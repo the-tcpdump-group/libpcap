@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.51 2003-11-04 07:37:02 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.51.2.1 2003-11-16 10:05:44 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -109,6 +109,7 @@ const char *pcap_lib_version(void)
 .ft B
 void pcap_close(pcap_t *p)
 int pcap_dump_flush(pcap_dumper_t *p)
+FILE *pcap_dump_file(pcap_dumper_t *p)
 void pcap_dump_close(pcap_dumper_t *p)
 .ft
 .fi
@@ -988,6 +989,10 @@ than just a version number.
 closes the files associated with
 .I p
 and deallocates resources.
+.PP
+.B pcap_dump_file()
+returns the standard I/O stream of the ``savefile'' opened by
+.BR pcap_dump_open().
 .PP
 .B pcap_dump_flush()
 flushes the output buffer to the ``savefile,'' so that any packets
