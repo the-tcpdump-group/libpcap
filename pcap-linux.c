@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.107 2004-03-24 06:49:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.108 2004-04-07 08:03:32 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -677,10 +677,6 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 static int
 pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-#ifdef HAVE_PF_PACKET_SOCKETS
-	struct sockaddr_ll sa_ll;
-#endif
-	struct sockaddr_pkt sa_pkt;
 	int ret;
 
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -688,43 +684,31 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 		/* PF_PACKET socket */
 		if (handle->md.ifindex == -1) {
 			/*
-			 * Cooked mode - can't send.
+			 * We don't support sending on the "any" device.
+			 */
+			strlcpy(handle->errbuf,
+			    "Sending packets isn't supported on the \"any\" device",
+			    PCAP_ERRBUF_SIZE);
+			return (-1);
+		}
+
+		if (handle->md.cooked) {
+			/*
+			 * We don't support sending on the "any" device.
+			 *
 			 * XXX - how do you send on a bound cooked-mode
 			 * socket?
+			 * Is a "sendto()" required there?
 			 */
 			strlcpy(handle->errbuf,
 			    "Sending packets isn't supported in cooked mode",
 			    PCAP_ERRBUF_SIZE);
 			return (-1);
 		}
-
-		memset(&sa_ll, 0, sizeof(sa_ll));
-		sa_ll.sll_family = AF_PACKET;
-		sa_ll.sll_ifindex = handle->md.ifindex;
-		/*
-		 * Do we have to set the hardware address?
-		 */
-		sa_ll.sll_protocol = htons(ETH_P_ALL);
-
-		ret = sendto(handle->fd, buf, size, 0, 
-			(struct sockaddr *)&sa_ll, sizeof(sa_ll));
-		if (ret == -1) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
-			    pcap_strerror(errno));
-			return (-1);
-		}
-		return (ret);
 	}
 #endif
-	memset(&sa_pkt, 0, sizeof(sa_pkt));
-	sa_pkt.spkt_family = PF_INET;
-	strcpy(sa_pkt.spkt_device, handle->md.device);
-	/*
-	 * Do we have to set "spkt_protocol" to the Ethernet protocol?
-	 */
 
-	ret = sendto(handle->fd, buf, size, 0, (struct sockaddr *)&sa_pkt, 
-		sizeof(sa_pkt));
+	ret = send(handle->fd, buf, size, 0);
 	if (ret == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
