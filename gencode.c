@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.99 1999-11-01 15:56:40 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.100 1999-12-08 19:54:03 mcr Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -304,6 +304,54 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		root = gen_retblk(snaplen);
 
 	if (optimize && !no_optimize) {
+		bpf_optimize(&root);
+		if (root == NULL ||
+		    (root->s.code == (BPF_RET|BPF_K) && root->s.k == 0))
+			bpf_error("expression rejects all packets");
+	}
+	program->bf_insns = icode_to_fcode(root, &len);
+	program->bf_len = len;
+
+	freechunks();
+	return (0);
+}
+
+/*
+ * entry point for using the compiler with no pcap open
+ * pass in all the stuff that is needed explicitly instead.
+ */
+int
+pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
+		    struct bpf_program *program,
+	     char *buf, int optimize, bpf_u_int32 mask)
+{
+	extern int n_errors;
+	int len;
+
+	n_errors = 0;
+	root = NULL;
+	bpf_pcap = NULL;
+	if (setjmp(top_ctx)) {
+		freechunks();
+		return (-1);
+	}
+
+	netmask = mask;
+
+	/* XXX needed? I don't grok the use of globals here. */
+	snaplen = snaplen_arg;
+
+	lex_init(buf ? buf : "");
+	init_linktype(linktype_arg);
+	(void)pcap_parse();
+
+	if (n_errors)
+		syntax();
+
+	if (root == NULL)
+		root = gen_retblk(snaplen_arg);
+
+	if (optimize) {
 		bpf_optimize(&root);
 		if (root == NULL ||
 		    (root->s.code == (BPF_RET|BPF_K) && root->s.k == 0))
