@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.1 2003-11-15 23:26:44 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.2 2003-11-18 21:09:17 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1155,6 +1155,14 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		handle->linktype = DLT_IP_OVER_FC;
 		break;
 
+	case ARPHRD_IRDA:
+		/* Don't expect IP packet out of this interfaces... */
+		handle->linktype = DLT_LINUX_IRDA;
+		/* We need to save packet direction for IrDA decoding,
+		 * so let's use "Linux-cooked" mode. Jean II */
+		//handle->md.cooked = 1;
+		break;
+
 	default:
 		handle->linktype = -1;
 		break;
@@ -1235,6 +1243,7 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 			map_arphrd_to_dlt(handle, arptype, 1);
 			if (handle->linktype == -1 ||
 			    handle->linktype == DLT_LINUX_SLL ||
+			    handle->linktype == DLT_LINUX_IRDA ||
 			    (handle->linktype == DLT_EN10MB &&
 			     (strncmp("isdn", device, 4) == 0 ||
 			      strncmp("isdY", device, 4) == 0))) {
@@ -1275,7 +1284,10 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 						"socket",
 						arptype);
 				}
-				handle->linktype = DLT_LINUX_SLL;
+				/* IrDA capture is not a real "cooked" capture,
+				 * it's IrLAP frames, not IP packets. */
+				if(handle->linktype != DLT_LINUX_IRDA)
+					handle->linktype = DLT_LINUX_SLL;
 			}
 
 			device_id = iface_get_id(sock_fd, device, ebuf);

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.3 2003-11-16 10:05:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.4 2003-11-18 21:09:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -194,6 +194,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_RAWSS7_MTP3    141             /* definitions */
 #define LINKTYPE_RAWSS7_SCCP    142
 
+#define LINKTYPE_LINUX_IRDA	144		/* Linux-IrDA */
+
 /*
  * These types are reserved for future use.
  */
@@ -330,6 +332,9 @@ static struct linktype_map {
 
 	/* Apple IP-over-IEEE 1394 cooked header */
 	{ DLT_APPLE_IP_OVER_IEEE1394, LINKTYPE_APPLE_IP_OVER_IEEE1394 },
+
+	/* IrDA IrLAP packets + Linux-cooked header */
+	{ DLT_LINUX_IRDA,	LINKTYPE_LINUX_IRDA },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
