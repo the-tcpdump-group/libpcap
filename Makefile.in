@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.89 2002-07-27 18:45:34 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.90 2003-02-11 01:46:05 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -87,7 +87,7 @@ GENHDR = \
 	tokdefs.h
 
 TAGHDR = \
-	bpf/net/bpf.h
+	pcap-bpf.h
 
 TAGFILES = \
 	$(SRC) $(HDR) $(TAGHDR)
@@ -144,12 +144,10 @@ install:
 	[ -d $(DESTDIR)$(includedir) ] || \
 	    (mkdir -p $(DESTDIR)$(includedir); chmod 755 $(DESTDIR)$(includedir))
 	$(INSTALL_DATA) $(srcdir)/pcap.h $(DESTDIR)$(includedir)/pcap.h
+	$(INSTALL_DATA) $(srcdir)/pcap-bpf.h \
+	    $(DESTDIR)$(includedir)/pcap-bpf.h
 	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
 	    $(DESTDIR)$(includedir)/pcap-namedb.h
-	[ -d $(DESTDIR)$(includedir)/net ] || \
-	    (mkdir -p $(DESTDIR)$(includedir)/net; chmod 755 $(DESTDIR)$(includedir)/net)
-	$(INSTALL_DATA) $(srcdir)/bpf/net/bpf.h \
-	    $(DESTDIR)$(includedir)/net/bpf.h
 	[ -d $(DESTDIR)$(mandir)/man3 ] || \
 		(mkdir -p $(DESTDIR)$(mandir)/man3; chmod 755 $(DESTDIR)$(mandir)/man3)
 	$(INSTALL_DATA) $(srcdir)/pcap.3 \
@@ -158,8 +156,8 @@ install:
 uninstall:
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
 	rm -f $(DESTDIR)$(includedir)/pcap.h
+	rm -f $(DESTDIR)$(includedir)/pcap-bpf.h
 	rm -f $(DESTDIR)$(includedir)/pcap-namedb.h
-	rm -f $(DESTDIR)$(includedir)/net/bpf.h
 	rm -f $(DESTDIR)$(mandir)/man3/pcap.3
 
 clean:
@@ -167,7 +165,7 @@ clean:
 
 distclean:
 	rm -f $(CLEANFILES) Makefile config.cache config.log config.status \
-	    config.h gnuc.h os-proto.h net bpf_filter.c stamp-h stamp-h.in
+	    config.h gnuc.h os-proto.h bpf_filter.c stamp-h stamp-h.in
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)

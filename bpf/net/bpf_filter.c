@@ -40,7 +40,7 @@
 
 #if !(defined(lint) || defined(KERNEL) || defined(_KERNEL))
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.40 2003-01-10 09:15:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.41 2003-02-11 01:46:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef WIN32
@@ -67,7 +67,7 @@ static const char rcsid[] =
 
 #endif /* WIN32 */
 
-#include <net/bpf.h>
+#include <pcap-bpf.h>
 
 #if !defined(KERNEL) && !defined(_KERNEL)
 #include <stdlib.h>

@@ -8,7 +8,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.6 2002-06-11 17:04:46 itojun Exp $";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.7 2003-02-11 01:46:06 guy Exp $";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -22,7 +22,7 @@ static const char rcsid[] =
 #include <sys/socket.h>
 
 #include <net/if.h>
-#include <net/bpf.h>
+#include <pcap-bpf.h>
 #include <net/enet.h>
 
 #include <netinet/in.h>

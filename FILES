@@ -16,7 +16,6 @@ VERSION
 aclocal.m4
 arcnet.h
 atmuni31.h
-bpf/net/bpf.h
 bpf/net/bpf_filter.c
 bpf_dump.c
 bpf_image.c
@@ -50,6 +49,7 @@ nametoaddr.c
 nlpid.h
 optimize.c
 pcap-bpf.c
+pcap-bpf.h
 pcap-dlpi.c
 pcap-enet.c
 pcap-int.h

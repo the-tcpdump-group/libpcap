@@ -1,5 +1,5 @@
 %define prefix   /usr
-%define version 2001.02.22 
+%define version 2003.02.10
 
 Summary: packet capture library
 Name: libpcap
@@ -12,7 +12,7 @@ BuildRoot: /tmp/%{name}-buildroot
 URL: http://www.tcpdump.org
 
 %description
-Packet-capture library LIBPCAP 0.5
+Packet-capture library LIBPCAP 0.8
 Now maintained by "The Tcpdump Group"
 See http://www.tcpdump.org
 Please send inquiries/comments/reports to tcpdump-workers@tcpdump.org
@@ -35,8 +35,8 @@ mkdir -p $RPM_BUILD_ROOT/usr/man/man3
 install -m 755 -o root libpcap.a $RPM_BUILD_ROOT/usr/lib
 install -m 644 -o root pcap.3 $RPM_BUILD_ROOT/usr/man/man3
 install -m 644 -o root pcap.h $RPM_BUILD_ROOT/usr/include
+install -m 644 -o root pcap-bpf.h $RPM_BUILD_ROOT/usr/include/net
 install -m 644 -o root pcap-namedb.h $RPM_BUILD_ROOT/usr/include
-install -m 644 -o root net/bpf.h $RPM_BUILD_ROOT/usr/include/net
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -46,5 +46,5 @@ rm -rf $RPM_BUILD_ROOT
 %doc LICENSE CHANGES INSTALL README.linux TODO VERSION CREDITS pcap.spec
 /usr/lib/libpcap.a
 /usr/include/pcap.h
+/usr/include/pcap-bpf.h
 /usr/include/pcap-namedb.h
-/usr/include/net/bpf.h

@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.41 2002-12-22 23:05:53 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.42 2003-02-11 01:46:06 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -44,7 +44,9 @@
 #include <sys/time.h>
 #endif /* WIN32 */
 
-#include <net/bpf.h>
+#ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
+#include <pcap-bpf.h>
+#endif
 
 #include <stdio.h>
 

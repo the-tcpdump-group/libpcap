@@ -37,7 +37,18 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.67 2003-01-23 07:24:53 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.1 2003-02-11 01:46:06 guy Exp $ (LBL)
+ */
+
+/*
+ * This is libpcap's cut-down version of bpf.h; it includes only
+ * the stuff needed for the code generator and the userland BPF
+ * interpreter, and the libpcap APIs for setting filters, etc..
+ *
+ * "pcap-bpf.c" will include the native OS version, as it deals with
+ * the OS's BPF implementation.
+ *
+ * XXX - should this all just be moved to "pcap.h"?
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -68,21 +79,13 @@ typedef	u_int bpf_u_int32;
 #define BPF_MINBUFSIZE 32
 
 /*
- *  Structure for BIOCSETF.
+ * Structure for "pcap_compile()", "pcap_setfilter()", etc..
  */
 struct bpf_program {
 	u_int bf_len;
 	struct bpf_insn *bf_insns;
 };
  
-/*
- * Struct returned by BIOCGSTATS.
- */
-struct bpf_stat {
-	u_int bs_recv;		/* number of packets received */
-	u_int bs_drop;		/* number of packets dropped */
-};
-
 /*
  * Struct return by BIOCVERSION.  This represents the version number of 
  * the filter language described by the instruction encodings below.
@@ -101,66 +104,6 @@ struct bpf_version {
 /* Current version number of filter architecture. */
 #define BPF_MAJOR_VERSION 1
 #define BPF_MINOR_VERSION 1
-
-/*
- * BPF ioctls
- *
- * The first set is for compatibility with Sun's pcc style
- * header files.  If your using gcc, we assume that you
- * have run fixincludes so the latter set should work.
- */
-#if (defined(sun) || defined(ibm032)) && !defined(__GNUC__)
-#define	BIOCGBLEN	_IOR(B,102, u_int)
-#define	BIOCSBLEN	_IOWR(B,102, u_int)
-#define	BIOCSETF	_IOW(B,103, struct bpf_program)
-#define	BIOCFLUSH	_IO(B,104)
-#define BIOCPROMISC	_IO(B,105)
-#define	BIOCGDLT	_IOR(B,106, u_int)
-#define BIOCGETIF	_IOR(B,107, struct ifreq)
-#define BIOCSETIF	_IOW(B,108, struct ifreq)
-#define BIOCSRTIMEOUT	_IOW(B,109, struct timeval)
-#define BIOCGRTIMEOUT	_IOR(B,110, struct timeval)
-#define BIOCGSTATS	_IOR(B,111, struct bpf_stat)
-#define BIOCIMMEDIATE	_IOW(B,112, u_int)
-#define BIOCVERSION	_IOR(B,113, struct bpf_version)
-#define BIOCSTCPF	_IOW(B,114, struct bpf_program)
-#define BIOCSUDPF	_IOW(B,115, struct bpf_program)
-#else
-#define	BIOCGBLEN	_IOR('B',102, u_int)
-#define	BIOCSBLEN	_IOWR('B',102, u_int)
-#define	BIOCSETF	_IOW('B',103, struct bpf_program)
-#define	BIOCFLUSH	_IO('B',104)
-#define BIOCPROMISC	_IO('B',105)
-#define	BIOCGDLT	_IOR('B',106, u_int)
-#define BIOCGETIF	_IOR('B',107, struct ifreq)
-#define BIOCSETIF	_IOW('B',108, struct ifreq)
-#define BIOCSRTIMEOUT	_IOW('B',109, struct timeval)
-#define BIOCGRTIMEOUT	_IOR('B',110, struct timeval)
-#define BIOCGSTATS	_IOR('B',111, struct bpf_stat)
-#define BIOCIMMEDIATE	_IOW('B',112, u_int)
-#define BIOCVERSION	_IOR('B',113, struct bpf_version)
-#define BIOCSTCPF	_IOW('B',114, struct bpf_program)
-#define BIOCSUDPF	_IOW('B',115, struct bpf_program)
-#endif
-
-/*
- * Structure prepended to each packet.
- */
-struct bpf_hdr {
-	struct timeval	bh_tstamp;	/* time stamp */
-	bpf_u_int32	bh_caplen;	/* length of captured portion */
-	bpf_u_int32	bh_datalen;	/* original length of packet */
-	u_short		bh_hdrlen;	/* length of bpf header (this struct
-					   plus alignment padding) */
-};
-/*
- * Because the structure above is not a multiple of 4 bytes, some compilers
- * will insist on inserting padding; hence, sizeof(struct bpf_hdr) won't work.
- * Only the kernel needs to know about it; applications use bh_hdrlen.
- */
-#if defined(KERNEL) || defined(_KERNEL)
-#define SIZEOF_BPF_HDR 18
-#endif
 
 /*
  * Data-link level type codes.
@@ -479,23 +422,6 @@ struct bpf_insn {
 #define BPF_STMT(code, k) { (u_short)(code), 0, 0, k }
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
-#if defined(BSD) && (defined(KERNEL) || defined(_KERNEL))
-/*
- * Systems based on non-BSD kernels don't have ifnet's (or they don't mean
- * anything if it is in <net/if.h>) and won't work like this.
- */
-# if __STDC__
-extern void bpf_tap(struct ifnet *, u_char *, u_int);
-extern void bpf_mtap(struct ifnet *, struct mbuf *);
-extern void bpfattach(struct ifnet *, u_int, u_int);
-extern void bpfilterattach(int);
-# else
-extern void bpf_tap();
-extern void bpf_mtap();
-extern void bpfattach();
-extern void bpfilterattach();
-# endif /* __STDC__ */
-#endif /* BSD && (_KERNEL || KERNEL) */
 #if __STDC__ || defined(__cplusplus)
 extern int bpf_validate(struct bpf_insn *, int);
 extern u_int bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);

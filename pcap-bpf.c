@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.55 2002-12-22 02:36:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.56 2003-02-11 01:46:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -35,9 +35,53 @@ static const char rcsid[] =
 #include <sys/ioctl.h>
 
 #include <net/if.h>
+
 #ifdef _AIX
+
+/*
+ * Make "pcap.h" not include "pcap-bpf.h"; we are going to include the
+ * native OS version, as we need "struct bpf_config" from it.
+ */
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
+
+#include <sys/types.h>
+
+/*
+ * Prevent bpf.h from redefining the DLT_ values to their
+ * IFT_ values, as we're going to return the standard libpcap
+ * values, not IBM's non-standard IFT_ values.
+ */
+#undef _AIX
+#include <net/bpf.h>
+#define _AIX
+
 #include <net/if_types.h>		/* for IFT_ values */
-#endif
+#include <sys/sysconfig.h>
+#include <sys/device.h>
+#include <odmi.h>
+#include <cf.h>
+
+#ifdef __64BIT__
+#define domakedev makedev64
+#define getmajor major64
+#define bpf_hdr bpf_hdr32
+#else /* __64BIT__ */
+#define domakedev makedev
+#define getmajor major
+#endif /* __64BIT__ */
+
+#define BPF_NAME "bpf"
+#define BPF_MINORS 4
+#define DRIVER_PATH "/usr/lib/drivers"
+#define BPF_NODE "/dev/bpf"
+static int bpfloadedflag = 0;
+static int odmlockid = 0;
+
+#else /* _AIX */
+
+#include <net/bpf.h>
+
+#endif /* _AIX */
 
 #include <ctype.h>
 #include <errno.h>
@@ -188,12 +232,159 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
+#ifdef _AIX
+static int 
+bpf_odminit(char *errbuf)
+{
+	if (odm_initialize() == -1) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "bpf_load: odm_initialize failed: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+
+	if ((odmlockid = odm_lock("/etc/objrepos/config_lock", ODM_WAIT)) == -1) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "bpf_load: odm_lock of /etc/objrepos/config_lock failed: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+
+	return (0);
+}
+
+static int 
+bpf_odmcleanup(char *errbuf)
+{
+	if (odm_unlock(odmlockid) == -1) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "bpf_load: odm_unlock failed: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+
+	odm_terminate();
+
+	return (0);
+}
+
+static int
+bpf_load(char *errbuf)
+{
+	long major;
+	int *minors;
+	int numminors, i, rc;
+	char buf[1024];
+	struct stat sbuf;
+	struct bpf_config cfg_bpf;
+	struct cfg_load cfg_ld;
+	struct cfg_kmod cfg_km;
+
+	/*
+	 * This is very very close to what happens in the real implementation
+	 * but I've fixed some (unlikely) bug situations.
+	 */
+	if (bpfloadedflag)
+		return (0);
+
+	if (bpf_odminit(errbuf) != 0)
+		return (-1);
+
+	major = genmajor(BPF_NAME);
+	if (major == -1) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "bpf_load: genmajor failed: %s", pcap_strerror(errno));
+		return (-1);
+	}
+
+	minors = getminor(major, &numminors, BPF_NAME);
+	if (!minors) {
+		minors = genminor("bpf", major, 0, BPF_MINORS, 1, 1);
+		if (!minors) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "bpf_load: genminor failed: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+
+	}
+
+	if (bpf_odmcleanup(errbuf))
+		return (-1);
+
+	rc = stat(BPF_NODE "0", &sbuf);
+	if (rc == -1 && errno != ENOENT) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "bpf_load: can't stat %s: %s",
+		    BPF_NODE "0", pcap_strerror(errno));
+		return (-1);
+	}
+
+	if (rc == -1 || getmajor(sbuf.st_rdev) != major) {
+		for (i = 0; i < BPF_MINORS; i++) {
+			sprintf(buf, "%s%d", BPF_NODE, i);
+			unlink(buf);
+			if (mknod(buf, S_IRUSR | S_IFCHR, domakedev(major, i)) == -1) {
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "bpf_load: can't mknod %s: %s",
+				    buf pcap_strerror(errno));
+				return (-1);
+			}
+		}
+	}
+
+	/* Check if the driver is loaded */
+	memset(&cfg_ld, 0x0, sizeof(cfg_ld));
+	cfg_ld.path = buf;
+	sprintf(cfg_ld.path, "%s/%s", DRIVER_PATH, BPF_NAME);
+	if (sysconfig(SYS_QUERYLOAD, (void *) &cfg_ld, sizeof(cfg_ld) == -1) ||
+	    (cfg_ld.kmid == 0)) {
+		/* Driver isn't loaded, load it now */
+		if (sysconfig(SYS_SINGLELOAD, (void *) &cfg_ld, sizeof(cfg_ld)) == -1) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "bpf_load: could not load driver: %s",
+			    strerror(errno));
+			return (-1);
+		}
+	}
+
+	/* Configure the driver */
+	cfg_km.cmd = CFG_INIT;
+	cfg_km.kmid = cfg_ld.kmid;
+	cfg_km.mdilen = sizeof(cfg_bpf);
+	cfg_km.mdiptr = (void *) &cfg_bpf; 
+	for (i = 0; i < BPF_MINORS; i++) {
+		cfg_bpf.devno = domakedev(major, i);
+		if (sysconfig(SYS_CFGKMOD, (void *) &cfg_km, sizeof(cfg_km)) == -1) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "bpf_load: could not configure driver: %s",
+			    strerror(errno));
+			return (-1);
+		}
+	}
+	
+	bpfloadedflag = 1;
+
+	return (0);
+}
+#endif
+
 static inline int
 bpf_open(pcap_t *p, char *errbuf)
 {
 	int fd;
 	int n = 0;
 	char device[sizeof "/dev/bpf0000000000"];
+
+#ifdef _AIX
+	/*
+	 * Load the bpf driver, if it isn't already loaded,
+	 * and create the BPF device entries, if they don't
+	 * already exist.
+	 */
+	if (bpf_load(errbuf) == -1)
+		return (-1);
+#endif
 
 	/*
 	 * Go through all the minors and find one that isn't in use.
