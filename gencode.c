@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.137 2000-12-12 03:26:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.138 2000-12-12 08:08:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2631,6 +2631,7 @@ gen_ecode(eaddr, q)
 			return gen_fhostop(eaddr, (int)q.dir);
 		if (linktype == DLT_IEEE802)
 			return gen_thostop(eaddr, (int)q.dir);
+		bpf_error("ethernet addresses supported only on ethernet, FDDI or token ring");
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
