@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.136 2000-11-09 06:20:05 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.137 2000-12-12 03:26:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -341,43 +341,15 @@ pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
 		    struct bpf_program *program,
 	     char *buf, int optimize, bpf_u_int32 mask)
 {
-	extern int n_errors;
-	int len;
+	pcap_t *p;
+	int ret;
 
-	n_errors = 0;
-	root = NULL;
-	bpf_pcap = NULL;
-	if (setjmp(top_ctx)) {
-		freechunks();
+	p = pcap_open_dead(linktype_arg, snaplen_arg);
+	if (p == NULL)
 		return (-1);
-	}
-
-	netmask = mask;
-
-	/* XXX needed? I don't grok the use of globals here. */
-	snaplen = snaplen_arg;
-
-	lex_init(buf ? buf : "");
-	init_linktype(linktype_arg);
-	(void)pcap_parse();
-
-	if (n_errors)
-		syntax();
-
-	if (root == NULL)
-		root = gen_retblk(snaplen_arg);
-
-	if (optimize) {
-		bpf_optimize(&root);
-		if (root == NULL ||
-		    (root->s.code == (BPF_RET|BPF_K) && root->s.k == 0))
-			bpf_error("expression rejects all packets");
-	}
-	program->bf_insns = icode_to_fcode(root, &len);
-	program->bf_len = len;
-
-	freechunks();
-	return (0);
+	ret = pcap_compile(p, program, buf, optimize, mask);
+	pcap_close(p);
+	return (ret);
 }
 
 /*
