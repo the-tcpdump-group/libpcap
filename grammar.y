@@ -22,12 +22,13 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.57 1999-10-19 15:18:30 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.58 2000-06-03 16:29:43 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
+#include <stdlib.h>
 
 #if __STDC__
 struct mbuf;
