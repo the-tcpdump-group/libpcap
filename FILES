@@ -103,4 +103,3 @@ Win32/Src/getservent.c
 Win32/Src/inet_aton.c
 Win32/Src/inet_net.c
 Win32/Src/inet_pton.c
-
