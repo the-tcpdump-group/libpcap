@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.85 2004-10-07 16:54:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.86 2004-12-18 08:49:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -33,7 +33,6 @@ static const char rcsid[] _U_ =
 #include <pcap-stdinc.h>
 #else /* WIN32 */
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 #endif /* WIN32 */
 
