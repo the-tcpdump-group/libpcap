@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.60 2004-04-30 09:13:51 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.61 2004-12-16 22:07:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -73,9 +73,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <limits.h>
 #else
 #define INT_MAX		2147483647
-#endif
-#ifdef HAVE_IFADDRS_H
-#include <ifaddrs.h>
 #endif
 
 #include "pcap-int.h"
