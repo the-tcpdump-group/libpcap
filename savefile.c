@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.90 2003-10-24 23:55:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.91 2003-11-04 01:49:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -594,6 +594,7 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 {
 	struct pcap_sf_patched_pkthdr sf_hdr;
 	FILE *fp = p->sf.rfile;
+	size_t amt_read;
 	bpf_u_int32 t;
 
 	/*
@@ -603,9 +604,23 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 	 * unpatched libpcap we only read as many bytes as the regular
 	 * header has.
 	 */
-	if (fread(&sf_hdr, p->sf.hdrsize, 1, fp) != 1) {
-		/* probably an EOF, though could be a truncated packet */
-		return (1);
+	amt_read = fread(&sf_hdr, 1, p->sf.hdrsize, fp);
+	if (amt_read != p->sf.hdrsize) {
+		if (ferror(fp)) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "error reading dump file: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		} else {
+			if (amt_read != 0) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "truncated dump file; tried to read %d header bytes, only got %lu",
+				    p->sf.hdrsize, (unsigned long)amt_read);
+				return (-1);
+			}
+			/* EOF */
+			return (1);
+		}
 	}
 
 	if (p->sf.swapped) {
@@ -671,9 +686,17 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 				return (-1);
 			}
 		}
-		if (fread((char *)tp, hdr->caplen, 1, fp) != 1) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file");
+		amt_read = fread((char *)tp, 1, hdr->caplen, fp);
+		if (amt_read != hdr->caplen) {
+			if (ferror(fp)) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "error reading dump file: %s",
+				    pcap_strerror(errno));
+			} else {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "truncated dump file; tried to read %u captured bytes, only got %lu",
+				    hdr->caplen, (unsigned long)amt_read);
+			}
 			return (-1);
 		}
 		/*
@@ -688,10 +711,17 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 
 	} else {
 		/* read the packet itself */
-
-		if (fread((char *)buf, hdr->caplen, 1, fp) != 1) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file");
+		amt_read = fread((char *)buf, 1, hdr->caplen, fp);
+		if (amt_read != hdr->caplen) {
+			if (ferror(fp)) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "error reading dump file: %s",
+				    pcap_strerror(errno));
+			} else {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "truncated dump file; tried to read %u captured bytes, only got %lu",
+				    hdr->caplen, (unsigned long)amt_read);
+			}
 			return (-1);
 		}
 	}
