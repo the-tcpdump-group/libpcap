@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.94 2003-11-15 23:24:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.95 2003-11-16 10:07:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -838,6 +838,12 @@ pcap_dump_open(pcap_t *p, const char *fname)
 	}
 	(void)sf_write_header(f, linktype, p->tzoff, p->snapshot);
 	return ((pcap_dumper_t *)f);
+}
+
+FILE *
+pcap_dump_file(pcap_dumper_t *p)
+{
+	return ((FILE *)p);
 }
 
 int

@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.45 2003-11-04 07:05:39 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.46 2003-11-16 10:07:36 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -209,6 +209,7 @@ pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 int	pcap_dump_flush(pcap_dumper_t *);
 void	pcap_dump_close(pcap_dumper_t *);
 void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
+FILE	*pcap_dump_file(pcap_dumper_t *);
 
 int	pcap_findalldevs(pcap_if_t **, char *);
 void	pcap_freealldevs(pcap_if_t *);
