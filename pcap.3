@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.47 2003-02-11 08:03:21 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.48 2003-04-10 06:21:00 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -78,6 +78,9 @@ void pcap_freecode(struct bpf_program *);
 .LP
 .ft B
 const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h)
+int pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
+.ti +8
+const u_char **pkt_data)
 .ft
 .LP
 .ft B
@@ -503,6 +506,33 @@ arrive, or if the file descriptor for the capture device is in
 non-blocking mode and no packets were available to be read), or if no
 more packets are available in a ``savefile.''  Unfortunately, there is
 no way to determine whether an error occured or not.
+.PP
+.B pcap_next_ex()
+reads the next packet and returns a success/failure indication:
+.RS
+.TP
+1
+the packet was read without problems
+.TP
+0
+packets are being read from a live capture, and the timeout expired
+.TP
+\-1
+an error occurred while reading the packet
+.TP
+\-2
+packets are being read from a ``savefile'', and there are no more
+packets to read from the savefile.
+.RE
+.PP
+If the packet was read without problems, the pointer pointed to by the
+.I pkt_header
+argument is set to point to the
+.I pcap_pkthdr
+struct for the packet, and the
+pointer pointed to by the
+.I pkt_data
+argument is set to point to the data in the packet.
 .PP
 .B pcap_dump()
 outputs a packet to the ``savefile'' opened with
