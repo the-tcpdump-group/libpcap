@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.6 2003-01-23 09:40:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.7 2003-04-09 10:01:10 risso Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -35,7 +35,19 @@ int* _errno();
 #define	PcapBufSize 256000	/*dimension of the buffer in the pcap_t structure*/
 #define	SIZE_BUF 1000000
 
-/*start winsock*/
+/*
+ * Header that the WinPcap driver associates to the packets.
+ * Once was in bpf.h
+ */
+struct bpf_hdr {
+	struct timeval	bh_tstamp;	/* time stamp */
+	bpf_u_int32	bh_caplen;	/* length of captured portion */
+	bpf_u_int32	bh_datalen;	/* original length of packet */
+	u_short		bh_hdrlen;	/* length of bpf header (this struct
+					   plus alignment padding) */
+};
+
+/* Start winsock */
 int 
 wsockinit()
 {
