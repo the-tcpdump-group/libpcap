@@ -42,6 +42,12 @@
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
 
+/* if we have u_int8_t */
+#undef u_int8_t
+
+/* if we have u_int16_t */
+#undef u_int16_t
+
 /* if we have u_int32_t */
 #undef u_int32_t
 
