@@ -37,10 +37,14 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.54 2002-03-08 11:16:34 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.55 2002-04-20 10:02:16 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* BSD style release date */
 #define BPF_RELEASE 199606
@@ -421,7 +425,7 @@ extern void bpfattach();
 extern void bpfilterattach();
 # endif /* __STDC__ */
 #endif /* BSD && (_KERNEL || KERNEL) */
-#if __STDC__
+#if __STDC__ || defined(__cplusplus)
 extern int bpf_validate(struct bpf_insn *, int);
 extern u_int bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);
 #else
@@ -433,5 +437,9 @@ extern u_int bpf_filter();
  * Number of scratch memory words (for BPF_LD|BPF_MEM and BPF_ST).
  */
 #define BPF_MEMWORDS 16
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
