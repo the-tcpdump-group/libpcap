@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.52 2001-01-14 05:30:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.53 2001-01-17 07:42:37 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -72,11 +72,32 @@ static const char rcsid[] =
 #include <net/if.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
-#include <netinet/if_ether.h>
+#include <net/if_arp.h>
 
 #ifdef HAVE_NETPACKET_PACKET_H
-#include <netpacket/packet.h>
-#endif
+# include <netpacket/packet.h>
+#else
+ /*
+  * Oh, joy.  Some Linux distributions have 2.2 or later kernels and
+  * libc5.  On at least one of those systems (Slackware 4.0), it
+  * appears that "/usr/include/sys/socket.h" includes <linux/socket.h>,
+  * which means it picks up all the AF_, PF_, and SO_ definitions
+  * appropriate for the current kernel; however, it also appears that
+  * they did not see fit to provide a "/usr/include/netpacket/packet.h"
+  * file.
+  *
+  * However, you should be able to get the right definitions by including
+  * <linux/if_packet.h>.
+  *
+  * So if this system has PF_PACKET defined but doesn't have the
+  * <netpacket/packet.h> header file, we include <linux/if_packet.h>
+  * instead.
+  */
+# ifdef PF_PACKET
+#  include <linux/if_packet.h>
+# endif /* PF_PACKET */
+#endif /* HAVE_NETPACKET_PACKET_H */
+
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
 #include <linux/filter.h>
@@ -110,12 +131,12 @@ static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 /*
  * Wrap some ioctl calls
  */
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 static int	iface_get_id(int fd, const char *device, char *ebuf);
 #endif
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 static int 	iface_bind(int fd, int ifindex, char *ebuf);
 #endif
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
@@ -221,7 +242,7 @@ static int
 pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 {
 	int			offset;
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 	struct sockaddr_ll	from;
 	struct sll_header	*hdrp;
 #else
@@ -231,7 +252,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	int			packet_len, caplen;
 	struct pcap_pkthdr	pcap_header;
 
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 	/*
 	 * If this is a cooked device, leave extra room for a
 	 * fake packet header.
@@ -270,7 +291,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		}
 	}
 
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 	/*
 	 * If this is from the loopback device, reject outgoing packets;
 	 * we'll see the packet as an incoming packet as well, and
@@ -286,7 +307,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		return 0;
 #endif
 
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 	/*
 	 * If this is a cooked device, fill in the fake packet header.
 	 */
@@ -606,7 +627,7 @@ static int
 live_open_new(pcap_t *handle, char *device, int promisc, 
 	      int to_ms, char *ebuf)
 {
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 	int			sock_fd = -1, device_id, mtu, arptype;
 	struct packet_mreq	mr;
 
@@ -793,7 +814,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 #endif
 }
 
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 /*
  *  Return the index of the given device name. Fill ebuf and return 
  *  -1 on failure.
@@ -1196,7 +1217,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	return ifr.ifr_hwaddr.sa_family;
 }
 
-#ifdef HAVE_NETPACKET_PACKET_H
+#ifdef PF_PACKET
 static int
 fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
