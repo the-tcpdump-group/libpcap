@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.1 2002-07-27 18:46:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.2 2002-07-30 08:12:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -56,6 +56,37 @@ static const char rcsid[] =
 #endif
 
 /*
+ * This is fun.
+ *
+ * In older BSD systems, socket addresses were fixed-length, and
+ * "sizeof (struct sockaddr)" gave the size of the structure.
+ * All addresses fit within a "struct sockaddr".
+ *
+ * In newer BSD systems, the socket address is variable-length, and
+ * there's an "sa_len" field giving the length of the structure;
+ * this allows socket addresses to be longer than 2 bytes of family
+ * and 14 bytes of data.
+ *
+ * Some commercial UNIXes use the old BSD scheme, some use the RFC 2553
+ * variant of the old BSD scheme (with "struct sockaddr_storage" rather
+ * than "struct sockaddr"), and some use the new BSD scheme.
+ *
+ * GNU libc uses neither scheme, but has an "SA_LEN()" macro that
+ * determines the size based on the address family.
+ */
+#ifndef SA_LEN
+#ifdef HAVE_SOCKADDR_SA_LEN
+#define SA_LEN(addr)	((addr)->sa_len)
+#else /* HAVE_SOCKADDR_SA_LEN */
+#ifdef HAVE_SOCKADDR_STORAGE
+#define SA_LEN(addr)	(sizeof (struct sockaddr_storage))
+#else /* HAVE_SOCKADDR_STORAGE */
+#define SA_LEN(addr)	(sizeof (struct sockaddr))
+#endif /* HAVE_SOCKADDR_STORAGE */
+#endif /* HAVE_SOCKADDR_SA_LEN */
+#endif /* SA_LEN */
+
+/*
  * Get a list of all interfaces that are up and that we can open.
  * Returns -1 on error, 0 otherwise.
  * The list, as returned through "alldevsp", may be null if no interfaces
@@ -69,6 +100,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	pcap_if_t *devlist = NULL;
 	struct ifaddrs *ifap, *ifa;
 	struct sockaddr *broadaddr, *dstaddr;
+	size_t broadaddr_size, dstaddr_size;
 	int ret = 0;
 
 	/*
@@ -108,21 +140,29 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 		 * non-null on a non-point-to-point
 		 * interface.
 		 */
-		if (ifa->ifa_flags & IFF_BROADCAST)
+		if (ifa->ifa_flags & IFF_BROADCAST) {
 			broadaddr = ifa->ifa_broadaddr;
-		else
+			broadaddr_size = SA_LEN(broadaddr);
+		} else {
 			broadaddr = NULL;
-		if (ifa->ifa_flags & IFF_POINTOPOINT)
+			broadaddr_size = 0;
+		}
+		if (ifa->ifa_flags & IFF_POINTOPOINT) {
 			dstaddr = ifa->ifa_dstaddr;
-		else
+			dstaddr_size = SA_LEN(ifa->ifa_dstaddr);
+		} else {
 			dstaddr = NULL;
+			dstaddr_size = 0;
+		}
 
 		/*
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifa->ifa_name,
-		    ifa->ifa_flags, ifa->ifa_addr, ifa->ifa_netmask,
-		    broadaddr, dstaddr, errbuf) < 0) {
+		    ifa->ifa_flags, ifa->ifa_addr, SA_LEN(ifa->ifa_addr),
+		    ifa->ifa_netmask, SA_LEN(ifa->ifa_netmask),
+		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
+		    errbuf) < 0) {
 			ret = -1;
 			break;
 		}

@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.49 2002-07-27 18:45:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.50 2002-07-30 08:12:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -85,47 +85,14 @@ struct rtentry;		/* declarations in <net/if.h> */
     (isdigit((unsigned char)((name)[2])) || (name)[2] == '\0'))
 #endif
 
-/*
- * This is fun.
- *
- * In older BSD systems, socket addresses were fixed-length, and
- * "sizeof (struct sockaddr)" gave the size of the structure.
- * All addresses fit within a "struct sockaddr".
- *
- * In newer BSD systems, the socket address is variable-length, and
- * there's an "sa_len" field giving the length of the structure;
- * this allows socket addresses to be longer than 2 bytes of family
- * and 14 bytes of data.
- *
- * Some commercial UNIXes use the old BSD scheme, some use the RFC 2553
- * variant of the old BSD scheme (with "struct sockaddr_storage" rather
- * than "struct sockaddr"), and some use the new BSD scheme.
- *
- * GNU libc uses neither scheme, but has an "SA_LEN()" macro that
- * determines the size based on the address family.
- */
-#ifndef SA_LEN
-#ifdef HAVE_SOCKADDR_SA_LEN
-#define SA_LEN(addr)	((addr)->sa_len)
-#else /* HAVE_SOCKADDR_SA_LEN */
-#ifdef HAVE_SOCKADDR_STORAGE
-#define SA_LEN(addr)	(sizeof (struct sockaddr_storage))
-#else /* HAVE_SOCKADDR_STORAGE */
-#define SA_LEN(addr)	(sizeof (struct sockaddr))
-#endif /* HAVE_SOCKADDR_STORAGE */
-#endif /* HAVE_SOCKADDR_SA_LEN */
-#endif /* SA_LEN */
-
 static struct sockaddr *
-dup_sockaddr(struct sockaddr *sa)
+dup_sockaddr(struct sockaddr *sa, size_t sa_len)
 {
 	struct sockaddr *newsa;
-	unsigned int size;
 
-	size = SA_LEN(sa);
-	if ((newsa = malloc(size)) == NULL)
+	if ((newsa = malloc(sa_len)) == NULL)
 		return (NULL);
-	return (memcpy(newsa, sa, size));
+	return (memcpy(newsa, sa, sa_len));
 }
 
 static int
@@ -324,8 +291,11 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 
 int
 add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
-    struct sockaddr *addr, struct sockaddr *netmask,
-    struct sockaddr *broadaddr, struct sockaddr *dstaddr, char *errbuf)
+    struct sockaddr *addr, size_t addr_size,
+    struct sockaddr *netmask, size_t netmask_size,
+    struct sockaddr *broadaddr, size_t broadaddr_size,
+    struct sockaddr *dstaddr, size_t dstaddr_size,
+    char *errbuf)
 {
 	pcap_if_t *curdev;
 	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
@@ -359,7 +329,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 
 	curaddr->next = NULL;
 	if (addr != NULL) {
-		curaddr->addr = dup_sockaddr(addr);
+		curaddr->addr = dup_sockaddr(addr, addr_size);
 		if (curaddr->addr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -370,7 +340,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 		curaddr->addr = NULL;
 
 	if (netmask != NULL) {
-		curaddr->netmask = dup_sockaddr(netmask);
+		curaddr->netmask = dup_sockaddr(netmask, netmask_size);
 		if (curaddr->netmask == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -381,7 +351,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 		curaddr->netmask = NULL;
 
 	if (broadaddr != NULL) {
-		curaddr->broadaddr = dup_sockaddr(broadaddr);
+		curaddr->broadaddr = dup_sockaddr(broadaddr, broadaddr_size);
 		if (curaddr->broadaddr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -392,7 +362,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 		curaddr->broadaddr = NULL;
 
 	if (dstaddr != NULL) {
-		curaddr->dstaddr = dup_sockaddr(dstaddr);
+		curaddr->dstaddr = dup_sockaddr(dstaddr, dstaddr_size);
 		if (curaddr->dstaddr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));

@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.1 2002-07-27 18:46:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.2 2002-07-30 08:12:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -68,6 +68,37 @@ struct rtentry;		/* declarations in <net/if.h> */
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
+
+/*
+ * This is fun.
+ *
+ * In older BSD systems, socket addresses were fixed-length, and
+ * "sizeof (struct sockaddr)" gave the size of the structure.
+ * All addresses fit within a "struct sockaddr".
+ *
+ * In newer BSD systems, the socket address is variable-length, and
+ * there's an "sa_len" field giving the length of the structure;
+ * this allows socket addresses to be longer than 2 bytes of family
+ * and 14 bytes of data.
+ *
+ * Some commercial UNIXes use the old BSD scheme, some use the RFC 2553
+ * variant of the old BSD scheme (with "struct sockaddr_storage" rather
+ * than "struct sockaddr"), and some use the new BSD scheme.
+ *
+ * GNU libc uses neither scheme, but has an "SA_LEN()" macro that
+ * determines the size based on the address family.
+ *
+ * We assume that a UNIX that doesn't have "getifaddrs()" and doesn't have
+ * SIOCGLIFCONF, but has SIOCGIFCONF, uses "struct sockaddr" for the
+ * address in an entry returned by SIOCGIFCONF.
+ */
+#ifndef SA_LEN
+#ifdef HAVE_SOCKADDR_SA_LEN
+#define SA_LEN(addr)	((addr)->sa_len)
+#else /* HAVE_SOCKADDR_SA_LEN */
+#define SA_LEN(addr)	(sizeof (struct sockaddr))
+#endif /* HAVE_SOCKADDR_SA_LEN */
+#endif /* SA_LEN */
 
 #ifdef HAVE_PROC_NET_DEV
 /*
@@ -200,37 +231,6 @@ scan_proc_net_dev(pcap_if_t **devlistp, int fd, char *errbuf)
 #endif /* HAVE_PROC_NET_DEV */
 
 /*
- * This is fun.
- *
- * In older BSD systems, socket addresses were fixed-length, and
- * "sizeof (struct sockaddr)" gave the size of the structure.
- * All addresses fit within a "struct sockaddr".
- *
- * In newer BSD systems, the socket address is variable-length, and
- * there's an "sa_len" field giving the length of the structure;
- * this allows socket addresses to be longer than 2 bytes of family
- * and 14 bytes of data.
- *
- * Some commercial UNIXes use the old BSD scheme, some use the RFC 2553
- * variant of the old BSD scheme (with "struct sockaddr_storage" rather
- * than "struct sockaddr"), and some use the new BSD scheme.
- *
- * GNU libc uses neither scheme, but has an "SA_LEN()" macro that
- * determines the size based on the address family.
- */
-#ifndef SA_LEN
-#ifdef HAVE_SOCKADDR_SA_LEN
-#define SA_LEN(addr)	((addr)->sa_len)
-#else /* HAVE_SOCKADDR_SA_LEN */
-#ifdef HAVE_SOCKADDR_STORAGE
-#define SA_LEN(addr)	(sizeof (struct sockaddr_storage))
-#else /* HAVE_SOCKADDR_STORAGE */
-#define SA_LEN(addr)	(sizeof (struct sockaddr))
-#endif /* HAVE_SOCKADDR_STORAGE */
-#endif /* HAVE_SOCKADDR_SA_LEN */
-#endif /* SA_LEN */
-
-/*
  * Get a list of all interfaces that are up and that we can open.
  * Returns -1 on error, 0 otherwise.
  * The list, as returned through "alldevsp", may be null if no interfaces
@@ -255,6 +255,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	unsigned buf_size;
 	struct ifreq ifrflags, ifrnetmask, ifrbroadaddr, ifrdstaddr;
 	struct sockaddr *netmask, *broadaddr, *dstaddr;
+	size_t netmask_size, broadaddr_size, dstaddr_size;
 	int ret = 0;
 
 	/*
@@ -343,6 +344,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 				 * Not available.
 				 */
 				netmask = NULL;
+				netmask_size = 0;
 			} else {
 				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "SIOCGIFNETMASK: %.*s: %s",
@@ -352,8 +354,10 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 				ret = -1;
 				break;
 			}
-		} else
+		} else {
 			netmask = &ifrnetmask.ifr_addr;
+			netmask_size = SA_LEN(netmask);
+		}
 
 		/*
 		 * Get the broadcast address for this address on this
@@ -371,6 +375,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 					 * Not available.
 					 */
 					broadaddr = NULL;
+					broadaddr_size = 0;
 				} else {
 					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "SIOCGIFBRDADDR: %.*s: %s",
@@ -380,14 +385,17 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 					ret = -1;
 					break;
 				}
-			} else
+			} else {
 				broadaddr = &ifrbroadaddr.ifr_broadaddr;
+				broadaddr_size = SA_LEN(broadaddr);
+			}
 		} else {
 			/*
 			 * Not a broadcast interface, so no broadcast
 			 * address.
 			 */
 			broadaddr = NULL;
+			broadaddr_size = 0;
 		}
 
 		/*
@@ -406,6 +414,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 					 * Not available.
 					 */
 					dstaddr = NULL;
+					dstaddr_size = 0;
 				} else {
 					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "SIOCGIFDSTADDR: %.*s: %s",
@@ -415,17 +424,27 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 					ret = -1;
 					break;
 				}
-			} else
+			} else {
 				dstaddr = &ifrdstaddr.ifr_dstaddr;
-		} else
+				dstaddr_size = SA_LEN(dstaddr);
+			}
+		} else {
+			/*
+			 * Not a point-to-point interface, so no destination
+			 * address.
+			 */
 			dstaddr = NULL;
+			dstaddr_size = 0;
+		}
 
 		/*
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifrp->ifr_name,
 		    ifrflags.ifr_flags, &ifrp->ifr_addr,
-		    netmask, broadaddr, dstaddr, errbuf) < 0) {
+		    SA_LEN(&ifrp->ifr_addr), netmask, netmask_size,
+		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
+		    errbuf) < 0) {
 			ret = -1;
 			break;
 		}
