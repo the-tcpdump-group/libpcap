@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.130 2000-10-28 09:43:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.131 2000-10-28 10:05:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1794,6 +1794,15 @@ lookup_proto(name, proto)
 		v = pcap_nametoeproto(name);
 		if (v == PROTO_UNDEF)
 			bpf_error("unknown ether proto '%s'", name);
+		break;
+
+	case Q_ISO:
+		if (strcmp(name, "esis") == 0)
+			v = ISO9542_ESIS;
+		else if (strcmp(name, "isis") == 0)
+			v = ISO10589_ISIS;
+		else
+			bpf_error("unknown osi proto '%s'", name);
 		break;
 
 	default:
