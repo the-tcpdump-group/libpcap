@@ -1,4 +1,10 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.57 2003-11-13 01:59:15 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.58 2004-03-29 17:40:11 mcr Exp $ (LBL)
+
+Mon.   March 29, 2004. mcr@sandelman.ottawa.on.ca. Summary for 3.8.2 release
+
+	updates for autoconf 2.5
+	fixes for ppp interfaces for freebsd 4.1
+	pcap gencode can generate code for 802.11, IEEE1394, and pflog.
 
 Wed.   November 12, 2003. mcr@sandelman.ottawa.on.ca. Summary for 0.8 release
 
