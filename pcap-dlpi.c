@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.81 2002-12-28 01:07:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.82 2003-01-03 08:33:54 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -99,7 +99,7 @@ static const char rcsid[] =
 #define	MAXDLBUF	8192
 
 /* Forwards */
-static const char *split_dname(const char *, int *, char *);
+static char *split_dname(char *, int *, char *);
 static int dlattachreq(int, bpf_u_int32, char *);
 static int dlbindack(int, char *, char *);
 static int dlbindreq(int, bpf_u_int32, char *);
@@ -267,7 +267,7 @@ pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
     char *ebuf)
 {
-	register const char *cp;
+	register char *cp;
 	register pcap_t *p;
 	int ppa;
 #ifdef HAVE_SOLARIS
@@ -301,10 +301,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	*/
 	cp = strrchr(device, '/');
 	if (cp == NULL)
-		cp = device;
+		strlcpy(dname, device, sizeof(dname));
 	else
-		cp++;
-	strlcpy(dname, cp, sizeof(dname));
+		strlcpy(dname, cp + 1, sizeof(dname));
 
 	/*
 	 * Split the device name into a device type name and a unit number;
@@ -342,14 +341,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 #else
 	/*
-	 * Get the unit number, and a pointer to the end of the device
-	 * type name.
-	 */
-	cp = split_dname(device, &ppa, ebuf);
-	if (cp == NULL)
-		goto bad;
-
-	/*
 	 * If the device name begins with "/", assume it begins with
 	 * the pathname of the directory containing the device to open;
 	 * otherwise, concatenate the device directory name and the
@@ -362,11 +353,19 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		    device);
 
 	/*
+	 * Get the unit number, and a pointer to the end of the device
+	 * type name.
+	 */
+	cp = split_dname(dname, &ppa, ebuf);
+	if (cp == NULL)
+		goto bad;
+
+	/*
 	 * Make a copy of the device pathname, and then remove the unit
 	 * number from the device pathname.
 	 */
 	strlcpy(dname2, dname, sizeof(dname));
-	*(dname + strlen(dname) - strlen(cp)) = '\0';
+	*cp = '\0';
 
 	/* Try device without unit number */
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
@@ -651,10 +650,10 @@ bad:
  *
  * Returns NULL on error, and fills "ebuf" with an error message.
  */
-static const char *
-split_dname(const char *device, int *unitp, char *ebuf)
+static char *
+split_dname(char *device, int *unitp, char *ebuf)
 {
-	const char *cp;
+	char *cp;
 	char *eos;
 	int unit;
 
