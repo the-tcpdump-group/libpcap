@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.205 2004-06-16 08:20:29 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.206 2004-06-16 08:29:33 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -5339,7 +5339,7 @@ gen_mpls(label_num)
 		struct block *b1;
 
                 label_num = label_num << 12; /* label is shifted 12 bits on the wire */
-		b1 = gen_mcmp(orig_nl, BPF_H, (bpf_int32)label_num, 0xfffff000); /* only compare the first 20 bits */
+		b1 = gen_mcmp(orig_nl, BPF_W, (bpf_int32)label_num, 0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
 	}
