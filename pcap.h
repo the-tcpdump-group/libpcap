@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.24 2000-07-29 07:36:43 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.25 2000-09-14 09:49:29 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -69,6 +69,27 @@ typedef struct pcap_dumper pcap_dumper_t;
  * of the flags used in the printout phases of tcpdump.
  * Many fields here are 32 bit ints so compilers won't insert unwanted
  * padding; these files need to be interchangeable across architectures.
+ *
+ * Do not change the format of this structure, in any way (this includes
+ * changes that only affect the length of fields in this structure).
+ * Instead:
+ *
+ *	introduce a new structure for the new format;
+ *
+ *	send mail to "tcpdump-workers@tcpdump.org", requesting a new
+ *	magic number for your new capture file format, and, when
+ *	you get the new magic number, put it in "savefile.c";
+ *
+ *	use that magic number for save files with the changed file
+ *	header;
+ *
+ *	make the code in "savefile.c" capable of reading files with
+ *	the old file header as well as files with the new file header
+ *	(using the magic number to determine the header format).
+ *
+ * Then supply the changes to "patches@tcpdump.org", so that future
+ * versions of libpcap and programs that use it (such as tcpdump) will
+ * be able to read your new capture file format.
  */
 struct pcap_file_header {
 	bpf_u_int32 magic;

@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.26 2000-07-29 07:36:41 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.27 2000-09-14 09:49:28 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -116,6 +116,28 @@ struct pcap_timeval {
 
 /*
  * How a `pcap_pkthdr' is actually stored in the dumpfile.
+ *
+ * Do not change the format of this structure, in any way (this includes
+ * changes that only affect the length of fields in this structure),
+ * and do not make the time stamp anything other than seconds and
+ * microseconds (e.g., seconds and nanoseconds).  Instead:
+ *
+ *	introduce a new structure for the new format;
+ *
+ *	send mail to "tcpdump-workers@tcpdump.org", requesting a new
+ *	magic number for your new capture file format, and, when
+ *	you get the new magic number, put it in "savefile.c";
+ *
+ *	use that magic number for save files with the changed record
+ *	header;
+ *
+ *	make the code in "savefile.c" capable of reading files with
+ *	the old record header as well as files with the new record header
+ *	(using the magic number to determine the header format).
+ *
+ * Then supply the changes to "patches@tcpdump.org", so that future
+ * versions of libpcap and programs that use it (such as tcpdump) will
+ * be able to read your new capture file format.
  */
 
 struct pcap_sf_pkthdr {
@@ -128,6 +150,10 @@ struct pcap_sf_pkthdr {
  * How a `pcap_pkthdr' is actually stored in dumpfiles written
  * by some patched versions of libpcap (e.g. the ones in Red
  * Hat Linux 6.1 and 6.2).
+ *
+ * Do not change the format of this structure, in any way (this includes
+ * changes that only affect the length of fields in this structure).
+ * Instead, introduce a new structure, as per the above.
  */
 
 struct pcap_sf_patched_pkthdr {
