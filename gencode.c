@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.217 2005-01-25 22:38:23 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.218 2005-01-31 01:47:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -757,7 +757,7 @@ init_linktype(p)
 		return;
 
 	case DLT_PPP:
-	case DLT_PPP_WITHDIRECTION:
+	case DLT_LINUX_PPP_WITHDIRECTION:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		off_linktype = 2;
@@ -1542,7 +1542,7 @@ gen_linktype(proto)
 		break;
 
 	case DLT_PPP:
-	case DLT_PPP_WITHDIRECTION:
+	case DLT_LINUX_PPP_WITHDIRECTION:
 	case DLT_PPP_SERIAL:
 	case DLT_PPP_ETHER:
 		/*
@@ -5117,13 +5117,13 @@ gen_inbound(dir)
 		    (bpf_int32)((dir == 0) ? PF_IN : PF_OUT));
 		break;
 
-	case DLT_PPP_WITHDIRECTION:
+	case DLT_LINUX_PPP_WITHDIRECTION:
 		if (dir) {
 			/* match outgoing packets */
-			b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_OUT);
+			b0 = gen_cmp(0, BPF_B, LINUX_PPP_WITHDIRECTION_OUT);
 		} else {
 			/* match incoming packets */
-			b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_IN);
+			b0 = gen_cmp(0, BPF_B, LINUX_PPP_WITHDIRECTION_IN);
 		}
 		break;
 
