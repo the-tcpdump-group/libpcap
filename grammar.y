@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.81 2003-12-16 05:19:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.82 2004-03-28 20:27:14 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,6 +49,7 @@ struct rtentry;
 #endif /* WIN32 */
 
 #include <stdio.h>
+#include <strings.h>
 
 #include "pcap-int.h"
 
@@ -120,7 +121,7 @@ pcap_parse()
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
-%token  PF_IFNAME PF_RNR PF_REASON PF_ACTION
+%token  PF_IFNAME PF_RSET PF_RNR PF_SRNR PF_REASON PF_ACTION
 %token  LINK
 %token	GEQ LEQ NEQ
 %token	ID EID HID HID6 AID
@@ -327,7 +328,9 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	;
 
 pfvar:	  PF_IFNAME ID		{ $$ = gen_pf_ifname($2); }
+	| PF_RSET ID		{ $$ = gen_pf_ruleset($2); }
 	| PF_RNR NUM		{ $$ = gen_pf_rnr($2); }
+	| PF_SRNR NUM		{ $$ = gen_pf_srnr($2); }
 	| PF_REASON reason	{ $$ = gen_pf_reason($2); }
 	| PF_ACTION action	{ $$ = gen_pf_action($2); }
 	;

@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.59 2004-03-23 19:18:07 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.60 2004-03-28 20:27:16 fenner Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -894,11 +894,22 @@ Apple LocalTalk; the packet begins with an AppleTalk LLAP header.
 OpenBSD pflog; the link layer header contains, in order:
 .RS 10
 .LP
-a 4-byte PF_ value, in network byte order;
+a 1-byte header length, in host byte order;
 .LP
-a 16-character interface name;
+a 4-byte PF_ value, in host byte order;
 .LP
-a 2-byte rule number, in network byte order;
+a 2-byte action code, in network byte order, which is one of:
+.RS 5
+.TP 5
+0
+passed
+.TP 5
+1
+dropped
+.TP 5
+2
+scrubbed
+.RE
 .LP
 a 2-byte reason code, in network byte order, which is one of:
 .RS 5
@@ -918,23 +929,19 @@ short
 4
 normalize
 .TP 5
+5
 memory
 .RE
 .LP
-a 2-byte action code, in network byte order, which is one of:
-.RS 5
-.TP 5
-0
-passed
-.TP 5
-1
-dropped
-.TP 5
-2
-scrubbed
-.RE
+a 16-character interface name;
 .LP
-a 2-byte direction, in network byte order, which is one of:
+a 16-character ruleset name (only meaningful if subrule is set);
+.LP
+a 4-byte rule number, in network byte order;
+.LP
+a 4-byte subrule number, in network byte order;
+.LP
+a 1-byte direction, in network byte order, which is one of:
 .RS 5
 .TP 5
 0

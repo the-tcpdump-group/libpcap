@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.18 2004-03-17 19:03:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.19 2004-03-28 20:27:15 fenner Exp $ (LBL)
  */
 
 /*
@@ -167,7 +167,9 @@ struct bpf_version {
 #endif
 
 /*
- * 17 is used for DLT_PFLOG in OpenBSD; don't use it for anything else.
+ * 17 is used for DLT_OLD_PFLOG in OpenBSD;
+ *     OBSOLETE: DLT_PFLOG is 117 in OpenBSD now as well. See below.
+ * 18 is used for DLT_PFSYNC in OpenBSD; don't use it for anything else.
  */
 
 #define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
@@ -281,12 +283,14 @@ struct bpf_version {
 /*
  * OpenBSD DLT_PFLOG; DLT_PFLOG is 17 in OpenBSD, but that's DLT_LANE8023
  * in SuSE 6.3, so we can't use 17 for it in capture-file headers.
+ *
+ * XXX: is there a conflict with DLT_PFSYNC 18 as well?
  */
 #ifdef __OpenBSD__
-#define DLT_PFLOG	17
-#else
-#define DLT_PFLOG	117
+#define DLT_OLD_PFLOG	17
+#define DLT_PFSYNC	18
 #endif
+#define DLT_PFLOG	117
 
 /*
  * Registered for Cisco-internal use.
