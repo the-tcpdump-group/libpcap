@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.102 2003-11-30 22:42:25 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.103 2003-12-10 09:30:57 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.102 $)
+AC_REVISION($Revision: 1.103 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -257,7 +257,7 @@ AC_ARG_WITH(dag, [  --with-dag[=DIR]        include DAG support (located in dire
 	# Use DAG API if present, otherwise don't
 	#
 	want_dag=ifpresent
-	dag_root=
+	dag_root=/root/dag
 ])
 ac_cv_lbl_dag_api=no
 case "$V_PCAP" in
@@ -297,17 +297,27 @@ if test "$with_dag" != no; then
 		dag_include_dir="$dag_root"
 	fi
 
-	if test -r "$dag_include_dir/dagapi.h" -a -r "$dag_tools_dir/dagapi.o"; then
-	  	V_INCLS="$V_INCLS -I $dag_include_dir"
+	ac_cv_lbl_dag_api=no
+	if test -r "$dag_include_dir/dagapi.h" -a -r "$dag_tools_dir/dagapi.o" -a -r "$dag_tools_dir/dagopts.o"; then
+		V_INCLS="$V_INCLS -I $dag_include_dir"
 		V_LIBS="$V_LIBS $dag_tools_dir/dagapi.o $dag_tools_dir/dagopts.o"
 		if test "$V_PCAP" != dag ; then
-		   SSRC="pcap-dag.c"
+			 SSRC="pcap-dag.c"
 		fi
 		ac_cv_lbl_dag_api=yes
-	else
-		ac_cv_lbl_dag_api=no
 	fi
-	AC_MSG_RESULT($ac_cv_lbl_dag_api)
+	if test -r "$dag_root/lib/dagreg.c"; then # DAG 2.5.x
+		if test -r "$dag_tools_dir/dagreg.o"; then
+			V_LIBS="$V_LIBS $dag_tools_dir/dagreg.o"
+		else
+			ac_cv_lbl_dag_api=no
+		fi
+	fi
+	dag_version=
+	if test $ac_cv_lbl_dag_api = yes -a -r "$dag_root/VERSION"; then
+		dag_version=" (`cat $dag_root/VERSION`)"
+	fi
+	AC_MSG_RESULT($ac_cv_lbl_dag_api$dag_version)
 	if test $ac_cv_lbl_dag_api = no; then
 		if test "$want_dag" = yes; then
 			AC_MSG_ERROR(DAG API not found under directory $dag_root; use --without-dag)
