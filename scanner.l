@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.85 2002-06-29 07:44:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.86 2002-07-11 09:06:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -243,6 +243,21 @@ inbound		return INBOUND;
 outbound	return OUTBOUND;
 
 vlan		return VLAN;
+
+lane		return LANE;
+llc		return LLC;
+metac		return METAC;
+bcc		return BCC;
+oam		return OAM;
+oamf4		return OAMF4;
+oamf4ec		return OAMF4EC;
+oamf4sc		return OAMF4SC;
+sc		return SC;
+ilmic		return ILMIC;
+vpi		return VPI;
+vci		return VCI;
+connectmsg	return CONNECTMSG;
+metaconnect	return METACONNECT;
 
 [ \n\t]			;
 [+\-*/:\[\]!<>()&|=]	return yytext[0];

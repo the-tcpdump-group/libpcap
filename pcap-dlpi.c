@@ -23,7 +23,7 @@
  */
 
 /*
- * Packet capture routine for dlpi under SunOS 5
+ * Packet capture routine for DLPI under SunOS 5, HP-UX 9/10/11, and AIX.
  *
  * Notes:
  *
@@ -33,12 +33,12 @@
  *      length results in data being left of the front of the packet.
  *
  *    - It might be desirable to use pfmod(7) to filter packets in the
- *      kernel.
+ *      kernel when possible.
  */
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.78 2002-06-11 17:04:46 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.79 2002-07-11 09:06:37 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -247,12 +247,31 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
+#ifndef DL_IPATM
+#define DL_IPATM	0x12	/* ATM Classical IP interface */
+#endif
+
+#ifdef HAVE_SOLARIS
+/*
+ * For SunATM.
+ */
+#ifndef A_GET_UNITS
+#define A_GET_UNITS	(('A'<<8)|118)
+#endif /* A_GET_UNITS */
+#ifndef A_PROMISCON_REQ
+#define A_PROMISCON_REQ	(('A'<<8)|121)
+#endif /* A_PROMISCON_REQ */
+#endif /* HAVE_SOLARIS */
+
 pcap_t *
 pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
 	register char *cp;
 	register pcap_t *p;
 	int ppa;
+#ifdef HAVE_SOLARIS
+	int isatm = 0;
+#endif
 	register dl_info_ack_t *infop;
 #ifdef HAVE_SYS_BUFMOD_H
 	bpf_u_int32 ss, flag;
@@ -376,6 +395,10 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	    dlinfoack(p->fd, (char *)buf, ebuf) < 0)
 		goto bad;
 	infop = &((union DL_primitives *)buf)->info_ack;
+#ifdef HAVE_SOLARIS
+	if (infop->dl_mac_type == DL_IPATM)
+		isatm = 1;
+#endif
 	if (infop->dl_provider_style == DL_STYLE2 &&
 	    (dlattachreq(p->fd, ppa, ebuf) < 0 ||
 	    dlokack(p->fd, "attach", (char *)buf, ebuf) < 0))
@@ -411,6 +434,21 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		goto bad;
 #endif
 
+#ifdef HAVE_SOLARIS
+	if (isatm) {
+		/*
+		** Have to turn on some special ATM promiscuous mode
+		** for SunATM.
+		** Do *NOT* turn regular promiscuous mode on; it doesn't
+		** help, and may break things.
+		*/
+		if (strioctl(p->fd, A_PROMISCON_REQ, 0, NULL) < 0) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "A_PROMISCON_REQ: %s",
+			    pcap_strerror(errno));
+			goto bad;
+		}
+	} else
+#endif
 	if (promisc) {
 		/*
 		** Enable promiscuous
@@ -433,12 +471,16 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	}
 	/*
 	** Try to enable sap (when not in promiscuous mode when using
-	** using HP-UX and never under SINIX)
+	** using HP-UX, when not doing SunATM on Solaris, and never
+	** under SINIX)
 	*/
 #ifndef sinix
 	if (
 #ifdef __hpux
 	    !promisc &&
+#endif
+#ifdef HAVE_SOLARIS
+	    !isatm &&
 #endif
 	    (dlpromisconreq(p->fd, DL_PROMISC_SAP, ebuf) < 0 ||
 	    dlokack(p->fd, "promisc_sap", (char *)buf, ebuf) < 0)) {
@@ -487,6 +529,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		p->offset = 2;
 		break;
 
+#ifdef HAVE_SOLARIS
+	case DL_IPATM:
+		p->linktype = DLT_SUNATM;
+		p->offset = 0;	/* works for LANE and LLC encapsulation */
+		break;
+#endif
+
 	default:
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown mac type %lu",
 		    (unsigned long)infop->dl_mac_type);
@@ -495,7 +544,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 #ifdef	DLIOCRAW
 	/*
-	** This is a non standard SunOS hack to get the ethernet header.
+	** This is a non standard SunOS hack to get the full raw link-layer
+	** header.
 	*/
 	if (strioctl(p->fd, DLIOCRAW, 0, NULL) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "DLIOCRAW: %s",
@@ -628,6 +678,49 @@ split_dname(char *device, int *unitp, char *ebuf)
 	}
 	*unitp = unit;
 	return (cp);
+}
+
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+#ifdef HAVE_SOLARIS
+	int fd;
+	union {
+		u_int nunits;
+		char pad[516];	/* XXX - must be at least 513; is 516
+				   in "atmgetunits" */
+	} buf;
+	char baname[2+1+1];
+	u_int i;
+
+	/*
+	 * We may have to do special magic to get ATM devices.
+	 */
+	if ((fd = open("/dev/ba", O_RDWR)) < 0) {
+		/*
+		 * We couldn't open the "ba" device.
+		 * For now, just give up; perhaps we should
+		 * return an error if the problem is neither
+		 * a "that device doesn't exist" error (ENOENT,
+		 * ENXIO, etc.) or a "you're not allowed to do
+		 * that" error (EPERM, EACCES).
+		 */
+		return (0);
+	}
+
+	if (strioctl(fd, A_GET_UNITS, sizeof(buf), (char *)&buf) < 0) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "A_GET_UNITS: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	for (i = 0; i < buf.nunits; i++) {
+		snprintf(baname, sizeof baname, "ba%u", i);
+		if (pcap_add_if(alldevsp, baname, 0, NULL, errbuf) < 0)
+			return (-1);
+	}
+#endif
+
+	return (0);
 }
 
 int

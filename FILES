@@ -15,6 +15,7 @@ SUNOS4/nit_if.o.sun4c.4.0.3c
 VERSION
 aclocal.m4
 arcnet.h
+atmuni31.h
 bpf/net/bpf.h
 bpf/net/bpf_filter.c
 bpf_dump.c
@@ -63,3 +64,4 @@ ppp.h
 savefile.c
 scanner.l
 sll.h
+sunatmpos.h

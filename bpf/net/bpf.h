@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.60 2002-07-11 07:56:45 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.61 2002-07-11 09:06:47 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -351,7 +351,18 @@ struct bpf_hdr {
 #define DLT_IP_OVER_FC		122
 
 /*
- * Reserved for capturing on Solaris with SunATM.
+ * This is for Full Frontal ATM on Solaris with SunATM, with a
+ * pseudo-header followed by an AALn PDU.
+ *
+ * There may be other forms of Full Frontal ATM on other OSes,
+ * with different pseudo-headers.
+ *
+ * If ATM software returns a pseudo-header with VPI/VCI information
+ * (and, ideally, packet type information, e.g. signalling, ILMI,
+ * LANE, LLC-multiplexed traffic, etc.), it should not use
+ * DLT_ATM_RFC1483, but should get a new DLT_ value, so tcpdump
+ * and the like don't have to infer the presence or absence of a
+ * pseudo-header and the form of the pseudo-header.
  */
 #define DLT_SUNATM		123	/* Solaris+SunATM */
 

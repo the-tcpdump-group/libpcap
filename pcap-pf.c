@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.66 2002-06-11 17:04:47 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.67 2002-07-11 09:06:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -390,6 +390,12 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 		close(p->fd);
 	free(p);
 	return (NULL);
+}
+
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (0);
 }
 
 int

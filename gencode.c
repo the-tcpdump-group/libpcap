@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.168 2002-07-11 07:56:44 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.169 2002-07-11 09:06:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +53,8 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "nlpid.h"
 #include "llc.h"
 #include "gencode.h"
+#include "atmuni31.h"
+#include "sunatmpos.h"
 #include "ppp.h"
 #include "sll.h"
 #include "arcnet.h"
@@ -139,11 +141,14 @@ static struct block *gen_cmp(u_int, u_int, bpf_int32);
 static struct block *gen_cmp_gt(u_int, u_int, bpf_int32);
 static struct block *gen_mcmp(u_int, u_int, bpf_int32, bpf_u_int32);
 static struct block *gen_bcmp(u_int, u_int, const u_char *);
+static struct block *gen_ncmp(bpf_u_int32, bpf_u_int32, bpf_u_int32,
+    bpf_u_int32, bpf_u_int32, int);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
+static struct block *gen_llc(int);
 static struct block *gen_hostop(bpf_u_int32, bpf_u_int32, int, int, u_int, u_int);
 #ifdef INET6
 static struct block *gen_hostop6(struct in6_addr *, struct in6_addr *, int, int, u_int, u_int);
@@ -177,6 +182,8 @@ static struct block *gen_proto(int, int, int);
 static struct slist *xfer_to_x(struct arth *);
 static struct slist *xfer_to_a(struct arth *);
 static struct block *gen_len(int, int);
+
+static struct block *gen_msg_abbrev(int type);
 
 static void *
 newchunk(n)
@@ -538,6 +545,30 @@ gen_bcmp(offset, size, v)
 	return b;
 }
 
+static struct block *
+gen_ncmp(datasize, offset, mask, jtype, jvalue, reverse)
+	bpf_u_int32 datasize, offset, mask, jtype, jvalue;
+	int reverse;
+{
+	struct slist *s;
+	struct block *b;
+ 
+	s = new_stmt(BPF_LD|datasize|BPF_ABS);
+	s->s.k = offset;
+ 
+	if (mask != 0xffffffff) {
+		s->next = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+		s->next->s.k = mask;
+	}
+ 
+	b = new_block(JMP(jtype));
+	b->stmts = s;
+	b->s.k = jvalue;
+	if (reverse && (jtype == BPF_JGT || jtype == BPF_JGE))
+		gen_not(b);
+	return b;
+}
+
 /*
  * Various code constructs need to know the layout of the data link
  * layer.  These variables give the necessary offsets.
@@ -563,6 +594,23 @@ gen_bcmp(offset, size, v)
  * It's set to -1 for no encapsulation, in which case, IP is assumed.
  */
 static u_int off_linktype;
+
+/*
+ * TRUE if the link layer includes an ATM pseudo-header.
+ */
+static int is_atm = 0;
+
+/*
+ * These are offsets for the ATM pseudo-header.
+ */
+static u_int off_vpi;
+static u_int off_vci;
+static u_int off_proto;
+
+/*
+ * This is the offset to the message type for Q.2931 messages.
+ */
+static u_int off_msg_type;
 
 /*
  * These are offsets to the beginning of the network-layer header.
@@ -596,6 +644,15 @@ init_linktype(type)
 	int type;
 {
 	linktype = type;
+
+	/*
+	 * Assume it's not raw ATM with a pseudo-header, for now.
+	 */
+	is_atm = 0;
+	off_vpi = -1;
+	off_vci = -1;
+	off_proto = -1;
+	off_msg_type = -1;
 
 	orig_linktype = -1;
 	orig_nl = -1;
@@ -757,6 +814,21 @@ init_linktype(type)
 		off_linktype = 0;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
+		return;
+
+	case DLT_SUNATM:
+		/*
+		 * Full Frontal ATM; you get AALn PDUs with an ATM
+		 * pseudo-header.
+		 */
+		is_atm = 1;
+		off_linktype = SUNATM_PKT_BEGIN_POS;
+		off_vpi = SUNATM_VPI_POS;
+		off_vci = SUNATM_VCI_POS;
+		off_proto = PROTO_POS;
+		off_msg_type = SUNATM_PKT_BEGIN_POS+MSG_TYPE_POS;
+		off_nl = SUNATM_PKT_BEGIN_POS+8;	/* 802.2+SNAP */
+		off_nl_nosnap = SUNATM_PKT_BEGIN_POS+3;	/* 802.2 */
 		return;
 
 	case DLT_RAW:
@@ -1021,81 +1093,19 @@ gen_linktype(proto)
 	case DLT_IEEE802:
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:
-		/*
-		 * XXX - handle token-ring variable-length header.
-		 */
-		switch (proto) {
-
-		case LLCSAP_ISONS:
-			return gen_cmp(off_linktype, BPF_H, (long)
-				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-
-		case LLCSAP_NETBEUI:
-			return gen_cmp(off_linktype, BPF_H, (long)
-				     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
-
-		case LLCSAP_IPX:
-			/*
-			 * XXX - are there ever SNAP frames for IPX on
-			 * non-Ethernet 802.x networks?
-			 */
-			return gen_cmp(off_linktype, BPF_B,
-			    (bpf_int32)LLCSAP_IPX);
-
-		case ETHERTYPE_ATALK:
-			/*
-			 * 802.2-encapsulated ETHERTYPE_ATALK packets are
-			 * SNAP packets with an organization code of
-			 * 0x080007 (Apple, for Appletalk) and a protocol
-			 * type of ETHERTYPE_ATALK (Appletalk).
-			 *
-			 * XXX - check for an organization code of
-			 * encapsulated Ethernet as well?
-			 */
-			return gen_snap(0x080007, ETHERTYPE_ATALK,
-			    off_linktype);
-			break;
-
-		default:
-			/*
-			 * XXX - we don't have to check for IPX 802.3
-			 * here, but should we check for the IPX Ethertype?
-			 */
-			if (proto <= ETHERMTU) {
-				/*
-				 * This is an LLC SAP value, so check
-				 * the DSAP.
-				 */
-				return gen_cmp(off_linktype, BPF_B,
-				     (bpf_int32)proto);
-			} else {
-				/*
-				 * This is an Ethernet type; we assume
-				 * that it's unlikely that it'll
-				 * appear in the right place at random,
-				 * and therefore check only the
-				 * location that would hold the Ethernet
-				 * type in a SNAP frame with an organization
-				 * code of 0x000000 (encapsulated Ethernet).
-				 *
-				 * XXX - if we were to check for the SNAP DSAP
-				 * and LSAP, as per XXX, and were also to check
-				 * for an organization code of 0x000000
-				 * (encapsulated Ethernet), we'd do
-				 *
-				 *	return gen_snap(0x000000, proto,
-				 *	    off_linktype);
-				 *
-				 * here; for now, we don't, as per the above.
-				 * I don't know whether it's worth the
-				 * extra CPU time to do the right check
-				 * or not.
-				 */
-				return gen_cmp(off_linktype+6, BPF_H,
-				    (bpf_int32)proto);
-			}
-		}
+		return gen_llc(proto);
 		break;
+
+	case DLT_SUNATM:
+		/*
+		 * Check for LLC encapsulation and then check the protocol.
+		 * XXX - also check for LANE and then check for an Ethernet
+		 * type?
+		 */
+		b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+		b1 = gen_llc(proto);
+		gen_and(b0, b1);
+		return b1;
 
 	case DLT_LINUX_SLL:
 		switch (proto) {
@@ -1577,6 +1587,82 @@ gen_snap(orgcode, ptype, offset)
 	snapblock[6] = (ptype >> 8);	/* upper 8 bits of protocol type */
 	snapblock[7] = (ptype >> 0);	/* lower 8 bits of protocol type */
 	return gen_bcmp(offset, 8, snapblock);
+}
+
+/*
+ * Check for a given protocol value assuming an 802.2 LLC header.
+ */
+static struct block *
+gen_llc(proto)
+	int proto;
+{
+	/*
+	 * XXX - handle token-ring variable-length header.
+	 */
+	switch (proto) {
+
+	case LLCSAP_ISONS:
+		return gen_cmp(off_linktype, BPF_H, (long)
+			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
+
+	case LLCSAP_NETBEUI:
+		return gen_cmp(off_linktype, BPF_H, (long)
+			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+
+	case LLCSAP_IPX:
+		/*
+		 * XXX - are there ever SNAP frames for IPX on
+		 * non-Ethernet 802.x networks?
+		 */
+		return gen_cmp(off_linktype, BPF_B, (bpf_int32)LLCSAP_IPX);
+
+	case ETHERTYPE_ATALK:
+		/*
+		 * 802.2-encapsulated ETHERTYPE_ATALK packets are
+		 * SNAP packets with an organization code of
+		 * 0x080007 (Apple, for Appletalk) and a protocol
+		 * type of ETHERTYPE_ATALK (Appletalk).
+		 *
+		 * XXX - check for an organization code of
+		 * encapsulated Ethernet as well?
+		 */
+		return gen_snap(0x080007, ETHERTYPE_ATALK, off_linktype);
+
+	default:
+		/*
+		 * XXX - we don't have to check for IPX 802.3
+		 * here, but should we check for the IPX Ethertype?
+		 */
+		if (proto <= ETHERMTU) {
+			/*
+			 * This is an LLC SAP value, so check
+			 * the DSAP.
+			 */
+			return gen_cmp(off_linktype, BPF_B, (bpf_int32)proto);
+		} else {
+			/*
+			 * This is an Ethernet type; we assume that it's
+			 * unlikely that it'll appear in the right place
+			 * at random, and therefore check only the
+			 * location that would hold the Ethernet type
+			 * in a SNAP frame with an organization code of
+			 * 0x000000 (encapsulated Ethernet).
+			 *
+			 * XXX - if we were to check for the SNAP DSAP and
+			 * LSAP, as per XXX, and were also to check for an
+			 * organization code of 0x000000 (encapsulated
+			 * Ethernet), we'd do
+			 *
+			 *	return gen_snap(0x000000, proto,
+			 *	    off_linktype);
+			 *
+			 * here; for now, we don't, as per the above.
+			 * I don't know whether it's worth the extra CPU
+			 * time to do the right check or not.
+			 */
+			return gen_cmp(off_linktype+6, BPF_H, (bpf_int32)proto);
+		}
+	}
 }
 
 static struct block *
@@ -4074,4 +4160,256 @@ gen_vlan(vlan_num)
 	}
 
 	return (b0);
+}
+
+struct block *
+gen_atmfield_code(atmfield, jvalue, jtype, reverse)
+	int atmfield;
+	bpf_u_int32 jvalue;
+	bpf_u_int32 jtype;
+	int reverse;
+{
+	struct block *b0;
+
+	switch (atmfield) {
+
+	case A_VPI:
+		if (!is_atm)
+			bpf_error("'vpi' supported only on raw ATM");
+		if (off_vpi == -1)
+			abort();
+		b0 = gen_ncmp(BPF_B, off_vpi, 0xffffffff, (u_int)jtype,
+		    (u_int)jvalue, reverse);
+		break;
+
+	case A_VCI:
+		if (!is_atm)
+			bpf_error("'vci' supported only on raw ATM");
+		if (off_vci == -1)
+			abort();
+		b0 = gen_ncmp(BPF_H, off_vci, 0xffffffff, (u_int)jtype,
+		    (u_int)jvalue, reverse);
+		break;
+
+	case A_PROTOTYPE:
+		if (off_proto == -1)
+			abort();	/* XXX - this isn't on FreeBSD */
+		b0 = gen_ncmp(BPF_B, off_proto, 0x0f, (u_int)jtype,
+		    (u_int)jvalue, reverse);
+		break;
+
+	case A_MSGTYPE:
+		if (off_msg_type == -1)
+			abort();
+		b0 = gen_ncmp(BPF_B, off_msg_type, 0xffffffff,
+		    (u_int)jtype, (u_int)jvalue, reverse);
+		break;
+
+	case A_CALLREFTYPE:
+		if (!is_atm)
+			bpf_error("'callref' supported only on raw ATM");
+		if (off_proto == -1)
+			abort();
+		b0 = gen_ncmp(BPF_B, off_proto, 0xffffffff, (u_int)jtype,
+		    (u_int)jvalue, reverse);
+		break;
+
+	default:
+		abort();
+	}
+	return b0;
+}
+
+struct block *
+gen_atmtype_abbrev(type)
+	int type;
+{
+	struct block *b0, *b1;
+
+	switch (type) {
+
+	case A_METAC:
+		/* Get all packets in Meta signalling Circuit */
+		if (!is_atm)
+			bpf_error("'metac' supported only on raw ATM");
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		b1 = gen_atmfield_code(A_VCI, 1, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_BCC:
+		/* Get all packets in Broadcast Circuit*/
+		if (!is_atm)
+			bpf_error("'bcc' supported only on raw ATM");
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		b1 = gen_atmfield_code(A_VCI, 2, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_OAMF4SC:
+		/* Get all cells in Segment OAM F4 circuit*/
+		if (!is_atm)
+			bpf_error("'oam4sc' supported only on raw ATM");
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		b1 = gen_atmfield_code(A_VCI, 3, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_OAMF4EC:
+		/* Get all cells in End-to-End OAM F4 Circuit*/
+		if (!is_atm)
+			bpf_error("'oam4ec' supported only on raw ATM");
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		b1 = gen_atmfield_code(A_VCI, 4, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_SC:
+		/*  Get all packets in connection Signalling Circuit */
+		if (!is_atm)
+			bpf_error("'sc' supported only on raw ATM");
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		b1 = gen_atmfield_code(A_VCI, 5, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_ILMIC:
+		/* Get all packets in ILMI Circuit */
+		if (!is_atm)
+			bpf_error("'ilmic' supported only on raw ATM");
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		b1 = gen_atmfield_code(A_VCI, 16, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_LANE:
+		/* Get all LANE packets */
+		if (!is_atm)
+			bpf_error("'lane' supported only on raw ATM");
+		b1 = gen_atmfield_code(A_PROTOTYPE, PT_LANE, BPF_JEQ, 0);
+		break;
+
+	case A_LLC:
+		/* Get all LLC-encapsulated packets */
+		if (!is_atm)
+			bpf_error("'llc' supported only on raw ATM");
+		b1 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+		break;
+
+	default:
+		abort();
+	}
+	return b1;
+}
+
+
+static struct block *
+gen_msg_abbrev(type)
+	int type;
+{
+	struct block *b1;
+
+	/*
+	 * Q.2931 signalling protocol messages for handling virtual circuits
+	 * establishment and teardown
+	 */
+	switch (type) {
+
+	case A_SETUP:
+		b1 = gen_atmfield_code(A_MSGTYPE, SETUP, BPF_JEQ, 0);
+		break;
+
+	case A_CALLPROCEED:
+		b1 = gen_atmfield_code(A_MSGTYPE, CALL_PROCEED, BPF_JEQ, 0); 
+		break;
+
+	case A_CONNECT:
+		b1 = gen_atmfield_code(A_MSGTYPE, CONNECT, BPF_JEQ, 0);
+		break;		       
+
+	case A_CONNECTACK:
+		b1 = gen_atmfield_code(A_MSGTYPE, CONNECT_ACK, BPF_JEQ, 0);  
+		break;
+
+	case A_RELEASE:
+		b1 = gen_atmfield_code(A_MSGTYPE, RELEASE, BPF_JEQ, 0);
+		break;
+
+	case A_RELEASE_DONE:
+		b1 = gen_atmfield_code(A_MSGTYPE, RELEASE_DONE, BPF_JEQ, 0);  
+		break;
+
+	default:
+		abort();
+	}
+	return b1;
+}
+
+struct block *
+gen_atmmulti_abbrev(type)
+	int type;
+{
+	struct block *b0, *b1;
+
+	switch (type) {
+
+	case A_OAM:
+		if (!is_atm)
+			bpf_error("'oam' supported only on raw ATM");
+		b1 = gen_atmmulti_abbrev(A_OAMF4);
+		break;
+
+	case A_OAMF4:
+		if (!is_atm)
+			bpf_error("'oamf4' supported only on raw ATM");
+		/* OAM F4 type */
+		b0 = gen_atmfield_code(A_VCI, 3, BPF_JEQ, 0); 
+		b1 = gen_atmfield_code(A_VCI, 4, BPF_JEQ, 0);
+		gen_or(b0, b1); 
+		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
+		gen_and(b0, b1);
+		break;
+
+	case A_CONNECTMSG:
+		/*
+		 * Get Q.2931 signalling messages for switched
+		 * virtual connection
+		 */
+		if (!is_atm)
+			bpf_error("'connectmsg' supported only on raw ATM");
+		b0 = gen_msg_abbrev(A_SETUP);
+		b1 = gen_msg_abbrev(A_CALLPROCEED);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_CONNECT);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_CONNECTACK);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_RELEASE);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_RELEASE_DONE);
+		gen_or(b0, b1);
+		b0 = gen_atmtype_abbrev(A_SC);
+		gen_and(b0, b1);
+		break;
+
+	case A_METACONNECT:
+		if (!is_atm)
+			bpf_error("'metaconnect' supported only on raw ATM");
+		b0 = gen_msg_abbrev(A_SETUP);
+		b1 = gen_msg_abbrev(A_CALLPROCEED);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_CONNECT);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_RELEASE);
+		gen_or(b0, b1);
+		b0 = gen_msg_abbrev(A_RELEASE_DONE);
+		gen_or(b0, b1);
+		b0 = gen_atmtype_abbrev(A_METAC);
+		gen_and(b0, b1);
+		break;
+
+	default:
+		abort();
+	}
+	return b1;
 }

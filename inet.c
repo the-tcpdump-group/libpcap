@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.47 2002-06-11 17:04:45 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.48 2002-07-11 09:06:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -110,11 +110,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #define SA_LEN(addr)	(sizeof (struct sockaddr))
 #endif /* HAVE_SOCKADDR_SA_LEN */
 #endif /* SA_LEN */
-
-/*
- * Description string for the "any" device.
- */
-static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 
 static struct sockaddr *
 dup_sockaddr(struct sockaddr *sa)
@@ -431,7 +426,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 	return (0);
 }
 
-static int
+int
 pcap_add_if(pcap_if_t **devlist, char *name, u_int flags,
     const char *description, char *errbuf)
 {
@@ -517,10 +512,10 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 
 	if (ret != -1) {
 		/*
-		 * We haven't had any errors yet; add the "any" device,
-		 * if we can open it.
+		 * We haven't had any errors yet; do any platform-specific
+		 * operations to add devices.
 		 */
-		if (pcap_add_if(&devlist, "any", 0, any_descr, errbuf) < 0)
+		if (pcap_platform_finddevs(&devlist, errbuf) < 0)
 			ret = -1;
 	}
 
@@ -874,15 +869,11 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 
 	if (ret != -1) {
 		/*
-		 * We haven't had any errors yet; add the "any" device,
-		 * if we can open it.
+		 * We haven't had any errors yet; do any platform-specific
+		 * operations to add devices.
 		 */
-		if (pcap_add_if(&devlist, "any", 0, any_descr, errbuf) < 0) {
-			/*
-			 * Oops, we had a fatal error.
-			 */
+		if (pcap_platform_finddevs(&devlist, errbuf) < 0)
 			ret = -1;
-		}
 	}
 
 	if (ret == -1) {

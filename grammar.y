@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.71 2001-07-03 19:15:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.72 2002-07-11 09:06:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -91,6 +91,7 @@ pcap_parse()
 	struct arth *a;
 	struct {
 		struct qual q;
+		int atmfieldtype;
 		struct block *b;
 	} blk;
 	struct block *rblk;
@@ -103,6 +104,10 @@ pcap_parse()
 %type	<i>	byteop pname pnum relop irelop
 %type	<blk>	and or paren not null prog
 %type	<rblk>	other
+%type	<blk>	gexpr
+%type	<i>	atmtype atmmultitype
+%type	<blk>	atmexpr atmfield atmhead ratmhead
+%type	<blk>	atmfieldvalue atmvalue atmlistvalue
 
 %token  DST SRC HOST GATEWAY
 %token  NET MASK PORT LESS GREATER PROTO PROTOCHAIN BYTE
@@ -121,6 +126,9 @@ pcap_parse()
 %token  STP
 %token  IPX
 %token  NETBEUI
+%token	LANE LLC METAC BCC SC ILMIC OAMF4EC OAMF4SC
+%token	OAM OAMF4 CONNECTMSG METACONNECT
+%token	VPI VCI
 
 %type	<s> ID
 %type	<e> EID
@@ -137,13 +145,16 @@ pcap_parse()
 %left '*' '/'
 %nonassoc UMINUS
 %%
-prog:	  null expr
+prog:	  null gexpr
 {
 	finish_parse($2.b);
 }
 	| null
 	;
 null:	  /* null */		{ $$.q = qerr; }
+	;
+gexpr:	  expr
+	| atmexpr
 	;
 expr:	  term
 	| expr and term		{ gen_and($1.b, $3.b); $$ = $3; }
@@ -333,5 +344,50 @@ byteop:	  '&'			{ $$ = '&'; }
 	;
 pnum:	  NUM
 	| paren pnum ')'	{ $$ = $2; }
+	;
+atmexpr:  atmhead
+	| atmexpr and atmhead	{ gen_and($1.b, $3.b); $$ = $3; }
+	| atmexpr or  atmhead	{ gen_or($1.b, $3.b); $$ = $3; }
+	;
+atmhead:  ratmhead
+	| not atmhead		{ gen_not($2.b); $$ = $2; }
+	;
+ratmhead: atmtype		{ $$.b = gen_atmtype_abbrev($1); $$.q = qerr; }
+	| atmmultitype		{ $$.b = gen_atmmulti_abbrev($1); $$.q = qerr; }
+	| atmfield atmvalue	{ $$.b = $2.b; }
+	| paren atmexpr ')'	{ $$.b = $2.b; $$.q = qerr; }
+	;
+atmtype: LANE			{ $$ = A_LANE; }
+	| LLC			{ $$ = A_LLC; }
+	| METAC			{ $$ = A_METAC;	}
+	| BCC			{ $$ = A_BCC; }
+	| OAMF4EC		{ $$ = A_OAMF4EC; }
+	| OAMF4SC		{ $$ = A_OAMF4SC; }
+	| SC			{ $$ = A_SC; }
+	| ILMIC			{ $$ = A_ILMIC; }
+	;
+atmmultitype: OAM		{ $$ = A_OAM; }
+	| OAMF4			{ $$ = A_OAMF4; }
+	| CONNECTMSG		{ $$ = A_CONNECTMSG; }
+	| METACONNECT		{ $$ = A_METACONNECT; }
+	;
+	/* ATM field types quantifier */
+atmfield: VPI			{ $$.atmfieldtype = A_VPI; }
+	| VCI			{ $$.atmfieldtype = A_VCI; }
+	;
+atmvalue: atmfieldvalue
+	| relop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (u_int)$2, (u_int)$1, 0); }
+	| irelop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (u_int)$2, (u_int)$1, 1); }
+	| paren atmlistvalue ')' { $$.b = $2.b; $$.q = qerr; }
+	;
+atmfieldvalue: NUM {
+	$$.atmfieldtype = $<blk>0.atmfieldtype;
+	if ($$.atmfieldtype == A_VPI ||
+	    $$.atmfieldtype == A_VCI)
+		$$.b = gen_atmfield_code($$.atmfieldtype, (u_int) $1, BPF_JEQ, 0);
+	}
+	;
+atmlistvalue: atmfieldvalue
+	| atmlistvalue or atmfieldvalue { gen_or($1.b, $3.b); $$ = $3; }
 	;
 %%

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.63 2002-06-07 04:31:12 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.64 2002-07-11 09:06:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -163,6 +163,7 @@ static const char rcsid[] =
 #define LINKTYPE_CISCO_IOS	118		/* For Cisco-internal use */
 #define LINKTYPE_PRISM_HEADER	119		/* 802.11+Prism II monitor mode */
 #define LINKTYPE_AIRONET_HEADER	120		/* FreeBSD Aironet driver stuff */
+#define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
 /*
  * These types are reserved for future use.

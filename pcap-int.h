@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.34 2002-06-11 17:04:46 itojun Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.35 2002-07-11 09:06:38 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -192,6 +192,19 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 strlen((y)))
 #endif
+
+/*
+ * Internal interfaces for "pcap_findalldevs()".
+ *
+ * "pcap_platform_finddevs()" is a platform-dependent routine to
+ * add devices not found by the "standard" mechanisms (SIOCGIFCONF,
+ * "getifaddrs()", etc..
+ *
+ * "pcap_add_if()" adds an interface to the list of interfaces.
+ */
+int	pcap_platform_finddevs(pcap_if_t **, char *);
+int	pcap_add_if(pcap_if_t **, char *, u_int, const char *, char *);
+
 
 #ifdef linux
 void	pcap_close_linux(pcap_t *);

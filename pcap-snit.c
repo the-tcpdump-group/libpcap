@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.56 2001-12-10 07:14:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.57 2002-07-11 09:06:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -313,6 +313,12 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		close(fd);
 	free(p);
 	return (NULL);
+}
+
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (0);
 }
 
 int

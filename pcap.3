@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.33 2002-07-11 08:12:34 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.34 2002-07-11 09:06:44 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -688,6 +688,42 @@ header or 4 for frames beginning with an 802.2 LLC header.
 .TP 5
 .B DLT_LTALK
 Apple LocalTalk; the packet begins with an AppleTalk LLAP header
+.TP 5
+.B DLT_SUNATM
+SunATM devices; the link layer header contains, in order:
+.RS 10
+.LP
+a 1-byte flag field, containing a direction flag in the uppermost bit,
+which is set for packets transmitted by the machine and clear for
+packets received by the machine, and a 4-byte traffic type in the
+low-order 4 bits, which is one of:
+.RS 5
+.TP 5
+0
+raw traffic
+.TP 5
+1
+LANE traffic
+.TP 5
+2
+LLC-encapsulated traffic
+.TP 5
+3
+MARS traffic
+.TP 5
+4
+IFMP traffic
+.TP 5
+5
+ILMI traffic
+.TP 5
+6
+Q.2931 traffic
+.RE
+.LP
+a 1-byte VPI value;
+.LP
+a 2-byte VCI field, in network byte order.
 .RE
 .PP
 .B pcap_snapshot()
