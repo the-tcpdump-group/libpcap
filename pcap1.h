@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap1.h,v 1.1 2004-03-24 19:51:11 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap1.h,v 1.2 2004-03-30 14:42:50 mcr Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -114,6 +114,7 @@ enum pcap1_info_types {
 	PCAP_WALLTIME,
 	PCAP_TIMESKEW,
 	PCAP_PROBEPLACE,              /* aka direction */
+	PCAP_COMMENT,                 /* comment */
 };
 
 struct pcap1_info_container {
@@ -150,6 +151,12 @@ enum pcap1_probe {
 struct pcap1_info_probe {
 	struct pcap1_info_container pic;
 	bpf_u_int32                 probeloc;   /* enum pcap1_probe */
+        unsigned char               probe_desc[0];
+};
+	
+struct pcap1_info_comment {
+	struct pcap1_info_container pic;
+        unsigned char               comment[0];
 };
 	
 struct pcap1_packet_header {

@@ -1,5 +1,11 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.58 2004-03-29 17:40:11 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59 2004-03-30 14:42:50 mcr Exp $ (LBL)
 
+Tue.   March 30, 2004. mcr@sandelman.ottawa.on.ca. Summary for 3.8.3 release
+
+	Fixed minor problem in gencode.c that would appear on 64-bit
+	platforms.
+	Version number is now sane.
+	
 Mon.   March 29, 2004. mcr@sandelman.ottawa.on.ca. Summary for 3.8.2 release
 
 	updates for autoconf 2.5
