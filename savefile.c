@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92 2003-11-04 07:05:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.93 2003-11-13 01:35:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -192,7 +192,9 @@ static const char rcsid[] =
 #define LINKTYPE_RAWSS7         139             /* see rawss7.h for */
 #define LINKTYPE_RAWSS7_MTP2    140	        /* information  on these */
 #define LINKTYPE_RAWSS7_MTP3    141             /* definitions */
-#define LINKTYPE_RAWSS7_SCCP    142             
+#define LINKTYPE_RAWSS7_SCCP    142
+
+#define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
 
 /*
  * These types are reserved for future use.
@@ -329,6 +331,9 @@ static struct linktype_map {
 
 	/* Apple IP-over-IEEE 1394 cooked header */
 	{ DLT_APPLE_IP_OVER_IEEE1394, LINKTYPE_APPLE_IP_OVER_IEEE1394 },
+
+	/* DOCSIS MAC frames */
+	{ DLT_DOCSIS,		LINKTYPE_DOCSIS },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:

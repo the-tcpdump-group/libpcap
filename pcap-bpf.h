@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9 2003-06-27 07:59:20 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.10 2003-11-13 01:35:47 guy Exp $ (LBL)
  */
 
 /*
@@ -393,6 +393,15 @@ struct bpf_version {
  * for example, raw GASP frames being handed up.
  */
 #define DLT_APPLE_IP_OVER_IEEE1394	138
+
+/*
+ * 139 through 142 are reserved for SS7.
+ */
+
+/*
+ * DOCSIS MAC frames.
+ */
+#define DLT_DOCSIS		143
 
 /*
  * The instruction encodings.
