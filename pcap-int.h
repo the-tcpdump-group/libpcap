@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.22 2000-06-08 06:40:10 torsten Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.23 2000-07-04 00:10:47 itojun Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -136,7 +136,7 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
 #ifndef HAVE_STRLCPY
 #define strlcpy(x, y, z) \
-	(strncpy((x), (y), (z)), (x)[(z) - 1] = '\0', strlen((y)))
+	(strncpy((x), (y), (z)), (x)[(z) - 1] = '\0', strlen((x)))
 #endif
 
 /* XXX */
