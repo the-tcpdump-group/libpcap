@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.73 2002-12-26 08:53:07 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.74 2003-01-21 04:39:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -123,7 +123,7 @@ static const char rcsid[] =
 #define LINKTYPE_PRONET		DLT_PRONET
 #define LINKTYPE_CHAOS		DLT_CHAOS
 #define LINKTYPE_TOKEN_RING	DLT_IEEE802	/* DLT_IEEE802 is used for Token Ring */
-#define LINKTYPE_ARCNET		DLT_ARCNET
+#define LINKTYPE_ARCNET		DLT_ARCNET	/* NetBSD-style headers */
 #define LINKTYPE_SLIP		DLT_SLIP
 #define LINKTYPE_PPP		DLT_PPP
 #define LINKTYPE_FDDI		DLT_FDDI
@@ -167,9 +167,11 @@ static const char rcsid[] =
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
 #define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
-#define LINKTYPE_TZSP		126		/* Tazmen Sniffer Protocol */
-
 #define LINKTYPE_IEEE802_11_RADIO 127		/* 802.11 plus WLAN header */
+
+#define LINKTYPE_TZSP		128		/* Tazmen Sniffer Protocol */
+
+#define LINKTYPE_ARCNET_LINUX	129		/* Linux-style headers */
 
 /*
  * These types are reserved for future use.
@@ -181,9 +183,9 @@ static const char rcsid[] =
 #define LINKTYPE_IPFILTER	116		/* IP Filter capture files */
 #define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
-#define LINKTYPE_RIO		123		/* RapidIO */
-#define LINKTYPE_PCI_EXP	124		/* PCI Express */
-#define LINKTYPE_AURORA		125		/* Xilinx Aurora link layer */
+#define LINKTYPE_RIO		124		/* RapidIO */
+#define LINKTYPE_PCI_EXP	125		/* PCI Express */
+#define LINKTYPE_AURORA		126		/* Xilinx Aurora link layer */
 
 static struct linktype_map {
 	int	dlt;
@@ -284,11 +286,14 @@ static struct linktype_map {
 	/* Xilinx Aurora link layer */
 	{ DLT_AURORA,		LINKTYPE_AURORA },
 
+	/* 802.11 plus WLAN header */
+	{ DLT_IEEE802_11_RADIO,	LINKTYPE_IEEE802_11_RADIO },
+
 	/* Tazmen Sniffer Protocol */
 	{ DLT_TZSP,		LINKTYPE_TZSP },
 
-	/* 802.11 plus WLAN header */
-	{ DLT_IEEE802_11_RADIO,	LINKTYPE_IEEE802_11_RADIO },
+	/* Arcnet with Linux-style link-layer headers */
+	{ DLT_ARCNET_LINUX,	LINKTYPE_ARCNET_LINUX },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:

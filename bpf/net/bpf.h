@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.65 2002-12-26 08:53:07 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.66 2003-01-21 04:39:05 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -183,7 +183,7 @@ struct bpf_hdr {
 #define DLT_PRONET	4	/* Proteon ProNET Token Ring */
 #define DLT_CHAOS	5	/* Chaos */
 #define DLT_IEEE802	6	/* IEEE 802 Networks */
-#define DLT_ARCNET	7	/* ARCNET */
+#define DLT_ARCNET	7	/* ARCNET, with NetBSD-style header */
 #define DLT_SLIP	8	/* Serial Line IP */
 #define DLT_PPP		9	/* Point-to-point Protocol */
 #define DLT_FDDI	10	/* FDDI */
@@ -393,6 +393,19 @@ struct bpf_hdr {
  * for 802.11 packets.
  */
 #define DLT_TZSP                128     /* Tazmen Sniffer Protocol */
+
+/*
+ * NetBSD's ARCNET headers have the source host, destination host,
+ * and type at the beginning of the packet; that's what's handed
+ * up to userland via BPF.
+ *
+ * Linux's ARCNET headers, however, have a 2-byte offset field
+ * between the host IDs and the type; that's what's handed up
+ * to userland via PF_PACKET sockets.
+ *
+ * We therefore have to have separate DLT_ values for them.
+ */
+#define DLT_ARCNET_LINUX	129	/* ARCNET */
 
 /*
  * The instruction encodings.
