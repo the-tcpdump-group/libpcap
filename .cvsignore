@@ -1,0 +1,8 @@
+config.log
+config.cache
+config.status
+Makefile
+scanner.c
+grammar.c
+tokdefs.h
+version.c
