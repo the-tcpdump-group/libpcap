@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.92 2001-11-12 22:08:46 fenner Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.93 2001-11-12 22:18:57 fenner Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.92 $)
+AC_REVISION($Revision: 1.93 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -97,14 +97,14 @@ AC_MSG_RESULT(${enable_ipv6-no})
 AC_MSG_CHECKING(whether to build optimizer debugging code)
 AC_ARG_ENABLE(optimizer-dbg, [  --enable-optimizer-dbg  build optimizer debugging code])
 if test "$enable_optimizer_dbg" = "yes"; then
-	AC_DEFINE(BDEBUG,1)
+	AC_DEFINE(BDEBUG,1,[Enable optimizer debugging])
 fi
 AC_MSG_RESULT(${enable_optimizer_dbg-no})
 
 AC_MSG_CHECKING(whether to build parser debugging code)
 AC_ARG_ENABLE(yydebug, [  --enable-yydebug        build parser debugging code])
 if test "$enable_yydebug" = "yes"; then
-	AC_DEFINE(YYDEBUG,1)
+	AC_DEFINE(YYDEBUG,1,[Enable parser debugging])
 fi
 AC_MSG_RESULT(${enable_yydebug-no})
 
