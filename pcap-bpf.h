@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.32 2005-01-31 01:47:27 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.33 2005-02-08 19:52:18 guy Exp $ (LBL)
  */
 
 /*
@@ -524,7 +524,7 @@ struct bpf_version {
 /*
  * Another PPP variant as per request from Karsten Keil <kkeil@suse.de>.
  *
- * This is used in Linux to allow a kernel socket filter to distinguish
+ * This is used in some OSes to allow a kernel socket filter to distinguish
  * between incoming and outgoing packets, on a socket intended to
  * supply pppd with outgoing packets so it can do dial-on-demand and
  * hangup-on-lack-of-demand; incoming packets are filtered out so they
@@ -535,7 +535,14 @@ struct bpf_version {
  * The first byte of the PPP header (0xff03) is modified to accomodate
  * the direction - 0x00 = IN, 0x01 = OUT.
  */
-#define DLT_LINUX_PPP_WITHDIRECTION   166
+#define DLT_PPP_PPPD		166
+
+/*
+ * Names for backwards compatibility with older versions of some PPP
+ * software; new software should use DLT_PPP_PPPD.
+ */
+#define DLT_PPP_WITH_DIRECTION	DLT_PPP_PPPD
+#define DLT_LINUX_PPP_WITHDIRECTION	DLT_PPP_PPPD
 
 /*
  * Juniper-private data link type, as per request from

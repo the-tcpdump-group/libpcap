@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.124 2005-01-31 01:47:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.125 2005-02-08 19:52:19 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -355,7 +355,7 @@ static const char rcsid[] _U_ =
 /*
  * Another PPP variant as per request from Karsten Keil <kkeil@suse.de>.
  *
- * This is used in Linux to allow a kernel socket filter to distinguish
+ * This is used in some OSes to allow a kernel socket filter to distinguish
  * between incoming and outgoing packets, on a socket intended to
  * supply pppd with outgoing packets so it can do dial-on-demand and
  * hangup-on-lack-of-demand; incoming packets are filtered out so they
@@ -366,7 +366,7 @@ static const char rcsid[] _U_ =
  * The first byte of the PPP header (0xff03) is modified to accomodate
  * the direction - 0x00 = IN, 0x01 = OUT.
  */
-#define LINKTYPE_LINUX_PPP_WITHDIRECTION 166
+#define LINKTYPE_PPP_PPPD	166
 
 /*
  * Juniper-private data link type, as per request from
@@ -559,8 +559,8 @@ static struct linktype_map {
 	/* BACnet MS/TP */
 	{ DLT_BACNET_MS_TP,	LINKTYPE_BACNET_MS_TP },
 
-	/* Linux PPP with direction flag in the PPP header */
-	{ DLT_LINUX_PPP_WITHDIRECTION,LINKTYPE_LINUX_PPP_WITHDIRECTION},
+	/* PPP for pppd, with direction flag in the PPP header */
+	{ DLT_PPP_PPPD,		LINKTYPE_PPP_PPPD},
 
 	/* Juniper-internal chassis encapsulation */
         { DLT_JUNIPER_PPPOE,    LINKTYPE_JUNIPER_PPPOE },
