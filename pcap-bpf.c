@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.81 2004-10-19 07:06:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.82 2004-12-14 23:33:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -143,6 +143,9 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int n = 0;
 	register u_char *bp, *ep;
 	struct bpf_insn *fcode;
+#ifdef PCAP_FDDIPAD
+	register int pad;
+#endif
 
 	fcode = p->md.use_bpf ? NULL : p->fcode.bf_insns;
  again:
@@ -224,8 +227,14 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	 */
 #define bhp ((struct bpf_hdr *)bp)
 	ep = bp + cc;
+#ifdef PCAP_FDDIPAD
+	if (pc->linktype == DLT_FDDI)
+		pad = pcap_fddipad;
+	else
+		pad = 0;
+#endif
 	while (bp < ep) {
-		register int caplen, hdrlen;
+		register int caplen, datalen, hdrlen, reclen;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -248,33 +257,45 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		caplen = bhp->bh_caplen;
+		datalen = bhp->bh_datalen;
 		hdrlen = bhp->bh_hdrlen;
+		reclen = hdrlen + caplen;
+
+#ifdef PCAP_FDDIPAD
+		if (caplen > pad)
+			caplen -= pad;
+		else
+			caplen = 0;
+		if (datalen > pad)
+			datalen -= pad;
+		else
+			datalen = 0;
+		hdrlen += pad;
+#endif
+
 		/*
 		 * Short-circuit evaluation: if using BPF filter
 		 * in kernel, no need to do it now.
 		 */
 		if (fcode == NULL ||
-		    bpf_filter(fcode, bp + hdrlen, bhp->bh_datalen, caplen)) {
+		    bpf_filter(fcode, bp + hdrlen, datalen, caplen)) {
+			struct pcap_pkthdr pkthdr;
+
+			pkthdr.ts.tv_sec = bhp->bh_tstamp.tv_sec;
 #ifdef _AIX
 			/*
 			 * AIX's BPF returns seconds/nanoseconds time
 			 * stamps, not seconds/microseconds time stamps.
-			 *
-			 * XXX - I'm guessing here that it's a "struct
-			 * timestamp"; if not, this code won't compile,
-			 * but, if not, you want to send us a bug report
-			 * and fall back on using DLPI.  It's not as if
-			 * BPF used to work right on AIX before this
-			 * change; this change attempts to fix the fact
-			 * that it didn't....
 			 */
-			bhp->bh_tstamp.tv_usec = bhp->bh_tstamp.tv_usec/1000;
+			pkthdr.ts.tv_usec = bhp->bh_tstamp.tv_usec/1000;
+#else
+			pkthdr.ts.tv_usec = bhp->bh_tstamp.tv_usec;
 #endif
-			/*
-			 * XXX A bpf_hdr matches a pcap_pkthdr.
-			 */
-			(*callback)(user, (struct pcap_pkthdr*)bp, bp + hdrlen);
-			bp += BPF_WORDALIGN(caplen + hdrlen);
+			pkthdr.caplen = caplen;
+			pkthdr.len = datalen;
+
+			(*callback)(user, &pkthdr, bp + hdrlen);
+			bp += BPF_WORDALIGN(reclen);
 			if (++n >= cnt && cnt > 0) {
 				p->bp = bp;
 				p->cc = ep - bp;
@@ -284,7 +305,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			/*
 			 * Skip this packet.
 			 */
-			bp += BPF_WORDALIGN(caplen + hdrlen);
+			bp += BPF_WORDALIGN(reclen);
 		}
 	}
 #undef bhp
