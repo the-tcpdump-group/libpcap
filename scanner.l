@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.80 2001-08-20 18:24:16 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.81 2001-09-14 01:40:57 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -278,7 +278,7 @@ ${B}			{ yylval.e = pcap_ether_aton(((char *)yytext)+1);
 			  bpf_error("IPv6 address %s not supported", yytext);
 #endif /*INET6*/
 			}
-({B}:+)+{B}?		{ bpf_error("bogus ethernet address %s", yytext); }
+{B}:+({B}:+)+		{ bpf_error("bogus ethernet address %s", yytext); }
 icmptype		{ yylval.i = 0; return NUM; }
 icmpcode		{ yylval.i = 1; return NUM; }
 icmp-echoreply		{ yylval.i = 0; return NUM; }
