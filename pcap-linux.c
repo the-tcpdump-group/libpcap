@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.73 2001-12-10 07:14:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.74 2002-02-03 23:02:07 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -904,6 +904,9 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		handle->linktype = DLT_ARCNET;
 		break;
 
+#ifndef ARPHRD_FDDI	/* From Linux 2.2.13 */
+#define ARPHRD_FDDI	774
+#endif
 	case ARPHRD_FDDI:
 		handle->linktype = DLT_FDDI;
 		handle->offset = 3;
@@ -976,6 +979,9 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		handle->linktype = DLT_LINUX_SLL;
 		break;
 
+#ifndef ARPHRD_HDLC
+#define ARPHRD_HDLC 513	/* From Linux 2.2.213 */
+#endif
 	case ARPHRD_HDLC:
 		handle->linktype = DLT_C_HDLC;
 		break;
@@ -984,7 +990,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
 	 * works for CIPE */
 	case ARPHRD_TUNNEL:
 #ifndef ARPHRD_SIT
-#define ARPHRD_SIT 776	/* From Linux 2.2.14 */
+#define ARPHRD_SIT 776	/* From Linux 2.2.13 */
 #endif
 	case ARPHRD_SIT:
 	case ARPHRD_CSLIP:
