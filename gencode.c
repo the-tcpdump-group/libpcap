@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.143 2001-01-14 07:57:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.144 2001-01-14 08:09:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1074,6 +1074,19 @@ gen_linktype(proto)
 		case LLC_ISO_LSAP:
 			proto = PPP_OSI;
 			break;
+
+		case LLC_STP_LSAP:
+			/*
+			 * I'm assuming the "Bridging PDU"s that go
+			 * over PPP are Spanning Tree Protocol
+			 * Bridging PDUs.
+			 */
+			proto = PPP_BRPDU;
+			break;
+
+		case LLC_IPX_LSAP:
+			proto = PPP_IPX;
+			break;
 		}
 		break;
 
@@ -1113,6 +1126,19 @@ gen_linktype(proto)
 
 		case LLC_ISO_LSAP:
 			proto = PPP_OSI;
+			break;
+
+		case LLC_STP_LSAP:
+			/*
+			 * I'm assuming the "Bridging PDU"s that go
+			 * over PPP are Spanning Tree Protocol
+			 * Bridging PDUs.
+			 */
+			proto = PPP_BRPDU;
+			break;
+
+		case LLC_IPX_LSAP:
+			proto = PPP_IPX;
 			break;
 		}
 		break;
@@ -1195,7 +1221,12 @@ gen_linktype(proto)
 
 	/*
 	 * Any type not handled above should always have an Ethernet
-	 * type at an offset of "off_linktype".
+	 * type at an offset of "off_linktype".  (PPP is partially
+	 * handled above - the protocol type is mapped from the
+	 * Ethernet and LLC types we use internally to the corresponding
+	 * PPP type - but the PPP type is always specified by a value
+	 * at "off_linktype", so we don't have to do the code generation
+	 * above.)
 	 */
 	return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
 }
