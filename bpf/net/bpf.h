@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.51 2001-11-28 05:50:05 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52 2002-01-22 23:36:19 mcr Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -206,8 +206,15 @@ struct bpf_hdr {
  * continue to compile - even though they won't correctly read
  * files of these types.
  */
+#ifdef __NetBSD__
+#ifndef DLT_SLIP_BSDOS
+#define DLT_SLIP_BSDOS	13	/* BSD/OS Serial Line IP */
+#define DLT_PPP_BSDOS	14	/* BSD/OS Point-to-point Protocol */
+#endif
+#else
 #define DLT_SLIP_BSDOS	15	/* BSD/OS Serial Line IP */
 #define DLT_PPP_BSDOS	16	/* BSD/OS Point-to-point Protocol */
+#endif
 
 #define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
 
