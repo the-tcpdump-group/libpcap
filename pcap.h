@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.26 2000-09-17 04:04:39 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.27 2000-09-18 05:08:02 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -176,6 +176,18 @@ struct pcap_file_header {
 #define PCAP_ENCAP_C_HDLC	104		/* Cisco HDLC */
 #define PCAP_ENCAP_IEEE802_11	105		/* IEEE 802.11 (wireless) */
 #define PCAP_ENCAP_ATM_CLIP	106		/* Linux Classical IP over ATM */
+
+/*
+ * PCAP_ENCAP_PPP is for use when there might, or might not, be an RFC 1662
+ * PPP in HDLC-like framing header (with 0xff 0x03 before the PPP protocol
+ * field) at the beginning of the packet.
+ *
+ * This is for use when there is always such a header; the address field
+ * might be 0xff, for regular PPP, or it might be an address field for Cisco
+ * point-to-point with HDLC framing as per section 4.3.1 of RFC 1547 ("Cisco
+ * HDLC").  This is, for example, what you get with NetBSD's DLT_PPP_SERIAL.
+ */
+#define PCAP_ENCAP_PPP_HDLC	107		/* PPP in HDLC-like framing */
 
 /*
  * Each packet in the dump file is prepended with this generic header.

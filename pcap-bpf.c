@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.40 2000-09-17 04:04:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.41 2000-09-18 05:08:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -318,6 +318,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	case DLT_C_HDLC:
 		/* BSD/OS Cisco HDLC */
 		v = PCAP_ENCAP_C_HDLC;
+		break;
+#endif
+
+#ifdef DLT_PPP_SERIAL
+	case DLT_PPP_SERIAL:
+		/* NetBSD sync/async serial PPP (or Cisco HDLC) */
+		v = PCAP_ENCAP_PPP_HDLC;
 		break;
 #endif
 
