@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.25 2002-05-29 06:57:29 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.26 2002-05-29 07:05:37 guy Exp $ (LBL)
 
 LIBPCAP 0.7.1
 Now maintained by "The Tcpdump Group"
@@ -77,14 +77,16 @@ Linux, in the 2.2 kernel and later kernels, has a "Socket Filter"
 mechanism that accepts BPF filters; see the README.linux file for
 information on configuring that option.
 
-Problems, bugs, questions, desirable enhancements, etc. 
-should be sent to the address "tcpdump-workers@tcpdump.org", or
-submitted on the SourceForge site for libpcap at
+Problems, bugs, questions, desirable enhancements, etc. should be sent
+to the address "tcpdump-workers@tcpdump.org".  Bugs, support requests,
+and feature requests may also be submitted on the SourceForge site for
+libpcap at
 
 	http://sourceforge.net/projects/libpcap/
 
-Source code contributions, etc. should be sent to the email address 
-"patches@tcpdump.org", or submitted on the SourceForge site for libpcap.
+Source code contributions, etc. should be sent to the email address
+"patches@tcpdump.org", or submitted as patches on the SourceForge site
+for libpcap.
 
 Current versions can be found at www.tcpdump.org, or the SourceForge
 site for libpcap.
