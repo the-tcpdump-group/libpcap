@@ -15,7 +15,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.18 2004-03-23 19:18:04 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.19 2004-11-10 09:28:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -242,10 +242,11 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return -2;
 			}
  
-			if (IS_BIGENDIAN()) {
-				rlen = header->rlen;
-			} else {
 				rlen = ntohs(header->rlen);
+			if (rlen < dag_record_size)
+			{
+				strncpy(p->errbuf, "dag_read: record too small", PCAP_ERRBUF_SIZE);
+				return -1;
 			}
 			p->md.dag_mem_bottom += rlen;
 
@@ -253,11 +254,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case TYPE_AAL5:
 			case TYPE_ATM:
 				if (header->type == TYPE_AAL5) {
-					if (IS_BIGENDIAN()) {
-						packet_len = header->wlen;
-					} else {
 						packet_len = ntohs(header->wlen);
-					}
 					caplen = rlen - dag_record_size;
 				} else {
 					caplen = packet_len = ATM_CELL_SIZE;
@@ -265,13 +262,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				if (p->linktype == DLT_SUNATM) {
 					struct sunatm_hdr *sunatm = (struct sunatm_hdr *)dp;
 					unsigned long rawatm;
-					if (IS_BIGENDIAN()) {
-						rawatm = *((unsigned long *)dp);
-						sunatm->vci = (rawatm >>  4) & 0xffff;
-					} else {
+					
 						rawatm = ntohl(*((unsigned long *)dp));
 						sunatm->vci = htons((rawatm >>  4) & 0xffff);
-					}
 					sunatm->vpi = (rawatm >> 20) & 0x00ff;
 					sunatm->flags = ((header->flags.iface & 1) ? 0x80 : 0x00) | 
 						((sunatm->vpi == 0 && sunatm->vci == htons(5)) ? 6 :
@@ -288,11 +281,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				break;
 
 			case TYPE_ETH:
-				if (IS_BIGENDIAN()) {
-					packet_len = header->wlen;
-				} else {
 					packet_len = ntohs(header->wlen);
-				}
 				packet_len -= (p->md.dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 2;
 				if (caplen > packet_len) {
@@ -302,11 +291,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				break;
 
 			case TYPE_HDLC_POS:
-				if (IS_BIGENDIAN()) {
-					packet_len = header->wlen;
-				} else {
 					packet_len = ntohs(header->wlen);
-				}
 				packet_len -= (p->md.dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size;
 				if (caplen > packet_len) {
