@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.15.2.2 2003-11-20 02:01:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.15.2.3 2003-11-30 02:32:02 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -100,6 +100,18 @@ pcap_read_win32(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	cc = p->cc;
 	if (p->cc == 0) {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 */
+		if (p->break_loop) {
+			/*
+			 * Yes - clear the flag that indicates that it
+			 * has, and return -2 to indicate that we were
+			 * told to break out of the loop.
+			 */
+			p->break_loop = 0;
+			return (-2);
+		}
 
 	    /* capture the packets */
 		if(PacketReceivePacket(p->adapter,p->Packet,TRUE)==FALSE){
@@ -119,7 +131,7 @@ pcap_read_win32(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	 */
 #define bhp ((struct bpf_hdr *)bp)
 	ep = bp + cc;
-	while (bp < ep) {
+	while (1) {
 		register int caplen, hdrlen;
 
 		/*
@@ -141,6 +153,8 @@ pcap_read_win32(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (n);
 			}
 		}
+		if (bp >= ep)
+			break;
 
 		caplen = bhp->bh_caplen;
 		hdrlen = bhp->bh_hdrlen;
