@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52.2.5 2002-06-07 04:17:57 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52.2.6 2002-06-07 04:31:57 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -256,10 +256,18 @@ struct bpf_hdr {
 #define DLT_IEEE802_11	105	/* IEEE 802.11 wireless */
 
 /*
- * Values between 106 and 107 are used in capture file headers as
- * link-layer types corresponding to DLT_ types that might differ
- * between platforms; don't use those values for new DLT_ new types.
+ * 106 is reserved for Linux Classical IP over ATM; it's like DLT_RAW,
+ * except when it isn't.  (I.e., sometimes it's just raw IP, and
+ * sometimes it isn't.)  We currently handle it as DLT_LINUX_SLL,
+ * so that we don't have to worry about the link-layer header.)
  */
+
+/*
+ * Reserved for Frame Relay; BSD/OS has a DLT_FR, with a value of 11,
+ * but that collides with other values.  DLT_FR and DLT_FRELAY packets
+ * start with the Frame Relay header (DLCI, etc.).
+ */
+#define DLT_FRELAY	107
 
 /*
  * OpenBSD DLT_LOOP, for loopback devices; it's like DLT_NULL, except
@@ -345,12 +353,6 @@ struct bpf_hdr {
  * Reserved for capturing on Solaris with SunATM.
  */
 #define DLT_SUNATM		123	/* Solaris+SunATM */
-
-/*
- * Reserved for Frame Relay; BSD/OS has a DLT_FR, with a value of 11,
- * but that collides with other values.
- */
-#define DLT_FRELAY		124
 
 /*
  * The instruction encodings.
