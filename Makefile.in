@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.80 2000-07-29 07:05:20 assar Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.81 2000-07-29 07:20:24 assar Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -135,17 +135,17 @@ bpf_filter.o: bpf_filter.c
 
 install:
 	[ -d $(DESTDIR)$(LIBDEST) ] || mkdir -p $(DESTDIR)$(LIBDEST)
-	$(INSTALL) -m 444 -o bin -g bin libpcap.a $(DESTDIR)$(LIBDEST)/libpcap.a
+	$(INSTALL) -m 444 libpcap.a $(DESTDIR)$(LIBDEST)/libpcap.a
 	$(RANLIB) $(DESTDIR)$(LIBDEST)/libpcap.a
 	[ -d $(DESTDIR)$(LIBDEST) ] || mkdir -p $(DESTDIR)$(INCLDEST)
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/pcap.h \
+	$(INSTALL) -m 444 $(srcdir)/pcap.h \
 	    $(DESTDIR)$(INCLDEST)/pcap.h
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/pcap-namedb.h \
+	$(INSTALL) -m 444 $(srcdir)/pcap-namedb.h \
 	    $(DESTDIR)$(INCLDEST)/pcap-namedb.h
 	[ -d $(DESTDIR)$(LIBDEST) ] || mkdir -p $(DESTDIR)$(INCLDEST)/net
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/bpf/net/bpf.h \
+	$(INSTALL) -m 444 $(srcdir)/bpf/net/bpf.h \
 	    $(DESTDIR)$(INCLDEST)/net/bpf.h
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/pcap.3 \
+	$(INSTALL) -m 444 $(srcdir)/pcap.3 \
 	    $(DESTDIR)$(MANDEST)/man3/pcap.3
 
 uninstall:
