@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Attic/rawssw7.h,v 1.2 2003-09-10 19:13:34 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Attic/rawss7.h,v 1.1 2003-09-10 19:55:36 mcr Exp $ (LBL)
  */
 
 /*
