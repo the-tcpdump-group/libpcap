@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.45 2000-12-22 11:53:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.46 2000-12-22 12:11:36 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -374,15 +374,65 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		packet_len += SLL_HDR_LEN;
 
 		hdrp = (struct sll_header *)handle->buffer;
-		hdrp->sll_pkttype = htons(from.sll_pkttype);
-		if (from.sll_protocol == ETH_P_802_2) {
-			/*
-			 * This is an 802.3 packet; set the packet type
-			 * field to the length, in network byte order.
-			 */
-			hdrp->sll_protocol = htons(packet_len);
-		} else
+
+		/*
+		 * Map the PACKET_ value to a LINUX_SLL_ value; we
+		 * want the same numerical value to be used in
+		 * the link-layer header even if the numerical values
+		 * for the PACKET_ #defines change, so that programs
+		 * that look at the packet type field will always be
+		 * able to handle DLT_LINUX_SLL captures.
+		 */
+		switch (from.sll_pktttype) {
+
+		case PACKET_HOST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_HOST);
+			break;
+
+		case PACKET_BROADCAST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_BROADCAST);
+			break;
+
+		case PACKET_MULTICAST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_MULTICAST);
+			break;
+
+		case PACKET_OTHERHOST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_OTHERHOST);
+			break;
+
+		case PACKET_OUTGOING:
+			hdrp->sll_pkttype = htons(LINUX_SLL_OUTGOING);
+			break;
+
+		default:
+			hdrp->sll_pkttype = -1;
+			break;
+		}
+
+		/*
+		 * Map special Linux internal protocol types to
+		 * LINUX_SLL_P_ values; we want the same numerical
+		 * value to be used in the link-layer header even
+		 * if the numerical values for the ETH_P_ #defines
+		 * change, so that programs that look at the protocol
+		 * field will always be able to handle DLT_LINUX_SLL
+		 * captures.
+		 */
+		switch (ntohs(from.sll_protocol)) {
+
+		case ETH_P_802_2:
+			hdrp->sll_protocol = ntohs(LINUX_SLL_P_802_2);
+			break;
+
+		case ETH_P_802_3:
+			hdrp->sll_protocol = ntohs(LINUX_SLL_P_802_3);
+			break;
+
+		default:
 			hdrp->sll_protocol = from.sll_protocol;
+			break;
+		}
 		hdrp->sll_hatype = htons(from.sll_hatype);
 		hdrp->sll_halen = htons(from.sll_halen);
 		memcpy(hdrp->sll_addr, from.sll_addr,

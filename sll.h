@@ -35,7 +35,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Attic/sll.h,v 1.1 2000-12-21 10:29:24 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Attic/sll.h,v 1.2 2000-12-22 12:11:36 guy Exp $ (LBL)
  */
 
 /*
@@ -77,13 +77,23 @@ struct sll_header {
 };
 
 /*
- * The LINUX_SLL_ values; they are defined here so that they're available
- * even on systems other than Linux, but they should be given the same
- * values as the corresponding PACKET_ values on Linux.  (Let's hope
- * those values never change.)
+ * The LINUX_SLL_ values for "sll_pkttype"; these correspond to the
+ * PACKET_ values on Linux, but are defined here so that they're
+ * available even on systems other than Linux, and so that they
+ * don't change even if the PACKET_ values change.
  */
 #define LINUX_SLL_HOST		0
 #define LINUX_SLL_BROADCAST	1
 #define LINUX_SLL_MULTICAST	2
 #define LINUX_SLL_OTHERHOST	3
 #define LINUX_SLL_OUTGOING	4
+
+/*
+ * The LINUX_SLL_ values for "sll_protocol"; these correspond to the
+ * ETH_P_ values on Linux, but are defined here so that they're
+ * available even on systems other than Linux, and so that they
+ * don't change even if the ETH_P_ values change.
+ */
+#define LINUX_SLL_P_802_3	0x0001	/* Novell 802.3 frames without 802.2 LLC header */
+#define LINUX_SLL_P_802_2	0x0004	/* 802.2 frames (not D/I/X Ethernet) */
+
