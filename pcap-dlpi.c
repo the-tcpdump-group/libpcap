@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.65 2001-05-21 03:35:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.66 2001-05-21 03:50:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -839,18 +839,85 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	register u_long majdev;
 	struct stat statbuf;
 	dl_hp_ppa_req_t	req;
-	bpf_u_int32 buf[MAXDLBUF];
+	char buf[MAXDLBUF];
+	char *ppa_data_buf;
+	dl_hp_ppa_ack_t	*dlp;
+	struct strbuf ctl;
+	int flags;
+	int ppa;
 
 	memset((char *)&req, 0, sizeof(req));
 	req.dl_primitive = DL_HP_PPA_REQ;
 
 	memset((char *)buf, 0, sizeof(buf));
-	if (send_request(fd, (char *)&req, sizeof(req), "hpppa", ebuf) < 0 ||
-	    recv_ack(fd, DL_HP_PPA_ACK_SIZE, "hpppa", (char *)buf, ebuf) < 0)
+	if (send_request(fd, (char *)&req, sizeof(req), "hpppa", ebuf) < 0)
 		return (-1);
 
+	ctl.maxlen = DL_HP_PPA_ACK_SIZE;
+	ctl.len = 0;
+	ctl.buf = (char *)buf;
+
+	flags = 0;
+	/*
+	 * DLPI may return a big chunk of data for a DL_HP_PPA_REQ. The normal
+	 * recv_ack will fail because it set the maxlen to MAXDLBUF (8192)
+	 * which is NOT big enough for a DL_HP_PPA_REQ.
+	 *
+	 * This causes libpcap applications to fail on a system with HP-APA
+	 * installed.
+	 *
+	 * To figure out how big the returned data is, we first call getmsg
+	 * to get the small head and peek at the head to get the actual data
+	 * length, and  then issue another getmsg to get the actual PPA data.
+	 */
+	/* get the head first */
+	if (getmsg(fd, &ctl, (struct strbuf *)NULL, &flags) < 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa getmsg: %s", pcap_strerror(errno));
+		return (-1);
+	}
+
+	dlp = (dl_hp_ppa_ack_t *)ctl.buf;
+	if (dlp->dl_primitive != DL_HP_PPA_ACK) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa unexpected primitive ack 0x%x",
+		    (bpf_u_int32)dlp->dl_primitive);
+		return (-1);
+	}
+	    
+	if (ctl.len < DL_HP_PPA_ACK_SIZE) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa ack too small (%d < %d)",
+		     ctl.len, DL_HP_PPA_ACK_SIZE);
+		return (-1);
+	}
+	    
+	/* allocate buffer */
+	if ((ppa_data_buf = (char *)malloc(dlp->dl_length)) == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa malloc: %s", pcap_strerror(errno));
+		return (-1);
+	}
+	ctl.maxlen = dlp->dl_length;
+	ctl.len = 0;
+	ctl.buf = (char *)ppa_data_buf;
+	/* get the data */
+	if (getmsg(fd, &ctl, (struct strbuf *)NULL, &flags) < 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa getmsg: %s", pcap_strerror(errno));
+		free(ppa_data_buf);
+		return (-1);
+	}
+	if (ctl.len < dlp->dl_length) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa ack too small (%d < %d)",
+		    ctl.len, dlp->dl_length);
+		free(ppa_data_buf);
+		return (-1);
+	}
+
 	ap = (dl_hp_ppa_ack_t *)buf;
-	ipstart = (dl_hp_ppa_info_t *)((u_char *)ap + ap->dl_offset);
+	ipstart = (dl_hp_ppa_info_t *)ppa_data_buf;
 	ip = ipstart;
 
 #ifdef HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1
@@ -925,9 +992,12 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
         if (ip->dl_hdw_state == HDW_DEAD) {
                 snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s%d: hardware state: DOWN\n", device, unit);
+		free(ppa_data_buf);
 		return (-1);
         }
-        return ((int)ip->dl_ppa);
+        ppa = ip->dl_ppa;
+        free(ppa_data_buf);
+        return (ppa);
 }
 #endif
 
