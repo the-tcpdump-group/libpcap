@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.115 2000-07-25 05:50:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.116 2000-08-06 01:22:39 torsten Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -283,7 +283,16 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 
 	netmask = mask;
+	
+	/* On Linux we do not use the BPF filter to truncate the packet
+	 * since the kernel provides other ways for that. In fact if we
+	 * are using the packet filter for that duty we will be unable 
+	 * to acquire the original packet size.  -- Torsten */
+#ifndef linux
 	snaplen = pcap_snapshot(p);
+#else
+	snaplen = 0xffff;
+#endif
 	if (snaplen == 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
