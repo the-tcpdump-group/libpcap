@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.79.2.3 2003-11-21 10:20:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.79.2.4 2003-11-21 23:29:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -483,7 +483,16 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 		"requires bpf language %d.%d or higher; kernel is %d.%d",
 				BPF_MAJOR_VERSION, BPF_MINOR_VERSION,
 			      bv.bv_major, bv.bv_minor);
-			/* don't give up, just be inefficient */
+			/*
+			 * Don't give up, just be inefficient.
+			 * XXX - we *did* hand a program to the kernel;
+			 * what will happen to it?  Should we do the
+			 * check *before* installing the filter?
+			 * What should we do if BIOCVERSION fails -
+			 * just do filtering in userland?
+			 */
+			if (install_bpf_program(p, fp) < 0)
+				return (-1);
 			p->md.use_bpf = 0;
 		}
 	} else {
