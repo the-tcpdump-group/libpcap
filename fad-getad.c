@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.5 2003-02-25 07:50:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.6 2003-09-10 22:29:55 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -186,7 +186,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 		 */
 		if (add_addr_to_iflist(&devlist, ifa->ifa_name,
 		    ifa->ifa_flags, ifa->ifa_addr, SA_LEN(ifa->ifa_addr),
-		    ifa->ifa_netmask, SA_LEN(ifa->ifa_netmask),
+		    ifa->ifa_netmask, SA_LEN(ifa->ifa_addr),
 		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
 		    errbuf) < 0) {
 			ret = -1;
