@@ -10,6 +10,7 @@ bpf/net/bpf.h
 bpf/net/bpf_filter.c
 bpf_dump.c
 bpf_image.c
+config.h.in
 config.guess
 config.sub
 configure
