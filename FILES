@@ -1,4 +1,5 @@
 CHANGES
+CREDITS
 FILES
 INSTALL
 Makefile.in
@@ -9,7 +10,6 @@ aclocal.m4
 bpf/net/bpf.h
 bpf/net/bpf_filter.c
 bpf_image.c
-config.guess
 config.sub
 configure
 configure.in
