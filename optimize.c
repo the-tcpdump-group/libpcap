@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.80 2004-11-09 01:20:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.81 2004-11-13 22:32:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -701,12 +701,20 @@ opt_peep(b)
 
 	last = s;
 	for (/*empty*/; /*empty*/; s = next) {
+		/*
+		 * Skip over nops.
+		 */
 		s = this_op(s);
 		if (s == 0)
-			break;
+			break;	/* nothing left in the block */
+
+		/*
+		 * Find the next real instruction after that one
+		 * (skipping nops).
+		 */
 		next = this_op(s->next);
 		if (next == 0)
-			break;
+			break;	/* no next instruction */
 		last = next;
 
 		/*
@@ -745,6 +753,12 @@ opt_peep(b)
 			if (ATOMELEM(b->out_use, X_ATOM))
 				continue;
 
+			/*
+			 * Check that the instruction following the ldi
+			 * is an addx, or it's an ldxms with an addx
+			 * following it (with 0 or more nops between the
+			 * ldxms and addx).
+			 */
 			if (next->s.code != (BPF_LDX|BPF_MSH|BPF_B))
 				add = next;
 			else
@@ -752,20 +766,23 @@ opt_peep(b)
 			if (add == 0 || add->s.code != (BPF_ALU|BPF_ADD|BPF_X))
 				continue;
 
+			/*
+			 * Check that a tax follows that (with 0 or more
+			 * nops between them).
+			 */
 			tax = this_op(add->next);
 			if (tax == 0 || tax->s.code != (BPF_MISC|BPF_TAX))
 				continue;
 
+			/*
+			 * Check that an ild follows that (with 0 or more
+			 * nops between them).
+			 */
 			ild = this_op(tax->next);
 			if (ild == 0 || BPF_CLASS(ild->s.code) != BPF_LD ||
 			    BPF_MODE(ild->s.code) != BPF_IND)
 				continue;
 			/*
-			 * XXX We need to check that X is not
-			 * subsequently used.  We know we can eliminate the
-			 * accumulator modifications since it is defined
-			 * by the last stmt of this sequence.
-			 *
 			 * We want to turn this sequence:
 			 *
 			 * (004) ldi     #0x2		{s}
@@ -782,6 +799,16 @@ opt_peep(b)
 			 * (007) nop
 			 * (008) ild     [x+2]
 			 *
+			 * XXX We need to check that X is not
+			 * subsequently used, because we want to change
+			 * what'll be in it after this sequence.
+			 *
+			 * We know we can eliminate the accumulator
+			 * modifications earlier in the sequence since
+			 * it is defined by the last stmt of this sequence
+			 * (i.e., the last statement of the sequence loads
+			 * a value into the accumulator, so we can eliminate
+			 * earlier operations on the accumulator).
 			 */
 			ild->s.k += s->s.k;
 			s->s.code = NOP;
@@ -1285,9 +1312,9 @@ fold_edge(child, ep)
 
 	if (oval0 == oval1)
 		/*
-		 * The operands are identical, so the
-		 * result is true if a true branch was
-		 * taken to get here, otherwise false.
+		 * The operands of the branch instructions are
+		 * identical, so the result is true if a true
+		 * branch was taken to get here, otherwise false.
 		 */
 		return sense ? JT(child) : JF(child);
 
@@ -1295,8 +1322,16 @@ fold_edge(child, ep)
 		/*
 		 * At this point, we only know the comparison if we
 		 * came down the true branch, and it was an equality
-		 * comparison with a constant.  We rely on the fact that
-		 * distinct constants have distinct value numbers.
+		 * comparison with a constant.
+		 *
+		 * I.e., if we came down the true branch, and the branch
+		 * was an equality comparison with a constant, we know the
+		 * accumulator contains that constant.  If we came down
+		 * the false branch, or the comparison wasn't with a
+		 * constant, we don't know what was in the accumulator.
+		 *
+		 * We rely on the fact that distinct constants have distinct
+		 * value numbers.
 		 */
 		return JF(child);
 
