@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.106 2004-02-09 06:28:19 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.107 2004-03-28 20:31:07 fenner Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.106 $)
+AC_REVISION($Revision: 1.107 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -26,7 +26,9 @@ dnl in "AC_LBL_FIXINCLUDES" in "aclocal.m4" uses it, so we have to
 dnl test for it and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
 dnl "AC_LBL_FIXINCLUDES" won't work on some platforms such as Solaris.
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h ifaddrs.h limits.h netinet/if_ether.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h ifaddrs.h limits.h)
+AC_CHECK_HEADERS(netinet/if_ether.h, , , [#include <sys/types.h>
+#include <sys/socket.h>])
 
 AC_LBL_FIXINCLUDES
 
