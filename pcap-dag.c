@@ -15,7 +15,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.20 2005-01-21 10:11:39 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.21 2005-04-03 23:56:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -658,11 +658,8 @@ dag_setfilter(pcap_t *p, struct bpf_program *fp)
 
 	/* Make our private copy of the filter */
 
-	if (install_bpf_program(p, fp) < 0) {
-		snprintf(p->errbuf, sizeof(p->errbuf),
-			 "malloc: %s", pcap_strerror(errno));
+	if (install_bpf_program(p, fp) < 0)
 		return -1;
-	}
 
 	p->md.use_bpf = 0;
 
