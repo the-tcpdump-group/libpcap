@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.34 2002-03-07 11:39:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.35 2002-03-08 11:10:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -92,7 +92,8 @@ again:
 	    bpf_filter(p->fcode.bf_insns, cp, datalen, caplen)) {
 		struct pcap_pkthdr h;
 		++p->md.stat.ps_recv;
-		h.ts = sh->snoop_timestamp;
+		h.ts.tv_sec = sh->snoop_timestamp.tv_sec;
+		h.ts.tv_usec = sh->snoop_timestamp.tv_usec;
 		h.len = datalen;
 		h.caplen = caplen;
 		(*callback)(user, &h, cp);
