@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.75 1999-10-30 05:33:45 itojun Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.76 2000-03-31 16:59:43 assar Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -122,8 +122,12 @@ version.c: $(srcdir)/VERSION
 	@rm -f $@
 	sed -e 's/.*/char pcap_version[] = "&";/' $(srcdir)/VERSION > $@
 
-bpf_filter.o: $(srcdir)/bpf/net/bpf_filter.c
-	$(CC) $(CFLAGS) -c $(srcdir)/bpf/net/bpf_filter.c -o bpf_filter.o
+bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
+	rm -f bpf_filter.c
+	ln -s $(srcdir)/bpf/net/bpf_filter.c bpf_filter.c
+
+bpf_filter.o: bpf_filter.c
+	$(CC) $(CFLAGS) -c bpf_filter.c
 
 install: force
 	$(INSTALL) -m 444 -o bin -g bin libpcap.a $(DESTDIR)$(LIBDEST)/libpcap.a
