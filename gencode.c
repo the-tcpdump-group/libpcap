@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.95 1999-10-19 15:18:29 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.96 1999-10-30 04:30:14 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -612,7 +612,7 @@ gen_linktype(proto)
 #ifdef INET6
 		else if (proto == ETHERTYPE_IPV6)
 			proto = PPP_IPV6;
-#endif /* INET6 */
+#endif
 		break;
 
 	case DLT_PPP_BSDOS:
@@ -631,7 +631,7 @@ gen_linktype(proto)
 			proto = PPP_IPV6;
 			/* more to go? */
 			break;
-#endif /* INET6 */
+#endif
 
 		case ETHERTYPE_DN:
 			proto = PPP_DECNET;
@@ -654,7 +654,7 @@ gen_linktype(proto)
 #ifdef INET6
 		else if (proto == ETHERTYPE_IPV6)
 			return (gen_cmp(0, BPF_W, (bpf_int32)htonl(AF_INET6)));
-#endif /* INET6 */
+#endif
 		else
 			return gen_false();
 	}
@@ -1164,6 +1164,10 @@ gen_proto_abbrev(proto)
 		gen_and(b0, b1);
 		break;
 
+#ifndef IPPROTO_PIM
+#define IPPROTO_PIM	103
+#endif
+
 	case Q_PIM:
 		b1 = gen_proto(IPPROTO_PIM, Q_IP, Q_DEFAULT);
 #ifdef INET6
@@ -1534,6 +1538,7 @@ gen_protochain(v, proto, dir)
 		s[i]->s.k = off_nl;
 		i++;
 		break;
+#ifdef INET6
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
 
@@ -1546,6 +1551,7 @@ gen_protochain(v, proto, dir)
 		s[i]->s.k = 40;
 		i++;
 		break;
+#endif
 	default:
 		bpf_error("unsupported proto to gen_protochain");
 		/*NOTREACHED*/
@@ -1569,6 +1575,7 @@ gen_protochain(v, proto, dir)
 	fix2 = i;
 	i++;
 
+#ifdef INET6
 	if (proto == Q_IPV6) {
 		int v6start, v6end, v6advance, j;
 
@@ -1664,7 +1671,9 @@ gen_protochain(v, proto, dir)
 		/* fixup */
 		for (j = v6start; j <= v6end; j++)
 			s[j]->s.jt = s[v6advance];
-	} else {
+	} else
+#endif
+	{
 		/* nop */
 		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
 		s[i]->s.k = 0;
