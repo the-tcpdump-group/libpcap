@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52.2.4 2002-06-06 08:57:43 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52.2.5 2002-06-07 04:17:57 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -345,6 +345,12 @@ struct bpf_hdr {
  * Reserved for capturing on Solaris with SunATM.
  */
 #define DLT_SUNATM		123	/* Solaris+SunATM */
+
+/*
+ * Reserved for Frame Relay; BSD/OS has a DLT_FR, with a value of 11,
+ * but that collides with other values.
+ */
+#define DLT_FRELAY		124
 
 /*
  * The instruction encodings.
