@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.99 
+# From configure.in Revision: 1.100 
 
 
 
@@ -73,7 +73,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --enable-yydebug        build parser debugging code"
 ac_help="$ac_help
-  --with-dag=DIR          include DAG support from DIR"
+  --with-dag[=DIR]        include DAG support (located in directory DIR, if supplied).  [default=yes, on BSD and Linux, if present]"
 ac_help="$ac_help
   --without-flex          don't use flex"
 ac_help="$ac_help
@@ -1971,27 +1971,58 @@ echo "$ac_t""$ac_cv_lbl_proc_net_dev" 1>&6
 # Check whether --with-dag or --without-dag was given.
 if test "${with_dag+set}" = set; then
   withval="$with_dag"
-  :
+  
+	if test "$withval" = no
+	then
+		want_dag=no
+	elif test "$withval" = yes
+	then
+		want_dag=yes
+		dag_root=
+	else
+		want_dag=yes
+		dag_root=$withval
+	fi
+
+else
+  
+	#
+	# Use DAG API if present, otherwise don't
+	#
+	want_dag=ifpresent
+	dag_root=
+
 fi
 
 ac_cv_lbl_dag_api=no
-if test "$with_dag" != no; then
-
-	case "$V_PCAP" in
-	linux|bpf|dag)
-		;;
-        *)
+case "$V_PCAP" in
+linux|bpf|dag)
+	#
+	# We support the DAG API on Linux or BSD, or if we're building a
+	# DAG-only libpcap.
+	#
+	;;
+*)
+	#
+	# If the user explicitly requested DAG, tell them it's not
+	# supported.
+	#
+	# If they expressed no preference, don't include it.
+	#
+	if test $want_dag = yes; then
 		{ echo "configure: error: DAG support only available with 'linux' 'bpf' and 'dag' packet capture types" 1>&2; exit 1; }
-		;;
-	esac
+	elif test $want_dag = yes; then
+		want_dag=no
+	fi
+	;;
+esac
 
+if test "$with_dag" != no; then
 	echo $ac_n "checking whether we have DAG API""... $ac_c" 1>&6
-echo "configure:1990: checking whether we have DAG API" >&5
+echo "configure:2023: checking whether we have DAG API" >&5
 
-	if test -z "$with_dag" -o "$with_dag" = yes; then
+	if test -z "$dag_root"; then
 		dag_root=$srcdir/../dag
-	else
-		dag_root=$with_dag
 	fi
 
 	if test -r "$dag_root/tools" -a -r "$dag_root/include"; then
@@ -2014,7 +2045,7 @@ echo "configure:1990: checking whether we have DAG API" >&5
 	fi
 	echo "$ac_t""$ac_cv_lbl_dag_api" 1>&6
 	if test $ac_cv_lbl_dag_api = no; then
-		if test ! -z "$with_dag"; then
+		if test "$want_dag" = yes; then
 			{ echo "configure: error: DAG API not found under directory $dag_root; use --without-dag" 1>&2; exit 1; }
 		fi
 	else
@@ -2050,7 +2081,7 @@ do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2054: checking for $ac_word" >&5
+echo "configure:2085: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_V_LEX'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2084,7 +2115,7 @@ test -n "$V_LEX" || V_LEX="lex"
     if test "$V_LEX" = flex ; then
 	    # The -V flag was added in 2.4
 	    echo $ac_n "checking for flex 2.4 or higher""... $ac_c" 1>&6
-echo "configure:2088: checking for flex 2.4 or higher" >&5
+echo "configure:2119: checking for flex 2.4 or higher" >&5
 	    if eval "test \"`echo '$''{'ac_cv_lbl_flex_v24'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2110,7 +2141,7 @@ do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2114: checking for $ac_word" >&5
+echo "configure:2145: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_V_YACC'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2157,7 +2188,7 @@ if test "$V_LEX" = lex ; then
 # Some versions of lex can't handle the definitions section of scanner.l .
 # Try lexing it and complain if it can't deal.
 	echo $ac_n "checking for capable lex""... $ac_c" 1>&6
-echo "configure:2161: checking for capable lex" >&5
+echo "configure:2192: checking for capable lex" >&5
 if eval "test \"`echo '$''{'tcpdump_cv_capable_lex'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2208,19 +2239,19 @@ EOF
 
 sinix*)
 	echo $ac_n "checking if SINIX compiler defines sinix""... $ac_c" 1>&6
-echo "configure:2212: checking if SINIX compiler defines sinix" >&5
+echo "configure:2243: checking if SINIX compiler defines sinix" >&5
 	if eval "test \"`echo '$''{'ac_cv_cc_sinix_defined'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2217 "configure"
+#line 2248 "configure"
 #include "confdefs.h"
 
 int main() {
 int i = sinix;
 ; return 0; }
 EOF
-if { (eval echo configure:2224: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2255: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_cc_sinix_defined=yes
 else
@@ -2252,7 +2283,7 @@ esac
 # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2256: checking for $ac_word" >&5
+echo "configure:2287: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2320,12 +2351,12 @@ EOF
     fi
 
 echo $ac_n "checking if sockaddr struct has sa_len member""... $ac_c" 1>&6
-echo "configure:2324: checking if sockaddr struct has sa_len member" >&5
+echo "configure:2355: checking if sockaddr struct has sa_len member" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_sockaddr_has_sa_len'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2329 "configure"
+#line 2360 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2334,7 +2365,7 @@ int main() {
 u_int i = sizeof(((struct sockaddr *)0)->sa_len)
 ; return 0; }
 EOF
-if { (eval echo configure:2338: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2369: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_sockaddr_has_sa_len=yes
 else
@@ -2355,12 +2386,12 @@ EOF
     fi
 
 echo $ac_n "checking if sockaddr_storage struct exists""... $ac_c" 1>&6
-echo "configure:2359: checking if sockaddr_storage struct exists" >&5
+echo "configure:2390: checking if sockaddr_storage struct exists" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_has_sockaddr_storage'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2364 "configure"
+#line 2395 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2369,7 +2400,7 @@ int main() {
 u_int i = sizeof (struct sockaddr_storage)
 ; return 0; }
 EOF
-if { (eval echo configure:2373: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2404: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_has_sockaddr_storage=yes
 else
@@ -2390,12 +2421,12 @@ EOF
     fi
 
 echo $ac_n "checking if dl_hp_ppa_info_t struct has dl_module_id_1 member""... $ac_c" 1>&6
-echo "configure:2394: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
+echo "configure:2425: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2399 "configure"
+#line 2430 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2405,7 +2436,7 @@ int main() {
 u_int i = sizeof(((dl_hp_ppa_info_t *)0)->dl_module_id_1)
 ; return 0; }
 EOF
-if { (eval echo configure:2409: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2440: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=yes
 else
@@ -2426,7 +2457,7 @@ EOF
     fi
 
 echo $ac_n "checking if unaligned accesses fail""... $ac_c" 1>&6
-echo "configure:2430: checking if unaligned accesses fail" >&5
+echo "configure:2461: checking if unaligned accesses fail" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_unaligned_fail'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2546,7 +2577,7 @@ ln -s ${srcdir}/bpf/net net
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:2550: checking for a BSD compatible install" >&5
+echo "configure:2581: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
