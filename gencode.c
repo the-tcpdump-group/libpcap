@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.176 2002-08-08 08:22:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.177 2002-08-08 09:09:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -4343,13 +4343,19 @@ gen_multicast(proto)
 		}
 
 		if (linktype == DLT_FDDI) {
-			/* XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX */
+			/*
+			 * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
+			 *
+			 * XXX - was that referring to bit-order issues?
+			 */
 			/* fddi[1] & 1 != 0 */
 			return gen_mac_multicast(1);
 		}
 
-		/* TODO - check how token ring handles multicast */
-		/* if (linktype == DLT_IEEE802) ... */
+		if (linktype == DLT_IEEE802) {
+			/* tr[2] & 1 != 0 */
+			return gen_mac_multicast(2);
+		}
 
 		if (linktype == DLT_IEEE802_11) {
 			/*
