@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.76 2002-08-05 07:59:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.77 2002-08-11 18:27:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -109,9 +109,8 @@ pcap_parse()
 %type	<i>	byteop pname pnum relop irelop
 %type	<blk>	and or paren not null prog
 %type	<rblk>	other
-%type	<blk>	gexpr
 %type	<i>	atmtype atmmultitype
-%type	<blk>	atmexpr atmfield atmhead ratmhead
+%type	<blk>	atmfield
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
 
 %token  DST SRC HOST GATEWAY
@@ -150,16 +149,13 @@ pcap_parse()
 %left '*' '/'
 %nonassoc UMINUS
 %%
-prog:	  null gexpr
+prog:	  null expr
 {
 	finish_parse($2.b);
 }
 	| null
 	;
 null:	  /* null */		{ $$.q = qerr; }
-	;
-gexpr:	  expr
-	| atmexpr
 	;
 expr:	  term
 	| expr and term		{ gen_and($1.b, $3.b); $$ = $3; }
@@ -254,6 +250,9 @@ rterm:	  head id		{ $$ = $2; }
 	| arth irelop arth	{ $$.b = gen_relation($2, $1, $3, 1);
 				  $$.q = qerr; }
 	| other			{ $$.b = $1; $$.q = qerr; }
+	| atmtype		{ $$.b = gen_atmtype_abbrev($1); $$.q = qerr; }
+	| atmmultitype		{ $$.b = gen_atmmulti_abbrev($1); $$.q = qerr; }
+	| atmfield atmvalue	{ $$.b = $2.b; $$.q = qerr; }
 	;
 /* protocol level qualifiers */
 pqual:	  pname
@@ -349,18 +348,6 @@ byteop:	  '&'			{ $$ = '&'; }
 	;
 pnum:	  NUM
 	| paren pnum ')'	{ $$ = $2; }
-	;
-atmexpr:  atmhead
-	| atmexpr and atmhead	{ gen_and($1.b, $3.b); $$ = $3; }
-	| atmexpr or  atmhead	{ gen_or($1.b, $3.b); $$ = $3; }
-	;
-atmhead:  ratmhead
-	| not atmhead		{ gen_not($2.b); $$ = $2; }
-	;
-ratmhead: atmtype		{ $$.b = gen_atmtype_abbrev($1); $$.q = qerr; }
-	| atmmultitype		{ $$.b = gen_atmmulti_abbrev($1); $$.q = qerr; }
-	| atmfield atmvalue	{ $$.b = $2.b; }
-	| paren atmexpr ')'	{ $$.b = $2.b; $$.q = qerr; }
 	;
 atmtype: LANE			{ $$ = A_LANE; }
 	| LLC			{ $$ = A_LLC; }

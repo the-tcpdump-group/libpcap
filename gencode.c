@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.178 2002-08-08 11:07:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.179 2002-08-11 18:27:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -160,6 +160,7 @@ static struct block *gen_ncmp(bpf_u_int32, bpf_u_int32, bpf_u_int32,
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
+static struct block *gen_ether_linktype(int);
 static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
 static struct block *gen_llc(int);
@@ -591,6 +592,12 @@ gen_ncmp(datasize, offset, mask, jtype, jvalue, reverse)
  */
 
 /*
+ * This is the offset of the beginning of the MAC-layer header.
+ * It's usually 0, except for ATM LANE.
+ */
+static u_int off_mac;
+
+/*
  * "off_linktype" is the offset to information in the link-layer header
  * giving the packet type.
  *
@@ -617,6 +624,12 @@ static u_int off_linktype;
 static int is_atm = 0;
 
 /*
+ * TRUE if "lane" appeared in the filter; it causes us to generate
+ * code that assumes LANE rather than LLC-encapsulated traffic in SunATM.
+ */
+static int is_lane = 0;
+
+/*
  * These are offsets for the ATM pseudo-header.
  */
 static u_int off_vpi;
@@ -624,9 +637,10 @@ static u_int off_vci;
 static u_int off_proto;
 
 /*
- * This is the offset to the message type for Q.2931 messages.
+ * This is the offset of the first byte after the ATM pseudo_header,
+ * or -1 if there is no ATM pseudo-header.
  */
-static u_int off_msg_type;
+static u_int off_payload;
 
 /*
  * These are offsets to the beginning of the network-layer header.
@@ -664,11 +678,13 @@ init_linktype(type)
 	/*
 	 * Assume it's not raw ATM with a pseudo-header, for now.
 	 */
+	off_mac = 0;
 	is_atm = 0;
+	is_lane = 0;
 	off_vpi = -1;
 	off_vci = -1;
 	off_proto = -1;
-	off_msg_type = -1;
+	off_payload = -1;
 
 	orig_linktype = -1;
 	orig_nl = -1;
@@ -838,13 +854,14 @@ init_linktype(type)
 		 * pseudo-header.
 		 */
 		is_atm = 1;
-		off_linktype = SUNATM_PKT_BEGIN_POS;
 		off_vpi = SUNATM_VPI_POS;
 		off_vci = SUNATM_VCI_POS;
 		off_proto = PROTO_POS;
-		off_msg_type = SUNATM_PKT_BEGIN_POS+MSG_TYPE_POS;
-		off_nl = SUNATM_PKT_BEGIN_POS+8;	/* 802.2+SNAP */
-		off_nl_nosnap = SUNATM_PKT_BEGIN_POS+3;	/* 802.2 */
+		off_mac = -1;	/* LLC-encapsulated, so no MAC-layer header */	
+		off_payload = SUNATM_PKT_BEGIN_POS;
+		off_linktype = off_payload;
+		off_nl = off_payload+8;		/* 802.2+SNAP */
+		off_nl_nosnap = off_payload+3;	/* 802.2 */
 		return;
 
 	case DLT_RAW:
@@ -920,6 +937,182 @@ gen_false()
 ((((y)&0xff)<<24) | (((y)&0xff00)<<8) | (((y)&0xff0000)>>8) | (((y)>>24)&0xff))
 
 static struct block *
+gen_ether_linktype(proto)
+	register int proto;
+{
+	struct block *b0, *b1;
+
+	switch (proto) {
+
+	case LLCSAP_ISONS:
+		/*
+		 * OSI protocols always use 802.2 encapsulation.
+		 * XXX - should we check both the DSAP and the
+		 * SSAP, like this, or should we check just the
+		 * DSAP?
+		 */
+		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		gen_not(b0);
+		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
+		gen_and(b0, b1);
+		return b1;
+
+	case LLCSAP_NETBEUI:
+		/*
+		 * NetBEUI always uses 802.2 encapsulation.
+		 * XXX - should we check both the DSAP and the
+		 * SSAP, like this, or should we check just the
+		 * DSAP?
+		 */
+		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		gen_not(b0);
+		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+		gen_and(b0, b1);
+		return b1;
+
+	case LLCSAP_IPX:
+		/*
+		 * Check for;
+		 *
+		 *	Ethernet_II frames, which are Ethernet
+		 *	frames with a frame type of ETHERTYPE_IPX;
+		 *
+		 *	Ethernet_802.3 frames, which are 802.3
+		 *	frames (i.e., the type/length field is
+		 *	a length field, <= ETHERMTU, rather than
+		 *	a type field) with the first two bytes
+		 *	after the Ethernet/802.3 header being
+		 *	0xFFFF;
+		 *
+		 *	Ethernet_802.2 frames, which are 802.3
+		 *	frames with an 802.2 LLC header and
+		 *	with the IPX LSAP as the DSAP in the LLC
+		 *	header;
+		 *
+		 *	Ethernet_SNAP frames, which are 802.3
+		 *	frames with an LLC header and a SNAP
+		 *	header and with an OUI of 0x000000
+		 *	(encapsulated Ethernet) and a protocol
+		 *	ID of ETHERTYPE_IPX in the SNAP header.
+		 *
+		 * XXX - should we generate the same code both
+		 * for tests for LLCSAP_IPX and for ETHERTYPE_IPX?
+		 */
+
+		/*
+		 * This generates code to check both for the
+		 * IPX LSAP (Ethernet_802.2) and for Ethernet_802.3.
+		 */
+		b0 = gen_cmp(off_linktype + 2, BPF_B, (bpf_int32)LLCSAP_IPX);
+		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)0xFFFF);
+		gen_or(b0, b1);
+
+		/*
+		 * Now we add code to check for SNAP frames with
+		 * ETHERTYPE_IPX, i.e. Ethernet_SNAP.
+		 */
+		b0 = gen_snap(0x000000, ETHERTYPE_IPX, 14);
+		gen_or(b0, b1);
+
+		/*
+		 * Now we generate code to check for 802.3
+		 * frames in general.
+		 */
+		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		gen_not(b0);
+
+		/*
+		 * Now add the check for 802.3 frames before the
+		 * check for Ethernet_802.2 and Ethernet_802.3,
+		 * as those checks should only be done on 802.3
+		 * frames, not on Ethernet frames.
+		 */
+		gen_and(b0, b1);
+
+		/*
+		 * Now add the check for Ethernet_II frames, and
+		 * do that before checking for the other frame
+		 * types.
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)ETHERTYPE_IPX);
+		gen_or(b0, b1);
+		return b1;
+
+	case ETHERTYPE_ATALK:
+	case ETHERTYPE_AARP:
+		/*
+		 * EtherTalk (AppleTalk protocols on Ethernet link
+		 * layer) may use 802.2 encapsulation.
+		 */
+
+		/*
+		 * Check for 802.2 encapsulation (EtherTalk phase 2?);
+		 * we check for an Ethernet type field less than
+		 * 1500, which means it's an 802.3 length field.
+		 */
+		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		gen_not(b0);
+
+		/*
+		 * 802.2-encapsulated ETHERTYPE_ATALK packets are
+		 * SNAP packets with an organization code of
+		 * 0x080007 (Apple, for Appletalk) and a protocol
+		 * type of ETHERTYPE_ATALK (Appletalk).
+		 *
+		 * 802.2-encapsulated ETHERTYPE_AARP packets are
+		 * SNAP packets with an organization code of
+		 * 0x000000 (encapsulated Ethernet) and a protocol
+		 * type of ETHERTYPE_AARP (Appletalk ARP).
+		 */
+		if (proto == ETHERTYPE_ATALK)
+			b1 = gen_snap(0x080007, ETHERTYPE_ATALK, 14);
+		else	/* proto == ETHERTYPE_AARP */
+			b1 = gen_snap(0x000000, ETHERTYPE_AARP, 14);
+		gen_and(b0, b1);
+
+		/*
+		 * Check for Ethernet encapsulation (Ethertalk
+		 * phase 1?); we just check for the Ethernet
+		 * protocol type.
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+
+		gen_or(b0, b1);
+		return b1;
+
+	default:
+		if (proto <= ETHERMTU) {
+			/*
+			 * This is an LLC SAP value, so the frames
+			 * that match would be 802.2 frames.
+			 * Check that the frame is an 802.2 frame
+			 * (i.e., that the length/type field is
+			 * a length field, <= ETHERMTU) and
+			 * then check the DSAP.
+			 */
+			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+			gen_not(b0);
+			b1 = gen_cmp(off_linktype + 2, BPF_B, (bpf_int32)proto);
+			gen_and(b0, b1);
+			return b1;
+		} else {
+			/*
+			 * This is an Ethernet type, so compare
+			 * the length/type field with it (if
+			 * the frame is an 802.2 frame, the length
+			 * field will be <= ETHERMTU, and, as
+			 * "proto" is > ETHERMTU, this test
+			 * will fail and the frame won't match,
+			 * which is what we want).
+			 */
+			return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+		}
+	}
+}
+
+static struct block *
 gen_linktype(proto)
 	register int proto;
 {
@@ -928,179 +1121,7 @@ gen_linktype(proto)
 	switch (linktype) {
 
 	case DLT_EN10MB:
-		switch (proto) {
-
-		case LLCSAP_ISONS:
-			/*
-			 * OSI protocols always use 802.2 encapsulation.
-			 * XXX - should we check both the DSAP and the
-			 * SSAP, like this, or should we check just the
-			 * DSAP?
-			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-			gen_not(b0);
-			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-			gen_and(b0, b1);
-			return b1;
-
-		case LLCSAP_NETBEUI:
-			/*
-			 * NetBEUI always uses 802.2 encapsulation.
-			 * XXX - should we check both the DSAP and the
-			 * SSAP, like this, or should we check just the
-			 * DSAP?
-			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-			gen_not(b0);
-			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
-			gen_and(b0, b1);
-			return b1;
-
-		case LLCSAP_IPX:
-			/*
-			 * Check for;
-			 *
-			 *	Ethernet_II frames, which are Ethernet
-			 *	frames with a frame type of ETHERTYPE_IPX;
-			 *
-			 *	Ethernet_802.3 frames, which are 802.3
-			 *	frames (i.e., the type/length field is
-			 *	a length field, <= ETHERMTU, rather than
-			 *	a type field) with the first two bytes
-			 *	after the Ethernet/802.3 header being
-			 *	0xFFFF;
-			 *
-			 *	Ethernet_802.2 frames, which are 802.3
-			 *	frames with an 802.2 LLC header and
-			 *	with the IPX LSAP as the DSAP in the LLC
-			 *	header;
-			 *
-			 *	Ethernet_SNAP frames, which are 802.3
-			 *	frames with an LLC header and a SNAP
-			 *	header and with an OUI of 0x000000
-			 *	(encapsulated Ethernet) and a protocol
-			 *	ID of ETHERTYPE_IPX in the SNAP header.
-			 *
-			 * XXX - should we generate the same code both
-			 * for tests for LLCSAP_IPX and for ETHERTYPE_IPX?
-			 */
-
-			/*
-			 * This generates code to check both for the
-			 * IPX LSAP (Ethernet_802.2) and for Ethernet_802.3.
-			 */
-			b0 = gen_cmp(off_linktype + 2, BPF_B,
-			    (bpf_int32)LLCSAP_IPX);
-			b1 = gen_cmp(off_linktype + 2, BPF_H,
-			    (bpf_int32)0xFFFF);
-			gen_or(b0, b1);
-
-			/*
-			 * Now we add code to check for SNAP frames with
-			 * ETHERTYPE_IPX, i.e. Ethernet_SNAP.
-			 */
-			b0 = gen_snap(0x000000, ETHERTYPE_IPX, 14);
-			gen_or(b0, b1);
-
-			/*
-			 * Now we generate code to check for 802.3
-			 * frames in general.
-			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-			gen_not(b0);
-
-			/*
-			 * Now add the check for 802.3 frames before the
-			 * check for Ethernet_802.2 and Ethernet_802.3,
-			 * as those checks should only be done on 802.3
-			 * frames, not on Ethernet frames.
-			 */
-			gen_and(b0, b1);
-
-			/*
-			 * Now add the check for Ethernet_II frames, and
-			 * do that before checking for the other frame
-			 * types.
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H,
-			    (bpf_int32)ETHERTYPE_IPX);
-			gen_or(b0, b1);
-			return b1;
-
-		case ETHERTYPE_ATALK:
-		case ETHERTYPE_AARP:
-			/*
-			 * EtherTalk (AppleTalk protocols on Ethernet link
-			 * layer) may use 802.2 encapsulation.
-			 */
-
-			/*
-			 * Check for 802.2 encapsulation (EtherTalk phase 2?);
-			 * we check for an Ethernet type field less than
-			 * 1500, which means it's an 802.3 length field.
-			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-			gen_not(b0);
-
-			/*
-			 * 802.2-encapsulated ETHERTYPE_ATALK packets are
-			 * SNAP packets with an organization code of
-			 * 0x080007 (Apple, for Appletalk) and a protocol
-			 * type of ETHERTYPE_ATALK (Appletalk).
-			 *
-			 * 802.2-encapsulated ETHERTYPE_AARP packets are
-			 * SNAP packets with an organization code of
-			 * 0x000000 (encapsulated Ethernet) and a protocol
-			 * type of ETHERTYPE_AARP (Appletalk ARP).
-			 */
-			if (proto == ETHERTYPE_ATALK)
-				b1 = gen_snap(0x080007, ETHERTYPE_ATALK, 14);
-			else	/* proto == ETHERTYPE_AARP */
-				b1 = gen_snap(0x000000, ETHERTYPE_AARP, 14);
-			gen_and(b0, b1);
-
-			/*
-			 * Check for Ethernet encapsulation (Ethertalk
-			 * phase 1?); we just check for the Ethernet
-			 * protocol type.
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
-
-			gen_or(b0, b1);
-			return b1;
-
-		default:
-			if (proto <= ETHERMTU) {
-				/*
-				 * This is an LLC SAP value, so the frames
-				 * that match would be 802.2 frames.
-				 * Check that the frame is an 802.2 frame
-				 * (i.e., that the length/type field is
-				 * a length field, <= ETHERMTU) and
-				 * then check the DSAP.
-				 */
-				b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-				gen_not(b0);
-				b1 = gen_cmp(off_linktype + 2, BPF_B,
-				     (bpf_int32)proto);
-				gen_and(b0, b1);
-				return b1;
-			} else {
-				/*
-				 * This is an Ethernet type, so compare
-				 * the length/type field with it (if
-				 * the frame is an 802.2 frame, the length
-				 * field will be <= ETHERMTU, and, as
-				 * "proto" is > ETHERMTU, this test
-				 * will fail and the frame won't match,
-				 * which is what we want).
-				 */
-				return gen_cmp(off_linktype, BPF_H,
-				    (bpf_int32)proto);
-			}
-		}
+		return gen_ether_linktype(proto);
 		break;
 
 	case DLT_IEEE802_11:
@@ -1114,14 +1135,37 @@ gen_linktype(proto)
 
 	case DLT_SUNATM:
 		/*
-		 * Check for LLC encapsulation and then check the protocol.
-		 * XXX - also check for LANE and then check for an Ethernet
-		 * type?
+		 * If "is_lane" is set, check for a LANE-encapsulated
+		 * version of this protocol, otherwise check for an
+		 * LLC-encapsulated version of this protocol.
+		 *
+		 * We assume LANE means Ethernet, not Token Ring.
 		 */
-		b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
-		b1 = gen_llc(proto);
-		gen_and(b0, b1);
-		return b1;
+		if (is_lane) {
+			/*
+			 * Check that the packet doesn't begin with an
+			 * LE Control marker.  (We've already generated
+			 * a test for LANE.)
+			 */
+			b0 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			gen_not(b0);
+
+			/*
+			 * Now generate an Ethernet test.
+			 */
+			b1 = gen_ether_linktype(proto);
+			gen_and(b0, b1);
+			return b1;
+		} else {
+			/*
+			 * Check for LLC encapsulation and then check the
+			 * protocol.
+			 */
+			b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+			b1 = gen_llc(proto);
+			gen_and(b0, b1);
+			return b1;
+		}
 
 	case DLT_LINUX_SLL:
 		switch (proto) {
@@ -1596,7 +1640,7 @@ gen_snap(orgcode, ptype, offset)
 
 	snapblock[0] = LLCSAP_SNAP;	/* DSAP = SNAP */
 	snapblock[1] = LLCSAP_SNAP;	/* SSAP = SNAP */
-	snapblock[2] = 0x03;	/* control = UI */
+	snapblock[2] = 0x03;		/* control = UI */
 	snapblock[3] = (orgcode >> 16);	/* upper 8 bits of organization code */
 	snapblock[4] = (orgcode >> 8);	/* middle 8 bits of organization code */
 	snapblock[5] = (orgcode >> 0);	/* lower 8 bits of organization code */
@@ -1786,10 +1830,10 @@ gen_ehostop(eaddr, dir)
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(6, 6, eaddr);
+		return gen_bcmp(off_mac + 6, 6, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(0, 6, eaddr);
+		return gen_bcmp(off_mac + 0, 6, eaddr);
 
 	case Q_AND:
 		b0 = gen_ehostop(eaddr, Q_SRC);
@@ -2534,7 +2578,21 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_thostop(eaddr, Q_OR);
 		else if (linktype == DLT_IEEE802_11)
 			b0 = gen_wlanhostop(eaddr, Q_OR);
-		else
+		else if (linktype == DLT_SUNATM && is_lane) {
+			/*
+			 * Check that the packet doesn't begin with an
+			 * LE Control marker.  (We've already generated
+			 * a test for LANE.)
+			 */
+			b1 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			gen_not(b1);
+
+			/*
+			 * Now check the MAC address.
+			 */
+			b0 = gen_ehostop(eaddr, Q_OR);
+			gen_and(b1, b0);
+		} else
 			bpf_error(
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11");
 
@@ -3523,11 +3581,30 @@ gen_scode(name, q)
 				free(eaddr);
 				return b;
 
-			default:
-				bpf_error(
-			"only ethernet/FDDI/token ring/802.11 supports link-level host name");
-				break;
+			case DLT_SUNATM:
+				if (!is_lane)
+					break;
+
+				/*
+				 * Check that the packet doesn't begin
+				 * with an LE Control marker.  (We've
+				 * already generated a test for LANE.)
+				 */
+				tmp = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H,
+				    0xFF00);
+				gen_not(tmp);
+
+				eaddr = pcap_ether_hostton(name);
+				if (eaddr == NULL)
+					bpf_error(
+					    "unknown ether host '%s'", name);
+				b = gen_ehostop(eaddr, dir);
+				gen_and(tmp, b);
+				free(eaddr);
+				return b;
 			}
+
+			bpf_error("only ethernet/FDDI/token ring/802.11/ATM LANE supports link-level host name");
 		} else if (proto == Q_DECNET) {
 			unsigned short dn_addr = __pcap_nametodnaddr(name);
 			/*
@@ -3877,6 +3954,8 @@ gen_ecode(eaddr, q)
 	register const u_char *eaddr;
 	struct qual q;
 {
+	struct block *b, *tmp;
+
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
 		if (linktype == DLT_EN10MB)
 			return gen_ehostop(eaddr, (int)q.dir);
@@ -3886,7 +3965,23 @@ gen_ecode(eaddr, q)
 			return gen_thostop(eaddr, (int)q.dir);
 		if (linktype == DLT_IEEE802_11)
 			return gen_wlanhostop(eaddr, (int)q.dir);
-		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11");
+		if (linktype == DLT_SUNATM && is_lane) {
+			/*
+			 * Check that the packet doesn't begin with an
+			 * LE Control marker.  (We've already generated
+			 * a test for LANE.)
+			 */
+			tmp = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			gen_not(tmp);
+
+			/*
+			 * Now check the MAC address.
+			 */
+			b = gen_ehostop(eaddr, (int)q.dir);
+			gen_and(tmp, b);
+			return b;
+		}
+		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE");
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
@@ -3960,6 +4055,14 @@ gen_load(proto, index, size)
 		bpf_error("unsupported index operation");
 
 	case Q_LINK:
+		/*
+		 * XXX - what about ATM LANE?  Should the index be
+		 * relative to the beginning of the AAL5 frame, so
+		 * that 0 refers to the beginning of the LE Control
+		 * field, or relative to the beginning of the LAN
+		 * frame, so that 0 refers, for Ethernet LANE, to
+		 * the beginning of the destination address?
+		 */
 		s = xfer_to_x(index);
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
 		sappend(s, tmp);
@@ -4298,6 +4401,22 @@ gen_broadcast(proto)
 			return gen_thostop(ebroadcast, Q_DST);
 		if (linktype == DLT_IEEE802_11)
 			return gen_wlanhostop(ebroadcast, Q_DST);
+		if (linktype == DLT_SUNATM && is_lane) {
+			/*
+			 * Check that the packet doesn't begin with an
+			 * LE Control marker.  (We've already generated
+			 * a test for LANE.)
+			 */
+			b1 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			gen_not(b1);
+
+			/*
+			 * Now check the MAC address.
+			 */
+			b0 = gen_ehostop(ebroadcast, Q_DST);
+			gen_and(b1, b0);
+			return b0;
+		}
 		bpf_error("not a broadcast link");
 		break;
 
@@ -4485,6 +4604,21 @@ gen_multicast(proto)
 			 * AND that with the checks for data and management
 			 * frames.
 			 */
+			gen_and(b1, b0);
+			return b0;
+		}
+
+		if (linktype == DLT_SUNATM && is_lane) {
+			/*
+			 * Check that the packet doesn't begin with an
+			 * LE Control marker.  (We've already generated
+			 * a test for LANE.)
+			 */
+			b1 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			gen_not(b1);
+
+			/* ether[off_mac] & 1 != 0 */
+			b0 = gen_mac_multicast(off_mac);
 			gen_and(b1, b0);
 			return b0;
 		}
@@ -4693,9 +4827,9 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 		break;
 
 	case A_MSGTYPE:
-		if (off_msg_type == -1)
+		if (off_payload == -1)
 			abort();
-		b0 = gen_ncmp(BPF_B, off_msg_type, 0xffffffff,
+		b0 = gen_ncmp(BPF_B, off_payload + MSG_TYPE_POS, 0xffffffff,
 		    (u_int)jtype, (u_int)jvalue, reverse);
 		break;
 
@@ -4781,6 +4915,24 @@ gen_atmtype_abbrev(type)
 		if (!is_atm)
 			bpf_error("'lane' supported only on raw ATM");
 		b1 = gen_atmfield_code(A_PROTOTYPE, PT_LANE, BPF_JEQ, 0);
+
+		/*
+		 * Arrange that all subsequent tests assume LANE
+		 * rather than LLC-encapsulated packets, and set
+		 * the offsets appropriately for LANE-encapsulated
+		 * Ethernet.
+		 *
+		 * "off_mac" is the offset of the Ethernet header,
+		 * which is 2 bytes past the ATM pseudo-header
+		 * (skipping the pseudo-header and 2-byte LE Client
+		 * field).  The other offsets are Ethernet offsets
+		 * relative to "off_mac".
+		 */
+		is_lane = 1;
+		off_mac = off_payload + 2;	/* MAC header */
+		off_linktype = off_mac + 12;
+		off_nl = off_mac + 14;		/* Ethernet II */
+		off_nl_nosnap = off_mac + 17;	/* 802.3+802.2 */
 		break;
 
 	case A_LLC:
@@ -4788,6 +4940,7 @@ gen_atmtype_abbrev(type)
 		if (!is_atm)
 			bpf_error("'llc' supported only on raw ATM");
 		b1 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+		is_lane = 0;
 		break;
 
 	default:
