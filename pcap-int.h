@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.24 2000-07-04 00:22:03 itojun Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.25 2000-07-18 03:43:47 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -44,6 +44,7 @@
 struct pcap_sf {
 	FILE *rfile;
 	int swapped;
+	int hdrsize;
 	int version_major;
 	int version_minor;
 	u_char *base;
@@ -117,6 +118,21 @@ struct pcap_sf_pkthdr {
     struct pcap_timeval ts;	/* time stamp */
     bpf_u_int32 caplen;		/* length of portion present */
     bpf_u_int32 len;		/* length this packet (off wire) */
+};
+
+/*
+ * How a `pcap_pkthdr' is actually stored in dumpfiles written
+ * by some patched versions of libpcap (e.g. the ones in Red
+ * Hat Linux 6.1 and 6.2).
+ */
+
+struct pcap_sf_patched_pkthdr {
+    struct pcap_timeval ts;	/* time stamp */
+    bpf_u_int32 caplen;		/* length of portion present */
+    bpf_u_int32 len;		/* length this packet (off wire) */
+    int		index;
+    unsigned short protocol;
+    unsigned char pkt_type;
 };
 
 int	yylex(void);
