@@ -40,7 +40,7 @@
 
 #if !(defined(lint) || defined(KERNEL) || defined(_KERNEL))
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.34 2000-06-26 05:08:35 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.35 2000-10-23 19:32:21 fenner Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -49,7 +49,6 @@ static const char rcsid[] =
 
 #define	SOLARIS	(defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 #if defined(__hpux) || SOLARIS
-# define	__P(x)		x
 # include <sys/sysmacros.h>
 # include <sys/stream.h>
 # define	mbuf	msgb
