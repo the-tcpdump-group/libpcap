@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.19 2003-07-25 05:07:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.20 2003-07-25 05:32:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -38,13 +38,6 @@ static const char rcsid[] =
 #include "pcap-int.h"
 
 static char nosup[] = "live packet capture not supported on this system";
-
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
-{
-	(void)snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s", nosup);
-	return (-1);
-}
 
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,

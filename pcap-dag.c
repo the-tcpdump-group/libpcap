@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.5 2003-07-25 05:07:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.6 2003-07-25 05:32:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -59,7 +59,6 @@ static int atexit_handler_installed = 0;
 #include "pcap-dag.h"
 
 /* Replace dag function names with pcap equivalent. */
-#define dag_read pcap_read
 #define dag_open_live pcap_open_live
 #define dag_platform_finddevs pcap_platform_finddevs
 #endif /* DAG_ONLY */
@@ -201,7 +200,7 @@ static unsigned long long swapll(unsigned long long ull) {
  *  for each of them. Returns the number of packets handled or -1 if an
  *  error occured.  A blocking 
  */
-int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
+static int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
   u_char		*dp = NULL;
   int			packet_len = 0, caplen = 0;
   struct pcap_pkthdr	pcap_header;
@@ -336,7 +335,6 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
    */
   handle->md.dag_mem_bottom = 0;
   handle->md.dag_mem_top = 0;
-  handle->md.is_dag = 1;
 
   handle->snapshot	= snaplen;
   /*handle->md.timeout	= to_ms; */
@@ -386,6 +384,7 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
     return NULL;
   }
 
+  handle->read_op = dag_read;
   handle->setfilter_op = dag_setfilter;
   handle->set_datalink_op = dag_set_datalink;
   handle->stats_op = dag_stats;

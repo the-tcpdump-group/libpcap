@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.48 2003-07-25 05:07:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.49 2003-07-25 05:32:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -95,8 +95,8 @@ pcap_stats_nit(pcap_t *p, struct pcap_stat *ps)
 	return (0);
 }
 
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	register int cc, n;
 	register struct bpf_insn *fcode = p->fcode.bf_insns;
@@ -260,6 +260,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 
+	p->read_op = pcap_read_nit;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->stats_op = pcap_stats_nit;

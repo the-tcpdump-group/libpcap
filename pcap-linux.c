@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.94 2003-07-25 05:07:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.95 2003-07-25 05:32:04 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -186,6 +186,7 @@ typedef int		socklen_t;
 static void map_arphrd_to_dlt(pcap_t *, int, int);
 static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
+static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
@@ -396,6 +397,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return NULL;
 	}
 
+	handle->read_op = pcap_read_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->stats_op = pcap_stats_linux;
@@ -409,15 +411,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
  *  for each of them. Returns the number of packets handled or -1 if an
  *  error occured.
  */
-int
-pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+static int
+pcap_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-#ifdef HAVE_DAG_API
-	if (handle->md.is_dag) {
-		return dag_read(handle, max_packets, callback, user);
-	}
-#endif /* HAVE_DAG_API */
-
 	/*
 	 * Currently, on Linux only one packet is delivered per read,
 	 * so we don't loop.

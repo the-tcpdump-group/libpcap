@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.43 2003-07-25 05:07:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.44 2003-07-25 05:32:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -58,8 +58,8 @@ static const char rcsid[] =
 #include "os-proto.h"
 #endif
 
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_snoop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	int cc;
 	register struct snoopheader *sh;
@@ -294,6 +294,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 
+	p->read_op = pcap_read_snoop;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->stats_op = pcap_stats_snoop;

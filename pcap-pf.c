@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.77 2003-07-25 05:07:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.78 2003-07-25 05:32:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -84,8 +84,8 @@ static int pcap_setfilter_pf(pcap_t *, struct bpf_program *);
  */
 #define BUFSPACE (200 * 256)
 
-int
-pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 {
 	register u_char *p, *bp;
 	struct bpf_insn *fcode;
@@ -415,6 +415,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		goto bad;
 	}
 
+	p->read_op = pcap_read_pf;
 	p->setfilter_op = pcap_setfilter_pf;
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->stats_op = pcap_stats_pf;

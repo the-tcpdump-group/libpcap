@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.65 2003-07-25 05:07:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.66 2003-07-25 05:32:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -135,18 +135,12 @@ pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 	return (0);
 }
 
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	int cc;
 	int n = 0;
 	register u_char *bp, *ep;
-
-#ifdef HAVE_DAG_API
-	if (p->md.is_dag) {
-		return dag_read(p, cnt, callback, user);
-	}
-#endif /* HAVE_DAG_API */
 
  again:
 	cc = p->cc;
@@ -733,6 +727,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
 
+	p->read_op = pcap_read_bpf;
 	p->setfilter_op = pcap_setfilter_bpf;
 	p->set_datalink_op = pcap_set_datalink_bpf;
 	p->stats_op = pcap_stats_bpf;

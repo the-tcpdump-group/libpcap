@@ -7,10 +7,8 @@
  *
  * Author: Richard Littin, Sean Irvine ({richard,sean}@reeltwo.com)
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dag.h,v 1.2 2003-07-25 04:04:57 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dag.h,v 1.3 2003-07-25 05:32:03 guy Exp $ (LBL)
  */
 
-int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user);
 pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf);
-int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 

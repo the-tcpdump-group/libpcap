@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.60 2003-07-25 05:07:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.61 2003-07-25 05:32:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -65,9 +65,17 @@ int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 
-	if (p->sf.rfile != NULL)
-		return (pcap_offline_read(p, cnt, callback, user));
-	return (pcap_read(p, cnt, callback, user));
+	return p->read_op(p, cnt, callback, user);
+}
+
+/*
+ * XXX - is this necessary?
+ */
+int
+pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+{
+
+	return p->read_op(p, cnt, callback, user);
 }
 
 int
@@ -76,15 +84,18 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	register int n;
 
 	for (;;) {
-		if (p->sf.rfile != NULL)
+		if (p->sf.rfile != NULL) {
+			/*
+			 * 0 means EOF, so don't loop if we get 0.
+			 */
 			n = pcap_offline_read(p, cnt, callback, user);
-		else {
+		} else {
 			/*
 			 * XXX keep reading until we get something
 			 * (or an error occurs)
 			 */
 			do {
-				n = pcap_read(p, cnt, callback, user);
+				n = p->read_op(p, cnt, callback, user);
 			} while (n == 0);
 		}
 		if (n <= 0)
@@ -182,7 +193,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcap_offline_read() meaning "end of file".
 	*/
-	return (pcap_read(p, 1, pcap_fakecallback, (u_char *)&s));
+	return (p->read_op(p, 1, pcap_fakecallback, (u_char *)&s));
 }
 
 int
