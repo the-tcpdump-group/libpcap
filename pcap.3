@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.44 2002-12-22 23:05:52 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.45 2003-01-16 07:29:15 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -77,7 +77,7 @@ void pcap_freecode(struct bpf_program *);
 .ft
 .LP
 .ft B
-u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h)
+const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h)
 .ft
 .LP
 .ft B
