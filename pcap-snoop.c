@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.45 2003-11-04 07:05:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.46 2003-11-12 23:15:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -99,6 +99,17 @@ again:
 	datalen = sh->snoop_packetlen;
 	caplen = (datalen < p->snapshot) ? datalen : p->snapshot;
 	cp = (u_char *)(sh + 1) + p->offset;		/* XXX */
+
+	/* 
+	 * XXX unfortunately snoop loopback isn't exactly like
+	 * BSD's.  The address family is encoded in the first 2
+	 * bytes rather than the first 4 bytes!  Luckily the last
+	 * two snoop loopback bytes are zeroed.
+	 */
+	if (p->linktype == DLT_NULL && *((short *)(cp + 2)) == 0) {
+		u_int *uip = (u_int *)cp;
+		*uip >>= 16;
+	}
 
 	if (p->fcode.bf_insns == NULL ||
 	    bpf_filter(p->fcode.bf_insns, cp, datalen, caplen)) {
@@ -235,9 +246,15 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	} else if (strncmp("ppp", device, 3) == 0) {
 		p->linktype = DLT_RAW;
 		ll_hdrlen = 0;	/* DLT_RAW meaning "no PPP header, just the IP packet"? */
+	} else if (strncmp("qfa", device, 3) == 0) {
+		p->linktype = DLT_IP_OVER_FC;
+		ll_hdrlen = 24;
+	} else if (strncmp("pl", device, 2) == 0) {
+		p->linktype = DLT_RAW;
+		ll_hdrlen = 0;	/* Cray UNICOS/mp pseudo link */
 	} else if (strncmp("lo", device, 2) == 0) {
 		p->linktype = DLT_NULL;
-		ll_hdrlen = 4;	/* is this just like BSD's loopback device? */
+		ll_hdrlen = 4;
 	} else {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "snoop: unknown physical layer type");
