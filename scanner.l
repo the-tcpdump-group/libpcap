@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.61 2000-01-25 03:21:29 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.62 2000-03-31 16:59:07 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -92,6 +92,7 @@ W		([0-9A-Fa-f][0-9A-Fa-f]?[0-9A-Fa-f]?[0-9A-Fa-f]?)
 %e 6000
 %k 4000
 %p 19000
+%n 2000
 
 V680		{W}:{W}:{W}:{W}:{W}:{W}:{W}:{W}
 
