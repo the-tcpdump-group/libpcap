@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.80 2002-12-19 09:05:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.81 2002-12-28 01:07:10 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -99,7 +99,7 @@ static const char rcsid[] =
 #define	MAXDLBUF	8192
 
 /* Forwards */
-static char *split_dname(char *, int *, char *);
+static const char *split_dname(const char *, int *, char *);
 static int dlattachreq(int, bpf_u_int32, char *);
 static int dlbindack(int, char *, char *);
 static int dlbindreq(int, bpf_u_int32, char *);
@@ -264,9 +264,10 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif /* HAVE_SOLARIS */
 
 pcap_t *
-pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
+pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
+    char *ebuf)
 {
-	register char *cp;
+	register const char *cp;
 	register pcap_t *p;
 	int ppa;
 #ifdef HAVE_SOLARIS
@@ -650,10 +651,10 @@ bad:
  *
  * Returns NULL on error, and fills "ebuf" with an error message.
  */
-static char *
-split_dname(char *device, int *unitp, char *ebuf)
+static const char *
+split_dname(const char *device, int *unitp, char *ebuf)
 {
-	char *cp;
+	const char *cp;
 	char *eos;
 	int unit;
 
