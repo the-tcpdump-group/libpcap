@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.78 2001-05-30 01:27:22 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.79 2001-08-20 18:17:29 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -278,36 +278,12 @@ ${B}			{ yylval.e = pcap_ether_aton(((char *)yytext)+1);
 			  bpf_error("IPv6 address %s not supported", yytext);
 #endif /*INET6*/
 			}
-{B}:+({B}:+)+		{ bpf_error("bogus ethernet address %s", yytext); }
-icmptype		{ yylval.i = 0; return NUM; }
-icmpcode		{ yylval.i = 1; return NUM; }
-icmp-echoreply		{ yylval.i = 0; return NUM; }
-icmp-unreach		{ yylval.i = 3; return NUM; }
-icmp-sourcequench	{ yylval.i = 4; return NUM; }
-icmp-redirect		{ yylval.i = 5; return NUM; }
-icmp-echo		{ yylval.i = 8; return NUM; }
-icmp-routeradvert	{ yylval.i = 9; return NUM; }
-icmp-routersolicit	{ yylval.i = 10; return NUM; }
-icmp-timxceed		{ yylval.i = 11; return NUM; }
-icmp-paramprob		{ yylval.i = 12; return NUM; }
-icmp-tstamp		{ yylval.i = 13; return NUM; }
-icmp-tstampreply	{ yylval.i = 14; return NUM; }
-icmp-ireq		{ yylval.i = 15; return NUM; }
-icmp-ireqreply		{ yylval.i = 16; return NUM; }
-icmp-maskreq		{ yylval.i = 17; return NUM; }
-icmp-maskreply		{ yylval.i = 18; return NUM; }
-tcpflags		{ yylval.i = 13; return NUM; }
-tcp-fin			{ yylval.i = 0x01; return NUM; }
-tcp-syn			{ yylval.i = 0x02; return NUM; }
-tcp-rst			{ yylval.i = 0x04; return NUM; }
-tcp-push		{ yylval.i = 0x08; return NUM; }
-tcp-ack			{ yylval.i = 0x10; return NUM; }
-tcp-urg			{ yylval.i = 0x20; return NUM; }
-[A-Za-z0-9][-_.A-Za-z0-9]*[.A-Za-z0-9] {
+({B}:+)+{B}?		{ bpf_error("bogus ethernet address %s", yytext); }
+[A-Za-z0-9]([-_.A-Za-z0-9]*[.A-Za-z0-9])? {
 			 yylval.s = sdup((char *)yytext); return ID; }
 "\\"[^ !()\n\t]+	{ yylval.s = sdup((char *)yytext + 1); return ID; }
-[^ \[\]\t\n\-_.A-Za-z0-9!<>()&|=]+i {
-			bpf_error("illegal token: %s\n", yytext); }
+[^ \[\]\t\n\-_.A-Za-z0-9!<>()&|=]+ {
+			bpf_error("illegal token: %s", yytext); }
 .			{ bpf_error("illegal char '%c'", *yytext); }
 %%
 void
