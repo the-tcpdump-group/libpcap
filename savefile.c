@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.53 2001-09-09 04:27:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.54 2001-09-09 05:02:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -172,6 +172,8 @@ static const char rcsid[] =
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
+#define LINKTYPE_IPFILTER	116		/* IP Filter capture files */
+#define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 
 static struct linktype_map {
 	int	dlt;

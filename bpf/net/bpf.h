@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.48 2001-09-09 04:27:19 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.49 2001-09-09 05:02:29 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -257,14 +257,15 @@ struct bpf_hdr {
  * OpenBSD defines it as 12, but that collides with DLT_RAW, so we
  * define it as 108 here.  If OpenBSD picks up this file, it should
  * define DLT_LOOP as 12 in its version, as per the comment above -
- * and should not use 108 for any purpose.
+ * and should not use 108 as a DLT_ value.
  */
 #define DLT_LOOP	108
 
 /*
  * Values between 109 and 112 are used in capture file headers as
  * link-layer types corresponding to DLT_ types that might differ
- * between platforms; don't use those values for new DLT_ new types.
+ * between platforms; don't use those values for new DLT_ types
+ * other than the corresponding DLT_ types.
  */
 
 /*
@@ -281,6 +282,16 @@ struct bpf_hdr {
  * Acorn Econet.
  */
 #define DLT_ECONET	115
+
+/*
+ * 116 is reserved for DLT_IPFILTER.
+ * 117 is used in capture-file headers as a link-layer type corresponding
+ * to OpenBSD DLT_PFLOG; DLT_PFLOG is 17, but that's DLT_LANE8023 in
+ * SuSE 6.3, so we can't use 17 for it in capture-file headers.
+ *
+ * Don't use 116 for anything other than DLT_IPFILTER, and don't use
+ * 117 for anything other than DLT_PFLOG.
+ */
 
 /*
  * The instruction encodings.
