@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.63 2004-04-03 20:52:42 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.64 2004-04-07 18:41:00 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -147,7 +147,7 @@ struct pcap {
 
 	char errbuf[PCAP_ERRBUF_SIZE + 1];
 	int dlt_count;
-	int *dlt_list;
+	u_int *dlt_list;
 
 	struct pcap_pkthdr pcap_header;	/* This is needed for the pcap_next_ex() to work */
 };
