@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.185 2003-02-05 01:53:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.186 2003-02-14 07:48:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -4904,7 +4904,6 @@ gen_inbound(dir)
 	 */
 	switch (linktype) {
 	case DLT_SLIP:
-	case DLT_PPP:
 		b0 = gen_relation(BPF_JEQ,
 			  gen_load(Q_LINK, gen_loadi(0), 1),
 			  gen_loadi(0),
