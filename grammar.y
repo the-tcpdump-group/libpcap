@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.60 2000-09-23 07:26:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.61 2000-10-22 04:15:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -116,6 +116,7 @@ pcap_parse()
 %token	LSH RSH
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
+%token	VLAN
 
 %type	<s> ID
 %type	<e> EID
@@ -162,14 +163,7 @@ nid:	  ID			{ $$.b = gen_scode($1, $$.q = $<blk>0.q); }
 	| HID			{
 				  /* Decide how to parse HID based on proto */
 				  $$.q = $<blk>0.q;
-				  switch ($$.q.proto) {
-				  case Q_DECNET:
-					$$.b = gen_ncode($1, 0, $$.q);
-					break;
-				  default:
-					$$.b = gen_ncode($1, 0, $$.q);
-					break;
-				  }
+				  $$.b = gen_ncode($1, 0, $$.q);
 				}
 	| HID6 '/' NUM		{
 #ifdef INET6
@@ -271,6 +265,8 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| BYTE NUM byteop NUM	{ $$ = gen_byteop($3, $2, $4); }
 	| INBOUND		{ $$ = gen_inbound(0); }
 	| OUTBOUND		{ $$ = gen_inbound(1); }
+	| VLAN pnum		{ $$ = gen_vlan($2); }
+	| VLAN			{ $$ = gen_vlan(-1); }
 	;
 relop:	  '>'			{ $$ = BPF_JGT; }
 	| GEQ			{ $$ = BPF_JGE; }

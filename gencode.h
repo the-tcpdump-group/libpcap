@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.41 2000-07-13 06:51:56 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.42 2000-10-22 04:15:56 guy Exp $ (LBL)
  */
 
 /* Address qualifiers. */
@@ -172,6 +172,8 @@ struct block *gen_byteop(int, int, int);
 struct block *gen_broadcast(int);
 struct block *gen_multicast(int);
 struct block *gen_inbound(int);
+
+struct block *gen_vlan(int);
 
 void bpf_optimize(struct block **);
 void bpf_error(const char *, ...)

@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.122 2000-10-12 03:53:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.123 2000-10-22 04:15:55 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2924,5 +2924,52 @@ gen_inbound(dir)
 			  gen_load(Q_LINK, gen_loadi(0), 1),
 			  gen_loadi(0),
 			  dir);
+	return (b0);
+}
+
+/*
+ * support IEEE 802.1Q VLAN trunk over ethernet
+ */
+struct block *
+gen_vlan(vlan_num)
+	int vlan_num;
+{
+	static u_int	orig_linktype = -1, orig_nl = -1;
+	struct	block	*b0;
+
+	/*
+	 * Change the offsets to point to the type and data fields within
+	 * the VLAN packet.  This is somewhat of a kludge.
+	 */
+	if (orig_nl == (u_int)-1) {
+		orig_linktype = off_linktype;	/* save original values */
+		orig_nl = off_nl;
+
+		switch (linktype) {
+
+		case DLT_EN10MB:
+			off_linktype = 16;
+			off_nl = 18;
+			break;
+
+		default:
+			bpf_error("no VLAN support for data link type %d",
+				  linktype);
+			/*NOTREACHED*/
+		}
+	}
+
+	/* check for VLAN */
+	b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
+
+	/* If a specific VLAN is requested, check VLAN id */
+	if (vlan_num >= 0) {
+		struct block *b1;
+
+		b1 = gen_cmp(orig_nl, BPF_H, (bpf_int32)vlan_num);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
+
 	return (b0);
 }
