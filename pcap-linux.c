@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.60 2001-07-29 01:22:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.61 2001-07-29 18:25:47 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -74,37 +74,38 @@ static const char rcsid[] =
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
 
-#ifdef HAVE_NETPACKET_PACKET_H
-# include <netpacket/packet.h>
+/*
+ * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
+ * sockets rather than SOCK_PACKET sockets.
+ *
+ * To use them, we include <linux/if_packet.h> rather than
+ * <netpacket/packet.h>; we do so because
+ *
+ *	some Linux distributions (e.g., Slackware 4.0) have 2.2 or
+ *	later kernels and libc5, and don't provide a <netpacket/packet.h>
+ *	file;
+ *
+ *	not all versions of glibc2 have a <netpacket/packet.h> file
+ *	that defines stuff needed for some of the 2.4-or-later-kernel
+ *	features, so if the system has a 2.4 or later kernel, we
+ *	still can't use those features.
+ *
+ * We're already including a number of other <linux/XXX.h> headers, and
+ * this code is Linux-specific (no other OS has PF_PACKET sockets as
+ * a raw packet capture mechanism), so it's not as if you gain any
+ * useful portability by using <netpacket/packet.h>
+ *
+ * XXX - should we just include <linux/if_packet.h> even if PF_PACKET
+ * isn't defined?  It only defines one data structure in 2.0.x, so
+ * it shouldn't cause any problems.
+ */
+#ifdef PF_PACKET  
+# include <linux/if_packet.h>
 
  /*
-  * We assume this means we really do have PF_PACKET sockets.
-  */
-# define HAVE_PF_PACKET_SOCKETS
-#else
- /*
-  * Oh, joy.  Some Linux distributions have 2.2 or later kernels and
-  * libc5.  On at least one of those systems (Slackware 4.0), it
-  * appears that "/usr/include/sys/socket.h" includes <linux/socket.h>,
-  * which means it picks up all the AF_, PF_, and SO_ definitions
-  * appropriate for the current kernel; however, it also appears that
-  * they did not see fit to provide a "/usr/include/netpacket/packet.h"
-  * file.
-  *
-  * However, you should be able to get the right definitions by including
-  * <linux/if_packet.h>.
-  *
-  * So if this system has PF_PACKET defined but doesn't have the
-  * <netpacket/packet.h> header file, we include <linux/if_packet.h>
-  * instead.
-  */
-# ifdef PF_PACKET
-#  include <linux/if_packet.h>
-
- /*
-  * However, on at least some Linux distributions (for example, Red Hat
-  * 5.2), there's no <netpacket/packet.h> file, but PF_PACKET is defined
-  * if you include <sys/socket.h>, but <linux/if_packet.h> doesn't define
+  * On at least some Linux distributions (for example, Red Hat 5.2),
+  * there's no <netpacket/packet.h> file, but PF_PACKET is defined if
+  * you include <sys/socket.h>, but <linux/if_packet.h> doesn't define
   * any of the PF_PACKET stuff such as "struct sockaddr_ll" or any of
   * the PACKET_xxx stuff.
   *
@@ -114,8 +115,7 @@ static const char rcsid[] =
 # ifdef PACKET_HOST
 #  define HAVE_PF_PACKET_SOCKETS
 # endif /* PACKET_HOST */
-# endif /* PF_PACKET */
-#endif /* HAVE_NETPACKET_PACKET_H */
+#endif /* PF_PACKET */
 
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
@@ -440,8 +440,42 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= packet_len;
 
-	/* Call the user supplied callback function */
+	/*
+	 * Count the packet.
+	 *
+	 * Arguably, we should count them before we check the filter,
+	 * as on many other platforms "ps_recv" counts packets
+	 * handed to the filter rather than packets that passed
+	 * the filter, but if filtering is done in the kernel, we
+	 * can't get a count of packets that passed the filter,
+	 * and that would mean the meaning of "ps_recv" wouldn't
+	 * be the same on all Linux systems.
+	 *
+	 * XXX - it's not the same on all systems in any case;
+	 * ideally, we should have a "get the statistics" call
+	 * that supplies more counts and indicates which of them
+	 * it supplies, so that we supply a count of packets
+	 * handed to the filter only on platforms where that
+	 * information is available.
+	 *
+	 * We count them here even if we can get the packet count
+	 * from the kernel, as we can only determine at run time
+	 * whether we'll be able to get it from the kernel (if
+	 * HAVE_TPACKET_STATS isn't defined, we can't get it from
+	 * the kernel, but if it is defined, the library might
+	 * have been built with a 2.4 or later kernel, but we
+	 * might be running on a 2.2[.x] kernel without Alexey
+	 * Kuznetzov's turbopacket patches, and thus the kernel
+	 * might not be able to supply those statistics).  We
+	 * could, I guess, try, when opening the socket, to get
+	 * the statistics, and if we can not increment the count
+	 * here, but it's not clear that always incrementing
+	 * the count is more expensive than always testing a flag
+	 * in memory.
+	 */
 	handle->md.stat.ps_recv++;
+
+	/* Call the user supplied callback function */
 	callback(userdata, &pcap_header, handle->buffer + handle->offset);
 
 	return 1;
@@ -449,15 +483,33 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 /*
  *  Get the statistics for the given packet capture handle.
- *  FIXME: Currently does not report the number of dropped packets.
+ *  Reports the number of dropped packets iff the kernel supports
+ *  the PACKET_STATISTICS "getsockopt()" argument (2.4 and later
+ *  kernels, and 2.2[.x] kernels with Alexey Kuznetzov's turbopacket
+ *  patches); otherwise, that information isn't available, and we lie
+ *  and report 0 as the count of dropped packets.
  */
 int
 pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 {
+#ifdef HAVE_TPACKET_STATS
+	struct tpacket_stats kstats;
+	socklen_t len;
+
+	/*
+	 * Try to get the packet counts from the kernel.
+	 */
+	if (getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS,
+			&kstats, &len) > -1) {
+		handle->md.stat.ps_recv = (kstats.tp_packets - kstats.tp_drops);
+		handle->md.stat.ps_drop = kstats.tp_drops;
+	}
+#endif
 	/*
 	 * "ps_recv" counts only packets that passed the filter.
 	 *
-	 * "ps_drop" isn't maintained.
+	 * "ps_drop" is maintained only on systems that support
+	 * the PACKET_STATISTICS "getsockopt()" argument.
 	 */
 	*stats = handle->md.stat;
 	return 0;

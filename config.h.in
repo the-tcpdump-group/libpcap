@@ -24,9 +24,6 @@
 /* Define if you have the <netinet/if_ether.h> header file.  */
 #undef HAVE_NETINET_IF_ETHER_H
 
-/* Define if you have the <netpacket/packet.h> header file.  */
-#undef HAVE_NETPACKET_PACKET_H
-
 /* Define if you have the <sys/bufmod.h> header file.  */
 #undef HAVE_SYS_BUFMOD_H
 
@@ -65,6 +62,9 @@
 
 /* /dev/dlpi directory */
 #undef PCAP_DEV_PREFIX
+
+/* if if_packet.h has tpacket_stats defined */
+#undef HAVE_TPACKET_STATS
 
 /* define on AIX to get certain functions */
 #undef _SUN

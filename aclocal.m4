@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.71 2000-09-19 03:56:26 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.72 2001-07-29 18:25:46 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -767,3 +767,21 @@ fi
 AC_MSG_RESULT($ac_cv___attribute__)
 ])
 
+dnl
+dnl Checks to see if tpacket_stats is defined in linux/if_packet.h
+dnl If so then pcap-linux.c can use this to report proper statistics.
+dnl
+dnl -Scott Barron
+dnl
+AC_DEFUN(AC_LBL_TPACKET_STATS,
+   [AC_MSG_CHECKING(if if_packet.h has tpacket_stats defined)
+   AC_CACHE_VAL(ac_cv_lbl_tpacket_stats,
+   AC_TRY_COMPILE([
+#  include <linux/if_packet.h>],
+   [struct tpacket_stats stats],
+   ac_cv_lbl_tpacket_stats=yes,
+   ac_cv_lbl_tpacket_stats=no))
+   AC_MSG_RESULT($ac_cv_lbl_tpacket_stats)
+   if test $ac_cv_lbl_tpacket_stats = yes; then
+       AC_DEFINE(HAVE_TPACKET_STATS,1,[if if_packet.h has tpacket_stats defined])
+   fi])
