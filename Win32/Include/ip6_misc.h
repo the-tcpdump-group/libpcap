@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Win32/Include/ip6_misc.h,v 1.2 2002-08-02 13:59:03 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Win32/Include/ip6_misc.h,v 1.2.2.1 2004-10-25 14:51:44 risso Exp $ (LBL)
  */
 
 /*
@@ -33,7 +33,7 @@
 
 #define	IN_MULTICAST(a)		IN_CLASSD(a)
 
-#define	IN_EXPERIMENTAL(a)	((((u_int32_t) (a)) & 0xe0000000) == 0xe0000000)
+#define	IN_EXPERIMENTAL(a)	((((u_int32_t) (a)) & 0xf0000000) == 0xf0000000)
 
 #define	IN_LOOPBACKNET		127
 
