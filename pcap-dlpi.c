@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91.2.4 2004-04-02 06:19:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91.2.5 2004-04-03 02:05:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -222,9 +222,14 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 			if (getmsg(p->fd, &ctl, &data, &flags) < 0) {
 				/* Don't choke when we get ptraced */
-				if (errno == EINTR) {
+				switch (errno) {
+
+				case EINTR:
 					cc = 0;
 					continue;
+
+				case EAGAIN:
+					return (0);
 				}
 				strlcpy(p->errbuf, pcap_strerror(errno),
 				    sizeof(p->errbuf));
