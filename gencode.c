@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.220 2005-03-17 07:02:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221 2005-03-27 22:10:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -5408,10 +5408,12 @@ gen_mpls(label_num)
 		default:
 			bpf_error("no MPLS support for data link type %d",
 				  linktype);
+			b0 = NULL;
 			/*NOTREACHED*/
 		}
 	} else {
 		bpf_error("'mpls' can't be combined with 'vlan' or another 'mpls'");
+		b0 = NULL;
 		/*NOTREACHED*/
 	}
 
