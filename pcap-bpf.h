@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.1 2003-02-11 01:46:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.2 2003-02-11 17:03:22 hannes Exp $ (LBL)
  */
 
 /*
@@ -349,6 +349,20 @@ struct bpf_version {
  * We therefore have to have separate DLT_ values for them.
  */
 #define DLT_ARCNET_LINUX	129	/* ARCNET */
+
+/*
+ * juniper-private data link types, as per request from
+ * Hannes Gredler <hannes@juniper.net> the DLT_s are used
+ * for passing on chassis-internal metainformation like
+ * QOS profiles etc.
+ */
+#define DLT_JUNIPER_MLPPP       130
+#define DLT_JUNIPER_MLFR        131
+#define DLT_JUNIPER_ES          132
+#define DLT_JUNIPER_GGSN        133
+#define DLT_JUNIPER_MFR         134
+#define DLT_JUNIPER_ATM2        135
+#define DLT_JUNIPER_SERVICES    136
 
 /*
  * The instruction encodings.

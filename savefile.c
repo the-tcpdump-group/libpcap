@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.75 2003-01-23 07:24:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.76 2003-02-11 17:03:22 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -173,6 +173,14 @@ static const char rcsid[] =
 
 #define LINKTYPE_ARCNET_LINUX	129		/* Linux-style headers */
 
+#define LINKTYPE_JUNIPER_MLPPP  130            /* Juniper-internal chassis encapsulation */
+#define LINKTYPE_JUNIPER_MLFR   131
+#define LINKTYPE_JUNIPER_ES     132
+#define LINKTYPE_JUNIPER_GGSN   133
+#define LINKTYPE_JUNIPER_MFR    134
+#define LINKTYPE_JUNIPER_ATM2   135
+#define LINKTYPE_JUNIPER_SERVICES 136
+
 /*
  * These types are reserved for future use.
  */
@@ -294,6 +302,15 @@ static struct linktype_map {
 
 	/* Arcnet with Linux-style link-layer headers */
 	{ DLT_ARCNET_LINUX,	LINKTYPE_ARCNET_LINUX },
+
+        /* Juniper-internal chassis encapsulation */
+        { DLT_JUNIPER_MLPPP,    LINKTYPE_JUNIPER_MLPPP },
+        { DLT_JUNIPER_MLFR,     LINKTYPE_JUNIPER_MLFR },
+        { DLT_JUNIPER_ES,       LINKTYPE_JUNIPER_ES },
+        { DLT_JUNIPER_GGSN,     LINKTYPE_JUNIPER_GGSN },
+        { DLT_JUNIPER_MFR,      LINKTYPE_JUNIPER_MFR },
+        { DLT_JUNIPER_ATM2,     LINKTYPE_JUNIPER_ATM2 },
+        { DLT_JUNIPER_SERVICES, LINKTYPE_JUNIPER_SERVICES },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
