@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.95 2003-11-16 10:07:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.96 2003-11-18 21:06:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -196,6 +196,8 @@ static const char rcsid[] _U_ =
 
 #define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
 
+#define LINKTYPE_LINUX_IRDA	144		/* Linux-IrDA */
+
 /*
  * These types are reserved for future use.
  */
@@ -334,6 +336,9 @@ static struct linktype_map {
 
 	/* DOCSIS MAC frames */
 	{ DLT_DOCSIS,		LINKTYPE_DOCSIS },
+
+	/* IrDA IrLAP packets + Linux-cooked header */
+	{ DLT_LINUX_IRDA,	LINKTYPE_LINUX_IRDA },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:

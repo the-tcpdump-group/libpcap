@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.10 2003-11-13 01:35:47 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.11 2003-11-18 21:06:50 guy Exp $ (LBL)
  */
 
 /*
@@ -402,6 +402,23 @@ struct bpf_version {
  * DOCSIS MAC frames.
  */
 #define DLT_DOCSIS		143
+
+/*
+ * Linux-IrDA packets. Protocol defined at http://www.irda.org.
+ * Those packets include IrLAP headers and above (IrLMP...), but
+ * don't include Phy framing (SOF/EOF/CRC & byte stuffing), because Phy
+ * framing can be handled by the hardware and depend on the bitrate.
+ * This is exactly the format you would get capturing on a Linux-IrDA
+ * interface (irdaX), but not on a raw serial port.
+ * Note the capture is done in "Linux-cooked" mode, so each packet include
+ * a fake packet header (struct sll_header). This is because IrDA packet
+ * decoding is dependant on the direction of the packet (incomming or
+ * outgoing).
+ * When/if other platform implement IrDA capture, we may revisit the
+ * issue and define a real DLT_IRDA...
+ * Jean II
+ */
+#define DLT_LINUX_IRDA		144
 
 /*
  * The instruction encodings.
