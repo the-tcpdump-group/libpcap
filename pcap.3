@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.14 2000-12-12 09:31:45 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.15 2000-12-28 01:58:05 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -124,7 +124,12 @@ specifies if the interface is to be put into promiscuous mode.
 (Note that even if this parameter is false, the interface
 could well be in promiscuous mode for some other reason.)
 .I to_ms
-specifies the read timeout in milliseconds.
+specifies the read timeout in milliseconds.  The read timeout is used to
+arrange that the read not necessarily return immediately when a packet
+is seen, but that it wait for some amount of time to allow more packets
+to arrive and to read multiple packets from the OS kernel in one
+operation.  Not all platforms support a read timeout; on platforms that
+don't, the read timeout is ignored.
 .I ebuf
 is used to return error text and is only set when
 .B pcap_open_live()
@@ -209,8 +214,19 @@ of -1 processes all the packets received in one buffer. A
 .I cnt
 of 0 processes all packets until an error occurs,
 .B EOF
-is reached, or the read times out (when doing live reads and a non-zero
-read timeout is specified).
+is reached, or, on some platforms, the read times out (when doing live
+reads and a non-zero read timeout is specified).
+.B pcap_dispatch()
+will not necessarily return when the read times out; on some platforms,
+the read timeout isn't supported, and, on other platforms, the timer
+doesn't start until at least one packet arrives.  This means that the
+read timeout should
+.B NOT
+be used in, for example, an interactive application, to allow the packet
+capture loop to ``poll'' for user input periodically, as there's no
+guarantee that
+.B pcap_dispatch()
+will return after the timeout expires.
 .I callback
 specifies a routine to be called with three arguments:
 a
