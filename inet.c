@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.44 2001-10-28 20:31:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.45 2001-10-28 20:40:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -641,7 +641,8 @@ scan_proc_net_dev(pcap_if_t **devlistp, int fd, char *errbuf)
 		/*
 		 * Add an entry for this interface, with no addresses.
 		 */
-		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, errbuf) == -1) {
+		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
+		    errbuf) == -1) {
 			/*
 			 * Failure.
 			 */
