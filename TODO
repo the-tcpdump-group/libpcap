@@ -22,14 +22,6 @@ Linux kernel interface
   be corrected so that capture starts when pcap_read is called for the 
   first time. 
 
-- For what is that silly linux-include directory needed? This should
-  a) be documented
-  b) not be neccessary. libpcap builds for me without that directory and
-     I don't think it is our responsible to work around broken build 
-     environments. If we detect a problem configure should fail but that's 
-     about it. 
-
-
 Less urgent items
 -----------------
 
