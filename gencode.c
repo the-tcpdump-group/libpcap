@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.129 2000-10-28 09:30:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.130 2000-10-28 09:43:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1281,6 +1281,15 @@ gen_host(addr, mask, proto, dir)
 	case Q_ESP:
 		bpf_error("'esp' modifier applied to host");
 
+	case Q_ISO:
+		bpf_error("ISO host filtering not implemented");
+
+	case Q_ESIS:
+		bpf_error("'esis' modifier applied to host");
+
+	case Q_ISIS:
+		bpf_error("'isis' modifier applied to host");
+
 	default:
 		abort();
 	}
@@ -1360,6 +1369,15 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_ESP:
 		bpf_error("'esp' modifier applied to host");
+
+	case Q_ISO:
+		bpf_error("ISO host filtering not implemented");
+
+	case Q_ESIS:
+		bpf_error("'esis' modifier applied to host");
+
+	case Q_ISIS:
+		bpf_error("'isis' modifier applied to host");
 
 	default:
 		abort();
