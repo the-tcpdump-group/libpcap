@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.54 2003-06-03 21:45:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.55 2003-06-07 10:26:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -674,16 +674,66 @@ pcap_close(pcap_t *p)
  */
 #ifdef WIN32
 /*
- * XXX - it'd be nice if we could somehow generate this when building WinPcap.
+ * XXX - it'd be nice if we could somehow generate the WinPcap and libpcap
+ * version numbers when building WinPcap.  (It'd be nice to do so for
+ * the packet.dll version number as well.)
  */
-static const char pcap_version_string[] =
-    "WinPcap version 3.0beta, based on libpcap version 0.8";
+static const char wpcap_version_string[] = "3.0";
+static const char pcap_version_string_fmt[] =
+    "WinPcap version %s, based on libpcap version 0.8";
+static const char pcap_version_string_packet_dll_fmt[] =
+    "WinPcap version %s (packet.dll version %s), based on libpcap version 0.8";
+static char *pcap_version_string;
+
+const char *
+pcap_lib_version(void)
+{
+	char *packet_version_string;
+	size_t pcap_version_string_len;
+
+	if (pcap_version_string == NULL) {
+		/*
+		 * Generate the version string.
+		 */
+		packet_version_string = PacketGetVersion();
+		if (strcmp(wpcap_version_string, packet_version_string) == 0) {
+			/*
+			 * WinPcap version string and packet.dll version
+			 * string are the same; just report the WinPcap
+			 * version.
+			 */
+			pcap_version_string_len =
+			    (sizeof pcap_version_string_fmt - 2) +
+			    strlen(wpcap_version_string);
+			pcap_version_string = malloc(pcap_version_string_len);
+			sprintf(pcap_version_string, pcap_version_string_fmt,
+			    wpcap_version_string);
+		} else {
+			/*
+			 * WinPcap version string and packet.dll version
+			 * string are different; that shouldn't be the
+			 * case (the two libraries should come from the
+			 * same version of WinPcap), so we report both
+			 * versions.
+			 */
+			pcap_version_string_len =
+			    (sizeof pcap_version_string_packet_dll_fmt - 4) +
+			    strlen(wpcap_version_string) +
+			    strlen(packet_version_string);
+			pcap_version_string = malloc(pcap_version_string_len);
+			sprintf(pcap_version_string,
+			    pcap_version_string_packet_dll_fmt,
+			    wpcap_version_string, packet_version_string);
+		}
+	}
+	return (pcap_version_string);
+}
 #else
 #include "version.h"
-#endif
 
 const char *
 pcap_lib_version(void)
 {
 	return (pcap_version_string);
 }
+#endif
