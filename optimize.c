@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.79 2004-11-08 09:03:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.80 2004-11-09 01:20:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -47,10 +47,19 @@ static const char rcsid[] _U_ =
 extern int dflag;
 #endif
 
+/*
+ * Represents a deleted instruction.
+ */
+#define NOP -1
+
+/*
+ * Register numbers for use-def values.
+ * 0 through BPF_MEMWORDS-1 represent the corresponding scratch memory
+ * location.  A_ATOM is the accumulator and X_ATOM is the index
+ * register.
+ */
 #define A_ATOM BPF_MEMWORDS
 #define X_ATOM (BPF_MEMWORDS+1)
-
-#define NOP -1
 
 /*
  * This define is used to represent *both* the accumulator and
@@ -419,6 +428,15 @@ atomdef(s)
 	return -1;
 }
 
+/*
+ * Compute the sets of registers used, defined, and killed by 'b'.
+ *
+ * "Used" means that a statement in 'b' uses the register before any
+ * statement in 'b' defines it.
+ * "Defined" means that a statement in 'b' defines it.
+ * "Killed" means that a statement in 'b' defines it before any
+ * statement in 'b' uses it.
+ */
 static void
 compute_local_ud(b)
 	struct block *b;
@@ -452,8 +470,26 @@ compute_local_ud(b)
 			def |= ATOMMASK(atom);
 		}
 	}
-	if (!ATOMELEM(def, A_ATOM) && BPF_CLASS(b->s.code) == BPF_JMP)
-		use |= ATOMMASK(A_ATOM);
+	if (BPF_CLASS(b->s.code) == BPF_JMP) {
+		/*
+		 * XXX - what about RET?
+		 */
+		atom = atomuse(&b->s);
+		if (atom >= 0) {
+			if (atom == AX_ATOM) {
+				if (!ATOMELEM(def, X_ATOM))
+					use |= ATOMMASK(X_ATOM);
+				if (!ATOMELEM(def, A_ATOM))
+					use |= ATOMMASK(A_ATOM);
+			}
+			else if (atom < N_ATOMS) {
+				if (!ATOMELEM(def, atom))
+					use |= ATOMMASK(atom);
+			}
+			else
+				abort();
+		}
+	}
 
 	b->def = def;
 	b->kill = kill;
