@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.196 2004-01-14 01:09:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.197 2004-01-29 10:25:19 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -837,7 +837,9 @@ init_linktype(type)
 		 *
 		 * XXX - the header is actually variable-length.  We
 		 * assume a 24-byte link-layer header, as appears in
-		 * data frames in networks with no bridges.
+		 * data frames in networks with no bridges.  If the
+		 * fromds and tods 802.11 header bits are both set,
+		 * it's actually supposed to be 30 bytes.
 		 */
 		off_linktype = 24;
 		off_nl = 32;		/* 802.11+802.2+SNAP */
