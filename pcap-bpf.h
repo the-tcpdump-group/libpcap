@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.8 2003-06-27 07:57:09 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9 2003-06-27 07:59:20 guy Exp $ (LBL)
  */
 
 /*
@@ -379,7 +379,7 @@ struct bpf_version {
 
 /*
  * Reserved for Apple IP-over-IEEE 1394, as per a request from Dieter
- * Sigmund <dieter@apple.com>.  The header that would be presented
+ * Siegmund <dieter@apple.com>.  The header that would be presented
  * would be an Ethernet-like header:
  *
  *	#define FIREWIRE_EUI64_LEN	8
