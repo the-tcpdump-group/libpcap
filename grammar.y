@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.79.2.1 2003-11-15 23:26:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.79.2.2 2003-12-16 05:20:44 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -115,7 +115,7 @@ pcap_parse()
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
 
 %token  DST SRC HOST GATEWAY
-%token  NET MASK PORT LESS GREATER PROTO PROTOCHAIN CBYTE
+%token  NET NETMASK PORT LESS GREATER PROTO PROTOCHAIN CBYTE
 %token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
@@ -177,7 +177,7 @@ id:	  nid
 nid:	  ID			{ $$.b = gen_scode($1, $$.q = $<blk>0.q); }
 	| HID '/' NUM		{ $$.b = gen_mcode($1, NULL, $3,
 				    $$.q = $<blk>0.q); }
-	| HID MASK HID		{ $$.b = gen_mcode($1, $3, 0,
+	| HID NETMASK HID	{ $$.b = gen_mcode($1, $3, 0,
 				    $$.q = $<blk>0.q); }
 	| HID			{
 				  /* Decide how to parse HID based on proto */
