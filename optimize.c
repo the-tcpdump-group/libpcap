@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.69 2001-11-12 21:57:06 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.70 2001-11-12 22:02:50 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -822,6 +822,16 @@ opt_peep(b)
 		last->s.code = NOP;
 		done = 0;
 		opt_not(b);
+	}
+	/*
+	 * jset #0        ->   never
+	 * jset #ffffffff ->   always
+	 */
+	if (b->s.code == (BPF_JMP|BPF_K|BPF_JSET)) {
+		if (b->s.k == 0)
+			JT(b) = JF(b);
+		if (b->s.k == 0xffffffff)
+			JF(b) = JT(b);
 	}
 	/*
 	 * If the accumulator is a known constant, we can compute the
