@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.60.2.1 2002-04-06 23:30:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.60.2.2 2002-04-07 00:23:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -45,9 +45,6 @@ struct rtentry;
 #endif
 #include <arpa/inet.h>
 #include <netdb.h>
-#ifdef INET6
-#include <sys/socket.h>
-#endif /*INET6*/
 
 #include <ctype.h>
 #include <errno.h>
