@@ -13,6 +13,7 @@ README.tru64
 SUNOS4/nit_if.o.sparc
 SUNOS4/nit_if.o.sun3
 SUNOS4/nit_if.o.sun4c.4.0.3c
+TODO
 VERSION
 aclocal.m4
 arcnet.h
@@ -96,4 +97,6 @@ Win32/Src/getservent.c
 Win32/Src/inet_aton.c
 Win32/Src/inet_net.c
 Win32/Src/inet_pton.c
+packaging/pcap.spec
+packaging/pcap.spec.in
 

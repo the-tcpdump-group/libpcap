@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.100 2003-10-14 07:46:57 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.101 2003-11-30 04:45:03 mcr Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.100 $)
+AC_REVISION($Revision: 1.101 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -340,6 +340,7 @@ if test "$V_LEX" = lex ; then
 	fi
 fi
 
+DYEXT="so"
 case "$host_os" in
 
 aix*)
@@ -379,6 +380,10 @@ sinix*)
 solaris*)
 	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 	;;
+darwin*)
+	DYEXT="dylib"
+    V_CCOPT="$V_CCOPT -fno-common"
+	;;
 esac
 
 AC_PROG_RANLIB
@@ -406,6 +411,7 @@ AC_SUBST(V_FINDALLDEVS)
 AC_SUBST(V_RANLIB)
 AC_SUBST(V_YACC)
 AC_SUBST(SSRC)
+AC_SUBST(DYEXT)
 
 AC_PROG_INSTALL
 
