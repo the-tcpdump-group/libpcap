@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.111 2005-03-26 23:07:51 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.112 2005-03-26 23:57:42 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.111 $)
+AC_REVISION($Revision: 1.112 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -40,6 +40,12 @@ AC_CHECK_FUNCS(vsnprintf snprintf,,
 if test $needsnprintf = yes; then
 	AC_LIBOBJ(snprintf)
 fi
+
+#
+# Do this before checking for ether_hostton(), as it's a
+# "gethostbyname() -ish function".
+#
+AC_LBL_LIBRARY_NET
 
 AC_CHECK_FUNCS(ether_hostton)
 if test "$ac_cv_func_ether_hostton" = yes; then
