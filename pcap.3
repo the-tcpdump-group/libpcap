@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.61 2004-04-09 21:16:44 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.62 2004-04-20 20:42:36 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -358,6 +358,13 @@ to by
 .BR addr ;
 may be null if the interface isn't a point-to-point interface
 .RE
+.PP
+Note that not all the addresses in the list of addresses are
+necessarily IPv4 or IPv6 addresses - you must check the
+.B sa_family
+member of the
+.B "struct sockaddr"
+before interpreting the contents of the address.
 .PP
 .B \-1
 is returned on failure, in which case
