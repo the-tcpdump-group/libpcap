@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.85 2003-12-18 23:32:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.86 2004-02-09 06:24:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -273,6 +273,14 @@ pcap_close_pf(pcap_t *p)
 	if (p->fd >= 0)
 		close(p->fd);
 }
+
+/*
+ * We include the OS's <net/bpf.h>, not our "pcap-bpf.h", so we probably
+ * don't get DLT_DOCSIS defined.
+ */
+#ifndef DLT_DOCSIS
+#define DLT_DOCSIS	143
+#endif
 
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
