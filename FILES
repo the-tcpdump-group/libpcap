@@ -8,6 +8,7 @@ VERSION
 aclocal.m4
 bpf/net/bpf.h
 bpf/net/bpf_filter.c
+bpf_dump.c
 bpf_image.c
 config.guess
 config.sub
