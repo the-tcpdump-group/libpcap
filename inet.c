@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.64 2005-01-28 20:51:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.65 2005-01-29 00:47:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -136,6 +136,14 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 
 	/*
 	 * Can we open this interface for live capture?
+	 *
+	 * We do this check so that interfaces that ae supplied
+	 * by the interface enumeration mechanism we're using
+	 * but that don't support packet capture aren't included
+	 * in the list.  An example of this is loopback interfaces
+	 * on Solaris; we don't just omit loopback interfaces
+	 * becaue you *can* capture on loopback interfaces on some
+	 * OSes.
 	 */
 	p = pcap_open_live(name, 68, 0, 0, errbuf);
 	if (p == NULL) {
