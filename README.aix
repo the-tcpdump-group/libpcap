@@ -6,19 +6,10 @@ Using BPF:
     machine.
 
     Note that the BPF driver and the "/dev/bpf" devices might not exist
-    on your machine; AIX's tcpdump appears to load the driver and create
-    the devices if they don't already exist.  Our libpcap doesn't create
-    them, so you should run (as the super-user) AIX's tcpdump once (you
-    can interrupt it as soon as it starts capturing packets) to create
-    the devices.  Do this before running the configure script, so that
-    the configure script finds the BPF devices and chooses to configure
-    libpcap to use BPF.
-
-    It may be that you will need to do this after every reboot; we don't
-    know whether that's the case, and, if it is the case, don't know
-    whether there's a way to force the driver to be loaded on a reboot. 
-    (We also don't know how to make libpcap create the devices and, if
-    necessary, load the driver.)
+    on your machine; AIX's tcpdump loads the driver and creates the
+    devices if they don't already exist.  Our libpcap should do the
+    same, and the configure script should detect that it's on an AIX
+    system and choose BPF even if the devices aren't there.
 
 (2) If libpcap doesn't compile on your machine when configured to use
     BPF, or if the workarounds fail to make it work correctly, you
