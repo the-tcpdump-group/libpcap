@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.6 2003-07-25 05:32:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.7 2003-07-25 06:36:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -44,7 +44,27 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <dagnew.h>
 #include <dagapi.h>
 
-#define MAX_DAG_SNAPLEN 2040
+#ifndef min
+#define min(a, b) ((a) > (b) ? (b) : (a))
+#endif
+
+#define MIN_DAG_SNAPLEN		12
+#define MAX_DAG_SNAPLEN		2040
+#define ATM_SNAPLEN		48
+
+/* Size of ATM payload */
+#define ATM_WLEN(h)		ATM_SNAPLEN
+#define ATM_SLEN(h)		ATM_SNAPLEN
+
+/* Size Ethernet payload */
+#define ETHERNET_WLEN(h, b)	(ntohs((h)->wlen) - ((b) >> 3))
+#define ETHERNET_SLEN(h, b) 	min(ETHERNET_WLEN(h, b), \
+				    ntohs((h)->rlen) - dag_record_size - 2)
+
+/* Size of HDLC payload */
+#define HDLC_WLEN(h, b)		(ntohs((h)->wlen) - ((b) >> 3))
+#define HDLC_SLEN(h, b)		min(HDLC_WLEN(h, b), \
+				    ntohs((h)->rlen) - dag_record_size)
 
 typedef struct pcap_dag_node {
   struct pcap_dag_node *next;
@@ -53,6 +73,24 @@ typedef struct pcap_dag_node {
 
 static pcap_dag_node_t *pcap_dags = NULL;
 static int atexit_handler_installed = 0;
+static unsigned short endian_test_word = 0x0100;
+
+#define IS_BIGENDIAN() (*((unsigned char *)&endian_test_word))
+
+/*
+ * Swap byte ordering of unsigned long long timestamp on a big endian
+ * machine.
+ */
+#define SWAP_TS(ull)  \
+    (IS_BIGENDIAN() ? ((ull & 0xff00000000000000LL) >> 56) | \
+                      ((ull & 0x00ff000000000000LL) >> 40) | \
+                      ((ull & 0x0000ff0000000000LL) >> 24) | \
+                      ((ull & 0x000000ff00000000LL) >> 8)  | \
+                      ((ull & 0x00000000ff000000LL) << 8)  | \
+                      ((ull & 0x0000000000ff0000LL) << 24) | \
+                      ((ull & 0x000000000000ff00LL) << 40) | \
+                      ((ull & 0x00000000000000ffLL) << 56) \
+                    : ull)
 
 #ifdef DAG_ONLY
 /* This code is reguired when compiling for a DAG device only. */
@@ -135,6 +173,8 @@ static int new_pcap_dag(pcap_t *p) {
   node->next = pcap_dags;
   node->p = p;
 
+  pcap_dags = node;
+
   return 0;
 }
 
@@ -163,38 +203,6 @@ static dag_record_t *get_next_dag_header(pcap_t *p) {
   return record;
 }
 
-/* Size of payload in ATM packets */
-#define ATM_CAPTURE_SIZE 48
-
-/* Size of payload of Ethernet packet */
-#define ETHERNET_LENGTH(h) min(ntohs((h)->wlen) - 4, ntohs((h)->rlen) - dag_record_size - 2 - (ntohs((h)->wlen) & 0x3))
-
-/* Size of HDLC packet */
-#define HDLC_LENGTH(h) min(ntohs((h)->wlen) - 4, ntohs((h)->rlen) - dag_record_size)
-
-#ifndef min
-#define min(a, b) ((a) > (b) ? (b) : (a))
-#endif
-
-/*
- * Swap byte ordering of unsigned long long on a big endian
- * machine.
- */
-static unsigned long long swapll(unsigned long long ull) {
-#if (BYTE_ORDER == BIG_ENDIAN)
-  return ((ull & 0xff00000000000000LL) >> 56) |
-    ((ull & 0x00ff000000000000LL) >> 40) |
-    ((ull & 0x0000ff0000000000LL) >> 24) |
-    ((ull & 0x000000ff00000000LL) >>  8) |
-    ((ull & 0x00000000ff000000LL) <<  8) |
-    ((ull & 0x0000000000ff0000LL) << 24) |
-    ((ull & 0x000000000000ff00LL) << 40) |
-    ((ull & 0x00000000000000ffLL) << 56) ;
-#else
-  return ull;
-#endif
-}
-
 /*
  *  Read at most max_packets from the capture stream and call the callback
  *  for each of them. Returns the number of packets handled or -1 if an
@@ -214,22 +222,33 @@ static int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
 
   switch(header->type) {
   case TYPE_ATM:
-    packet_len = ATM_CAPTURE_SIZE;
-    caplen = ATM_CAPTURE_SIZE;
+    packet_len = ATM_WLEN(header);
+    caplen = ATM_SLEN(header);
+    dp += 4;
     break;
   case TYPE_ETH:
-    packet_len = ntohs(header->wlen);
-    caplen = ETHERNET_LENGTH(header);
+    packet_len = ETHERNET_WLEN(header, p->md.dag_fcs_bits);
+    caplen = ETHERNET_SLEN(header, p->md.dag_fcs_bits);
     dp += 2;
     break;
   case TYPE_HDLC_POS:
-    packet_len = ntohs(header->wlen);
-    caplen = HDLC_LENGTH(header);
+    packet_len = HDLC_WLEN(header, p->md.dag_fcs_bits);
+    caplen = HDLC_SLEN(header, p->md.dag_fcs_bits);
     break;
   }
  
   if (caplen > p->snapshot)
     caplen = p->snapshot;
+
+  /* Count lost packets */
+  if (header->lctr > 0 && (p->md.stat.ps_drop+1) != 0) {
+    if (header->lctr == 0xffff ||
+	(p->md.stat.ps_drop + header->lctr) < p->md.stat.ps_drop) {
+      p->md.stat.ps_drop == ~0;
+    } else {
+      p->md.stat.ps_drop += header->lctr;
+    }
+  }
 
   /* Run the packet filter if not using kernel filter */
   if (p->fcode.bf_insns) {
@@ -240,7 +259,7 @@ static int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
   }
 
   /* convert between timestamp formats */
-  ts = swapll(header->ts);
+  ts = SWAP_TS(header->ts);
   pcap_header.ts.tv_sec  = ts >> 32;
   ts = ((ts &  0xffffffffULL) * 1000 * 1000);
   ts += (ts & 0x80000000ULL) << 1; /* rounding */
@@ -276,6 +295,8 @@ static int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
 pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf) {
   char conf[30]; /* dag configure string */
   pcap_t *handle;
+  char *s;
+  int n;
   
   if (device == NULL) {
     snprintf(ebuf, PCAP_ERRBUF_SIZE, "device is NULL: %s", pcap_strerror(errno));
@@ -308,10 +329,15 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
   }
 
   /* set the card snap length as specified by the specified snaplen parameter */
-  if (snaplen > MAX_DAG_SNAPLEN) {
+  if (snaplen == 0 || snaplen > MAX_DAG_SNAPLEN) {
     snaplen = MAX_DAG_SNAPLEN;
+  } else
+  if (snaplen < MIN_DAG_SNAPLEN) {
+    snaplen = MIN_DAG_SNAPLEN;
   }
-  snprintf(conf, 30, "varlen slen=%d", (snaplen % 4) ? (snaplen + 3) & ~3 : snaplen); /* snap len has to be a multiple of 4 */
+  /* snap len has to be a multiple of 4 */
+  snprintf(conf, 30, "varlen slen=%d", (snaplen + 3) & ~3); 
+
   fprintf(stderr, "Configuring DAG with '%s'.\n", conf);
   if(dag_configure(handle->fd, conf) < 0) {
     snprintf(ebuf, PCAP_ERRBUF_SIZE,"dag_configure %s: %s\n", device, pcap_strerror(errno));
@@ -335,6 +361,18 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
    */
   handle->md.dag_mem_bottom = 0;
   handle->md.dag_mem_top = 0;
+
+  /* TODO: query the card */
+  handle->md.dag_fcs_bits = 32;
+  if ((s = getenv("ERF_FCS_BITS")) != NULL) {
+    if ((n = atoi(s)) == 0 || n == 16|| n == 32) {
+      handle->md.dag_fcs_bits = n;
+    } else {
+      snprintf(ebuf, PCAP_ERRBUF_SIZE,
+        "pcap_open_live %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
+      return NULL;
+    }
+  }
 
   handle->snapshot	= snaplen;
   /*handle->md.timeout	= to_ms; */
