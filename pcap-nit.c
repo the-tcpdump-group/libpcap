@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.50.2.3 2003-11-21 10:20:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.50.2.4 2004-03-21 08:33:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -281,7 +281,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	/*
-	 * "handle->fd" is a socket, so "select()" should work on it.
+	 * "p->fd" is a socket, so "select()" should work on it.
 	 */
 	p->selectable_fd = p->fd;
 
