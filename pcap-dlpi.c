@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.83 2003-02-04 05:42:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.84 2003-02-05 01:46:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -97,6 +97,33 @@ static const char rcsid[] =
 #endif
 
 #define	MAXDLBUF	8192
+
+#ifdef HAVE_SYS_BUFMOD_H
+
+/*
+ * Size of a bufmod chunk to pass upstream; that appears to be the biggest
+ * value to which you can set it, and setting it to that value (which
+ * is bigger than what appears to be the Solaris default of 8192)
+ * reduces the number of packet drops.
+ */
+#define CHUNKSIZE	65536
+
+/*
+ * Size of the buffer to allocate for packet data we read; it must be
+ * large enough to hold a chunk.
+ */
+#define PKTBUFSIZE	CHUNKSIZE
+
+#else /* HAVE_SYS_BUFMOD_H */
+
+/*
+ * Size of the buffer to allocate for packet data we read; this is
+ * what the value used to be - there's no particular reason why it
+ * should be tied to MAXDLBUF, but we'll leave it as this for now.
+ */
+#define PKTBUFSIZE	(MAXDLBUF * sizeof(bpf_u_int32))
+
+#endif
 
 /* Forwards */
 static char *split_dname(char *, int *, char *);
@@ -275,12 +302,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 	register dl_info_ack_t *infop;
 #ifdef HAVE_SYS_BUFMOD_H
-	/*
-	 * XXX - is uint_t always 32 bits?  If not, these should be
-	 * uint_t, at least on systems that have that type.
-	 */
-	bpf_u_int32 ss;
-	bpf_u_int32 chunksize;
+	bpf_u_int32 ss, chunksize;
 #ifdef HAVE_SOLARIS
 	register char *release;
 	bpf_u_int32 osmajor, osminor, osmicro;
@@ -611,23 +633,18 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 			goto bad;
 		}
 	}
-#endif
 
 	/*
-	** Set the chunk length to 65536; that appears to be the biggest
-	** value to which you can set it, and doing so reduces the
-	** number of packet drops.
-	**
-	** XXX - what is the chunk size if it's not set?  0, meaning
-	** no buffering?
+	** Set the chunk length.
 	*/
-	chunksize = 65536;
+	chunksize = CHUNKSIZE;
 	if (strioctl(p->fd, SBIOCSCHUNK, sizeof(chunksize), (char *)&chunksize)
 	    != 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCSCHUNKP: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
+#endif
 
 	/*
 	** As the last operation flush the read side.
@@ -638,7 +655,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 	/* Allocate data buffer */
-	p->bufsize = MAXDLBUF * sizeof(bpf_u_int32);
+	p->bufsize = PKTBUFSIZE;
 	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
 
 	return (p);
