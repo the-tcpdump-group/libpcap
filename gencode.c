@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.159 2001-11-12 21:59:44 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.160 2001-11-30 07:25:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -676,6 +676,21 @@ init_linktype(type)
 		off_nl = 30;
 		return;
 
+	case DLT_PRISM_HEADER:
+		/*
+		 * Same as 802.11, but with an additional header before
+		 * the 802.11 header, containing a bunch of additional
+		 * information including radio-level information.
+		 *
+		 * The header is 144 bytes long.
+		 *
+		 * XXX - same variable-length header problem; at least
+		 * the Prism header is fixed-length.
+		 */
+		off_linktype = 144+24;
+		off_nl = 144+30;
+		return;
+
 	case DLT_ATM_RFC1483:
 		/*
 		 * assume routed, non-ISO PDUs
@@ -934,6 +949,7 @@ gen_linktype(proto)
 		break;
 
 	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
 	case DLT_FDDI:
 	case DLT_IEEE802:
 	case DLT_ATM_RFC1483:
