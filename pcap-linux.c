@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.49 2000-12-23 03:04:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.50 2000-12-23 07:50:18 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -410,13 +410,13 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			break;
 		}
 
-		hdrp->sll_protocol = from.sll_protocol;
 		hdrp->sll_hatype = htons(from.sll_hatype);
 		hdrp->sll_halen = htons(from.sll_halen);
 		memcpy(hdrp->sll_addr, from.sll_addr,
 		    (from.sll_halen > SLL_ADDRLEN) ?
 		      SLL_ADDRLEN :
 		      from.sll_halen);
+		hdrp->sll_protocol = from.sll_protocol;
 	}
 #endif
 
