@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.19 2000-05-08 23:11:02 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.20 2000-05-13 13:14:41 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -148,7 +148,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "malloc: %s", pcap_strerror(errno));
 		return (NULL);
 	}
