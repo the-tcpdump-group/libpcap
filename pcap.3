@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.43 2002-12-22 02:36:51 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.44 2002-12-22 23:05:52 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -100,7 +100,7 @@ char *pcap_strerror(int error)
 .LP
 .ft B
 void pcap_close(pcap_t *p)
-void pcap_dump_flush(pcap_dumper_t *p)
+int pcap_dump_flush(pcap_dumper_t *p)
 void pcap_dump_close(pcap_dumper_t *p)
 .ft
 .fi
@@ -883,6 +883,8 @@ flushes the output buffer to the ``savefile,'' so that any packets
 written with
 .B pcap_dump()
 but not yet written to the ``savefile'' will be written.
+.B \-1
+is returned on error, 0 on success.
 .PP
 .B pcap_dump_close()
 closes the ``savefile.''
