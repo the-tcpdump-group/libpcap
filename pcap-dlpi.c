@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.68 2001-06-27 05:22:44 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.69 2001-07-28 23:12:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -103,6 +103,8 @@ static int dlinfoack(int, char *, char *);
 static int dlinforeq(int, char *);
 static int dlokack(int, const char *, char *, char *);
 static int recv_ack(int, int, const char *, char *, char *);
+static char *dlstrerror(bpf_u_int32);
+static char *dlprim(bpf_u_int32);
 static int dlpromisconreq(int, bpf_u_int32, char *);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
 static char *get_release(bpf_u_int32 *, bpf_u_int32 *, bpf_u_int32 *);
@@ -361,10 +363,19 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	*/
 #if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20) && !defined(sinix)
 #ifdef _AIX
-        /* According to IBM's AIX Support Line, the dl_sap value
-        ** should not be less than 0x600 (1536) for standard ethernet 
-         */
-	if (dlbindreq(p->fd, 1537, ebuf) < 0 ||
+	/* According to IBM's AIX Support Line, the dl_sap value
+	** should not be less than 0x600 (1536) for standard Ethernet.
+	** However, we seem to get DL_BADADDR - "DLSAP addr in improper
+	** format or invalid" - errors if we use 1537 on the "tr0"
+	** device, which, given that its name starts with "tr" and that
+	** it's IBM, probably means a Token Ring device.   So if 1537
+	** fails, we try 0, in the hopes that it'll work (perhaps we
+	** need to use 1537 on "/dev/dlpi/en" because that device is
+	** for D/I/X Ethernet, the "SAP" is actually an Ethernet type,
+	** and it rejects invalid Ethernet types).
+	*/
+	if ((dlbindreq(p->fd, 1537, ebuf) < 0 &&
+	     dlbindreq(p->fd, 0, ebuf) < 0) ||
 #else
 	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
 #endif
@@ -645,52 +656,243 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 #ifdef DL_HP_PPA_ACK
 	case DL_HP_PPA_ACK:
 #endif
-
 		/* These are OK */
 		break;
 
 	case DL_ERROR_ACK:
 		switch (dlp->error_ack.dl_errno) {
 
-		case DL_BADPPA:
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "recv_ack: %s bad ppa (device unit)", what);
-			break;
-
-
 		case DL_SYSERR:
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "recv_ack: %s: UNIX error - %s",
 			    what, pcap_strerror(dlp->error_ack.dl_unix_errno));
 			break;
 
-		case DL_UNSUPPORTED:
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "recv_ack: %s: Service not supplied by provider",
-			    what);
-			break;
-
 		default:
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "recv_ack: %s error 0x%x",
-			    what, (bpf_u_int32)dlp->error_ack.dl_errno);
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
+			    what, dlstrerror(dlp->error_ack.dl_errno));
 			break;
 		}
 		return (-1);
 
 	default:
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "recv_ack: %s unexpected primitive ack 0x%x ",
-		    what, (bpf_u_int32)dlp->dl_primitive);
+		    "recv_ack: %s: Unexpected primitive ack %s",
+		    what, dlprim(dlp->dl_primitive));
 		return (-1);
 	}
 
 	if (ctl.len < size) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "recv_ack: %s ack too small (%d < %d)",
+		    "recv_ack: %s: Ack too small (%d < %d)",
 		    what, ctl.len, size);
 		return (-1);
 	}
 	return (ctl.len);
+}
+
+static char *
+dlstrerror(bpf_u_int32 dl_errno)
+{
+	static char errstring[6+2+8+1];
+
+	switch (dl_errno) {
+
+	case DL_ACCESS:
+		return ("Improper permissions for request");
+
+	case DL_BADADDR:
+		return ("DLSAP addr in improper format or invalid");
+
+	case DL_BADCORR:
+		return ("Seq number not from outstand DL_CONN_IND");
+
+	case DL_BADDATA:
+		return ("User data exceeded provider limit");
+
+	case DL_BADPPA:
+#ifdef HAVE_DEV_DLPI
+		/*
+		 * With a single "/dev/dlpi" device used for all
+		 * DLPI providers, PPAs have nothing to do with
+		 * unit numbers.
+		 */
+		return ("Specified PPA was invalid");
+#else
+		/*
+		 * We have separate devices for separate devices;
+		 * the PPA is just the unit number.
+		 */
+		return ("Specified PPA (device unit) was invalid");
+#endif
+
+	case DL_BADPRIM:
+		return ("Primitive received not known by provider");
+
+	case DL_BADQOSPARAM:
+		return ("QOS parameters contained invalid values");
+
+	case DL_BADQOSTYPE:
+		return ("QOS structure type is unknown/unsupported");
+
+	case DL_BADSAP:
+		return ("Bad LSAP selector");
+
+	case DL_BADTOKEN:
+		return ("Token used not an active stream");
+
+	case DL_BOUND:
+		return ("Attempted second bind with dl_max_conind");
+
+	case DL_INITFAILED:
+		return ("Physical link initialization failed");
+
+	case DL_NOADDR:
+		return ("Provider couldn't allocate alternate address");
+
+	case DL_NOTINIT:
+		return ("Physical link not initialized");
+
+	case DL_OUTSTATE:
+		return ("Primitive issued in improper state");
+
+	case DL_SYSERR:
+		return ("UNIX system error occurred");
+
+	case DL_UNSUPPORTED:
+		return ("Requested service not supplied by provider");
+
+	case DL_UNDELIVERABLE:
+		return ("Previous data unit could not be delivered");
+
+	case DL_NOTSUPPORTED:
+		return ("Primitive is known but not supported");
+
+	case DL_TOOMANY:
+		return ("Limit exceeded");
+
+	case DL_NOTENAB:
+		return ("Promiscuous mode not enabled");
+
+	case DL_BUSY:
+		return ("Other streams for PPA in post-attached");
+
+	case DL_NOAUTO:
+		return ("Automatic handling XID&TEST not supported");
+
+	case DL_NOXIDAUTO:
+		return ("Automatic handling of XID not supported");
+
+	case DL_NOTESTAUTO:
+		return ("Automatic handling of TEST not supported");
+
+	case DL_XIDAUTO:
+		return ("Automatic handling of XID response");
+
+	case DL_TESTAUTO:
+		return ("Automatic handling of TEST response");
+
+	case DL_PENDING:
+		return ("Pending outstanding connect indications");
+
+	default:
+		sprintf(errstring, "Error %02x", dl_errno);
+		return (errstring);
+	}
+}
+
+static char *
+dlprim(bpf_u_int32 prim)
+{
+	static char primbuf[80];
+
+	switch (prim) {
+
+	case DL_INFO_REQ:
+		return ("DL_INFO_REQ");
+
+	case DL_INFO_ACK:
+		return ("DL_INFO_ACK");
+
+	case DL_ATTACH_REQ:
+		return ("DL_ATTACH_REQ");
+
+	case DL_DETACH_REQ:
+		return ("DL_DETACH_REQ");
+
+	case DL_BIND_REQ:
+		return ("DL_BIND_REQ");
+
+	case DL_BIND_ACK:
+		return ("DL_BIND_ACK");
+
+	case DL_UNBIND_REQ:
+		return ("DL_UNBIND_REQ");
+
+	case DL_OK_ACK:
+		return ("DL_OK_ACK");
+
+	case DL_ERROR_ACK:
+		return ("DL_ERROR_ACK");
+
+	case DL_SUBS_BIND_REQ:
+		return ("DL_SUBS_BIND_REQ");
+
+	case DL_SUBS_BIND_ACK:
+		return ("DL_SUBS_BIND_ACK");
+
+	case DL_UNITDATA_REQ:
+		return ("DL_UNITDATA_REQ");
+
+	case DL_UNITDATA_IND:
+		return ("DL_UNITDATA_IND");
+
+	case DL_UDERROR_IND:
+		return ("DL_UDERROR_IND");
+
+	case DL_UDQOS_REQ:
+		return ("DL_UDQOS_REQ");
+
+	case DL_CONNECT_REQ:
+		return ("DL_CONNECT_REQ");
+
+	case DL_CONNECT_IND:
+		return ("DL_CONNECT_IND");
+
+	case DL_CONNECT_RES:
+		return ("DL_CONNECT_RES");
+
+	case DL_CONNECT_CON:
+		return ("DL_CONNECT_CON");
+
+	case DL_TOKEN_REQ:
+		return ("DL_TOKEN_REQ");
+
+	case DL_TOKEN_ACK:
+		return ("DL_TOKEN_ACK");
+
+	case DL_DISCONNECT_REQ:
+		return ("DL_DISCONNECT_REQ");
+
+	case DL_DISCONNECT_IND:
+		return ("DL_DISCONNECT_IND");
+
+	case DL_RESET_REQ:
+		return ("DL_RESET_REQ");
+
+	case DL_RESET_IND:
+		return ("DL_RESET_IND");
+
+	case DL_RESET_RES:
+		return ("DL_RESET_RES");
+
+	case DL_RESET_CON:
+		return ("DL_RESET_CON");
+
+	default:
+		(void) sprintf(primbuf, "unknown primitive 0x%x", prim);
+		return (primbuf);
+	}
 }
 
 static int
@@ -803,7 +1005,7 @@ get_release(bpf_u_int32 *majorp, bpf_u_int32 *minorp, bpf_u_int32 *microp)
 	if (sysinfo(SI_RELEASE, buf, sizeof(buf)) < 0)
 		return ("?");
 	cp = buf;
-	if (!isdigit(*cp))
+	if (!isdigit((unsigned char)*cp))
 		return (buf);
 	*majorp = strtol(cp, &cp, 10);
 	if (*cp++ != '.')
