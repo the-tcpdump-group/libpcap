@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.51 2001-02-21 09:33:05 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.52 2001-04-17 08:25:22 guy Exp $ (LBL)
  */
 
 /* Address qualifiers. */
@@ -173,6 +173,7 @@ void gen_not(struct block *);
 
 struct block *gen_scode(const char *, struct qual);
 struct block *gen_ecode(const u_char *, struct qual);
+struct block *gen_acode(const u_char *, struct qual);
 struct block *gen_mcode(const char *, const char *, int, struct qual);
 #ifdef INET6
 struct block *gen_mcode6(const char *, const char *, int, struct qual);

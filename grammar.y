@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.68 2001-02-21 09:33:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.69 2001-04-17 08:25:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -112,7 +112,7 @@ pcap_parse()
 %token  NUM INBOUND OUTBOUND
 %token  LINK
 %token	GEQ LEQ NEQ
-%token	ID EID HID HID6
+%token	ID EID HID HID6 AID
 %token	LSH RSH
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
@@ -124,6 +124,7 @@ pcap_parse()
 
 %type	<s> ID
 %type	<e> EID
+%type	<e> AID
 %type	<s> HID HID6
 %type	<i> NUM
 
@@ -188,6 +189,7 @@ nid:	  ID			{ $$.b = gen_scode($1, $$.q = $<blk>0.q); }
 #endif /*INET6*/
 				}
 	| EID			{ $$.b = gen_ecode($1, $$.q = $<blk>0.q); }
+	| AID			{ $$.b = gen_acode($1, $$.q = $<blk>0.q); }
 	| not id		{ gen_not($2.b); $$ = $2; }
 	;
 not:	  '!'			{ $$ = $<blk>0; }

@@ -13,6 +13,7 @@ SUNOS4/nit_if.o.sun3
 SUNOS4/nit_if.o.sun4c.4.0.3c
 VERSION
 aclocal.m4
+arcnet.h
 bpf/net/bpf.h
 bpf/net/bpf_filter.c
 bpf_dump.c

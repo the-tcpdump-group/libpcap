@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.75 2001-02-24 18:21:14 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.76 2001-04-17 08:25:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -243,6 +243,8 @@ vlan		return VLAN;
 "=="			return '=';
 "<<"			return LSH;
 ">>"			return RSH;
+${B}			{ yylval.e = pcap_ether_aton(((char *)yytext)+1);
+			  return AID; }
 {N}			{ yylval.i = stoi((char *)yytext); return NUM; }
 ({N}\.{N})|({N}\.{N}\.{N})|({N}\.{N}\.{N}\.{N})	{
 			yylval.s = sdup((char *)yytext); return HID; }
