@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.68 2003-11-20 02:02:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.69 2003-11-21 10:19:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -499,6 +499,14 @@ pcap_fileno(pcap_t *p)
 		return (-1);
 #endif
 }
+
+#ifndef WIN32
+int
+pcap_get_selectable_fd(pcap_t *p)
+{
+	return (p->selectable_fd);
+}
+#endif
 
 void
 pcap_perror(pcap_t *p, char *prefix)

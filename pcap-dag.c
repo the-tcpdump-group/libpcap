@@ -29,7 +29,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.13 2003-11-20 02:02:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.14 2003-11-21 10:19:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -468,6 +468,11 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
     snprintf(ebuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
 	goto fail;
   }
+
+  /*
+   * "select()" and "poll()" don't (yet) work on DAG device descriptors.
+   */
+  handle->selectable_fd = -1;
 
 #ifdef linux
   handle->md.device = (char *)device;

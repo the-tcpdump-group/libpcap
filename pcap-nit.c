@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.52 2003-11-20 02:02:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.53 2003-11-21 10:19:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -279,6 +279,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
 	}
+
+	/*
+	 * "handle->fd" is a socket, so "select()" should work on it.
+	 */
+	p->selectable_fd = p->fd;
 
 	p->read_op = pcap_read_nit;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */

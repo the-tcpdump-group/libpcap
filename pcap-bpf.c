@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.69 2003-11-20 02:02:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.70 2003-11-21 10:19:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -33,6 +33,7 @@ static const char rcsid[] _U_ =
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
+#include <sys/utsname.h>
 
 #include <net/if.h>
 
@@ -495,6 +496,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 	u_int v;
 	pcap_t *p;
+	struct utsname osinfo;
 
 #ifdef HAVE_DAG_API
 	if (strstr(device, "dag")) {
@@ -759,6 +761,60 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * problems we have experienced from AIX BPF. */
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
+
+	/*
+	 * On most BPF platforms, either you can do a "select()" or
+	 * "poll()" on a BPF file descriptor and it works correctly,
+	 * or you can do it and it will return "readable" if the
+	 * hold buffer is full but not if the timeout expires *and*
+	 * a non-blocking read will, if the hold buffer is empty
+	 * but the store buffer isn't empty, rotate the buffers
+	 * and return what packets are available.
+	 *
+	 * In the latter case, the fact that a non-blocking read
+	 * will give you the available packets means you can work
+	 * around the failure of "select()" and "poll()" to wake up
+	 * and return "readable" when the timeout expires by using
+	 * the timeout as the "select()" or "poll()" timeout, putting
+	 * the BPF descriptor into non-blocking mode, and read from
+	 * it regardless of whether "select()" reports it as readable
+	 * or not.
+	 *
+	 * However, in FreeBSD 4.3 and 4.4, "select()" and "poll()"
+	 * won't wake up and return "readable" if the timer expires
+	 * and non-blocking reads return EWOULDBLOCK if the hold
+	 * buffer is empty, even if the store buffer is non-empty.
+	 *
+	 * This means the workaround in question won't work.
+	 *
+	 * Therefore, on FreeBSD 4.3 and 4.4, we set "p->selectable_fd"
+	 * to -1, which means "sorry, you can't use 'select()' or 'poll()'
+	 * here".  On all other BPF platforms, we set it to the FD for
+	 * the BPF device; in NetBSD, OpenBSD, and Darwin, a non-blocking
+	 * read will, if the hold buffer is empty and the store buffer
+	 * isn't empty, rotate the buffers and return what packets are
+	 * there (and in sufficiently recent versions of OpenBSD
+	 * "select()" and "poll()" should work correctly).
+	 *
+	 * XXX - what about AIX?
+	 */
+	if (uname(&osinfo) == 0) {
+		/*
+		 * We can check what OS this is.
+		 */
+		if (strcmp(osinfo.sysname, "FreeBSD") == 0 &&
+		    (strcmp(osinfo.release, "4.3") == 0 ||
+		     strcmp(osinfo.release, "4.4") == 0))
+			p->selectable_fd = -1;
+		else
+			p->selectable_fd = p->fd;
+	} else {
+		/*
+		 * We can't find out what OS this is, so assume we can
+		 * do a "select()" or "poll()".
+		 */
+		p->selectable_fd = p->fd;
+	}
 
 	p->read_op = pcap_read_bpf;
 	p->setfilter_op = pcap_setfilter_bpf;
