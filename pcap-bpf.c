@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.52 2002-08-03 20:26:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.53 2002-10-08 07:18:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -102,6 +102,28 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case EINTR:
 				goto again;
 
+#ifdef _AIX
+			case EFAULT:
+				/*
+				 * Sigh.  More AIX wonderfulness.
+				 *
+				 * It appears, according to Don
+				 * Ebright, that a read from a BPF
+				 * device returns -1 with "errno"
+				 * set to EFAULT as an indication
+				 * that packets have been dropped
+				 * since the last successful read.
+				 *
+				 * This means that we shouldn't treat
+				 * EFAULT as a fatal error; as we
+				 * don't have an API for returning
+				 * a "some packets were dropped since
+				 * the last packet you saw" indication,
+				 * we just ignore EFAULT and keep reading.
+				 */
+				goto again;
+#endif 
+  
 			case EWOULDBLOCK:
 				return (0);
 #if defined(sun) && !defined(BSD)
