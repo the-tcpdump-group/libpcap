@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.54 2000-07-11 00:37:05 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.55 2000-10-10 04:53:54 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -329,7 +329,7 @@ pcap_ether_hostton(const char *name)
 	register struct pcap_etherent *ep;
 	register u_char *ap;
 	static FILE *fp = NULL;
-	static init = 0;
+	static int init = 0;
 
 	if (!init) {
 		fp = fopen(PCAP_ETHERS_FILE, "r");
