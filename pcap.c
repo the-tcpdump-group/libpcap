@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.59 2003-07-25 04:42:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.60 2003-07-25 05:07:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -228,9 +228,10 @@ pcap_set_datalink(pcap_t *p, int dlt)
 	int i;
 	const char *dlt_name;
 
-	if (p->dlt_count == 0) {
+	if (p->dlt_count == 0 || p->set_datalink_op == NULL) {
 		/*
-		 * We couldn't fetch the list of DLTs, which means
+		 * We couldn't fetch the list of DLTs, or we don't
+		 * have a "set datalink" operation, which means
 		 * this platform doesn't support changing the
 		 * DLT for an interface.  Check whether the new
 		 * DLT is the one this interface supports.
@@ -248,7 +249,7 @@ pcap_set_datalink(pcap_t *p, int dlt)
 			break;
 	if (i >= p->dlt_count)
 		goto unsupported;
-	if (pcap_set_datalink_platform(p, dlt) == -1)
+	if (p->set_datalink_op(p, dlt) == -1)
 		return (-1);
 	p->linktype = dlt;
 	return (0);

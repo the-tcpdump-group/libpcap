@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.4 2003-07-25 04:42:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.5 2003-07-25 05:07:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -62,11 +62,11 @@ static int atexit_handler_installed = 0;
 #define dag_read pcap_read
 #define dag_open_live pcap_open_live
 #define dag_platform_finddevs pcap_platform_finddevs
-#define dag_set_datalink_platform pcap_set_datalink_platform
 #endif /* DAG_ONLY */
 
 static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
+static int dag_set_datalink(pcap_t *p, int dlt);
 
 static void delete_pcap_dag(pcap_t *p) {
   pcap_dag_node_t *curr = NULL, *prev = NULL;
@@ -387,6 +387,7 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
   }
 
   handle->setfilter_op = dag_setfilter;
+  handle->set_datalink_op = dag_set_datalink;
   handle->stats_op = dag_stats;
   handle->close_op = dag_platform_close;
 
@@ -529,8 +530,8 @@ static int dag_setfilter(pcap_t *p, struct bpf_program *fp) {
   return (0);
 }
 
-int
-dag_set_datalink_platform(pcap_t *p, int dlt)
+static int
+dag_set_datalink(pcap_t *p, int dlt)
 {
 	return (0);
 }

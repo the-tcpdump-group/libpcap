@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.93 2003-07-25 04:42:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.94 2003-07-25 05:07:02 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -397,6 +397,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	handle->setfilter_op = pcap_setfilter_linux;
+	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->stats_op = pcap_stats_linux;
 	handle->close_op = pcap_close_linux;
 
@@ -1957,15 +1958,3 @@ reset_kernel_filter(pcap_t *handle)
 				   &dummy, sizeof(dummy));
 }
 #endif
-
-int
-pcap_set_datalink_platform(pcap_t *p, int dlt)
-{
-#ifdef HAVE_DAG_API
-	if (p->md.is_dag) {
-		return dag_set_datalink_platform(p, dlt);
-	}
-#endif /* HAVE_DAG_API */
-
-	return (0);
-}

@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.76 2003-07-25 04:42:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.77 2003-07-25 05:07:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -416,6 +416,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	}
 
 	p->setfilter_op = pcap_setfilter_pf;
+	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->stats_op = pcap_stats_pf;
 	p->close_op = pcap_close_pf;
 
@@ -468,11 +469,5 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 		fprintf(stderr, "tcpdump: Using kernel BPF filter\n");
 	else
 		fprintf(stderr, "tcpdump: Filtering in user process\n");
-	return (0);
-}
-
-int
-pcap_set_datalink_platform(pcap_t *p, int dlt)
-{
 	return (0);
 }

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.42 2003-07-25 04:42:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.43 2003-07-25 05:07:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -295,6 +295,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
+	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->stats_op = pcap_stats_snoop;
 	p->close_op = pcap_close_snoop;
 
@@ -307,12 +308,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
-{
-	return (0);
-}
-
-int
-pcap_set_datalink_platform(pcap_t *p, int dlt)
 {
 	return (0);
 }

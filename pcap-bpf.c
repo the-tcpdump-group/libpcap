@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.64 2003-07-25 04:42:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.65 2003-07-25 05:07:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -104,6 +104,7 @@ static int odmlockid = 0;
 #include "gencode.h"	/* for "no_optimize" */
 
 static int pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp);
+static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 
 static int
 pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
@@ -733,6 +734,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 
 	p->setfilter_op = pcap_setfilter_bpf;
+	p->set_datalink_op = pcap_set_datalink_bpf;
 	p->stats_op = pcap_stats_bpf;
 	p->close_op = pcap_close_bpf;
 
@@ -777,15 +779,9 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 	return (0);
 }
 
-int
-pcap_set_datalink_platform(pcap_t *p, int dlt)
+static int
+pcap_set_datalink_bpf(pcap_t *p, int dlt)
 {
-#ifdef HAVE_DAG_API
-	if (p->md.is_dag) {
-		return dag_set_datalink_platform(p, dlt);
-	}
-#endif /* HAVE_DAG_API */
-
 #ifdef BIOCSDLT
 	if (ioctl(p->fd, BIOCSDLT, &dlt) == -1) {
 		(void) snprintf(p->errbuf, sizeof(p->errbuf),
