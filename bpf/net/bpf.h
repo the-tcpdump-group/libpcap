@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.55 2002-04-20 10:02:16 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.56 2002-04-20 21:01:58 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -331,10 +331,15 @@ struct bpf_hdr {
 #define DLT_HHDLC		121
 
 /*
- * Reserved for Fibre Channel, as per a request from Don Lee
- * <donlee@cray.com>.
+ * Reserved for RFC 2625 IP-over-Fibre Channel, as per a request from
+ * Don Lee <donlee@cray.com>.
+ *
+ * This is not for use with raw Fibre Channel, where the link-layer
+ * header starts with a Fibre Channel frame header; it's for IP-over-FC,
+ * where the link-layer header starts with an RFC 2625 Network_Header
+ * field.
  */
-#define DLT_FC			122
+#define DLT_IP_OVER_FC		122
 
 /*
  * The instruction encodings.
