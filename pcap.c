@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.80 2004-12-18 08:52:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.81 2004-12-19 20:02:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -687,7 +687,7 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 }
 
 static int
-pcap_stats_dead(pcap_t *p, struct pcap_stat *ps)
+pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from a pcap_open_dead pcap_t");
@@ -706,7 +706,7 @@ pcap_close_common(pcap_t *p)
 }
 
 static void
-pcap_close_dead(pcap_t *p)
+pcap_close_dead(pcap_t *p _U_)
 {
 	/* Nothing to do. */
 }
@@ -826,12 +826,13 @@ pcap_lib_version(void)
 			 * same version of WinPcap), so we report both
 			 * versions.
 			 */
-			pcap_version_string_len =
+			full_pcap_version_string_len =
 			    (sizeof pcap_version_string_packet_dll_fmt - 6) +
 			    strlen(wpcap_version_string) +
 			    strlen(packet_version_string) +
 			    strlen(pcap_version_string);
-			pcap_version_string = malloc(pcap_version_string_len);
+			full_pcap_version_string = malloc(full_pcap_version_string_len);
+
 			sprintf(full_pcap_version_string,
 			    pcap_version_string_packet_dll_fmt,
 			    wpcap_version_string, packet_version_string,
