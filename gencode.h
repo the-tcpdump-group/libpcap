@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.46 2000-10-28 10:18:40 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.47 2000-11-04 10:09:55 guy Exp $ (LBL)
  */
 
 /* Address qualifiers. */
@@ -193,7 +193,6 @@ void finish_parse(struct block *);
 char *sdup(const char *);
 
 struct bpf_insn *icode_to_fcode(struct block *, int *);
-int install_bpf_program(pcap_t *, struct bpf_program *);
 int pcap_parse(void);
 void lex_init(char *);
 void lex_cleanup(void);
