@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.132 2000-10-28 10:18:39 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.133 2000-10-28 10:28:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -822,6 +822,10 @@ gen_linktype(proto)
 		case ETHERTYPE_NS:
 			proto = PPP_NS;
 			break;
+
+		case LLC_ISO_LSAP:
+			proto = PPP_OSI;
+			break;
 		}
 		break;
 
@@ -857,6 +861,10 @@ gen_linktype(proto)
 
 		case ETHERTYPE_NS:
 			proto = PPP_NS;
+			break;
+
+		case LLC_ISO_LSAP:
+			proto = PPP_OSI;
 			break;
 		}
 		break;
