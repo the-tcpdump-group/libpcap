@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.62 2000-03-31 16:59:07 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.63 2000-06-10 14:42:27 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -270,6 +270,13 @@ lex_init(buf)
 	char *buf;
 {
 	in_buffer = buf;
+#ifdef FLEX_SCANNER
+	/*
+	 * Flush the scanner's input buffer, so that there's no cruft
+	 * left over from a previous parse.
+	 */
+	YY_FLUSH_BUFFER;
+#endif
 }
 
 /*
