@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.57 2003-09-22 11:51:37 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.58 2003-09-25 22:22:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -132,7 +132,6 @@ int
 add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
     u_int flags, const char *description, char *errbuf)
 {
-	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
 	int this_instance;
 
