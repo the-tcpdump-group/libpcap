@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.41 2001-10-09 05:43:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.42 2001-10-10 06:46:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -427,9 +427,7 @@ pcap_add_if(pcap_if_t **devlist, char *name, u_int flags, char *errbuf)
  */
 #ifdef HAVE_IFADDRS_H
 int
-pcap_findalldevs(alldevsp, errbuf)
-	pcap_if_t **alldevsp;
-	register char *errbuf;
+pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	pcap_if_t *devlist = NULL;
 	struct ifaddrs *ifap, *ifa;
@@ -518,10 +516,137 @@ pcap_findalldevs(alldevsp, errbuf)
 	return (ret);
 }
 #else /* HAVE_IFADDRS_H */
+#ifdef HAVE_PROC_NET_DEV
+/*
+ * Get from "/proc/net/dev" all interfaces listed there; if they're
+ * already in the list of interfaces we have, that won't add another
+ * instance, but if they're not, that'll add them.
+ *
+ * We don't bother getting any addresses for them; it appears you can't
+ * use SIOCGIFADDR on Linux to get IPv6 addresses for interfaces, and,
+ * although some other types of addresses can be fetched with SIOCGIFADDR,
+ * we don't bother with them for now.
+ *
+ * We also don't fail if we couldn't open "/proc/net/dev"; we just leave
+ * the list of interfaces as is.
+ */
+static int
+scan_proc_net_dev(pcap_if_t **devlistp, int fd, char *errbuf)
+{
+	FILE *proc_net_f;
+	char linebuf[512];
+	int linenum;
+	unsigned char *p;
+	char name[512];	/* XXX - pick a size */
+	char *q, *saveq;
+	struct ifreq ifrflags;
+	int ret = 0;
+
+	proc_net_f = fopen("/proc/net/dev", "r");
+	if (proc_net_f == NULL)
+		return (0);
+
+	for (linenum = 1;
+	    fgets(linebuf, sizeof linebuf, proc_net_f) != NULL; linenum++) {
+		/*
+		 * Skip the first two lines - they're headers.
+		 */
+		if (linenum <= 2)
+			continue;
+
+		p = &linebuf[0];
+
+		/*
+		 * Skip leading white space.
+		 */
+		while (*p != '\0' && isspace(*p))
+			p++;
+		if (*p == '\0' || *p == '\n')
+			continue;	/* blank line */
+
+		/*
+		 * Get the interface name.
+		 */
+		q = &name[0];
+		while (*p != '\0' && !isspace(*p)) {
+			if (*p == ':') {
+				/*
+				 * This could be the separator between a
+				 * name and an alias number, or it could be
+				 * the separator between a name with no 
+				 * alias number and the next field.
+				 *
+				 * If there's a colon after digits, it
+				 * separates the name and the alias number,
+				 * otherwise it separates the name and the
+				 * next field.
+				 */
+				saveq = q;
+				while (isdigit(*p))
+					*q++ = *p++;
+				if (*p != ':') {
+					/*
+					 * That was the next field,
+					 * not the alias number.
+					 */
+					q = saveq;
+				}
+				break;
+			} else
+				*q++ = *p++;
+		}
+		*q = '\0';
+
+		/*
+		 * Get the flags for this interface, and skip it if
+		 * it's not up.
+		 */
+		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
+			if (errno == ENXIO)
+				continue;
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFFLAGS: %.*s: %s",
+			    (int)sizeof(ifrflags.ifr_name),
+			    ifrflags.ifr_name,
+			    pcap_strerror(errno));
+			ret = -1;
+			break;
+		}
+		if (!(ifrflags.ifr_flags & IFF_UP))
+			continue;
+
+		/*
+		 * Add an entry for this interface, with no addresses.
+		 */
+		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, errbuf) == -1) {
+			/*
+			 * Failure.
+			 */
+			ret = -1;
+			break;
+		}
+	}
+	if (ret != -1) {
+		/*
+		 * Well, we didn't fail for any other reason; did we
+		 * fail due to an error reading the file?
+		 */
+		if (ferror(proc_net_f)) {
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Error reading /proc/net/dev: %s",
+			    pcap_strerror(errno));
+			ret = -1;
+		}
+	}
+
+	(void)fclose(proc_net_f);
+	return (ret);
+}
+#endif /* HAVE_PROC_NET_DEV */
+
 int
-pcap_findalldevs(alldevsp, errbuf)
-	pcap_if_t **alldevsp;
-	register char *errbuf;
+pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	pcap_if_t *devlist = NULL;
 	register int fd;
@@ -532,22 +657,10 @@ pcap_findalldevs(alldevsp, errbuf)
 	unsigned buf_size;
 	struct ifreq ifrflags, ifrnetmask, ifrbroadaddr, ifrdstaddr;
 	struct sockaddr *netmask, *broadaddr, *dstaddr;
-#ifdef HAVE_PROC_NET_DEV
-	FILE *proc_net_f;
-	char linebuf[512];
-	int i;
-	unsigned char *p;
-	char name[512];	/* XXX - pick a size */
-	char *q, *saveq;
-#endif
 	int ret = 0;
 
 	/*
 	 * Create a socket from which to fetch the list of interfaces.
-	 *
-	 * XXX - on Linux, SIOCGIFCONF reports only interfaces with
-	 * IPv4 addresses; you need to read "/proc/net/dev" to get
-	 * the names of all the interfaces.
 	 */
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
@@ -722,126 +835,18 @@ pcap_findalldevs(alldevsp, errbuf)
 	free(buf);
 
 #ifdef HAVE_PROC_NET_DEV
-	/*
-	 * OK, now read "/proc/net/dev", and add to the list of
-	 * interfaces all interfaces listed there that we don't
-	 * already have.
-	 *
-	 * We don't bother getting any addresses for them;
-	 * it appears you can't use SIOCGIFADDR to get
-	 * IPv6 addresses for interfaces, and, although some
-	 * other types of addresses can be fetched with
-	 * SIOCGIFADDR, we don't bother with them for now.
-	 *
-	 * We also don't fail if we couldn't open "/proc/net/dev";
-	 * we just return the interfaces we've already found.
-	 */
-	proc_net_f = fopen("/proc/net/dev", "r");
-	if (proc_net_f != NULL) {
+	if (ret != -1) {
 		/*
-		 * Skip the first two lines - they're headers.
+		 * We haven't had any errors yet; now read "/proc/net/dev",
+		 * and add to the list of interfaces all interfaces listed
+		 * there that we don't already have, because, on Linux,
+		 * SIOCGIFCONF reports only interfaces with IPv4 addresses,
+		 * so you need to read "/proc/net/dev" to get the names of
+		 * the rest of the interfaces.
 		 */
-		for (i = 0; i < 2; i++) {
-			if (fgets(linebuf, sizeof linebuf, proc_net_f) == NULL) {
-				if (ferror(proc_net_f)) {
-					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "Error reading /proc/net/dev: %s",
-					    pcap_strerror(errno));
-				} else {
-					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "EOF reading header line %d of /proc/net/dev: %s",
-					    i + 1, pcap_strerror(errno));
-				}
-				ret = -1;
-				break;
-			}
-		}
-
-		/*
-		 * Now read the rest of the lines.
-		 */
-		while (ret != -1 &&
-		    fgets(linebuf, sizeof linebuf, proc_net_f) != NULL) {
-			p = &linebuf[0];
-
-			/*
-			 * Skip leading white space.
-			 */
-			while (*p != '\0' && isspace(*p))
-				p++;
-			if (*p == '\0' || *p == '\n')
-				continue;	/* blank line */
-
-			/*
-			 * Get the interface name.
-			 */
-			q = &name[0];
-			while (*p != '\0' && !isspace(*p)) {
-				if (*p == ':') {
-					/*
-					 * This could be the separator
-					 * between a name and an alias
-					 * number, or it could be the
-					 * separator between a name with
-					 * no alias number and the next
-					 * field.
-					 * If there's a colon after digits,
-					 * it separates the name and the alias
-					 * number, otherwise it separates the
-					 * name and the next field.
-					 */
-					saveq = q;
-					while (isdigit(*p))
-						*q++ = *p++;
-					if (*p != ':') {
-						/*
-						 * That was the next field,
-						 * not the alias number.
-						 */
-						q = saveq;
-					}
-					break;
-				} else
-					*q++ = *p++;
-			}
-			*q = '\0';
-
-			/*
-			 * Get the flags for this interface, and skip it if
-			 * it's not up.
-			 */
-			strncpy(ifrflags.ifr_name, name,
-			    sizeof(ifrflags.ifr_name));
-			if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
-				if (errno == ENXIO)
-					continue;
-				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "SIOCGIFFLAGS: %.*s: %s",
-				    (int)sizeof(ifrflags.ifr_name),
-				    ifrflags.ifr_name,
-				    pcap_strerror(errno));
-				ret = -1;
-				break;
-			}
-			if (!(ifrflags.ifr_flags & IFF_UP))
-				continue;
-
-			/*
-			 * Add an entry for this interface, with no addresses.
-			 */
-			if (pcap_add_if(&devlist, name, ifrflags.ifr_flags,
-			    errbuf) == -1) {
-				/*
-				 * Failure.
-				 */
-				ret = -1;
-				break;
-			}
-		}
-		(void)fclose(proc_net_f);
+		ret = scan_proc_net_dev(&devlist, fd, errbuf);
 	}
 #endif
-
 	(void)close(fd);
 
 	if (ret != -1) {
