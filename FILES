@@ -67,6 +67,7 @@ pcap-win32.c
 pcap.3
 pcap.c
 pcap.h
+pf.h
 ppp.h
 savefile.c
 scanner.l

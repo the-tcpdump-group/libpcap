@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.4 2002-07-16 05:03:34 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.5 2003-03-11 06:23:52 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -349,6 +349,7 @@ pcap-snoop.c	- IRIX Snoop network monitoring support
 pcap.3		- manual entry
 pcap.c		- pcap utility routines
 pcap.h		- public libpcap definitions
+pf.h		- OpenBSD DLT_PFLOG definitions
 ppp.h		- Point to Point Protocol definitions
 savefile.c	- offline support
 scanner.l	- filter string scanner

@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.78 2002-12-06 00:01:34 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.79 2003-03-11 06:23:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +53,7 @@ struct rtentry;
 #include "pcap-int.h"
 
 #include "gencode.h"
+#include "pf.h"
 #include <pcap-namedb.h>
 
 #ifdef HAVE_OS_PROTO_H
@@ -108,7 +109,7 @@ pcap_parse()
 %type	<a>	arth narth
 %type	<i>	byteop pname pnum relop irelop
 %type	<blk>	and or paren not null prog
-%type	<rblk>	other
+%type	<rblk>	other pfvar
 %type	<i>	atmtype atmmultitype
 %type	<blk>	atmfield
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
@@ -119,6 +120,7 @@ pcap_parse()
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
+%token  PF_IFNAME PF_RNR PF_REASON PF_ACTION
 %token  LINK
 %token	GEQ LEQ NEQ
 %token	ID EID HID HID6 AID
@@ -138,7 +140,7 @@ pcap_parse()
 %type	<e> EID
 %type	<e> AID
 %type	<s> HID HID6
-%type	<i> NUM
+%type	<i> NUM action reason
 
 %left OR AND
 %nonassoc  '!'
@@ -321,7 +323,40 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| OUTBOUND		{ $$ = gen_inbound(1); }
 	| VLAN pnum		{ $$ = gen_vlan($2); }
 	| VLAN			{ $$ = gen_vlan(-1); }
+	| pfvar			{ $$ = $1; }
 	;
+
+pfvar:	  PF_IFNAME ID		{ $$ = gen_pf_ifname($2); }
+	| PF_RNR NUM		{ $$ = gen_pf_rnr($2); }
+	| PF_REASON reason	{ $$ = gen_pf_reason($2); }
+	| PF_ACTION action	{ $$ = gen_pf_action($2); }
+	;
+
+reason:	  NUM			{ $$ = $1; }
+	| ID			{ const char *reasons[] = PFRES_NAMES;
+				  int i;
+				  for (i = 0; reasons[i]; i++) {
+					  if (pcap_strcasecmp($1, reasons[i]) == 0) {
+						  $$ = i;
+						  break;
+					  }
+				  }
+				  if (reasons[i] == NULL)
+					  bpf_error("unknown PF reason");
+				}
+	;
+
+action:	  ID			{ if (pcap_strcasecmp($1, "pass") == 0 ||
+				      pcap_strcasecmp($1, "accept") == 0)
+					$$ = PF_PASS;
+				  else if (pcap_strcasecmp($1, "drop") == 0 ||
+				      pcap_strcasecmp($1, "block") == 0)
+					$$ = PF_DROP;
+				  else
+					  bpf_error("unknown PF action");
+				}
+	;
+
 relop:	  '>'			{ $$ = BPF_JGT; }
 	| GEQ			{ $$ = BPF_JGE; }
 	| '='			{ $$ = BPF_JEQ; }

@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.56 2002-12-06 00:01:34 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.57 2003-03-11 06:23:53 guy Exp $ (LBL)
  */
 
 /*
@@ -277,6 +277,12 @@ struct block *gen_vlan(int);
 struct block *gen_atmfield_code(int atmfield, bpf_u_int32 jvalue, bpf_u_int32 jtype, int reverse);
 struct block *gen_atmtype_abbrev(int type);
 struct block *gen_atmmulti_abbrev(int type);
+
+struct block *gen_pf_ifname(char *);
+struct block *gen_pf_rnr(int);
+struct block *gen_pf_reason(int);
+struct block *gen_pf_action(int);
+struct block *gen_pf_dir(int);
 
 void bpf_optimize(struct block **);
 void bpf_error(const char *, ...)

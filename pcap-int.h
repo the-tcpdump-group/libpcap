@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.43 2002-12-28 00:44:04 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.44 2003-03-11 06:23:54 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -210,6 +210,8 @@ int sf_next_packet(pcap_t *, struct pcap_pkthdr *, u_char *, int);
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 strlen((y)))
 #endif
+
+int	pcap_strcasecmp(const char *, const char *);
 
 /*
  * Internal interface for "pcap_set_datalink()".  Attempts to set the

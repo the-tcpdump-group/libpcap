@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.5 2003-03-08 09:21:37 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.6 2003-03-11 06:23:53 guy Exp $ (LBL)
  */
 
 /*
@@ -158,6 +158,10 @@ struct bpf_version {
 #define DLT_PPP_BSDOS	16	/* BSD/OS Point-to-point Protocol */
 #endif
 
+/*
+ * 17 is used for DLT_PFLOG in OpenBSD; don't use it for anything else.
+ */
+
 #define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
 
 /*
@@ -258,12 +262,14 @@ struct bpf_version {
 #define DLT_IPFILTER	116
 
 /*
- * Reserved for use in capture-file headers as a link-layer type
- * corresponding to OpenBSD DLT_PFLOG; DLT_PFLOG is 17 in OpenBSD,
- * but that's DLT_LANE8023 in SuSE 6.3, so we can't use 17 for it
- * in capture-file headers.
+ * OpenBSD DLT_PFLOG; DLT_PFLOG is 17 in OpenBSD, but that's DLT_LANE8023
+ * in SuSE 6.3, so we can't use 17 for it in capture-file headers.
  */
+#ifdef __OpenBSD__
+#define DLT_PFLOG	17
+#else
 #define DLT_PFLOG	117
+#endif
 
 /*
  * Registered for Cisco-internal use.
@@ -271,7 +277,7 @@ struct bpf_version {
 #define DLT_CISCO_IOS	118
 
 /*
- * Reserved for 802.11 cards using the Prism II chips, with a link-layer
+ * For 802.11 cards using the Prism II chips, with a link-layer
  * header including Prism monitor mode information plus an 802.11
  * header.
  */

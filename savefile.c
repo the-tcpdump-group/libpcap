@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.77 2003-03-08 08:42:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.78 2003-03-11 06:23:55 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -162,6 +162,7 @@ static const char rcsid[] =
 #define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
 #define LINKTYPE_ECONET		115		/* Acorn Econet */
 
+#define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_CISCO_IOS	118		/* For Cisco-internal use */
 #define LINKTYPE_PRISM_HEADER	119		/* 802.11+Prism II monitor mode */
 #define LINKTYPE_AIRONET_HEADER	120		/* FreeBSD Aironet driver stuff */
@@ -189,7 +190,6 @@ static const char rcsid[] =
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
 #define LINKTYPE_IPFILTER	116		/* IP Filter capture files */
-#define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 #define LINKTYPE_RIO		124		/* RapidIO */
 #define LINKTYPE_PCI_EXP	125		/* PCI Express */
@@ -266,6 +266,9 @@ static struct linktype_map {
 
 	/* Acorn Econet */
 	{ DLT_ECONET,		LINKTYPE_ECONET },
+
+	/* OpenBSD DLT_PFLOG */
+	{ DLT_PFLOG,		LINKTYPE_PFLOG },
 
 	/* For Cisco-internal use */
 	{ DLT_CISCO_IOS,	LINKTYPE_CISCO_IOS },
