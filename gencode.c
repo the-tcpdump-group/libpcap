@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.165 2002-06-01 23:22:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.166 2002-06-11 05:30:39 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3539,16 +3539,16 @@ gen_relation(code, a0, a1, reversed)
 
 	s0 = xfer_to_x(a1);
 	s1 = xfer_to_a(a0);
-	s2 = new_stmt(BPF_ALU|BPF_SUB|BPF_X);
-	b = new_block(JMP(code));
-	if (code == BPF_JGT || code == BPF_JGE) {
-		reversed = !reversed;
-		b->s.k = 0x80000000;
+	if (code == BPF_JEQ) {
+		s2 = new_stmt(BPF_ALU|BPF_SUB|BPF_X);
+		b = new_block(JMP(code));
+		sappend(s1, s2);
 	}
+	else
+		b = new_block(BPF_JMP|code|BPF_X);
 	if (reversed)
 		gen_not(b);
 
-	sappend(s1, s2);
 	sappend(s0, s1);
 	sappend(a1->s, s0);
 	sappend(a0->s, a1->s);
