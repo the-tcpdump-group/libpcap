@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.47 2003-02-11 07:50:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.48 2003-02-11 08:01:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -630,7 +630,12 @@ pcap_lib_version(void)
 		    "WinPcap version 3.0beta, based on libpcap version 0.8");
 #else
 		snprintf(version_string, sizeof (version_string),
+#ifdef VERSION_DOTDOT
+		    "libpcap version %u.%u.%u", VERSION_MAJOR, VERSION_MINOR,
+		    VERSION_DOTDOT);
+#else
 		    "libpcap version %u.%u", VERSION_MAJOR, VERSION_MINOR);
+#endif
 #endif
 	}
 	return (version_string);

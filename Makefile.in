@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.91 2003-02-11 07:40:09 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.92 2003-02-11 08:01:40 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -131,8 +131,9 @@ version.c: $(srcdir)/VERSION
 
 version.h: $(srcdir)/VERSION
 	@rm -f $@
-	sed -e 's/\([0-9]*\)\.[0-9]*/#define VERSION_MAJOR \1/' $(srcdir)/VERSION > $@
-	sed -e 's/[0-9]*\.\([0-9]*\)/#define VERSION_MINOR \1/' $(srcdir)/VERSION >> $@
+	sed -e 's/\([0-9]*\)\..*/#define VERSION_MAJOR \1/' $(srcdir)/VERSION > $@
+	sed -e 's/[0-9]*\.\([0-9]*\).*/#define VERSION_MINOR \1/' $(srcdir)/VERSION >> $@
+	sed -n -e 's/[0-9]*\.[0-9]*\.\([0-9]*\)/#define VERSION_DOTDOT \1/p' $(srcdir)/VERSION >> $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c
@@ -189,5 +190,5 @@ tar:
 	    "rm -f ../$$name" ; \
 	     rm -f ../$$name
 
-depend:	$(GENSRC) bpf_filter.c
+depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	./mkdep -c $(CC) $(DEFS) $(INCLS) $(SRC)
