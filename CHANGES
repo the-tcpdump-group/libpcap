@@ -1,4 +1,12 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.52 2000-07-14 02:35:03 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.53 2000-09-20 15:10:28 torsten Exp $ (LBL)
+
+Mon Sep 18 21:01:49 CEST 2000 torsten@debian.org
+	* pcap-linux.c: add support for sniffing on all devices using the
+	  pseudo device "any"
+	* inet.c (pcap_lookupnet): support the "any" device using the
+	  0.0.0.0/0 network
+	* these changes are heavily based on the patch sent to me by
+	  Sebastian Krahmer.
 
 Fri Jun  7 23:00:05 GMT 2000 gharris@flashcom.net
 	* repair BIOSBLEN loop

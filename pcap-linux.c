@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.29 2000-09-20 07:52:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.30 2000-09-20 15:10:29 torsten Exp $ (LBL)";
 #endif
 
 /*
@@ -70,6 +70,13 @@ typedef int		socklen_t;
 #endif
 
 #define MAX_LINKHEADER_SIZE	256
+
+/* 
+ * When capturing on all interfaces we use this as the buffer size. 
+ * Should be bigger then all MTUs that occur in real life.
+ * 64kB should be enough for now.
+ */
+#define BIGGER_THAN_ALL_MTUS	(64*1024)
 
 /*
  * Prototypes for internal functions
@@ -116,7 +123,17 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	handle->snapshot	= snaplen;
 	handle->md.timeout	= to_ms;
 	handle->md.promisc	= promisc;
-	handle->md.device	= strdup(device);
+
+	/*
+	 * NULL and "any" are special devices which give us the hint to 
+	 * monitor all devices.
+	 */
+	if (!device || strcmp(device, "any") == 0) {
+		device			= NULL;
+		handle->md.device	= strdup("any");
+	} else
+		handle->md.device	= strdup(device);
+
 	if (handle->md.device == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "strdup: %s",
 			 pcap_strerror(errno) );
@@ -445,6 +462,8 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
  *  interface. pcap uses the PCAP_ENCAP_xxx constants for this. This 
  *  function maps the ARPHRD_xxx constant to an appropriate
  *  PCAP_ENCAP__xxx constant.
+ *  FIXME: This function is inappropriately named after the namechange
+ *  DLT -> PCAP_ENCAP.
  *  
  *  Returns -1 if unable to map the type.
  */
@@ -512,8 +531,15 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 	/* One shot loop used for error handling - bail out with break */
 
 	do {
-		/* Open a socket with protocol family packet. */
-		sock_fd = socket( PF_PACKET, SOCK_RAW, htons(ETH_P_ALL) );
+		/*
+		 * Open a socket with protocol family packet. If a device is
+		 * given we try to open it in raw mode otherwise we use 
+		 * the cooked interface. 
+		 */
+		sock_fd = device ? 
+			socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))
+		      : socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_ALL));
+
 		if (sock_fd == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "socket: %s",
 				 pcap_strerror(errno) );
@@ -523,27 +549,19 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		/* It seems the kernel supports the new interface. */
 		handle->md.sock_packet = 0;
 
-		/* 
-		 * Currently we only support monitoring a single interface.
-		 * While the kernel can do more I want to reimplement the 
-		 * old features first before adding new.
-		 */
-
-		if (!device) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				 "pcap_open_live: No device given");
-			break;
-		}
-
 		/*
 		 * What kind of frames do we have to deal with? Fall back 
 		 * to cooked mode if we have an unknown interface type. 
 		 */
 
-		arptype		= iface_get_arptype(sock_fd, device, ebuf);
-		if (arptype == -1) 
-			break;
-		handle->linktype = map_arphrd_to_dlt(arptype);
+		if (device) {
+			arptype	= iface_get_arptype(sock_fd, device, ebuf);
+			if (arptype == -1) 
+				break;
+			handle->linktype = map_arphrd_to_dlt(arptype);
+		} else 
+			handle->linktype = PCAP_ENCAP_RAW;
+			
 		if (handle->linktype == -1) {
 			/* Unknown interface type - reopen in cooked mode */
 			
@@ -566,45 +584,42 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		}
 
 
-		device_id = iface_get_id(sock_fd, device, ebuf);
-		if (device_id == -1)
-			break;
+		if (device) {
+			device_id = iface_get_id(sock_fd, device, ebuf);
+			if (device_id == -1)
+				break;
 
-		if (iface_bind(sock_fd, device_id, ebuf) == -1)
-			break;
+			if (iface_bind(sock_fd, device_id, ebuf) == -1)
+				break;
+		}
 
 		/* Select promiscous mode on/off */
 
 #ifdef SOL_PACKET
 		/* 
-		 * XXX: We got reports that this does not work in 2.3.99.
-		 * Need to investigate. Using ioctl to switch the promisc 
-		 * mode at device level costs us most of the benefits of 
-		 * using the new kernel interface.
-		 * UPDATE: I found the bug. The kernel checks mr_alen
-		 * even if it is of zero interest for the request. A 
-		 * random value there made the kernel return EINVAL. 
-		 * Probably the right solution is to memset the whole 
-		 * struct at first. 
+		 * Hmm, how can we set promiscuous mode on all interfaces?
+		 * I am not sure if that is possible at all.
 		 */
 
-		memset(&mr, 0, sizeof(mr));
-		mr.mr_ifindex = device_id;
-		mr.mr_type    = promisc ? 
-			PACKET_MR_PROMISC : PACKET_MR_ALLMULTI;
-		if (setsockopt(sock_fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP, 
-			        &mr, sizeof(mr)) == -1)
-		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				 "setsockopt: %s", pcap_strerror(errno));
-			break;
+		if (device) {
+			memset(&mr, 0, sizeof(mr));
+			mr.mr_ifindex = device_id;
+			mr.mr_type    = promisc ? 
+				PACKET_MR_PROMISC : PACKET_MR_ALLMULTI;
+			if (setsockopt(sock_fd, SOL_PACKET, 
+				PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1)
+			{
+				snprintf(ebuf, PCAP_ERRBUF_SIZE, 
+					"setsockopt: %s", pcap_strerror(errno));
+				break;
+			}
 		}
 #endif
 		
 		/* Compute the buffersize */
 
 		mtu	= iface_get_mtu(sock_fd, device, ebuf);
-		if( mtu == -1 )
+		if (mtu == -1)
 			break;
 		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
 		
@@ -794,7 +809,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		handle->fd 	 = sock_fd;
 		handle->offset	 = 0;
 		handle->linktype = map_arphrd_to_dlt(arptype);
-		if(handle->linktype == -1) {
+		if (handle->linktype == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "interface type of %s not supported", device);
 			break;
@@ -810,7 +825,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		
 	} while (0);
 		
-	if(sock_fd != -1)
+	if (sock_fd != -1)
 		close(sock_fd);
 	return 0;
 }
@@ -845,6 +860,9 @@ static int
 iface_get_mtu(int fd, const char *device, char *ebuf)
 {
 	struct ifreq	ifr;
+
+	if (!device)
+		return BIGGER_THAN_ALL_MTUS;
 
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));

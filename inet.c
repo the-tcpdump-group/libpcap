@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.35 2000-07-29 07:42:48 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.36 2000-09-20 15:10:29 torsten Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -267,6 +267,16 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register int fd;
 	register struct sockaddr_in *sin;
 	struct ifreq ifr;
+
+	/* 
+	 * The pseudo-device "any" listens on all interfaces and therefore
+	 * has the network address and -mask "0.0.0.0" therefore catching
+	 * all traffic. Using NULL for the interface is the same as "any".
+	 */
+	if (!device || strcmp(device, "any") == 0) {
+		*netp = *maskp = 0;
+		return 0;
+	}
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
