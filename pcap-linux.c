@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.62 2001-08-23 16:36:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.63 2001-08-24 07:46:53 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -51,6 +51,24 @@ static const char rcsid[] =
  *     do, if another socket also requested promiscuous mode between
  *     the time when we opened the socket and the time when we close
  *     the socket.
+ *
+ *   - MSG_TRUNC isn't supported, so you can't specify that "recvfrom()"
+ *     return the amount of data that you could have read, rather than
+ *     the amount that was returned, so we can't just allocate a buffer
+ *     whose size is the snapshot length and pass the snapshot length
+ *     as the byte count, and also pass MSG_TRUNC, so that the return
+ *     value tells us how long the packet was on the wire.
+ *
+ *     This means that, if we want to get the actual size of the packet,
+ *     so we can return it in the "len" field of the packet header,
+ *     we have to read the entire packet, not just the part that fits
+ *     within the snapshot length, and thus waste CPU time copying data
+ *     from the kernel that our caller won't see.
+ *
+ *     We have to get the actual size, and supply it in "len", because
+ *     otherwise, the IP dissector in tcpdump, for example, will complain
+ *     about "truncated-ip", as the packet will appear to have been
+ *     shorter, on the wire, than the IP header said it should have been.
  */
 
 
@@ -127,7 +145,15 @@ typedef int		socklen_t;
 #endif
 
 #ifndef MSG_TRUNC
-#define MSG_TRUNC	0
+/*
+ * This is being compiled on a system that lacks MSG_TRUNC; define it
+ * with the value it has in the 2.2 and later kernels, so that, on
+ * those kernels, when we pass it in the flags argument to "recvfrom()"
+ * we're passing the right value and thus get the MSG_TRUNC behavior
+ * we want.  (We don't get that behavior on 2.0[.x] kernels, because
+ * they didn't support MSG_TRUNC.)
+ */
+#define MSG_TRUNC	0x20
 #endif
 
 #define MAX_LINKHEADER_SIZE	256
@@ -238,33 +264,10 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		return NULL;
 	}
 
-	/* Compute the buffersize */
-
-	mtu	= iface_get_mtu(handle->fd, device, ebuf);
-	if (mtu == -1) {
-		close(handle->fd);
-		free(handle->md.device);
-		free(handle);
-		return NULL;
-	}
-	handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
-	if (handle->bufsize < handle->snapshot)
-		handle->bufsize = handle->snapshot;
-
-	/* Allocate the buffer */
-
-	handle->buffer	 = malloc(handle->bufsize + handle->offset);
-	if (!handle->buffer) {
-	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			 "malloc: %s", pcap_strerror(errno));
-		close(handle->fd);
-		free(handle->md.device);
-		free(handle);
-		return NULL;
-	}
-
 	/*
-	 * If we're using SOCKET_PACKET, this might be a 2.0[.x] kernel,
+	 * Compute the buffer size.
+	 *
+	 * If we're using SOCK_PACKET, this might be a 2.0[.x] kernel,
 	 * and might require special handling - check.
 	 */
 	if (handle->md.sock_packet && (uname(&utsname) < 0 ||
@@ -292,12 +295,36 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		 * but instead copy them all, just as the older
 		 * versions of libpcap for Linux did.
 		 *
-		 * That's just one of many problems with packet capture
-		 * on 2.0[.x] kernels; you really want a 2.2[.x]
-		 * or later kernel if you want packet capture to
-		 * work well.
+		 * The buffer therefore needs to be big enough to
+		 * hold the largest packet we can get from this
+		 * device.  Unfortunately, we can't get the MRU
+		 * of the network; we can only get the MTU.  The
+		 * MTU may be too small, in which case a packet larger
+		 * than the buffer size will be truncated *and* we
+		 * won't get the actual packet size.
+		 *
+		 * However, if the snapshot length is larger than
+		 * the buffer size based on the MTU, we use the
+		 * snapshot length as the buffer size, instead;
+		 * this means that with a sufficiently large snapshot
+		 * length we won't artificially truncate packets
+		 * to the MTU-based size.
+		 *
+		 * This mess just one of many problems with packet
+		 * capture on 2.0[.x] kernels; you really want a
+		 * 2.2[.x] or later kernel if you want packet capture
+		 * to work well.
 		 */
-		handle->md.readlen = handle->bufsize;
+		mtu = iface_get_mtu(handle->fd, device, ebuf);
+		if (mtu == -1) {
+			close(handle->fd);
+			free(handle->md.device);
+			free(handle);
+			return NULL;
+		}
+		handle->bufsize = MAX_LINKHEADER_SIZE + mtu;
+		if (handle->bufsize < handle->snapshot)
+			handle->bufsize = handle->snapshot;
 	} else {
 		/*
 		 * This is a 2.2[.x] or later kernel (we know that
@@ -309,7 +336,19 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		 * We can safely pass "recvfrom()" a byte count
 		 * based on the snapshot length.
 		 */
-		handle->md.readlen = handle->snapshot;
+		handle->bufsize = handle->snapshot;
+	}
+
+	/* Allocate the buffer */
+
+	handle->buffer	 = malloc(handle->bufsize + handle->offset);
+	if (!handle->buffer) {
+	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "malloc: %s", pcap_strerror(errno));
+		close(handle->fd);
+		free(handle->md.device);
+		free(handle);
+		return NULL;
 	}
 
 	return handle;
@@ -372,7 +411,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		fromlen = sizeof(from);
 		packet_len = recvfrom( 
 			handle->fd, handle->buffer + offset + handle->offset,
-			handle->md.readlen - offset, MSG_TRUNC, 
+			handle->bufsize - offset, MSG_TRUNC, 
 			(struct sockaddr *) &from, &fromlen);
 	} while (packet_len == -1 && errno == EINTR);
 
