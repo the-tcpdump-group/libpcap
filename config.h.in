@@ -13,6 +13,10 @@
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 
+/* Define to 1 if you have the declaration of `ether_hostton', and to 0 if you
+   don't. */
+#undef HAVE_DECL_ETHER_HOSTTON
+
 /* define if you have a /dev/dlpi */
 #undef HAVE_DEV_DLPI
 

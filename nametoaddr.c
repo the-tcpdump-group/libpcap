@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.74 2005-03-17 07:02:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.75 2005-03-26 23:07:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -405,18 +405,8 @@ pcap_ether_hostton(const char *name)
 }
 #else
 
-/*
- * XXX - perhaps this should, instead, be declared in "lbl/os-XXX.h" files,
- * for those OS versions that don't declare it, rather than being declared
- * here?  That way, for example, we could declare it on FreeBSD 2.x (which
- * doesn't declare it), but not on FreeBSD 3.x (which declares it like
- * this) or FreeBSD 4.x (which declares it with its first argument as
- * "const char *", so no matter how we declare it here, it'll fail to
- * compile on one of 3.x or 4.x).
- */
-#if !defined(sgi) && !defined(__NetBSD__) && !defined(__FreeBSD__) && \
-       !defined(_UNICOSMP)
-extern int ether_hostton(char *, struct ether_addr *);
+#if !defined(HAVE_DECL_ETHER_HOSTTON) || !HAVE_DECL_ETHER_HOSTTON
+extern int ether_hostton(const char *, struct ether_addr *);
 #endif
 
 /* Use the os supplied routines */

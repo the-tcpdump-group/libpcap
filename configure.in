@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.110 2004-12-17 23:25:36 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.111 2005-03-26 23:07:51 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.110 $)
+AC_REVISION($Revision: 1.111 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -32,13 +32,31 @@ AC_CHECK_HEADERS(netinet/if_ether.h, , , [#include <sys/types.h>
 
 AC_LBL_FIXINCLUDES
 
-AC_CHECK_FUNCS(ether_hostton strerror strlcpy)
+AC_CHECK_FUNCS(strerror strlcpy)
 
 needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
 	[needsnprintf=yes])
 if test $needsnprintf = yes; then
 	AC_LIBOBJ(snprintf)
+fi
+
+AC_CHECK_FUNCS(ether_hostton)
+if test "$ac_cv_func_ether_hostton" = yes; then
+	#
+	# OK, we have ether_hoston().  Do we have <netinet/if_ether.h>?
+	#
+	if test "$ac_cv_header_netinet_if_ether_h" = yes; then
+		#
+		# Yes.  Does it declare ether_hostton()?
+		#
+		AC_CHECK_DECLS(ether_hostton,,,
+		    [
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/if_ether.h>
+		    ])
+	fi
 fi
 
 dnl to pacify those who hate protochain insn
