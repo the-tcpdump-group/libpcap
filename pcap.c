@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.30 2000-04-27 09:11:14 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.31 2000-06-26 04:58:04 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -183,6 +183,21 @@ pcap_strerror(int errnum)
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 #endif
+}
+
+pcap_t *
+pcap_open_dead(int linktype, int snaplen)
+{
+	pcap_t *p;
+
+	p = malloc(sizeof(*p));
+	if (p == NULL)
+		return NULL;
+	memset (p, 0, sizeof(*p));
+	p->fd = -1;
+	p->snapshot = snaplen;
+	p->linktype = linktype;
+	return p;
 }
 
 void
