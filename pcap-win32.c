@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.13 2003-07-25 05:32:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.14 2003-09-22 11:48:40 risso Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -161,60 +161,64 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	wsockinit();
 
 	p = (pcap_t *)malloc(sizeof(*p));
-	if (p == NULL) {
+	if (p == NULL) 
+	{
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 		return (NULL);
 	}
 	memset(p, 0, sizeof(*p));
 	p->adapter=NULL;
 
-	p->adapter=PacketOpenAdapter(device);
-	if (p->adapter==NULL) {
+	p->adapter = PacketOpenAdapter((char*)device);
+	
+	if (p->adapter == NULL)
+	{
+		/* Adapter detected but we are not able to open it. Return failure. */
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Error opening adapter: %s", pcap_win32strerror());
 		return NULL;
 	}
-
+	
 	/*get network type*/
-	if(PacketGetNetType (p->adapter,&type)==FALSE)
+	if(PacketGetNetType (p->adapter,&type) == FALSE)
 	{
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Cannot determine the network type: %s", pcap_win32strerror());
 		goto bad;
 	}
 	
 	/*Set the linktype*/
-	switch (type.LinkType) {
-
+	switch (type.LinkType) 
+	{
 	case NdisMediumWan:
 		p->linktype = DLT_EN10MB;
-	break;
-
+		break;
+		
 	case NdisMedium802_3:
 		p->linktype = DLT_EN10MB;
-	break;
-
+		break;
+		
 	case NdisMediumFddi:
 		p->linktype = DLT_FDDI;
-	break;
-
+		break;
+		
 	case NdisMedium802_5:			
 		p->linktype = DLT_IEEE802;	
-	break;
-
+		break;
+		
 	case NdisMediumArcnetRaw:
 		p->linktype = DLT_ARCNET;
-	break;
-
+		break;
+		
 	case NdisMediumArcnet878_2:
 		p->linktype = DLT_ARCNET;
-	break;
-
+		break;
+		
 	case NdisMediumAtm:
 		p->linktype = DLT_ATM_RFC1483;
-	break;
-
+		break;
+		
 	default:
 		p->linktype = DLT_EN10MB;			/*an unknown adapter is assumed to be ethernet*/
-	break;
+		break;
 	}
 
 	/* Set promisquous mode */
@@ -225,7 +229,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->bufsize = PcapBufSize;
 
 	p->buffer = (u_char *)malloc(PcapBufSize);
-	if (p->buffer == NULL) {
+	if (p->buffer == NULL) 
+	{
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 		goto bad;
 	}
@@ -233,7 +238,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->snapshot = snaplen;
 
 	/* allocate Packet structure used during the capture */
-	if((p->Packet = PacketAllocatePacket())==NULL){
+	if((p->Packet = PacketAllocatePacket())==NULL)
+	{
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to allocate the PACKET structure");
 		goto bad;
 	}
