@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.7.2.1 2003-12-15 01:42:23 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.7.2.2 2003-12-15 02:05:00 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -306,12 +306,14 @@ README.dag	- notes on using libpcap to capture on Endace DAG devices
 README.hpux	- notes on using libpcap on HP-UX
 README.linux	- notes on using libpcap on Linux
 README.tru64	- notes on using libpcap on Digital/Tru64 UNIX
+README.Win32	- notes on using libpcap on Win32 systems (with WinPcap)
 SUNOS4		- pre-SunOS 4.1 replacement kernel nit modules
 VERSION		- version of this release
+acconfig.h	- support for post-2.13 autoconf
 aclocal.m4	- autoconf macros
 arcnet.h	- ARCNET definitions
 atmuni31.h	- ATM Q.2931 definitions
-bpf/net		- copies of bpf_filter.c and bpf.h
+bpf/net		- copy of bpf_filter.c
 bpf_dump.c	- BPF program printing routines
 bpf_filter.c	- symlink to bpf/net/bpf_filter.c
 bpf_image.c	- BPF disassembly routine
@@ -339,6 +341,7 @@ nametoaddr.c	- hostname to address routines
 nlpid.h		- OSI network layer protocol identifier definitions
 net		- symlink to bpf/net
 optimize.c	- BPF optimization routines
+packaging	- packaging information for building libpcap RPMs
 pcap-bpf.c	- BSD Packet Filter support
 pcap-bpf.h	- BPF definitions
 pcap-dag.c	- Endace DAG device capture support
@@ -362,6 +365,7 @@ pcap.c		- pcap utility routines
 pcap.h		- public libpcap definitions
 pf.h		- OpenBSD DLT_PFLOG definitions
 ppp.h		- Point to Point Protocol definitions
+rawss7.h	- information on DLT_ types for SS7
 savefile.c	- offline support
 scanner.l	- filter string scanner
 sll.h		- definitions for Linux cooked mode fake link-layer header
