@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.59 2003-03-28 08:08:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.60 2003-04-17 06:35:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -151,15 +151,19 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				/*
 				 * Sigh.  More AIX wonderfulness.
 				 *
-				 * It appears, according to Don
-				 * Ebright, that a read from a BPF
-				 * device returns -1 with "errno"
-				 * set to EFAULT as an indication
-				 * that packets have been dropped
-				 * since the last successful read.
+				 * For some unknown reason the uiomove()
+				 * operation in the bpf kernel extension
+				 * used to copy the buffer into user 
+				 * space sometimes returns EFAULT. I have
+				 * no idea why this is the case given that
+				 * a kernel debugger shows the user buffer 
+				 * is correct. This problem appears to 
+				 * be mostly mitigated by the memset of 
+				 * the buffer before it is first used. 
+				 * Very strange.... Shaun Clowes
 				 *
-				 * This means that we shouldn't treat
-				 * EFAULT as a fatal error; as we
+				 * In any case this means that we shouldn't 
+				 * treat EFAULT as a fatal error; as we
 				 * don't have an API for returning
 				 * a "some packets were dropped since
 				 * the last packet you saw" indication,
@@ -353,7 +357,7 @@ bpf_load(char *errbuf)
 	memset(&cfg_ld, 0x0, sizeof(cfg_ld));
 	cfg_ld.path = buf;
 	sprintf(cfg_ld.path, "%s/%s", DRIVER_PATH, BPF_NAME);
-	if (sysconfig(SYS_QUERYLOAD, (void *)&cfg_ld, sizeof(cfg_ld) == -1) ||
+	if ((sysconfig(SYS_QUERYLOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) ||
 	    (cfg_ld.kmid == 0)) {
 		/* Driver isn't loaded, load it now */
 		if (sysconfig(SYS_SINGLELOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) {
@@ -695,6 +699,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		    pcap_strerror(errno));
 		goto bad;
 	}
+#ifdef _AIX
+	/* For some strange reason this seems to prevent the EFAULT 
+	 * problems we have experienced from AIX BPF. */
+	memset(p->buffer, 0x0, p->bufsize);
+#endif
 
 	return (p);
  bad:
