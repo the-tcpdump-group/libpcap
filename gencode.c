@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.191 2003-05-02 08:37:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.192 2003-07-29 08:53:51 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2967,8 +2967,8 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_ISIS_CSNP:
-	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+	        b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
