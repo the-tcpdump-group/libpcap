@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.65 2001-08-25 05:08:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.66 2001-08-30 03:08:43 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -190,6 +190,7 @@ static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
 static int	fix_offset(struct bpf_insn *p);
 static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
+static int	reset_kernel_filter(pcap_t *handle);
 
 static struct sock_filter	total_insn
 	= BPF_STMT(BPF_RET | BPF_K, 0);
@@ -758,6 +759,17 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 			}
 		}
 	}
+
+	/*
+	 * If we're not using the kernel filter, get rid of any kernel
+	 * filter that might've been there before, e.g. because the
+	 * previous filter could work in the kernel, or because some other
+	 * code attached a filter to the socket by some means other than
+	 * calling "pcap_setfilter()".  Otherwise, the kernel filter may
+	 * filter out packets that would pass the new userland filter.
+	 */
+	if (!handle->md.use_bpf)
+		reset_kernel_filter(handle);
 
 	/*
 	 * Free up the copy of the filter that was made by "fix_program()".
@@ -1555,8 +1567,6 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 	int save_mode;
 	int ret;
 	int save_errno;
-	/* setsockopt() barfs unless it get a dummy parameter */
-	int dummy;
 
 	/*
 	 * The socket filter code doesn't discard all packets queued
@@ -1594,7 +1604,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		char drain[1];
 
 		/*
-		 * Note that we've put the total socket onto the filter.
+		 * Note that we've put the total filter onto the socket.
 		 */
 		total_filter_on = 1;
 
@@ -1637,10 +1647,20 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		 * we have the total filter on the socket,
 		 * and it won't come off.  What do we do then?
 		 */
-		setsockopt(handle->fd, SOL_SOCKET, SO_DETACH_FILTER,
-			   &dummy, sizeof(dummy));
+		reset_kernel_filter(handle);
+
 		errno = save_errno;
 	}
 	return ret;	 
+}
+
+static int
+reset_kernel_filter(pcap_t *handle)
+{
+	/* setsockopt() barfs unless it get a dummy parameter */
+	int dummy;
+
+	return setsockopt(handle->fd, SOL_SOCKET, SO_DETACH_FILTER,
+				   &dummy, sizeof(dummy));
 }
 #endif
