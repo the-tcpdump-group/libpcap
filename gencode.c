@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.114 2000-07-13 06:51:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.115 2000-07-25 05:50:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -136,6 +136,7 @@ static struct block *gen_hostop6(struct in6_addr *, struct in6_addr *, int, int,
 #endif
 static struct block *gen_ehostop(const u_char *, int);
 static struct block *gen_fhostop(const u_char *, int);
+static struct block *gen_thostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int, u_int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
 #ifdef INET6
@@ -574,6 +575,8 @@ init_linktype(type)
 		 * FDDI doesn't really have a link-level type field.
 		 * We assume that SSAP = SNAP is being used and pick
 		 * out the encapsulated Ethernet type.
+		 *
+		 * XXX - should we generate code to check for SNAP?
 		 */
 		off_linktype = 19;
 #ifdef PCAP_FDDIPAD
@@ -586,6 +589,28 @@ init_linktype(type)
 		return;
 
 	case DLT_IEEE802:
+		/*
+		 * Token Ring doesn't really have a link-level type field.
+		 * We assume that SSAP = SNAP is being used and pick
+		 * out the encapsulated Ethernet type.
+		 *
+		 * XXX - should we generate code to check for SNAP?
+		 *
+		 * XXX - the header is actually variable-length.
+		 * Some various Linux patched versions gave 38
+		 * as "off_linktype" and 40 as "off_nl"; however,
+		 * if a token ring packet has *no* routing
+		 * information, i.e. is not source-routed, the correct
+		 * values are 20 and 22, as they are in the vanilla code.
+		 *
+		 * A packet is source-routed iff the uppermost bit
+		 * of the first byte of the source address, at an
+		 * offset of 8, has the uppermost bit set.  If the
+		 * packet is source-routed, the total number of bytes
+		 * of routing information is 2 plus bits 0x1F00 of
+		 * the 16-bit value at an offset of 14 (shifted right
+		 * 8 - figure out which byte that is).
+		 */
 		off_linktype = 20;
 		off_nl = 22;
 		return;
@@ -875,6 +900,40 @@ gen_fhostop(eaddr, dir)
 }
 
 /*
+ * Like gen_ehostop, but for DLT_IEEE802 (Token Ring)
+ */
+static struct block *
+gen_thostop(eaddr, dir)
+	register const u_char *eaddr;
+	register int dir;
+{
+	register struct block *b0, *b1;
+
+	switch (dir) {
+	case Q_SRC:
+		return gen_bcmp(8, 6, eaddr);
+
+	case Q_DST:
+		return gen_bcmp(2, 6, eaddr);
+
+	case Q_AND:
+		b0 = gen_thostop(eaddr, Q_SRC);
+		b1 = gen_thostop(eaddr, Q_DST);
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_DEFAULT:
+	case Q_OR:
+		b0 = gen_thostop(eaddr, Q_SRC);
+		b1 = gen_thostop(eaddr, Q_DST);
+		gen_or(b0, b1);
+		return b1;
+	}
+	abort();
+	/* NOTREACHED */
+}
+
+/*
  * This is quite tricky because there may be pad bytes in front of the
  * DECNET header, and then there are two possible data packet formats that
  * carry both src and dst addresses, plus 5 packet types in a format that
@@ -1151,9 +1210,11 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_ehostop(eaddr, Q_OR);
 		else if (linktype == DLT_FDDI)
 			b0 = gen_fhostop(eaddr, Q_OR);
+		else if (linktype == DLT_IEEE802)
+			b0 = gen_thostop(eaddr, Q_OR);
 		else
 			bpf_error(
-			    "'gateway' supported only on ethernet or FDDI");
+			    "'gateway' supported only on ethernet, FDDI or token ring");
 
 		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR);
 		while (*alist) {
@@ -2015,9 +2076,16 @@ gen_scode(name, q)
 					    "unknown FDDI host '%s'", name);
 				return gen_fhostop(eaddr, dir);
 
+			case DLT_IEEE802:
+				eaddr = pcap_ether_hostton(name);
+				if (eaddr == NULL)
+					bpf_error(
+					    "unknown token ring host '%s'", name);
+				return gen_thostop(eaddr, dir);
+
 			default:
 				bpf_error(
-			"only ethernet/FDDI supports link-level host name");
+			"only ethernet/FDDI/token ring supports link-level host name");
 				break;
 			}
 		} else if (proto == Q_DECNET) {
@@ -2351,6 +2419,8 @@ gen_ecode(eaddr, q)
 			return gen_ehostop(eaddr, (int)q.dir);
 		if (linktype == DLT_FDDI)
 			return gen_fhostop(eaddr, (int)q.dir);
+		if (linktype == DLT_IEEE802)
+			return gen_thostop(eaddr, (int)q.dir);
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
@@ -2748,6 +2818,8 @@ gen_broadcast(proto)
 			return gen_ehostop(ebroadcast, Q_DST);
 		if (linktype == DLT_FDDI)
 			return gen_fhostop(ebroadcast, Q_DST);
+		if (linktype == DLT_IEEE802)
+			return gen_thostop(ebroadcast, Q_DST);
 		bpf_error("not a broadcast link");
 		break;
 
@@ -2795,6 +2867,10 @@ gen_multicast(proto)
 			b0->stmts = s;
 			return b0;
 		}
+
+		/* TODO - check how token ring handles multicast */
+		/* if (linktype == DLT_IEEE802) ... */
+
 		/* Link not known to support multicasts */
 		break;
 
