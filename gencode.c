@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.199 2004-01-31 01:54:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.200 2004-03-11 09:13:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -998,6 +998,13 @@ init_linktype(type)
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
+
+	case DLT_SYMANTEC_FIREWALL:
+		off_linktype = 6;
+		off_nl = 44;		/* Ethernet II */
+		off_nl_nosnap = 44;	/* XXX - what does it do with 802.3 packets? */
+		return;
+
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
