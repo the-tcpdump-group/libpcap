@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52 2002-01-22 23:36:19 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.53 2002-01-25 08:27:35 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -320,6 +320,11 @@ struct bpf_hdr {
  * (see Doug Ambrisko's FreeBSD patches).
  */
 #define DLT_AIRONET_HEADER	120
+
+/*
+ * Reserved for Siemens HiPath HDLC.
+ */
+#define DLT_HHDLC		121
 
 /*
  * The instruction encodings.

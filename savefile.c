@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.55 2001-11-28 07:16:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.56 2002-01-25 08:27:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -178,6 +178,7 @@ static const char rcsid[] =
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
 #define LINKTYPE_IPFILTER	116		/* IP Filter capture files */
 #define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
+#define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 
 static struct linktype_map {
 	int	dlt;
@@ -252,6 +253,9 @@ static struct linktype_map {
 
 	/* FreeBSD Aironet driver stuff */
 	{ DLT_AIRONET_HEADER,	LINKTYPE_AIRONET_HEADER },
+
+	/* Siemens HiPath HDLC */
+	{ DLT_HHDLC,		LINKTYPE_HHDLC },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
