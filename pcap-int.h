@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.59 2003-12-15 01:35:04 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.60 2003-12-20 10:24:52 risso Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -101,8 +101,8 @@ struct pcap {
 	int nonblock;
 #else
 	int fd;
-	int selectable_fd;
 #endif /* WIN32 */
+	int selectable_fd;
 	int snapshot;
 	int linktype;
 	int tzoff;		/* timezone offset */
