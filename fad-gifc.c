@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.3 2002-08-03 20:24:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.4 2003-02-25 07:50:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -85,8 +85,10 @@ struct rtentry;		/* declarations in <net/if.h> */
  * variant of the old BSD scheme (with "struct sockaddr_storage" rather
  * than "struct sockaddr"), and some use the new BSD scheme.
  *
- * GNU libc uses neither scheme, but has an "SA_LEN()" macro that
- * determines the size based on the address family.
+ * Some versions of GNU libc use neither scheme, but has an "SA_LEN()"
+ * macro that determines the size based on the address family.  Other
+ * versions don't have "SA_LEN()" (as it was in drafts of RFC 2553
+ * but not in the final version).
  *
  * We assume that a UNIX that doesn't have "getifaddrs()" and doesn't have
  * SIOCGLIFCONF, but has SIOCGIFCONF, uses "struct sockaddr" for the

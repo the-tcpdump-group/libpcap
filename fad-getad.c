@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.4 2002-10-19 02:25:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.5 2003-02-25 07:50:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -43,6 +43,7 @@ static const char rcsid[] =
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 
 #include <net/if.h>
 
@@ -73,15 +74,38 @@ static const char rcsid[] =
  * variant of the old BSD scheme (with "struct sockaddr_storage" rather
  * than "struct sockaddr"), and some use the new BSD scheme.
  *
- * GNU libc uses neither scheme, but has an "SA_LEN()" macro that
- * determines the size based on the address family.
+ * Some versions of GNU libc use neither scheme, but has an "SA_LEN()"
+ * macro that determines the size based on the address family.  Other
+ * versions don't have "SA_LEN()" (as it was in drafts of RFC 2553
+ * but not in the final version).  On the latter systems, we explicitly
+ * check the AF_ type to determine the length; we assume that on
+ * all those systems we have "struct sockaddr_storage".
  */
 #ifndef SA_LEN
 #ifdef HAVE_SOCKADDR_SA_LEN
 #define SA_LEN(addr)	(addr ? (addr)->sa_len : 0)
 #else /* HAVE_SOCKADDR_SA_LEN */
 #ifdef HAVE_SOCKADDR_STORAGE
-#define SA_LEN(addr)	(sizeof (struct sockaddr_storage))
+static size_t
+get_sa_len(struct sockaddr *addr)
+{
+	switch (addr->sa_family) {
+
+#ifdef AF_INET
+	case AF_INET:
+		return (sizeof (struct sockaddr_in));
+#endif
+
+#ifdef AF_INET6
+	case AF_INET6:
+		return (sizeof (struct sockaddr_in6));
+#endif
+
+	default:
+		return (sizeof (struct sockaddr));
+	}
+}
+#define SA_LEN(addr)	(get_sa_len(addr))
 #else /* HAVE_SOCKADDR_STORAGE */
 #define SA_LEN(addr)	(sizeof (struct sockaddr))
 #endif /* HAVE_SOCKADDR_STORAGE */
