@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.27 2004-12-09 19:03:36 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.28 2004-12-18 08:52:10 guy Exp $ (LBL)
  */
 
 /*
@@ -60,8 +60,13 @@ extern "C" {
 /* BSD style release date */
 #define BPF_RELEASE 199606
 
+#ifdef MSDOS /* must be 32-bit */
+typedef long          bpf_int32;
+typedef unsigned long bpf_u_int32;
+#else
 typedef	int bpf_int32;
 typedef	u_int bpf_u_int32;
+#endif
 
 /*
  * Alignment macros.  BPF_WORDALIGN rounds up to the next 

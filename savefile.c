@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.118 2004-12-17 20:26:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.119 2004-12-18 08:52:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -87,6 +87,19 @@ static const char rcsid[] _U_ =
 #define SFERR_BADVERSION	2
 #define SFERR_BADF		3
 #define SFERR_EOF		4 /* not really an error, just a status */
+
+/*
+ * Setting O_BINARY on DOS/Windows is a bit tricky
+ */
+#if defined(WIN32)
+  #define SET_BINMODE(f)  _setmode(fileno(f), O_BINARY)
+#elif defined(MSDOS)
+  #if defined(__HIGHC__)
+  #define SET_BINMODE(f)  setmode(f, O_BINARY)
+  #else
+  #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
+  #endif
+#endif
 
 /*
  * We don't write DLT_* values to the capture file header, because
@@ -657,7 +670,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 	if (fname[0] == '-' && fname[1] == '\0')
 		fp = stdin;
 	else {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 		fp = fopen(fname, "r");
 #else
 		fp = fopen(fname, "rb");
@@ -816,7 +829,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 		break;
 	}
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 	/*
 	 * You can do "select()" and "poll()" on plain files on most
 	 * platforms, and should be able to do so on pipes.
@@ -836,13 +849,13 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->stats_op = sf_stats;
 	p->close_op = sf_close;
 
-#ifdef WIN32
+#if defined(WIN32) || defined(MSDOS)
 	/*
 	 * If we're reading from the standard input, put it in binary
 	 * mode, as savefiles are binary files.
 	 */
 	if (fp == stdin)
-		_setmode(_fileno(f), _O_BINARY);
+		SET_BINMODE(fp);
 #endif
 
 	return (p);
@@ -1067,7 +1080,7 @@ static pcap_dumper_t *
 pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 {
 
-#ifdef WIN32
+#if defined(WIN32) || defined(MSDOS)
 	/*
 	 * If we're writing to the standard output, put it in binary
 	 * mode, as savefiles are binary files.
@@ -1076,7 +1089,7 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 	 * XXX - why?  And why not on the standard output?
 	 */
 	if (f == stdout)
-		_setmode(_fileno(f), _O_BINARY);
+		SET_BINMODE(f);
 	else
 		setbuf(f, NULL);
 #endif
@@ -1111,7 +1124,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		f = stdout;
 		fname = "standard output";
 	} else {
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 		f = fopen(fname, "w");
 #else
 		f = fopen(fname, "wb");

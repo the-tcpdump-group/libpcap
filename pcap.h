@@ -31,18 +31,21 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.51 2004-11-07 21:40:48 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.52 2004-12-18 08:52:11 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
 #define lib_pcap_h
 
-#ifdef WIN32
-#include <pcap-stdinc.h>
-#else /* WIN32 */
-#include <sys/types.h>
-#include <sys/time.h>
-#endif /* WIN32 */
+#if defined(WIN32)
+  #include <pcap-stdinc.h>
+#elif defined(MSDOS)
+  #include <sys/types.h>
+  #include <sys/socket.h>  /* u_int, u_char etc. */
+#else /* UN*X */
+  #include <sys/types.h>
+  #include <sys/time.h>
+#endif /* WIN32/MSDOS/UN*X */
 
 #ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap-bpf.h>
@@ -140,6 +143,39 @@ struct pcap_stat {
 #endif /* WIN32 */
 };
 
+#ifdef MSDOS
+/*
+ * As returned by the pcap_stats_ex()
+ */
+struct pcap_stat_ex {
+       u_long  rx_packets;        /* total packets received       */
+       u_long  tx_packets;        /* total packets transmitted    */
+       u_long  rx_bytes;          /* total bytes received         */
+       u_long  tx_bytes;          /* total bytes transmitted      */
+       u_long  rx_errors;         /* bad packets received         */
+       u_long  tx_errors;         /* packet transmit problems     */
+       u_long  rx_dropped;        /* no space in Rx buffers       */
+       u_long  tx_dropped;        /* no space available for Tx    */
+       u_long  multicast;         /* multicast packets received   */
+       u_long  collisions;
+
+       /* detailed rx_errors: */
+       u_long  rx_length_errors;
+       u_long  rx_over_errors;    /* receiver ring buff overflow  */
+       u_long  rx_crc_errors;     /* recv'd pkt with crc error    */
+       u_long  rx_frame_errors;   /* recv'd frame alignment error */
+       u_long  rx_fifo_errors;    /* recv'r fifo overrun          */
+       u_long  rx_missed_errors;  /* recv'r missed packet         */
+
+       /* detailed tx_errors */
+       u_long  tx_aborted_errors;
+       u_long  tx_carrier_errors;
+       u_long  tx_fifo_errors;
+       u_long  tx_heartbeat_errors;
+       u_long  tx_window_errors;
+     };
+#endif
+
 /*
  * Item in a list of interfaces.
  */
@@ -227,7 +263,8 @@ int	bpf_validate(struct bpf_insn *f, int len);
 char	*bpf_image(struct bpf_insn *, int);
 void	bpf_dump(struct bpf_program *, int);
 
-#ifdef WIN32
+#if defined(WIN32)
+
 /*
  * Win32 definitions
  */
@@ -239,20 +276,31 @@ int pcap_setmintocopy(pcap_t *p, int size);
 #ifdef WPCAP
 /* Include file with the wpcap-specific extensions */
 #include <Win32-Extensions.h>
-#endif
+#endif /* WPCAP */
 
 #define MODE_CAPT 0
 #define MODE_STAT 1
 #define MODE_MON 2
 
-#else
+#elif defined(MSDOS)
+
+/*
+ * MS-DOS definitions
+ */
+
+int  pcap_stats_ex (pcap_t *, struct pcap_stat_ex *);
+void pcap_set_wait (pcap_t *p, void (*yield)(void), int wait);
+u_long pcap_mac_packets (void);
+
+#else /* UN*X */
+
 /*
  * UN*X definitions
  */
 
 int	pcap_get_selectable_fd(pcap_t *);
 
-#endif /* WIN32 */
+#endif /* WIN32/MSDOS/UN*X */
 
 #ifdef __cplusplus
 }

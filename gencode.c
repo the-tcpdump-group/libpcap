@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.214 2004-12-17 20:16:44 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.215 2004-12-18 08:52:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -57,6 +57,10 @@ static const char rcsid[] _U_ =
 #include <memory.h>
 #include <setjmp.h>
 #include <stdarg.h>
+
+#ifdef MSDOS
+#include "pcap-dos.h"
+#endif
 
 #include "pcap-int.h"
 

@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.11 2004-10-18 09:51:02 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.12 2004-12-18 08:52:08 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -341,6 +341,7 @@ lbl/os-*.h	- OS-dependent defines and prototypes
 llc.h		- 802.2 LLC SAP definitions
 missing/*	- replacements for missing library functions
 mkdep		- construct Makefile dependency list
+msdos/*		- drivers for MS-DOS capture support
 nametoaddr.c	- hostname to address routines
 nlpid.h		- OSI network layer protocol identifier definitions
 net		- symlink to bpf/net
@@ -351,6 +352,8 @@ pcap-bpf.h	- BPF definitions
 pcap-dag.c	- Endace DAG device capture support
 pcap-dag.h	- Endace DAG device capture support
 pcap-dlpi.c	- Data Link Provider Interface support
+pcap-dos.c	- MS-DOS capture support
+pcap-dos.h	- headers for MS-DOS capture support
 pcap-enet.c	- enet support
 pcap-int.h	- internal libpcap definitions
 pcap-linux.c	- Linux packet socket support

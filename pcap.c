@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.79 2004-12-17 23:25:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.80 2004-12-18 08:52:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,7 +49,7 @@ static const char rcsid[] _U_ =
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__BORLANDC__)
 #include <unistd.h>
 #endif
 #include <fcntl.h>
@@ -57,6 +57,10 @@ static const char rcsid[] _U_ =
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
+#endif
+
+#ifdef MSDOS
+#include "pcap-dos.h"
 #endif
 
 #include "pcap-int.h"
@@ -528,7 +532,7 @@ pcap_fileno(pcap_t *p)
 #endif
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 int
 pcap_get_selectable_fd(pcap_t *p)
 {
@@ -561,7 +565,7 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
  * We don't look at "p->nonblock", in case somebody tweaked the FD
  * directly.
  */
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 int
 pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 {
@@ -586,7 +590,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	return p->setnonblock_op(p, nonblock, errbuf);
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 /*
  * Set non-blocking mode, under the assumption that it's just the
  * standard POSIX non-blocking flag.  (This can be called by the
@@ -629,6 +633,7 @@ pcap_win32strerror(void)
 	DWORD error;
 	static char errbuf[PCAP_ERRBUF_SIZE+1];
 	int errlen;
+	char *p;
 
 	error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
@@ -643,6 +648,8 @@ pcap_win32strerror(void)
 		errbuf[errlen - 1] = '\0';
 		errbuf[errlen - 2] = '\0';
 	}
+	p = strchr(errbuf, '\0');
+	snprintf (p, sizeof(errbuf)-(p-errbuf), " (%lu)", error);
 	return (errbuf);
 }
 #endif
@@ -692,7 +699,7 @@ pcap_close_common(pcap_t *p)
 {
 	if (p->buffer != NULL)
 		free(p->buffer);
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 	if (p->fd >= 0)
 		close(p->fd);
 #endif
@@ -778,7 +785,7 @@ static const char pcap_version_string[] = "libpcap version 0.9[.x]";
  * version numbers when building WinPcap.  (It'd be nice to do so for
  * the packet.dll version number as well.)
  */
-static const char wpcap_version_string[] = "3.0";
+static const char wpcap_version_string[] = "3.1";
 static const char pcap_version_string_fmt[] =
     "WinPcap version %s, based on %s";
 static const char pcap_version_string_packet_dll_fmt[] =
@@ -833,7 +840,34 @@ pcap_lib_version(void)
 	}
 	return (full_pcap_version_string);
 }
-#else
+
+#elif defined(MSDOS)
+
+static char *full_pcap_version_string;
+
+const char *
+pcap_lib_version (void)
+{
+	char *packet_version_string;
+	size_t full_pcap_version_string_len;
+	static char dospfx[] = "DOS-";
+
+	if (full_pcap_version_string == NULL) {
+		/*
+		 * Generate the version string.
+		 */
+		full_pcap_version_string_len =
+		    sizeof dospfx + strlen(pcap_version_string);
+		full_pcap_version_string =
+		    malloc(full_pcap_version_string_len);
+		strcpy(full_pcap_version_string, dospfx);
+		strcat(full_pcap_version_string, pcap_version_string);
+	}
+	return (full_pcap_version_string);
+}
+
+#else /* UN*X */
+
 const char *
 pcap_lib_version(void)
 {

@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.62 2004-12-17 20:32:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.63 2004-12-18 08:52:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -46,7 +46,9 @@ static const char rcsid[] _U_ =
 #else /* WIN32 */
 
 #include <sys/param.h>
+#ifndef MSDOS
 #include <sys/file.h>
+#endif
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_SOCKIO_H
@@ -65,9 +67,9 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__BORLANDC__)
 #include <unistd.h>
-#endif /* WIN32 */
+#endif /* !WIN32 && !__BORLANDC__ */
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #else
@@ -446,7 +448,7 @@ pcap_freealldevs(pcap_if_t *alldevs)
 	}
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 
 /*
  * Return the name of a network interface attached to the system, or NULL
@@ -570,7 +572,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	return (0);
 }
 
-#else /* WIN32 */
+#elif defined(WIN32)
 
 /*
  * Return the name of a network interface attached to the system, or NULL
@@ -696,4 +698,4 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	return (0);
 }
 
-#endif /* WIN32 */
+#endif /* !WIN32 && !MSDOS */

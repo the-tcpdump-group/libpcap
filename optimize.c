@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.83 2004-11-14 03:10:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.84 2004-12-18 08:52:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -32,6 +32,7 @@ static const char rcsid[] _U_ =
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <string.h>
 
 #include <errno.h>
 
@@ -45,6 +46,11 @@ static const char rcsid[] _U_ =
 
 #ifdef BDEBUG
 extern int dflag;
+#endif
+
+#if defined(MSDOS) && !defined(__DJGPP__)
+extern int _w32_ffs (int mask);
+#define ffs _w32_ffs
 #endif
 
 /*

@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.67 2004-12-17 20:32:35 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.68 2004-12-18 08:52:10 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -45,6 +45,11 @@ extern "C" {
 #ifdef WIN32
 #include <packet32.h>
 #endif /* WIN32 */
+
+#ifdef MSDOS
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 /*
  * Savefile
@@ -114,6 +119,11 @@ struct pcap {
 
 #ifdef PCAP_FDDIPAD
 	int fddipad;
+#endif
+
+#ifdef MSDOS
+        int inter_packet_wait;   /* offline: wait between packets */
+        void (*wait_proc)(void); /*          call proc while waiting */
 #endif
 
 	struct pcap_sf sf;
@@ -259,7 +269,7 @@ extern int vsnprintf (char *, size_t, const char *, va_list ap);
 /*
  * Routines that most pcap implementations can use for non-blocking mode.
  */
-#ifndef WIN32
+#if !defined(WIN32) && !defined(MSDOS)
 int	pcap_getnonblock_fd(pcap_t *, char *);
 int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
