@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.55 2001-01-20 07:47:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.56 2001-03-20 05:50:33 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -142,7 +142,7 @@ typedef int		socklen_t;
 /*
  * Prototypes for internal functions
  */
-static int map_arphrd_to_dlt(int arptype );
+static int map_arphrd_to_dlt(pcap_t *, int);
 static int live_open_old(pcap_t *, char *, int, int, char *);
 static int live_open_new(pcap_t *, char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -591,35 +591,70 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 /*
  *  Linux uses the ARP hardware type to identify the type of an 
  *  interface. pcap uses the DLT_xxx constants for this. This 
- *  function maps the ARPHRD_xxx constant to an appropriate
- *  DLT_xxx constant.
+ *  function takes a pointer to a "pcap_t", and an ARPHRD_xxx
+ *  constant, as arguments, and sets "handle->linktype" to the
+ *  appropriate DLT_XXX constant and sets "handle->offset" to
+ *  the appropriate value (to make "handle->offset" plus link-layer
+ *  header length be a multiple of 4, so that the link-layer payload
+ *  will be aligned on a 4-byte boundary when capturing packets).
+ *  (If the offset isn't set here, it'll be 0; add code as appropriate
+ *  for cases where it shouldn't be 0.)
  *  
  *  Returns -1 if unable to map the type; we print a message and,
  *  if we're using PF_PACKET/SOCK_RAW rather than PF_INET/SOCK_PACKET,
  *  we fall back on using PF_PACKET/SOCK_DGRAM.
  */
-static int map_arphrd_to_dlt(int arptype)
+static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
 {
 	switch (arptype) {
+
 	case ARPHRD_ETHER:
 	case ARPHRD_METRICOM:
-	case ARPHRD_LOOPBACK:	return DLT_EN10MB;
-	case ARPHRD_EETHER:	return DLT_EN3MB;
-	case ARPHRD_AX25:	return DLT_AX25;
-	case ARPHRD_PRONET:	return DLT_PRONET;
-	case ARPHRD_CHAOS:	return DLT_CHAOS;
+	case ARPHRD_LOOPBACK:
+		handle->linktype = DLT_EN10MB;
+		handle->offset = 2;
+		break;
+
+	case ARPHRD_EETHER:
+		handle->linktype = DLT_EN3MB;
+		break;
+
+	case ARPHRD_AX25:
+		handle->linktype = DLT_AX25;
+		break;
+
+	case ARPHRD_PRONET:
+		handle->linktype = DLT_PRONET;
+		break;
+
+	case ARPHRD_CHAOS:
+		handle->linktype = DLT_CHAOS;
+		break;
+
 #ifndef ARPHRD_IEEE802_TR
 #define ARPHRD_IEEE802_TR 800	/* From Linux 2.4 */
 #endif
 	case ARPHRD_IEEE802_TR:
-	case ARPHRD_IEEE802:	return DLT_IEEE802;
-	case ARPHRD_ARCNET:	return DLT_ARCNET;
-	case ARPHRD_FDDI:	return DLT_FDDI;
+	case ARPHRD_IEEE802:
+		handle->linktype = DLT_IEEE802;
+		handle->offset = 2;
+		break;
+
+	case ARPHRD_ARCNET:
+		handle->linktype = DLT_ARCNET;
+		break;
+
+	case ARPHRD_FDDI:
+		handle->linktype = DLT_FDDI;
+		handle->offset = 3;
+		break;
 
 #ifndef ARPHRD_ATM  /* FIXME: How to #include this? */
 #define ARPHRD_ATM 19
 #endif
-	case ARPHRD_ATM:	return DLT_ATM_CLIP;
+	case ARPHRD_ATM:
+		handle->linktype = DLT_ATM_CLIP;
+		break;
 
 	case ARPHRD_PPP:
 	/* Not sure if this is correct for all tunnels, but it
@@ -633,10 +668,14 @@ static int map_arphrd_to_dlt(int arptype)
 	case ARPHRD_SLIP6:
 	case ARPHRD_CSLIP6:
 	case ARPHRD_ADAPT:
-	case ARPHRD_SLIP:	return DLT_RAW;
-	}
+	case ARPHRD_SLIP:
+		handle->linktype = DLT_RAW;
+		break;
 
-	return -1;
+	default:
+		return -1;
+	}
+	return 0;
 }
 
 /* ===== Functions to interface to the newer kernels ================== */
@@ -689,6 +728,12 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		handle->md.lo_ifindex = iface_get_id(sock_fd, "lo", ebuf);
 
 		/*
+		 * Default value for offset to align link-layer payload
+		 * on a 4-byte boundary.
+		 */
+		handle->offset	 = 0;
+
+		/*
 		 * What kind of frames do we have to deal with? Fall back 
 		 * to cooked mode if we have an unknown interface type. 
 		 */
@@ -700,8 +745,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			arptype	= iface_get_arptype(sock_fd, device, ebuf);
 			if (arptype == -1) 
 				break;
-			handle->linktype = map_arphrd_to_dlt(arptype);
-			if (handle->linktype == -1 ||
+			if (map_arphrd_to_dlt(handle, arptype) == -1 ||
 			    (handle->linktype == DLT_EN10MB &&
 			     (strncmp("isdn", device, 4) == 0 ||
 			      strncmp("isdY", device, 4) == 0)) ||
@@ -804,9 +848,8 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		/* Fill in the pcap structure */
 
 		handle->fd 	 = sock_fd;
-		handle->offset	 = 0;
 
-		handle->buffer	 = malloc(handle->bufsize);
+		handle->buffer	 = malloc(handle->bufsize + handle->offset);
 		if (!handle->buffer) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "malloc: %s", pcap_strerror(errno));
@@ -1095,9 +1138,14 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		if (arptype == -1)
 			break;
 
-		handle->fd 	 = sock_fd;
+		/*
+		 * Default value for offset to align link-layer payload
+		 * on a 4-byte boundary.
+		 */
 		handle->offset	 = 0;
-		handle->linktype = map_arphrd_to_dlt(arptype);
+
+		handle->fd 	 = sock_fd;
+
 		/*
 		 * XXX - handle ISDN types here?  We can't fall back on
 		 * cooked sockets, so we'd have to figure out from the
@@ -1109,12 +1157,12 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		 * type that has only an Ethernet packet type as
 		 * a link-layer header.
 		 */
-		if (handle->linktype == -1) {
+		if (map_arphrd_to_dlt(handle, arptype) == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "interface type of %s not supported", device);
 			break;
 		}
-		handle->buffer	 = malloc(handle->bufsize);
+		handle->buffer	 = malloc(handle->bufsize + handle->offset);
 		if (!handle->buffer) {
 		        snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "malloc: %s", pcap_strerror(errno));
