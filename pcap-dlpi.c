@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.75 2002-02-22 11:49:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.76 2002-03-05 04:05:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -177,7 +177,7 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	cc = p->cc;
 	if (cc == 0) {
 		data.buf = (char *)p->buffer + p->offset;
-		data.maxlen = MAXDLBUF;
+		data.maxlen = p->bufsize;
 		data.len = 0;
 		do {
 			if (getmsg(p->fd, &ctl, &data, &flags) < 0) {
