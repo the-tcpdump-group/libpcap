@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.171 2002-08-02 03:44:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.172 2002-08-02 05:53:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -30,16 +30,21 @@ static const char rcsid[] =
 
 #ifdef WIN32
 #include <pcap-stdinc.h>
+#else /* WIN32 */
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+#endif /* WIN32 */
 
+/*
+ * XXX - why was this included even on UNIX?
+ */
 #ifdef __MINGW32__
 #include "IP6_misc.h"
 #endif
 
-#else /* WIN32 */
+#ifndef WIN32
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 #ifdef __NetBSD__
 #include <sys/param.h>
 #endif
@@ -69,11 +74,11 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "ppp.h"
 #include "sll.h"
 #include "arcnet.h"
-#ifndef WIN32
 #ifdef INET6
+#ifndef WIN32
 #include <netdb.h>	/* for "struct addrinfo" */
-#endif /*INET6*/
 #endif /* WIN32 */
+#endif /*INET6*/
 #include <pcap-namedb.h>
 
 #define ETHERMTU	1500

@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.66 2002-08-02 03:44:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.67 2002-08-02 05:53:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -34,9 +34,6 @@ static const char rcsid[] =
 #ifdef WIN32
 #include <pcap-stdinc.h>
 
-#ifdef __MINGW32__
-#include "IP6_misc.h"
-#endif
 #else /* WIN32 */
 
 #include <sys/param.h>
@@ -45,6 +42,16 @@ static const char rcsid[] =
 #include <sys/time.h>
 
 #include <netinet/in.h>
+#endif /* WIN32 */
+
+/*
+ * XXX - why was this included even on UNIX?
+ */
+#ifdef __MINGW32__
+#include "IP6_misc.h"
+#endif
+
+#ifndef WIN32
 #ifdef HAVE_ETHER_HOSTTON
 #ifdef HAVE_NETINET_IF_ETHER_H
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
