@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.43 2001-10-28 02:31:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.44 2001-10-28 20:31:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -111,6 +111,11 @@ struct rtentry;
 #endif /* HAVE_SOCKADDR_SA_LEN */
 #endif /* SA_LEN */
 
+/*
+ * Description string for the "any" device.
+ */
+static const char any_descr[] = "Pseudo-device that captures on all interfaces";
+
 static struct sockaddr *
 dup_sockaddr(struct sockaddr *sa)
 {
@@ -151,7 +156,7 @@ get_instance(char *name)
 
 static int
 add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
-    u_int flags, char *errbuf)
+    u_int flags, const char *description, char *errbuf)
 {
 	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
@@ -196,7 +201,18 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 		curdev->next = NULL;
 		curdev->name = malloc(strlen(name) + 1);
 		strcpy(curdev->name, name);
-		curdev->description = NULL;	/* not available */
+		if (description != NULL) {
+			/*
+			 * We have a description for this interface.
+			 */
+			curdev->description = malloc(strlen(description) + 1);
+			strcpy(curdev->description, description);
+		} else {
+			/*
+			 * We don't.
+			 */
+			curdev->description = NULL;
+		}
 		curdev->addresses = NULL;	/* list starts out as empty */
 		curdev->flags = 0;
 		if (ISLOOPBACK(name, flags))
@@ -314,7 +330,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 	pcap_if_t *curdev;
 	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
 
-	if (add_or_find_if(&curdev, alldevs, name, flags, errbuf) == -1) {
+	if (add_or_find_if(&curdev, alldevs, name, flags, NULL, errbuf) == -1) {
 		/*
 		 * Error - give up.
 		 */
@@ -416,11 +432,13 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 }
 
 static int
-pcap_add_if(pcap_if_t **devlist, char *name, u_int flags, char *errbuf)
+pcap_add_if(pcap_if_t **devlist, char *name, u_int flags,
+    const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
 
-	return (add_or_find_if(&curdev, devlist, name, flags, errbuf));
+	return (add_or_find_if(&curdev, devlist, name, flags, description,
+	    errbuf));
 }
 
 /*
@@ -502,7 +520,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 		 * We haven't had any errors yet; add the "any" device,
 		 * if we can open it.
 		 */
-		if (pcap_add_if(&devlist, "any", 0, errbuf) < 0)
+		if (pcap_add_if(&devlist, "any", 0, any_descr, errbuf) < 0)
 			ret = -1;
 	}
 
@@ -858,7 +876,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 		 * We haven't had any errors yet; add the "any" device,
 		 * if we can open it.
 		 */
-		if (pcap_add_if(&devlist, "any", 0, errbuf) < 0) {
+		if (pcap_add_if(&devlist, "any", 0, any_descr, errbuf) < 0) {
 			/*
 			 * Oops, we had a fatal error.
 			 */
