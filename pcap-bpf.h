@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.10 2003-11-13 01:35:47 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.1 2003-11-15 23:30:49 guy Exp $ (LBL)
  */
 
 /*
@@ -399,7 +399,7 @@ struct bpf_version {
  */
 
 /*
- * DOCSIS MAC frames.
+ * Reserved for DOCSIS MAC frames.
  */
 #define DLT_DOCSIS		143
 
