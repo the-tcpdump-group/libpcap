@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.66 2003-11-18 22:14:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.67 2003-11-20 01:21:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -60,6 +60,11 @@ static const char rcsid[] _U_ =
 #endif
 
 #include "pcap-int.h"
+
+#ifdef HAVE_DAG_API
+#include <dagnew.h>
+#include <dagapi.h>
+#endif
 
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -558,6 +563,15 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 		 */
 		return (0);
 	}
+
+#if HAVE_DAG_API
+	if (nonblock) {
+		p->md.dag_offset_flags |= DAGF_NONBLOCK;
+	} else {
+		p->md.dag_offset_flags &= ~DAGF_NONBLOCK;
+	}
+#endif /* HAVE_DAG_API */
+
 #ifndef WIN32
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
