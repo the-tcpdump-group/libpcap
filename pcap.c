@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.73 2004-03-23 19:18:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.74 2004-03-24 19:50:54 mcr Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,7 +49,7 @@ static const char rcsid[] _U_ =
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
+#ifndef _MSC_VER
 #include <unistd.h>
 #endif
 #include <fcntl.h>
@@ -351,6 +351,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_DOCSIS, "DOCSIS"),
 	DLT_CHOICE(DLT_LINUX_IRDA, "Linux IrDA"),
 	DLT_CHOICE(DLT_IEEE802_11_RADIO_AVS, "802.11 plus AVS radio information header"),
+        DLT_CHOICE(DLT_SYMANTEC_FIREWALL, "Symantec Firewall"),
 	DLT_CHOICE_SENTINEL
 };
 
