@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.63 2004-12-18 08:52:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.64 2005-01-28 20:51:20 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -130,8 +130,23 @@ int
 add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
     u_int flags, const char *description, char *errbuf)
 {
+	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
 	int this_instance;
+
+	/*
+	 * Can we open this interface for live capture?
+	 */
+	p = pcap_open_live(name, 68, 0, 0, errbuf);
+	if (p == NULL) {
+		/*
+		 * No.  Don't bother including it.
+		 * Don't treat this as an error, though.
+		 */
+		*curdev_ret = NULL;
+		return (0);
+	}
+	pcap_close(p);
 
 	/*
 	 * Is there already an entry in the list for this interface?
