@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.7 2003-07-25 06:36:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.8 2003-08-18 22:00:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -104,6 +104,7 @@ static unsigned short endian_test_word = 0x0100;
 static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
+static int dag_get_datalink(pcap_t *p);
 
 static void delete_pcap_dag(pcap_t *p) {
   pcap_dag_node_t *curr = NULL, *prev = NULL;
@@ -389,33 +390,12 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
   }
 #endif
 
-  /* set link type */
-  
-  /* Check the type through a dagapi call.
-  */
-  switch(dag_linktype(handle->fd)) {
-  case TYPE_HDLC_POS:
-    handle->linktype = DLT_CHDLC;
-    fprintf(stderr, "Set DAG linktype to %d (DLT_CHDLC)\n", handle->linktype);
-    break;
-  case TYPE_ETH:
-    handle->linktype = DLT_EN10MB;
-    fprintf(stderr, "Set DAG linktype to %d (DLT_EN10MB)\n", handle->linktype);
-    break;
-  case TYPE_ATM: 
-    handle->linktype = DLT_ATM_RFC1483;
-    fprintf(stderr, "Set DAG linktype to %d (DLT_ATM_RFC1483)\n", handle->linktype);
-    break;
-  case TYPE_LEGACY:
-    handle->linktype = DLT_NULL;
-    fprintf(stderr, "Set DAG linktype to %d (DLT_NULL)\n", handle->linktype);
-    break;
-  default:
-    snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_open_live %s: unknown linktype %d\n", device, dag_linktype(handle->fd));
+  if ((handle->linktype = dag_get_datalink(handle)) < 0) {
+    snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_get_linktype %s: unknown linktype\n", device);
     return NULL;
   }
   
-  handle->bufsize = 0;/*handle->snapshot;*/
+  handle->bufsize = 0;
 
   if (new_pcap_dag(handle) < 0) {
     snprintf(ebuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
@@ -571,4 +551,50 @@ static int
 dag_set_datalink(pcap_t *p, int dlt)
 {
 	return (0);
+}
+
+static int
+dag_get_datalink(pcap_t *p)
+{
+  int linktype = -1;
+
+  /* Check the type through a dagapi call.
+  */
+  switch(dag_linktype(p->fd)) {
+  case TYPE_HDLC_POS: {
+      dag_record_t *record;
+
+      /* peek at the first available record to see if it is PPP */
+      while ((p->md.dag_mem_top - p->md.dag_mem_bottom) < (dag_record_size + 4)) {
+        p->md.dag_mem_top = dag_offset(p->fd, &(p->md.dag_mem_bottom), 0);
+      }
+      record = (dag_record_t *)(p->md.dag_mem_base + p->md.dag_mem_bottom);
+
+      if ((ntohl(record->rec.pos.hdlc) & 0xffff0000) == 0xff030000) {
+        linktype = DLT_PPP_SERIAL;
+        fprintf(stderr, "Set DAG linktype to %d (DLT_PPP_SERIAL)\n", linktype);
+      } else {
+        linktype = DLT_CHDLC;
+        fprintf(stderr, "Set DAG linktype to %d (DLT_CHDLC)\n", linktype);
+      }
+      break;
+    }
+  case TYPE_ETH:
+    linktype = DLT_EN10MB;
+    fprintf(stderr, "Set DAG linktype to %d (DLT_EN10MB)\n", linktype);
+    break;
+  case TYPE_ATM: 
+    linktype = DLT_ATM_RFC1483;
+    fprintf(stderr, "Set DAG linktype to %d (DLT_ATM_RFC1483)\n", linktype);
+    break;
+  case TYPE_LEGACY:
+    linktype = DLT_NULL;
+    fprintf(stderr, "Set DAG linktype to %d (DLT_NULL)\n", linktype);
+    break;
+  default:
+    fprintf(stderr, "Unknown DAG linktype %d\n", dag_linktype(p->fd));
+    break;
+  }
+
+  return linktype;
 }
