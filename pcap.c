@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.43 2003-01-03 08:34:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.44 2003-01-16 07:44:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -448,8 +448,6 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 #else
 	int newtimeout;
 #endif
-	if (p->dlt_list != NULL)
-		free(p->dlt_list);
 
 	if (p->sf.rfile != NULL) {
 		/*
@@ -591,6 +589,8 @@ pcap_close(pcap_t *p)
 			free(p->sf.base);
 	} else if (p->buffer != NULL)
 		free(p->buffer);
+	if (p->dlt_list != NULL)
+		free(p->dlt_list);
 
 	pcap_freecode(&p->fcode);
 	free(p);
