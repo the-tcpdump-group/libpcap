@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.20 1999-11-21 01:10:20 assar Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.21 2000-05-04 13:34:24 itojun Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -131,6 +131,11 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 /* Ultrix pads to make everything line up on a nice boundary */
 #if defined(ultrix) || defined(__alpha) || defined(__NetBSD__)
 #define       PCAP_FDDIPAD 3
+#endif
+
+#ifndef HAVE_STRLCPY
+#define strlcpy(x, y, z) \
+	(strncpy((x), (y), (z)), (x)[(z) - 1] = '\0', strlen((y)))
 #endif
 
 /* XXX */
