@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.69 2001-04-17 08:25:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.70 2001-05-10 14:48:03 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -106,7 +106,7 @@ pcap_parse()
 
 %token  DST SRC HOST GATEWAY
 %token  NET MASK PORT LESS GREATER PROTO PROTOCHAIN BYTE
-%token  ARP RARP IP TCP UDP ICMP IGMP IGRP PIM VRRP
+%token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
@@ -247,6 +247,7 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| IP			{ $$ = Q_IP; }
 	| ARP			{ $$ = Q_ARP; }
 	| RARP			{ $$ = Q_RARP; }
+	| SCTP			{ $$ = Q_SCTP; }
 	| TCP			{ $$ = Q_TCP; }
 	| UDP			{ $$ = Q_UDP; }
 	| ICMP			{ $$ = Q_ICMP; }

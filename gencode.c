@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.151 2001-04-17 08:25:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.152 2001-05-10 14:48:01 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -63,6 +63,10 @@ struct rtentry;
 #endif /*INET6*/
 
 #define ETHERMTU	1500
+
+#ifndef IPPROTO_SCTP
+#define IPPROTO_SCTP 132
+#endif
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -1734,6 +1738,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_TCP:
 		bpf_error("'tcp' modifier applied to host");
 
+	case Q_SCTP:
+		bpf_error("'sctp' modifier applied to host");
+
 	case Q_UDP:
 		bpf_error("'udp' modifier applied to host");
 
@@ -1835,6 +1842,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_ARP:
 		bpf_error("'arp' modifier applied to ip6 host");
+
+	case Q_SCTP:
+		bpf_error("'sctp' modifier applied to host");
 
 	case Q_TCP:
 		bpf_error("'tcp' modifier applied to host");
@@ -1972,6 +1982,14 @@ gen_proto_abbrev(proto)
 	struct block *b1;
 
 	switch (proto) {
+
+	case Q_SCTP:
+		b1 = gen_proto(IPPROTO_SCTP, Q_IP, Q_DEFAULT);
+#ifdef INET6
+		b0 = gen_proto(IPPROTO_SCTP, Q_IPV6, Q_DEFAULT);
+		gen_or(b0, b1);
+#endif
+		break;
 
 	case Q_TCP:
 		b1 = gen_proto(IPPROTO_TCP, Q_IP, Q_DEFAULT);
@@ -2243,12 +2261,15 @@ gen_port(port, ip_proto, dir)
 	switch (ip_proto) {
 	case IPPROTO_UDP:
 	case IPPROTO_TCP:
+	case IPPROTO_SCTP:
 		b1 = gen_portop(port, ip_proto, dir);
 		break;
 
 	case PROTO_UNDEF:
 		tmp = gen_portop(port, IPPROTO_TCP, dir);
 		b1 = gen_portop(port, IPPROTO_UDP, dir);
+		gen_or(tmp, b1);
+		tmp = gen_portop(port, IPPROTO_SCTP, dir);
 		gen_or(tmp, b1);
 		break;
 
@@ -2313,12 +2334,15 @@ gen_port6(port, ip_proto, dir)
 	switch (ip_proto) {
 	case IPPROTO_UDP:
 	case IPPROTO_TCP:
+	case IPPROTO_SCTP:
 		b1 = gen_portop6(port, ip_proto, dir);
 		break;
 
 	case PROTO_UNDEF:
 		tmp = gen_portop6(port, IPPROTO_TCP, dir);
 		b1 = gen_portop6(port, IPPROTO_UDP, dir);
+		gen_or(tmp, b1);
+		tmp = gen_portop6(port, IPPROTO_SCTP, dir);
 		gen_or(tmp, b1);
 		break;
 
@@ -2753,6 +2777,10 @@ gen_proto(v, proto, dir)
 		bpf_error("'tcp proto' is bogus");
 		/* NOTREACHED */
 
+	case Q_SCTP:
+		bpf_error("'sctp proto' is bogus");
+		/* NOTREACHED */
+
 	case Q_ICMP:
 		bpf_error("'icmp proto' is bogus");
 		/* NOTREACHED */
@@ -2950,13 +2978,16 @@ gen_scode(name, q)
 		}
 
 	case Q_PORT:
-		if (proto != Q_DEFAULT && proto != Q_UDP && proto != Q_TCP)
+		if (proto != Q_DEFAULT &&
+		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
 			bpf_error("illegal qualifier of 'port'");
 		if (pcap_nametoport(name, &port, &real_proto) == 0)
 			bpf_error("unknown port '%s'", name);
 		if (proto == Q_UDP) {
 			if (real_proto == IPPROTO_TCP)
 				bpf_error("port '%s' is tcp", name);
+			else if (real_proto == IPPROTO_SCTP)
+				bpf_error("port '%s' is sctp", name);
 			else
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_UDP;
@@ -2964,9 +2995,22 @@ gen_scode(name, q)
 		if (proto == Q_TCP) {
 			if (real_proto == IPPROTO_UDP)
 				bpf_error("port '%s' is udp", name);
+
+			else if (real_proto == IPPROTO_SCTP)
+				bpf_error("port '%s' is sctp", name);
 			else
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_TCP;
+		}
+		if (proto == Q_SCTP) {
+			if (real_proto == IPPROTO_UDP)
+				bpf_error("port '%s' is udp", name);
+
+			else if (real_proto == IPPROTO_TCP)
+				bpf_error("port '%s' is tcp", name);
+			else
+				/* override PROTO_UNDEF */
+				real_proto = IPPROTO_SCTP;
 		}
 #ifndef INET6
 		return gen_port(port, real_proto, dir);
@@ -3105,6 +3149,8 @@ gen_ncode(s, v, q)
 			proto = IPPROTO_UDP;
 		else if (proto == Q_TCP)
 			proto = IPPROTO_TCP;
+		else if (proto == Q_SCTP)
+			proto = IPPROTO_SCTP;
 		else if (proto == Q_DEFAULT)
 			proto = PROTO_UNDEF;
 		else
@@ -3317,6 +3363,7 @@ gen_load(proto, index, size)
 		index->b = b;
 		break;
 
+	case Q_SCTP:
 	case Q_TCP:
 	case Q_UDP:
 	case Q_ICMP:

@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.52 2001-04-17 08:25:22 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.53 2001-05-10 14:48:02 fenner Exp $ (LBL)
  */
 
 /* Address qualifiers. */
@@ -36,41 +36,42 @@
 #define Q_IP		2
 #define Q_ARP		3
 #define Q_RARP		4
-#define Q_TCP		5
-#define Q_UDP		6
-#define Q_ICMP		7
-#define Q_IGMP		8
-#define Q_IGRP		9
+#define Q_SCTP		5
+#define Q_TCP		6
+#define Q_UDP		7
+#define Q_ICMP		8
+#define Q_IGMP		9
+#define Q_IGRP		10
 
 
-#define	Q_ATALK		10
-#define	Q_DECNET	11
-#define	Q_LAT		12
-#define Q_SCA		13
-#define	Q_MOPRC		14
-#define	Q_MOPDL		15
+#define	Q_ATALK		11
+#define	Q_DECNET	12
+#define	Q_LAT		13
+#define Q_SCA		14
+#define	Q_MOPRC		15
+#define	Q_MOPDL		16
 
 
-#define Q_IPV6		16
-#define Q_ICMPV6	17
-#define Q_AH		18
-#define Q_ESP		19
+#define Q_IPV6		17
+#define Q_ICMPV6	18
+#define Q_AH		19
+#define Q_ESP		20
 
-#define Q_PIM		20
-#define Q_VRRP		21
+#define Q_PIM		21
+#define Q_VRRP		22
 
-#define Q_AARP		22
+#define Q_AARP		23
 
-#define Q_ISO		23
-#define Q_ESIS		24
-#define Q_ISIS		25
-#define Q_CLNP		26
+#define Q_ISO		24
+#define Q_ESIS		25
+#define Q_ISIS		26
+#define Q_CLNP		27
 
-#define Q_STP		27
+#define Q_STP		28
 
-#define Q_IPX		28
+#define Q_IPX		29
 
-#define Q_NETBEUI	29
+#define Q_NETBEUI	30
 
 /* Directional qualifiers. */
 
