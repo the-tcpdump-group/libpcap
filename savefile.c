@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.98 2003-11-21 10:19:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.99 2003-12-03 21:34:21 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -209,6 +209,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_RIO		124		/* RapidIO */
 #define LINKTYPE_PCI_EXP	125		/* PCI Express */
 #define LINKTYPE_AURORA		126		/* Xilinx Aurora link layer */
+#define LINKTYPE_IBM_SP		145		/* IBM SP switch */
+#define LINKTYPE_IBM_SN		146		/* IBM Next Federation switch */
 
 static struct linktype_map {
 	int	dlt;
@@ -339,6 +341,10 @@ static struct linktype_map {
 
 	/* IrDA IrLAP packets + Linux-cooked header */
 	{ DLT_LINUX_IRDA,	LINKTYPE_LINUX_IRDA },
+
+	/* IBM SP and Next Federation switches */
+	{ DLT_IBM_SP,		LINKTYPE_IBM_SP },
+	{ DLT_IBM_SN,		LINKTYPE_IBM_SN },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
