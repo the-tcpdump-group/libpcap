@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.117 2004-12-15 09:00:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.118 2004-12-17 20:26:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -652,6 +652,8 @@ pcap_t *
 pcap_open_offline(const char *fname, char *errbuf)
 {
 	FILE *fp;
+	pcap_t *p;
+
 	if (fname[0] == '-' && fname[1] == '\0')
 		fp = stdin;
 	else {
@@ -663,10 +665,15 @@ pcap_open_offline(const char *fname, char *errbuf)
 		if (fp == NULL) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
 			    pcap_strerror(errno));
-			return NULL;
+			return (NULL);
 		}
 	}
-	return (pcap_fopen_offline(fp, errbuf));
+	p = pcap_fopen_offline(fp, errbuf);
+	if (p == NULL) {
+		if (fp != stdin)
+			fclose(fp);
+	}
+	return (p);
 }
 
 pcap_t *
@@ -840,8 +847,6 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 
 	return (p);
  bad:
-	if (fp != NULL && fp != stdin)
-		fclose(fp);
 	free(p);
 	return (NULL);
 }
