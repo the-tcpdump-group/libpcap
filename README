@@ -1,9 +1,20 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.20 2000-06-11 16:46:21 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.21 2000-06-16 17:50:17 mcr Exp $ (LBL)
 
 LIBPCAP 0.5
 Now maintained by "The Tcpdump Group"
-Send patches to patches@tcpdump.org
 See 		www.tcpdump.org
+
+Please send inquiries/comments/reports to 	tcpdump-workers@tcpdump.org
+
+Anonymous CVS is available via:
+	cvs -d cvs.tcpdump.org:/tcpdump/master login
+	(password "anoncvs")
+	cvs -d cvs.tcpdump.org:/tcpdump/master checkout libpcap
+
+Version 0.5 of LIBPCAP can be retrived with the CVS tag "libpcap_0_5":
+	cvs -d cvs.tcpdump.org:/tcpdump/master checkout -r libpcap_0_5 libpcap
+
+Please send patches against the master copy to patches@tcpdump.org.
 
 formerly from 	Lawrence Berkeley National Laboratory
 		Network Research Group <libpcap@ee.lbl.gov>
@@ -45,5 +56,5 @@ to Ultrix using the kernel source and/or object patches available in:
 
 Problems, bugs, questions, desirable enhancements, source code
 contributions, etc., should be sent to the email address
-"patches@tcpdump.org".
+"tcpdump-workers@tcpdump.org".
 
