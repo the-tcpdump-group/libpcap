@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.14 2004-01-29 10:36:44 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.15 2004-02-11 22:06:58 hannes Exp $ (LBL)
  */
 
 /*
@@ -478,6 +478,14 @@ struct bpf_version {
  * 802.11 drivers; that may happen in the future.
  */
 #define DLT_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
+
+/*
+ * juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net> the DLT_s are used
+ * for passing on chassis-internal metainformation like
+ * QOS profiles etc.
+ */
+#define DLT_JUNIPER_MONITOR     164
 
 /*
  * The instruction encodings.

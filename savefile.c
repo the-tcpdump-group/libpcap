@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.101 2004-01-29 10:36:44 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.102 2004-02-11 22:06:59 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -252,6 +252,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_USER14		161
 #define LINKTYPE_USER15		162
 
+#define LINKTYPE_JUNIPER_MONITOR 164
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -407,6 +409,10 @@ static struct linktype_map {
 	 *	defining DLT_* values that collide with those
 	 *	LINKTYPE_* values, either).
 	 */
+
+        /* Juniper-internal chassis encapsulation */
+        { DLT_JUNIPER_MONITOR,     LINKTYPE_JUNIPER_MONITOR },
+
 	{ -1,			-1 }
 };
 
