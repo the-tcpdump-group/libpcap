@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.59 2002-06-07 04:31:13 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.60 2002-07-11 07:56:45 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -263,9 +263,10 @@ struct bpf_hdr {
  */
 
 /*
- * Reserved for Frame Relay; BSD/OS has a DLT_FR, with a value of 11,
- * but that collides with other values.  DLT_FR and DLT_FRELAY packets
- * start with the Frame Relay header (DLCI, etc.).
+ * Frame Relay; BSD/OS has a DLT_FR with a value of 11, but that collides
+ * with other values.
+ * DLT_FR and DLT_FRELAY packets start with the Q.922 Frame Relay header
+ * (DLCI, etc.).
  */
 #define DLT_FRELAY	107
 

@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.167 2002-06-11 17:04:44 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.168 2002-07-11 07:56:44 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -781,6 +781,16 @@ init_linktype(type)
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
+
+	case DLT_FRELAY:
+		/*
+		 * XXX - we should set this to handle SNAP-encapsulated
+		 * frames (NLPID of 0x80).
+		 */
+		off_linktype = -1;
+		off_nl = 0;
+		off_nl_nosnap = 0;	/* no 802.2 LLC */
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -825,7 +835,7 @@ static struct block *
 gen_linktype(proto)
 	register int proto;
 {
-	struct block *b0, *b1;
+	struct block *b0, *b1, *b2;
 
 	switch (linktype) {
 
@@ -1467,6 +1477,51 @@ gen_linktype(proto)
 		switch (proto) {
 		case ETHERTYPE_ATALK:
 			return gen_true();
+		default:
+			return gen_false();
+		}
+		break;
+
+	case DLT_FRELAY:
+		/*
+		 * XXX - assumes a 2-byte Frame Relay header with
+		 * DLCI and flags.  What if the address is longer?
+		 */
+		switch (proto) {
+
+		case ETHERTYPE_IP:
+			/*
+			 * Check for the special NLPID for IP.
+			 */
+			return gen_cmp(2, BPF_H, (0x03<<8) | 0xcc);
+
+#ifdef INET6
+		case ETHERTYPE_IPV6:
+			/*
+			 * Check for the special NLPID for IPv6.
+			 */
+			return gen_cmp(2, BPF_H, (0x03<<8) | 0x8e);
+#endif
+
+		case LLCSAP_ISONS:
+			/*
+			 * Check for several OSI protocols.
+			 *
+			 * Frame Relay packets typically have an OSI
+			 * NLPID at the beginning; we check for each
+			 * of them.
+			 *
+			 * What we check for is the NLPID and a frame
+			 * control field of UI, i.e. 0x03 followed
+			 * by the NLPID.
+			 */
+			b0 = gen_cmp(2, BPF_H, (0x03<<8) | ISO8473_CLNP);
+			b1 = gen_cmp(2, BPF_H, (0x03<<8) | ISO9542_ESIS);
+			b2 = gen_cmp(2, BPF_H, (0x03<<8) | ISO10589_ISIS);
+			gen_or(b1, b2);
+			gen_or(b0, b2);
+			return b2;
+
 		default:
 			return gen_false();
 		}
@@ -2846,10 +2901,36 @@ gen_proto(v, proto, dir)
 		return b1;
 
 	case Q_ISO:
-		b0 = gen_linktype(LLCSAP_ISONS);
-		b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
-		gen_and(b0, b1);
-		return b1;
+		switch (linktype) {
+
+		case DLT_FRELAY:
+			/*
+			 * Frame Relay packets typically have an OSI
+			 * NLPID at the beginning; "gen_linktype(LLCSAP_ISONS)"
+			 * generates code to check for all the OSI
+			 * NLPIDs, so calling it and then adding a check
+			 * for the particular NLPID for which we're
+			 * looking is bogus, as we can just check for
+			 * the NLPID.
+			 *
+			 * What we check for is the NLPID and a frame
+			 * control field value of UI, i.e. 0x03 followed
+			 * by the NLPID.
+			 *
+			 * XXX - assumes a 2-byte Frame Relay header with
+			 * DLCI and flags.  What if the address is longer?
+			 *
+			 * XXX - what about SNAP-encapsulated frames?
+			 */
+			return gen_cmp(2, BPF_H, (0x03<<8) | v);
+			break;
+
+		default:
+			b0 = gen_linktype(LLCSAP_ISONS);
+			b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
+			gen_and(b0, b1);
+			return b1;
+		}
 
 	case Q_ARP:
 		bpf_error("arp does not encapsulate another protocol");
