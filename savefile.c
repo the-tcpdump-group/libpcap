@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.83 2003-07-25 04:05:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.84 2003-07-25 04:42:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -532,6 +532,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 	pcap_fddipad = 0;
 #endif
 
+	p->setfilter_op = install_bpf_program;
 	p->stats_op = sf_stats;
 	p->close_op = sf_close;
 

@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.10 2003-07-25 04:04:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.11 2003-07-25 04:42:04 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -42,6 +42,8 @@ static const char rcsid[] =
 int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
+
+static int pcap_setfilter_win32(pcap_t *, struct bpf_program *);
 
 #define	PcapBufSize 256000	/*dimension of the buffer in the pcap_t structure*/
 #define	SIZE_BUF 1000000
@@ -254,6 +256,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 	PacketSetReadTimeout(p->adapter, to_ms);
 
+	p->setfilter_op = pcap_setfilter_win32;
 	p->stats_op = pcap_stats_win32;
 	p->close_op = pcap_close_win32;
 
@@ -268,15 +271,10 @@ bad:
 }
 
 
-int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
+static int
+pcap_setfilter_win32(pcap_t *p, struct bpf_program *fp)
 {
-	if(p->adapter==NULL){
-		/* Offline capture: make our own copy of the filter */
-		if (install_bpf_program(p, fp) < 0)
-			return (-1);
-	}
-	else if(PacketSetBpf(p->adapter,fp)==FALSE){
+	if(PacketSetBpf(p->adapter,fp)==FALSE){
 		/* kernel filter not installed. */
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Driver error: cannot set bpf filter: %s", pcap_win32strerror());
 		return (-1);

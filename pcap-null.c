@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.17 2003-07-25 04:04:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.18 2003-07-25 04:42:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -57,19 +57,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (0);
-}
-
-int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
-{
-	if (p->sf.rfile == NULL) {
-		(void)snprintf(p->errbuf, sizeof(p->errbuf),
-		    "pcap_setfilter: %s", nosup);
-		return (-1);
-	}
-	if (install_bpf_program(p, fp) < 0)
-		return (-1);
 	return (0);
 }
 

@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.3 2003-07-25 04:04:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.4 2003-07-25 04:42:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -59,14 +59,13 @@ static int atexit_handler_installed = 0;
 #include "pcap-dag.h"
 
 /* Replace dag function names with pcap equivalent. */
-#define dag_stats pcap_stats
 #define dag_read pcap_read
 #define dag_open_live pcap_open_live
 #define dag_platform_finddevs pcap_platform_finddevs
-#define dag_setfilter pcap_setfilter
 #define dag_set_datalink_platform pcap_set_datalink_platform
 #endif /* DAG_ONLY */
 
+static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 
 static void delete_pcap_dag(pcap_t *p) {
@@ -387,6 +386,7 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
     return NULL;
   }
 
+  handle->setfilter_op = dag_setfilter;
   handle->stats_op = dag_stats;
   handle->close_op = dag_platform_close;
 
@@ -507,7 +507,7 @@ dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf)
  * no attempt to store the filter in kernel memory as that is not supported
  * with DAG cards.
  */
-int dag_setfilter(pcap_t *p, struct bpf_program *fp) {
+static int dag_setfilter(pcap_t *p, struct bpf_program *fp) {
   if (!p)
     return -1;
   if (!fp) {

@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.87 2003-07-25 04:04:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.88 2003-07-25 04:42:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -672,6 +672,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 
+	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->stats_op = pcap_stats_dlpi;
 	p->close_op = pcap_close_dlpi;
 
@@ -761,15 +762,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 #endif
 
-	return (0);
-}
-
-int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
-{
-
-	if (install_bpf_program(p, fp) < 0)
-		return (-1);
 	return (0);
 }
 

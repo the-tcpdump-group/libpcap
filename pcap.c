@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.58 2003-07-25 04:05:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.59 2003-07-25 04:42:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -608,6 +608,12 @@ pcap_strerror(int errnum)
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 #endif
+}
+
+int
+pcap_setfilter(pcap_t *p, struct bpf_program *fp)
+{
+	return p->setfilter_op(p, fp);
 }
 
 int

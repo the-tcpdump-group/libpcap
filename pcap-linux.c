@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.92 2003-07-25 04:04:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.93 2003-07-25 04:42:03 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -188,6 +188,7 @@ static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
+static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static void pcap_close_linux(pcap_t *);
 
 /*
@@ -395,6 +396,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return NULL;
 	}
 
+	handle->setfilter_op = pcap_setfilter_linux;
 	handle->stats_op = pcap_stats_linux;
 	handle->close_op = pcap_close_linux;
 
@@ -773,20 +775,14 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 /*
  *  Attach the given BPF code to the packet capture device.
  */
-int
-pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
+static int
+pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 {
 #ifdef SO_ATTACH_FILTER
 	struct sock_fprog	fcode;
 	int			can_filter_in_kernel;
 	int			err = 0;
 #endif
-
-#ifdef HAVE_DAG_API
-	if (handle->md.is_dag) {
-		return dag_setfilter(handle, filter);
-	}
-#endif /* HAVE_DAG_API */
 
 	if (!handle)
 		return -1;
@@ -807,13 +803,6 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	 * installing a kernel filter succeeds.
 	 */
 	handle->md.use_bpf = 0;
-
-	/*
-	 * If we're reading from a savefile, don't try to install
-	 * a kernel filter.
-	 */
-	if (handle->sf.rfile != NULL)
-		return 0;
 
 	/* Install kernel level filter if possible */
 

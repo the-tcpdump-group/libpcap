@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.75 2003-07-25 04:04:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.76 2003-07-25 04:42:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -73,6 +73,8 @@ struct rtentry;
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
+
+static int pcap_setfilter_pf(pcap_t *, struct bpf_program *);
 
 /*
  * BUFSPACE is the size in bytes of the packet read buffer.  Most tcpdump
@@ -413,6 +415,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		goto bad;
 	}
 
+	p->setfilter_op = pcap_setfilter_pf;
 	p->stats_op = pcap_stats_pf;
 	p->close_op = pcap_close_pf;
 
@@ -430,8 +433,8 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	return (0);
 }
 
-int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
+static int
+pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 {
 	/*
 	 * See if BIOCSETF works.  If it does, the kernel supports
