@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.65 2000-10-28 00:01:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.66 2000-10-28 01:22:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1782,6 +1782,20 @@ number_blks_r(p)
 /*
  * Return the number of stmts in the flowgraph reachable by 'p'.
  * The nodes should be unmarked before calling.
+ *
+ * Note that "stmts" means "instructions", and that this includes
+ *
+ *	side-effect statements in 'p' (slength(p->stmts));
+ *
+ *	statements in the true branch from 'p' (count_stmts(JT(p)));
+ *
+ *	statements in the false branch from 'p' (count_stmts(JF(p)));
+ *
+ *	the conditional jump itself (1);
+ *
+ *	an extra long jump if the true branch requires it (p->longjt);
+ *
+ *	an extra long jump if the false branch requires it (p->longjf).
  */
 static int
 count_stmts(p)
@@ -1793,7 +1807,7 @@ count_stmts(p)
 		return 0;
 	Mark(p);
 	n = count_stmts(JT(p)) + count_stmts(JF(p));
-	return slength(p->stmts) + n + 1;
+	return slength(p->stmts) + n + 1 + p->longjt + p->longjf;
 }
 
 /*
