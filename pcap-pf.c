@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.74 2003-07-25 03:25:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.75 2003-07-25 04:04:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -198,8 +198,8 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 {
 
 	/*
@@ -413,6 +413,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		goto bad;
 	}
 
+	p->stats_op = pcap_stats_pf;
 	p->close_op = pcap_close_pf;
 
 	return (p);

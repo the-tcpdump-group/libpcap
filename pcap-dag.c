@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.2 2003-07-25 03:25:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.3 2003-07-25 04:04:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -66,6 +66,8 @@ static int atexit_handler_installed = 0;
 #define dag_setfilter pcap_setfilter
 #define dag_set_datalink_platform pcap_set_datalink_platform
 #endif /* DAG_ONLY */
+
+static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 
 static void delete_pcap_dag(pcap_t *p) {
   pcap_dag_node_t *curr = NULL, *prev = NULL;
@@ -385,12 +387,13 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
     return NULL;
   }
 
+  handle->stats_op = dag_stats;
   handle->close_op = dag_platform_close;
 
   return handle;
 }
 
-int dag_stats(pcap_t *p, struct pcap_stat *ps) {
+static int dag_stats(pcap_t *p, struct pcap_stat *ps) {
   /* This needs to be filled out correctly.  Hopefully a dagapi call will
      provide all necessary information.
   */

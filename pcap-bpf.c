@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.62 2003-07-25 03:25:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.63 2003-07-25 04:04:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -103,16 +103,10 @@ static int odmlockid = 0;
 
 #include "gencode.h"
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 {
 	struct bpf_stat s;
-
-#ifdef HAVE_DAG_API
-	if (p->md.is_dag) {
-		return dag_stats(p, ps);
-	}
-#endif /* HAVE_DAG_API */
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
@@ -736,6 +730,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
 
+	p->stats_op = pcap_stats_bpf;
 	p->close_op = pcap_close_bpf;
 
 	return (p);

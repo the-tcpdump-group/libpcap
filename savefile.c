@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.82 2003-07-25 03:25:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.83 2003-07-25 04:05:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -410,6 +410,14 @@ swap_hdr(struct pcap_file_header *hp)
 	hp->linktype = SWAPLONG(hp->linktype);
 }
 
+static int
+sf_stats(pcap_t *p, struct pcap_stat *ps)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Statistics aren't available from savefiles");
+	return (-1);
+}
+
 static void
 sf_close(pcap_t *p)
 {
@@ -524,6 +532,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 	pcap_fddipad = 0;
 #endif
 
+	p->stats_op = sf_stats;
 	p->close_op = sf_close;
 
 	return (p);

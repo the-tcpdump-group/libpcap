@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.91 2003-07-25 03:25:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.92 2003-07-25 04:04:58 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -187,7 +187,8 @@ static void map_arphrd_to_dlt(pcap_t *, int, int);
 static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
-static void pcap_close_linux(pcap_t *handle);
+static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
+static void pcap_close_linux(pcap_t *);
 
 /*
  * Wrap some ioctl calls
@@ -394,6 +395,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return NULL;
 	}
 
+	handle->stats_op = pcap_stats_linux;
 	handle->close_op = pcap_close_linux;
 
 	return handle;
@@ -659,19 +661,13 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
  *  patches); otherwise, that information isn't available, and we lie
  *  and report 0 as the count of dropped packets.
  */
-int
-pcap_stats(pcap_t *handle, struct pcap_stat *stats)
+static int
+pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 #ifdef HAVE_TPACKET_STATS
 	struct tpacket_stats kstats;
 	socklen_t len = sizeof (struct tpacket_stats);
 #endif
-
-#ifdef HAVE_DAG_API
-	if (handle->md.is_dag) {
-		return dag_stats(handle, stats);
-	}
-#endif /* HAVE_DAG_API */
 
 #ifdef HAVE_TPACKET_STATS
 	/*

@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.9 2003-07-25 03:25:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.10 2003-07-25 04:04:59 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -75,8 +75,8 @@ wsockinit()
 }
 
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 {
 
 	if(PacketGetStats(p->adapter, (struct bpf_stat*)ps) != TRUE){
@@ -254,6 +254,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 	PacketSetReadTimeout(p->adapter, to_ms);
 
+	p->stats_op = pcap_stats_win32;
 	p->close_op = pcap_close_win32;
 
 	return (p);

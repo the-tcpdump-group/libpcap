@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.40 2003-07-25 03:25:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.41 2003-07-25 04:04:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -102,8 +102,8 @@ again:
 	return (0);
 }
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_snoop(pcap_t *p, struct pcap_stat *ps)
 {
 	register struct rawstats *rs;
 	struct rawstats rawstats;
@@ -294,6 +294,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 
+	p->stats_op = pcap_stats_snoop;
 	p->close_op = pcap_close_snoop;
 
 	return (p);

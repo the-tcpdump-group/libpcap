@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.45 2003-07-25 03:25:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.46 2003-07-25 04:04:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -71,8 +71,8 @@ static const char rcsid[] =
 /* Forwards */
 static int nit_setflags(int, int, int, char *);
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_nit(pcap_t *p, struct pcap_stat *ps)
 {
 
 	/*
@@ -260,6 +260,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 
+	p->stats_op = pcap_stats_nit;
 	p->close_op = pcap_close_nit;
 
 	return (p);

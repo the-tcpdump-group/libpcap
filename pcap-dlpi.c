@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.86 2003-07-25 03:25:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.87 2003-07-25 04:04:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -151,8 +151,8 @@ static int dlpi_kread(int, off_t, void *, u_int, char *);
 static int get_dlpi_ppa(int, const char *, int, char *);
 #endif
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 {
 
 	/*
@@ -672,6 +672,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 
+	p->stats_op = pcap_stats_dlpi;
 	p->close_op = pcap_close_dlpi;
 
 	return (p);
