@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.8 2003-12-21 21:52:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.9 2004-01-29 10:37:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -172,7 +172,7 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
 #define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
-#define LINKTYPE_IEEE802_11_RADIO 127		/* 802.11 plus WLAN header */
+#define LINKTYPE_IEEE802_11_RADIO 127		/* 802.11 plus BSD radio header */
 
 #define LINKTYPE_TZSP		128		/* Tazmen Sniffer Protocol */
 
@@ -196,6 +196,8 @@ static const char rcsid[] _U_ =
 
 #define LINKTYPE_LINUX_IRDA	144		/* Linux-IrDA */
 
+#define LINKTYPE_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
+
 /*
  * These types are reserved for future use.
  */
@@ -210,6 +212,44 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
 #define LINKTYPE_IBM_SP		145		/* IBM SP switch */
 #define LINKTYPE_IBM_SN		146		/* IBM Next Federation switch */
+
+/*
+ * Reserved for private use.  If you have some link-layer header type
+ * that you want to use within your organization, with the capture files
+ * using that link-layer header type not ever be sent outside your
+ * organization, you can use these values.
+ *
+ * No libpcap release will use these for any purpose, nor will any
+ * tcpdump release use them, either.
+ *
+ * Do *NOT* use these in capture files that you expect anybody not using
+ * your private versions of capture-file-reading tools to read; in
+ * particular, do *NOT* use them in products, otherwise you may find that
+ * people won't be able to use tcpdump, or snort, or Ethereal, or... to
+ * read capture files from your firewall/intrusion detection/traffic
+ * monitoring/etc. appliance, or whatever product uses that LINKTYPE_ value,
+ * and you may also find that the developers of those applications will
+ * not accept patches to let them read those files.
+ *
+ * Instead, ask "tcpdump-workers@tcpdump.org" for a new DLT_ and LINKTYPE_
+ * value, as per the comment in pcap-bpf.h
+ */
+#define LINKTYPE_USER0		147
+#define LINKTYPE_USER1		148
+#define LINKTYPE_USER2		149
+#define LINKTYPE_USER3		150
+#define LINKTYPE_USER4		151
+#define LINKTYPE_USER5		152
+#define LINKTYPE_USER6		153
+#define LINKTYPE_USER7		154
+#define LINKTYPE_USER8		155
+#define LINKTYPE_USER9		156
+#define LINKTYPE_USER10		157
+#define LINKTYPE_USER11		158
+#define LINKTYPE_USER12		159
+#define LINKTYPE_USER13		160
+#define LINKTYPE_USER14		161
+#define LINKTYPE_USER15		162
 
 static struct linktype_map {
 	int	dlt;
@@ -313,7 +353,7 @@ static struct linktype_map {
 	/* Xilinx Aurora link layer */
 	{ DLT_AURORA,		LINKTYPE_AURORA },
 
-	/* 802.11 plus WLAN header */
+	/* 802.11 plus BSD radio header */
 	{ DLT_IEEE802_11_RADIO,	LINKTYPE_IEEE802_11_RADIO },
 
 	/* Tazmen Sniffer Protocol */
@@ -344,6 +384,9 @@ static struct linktype_map {
 	/* IBM SP and Next Federation switches */
 	{ DLT_IBM_SP,		LINKTYPE_IBM_SP },
 	{ DLT_IBM_SN,		LINKTYPE_IBM_SN },
+
+	/* 802.11 plus AVS radio header */
+	{ DLT_IEEE802_11_RADIO_AVS, LINKTYPE_IEEE802_11_RADIO_AVS },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
