@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.99 2004-04-03 20:52:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.100 2004-04-03 20:53:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -356,7 +356,7 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 		    pcap_strerror(errno));
 		return (-1);
 	}
-#elif defined (DL_HP_RAWDLS)
+#elif defined(DL_HP_RAWDLS)
 	if (p->send_fd < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "send: Output FD couldn't be opened");
