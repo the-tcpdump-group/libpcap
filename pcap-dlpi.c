@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.105 2004-07-20 21:10:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.106 2004-07-20 21:18:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -160,7 +160,7 @@ static int dlokack(int, const char *, char *, char *);
 static int dlinforeq(int, char *);
 static int dlinfoack(int, char *, char *);
 #ifdef DL_HP_RAWDLS
-static int dlrawdatareq(int, u_char *, int);
+static int dlrawdatareq(int, const u_char *, int);
 #endif
 static int recv_ack(int, int, const char *, char *, char *);
 static char *dlstrerror(bpf_u_int32);
@@ -1387,7 +1387,7 @@ dlinfoack(int fd, char *bufp, char *ebuf)
  * There's an ack *if* there's an error.
  */
 static int
-dlrawdatareq(int fd, u_char *datap, int datalen)
+dlrawdatareq(int fd, const u_char *datap, int datalen)
 {
 	struct strbuf ctl, data;
 	long buf[MAXDLBUF];	/* XXX - char? */
@@ -1408,11 +1408,11 @@ dlrawdatareq(int fd, u_char *datap, int datalen)
 	 */
 	ctl.maxlen = 0;
 	ctl.len = dlen;
-	ctl.buf = buf;
+	ctl.buf = (void *)buf;
 
 	data.maxlen = 0;
 	data.len = datalen;
-	data.buf = datap;
+	data.buf = (void *)datap;
 
 	return (putmsg(fd, &ctl, &data, 0));
 }
