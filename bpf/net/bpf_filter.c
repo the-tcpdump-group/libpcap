@@ -40,7 +40,11 @@
 
 #if !(defined(lint) || defined(KERNEL) || defined(_KERNEL))
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.41 2003-02-11 01:46:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.42 2003-02-23 00:22:00 guy Exp $ (LBL)";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #ifdef WIN32
@@ -77,8 +81,13 @@ static const char rcsid[] =
 #define u_int32 bpf_u_int32
 
 #ifndef LBL_ALIGN
+/*
+ * XXX - IA-64?  If not, this probably won't work on Win64 IA-64
+ * systems, unless LBL_ALIGN is defined elsewhere for them.
+ */
 #if defined(sparc) || defined(__sparc__) || defined(mips) || \
-    defined(ibm032) || defined(__alpha) || defined(__hpux)
+    defined(ibm032) || defined(__alpha) || defined(__hpux) || \
+    defined(__arm__)
 #define LBL_ALIGN
 #endif
 #endif
