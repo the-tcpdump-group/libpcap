@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.83 2004-06-16 08:20:29 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.84 2004-10-07 09:06:56 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,7 +49,10 @@ struct rtentry;
 #endif /* WIN32 */
 
 #include <stdio.h>
+
+#ifndef WIN32
 #include <strings.h>
+#endif
 
 #include "pcap-int.h"
 
