@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.57 2004-01-26 02:11:06 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.58 2004-02-28 02:51:26 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3 "1 December 2003"
+.TH PCAP 3 "27 February 2004"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -101,6 +101,7 @@ int pcap_minor_version(pcap_t *p)
 int pcap_stats(pcap_t *p, struct pcap_stat *ps)
 FILE *pcap_file(pcap_t *p)
 int pcap_fileno(pcap_t *p)
+int pcap_get_selectable_fd(pcap_t *p);
 void pcap_perror(pcap_t *p, char *prefix)
 char *pcap_geterr(pcap_t *p)
 char *pcap_strerror(int error)
@@ -1051,6 +1052,67 @@ if a network device was opened with
 .BR pcap_open_live() ,
 or \-1, if a ``savefile'' was opened with
 .BR pcap_open_offline() .
+.PP
+.B pcap_get_selectable_fd()
+returns, on UNIX, a file descriptor number for a file descriptor on
+which one can
+do a
+.B select()
+or
+.B poll()
+to wait for it to be possible to read packets without blocking, if such
+a descriptor exists, or \-1, if no such descriptor exists.  Some network
+devices opened with
+.B pcap_open_live()
+do not support
+.B select()
+or
+.B poll()
+(for example, regular network devices on FreeBSD 4.3 and 4.4, and Endace
+DAG devices), so \-1 is returned for those devices.
+.PP
+Note that on most versions of most BSDs (including Mac OS X)
+.B select()
+and
+.B poll()
+do not work correctly on BPF devices;
+.B pcap_get_selectable_fd()
+will return a file descriptor on most of those versions (the exceptions
+being FreeBSD 4.3 and 4.4), a simple
+.B select()
+or
+.B poll()
+will not return even after a timeout specified in
+.B pcap_open_live()
+expires.  To work around this, an application that uses
+.B select()
+or
+.B poll()
+to wait for packets to arrive must put the
+.B pcap_t
+in non-blocking mode, and must arrange that the
+.B select()
+or
+.B poll()
+have a timeout less than or equal to the timeout specified in
+.BR pcap_open_live() ,
+and must try to read packets after that timeout expires, regardless of
+whether
+.B select()
+or
+.B poll()
+indicated that the file descriptor for the
+.B pcap_t
+is ready to be read or not.  (That workaround will not work in FreeBSD
+4.3 and later; however, in FreeBSD 4.6 and later,
+.B select()
+and
+.B poll()
+work correctly on BPF devices, so the workaround isn't necessary,
+although it does no harm.)
+.PP
+.B pcap_get_selectable_fd()
+is not available on Windows.
 .PP
 .B pcap_perror()
 prints the text of the last pcap library error on
