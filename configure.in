@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.104 2003-12-15 01:35:04 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.105 2004-01-14 03:00:36 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,8 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.104 $)
+AC_REVISION($Revision: 1.105 $)
+AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -32,13 +33,11 @@ AC_LBL_FIXINCLUDES
 AC_CHECK_FUNCS(ether_hostton strerror strlcpy)
 
 needsnprintf=no
-LIBOBJS=
 AC_CHECK_FUNCS(vsnprintf snprintf,,
 	[needsnprintf=yes])
 if test $needsnprintf = yes; then
-	LIBOBJS="$LIBOBJS snprintf.o"
+	AC_LIBOBJ(snprintf.o)
 fi
-AC_SUBST(LIBOBJS)
 
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)
