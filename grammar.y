@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.62 2000-10-28 08:19:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.63 2000-10-28 09:30:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -117,6 +117,7 @@ pcap_parse()
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
 %token	VLAN
+%token  ISO ESIS ISIS
 
 %type	<s> ID
 %type	<e> EID
@@ -258,6 +259,9 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| ICMPV6		{ $$ = Q_ICMPV6; }
 	| AH			{ $$ = Q_AH; }
 	| ESP			{ $$ = Q_ESP; }
+	| ISO			{ $$ = Q_ISO; }
+	| ESIS			{ $$ = Q_ESIS; }
+	| ISIS			{ $$ = Q_ISIS; }
 	;
 other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| pqual TK_MULTICAST	{ $$ = gen_multicast($1); }

@@ -35,6 +35,7 @@ linux-include/netinet/if_ether.h
 linux-include/netinet/ip_var.h
 mkdep
 nametoaddr.c
+nlpid.h
 optimize.c
 pcap-bpf.c
 pcap-dlpi.c

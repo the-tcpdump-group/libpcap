@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.128 2000-10-28 09:06:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.129 2000-10-28 09:30:21 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -50,6 +50,7 @@ struct rtentry;
 #include "pcap-int.h"
 
 #include "ethertype.h"
+#include "nlpid.h"
 #include "gencode.h"
 #include "ppp.h"
 #include <pcap-namedb.h>
@@ -57,6 +58,10 @@ struct rtentry;
 #include <netdb.h>
 #include <sys/socket.h>
 #endif /*INET6*/
+
+#define LLC_ISO_LSAP	0xfe
+
+#define ETHERMTU	1500
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -730,6 +735,17 @@ gen_linktype(proto)
 		 */
 		switch (proto) {
 
+		case LLC_ISO_LSAP:
+			/*
+			 * OSI protocols always use 802.2 encapsulation.
+			 */
+			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+			gen_not(b0);
+			b1 = gen_cmp(off_linktype + 2, BPF_H, (long)
+				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
+			gen_and(b0, b1);
+			return b1;
+
 		case ETHERTYPE_ATALK:
 		case ETHERTYPE_AARP:
 			/*
@@ -742,7 +758,7 @@ gen_linktype(proto)
 			 * we check for an Ethernet type field less than
 			 * 1500, which means it's an 802.3 length field.
 			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, 1500);
+			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 			gen_not(b0);
 
 			/*
@@ -1143,6 +1159,9 @@ gen_dnhostop(addr, dir, base_off)
 		gen_or(b0, b1);
 		return b1;
 
+	case Q_ISO:
+	        bpf_error("ISO host filtering not implemented");
+		
 	default:
 		abort();
 	}
@@ -1526,6 +1545,18 @@ gen_proto_abbrev(proto)
 		b0 = gen_proto(IPPROTO_ESP, Q_IPV6, Q_DEFAULT);
 		gen_or(b0, b1);
 #endif
+		break;
+
+	case Q_ISO:
+	        b1 = gen_linktype(LLC_ISO_LSAP);
+		break;
+
+	case Q_ESIS:
+	        b1 = gen_proto(ISO9542_ESIS, Q_ISO, Q_DEFAULT);
+		break;
+
+	case Q_ISIS:
+	        b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
 		break;
 
 	default:
@@ -2096,6 +2127,12 @@ gen_proto(v, proto, dir)
 #else
 		b1 = gen_protochain(v, Q_IP);
 #endif
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_ISO:
+		b0 = gen_linktype(LLC_ISO_LSAP);
+		b1 = gen_cmp(off_nl + 3, BPF_B, (long)v);
 		gen_and(b0, b1);
 		return b1;
 
@@ -2914,6 +2951,9 @@ gen_greater(n)
 	return gen_len(BPF_JGE, n);
 }
 
+/*
+ * Actually, this is less than or equal.
+ */
 struct block *
 gen_less(n)
 	int n;
