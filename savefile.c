@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.87 2003-08-18 22:16:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.88 2003-08-22 18:27:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -57,7 +57,10 @@ static const char rcsid[] =
  * because time is at a premium when we are writing the file.
  * In other words, the pcap_file_header and pcap_pkthdr,
  * records are written in host byte order.
- * Note that the packets are always written in network byte order.
+ * Note that the bytes of packet data are written out in the order in
+ * which they were received, so multi-byte fields in packets are not
+ * written in host byte order, they're written in whatever order the
+ * sending machine put them in.
  *
  * ntoh[ls] aren't sufficient because we might need to swap on a big-endian
  * machine (if the file was written in little-end order).
