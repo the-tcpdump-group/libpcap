@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.76 2004-10-19 15:55:28 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.77 2004-12-17 19:55:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -354,6 +354,12 @@ static struct dlt_choice dlt_choices[] = {
         DLT_CHOICE(DLT_SYMANTEC_FIREWALL, "Symantec Firewall"),
         DLT_CHOICE(DLT_JUNIPER_ATM1, "Juniper ATM1 PIC"),
         DLT_CHOICE(DLT_JUNIPER_ATM2, "Juniper ATM2 PIC"),
+ 	DLT_CHOICE(DLT_PPP_WITHDIRECTION, "PPP with direction"),
+ 	DLT_CHOICE(DLT_JUNIPER_PPPOE, "Juniper PPPoE"),
+ 	DLT_CHOICE(DLT_JUNIPER_PPPOE_ATM, "Juniper PPPoE/ATM"),
+ 	DLT_CHOICE(DLT_GPRS_LLC, "GPRS LLC"),
+ 	DLT_CHOICE(DLT_GPF_T, "GPF-T"),
+ 	DLT_CHOICE(DLT_GPF_F, "GPF-F"),
 	DLT_CHOICE_SENTINEL
 };
 
