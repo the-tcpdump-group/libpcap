@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.99 2003-12-03 21:34:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.100 2003-12-21 21:58:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -606,11 +606,16 @@ pcap_open_offline(const char *fname, char *errbuf)
 		break;
 	}
 
+#ifndef WIN32
 	/*
 	 * You can do "select()" and "poll()" on plain files on most
 	 * platforms, and should be able to do so on pipes.
+	 *
+	 * You can't do "select()" on anything other than sockets in
+	 * Windows, so, on Win32 systems, we don't have "selectable_fd".
 	 */
 	p->selectable_fd = fileno(fp);
+#endif
 
 	p->read_op = pcap_offline_read;
 	p->setfilter_op = install_bpf_program;
