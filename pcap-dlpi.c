@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.52 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.53 2000-01-25 02:25:04 mcr Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -314,7 +314,14 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	** using SINIX)
 	*/
 #if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20) && !defined(sinix)
+#ifdef _AIX
+        /* According to IBM's AIX Support Line, the dl_sap value
+        ** should not be less than 0x600 (1536) for standard ethernet 
+         */
+	if (dlbindreq(p->fd, 1537, ebuf) < 0 ||
+#else
 	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
+#endif
 	    dlbindack(p->fd, (char *)buf, ebuf) < 0)
 		goto bad;
 #endif
