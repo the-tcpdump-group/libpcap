@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.30 2000-04-27 09:11:12 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.31 2000-04-27 11:18:02 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -124,7 +124,7 @@ pcap_lookupdev(errbuf)
 		}
 	}
 	if (mp == NULL) {
-		(void)strncpy(errbuf, "no suitable device found",
+		(void)strlcpy(errbuf, "no suitable device found",
 		    PCAP_ERRBUF_SIZE);
 #ifdef HAVE_FREEIFADDRS
 		freeifaddrs(ifap);
@@ -134,8 +134,7 @@ pcap_lookupdev(errbuf)
 		return (NULL);
 	}
 
-	(void)strncpy(device, mp->ifa_name, sizeof(device) - 1);
-	device[sizeof(device) - 1] = '\0';
+	(void)strlcpy(device, mp->ifa_name, sizeof(device));
 #ifdef HAVE_FREEIFADDRS
 	freeifaddrs(ifap);
 #else
@@ -243,8 +242,7 @@ pcap_lookupdev(errbuf)
 		return (NULL);
 	}
 
-	(void)strncpy(device, mp->ifr_name, sizeof(device) - 1);
-	device[sizeof(device) - 1] = '\0';
+	(void)strlcpy(device, mp->ifr_name, sizeof(device));
 	free(buf);
 	return (device);
 #endif
