@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.56 2003-02-11 01:46:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.57 2003-02-11 06:19:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -236,17 +236,23 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 static int 
 bpf_odminit(char *errbuf)
 {
+	char *errstr;
+
 	if (odm_initialize() == -1) {
+		if (odm_err_msg(odmerrno, &errstr) == -1)
+			errstr = "Unknown error";
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_initialize failed: %s",
-		    pcap_strerror(errno));
+		    errstr);
 		return (-1);
 	}
 
 	if ((odmlockid = odm_lock("/etc/objrepos/config_lock", ODM_WAIT)) == -1) {
+		if (odm_err_msg(odmerrno, &errstr) == -1)
+			errstr = "Unknown error";
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_lock of /etc/objrepos/config_lock failed: %s",
-		    pcap_strerror(errno));
+		    errstr);
 		return (-1);
 	}
 
@@ -256,14 +262,25 @@ bpf_odminit(char *errbuf)
 static int 
 bpf_odmcleanup(char *errbuf)
 {
+	char *errstr;
+
 	if (odm_unlock(odmlockid) == -1) {
+		if (odm_err_msg(odmerrno, &errstr) == -1)
+			errstr = "Unknown error";
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_unlock failed: %s",
-		    pcap_strerror(errno));
+		    errstr);
 		return (-1);
 	}
 
-	odm_terminate();
+	if (odm_terminate() == -1) {
+		if (odm_err_msg(odmerrno, &errstr) == -1)
+			errstr = "Unknown error";
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "bpf_load: odm_terminate failed: %s",
+		    errstr);
+		return (-1);
+	}
 
 	return (0);
 }
@@ -306,7 +323,6 @@ bpf_load(char *errbuf)
 			    pcap_strerror(errno));
 			return (-1);
 		}
-
 	}
 
 	if (bpf_odmcleanup(errbuf))
@@ -327,7 +343,7 @@ bpf_load(char *errbuf)
 			if (mknod(buf, S_IRUSR | S_IFCHR, domakedev(major, i)) == -1) {
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "bpf_load: can't mknod %s: %s",
-				    buf pcap_strerror(errno));
+				    buf, pcap_strerror(errno));
 				return (-1);
 			}
 		}
@@ -337,10 +353,10 @@ bpf_load(char *errbuf)
 	memset(&cfg_ld, 0x0, sizeof(cfg_ld));
 	cfg_ld.path = buf;
 	sprintf(cfg_ld.path, "%s/%s", DRIVER_PATH, BPF_NAME);
-	if (sysconfig(SYS_QUERYLOAD, (void *) &cfg_ld, sizeof(cfg_ld) == -1) ||
+	if (sysconfig(SYS_QUERYLOAD, (void *)&cfg_ld, sizeof(cfg_ld) == -1) ||
 	    (cfg_ld.kmid == 0)) {
 		/* Driver isn't loaded, load it now */
-		if (sysconfig(SYS_SINGLELOAD, (void *) &cfg_ld, sizeof(cfg_ld)) == -1) {
+		if (sysconfig(SYS_SINGLELOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: could not load driver: %s",
 			    strerror(errno));
@@ -352,10 +368,10 @@ bpf_load(char *errbuf)
 	cfg_km.cmd = CFG_INIT;
 	cfg_km.kmid = cfg_ld.kmid;
 	cfg_km.mdilen = sizeof(cfg_bpf);
-	cfg_km.mdiptr = (void *) &cfg_bpf; 
+	cfg_km.mdiptr = (void *)&cfg_bpf; 
 	for (i = 0; i < BPF_MINORS; i++) {
 		cfg_bpf.devno = domakedev(major, i);
-		if (sysconfig(SYS_CFGKMOD, (void *) &cfg_km, sizeof(cfg_km)) == -1) {
+		if (sysconfig(SYS_CFGKMOD, (void *)&cfg_km, sizeof(cfg_km)) == -1) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: could not configure driver: %s",
 			    strerror(errno));
@@ -553,7 +569,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * this interface supports.  If this fails with EINVAL, it's
 	 * not fatal; we just don't get to use the feature later.
 	 */
-	if (ioctl(fd, BIOCGDLTLIST, (caddr_t) &bdl) == 0) {
+	if (ioctl(fd, BIOCGDLTLIST, (caddr_t)&bdl) == 0) {
 		bdl.bfl_list = (u_int *) malloc(sizeof(u_int) * bdl.bfl_len);
 		if (bdl.bfl_list == NULL) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -561,7 +577,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 			goto bad;
 		}
 
-		if (ioctl(fd, BIOCGDLTLIST, (caddr_t) &bdl) < 0) {
+		if (ioctl(fd, BIOCGDLTLIST, (caddr_t)&bdl) < 0) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
 			goto bad;
