@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.46 2003-02-11 07:40:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.47 2003-02-11 07:50:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -60,7 +60,14 @@ static const char rcsid[] =
 #endif
 
 #include "pcap-int.h"
+#ifndef WIN32
+/*
+ * XXX - it'd be nice if we could somehow generate a version.h file
+ * when building WinPcap, giving both the WinPcap and the libpcap
+ * version numbers.
+ */
 #include "version.h"
+#endif
 
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -608,14 +615,23 @@ pcap_close(pcap_t *p)
 const char *
 pcap_lib_version(void)
 {
-	static char version_string[10+1+10+1];
+	static char version_string[256];
 
 	if (version_string[0] == '\0') {
 		/*
 		 * We haven't built the string yet.
 		 */
-		snprintf(version_string, sizeof (version_string), "%u.%u",
-		    VERSION_MAJOR, VERSION_MINOR);
+#ifdef WIN32
+		/*
+		 * XXX - it'd be nice if we could somehow generate this
+		 * when building WinPcap.
+		 */
+		snprintf(version_string, sizeof (version_string),
+		    "WinPcap version 3.0beta, based on libpcap version 0.8");
+#else
+		snprintf(version_string, sizeof (version_string),
+		    "libpcap version %u.%u", VERSION_MAJOR, VERSION_MINOR);
+#endif
 	}
 	return (version_string);
 }
