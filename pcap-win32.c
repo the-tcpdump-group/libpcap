@@ -19,6 +19,11 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef lint
+static const char rcsid[] =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.2 2002-08-05 07:45:09 guy Exp $ (LBL)";
+#endif
+
 #include <pcap-int.h>
 #include <packet32.h>
 #include <Ntddndis.h>
