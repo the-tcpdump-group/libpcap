@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.67 2002-08-02 05:53:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.68 2003-02-25 22:12:03 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -163,36 +163,38 @@ int
 pcap_nametoport(const char *name, int *port, int *proto)
 {
 	struct servent *sp;
-	char *other;
+	int tcp_port = -1;
+	int udp_port = -1;
 
-	sp = getservbyname(name, (char *)0);
-	if (sp != NULL) {
-		NTOHS(sp->s_port);
-		*port = sp->s_port;
-		*proto = pcap_nametoproto(sp->s_proto);
-		/*
-		 * We need to check /etc/services for ambiguous entries.
-		 * If we find the ambiguous entry, and it has the
-		 * same port number, change the proto to PROTO_UNDEF
-		 * so both TCP and UDP will be checked.
-		 */
-		if (*proto == IPPROTO_TCP)
-			other = "udp";
-		else
-			other = "tcp";
-
-		sp = getservbyname(name, other);
-		if (sp != 0) {
-			NTOHS(sp->s_port);
+	/*
+	 * We need to check /etc/services for ambiguous entries.
+	 * If we find the ambiguous entry, and it has the
+	 * same port number, change the proto to PROTO_UNDEF
+	 * so both TCP and UDP will be checked.
+	 */
+	sp = getservbyname(name, "tcp");
+	if (sp != NULL) tcp_port = ntohs(sp->s_port);
+	sp = getservbyname(name, "udp");
+	if (sp != NULL) udp_port = ntohs(sp->s_port);
+	if (tcp_port >= 0) {
+		*port = tcp_port;
+		*proto = IPPROTO_TCP;
+		if (udp_port >= 0) {
+			if (udp_port == tcp_port)
+				*proto = PROTO_UNDEF;
 #ifdef notdef
-			if (*port != sp->s_port)
+			else
 				/* Can't handle ambiguous names that refer
 				   to different port numbers. */
 				warning("ambiguous port %s in /etc/services",
 					name);
 #endif
-			*proto = PROTO_UNDEF;
 		}
+		return 1;
+	}
+	if (udp_port >= 0) {
+		*port = udp_port;
+		*proto = IPPROTO_UDP;
 		return 1;
 	}
 #if defined(ultrix) || defined(__osf__)
