@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.93 
+# From configure.in Revision: 1.94 
 
 
 
@@ -1948,7 +1948,7 @@ echo "$ac_t""$tcpdump_cv_capable_lex" 1>&6
 	fi
 fi
 
-case "$target_os" in
+case "$host_os" in
 
 aix*)
 		cat >> confdefs.h <<\EOF
@@ -2166,7 +2166,7 @@ echo "configure:2166: checking if unaligned accesses fail" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_unaligned_fail'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
-  case "$target_cpu" in
+  case "$host_cpu" in
 
 	# XXX: should also check that they don't do weird things (like on arm)
 	alpha*|arm*|hp*|mips*|sparc*|ia64)

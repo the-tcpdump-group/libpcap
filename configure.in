@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.93 2001-11-12 22:18:57 fenner Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.94 2001-12-10 08:33:42 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.93 $)
+AC_REVISION($Revision: 1.94 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -185,7 +185,7 @@ if test "$V_LEX" = lex ; then
 	fi
 fi
 
-case "$target_os" in
+case "$host_os" in
 
 aix*)
 	dnl Workaround to enable certain features
