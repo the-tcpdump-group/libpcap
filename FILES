@@ -21,7 +21,6 @@ gencode.h
 grammar.y
 inet.c
 install-sh
-lbl/gnuc.h
 lbl/os-solaris2.h
 lbl/os-sunos4.h
 lbl/os-ultrix4.h
