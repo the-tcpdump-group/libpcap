@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.30 2001-12-10 06:35:00 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.31 2001-12-29 21:57:07 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -43,7 +43,7 @@ pcap_dumper_t *pcap_dump_open(pcap_t *p, char *fname)
 .ft
 .LP
 .ft B
-int pcap_setnonblock(pcap_t *, int nonblock, char *errbuf);
+int pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf);
 int pcap_getnonblock(pcap_t *p, char *errbuf);
 .ft
 .LP
@@ -217,7 +217,8 @@ depending on whether the
 argument is non-zero or zero.  It has no effect on ``savefiles''.
 If there is an error, \-1 is returned and
 .I errbuf
-is filled in with an appropriate error message.
+is filled in with an appropriate error message; otherwise, 0 is
+returned.
 In
 ``non-blocking'' mode, an attempt to read from the capture descriptor
 with
