@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.23 2004-06-16 15:51:46 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.24 2004-12-17 20:41:59 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -377,8 +377,7 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 static void
 pcap_close_win32(pcap_t *p)
 {
-	if (p->buffer != NULL)
-		free(p->buffer);
+	pcap_close_common(p);
 	if (p->adapter != NULL) {
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.77 2004-12-17 19:55:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.78 2004-12-17 20:41:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -692,8 +692,10 @@ pcap_close_common(pcap_t *p)
 {
 	if (p->buffer != NULL)
 		free(p->buffer);
+#ifndef WIN32
 	if (p->fd >= 0)
 		close(p->fd);
+#endif
 }
 
 static void
