@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.104 2004-05-21 09:45:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.105 2004-07-20 21:10:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -580,7 +580,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 				 * on Solaris, the lack of a DLPI device
 				 * for the loopback interface is just a
 				 * symptom of that inability.
-				 * 
+				 */
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", device);
 			} else {
@@ -611,8 +611,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		if (dl_doattach(p->fd, ppa, ebuf) < 0)
 			goto bad;
 #ifdef DL_HP_RAWDLS
-		if (send_fd >= 0) {
-			if (dl_doattach(p->send_fd, ppa, ebuf) < 0) < 0)
+		if (p->send_fd >= 0) {
+			if (dl_doattach(p->send_fd, ppa, ebuf) < 0)
 				goto bad;
 		}
 #endif
@@ -1414,12 +1414,7 @@ dlrawdatareq(int fd, u_char *datap, int datalen)
 	data.len = datalen;
 	data.buf = datap;
 
-	if (putmsg(fd, &ctl, &data, 0) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "dlrawdatareq: putmsg: %s", pcap_strerror(errno));
-		return (-1);
-	}
-	return (0);
+	return (putmsg(fd, &ctl, &data, 0));
 }
 #endif /* DL_HP_RAWDLS */
 
