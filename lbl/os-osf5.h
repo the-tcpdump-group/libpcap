@@ -18,11 +18,11 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/lbl/os-osf5.h,v 1.1 2002-06-01 09:37:42 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/lbl/os-osf5.h,v 1.2 2002-08-02 03:24:15 guy Exp $ (LBL)
  */
 
 /*
- * Prototypes missing in Tru64 UNIX 5.x */
+ * Prototypes missing in Tru64 UNIX 5.x
  * XXX - "snprintf()" and "vsnprintf()" aren't missing, but you have to
  * #define the right value to get them defined by <stdio.h>.
  */
