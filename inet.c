@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.28 2000-04-09 20:59:31 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.29 2000-04-13 04:58:09 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -108,8 +108,10 @@ pcap_lookupdev(errbuf)
 		if ((ifa->ifa_flags & IFF_LOOPBACK) != 0)
 			continue;
 #else
-		if (strcmp(ifa->ifa_name, "lo0") == 0)
+		if (strncmp(ifa->ifa_name, "lo", 2) == 0 &&
+		    (ifa->ifa_name[2] == '\0' || isdigit(ifa->ifa_name[2]))) {
 			continue;
+		}
 #endif
 
 		for (cp = ifa->ifa_name; !isdigit(*cp); ++cp)
