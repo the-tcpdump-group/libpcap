@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.90 2001-10-09 03:53:38 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.91 2001-10-09 05:43:20 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.90 $)
+AC_REVISION($Revision: 1.91 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -141,6 +141,17 @@ null)
 	;;
 
 esac
+
+AC_MSG_CHECKING(whether we have /proc/net/dev)
+if test -r /proc/net/dev ; then
+	ac_cv_lbl_proc_net_dev=yes
+else
+	ac_cv_lbl_proc_net_dev=no
+fi
+if test $ac_cv_lbl_proc_net_dev = yes; then
+	AC_DEFINE(HAVE_PROC_NET_DEV, 1, [define if you have a /proc/net/dev])
+fi
+AC_MSG_RESULT($ac_cv_lbl_proc_net_dev)
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)
 if test "$V_LEX" = lex ; then

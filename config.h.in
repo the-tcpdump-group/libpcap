@@ -66,6 +66,9 @@
 /* if if_packet.h has tpacket_stats defined */
 #undef HAVE_TPACKET_STATS
 
+/* define if you have a /proc/net/dev */
+#undef HAVE_PROC_NET_DEV
+
 /* define on AIX to get certain functions */
 #undef _SUN
 
