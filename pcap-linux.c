@@ -370,11 +370,14 @@ pcap_setfilter( pcap_t *handle, struct bpf_program *filter )
 
 	fcode.filter	= (struct sock_filter *) handle->fcode.bf_insns;
 	fcode.len	= filter->bf_len;
+#ifdef USHRT_MAX
 	if( filter->bf_len > USHRT_MAX ) {
 		fprintf( stderr, "Warning: Filter to complex for kernel\n" );
 		/* paranoid - should never happen */
 	} 
-	else if( setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
+	else
+#endif
+        if( setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
 		       &fcode, sizeof(fcode)) == 0 )
 	{
 		handle->md.use_bpf = 1;
@@ -507,6 +510,7 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 
 		/* Select promiscous mode on/off */
 
+#ifdef SOL_PACKET
 		/* XXX: We got reports that this does not work in 2.3.99.
 		 * Need to investigate. Using ioctl to switch the promisc 
 		 * mode at device level costs us most of the benefits of 
@@ -528,6 +532,7 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 				 "setsockopt: %s", pcap_strerror(errno));
 			break;
 		}
+#endif
 		
 		/* Compute the buffersize */
 
