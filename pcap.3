@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.15 2000-12-28 01:58:05 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.16 2001-01-03 00:57:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -201,32 +201,22 @@ and
 are
 .I bpf_u_int32
 pointers.
-A return of -1 indicates an error in which case
+A return of \-1 indicates an error in which case
 .I errbuf
 is filled in with an appropriate error message.
 .PP
 .B pcap_dispatch()
 is used to collect and process packets.
 .I cnt
-specifies the maximum number of packets to process before returning. A
+specifies the maximum number of packets to process before returning.
+This is not a minimum number; when reading a live capture, only one
+bufferful of packets is read at a time, so fewer than
 .I cnt
-of -1 processes all the packets received in one buffer. A
+packets may be processed. A
 .I cnt
-of 0 processes all packets until an error occurs,
-.B EOF
-is reached, or, on some platforms, the read times out (when doing live
-reads and a non-zero read timeout is specified).
-.B pcap_dispatch()
-will not necessarily return when the read times out; on some platforms,
-the read timeout isn't supported, and, on other platforms, the timer
-doesn't start until at least one packet arrives.  This means that the
-read timeout should
-.B NOT
-be used in, for example, an interactive application, to allow the packet
-capture loop to ``poll'' for user input periodically, as there's no
-guarantee that
-.B pcap_dispatch()
-will return after the timeout expires.
+of \-1 processes all the packets received in one buffer when reading a
+live capture, or all the packets in the file when reading a
+``savefile''.
 .I callback
 specifies a routine to be called with three arguments:
 a
@@ -238,21 +228,69 @@ a pointer to the
 struct (which precede the actual network headers and data),
 and a
 .I u_char
-pointer to the packet data. The number of packets read is returned.
-Zero is returned when
-.B EOF
-is reached in a ``savefile.'' A return of -1 indicates
+pointer to the packet data.
+.PP
+The number of packets read is returned.
+0 is returned if no packets were read from a live capture (if, for
+example, they were discarded because they didn't pass the packet filter,
+or if, on platforms that support a read timeout that starts before any
+packets arrive, the timeout expires before any packets arrive, or if the
+file descriptor for the capture device is in non-blocking mode and no
+packets were available to be read) or if no more packets are available
+in a ``savefile.'' A return of \-1 indicates
 an error in which case
 .B pcap_perror()
 or
 .B pcap_geterr()
 may be used to display the error text.
 .PP
+.BR NOTE :
+when reading a live capture,
+.B pcap_dispatch()
+will not necessarily return when the read times out; on some platforms,
+the read timeout isn't supported, and, on other platforms, the timer
+doesn't start until at least one packet arrives.  This means that the
+read timeout should
+.B NOT
+be used in, for example, an interactive application, to allow the packet
+capture loop to ``poll'' for user input periodically, as there's no
+guarantee that
+.B pcap_dispatch()
+will return after the timeout expires.
+.PP
+.B pcap_loop()
+is similar to
+.B pcap_dispatch()
+except it keeps reading packets until
+.I cnt
+packets are processed or an error occurs.
+It does
+.B not
+return when live read timeouts occur.
+Rather, specifying a non-zero read timeout to
+.B pcap_open_live()
+and then calling
+.B pcap_dispatch()
+allows the reception and processing of any packets that arrive when the
+timeout occurs.
+A negative
+.I cnt
+causes
+.B pcap_loop()
+to loop forever (or at least until an error occurs).
+.PP
+.B pcap_next()
+returns a
+.I u_char
+pointer to the next packet.
+.PP
 .B pcap_dump()
 outputs a packet to the ``savefile'' opened with
 .BR pcap_dump_open() .
 Note that its calling arguments are suitable for use with
-.BR pcap_dispatch() .
+.B pcap_dispatch()
+or
+.BR pcap_loop() .
 .PP
 .B pcap_compile()
 is used to compile the string
@@ -267,7 +305,7 @@ struct and is filled in by
 controls whether optimization on the resulting code is performed.
 .I netmask
 specifies the netmask of the local net.
-A return of -1 indicates an error in which case
+A return of \-1 indicates an error in which case
 .BR pcap_geterr()
 may be used to display the error text.
 .PP
@@ -279,7 +317,7 @@ snaplen and linktype explicitly.  It is intended to be used for
 compiling filters for direct BPF usage, without necessarily having
 called
 .BR pcap_open() .
-A return of -1 indicates an error; the error text is unavailable.
+A return of \-1 indicates an error; the error text is unavailable.
 .RB ( pcap_compile_nopcap()
 is a wrapper around
 .BR pcap_open_dead() ,
@@ -313,32 +351,6 @@ when that BPF program is no longer needed, for example after it
 has been made the filter program for a pcap structure by a call to
 .BR pcap_setfilter() .
 .PP
-.B pcap_loop()
-is similar to
-.B pcap_dispatch()
-except it keeps reading packets until
-.I cnt
-packets are processed or an error occurs.
-It does
-.B not
-return when live read timeouts occur.
-Rather, specifying a non-zero read timeout to
-.B pcap_open_live()
-and then calling
-.B pcap_dispatch()
-allows the reception and processing of any packets that arrive when the
-timeout occurs.
-A negative
-.I cnt
-causes
-.B pcap_loop()
-to loop forever (or at least until an error occurs).
-.PP
-.B pcap_next()
-returns a
-.I u_char
-pointer to the next packet.
-.PP
 .B pcap_datalink()
 returns the link layer type, e.g.
 .BR DLT_EN10MB .
@@ -368,7 +380,7 @@ returns 0 and fills in a
 .B pcap_stat
 struct. The values represent packet statistics from the start of the
 run to the time of the call. If there is an error or the under lying
-packet capture doesn't support packet statistics, -1 is returned and
+packet capture doesn't support packet statistics, \-1 is returned and
 the error text can be obtained with
 .B pcap_perror()
 or
