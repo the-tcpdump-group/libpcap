@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.43 2003-02-11 07:40:09 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.44 2003-04-10 06:08:06 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -177,6 +177,7 @@ int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
 int	pcap_dispatch(pcap_t *, int, pcap_handler, u_char *);
 const u_char*
 	pcap_next(pcap_t *, struct pcap_pkthdr *);
+int 	pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const u_char **);
 int	pcap_stats(pcap_t *, struct pcap_stat *);
 int	pcap_setfilter(pcap_t *, struct bpf_program *);
 int	pcap_getnonblock(pcap_t *, char *);
