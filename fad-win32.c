@@ -19,11 +19,6 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.2 2002-08-05 07:45:09 guy Exp $ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -167,23 +162,10 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 	 */
 	if (!PacketGetNetInfoEx((void *)name, if_addrs, &if_addr_size)) {
 		/*
-		 * Failure.
+		 * Failure. Return A succesful code, but don't add any address to the list
 		 */
 
-		addr=(struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
-		netmask=(struct sockaddr_in*)malloc(sizeof(struct sockaddr_in));
-
-		addr->sin_family = AF_INET;
-		addr->sin_addr.s_addr = 0;
-		netmask->sin_family = AF_INET;
-		netmask->sin_addr.s_addr = 0;
-	
-		return (add_addr_to_list(curdev, 
-			(struct sockaddr*)addr,
-			(struct sockaddr*)netmask,
-			NULL,
-			NULL,
-			errbuf));
+		return 0;
 	}
 
 	/*
