@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.121 2005-01-07 11:21:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.122 2005-01-11 11:02:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -372,6 +372,13 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_GPF_T		170		/* GPF-T (ITU-T G.7041/Y.1303) */
 #define LINKTYPE_GPF_F		171		/* GPF-T (ITU-T G.7041/Y.1303) */
 
+/*
+ * Requested by Oolan Zimmer <oz@gcom.com> for use in Gcom's T1/E1 line
+ * monitoring equipment.
+ */
+#define LINKTYPE_GCOM_T1E1	172
+#define LINKTYPE_GCOM_SERIAL	173
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -551,6 +558,9 @@ static struct linktype_map {
 
 	/* Framed Generic Framing Procedure (ITU-T G.7041/Y.1303) */
 	{ DLT_GPF_F,		LINKTYPE_GPF_F },
+
+	{ DLT_GCOM_T1E1,	LINKTYPE_GCOM_T1E1 },
+	{ DLT_GCOM_SERIAL,	LINKTYPE_GCOM_SERIAL },
 
 	{ -1,			-1 }
 };

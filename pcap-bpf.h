@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.28 2004-12-18 08:52:10 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.29 2005-01-11 11:02:08 guy Exp $ (LBL)
  */
 
 /*
@@ -534,6 +534,13 @@ struct bpf_version {
 #define DLT_GPRS_LLC		169	/* GPRS LLC */
 #define DLT_GPF_T		170	/* GPF-T (ITU-T G.7041/Y.1303) */
 #define DLT_GPF_F		171	/* GPF-F (ITU-T G.7041/Y.1303) */
+
+/*
+ * Requested by Oolan Zimmer <oz@gcom.com> for use in Gcom's T1/E1 line
+ * monitoring equipment.
+ */
+#define DLT_GCOM_T1E1		172
+#define DLT_GCOM_SERIAL		173
 
 /*
  * The instruction encodings.
