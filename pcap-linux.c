@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.78 2002-02-22 09:20:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.79 2002-03-07 11:27:58 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1057,6 +1057,10 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 	case ARPHRD_CSLIP6:
 	case ARPHRD_ADAPT:
 	case ARPHRD_SLIP:
+#ifndef ARPHRD_RAWHDLC
+#define ARPHRD_RAWHDLC 518
+#endif
+	case ARPHRD_RAWHDLC:
 		/*
 		 * XXX - should some of those be mapped to DLT_LINUX_SLL
 		 * instead?  Should we just map all of them to DLT_LINUX_SLL?
