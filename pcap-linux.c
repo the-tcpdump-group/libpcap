@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.42 2000-12-16 10:43:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.43 2000-12-18 00:20:51 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -889,7 +889,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		/* Bind to the given device */
 
 		if (!device) {
-		        strncpy(ebuf, "pcap_open_live: No interface given",
+		        strncpy(ebuf, "pcap_open_live: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
 				PCAP_ERRBUF_SIZE);
 			break;
 		}
