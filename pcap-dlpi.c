@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.101 2004-04-07 07:56:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.102 2004-04-23 05:19:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -554,8 +554,28 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 		/* Try again with unit number */
 		if ((p->fd = open(dname2, O_RDWR)) < 0) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dname2,
-			    pcap_strerror(errno));
+			if (errno == ENOENT) {
+				/*
+				 * We just report "No DLPI device found"
+				 * with the device name, so people don't
+				 * get confused and think, for example,
+				 * that if they can't capture on "lo0"
+				 * on Solaris the fix is to change libpcap
+				 * (or the application that uses it) to
+				 * look for something other than "/dev/lo0",
+				 * as the fix is to look for an operating
+				 * system other than Solaris - you just
+				 * *can't* capture on a loopback interface
+				 * on Solaris, the lack of a DLPI device
+				 * for the loopback interface is just a
+				 * symptom of that inability.
+				 * 
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "%s: No DLPI device found", device);
+			} else {
+				snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s",
+				    dname2, pcap_strerror(errno));
+			}
 			goto bad;
 		}
 		/* XXX Assume unit zero */
