@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.98 2003-11-30 22:46:13 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.99 2003-12-15 01:35:03 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -83,7 +83,7 @@ SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
 # hack the extra indirection
-OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) # $(LIBOBJS)
+OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
 HDR =	pcap.h pcap-int.h pcap-namedb.h pcap-nit.h pcap-pf.h \
 	ethertype.h gencode.h gnuc.h
 GENHDR = \
@@ -145,8 +145,8 @@ grammar.o: grammar.c
 version.o: version.c
 	$(CC) $(CFLAGS) -c version.c
 
-snprintf.o: $(srcdir)/../tcpdump/missing/snprintf.c
-	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/../tcpdump/missing/snprintf.c
+snprintf.o: $(srcdir)/missing/snprintf.c
+	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
 
 version.c: $(srcdir)/VERSION
 	@rm -f $@

@@ -76,6 +76,7 @@ ppp.h
 savefile.c
 scanner.l
 sll.h
+snprintf.c
 sunatmpos.h
 Win32/Include/Gnuc.h
 Win32/Include/addrinfo.h

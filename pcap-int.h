@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.58 2003-11-21 10:19:34 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.59 2003-12-15 01:35:04 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -235,6 +235,18 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 	(strncpy((x), (y), (z)), \
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 strlen((y)))
+#endif
+
+#include <stdarg.h>
+
+#if !defined(HAVE_SNPRINTF)
+#define snprintf pcap_snprintf
+extern int snprintf (char *, size_t, const char *, ...);
+#endif
+
+#if !defined(HAVE_VSNPRINTF)
+#define vsnprintf pcap_vsnprintf
+extern int vsnprintf (char *, size_t, const char *, va_list ap);
 #endif
 
 /*
