@@ -1,20 +1,21 @@
 This file lists people who have contributed to libpcap:
 
 The current maintainers:
-	Bill Fenner			<fenner@research.att.com>
-	Assar Westerlund	 	<assar@sics.se>
 	Alexey Kuznetsov		<kuznet@ms2.inr.ac.ru>
-	Jun-ichiro itojun Hagino	<itojun@iijlab.net>
+	Assar Westerlund	 	<assar@sics.se>
+	Bill Fenner			<fenner@research.att.com>
+	Fulvio Risso			<risso@polito.it>
 	Guy Harris	 		<guy@alum.mit.edu>
-	Torsten Landschoff	 	<torsten@debian.org>
+	Juergen Schoenwaelder		<schoenw@ibr.cs.tu-bs.de>
+	Jun-ichiro itojun Hagino	<itojun@iijlab.net>
 	Michael Richardson	 	<mcr@sandelman.ottawa.on.ca>
 	Sebastian Krahmer		<krahmer@cs.uni-potsdam.de>
+	Torsten Landschoff	 	<torsten@debian.org>
 
 Additional people who have contributed patches:
 
 	Arkadiusz Miskiewicz		<misiek@pld.org.pl>
 	Armando L. Caro Jr.		<acaro@mail.eecis.udel.edu>
-	Fulvio Risso			<risso@polito.it>
 	Charles M. Hannum		<mycroft@netbsd.org>
 	Chris G. Demetriou		<cgd@netbsd.org>
 	Chris Pepper			<pepper@mail.reppep.com>
@@ -32,7 +33,6 @@ Additional people who have contributed patches:
 	Javier Achirica			<achirica@ttd.net>
 	Jefferson Ogata			<jogata@nodc.noaa.gov>
 	John Bankier			<jbankier@rainfinity.com>
-	Juergen Schoenwaelder		<schoenw@ibr.cs.tu-bs.de>
 	Klaus Klein			<kleink@netbsd.org>
 	Lorenzo Cavallaro		<sullivan@sikurezza.org>
 	Loris Degioanni			<loris@netgroup-serv.polito.it>
