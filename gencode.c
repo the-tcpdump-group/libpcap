@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.153 2001-05-30 01:27:21 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.154 2001-06-10 01:11:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -654,6 +654,23 @@ init_linktype(type)
 		off_nl = 22;
 		return;
 
+	case DLT_IEEE802_11:
+		/*
+		 * 802.11 doesn't really have a link-level type field.
+		 * We set "off_linktype" to the offset of the LLC header.
+		 *
+		 * To check for Ethernet types, we assume that SSAP = SNAP
+		 * is being used and pick out the encapsulated Ethernet type.
+		 * XXX - should we generate code to check for SNAP?
+		 *
+		 * XXX - the header is actually variable-length.  We
+		 * assume a 24-byte link-layer header, as appears in
+		 * data frames in networks with no bridges.
+		 */
+		off_linktype = 24;
+		off_nl = 30;
+		return;
+
 	case DLT_ATM_RFC1483:
 		/*
 		 * assume routed, non-ISO PDUs
@@ -901,6 +918,7 @@ gen_linktype(proto)
 		}
 		break;
 
+	case DLT_IEEE802_11:
 	case DLT_FDDI:
 	case DLT_IEEE802:
 	case DLT_ATM_RFC1483:
