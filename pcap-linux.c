@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.76 2002-02-05 05:47:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.77 2002-02-10 00:05:14 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -168,7 +168,7 @@ typedef int		socklen_t;
 /*
  * Prototypes for internal functions
  */
-static void map_arphrd_to_dlt(pcap_t *, int);
+static void map_arphrd_to_dlt(pcap_t *, int, int);
 static int live_open_old(pcap_t *, char *, int, int, char *);
 static int live_open_new(pcap_t *, char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -861,10 +861,14 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
  *  will be aligned on a 4-byte boundary when capturing packets).
  *  (If the offset isn't set here, it'll be 0; add code as appropriate
  *  for cases where it shouldn't be 0.)
+ *
+ *  If "cooked_ok" is non-zero, we can use DLT_LINUX_SLL and capture
+ *  in cooked mode; otherwise, we can't use cooked mode, so we have
+ *  to pick some type that works in raw mode, or fail.
  *  
  *  Sets the link type to -1 if unable to map the type.
  */
-static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
+static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 {
 	switch (arptype) {
 
@@ -949,9 +953,13 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		 * Both of those are a nuisance - and, at least on systems
 		 * that support PF_PACKET sockets, we don't have to put
 		 * up with those nuisances; instead, we can just capture
-		 * in cooked mode.  That's what we'll do.
+		 * in cooked mode.  That's what we'll do, if we can.
+		 * Otherwise, we'll just fail.
 		 */
-		handle->linktype = DLT_LINUX_SLL;
+		if (cooked_ok)
+			handle->linktype = DLT_LINUX_SLL;
+		else
+			handle->linktype = -1;
 		break;
 
 #ifndef ARPHRD_IEEE80211  /* From Linux 2.4.6 */
@@ -981,9 +989,34 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		 * oddball link-layer headers particular packets have).
 		 *
 		 * As such, we just punt, and run all PPP interfaces
-		 * in cooked mode.
+		 * in cooked mode, if we can; otherwise, we just treat
+		 * it as DLT_RAW, for now - if somebody needs to capture,
+		 * on a 2.0[.x] kernel, on PPP devices that supply a
+		 * link-layer header, they'll have to add code here to
+		 * map to the appropriate DLT_ type (possibly adding a
+		 * new DLT_ type, if necessary).
 		 */
-		handle->linktype = DLT_LINUX_SLL;
+		if (cooked_ok)
+			handle->linktype = DLT_LINUX_SLL;
+		else {
+			/*
+			 * XXX - handle ISDN types here?  We can't fall
+			 * back on cooked sockets, so we'd have to
+			 * figure out from the device name what type of
+			 * link-layer encapsulation it's using, and map
+			 * that to an appropriate DLT_ value, meaning
+			 * we'd map "isdnN" devices to DLT_RAW (they
+			 * supply raw IP packets with no link-layer
+			 * header) and "isdY" devices to a new DLT_I4L_IP
+			 * type that has only an Ethernet packet type as
+			 * a link-layer header.
+			 *
+			 * But sometimes we seem to get random crap
+			 * in the link-layer header when capturing on
+			 * ISDN devices....
+			 */
+			handle->linktype = DLT_RAW;
+		}
 		break;
 
 #ifndef ARPHRD_HDLC
@@ -1089,7 +1122,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			arptype	= iface_get_arptype(sock_fd, device, ebuf);
 			if (arptype == -1) 
 				break;
-			map_arphrd_to_dlt(handle, arptype);
+			map_arphrd_to_dlt(handle, arptype, 1);
 			if (handle->linktype == -1 ||
 			    handle->linktype == DLT_LINUX_SLL ||
 			    (handle->linktype == DLT_EN10MB &&
@@ -1389,7 +1422,26 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		if (iface_bind_old(sock_fd, device, ebuf) == -1)
 			break;
 
-		/* Go to promisc mode */
+		/*
+		 * Try to get the link-layer type.
+		 */
+		arptype = iface_get_arptype(sock_fd, device, ebuf);
+		if (arptype == -1)
+			break;
+
+		/*
+		 * Try to find the DLT_ type corresponding to that
+		 * link-layer type.
+		 */
+		map_arphrd_to_dlt(handle, arptype, 0);
+		if (handle->linktype == -1) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "unknown arptype %d", arptype);
+			break;
+		}
+
+		/* Go to promisc mode if requested */
+
 		if (promisc) {
 			memset(&ifr, 0, sizeof(ifr));
 			strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
@@ -1443,12 +1495,6 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 			}
 		}
 
-		/* All done - fill in the pcap handle */
-
-		arptype = iface_get_arptype(sock_fd, device, ebuf);
-		if (arptype == -1)
-			break;
-
 		/* Save the socket FD in the pcap structure */
 
 		handle->fd 	 = sock_fd;
@@ -1458,25 +1504,6 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		 * on a 4-byte boundary.
 		 */
 		handle->offset	 = 0;
-
-		/*
-		 * XXX - handle ISDN types here?  We can't fall back on
-		 * cooked sockets, so we'd have to figure out from the
-		 * device name what type of link-layer encapsulation
-		 * it's using, and map that to an appropriate DLT_
-		 * value, meaning we'd map "isdnN" devices to DLT_RAW
-		 * (they supply raw IP packets with no link-layer
-		 * header) and "isdY" devices to a new DLT_I4L_IP
-		 * type that has only an Ethernet packet type as
-		 * a link-layer header.
-		 */
-		map_arphrd_to_dlt(handle, arptype);
-		if (handle->linktype == -1 ||
-		    handle->linktype == DLT_LINUX_SLL) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				 "interface type of %s not supported", device);
-			break;
-		}
 
 		return 1;
 
