@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.46 2001-07-29 01:22:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.47 2001-11-17 21:24:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -35,6 +35,16 @@ static const char rcsid[] =
 #include <sys/ioctl.h>
 
 #include <net/if.h>
+#ifdef _AIX
+/*
+ * XXX - I'm guessing here AIX defines IFT_ values in <net/if_types.h>,
+ * as BSD does.  If not, this code won't compile, but, if not, you
+ * want to send us a bug report and fall back on using DLPI.
+ * It's not as if BPF used to work right on AIX before this change;
+ * this change attempts to fix the fact that it didn't....
+ */
+#include <net/if_types.h>		/* for IFT_ values */
+#endif
 
 #include <ctype.h>
 #include <errno.h>
@@ -132,6 +142,20 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/*
 		 * XXX A bpf_hdr matches a pcap_pkthdr.
 		 */
+#ifdef _AIX
+		/*
+		 * AIX's BPF returns seconds/nanoseconds time stamps, not
+		 * seconds/microseconds time stamps.
+		 *
+		 * XXX - I'm guessing here that it's a "struct timestamp";
+		 * if not, this code won't compile, but, if not, you
+		 * want to send us a bug report and fall back on using
+		 * DLPI.  It's not as if BPF used to work right on
+		 * AIX before this change; this change attempts to fix
+		 * the fact that it didn't....
+		 */
+		bhp->bh_tstamp.tv_usec = bhp->bh_tstamp.tv_usec/1000;
+#endif
 		(*callback)(user, (struct pcap_pkthdr*)bp, bp + hdrlen);
 		bp += BPF_WORDALIGN(caplen + hdrlen);
 		if (++n >= cnt && cnt > 0) {
@@ -244,17 +268,32 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    pcap_strerror(errno));
 		goto bad;
 	}
-#ifdef __OpenBSD__
+#ifdef _AIX
+	/*
+	 * AIX's BPF returns IFF_ types, not DLT_ types, in BIOCGDLT.
+	 */
 	switch (v) {
-	case DLT_LOOP:
-		/*
-		 * XXX - DLT_LOOP has a network-byte-order, rather than
-		 * a host-byte-order, AF_ value as the link-layer
-		 * header; will the BPF code generator handle that
-		 * correctly on little-endian machines?
-		 */
-		v = DLT_NULL;
+
+	case IFT_ETHER:
+	case IFT_ISO88023:
+		v = DLT_EN10MB;
 		break;
+
+	case IFT_FDDI:
+		v = DLT_FDDI;
+		break;
+
+	case IFT_ISO88025:
+		v = DLT_IEEE802;
+		break;
+
+	default:
+		/*
+		 * We don't know what to map this to yet.
+		 */
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown interface type %lu",
+		    v);
+		goto bad;
 	}
 #endif
 #if _BSDI_VERSION - 0 >= 199510
