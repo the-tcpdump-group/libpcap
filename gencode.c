@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.156 2001-06-20 07:12:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.157 2001-07-03 19:15:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2922,21 +2922,27 @@ gen_scode(name, q)
 				if (eaddr == NULL)
 					bpf_error(
 					    "unknown ether host '%s'", name);
-				return gen_ehostop(eaddr, dir);
+				b = gen_ehostop(eaddr, dir);
+				free(eaddr);
+				return b;
 
 			case DLT_FDDI:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
 					    "unknown FDDI host '%s'", name);
-				return gen_fhostop(eaddr, dir);
+				b = gen_fhostop(eaddr, dir);
+				free(eaddr);
+				return b;
 
 			case DLT_IEEE802:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
 					    "unknown token ring host '%s'", name);
-				return gen_thostop(eaddr, dir);
+				b = gen_thostop(eaddr, dir);
+				free(eaddr);
+				return b;
 
 			default:
 				bpf_error(
@@ -3070,7 +3076,9 @@ gen_scode(name, q)
 		alist = pcap_nametoaddr(name);
 		if (alist == NULL || *alist == NULL)
 			bpf_error("unknown host '%s'", name);
-		return gen_gateway(eaddr, alist, proto, dir);
+		b = gen_gateway(eaddr, alist, proto, dir);
+		free(eaddr);
+		return b;
 #else
 		bpf_error("'gateway' not supported in this configuration");
 #endif /*INET6*/

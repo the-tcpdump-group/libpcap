@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.70 2001-05-10 14:48:03 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.71 2001-07-03 19:15:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -188,8 +188,24 @@ nid:	  ID			{ $$.b = gen_scode($1, $$.q = $<blk>0.q); }
 					"in this configuration");
 #endif /*INET6*/
 				}
-	| EID			{ $$.b = gen_ecode($1, $$.q = $<blk>0.q); }
-	| AID			{ $$.b = gen_acode($1, $$.q = $<blk>0.q); }
+	| EID			{ 
+				  $$.b = gen_ecode($1, $$.q = $<blk>0.q);
+				  /*
+				   * $1 was allocated by "pcap_ether_aton()",
+				   * so we must free it now that we're done
+				   * with it.
+				   */
+				  free($1);
+				}
+	| AID			{
+				  $$.b = gen_acode($1, $$.q = $<blk>0.q);
+				  /*
+				   * $1 was allocated by "pcap_ether_aton()",
+				   * so we must free it now that we're done
+				   * with it.
+				   */
+				  free($1);
+				}
 	| not id		{ gen_not($2.b); $$ = $2; }
 	;
 not:	  '!'			{ $$ = $<blk>0; }
