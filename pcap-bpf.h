@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.3 2003-03-08 08:42:14 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.4 2003-03-08 09:13:39 guy Exp $ (LBL)
  */
 
 /*
@@ -136,9 +136,16 @@ struct bpf_version {
  * Ports of this to particular platforms should replace these definitions
  * with the ones appropriate to that platform, if the values are
  * different on that platform.
+ *
+ * XXX - DLT_ATM_RFC1483 is 13 in BSD/OS, and DLT_RAW is 14 in BSD/OS,
+ * but I don't know what the right #define is for BSD/OS.
  */
 #define DLT_ATM_RFC1483	11	/* LLC/SNAP encapsulated atm */
+#ifdef __OpenBSD__
+#define DLT_RAW		14	/* raw IP */
+#else
 #define DLT_RAW		12	/* raw IP */
+#endif
 
 /*
  * These are values from BSD/OS's "bpf.h".
@@ -226,10 +233,14 @@ struct bpf_version {
 
 /*
  * Encapsulated packets for IPsec; DLT_ENC is 13 in OpenBSD, but that's
- * DLT_SLIP_BSDOS in NetBSD, so we can't use 13 for it in capture-file
- * headers.
+ * DLT_SLIP_BSDOS in NetBSD, so we don't use 13 for it in OSes other
+ * than OpenBSD.
  */
+#ifdef __OpenBSD__
+#define DLT_ENC		13
+#else
 #define DLT_ENC		109
+#endif
 
 /*
  * Values between 110 and 112 are reserved for use in capture file headers
