@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.96 1999-10-30 04:30:14 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.97 1999-10-30 05:16:35 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -1566,6 +1566,9 @@ gen_protochain(v, proto, dir)
 	fix5 = i;
 	i++;
 
+#ifndef IPPROTO_NONE
+#define IPPROTO_NONE	59
+#endif
 	/* if (A == IPPROTO_NONE) goto end */
 	s[i] = new_stmt(BPF_JMP|BPF_JEQ|BPF_K);
 	s[i]->s.jt = NULL;	/*later*/
