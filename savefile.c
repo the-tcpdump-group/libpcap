@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.89 2003-09-09 17:10:15 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.90 2003-10-24 23:55:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -540,6 +540,36 @@ pcap_open_offline(const char *fname, char *errbuf)
 	pcap_fddipad = 0;
 #endif
 
+	/*
+	 * We interchanged the caplen and len fields at version 2.3,
+	 * in order to match the bpf header layout.  But unfortunately
+	 * some files were written with version 2.3 in their headers
+	 * but without the interchanged fields.
+	 *
+	 * In addition, DG/UX tcpdump writes out files with a version
+	 * number of 543.0, and with the caplen and len fields in the
+	 * pre-2.3 order.
+	 */
+	switch (hdr.version_major) {
+
+	case 2:
+		if (hdr.version_minor < 3)
+			p->sf.lengths_swapped = SWAPPED;
+		else if (hdr.version_minor == 3)
+			p->sf.lengths_swapped = MAYBE_SWAPPED;
+		else
+			p->sf.lengths_swapped = NOT_SWAPPED;
+		break;
+
+	case 543:
+		p->sf.lengths_swapped = SWAPPED;
+		break;
+
+	default:
+		p->sf.lengths_swapped = NOT_SWAPPED;
+		break;
+	}
+
 	p->read_op = pcap_offline_read;
 	p->setfilter_op = install_bpf_program;
 	p->set_datalink_op = NULL;	/* we don't support munging link-layer headers */
@@ -564,6 +594,7 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 {
 	struct pcap_sf_patched_pkthdr sf_hdr;
 	FILE *fp = p->sf.rfile;
+	bpf_u_int32 t;
 
 	/*
 	 * Read the packet header; the structure we use as a buffer
@@ -589,17 +620,27 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 		hdr->ts.tv_sec = sf_hdr.ts.tv_sec;
 		hdr->ts.tv_usec = sf_hdr.ts.tv_usec;
 	}
-	/*
-	 * We interchanged the caplen and len fields at version 2.3,
-	 * in order to match the bpf header layout.  But unfortunately
-	 * some files were written with version 2.3 in their headers
-	 * but without the interchanged fields.
-	 */
-	if (p->sf.version_minor < 3 ||
-	    (p->sf.version_minor == 3 && hdr->caplen > hdr->len)) {
-		int t = hdr->caplen;
+	/* Swap the caplen and len fields, if necessary. */
+	switch (p->sf.lengths_swapped) {
+
+	case NOT_SWAPPED:
+		break;
+
+	case MAYBE_SWAPPED:
+		if (hdr->caplen <= hdr->len) {
+			/*
+			 * The captured length is <= the actual length,
+			 * so presumably they weren't swapped.
+			 */
+			break;
+		}
+		/* FALLTHROUGH */
+
+	case SWAPPED:
+		t = hdr->caplen;
 		hdr->caplen = hdr->len;
 		hdr->len = t;
+		break;
 	}
 
 	if (hdr->caplen > buflen) {

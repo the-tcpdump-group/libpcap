@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.53 2003-07-25 06:36:23 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.54 2003-10-24 23:55:06 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -49,10 +49,17 @@ extern "C" {
 /*
  * Savefile
  */
+typedef enum {
+	NOT_SWAPPED,
+	SWAPPED,
+	MAYBE_SWAPPED
+} swapped_type_t;
+
 struct pcap_sf {
 	FILE *rfile;
 	int swapped;
 	int hdrsize;
+	swapped_type_t lengths_swapped;
 	int version_major;
 	int version_minor;
 	u_char *base;
