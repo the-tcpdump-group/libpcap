@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.198 2004-01-29 10:36:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.199 2004-01-31 01:54:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -880,6 +880,29 @@ init_linktype(type)
 		off_linktype = 64+24;
 		off_nl = 64+32;		/* Radio+802.11+802.2+SNAP */
 		off_nl_nosnap = 64+27;	/* Radio+802.11+802.2 */
+		return;
+
+	case DLT_IEEE802_11_RADIO:
+		/*
+		 * Same as 802.11, but with an additional header before
+		 * the 802.11 header, containing a bunch of additional
+		 * information including radio-level information.
+		 *
+		 * XXX - same variable-length header problem, only
+		 * even *more* so; this header is also variable-length,
+		 * with the length being the 16-bit number at an offset
+		 * of 2 from the beginning of the radio header, and it's
+		 * device-dependent (different devices might supply
+		 * different amounts of information), so we can't even
+		 * assume a fixed length for the current version of the
+		 * header.
+		 *
+		 * Therefore, currently, only raw "link[N:M]" filtering is
+		 * supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
 		return;
 
 	case DLT_ATM_RFC1483:
