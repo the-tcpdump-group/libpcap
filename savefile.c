@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.122 2005-01-11 11:02:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.123 2005-01-12 09:15:05 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -379,6 +379,13 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_GCOM_T1E1	172
 #define LINKTYPE_GCOM_SERIAL	173
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>.  The DLT_ is used
+ * for internal communication to Physical Interface Cards (PIC)
+ */
+#define LINKTYPE_JUNIPER_PIC_PEER    174
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -561,6 +568,9 @@ static struct linktype_map {
 
 	{ DLT_GCOM_T1E1,	LINKTYPE_GCOM_T1E1 },
 	{ DLT_GCOM_SERIAL,	LINKTYPE_GCOM_SERIAL },
+
+        /* Juniper-internal chassis encapsulation */
+        { DLT_JUNIPER_PIC_PEER, LINKTYPE_JUNIPER_PIC_PEER },
 
 	{ -1,			-1 }
 };
