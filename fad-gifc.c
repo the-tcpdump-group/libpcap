@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.7 2005-01-28 20:33:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.8 2005-01-29 10:34:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -256,7 +256,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	char *buf = NULL;
 	unsigned buf_size;
 #ifdef HAVE_SOLARIS
-	char *p;
+	char *p, *q;
 #endif
 	struct ifreq ifrflags, ifrnetmask, ifrbroadaddr, ifrdstaddr;
 	struct sockaddr *netmask, *broadaddr, *dstaddr;
@@ -347,28 +347,6 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 		 */
 		if (strncmp(ifrp->ifr_name, "dummy", 5) == 0)
 			continue;
-
-#ifdef HAVE_SOLARIS
-		/*
-		 * Skip entries that have a ":" followed by a number
-		 * at the end - those are Solaris virtual interfaces
-		 * on which you can't capture.
-		 */
-		p = strchr(ifrp->ifr_name, ':');
-		if (p != NULL) {
-			/*
-			 * We have a ":"; is it followed by a number?
-			 */
-			while (isdigit((unsigned char)*p))
-				p++;
-			if (*p == '\0') {
-				/*
-				 * All digits after the ":" until the end.
-				 */
-				continue;
-			}
-		}
-#endif
 
 		/*
 		 * Get the flags for this interface, and skip it if it's
@@ -495,6 +473,34 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 			dstaddr = NULL;
 			dstaddr_size = 0;
 		}
+
+#ifdef HAVE_SOLARIS
+		/*
+		 * If this entry has a colon followed by a number at
+		 * the end, it's a logical interface.  Those are just
+		 * the way you assign multiple IP addresses to a real
+		 * interface, so an entry for a logical interface should
+		 * be treated like the entry for the real interface;
+		 * we do that by stripping off the ":" and the number.
+		 */
+		p = strchr(ifrp->ifr_name, ':');
+		if (p != NULL) {
+			/*
+			 * We have a ":"; is it followed by a number?
+			 */
+			q = p + 1;
+			while (isdigit((unsigned char)*q))
+				q++;
+			if (*q == '\0') {
+				/*
+				 * All digits after the ":" until the end.
+				 * Strip off the ":" and everything after
+				 * it.
+				 */
+				*p = '\0';
+			}
+		}
+#endif
 
 		/*
 		 * Add information for this address to the list.
