@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.107 2004-06-07 20:00:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.108 2004-08-17 17:50:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,8 +49,21 @@ static const char rcsid[] _U_ =
 #include "os-proto.h"
 #endif
 
-#define TCPDUMP_MAGIC 0xa1b2c3d4
-#define PATCHED_TCPDUMP_MAGIC 0xa1b2cd34
+/*
+ * Standard libpcap format.
+ */
+#define TCPDUMP_MAGIC		0xa1b2c3d4
+
+/*
+ * Alexey Kuznetzov's modified libpcap format.
+ */
+#define KUZNETZOV_TCPDUMP_MAGIC	0xa1b2cd34
+
+/*
+ * Reserved for Francisco Mesquita <francisco.mesquita@radiomovel.pt>
+ * for another modified format.
+ */
+#define FMESQUITA_TCPDUMP_MAGIC	0xa1b234cd
 
 /*
  * We use the "receiver-makes-right" approach to byte order,
@@ -636,9 +649,9 @@ pcap_open_offline(const char *fname, char *errbuf)
 		goto bad;
 	}
 	magic = hdr.magic;
-	if (magic != TCPDUMP_MAGIC && magic != PATCHED_TCPDUMP_MAGIC) {
+	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC) {
 		magic = SWAPLONG(magic);
-		if (magic != TCPDUMP_MAGIC && magic != PATCHED_TCPDUMP_MAGIC) {
+		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bad dump file format");
 			goto bad;
@@ -646,12 +659,23 @@ pcap_open_offline(const char *fname, char *errbuf)
 		p->sf.swapped = 1;
 		swap_hdr(&hdr);
 	}
-	if (magic == PATCHED_TCPDUMP_MAGIC) {
+	if (magic == KUZNETZOV_TCPDUMP_MAGIC) {
 		/*
 		 * XXX - the patch that's in some versions of libpcap
-		 * changes the packet header but not the magic number;
+		 * changes the packet header but not the magic number,
+		 * and some other versions with this magic number have
+		 * some extra debugging information in the packet header;
 		 * we'd have to use some hacks^H^H^H^H^Hheuristics to
-		 * detect that.
+		 * detect those variants.
+		 *
+		 * Ethereal does that, but it does so by trying to read
+		 * the first two packets of the file with each of the
+		 * record header formats.  That currently means it seeks
+		 * backwards and retries the reads, which doesn't work
+		 * on pipes.  We want to be able to read from a pipe, so
+		 * that strategy won't work; we'd have to buffer some
+		 * data ourselves and read from that buffer in order to
+		 * make that work.
 		 */
 		p->sf.hdrsize = sizeof(struct pcap_sf_patched_pkthdr);
 	} else
