@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.10 2000-09-17 04:04:39 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.11 2000-10-12 04:12:27 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -294,34 +294,8 @@ returns a
 pointer to the next packet.
 .PP
 .B pcap_datalink()
-returns the link layer type; this will be one of
-.BR PCAP_ENCAP_NULL ,
-.BR PCAP_ENCAP_ETHERNET ,
-.BR PCAP_ENCAP_EXP_ETHERNET ,
-.BR PCAP_ENCAP_AX25 ,
-.BR PCAP_ENCAP_PRONET ,
-.BR PCAP_ENCAP_CHAOS ,
-.BR PCAP_ENCAP_TOKEN_RING ,
-.BR PCAP_ENCAP_ARCNET ,
-.BR PCAP_ENCAP_SLIP ,
-.BR PCAP_ENCAP_PPP ,
-.BR PCAP_ENCAP_FDDI ,
-.BR PCAP_ENCAP_ATM_RFC1483 ,
-.BR PCAP_ENCAP_RAW ,
-.BR PCAP_ENCAP_SLIP_BSDOS ,
-.BR PCAP_ENCAP_PPP_BSDOS ,
-.BR PCAP_ENCAP_C_HDLC ,
-.BR PCAP_ENCAP_IEEE802_11 ,
-.BR PCAP_ENCAP_ATM_CLIP .
-Those PCAP_ENCAP_* codes corresponding to DLT_* codes with the same
-value on all platforms have the same value as the corresponding DLT_*
-code, so code can check for those DLT_* values rather than the
-PCAP_ENCAP_* values, so that the code will compile with older versions
-of libpcap.  Other PCAP_ENCAP_* codes should be checked for directly;
-#ifdefs can be used to ensure that the code compile with older versions
-of libpcap.  Other DLT_* codes can also be checked for, again with
-#ifdefs, so that capture files with one of those codes can, at least, be
-read on platforms that assign the same value to those codes.
+returns the link layer type, e.g.
+.BR DLT_EN10MB .
 .PP
 .B pcap_snapshot()
 returns the snapshot length specified when
