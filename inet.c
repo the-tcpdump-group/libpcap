@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.22 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.23 1999-11-17 06:06:25 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -89,26 +89,43 @@ pcap_lookupdev(errbuf)
 	register char *cp;
 	register struct ifreq *ifrp, *ifend, *ifnext, *mp;
 	struct ifconf ifc;
-	struct ifreq ibuf[16], ifr;
+	char *buf;
+	struct ifreq ifr;
 	static char device[sizeof(ifrp->ifr_name) + 1];
+	unsigned buf_size;
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
 		(void)sprintf(errbuf, "socket: %s", pcap_strerror(errno));
 		return (NULL);
 	}
-	ifc.ifc_len = sizeof ibuf;
-	ifc.ifc_buf = (caddr_t)ibuf;
 
-	memset((char *)ibuf, 0, sizeof(ibuf));
-	if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0 ||
-	    ifc.ifc_len < sizeof(struct ifreq)) {
-		(void)sprintf(errbuf, "SIOCGIFCONF: %s", pcap_strerror(errno));
-		(void)close(fd);
-		return (NULL);
-	}
-	ifrp = ibuf;
-	ifend = (struct ifreq *)((char *)ibuf + ifc.ifc_len);
+	buf_size = 8192;
+
+	do {
+		buf = malloc (buf_size);
+		if (buf == NULL) {
+			close (fd);
+			(void)sprintf(errbuf, "out of memory");
+			return (NULL);
+		}
+
+		ifc.ifc_len = buf_size;
+		ifc.ifc_buf = buf;
+		memset (buf, 0, buf_size);
+		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0) {
+			free (buf);
+			(void)sprintf(errbuf, "SIOCGIFCONF: %s",
+				      pcap_strerror(errno));
+			(void)close(fd);
+			return (NULL);
+		}
+		if (ifc.ifc_len == buf_size)
+			free (buf);
+	} while (ifc.ifc_len == buf_size);
+
+	ifrp = (struct ifreq *)buf;
+	ifend = (struct ifreq *)(buf + ifc.ifc_len);
 
 	mp = NULL;
 	minunit = 666;
@@ -138,6 +155,7 @@ pcap_lookupdev(errbuf)
 			    (int)sizeof(ifr.ifr_name), ifr.ifr_name,
 			    pcap_strerror(errno));
 			(void)close(fd);
+			free (buf);
 			return (NULL);
 		}
 
@@ -153,6 +171,7 @@ pcap_lookupdev(errbuf)
 			mp = ifrp;
 		}
 	}
+	free(buf);
 	(void)close(fd);
 	if (mp == NULL) {
 		(void)strcpy(errbuf, "no suitable device found");
