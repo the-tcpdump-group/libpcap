@@ -83,6 +83,9 @@
 /* define if you have a /proc/net/dev */
 #undef HAVE_PROC_NET_DEV
 
+/* define if you have a DAG API */
+#undef HAVE_DAG_API
+
 /* define on AIX to get certain functions */
 #undef _SUN
 

@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.55 2003-02-04 09:51:38 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.56 2003-07-23 05:29:20 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -529,7 +529,11 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	 * has the network address and -mask "0.0.0.0" therefore catching
 	 * all traffic. Using NULL for the interface is the same as "any".
 	 */
-	if (!device || strcmp(device, "any") == 0) {
+	if (!device || strcmp(device, "any") == 0
+#ifdef HAVE_DAG_API
+	    || strstr(device, "dag") != NULL
+#endif
+	    ) {
 		*netp = *maskp = 0;
 		return 0;
 	}

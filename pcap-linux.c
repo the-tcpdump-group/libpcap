@@ -24,9 +24,10 @@
  *  IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
+
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.89 2003-04-09 07:19:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.90 2003-07-23 05:29:22 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -79,6 +80,10 @@ static const char rcsid[] =
 #include "pcap-int.h"
 #include "sll.h"
 
+#ifdef HAVE_DAG_API
+#include "pcap-dag.h"
+#endif /* HAVE_DAG_API */
+	  
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -227,6 +232,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	int		err;
 	int		live_open_ok = 0;
 	struct utsname	utsname;
+
+#ifdef HAVE_DAG_API
+	if (strstr(device, "dag")) {
+		return dag_open_live(device, snaplen, promisc, to_ms, ebuf);
+	}
+#endif /* HAVE_DAG_API */
 
         /* Allocate a handle for this session. */
 
@@ -403,6 +414,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 int
 pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
+#ifdef HAVE_DAG_API
+	if (handle->md.is_dag) {
+		return dag_read(handle, max_packets, callback, user);
+	}
+#endif /* HAVE_DAG_API */
+
 	/*
 	 * Currently, on Linux only one packet is delivered per read,
 	 * so we don't loop.
@@ -655,7 +672,15 @@ pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 #ifdef HAVE_TPACKET_STATS
 	struct tpacket_stats kstats;
 	socklen_t len = sizeof (struct tpacket_stats);
+#endif
 
+#ifdef HAVE_DAG_API
+	if (handle->md.is_dag) {
+		return dag_stats(handle, stats);
+	}
+#endif /* HAVE_DAG_API */
+
+#ifdef HAVE_TPACKET_STATS
 	/*
 	 * Try to get the packet counts from the kernel.
 	 */
@@ -748,6 +773,11 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	if (pcap_add_if(alldevsp, "any", 0, any_descr, errbuf) < 0)
 		return (-1);
 
+#ifdef HAVE_DAG_API
+	if (dag_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif /* HAVE_DAG_API */
+
 	return (0);
 }
 
@@ -762,6 +792,12 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	int			can_filter_in_kernel;
 	int			err = 0;
 #endif
+
+#ifdef HAVE_DAG_API
+	if (handle->md.is_dag) {
+		return dag_setfilter(handle, filter);
+	}
+#endif /* HAVE_DAG_API */
 
 	if (!handle)
 		return -1;
@@ -1428,6 +1464,13 @@ void	pcap_close_linux( pcap_t *handle )
 	struct pcap	*p, *prevp;
 	struct ifreq	ifr;
 
+#ifdef HAVE_DAG_API
+	if (handle->md.is_dag) {
+		/* close actions will be done in dag_platform_close() */
+		return;
+	}
+#endif /* HAVE_DAG_API */
+
 	if (handle->md.clear_promisc) {
 		/*
 		 * We put the interface into promiscuous mode; take
@@ -1950,5 +1993,11 @@ reset_kernel_filter(pcap_t *handle)
 int
 pcap_set_datalink_platform(pcap_t *p, int dlt)
 {
+#ifdef HAVE_DAG_API
+	if (p->md.is_dag) {
+		return dag_set_datalink_platform(p, dlt);
+	}
+#endif /* HAVE_DAG_API */
+
 	return (0);
 }

@@ -50,6 +50,8 @@ nlpid.h
 optimize.c
 pcap-bpf.c
 pcap-bpf.h
+pcap-dag.c
+pcap-dag.h
 pcap-dlpi.c
 pcap-enet.c
 pcap-int.h

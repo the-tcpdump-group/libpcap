@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.55 2003-06-07 10:26:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.56 2003-07-23 05:29:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -637,6 +637,9 @@ pcap_close(pcap_t *p)
 	if (p->fd >= 0) {
 #ifdef linux
 		pcap_close_linux(p);
+#endif
+#ifdef HAVE_DAG_API
+		dag_platform_close(p);
 #endif
 		close(p->fd);
 	}

@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.98 2003-02-11 06:21:00 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.99 2003-07-23 05:29:20 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,12 +6,12 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.98 $)
+AC_REVISION($Revision: 1.99 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
 
-AC_LBL_C_INIT(V_CCOPT, V_INCLS)
+AC_LBL_C_INIT(V_CCOPT, V_INCLS, V_LIBS)
 AC_LBL_C_INLINE
 AC_C___ATTRIBUTE__
 
@@ -217,6 +217,10 @@ linux)
 	AC_LBL_TPACKET_STATS
 	;;
 
+dag)
+	V_DEFS="$V_DEFS -DDAG_ONLY"
+	;;	
+
 null)
 	AC_MSG_WARN(cannot determine packet capture interface)
 	AC_MSG_WARN((see the INSTALL doc for more info))
@@ -234,6 +238,59 @@ if test $ac_cv_lbl_proc_net_dev = yes; then
 	AC_DEFINE(HAVE_PROC_NET_DEV, 1, [define if you have a /proc/net/dev])
 fi
 AC_MSG_RESULT($ac_cv_lbl_proc_net_dev)
+
+AC_ARG_WITH(dag, [  --with-dag=DIR          include DAG support from DIR])
+ac_cv_lbl_dag_api=no
+if test "$with_dag" != no; then
+
+	case "$V_PCAP" in
+	linux|bpf|dag)
+		;;
+        *)
+		AC_MSG_ERROR(DAG support only available with 'linux' 'bpf' and 'dag' packet capture types)
+		;;
+	esac
+
+	AC_MSG_CHECKING(whether we have DAG API)
+
+	if test -z "$with_dag" -o "$with_dag" = yes; then
+		dag_root=$srcdir/../dag
+	else
+		dag_root=$with_dag
+	fi
+
+	if test -r "$dag_root/tools" -a -r "$dag_root/include"; then
+		dag_tools_dir="$dag_root/tools"
+		dag_include_dir="$dag_root/include"
+	else
+		dag_tools_dir="$dag_root"
+		dag_include_dir="$dag_root"
+	fi
+
+	if test -r "$dag_include_dir/dagapi.h" -a -r "$dag_tools_dir/dagapi.o"; then
+	  	V_INCLS="$V_INCLS -I $dag_include_dir"
+		V_LIBS="$V_LIBS $dag_tools_dir/dagapi.o $dag_tools_dir/dagopts.o"
+		if test "$V_PCAP" != dag ; then
+		   SSRC="pcap-dag.c"
+		fi
+		ac_cv_lbl_dag_api=yes
+	else
+		ac_cv_lbl_dag_api=no
+	fi
+	AC_MSG_RESULT($ac_cv_lbl_dag_api)
+	if test $ac_cv_lbl_dag_api = no; then
+		if test ! -z "$with_dag"; then
+			AC_MSG_ERROR(DAG API not found under directory $dag_root; use --without-dag)
+		fi
+	else
+		AC_DEFINE(HAVE_DAG_API, 1, [define if you have a DAG API])
+	fi
+fi
+
+if test "$V_PCAP" = dag -a "$ac_cv_lbl_dag_api" = no; then
+	AC_MSG_ERROR(Specifying the capture type as 'dag' requires the DAG API to be present; use --with-dag=DIR)
+fi
+
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)
 if test "$V_LEX" = lex ; then
@@ -310,12 +367,15 @@ rm -f net
 ln -s ${srcdir}/bpf/net net
 
 AC_SUBST(V_CCOPT)
+AC_SUBST(V_DEFS)
 AC_SUBST(V_INCLS)
+AC_SUBST(V_LIBS)
 AC_SUBST(V_LEX)
 AC_SUBST(V_PCAP)
 AC_SUBST(V_FINDALLDEVS)
 AC_SUBST(V_RANLIB)
 AC_SUBST(V_YACC)
+AC_SUBST(SSRC)
 
 AC_PROG_INSTALL
 
