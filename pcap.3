@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.46 2003-02-11 07:40:09 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.47 2003-02-11 08:03:21 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -873,8 +873,9 @@ is provided in case
 isn't available.
 .PP
 .B pcap_lib_version()
-returns a pointer to a string giving the version number of the libpcap
-library being used.
+returns a pointer to a string giving information about the version of
+the libpcap library being used; note that it contains more information
+than just a version number.
 .PP
 .B pcap_close()
 closes the files associated with
