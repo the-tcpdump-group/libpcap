@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.69 2000-07-06 01:50:36 assar Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.70 2000-07-11 00:36:07 assar Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -118,7 +118,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 			    fi
 			    CFLAGS="$savedcflags"
 			    V_CCOPT="-Aa $V_CCOPT"
-			    AC_DEFINE(_HPUX_SOURCE)
+			    AC_DEFINE(_HPUX_SOURCE,1,[needed on HP-UX])
 			    ;;
 
 		    *)
@@ -246,14 +246,14 @@ AC_DEFUN(AC_LBL_TYPE_SIGNAL,
     [AC_BEFORE([$0], [AC_LBL_LIBPCAP])
     AC_TYPE_SIGNAL
     if test "$ac_cv_type_signal" = void ; then
-	    AC_DEFINE(RETSIGVAL,)
+	    AC_DEFINE(RETSIGVAL,[],[return value of signal handlers])
     else
-	    AC_DEFINE(RETSIGVAL,(0))
+	    AC_DEFINE(RETSIGVAL,(0),[return value of signal handlers])
     fi
     case "$target_os" in
 
     irix*)
-	    AC_DEFINE(_BSD_SIGNALS)
+	    AC_DEFINE(_BSD_SIGNALS,1,[get BSD semantics on Irix])
 	    ;;
 
     *)
@@ -384,9 +384,9 @@ AC_DEFUN(AC_LBL_UNION_WAIT,
 	    ac_cv_lbl_union_wait=yes))
     AC_MSG_RESULT($ac_cv_lbl_union_wait)
     if test $ac_cv_lbl_union_wait = yes ; then
-	    AC_DEFINE(DECLWAITSTATUS,union wait)
+	    AC_DEFINE(DECLWAITSTATUS,union wait,[type for wait])
     else
-	    AC_DEFINE(DECLWAITSTATUS,int)
+	    AC_DEFINE(DECLWAITSTATUS,int,[type for wait])
     fi])
 
 dnl
@@ -411,7 +411,7 @@ AC_DEFUN(AC_LBL_SOCKADDR_SA_LEN,
 	ac_cv_lbl_sockaddr_has_sa_len=no))
     AC_MSG_RESULT($ac_cv_lbl_sockaddr_has_sa_len)
     if test $ac_cv_lbl_sockaddr_has_sa_len = yes ; then
-	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN)
+	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN,1,[if struct sockaddr has sa_len])
     fi])
 
 dnl
@@ -445,7 +445,7 @@ AC_DEFUN(AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1,
 	ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=no))
     AC_MSG_RESULT($ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1)
     if test $ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1 = yes ; then
-	    AC_DEFINE(HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1)
+	    AC_DEFINE(HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1,1,[if ppa_info_t_dl_module_id exists])
     fi])
 
 dnl
@@ -500,7 +500,7 @@ AC_DEFUN(AC_LBL_CHECK_TYPE,
 	ac_cv_lbl_have_$1=no))
     AC_MSG_RESULT($ac_cv_lbl_have_$1)
     if test $ac_cv_lbl_have_$1 = no ; then
-	    AC_DEFINE($1, $2)
+	    AC_DEFINE($1, $2, [if we have $1])
     fi])
 
 dnl
@@ -569,7 +569,7 @@ EOF
 	esac])
     AC_MSG_RESULT($ac_cv_lbl_unaligned_fail)
     if test $ac_cv_lbl_unaligned_fail = yes ; then
-	    AC_DEFINE(LBL_ALIGN)
+	    AC_DEFINE(LBL_ALIGN,1,[if unaligned access fails])
     fi])
 
 dnl
@@ -619,7 +619,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    name="lbl/os-$os.h"
 	    if test -f $name ; then
 		    ln -s $name os-proto.h
-		    AC_DEFINE(HAVE_OS_PROTO_H)
+		    AC_DEFINE(HAVE_OS_PROTO_H,1,[if there's an os_proto.h])
 	    else
 		    AC_MSG_WARN(can't find $name)
 	    fi
