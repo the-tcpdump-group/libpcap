@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.5 2003-11-15 23:23:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.6 2004-02-27 08:03:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -322,6 +322,20 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 			ifnext = ifrp + 1;
 		else
 			ifnext = (struct ifreq *)((char *)ifrp + n);
+
+		/*
+		 * XXX - The 32-bit compatibility layer for Linux on IA-64
+		 * is slightly broken. It correctly converts the structures
+		 * to and from kernel land from 64 bit to 32 bit but 
+		 * doesn't update ifc.ifc_len, leaving it larger than the 
+		 * amount really used. This means we read off the end 
+		 * of the buffer and encounter an interface with an 
+		 * "empty" name. Since this is highly unlikely to ever 
+		 * occur in a valid case we can just finish looking for 
+		 * interfaces if we see an empty name.
+		 */
+		if (!(*ifrp->ifr_name))
+			break;
 
 		/*
 		 * Get the flags for this interface, and skip it if it's
