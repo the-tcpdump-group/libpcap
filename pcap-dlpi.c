@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.74 2001-12-10 07:14:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.74.2.1 2002-02-22 11:49:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -223,7 +223,8 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		++p->md.stat.ps_recv;
 		if (bpf_filter(fcode, pk, origlen, caplen)) {
 #ifdef HAVE_SYS_BUFMOD_H
-			pkthdr.ts = sbp->sbh_timestamp;
+			pkthdr.ts.tv_sec = sbp->sbh_timestamp.tv_sec;
+			pkthdr.ts.tv_usec = sbp->sbh_timestamp.tv_usec;
 #else
 			(void)gettimeofday(&pkthdr.ts, NULL);
 #endif
