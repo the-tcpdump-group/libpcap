@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.34 2000-10-18 23:51:48 torsten Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.35 2000-10-20 06:55:28 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -89,10 +89,14 @@ static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 /*
  * Wrap some ioctl calls
  */
+#ifdef HAVE_NETPACKET_PACKET_H
 static int	iface_get_id(int fd, const char *device, char *ebuf);
+#endif
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
+#ifdef HAVE_NETPACKET_PACKET_H
 static int 	iface_bind(int fd, int ifindex, char *ebuf);
+#endif
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 /*
@@ -607,6 +611,8 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		if (mtu == -1)
 			break;
 		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
+		if (handle->bufsize < handle->snapshot)
+			handle->bufsize = handle->snapshot;
 		
 		/* Fill in the pcap structure */
 
@@ -784,6 +790,8 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		if (mtu == -1)
 			break;
 		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
+		if (handle->bufsize < handle->snapshot)
+			handle->bufsize = handle->snapshot;
 		
 		/* All done - fill in the pcap handle */
 
