@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.79 2004-09-15 08:01:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.80 2004-10-05 07:23:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -298,6 +298,41 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 	int ret;
 
 	ret = write(p->fd, buf, size);
+#ifdef __APPLE__
+	if (ret == -1 && errno == EAFNOSUPPORT) {
+		/*
+		 * In Mac OS X, there's a bug wherein setting the
+		 * BIOCSHDRCMPLT flag causes writes to fail; see,
+		 * for example:
+		 *
+		 *	http://cerberus.sourcefire.com/~jeff/archives/patches/macosx/BIOCSHDRCMPLT-10.3.3.patch
+		 *
+		 * So, if, on OS X, we get EAFNOSUPPORT from the write, we
+		 * assume it's due to that bug, and turn off that flag
+		 * and try again.  If we succeed, it either means that
+		 * somebody applied the fix from that URL, or other patches
+		 * for that bug from
+		 *
+		 *	http://cerberus.sourcefire.com/~jeff/archives/patches/macosx/
+		 *
+		 * and are running a Darwin kernel with those fixes, or
+		 * that Apple fixed the problem in some OS X release.
+		 */
+		u_int spoof_eth_src = 0;
+
+		if (ioctl(p->fd, BIOCSHDRCMPLT, &spoof_eth_src) == -1) {
+			(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "send: can't turn off BIOCSHDRCMPLT: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+
+		/*
+		 * Now try the write again.
+		 */
+		ret = write(p->fd, buf, size);
+	}
+#endif /* __APPLE__ */
 	if (ret == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
@@ -537,7 +572,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #ifdef BIOCGDLTLIST
 	struct bpf_dltlist bdl;
 #endif
-#if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT) && !(__APPLE__)
+#if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT)
 	u_int spoof_eth_src = 1;
 #endif
 	u_int v;
@@ -766,25 +801,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		}
 	}
 		
-#if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT) && !(__APPLE__)
+#if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT)
 	/*
 	 * Do a BIOCSHDRCMPLT, if defined, to turn that flag on, so
 	 * the link-layer source address isn't forcibly overwritten.
 	 * (Should we ignore errors?  Should we do this only if
 	 * we're open for writing?)
-	 *
-	 * We don't do it on Mac OS X, because there's a bug wherein
-	 * setting that flag causes writes to fail; see, for example:
-	 *
-	 *	http://cerberus.sourcefire.com/~jeff/archives/patches/macosx/BIOCSHDRCMPLT-10.3.3.patch
-	 *
-	 * If that bug gets fixed at some point in the future, we could,
-	 * on OS X, do a "uname()" call to see whether we're on a version
-	 * of OS X without the bug and, if so, make the call.  Or we could
-	 * make the call unconditionally and, in the inject routine,
-	 * if the write fails with EAFNOSUPPORT or EPFNOSUPPORT (whichever
-	 * is the error we get if the flag is set), turn the flag off
-	 * and try again.
 	 *
 	 * XXX - I seem to remember some packet-sending bug in some
 	 * BSDs - check CVS log for "bpf.c"?
