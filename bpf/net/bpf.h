@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.37 1999-10-19 15:18:31 itojun Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.38 2000-06-26 04:56:28 assar Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -154,7 +154,7 @@ struct bpf_hdr {
  * will insist on inserting padding; hence, sizeof(struct bpf_hdr) won't work.
  * Only the kernel needs to know about it; applications use bh_hdrlen.
  */
-#ifdef KERNEL
+#if defined(KERNEL) || defined(_KERNEL)
 #define SIZEOF_BPF_HDR 18
 #endif
 
@@ -260,15 +260,29 @@ struct bpf_insn {
 #define BPF_STMT(code, k) { (u_short)(code), 0, 0, k }
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
-#ifdef KERNEL
-extern u_int bpf_filter();
-extern void bpfattach();
+#if defined(BSD) && (defined(KERNEL) || defined(_KERNEL))
+/*
+ * Systems based on non-BSD kernels don't have ifnet's (or they don't mean
+ * anything if it is in <net/if.h>) and won't work like this.
+ */
+# if __STDC__
+extern void bpf_tap(struct ifnet *, u_char *, u_int);
+extern void bpf_mtap(struct ifnet *, struct mbuf *);
+extern void bpfattach(struct ifnet *, u_int, u_int);
+extern void bpfilterattach(int);
+# else
 extern void bpf_tap();
 extern void bpf_mtap();
-#else
+extern void bpfattach();
+extern void bpfilterattach();
+# endif /* __STDC__ */
+#endif /* BSD && (_KERNEL || KERNEL) */
 #if __STDC__
+extern int bpf_validate(struct bpf_insn *, int);
 extern u_int bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);
-#endif
+#else
+extern int bpf_validate();
+extern u_int bpf_filter();
 #endif
 
 /*
