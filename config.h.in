@@ -10,7 +10,7 @@
 /* Enable optimizer debugging */
 #undef BDEBUG
 
-/* define if you have a DAG API */
+/* define if you have the DAG API */
 #undef HAVE_DAG_API
 
 /* define if you have a /dev/dlpi */
@@ -27,9 +27,6 @@
 
 /* if ppa_info_t_dl_module_id exists */
 #undef HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1
-
-/* Define to 1 if you have the <ifaddrs.h> header file. */
-#undef HAVE_IFADDRS_H
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H

@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.108 2004-11-09 18:32:22 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.109 2004-12-16 22:22:20 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.108 $)
+AC_REVISION($Revision: 1.109 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -26,7 +26,7 @@ dnl in "AC_LBL_FIXINCLUDES" in "aclocal.m4" uses it, so we have to
 dnl test for it and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
 dnl "AC_LBL_FIXINCLUDES" won't work on some platforms such as Solaris.
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h ifaddrs.h limits.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h limits.h)
 AC_CHECK_HEADERS(netinet/if_ether.h, , , [#include <sys/types.h>
 #include <sys/socket.h>])
 
@@ -105,65 +105,88 @@ fi
 AC_MSG_RESULT($V_PCAP)
 
 dnl
-dnl Now figure out how we get a list of interfaces and addresses.
+dnl Now figure out how we get a list of interfaces and addresses,
+dnl if we support capturing.  Don't bother if we don't support
+dnl capturing.
 dnl
-AC_CHECK_FUNC(getifaddrs,[
+if test "$V_PCAP" = null
+then
 	#
-	# We have "getifaddrs()", so we use that to get the list
+	# We can't capture, so we can't open any capture
+	# devices, so we won't return any interfaces.
 	#
-	V_FINDALLDEVS=getad
-],[
-	#
-	# Well, we don't have "getifaddrs()", so we have to use some
-	# other mechanism; determine what that mechanism is.
-	#
-	# The first thing we use is the type of capture mechanism,
-	# which is somewhat of a proxy for the OS we're using.
-	#
-	case "$V_PCAP" in
+	V_FINDALLDEVS=null
+else
+	AC_CHECK_FUNC(getifaddrs,[
+		#
+		# We have "getifaddrs()"; make sure we have <ifaddrs.h>
+		# as well, just in case some platform is really weird.
+		#
+		AC_CHECK_HEADER(ifaddrs.h,[
+		    #
+		    # We have the header, so we use "getifaddrs()" to
+		    # get the list of interfaces.
+		    #
+		    V_FINDALLDEVS=getad
+		],[
+		    #
+		    # We don't have the header - give up.
+		    # XXX - we could also fall back on some other
+		    # mechanism, but, for now, this'll catch this
+		    # problem so that we can at least try to figure
+		    # out something to do on systems with "getifaddrs()"
+		    # but without "ifaddrs.h", if there is something
+		    # we can do on those systems.
+		    #
+		    AC_MSG_ERROR([Your system has getifaddrs() but doesn't have a usable <ifaddrs.h>.])
+		])
+	],[
+		#
+		# Well, we don't have "getifaddrs()", so we have to use
+		# some other mechanism; determine what that mechanism is.
+		#
+		# The first thing we use is the type of capture mechanism,
+		# which is somewhat of a proxy for the OS we're using.
+		#
+		case "$V_PCAP" in
 
-	dlpi)
-		#
-		# This might be Solaris 8 or later, with SIOCGLIFCONF,
-		# or it might be some other OS, with just SIOCGIFCONF.
-		#
-		AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
-		AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
-		    AC_TRY_COMPILE(
-			[#include <sys/param.h>
-			#include <sys/file.h>
-			#include <sys/ioctl.h>
-			#include <sys/socket.h>
-			#include <sys/sockio.h>],
-			[ioctl(0, SIOCGLIFCONF, (char *)0);],
-			ac_cv_lbl_have_siocglifconf=yes,
-			ac_cv_lbl_have_siocglifconf=no))
-		AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
-		if test $ac_cv_lbl_have_siocglifconf = yes ; then
-			V_FINDALLDEVS=glifc
-		else
+		dlpi)
+			#
+			# This might be Solaris 8 or later, with
+			# SIOCGLIFCONF, or it might be some other OS
+			# or some older version of Solaris, with
+			# just SIOCGIFCONF.
+			#
+			AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
+			AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
+			    AC_TRY_COMPILE(
+				[#include <sys/param.h>
+				#include <sys/file.h>
+				#include <sys/ioctl.h>
+				#include <sys/socket.h>
+				#include <sys/sockio.h>],
+				[ioctl(0, SIOCGLIFCONF, (char *)0);],
+				ac_cv_lbl_have_siocglifconf=yes,
+				ac_cv_lbl_have_siocglifconf=no))
+			AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
+			if test $ac_cv_lbl_have_siocglifconf = yes ; then
+				V_FINDALLDEVS=glifc
+			else
+				V_FINDALLDEVS=gifc
+			fi
+			;;
+
+		*)
+			#
+			# Assume we just have SIOCGIFCONF.
+			# (XXX - on at least later Linux kernels, there's
+			# another mechanism, and we should be using that
+			# instead.)
+			#
 			V_FINDALLDEVS=gifc
-		fi
-		;;
-
-	null)
-		#
-		# We can't capture, so we can't open any capture
-		# devices, so we won't return any interfaces.
-		#
-		V_FINDALLDEVS=null
-		;;
-
-	*)
-		#
-		# Assume we just have SIOCGIFCONF.
-		# (XXX - on at least later Linux kernels, there's
-		# another mechanism, and we should be using that
-		# instead.)
-		#
-		V_FINDALLDEVS=gifc
-		;;
-	esac])
+			;;
+		esac])
+fi
 
 AC_MSG_CHECKING(if --enable-ipv6 option is specified)
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           build IPv6-capable version])
