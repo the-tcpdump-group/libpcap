@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.30 2000-11-04 10:09:55 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.31 2000-12-16 10:43:26 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -65,10 +65,12 @@ struct pcap_md {
 	long	OrigMissed;	/* missed by i/f before this run */
 #ifdef linux
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
+	int	readlen;	/* byte count to hand to "recvmsg()" */
 	int	timeout;	/* timeout specified to pcap_open_live */
-	int	promisc;	/* running in promiscuous mode */
+	int	clear_promisc;	/* must clear promiscuous mode when we close */
 	int	lo_ifindex;	/* interface index of the loopback device */
 	char 	*device;	/* device name */
+	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */
 #endif
 };
 
@@ -189,6 +191,10 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 	(strncpy((x), (y), (z)), \
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 strlen((y)))
+#endif
+
+#ifdef linux
+void	pcap_close_linux(pcap_t *);
 #endif
 
 /* XXX */

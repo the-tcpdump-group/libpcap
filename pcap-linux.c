@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.41 2000-12-03 09:07:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.42 2000-12-16 10:43:29 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -45,13 +45,12 @@ static const char rcsid[] =
  *     it off ourselves when we're done; the kernel doesn't keep track
  *     of how many sockets are listening promiscuously, which means
  *     it won't get turned off automatically when no sockets are
- *     listening promiscuously.  We'd have to catch "pcap_close()"
- *     and restore the value the promiscuous flag had when we opened
- *     the device - which may not be the value it should have, if
- *     another socket also requested promiscuous mode between the time
- *     when we opened the socket and the time when we close the socket.
- *     We currently just punt, printing a warning and hinting that the
- *     user should upgrade to a 2.2 or later kernel.
+ *     listening promiscuously.  We catch "pcap_close()" and, for
+ *     interfaces we put into promiscuous mode, take them out of
+ *     promiscuous mode - which isn't necessarily the right thing to
+ *     do, if another socket also requested promiscuous mode between
+ *     the time when we opened the socket and the time when we close
+ *     the socket.
  */
 
 
@@ -68,6 +67,7 @@ static const char rcsid[] =
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/utsname.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
@@ -146,7 +146,6 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	memset(handle, 0, sizeof(*handle));
 	handle->snapshot	= snaplen;
 	handle->md.timeout	= to_ms;
-	handle->md.promisc	= promisc;
 
 	/*
 	 * NULL and "any" are special devices which give us the hint to 
@@ -310,8 +309,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	do {
 		fromlen = sizeof(from);
 		packet_len = recvfrom( 
-			handle->fd, handle->buffer + handle->offset, 
-			handle->snapshot, MSG_TRUNC, 
+			handle->fd, handle->buffer + handle->offset,
+			handle->md.readlen, MSG_TRUNC, 
 			(struct sockaddr *) &from, &fromlen);
 	} while (packet_len == -1 && errno == EINTR);
 
@@ -687,6 +686,15 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			break;
 		}
 
+		/*
+		 * This is a 2.2 or later kernel, as it has PF_PACKET;
+		 * "recvfrom()", when passed the MSG_TRUNC flag, will
+		 * return the actual length of the packet, not the
+		 * number of bytes from the packet copied to userland,
+		 * so we can safely pass it a byte count based on the
+		 * snapshot length.
+		 */
+		handle->md.readlen = handle->snapshot;
 		return 1;
 
 	} while(0);
@@ -755,31 +763,101 @@ iface_bind(int fd, int ifindex, char *ebuf)
  * With older kernels promiscuous mode is kind of interesting because we
  * have to reset the interface before exiting. The problem can't really
  * be solved without some daemon taking care of managing usage counts. 
- * We save the promiscuous state of the device when opening the capture
- * stream and arrange for it to be reset on process exit.
- *
- * XXX: This solution is still not correct even for this case. The 
- * devices stay in promiscuous mode until the process exits. I need to 
- * modify pcap_close to solve this.
+ * If we put the interface into promiscuous mode, we set a flag indicating
+ * that we must take it out of that mode when the interface is closed,
+ * and, when closing the interface, if that flag is set we take it out
+ * of promiscuous mode.
  */
 
-/* 
- * The device name and the interface flags to be restored at exit
+/*
+ * List of pcaps for which we turned promiscuous mode on by hand.
+ * If there are any such pcaps, we arrange to call "pcap_close_all()"
+ * when we exit, and have it close all of them to turn promiscuous mode
+ * off.
  */
-struct ifreq	restore_ifr;
+static struct pcap *pcaps_to_close;
 
-static void	restore_interface( void )
+/*
+ * TRUE if we've already called "atexit()" to cause "pcap_close_all()" to
+ * be called on exit.
+ */
+static int did_atexit;
+
+static void	pcap_close_all(void)
 {
-	int	status = socket(PF_INET, SOCK_PACKET, 0);
+	struct pcap *handle;
 
-	if (status != -1)
-		status = ioctl(status, SIOCSIFFLAGS, &restore_ifr);
+	while ((handle = pcaps_to_close) != NULL)
+		pcap_close(handle);
+}
 
-	if (status == -1) {
-		fprintf(stderr, 
-		"Can't restore interface flags. Please adjust manually. \n"
-		"Hint: This can't happen with Linux >= 2.2.0.\n");
+void	pcap_close_linux( pcap_t *handle )
+{
+	struct pcap	*p, *prevp;
+	struct ifreq	ifr;
+
+	if (handle->md.clear_promisc) {
+		/*
+		 * We put the interface into promiscuous mode; take
+		 * it out of promiscuous mode.
+		 *
+		 * XXX - if somebody else wants it in promiscuous mode,
+		 * this code cannot know that, so it'll take it out
+		 * of promiscuous mode.  That's not fixable in 2.0[.x]
+		 * kernels.
+		 */
+		memset(&ifr, 0, sizeof(ifr));
+		strncpy(ifr.ifr_name, handle->md.device, sizeof(ifr.ifr_name));
+		if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
+			fprintf(stderr, 
+			    "Can't restore interface flags (SIOCGIFFLAGS failed: %s).\n"
+			    "Please adjust manually.\n"
+			    "Hint: This can't happen with Linux >= 2.2.0.\n",
+			    strerror(errno));
+		} else {
+			if (ifr.ifr_flags & IFF_PROMISC) {
+				/*
+				 * Promiscuous mode is currently on; turn it
+				 * off.
+				 */
+				ifr.ifr_flags &= ~IFF_PROMISC;
+				if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1) {
+					fprintf(stderr, 
+					    "Can't restore interface flags (SIOCSIFFLAGS failed: %s).\n"
+					    "Please adjust manually.\n"
+					    "Hint: This can't happen with Linux >= 2.2.0.\n",
+					    strerror(errno));
+				}
+			}
+		}
+
+		/*
+		 * Take this pcap out of the list of pcaps for which we
+		 * have to take the interface out of promiscuous mode.
+		 */
+		for (p = pcaps_to_close, prevp = NULL; p != NULL;
+		    prevp = p, p = p->md.next) {
+			if (p == handle) {
+				/*
+				 * Found it.  Remove it from the list.
+				 */
+				if (prevp == NULL) {
+					/*
+					 * It was at the head of the list.
+					 */
+					pcaps_to_close = p->md.next;
+				} else {
+					/*
+					 * It was in the middle of the list.
+					 */
+					prevp->md.next = p->md.next;
+				}
+				break;
+			}
+		}
 	}
+	if (handle->md.device != NULL)
+		free(handle->md.device);
 }
 
 /*
@@ -792,6 +870,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 	int		sock_fd = -1, mtu, arptype;
+	struct utsname	utsname;
 	struct ifreq	ifr;
 
 	do {
@@ -827,7 +906,32 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 				break;
 			}
 			if ((ifr.ifr_flags & IFF_PROMISC) == 0) {
-				restore_ifr    = ifr;
+				/*
+				 * Promiscuous mode isn't currently on,
+				 * so turn it on, and remember that
+				 * we should turn it off when the
+				 * pcap_t is closed.
+				 */
+
+				/*
+				 * If we haven't already done so, arrange
+				 * to have "pcap_close_all()" called when
+				 * we exit.
+				 */
+				if (!did_atexit) {
+					if (atexit(pcap_close_all) == -1) {
+						/*
+						 * "atexit()" failed; don't
+						 * put the interface in
+						 * promiscuous mode, just
+						 * give up.
+						 */
+						strncpy(ebuf, "atexit failed",
+							PCAP_ERRBUF_SIZE);
+						break;
+					}
+				}
+
 				ifr.ifr_flags |= IFF_PROMISC;
 				if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
 				        snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -835,12 +939,14 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 						 pcap_strerror(errno));
 					break;
 				}
-				if (atexit(restore_interface) == -1) {
-					restore_interface();
-					strncpy(ebuf, "atexit failed",
-						PCAP_ERRBUF_SIZE);
-					break;
-				}
+				handle->md.clear_promisc = 1;
+
+				/*
+				 * Add this to the list of pcaps
+				 * to close when we exit.
+				 */
+				handle->md.next = pcaps_to_close;
+				pcaps_to_close = handle;
 			}
 		}
 
@@ -874,6 +980,50 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 			break;
 		}
 
+		/*
+		 * This might be a 2.0[.x] kernel - check.
+		 */
+		if (uname(&utsname) < 0 ||
+		    strncmp(utsname.release, "2.0", 3) == 0) {
+			/*
+			 * Either we couldn't find out what kernel release
+			 * this is, or it's a 2.0[.x] kernel.
+			 *
+			 * In the 2.0[.x] kernel, a "recvfrom()" on
+			 * a SOCK_PACKET socket, with MSG_TRUNC set, will
+			 * return the number of bytes read, so if we pass
+			 * a length based on the snapshot length, it'll
+			 * return the number of bytes from the packet
+			 * copied to userland, not the actual length
+			 * of the packet.
+			 *
+			 * This means that, for example, the IP dissector
+			 * in tcpdump will get handed a packet length less
+			 * than the length in the IP header, and will
+			 * complain about "truncated-ip".
+			 *
+			 * So we don't bother trying to copy from the
+			 * kernel only the bytes in which we're interested,
+			 * but instead copy them all, just as the older
+			 * versions of libpcap for Linux did.
+			 *
+			 * Just one of many problems with packet capture
+			 * on 2.0[.x] kernels; you really want a 2.2[.x]
+			 * or later kernel if you want packet capture to
+			 * work well.
+			 */
+			handle->md.readlen = handle->bufsize;
+		} else {
+			/*
+			 * This is a 2.2[.x] or later kernel (although
+			 * why we're using SOCK_PACKET on such a system
+			 * is unknown to me).
+			 *
+			 * We can safely pass "recvfrom()" a byte count
+			 * based on the snapshot length.
+			 */
+			handle->md.readlen = handle->snapshot;
+		}
 		return 1;
 
 	} while (0);
