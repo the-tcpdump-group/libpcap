@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf_image.c,v 1.22 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/bpf_image.c,v 1.23 2000-04-27 09:11:11 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -277,8 +277,8 @@ bpf_image(p, n)
 		fmt = "";
 		break;
 	}
-	(void)sprintf(operand, fmt, v);
-	(void)sprintf(image,
+	(void)snprintf(operand, sizeof operand, fmt, v);
+	(void)snprintf(image, sizeof image,
 		      (BPF_CLASS(p->code) == BPF_JMP &&
 		       BPF_OP(p->code) != BPF_JA) ?
 		      "(%03d) %-8s %-16s jt %d\tjf %d"

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.38 1999-11-21 01:11:58 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.39 2000-04-27 09:11:14 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -112,7 +112,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		strcpy(errbuf, "out of swap");
+		strlcpy(errbuf, "out of swap", PCAP_ERRBUF_SIZE);
 		return (NULL);
 	}
 
@@ -127,24 +127,27 @@ pcap_open_offline(const char *fname, char *errbuf)
 	else {
 		fp = fopen(fname, "r");
 		if (fp == NULL) {
-			sprintf(errbuf, "%s: %s", fname, pcap_strerror(errno));
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
+			    pcap_strerror(errno));
 			goto bad;
 		}
 	}
 	if (fread((char *)&hdr, sizeof(hdr), 1, fp) != 1) {
-		sprintf(errbuf, "fread: %s", pcap_strerror(errno));
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "fread: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	if (hdr.magic != TCPDUMP_MAGIC) {
 		if (SWAPLONG(hdr.magic) != TCPDUMP_MAGIC) {
-			sprintf(errbuf, "bad dump file format");
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "bad dump file format");
 			goto bad;
 		}
 		p->sf.swapped = 1;
 		swap_hdr(&hdr);
 	}
 	if (hdr.version_major < PCAP_VERSION_MAJOR) {
-		sprintf(errbuf, "archaic file format");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "archaic file format");
 		goto bad;
 	}
 	p->tzoff = hdr.thiszone;
@@ -171,7 +174,13 @@ pcap_open_offline(const char *fname, char *errbuf)
 		break;
 	}
 
+	if (p->bufsize < 0)
+		p->bufsize = BPF_MAXBUFSIZE;
 	p->sf.base = (u_char *)malloc(p->bufsize + BPF_ALIGNMENT);
+	if (p->sf.base == NULL) {
+		strlcpy(errbuf, "out of swap", PCAP_ERRBUF_SIZE);
+		goto bad;
+	}
 	p->buffer = p->sf.base + BPF_ALIGNMENT - (linklen % BPF_ALIGNMENT);
 	p->sf.version_major = hdr.version_major;
 	p->sf.version_minor = hdr.version_minor;
@@ -239,9 +248,11 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
 		static int tsize = 0;
 
 		if (hdr->caplen > 65535) {
-			sprintf(p->errbuf, "bogus savefile header");
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "bogus savefile header");
 			return (-1);
 		}
+
 		if (tsize < hdr->caplen) {
 			tsize = ((hdr->caplen + 1023) / 1024) * 1024;
 			if (tp != NULL)
@@ -249,12 +260,14 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
 			tp = (u_char *)malloc(tsize);
 			if (tp == NULL) {
 				tsize = 0;
-				sprintf(p->errbuf, "BUFMOD hack malloc");
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "BUFMOD hack malloc");
 				return (-1);
 			}
 		}
 		if (fread((char *)tp, hdr->caplen, 1, fp) != 1) {
-			sprintf(p->errbuf, "truncated dump file");
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "truncated dump file");
 			return (-1);
 		}
 		/*
@@ -271,7 +284,8 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
 		/* read the packet itself */
 
 		if (fread((char *)buf, hdr->caplen, 1, fp) != 1) {
-			sprintf(p->errbuf, "truncated dump file");
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "truncated dump file");
 			return (-1);
 		}
 	}
@@ -341,7 +355,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 	else {
 		f = fopen(fname, "w");
 		if (f == NULL) {
-			sprintf(p->errbuf, "%s: %s",
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 			    fname, pcap_strerror(errno));
 			return (NULL);
 		}

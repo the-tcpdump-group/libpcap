@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.61 1999-10-19 15:18:30 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.62 2000-04-27 09:11:12 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -1936,7 +1936,7 @@ convert_code_r(p)
 		dst->k = src->s.k;
 
 		/* fill block-local relative jump */
-		if (BPF_CLASS(src->s.code) != BPF_JMP || src->s.code == BPF_JMP|BPF_JA) {
+		if (BPF_CLASS(src->s.code) != BPF_JMP || src->s.code == (BPF_JMP|BPF_JA)) {
 #if 0
 			if (src->s.jt || src->s.jf) {
 				bpf_error("illegal jmp destination");

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.21 2000-02-08 20:46:45 kenh Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.22 2000-04-27 09:11:14 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -76,7 +76,8 @@ again:
 		case EWOULDBLOCK:
 			return (0);			/* XXX */
 		}
-		sprintf(p->errbuf, "read: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, sizeof(p->errbuf),
+		    "read: %s", pcap_strerror(errno));
 		return (-1);
 	}
 	sh = (struct snoopheader *)p->buffer;
@@ -106,7 +107,8 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	rs = &rawstats;
 	bzero((char *)rs, sizeof(*rs));
 	if (ioctl(p->fd, SIOCRAWSTATS, (char *)rs) < 0) {
-		sprintf(p->errbuf, "SIOCRAWSTATS: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, sizeof(p->errbuf),
+		    "SIOCRAWSTATS: %s", pcap_strerror(errno));
 		return (-1);
 	}
 
@@ -130,13 +132,15 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		return (NULL);
 	}
 	bzero((char *)p, sizeof(*p));
 	fd = socket(PF_RAW, SOCK_RAW, RAWPROTO_SNOOP);
 	if (fd < 0) {
-		sprintf(ebuf, "snoop socket: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "snoop socket: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->fd = fd;
@@ -144,24 +148,28 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	sr.sr_family = AF_RAW;
 	(void)strncpy(sr.sr_ifname, device, sizeof(sr.sr_ifname));
 	if (bind(fd, (struct sockaddr *)&sr, sizeof(sr))) {
-		sprintf(ebuf, "snoop bind: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "snoop bind: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	bzero((char *)&sf, sizeof(sf));
 	if (ioctl(fd, SIOCADDSNOOP, &sf) < 0) {
-		sprintf(ebuf, "SIOCADDSNOOP: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SIOCADDSNOOP: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	v = 64 * 1024;
 	(void)setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
 	if (ioctl(fd, SIOCSNOOPLEN, &snaplen) < 0) {
-		sprintf(ebuf, "SIOCSNOOPLEN: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SIOCSNOOPLEN: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->snapshot = snaplen;
 	v = 1;
 	if (ioctl(fd, SIOCSNOOPING, &v) < 0) {
-		sprintf(ebuf, "SIOCSNOOPING: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SIOCSNOOPING: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	/*
@@ -190,14 +198,16 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	} else if (strncmp("lo", device, 2) == 0) {
 		p->linktype = DLT_NULL;
 	} else {
-		sprintf(ebuf, "snoop: unknown physical layer type");
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		    "snoop: unknown physical layer type");
 		goto bad;
 	}
 
 	p->bufsize = 4096;				/* XXX */
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 

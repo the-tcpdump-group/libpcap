@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.15 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.16 2000-04-27 09:11:13 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -96,7 +96,8 @@ again:
 			case EWOULDBLOCK:
 				return (0);		/* XXX */
 			}
-			sprintf(p->errbuf, "read: %s", pcap_strerror(errno));
+			snprintf(p->errbuf, sizeof(p->errbuf),
+			    "read: %s", pcap_strerror(errno));
 			return (-1);
 		}
 	} while (strcmp(p->md.device, from.sa_data));
@@ -125,7 +126,7 @@ again:
 		++p->md.stat.ps_recv;
 		/* Get timestamp */
 		if (ioctl(p->fd, SIOCGSTAMP, &h.ts) < 0) {
-			sprintf(p->errbuf, "SIOCGSTAMP: %s",
+			snprintf(p->errbuf, sizeof(p->errbuf), "SIOCGSTAMP: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -147,7 +148,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, PCAP_ERRBUFF_SIZE,
+		    "malloc: %s", pcap_strerror(errno));
 		return (NULL);
 	}
 	memset(p, 0, sizeof(*p));
@@ -155,7 +157,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
 	if (fd < 0) {
-		sprintf(ebuf, "socket: %s", pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, "socket: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->fd = fd;
@@ -165,14 +168,16 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	sa.sa_family = AF_INET;
 	(void)strncpy(sa.sa_data, device, sizeof(sa.sa_data));
 	if (bind(p->fd, &sa, sizeof(sa))) {
-		sprintf(ebuf, "bind: %s: %s", device, pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, "bind: %s: %s", device,
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(p->fd, SIOCGIFHWADDR, &ifr) < 0 ) {
-		sprintf(ebuf, "SIOCGIFHWADDR: %s", pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFHWADDR: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	broadcast = 0;
@@ -251,7 +256,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 #endif
 
 	default:
-		sprintf(ebuf, "unknown physical layer type 0x%x",
+		snprint(ebuf, PCAP_ERRBUFF_SIZE,
+		    "unknown physical layer type 0x%x",
 		    ifr.ifr_hwaddr.sa_family);
 		goto bad;
 	}
@@ -260,7 +266,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(p->fd, SIOCGIFMTU, &ifr) < 0 ) {
-		sprintf(ebuf, "SIOCGIFMTU: %s", pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFMTU: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
@@ -269,7 +276,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
@@ -278,13 +286,15 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		memset(&ifr, 0, sizeof(ifr));
 		strcpy(ifr.ifr_name, device);
 		if (ioctl(p->fd, SIOCGIFFLAGS, &ifr) < 0 ) {
-			sprintf(ebuf, "SIOCGIFFLAGS: %s", pcap_strerror(errno));
+			snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFFLAGS: %s",
+			    pcap_strerror(errno));
 			goto bad;
 		}
 		saved_ifr = ifr;
 		ifr.ifr_flags |= IFF_PROMISC;
 		if (ioctl(p->fd, SIOCSIFFLAGS, &ifr) < 0 ) {
-			sprintf(ebuf, "SIOCSIFFLAGS: %s", pcap_strerror(errno));
+			snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCSIFFLAGS: %s",
+			    pcap_strerror(errno));
 			goto bad;
 		}
 		ifr.ifr_flags &= ~IFF_PROMISC;
@@ -293,7 +303,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p->md.device = strdup(device);
 	if (p->md.device == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
+		snprint(ebuf, PCAP_ERRBUFF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->snapshot = snaplen;

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.29 2000-04-13 04:58:09 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.30 2000-04-27 09:11:12 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -95,7 +95,8 @@ pcap_lookupdev(errbuf)
 	static char device[IF_NAMESIZE + 1];
 
 	if (getifaddrs(&ifap) != 0) {
-		(void)sprintf(errbuf, "getifaddrs: %s", pcap_strerror(errno));
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "getifaddrs: %s", pcap_strerror(errno));
 		return NULL;
 	}
 
@@ -123,14 +124,23 @@ pcap_lookupdev(errbuf)
 		}
 	}
 	if (mp == NULL) {
-		(void)strcpy(errbuf, "no suitable device found");
+		(void)strncpy(errbuf, "no suitable device found",
+		    PCAP_ERRBUF_SIZE);
+#ifdef HAVE_FREEIFADDRS
+		freeifaddrs(ifap);
+#else
 		free(ifap);
+#endif
 		return (NULL);
 	}
 
 	(void)strncpy(device, mp->ifa_name, sizeof(device) - 1);
 	device[sizeof(device) - 1] = '\0';
+#ifdef HAVE_FREEIFADDRS
+	freeifaddrs(ifap);
+#else
 	free(ifap);
+#endif
 	return (device);
 #else
 	register int fd, minunit, n;
@@ -144,7 +154,8 @@ pcap_lookupdev(errbuf)
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		(void)sprintf(errbuf, "socket: %s", pcap_strerror(errno));
+		(void)snprintf(errbuf, PCAP_ERRBUFF_SIZE,
+		    "socket: %s", pcap_strerror(errno));
 		return (NULL);
 	}
 
@@ -154,7 +165,8 @@ pcap_lookupdev(errbuf)
 		buf = malloc (buf_size);
 		if (buf == NULL) {
 			close (fd);
-			(void)sprintf(errbuf, "out of memory");
+			(void)snprintf(errbuf, PCAP_ERRBUFF_SIZE,
+			    "out of memory");
 			return (NULL);
 		}
 
@@ -164,8 +176,8 @@ pcap_lookupdev(errbuf)
 		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0
 		    && errno != EINVAL) {
 			free (buf);
-			(void)sprintf(errbuf, "SIOCGIFCONF: %s",
-				      pcap_strerror(errno));
+			(void)snprintf(errbuf, PCAP_ERRBUFF_SIZE,
+			    "SIOCGIFCONF: %s", pcap_strerror(errno));
 			(void)close(fd);
 			return (NULL);
 		}
@@ -202,7 +214,8 @@ pcap_lookupdev(errbuf)
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
 			if (errno == ENXIO)
 				continue;
-			(void)sprintf(errbuf, "SIOCGIFFLAGS: %.*s: %s",
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFFLAGS: %.*s: %s",
 			    (int)sizeof(ifr.ifr_name), ifr.ifr_name,
 			    pcap_strerror(errno));
 			(void)close(fd);
@@ -224,7 +237,8 @@ pcap_lookupdev(errbuf)
 	}
 	(void)close(fd);
 	if (mp == NULL) {
-		(void)strcpy(errbuf, "no suitable device found");
+		(void)strlcpy(errbuf, "no suitable device found",
+		    PCAP_ERRBUF_SIZE);
 		free(buf);
 		return (NULL);
 	}
@@ -248,7 +262,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		(void)sprintf(errbuf, "socket: %s", pcap_strerror(errno));
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE, "socket: %s",
+		    pcap_strerror(errno));
 		return (-1);
 	}
 	memset(&ifr, 0, sizeof(ifr));
@@ -259,10 +274,11 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	(void)strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, SIOCGIFADDR, (char *)&ifr) < 0) {
 		if (errno == EADDRNOTAVAIL) {
-			(void)sprintf(errbuf, "%s: no IPv4 address assigned",
-			    device);
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: no IPv4 address assigned", device);
 		} else {
-			(void)sprintf(errbuf, "SIOCGIFADDR: %s: %s",
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFADDR: %s: %s",
 			    device, pcap_strerror(errno));
 		}
 		(void)close(fd);
@@ -271,8 +287,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	sin = (struct sockaddr_in *)&ifr.ifr_addr;
 	*netp = sin->sin_addr.s_addr;
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
-		(void)sprintf(errbuf, "SIOCGIFNETMASK: %s: %s",
-		    device, pcap_strerror(errno));
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));
 		(void)close(fd);
 		return (-1);
 	}
@@ -286,8 +302,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 		else if (IN_CLASSC(*netp))
 			*maskp = IN_CLASSC_NET;
 		else {
-			(void)sprintf(errbuf, "inet class for 0x%x unknown",
-			    *netp);
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "inet class for 0x%x unknown", *netp);
 			return (-1);
 		}
 	}

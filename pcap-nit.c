@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.31 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.32 2000-04-27 09:11:13 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -91,7 +91,7 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (cc < 0) {
 			if (errno == EWOULDBLOCK)
 				return (0);
-			sprintf(p->errbuf, "pcap_read: %s",
+			snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
 				pcap_strerror(errno));
 			return (-1);
 		}
@@ -125,7 +125,8 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			continue;
 
 		default:
-			sprintf(p->errbuf, "bad nit state %d", nh->nh_state);
+			snprintf(p->errbuf, sizeof(p->errbuf),
+			    "bad nit state %d", nh->nh_state);
 			return (-1);
 		}
 		++p->md.stat.ps_recv;
@@ -174,7 +175,8 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 		nioc.nioc_flags |= NF_PROMISC;
 
 	if (ioctl(fd, SIOCSNIT, &nioc) < 0) {
-		sprintf(ebuf, "SIOCSNIT: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SIOCSNIT: %s",
+		    pcap_strerror(errno));
 		return (-1);
 	}
 	return (0);
@@ -202,15 +204,16 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	bzero(p, sizeof(*p));
 	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
 	if (fd < 0) {
-		sprintf(ebuf, "socket: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		    "socket: %s", pcap_strerror(errno));
 		goto bad;
 	}
 	snit.snit_family = AF_NIT;
 	(void)strncpy(snit.snit_ifname, device, NITIFSIZ);
 
 	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
-		sprintf(ebuf, "bind: %s: %s", snit.snit_ifname,
-			pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
 		goto bad;
 	}
 	p->snapshot = snaplen;

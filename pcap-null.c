@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.7 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.8 2000-04-27 09:11:13 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>			/* optionally get BSD define */
@@ -40,7 +40,7 @@ int
 pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
 
-	(void)sprintf(p->errbuf, "pcap_stats: %s", nosup);
+	(void)snprintf(p->errbuf, sizeof(p->errbuf), "pcap_stats: %s", nosup);
 	return (-1);
 }
 
@@ -48,7 +48,7 @@ int
 pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 
-	(void)sprintf(p->errbuf, "pcap_read: %s", nosup);
+	(void)snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s", nosup);
 	return (-1);
 }
 
@@ -65,7 +65,8 @@ pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
 
 	if (p->sf.rfile == NULL) {
-		(void)sprintf(p->errbuf, "pcap_setfilter: %s", nosup);
+		(void)snprintf(p->errbuf, sizeof(p->errbuf),
+		    "pcap_setfilter: %s", nosup);
 		return (-1);
 	}
 	p->fcode = *fp;

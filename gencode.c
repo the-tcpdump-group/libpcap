@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.105 2000-04-01 11:44:59 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.106 2000-04-27 09:11:11 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -97,7 +97,8 @@ bpf_error(fmt, va_alist)
 	va_start(ap);
 #endif
 	if (bpf_pcap != NULL)
-		(void)vsprintf(pcap_geterr(bpf_pcap), fmt, ap);
+		(void)vsnprintf(pcap_geterr(bpf_pcap), PCAP_ERRBUF_SIZE,
+		    fmt, ap);
 	va_end(ap);
 	longjmp(top_ctx, 1);
 	/* NOTREACHED */

@@ -91,6 +91,18 @@ on the network, even those destined for other hosts, are accessible
 through this mechanism.
 .PP
 .SH ROUTINES
+NOTE:
+.I errbuf
+in
+.B pcap_open_live(),
+.B pcap_open_offline(),
+.B pcap_lookupdev(),
+and
+.B pcap_lookupnet()
+is assumed to be able to hold at least
+.B PCAP_ERRBUFF_SIZE
+chars.
+.PP
 .B pcap_open_live()
 is used to obtain a packet capture descriptor to look
 at packets on the network.
