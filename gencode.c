@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.179 2002-08-11 18:27:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.180 2002-10-18 08:46:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -173,6 +173,7 @@ static struct block *gen_ehostop(const u_char *, int);
 static struct block *gen_fhostop(const u_char *, int);
 static struct block *gen_thostop(const u_char *, int);
 static struct block *gen_wlanhostop(const u_char *, int);
+static struct block *gen_ipfchostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int, u_int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
 #ifdef INET6
@@ -887,6 +888,22 @@ init_linktype(type)
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
+	case DLT_IP_OVER_FC:
+		/*
+		 * RFC 2625 IP-over-Fibre-Channel doesn't really have a
+		 * link-level type field.  We set "off_linktype" to the
+		 * offset of the LLC header.
+		 *
+		 * To check for Ethernet types, we assume that SSAP = SNAP
+		 * is being used and pick out the encapsulated Ethernet type.
+		 * XXX - should we generate code to check for SNAP? RFC
+		 * 2625 says SNAP should be used.
+		 */
+		off_linktype = 16;
+		off_nl = 24;		/* IPFC+802.2+SNAP */
+		off_nl_nosnap = 19;	/* IPFC+802.2 */
+		return;
+
 	case DLT_FRELAY:
 		/*
 		 * XXX - we should set this to handle SNAP-encapsulated
@@ -1130,6 +1147,7 @@ gen_linktype(proto)
 	case DLT_IEEE802:
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:
+	case DLT_IP_OVER_FC:
 		return gen_llc(proto);
 		break;
 
@@ -2235,6 +2253,42 @@ gen_wlanhostop(eaddr, dir)
 }
 
 /*
+ * Like gen_ehostop, but for RFC 2625 IP-over-Fibre-Channel.
+ * (We assume that the addresses are IEEE 48-bit MAC addresses,
+ * as the RFC states.)
+ */
+static struct block *
+gen_ipfchostop(eaddr, dir)
+	register const u_char *eaddr;
+	register int dir;
+{
+	register struct block *b0, *b1;
+
+	switch (dir) {
+	case Q_SRC:
+		return gen_bcmp(10, 6, eaddr);
+
+	case Q_DST:
+		return gen_bcmp(2, 6, eaddr);
+
+	case Q_AND:
+		b0 = gen_ipfchostop(eaddr, Q_SRC);
+		b1 = gen_ipfchostop(eaddr, Q_DST);
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_DEFAULT:
+	case Q_OR:
+		b0 = gen_ipfchostop(eaddr, Q_SRC);
+		b1 = gen_ipfchostop(eaddr, Q_DST);
+		gen_or(b0, b1);
+		return b1;
+	}
+	abort();
+	/* NOTREACHED */
+}
+
+/*
  * This is quite tricky because there may be pad bytes in front of the
  * DECNET header, and then there are two possible data packet formats that
  * carry both src and dst addresses, plus 5 packet types in a format that
@@ -2592,9 +2646,11 @@ gen_gateway(eaddr, alist, proto, dir)
 			 */
 			b0 = gen_ehostop(eaddr, Q_OR);
 			gen_and(b1, b0);
-		} else
+		} else if (linktype == DLT_IP_OVER_FC)
+			b0 = gen_ipfchostop(eaddr, Q_OR);
+		else
 			bpf_error(
-			    "'gateway' supported only on ethernet/FDDI/token ring/802.11");
+			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/Fibre Channel");
 
 		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR);
 		while (*alist) {
@@ -3581,6 +3637,15 @@ gen_scode(name, q)
 				free(eaddr);
 				return b;
 
+			case DLT_IP_OVER_FC:
+				eaddr = pcap_ether_hostton(name);
+				if (eaddr == NULL)
+					bpf_error(
+					    "unknown Fibre Channel host '%s'", name);
+				b = gen_ipfchostop(eaddr, dir);
+				free(eaddr);
+				return b;
+
 			case DLT_SUNATM:
 				if (!is_lane)
 					break;
@@ -3604,7 +3669,7 @@ gen_scode(name, q)
 				return b;
 			}
 
-			bpf_error("only ethernet/FDDI/token ring/802.11/ATM LANE supports link-level host name");
+			bpf_error("only ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel supports link-level host name");
 		} else if (proto == Q_DECNET) {
 			unsigned short dn_addr = __pcap_nametodnaddr(name);
 			/*
@@ -3981,7 +4046,9 @@ gen_ecode(eaddr, q)
 			gen_and(tmp, b);
 			return b;
 		}
-		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE");
+		if (linktype == DLT_IP_OVER_FC)
+			return gen_ipfchostop(eaddr, (int)q.dir);
+		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */

@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.38 2002-09-18 19:07:57 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.39 2002-10-18 08:46:15 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -752,6 +752,10 @@ a 1-byte VPI value;
 .LP
 a 2-byte VCI field, in network byte order.
 .RE
+.TP 5
+.B DLT_IP_OVER_FC
+RFC 2625 IP-over-Fibre Channel, with the link-layer header being the
+Network_Header as described in that RFC.
 .PP
 .B pcap_snapshot()
 returns the snapshot length specified when

@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.84 2002-07-12 07:51:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.85 2002-10-18 08:46:14 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1094,6 +1094,30 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 
 	case ARPHRD_LOCALTLK:
 		handle->linktype = DLT_LTALK;
+		break;
+
+#ifndef ARPHRD_FCPP
+#define ARPHRD_FCPP	784
+#endif
+	case ARPHRD_FCPP:
+#ifndef ARPHRD_FCAL
+#define ARPHRD_FCAL	785
+#endif
+	case ARPHRD_FCAL:
+#ifndef ARPHRD_FCPL
+#define ARPHRD_FCPL	786
+#endif
+	case ARPHRD_FCPL:
+#ifndef ARPHRD_FCFABRIC
+#define ARPHRD_FCFABRIC	787
+#endif
+	case ARPHRD_FCFABRIC:
+		/*
+		 * We assume that those all mean RFC 2625 IP-over-
+		 * Fibre Channel, with the RFC 2625 header at
+		 * the beginning of the packet.
+		 */
+		handle->linktype = DLT_IP_OVER_FC;
 		break;
 
 	default:
