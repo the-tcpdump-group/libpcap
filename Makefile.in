@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.84 2000-09-19 14:52:41 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.85 2000-12-17 07:25:40 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -164,7 +164,7 @@ clean:
 
 distclean:
 	rm -f $(CLEANFILES) Makefile config.cache config.log config.status \
-	    gnuc.h os-proto.h net
+	    config.h gnuc.h os-proto.h net bpf_filter.c
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
