@@ -24,6 +24,10 @@
  *  IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
+#ifndef lint
+static const char rcsid[] =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.29 2000-09-20 07:52:04 guy Exp $ (LBL)";
+#endif
 
 /*
  * Known bugs:
@@ -873,4 +877,3 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 
 	return ifr.ifr_hwaddr.sa_family;
 }
-
