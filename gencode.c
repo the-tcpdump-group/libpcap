@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.190 2003-03-28 08:09:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.191 2003-05-02 08:37:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -4976,7 +4976,7 @@ gen_inbound(dir)
 
 /* PF firewall log matched interface */
 struct block *
-gen_pf_ifname(char *ifname)
+gen_pf_ifname(const char *ifname)
 {
 	if (linktype != DLT_PFLOG) {
 		bpf_error("ifname supported only for DLT_PFLOG");
@@ -4986,7 +4986,7 @@ gen_pf_ifname(char *ifname)
 		bpf_error("ifname interface names can't be larger than 16 characters");
 		/* NOTREACHED */
 	}
-	return (gen_bcmp(4, strlen(ifname), ifname));
+	return (gen_bcmp(4, strlen(ifname), (const u_char *)ifname));
 }
 
 
