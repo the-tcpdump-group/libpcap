@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.106 2004-07-20 21:18:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.107 2004-07-22 20:18:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -105,6 +105,12 @@ static const char rcsid[] _U_ =
 #include <string.h>
 #include <stropts.h>
 #include <unistd.h>
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#else
+#define INT_MAX		2147483647
+#endif
 
 #include "pcap-int.h"
 
@@ -940,7 +946,7 @@ split_dname(char *device, int *unitp, char *ebuf)
 {
 	char *cp;
 	char *eos;
-	int unit;
+	long unit;
 
 	/*
 	 * Look for a number at the end of the device name string.
@@ -956,12 +962,23 @@ split_dname(char *device, int *unitp, char *ebuf)
 	while (cp-1 >= device && *(cp-1) >= '0' && *(cp-1) <= '9')
 		cp--;
 
+	errno = 0;
 	unit = strtol(cp, &eos, 10);
 	if (*eos != '\0') {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
 		return (NULL);
 	}
-	*unitp = unit;
+	if (errno == ERANGE || unit > INT_MAX) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number too large",
+		    device);
+		return (NULL);
+	}
+	if (unit < 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number is negative",
+		    device);
+		return (NULL);
+	}
+	*unitp = (int)unit;
 	return (cp);
 }
 
