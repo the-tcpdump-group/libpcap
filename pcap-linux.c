@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.31 2000-10-12 03:53:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.32 2000-10-18 08:32:55 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -541,7 +541,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 				break;
 			handle->linktype = map_arphrd_to_dlt(arptype);
 		} else 
-			handle->linktype = PCAP_ENCAP_RAW;
+			handle->linktype = DLT_RAW;
 			
 		if (handle->linktype == -1) {
 			/* Unknown interface type - reopen in cooked mode */
