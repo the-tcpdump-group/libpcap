@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.76 2002-03-05 04:05:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.77 2002-05-31 11:03:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -489,7 +489,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	default:
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown mac type %lu",
-		    infop->dl_mac_type);
+		    (unsigned long)infop->dl_mac_type);
 		goto bad;
 	}
 
@@ -1147,8 +1147,8 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	    
 	if (ctl.len < DL_HP_PPA_ACK_SIZE) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "get_dlpi_ppa: hpppa ack too small (%d < %d)",
-		     ctl.len, DL_HP_PPA_ACK_SIZE);
+		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
+		     ctl.len, (unsigned long)DL_HP_PPA_ACK_SIZE);
 		return (-1);
 	}
 	    
