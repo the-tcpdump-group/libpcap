@@ -21,6 +21,9 @@
 /* Define if you have the <ifaddrs.h> header file.  */
 #undef HAVE_IFADDRS_H
 
+/* Define if you have the <netinet/if_ether.h> header file.  */
+#undef HAVE_NETINET_IF_ETHER_H
+
 /* Define if you have the <netpacket/packet.h> header file.  */
 #undef HAVE_NETPACKET_PACKET_H
 
@@ -41,6 +44,12 @@
 
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
+
+/* if we have u_int8_t */
+#undef u_int8_t
+
+/* if we have u_int16_t */
+#undef u_int16_t
 
 /* if we have u_int32_t */
 #undef u_int32_t
