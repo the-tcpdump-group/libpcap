@@ -15,7 +15,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.19 2004-11-10 09:28:25 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.20 2005-01-21 10:11:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -41,8 +41,8 @@ struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
 
-#include <dagnew.h>
-#include <dagapi.h>
+#include "dagnew.h"
+#include "dagapi.h"
 
 #define MIN_DAG_SNAPLEN		12
 #define MAX_DAG_SNAPLEN		2040
@@ -385,6 +385,7 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	pcap_t *handle;
 	char *s;
 	int n;
+	daginf_t* daginf;
 	
 	if (device == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "device is NULL: %s", pcap_strerror(errno));
@@ -454,9 +455,17 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	 */
 	handle->md.dag_mem_bottom = 0;
 	handle->md.dag_mem_top = 0;
-
-	/* TODO: query the card */
 	handle->md.dag_fcs_bits = 32;
+
+	/* Query the card first for special cases. */
+	daginf = dag_info(handle->fd);
+	if ((0x4200 == daginf->device_code) || (0x4230 == daginf->device_code))
+	{
+		/* DAG 4.2S and 4.23S already strip the FCS.  Stripping the final word again truncates the packet. */
+		handle->md.dag_fcs_bits = 0;
+	}
+
+	/* Then allow an environment variable to override. */
 	if ((s = getenv("ERF_FCS_BITS")) != NULL) {
 		if ((n = atoi(s)) == 0 || n == 16|| n == 32) {
 			handle->md.dag_fcs_bits = n;
