@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.52 2002-08-02 03:44:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.53 2002-11-13 06:46:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -93,13 +93,13 @@ struct rtentry;		/* declarations in <net/if.h> */
 #endif
 
 struct sockaddr *
-dup_sockaddr(struct sockaddr *sa, size_t sa_len)
+dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 {
 	struct sockaddr *newsa;
 
-	if ((newsa = malloc(sa_len)) == NULL)
+	if ((newsa = malloc(sa_length)) == NULL)
 		return (NULL);
-	return (memcpy(newsa, sa, sa_len));
+	return (memcpy(newsa, sa, sa_length));
 }
 
 static int
