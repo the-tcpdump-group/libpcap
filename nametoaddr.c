@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.48 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.49 1999-10-17 21:29:18 mcr Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -329,10 +329,6 @@ pcap_ether_hostton(const char *name)
 	return (NULL);
 }
 #else
-
-#ifndef sgi
-extern int ether_hostton(char *, struct ether_addr *);
-#endif
 
 /* Use the os supplied routines */
 u_char *
