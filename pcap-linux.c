@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.73.2.3 2002-02-10 00:06:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.73.2.4 2002-02-22 09:21:01 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -213,6 +213,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
 	pcap_t		*handle;
 	int		mtu;
+	int		err;
+	int		live_open_ok = 0;
 	struct utsname	utsname;
 
         /* Allocate a handle for this session. */
@@ -264,16 +266,22 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	 * trying both methods with the newer method preferred.
 	 */
 
-	if (! (live_open_new(handle, device, promisc, to_ms, ebuf) ||
-	       live_open_old(handle, device, promisc, to_ms, ebuf)) )
-	{
+	if ((err = live_open_new(handle, device, promisc, to_ms, ebuf)) == 1)
+		live_open_ok = 1;
+	else if (err == 0) {
+		/* Non-fatal error; try old way */
+		if (live_open_old(handle, device, promisc, to_ms, ebuf))
+			live_open_ok = 1;
+	}
+	if (!live_open_ok) {
 		/* 
 		 * Both methods to open the packet socket failed. Tidy
 		 * up and report our failure (ebuf is expected to be
 		 * set by the functions above). 
 		 */
 
-		free(handle->md.device);
+		if (handle->md.device != NULL)
+			free(handle->md.device);
 		free(handle);
 		return NULL;
 	}
@@ -331,8 +339,12 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		 */
 		mtu = iface_get_mtu(handle->fd, device, ebuf);
 		if (mtu == -1) {
+			if (handle->md.clear_promisc)
+				/* 2.0.x kernel */
+				pcap_close_linux(handle);
 			close(handle->fd);
-			free(handle->md.device);
+			if (handle->md.device != NULL)
+				free(handle->md.device);
 			free(handle);
 			return NULL;
 		}
@@ -359,8 +371,12 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	if (!handle->buffer) {
 	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
+		if (handle->md.clear_promisc)
+			/* 2.0.x kernel */
+			pcap_close_linux(handle);
 		close(handle->fd);
-		free(handle->md.device);
+		if (handle->md.device != NULL)
+			free(handle->md.device);
 		free(handle);
 		return NULL;
 	}
@@ -719,6 +735,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 #ifdef SO_ATTACH_FILTER
 	struct sock_fprog	fcode;
 	int			can_filter_in_kernel;
+	int			err = 0;
 #endif
 
 	if (!handle)
@@ -731,11 +748,9 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 
 	/* Make our private copy of the filter */
 
-	if (install_bpf_program(handle, filter) < 0) {
-		snprintf(handle->errbuf, sizeof(handle->errbuf),
-			 "malloc: %s", pcap_strerror(errno));
+	if (install_bpf_program(handle, filter) < 0)
+		/* install_bpf_program() filled in errbuf */
 		return -1;
-	}
 
 	/* 
 	 * Run user level packet filter by default. Will be overriden if 
@@ -809,12 +824,12 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	}
 
 	if (can_filter_in_kernel) {
-		if (set_kernel_filter(handle, &fcode) == 0)
+		if ((err = set_kernel_filter(handle, &fcode)) == 0)
 		{
 			/* Installation succeded - using kernel filter. */
 			handle->md.use_bpf = 1;
 		}
-		else
+		else if (err == -1)	/* Non-fatal error */
 		{
 			/* 
 			 * Print a warning if we weren't able to install
@@ -845,6 +860,10 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	 */
 	if (fcode.filter != NULL)
 		free(fcode.filter);
+
+	if (err == -2)
+		/* Fatal error */
+		return -1;
 #endif /* SO_ATTACH_FILTER */
 
 	return 0;
@@ -1068,6 +1087,8 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
 	int			sock_fd = -1, device_id, arptype;
+	int			err;
+	int			fatal_err = 0;
 	struct packet_mreq	mr;
 
 	/* One shot loop used for error handling - bail out with break */
@@ -1120,8 +1141,10 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			handle->md.cooked = 0;
 
 			arptype	= iface_get_arptype(sock_fd, device, ebuf);
-			if (arptype == -1) 
+			if (arptype == -1) {
+				fatal_err = 1;
 				break;
+			}
 			map_arphrd_to_dlt(handle, arptype, 1);
 			if (handle->linktype == -1 ||
 			    handle->linktype == DLT_LINUX_SLL ||
@@ -1172,8 +1195,11 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			if (device_id == -1)
 				break;
 
-			if (iface_bind(sock_fd, device_id, ebuf) == -1)
+			if ((err = iface_bind(sock_fd, device_id, ebuf)) < 0) {
+				if (err == -2)
+					fatal_err = 1;
 				break;
+			}
 		} else {
 			/*
 			 * This is cooked mode.
@@ -1225,7 +1251,11 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 
 	if (sock_fd != -1)
 		close(sock_fd);
-	return 0;
+
+	if (fatal_err)
+		return -2;
+	else
+		return 0;
 #else
 	strncpy(ebuf, 
 		"New packet capturing interface not supported by build " 
@@ -1263,6 +1293,8 @@ static int
 iface_bind(int fd, int ifindex, char *ebuf)
 {
 	struct sockaddr_ll	sll;
+	int			err;
+	socklen_t		errlen = sizeof(err);
 
 	memset(&sll, 0, sizeof(sll));
 	sll.sll_family		= AF_PACKET;
@@ -1273,6 +1305,20 @@ iface_bind(int fd, int ifindex, char *ebuf)
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			 "bind: %s", pcap_strerror(errno));
 		return -1;
+	}
+
+	/* Any pending errors, e.g., network is down? */
+
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			"getsockopt: %s", pcap_strerror(errno));
+		return -2;
+	}
+
+	if (err > 0) { 
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			"bind: %s", pcap_strerror(err)); 
+		return -2;
 	}
 
 	return 0;
@@ -1380,8 +1426,10 @@ void	pcap_close_linux( pcap_t *handle )
 			}
 		}
 	}
+
 	if (handle->md.device != NULL)
 		free(handle->md.device);
+		handle->md.device = NULL;
 }
 
 /*
@@ -1475,6 +1523,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 							PCAP_ERRBUF_SIZE);
 						break;
 					}
+					did_atexit = 1;
 				}
 
 				ifr.ifr_flags |= IFF_PROMISC;
@@ -1509,6 +1558,8 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 
 	} while (0);
 
+	if (handle->md.clear_promisc)
+		pcap_close_linux(handle);
 	if (sock_fd != -1)
 		close(sock_fd);
 	return 0;
@@ -1522,12 +1573,28 @@ static int
 iface_bind_old(int fd, const char *device, char *ebuf)
 {
 	struct sockaddr	saddr;
+	int		err;
+	socklen_t	errlen = sizeof(err);
 
 	memset(&saddr, 0, sizeof(saddr));
 	strncpy(saddr.sa_data, device, sizeof(saddr.sa_data));
 	if (bind(fd, &saddr, sizeof(saddr)) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			 "bind: %s", pcap_strerror(errno));
+		return -1;
+	}
+
+	/* Any pending errors, e.g., network is down? */
+
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			"getsockopt: %s", pcap_strerror(errno));
+		return -1;
+	}
+
+	if (err > 0) { 
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			"bind: %s", pcap_strerror(err)); 
 		return -1;
 	}
 
@@ -1756,7 +1823,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		/*
 		 * Save the socket's current mode, and put it in
 		 * non-blocking mode; we drain it by reading packets
-		 * until we get an error (which we assume is a
+		 * until we get an error (which is normally a
 		 * "nothing more to be read" error).
 		 */
 		save_mode = fcntl(handle->fd, F_GETFL, 0);
@@ -1765,7 +1832,15 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 			while (recv(handle->fd, &drain, sizeof drain,
 			       MSG_TRUNC) >= 0)
 				;
+			save_errno = errno;
 			fcntl(handle->fd, F_SETFL, save_mode);
+			if (save_errno != EAGAIN) {
+				/* Fatal error */
+				reset_kernel_filter(handle);
+				snprintf(handle->errbuf, sizeof(handle->errbuf),
+				 "recv: %s", pcap_strerror(save_errno));
+				return -2;
+			}
 		}
 	}
 
