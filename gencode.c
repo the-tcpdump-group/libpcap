@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.144 2001-01-14 08:09:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.145 2001-01-14 21:26:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -51,6 +51,7 @@ struct rtentry;
 
 #include "ethertype.h"
 #include "nlpid.h"
+#include "llc.h"
 #include "gencode.h"
 #include "ppp.h"
 #include "sll.h"
@@ -59,17 +60,6 @@ struct rtentry;
 #include <netdb.h>
 #include <sys/socket.h>
 #endif /*INET6*/
-
-/*
- * LLC SAP values.
- * Note that these fit in one byte, and are thus less than 1500, and
- * are thus distinguishable from ETHERTYPE_ values, so we can use them
- * as protocol types values.
- */
-#define LLC_SNAP_LSAP	0xaa
-#define LLC_ISO_LSAP	0xfe
-#define LLC_STP_LSAP	0x42
-#define LLC_IPX_LSAP	0xe0
 
 #define ETHERMTU	1500
 
@@ -717,7 +707,7 @@ gen_linktype(proto)
 	case DLT_EN10MB:
 		switch (proto) {
 
-		case LLC_ISO_LSAP:
+		case LLCSAP_ISONS:
 			/*
 			 * OSI protocols always use 802.2 encapsulation.
 			 * XXX - should we check both the DSAP and the
@@ -727,28 +717,54 @@ gen_linktype(proto)
 			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 			gen_not(b0);
 			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
+				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
 			gen_and(b0, b1);
 			return b1;
 
-		case LLC_IPX_LSAP:
+		case LLCSAP_IPX:
 			/*
-			 * Check both for the IPX LSAP as the DSAP and
-			 * for Netware 802.3, where the type/length
-			 * field is a length field (i.e., <= ETHERMTU)
-			 * and the first two bytes after the LLC header
-			 * are 0xFFFF.
+			 * Check for;
 			 *
-			 * XXX - check for the IPX Ethertype, 0x8137,
-			 * as well?
+			 *	Ethernet_II frames, which are Ethernet
+			 *	frames with a frame type of ETHERTYPE_IPX;
 			 *
+			 *	Ethernet_802.3 frames, which are 802.3
+			 *	frames (i.e., the type/length field is
+			 *	a length field, <= ETHERMTU, rather than
+			 *	a type field) with the first two bytes
+			 *	after the Ethernet/802.3 header being
+			 *	0xFFFF;
+			 *
+			 *	Ethernet_802.2 frames, which are 802.3
+			 *	frames with an 802.2 LLC header and
+			 *	with the IPX LSAP as the DSAP in the LLC
+			 *	header;
+			 *
+			 *	Ethernet_SNAP frames, which are 802.3
+			 *	frames with an LLC header and a SNAP
+			 *	header and with an OUI of 0x000000
+			 *	(encapsulated Ethernet) and a protocol
+			 *	ID of ETHERTYPE_IPX in the SNAP header.
+			 *
+			 * XXX - should we generate the same code both
+			 * for tests for LLCSAP_IPX and for ETHERTYPE_IPX?
+			 */
+
+			/*
 			 * This generates code to check both for the
-			 * IPX LSAP and for Netware 802.3.
+			 * IPX LSAP (Ethernet_802.2) and for Ethernet_802.3.
 			 */
 			b0 = gen_cmp(off_linktype + 2, BPF_B,
-			    (bpf_int32)LLC_IPX_LSAP);
+			    (bpf_int32)LLCSAP_IPX);
 			b1 = gen_cmp(off_linktype + 2, BPF_H,
 			    (bpf_int32)0xFFFF);
+			gen_or(b0, b1);
+
+			/*
+			 * Now we add code to check for SNAP frames with
+			 * ETHERTYPE_IPX, i.e. Ethernet_SNAP.
+			 */
+			b0 = gen_snap(0x000000, ETHERTYPE_IPX, 14);
 			gen_or(b0, b1);
 
 			/*
@@ -759,10 +775,21 @@ gen_linktype(proto)
 			gen_not(b0);
 
 			/*
-			 * Now check for 802.3 frames and, if that passes,
-			 * check for either of the flavors of IPX.
+			 * Now add the check for 802.3 frames before the
+			 * check for Ethernet_802.2 and Ethernet_802.3,
+			 * as those checks should only be done on 802.3
+			 * frames, not on Ethernet frames.
 			 */
 			gen_and(b0, b1);
+
+			/*
+			 * Now add the check for Ethernet_II frames, and
+			 * do that before checking for the other frame
+			 * types.
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H,
+			    (bpf_int32)ETHERTYPE_IPX);
+			gen_or(b0, b1);
 			return b1;
 
 		case ETHERTYPE_ATALK:
@@ -848,9 +875,9 @@ gen_linktype(proto)
 		 */
 		switch (proto) {
 
-		case LLC_ISO_LSAP:
+		case LLCSAP_ISONS:
 			return gen_cmp(off_linktype, BPF_H, (long)
-				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
+				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
 
 		case ETHERTYPE_ATALK:
 			/*
@@ -910,7 +937,7 @@ gen_linktype(proto)
 	case DLT_LINUX_SLL:
 		switch (proto) {
 
-		case LLC_ISO_LSAP:
+		case LLCSAP_ISONS:
 			/*
 			 * OSI protocols always use 802.2 encapsulation.
 			 * XXX - should we check both the DSAP and the
@@ -919,11 +946,11 @@ gen_linktype(proto)
 			 */
 			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
+				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
 			gen_and(b0, b1);
 			return b1;
 
-		case LLC_IPX_LSAP:
+		case LLCSAP_IPX:
 			/*
 			 * Check both for 802.2 frames with the IPX LSAP as
 			 * the DSAP and for Netware 802.3 frames.
@@ -933,7 +960,7 @@ gen_linktype(proto)
 			 */
 			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 			b1 = gen_cmp(off_linktype + 2, BPF_B,
-			    (bpf_int32)LLC_IPX_LSAP);
+			    (bpf_int32)LLCSAP_IPX);
 			gen_and(b0, b1);
 
 			/*
@@ -1071,11 +1098,11 @@ gen_linktype(proto)
 			proto = PPP_NS;
 			break;
 
-		case LLC_ISO_LSAP:
+		case LLCSAP_ISONS:
 			proto = PPP_OSI;
 			break;
 
-		case LLC_STP_LSAP:
+		case LLCSAP_8021D:
 			/*
 			 * I'm assuming the "Bridging PDU"s that go
 			 * over PPP are Spanning Tree Protocol
@@ -1084,7 +1111,7 @@ gen_linktype(proto)
 			proto = PPP_BRPDU;
 			break;
 
-		case LLC_IPX_LSAP:
+		case LLCSAP_IPX:
 			proto = PPP_IPX;
 			break;
 		}
@@ -1124,11 +1151,11 @@ gen_linktype(proto)
 			proto = PPP_NS;
 			break;
 
-		case LLC_ISO_LSAP:
+		case LLCSAP_ISONS:
 			proto = PPP_OSI;
 			break;
 
-		case LLC_STP_LSAP:
+		case LLCSAP_8021D:
 			/*
 			 * I'm assuming the "Bridging PDU"s that go
 			 * over PPP are Spanning Tree Protocol
@@ -1137,7 +1164,7 @@ gen_linktype(proto)
 			proto = PPP_BRPDU;
 			break;
 
-		case LLC_IPX_LSAP:
+		case LLCSAP_IPX:
 			proto = PPP_IPX;
 			break;
 		}
@@ -1246,8 +1273,8 @@ gen_snap(orgcode, ptype, offset)
 {
 	u_char snapblock[8];
 
-	snapblock[0] = LLC_SNAP_LSAP;	/* DSAP = SNAP */
-	snapblock[1] = LLC_SNAP_LSAP;	/* SSAP = SNAP */
+	snapblock[0] = LLCSAP_SNAP;	/* DSAP = SNAP */
+	snapblock[1] = LLCSAP_SNAP;	/* SSAP = SNAP */
 	snapblock[2] = 0x03;	/* control = UI */
 	snapblock[3] = (orgcode >> 16);	/* upper 8 bits of organization code */
 	snapblock[4] = (orgcode >> 8);	/* middle 8 bits of organization code */
@@ -1940,7 +1967,7 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_ISO:
-	        b1 = gen_linktype(LLC_ISO_LSAP);
+	        b1 = gen_linktype(LLCSAP_ISONS);
 		break;
 
 	case Q_ESIS:
@@ -1956,11 +1983,11 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_STP:
-	        b1 = gen_linktype(LLC_STP_LSAP);
+	        b1 = gen_linktype(LLCSAP_8021D);
 		break;
 
 	case Q_IPX:
-	        b1 = gen_linktype(LLC_IPX_LSAP);
+	        b1 = gen_linktype(LLCSAP_IPX);
 		break;
 
 	default:
@@ -2534,7 +2561,7 @@ gen_proto(v, proto, dir)
 		return b1;
 
 	case Q_ISO:
-		b0 = gen_linktype(LLC_ISO_LSAP);
+		b0 = gen_linktype(LLCSAP_ISONS);
 		b1 = gen_cmp(off_nl + 3, BPF_B, (long)v);
 		gen_and(b0, b1);
 		return b1;
