@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.19 2001-02-09 04:50:17 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.20 2001-03-26 10:21:31 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -383,9 +383,13 @@ returns the minor number of the version of the pcap used to write the
 savefile.
 .PP
 .B pcap_file()
-returns the name of the ``savefile.''
+returns the standard I/O stream of the ``savefile,'' if a ``savefile''
+was opened with
+.BR pcap_open_offline() ,
+or NULL, if a network device was opened with
+.BR pcap_open_live() .
 .PP
-.B int pcap_stats()
+.B pcap_stats()
 returns 0 and fills in a
 .B pcap_stat
 struct. The values represent packet statistics from the start of the
@@ -397,7 +401,11 @@ or
 .BR pcap_geterr() .
 .PP
 .B pcap_fileno()
-returns the file descriptor number of the ``savefile.''
+returns the file descriptor number from which captured packets are read,
+if a network device was opened with
+.BR pcap_open_live() ,
+or \-1, if a ``savefile'' was opened with
+.BR pcap_open_offline() .
 .PP
 .B pcap_perror()
 prints the text of the last pcap library error on
