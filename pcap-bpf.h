@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.5 2004-01-29 10:37:26 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.6 2004-03-11 23:12:36 guy Exp $ (LBL)
  */
 
 /*
@@ -179,6 +179,15 @@ struct bpf_version {
  */
 #define DLT_PPP_SERIAL	50	/* PPP over serial with HDLC encapsulation */
 #define DLT_PPP_ETHER	51	/* PPP over Ethernet */
+
+/*
+ * The Axent Raptor firewall - now the Symantec Enterprise Firewall - uses
+ * a link-layer type of 99 for the tcpdump it supplies.  The link-layer
+ * header has 6 bytes of unknown data, something that appears to be an
+ * Ethernet type, and 36 bytes that appear to be 0 in at least one capture
+ * I've seen.
+ */
+#define DLT_SYMANTEC_FIREWALL	99
 
 /*
  * Values between 100 and 103 are used in capture file headers as
@@ -478,6 +487,14 @@ struct bpf_version {
  * 802.11 drivers; that may happen in the future.
  */
 #define DLT_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
+
+/*
+ * juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net> the DLT_s are used
+ * for passing on chassis-internal metainformation like
+ * QOS profiles etc.
+ */
+#define DLT_JUNIPER_MONITOR     164
 
 /*
  * The instruction encodings.

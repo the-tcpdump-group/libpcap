@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.9 2004-01-29 10:37:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.10 2004-03-11 23:12:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -150,6 +150,13 @@ static const char rcsid[] _U_ =
 
 #define LINKTYPE_PPP_ETHER	51		/* NetBSD PPP-over-Ethernet */
 
+/*
+ * This isn't supported in libpcap 0.8[.x], but is supported in the
+ * current CVS version; we include it here to note that it's not available
+ * for anybody else to use.
+ */
+#define LINKTYPE_SYMANTEC_FIREWALL 99		/* Symantec Enterprise Firewall */
+
 #define LINKTYPE_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
 #define LINKTYPE_RAW		101		/* raw IP */
 #define LINKTYPE_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
@@ -194,6 +201,13 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_RAWSS7_MTP3    141             /* definitions */
 #define LINKTYPE_RAWSS7_SCCP    142
 
+/*
+ * This isn't supported in libpcap 0.8[.x], but is supported in the
+ * current CVS version; we include it here to note that it's not available
+ * for anybody else to use.
+ */
+#define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
+
 #define LINKTYPE_LINUX_IRDA	144		/* Linux-IrDA */
 
 #define LINKTYPE_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
@@ -209,7 +223,6 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_RIO		124		/* RapidIO */
 #define LINKTYPE_PCI_EXP	125		/* PCI Express */
 #define LINKTYPE_AURORA		126		/* Xilinx Aurora link layer */
-#define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
 #define LINKTYPE_IBM_SP		145		/* IBM SP switch */
 #define LINKTYPE_IBM_SN		146		/* IBM Next Federation switch */
 
@@ -281,6 +294,7 @@ static struct linktype_map {
 	/* BSD/OS Frame Relay */
 	{ DLT_FR,		LINKTYPE_FRELAY },
 #endif
+	{ DLT_SYMANTEC_FIREWALL, LINKTYPE_SYMANTEC_FIREWALL },
 	{ DLT_ATM_RFC1483, 	LINKTYPE_ATM_RFC1483 },
 	{ DLT_RAW,		LINKTYPE_RAW },
 	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
