@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.52 2004-03-23 19:18:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.53 2004-04-07 18:33:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -63,8 +63,8 @@ pcap_read_snoop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	int cc;
 	register struct snoopheader *sh;
-	register int datalen;
-	register int caplen;
+	register u_int datalen;
+	register u_int caplen;
 	register u_char *cp;
 
 again:
@@ -97,6 +97,16 @@ again:
 	}
 	sh = (struct snoopheader *)p->buffer;
 	datalen = sh->snoop_packetlen;
+
+	/*
+	 * XXX - Sigh, snoop_packetlen is a 16 bit quantity.  If we
+	 * got a short length, but read a full sized snoop pakcet,
+	 * assume we overflowed and add back the 64K...
+	 */
+	if (cc == (p->snapshot + sizeof(struct snoopheader)) &&
+	    (datalen < p->snapshot))
+		datalen += (64 * 1024);
+
 	caplen = (datalen < p->snapshot) ? datalen : p->snapshot;
 	cp = (u_char *)(sh + 1) + p->offset;		/* XXX */
 
@@ -128,6 +138,8 @@ again:
 static int
 pcap_inject_snoop(pcap_t *p, const void *buf, size_t size)
 {
+	int ret;
+
 	/*
 	 * XXX - libnet overwrites the source address with what I
 	 * presume is the interface's address; is that required?
