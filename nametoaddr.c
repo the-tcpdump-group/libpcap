@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.59 2001-06-27 05:11:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.60 2001-07-28 22:56:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -313,7 +313,7 @@ pcap_ether_aton(const char *s)
 		if (*s == ':')
 			s += 1;
 		d = xdtoi(*s++);
-		if (isxdigit(*s)) {
+		if (isxdigit((unsigned char)*s)) {
 			d <<= 4;
 			d |= xdtoi(*s++);
 		}

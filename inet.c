@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.37 2001-06-18 23:43:16 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.38 2001-07-28 22:56:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -235,10 +235,11 @@ pcap_lookupdev(errbuf)
 			continue;
 
 		endcp = ifrp->ifr_name + strlen(ifrp->ifr_name);
-		for (cp = ifrp->ifr_name; cp < endcp && !isdigit(*cp); ++cp)
+		for (cp = ifrp->ifr_name;
+		    cp < endcp && !isdigit((unsigned char)*cp); ++cp)
 			continue;
 		
-		if (isdigit (*cp)) {
+		if (isdigit ((unsigned char)*cp)) {
 			n = atoi(cp);
 		} else {
 			n = 0;
