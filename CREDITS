@@ -3,7 +3,7 @@ This file lists people who have contributed to libpcap:
 The current maintainers:
 	Bill Fenner			<fenner@research.att.com>
 	Assar Westerlund	 	<assar@sics.se>
-	Alexei				<kuznet@ms2.inr.ac.ru>
+	Alexey Kuznetsov		<kuznet@ms2.inr.ac.ru>
 	Jun-ichiro itojun Hagino	<itojun@iijlab.net>
 	Guy Harris	 		<gharris@flashcom.net>
 	Torsten Landschoff	 	<t.landschoff@gmx.net>
@@ -12,7 +12,7 @@ The current maintainers:
 
 Additional people who have contributed patches:
 
-					<risso@polito.it>
+	Fulvio Risso			<risso@polito.it>
 	Chris G. Demetriou		<cgd@netbsd.org>
 	Darren Reed			<darrenr@reed.wattle.id.au>
 	Greg Troxel			<gdt@ir.bbn.com>
@@ -25,5 +25,3 @@ The original LBL crew:
 	Steve McCanne
 	Craig Leres
 	Van Jacobson
-
-
