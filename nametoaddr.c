@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.55 2000-10-10 04:53:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.56 2000-12-18 03:42:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -355,7 +355,7 @@ pcap_ether_hostton(const char *name)
 }
 #else
 
-#if !defined(sgi) && !defined(__NetBSD__)
+#if !defined(sgi) && !defined(__NetBSD__) && !defined(__FreeBSD__)
 extern int ether_hostton(char *, struct ether_addr *);
 #endif
 
