@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.42 2000-12-16 10:43:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.51.2.1 2001-01-14 06:48:36 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -59,6 +59,7 @@ static const char rcsid[] =
 #endif
 
 #include "pcap-int.h"
+#include "sll.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -118,6 +119,11 @@ static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 static int 	iface_bind(int fd, int ifindex, char *ebuf);
 #endif
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
+
+#ifdef SO_ATTACH_FILTER
+static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
+static int	fix_offset(struct bpf_insn *p);
+#endif
 
 /*
  *  Get a handle for a live capture from the given device. You can 
@@ -188,27 +194,6 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		return NULL;
 	}
 
-	/* 
-	 * Okay, now we have a packet stream open. Maybe we need to handle 
-	 * a timeout? In that case we set the filehandle to nonblocking 
-	 * so pcap_read can try reading the fd and call select if no data
-	 * is available at first. 
-	 */
-
-	if (to_ms > 0) {
-		int	flags = fcntl(handle->fd, F_GETFL);
-		if (flags != -1) {
-			flags |= O_NONBLOCK;
-			flags = fcntl(handle->fd, F_SETFL, flags);
-		}
-		if (flags == -1) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "fcntl: %s",
-				 pcap_strerror(errno));
-			pcap_close(handle);
-			return NULL;
-		}
-	}
-
 	return handle;
 }
 
@@ -216,70 +201,15 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
  *  Read at most max_packets from the capture stream and call the callback
  *  for each of them. Returns the number of packets handled or -1 if an
  *  error occured. 
- *  
- *  XXX: Can I rely on the Linux-specified behaviour of select (returning
- *  the time left in the timeval structure)? I really don't want to query
- *  the system time before each select call...
- *  
- *  pcap_read currently gets not only a packet from the kernel but also
- *  the sockaddr_ll returned as source of the packet. This way we can at
- *  some time extend tcpdump and libpcap to sniff on all devices at a time
- *  and find the right printing routine by using the information in the
- *  sockaddr_ll structure.
  */
 int
 pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	int		status, packets;
-	fd_set		read_fds;
-	struct timeval	tv;
-
 	/*
-	 * Fill in a timeval structure for select if we need to obeye a
-	 * timeout.
+	 * Currently, on Linux only one packet is delivered per read,
+	 * so we don't loop.
 	 */
-	if (handle->md.timeout > 0) {
-		tv.tv_usec	= (handle->md.timeout % 1000) * 1000;
-		tv.tv_sec	= (handle->md.timeout / 1000);
-	}
-
-	/*
-	 * Read packets until the packet limit has been reached or 
-	 * an error occured while reading. Call the user function 
-	 * for each received packet.
-	 */
-	for (packets = 0; max_packets == -1 || packets < max_packets;)
-	{
-		status = pcap_read_packet(handle, callback, user);
-
-		if (status > 0) {
-			packets += status;
-			continue;
-		} else if (status == -1)
-			return -1;
-
-		/* 
-		 * If no packet is available we go to sleep. FIXME: This
-		 * might be better implemented using poll(?)
-		 */
-		FD_ZERO(&read_fds);
-		FD_SET(handle->fd, &read_fds);
-		status = select(handle->fd + 1, 
-				&read_fds, NULL, NULL, &tv);
-
-		if (status == -1) {
-			if (errno == EINTR)
-				return packets;
-			snprintf(handle->errbuf, sizeof(handle->errbuf),
-				 "select: %s", pcap_strerror(errno));
-			return -1;
-		} 
-		else if (status == 0 || 
-			   (tv.tv_usec == 0 && tv.tv_sec == 0))
-			return packets;
-	}
-
-	return packets;
+	return pcap_read_packet(handle, callback, user);
 }
 
 /*
@@ -290,8 +220,10 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 static int
 pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 {
+	int			offset;
 #ifdef HAVE_NETPACKET_PACKET_H
 	struct sockaddr_ll	from;
+	struct sll_header	*hdrp;
 #else
 	struct sockaddr		from;
 #endif
@@ -299,18 +231,30 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	int			packet_len, caplen;
 	struct pcap_pkthdr	pcap_header;
 
+#ifdef HAVE_NETPACKET_PACKET_H
 	/*
-	 * We don't currently use the from return value of recvfrom but
-	 * this will probably be implemented in the future.
+	 * If this is a cooked device, leave extra room for a
+	 * fake packet header.
 	 */
+	if (handle->md.cooked)
+		offset = SLL_HDR_LEN;
+	else
+		offset = 0;
+#else
+	/*
+	 * This system doesn't have PF_PACKET sockets, so it doesn't
+	 * support cooked devices.
+	 */
+	offset = 0;
+#endif
 
 	/* Receive a single packet from the kernel */
 
 	do {
 		fromlen = sizeof(from);
 		packet_len = recvfrom( 
-			handle->fd, handle->buffer + handle->offset,
-			handle->md.readlen, MSG_TRUNC, 
+			handle->fd, handle->buffer + offset + handle->offset,
+			handle->md.readlen - offset, MSG_TRUNC, 
 			(struct sockaddr *) &from, &fromlen);
 	} while (packet_len == -1 && errno == EINTR);
 
@@ -342,6 +286,64 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		return 0;
 #endif
 
+#ifdef HAVE_NETPACKET_PACKET_H
+	/*
+	 * If this is a cooked device, fill in the fake packet header.
+	 */
+	if (handle->md.cooked) {
+		/*
+		 * Add the length of the fake header to the length
+		 * of packet data we read.
+		 */
+		packet_len += SLL_HDR_LEN;
+
+		hdrp = (struct sll_header *)handle->buffer;
+
+		/*
+		 * Map the PACKET_ value to a LINUX_SLL_ value; we
+		 * want the same numerical value to be used in
+		 * the link-layer header even if the numerical values
+		 * for the PACKET_ #defines change, so that programs
+		 * that look at the packet type field will always be
+		 * able to handle DLT_LINUX_SLL captures.
+		 */
+		switch (from.sll_pkttype) {
+
+		case PACKET_HOST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_HOST);
+			break;
+
+		case PACKET_BROADCAST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_BROADCAST);
+			break;
+
+		case PACKET_MULTICAST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_MULTICAST);
+			break;
+
+		case PACKET_OTHERHOST:
+			hdrp->sll_pkttype = htons(LINUX_SLL_OTHERHOST);
+			break;
+
+		case PACKET_OUTGOING:
+			hdrp->sll_pkttype = htons(LINUX_SLL_OUTGOING);
+			break;
+
+		default:
+			hdrp->sll_pkttype = -1;
+			break;
+		}
+
+		hdrp->sll_hatype = htons(from.sll_hatype);
+		hdrp->sll_halen = htons(from.sll_halen);
+		memcpy(hdrp->sll_addr, from.sll_addr,
+		    (from.sll_halen > SLL_ADDRLEN) ?
+		      SLL_ADDRLEN :
+		      from.sll_halen);
+		hdrp->sll_protocol = from.sll_protocol;
+	}
+#endif
+
 	/*
 	 * XXX: According to the kernel source we should get the real 
 	 * packet len if calling recvfrom with MSG_TRUNC set. It does 
@@ -367,8 +369,11 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * the result that we don't get the real packet length. This 
 	 * is valid at least until kernel 2.2.17pre6. 
 	 *
-	 * tcpdump is currently fixed by changing the BPF code generator
-	 * to not truncate the received packet. 
+	 * We currently handle this by making a copy of the filter
+	 * program, fixing all "ret" instructions with non-zero
+	 * operands to have an operand of 65535 so that the filter
+	 * doesn't truncate the packet, and supplying that modified
+	 * filter to the kernel.
 	 */
 
 	caplen = packet_len;
@@ -421,6 +426,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 {
 #ifdef SO_ATTACH_FILTER
 	struct sock_fprog	fcode;
+	int			can_filter_in_kernel;
 #endif
 
 	if (!handle)
@@ -455,44 +461,89 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	/* Install kernel level filter if possible */
 
 #ifdef SO_ATTACH_FILTER
-	/*
-	 * Oh joy, the Linux kernel uses struct sock_fprog instead of 
-	 * struct bpf_program and of course the length field is of 
-	 * different size. Pointed out by Sebastian
-	 */
-
-	fcode.filter	= (struct sock_filter *) handle->fcode.bf_insns;
-	fcode.len	= filter->bf_len;
 #ifdef USHRT_MAX
-	if (filter->bf_len > USHRT_MAX) {
+	if (handle->fcode.bf_len > USHRT_MAX) {
 		/*
 		 * fcode.len is an unsigned short for current kernel. 
-		 * I have yet to see BPF-Code with that much instructions
-		 * but still it is possible. So for the sake of 
-		 * correctness I added this check.
+		 * I have yet to see BPF-Code with that much
+		 * instructions but still it is possible. So for the
+		 * sake of correctness I added this check.
 		 */
-		fprintf(stderr, "Warning: Filter to complex for kernel\n");
-	} 
-	else
-#endif
-        if (setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
-		       &fcode, sizeof(fcode)) == 0)
+		fprintf(stderr, "Warning: Filter too complex for kernel\n");
+		fcode.filter = NULL;
+		can_filter_in_kernel = 0;
+	} else
+#endif /* USHRT_MAX */
 	{
-		/* Installation succeded - using kernel filter. */
-		handle->md.use_bpf = 1;
-	} 
-	else
-	{
-		/* 
-		 * Print a warning if kernel filter available but a problem
-		 * occured using it. 
+		/*
+		 * Oh joy, the Linux kernel uses struct sock_fprog instead
+		 * of struct bpf_program and of course the length field is
+		 * of different size. Pointed out by Sebastian
+		 *
+		 * Oh, and we also need to fix it up so that all "ret"
+		 * instructions with non-zero operands have 65535 as the
+		 * operand, and so that, if we're in cooked mode, all
+		 * memory-reference instructions use special magic offsets
+		 * in references to the link-layer header and assume that
+		 * the link-layer payload begins at 0; "fix_program()"
+		 * will do that.
 		 */
-		if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
-			fprintf(stderr, "Warning: Kernel filter failed: %s\n", 
-				pcap_strerror(errno));
+		switch (fix_program(handle, &fcode)) {
+
+		case -1:
+		default:
+			/*
+			 * Fatal error; just quit.
+			 * (The "default" case shouldn't happen; we
+			 * return -1 for that reason.)
+			 */
+			return -1;
+
+		case 0:
+			/*
+			 * The program performed checks that we can't make
+			 * work in the kernel.
+			 */
+			can_filter_in_kernel = 0;
+			break;
+
+		case 1:
+			/*
+			 * We have a filter that'll work in the kernel.
+			 */
+			can_filter_in_kernel = 1;
+			break;
 		}
 	}
-#endif
+
+	if (can_filter_in_kernel) {
+		if (setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
+			       &fcode, sizeof(fcode)) == 0)
+		{
+			/* Installation succeded - using kernel filter. */
+			handle->md.use_bpf = 1;
+		}
+		else
+		{
+			/* 
+			 * Print a warning if we weren't able to install
+			 * the filter for a reason other than "this kernel
+			 * isn't configured to support socket filters.
+			 */
+			if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
+				fprintf(stderr,
+				    "Warning: Kernel filter failed: %s\n", 
+					pcap_strerror(errno));
+			}
+		}
+	}
+
+	/*
+	 * Free up the copy of the filter that was made by "fix_program()".
+	 */
+	if (fcode.filter != NULL)
+		free(fcode.filter);
+#endif /* SO_ATTACH_FILTER */
 
 	return 0;
 }
@@ -503,7 +554,9 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
  *  function maps the ARPHRD_xxx constant to an appropriate
  *  DLT_xxx constant.
  *  
- *  Returns -1 if unable to map the type.
+ *  Returns -1 if unable to map the type; we print a message and,
+ *  if we're using PF_PACKET/SOCK_RAW rather than PF_INET/SOCK_PACKET,
+ *  we fall back on using PF_PACKET/SOCK_DGRAM.
  */
 static int map_arphrd_to_dlt(int arptype)
 {
@@ -528,8 +581,11 @@ static int map_arphrd_to_dlt(int arptype)
 #endif
 	case ARPHRD_ATM:	return DLT_ATM_CLIP;
 
-	case ARPHRD_SIT:
 	case ARPHRD_PPP:
+	/* Not sure if this is correct for all tunnels, but it
+	 * works for CIPE */
+	case ARPHRD_TUNNEL:
+	case ARPHRD_SIT:
 	case ARPHRD_CSLIP:
 	case ARPHRD_SLIP6:
 	case ARPHRD_CSLIP6:
@@ -594,14 +650,27 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		 */
 
 		if (device) {
+			/* Assume for now we don't need cooked mode. */
+			handle->md.cooked = 0;
+
 			arptype	= iface_get_arptype(sock_fd, device, ebuf);
 			if (arptype == -1) 
 				break;
 			handle->linktype = map_arphrd_to_dlt(arptype);
-			if (handle->linktype == -1) {
+			if (handle->linktype == -1 ||
+			    (handle->linktype == DLT_EN10MB &&
+			     (strncmp("isdn", device, 4) == 0 ||
+			      strncmp("isdY", device, 4) == 0)) ||
+			    (handle->linktype == DLT_RAW &&
+			     (strncmp("ippp", device, 4) == 0))) {
 				/*
-				 * Unknown interface type - reopen in cooked
-				 * mode.
+				 * Unknown interface type (-1), or an ISDN
+				 * device (whose link-layer type we
+				 * can only determine by using APIs
+				 * that may be different on different
+				 * kernels) - reopen in cooked mode.
+				 *
+				 * XXX - do that with DLT_RAW as well?
 				 */
 				if (close(sock_fd) == -1) {
 					snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -615,13 +684,23 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 						 "socket: %s", pcap_strerror(errno));
 					break;
 				}
+				handle->md.cooked = 1;
 
-				fprintf(stderr, 
-					"Warning: arptype %d not supported by "
-					"libpcap - falling back to cooked "
-					"socket\n",
-					arptype);
-				handle->linktype = DLT_RAW;
+				if (handle->linktype == -1) {
+					/*
+					 * Warn that we're falling back on
+					 * cooked mode; we may want to
+					 * update "map_arphrd_to_dlt()"
+					 * to handle the new type.
+					 */
+					fprintf(stderr, 
+						"Warning: arptype %d not "
+						"supported by libpcap - "
+						"falling back to cooked "
+						"socket\n",
+						arptype);
+				}
+				handle->linktype = DLT_LINUX_SLL;
 			}
 
 			device_id = iface_get_id(sock_fd, device, ebuf);
@@ -631,7 +710,11 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			if (iface_bind(sock_fd, device_id, ebuf) == -1)
 				break;
 		} else {
-			handle->linktype = DLT_RAW;
+			/*
+			 * This is cooked mode.
+			 */
+			handle->md.cooked = 1;
+			handle->linktype = DLT_LINUX_SLL;
 
 			/*
 			 * XXX - squelch GCC complaints about
@@ -886,10 +969,13 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		/* It worked - we are using the old interface */
 		handle->md.sock_packet = 1;
 
+		/* ...which means we get the link-layer header. */
+		handle->md.cooked = 0;
+
 		/* Bind to the given device */
 
 		if (!device) {
-		        strncpy(ebuf, "pcap_open_live: No interface given",
+		        strncpy(ebuf, "pcap_open_live: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
 				PCAP_ERRBUF_SIZE);
 			break;
 		}
@@ -968,6 +1054,17 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		handle->fd 	 = sock_fd;
 		handle->offset	 = 0;
 		handle->linktype = map_arphrd_to_dlt(arptype);
+		/*
+		 * XXX - handle ISDN types here?  We can't fall back on
+		 * cooked sockets, so we'd have to figure out from the
+		 * device name what type of link-layer encapsulation
+		 * it's using, and map that to an appropriate DLT_
+		 * value, meaning we'd map "isdnN" devices to DLT_RAW
+		 * (they supply raw IP packets with no link-layer
+		 * header) and "isdY" devices to a new DLT_I4L_IP
+		 * type that has only an Ethernet packet type as
+		 * a link-layer header.
+		 */
 		if (handle->linktype == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "interface type of %s not supported", device);
@@ -1098,3 +1195,129 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 
 	return ifr.ifr_hwaddr.sa_family;
 }
+
+#ifdef HAVE_NETPACKET_PACKET_H
+static int
+fix_program(pcap_t *handle, struct sock_fprog *fcode)
+{
+	size_t prog_size;
+	register int i;
+	register struct bpf_insn *p;
+	struct bpf_insn *f;
+	int len;
+
+	/*
+	 * Make a copy of the filter, and modify that copy if
+	 * necessary.
+	 */
+	prog_size = sizeof(*handle->fcode.bf_insns) * handle->fcode.bf_len;
+	len = handle->fcode.bf_len;
+	f = (struct bpf_insn *)malloc(prog_size);
+	if (f == NULL) {
+		snprintf(handle->errbuf, sizeof(handle->errbuf),
+			 "malloc: %s", pcap_strerror(errno));
+		return -1;
+	}
+	memcpy(f, handle->fcode.bf_insns, prog_size);
+	fcode->len = len;
+	fcode->filter = (struct sock_filter *) f;
+
+	for (i = 0; i < len; ++i) {
+		p = &f[i];
+		/*
+		 * What type of instruction is this?
+		 */
+		switch (BPF_CLASS(p->code)) {
+
+		case BPF_RET:
+			/*
+			 * It's a return instruction; is the snapshot
+			 * length a constant, rather than the contents
+			 * of the accumulator?
+			 */
+			if (BPF_MODE(p->code) == BPF_K) {
+				/*
+				 * Yes - if the value to be returned,
+				 * i.e. the snapshot length, is anything
+				 * other than 0, make it 65535, so that
+				 * the packet is truncated by "recvfrom()",
+				 * not by the filter.
+				 *
+				 * XXX - there's nothing we can easily do
+				 * if it's getting the value from the
+				 * accumulator; we'd have to insert
+				 * code to force non-zero values to be
+				 * 65535.
+				 */
+				if (p->k != 0)
+					p->k = 65535;
+			}
+			break;
+
+		case BPF_LD:
+		case BPF_LDX:
+			/*
+			 * It's a load instruction; is it loading
+			 * from the packet?
+			 */
+			switch (BPF_MODE(p->code)) {
+
+			case BPF_ABS:
+			case BPF_IND:
+			case BPF_MSH:
+				/*
+				 * Yes; are we in cooked mode?
+				 */
+				if (handle->md.cooked) {
+					/*
+					 * Yes, so we need to fix this
+					 * instruction.
+					 */
+					if (fix_offset(p) < 0) {
+						/*
+						 * We failed to do so.
+						 * Return 0, so our caller
+						 * knows to punt to userland.
+						 */
+						return 0;
+					}
+				}
+				break;
+			}
+			break;
+		}
+	}
+	return 1;	/* we succeeded */
+}
+
+static int
+fix_offset(struct bpf_insn *p)
+{
+	/*
+	 * What's the offset?
+	 */
+	if (p->k >= SLL_HDR_LEN) {
+		/*
+		 * It's within the link-layer payload; that starts at an
+		 * offset of 0, as far as the kernel packet filter is
+		 * concerned, so subtract the length of the link-layer
+		 * header.
+		 */
+		p->k -= SLL_HDR_LEN;
+	} else if (p->k == 14) {
+		/*
+		 * It's the protocol field; map it to the special magic
+		 * kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
+	} else {
+		/*
+		 * It's within the header, but it's not one of those
+		 * fields; we can't do that in the kernel, so punt
+		 * to userland.
+		 */
+		return -1;
+	}
+	return 0;
+}
+#endif

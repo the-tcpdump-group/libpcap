@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.139 2000-12-16 21:31:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.140.2.1 2001-01-14 06:48:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +53,7 @@ struct rtentry;
 #include "nlpid.h"
 #include "gencode.h"
 #include "ppp.h"
+#include "sll.h"
 #include <pcap-namedb.h>
 #ifdef INET6
 #include <netdb.h>
@@ -293,15 +294,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	netmask = mask;
 	
-	/* On Linux we do not use the BPF filter to truncate the packet
-	 * since the kernel provides other ways for that. In fact if we
-	 * are using the packet filter for that duty we will be unable 
-	 * to acquire the original packet size.  -- Torsten */
-#ifndef linux
 	snaplen = pcap_snapshot(p);
-#else
-	snaplen = 0xffff;
-#endif
 	if (snaplen == 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
@@ -657,6 +650,11 @@ init_linktype(type)
 	case DLT_ATM_CLIP:	/* Linux ATM defines this */
 		off_linktype = 6;
 		off_nl = 8;
+		return;
+
+	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket */
+		off_linktype = 14;
+		off_nl = 16;
 		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
