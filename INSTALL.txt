@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.1 2001-05-05 00:57:10 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.2 2001-06-05 03:45:53 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -201,11 +201,11 @@ socket option enabled; see the README.linux file for information about
 this.
 
 If you use AIX, you may not be able to build libpcap from this release.
-libpcap. We do not have an AIX system in house so it's impossible for
-us to test AIX patches submitted to us. We are told that you must link
-against /lib/pse.exp, that you must use AIX cc or a GNU C compiler
-newer than 2.7.2 and that you may need to run strload before running a
-libpcap application.
+We do not have an AIX system in house so it's impossible for us to test
+AIX patches submitted to us.  We are told that you must link against
+/lib/pse.exp, that you must use AIX cc or a GNU C compiler newer than
+2.7.2, and that you may need to run strload before running a libpcap
+application.
 
 Read the README.aix file for information on installing libpcap and
 configuring your system to be able to support libpcap.
