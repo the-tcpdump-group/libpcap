@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.42 2000-12-16 21:31:11 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.43 2000-12-16 22:19:12 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -265,7 +265,7 @@ struct bpf_hdr {
 #define DLT_LOOP	108
 
 /*
- * Values between 109 and 113 are used in capture file headers as
+ * Values between 109 and 112 are used in capture file headers as
  * link-layer types corresponding to DLT_ types that might differ
  * between platforms; don't use those values for new DLT_ new types.
  */

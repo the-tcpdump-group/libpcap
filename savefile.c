@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.47 2000-12-16 21:31:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.48 2000-12-16 22:19:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -132,6 +132,23 @@ static const char rcsid[] =
 #define LINKTYPE_PPP		DLT_PPP
 #define LINKTYPE_FDDI		DLT_FDDI
 
+/*
+ * LINKTYPE_PPP is for use when there might, or might not, be an RFC 1662
+ * PPP in HDLC-like framing header (with 0xff 0x03 before the PPP protocol
+ * field) at the beginning of the packet.
+ *
+ * This is for use when there is always such a header; the address field
+ * might be 0xff, for regular PPP, or it might be an address field for Cisco
+ * point-to-point with HDLC framing as per section 4.3.1 of RFC 1547 ("Cisco
+ * HDLC").  This is, for example, what you get with NetBSD's DLT_PPP_SERIAL.
+ *
+ * We give it the same value as NetBSD's DLT_PPP_SERIAL, in the hopes that
+ * nobody else will choose a DLT_ value of 50, and so that DLT_PPP_SERIAL
+ * captures will be written out with a link type that NetBSD's tcpdump
+ * can read.
+ */
+#define LINKTYPE_PPP_HDLC	50		/* PPP in HDLC-like framing */
+
 #define LINKTYPE_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
 #define LINKTYPE_RAW		101		/* raw IP */
 #define LINKTYPE_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
@@ -149,18 +166,6 @@ static const char rcsid[] =
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
-
-/*
- * LINKTYPE_PPP is for use when there might, or might not, be an RFC 1662
- * PPP in HDLC-like framing header (with 0xff 0x03 before the PPP protocol
- * field) at the beginning of the packet.
- *
- * This is for use when there is always such a header; the address field
- * might be 0xff, for regular PPP, or it might be an address field for Cisco
- * point-to-point with HDLC framing as per section 4.3.1 of RFC 1547 ("Cisco
- * HDLC").  This is, for example, what you get with NetBSD's DLT_PPP_SERIAL.
- */
-#define LINKTYPE_PPP_HDLC	113		/* PPP in HDLC-like framing */
 
 static struct linktype_map {
 	int	dlt;
