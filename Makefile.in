@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.97 2003-11-30 04:45:02 mcr Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.98 2003-11-30 22:46:13 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -105,6 +105,11 @@ libpcap.a: $(OBJ)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
+
+#
+# XXX - this works with GNU ld, but won't necessarily work with native
+# ld on, for example, various SVR4-flavored platforms, or Digital UNIX.
+#
 libpcap.so: $(OBJ)
 	@rm -f $@
 	ld -shared -o $@.`cat VERSION` $(OBJ)
