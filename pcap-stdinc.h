@@ -34,10 +34,18 @@
 #define SIZEOF_SHORT 2
 #define SIZEOF_INT 4
 
-#define _WINSOCKAPI_
+/*
+ * Avoids a compiler warning in case this was already defined      
+ * (someone defined _WINSOCKAPI_ when including 'windows.h', in order
+ * to prevent it from including 'winsock.h')
+ */
+#ifdef _WINSOCKAPI_
+#undef _WINSOCKAPI_
+#endif
+#include <winsock2.h>
+
 #include <fcntl.h>
 
-#include <winsock2.h>
 #include "bittypes.h"
 #include <time.h>
 #include <io.h>
