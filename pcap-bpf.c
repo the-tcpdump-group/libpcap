@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.68 2003-11-15 23:24:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.69 2003-11-20 02:02:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -763,6 +763,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->read_op = pcap_read_bpf;
 	p->setfilter_op = pcap_setfilter_bpf;
 	p->set_datalink_op = pcap_set_datalink_bpf;
+	p->getnonblock_op = pcap_getnonblock_fd;
+	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_bpf;
 	p->close_op = pcap_close_bpf;
 

@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.80 2003-11-15 23:24:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.81 2003-11-20 02:02:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -437,6 +437,8 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	p->read_op = pcap_read_pf;
 	p->setfilter_op = pcap_setfilter_pf;
 	p->set_datalink_op = NULL;	/* can't change data link type */
+	p->getnonblock_op = pcap_getnonblock_fd;
+	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_pf;
 	p->close_op = pcap_close_pf;
 

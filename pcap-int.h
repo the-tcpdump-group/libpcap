@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.56 2003-11-20 01:21:26 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.57 2003-11-20 02:02:39 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -131,6 +131,8 @@ struct pcap {
 	int	(*read_op)(pcap_t *, int cnt, pcap_handler, u_char *);
 	int	(*setfilter_op)(pcap_t *, struct bpf_program *);
 	int	(*set_datalink_op)(pcap_t *, int);
+	int	(*getnonblock_op)(pcap_t *, char *);
+	int	(*setnonblock_op)(pcap_t *, int, char *);
 	int	(*stats_op)(pcap_t *, struct pcap_stat *);
 	void	(*close_op)(pcap_t *);
 
@@ -235,13 +237,12 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 #endif
 
 /*
- * Internal interface for "pcap_set_datalink()".  Attempts to set the
- * link-layer type to the specified type; if that fails, returns -1.
- * (On platforms that don't support setting it at all, this can just
- * return 0 - on those platforms, "pcap_set_datalink()" has already
- * checked whether the DLT_ value is the one the device supports.
+ * Routines that most pcap implementations can use for non-blocking mode.
  */
-int	pcap_set_datalink_platform(pcap_t *, int);
+#ifndef WIN32
+int	pcap_getnonblock_fd(pcap_t *, char *);
+int	pcap_setnonblock_fd(pcap_t *p, int, char *);
+#endif
 
 /*
  * Internal interfaces for "pcap_findalldevs()".

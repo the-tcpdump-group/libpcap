@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.96 2003-11-18 21:06:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.97 2003-11-20 02:02:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -429,6 +429,26 @@ swap_hdr(struct pcap_file_header *hp)
 }
 
 static int
+sf_getnonblock(pcap_t *p, char *errbuf)
+{
+	/*
+	 * This is a savefile, not a live capture file, so never say
+	 * it's in non-blocking mode.
+	 */
+	return (0);
+}
+
+static int
+sf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+{
+	/*
+	 * This is a savefile, not a live capture file, so ignore
+	 * requests to put it in non-blocking mode.
+	 */
+	return (0);
+}
+
+static int
 sf_stats(pcap_t *p, struct pcap_stat *ps)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -583,6 +603,8 @@ pcap_open_offline(const char *fname, char *errbuf)
 	p->read_op = pcap_offline_read;
 	p->setfilter_op = install_bpf_program;
 	p->set_datalink_op = NULL;	/* we don't support munging link-layer headers */
+	p->getnonblock_op = sf_getnonblock;
+	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
 	p->close_op = sf_close;
 
