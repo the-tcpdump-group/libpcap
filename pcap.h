@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.28 2000-10-12 03:54:01 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.29 2000-10-12 04:16:52 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -70,11 +70,18 @@ typedef struct pcap_dumper pcap_dumper_t;
  * Many fields here are 32 bit ints so compilers won't insert unwanted
  * padding; these files need to be interchangeable across architectures.
  *
- * Do not change the format of this structure, in any way (this includes
+ * Do not change the layout of this structure, in any way (this includes
  * changes that only affect the length of fields in this structure).
+ *
+ * Also, do not change the interpretation of any of the members of this
+ * structure, in any way (this includes using values other than
+ * LINKTYPE_ values, as defined in "savefile.c", in the "linktype"
+ * field).
+ *
  * Instead:
  *
- *	introduce a new structure for the new format;
+ *	introduce a new structure for the new format, if the layout
+ *	of the structure changed;
  *
  *	send mail to "tcpdump-workers@tcpdump.org", requesting a new
  *	magic number for your new capture file format, and, when
