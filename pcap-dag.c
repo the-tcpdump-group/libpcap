@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.8 2003-08-18 22:00:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.9 2003-10-02 07:07:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -69,6 +69,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 typedef struct pcap_dag_node {
   struct pcap_dag_node *next;
   pcap_t *p;
+  pid_t pid;
 } pcap_dag_node_t;
 
 static pcap_dag_node_t *pcap_dags = NULL;
@@ -149,13 +150,15 @@ static void dag_platform_close(pcap_t *p) {
   }
 #endif
   delete_pcap_dag(p);
-  /* XXX - does "dag_close()" do this?  If so, we don't need to. */
-  close(p->fd);
 }
 
 static void atexit_handler(void) {
   while (pcap_dags != NULL) {
-    dag_platform_close(pcap_dags->p);
+    if (pcap_dags->pid == getpid()) {
+      dag_platform_close(pcap_dags->p);
+    } else {
+      delete_pcap_dag(pcap_dags->p);
+    }
   }
 }
 
@@ -173,6 +176,7 @@ static int new_pcap_dag(pcap_t *p) {
 
   node->next = pcap_dags;
   node->p = p;
+  node->pid = getpid();
 
   pcap_dags = node;
 
@@ -187,19 +191,19 @@ static dag_record_t *get_next_dag_header(pcap_t *p) {
   register dag_record_t *record;
   int rlen;
 
-  if (p->md.dag_mem_top - p->md.dag_mem_bottom < dag_record_size) {
+  /*
+   * The buffer is guaranteed to only contain complete records so any
+   * time top and bottom differ there will be at least one record available.
+   * Here we test the difference is at least the size of a record header
+   * using the poorly named constant 'dag_record_size'.
+   */
+  while ((p->md.dag_mem_top - p->md.dag_mem_bottom) < dag_record_size) {
     p->md.dag_mem_top = dag_offset(p->fd, &(p->md.dag_mem_bottom), 0);
   }
 
   record = (dag_record_t *)(p->md.dag_mem_base + p->md.dag_mem_bottom);
-  rlen = ntohs(record->rlen);
-  while (p->md.dag_mem_top - p->md.dag_mem_bottom < rlen) {
-    p->md.dag_mem_top = dag_offset(p->fd, &(p->md.dag_mem_bottom), 0);
-    record = (dag_record_t *)(p->md.dag_mem_base + p->md.dag_mem_bottom);
-    rlen = ntohs(record->rlen);
-  }
 
-  p->md.dag_mem_bottom += rlen;
+  p->md.dag_mem_bottom += ntohs(record->rlen);
   
   return record;
 }
