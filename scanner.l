@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.60 1999-11-17 04:09:58 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.61 2000-01-25 03:21:29 mcr Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -39,6 +39,10 @@ static const char rcsid[] =
 #ifdef INET6
 #include <netdb.h>
 #include <sys/socket.h>
+/* Workaround for AIX 4.3 */
+#if !defined(AI_NUMERICHOST)
+#define AI_NUMERICHOST 0x04
+#endif
 #endif /*INET6*/
 #include "tokdefs.h"
 
