@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.32 2001-10-08 01:06:22 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.33 2001-10-28 02:31:50 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -139,8 +139,10 @@ struct pcap_if {
 	char *name;		/* name to hand to "pcap_open_live()" */
 	char *description;	/* textual description of interface, or NULL */
 	struct pcap_addr *addresses;
-	u_int is_loopback;	/* non-0 if interface is loopback */
+	u_int flags;		/* PCAP_IF_ interface flags */
 };
+
+#define PCAP_IF_LOOPBACK	0x00000001	/* interface is loopback */
 
 /*
  * Representation of an interface address.

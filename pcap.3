@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.25 2001-10-13 06:28:53 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.26 2001-10-28 02:31:50 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -238,8 +238,13 @@ a pointer to a string giving a human-readable description of the device
 .B addresses
 a pointer to the first element of a list of addresses for the interface
 .TP
-.B is_loopback
-non-zero if the interface is a loopback interface
+.B flags
+interface flags:
+.RS
+.TP
+.B PCAP_IF_LOOPBACK
+set if the interface is a loopback interface
+.RE
 .RE
 .PP
 Each element of the list of addresses is of type

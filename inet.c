@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.42 2001-10-10 06:46:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.43 2001-10-28 02:31:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -198,7 +198,9 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 		strcpy(curdev->name, name);
 		curdev->description = NULL;	/* not available */
 		curdev->addresses = NULL;	/* list starts out as empty */
-		curdev->is_loopback = ISLOOPBACK(name, flags);
+		curdev->flags = 0;
+		if (ISLOOPBACK(name, flags))
+			curdev->flags |= PCAP_IF_LOOPBACK;
 
 		/*
 		 * Add it to the list, in the appropriate location.
@@ -245,7 +247,8 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 			 * Is the new interface a non-loopback interface
 			 * and the next interface a loopback interface?
 			 */
-			if (!curdev->is_loopback && nextdev->is_loopback) {
+			if (!(curdev->flags & PCAP_IF_LOOPBACK) &&
+			    (nextdev->flags & PCAP_IF_LOOPBACK)) {
 				/*
 				 * Yes, we should put the new entry
 				 * before "nextdev", i.e. after "prevdev".
@@ -267,7 +270,8 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 			 * loopback interfaces.)
 			 */
 			if (this_instance < get_instance(nextdev->name) &&
-			    (!curdev->is_loopback || nextdev->is_loopback)) {
+			    (!(curdev->flags & PCAP_IF_LOOPBACK) ||
+			       (nextdev->flags & PCAP_IF_LOOPBACK))) {
 				/*
 				 * Yes - we should put the new entry
 				 * before "nextdev", i.e. after "prevdev".
@@ -943,7 +947,7 @@ pcap_lookupdev(errbuf)
 	if (pcap_findalldevs(&alldevs, errbuf) == -1)
 		return (NULL);
 	
-	if (alldevs == NULL || alldevs->is_loopback) {
+	if (alldevs == NULL || (alldevs->flags & PCAP_IF_LOOPBACK)) {
 		/*
 		 * There are no devices on the list, or the first device
 		 * on the list is a loopback device, which means there
