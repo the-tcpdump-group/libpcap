@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.74 2002-06-11 17:04:45 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.75 2002-08-12 02:38:11 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1945,7 +1945,7 @@ convert_code_r(p)
 
 	/* generate offset[] for convenience  */
 	if (slen) {
-		offset = (struct slist **)calloc(sizeof(struct slist *), slen);
+		offset = (struct slist **)calloc(slen, sizeof(struct slist *));
 		if (!offset) {
 			bpf_error("not enough core");
 			/*NOTREACHED*/
