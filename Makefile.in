@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.76 2000-03-31 16:59:43 assar Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.77 2000-06-10 14:20:24 assar Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -50,7 +50,7 @@ DEFS = @DEFS@
 CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 
 INSTALL = @INSTALL@
-RANLIB = @V_RANLIB@
+RANLIB = @RANLIB@
 
 #
 # Flex and bison allow you to specify the prefixes of the global symbols
