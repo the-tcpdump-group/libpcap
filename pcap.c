@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.50 2003-03-11 06:23:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.51 2003-04-09 09:58:16 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -121,6 +121,63 @@ pcap_next(pcap_t *p, struct pcap_pkthdr *h)
 		return (0);
 	return (s.pkt);
 }
+
+
+/* additions for pcap_next_ex */
+struct pkt_for_fakecallback {
+	struct pcap_pkthdr *hdr;
+	const u_char **pkt;
+};
+
+static void
+pcap_fakecallback(u_char *userData, const struct pcap_pkthdr *h, const u_char *pkt)
+{
+	struct pkt_for_fakecallback *sp = (struct pkt_for_fakecallback *)userData;
+	*sp->hdr = *h;
+	*sp->pkt = pkt;
+}
+
+int 
+pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **pkt_data)
+{
+struct pkt_for_fakecallback s;
+
+	s.hdr= &(p->pcap_header);
+	s.pkt= pkt_data;
+
+	/* Saves a pointer to the packet headers */
+	*pkt_header= &(p->pcap_header);
+
+	if (p->sf.rfile != NULL)
+	{
+	int status;
+
+		/* We are on an offline capture */
+		status= pcap_offline_read(p, 1, pcap_fakecallback, (u_char*)&s);
+
+		/*
+			Return codes for pcap_offline_read() are:
+			-  0: EOF
+			- -1: error
+			- >1: OK
+			The first one ('0') conflicts with the return code of the pcap_read()
+		*/
+		if (status == 0)
+			return -2;
+		else
+			return status;
+	}
+
+	/*
+		Return codes for pcap_read() are:
+		-  0: timeout
+		- -1: error
+		- >1: OK
+		The first one ('0') conflicts with the return code of the pcap_offline_read()
+	*/
+	return (pcap_read(p, 1, pcap_fakecallback, (u_char*)&s));
+}
+/* End additions for pacp_next_ex */
 
 int
 pcap_datalink(pcap_t *p)
