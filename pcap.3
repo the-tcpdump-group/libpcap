@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.13 2000-10-28 00:01:31 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.14 2000-12-12 09:31:45 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -229,7 +229,7 @@ is reached in a ``savefile.'' A return of -1 indicates
 an error in which case
 .B pcap_perror()
 or
-.BR pcap_geterr()
+.B pcap_geterr()
 may be used to display the error text.
 .PP
 .B pcap_dump()
@@ -251,6 +251,9 @@ struct and is filled in by
 controls whether optimization on the resulting code is performed.
 .I netmask
 specifies the netmask of the local net.
+A return of -1 indicates an error in which case
+.BR pcap_geterr()
+may be used to display the error text.
 .PP
 .B pcap_compile_nopcap()
 is similar to
@@ -260,6 +263,16 @@ snaplen and linktype explicitly.  It is intended to be used for
 compiling filters for direct BPF usage, without necessarily having
 called
 .BR pcap_open() .
+A return of -1 indicates an error; the error text is unavailable.
+.RB ( pcap_compile_nopcap()
+is a wrapper around
+.BR pcap_open_dead() ,
+.BR pcap_compile() ,
+and
+.BR pcap_close() ;
+the latter three routines can be used directly in order to get the error
+text for a compilation error.)
+.B
 .PP
 .B pcap_setfilter()
 is used to specify a filter program.
@@ -269,7 +282,9 @@ is a pointer to a
 struct, usually the result of a call to
 .BR pcap_compile() .
 .B \-1
-is returned on failure;
+is returned on failure, in which case
+.BR pcap_geterr()
+may be used to display the error text;
 .B 0
 is returned on success.
 .PP
@@ -354,6 +369,13 @@ prefixed by
 .PP
 .B pcap_geterr()
 returns the error text pertaining to the last pcap library error.
+.BR NOTE :
+the pointer it returns will no longer point to a valid error message
+string after the
+.B pcap_t
+passed to it is closed; you must use or copy the string before closing
+the
+.BR pcap_t .
 .PP
 .B pcap_strerror()
 is provided in case
