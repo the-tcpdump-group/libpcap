@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.183 2002-12-12 07:04:17 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.184 2003-01-23 07:24:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -695,8 +695,14 @@ init_linktype(type)
 
 	case DLT_ARCNET:
 		off_linktype = 2;
-		off_nl = 6;	/* XXX in reality, variable! */
+		off_nl = 6;		/* XXX in reality, variable! */
 		off_nl_nosnap = 6;	/* no 802.2 LLC */
+		return;
+
+	case DLT_ARCNET_LINUX:
+		off_linktype = 4;
+		off_nl = 8;		/* XXX in reality, variable! */
+		off_nl_nosnap = 8;	/* no 802.2 LLC */
 		return;
 
 	case DLT_EN10MB:
@@ -1166,15 +1172,19 @@ gen_linktype(proto)
 		return gen_ether_linktype(proto);
 		break;
 
-        case DLT_C_HDLC:
-            switch (proto) {
-            case LLCSAP_ISONS:
-                proto = (proto << 8 | LLCSAP_ISONS);
-                /* fall through */
-            default:
-                return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
-                break;
-            }
+	case DLT_C_HDLC:
+		switch (proto) {
+
+		case LLCSAP_ISONS:
+			proto = (proto << 8 | LLCSAP_ISONS);
+			/* fall through */
+
+		default:
+			return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+			break;
+		}
+		break;
+
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO:
@@ -1567,36 +1577,45 @@ gen_linktype(proto)
 		return (gen_cmp(0, BPF_W, (bpf_int32)proto));
 
 	case DLT_ARCNET:
+	case DLT_ARCNET_LINUX:
 		/*
 		 * XXX should we check for first fragment if the protocol
 		 * uses PHDS?
 		 */
-		switch(proto) {
+		switch (proto) {
+
 		default:
 			return gen_false();
+
 #ifdef INET6
 		case ETHERTYPE_IPV6:
-			return(gen_cmp(2, BPF_B,
-					(bpf_int32)htonl(ARCTYPE_INET6)));
+			return (gen_cmp(off_linktype, BPF_B,
+				(bpf_int32)ARCTYPE_INET6));
 #endif /* INET6 */
+
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(2, BPF_B, (bpf_int32)htonl(ARCTYPE_IP));
-			b1 = gen_cmp(2, BPF_B,
-					(bpf_int32)htonl(ARCTYPE_IP_OLD));
+			b0 = gen_cmp(off_linktype, BPF_B, 
+				     (bpf_int32)ARCTYPE_IP);
+			b1 = gen_cmp(off_linktype, BPF_B,
+				     (bpf_int32)ARCTYPE_IP_OLD);
 			gen_or(b0, b1);
-			return(b1);
+			return (b1);
+
 		case ETHERTYPE_ARP:
-			b0 = gen_cmp(2, BPF_B, (bpf_int32)htonl(ARCTYPE_ARP));
-			b1 = gen_cmp(2, BPF_B,
-					(bpf_int32)htonl(ARCTYPE_ARP_OLD));
+			b0 = gen_cmp(off_linktype, BPF_B,
+				     (bpf_int32)ARCTYPE_ARP);
+			b1 = gen_cmp(off_linktype, BPF_B, 
+				     (bpf_int32)ARCTYPE_ARP_OLD);
 			gen_or(b0, b1);
-			return(b1);
+			return (b1);
+
 		case ETHERTYPE_REVARP:
-			return(gen_cmp(2, BPF_B,
-					(bpf_int32)htonl(ARCTYPE_REVARP)));
+			return (gen_cmp(off_linktype, BPF_B,
+					(bpf_int32)ARCTYPE_REVARP));
+
 		case ETHERTYPE_ATALK:
-			return(gen_cmp(2, BPF_B,
-					(bpf_int32)htonl(ARCTYPE_ATALK)));
+			return (gen_cmp(off_linktype, BPF_B,
+					(bpf_int32)ARCTYPE_ATALK));
 		}
 		break;
 
@@ -4598,7 +4617,7 @@ gen_broadcast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		if (linktype == DLT_ARCNET)
+		if (linktype == DLT_ARCNET || linktype == DLT_ARCNET_LINUX)
 			return gen_ahostop(abroadcast, Q_DST);
 		if (linktype == DLT_EN10MB)
 			return gen_ehostop(ebroadcast, Q_DST);
@@ -4671,7 +4690,7 @@ gen_multicast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		if (linktype == DLT_ARCNET)
+		if (linktype == DLT_ARCNET || linktype == DLT_ARCNET_LINUX)
 			/* all ARCnet multicasts use the same address */
 			return gen_ahostop(abroadcast, Q_DST);
 
@@ -4910,7 +4929,7 @@ gen_acode(eaddr, q)
 	struct qual q;
 {
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-		if (linktype == DLT_ARCNET)
+		if (linktype == DLT_ARCNET || linktype == DLT_ARCNET_LINUX)
 			return gen_ahostop(eaddr, (int)q.dir);
 	}
 	bpf_error("ARCnet address used in non-arc expression");

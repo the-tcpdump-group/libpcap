@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.74 2003-01-21 04:39:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.75 2003-01-23 07:24:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -123,7 +123,7 @@ static const char rcsid[] =
 #define LINKTYPE_PRONET		DLT_PRONET
 #define LINKTYPE_CHAOS		DLT_CHAOS
 #define LINKTYPE_TOKEN_RING	DLT_IEEE802	/* DLT_IEEE802 is used for Token Ring */
-#define LINKTYPE_ARCNET		DLT_ARCNET	/* NetBSD-style headers */
+#define LINKTYPE_ARCNET		DLT_ARCNET	/* BSD-style headers */
 #define LINKTYPE_SLIP		DLT_SLIP
 #define LINKTYPE_PPP		DLT_PPP
 #define LINKTYPE_FDDI		DLT_FDDI

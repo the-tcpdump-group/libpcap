@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.44 2003-01-16 07:44:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.45 2003-01-23 07:24:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -214,6 +214,7 @@ struct dlt_choice {
 
 static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_ARCNET),
+	DLT_CHOICE(DLT_ARCNET_LINUX),
 	DLT_CHOICE(DLT_EN10MB),
 	DLT_CHOICE(DLT_SLIP),
 	DLT_CHOICE(DLT_SLIP_BSDOS),
