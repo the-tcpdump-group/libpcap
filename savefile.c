@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.119 2004-12-18 08:52:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.120 2004-12-27 01:12:17 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -715,7 +715,8 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 		} else {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
-			    sizeof(hdr), (unsigned long)amt_read);
+			    (unsigned long)sizeof(hdr),
+			    (unsigned long)amt_read);
 		}
 		goto bad;
 	}
