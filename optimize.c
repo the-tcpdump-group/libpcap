@@ -21,8 +21,8 @@
  *  Optimization module for tcpdump intermediate representation.
  */
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76 2003-03-08 08:26:31 guy Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76.2.1 2003-11-15 23:26:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H

@@ -7,8 +7,8 @@
  * Rayan Zachariassen, CA*Net
  */
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.7 2003-02-11 01:46:06 guy Exp $";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.7.2.1 2003-11-15 23:26:44 guy Exp $";
 #endif
 
 #ifdef HAVE_CONFIG_H

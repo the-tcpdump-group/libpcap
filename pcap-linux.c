@@ -26,8 +26,8 @@
  */
 
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98 2003-11-05 04:25:24 guy Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.1 2003-11-15 23:26:44 guy Exp $ (LBL)";
 #endif
 
 /*
