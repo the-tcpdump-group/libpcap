@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.71 2001-10-12 06:43:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.72 2001-11-11 22:32:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -262,6 +262,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		return (NULL);
 	}
 	memset(p, 0, sizeof(*p));
+	p->fd = -1;	/* indicate that it hasn't been opened yet */
 
 #ifdef HAVE_DEV_DLPI
 	/*
@@ -574,6 +575,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	return (p);
 bad:
+	if (p->fd >= 0)
+		close(p->fd);
 	free(p);
 	return (NULL);
 }
