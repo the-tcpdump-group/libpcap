@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.62 2002-06-07 04:17:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.63 2002-06-07 04:31:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -167,7 +167,7 @@ static const char rcsid[] =
 /*
  * These types are reserved for future use.
  */
-#define LINKTYPE_FR		107		/* BSD/OS Frame Relay */
+#define LINKTYPE_FRELAY		107		/* Frame Relay */
 #define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
@@ -177,7 +177,6 @@ static const char rcsid[] =
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
 #define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
-#define LINKTYPE_FRELAY		124		/* Frame Relay */
 
 static struct linktype_map {
 	int	dlt;
@@ -236,6 +235,9 @@ static struct linktype_map {
 	/* IEEE 802.11 wireless */
 	{ DLT_IEEE802_11,	LINKTYPE_IEEE802_11 },
 
+	/* Frame Relay */
+	{ DLT_FRELAY,		LINKTYPE_FRELAY },
+
 	/* OpenBSD loopback */
 	{ DLT_LOOP,		LINKTYPE_LOOP },
 
@@ -265,9 +267,6 @@ static struct linktype_map {
 
 	/* Solaris+SunATM */
 	{ DLT_SUNATM,		LINKTYPE_SUNATM },
-
-	/* Frame Relay */
-	{ DLT_FRELAY,		LINKTYPE_FRELAY },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
