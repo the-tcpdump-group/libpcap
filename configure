@@ -660,7 +660,7 @@ fi
     V_CCOPT="-O"
     V_INCLS=""
     if test "${srcdir}" != "." ; then
-	    V_INCLS="-I\$\(srcdir\)"
+	    V_INCLS="-I\$(srcdir)"
     fi
     if test "${CFLAGS+set}" = set; then
 	    LBL_CFLAGS="$CFLAGS"
@@ -1861,21 +1861,13 @@ EOF
 
     fi
 
-if test "${srcdir}" = "." ; then
-	srcdirprefix=""
-else
-	srcdirprefix="./"
-fi
-
-if test -r ${srcdirprefix}lbl/gnuc.h ; then
+if test -r ${srcdir}/lbl/gnuc.h ; then
 	rm -f gnuc.h
-	ln -s ${srcdirprefix}lbl/gnuc.h gnuc.h
+	ln -s ${srcdir}/lbl/gnuc.h gnuc.h
 fi
 
-rm -f bpf_filter.c
-ln -s ${srcdirprefix}bpf/net/bpf_filter.c bpf_filter.c
 rm -f net
-ln -s ${srcdirprefix}bpf/net net
+ln -s ${srcdir}/bpf/net net
 
 
 
@@ -1896,7 +1888,7 @@ ln -s ${srcdirprefix}bpf/net net
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:1900: checking for a BSD compatible install" >&5
+echo "configure:1892: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
