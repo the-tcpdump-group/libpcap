@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.82 2004-11-14 00:28:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.83 2004-11-14 03:10:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1206,11 +1206,18 @@ opt_blk(b, do_stmts)
 	} else {
 		/*
 		 * Inherit values from our predecessors.
+		 *
+		 * First, get the values from the predecessor along the
+		 * first edge leading to this node.
 		 */
 		memcpy((char *)b->val, (char *)p->pred->val, sizeof(b->val));
 		/*
-		 * If any register has an ambiguous value (i.e., control
-		 * paths are merging), give it the undefined value of 0.
+		 * Now look at all the other nodes leading to this node.
+		 * If, for the predecessor along that edge, a register
+		 * has a different value from the one we have (i.e.,
+		 * control paths are merging, and the merging paths
+		 * assign different values to that register), give the
+		 * register the undefined value of 0.
 		 */
 		while ((p = p->next) != NULL) {
 			for (i = 0; i < N_ATOMS; ++i)
