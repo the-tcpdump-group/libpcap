@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.49 2000-12-21 10:29:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.50 2001-04-17 08:10:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -149,6 +149,8 @@ static const char rcsid[] =
  */
 #define LINKTYPE_PPP_HDLC	50		/* PPP in HDLC-like framing */
 
+#define LINKTYPE_PPP_ETHER	51		/* NetBSD PPP-over-Ethernet */
+
 #define LINKTYPE_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
 #define LINKTYPE_RAW		101		/* raw IP */
 #define LINKTYPE_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
@@ -215,6 +217,9 @@ static struct linktype_map {
 
 	/* NetBSD sync/async serial PPP (or Cisco HDLC) */
 	{ DLT_PPP_SERIAL,	LINKTYPE_PPP_HDLC },
+
+	/* NetBSD PPP over Ethernet */
+	{ DLT_PPP_ETHER,	LINKTYPE_PPP_ETHER },
 
 	/* IEEE 802.11 wireless */
 	{ DLT_IEEE802_11,	LINKTYPE_IEEE802_11 },

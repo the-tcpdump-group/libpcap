@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.44 2000-12-21 10:29:24 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.45 2001-04-17 08:10:02 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -212,11 +212,12 @@ struct bpf_hdr {
 #define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
 
 /*
- * This value is defined by NetBSD; other platforms should refrain from
- * using it for other purposes, so that NetBSD savefiles with a link
- * type of 50 can be read as this type on all platforms.
+ * These values are defined by NetBSD; other platforms should refrain from
+ * using them for other purposes, so that NetBSD savefiles with link
+ * types of 50 or 51 can be read as this type on all platforms.
  */
 #define DLT_PPP_SERIAL	50	/* PPP over serial with HDLC encapsulation */
+#define DLT_PPP_ETHER	51	/* PPP over Ethernet */
 
 /*
  * This value was defined by libpcap 0.5; platforms that have defined

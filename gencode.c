@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.149 2001-02-21 09:33:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.150 2001-04-17 08:10:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -575,10 +575,20 @@ init_linktype(type)
 		return;
 
 	case DLT_PPP:
-	case DLT_C_HDLC:
-	case DLT_PPP_SERIAL:
+	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
+	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		off_linktype = 2;
 		off_nl = 4;
+		return;
+
+	case DLT_PPP_ETHER:		/* NetBSD PPP over Ethernet */
+		/*
+		 * This includes the Ethernet header (since we need
+		 * the ethertype to dispatch Session vs. Discovery)
+		 * and the PPPoE (RFC 2516) header.
+		 */
+		off_linktype = 20;
+		off_nl = 22;
 		return;
 
 	case DLT_PPP_BSDOS:
