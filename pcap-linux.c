@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.36 2000-10-25 05:59:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.37 2000-10-25 06:59:10 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -113,7 +113,7 @@ pcap_t *
 pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
         /* Allocate a handle for this session. */
-	
+
 	pcap_t	*handle = malloc(sizeof(*handle));
 	if (handle == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -154,7 +154,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	 * to be compatible with older kernels for a while so we are 
 	 * trying both methods with the newer method preferred.
 	 */
-	
+
 	if (! (live_open_new(handle, device, promisc, to_ms, ebuf) ||
 	       live_open_old(handle, device, promisc, to_ms, ebuf)) )
 	{
@@ -168,7 +168,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		free(handle);
 		return NULL;
 	}
-	
+
 	/* 
 	 * Okay, now we have a packet stream open. Maybe we need to handle 
 	 * a timeout? In that case we set the filehandle to nonblocking 
@@ -223,7 +223,7 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 		tv.tv_usec	= (handle->md.timeout % 1000) * 1000;
 		tv.tv_sec	= (handle->md.timeout / 1000);
 	}
-	
+
 	/*
 	 * Read packets until the packet limit has been reached or 
 	 * an error occured while reading. Call the user function 
@@ -238,7 +238,7 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 			continue;
 		} else if (status == -1)
 			return -1;
-			
+
 		/* 
 		 * If no packet is available we go to sleep. FIXME: This
 		 * might be better implemented using poll(?)
@@ -262,7 +262,7 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 
 	return packets;
 }
-		
+
 /*
  *  Read a packet from the socket calling the handler provided by 
  *  the user. Returns the number of packets received or -1 if an
@@ -280,7 +280,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * We don't currently use the from return value of recvfrom but
 	 * this will probably be implemented in the future.
 	 */
-	
+
 	/* Receive a single packet from the kernel */
 
 	do {
@@ -331,7 +331,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * tcpdump is currently fixed by changing the BPF code generator
 	 * to not truncate the received packet. 
 	 */
-	
+
 	caplen = packet_len;
 	if (caplen > handle->snapshot)
 		caplen = handle->snapshot;
@@ -345,9 +345,9 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			return 0;
 		}
 	}
-	
+
 	/* Fill in our own header data */
-	
+
 	if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
 		snprintf(handle->errbuf, sizeof(handle->errbuf),
 			 "ioctl: %s", pcap_strerror(errno));
@@ -355,7 +355,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	}
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= packet_len;
-	
+
 	/* Call the user supplied callback function */
 	handle->md.stat.ps_recv++;
 	callback(userdata, &pcap_header, handle->buffer + handle->offset);
@@ -394,12 +394,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 
 	/* Free old filter code if existing */
 
-	handle->fcode.bf_len	= 0;
-	if (handle->fcode.bf_insns) {
-		free(handle->fcode.bf_insns);
-		handle->fcode.bf_insns = NULL;
-	}
-
+	pcap_freecode(handle, &handle->fcode);
 
 	/* Make our private copy of the filter */
 
@@ -428,7 +423,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 		return 0;
 
 	/* Install kernel level filter if possible */
-	
+
 #ifdef SO_ATTACH_FILTER
 	/*
 	 * Oh joy, the Linux kernel uses struct sock_fprog instead of 
@@ -557,10 +552,10 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			handle->linktype = map_arphrd_to_dlt(arptype);
 		} else 
 			handle->linktype = DLT_RAW;
-			
+
 		if (handle->linktype == -1) {
 			/* Unknown interface type - reopen in cooked mode */
-			
+
 			if (close(sock_fd) == -1) {
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
 					 "close: %s", pcap_strerror(errno));
@@ -611,14 +606,14 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			}
 		}
 #endif
-		
+
 		/* Compute the buffersize */
 
 		mtu	= iface_get_mtu(sock_fd, device, ebuf);
 		if (mtu == -1)
 			break;
 		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
-		
+
 		/* Fill in the pcap structure */
 
 		handle->fd 	 = sock_fd;
@@ -740,7 +735,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 
 	do {
 		/* Open the socket */
-		
+
 		sock_fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
 		if (sock_fd == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -788,7 +783,6 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 			}
 		}
 
-		
 		/* Compute the buffersize */
 
 		mtu	= iface_get_mtu(sock_fd, device, ebuf);
@@ -797,7 +791,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
 		if (handle->bufsize < handle->snapshot)
 			handle->bufsize = handle->snapshot;
-		
+
 		/* All done - fill in the pcap handle */
 
 		arptype = iface_get_arptype(sock_fd, device, ebuf);
@@ -820,9 +814,9 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		}
 
 		return 1;
-		
+
 	} while (0);
-		
+
 	if (sock_fd != -1)
 		close(sock_fd);
 	return 0;

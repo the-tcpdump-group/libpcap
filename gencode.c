@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.123 2000-10-22 04:15:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.124 2000-10-25 06:59:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -369,6 +369,20 @@ pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
 
 	freechunks();
 	return (0);
+}
+
+/*
+ * Clean up a "struct bpf_program" by freeing all the memory allocated
+ * in it.
+ */
+void
+pcap_freecode(pcap_t *p, struct bpf_program *program)
+{
+	program->bf_len = 0;
+	if (program->bf_insns != NULL) {
+		free((char *)program->bf_insns);
+		program->bf_insns = NULL;
+	}
 }
 
 /*
