@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.75 2002-02-03 23:03:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.73.2.1 2002-02-03 23:04:48 guy Exp $ (LBL)";
 #endif
 
 /*
