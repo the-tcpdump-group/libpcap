@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.119 2005-03-27 21:51:23 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.120 2005-03-27 22:26:25 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.119 $)
+AC_REVISION($Revision: 1.120 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -78,7 +78,7 @@ AC_LBL_LIBRARY_NET
 AC_CHECK_FUNCS(ether_hostton)
 if test "$ac_cv_func_ether_hostton" = yes; then
 	#
-	# OK, we have ether_hoston().  Do we have <netinet/if_ether.h>?
+	# OK, we have ether_hostton().  Do we have <netinet/if_ether.h>?
 	#
 	if test "$ac_cv_header_netinet_if_ether_h" = yes; then
 		#
@@ -109,7 +109,7 @@ struct rtentry;
 		AC_CHECK_HEADERS(netinet/ether.h)
 		if test "$ac_cv_header_netinet_ether_h" = yes; then
 			#
-			# We have it - does it declare ether_hoston()?
+			# We have it - does it declare ether_hostton()?
 			# Unset ac_cv_have_decl_ether_hostton so we don't
 			# treat the previous failure as a cached value and
 			# suppress the next test.

@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.76 2005-03-27 02:45:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.77 2005-03-27 22:26:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -63,10 +63,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>	/* for "struct ifnet" in "struct arpcom" on Solaris */
 #include <netinet/if_ether.h>
 #endif /* HAVE_NETINET_IF_ETHER_H */
-#endif /* HAVE_ETHER_HOSTTON */
-#ifdef NETINET_ETHER_H_DECLARES_ETHER_HOSTON
+#ifdef NETINET_ETHER_H_DECLARES_ETHER_HOSTTON
 #include <netinet/ether.h>
-#endif /* NETINET_ETHER_H_DECLARES_ETHER_HOSTON */
+#endif /* NETINET_ETHER_H_DECLARES_ETHER_HOSTTON */
+#endif /* HAVE_ETHER_HOSTTON */
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif /* WIN32 */
