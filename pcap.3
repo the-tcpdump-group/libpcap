@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.29 2001-12-09 08:58:28 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.30 2001-12-10 06:35:00 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -696,6 +696,10 @@ the error text can be obtained with
 .B pcap_perror()
 or
 .BR pcap_geterr() .
+.B pcap_stats()
+is supported only on live captures, not on ``savefiles''; no statistics
+are stored in ``savefiles'', so no statistics are available when reading
+from a ``savefile''.
 .PP
 .B pcap_fileno()
 returns the file descriptor number from which captured packets are read,
