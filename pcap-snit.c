@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.46 2000-04-27 09:11:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.47 2000-04-27 11:16:20 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -213,7 +213,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		strcpy(ebuf, pcap_strerror(errno));
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUFF_SIZE);
 		return (NULL);
 	}
 
@@ -287,7 +287,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		strcpy(ebuf, pcap_strerror(errno));
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUFF_SIZE);
 		goto bad;
 	}
 	return (p);

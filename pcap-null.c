@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.8 2000-04-27 09:11:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-null.c,v 1.9 2000-04-27 11:16:20 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>			/* optionally get BSD define */
@@ -56,7 +56,7 @@ pcap_t *
 pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
 
-	(void)strcpy(ebuf, nosup);
+	(void)strlcpy(ebuf, nosup, PCAP_ERRBUFF_SIZE);
 	return (NULL);
 }
 

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.16 2000-04-27 09:11:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.17 2000-04-27 11:16:19 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -284,7 +284,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	/* XXX */
 	if (promisc && broadcast) {
 		memset(&ifr, 0, sizeof(ifr));
-		strcpy(ifr.ifr_name, device);
+		strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 		if (ioctl(p->fd, SIOCGIFFLAGS, &ifr) < 0 ) {
 			snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFFLAGS: %s",
 			    pcap_strerror(errno));

@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.54 2000-04-27 09:11:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.55 2000-04-27 11:16:19 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -159,7 +159,8 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					cc = 0;
 					continue;
 				}
-				strcpy(p->errbuf, pcap_strerror(errno));
+				strlcpy(p->errbuf, pcap_strerror(errno),
+				    sizeof(p->errbuf));
 				return (-1);
 			}
 			cc = data.len;
@@ -241,7 +242,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		strcpy(ebuf, pcap_strerror(errno));
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUFF_SIZE);
 		return (NULL);
 	}
 	memset(p, 0, sizeof(*p));
@@ -263,7 +264,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	}
 
 	if (*device == '/')
-		strcpy(dname, device);
+		strlcpy(dname, device, sizeof(dname));
 	else {
 		snprintf(dname, sizeof(dname),
 		    "%s/%s", PCAP_DEV_PREFIX, device);
@@ -282,7 +283,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		goto bad;
 #else
 	/* Try device without unit number */
-	strcpy(dname2, dname);
+	strlcpy(dname2, dname, sizeof(dname2));
 	cp = strchr(dname, *cp);
 	*cp = '\0';
 	if ((p->fd = open(dname, O_RDWR)) < 0) {

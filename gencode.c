@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.107 2000-04-27 09:18:57 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.108 2000-04-27 11:16:19 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -226,7 +226,7 @@ sdup(s)
 	int n = strlen(s) + 1;
 	char *cp = newchunk(n);
 
-	strcpy(cp, s);
+	strcpy(cp, s);	/*safe*/
 	return (cp);
 }
 
