@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.160 2001-11-30 07:25:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.161 2001-12-18 09:10:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3589,6 +3589,7 @@ gen_arth(code, a0, a1)
 	sappend(a1->s, s0);
 	sappend(a0->s, a1->s);
 
+	free_reg(a0->regno);
 	free_reg(a1->regno);
 
 	s0 = new_stmt(BPF_ST);
