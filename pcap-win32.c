@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.5 2002-12-22 02:36:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.6 2003-01-23 09:40:09 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -166,6 +166,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 	case NdisMediumArcnetRaw:
 		p->linktype = DLT_ARCNET;
+	break;
 
 	case NdisMediumArcnet878_2:
 		p->linktype = DLT_ARCNET;
@@ -177,6 +178,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 	default:
 		p->linktype = DLT_EN10MB;			/*an unknown adapter is assumed to be ethernet*/
+	break;
 	}
 
 	/* Set promisquous mode */
