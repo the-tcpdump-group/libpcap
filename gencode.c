@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.202 2004-03-28 20:27:12 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.203 2004-03-29 21:04:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -5097,8 +5097,8 @@ gen_pf_ruleset(char *ruleset)
 		/* NOTREACHED */
 	}
 	if (strlen(ruleset) >= sizeof(((struct pfloghdr *)0)->ruleset)) {
-		bpf_error("ruleset names can only be %d characters",
-		    sizeof(((struct pfloghdr *)0)->ruleset) - 1);
+		bpf_error("ruleset names can only be %ld characters",
+		    (long)(sizeof(((struct pfloghdr *)0)->ruleset) - 1));
 		/* NOTREACHED */
 	}
 	b0 = gen_bcmp(offsetof(struct pfloghdr, ruleset),
