@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.100 2004-04-03 20:53:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.101 2004-04-07 07:56:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -577,13 +577,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		isatm = 1;
 #endif
 	if (infop->dl_provider_style == DL_STYLE2) {
-		if (dlattachreq(p->fd, ppa, ebuf) < 0 ||
-		    dlokack(p->fd, "attach", (char *)buf, ebuf) < 0)
+		if (dl_doattach(p->fd, ppa, ebuf) < 0)
 			goto bad;
 #ifdef DL_HP_RAWDLS
 		if (send_fd >= 0) {
-			if (dlattachreq(p->send_fd, ppa, ebuf) < 0 ||
-			    dlokack(p->send_fd, "attach", (char *)buf, ebuf) < 0)
+			if (dl_doattach(p->send_fd, ppa, ebuf) < 0) < 0)
 				goto bad;
 		}
 #endif
