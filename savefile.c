@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.114 2004-12-07 17:27:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.115 2004-12-09 19:03:37 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -350,6 +350,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_JUNIPER_PPPOE_ATM 168
 
 #define LINKTYPE_GPRS_LLC	169		/* GPRS LLC */
+#define LINKTYPE_GPF_T		170		/* GPF-T (ITU-T G.7041/Y.1303) */
+#define LINKTYPE_GPF_F		171		/* GPF-T (ITU-T G.7041/Y.1303) */
 
 static struct linktype_map {
 	int	dlt;
@@ -524,6 +526,12 @@ static struct linktype_map {
 
 	/* GPRS LLC */
 	{ DLT_GPRS_LLC,		LINKTYPE_GPRS_LLC },
+
+	/* Transparent Generic Framing Procedure (ITU-T G.7041/Y.1303) */
+	{ DLT_GPF_T,		LINKTYPE_GPF_T },
+
+	/* Framed Generic Framing Procedure (ITU-T G.7041/Y.1303) */
+	{ DLT_GPF_F,		LINKTYPE_GPF_F },
 
 	{ -1,			-1 }
 };
