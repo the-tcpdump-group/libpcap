@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.92 2003-02-11 08:01:40 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.93 2003-02-13 07:54:59 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -130,10 +130,15 @@ version.c: $(srcdir)/VERSION
 	sed -e 's/.*/char pcap_version[] = "&";/' $(srcdir)/VERSION > $@
 
 version.h: $(srcdir)/VERSION
+	#
+	# NOTE: this really is supposed to be static; importing a string
+	# from a shared library does not work very well on many
+	# versions of UNIX (Solaris, Linux, and the BSDs, for example),
+	# so we make the version string static and return it from
+	# a function, which does work.
+	#
 	@rm -f $@
-	sed -e 's/\([0-9]*\)\..*/#define VERSION_MAJOR \1/' $(srcdir)/VERSION > $@
-	sed -e 's/[0-9]*\.\([0-9]*\).*/#define VERSION_MINOR \1/' $(srcdir)/VERSION >> $@
-	sed -n -e 's/[0-9]*\.[0-9]*\.\([0-9]*\)/#define VERSION_DOTDOT \1/p' $(srcdir)/VERSION >> $@
+	sed -e 's/.*/static const char pcap_version_string[] = "libpcap version &";/' $(srcdir)/VERSION > $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.48 2003-02-11 08:01:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.49 2003-02-13 07:54:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -60,14 +60,6 @@ static const char rcsid[] =
 #endif
 
 #include "pcap-int.h"
-#ifndef WIN32
-/*
- * XXX - it'd be nice if we could somehow generate a version.h file
- * when building WinPcap, giving both the WinPcap and the libpcap
- * version numbers.
- */
-#include "version.h"
-#endif
 
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -606,37 +598,29 @@ pcap_close(pcap_t *p)
 }
 
 /*
- * Generate the version string at run time, so that if libpcap is a
- * shared library, it reflects the version of the library with
- * which the program calling "pcap_lib_version()" is running, not
- * the version with which it was built (on at least some UNIXes,
- * constant data is linked in at build time).
+ * We make the version string static, and return a pointer to it, rather
+ * than exporting the version string directly.  On at least some UNIXes,
+ * if you import data from a shared library into an program, the data is
+ * bound into the program binary, so if the string in the version of the
+ * library with which the program was linked isn't the same as the
+ * string in the version of the library with which the program is being
+ * run, various undesirable things may happen (warnings, the string
+ * being the one from the version of the library with which the program
+ * was linked, or even weirder things, such as the string being the one
+ * from the library but being truncated).
  */
+#ifdef WIN32
+/*
+ * XXX - it'd be nice if we could somehow generate this when building WinPcap.
+ */
+static const char pcap_version_string[] =
+    "WinPcap version 3.0beta, based on libpcap version 0.8";
+#else
+#include "version.h"
+#endif
+
 const char *
 pcap_lib_version(void)
 {
-	static char version_string[256];
-
-	if (version_string[0] == '\0') {
-		/*
-		 * We haven't built the string yet.
-		 */
-#ifdef WIN32
-		/*
-		 * XXX - it'd be nice if we could somehow generate this
-		 * when building WinPcap.
-		 */
-		snprintf(version_string, sizeof (version_string),
-		    "WinPcap version 3.0beta, based on libpcap version 0.8");
-#else
-		snprintf(version_string, sizeof (version_string),
-#ifdef VERSION_DOTDOT
-		    "libpcap version %u.%u.%u", VERSION_MAJOR, VERSION_MINOR,
-		    VERSION_DOTDOT);
-#else
-		    "libpcap version %u.%u", VERSION_MAJOR, VERSION_MINOR);
-#endif
-#endif
-	}
-	return (version_string);
+	return (pcap_version_string);
 }
