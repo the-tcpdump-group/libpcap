@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.61 2001-07-29 18:25:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.62 2001-08-23 16:36:41 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -178,9 +178,13 @@ static int	fix_offset(struct bpf_insn *p);
 pcap_t *
 pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
+	pcap_t		*handle;
+	int		mtu;
+	struct utsname	utsname;
+
         /* Allocate a handle for this session. */
 
-	pcap_t	*handle = malloc(sizeof(*handle));
+	handle = malloc(sizeof(*handle));
 	if (handle == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			 pcap_strerror(errno));
@@ -232,6 +236,80 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		free(handle->md.device);
 		free(handle);
 		return NULL;
+	}
+
+	/* Compute the buffersize */
+
+	mtu	= iface_get_mtu(handle->fd, device, ebuf);
+	if (mtu == -1) {
+		close(handle->fd);
+		free(handle->md.device);
+		free(handle);
+		return NULL;
+	}
+	handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
+	if (handle->bufsize < handle->snapshot)
+		handle->bufsize = handle->snapshot;
+
+	/* Allocate the buffer */
+
+	handle->buffer	 = malloc(handle->bufsize + handle->offset);
+	if (!handle->buffer) {
+	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "malloc: %s", pcap_strerror(errno));
+		close(handle->fd);
+		free(handle->md.device);
+		free(handle);
+		return NULL;
+	}
+
+	/*
+	 * If we're using SOCKET_PACKET, this might be a 2.0[.x] kernel,
+	 * and might require special handling - check.
+	 */
+	if (handle->md.sock_packet && (uname(&utsname) < 0 ||
+	    strncmp(utsname.release, "2.0", 3) == 0)) {
+		/*
+		 * We're using a SOCK_PACKET structure, and either
+		 * we couldn't find out what kernel release this is,
+		 * or it's a 2.0[.x] kernel.
+		 *
+		 * In the 2.0[.x] kernel, a "recvfrom()" on
+		 * a SOCK_PACKET socket, with MSG_TRUNC set, will
+		 * return the number of bytes read, so if we pass
+		 * a length based on the snapshot length, it'll
+		 * return the number of bytes from the packet
+		 * copied to userland, not the actual length
+		 * of the packet.
+		 *
+		 * This means that, for example, the IP dissector
+		 * in tcpdump will get handed a packet length less
+		 * than the length in the IP header, and will
+		 * complain about "truncated-ip".
+		 *
+		 * So we don't bother trying to copy from the
+		 * kernel only the bytes in which we're interested,
+		 * but instead copy them all, just as the older
+		 * versions of libpcap for Linux did.
+		 *
+		 * That's just one of many problems with packet capture
+		 * on 2.0[.x] kernels; you really want a 2.2[.x]
+		 * or later kernel if you want packet capture to
+		 * work well.
+		 */
+		handle->md.readlen = handle->bufsize;
+	} else {
+		/*
+		 * This is a 2.2[.x] or later kernel (we know that
+		 * either because we're not using a SOCK_PACKET
+		 * socket - PF_PACKET is supported only in 2.2
+		 * and later kernels - or because we checked the
+		 * kernel version).
+		 *
+		 * We can safely pass "recvfrom()" a byte count
+		 * based on the snapshot length.
+		 */
+		handle->md.readlen = handle->snapshot;
 	}
 
 	return handle;
@@ -783,7 +861,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
-	int			sock_fd = -1, device_id, mtu, arptype;
+	int			sock_fd = -1, device_id, arptype;
 	struct packet_mreq	mr;
 
 	/* One shot loop used for error handling - bail out with break */
@@ -930,33 +1008,10 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		}
 #endif
 
-		/* Compute the buffersize */
-
-		mtu	= iface_get_mtu(sock_fd, device, ebuf);
-		if (mtu == -1)
-			break;
-		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
-
-		/* Fill in the pcap structure */
+		/* Save the socket FD in the pcap structure */
 
 		handle->fd 	 = sock_fd;
 
-		handle->buffer	 = malloc(handle->bufsize + handle->offset);
-		if (!handle->buffer) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				 "malloc: %s", pcap_strerror(errno));
-			break;
-		}
-
-		/*
-		 * This is a 2.2 or later kernel, as it has PF_PACKET;
-		 * "recvfrom()", when passed the MSG_TRUNC flag, will
-		 * return the actual length of the packet, not the
-		 * number of bytes from the packet copied to userland,
-		 * so we can safely pass it a byte count based on the
-		 * snapshot length.
-		 */
-		handle->md.readlen = handle->snapshot;
 		return 1;
 
 	} while(0);
@@ -1131,8 +1186,7 @@ static int
 live_open_old(pcap_t *handle, char *device, int promisc, 
 	      int to_ms, char *ebuf)
 {
-	int		sock_fd = -1, mtu, arptype;
-	struct utsname	utsname;
+	int		sock_fd = -1, arptype;
 	struct ifreq	ifr;
 
 	do {
@@ -1215,28 +1269,21 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 			}
 		}
 
-		/* Compute the buffersize */
-
-		mtu	= iface_get_mtu(sock_fd, device, ebuf);
-		if (mtu == -1)
-			break;
-		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
-		if (handle->bufsize < handle->snapshot)
-			handle->bufsize = handle->snapshot;
-
 		/* All done - fill in the pcap handle */
 
 		arptype = iface_get_arptype(sock_fd, device, ebuf);
 		if (arptype == -1)
 			break;
 
+		/* Save the socket FD in the pcap structure */
+
+		handle->fd 	 = sock_fd;
+
 		/*
 		 * Default value for offset to align link-layer payload
 		 * on a 4-byte boundary.
 		 */
 		handle->offset	 = 0;
-
-		handle->fd 	 = sock_fd;
 
 		/*
 		 * XXX - handle ISDN types here?  We can't fall back on
@@ -1254,57 +1301,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 				 "interface type of %s not supported", device);
 			break;
 		}
-		handle->buffer	 = malloc(handle->bufsize + handle->offset);
-		if (!handle->buffer) {
-		        snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				 "malloc: %s", pcap_strerror(errno));
-			break;
-		}
 
-		/*
-		 * This might be a 2.0[.x] kernel - check.
-		 */
-		if (uname(&utsname) < 0 ||
-		    strncmp(utsname.release, "2.0", 3) == 0) {
-			/*
-			 * Either we couldn't find out what kernel release
-			 * this is, or it's a 2.0[.x] kernel.
-			 *
-			 * In the 2.0[.x] kernel, a "recvfrom()" on
-			 * a SOCK_PACKET socket, with MSG_TRUNC set, will
-			 * return the number of bytes read, so if we pass
-			 * a length based on the snapshot length, it'll
-			 * return the number of bytes from the packet
-			 * copied to userland, not the actual length
-			 * of the packet.
-			 *
-			 * This means that, for example, the IP dissector
-			 * in tcpdump will get handed a packet length less
-			 * than the length in the IP header, and will
-			 * complain about "truncated-ip".
-			 *
-			 * So we don't bother trying to copy from the
-			 * kernel only the bytes in which we're interested,
-			 * but instead copy them all, just as the older
-			 * versions of libpcap for Linux did.
-			 *
-			 * Just one of many problems with packet capture
-			 * on 2.0[.x] kernels; you really want a 2.2[.x]
-			 * or later kernel if you want packet capture to
-			 * work well.
-			 */
-			handle->md.readlen = handle->bufsize;
-		} else {
-			/*
-			 * This is a 2.2[.x] or later kernel (although
-			 * why we're using SOCK_PACKET on such a system
-			 * is unknown to me).
-			 *
-			 * We can safely pass "recvfrom()" a byte count
-			 * based on the snapshot length.
-			 */
-			handle->md.readlen = handle->snapshot;
-		}
 		return 1;
 
 	} while (0);
