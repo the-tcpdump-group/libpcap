@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.152 2001-05-10 14:48:01 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.153 2001-05-30 01:27:21 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2365,6 +2365,7 @@ lookup_proto(name, proto)
 
 	case Q_DEFAULT:
 	case Q_IP:
+	case Q_IPV6:
 		v = pcap_nametoproto(name);
 		if (v == PROTO_UNDEF)
 			bpf_error("unknown ip proto '%s'", name);

@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.77 2001-05-10 14:48:03 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.78 2001-05-30 01:27:22 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -179,8 +179,20 @@ igrp		return IGRP;
 pim		return PIM;
 vrrp		return VRRP;
 
-ip6		return IPV6;
-icmp6		return ICMPV6;
+ip6		{
+#ifdef INET6
+		return IPV6;
+#else
+		bpf_error("%s not supported", yytext);
+#endif
+		}
+icmp6		{
+#ifdef INET6
+		return ICMPV6;
+#else
+		bpf_error("%s not supported", yytext);
+#endif
+		}
 ah		return AH;
 esp		return ESP;
 
