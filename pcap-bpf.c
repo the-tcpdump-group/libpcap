@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.76 2004-03-24 19:52:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.77 2004-03-31 01:03:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -780,9 +780,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 *
 	 * If that bug gets fixed at some point in the future, we could,
 	 * on OS X, do a "uname()" call to see whether we're on a version
-	 * of OS X without the bug and, if so, make the call.  (It'd be
-	 * nice if we could somehow determine whether you're running
-	 * on an OS X with one of Jeff's patches to fix that problem....)
+	 * of OS X without the bug and, if so, make the call.  Or we could
+	 * make the call unconditionally and, in the inject routine,
+	 * if the write fails with EAFNOSUPPORT or EPFNOSUPPORT (whichever
+	 * is the error we get if the flag is set), turn the flag off
+	 * and try again.
 	 *
 	 * XXX - I seem to remember some packet-sending bug in some
 	 * BSDs - check CVS log for "bpf.c"?
