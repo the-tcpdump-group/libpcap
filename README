@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.18.1.1.2.1 2000-06-11 16:39:20 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.18.1.1.2.2 2000-07-13 05:46:33 gharris Exp $ (LBL)
 
 LIBPCAP 0.5
 Now maintained by "The Tcpdump Group"
@@ -43,7 +43,13 @@ to Ultrix using the kernel source and/or object patches available in:
 
 	ftp://gatekeeper.dec.com/pub/DEC/net/bpfext42.tar.Z.
 
-Problems, bugs, questions, desirable enhancements, source code
-contributions, etc., should be sent to the email address
-"patches@tcpdump.org".
+Problems, bugs, questions, desirable enhancements, etc. 
+should be sent to the address "tcpdump-workers@tcpdump.org"
+
+Source code contributions, etc., should be sent to the email address 
+"patches@tcpdump.org"
+
+Current versions can be found at www.tcpdump.org
+
+ - The TCPdump team
 
