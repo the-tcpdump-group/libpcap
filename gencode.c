@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.211 2004-11-06 22:45:17 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.212 2004-11-06 22:57:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -578,15 +578,15 @@ gen_ncmp(datasize, offset, mask, jtype, jvalue, reverse)
 {
 	struct slist *s;
 	struct block *b;
- 
+
 	s = new_stmt(BPF_LD|datasize|BPF_ABS);
 	s->s.k = offset;
- 
+
 	if (mask != 0xffffffff) {
 		s->next = new_stmt(BPF_ALU|BPF_AND|BPF_K);
 		s->next->s.k = mask;
 	}
- 
+
 	b = new_block(JMP(jtype));
 	b->stmts = s;
 	b->s.k = jvalue;
@@ -751,7 +751,7 @@ init_linktype(type)
 		return;
 
 	case DLT_PPP:
-        case DLT_PPP_WITHDIRECTION:
+	case DLT_PPP_WITHDIRECTION:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		off_linktype = 2;
@@ -924,7 +924,7 @@ init_linktype(type)
 		off_vpi = SUNATM_VPI_POS;
 		off_vci = SUNATM_VCI_POS;
 		off_proto = PROTO_POS;
-		off_mac = -1;	/* LLC-encapsulated, so no MAC-layer header */	
+		off_mac = -1;	/* LLC-encapsulated, so no MAC-layer header */
 		off_payload = SUNATM_PKT_BEGIN_POS;
 		off_linktype = off_payload;
 		off_nl = off_payload+8;		/* 802.2+SNAP */
@@ -1018,13 +1018,13 @@ init_linktype(type)
 		return;
 
 	case DLT_JUNIPER_ATM1:
-                off_linktype = 4; /* in reality variable between 4-8 */
+		off_linktype = 4; /* in reality variable between 4-8 */
 		off_nl = 4;
 		off_nl_nosnap = 14;
 		return;
 
 	case DLT_JUNIPER_ATM2:
-                off_linktype = 8; /* in reality variable between 8-12 */
+		off_linktype = 8; /* in reality variable between 8-12 */
 		off_nl = 8;
 		off_nl_nosnap = 18;
 		return;
@@ -1279,7 +1279,7 @@ gen_linux_sll_linktype(proto)
 		/*
 		 * OSI protocols always use 802.2 encapsulation.
 		 * XXX - should we check both the DSAP and the
-		 * LSAP, like this, or should we check just the
+		 * SSAP, like this, or should we check just the
 		 * DSAP?
 		 */
 		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
@@ -1529,7 +1529,7 @@ gen_linktype(proto)
 		break;
 
 	case DLT_PPP:
-        case DLT_PPP_WITHDIRECTION:
+	case DLT_PPP_WITHDIRECTION:
 	case DLT_PPP_SERIAL:
 	case DLT_PPP_ETHER:
 		/*
@@ -1734,7 +1734,7 @@ gen_linktype(proto)
 #endif /* INET6 */
 
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(off_linktype, BPF_B, 
+			b0 = gen_cmp(off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_IP);
 			b1 = gen_cmp(off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_IP_OLD);
@@ -1744,7 +1744,7 @@ gen_linktype(proto)
 		case ETHERTYPE_ARP:
 			b0 = gen_cmp(off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_ARP);
-			b1 = gen_cmp(off_linktype, BPF_B, 
+			b1 = gen_cmp(off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_ARP_OLD);
 			gen_or(b0, b1);
 			return (b1);
@@ -1816,22 +1816,22 @@ gen_linktype(proto)
 		/*NOTREACHED*/
 		break;
 
-        case DLT_JUNIPER_ATM1:
-        case DLT_JUNIPER_ATM2:
-            /* just lets verify the magic number for now - 
-             * we may have upto 6 different encapsulations on the wire
-             * and need a lot of heuristics to figure out that the payload
-             * might be;
-             *
-             * FIXME encapsulation specific BPF_ filters
-             */
-            return gen_mcmp(0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
+	case DLT_JUNIPER_ATM1:
+	case DLT_JUNIPER_ATM2:
+		/* just lets verify the magic number for now -
+		 * we may have up to 6 different encapsulations on the wire
+		 * and need a lot of heuristics to figure out that the payload
+		 * might be;
+		 *
+		 * FIXME encapsulation specific BPF_ filters
+		 */
+		return gen_mcmp(0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
 
 	case DLT_LINUX_IRDA:
-	        bpf_error("IrDA link-layer type filtering not implemented");
+		bpf_error("IrDA link-layer type filtering not implemented");
 
 	case DLT_DOCSIS:
-	        bpf_error("DOCSIS link-layer type filtering not implemented");
+		bpf_error("DOCSIS link-layer type filtering not implemented");
 	}
 
 	/*
@@ -2566,7 +2566,7 @@ gen_dnhostop(addr, dir, base_off)
 		return b1;
 
 	case Q_ISO:
-	        bpf_error("ISO host filtering not implemented");
+		bpf_error("ISO host filtering not implemented");
 
 	default:
 		abort();
@@ -3040,91 +3040,91 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_ISO:
-	        b1 = gen_linktype(LLCSAP_ISONS);
+		b1 = gen_linktype(LLCSAP_ISONS);
 		break;
 
 	case Q_ESIS:
-	        b1 = gen_proto(ISO9542_ESIS, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(ISO9542_ESIS, Q_ISO, Q_DEFAULT);
 		break;
 
 	case Q_ISIS:
-	        b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
 		break;
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
-	        b0 = gen_proto(ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		b0 = gen_proto(ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_L2: /* all IS-IS Level2 PDU-Types */
-	        b0 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		b0 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_IIH: /* all IS-IS Hello PDU-Types */
-	        b0 = gen_proto(ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT);                
+		b0 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
-	case Q_ISIS_LSP: 
-	        b0 = gen_proto(ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+	case Q_ISIS_LSP:
+		b0 = gen_proto(ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_SNP:
-	        b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
-	        b0 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_CSNP:
-	        b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_PSNP:
-	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
-	        b1 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b1 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 		break;
 
 	case Q_CLNP:
-	        b1 = gen_proto(ISO8473_CLNP, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(ISO8473_CLNP, Q_ISO, Q_DEFAULT);
 		break;
 
 	case Q_STP:
-	        b1 = gen_linktype(LLCSAP_8021D);
+		b1 = gen_linktype(LLCSAP_8021D);
 		break;
 
 	case Q_IPX:
-	        b1 = gen_linktype(LLCSAP_IPX);
+		b1 = gen_linktype(LLCSAP_IPX);
 		break;
 
 	case Q_NETBEUI:
-	        b1 = gen_linktype(LLCSAP_NETBEUI);
+		b1 = gen_linktype(LLCSAP_NETBEUI);
 		break;
 
 	default:
@@ -5102,28 +5102,28 @@ gen_inbound(dir)
 		    (bpf_int32)((dir == 0) ? PF_IN : PF_OUT));
 		break;
 
-        case DLT_PPP_WITHDIRECTION:
-                if (dir) {
-                    /* match outgoing packets */
-                    b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_OUT);
-                } else {
-                    /* match incoming packets */
-                    b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_IN);
-                }
-                break;
+	case DLT_PPP_WITHDIRECTION:
+		if (dir) {
+			/* match outgoing packets */
+			b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_OUT);
+		} else {
+			/* match incoming packets */
+			b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_IN);
+		}
+		break;
 
-        case DLT_JUNIPER_ATM1:
-        case DLT_JUNIPER_ATM2:
-                /* juniper flags (including direction) are stored
-                 * the byte after the 3-byte magic number */
-                if (dir) {
-                    /* match outgoing packets */
-                    b0 = gen_mcmp(3, BPF_B, 0, 0x01);
-                } else {
-                    /* match incoming packets */
-                    b0 = gen_mcmp(3, BPF_B, 1, 0x01);
-                }
-            break;
+	case DLT_JUNIPER_ATM1:
+	case DLT_JUNIPER_ATM2:
+		/* juniper flags (including direction) are stored
+		 * the byte after the 3-byte magic number */
+		if (dir) {
+			/* match outgoing packets */
+			b0 = gen_mcmp(3, BPF_B, 0, 0x01);
+		} else {
+			/* match incoming packets */
+			b0 = gen_mcmp(3, BPF_B, 1, 0x01);
+		}
+	    break;
 
 	default:
 		bpf_error("inbound/outbound not supported on linktype %d",
@@ -5361,29 +5361,29 @@ gen_mpls(label_num)
 			off_linktype = 16;
 			off_nl_nosnap = 18;
 			off_nl = 18;
-                        
-                        b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
+
+			b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
 			break;
 
 		case DLT_PPP:
 			off_linktype = 6;
 			off_nl_nosnap = 8;
 			off_nl = 8;
-                        
-                        b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)PPP_MPLS_UCAST);
+
+			b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)PPP_MPLS_UCAST);
 			break;
 
-                case DLT_C_HDLC:
-                        off_linktype = 6;
+		case DLT_C_HDLC:
+			off_linktype = 6;
 			off_nl_nosnap = 8;
 			off_nl = 8;
-                        
-                        b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
-                        break;
 
-                        /* FIXME add other DLT_s ...
-                         * for Frame-Relay/and ATM this may get messy due to SNAP headers
-                         * leave it for now */
+			b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
+			break;
+
+			/* FIXME add other DLT_s ...
+			 * for Frame-Relay/and ATM this may get messy due to SNAP headers
+			 * leave it for now */
 
 		default:
 			bpf_error("no MPLS support for data link type %d",
@@ -5399,7 +5399,7 @@ gen_mpls(label_num)
 	if (label_num >= 0) {
 		struct block *b1;
 
-                label_num = label_num << 12; /* label is shifted 12 bits on the wire */
+		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(orig_nl, BPF_W, (bpf_int32)label_num, 0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
@@ -5585,15 +5585,15 @@ gen_msg_abbrev(type)
 		break;
 
 	case A_CALLPROCEED:
-		b1 = gen_atmfield_code(A_MSGTYPE, CALL_PROCEED, BPF_JEQ, 0); 
+		b1 = gen_atmfield_code(A_MSGTYPE, CALL_PROCEED, BPF_JEQ, 0);
 		break;
 
 	case A_CONNECT:
 		b1 = gen_atmfield_code(A_MSGTYPE, CONNECT, BPF_JEQ, 0);
-		break;		       
+		break;
 
 	case A_CONNECTACK:
-		b1 = gen_atmfield_code(A_MSGTYPE, CONNECT_ACK, BPF_JEQ, 0);  
+		b1 = gen_atmfield_code(A_MSGTYPE, CONNECT_ACK, BPF_JEQ, 0);
 		break;
 
 	case A_RELEASE:
@@ -5601,7 +5601,7 @@ gen_msg_abbrev(type)
 		break;
 
 	case A_RELEASE_DONE:
-		b1 = gen_atmfield_code(A_MSGTYPE, RELEASE_DONE, BPF_JEQ, 0);  
+		b1 = gen_atmfield_code(A_MSGTYPE, RELEASE_DONE, BPF_JEQ, 0);
 		break;
 
 	default:
@@ -5628,9 +5628,9 @@ gen_atmmulti_abbrev(type)
 		if (!is_atm)
 			bpf_error("'oamf4' supported only on raw ATM");
 		/* OAM F4 type */
-		b0 = gen_atmfield_code(A_VCI, 3, BPF_JEQ, 0); 
+		b0 = gen_atmfield_code(A_VCI, 3, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(A_VCI, 4, BPF_JEQ, 0);
-		gen_or(b0, b1); 
+		gen_or(b0, b1);
 		b0 = gen_atmfield_code(A_VPI, 0, BPF_JEQ, 0);
 		gen_and(b0, b1);
 		break;
