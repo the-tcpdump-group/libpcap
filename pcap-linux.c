@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.83 2002-07-11 09:06:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.84 2002-07-12 07:51:15 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -744,7 +744,7 @@ static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	if (pcap_add_if(&devlist, "any", 0, any_descr, errbuf) < 0)
+	if (pcap_add_if(alldevsp, "any", 0, any_descr, errbuf) < 0)
 		return (-1);
 
 	return (0);
