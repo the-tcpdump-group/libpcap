@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.85 
+# From configure.in Revision: 1.86 
 
 
 
@@ -1897,16 +1897,12 @@ solaris*)
 EOF
 
 	;;
-
-linux*)
-	V_INCLS="$V_INCLS -Ilinux-include"
-	;;
 esac
 
 # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1910: checking for $ac_word" >&5
+echo "configure:1906: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1974,12 +1970,12 @@ EOF
     fi
 
 echo $ac_n "checking if sockaddr struct has sa_len member""... $ac_c" 1>&6
-echo "configure:1978: checking if sockaddr struct has sa_len member" >&5
+echo "configure:1974: checking if sockaddr struct has sa_len member" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_sockaddr_has_sa_len'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1983 "configure"
+#line 1979 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -1988,7 +1984,7 @@ int main() {
 u_int i = sizeof(((struct sockaddr *)0)->sa_len)
 ; return 0; }
 EOF
-if { (eval echo configure:1992: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1988: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_sockaddr_has_sa_len=yes
 else
@@ -2009,12 +2005,12 @@ EOF
     fi
 
 echo $ac_n "checking if dl_hp_ppa_info_t struct has dl_module_id_1 member""... $ac_c" 1>&6
-echo "configure:2013: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
+echo "configure:2009: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2018 "configure"
+#line 2014 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2024,7 +2020,7 @@ int main() {
 u_int i = sizeof(((dl_hp_ppa_info_t *)0)->dl_module_id_1)
 ; return 0; }
 EOF
-if { (eval echo configure:2028: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2024: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=yes
 else
@@ -2045,7 +2041,7 @@ EOF
     fi
 
 echo $ac_n "checking if unaligned accesses fail""... $ac_c" 1>&6
-echo "configure:2049: checking if unaligned accesses fail" >&5
+echo "configure:2045: checking if unaligned accesses fail" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_unaligned_fail'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2130,7 +2126,7 @@ ln -s ${srcdir}/bpf/net net
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:2134: checking for a BSD compatible install" >&5
+echo "configure:2130: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
