@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.88 2004-10-19 07:06:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.89 2004-12-15 00:05:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -182,10 +182,6 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		inc = ENALIGN(buflen + sp->ens_stamplen);
 		cc -= inc;
 		bp += inc;
-#ifdef PCAP_FDDIPAD
-		p += pad;
-		buflen -= pad;
-#endif
 		pc->md.TotPkts++;
 		pc->md.TotDrops += sp->ens_dropped;
 		pc->md.TotMissed = sp->ens_ifoverflows;
@@ -195,6 +191,14 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		/*
 		 * Short-circuit evaluation: if using BPF filter
 		 * in kernel, no need to do it now.
+		 *
+#ifdef PCAP_FDDIPAD
+		 * Note: the filter code was generated assuming
+		 * that pcap_fddipad was the amount of padding
+		 * before the header, as that's what's required
+		 * in the kernel, so we run the filter before
+		 * skipping that padding.
+#endif
 		 */
 		if (fcode == NULL ||
 		    bpf_filter(fcode, p, sp->ens_count, buflen)) {
@@ -205,6 +209,10 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 			h.len = sp->ens_count - pad;
 #else
 			h.len = sp->ens_count;
+#endif
+#ifdef PCAP_FDDIPAD
+			p += pad;
+			buflen -= pad;
 #endif
 			h.caplen = buflen;
 			(*callback)(user, &h, p);
