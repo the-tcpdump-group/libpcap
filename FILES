@@ -48,6 +48,7 @@ lbl/os-solaris2.h
 lbl/os-sunos4.h
 lbl/os-ultrix4.h
 llc.h
+missing/snprintf.c
 mkdep
 nametoaddr.c
 nlpid.h
@@ -81,7 +82,6 @@ rawss7.h
 savefile.c
 scanner.l
 sll.h
-snprintf.c
 sunatmpos.h
 Win32/Include/Gnuc.h
 Win32/Include/addrinfo.h
