@@ -75,6 +75,9 @@
 
 #ifndef __GLIBC__
 typedef int		socklen_t;
+#endif
+
+#ifndef MSG_TRUNC
 #define MSG_TRUNC	0
 #endif
 
