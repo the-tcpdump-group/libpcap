@@ -1,4 +1,9 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.53 2000-09-20 15:10:28 torsten Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.54 2000-12-17 15:16:50 fenner Exp $ (LBL)
+
+
+Sun Dec 17 07:14:08 PST 2000 fenner@research.att.com
+        * Updated config.guess and config.sub from
+	  ftp://ftp.gnu.org/gnu/config/
 
 Mon Sep 18 21:01:49 CEST 2000 torsten@debian.org
 	* pcap-linux.c: add support for sniffing on all devices using the
