@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.61 2002-07-11 09:06:47 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.62 2002-10-09 13:28:27 hannes Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -365,6 +365,15 @@ struct bpf_hdr {
  * pseudo-header and the form of the pseudo-header.
  */
 #define DLT_SUNATM		123	/* Solaris+SunATM */
+
+/* 
+ * Reserved as per request from Kent Dahlgren <kent@praesum.com>
+ * for private use
+ */
+
+#define DLT_RIO                 124     /* RapidIO */
+#define DLT_PCI_EXP             125     /* PCI Express */
+#define DLT_AURORA              126     /* Xilinx Aurora link layer */
 
 /*
  * The instruction encodings.
