@@ -6,6 +6,10 @@
  *
  * Rayan Zachariassen, CA*Net
  */
+#ifndef lint
+static const char rcsid[] =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.2 2000-01-10 18:42:59 fenner Exp $";
+#endif
 
 #include <sys/types.h>
 #include <sys/time.h>
