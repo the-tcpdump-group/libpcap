@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.58.2.1 2003-11-15 23:26:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.58.2.2 2004-04-30 09:07:21 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -597,9 +597,10 @@ pcap_lookupdev(errbuf)
 		ULONG NameLength = 8192;
 		static char AdaptersName[8192];
 		
-		PacketGetAdapterNames(AdaptersName,&NameLength);
-		
-		return (AdaptersName);
+		if (PacketGetAdapterNames(AdaptersName,&NameLength) )
+			return (AdaptersName);
+		else
+			return NULL;
 	} else {
 		/*
 		 * Windows NT (NT 4.0, W2K, WXP). Convert the names to UNICODE for backward compatibility
@@ -617,7 +618,15 @@ pcap_lookupdev(errbuf)
 			return NULL;
 		}
 
-		PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength);
+		if ( !PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength) )
+		{
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				"PacketGetAdapterNames: %s",
+				pcap_win32strerror());
+			free(TAdaptersName);
+			return NULL;
+		}
+
 
 		tAstr = (char*)TAdaptersName;
 		tUstr = (WCHAR*)AdaptersName;
@@ -646,6 +655,7 @@ pcap_lookupdev(errbuf)
 			tAstr += strlen(tAstr) + 1;
 		}
 
+		free(TAdaptersName);
 		return (char *)(AdaptersName);
 	}	
 }
