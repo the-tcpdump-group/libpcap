@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.71 2001-10-25 18:09:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.72 2001-12-10 05:49:40 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -627,15 +627,59 @@ pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 {
 #ifdef HAVE_TPACKET_STATS
 	struct tpacket_stats kstats;
-	socklen_t len;
+	socklen_t len = sizeof (struct tpacket_stats);
 
 	/*
 	 * Try to get the packet counts from the kernel.
 	 */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS,
 			&kstats, &len) > -1) {
-		handle->md.stat.ps_recv = (kstats.tp_packets - kstats.tp_drops);
+		/*
+		 * In "linux/net/packet/af_packet.c", at least in the
+		 * 2.4.9 kernel, "tp_packets" is incremented for every
+		 * packet that passes the packet filter *and* is
+		 * successfully queued on the socket; "tp_drops" is
+		 * incremented for every packet dropped because there's
+		 * not enough free space in the socket buffer.
+		 *
+		 * When the statistics are returned for a PACKET_STATISTICS
+		 * "getsockopt()" call, "tp_drops" is added to "tp_packets",
+		 * so that "tp_packets" counts all packets handed to
+		 * the PF_PACKET socket, including packets dropped because
+		 * there wasn't room on the socket buffer - but not
+		 * including packets that didn't pass the filter.
+		 *
+		 * In the BSD BPF, the count of received packets is
+		 * incremented for every packet handed to BPF, regardless
+		 * of whether it passed the filter.
+		 *
+		 * We can't make "pcap_stats()" work the same on both
+		 * platforms, but the best approximation is to return
+		 * "tp_packets" as the count of packets and "tp_drops"
+		 * as the count of drops.
+		 *
+		 * Note that "tp_packets" may include packets not yet
+		 * processed by libpcap; the packets may have been
+		 * queued on the socket but not read yet.  (The equivalent
+		 * may be true on other platforms.)
+		 */
+		handle->md.stat.ps_recv = kstats.tp_packets;
 		handle->md.stat.ps_drop = kstats.tp_drops;
+	}
+	else
+	{
+		/*
+		 * If the error was EOPNOTSUPP, fall through, so that
+		 * if you build the library on a system with
+		 * "struct tpacket_stats" and run it on a system
+		 * that doesn't, it works as it does if the library
+		 * is built on a system without "struct tpacket_stats".
+		 */
+		if (errno != EOPNOTSUPP) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "pcap_stats: %s", pcap_strerror(errno));
+			return -1;
+		}
 	}
 #endif
 	/*
