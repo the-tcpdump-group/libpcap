@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.84 2004-12-18 08:52:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.85 2005-04-04 08:42:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -438,10 +438,12 @@ atomdef(s)
  * Compute the sets of registers used, defined, and killed by 'b'.
  *
  * "Used" means that a statement in 'b' uses the register before any
- * statement in 'b' defines it.
+ * statement in 'b' defines it, i.e. it uses the value left in
+ * that register by a predecessor block of this block.
  * "Defined" means that a statement in 'b' defines it.
  * "Killed" means that a statement in 'b' defines it before any
- * statement in 'b' uses it.
+ * statement in 'b' uses it, i.e. it kills the value left in that
+ * register by a predecessor block of this block.
  */
 static void
 compute_local_ud(b)
