@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.46 2000-12-22 12:11:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.47 2000-12-22 12:24:20 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -410,29 +410,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			break;
 		}
 
-		/*
-		 * Map special Linux internal protocol types to
-		 * LINUX_SLL_P_ values; we want the same numerical
-		 * value to be used in the link-layer header even
-		 * if the numerical values for the ETH_P_ #defines
-		 * change, so that programs that look at the protocol
-		 * field will always be able to handle DLT_LINUX_SLL
-		 * captures.
-		 */
-		switch (ntohs(from.sll_protocol)) {
-
-		case ETH_P_802_2:
-			hdrp->sll_protocol = ntohs(LINUX_SLL_P_802_2);
-			break;
-
-		case ETH_P_802_3:
-			hdrp->sll_protocol = ntohs(LINUX_SLL_P_802_3);
-			break;
-
-		default:
-			hdrp->sll_protocol = from.sll_protocol;
-			break;
-		}
+		hdrp->sll_protocol = from.sll_protocol;
 		hdrp->sll_hatype = htons(from.sll_hatype);
 		hdrp->sll_halen = htons(from.sll_halen);
 		memcpy(hdrp->sll_addr, from.sll_addr,
