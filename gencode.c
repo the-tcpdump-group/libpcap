@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.189 2003-03-11 06:23:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.190 2003-03-28 08:09:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -4667,6 +4667,8 @@ gen_broadcast(proto)
 			return gen_thostop(ebroadcast, Q_DST);
 		if (linktype == DLT_IEEE802_11)
 			return gen_wlanhostop(ebroadcast, Q_DST);
+		if (linktype == DLT_IP_OVER_FC)
+			return gen_ipfchostop(ebroadcast, Q_DST);
 		if (linktype == DLT_SUNATM && is_lane) {
 			/*
 			 * Check that the packet doesn't begin with an
@@ -4696,7 +4698,7 @@ gen_broadcast(proto)
 		gen_and(b0, b2);
 		return b2;
 	}
-	bpf_error("only ether/ip broadcast filters supported");
+	bpf_error("only link-layer/IP broadcast filters supported");
 }
 
 /*
@@ -4874,6 +4876,11 @@ gen_multicast(proto)
 			return b0;
 		}
 
+		if (linktype == DLT_IP_OVER_FC) {
+			b0 = gen_mac_multicast(2);
+			return b0;
+		}
+
 		if (linktype == DLT_SUNATM && is_lane) {
 			/*
 			 * Check that the packet doesn't begin with an
@@ -4907,7 +4914,7 @@ gen_multicast(proto)
 		return b1;
 #endif /* INET6 */
 	}
-	bpf_error("only IP multicast filters supported on ethernet/FDDI");
+	bpf_error("link-layer multicast filters supported only on ethernet/FDDI/token ring/ARCNET/802.11/ATM LANE/Fibre Channel");
 }
 
 /*
