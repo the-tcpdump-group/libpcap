@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.45 2001-04-17 08:10:02 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.46 2001-06-05 03:09:40 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -275,6 +275,11 @@ struct bpf_hdr {
  * This is for Linux cooked sockets.
  */
 #define DLT_LINUX_SLL	113
+
+/*
+ * Apple LocalTalk hardware.
+ */
+#define DLT_LTALK	114
 
 /*
  * The instruction encodings.
