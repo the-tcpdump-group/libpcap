@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.116 2004-12-15 00:25:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.117 2004-12-15 09:00:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -674,6 +674,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 {
 	register pcap_t *p;
 	struct pcap_file_header hdr;
+	size_t amt_read;
 	bpf_u_int32 magic;
 	int linklen;
 
@@ -685,9 +686,17 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 
 	memset((char *)p, 0, sizeof(*p));
 
-	if (fread((char *)&hdr, sizeof(hdr), 1, fp) != 1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "fread: %s",
-		    pcap_strerror(errno));
+	amt_read = fread((char *)&hdr, 1, sizeof(hdr), fp);
+	if (amt_read != sizeof(hdr)) {
+		if (ferror(fp)) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "error reading dump file: %s",
+			    pcap_strerror(errno));
+		} else {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
+			    sizeof(hdr), (unsigned long)amt_read);
+		}
 		goto bad;
 	}
 	magic = hdr.magic;
