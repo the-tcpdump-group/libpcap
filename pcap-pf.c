@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.64 2001-07-29 01:22:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.65 2001-12-10 07:14:19 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -196,16 +196,40 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
 
 	/*
-	 * "ps_recv" counts only packets that passed the filter.
+	 * If packet filtering is being done in the kernel:
 	 *
-	 * "ps_drop" counts packets that passed the kernel filter
-	 * (if any) but were dropped because the input queue was
-	 * full.  It counts packets regardless of whether they would
-	 * have passed a userland filter.
+	 *	"ps_recv" counts only packets that passed the filter.
+	 *	This does not include packets dropped because we
+	 *	ran out of buffer space.  (XXX - perhaps it should,
+	 *	by adding "ps_drop" to "ps_recv", for compatibility
+	 *	with some other platforms.  On the other hand, on
+	 *	some platforms "ps_recv" counts only packets that
+	 *	passed the filter, and on others it counts packets
+	 *	that didn't pass the filter....)
 	 *
-	 * "ps_ifdrop" counts packets dropped by the network
-	 * inteface (regardless of whether they would have passed
-	 * the input filter, of course).
+	 *	"ps_drop" counts packets that passed the kernel filter
+	 *	(if any) but were dropped because the input queue was
+	 *	full.
+	 *
+	 *	"ps_ifdrop" counts packets dropped by the network
+	 *	inteface (regardless of whether they would have passed
+	 *	the input filter, of course).
+	 *
+	 * If packet filtering is not being done in the kernel:
+	 *
+	 *	"ps_recv" counts only packets that passed the filter.
+	 *
+	 *	"ps_drop" counts packets that were dropped because the
+	 *	input queue was full, regardless of whether they passed
+	 *	the userland filter.
+	 *
+	 *	"ps_ifdrop" counts packets dropped by the network
+	 *	inteface (regardless of whether they would have passed
+	 *	the input filter, of course).
+	 *
+	 * These statistics don't include packets not yet read from
+	 * the kernel by libpcap, but they may include packets not
+	 * yet read from libpcap by the application.
 	 */
 	ps->ps_recv = p->md.TotAccepted;
 	ps->ps_drop = p->md.TotDrops;

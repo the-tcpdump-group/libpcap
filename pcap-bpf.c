@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.47 2001-11-17 21:24:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.48 2001-12-10 07:14:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -69,12 +69,16 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
-	 * that passed the filter.
+	 * that passed the filter.  This includes packets later dropped
+	 * because we ran out of buffer space.
 	 *
 	 * "ps_drop" counts packets dropped inside the BPF device
 	 * because we ran out of buffer space.  It doesn't count
 	 * packets dropped by the interface driver.  It counts
 	 * only packets that passed the filter.
+	 *
+	 * Both statistics include packets not yet read from the kernel
+	 * by libpcap, and thus not yet seen by the application.
 	 */
 	if (ioctl(p->fd, BIOCGSTATS, (caddr_t)&s) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGSTATS: %s",

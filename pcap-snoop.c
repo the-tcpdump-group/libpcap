@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.32 2001-07-29 01:22:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.33 2001-12-10 07:14:21 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -134,6 +134,8 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 
 	/*
 	 * "ps_recv" counts only packets that passed the filter.
+	 * As filtering is done in userland, this does not include
+	 * packets dropped because we ran out of buffer space.
 	 */
 	*ps = p->md.stat;
 	return (0);

@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.72 2001-12-10 05:49:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.73 2001-12-10 07:14:16 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -657,11 +657,6 @@ pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 		 * platforms, but the best approximation is to return
 		 * "tp_packets" as the count of packets and "tp_drops"
 		 * as the count of drops.
-		 *
-		 * Note that "tp_packets" may include packets not yet
-		 * processed by libpcap; the packets may have been
-		 * queued on the socket but not read yet.  (The equivalent
-		 * may be true on other platforms.)
 		 */
 		handle->md.stat.ps_recv = kstats.tp_packets;
 		handle->md.stat.ps_drop = kstats.tp_drops;
@@ -683,10 +678,33 @@ pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 	}
 #endif
 	/*
-	 * "ps_recv" counts only packets that passed the filter.
+	 * On systems where the PACKET_STATISTICS "getsockopt()" argument
+	 * is supported on PF_PACKET sockets:
 	 *
-	 * "ps_drop" is maintained only on systems that support
-	 * the PACKET_STATISTICS "getsockopt()" argument.
+	 *	"ps_recv" counts only packets that *passed* the filter,
+	 *	not packets that didn't pass the filter.  This includes
+	 *	packets later dropped because we ran out of buffer space.
+	 *
+	 *	"ps_drop" counts packets dropped because we ran out of
+	 *	buffer space.  It doesn't count packets dropped by the
+	 *	interface driver.  It counts only packets that passed
+	 *	the filter.
+	 *
+	 *	Both statistics include packets not yet read from the
+	 *	kernel by libpcap, and thus not yet seen by the application.
+	 *
+	 * On systems where the PACKET_STATISTICS "getsockopt()" argument
+	 * is not supported on PF_PACKET sockets:
+	 *
+	 *	"ps_recv" counts only packets that *passed* the filter,
+	 *	not packets that didn't pass the filter.  It does not
+	 *	count packets dropped because we ran out of buffer
+	 *	space.
+	 *
+	 *	"ps_drop" is not supported.
+	 *
+	 *	"ps_recv" doesn't include packets not yet read from
+	 *	the kernel by libpcap.
 	 */
 	*stats = handle->md.stat;
 	return 0;

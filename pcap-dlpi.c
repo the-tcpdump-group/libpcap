@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.73 2001-11-17 21:07:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.74 2001-12-10 07:14:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -130,7 +130,9 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
-	 * that passed the filter.
+	 * that passed the filter.  As filtering is done in userland,
+	 * this does not include packets dropped because we ran out
+	 * of buffer space.
 	 *
 	 * "ps_drop" counts packets dropped inside the DLPI service
 	 * provider device device because of flow control requirements
@@ -138,6 +140,10 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	 * the interface driver, or packets dropped upstream.  As
 	 * filtering is done in userland, it counts packets regardless
 	 * of whether they would've passed the filter.
+	 *
+	 * These statistics don't include packets not yet read from
+	 * the kernel by libpcap, but they may include packets not
+	 * yet read from libpcap by the application.
 	 */
 	*ps = p->md.stat;
 	return (0);
