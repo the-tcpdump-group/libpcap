@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.32 2000-10-18 08:32:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.33 2000-10-18 23:47:41 torsten Exp $ (LBL)";
 #endif
 
 /*
@@ -241,8 +241,11 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 		 */
 		FD_ZERO(&read_fds);
 		FD_SET(handle->fd, &read_fds);
-		status = select(handle->fd + 1, 
-				&read_fds, NULL, NULL, &tv);
+		do {
+			status = select(handle->fd + 1, 
+					&read_fds, NULL, NULL, &tv);
+		} while (status == -1 && errno == EINTR);
+
 		if (status == -1) {
 			snprintf(handle->errbuf, sizeof(handle->errbuf),
 				 "select: %s", pcap_strerror(errno));
