@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.135 2000-10-30 06:06:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.136 2000-11-09 06:20:05 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1857,7 +1857,6 @@ gen_protochain(v, proto, dir)
 	int fix2, fix3, fix4, fix5;
 	int ahcheck, again, end;
 	int i, max;
-	int reg1 = alloc_reg();
 	int reg2 = alloc_reg();
 
 	memset(s, 0, sizeof(s));
@@ -1979,15 +1978,22 @@ gen_protochain(v, proto, dir)
 
 		/*
 		 * in short,
-		 * A = P[X + 1];
-		 * X = X + (P[X] + 1) * 8;
+		 * A = P[X];
+		 * X = X + (P[X + 1] + 1) * 8;
 		 */
 		/* A = X */
 		s[i] = new_stmt(BPF_MISC|BPF_TXA);
 		i++;
-		/* MEM[reg1] = A */
+		/* A = P[X + packet head] */
+		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
+		s[i]->s.k = off_nl;
+		i++;
+		/* MEM[reg2] = A */
 		s[i] = new_stmt(BPF_ST);
-		s[i]->s.k = reg1;
+		s[i]->s.k = reg2;
+		i++;
+		/* A = X */
+		s[i] = new_stmt(BPF_MISC|BPF_TXA);
 		i++;
 		/* A += 1 */
 		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
@@ -1997,18 +2003,6 @@ gen_protochain(v, proto, dir)
 		s[i] = new_stmt(BPF_MISC|BPF_TAX);
 		i++;
 		/* A = P[X + packet head]; */
-		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = off_nl;
-		i++;
-		/* MEM[reg2] = A */
-		s[i] = new_stmt(BPF_ST);
-		s[i]->s.k = reg2;
-		i++;
-		/* X = MEM[reg1] */
-		s[i] = new_stmt(BPF_LDX|BPF_MEM);
-		s[i]->s.k = reg1;
-		i++;
-		/* A = P[X + packet head] */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
 		s[i]->s.k = off_nl;
 		i++;
@@ -2061,22 +2055,11 @@ gen_protochain(v, proto, dir)
 
 	/*
 	 * in short,
-	 * A = P[X + 1];
-	 * X = X + (P[X] + 2) * 4;
+	 * A = P[X];
+	 * X = X + (P[X + 1] + 2) * 4;
 	 */
 	/* A = X */
 	s[i - 1]->s.jt = s[i] = new_stmt(BPF_MISC|BPF_TXA);
-	i++;
-	/* MEM[reg1] = A */
-	s[i] = new_stmt(BPF_ST);
-	s[i]->s.k = reg1;
-	i++;
-	/* A += 1 */
-	s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
-	s[i]->s.k = 1;
-	i++;
-	/* X = A */
-	s[i] = new_stmt(BPF_MISC|BPF_TAX);
 	i++;
 	/* A = P[X + packet head]; */
 	s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
@@ -2086,9 +2069,15 @@ gen_protochain(v, proto, dir)
 	s[i] = new_stmt(BPF_ST);
 	s[i]->s.k = reg2;
 	i++;
-	/* X = MEM[reg1] */
-	s[i] = new_stmt(BPF_LDX|BPF_MEM);
-	s[i]->s.k = reg1;
+	/* A = X */
+	s[i - 1]->s.jt = s[i] = new_stmt(BPF_MISC|BPF_TXA);
+	i++;
+	/* A += 1 */
+	s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s[i]->s.k = 1;
+	i++;
+	/* X = A */
+	s[i] = new_stmt(BPF_MISC|BPF_TAX);
 	i++;
 	/* A = P[X + packet head] */
 	s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
@@ -2139,7 +2128,6 @@ gen_protochain(v, proto, dir)
 	b->stmts = s[1];	/*remember, s[0] is dummy*/
 	b->s.k = v;
 
-	free_reg(reg1);
 	free_reg(reg2);
 
 	gen_and(b0, b);
