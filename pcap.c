@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.32 2000-07-11 00:37:07 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.33 2000-08-13 10:33:14 torsten Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -210,7 +210,8 @@ pcap_close(pcap_t *p)
 	if (p->fd >= 0)
 		close(p->fd);
 	if (p->sf.rfile != NULL) {
-		(void)fclose(p->sf.rfile);
+		if (p->sf.rfile != stdin)
+			(void)fclose(p->sf.rfile);
 		if (p->sf.base != NULL)
 			free(p->sf.base);
 	} else if (p->buffer != NULL)
