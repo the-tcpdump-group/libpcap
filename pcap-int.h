@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.21 2000-05-04 13:34:24 itojun Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.22 2000-06-08 06:40:10 torsten Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -52,16 +52,17 @@ struct pcap_sf {
 struct pcap_md {
 	struct pcap_stat stat;
 	/*XXX*/
-	int use_bpf;
+	int use_bpf;		/* using kernel filter */
 	u_long	TotPkts;	/* can't oflow for 79 hrs on ether */
 	u_long	TotAccepted;	/* count accepted by filter */
 	u_long	TotDrops;	/* count of dropped packets */
 	long	TotMissed;	/* missed by i/f during this run */
 	long	OrigMissed;	/* missed by i/f before this run */
 #ifdef linux
-	int pad;
-	int skip;
-	char *device;
+	int	sock_packet;	/* using Linux 2.0 compatible interface */
+	int	timeout;	/* timeout specified to pcap_open_live */
+	int	promisc;	/* running in promiscuous mode */
+	char 	*device;	/* device name */
 #endif
 };
 

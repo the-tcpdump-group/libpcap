@@ -1,4 +1,7 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.50 2000-04-27 09:37:47 itojun Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.51 2000-06-08 06:40:09 torsten Exp $ (LBL)
+
+Thu Jun  8 08:37:09 CEST 2000 torsten@debian.org
+        * merged the Linux v2.2 packet support into the main trunk
 
 Thu Apr 27 18:49:57 JST 2000  itojun@iijlab.net
 	* avoid use of sprintf() and other unbounded string operations.
