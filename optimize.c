@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76.2.1 2003-11-15 23:26:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76.2.2 2003-12-22 00:04:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -664,7 +664,7 @@ opt_peep(b)
 		return;
 
 	last = s;
-	for (/*empty*/; /*empty*/; s = next) {
+	while (1) {
 		s = this_op(s);
 		if (s == 0)
 			break;
@@ -707,23 +707,23 @@ opt_peep(b)
 			 * any local dependencies.
 			 */
 			if (ATOMELEM(b->out_use, X_ATOM))
-				continue;
+				break;
 
 			if (next->s.code != (BPF_LDX|BPF_MSH|BPF_B))
 				add = next;
 			else
 				add = this_op(next->next);
 			if (add == 0 || add->s.code != (BPF_ALU|BPF_ADD|BPF_X))
-				continue;
+				break;
 
 			tax = this_op(add->next);
 			if (tax == 0 || tax->s.code != (BPF_MISC|BPF_TAX))
-				continue;
+				break;
 
 			ild = this_op(tax->next);
 			if (ild == 0 || BPF_CLASS(ild->s.code) != BPF_LD ||
 			    BPF_MODE(ild->s.code) != BPF_IND)
-				continue;
+				break;
 			/*
 			 * XXX We need to check that X is not
 			 * subsequently used.  We know we can eliminate the
@@ -753,45 +753,57 @@ opt_peep(b)
 			tax->s.code = NOP;
 			done = 0;
 		}
+		s = next;
 	}
 	/*
 	 * If we have a subtract to do a comparison, and the X register
 	 * is a known constant, we can merge this value into the
 	 * comparison.
 	 */
-	if (BPF_OP(b->s.code) == BPF_JEQ) {
-		if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X) &&
-		    !ATOMELEM(b->out_use, A_ATOM)) {
-			val = b->val[X_ATOM];
-			if (vmap[val].is_const) {
-				/*
-				 * sub x  ->	nop
-				 * jeq #y	jeq #(x+y)
-				 */
-				b->s.k += vmap[val].const_val;
-				last->s.code = NOP;
-				done = 0;
-			} else if (b->s.k == 0) {
-				/*
-				 * sub #x  ->	nop
-				 * jeq #0	jeq #x
-				 */
-				last->s.code = NOP;
-				b->s.code = BPF_CLASS(b->s.code) |
-					BPF_OP(b->s.code) | BPF_X;
-				done = 0;
-			}
-		}
-		/*
-		 * Likewise, a constant subtract can be simplified.
-		 */
-		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K) &&
-			 !ATOMELEM(b->out_use, A_ATOM)) {
+	if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X) &&
+	    !ATOMELEM(b->out_use, A_ATOM)) {
+		val = b->val[X_ATOM];
+		if (vmap[val].is_const) {
+			int op;
 
+			b->s.k += vmap[val].const_val;
+			op = BPF_OP(b->s.code);
+			if (op == BPF_JGT || op == BPF_JGE) {
+				struct block *t = JT(b);
+				JT(b) = JF(b);
+				JF(b) = t;
+				b->s.k += 0x80000000;
+			}
 			last->s.code = NOP;
-			b->s.k += last->s.k;
+			done = 0;
+		} else if (b->s.k == 0) {
+			/*
+			 * sub x  ->	nop
+			 * j  #0	j  x
+			 */
+			last->s.code = NOP;
+			b->s.code = BPF_CLASS(b->s.code) | BPF_OP(b->s.code) |
+				BPF_X;
 			done = 0;
 		}
+	}
+	/*
+	 * Likewise, a constant subtract can be simplified.
+	 */
+	else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K) &&
+		 !ATOMELEM(b->out_use, A_ATOM)) {
+		int op;
+
+		b->s.k += last->s.k;
+		last->s.code = NOP;
+		op = BPF_OP(b->s.code);
+		if (op == BPF_JGT || op == BPF_JGE) {
+			struct block *t = JT(b);
+			JT(b) = JF(b);
+			JF(b) = t;
+			b->s.k += 0x80000000;
+		}
+		done = 0;
 	}
 	/*
 	 * and #k	nop
@@ -984,17 +996,18 @@ opt_stmt(s, val, alter)
 		 * that is 0, and simplify.  This may not seem like
 		 * much of a simplification but it could open up further
 		 * optimizations.
-		 * XXX We could also check for mul by 1, etc.
+		 * XXX We could also check for mul by 1, and -1, etc.
 		 */
 		if (alter && vmap[val[A_ATOM]].is_const
 		    && vmap[val[A_ATOM]].const_val == 0) {
-			if (op == BPF_ADD || op == BPF_OR) {
+			if (op == BPF_ADD || op == BPF_OR ||
+			    op == BPF_LSH || op == BPF_RSH || op == BPF_SUB) {
 				s->code = BPF_MISC|BPF_TXA;
 				vstore(s, &val[A_ATOM], val[X_ATOM], alter);
 				break;
 			}
 			else if (op == BPF_MUL || op == BPF_DIV ||
-				 op == BPF_AND || op == BPF_LSH || op == BPF_RSH) {
+				 op == BPF_AND) {
 				s->code = BPF_LD|BPF_IMM;
 				s->k = 0;
 				vstore(s, &val[A_ATOM], K(s->k), alter);
