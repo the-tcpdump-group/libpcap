@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.110 2004-09-28 01:09:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.111 2004-10-20 14:28:49 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -340,6 +340,15 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_PPP_WITHDIRECTION 166
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>.  The DLT_s are used
+ * for passing on chassis-internal metainformation such as
+ * QOS profiles, cookies, etc..
+ */
+#define LINKTYPE_JUNIPER_PPPOE     167
+#define LINKTYPE_JUNIPER_PPPOE_ATM 168
+
 
 static struct linktype_map {
 	int	dlt;
@@ -507,6 +516,10 @@ static struct linktype_map {
 
         /* PPP with direction flag in the PPP header */
         { DLT_PPP_WITHDIRECTION,LINKTYPE_PPP_WITHDIRECTION},
+
+	/* Juniper-internal chassis encapsulation */
+        { DLT_JUNIPER_PPPOE,    LINKTYPE_JUNIPER_PPPOE },
+        { DLT_JUNIPER_PPPOE_ATM,LINKTYPE_JUNIPER_PPPOE_ATM },
 
 	{ -1,			-1 }
 };

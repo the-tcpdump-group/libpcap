@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.22 2004-08-18 14:25:01 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.23 2004-10-20 14:28:49 hannes Exp $ (LBL)
  */
 
 /*
@@ -515,6 +515,15 @@ struct bpf_version {
  * the direction 0x00 = IN, 0x01 = OUT
  */
 #define DLT_PPP_WITHDIRECTION   166
+
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>.  The DLT_s are used
+ * for passing on chassis-internal metainformation such as
+ * QOS profiles, cookies, etc..
+ */
+#define DLT_JUNIPER_PPPOE       167
+#define DLT_JUNIPER_PPPOE_ATM   168
 
 /*
  * The instruction encodings.
