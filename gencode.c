@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.133 2000-10-28 10:28:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.134 2000-10-29 05:53:21 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -59,6 +59,7 @@ struct rtentry;
 #include <sys/socket.h>
 #endif /*INET6*/
 
+#define LLC_SNAP_LSAP	0xaa
 #define LLC_ISO_LSAP	0xfe
 
 #define ETHERMTU	1500
@@ -886,9 +887,9 @@ gen_linktype(proto)
 /*
  * Check for an LLC SNAP packet with a given organization code and
  * protocol type; we check the entire contents of the 802.2 LLC and
- * snap headers, checking for a DSAP of 0xAA, an SSAP of 0xAA, and
- * a control field of 0x03 in the LLC header, and for the specified
- * organization code and protocol type in the SNAP header.
+ * snap headers, checking for DSAP and SSAP of SNAP and a control
+ * field of 0x03 in the LLC header, and for the specified organization
+ * code and protocol type in the SNAP header.
  */
 static struct block *
 gen_snap(orgcode, ptype, offset)
@@ -898,8 +899,8 @@ gen_snap(orgcode, ptype, offset)
 {
 	u_char snapblock[8];
 
-	snapblock[0] = 0xAA;	/* DSAP = SNAP */
-	snapblock[1] = 0xAA;	/* SSAP = SNAP */
+	snapblock[0] = LLC_SNAP_LSAP;	/* DSAP = SNAP */
+	snapblock[1] = LLC_SNAP_LSAP;	/* SSAP = SNAP */
 	snapblock[2] = 0x03;	/* control = UI */
 	snapblock[3] = (orgcode >> 16);	/* upper 8 bits of organization code */
 	snapblock[4] = (orgcode >> 8);	/* middle 8 bits of organization code */
