@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.65 2002-08-01 08:33:04 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.66 2002-08-06 06:27:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -154,6 +154,7 @@ static const char rcsid[] =
 #define LINKTYPE_C_HDLC		104		/* Cisco HDLC */
 #define LINKTYPE_IEEE802_11	105		/* IEEE 802.11 (wireless) */
 #define LINKTYPE_ATM_CLIP	106		/* Linux Classical IP over ATM */
+#define LINKTYPE_FRELAY		107		/* Frame Relay */
 #define LINKTYPE_LOOP		108		/* OpenBSD loopback */
 
 #define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
@@ -168,7 +169,6 @@ static const char rcsid[] =
 /*
  * These types are reserved for future use.
  */
-#define LINKTYPE_FRELAY		107		/* Frame Relay */
 #define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
@@ -177,7 +177,6 @@ static const char rcsid[] =
 #define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
-#define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
 static struct linktype_map {
 	int	dlt;
