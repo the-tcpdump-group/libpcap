@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.39 2002-08-02 03:25:32 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.40 2002-08-20 15:33:31 risso Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -114,7 +114,7 @@ struct pcap {
 	 */
 	struct bpf_program fcode;
 
-	char errbuf[PCAP_ERRBUF_SIZE];
+	char errbuf[PCAP_ERRBUF_SIZE + 1];
 };
 
 /*
