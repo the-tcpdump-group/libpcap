@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.103 2000-03-01 14:07:02 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.104 2000-04-01 11:37:45 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -1209,7 +1209,6 @@ gen_proto_abbrev(proto)
 #endif
 	case Q_IGRP:
 		b1 = gen_proto(IPPROTO_IGRP, Q_IP, Q_DEFAULT);
-		gen_and(b0, b1);
 		break;
 
 #ifndef IPPROTO_PIM
