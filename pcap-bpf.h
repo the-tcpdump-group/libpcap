@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.12 2003-12-03 21:34:21 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.13 2003-12-20 02:38:23 guy Exp $ (LBL)
  */
 
 /*
@@ -107,6 +107,14 @@ struct bpf_version {
 
 /*
  * Data-link level type codes.
+ *
+ * Do *NOT* add new values to this list without asking
+ * "tcpdump-workers@tcpdump.org" for a value.  Otherwise, you run the
+ * risk of using a value that's already being used for some other purpose,
+ * and of having tools that read libpcap-format captures not being able
+ * to handle captures with your new DLT_ value, with no hope that they
+ * will ever be changed to do so (as that would destroy their ability
+ * to read captures using that value for that other purpose).
  */
 
 /*
@@ -425,6 +433,44 @@ struct bpf_version {
  */
 #define DLT_IBM_SP		145
 #define DLT_IBM_SN		146
+
+/*
+ * Reserved for private use.  If you have some link-layer header type
+ * that you want to use within your organization, with the capture files
+ * using that link-layer header type not ever be sent outside your
+ * organization, you can use these values.
+ *
+ * No libpcap release will use these for any purpose, nor will any
+ * tcpdump release use them, either.
+ *
+ * Do *NOT* use these in capture files that you expect anybody not using
+ * your private versions of capture-file-reading tools to read; in
+ * particular, do *NOT* use them in products, otherwise you may find that
+ * people won't be able to use tcpdump, or snort, or Ethereal, or... to
+ * read capture files from your firewall/intrusion detection/traffic
+ * monitoring/etc. appliance, or whatever product uses that DLT_ value,
+ * and you may also find that the developers of those applications will
+ * not accept patches to let them read those files.
+ *
+ * Instead, ask "tcpdump-workers@tcpdump.org" for a new DLT_ value,
+ * as per the comment above.
+ */
+#define DLT_USER0		147
+#define DLT_USER1		148
+#define DLT_USER2		149
+#define DLT_USER3		150
+#define DLT_USER4		151
+#define DLT_USER5		152
+#define DLT_USER6		153
+#define DLT_USER7		154
+#define DLT_USER8		155
+#define DLT_USER9		156
+#define DLT_USER10		157
+#define DLT_USER11		158
+#define DLT_USER12		159
+#define DLT_USER13		160
+#define DLT_USER14		161
+#define DLT_USER15		162
 
 /*
  * The instruction encodings.
