@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.35 2002-09-06 21:14:46 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.36 2002-09-12 19:42:03 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -133,7 +133,12 @@ argument of "any" or
 .B NULL
 can be used to capture packets from all interfaces.
 .I snaplen
-specifies the maximum number of bytes to capture.
+specifies the maximum number of bytes to capture.  If this value is less
+than the size of a packet that is captured, only the first
+.I snaplen
+bytes of that packet will be captured and provided as packet data.  A
+value of 65535 should be sufficient, on most if not all networks, to
+capture all the data available from the packet.
 .I promisc
 specifies if the interface is to be put into promiscuous mode.
 (Note that even if this parameter is false, the interface
@@ -403,7 +408,19 @@ is larger than the maximum number of bytes to capture)
 .PP
 and a
 .I const u_char
-pointer to the packet data.
+pointer to the first
+.B caplen
+(as given in the
+.I struct pcap_pkthdr
+a pointer to which is passed to the callback routine)
+bytes of data from the packet (which won't necessarily be the entire
+packet; to capture the entire packet, you will have to provide a value
+for
+.I snaplen
+in your call to
+.B pcap_open_live()
+that is sufficiently large to get all of the packet's data - a value of
+65535 should be sufficient on most if not all networks).
 .PP
 The number of packets read is returned.
 0 is returned if no packets were read from a live capture (if, for
