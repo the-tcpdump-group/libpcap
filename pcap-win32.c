@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.2 2002-08-05 07:45:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.3 2002-11-11 10:34:06 risso Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -162,6 +162,9 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	case NdisMedium802_5:			
 		p->linktype = DLT_IEEE802;	
 	break;
+
+	case NdisMediumArcnetRaw:
+		p->linktype = DLT_ARCNET;
 
 	case NdisMediumArcnet878_2:
 		p->linktype = DLT_ARCNET;
