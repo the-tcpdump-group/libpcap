@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.61 2004-12-16 22:07:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.62 2004-12-17 20:32:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -52,7 +52,6 @@ static const char rcsid[] _U_ =
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif
-#include <sys/time.h>				/* concession to AIX */
 
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
@@ -279,7 +278,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 }
 
 int
-add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
+add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
     struct sockaddr *broadaddr, size_t broadaddr_size,
@@ -391,7 +390,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 }
 
 int
-pcap_add_if(pcap_if_t **devlist, char *name, u_int flags,
+pcap_add_if(pcap_if_t **devlist, const char *name, u_int flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
