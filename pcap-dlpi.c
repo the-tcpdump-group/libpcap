@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.58 2000-07-11 00:37:05 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.59 2000-08-13 06:56:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -908,7 +908,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	}
         if (i == ap->dl_count) {
                 snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "can't find PPA for %s", device);
+		    "can't find /dev/dlpi PPA for %s", device);
 		return (-1);
         }
         if (ip->dl_hdw_state == HDW_DEAD) {
