@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.81 2004-11-13 22:32:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.82 2004-11-14 00:28:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1195,16 +1195,23 @@ opt_blk(b, do_stmts)
 
 	/*
 	 * Initialize the atom values.
-	 * If we have no predecessors, everything is undefined.
-	 * Otherwise, we inherent our values from our predecessors.
-	 * If any register has an ambiguous value (i.e. control paths are
-	 * merging) give it the undefined value of 0.
 	 */
 	p = b->in_edges;
-	if (p == 0)
+	if (p == 0) {
+		/*
+		 * We have no predecessors, so everything is undefined
+		 * upon entry to this block.
+		 */
 		memset((char *)b->val, 0, sizeof(b->val));
-	else {
+	} else {
+		/*
+		 * Inherit values from our predecessors.
+		 */
 		memcpy((char *)b->val, (char *)p->pred->val, sizeof(b->val));
+		/*
+		 * If any register has an ambiguous value (i.e., control
+		 * paths are merging), give it the undefined value of 0.
+		 */
 		while ((p = p->next) != NULL) {
 			for (i = 0; i < N_ATOMS; ++i)
 				if (b->val[i] != p->pred->val[i])
