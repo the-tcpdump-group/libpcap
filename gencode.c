@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.119 2000-09-23 07:26:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.120 2000-10-06 04:52:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -156,6 +156,7 @@ struct block *gen_portop6(int, int, int);
 static struct block *gen_port6(int, int, int);
 #endif
 static int lookup_proto(const char *, int);
+static struct block *gen_protochain(int, int, int);
 static struct block *gen_proto(int, int, int);
 static struct slist *xfer_to_x(struct arth *);
 static struct slist *xfer_to_a(struct arth *);
@@ -1677,7 +1678,7 @@ gen_joinsp(s, n)
 }
 #endif
 
-struct block *
+static struct block *
 gen_protochain(v, proto, dir)
 	int v;
 	int proto;
