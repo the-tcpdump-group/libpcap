@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.6 2003-05-15 14:30:29 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.7 2003-09-22 11:45:58 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -44,15 +44,7 @@ static const char rcsid[] =
 #include <packet32.h>
 
 #include <errno.h>
-
-#ifndef SA_LEN
-#ifdef HAVE_SOCKADDR_SA_LEN
-#define SA_LEN(addr)	((addr)->sa_len)
-#else /* HAVE_SOCKADDR_SA_LEN */
-#define SA_LEN(addr)	(sizeof (struct sockaddr))
-#endif /* HAVE_SOCKADDR_SA_LEN */
-#endif /* SA_LEN */
-
+	
 /*
  * Add an entry to the list of addresses for an interface.
  * "curdev" is the entry for that interface.
@@ -76,7 +68,7 @@ add_addr_to_list(pcap_if_t *curdev, struct sockaddr *addr,
 
 	curaddr->next = NULL;
 	if (addr != NULL) {
-		curaddr->addr = (struct sockaddr*)dup_sockaddr(addr, SA_LEN(addr));
+		curaddr->addr = (struct sockaddr*)dup_sockaddr(addr, sizeof(struct sockaddr_storage));
 		if (curaddr->addr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -87,7 +79,7 @@ add_addr_to_list(pcap_if_t *curdev, struct sockaddr *addr,
 		curaddr->addr = NULL;
 
 	if (netmask != NULL) {
-		curaddr->netmask = (struct sockaddr*)dup_sockaddr(netmask, SA_LEN(netmask));
+		curaddr->netmask = (struct sockaddr*)dup_sockaddr(netmask, sizeof(struct sockaddr_storage));
 		if (curaddr->netmask == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -98,7 +90,7 @@ add_addr_to_list(pcap_if_t *curdev, struct sockaddr *addr,
 		curaddr->netmask = NULL;
 		
 	if (broadaddr != NULL) {
-		curaddr->broadaddr = (struct sockaddr*)dup_sockaddr(broadaddr, SA_LEN(broadaddr));
+		curaddr->broadaddr = (struct sockaddr*)dup_sockaddr(broadaddr, sizeof(struct sockaddr_storage));
 		if (curaddr->broadaddr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -109,7 +101,7 @@ add_addr_to_list(pcap_if_t *curdev, struct sockaddr *addr,
 		curaddr->broadaddr = NULL;
 		
 	if (dstaddr != NULL) {
-		curaddr->dstaddr = (struct sockaddr*)dup_sockaddr(dstaddr, SA_LEN(dstaddr));
+		curaddr->dstaddr = (struct sockaddr*)dup_sockaddr(dstaddr, sizeof(struct sockaddr_storage));
 		if (curaddr->dstaddr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -154,11 +146,11 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
     char *errbuf)
 {
 	pcap_if_t *curdev;
-	npf_if_addr if_addrs[16];
+	npf_if_addr if_addrs[MAX_NETWORK_ADDRESSES];
 	LONG if_addr_size;
 	int res = 0;
 
-	if_addr_size = 16;
+	if_addr_size = MAX_NETWORK_ADDRESSES;
 
 	/*
 	 * Add an entry for this interface, with no addresses.
@@ -173,8 +165,6 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 
 	/*
 	 * Get the list of addresses for the interface.
-	 *
-	 * XXX - what about IPv6?
 	 */
 	if (!PacketGetNetInfoEx((void *)name, if_addrs, &if_addr_size)) {
 		/*
@@ -229,154 +219,73 @@ int
 pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	pcap_if_t *devlist = NULL;
-	DWORD dwVersion;
-	DWORD dwWindowsMajorVersion;
 	int ret = 0;
 	const char *desc;
-
-	dwVersion = GetVersion();	/* get the OS version */
-	dwWindowsMajorVersion =  (DWORD)(LOBYTE(LOWORD(dwVersion)));
-	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
-		/*
-		 * Windows 95, 98, ME.
-		 */
-		char AdaptersName[8192];
-		ULONG NameLength = 8192;
-		char *name;
-
-		if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "PacketGetAdapterNames: %s",
-			    pcap_win32strerror());
-			return (-1);
-		}
-
-		/*
-		 * "PacketGetAdapterNames()" returned a list of
-		 * null-terminated ASCII interface name strings,
-		 * terminated by a null string, followed by a list
-		 * of null-terminated ASCII interface description
-		 * strings, terminated by a null string.
-		 * This means there are two ASCII nulls at the end
-		 * of the first list.
-		 *
-		 * Find the end of the first list; that's the
-		 * beginning of the second list.
-		 */
-		desc = &AdaptersName[0];
-		while (*desc != '\0' || *(desc + 1) != '\0')
-			desc++;
-
-		/*
-		 * Found it - "desc" points to the first of the two
-		 * nulls at the end of the list of names, so the
-		 * first byte of the list of descriptions is two bytes
-		 * after it.
-		 */
-		desc += 2;
-
-		/*
-		 * Loop over the elements in the first list.
-		 */
-		name = &AdaptersName[0];
-		while (*name != '\0') {
-			/*
-			 * Add an entry for this interface.
-			 */
-			if (pcap_add_if_win32(&devlist, name, desc,
-			    errbuf) == -1) {
-				/*
-				 * Failure.
-				 */
-				ret = -1;
-				break;
-			}
-			name += strlen(name) + 1;
-			desc += strlen(desc) + 1;
-		}
-	} else {
-		/*
-		 * Windows NT (NT 4.0, W2K, WXP).
-		 */
-		WCHAR AdaptersName[8192];
-		ULONG NameLength = 8192;
-		const WCHAR *t;
-		WCHAR *uc_name;
-		char ascii_name[8192];
-		char ascii_desc[8192];
-		char *p;
-
-		if (!PacketGetAdapterNames((PTSTR)AdaptersName, &NameLength)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "PacketGetAdapterNames: %s",
-			    pcap_win32strerror());
-			return (-1);
-		}
-
-		/*
-		 * "PacketGetAdapterNames()" returned a list of
-		 * null-terminated Unicode interface name strings,
-		 * terminated by a null string, followed by a list
-		 * of null-terminated ASCII interface description
-		 * strings, terminated by a null string.
-		 * This means there are two Unicode nulls at the end
-		 * of the first list.
-		 *
-		 * Find the end of the first list; that's the
-		 * beginning of the second list.
-		 */
-		t = &AdaptersName[0];
-		while (*t != '\0' || *(t + 1) != '\0')
-			t++;
-
-		/*
-		 * Found it - "t" points to the first of the two
-		 * nulls at the end of the list of names, so the
-		 * first byte of the list of descriptions is two wide
-		 * characters after it.
-		 */
-		t += 2;
-		desc = (const char *)t;
-
-		/*
-		 * Loop over the elements in the first list.
-		 *
-		 * We assume all characters in the name string are valid
-		 * ASCII characters.
-		 */
-		uc_name = &AdaptersName[0];
-		while (*uc_name != '\0') {
-			p = ascii_name;
-			while ((*p++ = (char)*uc_name++) != '\0')
-				;
-			p = ascii_desc;
-			while ((*p++ = *desc++) != '\0')
-				;
-
-			/*
-			 * Add an entry for this interface.
-			 */
-			if (pcap_add_if_win32(&devlist, ascii_name,
-			    ascii_desc, errbuf) == -1) {
-				/*
-				 * Failure.
-				 */
-				ret = -1;
-				break;
-			}
-		}
+	char AdaptersName[8192];
+	ULONG NameLength = 8192;
+	char *name;
+	
+	if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			"PacketGetAdapterNames: %s",
+			pcap_win32strerror());
+		return (-1);
 	}
-
+	
+	/*
+	 * "PacketGetAdapterNames()" returned a list of
+	 * null-terminated ASCII interface name strings,
+	 * terminated by a null string, followed by a list
+	 * of null-terminated ASCII interface description
+	 * strings, terminated by a null string.
+	 * This means there are two ASCII nulls at the end
+	 * of the first list.
+	 *
+	 * Find the end of the first list; that's the
+	 * beginning of the second list.
+	 */
+	desc = &AdaptersName[0];
+	while (*desc != '\0' || *(desc + 1) != '\0')
+		desc++;
+	
+	/*
+ 	 * Found it - "desc" points to the first of the two
+	 * nulls at the end of the list of names, so the
+	 * first byte of the list of descriptions is two bytes
+	 * after it.
+	 */
+	desc += 2;
+	
+	/*
+	 * Loop over the elements in the first list.
+	 */
+	name = &AdaptersName[0];
+	while (*name != '\0') {
+	/*
+	 * Add an entry for this interface.
+	 */
+	if (pcap_add_if_win32(&devlist, name, desc,
+			errbuf) == -1) {
+			/*
+			* Failure.
+			*/
+			ret = -1;
+			break;
+		}
+		name += strlen(name) + 1;
+		desc += strlen(desc) + 1;
+	}
+	
 	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
+	/*
+	 * We had an error; free the list we've been constructing.
+	 */
+	if (devlist != NULL) {
 			pcap_freealldevs(devlist);
 			devlist = NULL;
 		}
 	}
-
+	
 	*alldevsp = devlist;
 	return (ret);
 }
