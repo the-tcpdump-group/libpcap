@@ -104,12 +104,12 @@ static int 	iface_bind_old( int fd, const char *device, char *ebuf );
 pcap_t *
 pcap_open_live( char *device, int snaplen, int promisc, int to_ms, char *ebuf )
 {
-	/* Allocate a handle for this session and initialize the contents 
-	 * to all nulls. */
+        /* Allocate a handle for this session. */
 	
-	pcap_t	*handle = calloc( 1, sizeof(*handle) );
+	pcap_t	*handle = malloc(sizeof(*handle));
 	if( handle == NULL ) {
-		sprintf( ebuf, "calloc: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			 pcap_strerror(errno));
 		return NULL;
 	}
 
@@ -121,7 +121,8 @@ pcap_open_live( char *device, int snaplen, int promisc, int to_ms, char *ebuf )
 	handle->md.promisc	= promisc;
 	handle->md.device	= strdup( device );
 	if( handle->md.device == NULL ) {
-		sprintf( ebuf, "strdup: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "strdup: %s",
+			 pcap_strerror(errno) );
 		free( handle );
 		return NULL;
 	}
@@ -141,6 +142,7 @@ pcap_open_live( char *device, int snaplen, int promisc, int to_ms, char *ebuf )
 		 * up and report our failure (ebuf is expected to be
 		 * set by the functions above). */
 
+		free(handle->md.device);
 		free( handle );
 		return NULL;
 	}
@@ -157,7 +159,8 @@ pcap_open_live( char *device, int snaplen, int promisc, int to_ms, char *ebuf )
 			flags = fcntl( handle->fd, F_SETFL, flags );
 		}
 		if( flags == -1 ) {
-			sprintf(ebuf, "fcntl: %s", pcap_strerror(errno));
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "fcntl: %s",
+				 pcap_strerror(errno));
 			pcap_close( handle );
 			return NULL;
 		}
@@ -210,8 +213,8 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 		status = select( handle->fd + 1, 
 				 &read_fds, NULL, NULL, &tv );
 		if( status == -1 ) {
-			sprintf( handle->errbuf, "select: %s", 
-				 pcap_strerror(errno) );
+			snprintf(handle->errbuf, sizeof(handle->errbuf),
+				 "select: %s", pcap_strerror(errno));
 			return -1;
 		} else if( status == 0 || 
 			   (tv.tv_usec == 0 && tv.tv_sec == 0) )
@@ -253,8 +256,8 @@ pcap_read_packet( pcap_t *handle, pcap_handler callback, u_char *userdata )
 		if( errno == EAGAIN )
 			return 0;	/* no packet there */
 		else {
-			sprintf( handle->errbuf, "recvfrom: %s", 
-				 pcap_strerror(errno) );
+			snprintf(handle->errbuf, sizeof(handle->errbuf),
+				 "recvfrom: %s", pcap_strerror(errno));
 			return -1;
 		}
 	}
@@ -281,7 +284,8 @@ pcap_read_packet( pcap_t *handle, pcap_handler callback, u_char *userdata )
 	/* Fill in our own header data */
 	
 	if( ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1 ) {
-		sprintf( "ioctl: %s", pcap_strerror(errno) );
+		snprintf(handle->errbuf, sizeof(handle->errbuf),
+			 "ioctl: %s", pcap_strerror(errno));
 		return -1;
 	}
 	pcap_header.caplen	= caplen;
@@ -321,7 +325,8 @@ pcap_setfilter( pcap_t *handle, struct bpf_program *filter )
 	if( !handle )
 		return -1;
 	if( !filter ) {
-		strcpy( handle->errbuf, "setfilter: No filter specified" );
+	        strncpy(handle->errbuf, "setfilter: No filter specified",
+			sizeof(handle->errbuf));
 		return -1;
 	}
 
@@ -338,7 +343,8 @@ pcap_setfilter( pcap_t *handle, struct bpf_program *filter )
 	handle->fcode.bf_insns = 
 		malloc( filter->bf_len * sizeof(*filter->bf_insns) );
 	if( handle->fcode.bf_insns == NULL ) {
-		sprintf( handle->errbuf, "calloc: %s", pcap_strerror(errno) );
+		snprintf(handle->errbuf, sizeof(handle->errbuf),
+			 "malloc: %s", pcap_strerror(errno));
 		return -1;
 	} 
 	memcpy( handle->fcode.bf_insns, filter->bf_insns, 
@@ -438,7 +444,8 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 		/* Open a socket with protocol family packet. */
 		sock_fd = socket( PF_PACKET, SOCK_RAW, htons(ETH_P_ALL) );
 		if( sock_fd == -1 ) {
-			sprintf( ebuf, "socket: %s", pcap_strerror(errno) );
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "socket: %s",
+				 pcap_strerror(errno) );
 			break;
 		}
 
@@ -450,7 +457,8 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 		 * old features first before adding more. */
 
 		if( !device ) {
-			sprintf( ebuf, "pcap_open_live: No device given" );
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "pcap_open_live: No device given" );
 			break;
 		}
 
@@ -465,14 +473,15 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 			/* Unknown interface type - reopen in cooked mode */
 			
 			if( close(sock_fd) == -1 ) {
-				sprintf("close: %s", pcap_strerror(errno));
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+					 "close: %s", pcap_strerror(errno));
 				break;
 			}
 			sock_fd = socket( PF_PACKET, SOCK_DGRAM, 
 					  htons(ETH_P_ALL) );
 			if( sock_fd == -1 ) {
-				sprintf( ebuf, "socket: %s", 
-					       pcap_strerror(errno) );
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+					 "socket: %s", pcap_strerror(errno));
 				break;
 			}
 
@@ -508,7 +517,8 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 		if( setsockopt( sock_fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP, 
 			        &mr, sizeof(mr) ) == -1 )
 		{
-			sprintf(ebuf, "setsockopt: %s", pcap_strerror(errno));
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "setsockopt: %s", pcap_strerror(errno));
 			break;
 		}
 		
@@ -526,7 +536,8 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 
 		handle->buffer	 = malloc( handle->bufsize );
 		if( !handle->buffer ) {
-			sprintf( ebuf, "malloc: %s", pcap_strerror(errno) );
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "malloc: %s", pcap_strerror(errno));
 			break;
 		}
 
@@ -538,8 +549,9 @@ live_open_new( pcap_t *handle, char *device, int promisc,
 		close( sock_fd );
 	return 0;
 #else
-	strcpy( ebuf, "New packet capturing interface not supported by build " 
-                      "environment" );
+	strncpy(ebuf, 
+		"New packet capturing interface not supported by build " 
+		"environment", PCAP_ERRBUF_SIZE);
 	return 0;
 #endif
 }
@@ -560,7 +572,8 @@ iface_get_id( int fd, const char *device, char *ebuf )
 	strncpy( ifr.ifr_name, device, sizeof(ifr.ifr_name) );
 
 	if( ioctl(fd, SIOCGIFINDEX, &ifr) == -1 ) {
-		sprintf( ebuf, "ioctl: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "ioctl: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -583,7 +596,8 @@ iface_bind( int fd, int ifindex, char *ebuf )
 	sll.sll_protocol	= htons(ETH_P_ALL);
 
 	if( bind(fd, (struct sockaddr *) &sll, sizeof(sll)) == -1 ) {
-		sprintf( ebuf, "bind: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "bind: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -642,7 +656,8 @@ live_open_old( pcap_t *handle, char *device, int promisc,
 		
 		sock_fd = socket( PF_INET, SOCK_PACKET, htons(ETH_P_ALL) );
 		if( sock_fd == -1 ) {
-			sprintf( ebuf, "socket: %s", pcap_strerror(errno) );
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "socket: %s", pcap_strerror(errno));
 			break;
 		}
 
@@ -652,7 +667,8 @@ live_open_old( pcap_t *handle, char *device, int promisc,
 		/* Bind to the given device */
 
 		if( !device ) {
-			strcpy( ebuf, "pcap_open_live: No interface given" );
+		        strncpy(ebuf, "pcap_open_live: No interface given",
+				PCAP_ERRBUF_SIZE);
 			break;
 		}
 		if( iface_bind_old(sock_fd, device, ebuf) == -1 )
@@ -663,21 +679,23 @@ live_open_old( pcap_t *handle, char *device, int promisc,
 			memset( &ifr, 0, sizeof(ifr) );
 			strncpy( ifr.ifr_name, device, sizeof(ifr.ifr_name) );
 			if( ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1 ) {
-				sprintf( ebuf, "ioctl: %s", 
-					 pcap_strerror(errno) );
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+					 "ioctl: %s", pcap_strerror(errno));
 				break;
 			}
 			if( (ifr.ifr_flags & IFF_PROMISC) == 0 ) {
 				restore_ifr    = ifr;
 				ifr.ifr_flags |= IFF_PROMISC;
 				if( ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1 ) {
-					sprintf( ebuf, "ioctl: %s", 
-						 pcap_strerror(errno) );
+				        snprintf(ebuf, PCAP_ERRBUF_SIZE,
+						 "ioctl: %s",
+						 pcap_strerror(errno));
 					break;
 				}
 				if( atexit(restore_interface) == -1 ) {
 					restore_interface();
-					strcpy( ebuf, "atexit failed" );
+					strncpy(ebuf, "atexit failed",
+						PCAP_ERRBUF_SIZE);
 					break;
 				}
 			}
@@ -701,13 +719,14 @@ live_open_old( pcap_t *handle, char *device, int promisc,
 		handle->offset	 = 0;
 		handle->linktype = map_arphrd_to_dlt( arptype );
 		if( handle->linktype == -1 ) {
-			sprintf(ebuf, "interface type of %s not supported", 
-				      device);
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "interface type of %s not supported", device);
 			break;
 		}
 		handle->buffer	 = malloc( handle->bufsize );
 		if( !handle->buffer ) {
-			sprintf( ebuf, "malloc: %s", pcap_strerror(errno) );
+		        snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "malloc: %s", pcap_strerror(errno));
 			break;
 		}
 
@@ -734,7 +753,8 @@ iface_bind_old( int fd, const char *device, char *ebuf )
 	memset( &saddr, 0, sizeof(saddr) );
 	strncpy( saddr.sa_data, device, sizeof(saddr.sa_data) );
 	if( bind(fd, &saddr, sizeof(saddr)) == -1 ) {
-		sprintf( ebuf, "bind: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "bind: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -758,7 +778,8 @@ iface_get_mtu( int fd, const char *device, char *ebuf )
 	strncpy( ifr.ifr_name, device, sizeof(ifr.ifr_name) );
 
 	if( ioctl(fd, SIOCGIFMTU, &ifr) == -1 ) {
-		sprintf( ebuf, "ioctl: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "ioctl: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -779,7 +800,8 @@ iface_get_arptype( int fd, const char *device, char *ebuf )
 	strncpy( ifr.ifr_name, device, sizeof(ifr.ifr_name) );
 
 	if( ioctl(fd, SIOCGIFHWADDR, &ifr) == -1 ) {
-		sprintf( ebuf, "ioctl: %s", pcap_strerror(errno) );
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "ioctl: %s", pcap_strerror(errno));
 		return -1;
 	}
 
