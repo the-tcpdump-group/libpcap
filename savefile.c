@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.86 2003-07-25 05:32:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.87 2003-08-18 22:16:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -552,7 +552,7 @@ pcap_open_offline(const char *fname, char *errbuf)
  * no more packets, and SFERR_TRUNC if a partial packet was encountered.
  */
 static int
-sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
+sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 {
 	struct pcap_sf_patched_pkthdr sf_hdr;
 	FILE *fp = p->sf.rfile;
@@ -602,7 +602,7 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
 		 * grossly wrong, try to salvage.
 		 */
 		static u_char *tp = NULL;
-		static int tsize = 0;
+		static size_t tsize = 0;
 
 		if (hdr->caplen > 65535) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
