@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.140 2000-12-21 10:29:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.141 2001-01-14 04:34:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -60,8 +60,15 @@ struct rtentry;
 #include <sys/socket.h>
 #endif /*INET6*/
 
+/*
+ * LLC SAP values.
+ * Note that these fit in one byte, and are thus less than 1500, and
+ * are thus distinguishable from ETHERTYPE_ values, so we can use them
+ * as protocol types values.
+ */
 #define LLC_SNAP_LSAP	0xaa
 #define LLC_ISO_LSAP	0xfe
+#define LLC_STP_LSAP	0x42
 
 #define ETHERMTU	1500
 
@@ -591,12 +598,13 @@ init_linktype(type)
 	case DLT_FDDI:
 		/*
 		 * FDDI doesn't really have a link-level type field.
-		 * We assume that SSAP = SNAP is being used and pick
-		 * out the encapsulated Ethernet type.
+		 * We set "off_linktype" to the offset of the LLC header.
 		 *
+		 * To check for Ethernet types, we assume that SSAP = SNAP
+		 * is being used and pick out the encapsulated Ethernet type.
 		 * XXX - should we generate code to check for SNAP?
 		 */
-		off_linktype = 19;
+		off_linktype = 13;
 #ifdef PCAP_FDDIPAD
 		off_linktype += pcap_fddipad;
 #endif
@@ -609,9 +617,10 @@ init_linktype(type)
 	case DLT_IEEE802:
 		/*
 		 * Token Ring doesn't really have a link-level type field.
-		 * We assume that SSAP = SNAP is being used and pick
-		 * out the encapsulated Ethernet type.
+		 * We set "off_linktype" to the offset of the LLC header.
 		 *
+		 * To check for Ethernet types, we assume that SSAP = SNAP
+		 * is being used and pick out the encapsulated Ethernet type.
 		 * XXX - should we generate code to check for SNAP?
 		 *
 		 * XXX - the header is actually variable-length.
@@ -629,7 +638,7 @@ init_linktype(type)
 		 * the 16-bit value at an offset of 14 (shifted right
 		 * 8 - figure out which byte that is).
 		 */
-		off_linktype = 20;
+		off_linktype = 14;
 		off_nl = 22;
 		return;
 
@@ -702,10 +711,6 @@ gen_linktype(proto)
 {
 	struct block *b0, *b1;
 
-	/* If we're not using encapsulation, we're done */
-	if (off_linktype == -1)
-		return gen_true();
-
 	switch (linktype) {
 
 	case DLT_EN10MB:
@@ -718,6 +723,9 @@ gen_linktype(proto)
 		case LLC_ISO_LSAP:
 			/*
 			 * OSI protocols always use 802.2 encapsulation.
+			 * XXX - should we check both the DSAP and the
+			 * LSAP, like this, or should we check just the
+			 * DSAP?
 			 */
 			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 			gen_not(b0);
@@ -767,11 +775,125 @@ gen_linktype(proto)
 
 			gen_or(b0, b1);
 			return b1;
+
+		default:
+			if (proto <= ETHERMTU) {
+				/*
+				 * This is an LLC SAP value, so the frames
+				 * that match would be 802.2 frames.
+				 * Check that the frame is an 802.2 frame
+				 * (i.e., that the length/type field is
+				 * a length field, <= ETHERMTU) and
+				 * then check the DSAP.
+				 */
+				b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+				gen_not(b0);
+				b1 = gen_cmp(off_linktype + 2, BPF_B,
+				     (bpf_int32)proto);
+				gen_and(b0, b1);
+				return b1;
+			} else {
+				/*
+				 * This is an Ethernet type, so compare
+				 * the length/type field with it (if
+				 * the frame is an 802.2 frame, the length
+				 * field will be <= ETHERMTU, and, as
+				 * "proto" is > ETHERMTU, this test
+				 * will fail and the frame won't match,
+				 * which is what we want).
+				 */
+				return gen_cmp(off_linktype, BPF_H,
+				    (bpf_int32)proto);
+			}
+		}
+		break;
+
+	case DLT_FDDI:
+	case DLT_IEEE802:
+	case DLT_ATM_RFC1483:
+	case DLT_ATM_CLIP:
+		/*
+		 * XXX - handle token-ring variable-length header.
+		 */
+		switch (proto) {
+
+		case LLC_ISO_LSAP:
+			return gen_cmp(off_linktype, BPF_H, (long)
+				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
+
+		case ETHERTYPE_ATALK:
+			/*
+			 * 802.2-encapsulated ETHERTYPE_ATALK packets are
+			 * SNAP packets with an organization code of
+			 * 0x080007 (Apple, for Appletalk) and a protocol
+			 * type of ETHERTYPE_ATALK (Appletalk).
+			 *
+			 * XXX - check for an organization code of
+			 * encapsulated Ethernet as well?
+			 */
+			return gen_snap(0x080007, ETHERTYPE_ATALK,
+			    off_linktype);
+			break;
+
+		default:
+			if (proto <= ETHERMTU) {
+				/*
+				 * This is an LLC SAP value, so check
+				 * the DSAP.
+				 */
+				return gen_cmp(off_linktype, BPF_B,
+				     (bpf_int32)proto);
+			} else {
+				/*
+				 * This is an Ethernet type; we assume
+				 * that it's unlikely that it'll
+				 * appear in the right place at random,
+				 * and therefore check only the
+				 * location that would hold the Ethernet
+				 * type in a SNAP frame with an organization
+				 * code of 0x000000 (encapsulated Ethernet).
+				 *
+				 * XXX - if we were to check for the SNAP DSAP
+				 * and LSAP, as per XXX, and were also to check
+				 * for an organization code of 0x000000
+				 * (encapsulated Ethernet), we'd do
+				 *
+				 *	return gen_snap(0x000000, proto,
+				 *	    off_linktype);
+				 *
+				 * here; for now, we don't, as per the above.
+				 * I don't know whether it's worth the
+				 * extra CPU time to do the right check
+				 * or not.
+				 */
+				return gen_cmp(off_linktype+6, BPF_H,
+				    (bpf_int32)proto);
+			}
 		}
 		break;
 
 	case DLT_SLIP:
-		return gen_false();
+	case DLT_SLIP_BSDOS:
+	case DLT_RAW:
+		/*
+		 * These types don't provide any type field; packets
+		 * are always IP.
+		 *
+		 * XXX - for IPv4, check for a version number of 4, and,
+		 * for IPv6, check for a version number of 6?
+		 */
+		switch (proto) {
+
+		case ETHERTYPE_IP:
+#ifdef INET6
+		case ETHERTYPE_IPV6:
+#endif
+			return gen_true();		/* always true */
+
+		default:
+			return gen_false();		/* always false */
+		}
+		break;
 
 	case DLT_PPP:
 	case DLT_PPP_SERIAL:
@@ -911,6 +1033,24 @@ gen_linktype(proto)
 		}
 		return (gen_cmp(0, BPF_W, (bpf_int32)proto));
 	}
+
+	/*
+	 * All the types that have no encapsulation should either be
+	 * handled as DLT_SLIP, DLT_SLIP_BSDOS, and DLT_RAW are, if
+	 * all packets are IP packets, or should be handled in some
+	 * special case, if none of them are (if some are and some
+	 * aren't, the lack of encapsulation is a problem, as we'd
+	 * have to find some other way of determining the packet type).
+	 *
+	 * Therefore, if "off_linktype" is -1, there's an error.
+	 */
+	if (off_linktype == -1)
+		abort();
+
+	/*
+	 * Any type not handled above should always have an Ethernet
+	 * type at an offset of "off_linktype".
+	 */
 	return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
 }
 
@@ -1332,6 +1472,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_CLNP:
 		bpf_error("'clnp' modifier applied to host");
 
+	case Q_STP:
+		bpf_error("'stp' modifier applied to host");
+
 	default:
 		abort();
 	}
@@ -1423,6 +1566,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_CLNP:
 		bpf_error("'clnp' modifier applied to host");
+
+	case Q_STP:
+		bpf_error("'stp' modifier applied to host");
 
 	default:
 		abort();
@@ -1624,6 +1770,10 @@ gen_proto_abbrev(proto)
 
 	case Q_CLNP:
 	        b1 = gen_proto(ISO8473_CLNP, Q_ISO, Q_DEFAULT);
+		break;
+
+	case Q_STP:
+	        b1 = gen_linktype(LLC_STP_LSAP);
 		break;
 
 	default:
@@ -2281,6 +2431,9 @@ gen_proto(v, proto, dir)
 
 	case Q_ESP:
 		bpf_error("'ah proto' is bogus");
+
+	case Q_STP:
+		bpf_error("'stp proto' is bogus");
 
 	default:
 		abort();
