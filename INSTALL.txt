@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.3 2002-07-16 05:00:00 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.4 2002-07-16 05:03:34 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -311,6 +311,7 @@ aclocal.m4	- autoconf macros
 arcnet.h	- ARCNET definitions
 atmuni31.h	- ATM Q.2931 definitions
 bpf/net		- copies of bpf_filter.c and bpf.h
+bpf_dump.c	- BPF program printing routines
 bpf_filter.c	- symlink to bpf/net/bpf_filter.c
 bpf_image.c	- BPF disassembly routine
 config.guess	- autoconf support
