@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.102 2000-03-01 03:37:24 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.103 2000-03-01 14:07:02 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -2071,8 +2071,12 @@ gen_scode(name, q)
 				b = tmp;
 			}
 			freeaddrinfo(res0);
-			if (b == NULL)
-				bpf_error("unknown host '%s'", name);
+			if (b == NULL) {
+				bpf_error("unknown host '%s'%s", name,
+				    (proto == Q_DEFAULT)
+					? ""
+					: " for specified address family");
+			}
 			return b;
 #endif /*INET6*/
 		}
