@@ -22,21 +22,33 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.73 2002-08-01 08:33:02 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.74 2002-08-02 03:44:20 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#ifdef WIN32
 #include <pcap-stdinc.h>
+#else /* WIN32 */
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/socket.h>
+#endif
 
 #include <stdlib.h>
 
+#ifndef WIN32
 #if __STDC__
 struct mbuf;
 struct rtentry;
 #endif
+
+#include <net/if.h>
+
+#include <netinet/in.h>
+#endif /* WIN32 */
 
 #include <stdio.h>
 

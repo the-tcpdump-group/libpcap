@@ -33,18 +33,25 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.40 2002-08-01 08:33:04 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.41 2002-08-02 03:44:21 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#ifdef WIN32
 #include <pcap-stdinc.h>
+#else /* WIN32 */
+#include <sys/types.h>
+#endif /* WIN32 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef WIN32
+#include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
 
@@ -347,7 +354,7 @@ pcap_close(pcap_t *p)
 #endif
 		close(p->fd);
 	}
-#else
+#else /* WIN32 */
 	if (p->adapter != NULL) {
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;

@@ -34,21 +34,31 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.51 2002-08-01 08:33:02 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.52 2002-08-02 03:44:20 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#ifdef WIN32
 #include <pcap-stdinc.h>
+#else /* WIN32 */
+
+#include <sys/param.h>
+#include <sys/file.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif
+#include <sys/time.h>				/* concession to AIX */
 
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
+#include <netinet/in.h>
+#endif /* WIN32 */
 
 #include <ctype.h>
 #include <errno.h>
@@ -56,6 +66,9 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef WIN32
+#include <unistd.h>
+#endif /* WIN32 */
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #else

@@ -31,13 +31,18 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.36 2002-08-01 08:33:04 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.37 2002-08-02 03:44:21 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
 #define lib_pcap_h
 
+#ifdef WIN32
 #include <pcap-stdinc.h>
+#else /* WIN32 */
+#include <sys/types.h>
+#include <sys/time.h>
+#endif /* WIN32 */
 
 #include <net/bpf.h>
 

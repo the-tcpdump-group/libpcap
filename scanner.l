@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.88 2002-08-01 08:33:05 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.89 2002-08-02 03:44:21 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -36,11 +36,16 @@ static const char rcsid[] =
 
 #include "gencode.h"
 #ifdef INET6
+#ifdef WIN32
 #include <pcap-stdinc.h>
 
 #ifdef __MINGW32__
 #include "IP6_misc.h"
 #endif
+#else /* WIN32 */
+#include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
+#include <netdb.h>	/* for "struct addrinfo" */
+#endif /* WIN32 */
 
 /* Workaround for AIX 4.3 */
 #if !defined(AI_NUMERICHOST)
