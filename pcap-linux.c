@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.68 2001-10-08 01:06:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.69 2001-10-25 06:46:14 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1051,11 +1051,11 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 					 * update "map_arphrd_to_dlt()"
 					 * to handle the new type.
 					 */
-					fprintf(stderr, 
+					snprintf(ebuf, PCAP_ERRBUF_SIZE,
 						"Warning: arptype %d not "
 						"supported by libpcap - "
 						"falling back to cooked "
-						"socket\n",
+						"socket",
 						arptype);
 				}
 				handle->linktype = DLT_LINUX_SLL;
