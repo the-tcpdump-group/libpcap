@@ -6,6 +6,7 @@ LICENSE
 Makefile.in
 README
 README.aix
+README.hpux
 README.linux
 README.tru64
 SUNOS4/nit_if.o.sparc
