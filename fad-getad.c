@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.2 2002-07-30 08:12:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.3 2002-08-26 09:50:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -43,6 +43,8 @@ static const char rcsid[] =
 
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#include <net/if.h>
 
 #include <errno.h>
 #include <stdio.h>
