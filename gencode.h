@@ -18,11 +18,8 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.39 2000-07-01 03:33:48 assar Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.40 2000-07-11 00:37:07 assar Exp $ (LBL)
  */
-
-/*XXX*/
-#include "gnuc.h"
 
 /* Address qualifiers. */
 
@@ -177,9 +174,9 @@ struct block *gen_multicast(int);
 struct block *gen_inbound(int);
 
 void bpf_optimize(struct block **);
-__dead void bpf_error(const char *, ...)
+void bpf_error(const char *, ...)
 #if HAVE___ATTRIBUTE__
-    __attribute__((volatile, format (printf, 1, 2)))
+    __attribute__((noreturn, format (printf, 1, 2)))
 #endif
 ;
 

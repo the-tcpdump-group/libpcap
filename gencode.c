@@ -21,7 +21,11 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.112 2000-07-01 03:32:50 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.113 2000-07-11 00:37:04 assar Exp $ (LBL)";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <sys/types.h>
@@ -54,7 +58,6 @@ struct rtentry;
 #include <sys/socket.h>
 #endif /*INET6*/
 
-#include "gnuc.h"
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -73,8 +76,9 @@ int	pcap_fddipad;
 #endif
 
 /* VARARGS */
-__dead void
+void
 bpf_error(const char *fmt, ...)
+
 {
 	va_list ap;
 

@@ -25,7 +25,11 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.49 2000-07-01 03:35:07 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.50 2000-07-11 00:37:07 assar Exp $ (LBL)";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <sys/types.h>
@@ -62,7 +66,6 @@ static const char rcsid[] =
 
 #include "pcap-int.h"
 
-#include "gnuc.h"
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif

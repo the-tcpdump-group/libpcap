@@ -8,7 +8,11 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.2 2000-01-10 18:42:59 fenner Exp $";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.3 2000-07-11 00:37:06 assar Exp $";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <sys/types.h>
