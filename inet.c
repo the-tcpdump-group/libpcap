@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.27 2000-02-23 11:39:45 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.28 2000-04-09 20:59:31 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -159,7 +159,8 @@ pcap_lookupdev(errbuf)
 		ifc.ifc_len = buf_size;
 		ifc.ifc_buf = buf;
 		memset (buf, 0, buf_size);
-		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0) {
+		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0
+		    && errno != EINVAL) {
 			free (buf);
 			(void)sprintf(errbuf, "SIOCGIFCONF: %s",
 				      pcap_strerror(errno));
