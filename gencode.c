@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.146 2001-01-15 00:03:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.147 2001-01-28 09:44:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -721,6 +721,20 @@ gen_linktype(proto)
 			gen_and(b0, b1);
 			return b1;
 
+		case LLCSAP_NETBEUI:
+			/*
+			 * NetBEUI always uses 802.2 encapsulation.
+			 * XXX - should we check both the DSAP and the
+			 * SSAP, like this, or should we check just the
+			 * DSAP?
+			 */
+			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+			gen_not(b0);
+			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+				     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+			gen_and(b0, b1);
+			return b1;
+
 		case LLCSAP_IPX:
 			/*
 			 * Check for;
@@ -879,6 +893,18 @@ gen_linktype(proto)
 			return gen_cmp(off_linktype, BPF_H, (long)
 				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
 
+		case LLCSAP_NETBEUI:
+			return gen_cmp(off_linktype, BPF_H, (long)
+				     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+
+		case LLCSAP_IPX:
+			/*
+			 * XXX - are there ever SNAP frames for IPX on
+			 * non-Ethernet 802.x networks?
+			 */
+			return gen_cmp(off_linktype, BPF_B,
+			    (bpf_int32)LLCSAP_IPX);
+
 		case ETHERTYPE_ATALK:
 			/*
 			 * 802.2-encapsulated ETHERTYPE_ATALK packets are
@@ -947,6 +973,19 @@ gen_linktype(proto)
 			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
 				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
+			gen_and(b0, b1);
+			return b1;
+
+		case LLCSAP_NETBEUI:
+			/*
+			 * NetBEUI always uses 802.2 encapsulation.
+			 * XXX - should we check both the DSAP and the
+			 * LSAP, like this, or should we check just the
+			 * DSAP?
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+				     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
 			gen_and(b0, b1);
 			return b1;
 
@@ -1712,6 +1751,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_IPX:
 		bpf_error("IPX host filtering not implemented");
 
+	case Q_NETBEUI:
+		bpf_error("'netbeui' modifier applied to host");
+
 	default:
 		abort();
 	}
@@ -1809,6 +1851,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_IPX:
 		bpf_error("IPX host filtering not implemented");
+
+	case Q_NETBEUI:
+		bpf_error("'netbeui' modifier applied to host");
 
 	default:
 		abort();
@@ -2018,6 +2063,10 @@ gen_proto_abbrev(proto)
 
 	case Q_IPX:
 	        b1 = gen_linktype(LLCSAP_IPX);
+		break;
+
+	case Q_NETBEUI:
+	        b1 = gen_linktype(LLCSAP_NETBEUI);
 		break;
 
 	default:
@@ -2681,6 +2730,9 @@ gen_proto(v, proto, dir)
 
 	case Q_IPX:
 		bpf_error("'ipx proto' is bogus");
+
+	case Q_NETBEUI:
+		bpf_error("'netbeui proto' is bogus");
 
 	default:
 		abort();
