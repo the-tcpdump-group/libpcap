@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.158 2001-09-20 00:24:24 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.159 2001-11-12 21:59:44 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3265,6 +3265,7 @@ gen_mcode6(s1, s2, masklen, q)
 
 	if (sizeof(mask) * 8 < masklen)
 		bpf_error("mask length must be <= %u", (unsigned int)(sizeof(mask) * 8));
+	memset(&mask, 0, sizeof(mask));
 	memset(&mask, 0xff, masklen / 8);
 	if (masklen % 8) {
 		mask.s6_addr[masklen / 8] =
