@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.24 2004-12-17 20:41:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.25 2005-02-26 21:58:06 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -631,10 +631,22 @@ static int
 pcap_setfilter_win32_npf(pcap_t *p, struct bpf_program *fp)
 {
 	if(PacketSetBpf(p->adapter,fp)==FALSE){
-		/* kernel filter not installed. */
+		/*
+		 * Kernel filter not installed.
+		 * XXX - fall back on userland filtering, as is done
+		 * on other platforms?
+		 */
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Driver error: cannot set bpf filter: %s", pcap_win32strerror());
 		return (-1);
 	}
+
+	/*
+	 * Discard any previously-received packets, as they might have
+	 * passed whatever filter was formerly in effect, but might
+	 * not pass this filter (BIOCSETF discards packets buffered
+	 * in the kernel, so you can lose packets in any case).
+	 */
+	p->cc = 0;
 	return (0);
 }
 

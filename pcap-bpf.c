@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.85 2005-02-24 08:59:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86 2005-02-26 21:58:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1077,6 +1077,14 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 		return (-1);
 	}
 	p->md.use_bpf = 1;	/* filtering in the kernel */
+
+	/*
+	 * Discard any previously-received packets, as they might have
+	 * passed whatever filter was formerly in effect, but might
+	 * not pass this filter (BIOCSETF discards packets buffered
+	 * in the kernel, so you can lose packets in any case).
+	 */
+	p->cc = 0;
 	return (0);
 }
 
