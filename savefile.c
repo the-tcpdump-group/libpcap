@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.106 2004-03-23 19:18:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.107 2004-06-07 20:00:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -315,6 +315,11 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_JUNIPER_MONITOR 164
 
+/*
+ * Reserved for BACnet MS/TP.
+ */
+#define LINKTYPE_BACNET_MS_TP	165
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -473,8 +478,11 @@ static struct linktype_map {
 	 *	LINKTYPE_* values, either).
 	 */
 
-        /* Juniper-internal chassis encapsulation */
-        { DLT_JUNIPER_MONITOR,     LINKTYPE_JUNIPER_MONITOR },
+	/* Juniper-internal chassis encapsulation */
+	{ DLT_JUNIPER_MONITOR,	LINKTYPE_JUNIPER_MONITOR },
+
+	/* BACnet MS/TP */
+	{ DLT_BACNET_MS_TP,	LINKTYPE_BACNET_MS_TP },
 
 	{ -1,			-1 }
 };

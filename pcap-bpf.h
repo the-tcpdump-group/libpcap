@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.20 2004-06-04 22:19:47 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.21 2004-06-07 20:00:08 guy Exp $ (LBL)
  */
 
 /*
@@ -503,6 +503,11 @@ struct bpf_version {
  * QOS profiles, etc..
  */
 #define DLT_JUNIPER_MONITOR     164
+
+/*
+ * Reserved for BACnet MS/TP.
+ */
+#define DLT_BACNET_MS_TP	165
 
 /*
  * The instruction encodings.
