@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.82 2000-07-06 01:50:36 assar Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.83 2000-07-11 00:38:19 assar Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,16 +6,16 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.82 $)
+AC_REVISION($Revision: 1.83 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
+AC_C_INLINE
+AC_C___ATTRIBUTE__
 
 AC_LBL_CHECK_TYPE(u_int32_t, u_int)
-
-AC_C___ATTRIBUTE__
 
 AC_CHECK_HEADERS(sys/sockio.h ifaddrs.h)
 
@@ -33,7 +33,7 @@ x)	enable_protochain=enabled	;;
 esac
 
 if test "$enable_protochain" = "disabled"; then
-	AC_DEFINE(NO_PROTOCHAIN)
+	AC_DEFINE(NO_PROTOCHAIN,1,[do not use protochain])
 fi
 AC_MSG_RESULT(${enable_protochain})
 
@@ -82,7 +82,7 @@ AC_MSG_RESULT($V_PCAP)
 AC_MSG_CHECKING(if --enable-ipv6 option is specified)
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           build IPv6-capable version])
 if test "$enable_ipv6" = "yes"; then
-	AC_DEFINE(INET6)
+	AC_DEFINE(INET6,1,[IPv6])
 fi
 AC_MSG_RESULT(${enable_ipv6-no})
 
@@ -93,14 +93,14 @@ dlpi)
 	AC_MSG_CHECKING(for /dev/dlpi device)
 	if test -c /dev/dlpi ; then
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_DEV_DLPI)
+		AC_DEFINE(HAVE_DEV_DLPI, 1, [define if you have a /dev/dlpi])
 	else
 		AC_MSG_RESULT(no)
 		dir="/dev/dlpi"
 		AC_MSG_CHECKING(for $dir directory)
 		if test -d $dir ; then
 			AC_MSG_RESULT(yes)
-			AC_DEFINE_UNQUOTED(PCAP_DEV_PREFIX, "$dir")
+			AC_DEFINE_UNQUOTED(PCAP_DEV_PREFIX, "$dir", [/dev/dlpi directory])
 		else
 			AC_MSG_RESULT(no)
 		fi
@@ -140,11 +140,11 @@ case "$target_os" in
 
 aix*)
 	dnl Workaround to enable certain features
-	AC_DEFINE(_SUN)
+	AC_DEFINE(_SUN,1,[define on AIX to get certain functions])
 	;;
 
 hpux9*)
-	AC_DEFINE(HAVE_HPUX9)
+	AC_DEFINE(HAVE_HPUX9,1,[on HP-UX 9.x])
 	;;
 
 hpux10.0*)
@@ -155,7 +155,7 @@ hpux10.1*)
 
 hpux*)
 	dnl HPUX 10.20 and above is similar to HPUX 9...
-	AC_DEFINE(HAVE_HPUX10_20)
+	AC_DEFINE(HAVE_HPUX10_20,1,[on HP-UX 10.20])
 	;;
 
 sinix*)
@@ -168,12 +168,12 @@ sinix*)
 		    ac_cv_cc_sinix_defined=no))
 	    AC_MSG_RESULT($ac_cv_cc_sinix_defined)
 	    if test $ac_cv_cc_sinix_defined = no ; then
-		    AC_DEFINE(sinix)
+		    AC_DEFINE(sinix,1,[on sinix])
 	    fi
 	;;
 
 solaris*)
-	AC_DEFINE(HAVE_SOLARIS)
+	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 	;;
 
 linux*)
@@ -191,11 +191,6 @@ AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 AC_LBL_UNALIGNED_ACCESS
 
-if test -r ${srcdir}/lbl/gnuc.h ; then
-	rm -f gnuc.h
-	ln -s ${srcdir}/lbl/gnuc.h gnuc.h
-fi
-
 rm -f net
 ln -s ${srcdir}/bpf/net net
 
@@ -207,6 +202,8 @@ AC_SUBST(V_RANLIB)
 AC_SUBST(V_YACC)
 
 AC_PROG_INSTALL
+
+AC_CONFIG_HEADER(config.h)
 
 AC_OUTPUT(Makefile)
 
