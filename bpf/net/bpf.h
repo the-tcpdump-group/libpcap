@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.47 2001-09-05 04:27:24 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.48 2001-09-09 04:27:19 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -220,6 +220,12 @@ struct bpf_hdr {
 #define DLT_PPP_ETHER	51	/* PPP over Ethernet */
 
 /*
+ * Values between 100 and 103 are used in capture file headers as
+ * link-layer types corresponding to DLT_ types that differ
+ * between platforms; don't use those values for new DLT_ new types.
+ */
+
+/*
  * This value was defined by libpcap 0.5; platforms that have defined
  * it with a different value should define it here with that value -
  * a link type of 104 in a save file will be mapped to DLT_C_HDLC,
@@ -236,16 +242,6 @@ struct bpf_hdr {
 #define DLT_C_HDLC	104	/* Cisco HDLC */
 #define DLT_CHDLC	DLT_C_HDLC
 
-/*
- * Reserved for future use.
- * Do not pick other numerical value for these unless you have also
- * picked up the tcpdump.org top-of-CVS-tree version of "savefile.c",
- * which will arrange that capture files for these DLT_ types have
- * the same "network" value on all platforms, regardless of what
- * value is chosen for their DLT_ type (thus allowing captures made
- * on one platform to be read on other platforms, even if the two
- * platforms don't use the same numerical values for all DLT_ types).
- */
 #define DLT_IEEE802_11	105	/* IEEE 802.11 wireless */
 
 /*

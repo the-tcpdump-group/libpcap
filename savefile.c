@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.52 2001-09-05 04:27:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.53 2001-09-09 04:27:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -156,23 +156,22 @@ static const char rcsid[] =
 #define LINKTYPE_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
 #define LINKTYPE_PPP_BSDOS	103		/* BSD/OS PPP BPF header */
 #define LINKTYPE_C_HDLC		104		/* Cisco HDLC */
+#define LINKTYPE_IEEE802_11	105		/* IEEE 802.11 (wireless) */
 #define LINKTYPE_ATM_CLIP	106		/* Linux Classical IP over ATM */
+#define LINKTYPE_LOOP		108		/* OpenBSD loopback */
+
+#define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
+#define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
+#define LINKTYPE_ECONET		115		/* Acorn Econet */
 
 /*
- * Reserved for future use.
+ * These types are reserved for future use.
  */
-#define LINKTYPE_IEEE802_11	105		/* IEEE 802.11 (wireless) */
 #define LINKTYPE_FR		107		/* BSD/OS Frame Relay */
-#define LINKTYPE_LOOP		108		/* OpenBSD loopback */
 #define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
-
-#define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
-
-#define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
-#define LINKTYPE_ECONET		115		/* Acorn Econet */
 
 static struct linktype_map {
 	int	dlt;
