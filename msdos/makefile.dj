@@ -6,17 +6,18 @@
 #
 #  c:\net\pcap> make -f msdos/makefile.dj
 #
+# @(#) $Header: /tcpdump/master/libpcap/msdos/makefile.dj,v 1.2 2004-12-19 19:41:06 guy Exp $ (LBL)
 
 VPATH = missing msdos
 
-PREREQUISITES = scanner.c grammar.c tokdefs.h msdos/pkt_stub.inc
+PREREQUISITES = scanner.c grammar.c tokdefs.h version.h msdos/pkt_stub.inc
 
 include msdos/common.dj
 
 DRIVER_DIR = ./msdos/pm_drvr
 
 CFLAGS += -DDEBUG -DNDIS_DEBUG -DHAVE_LIMITS_H -DHAVE_STRERROR \
-          -D_U_='__attribute__((unused))'
+          -D_U_='__attribute__((unused))' -DHAVE_VERSION_H
 
 # CFLAGS += -Dyylval=pcap_lval -DBDEBUG -DNDEBUG
 
@@ -49,7 +50,7 @@ $(PM_OBJECTS):
 	$(MAKE) -f Makefile.dj -C $(DRIVER_DIR) $(notdir $@)
 endif
 
-libpcap.a: $(OBJECTS) $(PM_OBJECTS)
+libpcap.a: version.h $(OBJECTS) $(PM_OBJECTS)
 	rm -f $@
 	ar rs $@ $^
 
@@ -63,6 +64,10 @@ grammar.c tokdefs.h: grammar.y
 	$(YACC) --name-prefix=pcap_ --yacc --defines grammar.y
 	mv -f y_tab.c grammar.c
 	mv -f y_tab.h tokdefs.h
+
+version.h: ./VERSION
+	@echo '/* Generated from VERSION. Do not edit */' > $@
+	sed -e 's/.*/static char pcap_version_string[] = "libpcap (&)";/' ./VERSION >> $@
 
 scanner.c: scanner.l
 	$(LEX) -Ppcap_ -7 -t $^ > $@
