@@ -1,4 +1,6 @@
 CHANGES
+ChmodBPF/ChmodBPF
+ChmodBPF/StartupParameters.plist
 CREDITS
 FILES
 INSTALL.txt
@@ -9,6 +11,7 @@ README.aix
 README.dag
 README.hpux
 README.linux
+README.macosx
 README.tru64
 README.Win32
 SUNOS4/nit_if.o.sparc
