@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.197 2004-01-29 10:25:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.198 2004-01-29 10:36:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -862,13 +862,14 @@ init_linktype(type)
 		off_nl_nosnap = 144+27;	/* Prism+802.11+802.2 */
 		return;
 
-	case DLT_IEEE802_11_RADIO:
+	case DLT_IEEE802_11_RADIO_AVS:
 		/*
 		 * Same as 802.11, but with an additional header before
 		 * the 802.11 header, containing a bunch of additional
 		 * information including radio-level information.
 		 *
-		 * The header is 64 bytes long.
+		 * The header is 64 bytes long, at least in its
+		 * current incarnation.
 		 *
 		 * XXX - same variable-length header problem, only
 		 * more so; this header is also variable-length,

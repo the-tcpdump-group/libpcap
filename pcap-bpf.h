@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.13 2003-12-20 02:38:23 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.14 2004-01-29 10:36:44 guy Exp $ (LBL)
  */
 
 /*
@@ -337,15 +337,10 @@ struct bpf_version {
 #define DLT_AURORA              126     /* Xilinx Aurora link layer */
 
 /*
- * For future use with 802.11 captures - defined by AbsoluteValue
- * Systems to store a number of bits of link-layer information:
- *
- *	http://www.shaftnet.org/~pizza/software/capturefrm.txt
- *
- * but could and arguably should also be used by non-AVS Linux
- * 802.11 drivers and BSD drivers; that may happen in the future.
+ * BSD header for 802.11 plus a number of bits of link-layer information
+ * including radio information.
  */
-#define DLT_IEEE802_11_RADIO	127	/* 802.11 plus WLAN header */
+#define DLT_IEEE802_11_RADIO	127	/* 802.11 plus BSD radio header */
 
 /*
  * Reserved for the TZSP encapsulation, as per request from
@@ -471,6 +466,18 @@ struct bpf_version {
 #define DLT_USER13		160
 #define DLT_USER14		161
 #define DLT_USER15		162
+
+/*
+ * For future use with 802.11 captures - defined by AbsoluteValue
+ * Systems to store a number of bits of link-layer information
+ * including radio information:
+ *
+ *	http://www.shaftnet.org/~pizza/software/capturefrm.txt
+ *
+ * but could and arguably should also be used by non-AVS Linux
+ * 802.11 drivers; that may happen in the future.
+ */
+#define DLT_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
 
 /*
  * The instruction encodings.
