@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.6 2004-03-11 23:12:36 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.7 2004-03-11 23:49:04 guy Exp $ (LBL)
  */
 
 /*
@@ -375,10 +375,10 @@ struct bpf_version {
 #define DLT_ARCNET_LINUX	129	/* ARCNET */
 
 /*
- * juniper-private data link types, as per request from
- * Hannes Gredler <hannes@juniper.net> the DLT_s are used
- * for passing on chassis-internal metainformation like
- * QOS profiles etc.
+ * Juniper-private data link types, as per request from
+ * Hannes Gredler <hannes@juniper.net>.  The DLT_s are used
+ * for passing on chassis-internal metainformation such as
+ * QOS profiles, etc..
  */
 #define DLT_JUNIPER_MLPPP       130
 #define DLT_JUNIPER_MLFR        131
@@ -456,8 +456,12 @@ struct bpf_version {
  * and you may also find that the developers of those applications will
  * not accept patches to let them read those files.
  *
+ * Also, do not use them if somebody might send you a capture using them
+ * for *their* private type and tools using them for *your* private type
+ * would have to read them.
+ *
  * Instead, ask "tcpdump-workers@tcpdump.org" for a new DLT_ value,
- * as per the comment above.
+ * as per the comment above, and use the type you're given.
  */
 #define DLT_USER0		147
 #define DLT_USER1		148
@@ -489,10 +493,10 @@ struct bpf_version {
 #define DLT_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
 
 /*
- * juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net> the DLT_s are used
- * for passing on chassis-internal metainformation like
- * QOS profiles etc.
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>.  The DLT_s are used
+ * for passing on chassis-internal metainformation such as
+ * QOS profiles, etc..
  */
 #define DLT_JUNIPER_MONITOR     164
 
