@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.11 2004-03-11 23:46:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.12 2004-08-17 17:56:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,8 +49,21 @@ static const char rcsid[] _U_ =
 #include "os-proto.h"
 #endif
 
-#define TCPDUMP_MAGIC 0xa1b2c3d4
-#define PATCHED_TCPDUMP_MAGIC 0xa1b2cd34
+/*
+ * Standard libpcap format.
+ */
+#define TCPDUMP_MAGIC		0xa1b2c3d4
+
+/*
+ * Alexey Kuznetzov's modified libpcap format.
+ */
+#define KUZNETZOV_TCPDUMP_MAGIC	0xa1b2cd34
+
+/*
+ * Reserved for Francisco Mesquita <francisco.mesquita@radiomovel.pt>
+ * for another modified format.
+ */
+#define FMESQUITA_TCPDUMP_MAGIC	0xa1b234cd
 
 /*
  * We use the "receiver-makes-right" approach to byte order,
@@ -325,6 +338,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_JUNIPER_MONITOR 164
 
+/*
+ * This isn't supported in libpcap 0.8[.x], but is supported in the
+ * current CVS version; we include it here to note that it's not available
+ * for anybody else to use.
+ */
+#define LINKTYPE_BACNET_MS_TP	165
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -483,8 +503,8 @@ static struct linktype_map {
 	 *	LINKTYPE_* values, either).
 	 */
 
-        /* Juniper-internal chassis encapsulation */
-        { DLT_JUNIPER_MONITOR,     LINKTYPE_JUNIPER_MONITOR },
+	/* Juniper-internal chassis encapsulation */
+	{ DLT_JUNIPER_MONITOR,	LINKTYPE_JUNIPER_MONITOR },
 
 	{ -1,			-1 }
 };
@@ -630,9 +650,9 @@ pcap_open_offline(const char *fname, char *errbuf)
 		goto bad;
 	}
 	magic = hdr.magic;
-	if (magic != TCPDUMP_MAGIC && magic != PATCHED_TCPDUMP_MAGIC) {
+	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC) {
 		magic = SWAPLONG(magic);
-		if (magic != TCPDUMP_MAGIC && magic != PATCHED_TCPDUMP_MAGIC) {
+		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bad dump file format");
 			goto bad;
@@ -640,12 +660,23 @@ pcap_open_offline(const char *fname, char *errbuf)
 		p->sf.swapped = 1;
 		swap_hdr(&hdr);
 	}
-	if (magic == PATCHED_TCPDUMP_MAGIC) {
+	if (magic == KUZNETZOV_TCPDUMP_MAGIC) {
 		/*
 		 * XXX - the patch that's in some versions of libpcap
-		 * changes the packet header but not the magic number;
+		 * changes the packet header but not the magic number,
+		 * and some other versions with this magic number have
+		 * some extra debugging information in the packet header;
 		 * we'd have to use some hacks^H^H^H^H^Hheuristics to
-		 * detect that.
+		 * detect those variants.
+		 *
+		 * Ethereal does that, but it does so by trying to read
+		 * the first two packets of the file with each of the
+		 * record header formats.  That currently means it seeks
+		 * backwards and retries the reads, which doesn't work
+		 * on pipes.  We want to be able to read from a pipe, so
+		 * that strategy won't work; we'd have to buffer some
+		 * data ourselves and read from that buffer in order to
+		 * make that work.
 		 */
 		p->sf.hdrsize = sizeof(struct pcap_sf_patched_pkthdr);
 	} else
@@ -994,13 +1025,15 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		f = fopen(fname, "w");
 #else
 		f = fopen(fname, "wb");
-		setbuf(f, NULL);	/* XXX - why? */
 #endif
 		if (f == NULL) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 			    fname, pcap_strerror(errno));
 			return (NULL);
 		}
+#ifdef WIN32
+		setbuf(f, NULL);	/* XXX - why? */
+#endif
 	}
 	(void)sf_write_header(f, linktype, p->tzoff, p->snapshot);
 	return ((pcap_dumper_t *)f);
