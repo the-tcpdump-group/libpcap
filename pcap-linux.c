@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.35 2000-10-20 06:55:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.36 2000-10-25 05:59:04 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -420,6 +420,13 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	 */
 	handle->md.use_bpf = 0;
 
+	/*
+	 * If we're reading from a savefile, don't try to install
+	 * a kernel filter.
+	 */
+	if (handle->sf.rfile != NULL)
+		return 0;
+
 	/* Install kernel level filter if possible */
 	
 #ifdef SO_ATTACH_FILTER
@@ -582,7 +589,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 				break;
 		}
 
-		/* Select promiscous mode on/off */
+		/* Select promiscuous mode on/off */
 
 #ifdef SOL_PACKET
 		/* 
@@ -611,8 +618,6 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		if (mtu == -1)
 			break;
 		handle->bufsize	 = MAX_LINKHEADER_SIZE + mtu;
-		if (handle->bufsize < handle->snapshot)
-			handle->bufsize = handle->snapshot;
 		
 		/* Fill in the pcap structure */
 
