@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.105 2004-03-16 19:27:55 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.106 2004-03-23 19:18:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -574,6 +574,14 @@ sf_stats(pcap_t *p, struct pcap_stat *ps)
 	return (-1);
 }
 
+static int
+sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
+{
+	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
+	    PCAP_ERRBUF_SIZE);
+	return (-1);
+}
+
 static void
 sf_close(pcap_t *p)
 {
@@ -730,6 +738,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 #endif
 
 	p->read_op = pcap_offline_read;
+	p->inject_op = sf_inject;
 	p->setfilter_op = install_bpf_program;
 	p->set_datalink_op = NULL;	/* we don't support munging link-layer headers */
 	p->getnonblock_op = sf_getnonblock;

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.55 2004-03-21 08:32:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.56 2004-03-23 19:18:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -193,6 +193,23 @@ pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
+pcap_inject_nit(pcap_t *p, const void *buf, size_t size)
+{
+	struct sockaddr sa;
+	int ret;
+
+	memset(&sa, 0, sizeof(sa));
+	strncpy(sa.sa_data, device, sizeof(sa.sa_data));
+	ret = sendto(p->fd, buf, size, 0, &sa, sizeof(sa));
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
+
+static int
 nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 {
 	struct nit_ioc nioc;
@@ -226,6 +243,8 @@ pcap_close_nit(pcap_t *p)
 {
 	if (p->buffer != NULL)
 		free(p->buffer);
+	if (p->device != NULL)
+		free(p->device);
 	if (p->fd >= 0)
 		close(p->fd);
 }
@@ -281,6 +300,16 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	/*
+	 * We need the device name in order to send packets.
+	 */
+	p->device = strdup(device);
+	if (p->device == NULL) {
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		free(p->buffer);
+		goto bad;
+	}
+
+	/*
 	 * "p->fd" is a socket, so "select()" should work on it.
 	 */
 	p->selectable_fd = p->fd;
@@ -306,6 +335,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	p->read_op = pcap_read_nit;
+	p->inject_op = pcap_inject_nit;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.72 2004-03-17 19:03:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.73 2004-03-23 19:18:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -698,6 +698,30 @@ pcap_open_dead(int linktype, int snaplen)
 	p->stats_op = pcap_stats_dead;
 	p->close_op = pcap_close_dead;
 	return p;
+}
+
+/*
+ * API compatible with WinPcap's "send a packet" routine - returns -1
+ * on error, 0 otherwise.
+ *
+ * XXX - what if we get a short write?
+ */
+int
+pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
+{
+	if (p->inject_op(p, buf, size) == -1)
+		return (-1);
+	return (0);
+}
+
+/*
+ * API compatible with OpenBSD's "send a packet" routine - returns -1 on
+ * error, number of bytes written otherwise.
+ */
+int
+pcap_inject(pcap_t *p, const void *buf, size_t size)
+{
+	return (p->inject_op(p, buf, size));
 }
 
 void

@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.70 2003-12-18 23:32:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.71 2004-03-23 19:18:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -205,6 +205,29 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
+pcap_inject_snit(pcap_t *p, const void *buf, size_t size)
+{
+	struct strbuf ctl, data;
+	
+	/*
+	 * XXX - can we just do
+	 *
+	ret = write(pd->f, buf, size);
+	 */
+	ctl.len = sizeof(*sa);	/* XXX - what was this? */
+	ctl.buf = (char *)sa;
+	data.buf = buf;
+	data.len = size;
+	ret = putmsg(p->fd, &ctl, &data);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}
+
+static int
 nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 {
 	bpf_u_int32 flags;
@@ -271,7 +294,23 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		snaplen = 96;
 
 	memset(p, 0, sizeof(*p));
-	p->fd = fd = open(dev, O_RDONLY);
+	/*
+	 * Initially try a read/write open (to allow the inject
+	 * method to work).  If that fails due to permission
+	 * issues, fall back to read-only.  This allows a
+	 * non-root user to be granted specific access to pcap
+	 * capabilities via file permissions.
+	 *
+	 * XXX - we should have an API that has a flag that
+	 * controls whether to open read-only or read-write,
+	 * so that denial of permission to send (or inability
+	 * to send, if sending packets isn't supported on
+	 * the device in question) can be indicated at open
+	 * time.
+	 */
+	p->fd = fd = open(dev, O_RDWR);
+	if (fd < 0 && errno == EACCES)
+		p->fd = fd = open(dev, O_RDONLY);
 	if (fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dev,
 		    pcap_strerror(errno));
@@ -365,6 +404,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	p->read_op = pcap_read_snit;
+	p->inject_op = pcap_inject_snit;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;

@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.58 2004-02-28 02:51:26 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.59 2004-03-23 19:18:07 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -85,6 +85,11 @@ const u_char **pkt_data)
 .LP
 .ft B
 void pcap_breakloop(pcap_t *)
+.ft
+.LP
+.ft B
+int pcap_inject(pcap_t *p, const void *buf, size_t size)
+int pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
 .ft
 .LP
 .ft B
@@ -627,6 +632,36 @@ or
 the flag is cleared, so a subsequent call will resume reading packets. 
 If a positive number is returned, the flag is not cleared, so a
 subsequent call will return \-2 and clear the flag.
+.PP
+.B pcap_inject()
+sends a raw packet through the network interface;
+.I buf
+points to the data of the packet, including the link-layer header, and
+.I size
+is the number of bytes in the packet.
+It returns the number of bytes written on success.  A return of \-1
+indicates an error in which case
+.B pcap_perror()
+or
+.B pcap_geterr()
+may be used to display the error text.
+Note that, even if you successfully open the network interface, you
+might not have permission to send packets on it, or it might not support
+sending packets; as
+.I pcap_open_live()
+doesn't have a flag to indicate whether to open for capturing, sending,
+or capturing and sending, you cannot request an open that supports
+sending and be notified at open time whether sending will be possible.
+Note also that some devices might not support sending packets.
+.PP
+.B pcap_sendpacket()
+is like
+.BR pcap_inject() ,
+but it returns 0 on success and \-1 on failure.
+.RB ( pcap_inject()
+comes from OpenBSD;
+.B pcap_sendpacket()
+comes from WinPcap.  Both are provided for compatibility.)
 .PP
 .B pcap_dump()
 outputs a packet to the ``savefile'' opened with

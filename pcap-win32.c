@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.20 2004-01-28 14:06:20 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.21 2004-03-23 19:18:07 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -344,6 +344,29 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 #endif /* HAVE_DAG_API */
 
+/* Send a packet to the network */
+static int 
+pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
+	LPPACKET PacketToSend;
+
+	PacketToSend=PacketAllocatePacket();
+	PacketInitPacket(PacketToSend,buf,size);
+	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
+		PacketFreePacket(PacketToSend);
+		return -1;
+	}
+
+	PacketFreePacket(PacketToSend);
+
+	/*
+	 * We assume it all got sent if "PacketSendPacket()" succeeded.
+	 * "pcap_inject()" is expected to return the number of bytes
+	 * sent.
+	 */
+	return size;
+}
+
 static void
 pcap_close_win32(pcap_t *p)
 {
@@ -569,6 +592,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #ifdef HAVE_DAG_API
 	}
 #endif /* HAVE_DAG_API */
+	p->inject_op = pcap_inject_win32;
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_win32;
 	p->setnonblock_op = pcap_setnonblock_win32;
@@ -683,28 +707,6 @@ pcap_setmode(pcap_t *p, int mode){
 		return -1;
 	}
 
-	return 0;
-}
-
-/* Send a packet to the network */
-int 
-pcap_sendpacket(pcap_t *p, u_char *buf, int size){
-	LPPACKET PacketToSend;
-
-	if (p->adapter==NULL)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Writing a packet is allowed only on a physical adapter");
-		return -1;
-	}
-
-	PacketToSend=PacketAllocatePacket();
-	PacketInitPacket(PacketToSend,buf,size);
-	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
-		PacketFreePacket(PacketToSend);
-		return -1;
-	}
-
-	PacketFreePacket(PacketToSend);
 	return 0;
 }
 

@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.61 2003-12-21 22:00:10 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.62 2004-03-23 19:18:05 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -74,13 +74,14 @@ struct pcap_md {
 	u_long	TotDrops;	/* count of dropped packets */
 	long	TotMissed;	/* missed by i/f during this run */
 	long	OrigMissed;	/* missed by i/f before this run */
+	char	*device;	/* device name */
 #ifdef linux
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
 	int	timeout;	/* timeout specified to pcap_open_live */
 	int	clear_promisc;	/* must clear promiscuous mode when we close */
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
+	int	ifindex;	/* interface index of device we're bound to */
 	int	lo_ifindex;	/* interface index of the loopback device */
-	char	*device;	/* device name */
 	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */
 #endif
 
@@ -130,6 +131,7 @@ struct pcap {
 	 * Methods.
 	 */
 	int	(*read_op)(pcap_t *, int cnt, pcap_handler, u_char *);
+	int	(*inject_op)(pcap_t *, const void *, size_t);
 	int	(*setfilter_op)(pcap_t *, struct bpf_program *);
 	int	(*set_datalink_op)(pcap_t *, int);
 	int	(*getnonblock_op)(pcap_t *, char *);

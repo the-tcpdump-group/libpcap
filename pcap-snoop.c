@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.51 2004-03-21 08:32:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.52 2004-03-23 19:18:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -124,6 +124,22 @@ again:
 	}
 	return (0);
 }
+
+static int
+pcap_inject_snoop(pcap_t *p, const void *buf, size_t size)
+{
+	/*
+	 * XXX - libnet overwrites the source address with what I
+	 * presume is the interface's address; is that required?
+	 */
+	ret = write(p->fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
 
 static int
 pcap_stats_snoop(pcap_t *p, struct pcap_stat *ps)
@@ -358,6 +374,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->selectable_fd = p->fd;
 
 	p->read_op = pcap_read_snoop;
+	p->inject_op = pcap_inject_snoop;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.73 2003-12-24 08:26:24 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.74 2004-03-23 19:18:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -292,6 +292,29 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
+static int
+pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
+{
+	int ret;
+
+	/*
+	 * Do a BIOCSHDRCMPLT, if defined, to turn that flag on, so
+	 * the link-layer source address isn't forcibly overwritten?
+	 * (Ignore errors?  Return errors if not "sorry, that ioctl
+	 * isn't supported?)
+	 *
+	 * XXX - I seem to remember some packet-sending bug in some
+	 * BSDs - check CVS log for "bpf.c"?
+	 */
+	ret = write(p->fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}
+
 #ifdef _AIX
 static int 
 bpf_odminit(char *errbuf)
@@ -467,7 +490,23 @@ bpf_open(pcap_t *p, char *errbuf)
 	 */
 	do {
 		(void)snprintf(device, sizeof(device), "/dev/bpf%d", n++);
-		fd = open(device, O_RDONLY);
+		/*
+		 * Initially try a read/write open (to allow the inject
+		 * method to work).  If that fails due to permission
+		 * issues, fall back to read-only.  This allows a
+		 * non-root user to be granted specific access to pcap
+		 * capabilities via file permissions.
+		 *
+		 * XXX - we should have an API that has a flag that
+		 * controls whether to open read-only or read-write,
+		 * so that denial of permission to send (or inability
+		 * to send, if sending packets isn't supported on
+		 * the device in question) can be indicated at open
+		 * time.
+		 */
+		fd = open(device, O_RDWR);
+		if (fd == -1 && errno == EACCES)
+			fd = open(device, O_RDONLY);
 	} while (fd < 0 && errno == EBUSY);
 
 	/*
@@ -898,6 +937,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	p->read_op = pcap_read_bpf;
+	p->inject_op = pcap_inject_bpf;
 	p->setfilter_op = pcap_setfilter_bpf;
 	p->set_datalink_op = pcap_set_datalink_bpf;
 	p->getnonblock_op = pcap_getnonblock_fd;

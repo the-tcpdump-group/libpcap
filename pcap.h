@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.49 2004-01-27 09:44:14 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.50 2004-03-23 19:18:07 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -184,6 +184,8 @@ int	pcap_setfilter(pcap_t *, struct bpf_program *);
 int	pcap_getnonblock(pcap_t *, char *);
 int	pcap_setnonblock(pcap_t *, int, char *);
 void	pcap_perror(pcap_t *, char *);
+int	pcap_inject(pcap_t *, const void *, size_t);
+int	pcap_sendpacket(pcap_t *, const u_char *, int);
 char	*pcap_strerror(int);
 char	*pcap_geterr(pcap_t *);
 int	pcap_compile(pcap_t *, struct bpf_program *, char *, int,
@@ -230,7 +232,6 @@ void	bpf_dump(struct bpf_program *, int);
 
 int pcap_setbuff(pcap_t *p, int dim);
 int pcap_setmode(pcap_t *p, int mode);
-int pcap_sendpacket(pcap_t *p, u_char *buf, int size);
 int pcap_setmintocopy(pcap_t *p, int size);
 
 #ifdef WPCAP

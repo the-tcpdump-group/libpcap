@@ -15,7 +15,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.17 2004-01-30 02:23:53 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.18 2004-03-23 19:18:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -377,6 +377,14 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return processed;
 }
 
+static int
+dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
+{
+	strlcpy(p->errbuf, "Sending packets isn't supported on DAG cards",
+	    PCAP_ERRBUF_SIZE);
+	return (-1);
+}
+
 /*
  *  Get a handle for a live capture from the given DAG device.  Passing a NULL
  *  device will result in a failure.  The promisc flag is ignored because DAG
@@ -503,6 +511,7 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 #endif
 
 	handle->read_op = dag_read;
+	handle->inject_op = dag_inject;
 	handle->setfilter_op = dag_setfilter;
 	handle->set_datalink_op = dag_set_datalink;
 	handle->getnonblock_op = pcap_getnonblock_fd;

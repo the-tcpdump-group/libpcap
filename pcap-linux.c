@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.105 2004-01-14 01:56:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.106 2004-03-23 19:18:05 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -188,6 +188,7 @@ static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
+static int pcap_inject_linux(pcap_t *, const void *, size_t);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static void pcap_close_linux(pcap_t *);
@@ -404,6 +405,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	handle->selectable_fd = handle->fd;
 
 	handle->read_op = pcap_read_linux;
+	handle->inject_op = pcap_inject_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
@@ -671,6 +673,63 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	return 1;
 }
+
+static int
+pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
+{
+#ifdef HAVE_PF_PACKET_SOCKETS
+	struct sockaddr_ll sa_ll;
+#endif
+	struct sockaddr_pkt sa_pkt;
+	int ret;
+
+#ifdef HAVE_PF_PACKET_SOCKETS
+	if (!handle->md.sock_packet)) {
+		/* PF_PACKET socket */
+		if (handle->md.ifindex == -1) {
+			/*
+			 * Cooked mode - can't send.
+			 * XXX - how do you send on a bound cooked-mode
+			 * socket?
+			 */
+			strlcpy(handle->errbuf,
+			    "Sending packets isn't supported in cooked mode",
+			    PCAP_ERRBUF_SIZE);
+			return (-1);
+		}
+
+		memset(&sa_ll, 0, sizeof(sa_ll));
+		sa_ll.sll_family = AF_PACKET;
+		sa_ll.sll_ifindex = handle->md.ifindex;
+		/*
+		 * Do we have to set the hardware address?
+		 */
+		sa_ll.sll_protocol = htons(ETH_P_ALL);
+
+		ret = sendto(handle->fd, buf, size, 0, &sa_ll, sizeof(sa_ll));
+		if (ret == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+		return (ret);
+	}
+#endif
+	memset(&sa_pkt, 0, sizeof(sa_pkt));
+	sa_pkt.spkt_family = PF_INET;
+	strcpy(sa_pkt.spkt_device, handle->md.device);
+	/*
+	 * Do we have to set "spkt_protocol" to the Ethernet protocol?
+	 */
+
+	ret = sendto(handle->fd, buf, size, 0, &sa, sizeof(sa)));
+	if (ret == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
 
 /*
  *  Get the statistics for the given packet capture handle.
@@ -1221,7 +1280,7 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
-	int			sock_fd = -1, device_id, arptype;
+	int			sock_fd = -1, arptype;
 	int			err;
 	int			fatal_err = 0;
 	struct packet_mreq	mr;
@@ -1341,11 +1400,12 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 					handle->linktype = DLT_LINUX_SLL;
 			}
 
-			device_id = iface_get_id(sock_fd, device, ebuf);
-			if (device_id == -1)
+			handle->md.ifindex = iface_get_id(sock_fd, device, ebuf);
+			if (handle->md.ifindex == -1)
 				break;
 
-			if ((err = iface_bind(sock_fd, device_id, ebuf)) < 0) {
+			if ((err = iface_bind(sock_fd, handle->md.ifindex,
+			    ebuf)) < 0) {
 				if (err == -2)
 					fatal_err = 1;
 				break;
@@ -1358,14 +1418,15 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 			handle->linktype = DLT_LINUX_SLL;
 
 			/*
-			 * XXX - squelch GCC complaints about
-			 * uninitialized variables; if we can't
-			 * select promiscuous mode on all interfaces,
-			 * we should move the code below into the
-			 * "if (device)" branch of the "if" and
-			 * get rid of the next statement.
+			 * We're not bound to a device.
+			 * XXX - true?  Or true only if we're using
+			 * the "any" device?
+			 * For now, we're using this as an indication
+			 * that we can't transmit; stop doing that only
+			 * if we figure out how to transmit in cooked
+			 * mode.
 			 */
-			device_id = -1;
+			handle->md.ifindex = -1;
 		}
 
 		/*
@@ -1389,7 +1450,7 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 
 		if (device && promisc) {
 			memset(&mr, 0, sizeof(mr));
-			mr.mr_ifindex = device_id;
+			mr.mr_ifindex = handle->md.ifindex;
 			mr.mr_type    = PACKET_MR_PROMISC;
 			if (setsockopt(sock_fd, SOL_PACKET,
 				PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1)

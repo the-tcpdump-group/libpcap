@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.86 2004-02-09 06:24:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.87 2004-03-23 19:18:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -220,6 +220,20 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
+pcap_inject_pf(pcap_t *p, const void *buf, size_t size)
+{
+	int ret;
+
+	ret = write(p->fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
+
+static int
 pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 {
 
@@ -299,14 +313,28 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return (0);
 	}
 	memset(p, 0, sizeof(*p));
-
 	/*
+	 * Initially try a read/write open (to allow the inject
+	 * method to work).  If that fails due to permission
+	 * issues, fall back to read-only.  This allows a
+	 * non-root user to be granted specific access to pcap
+	 * capabilities via file permissions.
+	 *
+	 * XXX - we should have an API that has a flag that
+	 * controls whether to open read-only or read-write,
+	 * so that denial of permission to send (or inability
+	 * to send, if sending packets isn't supported on
+	 * the device in question) can be indicated at open
+	 * time.
+	 *
 	 * XXX - we assume here that "pfopen()" does not, in fact, modify
 	 * its argument, even though it takes a "char *" rather than a
 	 * "const char *" as its first argument.  That appears to be
 	 * the case, at least on Digital UNIX 4.0.
 	 */
-	p->fd = pfopen(device, O_RDONLY);
+	p->fd = pfopen(device, O_RDWR);
+	if (p->fd == -1 && errno == EACCES)
+		p->fd = pfopen(device, O_RDONLY);
 	if (p->fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
 your system may not be properly configured; see the packetfilter(4) man page\n",
@@ -467,6 +495,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	p->selectable_fd = p->fd;
 
 	p->read_op = pcap_read_pf;
+	p->inject_op = pcap_inject_pf;
 	p->setfilter_op = pcap_setfilter_pf;
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;

@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.95 2003-12-18 23:32:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.96 2004-03-23 19:18:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -220,6 +220,11 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				p->break_loop = 0;
 				return (-2);
 			}
+			/*
+			 * XXX - check for the DLPI primitive, which
+			 * would be DL_HP_RAWDATA_IND on HP-UX
+			 * if we're in raw mode?
+			 */
 			if (getmsg(p->fd, &ctl, &data, &flags) < 0) {
 				/* Don't choke when we get ptraced */
 				if (errno == EINTR) {
@@ -305,6 +310,23 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	p->cc = 0;
 	return (n);
 }
+
+static int
+pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
+{
+	int ret;
+
+	/*
+	 * XXX - use "dlunitdatareq()" on HP-UX.
+	 */
+	ret = write(p->fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
 
 #ifndef DL_IPATM
 #define DL_IPATM	0x12	/* ATM Classical IP interface */
@@ -573,6 +595,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 	/*
 	** Determine link type
+	** XXX - get SAP length and address length as well, for use
+	** when sending packets.
 	*/
 	if (dlinforeq(p->fd, ebuf) < 0 ||
 	    dlinfoack(p->fd, (char *)buf, ebuf) < 0)
@@ -612,6 +636,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		break;
 
 	case DL_TPR:
+		/*
+		 * XXX - what about DL_TPB?  Is that Token Bus?
+		 */	
 		p->linktype = DLT_IEEE802;
 		p->offset = 2;
 		break;
@@ -730,6 +757,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->selectable_fd = p->fd;
 
 	p->read_op = pcap_read_dlpi;
+	p->inject_op = pcap_inject_dlpi;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;
@@ -1193,6 +1221,77 @@ dlinfoack(int fd, char *bufp, char *ebuf)
 
 	return (recv_ack(fd, DL_INFO_ACK_SIZE, "info", bufp, ebuf));
 }
+
+#if 0
+/*
+ * No ack?
+ *
+ * On HP-UX, use DL_HP_RAWDATA_REQ instead, *if* we're in RAW mode.
+ * There is an ack *IF* there's an error.
+ *
+ * XXX - this is not needed on Solaris; we're running in raw mode so
+ * we can just do a "write()".
+ * What about, say, AIX?
+ */
+static int
+dlunitdatareq(int fd, u_char *addrp, int addrlen, u_char *datap, int datalen)
+{
+	struct strbuf ctl, data;
+	long buf[MAXDLBUF];	/* XXX - char? */
+	union DL_primitives *dlp;
+
+	dlp = (union DL_primitives*) buf;
+
+	dlp->unitdata_req.dl_primitive = DL_UNITDATA_REQ;
+	dlp->unitdata_req.dl_dest_addr_length = addrlen;
+	dlp->unitdata_req.dl_dest_addr_offset = DL_UNITDATA_REQ_SIZE;
+	dlp->unitdata_req.dl_priority.dl_min = 0;
+	dlp->unitdata_req.dl_priority.dl_max = 0
+
+	/*
+	 * XXX - the "address", on Ethernet, is the destination address,
+	 * followed by the link-layer type.  What is it for other
+	 * link layers?
+	 *
+	 * The address length "dl_addr_length" from the "info_ack"
+	 * structure is the total length of the link-layer address.
+	 *
+	 * The SAP length "dl_sap_length" is the length of the SAP part
+	 * of the address.
+	 * If positive, the SAP comes before the destination address;
+	 * if negative, the SAP comes after the destination address.
+	 *
+	 * XXX - what about Ethernet vs. 802.3?  Is the SAP the Ethertype
+	 * or the DSAP?  How can we send both?  *Can* we send both on
+	 * the same device?
+	 *
+	 * Note that in raw mode, we send a raw link-layer packet.
+	 * In that mode, can we avoid worrying about this crap?
+	 *
+	 * For ATM (ha ha), we might not be able to send packets,
+	 * even in raw mode, without binding to a VC.  (Presumably
+	 * going into SAP promiscuous mode lets us *see* all packets.)
+	 *
+	 * XXX - extract it from the packet to be sent.
+	 */
+	memcpy((char *)dlp + DL_UNITDATA_REQ_SIZE, addrp, addrlen);
+
+	ctl.maxlen = 0;
+	ctl.len = DL_UNITDATA_REQ_SIZE + addrlen;
+	ctl.buf = buf;
+
+	data.maxlen = 0;
+	data.len = datalen;
+	data.buf = datap;
+
+	if (putmsg(fd, &ctl, &data, 0) < 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "dlunitdatareq: putmsg: %s", pcap_strerror(errno));
+		return (-1);
+	}
+	return (0);
+}
+#endif
 
 #ifdef HAVE_SYS_BUFMOD_H
 static int
