@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.192 2003-07-29 08:53:51 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.193 2003-08-18 22:09:30 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -209,7 +209,8 @@ newchunk(n)
 	u_int n;
 {
 	struct chunk *cp;
-	int k, size;
+	int k;
+	size_t size;
 
 #ifndef __NetBSD__
 	/* XXX Round up to nearest long. */
@@ -1711,7 +1712,7 @@ gen_linktype(proto)
 	 *
 	 * Therefore, if "off_linktype" is -1, there's an error.
 	 */
-	if (off_linktype == -1)
+	if (off_linktype == (u_int)-1)
 		abort();
 
 	/*
@@ -2481,7 +2482,7 @@ gen_host(addr, mask, proto, dir)
 
 	case Q_DEFAULT:
 		b0 = gen_host(addr, mask, Q_IP, dir);
-		if (off_linktype != -1) {
+		if (off_linktype != (u_int)-1) {
 		    b1 = gen_host(addr, mask, Q_ARP, dir);
 		    gen_or(b0, b1);
 		    b0 = gen_host(addr, mask, Q_RARP, dir);
@@ -3882,7 +3883,7 @@ gen_scode(name, q)
 			if (alist == NULL || *alist == NULL)
 				bpf_error("unknown host '%s'", name);
 			tproto = proto;
-			if (off_linktype == -1 && tproto == Q_DEFAULT)
+			if (off_linktype == (u_int)-1 && tproto == Q_DEFAULT)
 				tproto = Q_IP;
 			b = gen_host(**alist++, 0xffffffff, tproto, dir);
 			while (*alist) {
@@ -5133,7 +5134,7 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 	case A_VPI:
 		if (!is_atm)
 			bpf_error("'vpi' supported only on raw ATM");
-		if (off_vpi == -1)
+		if (off_vpi == (u_int)-1)
 			abort();
 		b0 = gen_ncmp(BPF_B, off_vpi, 0xffffffff, (u_int)jtype,
 		    (u_int)jvalue, reverse);
@@ -5142,21 +5143,21 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 	case A_VCI:
 		if (!is_atm)
 			bpf_error("'vci' supported only on raw ATM");
-		if (off_vci == -1)
+		if (off_vci == (u_int)-1)
 			abort();
 		b0 = gen_ncmp(BPF_H, off_vci, 0xffffffff, (u_int)jtype,
 		    (u_int)jvalue, reverse);
 		break;
 
 	case A_PROTOTYPE:
-		if (off_proto == -1)
+		if (off_proto == (u_int)-1)
 			abort();	/* XXX - this isn't on FreeBSD */
 		b0 = gen_ncmp(BPF_B, off_proto, 0x0f, (u_int)jtype,
 		    (u_int)jvalue, reverse);
 		break;
 
 	case A_MSGTYPE:
-		if (off_payload == -1)
+		if (off_payload == (u_int)-1)
 			abort();
 		b0 = gen_ncmp(BPF_B, off_payload + MSG_TYPE_POS, 0xffffffff,
 		    (u_int)jtype, (u_int)jvalue, reverse);
@@ -5165,7 +5166,7 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 	case A_CALLREFTYPE:
 		if (!is_atm)
 			bpf_error("'callref' supported only on raw ATM");
-		if (off_proto == -1)
+		if (off_proto == (u_int)-1)
 			abort();
 		b0 = gen_ncmp(BPF_B, off_proto, 0xffffffff, (u_int)jtype,
 		    (u_int)jvalue, reverse);
