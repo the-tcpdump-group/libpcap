@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.81 2002-06-11 17:04:47 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.82 2002-07-06 21:22:35 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -154,6 +154,16 @@ typedef int		socklen_t;
  * they didn't support MSG_TRUNC.)
  */
 #define MSG_TRUNC	0x20
+#endif
+
+#ifndef SOL_PACKET
+/*
+ * This is being compiled on a system that lacks SOL_PACKET; define it
+ * with the value it has in the 2.2 and later kernels, so that we can
+ * set promiscuous mode in the good modern way rather than the old
+ * 2.0-kernel crappy way.
+ */
+#define SOL_PACKET	263
 #endif
 
 #define MAX_LINKHEADER_SIZE	256
@@ -1224,7 +1234,6 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 
 		/* Select promiscuous mode on/off */
 
-#ifdef SOL_PACKET
 		/*
 		 * Hmm, how can we set promiscuous mode on all interfaces?
 		 * I am not sure if that is possible at all.
@@ -1243,7 +1252,6 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 				break;
 			}
 		}
-#endif
 
 		/* Save the socket FD in the pcap structure */
 
