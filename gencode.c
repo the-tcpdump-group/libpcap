@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.142 2001-01-14 05:30:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.143 2001-01-14 07:57:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -69,6 +69,7 @@ struct rtentry;
 #define LLC_SNAP_LSAP	0xaa
 #define LLC_ISO_LSAP	0xfe
 #define LLC_STP_LSAP	0x42
+#define LLC_IPX_LSAP	0xe0
 
 #define ETHERMTU	1500
 
@@ -720,13 +721,47 @@ gen_linktype(proto)
 			/*
 			 * OSI protocols always use 802.2 encapsulation.
 			 * XXX - should we check both the DSAP and the
-			 * LSAP, like this, or should we check just the
+			 * SSAP, like this, or should we check just the
 			 * DSAP?
 			 */
 			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 			gen_not(b0);
 			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
 				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
+			gen_and(b0, b1);
+			return b1;
+
+		case LLC_IPX_LSAP:
+			/*
+			 * Check both for the IPX LSAP as the DSAP and
+			 * for Netware 802.3, where the type/length
+			 * field is a length field (i.e., <= ETHERMTU)
+			 * and the first two bytes after the LLC header
+			 * are 0xFFFF.
+			 *
+			 * XXX - check for the IPX Ethertype, 0x8137,
+			 * as well?
+			 *
+			 * This generates code to check both for the
+			 * IPX LSAP and for Netware 802.3.
+			 */
+			b0 = gen_cmp(off_linktype + 2, BPF_B,
+			    (bpf_int32)LLC_IPX_LSAP);
+			b1 = gen_cmp(off_linktype + 2, BPF_H,
+			    (bpf_int32)0xFFFF);
+			gen_or(b0, b1);
+
+			/*
+			 * Now we generate code to check for 802.3
+			 * frames in general.
+			 */
+			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+			gen_not(b0);
+
+			/*
+			 * Now check for 802.3 frames and, if that passes,
+			 * check for either of the flavors of IPX.
+			 */
 			gen_and(b0, b1);
 			return b1;
 
@@ -832,6 +867,10 @@ gen_linktype(proto)
 			break;
 
 		default:
+			/*
+			 * XXX - we don't have to check for IPX 802.3
+			 * here, but should we check for the IPX Ethertype?
+			 */
 			if (proto <= ETHERMTU) {
 				/*
 				 * This is an LLC SAP value, so check
@@ -878,11 +917,31 @@ gen_linktype(proto)
 			 * LSAP, like this, or should we check just the
 			 * DSAP?
 			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-			gen_not(b0);
+			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
 				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
 			gen_and(b0, b1);
+			return b1;
+
+		case LLC_IPX_LSAP:
+			/*
+			 * Check both for 802.2 frames with the IPX LSAP as
+			 * the DSAP and for Netware 802.3 frames.
+			 *
+			 * This generates code to check for 802.2 frames
+			 * with the IPX LSAP.
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+			b1 = gen_cmp(off_linktype + 2, BPF_B,
+			    (bpf_int32)LLC_IPX_LSAP);
+			gen_and(b0, b1);
+
+			/*
+			 * Now check for 802.3 frames and OR that with
+			 * the previous test.
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_3);
+			gen_or(b0, b1);
 			return b1;
 
 		case ETHERTYPE_ATALK:
@@ -1562,6 +1621,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_STP:
 		bpf_error("'stp' modifier applied to host");
 
+	case Q_IPX:
+		bpf_error("IPX host filtering not implemented");
+
 	default:
 		abort();
 	}
@@ -1656,6 +1718,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_STP:
 		bpf_error("'stp' modifier applied to host");
+
+	case Q_IPX:
+		bpf_error("IPX host filtering not implemented");
 
 	default:
 		abort();
@@ -1861,6 +1926,10 @@ gen_proto_abbrev(proto)
 
 	case Q_STP:
 	        b1 = gen_linktype(LLC_STP_LSAP);
+		break;
+
+	case Q_IPX:
+	        b1 = gen_linktype(LLC_IPX_LSAP);
 		break;
 
 	default:
@@ -2521,6 +2590,9 @@ gen_proto(v, proto, dir)
 
 	case Q_STP:
 		bpf_error("'stp proto' is bogus");
+
+	case Q_IPX:
+		bpf_error("'ipx proto' is bogus");
 
 	default:
 		abort();
