@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.8 2003-11-15 23:23:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.9 2004-04-30 08:58:52 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -221,14 +221,29 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	pcap_if_t *devlist = NULL;
 	int ret = 0;
 	const char *desc;
-	char AdaptersName[8192];
-	ULONG NameLength = 8192;
+	char *AdaptersName;
+	ULONG NameLength;
 	char *name;
 	
+	PacketGetAdapterNames(NULL, &NameLength);
+
+	if (NameLength > 0)
+		AdaptersName = (char*) malloc(NameLength);
+	else
+	{
+		return (NULL);
+	}
+	if (AdaptersName == NULL)
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot allocate enough memory to list the adapters.");
+		return (-1);
+	}			
+
 	if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			"PacketGetAdapterNames: %s",
 			pcap_win32strerror());
+		free(AdaptersName);
 		return (-1);
 	}
 	
@@ -287,5 +302,6 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 	
 	*alldevsp = devlist;
+	free(AdaptersName);
 	return (ret);
 }
