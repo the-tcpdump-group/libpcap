@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.106 2000-04-27 09:11:11 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.107 2000-04-27 09:18:57 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -2040,7 +2040,7 @@ gen_scode(name, q)
 			return b;
 #else
 			memset(&mask128, 0xff, sizeof(mask128));
-			res0 = res = pcap_nametoaddr(name);
+			res0 = res = pcap_nametoaddrinfo(name);
 			if (res == NULL)
 				bpf_error("unknown host '%s'", name);
 			b = tmp = NULL;
@@ -2294,7 +2294,7 @@ gen_mcode6(s1, s2, masklen, q)
 	if (s2)
 		bpf_error("no mask %s supported", s2);
 
-	res = pcap_nametoaddr(s1);
+	res = pcap_nametoaddrinfo(s1);
 	if (!res)
 		bpf_error("invalid ip6 address %s", s1);
 	if (res->ai_next)

@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.6 1999-10-19 15:18:31 itojun Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.7 2000-04-27 09:18:58 itojun Exp $ (LBL)
  */
 
 #ifndef lib_pcap_ethers_h
@@ -54,10 +54,9 @@ struct	pcap_etherent *pcap_next_etherent(FILE *);
 u_char *pcap_ether_hostton(const char*);
 u_char *pcap_ether_aton(const char *);
 
-#ifndef INET6
 bpf_u_int32 **pcap_nametoaddr(const char *);
-#else
-struct addrinfo *pcap_nametoaddr(const char *);
+#ifdef INET6
+struct addrinfo *pcap_nametoaddrinfo(const char *);
 #endif
 bpf_u_int32 pcap_nametonetaddr(const char *);
 

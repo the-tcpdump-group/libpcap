@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.51 1999-11-25 08:25:35 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.52 2000-04-27 09:18:58 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -74,7 +74,6 @@ static inline int xdtoi(int);
  *  Convert host name to internet address.
  *  Return 0 upon failure.
  */
-#ifndef INET6
 bpf_u_int32 **
 pcap_nametoaddr(const char *name)
 {
@@ -98,9 +97,10 @@ pcap_nametoaddr(const char *name)
 	else
 		return 0;
 }
-#else
+
+#ifdef INET6
 struct addrinfo *
-pcap_nametoaddr(const char *name)
+pcap_nametoaddrinfo(const char *name)
 {
 	struct addrinfo hints, *res;
 	int error;
