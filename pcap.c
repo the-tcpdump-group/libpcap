@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.37 2001-12-09 05:10:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.38 2001-12-29 21:55:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -226,7 +226,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 		    pcap_strerror(errno));
 		return (-1);
 	}
-	return (fdflags);
+	return (0);
 }
 
 /*
