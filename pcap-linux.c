@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.66 2001-08-30 03:08:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.67 2001-09-23 22:43:57 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -846,7 +846,42 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
 #define ARPHRD_ATM 19
 #endif
 	case ARPHRD_ATM:
-		handle->linktype = DLT_ATM_CLIP;
+		/*
+		 * The Classical IP implementation in ATM for Linux
+		 * supports both what RFC 1483 calls "LLC Encapsulation",
+		 * in which each packet has an LLC header, possibly
+		 * with a SNAP header as well, prepended to it, and
+		 * what RFC 1483 calls "VC Based Multiplexing", in which
+		 * different virtual circuits carry different network
+		 * layer protocols, and no header is prepended to packets.
+		 *
+		 * They both have an ARPHRD_ type of ARPHRD_ATM, so
+		 * you can't use the ARPHRD_ type to find out whether
+		 * captured packets will have an LLC header, and,
+		 * while there's a socket ioctl to *set* the encapsulation
+		 * type, there's no ioctl to *get* the encapsulation type.
+		 *
+		 * This means that
+		 *
+		 *	programs that dissect Linux Classical IP frames
+		 *	would have to check for an LLC header and,
+		 *	depending on whether they see one or not, dissect
+		 *	the frame as LLC-encapsulated or as raw IP (I
+		 *	don't know whether there's any traffic other than
+		 *	IP that would show up on the socket, or whether
+		 *	there's any support for IPv6 in the Linux
+		 *	Classical IP code);
+		 *
+		 *	filter expressions would have to compile into
+		 *	code that checks for an LLC header and does
+		 *	the right thing.
+		 *
+		 * Both of those are a nuisance - and, at least on systems
+		 * that support PF_PACKET sockets, we don't have to put
+		 * up with those nuisances; instead, we can just capture
+		 * in cooked mode.  That's what we'll do.
+		 */
+		handle->linktype = DLT_LINUX_SLL;
 		break;
 
 #ifndef ARPHRD_IEEE80211  /* From Linux 2.4.6 */
