@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.208 2004-08-18 14:25:02 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.209 2004-08-27 07:37:10 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -5283,7 +5283,7 @@ gen_vlan(vlan_num)
 	if (vlan_num >= 0) {
 		struct block *b1;
 
-		b1 = gen_cmp(orig_nl, BPF_H, (bpf_int32)vlan_num);
+		b1 = gen_mcmp(orig_nl, BPF_H, (bpf_int32)vlan_num, 0x0fff);
 		gen_and(b0, b1);
 		b0 = b1;
 	}
