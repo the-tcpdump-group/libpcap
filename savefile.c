@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.61 2002-06-06 08:57:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.62 2002-06-07 04:17:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -177,6 +177,7 @@ static const char rcsid[] =
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
 #define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
+#define LINKTYPE_FRELAY		124		/* Frame Relay */
 
 static struct linktype_map {
 	int	dlt;
@@ -204,6 +205,10 @@ static struct linktype_map {
 	 * have values that should never be equal to any DLT_*
 	 * code.
 	 */
+#ifdef DLT_FR
+	/* BSD/OS Frame Relay */
+	{ DLT_FR,		LINKTYPE_FRELAY },
+#endif
 	{ DLT_ATM_RFC1483, 	LINKTYPE_ATM_RFC1483 },
 	{ DLT_RAW,		LINKTYPE_RAW },
 	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
@@ -260,6 +265,9 @@ static struct linktype_map {
 
 	/* Solaris+SunATM */
 	{ DLT_SUNATM,		LINKTYPE_SUNATM },
+
+	/* Frame Relay */
+	{ DLT_FRELAY,		LINKTYPE_FRELAY },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:

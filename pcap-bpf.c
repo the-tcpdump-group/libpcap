@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.49 2002-05-31 10:59:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.50 2002-06-07 04:17:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -313,7 +313,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		break;
 
 	case 11:	/*DLT_FR*/
-		v = DLT_RAW;	/*XXX*/
+		v = DLT_FRELAY;
 		break;
 
 	case 12:	/*DLT_C_HDLC*/
