@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.44 2000-12-21 10:29:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.45 2000-12-22 11:53:27 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -629,8 +629,11 @@ static int map_arphrd_to_dlt(int arptype)
 #endif
 	case ARPHRD_ATM:	return DLT_ATM_CLIP;
 
-	case ARPHRD_SIT:
 	case ARPHRD_PPP:
+	/* Not sure if this is correct for all tunnels, but it
+	 * works for CIPE */
+	case ARPHRD_TUNNEL:
+	case ARPHRD_SIT:
 	case ARPHRD_CSLIP:
 	case ARPHRD_SLIP6:
 	case ARPHRD_CSLIP6:
