@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.80 2000-06-26 04:20:36 assar Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.81 2000-07-01 03:31:45 assar Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,16 +6,10 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.80 $)
+AC_REVISION($Revision: 1.81 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
-
-umask 002
-
-if test -z "$PWD" ; then
-	PWD=`pwd`
-fi
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 
@@ -23,7 +17,7 @@ AC_LBL_CHECK_TYPE(u_int32_t, u_int)
 
 AC_C___ATTRIBUTE__
 
-AC_CHECK_HEADERS(malloc.h sys/sockio.h ifaddrs.h)
+AC_CHECK_HEADERS(sys/sockio.h ifaddrs.h)
 
 AC_LBL_FIXINCLUDES
 
