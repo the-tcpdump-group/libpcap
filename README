@@ -1,10 +1,13 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.18 1999-10-07 23:46:40 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.19 2000-01-24 23:57:55 mcr Exp $ (LBL)
 
-LIBPCAP 0.4
-Lawrence Berkeley National Laboratory
-Network Research Group
-libpcap@ee.lbl.gov
-ftp://ftp.ee.lbl.gov/libpcap.tar.Z
+LIBPCAP 0.5
+Now maintained by "The Tcpdump Group"
+Send patches to patches@tcpdump.org
+See 		www.tcpdump.org
+
+formerly from 	Lawrence Berkeley National Laboratory
+		Network Research Group <libpcap@ee.lbl.gov>
+		ftp://ftp.ee.lbl.gov/libpcap.tar.Z (0.4)
 
 This directory contains source code for libpcap, a system-independent
 interface for user-level packet capture.  libpcap provides a portable
@@ -42,8 +45,5 @@ to Ultrix using the kernel source and/or object patches available in:
 
 Problems, bugs, questions, desirable enhancements, source code
 contributions, etc., should be sent to the email address
-"libpcap@ee.lbl.gov".
+"patches@tcpdump.org".
 
- - Steve McCanne
-   Craig Leres
-   Van Jacobson
