@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.148 2001-02-12 09:33:21 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.149 2001-02-21 09:33:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1698,6 +1698,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_PIM:
 		bpf_error("'pim' modifier applied to host");
 
+	case Q_VRRP:
+		bpf_error("'vrrp' modifier applied to host");
+
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
 
@@ -1799,6 +1802,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_PIM:
 		bpf_error("'pim' modifier applied to host");
+
+	case Q_VRRP:
+		bpf_error("'vrrp' modifier applied to host");
 
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
@@ -1961,6 +1967,14 @@ gen_proto_abbrev(proto)
 		b0 = gen_proto(IPPROTO_PIM, Q_IPV6, Q_DEFAULT);
 		gen_or(b0, b1);
 #endif
+		break;
+
+#ifndef IPPROTO_VRRP
+#define IPPROTO_VRRP	112
+#endif
+
+	case Q_VRRP:
+		b1 = gen_proto(IPPROTO_VRRP, Q_IP, Q_DEFAULT);
 		break;
 
 	case Q_IP:
@@ -2704,6 +2718,10 @@ gen_proto(v, proto, dir)
 		bpf_error("'pim proto' is bogus");
 		/* NOTREACHED */
 
+	case Q_VRRP:
+		bpf_error("'vrrp proto' is bogus");
+		/* NOTREACHED */
+
 #ifdef INET6
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
@@ -3254,6 +3272,7 @@ gen_load(proto, index, size)
 	case Q_IGMP:
 	case Q_IGRP:
 	case Q_PIM:
+	case Q_VRRP:
 		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
 		s->s.k = off_nl;
 		sappend(s, xfer_to_a(index));
