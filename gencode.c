@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.174 2002-08-06 06:13:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.175 2002-08-06 07:35:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -4072,6 +4072,27 @@ gen_inbound(dir)
 			  gen_load(Q_LINK, gen_loadi(0), 1),
 			  gen_loadi(0),
 			  dir);
+		break;
+
+	case DLT_LINUX_SLL:
+		if (dir) {
+			/*
+			 * Match packets sent by this machine.
+			 */
+			b0 = gen_cmp(0, BPF_H, LINUX_SLL_OUTGOING);
+		} else {
+			/*
+			 * Match packets sent to this machine.
+			 * (No broadcast or multicast packets, or
+			 * packets sent to some other machine and
+			 * received promiscuously.)
+			 *
+			 * XXX - packets sent to other machines probably
+			 * shouldn't be matched, but what about broadcast
+			 * or multicast packets we received?
+			 */
+			b0 = gen_cmp(0, BPF_H, LINUX_SLL_HOST);
+		}
 		break;
 
 	default:
