@@ -3,9 +3,6 @@
 /* Define to empty if the keyword does not work.  */
 #undef const
 
-/* Define as __inline if that's what the C compiler calls it.  */
-#undef inline
-
 /* Long story short: aclocal.m4 depends on autoconf 2.13
  * implementation details wrt "const"; newer versions
  * have different implementation details so for now we
@@ -46,6 +43,9 @@
 
 /* needed on HP-UX */
 #undef _HPUX_SOURCE
+
+/* Define as token for inline if inlining supported */
+#undef inline
 
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
