@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.94 2001-12-10 08:33:42 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.94.2.1 2002-06-28 10:36:26 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,13 +6,13 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.94 $)
+AC_REVISION($Revision: 1.94.2.1 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
 
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
-AC_C_INLINE
+AC_LBL_C_INLINE
 AC_C___ATTRIBUTE__
 
 AC_LBL_CHECK_TYPE(u_int8_t, u_char)
