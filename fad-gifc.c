@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.2 2002-07-30 08:12:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.3 2002-08-03 20:24:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -305,6 +305,16 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	ifend = (struct ifreq *)(buf + ifc.ifc_len);
 
 	for (; ifrp < ifend; ifrp = ifnext) {
+		/*
+		 * XXX - what if this isn't an IPv4 address?  Can
+		 * we still get the netmask, etc. with ioctls on
+		 * an IPv4 socket?
+		 *
+		 * The answer is probably platform-dependent, and
+		 * if the answer is "no" on more than one platform,
+		 * the way you work around it is probably platform-
+		 * dependent as well.
+		 */
 		n = SA_LEN(&ifrp->ifr_addr) + sizeof(ifrp->ifr_name);
 		if (n < sizeof(*ifrp))
 			ifnext = ifrp + 1;
