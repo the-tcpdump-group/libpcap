@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.64 2001-08-24 09:27:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.65 2001-08-25 05:08:26 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -189,6 +189,12 @@ static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 #ifdef SO_ATTACH_FILTER
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
 static int	fix_offset(struct bpf_insn *p);
+static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
+
+static struct sock_filter	total_insn
+	= BPF_STMT(BPF_RET | BPF_K, 0);
+static struct sock_fprog	total_fcode
+	= { 1, &total_insn };
 #endif
 
 /*
@@ -733,8 +739,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 	}
 
 	if (can_filter_in_kernel) {
-		if (setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
-			       &fcode, sizeof(fcode)) == 0)
+		if (set_kernel_filter(handle, &fcode) == 0)
 		{
 			/* Installation succeded - using kernel filter. */
 			handle->md.use_bpf = 1;
@@ -1418,7 +1423,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	return ifr.ifr_hwaddr.sa_family;
 }
 
-#ifdef HAVE_PF_PACKET_SOCKETS
+#ifdef SO_ATTACH_FILTER
 static int
 fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
@@ -1541,5 +1546,101 @@ fix_offset(struct bpf_insn *p)
 		return -1;
 	}
 	return 0;
+}
+
+static int
+set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
+{
+	int total_filter_on = 0;
+	int save_mode;
+	int ret;
+	int save_errno;
+	/* setsockopt() barfs unless it get a dummy parameter */
+	int dummy;
+
+	/*
+	 * The socket filter code doesn't discard all packets queued
+	 * up on the socket when the filter is changed; this means
+	 * that packets that don't match the new filter may show up
+	 * after the new filter is put onto the socket, if those
+	 * packets haven't yet been read.
+	 *
+	 * This means, for example, that if you do a tcpdump capture
+	 * with a filter, the first few packets in the capture might
+	 * be packets that wouldn't have passed the filter.
+	 *
+	 * We therefore discard all packets queued up on the socket
+	 * when setting a kernel filter.  (This isn't an issue for
+	 * userland filters, as the userland filtering is done after
+	 * packets are queued up.)
+	 *
+	 * To flush those packets, we put the socket in read-only mode,
+	 * and read packets from the socket until there are no more to
+	 * read.
+	 *
+	 * In order to keep that from being an infinite loop - i.e.,
+	 * to keep more packets from arriving while we're draining
+	 * the queue - we put the "total filter", which is a filter
+	 * that rejects all packets, onto the socket before draining
+	 * the queue.
+	 *
+	 * This code deliberately ignores any errors, so that you may
+	 * get bogus packets if an error occurs, rather than having
+	 * the filtering done in userland even if it could have been
+	 * done in the kernel.
+	 */
+	if (setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
+		       &total_fcode, sizeof(total_fcode)) == 0) {
+		char drain[1];
+
+		/*
+		 * Note that we've put the total socket onto the filter.
+		 */
+		total_filter_on = 1;
+
+		/*
+		 * Save the socket's current mode, and put it in
+		 * non-blocking mode; we drain it by reading packets
+		 * until we get an error (which we assume is a
+		 * "nothing more to be read" error).
+		 */
+		save_mode = fcntl(handle->fd, F_GETFL, 0);
+		if (save_mode != -1 &&
+		    fcntl(handle->fd, F_SETFL, save_mode | O_NONBLOCK) >= 0) {
+			while (recv(handle->fd, &drain, sizeof drain,
+			       MSG_TRUNC) >= 0)
+				;
+			fcntl(handle->fd, F_SETFL, save_mode);
+		}
+	}
+
+	/*
+	 * Now attach the new filter.
+	 */
+	ret = setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
+			 fcode, sizeof(*fcode));
+	if (ret == -1 && total_filter_on) {
+		/*
+		 * Well, we couldn't set that filter on the socket,
+		 * but we could set the total filter on the socket.
+		 *
+		 * This could, for example, mean that the filter was
+		 * too big to put into the kernel, so we'll have to
+		 * filter in userland; in any case, we'll be doing
+		 * filtering in userland, so we need to remove the
+		 * total filter so we see packets.
+		 */
+		save_errno = errno;
+
+		/*
+		 * XXX - if this fails, we're really screwed;
+		 * we have the total filter on the socket,
+		 * and it won't come off.  What do we do then?
+		 */
+		setsockopt(handle->fd, SOL_SOCKET, SO_DETACH_FILTER,
+			   &dummy, sizeof(dummy));
+		errno = save_errno;
+	}
+	return ret;	 
 }
 #endif
