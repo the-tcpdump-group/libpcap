@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.173 2002-08-05 07:59:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.174 2002-08-06 06:13:20 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -800,7 +800,7 @@ init_linktype(type)
 		 */
 		off_linktype = 24;
 		off_nl = 32;		/* 802.11+802.2+SNAP */
-		off_nl_nosnap = 27;	/* 802.22+802.2 */
+		off_nl_nosnap = 27;	/* 802.11+802.2 */
 		return;
 
 	case DLT_PRISM_HEADER:
