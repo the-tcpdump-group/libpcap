@@ -26,12 +26,32 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.37 2000-10-25 06:59:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.38 2000-10-25 07:46:50 guy Exp $ (LBL)";
 #endif
 
 /*
- * Known bugs:
- *   - setting promiscuous on loopback gives every packet twice
+ * Known problems with 2.0[.x] kernels:
+ *
+ *   - The loopback device gives every packet twice; on 2.2[.x] kernels,
+ *     if we use PF_PACKET, we can filter out the transmitted version
+ *     of the packet by using data in the "sockaddr_ll" returned by
+ *     "recvfrom()", but, on 2.0[.x] kernels, we have to use
+ *     PF_INET/SOCK_PACKET, which means "recvfrom()" supplies a
+ *     "sockaddr_pkt" which doesn't give us enough information to let
+ *     us do that.
+ *
+ *   - We have to set the interface's IFF_PROMISC flag ourselves, if
+ *     we're to run in promiscuous mode, which means we have to turn
+ *     it off ourselves when we're done; the kernel doesn't keep track
+ *     of how many sockets are listening promiscuously, which means
+ *     it won't get turned off automatically when no sockets are
+ *     listening promiscuously.  We'd have to catch "pcap_close()"
+ *     and restore the value the promiscuous flag had when we opened
+ *     the device - which may not be the value it should have, if
+ *     another socket also requested promiscuous mode between the time
+ *     when we opened the socket and the time when we close the socket.
+ *     We currently just punt, printing a warning and hinting that the
+ *     user should upgrade to a 2.2 or later kernel.
  */
 
 
@@ -271,7 +291,11 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 static int
 pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 {
+#ifdef HAVE_NETPACKET_PACKET_H
+	struct sockaddr_ll	from;
+#else
 	struct sockaddr		from;
+#endif
 	socklen_t		fromlen;
 	int			packet_len, caplen;
 	struct pcap_pkthdr	pcap_header;
@@ -302,6 +326,22 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			return -1;
 		}
 	}
+
+#ifdef HAVE_NETPACKET_PACKET_H
+	/*
+	 * If this is from the loopback device, reject outgoing packets;
+	 * we'll see the packet as an incoming packet as well, and
+	 * we don't want to see it twice.
+	 *
+	 * We can only do this if we're using PF_PACKET; the address
+	 * returned for SOCK_PACKET is a "sockaddr_pkt" which lacks
+	 * the relevant packet type information.
+	 */
+	if (!handle->md.sock_packet &&
+	    from.sll_ifindex == handle->md.lo_ifindex &&
+	    from.sll_pkttype == PACKET_OUTGOING)
+		return 0;
+#endif
 
 	/*
 	 * XXX: According to the kernel source we should get the real 
@@ -541,6 +581,19 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		handle->md.sock_packet = 0;
 
 		/*
+		 * Get the interface index of the loopback device.
+		 * If the attempt fails, don't fail, just set the
+		 * "md.lo_ifindex" to -1.
+		 *
+		 * XXX - can there be more than one device that loops
+		 * packets back, i.e. devices other than "lo"?  If so,
+		 * we'd need to find them all, and have an array of
+		 * indices for them, and check all of them in
+		 * "pcap_read_packet()".
+		 */
+		handle->md.lo_ifindex = iface_get_id(sock_fd, "lo", ebuf);
+
+		/*
 		 * What kind of frames do we have to deal with? Fall back 
 		 * to cooked mode if we have an unknown interface type. 
 		 */
@@ -550,38 +603,50 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			if (arptype == -1) 
 				break;
 			handle->linktype = map_arphrd_to_dlt(arptype);
-		} else 
-			handle->linktype = DLT_RAW;
+			if (handle->linktype == -1) {
+				/*
+				 * Unknown interface type - reopen in cooked
+				 * mode.
+				 */
+				if (close(sock_fd) == -1) {
+					snprintf(ebuf, PCAP_ERRBUF_SIZE,
+						 "close: %s", pcap_strerror(errno));
+					break;
+				}
+				sock_fd = socket(PF_PACKET, SOCK_DGRAM, 
+						 htons(ETH_P_ALL));
+				if (sock_fd == -1) {
+					snprintf(ebuf, PCAP_ERRBUF_SIZE,
+						 "socket: %s", pcap_strerror(errno));
+					break;
+				}
 
-		if (handle->linktype == -1) {
-			/* Unknown interface type - reopen in cooked mode */
-
-			if (close(sock_fd) == -1) {
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
-					 "close: %s", pcap_strerror(errno));
-				break;
+				fprintf(stderr, 
+					"Warning: arptype %d not supported by "
+					"libpcap - falling back to cooked "
+					"socket\n",
+					arptype);
+				handle->linktype = DLT_RAW;
 			}
-			sock_fd = socket(PF_PACKET, SOCK_DGRAM, 
-					 htons(ETH_P_ALL));
-			if (sock_fd == -1) {
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
-					 "socket: %s", pcap_strerror(errno));
-				break;
-			}
 
-			fprintf(stderr, 
-				"Warning: Falling back to cooked socket\n");
-			handle->linktype = DLT_RAW;
-		}
-
-
-		if (device) {
 			device_id = iface_get_id(sock_fd, device, ebuf);
 			if (device_id == -1)
 				break;
 
 			if (iface_bind(sock_fd, device_id, ebuf) == -1)
 				break;
+		} else {
+			handle->linktype = DLT_RAW;
+
+			/*
+			 * XXX - squelch GCC complaints about
+			 * uninitialized variables; if we can't
+			 * select promiscuous mode on all interfaces,
+			 * we should move the code below into the
+			 * "if (device)" branch of the "if" and
+			 * get rid of the next statement.
+			 */
+			device_id = -1;
 		}
 
 		/* Select promiscuous mode on/off */

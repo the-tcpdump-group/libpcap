@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.28 2000-09-19 03:28:10 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.29 2000-10-25 07:46:49 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -67,6 +67,7 @@ struct pcap_md {
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
 	int	timeout;	/* timeout specified to pcap_open_live */
 	int	promisc;	/* running in promiscuous mode */
+	int	lo_ifindex;	/* interface index of the loopback device */
 	char 	*device;	/* device name */
 #endif
 };
