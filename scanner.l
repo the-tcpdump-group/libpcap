@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.86 2002-07-11 09:06:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.87 2002-07-27 18:41:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -283,7 +283,7 @@ ${B}			{ yylval.e = pcap_ether_aton(((char *)yytext)+1);
 			  if (getaddrinfo(yytext, NULL, &hints, &res))
 				bpf_error("bogus IPv6 address %s", yytext);
 			  else {
-				yylval.e = sdup((char *)yytext); return HID6;
+				yylval.s = sdup((char *)yytext); return HID6;
 			  }
 #else
 			  bpf_error("IPv6 address %s not supported", yytext);
