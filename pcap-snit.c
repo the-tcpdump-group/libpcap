@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.69 2003-11-21 10:19:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.70 2003-12-18 23:32:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -343,6 +343,26 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * "poll()" should work on it.
 	 */
 	p->selectable_fd = p->fd;
+
+	/*
+	 * This is (presumably) a real Ethernet capture; give it a
+	 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+	 * that an application can let you choose it, in case you're
+	 * capturing DOCSIS traffic that a Cisco Cable Modem
+	 * Termination System is putting out onto an Ethernet (it
+	 * doesn't put an Ethernet header onto the wire, it puts raw
+	 * DOCSIS frames out on the wire inside the low-level
+	 * Ethernet framing).
+	 */
+	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+	/*
+	 * If that fails, just leave the list empty.
+	 */
+	if (p->dlt_list != NULL) {
+		p->dlt_list[0] = DLT_EN10MB;
+		p->dlt_list[1] = DLT_DOCSIS;
+		p->dlt_count = 2;
+	}
 
 	p->read_op = pcap_read_snit;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */

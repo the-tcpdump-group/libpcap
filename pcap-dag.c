@@ -29,7 +29,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.14 2003-11-21 10:19:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.15 2003-12-18 23:32:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -457,16 +457,16 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
   handle->snapshot	= snaplen;
   /*handle->md.timeout	= to_ms; */
 
-  if ((handle->linktype = dag_get_datalink(handle)) < 0) {
+  if (dag_get_datalink(handle) < 0) {
     snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_get_linktype %s: unknown linktype\n", device);
-	goto fail;
+    goto fail;
   }
   
   handle->bufsize = 0;
 
   if (new_pcap_dag(handle) < 0) {
     snprintf(ebuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
-	goto fail;
+    goto fail;
   }
 
   /*
@@ -496,6 +496,11 @@ fail:
 	free((char *)device);
   }
   if (handle != NULL) {
+	/*
+	 * Get rid of any link-layer type list we allocated.
+	 */
+	if (handle->dlt_list != NULL)
+		free(handle->dlt_list);
 	free(handle);
   }
 
@@ -666,8 +671,6 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 static int
 dag_get_datalink(pcap_t *p)
 {
-  int linktype = -1;
-
   /* Check the type through a dagapi call.
   */
   switch(dag_linktype(p->fd)) {
@@ -681,30 +684,48 @@ dag_get_datalink(pcap_t *p)
       record = (dag_record_t *)(p->md.dag_mem_base + p->md.dag_mem_bottom);
 
       if ((ntohl(record->rec.pos.hdlc) & 0xffff0000) == 0xff030000) {
-        linktype = DLT_PPP_SERIAL;
+        p->linktype = DLT_PPP_SERIAL;
         fprintf(stderr, "Set DAG linktype to %d (DLT_PPP_SERIAL)\n", linktype);
       } else {
-        linktype = DLT_CHDLC;
+        p->linktype = DLT_CHDLC;
         fprintf(stderr, "Set DAG linktype to %d (DLT_CHDLC)\n", linktype);
       }
       break;
     }
   case TYPE_ETH:
-    linktype = DLT_EN10MB;
+    p->linktype = DLT_EN10MB;
+    /*
+     * This is (presumably) a real Ethernet capture; give it a
+     * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+     * that an application can let you choose it, in case you're
+     * capturing DOCSIS traffic that a Cisco Cable Modem
+     * Termination System is putting out onto an Ethernet (it
+     * doesn't put an Ethernet header onto the wire, it puts raw
+     * DOCSIS frames out on the wire inside the low-level
+     * Ethernet framing).
+     */
+    p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+    /*
+     * If that fails, just leave the list empty.
+     */
+    if (p->dlt_list != NULL) {
+      p->dlt_list[0] = DLT_EN10MB;
+      p->dlt_list[1] = DLT_DOCSIS;
+      p->dlt_count = 2;
+    }
     fprintf(stderr, "Set DAG linktype to %d (DLT_EN10MB)\n", linktype);
     break;
   case TYPE_ATM: 
-    linktype = DLT_ATM_RFC1483;
+    p->linktype = DLT_ATM_RFC1483;
     fprintf(stderr, "Set DAG linktype to %d (DLT_ATM_RFC1483)\n", linktype);
     break;
   case TYPE_LEGACY:
-    linktype = DLT_NULL;
+    p->linktype = DLT_NULL;
     fprintf(stderr, "Set DAG linktype to %d (DLT_NULL)\n", linktype);
     break;
   default:
     fprintf(stderr, "Unknown DAG linktype %d\n", dag_linktype(p->fd));
-    break;
+    return -1;;
   }
-
-  return linktype;
+  return 0;
 }

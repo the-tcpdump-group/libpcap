@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.18 2003-11-30 02:31:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.19 2003-12-18 23:32:33 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -231,6 +231,25 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		
 	case NdisMedium802_3:
 		p->linktype = DLT_EN10MB;
+		/*
+		 * This is (presumably) a real Ethernet capture; give it a
+		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+		 * that an application can let you choose it, in case you're
+		 * capturing DOCSIS traffic that a Cisco Cable Modem
+		 * Termination System is putting out onto an Ethernet (it
+		 * doesn't put an Ethernet header onto the wire, it puts raw
+		 * DOCSIS frames out on the wire inside the low-level
+		 * Ethernet framing).
+		 */
+		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (p->dlt_list != NULL) {
+			p->dlt_list[0] = DLT_EN10MB;
+			p->dlt_list[1] = DLT_DOCSIS;
+			p->dlt_count = 2;
+		}
 		break;
 		
 	case NdisMediumFddi:
@@ -313,6 +332,11 @@ bad:
 	    PacketCloseAdapter(p->adapter);
 	if (p->buffer != NULL)
 		free(p->buffer);
+	/*
+	 * Get rid of any link-layer type list we allocated.
+	 */
+	if (p->dlt_list != NULL)
+		free(p->dlt_list);
 	free(p);
 	return (NULL);
 }

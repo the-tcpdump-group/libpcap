@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.69 2003-11-21 10:19:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.70 2003-12-18 23:32:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -275,6 +275,22 @@ pcap_set_datalink(pcap_t *p, int dlt)
 			break;
 	if (i >= p->dlt_count)
 		goto unsupported;
+	if (p->dlt_count == 2 && p->dlt_list[0] == DLT_EN10MB &&
+	    dlt == DLT_DOCSIS) {
+		/*
+		 * This is presumably an Ethernet device, as the first
+		 * link-layer type it offers is DLT_EN10MB, and the only
+		 * other type it offers is DLT_DOCSIS.  That means that
+		 * we can't tell the driver to supply DOCSIS link-layer
+		 * headers - we're just pretending that's what we're
+		 * getting, as, presumably, we're capturing on a dedicated
+		 * link to a Cisco Cable Modem Termination System, and
+		 * it's putting raw DOCSIS frames on the wire inside low-level
+		 * Ethernet framing.
+		 */
+		p->linktype = dlt;
+		return (0);
+	}
 	if (p->set_datalink_op(p, dlt) == -1)
 		return (-1);
 	p->linktype = dlt;
@@ -331,6 +347,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_SUNATM, "Sun raw ATM"),
 	DLT_CHOICE(DLT_IEEE802_11_RADIO, "802.11 plus radio information header"),
 	DLT_CHOICE(DLT_ARCNET_LINUX, "Linux ARCNET"),
+	DLT_CHOICE(DLT_DOCSIS, "DOCSIS"),
 	DLT_CHOICE(DLT_LINUX_IRDA, "Linux IrDA"),
 	DLT_CHOICE_SENTINEL
 };

@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.102 2003-11-21 10:19:34 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.103 2003-12-18 23:32:32 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -948,6 +948,34 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 	switch (arptype) {
 
 	case ARPHRD_ETHER:
+		/*
+		 * This is (presumably) a real Ethernet capture; give it a
+		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+		 * that an application can let you choose it, in case you're
+		 * capturing DOCSIS traffic that a Cisco Cable Modem
+		 * Termination System is putting out onto an Ethernet (it
+		 * doesn't put an Ethernet header onto the wire, it puts raw
+		 * DOCSIS frames out on the wire inside the low-level
+		 * Ethernet framing).
+		 *
+		 * XXX - are there any sorts of "fake Ethernet" that have
+		 * ARPHRD_ETHER but that *shouldn't offer DLT_DOCSIS as
+		 * a Cisco CMTS won't put traffic onto it or get traffic
+		 * bridged onto it?  ISDN is handled in "live_open_new()",
+		 * as we fall back on cooked mode there; are there any
+		 * others?
+		 */
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (handle->dlt_list != NULL) {
+			handle->dlt_list[0] = DLT_EN10MB;
+			handle->dlt_list[1] = DLT_DOCSIS;
+			handle->dlt_count = 2;
+		}
+		/* FALLTHROUGH */
+
 	case ARPHRD_METRICOM:
 	case ARPHRD_LOOPBACK:
 		handle->linktype = DLT_EN10MB;
@@ -1278,6 +1306,17 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 				}
 				handle->md.cooked = 1;
 
+				/*
+				 * Get rid of any link-layer type list
+				 * we allocated - this only supports cooked
+				 * capture.
+				 */
+				if (handle->dlt_list != NULL) {
+					free(handle->dlt_list);
+					handle->dlt_list = NULL;
+					handle->dlt_count = 0;
+				}
+
 				if (handle->linktype == -1) {
 					/*
 					 * Warn that we're falling back on
@@ -1294,7 +1333,7 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 				}
 				/* IrDA capture is not a real "cooked" capture,
 				 * it's IrLAP frames, not IP packets. */
-				if(handle->linktype != DLT_LINUX_IRDA)
+				if (handle->linktype != DLT_LINUX_IRDA)
 					handle->linktype = DLT_LINUX_SLL;
 			}
 
@@ -1368,9 +1407,14 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 	if (sock_fd != -1)
 		close(sock_fd);
 
-	if (fatal_err)
+	if (fatal_err) {
+		/*
+		 * Get rid of any link-layer type list we allocated.
+		 */
+		if (handle->dlt_list != NULL)
+			free(handle->dlt_list);
 		return -2;
-	else
+	} else
 		return 0;
 #else
 	strncpy(ebuf,

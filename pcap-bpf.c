@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.71 2003-11-22 00:06:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.72 2003-12-18 23:32:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -490,6 +490,14 @@ pcap_close_bpf(pcap_t *p)
 }
 
 /*
+ * We include the OS's <net/bpf.h>, not our "pcap-bpf.h", so we probably
+ * don't get DLT_DOCSIS defined.
+ */
+#ifndef DLT_DOCSIS
+#define DLT_DOCSIS	143
+#endif
+
+/*
  * XXX - on AIX, IBM's tcpdump (and perhaps the incompatible-with-everybody-
  * else's libpcap in AIX 5.1) appears to forcibly load the BPF driver
  * if it's not already loaded, and to create the BPF devices if they
@@ -653,7 +661,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * not fatal; we just don't get to use the feature later.
 	 */
 	if (ioctl(fd, BIOCGDLTLIST, (caddr_t)&bdl) == 0) {
-		bdl.bfl_list = (u_int *) malloc(sizeof(u_int) * bdl.bfl_len);
+		u_int i;
+		int is_ethernet;
+
+		bdl.bfl_list = (u_int *) malloc(sizeof(u_int) * bdl.bfl_len + 1);
 		if (bdl.bfl_list == NULL) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
@@ -663,9 +674,44 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		if (ioctl(fd, BIOCGDLTLIST, (caddr_t)&bdl) < 0) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
+			free(bdl.bfl_list);
 			goto bad;
 		}
 
+		/*
+		 * OK, for real Ethernet devices, add DLT_DOCSIS to the
+		 * list, so that an application can let you choose it,
+		 * in case you're capturing DOCSIS traffic that a Cisco
+		 * Cable Modem Termination System is putting out onto
+		 * an Ethernet (it doesn't put an Ethernet header onto
+		 * the wire, it puts raw DOCSIS frames out on the wire
+		 * inside the low-level Ethernet framing).
+		 *
+		 * A "real Ethernet device" is defined here as a device
+		 * that has a link-layer type of DLT_EN10MB and that has
+		 * no alternate link-layer types; that's done to exclude
+		 * 802.11 interfaces (which might or might not be the
+		 * right thing to do, but I suspect it is - Ethernet <->
+		 * 802.11 bridges would probably badly mishandle frames
+		 * that don't have Ethernet headers).
+		 */
+		if (p->linktype == DLT_EN10MB) {
+			is_ethernet = TRUE;
+			for (i = 0; i < bdl.bfl_len; i++) {
+				if (bdl.bfl_list != DLT_EN10MB) {
+					is_ethernet = FALSE;
+					break;
+				}
+			}
+			if (is_ethernet) {
+				/*
+				 * We reserved one more slot at the end of
+				 * the list.
+				 */
+				bdl.bfl_list[bdl.bfl_len] = DLT_DOCSIS;
+				bdl.bfl_len++;
+			}
+		}
 		p->dlt_count = bdl.bfl_len;
 		p->dlt_list = bdl.bfl_list;
 	} else {
@@ -677,6 +723,26 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 #endif
 
+	/*
+	 * If this is an Ethernet device, and we don't have a DLT_ list,
+	 * give it a list with DLT_EN10MB and DLT_DOCSIS.  (That'd give
+	 * 802.11 interfaces DLT_DOCSIS, which isn't the right thing to
+	 * do, but there's not much we can do about that without finding
+	 * some other way of determining whether it's an Ethernet or 802.11
+	 * device.)
+	 */
+	if (p->linktype == DLT_EN10MB && p->dlt_count == 0) {
+		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (p->dlt_list != NULL) {
+			p->dlt_list[0] = DLT_EN10MB;
+			p->dlt_list[1] = DLT_DOCSIS;
+			p->dlt_count = 2;
+		}
+	}
+		
 	/* set timeout */
 	if (to_ms != 0) {
 		/*
@@ -842,10 +908,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	return (p);
  bad:
 	(void)close(fd);
-#ifdef BIOCGDLTLIST
-	if (bdl.bfl_list != NULL)
-		free(bdl.bfl_list);
-#endif
+	if (p->dlt_list != NULL)
+		free(p->dlt_list);
 	free(p);
 	return (NULL);
 }
