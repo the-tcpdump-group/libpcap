@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.82 2003-01-03 08:33:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.83 2003-02-04 05:42:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -275,7 +275,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 	register dl_info_ack_t *infop;
 #ifdef HAVE_SYS_BUFMOD_H
-	bpf_u_int32 ss, flag;
+	/*
+	 * XXX - is uint_t always 32 bits?  If not, these should be
+	 * uint_t, at least on systems that have that type.
+	 */
+	bpf_u_int32 ss;
+	bpf_u_int32 chunksize;
 #ifdef HAVE_SOLARIS
 	register char *release;
 	bpf_u_int32 osmajor, osminor, osmicro;
@@ -593,20 +598,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	/*
-	** Set up the bufmod flags
-	*/
-	if (strioctl(p->fd, SBIOCGFLAGS, sizeof(flag), (char *)&flag) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCGFLAGS: %s",
-		    pcap_strerror(errno));
-		goto bad;
-	}
-	flag |= SB_NO_DROPS;
-	if (strioctl(p->fd, SBIOCSFLAGS, sizeof(flag), (char *)&flag) != 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCSFLAGS: %s",
-		    pcap_strerror(errno));
-		goto bad;
-	}
-	/*
 	** Set up the bufmod timeout
 	*/
 	if (to_ms != 0) {
@@ -621,6 +612,22 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		}
 	}
 #endif
+
+	/*
+	** Set the chunk length to 65536; that appears to be the biggest
+	** value to which you can set it, and doing so reduces the
+	** number of packet drops.
+	**
+	** XXX - what is the chunk size if it's not set?  0, meaning
+	** no buffering?
+	*/
+	chunksize = 65536;
+	if (strioctl(p->fd, SBIOCSCHUNK, sizeof(chunksize), (char *)&chunksize)
+	    != 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCSCHUNKP: %s",
+		    pcap_strerror(errno));
+		goto bad;
+	}
 
 	/*
 	** As the last operation flush the read side.
