@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.203 2004-03-29 21:04:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.204 2004-04-07 18:43:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -98,7 +98,7 @@ static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
 /* Hack for updating VLAN offsets. */
-static u_int	orig_linktype = -1, orig_nl = -1, orig_nl_nosnap = -1;
+static u_int	orig_linktype = -1U, orig_nl = -1U, orig_nl_nosnap = -1U;
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
@@ -1256,6 +1256,7 @@ gen_linktype(proto)
 
 	case DLT_EN10MB:
 		return gen_ether_linktype(proto);
+		/*NOTREACHED*/
 		break;
 
 	case DLT_C_HDLC:
@@ -1267,6 +1268,7 @@ gen_linktype(proto)
 
 		default:
 			return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+			/*NOTREACHED*/
 			break;
 		}
 		break;
@@ -1280,6 +1282,7 @@ gen_linktype(proto)
 	case DLT_ATM_CLIP:
 	case DLT_IP_OVER_FC:
 		return gen_llc(proto);
+		/*NOTREACHED*/
 		break;
 
 	case DLT_SUNATM:
@@ -1475,6 +1478,7 @@ gen_linktype(proto)
 				    (bpf_int32)proto);
 			}
 		}
+		/*NOTREACHED*/
 		break;
 
 	case DLT_SLIP:
@@ -1498,6 +1502,7 @@ gen_linktype(proto)
 		default:
 			return gen_false();		/* always false */
 		}
+		/*NOTREACHED*/
 		break;
 
 	case DLT_PPP:
@@ -1684,6 +1689,7 @@ gen_linktype(proto)
 #endif /* INET6 */
 		else
 			return gen_false();
+		/*NOTREACHED*/
 		break;
 
 	case DLT_ARCNET:
@@ -1727,6 +1733,7 @@ gen_linktype(proto)
 			return (gen_cmp(off_linktype, BPF_B,
 					(bpf_int32)ARCTYPE_ATALK));
 		}
+		/*NOTREACHED*/
 		break;
 
 	case DLT_LTALK:
@@ -1736,6 +1743,7 @@ gen_linktype(proto)
 		default:
 			return gen_false();
 		}
+		/*NOTREACHED*/
 		break;
 
 	case DLT_FRELAY:
@@ -1781,6 +1789,7 @@ gen_linktype(proto)
 		default:
 			return gen_false();
 		}
+		/*NOTREACHED*/
 		break;
 
 	case DLT_LINUX_IRDA:
@@ -3714,6 +3723,7 @@ gen_proto(v, proto, dir)
 			 * XXX - what about SNAP-encapsulated frames?
 			 */
 			return gen_cmp(2, BPF_H, (0x03<<8) | v);
+			/*NOTREACHED*/
 			break;
 
 		case DLT_C_HDLC:
@@ -4154,6 +4164,7 @@ gen_mcode(s1, s2, masklen, q)
 		bpf_error("Mask syntax for networks only");
 		/* NOTREACHED */
 	}
+	/* NOTREACHED */
 }
 
 struct block *
@@ -4788,6 +4799,7 @@ gen_broadcast(proto)
 		return b2;
 	}
 	bpf_error("only link-layer/IP broadcast filters supported");
+	/* NOTREACHED */
 }
 
 /*
@@ -5004,6 +5016,7 @@ gen_multicast(proto)
 #endif /* INET6 */
 	}
 	bpf_error("link-layer multicast filters supported only on ethernet/FDDI/token ring/ARCNET/802.11/ATM LANE/Fibre Channel");
+	/* NOTREACHED */
 }
 
 /*
@@ -5082,7 +5095,7 @@ gen_pf_ifname(const char *ifname)
 		    len-1);
 		/* NOTREACHED */
 	}
-	b0 = gen_bcmp(off, strlen(ifname), ifname);
+	b0 = gen_bcmp(off, strlen(ifname), (const u_char *)ifname);
 	return (b0);
 }
 
@@ -5102,7 +5115,7 @@ gen_pf_ruleset(char *ruleset)
 		/* NOTREACHED */
 	}
 	b0 = gen_bcmp(offsetof(struct pfloghdr, ruleset),
-	    strlen(ruleset), ruleset);
+	    strlen(ruleset), (const u_char *)ruleset);
 	return (b0);
 }
 
