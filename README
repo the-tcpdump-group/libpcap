@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.19 2000-01-24 23:57:55 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.20 2000-06-11 16:46:21 mcr Exp $ (LBL)
 
 LIBPCAP 0.5
 Now maintained by "The Tcpdump Group"
@@ -36,7 +36,7 @@ added overhead (especially, for selective filters).  Ideally, libpcap
 would translate BPF filters into a filter program that is compatible
 with the underlying kernel subsystem, but this is not yet implemented.
 
-BPF is standard in 4.4BSD, BSD/386, NetBSD, and FreeBSD.  DEC OSF/1
+BPF is standard in 4.4BSD, BSD/OS, NetBSD, FreeBSD, and OpenBSD.  DEC OSF/1
 uses the packetfilter interface but has been extended to accept BPF
 filters (which libpcap utilizes).  Also, you can add BPF filter support
 to Ultrix using the kernel source and/or object patches available in:
