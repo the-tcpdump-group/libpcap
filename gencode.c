@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.215 2004-12-18 08:52:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.216 2005-01-12 09:02:55 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1023,6 +1023,12 @@ init_linktype(p)
 		off_nl_nosnap = PFLOG_HDRLEN;
 		return;
 
+        case DLT_JUNIPER_MLPPP:
+                off_linktype = 4;
+		off_nl = 4;
+		off_nl_nosnap = -1;
+                break;
+
 	case DLT_JUNIPER_ATM1:
 		off_linktype = 4; /* in reality variable between 4-8 */
 		off_nl = 4;
@@ -1822,6 +1828,7 @@ gen_linktype(proto)
 		/*NOTREACHED*/
 		break;
 
+        case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
 		/* just lets verify the magic number for now -
@@ -5118,6 +5125,7 @@ gen_inbound(dir)
 		}
 		break;
 
+        case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
 		/* juniper flags (including direction) are stored
