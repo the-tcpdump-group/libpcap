@@ -1,4 +1,10 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.48 1999-10-30 23:50:43 itojun Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.49 2000-02-23 11:41:35 itojun Exp $ (LBL)
+
+Wed Feb 23 20:32:32 JST 2000  itojun@iijlab.net
+	* use getifaddrs(3) whenever possible.  this avoids use of SIOCGIFCONF.
+	  SIOCGIFCONF is hard-to-use API since (1) it does not tell us amount
+	  of buffer beforehand, (2) it is not friendly with alignment issues
+	  due to use of packed struct.
 
 Sun Oct 19 JST 1999  itojun@iijlab.net
 	* bring in KAME IPv6/IPsec bpf compiler.
