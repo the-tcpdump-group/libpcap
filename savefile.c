@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.66 2002-08-06 06:27:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.67 2002-10-09 19:02:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -177,6 +177,9 @@ static const char rcsid[] =
 #define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
+#define LINKTYPE_RIO		123		/* RapidIO */
+#define LINKTYPE_PCI_EXP	124		/* PCI Express */
+#define LINKTYPE_AURORA		125		/* Xilinx Aurora link layer */
 
 static struct linktype_map {
 	int	dlt;
@@ -267,6 +270,15 @@ static struct linktype_map {
 
 	/* Solaris+SunATM */
 	{ DLT_SUNATM,		LINKTYPE_SUNATM },
+
+	/* RapidIO */
+	{ DLT_RIO,		LINKTYPE_RIO },
+
+	/* PCI Express */
+	{ DLT_PCI_EXP,		LINKTYPE_PCI_EXP },
+
+	/* Xilinx Aurora link layer */
+	{ DLT_AURORA,		LINKTYPE_AURORA },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
