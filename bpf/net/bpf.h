@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.53 2002-01-25 08:27:35 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.52.2.1 2002-03-08 11:19:51 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -325,6 +325,12 @@ struct bpf_hdr {
  * Reserved for Siemens HiPath HDLC.
  */
 #define DLT_HHDLC		121
+
+/*
+ * Reserved for Fibre Channel, as per a request from Don Lee
+ * <donlee@cray.com>.
+ */
+#define DLT_FC			122
 
 /*
  * The instruction encodings.
