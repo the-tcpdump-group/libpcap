@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.127 2000-10-28 08:19:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.128 2000-10-28 09:06:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -779,15 +779,41 @@ gen_linktype(proto)
 
 	case DLT_PPP:
 	case DLT_PPP_SERIAL:
-		if (proto == ETHERTYPE_IP)
+		/*
+		 * We use Ethernet protocol types inside libpcap;
+		 * map them to the corresponding PPP protocol types.
+		 */
+		switch (proto) {
+
+		case ETHERTYPE_IP:
 			proto = PPP_IP;			/* XXX was 0x21 */
+			break;
+
 #ifdef INET6
-		else if (proto == ETHERTYPE_IPV6)
+		case ETHERTYPE_IPV6:
 			proto = PPP_IPV6;
+			break;
 #endif
+
+		case ETHERTYPE_DN:
+			proto = PPP_DECNET;
+			break;
+
+		case ETHERTYPE_ATALK:
+			proto = PPP_APPLE;
+			break;
+
+		case ETHERTYPE_NS:
+			proto = PPP_NS;
+			break;
+		}
 		break;
 
 	case DLT_PPP_BSDOS:
+		/*
+		 * We use Ethernet protocol types inside libpcap;
+		 * map them to the corresponding PPP protocol types.
+		 */
 		switch (proto) {
 
 		case ETHERTYPE_IP:
