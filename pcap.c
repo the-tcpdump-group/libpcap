@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.74 2004-03-24 19:50:54 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.75 2004-10-19 07:06:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -677,6 +677,15 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps)
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from a pcap_open_dead pcap_t");
 	return (-1);
+}
+
+void
+pcap_close_common(pcap_t *p)
+{
+	if (p->buffer != NULL)
+		free(p->buffer);
+	if (p->fd >= 0)
+		close(p->fd);
 }
 
 static void

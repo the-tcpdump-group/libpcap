@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.64 2004-04-07 18:41:00 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.65 2004-10-19 07:06:12 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -259,6 +259,8 @@ extern int vsnprintf (char *, size_t, const char *, va_list ap);
 int	pcap_getnonblock_fd(pcap_t *, char *);
 int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
+
+void	pcap_close_common(pcap_t *);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".

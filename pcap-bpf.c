@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.80 2004-10-05 07:23:39 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.81 2004-10-19 07:06:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -545,15 +545,6 @@ bpf_open(pcap_t *p, char *errbuf)
 	return (fd);
 }
 
-static void
-pcap_close_bpf(pcap_t *p)
-{
-	if (p->buffer != NULL)
-		free(p->buffer);
-	if (p->fd >= 0)
-		close(p->fd);
-}
-
 /*
  * We include the OS's <net/bpf.h>, not our "pcap-bpf.h", so we probably
  * don't get DLT_DOCSIS defined.
@@ -978,7 +969,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_bpf;
-	p->close_op = pcap_close_bpf;
+	p->close_op = pcap_close_common;
 
 	return (p);
  bad:

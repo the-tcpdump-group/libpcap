@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.56 2004-03-23 19:18:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.57 2004-10-19 07:06:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -241,12 +241,9 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 static void
 pcap_close_nit(pcap_t *p)
 {
-	if (p->buffer != NULL)
-		free(p->buffer);
+	pcap_close_common(p);
 	if (p->device != NULL)
 		free(p->device);
-	if (p->fd >= 0)
-		close(p->fd);
 }
 
 pcap_t *

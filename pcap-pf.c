@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.87 2004-03-23 19:18:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.88 2004-10-19 07:06:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -279,15 +279,6 @@ pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 	return (0);
 }
 
-static void
-pcap_close_pf(pcap_t *p)
-{
-	if (p->buffer != NULL)
-		free(p->buffer);
-	if (p->fd >= 0)
-		close(p->fd);
-}
-
 /*
  * We include the OS's <net/bpf.h>, not our "pcap-bpf.h", so we probably
  * don't get DLT_DOCSIS defined.
@@ -501,7 +492,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_pf;
-	p->close_op = pcap_close_pf;
+	p->close_op = pcap_close_common;
 
 	return (p);
  bad:

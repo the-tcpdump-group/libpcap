@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.107 2004-07-22 20:18:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.108 2004-10-19 07:06:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -432,10 +432,7 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 static void
 pcap_close_dlpi(pcap_t *p)
 {
-	if (p->buffer != NULL)
-		free(p->buffer);
-	if (p->fd >= 0)
-		close(p->fd);
+	pcap_close_common(p);
 	if (p->send_fd >= 0)
 		close(p->send_fd);
 }

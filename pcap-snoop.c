@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.53 2004-04-07 18:33:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.54 2004-10-19 07:06:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -191,15 +191,6 @@ pcap_stats_snoop(pcap_t *p, struct pcap_stat *ps)
 	 */
 	*ps = p->md.stat;
 	return (0);
-}
-
-static void
-pcap_close_snoop(pcap_t *p)
-{
-	if (p->buffer != NULL)
-		free(p->buffer);
-	if (p->fd >= 0)
-		close(p->fd);
 }
 
 /* XXX can't disable promiscuous */
@@ -392,7 +383,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_snoop;
-	p->close_op = pcap_close_snoop;
+	p->close_op = pcap_close_common;
 
 	return (p);
  bad:
