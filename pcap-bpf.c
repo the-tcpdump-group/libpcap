@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.33 2000-04-27 09:11:12 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.34 2000-07-10 04:50:05 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>			/* optionally get BSD define */
@@ -152,7 +152,7 @@ bpf_open(pcap_t *p, char *errbuf)
 	 * XXX better message for all minors used
 	 */
 	if (fd < 0)
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "(no devices found) %s: %s",
 		    device, pcap_strerror(errno));
 
 	return (fd);
@@ -193,11 +193,20 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		goto bad;
 	}
 	v = 32768;	/* XXX this should be a user-accessible hook */
-	/* Ignore the return value - this is because the call fails on
-	 * BPF systems that don't have kernel malloc.  And if the call
-	 * fails, it's no big deal, we just continue to use the standard
-	 * buffer size.
-	 */
+	/* try finding a good size for the buffer */
+ 	do {
+ 		(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
+ 
+ 		(void)strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+ 		if ((ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) &&
+ 		    (errno != ENOBUFS)) {
+ 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
+ 			    errno, device, pcap_strerror(errno));
+ 			goto bad;
+ 		}
+ 		v >>= 2;
+ 	} while (fd < 0 && errno == ENOBUFS);
+
 	(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
 
 	(void)strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
@@ -253,6 +262,16 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 			goto bad;
 		}
 	}
+
+#ifdef	BIOCIMMEDIATE
+	v = 1;
+	if (ioctl(p->fd, BIOCIMMEDIATE, &v) < 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "BIOCIMMEDIATE: %s",
+		    pcap_strerror(errno));
+		goto bad;
+	}
+#endif	/* BIOCIMMEDIATE */
+
 	if (promisc)
 		/* set promiscuous mode, okay if it fails */
 		(void)ioctl(p->fd, BIOCPROMISC, NULL);
