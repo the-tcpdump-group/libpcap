@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.63 2001-08-24 07:46:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.64 2001-08-24 09:27:14 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -377,6 +377,7 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 static int
 pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 {
+	u_char			*bp;
 	int			offset;
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct sockaddr_ll	from;
@@ -407,10 +408,11 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	/* Receive a single packet from the kernel */
 
+	bp = handle->buffer + handle->offset;
 	do {
 		fromlen = sizeof(from);
 		packet_len = recvfrom( 
-			handle->fd, handle->buffer + offset + handle->offset,
+			handle->fd, bp + offset,
 			handle->bufsize - offset, MSG_TRUNC, 
 			(struct sockaddr *) &from, &fromlen);
 	} while (packet_len == -1 && errno == EINTR);
@@ -454,7 +456,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 */
 		packet_len += SLL_HDR_LEN;
 
-		hdrp = (struct sll_header *)handle->buffer;
+		hdrp = (struct sll_header *)bp;
 
 		/*
 		 * Map the PACKET_ value to a LINUX_SLL_ value; we
@@ -539,7 +541,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	/* Run the packet filter if not using kernel filter */
 	if (!handle->md.use_bpf && handle->fcode.bf_insns) {
-		if (bpf_filter(handle->fcode.bf_insns, handle->buffer, 
+		if (bpf_filter(handle->fcode.bf_insns, bp,
 		                packet_len, caplen) == 0)
 		{
 			/* rejected by filter */
@@ -593,7 +595,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	handle->md.stat.ps_recv++;
 
 	/* Call the user supplied callback function */
-	callback(userdata, &pcap_header, handle->buffer + handle->offset);
+	callback(userdata, &pcap_header, bp);
 
 	return 1;
 }
