@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.155 2001-06-18 08:46:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.156 2001-06-20 07:12:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -592,14 +592,13 @@ init_linktype(type)
 		off_nl = 4;
 		return;
 
-	case DLT_PPP_ETHER:		/* NetBSD PPP over Ethernet */
+	case DLT_PPP_ETHER:
 		/*
-		 * This includes the Ethernet header (since we need
-		 * the ethertype to dispatch Session vs. Discovery)
-		 * and the PPPoE (RFC 2516) header.
+		 * This does no include the Ethernet header, and
+		 * only covers session state.
 		 */
-		off_linktype = 20;
-		off_nl = 22;
+		off_linktype = 6;
+		off_nl = 8;
 		return;
 
 	case DLT_PPP_BSDOS:
@@ -1188,6 +1187,7 @@ gen_linktype(proto)
 
 	case DLT_PPP:
 	case DLT_PPP_SERIAL:
+	case DLT_PPP_ETHER:
 		/*
 		 * We use Ethernet protocol types inside libpcap;
 		 * map them to the corresponding PPP protocol types.
