@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.77 2002-05-31 11:03:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.78 2002-06-11 17:04:46 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1081,7 +1081,7 @@ get_release(bpf_u_int32 *majorp, bpf_u_int32 *minorp, bpf_u_int32 *microp)
  * says that, to see the machine's outgoing traffic, you'd need to
  * apply the right patches to your system, and also set that variable
  * with:
- 
+
 echo 'lanc_outbound_promisc_flag/W1' | /usr/bin/adb -w /stand/vmunix /dev/kmem
 
  * which could be put in, for example, "/sbin/init.d/lan".
@@ -1144,14 +1144,14 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		    (bpf_u_int32)dlp->dl_primitive);
 		return (-1);
 	}
-	    
+
 	if (ctl.len < DL_HP_PPA_ACK_SIZE) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
 		     ctl.len, (unsigned long)DL_HP_PPA_ACK_SIZE);
 		return (-1);
 	}
-	    
+
 	/* allocate buffer */
 	if ((ppa_data_buf = (char *)malloc(dlp->dl_length)) == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,

@@ -8,7 +8,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.5 2000-10-12 03:53:59 guy Exp $";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.6 2002-06-11 17:04:46 itojun Exp $";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -133,7 +133,7 @@ wrapup(int fd)
 		perror("tcpdump: enet ioctl EIOSTATS error");
 		exit(-1);
 	}
-	
+
 	fprintf(stderr, "%d packets queued", es.enStat_Rcnt);
 	if (es.enStat_Rdrops > 0)
 		fprintf(stderr, ", %d dropped", es.enStat_Rdrops);
@@ -141,7 +141,7 @@ wrapup(int fd)
 		fprintf(stderr, ", %d tcpdump %s", es.enStat_Reads,
 				es.enStat_Reads > 1 ? "reads" : "read");
 	if (es.enStat_MaxRead > 1)
-		fprintf(stderr, ", %d packets in largest read", 
+		fprintf(stderr, ", %d packets in largest read",
 			es.enStat_MaxRead);
 	putc('\n', stderr);
 #endif	/* IBMRTPC */

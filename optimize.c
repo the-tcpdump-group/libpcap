@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.73 2002-06-11 05:30:40 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.74 2002-06-11 17:04:45 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1139,7 +1139,7 @@ opt_blk(b, do_stmts)
 	 * already there, or if this block is a return,
 	 * eliminate all the statements.
 	 */
-	if (do_stmts && 
+	if (do_stmts &&
 	    ((b->out_use == 0 && aval != 0 &&b->val[A_ATOM] == aval) ||
 	     BPF_CLASS(b->s.code) == BPF_RET)) {
 		if (b->stmts != 0) {
@@ -2091,12 +2091,12 @@ icode_to_fcode(root, lenp)
 	while (1) {
 	    unMarkAll();
 	    n = *lenp = count_stmts(root);
-    
+
 	    fp = (struct bpf_insn *)malloc(sizeof(*fp) * n);
 	    memset((char *)fp, 0, sizeof(*fp) * n);
 	    fstart = fp;
 	    ftail = fp + n;
-    
+
 	    unMarkAll();
 	    if (convert_code_r(root))
 		break;

@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.53 2001-05-10 14:48:02 fenner Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.54 2002-06-11 17:04:45 itojun Exp $ (LBL)
  */
 
 /* Address qualifiers. */
@@ -97,7 +97,7 @@ struct slist {
 	struct slist *next;
 };
 
-/* 
+/*
  * A bit vector to represent definition sets.  We assume TOT_REGISTERS
  * is smaller than 8*sizeof(atomset).
  */

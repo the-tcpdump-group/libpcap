@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.46 2002-04-09 07:37:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.47 2002-06-11 17:04:45 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -121,7 +121,7 @@ dup_sockaddr(struct sockaddr *sa)
 {
 	struct sockaddr *newsa;
 	unsigned int size;
-	
+
 	size = SA_LEN(sa);
 	if ((newsa = malloc(size)) == NULL)
 		return (NULL);
@@ -194,7 +194,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 			    "malloc: %s", pcap_strerror(errno));
 			return (-1);
 		}
-		
+
 		/*
 		 * Fill in the entry.
 		 */
@@ -317,7 +317,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
 		} else
 			prevdev->next = curdev;
 	}
-	
+
 	*curdev_ret = curdev;
 	return (0);
 }
@@ -379,7 +379,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 		}
 	} else
 		curaddr->netmask = NULL;
-		
+
 	if (broadaddr != NULL) {
 		curaddr->broadaddr = dup_sockaddr(broadaddr);
 		if (curaddr->broadaddr == NULL) {
@@ -390,7 +390,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 		}
 	} else
 		curaddr->broadaddr = NULL;
-		
+
 	if (dstaddr != NULL) {
 		curaddr->dstaddr = dup_sockaddr(dstaddr);
 		if (curaddr->dstaddr == NULL) {
@@ -401,7 +401,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, char *name, u_int flags,
 		}
 	} else
 		curaddr->dstaddr = NULL;
-		
+
 	/*
 	 * Find the end of the list of addresses.
 	 */
@@ -595,7 +595,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, int fd, char *errbuf)
 				/*
 				 * This could be the separator between a
 				 * name and an alias number, or it could be
-				 * the separator between a name with no 
+				 * the separator between a name with no
 				 * alias number and the next field.
 				 *
 				 * If there's a colon after digits, it
@@ -965,7 +965,7 @@ pcap_lookupdev(errbuf)
 
 	if (pcap_findalldevs(&alldevs, errbuf) == -1)
 		return (NULL);
-	
+
 	if (alldevs == NULL || (alldevs->flags & PCAP_IF_LOOPBACK)) {
 		/*
 		 * There are no devices on the list, or the first device
@@ -1003,7 +1003,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register struct sockaddr_in *sin;
 	struct ifreq ifr;
 
-	/* 
+	/*
 	 * The pseudo-device "any" listens on all interfaces and therefore
 	 * has the network address and -mask "0.0.0.0" therefore catching
 	 * all traffic. Using NULL for the interface is the same as "any".

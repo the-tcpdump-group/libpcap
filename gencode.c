@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.166 2002-06-11 05:30:39 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.167 2002-06-11 17:04:44 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -299,7 +299,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 
 	netmask = mask;
-	
+
 	snaplen = pcap_snapshot(p);
 	if (snaplen == 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -1784,7 +1784,7 @@ gen_dnhostop(addr, dir, base_off)
 
 	case Q_ISO:
 	        bpf_error("ISO host filtering not implemented");
-		
+
 	default:
 		abort();
 	}

@@ -3,13 +3,13 @@
  *
  *  Copyright (c) 2000 Torsten Landschoff <torsten@debian.org>
  *  		       Sebastian Krahmer  <krahmer@cs.uni-potsdam.de>
- *  
+ *
  *  License: BSD
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
  *  are met:
- *  
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *  2. Redistributions in binary form must reproduce the above copyright
@@ -19,14 +19,14 @@
  *  3. The names of the authors may not be used to endorse or promote
  *     products derived from this software without specific prior
  *     written permission.
- *  
+ *
  *  THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
  *  IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.80 2002-06-01 09:36:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.81 2002-06-11 17:04:47 itojun Exp $ (LBL)";
 #endif
 
 /*
@@ -117,7 +117,7 @@ static const char rcsid[] =
  * isn't defined?  It only defines one data structure in 2.0.x, so
  * it shouldn't cause any problems.
  */
-#ifdef PF_PACKET  
+#ifdef PF_PACKET
 # include <linux/if_packet.h>
 
  /*
@@ -158,8 +158,8 @@ typedef int		socklen_t;
 
 #define MAX_LINKHEADER_SIZE	256
 
-/* 
- * When capturing on all interfaces we use this as the buffer size. 
+/*
+ * When capturing on all interfaces we use this as the buffer size.
  * Should be bigger then all MTUs that occur in real life.
  * 64kB should be enough for now.
  */
@@ -199,13 +199,13 @@ static struct sock_fprog	total_fcode
 #endif
 
 /*
- *  Get a handle for a live capture from the given device. You can 
- *  pass NULL as device to get all packages (without link level 
+ *  Get a handle for a live capture from the given device. You can
+ *  pass NULL as device to get all packages (without link level
  *  information of course). If you pass 1 as promisc the interface
- *  will be set to promiscous mode (XXX: I think this usage should 
+ *  will be set to promiscous mode (XXX: I think this usage should
  *  be deprecated and functions be added to select that later allow
  *  modification of that values -- Torsten).
- *  
+ *
  *  See also pcap(3).
  */
 pcap_t *
@@ -233,7 +233,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	handle->md.timeout	= to_ms;
 
 	/*
-	 * NULL and "any" are special devices which give us the hint to 
+	 * NULL and "any" are special devices which give us the hint to
 	 * monitor all devices.
 	 */
 	if (!device || strcmp(device, "any") == 0) {
@@ -245,7 +245,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "Promiscuous mode not supported on the \"any\" device");
 		}
-	
+
 	} else
 		handle->md.device	= strdup(device);
 
@@ -256,13 +256,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		return NULL;
 	}
 
-	/* 
-	 * Current Linux kernels use the protocol family PF_PACKET to 
-	 * allow direct access to all packets on the network while 
-	 * older kernels had a special socket type SOCK_PACKET to 
+	/*
+	 * Current Linux kernels use the protocol family PF_PACKET to
+	 * allow direct access to all packets on the network while
+	 * older kernels had a special socket type SOCK_PACKET to
 	 * implement this feature.
 	 * While this old implementation is kind of obsolete we need
-	 * to be compatible with older kernels for a while so we are 
+	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 */
 
@@ -274,10 +274,10 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 			live_open_ok = 1;
 	}
 	if (!live_open_ok) {
-		/* 
+		/*
 		 * Both methods to open the packet socket failed. Tidy
 		 * up and report our failure (ebuf is expected to be
-		 * set by the functions above). 
+		 * set by the functions above).
 		 */
 
 		if (handle->md.device != NULL)
@@ -387,7 +387,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 /*
  *  Read at most max_packets from the capture stream and call the callback
  *  for each of them. Returns the number of packets handled or -1 if an
- *  error occured. 
+ *  error occured.
  */
 int
 pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
@@ -400,7 +400,7 @@ pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 }
 
 /*
- *  Read a packet from the socket calling the handler provided by 
+ *  Read a packet from the socket calling the handler provided by
  *  the user. Returns the number of packets received or -1 if an
  *  error occured.
  */
@@ -441,9 +441,9 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	bp = handle->buffer + handle->offset;
 	do {
 		fromlen = sizeof(from);
-		packet_len = recvfrom( 
+		packet_len = recvfrom(
 			handle->fd, bp + offset,
-			handle->bufsize - offset, MSG_TRUNC, 
+			handle->bufsize - offset, MSG_TRUNC,
 			(struct sockaddr *) &from, &fromlen);
 	} while (packet_len == -1 && errno == EINTR);
 
@@ -534,16 +534,16 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #endif
 
 	/*
-	 * XXX: According to the kernel source we should get the real 
-	 * packet len if calling recvfrom with MSG_TRUNC set. It does 
+	 * XXX: According to the kernel source we should get the real
+	 * packet len if calling recvfrom with MSG_TRUNC set. It does
 	 * not seem to work here :(, but it is supported by this code
-	 * anyway. 
+	 * anyway.
 	 * To be honest the code RELIES on that feature so this is really
 	 * broken with 2.2.x kernels.
 	 * I spend a day to figure out what's going on and I found out
-	 * that the following is happening: 
+	 * that the following is happening:
 	 *
-	 * The packet comes from a random interface and the packet_rcv 
+	 * The packet comes from a random interface and the packet_rcv
 	 * hook is called with a clone of the packet. That code inserts
 	 * the packet into the receive queue of the packet socket.
 	 * If a filter is attached to that socket that filter is run
@@ -553,10 +553,10 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * # tcpdump -d
 	 * (000) ret      #68
 	 *
-	 * So the packet filter cuts down the packet. The recvfrom call 
+	 * So the packet filter cuts down the packet. The recvfrom call
 	 * says "hey, it's only 68 bytes, it fits into the buffer" with
-	 * the result that we don't get the real packet length. This 
-	 * is valid at least until kernel 2.2.17pre6. 
+	 * the result that we don't get the real packet length. This
+	 * is valid at least until kernel 2.2.17pre6.
 	 *
 	 * We currently handle this by making a copy of the filter
 	 * program, fixing all "ret" instructions with non-zero
@@ -727,7 +727,7 @@ pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 }
 
 /*
- *  Attach the given BPF code to the packet capture device. 
+ *  Attach the given BPF code to the packet capture device.
  */
 int
 pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
@@ -752,9 +752,9 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 		/* install_bpf_program() filled in errbuf */
 		return -1;
 
-	/* 
-	 * Run user level packet filter by default. Will be overriden if 
-	 * installing a kernel filter succeeds. 
+	/*
+	 * Run user level packet filter by default. Will be overriden if
+	 * installing a kernel filter succeeds.
 	 */
 	handle->md.use_bpf = 0;
 
@@ -771,7 +771,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 #ifdef USHRT_MAX
 	if (handle->fcode.bf_len > USHRT_MAX) {
 		/*
-		 * fcode.len is an unsigned short for current kernel. 
+		 * fcode.len is an unsigned short for current kernel.
 		 * I have yet to see BPF-Code with that much
 		 * instructions but still it is possible. So for the
 		 * sake of correctness I added this check.
@@ -831,14 +831,14 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 		}
 		else if (err == -1)	/* Non-fatal error */
 		{
-			/* 
+			/*
 			 * Print a warning if we weren't able to install
 			 * the filter for a reason other than "this kernel
 			 * isn't configured to support socket filters.
 			 */
 			if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
 				fprintf(stderr,
-				    "Warning: Kernel filter failed: %s\n", 
+				    "Warning: Kernel filter failed: %s\n",
 					pcap_strerror(errno));
 			}
 		}
@@ -870,8 +870,8 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 }
 
 /*
- *  Linux uses the ARP hardware type to identify the type of an 
- *  interface. pcap uses the DLT_xxx constants for this. This 
+ *  Linux uses the ARP hardware type to identify the type of an
+ *  interface. pcap uses the DLT_xxx constants for this. This
  *  function takes a pointer to a "pcap_t", and an ARPHRD_xxx
  *  constant, as arguments, and sets "handle->linktype" to the
  *  appropriate DLT_XXX constant and sets "handle->offset" to
@@ -884,7 +884,7 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
  *  If "cooked_ok" is non-zero, we can use DLT_LINUX_SLL and capture
  *  in cooked mode; otherwise, we can't use cooked mode, so we have
  *  to pick some type that works in raw mode, or fail.
- *  
+ *
  *  Sets the link type to -1 if unable to map the type.
  */
 static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
@@ -1086,7 +1086,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
  *  FIXME: 0 uses to mean success (Sebastian)
  */
 static int
-live_open_new(pcap_t *handle, char *device, int promisc, 
+live_open_new(pcap_t *handle, char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -1100,10 +1100,10 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 	do {
 		/*
 		 * Open a socket with protocol family packet. If a device is
-		 * given we try to open it in raw mode otherwise we use 
-		 * the cooked interface. 
+		 * given we try to open it in raw mode otherwise we use
+		 * the cooked interface.
 		 */
-		sock_fd = device ? 
+		sock_fd = device ?
 			socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))
 		      : socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_ALL));
 
@@ -1136,8 +1136,8 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		handle->offset	 = 0;
 
 		/*
-		 * What kind of frames do we have to deal with? Fall back 
-		 * to cooked mode if we have an unknown interface type. 
+		 * What kind of frames do we have to deal with? Fall back
+		 * to cooked mode if we have an unknown interface type.
 		 */
 
 		if (device) {
@@ -1169,7 +1169,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 						 "close: %s", pcap_strerror(errno));
 					break;
 				}
-				sock_fd = socket(PF_PACKET, SOCK_DGRAM, 
+				sock_fd = socket(PF_PACKET, SOCK_DGRAM,
 						 htons(ETH_P_ALL));
 				if (sock_fd == -1) {
 					snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -1225,7 +1225,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		/* Select promiscuous mode on/off */
 
 #ifdef SOL_PACKET
-		/* 
+		/*
 		 * Hmm, how can we set promiscuous mode on all interfaces?
 		 * I am not sure if that is possible at all.
 		 */
@@ -1233,12 +1233,12 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 		if (device) {
 			memset(&mr, 0, sizeof(mr));
 			mr.mr_ifindex = device_id;
-			mr.mr_type    = promisc ? 
+			mr.mr_type    = promisc ?
 				PACKET_MR_PROMISC : PACKET_MR_ALLMULTI;
-			if (setsockopt(sock_fd, SOL_PACKET, 
+			if (setsockopt(sock_fd, SOL_PACKET,
 				PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1)
 			{
-				snprintf(ebuf, PCAP_ERRBUF_SIZE, 
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
 					"setsockopt: %s", pcap_strerror(errno));
 				break;
 			}
@@ -1261,8 +1261,8 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 	else
 		return 0;
 #else
-	strncpy(ebuf, 
-		"New packet capturing interface not supported by build " 
+	strncpy(ebuf,
+		"New packet capturing interface not supported by build "
 		"environment", PCAP_ERRBUF_SIZE);
 	return 0;
 #endif
@@ -1270,7 +1270,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 
 #ifdef HAVE_PF_PACKET_SOCKETS
 /*
- *  Return the index of the given device name. Fill ebuf and return 
+ *  Return the index of the given device name. Fill ebuf and return
  *  -1 on failure.
  */
 static int
@@ -1291,7 +1291,7 @@ iface_get_id(int fd, const char *device, char *ebuf)
 }
 
 /*
- *  Bind the socket associated with FD to the given device. 
+ *  Bind the socket associated with FD to the given device.
  */
 static int
 iface_bind(int fd, int ifindex, char *ebuf)
@@ -1319,9 +1319,9 @@ iface_bind(int fd, int ifindex, char *ebuf)
 		return -2;
 	}
 
-	if (err > 0) { 
+	if (err > 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			"bind: %s", pcap_strerror(err)); 
+			"bind: %s", pcap_strerror(err));
 		return -2;
 	}
 
@@ -1336,7 +1336,7 @@ iface_bind(int fd, int ifindex, char *ebuf)
 /*
  * With older kernels promiscuous mode is kind of interesting because we
  * have to reset the interface before exiting. The problem can't really
- * be solved without some daemon taking care of managing usage counts. 
+ * be solved without some daemon taking care of managing usage counts.
  * If we put the interface into promiscuous mode, we set a flag indicating
  * that we must take it out of that mode when the interface is closed,
  * and, when closing the interface, if that flag is set we take it out
@@ -1383,7 +1383,7 @@ void	pcap_close_linux( pcap_t *handle )
 		memset(&ifr, 0, sizeof(ifr));
 		strncpy(ifr.ifr_name, handle->md.device, sizeof(ifr.ifr_name));
 		if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
-			fprintf(stderr, 
+			fprintf(stderr,
 			    "Can't restore interface flags (SIOCGIFFLAGS failed: %s).\n"
 			    "Please adjust manually.\n"
 			    "Hint: This can't happen with Linux >= 2.2.0.\n",
@@ -1396,7 +1396,7 @@ void	pcap_close_linux( pcap_t *handle )
 				 */
 				ifr.ifr_flags &= ~IFF_PROMISC;
 				if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1) {
-					fprintf(stderr, 
+					fprintf(stderr,
 					    "Can't restore interface flags (SIOCSIFFLAGS failed: %s).\n"
 					    "Please adjust manually.\n"
 					    "Hint: This can't happen with Linux >= 2.2.0.\n",
@@ -1442,7 +1442,7 @@ void	pcap_close_linux( pcap_t *handle )
  *  FIXME: 0 uses to mean success (Sebastian)
  */
 static int
-live_open_old(pcap_t *handle, char *device, int promisc, 
+live_open_old(pcap_t *handle, char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 	int		sock_fd = -1, arptype;
@@ -1570,7 +1570,7 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 }
 
 /*
- *  Bind the socket associated with FD to the given device using the 
+ *  Bind the socket associated with FD to the given device using the
  *  interface of the old kernels.
  */
 static int
@@ -1596,9 +1596,9 @@ iface_bind_old(int fd, const char *device, char *ebuf)
 		return -1;
 	}
 
-	if (err > 0) { 
+	if (err > 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			"bind: %s", pcap_strerror(err)); 
+			"bind: %s", pcap_strerror(err));
 		return -1;
 	}
 
@@ -1609,7 +1609,7 @@ iface_bind_old(int fd, const char *device, char *ebuf)
 /* ===== System calls available on all supported kernels ============== */
 
 /*
- *  Query the kernel for the MTU of the given interface. 
+ *  Query the kernel for the MTU of the given interface.
  */
 static int
 iface_get_mtu(int fd, const char *device, char *ebuf)
@@ -1815,7 +1815,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 	 * the filtering done in userland even if it could have been
 	 * done in the kernel.
 	 */
-	if (setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
+	if (setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER,
 		       &total_fcode, sizeof(total_fcode)) == 0) {
 		char drain[1];
 
@@ -1851,7 +1851,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 	/*
 	 * Now attach the new filter.
 	 */
-	ret = setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER, 
+	ret = setsockopt(handle->fd, SOL_SOCKET, SO_ATTACH_FILTER,
 			 fcode, sizeof(*fcode));
 	if (ret == -1 && total_filter_on) {
 		/*
@@ -1875,7 +1875,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 
 		errno = save_errno;
 	}
-	return ret;	 
+	return ret;
 }
 
 static int

@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.65 2001-12-10 07:14:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.66 2002-06-11 17:04:47 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -386,8 +386,8 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 
 	return (p);
  bad:
- 	if (p->fd >= 0)
- 		close(p->fd);
+	if (p->fd >= 0)
+		close(p->fd);
 	free(p);
 	return (NULL);
 }
