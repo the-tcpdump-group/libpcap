@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.182 2002-12-06 00:01:33 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.183 2002-12-12 07:04:17 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -838,6 +838,25 @@ init_linktype(type)
 		off_nl_nosnap = 144+27;	/* Prism+802.11+802.2 */
 		return;
 
+	case DLT_IEEE802_11_RADIO:
+		/*
+		 * Same as 802.11, but with an additional header before
+		 * the 802.11 header, containing a bunch of additional
+		 * information including radio-level information.
+		 *
+		 * The header is 64 bytes long.
+		 *
+		 * XXX - same variable-length header problem, only
+		 * more so; this header is also variable-length,
+		 * with the length being the 32-bit big-endian
+		 * number at an offset of 4 from the beginning
+		 * of the radio header.
+		 */
+		off_linktype = 64+24;
+		off_nl = 64+32;		/* Radio+802.11+802.2+SNAP */
+		off_nl_nosnap = 64+27;	/* Radio+802.11+802.2 */
+		return;
+
 	case DLT_ATM_RFC1483:
 		off_linktype = 0;
 		off_nl = 4;             /* FIXME SNAP */
@@ -1158,6 +1177,7 @@ gen_linktype(proto)
             }
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO:
 	case DLT_FDDI:
 	case DLT_IEEE802:
 	case DLT_ATM_RFC1483:
@@ -3034,6 +3054,7 @@ gen_port(port, ip_proto, dir)
         switch (linktype) {
         case DLT_IEEE802_11:
         case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO:
         case DLT_FDDI:
         case DLT_IEEE802:
         case DLT_ATM_RFC1483:
@@ -3510,6 +3531,7 @@ gen_proto(v, proto, dir)
                 switch (linktype) {
                 case DLT_IEEE802_11:
                 case DLT_PRISM_HEADER:
+		case DLT_IEEE802_11_RADIO:
                 case DLT_FDDI:
                 case DLT_IEEE802:
                 case DLT_ATM_RFC1483:
