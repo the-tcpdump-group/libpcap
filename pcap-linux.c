@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.104 2004-01-02 11:25:26 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.105 2004-01-14 01:56:10 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -684,8 +684,6 @@ static int
 pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 #ifdef HAVE_TPACKET_STATS
-        static struct tpacket_stats kstats_total = { 0, 0 };
-
 	struct tpacket_stats kstats;
 	socklen_t len = sizeof (struct tpacket_stats);
 #endif
@@ -719,19 +717,13 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * platforms, but the best approximation is to return
 		 * "tp_packets" as the count of packets and "tp_drops"
 		 * as the count of drops.
+		 *
+		 * Keep a running total because each call to 
+		 *    getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS, ....
+		 * resets the counters to zero.
 		 */
-
-                /*
-                 * Keep a running total because each call to 
-                 *    getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS, ....
-                 * resets the counters to zero.
-                 */
-
-                kstats_total.tp_packets += kstats.tp_packets;
-                kstats_total.tp_drops += kstats.tp_drops;
- 
-                handle->md.stat.ps_recv = kstats_total.tp_packets;
-                handle->md.stat.ps_drop = kstats_total.tp_drops;
+		handle->md.stat.ps_recv += kstats.tp_packets;
+		handle->md.stat.ps_drop += kstats.tp_drops;
 	}
 	else
 	{
