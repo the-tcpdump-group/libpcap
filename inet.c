@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.54 2002-12-22 02:36:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.55 2003-02-04 09:51:38 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -627,7 +627,7 @@ pcap_lookupdev(errbuf)
 
 int
 pcap_lookupnet(device, netp, maskp, errbuf)
-	register char *device;
+	const register char *device;
 	register bpf_u_int32 *netp, *maskp;
 	register char *errbuf;
 {
