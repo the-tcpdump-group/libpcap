@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.36 2000-07-11 23:00:05 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.37 2000-07-11 23:02:51 assar Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -200,9 +200,11 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	 * Try finding a good size for the buffer; 32768 may be too
 	 * big, so keep cutting it in half until we find a size
 	 * that works, or run out of sizes to try.
+	 *
+	 * XXX - there should be a user-accessible hook to set the
+	 * initial buffer size.
 	 */
-	v = 32768;	/* XXX this should be a user-accessible hook */
-	do {
+	for (v = 32768; v != 0; v >>= 1) {
 		/* Ignore the return value - this is because the call fails
 		 * on BPF systems that don't have kernel malloc.  And if
 		 * the call fails, it's no big deal, we just continue to
@@ -219,12 +221,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 			    device, pcap_strerror(errno));
 			goto bad;
 		}
-
-		/*
-		 * Try a smaller size.
-		 */
-		v >>= 2;
-	} while (v != 0);
+	}
 
 	if (v == 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
