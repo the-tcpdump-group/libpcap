@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.47 2000-12-22 12:24:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.48 2000-12-22 12:30:04 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -736,7 +736,9 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			if (handle->linktype == -1 ||
 			    (handle->linktype == DLT_EN10MB &&
 			     (strncmp("isdn", device, 4) == 0 ||
-			      strncmp("isdY", device, 4) == 0))) {
+			      strncmp("isdY", device, 4) == 0)) ||
+			    (handle->linktype == DLT_RAW &&
+			     (strncmp("ippp", device, 4) == 0))) {
 				/*
 				 * Unknown interface type (-1), or an ISDN
 				 * device (whose link-layer type we
