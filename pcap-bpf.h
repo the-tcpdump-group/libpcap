@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.2 2003-02-11 17:03:22 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.3 2003-03-08 08:42:14 guy Exp $ (LBL)
  */
 
 /*
@@ -225,8 +225,15 @@ struct bpf_version {
 #define DLT_LOOP	108
 
 /*
- * Values between 109 and 112 are used in capture file headers as
- * link-layer types corresponding to DLT_ types that might differ
+ * Encapsulated packets for IPsec; DLT_ENC is 13 in OpenBSD, but that's
+ * DLT_SLIP_BSDOS in NetBSD, so we can't use 13 for it in capture-file
+ * headers.
+ */
+#define DLT_ENC		109
+
+/*
+ * Values between 110 and 112 are reserved for use in capture file headers
+ * as link-layer types corresponding to DLT_ types that might differ
  * between platforms; don't use those values for new DLT_ types
  * other than the corresponding DLT_ types.
  */

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.76 2003-02-11 17:03:22 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.77 2003-03-08 08:42:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -156,6 +156,7 @@ static const char rcsid[] =
 #define LINKTYPE_ATM_CLIP	106		/* Linux Classical IP over ATM */
 #define LINKTYPE_FRELAY		107		/* Frame Relay */
 #define LINKTYPE_LOOP		108		/* OpenBSD loopback */
+#define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 
 #define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
 #define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
@@ -173,7 +174,7 @@ static const char rcsid[] =
 
 #define LINKTYPE_ARCNET_LINUX	129		/* Linux-style headers */
 
-#define LINKTYPE_JUNIPER_MLPPP  130            /* Juniper-internal chassis encapsulation */
+#define LINKTYPE_JUNIPER_MLPPP  130		/* Juniper-internal chassis encapsulation */
 #define LINKTYPE_JUNIPER_MLFR   131
 #define LINKTYPE_JUNIPER_ES     132
 #define LINKTYPE_JUNIPER_GGSN   133
@@ -184,7 +185,6 @@ static const char rcsid[] =
 /*
  * These types are reserved for future use.
  */
-#define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
 #define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */

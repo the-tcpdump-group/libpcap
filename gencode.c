@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.187 2003-03-08 08:23:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.188 2003-03-08 08:42:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -736,6 +736,12 @@ init_linktype(type)
 		off_linktype = 0;
 		off_nl = 4;
 		off_nl_nosnap = 4;	/* no 802.2 LLC */
+		return;
+
+	case DLT_ENC:
+		off_linktype = 0;
+		off_nl = 12;
+		off_nl_nosnap = 12;	/* no 802.2 LLC */
 		return;
 
 	case DLT_PPP:
@@ -1523,9 +1529,13 @@ gen_linktype(proto)
 
 	case DLT_NULL:
 	case DLT_LOOP:
+	case DLT_ENC:
 		/*
 		 * For DLT_NULL, the link-layer header is a 32-bit
-		 * word containing an AF_ value in *host* byte order.
+		 * word containing an AF_ value in *host* byte order,
+		 * and for DLT_ENC, the link-layer header begins
+		 * with a 32-bit work containing an AF_ value in
+		 * host byte order.
 		 *
 		 * In addition, if we're reading a saved capture file,
 		 * the host byte order in the capture may not be the
@@ -1563,7 +1573,7 @@ gen_linktype(proto)
 			return gen_false();
 		}
 
-		if (linktype == DLT_NULL) {
+		if (linktype == DLT_NULL || linktype == DLT_ENC) {
 			/*
 			 * The AF_ value is in host byte order, but
 			 * the BPF interpreter will convert it to
