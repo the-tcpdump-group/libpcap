@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.67 1999-10-07 23:46:40 mcr Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.68 1999-10-10 01:47:06 mcr Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -156,21 +156,15 @@ AC_LBL_SOCKADDR_SA_LEN
 
 AC_LBL_UNALIGNED_ACCESS
 
-if test "${srcdir}" = "." ; then
-	srcdirprefix=""
-else
-	srcdirprefix="./"
-fi
-
-if test -r ${srcdirprefix}lbl/gnuc.h ; then
+if test -r ${srcdir}/lbl/gnuc.h ; then
 	rm -f gnuc.h
-	ln -s ${srcdirprefix}lbl/gnuc.h gnuc.h
+	ln -s ${srcdir}/lbl/gnuc.h gnuc.h
 fi
 
 rm -f bpf_filter.c
-ln -s ${srcdirprefix}bpf/net/bpf_filter.c bpf_filter.c
+ln -s ${srcdir}/bpf/net/bpf_filter.c bpf_filter.c
 rm -f net
-ln -s ${srcdirprefix}bpf/net net
+ln -s ${srcdir}/bpf/net net
 
 AC_SUBST(V_CCOPT)
 AC_SUBST(V_INCLS)

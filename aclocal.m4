@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.63 1999-10-07 23:46:40 mcr Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.64 1999-10-10 01:47:05 mcr Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -51,7 +51,7 @@ AC_DEFUN(AC_LBL_C_INIT,
     $1="-O"
     $2=""
     if test "${srcdir}" != "." ; then
-	    $2="-I\$\(srcdir\)"
+	    $2="-I\$(srcdir)"
     fi
     if test "${CFLAGS+set}" = set; then
 	    LBL_CFLAGS="$CFLAGS"
