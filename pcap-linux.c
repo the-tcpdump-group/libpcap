@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.4 2003-11-21 10:20:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.5 2004-09-06 01:25:44 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1163,6 +1163,9 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		handle->linktype = DLT_IP_OVER_FC;
 		break;
 
+#ifndef ARPHRD_IRDA
+#define ARPHRD_IRDA	783
+#endif
 	case ARPHRD_IRDA:
 		/* Don't expect IP packet out of this interfaces... */
 		handle->linktype = DLT_LINUX_IRDA;
