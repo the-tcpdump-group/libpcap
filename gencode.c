@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.134 2000-10-29 05:53:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.135 2000-10-30 06:06:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -686,7 +686,7 @@ init_linktype(type)
 		off_nl = 8;
 		return;
 	}
-	bpf_error("unknown data link type 0x%x", linktype);
+	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
 }
 
@@ -742,7 +742,7 @@ gen_linktype(proto)
 			 */
 			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 			gen_not(b0);
-			b1 = gen_cmp(off_linktype + 2, BPF_H, (long)
+			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
 				     ((LLC_ISO_LSAP << 8) | LLC_ISO_LSAP));
 			gen_and(b0, b1);
 			return b1;
