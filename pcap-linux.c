@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.58 2001-06-10 01:11:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.59 2001-06-18 08:46:30 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -702,6 +702,10 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		 * instead?  Should we just map all of them to DLT_LINUX_SLL?
 		 */
 		handle->linktype = DLT_RAW;
+		break;
+
+	case ARPHRD_LOCALTLK:
+		handle->linktype = DLT_LTALK;
 		break;
 
 	default:

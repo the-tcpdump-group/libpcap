@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.154 2001-06-10 01:11:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.155 2001-06-18 08:46:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -693,6 +693,16 @@ init_linktype(type)
 	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket */
 		off_linktype = 14;
 		off_nl = 16;
+		return;
+
+	case DLT_LTALK:
+		/*
+		 * LocalTalk does have a 1-byte type field in the LLAP header,
+		 * but really it just indicates whether there is a "short" or
+		 * "long" DDP packet following.
+		 */
+		off_linktype = -1;
+		off_nl = 0;
 		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
@@ -1371,6 +1381,15 @@ gen_linktype(proto)
 		case ETHERTYPE_ATALK:
 			return(gen_cmp(2, BPF_B,
 					(bpf_int32)htonl(ARCTYPE_ATALK)));
+		}
+		break;
+
+	case DLT_LTALK:
+		switch (proto) {
+		case ETHERTYPE_ATALK:
+			return gen_true();
+		default:
+			return gen_false();
 		}
 		break;
 	}
