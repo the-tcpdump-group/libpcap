@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.25 2000-09-14 09:49:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.26 2000-09-17 04:04:39 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -98,8 +98,84 @@ struct pcap_file_header {
 	bpf_int32 thiszone;	/* gmt to local correction */
 	bpf_u_int32 sigfigs;	/* accuracy of timestamps */
 	bpf_u_int32 snaplen;	/* max length saved portion of each pkt */
-	bpf_u_int32 linktype;	/* data link type (DLT_*) */
+	bpf_u_int32 linktype;	/* data link type (PCAP_ENCAP_*) */
 };
+
+/*
+ * Values for "linktype" in the file header.
+ *
+ * In the past, these have been DLT_ codes defined by <net/bpf.h>.
+ * Those codes were used in two places:
+ *
+ *	inside BSD kernels, as the value returned by the BIOCGDLT ioctl
+ *	for "/dev/bpfN" devices;
+ *
+ *	inside libpcap capture file headers.
+ *
+ * Unfortunately, the various flavors of BSD have not always used the same
+ * numerical values for the same data types, and various patches to
+ * libpcap for non-BSD OSes have added their own DLT_ codes for link
+ * layer encapsulation types seen on those OSes, and those codes have had,
+ * in some cases, values that were also used, on other platforms, for other
+ * link layer encapsulation types.
+ *
+ * This means that capture files of a type whose numerical DLT_ code
+ * means different things on different BSDs, or with different versions
+ * of libpcap, can't always be read on systems other than those like
+ * the one running on the machine on which the capture was made.
+ *
+ * We therefore now, in an attempt to decouple the values supplied by
+ * BIOCGDLT from the values used in the libpcap file header, define
+ * a set of PCAP_ENCAP_* codes to be used in the header; "pcap_open_live()"
+ * in the various "pcap-bpf.c" files should set the "linktype" field of
+ * the "pcap_t" it returns to a PCAP_ENCAP_* code, not to a DLT_* code.
+ *
+ * For those DLT_* codes that have, as far as we know, the same values on
+ * all platforms (DLT_NULL through DLT_FDDI), we define PCAP_ENCAP_xxx as
+ * DLT_xxx; this means that captures of those types will continue to use
+ * the same "linktype" value, and thus will continue to be readable by
+ * older versions of libpcap.
+ *
+ * The other PCAP_ENCAP_* codes are given values starting at 100, in the
+ * hopes that no DLT_* code will be given one of those values.
+ *
+ * In order to ensure that a given PCAP_ENCAP_* code's value will refer to
+ * the same encapsulation type on all platforms, you should not allocate
+ * a new PCAP_ENCAP_* value without consulting "tcpdump-workers@tcpdump.org".
+ * The tcpdump developers will allocate a value for you, and will not
+ * subsequently allocate it to anybody else; that value will be added to
+ * the "pcap.h" in the tcpdump.org CVS repository, so that a future
+ * libpcap release will include it.
+ *
+ * You should, if possible, also contribute patches to libpcap and tcpdump
+ * to handle the new encapsulation type, so that they can also be checked
+ * into the tcpdump.org CVS repository and so that they will appear in
+ * future libpcap and tcpdump releases.
+ *
+ * PCAP_ENCAP_* codes should not be used inside kernels; DLT_* codes
+ * should be used inside kernels that support BSD's BPF mechanism (other
+ * kernels may use other codes, e.g. ARPHRD_* codes in Linux kernels
+ * and DL_* codes in kernels using DLPI).
+ */
+#define PCAP_ENCAP_NULL		DLT_NULL
+#define PCAP_ENCAP_ETHERNET	DLT_EN10MB	/* also for 100Mb and up */
+#define PCAP_ENCAP_EXP_ETHERNET	DLT_EN3MB	/* 3Mb experimental Ethernet */
+#define PCAP_ENCAP_AX25		DLT_AX25
+#define PCAP_ENCAP_PRONET	DLT_PRONET
+#define PCAP_ENCAP_CHAOS	DLT_CHAOS
+#define PCAP_ENCAP_TOKEN_RING	DLT_IEEE802	/* DLT_IEEE802 is used for Token Ring */
+#define PCAP_ENCAP_ARCNET	DLT_ARCNET
+#define PCAP_ENCAP_SLIP		DLT_SLIP
+#define PCAP_ENCAP_PPP		DLT_PPP
+#define PCAP_ENCAP_FDDI		DLT_FDDI
+
+#define PCAP_ENCAP_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
+#define PCAP_ENCAP_RAW		101		/* raw IP */
+#define PCAP_ENCAP_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
+#define PCAP_ENCAP_PPP_BSDOS	103		/* BSD/OS PPP BPF header */
+#define PCAP_ENCAP_C_HDLC	104		/* Cisco HDLC */
+#define PCAP_ENCAP_IEEE802_11	105		/* IEEE 802.11 (wireless) */
+#define PCAP_ENCAP_ATM_CLIP	106		/* Linux Classical IP over ATM */
 
 /*
  * Each packet in the dump file is prepended with this generic header.

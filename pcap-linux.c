@@ -438,9 +438,9 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 
 /*
  *  Linux uses the ARP hardware type to identify the type of an 
- *  interface. pcap uses the DLT_xxx constants for this. This 
+ *  interface. pcap uses the PCAP_ENCAP_xxx constants for this. This 
  *  function maps the ARPHRD_xxx constant to an appropriate
- *  DLT_xxx constant.
+ *  PCAP_ENCAP__xxx constant.
  *  
  *  Returns -1 if unable to map the type.
  */
@@ -449,20 +449,42 @@ static int map_arphrd_to_dlt(int arptype)
 	switch (arptype) {
 	case ARPHRD_ETHER:
 	case ARPHRD_METRICOM:
-	case ARPHRD_LOOPBACK:	return DLT_EN10MB;
-	case ARPHRD_EETHER:	return DLT_EN3MB;
-	case ARPHRD_AX25:	return DLT_AX25;
-	case ARPHRD_PRONET:	return DLT_PRONET;
-	case ARPHRD_CHAOS:	return DLT_CHAOS;
-	case ARPHRD_IEEE802:	return DLT_IEEE802;
-	case ARPHRD_ARCNET:	return DLT_ARCNET;
-	case ARPHRD_FDDI:	return DLT_FDDI;
+	case ARPHRD_LOOPBACK:
+		return PCAP_ENCAP_ETHERNET;
+
+	case ARPHRD_EETHER:
+		return PCAP_ENCAP_EXP_ETHERNET;
+
+	case ARPHRD_AX25:
+		return PCAP_ENCAP_AX25;
+
+	case ARPHRD_PRONET:
+		return PCAP_ENCAP_PRONET;
+
+	case ARPHRD_CHAOS:
+		return PCAP_ENCAP_CHAOS;
+
+	case ARPHRD_IEEE802:
+		return PCAP_ENCAP_TOKEN_RING;
+
+	case ARPHRD_ARCNET:
+		return PCAP_ENCAP_ARCNET;
+
+	case ARPHRD_FDDI:
+		return PCAP_ENCAP_FDDI;
+
+#ifndef ARPHRD_ATM  /* FIXME: How to #include this? */
+#define ARPHRD_ATM 19
+#endif
+	case ARPHRD_ATM:
+		return PCAP_ENCAP_ATM_CLIP;
 
 	case ARPHRD_PPP:
 	case ARPHRD_CSLIP:
 	case ARPHRD_SLIP6:
 	case ARPHRD_CSLIP6:
-	case ARPHRD_SLIP:	return DLT_RAW;
+	case ARPHRD_SLIP:
+		return PCAP_ENCAP_RAW;
 	}
 
 	return -1;
@@ -536,7 +558,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 
 			fprintf(stderr, 
 				"Warning: Falling back to cooked socket\n");
-			handle->linktype = DLT_RAW;
+			handle->linktype = PCAP_ENCAP_RAW;
 		}
 
 

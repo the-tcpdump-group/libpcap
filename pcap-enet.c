@@ -8,7 +8,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.3 2000-07-11 00:37:06 assar Exp $";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-enet.c,v 1.4 2000-09-17 04:04:37 guy Exp $";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -229,7 +229,7 @@ initdevice(char *device, int pflag, int *linktype)
 	/*
 	 * "enetfilter" supports only ethernets.
 	 */
-	*linktype = DLT_EN10MB;
+	*linktype = PCAP_ENCAP_ETHERNET;
 
 	return(if_fd);
 }

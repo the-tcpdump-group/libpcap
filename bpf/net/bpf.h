@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.38 2000-06-26 04:56:28 assar Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.39 2000-09-17 04:04:39 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -160,6 +160,12 @@ struct bpf_hdr {
 
 /*
  * Data-link level type codes.
+ * These are the types that are the same on all platforms; on other
+ * platforms, a <net/bpf.h> should be supplied that defines the additional
+ * DLT_* codes appropriately for that platform (the BSDs, for example,
+ * should not just pick up this version of "bpf.h"; they should also define
+ * the additional DLT_* codes used by their kernels, as well as the values
+ * defined here).
  */
 #define DLT_NULL	0	/* no link-layer encapsulation */
 #define DLT_EN10MB	1	/* Ethernet (10Mb) */
@@ -172,20 +178,39 @@ struct bpf_hdr {
 #define DLT_SLIP	8	/* Serial Line IP */
 #define DLT_PPP		9	/* Point-to-point Protocol */
 #define DLT_FDDI	10	/* FDDI */
-#ifdef __FreeBSD__
-#define DLT_ATM_RFC1483	11	/* LLC/SNAP encapsulated atm */
-#endif
-#ifdef __OpenBSD__
-#define DLT_ATM_RFC1483	11	/* LLC/SNAP encapsulated atm */
-#define DLT_LOOP	12	/* loopback */
-#endif
-/* offset to avoid collision with BSD/OS values */
+#define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
+
+/*
+ * These are the values that were traditionally defined in <net/bpf.h>,
+ * but that are not the same on all platforms; if they are not already
+ * defined (e.g., defined above because this is a BSD that defines them
+ * for use in its kernel), we define them to have the appropriate
+ * PCAP_ENCAP_* value from <pcap.h>, so that programs using those DLT_
+ * codes will continue to compile and will be able to read capture files
+ * from the current version of libpcap.
+ */
 #ifndef DLT_ATM_RFC1483
 #define DLT_ATM_RFC1483	100	/* LLC/SNAP encapsulated atm */
 #endif
+#ifndef DLT_RAW
 #define DLT_RAW		101	/* raw IP */
+#endif
+
+/*
+ * NOTE: these two values were defined by LBL libpcap, but with values
+ * that didn't seem to correspond to the values that were used in BSD/OS;
+ * neither of them are, as far as I know, used in any kernel, so they
+ * should not be defined above.  We therefore don't bother checking to
+ * see if they're already defined.
+ */
 #define DLT_SLIP_BSDOS	102	/* BSD/OS Serial Line IP */
 #define DLT_PPP_BSDOS	103	/* BSD/OS Point-to-point Protocol */
+
+/*
+ * This value was defined by libpcap 0.5; we now use it as a DLT_* value
+ * solely for backwards compatibility - new programs should use
+ * PCAP_ENCAP_C_HDLC instead.
+ */
 #define DLT_CHDLC	104	/* Cisco HDLC */
 
 /*

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.41 2000-07-18 03:43:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.42 2000-09-17 04:04:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -177,15 +177,15 @@ pcap_open_offline(const char *fname, char *errbuf)
 	/* XXX should handle all types */
 	switch (p->linktype) {
 
-	case DLT_EN10MB:
+	case PCAP_ENCAP_ETHERNET:
 		linklen = 14;
 		break;
 
-	case DLT_FDDI:
+	case PCAP_ENCAP_FDDI:
 		linklen = 13 + 8;	/* fddi_header + llc */
 		break;
 
-	case DLT_NULL:
+	case PCAP_ENCAP_NULL:
 	default:
 		linklen = 0;
 		break;
