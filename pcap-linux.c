@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.103 2003-12-18 23:32:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.104 2004-01-02 11:25:26 hannes Exp $ (LBL)";
 #endif
 
 /*
@@ -684,6 +684,8 @@ static int
 pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 #ifdef HAVE_TPACKET_STATS
+        static struct tpacket_stats kstats_total = { 0, 0 };
+
 	struct tpacket_stats kstats;
 	socklen_t len = sizeof (struct tpacket_stats);
 #endif
@@ -718,8 +720,18 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * "tp_packets" as the count of packets and "tp_drops"
 		 * as the count of drops.
 		 */
-		handle->md.stat.ps_recv = kstats.tp_packets;
-		handle->md.stat.ps_drop = kstats.tp_drops;
+
+                /*
+                 * Keep a running total because each call to 
+                 *    getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS, ....
+                 * resets the counters to zero.
+                 */
+
+                kstats_total.tp_packets += kstats.tp_packets;
+                kstats_total.tp_drops += kstats.tp_drops;
+ 
+                handle->md.stat.ps_recv = kstats_total.tp_packets;
+                handle->md.stat.ps_drop = kstats_total.tp_drops;
 	}
 	else
 	{
