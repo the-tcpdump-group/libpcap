@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.213 2004-12-15 00:25:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.214 2004-12-17 20:16:44 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -33,7 +33,6 @@ static const char rcsid[] _U_ =
 #else /* WIN32 */
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #endif /* WIN32 */
 
 /*
