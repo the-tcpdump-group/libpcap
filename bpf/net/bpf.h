@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.43 2000-12-16 22:19:12 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.44 2000-12-21 10:29:24 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -271,7 +271,12 @@ struct bpf_hdr {
  */
 
 /*
- * The instruction encondings.
+ * This is for Linux cooked sockets.
+ */
+#define DLT_LINUX_SLL	113
+
+/*
+ * The instruction encodings.
  */
 /* instruction classes */
 #define BPF_CLASS(code) ((code) & 0x07)

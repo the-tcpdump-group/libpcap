@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.31 2000-12-16 10:43:26 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.32 2000-12-21 10:29:23 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -68,6 +68,7 @@ struct pcap_md {
 	int	readlen;	/* byte count to hand to "recvmsg()" */
 	int	timeout;	/* timeout specified to pcap_open_live */
 	int	clear_promisc;	/* must clear promiscuous mode when we close */
+	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
 	int	lo_ifindex;	/* interface index of the loopback device */
 	char 	*device;	/* device name */
 	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */

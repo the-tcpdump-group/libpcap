@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.48 2000-12-16 22:19:12 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.49 2000-12-21 10:29:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -167,6 +167,8 @@ static const char rcsid[] =
 #define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
 #define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
 
+#define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -219,6 +221,9 @@ static struct linktype_map {
 
 	/* OpenBSD loopback */
 	{ DLT_LOOP,		LINKTYPE_LOOP },
+
+	/* Linux cooked socket capture */
+	{ DLT_LINUX_SLL,	LINKTYPE_LINUX_SLL },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
