@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.18 1999-10-07 23:46:40 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.19 1999-10-19 15:18:30 itojun Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -108,7 +108,7 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
 /* Ultrix pads to make everything line up on a nice boundary */
-#if defined(ultrix) || defined(__alpha)
+#if defined(ultrix) || defined(__alpha) || defined(__NetBSD__)
 #define       PCAP_FDDIPAD 3
 #endif
 

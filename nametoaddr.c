@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.49 1999-10-17 21:29:18 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.50 1999-10-19 15:18:30 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -41,6 +41,10 @@ struct rtentry;
 #include <netinet/in.h>
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
+#ifdef INET6
+#include <netdb.h>
+#include <sys/socket.h>
+#endif /*INET6*/
 
 #include <ctype.h>
 #include <errno.h>
@@ -70,6 +74,7 @@ static inline int xdtoi(int);
  *  Convert host name to internet address.
  *  Return 0 upon failure.
  */
+#ifndef INET6
 bpf_u_int32 **
 pcap_nametoaddr(const char *name)
 {
@@ -93,6 +98,22 @@ pcap_nametoaddr(const char *name)
 	else
 		return 0;
 }
+#else
+struct addrinfo *
+pcap_nametoaddr(const char *name)
+{
+	struct addrinfo hints, *res;
+	int error;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	error = getaddrinfo(name, NULL, &hints, &res);
+	if (error)
+		return NULL;
+	else
+		return res;
+}
+#endif /*INET6*/
 
 /*
  *  Convert net name to internet address.
@@ -185,6 +206,9 @@ struct eproto eproto_db[] = {
 	{ "pup", ETHERTYPE_PUP },
 	{ "xns", ETHERTYPE_NS },
 	{ "ip", ETHERTYPE_IP },
+#ifdef INET6
+	{ "ip6", ETHERTYPE_IPV6 },
+#endif
 	{ "arp", ETHERTYPE_ARP },
 	{ "rarp", ETHERTYPE_REVARP },
 	{ "sprite", ETHERTYPE_SPRITE },
@@ -329,6 +353,10 @@ pcap_ether_hostton(const char *name)
 	return (NULL);
 }
 #else
+
+#if !defined(sgi) && !defined(__NetBSD__)
+extern int ether_hostton(char *, struct ether_addr *);
+#endif
 
 /* Use the os supplied routines */
 u_char *
