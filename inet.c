@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.34 2000-07-11 00:37:04 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.35 2000-07-29 07:42:48 assar Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -74,9 +74,12 @@ struct rtentry;
 /* Not all systems have IFF_LOOPBACK */
 #ifdef IFF_LOOPBACK
 #define ISLOOPBACK(p) ((p)->ifr_flags & IFF_LOOPBACK)
+#define ISLOOPBACK_IFA(p) ((p)->ifa_flags & IFF_LOOPBACK)
 #else
 #define ISLOOPBACK(p) ((p)->ifr_name[0] == 'l' && (p)->ifr_name[1] == 'o' && \
     (isdigit((p)->ifr_name[2]) || (p)->ifr_name[2] == '\0'))
+#define ISLOOPBACK_IFA(p) ((p)->ifa_name[0] == 'l' && (p)->ifa_name[1] == 'o' && \
+    (isdigit((p)->ifa_name[2]) || (p)->ifa_name[2] == '\0'))
 #endif
 
 /*
@@ -103,21 +106,20 @@ pcap_lookupdev(errbuf)
 	mp = NULL;
 	minunit = 666;
 	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-		if ((ifa->ifa_flags & IFF_UP) == 0)
-			continue;
-#ifdef IFF_LOOPBACK
-		if ((ifa->ifa_flags & IFF_LOOPBACK) != 0)
-			continue;
-#else
-		if (strncmp(ifa->ifa_name, "lo", 2) == 0 &&
-		    (ifa->ifa_name[2] == '\0' || isdigit(ifa->ifa_name[2]))) {
-			continue;
-		}
-#endif
+		const char *endcp;
 
-		for (cp = ifa->ifa_name; !isdigit(*cp); ++cp)
+		if ((ifa->ifa_flags & IFF_UP) == 0 || ISLOOPBACK_IFA(ifa))
 			continue;
-		n = atoi(cp);
+
+		endcp = ifa->ifa_name + strlen(ifa->ifa_name);
+		for (cp = ifa->ifa_name; cp < endcp && !isdigit(*cp); ++cp)
+			continue;
+
+		if (isdigit (*cp)) {
+			n = atoi(cp);
+		} else {
+			n = 0;
+		}
 		if (n < minunit) {
 			minunit = n;
 			mp = ifa;
@@ -192,6 +194,8 @@ pcap_lookupdev(errbuf)
 	mp = NULL;
 	minunit = 666;
 	for (; ifrp < ifend; ifrp = ifnext) {
+		const char *endcp;
+
 #ifdef HAVE_SOCKADDR_SA_LEN
 		n = ifrp->ifr_addr.sa_len + sizeof(ifrp->ifr_name);
 		if (n < sizeof(*ifrp))
@@ -226,9 +230,15 @@ pcap_lookupdev(errbuf)
 		if ((ifr.ifr_flags & IFF_UP) == 0 || ISLOOPBACK(&ifr))
 			continue;
 
-		for (cp = ifrp->ifr_name; !isdigit(*cp); ++cp)
+		endcp = ifrp->ifr_name + strlen(ifrp->ifr_name);
+		for (cp = ifrp->ifr_name; cp < endcp && !isdigit(*cp); ++cp)
 			continue;
-		n = atoi(cp);
+		
+		if (isdigit (*cp)) {
+			n = atoi(cp);
+		} else {
+			n = 0;
+		}
 		if (n < minunit) {
 			minunit = n;
 			mp = ifrp;
