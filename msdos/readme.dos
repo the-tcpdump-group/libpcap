@@ -18,6 +18,15 @@ Files specific to DOS are pcap-dos.[ch] and the assembly and C files in
 the MSDOS sub-directory. Remember to built lipcap libraries from the top
 install directory. And not from the MSDOS sub-directory.
 
+Note for djgpp users:
+  If you got the libpcap from the official site www.tcpdump, then that
+  distribution does NOT contain any sources for building 32-bit drivers.
+  Instead get the full version at
+     http://www.bgnett.no/~giva/pcap/libpcap.zip
+
+  and set "USE_32BIT_DRIVERS = 1" in msdos\common.dj.
+
+
 
 Requirements
 ------------
@@ -27,7 +36,7 @@ driver. This driver must be installed prior to using any program (e.g.
 tcpdump) compiled with libpcap. Work is underway to implement protected-
 mode drivers for 32-bit targets (djgpp only). The 3Com 3c509 driver is
 working almost perfectly. Due to lack of LAN-cards, I've not had the
-opporunity to test other drivers. These 32-bit drivers are modified
+opportunity to test other drivers. These 32-bit drivers are modified
 Linux drivers.
 
 
@@ -138,11 +147,6 @@ I've included some extra functions to DOS-libpcap:
     Function `pcap_offline_read()' will wait (and optionally yield)
     before printing next packet. This will simulate the pace the packets
     where actually recorded.
-
-  `pcap_verbose (int mode)' :
-    Sets the internal verbosity mode. Currently only effective while
-    capturing packets to file (the `-w' option in tcpdump). `pcap_dump()'
-    will print to `stderr' number of packets dumped.
 
 
 
