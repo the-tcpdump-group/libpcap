@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.79 2002-07-13 09:34:59 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.80 2002-07-27 18:45:34 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -457,6 +457,31 @@ AC_DEFUN(AC_LBL_SOCKADDR_SA_LEN,
     AC_MSG_RESULT($ac_cv_lbl_sockaddr_has_sa_len)
     if test $ac_cv_lbl_sockaddr_has_sa_len = yes ; then
 	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN,1,[if struct sockaddr has sa_len])
+    fi])
+
+dnl
+dnl Checks to see if there's a sockaddr_storage structure
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_SOCKADDR_STORAGE
+dnl
+dnl results:
+dnl
+dnl	HAVE_SOCKADDR_STORAGE (defined)
+dnl
+AC_DEFUN(AC_LBL_SOCKADDR_STORAGE,
+    [AC_MSG_CHECKING(if sockaddr_storage struct exists)
+    AC_CACHE_VAL(ac_cv_lbl_has_sockaddr_storage,
+	AC_TRY_COMPILE([
+#	include <sys/types.h>
+#	include <sys/socket.h>],
+	[u_int i = sizeof (struct sockaddr_storage)],
+	ac_cv_lbl_has_sockaddr_storage=yes,
+	ac_cv_lbl_has_sockaddr_storage=no))
+    AC_MSG_RESULT($ac_cv_lbl_has_sockaddr_storage)
+    if test $ac_cv_lbl_has_sockaddr_storage = yes ; then
+	    AC_DEFINE(HAVE_SOCKADDR_STORAGE,1,[if struct sockaddr_storage exists])
     fi])
 
 dnl

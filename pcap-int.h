@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.35 2002-07-11 09:06:38 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.36 2002-07-27 18:45:35 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -203,6 +203,8 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
  * "pcap_add_if()" adds an interface to the list of interfaces.
  */
 int	pcap_platform_finddevs(pcap_if_t **, char *);
+int	add_addr_to_iflist(pcap_if_t **, char *, u_int, struct sockaddr *,
+	    struct sockaddr *, struct sockaddr *, struct sockaddr *, char *);
 int	pcap_add_if(pcap_if_t **, char *, u_int, const char *, char *);
 
 

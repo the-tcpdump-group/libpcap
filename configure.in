@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.95 2002-06-28 10:34:36 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.96 2002-07-27 18:45:35 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.95 $)
+AC_REVISION($Revision: 1.96 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -86,6 +86,67 @@ else
 	V_PCAP=null
 fi
 AC_MSG_RESULT($V_PCAP)
+
+dnl
+dnl Now figure out how we get a list of interfaces and addresses.
+dnl
+AC_CHECK_FUNC(getifaddrs,[
+	#
+	# We have "getifaddrs()", so we use that to get the list
+	#
+	V_FINDALLDEVS=getad
+],[
+	#
+	# Well, we don't have "getifaddrs()", so we have to use some
+	# other mechanism; determine what that mechanism is.
+	#
+	# The first thing we use is the type of capture mechanism,
+	# which is somewhat of a proxy for the OS we're using.
+	#
+	case "$V_PCAP" in
+
+	dlpi)
+		#
+		# This might be Solaris 8 or later, with SIOCGLIFCONF,
+		# or it might be some other OS, with just SIOCGIFCONF.
+		#
+		AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
+		AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
+		    AC_TRY_COMPILE(
+			[#include <sys/param.h>
+			#include <sys/file.h>
+			#include <sys/ioctl.h>
+			#include <sys/socket.h>
+			#include <sys/sockio.h>],
+			[ioctl(0, SIOCGLIFCONF, (char *)0);],
+			ac_cv_lbl_have_siocglifconf=yes,
+			ac_cv_lbl_have_siocglifconf=no))
+		AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
+		if test $ac_cv_lbl_have_siocglifconf = yes ; then
+			V_FINDALLDEVS=glifc
+		else
+			V_FINDALLDEVS=gifc
+		fi
+		;;
+
+	null)
+		#
+		# We can't capture, so we can't open any capture
+		# devices, so we won't return any interfaces.
+		#
+		V_FINDALLDEVS=null
+		;;
+
+	*)
+		#
+		# Assume we just have SIOCGIFCONF.
+		# (XXX - on at least later Linux kernels, there's
+		# another mechanism, and we should be using that
+		# instead.)
+		#
+		V_FINDALLDEVS=gifc
+		;;
+	esac])
 
 AC_MSG_CHECKING(if --enable-ipv6 option is specified)
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           build IPv6-capable version])
@@ -232,6 +293,8 @@ AC_LBL_DEVEL(V_CCOPT)
 
 AC_LBL_SOCKADDR_SA_LEN
 
+AC_LBL_SOCKADDR_STORAGE
+
 AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 AC_LBL_UNALIGNED_ACCESS
@@ -243,6 +306,7 @@ AC_SUBST(V_CCOPT)
 AC_SUBST(V_INCLS)
 AC_SUBST(V_LEX)
 AC_SUBST(V_PCAP)
+AC_SUBST(V_FINDALLDEVS)
 AC_SUBST(V_RANLIB)
 AC_SUBST(V_YACC)
 

@@ -104,6 +104,9 @@
 /* if struct sockaddr has sa_len */
 #undef HAVE_SOCKADDR_SA_LEN
 
+/* if struct sockaddr_storage exists */
+#undef HAVE_SOCKADDR_STORAGE
+
 /* if ppa_info_t_dl_module_id exists */
 #undef HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1
 

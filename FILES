@@ -27,6 +27,10 @@ configure
 configure.in
 etherent.c
 ethertype.h
+fad-getad.c
+fad-gifc.c
+fad-glifc.c
+fad-null.c
 gencode.c
 gencode.h
 grammar.y
