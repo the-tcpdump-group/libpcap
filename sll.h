@@ -35,7 +35,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Attic/sll.h,v 1.2 2000-12-22 12:11:36 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Attic/sll.h,v 1.3 2000-12-22 12:14:48 guy Exp $ (LBL)
  */
 
 /*
@@ -56,8 +56,8 @@
  *
  *	a 2-byte link-layer address length;
  *
- *	an 8-byte link-layer address, whose actual length is specified
- *	by the previous value.
+ *	an 8-byte source link-layer address, whose actual length is
+ *	specified by the previous value.
  *
  * All fields except for the link-layer address are in network byte order.
  */
@@ -96,4 +96,3 @@ struct sll_header {
  */
 #define LINUX_SLL_P_802_3	0x0001	/* Novell 802.3 frames without 802.2 LLC header */
 #define LINUX_SLL_P_802_2	0x0004	/* 802.2 frames (not D/I/X Ethernet) */
-
