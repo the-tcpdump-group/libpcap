@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.94 2003-02-13 07:56:38 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.95 2003-02-21 03:19:19 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -107,6 +107,8 @@ scanner.c: $(srcdir)/scanner.l
 
 scanner.o: scanner.c tokdefs.h
 	$(CC) $(CFLAGS) -c scanner.c
+
+pcap.o: version.h
 
 tokdefs.h: grammar.c
 grammar.c: $(srcdir)/grammar.y
