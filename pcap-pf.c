@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.58 2000-07-11 00:37:06 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.59 2000-07-29 08:03:57 assar Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -216,7 +216,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    "pcap_open_live: %s", pcap_strerror(errno));
 		return (0);
 	}
-	bzero((char *)p, sizeof(*p));
+	memset(p, 0, sizeof(*p));
 	p->fd = pfopen(device, O_RDONLY);
 	if (p->fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
@@ -294,7 +294,7 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 	}
 	p->snapshot = snaplen;
 	/* accept all packets */
-	bzero((char *)&Filter, sizeof(Filter));
+	memset(&Filter, 0, sizeof(Filter));
 	Filter.enf_Priority = 37;	/* anything > 2 */
 	Filter.enf_FilterLen = 0;	/* means "always true" */
 	if (ioctl(p->fd, EIOCSETF, (caddr_t)&Filter) < 0) {

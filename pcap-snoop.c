@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.26 2000-07-11 00:37:07 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.27 2000-07-29 08:03:57 assar Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -108,7 +108,7 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	struct rawstats rawstats;
 
 	rs = &rawstats;
-	bzero((char *)rs, sizeof(*rs));
+	memset(rs, 0, sizeof(*rs));
 	if (ioctl(p->fd, SIOCRAWSTATS, (char *)rs) < 0) {
 		snprintf(p->errbuf, sizeof(p->errbuf),
 		    "SIOCRAWSTATS: %s", pcap_strerror(errno));
@@ -142,7 +142,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    pcap_strerror(errno));
 		return (NULL);
 	}
-	bzero((char *)p, sizeof(*p));
+	memset(p, 0, sizeof(*p));
 	fd = socket(PF_RAW, SOCK_RAW, RAWPROTO_SNOOP);
 	if (fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "snoop socket: %s",
@@ -150,7 +150,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		goto bad;
 	}
 	p->fd = fd;
-	bzero((char *)&sr, sizeof(sr));
+	memset(&sr, 0, sizeof(sr));
 	sr.sr_family = AF_RAW;
 	(void)strncpy(sr.sr_ifname, device, sizeof(sr.sr_ifname));
 	if (bind(fd, (struct sockaddr *)&sr, sizeof(sr))) {
@@ -158,7 +158,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    pcap_strerror(errno));
 		goto bad;
 	}
-	bzero((char *)&sf, sizeof(sf));
+	memset(&sf, 0, sizeof(sf));
 	if (ioctl(fd, SIOCADDSNOOP, &sf) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SIOCADDSNOOP: %s",
 		    pcap_strerror(errno));

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.35 2000-07-11 00:37:06 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.36 2000-07-29 08:03:56 assar Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -161,7 +161,7 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 {
 	struct nit_ioc nioc;
 
-	bzero((char *)&nioc, sizeof(nioc));
+	memset(&nioc, 0, sizeof(nioc));
 	nioc.nioc_bufspace = BUFSPACE;
 	nioc.nioc_chunksize = CHUNKSIZE;
 	nioc.nioc_typetomatch = NT_ALLTYPES;
@@ -204,7 +204,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		 */
 		snaplen = 96;
 
-	bzero(p, sizeof(*p));
+	memset(p, 0, sizeof(*p));
 	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
 	if (fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,

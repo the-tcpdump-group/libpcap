@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.38 2000-07-14 06:25:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.39 2000-07-29 08:03:56 assar Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -176,7 +176,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    pcap_strerror(errno));
 		return (NULL);
 	}
-	bzero(p, sizeof(*p));
+	memset(p, 0, sizeof(*p));
 	fd = bpf_open(p, ebuf);
 	if (fd < 0)
 		goto bad;
