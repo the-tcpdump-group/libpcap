@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.207 2004-07-15 00:08:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.208 2004-08-18 14:25:02 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -750,6 +750,7 @@ init_linktype(type)
 		return;
 
 	case DLT_PPP:
+        case DLT_PPP_WITHDIRECTION:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		off_linktype = 2;
@@ -1506,6 +1507,7 @@ gen_linktype(proto)
 		break;
 
 	case DLT_PPP:
+        case DLT_PPP_WITHDIRECTION:
 	case DLT_PPP_SERIAL:
 	case DLT_PPP_ETHER:
 		/*
@@ -5066,6 +5068,16 @@ gen_inbound(dir)
 		b0 = gen_cmp(offsetof(struct pfloghdr, dir), BPF_B,
 		    (bpf_int32)((dir == 0) ? PF_IN : PF_OUT));
 		break;
+
+        case DLT_PPP_WITHDIRECTION:
+                if (dir) {
+                    /* match outgoing packets */
+                    b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_OUT);
+                } else {
+                    /* match incoming packets */
+                    b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_IN);
+                }
+                break;
 
 	default:
 		bpf_error("inbound/outbound not supported on linktype %d",

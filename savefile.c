@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.108 2004-08-17 17:50:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.109 2004-08-18 14:25:01 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -333,6 +333,14 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_BACNET_MS_TP	165
 
+/*
+ * another PPP variant as per request from Karsten Keil <kkeil@suse.de>
+ * the first byte (0xff) of the PPP header (0xff03) is tweaked to accomodate
+ * the direction 0x00 = IN, 0x01 = OUT
+ */
+#define LINKTYPE_PPP_WITHDIRECTION 166
+
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -496,6 +504,9 @@ static struct linktype_map {
 
 	/* BACnet MS/TP */
 	{ DLT_BACNET_MS_TP,	LINKTYPE_BACNET_MS_TP },
+
+        /* PPP with direction flag in the PPP header */
+        { DLT_PPP_WITHDIRECTION,LINKTYPE_PPP_WITHDIRECTION},
 
 	{ -1,			-1 }
 };

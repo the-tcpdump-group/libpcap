@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.21 2004-06-07 20:00:08 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.22 2004-08-18 14:25:01 hannes Exp $ (LBL)
  */
 
 /*
@@ -508,6 +508,13 @@ struct bpf_version {
  * Reserved for BACnet MS/TP.
  */
 #define DLT_BACNET_MS_TP	165
+
+/*
+ * another PPP variant as per request from Karsten Keil <kkeil@suse.de>
+ * the first byte of the PPP header (0xff03) is modified to accomodate
+ * the direction 0x00 = IN, 0x01 = OUT
+ */
+#define DLT_PPP_WITHDIRECTION   166
 
 /*
  * The instruction encodings.
