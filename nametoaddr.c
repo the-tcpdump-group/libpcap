@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.72 2003-12-24 08:27:04 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.73 2003-12-24 09:14:21 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -124,7 +124,7 @@ pcap_nametoaddrinfo(const char *name)
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;	/*not really*/
-	hints.ai_socktype = IPPROTO_TCP;	/*not really*/
+	hints.ai_protocol = IPPROTO_TCP;	/*not really*/
 	error = getaddrinfo(name, NULL, &hints, &res);
 	if (error)
 		return NULL;
