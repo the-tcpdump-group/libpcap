@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.4 2002-12-19 09:05:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.5 2002-12-22 02:36:50 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -115,7 +115,8 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 
 pcap_t *
-pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
+pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
+    char *ebuf)
 {
 	register pcap_t *p;
 	NetType type;

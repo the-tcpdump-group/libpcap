@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.39 2002-12-21 23:38:52 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.40 2002-12-22 02:36:51 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -166,8 +166,8 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 			     const u_char *);
 
 char	*pcap_lookupdev(char *);
-int	pcap_lookupnet(char *, bpf_u_int32 *, bpf_u_int32 *, char *);
-pcap_t	*pcap_open_live(char *, int, int, int, char *);
+int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
+pcap_t	*pcap_open_live(const char *, int, int, int, char *);
 pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_offline(const char *, char *);
 void	pcap_close(pcap_t *);

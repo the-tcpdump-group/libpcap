@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.53 2002-11-13 06:46:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.54 2002-12-22 02:36:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -103,9 +103,9 @@ dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 }
 
 static int
-get_instance(char *name)
+get_instance(const char *name)
 {
-	char *cp, *endcp;
+	const char *cp, *endcp;
 	int n;
 
 	if (strcmp(name, "any") == 0) {
@@ -129,7 +129,7 @@ get_instance(char *name)
 }
 
 int
-add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
+add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
     u_int flags, const char *description, char *errbuf)
 {
 	pcap_t *p;
@@ -516,7 +516,7 @@ pcap_lookupdev(errbuf)
 
 int
 pcap_lookupnet(device, netp, maskp, errbuf)
-	register char *device;
+	register const char *device;
 	register bpf_u_int32 *netp, *maskp;
 	register char *errbuf;
 {

@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.86 2002-12-19 09:05:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.87 2002-12-22 02:36:49 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -179,8 +179,8 @@ typedef int		socklen_t;
  * Prototypes for internal functions
  */
 static void map_arphrd_to_dlt(pcap_t *, int, int);
-static int live_open_old(pcap_t *, char *, int, int, char *);
-static int live_open_new(pcap_t *, char *, int, int, char *);
+static int live_open_old(pcap_t *, const char *, int, int, char *);
+static int live_open_new(pcap_t *, const char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 
 /*
@@ -219,7 +219,8 @@ static struct sock_fprog	total_fcode
  *  See also pcap(3).
  */
 pcap_t *
-pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
+pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
+    char *ebuf)
 {
 	pcap_t		*handle;
 	int		mtu;
@@ -1134,7 +1135,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
  *  FIXME: 0 uses to mean success (Sebastian)
  */
 static int
-live_open_new(pcap_t *handle, char *device, int promisc,
+live_open_new(pcap_t *handle, const char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -1488,7 +1489,7 @@ void	pcap_close_linux( pcap_t *handle )
  *  FIXME: 0 uses to mean success (Sebastian)
  */
 static int
-live_open_old(pcap_t *handle, char *device, int promisc,
+live_open_old(pcap_t *handle, const char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
 	int		sock_fd = -1, arptype;

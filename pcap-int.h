@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.41 2002-12-19 09:05:46 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.42 2002-12-22 02:36:49 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -73,7 +73,7 @@ struct pcap_md {
 	int	clear_promisc;	/* must clear promiscuous mode when we close */
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
 	int	lo_ifindex;	/* interface index of the loopback device */
-	char 	*device;	/* device name */
+	const char *device;	/* device name */
 	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */
 #endif
 };
@@ -235,7 +235,7 @@ int	add_addr_to_iflist(pcap_if_t **, char *, u_int, struct sockaddr *,
 	    struct sockaddr *, size_t, char *);
 int	pcap_add_if(pcap_if_t **, char *, u_int, const char *, char *);
 struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
-int	add_or_find_if(pcap_if_t **, pcap_if_t **, char *, u_int,
+int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
 	    const char *, char *);
 
 #ifdef linux
