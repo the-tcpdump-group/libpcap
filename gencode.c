@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.157 2001-07-03 19:15:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.158 2001-09-20 00:24:24 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -77,6 +77,9 @@ struct rtentry;
 /* Locals */
 static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
+
+/* Hack for updating VLAN offsets. */
+static u_int	orig_linktype = -1, orig_nl = -1;
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
@@ -550,6 +553,9 @@ init_linktype(type)
 	int type;
 {
 	linktype = type;
+
+	orig_linktype = -1;
+	orig_nl = -1;
 
 	switch (type) {
 
@@ -3873,7 +3879,6 @@ struct block *
 gen_vlan(vlan_num)
 	int vlan_num;
 {
-	static u_int	orig_linktype = -1, orig_nl = -1;
 	struct	block	*b0;
 
 	/*
