@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.78 2003-03-11 06:23:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.79 2003-04-09 09:55:20 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -529,11 +529,7 @@ pcap_open_offline(const char *fname, char *errbuf)
  * and the contents in buf.  Return 0 on success, SFERR_EOF if there were
  * no more packets, and SFERR_TRUNC if a partial packet was encountered.
  */
-#ifdef WIN32
-int
-#else
 static int
-#endif
 sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
 {
 	struct pcap_sf_patched_pkthdr sf_hdr;
