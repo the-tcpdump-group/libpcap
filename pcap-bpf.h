@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.30 2005-01-12 09:15:05 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.31 2005-01-31 01:00:07 guy Exp $ (LBL)
  */
 
 /*
@@ -178,6 +178,12 @@ struct bpf_version {
  */
 
 #define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
+
+/*
+ * Apparently Redback uses this for its SmartEdge 400/800.  I hope
+ * nobody else decided to use it, too.
+ */
+#define DLT_REDBACK_SMARTEDGE	32
 
 /*
  * These values are defined by NetBSD; other platforms should refrain from
