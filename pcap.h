@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.22 1999-12-08 19:54:03 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.23 2000-06-26 04:57:11 assar Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -102,6 +102,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 char	*pcap_lookupdev(char *);
 int	pcap_lookupnet(char *, bpf_u_int32 *, bpf_u_int32 *, char *);
 pcap_t	*pcap_open_live(char *, int, int, int, char *);
+pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_offline(const char *, char *);
 void	pcap_close(pcap_t *);
 int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
@@ -135,5 +136,7 @@ void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 /* XXX this guy lives in the bpf tree */
 u_int	bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);
+int	bpf_validate(struct bpf_insn *f, int len);
 char	*bpf_image(struct bpf_insn *, int);
+void	bpf_dump(struct bpf_program *, int);
 #endif
