@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.84 2000-07-14 02:12:36 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.85 2000-08-16 20:28:52 fenner Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.84 $)
+AC_REVISION($Revision: 1.85 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -141,6 +141,22 @@ null)
 esac
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)
+if test "$V_LEX" = lex ; then
+# Some versions of lex can't handle the definitions section of scanner.l .
+# Try lexing it and complain if it can't deal.
+	AC_CACHE_CHECK([for capable lex], tcpdump_cv_capable_lex,
+		if lex -t scanner.l > /dev/null 2>&1; then
+			tcpdump_cv_capable_lex=yes
+		else
+			tcpdump_cv_capable_lex=insufficient
+		fi)
+	if test $tcpdump_cv_capable_lex = insufficient ; then
+		AC_MSG_ERROR([Your operating system's lex is insufficient to compile
+ libpcap.  flex is a lex replacement that has many advantages, including
+ being able to compile libpcap.  For more information, see
+ http://www.gnu.org/software/flex/flex.html .])
+	fi
+fi
 
 case "$target_os" in
 
