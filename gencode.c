@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.175 2002-08-06 07:35:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.176 2002-08-08 08:22:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -171,6 +171,7 @@ static struct block *gen_ahostop(const u_char *, int);
 static struct block *gen_ehostop(const u_char *, int);
 static struct block *gen_fhostop(const u_char *, int);
 static struct block *gen_thostop(const u_char *, int);
+static struct block *gen_wlanhostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int, u_int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
 #ifdef INET6
@@ -195,6 +196,7 @@ static struct block *gen_protochain(int, int, int);
 static struct block *gen_proto(int, int, int);
 static struct slist *xfer_to_x(struct arth *);
 static struct slist *xfer_to_a(struct arth *);
+static struct block *gen_mac_multicast(int);
 static struct block *gen_len(int, int);
 
 static struct block *gen_msg_abbrev(int type);
@@ -1883,6 +1885,300 @@ gen_thostop(eaddr, dir)
 }
 
 /*
+ * Like gen_ehostop, but for DLT_IEEE802_11 (802.11 wireless LAN)
+ */
+static struct block *
+gen_wlanhostop(eaddr, dir)
+	register const u_char *eaddr;
+	register int dir;
+{
+	register struct block *b0, *b1, *b2, *b3;
+	register struct slist *s;
+
+	switch (dir) {
+	case Q_SRC:
+		/*
+		 * Oh, yuk.
+		 *
+		 *	For control frames, there is no SA.
+		 *
+		 *	For management frames, SA is at an
+		 *	offset of 10 from the beginning of
+		 *	the packet.
+		 *
+		 *	For data frames, SA is at an offset
+		 *	of 10 from the beginning of the packet
+		 *	if From DS is clear, at an offset of
+		 *	16 from the beginning of the packet
+		 *	if From DS is set and To DS is clear,
+		 *	and an offset of 24 from the beginning
+		 *	of the packet if From DS is set and To DS
+		 *	is set.
+		 */
+
+		/*
+		 * If the low-order bit of the type value is 1,
+		 * this is either a control frame or a frame
+		 * with a reserved type, and thus not a
+		 * frame with an SA.
+		 *
+		 * I.e., first check "!(link[0] & 0x04)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b0 = new_block(JMP(BPF_JSET));
+		b0->s.k = 0x04;
+		b0->stmts = s;
+		gen_not(b0);
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "!(link[0] & 0x08)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x08;
+		b2->stmts = s;
+		gen_not(b2);
+
+		/*
+		 * For management frames, test the SA at 10.
+		 */
+		b1 = gen_bcmp(10, 6, eaddr);
+		gen_and(b2, b1);
+		b3 = b1;
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a data frame; check From DS.
+		 *
+		 * I.e., check "(link[0] & 0x08) && !(link[1] & 0x02)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x02;	/* From DS */
+		b2->stmts = s;
+		gen_not(b2);
+		gen_and(b1, b2);
+
+		/*
+		 * For data frames with From DS not set, test the SA at 10;
+		 * then combine that test with the management frame test.
+		 */
+		b1 = gen_bcmp(10, 6, eaddr);
+		gen_and(b2, b1);
+		gen_or(b3, b1);
+		b3 = b1;
+
+		/*
+		 * Now, check for a data frame with From DS set and
+		 * To DS not set.
+		 *
+		 * I.e., check "(link[0] & 0x08) && (link[1] & 0x02)
+		 * && !(link[1] & 0x01)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x02;	/* From DS */
+		b2->stmts = s;
+		gen_and(b1, b2);
+		b1 = b2;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x01;	/* To DS */
+		b2->stmts = s;
+		gen_not(b2);
+		gen_and(b1, b2);	/* Data && From DS and not To DS */
+
+		/*
+		 * Test the SA at 16, and OR the previous SA tests
+		 * with it.
+		 */
+		b1 = gen_bcmp(16, 6, eaddr);
+		gen_and(b2, b1);
+		gen_or(b3, b1);
+		b3 = b1;
+
+		/*
+		 * And now for a data frame with From DS set and To DS set.
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x02;	/* From DS */
+		b2->stmts = s;
+		gen_and(b1, b2);
+		b1 = b2;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x01;	/* To DS */
+		b2->stmts = s;
+		gen_and(b1, b2);	/* Data && From DS and To DS */
+
+		/*
+		 * Test the SA at 24, and OR the previous SA tests
+		 * with it.
+		 */
+		b1 = gen_bcmp(24, 6, eaddr);
+		gen_and(b2, b1);
+		gen_or(b3, b1);
+
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_DST:
+		/*
+		 * Oh, yuk.
+		 *
+		 *	For control frames, there is no DA.
+		 *
+		 *	For management frames, DA is at an
+		 *	offset of 4 from the beginning of
+		 *	the packet.
+		 *
+		 *	For data frames, DA is at an offset
+		 *	of 4 from the beginning of the packet
+		 *	if To DS is clear and at an offset of
+		 *	16 from the beginning of the packet
+		 *	if To DS is set.
+		 */
+
+		/*
+		 * If the low-order bit of the type value is 1,
+		 * this is either a control frame or a frame
+		 * with a reserved type, and thus not a
+		 * frame with a DA.
+		 *
+		 * I.e., first check "!(link[0] & 0x04)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b0 = new_block(JMP(BPF_JSET));
+		b0->s.k = 0x04;
+		b0->stmts = s;
+		gen_not(b0);
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "!(link[0] & 0x08)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x08;
+		b2->stmts = s;
+		gen_not(b2);
+
+		/*
+		 * For management frames, test the DA at 4.
+		 */
+		b1 = gen_bcmp(4, 6, eaddr);
+		gen_and(b2, b1);
+		b3 = b1;
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a data frame; check To DS.
+		 *
+		 * I.e., check "(link[0] & 0x08) && !(link[1] & 0x01)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x01;	/* To DS */
+		b2->stmts = s;
+		gen_not(b2);
+		gen_and(b1, b2);
+
+		/*
+		 * For data frames with To DS not set, test the DA at 4;
+		 * then combine that test with the management frame test.
+		 */
+		b1 = gen_bcmp(4, 6, eaddr);
+		gen_and(b2, b1);
+		gen_or(b3, b1);
+		b3 = b1;
+
+		/*
+		 * Now, check for a data frame with To DS set.
+		 *
+		 * I.e., check "(link[0] & 0x08) && (link[1] & 0x01)".
+		 */
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 0;
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s->s.k = 1;
+		b2 = new_block(JMP(BPF_JSET));
+		b2->s.k = 0x01;	/* To DS */
+		b2->stmts = s;
+		gen_and(b1, b2);
+
+		/*
+		 * Test the DA at 16, and OR the previous DA tests
+		 * with it.
+		 */
+		b1 = gen_bcmp(16, 6, eaddr);
+		gen_and(b2, b1);
+		gen_or(b3, b1);
+
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_AND:
+		b0 = gen_wlanhostop(eaddr, Q_SRC);
+		b1 = gen_wlanhostop(eaddr, Q_DST);
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_DEFAULT:
+	case Q_OR:
+		b0 = gen_wlanhostop(eaddr, Q_SRC);
+		b1 = gen_wlanhostop(eaddr, Q_DST);
+		gen_or(b0, b1);
+		return b1;
+	}
+	abort();
+	/* NOTREACHED */
+}
+
+/*
  * This is quite tricky because there may be pad bytes in front of the
  * DECNET header, and then there are two possible data packet formats that
  * carry both src and dst addresses, plus 5 packet types in a format that
@@ -2224,9 +2520,11 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_fhostop(eaddr, Q_OR);
 		else if (linktype == DLT_IEEE802)
 			b0 = gen_thostop(eaddr, Q_OR);
+		else if (linktype == DLT_IEEE802_11)
+			b0 = gen_wlanhostop(eaddr, Q_OR);
 		else
 			bpf_error(
-			    "'gateway' supported only on ethernet, FDDI or token ring");
+			    "'gateway' supported only on ethernet/FDDI/token ring/802.11");
 
 		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR);
 		while (*alist) {
@@ -3204,9 +3502,18 @@ gen_scode(name, q)
 				free(eaddr);
 				return b;
 
+			case DLT_IEEE802_11:
+				eaddr = pcap_ether_hostton(name);
+				if (eaddr == NULL)
+					bpf_error(
+					    "unknown 802.11 host '%s'", name);
+				b = gen_wlanhostop(eaddr, dir);
+				free(eaddr);
+				return b;
+
 			default:
 				bpf_error(
-			"only ethernet/FDDI/token ring supports link-level host name");
+			"only ethernet/FDDI/token ring/802.11 supports link-level host name");
 				break;
 			}
 		} else if (proto == Q_DECNET) {
@@ -3565,7 +3872,9 @@ gen_ecode(eaddr, q)
 			return gen_fhostop(eaddr, (int)q.dir);
 		if (linktype == DLT_IEEE802)
 			return gen_thostop(eaddr, (int)q.dir);
-		bpf_error("ethernet addresses supported only on ethernet, FDDI or token ring");
+		if (linktype == DLT_IEEE802_11)
+			return gen_wlanhostop(eaddr, (int)q.dir);
+		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11");
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
@@ -3975,6 +4284,8 @@ gen_broadcast(proto)
 			return gen_fhostop(ebroadcast, Q_DST);
 		if (linktype == DLT_IEEE802)
 			return gen_thostop(ebroadcast, Q_DST);
+		if (linktype == DLT_IEEE802_11)
+			return gen_wlanhostop(ebroadcast, Q_DST);
 		bpf_error("not a broadcast link");
 		break;
 
@@ -3991,11 +4302,31 @@ gen_broadcast(proto)
 	bpf_error("only ether/ip broadcast filters supported");
 }
 
+/*
+ * Generate code to test the low-order bit of a MAC address (that's
+ * the bottom bit of the *first* byte).
+ */
+static struct block *
+gen_mac_multicast(offset)
+	int offset;
+{
+	register struct block *b0;
+	register struct slist *s;
+
+	/* link[offset] & 1 != 0 */
+	s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+	s->s.k = offset;
+	b0 = new_block(JMP(BPF_JSET));
+	b0->s.k = 1;
+	b0->stmts = s;
+	return b0;
+}
+
 struct block *
 gen_multicast(proto)
 	int proto;
 {
-	register struct block *b0, *b1;
+	register struct block *b0, *b1, *b2, *b3;
 	register struct slist *s;
 
 	switch (proto) {
@@ -4008,27 +4339,128 @@ gen_multicast(proto)
 
 		if (linktype == DLT_EN10MB) {
 			/* ether[0] & 1 != 0 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 0;
-			b0 = new_block(JMP(BPF_JSET));
-			b0->s.k = 1;
-			b0->stmts = s;
-			return b0;
+			return gen_mac_multicast(0);
 		}
 
 		if (linktype == DLT_FDDI) {
 			/* XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX */
 			/* fddi[1] & 1 != 0 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 1;
-			b0 = new_block(JMP(BPF_JSET));
-			b0->s.k = 1;
-			b0->stmts = s;
-			return b0;
+			return gen_mac_multicast(1);
 		}
 
 		/* TODO - check how token ring handles multicast */
 		/* if (linktype == DLT_IEEE802) ... */
+
+		if (linktype == DLT_IEEE802_11) {
+			/*
+			 * Oh, yuk.
+			 *
+			 *	For control frames, there is no DA.
+			 *
+			 *	For management frames, DA is at an
+			 *	offset of 4 from the beginning of
+			 *	the packet.
+			 *
+			 *	For data frames, DA is at an offset
+			 *	of 4 from the beginning of the packet
+			 *	if To DS is clear and at an offset of
+			 *	16 from the beginning of the packet
+			 *	if To DS is set.
+			 */
+
+			/*
+			 * If the low-order bit of the type value is 1,
+			 * this is either a control frame or a frame
+			 * with a reserved type, and thus not a
+			 * frame with a DA.
+			 *
+			 * I.e., first check "!(link[0] & 0x04)".
+			 */
+			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+			s->s.k = 0;
+			b0 = new_block(JMP(BPF_JSET));
+			b0->s.k = 0x04;
+			b0->stmts = s;
+			gen_not(b0);
+
+			/*
+			 * If the high-order bit of the type value is 0,
+			 * this is a management frame.
+			 * I.e, check "!(link[0] & 0x08)".
+			 */
+			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+			s->s.k = 0;
+			b2 = new_block(JMP(BPF_JSET));
+			b2->s.k = 0x08;
+			b2->stmts = s;
+			gen_not(b2);
+
+			/*
+			 * For management frames, test the DA at 4.
+			 */
+			b1 = gen_mac_multicast(4);
+			gen_and(b2, b1);
+			b3 = b1;
+
+			/*
+			 * If the high-order bit of the type value is 0,
+			 * this is a data frame; check To DS.
+			 *
+			 * I.e., check "(link[0] & 0x08) && !(link[1] & 0x01)".
+			 */
+			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+			s->s.k = 0;
+			b1 = new_block(JMP(BPF_JSET));
+			b1->s.k = 0x08;
+			b1->stmts = s;
+
+			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+			s->s.k = 1;
+			b2 = new_block(JMP(BPF_JSET));
+			b2->s.k = 0x01;	/* To DS */
+			b2->stmts = s;
+			gen_not(b2);
+			gen_and(b1, b2);
+
+			/*
+			 * For data frames with To DS not set, test the DA
+			 * at 4; then combine that test with the management
+			 * frame test.
+			 */
+			b1 = gen_mac_multicast(4);
+			gen_and(b2, b1);
+			gen_or(b3, b1);
+			b3 = b1;
+
+			/*
+			 * Now, check for a data frame with To DS set.
+			 *
+			 * I.e., check "(link[0] & 0x08) && (link[1] & 0x01)".
+			 */
+			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+			s->s.k = 0;
+			b1 = new_block(JMP(BPF_JSET));
+			b1->s.k = 0x08;
+			b1->stmts = s;
+
+			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+			s->s.k = 1;
+			b2 = new_block(JMP(BPF_JSET));
+			b2->s.k = 0x01;	/* To DS */
+			b2->stmts = s;
+			gen_and(b1, b2);
+
+			/*
+			 * Test the DA at 16, and OR the previous DA tests
+			 * with it.
+			 */
+			b1 = gen_mac_multicast(16);
+			gen_and(b2, b1);
+			gen_or(b3, b1);
+
+			gen_and(b0, b1);
+			return b1;
+		}
 
 		/* Link not known to support multicasts */
 		break;
