@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.44 2003-03-11 06:23:54 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.45 2003-04-09 10:06:44 risso Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -117,6 +117,8 @@ struct pcap {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];
 	int dlt_count;
 	int *dlt_list;
+
+	struct pcap_pkthdr pcap_header;	/* This is needed for the pcap_next_ex() to work */
 };
 
 /*
@@ -191,10 +193,6 @@ int	yylex(void);
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
-#ifdef WIN32
-/* sf_next_packet must be exported for pcap_read_ex */
-int sf_next_packet(pcap_t *, struct pcap_pkthdr *, u_char *, int);
-#endif
 
 /*
  * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
@@ -210,8 +208,6 @@ int sf_next_packet(pcap_t *, struct pcap_pkthdr *, u_char *, int);
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 strlen((y)))
 #endif
-
-int	pcap_strcasecmp(const char *, const char *);
 
 /*
  * Internal interface for "pcap_set_datalink()".  Attempts to set the
