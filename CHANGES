@@ -1,11 +1,41 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.51 2000-06-08 06:40:09 torsten Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.52 2000-07-14 02:35:03 guy Exp $ (LBL)
+
+Fri Jun  7 23:00:05 GMT 2000 gharris@flashcom.net
+	* repair BIOSBLEN loop
+
+Sun Jun 11 16:46:22 GMT 2000  mcr@sandelman.ottawa.on.ca
+	* add README.aix file describing AIX-specific issues
+
+Sat Jun 10 14:20:24 GMT 2000  cgd@netbsd.org
+	* fixes to cross-compiling
 
 Thu Jun  8 08:37:09 CEST 2000 torsten@debian.org
         * merged the Linux v2.2 packet support into the main trunk
 
+Sat Jun 3 16:29:42 GMT 2000  itojun@iijlab.net
+	* -Wall -Werror clean.
+
+Thu May  4 13:34:24 GMT 2000  itojun@iijlab.net
+	* do not use strlcpy() if the platform does not supply one.
+	  linkage of third-party source code can fail if the third-party
+	  code does not have AC_REPLACE_FUNCS(strlcpy).  (exapmle:
+	  ethereal)
+
 Thu Apr 27 18:49:57 JST 2000  itojun@iijlab.net
 	* avoid use of sprintf() and other unbounded string operations.
 	  NOTE: *errbuf arg is assumed to be larger than PCAP_ERRBUF_SIZE.
+
+Sun Apr  9 17:44:26 GMT 2000 assar@sics.se
+	* check for u_int32_t (used in gencode)
+
+Sat Apr  1 12:06:37 GMT 2000 assar@sics.se
+	* (AC_C___ATTRIBUTE__): call
+
+Fri Mar 31 16:59:43 GMT 2000 assar@sics.se
+	* link bpf_filter.c to make it work with all makes.  problem
+	  reported by Rick Jones <raj@cup.hp.com>
+	* update config.guess and config.sub to latest versions from FSF
+	  CVS tree
 
 Wed Feb 23 20:32:32 JST 2000  itojun@iijlab.net
 	* use getifaddrs(3) whenever possible.  this avoids use of SIOCGIFCONF.
@@ -13,12 +43,32 @@ Wed Feb 23 20:32:32 JST 2000  itojun@iijlab.net
 	  of buffer beforehand, (2) it is not friendly with alignment issues
 	  due to use of packed struct.
 
-Sun Oct 19 JST 1999  itojun@iijlab.net
-	* bring in KAME IPv6/IPsec bpf compiler.
+Sat Jan  1 06:08:49 GMT 2000 assar@sics.se
+	* (AC_REVISION): add
 
-Sometime in 1999
-	* tcpdump.org imported LBL 0.4
+v0.5 Sat Jun 10 11:09:15 PDT 2000
 
+itojun@iijlab.net
+- Brought in KAME IPv6/IPsec bpf compiler.
+- Fixes for NetBSD.
+- Support added for OpenBSD DLT_LOOP and BSD/OS DLT_C_HDLC (Cisco HDLC),
+  and changes to work around different BSDs having different DLT_ types
+  with the same numeric value.
+
+Assar Westerlund  <assar@sics.se>
+- Building outside the source code tree fixed.
+- Changed to write out time stamps with 32-bit seconds and microseconds
+  fields, regardless of whether those fields are 32 bits or 64 bits in
+  the OS's native "struct timeval".
+- Changed "pcap_lookupdev()" to dynamically grow the buffer into which
+  the list of interfaces is read as necessary in order to hold the
+  entire list.
+
+Greg Troxel <gdt@ir.bbn.com>
+- Added a new "pcap_compile_nopcap()", which lets you compile a filter
+  expression into a BPF program without having an open live capture or
+  capture file.
+  
 v0.4 Sat Jul 25 12:40:09 PDT 1998
 
 - Fix endian problem with DLT_NULL devices. From FreeBSD via Bill
