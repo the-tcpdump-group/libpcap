@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.70 2001-07-29 01:22:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.71 2001-10-12 06:43:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -379,14 +379,19 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	** However, we seem to get DL_BADADDR - "DLSAP addr in improper
 	** format or invalid" - errors if we use 1537 on the "tr0"
 	** device, which, given that its name starts with "tr" and that
-	** it's IBM, probably means a Token Ring device.   So if 1537
-	** fails, we try 0, in the hopes that it'll work (perhaps we
-	** need to use 1537 on "/dev/dlpi/en" because that device is
-	** for D/I/X Ethernet, the "SAP" is actually an Ethernet type,
-	** and it rejects invalid Ethernet types).
+	** it's IBM, probably means a Token Ring device.  (Perhaps we
+	** need to use 1537 on "/dev/dlpi/en" because that device is for
+	** D/I/X Ethernet, the "SAP" is actually an Ethernet type, and
+	** it rejects invalid Ethernet types.)
+	**
+	** So if 1537 fails, we try 2, as Hyung Sik Yoon of IBM Korea
+	** says that works on Token Ring (he says that 0 does *not*
+	** work; perhaps that's considered an invalid LLC SAP value - I
+	** assume the SAP value in a DLPI bind is an LLC SAP for network
+	** types that use 802.2 LLC).
 	*/
 	if ((dlbindreq(p->fd, 1537, ebuf) < 0 &&
-	     dlbindreq(p->fd, 0, ebuf) < 0) ||
+	     dlbindreq(p->fd, 2, ebuf) < 0) ||
 #else
 	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
 #endif
