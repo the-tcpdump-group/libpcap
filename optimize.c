@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.75 2002-08-12 02:38:11 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76 2003-03-08 08:26:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1842,17 +1842,23 @@ opt_init(root)
 	unMarkAll();
 	n = count_blocks(root);
 	blocks = (struct block **)malloc(n * sizeof(*blocks));
+	if (blocks == NULL)
+		bpf_error("malloc");
 	unMarkAll();
 	n_blocks = 0;
 	number_blks_r(root);
 
 	n_edges = 2 * n_blocks;
 	edges = (struct edge **)malloc(n_edges * sizeof(*edges));
+	if (edges == NULL)
+		bpf_error("malloc");
 
 	/*
 	 * The number of levels is bounded by the number of nodes.
 	 */
 	levels = (struct block **)malloc(n_blocks * sizeof(*levels));
+	if (levels == NULL)
+		bpf_error("malloc");
 
 	edgewords = n_edges / (8 * sizeof(bpf_u_int32)) + 1;
 	nodewords = n_blocks / (8 * sizeof(bpf_u_int32)) + 1;
@@ -1860,6 +1866,8 @@ opt_init(root)
 	/* XXX */
 	space = (bpf_u_int32 *)malloc(2 * n_blocks * nodewords * sizeof(*space)
 				 + n_edges * edgewords * sizeof(*space));
+	if (space == NULL)
+		bpf_error("malloc");
 	p = space;
 	all_dom_sets = p;
 	for (i = 0; i < n; ++i) {
@@ -1897,6 +1905,8 @@ opt_init(root)
 	maxval = 3 * max_stmts;
 	vmap = (struct vmapinfo *)malloc(maxval * sizeof(*vmap));
 	vnode_base = (struct valnode *)malloc(maxval * sizeof(*vnode_base));
+	if (vmap == NULL || vnode_base == NULL)
+		bpf_error("malloc");
 }
 
 /*
@@ -2093,6 +2103,8 @@ icode_to_fcode(root, lenp)
 	    n = *lenp = count_stmts(root);
 
 	    fp = (struct bpf_insn *)malloc(sizeof(*fp) * n);
+	    if (fp == NULL)
+		    bpf_error("malloc");
 	    memset((char *)fp, 0, sizeof(*fp) * n);
 	    fstart = fp;
 	    ftail = fp + n;
