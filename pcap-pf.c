@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.83 2003-11-21 23:28:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.84 2003-11-22 00:32:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -464,46 +464,75 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 static int
 pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 {
-	/*
-	 * See if BIOCSETF works.  If it does, the kernel supports
-	 * BPF-style filters, and we do not need to do post-filtering.
-	 */
-	p->md.use_bpf = (ioctl(p->fd, BIOCSETF, (caddr_t)fp) >= 0);
-	if (p->md.use_bpf) {
-		struct bpf_version bv;
+	struct bpf_version bv;
 
-		if (ioctl(p->fd, BIOCVERSION, (caddr_t)&bv) < 0) {
-			snprintf(p->errbuf, sizeof(p->errbuf),
-			    "BIOCVERSION: %s", pcap_strerror(errno));
-			return (-1);
-		}
-		else if (bv.bv_major != BPF_MAJOR_VERSION ||
-			 bv.bv_minor < BPF_MINOR_VERSION) {
-			fprintf(stderr,
-		"requires bpf language %d.%d or higher; kernel is %d.%d",
-				BPF_MAJOR_VERSION, BPF_MINOR_VERSION,
-			      bv.bv_major, bv.bv_minor);
+	/*
+	 * See if BIOCVERSION works.  If not, we assume the kernel doesn't
+	 * support BPF-style filters (it's not documented in the bpf(7)
+	 * or packetfiler(7) man pages, but the code used to fail if
+	 * BIOCSETF worked but BIOCVERSION didn't, and I've seen it do
+	 * kernel filtering in DU 4.0, so presumably BIOCVERSION works
+	 * there, at least).
+	 */
+	if (ioctl(p->fd, BIOCVERSION, (caddr_t)&bv) >= 0) {
+		/*
+		 * OK, we have the version of the BPF interpreter;
+		 * is it the same major version as us, and the same
+		 * or better minor version?
+		 */
+		if (bv.bv_major == BPF_MAJOR_VERSION &&
+		    bv.bv_minor >= BPF_MINOR_VERSION) {
 			/*
-			 * Don't give up, just be inefficient.
-			 * XXX - we *did* hand a program to the kernel;
-			 * what will happen to it?  Should we do the
-			 * check *before* installing the filter?
-			 * What should we do if BIOCVERSION fails -
-			 * just do filtering in userland?
+			 * Yes.  Try to install the filter.
 			 */
-			if (install_bpf_program(p, fp) < 0)
+			if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
+				snprintf(p->errbuf, sizeof(p->errbuf),
+				    "BIOCSETF: %s", pcap_strerror(errno));
 				return (-1);
-			p->md.use_bpf = 0;
+			}
+
+			/*
+			 * OK, that succeeded.  We're doing filtering in
+			 * the kernel.  (We assume we don't have a
+			 * userland filter installed - that'd require
+			 * a previous version check to have failed but
+			 * this one to succeed.)
+			 *
+			 * XXX - this message should be supplied to the
+			 * application as a warning of some sort,
+			 * except that if it's a GUI application, it's
+			 * not clear that it should be displayed in
+			 * a window to annoy the user.
+			 */
+			fprintf(stderr, "tcpdump: Using kernel BPF filter\n");
+			p->md.use_bpf = 1;
+			return (0);
 		}
-	} else {
-		if (install_bpf_program(p, fp) < 0)
-			return (-1);
+
+		/*
+		 * We can't use the kernel's BPF interpreter; don't give
+		 * up, just log a message and be inefficient.
+		 *
+		 * XXX - this should really be supplied to the application
+		 * as a warning of some sort.
+		 */
+		fprintf(stderr,
+	    "tcpdump: Requires BPF language %d.%d or higher; kernel is %d.%d\n",
+		    BPF_MAJOR_VERSION, BPF_MINOR_VERSION,
+		    bv.bv_major, bv.bv_minor);
 	}
 
-	/*XXX this goes in tcpdump*/
-	if (p->md.use_bpf)
-		fprintf(stderr, "tcpdump: Using kernel BPF filter\n");
-	else
-		fprintf(stderr, "tcpdump: Filtering in user process\n");
+	/*
+	 * We couldn't do filtering in the kernel; do it in userland.
+	 */
+	if (install_bpf_program(p, fp) < 0)
+		return (-1);
+
+	/*
+	 * XXX - this message should be supplied by the application as
+	 * a warning of some sort.
+	 */
+	fprintf(stderr, "tcpdump: Filtering in user process\n");
+	p->md.use_bpf = 0;
 	return (0);
 }
