@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.7.2.2 2003-12-15 02:05:00 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.7.2.3 2004-04-05 22:48:26 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -336,6 +336,7 @@ inet.c		- network routines
 install-sh	- BSD style install script
 lbl/os-*.h	- OS-dependent defines and prototypes
 llc.h		- 802.2 LLC SAP definitions
+missing/*	- replacements for missing library functions
 mkdep		- construct Makefile dependency list
 nametoaddr.c	- hostname to address routines
 nlpid.h		- OSI network layer protocol identifier definitions
@@ -369,6 +370,5 @@ rawss7.h	- information on DLT_ types for SS7
 savefile.c	- offline support
 scanner.l	- filter string scanner
 sll.h		- definitions for Linux cooked mode fake link-layer header
-snprintf.c	- snprintf and vsnprintf for platforms that lack them
 sunatmpos.h	- definitions for SunATM capturing
 Win32		- headers and routines for building on Win32 systems
