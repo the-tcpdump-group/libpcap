@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.71 2002-12-22 02:36:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.72 2003-01-03 08:33:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -254,6 +254,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return (0);
 	}
 	memset(p, 0, sizeof(*p));
+
+	/*
+	 * XXX - we assume here that "pfopen()" does not, in fact, modify
+	 * its argument, even though it takes a "char *" rather than a
+	 * "const char *" as its first argument.  That appears to be
+	 * the case, at least on Digital UNIX 4.0.
+	 */
 	p->fd = pfopen(device, O_RDONLY);
 	if (p->fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
