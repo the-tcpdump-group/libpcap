@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.81 2000-07-29 07:20:24 assar Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.82 2000-07-30 05:56:49 assar Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -27,11 +27,11 @@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 # Pathname of directory to install the include files
-INCLDEST = @includedir@
+includedir = @includedir@
 # Pathname of directory to install the library
-LIBDEST =  @libdir@
+libdir =  @libdir@
 # Pathname of directory to install the man page
-MANDEST = @mandir@
+mandir = @mandir@
 
 # VPATH
 srcdir = @srcdir@
@@ -50,6 +50,8 @@ DEFS = @DEFS@
 CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 
 INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
 RANLIB = @RANLIB@
 
 #
@@ -134,26 +136,25 @@ bpf_filter.o: bpf_filter.c
 	$(CC) $(CFLAGS) -c bpf_filter.c
 
 install:
-	[ -d $(DESTDIR)$(LIBDEST) ] || mkdir -p $(DESTDIR)$(LIBDEST)
-	$(INSTALL) -m 444 libpcap.a $(DESTDIR)$(LIBDEST)/libpcap.a
-	$(RANLIB) $(DESTDIR)$(LIBDEST)/libpcap.a
-	[ -d $(DESTDIR)$(LIBDEST) ] || mkdir -p $(DESTDIR)$(INCLDEST)
-	$(INSTALL) -m 444 $(srcdir)/pcap.h \
-	    $(DESTDIR)$(INCLDEST)/pcap.h
-	$(INSTALL) -m 444 $(srcdir)/pcap-namedb.h \
-	    $(DESTDIR)$(INCLDEST)/pcap-namedb.h
-	[ -d $(DESTDIR)$(LIBDEST) ] || mkdir -p $(DESTDIR)$(INCLDEST)/net
-	$(INSTALL) -m 444 $(srcdir)/bpf/net/bpf.h \
-	    $(DESTDIR)$(INCLDEST)/net/bpf.h
-	$(INSTALL) -m 444 $(srcdir)/pcap.3 \
-	    $(DESTDIR)$(MANDEST)/man3/pcap.3
+	[ -d $(DESTDIR)$(libdir) ] || mkdir -p $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
+	$(RANLIB) $(DESTDIR)$(libdir)/libpcap.a
+	[ -d $(DESTDIR)$(libdir) ] || mkdir -p $(DESTDIR)$(includedir)
+	$(INSTALL_DATA) $(srcdir)/pcap.h $(DESTDIR)$(includedir)/pcap.h
+	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
+	    $(DESTDIR)$(includedir)/pcap-namedb.h
+	[ -d $(DESTDIR)$(libdir) ] || mkdir -p $(DESTDIR)$(includedir)/net
+	$(INSTALL_DATA) $(srcdir)/bpf/net/bpf.h \
+	    $(DESTDIR)$(includedir)/net/bpf.h
+	$(INSTALL_DATA) $(srcdir)/pcap.3 \
+	    $(DESTDIR)$(mandir)/man3/pcap.3
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDEST)/libpcap.a
-	rm -f $(DESTDIR)$(INCLDEST)/pcap.h
-	rm -f $(DESTDIR)$(INCLDEST)/pcap-namedb.h
-	rm -f $(DESTDIR)$(INCLDEST)/net/bpf.h
-	rm -f $(DESTDIR)$(MANDEST)/man3/pcap.3
+	rm -f $(DESTDIR)$(libdir)/libpcap.a
+	rm -f $(DESTDIR)$(includedir)/pcap.h
+	rm -f $(DESTDIR)$(includedir)/pcap-namedb.h
+	rm -f $(DESTDIR)$(includedir)/net/bpf.h
+	rm -f $(DESTDIR)$(mandir)/man3/pcap.3
 
 clean:
 	rm -f $(CLEANFILES)
