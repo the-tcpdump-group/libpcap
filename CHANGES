@@ -1,5 +1,28 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.47.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.48.2.1 2000-06-10 18:47:37 assar Exp $ (LBL)
 
+v0.5 Sat Jun 10 11:09:15 PDT 2000
+
+itojun@iijlab.net
+- Brought in KAME IPv6/IPsec bpf compiler.
+- Fixes for NetBSD.
+- Support added for OpenBSD DLT_LOOP and BSD/OS DLT_C_HDLC (Cisco HDLC),
+  and changes to work around different BSDs having different DLT_ types
+  with the same numeric value.
+
+Assar Westerlund  <assar@sics.se>
+- Building outside the source code tree fixed.
+- Changed to write out time stamps with 32-bit seconds and microseconds
+  fields, regardless of whether those fields are 32 bits or 64 bits in
+  the OS's native "struct timeval".
+- Changed "pcap_lookupdev()" to dynamically grow the buffer into which
+  the list of interfaces is read as necessary in order to hold the
+  entire list.
+
+Greg Troxel <gdt@ir.bbn.com>
+- Added a new "pcap_compile_nopcap()", which lets you compile a filter
+  expression into a BPF program without having an open live capture or
+  capture file.
+  
 v0.4 Sat Jul 25 12:40:09 PDT 1998
 
 - Fix endian problem with DLT_NULL devices. From FreeBSD via Bill
