@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.79.2.2 2003-11-20 02:01:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.79.2.3 2003-11-21 10:20:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -433,6 +433,11 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
 	}
+
+	/*
+	 * "select()" and "poll()" work on packetfilter devices.
+	 */
+	p->selectable_fd = p->fd;
 
 	p->read_op = pcap_read_pf;
 	p->setfilter_op = pcap_setfilter_pf;

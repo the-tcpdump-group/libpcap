@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.5 2003-11-20 02:01:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.6 2003-11-21 10:20:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -595,6 +595,12 @@ pcap_open_offline(const char *fname, char *errbuf)
 		p->sf.lengths_swapped = NOT_SWAPPED;
 		break;
 	}
+
+	/*
+	 * You can do "select()" and "poll()" on plain files on most
+	 * platforms, and should be able to do so on pipes.
+	 */
+	p->selectable_fd = fileno(fp);
 
 	p->read_op = pcap_offline_read;
 	p->setfilter_op = install_bpf_program;

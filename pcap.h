@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.45.2.2 2003-11-18 22:14:53 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.45.2.3 2003-11-21 10:20:50 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -240,6 +240,13 @@ int pcap_setmintocopy(pcap_t *p, int size);
 
 #define MODE_CAPT 0
 #define MODE_STAT 1
+
+#else
+/*
+ * UN*X definitions
+ */
+
+int	pcap_get_selectable_fd(pcap_t *);
 
 #endif /* WIN32 */
 

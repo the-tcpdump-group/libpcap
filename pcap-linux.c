@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.3 2003-11-20 02:01:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.4 2003-11-21 10:20:46 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -396,6 +396,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		free(handle);
 		return NULL;
 	}
+
+	/*
+	 * "handle->fd" is a socket, so "select()" and "poll()"
+	 * should work on it.
+	 */
+	handle->selectable_fd = handle->fd;
 
 	handle->read_op = pcap_read_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
