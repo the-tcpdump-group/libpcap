@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.67 2002-07-11 09:06:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.68 2002-08-02 03:28:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -256,7 +256,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	p->fd = pfopen(device, O_RDONLY);
 	if (p->fd < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
-your system may not be properly configured; see \"man packetfilter(4)\"\n",
+your system may not be properly configured; see the packetfilter(4) man page\n"
 			device, pcap_strerror(errno));
 		goto bad;
 	}
@@ -345,7 +345,7 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 		 * framing", there's not much we can do, as that
 		 * doesn't specify a particular type of header.
 		 */
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown data-link type %lu",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown data-link type %u",
 		    devparams.end_dev_type);
 		goto bad;
 	}
