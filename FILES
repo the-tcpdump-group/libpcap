@@ -10,11 +10,13 @@ README.dag
 README.hpux
 README.linux
 README.tru64
+README.Win32
 SUNOS4/nit_if.o.sparc
 SUNOS4/nit_if.o.sun3
 SUNOS4/nit_if.o.sun4c.4.0.3c
 TODO
 VERSION
+acconfig.h
 aclocal.m4
 arcnet.h
 atmuni31.h
@@ -50,6 +52,8 @@ mkdep
 nametoaddr.c
 nlpid.h
 optimize.c
+packaging/pcap.spec
+packaging/pcap.spec.in
 pcap-bpf.c
 pcap-bpf.h
 pcap-dag.c
@@ -73,6 +77,7 @@ pcap.c
 pcap.h
 pf.h
 ppp.h
+rawss7.h
 savefile.c
 scanner.l
 sll.h
@@ -98,6 +103,4 @@ Win32/Src/getservent.c
 Win32/Src/inet_aton.c
 Win32/Src/inet_net.c
 Win32/Src/inet_pton.c
-packaging/pcap.spec
-packaging/pcap.spec.in
 
