@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.50 2000-12-23 07:50:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.51 2001-01-03 01:06:16 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -194,27 +194,6 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		return NULL;
 	}
 
-	/* 
-	 * Okay, now we have a packet stream open. Maybe we need to handle 
-	 * a timeout? In that case we set the filehandle to nonblocking 
-	 * so pcap_read can try reading the fd and call select if no data
-	 * is available at first. 
-	 */
-
-	if (to_ms > 0) {
-		int	flags = fcntl(handle->fd, F_GETFL);
-		if (flags != -1) {
-			flags |= O_NONBLOCK;
-			flags = fcntl(handle->fd, F_SETFL, flags);
-		}
-		if (flags == -1) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "fcntl: %s",
-				 pcap_strerror(errno));
-			pcap_close(handle);
-			return NULL;
-		}
-	}
-
 	return handle;
 }
 
@@ -222,70 +201,15 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
  *  Read at most max_packets from the capture stream and call the callback
  *  for each of them. Returns the number of packets handled or -1 if an
  *  error occured. 
- *  
- *  XXX: Can I rely on the Linux-specified behaviour of select (returning
- *  the time left in the timeval structure)? I really don't want to query
- *  the system time before each select call...
- *  
- *  pcap_read currently gets not only a packet from the kernel but also
- *  the sockaddr_ll returned as source of the packet. This way we can at
- *  some time extend tcpdump and libpcap to sniff on all devices at a time
- *  and find the right printing routine by using the information in the
- *  sockaddr_ll structure.
  */
 int
 pcap_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	int		status, packets;
-	fd_set		read_fds;
-	struct timeval	tv;
-
 	/*
-	 * Fill in a timeval structure for select if we need to obeye a
-	 * timeout.
+	 * Currently, on Linux only one packet is delivered per read,
+	 * so we don't loop.
 	 */
-	if (handle->md.timeout > 0) {
-		tv.tv_usec	= (handle->md.timeout % 1000) * 1000;
-		tv.tv_sec	= (handle->md.timeout / 1000);
-	}
-
-	/*
-	 * Read packets until the packet limit has been reached or 
-	 * an error occured while reading. Call the user function 
-	 * for each received packet.
-	 */
-	for (packets = 0; max_packets == -1 || packets < max_packets;)
-	{
-		status = pcap_read_packet(handle, callback, user);
-
-		if (status > 0) {
-			packets += status;
-			continue;
-		} else if (status == -1)
-			return -1;
-
-		/* 
-		 * If no packet is available we go to sleep. FIXME: This
-		 * might be better implemented using poll(?)
-		 */
-		FD_ZERO(&read_fds);
-		FD_SET(handle->fd, &read_fds);
-		status = select(handle->fd + 1, 
-				&read_fds, NULL, NULL, &tv);
-
-		if (status == -1) {
-			if (errno == EINTR)
-				return packets;
-			snprintf(handle->errbuf, sizeof(handle->errbuf),
-				 "select: %s", pcap_strerror(errno));
-			return -1;
-		} 
-		else if (status == 0 || 
-			   (tv.tv_usec == 0 && tv.tv_sec == 0))
-			return packets;
-	}
-
-	return packets;
+	return pcap_read_packet(handle, callback, user);
 }
 
 /*
