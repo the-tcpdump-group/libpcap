@@ -18,7 +18,6 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
-#ifdef WIN32
 
 #define SIZEOF_CHAR 1
 #define SIZEOF_SHORT 2
@@ -41,23 +40,3 @@
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define inline __inline 
-
-#else
-
-#include <unistd.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/timeb.h>
-#include <sys/file.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#ifdef HAVE_SYS_SOCKIO_H
-#include <sys/sockio.h>
-#include <arpa/inet.h>
-#endif
-
-#endif
