@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.68 2002-10-18 08:46:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.69 2002-10-24 08:09:42 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -483,6 +483,8 @@ pcap_open_offline(const char *fname, char *errbuf)
 
 	return (p);
  bad:
+	if(fp)
+		fclose(fp);
 	free(p);
 	return (NULL);
 }
