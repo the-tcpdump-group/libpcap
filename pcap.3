@@ -225,6 +225,15 @@ controls whether optimization on the resulting code is performed.
 .I netmask
 specifies the netmask of the local net.
 .PP
+.B pcap_compile_nopcap()
+is similar to
+.B pcap_compile()
+except that instead of passing a pcap structure, one passes the
+snaplen and linktype explicitly.  It is intended to be used for
+compiling filters for direct bpf usage, without necessarily having
+called
+.BR pcap_open() .
+.PP
 .B pcap_setfilter()
 is used to specify a filter program.
 .I fp
@@ -331,10 +340,10 @@ Craig Leres and
 Steven McCanne, all of the
 Lawrence Berkeley National Laboratory, University of California, Berkeley, CA.
 .LP
-The current version is available via anonymous ftp:
+The current version is available from "The Tcpdump Group"'s Web site at
 .LP
 .RS
-.I ftp://ftp.ee.lbl.gov/libpcap.tar.Z
+.I http://www.tcpdump.org/
 .RE
 .SH BUGS
-Please send bug reports to libpcap@ee.lbl.gov.
+Please send bug reports to patches@tcpdump.org.

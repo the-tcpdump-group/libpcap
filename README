@@ -1,10 +1,13 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.18.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.18.1.1.2.1 2000-06-11 16:39:20 mcr Exp $ (LBL)
 
-LIBPCAP 0.4
-Lawrence Berkeley National Laboratory
-Network Research Group
-libpcap@ee.lbl.gov
-ftp://ftp.ee.lbl.gov/libpcap.tar.Z
+LIBPCAP 0.5
+Now maintained by "The Tcpdump Group"
+Send patches to patches@tcpdump.org
+See 		www.tcpdump.org
+
+formerly from 	Lawrence Berkeley National Laboratory
+		Network Research Group <libpcap@ee.lbl.gov>
+		ftp://ftp.ee.lbl.gov/libpcap.tar.Z (0.4)
 
 This directory contains source code for libpcap, a system-independent
 interface for user-level packet capture.  libpcap provides a portable
@@ -33,7 +36,7 @@ added overhead (especially, for selective filters).  Ideally, libpcap
 would translate BPF filters into a filter program that is compatible
 with the underlying kernel subsystem, but this is not yet implemented.
 
-BPF is standard in 4.4BSD, BSD/386, NetBSD, and FreeBSD.  DEC OSF/1
+BPF is standard in 4.4BSD, BSD/OS, NetBSD, FreeBSD, and OpenBSD.  DEC OSF/1
 uses the packetfilter interface but has been extended to accept BPF
 filters (which libpcap utilizes).  Also, you can add BPF filter support
 to Ultrix using the kernel source and/or object patches available in:
@@ -42,8 +45,5 @@ to Ultrix using the kernel source and/or object patches available in:
 
 Problems, bugs, questions, desirable enhancements, source code
 contributions, etc., should be sent to the email address
-"libpcap@ee.lbl.gov".
+"patches@tcpdump.org".
 
- - Steve McCanne
-   Craig Leres
-   Van Jacobson

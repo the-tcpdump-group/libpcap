@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/Attic/INSTALL,v 1.42.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/Attic/INSTALL,v 1.42.1.1.2.1 2000-06-11 16:39:20 mcr Exp $ (LBL)
 
 To build libpcap, first customize any paths in Makefile.in, then run
 "./configure" (a shell script). The configure script will determine
@@ -172,16 +172,16 @@ application. Also, packet timestamps aren't very good. This appears to
 be due to haphazard handling of the timestamp in the kernel.
 
 Note well: there is rumoured to be a version of tcpdump floating around
-called 3.0.3 that includes libpcap and is supposed to support Linux.
+called 3.0.3 that includes libpcap and is supposed to support Linux. 
 You should be advised that the Network Research Group at LBNL never
-generated a release with this version number. We note with interest
-that a standard cracker trick to get people to install trojans is to
-distribute bogus packages that have a version number higher than the
-current release. We also note with annoyance that 90% of the Linux
-related bug reports we get are due to changes made to unofficial
-versions of our page. If you are having trouble but aren't using a
-version that came from ftp.ee.lbl.gov, please try that before
-submitting a bug report!
+generated a release with this version number.  The LBNL Network Research
+Group notes with interest that a standard cracker trick to get people to
+install trojans is to distribute bogus packages that have a version
+number higher than the current release.  They also noted with annoyance
+that 90% of the Linux related bug reports they got are due to changes
+made to unofficial versions of their page.  If you are having trouble
+but aren't using a version that came from tcpdump.org, please try that
+before submitting a bug report!
 
 If you use AIX, you may not be able to build libpcap from this release.
 Although AIX 4 ships with tcpdump, it is an old version that predates
