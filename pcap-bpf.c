@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.51 2002-07-11 09:06:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.52 2002-08-03 20:26:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -36,13 +36,6 @@ static const char rcsid[] =
 
 #include <net/if.h>
 #ifdef _AIX
-/*
- * XXX - I'm guessing here AIX defines IFT_ values in <net/if_types.h>,
- * as BSD does.  If not, this code won't compile, but, if not, you
- * want to send us a bug report and fall back on using DLPI.
- * It's not as if BPF used to work right on AIX before this change;
- * this change attempts to fix the fact that it didn't....
- */
 #include <net/if_types.h>		/* for IFT_ values */
 #endif
 
@@ -198,6 +191,16 @@ bpf_open(pcap_t *p, char *errbuf)
 	return (fd);
 }
 
+/*
+ * XXX - on AIX, IBM's tcpdump (and perhaps the incompatible-with-everybody-
+ * else's libpcap in AIX 5.1) appears to forcibly load the BPF driver
+ * if it's not already loaded, and to create the BPF devices if they
+ * don't exist.
+ *
+ * It'd be nice if we could do the same, although the code to do so
+ * might be version-dependent, alas (the way to do it isn't necessarily
+ * documented).
+ */
 pcap_t *
 pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
@@ -325,6 +328,11 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	/* set timeout */
 	if (to_ms != 0) {
+		/*
+		 * XXX - is this seconds/nanoseconds in AIX?
+		 * (Treating it as such doesn't fix the timeout
+		 * problem described below.)
+		 */
 		struct timeval to;
 		to.tv_sec = to_ms / 1000;
 		to.tv_usec = (to_ms * 1000) % 1000000;
