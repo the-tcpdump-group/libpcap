@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Win32/Include/ip6_misc.h,v 1.1 2002-08-01 08:33:06 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Win32/Include/ip6_misc.h,v 1.2 2002-08-02 13:59:03 risso Exp $ (LBL)
  */
 
 /*
@@ -36,9 +36,6 @@
 #define	IN_EXPERIMENTAL(a)	((((u_int32_t) (a)) & 0xe0000000) == 0xe0000000)
 
 #define	IN_LOOPBACKNET		127
-
-const struct in6_addr in6addr_any;        /* :: */
-const struct in6_addr in6addr_loopback;   /* ::1 */
 
 #ifdef __MINGW32__
 /* IPv6 address */
