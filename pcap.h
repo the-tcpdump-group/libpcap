@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.23 2000-06-26 04:57:11 assar Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.24 2000-07-29 07:36:43 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -42,6 +42,10 @@
 #include <net/bpf.h>
 
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define PCAP_VERSION_MAJOR 2
 #define PCAP_VERSION_MINOR 4
@@ -139,4 +143,9 @@ u_int	bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);
 int	bpf_validate(struct bpf_insn *f, int len);
 char	*bpf_image(struct bpf_insn *, int);
 void	bpf_dump(struct bpf_program *, int);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

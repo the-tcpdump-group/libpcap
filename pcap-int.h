@@ -30,11 +30,15 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.25 2000-07-18 03:43:47 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.26 2000-07-29 07:36:41 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
 #define pcap_int_h
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <pcap.h>
 
@@ -159,4 +163,9 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
 /* XXX */
 extern	int pcap_fddipad;
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

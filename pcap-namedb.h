@@ -30,11 +30,15 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.7 2000-04-27 09:18:58 itojun Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.8 2000-07-29 07:36:43 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_ethers_h
 #define lib_pcap_ethers_h
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * As returned by the pcap_next_etherent()
@@ -75,5 +79,9 @@ int	pcap_nametoeproto(const char *);
 int __pcap_atodn(const char *, bpf_u_int32 *);
 int __pcap_atoin(const char *, bpf_u_int32 *);
 u_short	__pcap_nametodnaddr(const char *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
