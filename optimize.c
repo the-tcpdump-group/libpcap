@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.77 2003-11-15 23:24:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.78 2004-11-07 22:43:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1101,7 +1101,7 @@ opt_blk(b, do_stmts)
 	struct slist *s;
 	struct edge *p;
 	int i;
-	bpf_int32 aval;
+	bpf_int32 aval, xval;
 
 #if 0
 	for (s = b->stmts; s && s->next; s = s->next)
@@ -1130,17 +1130,36 @@ opt_blk(b, do_stmts)
 		}
 	}
 	aval = b->val[A_ATOM];
+	xval = b->val[X_ATOM];
 	for (s = b->stmts; s; s = s->next)
 		opt_stmt(&s->s, b->val, do_stmts);
 
 	/*
 	 * This is a special case: if we don't use anything from this
-	 * block, and we load the accumulator with value that is
-	 * already there, or if this block is a return,
+	 * block, and we load the accumulator or index register with a
+	 * value that is already there, or if this block is a return,
 	 * eliminate all the statements.
+	 *
+	 * XXX - what if it does a store?
+	 *
+	 * XXX - why does it matter whether we use anything from this
+	 * block?  If the accumulator or index register doesn't change
+	 * its value, isn't that OK even if we use that value?
+	 *
+	 * XXX - if we load the accumulator with a different value,
+	 * and the block ends with a conditional branch, we obviously
+	 * can't eliminate it, as the branch depends on that value.
+	 * For the index register, the conditional branch only depends
+	 * on the index register value if the test is against the index
+	 * register value rather than a constant; if nothing uses the
+	 * value we put into the index register, and we're not testing
+	 * against the index register's value, and there aren't any
+	 * other problems that would keep us from eliminating this
+	 * block, can we eliminate it?
 	 */
 	if (do_stmts &&
-	    ((b->out_use == 0 && aval != 0 &&b->val[A_ATOM] == aval) ||
+	    ((b->out_use == 0 && aval != 0 && b->val[A_ATOM] == aval &&
+	      xval != 0 && b->val[X_ATOM] == xval) ||
 	     BPF_CLASS(b->s.code) == BPF_RET)) {
 		if (b->stmts != 0) {
 			b->stmts = 0;
