@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91.2.8 2004-05-21 09:46:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91.2.9 2004-07-20 21:05:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -476,7 +476,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 				 * on Solaris, the lack of a DLPI device
 				 * for the loopback interface is just a
 				 * symptom of that inability.
-				 * 
+				 */
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", device);
 			} else {
