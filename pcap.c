@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.63.2.2 2003-11-18 21:09:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.63.2.3 2003-11-18 22:14:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -291,41 +291,42 @@ unsupported:
 
 struct dlt_choice {
 	const char *name;
+	const char *description;
 	int	dlt;
 };
 
-#define DLT_CHOICE(code) { #code, code }
-#define DLT_CHOICE_SENTINEL { NULL, 0 }
+#define DLT_CHOICE(code, description) { #code, description, code }
+#define DLT_CHOICE_SENTINEL { NULL, NULL, 0 }
 
 static struct dlt_choice dlt_choices[] = {
-	DLT_CHOICE(DLT_NULL),
-	DLT_CHOICE(DLT_EN10MB),
-	DLT_CHOICE(DLT_IEEE802),
-	DLT_CHOICE(DLT_ARCNET),
-	DLT_CHOICE(DLT_SLIP),
-	DLT_CHOICE(DLT_PPP),
-	DLT_CHOICE(DLT_FDDI),
-	DLT_CHOICE(DLT_ATM_RFC1483),
-	DLT_CHOICE(DLT_RAW),
-	DLT_CHOICE(DLT_SLIP_BSDOS),
-	DLT_CHOICE(DLT_PPP_BSDOS),
-	DLT_CHOICE(DLT_ATM_CLIP),
-	DLT_CHOICE(DLT_PPP_SERIAL),
-	DLT_CHOICE(DLT_PPP_ETHER),
-	DLT_CHOICE(DLT_C_HDLC),
-	DLT_CHOICE(DLT_IEEE802_11),
-	DLT_CHOICE(DLT_FRELAY),
-	DLT_CHOICE(DLT_LOOP),
-	DLT_CHOICE(DLT_ENC),
-	DLT_CHOICE(DLT_LINUX_SLL),
-	DLT_CHOICE(DLT_LTALK),
-	DLT_CHOICE(DLT_PFLOG),
-	DLT_CHOICE(DLT_PRISM_HEADER),
-	DLT_CHOICE(DLT_IP_OVER_FC),
-	DLT_CHOICE(DLT_SUNATM),
-	DLT_CHOICE(DLT_IEEE802_11_RADIO),
-	DLT_CHOICE(DLT_ARCNET_LINUX),
-	DLT_CHOICE(DLT_LINUX_IRDA),
+	DLT_CHOICE(DLT_NULL, "BSD loopback"),
+	DLT_CHOICE(DLT_EN10MB, "Ethernet"),
+	DLT_CHOICE(DLT_IEEE802, "Token ring"),
+	DLT_CHOICE(DLT_ARCNET, "ARCNET"),
+	DLT_CHOICE(DLT_SLIP, "SLIP"),
+	DLT_CHOICE(DLT_PPP, "PPP"),
+	DLT_CHOICE(DLT_FDDI, "FDDI"),
+	DLT_CHOICE(DLT_ATM_RFC1483, "RFC 1483 IP-over-ATM"),
+	DLT_CHOICE(DLT_RAW, "Raw IP"),
+	DLT_CHOICE(DLT_SLIP_BSDOS, "BSD/OS SLIP"),
+	DLT_CHOICE(DLT_PPP_BSDOS, "BSD/OS PPP"),
+	DLT_CHOICE(DLT_ATM_CLIP, "Linux Classical IP-over-ATM"),
+	DLT_CHOICE(DLT_PPP_SERIAL, "PPP over serial"),
+	DLT_CHOICE(DLT_PPP_ETHER, "PPPoE"),
+	DLT_CHOICE(DLT_C_HDLC, "Cisco HDLC"),
+	DLT_CHOICE(DLT_IEEE802_11, "802.11"),
+	DLT_CHOICE(DLT_FRELAY, "Frame Relay"),
+	DLT_CHOICE(DLT_LOOP, "OpenBSD loopback"),
+	DLT_CHOICE(DLT_ENC, "OpenBSD encapsulated IP"),
+	DLT_CHOICE(DLT_LINUX_SLL, "Linux cooked"),
+	DLT_CHOICE(DLT_LTALK, "Localtalk"),
+	DLT_CHOICE(DLT_PFLOG, "OpenBSD pflog file"),
+	DLT_CHOICE(DLT_PRISM_HEADER, "802.11 plus Prism header"),
+	DLT_CHOICE(DLT_IP_OVER_FC, "RFC 2625 IP-over-Fibre Channel"),
+	DLT_CHOICE(DLT_SUNATM, "Sun raw ATM"),
+	DLT_CHOICE(DLT_IEEE802_11_RADIO, "802.11 plus radio information header"),
+	DLT_CHOICE(DLT_ARCNET_LINUX, "Linux ARCNET"),
+	DLT_CHOICE(DLT_LINUX_IRDA, "Linux IrDA"),
 	DLT_CHOICE_SENTINEL
 };
 
@@ -435,6 +436,18 @@ pcap_datalink_val_to_name(int dlt)
 	for (i = 0; dlt_choices[i].name != NULL; i++) {
 		if (dlt_choices[i].dlt == dlt)
 			return (dlt_choices[i].name + sizeof("DLT_") - 1);
+	}
+	return (NULL);
+}
+
+const char *
+pcap_datalink_val_to_description(int dlt)
+{
+	int i;
+
+	for (i = 0; dlt_choices[i].name != NULL; i++) {
+		if (dlt_choices[i].dlt == dlt)
+			return (dlt_choices[i].description);
 	}
 	return (NULL);
 }

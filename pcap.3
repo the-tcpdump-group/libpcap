@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.51.2.2 2003-11-18 21:51:33 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.51.2.3 2003-11-18 22:14:52 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -93,6 +93,7 @@ int pcap_list_datalinks(pcap_t *p, int **dlt_buf);
 int pcap_set_datalink(pcap_t *p, int dlt);
 int pcap_datalink_name_to_val(const char *name);
 const char *pcap_datalink_val_to_name(int dlt);
+const char *pcap_datalink_val_to_description(int dlt);
 int pcap_snapshot(pcap_t *p)
 int pcap_is_swapped(pcap_t *p)
 int pcap_major_version(pcap_t *p)
@@ -982,14 +983,16 @@ name with the
 .B DLT_
 removed, to the corresponding data link type value.  The translation
 is case-insensitive.  
-is used to set the current data link type of the pcap descriptor
-NULL is returned on failure.
+.B \-1
+is returned on failure.
 .PP
 .B pcap_datalink_val_to_name()
 translates a data link type value to the corresponding data link type
-name.
-.B \-1
-is returned on failure.
+name.  NULL is returned on failure.
+.PP
+.B pcap_datalink_val_to_description()
+translates a data link type value to a short description of that data
+link type.  NULL is returned on failure.
 .PP
 .B pcap_snapshot()
 returns the snapshot length specified when
