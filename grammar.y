@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.82 2004-03-28 20:27:14 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.83 2004-06-16 08:20:29 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -128,7 +128,7 @@ pcap_parse()
 %token	LSH RSH
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
-%token	VLAN
+%token	VLAN MPLS
 %token  ISO ESIS CLNP ISIS L1 L2 IIH LSP SNP CSNP PSNP 
 %token  STP
 %token  IPX
@@ -324,6 +324,8 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| OUTBOUND		{ $$ = gen_inbound(1); }
 	| VLAN pnum		{ $$ = gen_vlan($2); }
 	| VLAN			{ $$ = gen_vlan(-1); }
+	| MPLS pnum		{ $$ = gen_mpls($2); }
+	| MPLS			{ $$ = gen_mpls(-1); }
 	| pfvar			{ $$ = $1; }
 	;
 

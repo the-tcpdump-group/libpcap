@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.204 2004-04-07 18:43:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.205 2004-06-16 08:20:29 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -97,7 +97,7 @@ static const char rcsid[] _U_ =
 static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
-/* Hack for updating VLAN offsets. */
+/* Hack for updating VLAN, MPLS offsets. */
 static u_int	orig_linktype = -1U, orig_nl = -1U, orig_nl_nosnap = -1U;
 
 /* XXX */
@@ -5272,6 +5272,74 @@ gen_vlan(vlan_num)
 		struct block *b1;
 
 		b1 = gen_cmp(orig_nl, BPF_H, (bpf_int32)vlan_num);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
+
+	return (b0);
+}
+
+/*
+ * support for MPLS
+ */
+struct block *
+gen_mpls(label_num)
+	int label_num;
+{
+	struct	block	*b0;
+
+	/*
+	 * Change the offsets to point to the type and data fields within
+	 * the MPLS packet.  This is somewhat of a kludge.
+	 */
+	if (orig_nl == (u_int)-1) {
+		orig_linktype = off_linktype;	/* save original values */
+		orig_nl = off_nl;
+		orig_nl_nosnap = off_nl_nosnap;
+
+		switch (linktype) {
+
+		case DLT_EN10MB:
+			off_linktype = 16;
+			off_nl_nosnap = 18;
+			off_nl = 18;
+                        
+                        b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
+			break;
+
+		case DLT_PPP:
+			off_linktype = 6;
+			off_nl_nosnap = 8;
+			off_nl = 8;
+                        
+                        b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)PPP_MPLS_UCAST);
+			break;
+
+                case DLT_C_HDLC:
+                        off_linktype = 6;
+			off_nl_nosnap = 8;
+			off_nl = 8;
+                        
+                        b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
+                        break;
+
+                        /* FIXME add other DLT_s ...
+                         * for Frame-Relay/and ATM this may get messy due to SNAP headers
+                         * leave it for now */
+
+		default:
+			bpf_error("no MPLS support for data link type %d",
+				  linktype);
+			/*NOTREACHED*/
+		}
+	}
+
+	/* If a specific MPLS label is requested, check it */
+	if (label_num >= 0) {
+		struct block *b1;
+
+                label_num = label_num << 12; /* label is shifted 12 bits on the wire */
+		b1 = gen_mcmp(orig_nl, BPF_H, (bpf_int32)label_num, 0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
 	}
