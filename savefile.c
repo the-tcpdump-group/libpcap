@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.69 2002-10-24 08:09:42 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.70 2002-12-11 22:43:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -167,6 +167,8 @@ static const char rcsid[] =
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
 #define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
+#define LINKTYPE_IEEE802_11_RADIO 127		/* 802.11 plus WLAN header */
+
 /*
  * These types are reserved for future use.
  */
@@ -279,6 +281,9 @@ static struct linktype_map {
 
 	/* Xilinx Aurora link layer */
 	{ DLT_AURORA,		LINKTYPE_AURORA },
+
+	/* 802.11 plus WLAN header */
+	{ DLT_IEEE802_11_RADIO,	LINKTYPE_IEEE802_11_RADIO },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:

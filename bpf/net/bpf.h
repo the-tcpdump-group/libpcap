@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.63 2002-10-18 08:46:15 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.64 2002-12-11 22:43:32 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -367,12 +367,22 @@ struct bpf_hdr {
 
 /* 
  * Reserved as per request from Kent Dahlgren <kent@praesum.com>
- * for private use
+ * for private use.
  */
-
 #define DLT_RIO                 124     /* RapidIO */
 #define DLT_PCI_EXP             125     /* PCI Express */
 #define DLT_AURORA              126     /* Xilinx Aurora link layer */
+
+/*
+ * For future use with 802.11 captures - defined by AbsoluteValue
+ * Systems to store a number of bits of link-layer information:
+ *
+ *	http://www.shaftnet.org/~pizza/software/capturefrm.txt
+ *
+ * but could and arguably should also be used by non-AVS Linux
+ * 802.11 drivers and BSD drivers; that may happen in the future.
+ */
+#define DLT_IEEE802_11_RADIO	127	/* 802.11 plus WLAN header */
 
 /*
  * The instruction encodings.
