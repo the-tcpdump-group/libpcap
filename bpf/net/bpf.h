@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.46 2001-06-05 03:09:40 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.47 2001-09-05 04:27:24 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -280,6 +280,11 @@ struct bpf_hdr {
  * Apple LocalTalk hardware.
  */
 #define DLT_LTALK	114
+
+/*
+ * Acorn Econet.
+ */
+#define DLT_ECONET	115
 
 /*
  * The instruction encodings.

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.51 2001-06-05 03:09:39 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.52 2001-09-05 04:27:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -172,6 +172,7 @@ static const char rcsid[] =
 #define LINKTYPE_LINUX_SLL	113		/* Linux cooked socket capture */
 
 #define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
+#define LINKTYPE_ECONET		115		/* Acorn Econet */
 
 static struct linktype_map {
 	int	dlt;
@@ -234,6 +235,9 @@ static struct linktype_map {
 
 	/* Apple LocalTalk hardware */
 	{ DLT_LTALK,		LINKTYPE_LTALK },
+
+	/* Acorn Econet */
+	{ DLT_ECONET,		LINKTYPE_ECONET },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
