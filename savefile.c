@@ -30,15 +30,12 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.55.2.1 2002-03-08 11:28:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.55.2.2 2002-03-24 23:25:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <sys/types.h>
-#include <sys/time.h>
 
 #include <errno.h>
 #include <memory.h>

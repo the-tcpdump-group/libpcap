@@ -22,15 +22,12 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.71 2001-11-12 22:04:23 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.69.2.1 2002-03-24 23:25:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-
-#include <sys/types.h>
-#include <sys/time.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,6 +117,9 @@ static void opt_peep(struct block *);
 static void opt_stmt(struct stmt *, int[], int);
 static void deadstmt(struct stmt *, struct stmt *[]);
 static void opt_deadstores(struct block *);
+static void opt_blk(struct block *, int);
+static int use_conflict(struct block *, struct block *);
+static void opt_j(struct edge *);
 static struct block *fold_edge(struct block *, struct edge *);
 static inline int eq_blk(struct block *, struct block *);
 static int slength(struct slist *);
@@ -819,16 +819,6 @@ opt_peep(b)
 		last->s.code = NOP;
 		done = 0;
 		opt_not(b);
-	}
-	/*
-	 * jset #0        ->   never
-	 * jset #ffffffff ->   always
-	 */
-	if (b->s.code == (BPF_JMP|BPF_K|BPF_JSET)) {
-		if (b->s.k == 0)
-			JT(b) = JF(b);
-		if (b->s.k == 0xffffffff)
-			JF(b) = JT(b);
 	}
 	/*
 	 * If the accumulator is a known constant, we can compute the
