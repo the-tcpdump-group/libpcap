@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.40 2002-08-20 15:33:31 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.41 2002-12-19 09:05:46 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -115,6 +115,8 @@ struct pcap {
 	struct bpf_program fcode;
 
 	char errbuf[PCAP_ERRBUF_SIZE + 1];
+	int dlt_count;
+	int *dlt_list;
 };
 
 /*
@@ -208,6 +210,15 @@ int sf_next_packet(pcap_t *, struct pcap_pkthdr *, u_char *, int);
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 strlen((y)))
 #endif
+
+/*
+ * Internal interface for "pcap_set_datalink()".  Attempts to set the
+ * link-layer type to the specified type; if that fails, returns -1.
+ * (On platforms that don't support setting it at all, this can just
+ * return 0 - on those platforms, "pcap_set_datalink()" has already
+ * checked whether the DLT_ value is the one the device supports.
+ */
+int	pcap_set_datalink_platform(pcap_t *, int);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".

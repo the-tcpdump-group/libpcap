@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.85 2002-10-18 08:46:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.86 2002-12-19 09:05:46 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1934,3 +1934,9 @@ reset_kernel_filter(pcap_t *handle)
 				   &dummy, sizeof(dummy));
 }
 #endif
+
+int
+pcap_set_datalink_platform(pcap_t *p, int dlt)
+{
+	return (0);
+}

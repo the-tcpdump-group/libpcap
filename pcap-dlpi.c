@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.79 2002-07-11 09:06:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.80 2002-12-19 09:05:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1444,3 +1444,9 @@ dlpi_kread(register int fd, register off_t addr,
 	return (cc);
 }
 #endif
+
+int
+pcap_set_datalink_platform(pcap_t *p, int dlt)
+{
+	return (0);
+}

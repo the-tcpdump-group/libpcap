@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.3 2002-11-11 10:34:06 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.4 2002-12-19 09:05:48 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -322,4 +322,8 @@ pcap_setmintocopy(pcap_t *p, int size)
 	return 0;
 }
 
-
+int
+pcap_set_datalink_platform(pcap_t *p, int dlt)
+{
+	return (0);
+}

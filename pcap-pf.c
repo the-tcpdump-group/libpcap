@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.69 2002-08-03 20:22:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.70 2002-12-19 09:05:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -433,5 +433,11 @@ pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 		fprintf(stderr, "tcpdump: Using kernel BPF filter\n");
 	else
 		fprintf(stderr, "tcpdump: Filtering in user process\n");
+	return (0);
+}
+
+int
+pcap_set_datalink_platform(pcap_t *p, int dlt)
+{
 	return (0);
 }

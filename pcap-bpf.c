@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.53 2002-10-08 07:18:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.54 2002-12-19 09:05:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -229,8 +229,15 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	int fd;
 	struct ifreq ifr;
 	struct bpf_version bv;
+#ifdef BIOCGDLTLIST
+	struct bpf_dltlist bdl;
+#endif
 	u_int v;
 	pcap_t *p;
+
+#ifdef BIOCGDLTLIST
+	bzero(&bdl, sizeof(bdl));
+#endif
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
@@ -348,6 +355,37 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 #endif
 	p->linktype = v;
 
+#ifdef BIOCGDLTLIST
+	/*
+	 * We know the default link type -- now determine all the DLTs
+	 * this interface supports.  If this fails with EINVAL, it's
+	 * not fatal; we just don't get to use the feature later.
+	 */
+	if (ioctl(fd, BIOCGDLTLIST, (caddr_t) &bdl) == 0) {
+		bdl.bfl_list = (u_int *) malloc(sizeof(u_int) * bdl.bfl_len);
+		if (bdl.bfl_list == NULL) {
+			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			    pcap_strerror(errno));
+			goto bad;
+		}
+
+		if (ioctl(fd, BIOCGDLTLIST, (caddr_t) &bdl) < 0) {
+			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
+			goto bad;
+		}
+
+		p->dlt_count = bdl.bfl_len;
+		p->dlt_list = bdl.bfl_list;
+	} else {
+		if (errno != EINVAL) {
+			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
+			goto bad;
+		}
+	}
+#endif
+
 	/* set timeout */
 	if (to_ms != 0) {
 		/*
@@ -446,6 +484,10 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	return (p);
  bad:
 	(void)close(fd);
+#ifdef BIOCGDLTLIST
+	if (bdl.bfl_list != NULL)
+		free(bdl.bfl_list);
+#endif
 	free(p);
 	return (NULL);
 }
@@ -475,5 +517,18 @@ pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 		    pcap_strerror(errno));
 		return (-1);
 	}
+	return (0);
+}
+
+int
+pcap_set_datalink_platform(pcap_t *p, int dlt)
+{
+#ifdef BIOCSDLT
+	if (ioctl(p->fd, BIOCSDLT, &dlt) == -1) {
+		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		    "Cannot set DLT %d: %s", dlt, strerror(errno));
+		return (-1);
+	}
+#endif
 	return (0);
 }

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.41 2002-08-02 03:44:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.42 2002-12-19 09:05:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -126,6 +126,196 @@ int
 pcap_datalink(pcap_t *p)
 {
 	return (p->linktype);
+}
+
+int
+pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
+{
+	if (p->dlt_count == 0) {
+		/*
+		 * We couldn't fetch the list of DLTs, which means
+		 * this platform doesn't support changing the
+		 * DLT for an interface.  Return a list of DLTs
+		 * containing only the DLT this device supports.
+		 */
+		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer));
+		if (*dlt_buffer == NULL) {
+			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			    "malloc: %s", pcap_strerror(errno));
+			return (-1);
+		}
+		**dlt_buffer = p->linktype;
+		return (1);
+	} else {
+		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer) * p->dlt_count);
+		if (*dlt_buffer == NULL) {
+			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			    "malloc: %s", pcap_strerror(errno));
+			return (-1);
+		}
+		(void)memcpy(*dlt_buffer, p->dlt_list,
+		    sizeof(**dlt_buffer) * p->dlt_count);
+		return (p->dlt_count);
+	}
+}
+
+int
+pcap_set_datalink(pcap_t *p, int dlt)
+{
+	int i;
+	const char *dlt_name;
+
+	if (p->dlt_count == 0) {
+		/*
+		 * We couldn't fetch the list of DLTs, which means
+		 * this platform doesn't support changing the
+		 * DLT for an interface.  Check whether the new
+		 * DLT is the one this interface supports.
+		 */
+		if (p->linktype != dlt)
+			goto unsupported;
+
+		/*
+		 * It is, so there's nothing we need to do here.
+		 */
+		return (0);
+	}
+	for (i = 0; i < p->dlt_count; i++)
+		if (p->dlt_list[i] == dlt)
+			break;
+	if (i >= p->dlt_count)
+		goto unsupported;
+	if (pcap_set_datalink_platform(p, dlt) == -1)
+		return (-1);
+	p->linktype = dlt;
+	return (0);
+
+unsupported:
+	dlt_name = pcap_datalink_val_to_name(dlt);
+	if (dlt_name != NULL) {
+		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		    "%s is not one of the DLTs supported by this device",
+		    dlt_name);
+	} else {
+		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		    "DLT %d is not one of the DLTs supported by this device",
+		    dlt);
+	}
+	return (-1);
+}
+
+struct dlt_choice {
+	const char *name;
+	int	dlt;
+};
+
+#define DLT_CHOICE(code) { #code, code }
+#define DLT_CHOICE_SENTINEL { NULL, 0 }
+
+static struct dlt_choice dlt_choices[] = {
+	DLT_CHOICE(DLT_ARCNET),
+	DLT_CHOICE(DLT_EN10MB),
+	DLT_CHOICE(DLT_SLIP),
+	DLT_CHOICE(DLT_SLIP_BSDOS),
+	DLT_CHOICE(DLT_NULL),
+	DLT_CHOICE(DLT_LOOP),
+	DLT_CHOICE(DLT_PPP),
+	DLT_CHOICE(DLT_C_HDLC),
+	DLT_CHOICE(DLT_PPP_SERIAL),
+	DLT_CHOICE(DLT_PPP_ETHER),
+	DLT_CHOICE(DLT_PPP_BSDOS),
+	DLT_CHOICE(DLT_FDDI),
+	DLT_CHOICE(DLT_IEEE802),
+	DLT_CHOICE(DLT_IEEE802_11),
+	DLT_CHOICE(DLT_PRISM_HEADER),
+	DLT_CHOICE(DLT_IEEE802_11_RADIO),
+	DLT_CHOICE(DLT_ATM_RFC1483),
+	DLT_CHOICE(DLT_ATM_CLIP),
+	DLT_CHOICE(DLT_SUNATM),
+	DLT_CHOICE(DLT_RAW),
+	DLT_CHOICE(DLT_LINUX_SLL),
+	DLT_CHOICE(DLT_LTALK),
+	DLT_CHOICE(DLT_IP_OVER_FC),
+	DLT_CHOICE(DLT_FRELAY),
+	DLT_CHOICE_SENTINEL
+};
+
+/*
+ * This array is designed for mapping upper and lower case letter
+ * together for a case independent comparison.  The mappings are
+ * based upon ascii character sequences.
+ */
+static const u_char charmap[] = {
+	'\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
+	'\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
+	'\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
+	'\030', '\031', '\032', '\033', '\034', '\035', '\036', '\037',
+	'\040', '\041', '\042', '\043', '\044', '\045', '\046', '\047',
+	'\050', '\051', '\052', '\053', '\054', '\055', '\056', '\057',
+	'\060', '\061', '\062', '\063', '\064', '\065', '\066', '\067',
+	'\070', '\071', '\072', '\073', '\074', '\075', '\076', '\077',
+	'\100', '\141', '\142', '\143', '\144', '\145', '\146', '\147',
+	'\150', '\151', '\152', '\153', '\154', '\155', '\156', '\157',
+	'\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
+	'\170', '\171', '\172', '\133', '\134', '\135', '\136', '\137',
+	'\140', '\141', '\142', '\143', '\144', '\145', '\146', '\147',
+	'\150', '\151', '\152', '\153', '\154', '\155', '\156', '\157',
+	'\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
+	'\170', '\171', '\172', '\173', '\174', '\175', '\176', '\177',
+	'\200', '\201', '\202', '\203', '\204', '\205', '\206', '\207',
+	'\210', '\211', '\212', '\213', '\214', '\215', '\216', '\217',
+	'\220', '\221', '\222', '\223', '\224', '\225', '\226', '\227',
+	'\230', '\231', '\232', '\233', '\234', '\235', '\236', '\237',
+	'\240', '\241', '\242', '\243', '\244', '\245', '\246', '\247',
+	'\250', '\251', '\252', '\253', '\254', '\255', '\256', '\257',
+	'\260', '\261', '\262', '\263', '\264', '\265', '\266', '\267',
+	'\270', '\271', '\272', '\273', '\274', '\275', '\276', '\277',
+	'\300', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
+	'\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
+	'\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
+	'\370', '\371', '\372', '\333', '\334', '\335', '\336', '\337',
+	'\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
+	'\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
+	'\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
+	'\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377',
+};
+
+static int
+pcap_strcasecmp(const char *s1, const char *s2)
+{
+	register const u_char	*cm = charmap,
+				*us1 = (u_char *)s1,
+				*us2 = (u_char *)s2;
+
+	while (cm[*us1] == cm[*us2++])
+		if (*us1++ == '\0')
+			return(0);
+	return (cm[*us1] - cm[*--us2]);
+}
+
+int
+pcap_datalink_name_to_val(const char *name)
+{
+	int i;
+
+	for (i = 0; dlt_choices[i].name != NULL; i++) {
+		if (pcap_strcasecmp(dlt_choices[i].name + sizeof("DLT_") - 1,
+		    name) == 0)
+			return (dlt_choices[i].dlt);
+	}
+	return (-1);
+}
+
+const char *
+pcap_datalink_val_to_name(int dlt)
+{
+	int i;
+
+	for (i = 0; dlt_choices[i].name != NULL; i++) {
+		if (dlt_choices[i].dlt == dlt)
+			return (dlt_choices[i].name + sizeof("DLT_") - 1);
+	}
+	return (NULL);
 }
 
 int
@@ -226,6 +416,8 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 #else
 	int newtimeout;
 #endif
+	if (p->dlt_list != NULL)
+		free(p->dlt_list);
 
 	if (p->sf.rfile != NULL) {
 		/*
