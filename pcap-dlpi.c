@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91.2.3 2003-11-21 10:20:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91.2.4 2004-04-02 06:19:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -57,7 +57,7 @@ static const char rcsid[] _U_ =
 #ifdef HAVE_HPUX9
 #include <sys/socket.h>
 #endif
-#ifdef DL_HP_PPA_ACK_OBS
+#ifdef DL_HP_PPA_REQ
 #include <sys/stat.h>
 #endif
 #include <sys/stream.h>
@@ -1216,7 +1216,7 @@ get_release(bpf_u_int32 *majorp, bpf_u_int32 *minorp, bpf_u_int32 *microp)
 }
 #endif
 
-#ifdef DL_HP_PPA_ACK_OBS
+#ifdef DL_HP_PPA_REQ
 /*
  * Under HP-UX 10 and HP-UX 11, we can ask for the ppa
  */
