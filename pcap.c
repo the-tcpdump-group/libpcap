@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.45 2003-01-23 07:24:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.46 2003-02-11 07:40:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -60,6 +60,7 @@ static const char rcsid[] =
 #endif
 
 #include "pcap-int.h"
+#include "version.h"
 
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -595,4 +596,26 @@ pcap_close(pcap_t *p)
 
 	pcap_freecode(&p->fcode);
 	free(p);
+}
+
+/*
+ * Generate the version string at run time, so that if libpcap is a
+ * shared library, it reflects the version of the library with
+ * which the program calling "pcap_lib_version()" is running, not
+ * the version with which it was built (on at least some UNIXes,
+ * constant data is linked in at build time).
+ */
+const char *
+pcap_lib_version(void)
+{
+	static char version_string[10+1+10+1];
+
+	if (version_string[0] == '\0') {
+		/*
+		 * We haven't built the string yet.
+		 */
+		snprintf(version_string, sizeof (version_string), "%u.%u",
+		    VERSION_MAJOR, VERSION_MINOR);
+	}
+	return (version_string);
 }

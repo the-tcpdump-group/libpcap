@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.90 2003-02-11 01:46:05 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.91 2003-02-11 07:40:09 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -84,7 +84,7 @@ OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(GENSRC:.c=.o) # $(LIBOBJS)
 HDR =	pcap.h pcap-int.h pcap-namedb.h pcap-nit.h pcap-pf.h \
 	ethertype.h gencode.h gnuc.h
 GENHDR = \
-	tokdefs.h
+	tokdefs.h version.h
 
 TAGHDR = \
 	pcap-bpf.h
@@ -128,6 +128,11 @@ snprintf.o: $(srcdir)/../tcpdump/missing/snprintf.c
 version.c: $(srcdir)/VERSION
 	@rm -f $@
 	sed -e 's/.*/char pcap_version[] = "&";/' $(srcdir)/VERSION > $@
+
+version.h: $(srcdir)/VERSION
+	@rm -f $@
+	sed -e 's/\([0-9]*\)\.[0-9]*/#define VERSION_MAJOR \1/' $(srcdir)/VERSION > $@
+	sed -e 's/[0-9]*\.\([0-9]*\)/#define VERSION_MINOR \1/' $(srcdir)/VERSION >> $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c

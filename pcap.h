@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.42 2003-02-11 01:46:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.43 2003-02-11 07:40:09 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -210,6 +210,8 @@ void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 int	pcap_findalldevs(pcap_if_t **, char *);
 void	pcap_freealldevs(pcap_if_t *);
+
+const char *pcap_lib_version(void);
 
 /* XXX this guy lives in the bpf tree */
 u_int	bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);

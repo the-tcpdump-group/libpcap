@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.45 2003-01-16 07:29:15 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.46 2003-02-11 07:40:09 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -96,6 +96,7 @@ int pcap_fileno(pcap_t *p)
 void pcap_perror(pcap_t *p, char *prefix)
 char *pcap_geterr(pcap_t *p)
 char *pcap_strerror(int error)
+const char *pcap_lib_version(void)
 .ft
 .LP
 .ft B
@@ -816,12 +817,10 @@ returns true if the current ``savefile'' uses a different byte order
 than the current system.
 .PP
 .B pcap_major_version()
-returns the major number of the version of the pcap used to write the
-savefile.
-.PP
+returns the major number of the file format of the savefile;
 .B pcap_minor_version()
-returns the minor number of the version of the pcap used to write the
-savefile.
+returns the minor number of the file format of the savefile.  The
+version number is stored in the header of the savefile.
 .PP
 .B pcap_file()
 returns the standard I/O stream of the ``savefile,'' if a ``savefile''
@@ -872,6 +871,10 @@ the
 is provided in case
 .BR strerror (1)
 isn't available.
+.PP
+.B pcap_lib_version()
+returns a pointer to a string giving the version number of the libpcap
+library being used.
 .PP
 .B pcap_close()
 closes the files associated with
