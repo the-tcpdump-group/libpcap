@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.111 2004-10-20 14:28:49 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.112 2004-11-07 21:40:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -639,8 +639,28 @@ sf_close(pcap_t *p)
 pcap_t *
 pcap_open_offline(const char *fname, char *errbuf)
 {
+	FILE *fp;
+	if (fname[0] == '-' && fname[1] == '\0')
+		fp = stdin;
+	else {
+#ifndef WIN32
+		fp = fopen(fname, "r");
+#else
+		fp = fopen(fname, "rb");
+#endif
+		if (fp == NULL) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
+			    pcap_strerror(errno));
+			return NULL;
+		}
+	}
+	return (pcap_fopen_offline(fp, errbuf));
+}
+
+pcap_t *
+pcap_fopen_offline(FILE *fp, char *errbuf)
+{
 	register pcap_t *p;
-	register FILE *fp;
 	struct pcap_file_header hdr;
 	bpf_u_int32 magic;
 	int linklen;
@@ -653,20 +673,6 @@ pcap_open_offline(const char *fname, char *errbuf)
 
 	memset((char *)p, 0, sizeof(*p));
 
-	if (fname[0] == '-' && fname[1] == '\0')
-		fp = stdin;
-	else {
-#ifndef WIN32
-		fp = fopen(fname, "r");
-#else
-		fp = fopen(fname, "rb");
-#endif
-		if (fp == NULL) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
-			    pcap_strerror(errno));
-			goto bad;
-		}
-	}
 	if (fread((char *)&hdr, sizeof(hdr), 1, fp) != 1) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "fread: %s",
 		    pcap_strerror(errno));
@@ -801,6 +807,15 @@ pcap_open_offline(const char *fname, char *errbuf)
 	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
 	p->close_op = sf_close;
+
+#ifdef WIN32
+	/*
+	 * If we're reading from the standard input, put it in binary
+	 * mode, as savefiles are binary files.
+	 */
+	if (fp == stdin)
+		_setmode(_fileno(f), _O_BINARY);
+#endif
 
 	return (p);
  bad:
@@ -1022,6 +1037,33 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	(void)fwrite((char *)sp, h->caplen, 1, f);
 }
 
+static pcap_dumper_t *
+pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
+{
+
+#ifdef WIN32
+	/*
+	 * If we're writing to the standard output, put it in binary
+	 * mode, as savefiles are binary files.
+	 *
+	 * Otherwise, we turn off buffering.
+	 * XXX - why?  And why not on the standard output?
+	 */
+	if (f == stdout)
+		_setmode(_fileno(f), _O_BINARY);
+	else
+		setbuf(f, NULL);
+#endif
+	if (sf_write_header(f, linktype, p->tzoff, p->snapshot) == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't write to %s: %s",
+		    fname, pcap_strerror(errno));
+		if (f != stdout)
+			(void)fclose(f);
+		return (NULL);
+	}
+	return ((pcap_dumper_t *)f);
+}
+
 /*
  * Initialize so that sf_write() will output to the file named 'fname'.
  */
@@ -1041,9 +1083,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 
 	if (fname[0] == '-' && fname[1] == '\0') {
 		f = stdout;
-#ifdef WIN32
-		_setmode(_fileno(f), _O_BINARY);
-#endif
+		fname = "standard output";
 	} else {
 #ifndef WIN32
 		f = fopen(fname, "w");
@@ -1055,12 +1095,27 @@ pcap_dump_open(pcap_t *p, const char *fname)
 			    fname, pcap_strerror(errno));
 			return (NULL);
 		}
-#ifdef WIN32
-		setbuf(f, NULL);	/* XXX - why? */
-#endif
 	}
-	(void)sf_write_header(f, linktype, p->tzoff, p->snapshot);
-	return ((pcap_dumper_t *)f);
+	return (pcap_setup_dump(p, linktype, f, fname));
+}
+
+/*
+ * Initialize so that sf_write() will output to the given stream.
+ */
+pcap_dumper_t *
+pcap_dump_fopen(pcap_t *p, FILE *f)
+{	
+	int linktype;
+
+	linktype = dlt_to_linktype(p->linktype);
+	if (linktype == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "stream: link-layer type %d isn't supported in savefiles",
+		    linktype);
+		return (NULL);
+	}
+
+	return (pcap_setup_dump(p, linktype, f, "stream"));
 }
 
 FILE *
