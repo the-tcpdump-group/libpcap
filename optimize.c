@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.78 2004-11-07 22:43:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.79 2004-11-08 09:03:37 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -755,16 +755,27 @@ opt_peep(b)
 		}
 	}
 	/*
-	 * If we have a subtract to do a comparison, and the X register
-	 * is a known constant, we can merge this value into the
-	 * comparison.
+	 * If the comparison at the end of a block is an equality
+	 * comparison against a constant, and nobody uses the value
+	 * we leave in the A register at the end of a block, and
+	 * the operation preceding the comparison is an arithmetic
+	 * operation, we can sometime optimize it away.
 	 */
-	if (BPF_OP(b->s.code) == BPF_JEQ) {
-		if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X) &&
-		    !ATOMELEM(b->out_use, A_ATOM)) {
+	if (b->s.code == (BPF_JMP|BPF_JEQ|BPF_K) &&
+	    !ATOMELEM(b->out_use, A_ATOM)) {
+	    	/*
+	    	 * We can optimize away certain subtractions of the
+	    	 * X register.
+	    	 */
+		if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X)) {
 			val = b->val[X_ATOM];
 			if (vmap[val].is_const) {
 				/*
+				 * If we have a subtract to do a comparison,
+				 * and the X register is a known constant,
+				 * we can merge this value into the
+				 * comparison:
+				 *
 				 * sub x  ->	nop
 				 * jeq #y	jeq #(x+y)
 				 */
@@ -773,37 +784,45 @@ opt_peep(b)
 				done = 0;
 			} else if (b->s.k == 0) {
 				/*
-				 * sub #x  ->	nop
-				 * jeq #0	jeq #x
+				 * If the X register isn't a constant,
+				 * and the comparison in the test is
+				 * against 0, we can compare with the
+				 * X register, instead:
+				 *
+				 * sub x  ->	nop
+				 * jeq #0	jeq x
 				 */
 				last->s.code = NOP;
-				b->s.code = BPF_CLASS(b->s.code) |
-					BPF_OP(b->s.code) | BPF_X;
+				b->s.code = BPF_JMP|BPF_JEQ|BPF_X;
 				done = 0;
 			}
 		}
 		/*
-		 * Likewise, a constant subtract can be simplified.
+		 * Likewise, a constant subtract can be simplified:
+		 *
+		 * sub #x ->	nop
+		 * jeq #y ->	jeq #(x+y)
 		 */
-		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K) &&
-			 !ATOMELEM(b->out_use, A_ATOM)) {
-
+		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K)) {
 			last->s.code = NOP;
 			b->s.k += last->s.k;
 			done = 0;
 		}
-	}
-	/*
-	 * and #k	nop
-	 * jeq #0  ->	jset #k
-	 */
-	if (last->s.code == (BPF_ALU|BPF_AND|BPF_K) &&
-	    !ATOMELEM(b->out_use, A_ATOM) && b->s.k == 0) {
-		b->s.k = last->s.k;
-		b->s.code = BPF_JMP|BPF_K|BPF_JSET;
-		last->s.code = NOP;
-		done = 0;
-		opt_not(b);
+		/*
+		 * And, similarly, a constant AND can be simplified
+		 * if we're testing against 0, i.e.:
+		 *
+		 * and #k	nop
+		 * jeq #0  ->	jset #k
+		 */
+		else if (last->s.code == (BPF_ALU|BPF_AND|BPF_K) &&
+		    b->s.k == 0) {
+			b->s.k = last->s.k;
+			b->s.code = BPF_JMP|BPF_K|BPF_JSET;
+			last->s.code = NOP;
+			done = 0;
+			opt_not(b);
+		}
 	}
 	/*
 	 * jset #0        ->   never
