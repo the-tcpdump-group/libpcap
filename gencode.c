@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.145 2001-01-14 21:26:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.146 2001-01-15 00:03:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -952,15 +952,36 @@ gen_linktype(proto)
 
 		case LLCSAP_IPX:
 			/*
-			 * Check both for 802.2 frames with the IPX LSAP as
-			 * the DSAP and for Netware 802.3 frames.
+			 *	Ethernet_II frames, which are Ethernet
+			 *	frames with a frame type of ETHERTYPE_IPX;
 			 *
-			 * This generates code to check for 802.2 frames
-			 * with the IPX LSAP.
+			 *	Ethernet_802.3 frames, which have a frame
+			 *	type of LINUX_SLL_P_802_3;
+			 *
+			 *	Ethernet_802.2 frames, which are 802.3
+			 *	frames with an 802.2 LLC header (i.e, have
+			 *	a frame type of LINUX_SLL_P_802_2) and
+			 *	with the IPX LSAP as the DSAP in the LLC
+			 *	header;
+			 *
+			 *	Ethernet_SNAP frames, which are 802.3
+			 *	frames with an LLC header and a SNAP
+			 *	header and with an OUI of 0x000000
+			 *	(encapsulated Ethernet) and a protocol
+			 *	ID of ETHERTYPE_IPX in the SNAP header.
+			 *
+			 * First, do the checks on LINUX_SLL_P_802_2
+			 * frames; generate the check for either
+			 * Ethernet_802.2 or Ethernet_SNAP frames, and
+			 * then put a check for LINUX_SLL_P_802_2 frames
+			 * before it.
 			 */
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-			b1 = gen_cmp(off_linktype + 2, BPF_B,
+			b0 = gen_cmp(off_linktype + 2, BPF_B,
 			    (bpf_int32)LLCSAP_IPX);
+			b1 = gen_snap(0x000000, ETHERTYPE_IPX,
+			    off_linktype + 2);
+			gen_or(b0, b1);
+			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 			gen_and(b0, b1);
 
 			/*
@@ -968,6 +989,15 @@ gen_linktype(proto)
 			 * the previous test.
 			 */
 			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_3);
+			gen_or(b0, b1);
+
+			/*
+			 * Now add the check for Ethernet_II frames, and
+			 * do that before checking for the other frame
+			 * types.
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H,
+			    (bpf_int32)ETHERTYPE_IPX);
 			gen_or(b0, b1);
 			return b1;
 
