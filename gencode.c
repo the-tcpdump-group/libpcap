@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.138 2000-12-12 08:08:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.139 2000-12-16 21:31:10 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -578,6 +578,7 @@ init_linktype(type)
 		return;
 
 	case DLT_NULL:
+	case DLT_LOOP:
 		off_linktype = 0;
 		off_nl = 4;
 		return;
@@ -688,6 +689,14 @@ gen_false()
 {
 	return gen_uncond(0);
 }
+
+/*
+ * Byte-swap a 32-bit number.
+ * ("htonl()" or "ntohl()" won't work - we want to byte-swap even on
+ * big-endian platforms.)
+ */
+#define	SWAPLONG(y) \
+((((y)&0xff)<<24) | (((y)&0xff00)<<8) | (((y)&0xff0000)>>8) | (((y)>>24)&0xff))
 
 static struct block *
 gen_linktype(proto)
@@ -843,15 +852,66 @@ gen_linktype(proto)
 		break;
 
 	case DLT_NULL:
-		/* XXX */
-		if (proto == ETHERTYPE_IP)
-			return (gen_cmp(0, BPF_W, (bpf_int32)htonl(AF_INET)));
+	case DLT_LOOP:
+		/*
+		 * For DLT_NULL, the link-layer header is a 32-bit
+		 * word containing an AF_ value in *host* byte order.
+		 *
+		 * In addition, if we're reading a saved capture file,
+		 * the host byte order in the capture may not be the
+		 * same as the host byte order on this machine.
+		 *
+		 * For DLT_LOOP, the link-layer header is a 32-bit
+		 * word containing an AF_ value in *network* byte order.
+		 *
+		 * XXX - AF_ values may, unfortunately, be platform-
+		 * dependent; for example, FreeBSD's AF_INET6 is 24
+		 * whilst NetBSD's and OpenBSD's is 26.
+		 *
+		 * This means that, when reading a capture file, just
+		 * checking for our AF_INET6 value won't work if the
+		 * capture file came from another OS.
+		 */
+		switch (proto) {
+
+		case ETHERTYPE_IP:
+			proto = AF_INET;
+			break;
+
 #ifdef INET6
-		else if (proto == ETHERTYPE_IPV6)
-			return (gen_cmp(0, BPF_W, (bpf_int32)htonl(AF_INET6)));
+		case ETHERTYPE_IPV6:
+			proto = AF_INET6;
+			break;
 #endif
-		else
+
+		default:
+			/*
+			 * Not a type on which we support filtering.
+			 * XXX - support those that have AF_ values
+			 * #defined on this platform, at least?
+			 */
 			return gen_false();
+		}
+
+		if (linktype == DLT_NULL) {
+			/*
+			 * The AF_ value is in host byte order, but
+			 * the BPF interpreter will convert it to
+			 * network byte order.
+			 *
+			 * If this is a save file, and it's from a
+			 * machine with the opposite byte order to
+			 * ours, we byte-swap the AF_ value.
+			 *
+			 * Then we run it through "htonl()", and
+			 * generate code to compare against the result.
+			 */
+			if (bpf_pcap->sf.rfile != NULL &&
+			    bpf_pcap->sf.swapped)
+				proto = SWAPLONG(proto);
+			proto = htonl(proto);
+		}
+		return (gen_cmp(0, BPF_W, (bpf_int32)proto));
 	}
 	return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
 }
@@ -3117,10 +3177,24 @@ gen_inbound(dir)
 {
 	register struct block *b0;
 
-	b0 = gen_relation(BPF_JEQ,
+	/*
+	 * Only some data link types support inbound/outbound qualifiers.
+	 */
+	switch (linktype) {
+	case DLT_SLIP:
+	case DLT_PPP:
+		b0 = gen_relation(BPF_JEQ,
 			  gen_load(Q_LINK, gen_loadi(0), 1),
 			  gen_loadi(0),
 			  dir);
+		break;
+
+	default:
+		bpf_error("inbound/outbound not supported on linktype %d\n",
+		    linktype);
+		b0 = NULL;
+		/* NOTREACHED */
+	}
 	return (b0);
 }
 

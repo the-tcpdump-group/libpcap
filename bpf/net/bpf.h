@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.41 2000-11-15 05:36:49 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.42 2000-12-16 21:31:11 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -168,7 +168,9 @@ struct bpf_hdr {
  * DLT_* codes appropriately for that platform (the BSDs, for example,
  * should not just pick up this version of "bpf.h"; they should also define
  * the additional DLT_* codes used by their kernels, as well as the values
- * defined here).
+ * defined here - and, if the values they use for particular DLT_ types
+ * differ from those here, they should use their values, not the ones
+ * here).
  */
 #define DLT_NULL	0	/* no link-layer encapsulation */
 #define DLT_EN10MB	1	/* Ethernet (10Mb) */
@@ -244,6 +246,29 @@ struct bpf_hdr {
  * platforms don't use the same numerical values for all DLT_ types).
  */
 #define DLT_IEEE802_11	105	/* IEEE 802.11 wireless */
+
+/*
+ * Values between 106 and 107 are used in capture file headers as
+ * link-layer types corresponding to DLT_ types that might differ
+ * between platforms; don't use those values for new DLT_ new types.
+ */
+
+/*
+ * OpenBSD DLT_LOOP, for loopback devices; it's like DLT_NULL, except
+ * that the AF_ type in the link-layer header is in network byte order.
+ *
+ * OpenBSD defines it as 12, but that collides with DLT_RAW, so we
+ * define it as 108 here.  If OpenBSD picks up this file, it should
+ * define DLT_LOOP as 12 in its version, as per the comment above -
+ * and should not use 108 for any purpose.
+ */
+#define DLT_LOOP	108
+
+/*
+ * Values between 109 and 113 are used in capture file headers as
+ * link-layer types corresponding to DLT_ types that might differ
+ * between platforms; don't use those values for new DLT_ new types.
+ */
 
 /*
  * The instruction encondings.

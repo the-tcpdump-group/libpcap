@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.46 2000-11-15 05:36:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.47 2000-12-16 21:31:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -211,6 +211,9 @@ static struct linktype_map {
 
 	/* IEEE 802.11 wireless */
 	{ DLT_IEEE802_11,	LINKTYPE_IEEE802_11 },
+
+	/* OpenBSD loopback */
+	{ DLT_LOOP,		LINKTYPE_LOOP },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
