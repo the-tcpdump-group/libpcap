@@ -1,3 +1,7 @@
+For HP-UX 11i (11.11) and later, there are no known issues with
+promiscuous mode under HP-UX.  If you are using a earlier version of
+HP-UX and cannot upgrade, please continue reading.
+
 HP-UX patches to fix packet capture problems
 
 Note that packet-capture programs such as tcpdump may, on HP-UX, not be
