@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.36 2002-07-11 09:06:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.37 2002-07-30 07:48:20 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -251,8 +251,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 #ifndef ifr_mtu
 #define ifr_mtu	ifr_metric
 #endif
-	if (snaplen > ifr.ifr_mtu)
-		snaplen = ifr.ifr_mtu;
+	if (snaplen > ifr.ifr_mtu + ll_hdrlen)
+		snaplen = ifr.ifr_mtu + ll_hdrlen;
 #endif
 
 	/*
