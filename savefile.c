@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.1 2003-11-15 23:26:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92.2.2 2003-11-15 23:32:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -192,7 +192,7 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_RAWSS7         139             /* see rawss7.h for */
 #define LINKTYPE_RAWSS7_MTP2    140	        /* information  on these */
 #define LINKTYPE_RAWSS7_MTP3    141             /* definitions */
-#define LINKTYPE_RAWSS7_SCCP    142             
+#define LINKTYPE_RAWSS7_SCCP    142
 
 /*
  * These types are reserved for future use.
@@ -205,6 +205,7 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_RIO		124		/* RapidIO */
 #define LINKTYPE_PCI_EXP	125		/* PCI Express */
 #define LINKTYPE_AURORA		126		/* Xilinx Aurora link layer */
+#define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
 
 static struct linktype_map {
 	int	dlt;
