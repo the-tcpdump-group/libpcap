@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.63 2000-07-11 00:37:05 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.64 2000-09-06 07:40:03 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1867,7 +1867,7 @@ opt_init(root)
 	 */
 	maxval = 3 * max_stmts;
 	vmap = (struct vmapinfo *)malloc(maxval * sizeof(*vmap));
-	vnode_base = (struct valnode *)malloc(maxval * sizeof(*vmap));
+	vnode_base = (struct valnode *)malloc(maxval * sizeof(*vnode_base));
 }
 
 /*
