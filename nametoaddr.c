@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.52 2000-04-27 09:18:58 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.53 2000-07-01 03:35:08 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -32,11 +32,8 @@ static const char rcsid[] =
 #include <sys/socket.h>
 #include <sys/time.h>
 
-#if __STDC__
 struct mbuf;
 struct rtentry;
-#endif
-
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/if_ether.h>

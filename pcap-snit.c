@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.48 2000-04-27 14:24:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.49 2000-07-01 03:35:07 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -56,9 +56,6 @@ static const char rcsid[] =
 
 #include <ctype.h>
 #include <errno.h>
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
