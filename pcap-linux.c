@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.106 2004-03-23 19:18:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.107 2004-03-24 06:49:16 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -684,7 +684,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	int ret;
 
 #ifdef HAVE_PF_PACKET_SOCKETS
-	if (!handle->md.sock_packet)) {
+	if (!handle->md.sock_packet) {
 		/* PF_PACKET socket */
 		if (handle->md.ifindex == -1) {
 			/*
@@ -706,7 +706,8 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 		 */
 		sa_ll.sll_protocol = htons(ETH_P_ALL);
 
-		ret = sendto(handle->fd, buf, size, 0, &sa_ll, sizeof(sa_ll));
+		ret = sendto(handle->fd, buf, size, 0, 
+			(struct sockaddr *)&sa_ll, sizeof(sa_ll));
 		if (ret == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 			    pcap_strerror(errno));
@@ -722,7 +723,8 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	 * Do we have to set "spkt_protocol" to the Ethernet protocol?
 	 */
 
-	ret = sendto(handle->fd, buf, size, 0, &sa, sizeof(sa)));
+	ret = sendto(handle->fd, buf, size, 0, (struct sockaddr *)&sa_pkt, 
+		sizeof(sa_pkt));
 	if (ret == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
