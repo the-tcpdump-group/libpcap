@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.31 2001-12-29 21:57:07 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.32 2002-05-22 08:03:36 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -377,11 +377,32 @@ a
 .I u_char
 pointer which is passed in from
 .BR pcap_dispatch() ,
-a pointer to the
-.I pcap_pkthdr
-struct (which precede the actual network headers and data),
+a
+.I const struct pcap_pkthdr
+pointer to a structure with the following members:
+.RS
+.TP
+.B ts
+a
+.I struct timeval
+containing the time when the packet was captured
+.TP
+.B caplen
+a
+.I bpf_u_int32
+giving the number of bytes of the packet that are available from the
+capture
+.TP
+.B len
+a
+.I bpf_u_int32
+giving the length of the packet, in bytes (which might be more than the
+number of bytes available from the capture, if the length of the packet
+is larger than the maximum number of bytes to capture)
+.RE
+.PP
 and a
-.I u_char
+.I const u_char
 pointer to the packet data.
 .PP
 The number of packets read is returned.
@@ -431,7 +452,10 @@ A negative
 .I cnt
 causes
 .B pcap_loop()
-to loop forever (or at least until an error occurs).
+to loop forever (or at least until an error occurs).  A negative number
+is returned on an error; 0 is returned if
+.I cnt
+is exhausted.
 .PP
 .B pcap_next()
 reads the next packet (by calling
