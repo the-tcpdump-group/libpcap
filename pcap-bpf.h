@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.24 2004-10-29 02:00:59 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.25 2004-10-29 02:15:08 guy Exp $ (LBL)
  */
 
 /*
@@ -492,8 +492,8 @@ struct bpf_version {
  *
  *	http://www.shaftnet.org/~pizza/software/capturefrm.txt
  *
- * but could and arguably should also be used by non-AVS Linux
- * 802.11 drivers; that may happen in the future.
+ * but it might be used by some non-AVS drivers now or in the
+ * future.
  */
 #define DLT_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
 
