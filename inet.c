@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.23 1999-11-17 06:06:25 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.24 1999-11-17 06:10:06 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -102,7 +102,7 @@ pcap_lookupdev(errbuf)
 
 	buf_size = 8192;
 
-	do {
+	for (;;) {
 		buf = malloc (buf_size);
 		if (buf == NULL) {
 			close (fd);
@@ -120,9 +120,11 @@ pcap_lookupdev(errbuf)
 			(void)close(fd);
 			return (NULL);
 		}
-		if (ifc.ifc_len == buf_size)
-			free (buf);
-	} while (ifc.ifc_len == buf_size);
+		if (ifc.ifc_len < buf_size)
+			break;
+		free (buf);
+		buf_size *= 2;
+	}
 
 	ifrp = (struct ifreq *)buf;
 	ifend = (struct ifreq *)(buf + ifc.ifc_len);
