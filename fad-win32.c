@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.7.2.2 2004-04-30 09:05:18 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.7.2.3 2004-04-30 09:11:25 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -231,7 +231,8 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 		AdaptersName = (char*) malloc(NameLength);
 	else
 	{
-		return (NULL);
+		*alldevsp = NULL;
+		return 0;
 	}
 	if (AdaptersName == NULL)
 	{
