@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.23 2004-10-20 14:28:49 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.24 2004-10-29 02:00:59 guy Exp $ (LBL)
  */
 
 /*
@@ -350,10 +350,11 @@ struct bpf_version {
 #define DLT_AURORA              126     /* Xilinx Aurora link layer */
 
 /*
- * BSD header for 802.11 plus a number of bits of link-layer information
- * including radio information.
+ * Header for 802.11 plus a number of bits of link-layer information
+ * including radio information, used by some recent BSD drivers as
+ * well as the madwifi Atheros driver for Linux.
  */
-#define DLT_IEEE802_11_RADIO	127	/* 802.11 plus BSD radio header */
+#define DLT_IEEE802_11_RADIO	127	/* 802.11 plus radiotap radio header */
 
 /*
  * Reserved for the TZSP encapsulation, as per request from
