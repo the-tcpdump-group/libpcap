@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.21 2004-03-23 19:18:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.22 2004-06-07 13:27:46 risso Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -350,7 +350,14 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 	LPPACKET PacketToSend;
 
 	PacketToSend=PacketAllocatePacket();
-	PacketInitPacket(PacketToSend,buf,size);
+	
+	if (PacketToSend == NULL)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketAllocatePacket failed");
+		return -1;
+	}
+	
+	PacketInitPacket(PacketToSend,(PVOID)buf,size);
 	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
 		PacketFreePacket(PacketToSend);
