@@ -30,11 +30,11 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.8 2000-07-29 07:36:43 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.9 2004-12-19 19:48:37 guy Exp $ (LBL)
  */
 
-#ifndef lib_pcap_ethers_h
-#define lib_pcap_ethers_h
+#ifndef lib_pcap_namedb_h
+#define lib_pcap_namedb_h
 
 #ifdef __cplusplus
 extern "C" {
