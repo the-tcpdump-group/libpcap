@@ -19,7 +19,9 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  * This code contributed by Atanu Ghosh (atanu@cs.ucl.ac.uk),
- * University College London.
+ * University College London, and subsequently modified by
+ * Guy Harris (guy@alum.mit.edu) and Mark Pizzolato
+ * <List-tcpdump-workers@subscriptions.pizzolato.net>.
  */
 
 /*
@@ -27,18 +29,40 @@
  *
  * Notes:
  *
- *    - Apparently the DLIOCRAW ioctl() is specific to SunOS.
+ *    - The DLIOCRAW ioctl() is specific to SunOS.
  *
  *    - There is a bug in bufmod(7) such that setting the snapshot
  *      length results in data being left of the front of the packet.
  *
  *    - It might be desirable to use pfmod(7) to filter packets in the
  *      kernel when possible.
+ *
+ *    - The HP-UX 10.20 DLPI Programmer's Guide used to be available
+ *      at
+ *
+ *            http://docs.hp.com/hpux/onlinedocs/B2355-90093/B2355-90093.html
+ *
+ *      but is no longer available; it can still be found at
+ *
+ *            http://h21007.www2.hp.com/dspp/files/unprotected/Drivers/Docs/Refs/B2355-90093.pdf
+ *
+ *      in PDF form.
+ *
+ *    - The HP-UX 11.00 DLPI Programmer's Guide is available at
+ *
+ *            http://docs.hp.com/hpux/onlinedocs/B2355-90139/B2355-90139.html
+ *
+ *      and in PDF form at
+ *
+ *            http://h21007.www2.hp.com/dspp/files/unprotected/Drivers/Docs/Refs/B2355-90139.pdf
+ *
+ *    - Both of the HP documents describe raw-mode services, which are
+ *      what we use if DL_HP_RAWDLS is defined.
  */
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.98 2004-04-03 02:04:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.99 2004-04-03 20:52:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -127,16 +151,20 @@ static const char rcsid[] _U_ =
 
 /* Forwards */
 static char *split_dname(char *, int *, char *);
+static int dl_doattach(int, int, char *);
 static int dlattachreq(int, bpf_u_int32, char *);
-static int dlbindack(int, char *, char *);
 static int dlbindreq(int, bpf_u_int32, char *);
-static int dlinfoack(int, char *, char *);
-static int dlinforeq(int, char *);
+static int dlbindack(int, char *, char *);
+static int dlpromisconreq(int, bpf_u_int32, char *);
 static int dlokack(int, const char *, char *, char *);
+static int dlinforeq(int, char *);
+static int dlinfoack(int, char *, char *);
+#ifdef DL_HP_RAWDLS
+static int dlrawdatareq(int, u_char *, int);
+#endif
 static int recv_ack(int, int, const char *, char *, char *);
 static char *dlstrerror(bpf_u_int32);
 static char *dlprim(bpf_u_int32);
-static int dlpromisconreq(int, bpf_u_int32, char *);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
 static char *get_release(bpf_u_int32 *, bpf_u_int32 *, bpf_u_int32 *);
 #endif
@@ -321,15 +349,50 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 {
 	int ret;
 
-	/*
-	 * XXX - use "dlunitdatareq()" on HP-UX.
-	 */
+#if defined(DLIOCRAW)
 	ret = write(p->fd, buf, size);
 	if (ret == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
+#elif defined (DL_HP_RAWDLS)
+	if (p->send_fd < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "send: Output FD couldn't be opened");
+		return (-1);
+	}
+	ret = dlrawdatareq(p->send_fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+#else /* no raw mode */
+	/*
+	 * XXX - this is a pain, because you might have to extract
+	 * the address from the packet and use it in a DL_UNITDATA_REQ
+	 * request.  That would be dependent on the link-layer type.
+	 *
+	 * I also don't know what SAP you'd have to bind the descriptor
+	 * to, or whether you'd need separate "receive" and "send" FDs,
+	 * nor do I know whether you'd need different bindings for
+	 * D/I/X Ethernet and 802.3, or for {FDDI,Token Ring} plus
+	 * 802.2 and {FDDI,Token Ring} plus 802.2 plus SNAP.
+	 *
+	 * So, for now, we just return a "you can't send" indication,
+	 * and leave it up to somebody with a DLPI-based system lacking
+	 * both DLIOCRAW and DL_HP_RAWDLS to supply code to implement
+	 * packet transmission on that system.  If they do, they should
+	 * send it to us - but should not send us code that assumes
+	 * Ethernet; if the code doesn't work on non-Ethernet interfaces,
+	 * it should check "p->linktype" and reject the send request if
+	 * it's anything other than DLT_EN10MB.
+	 */
+	strlcpy(p->errbuf, "send: Not supported on this version of this OS",
+	    PCAP_ERRBUF_SIZE);
+	ret = -1;
+#endif /* raw mode */
 	return (ret);
 }                           
 
@@ -356,6 +419,8 @@ pcap_close_dlpi(pcap_t *p)
 		free(p->buffer);
 	if (p->fd >= 0)
 		close(p->fd);
+	if (p->send_fd >= 0)
+		close(p->send_fd);
 }
 
 pcap_t *
@@ -389,6 +454,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 	memset(p, 0, sizeof(*p));
 	p->fd = -1;	/* indicate that it hasn't been opened yet */
+	p->send_fd = -1;
 
 #ifdef HAVE_DEV_DLPI
 	/*
@@ -426,6 +492,22 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		    "%s: %s", cp, pcap_strerror(errno));
 		goto bad;
 	}
+
+#ifdef DL_HP_RAWDLS
+	/*
+	 * XXX - HP-UX 10.20 and 11.xx don't appear to support sending and
+	 * receiving packets on the same descriptor - you have to bind the
+	 * descriptor on which you receive to a SAP of 22 and bind the
+	 * descriptor on which you send to a SAP of 24.
+	 *
+	 * If the open fails, we just leave -1 in "p->send_fd" and reject
+	 * attempts to send packets, just as if, in pcap-bpf.c, we fail
+	 * to open the BPF device for reading and writing, we just try
+	 * to open it for reading only and, if that succeeds, just let
+	 * the send attempts fail.
+	 */
+	p->send_fd = open(cp, O_RDWR);
+#endif
 
 	/*
 	 * Get a table of all PPAs for that device, and search that
@@ -494,10 +576,19 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	if (infop->dl_mac_type == DL_IPATM)
 		isatm = 1;
 #endif
-	if (infop->dl_provider_style == DL_STYLE2 &&
-	    (dlattachreq(p->fd, ppa, ebuf) < 0 ||
-	    dlokack(p->fd, "attach", (char *)buf, ebuf) < 0))
-		goto bad;
+	if (infop->dl_provider_style == DL_STYLE2) {
+		if (dlattachreq(p->fd, ppa, ebuf) < 0 ||
+		    dlokack(p->fd, "attach", (char *)buf, ebuf) < 0)
+			goto bad;
+#ifdef DL_HP_RAWDLS
+		if (send_fd >= 0) {
+			if (dlattachreq(p->send_fd, ppa, ebuf) < 0 ||
+			    dlokack(p->send_fd, "attach", (char *)buf, ebuf) < 0)
+				goto bad;
+		}
+#endif
+	}
+
 	/*
 	** Bind (defer if using HP-UX 9 or HP-UX 10.20, totally skip if
 	** using SINIX)
@@ -522,12 +613,34 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	*/
 	if ((dlbindreq(p->fd, 1537, ebuf) < 0 &&
 	     dlbindreq(p->fd, 2, ebuf) < 0) ||
-#else
+	     dlbindack(p->fd, (char *)buf, ebuf) < 0)
+		goto bad;
+#elif defined(DL_HP_RAWDLS)
+	/*
+	** This is the descriptor on which we receive packets; we
+	** bind it to 22, as that's INSAP, as per the HP-UX DLPI
+	** Programmer's Guide.
+	*/
+	if (dlbindreq(p->fd, 22, ebuf) < 0 ||
+	     dlbindack(p->fd, (char *)buf, ebuf) < 0)
+		goto bad;
+
+	if (p->send_fd >= 0) {
+		/*
+		** This is the descriptor on which we send packets; we
+		** bind it to 24, as that's OUTSAP, as per the HP-UX
+		** DLPI Programmer's Guide.
+		*/
+		if (dlbindreq(p->send_fd, 24, ebuf) < 0 ||
+		    dlbindack(p->send_fd, (char *)buf, ebuf) < 0)
+			goto bad;
+	}
+#else /* neither AIX nor HP-UX */
 	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
-#endif
 	    dlbindack(p->fd, (char *)buf, ebuf) < 0)
 		goto bad;
-#endif
+#endif /* SAP to bind to */
+#endif /* HP-UX 9 or 10.20 or SINIX */
 
 #ifdef HAVE_SOLARIS
 	if (isatm) {
@@ -546,7 +659,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 	if (promisc) {
 		/*
-		** Enable promiscuous
+		** Enable promiscuous (not necessary on send FD)
 		*/
 		if (dlpromisconreq(p->fd, DL_PROMISC_PHYS, ebuf) < 0 ||
 		    dlokack(p->fd, "promisc_phys", (char *)buf, ebuf) < 0)
@@ -555,7 +668,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		/*
 		** Try to enable multicast (you would have thought
 		** promiscuous would be sufficient). (Skip if using
-		** HP-UX or SINIX)
+		** HP-UX or SINIX) (Not necessary on send FD)
 		*/
 #if !defined(__hpux) && !defined(sinix)
 		if (dlpromisconreq(p->fd, DL_PROMISC_MULTI, ebuf) < 0 ||
@@ -567,7 +680,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	/*
 	** Try to enable sap (when not in promiscuous mode when using
 	** using HP-UX, when not doing SunATM on Solaris, and never
-	** under SINIX)
+	** under SINIX) (Not necessary on send FD)
 	*/
 #ifndef sinix
 	if (
@@ -774,6 +887,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 bad:
 	if (p->fd >= 0)
 		close(p->fd);
+	if (p->send_fd >= 0)
+		close(p->send_fd);
 	/*
 	 * Get rid of any link-layer type list we allocated.
 	 */
@@ -819,6 +934,17 @@ split_dname(char *device, int *unitp, char *ebuf)
 	}
 	*unitp = unit;
 	return (cp);
+}
+
+static int
+dl_doattach(int fd, int ppa, char *ebuf)
+{
+	bpf_u_int32 buf[MAXDLBUF];
+
+	if (dlattachreq(fd, ppa, ebuf) < 0 ||
+	    dlokack(fd, "attach", (char *)buf, ebuf) < 0)
+		return (-1);
+	return (0);
 }
 
 int
@@ -1227,62 +1353,32 @@ dlinfoack(int fd, char *bufp, char *ebuf)
 	return (recv_ack(fd, DL_INFO_ACK_SIZE, "info", bufp, ebuf));
 }
 
-#if 0
+#ifdef DL_HP_RAWDLS
 /*
- * No ack?
- *
- * On HP-UX, use DL_HP_RAWDATA_REQ instead, *if* we're in RAW mode.
- * There is an ack *IF* there's an error.
- *
- * XXX - this is not needed on Solaris; we're running in raw mode so
- * we can just do a "write()".
- * What about, say, AIX?
+ * There's an ack *if* there's an error.
  */
 static int
-dlunitdatareq(int fd, u_char *addrp, int addrlen, u_char *datap, int datalen)
+dlrawdatareq(int fd, u_char *datap, int datalen)
 {
 	struct strbuf ctl, data;
 	long buf[MAXDLBUF];	/* XXX - char? */
 	union DL_primitives *dlp;
+	int dlen;
 
 	dlp = (union DL_primitives*) buf;
 
-	dlp->unitdata_req.dl_primitive = DL_UNITDATA_REQ;
-	dlp->unitdata_req.dl_dest_addr_length = addrlen;
-	dlp->unitdata_req.dl_dest_addr_offset = DL_UNITDATA_REQ_SIZE;
-	dlp->unitdata_req.dl_priority.dl_min = 0;
-	dlp->unitdata_req.dl_priority.dl_max = 0
+	dlp->dl_primitive = DL_HP_RAWDATA_REQ;
+	dlen = DL_HP_RAWDATA_REQ_SIZE;
 
 	/*
-	 * XXX - the "address", on Ethernet, is the destination address,
-	 * followed by the link-layer type.  What is it for other
-	 * link layers?
-	 *
-	 * The address length "dl_addr_length" from the "info_ack"
-	 * structure is the total length of the link-layer address.
-	 *
-	 * The SAP length "dl_sap_length" is the length of the SAP part
-	 * of the address.
-	 * If positive, the SAP comes before the destination address;
-	 * if negative, the SAP comes after the destination address.
-	 *
-	 * XXX - what about Ethernet vs. 802.3?  Is the SAP the Ethertype
-	 * or the DSAP?  How can we send both?  *Can* we send both on
-	 * the same device?
-	 *
-	 * Note that in raw mode, we send a raw link-layer packet.
-	 * In that mode, can we avoid worrying about this crap?
-	 *
-	 * For ATM (ha ha), we might not be able to send packets,
-	 * even in raw mode, without binding to a VC.  (Presumably
-	 * going into SAP promiscuous mode lets us *see* all packets.)
-	 *
-	 * XXX - extract it from the packet to be sent.
+	 * HP's documentation doesn't appear to show us supplying any
+	 * address pointed to by the control part of the message.
+	 * I think that's what raw mode means - you just send the raw
+	 * packet, you don't specify where to send it to, as that's
+	 * implied by the destination address.
 	 */
-	memcpy((char *)dlp + DL_UNITDATA_REQ_SIZE, addrp, addrlen);
-
 	ctl.maxlen = 0;
-	ctl.len = DL_UNITDATA_REQ_SIZE + addrlen;
+	ctl.len = dlen;
 	ctl.buf = buf;
 
 	data.maxlen = 0;
@@ -1291,12 +1387,12 @@ dlunitdatareq(int fd, u_char *addrp, int addrlen, u_char *datap, int datalen)
 
 	if (putmsg(fd, &ctl, &data, 0) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "dlunitdatareq: putmsg: %s", pcap_strerror(errno));
+		    "dlrawdatareq: putmsg: %s", pcap_strerror(errno));
 		return (-1);
 	}
 	return (0);
 }
-#endif
+#endif /* DL_HP_RAWDLS */
 
 #ifdef HAVE_SYS_BUFMOD_H
 static int
