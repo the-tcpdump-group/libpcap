@@ -19,8 +19,8 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.50 2003-11-04 07:05:35 guy Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.51 2003-11-15 23:24:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H

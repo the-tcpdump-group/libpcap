@@ -31,8 +31,8 @@
  */
 
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.15 2003-11-04 07:05:37 guy Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.16 2003-11-15 23:24:05 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
