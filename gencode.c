@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.117 2000-09-17 04:04:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.118 2000-09-18 06:39:44 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -538,9 +538,72 @@ static void
 init_linktype(type)
 	int type;
 {
-	linktype = type;
-
+	/*
+	 * Map DLT_ codes that don't have the same value as the
+	 * equivalent PCAP_ENCAP_ codes to the corresponding PCAP_ENCAP_
+	 * code.
+	 *
+	 * Even though "pcap_open_live()" in "pcap-bpf.c" does a
+	 * similar mapping, we do that mapping here as well, to
+	 * handle filters constructed for savefiles.
+	 *
+	 * XXX - should we do this mapping in "savefile.c"?  Doing so
+	 * might cause programs that read one or more capture files
+	 * and write another capture file with the same type as
+	 * the input file(s) to use PCAP_ENCAP_ values that aren't
+	 * supported by the libpcap on the system that wrote the original
+	 * capture file, so we might not want to do that.
+	 */
 	switch (type) {
+
+#ifdef DLT_ATM_RFC1483
+	case DLT_ATM_RFC1483:
+		linktype = PCAP_ENCAP_ATM_RFC1483;
+		break;
+#endif
+
+#ifdef DLT_RAW
+	case DLT_RAW:
+		linktype = PCAP_ENCAP_RAW;
+		break;
+#endif
+
+#ifdef DLT_SLIP_BSDOS
+	case DLT_SLIP_BSDOS:
+		linktype = PCAP_ENCAP_SLIP_BSDOS;
+		break;
+#endif
+
+#ifdef DLT_PPP_BSDOS
+	case DLT_PPP_BSDOS:
+		linktype = PCAP_ENCAP_PPP_BSDOS;
+		break;
+#endif
+
+#ifdef DLT_CIP
+	case DLT_CIP:
+		linktype = PCAP_ENCAP_ATM_CLIP;
+		break;
+#endif
+
+#ifdef DLT_ATM_CLIP
+	case DLT_ATM_CLIP:
+		linktype = PCAP_ENCAP_ATM_CLIP;
+		break;
+#endif
+
+#ifdef DLT_PPP_SERIAL
+	case DLT_PPP_SERIAL:
+		linktype = PCAP_ENCAP_PPP_HDLC;
+		break;
+#endif
+
+	default:
+		linktype = type;
+		break;
+	}
+
+	switch (linktype) {
 
 	case PCAP_ENCAP_ETHERNET:
 		off_linktype = 12;
@@ -570,6 +633,7 @@ init_linktype(type)
 
 	case PCAP_ENCAP_PPP:
 	case PCAP_ENCAP_C_HDLC:
+	case PCAP_ENCAP_PPP_HDLC:
 		off_linktype = 2;
 		off_nl = 4;
 		return;
@@ -690,6 +754,7 @@ gen_linktype(proto)
 		return gen_false();
 
 	case PCAP_ENCAP_PPP:
+	case PCAP_ENCAP_PPP_HDLC:
 		if (proto == ETHERTYPE_IP)
 			proto = PPP_IP;			/* XXX was 0x21 */
 #ifdef INET6
