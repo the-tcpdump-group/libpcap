@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.45 2003-04-09 10:06:44 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.46 2003-04-10 06:07:08 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -248,6 +248,8 @@ char	*pcap_win32strerror(void);
 extern	int pcap_fddipad;
 
 int	install_bpf_program(pcap_t *, struct bpf_program *);
+
+int	pcap_strcasecmp(const char *, const char *);
 
 #ifdef __cplusplus
 }
