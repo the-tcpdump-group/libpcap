@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.17 2001-01-03 22:52:26 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.18 2001-01-18 04:41:45 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -122,7 +122,11 @@ specifies the maximum number of bytes to capture.
 .I promisc
 specifies if the interface is to be put into promiscuous mode.
 (Note that even if this parameter is false, the interface
-could well be in promiscuous mode for some other reason.)
+could well be in promiscuous mode for some other reason.)  For now, this
+doesn't work on the "any" device; if an argument of "any" or NULL is
+supplied, the
+.I promisc
+flag is ignored.
 .I to_ms
 specifies the read timeout in milliseconds.  The read timeout is used to
 arrange that the read not necessarily return immediately when a packet
