@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.117 2005-03-27 02:45:03 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.118 2005-03-27 03:36:36 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.117 $)
+AC_REVISION($Revision: 1.118 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -34,7 +34,7 @@ if test "$ac_cv_header_netinet_if_ether_h" != yes; then
 	# The simple test didn't work.
 	# Do we need to include <net/if.h> first?
 	# Unset ac_cv_header_netinet_if_ether_h so we don't
-	# tread the previous failure as a cached value and
+	# treat the previous failure as a cached value and
 	# suppress the next test.
 	#
 	AC_MSG_NOTICE([Rechecking with some additional includes])
@@ -106,7 +106,11 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 		if test "$ac_cv_header_netinet_ether_h" = yes; then
 			#
 			# We have it - does it declare ether_hoston()?
+			# Unset ac_cv_have_decl_ether_hostton so we don't
+			# treat the previous failure as a cached value and
+			# suppress the next test.
 			#
+			unset ac_cv_have_decl_ether_hostton
 			AC_CHECK_DECLS(ether_hostton,
 			    [
 				AC_DEFINE(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON,,
