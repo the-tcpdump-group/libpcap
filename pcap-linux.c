@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.48 2000-12-22 12:30:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.49 2000-12-23 03:04:06 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -383,7 +383,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 * that look at the packet type field will always be
 		 * able to handle DLT_LINUX_SLL captures.
 		 */
-		switch (from.sll_pktttype) {
+		switch (from.sll_pkttype) {
 
 		case PACKET_HOST:
 			hdrp->sll_pkttype = htons(LINUX_SLL_HOST);
