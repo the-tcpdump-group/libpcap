@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.44 2000-10-12 03:54:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.45 2000-11-15 05:31:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -160,7 +160,7 @@ static const char rcsid[] =
  * point-to-point with HDLC framing as per section 4.3.1 of RFC 1547 ("Cisco
  * HDLC").  This is, for example, what you get with NetBSD's DLT_PPP_SERIAL.
  */
-#define LINKTYPE_PPP_HDLC	107		/* PPP in HDLC-like framing */
+#define LINKTYPE_PPP_HDLC	113		/* PPP in HDLC-like framing */
 
 static struct linktype_map {
 	int	dlt;
