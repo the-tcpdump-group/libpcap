@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.99 2003-07-23 05:29:20 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.100 2003-10-14 07:46:57 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.99 $)
+AC_REVISION($Revision: 1.100 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -239,24 +239,54 @@ if test $ac_cv_lbl_proc_net_dev = yes; then
 fi
 AC_MSG_RESULT($ac_cv_lbl_proc_net_dev)
 
-AC_ARG_WITH(dag, [  --with-dag=DIR          include DAG support from DIR])
+AC_ARG_WITH(dag, [  --with-dag[=DIR]        include DAG support (located in directory DIR, if supplied).  [default=yes, on BSD and Linux, if present]],
+[
+	if test "$withval" = no
+	then
+		want_dag=no
+	elif test "$withval" = yes
+	then
+		want_dag=yes
+		dag_root=
+	else
+		want_dag=yes
+		dag_root=$withval
+	fi
+],[
+	#
+	# Use DAG API if present, otherwise don't
+	#
+	want_dag=ifpresent
+	dag_root=
+])
 ac_cv_lbl_dag_api=no
-if test "$with_dag" != no; then
-
-	case "$V_PCAP" in
-	linux|bpf|dag)
-		;;
-        *)
+case "$V_PCAP" in
+linux|bpf|dag)
+	#
+	# We support the DAG API on Linux or BSD, or if we're building a
+	# DAG-only libpcap.
+	#
+	;;
+*)
+	#
+	# If the user explicitly requested DAG, tell them it's not
+	# supported.
+	#
+	# If they expressed no preference, don't include it.
+	#
+	if test $want_dag = yes; then
 		AC_MSG_ERROR(DAG support only available with 'linux' 'bpf' and 'dag' packet capture types)
-		;;
-	esac
+	elif test $want_dag = yes; then
+		want_dag=no
+	fi
+	;;
+esac
 
+if test "$with_dag" != no; then
 	AC_MSG_CHECKING(whether we have DAG API)
 
-	if test -z "$with_dag" -o "$with_dag" = yes; then
+	if test -z "$dag_root"; then
 		dag_root=$srcdir/../dag
-	else
-		dag_root=$with_dag
 	fi
 
 	if test -r "$dag_root/tools" -a -r "$dag_root/include"; then
@@ -279,7 +309,7 @@ if test "$with_dag" != no; then
 	fi
 	AC_MSG_RESULT($ac_cv_lbl_dag_api)
 	if test $ac_cv_lbl_dag_api = no; then
-		if test ! -z "$with_dag"; then
+		if test "$want_dag" = yes; then
 			AC_MSG_ERROR(DAG API not found under directory $dag_root; use --without-dag)
 		fi
 	else
