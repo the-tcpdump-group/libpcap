@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.75 2005-03-26 23:07:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.76 2005-03-27 02:45:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -53,6 +53,10 @@ static const char rcsid[] _U_ =
 
 #ifndef WIN32
 #ifdef HAVE_ETHER_HOSTTON
+/*
+ * XXX - do we need any of this if <netinet/if_ether.h> doesn't declare
+ * ether_hostton()?
+ */
 #ifdef HAVE_NETINET_IF_ETHER_H
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
@@ -60,6 +64,9 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <netinet/if_ether.h>
 #endif /* HAVE_NETINET_IF_ETHER_H */
 #endif /* HAVE_ETHER_HOSTTON */
+#ifdef NETINET_ETHER_H_DECLARES_ETHER_HOSTON
+#include <netinet/ether.h>
+#endif /* NETINET_ETHER_H_DECLARES_ETHER_HOSTON */
 #include <arpa/inet.h>
 #include <netdb.h>
 #endif /* WIN32 */

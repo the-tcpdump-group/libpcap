@@ -41,6 +41,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define to 1 if you have the <netinet/ether.h> header file. */
+#undef HAVE_NETINET_ETHER_H
+
 /* Define to 1 if you have the <netinet/if_ether.h> header file. */
 #undef HAVE_NETINET_IF_ETHER_H
 
@@ -118,6 +121,12 @@
 
 /* if unaligned access fails */
 #undef LBL_ALIGN
+
+/* Define to 1 if netinet/ether.h declares `ether_hostton' */
+#undef NETINET_ETHER_H_DECLARES_ETHER_HOSTTON
+
+/* Define to 1 if netinet/if_ether.h declares `ether_hostton' */
+#undef NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON
 
 /* do not use protochain */
 #undef NO_PROTOCHAIN
