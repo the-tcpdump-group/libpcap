@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.15.2.1 2003-11-15 23:26:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.15.2.2 2003-11-20 02:01:32 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -44,6 +44,8 @@ int* _errno();
 #endif /* __MINGW32__ */
 
 static int pcap_setfilter_win32(pcap_t *, struct bpf_program *);
+static int pcap_getnonblock_win32(pcap_t *, char *);
+static int pcap_setnonblock_win32(pcap_t *, int, char *);
 
 #define	PcapBufSize 256000	/*dimension of the buffer in the pcap_t structure*/
 #define	SIZE_BUF 1000000
@@ -286,6 +288,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->read_op = pcap_read_win32;
 	p->setfilter_op = pcap_setfilter_win32;
 	p->set_datalink_op = NULL;	/* can't change data link type */
+	p->getnonblock_op = pcap_getnonblock_win32;
+	p->setnonblock_op = pcap_setnonblock_win32;
 	p->stats_op = pcap_stats_win32;
 	p->close_op = pcap_close_win32;
 
@@ -311,6 +315,44 @@ pcap_setfilter_win32(pcap_t *p, struct bpf_program *fp)
 	return (0);
 }
 
+
+static int
+pcap_getnonblock_win32(pcap_t *p, char *errbuf)
+{
+	/*
+	 * XXX - if there were a PacketGetReadTimeout() call, we
+	 * would use it, and return 1 if the timeout is -1
+	 * and 0 otherwise.
+	 */
+	return (p->nonblock);
+}
+
+static int
+pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
+{
+	int newtimeout;
+
+	if (nonblock) {
+		/*
+		 * Set the read timeout to -1 for non-blocking mode.
+		 */
+		newtimeout = -1;
+	} else {
+		/*
+		 * Restore the timeout set when the device was opened.
+		 * (Note that this may be -1, in which case we're not
+		 * really leaving non-blocking mode.)
+		 */
+		newtimeout = p->timeout;
+	}
+	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "PacketSetReadTimeout: %s", pcap_win32strerror());
+		return (-1);
+	}
+	p->nonblock = (newtimeout == -1);
+	return (0);
+}
 
 /* Set the driver working mode */
 int 

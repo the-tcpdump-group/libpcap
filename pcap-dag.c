@@ -29,7 +29,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.10.2.2 2003-11-20 01:18:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.10.2.3 2003-11-20 02:01:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -101,6 +101,7 @@ static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
 static int dag_get_datalink(pcap_t *p);
+static int dag_setnonblock(pcap_t *p, int nonblock, char *errbuf);
 
 static void delete_pcap_dag(pcap_t *p) {
   pcap_dag_node_t *curr = NULL, *prev = NULL;
@@ -478,6 +479,8 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
   handle->read_op = dag_read;
   handle->setfilter_op = dag_setfilter;
   handle->set_datalink_op = dag_set_datalink;
+  handle->getnonblock_op = pcap_getnonblock_fd;
+  handle->setnonblock_op = dag_setnonblock;
   handle->stats_op = dag_stats;
   handle->close_op = dag_platform_close;
 
@@ -635,6 +638,26 @@ dag_set_datalink(pcap_t *p, int dlt)
 	return (0);
 }
 
+static int
+dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+{
+	/*
+	 * Set non-blocking mode on the FD.
+	 * XXX - is that necessary?  If not, don't bother calling it,
+	 * and have a "dag_getnonblock()" function that looks at
+	 * "p->md.dag_offset_flags".
+	 */
+	if (pcap_setnonblock_fd(p, nonblock, errbuf) < 0)
+		return (-1);
+
+	if (nonblock) {
+		p->md.dag_offset_flags |= DAGF_NONBLOCK;
+	} else {
+		p->md.dag_offset_flags &= ~DAGF_NONBLOCK;
+	}
+	return (0);
+}
+		
 static int
 dag_get_datalink(pcap_t *p)
 {

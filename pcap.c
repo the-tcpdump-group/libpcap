@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.63.2.4 2003-11-20 01:18:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.63.2.5 2003-11-20 02:01:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -512,26 +512,25 @@ pcap_geterr(pcap_t *p)
 	return (p->errbuf);
 }
 
-/*
- * NOTE: in the future, these may need to call platform-dependent routines,
- * e.g. on platforms with memory-mapped packet-capture mechanisms where
- * "pcap_read()" uses "select()" or "poll()" to wait for packets to arrive.
- */
 int
 pcap_getnonblock(pcap_t *p, char *errbuf)
 {
-#ifndef WIN32
-	int fdflags;
-#endif
+	return p->getnonblock_op(p, errbuf);
+}
 
-	if (p->sf.rfile != NULL) {
-		/*
-		 * This is a savefile, not a live capture file, so
-		 * never say it's in non-blocking mode.
-		 */
-		return (0);
-	}
+/*
+ * Get the current non-blocking mode setting, under the assumption that
+ * it's just the standard POSIX non-blocking flag.
+ *
+ * We don't look at "p->nonblock", in case somebody tweaked the FD
+ * directly.
+ */
 #ifndef WIN32
+int
+pcap_getnonblock_fd(pcap_t *p, char *errbuf)
+{
+	int fdflags;
+
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
@@ -542,37 +541,27 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 		return (1);
 	else
 		return (0);
-#else
-	return (p->nonblock);
-#endif
 }
+#endif
 
 int
 pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
+	return p->setnonblock_op(p, nonblock, errbuf);
+}
+
 #ifndef WIN32
+/*
+ * Set non-blocking mode, under the assumption that it's just the
+ * standard POSIX non-blocking flag.  (This can be called by the
+ * per-platform non-blocking-mode routine if that routine also
+ * needs to do some additional work.)
+ */
+int
+pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
+{
 	int fdflags;
-#else
-	int newtimeout;
-#endif
 
-	if (p->sf.rfile != NULL) {
-		/*
-		 * This is a savefile, not a live capture file, so
-		 * ignore requests to put it in non-blocking mode.
-		 */
-		return (0);
-	}
-
-#if HAVE_DAG_API
-	if (nonblock) {
-		p->md.dag_offset_flags |= DAGF_NONBLOCK;
-	} else {
-		p->md.dag_offset_flags &= ~DAGF_NONBLOCK;
-	}
-#endif /* HAVE_DAG_API */
-
-#ifndef WIN32
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
@@ -588,29 +577,9 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 		    pcap_strerror(errno));
 		return (-1);
 	}
-#else
-	if (nonblock) {
-		/*
-		 * Set the read timeout to -1 for non-blocking mode.
-		 */
-		newtimeout = -1;
-	} else {
-		/*
-		 * Restore the timeout set when the device was opened.
-		 * (Note that this may be -1, in which case we're not
-		 * really leaving non-blocking mode.)
-		 */
-		newtimeout = p->timeout;
-	}
-	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "PacketSetReadTimeout: %s", pcap_win32strerror());
-		return (-1);
-	}
-	p->nonblock = (newtimeout == -1);
-#endif
 	return (0);
 }
+#endif
 
 #ifdef WIN32
 /*

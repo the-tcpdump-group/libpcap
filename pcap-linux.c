@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.2 2003-11-18 21:09:17 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.98.2.3 2003-11-20 02:01:30 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -400,6 +400,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	handle->read_op = pcap_read_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
+	handle->getnonblock_op = pcap_getnonblock_fd;
+	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->stats_op = pcap_stats_linux;
 	handle->close_op = pcap_close_linux;
 
