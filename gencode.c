@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.184 2003-01-23 07:24:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.185 2003-02-05 01:53:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -864,10 +864,6 @@ init_linktype(type)
 		return;
 
 	case DLT_ATM_RFC1483:
-		off_linktype = 0;
-		off_nl = 4;             /* FIXME SNAP */
-		return;
-
 	case DLT_ATM_CLIP:	/* Linux ATM defines this */
 		/*
 		 * assume routed, non-ISO PDUs
@@ -993,6 +989,9 @@ gen_ether_linktype(proto)
 	case LLCSAP_ISONS:
 		/*
 		 * OSI protocols always use 802.2 encapsulation.
+		 * XXX - should we check both the DSAP and the
+		 * SSAP, like this, or should we check just the
+		 * DSAP?
 		 */
 		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
@@ -1012,6 +1011,9 @@ gen_ether_linktype(proto)
 	case LLCSAP_NETBEUI:
 		/*
 		 * NetBEUI always uses 802.2 encapsulation.
+		 * XXX - should we check both the DSAP and the
+		 * SSAP, like this, or should we check just the
+		 * DSAP?
 		 */
 		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
@@ -1243,6 +1245,9 @@ gen_linktype(proto)
 		case LLCSAP_ISONS:
 			/*
 			 * OSI protocols always use 802.2 encapsulation.
+			 * XXX - should we check both the DSAP and the
+			 * LSAP, like this, or should we check just the
+			 * DSAP?
 			 */
 			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
@@ -1737,10 +1742,10 @@ gen_llc(proto)
 	 */
 	switch (proto) {
 
-        case LLCSAP_IP:
+	case LLCSAP_IP:
 		return gen_cmp(off_linktype, BPF_H, (long)
 			     ((LLCSAP_IP << 8) | LLCSAP_IP));
-                
+
 	case LLCSAP_ISONS:
 		return gen_cmp(off_linktype, BPF_H, (long)
 			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
@@ -2734,7 +2739,7 @@ gen_proto_abbrev(proto)
 	int proto;
 {
 	struct block *b0;
-        struct block *b1;
+	struct block *b1;
 
 	switch (proto) {
 
@@ -2920,7 +2925,7 @@ gen_proto_abbrev(proto)
 	        b1 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
 		gen_or(b0, b1);
 	        b0 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT);                
-                gen_or(b0, b1);
+		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_LSP: 
@@ -3070,20 +3075,24 @@ gen_port(port, ip_proto, dir)
 {
 	struct block *b0, *b1, *tmp;
 
-        switch (linktype) {
-        case DLT_IEEE802_11:
-        case DLT_PRISM_HEADER:
-	case DLT_IEEE802_11_RADIO:
-        case DLT_FDDI:
-        case DLT_IEEE802:
-        case DLT_ATM_RFC1483:
-        case DLT_ATM_CLIP:
-                b0 = gen_linktype(LLCSAP_IP);
-                break;
-        default:
-                b0 = gen_linktype(ETHERTYPE_IP);
-                break;
-        }
+	/*
+	 * ether proto ip
+	 *
+	 * For FDDI, RFC 1188 says that SNAP encapsulation is used,
+	 * not LLC encapsulation with LLCSAP_IP.
+	 *
+	 * For IEEE 802 networks - which includes 802.5 token ring
+	 * (which is what DLT_IEEE802 means) and 802.11 - RFC 1042
+	 * says that SNAP encapsulation is used, not LLC encapsulation
+	 * with LLCSAP_IP.
+	 *
+	 * For LLC-encapsulated ATM/"Classical IP", RFC 1483 and
+	 * RFC 2225 say that SNAP encapsulation is used, not LLC
+	 * encapsulation with LLCSAP_IP.
+	 *
+	 * So we always check for ETHERTYPE_IP.
+	 */
+	b0 =  gen_linktype(ETHERTYPE_IP);
 
 	switch (ip_proto) {
 	case IPPROTO_UDP:
@@ -3547,20 +3556,22 @@ gen_proto(v, proto, dir)
 		/*FALLTHROUGH*/
 #endif
 	case Q_IP:
-                switch (linktype) {
-                case DLT_IEEE802_11:
-                case DLT_PRISM_HEADER:
-		case DLT_IEEE802_11_RADIO:
-                case DLT_FDDI:
-                case DLT_IEEE802:
-                case DLT_ATM_RFC1483:
-                case DLT_ATM_CLIP:
-			b0 = gen_linktype(LLCSAP_IP);
-                        break;
-                default:
-                        b0 = gen_linktype(ETHERTYPE_IP);
-                        break;
-                }
+		/*
+		 * For FDDI, RFC 1188 says that SNAP encapsulation is used,
+		 * not LLC encapsulation with LLCSAP_IP.
+		 *
+		 * For IEEE 802 networks - which includes 802.5 token ring
+		 * (which is what DLT_IEEE802 means) and 802.11 - RFC 1042
+		 * says that SNAP encapsulation is used, not LLC encapsulation
+		 * with LLCSAP_IP.
+		 *
+		 * For LLC-encapsulated ATM/"Classical IP", RFC 1483 and
+		 * RFC 2225 say that SNAP encapsulation is used, not LLC
+		 * encapsulation with LLCSAP_IP.
+		 *
+		 * So we always check for ETHERTYPE_IP.
+		 */
+		b0 = gen_linktype(ETHERTYPE_IP);
 #ifndef CHASE_CHAIN
 		b1 = gen_cmp(off_nl + 9, BPF_B, (bpf_int32)v);
 #else
@@ -3594,13 +3605,17 @@ gen_proto(v, proto, dir)
 			return gen_cmp(2, BPF_H, (0x03<<8) | v);
 			break;
 
-                case DLT_C_HDLC:
-                        /* Cisco uses an Ethertype lookalike - for OSI its 0xfefe */
-                        b0 = gen_linktype(LLCSAP_ISONS<<8 | LLCSAP_ISONS);
-                        /* OSI in C-HDLC is stuffed with a fudge byte */
+		case DLT_C_HDLC:
+			/*
+			 * Cisco uses an Ethertype lookalike - for OSI,
+			 * it's 0xfefe.
+			 */
+			b0 = gen_linktype(LLCSAP_ISONS<<8 | LLCSAP_ISONS);
+			/* OSI in C-HDLC is stuffed with a fudge byte */
 			b1 = gen_cmp(off_nl_nosnap+1, BPF_B, (long)v);
 			gen_and(b0, b1);
-                        return b1;
+			return b1;
+
 		default:
 			b0 = gen_linktype(LLCSAP_ISONS);
 			b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
@@ -3608,12 +3623,15 @@ gen_proto(v, proto, dir)
 			return b1;
 		}
 
-        case Q_ISIS:
-            b0 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
-            /* 4 is the offset of the PDU type relative to the IS-IS header */
-            b1 = gen_cmp(off_nl_nosnap+4, BPF_B, (long)v);
-            gen_and(b0, b1);
-            return b1;
+	case Q_ISIS:
+		b0 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		/*
+		 * 4 is the offset of the PDU type relative to the IS-IS
+		 * header.
+		 */
+		b1 = gen_cmp(off_nl_nosnap+4, BPF_B, (long)v);
+		gen_and(b0, b1);
+		return b1;
 
 	case Q_ARP:
 		bpf_error("arp does not encapsulate another protocol");
