@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.37 2000-07-11 23:02:51 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.38 2000-07-14 06:25:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -277,7 +277,54 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		}
 	}
 
+#ifdef _AIX
 #ifdef	BIOCIMMEDIATE
+	/*
+	 * Darren Reed notes that
+	 *
+	 *	On AIX (4.2 at least), if BIOCIMMEDIATE is not set, the
+	 *	timeout appears to be ignored and it waits until the buffer
+	 *	is filled before returning.  The result of not having it
+	 *	set is almost worse than useless if your BPF filter
+	 *	is reducing things to only a few packets (i.e. one every
+	 *	second or so).
+	 *
+	 * so we turn BIOCIMMEDIATE mode on if this is AIX.
+	 *
+	 * We don't turn it on for other platforms, as that means we
+	 * get woken up for every packet, which may not be what we want;
+	 * in the Winter 1993 USENIX paper on BPF, they say:
+	 *
+	 *	Since a process might want to look at every packet on a
+	 *	network and the time between packets can be only a few
+	 *	microseconds, it is not possible to do a read system call
+	 *	per packet and BPF must collect the data from several
+	 *	packets and return it as a unit when the monitoring
+	 *	application does a read.
+	 *
+	 * which I infer is the reason for the timeout - it means we
+	 * wait that amount of time, in the hopes that more packets
+	 * will arrive and we'll get them all with one read.
+	 *
+	 * Setting BIOCIMMEDIATE mode on FreeBSD (and probably other
+	 * BSDs) causes the timeout to be ignored.
+	 *
+	 * On the other hand, some platforms (e.g., Linux) don't support
+	 * timeouts, they just hand stuff to you as soon as it arrives;
+	 * if that doesn't cause a problem on those platforms, it may
+	 * be OK to have BIOCIMMEDIATE mode on BSD as well.
+	 *
+	 * (Note, though, that applications may depend on the read
+	 * completing, even if no packets have arrived, when the timeout
+	 * expires, e.g. GUI applications that have to check for input
+	 * while waiting for packets to arrive; a non-zero timeout
+	 * prevents "select()" from working right on FreeBSD and
+	 * possibly other BSDs, as the timer doesn't start until a
+	 * "read()" is done, so the timer isn't in effect if the
+	 * application is blocked on a "select()", and the "select()"
+	 * doesn't get woken up for a BPF device until the buffer
+	 * fills up.)
+	 */
 	v = 1;
 	if (ioctl(p->fd, BIOCIMMEDIATE, &v) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "BIOCIMMEDIATE: %s",
@@ -285,6 +332,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		goto bad;
 	}
 #endif	/* BIOCIMMEDIATE */
+#endif	/* _AIX */
 
 	if (promisc)
 		/* set promiscuous mode, okay if it fails */
