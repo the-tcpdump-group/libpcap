@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.51.2.2 2001-01-17 18:16:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.51.2.3 2001-01-18 03:59:56 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -76,6 +76,11 @@ static const char rcsid[] =
 
 #ifdef HAVE_NETPACKET_PACKET_H
 # include <netpacket/packet.h>
+
+ /*
+  * We assume this means we really do have PF_PACKET sockets.
+  */
+# define HAVE_PF_PACKET_SOCKETS
 #else
  /*
   * Oh, joy.  Some Linux distributions have 2.2 or later kernels and
@@ -95,6 +100,20 @@ static const char rcsid[] =
   */
 # ifdef PF_PACKET
 #  include <linux/if_packet.h>
+
+ /*
+  * However, on at least some Linux distributions (for example, Red Hat
+  * 5.2), there's no <netpacket/packet.h> file, but PF_PACKET is defined
+  * if you include <sys/socket.h>, but <linux/if_packet.h> doesn't define
+  * any of the PF_PACKET stuff such as "struct sockaddr_ll" or any of
+  * the PACKET_xxx stuff.
+  *
+  * So we check whether PACKET_HOST is defined, and assume that we have
+  * PF_PACKET sockets only if it is defined.
+  */
+# ifdef PACKET_HOST
+#  define HAVE_PF_PACKET_SOCKETS
+# endif /* PACKET_HOST */
 # endif /* PF_PACKET */
 #endif /* HAVE_NETPACKET_PACKET_H */
 
@@ -131,12 +150,12 @@ static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 /*
  * Wrap some ioctl calls
  */
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 static int	iface_get_id(int fd, const char *device, char *ebuf);
 #endif
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 static int 	iface_bind(int fd, int ifindex, char *ebuf);
 #endif
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
@@ -242,7 +261,7 @@ static int
 pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 {
 	int			offset;
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 	struct sockaddr_ll	from;
 	struct sll_header	*hdrp;
 #else
@@ -252,7 +271,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	int			packet_len, caplen;
 	struct pcap_pkthdr	pcap_header;
 
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is a cooked device, leave extra room for a
 	 * fake packet header.
@@ -291,7 +310,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		}
 	}
 
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is from the loopback device, reject outgoing packets;
 	 * we'll see the packet as an incoming packet as well, and
@@ -307,7 +326,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		return 0;
 #endif
 
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is a cooked device, fill in the fake packet header.
 	 */
@@ -606,6 +625,9 @@ static int map_arphrd_to_dlt(int arptype)
 	/* Not sure if this is correct for all tunnels, but it
 	 * works for CIPE */
 	case ARPHRD_TUNNEL:
+#ifndef ARPHRD_SIT
+#define ARPHRD_SIT 776	/* From Linux 2.2.14 */
+#endif
 	case ARPHRD_SIT:
 	case ARPHRD_CSLIP:
 	case ARPHRD_SLIP6:
@@ -627,7 +649,7 @@ static int
 live_open_new(pcap_t *handle, char *device, int promisc, 
 	      int to_ms, char *ebuf)
 {
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 	int			sock_fd = -1, device_id, mtu, arptype;
 	struct packet_mreq	mr;
 
@@ -814,7 +836,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 #endif
 }
 
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 /*
  *  Return the index of the given device name. Fill ebuf and return 
  *  -1 on failure.
@@ -1217,7 +1239,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	return ifr.ifr_hwaddr.sa_family;
 }
 
-#ifdef PF_PACKET
+#ifdef HAVE_PF_PACKET_SOCKETS
 static int
 fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
