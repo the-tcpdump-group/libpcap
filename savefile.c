@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.125 2005-02-08 19:52:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126 2005-02-08 20:03:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -395,6 +395,15 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_JUNIPER_PIC_PEER    174
 
+/*
+ * Link types requested by Gregor Maier <gregor@endace.com> of Endace
+ * Measurement Systems.  They add an ERF header (see
+ * http://www.endace.com/support/EndaceRecordFormat.pdf) in front of
+ * the link-layer header.
+ */
+#define LINKTYPE_ERF_ETH	175	/* Ethernet */
+#define LINKTYPE_ERF_POS	176	/* Packet-over-SONET */
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -580,6 +589,10 @@ static struct linktype_map {
 
         /* Juniper-internal chassis encapsulation */
         { DLT_JUNIPER_PIC_PEER, LINKTYPE_JUNIPER_PIC_PEER },
+
+	/* Endace types */
+	{ DLT_ERF_ETH,		LINKTYPE_ERF_ETH },
+	{ DLT_ERF_POS,		LINKTYPE_ERF_POS },
 
 	{ -1,			-1 }
 };

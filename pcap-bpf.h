@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.33 2005-02-08 19:52:18 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34 2005-02-08 20:03:15 guy Exp $ (LBL)
  */
 
 /*
@@ -570,6 +570,15 @@ struct bpf_version {
  * for internal communication to Physical Interface Cards (PIC)
  */
 #define DLT_JUNIPER_PIC_PEER    174
+
+/*
+ * Link types requested by Gregor Maier <gregor@endace.com> of Endace
+ * Measurement Systems.  They add an ERF header (see
+ * http://www.endace.com/support/EndaceRecordFormat.pdf) in front of
+ * the link-layer header.
+ */
+#define DLT_ERF_ETH		175	/* Ethernet */
+#define DLT_ERF_POS		176	/* Packet-over-SONET */
 
 /*
  * The instruction encodings.
