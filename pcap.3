@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.11 2000-10-12 04:12:27 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.12 2000-10-22 02:21:34 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -110,7 +110,12 @@ chars.
 is used to obtain a packet capture descriptor to look
 at packets on the network.
 .I device
-is a string that specifies the network device to open.
+is a string that specifies the network device to open; on Linux systems
+with 2.2 or later kernels, a
+.I device
+argument of "any" or
+.B NULL
+can be used to capture packets from all interfaces.
 .I snaplen
 specifies the maximum number of bytes to capture.
 .I promisc
