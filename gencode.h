@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.43 2000-10-28 00:01:27 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.44 2000-10-28 08:19:29 guy Exp $ (LBL)
  */
 
 /* Address qualifiers. */
@@ -57,6 +57,8 @@
 #define Q_ESP		19
 
 #define Q_PIM		20
+
+#define	Q_AARP		21
 
 /* Directional qualifiers. */
 

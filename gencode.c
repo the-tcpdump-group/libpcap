@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.126 2000-10-28 00:01:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.127 2000-10-28 08:19:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -124,12 +124,14 @@ static inline void syntax(void);
 static void backpatch(struct block *, struct block *);
 static void merge(struct block *, struct block *);
 static struct block *gen_cmp(u_int, u_int, bpf_int32);
+static struct block *gen_cmp_gt(u_int, u_int, bpf_int32);
 static struct block *gen_mcmp(u_int, u_int, bpf_int32, bpf_u_int32);
 static struct block *gen_bcmp(u_int, u_int, const u_char *);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_linktype(int);
+static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
 static struct block *gen_hostop(bpf_u_int32, bpf_u_int32, int, int, u_int, u_int);
 #ifdef INET6
 static struct block *gen_hostop6(struct in6_addr *, struct in6_addr *, int, int, u_int, u_int);
@@ -487,6 +489,24 @@ gen_cmp(offset, size, v)
 }
 
 static struct block *
+gen_cmp_gt(offset, size, v)
+	u_int offset, size;
+	bpf_int32 v;
+{
+	struct slist *s;
+	struct block *b;
+
+	s = new_stmt(BPF_LD|BPF_ABS|size);
+	s->s.k = offset;
+
+	b = new_block(JMP(BPF_JGT));
+	b->stmts = s;
+	b->s.k = v;
+
+	return b;
+}
+
+static struct block *
 gen_mcmp(offset, size, v, mask)
 	u_int offset, size;
 	bpf_int32 v;
@@ -703,6 +723,57 @@ gen_linktype(proto)
 
 	switch (linktype) {
 
+	case DLT_EN10MB:
+		/*
+		 * XXX - handle other LLC-encapsulated protocols here
+		 * (IPX, OSI)?
+		 */
+		switch (proto) {
+
+		case ETHERTYPE_ATALK:
+		case ETHERTYPE_AARP:
+			/*
+			 * EtherTalk (AppleTalk protocols on Ethernet link
+			 * layer) may use 802.2 encapsulation.
+			 */
+
+			/*
+			 * Check for 802.2 encapsulation (EtherTalk phase 2?);
+			 * we check for an Ethernet type field less than
+			 * 1500, which means it's an 802.3 length field.
+			 */
+			b0 = gen_cmp_gt(off_linktype, BPF_H, 1500);
+			gen_not(b0);
+
+			/*
+			 * 802.2-encapsulated ETHERTYPE_ATALK packets are
+			 * SNAP packets with an organization code of
+			 * 0x080007 (Apple, for Appletalk) and a protocol
+			 * type of ETHERTYPE_ATALK (Appletalk).
+			 *
+			 * 802.2-encapsulated ETHERTYPE_AARP packets are
+			 * SNAP packets with an organization code of
+			 * 0x000000 (encapsulated Ethernet) and a protocol
+			 * type of ETHERTYPE_AARP (Appletalk ARP).
+			 */
+			if (proto == ETHERTYPE_ATALK)
+				b1 = gen_snap(0x080007, ETHERTYPE_ATALK, 14);
+			else	/* proto == ETHERTYPE_AARP */
+				b1 = gen_snap(0x000000, ETHERTYPE_AARP, 14);
+			gen_and(b0, b1);
+
+			/*
+			 * Check for Ethernet encapsulation (Ethertalk
+			 * phase 1?); we just check for the Ethernet
+			 * protocol type.
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+
+			gen_or(b0, b1);
+			return b1;
+		}
+		break;
+
 	case DLT_SLIP:
 		return gen_false();
 
@@ -760,6 +831,32 @@ gen_linktype(proto)
 			return gen_false();
 	}
 	return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+}
+
+/*
+ * Check for an LLC SNAP packet with a given organization code and
+ * protocol type; we check the entire contents of the 802.2 LLC and
+ * snap headers, checking for a DSAP of 0xAA, an SSAP of 0xAA, and
+ * a control field of 0x03 in the LLC header, and for the specified
+ * organization code and protocol type in the SNAP header.
+ */
+static struct block *
+gen_snap(orgcode, ptype, offset)
+	bpf_u_int32 orgcode;
+	bpf_u_int32 ptype;
+	u_int offset;
+{
+	u_char snapblock[8];
+
+	snapblock[0] = 0xAA;	/* DSAP = SNAP */
+	snapblock[1] = 0xAA;	/* SSAP = SNAP */
+	snapblock[2] = 0x03;	/* control = UI */
+	snapblock[3] = (orgcode >> 16);	/* upper 8 bits of organization code */
+	snapblock[4] = (orgcode >> 8);	/* middle 8 bits of organization code */
+	snapblock[5] = (orgcode >> 0);	/* lower 8 bits of organization code */
+	snapblock[6] = (ptype >> 8);	/* upper 8 bits of protocol type */
+	snapblock[7] = (ptype >> 0);	/* lower 8 bits of protocol type */
+	return gen_bcmp(offset, 8, snapblock);
 }
 
 static struct block *
@@ -1107,6 +1204,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
 
+	case Q_AARP:
+		bpf_error("AARP host filtering not implemented");
+
 	case Q_DECNET:
 		return gen_dnhostop(addr, dir, off_nl);
 
@@ -1184,6 +1284,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
+
+	case Q_AARP:
+		bpf_error("AARP host filtering not implemented");
 
 	case Q_DECNET:
 		bpf_error("'decnet' modifier applied to ip6 host");
@@ -1338,6 +1441,10 @@ gen_proto_abbrev(proto)
 
 	case Q_ATALK:
 		b1 =  gen_linktype(ETHERTYPE_ATALK);
+		break;
+
+	case Q_AARP:
+		b1 =  gen_linktype(ETHERTYPE_AARP);
 		break;
 
 	case Q_DECNET:
