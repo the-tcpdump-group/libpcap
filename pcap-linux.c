@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.69 2001-10-25 06:46:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.70 2001-10-25 08:27:18 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -168,7 +168,7 @@ typedef int		socklen_t;
 /*
  * Prototypes for internal functions
  */
-static int map_arphrd_to_dlt(pcap_t *, int);
+static void map_arphrd_to_dlt(pcap_t *, int);
 static int live_open_old(pcap_t *, char *, int, int, char *);
 static int live_open_new(pcap_t *, char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -800,11 +800,9 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
  *  (If the offset isn't set here, it'll be 0; add code as appropriate
  *  for cases where it shouldn't be 0.)
  *  
- *  Returns -1 if unable to map the type; we print a message and,
- *  if we're using PF_PACKET/SOCK_RAW rather than PF_INET/SOCK_PACKET,
- *  we fall back on using PF_PACKET/SOCK_DGRAM.
+ *  Sets the link type to -1 if unable to map the type.
  */
-static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
+static void map_arphrd_to_dlt(pcap_t *handle, int arptype)
 {
 	switch (arptype) {
 
@@ -944,9 +942,9 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		break;
 
 	default:
-		return -1;
+		handle->linktype = -1;
+		break;
 	}
-	return 0;
 }
 
 /* ===== Functions to interface to the newer kernels ================== */
@@ -1016,7 +1014,8 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			arptype	= iface_get_arptype(sock_fd, device, ebuf);
 			if (arptype == -1) 
 				break;
-			if (map_arphrd_to_dlt(handle, arptype) == -1 ||
+			map_arphrd_to_dlt(handle, arptype);
+			if (handle->linktype == -1 ||
 			    handle->linktype == DLT_LINUX_SLL ||
 			    (handle->linktype == DLT_EN10MB &&
 			     (strncmp("isdn", device, 4) == 0 ||
@@ -1052,7 +1051,7 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 					 * to handle the new type.
 					 */
 					snprintf(ebuf, PCAP_ERRBUF_SIZE,
-						"Warning: arptype %d not "
+						"arptype %d not "
 						"supported by libpcap - "
 						"falling back to cooked "
 						"socket",
@@ -1396,7 +1395,8 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		 * type that has only an Ethernet packet type as
 		 * a link-layer header.
 		 */
-		if (map_arphrd_to_dlt(handle, arptype) == -1) {
+		map_arphrd_to_dlt(handle, arptype);
+		if (handle->linktype == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "interface type of %s not supported", device);
 			break;
