@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.113 2000-07-11 00:37:04 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.114 2000-07-13 06:51:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -276,6 +276,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	root = NULL;
 	bpf_pcap = p;
 	if (setjmp(top_ctx)) {
+		lex_cleanup();
 		freechunks();
 		return (-1);
 	}

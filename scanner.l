@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.64 2000-07-11 00:37:08 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.65 2000-07-13 06:51:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -59,30 +59,16 @@ static inline int xdtoi(int);
 
 #ifdef FLEX_SCANNER
 #define YY_NO_UNPUT
-#undef YY_INPUT
-#define YY_INPUT(buf, result, max)\
- {\
-	char *src = in_buffer;\
-	int i;\
-\
-	if (*src == 0)\
-		result = YY_NULL;\
-	else {\
-		for (i = 0; *src && i < max; ++i)\
-			buf[i] = *src++;\
-		in_buffer += i;\
-		result = i;\
-	}\
- }
+static YY_BUFFER_STATE in_buffer;
 #else
+static char *in_buffer;
+
 #undef getc
 #define getc(fp)  (*in_buffer == 0 ? EOF : *in_buffer++)
 #endif
 
 #define yylval pcap_lval
 extern YYSTYPE yylval;
-
-static char *in_buffer;
 
 %}
 
@@ -272,13 +258,23 @@ void
 lex_init(buf)
 	char *buf;
 {
-	in_buffer = buf;
 #ifdef FLEX_SCANNER
-	/*
-	 * Flush the scanner's input buffer, so that there's no cruft
-	 * left over from a previous parse.
-	 */
-	YY_FLUSH_BUFFER;
+	in_buffer = yy_scan_string(buf);
+#else
+	in_buffer = buf;
+#endif
+}
+
+/*
+ * Do any cleanup necessary after parsing.
+ */
+void
+lex_cleanup()
+{
+#ifdef FLEX_SCANNER
+	if (in_buffer != NULL)
+		yy_delete_buffer(in_buffer);
+	in_buffer = NULL;
 #endif
 }
 
@@ -331,4 +327,3 @@ stoi(s)
 
 	return n;
 }
-
