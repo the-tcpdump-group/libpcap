@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.67 2001-09-23 22:43:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.68 2001-10-08 01:06:21 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -237,6 +237,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	if (!device || strcmp(device, "any") == 0) {
 		device			= NULL;
 		handle->md.device	= strdup("any");
+		if (promisc) {
+			promisc = 0;
+			/* Just a warning. */
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "Promiscuous mode not supported on the \"any\" device");
+		}
+	
 	} else
 		handle->md.device	= strdup(device);
 

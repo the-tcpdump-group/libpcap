@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.22 2001-07-04 07:34:50 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.23 2001-10-08 01:06:21 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -28,17 +28,23 @@ pcap \- Packet Capture library
 #include <pcap.h>
 .ft
 .LP
+.nf
+.ft B
+char errbuf[PCAP_ERRBUF_SIZE];
+.ft
+.LP
 .ft B
 pcap_t *pcap_open_live(char *device, int snaplen,
 .ti +8
-int promisc, int to_ms, char *ebuf)
+int promisc, int to_ms, char *errbuf)
 pcap_t *pcap_open_dead(int linktype, int snaplen)
-pcap_t *pcap_open_offline(char *fname, char *ebuf)
+pcap_t *pcap_open_offline(char *fname, char *errbuf)
 pcap_dumper_t *pcap_dump_open(pcap_t *p, char *fname)
 .ft
 .LP
 .ft B
-char errbuf[PCAP_ERRBUF_SIZE];
+int pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
+void pcap_freealldevs(pcap_if_t *)
 char *pcap_lookupdev(char *errbuf)
 int pcap_lookupnet(char *device, bpf_u_int32 *netp,
 .ti +8
@@ -99,7 +105,9 @@ NOTE:
 .I errbuf
 in
 .B pcap_open_live(),
+.B pcap_open_dead(),
 .B pcap_open_offline(),
+.B pcap_findalldevs(),
 .B pcap_lookupdev(),
 and
 .B pcap_lookupnet()
@@ -134,20 +142,20 @@ is seen, but that it wait for some amount of time to allow more packets
 to arrive and to read multiple packets from the OS kernel in one
 operation.  Not all platforms support a read timeout; on platforms that
 don't, the read timeout is ignored.
-.I ebuf
+.I errbuf
 is used to return error or warning text.  It will be set to error text when
 .B pcap_open_live()
 fails and returns
 .BR NULL .
-.I ebuf
+.I errbuf
 may also be set to warning text when
 .B pcap_open_live()
 succeds; to detect this case the caller should store a zero-length string in
-.I ebuf
+.I errbuf
 before calling
 .B pcap_open_live()
 and display the warning to the user if
-.I ebuf
+.I errbuf
 is no longer a zero-length string.
 .PP
 .B pcap_open_dead()
@@ -166,7 +174,7 @@ and
 .BR tcpslice(1) .
 The name "-" in a synonym for
 .BR stdin .
-.I ebuf
+.I errbuf
 is used to return error text and is only set when
 .B pcap_open_offline()
 fails and returns
@@ -192,6 +200,97 @@ If
 is returned,
 .B pcap_geterr()
 can be used to get the error text.
+.PP
+.B pcap_findalldevs()
+constructs a list of network devices that can be opened with
+.BR pcap_open_live() .
+(Note that there may be network devices that cannot be opened with
+.BR pcap_open_live()
+by the
+process calling
+.BR pcap_findalldevs() ,
+because, for example, that process might not have sufficient privileges
+to open them for capturing; if so, those devices will not appear on the
+list.)
+.I alldevsp
+is set to point to the first element of the list; each element of the
+list is of type
+.BR pcap_if_t ,
+and has the following members:
+.RS
+.TP
+.B next
+if not
+.BR NULL ,
+a pointer to the next element in the list;
+.B NULL
+for the last element of the list
+.TP
+.B name
+a pointer to a string giving a name for the device to pass to
+.B pcap_open_live()
+.TP
+.B description
+if not
+.BR NULL ,
+a pointer to a string giving a human-readable description of the device
+.TP
+.B addresses
+a pointer to the first element of a list of addresses for the interface
+.TP
+.B is_loopback
+non-zero if the interface is a loopback interface
+.RE
+.PP
+Each element of the list of addresses is of type
+.BR pcap_addr_t ,
+and has the following members:
+.RS
+.TP
+.B next
+if not
+.BR NULL ,
+a pointer to the next element in the list;
+.B NULL
+for the last element of the list
+.TP
+.B addr
+a pointer to a
+.B "struct sockaddr"
+containing an address
+.TP
+.B netmask
+if not
+.BR NULL ,
+a pointer to a
+.B "struct sockaddr"
+that contains the netmask corresponding to the address pointed to by
+.B addr
+.TP
+.B broadaddr
+if not
+.BR NULL ,
+a pointer to a
+.B "struct sockaddr"
+that contains the broadcast address corresponding to the address pointed
+to by
+.BR addr ;
+may be null if the interface doesn't support broadcasts
+.TP
+.B dstaddr
+if not
+.BR NULL ,
+a pointer to a
+.B "struct sockaddr"
+that contains the destination address corresponding to the address pointed
+to by
+.BR addr ;
+may be null if the interface isn't a point-to-point interface
+.RE
+.PP
+.B pcap_freealldevs()
+is used to free a list allocated by
+.BR pcap_findalldevs() .
 .PP
 .B pcap_lookupdev()
 returns a pointer to a network device suitable for use with
