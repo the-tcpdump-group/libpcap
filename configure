@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.97 
+# From configure.in Revision: 1.98 
 
 
 
@@ -1619,6 +1619,13 @@ elif test -r /usr/include/linux/socket.h ; then
 	V_PCAP=linux
 elif test -r /usr/include/net/raw.h ; then
 	V_PCAP=snoop
+elif test -r /usr/include/odmi.h ; then
+	#
+	# On AIX, the BPF devices might not yet be present - they're
+	# created the first time libpcap runs after booting.
+	# We check for odmi.h instead.
+	#
+	V_PCAP=bpf
 elif test -r /usr/include/sys/dlpi.h ; then
 	V_PCAP=dlpi
 elif test -c /dev/bpf0 ; then		# check again in case not readable
@@ -1633,12 +1640,12 @@ fi
 echo "$ac_t""$V_PCAP" 1>&6
 
 echo $ac_n "checking for getifaddrs""... $ac_c" 1>&6
-echo "configure:1637: checking for getifaddrs" >&5
+echo "configure:1644: checking for getifaddrs" >&5
 if eval "test \"`echo '$''{'ac_cv_func_getifaddrs'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1642 "configure"
+#line 1649 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char getifaddrs(); below.  */
@@ -1661,7 +1668,7 @@ getifaddrs();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1665: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+if { (eval echo configure:1672: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
   rm -rf conftest*
   eval "ac_cv_func_getifaddrs=yes"
 else
@@ -1699,12 +1706,12 @@ else
 		# or it might be some other OS, with just SIOCGIFCONF.
 		#
 		echo $ac_n "checking whether we have SIOCGLIFCONF""... $ac_c" 1>&6
-echo "configure:1703: checking whether we have SIOCGLIFCONF" >&5
+echo "configure:1710: checking whether we have SIOCGLIFCONF" >&5
 		if eval "test \"`echo '$''{'ac_cv_lbl_have_siocglifconf'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1708 "configure"
+#line 1715 "configure"
 #include "confdefs.h"
 #include <sys/param.h>
 			#include <sys/file.h>
@@ -1715,7 +1722,7 @@ int main() {
 ioctl(0, SIOCGLIFCONF, (char *)0);
 ; return 0; }
 EOF
-if { (eval echo configure:1719: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1726: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_have_siocglifconf=yes
 else
@@ -1757,7 +1764,7 @@ fi
 
 
 echo $ac_n "checking if --enable-ipv6 option is specified""... $ac_c" 1>&6
-echo "configure:1761: checking if --enable-ipv6 option is specified" >&5
+echo "configure:1768: checking if --enable-ipv6 option is specified" >&5
 # Check whether --enable-ipv6 or --disable-ipv6 was given.
 if test "${enable_ipv6+set}" = set; then
   enableval="$enable_ipv6"
@@ -1773,7 +1780,7 @@ fi
 echo "$ac_t""${enable_ipv6-no}" 1>&6
 
 echo $ac_n "checking whether to build optimizer debugging code""... $ac_c" 1>&6
-echo "configure:1777: checking whether to build optimizer debugging code" >&5
+echo "configure:1784: checking whether to build optimizer debugging code" >&5
 # Check whether --enable-optimizer-dbg or --disable-optimizer-dbg was given.
 if test "${enable_optimizer_dbg+set}" = set; then
   enableval="$enable_optimizer_dbg"
@@ -1789,7 +1796,7 @@ fi
 echo "$ac_t""${enable_optimizer_dbg-no}" 1>&6
 
 echo $ac_n "checking whether to build parser debugging code""... $ac_c" 1>&6
-echo "configure:1793: checking whether to build parser debugging code" >&5
+echo "configure:1800: checking whether to build parser debugging code" >&5
 # Check whether --enable-yydebug or --disable-yydebug was given.
 if test "${enable_yydebug+set}" = set; then
   enableval="$enable_yydebug"
@@ -1811,17 +1818,17 @@ dlpi)
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
-echo "configure:1815: checking for $ac_hdr" >&5
+echo "configure:1822: checking for $ac_hdr" >&5
 if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1820 "configure"
+#line 1827 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
 ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
-{ (eval echo configure:1825: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
+{ (eval echo configure:1832: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
 ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
 if test -z "$ac_err"; then
   rm -rf conftest*
@@ -1848,7 +1855,7 @@ fi
 done
 
 	echo $ac_n "checking for /dev/dlpi device""... $ac_c" 1>&6
-echo "configure:1852: checking for /dev/dlpi device" >&5
+echo "configure:1859: checking for /dev/dlpi device" >&5
 	if test -c /dev/dlpi ; then
 		echo "$ac_t""yes" 1>&6
 		cat >> confdefs.h <<\EOF
@@ -1859,7 +1866,7 @@ EOF
 		echo "$ac_t""no" 1>&6
 		dir="/dev/dlpi"
 		echo $ac_n "checking for $dir directory""... $ac_c" 1>&6
-echo "configure:1863: checking for $dir directory" >&5
+echo "configure:1870: checking for $dir directory" >&5
 		if test -d $dir ; then
 			echo "$ac_t""yes" 1>&6
 			cat >> confdefs.h <<EOF
@@ -1874,7 +1881,7 @@ EOF
 
 linux)
 	echo $ac_n "checking Linux kernel version""... $ac_c" 1>&6
-echo "configure:1878: checking Linux kernel version" >&5
+echo "configure:1885: checking Linux kernel version" >&5
  	if test "$cross_compiling" = yes; then
  		if eval "test \"`echo '$''{'ac_cv_linux_vers'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1899,12 +1906,12 @@ fi
 		{ echo "configure: error: version 2 or higher required; see the INSTALL doc for more info" 1>&2; exit 1; }
 	fi
 	echo $ac_n "checking if if_packet.h has tpacket_stats defined""... $ac_c" 1>&6
-echo "configure:1903: checking if if_packet.h has tpacket_stats defined" >&5
+echo "configure:1910: checking if if_packet.h has tpacket_stats defined" >&5
    if eval "test \"`echo '$''{'ac_cv_lbl_tpacket_stats'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1908 "configure"
+#line 1915 "configure"
 #include "confdefs.h"
 
 #  include <linux/if_packet.h>
@@ -1912,7 +1919,7 @@ int main() {
 struct tpacket_stats stats
 ; return 0; }
 EOF
-if { (eval echo configure:1916: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:1923: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_tpacket_stats=yes
 else
@@ -1941,7 +1948,7 @@ null)
 esac
 
 echo $ac_n "checking whether we have /proc/net/dev""... $ac_c" 1>&6
-echo "configure:1945: checking whether we have /proc/net/dev" >&5
+echo "configure:1952: checking whether we have /proc/net/dev" >&5
 if test -r /proc/net/dev ; then
 	ac_cv_lbl_proc_net_dev=yes
 else
@@ -1975,7 +1982,7 @@ do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:1979: checking for $ac_word" >&5
+echo "configure:1986: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_V_LEX'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2009,7 +2016,7 @@ test -n "$V_LEX" || V_LEX="lex"
     if test "$V_LEX" = flex ; then
 	    # The -V flag was added in 2.4
 	    echo $ac_n "checking for flex 2.4 or higher""... $ac_c" 1>&6
-echo "configure:2013: checking for flex 2.4 or higher" >&5
+echo "configure:2020: checking for flex 2.4 or higher" >&5
 	    if eval "test \"`echo '$''{'ac_cv_lbl_flex_v24'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2035,7 +2042,7 @@ do
 # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2039: checking for $ac_word" >&5
+echo "configure:2046: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_V_YACC'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2082,7 +2089,7 @@ if test "$V_LEX" = lex ; then
 # Some versions of lex can't handle the definitions section of scanner.l .
 # Try lexing it and complain if it can't deal.
 	echo $ac_n "checking for capable lex""... $ac_c" 1>&6
-echo "configure:2086: checking for capable lex" >&5
+echo "configure:2093: checking for capable lex" >&5
 if eval "test \"`echo '$''{'tcpdump_cv_capable_lex'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2133,19 +2140,19 @@ EOF
 
 sinix*)
 	echo $ac_n "checking if SINIX compiler defines sinix""... $ac_c" 1>&6
-echo "configure:2137: checking if SINIX compiler defines sinix" >&5
+echo "configure:2144: checking if SINIX compiler defines sinix" >&5
 	if eval "test \"`echo '$''{'ac_cv_cc_sinix_defined'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2142 "configure"
+#line 2149 "configure"
 #include "confdefs.h"
 
 int main() {
 int i = sinix;
 ; return 0; }
 EOF
-if { (eval echo configure:2149: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2156: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_cc_sinix_defined=yes
 else
@@ -2177,7 +2184,7 @@ esac
 # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
 echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
-echo "configure:2181: checking for $ac_word" >&5
+echo "configure:2188: checking for $ac_word" >&5
 if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2245,12 +2252,12 @@ EOF
     fi
 
 echo $ac_n "checking if sockaddr struct has sa_len member""... $ac_c" 1>&6
-echo "configure:2249: checking if sockaddr struct has sa_len member" >&5
+echo "configure:2256: checking if sockaddr struct has sa_len member" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_sockaddr_has_sa_len'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2254 "configure"
+#line 2261 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2259,7 +2266,7 @@ int main() {
 u_int i = sizeof(((struct sockaddr *)0)->sa_len)
 ; return 0; }
 EOF
-if { (eval echo configure:2263: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2270: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_sockaddr_has_sa_len=yes
 else
@@ -2280,12 +2287,12 @@ EOF
     fi
 
 echo $ac_n "checking if sockaddr_storage struct exists""... $ac_c" 1>&6
-echo "configure:2284: checking if sockaddr_storage struct exists" >&5
+echo "configure:2291: checking if sockaddr_storage struct exists" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_has_sockaddr_storage'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2289 "configure"
+#line 2296 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2294,7 +2301,7 @@ int main() {
 u_int i = sizeof (struct sockaddr_storage)
 ; return 0; }
 EOF
-if { (eval echo configure:2298: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2305: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_has_sockaddr_storage=yes
 else
@@ -2315,12 +2322,12 @@ EOF
     fi
 
 echo $ac_n "checking if dl_hp_ppa_info_t struct has dl_module_id_1 member""... $ac_c" 1>&6
-echo "configure:2319: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
+echo "configure:2326: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2324 "configure"
+#line 2331 "configure"
 #include "confdefs.h"
 
 #	include <sys/types.h>
@@ -2330,7 +2337,7 @@ int main() {
 u_int i = sizeof(((dl_hp_ppa_info_t *)0)->dl_module_id_1)
 ; return 0; }
 EOF
-if { (eval echo configure:2334: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:2341: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=yes
 else
@@ -2351,7 +2358,7 @@ EOF
     fi
 
 echo $ac_n "checking if unaligned accesses fail""... $ac_c" 1>&6
-echo "configure:2355: checking if unaligned accesses fail" >&5
+echo "configure:2362: checking if unaligned accesses fail" >&5
     if eval "test \"`echo '$''{'ac_cv_lbl_unaligned_fail'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -2437,7 +2444,7 @@ ln -s ${srcdir}/bpf/net net
 # SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
 # ./install, which can be erroneously created by make from ./install.sh.
 echo $ac_n "checking for a BSD compatible install""... $ac_c" 1>&6
-echo "configure:2441: checking for a BSD compatible install" >&5
+echo "configure:2448: checking for a BSD compatible install" >&5
 if test -z "$INSTALL"; then
 if eval "test \"`echo '$''{'ac_cv_path_install'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
