@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.79 2003-04-09 09:55:20 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.80 2003-04-28 08:20:25 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -182,6 +182,7 @@ static const char rcsid[] =
 #define LINKTYPE_JUNIPER_MFR    134
 #define LINKTYPE_JUNIPER_ATM2   135
 #define LINKTYPE_JUNIPER_SERVICES 136
+#define LINKTYPE_JUNIPER_ATM1   137
 
 /*
  * These types are reserved for future use.
@@ -314,6 +315,7 @@ static struct linktype_map {
         { DLT_JUNIPER_MFR,      LINKTYPE_JUNIPER_MFR },
         { DLT_JUNIPER_ATM2,     LINKTYPE_JUNIPER_ATM2 },
         { DLT_JUNIPER_SERVICES, LINKTYPE_JUNIPER_SERVICES },
+        { DLT_JUNIPER_ATM1,     LINKTYPE_JUNIPER_ATM1 },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
