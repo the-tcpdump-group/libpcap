@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.10 2004-04-30 09:12:42 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.11 2005-01-29 00:52:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -155,8 +155,7 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	if (add_or_find_if(&curdev, devlist, (char *)name, 0, (char *)desc,
-	    errbuf) == -1) {
+	if (add_or_find_if(&curdev, devlist, name, 0, desc, errbuf) == -1) {
 		/*
 		 * Failure.
 		 */
@@ -277,14 +276,13 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	name = &AdaptersName[0];
 	while (*name != '\0') {
-	/*
-	 * Add an entry for this interface.
-	 */
-	if (pcap_add_if_win32(&devlist, name, desc,
-			errbuf) == -1) {
+		/*
+		 * Add an entry for this interface.
+		 */
+		if (pcap_add_if_win32(&devlist, name, desc, errbuf) == -1) {
 			/*
-			* Failure.
-			*/
+			 * Failure.
+			 */
 			ret = -1;
 			break;
 		}
@@ -293,10 +291,10 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 	
 	if (ret == -1) {
-	/*
-	 * We had an error; free the list we've been constructing.
-	 */
-	if (devlist != NULL) {
+		/*
+		 * We had an error; free the list we've been constructing.
+		 */
+		if (devlist != NULL) {
 			pcap_freealldevs(devlist);
 			devlist = NULL;
 		}
