@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.50 2001-11-02 08:03:39 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.51 2001-11-28 05:50:05 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -300,6 +300,19 @@ struct bpf_hdr {
  * Registered for Cisco-internal use.
  */
 #define DLT_CISCO_IOS	118
+
+/*
+ * Reserved for 802.11 cards using the Prism II chips, with a link-layer
+ * header including Prism monitor mode information plus an 802.11
+ * header.
+ */
+#define DLT_PRISM_HEADER	119
+
+/*
+ * Reserved for Aironet 802.11 cards, with an Aironet link-layer header
+ * (see Doug Ambrisko's FreeBSD patches).
+ */
+#define DLT_AIRONET_HEADER	120
 
 /*
  * The instruction encodings.
