@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.102 2004-02-11 22:06:59 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.103 2004-03-11 19:56:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -149,6 +149,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_PPP_HDLC	50		/* PPP in HDLC-like framing */
 
 #define LINKTYPE_PPP_ETHER	51		/* NetBSD PPP-over-Ethernet */
+
+#define LINKTYPE_SYMANTEC_FIREWALL 99		/* Symantec Enterprise Firewall */
 
 #define LINKTYPE_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
 #define LINKTYPE_RAW		101		/* raw IP */
@@ -284,6 +286,8 @@ static struct linktype_map {
 	/* BSD/OS Frame Relay */
 	{ DLT_FR,		LINKTYPE_FRELAY },
 #endif
+
+	{ DLT_SYMANTEC_FIREWALL, LINKTYPE_SYMANTEC_FIREWALL },
 	{ DLT_ATM_RFC1483, 	LINKTYPE_ATM_RFC1483 },
 	{ DLT_RAW,		LINKTYPE_RAW },
 	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
