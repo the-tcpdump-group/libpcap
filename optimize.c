@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.68 2001-10-13 04:23:28 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.69 2001-11-12 21:57:06 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -940,7 +940,10 @@ opt_stmt(s, val, alter)
 		op = BPF_OP(s->code);
 		if (alter) {
 			if (s->k == 0) {
-				if (op == BPF_ADD || op == BPF_SUB ||
+				/* don't optimize away "sub #0"
+				 * as it may be needed later to
+				 * fixup the generated math code */
+				if (op == BPF_ADD ||
 				    op == BPF_LSH || op == BPF_RSH ||
 				    op == BPF_OR) {
 					s->code = NOP;
