@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.83 2000-09-18 05:04:52 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.84 2000-09-19 14:52:41 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -136,14 +136,17 @@ bpf_filter.o: bpf_filter.c
 	$(CC) $(CFLAGS) -c bpf_filter.c
 
 install:
-	[ -d $(DESTDIR)$(libdir) ] || mkdir -p $(DESTDIR)$(libdir)
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
 	$(RANLIB) $(DESTDIR)$(libdir)/libpcap.a
-	[ -d $(DESTDIR)$(libdir) ] || mkdir -p $(DESTDIR)$(includedir)
+	[ -d $(DESTDIR)$(includedir) ] || \
+	    (mkdir -p $(DESTDIR)$(includedir); chmod 755 $(DESTDIR)$(includedir))
 	$(INSTALL_DATA) $(srcdir)/pcap.h $(DESTDIR)$(includedir)/pcap.h
 	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
 	    $(DESTDIR)$(includedir)/pcap-namedb.h
-	[ -d $(DESTDIR)$(libdir) ] || mkdir -p $(DESTDIR)$(includedir)/net
+	[ -d $(DESTDIR)$(includedir)/net ] || \
+	    (mkdir -p $(DESTDIR)$(includedir)/net; chmod 755 $(DESTDIR)$(includedir)/net)
 	$(INSTALL_DATA) $(srcdir)/bpf/net/bpf.h \
 	    $(DESTDIR)$(includedir)/net/bpf.h
 	$(INSTALL_DATA) $(srcdir)/pcap.3 \
