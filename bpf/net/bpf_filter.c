@@ -40,7 +40,7 @@
 
 #if !(defined(lint) || defined(KERNEL) || defined(_KERNEL))
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.38 2002-08-02 03:44:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.39 2003-01-10 09:14:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef WIN32
@@ -77,7 +77,7 @@ static const char rcsid[] =
 #define u_int32 bpf_u_int32
 
 #ifndef LBL_ALIGN
-#if defined(sparc) || defined(mips) || defined(ibm032) || \
+#if defined(sparc) || define(__sparc__) || defined(mips) || defined(ibm032) || \
     defined(__alpha) || defined(__hpux)
 #define LBL_ALIGN
 #endif
