@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.66 2001-05-21 03:50:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.67 2001-05-21 07:33:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -95,6 +95,7 @@ static const char rcsid[] =
 #define	MAXDLBUF	8192
 
 /* Forwards */
+static char *split_dname(char *, int *, char *);
 static int dlattachreq(int, bpf_u_int32, char *);
 static int dlbindack(int, char *, char *);
 static int dlbindreq(int, bpf_u_int32, char *);
@@ -226,9 +227,8 @@ pcap_t *
 pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
 	register char *cp;
-	char *eos;
 	register pcap_t *p;
-	register int ppa;
+	int ppa;
 	register dl_info_ack_t *infop;
 #ifdef HAVE_SYS_BUFMOD_H
 	bpf_u_int32 ss, flag;
@@ -262,20 +262,12 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	strlcpy(dname, cp, sizeof(dname));
 
 	/*
-	 * Split the name into a device type and a unit number.
+	 * Split the device name into a device type name and a unit number;
+	 * chop off the unit number, so "dname" is just a device type name.
 	 */
-	cp = strpbrk(dname, "0123456789");
-	if (cp == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "%s missing unit number", device);
+	cp = split_dname(dname, &ppa, ebuf);
+	if (cp == NULL)
 		goto bad;
-	}
-	ppa = strtol(cp, &eos, 10);
-	if (*eos != '\0') {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "%s bad unit number", device);
-		goto bad;
-	}
 	*cp = '\0';
 
 	/*
@@ -305,33 +297,31 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		goto bad;
 #else
 	/*
-	** Determine device and ppa
-	*/
-	cp = device+strlen(device)-1;  /* Start at end of string */
-	if (*cp < '0' || *cp > '9') {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s missing unit number",
-		    device);
+	 * Get the unit number, and a pointer to the end of the device
+	 * type name.
+	 */
+	cp = split_dname(device, &ppa, ebuf);
+	if (cp == NULL)
 		goto bad;
-	}
 
-	/* Digits at end of string are unit number */
-	while (cp-1 >= device && *(cp-1) >= '0' && *(cp-1) <= '9')
-		cp--;
-
-	ppa = strtol(cp, &eos, 10);
-	if (*eos != '\0') {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
-		goto bad;
-	}
-
+	/*
+	 * If the device name begins with "/", assume it begins with
+	 * the pathname of the directory containing the device to open;
+	 * otherwise, concatenate the device directory name and the
+	 * device name.
+	 */
 	if (*device == '/')
 		strlcpy(dname, device, sizeof(dname));
 	else
 		snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
 		    device);
 
+	/*
+	 * Make a copy of the device pathname, and then remove the unit
+	 * number from the device pathname.
+	 */
 	strlcpy(dname2, dname, sizeof(dname));
-	*(dname+strlen(dname)-strlen(cp))='\0';
+	*(dname + strlen(dname) - strlen(cp)) = '\0';
 
 	/* Try device without unit number */
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
@@ -559,6 +549,44 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 bad:
 	free(p);
 	return (NULL);
+}
+
+/*
+ * Split a device name into a device type name and a unit number;
+ * return the a pointer to the beginning of the unit number, which
+ * is the end of the device type name, and set "*unitp" to the unit
+ * number.
+ *
+ * Returns NULL on error, and fills "ebuf" with an error message.
+ */
+static char *
+split_dname(char *device, int *unitp, char *ebuf)
+{
+	char *cp;
+	char *eos;
+	int unit;
+
+	/*
+	 * Look for a number at the end of the device name string.
+	 */
+	cp = device + strlen(device) - 1;
+	if (*cp < '0' || *cp > '9') {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s missing unit number",
+		    device);
+		return (NULL);
+	}
+
+	/* Digits at end of string are unit number */
+	while (cp-1 >= device && *(cp-1) >= '0' && *(cp-1) <= '9')
+		cp--;
+
+	unit = strtol(cp, &eos, 10);
+	if (*eos != '\0') {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
+		return (NULL);
+	}
+	*unitp = unit;
+	return (cp);
 }
 
 int
