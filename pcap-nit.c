@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.33 2000-04-27 11:16:20 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.34 2000-04-27 14:24:12 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -175,7 +175,7 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 		nioc.nioc_flags |= NF_PROMISC;
 
 	if (ioctl(fd, SIOCSNIT, &nioc) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SIOCSNIT: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -191,7 +191,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUFF_SIZE);
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		return (NULL);
 	}
 
@@ -204,7 +204,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	bzero(p, sizeof(*p));
 	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
 	if (fd < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		goto bad;
 	}
@@ -212,7 +212,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	(void)strncpy(snit.snit_ifname, device, NITIFSIZ);
 
 	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
 		goto bad;
 	}
@@ -227,7 +227,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUFF_SIZE);
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
 	}
 	return (p);

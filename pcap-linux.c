@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.17 2000-04-27 11:16:19 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.18 2000-04-27 14:24:12 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -148,7 +148,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, PCAP_ERRBUFF_SIZE,
+		snprint(ebuf, PCAP_ERRBUF_SIZE, PCAP_ERRBUF_SIZE,
 		    "malloc: %s", pcap_strerror(errno));
 		return (NULL);
 	}
@@ -157,7 +157,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
 	if (fd < 0) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, "socket: %s",
+		snprint(ebuf, PCAP_ERRBUF_SIZE, "socket: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -168,7 +168,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	sa.sa_family = AF_INET;
 	(void)strncpy(sa.sa_data, device, sizeof(sa.sa_data));
 	if (bind(p->fd, &sa, sizeof(sa))) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, "bind: %s: %s", device,
+		snprint(ebuf, PCAP_ERRBUF_SIZE, "bind: %s: %s", device,
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -176,7 +176,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(p->fd, SIOCGIFHWADDR, &ifr) < 0 ) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFHWADDR: %s",
+		snprint(ebuf, PCAP_ERRBUF_SIZE, "SIOCGIFHWADDR: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -256,7 +256,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 #endif
 
 	default:
-		snprint(ebuf, PCAP_ERRBUFF_SIZE,
+		snprint(ebuf, PCAP_ERRBUF_SIZE,
 		    "unknown physical layer type 0x%x",
 		    ifr.ifr_hwaddr.sa_family);
 		goto bad;
@@ -266,7 +266,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(p->fd, SIOCGIFMTU, &ifr) < 0 ) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFMTU: %s",
+		snprint(ebuf, PCAP_ERRBUF_SIZE, "SIOCGIFMTU: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -276,7 +276,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, "malloc: %s",
+		snprint(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -286,14 +286,14 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		memset(&ifr, 0, sizeof(ifr));
 		strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 		if (ioctl(p->fd, SIOCGIFFLAGS, &ifr) < 0 ) {
-			snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCGIFFLAGS: %s",
+			snprint(ebuf, PCAP_ERRBUF_SIZE, "SIOCGIFFLAGS: %s",
 			    pcap_strerror(errno));
 			goto bad;
 		}
 		saved_ifr = ifr;
 		ifr.ifr_flags |= IFF_PROMISC;
 		if (ioctl(p->fd, SIOCSIFFLAGS, &ifr) < 0 ) {
-			snprint(ebuf, PCAP_ERRBUFF_SIZE, "SIOCSIFFLAGS: %s",
+			snprint(ebuf, PCAP_ERRBUF_SIZE, "SIOCSIFFLAGS: %s",
 			    pcap_strerror(errno));
 			goto bad;
 		}
@@ -303,7 +303,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p->md.device = strdup(device);
 	if (p->md.device == NULL) {
-		snprint(ebuf, PCAP_ERRBUFF_SIZE, "malloc: %s",
+		snprint(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}

@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.55 2000-04-27 11:16:19 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.56 2000-04-27 14:24:12 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -242,7 +242,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUFF_SIZE);
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		return (NULL);
 	}
 	memset(p, 0, sizeof(*p));
@@ -252,13 +252,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	*/
 	cp = strpbrk(device, "0123456789");
 	if (cp == NULL) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s missing unit number", device);
 		goto bad;
 	}
 	ppa = strtol(cp, &eos, 10);
 	if (*eos != '\0') {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s bad unit number", device);
 		goto bad;
 	}
@@ -273,7 +273,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	/* Map network device to /dev/dlpi unit */
 	cp = "/dev/dlpi";
 	if ((p->fd = open(cp, O_RDWR)) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s: %s", cp, pcap_strerror(errno));
 		goto bad;
 	}
@@ -288,14 +288,14 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	*cp = '\0';
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
 		if (errno != ENOENT) {
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE, "%s: %s", dname,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
 			    pcap_strerror(errno));
 			goto bad;
 		}
 
 		/* Try again with unit number */
 		if ((p->fd = open(dname2, O_RDWR)) < 0) {
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE, "%s: %s", dname2,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dname2,
 			    pcap_strerror(errno));
 			goto bad;
 		}
@@ -406,7 +406,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		break;
 
 	default:
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "unknown mac type 0x%lu",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown mac type 0x%lu",
 		    infop->dl_mac_type);
 		goto bad;
 	}
@@ -416,7 +416,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	** This is a non standard SunOS hack to get the ethernet header.
 	*/
 	if (strioctl(p->fd, DLIOCRAW, 0, NULL) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "DLIOCRAW: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "DLIOCRAW: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -427,7 +427,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	** Another non standard call to get the data nicely buffered
 	*/
 	if (ioctl(p->fd, I_PUSH, "bufmod") != 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "I_PUSH bufmod: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "I_PUSH bufmod: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -455,7 +455,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 #endif
 	if (ss > 0 &&
 	    strioctl(p->fd, SBIOCSSNAP, sizeof(ss), (char *)&ss) != 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SBIOCSSNAP: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCSSNAP: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -464,13 +464,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	** Set up the bufmod flags
 	*/
 	if (strioctl(p->fd, SBIOCGFLAGS, sizeof(flag), (char *)&flag) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SBIOCGFLAGS: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCGFLAGS: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 	flag |= SB_NO_DROPS;
 	if (strioctl(p->fd, SBIOCSFLAGS, sizeof(flag), (char *)&flag) != 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SBIOCSFLAGS: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCSFLAGS: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -483,7 +483,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		to.tv_sec = to_ms / 1000;
 		to.tv_usec = (to_ms * 1000) % 1000000;
 		if (strioctl(p->fd, SBIOCSTIME, sizeof(to), (char *)&to) != 0) {
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE, "SBIOCSTIME: %s",
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "SBIOCSTIME: %s",
 			    pcap_strerror(errno));
 			goto bad;
 		}
@@ -494,7 +494,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	** As the last operation flush the read side.
 	*/
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "FLUSHR: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -528,7 +528,7 @@ send_request(int fd, char *ptr, int len, char *what, char *ebuf)
 
 	flags = 0;
 	if (putmsg(fd, &ctl, (struct strbuf *) NULL, flags) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "send_request: putmsg \"%s\": %s",
 		    what, pcap_strerror(errno));
 		return (-1);
@@ -549,7 +549,7 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 
 	flags = 0;
 	if (getmsg(fd, &ctl, (struct strbuf*)NULL, &flags) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "recv_ack: %s getmsg: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s getmsg: %s",
 		    what, pcap_strerror(errno));
 		return (-1);
 	}
@@ -571,24 +571,24 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 		switch (dlp->error_ack.dl_errno) {
 
 		case DL_BADPPA:
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s bad ppa (device unit)", what);
 			break;
 
 
 		case DL_SYSERR:
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE, "recv_ack: %s: %s",
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
 			    what, pcap_strerror(dlp->error_ack.dl_unix_errno));
 			break;
 
 		case DL_UNSUPPORTED:
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s: Service not supplied by provider",
 			    what);
 			break;
 
 		default:
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s error 0x%x",
 			    what, (bpf_u_int32)dlp->error_ack.dl_errno);
 			break;
@@ -596,14 +596,14 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 		return (-1);
 
 	default:
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s unexpected primitive ack 0x%x ",
 		    what, (bpf_u_int32)dlp->dl_primitive);
 		return (-1);
 	}
 
 	if (ctl.len < size) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s ack too small (%d < %d)",
 		    what, ctl.len, size);
 		return (-1);
@@ -754,7 +754,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	bpf_u_int32 buf[MAXDLBUF];
 
 	if (stat(device, &statbuf) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "stat: %s: %s", device, pcap_strerror(errno));
 		return (-1);
 	}
@@ -778,12 +778,12 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
                 ip = (dl_hp_ppa_info_t *)((u_char *)ip + ip->dl_next_offset);
         }
         if (i == ap->dl_count) {
-                snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+                snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "can't find PPA for %s", device);
 		return (-1);
         }
         if (ip->dl_hdw_state == HDW_DEAD) {
-                snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+                snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s: hardware state: DOWN\n", device);
 		return (-1);
         }
@@ -819,19 +819,19 @@ get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
 	if (cp != NULL)
 		ifname = cp + 1;
 	if (nlist(path_vmunix, &nl) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "nlist %s failed",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "nlist %s failed",
 		    path_vmunix);
 		return (-1);
 	}
 	if (nl[NL_IFNET].n_value == 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "could't find %s kernel symbol",
 		    nl[NL_IFNET].n_name);
 		return (-1);
 	}
 	kd = open("/dev/kmem", O_RDONLY);
 	if (kd < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "kmem open: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "kmem open: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -854,7 +854,7 @@ get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
 			return (ifnet.if_index);
 	}
 
-	snprintf(ebuf, PCAP_ERRBUFF_SIZE, "Can't find %s", ifname);
+	snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't find %s", ifname);
 	return (-1);
 }
 
@@ -865,17 +865,17 @@ dlpi_kread(register int fd, register off_t addr,
 	register int cc;
 
 	if (lseek(fd, addr, SEEK_SET) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "lseek: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "lseek: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
 	cc = read(fd, buf, len);
 	if (cc < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "read: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "read: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	} else if (cc != len) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "short read (%d != %d)", cc,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "short read (%d != %d)", cc,
 		    len);
 		return (-1);
 	}

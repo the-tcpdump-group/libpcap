@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.55 2000-04-27 09:11:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.56 2000-04-27 14:24:13 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -212,14 +212,14 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "pcap_open_live: %s", pcap_strerror(errno));
 		return (0);
 	}
 	bzero((char *)p, sizeof(*p));
 	p->fd = pfopen(device, O_RDONLY);
 	if (p->fd < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "pf open: %s: %s\n\
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
 your system may not be properly configured; see \"man packetfilter(4)\"\n",
 			device, pcap_strerror(errno));
 		goto bad;
@@ -229,7 +229,7 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 	if (promisc)
 		enmode |= ENPROMISC;
 	if (ioctl(p->fd, EIOCMBIS, (caddr_t)&enmode) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "EIOCMBIS: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCMBIS: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -240,13 +240,13 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 #endif
 	/* set the backlog */
 	if (ioctl(p->fd, EIOCSETW, (caddr_t)&backlog) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "EIOCSETW: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCSETW: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 	/* discover interface type */
 	if (ioctl(p->fd, EIOCDEVP, (caddr_t)&devparams) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "EIOCDEVP: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCDEVP: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -288,7 +288,7 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 		snaplen += pcap_fddipad;
 #endif
 	if (ioctl(p->fd, EIOCTRUNCATE, (caddr_t)&snaplen) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "EIOCTRUNCATE: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCTRUNCATE: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -298,7 +298,7 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 	Filter.enf_Priority = 37;	/* anything > 2 */
 	Filter.enf_FilterLen = 0;	/* means "always true" */
 	if (ioctl(p->fd, EIOCSETF, (caddr_t)&Filter) < 0) {
-		snprintf(ebuf, PCAP_ERRBUFF_SIZE, "EIOCSETF: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCSETF: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -308,7 +308,7 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 		timeout.tv_sec = to_ms / 1000;
 		timeout.tv_usec = (to_ms * 1000) % 1000000;
 		if (ioctl(p->fd, EIOCSRTIMEOUT, (caddr_t)&timeout) < 0) {
-			snprintf(ebuf, PCAP_ERRBUFF_SIZE, "EIOCSRTIMEOUT: %s",
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCSRTIMEOUT: %s",
 				pcap_strerror(errno));
 			goto bad;
 		}

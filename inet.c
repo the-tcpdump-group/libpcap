@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.31 2000-04-27 11:18:02 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.32 2000-04-27 14:24:11 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -153,7 +153,7 @@ pcap_lookupdev(errbuf)
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUFF_SIZE,
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		return (NULL);
 	}
@@ -164,7 +164,7 @@ pcap_lookupdev(errbuf)
 		buf = malloc (buf_size);
 		if (buf == NULL) {
 			close (fd);
-			(void)snprintf(errbuf, PCAP_ERRBUFF_SIZE,
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "out of memory");
 			return (NULL);
 		}
@@ -175,7 +175,7 @@ pcap_lookupdev(errbuf)
 		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0
 		    && errno != EINVAL) {
 			free (buf);
-			(void)snprintf(errbuf, PCAP_ERRBUFF_SIZE,
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGIFCONF: %s", pcap_strerror(errno));
 			(void)close(fd);
 			return (NULL);
