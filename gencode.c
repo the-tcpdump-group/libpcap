@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.193.2.1 2003-11-15 23:26:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.193.2.2 2003-12-18 20:37:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -954,6 +954,15 @@ init_linktype(type)
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
+
+	case DLT_LINUX_IRDA:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -1700,6 +1709,9 @@ gen_linktype(proto)
 			return gen_false();
 		}
 		break;
+
+	case DLT_LINUX_IRDA:
+	        bpf_error("IrDA link-layer type filtering not implemented");
 	}
 
 	/*
