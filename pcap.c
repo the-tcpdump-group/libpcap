@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.52 2003-04-10 06:10:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.53 2003-05-26 08:52:42 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -134,12 +134,12 @@ pcap_fakecallback(u_char *userData, const struct pcap_pkthdr *h,
 	struct pkt_for_fakecallback *sp = (struct pkt_for_fakecallback *)userData;
 
 	*sp->hdr = *h;
-	*sp->pkt = pkt;
+	*sp->pkt = (u_char *) pkt;
 }
 
 int 
 pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
-    const u_char **pkt_data)
+    u_char **pkt_data)
 {
 	struct pkt_for_fakecallback s;
 
