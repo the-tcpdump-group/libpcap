@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.65 2004-10-19 07:06:12 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.66 2004-12-15 00:25:09 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -111,6 +111,10 @@ struct pcap {
 	int offset;		/* offset for proper alignment */
 
 	int break_loop;		/* flag set to force break from packet-reading loop */
+
+#ifdef PCAP_FDDIPAD
+	int fddipad;
+#endif
 
 	struct pcap_sf sf;
 	struct pcap_md md;
@@ -283,9 +287,6 @@ int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
 #ifdef WIN32
 char	*pcap_win32strerror(void);
 #endif
-
-/* XXX */
-extern	int pcap_fddipad;
 
 int	install_bpf_program(pcap_t *, struct bpf_program *);
 

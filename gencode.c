@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.212 2004-11-06 22:57:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.213 2004-12-15 00:25:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -102,9 +102,7 @@ static u_int	orig_linktype = -1U, orig_nl = -1U, orig_nl_nosnap = -1U;
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
-int	pcap_fddipad = PCAP_FDDIPAD;
-#else
-int	pcap_fddipad;
+static int	pcap_fddipad;
 #endif
 
 /* VARARGS */
@@ -123,7 +121,7 @@ bpf_error(const char *fmt, ...)
 	/* NOTREACHED */
 }
 
-static void init_linktype(int);
+static void init_linktype(pcap_t *);
 
 static int alloc_reg(void);
 static void free_reg(int);
@@ -133,8 +131,10 @@ static struct block *root;
 /*
  * We divy out chunks of memory rather than call malloc each time so
  * we don't have to worry about leaking memory.  It's probably
- * not a big deal if all this memory was wasted but it this ever
+ * not a big deal if all this memory was wasted but if this ever
  * goes into a library that would probably not be a good idea.
+ *
+ * XXX - this *is* in a library....
  */
 #define NCHUNKS 16
 #define CHUNK0SIZE 1024
@@ -341,7 +341,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 
 	lex_init(buf ? buf : "");
-	init_linktype(pcap_datalink(p));
+	init_linktype(p);
 	(void)pcap_parse();
 
 	if (n_errors)
@@ -679,10 +679,13 @@ static u_int off_nl_nosnap;
 static int linktype;
 
 static void
-init_linktype(type)
-	int type;
+init_linktype(p)
+	pcap_t *p;
 {
-	linktype = type;
+	linktype = pcap_datalink(p);
+#ifdef PCAP_FDDIPAD
+	pcap_fddipad = p->fddipad;
+#endif
 
 	/*
 	 * Assume it's not raw ATM with a pseudo-header, for now.
@@ -699,7 +702,7 @@ init_linktype(type)
 	orig_nl = -1;
 	orig_nl_nosnap = -1;
 
-	switch (type) {
+	switch (linktype) {
 
 	case DLT_ARCNET:
 		off_linktype = 2;

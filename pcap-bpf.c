@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.83 2004-12-14 23:55:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.84 2004-12-15 00:25:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -229,10 +229,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #define bhp ((struct bpf_hdr *)bp)
 	ep = bp + cc;
 #ifdef PCAP_FDDIPAD
-	if (pc->linktype == DLT_FDDI)
-		pad = pcap_fddipad;
-	else
-		pad = 0;
+	pad = p->fddipad;
 #endif
 	while (bp < ep) {
 		register int caplen, hdrlen;
@@ -266,7 +263,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 *
 #ifdef PCAP_FDDIPAD
 		 * Note: the filter code was generated assuming
-		 * that pcap_fddipad was the amount of padding
+		 * that p->fddipad was the amount of padding
 		 * before the header, as that's what's required
 		 * in the kernel, so we run the filter before
 		 * skipping that padding.
@@ -727,6 +724,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		v = DLT_CHDLC;
 		break;
 	}
+#endif
+#ifdef PCAP_FDDIPAD
+	if (v == DLT_FDDI)
+		p->fddipad = PCAP_FDDIPAD:
+	else
+		p->fddipad = 0;
 #endif
 	p->linktype = v;
 

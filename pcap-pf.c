@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.89 2004-12-15 00:05:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.90 2004-12-15 00:25:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -129,10 +129,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	 */
 	n = 0;
 #ifdef PCAP_FDDIPAD
-	if (pc->linktype == DLT_FDDI)
-		pad = pcap_fddipad;
-	else
-		pad = 0;
+	pad = p->fddipad;
 #endif
 	while (cc > 0) {
 		/*
@@ -194,7 +191,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		 *
 #ifdef PCAP_FDDIPAD
 		 * Note: the filter code was generated assuming
-		 * that pcap_fddipad was the amount of padding
+		 * that p->fddipad was the amount of padding
 		 * before the header, as that's what's required
 		 * in the kernel, so we run the filter before
 		 * skipping that padding.
@@ -450,9 +447,13 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	}
 	/* set truncation */
 #ifdef PCAP_FDDIPAD
-	if (p->linktype == DLT_FDDI)
+	if (p->linktype == DLT_FDDI) {
+		p->fddipad = PCAP_FDDIPAD:
+
 		/* packetfilter includes the padding in the snapshot */
-		snaplen += pcap_fddipad;
+		snaplen += PCAP_FDDIPAD;
+	} else
+		p->fddipad = 0;
 #endif
 	if (ioctl(p->fd, EIOCTRUNCATE, (caddr_t)&snaplen) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCTRUNCATE: %s",

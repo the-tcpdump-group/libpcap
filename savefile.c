@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.115 2004-12-09 19:03:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.116 2004-12-15 00:25:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -766,8 +766,8 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->sf.version_major = hdr.version_major;
 	p->sf.version_minor = hdr.version_minor;
 #ifdef PCAP_FDDIPAD
-	/* XXX padding only needed for kernel fcode */
-	pcap_fddipad = 0;
+	/* Padding only needed for live capture fcode */
+	p->fddipad = 0;
 #endif
 
 	/*
