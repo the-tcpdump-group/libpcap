@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.25 2004-10-29 02:15:08 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.26 2004-12-07 17:27:45 guy Exp $ (LBL)
  */
 
 /*
@@ -525,6 +525,8 @@ struct bpf_version {
  */
 #define DLT_JUNIPER_PPPOE       167
 #define DLT_JUNIPER_PPPOE_ATM   168
+
+#define DLT_GPRS_LLC		169	/* GPRS LLC */
 
 /*
  * The instruction encodings.

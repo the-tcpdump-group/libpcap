@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.113 2004-11-30 10:51:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.114 2004-12-07 17:27:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -349,6 +349,7 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_JUNIPER_PPPOE     167
 #define LINKTYPE_JUNIPER_PPPOE_ATM 168
 
+#define LINKTYPE_GPRS_LLC	169		/* GPRS LLC */
 
 static struct linktype_map {
 	int	dlt;
@@ -520,6 +521,9 @@ static struct linktype_map {
 	/* Juniper-internal chassis encapsulation */
         { DLT_JUNIPER_PPPOE,    LINKTYPE_JUNIPER_PPPOE },
         { DLT_JUNIPER_PPPOE_ATM,LINKTYPE_JUNIPER_PPPOE_ATM },
+
+	/* GPRS LLC */
+	{ DLT_GPRS_LLC,		LINKTYPE_GPRS_LLC },
 
 	{ -1,			-1 }
 };
