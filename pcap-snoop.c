@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.30 2000-10-28 00:01:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.31 2001-06-05 03:48:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -179,6 +179,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	    strncmp("vfe", device, 3) == 0 ||	/* Challenge VME 100Mbit */
 	    strncmp("fa", device, 2) == 0 ||
 	    strncmp("qaa", device, 3) == 0 ||
+	    strncmp("cip", device, 3) == 0 ||
 	    strncmp("el", device, 2) == 0) {
 		p->linktype = DLT_EN10MB;
 		p->offset = RAW_HDRPAD(sizeof(struct ether_header));
