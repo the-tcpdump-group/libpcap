@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.40 2000-11-04 07:19:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.41 2000-12-03 09:07:27 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -516,6 +516,10 @@ static int map_arphrd_to_dlt(int arptype)
 	case ARPHRD_AX25:	return DLT_AX25;
 	case ARPHRD_PRONET:	return DLT_PRONET;
 	case ARPHRD_CHAOS:	return DLT_CHAOS;
+#ifndef ARPHRD_IEEE802_TR
+#define ARPHRD_IEEE802_TR 800	/* From Linux 2.4 */
+#endif
+	case ARPHRD_IEEE802_TR:
 	case ARPHRD_IEEE802:	return DLT_IEEE802;
 	case ARPHRD_ARCNET:	return DLT_ARCNET;
 	case ARPHRD_FDDI:	return DLT_FDDI;
