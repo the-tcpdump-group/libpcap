@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.34 2002-07-11 09:06:44 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.35 2002-09-06 21:14:46 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -494,8 +494,14 @@ struct and is filled in by
 .I optimize
 controls whether optimization on the resulting code is performed.
 .I netmask
-specifies the netmask of the local net.
-A return of \-1 indicates an error in which case
+specifies the IPv4 netmask of the network on which packets are being
+captured; it is used only when checking for IPv4 broadcast addresses in
+the filter program.  If the netmask of the network on which packets are
+being captured isn't known to the program, or if packets are being
+captured on the Linux "any" pseudo-interface that can capture on more
+than one network, a value of 0 can be supplied; tests for IPv4 broadcast
+addreses won't be done correctly, but all other tests in the filter
+program will be OK.  A return of \-1 indicates an error in which case
 .BR pcap_geterr()
 may be used to display the error text.
 .PP
