@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.40 2000-10-12 03:54:02 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.41 2000-11-15 05:36:49 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -232,6 +232,18 @@ struct bpf_hdr {
  */
 #define DLT_C_HDLC	104	/* Cisco HDLC */
 #define DLT_CHDLC	DLT_C_HDLC
+
+/*
+ * Reserved for future use.
+ * Do not pick other numerical value for these unless you have also
+ * picked up the tcpdump.org top-of-CVS-tree version of "savefile.c",
+ * which will arrange that capture files for these DLT_ types have
+ * the same "network" value on all platforms, regardless of what
+ * value is chosen for their DLT_ type (thus allowing captures made
+ * on one platform to be read on other platforms, even if the two
+ * platforms don't use the same numerical values for all DLT_ types).
+ */
+#define DLT_IEEE802_11	105	/* IEEE 802.11 wireless */
 
 /*
  * The instruction encondings.

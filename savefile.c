@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.45 2000-11-15 05:31:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.46 2000-11-15 05:36:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -208,6 +208,9 @@ static struct linktype_map {
 
 	/* NetBSD sync/async serial PPP (or Cisco HDLC) */
 	{ DLT_PPP_SERIAL,	LINKTYPE_PPP_HDLC },
+
+	/* IEEE 802.11 wireless */
+	{ DLT_IEEE802_11,	LINKTYPE_IEEE802_11 },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
