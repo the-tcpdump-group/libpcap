@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.63 2004-11-07 21:40:48 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.64 2004-12-17 21:27:54 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -217,7 +217,7 @@ The name "-" in a synonym for
 Alternatively, you may call
 .B pcap_fopen_offline()
 to read dumped data from an existing open stream
-.IB fp .
+.IR fp .
 Note that on Windows, that stream should be opened in binary mode.
 .I errbuf
 is used to return error text and is only set when
