@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.70 2001-10-25 08:27:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.71 2001-10-25 18:09:59 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1396,7 +1396,8 @@ live_open_old(pcap_t *handle, char *device, int promisc,
 		 * a link-layer header.
 		 */
 		map_arphrd_to_dlt(handle, arptype);
-		if (handle->linktype == -1) {
+		if (handle->linktype == -1 ||
+		    handle->linktype == DLT_LINUX_SLL) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "interface type of %s not supported", device);
 			break;
