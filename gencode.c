@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.97 1999-10-30 05:16:35 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.98 1999-11-01 13:47:51 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -1506,7 +1506,7 @@ gen_protochain(v, proto, dir)
 		break;
 	case Q_DEFAULT:
 		b0 = gen_protochain(v, Q_IP, dir);
-		b = gen_protochain(v, Q_IP, dir);
+		b = gen_protochain(v, Q_IPV6, dir);
 		gen_or(b0, b);
 		return b;
 	default:
