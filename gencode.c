@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.186 2003-02-14 07:48:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.187 2003-03-08 08:23:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -225,6 +225,8 @@ newchunk(n)
 			bpf_error("out of memory");
 		size = CHUNK0SIZE << k;
 		cp->m = (void *)malloc(size);
+		if (cp->m == NULL)
+			bpf_error("out of memory");
 		memset((char *)cp->m, 0, size);
 		cp->n_left = size;
 		if (n > size)
