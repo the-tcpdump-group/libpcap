@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.33 2001-12-10 07:14:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.33.2.1 2002-03-07 11:39:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -191,6 +191,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	    strncmp("ec", device, 2) == 0 ||	/* Indigo/Indy 10 Mbit,
 						   O2 10/100 */
 	    strncmp("ef", device, 2) == 0 ||	/* O200/2000 10/100 Mbit */
+	    strncmp("eg", device, 2) == 0 ||	/* Octane/O2xxx/O3xxx Gigabit */
 	    strncmp("gfe", device, 3) == 0 ||	/* GIO 100 Mbit */
 	    strncmp("fxp", device, 3) == 0 ||	/* Challenge VME Enet */
 	    strncmp("ep", device, 2) == 0 ||	/* Challenge 8x10 Mbit EPLEX */
