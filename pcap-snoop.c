@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.23 2000-04-27 14:24:13 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.24 2000-04-29 10:09:23 assar Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -128,7 +128,10 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	struct sockaddr_raw sr;
 	struct snoopfilter sf;
 	u_int v;
+	int ll_hdrlen;
+	int snooplen;
 	pcap_t *p;
+	struct ifreq ifr;
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
@@ -160,18 +163,6 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	}
 	v = 64 * 1024;
 	(void)setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
-	if (ioctl(fd, SIOCSNOOPLEN, &snaplen) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SIOCSNOOPLEN: %s",
-		    pcap_strerror(errno));
-		goto bad;
-	}
-	p->snapshot = snaplen;
-	v = 1;
-	if (ioctl(fd, SIOCSNOOPING, &v) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SIOCSNOOPING: %s",
-		    pcap_strerror(errno));
-		goto bad;
-	}
 	/*
 	 * XXX hack - map device name to link layer type
 	 */
@@ -188,18 +179,73 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	    strncmp("el", device, 2) == 0) {
 		p->linktype = DLT_EN10MB;
 		p->offset = RAW_HDRPAD(sizeof(struct ether_header));
+		ll_hdrlen = sizeof(struct ether_header);
 	} else if (strncmp("ipg", device, 3) == 0 ||
 		   strncmp("rns", device, 3) == 0 ||	/* O2/200/2000 FDDI */
 		   strncmp("xpi", device, 3) == 0) {
 		p->linktype = DLT_FDDI;
 		p->offset = 3;				/* XXX yeah? */
+ 		ll_hdrlen = 13;
 	} else if (strncmp("ppp", device, 3) == 0) {
 		p->linktype = DLT_RAW;
+ 		ll_hdrlen = 0;	/* DLT_RAW meaning "no PPP header, just the IP packet"? */
 	} else if (strncmp("lo", device, 2) == 0) {
 		p->linktype = DLT_NULL;
+ 		ll_hdrlen = 4;	/* is this just like BSD's loopback device? */
 	} else {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "snoop: unknown physical layer type");
+ 		goto bad;
+ 	}
+ #ifdef SIOCGIFMTU
+ 	/*
+ 	 * XXX - IRIX appears to give you an error if you try to set the
+ 	 * capture length to be greater than the MTU, so let's try to get
+ 	 * the MTU first and, if that succeeds, trim the snap length
+ 	 * to be no greater than the MTU.
+ 	 */
+ 	(void)strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+ 	if (ioctl(fd, SIOCGIFMTU, (char *)&ifr) < 0) {
+ 		sprintf(ebuf, "SIOCGIFMTU: %s", pcap_strerror(errno));
+ 		goto bad;
+ 	}
+ 	/*
+ 	 * OK, we got it.
+ 	 *
+ 	 * XXX - some versions of IRIX 6.5 define "ifr_mtu" and have an
+ 	 * "ifru_metric" member of the "ifr_ifru" union in an "ifreq"
+ 	 * structure, others don't.
+ 	 *
+ 	 * I've no idea what's going on, so, if "ifr_mtu" isn't defined,
+ 	 * we define it as "ifr_metric", as using that field appears to
+ 	 * work on the versions that lack "ifr_mtu" (and, on those that
+ 	 * don't lack it, "ifru_metric" and "ifru_mtu" are both "int"
+ 	 * members of the "ifr_ifru" union, which suggests that they
+ 	 * may be interchangeable in this case).
+ 	 */
+ #ifndef ifr_mtu
+ #define ifr_mtu	ifr_metric
+ #endif
+ 	if (snaplen > ifr.ifr_mtu)
+ 		snaplen = ifr.ifr_mtu;
+ #endif
+ 
+ 	/*
+ 	 * The argument to SIOCSNOOPLEN is the number of link-layer
+ 	 * payload bytes to capture - it doesn't count link-layer
+ 	 * header bytes.
+ 	 */
+ 	snooplen = snaplen - ll_hdrlen;
+ 	if (snooplen < 0)
+ 		snooplen = 0;
+ 	if (ioctl(fd, SIOCSNOOPLEN, &snooplen) < 0) {
+ 		sprintf(ebuf, "SIOCSNOOPLEN: %s", pcap_strerror(errno));
+ 		goto bad;
+ 	}
+ 	p->snapshot = snaplen;
+ 	v = 1;
+ 	if (ioctl(fd, SIOCSNOOPING, &v) < 0) {
+ 		sprintf(ebuf, "SIOCSNOOPING: %s", pcap_strerror(errno));
 		goto bad;
 	}
 
