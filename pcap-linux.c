@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.59 2001-06-18 08:46:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.60 2001-07-29 01:22:41 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -454,6 +454,11 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 int
 pcap_stats(pcap_t *handle, struct pcap_stat *stats)
 {
+	/*
+	 * "ps_recv" counts only packets that passed the filter.
+	 *
+	 * "ps_drop" isn't maintained.
+	 */
 	*stats = handle->md.stat;
 	return 0;
 }

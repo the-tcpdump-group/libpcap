@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.63 2001-07-28 22:53:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.64 2001-07-29 01:22:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -195,6 +195,18 @@ int
 pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
 
+	/*
+	 * "ps_recv" counts only packets that passed the filter.
+	 *
+	 * "ps_drop" counts packets that passed the kernel filter
+	 * (if any) but were dropped because the input queue was
+	 * full.  It counts packets regardless of whether they would
+	 * have passed a userland filter.
+	 *
+	 * "ps_ifdrop" counts packets dropped by the network
+	 * inteface (regardless of whether they would have passed
+	 * the input filter, of course).
+	 */
 	ps->ps_recv = p->md.TotAccepted;
 	ps->ps_drop = p->md.TotDrops;
 	ps->ps_ifdrop = p->md.TotMissed - p->md.OrigMissed;

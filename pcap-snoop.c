@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.31 2001-06-05 03:48:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.32 2001-07-29 01:22:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -115,10 +115,26 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 		return (-1);
 	}
 
+	/*
+	 * "ifdrops" are those dropped by the network interface
+	 * due to resource shortages or hardware errors.
+	 *
+	 * "sbdrops" are those dropped due to socket buffer limits.
+	 *
+	 * As filter is done in userland, "sbdrops" counts packets
+	 * regardless of whether they would've passed the filter.
+	 *
+	 * XXX - does this count *all* Snoop or Drain sockets,
+	 * rather than just this socket?  If not, why does it have
+	 * both Snoop and Drain statistics?
+	 */
 	p->md.stat.ps_drop =
 	    rs->rs_snoop.ss_ifdrops + rs->rs_snoop.ss_sbdrops +
 	    rs->rs_drain.ds_ifdrops + rs->rs_drain.ds_sbdrops;
 
+	/*
+	 * "ps_recv" counts only packets that passed the filter.
+	 */
 	*ps = p->md.stat;
 	return (0);
 }
