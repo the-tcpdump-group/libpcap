@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.111 2000-06-26 05:10:40 assar Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.112 2000-07-01 03:32:50 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -31,11 +31,8 @@ static const char rcsid[] =
 #include <sys/param.h>
 #endif
 
-#if __STDC__
 struct mbuf;
 struct rtentry;
-#endif
-
 #include <net/if.h>
 
 #include <netinet/in.h>
@@ -44,11 +41,7 @@ struct rtentry;
 #include <stdlib.h>
 #include <memory.h>
 #include <setjmp.h>
-#if __STDC__
 #include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
 
 #include "pcap-int.h"
 
@@ -81,21 +74,11 @@ int	pcap_fddipad;
 
 /* VARARGS */
 __dead void
-#if __STDC__
 bpf_error(const char *fmt, ...)
-#else
-bpf_error(fmt, va_alist)
-	const char *fmt;
-	va_dcl
-#endif
 {
 	va_list ap;
 
-#if __STDC__
 	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
 	if (bpf_pcap != NULL)
 		(void)vsnprintf(pcap_geterr(bpf_pcap), PCAP_ERRBUF_SIZE,
 		    fmt, ap);
@@ -1186,7 +1169,10 @@ struct block *
 gen_proto_abbrev(proto)
 	int proto;
 {
-	struct block *b0, *b1;
+#ifdef INET6
+	struct block *b0;
+#endif
+	struct block *b1;
 
 	switch (proto) {
 
