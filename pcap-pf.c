@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.72 2003-01-03 08:33:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.73 2003-05-02 08:35:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -60,6 +60,13 @@ struct rtentry;
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+/*
+ * Make "pcap.h" not include "pcap-bpf.h"; we are going to include the
+ * native OS version, as we need various BPF ioctls from it.
+ */
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
+#include <net/bpf.h>
 
 #include "pcap-int.h"
 
