@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.3 2002-08-26 09:50:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-getad.c,v 1.4 2002-10-19 02:25:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -78,7 +78,7 @@ static const char rcsid[] =
  */
 #ifndef SA_LEN
 #ifdef HAVE_SOCKADDR_SA_LEN
-#define SA_LEN(addr)	((addr)->sa_len)
+#define SA_LEN(addr)	(addr ? (addr)->sa_len : 0)
 #else /* HAVE_SOCKADDR_SA_LEN */
 #ifdef HAVE_SOCKADDR_STORAGE
 #define SA_LEN(addr)	(sizeof (struct sockaddr_storage))
