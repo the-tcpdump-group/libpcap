@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.67.2.3 2003-11-21 10:20:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.67.2.4 2003-11-22 00:06:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -142,7 +142,9 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int cc;
 	int n = 0;
 	register u_char *bp, *ep;
+	struct bpf_insn *fcode;
 
+	fcode = p->md.use_bpf ? NULL : p->fcode.bf_insns;
  again:
 	/*
 	 * Has "pcap_breakloop()" been called?
@@ -248,28 +250,41 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		caplen = bhp->bh_caplen;
 		hdrlen = bhp->bh_hdrlen;
 		/*
-		 * XXX A bpf_hdr matches a pcap_pkthdr.
+		 * Short-circuit evaluation: if using BPF filter
+		 * in kernel, no need to do it now.
 		 */
+		if (fcode == NULL ||
+		    bpf_filter(fcode, bp + hdrlen, bhp->bh_datalen, caplen)) {
 #ifdef _AIX
-		/*
-		 * AIX's BPF returns seconds/nanoseconds time stamps, not
-		 * seconds/microseconds time stamps.
-		 *
-		 * XXX - I'm guessing here that it's a "struct timestamp";
-		 * if not, this code won't compile, but, if not, you
-		 * want to send us a bug report and fall back on using
-		 * DLPI.  It's not as if BPF used to work right on
-		 * AIX before this change; this change attempts to fix
-		 * the fact that it didn't....
-		 */
-		bhp->bh_tstamp.tv_usec = bhp->bh_tstamp.tv_usec/1000;
+			/*
+			 * AIX's BPF returns seconds/nanoseconds time
+			 * stamps, not seconds/microseconds time stamps.
+			 *
+			 * XXX - I'm guessing here that it's a "struct
+			 * timestamp"; if not, this code won't compile,
+			 * but, if not, you want to send us a bug report
+			 * and fall back on using DLPI.  It's not as if
+			 * BPF used to work right on AIX before this
+			 * change; this change attempts to fix the fact
+			 * that it didn't....
+			 */
+			bhp->bh_tstamp.tv_usec = bhp->bh_tstamp.tv_usec/1000;
 #endif
-		(*callback)(user, (struct pcap_pkthdr*)bp, bp + hdrlen);
-		bp += BPF_WORDALIGN(caplen + hdrlen);
-		if (++n >= cnt && cnt > 0) {
-			p->bp = bp;
-			p->cc = ep - bp;
-			return (n);
+			/*
+			 * XXX A bpf_hdr matches a pcap_pkthdr.
+			 */
+			(*callback)(user, (struct pcap_pkthdr*)bp, bp + hdrlen);
+			bp += BPF_WORDALIGN(caplen + hdrlen);
+			if (++n >= cnt && cnt > 0) {
+				p->bp = bp;
+				p->cc = ep - bp;
+				return (n);
+			}
+		} else {
+			/*
+			 * Skip this packet.
+			 */
+			bp += BPF_WORDALIGN(caplen + hdrlen);
 		}
 	}
 #undef bhp
@@ -855,13 +870,29 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 	 * Take a safer side for now.
 	 */
 	if (no_optimize) {
+		/*
+		 * XXX - what if we already have a filter in the kernel?
+		 */
 		if (install_bpf_program(p, fp) < 0)
 			return (-1);
-	} else if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
+		p->md.use_bpf = 0;	/* filtering in userland */
+		return (0);
+	}
+
+	/*
+	 * Free any user-mode filter we might happen to have installed.
+	 */
+	pcap_freecode(&p->fcode);
+
+	/*
+	 * Try to install the kernel filter.
+	 */
+	if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETF: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
+	p->md.use_bpf = 1;	/* filtering in the kernel */
 	return (0);
 }
 
