@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.60 2000-09-17 04:04:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.61 2000-10-12 03:54:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -120,7 +120,7 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	 */
 	n = 0;
 #ifdef PCAP_FDDIPAD
-	if (pc->linktype == PCAP_ENCAP_FDDI)
+	if (pc->linktype == DLT_FDDI)
 		pad = pcap_fddipad;
 	else
 		pad = 0;
@@ -257,12 +257,12 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 	switch (devparams.end_dev_type) {
 
 	case ENDT_10MB:
-		p->linktype = PCAP_ENCAP_ETHERNET;
+		p->linktype = DLT_EN10MB;
 		p->offset = 2;
 		break;
 
 	case ENDT_FDDI:
-		p->linktype = PCAP_ENCAP_FDDI;
+		p->linktype = DLT_FDDI;
 		break;
 
 	default:
@@ -277,13 +277,13 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 		   "Packet filter data-link type %d unknown, assuming Ethernet",
 		    devparams.end_dev_type);
 #endif
-		p->linktype = PCAP_ENCAP_ETHERNET;
+		p->linktype = DLT_EN10MB;
 		p->offset = 2;
 		break;
 	}
 	/* set truncation */
 #ifdef PCAP_FDDIPAD
-	if (p->linktype == PCAP_ENCAP_FDDI)
+	if (p->linktype == DLT_FDDI)
 		/* packetfilter includes the padding in the snapshot */
 		snaplen += pcap_fddipad;
 #endif

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.42 2000-09-18 06:38:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.43 2000-10-12 03:53:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -235,97 +235,40 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    pcap_strerror(errno));
 		goto bad;
 	}
+#ifdef __OpenBSD__
+	switch (v) {
+	case DLT_LOOP:
+		/*
+		 * XXX - DLT_LOOP has a network-byte-order, rather than
+		 * a host-byte-order, AF_ value as the link-layer
+		 * header; will the BPF code generator handle that
+		 * correctly on little-endian machines?
+		 */
+		v = DLT_NULL;
+		break;
+	}
+#endif
+#if _BSDI_VERSION - 0 >= 199510
+	/* The SLIP and PPP link layer header changed in BSD/OS 2.1 */
 	switch (v) {
 
-	case DLT_NULL:
-	case DLT_EN10MB:
-	case DLT_EN3MB:
-	case DLT_AX25:
-	case DLT_PRONET:
-	case DLT_CHAOS:
-	case DLT_IEEE802:
-	case DLT_ARCNET:
-	case DLT_FDDI:
-		/*
-		 * These DLT_* types have PCAP_ENCAP_* types with values
-		 * identical to the values of the corresponding DLT_*
-		 * type.
-		 */
-		break;
-
-	case DLT_ATM_RFC1483:
-		v = PCAP_ENCAP_ATM_RFC1483;
-		break;
-
-	case DLT_RAW:
-		v = PCAP_ENCAP_RAW;
-		break;
-
 	case DLT_SLIP:
-#if _BSDI_VERSION - 0 >= 199510
-		/*
-		 * The SLIP link layer header changed in BSD/OS 2.1;
-		 * however, BSD/OS apparently continued to use DLT_SLIP
-		 * as the DLT_* type for it - we map it to DLT_SLIP_BSDOS,
-		 * so that BSD/OS 2.1 and later SLIP captures can be
-		 * distinguished from other SLIP captures.
-		 */
-		v = PCAP_ENCAP_SLIP_BSDOS;
-#else
-		/*
-		 * DLT_SLIP and PCAP_ENCAP_SLIP have the same value.
-		 */
-#endif
+		v = DLT_SLIP_BSDOS;
 		break;
 
 	case DLT_PPP:
-#if _BSDI_VERSION - 0 >= 199510
-		/*
-		 * The PPP link layer header changed in BSD/OS 2.1;
-		 * however, BSD/OS apparently continued to use DLT_PPP
-		 * as the DLT_* type for it - we map it to DLT_PPP_BSDOS,
-		 * so that BSD/OS 2.1 and later SLIP captures can be
-		 * distinguished from other SLIP captures.
-		 */
-		v = PCAP_ENCAP_PPP_BSDOS;
-#else
-		/*
-		 * DLT_PPP and PCAP_ENCAP_PPP have the same value.
-		 */
-#endif
+		v = DLT_PPP_BSDOS;
 		break;
 
-#ifdef DLT_FR
-	case DLT_FR:
-		/* BSD/OS Frame Relay */
-		v = PCAP_ENCAP_RAW;	/*XXX*/
+	case 11:	/*DLT_FR*/
+		v = DLT_RAW;	/*XXX*/
 		break;
-#endif
 
-#ifdef DLT_C_HDLC
-	case DLT_C_HDLC:
-		/* BSD/OS Cisco HDLC */
-		v = PCAP_ENCAP_C_HDLC;
+	case 12:	/*DLT_C_HDLC*/
+		v = DLT_CHDLC;
 		break;
-#endif
-
-#ifdef DLT_PPP_SERIAL
-	case DLT_PPP_SERIAL:
-		/* NetBSD sync/async serial PPP (or Cisco HDLC) */
-		v = PCAP_ENCAP_PPP_HDLC;
-		break;
-#endif
-
-	default:
-		/*
-		 * We don't know what this is; we'd need to add a
-		 * PCAP_ENCAP_* type for it, and would probably
-		 * need to add libpcap and tcpdump support for it
-		 * as well.
-		 */
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown DLT_ type %u", v);
-		goto bad;
 	}
+#endif
 	p->linktype = v;
 
 	/* set timeout */

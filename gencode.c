@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.121 2000-10-10 04:53:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.122 2000-10-12 03:53:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -539,79 +539,16 @@ static void
 init_linktype(type)
 	int type;
 {
-	/*
-	 * Map DLT_ codes that don't have the same value as the
-	 * equivalent PCAP_ENCAP_ codes to the corresponding PCAP_ENCAP_
-	 * code.
-	 *
-	 * Even though "pcap_open_live()" in "pcap-bpf.c" does a
-	 * similar mapping, we do that mapping here as well, to
-	 * handle filters constructed for savefiles.
-	 *
-	 * XXX - should we do this mapping in "savefile.c"?  Doing so
-	 * might cause programs that read one or more capture files
-	 * and write another capture file with the same type as
-	 * the input file(s) to use PCAP_ENCAP_ values that aren't
-	 * supported by the libpcap on the system that wrote the original
-	 * capture file, so we might not want to do that.
-	 */
+	linktype = type;
+
 	switch (type) {
 
-#ifdef DLT_ATM_RFC1483
-	case DLT_ATM_RFC1483:
-		linktype = PCAP_ENCAP_ATM_RFC1483;
-		break;
-#endif
-
-#ifdef DLT_RAW
-	case DLT_RAW:
-		linktype = PCAP_ENCAP_RAW;
-		break;
-#endif
-
-#ifdef DLT_SLIP_BSDOS
-	case DLT_SLIP_BSDOS:
-		linktype = PCAP_ENCAP_SLIP_BSDOS;
-		break;
-#endif
-
-#ifdef DLT_PPP_BSDOS
-	case DLT_PPP_BSDOS:
-		linktype = PCAP_ENCAP_PPP_BSDOS;
-		break;
-#endif
-
-#ifdef DLT_CIP
-	case DLT_CIP:
-		linktype = PCAP_ENCAP_ATM_CLIP;
-		break;
-#endif
-
-#ifdef DLT_ATM_CLIP
-	case DLT_ATM_CLIP:
-		linktype = PCAP_ENCAP_ATM_CLIP;
-		break;
-#endif
-
-#ifdef DLT_PPP_SERIAL
-	case DLT_PPP_SERIAL:
-		linktype = PCAP_ENCAP_PPP_HDLC;
-		break;
-#endif
-
-	default:
-		linktype = type;
-		break;
-	}
-
-	switch (linktype) {
-
-	case PCAP_ENCAP_ETHERNET:
+	case DLT_EN10MB:
 		off_linktype = 12;
 		off_nl = 14;
 		return;
 
-	case PCAP_ENCAP_SLIP:
+	case DLT_SLIP:
 		/*
 		 * SLIP doesn't have a link level type.  The 16 byte
 		 * header is hacked into our SLIP driver.
@@ -620,31 +557,31 @@ init_linktype(type)
 		off_nl = 16;
 		return;
 
-	case PCAP_ENCAP_SLIP_BSDOS:
-		/* XXX this may be the same as the PCAP_ENCAP_PPP_BSDOS case */
+	case DLT_SLIP_BSDOS:
+		/* XXX this may be the same as the DLT_PPP_BSDOS case */
 		off_linktype = -1;
 		/* XXX end */
 		off_nl = 24;
 		return;
 
-	case PCAP_ENCAP_NULL:
+	case DLT_NULL:
 		off_linktype = 0;
 		off_nl = 4;
 		return;
 
-	case PCAP_ENCAP_PPP:
-	case PCAP_ENCAP_C_HDLC:
-	case PCAP_ENCAP_PPP_HDLC:
+	case DLT_PPP:
+	case DLT_C_HDLC:
+	case DLT_PPP_SERIAL:
 		off_linktype = 2;
 		off_nl = 4;
 		return;
 
-	case PCAP_ENCAP_PPP_BSDOS:
+	case DLT_PPP_BSDOS:
 		off_linktype = 5;
 		off_nl = 24;
 		return;
 
-	case PCAP_ENCAP_FDDI:
+	case DLT_FDDI:
 		/*
 		 * FDDI doesn't really have a link-level type field.
 		 * We assume that SSAP = SNAP is being used and pick
@@ -662,7 +599,7 @@ init_linktype(type)
 #endif
 		return;
 
-	case PCAP_ENCAP_TOKEN_RING:
+	case DLT_IEEE802:
 		/*
 		 * Token Ring doesn't really have a link-level type field.
 		 * We assume that SSAP = SNAP is being used and pick
@@ -689,7 +626,7 @@ init_linktype(type)
 		off_nl = 22;
 		return;
 
-	case PCAP_ENCAP_ATM_RFC1483:
+	case DLT_ATM_RFC1483:
 		/*
 		 * assume routed, non-ISO PDUs
 		 * (i.e., LLC = 0xAA-AA-03, OUT = 0x00-00-00)
@@ -698,12 +635,12 @@ init_linktype(type)
 		off_nl = 8;
 		return;
 
-	case PCAP_ENCAP_RAW:
+	case DLT_RAW:
 		off_linktype = -1;
 		off_nl = 0;
 		return;
 
-	case PCAP_ENCAP_ATM_CLIP:
+	case DLT_ATM_CLIP:	/* Linux ATM defines this */
 		off_linktype = 6;
 		off_nl = 8;
 		return;
@@ -751,11 +688,11 @@ gen_linktype(proto)
 
 	switch (linktype) {
 
-	case PCAP_ENCAP_SLIP:
+	case DLT_SLIP:
 		return gen_false();
 
-	case PCAP_ENCAP_PPP:
-	case PCAP_ENCAP_PPP_HDLC:
+	case DLT_PPP:
+	case DLT_PPP_SERIAL:
 		if (proto == ETHERTYPE_IP)
 			proto = PPP_IP;			/* XXX was 0x21 */
 #ifdef INET6
@@ -764,7 +701,7 @@ gen_linktype(proto)
 #endif
 		break;
 
-	case PCAP_ENCAP_PPP_BSDOS:
+	case DLT_PPP_BSDOS:
 		switch (proto) {
 
 		case ETHERTYPE_IP:
@@ -796,7 +733,7 @@ gen_linktype(proto)
 		}
 		break;
 
-	case PCAP_ENCAP_NULL:
+	case DLT_NULL:
 		/* XXX */
 		if (proto == ETHERTYPE_IP)
 			return (gen_cmp(0, BPF_W, (bpf_int32)htonl(AF_INET)));
@@ -938,7 +875,7 @@ gen_ehostop(eaddr, dir)
 }
 
 /*
- * Like gen_ehostop, but for PCAP_ENCAP_FDDI
+ * Like gen_ehostop, but for DLT_FDDI
  */
 static struct block *
 gen_fhostop(eaddr, dir)
@@ -980,7 +917,7 @@ gen_fhostop(eaddr, dir)
 }
 
 /*
- * Like gen_ehostop, but for PCAP_ENCAP_TOKEN_RING
+ * Like gen_ehostop, but for DLT_IEEE802 (Token Ring)
  */
 static struct block *
 gen_thostop(eaddr, dir)
@@ -1286,11 +1223,11 @@ gen_gateway(eaddr, alist, proto, dir)
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		if (linktype == PCAP_ENCAP_ETHERNET)
+		if (linktype == DLT_EN10MB)
 			b0 = gen_ehostop(eaddr, Q_OR);
-		else if (linktype == PCAP_ENCAP_FDDI)
+		else if (linktype == DLT_FDDI)
 			b0 = gen_fhostop(eaddr, Q_OR);
-		else if (linktype == PCAP_ENCAP_TOKEN_RING)
+		else if (linktype == DLT_IEEE802)
 			b0 = gen_thostop(eaddr, Q_OR);
 		else
 			bpf_error(
@@ -2142,21 +2079,21 @@ gen_scode(name, q)
 		if (proto == Q_LINK) {
 			switch (linktype) {
 
-			case PCAP_ENCAP_ETHERNET:
+			case DLT_EN10MB:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
 					    "unknown ether host '%s'", name);
 				return gen_ehostop(eaddr, dir);
 
-			case PCAP_ENCAP_FDDI:
+			case DLT_FDDI:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
 					    "unknown FDDI host '%s'", name);
 				return gen_fhostop(eaddr, dir);
 
-			case PCAP_ENCAP_TOKEN_RING:
+			case DLT_IEEE802:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
@@ -2495,11 +2432,11 @@ gen_ecode(eaddr, q)
 	struct qual q;
 {
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-		if (linktype == PCAP_ENCAP_ETHERNET)
+		if (linktype == DLT_EN10MB)
 			return gen_ehostop(eaddr, (int)q.dir);
-		if (linktype == PCAP_ENCAP_FDDI)
+		if (linktype == DLT_FDDI)
 			return gen_fhostop(eaddr, (int)q.dir);
-		if (linktype == PCAP_ENCAP_TOKEN_RING)
+		if (linktype == DLT_IEEE802)
 			return gen_thostop(eaddr, (int)q.dir);
 	}
 	bpf_error("ethernet address used in non-ether expression");
@@ -2894,11 +2831,11 @@ gen_broadcast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		if (linktype == PCAP_ENCAP_ETHERNET)
+		if (linktype == DLT_EN10MB)
 			return gen_ehostop(ebroadcast, Q_DST);
-		if (linktype == PCAP_ENCAP_FDDI)
+		if (linktype == DLT_FDDI)
 			return gen_fhostop(ebroadcast, Q_DST);
-		if (linktype == PCAP_ENCAP_TOKEN_RING)
+		if (linktype == DLT_IEEE802)
 			return gen_thostop(ebroadcast, Q_DST);
 		bpf_error("not a broadcast link");
 		break;
@@ -2927,7 +2864,7 @@ gen_multicast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		if (linktype == PCAP_ENCAP_ETHERNET) {
+		if (linktype == DLT_EN10MB) {
 			/* ether[0] & 1 != 0 */
 			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
 			s->s.k = 0;
@@ -2937,7 +2874,7 @@ gen_multicast(proto)
 			return b0;
 		}
 
-		if (linktype == PCAP_ENCAP_FDDI) {
+		if (linktype == DLT_FDDI) {
 			/* XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX */
 			/* fddi[1] & 1 != 0 */
 			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
@@ -2949,7 +2886,7 @@ gen_multicast(proto)
 		}
 
 		/* TODO - check how token ring handles multicast */
-		/* if (linktype == PCAP_ENCAP_TOKEN_RING) ... */
+		/* if (linktype == DLT_IEEE802) ... */
 
 		/* Link not known to support multicasts */
 		break;

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.28 2000-09-17 04:04:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.29 2000-10-12 03:54:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -180,20 +180,20 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	    strncmp("fa", device, 2) == 0 ||
 	    strncmp("qaa", device, 3) == 0 ||
 	    strncmp("el", device, 2) == 0) {
-		p->linktype = PCAP_ENCAP_ETHERNET;
+		p->linktype = DLT_EN10MB;
 		p->offset = RAW_HDRPAD(sizeof(struct ether_header));
 		ll_hdrlen = sizeof(struct ether_header);
 	} else if (strncmp("ipg", device, 3) == 0 ||
 		   strncmp("rns", device, 3) == 0 ||	/* O2/200/2000 FDDI */
 		   strncmp("xpi", device, 3) == 0) {
-		p->linktype = PCAP_ENCAP_FDDI;
+		p->linktype = DLT_FDDI;
 		p->offset = 3;				/* XXX yeah? */
 		ll_hdrlen = 13;
 	} else if (strncmp("ppp", device, 3) == 0) {
-		p->linktype = PCAP_ENCAP_RAW;
-		ll_hdrlen = 0;	/* PCAP_ENCAP_RAW meaning "no PPP header, just the IP packet"? */
+		p->linktype = DLT_RAW;
+		ll_hdrlen = 0;	/* DLT_RAW meaning "no PPP header, just the IP packet"? */
 	} else if (strncmp("lo", device, 2) == 0) {
-		p->linktype = PCAP_ENCAP_NULL;
+		p->linktype = DLT_NULL;
 		ll_hdrlen = 4;	/* is this just like BSD's loopback device? */
 	} else {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,

@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.60 2000-09-17 04:04:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.61 2000-10-12 03:53:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -439,12 +439,12 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	case DL_CSMACD:
 	case DL_ETHER:
-		p->linktype = PCAP_ENCAP_ETHERNET;
+		p->linktype = DLT_EN10MB;
 		p->offset = 2;
 		break;
 
 	case DL_FDDI:
-		p->linktype = PCAP_ENCAP_FDDI;
+		p->linktype = DLT_FDDI;
 		p->offset = 3;
 		break;
 

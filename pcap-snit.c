@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.52 2000-09-17 04:04:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.53 2000-10-12 03:54:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -282,7 +282,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	/*
 	 * NIT supports only ethernets.
 	 */
-	p->linktype = PCAP_ENCAP_ETHERNET;
+	p->linktype = DLT_EN10MB;
 
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char *)malloc(p->bufsize);

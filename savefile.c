@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.43 2000-10-10 04:53:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.44 2000-10-12 03:54:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -75,6 +75,196 @@ static const char rcsid[] =
 #define SFERR_BADVERSION	2
 #define SFERR_BADF		3
 #define SFERR_EOF		4 /* not really an error, just a status */
+
+/*
+ * We don't write DLT_* values to the capture file header, because
+ * they're not the same on all platforms.
+ *
+ * Unfortunately, the various flavors of BSD have not always used the same
+ * numerical values for the same data types, and various patches to
+ * libpcap for non-BSD OSes have added their own DLT_* codes for link
+ * layer encapsulation types seen on those OSes, and those codes have had,
+ * in some cases, values that were also used, on other platforms, for other
+ * link layer encapsulation types.
+ *
+ * This means that capture files of a type whose numerical DLT_* code
+ * means different things on different BSDs, or with different versions
+ * of libpcap, can't always be read on systems other than those like
+ * the one running on the machine on which the capture was made.
+ *
+ * Instead, we define here a set of LINKTYPE_* codes, and map DLT_* codes
+ * to LINKTYPE_* codes when writing a savefile header, and map LINKTYPE_*
+ * codes to DLT_* codes when reading a savefile header.
+ *
+ * For those DLT_* codes that have, as far as we know, the same values on
+ * all platforms (DLT_NULL through DLT_FDDI), we define LINKTYPE_xxx as
+ * DLT_xxx; that way, captures of those types can still be read by
+ * versions of libpcap that map LINKTYPE_* values to DLT_* values, and
+ * captures of those types written by versions of libpcap that map DLT_
+ * values to LINKTYPE_ values can still be read by older versions
+ * of libpcap.
+ *
+ * The other LINKTYPE_* codes are given values starting at 100, in the
+ * hopes that no DLT_* code will be given one of those values.
+ *
+ * In order to ensure that a given LINKTYPE_* code's value will refer to
+ * the same encapsulation type on all platforms, you should not allocate
+ * a new LINKTYPE_* value without consulting "tcpdump-workers@tcpdump.org".
+ * The tcpdump developers will allocate a value for you, and will not
+ * subsequently allocate it to anybody else; that value will be added to
+ * the "pcap.h" in the tcpdump.org CVS repository, so that a future
+ * libpcap release will include it.
+ *
+ * You should, if possible, also contribute patches to libpcap and tcpdump
+ * to handle the new encapsulation type, so that they can also be checked
+ * into the tcpdump.org CVS repository and so that they will appear in
+ * future libpcap and tcpdump releases.
+ */
+#define LINKTYPE_NULL		DLT_NULL
+#define LINKTYPE_ETHERNET	DLT_EN10MB	/* also for 100Mb and up */
+#define LINKTYPE_EXP_ETHERNET	DLT_EN3MB	/* 3Mb experimental Ethernet */
+#define LINKTYPE_AX25		DLT_AX25
+#define LINKTYPE_PRONET		DLT_PRONET
+#define LINKTYPE_CHAOS		DLT_CHAOS
+#define LINKTYPE_TOKEN_RING	DLT_IEEE802	/* DLT_IEEE802 is used for Token Ring */
+#define LINKTYPE_ARCNET		DLT_ARCNET
+#define LINKTYPE_SLIP		DLT_SLIP
+#define LINKTYPE_PPP		DLT_PPP
+#define LINKTYPE_FDDI		DLT_FDDI
+
+#define LINKTYPE_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
+#define LINKTYPE_RAW		101		/* raw IP */
+#define LINKTYPE_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
+#define LINKTYPE_PPP_BSDOS	103		/* BSD/OS PPP BPF header */
+#define LINKTYPE_C_HDLC		104		/* Cisco HDLC */
+#define LINKTYPE_ATM_CLIP	106		/* Linux Classical IP over ATM */
+
+/*
+ * Reserved for future use.
+ */
+#define LINKTYPE_IEEE802_11	105		/* IEEE 802.11 (wireless) */
+#define LINKTYPE_FR		107		/* BSD/OS Frame Relay */
+#define LINKTYPE_LOOP		108		/* OpenBSD loopback */
+#define LINKTYPE_ENC		109		/* OpenBSD IPSEC enc */
+#define LINKTYPE_LANE8023	110		/* ATM LANE + 802.3 */
+#define LINKTYPE_HIPPI		111		/* NetBSD HIPPI */
+#define LINKTYPE_HDLC		112		/* NetBSD HDLC framing */
+
+/*
+ * LINKTYPE_PPP is for use when there might, or might not, be an RFC 1662
+ * PPP in HDLC-like framing header (with 0xff 0x03 before the PPP protocol
+ * field) at the beginning of the packet.
+ *
+ * This is for use when there is always such a header; the address field
+ * might be 0xff, for regular PPP, or it might be an address field for Cisco
+ * point-to-point with HDLC framing as per section 4.3.1 of RFC 1547 ("Cisco
+ * HDLC").  This is, for example, what you get with NetBSD's DLT_PPP_SERIAL.
+ */
+#define LINKTYPE_PPP_HDLC	107		/* PPP in HDLC-like framing */
+
+static struct linktype_map {
+	int	dlt;
+	int	linktype;
+} map[] = {
+	/*
+	 * These DLT_* codes have LINKTYPE_* codes with values identical
+	 * to the values of the corresponding DLT_* code.
+	 */
+	{ DLT_NULL,		LINKTYPE_NULL },
+	{ DLT_EN10MB,		LINKTYPE_ETHERNET },
+	{ DLT_EN3MB,		LINKTYPE_EXP_ETHERNET },
+	{ DLT_AX25,		LINKTYPE_AX25 },
+	{ DLT_PRONET,		LINKTYPE_PRONET },
+	{ DLT_CHAOS,		LINKTYPE_CHAOS },
+	{ DLT_IEEE802,		LINKTYPE_TOKEN_RING },
+	{ DLT_ARCNET,		LINKTYPE_ARCNET },
+	{ DLT_SLIP,		LINKTYPE_SLIP },
+	{ DLT_PPP,		LINKTYPE_PPP },
+	{ DLT_FDDI,	 	LINKTYPE_FDDI },
+
+	/*
+	 * These DLT_* codes have different values on different
+	 * platforms; we map them to LINKTYPE_* codes that
+	 * have values that should never be equal to any DLT_*
+	 * code.
+	 */
+	{ DLT_ATM_RFC1483, 	LINKTYPE_ATM_RFC1483 },
+	{ DLT_RAW,		LINKTYPE_RAW },
+	{ DLT_SLIP_BSDOS,	LINKTYPE_SLIP_BSDOS },
+	{ DLT_PPP_BSDOS,	LINKTYPE_PPP_BSDOS },
+
+	/* BSD/OS Cisco HDLC */
+	{ DLT_C_HDLC,		LINKTYPE_C_HDLC },
+
+	/*
+	 * These DLT_* codes are not on all platforms, but, so far,
+	 * there don't appear to be any platforms that define
+	 * other codes with those values; we map them to
+	 * different LINKTYPE_* values anyway, just in case.
+	 */
+
+	/* Linux ATM Classical IP */
+	{ DLT_ATM_CLIP,		LINKTYPE_ATM_CLIP },
+
+	/* NetBSD sync/async serial PPP (or Cisco HDLC) */
+	{ DLT_PPP_SERIAL,	LINKTYPE_PPP_HDLC },
+
+	/*
+	 * Any platform that defines additional DLT_* codes should:
+	 *
+	 *	request a LINKTYPE_* code and value from tcpdump.org,
+	 *	as per the above;
+	 *
+	 *	add, in their version of libpcap, an entry to map
+	 *	those DLT_* codes to the corresponding LINKTYPE_*
+	 *	code;
+	 *
+	 *	redefine, in their "net/bpf.h", any DLT_* values
+	 *	that collide with the values used by their additional
+	 *	DLT_* codes, to remove those collisions (but without
+	 *	making them collide with any of the LINKTYPE_*
+	 *	values equal to 50 or above; they should also avoid
+	 *	defining DLT_* values that collide with those
+	 *	LINKTYPE_* values, either).
+	 */
+	{ -1,			-1 }
+};
+
+static int
+dlt_to_linktype(int dlt)
+{
+	int i;
+
+	for (i = 0; map[i].dlt != -1; i++) {
+		if (map[i].dlt == dlt)
+			return (map[i].linktype);
+	}
+
+	/*
+	 * If we don't have a mapping for this DLT_ code, return an
+	 * error; that means that the table above needs to have an
+	 * entry added.
+	 */
+	return (-1);
+}
+
+static int
+linktype_to_dlt(int linktype)
+{
+	int i;
+
+	for (i = 0; map[i].linktype != -1; i++) {
+		if (map[i].linktype == linktype)
+			return (map[i].dlt);
+	}
+
+	/*
+	 * If we don't have an entry for this link type, return
+	 * the link type value; it may be a DLT_ value from an
+	 * older version of libpcap.
+	 */
+	return linktype;
+}
 
 static int
 sf_write_header(FILE *fp, int linktype, int thiszone, int snaplen)
@@ -170,7 +360,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 	}
 	p->tzoff = hdr.thiszone;
 	p->snapshot = hdr.snaplen;
-	p->linktype = hdr.linktype;
+	p->linktype = linktype_to_dlt(hdr.linktype);
 	p->sf.rfile = fp;
 	p->bufsize = hdr.snaplen;
 
@@ -178,15 +368,15 @@ pcap_open_offline(const char *fname, char *errbuf)
 	/* XXX should handle all types */
 	switch (p->linktype) {
 
-	case PCAP_ENCAP_ETHERNET:
+	case DLT_EN10MB:
 		linklen = 14;
 		break;
 
-	case PCAP_ENCAP_FDDI:
+	case DLT_FDDI:
 		linklen = 13 + 8;	/* fddi_header + llc */
 		break;
 
-	case PCAP_ENCAP_NULL:
+	case DLT_NULL:
 	default:
 		linklen = 0;
 		break;
@@ -374,6 +564,16 @@ pcap_dumper_t *
 pcap_dump_open(pcap_t *p, const char *fname)
 {
 	FILE *f;
+	int linktype;
+
+	linktype = dlt_to_linktype(p->linktype);
+	if (linktype == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: link-layer type %d isn't supported in savefiles",
+		    fname, linktype);
+		return (NULL);
+	}
+
 	if (fname[0] == '-' && fname[1] == '\0')
 		f = stdout;
 	else {
@@ -384,7 +584,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 			return (NULL);
 		}
 	}
-	(void)sf_write_header(f, p->linktype, p->tzoff, p->snapshot);
+	(void)sf_write_header(f, linktype, p->tzoff, p->snapshot);
 	return ((pcap_dumper_t *)f);
 }
 
