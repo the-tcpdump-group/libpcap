@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.89 2001-07-29 18:25:47 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.90 2001-10-09 03:53:38 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.89 $)
+AC_REVISION($Revision: 1.90 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -25,11 +25,11 @@ dnl in "AC_LBL_FIXINCLUDES" in "aclocal.m4" uses it, so we have to
 dnl test for it and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
 dnl "AC_LBL_FIXINCLUDES" won't work on some platforms such as Solaris.
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h ifaddrs.h netinet/if_ether.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h ifaddrs.h limits.h netinet/if_ether.h)
 
 AC_LBL_FIXINCLUDES
 
-AC_CHECK_FUNCS(ether_hostton strerror freeifaddrs strlcpy)
+AC_CHECK_FUNCS(ether_hostton strerror strlcpy)
 
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)

@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# From configure.in Revision: 1.89 
+# From configure.in Revision: 1.90 
 
 
 
@@ -1393,7 +1393,7 @@ else
 fi
 echo "$ac_t""$CPP" 1>&6
 
-for ac_hdr in sys/ioccom.h sys/sockio.h ifaddrs.h netinet/if_ether.h
+for ac_hdr in sys/ioccom.h sys/sockio.h ifaddrs.h limits.h netinet/if_ether.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -1480,7 +1480,7 @@ fi
 	    fi
     fi
 
-for ac_func in ether_hostton strerror freeifaddrs strlcpy
+for ac_func in ether_hostton strerror strlcpy
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:1487: checking for $ac_func" >&5

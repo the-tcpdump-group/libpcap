@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.39 2001-10-08 01:06:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.40 2001-10-09 03:53:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -62,6 +62,11 @@ struct rtentry;
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#else
+#define INT_MAX		2147483647
+#endif
 #ifdef HAVE_IFADDRS_H
 #include <ifaddrs.h>
 #endif
@@ -123,6 +128,15 @@ get_instance(char *name)
 {
 	char *cp, *endcp;
 	int n;
+
+	if (strcmp(name, "any") == 0) {
+		/*
+		 * Give the "any" device an artificially high instance
+		 * number, so it shows up after all other non-loopback
+		 * interfaces.
+		 */
+		return INT_MAX;
+	}
 
 	endcp = name + strlen(name);
 	for (cp = name; cp < endcp && !isdigit((unsigned char)*cp); ++cp)
@@ -419,8 +433,8 @@ pcap_findalldevs(alldevsp, errbuf)
 {
 	pcap_if_t *devlist = NULL;
 	struct ifaddrs *ifap, *ifa;
+	struct sockaddr *broadaddr, *dstaddr;
 	int ret = 0;
-
 
 	/*
 	 * Get the list of interface addresses.
@@ -442,11 +456,27 @@ pcap_findalldevs(alldevsp, errbuf)
 		}
 
 		/*
+		 * "ifa_broadaddr" may be non-null even on
+		 * non-broadcast interfaces; "ifa_dstaddr"
+		 * was, on at least one FreeBSD 4.1 system,
+		 * non-null on a non-point-to-point
+		 * interface.
+		 */
+		if (ifa->ifa_flags & IFF_BROADCAST)
+			broadaddr = ifa->ifa_broadaddr;
+		else
+			broadaddr = NULL;
+		if (ifa->ifa_flags & IFF_POINTOPOINT)
+			dstaddr = ifa->ifa_dstaddr;
+		else
+			dstaddr = NULL;
+
+		/*
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifa->ifa_name,
 		    ifa->ifa_flags, ifa->ifa_addr, ifa->ifa_netmask,
-		    ifa->ifa_broadaddr, ifa->ifa_dstaddr, errbuf) < 0) {
+		    broadaddr, dstaddr, errbuf) < 0) {
 			/*
 			 * Oops, we had a fatal error.
 			 * Free the list we've been constructing, and fail.
@@ -462,12 +492,22 @@ pcap_findalldevs(alldevsp, errbuf)
 
 	freeifaddrs(ifap);
 
-	if (pcap_addanydev(&devlist, errbuf) < 0) {
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
+	if (ret != -1) {
+		/*
+		 * We haven't had any errors yet; add the "any" device,
+		 * if we can open it.
+		 */
+		if (pcap_addanydev(&devlist, errbuf) < 0) {
+			/*
+			 * Oops, we had a fatal error.
+			 * Free the list we've been constructing, and fail.
+			 */
+			if (devlist != NULL) {
+				pcap_freealldevs(devlist);
+				devlist = NULL;
+			}
+			return (-1);
 		}
-		return -1;
 	}
 
 	*alldevsp = devlist;
@@ -694,12 +734,22 @@ pcap_findalldevs(alldevsp, errbuf)
 	(void)close(fd);
 	free(buf);
 
-	if (pcap_addanydev(&devlist, errbuf) < 0) {
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
+	if (ret != -1) {
+		/*
+		 * We haven't had any errors yet; add the "any" device,
+		 * if we can open it.
+		 */
+		if (pcap_addanydev(&devlist, errbuf) < 0) {
+			/*
+			 * Oops, we had a fatal error.
+			 * Free the list we've been constructing, and fail.
+			 */
+			if (devlist != NULL) {
+				pcap_freealldevs(devlist);
+				devlist = NULL;
+			}
+			return (-1);
 		}
-		return -1;
 	}
 
 	*alldevsp = devlist;
