@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.131 2000-10-28 10:05:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.132 2000-10-28 10:18:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1290,6 +1290,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_ISIS:
 		bpf_error("'isis' modifier applied to host");
 
+	case Q_CLNP:
+		bpf_error("'clnp' modifier applied to host");
+
 	default:
 		abort();
 	}
@@ -1378,6 +1381,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_ISIS:
 		bpf_error("'isis' modifier applied to host");
+
+	case Q_CLNP:
+		bpf_error("'clnp' modifier applied to host");
 
 	default:
 		abort();
@@ -1575,6 +1581,10 @@ gen_proto_abbrev(proto)
 
 	case Q_ISIS:
 	        b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		break;
+
+	case Q_CLNP:
+	        b1 = gen_proto(ISO8473_CLNP, Q_ISO, Q_DEFAULT);
 		break;
 
 	default:
@@ -1801,6 +1811,8 @@ lookup_proto(name, proto)
 			v = ISO9542_ESIS;
 		else if (strcmp(name, "isis") == 0)
 			v = ISO10589_ISIS;
+		else if (strcmp(name, "clnp") == 0)
+			v = ISO8473_CLNP;
 		else
 			bpf_error("unknown osi proto '%s'", name);
 		break;
