@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.72 2003-12-18 23:32:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.73 2003-12-24 08:26:24 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -696,10 +696,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		 * that don't have Ethernet headers).
 		 */
 		if (p->linktype == DLT_EN10MB) {
-			is_ethernet = TRUE;
+			is_ethernet = 1;
 			for (i = 0; i < bdl.bfl_len; i++) {
 				if (bdl.bfl_list != DLT_EN10MB) {
-					is_ethernet = FALSE;
+					is_ethernet = 0;
 					break;
 				}
 			}
