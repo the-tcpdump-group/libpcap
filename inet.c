@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.25 2000-01-13 17:08:59 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.26 2000-01-14 23:55:31 mcr Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>
@@ -173,15 +173,16 @@ pcap_lookupdev(errbuf)
 			mp = ifrp;
 		}
 	}
-	free(buf);
 	(void)close(fd);
 	if (mp == NULL) {
 		(void)strcpy(errbuf, "no suitable device found");
+		free(buf);
 		return (NULL);
 	}
 
 	(void)strncpy(device, mp->ifr_name, sizeof(device) - 1);
 	device[sizeof(device) - 1] = '\0';
+	free(buf);
 	return (device);
 }
 
