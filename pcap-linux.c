@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.51 2001-01-03 01:06:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.52 2001-01-14 05:30:08 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1304,7 +1304,7 @@ fix_offset(struct bpf_insn *p)
 		 * header.
 		 */
 		p->k -= SLL_HDR_LEN;
-	} else if (p->k == 2) {
+	} else if (p->k == 14) {
 		/*
 		 * It's the protocol field; map it to the special magic
 		 * kernel offset for that field.
