@@ -15,7 +15,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.16 2004-01-05 18:18:54 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.17 2004-01-30 02:23:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -211,7 +211,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 
 			p->md.dag_mem_top = dag_offset(p->fd, &(p->md.dag_mem_bottom), flags);
-			if ((p->md.dag_mem_top - p->md.dag_mem_bottom < dag_record_size) && nonblocking)
+			if (nonblocking && (p->md.dag_mem_top - p->md.dag_mem_bottom < dag_record_size))
 			{
 				/* Pcap is configured to process only available packets, and there aren't any. */
 				return 0;
@@ -274,8 +274,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					}
 					sunatm->vpi = (rawatm >> 20) & 0x00ff;
 					sunatm->flags = ((header->flags.iface & 1) ? 0x80 : 0x00) | 
-						((sunatm->vpi == 0 && sunatm->vci == 5) ? 6 :
-						((sunatm->vpi == 0 && sunatm->vci == 16) ? 5 : 
+						((sunatm->vpi == 0 && sunatm->vci == htons(5)) ? 6 :
+						((sunatm->vpi == 0 && sunatm->vci == htons(16)) ? 5 : 
 						((dp[ATM_HDR_SIZE] == 0xaa &&
 							dp[ATM_HDR_SIZE+1] == 0xaa &&
 							dp[ATM_HDR_SIZE+2] == 0x03) ? 2 : 1)));
@@ -320,10 +320,10 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 			/* Count lost packets. */
 			if (header->lctr) {
-				if (p->md.stat.ps_drop > (UINT_MAX - header->lctr)) {
+				if (p->md.stat.ps_drop > (UINT_MAX - ntohs(header->lctr))) {
 					p->md.stat.ps_drop = UINT_MAX;
 				} else {
-					p->md.stat.ps_drop += header->lctr;
+					p->md.stat.ps_drop += ntohs(header->lctr);
 				}
 			}
 
