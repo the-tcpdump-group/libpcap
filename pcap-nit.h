@@ -15,5 +15,5 @@
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Attic/pcap-nit.h,v 1.2 1999-10-07 23:46:40 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Attic/pcap-nit.h,v 1.2.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)
  */

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.22 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.22.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)";
 #endif
 
 #include <sys/param.h>

@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.36 1999-10-07 23:46:41 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.36.1.1 1999-10-07 23:46:41 mcr Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
