@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.75 2004-03-24 07:00:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.76 2004-03-24 19:52:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -527,16 +527,6 @@ pcap_close_bpf(pcap_t *p)
 #define DLT_DOCSIS	143
 #endif
 
-/*
- * XXX - on AIX, IBM's tcpdump (and perhaps the incompatible-with-everybody-
- * else's libpcap in AIX 5.1) appears to forcibly load the BPF driver
- * if it's not already loaded, and to create the BPF devices if they
- * don't exist.
- *
- * It'd be nice if we could do the same, although the code to do so
- * might be version-dependent, alas (the way to do it isn't necessarily
- * documented).
- */
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
     char *ebuf)
@@ -782,6 +772,17 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * the link-layer source address isn't forcibly overwritten.
 	 * (Should we ignore errors?  Should we do this only if
 	 * we're open for writing?)
+	 *
+	 * We don't do it on Mac OS X, because there's a bug wherein
+	 * setting that flag causes writes to fail; see, for example:
+	 *
+	 *	http://cerberus.sourcefire.com/~jeff/archives/patches/macosx/BIOCSHDRCMPLT-10.3.3.patch
+	 *
+	 * If that bug gets fixed at some point in the future, we could,
+	 * on OS X, do a "uname()" call to see whether we're on a version
+	 * of OS X without the bug and, if so, make the call.  (It'd be
+	 * nice if we could somehow determine whether you're running
+	 * on an OS X with one of Jeff's patches to fix that problem....)
 	 *
 	 * XXX - I seem to remember some packet-sending bug in some
 	 * BSDs - check CVS log for "bpf.c"?
