@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.7 2003-04-28 08:20:24 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.8 2003-06-27 07:57:09 guy Exp $ (LBL)
  */
 
 /*
@@ -376,6 +376,23 @@ struct bpf_version {
 #define DLT_JUNIPER_ATM2        135
 #define DLT_JUNIPER_SERVICES    136
 #define DLT_JUNIPER_ATM1        137
+
+/*
+ * Reserved for Apple IP-over-IEEE 1394, as per a request from Dieter
+ * Sigmund <dieter@apple.com>.  The header that would be presented
+ * would be an Ethernet-like header:
+ *
+ *	#define FIREWIRE_EUI64_LEN	8
+ *	struct firewire_header {
+ *		u_char  firewire_dhost[FIREWIRE_EUI64_LEN];
+ *		u_char  firewire_dhost[FIREWIRE_EUI64_LEN];
+ *		u_short firewire_type;
+ *	};
+ *
+ * with "firewire_type" being an Ethernet type value, rather than,
+ * for example, raw GASP frames being handed up.
+ */
+#define DLT_APPLE_IP_OVER_IEEE1394	138
 
 /*
  * The instruction encodings.
