@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.48 2001-12-10 07:14:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.49 2002-05-31 10:59:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -295,7 +295,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		/*
 		 * We don't know what to map this to yet.
 		 */
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown interface type %lu",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown interface type %u",
 		    v);
 		goto bad;
 	}
