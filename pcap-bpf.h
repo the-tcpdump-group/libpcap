@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.2 2003-11-18 21:09:17 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.9.2.3 2003-12-03 21:37:28 guy Exp $ (LBL)
  */
 
 /*
@@ -419,6 +419,12 @@ struct bpf_version {
  * Jean II
  */
 #define DLT_LINUX_IRDA		144
+
+/*
+ * Reserved for IBM SP switch and IBM Next Federation switch.
+ */
+#define DLT_IBM_SP		145
+#define DLT_IBM_SN		146
 
 /*
  * The instruction encodings.
