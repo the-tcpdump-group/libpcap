@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.64 2001-02-21 09:07:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.65 2001-05-21 03:35:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -307,12 +307,17 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	/*
 	** Determine device and ppa
 	*/
-	cp = strpbrk(device, "0123456789");
-	if (cp == NULL) {
+	cp = device+strlen(device)-1;  /* Start at end of string */
+	if (*cp < '0' || *cp > '9') {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s missing unit number",
 		    device);
 		goto bad;
 	}
+
+	/* Digits at end of string are unit number */
+	while (cp-1 >= device && *(cp-1) >= '0' && *(cp-1) <= '9')
+		cp--;
+
 	ppa = strtol(cp, &eos, 10);
 	if (*eos != '\0') {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
@@ -325,10 +330,10 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
 		    device);
 
+	strlcpy(dname2, dname, sizeof(dname));
+	*(dname+strlen(dname)-strlen(cp))='\0';
+
 	/* Try device without unit number */
-	strlcpy(dname2, dname, sizeof(dname2));
-	cp = strchr(dname, *cp);
-	*cp = '\0';
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
 		if (errno != ENOENT) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
