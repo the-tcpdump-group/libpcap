@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.17.2.1 2001-01-18 04:42:11 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.17.2.2 2001-02-09 04:51:13 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -284,9 +284,15 @@ causes
 to loop forever (or at least until an error occurs).
 .PP
 .B pcap_next()
-returns a
+reads the next packet (by calling
+.B pcap_dispatch()
+with a
+.I cnt
+of 1) and returns a
 .I u_char
-pointer to the next packet.
+pointer to the data in that packet.  (The
+.I pcap_pkthdr
+struct for that packet is not supplied.)
 .PP
 .B pcap_dump()
 outputs a packet to the ``savefile'' opened with
