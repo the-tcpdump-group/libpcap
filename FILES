@@ -6,6 +6,7 @@ LICENSE
 Makefile.in
 README
 README.aix
+README.linux
 SUNOS4/nit_if.o.sparc
 SUNOS4/nit_if.o.sun3
 SUNOS4/nit_if.o.sun4c.4.0.3c
