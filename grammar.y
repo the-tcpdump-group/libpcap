@@ -22,26 +22,21 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.72 2002-07-11 09:06:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.73 2002-08-01 08:33:02 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/socket.h>
+#include <pcap-stdinc.h>
+
 #include <stdlib.h>
 
 #if __STDC__
 struct mbuf;
 struct rtentry;
 #endif
-
-#include <net/if.h>
-
-#include <netinet/in.h>
 
 #include <stdio.h>
 
@@ -110,7 +105,7 @@ pcap_parse()
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
 
 %token  DST SRC HOST GATEWAY
-%token  NET MASK PORT LESS GREATER PROTO PROTOCHAIN BYTE
+%token  NET MASK PORT LESS GREATER PROTO PROTOCHAIN CBYTE
 %token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
@@ -305,7 +300,7 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| pqual TK_MULTICAST	{ $$ = gen_multicast($1); }
 	| LESS NUM		{ $$ = gen_less($2); }
 	| GREATER NUM		{ $$ = gen_greater($2); }
-	| BYTE NUM byteop NUM	{ $$ = gen_byteop($3, $2, $4); }
+	| CBYTE NUM byteop NUM	{ $$ = gen_byteop($3, $2, $4); }
 	| INBOUND		{ $$ = gen_inbound(0); }
 	| OUTBOUND		{ $$ = gen_inbound(1); }
 	| VLAN pnum		{ $$ = gen_vlan($2); }

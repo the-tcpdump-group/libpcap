@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.87 2002-07-27 18:41:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.88 2002-08-01 08:33:05 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -36,8 +36,12 @@ static const char rcsid[] =
 
 #include "gencode.h"
 #ifdef INET6
-#include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
-#include <netdb.h>	/* for "struct addrinfo" */
+#include <pcap-stdinc.h>
+
+#ifdef __MINGW32__
+#include "IP6_misc.h"
+#endif
+
 /* Workaround for AIX 4.3 */
 #if !defined(AI_NUMERICHOST)
 #define AI_NUMERICHOST 0x04
@@ -230,7 +234,7 @@ gateway		return GATEWAY;
 
 less		return LESS;
 greater		return GREATER;
-byte		return BYTE;
+byte		return CBYTE;
 broadcast	return TK_BROADCAST;
 multicast	return TK_MULTICAST;
 

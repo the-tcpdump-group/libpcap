@@ -21,16 +21,19 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.169 2002-07-11 09:06:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.170 2002-08-01 08:33:01 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
+#include <pcap-stdinc.h>
+
+#ifdef __MINGW32__
+#include "IP6_misc.h"
+#endif
+
 #ifdef __NetBSD__
 #include <sys/param.h>
 #endif
@@ -38,8 +41,6 @@ static const char rcsid[] =
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
-
-#include <netinet/in.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -59,7 +60,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "sll.h"
 #include "arcnet.h"
 #ifdef INET6
-#include <netdb.h>	/* for "struct addrinfo" */
 #endif /*INET6*/
 #include <pcap-namedb.h>
 

@@ -24,19 +24,19 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.64 2002-06-11 17:04:45 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.65 2002-08-01 08:33:03 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <sys/param.h>
-#include <sys/types.h>				/* concession to AIX */
-#include <sys/socket.h>
-#include <sys/time.h>
+#include <pcap-stdinc.h>
 
-#include <netinet/in.h>
+#ifdef __MINGW32__
+#include "IP6_misc.h"
+#endif
+
 #ifdef HAVE_ETHER_HOSTTON
 #ifdef HAVE_NETINET_IF_ETHER_H
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
@@ -45,8 +45,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <netinet/if_ether.h>
 #endif /* HAVE_NETINET_IF_ETHER_H */
 #endif /* HAVE_ETHER_HOSTTON */
-#include <arpa/inet.h>
-#include <netdb.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -123,12 +121,19 @@ pcap_nametoaddrinfo(const char *name)
 bpf_u_int32
 pcap_nametonetaddr(const char *name)
 {
+#ifndef WIN32
 	struct netent *np;
 
 	if ((np = getnetbyname(name)) != NULL)
 		return np->n_net;
 	else
 		return 0;
+#else
+	/*
+	 * There's no "getnetbyname()" on Windows.
+	 */
+	return 0;
+#endif
 }
 
 /*

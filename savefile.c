@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.64 2002-07-11 09:06:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.65 2002-08-01 08:33:04 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -376,12 +376,20 @@ pcap_open_offline(const char *fname, char *errbuf)
 	/*
 	 * Set this field so we don't close stdin in pcap_close!
 	 */
+#ifndef WIN32
 	p->fd = -1;
+#else
+	p->adapter = NULL;
+#endif
 
 	if (fname[0] == '-' && fname[1] == '\0')
 		fp = stdin;
 	else {
+#ifndef WIN32
 		fp = fopen(fname, "r");
+#else
+		fp = fopen(fname, "rb");
+#endif
 		if (fp == NULL) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
 			    pcap_strerror(errno));
@@ -422,7 +430,12 @@ pcap_open_offline(const char *fname, char *errbuf)
 	p->snapshot = hdr.snaplen;
 	p->linktype = linktype_to_dlt(hdr.linktype);
 	p->sf.rfile = fp;
+#ifndef WIN32
 	p->bufsize = hdr.snaplen;
+#else
+	/* Allocate the space for pcap_pkthdr as well. It will be used by pcap_read_ex */
+	p->bufsize = hdr.snaplen+sizeof(struct pcap_pkthdr);
+#endif
 
 	/* Align link header as required for proper data alignment */
 	/* XXX should handle all types */
@@ -468,7 +481,11 @@ pcap_open_offline(const char *fname, char *errbuf)
  * and the contents in buf.  Return 0 on success, SFERR_EOF if there were
  * no more packets, and SFERR_TRUNC if a partial packet was encountered.
  */
+#ifdef WIN32
+int
+#else
 static int
+#endif
 sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, int buflen)
 {
 	struct pcap_sf_patched_pkthdr sf_hdr;
@@ -634,10 +651,18 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		return (NULL);
 	}
 
-	if (fname[0] == '-' && fname[1] == '\0')
+	if (fname[0] == '-' && fname[1] == '\0') {
 		f = stdout;
-	else {
+#ifdef WIN32
+		_setmode(_fileno(f), _O_BINARY);
+#endif
+	} else {
+#ifndef WIN32
 		f = fopen(fname, "w");
+#else
+		f = fopen(fname, "wb");
+		setbuf(f, NULL);	/* XXX - why? */
+#endif
 		if (f == NULL) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 			    fname, pcap_strerror(errno));

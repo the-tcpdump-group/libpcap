@@ -31,14 +31,13 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.35 2002-07-20 23:50:21 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.36 2002-08-01 08:33:04 risso Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
 #define lib_pcap_h
 
-#include <sys/types.h>
-#include <sys/time.h>
+#include <pcap-stdinc.h>
 
 #include <net/bpf.h>
 
@@ -129,6 +128,9 @@ struct pcap_stat {
 	u_int ps_recv;		/* number of packets received */
 	u_int ps_drop;		/* number of packets dropped */
 	u_int ps_ifdrop;	/* drops by interface XXX not yet supported */
+#ifdef WIN32
+	u_int bs_capt;		/* number of packets that reach the application */
+#endif /* WIN32 */
 };
 
 /*
@@ -202,6 +204,26 @@ u_int	bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);
 int	bpf_validate(struct bpf_insn *f, int len);
 char	*bpf_image(struct bpf_insn *, int);
 void	bpf_dump(struct bpf_program *, int);
+
+#ifdef WIN32
+/*
+ * Win32 definitions
+ */
+
+int pcap_setbuff(pcap_t *p, int dim);
+int pcap_setmode(pcap_t *p, int mode);
+int pcap_sendpacket(pcap_t *p, u_char *buf, int size);
+int pcap_setmintocopy(pcap_t *p, int size);
+
+#ifdef WPCAP
+/* Include file with the wpcap-specific extensions */
+#include <Win32-Extensions.h>
+#endif
+
+#define MODE_CAPT 0
+#define MODE_STAT 1
+
+#endif /* WIN32 */
 
 #ifdef __cplusplus
 }

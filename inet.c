@@ -34,26 +34,21 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.50 2002-07-30 08:12:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.51 2002-08-01 08:33:02 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <sys/param.h>
-#include <sys/file.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
+#include <pcap-stdinc.h>
 #ifdef HAVE_SYS_SOCKIO_H
 #include <sys/sockio.h>
 #endif
-#include <sys/time.h>				/* concession to AIX */
 
 struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
-#include <netinet/in.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -61,7 +56,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #else
@@ -85,7 +79,7 @@ struct rtentry;		/* declarations in <net/if.h> */
     (isdigit((unsigned char)((name)[2])) || (name)[2] == '\0'))
 #endif
 
-static struct sockaddr *
+struct sockaddr *
 dup_sockaddr(struct sockaddr *sa, size_t sa_len)
 {
 	struct sockaddr *newsa;
@@ -121,7 +115,7 @@ get_instance(char *name)
 	return (n);
 }
 
-static int
+int
 add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, char *name,
     u_int flags, const char *description, char *errbuf)
 {
@@ -458,6 +452,8 @@ pcap_freealldevs(pcap_if_t *alldevs)
 	}
 }
 
+#ifndef WIN32
+
 /*
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the
@@ -575,3 +571,79 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	*netp &= *maskp;
 	return (0);
 }
+
+#else /* WIN32 */
+
+/*
+ * Return the name of a network interface attached to the system, or NULL
+ * if none can be found.  The interface must be configured up; the
+ * lowest unit number is preferred; loopback is ignored.
+ */
+char *
+pcap_lookupdev(errbuf)
+	register char *errbuf;
+{
+	DWORD dwVersion;
+	DWORD dwWindowsMajorVersion;
+	dwVersion = GetVersion();	/* get the OS version */
+	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+	
+	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
+		/*
+		 * Windows 95, 98, ME.
+		 */
+		ULONG NameLength = 8192;
+		static char AdaptersName[8192];
+		
+		PacketGetAdapterNames(AdaptersName,&NameLength);
+		
+		return (AdaptersName);
+	} else {
+		/*
+		 * Windows NT (NT 4.0, W2K, WXP).
+		 */
+		ULONG NameLength = 8192;
+		static WCHAR AdaptersName[8192];
+		
+		PacketGetAdapterNames((PTSTR)AdaptersName,&NameLength);
+		
+		return (char *)(AdaptersName);
+	}	
+}
+
+
+int
+pcap_lookupnet(device, netp, maskp, errbuf)
+	register char *device;
+	register bpf_u_int32 *netp, *maskp;
+	register char *errbuf;
+{
+	/* 
+	 * We need only the first address, so we allocate a single
+	 * npf_if_addr structure and we set if_addr_size to 1.
+	 */
+	npf_if_addr if_addrs;
+	LONG if_addr_size = 1;
+	struct sockaddr_in *t_addr;
+
+	if (!PacketGetNetInfoEx((void *)device, &if_addrs, &if_addr_size)) {
+		*netp = *maskp = 0;
+		return (0);
+	}
+
+	t_addr = (struct sockaddr_in *) &(if_addrs.IPAddress);
+	*netp = t_addr->sin_addr.S_un.S_addr;
+	t_addr = (struct sockaddr_in *) &(if_addrs.SubnetMask);
+	*maskp = t_addr->sin_addr.S_un.S_addr;
+
+	/*
+	 * XXX - will we ever get back a 0 netmask?
+	 * If so, we should presumably make the "if (*maskp == 0)" code
+	 * above common, rather than non-Win32-specific.
+	 */
+
+	*netp &= *maskp;
+	return (0);
+}
+
+#endif /* WIN32 */

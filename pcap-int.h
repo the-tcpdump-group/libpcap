@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.37 2002-07-30 08:12:14 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.38 2002-08-01 08:33:03 risso Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -41,6 +41,10 @@ extern "C" {
 #endif
 
 #include <pcap.h>
+
+#ifdef WIN32
+#include <packet32.h>
+#endif /* WIN32 */
 
 /*
  * Savefile
@@ -75,7 +79,14 @@ struct pcap_md {
 };
 
 struct pcap {
+#ifdef WIN32
+	ADAPTER *adapter;
+	LPPACKET Packet;
+	int timeout;
+	int nonblock;
+#else
 	int fd;
+#endif /* WIN32 */
 	int snapshot;
 	int linktype;
 	int tzoff;		/* timezone offset */
@@ -178,6 +189,11 @@ int	yylex(void);
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
+#ifdef WIN32
+/* sf_next_packet must be exported for pcap_read_ex */
+int sf_next_packet(pcap_t *, struct pcap_pkthdr *, u_char *, int);
+#endif
+
 /*
  * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
  * Tru64 UNIX, and NetBSD pad to make everything line up on a nice boundary.
@@ -211,6 +227,10 @@ int	pcap_add_if(pcap_if_t **, char *, u_int, const char *, char *);
 
 #ifdef linux
 void	pcap_close_linux(pcap_t *);
+#endif
+
+#ifdef WIN32
+char	*pcap_win32strerror(void);
 #endif
 
 /* XXX */

@@ -33,19 +33,18 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.39 2002-06-11 17:04:47 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.40 2002-08-01 08:33:04 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include <sys/types.h>
+#include <pcap-stdinc.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -155,7 +154,14 @@ pcap_file(pcap_t *p)
 int
 pcap_fileno(pcap_t *p)
 {
+#ifndef WIN32
 	return (p->fd);
+#else
+	if (p->adapter != NULL)
+		return ((int)(DWORD)p->adapter->hFile);
+	else
+		return (-1);
+#endif
 }
 
 void
@@ -178,7 +184,9 @@ pcap_geterr(pcap_t *p)
 int
 pcap_getnonblock(pcap_t *p, char *errbuf)
 {
+#ifndef WIN32
 	int fdflags;
+#endif
 
 	if (p->sf.rfile != NULL) {
 		/*
@@ -187,6 +195,7 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 		 */
 		return (0);
 	}
+#ifndef WIN32
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
@@ -197,12 +206,19 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 		return (1);
 	else
 		return (0);
+#else
+	return (p->nonblock);
+#endif
 }
 
 int
 pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
+#ifndef WIN32
 	int fdflags;
+#else
+	int newtimeout;
+#endif
 
 	if (p->sf.rfile != NULL) {
 		/*
@@ -211,6 +227,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 		 */
 		return (0);
 	}
+#ifndef WIN32
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
@@ -226,8 +243,59 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 		    pcap_strerror(errno));
 		return (-1);
 	}
+#else
+	if (nonblock) {
+		/*
+		 * Set the read timeout to -1 for non-blocking mode.
+		 */
+		newtimeout = -1;
+	} else {
+		/*
+		 * Restore the timeout set when the device was opened.
+		 * (Note that this may be -1, in which case we're not
+		 * really leaving non-blocking mode.)
+		 */
+		newtimeout = p->timeout;
+	}
+	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "PacketSetReadTimeout: %s", pcap_win32strerror());
+		return (-1);
+	}
+	p->nonblock = (newtimeout == -1);
+#endif
 	return (0);
 }
+
+#ifdef WIN32
+/*
+ * Generate a string for the last Win32-specific error (i.e. an error generated when 
+ * calling a Win32 API).
+ * For errors occurred during standard C calls, we still use pcap_strerror()
+ */
+char *
+pcap_win32strerror(void)
+{
+	DWORD error;
+	static char errbuf[PCAP_ERRBUF_SIZE+1];
+	int errlen;
+
+	error = GetLastError();
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
+	    PCAP_ERRBUF_SIZE, NULL);
+
+	/*
+	 * "FormatMessage()" "helpfully" sticks CR/LF at the end of the
+	 * message.  Get rid of it.
+	 */
+	errlen = strlen(errbuf);
+	if (errlen >= 2) {
+		errbuf[errlen - 1] = '\0';
+		errbuf[errlen - 2] = '\0';
+	}
+	return (errbuf);
+}
+#endif
 
 /*
  * Not all systems have strerror().
@@ -258,7 +326,11 @@ pcap_open_dead(int linktype, int snaplen)
 	if (p == NULL)
 		return NULL;
 	memset (p, 0, sizeof(*p));
+#ifndef WIN32
 	p->fd = -1;
+#else
+	p->adapter = NULL;
+#endif /* WIN32 */
 	p->snapshot = snaplen;
 	p->linktype = linktype;
 	return p;
@@ -268,12 +340,19 @@ void
 pcap_close(pcap_t *p)
 {
 	/*XXX*/
+#ifndef WIN32
 	if (p->fd >= 0) {
 #ifdef linux
 		pcap_close_linux(p);
 #endif
 		close(p->fd);
 	}
+#else
+	if (p->adapter != NULL) {
+		PacketCloseAdapter(p->adapter);
+		p->adapter = NULL;
+	}
+#endif /* WIN32 */
 	if (p->sf.rfile != NULL) {
 		if (p->sf.rfile != stdin)
 			(void)fclose(p->sf.rfile);

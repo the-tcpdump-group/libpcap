@@ -40,12 +40,10 @@
 
 #if !(defined(lint) || defined(KERNEL) || defined(_KERNEL))
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.36 2002-06-11 17:04:48 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.37 2002-08-01 08:33:12 risso Exp $ (LBL)";
 #endif
 
-#include <sys/param.h>
-#include <sys/types.h>
-#include <sys/time.h>
+#include <pcap-stdinc.h>
 
 #define	SOLARIS	(defined(sun) && (defined(__SVR4) || defined(__svr4__)))
 #if defined(__hpux) || SOLARIS
@@ -76,7 +74,6 @@ static const char rcsid[] =
 #endif
 
 #ifndef LBL_ALIGN
-#include <netinet/in.h>
 
 #define EXTRACT_SHORT(p)	((u_short)ntohs(*(u_short *)p))
 #define EXTRACT_LONG(p)		(ntohl(*(u_int32 *)p))
