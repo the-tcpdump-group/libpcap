@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76.2.2 2003-12-22 00:04:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.76.2.3 2003-12-22 00:26:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -760,50 +760,39 @@ opt_peep(b)
 	 * is a known constant, we can merge this value into the
 	 * comparison.
 	 */
-	if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X) &&
-	    !ATOMELEM(b->out_use, A_ATOM)) {
-		val = b->val[X_ATOM];
-		if (vmap[val].is_const) {
-			int op;
-
-			b->s.k += vmap[val].const_val;
-			op = BPF_OP(b->s.code);
-			if (op == BPF_JGT || op == BPF_JGE) {
-				struct block *t = JT(b);
-				JT(b) = JF(b);
-				JF(b) = t;
-				b->s.k += 0x80000000;
+	if (BPF_OP(b->s.code) == BPF_JEQ) {
+		if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X) &&
+		    !ATOMELEM(b->out_use, A_ATOM)) {
+			val = b->val[X_ATOM];
+			if (vmap[val].is_const) {
+				/*
+				 * sub x  ->	nop
+				 * jeq #y	jeq #(x+y)
+				 */
+				b->s.k += vmap[val].const_val;
+				last->s.code = NOP;
+				done = 0;
+			} else if (b->s.k == 0) {
+				/*
+				 * sub #x  ->	nop
+				 * jeq #0	jeq #x
+				 */
+				last->s.code = NOP;
+				b->s.code = BPF_CLASS(b->s.code) |
+					BPF_OP(b->s.code) | BPF_X;
+				done = 0;
 			}
-			last->s.code = NOP;
-			done = 0;
-		} else if (b->s.k == 0) {
-			/*
-			 * sub x  ->	nop
-			 * j  #0	j  x
-			 */
-			last->s.code = NOP;
-			b->s.code = BPF_CLASS(b->s.code) | BPF_OP(b->s.code) |
-				BPF_X;
-			done = 0;
 		}
-	}
-	/*
-	 * Likewise, a constant subtract can be simplified.
-	 */
-	else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K) &&
-		 !ATOMELEM(b->out_use, A_ATOM)) {
-		int op;
+		/*
+		 * Likewise, a constant subtract can be simplified.
+		 */
+		else if (last->s.code == (BPF_ALU|BPF_SUB|BPF_K) &&
+			 !ATOMELEM(b->out_use, A_ATOM)) {
 
-		b->s.k += last->s.k;
-		last->s.code = NOP;
-		op = BPF_OP(b->s.code);
-		if (op == BPF_JGT || op == BPF_JGE) {
-			struct block *t = JT(b);
-			JT(b) = JF(b);
-			JF(b) = t;
-			b->s.k += 0x80000000;
+			last->s.code = NOP;
+			b->s.k += last->s.k;
+			done = 0;
 		}
-		done = 0;
 	}
 	/*
 	 * and #k	nop
@@ -996,18 +985,17 @@ opt_stmt(s, val, alter)
 		 * that is 0, and simplify.  This may not seem like
 		 * much of a simplification but it could open up further
 		 * optimizations.
-		 * XXX We could also check for mul by 1, and -1, etc.
+		 * XXX We could also check for mul by 1, etc.
 		 */
 		if (alter && vmap[val[A_ATOM]].is_const
 		    && vmap[val[A_ATOM]].const_val == 0) {
-			if (op == BPF_ADD || op == BPF_OR ||
-			    op == BPF_LSH || op == BPF_RSH || op == BPF_SUB) {
+			if (op == BPF_ADD || op == BPF_OR) {
 				s->code = BPF_MISC|BPF_TXA;
 				vstore(s, &val[A_ATOM], val[X_ATOM], alter);
 				break;
 			}
 			else if (op == BPF_MUL || op == BPF_DIV ||
-				 op == BPF_AND) {
+				 op == BPF_AND || op == BPF_LSH || op == BPF_RSH) {
 				s->code = BPF_LD|BPF_IMM;
 				s->k = 0;
 				vstore(s, &val[A_ATOM], K(s->k), alter);
