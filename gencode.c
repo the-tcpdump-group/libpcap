@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.200 2004-03-11 09:13:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.201 2004-03-17 19:03:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -978,6 +978,12 @@ init_linktype(type)
 		 */
 		off_linktype = -1;
 		off_nl = 0;
+		off_nl_nosnap = 0;	/* no 802.2 LLC */
+		return;
+
+	case DLT_APPLE_IP_OVER_IEEE1394:
+		off_linktype = 16;
+		off_nl = 18;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 

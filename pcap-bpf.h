@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.17 2004-03-11 23:47:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.18 2004-03-17 19:03:29 guy Exp $ (LBL)
  */
 
 /*
@@ -390,14 +390,14 @@ struct bpf_version {
 #define DLT_JUNIPER_ATM1        137
 
 /*
- * Reserved for Apple IP-over-IEEE 1394, as per a request from Dieter
- * Siegmund <dieter@apple.com>.  The header that would be presented
- * would be an Ethernet-like header:
+ * Apple IP-over-IEEE 1394, as per a request from Dieter Siegmund
+ * <dieter@apple.com>.  The header that's presented is an Ethernet-like
+ * header:
  *
  *	#define FIREWIRE_EUI64_LEN	8
  *	struct firewire_header {
  *		u_char  firewire_dhost[FIREWIRE_EUI64_LEN];
- *		u_char  firewire_dhost[FIREWIRE_EUI64_LEN];
+ *		u_char  firewire_shost[FIREWIRE_EUI64_LEN];
  *		u_short firewire_type;
  *	};
  *
