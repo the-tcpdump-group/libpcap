@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.66 1999-10-30 04:41:48 itojun Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.67 2000-04-01 12:06:08 assar Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -704,3 +704,31 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
     # DLPI needs putmsg under HPUX so test for -lstr while we're at it
     AC_CHECK_LIB(str, putmsg)
     ])
+
+dnl
+dnl Test for __attribute__
+dnl
+
+AC_DEFUN(AC_C___ATTRIBUTE__, [
+AC_MSG_CHECKING(for __attribute__)
+AC_CACHE_VAL(ac_cv___attribute__, [
+AC_TRY_COMPILE([
+#include <stdlib.h>
+],
+[
+static void foo(void) __attribute__ ((noreturn));
+
+static void
+foo(void)
+{
+  exit(1);
+}
+],
+ac_cv___attribute__=yes,
+ac_cv___attribute__=no)])
+if test "$ac_cv___attribute__" = "yes"; then
+  AC_DEFINE(HAVE___ATTRIBUTE__, 1, [define if your compiler has __attribute__])
+fi
+AC_MSG_RESULT($ac_cv___attribute__)
+])
+
