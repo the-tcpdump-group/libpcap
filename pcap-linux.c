@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.95 2003-07-25 05:32:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.96 2003-10-06 07:04:55 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1074,10 +1074,10 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		}
 		break;
 
-#ifndef ARPHRD_HDLC
-#define ARPHRD_HDLC 513	/* From Linux 2.2.13 */
+#ifndef ARPHRD_CISCO
+#define ARPHRD_CISCO 513 /* previously ARPHRD_HDLC */
 #endif
-	case ARPHRD_HDLC:
+	case ARPHRD_CISCO:
 		handle->linktype = DLT_C_HDLC;
 		break;
 
@@ -1097,11 +1097,22 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 #define ARPHRD_RAWHDLC 518
 #endif
 	case ARPHRD_RAWHDLC:
+#ifndef ARPHRD_DLCI
+#define ARPHRD_DLCI 15
+#endif
+	case ARPHRD_DLCI:
 		/*
 		 * XXX - should some of those be mapped to DLT_LINUX_SLL
 		 * instead?  Should we just map all of them to DLT_LINUX_SLL?
 		 */
 		handle->linktype = DLT_RAW;
+		break;
+
+#ifndef ARPHRD_FRAD
+#define ARPHRD_FRAD 770
+#endif
+	case ARPHRD_FRAD:
+		handle->linktype = DLT_FRELAY;
 		break;
 
 	case ARPHRD_LOCALTLK:
