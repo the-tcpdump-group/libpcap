@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.109 2004-12-16 22:22:20 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.110 2004-12-17 23:25:36 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.109 $)
+AC_REVISION($Revision: 1.110 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -569,6 +569,12 @@ AC_LBL_SOCKADDR_STORAGE
 AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 AC_LBL_UNALIGNED_ACCESS
+
+#
+# Makefile.in includes rules to generate version.h, so we assume
+# that it will be generated if autoconf is used.
+#
+AC_DEFINE(HAVE_VERSION_H, 1, [define if version.h is generated in the build procedure])
 
 rm -f net
 ln -s ${srcdir}/bpf/net net

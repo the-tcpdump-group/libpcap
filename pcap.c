@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.78 2004-12-17 20:41:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.79 2004-12-17 23:25:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -766,6 +766,12 @@ pcap_close(pcap_t *p)
  * was linked, or even weirder things, such as the string being the one
  * from the library but being truncated).
  */
+#ifdef HAVE_VERSION_H
+#include "version.h"
+#else
+static const char pcap_version_string[] = "libpcap version 0.9[.x]";
+#endif
+
 #ifdef WIN32
 /*
  * XXX - it'd be nice if we could somehow generate the WinPcap and libpcap
@@ -774,18 +780,18 @@ pcap_close(pcap_t *p)
  */
 static const char wpcap_version_string[] = "3.0";
 static const char pcap_version_string_fmt[] =
-    "WinPcap version %s, based on libpcap version 0.8";
+    "WinPcap version %s, based on %s";
 static const char pcap_version_string_packet_dll_fmt[] =
-    "WinPcap version %s (packet.dll version %s), based on libpcap version 0.8";
-static char *pcap_version_string;
+    "WinPcap version %s (packet.dll version %s), based on %s";
+static char *full_pcap_version_string;
 
 const char *
 pcap_lib_version(void)
 {
 	char *packet_version_string;
-	size_t pcap_version_string_len;
+	size_t full_pcap_version_string_len;
 
-	if (pcap_version_string == NULL) {
+	if (full_pcap_version_string == NULL) {
 		/*
 		 * Generate the version string.
 		 */
@@ -796,12 +802,15 @@ pcap_lib_version(void)
 			 * string are the same; just report the WinPcap
 			 * version.
 			 */
-			pcap_version_string_len =
-			    (sizeof pcap_version_string_fmt - 2) +
-			    strlen(wpcap_version_string);
-			pcap_version_string = malloc(pcap_version_string_len);
-			sprintf(pcap_version_string, pcap_version_string_fmt,
-			    wpcap_version_string);
+			full_pcap_version_string_len =
+			    (sizeof pcap_version_string_fmt - 4) +
+			    strlen(wpcap_version_string) +
+			    strlen(pcap_version_string);
+			full_pcap_version_string =
+			    malloc(full_pcap_version_string_len);
+			sprintf(full_pcap_version_string,
+			    pcap_version_string_fmt, wpcap_version_string,
+			    pcap_version_string);
 		} else {
 			/*
 			 * WinPcap version string and packet.dll version
@@ -811,20 +820,20 @@ pcap_lib_version(void)
 			 * versions.
 			 */
 			pcap_version_string_len =
-			    (sizeof pcap_version_string_packet_dll_fmt - 4) +
+			    (sizeof pcap_version_string_packet_dll_fmt - 6) +
 			    strlen(wpcap_version_string) +
-			    strlen(packet_version_string);
+			    strlen(packet_version_string) +
+			    strlen(pcap_version_string);
 			pcap_version_string = malloc(pcap_version_string_len);
-			sprintf(pcap_version_string,
+			sprintf(full_pcap_version_string,
 			    pcap_version_string_packet_dll_fmt,
-			    wpcap_version_string, packet_version_string);
+			    wpcap_version_string, packet_version_string,
+			    pcap_version_string);
 		}
 	}
-	return (pcap_version_string);
+	return (full_pcap_version_string);
 }
 #else
-#include "version.h"
-
 const char *
 pcap_lib_version(void)
 {
