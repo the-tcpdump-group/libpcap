@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.27 2002-08-02 04:42:51 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.28 2003-11-13 01:57:10 mcr Exp $ (LBL)
 
 LIBPCAP 0.8
 Now maintained by "The Tcpdump Group"
@@ -11,8 +11,8 @@ Anonymous CVS is available via:
 	(password "anoncvs")
 	cvs -d :pserver:tcpdump@cvs.tcpdump.org:/tcpdump/master checkout libpcap
 
-Version 0.7.1 of LIBPCAP can be retrieved with the CVS tag "libpcap_0_7rel1":
-	cvs -d :pserver:tcpdump@cvs.tcpdump.org:/tcpdump/master checkout -r libpcap_0_7rel1 libpcap
+Version 0.8 of LIBPCAP can be retrieved with the CVS tag "libpcap_0_8rel1":
+	cvs -d :pserver:tcpdump@cvs.tcpdump.org:/tcpdump/master checkout -r libpcap_0_8rel1 libpcap
 
 Please send patches against the master copy to patches@tcpdump.org.
 
