@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.75 2004-10-19 07:06:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.76 2004-10-19 15:55:28 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -352,6 +352,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_LINUX_IRDA, "Linux IrDA"),
 	DLT_CHOICE(DLT_IEEE802_11_RADIO_AVS, "802.11 plus AVS radio information header"),
         DLT_CHOICE(DLT_SYMANTEC_FIREWALL, "Symantec Firewall"),
+        DLT_CHOICE(DLT_JUNIPER_ATM1, "Juniper ATM1 PIC"),
+        DLT_CHOICE(DLT_JUNIPER_ATM2, "Juniper ATM2 PIC"),
 	DLT_CHOICE_SENTINEL
 };
 

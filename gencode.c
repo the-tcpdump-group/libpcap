@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.209 2004-08-27 07:37:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.210 2004-10-19 15:55:28 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1016,6 +1016,18 @@ init_linktype(type)
 		off_nl_nosnap = PFLOG_HDRLEN;
 		return;
 
+	case DLT_JUNIPER_ATM1:
+                off_linktype = 4; /* in reality variable between 4-8 */
+		off_nl = 4;
+		off_nl_nosnap = 14;
+		return;
+
+	case DLT_JUNIPER_ATM2:
+                off_linktype = 8; /* in reality variable between 8-12 */
+		off_nl = 8;
+		off_nl_nosnap = 18;
+		return;
+
 #ifdef DLT_PFSYNC
 	case DLT_PFSYNC:
 		off_linktype = -1;
@@ -1793,6 +1805,17 @@ gen_linktype(proto)
 		}
 		/*NOTREACHED*/
 		break;
+
+        case DLT_JUNIPER_ATM1:
+        case DLT_JUNIPER_ATM2:
+            /* just lets verify the magic number for now - 
+             * we may have upto 6 different encapsulations on the wire
+             * and need a lot of heuristics to figure out that the payload
+             * might be;
+             *
+             * FIXME encapsulation specific BPF_ filters
+             */
+            return gen_mcmp(0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
 
 	case DLT_LINUX_IRDA:
 	        bpf_error("IrDA link-layer type filtering not implemented");
@@ -5078,6 +5101,19 @@ gen_inbound(dir)
                     b0 = gen_cmp(0, BPF_B, PPP_WITHDIRECTION_IN);
                 }
                 break;
+
+        case DLT_JUNIPER_ATM1:
+        case DLT_JUNIPER_ATM2:
+                /* juniper flags (including direction) are stored
+                 * the byte after the 3-byte magic number */
+                if (dir) {
+                    /* match outgoing packets */
+                    b0 = gen_mcmp(3, BPF_B, 0, 0x01);
+                } else {
+                    /* match incoming packets */
+                    b0 = gen_mcmp(3, BPF_B, 1, 0x01);
+                }
+            break;
 
 	default:
 		bpf_error("inbound/outbound not supported on linktype %d",
