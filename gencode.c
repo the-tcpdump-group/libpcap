@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.219 2005-02-08 19:52:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.220 2005-03-17 07:02:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3380,8 +3380,11 @@ lookup_proto(name, proto)
 	case Q_LINK:
 		/* XXX should look up h/w protocol type based on linktype */
 		v = pcap_nametoeproto(name);
-		if (v == PROTO_UNDEF)
-			bpf_error("unknown ether proto '%s'", name);
+		if (v == PROTO_UNDEF) {
+			v = pcap_nametollc(name);
+			if (v == PROTO_UNDEF)
+				bpf_error("unknown ether proto '%s'", name);
+		}
 		break;
 
 	case Q_ISO:

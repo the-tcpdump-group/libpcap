@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.73 2003-12-24 09:14:21 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.74 2005-03-17 07:02:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -259,6 +259,30 @@ int
 pcap_nametoeproto(const char *s)
 {
 	struct eproto *p = eproto_db;
+
+	while (p->s != 0) {
+		if (strcmp(p->s, s) == 0)
+			return p->p;
+		p += 1;
+	}
+	return PROTO_UNDEF;
+}
+
+#include "llc.h"
+
+/* Static data base of LLC values. */
+static struct eproto llc_db[] = {
+	{ "iso", LLCSAP_ISONS },
+	{ "stp", LLCSAP_8021D },
+	{ "ipx", LLCSAP_IPX },
+	{ "netbeui", LLCSAP_NETBEUI },
+	{ (char *)0, 0 }
+};
+
+int
+pcap_nametollc(const char *s)
+{
+	struct eproto *p = llc_db;
 
 	while (p->s != 0) {
 		if (strcmp(p->s, s) == 0)
