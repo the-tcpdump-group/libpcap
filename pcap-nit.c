@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.38 2000-10-12 03:54:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.39 2000-10-28 00:01:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -245,6 +245,7 @@ int
 pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
 
-	p->fcode = *fp;
+	if (install_bpf_program(p, fp) < 0)
+		return (-1);
 	return (0);
 }

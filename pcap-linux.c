@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.38 2000-10-25 07:46:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.39 2000-10-28 00:01:29 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -432,22 +432,13 @@ pcap_setfilter(pcap_t *handle, struct bpf_program *filter)
 		return -1;
 	}
 
-	/* Free old filter code if existing */
-
-	pcap_freecode(handle, &handle->fcode);
-
 	/* Make our private copy of the filter */
 
-	handle->fcode.bf_len   = filter->bf_len;
-	handle->fcode.bf_insns = 
-		malloc(filter->bf_len * sizeof(*filter->bf_insns));
-	if (handle->fcode.bf_insns == NULL) {
+	if (install_bpf_program(handle, filter) < 0) {
 		snprintf(handle->errbuf, sizeof(handle->errbuf),
 			 "malloc: %s", pcap_strerror(errno));
 		return -1;
-	} 
-	memcpy(handle->fcode.bf_insns, filter->bf_insns, 
-	       filter->bf_len * sizeof(*filter->bf_insns));
+	}
 
 	/* 
 	 * Run user level packet filter by default. Will be overriden if 

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.43 2000-10-12 03:53:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.44 2000-10-28 00:01:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -372,11 +372,13 @@ pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 	 * compatible with some of kernel BPF code (for example BSD/OS 3.1).
 	 * Take a safer side for now.
 	 */
-	if (no_optimize)
-		p->fcode = *fp;
-	else if (p->sf.rfile != NULL)
-		p->fcode = *fp;
-	else if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
+	if (no_optimize) {
+		if (install_bpf_program(p, fp) < 0)
+			return (-1);
+	} else if (p->sf.rfile != NULL) {
+		if (install_bpf_program(p, fp) < 0)
+			return (-1);
+	} else if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETF: %s",
 		    pcap_strerror(errno));
 		return (-1);

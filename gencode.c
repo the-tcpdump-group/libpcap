@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.125 2000-10-25 07:28:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.126 2000-10-28 00:01:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -377,7 +377,7 @@ pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
  * in it.
  */
 void
-pcap_freecode(pcap_t *p, struct bpf_program *program)
+pcap_freecode(struct bpf_program *program)
 {
 	program->bf_len = 0;
 	if (program->bf_insns != NULL) {
