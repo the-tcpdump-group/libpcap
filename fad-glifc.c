@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-glifc.c,v 1.3 2003-11-15 23:23:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-glifc.c,v 1.4 2005-01-28 20:33:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -89,6 +89,9 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	struct lifconf ifc;
 	char *buf = NULL;
 	unsigned buf_size;
+#ifdef HAVE_SOLARIS
+	char *p;
+#endif
 	struct lifreq ifrflags, ifrnetmask, ifrbroadaddr, ifrdstaddr;
 	struct sockaddr *netmask, *broadaddr, *dstaddr;
 	int ret = 0;
@@ -173,6 +176,36 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 			fd = fd6;
 		else
 			fd = fd4;
+
+		/*
+		 * Skip entries that begin with "dummy".
+		 * XXX - what are these?  Is this Linux-specific?
+		 * Are there platforms on which we shouldn't do this?
+		 */
+		if (strncmp(ifrp->lifr_name, "dummy", 5) == 0)
+			continue;
+
+#ifdef HAVE_SOLARIS
+		/*
+		 * Skip entries that have a ":" followed by a number
+		 * at the end - those are Solaris virtual interfaces
+		 * on which you can't capture.
+		 */
+		p = strchr(ifrp->lifr_name, ':');
+		if (p != NULL) {
+			/*
+			 * We have a ":"; is it followed by a number?
+			 */
+			while (isdigit((unsigned char)*p))
+				p++;
+			if (*p == '\0') {
+				/*
+				 * All digits after the ":" until the end.
+				 */
+				continue;
+			}
+		}
+#endif
 
 		/*
 		 * Get the flags for this interface, and skip it if it's
