@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.110 2000-06-03 16:29:42 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.111 2000-06-26 05:10:40 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -295,6 +295,11 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	netmask = mask;
 	snaplen = pcap_snapshot(p);
+	if (snaplen == 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			 "snaplen of 0 rejects all packets");
+		return -1;
+	}
 
 	lex_init(buf ? buf : "");
 	init_linktype(pcap_datalink(p));
@@ -648,8 +653,8 @@ gen_linktype(proto)
 {
 	struct block *b0, *b1;
 
-	/* If we're not using encapsulation and checking for IP, we're done */
-	if (off_linktype == -1 && proto == ETHERTYPE_IP)
+	/* If we're not using encapsulation, we're done */
+	if (off_linktype == -1)
 		return gen_true();
 
 	switch (linktype) {
@@ -982,10 +987,12 @@ gen_host(addr, mask, proto, dir)
 
 	case Q_DEFAULT:
 		b0 = gen_host(addr, mask, Q_IP, dir);
-		b1 = gen_host(addr, mask, Q_ARP, dir);
-		gen_or(b0, b1);
-		b0 = gen_host(addr, mask, Q_RARP, dir);
-		gen_or(b1, b0);
+		if (off_linktype != -1) {
+		    b1 = gen_host(addr, mask, Q_ARP, dir);
+		    gen_or(b0, b1);
+		    b0 = gen_host(addr, mask, Q_RARP, dir);
+		    gen_or(b1, b0);
+		}
 		return b0;
 
 	case Q_IP:
