@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.36 2000-09-20 15:10:29 torsten Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.37 2001-06-18 23:43:16 itojun Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -95,6 +95,10 @@ pcap_lookupdev(errbuf)
 	struct ifaddrs *ifap, *ifa, *mp;
 	int n, minunit;
 	char *cp;
+/* for old BSD systems, including bsdi3 */
+#ifndef IF_NAMESIZE
+#define IF_NAMESIZE IFNAMSIZ
+#endif
 	static char device[IF_NAMESIZE + 1];
 
 	if (getifaddrs(&ifap) != 0) {
