@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.163 2002-04-07 00:04:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.164 2002-04-11 07:38:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -78,7 +78,7 @@ static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
 /* Hack for updating VLAN offsets. */
-static u_int	orig_linktype = -1, orig_nl = -1;
+static u_int	orig_linktype = -1, orig_nl = -1, orig_nl_nosnap = -1;
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
@@ -540,11 +540,55 @@ gen_bcmp(offset, size, v)
 
 /*
  * Various code constructs need to know the layout of the data link
- * layer.  These variables give the necessary offsets.  off_linktype
- * is set to -1 for no encapsulation, in which case, IP is assumed.
+ * layer.  These variables give the necessary offsets.
+ */
+
+/*
+ * "off_linktype" is the offset to information in the link-layer header
+ * giving the packet type.
+ *
+ * For Ethernet, it's the offset of the Ethernet type field.
+ *
+ * For link-layer types that always use 802.2 headers, it's the
+ * offset of the LLC header.
+ *
+ * For PPP, it's the offset of the PPP type field.
+ *
+ * For Cisco HDLC, it's the offset of the CHDLC type field.
+ *
+ * For BSD loopback, it's the offset of the AF_ value.
+ *
+ * For Linux cooked sockets, it's the offset of the type field.
+ *
+ * It's set to -1 for no encapsulation, in which case, IP is assumed.
  */
 static u_int off_linktype;
+
+/*
+ * These are offsets to the beginning of the network-layer header.
+ *
+ * If the link layer never uses 802.2 LLC:
+ *
+ *	"off_nl" and "off_nl_nosnap" are the same.
+ *
+ * If the link layer always uses 802.2 LLC:
+ *
+ *	"off_nl" is the offset if there's a SNAP header following
+ *	the 802.2 header;
+ *
+ *	"off_nl_nosnap" is the offset if there's no SNAP header.
+ *
+ * If the link layer is Ethernet:
+ *
+ *	"off_nl" is the offset if the packet is an Ethernet II packet
+ *	(we assume no 802.3+802.2+SNAP);
+ *
+ *	"off_nl_nosnap" is the offset if the packet is an 802.3 packet
+ *	with an 802.2 header following it.
+ */
 static u_int off_nl;
+static u_int off_nl_nosnap;
+
 static int linktype;
 
 static void
@@ -555,17 +599,20 @@ init_linktype(type)
 
 	orig_linktype = -1;
 	orig_nl = -1;
+	orig_nl_nosnap = -1;
 
 	switch (type) {
 
 	case DLT_ARCNET:
 		off_linktype = 2;
 		off_nl = 6;	/* XXX in reality, variable! */
+		off_nl_nosnap = 6;	/* no 802.2 LLC */
 		return;
 
 	case DLT_EN10MB:
 		off_linktype = 12;
-		off_nl = 14;
+		off_nl = 14;		/* Ethernet II */
+		off_nl_nosnap = 17;	/* 802.3+802.2 */
 		return;
 
 	case DLT_SLIP:
@@ -575,6 +622,7 @@ init_linktype(type)
 		 */
 		off_linktype = -1;
 		off_nl = 16;
+		off_nl_nosnap = 16;	/* no 802.2 LLC */
 		return;
 
 	case DLT_SLIP_BSDOS:
@@ -582,12 +630,14 @@ init_linktype(type)
 		off_linktype = -1;
 		/* XXX end */
 		off_nl = 24;
+		off_nl_nosnap = 24;	/* no 802.2 LLC */
 		return;
 
 	case DLT_NULL:
 	case DLT_LOOP:
 		off_linktype = 0;
 		off_nl = 4;
+		off_nl_nosnap = 4;	/* no 802.2 LLC */
 		return;
 
 	case DLT_PPP:
@@ -595,6 +645,7 @@ init_linktype(type)
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		off_linktype = 2;
 		off_nl = 4;
+		off_nl_nosnap = 4;	/* no 802.2 LLC */
 		return;
 
 	case DLT_PPP_ETHER:
@@ -604,11 +655,13 @@ init_linktype(type)
 		 */
 		off_linktype = 6;
 		off_nl = 8;
+		off_nl_nosnap = 8;	/* no 802.2 LLC */
 		return;
 
 	case DLT_PPP_BSDOS:
 		off_linktype = 5;
 		off_nl = 24;
+		off_nl_nosnap = 24;	/* no 802.2 LLC */
 		return;
 
 	case DLT_FDDI:
@@ -624,9 +677,11 @@ init_linktype(type)
 #ifdef PCAP_FDDIPAD
 		off_linktype += pcap_fddipad;
 #endif
-		off_nl = 21;
+		off_nl = 21;		/* FDDI+802.2+SNAP */
+		off_nl_nosnap = 16;	/* FDDI+802.2 */
 #ifdef PCAP_FDDIPAD
 		off_nl += pcap_fddipad;
+		off_nl_nosnap += pcap_fddipad;
 #endif
 		return;
 
@@ -655,7 +710,8 @@ init_linktype(type)
 		 * 8 - figure out which byte that is).
 		 */
 		off_linktype = 14;
-		off_nl = 22;
+		off_nl = 22;		/* Token Ring+802.2+SNAP */
+		off_nl_nosnap = 17;	/* Token Ring+802.2 */
 		return;
 
 	case DLT_IEEE802_11:
@@ -672,7 +728,8 @@ init_linktype(type)
 		 * data frames in networks with no bridges.
 		 */
 		off_linktype = 24;
-		off_nl = 30;
+		off_nl = 32;		/* 802.11+802.2+SNAP */
+		off_nl_nosnap = 27;	/* 802.22+802.2 */
 		return;
 
 	case DLT_PRISM_HEADER:
@@ -687,31 +744,31 @@ init_linktype(type)
 		 * the Prism header is fixed-length.
 		 */
 		off_linktype = 144+24;
-		off_nl = 144+30;
+		off_nl = 144+32;	/* Prism+802.11+802.2+SNAP */
+		off_nl_nosnap = 144+27;	/* Prism+802.11+802.2 */
 		return;
 
 	case DLT_ATM_RFC1483:
+	case DLT_ATM_CLIP:	/* Linux ATM defines this */
 		/*
 		 * assume routed, non-ISO PDUs
 		 * (i.e., LLC = 0xAA-AA-03, OUT = 0x00-00-00)
 		 */
-		off_linktype = 6;
-		off_nl = 8;
+		off_linktype = 0;
+		off_nl = 8;		/* 802.2+SNAP */
+		off_nl_nosnap = 3;	/* 802.2 */
 		return;
 
 	case DLT_RAW:
 		off_linktype = -1;
 		off_nl = 0;
-		return;
-
-	case DLT_ATM_CLIP:	/* Linux ATM defines this */
-		off_linktype = 6;
-		off_nl = 8;
+		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket */
 		off_linktype = 14;
 		off_nl = 16;
+		off_nl_nosnap = 16;	/* no 802.2 LLC */
 		return;
 
 	case DLT_LTALK:
@@ -722,6 +779,7 @@ init_linktype(type)
 		 */
 		off_linktype = -1;
 		off_nl = 0;
+		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
@@ -2789,7 +2847,7 @@ gen_proto(v, proto, dir)
 
 	case Q_ISO:
 		b0 = gen_linktype(LLCSAP_ISONS);
-		b1 = gen_cmp(off_nl + 3, BPF_B, (long)v);
+		b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
 		gen_and(b0, b1);
 		return b1;
 
@@ -3905,11 +3963,13 @@ gen_vlan(vlan_num)
 	if (orig_nl == (u_int)-1) {
 		orig_linktype = off_linktype;	/* save original values */
 		orig_nl = off_nl;
+		orig_nl_nosnap = off_nl_nosnap;
 
 		switch (linktype) {
 
 		case DLT_EN10MB:
 			off_linktype = 16;
+			off_nl_nosnap = 18;
 			off_nl = 18;
 			break;
 
