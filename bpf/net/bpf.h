@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.64 2002-12-11 22:43:32 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.65 2002-12-26 08:53:07 hannes Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -383,6 +383,16 @@ struct bpf_hdr {
  * 802.11 drivers and BSD drivers; that may happen in the future.
  */
 #define DLT_IEEE802_11_RADIO	127	/* 802.11 plus WLAN header */
+
+/*
+ * Reserved for the TZSP encapsulation, as per request from
+ * Chris Waters <chris.waters@networkchemistry.com>
+ * TZSP is a generic encapsulation for any other link type,
+ * which includes a means to include meta-information
+ * with the packet, e.g. signal strength and channel
+ * for 802.11 packets.
+ */
+#define DLT_TZSP                128     /* Tazmen Sniffer Protocol */
 
 /*
  * The instruction encodings.

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.72 2002-12-22 23:05:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.73 2002-12-26 08:53:07 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -167,6 +167,8 @@ static const char rcsid[] =
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
 #define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
+#define LINKTYPE_TZSP		126		/* Tazmen Sniffer Protocol */
+
 #define LINKTYPE_IEEE802_11_RADIO 127		/* 802.11 plus WLAN header */
 
 /*
@@ -281,6 +283,9 @@ static struct linktype_map {
 
 	/* Xilinx Aurora link layer */
 	{ DLT_AURORA,		LINKTYPE_AURORA },
+
+	/* Tazmen Sniffer Protocol */
+	{ DLT_TZSP,		LINKTYPE_TZSP },
 
 	/* 802.11 plus WLAN header */
 	{ DLT_IEEE802_11_RADIO,	LINKTYPE_IEEE802_11_RADIO },
