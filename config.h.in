@@ -30,6 +30,9 @@
 /* Define if you have the <sys/dlpi_ext.h> header file.  */
 #undef HAVE_SYS_DLPI_EXT_H
 
+/* Define if you have the <sys/ioccom.h> header file.  */
+#undef HAVE_SYS_IOCCOM_H
+
 /* Define if you have the <sys/sockio.h> header file.  */
 #undef HAVE_SYS_SOCKIO_H
 
