@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.103 2004-05-21 09:22:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.104 2004-05-21 09:45:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -188,11 +188,13 @@ pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 	 * that passed the filter.  As filtering is done in userland,
 	 * this would not include packets dropped because we ran out
 	 * of buffer space; in order to make this more like other
-	 * platforms (and to keep from confusing applications that,
-	 * for example, compute packet drop percentages), we also make it
-	 * count packets dropped by "bufmod" (otherwise we might run
-	 * the risk of the packet drop count being bigger than the
-	 * received-packet count).
+	 * platforms (Linux 2.4 and later, BSDs with BPF), where the
+	 * "packets received" count includes packets received but dropped
+	 * due to running out of buffer space, and to keep from confusing
+	 * applications that, for example, compute packet drop percentages,
+	 * we also make it count packets dropped by "bufmod" (otherwise we
+	 * might run the risk of the packet drop count being bigger than
+	 * the received-packet count).
 	 *
 	 * "ps_drop" counts packets dropped by "bufmod" because of
 	 * flow control requirements or resource exhaustion; it doesn't
@@ -205,6 +207,11 @@ pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 	 * yet read from libpcap by the application.
 	 */
 	*ps = p->md.stat;
+
+	/*
+	 * Add in the drop count, as per the above comment.
+	 */
+	ps->ps_recv += ps->ps_drop;
 	return (0);
 }
 
@@ -311,15 +318,6 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif
 			sbp = (struct sb_hdr *)bp;
 		p->md.stat.ps_drop = sbp->sbh_drops;
-		/*
-		 * On at least some other platforms (Linux 2.4 and later,
-		 * BSDs with BPF), "ps_recv" counts packets that were
-		 * received but dropped due to running out of buffer
-		 * space; we do that here, so that applications that
-		 * compute packet drop percentages don't see more packets
-		 * dropped than received.
-		 */
-		p->md.stat.ps_recv += sbp->sbh_drops;
 		pk = bp + sizeof(*sbp);
 		bp += sbp->sbh_totlen;
 		origlen = sbp->sbh_origlen;
