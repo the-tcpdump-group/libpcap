@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.82 2004-12-14 23:33:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.83 2004-12-14 23:55:30 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -142,6 +142,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int cc;
 	int n = 0;
 	register u_char *bp, *ep;
+	u_char *datap;
 	struct bpf_insn *fcode;
 #ifdef PCAP_FDDIPAD
 	register int pad;
@@ -234,7 +235,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		pad = 0;
 #endif
 	while (bp < ep) {
-		register int caplen, datalen, hdrlen, reclen;
+		register int caplen, hdrlen;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -257,28 +258,22 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		caplen = bhp->bh_caplen;
-		datalen = bhp->bh_datalen;
 		hdrlen = bhp->bh_hdrlen;
-		reclen = hdrlen + caplen;
-
-#ifdef PCAP_FDDIPAD
-		if (caplen > pad)
-			caplen -= pad;
-		else
-			caplen = 0;
-		if (datalen > pad)
-			datalen -= pad;
-		else
-			datalen = 0;
-		hdrlen += pad;
-#endif
-
+		datap = bp + hdrlen;
 		/*
 		 * Short-circuit evaluation: if using BPF filter
 		 * in kernel, no need to do it now.
+		 *
+#ifdef PCAP_FDDIPAD
+		 * Note: the filter code was generated assuming
+		 * that pcap_fddipad was the amount of padding
+		 * before the header, as that's what's required
+		 * in the kernel, so we run the filter before
+		 * skipping that padding.
+#endif
 		 */
 		if (fcode == NULL ||
-		    bpf_filter(fcode, bp + hdrlen, datalen, caplen)) {
+		    bpf_filter(fcode, datap, bhp->bh_datalen, caplen)) {
 			struct pcap_pkthdr pkthdr;
 
 			pkthdr.ts.tv_sec = bhp->bh_tstamp.tv_sec;
@@ -291,11 +286,22 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #else
 			pkthdr.ts.tv_usec = bhp->bh_tstamp.tv_usec;
 #endif
+#ifdef PCAP_FDDIPAD
+			if (caplen > pad)
+				pkthdr.caplen = caplen - pad;
+			else
+				pkthdr.caplen = 0;
+			if (bhp->bh_datalen > pad)
+				pkthdr.len = bhp->bh_datalen - pad;
+			else
+				pkthdr.len = 0;
+			datap += pad;
+#else
 			pkthdr.caplen = caplen;
-			pkthdr.len = datalen;
-
-			(*callback)(user, &pkthdr, bp + hdrlen);
-			bp += BPF_WORDALIGN(reclen);
+			pkthdr.len = bhp->bh_datalen;
+#endif
+			(*callback)(user, &pkthdr, datap);
+			bp += BPF_WORDALIGN(caplen + hdrlen);
 			if (++n >= cnt && cnt > 0) {
 				p->bp = bp;
 				p->cc = ep - bp;
@@ -305,7 +311,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			/*
 			 * Skip this packet.
 			 */
-			bp += BPF_WORDALIGN(reclen);
+			bp += BPF_WORDALIGN(caplen + hdrlen);
 		}
 	}
 #undef bhp
