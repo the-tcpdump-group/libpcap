@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.56 2002-04-20 21:01:58 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.57 2002-06-06 08:57:04 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -340,6 +340,11 @@ struct bpf_hdr {
  * field.
  */
 #define DLT_IP_OVER_FC		122
+
+/*
+ * Reserved for capturing on Solaris with SunATM.
+ */
+#define DLT_SUNATM		123	/* Solaris+SunATM */
 
 /*
  * The instruction encodings.

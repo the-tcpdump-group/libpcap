@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.60 2002-04-20 21:01:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.61 2002-06-06 08:57:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -176,6 +176,7 @@ static const char rcsid[] =
 #define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_HHDLC		121		/* Siemens HiPath HDLC */
 #define LINKTYPE_IP_OVER_FC	122		/* RFC 2625 IP-over-Fibre Channel */
+#define LINKTYPE_SUNATM		123		/* Solaris+SunATM */
 
 static struct linktype_map {
 	int	dlt;
@@ -256,6 +257,9 @@ static struct linktype_map {
 
 	/* RFC 2625 IP-over-Fibre Channel */
 	{ DLT_IP_OVER_FC,	LINKTYPE_IP_OVER_FC },
+
+	/* Solaris+SunATM */
+	{ DLT_SUNATM,		LINKTYPE_SUNATM },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
