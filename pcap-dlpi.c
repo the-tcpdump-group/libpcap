@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.72 2001-11-11 22:32:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.73 2001-11-17 21:07:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -89,7 +89,11 @@ static const char rcsid[] =
 #endif
 
 #ifndef PCAP_DEV_PREFIX
+#ifdef _AIX
+#define PCAP_DEV_PREFIX "/dev/dlpi"
+#else
 #define PCAP_DEV_PREFIX "/dev"
+#endif
 #endif
 
 #define	MAXDLBUF	8192
