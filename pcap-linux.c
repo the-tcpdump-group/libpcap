@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.90 2003-07-23 05:29:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.91 2003-07-25 03:25:46 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -187,6 +187,7 @@ static void map_arphrd_to_dlt(pcap_t *, int, int);
 static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
+static void pcap_close_linux(pcap_t *handle);
 
 /*
  * Wrap some ioctl calls
@@ -361,12 +362,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		 */
 		mtu = iface_get_mtu(handle->fd, device, ebuf);
 		if (mtu == -1) {
-			if (handle->md.clear_promisc)
-				/* 2.0.x kernel */
-				pcap_close_linux(handle);
-			close(handle->fd);
-			if (handle->md.device != NULL)
-				free(handle->md.device);
+			pcap_close_linux(handle);
 			free(handle);
 			return NULL;
 		}
@@ -393,15 +389,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	if (!handle->buffer) {
 	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
-		if (handle->md.clear_promisc)
-			/* 2.0.x kernel */
-			pcap_close_linux(handle);
-		close(handle->fd);
-		if (handle->md.device != NULL)
-			free(handle->md.device);
+		pcap_close_linux(handle);
 		free(handle);
 		return NULL;
 	}
+
+	handle->close_op = pcap_close_linux;
 
 	return handle;
 }
@@ -1459,17 +1452,10 @@ static void	pcap_close_all(void)
 		pcap_close(handle);
 }
 
-void	pcap_close_linux( pcap_t *handle )
+static void	pcap_close_linux( pcap_t *handle )
 {
 	struct pcap	*p, *prevp;
 	struct ifreq	ifr;
-
-#ifdef HAVE_DAG_API
-	if (handle->md.is_dag) {
-		/* close actions will be done in dag_platform_close() */
-		return;
-	}
-#endif /* HAVE_DAG_API */
 
 	if (handle->md.clear_promisc) {
 		/*
@@ -1535,6 +1521,10 @@ void	pcap_close_linux( pcap_t *handle )
 	if (handle->md.device != NULL)
 		free(handle->md.device);
 	handle->md.device = NULL;
+	if (handle->buffer != NULL)
+		free(handle->buffer);
+	if (handle->fd >= 0)
+		close(handle->fd);
 }
 
 /*
@@ -1546,14 +1536,14 @@ static int
 live_open_old(pcap_t *handle, const char *device, int promisc,
 	      int to_ms, char *ebuf)
 {
-	int		sock_fd = -1, arptype;
+	int		arptype;
 	struct ifreq	ifr;
 
 	do {
 		/* Open the socket */
 
-		sock_fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
-		if (sock_fd == -1) {
+		handle->fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
+		if (handle->fd == -1) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				 "socket: %s", pcap_strerror(errno));
 			break;
@@ -1572,13 +1562,13 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 				PCAP_ERRBUF_SIZE);
 			break;
 		}
-		if (iface_bind_old(sock_fd, device, ebuf) == -1)
+		if (iface_bind_old(handle->fd, device, ebuf) == -1)
 			break;
 
 		/*
 		 * Try to get the link-layer type.
 		 */
-		arptype = iface_get_arptype(sock_fd, device, ebuf);
+		arptype = iface_get_arptype(handle->fd, device, ebuf);
 		if (arptype == -1)
 			break;
 
@@ -1598,7 +1588,7 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 		if (promisc) {
 			memset(&ifr, 0, sizeof(ifr));
 			strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
-			if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
+			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
 					 "ioctl: %s", pcap_strerror(errno));
 				break;
@@ -1632,7 +1622,7 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 				}
 
 				ifr.ifr_flags |= IFF_PROMISC;
-				if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
+				if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1) {
 				        snprintf(ebuf, PCAP_ERRBUF_SIZE,
 						 "ioctl: %s",
 						 pcap_strerror(errno));
@@ -1649,10 +1639,6 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 			}
 		}
 
-		/* Save the socket FD in the pcap structure */
-
-		handle->fd 	 = sock_fd;
-
 		/*
 		 * Default value for offset to align link-layer payload
 		 * on a 4-byte boundary.
@@ -1663,10 +1649,7 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 
 	} while (0);
 
-	if (handle->md.clear_promisc)
-		pcap_close_linux(handle);
-	if (sock_fd != -1)
-		close(sock_fd);
+	pcap_close_linux(handle);
 	return 0;
 }
 

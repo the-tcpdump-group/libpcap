@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.8 2003-05-15 14:30:30 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.9 2003-07-25 03:25:47 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -136,6 +136,17 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
+
+static void
+pcap_close_win32(pcap_t *p)
+{
+	if (p->buffer != NULL)
+		free(p->buffer);
+	if (p->adapter != NULL) {
+		PacketCloseAdapter(p->adapter);
+		p->adapter = NULL;
+	}
+}
 
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
@@ -242,6 +253,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	PacketSetReadTimeout(p->adapter, to_ms);
+
+	p->close_op = pcap_close_win32;
 
 	return (p);
 bad:

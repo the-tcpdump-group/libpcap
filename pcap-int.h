@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.47 2003-07-23 05:29:21 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.48 2003-07-25 03:25:46 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -115,6 +115,10 @@ struct pcap {
 	 */
 	u_char *pkt;
 
+	/*
+	 * Methods.
+	 */
+	void	(*close_op)(pcap_t *);
 
 	/*
 	 * Placeholder for filter code if bpf not in kernel.
@@ -242,10 +246,6 @@ int	pcap_add_if(pcap_if_t **, char *, u_int, const char *, char *);
 struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
 int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
 	    const char *, char *);
-
-#ifdef linux
-void	pcap_close_linux(pcap_t *);
-#endif
 
 #ifdef WIN32
 char	*pcap_win32strerror(void);

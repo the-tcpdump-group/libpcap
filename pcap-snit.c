@@ -25,7 +25,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.60 2002-12-22 02:36:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.61 2003-07-25 03:25:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -218,6 +218,15 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 	return (0);
 }
 
+static void
+pcap_close_snit(pcap_t *p)
+{
+	if (p->buffer != NULL)
+		free(p->buffer);
+	if (p->fd >= 0)
+		close(p->fd);
+}
+
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
     char *ebuf)
@@ -308,6 +317,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
 	}
+
+	p->close_op = pcap_close_snit;
+
 	return (p);
  bad:
 	if (fd >= 0)

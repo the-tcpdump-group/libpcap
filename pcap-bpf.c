@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.61 2003-07-23 05:29:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.62 2003-07-25 03:25:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -440,6 +440,15 @@ bpf_open(pcap_t *p, char *errbuf)
 	return (fd);
 }
 
+static void
+pcap_close_bpf(pcap_t *p)
+{
+	if (p->buffer != NULL)
+		free(p->buffer);
+	if (p->fd >= 0)
+		close(p->fd);
+}
+
 /*
  * XXX - on AIX, IBM's tcpdump (and perhaps the incompatible-with-everybody-
  * else's libpcap in AIX 5.1) appears to forcibly load the BPF driver
@@ -726,6 +735,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * problems we have experienced from AIX BPF. */
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
+
+	p->close_op = pcap_close_bpf;
 
 	return (p);
  bad:

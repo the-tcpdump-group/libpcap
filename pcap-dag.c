@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.1 2003-07-23 05:29:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.2 2003-07-25 03:25:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -65,7 +65,6 @@ static int atexit_handler_installed = 0;
 #define dag_platform_finddevs pcap_platform_finddevs
 #define dag_setfilter pcap_setfilter
 #define dag_set_datalink_platform pcap_set_datalink_platform
-#define dag_platform_close pcap_platform_close
 #endif /* DAG_ONLY */
 
 static void delete_pcap_dag(pcap_t *p) {
@@ -87,14 +86,14 @@ static void delete_pcap_dag(pcap_t *p) {
 }
 
 /*
- * Performs a graceful shutdown of the DAG card and frees dynamic memory held
- * in the pcap_t structure.
+ * Performs a graceful shutdown of the DAG card, frees dynamic memory held
+ * in the pcap_t structure, and closes the file descriptor for the DAG card.
  */
 
-void dag_platform_close(pcap_t *p) {
+static void dag_platform_close(pcap_t *p) {
 
 #ifdef linux
-  if (p != NULL && p->md.is_dag && p->md.device != NULL) {
+  if (p != NULL && p->md.device != NULL) {
     if(dag_stop(p->fd) < 0)
       fprintf(stderr,"dag_stop %s: %s\n", p->md.device, strerror(errno));
     if(dag_close(p->fd) < 0)
@@ -103,7 +102,7 @@ void dag_platform_close(pcap_t *p) {
     free(p->md.device);
   }
 #else
-  if (p != NULL && p->md.is_dag) {
+  if (p != NULL) {
     if(dag_stop(p->fd) < 0)
       fprintf(stderr,"dag_stop: %s\n", strerror(errno));
     if(dag_close(p->fd) < 0)
@@ -111,6 +110,8 @@ void dag_platform_close(pcap_t *p) {
   }
 #endif
   delete_pcap_dag(p);
+  /* XXX - does "dag_close()" do this?  If so, we don't need to. */
+  close(p->fd);
 }
 
 static void atexit_handler(void) {
@@ -383,6 +384,8 @@ pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, c
     snprintf(ebuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
     return NULL;
   }
+
+  handle->close_op = dag_platform_close;
 
   return handle;
 }

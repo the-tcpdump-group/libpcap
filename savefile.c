@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.81 2003-06-27 07:57:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.82 2003-07-25 03:25:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -410,6 +410,15 @@ swap_hdr(struct pcap_file_header *hp)
 	hp->linktype = SWAPLONG(hp->linktype);
 }
 
+static void
+sf_close(pcap_t *p)
+{
+	if (p->sf.rfile != stdin)
+		(void)fclose(p->sf.rfile);
+	if (p->sf.base != NULL)
+		free(p->sf.base);
+}
+
 pcap_t *
 pcap_open_offline(const char *fname, char *errbuf)
 {
@@ -426,14 +435,6 @@ pcap_open_offline(const char *fname, char *errbuf)
 	}
 
 	memset((char *)p, 0, sizeof(*p));
-	/*
-	 * Set this field so we don't close stdin in pcap_close!
-	 */
-#ifndef WIN32
-	p->fd = -1;
-#else
-	p->adapter = NULL;
-#endif
 
 	if (fname[0] == '-' && fname[1] == '\0')
 		fp = stdin;
@@ -522,6 +523,8 @@ pcap_open_offline(const char *fname, char *errbuf)
 	/* XXX padding only needed for kernel fcode */
 	pcap_fddipad = 0;
 #endif
+
+	p->close_op = sf_close;
 
 	return (p);
  bad:

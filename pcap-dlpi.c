@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.85 2003-02-19 08:06:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.86 2003-07-25 03:25:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -289,6 +289,15 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #define A_PROMISCON_REQ	(('A'<<8)|121)
 #endif /* A_PROMISCON_REQ */
 #endif /* HAVE_SOLARIS */
+
+static void
+pcap_close_dlpi(pcap_t *p)
+{
+	if (p->buffer != NULL)
+		free(p->buffer);
+	if (p->fd >= 0)
+		close(p->fd);
+}
 
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
@@ -654,9 +663,16 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		    pcap_strerror(errno));
 		goto bad;
 	}
+
 	/* Allocate data buffer */
 	p->bufsize = PKTBUFSIZE;
 	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
+	if (p->buffer == NULL) {
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		goto bad;
+	}
+
+	p->close_op = pcap_close_dlpi;
 
 	return (p);
 bad:

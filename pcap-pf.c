@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.73 2003-05-02 08:35:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.74 2003-07-25 03:25:47 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -244,6 +244,15 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	return (0);
 }
 
+static void
+pcap_close_pf(pcap_t *p)
+{
+	if (p->buffer != NULL)
+		free(p->buffer);
+	if (p->fd >= 0)
+		close(p->fd);
+}
+
 pcap_t *
 pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
     char *ebuf)
@@ -396,8 +405,15 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 			goto bad;
 		}
 	}
+
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char*)malloc(p->bufsize + p->offset);
+	if (p->buffer == NULL) {
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		goto bad;
+	}
+
+	p->close_op = pcap_close_pf;
 
 	return (p);
  bad:

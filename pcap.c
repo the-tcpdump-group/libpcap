@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.56 2003-07-23 05:29:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.57 2003-07-25 03:25:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -610,6 +610,12 @@ pcap_strerror(int errnum)
 #endif
 }
 
+static void
+pcap_close_dead(pcap_t *p)
+{
+	/* Nothing to do. */
+}
+
 pcap_t *
 pcap_open_dead(int linktype, int snaplen)
 {
@@ -619,46 +625,18 @@ pcap_open_dead(int linktype, int snaplen)
 	if (p == NULL)
 		return NULL;
 	memset (p, 0, sizeof(*p));
-#ifndef WIN32
-	p->fd = -1;
-#else
-	p->adapter = NULL;
-#endif /* WIN32 */
 	p->snapshot = snaplen;
 	p->linktype = linktype;
+	p->close_op = pcap_close_dead;
 	return p;
 }
 
 void
 pcap_close(pcap_t *p)
 {
-	/*XXX*/
-#ifndef WIN32
-	if (p->fd >= 0) {
-#ifdef linux
-		pcap_close_linux(p);
-#endif
-#ifdef HAVE_DAG_API
-		dag_platform_close(p);
-#endif
-		close(p->fd);
-	}
-#else /* WIN32 */
-	if (p->adapter != NULL) {
-		PacketCloseAdapter(p->adapter);
-		p->adapter = NULL;
-	}
-#endif /* WIN32 */
-	if (p->sf.rfile != NULL) {
-		if (p->sf.rfile != stdin)
-			(void)fclose(p->sf.rfile);
-		if (p->sf.base != NULL)
-			free(p->sf.base);
-	} else if (p->buffer != NULL)
-		free(p->buffer);
+	p->close_op(p);
 	if (p->dlt_list != NULL)
 		free(p->dlt_list);
-
 	pcap_freecode(&p->fcode);
 	free(p);
 }
