@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.56 2003-07-23 05:29:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.57 2003-09-22 11:51:37 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -135,20 +135,6 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
 	int this_instance;
-
-	/*
-	 * Can we open this interface for live capture?
-	 */
-	p = pcap_open_live(name, 68, 0, 0, errbuf);
-	if (p == NULL) {
-		/*
-		 * No.  Don't bother including it.
-		 * Don't treat this as an error, though.
-		 */
-		*curdev_ret = NULL;
-		return (0);
-	}
-	pcap_close(p);
 
 	/*
 	 * Is there already an entry in the list for this interface?
@@ -617,13 +603,50 @@ pcap_lookupdev(errbuf)
 		return (AdaptersName);
 	} else {
 		/*
-		 * Windows NT (NT 4.0, W2K, WXP).
+		 * Windows NT (NT 4.0, W2K, WXP). Convert the names to UNICODE for backward compatibility
 		 */
 		ULONG NameLength = 8192;
 		static WCHAR AdaptersName[8192];
-		
-		PacketGetAdapterNames((PTSTR)AdaptersName,&NameLength);
-		
+		char *tAstr;
+		WCHAR *tUstr;
+		WCHAR *TAdaptersName = (WCHAR*)malloc(8192 * sizeof(WCHAR));
+		int NAdapts = 0;
+
+		if(TAdaptersName == NULL)
+		{
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE, "memory allocation failure");
+			return NULL;
+		}
+
+		PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength);
+
+		tAstr = (char*)TAdaptersName;
+		tUstr = (WCHAR*)AdaptersName;
+
+		/*
+		 * Convert and copy the device names
+		 */
+		while(sscanf(tAstr, "%S", tUstr) > 0)
+		{
+			tAstr += strlen(tAstr) + 1;
+			tUstr += wcslen(tUstr) + 1;
+			NAdapts ++;
+		}
+
+		tAstr++;
+		*tUstr = 0;
+		tUstr++;
+
+		/*
+		 * Copy the descriptions
+		 */
+		while(NAdapts--)
+		{
+			strcpy((char*)tUstr, tAstr);
+			(char*)tUstr += strlen(tAstr) + 1;;
+			tAstr += strlen(tAstr) + 1;
+		}
+
 		return (char *)(AdaptersName);
 	}	
 }
@@ -636,30 +659,35 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register char *errbuf;
 {
 	/* 
-	 * We need only the first address, so we allocate a single
-	 * npf_if_addr structure and we set if_addr_size to 1.
+	 * We need only the first IPv4 address, so we must scan the array returned by PacketGetNetInfo()
+	 * in order to skip non IPv4 (i.e. IPv6 addresses)
 	 */
-	npf_if_addr if_addrs;
+	npf_if_addr if_addrs[MAX_NETWORK_ADDRESSES];
 	LONG if_addr_size = 1;
 	struct sockaddr_in *t_addr;
+	unsigned int i;
 
-	if (!PacketGetNetInfoEx((void *)device, &if_addrs, &if_addr_size)) {
+	if (!PacketGetNetInfoEx((void *)device, if_addrs, &if_addr_size)) {
 		*netp = *maskp = 0;
 		return (0);
 	}
 
-	t_addr = (struct sockaddr_in *) &(if_addrs.IPAddress);
-	*netp = t_addr->sin_addr.S_un.S_addr;
-	t_addr = (struct sockaddr_in *) &(if_addrs.SubnetMask);
-	*maskp = t_addr->sin_addr.S_un.S_addr;
+	for(i=0; i<MAX_NETWORK_ADDRESSES; i++)
+	{
+		if(if_addrs[i].IPAddress.ss_family == AF_INET)
+		{
+			t_addr = (struct sockaddr_in *) &(if_addrs[i].IPAddress);
+			*netp = t_addr->sin_addr.S_un.S_addr;
+			t_addr = (struct sockaddr_in *) &(if_addrs[i].SubnetMask);
+			*maskp = t_addr->sin_addr.S_un.S_addr;
 
-	/*
-	 * XXX - will we ever get back a 0 netmask?
-	 * If so, we should presumably make the "if (*maskp == 0)" code
-	 * above common, rather than non-Win32-specific.
-	 */
+			*netp &= *maskp;
+			return (0);
+		}
+				
+	}
 
-	*netp &= *maskp;
+	*netp = *maskp = 0;
 	return (0);
 }
 
