@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.88 2003-01-23 07:24:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.89 2003-04-09 07:19:49 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1271,18 +1271,29 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 			device_id = -1;
 		}
 
-		/* Select promiscuous mode on/off */
+		/*
+		 * Select promiscuous mode on if "promisc" is set.
+		 *
+		 * Do not turn allmulti mode on if we don't select
+		 * promiscuous mode - on some devices (e.g., Orinoco
+		 * wireless interfaces), allmulti mode isn't supported
+		 * and the driver implements it by turning promiscuous
+		 * mode on, and that screws up the operation of the
+		 * card as a normal networking interface, and on no
+		 * other platform I know of does starting a non-
+		 * promiscuous capture affect which multicast packets
+		 * are received by the interface.
+		 */
 
 		/*
 		 * Hmm, how can we set promiscuous mode on all interfaces?
 		 * I am not sure if that is possible at all.
 		 */
 
-		if (device) {
+		if (device && promisc) {
 			memset(&mr, 0, sizeof(mr));
 			mr.mr_ifindex = device_id;
-			mr.mr_type    = promisc ?
-				PACKET_MR_PROMISC : PACKET_MR_ALLMULTI;
+			mr.mr_type    = PACKET_MR_PROMISC;
 			if (setsockopt(sock_fd, SOL_PACKET,
 				PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr)) == -1)
 			{
