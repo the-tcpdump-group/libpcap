@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.39 2000-10-28 00:01:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.40 2000-11-04 07:19:23 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -525,6 +525,7 @@ static int map_arphrd_to_dlt(int arptype)
 #endif
 	case ARPHRD_ATM:	return DLT_ATM_CLIP;
 
+	case ARPHRD_SIT:
 	case ARPHRD_PPP:
 	case ARPHRD_CSLIP:
 	case ARPHRD_SLIP6:
