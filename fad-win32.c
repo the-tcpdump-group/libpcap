@@ -19,6 +19,11 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#ifndef lint
+static const char rcsid[] =
+    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.4 2002-08-08 09:15:57 guy Exp $ (LBL)";
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -162,10 +167,15 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 	 */
 	if (!PacketGetNetInfoEx((void *)name, if_addrs, &if_addr_size)) {
 		/*
-		 * Failure. Return A succesful code, but don't add any address to the list
+		 * Failure.
+		 *
+		 * We don't return an error, because this can happen with
+		 * NdisWan interfaces, and we want to supply them even
+		 * if we can't supply their addresses.
+		 *
+		 * We return an entry with an empty address list.
 		 */
-
-		return 0;
+		return (0);
 	}
 
 	/*
