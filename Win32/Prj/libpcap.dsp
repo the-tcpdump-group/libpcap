@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /I "../../lbl/" /I "../../bpf/" /I "../include/" /I "../../../../common" /D "YY_NEVER_INTERACTIVE" /D yylval=pcap_lval /D "_USRDLL" /D "LIBPCAP_EXPORTS" /D "HAVE_STRERROR" /D "_DEBUG" /D "__STDC__" /D "INET6" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D SIZEOF_CHAR=1 /D SIZEOF_SHORT=2 /D SIZEOF_INT=4 /D "HAVE_ADDRINFO" /YX /FD /c
+# ADD CPP /nologo /MT /W3 /GX /O2 /I "../../" /I "../../lbl/" /I "../../bpf/" /I "../include/" /I "../../../../common" /D "YY_NEVER_INTERACTIVE" /D yylval=pcap_lval /D "_USRDLL" /D "LIBPCAP_EXPORTS" /D "HAVE_STRERROR" /D "NDEBUG" /D "__STDC__" /D "INET6" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D SIZEOF_CHAR=1 /D SIZEOF_SHORT=2 /D SIZEOF_INT=4 /D "HAVE_ADDRINFO" /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
