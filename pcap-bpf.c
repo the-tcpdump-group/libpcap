@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.41 2000-09-18 05:08:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.42 2000-09-18 06:38:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -294,18 +294,6 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		 */
 #endif
 		break;
-
-#ifdef DLT_LOOP
-	case DLT_LOOP:
-		/*
-		 * OpenBSD DLT_LOOP, which is like DLT_NULL, but with
-		 * the AF_ value in the header being in network byte
-		 * order rather than host byte order.
-		 */
-		v = PCAP_ENCAP_NULL;
-		break;
-	}
-#endif
 
 #ifdef DLT_FR
 	case DLT_FR:
