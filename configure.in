@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.70 1999-10-30 05:33:46 itojun Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.71 1999-11-01 15:56:40 itojun Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -23,6 +23,20 @@ AC_CHECK_HEADERS(malloc.h sys/ioccom.h sys/sockio.h)
 AC_LBL_FIXINCLUDES
 
 AC_CHECK_FUNCS(ether_hostton strerror)
+
+dnl to pacify those who hate protochain insn
+AC_MSG_CHECKING(if --disable-protochain option is specified)
+AC_ARG_ENABLE(protochain, [  --disable-protochain    disable \"protochain\" insn])
+case "x$enable_protochain" in
+xyes)	enable_protochain=enabled	;;
+xno)	enable_protochain=disabled	;;
+x)	enable_protochain=enabled	;;
+esac
+
+if test "$enable_protochain" = "disabled"; then
+	AC_DEFINE(NO_PROTOCHAIN)
+fi
+AC_MSG_RESULT(${enable_protochain})
 
 dnl
 dnl Not all versions of test support -c (character special) but it's a

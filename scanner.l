@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.57 1999-10-19 15:18:31 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.58 1999-11-01 15:56:41 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -118,7 +118,13 @@ net		return NET;
 mask		return MASK;
 port		return PORT;
 proto		return PROTO;
-protochain	return PROTOCHAIN;
+protochain	{
+#ifdef NO_PROTOCHAIN
+		  bpf_error("%s not supported", yytext);
+#else
+		  return PROTOCHAIN;
+#endif
+		}
 
 gateway		return GATEWAY;
 

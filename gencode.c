@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.98 1999-11-01 13:47:51 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.99 1999-11-01 15:56:40 itojun Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -1489,6 +1489,9 @@ gen_protochain(v, proto, dir)
 	int proto;
 	int dir;
 {
+#ifdef NO_PROTOCHAIN
+	return gen_proto(v, proto, dir);
+#else
 	struct block *b0, *b;
 	struct slist *s[100], *sp;
 	int fix2, fix3, fix4, fix5;
@@ -1781,6 +1784,7 @@ gen_protochain(v, proto, dir)
 
 	gen_and(b0, b);
 	return b;
+#endif
 }
 
 static struct block *
