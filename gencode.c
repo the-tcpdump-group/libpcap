@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.161 2001-12-18 09:10:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.162 2002-04-06 23:57:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -59,7 +59,6 @@ struct rtentry;
 #include <pcap-namedb.h>
 #ifdef INET6
 #include <netdb.h>
-#include <sys/socket.h>
 #endif /*INET6*/
 
 #define ETHERMTU	1500
