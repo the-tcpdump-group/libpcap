@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.101 2003-11-30 04:45:03 mcr Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.102 2003-11-30 22:42:25 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.101 $)
+AC_REVISION($Revision: 1.102 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -359,7 +359,12 @@ hpux10.1*)
 	;;
 
 hpux*)
-	dnl HPUX 10.20 and above is similar to HPUX 9...
+	dnl HPUX 10.20 and above is similar to HPUX 9, but
+	dnl not the same....
+	dnl
+	dnl XXX - DYEXT should be set to "sl" if this is building
+	dnl for 32-bit PA-RISC, but should be left as "so" for
+	dnl 64-bit PA-RISC or, I suspect, IA-64.
 	AC_DEFINE(HAVE_HPUX10_20,1,[on HP-UX 10.20])
 	;;
 
@@ -382,7 +387,7 @@ solaris*)
 	;;
 darwin*)
 	DYEXT="dylib"
-    V_CCOPT="$V_CCOPT -fno-common"
+	V_CCOPT="$V_CCOPT -fno-common"
 	;;
 esac
 
