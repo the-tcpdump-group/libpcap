@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.84 2004-12-15 00:25:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.85 2005-02-24 08:59:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -592,6 +592,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 	u_int v;
 	pcap_t *p;
+	struct bpf_insn total_insn;
+	struct bpf_program total_prog;
 	struct utsname osinfo;
 
 #ifdef HAVE_DAG_API
@@ -937,6 +939,28 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * problems we have experienced from AIX BPF. */
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
+
+	/*
+	 * If there's no filter program installed, there's
+	 * no indication to the kernel of what the snapshot
+	 * length should be, so no snapshotting is done.
+	 *
+	 * Therefore, when we open the device, we install
+	 * an "accept everything" filter with the specified
+	 * snapshot length.
+	 */
+	total_insn.code = (u_short)(BPF_RET | BPF_K);
+	total_insn.jt = 0;
+	total_insn.jf = 0;
+	total_insn.k = snaplen;
+
+	total_prog.bf_len = 1;
+	total_prog.bf_insns = &total_insn;
+	if (ioctl(p->fd, BIOCSETF, (caddr_t)&total_prog) < 0) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "BIOCSETF: %s",
+		    pcap_strerror(errno));
+		goto bad;
+	}
 
 	/*
 	 * On most BPF platforms, either you can do a "select()" or
