@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.88 2003-08-22 18:27:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.89 2003-09-09 17:10:15 mcr Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -188,6 +188,11 @@ static const char rcsid[] =
 #define LINKTYPE_JUNIPER_ATM1   137
 
 #define LINKTYPE_APPLE_IP_OVER_IEEE1394 138	/* Apple IP-over-IEEE 1394 cooked header */
+
+#define LINKTYPE_RAWSS7         139             /* see rawss7.h for */
+#define LINKTYPE_RAWSS7_MTP2    140	        /* information  on these */
+#define LINKTYPE_RAWSS7_MTP3    141             /* definitions */
+#define LINKTYPE_RAWSS7_SCCP    142             
 
 /*
  * These types are reserved for future use.
