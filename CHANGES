@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.57 2003-11-13 01:59:15 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.56.4.1 2003-11-15 23:27:05 guy Exp $ (LBL)
 
 Wed.   November 12, 2003. mcr@sandelman.ottawa.on.ca. Summary for 0.8 release
 
