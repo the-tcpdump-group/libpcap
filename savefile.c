@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.54 2001-09-09 05:02:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.55 2001-11-28 07:16:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -164,6 +164,10 @@ static const char rcsid[] =
 #define LINKTYPE_LTALK		114		/* Apple LocalTalk hardware */
 #define LINKTYPE_ECONET		115		/* Acorn Econet */
 
+#define LINKTYPE_CISCO_IOS	118		/* For Cisco-internal use */
+#define LINKTYPE_PRISM_HEADER	119		/* 802.11+Prism II monitor mode */
+#define LINKTYPE_AIRONET_HEADER	120		/* FreeBSD Aironet driver stuff */
+
 /*
  * These types are reserved for future use.
  */
@@ -239,6 +243,15 @@ static struct linktype_map {
 
 	/* Acorn Econet */
 	{ DLT_ECONET,		LINKTYPE_ECONET },
+
+	/* For Cisco-internal use */
+	{ DLT_CISCO_IOS,	LINKTYPE_CISCO_IOS },
+
+	/* Prism II monitor-mode header plus 802.11 header */
+	{ DLT_PRISM_HEADER,	LINKTYPE_PRISM_HEADER },
+
+	/* FreeBSD Aironet driver stuff */
+	{ DLT_AIRONET_HEADER,	LINKTYPE_AIRONET_HEADER },
 
 	/*
 	 * Any platform that defines additional DLT_* codes should:
