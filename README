@@ -1,6 +1,6 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.26 2002-05-29 07:05:37 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.27 2002-08-02 04:42:51 guy Exp $ (LBL)
 
-LIBPCAP 0.7.1
+LIBPCAP 0.8
 Now maintained by "The Tcpdump Group"
 See 		www.tcpdump.org
 
