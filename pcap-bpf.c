@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.74 2004-03-23 19:18:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.75 2004-03-24 07:00:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -297,15 +297,6 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 {
 	int ret;
 
-	/*
-	 * Do a BIOCSHDRCMPLT, if defined, to turn that flag on, so
-	 * the link-layer source address isn't forcibly overwritten?
-	 * (Ignore errors?  Return errors if not "sorry, that ioctl
-	 * isn't supported?)
-	 *
-	 * XXX - I seem to remember some packet-sending bug in some
-	 * BSDs - check CVS log for "bpf.c"?
-	 */
 	ret = write(p->fd, buf, size);
 	if (ret == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
@@ -556,6 +547,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #ifdef BIOCGDLTLIST
 	struct bpf_dltlist bdl;
 #endif
+#if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT) && !(__APPLE__)
+	u_int spoof_eth_src = 1;
+#endif
 	u_int v;
 	pcap_t *p;
 	struct utsname osinfo;
@@ -782,6 +776,22 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		}
 	}
 		
+#if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT) && !(__APPLE__)
+	/*
+	 * Do a BIOCSHDRCMPLT, if defined, to turn that flag on, so
+	 * the link-layer source address isn't forcibly overwritten.
+	 * (Should we ignore errors?  Should we do this only if
+	 * we're open for writing?)
+	 *
+	 * XXX - I seem to remember some packet-sending bug in some
+	 * BSDs - check CVS log for "bpf.c"?
+	 */
+	if (ioctl(fd, BIOCSHDRCMPLT, &spoof_eth_src) == -1) {
+		(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "BIOCSHDRCMPLT: %s", pcap_strerror(errno));
+		goto bad;
+	}
+#endif
 	/* set timeout */
 	if (to_ms != 0) {
 		/*
