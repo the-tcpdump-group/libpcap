@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.79 2002-03-07 11:27:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.80 2002-06-01 09:36:26 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1433,7 +1433,7 @@ void	pcap_close_linux( pcap_t *handle )
 
 	if (handle->md.device != NULL)
 		free(handle->md.device);
-		handle->md.device = NULL;
+	handle->md.device = NULL;
 }
 
 /*
