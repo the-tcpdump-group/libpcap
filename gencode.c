@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.181 2002-12-04 21:40:13 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.182 2002-12-06 00:01:33 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2694,10 +2694,8 @@ struct block *
 gen_proto_abbrev(proto)
 	int proto;
 {
-#ifdef INET6
 	struct block *b0;
-#endif
-	struct block *b1;
+        struct block *b1;
 
 	switch (proto) {
 
@@ -2852,6 +2850,66 @@ gen_proto_abbrev(proto)
 
 	case Q_ISIS:
 	        b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		break;
+
+	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
+	        b0 = gen_proto(ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+		break;
+
+	case Q_ISIS_L2: /* all IS-IS Level2 PDU-Types */
+	        b0 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+		break;
+
+	case Q_ISIS_IIH: /* all IS-IS Hello PDU-Types */
+	        b0 = gen_proto(ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT);                
+                gen_or(b0, b1);
+		break;
+
+	case Q_ISIS_LSP: 
+	        b0 = gen_proto(ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+		break;
+
+	case Q_ISIS_SNP:
+	        b0 = gen_proto(ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+	        b0 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+		break;
+
+	case Q_ISIS_CSNP:
+	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
+		break;
+
+	case Q_ISIS_PSNP:
+	        b0 = gen_proto(ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+	        b1 = gen_proto(ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		gen_or(b0, b1);
 		break;
 
 	case Q_CLNP:
@@ -3508,6 +3566,13 @@ gen_proto(v, proto, dir)
 			gen_and(b0, b1);
 			return b1;
 		}
+
+        case Q_ISIS:
+            b0 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+            /* 4 is the offset of the PDU type relative to the IS-IS header */
+            b1 = gen_cmp(off_nl_nosnap+4, BPF_B, (long)v);
+            gen_and(b0, b1);
+            return b1;
 
 	case Q_ARP:
 		bpf_error("arp does not encapsulate another protocol");

@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.77 2002-08-11 18:27:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.78 2002-12-06 00:01:34 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -126,7 +126,7 @@ pcap_parse()
 %token  LEN
 %token  IPV6 ICMPV6 AH ESP
 %token	VLAN
-%token  ISO ESIS ISIS CLNP
+%token  ISO ESIS CLNP ISIS L1 L2 IIH LSP SNP CSNP PSNP 
 %token  STP
 %token  IPX
 %token  NETBEUI
@@ -300,6 +300,13 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| ISO			{ $$ = Q_ISO; }
 	| ESIS			{ $$ = Q_ESIS; }
 	| ISIS			{ $$ = Q_ISIS; }
+	| L1			{ $$ = Q_ISIS_L1; }
+	| L2			{ $$ = Q_ISIS_L2; }
+	| IIH			{ $$ = Q_ISIS_IIH; }
+	| LSP			{ $$ = Q_ISIS_LSP; }
+	| SNP			{ $$ = Q_ISIS_SNP; }
+	| PSNP			{ $$ = Q_ISIS_PSNP; }
+	| CSNP			{ $$ = Q_ISIS_CSNP; }
 	| CLNP			{ $$ = Q_CLNP; }
 	| STP			{ $$ = Q_STP; }
 	| IPX			{ $$ = Q_IPX; }

@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.55 2002-07-11 09:06:34 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.56 2002-12-06 00:01:34 hannes Exp $ (LBL)
  */
 
 /*
@@ -106,6 +106,18 @@
 #define Q_IPX		29
 
 #define Q_NETBEUI	30
+
+/* IS-IS Levels */
+#define Q_ISIS_L1       31
+#define Q_ISIS_L2       32
+/* PDU types */
+#define Q_ISIS_IIH      33
+#define Q_ISIS_LAN_IIH  34
+#define Q_ISIS_PTP_IIH  35
+#define Q_ISIS_SNP      36
+#define Q_ISIS_CSNP     37
+#define Q_ISIS_PSNP     38
+#define Q_ISIS_LSP      39
 
 /* Directional qualifiers. */
 
