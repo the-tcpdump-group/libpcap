@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.78 2003-07-25 05:32:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.79 2003-11-04 07:05:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -135,6 +135,25 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		pad = 0;
 #endif
 	while (cc > 0) {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return -2 to indicate
+		 * that we were told to break out of the loop, otherwise
+		 * leave the flag set, so that the *next* call will break
+		 * out of the loop without having read any packets, and
+		 * return the number of packets we've processed so far.
+		 */
+		if (pc->break_loop) {
+			if (n == 0) {
+				pc->break_loop = 0;
+				return (-2);
+			} else {
+				pc->cc = cc;
+				pc->bp = bp;
+				return (n);
+			}
+		}
 		if (cc < sizeof(*sp)) {
 			snprintf(pc->errbuf, sizeof(pc->errbuf),
 			    "pf short read (%d)", cc);

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.44 2003-07-25 05:32:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.45 2003-11-04 07:05:37 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -68,13 +68,25 @@ pcap_read_snoop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	register u_char *cp;
 
 again:
+	/*
+	 * Has "pcap_breakloop()" been called?
+	 */
+	if (p->break_loop) {
+		/*
+		 * Yes - clear the flag that indicates that it
+		 * has, and return -2 to indicate that we were
+		 * told to break out of the loop.
+		 */
+		p->break_loop = 0;
+		return (-2);
+	}
 	cc = read(p->fd, (char *)p->buffer, p->bufsize);
 	if (cc < 0) {
 		/* Don't choke when we get ptraced */
 		switch (errno) {
 
 		case EINTR:
-				goto again;
+			goto again;
 
 		case EWOULDBLOCK:
 			return (0);			/* XXX */

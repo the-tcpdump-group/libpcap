@@ -19,7 +19,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.9 2003-10-02 07:07:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.10 2003-11-04 07:05:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -210,8 +210,9 @@ static dag_record_t *get_next_dag_header(pcap_t *p) {
 
 /*
  *  Read at most max_packets from the capture stream and call the callback
- *  for each of them. Returns the number of packets handled or -1 if an
- *  error occured.  A blocking 
+ *  for each of them. Returns the number of packets handled, -1 if an
+ *  error occured, or -2 if we were told to break out of the loop.
+ *  A blocking 
  */
 static int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
   u_char		*dp = NULL;
@@ -221,6 +222,18 @@ static int dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
   dag_record_t *header;
   register unsigned long long ts;
  
+  /*
+   * Has "pcap_breakloop()" been called?
+   */
+  if (p->break_loop) {
+    /*
+     * Yes - clear the flag that indicates that it has, and return -2
+     * to indicate that we were told to break out of the loop.
+     */
+    p->break_loop = 0;
+    return -2;
+  }
+
   /* Receive a single packet from the kernel */
   header = get_next_dag_header(p);
   dp = ((u_char *)header) + dag_record_size;

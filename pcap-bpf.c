@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.66 2003-07-25 05:32:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.67 2003-11-04 07:05:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -143,6 +143,18 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	register u_char *bp, *ep;
 
  again:
+	/*
+	 * Has "pcap_breakloop()" been called?
+	 */
+	if (p->break_loop) {
+		/*
+		 * Yes - clear the flag that indicates that it
+		 * has, and return -2 to indicate that we were
+		 * told to break out of the loop.
+		 */
+		p->break_loop = 0;
+		return (-2);
+	}
 	cc = p->cc;
 	if (p->cc == 0) {
 		cc = read(p->fd, (char *)p->buffer, p->bufsize);
@@ -211,6 +223,27 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	ep = bp + cc;
 	while (bp < ep) {
 		register int caplen, hdrlen;
+
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return -2 to indicate
+		 * that we were told to break out of the loop, otherwise
+		 * leave the flag set, so that the *next* call will break
+		 * out of the loop without having read any packets, and
+		 * return the number of packets we've processed so far.
+		 */
+		if (p->break_loop) {
+			if (n == 0) {
+				p->break_loop = 0;
+				return (-2);
+			} else {
+				p->bp = bp;
+				p->cc = ep - bp;
+				return (n);
+			}
+		}
+
 		caplen = bhp->bh_caplen;
 		hdrlen = bhp->bh_hdrlen;
 		/*
@@ -470,7 +503,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif /* HAVE_DAG_API */
 
 #ifdef BIOCGDLTLIST
-	bzero(&bdl, sizeof(bdl));
+	memset(&bdl, 0, sizeof(bdl));
 #endif
 
 	p = (pcap_t *)malloc(sizeof(*p));

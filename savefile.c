@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.91 2003-11-04 01:49:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.92 2003-11-04 07:05:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -741,6 +741,23 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	while (status == 0) {
 		struct pcap_pkthdr h;
+
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return -2 to indicate
+		 * that we were told to break out of the loop, otherwise
+		 * leave the flag set, so that the *next* call will break
+		 * out of the loop without having read any packets, and
+		 * return the number of packets we've processed so far.
+		 */
+		if (p->break_loop) {
+			if (n == 0) {
+				p->break_loop = 0;
+				return (-2);
+			} else
+				return (n);
+		}
 
 		status = sf_next_packet(p, &h, p->buffer, p->bufsize);
 		if (status) {

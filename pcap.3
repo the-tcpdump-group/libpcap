@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.49 2003-10-10 00:27:45 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.50 2003-11-04 07:05:38 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -81,6 +81,10 @@ const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h)
 int pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 .ti +8
 const u_char **pkt_data)
+.ft
+.LP
+.ft B
+void pcap_breakloop(pcap_t *)
 .ft
 .LP
 .ft B
@@ -455,6 +459,9 @@ an error in which case
 or
 .B pcap_geterr()
 may be used to display the error text.
+A return of \-2 indicates that the loop terminated due to a call to
+.B pcap_breakloop()
+before any packets were processed.
 .PP
 .BR NOTE :
 when reading a live capture,
@@ -489,10 +496,12 @@ A negative
 .I cnt
 causes
 .B pcap_loop()
-to loop forever (or at least until an error occurs).  A negative number
-is returned on an error; 0 is returned if
+to loop forever (or at least until an error occurs).  \-1 is returned on
+an error; 0 is returned if
 .I cnt
-is exhausted.
+is exhausted; \-2 is returned if the loop terminated due to a call to
+.B pcap_breakloop()
+before any packets were processed.
 .PP
 .B pcap_next()
 reads the next packet (by calling
@@ -540,6 +549,45 @@ struct for the packet, and the
 pointer pointed to by the
 .I pkt_data
 argument is set to point to the data in the packet.
+.PP
+.B pcap_breakloop()
+sets a flag that will force
+.B pcap_dispatch()
+or
+.B pcap_loop()
+to return rather than looping; they will return the number of packets
+that have been processed so far, or \-2 if no packets have been
+processed so far.
+.PP
+This routine is safe to use inside a signal handler on UNIX or a console
+control handler on Windows, as it merely sets a flag that is checked
+within the loop.
+.PP
+The flag is checked in loops reading packets from the OS - a signal by
+itself will not necessarily terminate those loops - as well as in loops
+processing a set of packets returned by the OS.  Note that
+.B pcap_next()
+will, on some platforms, loop reading packets from the OS; that loop
+will not necessarily be terminated by a signal, so
+.B pcap_breakloop()
+should be used to terminate packet processing even if
+.B pcap_next()
+is being used.
+.PP
+.B pcap_breakloop()
+does not guarantee that no further packets will be processed by
+.B pcap_dispatch()
+or
+.B pcap_loop()
+after it is called; at most one more packet might be processed.
+.PP
+If \-2 is returned from
+.B pcap_dispatch()
+or
+.BR pcap_loop() ,
+the flag is cleared, so a subsequent call will resume reading packets. 
+If a positive number is returned, the flag is not cleared, so a
+subsequent call will return \-2 and clear the flag.
 .PP
 .B pcap_dump()
 outputs a packet to the ``savefile'' opened with

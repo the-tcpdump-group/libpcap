@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.96 2003-10-06 07:04:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.97 2003-11-04 07:05:34 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -462,6 +462,18 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	bp = handle->buffer + handle->offset;
 	do {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 */
+		if (p->break_loop) {
+			/*
+			 * Yes - clear the flag that indicates that it
+			 * has, and return -2 as an indication that we
+			 * were told to break out of the loop.
+			 */
+			p->break_loop = 0;
+			return -2;
+		}
 		fromlen = sizeof(from);
 		packet_len = recvfrom(
 			handle->fd, bp + offset,

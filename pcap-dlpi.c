@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.90 2003-07-25 05:32:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.91 2003-11-04 07:05:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -207,6 +207,19 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		data.maxlen = p->bufsize;
 		data.len = 0;
 		do {
+			/*
+			 * Has "pcap_breakloop()" been called?
+			 */
+			if (p->break_loop) {
+				/*
+				 * Yes - clear the flag that indicates
+				 * that it has, and return -2 to
+				 * indicate that we were told to
+				 * break out of the loop.
+				 */
+				p->break_loop = 0;
+				return (-2);
+			}
 			if (getmsg(p->fd, &ctl, &data, &flags) < 0) {
 				/* Don't choke when we get ptraced */
 				if (errno == EINTR) {
@@ -229,6 +242,25 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	n = 0;
 #ifdef HAVE_SYS_BUFMOD_H
 	while (bp < ep) {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return -2 to indicate
+		 * that we were told to break out of the loop, otherwise
+		 * leave the flag set, so that the *next* call will break
+		 * out of the loop without having read any packets, and
+		 * return the number of packets we've processed so far.
+		 */
+		if (p->break_loop) {
+			if (n == 0) {
+				p->break_loop = 0;
+				return (-2);
+			} else {
+				p->bp = bp;
+				p->cc = ep - bp;
+				return (n);
+			}
+		}
 #ifdef LBL_ALIGN
 		if ((long)bp & 3) {
 			sbp = &sbhdr;

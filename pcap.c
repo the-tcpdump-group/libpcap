@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.62 2003-10-31 21:49:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.63 2003-11-04 07:05:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -189,11 +189,21 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 * Return codes for pcap_read() are:
 	 *   -  0: timeout
 	 *   - -1: error
+	 *   - -2: loop was broken out of with pcap_breakloop()
 	 *   - >1: OK
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcap_offline_read() meaning "end of file".
 	*/
 	return (p->read_op(p, 1, pcap_fakecallback, (u_char *)&s));
+}
+
+/*
+ * Force the loop in "pcap_read()" or "pcap_read_offline()" to terminate.
+ */
+void
+pcap_breakloop(pcap_t *p)
+{
+	p->break_loop = 1;
 }
 
 int

@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.54 2003-10-24 23:55:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.55 2003-11-04 07:05:34 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -105,6 +105,8 @@ struct pcap {
 	int linktype;
 	int tzoff;		/* timezone offset */
 	int offset;		/* offset for proper alignment */
+
+	int break_loop;		/* flag set to force break from packet-reading loop */
 
 	struct pcap_sf sf;
 	struct pcap_md md;
