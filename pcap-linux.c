@@ -26,7 +26,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.56 2001-03-20 05:50:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.57 2001-04-09 05:55:40 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -657,6 +657,27 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
 		break;
 
 	case ARPHRD_PPP:
+		/*
+		 * Some PPP code in the kernel supplies no link-layer
+		 * header whatsoever to PF_PACKET sockets; other PPP
+		 * code supplies PPP link-layer headers ("syncppp.c");
+		 * some PPP code might supply random link-layer
+		 * headers (PPP over ISDN - there's code in Ethereal,
+		 * for example, to cope with PPP-over-ISDN captures
+		 * with which the Ethereal developers have had to cope,
+		 * heuristically trying to determine which of the
+		 * oddball link-layer headers particular packets have).
+		 *
+		 * As such, we just punt, and run all PPP interfaces
+		 * in cooked mode.
+		 */
+		handle->linktype = DLT_LINUX_SLL;
+		break;
+
+	case ARPHRD_HDLC:
+		handle->linktype = DLT_C_HDLC;
+		break;
+
 	/* Not sure if this is correct for all tunnels, but it
 	 * works for CIPE */
 	case ARPHRD_TUNNEL:
@@ -669,6 +690,10 @@ static int map_arphrd_to_dlt(pcap_t *handle, int arptype)
 	case ARPHRD_CSLIP6:
 	case ARPHRD_ADAPT:
 	case ARPHRD_SLIP:
+		/*
+		 * XXX - should some of those be mapped to DLT_LINUX_SLL
+		 * instead?  Should we just map all of them to DLT_LINUX_SLL?
+		 */
 		handle->linktype = DLT_RAW;
 		break;
 
@@ -746,19 +771,18 @@ live_open_new(pcap_t *handle, char *device, int promisc,
 			if (arptype == -1) 
 				break;
 			if (map_arphrd_to_dlt(handle, arptype) == -1 ||
+			    handle->linktype == DLT_LINUX_SLL ||
 			    (handle->linktype == DLT_EN10MB &&
 			     (strncmp("isdn", device, 4) == 0 ||
-			      strncmp("isdY", device, 4) == 0)) ||
-			    (handle->linktype == DLT_RAW &&
-			     (strncmp("ippp", device, 4) == 0))) {
+			      strncmp("isdY", device, 4) == 0))) {
 				/*
-				 * Unknown interface type (-1), or an ISDN
-				 * device (whose link-layer type we
-				 * can only determine by using APIs
-				 * that may be different on different
+				 * Unknown interface type (-1), or a
+				 * device we explicitly chose to run
+				 * in cooked mode (e.g., PPP devices),
+				 * or an ISDN device (whose link-layer
+				 * type we can only determine by using
+				 * APIs that may be different on different
 				 * kernels) - reopen in cooked mode.
-				 *
-				 * XXX - do that with DLT_RAW as well?
 				 */
 				if (close(sock_fd) == -1) {
 					snprintf(ebuf, PCAP_ERRBUF_SIZE,
