@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.216 2005-01-12 09:02:55 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.217 2005-01-25 22:38:23 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1023,11 +1023,12 @@ init_linktype(p)
 		off_nl_nosnap = PFLOG_HDRLEN;
 		return;
 
+        case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
                 off_linktype = 4;
 		off_nl = 4;
 		off_nl_nosnap = -1;
-                break;
+                return;
 
 	case DLT_JUNIPER_ATM1:
 		off_linktype = 4; /* in reality variable between 4-8 */
@@ -1828,11 +1829,12 @@ gen_linktype(proto)
 		/*NOTREACHED*/
 		break;
 
+        case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
 		/* just lets verify the magic number for now -
-		 * we may have up to 6 different encapsulations on the wire
+		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
 		 * might be;
 		 *
@@ -5125,6 +5127,7 @@ gen_inbound(dir)
 		}
 		break;
 
+        case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
 	case DLT_JUNIPER_ATM2:
