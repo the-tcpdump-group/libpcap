@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.50 2003-12-18 23:32:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.51 2004-03-21 08:32:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -257,14 +257,14 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		 * as well; what are "cip" devices - some other ATM
 		 * Classical IP devices?
 		 */
-		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 		/*
 		 * If that fails, just leave the list empty.
 		 */
-		if (handle->dlt_list != NULL) {
-			handle->dlt_list[0] = DLT_EN10MB;
-			handle->dlt_list[1] = DLT_DOCSIS;
-			handle->dlt_count = 2;
+		if (p->dlt_list != NULL) {
+			p->dlt_list[0] = DLT_EN10MB;
+			p->dlt_list[1] = DLT_DOCSIS;
+			p->dlt_count = 2;
 		}
 	} else if (strncmp("ipg", device, 3) == 0 ||
 		   strncmp("rns", device, 3) == 0 ||	/* O2/200/2000 FDDI */
@@ -353,7 +353,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	/*
-	 * "handle->fd" is a socket, so "select()" should work on it.
+	 * "p->fd" is a socket, so "select()" should work on it.
 	 */
 	p->selectable_fd = p->fd;
 
