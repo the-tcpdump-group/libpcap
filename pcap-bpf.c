@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.67.2.4 2003-11-22 00:06:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.67.2.5 2004-09-15 08:02:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -818,8 +818,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		 * We can check what OS this is.
 		 */
 		if (strcmp(osinfo.sysname, "FreeBSD") == 0 &&
-		    (strcmp(osinfo.release, "4.3") == 0 ||
-		     strcmp(osinfo.release, "4.4") == 0))
+		    (strncmp(osinfo.release, "4.3-", 4) == 0 ||
+		     strncmp(osinfo.release, "4.4-", 4) == 0))
 			p->selectable_fd = -1;
 		else
 			p->selectable_fd = p->fd;
