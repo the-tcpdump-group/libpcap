@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.56 2000-04-27 14:24:12 itojun Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.57 2000-07-06 01:50:36 assar Exp $ (LBL)";
 #endif
 
 #include <sys/types.h>
@@ -247,10 +247,21 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	}
 	memset(p, 0, sizeof(*p));
 
+#ifdef HAVE_DEV_DLPI
 	/*
-	** Determine device and ppa
+	** Remove any "/dev/" on the front of the device.
 	*/
-	cp = strpbrk(device, "0123456789");
+	cp = strrchr(device, '/');
+	if (cp == NULL)
+		cp = device;
+	else
+		cp++;
+	strlcpy(dname, cp, sizeof(dname));
+
+	/*
+	 * Split the name into a device type and a unit number.
+	 */
+	cp = strpbrk(dname, "0123456789");
 	if (cp == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s missing unit number", device);
@@ -262,26 +273,55 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		    "%s bad unit number", device);
 		goto bad;
 	}
+	*cp = '\0';
 
-	if (*device == '/')
-		strlcpy(dname, device, sizeof(dname));
-	else {
-		snprintf(dname, sizeof(dname),
-		    "%s/%s", PCAP_DEV_PREFIX, device);
-	}
-#ifdef HAVE_DEV_DLPI
-	/* Map network device to /dev/dlpi unit */
+	/*
+	 * Use "/dev/dlpi" as the device.
+	 *
+	 * XXX - HP's DLPI Programmer's Guide for HP-UX 11.00 says that
+	 * the "dl_mjr_num" field is for the "major number of interface
+	 * driver"; that's the major of "/dev/dlpi" on the system on
+	 * which I tried this, but there may be DLPI devices that
+	 * use a different driver, in which case we may need to
+	 * search "/dev" for the appropriate device with that major
+	 * device number, rather than hardwiring "/dev/dlpi".
+	 */
 	cp = "/dev/dlpi";
 	if ((p->fd = open(cp, O_RDWR)) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s: %s", cp, pcap_strerror(errno));
 		goto bad;
 	}
-	/* Map network interface to /dev/dlpi unit */
+
+	/*
+	 * Get a table of all PPAs for that device, and search that
+	 * table for the specified device type name and unit number.
+	 */
 	ppa = get_dlpi_ppa(p->fd, dname, ppa, ebuf);
 	if (ppa < 0)
 		goto bad;
 #else
+	/*
+	** Determine device and ppa
+	*/
+	cp = strpbrk(device, "0123456789");
+	if (cp == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s missing unit number",
+		    device);
+		goto bad;
+	}
+	ppa = strtol(cp, &eos, 10);
+	if (*eos != '\0') {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
+		goto bad;
+	}
+
+	if (*device == '/')
+		strlcpy(dname, device, sizeof(dname));
+	else
+		snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
+		    device);
+
 	/* Try device without unit number */
 	strlcpy(dname2, dname, sizeof(dname2));
 	cp = strchr(dname, *cp);
@@ -736,29 +776,56 @@ get_release(bpf_u_int32 *majorp, bpf_u_int32 *minorp, bpf_u_int32 *microp)
 
 #ifdef DL_HP_PPA_ACK_OBS
 /*
- * Under HP-UX 10, we can ask for the ppa
+ * Under HP-UX 10 and HP-UX 11, we can ask for the ppa
  */
 
 
-/* Determine ppa number that specifies ifname */
+/*
+ * Determine ppa number that specifies ifname.
+ *
+ * If the "dl_hp_ppa_info_t" doesn't have a "dl_module_id_1" member,
+ * the code that's used here is the old code for HP-UX 10.x.
+ *
+ * However, HP-UX 10.20, at least, appears to have such a member
+ * in its "dl_hp_ppa_info_t" structure, so the new code is used.
+ * The new code didn't work on an old 10.20 system on which Rick
+ * Jones of HP tried it, but with later patches installed, it
+ * worked - it appears that the older system had those members but
+ * didn't put anything in them, so, if the search by name fails, we
+ * do the old search.
+ *
+ * Rick suggests that making sure your system is "up on the latest
+ * lancommon/DLPI/driver patches" is probably a good idea; it'd fix
+ * that problem, as well as allowing libpcap to see packets sent
+ * from the system on which the libpcap application is being run.
+ * (On 10.20, in addition to getting the latest patches, you need
+ * to turn the kernel "lanc_outbound_promisc_flag" flag on with ADB;
+ * a posting to "comp.sys.hp.hpux" at
+ *
+ *	http://www.deja.com/[ST_rn=ps]/getdoc.xp?AN=558092266
+ *
+ * says that, to see the machine's outgoing traffic, you'd need to
+ * apply the right patches to your system, and also set that variable
+ * with:
+ 
+echo 'lanc_outbound_promisc_flag/W1' | /usr/bin/adb -w /stand/vmunix /dev/kmem
+
+ * which could be put in, for example, "/sbin/init.d/lan".
+ *
+ * Setting the variable is not necessary on HP-UX 11.x.
+ */
 static int
 get_dlpi_ppa(register int fd, register const char *device, register int unit,
     register char *ebuf)
 {
 	register dl_hp_ppa_ack_t *ap;
-	register dl_hp_ppa_info_t *ip;
+	register dl_hp_ppa_info_t *ipstart, *ip;
 	register int i;
+	char dname[100];
 	register u_long majdev;
-	dl_hp_ppa_req_t	req;
 	struct stat statbuf;
+	dl_hp_ppa_req_t	req;
 	bpf_u_int32 buf[MAXDLBUF];
-
-	if (stat(device, &statbuf) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "stat: %s: %s", device, pcap_strerror(errno));
-		return (-1);
-	}
-	majdev = major(statbuf.st_rdev);
 
 	memset((char *)&req, 0, sizeof(req));
 	req.dl_primitive = DL_HP_PPA_REQ;
@@ -769,14 +836,73 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		return (-1);
 
 	ap = (dl_hp_ppa_ack_t *)buf;
-	ip = (dl_hp_ppa_info_t *)((u_char *)ap + ap->dl_offset);
+	ipstart = (dl_hp_ppa_info_t *)((u_char *)ap + ap->dl_offset);
+	ip = ipstart;
 
-        for(i = 0; i < ap->dl_count; i++) {
-                if (ip->dl_mjr_num == majdev && ip->dl_instance_num == unit)
-                        break;
+#ifdef HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1
+	/*
+	 * The "dl_hp_ppa_info_t" structure has a "dl_module_id_1"
+	 * member that should, in theory, contain the part of the
+	 * name for the device that comes before the unit number,
+	 * and should also have a "dl_module_id_2" member that may
+	 * contain an alternate name (e.g., I think Ethernet devices
+	 * have both "lan", for "lanN", and "snap", for "snapN", with
+	 * the former being for Ethernet packets and the latter being
+	 * for 802.3/802.2 packets).
+	 *
+	 * Search for the device that has the specified name and
+	 * instance number.
+	 */
+	for (i = 0; i < ap->dl_count; i++) {
+		if ((strcmp(ip->dl_module_id_1, device) == 0 ||
+		     strcmp(ip->dl_module_id_2, device) == 0) &&
+		    ip->dl_instance_num == unit)
+			break;
 
-                ip = (dl_hp_ppa_info_t *)((u_char *)ip + ip->dl_next_offset);
-        }
+		ip = (dl_hp_ppa_info_t *)((u_char *)ipstart + ip->dl_next_offset);
+	}
+#else
+	/*
+	 * We don't have that member, so the search is impossible; make it
+	 * look as if the search failed.
+	 */
+	i = ap->dl_count;
+#endif
+
+	if (i == ap->dl_count) {
+		/*
+		 * Well, we didn't, or can't, find the device by name.
+		 *
+		 * HP-UX 10.20, whilst it has "dl_module_id_1" and
+		 * "dl_module_id_2" fields in the "dl_hp_ppa_info_t",
+		 * doesn't seem to fill them in unless the system is
+		 * at a reasonably up-to-date patch level.
+		 *
+		 * Older HP-UX 10.x systems might not have those fields
+		 * at all.
+		 *
+		 * Therefore, we'll search for the entry with the major
+		 * device number of a device with the name "/dev/<dev><unit>",
+		 * if such a device exists, as the old code did.
+		 */
+		snprintf(dname, sizeof(dname), "/dev/%s%d", device, unit);
+		if (stat(dname, &statbuf) < 0) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "stat: %s: %s",
+			    dname, pcap_strerror(errno));
+			return (-1);
+		}
+		majdev = major(statbuf.st_rdev);
+
+		ip = ipstart;
+
+		for (i = 0; i < ap->dl_count; i++) {
+			if (ip->dl_mjr_num == majdev &&
+			    ip->dl_instance_num == unit)
+				break;
+
+			ip = (dl_hp_ppa_info_t *)((u_char *)ipstart + ip->dl_next_offset);
+		}
+	}
         if (i == ap->dl_count) {
                 snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "can't find PPA for %s", device);
@@ -813,7 +939,7 @@ get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
 	register int kd;
 	void *addr;
 	struct ifnet ifnet;
-	char if_name[sizeof(ifnet.if_name)], tifname[32];
+	char if_name[sizeof(ifnet.if_name) + 1];
 
 	cp = strrchr(ifname, '/');
 	if (cp != NULL)
@@ -844,13 +970,12 @@ get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
 		if (dlpi_kread(kd, (off_t)addr,
 		    &ifnet, sizeof(ifnet), ebuf) < 0 ||
 		    dlpi_kread(kd, (off_t)ifnet.if_name,
-		    if_name, sizeof(if_name), ebuf) < 0) {
+		    if_name, sizeof(ifnet.if_name), ebuf) < 0) {
 			(void)close(kd);
 			return (-1);
 		}
-		snprintf(tifname, sizeof(tifname), "%.*s%d",
-		    (int)sizeof(if_name), if_name, ifnet.if_unit);
-		if (strcmp(tifname, ifname) == 0)
+		if_name[sizeof(ifnet.if_name)] = '\0';
+		if (strcmp(if_name, ifname) == 0 && ifnet.if_unit == unit)
 			return (ifnet.if_index);
 	}
 

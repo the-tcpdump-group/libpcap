@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.81 2000-07-01 03:31:45 assar Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.82 2000-07-06 01:50:36 assar Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.81 $)
+AC_REVISION($Revision: 1.82 $)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -186,6 +186,8 @@ AC_PROG_RANLIB
 AC_LBL_DEVEL(V_CCOPT)
 
 AC_LBL_SOCKADDR_SA_LEN
+
+AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 AC_LBL_UNALIGNED_ACCESS
 

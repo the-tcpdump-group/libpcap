@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.68 2000-06-10 14:17:58 assar Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.69 2000-07-06 01:50:36 assar Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -412,6 +412,40 @@ AC_DEFUN(AC_LBL_SOCKADDR_SA_LEN,
     AC_MSG_RESULT($ac_cv_lbl_sockaddr_has_sa_len)
     if test $ac_cv_lbl_sockaddr_has_sa_len = yes ; then
 	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN)
+    fi])
+
+dnl
+dnl Checks to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
+dnl dl_module_id_1 member
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
+dnl
+dnl results:
+dnl
+dnl	HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1 (defined)
+dnl
+dnl NOTE: any compile failure means we conclude that it doesn't have
+dnl that member, so if we don't have DLPI, don't have a <sys/dlpi_ext.h>
+dnl header, or have one that doesn't declare a dl_hp_ppa_info_t type,
+dnl we conclude it doesn't have that member (which is OK, as either we
+dnl won't be using code that would use that member, or we wouldn't
+dnl compile in any case).
+dnl
+AC_DEFUN(AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1,
+    [AC_MSG_CHECKING(if dl_hp_ppa_info_t struct has dl_module_id_1 member)
+    AC_CACHE_VAL(ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1,
+	AC_TRY_COMPILE([
+#	include <sys/types.h>
+#	include <sys/dlpi.h>
+#	include <sys/dlpi_ext.h>],
+	[u_int i = sizeof(((dl_hp_ppa_info_t *)0)->dl_module_id_1)],
+	ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=yes,
+	ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=no))
+    AC_MSG_RESULT($ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1)
+    if test $ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1 = yes ; then
+	    AC_DEFINE(HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1)
     fi])
 
 dnl
