@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.4 2002-08-08 09:15:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-win32.c,v 1.5 2003-03-12 13:28:54 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -29,6 +29,7 @@ static const char rcsid[] =
 #endif
 
 #include <pcap.h>
+#include <pcap-int.h>
 #include <packet32.h>
 
 #include <errno.h>
@@ -145,7 +146,6 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 	npf_if_addr if_addrs[16];
 	LONG if_addr_size;
 	int res = 0;
-	struct sockaddr_in *addr, *netmask;
 
 	if_addr_size = 16;
 
