@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.20 2001-03-26 10:21:31 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.21 2001-04-30 16:10:51 fenner Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -135,10 +135,20 @@ to arrive and to read multiple packets from the OS kernel in one
 operation.  Not all platforms support a read timeout; on platforms that
 don't, the read timeout is ignored.
 .I ebuf
-is used to return error text and is only set when
+is used to return error or warning text.  It will be set to error text when
 .B pcap_open_live()
 fails and returns
 .BR NULL .
+.I ebuf
+may also be set to warning text when
+.B pcap_open_live()
+succeds; to detect this case the caller should store a zero-length string in
+.I ebuf
+before calling
+.B pcap_open_live()
+and display the warning to the user if
+.I ebuf
+is no longer a zero-length string.
 .PP
 .B pcap_open_dead()
 is used for creating a

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.44 2000-10-28 00:01:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.45 2001-04-30 16:10:51 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -340,9 +340,13 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 #endif	/* BIOCIMMEDIATE */
 #endif	/* _AIX */
 
-	if (promisc)
+	if (promisc) {
 		/* set promiscuous mode, okay if it fails */
-		(void)ioctl(p->fd, BIOCPROMISC, NULL);
+		if (ioctl(p->fd, BIOCPROMISC, NULL) < 0) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "BIOCPROMISC: %s",
+			    pcap_strerror(errno));
+		}
+	}
 
 	if (ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "BIOCGBLEN: %s",
