@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.210 2004-10-19 15:55:28 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.211 2004-11-06 22:45:17 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -165,6 +165,7 @@ static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_ether_linktype(int);
+static struct block *gen_linux_sll_linktype(int);
 static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
 static struct block *gen_llc(int);
@@ -1260,6 +1261,172 @@ gen_ether_linktype(proto)
 }
 
 static struct block *
+gen_linux_sll_linktype(proto)
+	register int proto;
+{
+	struct block *b0, *b1;
+
+	switch (proto) {
+
+	case LLCSAP_IP:
+		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+			     ((LLCSAP_IP << 8) | LLCSAP_IP));
+		gen_and(b0, b1);
+		return b1;
+
+	case LLCSAP_ISONS:
+		/*
+		 * OSI protocols always use 802.2 encapsulation.
+		 * XXX - should we check both the DSAP and the
+		 * LSAP, like this, or should we check just the
+		 * DSAP?
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
+		gen_and(b0, b1);
+		return b1;
+
+	case LLCSAP_NETBEUI:
+		/*
+		 * NetBEUI always uses 802.2 encapsulation.
+		 * XXX - should we check both the DSAP and the
+		 * LSAP, like this, or should we check just the
+		 * DSAP?
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+		gen_and(b0, b1);
+		return b1;
+
+	case LLCSAP_IPX:
+		/*
+		 *	Ethernet_II frames, which are Ethernet
+		 *	frames with a frame type of ETHERTYPE_IPX;
+		 *
+		 *	Ethernet_802.3 frames, which have a frame
+		 *	type of LINUX_SLL_P_802_3;
+		 *
+		 *	Ethernet_802.2 frames, which are 802.3
+		 *	frames with an 802.2 LLC header (i.e, have
+		 *	a frame type of LINUX_SLL_P_802_2) and
+		 *	with the IPX LSAP as the DSAP in the LLC
+		 *	header;
+		 *
+		 *	Ethernet_SNAP frames, which are 802.3
+		 *	frames with an LLC header and a SNAP
+		 *	header and with an OUI of 0x000000
+		 *	(encapsulated Ethernet) and a protocol
+		 *	ID of ETHERTYPE_IPX in the SNAP header.
+		 *
+		 * First, do the checks on LINUX_SLL_P_802_2
+		 * frames; generate the check for either
+		 * Ethernet_802.2 or Ethernet_SNAP frames, and
+		 * then put a check for LINUX_SLL_P_802_2 frames
+		 * before it.
+		 */
+		b0 = gen_cmp(off_linktype + 2, BPF_B,
+		    (bpf_int32)LLCSAP_IPX);
+		b1 = gen_snap(0x000000, ETHERTYPE_IPX,
+		    off_linktype + 2);
+		gen_or(b0, b1);
+		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		gen_and(b0, b1);
+
+		/*
+		 * Now check for 802.3 frames and OR that with
+		 * the previous test.
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_3);
+		gen_or(b0, b1);
+
+		/*
+		 * Now add the check for Ethernet_II frames, and
+		 * do that before checking for the other frame
+		 * types.
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H,
+		    (bpf_int32)ETHERTYPE_IPX);
+		gen_or(b0, b1);
+		return b1;
+
+	case ETHERTYPE_ATALK:
+	case ETHERTYPE_AARP:
+		/*
+		 * EtherTalk (AppleTalk protocols on Ethernet link
+		 * layer) may use 802.2 encapsulation.
+		 */
+
+		/*
+		 * Check for 802.2 encapsulation (EtherTalk phase 2?);
+		 * we check for the 802.2 protocol type in the
+		 * "Ethernet type" field.
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+
+		/*
+		 * 802.2-encapsulated ETHERTYPE_ATALK packets are
+		 * SNAP packets with an organization code of
+		 * 0x080007 (Apple, for Appletalk) and a protocol
+		 * type of ETHERTYPE_ATALK (Appletalk).
+		 *
+		 * 802.2-encapsulated ETHERTYPE_AARP packets are
+		 * SNAP packets with an organization code of
+		 * 0x000000 (encapsulated Ethernet) and a protocol
+		 * type of ETHERTYPE_AARP (Appletalk ARP).
+		 */
+		if (proto == ETHERTYPE_ATALK)
+			b1 = gen_snap(0x080007, ETHERTYPE_ATALK,
+			    off_linktype + 2);
+		else	/* proto == ETHERTYPE_AARP */
+			b1 = gen_snap(0x000000, ETHERTYPE_AARP,
+			    off_linktype + 2);
+		gen_and(b0, b1);
+
+		/*
+		 * Check for Ethernet encapsulation (Ethertalk
+		 * phase 1?); we just check for the Ethernet
+		 * protocol type.
+		 */
+		b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+
+		gen_or(b0, b1);
+		return b1;
+
+	default:
+		if (proto <= ETHERMTU) {
+			/*
+			 * This is an LLC SAP value, so the frames
+			 * that match would be 802.2 frames.
+			 * Check for the 802.2 protocol type
+			 * in the "Ethernet type" field, and
+			 * then check the DSAP.
+			 */
+			b0 = gen_cmp(off_linktype, BPF_H,
+			    LINUX_SLL_P_802_2);
+			b1 = gen_cmp(off_linktype + 2, BPF_B,
+			     (bpf_int32)proto);
+			gen_and(b0, b1);
+			return b1;
+		} else {
+			/*
+			 * This is an Ethernet type, so compare
+			 * the length/type field with it (if
+			 * the frame is an 802.2 frame, the length
+			 * field will be <= ETHERMTU, and, as
+			 * "proto" is > ETHERMTU, this test
+			 * will fail and the frame won't match,
+			 * which is what we want).
+			 */
+			return gen_cmp(off_linktype, BPF_H,
+			    (bpf_int32)proto);
+		}
+	}
+}
+
+static struct block *
 gen_linktype(proto)
 	register int proto;
 {
@@ -1333,164 +1500,7 @@ gen_linktype(proto)
 		}
 
 	case DLT_LINUX_SLL:
-		switch (proto) {
-
-		case LLCSAP_IP:
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLCSAP_IP << 8) | LLCSAP_IP));
-			gen_and(b0, b1);
-			return b1;
-
-		case LLCSAP_ISONS:
-			/*
-			 * OSI protocols always use 802.2 encapsulation.
-			 * XXX - should we check both the DSAP and the
-			 * LSAP, like this, or should we check just the
-			 * DSAP?
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-			gen_and(b0, b1);
-			return b1;
-
-		case LLCSAP_NETBEUI:
-			/*
-			 * NetBEUI always uses 802.2 encapsulation.
-			 * XXX - should we check both the DSAP and the
-			 * LSAP, like this, or should we check just the
-			 * DSAP?
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-			b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-				     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
-			gen_and(b0, b1);
-			return b1;
-
-		case LLCSAP_IPX:
-			/*
-			 *	Ethernet_II frames, which are Ethernet
-			 *	frames with a frame type of ETHERTYPE_IPX;
-			 *
-			 *	Ethernet_802.3 frames, which have a frame
-			 *	type of LINUX_SLL_P_802_3;
-			 *
-			 *	Ethernet_802.2 frames, which are 802.3
-			 *	frames with an 802.2 LLC header (i.e, have
-			 *	a frame type of LINUX_SLL_P_802_2) and
-			 *	with the IPX LSAP as the DSAP in the LLC
-			 *	header;
-			 *
-			 *	Ethernet_SNAP frames, which are 802.3
-			 *	frames with an LLC header and a SNAP
-			 *	header and with an OUI of 0x000000
-			 *	(encapsulated Ethernet) and a protocol
-			 *	ID of ETHERTYPE_IPX in the SNAP header.
-			 *
-			 * First, do the checks on LINUX_SLL_P_802_2
-			 * frames; generate the check for either
-			 * Ethernet_802.2 or Ethernet_SNAP frames, and
-			 * then put a check for LINUX_SLL_P_802_2 frames
-			 * before it.
-			 */
-			b0 = gen_cmp(off_linktype + 2, BPF_B,
-			    (bpf_int32)LLCSAP_IPX);
-			b1 = gen_snap(0x000000, ETHERTYPE_IPX,
-			    off_linktype + 2);
-			gen_or(b0, b1);
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-			gen_and(b0, b1);
-
-			/*
-			 * Now check for 802.3 frames and OR that with
-			 * the previous test.
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_3);
-			gen_or(b0, b1);
-
-			/*
-			 * Now add the check for Ethernet_II frames, and
-			 * do that before checking for the other frame
-			 * types.
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H,
-			    (bpf_int32)ETHERTYPE_IPX);
-			gen_or(b0, b1);
-			return b1;
-
-		case ETHERTYPE_ATALK:
-		case ETHERTYPE_AARP:
-			/*
-			 * EtherTalk (AppleTalk protocols on Ethernet link
-			 * layer) may use 802.2 encapsulation.
-			 */
-
-			/*
-			 * Check for 802.2 encapsulation (EtherTalk phase 2?);
-			 * we check for the 802.2 protocol type in the
-			 * "Ethernet type" field.
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-
-			/*
-			 * 802.2-encapsulated ETHERTYPE_ATALK packets are
-			 * SNAP packets with an organization code of
-			 * 0x080007 (Apple, for Appletalk) and a protocol
-			 * type of ETHERTYPE_ATALK (Appletalk).
-			 *
-			 * 802.2-encapsulated ETHERTYPE_AARP packets are
-			 * SNAP packets with an organization code of
-			 * 0x000000 (encapsulated Ethernet) and a protocol
-			 * type of ETHERTYPE_AARP (Appletalk ARP).
-			 */
-			if (proto == ETHERTYPE_ATALK)
-				b1 = gen_snap(0x080007, ETHERTYPE_ATALK,
-				    off_linktype + 2);
-			else	/* proto == ETHERTYPE_AARP */
-				b1 = gen_snap(0x000000, ETHERTYPE_AARP,
-				    off_linktype + 2);
-			gen_and(b0, b1);
-
-			/*
-			 * Check for Ethernet encapsulation (Ethertalk
-			 * phase 1?); we just check for the Ethernet
-			 * protocol type.
-			 */
-			b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
-
-			gen_or(b0, b1);
-			return b1;
-
-		default:
-			if (proto <= ETHERMTU) {
-				/*
-				 * This is an LLC SAP value, so the frames
-				 * that match would be 802.2 frames.
-				 * Check for the 802.2 protocol type
-				 * in the "Ethernet type" field, and
-				 * then check the DSAP.
-				 */
-				b0 = gen_cmp(off_linktype, BPF_H,
-				    LINUX_SLL_P_802_2);
-				b1 = gen_cmp(off_linktype + 2, BPF_B,
-				     (bpf_int32)proto);
-				gen_and(b0, b1);
-				return b1;
-			} else {
-				/*
-				 * This is an Ethernet type, so compare
-				 * the length/type field with it (if
-				 * the frame is an 802.2 frame, the length
-				 * field will be <= ETHERMTU, and, as
-				 * "proto" is > ETHERMTU, this test
-				 * will fail and the frame won't match,
-				 * which is what we want).
-				 */
-				return gen_cmp(off_linktype, BPF_H,
-				    (bpf_int32)proto);
-			}
-		}
+		return gen_linux_sll_linktype(proto);
 		/*NOTREACHED*/
 		break;
 
