@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.55 2003-11-04 07:05:34 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.55.2.1 2003-11-20 01:18:37 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -89,6 +89,7 @@ struct pcap_md {
 	u_int	dag_mem_bottom;	/* DAG card current memory bottom pointer */
 	u_int	dag_mem_top;	/* DAG card current memory top pointer */
 	int	dag_fcs_bits;	/* Number of checksum bits from link layer */
+	int dag_offset_flags; /* Flags to pass to dag_offset(). */
 #endif
 };
 
