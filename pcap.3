@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.50 2003-11-04 07:05:38 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.51 2003-11-04 07:37:02 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -462,6 +462,11 @@ may be used to display the error text.
 A return of \-2 indicates that the loop terminated due to a call to
 .B pcap_breakloop()
 before any packets were processed.
+.ft B
+If your application uses pcap_breakloop(),
+make sure that you explicitly check for \-1 and \-2, rather than just
+checking for a return value < 0.
+.ft R
 .PP
 .BR NOTE :
 when reading a live capture,
@@ -502,6 +507,11 @@ an error; 0 is returned if
 is exhausted; \-2 is returned if the loop terminated due to a call to
 .B pcap_breakloop()
 before any packets were processed.
+.ft B
+If your application uses pcap_breakloop(),
+make sure that you explicitly check for \-1 and \-2, rather than just
+checking for a return value < 0.
+.ft R
 .PP
 .B pcap_next()
 reads the next packet (by calling
@@ -565,7 +575,19 @@ within the loop.
 .PP
 The flag is checked in loops reading packets from the OS - a signal by
 itself will not necessarily terminate those loops - as well as in loops
-processing a set of packets returned by the OS.  Note that
+processing a set of packets returned by the OS.
+.ft B
+Note that if you are catching signals on UNIX systems that support
+restarting system calls after a signal, and calling pcap_breakloop()
+in the signal handler, you must specify, when catching those signals,
+that system calls should NOT be restarted by that signal.  Otherwise,
+if the signal interrupted a call reading packets in a live capture,
+when your signal handler returns after calling pcap_breakloop(), the
+call will be restarted, and the loop will not terminate until more
+packets arrive and the call completes.
+.ft R
+.PP
+Note that
 .B pcap_next()
 will, on some platforms, loop reading packets from the OS; that loop
 will not necessarily be terminated by a signal, so
