@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.70 2001-11-12 22:02:50 fenner Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.71 2001-11-12 22:04:23 fenner Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -120,9 +120,6 @@ static void opt_peep(struct block *);
 static void opt_stmt(struct stmt *, int[], int);
 static void deadstmt(struct stmt *, struct stmt *[]);
 static void opt_deadstores(struct block *);
-static void opt_blk(struct block *, int);
-static int use_conflict(struct block *, struct block *);
-static void opt_j(struct edge *);
 static struct block *fold_edge(struct block *, struct edge *);
 static inline int eq_blk(struct block *, struct block *);
 static int slength(struct slist *);
