@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.84 2003-02-05 01:46:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.85 2003-02-19 08:06:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -236,7 +236,7 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		} else
 #endif
 			sbp = (struct sb_hdr *)bp;
-		p->md.stat.ps_drop += sbp->sbh_drops;
+		p->md.stat.ps_drop = sbp->sbh_drops;
 		pk = bp + sizeof(*sbp);
 		bp += sbp->sbh_totlen;
 		origlen = sbp->sbh_origlen;
