@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.140.2.1 2001-01-14 06:48:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.140.2.2 2001-02-12 10:33:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2410,6 +2410,8 @@ gen_scode(name, q)
 					tmp = gen_host6(&sin6->sin6_addr,
 						&mask128, tproto6, dir);
 					break;
+				default:
+					continue;
 				}
 				if (b)
 					gen_or(b, tmp);
