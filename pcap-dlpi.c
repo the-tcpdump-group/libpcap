@@ -38,7 +38,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.67 2001-05-21 07:33:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.68 2001-06-27 05:22:44 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -963,8 +963,8 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	 * instance number.
 	 */
 	for (i = 0; i < ap->dl_count; i++) {
-		if ((strcmp(ip->dl_module_id_1, device) == 0 ||
-		     strcmp(ip->dl_module_id_2, device) == 0) &&
+		if ((strcmp((const char *)ip->dl_module_id_1, device) == 0 ||
+		     strcmp((const char *)ip->dl_module_id_2, device) == 0) &&
 		    ip->dl_instance_num == unit)
 			break;
 
