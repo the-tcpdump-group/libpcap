@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.112 2004-11-07 21:40:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.113 2004-11-30 10:51:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -976,7 +976,7 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 int
 pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct bpf_insn *fcode = p->fcode.bf_insns;
+	struct bpf_insn *fcode;
 	int status = 0;
 	int n = 0;
 
@@ -1007,7 +1007,7 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			return (status);
 		}
 
-		if (fcode == NULL ||
+		if ((fcode = p->fcode.bf_insns) == NULL ||
 		    bpf_filter(fcode, p->buffer, h.len, h.caplen)) {
 			(*callback)(user, &h, p->buffer);
 			if (++n >= cnt && cnt > 0)
