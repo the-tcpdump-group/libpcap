@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.24 2001-10-12 21:43:29 mcr Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.25 2001-10-13 06:28:53 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -412,10 +412,10 @@ or
 .BR pcap_loop() .
 If called directly, the 
 .I user
-paramater is of type 
+parameter is of type 
 .I pcap_dumper_t
 as returned by
-.B pcap_dump_open.
+.BR pcap_dump_open() .
 .PP
 .B pcap_compile()
 is used to compile the string
