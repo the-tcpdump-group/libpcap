@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.49 2001-09-09 05:02:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/bpf/net/Attic/bpf.h,v 1.50 2001-11-02 08:03:39 guy Exp $ (LBL)
  */
 
 #ifndef BPF_MAJOR_VERSION
@@ -284,14 +284,22 @@ struct bpf_hdr {
 #define DLT_ECONET	115
 
 /*
- * 116 is reserved for DLT_IPFILTER.
- * 117 is used in capture-file headers as a link-layer type corresponding
- * to OpenBSD DLT_PFLOG; DLT_PFLOG is 17, but that's DLT_LANE8023 in
- * SuSE 6.3, so we can't use 17 for it in capture-file headers.
- *
- * Don't use 116 for anything other than DLT_IPFILTER, and don't use
- * 117 for anything other than DLT_PFLOG.
+ * Reserved for use with OpenBSD ipfilter.
  */
+#define DLT_IPFILTER	116
+
+/*
+ * Reserved for use in capture-file headers as a link-layer type
+ * corresponding to OpenBSD DLT_PFLOG; DLT_PFLOG is 17 in OpenBSD,
+ * but that's DLT_LANE8023 in SuSE 6.3, so we can't use 17 for it
+ * in capture-file headers.
+ */
+#define DLT_PFLOG	117
+
+/*
+ * Registered for Cisco-internal use.
+ */
+#define DLT_CISCO_IOS	118
 
 /*
  * The instruction encodings.
