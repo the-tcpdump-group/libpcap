@@ -1,4 +1,8 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.49 2000-02-23 11:41:35 itojun Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.50 2000-04-27 09:37:47 itojun Exp $ (LBL)
+
+Thu Apr 27 18:49:57 JST 2000  itojun@iijlab.net
+	* avoid use of sprintf() and other unbounded string operations.
+	  NOTE: *errbuf arg is assumed to be larger than PCAP_ERRBUF_SIZE.
 
 Wed Feb 23 20:32:32 JST 2000  itojun@iijlab.net
 	* use getifaddrs(3) whenever possible.  this avoids use of SIOCGIFCONF.
