@@ -30,6 +30,7 @@ pcap \- Packet Capture library
 pcap_t *pcap_open_live(char *device, int snaplen,
 .ti +8
 int promisc, int to_ms, char *ebuf)
+pcap_t *pcap_open_dead(int linktype, int snaplen)
 pcap_t *pcap_open_offline(char *fname, char *ebuf)
 pcap_dumper_t *pcap_dump_open(pcap_t *p, char *fname)
 .ft
@@ -121,6 +122,12 @@ is used to return error text and is only set when
 .B pcap_open_live()
 fails and returns
 .BR NULL .
+.PP
+.B pcap_open_dead()
+is used for creating a
+.B pcap_t
+structure to use when calling the other functions in libpcap.  It is
+typically used when just using libpcap for compiling BPF code.
 .PP
 .B pcap_open_offline()
 is called to open a ``savefile'' for reading.
