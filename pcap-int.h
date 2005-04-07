@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.69 2005-04-07 01:24:18 mcr Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.70 2005-04-07 02:47:34 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -98,6 +98,14 @@ struct pcap_md {
 	int	dag_offset_flags; /* Flags to pass to dag_offset(). */
 #endif
 };
+
+/*
+ * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
+ * Tru64 UNIX, and NetBSD pad to make everything line up on a nice boundary.
+ */
+#if defined(ultrix) || defined(__osf__) || (defined(__NetBSD__) && __NetBSD_Version__ > 106000000)
+#define       PCAP_FDDIPAD 3
+#endif
 
 struct pcap {
 #ifdef WIN32
@@ -237,15 +245,6 @@ int	yylex(void);
 /* XXX should these be in pcap.h? */
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
-
-
-/*
- * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
- * Tru64 UNIX, and NetBSD pad to make everything line up on a nice boundary.
- */
-#if defined(ultrix) || defined(__osf__) || (defined(__NetBSD__) && __NetBSD_Version__ > 106000000)
-#define       PCAP_FDDIPAD 3
-#endif
 
 #ifndef HAVE_STRLCPY
 #define strlcpy(x, y, z) \
