@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.68 2004-12-18 08:52:10 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.69 2005-04-07 01:24:18 mcr Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -243,7 +243,7 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
  * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
  * Tru64 UNIX, and NetBSD pad to make everything line up on a nice boundary.
  */
-#if defined(ultrix) || defined(__osf__) || defined(__NetBSD__)
+#if defined(ultrix) || defined(__osf__) || (defined(__NetBSD__) && __NetBSD_Version__ > 106000000)
 #define       PCAP_FDDIPAD 3
 #endif
 
