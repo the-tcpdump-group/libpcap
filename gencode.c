@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221 2005-03-27 22:10:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.222 2005-04-07 20:42:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1049,6 +1049,15 @@ init_linktype(p)
 		off_nl_nosnap = 4;
 		return;
 #endif
+
+	case DLT_LAPD:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -1847,6 +1856,9 @@ gen_linktype(proto)
 
 	case DLT_DOCSIS:
 		bpf_error("DOCSIS link-layer type filtering not implemented");
+
+	case DLT_LAPD:
+		bpf_error("LAPD link-layer type filtering not implemented");
 	}
 
 	/*

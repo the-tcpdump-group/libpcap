@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126 2005-02-08 20:03:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.127 2005-04-07 20:42:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -404,6 +404,12 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_ERF_ETH	175	/* Ethernet */
 #define LINKTYPE_ERF_POS	176	/* Packet-over-SONET */
 
+/*
+ * Requested by Daniele Orlandi <daniele@orlandi.com> for raw LAPD
+ * for vISDN (http://www.orlandi.com/visdn/).
+ */
+#define LINKTYPE_LAPD		177
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -593,6 +599,9 @@ static struct linktype_map {
 	/* Endace types */
 	{ DLT_ERF_ETH,		LINKTYPE_ERF_ETH },
 	{ DLT_ERF_POS,		LINKTYPE_ERF_POS },
+
+	/* Raw LAPD */
+	{ DLT_LAPD,		LINKTYPE_LAPD },
 
 	{ -1,			-1 }
 };

@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34 2005-02-08 20:03:15 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.35 2005-04-07 20:42:45 guy Exp $ (LBL)
  */
 
 /*
@@ -579,6 +579,12 @@ struct bpf_version {
  */
 #define DLT_ERF_ETH		175	/* Ethernet */
 #define DLT_ERF_POS		176	/* Packet-over-SONET */
+
+/*
+ * Requested by Daniele Orlandi <daniele@orlandi.com> for raw LAPD
+ * for vISDN (http://www.orlandi.com/visdn/).
+ */
+#define DLT_LAPD		177
 
 /*
  * The instruction encodings.
