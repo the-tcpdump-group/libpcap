@@ -37,7 +37,8 @@
  *    - It might be desirable to use pfmod(7) to filter packets in the
  *      kernel when possible.
  *
- *    - The HP-UX 10.20 DLPI Programmer's Guide used to be available
+ *    - An older version of the HP-UX DLPI Programmer's Guide, which
+ *      I think was advertised as the 10.20 version, used to be available
  *      at
  *
  *            http://docs.hp.com/hpux/onlinedocs/B2355-90093/B2355-90093.html
@@ -48,21 +49,24 @@
  *
  *      in PDF form.
  *
- *    - The HP-UX 11.00 DLPI Programmer's Guide is available at
+ *    - The HP-UX 10.x, 11.0, and 11i v1.6 version of the HP-UX DLPI
+ *      Programmer's Guide, which I think was once advertised as the
+ *      11.00 version is available at
  *
- *            http://docs.hp.com/hpux/onlinedocs/B2355-90139/B2355-90139.html
+ *            http://docs.hp.com/en/B2355-90139/index.html
  *
- *      and in PDF form at
+ *    - The HP-UX 11i v2 version of the HP-UX DLPI Programmer's Guide
+ *      is available at
  *
- *            http://h21007.www2.hp.com/dspp/files/unprotected/Drivers/Docs/Refs/B2355-90139.pdf
+ *            http://docs.hp.com/en/B2355-90871/index.html
  *
- *    - Both of the HP documents describe raw-mode services, which are
+ *    - All of the HP documents describe raw-mode services, which are
  *      what we use if DL_HP_RAWDLS is defined.
  */
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.109 2005-04-08 02:15:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.110 2005-04-08 03:08:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -652,6 +656,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** This is the descriptor on which we receive packets; we
 	** bind it to 22, as that's INSAP, as per the HP-UX DLPI
 	** Programmer's Guide.
+	**
+	** XXX - is the SAP relevant?  Apparently, if some application
+	** is already bound to that SAP, this fails with a DL_ERROR_ACK
+	** message of type DL_SYSERR with an errno of EBUSY, and
+	** the primitives we use already imply raw mode.  Should we,
+	** instead, just keep trying SAPs from some set of SAPs until
+	** we don't fail with EBUSY?
 	*/
 	if (dlbindreq(p->fd, 22, ebuf) < 0 ||
 	     dlbindack(p->fd, (char *)buf, ebuf) < 0)
