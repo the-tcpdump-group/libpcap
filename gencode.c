@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.223 2005-04-08 14:40:38 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.224 2005-04-08 15:33:58 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3806,6 +3806,13 @@ gen_proto(v, proto, dir)
 			b1 = gen_cmp(off_nl_nosnap+1, BPF_B, (long)v);
 			gen_and(b0, b1);
 			return b1;
+
+                case DLT_EN10MB:
+                        b0 = gen_cmp(off_nl_nosnap-3, BPF_H, LLCSAP_ISONS<< 8 | LLCSAP_ISONS);
+                        b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
+                        gen_and(b0, b1);
+                        return b1;
+                        break;
 
 		default:
 			b0 = gen_linktype(LLCSAP_ISONS);
