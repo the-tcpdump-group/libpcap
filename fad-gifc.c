@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.9 2005-04-08 02:04:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/fad-gifc.c,v 1.10 2005-04-08 02:15:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -255,7 +255,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	struct ifconf ifc;
 	char *buf = NULL;
 	unsigned buf_size;
-#if defined (HAVE_SOLARIS) || defined (HAVE_HPUX10_20)
+#if defined (HAVE_SOLARIS) || defined (HAVE_HPUX10_20_OR_LATER)
 	char *p, *q;
 #endif
 	struct ifreq ifrflags, ifrnetmask, ifrbroadaddr, ifrdstaddr;
@@ -474,7 +474,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 			dstaddr_size = 0;
 		}
 
-#if defined (HAVE_SOLARIS) || defined (HAVE_HPUX10_20)
+#if defined (HAVE_SOLARIS) || defined (HAVE_HPUX10_20_OR_LATER)
 		/*
 		 * If this entry has a colon followed by a number at
 		 * the end, it's a logical interface.  Those are just

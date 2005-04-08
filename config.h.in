@@ -23,8 +23,8 @@
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
 
-/* on HP-UX 10.20 */
-#undef HAVE_HPUX10_20
+/* on HP-UX 10.20 or later */
+#undef HAVE_HPUX10_20_OR_LATER
 
 /* on HP-UX 9.x */
 #undef HAVE_HPUX9

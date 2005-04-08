@@ -62,7 +62,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.108 2004-10-19 07:06:12 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.109 2005-04-08 02:15:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -622,10 +622,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	/*
-	** Bind (defer if using HP-UX 9 or HP-UX 10.20, totally skip if
-	** using SINIX)
+	** Bind (defer if using HP-UX 9 or HP-UX 10.20 or later, totally
+	** skip if using SINIX)
 	*/
-#if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20) && !defined(sinix)
+#if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20_OR_LATER) && !defined(sinix)
 #ifdef _AIX
 	/* According to IBM's AIX Support Line, the dl_sap value
 	** should not be less than 0x600 (1536) for standard Ethernet.
@@ -734,10 +734,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 
 	/*
-	** HP-UX 9 and HP-UX 10.20 must bind after setting promiscuous
-	** options)
+	** HP-UX 9, and HP-UX 10.20 or later, must bind after setting
+	** promiscuous options)
 	*/
-#if defined(HAVE_HPUX9) || defined(HAVE_HPUX10_20)
+#if defined(HAVE_HPUX9) || defined(HAVE_HPUX10_20_OR_LATER)
 	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
 	    dlbindack(p->fd, (char *)buf, ebuf) < 0)
 		goto bad;
