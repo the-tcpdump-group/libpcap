@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.222 2005-04-07 20:42:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.223 2005-04-08 14:40:38 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1457,9 +1457,14 @@ gen_linktype(proto)
 	switch (linktype) {
 
 	case DLT_EN10MB:
-		return gen_ether_linktype(proto);
-		/*NOTREACHED*/
-		break;
+
+                if (proto <= ETHERMTU) {
+                        off_linktype+=2;
+                        return gen_llc(proto);
+                }
+                else return gen_ether_linktype(proto);
+                /*NOTREACHED*/
+                break;
 
 	case DLT_C_HDLC:
 		switch (proto) {
@@ -5332,27 +5337,25 @@ gen_vlan(vlan_num)
 
 	/*
 	 * Change the offsets to point to the type and data fields within
-	 * the VLAN packet.  This is somewhat of a kludge.
+	 * the VLAN packet. just increment the offsets to support hierarchy.
 	 */
-	if (orig_nl == (u_int)-1) {
-		orig_linktype = off_linktype;	/* save original values */
-		orig_nl = off_nl;
-		orig_nl_nosnap = off_nl_nosnap;
+        orig_linktype = off_linktype;	/* save original values */
+        orig_nl = off_nl;
+        orig_nl_nosnap = off_nl_nosnap;
 
-		switch (linktype) {
+        switch (linktype) {
 
-		case DLT_EN10MB:
-			off_linktype = 16;
-			off_nl_nosnap = 18;
-			off_nl = 18;
-			break;
+        case DLT_EN10MB:
+                off_linktype += 4;
+                off_nl_nosnap += 4;
+                off_nl = +4;
+                break;
 
-		default:
-			bpf_error("no VLAN support for data link type %d",
-				  linktype);
-			/*NOTREACHED*/
-		}
-	}
+        default:
+                bpf_error("no VLAN support for data link type %d",
+                      linktype);
+            /*NOTREACHED*/
+        }
 
 	/* check for VLAN */
 	b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
@@ -5380,54 +5383,42 @@ gen_mpls(label_num)
 
 	/*
 	 * Change the offsets to point to the type and data fields within
-	 * the MPLS packet.  This is somewhat of a kludge.
+	 * the MPLS packet. just increment the offsets to support hierarchy.
 	 */
-	if (orig_nl == (u_int)-1) {
-		orig_linktype = off_linktype;	/* save original values */
-		orig_nl = off_nl;
-		orig_nl_nosnap = off_nl_nosnap;
+        orig_linktype = off_linktype;	/* save original values */
+        orig_nl = off_nl;
+        orig_nl_nosnap = off_nl_nosnap;
 
-		switch (linktype) {
+        switch (linktype) {
+            
+        case DLT_C_HDLC: /* fall through */
+        case DLT_EN10MB:
+                off_linktype += 4;
+                off_nl_nosnap += 4;
+                off_nl += 4;
+                        
+                b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
+                break;
 
-		case DLT_EN10MB:
-			off_linktype = 16;
-			off_nl_nosnap = 18;
-			off_nl = 18;
+        case DLT_PPP:
+                off_linktype += 4;
+                off_nl_nosnap += 4;
+                off_nl += 4;
 
-			b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
-			break;
+                b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)PPP_MPLS_UCAST);
+                break;
 
-		case DLT_PPP:
-			off_linktype = 6;
-			off_nl_nosnap = 8;
-			off_nl = 8;
+                /* FIXME add other DLT_s ...
+                 * for Frame-Relay/and ATM this may get messy due to SNAP headers
+                 * leave it for now */
 
-			b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)PPP_MPLS_UCAST);
-			break;
-
-		case DLT_C_HDLC:
-			off_linktype = 6;
-			off_nl_nosnap = 8;
-			off_nl = 8;
-
-			b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
-			break;
-
-			/* FIXME add other DLT_s ...
-			 * for Frame-Relay/and ATM this may get messy due to SNAP headers
-			 * leave it for now */
-
-		default:
-			bpf_error("no MPLS support for data link type %d",
-				  linktype);
-			b0 = NULL;
-			/*NOTREACHED*/
-		}
-	} else {
-		bpf_error("'mpls' can't be combined with 'vlan' or another 'mpls'");
-		b0 = NULL;
-		/*NOTREACHED*/
-	}
+        default:
+                bpf_error("no MPLS support for data link type %d",
+                          linktype);
+                b0 = NULL;
+                /*NOTREACHED*/
+                break;
+        }
 
 	/* If a specific MPLS label is requested, check it */
 	if (label_num >= 0) {
