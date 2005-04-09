@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.224 2005-04-08 15:33:58 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.1 2005-04-09 18:16:50 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
