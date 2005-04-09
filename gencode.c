@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.224 2005-04-08 15:33:58 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.225 2005-04-09 21:15:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1050,7 +1050,7 @@ init_linktype(p)
 		return;
 #endif
 
-	case DLT_LAPD:
+	case DLT_LINUX_LAPD:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
@@ -1862,7 +1862,7 @@ gen_linktype(proto)
 	case DLT_DOCSIS:
 		bpf_error("DOCSIS link-layer type filtering not implemented");
 
-	case DLT_LAPD:
+	case DLT_LINUX_LAPD:
 		bpf_error("LAPD link-layer type filtering not implemented");
 	}
 
