@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.227 2005-04-10 03:40:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.228 2005-04-10 17:48:38 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3084,7 +3084,9 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_ISIS:
+                b0 = gen_linktype(LLCSAP_ISONS);
 		b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+                gen_and(b0, b1);
 		break;
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
