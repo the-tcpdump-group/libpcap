@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.226 2005-04-09 23:38:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.227 2005-04-10 03:40:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -171,7 +171,7 @@ static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
-static struct block *gen_llc(int);
+static struct block *gen_llc_linktype(int);
 static struct block *gen_hostop(bpf_u_int32, bpf_u_int32, int, int, u_int, u_int);
 #ifdef INET6
 static struct block *gen_hostop6(struct in6_addr *, struct in6_addr *, int, int, u_int, u_int);
@@ -1098,6 +1098,15 @@ gen_false()
 #define	SWAPLONG(y) \
 ((((y)&0xff)<<24) | (((y)&0xff00)<<8) | (((y)&0xff0000)>>8) | (((y)>>24)&0xff))
 
+/*
+ * Generate code to match a particular packet type.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.  We use that to determine whether to
+ * match the type/length field or to check the type/length field for
+ * a value <= ETHERMTU to see whether it's a type field and then do
+ * the appropriate test.
+ */
 static struct block *
 gen_ether_linktype(proto)
 	register int proto;
@@ -1268,6 +1277,14 @@ gen_ether_linktype(proto)
 	}
 }
 
+/*
+ * Generate code to match a particular packet type.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.  We use that to determine whether to
+ * match the type field or to check the type field for the special
+ * LINUX_SLL_P_802_2 value and then do the appropriate test.
+ */
 static struct block *
 gen_linux_sll_linktype(proto)
 	register int proto;
@@ -1276,36 +1293,24 @@ gen_linux_sll_linktype(proto)
 
 	switch (proto) {
 
-	case LLCSAP_IP:
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_IP << 8) | LLCSAP_IP));
-		gen_and(b0, b1);
-		return b1;
-
 	case LLCSAP_ISONS:
-		/*
-		 * OSI protocols always use 802.2 encapsulation.
-		 * XXX - should we check both the DSAP and the
-		 * SSAP, like this, or should we check just the
-		 * DSAP?
-		 */
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-		gen_and(b0, b1);
-		return b1;
-
+	case LLCSAP_IP:
 	case LLCSAP_NETBEUI:
 		/*
-		 * NetBEUI always uses 802.2 encapsulation.
+		 * OSI protocols and NetBEUI always use 802.2 encapsulation,
+		 * so we check the DSAP and SSAP.
+		 *
+		 * LLCSAP_IP checks for IP-over-802.2, rather
+		 * than IP-over-Ethernet or IP-over-SNAP.
+		 *
 		 * XXX - should we check both the DSAP and the
-		 * LSAP, like this, or should we check just the
-		 * DSAP?
+		 * SSAP, like this, or should we check just the
+		 * DSAP, as we do for other types <= ETHERMTU
+		 * (i.e., other SAP values)?
 		 */
 		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
 
@@ -1434,6 +1439,13 @@ gen_linux_sll_linktype(proto)
 	}
 }
 
+/*
+ * Generate code to match a particular packet type by matching the
+ * link-layer type field or fields in the 802.2 LLC header.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.
+ */
 static struct block *
 gen_linktype(proto)
 	register int proto;
@@ -1469,7 +1481,7 @@ gen_linktype(proto)
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:
 	case DLT_IP_OVER_FC:
-		return gen_llc(proto);
+		return gen_llc_linktype(proto);
 		/*NOTREACHED*/
 		break;
 
@@ -1502,7 +1514,7 @@ gen_linktype(proto)
 			 * protocol.
 			 */
 			b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
-			b1 = gen_llc(proto);
+			b1 = gen_llc_linktype(proto);
 			gen_and(b0, b1);
 			return b1;
 		}
@@ -1901,12 +1913,19 @@ gen_snap(orgcode, ptype, offset)
 }
 
 /*
- * Check for a given protocol value assuming an 802.2 LLC header.
+ * Generate code to match a particular packet type, for link-layer types
+ * using 802.2 LLC headers.
+ *
  * This is *NOT* used for Ethernet; "gen_ether_linktype()" is used
- * for that.
+ * for that - it handles the D/I/X Ethernet vs. 802.3+802.2 issues.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.  We use that to determine whether to
+ * match the DSAP or both DSAP and LSAP or to check the OUI and
+ * protocol ID in a SNAP header.
  */
 static struct block *
-gen_llc(proto)
+gen_llc_linktype(proto)
 	int proto;
 {
 	/*
