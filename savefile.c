@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.127 2005-04-07 20:42:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.1 2005-04-10 18:04:52 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -406,9 +406,11 @@ static const char rcsid[] _U_ =
 
 /*
  * Requested by Daniele Orlandi <daniele@orlandi.com> for raw LAPD
- * for vISDN (http://www.orlandi.com/visdn/).
+ * for vISDN (http://www.orlandi.com/visdn/).  Its link-layer header
+ * includes additional information before the LAPD header, so it's
+ * not necessarily a generic LAPD header.
  */
-#define LINKTYPE_LAPD		177
+#define LINKTYPE_LINUX_LAPD	177
 
 static struct linktype_map {
 	int	dlt;
@@ -600,8 +602,8 @@ static struct linktype_map {
 	{ DLT_ERF_ETH,		LINKTYPE_ERF_ETH },
 	{ DLT_ERF_POS,		LINKTYPE_ERF_POS },
 
-	/* Raw LAPD */
-	{ DLT_LAPD,		LINKTYPE_LAPD },
+	/* viSDN LAPD */
+	{ DLT_LINUX_LAPD,	LINKTYPE_LINUX_LAPD },
 
 	{ -1,			-1 }
 };

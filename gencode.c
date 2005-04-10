@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.1 2005-04-09 18:16:50 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.2 2005-04-10 18:04:50 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -171,7 +171,7 @@ static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
-static struct block *gen_llc(int);
+static struct block *gen_llc_linktype(int);
 static struct block *gen_hostop(bpf_u_int32, bpf_u_int32, int, int, u_int, u_int);
 #ifdef INET6
 static struct block *gen_hostop6(struct in6_addr *, struct in6_addr *, int, int, u_int, u_int);
@@ -989,7 +989,7 @@ init_linktype(p)
 	case DLT_APPLE_IP_OVER_IEEE1394:
 		off_linktype = 16;
 		off_nl = 18;
-		off_nl_nosnap = 0;	/* no 802.2 LLC */
+		off_nl_nosnap = 18;	/* no 802.2 LLC */
 		return;
 
 	case DLT_LINUX_IRDA:
@@ -1018,16 +1018,16 @@ init_linktype(p)
 
 	case DLT_PFLOG:
 		off_linktype = 0;
-		/* XXX read from header? */
+		/* XXX read this from pf.h? */
 		off_nl = PFLOG_HDRLEN;
-		off_nl_nosnap = PFLOG_HDRLEN;
+		off_nl_nosnap = PFLOG_HDRLEN;	/* no 802.2 LLC */
 		return;
 
         case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
                 off_linktype = 4;
 		off_nl = 4;
-		off_nl_nosnap = -1;
+		off_nl_nosnap = -1;	/* no 802.2 LLC */
                 return;
 
 	case DLT_JUNIPER_ATM1:
@@ -1050,7 +1050,7 @@ init_linktype(p)
 		return;
 #endif
 
-	case DLT_LAPD:
+	case DLT_LINUX_LAPD:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
@@ -1098,6 +1098,15 @@ gen_false()
 #define	SWAPLONG(y) \
 ((((y)&0xff)<<24) | (((y)&0xff00)<<8) | (((y)&0xff0000)>>8) | (((y)>>24)&0xff))
 
+/*
+ * Generate code to match a particular packet type.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.  We use that to determine whether to
+ * match the type/length field or to check the type/length field for
+ * a value <= ETHERMTU to see whether it's a type field and then do
+ * the appropriate test.
+ */
 static struct block *
 gen_ether_linktype(proto)
 	register int proto;
@@ -1107,38 +1116,24 @@ gen_ether_linktype(proto)
 	switch (proto) {
 
 	case LLCSAP_ISONS:
-		/*
-		 * OSI protocols always use 802.2 encapsulation.
-		 * XXX - should we check both the DSAP and the
-		 * SSAP, like this, or should we check just the
-		 * DSAP?
-		 */
-		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-		gen_not(b0);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-		gen_and(b0, b1);
-		return b1;
-
 	case LLCSAP_IP:
-		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
-		gen_not(b0);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_IP << 8) | LLCSAP_IP));
-		gen_and(b0, b1);
-		return b1;
-
 	case LLCSAP_NETBEUI:
 		/*
-		 * NetBEUI always uses 802.2 encapsulation.
+		 * OSI protocols and NetBEUI always use 802.2 encapsulation,
+		 * so we check the DSAP and SSAP.
+		 *
+		 * LLCSAP_IP checks for IP-over-802.2, rather
+		 * than IP-over-Ethernet or IP-over-SNAP.
+		 *
 		 * XXX - should we check both the DSAP and the
 		 * SSAP, like this, or should we check just the
-		 * DSAP?
+		 * DSAP, as we do for other types <= ETHERMTU
+		 * (i.e., other SAP values)?
 		 */
 		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
 		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
 
@@ -1282,6 +1277,14 @@ gen_ether_linktype(proto)
 	}
 }
 
+/*
+ * Generate code to match a particular packet type.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.  We use that to determine whether to
+ * match the type field or to check the type field for the special
+ * LINUX_SLL_P_802_2 value and then do the appropriate test.
+ */
 static struct block *
 gen_linux_sll_linktype(proto)
 	register int proto;
@@ -1290,36 +1293,24 @@ gen_linux_sll_linktype(proto)
 
 	switch (proto) {
 
-	case LLCSAP_IP:
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_IP << 8) | LLCSAP_IP));
-		gen_and(b0, b1);
-		return b1;
-
 	case LLCSAP_ISONS:
-		/*
-		 * OSI protocols always use 802.2 encapsulation.
-		 * XXX - should we check both the DSAP and the
-		 * SSAP, like this, or should we check just the
-		 * DSAP?
-		 */
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-		gen_and(b0, b1);
-		return b1;
-
+	case LLCSAP_IP:
 	case LLCSAP_NETBEUI:
 		/*
-		 * NetBEUI always uses 802.2 encapsulation.
+		 * OSI protocols and NetBEUI always use 802.2 encapsulation,
+		 * so we check the DSAP and SSAP.
+		 *
+		 * LLCSAP_IP checks for IP-over-802.2, rather
+		 * than IP-over-Ethernet or IP-over-SNAP.
+		 *
 		 * XXX - should we check both the DSAP and the
-		 * LSAP, like this, or should we check just the
-		 * DSAP?
+		 * SSAP, like this, or should we check just the
+		 * DSAP, as we do for other types <= ETHERMTU
+		 * (i.e., other SAP values)?
 		 */
 		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
 		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
-			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
 
@@ -1448,6 +1439,13 @@ gen_linux_sll_linktype(proto)
 	}
 }
 
+/*
+ * Generate code to match a particular packet type by matching the
+ * link-layer type field or fields in the 802.2 LLC header.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.
+ */
 static struct block *
 gen_linktype(proto)
 	register int proto;
@@ -1457,12 +1455,7 @@ gen_linktype(proto)
 	switch (linktype) {
 
 	case DLT_EN10MB:
-
-                if (proto <= ETHERMTU) {
-                        off_linktype+=2;
-                        return gen_llc(proto);
-                }
-                else return gen_ether_linktype(proto);
+                return gen_ether_linktype(proto);
                 /*NOTREACHED*/
                 break;
 
@@ -1488,7 +1481,7 @@ gen_linktype(proto)
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:
 	case DLT_IP_OVER_FC:
-		return gen_llc(proto);
+		return gen_llc_linktype(proto);
 		/*NOTREACHED*/
 		break;
 
@@ -1521,10 +1514,12 @@ gen_linktype(proto)
 			 * protocol.
 			 */
 			b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
-			b1 = gen_llc(proto);
+			b1 = gen_llc_linktype(proto);
 			gen_and(b0, b1);
 			return b1;
 		}
+		/*NOTREACHED*/
+		break;
 
 	case DLT_LINUX_SLL:
 		return gen_linux_sll_linktype(proto);
@@ -1862,7 +1857,7 @@ gen_linktype(proto)
 	case DLT_DOCSIS:
 		bpf_error("DOCSIS link-layer type filtering not implemented");
 
-	case DLT_LAPD:
+	case DLT_LINUX_LAPD:
 		bpf_error("LAPD link-layer type filtering not implemented");
 	}
 
@@ -1918,10 +1913,19 @@ gen_snap(orgcode, ptype, offset)
 }
 
 /*
- * Check for a given protocol value assuming an 802.2 LLC header.
+ * Generate code to match a particular packet type, for link-layer types
+ * using 802.2 LLC headers.
+ *
+ * This is *NOT* used for Ethernet; "gen_ether_linktype()" is used
+ * for that - it handles the D/I/X Ethernet vs. 802.3+802.2 issues.
+ *
+ * "proto" is an Ethernet type value, if > ETHERMTU, or an LLC SAP
+ * value, if <= ETHERMTU.  We use that to determine whether to
+ * match the DSAP or both DSAP and LSAP or to check the OUI and
+ * protocol ID in a SNAP header.
  */
 static struct block *
-gen_llc(proto)
+gen_llc_linktype(proto)
 	int proto;
 {
 	/*
@@ -1930,16 +1934,16 @@ gen_llc(proto)
 	switch (proto) {
 
 	case LLCSAP_IP:
-		return gen_cmp(off_linktype, BPF_H, (long)
-			     ((LLCSAP_IP << 8) | LLCSAP_IP));
-
 	case LLCSAP_ISONS:
-		return gen_cmp(off_linktype, BPF_H, (long)
-			     ((LLCSAP_ISONS << 8) | LLCSAP_ISONS));
-
 	case LLCSAP_NETBEUI:
+		/*
+		 * XXX - should we check both the DSAP and the
+		 * SSAP, like this, or should we check just the
+		 * DSAP, as we do for other types <= ETHERMTU
+		 * (i.e., other SAP values)?
+		 */
 		return gen_cmp(off_linktype, BPF_H, (long)
-			     ((LLCSAP_NETBEUI << 8) | LLCSAP_NETBEUI));
+			     ((proto << 8) | proto));
 
 	case LLCSAP_IPX:
 		/*
@@ -3080,7 +3084,9 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_ISIS:
+                b0 = gen_linktype(LLCSAP_ISONS);
 		b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+                gen_and(b0, b1);
 		break;
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
@@ -3806,13 +3812,6 @@ gen_proto(v, proto, dir)
 			b1 = gen_cmp(off_nl_nosnap+1, BPF_B, (long)v);
 			gen_and(b0, b1);
 			return b1;
-
-                case DLT_EN10MB:
-                        b0 = gen_cmp(off_nl_nosnap-3, BPF_H, LLCSAP_ISONS<< 8 | LLCSAP_ISONS);
-                        b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
-                        gen_and(b0, b1);
-                        return b1;
-                        break;
 
 		default:
 			b0 = gen_linktype(LLCSAP_ISONS);
@@ -5344,7 +5343,33 @@ gen_vlan(vlan_num)
 
 	/*
 	 * Change the offsets to point to the type and data fields within
-	 * the VLAN packet. just increment the offsets to support hierarchy.
+	 * the VLAN packet.  Just increment the offsets, so that we
+	 * can support a hierarchy, e.g. "vlan 300 && vlan 200" to
+	 * capture VLAN 200 encapsulated within VLAN 100.
+	 *
+	 * XXX - this is a bit of a kludge.  If we were to split the
+	 * compiler into a parser that parses an expression and
+	 * generates an expression tree, and a code generator that
+	 * takes an expression tree (which could come from our
+	 * parser or from some other parser) and generates BPF code,
+	 * we could perhaps make the offsets parameters of routines
+	 * and, in the handler for an "AND" node, pass to subnodes
+	 * other than the VLAN node the adjusted offsets.
+	 *
+	 * This would mean that "vlan" would, instead of changing the
+	 * behavior of *all* tests after it, change only the behavior
+	 * of tests ANDed with it.  That would change the documented
+	 * semantics of "vlan", which might break some expressions.
+	 * However, it would mean that "(vlan and ip) or ip" would check
+	 * both for VLAN-encapsulated IP and IP-over-Ethernet, rather than
+	 * checking only for VLAN-encapsulated IP, so that could still
+	 * be considered worth doing; it wouldn't break expressions
+	 * that are of the form "vlan and ..." or "vlan N and ...",
+	 * which I suspect are the most common expressions involving
+	 * "vlan".  "vlan or ..." doesn't necessarily do what the user
+	 * would really want, now, as all the "or ..." tests would
+	 * be done assuming a VLAN, even though the "or" could be viewed
+	 * as meaning "or, if this isn't a VLAN packet...".
 	 */
         orig_linktype = off_linktype;	/* save original values */
         orig_nl = off_nl;
@@ -5355,7 +5380,7 @@ gen_vlan(vlan_num)
         case DLT_EN10MB:
                 off_linktype += 4;
                 off_nl_nosnap += 4;
-                off_nl = +4;
+                off_nl += 4;
                 break;
 
         default:
@@ -5390,7 +5415,12 @@ gen_mpls(label_num)
 
 	/*
 	 * Change the offsets to point to the type and data fields within
-	 * the MPLS packet. just increment the offsets to support hierarchy.
+	 * the MPLS packet.  Just increment the offsets, so that we
+	 * can support a hierarchy, e.g. "mpls 100000 && mpls 1024" to
+	 * capture packets with an outer label of 100000 and an inner
+	 * label of 1024.
+	 *
+	 * XXX - this is a bit of a kludge.  See comments in gen_vlan().
 	 */
         orig_linktype = off_linktype;	/* save original values */
         orig_nl = off_nl;

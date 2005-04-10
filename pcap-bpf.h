@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.1 2005-04-09 18:26:17 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.2 2005-04-10 18:04:51 hannes Exp $ (LBL)
  */
 
 /*
@@ -582,12 +582,14 @@ struct bpf_version {
 
 /*
  * Requested by Daniele Orlandi <daniele@orlandi.com> for raw LAPD
- * for vISDN (http://www.orlandi.com/visdn/).
+ * for vISDN (http://www.orlandi.com/visdn/).  Its link-layer header
+ * includes additional information before the LAPD header, so it's
+ * not necessarily a generic LAPD header.
  */
-#define DLT_LAPD		177
+#define DLT_LINUX_LAPD		177
 
 /*
- * The instruction encodings.
+ * The instruction encodings.
  */
 /* instruction classes */
 #define BPF_CLASS(code) ((code) & 0x07)
