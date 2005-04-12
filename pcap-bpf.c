@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86 2005-02-26 21:58:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86.2.1 2005-04-12 20:47:43 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -729,7 +729,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 #ifdef PCAP_FDDIPAD
 	if (v == DLT_FDDI)
-		p->fddipad = PCAP_FDDIPAD:
+		p->fddipad = PCAP_FDDIPAD;
 	else
 		p->fddipad = 0;
 #endif
