@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.64 2004-12-17 21:27:54 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.65 2005-04-13 18:59:41 mcr Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -58,6 +58,10 @@ int pcap_lookupnet(const char *device, bpf_u_int32 *netp,
 bpf_u_int32 *maskp, char *errbuf)
 .ft
 .LP
+.ft B
+typedef void (*pcap_handler)(u_char *user, const struct pcap_pkthdr *h,
+.ti +8
+			     const u_char *bytes);
 .ft B
 int pcap_dispatch(pcap_t *p, int cnt,
 .ti +8
