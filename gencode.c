@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.228 2005-04-10 17:48:38 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.229 2005-04-15 04:39:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3084,9 +3084,7 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_ISIS:
-                b0 = gen_linktype(LLCSAP_ISONS);
 		b1 = gen_proto(ISO10589_ISIS, Q_ISO, Q_DEFAULT);
-                gen_and(b0, b1);
 		break;
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
@@ -3474,7 +3472,7 @@ gen_protochain(v, proto, dir)
 	no_optimize = 1; /*this code is not compatible with optimzer yet */
 
 	/*
-	 * s[0] is a dummy entry to protect other BPF insn from damaged
+	 * s[0] is a dummy entry to protect other BPF insn from damage
 	 * by s[fix] = foo with uninitialized variable "fix".  It is somewhat
 	 * hard to find interdependency made by jump table fixup.
 	 */
@@ -3730,6 +3728,15 @@ gen_protochain(v, proto, dir)
 #endif
 }
 
+/*
+ * Generate code that checks whether the packet is a packet for protocol
+ * <proto> and whether the type field in that protocol's header has
+ * the value <v>, e.g. if <proto> is Q_IP, it checks whether it's an
+ * IP packet and checks the protocol number in the IP header against <v>.
+ *
+ * If <proto> is Q_DEFAULT, i.e. just "proto" was specified, it checks
+ * against Q_IP and Q_IPV6.
+ */
 static struct block *
 gen_proto(v, proto, dir)
 	int v;
