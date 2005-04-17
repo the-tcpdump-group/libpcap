@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.112 2005-04-17 17:18:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.113 2005-04-17 17:25:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1043,8 +1043,11 @@ dl_dohpuxbind(int fd, char *ebuf)
 
 		/*
 		 * For EBUSY, try the next SAP value; that means that
-		 * somebody else is using that SAP.
+		 * somebody else is using that SAP.  Clear ebuf so
+		 * that application doesn't report the "Device busy"
+		 * error as a warning.
 		 */
+		*ebuf = '\0';
 		hpsap++;
 		if (hpsap > 100)
 			return (-1);
