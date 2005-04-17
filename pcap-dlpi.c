@@ -20,8 +20,9 @@
  *
  * This code contributed by Atanu Ghosh (atanu@cs.ucl.ac.uk),
  * University College London, and subsequently modified by
- * Guy Harris (guy@alum.mit.edu) and Mark Pizzolato
- * <List-tcpdump-workers@subscriptions.pizzolato.net>.
+ * Guy Harris (guy@alum.mit.edu), Mark Pizzolato
+ * <List-tcpdump-workers@subscriptions.pizzolato.net>,
+ * and Mark C. Brown (mbrown@hp.com).
  */
 
 /*
@@ -61,12 +62,15 @@
  *            http://docs.hp.com/en/B2355-90871/index.html
  *
  *    - All of the HP documents describe raw-mode services, which are
- *      what we use if DL_HP_RAWDLS is defined.
+ *      what we use if DL_HP_RAWDLS is defined.  XXX - we use __hpux
+ *      in some places to test for HP-UX, but use DL_HP_RAWDLS in
+ *      other places; do we support any versions of HP-UX without
+ *      DL_HP_RAWDLS?
  */
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.110 2005-04-08 03:08:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.111 2005-04-17 00:47:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -162,9 +166,12 @@ static const char rcsid[] _U_ =
 /* Forwards */
 static char *split_dname(char *, int *, char *);
 static int dl_doattach(int, int, char *);
+#ifdef DL_HP_RAWDLS
+static int dl_dohpuxbind(int, char *);
+#endif
 static int dlattachreq(int, bpf_u_int32, char *);
 static int dlbindreq(int, bpf_u_int32, char *);
-static int dlbindack(int, char *, char *);
+static int dlbindack(int, char *, char *, int *);
 static int dlpromisconreq(int, bpf_u_int32, char *);
 static int dlokack(int, const char *, char *, char *);
 static int dlinforeq(int, char *);
@@ -172,7 +179,7 @@ static int dlinfoack(int, char *, char *);
 #ifdef DL_HP_RAWDLS
 static int dlrawdatareq(int, const u_char *, int);
 #endif
-static int recv_ack(int, int, const char *, char *, char *);
+static int recv_ack(int, int, const char *, char *, char *, int *);
 static char *dlstrerror(bpf_u_int32);
 static char *dlprim(bpf_u_int32);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
@@ -415,7 +422,7 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 	ret = -1;
 #endif /* raw mode */
 	return (ret);
-}                           
+}   
 
 #ifndef DL_IPATM
 #define DL_IPATM	0x12	/* ATM Classical IP interface */
@@ -514,9 +521,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #ifdef DL_HP_RAWDLS
 	/*
 	 * XXX - HP-UX 10.20 and 11.xx don't appear to support sending and
-	 * receiving packets on the same descriptor - you have to bind the
-	 * descriptor on which you receive to a SAP of 22 and bind the
-	 * descriptor on which you send to a SAP of 24.
+	 * receiving packets on the same descriptor - you need separate
+	 * descriptors for sending and receiving, bound to different SAPs.
 	 *
 	 * If the open fails, we just leave -1 in "p->send_fd" and reject
 	 * attempts to send packets, just as if, in pcap-bpf.c, we fail
@@ -631,7 +637,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	*/
 #if !defined(HAVE_HPUX9) && !defined(HAVE_HPUX10_20_OR_LATER) && !defined(sinix)
 #ifdef _AIX
-	/* According to IBM's AIX Support Line, the dl_sap value
+	/*
+	** AIX.
+	** According to IBM's AIX Support Line, the dl_sap value
 	** should not be less than 0x600 (1536) for standard Ethernet.
 	** However, we seem to get DL_BADADDR - "DLSAP addr in improper
 	** format or invalid" - errors if we use 1537 on the "tr0"
@@ -649,41 +657,33 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	*/
 	if ((dlbindreq(p->fd, 1537, ebuf) < 0 &&
 	     dlbindreq(p->fd, 2, ebuf) < 0) ||
-	     dlbindack(p->fd, (char *)buf, ebuf) < 0)
+	     dlbindack(p->fd, (char *)buf, ebuf, NULL) < 0)
 		goto bad;
 #elif defined(DL_HP_RAWDLS)
 	/*
-	** This is the descriptor on which we receive packets; we
-	** bind it to 22, as that's INSAP, as per the HP-UX DLPI
-	** Programmer's Guide.
-	**
-	** XXX - is the SAP relevant?  Apparently, if some application
-	** is already bound to that SAP, this fails with a DL_ERROR_ACK
-	** message of type DL_SYSERR with an errno of EBUSY, and
-	** the primitives we use already imply raw mode.  Should we,
-	** instead, just keep trying SAPs from some set of SAPs until
-	** we don't fail with EBUSY?
+	** HP-UX 10.0x and 10.1x.
 	*/
-	if (dlbindreq(p->fd, 22, ebuf) < 0 ||
-	     dlbindack(p->fd, (char *)buf, ebuf) < 0)
+	if (dl_dohpuxbind(p->fd, ebuf) < 0)
 		goto bad;
-
 	if (p->send_fd >= 0) {
 		/*
-		** This is the descriptor on which we send packets; we
-		** bind it to 24, as that's OUTSAP, as per the HP-UX
-		** DLPI Programmer's Guide.
+		** XXX - if this fails, just close send_fd and
+		** set it to -1, so that you can't send but can
+		** still receive?
 		*/
-		if (dlbindreq(p->send_fd, 24, ebuf) < 0 ||
-		    dlbindack(p->send_fd, (char *)buf, ebuf) < 0)
+		if (dl_dohpuxbind(p->send_fd, ebuf) < 0)
 			goto bad;
 	}
 #else /* neither AIX nor HP-UX */
+	/*
+	** Not Sinix, and neither AIX nor HP-UX - Solaris, and any other
+	** OS using DLPI.
+	**/
 	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
-	    dlbindack(p->fd, (char *)buf, ebuf) < 0)
+	    dlbindack(p->fd, (char *)buf, ebuf, NULL) < 0)
 		goto bad;
-#endif /* SAP to bind to */
-#endif /* HP-UX 9 or 10.20 or SINIX */
+#endif /* AIX vs. HP-UX vs. other */
+#endif /* !HP-UX 9 and !HP-UX 10.20 or later and !SINIX */
 
 #ifdef HAVE_SOLARIS
 	if (isatm) {
@@ -721,8 +721,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #endif
 	}
 	/*
-	** Try to enable sap (when not in promiscuous mode when using
-	** using HP-UX, when not doing SunATM on Solaris, and never
+	** Try to enable SAP promiscuity (when not in promiscuous mode
+	** when using HP-UX, when not doing SunATM on Solaris, and never
 	** under SINIX) (Not necessary on send FD)
 	*/
 #ifndef sinix
@@ -742,16 +742,29 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		else
 			goto bad;
 	}
-#endif
+#endif /* sinix */
 
 	/*
 	** HP-UX 9, and HP-UX 10.20 or later, must bind after setting
-	** promiscuous options)
+	** promiscuous options.
 	*/
 #if defined(HAVE_HPUX9) || defined(HAVE_HPUX10_20_OR_LATER)
-	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
-	    dlbindack(p->fd, (char *)buf, ebuf) < 0)
+	if (dl_dohpuxbind(p->fd, ebuf) < 0)
 		goto bad;
+	/*
+	** We don't set promiscuous mode on the send FD, but we'll defer
+	** binding it anyway, just to keep the HP-UX 9/10.20 or later
+	** code together.
+	*/
+	if (p->send_fd >= 0) {
+		/*
+		** XXX - if this fails, just close send_fd and
+		** set it to -1, so that you can't send but can
+		** still receive?
+		*/
+		if (dl_dohpuxbind(p->send_fd, ebuf) < 0)
+			goto bad;
+	}
 #endif
 
 	/*
@@ -1001,6 +1014,44 @@ dl_doattach(int fd, int ppa, char *ebuf)
 	return (0);
 }
 
+#ifdef DL_HP_RAWDLS
+static int
+dl_dohpuxbind(int fd, char *ebuf)
+{
+	int hpsap;
+	int uerror;
+	bpf_u_int32 buf[MAXDLBUF];
+
+	/*
+	 * XXX - we start at 22 because we used to use only 22, but
+	 * that was just because that was the value used in some
+	 * sample code from HP.  With what value *should* we start?
+	 * Does it matter, given that we're enabling SAP promiscuity
+	 * on the input FD?
+	 */
+	hpsap = 22;
+	for (;;) {
+		if (dlbindreq(fd, hpsap, ebuf) < 0)
+			return (-1);
+		if (dlbindack(fd, (char *)buf, ebuf, &uerror) >= 0)
+			break;
+		/*
+		 * For any error other than a UNIX EBUSY, give up.
+		 */
+		if (uerror != EBUSY)
+			return (-1);
+
+		/*
+		 * For EBUSY, try the next SAP value; that means that
+		 * somebody else is using that SAP.
+		 */
+		hpsap++;
+		if (hpsap > 100)
+			return (-1);
+	}
+}
+#endif
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
@@ -1065,7 +1116,7 @@ send_request(int fd, char *ptr, int len, char *what, char *ebuf)
 }
 
 static int
-recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
+recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerr)
 {
 	union	DL_primitives	*dlp;
 	struct	strbuf	ctl;
@@ -1098,12 +1149,16 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 		switch (dlp->error_ack.dl_errno) {
 
 		case DL_SYSERR:
+			if (uerror != NULL)
+				*uerror = dlp->error_ack.dl_unix_errno;
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s: UNIX error - %s",
 			    what, pcap_strerror(dlp->error_ack.dl_unix_errno));
 			break;
 
 		default:
+			if (uerror != NULL)
+				*uerror = 0;
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
 			    what, dlstrerror(dlp->error_ack.dl_errno));
 			break;
@@ -1111,6 +1166,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 		return (-1);
 
 	default:
+		if (uerror != NULL)
+			*uerror = 0;
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Unexpected primitive ack %s",
 		    what, dlprim(dlp->dl_primitive));
@@ -1118,6 +1175,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf)
 	}
 
 	if (ctl.len < size) {
+		if (uerror != NULL)
+			*uerror = 0;
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Ack too small (%d < %d)",
 		    what, ctl.len, size);
@@ -1349,26 +1408,23 @@ dlbindreq(int fd, bpf_u_int32 sap, char *ebuf)
 
 	memset((char *)&req, 0, sizeof(req));
 	req.dl_primitive = DL_BIND_REQ;
-#ifdef DL_HP_RAWDLS
+	/* XXX - what if neither of these are defined? */
+#if defined(DL_HP_RAWDLS)
 	req.dl_max_conind = 1;			/* XXX magic number */
-	/* 22 is INSAP as per the HP-UX DLPI Programmer's Guide */
-	req.dl_sap = 22;
 	req.dl_service_mode = DL_HP_RAWDLS;
-#else
-	req.dl_sap = sap;
-#ifdef DL_CLDLS
+#elif defined(DL_CLDLS)
 	req.dl_service_mode = DL_CLDLS;
 #endif
-#endif
+	req.dl_sap = sap;
 
 	return (send_request(fd, (char *)&req, sizeof(req), "bind", ebuf));
 }
 
 static int
-dlbindack(int fd, char *bufp, char *ebuf)
+dlbindack(int fd, char *bufp, char *ebuf, int *uerror)
 {
 
-	return (recv_ack(fd, DL_BIND_ACK_SIZE, "bind", bufp, ebuf));
+	return (recv_ack(fd, DL_BIND_ACK_SIZE, "bind", bufp, ebuf, uerror));
 }
 
 static int
@@ -1386,7 +1442,7 @@ static int
 dlokack(int fd, const char *what, char *bufp, char *ebuf)
 {
 
-	return (recv_ack(fd, DL_OK_ACK_SIZE, what, bufp, ebuf));
+	return (recv_ack(fd, DL_OK_ACK_SIZE, what, bufp, ebuf, NULL));
 }
 
 
@@ -1404,7 +1460,7 @@ static int
 dlinfoack(int fd, char *bufp, char *ebuf)
 {
 
-	return (recv_ack(fd, DL_INFO_ACK_SIZE, "info", bufp, ebuf));
+	return (recv_ack(fd, DL_INFO_ACK_SIZE, "info", bufp, ebuf, NULL));
 }
 
 #ifdef DL_HP_RAWDLS
@@ -1685,20 +1741,20 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 			ip = (dl_hp_ppa_info_t *)((u_char *)ipstart + ip->dl_next_offset);
 		}
 	}
-        if (i == ap->dl_count) {
-                snprintf(ebuf, PCAP_ERRBUF_SIZE,
+	if (i == ap->dl_count) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "can't find /dev/dlpi PPA for %s%d", device, unit);
 		return (-1);
-        }
-        if (ip->dl_hdw_state == HDW_DEAD) {
-                snprintf(ebuf, PCAP_ERRBUF_SIZE,
+	}
+	if (ip->dl_hdw_state == HDW_DEAD) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s%d: hardware state: DOWN\n", device, unit);
 		free(ppa_data_buf);
 		return (-1);
-        }
-        ppa = ip->dl_ppa;
-        free(ppa_data_buf);
-        return (ppa);
+	}
+	ppa = ip->dl_ppa;
+	free(ppa_data_buf);
+	return (ppa);
 }
 #endif
 
