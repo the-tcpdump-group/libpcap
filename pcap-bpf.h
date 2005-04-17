@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.2 2005-04-10 18:04:51 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.3 2005-04-17 00:56:00 guy Exp $ (LBL)
  */
 
 /*
@@ -589,7 +589,7 @@ struct bpf_version {
 #define DLT_LINUX_LAPD		177
 
 /*
- * The instruction encodings.
+ * The instruction encodings.
  */
 /* instruction classes */
 #define BPF_CLASS(code) ((code) & 0x07)
