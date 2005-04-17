@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.108.2.2 2005-04-17 00:54:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.108.2.3 2005-04-17 17:20:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1116,7 +1116,7 @@ send_request(int fd, char *ptr, int len, char *what, char *ebuf)
 }
 
 static int
-recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerr)
+recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror)
 {
 	union	DL_primitives	*dlp;
 	struct	strbuf	ctl;
