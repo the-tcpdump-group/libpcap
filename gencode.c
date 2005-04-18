@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.229 2005-04-15 04:39:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.230 2005-04-18 22:36:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -108,10 +108,11 @@ static u_int	orig_linktype = -1U, orig_nl = -1U, orig_nl_nosnap = -1U;
 static int	pcap_fddipad;
 #endif
 
+void	bpf_error(const char *fmt, ...) __attribute__((noreturn));
+
 /* VARARGS */
 void
 bpf_error(const char *fmt, ...)
-
 {
 	va_list ap;
 
