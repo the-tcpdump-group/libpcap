@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.4 2005-04-18 22:40:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.5 2005-04-19 04:26:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -193,14 +193,20 @@ static struct block *gen_gateway(const u_char *, bpf_u_int32 **, int, int);
 #endif
 static struct block *gen_ipfrag(void);
 static struct block *gen_portatom(int, bpf_int32);
+static struct block *gen_portrangeatom(int, bpf_int32, bpf_int32);
 #ifdef INET6
 static struct block *gen_portatom6(int, bpf_int32);
+static struct block *gen_portrangeatom6(int, bpf_int32, bpf_int32);
 #endif
 struct block *gen_portop(int, int, int);
 static struct block *gen_port(int, int, int);
+struct block *gen_portrangeop(int, int, int, int);
+static struct block *gen_portrange(int, int, int, int);
 #ifdef INET6
 struct block *gen_portop6(int, int, int);
 static struct block *gen_port6(int, int, int);
+struct block *gen_portrangeop6(int, int, int, int);
+static struct block *gen_portrange6(int, int, int, int);
 #endif
 static int lookup_proto(const char *, int);
 static struct block *gen_protochain(int, int, int);
@@ -3315,7 +3321,7 @@ gen_portop6(port, proto, dir)
 {
 	struct block *b0, *b1, *tmp;
 
-	/* ip proto 'proto' */
+	/* ip6 proto 'proto' */
 	b0 = gen_cmp(off_nl + 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
@@ -3356,7 +3362,7 @@ gen_port6(port, ip_proto, dir)
 {
 	struct block *b0, *b1, *tmp;
 
-	/* ether proto ip */
+	/* link proto ip6 */
 	b0 =  gen_linktype(ETHERTYPE_IPV6);
 
 	switch (ip_proto) {
@@ -3371,6 +3377,242 @@ gen_port6(port, ip_proto, dir)
 		b1 = gen_portop6(port, IPPROTO_UDP, dir);
 		gen_or(tmp, b1);
 		tmp = gen_portop6(port, IPPROTO_SCTP, dir);
+		gen_or(tmp, b1);
+		break;
+
+	default:
+		abort();
+	}
+	gen_and(b0, b1);
+	return b1;
+}
+#endif /* INET6 */
+
+/* gen_portrange code */
+struct block *
+gen_portrangeatom(off, v1, v2)
+	int off;
+	bpf_int32 v1, v2;
+{
+	struct slist *s1, *s2;
+	struct block *b1, *b2;
+
+	if (v1 > v2) {
+		/*
+		 * Reverse the order of the ports, so v1 is the lower one.
+		 */
+		bpf_int32 vtemp;
+
+		vtemp = v1;
+		v1 = v2;
+		v2 = vtemp;
+	}
+	s1 = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
+	s1->s.k = off_nl;
+
+	s1->next = new_stmt(BPF_LD|BPF_IND|BPF_H);
+	s1->next->s.k = off_nl + off;
+
+	b1 = new_block(JMP(BPF_JGE));
+	b1->stmts = s1;
+	b1->s.k = v1;
+
+	s2 = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
+	s2->s.k = off_nl;
+
+	s2->next = new_stmt(BPF_LD|BPF_IND|BPF_H);
+	s2->next->s.k = off_nl + off;
+
+	b2 = new_block(JMP(BPF_JGT));
+	gen_not(b2);
+	b2->stmts = s2;
+	b2->s.k = v2;
+
+	gen_and(b1, b2); 
+
+	return b2;
+}
+
+struct block *
+gen_portrangeop(port1, port2, proto, dir)
+	int port1, port2;
+	int proto;
+	int dir;
+{
+	struct block *b0, *b1, *tmp;
+
+	/* ip proto 'proto' */
+	tmp = gen_cmp(off_nl + 9, BPF_B, (bpf_int32)proto);
+	b0 = gen_ipfrag();
+	gen_and(tmp, b0);
+
+	switch (dir) {
+	case Q_SRC:
+		b1 = gen_portrangeatom(0, (bpf_int32)port1, (bpf_int32)port2);
+		break;
+
+	case Q_DST:
+		b1 = gen_portrangeatom(2, (bpf_int32)port1, (bpf_int32)port2);
+		break;
+
+	case Q_OR:
+	case Q_DEFAULT:
+		tmp = gen_portrangeatom(0, (bpf_int32)port1, (bpf_int32)port2);
+		b1 = gen_portrangeatom(2, (bpf_int32)port1, (bpf_int32)port2);
+		gen_or(tmp, b1);
+		break;
+
+	case Q_AND:
+		tmp = gen_portrangeatom(0, (bpf_int32)port1, (bpf_int32)port2);
+		b1 = gen_portrangeatom(2, (bpf_int32)port1, (bpf_int32)port2);
+		gen_and(tmp, b1);
+		break;
+
+	default:
+		abort();
+	}
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+static struct block *
+gen_portrange(port1, port2, ip_proto, dir)
+	int port1, port2;
+	int ip_proto;
+	int dir;
+{
+	struct block *b0, *b1, *tmp;
+
+	/* link proto ip */
+	b0 =  gen_linktype(ETHERTYPE_IP);
+
+	switch (ip_proto) {
+	case IPPROTO_UDP:
+	case IPPROTO_TCP:
+	case IPPROTO_SCTP:
+		b1 = gen_portrangeop(port1, port2, ip_proto, dir);
+		break;
+
+	case PROTO_UNDEF:
+		tmp = gen_portrangeop(port1, port2, IPPROTO_TCP, dir);
+		b1 = gen_portrangeop(port1, port2, IPPROTO_UDP, dir);
+		gen_or(tmp, b1);
+		tmp = gen_portrangeop(port1, port2, IPPROTO_SCTP, dir);
+		gen_or(tmp, b1);
+		break;
+
+	default:
+		abort();
+	}
+	gen_and(b0, b1);
+	return b1;
+}
+
+#ifdef INET6
+struct block *
+gen_portrangeatom6(off, v1, v2)
+	int off;
+	bpf_int32 v1, v2;
+{
+	struct slist *s1, *s2;
+	struct block *b1, *b2;
+
+	if (v1 > v2) {
+		/*
+		 * Reverse the order of the ports, so v1 is the lower one.
+		 */
+		bpf_int32 vtemp;
+
+		vtemp = v1;
+		v1 = v2;
+		v2 = vtemp;
+	}
+
+	s1 = new_stmt(BPF_LD|BPF_ABS|BPF_H);
+	s1->s.k = off_nl + 40 + off;
+
+	b1 = new_block(JMP(BPF_JGE));
+	b1->stmts = s1;
+	b1->s.k = v1;
+
+	s2 = new_stmt(BPF_LD|BPF_ABS|BPF_H);
+	s2->s.k = off_nl + 40 + off;
+
+	b2 = new_block(JMP(BPF_JGT));
+	gen_not(b2);
+	b2->stmts = s2;
+	b2->s.k = v2;
+
+	gen_and(b1, b2); 
+
+	return b2;
+}
+
+struct block *
+gen_portrangeop6(port1, port2, proto, dir)
+	int port1, port2;
+	int proto;
+	int dir;
+{
+	struct block *b0, *b1, *tmp;
+
+	/* ip6 proto 'proto' */
+	b0 = gen_cmp(off_nl + 6, BPF_B, (bpf_int32)proto);
+
+	switch (dir) {
+	case Q_SRC:
+		b1 = gen_portrangeatom6(0, (bpf_int32)port1, (bpf_int32)port2);
+		break;
+
+	case Q_DST:
+		b1 = gen_portrangeatom6(2, (bpf_int32)port1, (bpf_int32)port2);
+		break;
+
+	case Q_OR:
+	case Q_DEFAULT:
+		tmp = gen_portrangeatom6(0, (bpf_int32)port1, (bpf_int32)port2);
+		b1 = gen_portrangeatom6(2, (bpf_int32)port1, (bpf_int32)port2);
+		gen_or(tmp, b1);
+		break;
+
+	case Q_AND:
+		tmp = gen_portrangeatom6(0, (bpf_int32)port1, (bpf_int32)port2);
+		b1 = gen_portrangeatom6(2, (bpf_int32)port1, (bpf_int32)port2);
+		gen_and(tmp, b1);
+		break;
+
+	default:
+		abort();
+	}
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+static struct block *
+gen_portrange6(port1, port2, ip_proto, dir)
+	int port1, port2;
+	int ip_proto;
+	int dir;
+{
+	struct block *b0, *b1, *tmp;
+
+	/* link proto ip6 */
+	b0 =  gen_linktype(ETHERTYPE_IPV6);
+
+	switch (ip_proto) {
+	case IPPROTO_UDP:
+	case IPPROTO_TCP:
+	case IPPROTO_SCTP:
+		b1 = gen_portrangeop6(port1, port2, ip_proto, dir);
+		break;
+
+	case PROTO_UNDEF:
+		tmp = gen_portrangeop6(port1, port2, IPPROTO_TCP, dir);
+		b1 = gen_portrangeop6(port1, port2, IPPROTO_UDP, dir);
+		gen_or(tmp, b1);
+		tmp = gen_portrangeop6(port1, port2, IPPROTO_SCTP, dir);
 		gen_or(tmp, b1);
 		break;
 
@@ -3963,6 +4205,7 @@ gen_scode(name, q)
 #endif /*INET6*/
 	struct block *b, *tmp;
 	int port, real_proto;
+	int port1, port2;
 
 	switch (q.addr) {
 
@@ -4170,6 +4413,50 @@ gen_scode(name, q)
 	    }
 #endif /* INET6 */
 
+	case Q_PORTRANGE:
+		if (proto != Q_DEFAULT &&
+		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
+			bpf_error("illegal qualifier of 'portrange'");
+		if (pcap_nametoportrange(name, &port1, &port2, &real_proto) == 0) 
+			bpf_error("unknown port in range '%s'", name);
+		if (proto == Q_UDP) {
+			if (real_proto == IPPROTO_TCP)
+				bpf_error("port in range '%s' is tcp", name);
+			else if (real_proto == IPPROTO_SCTP)
+				bpf_error("port in range '%s' is sctp", name);
+			else
+				/* override PROTO_UNDEF */
+				real_proto = IPPROTO_UDP;
+		}
+		if (proto == Q_TCP) {
+			if (real_proto == IPPROTO_UDP)
+				bpf_error("port in range '%s' is udp", name);
+			else if (real_proto == IPPROTO_SCTP)
+				bpf_error("port in range '%s' is sctp", name);
+			else
+				/* override PROTO_UNDEF */
+				real_proto = IPPROTO_TCP;
+		}
+		if (proto == Q_SCTP) {
+			if (real_proto == IPPROTO_UDP)
+				bpf_error("port in range '%s' is udp", name);
+			else if (real_proto == IPPROTO_TCP)
+				bpf_error("port in range '%s' is tcp", name);
+			else
+				/* override PROTO_UNDEF */
+				real_proto = IPPROTO_SCTP;	
+		}
+#ifndef INET6
+		return gen_portrange(port1, port2, real_proto, dir);
+#else
+	    {
+		struct block *b;
+		b = gen_portrange(port1, port2, real_proto, dir);
+		gen_or(gen_portrange6(port1, port2, real_proto, dir), b);
+		return b;
+	    }
+#endif /* INET6 */
+
 	case Q_GATEWAY:
 #ifndef INET6
 		eaddr = pcap_ether_hostton(name);
@@ -4313,6 +4600,29 @@ gen_ncode(s, v, q)
 		struct block *b;
 		b = gen_port((int)v, proto, dir);
 		gen_or(gen_port6((int)v, proto, dir), b);
+		return b;
+	    }
+#endif /* INET6 */
+
+	case Q_PORTRANGE:
+		if (proto == Q_UDP)
+			proto = IPPROTO_UDP;
+		else if (proto == Q_TCP)
+			proto = IPPROTO_TCP;
+		else if (proto == Q_SCTP)
+			proto = IPPROTO_SCTP;
+		else if (proto == Q_DEFAULT)
+			proto = PROTO_UNDEF;
+		else
+			bpf_error("illegal qualifier of 'portrange'");
+
+#ifndef INET6
+		return gen_portrange((int)v, (int)v, proto, dir);
+#else
+	    {
+		struct block *b;
+		b = gen_portrange((int)v, (int)v, proto, dir);
+		gen_or(gen_portrange6((int)v, (int)v, proto, dir), b);
 		return b;
 	    }
 #endif /* INET6 */

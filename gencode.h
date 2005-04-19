@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.60 2004-06-16 08:20:30 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.60.2.1 2005-04-19 04:26:07 guy Exp $ (LBL)
  */
 
 /*
@@ -63,6 +63,7 @@
 #define Q_GATEWAY	4
 #define Q_PROTO		5
 #define Q_PROTOCHAIN	6
+#define Q_PORTRANGE	7
 
 /* Protocol qualifiers. */
 
