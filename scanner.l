@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99 2004-06-16 08:20:28 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.100 2005-04-19 04:25:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -234,6 +234,7 @@ host		return HOST;
 net		return NET;
 mask		return NETMASK;
 port		return PORT;
+portrange	return PORTRANGE;
 proto		return PROTO;
 protochain	{
 #ifdef NO_PROTOCHAIN

@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.86 2004-12-18 08:49:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.87 2005-04-19 04:25:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -114,7 +114,7 @@ pcap_parse()
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
 
 %token  DST SRC HOST GATEWAY
-%token  NET NETMASK PORT LESS GREATER PROTO PROTOCHAIN CBYTE
+%token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
 %token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
@@ -271,6 +271,7 @@ dqual:	  SRC			{ $$ = Q_SRC; }
 aqual:	  HOST			{ $$ = Q_HOST; }
 	| NET			{ $$ = Q_NET; }
 	| PORT			{ $$ = Q_PORT; }
+	| PORTRANGE		{ $$ = Q_PORTRANGE; }
 	;
 /* non-directional address type qualifiers */
 ndaqual:  GATEWAY		{ $$ = Q_GATEWAY; }
