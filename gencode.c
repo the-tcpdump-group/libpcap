@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.231 2005-04-19 04:25:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.232 2005-04-20 18:23:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -101,7 +101,7 @@ static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
 /* Hack for updating VLAN, MPLS offsets. */
-static u_int	orig_linktype = -1U, orig_nl = -1U, orig_nl_nosnap = -1U;
+static u_int	orig_linktype = -1U, orig_nl = -1U;
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
@@ -710,7 +710,6 @@ init_linktype(p)
 
 	orig_linktype = -1;
 	orig_nl = -1;
-	orig_nl_nosnap = -1;
 
 	switch (linktype) {
 
@@ -5691,7 +5690,6 @@ gen_vlan(vlan_num)
 	 */
         orig_linktype = off_linktype;	/* save original values */
         orig_nl = off_nl;
-        orig_nl_nosnap = off_nl_nosnap;
 
         switch (linktype) {
 
@@ -5742,7 +5740,6 @@ gen_mpls(label_num)
 	 */
         orig_linktype = off_linktype;	/* save original values */
         orig_nl = off_nl;
-        orig_nl_nosnap = off_nl_nosnap;
 
         switch (linktype) {
             
