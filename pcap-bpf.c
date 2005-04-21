@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.87 2005-04-12 20:46:28 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.88 2005-04-21 02:41:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -59,7 +59,7 @@ static const char rcsid[] _U_ =
 #include <net/if_types.h>		/* for IFT_ values */
 #include <sys/sysconfig.h>
 #include <sys/device.h>
-#include <odmi.h>
+#include <sys/cfgodm.h>
 #include <cf.h>
 
 #ifdef __64BIT__
