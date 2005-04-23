@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.61 2005-04-19 04:25:00 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.62 2005-04-23 22:26:52 guy Exp $ (LBL)
  */
 
 /*
@@ -54,6 +54,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+#ifndef HAVE___ATTRIBUTE__
+#define __attribute__(x)
+#endif /* HAVE___ATTRIBUTE__ */
 
 /* Address qualifiers. */
 
@@ -290,10 +294,7 @@ struct block *gen_pf_dir(int);
 
 void bpf_optimize(struct block **);
 void bpf_error(const char *, ...)
-#if HAVE___ATTRIBUTE__
-    __attribute__((noreturn, format (printf, 1, 2)))
-#endif
-;
+    __attribute__((noreturn, format (printf, 1, 2)));
 
 void finish_parse(struct block *);
 char *sdup(const char *);
