@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.233 2005-04-23 22:26:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.234 2005-04-25 18:58:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3386,7 +3386,7 @@ gen_port6(port, ip_proto, dir)
 #endif /* INET6 */
 
 /* gen_portrange code */
-struct block *
+static struct block *
 gen_portrangeatom(off, v1, v2)
 	int off;
 	bpf_int32 v1, v2;
@@ -3507,7 +3507,7 @@ gen_portrange(port1, port2, ip_proto, dir)
 }
 
 #ifdef INET6
-struct block *
+static struct block *
 gen_portrangeatom6(off, v1, v2)
 	int off;
 	bpf_int32 v1, v2;
