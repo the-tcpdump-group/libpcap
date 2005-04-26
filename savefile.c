@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.128 2005-04-09 21:15:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.129 2005-04-26 00:54:23 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -98,7 +98,7 @@ static const char rcsid[] _U_ =
  * Setting O_BINARY on DOS/Windows is a bit tricky
  */
 #if defined(WIN32)
-  #define SET_BINMODE(f)  _setmode(fileno(f), O_BINARY)
+  #define SET_BINMODE(f)  _setmode(fileno(f), _O_BINARY)
 #elif defined(MSDOS)
   #if defined(__HIGHC__)
   #define SET_BINMODE(f)  setmode(f, O_BINARY)
@@ -727,7 +727,17 @@ pcap_open_offline(const char *fname, char *errbuf)
 	pcap_t *p;
 
 	if (fname[0] == '-' && fname[1] == '\0')
+	{
 		fp = stdin;
+#if defined(WIN32) || defined(MSDOS)
+		/*
+		* If we're reading from the standard input, put it in binary
+		* mode, as savefiles are binary files.
+		*/
+		if (fp == stdin)
+			SET_BINMODE(fp);
+#endif
+	}
 	else {
 #if !defined(WIN32) && !defined(MSDOS)
 		fp = fopen(fname, "r");
@@ -908,15 +918,6 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
 	p->close_op = sf_close;
-
-#if defined(WIN32) || defined(MSDOS)
-	/*
-	 * If we're reading from the standard input, put it in binary
-	 * mode, as savefiles are binary files.
-	 */
-	if (fp == stdin)
-		SET_BINMODE(fp);
-#endif
 
 	return (p);
  bad:
