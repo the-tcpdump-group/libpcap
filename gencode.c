@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.11 2005-05-01 04:14:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.12 2005-05-01 08:37:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -178,7 +178,7 @@ static struct block *gen_mcmp(enum e_offrel, u_int, u_int, bpf_int32,
     bpf_u_int32);
 static struct block *gen_bcmp(enum e_offrel, u_int, u_int, const u_char *);
 static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
-    bpf_u_int32, bpf_u_int32, int, bpf_u_int32);
+    bpf_u_int32, bpf_u_int32, int, bpf_int32);
 static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
@@ -608,17 +608,19 @@ gen_bcmp(offrel, offset, size, v)
 static struct block *
 gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
 	enum e_offrel offrel;
-	bpf_u_int32 offset, size, mask, jtype, v;
+	bpf_int32 v;
+	bpf_u_int32 offset, size, mask, jtype;
 	int reverse;
 {
-	struct slist *s;
+	struct slist *s, *s2;
 	struct block *b;
 
 	s = gen_load_a(offrel, offset, size);
 
 	if (mask != 0xffffffff) {
-		s->next = new_stmt(BPF_ALU|BPF_AND|BPF_K);
-		s->next->s.k = mask;
+		s2 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+		s2->s.k = mask;
+		sappend(s, s2);
 	}
 
 	b = new_block(JMP(jtype));
@@ -5812,7 +5814,7 @@ gen_mpls(label_num)
 struct block *
 gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 	int atmfield;
-	bpf_u_int32 jvalue;
+	bpf_int32 jvalue;
 	bpf_u_int32 jtype;
 	int reverse;
 {
@@ -5825,8 +5827,8 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 			bpf_error("'vpi' supported only on raw ATM");
 		if (off_vpi == (u_int)-1)
 			abort();
-		b0 = gen_ncmp(OR_LINK, off_vpi, BPF_B, 0xffffffff, (u_int)jtype,
-		    (u_int)jvalue, reverse);
+		b0 = gen_ncmp(OR_LINK, off_vpi, BPF_B, 0xffffffff, jtype,
+		    reverse, jvalue);
 		break;
 
 	case A_VCI:
@@ -5834,22 +5836,22 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 			bpf_error("'vci' supported only on raw ATM");
 		if (off_vci == (u_int)-1)
 			abort();
-		b0 = gen_ncmp(OR_LINK, off_vci, BPF_H, 0xffffffff, (u_int)jtype,
-		    reverse, (u_int)jvalue);
+		b0 = gen_ncmp(OR_LINK, off_vci, BPF_H, 0xffffffff, jtype,
+		    reverse, jvalue);
 		break;
 
 	case A_PROTOTYPE:
 		if (off_proto == (u_int)-1)
 			abort();	/* XXX - this isn't on FreeBSD */
-		b0 = gen_ncmp(OR_LINK, off_proto, BPF_B, 0x0f, (u_int)jtype,
-		    reverse, (u_int)jvalue);
+		b0 = gen_ncmp(OR_LINK, off_proto, BPF_B, 0x0f, jtype,
+		    reverse, jvalue);
 		break;
 
 	case A_MSGTYPE:
 		if (off_payload == (u_int)-1)
 			abort();
 		b0 = gen_ncmp(OR_LINK, off_payload + MSG_TYPE_POS, BPF_B,
-		    0xffffffff, (u_int)jtype, reverse, (u_int)jvalue);
+		    0xffffffff, jtype, reverse, jvalue);
 		break;
 
 	case A_CALLREFTYPE:
@@ -5858,7 +5860,7 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 		if (off_proto == (u_int)-1)
 			abort();
 		b0 = gen_ncmp(OR_LINK, off_proto, BPF_B, 0xffffffff,
-		    (u_int)jtype, reverse, (u_int)jvalue);
+		    jtype, reverse, jvalue);
 		break;
 
 	default:

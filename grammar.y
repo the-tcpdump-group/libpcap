@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.86.2.1 2005-04-19 04:26:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.86.2.2 2005-05-01 08:37:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -414,15 +414,15 @@ atmfield: VPI			{ $$.atmfieldtype = A_VPI; }
 	| VCI			{ $$.atmfieldtype = A_VCI; }
 	;
 atmvalue: atmfieldvalue
-	| relop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (u_int)$2, (u_int)$1, 0); }
-	| irelop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (u_int)$2, (u_int)$1, 1); }
+	| relop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (bpf_int32)$2, (bpf_u_int32)$1, 0); }
+	| irelop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (bpf_int32)$2, (bpf_u_int32)$1, 1); }
 	| paren atmlistvalue ')' { $$.b = $2.b; $$.q = qerr; }
 	;
 atmfieldvalue: NUM {
 	$$.atmfieldtype = $<blk>0.atmfieldtype;
 	if ($$.atmfieldtype == A_VPI ||
 	    $$.atmfieldtype == A_VCI)
-		$$.b = gen_atmfield_code($$.atmfieldtype, (u_int) $1, BPF_JEQ, 0);
+		$$.b = gen_atmfield_code($$.atmfieldtype, (bpf_int32) $1, BPF_JEQ, 0);
 	}
 	;
 atmlistvalue: atmfieldvalue
