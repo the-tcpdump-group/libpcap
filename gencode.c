@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.9 2005-05-01 00:38:34 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.10 2005-05-01 00:56:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -166,6 +166,9 @@ static struct block *gen_ncmp(bpf_u_int32, bpf_u_int32, bpf_u_int32,
 static struct slist *gen_load_llrel(u_int, u_int);
 static struct slist *gen_load_nlrel(u_int, u_int);
 static struct slist *gen_load_ipv4tlrel(u_int, u_int);
+#ifdef INET6
+static struct slist *gen_load_ipv6tlrel(u_int, u_int);
+#endif
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
@@ -1119,6 +1122,23 @@ gen_load_ipv4tlrel(offset, size)
 
 	return s;
 }
+
+#ifdef INET6
+/*
+ * Load a value relative to the beginning of the transport-layer header,
+ * where the network-layer header is an IPv6 header.  (This doesn't handle
+ * extension headers.)
+ */
+static struct slist *
+gen_load_ipv6tlrel(offset, size)
+	u_int offset, size;
+{
+	struct slist *s;
+
+	s = gen_load_nlrel(40 + offset, size);
+	return s;
+}
+#endif
 
 static struct block *
 gen_uncond(rsense)
@@ -3555,13 +3575,13 @@ gen_portrangeatom6(off, v1, v2)
 		v2 = vtemp;
 	}
 
-	s1 = gen_load_nlrel(40 + off, BPF_H);
+	s1 = gen_load_ipv6tlrel(off, BPF_H);
 
 	b1 = new_block(JMP(BPF_JGE));
 	b1->stmts = s1;
 	b1->s.k = v1;
 
-	s2 = gen_load_nlrel(40 + off, BPF_H);
+	s2 = gen_load_ipv6tlrel(off, BPF_H);
 
 	b2 = new_block(JMP(BPF_JGT));
 	gen_not(b2);
