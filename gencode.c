@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.240 2005-05-01 09:17:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.241 2005-05-01 19:32:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -179,6 +179,7 @@ static struct block *gen_mcmp(enum e_offrel, u_int, u_int, bpf_int32,
 static struct block *gen_bcmp(enum e_offrel, u_int, u_int, const u_char *);
 static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
     bpf_u_int32, bpf_u_int32, int, bpf_int32);
+static struct slist *gen_load_llrel(u_int, u_int);
 static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
 static struct slist *gen_loadx_iphdrlen(void);
 static struct block *gen_uncond(int);
@@ -186,6 +187,9 @@ static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
+static void insert_radiotap_load_llprefixlen(struct block *);
+static void insert_load_llprefixlen(struct block *);
+static struct slist *gen_llprefixlen(void);
 static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32, u_int);
 static struct block *gen_llc_linktype(int);
@@ -474,6 +478,23 @@ finish_parse(p)
 	p->sense = !p->sense;
 	backpatch(p, gen_retblk(0));
 	root = p->head;
+
+	/*
+	 * Insert before the statements of the first (root) block any
+	 * statements needed to load the lengths of any variable-length
+	 * headers into registers.
+	 *
+	 * XXX - a fancier strategy would be to insert those before the
+	 * statements of all blocks that use those lengths and that
+	 * have no predecessors that use them, so that we only compute
+	 * the lengths if we need them.  There might be even better
+	 * approaches than that.  However, as we're currently only
+	 * handling variable-length radiotap headers, and as all
+	 * filtering expressions other than raw link[M:N] tests
+	 * require the length of that header, doing more for that
+	 * header length isn't really worth the effort.
+	 */
+	insert_load_llprefixlen(root);
 }
 
 void
@@ -634,8 +655,15 @@ gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
 
 /*
  * Various code constructs need to know the layout of the data link
- * layer.  These variables give the necessary offsets.
+ * layer.  These variables give the necessary offsets from the beginning
+ * of the packet data.
+ *
+ * If the link layer has variable_length headers, the offsets are offsets
+ * from the end of the link-link-layer header, and "reg_ll_size" is
+ * the register number for a register containing the length of the
+ * link-layer header.  Otherwise, "reg_ll_size" is -1.
  */
+static int reg_ll_size;
 
 /*
  * This is the offset of the beginning of the MAC-layer header.
@@ -737,6 +765,8 @@ init_linktype(p)
 
 	orig_linktype = -1;
 	orig_nl = -1;
+
+	reg_ll_size = -1;
 
 	switch (linktype) {
 
@@ -926,21 +956,14 @@ init_linktype(p)
 		 * the 802.11 header, containing a bunch of additional
 		 * information including radio-level information.
 		 *
-		 * XXX - same variable-length header problem, only
-		 * even *more* so; this header is also variable-length,
-		 * with the length being the 16-bit number at an offset
-		 * of 2 from the beginning of the radio header, and it's
-		 * device-dependent (different devices might supply
-		 * different amounts of information), so we can't even
-		 * assume a fixed length for the current version of the
-		 * header.
-		 *
-		 * Therefore, currently, only raw "link[N:M]" filtering is
-		 * supported.
+		 * The radiotap header is variable length, and we
+		 * generate code to compute its length and store it
+		 * in a register.  These offsets are relative to the
+		 * beginning of the 802.11 header.
 		 */
-		off_linktype = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
+		off_linktype = 24;
+		off_nl = 32;		/* 802.11+802.2+SNAP */
+		off_nl_nosnap = 27;	/* 802.11+802.2 */
 		return;
 
 	case DLT_ATM_RFC1483:
@@ -1097,6 +1120,36 @@ init_linktype(p)
 }
 
 /*
+ * Load a value relative to the beginning of the link-layer header.
+ * The link-layer header doesn't necessarily begin at the beginning
+ * of the packet data; there might be a variable-length prefix containing
+ * radio information.
+ */
+static struct slist *
+gen_load_llrel(offset, size)
+	u_int offset, size;
+{
+	struct slist *s, *s2;
+
+	s = gen_llprefixlen();
+
+	/*
+	 * If "s" is non-null, it has code to arrange that the X register
+	 * contains the length of the prefix preceding the link-layer
+	 * header.
+	 */
+	if (s != NULL) {
+		s2 = new_stmt(BPF_LD|BPF_IND|size);
+		s2->s.k = offset;
+		sappend(s, s2);
+	} else {
+		s = new_stmt(BPF_LD|BPF_ABS|size);
+		s->s.k = offset;
+	}
+	return s;
+}
+
+/*
  * Load a value relative to the beginning of the specified header.
  */
 static struct slist *
@@ -1109,18 +1162,15 @@ gen_load_a(offrel, offset, size)
 	switch (offrel) {
 
 	case OR_LINK:
-		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = offset;
+		s = gen_load_llrel(offset, size);
 		break;
 
 	case OR_NET:
-		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_nl + offset;
+		s = gen_load_llrel(off_nl + offset, size);
 		break;
 
 	case OR_NET_NOSNAP:
-		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_nl_nosnap + offset;
+		s = gen_load_llrel(off_nl_nosnap + offset, size);
 		break;
 
 	case OR_TRAN_IPV4:
@@ -1140,8 +1190,7 @@ gen_load_a(offrel, offset, size)
 		break;
 
 	case OR_TRAN_IPV6:
-		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_nl + 40 + offset;
+		s = gen_load_llrel(off_nl + 40 + offset, size);
 		break;
 
 	default:
@@ -1152,16 +1201,55 @@ gen_load_a(offrel, offset, size)
 }
 
 /*
- * Generate code to load into the X register the length of the IPv4
- * header in the packet.
+ * Generate code to load into the X register the sum of the length of
+ * the IPv4 header and any variable-length header preceding the link-layer
+ * header.
  */
 static struct slist *
 gen_loadx_iphdrlen()
 {
-	struct slist *s;
+	struct slist *s, *s2;
 
-	s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-	s->s.k = off_nl;
+	s = gen_llprefixlen();
+	if (s != NULL) {
+		/*
+		 * There's a variable-length prefix preceding the
+		 * link-layer header.  "s" points to a list of statements
+		 * that put the length of that prefix into the X register.
+		 * The 4*([k]&0xf) addressing mode can't be used, as we
+		 * don't have a constant offset, so we have to load the
+		 * value in question into the A register and add to it
+		 * the value from the X register.
+		 */
+		s2 = new_stmt(BPF_LD|BPF_IND|BPF_B);
+		s2->s.k = off_nl;
+		sappend(s, s2);
+		s2 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+		s2->s.k = 0xf;
+		sappend(s, s2);
+		s2 = new_stmt(BPF_ALU|BPF_LSH|BPF_K);
+		s2->s.k = 2;
+		sappend(s, s2);
+
+		/*
+		 * The A register now contains the length of the
+		 * IP header.  We need to add to it the length
+		 * of the prefix preceding the link-layer
+		 * header, which is still in the X register, and
+		 * move the result into the X register.
+		 */
+		sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
+		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
+	} else {
+		/*
+		 * There is no variable-length header preceding the
+		 * link-layer header; if there's a fixed-length
+		 * header preceding it, its length is included in
+		 * the off_ variables, so it doesn't need to be added.
+		 */
+		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
+		s->s.k = off_nl;
+	}
 	return s;
 }
 
@@ -1546,6 +1634,124 @@ gen_linux_sll_linktype(proto)
 	}
 }
 
+static void
+insert_radiotap_load_llprefixlen(b)
+	struct block *b;
+{
+	struct slist *s1, *s2;
+
+	/*
+	 * Prepend to the statements in this block code to load the
+	 * length of the radiotap header into the register assigned
+	 * to hold that length, if one has been assigned.
+	 */
+	if (reg_ll_size != -1) {
+		/*
+		 * The 2 bytes at offsets of 2 and 3 from the beginning
+		 * of the radiotap header are the length of the radiotap
+		 * header; unfortunately, it's little-endian, so we have
+		 * to load it a byte at a time and construct the value.
+		 */
+
+		/*
+		 * Load the high-order byte, at an offset of 3, shift it
+		 * left a byte, and put the result in the X register.
+		 */
+		s1 = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s1->s.k = 3;
+		s2 = new_stmt(BPF_ALU|BPF_LSH|BPF_K);
+		sappend(s1, s2);
+		s2->s.k = 8;
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		/*
+		 * Load the next byte, at an offset of 2, and OR the
+		 * value from the X register into it.
+		 */
+		s2 = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		sappend(s1, s2);
+		s2->s.k = 2;
+		s2 = new_stmt(BPF_ALU|BPF_OR|BPF_X);
+		sappend(s1, s2);
+
+		/*
+		 * Now allocate a register to hold that value and store
+		 * it.
+		 */
+		s2 = new_stmt(BPF_ST);
+		s2->s.k = reg_ll_size;
+		sappend(s1, s2);
+
+		/*
+		 * Now move it into the X register.
+		 */
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		/*
+		 * Now append all the existing statements in this
+		 * block to these statements.
+		 */
+		sappend(s1, b->stmts);
+		b->stmts = s1;
+	}
+}
+
+
+static void
+insert_load_llprefixlen(b)
+	struct block *b;
+{
+	switch (linktype) {
+
+	case DLT_IEEE802_11_RADIO:
+		insert_radiotap_load_llprefixlen(b);
+	}
+}
+
+
+static struct slist *
+gen_radiotap_llprefixlen(void)
+{
+	struct slist *s;
+
+	if (reg_ll_size == -1) {
+		/*
+		 * We haven't yet assigned a register for the length
+		 * of the radiotap header; allocate one.
+		 */
+		reg_ll_size = alloc_reg();
+	}
+
+	/*
+	 * Load the register containing the radiotap length
+	 * into the X register.
+	 */
+	s = new_stmt(BPF_LDX|BPF_MEM);
+	s->s.k = reg_ll_size;
+	return s;
+}
+
+/*
+ * Generate code to compute the link-layer header length, if necessary,
+ * putting it into the X register, and to return either a pointer to a
+ * "struct slist" for the list of statements in that code, or NULL if
+ * no code is necessary.
+ */
+static struct slist *
+gen_llprefixlen(void)
+{
+	switch (linktype) {
+
+	case DLT_IEEE802_11_RADIO:
+		return gen_radiotap_llprefixlen();
+
+	default:
+		return NULL;
+	}
+}
+
 /*
  * Generate code to match a particular packet type by matching the
  * link-layer type field or fields in the 802.2 LLC header.
@@ -1583,9 +1789,9 @@ gen_linktype(proto)
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
-	case DLT_IEEE802_11_RADIO:
 	case DLT_FDDI:
 	case DLT_IEEE802:
+	case DLT_IEEE802_11_RADIO:
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:
 	case DLT_IP_OVER_FC:
@@ -3280,6 +3486,15 @@ gen_ipfrag()
 	return b;
 }
 
+/*
+ * Generate a comparison to a port value in the transport-layer header
+ * at the specified offset from the beginning of that header.
+ *
+ * XXX - this handles a variable-length prefix preceding the link-layer
+ * header, such as the radiotap or AVS radio prefix, but doesn't handle
+ * variable-length link-layer headers (such as Token Ring or 802.11
+ * headers).
+ */
 static struct block *
 gen_portatom(off, v)
 	int off;
@@ -3754,6 +3969,19 @@ gen_protochain(v, proto, dir)
 		bpf_error("bad protocol applied for 'protochain'");
 		/*NOTREACHED*/
 	}
+
+	/*
+	 * We don't handle variable-length radiotap here headers yet.
+	 * We might want to add BPF instructions to do the protochain
+	 * work, to simplify that and, on platforms that have a BPF
+	 * interpreter with the new instructions, let the filtering
+	 * be done in the kernel.  (We already require a modified BPF
+	 * engine to do the protochain stuff, to support backward
+	 * branches, and backward branch support is unlikely to appear
+	 * in kernel BPF engines.)
+	 */
+	if (linktype == DLT_IEEE802_11_RADIO)
+		bpf_error("'protochain' not supported with radiotap headers");
 
 	no_optimize = 1; /*this code is not compatible with optimzer yet */
 
@@ -4826,6 +5054,13 @@ xfer_to_a(a)
 	return s;
 }
 
+/*
+ * Modify "index" to use the value stored into its register as an
+ * offset relative to the beginning of the header for the protocol
+ * "proto", and allocate a register and put an item "size" bytes long
+ * (1, 2, or 4) at that offset into that register, making it the register
+ * for "index".
+ */
 struct arth *
 gen_load(proto, index, size)
 	int proto;
@@ -4860,6 +5095,9 @@ gen_load(proto, index, size)
 
 	case Q_LINK:
 		/*
+		 * The offset is relative to the beginning of
+		 * the link-layer header.
+		 *
 		 * XXX - what about ATM LANE?  Should the index be
 		 * relative to the beginning of the AAL5 frame, so
 		 * that 0 refers to the beginning of the LE Control
@@ -4867,7 +5105,27 @@ gen_load(proto, index, size)
 		 * frame, so that 0 refers, for Ethernet LANE, to
 		 * the beginning of the destination address?
 		 */
-		s = xfer_to_x(index);
+		s = gen_llprefixlen();
+
+		/*
+		 * If "s" is non-null, it has code to arrange that the
+		 * X register contains the length of the prefix preceding
+		 * the link-layer header.  Add to it the offset computed
+		 * into the register specified by "index", and move that
+		 * into the X register.  Otherwise, just load into the X
+		 * register the offset computed into the register specifed
+		 * by "index".
+		 */
+		if (s != NULL) {
+			sappend(s, xfer_to_a(index));
+			sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
+			sappend(s, new_stmt(BPF_MISC|BPF_TAX));
+		} else
+			s = xfer_to_x(index);
+
+		/*
+		 * Load the item at the offset we've put in the X register.
+		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
 		sappend(s, tmp);
 		sappend(index->s, s);
@@ -4885,13 +5143,44 @@ gen_load(proto, index, size)
 #ifdef INET6
 	case Q_IPV6:
 #endif
-		/* XXX Note that we assume a fixed link header here. */
-		s = xfer_to_x(index);
+		/*
+		 * The offset is relative to the beginning of
+		 * the network-layer header.
+		 * XXX - are there any cases where we want
+		 * off_nl_nosnap?
+		 */
+		s = gen_llprefixlen();
+
+		/*
+		 * If "s" is non-null, it has code to arrange that the
+		 * X register contains the length of the prefix preceding
+		 * the link-layer header.  Add to it the offset computed
+		 * into the register specified by "index", and move that
+		 * into the X register.  Otherwise, just load into the X
+		 * register the offset computed into the register specifed
+		 * by "index".
+		 */
+		if (s != NULL) {
+			sappend(s, xfer_to_a(index));
+			sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
+			sappend(s, new_stmt(BPF_MISC|BPF_TAX));
+		} else
+			s = xfer_to_x(index);
+
+		/*
+		 * Load the item at the sum of the offset we've put in the
+		 * X register and the offset of the start of the network
+		 * layer header.
+		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
 		tmp->s.k = off_nl;
 		sappend(s, tmp);
 		sappend(index->s, s);
 
+		/*
+		 * Do the computation only if the packet contains
+		 * the protocol in question.
+		 */
 		b = gen_proto_abbrev(proto);
 		if (index->b)
 			gen_and(index->b, b);
@@ -4906,7 +5195,29 @@ gen_load(proto, index, size)
 	case Q_IGRP:
 	case Q_PIM:
 	case Q_VRRP:
+		/*
+		 * The offset is relative to the beginning of
+		 * the transport-layer header.
+		 * XXX - are there any cases where we want
+		 * off_nl_nosnap?
+		 * XXX - we should, if we're built with
+		 * IPv6 support, generate code to load either
+		 * IPv4, IPv6, or both, as appropriate.
+		 */
 		s = gen_loadx_iphdrlen();
+
+		/*
+		 * The X register now contains the sum of the offset
+		 * of the beginning of the link-layer header and
+		 * the length of the network-layer header.  Load
+		 * into the A register the offset relative to
+		 * the beginning of the transport layer header,
+		 * add the X register to that, move that to the
+		 * X register, and load with an offset from the
+		 * X register equal to the offset of the network
+		 * layer header relative to the beginning of
+		 * the link-layer header.
+		 */
 		sappend(s, xfer_to_a(index));
 		sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
@@ -4914,6 +5225,12 @@ gen_load(proto, index, size)
 		tmp->s.k = off_nl;
 		sappend(index->s, s);
 
+		/*
+		 * Do the computation only if the packet contains
+		 * the protocol in question - which is true only
+		 * if this is an IP datagram and is the first or
+		 * only fragment of that datagram.
+		 */
 		gen_and(gen_proto_abbrev(proto), b = gen_ipfrag());
 		if (index->b)
 			gen_and(index->b, b);
@@ -5139,6 +5456,16 @@ gen_less(n)
 	return b;
 }
 
+/*
+ * This is for "byte {idx} {op} {val}"; "idx" is treated as relative to
+ * the beginning of the link-layer header.
+ * XXX - that means you can't test values in the radiotap header, but
+ * as that header is difficult if not impossible to parse generally
+ * without a loop, that might not be a severe problem.  A new keyword
+ * "radio" could be added for that, although what you'd really want
+ * would be a way of testing particular radio header values, which
+ * would generate code appropriate to the radio header in question.
+ */
 struct block *
 gen_byteop(op, idx, val)
 	int op, idx, val;
@@ -5199,7 +5526,10 @@ gen_broadcast(proto)
 			return gen_fhostop(ebroadcast, Q_DST);
 		if (linktype == DLT_IEEE802)
 			return gen_thostop(ebroadcast, Q_DST);
-		if (linktype == DLT_IEEE802_11)
+		if (linktype == DLT_IEEE802_11 ||
+		    linktype == DLT_IEEE802_11_RADIO_AVS ||
+		    linktype == DLT_IEEE802_11_RADIO ||
+		    linktype == DLT_PRISM_HEADER)
 			return gen_wlanhostop(ebroadcast, Q_DST);
 		if (linktype == DLT_IP_OVER_FC)
 			return gen_ipfchostop(ebroadcast, Q_DST);
