@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.10 2005-05-01 00:56:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.11 2005-05-01 04:14:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -131,6 +131,18 @@ static void free_reg(int);
 static struct block *root;
 
 /*
+ * Value passed to gen_load_a() to indicate what the offset argument
+ * is relative to.
+ */
+enum e_offrel {
+	OR_LINK,	/* relative to the link-layer header */
+	OR_NET,		/* relative to the network-layer header */
+	OR_NET_NOSNAP,	/* relative to the network-layer header, with no SNAP header at the link layer */
+	OR_TRAN_IPV4,	/* relative to the transport-layer header, with IPv4 network layer */
+	OR_TRAN_IPV6	/* relative to the transport-layer header, with IPv6 network layer */
+};
+
+/*
  * We divy out chunks of memory rather than call malloc each time so
  * we don't have to worry about leaking memory.  It's probably
  * not a big deal if all this memory was wasted but if this ever
@@ -157,18 +169,17 @@ static inline void syntax(void);
 
 static void backpatch(struct block *, struct block *);
 static void merge(struct block *, struct block *);
-static struct block *gen_cmp(u_int, u_int, bpf_int32);
-static struct block *gen_cmp_gt(u_int, u_int, bpf_int32);
-static struct block *gen_mcmp(u_int, u_int, bpf_int32, bpf_u_int32);
-static struct block *gen_bcmp(u_int, u_int, const u_char *);
-static struct block *gen_ncmp(bpf_u_int32, bpf_u_int32, bpf_u_int32,
-    bpf_u_int32, bpf_u_int32, int);
-static struct slist *gen_load_llrel(u_int, u_int);
-static struct slist *gen_load_nlrel(u_int, u_int);
-static struct slist *gen_load_ipv4tlrel(u_int, u_int);
-#ifdef INET6
-static struct slist *gen_load_ipv6tlrel(u_int, u_int);
-#endif
+static struct block *gen_cmp(enum e_offrel, u_int, u_int, bpf_int32);
+static struct block *gen_cmp_gt(enum e_offrel, u_int, u_int, bpf_int32);
+static struct block *gen_cmp_ge(enum e_offrel, u_int, u_int, bpf_int32);
+static struct block *gen_cmp_lt(enum e_offrel, u_int, u_int, bpf_int32);
+static struct block *gen_cmp_le(enum e_offrel, u_int, u_int, bpf_int32);
+static struct block *gen_mcmp(enum e_offrel, u_int, u_int, bpf_int32,
+    bpf_u_int32);
+static struct block *gen_bcmp(enum e_offrel, u_int, u_int, const u_char *);
+static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
+    bpf_u_int32, bpf_u_int32, int, bpf_u_int32);
+static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
@@ -187,7 +198,7 @@ static struct block *gen_fhostop(const u_char *, int);
 static struct block *gen_thostop(const u_char *, int);
 static struct block *gen_wlanhostop(const u_char *, int);
 static struct block *gen_ipfchostop(const u_char *, int);
-static struct block *gen_dnhostop(bpf_u_int32, int, u_int);
+static struct block *gen_dnhostop(bpf_u_int32, int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
 #ifdef INET6
 static struct block *gen_host6(struct in6_addr *, struct in6_addr *, int, int);
@@ -495,58 +506,63 @@ gen_not(b)
 }
 
 static struct block *
-gen_cmp(offset, size, v)
+gen_cmp(offrel, offset, size, v)
+	enum e_offrel offrel;
 	u_int offset, size;
 	bpf_int32 v;
 {
-	struct slist *s;
-	struct block *b;
-
-	s = gen_load_llrel(offset, size);
-
-	b = new_block(JMP(BPF_JEQ));
-	b->stmts = s;
-	b->s.k = v;
-
-	return b;
+	return gen_ncmp(offrel, offset, size, 0xffffffff, BPF_JEQ, 0, v);
 }
 
 static struct block *
-gen_cmp_gt(offset, size, v)
+gen_cmp_gt(offrel, offset, size, v)
+	enum e_offrel offrel;
 	u_int offset, size;
 	bpf_int32 v;
 {
-	struct slist *s;
-	struct block *b;
-
-	s = gen_load_llrel(offset, size);
-
-	b = new_block(JMP(BPF_JGT));
-	b->stmts = s;
-	b->s.k = v;
-
-	return b;
+	return gen_ncmp(offrel, offset, size, 0xffffffff, BPF_JGT, 0, v);
 }
 
 static struct block *
-gen_mcmp(offset, size, v, mask)
+gen_cmp_ge(offrel, offset, size, v)
+	enum e_offrel offrel;
+	u_int offset, size;
+	bpf_int32 v;
+{
+	return gen_ncmp(offrel, offset, size, 0xffffffff, BPF_JGE, 0, v);
+}
+
+static struct block *
+gen_cmp_lt(offrel, offset, size, v)
+	enum e_offrel offrel;
+	u_int offset, size;
+	bpf_int32 v;
+{
+	return gen_ncmp(offrel, offset, size, 0xffffffff, BPF_JGE, 1, v);
+}
+
+static struct block *
+gen_cmp_le(offrel, offset, size, v)
+	enum e_offrel offrel;
+	u_int offset, size;
+	bpf_int32 v;
+{
+	return gen_ncmp(offrel, offset, size, 0xffffffff, BPF_JGT, 1, v);
+}
+
+static struct block *
+gen_mcmp(offrel, offset, size, v, mask)
+	enum e_offrel offrel;
 	u_int offset, size;
 	bpf_int32 v;
 	bpf_u_int32 mask;
 {
-	struct block *b = gen_cmp(offset, size, v);
-	struct slist *s;
-
-	if (mask != 0xffffffff) {
-		s = new_stmt(BPF_ALU|BPF_AND|BPF_K);
-		s->s.k = mask;
-		b->stmts->next = s;
-	}
-	return b;
+	return gen_ncmp(offrel, offset, size, mask, BPF_JEQ, 0, v);
 }
 
 static struct block *
-gen_bcmp(offset, size, v)
+gen_bcmp(offrel, offset, size, v)
+	enum e_offrel offrel;
 	register u_int offset, size;
 	register const u_char *v;
 {
@@ -558,7 +574,7 @@ gen_bcmp(offset, size, v)
 		bpf_int32 w = ((bpf_int32)p[0] << 24) |
 		    ((bpf_int32)p[1] << 16) | ((bpf_int32)p[2] << 8) | p[3];
 
-		tmp = gen_cmp(offset + size - 4, BPF_W, w);
+		tmp = gen_cmp(offrel, offset + size - 4, BPF_W, w);
 		if (b != NULL)
 			gen_and(b, tmp);
 		b = tmp;
@@ -568,14 +584,14 @@ gen_bcmp(offset, size, v)
 		register const u_char *p = &v[size - 2];
 		bpf_int32 w = ((bpf_int32)p[0] << 8) | p[1];
 
-		tmp = gen_cmp(offset + size - 2, BPF_H, w);
+		tmp = gen_cmp(offrel, offset + size - 2, BPF_H, w);
 		if (b != NULL)
 			gen_and(b, tmp);
 		b = tmp;
 		size -= 2;
 	}
 	if (size > 0) {
-		tmp = gen_cmp(offset, BPF_B, (bpf_int32)v[0]);
+		tmp = gen_cmp(offrel, offset, BPF_B, (bpf_int32)v[0]);
 		if (b != NULL)
 			gen_and(b, tmp);
 		b = tmp;
@@ -583,16 +599,22 @@ gen_bcmp(offset, size, v)
 	return b;
 }
 
+/*
+ * AND the field of size "size" at offset "offset" relative to the header
+ * specified by "offrel" with "mask", and compare it with the value "v"
+ * with the test specified by "jtype"; if "reverse" is true, the test
+ * should test the opposite of "jtype".
+ */
 static struct block *
-gen_ncmp(datasize, offset, mask, jtype, jvalue, reverse)
-	bpf_u_int32 datasize, offset, mask, jtype, jvalue;
+gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
+	enum e_offrel offrel;
+	bpf_u_int32 offset, size, mask, jtype, v;
 	int reverse;
 {
 	struct slist *s;
 	struct block *b;
 
-	s = new_stmt(BPF_LD|datasize|BPF_ABS);
-	s->s.k = offset;
+	s = gen_load_a(offrel, offset, size);
 
 	if (mask != 0xffffffff) {
 		s->next = new_stmt(BPF_ALU|BPF_AND|BPF_K);
@@ -601,7 +623,7 @@ gen_ncmp(datasize, offset, mask, jtype, jvalue, reverse)
 
 	b = new_block(JMP(jtype));
 	b->stmts = s;
-	b->s.k = jvalue;
+	b->s.k = v;
 	if (reverse && (jtype == BPF_JGT || jtype == BPF_JGE))
 		gen_not(b);
 	return b;
@@ -1072,73 +1094,59 @@ init_linktype(p)
 }
 
 /*
- * Load a value relative to the beginning of the link-layer header.
+ * Load a value relative to the beginning of the specified header.
  */
 static struct slist *
-gen_load_llrel(offset, size)
+gen_load_a(offrel, offset, size)
+	enum e_offrel offrel;
 	u_int offset, size;
 {
 	struct slist *s;
 
-	s = new_stmt(BPF_LD|BPF_ABS|size);
-	s->s.k = offset;
+	switch (offrel) {
+
+	case OR_LINK:
+		s = new_stmt(BPF_LD|BPF_ABS|size);
+		s->s.k = offset;
+		break;
+
+	case OR_NET:
+		s = new_stmt(BPF_LD|BPF_ABS|size);
+		s->s.k = off_nl + offset;
+		break;
+
+	case OR_NET_NOSNAP:
+		s = new_stmt(BPF_LD|BPF_ABS|size);
+		s->s.k = off_nl_nosnap + offset;
+		break;
+
+	case OR_TRAN_IPV4:
+		/*
+		 * Load the X register with the length of the IPv4 header,
+		 * in bytes.
+		 */
+		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
+		s->s.k = off_nl;
+
+		/*
+		 * Load the item at {length of the link-layer header} +
+		 * {length of the IPv4 header} + {specified offset}.
+		 */
+		s->next = new_stmt(BPF_LD|BPF_IND|size);
+		s->next->s.k = off_nl + offset;
+		break;
+
+	case OR_TRAN_IPV6:
+		s = new_stmt(BPF_LD|BPF_ABS|size);
+		s->s.k = off_nl + 40 + offset;
+		break;
+
+	default:
+		abort();
+		return NULL;
+	}
 	return s;
 }
-
-/*
- * Load a value relative to the beginning of the network-layer header.
- */
-static struct slist *
-gen_load_nlrel(offset, size)
-	u_int offset, size;
-{
-	return gen_load_llrel(off_nl + offset, size);
-}
-
-/*
- * Load a value relative to the beginning of the transport-layer header,
- * where the network-layer header is an IPv4 header.  (This doesn't handle
- * AH headers.)
- */
-static struct slist *
-gen_load_ipv4tlrel(offset, size)
-	u_int offset, size;
-{
-	struct slist *s;
-
-	/*
-	 * Load the X register with the length of the IPv4 header,
-	 * in bytes.
-	 */
-	s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-	s->s.k = off_nl;
-
-	/*
-	 * Load the item at {length of the link-layer header} + {length
-	 * of the IPv4 header} + {specified offset}.
-	 */
-	s->next = new_stmt(BPF_LD|BPF_IND|size);
-	s->next->s.k = off_nl + offset;
-
-	return s;
-}
-
-#ifdef INET6
-/*
- * Load a value relative to the beginning of the transport-layer header,
- * where the network-layer header is an IPv6 header.  (This doesn't handle
- * extension headers.)
- */
-static struct slist *
-gen_load_ipv6tlrel(offset, size)
-	u_int offset, size;
-{
-	struct slist *s;
-
-	s = gen_load_nlrel(40 + offset, size);
-	return s;
-}
-#endif
 
 static struct block *
 gen_uncond(rsense)
@@ -1207,9 +1215,9 @@ gen_ether_linktype(proto)
 		 * DSAP, as we do for other types <= ETHERMTU
 		 * (i.e., other SAP values)?
 		 */
-		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+		b1 = gen_cmp(OR_LINK, off_linktype + 2, BPF_H, (bpf_int32)
 			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
@@ -1247,8 +1255,10 @@ gen_ether_linktype(proto)
 		 * This generates code to check both for the
 		 * IPX LSAP (Ethernet_802.2) and for Ethernet_802.3.
 		 */
-		b0 = gen_cmp(off_linktype + 2, BPF_B, (bpf_int32)LLCSAP_IPX);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)0xFFFF);
+		b0 = gen_cmp(OR_LINK, off_linktype + 2, BPF_B,
+		    (bpf_int32)LLCSAP_IPX);
+		b1 = gen_cmp(OR_LINK, off_linktype + 2, BPF_H,
+		    (bpf_int32)0xFFFF);
 		gen_or(b0, b1);
 
 		/*
@@ -1262,7 +1272,7 @@ gen_ether_linktype(proto)
 		 * Now we generate code to check for 802.3
 		 * frames in general.
 		 */
-		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
 
 		/*
@@ -1278,7 +1288,8 @@ gen_ether_linktype(proto)
 		 * do that before checking for the other frame
 		 * types.
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)ETHERTYPE_IPX);
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+		    (bpf_int32)ETHERTYPE_IPX);
 		gen_or(b0, b1);
 		return b1;
 
@@ -1294,7 +1305,7 @@ gen_ether_linktype(proto)
 		 * we check for an Ethernet type field less than
 		 * 1500, which means it's an 802.3 length field.
 		 */
-		b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+		b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
 
 		/*
@@ -1319,7 +1330,7 @@ gen_ether_linktype(proto)
 		 * phase 1?); we just check for the Ethernet
 		 * protocol type.
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
 
 		gen_or(b0, b1);
 		return b1;
@@ -1334,9 +1345,10 @@ gen_ether_linktype(proto)
 			 * a length field, <= ETHERMTU) and
 			 * then check the DSAP.
 			 */
-			b0 = gen_cmp_gt(off_linktype, BPF_H, ETHERMTU);
+			b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
 			gen_not(b0);
-			b1 = gen_cmp(off_linktype + 2, BPF_B, (bpf_int32)proto);
+			b1 = gen_cmp(OR_LINK, off_linktype + 2, BPF_B,
+			    (bpf_int32)proto);
 			gen_and(b0, b1);
 			return b1;
 		} else {
@@ -1349,7 +1361,8 @@ gen_ether_linktype(proto)
 			 * will fail and the frame won't match,
 			 * which is what we want).
 			 */
-			return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+			return gen_cmp(OR_LINK, off_linktype, BPF_H,
+			    (bpf_int32)proto);
 		}
 	}
 }
@@ -1385,8 +1398,8 @@ gen_linux_sll_linktype(proto)
 		 * DSAP, as we do for other types <= ETHERMTU
 		 * (i.e., other SAP values)?
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
-		b1 = gen_cmp(off_linktype + 2, BPF_H, (bpf_int32)
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		b1 = gen_cmp(OR_LINK, off_linktype + 2, BPF_H, (bpf_int32)
 			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
@@ -1417,19 +1430,19 @@ gen_linux_sll_linktype(proto)
 		 * then put a check for LINUX_SLL_P_802_2 frames
 		 * before it.
 		 */
-		b0 = gen_cmp(off_linktype + 2, BPF_B,
+		b0 = gen_cmp(OR_LINK, off_linktype + 2, BPF_B,
 		    (bpf_int32)LLCSAP_IPX);
 		b1 = gen_snap(0x000000, ETHERTYPE_IPX,
 		    off_linktype + 2);
 		gen_or(b0, b1);
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, LINUX_SLL_P_802_2);
 		gen_and(b0, b1);
 
 		/*
 		 * Now check for 802.3 frames and OR that with
 		 * the previous test.
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_3);
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, LINUX_SLL_P_802_3);
 		gen_or(b0, b1);
 
 		/*
@@ -1437,7 +1450,7 @@ gen_linux_sll_linktype(proto)
 		 * do that before checking for the other frame
 		 * types.
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H,
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 		    (bpf_int32)ETHERTYPE_IPX);
 		gen_or(b0, b1);
 		return b1;
@@ -1454,7 +1467,7 @@ gen_linux_sll_linktype(proto)
 		 * we check for the 802.2 protocol type in the
 		 * "Ethernet type" field.
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H, LINUX_SLL_P_802_2);
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, LINUX_SLL_P_802_2);
 
 		/*
 		 * 802.2-encapsulated ETHERTYPE_ATALK packets are
@@ -1480,7 +1493,7 @@ gen_linux_sll_linktype(proto)
 		 * phase 1?); we just check for the Ethernet
 		 * protocol type.
 		 */
-		b0 = gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
 
 		gen_or(b0, b1);
 		return b1;
@@ -1494,9 +1507,9 @@ gen_linux_sll_linktype(proto)
 			 * in the "Ethernet type" field, and
 			 * then check the DSAP.
 			 */
-			b0 = gen_cmp(off_linktype, BPF_H,
+			b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 			    LINUX_SLL_P_802_2);
-			b1 = gen_cmp(off_linktype + 2, BPF_B,
+			b1 = gen_cmp(OR_LINK, off_linktype + 2, BPF_B,
 			     (bpf_int32)proto);
 			gen_and(b0, b1);
 			return b1;
@@ -1510,7 +1523,7 @@ gen_linux_sll_linktype(proto)
 			 * will fail and the frame won't match,
 			 * which is what we want).
 			 */
-			return gen_cmp(off_linktype, BPF_H,
+			return gen_cmp(OR_LINK, off_linktype, BPF_H,
 			    (bpf_int32)proto);
 		}
 	}
@@ -1544,7 +1557,8 @@ gen_linktype(proto)
 			/* fall through */
 
 		default:
-			return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+			return gen_cmp(OR_LINK, off_linktype, BPF_H,
+			    (bpf_int32)proto);
 			/*NOTREACHED*/
 			break;
 		}
@@ -1576,7 +1590,8 @@ gen_linktype(proto)
 			 * LE Control marker.  (We've already generated
 			 * a test for LANE.)
 			 */
-			b0 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			b0 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+			    0xFF00);
 			gen_not(b0);
 
 			/*
@@ -1686,10 +1701,10 @@ gen_linktype(proto)
 		switch (proto) {
 
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(off_linktype, BPF_H, PPP_IP);
-			b1 = gen_cmp(off_linktype, BPF_H, PPP_VJC);
+			b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, PPP_IP);
+			b1 = gen_cmp(OR_LINK, off_linktype, BPF_H, PPP_VJC);
 			gen_or(b0, b1);
-			b0 = gen_cmp(off_linktype, BPF_H, PPP_VJNC);
+			b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, PPP_VJNC);
 			gen_or(b1, b0);
 			return b0;
 
@@ -1795,7 +1810,7 @@ gen_linktype(proto)
 				proto = SWAPLONG(proto);
 			proto = htonl(proto);
 		}
-		return (gen_cmp(0, BPF_W, (bpf_int32)proto));
+		return (gen_cmp(OR_LINK, 0, BPF_W, (bpf_int32)proto));
 
 	case DLT_PFLOG:
 		/*
@@ -1803,12 +1818,12 @@ gen_linktype(proto)
 		 * the packet.
 		 */
 		if (proto == ETHERTYPE_IP)
-			return (gen_cmp(offsetof(struct pfloghdr, af), BPF_B,
-			    (bpf_int32)AF_INET));
+			return (gen_cmp(OR_LINK, offsetof(struct pfloghdr, af),
+			    BPF_B, (bpf_int32)AF_INET));
 #ifdef INET6
 		else if (proto == ETHERTYPE_IPV6)
-			return (gen_cmp(offsetof(struct pfloghdr, af), BPF_B,
-			    (bpf_int32)AF_INET6));
+			return (gen_cmp(OR_LINK, offsetof(struct pfloghdr, af),
+			    BPF_B, (bpf_int32)AF_INET6));
 #endif /* INET6 */
 		else
 			return gen_false();
@@ -1828,32 +1843,32 @@ gen_linktype(proto)
 
 #ifdef INET6
 		case ETHERTYPE_IPV6:
-			return (gen_cmp(off_linktype, BPF_B,
+			return (gen_cmp(OR_LINK, off_linktype, BPF_B,
 				(bpf_int32)ARCTYPE_INET6));
 #endif /* INET6 */
 
 		case ETHERTYPE_IP:
-			b0 = gen_cmp(off_linktype, BPF_B,
+			b0 = gen_cmp(OR_LINK, off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_IP);
-			b1 = gen_cmp(off_linktype, BPF_B,
+			b1 = gen_cmp(OR_LINK, off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_IP_OLD);
 			gen_or(b0, b1);
 			return (b1);
 
 		case ETHERTYPE_ARP:
-			b0 = gen_cmp(off_linktype, BPF_B,
+			b0 = gen_cmp(OR_LINK, off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_ARP);
-			b1 = gen_cmp(off_linktype, BPF_B,
+			b1 = gen_cmp(OR_LINK, off_linktype, BPF_B,
 				     (bpf_int32)ARCTYPE_ARP_OLD);
 			gen_or(b0, b1);
 			return (b1);
 
 		case ETHERTYPE_REVARP:
-			return (gen_cmp(off_linktype, BPF_B,
+			return (gen_cmp(OR_LINK, off_linktype, BPF_B,
 					(bpf_int32)ARCTYPE_REVARP));
 
 		case ETHERTYPE_ATALK:
-			return (gen_cmp(off_linktype, BPF_B,
+			return (gen_cmp(OR_LINK, off_linktype, BPF_B,
 					(bpf_int32)ARCTYPE_ATALK));
 		}
 		/*NOTREACHED*/
@@ -1880,14 +1895,14 @@ gen_linktype(proto)
 			/*
 			 * Check for the special NLPID for IP.
 			 */
-			return gen_cmp(2, BPF_H, (0x03<<8) | 0xcc);
+			return gen_cmp(OR_LINK, 2, BPF_H, (0x03<<8) | 0xcc);
 
 #ifdef INET6
 		case ETHERTYPE_IPV6:
 			/*
 			 * Check for the special NLPID for IPv6.
 			 */
-			return gen_cmp(2, BPF_H, (0x03<<8) | 0x8e);
+			return gen_cmp(OR_LINK, 2, BPF_H, (0x03<<8) | 0x8e);
 #endif
 
 		case LLCSAP_ISONS:
@@ -1902,9 +1917,9 @@ gen_linktype(proto)
 			 * control field of UI, i.e. 0x03 followed
 			 * by the NLPID.
 			 */
-			b0 = gen_cmp(2, BPF_H, (0x03<<8) | ISO8473_CLNP);
-			b1 = gen_cmp(2, BPF_H, (0x03<<8) | ISO9542_ESIS);
-			b2 = gen_cmp(2, BPF_H, (0x03<<8) | ISO10589_ISIS);
+			b0 = gen_cmp(OR_LINK, 2, BPF_H, (0x03<<8) | ISO8473_CLNP);
+			b1 = gen_cmp(OR_LINK, 2, BPF_H, (0x03<<8) | ISO9542_ESIS);
+			b2 = gen_cmp(OR_LINK, 2, BPF_H, (0x03<<8) | ISO10589_ISIS);
 			gen_or(b1, b2);
 			gen_or(b0, b2);
 			return b2;
@@ -1926,7 +1941,7 @@ gen_linktype(proto)
 		 *
 		 * FIXME encapsulation specific BPF_ filters
 		 */
-		return gen_mcmp(0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
+		return gen_mcmp(OR_LINK, 0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
 
 	case DLT_LINUX_IRDA:
 		bpf_error("IrDA link-layer type filtering not implemented");
@@ -1960,7 +1975,7 @@ gen_linktype(proto)
 	 * at "off_linktype", so we don't have to do the code generation
 	 * above.)
 	 */
-	return gen_cmp(off_linktype, BPF_H, (bpf_int32)proto);
+	return gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
 }
 
 /*
@@ -1986,7 +2001,7 @@ gen_snap(orgcode, ptype, offset)
 	snapblock[5] = (orgcode >> 0);	/* lower 8 bits of organization code */
 	snapblock[6] = (ptype >> 8);	/* upper 8 bits of protocol type */
 	snapblock[7] = (ptype >> 0);	/* lower 8 bits of protocol type */
-	return gen_bcmp(offset, 8, snapblock);
+	return gen_bcmp(OR_LINK, offset, 8, snapblock);
 }
 
 /*
@@ -2019,7 +2034,7 @@ gen_llc_linktype(proto)
 		 * DSAP, as we do for other types <= ETHERMTU
 		 * (i.e., other SAP values)?
 		 */
-		return gen_cmp(off_linktype, BPF_H, (long)
+		return gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_u_int32)
 			     ((proto << 8) | proto));
 
 	case LLCSAP_IPX:
@@ -2027,7 +2042,8 @@ gen_llc_linktype(proto)
 		 * XXX - are there ever SNAP frames for IPX on
 		 * non-Ethernet 802.x networks?
 		 */
-		return gen_cmp(off_linktype, BPF_B, (bpf_int32)LLCSAP_IPX);
+		return gen_cmp(OR_LINK, off_linktype, BPF_B,
+		    (bpf_int32)LLCSAP_IPX);
 
 	case ETHERTYPE_ATALK:
 		/*
@@ -2051,7 +2067,8 @@ gen_llc_linktype(proto)
 			 * This is an LLC SAP value, so check
 			 * the DSAP.
 			 */
-			return gen_cmp(off_linktype, BPF_B, (bpf_int32)proto);
+			return gen_cmp(OR_LINK, off_linktype, BPF_B,
+			    (bpf_int32)proto);
 		} else {
 			/*
 			 * This is an Ethernet type; we assume that it's
@@ -2073,7 +2090,8 @@ gen_llc_linktype(proto)
 			 * I don't know whether it's worth the extra CPU
 			 * time to do the right check or not.
 			 */
-			return gen_cmp(off_linktype+6, BPF_H, (bpf_int32)proto);
+			return gen_cmp(OR_LINK, off_linktype+6, BPF_H,
+			    (bpf_int32)proto);
 		}
 	}
 }
@@ -2115,7 +2133,7 @@ gen_hostop(addr, mask, dir, proto, src_off, dst_off)
 		abort();
 	}
 	b0 = gen_linktype(proto);
-	b1 = gen_mcmp(offset, BPF_W, (bpf_int32)addr, mask);
+	b1 = gen_mcmp(OR_NET, offset, BPF_W, (bpf_int32)addr, mask);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -2161,12 +2179,12 @@ gen_hostop6(addr, mask, dir, proto, src_off, dst_off)
 	/* this order is important */
 	a = (u_int32_t *)addr;
 	m = (u_int32_t *)mask;
-	b1 = gen_mcmp(offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
-	b0 = gen_mcmp(offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
+	b1 = gen_mcmp(OR_NET, offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
+	b0 = gen_mcmp(OR_NET, offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
 	gen_and(b0, b1);
-	b0 = gen_mcmp(offset + 4, BPF_W, ntohl(a[1]), ntohl(m[1]));
+	b0 = gen_mcmp(OR_NET, offset + 4, BPF_W, ntohl(a[1]), ntohl(m[1]));
 	gen_and(b0, b1);
-	b0 = gen_mcmp(offset + 0, BPF_W, ntohl(a[0]), ntohl(m[0]));
+	b0 = gen_mcmp(OR_NET, offset + 0, BPF_W, ntohl(a[0]), ntohl(m[0]));
 	gen_and(b0, b1);
 	b0 = gen_linktype(proto);
 	gen_and(b0, b1);
@@ -2183,10 +2201,10 @@ gen_ehostop(eaddr, dir)
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(off_mac + 6, 6, eaddr);
+		return gen_bcmp(OR_LINK, off_mac + 6, 6, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(off_mac + 0, 6, eaddr);
+		return gen_bcmp(OR_LINK, off_mac + 0, 6, eaddr);
 
 	case Q_AND:
 		b0 = gen_ehostop(eaddr, Q_SRC);
@@ -2218,16 +2236,16 @@ gen_fhostop(eaddr, dir)
 	switch (dir) {
 	case Q_SRC:
 #ifdef PCAP_FDDIPAD
-		return gen_bcmp(6 + 1 + pcap_fddipad, 6, eaddr);
+		return gen_bcmp(OR_LINK, 6 + 1 + pcap_fddipad, 6, eaddr);
 #else
-		return gen_bcmp(6 + 1, 6, eaddr);
+		return gen_bcmp(OR_LINK, 6 + 1, 6, eaddr);
 #endif
 
 	case Q_DST:
 #ifdef PCAP_FDDIPAD
-		return gen_bcmp(0 + 1 + pcap_fddipad, 6, eaddr);
+		return gen_bcmp(OR_LINK, 0 + 1 + pcap_fddipad, 6, eaddr);
 #else
-		return gen_bcmp(0 + 1, 6, eaddr);
+		return gen_bcmp(OR_LINK, 0 + 1, 6, eaddr);
 #endif
 
 	case Q_AND:
@@ -2259,10 +2277,10 @@ gen_thostop(eaddr, dir)
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(8, 6, eaddr);
+		return gen_bcmp(OR_LINK, 8, 6, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(2, 6, eaddr);
+		return gen_bcmp(OR_LINK, 2, 6, eaddr);
 
 	case Q_AND:
 		b0 = gen_thostop(eaddr, Q_SRC);
@@ -2319,7 +2337,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * First, check for To DS set, i.e. check "link[1] & 0x01".
 		 */
-		s = gen_load_llrel(1, BPF_B);
+		s = gen_load_a(OR_LINK, 1, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x01;	/* To DS */
 		b1->stmts = s;
@@ -2327,14 +2345,14 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * If To DS is set, the SA is at 24.
 		 */
-		b0 = gen_bcmp(24, 6, eaddr);
+		b0 = gen_bcmp(OR_LINK, 24, 6, eaddr);
 		gen_and(b1, b0);
 
 		/*
 		 * Now, check for To DS not set, i.e. check
 		 * "!(link[1] & 0x01)".
 		 */
-		s = gen_load_llrel(1, BPF_B);
+		s = gen_load_a(OR_LINK, 1, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x01;	/* To DS */
 		b2->stmts = s;
@@ -2343,7 +2361,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * If To DS is not set, the SA is at 16.
 		 */
-		b1 = gen_bcmp(16, 6, eaddr);
+		b1 = gen_bcmp(OR_LINK, 16, 6, eaddr);
 		gen_and(b2, b1);
 
 		/*
@@ -2357,7 +2375,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for From DS being set, and AND that with
 		 * the ORed-together checks.
 		 */
-		s = gen_load_llrel(1, BPF_B);
+		s = gen_load_a(OR_LINK, 1, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x02;	/* From DS */
 		b1->stmts = s;
@@ -2366,7 +2384,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * Now check for data frames with From DS not set.
 		 */
-		s = gen_load_llrel(1, BPF_B);
+		s = gen_load_a(OR_LINK, 1, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x02;	/* From DS */
 		b2->stmts = s;
@@ -2375,7 +2393,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * If From DS isn't set, the SA is at 10.
 		 */
-		b1 = gen_bcmp(10, 6, eaddr);
+		b1 = gen_bcmp(OR_LINK, 10, 6, eaddr);
 		gen_and(b2, b1);
 
 		/*
@@ -2389,7 +2407,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for a data frame.
 		 * I.e, check "link[0] & 0x08".
 		 */
-		gen_load_llrel(0, BPF_B);
+		gen_load_a(OR_LINK, 0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x08;
 		b1->stmts = s;
@@ -2404,7 +2422,7 @@ gen_wlanhostop(eaddr, dir)
 		 * is a management frame.
 		 * I.e, check "!(link[0] & 0x08)".
 		 */
-		s = gen_load_llrel(0, BPF_B);
+		s = gen_load_a(OR_LINK, 0, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x08;
 		b2->stmts = s;
@@ -2413,7 +2431,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * For management frames, the SA is at 10.
 		 */
-		b1 = gen_bcmp(10, 6, eaddr);
+		b1 = gen_bcmp(OR_LINK, 10, 6, eaddr);
 		gen_and(b2, b1);
 
 		/*
@@ -2431,7 +2449,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * I.e., check "!(link[0] & 0x04)".
 		 */
-		s = gen_load_llrel(0, BPF_B);
+		s = gen_load_a(OR_LINK, 0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x04;
 		b1->stmts = s;
@@ -2466,7 +2484,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * First, check for To DS set, i.e. "link[1] & 0x01".
 		 */
-		s = gen_load_llrel(1, BPF_B);
+		s = gen_load_a(OR_LINK, 1, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x01;	/* To DS */
 		b1->stmts = s;
@@ -2474,14 +2492,14 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * If To DS is set, the DA is at 16.
 		 */
-		b0 = gen_bcmp(16, 6, eaddr);
+		b0 = gen_bcmp(OR_LINK, 16, 6, eaddr);
 		gen_and(b1, b0);
 
 		/*
 		 * Now, check for To DS not set, i.e. check
 		 * "!(link[1] & 0x01)".
 		 */
-		s = gen_load_llrel(1, BPF_B);
+		s = gen_load_a(OR_LINK, 1, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x01;	/* To DS */
 		b2->stmts = s;
@@ -2490,7 +2508,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * If To DS is not set, the DA is at 4.
 		 */
-		b1 = gen_bcmp(4, 6, eaddr);
+		b1 = gen_bcmp(OR_LINK, 4, 6, eaddr);
 		gen_and(b2, b1);
 
 		/*
@@ -2503,7 +2521,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for a data frame.
 		 * I.e, check "link[0] & 0x08".
 		 */
-		s = gen_load_llrel(0, BPF_B);
+		s = gen_load_a(OR_LINK, 0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x08;
 		b1->stmts = s;
@@ -2518,7 +2536,7 @@ gen_wlanhostop(eaddr, dir)
 		 * is a management frame.
 		 * I.e, check "!(link[0] & 0x08)".
 		 */
-		s = gen_load_llrel(0, BPF_B);
+		s = gen_load_a(OR_LINK, 0, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x08;
 		b2->stmts = s;
@@ -2527,7 +2545,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * For management frames, the DA is at 4.
 		 */
-		b1 = gen_bcmp(4, 6, eaddr);
+		b1 = gen_bcmp(OR_LINK, 4, 6, eaddr);
 		gen_and(b2, b1);
 
 		/*
@@ -2545,7 +2563,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * I.e., check "!(link[0] & 0x04)".
 		 */
-		s = gen_load_llrel(0, BPF_B);
+		s = gen_load_a(OR_LINK, 0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x04;
 		b1->stmts = s;
@@ -2589,10 +2607,10 @@ gen_ipfchostop(eaddr, dir)
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(10, 6, eaddr);
+		return gen_bcmp(OR_LINK, 10, 6, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(2, 6, eaddr);
+		return gen_bcmp(OR_LINK, 2, 6, eaddr);
 
 	case Q_AND:
 		b0 = gen_ipfchostop(eaddr, Q_SRC);
@@ -2630,10 +2648,9 @@ gen_ipfchostop(eaddr, dir)
  * and not generate masking instructions if the mask is 0xFFFF.
  */
 static struct block *
-gen_dnhostop(addr, dir, base_off)
+gen_dnhostop(addr, dir)
 	bpf_u_int32 addr;
 	int dir;
-	u_int base_off;
 {
 	struct block *b0, *b1, *b2, *tmp;
 	u_int offset_lh;	/* offset if long header is received */
@@ -2653,16 +2670,16 @@ gen_dnhostop(addr, dir, base_off)
 
 	case Q_AND:
 		/* Inefficient because we do our Calvinball dance twice */
-		b0 = gen_dnhostop(addr, Q_SRC, base_off);
-		b1 = gen_dnhostop(addr, Q_DST, base_off);
+		b0 = gen_dnhostop(addr, Q_SRC);
+		b1 = gen_dnhostop(addr, Q_DST);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_OR:
 	case Q_DEFAULT:
 		/* Inefficient because we do our Calvinball dance twice */
-		b0 = gen_dnhostop(addr, Q_SRC, base_off);
-		b1 = gen_dnhostop(addr, Q_DST, base_off);
+		b0 = gen_dnhostop(addr, Q_SRC);
+		b1 = gen_dnhostop(addr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
 
@@ -2674,26 +2691,25 @@ gen_dnhostop(addr, dir, base_off)
 	}
 	b0 = gen_linktype(ETHERTYPE_DN);
 	/* Check for pad = 1, long header case */
-	tmp = gen_mcmp(base_off + 2, BPF_H,
+	tmp = gen_mcmp(OR_NET, 2, BPF_H,
 	    (bpf_int32)ntohs(0x0681), (bpf_int32)ntohs(0x07FF));
-	b1 = gen_cmp(base_off + 2 + 1 + offset_lh,
+	b1 = gen_cmp(OR_NET, 2 + 1 + offset_lh,
 	    BPF_H, (bpf_int32)ntohs(addr));
 	gen_and(tmp, b1);
 	/* Check for pad = 0, long header case */
-	tmp = gen_mcmp(base_off + 2, BPF_B, (bpf_int32)0x06, (bpf_int32)0x7);
-	b2 = gen_cmp(base_off + 2 + offset_lh, BPF_H, (bpf_int32)ntohs(addr));
+	tmp = gen_mcmp(OR_NET, 2, BPF_B, (bpf_int32)0x06, (bpf_int32)0x7);
+	b2 = gen_cmp(OR_NET, 2 + offset_lh, BPF_H, (bpf_int32)ntohs(addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
-	tmp = gen_mcmp(base_off + 2, BPF_H,
+	tmp = gen_mcmp(OR_NET, 2, BPF_H,
 	    (bpf_int32)ntohs(0x0281), (bpf_int32)ntohs(0x07FF));
-	b2 = gen_cmp(base_off + 2 + 1 + offset_sh,
-	    BPF_H, (bpf_int32)ntohs(addr));
+	b2 = gen_cmp(OR_NET, 2 + 1 + offset_sh, BPF_H, (bpf_int32)ntohs(addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
-	tmp = gen_mcmp(base_off + 2, BPF_B, (bpf_int32)0x02, (bpf_int32)0x7);
-	b2 = gen_cmp(base_off + 2 + offset_sh, BPF_H, (bpf_int32)ntohs(addr));
+	tmp = gen_mcmp(OR_NET, 2, BPF_B, (bpf_int32)0x02, (bpf_int32)0x7);
+	b2 = gen_cmp(OR_NET, 2 + offset_sh, BPF_H, (bpf_int32)ntohs(addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 
@@ -2724,16 +2740,13 @@ gen_host(addr, mask, proto, dir)
 		return b0;
 
 	case Q_IP:
-		return gen_hostop(addr, mask, dir, ETHERTYPE_IP,
-				  off_nl + 12, off_nl + 16);
+		return gen_hostop(addr, mask, dir, ETHERTYPE_IP, 12, 16);
 
 	case Q_RARP:
-		return gen_hostop(addr, mask, dir, ETHERTYPE_REVARP,
-				  off_nl + 14, off_nl + 24);
+		return gen_hostop(addr, mask, dir, ETHERTYPE_REVARP, 14, 24);
 
 	case Q_ARP:
-		return gen_hostop(addr, mask, dir, ETHERTYPE_ARP,
-				  off_nl + 14, off_nl + 24);
+		return gen_hostop(addr, mask, dir, ETHERTYPE_ARP, 14, 24);
 
 	case Q_TCP:
 		bpf_error("'tcp' modifier applied to host");
@@ -2766,7 +2779,7 @@ gen_host(addr, mask, proto, dir)
 		bpf_error("AARP host filtering not implemented");
 
 	case Q_DECNET:
-		return gen_dnhostop(addr, dir, off_nl);
+		return gen_dnhostop(addr, dir);
 
 	case Q_SCA:
 		bpf_error("SCA host filtering not implemented");
@@ -2889,8 +2902,7 @@ gen_host6(addr, mask, proto, dir)
 		bpf_error("MOPRC host filtering not implemented");
 
 	case Q_IPV6:
-		return gen_hostop6(addr, mask, dir, ETHERTYPE_IPV6,
-				  off_nl + 8, off_nl + 24);
+		return gen_hostop6(addr, mask, dir, ETHERTYPE_IPV6, 8, 24);
 
 	case Q_ICMPV6:
 		bpf_error("'icmp6' modifier applied to host");
@@ -2961,7 +2973,8 @@ gen_gateway(eaddr, alist, proto, dir)
 			 * LE Control marker.  (We've already generated
 			 * a test for LANE.)
 			 */
-			b1 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+			    0xFF00);
 			gen_not(b1);
 
 			/*
@@ -3241,7 +3254,7 @@ gen_ipfrag()
 	struct block *b;
 
 	/* not ip frag */
-	s = gen_load_nlrel(6, BPF_H);
+	s = gen_load_a(OR_NET, 6, BPF_H);
 	b = new_block(JMP(BPF_JSET));
 	b->s.k = 0x1fff;
 	b->stmts = s;
@@ -3255,16 +3268,7 @@ gen_portatom(off, v)
 	int off;
 	bpf_int32 v;
 {
-	struct slist *s;
-	struct block *b;
-
-	s = gen_load_ipv4tlrel(off, BPF_H);
-
-	b = new_block(JMP(BPF_JEQ));
-	b->stmts = s;
-	b->s.k = v;
-
-	return b;
+	return gen_cmp(OR_TRAN_IPV4, off, BPF_H, v);
 }
 
 #ifdef INET6
@@ -3273,7 +3277,7 @@ gen_portatom6(off, v)
 	int off;
 	bpf_int32 v;
 {
-	return gen_cmp(off_nl + 40 + off, BPF_H, v);
+	return gen_cmp(OR_TRAN_IPV6, off, BPF_H, v);
 }
 #endif/*INET6*/
 
@@ -3284,7 +3288,7 @@ gen_portop(port, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip proto 'proto' */
-	tmp = gen_cmp(off_nl + 9, BPF_B, (bpf_int32)proto);
+	tmp = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)proto);
 	b0 = gen_ipfrag();
 	gen_and(tmp, b0);
 
@@ -3375,7 +3379,7 @@ gen_portop6(port, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip6 proto 'proto' */
-	b0 = gen_cmp(off_nl + 6, BPF_B, (bpf_int32)proto);
+	b0 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
 	case Q_SRC:
@@ -3447,7 +3451,6 @@ gen_portrangeatom(off, v1, v2)
 	int off;
 	bpf_int32 v1, v2;
 {
-	struct slist *s1, *s2;
 	struct block *b1, *b2;
 
 	if (v1 > v2) {
@@ -3461,18 +3464,8 @@ gen_portrangeatom(off, v1, v2)
 		v2 = vtemp;
 	}
 
-	s1 = gen_load_ipv4tlrel(off, BPF_H);
-
-	b1 = new_block(JMP(BPF_JGE));
-	b1->stmts = s1;
-	b1->s.k = v1;
-
-	s2 = gen_load_ipv4tlrel(off, BPF_H);
-
-	b2 = new_block(JMP(BPF_JGT));
-	gen_not(b2);
-	b2->stmts = s2;
-	b2->s.k = v2;
+	b1 = gen_cmp_ge(OR_TRAN_IPV4, off, BPF_H, v1);
+	b2 = gen_cmp_le(OR_TRAN_IPV4, off, BPF_H, v2);
 
 	gen_and(b1, b2); 
 
@@ -3488,7 +3481,7 @@ gen_portrangeop(port1, port2, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip proto 'proto' */
-	tmp = gen_cmp(off_nl + 9, BPF_B, (bpf_int32)proto);
+	tmp = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)proto);
 	b0 = gen_ipfrag();
 	gen_and(tmp, b0);
 
@@ -3561,7 +3554,6 @@ gen_portrangeatom6(off, v1, v2)
 	int off;
 	bpf_int32 v1, v2;
 {
-	struct slist *s1, *s2;
 	struct block *b1, *b2;
 
 	if (v1 > v2) {
@@ -3575,18 +3567,8 @@ gen_portrangeatom6(off, v1, v2)
 		v2 = vtemp;
 	}
 
-	s1 = gen_load_ipv6tlrel(off, BPF_H);
-
-	b1 = new_block(JMP(BPF_JGE));
-	b1->stmts = s1;
-	b1->s.k = v1;
-
-	s2 = gen_load_ipv6tlrel(off, BPF_H);
-
-	b2 = new_block(JMP(BPF_JGT));
-	gen_not(b2);
-	b2->stmts = s2;
-	b2->s.k = v2;
+	b1 = gen_cmp_ge(OR_TRAN_IPV6, off, BPF_H, v1);
+	b2 = gen_cmp_le(OR_TRAN_IPV6, off, BPF_H, v2);
 
 	gen_and(b1, b2); 
 
@@ -3602,7 +3584,7 @@ gen_portrangeop6(port1, port2, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip6 proto 'proto' */
-	b0 = gen_cmp(off_nl + 6, BPF_B, (bpf_int32)proto);
+	b0 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
 	case Q_SRC:
@@ -4063,7 +4045,7 @@ gen_proto(v, proto, dir)
 		 */
 		b0 = gen_linktype(ETHERTYPE_IP);
 #ifndef CHASE_CHAIN
-		b1 = gen_cmp(off_nl + 9, BPF_B, (bpf_int32)v);
+		b1 = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)v);
 #else
 		b1 = gen_protochain(v, Q_IP);
 #endif
@@ -4092,7 +4074,7 @@ gen_proto(v, proto, dir)
 			 *
 			 * XXX - what about SNAP-encapsulated frames?
 			 */
-			return gen_cmp(2, BPF_H, (0x03<<8) | v);
+			return gen_cmp(OR_LINK, 2, BPF_H, (0x03<<8) | v);
 			/*NOTREACHED*/
 			break;
 
@@ -4103,13 +4085,13 @@ gen_proto(v, proto, dir)
 			 */
 			b0 = gen_linktype(LLCSAP_ISONS<<8 | LLCSAP_ISONS);
 			/* OSI in C-HDLC is stuffed with a fudge byte */
-			b1 = gen_cmp(off_nl_nosnap+1, BPF_B, (long)v);
+			b1 = gen_cmp(OR_NET_NOSNAP, 1, BPF_B, (long)v);
 			gen_and(b0, b1);
 			return b1;
 
 		default:
 			b0 = gen_linktype(LLCSAP_ISONS);
-			b1 = gen_cmp(off_nl_nosnap, BPF_B, (long)v);
+			b1 = gen_cmp(OR_NET_NOSNAP, 0, BPF_B, (long)v);
 			gen_and(b0, b1);
 			return b1;
 		}
@@ -4120,7 +4102,7 @@ gen_proto(v, proto, dir)
 		 * 4 is the offset of the PDU type relative to the IS-IS
 		 * header.
 		 */
-		b1 = gen_cmp(off_nl_nosnap+4, BPF_B, (long)v);
+		b1 = gen_cmp(OR_NET_NOSNAP, 4, BPF_B, (long)v);
 		gen_and(b0, b1);
 		return b1;
 
@@ -4195,7 +4177,7 @@ gen_proto(v, proto, dir)
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
 #ifndef CHASE_CHAIN
-		b1 = gen_cmp(off_nl + 6, BPF_B, (bpf_int32)v);
+		b1 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)v);
 #else
 		b1 = gen_protochain(v, Q_IPV6);
 #endif
@@ -4324,8 +4306,8 @@ gen_scode(name, q)
 				 * with an LE Control marker.  (We've
 				 * already generated a test for LANE.)
 				 */
-				tmp = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H,
-				    0xFF00);
+				tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
+				    BPF_H, 0xFF00);
 				gen_not(tmp);
 
 				eaddr = pcap_ether_hostton(name);
@@ -4773,7 +4755,8 @@ gen_ecode(eaddr, q)
 			 * LE Control marker.  (We've already generated
 			 * a test for LANE.)
 			 */
-			tmp = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+			    0xFF00);
 			gen_not(tmp);
 
 			/*
@@ -5152,17 +5135,14 @@ gen_byteop(op, idx, val)
 		abort();
 
 	case '=':
-		return gen_cmp((u_int)idx, BPF_B, (bpf_int32)val);
+		return gen_cmp(OR_LINK, (u_int)idx, BPF_B, (bpf_int32)val);
 
 	case '<':
-		b = gen_cmp((u_int)idx, BPF_B, (bpf_int32)val);
-		b->s.code = JMP(BPF_JGE);
-		gen_not(b);
+		b = gen_cmp_lt(OR_LINK, (u_int)idx, BPF_B, (bpf_int32)val);
 		return b;
 
 	case '>':
-		b = gen_cmp((u_int)idx, BPF_B, (bpf_int32)val);
-		b->s.code = JMP(BPF_JGT);
+		b = gen_cmp_gt(OR_LINK, (u_int)idx, BPF_B, (bpf_int32)val);
 		return b;
 
 	case '|':
@@ -5213,7 +5193,8 @@ gen_broadcast(proto)
 			 * LE Control marker.  (We've already generated
 			 * a test for LANE.)
 			 */
-			b1 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+			    0xFF00);
 			gen_not(b1);
 
 			/*
@@ -5229,8 +5210,8 @@ gen_broadcast(proto)
 	case Q_IP:
 		b0 = gen_linktype(ETHERTYPE_IP);
 		hostmask = ~netmask;
-		b1 = gen_mcmp(off_nl + 16, BPF_W, (bpf_int32)0, hostmask);
-		b2 = gen_mcmp(off_nl + 16, BPF_W,
+		b1 = gen_mcmp(OR_NET, 16, BPF_W, (bpf_int32)0, hostmask);
+		b2 = gen_mcmp(OR_NET, 16, BPF_W,
 			      (bpf_int32)(~0 & hostmask), hostmask);
 		gen_or(b1, b2);
 		gen_and(b0, b2);
@@ -5252,7 +5233,7 @@ gen_mac_multicast(offset)
 	register struct slist *s;
 
 	/* link[offset] & 1 != 0 */
-	s = gen_load_llrel(offset, BPF_B);
+	s = gen_load_a(OR_LINK, offset, BPF_B);
 	b0 = new_block(JMP(BPF_JSET));
 	b0->s.k = 1;
 	b0->stmts = s;
@@ -5316,7 +5297,7 @@ gen_multicast(proto)
 			 *
 			 * First, check for To DS set, i.e. "link[1] & 0x01".
 			 */
-			s = gen_load_llrel(1, BPF_B);
+			s = gen_load_a(OR_LINK, 1, BPF_B);
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x01;	/* To DS */
 			b1->stmts = s;
@@ -5331,7 +5312,7 @@ gen_multicast(proto)
 			 * Now, check for To DS not set, i.e. check
 			 * "!(link[1] & 0x01)".
 			 */
-			s = gen_load_llrel(1, BPF_B);
+			s = gen_load_a(OR_LINK, 1, BPF_B);
 			b2 = new_block(JMP(BPF_JSET));
 			b2->s.k = 0x01;	/* To DS */
 			b2->stmts = s;
@@ -5353,7 +5334,7 @@ gen_multicast(proto)
 			 * Now check for a data frame.
 			 * I.e, check "link[0] & 0x08".
 			 */
-			s = gen_load_llrel(0, BPF_B);
+			s = gen_load_a(OR_LINK, 0, BPF_B);
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x08;
 			b1->stmts = s;
@@ -5368,7 +5349,7 @@ gen_multicast(proto)
 			 * is a management frame.
 			 * I.e, check "!(link[0] & 0x08)".
 			 */
-			s = gen_load_llrel(0, BPF_B);
+			s = gen_load_a(OR_LINK, 0, BPF_B);
 			b2 = new_block(JMP(BPF_JSET));
 			b2->s.k = 0x08;
 			b2->stmts = s;
@@ -5395,7 +5376,7 @@ gen_multicast(proto)
 			 *
 			 * I.e., check "!(link[0] & 0x04)".
 			 */
-			s = gen_load_llrel(0, BPF_B);
+			s = gen_load_a(OR_LINK, 0, BPF_B);
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x04;
 			b1->stmts = s;
@@ -5420,7 +5401,8 @@ gen_multicast(proto)
 			 * LE Control marker.  (We've already generated
 			 * a test for LANE.)
 			 */
-			b1 = gen_cmp(SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+			    0xFF00);
 			gen_not(b1);
 
 			/* ether[off_mac] & 1 != 0 */
@@ -5434,15 +5416,14 @@ gen_multicast(proto)
 
 	case Q_IP:
 		b0 = gen_linktype(ETHERTYPE_IP);
-		b1 = gen_cmp(off_nl + 16, BPF_B, (bpf_int32)224);
-		b1->s.code = JMP(BPF_JGE);
+		b1 = gen_cmp_ge(OR_NET, 16, BPF_B, (bpf_int32)224);
 		gen_and(b0, b1);
 		return b1;
 
 #ifdef INET6
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
-		b1 = gen_cmp(off_nl + 24, BPF_B, (bpf_int32)255);
+		b1 = gen_cmp(OR_NET, 24, BPF_B, (bpf_int32)255);
 		gen_and(b0, b1);
 		return b1;
 #endif /* INET6 */
@@ -5478,7 +5459,7 @@ gen_inbound(dir)
 			/*
 			 * Match packets sent by this machine.
 			 */
-			b0 = gen_cmp(0, BPF_H, LINUX_SLL_OUTGOING);
+			b0 = gen_cmp(OR_LINK, 0, BPF_H, LINUX_SLL_OUTGOING);
 		} else {
 			/*
 			 * Match packets sent to this machine.
@@ -5490,22 +5471,22 @@ gen_inbound(dir)
 			 * shouldn't be matched, but what about broadcast
 			 * or multicast packets we received?
 			 */
-			b0 = gen_cmp(0, BPF_H, LINUX_SLL_HOST);
+			b0 = gen_cmp(OR_LINK, 0, BPF_H, LINUX_SLL_HOST);
 		}
 		break;
 
 	case DLT_PFLOG:
-		b0 = gen_cmp(offsetof(struct pfloghdr, dir), BPF_B,
+		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, dir), BPF_B,
 		    (bpf_int32)((dir == 0) ? PF_IN : PF_OUT));
 		break;
 
 	case DLT_PPP_PPPD:
 		if (dir) {
 			/* match outgoing packets */
-			b0 = gen_cmp(0, BPF_B, PPP_PPPD_OUT);
+			b0 = gen_cmp(OR_LINK, 0, BPF_B, PPP_PPPD_OUT);
 		} else {
 			/* match incoming packets */
-			b0 = gen_cmp(0, BPF_B, PPP_PPPD_IN);
+			b0 = gen_cmp(OR_LINK, 0, BPF_B, PPP_PPPD_IN);
 		}
 		break;
 
@@ -5517,10 +5498,10 @@ gen_inbound(dir)
 		 * the byte after the 3-byte magic number */
 		if (dir) {
 			/* match outgoing packets */
-			b0 = gen_mcmp(3, BPF_B, 0, 0x01);
+			b0 = gen_mcmp(OR_LINK, 3, BPF_B, 0, 0x01);
 		} else {
 			/* match incoming packets */
-			b0 = gen_mcmp(3, BPF_B, 1, 0x01);
+			b0 = gen_mcmp(OR_LINK, 3, BPF_B, 1, 0x01);
 		}
 	    break;
 
@@ -5552,7 +5533,7 @@ gen_pf_ifname(const char *ifname)
 		    len-1);
 		/* NOTREACHED */
 	}
-	b0 = gen_bcmp(off, strlen(ifname), (const u_char *)ifname);
+	b0 = gen_bcmp(OR_LINK, off, strlen(ifname), (const u_char *)ifname);
 	return (b0);
 }
 
@@ -5571,7 +5552,7 @@ gen_pf_ruleset(char *ruleset)
 		    (long)(sizeof(((struct pfloghdr *)0)->ruleset) - 1));
 		/* NOTREACHED */
 	}
-	b0 = gen_bcmp(offsetof(struct pfloghdr, ruleset),
+	b0 = gen_bcmp(OR_LINK, offsetof(struct pfloghdr, ruleset),
 	    strlen(ruleset), (const u_char *)ruleset);
 	return (b0);
 }
@@ -5583,7 +5564,7 @@ gen_pf_rnr(int rnr)
 	struct block *b0;
 
 	if (linktype == DLT_PFLOG) {
-		b0 = gen_cmp(offsetof(struct pfloghdr, rulenr), BPF_W,
+		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, rulenr), BPF_W,
 			 (bpf_int32)rnr);
 	} else {
 		bpf_error("rnr not supported on linktype 0x%x", linktype);
@@ -5604,7 +5585,7 @@ gen_pf_srnr(int srnr)
 		/* NOTREACHED */
 	}
 
-	b0 = gen_cmp(offsetof(struct pfloghdr, subrulenr), BPF_W,
+	b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, subrulenr), BPF_W,
 	    (bpf_int32)srnr);
 	return (b0);
 }
@@ -5616,7 +5597,7 @@ gen_pf_reason(int reason)
 	struct block *b0;
 
 	if (linktype == DLT_PFLOG) {
-		b0 = gen_cmp(offsetof(struct pfloghdr, reason), BPF_B,
+		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, reason), BPF_B,
 		    (bpf_int32)reason);
 	} else {
 		bpf_error("reason not supported on linktype 0x%x", linktype);
@@ -5633,7 +5614,7 @@ gen_pf_action(int action)
 	struct block *b0;
 
 	if (linktype == DLT_PFLOG) {
-		b0 = gen_cmp(offsetof(struct pfloghdr, action), BPF_B,
+		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, action), BPF_B,
 		    (bpf_int32)action);
 	} else {
 		bpf_error("action not supported on linktype 0x%x", linktype);
@@ -5666,10 +5647,10 @@ gen_ahostop(eaddr, dir)
 	switch (dir) {
 	/* src comes first, different from Ethernet */
 	case Q_SRC:
-		return gen_bcmp(0, 1, eaddr);
+		return gen_bcmp(OR_LINK, 0, 1, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(1, 1, eaddr);
+		return gen_bcmp(OR_LINK, 1, 1, eaddr);
 
 	case Q_AND:
 		b0 = gen_ahostop(eaddr, Q_SRC);
@@ -5745,13 +5726,14 @@ gen_vlan(vlan_num)
         }
 
 	/* check for VLAN */
-	b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
+	b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
 
 	/* If a specific VLAN is requested, check VLAN id */
 	if (vlan_num >= 0) {
 		struct block *b1;
 
-		b1 = gen_mcmp(orig_nl, BPF_H, (bpf_int32)vlan_num, 0x0fff);
+		b1 = gen_mcmp(OR_LINK, orig_nl, BPF_H, (bpf_int32)vlan_num,
+		    0x0fff);
 		gen_and(b0, b1);
 		b0 = b1;
 	}
@@ -5788,7 +5770,8 @@ gen_mpls(label_num)
                 off_nl_nosnap += 4;
                 off_nl += 4;
                         
-                b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_MPLS);
+                b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
+                    (bpf_int32)ETHERTYPE_MPLS);
                 break;
 
         case DLT_PPP:
@@ -5796,7 +5779,8 @@ gen_mpls(label_num)
                 off_nl_nosnap += 4;
                 off_nl += 4;
 
-                b0 = gen_cmp(orig_linktype, BPF_H, (bpf_int32)PPP_MPLS_UCAST);
+                b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
+                    (bpf_int32)PPP_MPLS_UCAST);
                 break;
 
                 /* FIXME add other DLT_s ...
@@ -5816,7 +5800,8 @@ gen_mpls(label_num)
 		struct block *b1;
 
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
-		b1 = gen_mcmp(orig_nl, BPF_W, (bpf_int32)label_num, 0xfffff000); /* only compare the first 20 bits */
+		b1 = gen_mcmp(OR_LINK, orig_nl, BPF_W, (bpf_int32)label_num,
+		    0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
 	}
@@ -5840,7 +5825,7 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 			bpf_error("'vpi' supported only on raw ATM");
 		if (off_vpi == (u_int)-1)
 			abort();
-		b0 = gen_ncmp(BPF_B, off_vpi, 0xffffffff, (u_int)jtype,
+		b0 = gen_ncmp(OR_LINK, off_vpi, BPF_B, 0xffffffff, (u_int)jtype,
 		    (u_int)jvalue, reverse);
 		break;
 
@@ -5849,22 +5834,22 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 			bpf_error("'vci' supported only on raw ATM");
 		if (off_vci == (u_int)-1)
 			abort();
-		b0 = gen_ncmp(BPF_H, off_vci, 0xffffffff, (u_int)jtype,
-		    (u_int)jvalue, reverse);
+		b0 = gen_ncmp(OR_LINK, off_vci, BPF_H, 0xffffffff, (u_int)jtype,
+		    reverse, (u_int)jvalue);
 		break;
 
 	case A_PROTOTYPE:
 		if (off_proto == (u_int)-1)
 			abort();	/* XXX - this isn't on FreeBSD */
-		b0 = gen_ncmp(BPF_B, off_proto, 0x0f, (u_int)jtype,
-		    (u_int)jvalue, reverse);
+		b0 = gen_ncmp(OR_LINK, off_proto, BPF_B, 0x0f, (u_int)jtype,
+		    reverse, (u_int)jvalue);
 		break;
 
 	case A_MSGTYPE:
 		if (off_payload == (u_int)-1)
 			abort();
-		b0 = gen_ncmp(BPF_B, off_payload + MSG_TYPE_POS, 0xffffffff,
-		    (u_int)jtype, (u_int)jvalue, reverse);
+		b0 = gen_ncmp(OR_LINK, off_payload + MSG_TYPE_POS, BPF_B,
+		    0xffffffff, (u_int)jtype, reverse, (u_int)jvalue);
 		break;
 
 	case A_CALLREFTYPE:
@@ -5872,8 +5857,8 @@ gen_atmfield_code(atmfield, jvalue, jtype, reverse)
 			bpf_error("'callref' supported only on raw ATM");
 		if (off_proto == (u_int)-1)
 			abort();
-		b0 = gen_ncmp(BPF_B, off_proto, 0xffffffff, (u_int)jtype,
-		    (u_int)jvalue, reverse);
+		b0 = gen_ncmp(OR_LINK, off_proto, BPF_B, 0xffffffff,
+		    (u_int)jtype, reverse, (u_int)jvalue);
 		break;
 
 	default:
