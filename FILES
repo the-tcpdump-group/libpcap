@@ -96,7 +96,6 @@ pcap.c
 pcap.h
 pf.h
 ppp.h
-rawss7.h
 savefile.c
 scanner.l
 sll.h

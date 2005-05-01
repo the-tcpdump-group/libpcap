@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.129 2005-04-26 00:54:23 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.130 2005-05-01 19:46:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -269,10 +269,10 @@ static const char rcsid[] _U_ =
 
 #define LINKTYPE_APPLE_IP_OVER_IEEE1394 138	/* Apple IP-over-IEEE 1394 cooked header */
 
-#define LINKTYPE_RAWSS7         139             /* see rawss7.h for */
-#define LINKTYPE_RAWSS7_MTP2    140	        /* information  on these */
-#define LINKTYPE_RAWSS7_MTP3    141             /* definitions */
-#define LINKTYPE_RAWSS7_SCCP    142
+#define LINKTYPE_MTP2_WITH_PHDR	139
+#define LINKTYPE_MTP2		140
+#define LINKTYPE_MTP3		141
+#define LINKTYPE_SCCP		142
 
 #define LINKTYPE_DOCSIS		143		/* DOCSIS MAC frames */
 
@@ -537,6 +537,12 @@ static struct linktype_map {
 
 	/* Apple IP-over-IEEE 1394 cooked header */
 	{ DLT_APPLE_IP_OVER_IEEE1394, LINKTYPE_APPLE_IP_OVER_IEEE1394 },
+
+	/* SS7 */
+	{ DLT_MTP2_WITH_PHDR,	LINKTYPE_MTP2_WITH_PHDR },
+	{ DLT_MTP2,		LINKTYPE_MTP2 },
+	{ DLT_MTP3,		LINKTYPE_MTP3 },
+	{ DLT_SCCP,		LINKTYPE_SCCP },
 
 	/* DOCSIS MAC frames */
 	{ DLT_DOCSIS,		LINKTYPE_DOCSIS },
