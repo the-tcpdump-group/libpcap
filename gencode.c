@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.238 2005-05-01 08:37:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.239 2005-05-01 09:05:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -180,6 +180,7 @@ static struct block *gen_bcmp(enum e_offrel, u_int, u_int, const u_char *);
 static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
     bpf_u_int32, bpf_u_int32, int, bpf_int32);
 static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
+static struct slist *gen_loadx_iphdrlen(void);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
@@ -1147,6 +1148,20 @@ gen_load_a(offrel, offset, size)
 		abort();
 		return NULL;
 	}
+	return s;
+}
+
+/*
+ * Generate code to load into the X register the length of the IPv4
+ * header in the packet.
+ */
+static struct slist *
+gen_loadx_iphdrlen()
+{
+	struct slist *s;
+
+	s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
+	s->s.k = off_nl;
 	return s;
 }
 
@@ -4891,8 +4906,7 @@ gen_load(proto, index, size)
 	case Q_IGRP:
 	case Q_PIM:
 	case Q_VRRP:
-		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-		s->s.k = off_nl;
+		s = gen_loadx_iphdrlen();
 		sappend(s, xfer_to_a(index));
 		sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
