@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.8 2005-04-25 18:59:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.9 2005-05-01 00:38:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -163,6 +163,9 @@ static struct block *gen_mcmp(u_int, u_int, bpf_int32, bpf_u_int32);
 static struct block *gen_bcmp(u_int, u_int, const u_char *);
 static struct block *gen_ncmp(bpf_u_int32, bpf_u_int32, bpf_u_int32,
     bpf_u_int32, bpf_u_int32, int);
+static struct slist *gen_load_llrel(u_int, u_int);
+static struct slist *gen_load_nlrel(u_int, u_int);
+static struct slist *gen_load_ipv4tlrel(u_int, u_int);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
@@ -496,8 +499,7 @@ gen_cmp(offset, size, v)
 	struct slist *s;
 	struct block *b;
 
-	s = new_stmt(BPF_LD|BPF_ABS|size);
-	s->s.k = offset;
+	s = gen_load_llrel(offset, size);
 
 	b = new_block(JMP(BPF_JEQ));
 	b->stmts = s;
@@ -514,8 +516,7 @@ gen_cmp_gt(offset, size, v)
 	struct slist *s;
 	struct block *b;
 
-	s = new_stmt(BPF_LD|BPF_ABS|size);
-	s->s.k = offset;
+	s = gen_load_llrel(offset, size);
 
 	b = new_block(JMP(BPF_JGT));
 	b->stmts = s;
@@ -1065,6 +1066,58 @@ init_linktype(p)
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
+}
+
+/*
+ * Load a value relative to the beginning of the link-layer header.
+ */
+static struct slist *
+gen_load_llrel(offset, size)
+	u_int offset, size;
+{
+	struct slist *s;
+
+	s = new_stmt(BPF_LD|BPF_ABS|size);
+	s->s.k = offset;
+	return s;
+}
+
+/*
+ * Load a value relative to the beginning of the network-layer header.
+ */
+static struct slist *
+gen_load_nlrel(offset, size)
+	u_int offset, size;
+{
+	return gen_load_llrel(off_nl + offset, size);
+}
+
+/*
+ * Load a value relative to the beginning of the transport-layer header,
+ * where the network-layer header is an IPv4 header.  (This doesn't handle
+ * AH headers.)
+ */
+static struct slist *
+gen_load_ipv4tlrel(offset, size)
+	u_int offset, size;
+{
+	struct slist *s;
+
+	/*
+	 * Load the X register with the length of the IPv4 header,
+	 * in bytes.
+	 */
+	s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
+	s->s.k = off_nl;
+
+	/*
+	 * Load the item at {length of the link-layer header} + {length
+	 * of the IPv4 header} + {specified offset}.
+	 */
+	s->next = new_stmt(BPF_LD|BPF_IND|size);
+	s->next->s.k = off_nl + offset;
+
+	return s;
 }
 
 static struct block *
@@ -2246,8 +2299,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * First, check for To DS set, i.e. check "link[1] & 0x01".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 1;
+		s = gen_load_llrel(1, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x01;	/* To DS */
 		b1->stmts = s;
@@ -2262,8 +2314,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now, check for To DS not set, i.e. check
 		 * "!(link[1] & 0x01)".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 1;
+		s = gen_load_llrel(1, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x01;	/* To DS */
 		b2->stmts = s;
@@ -2286,8 +2337,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for From DS being set, and AND that with
 		 * the ORed-together checks.
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 1;
+		s = gen_load_llrel(1, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x02;	/* From DS */
 		b1->stmts = s;
@@ -2296,8 +2346,7 @@ gen_wlanhostop(eaddr, dir)
 		/*
 		 * Now check for data frames with From DS not set.
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 1;
+		s = gen_load_llrel(1, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x02;	/* From DS */
 		b2->stmts = s;
@@ -2320,8 +2369,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for a data frame.
 		 * I.e, check "link[0] & 0x08".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 0;
+		gen_load_llrel(0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x08;
 		b1->stmts = s;
@@ -2336,8 +2384,7 @@ gen_wlanhostop(eaddr, dir)
 		 * is a management frame.
 		 * I.e, check "!(link[0] & 0x08)".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 0;
+		s = gen_load_llrel(0, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x08;
 		b2->stmts = s;
@@ -2364,8 +2411,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * I.e., check "!(link[0] & 0x04)".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 0;
+		s = gen_load_llrel(0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x04;
 		b1->stmts = s;
@@ -2400,8 +2446,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * First, check for To DS set, i.e. "link[1] & 0x01".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 1;
+		s = gen_load_llrel(1, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x01;	/* To DS */
 		b1->stmts = s;
@@ -2416,8 +2461,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now, check for To DS not set, i.e. check
 		 * "!(link[1] & 0x01)".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 1;
+		s = gen_load_llrel(1, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x01;	/* To DS */
 		b2->stmts = s;
@@ -2439,8 +2483,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for a data frame.
 		 * I.e, check "link[0] & 0x08".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 0;
+		s = gen_load_llrel(0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x08;
 		b1->stmts = s;
@@ -2455,8 +2498,7 @@ gen_wlanhostop(eaddr, dir)
 		 * is a management frame.
 		 * I.e, check "!(link[0] & 0x08)".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 0;
+		s = gen_load_llrel(0, BPF_B);
 		b2 = new_block(JMP(BPF_JSET));
 		b2->s.k = 0x08;
 		b2->stmts = s;
@@ -2483,8 +2525,7 @@ gen_wlanhostop(eaddr, dir)
 		 *
 		 * I.e., check "!(link[0] & 0x04)".
 		 */
-		s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-		s->s.k = 0;
+		s = gen_load_llrel(0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x04;
 		b1->stmts = s;
@@ -3180,8 +3221,7 @@ gen_ipfrag()
 	struct block *b;
 
 	/* not ip frag */
-	s = new_stmt(BPF_LD|BPF_H|BPF_ABS);
-	s->s.k = off_nl + 6;
+	s = gen_load_nlrel(6, BPF_H);
 	b = new_block(JMP(BPF_JSET));
 	b->s.k = 0x1fff;
 	b->stmts = s;
@@ -3198,11 +3238,7 @@ gen_portatom(off, v)
 	struct slist *s;
 	struct block *b;
 
-	s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-	s->s.k = off_nl;
-
-	s->next = new_stmt(BPF_LD|BPF_IND|BPF_H);
-	s->next->s.k = off_nl + off;
+	s = gen_load_ipv4tlrel(off, BPF_H);
 
 	b = new_block(JMP(BPF_JEQ));
 	b->stmts = s;
@@ -3404,21 +3440,14 @@ gen_portrangeatom(off, v1, v2)
 		v1 = v2;
 		v2 = vtemp;
 	}
-	s1 = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-	s1->s.k = off_nl;
 
-	s1->next = new_stmt(BPF_LD|BPF_IND|BPF_H);
-	s1->next->s.k = off_nl + off;
+	s1 = gen_load_ipv4tlrel(off, BPF_H);
 
 	b1 = new_block(JMP(BPF_JGE));
 	b1->stmts = s1;
 	b1->s.k = v1;
 
-	s2 = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-	s2->s.k = off_nl;
-
-	s2->next = new_stmt(BPF_LD|BPF_IND|BPF_H);
-	s2->next->s.k = off_nl + off;
+	s2 = gen_load_ipv4tlrel(off, BPF_H);
 
 	b2 = new_block(JMP(BPF_JGT));
 	gen_not(b2);
@@ -3526,15 +3555,13 @@ gen_portrangeatom6(off, v1, v2)
 		v2 = vtemp;
 	}
 
-	s1 = new_stmt(BPF_LD|BPF_ABS|BPF_H);
-	s1->s.k = off_nl + 40 + off;
+	s1 = gen_load_nlrel(40 + off, BPF_H);
 
 	b1 = new_block(JMP(BPF_JGE));
 	b1->stmts = s1;
 	b1->s.k = v1;
 
-	s2 = new_stmt(BPF_LD|BPF_ABS|BPF_H);
-	s2->s.k = off_nl + 40 + off;
+	s2 = gen_load_nlrel(40 + off, BPF_H);
 
 	b2 = new_block(JMP(BPF_JGT));
 	gen_not(b2);
@@ -5205,8 +5232,7 @@ gen_mac_multicast(offset)
 	register struct slist *s;
 
 	/* link[offset] & 1 != 0 */
-	s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-	s->s.k = offset;
+	s = gen_load_llrel(offset, BPF_B);
 	b0 = new_block(JMP(BPF_JSET));
 	b0->s.k = 1;
 	b0->stmts = s;
@@ -5270,8 +5296,7 @@ gen_multicast(proto)
 			 *
 			 * First, check for To DS set, i.e. "link[1] & 0x01".
 			 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 1;
+			s = gen_load_llrel(1, BPF_B);
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x01;	/* To DS */
 			b1->stmts = s;
@@ -5286,8 +5311,7 @@ gen_multicast(proto)
 			 * Now, check for To DS not set, i.e. check
 			 * "!(link[1] & 0x01)".
 			 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 1;
+			s = gen_load_llrel(1, BPF_B);
 			b2 = new_block(JMP(BPF_JSET));
 			b2->s.k = 0x01;	/* To DS */
 			b2->stmts = s;
@@ -5309,8 +5333,7 @@ gen_multicast(proto)
 			 * Now check for a data frame.
 			 * I.e, check "link[0] & 0x08".
 			 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 0;
+			s = gen_load_llrel(0, BPF_B);
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x08;
 			b1->stmts = s;
@@ -5325,8 +5348,7 @@ gen_multicast(proto)
 			 * is a management frame.
 			 * I.e, check "!(link[0] & 0x08)".
 			 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 0;
+			s = gen_load_llrel(0, BPF_B);
 			b2 = new_block(JMP(BPF_JSET));
 			b2->s.k = 0x08;
 			b2->stmts = s;
@@ -5353,8 +5375,7 @@ gen_multicast(proto)
 			 *
 			 * I.e., check "!(link[0] & 0x04)".
 			 */
-			s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-			s->s.k = 0;
+			s = gen_load_llrel(0, BPF_B);
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x04;
 			b1->stmts = s;
