@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.4 2005-05-01 19:54:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.5 2005-05-01 20:00:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -737,7 +737,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 		fp = stdin;
 #if defined(WIN32) || defined(MSDOS)
 		/*
-		 * If we're reading from the standard input, put it in binary
+		 * We're reading from the standard input, so put it in binary
 		 * mode, as savefiles are binary files.
 		 */
 		SET_BINMODE(fp);
