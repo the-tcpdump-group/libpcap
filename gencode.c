@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.13 2005-05-01 09:05:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.14 2005-05-01 09:18:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1104,7 +1104,7 @@ gen_load_a(offrel, offset, size)
 	enum e_offrel offrel;
 	u_int offset, size;
 {
-	struct slist *s;
+	struct slist *s, *s2;
 
 	switch (offrel) {
 
@@ -1128,15 +1128,15 @@ gen_load_a(offrel, offset, size)
 		 * Load the X register with the length of the IPv4 header,
 		 * in bytes.
 		 */
-		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-		s->s.k = off_nl;
+		s = gen_loadx_iphdrlen();
 
 		/*
 		 * Load the item at {length of the link-layer header} +
 		 * {length of the IPv4 header} + {specified offset}.
 		 */
-		s->next = new_stmt(BPF_LD|BPF_IND|size);
-		s->next->s.k = off_nl + offset;
+		s2 = new_stmt(BPF_LD|BPF_IND|size);
+		s2->s.k = off_nl + offset;
+		sappend(s, s2);
 		break;
 
 	case OR_TRAN_IPV6:
