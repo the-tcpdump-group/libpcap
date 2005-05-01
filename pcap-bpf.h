@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.3 2005-04-17 00:56:00 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.4 2005-05-01 19:50:51 guy Exp $ (LBL)
  */
 
 /*
@@ -423,8 +423,13 @@ struct bpf_version {
 #define DLT_APPLE_IP_OVER_IEEE1394	138
 
 /*
- * 139 through 142 are reserved for SS7.
+ * Various SS7 encapsulations, as per a request from Jeff Morriss
+ * <jeff.morriss[AT]ulticom.com> and subsequent discussions.
  */
+#define DLT_MTP2_WITH_PHDR	139	/* pseudo-header with various info, followed by MTP2 */
+#define DLT_MTP2		140	/* MTP2, without pseudo-header */
+#define DLT_MTP3		141	/* MTP3, without pseudo-header or MTP2 */
+#define DLT_SCCP		142	/* SCCP, without pseudo-header or MTP2 or MTP3 */
 
 /*
  * DOCSIS MAC frames.
