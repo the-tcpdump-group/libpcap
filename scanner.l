@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99.2.1 2005-04-19 04:26:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99.2.2 2005-05-02 21:13:40 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -183,6 +183,7 @@ igmp		return IGMP;
 igrp		return IGRP;
 pim		return PIM;
 vrrp		return VRRP;
+radio		return RADIO;
 
 ip6		{
 #ifdef INET6
