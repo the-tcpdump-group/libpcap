@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.242 2005-05-02 21:13:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.243 2005-05-02 21:22:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1805,11 +1805,12 @@ gen_linktype(proto)
 		}
 		break;
 
-	case DLT_IEEE802_11:
-	case DLT_PRISM_HEADER:
 	case DLT_FDDI:
 	case DLT_IEEE802:
+	case DLT_IEEE802_11:
+	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
+	case DLT_PRISM_HEADER:
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:
 	case DLT_IP_OVER_FC:
@@ -3212,7 +3213,10 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_fhostop(eaddr, Q_OR);
 		else if (linktype == DLT_IEEE802)
 			b0 = gen_thostop(eaddr, Q_OR);
-		else if (linktype == DLT_IEEE802_11)
+		else if (linktype == DLT_IEEE802_11 ||
+		    linktype == DLT_IEEE802_11_RADIO_AVS ||
+		    linktype == DLT_IEEE802_11_RADIO ||
+		    linktype == DLT_PRISM_HEADER)
 			b0 = gen_wlanhostop(eaddr, Q_OR);
 		else if (linktype == DLT_SUNATM && is_lane) {
 			/*
@@ -4555,6 +4559,9 @@ gen_scode(name, q)
 				return b;
 
 			case DLT_IEEE802_11:
+			case DLT_IEEE802_11_RADIO_AVS:
+			case DLT_IEEE802_11_RADIO:
+			case DLT_PRISM_HEADER:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
@@ -5022,7 +5029,10 @@ gen_ecode(eaddr, q)
 			return gen_fhostop(eaddr, (int)q.dir);
 		if (linktype == DLT_IEEE802)
 			return gen_thostop(eaddr, (int)q.dir);
-		if (linktype == DLT_IEEE802_11)
+		if (linktype == DLT_IEEE802_11 ||
+		    linktype == DLT_IEEE802_11_RADIO_AVS ||
+		    linktype == DLT_IEEE802_11_RADIO ||
+		    linktype == DLT_PRISM_HEADER)
 			return gen_wlanhostop(eaddr, (int)q.dir);
 		if (linktype == DLT_SUNATM && is_lane) {
 			/*
@@ -5681,7 +5691,10 @@ gen_multicast(proto)
 			return gen_mac_multicast(2);
 		}
 
-		if (linktype == DLT_IEEE802_11) {
+		if (linktype == DLT_IEEE802_11 ||
+		    linktype == DLT_IEEE802_11_RADIO_AVS ||
+		    linktype == DLT_IEEE802_11_RADIO ||
+		    linktype == DLT_PRISM_HEADER) {
 			/*
 			 * Oh, yuk.
 			 *
