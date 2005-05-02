@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.63 2005-05-01 08:37:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.64 2005-05-02 21:13:08 guy Exp $ (LBL)
  */
 
 /*
@@ -123,6 +123,8 @@
 #define Q_ISIS_CSNP     37
 #define Q_ISIS_PSNP     38
 #define Q_ISIS_LSP      39
+
+#define Q_RADIO		40
 
 /* Directional qualifiers. */
 

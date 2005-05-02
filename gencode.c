@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.241 2005-05-01 19:32:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.242 2005-05-02 21:13:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -135,6 +135,7 @@ static struct block *root;
  * is relative to.
  */
 enum e_offrel {
+	OR_PACKET,	/* relative to the beginning of the packet */
 	OR_LINK,	/* relative to the link-layer header */
 	OR_NET,		/* relative to the network-layer header */
 	OR_NET_NOSNAP,	/* relative to the network-layer header, with no SNAP header at the link layer */
@@ -666,6 +667,12 @@ gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
 static int reg_ll_size;
 
 /*
+ * This is the offset of the beginning of the link-layer header.
+ * It's usually 0, except for 802.11 with a fixed-length radio header.
+ */
+static u_int off_ll;
+
+/*
  * This is the offset of the beginning of the MAC-layer header.
  * It's usually 0, except for ATM LANE.
  */
@@ -762,6 +769,11 @@ init_linktype(p)
 	off_vci = -1;
 	off_proto = -1;
 	off_payload = -1;
+
+	/*
+	 * Also assume it's not 802.11 with a fixed-length radio header.
+	 */
+	off_ll = 0;
 
 	orig_linktype = -1;
 	orig_nl = -1;
@@ -925,6 +937,7 @@ init_linktype(p)
 		 * XXX - same variable-length header problem; at least
 		 * the Prism header is fixed-length.
 		 */
+		off_ll = 144;
 		off_linktype = 144+24;
 		off_nl = 144+32;	/* Prism+802.11+802.2+SNAP */
 		off_nl_nosnap = 144+27;	/* Prism+802.11+802.2 */
@@ -945,6 +958,7 @@ init_linktype(p)
 		 * number at an offset of 4 from the beginning
 		 * of the radio header.
 		 */
+		off_ll = 64;
 		off_linktype = 64+24;
 		off_nl = 64+32;		/* Radio+802.11+802.2+SNAP */
 		off_nl_nosnap = 64+27;	/* Radio+802.11+802.2 */
@@ -1161,8 +1175,12 @@ gen_load_a(offrel, offset, size)
 
 	switch (offrel) {
 
-	case OR_LINK:
+	case OR_PACKET:
 		s = gen_load_llrel(offset, size);
+		break;
+
+	case OR_LINK:
+		s = gen_load_llrel(off_ll + offset, size);
 		break;
 
 	case OR_NET:
@@ -3051,6 +3069,9 @@ gen_host(addr, mask, proto, dir)
 	case Q_NETBEUI:
 		bpf_error("'netbeui' modifier applied to host");
 
+	case Q_RADIO:
+		bpf_error("'radio' modifier applied to host");
+
 	default:
 		abort();
 	}
@@ -3156,6 +3177,9 @@ gen_host6(addr, mask, proto, dir)
 
 	case Q_NETBEUI:
 		bpf_error("'netbeui' modifier applied to host");
+
+	case Q_RADIO:
+		bpf_error("'radio' modifier applied to host");
 
 	default:
 		abort();
@@ -3463,6 +3487,9 @@ gen_proto_abbrev(proto)
 	case Q_NETBEUI:
 		b1 = gen_linktype(LLCSAP_NETBEUI);
 		break;
+
+	case Q_RADIO:
+		bpf_error("'radio' is not a valid protocol type");
 
 	default:
 		abort();
@@ -4448,6 +4475,9 @@ gen_proto(v, proto, dir)
 	case Q_NETBEUI:
 		bpf_error("'netbeui proto' is bogus");
 
+	case Q_RADIO:
+		bpf_error("'radio proto' is bogus");
+
 	default:
 		abort();
 		/* NOTREACHED */
@@ -5093,6 +5123,31 @@ gen_load(proto, index, size)
 	default:
 		bpf_error("unsupported index operation");
 
+	case Q_RADIO:
+		/*
+		 * The offset is relative to the beginning of the packet
+		 * data, if we have a radio header.  (If we don't, this
+		 * is an error.)
+		 */
+		if (linktype != DLT_IEEE802_11_RADIO_AVS &&
+		    linktype != DLT_IEEE802_11_RADIO &&
+		    linktype != DLT_PRISM_HEADER)
+			bpf_error("radio information not present in capture");
+
+		/*
+		 * Load into the X register the offset computed into the
+		 * register specifed by "index".
+		 */
+		s = xfer_to_x(index);
+
+		/*
+		 * Load the item at that offset.
+		 */
+		tmp = new_stmt(BPF_LD|BPF_IND|size);
+		sappend(s, tmp);
+		sappend(index->s, s);
+		break;
+
 	case Q_LINK:
 		/*
 		 * The offset is relative to the beginning of
@@ -5124,9 +5179,14 @@ gen_load(proto, index, size)
 			s = xfer_to_x(index);
 
 		/*
-		 * Load the item at the offset we've put in the X register.
+		 * Load the item at the sum of the offset we've put in the
+		 * X register and the offset of the start of the link
+		 * layer header (which is 0 if the radio header is
+		 * variable-length; that header length is what we put
+		 * into the X register and then added to the index).
 		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
+		tmp->s.k = off_ll;
 		sappend(s, tmp);
 		sappend(index->s, s);
 		break;
