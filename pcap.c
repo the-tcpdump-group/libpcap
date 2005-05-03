@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88 2005-02-08 20:03:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.1 2005-05-03 18:54:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -683,6 +683,23 @@ int
 pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
 	return p->setfilter_op(p, fp);
+}
+
+/*
+ * Set direction flag, which controls whether we accept only incoming
+ * packets, only outgoing packets, or both.
+ * Note that, depending on the platform, some or all direction arguments
+ * might not be supported.
+ */
+int
+pcap_setdirection(pcap_t *p, direction_t d)
+{
+	if (p->setdirection_op == NULL) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Setting direction is not implemented on this platform");
+		return -1;
+	} else
+		return p->setdirection_op(p, d);
 }
 
 int
