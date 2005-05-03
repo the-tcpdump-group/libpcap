@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110 2004-10-19 07:06:12 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.111 2005-05-03 18:53:59 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -191,6 +191,7 @@ static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_inject_linux(pcap_t *, const void *, size_t);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
+static int pcap_setdirection_linux(pcap_t *, direction_t);
 static void pcap_close_linux(pcap_t *);
 
 /*
@@ -407,6 +408,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	handle->read_op = pcap_read_linux;
 	handle->inject_op = pcap_inject_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
+	handle->setdirection_op = pcap_setdirection_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
@@ -504,19 +506,37 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	}
 
 #ifdef HAVE_PF_PACKET_SOCKETS
-	/*
-	 * If this is from the loopback device, reject outgoing packets;
-	 * we'll see the packet as an incoming packet as well, and
-	 * we don't want to see it twice.
-	 *
-	 * We can only do this if we're using PF_PACKET; the address
-	 * returned for SOCK_PACKET is a "sockaddr_pkt" which lacks
-	 * the relevant packet type information.
-	 */
-	if (!handle->md.sock_packet &&
-	    from.sll_ifindex == handle->md.lo_ifindex &&
-	    from.sll_pkttype == PACKET_OUTGOING)
-		return 0;
+	if (!handle->md.sock_packet) {
+		/*
+		 * Do checks based on packet direction.
+		 * We can only do this if we're using PF_PACKET; the
+		 * address returned for SOCK_PACKET is a "sockaddr_pkt"
+		 * which lacks the relevant packet type information.
+		 */
+		if (from.sll_pkttype == PACKET_OUTGOING) {
+			/*
+			 * Outgoing packet.
+			 * If this is from the loopback device, reject it;
+			 * we'll see the packet as an incoming packet as well,
+			 * and we don't want to see it twice.
+			 */
+			if (from.sll_ifindex == handle->md.lo_ifindex)
+				return 0;
+
+			/*
+			 * If the user only wants incoming packets, reject it.
+			 */
+			if (handle->direction == D_IN)
+				return 0;
+		} else {
+			/*
+			 * Incoming packet.
+			 * If the user only wants outgoing packets, reject it.
+			 */
+			if (handle->direction == D_OUT)
+				return 0;
+		}
+	}
 #endif
 
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -972,6 +992,28 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 #endif /* SO_ATTACH_FILTER */
 
 	return 0;
+}
+
+/*
+ * Set direction flag: Which packets do we accept on a forwarding
+ * single device? IN, OUT or both?
+ */
+static int
+pcap_setdirection_linux(pcap_t *handle, direction_t d)
+{
+#ifdef HAVE_PF_PACKET_SOCKETS
+	if (!handle->md.sock_packet) {
+		handle->direction = d;
+		return 0;
+	}
+#endif
+	/*
+	 * We're not using PF_PACKET sockets, so we can't determine
+	 * the direction of the packet.
+	 */
+	snprintf(handle->errbuf, sizeof(handle->errbuf),
+	    "Setting direction is not supported on SOCK_PACKET sockets");
+	return -1;
 }
 
 /*

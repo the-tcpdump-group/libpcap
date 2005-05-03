@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.113 2005-04-17 17:25:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.114 2005-05-03 18:53:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -933,6 +933,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->read_op = pcap_read_dlpi;
 	p->inject_op = pcap_inject_dlpi;
 	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
+	p->setdirection_op = NULL;	/* Not implemented.*/
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;

@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.25 2005-02-26 21:58:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.26 2005-05-03 18:54:01 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -602,6 +602,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #ifdef HAVE_DAG_API
 	}
 #endif /* HAVE_DAG_API */
+	p->setdirection_op = NULL;	/* Not implemented. */
+	    /* XXX - can this be implemented on some versions of Windows? */
 	p->inject_op = pcap_inject_win32;
 	p->set_datalink_op = NULL;	/* can't change data link type */
 	p->getnonblock_op = pcap_getnonblock_win32;

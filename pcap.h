@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.52 2004-12-18 08:52:11 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap.h,v 1.53 2005-05-03 18:54:02 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -119,6 +119,12 @@ struct pcap_file_header {
 	bpf_u_int32 snaplen;	/* max length saved portion of each pkt */
 	bpf_u_int32 linktype;	/* data link type (LINKTYPE_*) */
 };
+
+typedef enum {
+       D_INOUT = 0,
+       D_IN,
+       D_OUT
+} direction_t;
 
 /*
  * Each packet in the dump file is prepended with this generic header.
@@ -218,6 +224,7 @@ int 	pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const u_char **);
 void	pcap_breakloop(pcap_t *);
 int	pcap_stats(pcap_t *, struct pcap_stat *);
 int	pcap_setfilter(pcap_t *, struct bpf_program *);
+int 	pcap_setdirection(pcap_t *, direction_t);
 int	pcap_getnonblock(pcap_t *, char *);
 int	pcap_setnonblock(pcap_t *, int, char *);
 void	pcap_perror(pcap_t *, char *);
