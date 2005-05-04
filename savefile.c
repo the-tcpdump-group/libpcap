@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.132 2005-05-01 19:57:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.133 2005-05-04 19:40:15 risso Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -98,7 +98,7 @@ static const char rcsid[] _U_ =
  * Setting O_BINARY on DOS/Windows is a bit tricky
  */
 #if defined(WIN32)
-  #define SET_BINMODE(f)  _setmode(fileno(f), _O_BINARY)
+  #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
 #elif defined(MSDOS)
   #if defined(__HIGHC__)
   #define SET_BINMODE(f)  setmode(f, O_BINARY)
