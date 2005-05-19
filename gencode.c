@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.19 2005-05-12 07:06:14 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.20 2005-05-19 10:05:31 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1126,6 +1126,30 @@ init_linktype(p)
             off_nl_nosnap = -1;     /* no 802.2 LLC */
             return;
 
+        case DLT_JUNIPER_GGSN:
+            off_linktype = 6;
+            off_nl = 12;
+            off_nl_nosnap = -1;     /* no 802.2 LLC */
+            return;
+
+        case DLT_JUNIPER_ES:
+            off_linktype = 6;
+            off_nl = -1;            /* not really a network layer but raw IP adresses */
+            off_nl_nosnap = -1;     /* no 802.2 LLC */
+            return;
+
+        case DLT_JUNIPER_MONITOR:
+            off_linktype = 12;
+            off_nl = 12;            /* raw IP/IP6 header */
+            off_nl_nosnap = -1;     /* no 802.2 LLC */
+            return;
+
+        case DLT_JUNIPER_SERVICES:
+            off_linktype = 12;
+            off_nl = -1;            /* L3 proto location dep. on cookie type */
+            off_nl_nosnap = -1;     /* no 802.2 LLC */
+            return;
+
 #ifdef DLT_PFSYNC
 	case DLT_PFSYNC:
 		off_linktype = -1;
@@ -2192,6 +2216,10 @@ gen_linktype(proto)
 	case DLT_JUNIPER_ATM2:
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_PPPOE_ATM:
+        case DLT_JUNIPER_GGSN:
+        case DLT_JUNIPER_ES:
+        case DLT_JUNIPER_MONITOR:
+        case DLT_JUNIPER_SERVICES:
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
@@ -5931,6 +5959,10 @@ gen_inbound(dir)
 	case DLT_JUNIPER_ATM2:
 	case DLT_JUNIPER_PPPOE:
 	case DLT_JUNIPER_PPPOE_ATM:
+        case DLT_JUNIPER_GGSN:
+        case DLT_JUNIPER_ES:
+        case DLT_JUNIPER_MONITOR:
+        case DLT_JUNIPER_SERVICES:
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
 		if (dir) {
