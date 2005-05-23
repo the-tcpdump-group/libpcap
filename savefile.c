@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.6 2005-05-04 19:40:01 risso Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.7 2005-05-23 20:32:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -717,6 +717,18 @@ sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 	return (-1);
 }
 
+/*
+ * Set direction flag: Which packets do we accept on a forwarding
+ * single device? IN, OUT or both?
+ */
+static int
+sf_setdirection(pcap_t *p, direction_t d)
+{
+	snprintf(p->errbuf, sizeof(p->errbuf),
+	    "Setting direction is not supported on savefiles");
+	return (-1);
+}
+
 static void
 sf_close(pcap_t *p)
 {
@@ -918,6 +930,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->read_op = pcap_offline_read;
 	p->inject_op = sf_inject;
 	p->setfilter_op = install_bpf_program;
+	p->setdirection_op = sf_setdirection;
 	p->set_datalink_op = NULL;	/* we don't support munging link-layer headers */
 	p->getnonblock_op = sf_getnonblock;
 	p->setnonblock_op = sf_setnonblock;
