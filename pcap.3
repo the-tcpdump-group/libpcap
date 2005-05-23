@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.66 2005-05-03 18:54:01 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.67 2005-05-23 20:37:30 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -797,6 +797,7 @@ is the default setting if this function is not called.  This isn't
 necessarily supported on all platforms; some platforms might return an
 error, and some other platforms might not support
 .BR D_OUT .
+This operation is not supported if a ``savefile'' is being read.
 .B \-1
 is returned on failure,
 .B 0
