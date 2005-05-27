@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.2 2005-05-19 10:05:32 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.3 2005-05-27 23:33:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -331,7 +331,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_SLIP, "SLIP"),
 	DLT_CHOICE(DLT_PPP, "PPP"),
 	DLT_CHOICE(DLT_FDDI, "FDDI"),
-	DLT_CHOICE(DLT_ATM_RFC1483, "RFC 1483 IP-over-ATM"),
+	DLT_CHOICE(DLT_ATM_RFC1483, "RFC 1483 LLC-encapsulated ATM"),
 	DLT_CHOICE(DLT_RAW, "Raw IP"),
 	DLT_CHOICE(DLT_SLIP_BSDOS, "BSD/OS SLIP"),
 	DLT_CHOICE(DLT_PPP_BSDOS, "BSD/OS PPP"),
