@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.37 2005-05-01 19:46:27 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.38 2005-05-27 23:32:20 guy Exp $ (LBL)
  */
 
 /*
@@ -147,7 +147,7 @@ struct bpf_version {
  * XXX - DLT_ATM_RFC1483 is 13 in BSD/OS, and DLT_RAW is 14 in BSD/OS,
  * but I don't know what the right #define is for BSD/OS.
  */
-#define DLT_ATM_RFC1483	11	/* LLC/SNAP encapsulated atm */
+#define DLT_ATM_RFC1483	11	/* LLC-encapsulated ATM */
 
 #ifdef __OpenBSD__
 #define DLT_RAW		14	/* raw IP */
