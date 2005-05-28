@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.246 2005-05-19 09:33:20 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.247 2005-05-28 00:29:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -985,6 +985,13 @@ init_linktype(p)
 		/*
 		 * assume routed, non-ISO PDUs
 		 * (i.e., LLC = 0xAA-AA-03, OUT = 0x00-00-00)
+		 *
+		 * XXX - what about ISO PDUs, e.g. CLNP, ISIS, ESIS,
+		 * or PPP with the PPP NLPID (e.g., PPPoA)?  The
+		 * latter would presumably be treated the way PPPoE
+		 * should be, so you can do "pppoe and udp port 2049"
+		 * or "pppoa and tcp port 80" and have it check for
+		 * PPPo{A,E} and a PPP protocol of IP and....
 		 */
 		off_linktype = 0;
 		off_nl = 8;		/* 802.2+SNAP */
