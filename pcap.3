@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.67 2005-05-23 20:37:30 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.68 2005-06-03 20:36:19 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -123,6 +123,7 @@ const char *pcap_lib_version(void)
 .ft B
 void pcap_close(pcap_t *p)
 int pcap_dump_flush(pcap_dumper_t *p)
+long pcap_dump_ftell(pcap_dumper_t *p)
 FILE *pcap_dump_file(pcap_dumper_t *p)
 void pcap_dump_close(pcap_dumper_t *p)
 .ft
@@ -1259,6 +1260,15 @@ written with
 but not yet written to the ``savefile'' will be written.
 .B \-1
 is returned on error, 0 on success.
+.PP
+.B pcap_dump_ftell()
+returns the current file position for the ``savefile'', representing the
+number of bytes written by
+.B pcap_dump_open()
+and
+.BR pcap_dump() .
+.B \-1
+is returned on error.
 .PP
 .B pcap_dump_close()
 closes the ``savefile.''
