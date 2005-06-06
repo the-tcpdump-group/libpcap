@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.21 2005-05-28 00:30:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.22 2005-06-06 14:14:01 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6242,7 +6242,6 @@ gen_mpls(label_num)
             
         case DLT_C_HDLC: /* fall through */
         case DLT_EN10MB:
-                off_linktype += 4;
                 off_nl_nosnap += 4;
                 off_nl += 4;
                         
@@ -6251,7 +6250,6 @@ gen_mpls(label_num)
                 break;
 
         case DLT_PPP:
-                off_linktype += 4;
                 off_nl_nosnap += 4;
                 off_nl += 4;
 
