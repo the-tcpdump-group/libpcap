@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.25.2.1 2005-05-03 18:54:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.25.2.2 2005-06-10 03:48:56 risso Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -411,6 +411,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	
 	if (p->adapter == NULL)
 	{
+		free(p);
 		/* Adapter detected but we are not able to open it. Return failure. */
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Error opening adapter: %s", pcap_win32strerror());
 		return NULL;
