@@ -32,7 +32,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.26 2005-05-03 18:54:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.27 2005-06-10 03:49:19 risso Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -419,6 +419,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	/*get network type*/
 	if(PacketGetNetType (p->adapter,&type) == FALSE)
 	{
+		free(p);
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Cannot determine the network type: %s", pcap_win32strerror());
 		goto bad;
 	}
