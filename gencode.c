@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.23 2005-06-20 21:30:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.24 2005-06-20 21:52:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6479,7 +6479,7 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 
 	case M_SIO:
 		if (off_sio == (u_int)-1)
-			abort();
+			bpf_error("'sio' supported only on SS7");
 		/* sio coded on 1 byte so max value 255 */
 		if(jvalue > 255)
 		        bpf_error("sio value %u too big; max value = 255",
@@ -6490,7 +6490,7 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 
         case M_OPC:
 	        if (off_opc == (u_int)-1)
-			abort();
+			bpf_error("'opc' supported only on SS7");
 		/* opc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
 		        bpf_error("opc value %u too big; max value = 16383",
@@ -6510,7 +6510,7 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 
 	case M_DPC:
 	        if (off_dpc == (u_int)-1)
-			abort();
+			bpf_error("'dpc' supported only on SS7");
 		/* dpc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
 		        bpf_error("dpc value %u too big; max value = 16383",
@@ -6528,7 +6528,7 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 
 	case M_SLS:
 	        if (off_sls == (u_int)-1)
-		         abort();
+			bpf_error("'sls' supported only on SS7");
 		/* sls coded on 4 bits so max value 15 */
 		if (jvalue > 15)
 		         bpf_error("sls value %u too big; max value = 15",
