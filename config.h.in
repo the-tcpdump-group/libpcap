@@ -53,6 +53,9 @@
 /* define if you have a /proc/net/dev */
 #undef HAVE_PROC_NET_DEV
 
+/* define if you have a Septel API */
+#undef HAVE_SEPTEL_API
+
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
 

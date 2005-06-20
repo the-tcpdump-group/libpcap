@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.1 2005-05-03 18:54:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.2 2005-06-20 21:30:18 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -83,6 +83,10 @@ static const char rcsid[] _U_ =
 #ifdef HAVE_DAG_API
 #include "pcap-dag.h"
 #endif /* HAVE_DAG_API */
+
+#ifdef HAVE_SEPTEL_API
+#include "pcap-septel.h"
+#endif /* HAVE_SEPTEL_API */
 	  
 #include <errno.h>
 #include <stdlib.h>
@@ -245,7 +249,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 #endif /* HAVE_DAG_API */
 
-        /* Allocate a handle for this session. */
+#ifdef HAVE_SEPTEL_API
+	if (strstr(device, "septel")) {
+		return septel_open_live(device, snaplen, promisc, to_ms, ebuf);
+	}
+#endif /* HAVE_SEPTEL_API */
+
+	/* Allocate a handle for this session. */
 
 	handle = malloc(sizeof(*handle));
 	if (handle == NULL) {
@@ -854,6 +864,11 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	if (dag_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_DAG_API */
+
+#ifdef HAVE_SEPTEL_API
+	if (septel_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif /* HAVE_SEPTEL_API */
 
 	return (0);
 }
