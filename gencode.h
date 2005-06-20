@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.64 2005-05-02 21:13:08 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.65 2005-06-20 21:27:09 guy Exp $ (LBL)
  */
 
 /*
@@ -173,6 +173,13 @@
 				   end-to-end circuits, ILMI circuits or
 				   connection signalling circuit. */
 
+/*MTP3 field types */
+#define M_SIO 1
+#define M_OPC 2
+#define M_DPC 3
+#define M_SLS 4
+
+
 struct slist;
 
 struct stmt {
@@ -285,6 +292,8 @@ struct block *gen_mpls(int);
 struct block *gen_atmfield_code(int atmfield, bpf_int32 jvalue, bpf_u_int32 jtype, int reverse);
 struct block *gen_atmtype_abbrev(int type);
 struct block *gen_atmmulti_abbrev(int type);
+
+struct block *gen_mtp3field_code(int mtp3field, bpf_u_int32 jvalue, bpf_u_int32 jtype, int reverse);
 
 struct block *gen_pf_ifname(const char *);
 struct block *gen_pf_rnr(int);

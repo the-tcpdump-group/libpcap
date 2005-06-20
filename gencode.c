@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.248 2005-06-06 14:10:58 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.249 2005-06-20 21:27:08 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -718,6 +718,14 @@ static u_int off_vci;
 static u_int off_proto;
 
 /*
+ * These are offsets for the MTP3 fields.
+ */
+static u_int off_sio;
+static u_int off_opc;
+static u_int off_dpc;
+static u_int off_sls;
+
+/*
  * This is the offset of the first byte after the ATM pseudo_header,
  * or -1 if there is no ATM pseudo-header.
  */
@@ -769,6 +777,11 @@ init_linktype(p)
 	off_vci = -1;
 	off_proto = -1;
 	off_payload = -1;
+
+	off_sio = -1;
+	off_opc = -1;
+	off_dpc = -1;
+	off_sls = -1;
 
 	/*
 	 * Also assume it's not 802.11 with a fixed-length radio header.
@@ -1119,43 +1132,53 @@ init_linktype(p)
 		off_nl_nosnap = 18;
 		return;
 
-                /* frames captured on a Juniper PPPoE service PIC
-                 * contain raw ethernet frames */
-        case DLT_JUNIPER_PPPOE:
-            off_linktype = 16;
-            off_nl = 18;            /* Ethernet II */
-            off_nl_nosnap = 21;     /* 802.3+802.2 */
-            return;
+		/* frames captured on a Juniper PPPoE service PIC
+		 * contain raw ethernet frames */
+	case DLT_JUNIPER_PPPOE:
+		off_linktype = 16;
+		off_nl = 18;		/* Ethernet II */
+		off_nl_nosnap = 21;	/* 802.3+802.2 */
+		return;
 
-        case DLT_JUNIPER_PPPOE_ATM:
-            off_linktype = 4;
-            off_nl = 6;
-            off_nl_nosnap = -1;     /* no 802.2 LLC */
-            return;
+	case DLT_JUNIPER_PPPOE_ATM:
+		off_linktype = 4;
+		off_nl = 6;
+		off_nl_nosnap = -1;	 /* no 802.2 LLC */
+		return;
 
-        case DLT_JUNIPER_GGSN:
-            off_linktype = 6;
-            off_nl = 12;
-            off_nl_nosnap = -1;     /* no 802.2 LLC */
-            return;
+	case DLT_JUNIPER_GGSN:
+		off_linktype = 6;
+		off_nl = 12;
+		off_nl_nosnap = -1;	 /* no 802.2 LLC */
+		return;
 
-        case DLT_JUNIPER_ES:
-            off_linktype = 6;
-            off_nl = -1;            /* not really a network layer but raw IP adresses */
-            off_nl_nosnap = -1;     /* no 802.2 LLC */
-            return;
+	case DLT_JUNIPER_ES:
+		off_linktype = 6;
+		off_nl = -1;		/* not really a network layer but raw IP adresses */
+		off_nl_nosnap = -1;	/* no 802.2 LLC */
+		return;
 
-        case DLT_JUNIPER_MONITOR:
-            off_linktype = 12;
-            off_nl = 12;            /* raw IP/IP6 header */
-            off_nl_nosnap = -1;     /* no 802.2 LLC */
-            return;
+	case DLT_JUNIPER_MONITOR:
+		off_linktype = 12;
+		off_nl = 12;		/* raw IP/IP6 header */
+		off_nl_nosnap = -1;	/* no 802.2 LLC */
+		return;
 
-        case DLT_JUNIPER_SERVICES:
-            off_linktype = 12;
-            off_nl = -1;            /* L3 proto location dep. on cookie type */
-            off_nl_nosnap = -1;     /* no 802.2 LLC */
-            return;
+	case DLT_JUNIPER_SERVICES:
+		off_linktype = 12;
+		off_nl = -1;		/* L3 proto location dep. on cookie type */
+		off_nl_nosnap = -1;	/* no 802.2 LLC */
+		return;
+
+	case DLT_MTP2:
+		off_sio = 3;
+		off_opc = 4;
+		off_dpc = 4;
+		off_sls = 7;
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
 
 #ifdef DLT_PFSYNC
 	case DLT_PFSYNC:
@@ -6442,6 +6465,86 @@ gen_atmtype_abbrev(type)
 	return b1;
 }
 
+struct block *
+gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
+	int mtp3field;
+	bpf_u_int32 jvalue;
+	bpf_u_int32 jtype;
+	int reverse;
+{
+	struct block *b0;
+	bpf_u_int32 val1 , val2 , val3;
+
+	switch (mtp3field) {
+
+	case M_SIO:
+		if (off_sio == (u_int)-1)
+			abort();
+		/* sio coded on 1 byte so max value 255 */
+		if(jvalue > 255)
+		        bpf_error("sio value %u too big; max value = 255",
+		            jvalue);
+		b0 = gen_ncmp(OR_PACKET, off_sio, BPF_B, 0xffffffff,
+		    (u_int)jtype, reverse, (u_int)jvalue);
+		break;
+
+        case M_OPC:
+	        if (off_opc == (u_int)-1)
+			abort();
+		/* opc coded on 14 bits so max value 16383 */
+		if (jvalue > 16383)
+		        bpf_error("opc value %u too big; max value = 16383",
+		            jvalue);
+		/* the following instructions are made to convert jvalue
+		 * to the form used to write opc in an ss7 message*/
+		val1 = jvalue & 0x00003c00;
+		val1 = val1 >>10;
+		val2 = jvalue & 0x000003fc;
+		val2 = val2 <<6;
+		val3 = jvalue & 0x00000003;
+		val3 = val3 <<22;
+		jvalue = val1 + val2 + val3;
+		b0 = gen_ncmp(OR_PACKET, off_opc, BPF_W, 0x00c0ff0f,
+		    (u_int)jtype, reverse, (u_int)jvalue);
+		break;
+
+	case M_DPC:
+	        if (off_dpc == (u_int)-1)
+			abort();
+		/* dpc coded on 14 bits so max value 16383 */
+		if (jvalue > 16383)
+		        bpf_error("dpc value %u too big; max value = 16383",
+		            jvalue);
+		/* the following instructions are made to convert jvalue
+		 * to the forme used to write dpc in an ss7 message*/
+		val1 = jvalue & 0x000000ff;
+		val1 = val1 << 24;
+		val2 = jvalue & 0x00003f00;
+		val2 = val2 << 8;
+		jvalue = val1 + val2;
+		b0 = gen_ncmp(OR_PACKET, off_dpc, BPF_W, 0xff3f0000,
+		    (u_int)jtype, reverse, (u_int)jvalue);
+		break;
+
+	case M_SLS:
+	        if (off_sls == (u_int)-1)
+		         abort();
+		/* sls coded on 4 bits so max value 15 */
+		if (jvalue > 15)
+		         bpf_error("sls value %u too big; max value = 15",
+		             jvalue);
+		/* the following instruction is made to convert jvalue
+		 * to the forme used to write sls in an ss7 message*/
+		jvalue = jvalue << 4;
+		b0 = gen_ncmp(OR_PACKET, off_sls, BPF_B, 0xf0,
+		    (u_int)jtype,reverse, (u_int)jvalue);
+		break;
+
+	default:
+		abort();
+	}
+	return b0;
+}
 
 static struct block *
 gen_msg_abbrev(type)

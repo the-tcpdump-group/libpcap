@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.89 2005-05-02 21:13:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.90 2005-06-20 21:27:09 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -97,6 +97,7 @@ pcap_parse()
 	struct {
 		struct qual q;
 		int atmfieldtype;
+		int mtp3fieldtype;
 		struct block *b;
 	} blk;
 	struct block *rblk;
@@ -112,6 +113,9 @@ pcap_parse()
 %type	<i>	atmtype atmmultitype
 %type	<blk>	atmfield
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
+%type   <blk>   mtp3field
+%type   <blk>   mtp3fieldvalue mtp3value mtp3listvalue
+
 
 %token  DST SRC HOST GATEWAY
 %token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
@@ -135,6 +139,7 @@ pcap_parse()
 %token	OAM OAMF4 CONNECTMSG METACONNECT
 %token	VPI VCI
 %token	RADIO
+%token  SIO OPC DPC SLS
 
 %type	<s> ID
 %type	<e> EID
@@ -255,6 +260,7 @@ rterm:	  head id		{ $$ = $2; }
 	| atmtype		{ $$.b = gen_atmtype_abbrev($1); $$.q = qerr; }
 	| atmmultitype		{ $$.b = gen_atmmulti_abbrev($1); $$.q = qerr; }
 	| atmfield atmvalue	{ $$.b = $2.b; $$.q = qerr; }
+	| mtp3field mtp3value	{ $$.b = $2.b; $$.q = qerr; }
 	;
 /* protocol level qualifiers */
 pqual:	  pname
@@ -429,5 +435,28 @@ atmfieldvalue: NUM {
 	;
 atmlistvalue: atmfieldvalue
 	| atmlistvalue or atmfieldvalue { gen_or($1.b, $3.b); $$ = $3; }
+	;
+	/* MTP3 field types quantifier */
+mtp3field: SIO			{ $$.mtp3fieldtype = M_SIO; }
+	| OPC			{ $$.mtp3fieldtype = M_OPC; }
+	| DPC			{ $$.mtp3fieldtype = M_DPC; }
+	| SLS                   { $$.mtp3fieldtype = M_SLS; }
+	;
+mtp3value: mtp3fieldvalue
+	| relop NUM		{ $$.b = gen_mtp3field_code($<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 0); }
+	| irelop NUM		{ $$.b = gen_mtp3field_code($<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 1); }
+	| paren mtp3listvalue ')' { $$.b = $2.b; $$.q = qerr; }
+	;
+mtp3fieldvalue: NUM {
+	$$.mtp3fieldtype = $<blk>0.mtp3fieldtype;
+	if ($$.mtp3fieldtype == M_SIO ||
+	    $$.mtp3fieldtype == M_OPC ||
+	    $$.mtp3fieldtype == M_DPC ||
+	    $$.mtp3fieldtype == M_SLS )
+		$$.b = gen_mtp3field_code($$.mtp3fieldtype, (u_int) $1, BPF_JEQ, 0);
+	}
+	;
+mtp3listvalue: mtp3fieldvalue
+	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; }
 	;
 %%
