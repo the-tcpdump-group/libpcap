@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.125 2005-06-20 21:27:08 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.126 2005-06-20 21:36:57 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.125 $)
+AC_REVISION($Revision: 1.126 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -391,7 +391,7 @@ fi
 AC_MSG_RESULT($ac_cv_lbl_proc_net_dev)
 
 # Check for Endace DAG card support.
-AC_ARG_WITH([dag], [  --with-dag[[=DIR]]          include Endace DAG support ("yes", "no" or DIR; default="yes" on BSD and Linux if present)],
+AC_ARG_WITH([dag], [  --with-dag[[=DIR]]        include Endace DAG support ("yes", "no" or DIR; default="yes" on BSD and Linux if present)],
 [
 	if test "$withval" = no
 	then
@@ -591,7 +591,7 @@ if test $ac_cv_lbl_dag_api = no; then
 	fi
 fi
 
-AC_ARG_WITH(septel, [  --with-septel[=DIR]        include Septel support (located in directory DIR, if supplied).  [default=yes, on Linux, if present]],
+AC_ARG_WITH(septel, [  --with-septel[[=DIR]]     include Septel support (located in directory DIR, if supplied).  [default=yes, on Linux, if present]],
 [
 	if test "$withval" = no
 	then
