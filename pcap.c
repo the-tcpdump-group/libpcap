@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.4 2005-07-05 22:14:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.5 2005-07-05 22:33:17 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -696,7 +696,7 @@ pcap_setfilter(pcap_t *p, struct bpf_program *fp)
  * might not be supported.
  */
 int
-pcap_setdirection(pcap_t *p, pcap_direction_t d)
+pcap_setdirection(pcap_t *p, direction_t d)
 {
 	if (p->setdirection_op == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
