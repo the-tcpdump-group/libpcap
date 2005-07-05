@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.90 2005-06-04 02:51:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.91 2005-07-05 22:12:17 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -105,7 +105,7 @@ static int odmlockid = 0;
 #include "gencode.h"	/* for "no_optimize" */
 
 static int pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp);
-static int pcap_setdirection_bpf(pcap_t *, direction_t);
+static int pcap_setdirection_bpf(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 
 static int
@@ -1095,26 +1095,26 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
  * single device? IN, OUT or both?
  */
 static int
-pcap_setdirection_bpf(pcap_t *p, direction_t d)
+pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 {
 #ifdef BIOCSSEESENT
 	u_int seesent;
 #endif
 
 	/*
-	 * We don't support D_OUT.
+	 * We don't support PCAP_D_OUT.
 	 */
-	if (d == D_OUT) {
+	if (d == PCAP_D_OUT) {
 		snprintf(p->errbuf, sizeof(p->errbuf),
-		    "Setting direction to D_OUT is not supported on BPF");
+		    "Setting direction to PCAP_D_OUT is not supported on BPF");
 		return -1;
 	}
 #ifdef BIOCSSEESENT
-	seesent = (d == D_INOUT);
+	seesent = (d == PCAP_D_INOUT);
 	if (ioctl(p->fd, BIOCSSEESENT, &seesent) == -1) {
 		(void) snprintf(p->errbuf, sizeof(p->errbuf),
 		    "Cannot set direction to %s: %s",
-		        (d == D_INOUT) ? "D_INOUT" : "D_IN",
+		        (d == PCAP_D_INOUT) ? "PCAP_D_INOUT" : "PCAP_D_IN",
 			strerror(errno));
 		return (-1);
 	}
