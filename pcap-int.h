@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.72 2005-07-05 22:12:18 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.73 2005-07-05 22:31:57 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -151,7 +151,7 @@ struct pcap {
 	u_char *pkt;
 
 	/* We're accepting only packets in this direction/these directions. */
-	pcap_direction_t direction;
+	direction_t direction;
 
 	/*
 	 * Methods.
@@ -159,7 +159,7 @@ struct pcap {
 	int	(*read_op)(pcap_t *, int cnt, pcap_handler, u_char *);
 	int	(*inject_op)(pcap_t *, const void *, size_t);
 	int	(*setfilter_op)(pcap_t *, struct bpf_program *);
-	int	(*setdirection_op)(pcap_t *, pcap_direction_t);
+	int	(*setdirection_op)(pcap_t *, direction_t);
 	int	(*set_datalink_op)(pcap_t *, int);
 	int	(*getnonblock_op)(pcap_t *, char *);
 	int	(*setnonblock_op)(pcap_t *, int, char *);
