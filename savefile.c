@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.10 2005-07-05 22:33:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.11 2005-07-07 02:04:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -722,7 +722,7 @@ sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
  * single device? IN, OUT or both?
  */
 static int
-sf_setdirection(pcap_t *p, direction_t d)
+sf_setdirection(pcap_t *p, pcap_direction_t d)
 {
 	snprintf(p->errbuf, sizeof(p->errbuf),
 	    "Setting direction is not supported on savefiles");
