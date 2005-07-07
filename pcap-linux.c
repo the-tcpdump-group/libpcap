@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.114 2005-07-05 22:31:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.115 2005-07-07 01:57:01 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -195,7 +195,7 @@ static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_inject_linux(pcap_t *, const void *, size_t);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
-static int pcap_setdirection_linux(pcap_t *, direction_t);
+static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static void pcap_close_linux(pcap_t *);
 
 /*
@@ -536,14 +536,14 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			/*
 			 * If the user only wants incoming packets, reject it.
 			 */
-			if (handle->direction == D_IN)
+			if (handle->direction == PCAP_D_IN)
 				return 0;
 		} else {
 			/*
 			 * Incoming packet.
 			 * If the user only wants outgoing packets, reject it.
 			 */
-			if (handle->direction == D_OUT)
+			if (handle->direction == PCAP_D_OUT)
 				return 0;
 		}
 	}
@@ -1014,7 +1014,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
  * single device? IN, OUT or both?
  */
 static int
-pcap_setdirection_linux(pcap_t *handle, direction_t d)
+pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
 	if (!handle->md.sock_packet) {
