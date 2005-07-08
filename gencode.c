@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.24 2005-06-20 21:52:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.25 2005-07-08 15:27:06 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -101,7 +101,7 @@ static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
 /* Hack for updating VLAN, MPLS offsets. */
-static u_int	orig_linktype = -1U, orig_nl = -1U;
+static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
@@ -205,6 +205,7 @@ static struct block *gen_thostop(const u_char *, int);
 static struct block *gen_wlanhostop(const u_char *, int);
 static struct block *gen_ipfchostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int);
+static struct block *gen_null(int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
 #ifdef INET6
 static struct block *gen_host6(struct in6_addr *, struct in6_addr *, int, int);
@@ -790,6 +791,7 @@ init_linktype(p)
 
 	orig_linktype = -1;
 	orig_nl = -1;
+        label_stack_depth = 0;
 
 	reg_ll_size = -1;
 
@@ -2448,7 +2450,10 @@ gen_hostop(addr, mask, dir, proto, src_off, dst_off)
 	default:
 		abort();
 	}
-	b0 = gen_linktype(proto);
+        if (off_linktype != (u_int)-1)
+            b0 = gen_linktype(proto);
+        else
+            b0 = gen_null(Q_IP);
 	b1 = gen_mcmp(OR_NET, offset, BPF_W, (bpf_int32)addr, mask);
 	gen_and(b0, b1);
 	return b1;
@@ -3034,6 +3039,38 @@ gen_dnhostop(addr, dir)
 	return b1;
 }
 
+/* generate a null link-layer encapsulation
+ *
+ * which is matching for 0x4 in the first byte of the IPv4 header
+ *          matching for 0x6 in the first byte of the IPv6 header
+ *
+ * we need this for matching to an IP payload in MPLS packets
+ */
+static struct block *
+gen_null(proto)
+	int proto;
+{
+	struct block *b0, *b1;
+        switch (proto) {
+        case Q_IP:
+                /* match the bottom-of-stack bit */
+                b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
+                /* match the IPv4 version number */
+                b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x40, 0xf0);
+                gen_and(b0,b1);
+                return b1;
+        case Q_IPV6:
+                /* match the bottom-of-stack bit */
+                b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
+                /* match the IPv4 version number */
+                b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x60, 0xf0);
+                gen_and(b0,b1);
+                return b1;
+        default:
+                abort();
+        }
+}
+
 static struct block *
 gen_host(addr, mask, proto, dir)
 	bpf_u_int32 addr;
@@ -3401,7 +3438,10 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_IP:
-		b1 =  gen_linktype(ETHERTYPE_IP);
+                if (off_linktype != (u_int)-1)
+                    b1 = gen_linktype(ETHERTYPE_IP);
+                else
+                    b1 = gen_null(Q_IP); 
 		break;
 
 	case Q_ARP:
@@ -4393,7 +4433,11 @@ gen_proto(v, proto, dir)
 		 *
 		 * So we always check for ETHERTYPE_IP.
 		 */
-		b0 = gen_linktype(ETHERTYPE_IP);
+
+                if (off_linktype != (u_int)-1)
+                    b0 = gen_linktype(ETHERTYPE_IP);
+                else
+                    b0 = gen_null(Q_IP); 
 #ifndef CHASE_CHAIN
 		b1 = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)v);
 #else
@@ -6247,7 +6291,7 @@ struct block *
 gen_mpls(label_num)
 	int label_num;
 {
-	struct	block	*b0;
+	struct	block	*b0,*b1;
 
 	/*
 	 * Change the offsets to point to the type and data fields within
@@ -6261,41 +6305,43 @@ gen_mpls(label_num)
         orig_linktype = off_linktype;	/* save original values */
         orig_nl = off_nl;
 
-        switch (linktype) {
-            
-        case DLT_C_HDLC: /* fall through */
-        case DLT_EN10MB:
-                off_nl_nosnap += 4;
-                off_nl += 4;
-                        
-                b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
-                    (bpf_int32)ETHERTYPE_MPLS);
-                break;
+        if (label_stack_depth > 0) {
+            /* just match the bottom-of-stack bit clear */
+            b0 = gen_mcmp(OR_LINK, orig_nl-2, BPF_B, 0, 0x01);
+        } else {
 
-        case DLT_PPP:
-                off_nl_nosnap += 4;
-                off_nl += 4;
-
-                b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
-                    (bpf_int32)PPP_MPLS_UCAST);
-                break;
-
+            /* poison the linktype to make sure higher level
+             * code generators don't try to match against IP related protocols like
+             * Q_ARP, Q_RARP etc. */
+            off_linktype = -1;
+            switch (linktype) {
+                
+            case DLT_C_HDLC: /* fall through */
+            case DLT_EN10MB:
+                    b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
+                                 (bpf_int32)ETHERTYPE_MPLS);
+                    break;
+                
+            case DLT_PPP:
+                    b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
+                                 (bpf_int32)PPP_MPLS_UCAST);
+                    break;
+                
                 /* FIXME add other DLT_s ...
                  * for Frame-Relay/and ATM this may get messy due to SNAP headers
                  * leave it for now */
-
-        default:
-                bpf_error("no MPLS support for data link type %d",
+                
+            default:
+                    bpf_error("no MPLS support for data link type %d",
                           linktype);
-                b0 = NULL;
-                /*NOTREACHED*/
-                break;
+                    b0 = NULL;
+                    /*NOTREACHED*/
+                    break;
+            }
         }
 
 	/* If a specific MPLS label is requested, check it */
 	if (label_num >= 0) {
-		struct block *b1;
-
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(OR_LINK, orig_nl, BPF_W, (bpf_int32)label_num,
 		    0xfffff000); /* only compare the first 20 bits */
@@ -6303,6 +6349,9 @@ gen_mpls(label_num)
 		b0 = b1;
 	}
 
+        off_nl_nosnap += 4;
+        off_nl += 4;
+        label_stack_depth++;
 	return (b0);
 }
 
