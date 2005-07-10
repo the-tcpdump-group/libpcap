@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.93 2005-07-07 01:57:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.94 2005-07-10 10:54:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -997,9 +997,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * there (and in sufficiently recent versions of OpenBSD
 	 * "select()" and "poll()" should work correctly).
 	 *
-	 * In addition, in Mac OS X 10.4, "select()" and "poll()" don't
-	 * work on *any* character devices, including BPF devices.
-	 *
 	 * XXX - what about AIX?
 	 */
 	p->selectable_fd = p->fd;	/* assume select() works until we know otherwise */
@@ -1010,9 +1007,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		if (strcmp(osinfo.sysname, "FreeBSD") == 0) {
 			if (strncmp(osinfo.release, "4.3-", 4) == 0 ||
 			     strncmp(osinfo.release, "4.4-", 4) == 0)
-				p->selectable_fd = -1;
-		} else if (strcmp(osinfo.sysname, "Darwin") == 0) {
-			if (strncmp(osinfo.release, "8.", 2) == 0)
 				p->selectable_fd = -1;
 		}
 	}
