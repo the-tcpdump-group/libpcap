@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.23 2005-07-07 06:55:20 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.24 2005-07-10 22:09:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -863,13 +863,11 @@ dag_get_datalink(pcap_t *p)
 
 	case TYPE_MC_HDLC:
 		if (p->dlt_list != NULL) {
-			p->dlt_count = 2;
+			p->dlt_count = 4;
 			p->dlt_list[0] = DLT_CHDLC;
 			p->dlt_list[1] = DLT_PPP_SERIAL;
 			p->dlt_list[2] = DLT_FRELAY;
 			p->dlt_list[3] = DLT_MTP2;
-			p->dlt_list[4] = DLT_MTP3;
-			p->dlt_list[5] = DLT_SCCP;
 		}
 		p->linktype = DLT_CHDLC;
 		break;
