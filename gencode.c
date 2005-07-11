@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.251 2005-07-08 15:18:59 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.252 2005-07-11 13:56:01 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6219,7 +6219,7 @@ struct block *
 gen_vlan(vlan_num)
 	int vlan_num;
 {
-	struct	block	*b0;
+	struct	block	*b0,*b1;
 
 	/*
 	 * Change the offsets to point to the type and data fields within
@@ -6269,12 +6269,13 @@ gen_vlan(vlan_num)
         }
 
 	/* check for VLAN */
-	b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
+        if (orig_linktype != (u_int)-1)
+                b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
+        else
+                bpf_error("no VLAN match after MPLS");
 
 	/* If a specific VLAN is requested, check VLAN id */
 	if (vlan_num >= 0) {
-		struct block *b1;
-
 		b1 = gen_mcmp(OR_LINK, orig_nl, BPF_H, (bpf_int32)vlan_num,
 		    0x0fff);
 		gen_and(b0, b1);
