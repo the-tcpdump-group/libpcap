@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.252 2005-07-11 13:56:01 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.253 2005-07-14 15:59:24 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1853,6 +1853,23 @@ gen_linktype(proto)
 {
 	struct block *b0, *b1, *b2;
 
+        /* has the linktype been poisoned by MPLS expression ? */
+        if (off_linktype == (u_int)-1) {
+                switch(proto) {
+                    /* FIXME add other L3 proto IDs */
+                case ETHERTYPE_IP:
+                case PPP_IP:
+                        return gen_null(Q_IP); 
+                    /* FIXME add other L3 proto IDs */
+                case ETHERTYPE_IPV6:
+                case PPP_IPV6:
+                        return gen_null(Q_IPV6); 
+                default:
+                    bpf_error("unsupported protocol over mpls");
+                    /* NOTREACHED */
+            }
+        }
+
 	switch (linktype) {
 
 	case DLT_EN10MB:
@@ -2450,10 +2467,7 @@ gen_hostop(addr, mask, dir, proto, src_off, dst_off)
 	default:
 		abort();
 	}
-        if (off_linktype != (u_int)-1)
-            b0 = gen_linktype(proto);
-        else
-            b0 = gen_null(Q_IP);
+        b0 = gen_linktype(proto);
 	b1 = gen_mcmp(OR_NET, offset, BPF_W, (bpf_int32)addr, mask);
 	gen_and(b0, b1);
 	return b1;
@@ -3438,10 +3452,7 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_IP:
-                if (off_linktype != (u_int)-1)
-                    b1 = gen_linktype(ETHERTYPE_IP);
-                else
-                    b1 = gen_null(Q_IP); 
+                b1 = gen_linktype(ETHERTYPE_IP);
 		break;
 
 	case Q_ARP:
@@ -4434,10 +4445,7 @@ gen_proto(v, proto, dir)
 		 * So we always check for ETHERTYPE_IP.
 		 */
 
-                if (off_linktype != (u_int)-1)
-                    b0 = gen_linktype(ETHERTYPE_IP);
-                else
-                    b0 = gen_null(Q_IP); 
+                b0 = gen_linktype(ETHERTYPE_IP);
 #ifndef CHASE_CHAIN
 		b1 = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)v);
 #else
