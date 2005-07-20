@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.253 2005-07-14 15:59:24 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.254 2005-07-20 15:18:07 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1115,6 +1115,7 @@ init_linktype(p)
 		off_nl_nosnap = PFLOG_HDRLEN;	/* no 802.2 LLC */
 		return;
 
+        case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
                 off_linktype = 4;
@@ -2259,6 +2260,7 @@ gen_linktype(proto)
 		/*NOTREACHED*/
 		break;
 
+        case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
@@ -6035,6 +6037,7 @@ gen_inbound(dir)
 		}
 		break;
 
+        case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
 	case DLT_JUNIPER_ATM1:
