@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.28 2005-07-20 15:20:20 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.29 2005-07-31 19:02:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6091,7 +6091,7 @@ gen_pf_ifname(const char *ifname)
 	return (b0);
 }
 
-/* PF firewall log matched interface */
+/* PF firewall log ruleset name */
 struct block *
 gen_pf_ruleset(char *ruleset)
 {
