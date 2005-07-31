@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.85 2005-04-04 08:42:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.86 2005-07-31 17:58:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -904,6 +904,17 @@ opt_peep(b)
 			JT(b) = JF(b);
 		if (b->s.k == 0xffffffff)
 			JF(b) = JT(b);
+	}
+	/*
+	 * If we're comparing against the index register, and the index
+	 * register is a known constant, we can just compare against that
+	 * constant.
+	 */
+	val = b->val[X_ATOM];
+	if (vmap[val].is_const && BPF_SRC(b->s.code) == BPF_X) {
+		bpf_int32 v = vmap[val].const_val;
+		b->s.code &= ~BPF_X;
+		b->s.k = v;
 	}
 	/*
 	 * If the accumulator is a known constant, we can compute the
