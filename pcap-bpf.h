@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.38 2005-05-27 23:32:20 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.39 2005-08-01 01:13:53 guy Exp $ (LBL)
  */
 
 /*
@@ -656,7 +656,7 @@ struct bpf_insn {
 	u_short	code;
 	u_char 	jt;
 	u_char 	jf;
-	bpf_int32 k;
+	bpf_u_int32 k;
 };
 
 /*
