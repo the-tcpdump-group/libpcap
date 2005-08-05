@@ -1,6 +1,6 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.60 2005-07-05 21:03:26 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.61 2005-08-05 23:05:37 guy Exp $ (LBL)
 
-Tue. 	July 5, 2005.  ken@xelerance.com. Summary for 3.9.x tcpdump
+Tue. 	July 5, 2005.  ken@xelerance.com. Summary for 0.9.x libpcap
 
 	Fixes for compiling on nearly every platform,
 		including improved 64bit support
