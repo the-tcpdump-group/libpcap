@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.99 2003-12-15 01:35:03 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.100 2005-08-08 17:44:26 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -121,7 +121,6 @@ libpcap.dylib: $(OBJ)
 		-install_name $(libdir)/libpcap.0.dylib -compatibility_version `cat VERSION` \
 		-current_version `cat VERSION`
 
-
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
 	$(LEX) -t $< > $$$$.$@; mv $$$$.$@ $@
@@ -169,6 +168,9 @@ bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 
 bpf_filter.o: bpf_filter.c
 	$(CC) $(CFLAGS) -c bpf_filter.c
+
+filtertest: filtertest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o filtertest filtertest.c libpcap.a
 
 install: libpcap.a 
 	[ -d $(DESTDIR)$(libdir) ] || \

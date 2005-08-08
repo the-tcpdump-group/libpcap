@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.13 2005-06-20 21:27:08 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.14 2005-08-08 17:44:25 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -333,6 +333,7 @@ fad-gifc.c	- pcap_findalldevs() for systems with only SIOCGIFLIST
 fad-glifc.c	- pcap_findalldevs() for systems with SIOCGLIFCONF
 fad-null.c	- pcap_findalldevs() for systems without capture support
 fad-win32.c	- pcap_findalldevs() for WinPcap
+filtertest.c	- test program for BPF compiler
 gencode.c	- BPF code generation routines
 gencode.h	- BPF code generation definitions
 grammar.y	- filter string grammar

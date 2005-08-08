@@ -39,6 +39,7 @@ fad-gifc.c
 fad-glifc.c
 fad-null.c
 fad-win32.c
+filtertest.c
 gencode.c
 gencode.h
 grammar.y
