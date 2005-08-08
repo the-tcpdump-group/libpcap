@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.30 2005-08-08 02:40:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.31 2005-08-08 07:25:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -701,11 +701,6 @@ static u_int off_mac;
 static u_int off_linktype;
 
 /*
- * TRUE if we're checking MPLS-encapsulated packets.
- */
-static int is_mpls = 0;
-
-/*
  * TRUE if the link layer includes an ATM pseudo-header.
  */
 static int is_atm = 0;
@@ -783,11 +778,6 @@ init_linktype(p)
 	off_vci = -1;
 	off_proto = -1;
 	off_payload = -1;
-
-	/*
-	 * Assume also that we're not checking MPLS-encapsulated packets.
-	 */
-	is_mpls = 0;
 
 	/*
 	 * And assume we're not doing SS7.
@@ -1868,7 +1858,7 @@ gen_linktype(proto)
 	struct block *b0, *b1, *b2;
 
 	/* are we checking MPLS-encapsulated packets? */
-	if (is_mpls) {
+	if (label_stack_depth > 0) {
 		switch (proto) {
 		case ETHERTYPE_IP:
 		case PPP_IP:
@@ -3121,7 +3111,7 @@ gen_host(addr, mask, proto, dir)
 		 * Only check for non-IPv4 addresses if we're not
 		 * checking MPLS-encapsulated packets.
 		 */
-		if (!is_mpls) {
+		if (label_stack_depth == 0) {
 			b1 = gen_host(addr, mask, Q_ARP, dir);
 			gen_or(b0, b1);
 			b0 = gen_host(addr, mask, Q_RARP, dir);
@@ -6254,7 +6244,7 @@ gen_vlan(vlan_num)
 	struct	block	*b0, *b1;
 
 	/* can't check for VLAN-encapsulated packets inside MPLS */
-	if (is_mpls)
+	if (label_stack_depth > 0)
 		bpf_error("no VLAN match after MPLS");
 
 	/*
@@ -6348,7 +6338,6 @@ gen_mpls(label_num)
              * match against IP-related protocols such as Q_ARP, Q_RARP
              * etc.
              */
-            is_mpls = 1;
             switch (linktype) {
                 
             case DLT_C_HDLC: /* fall through */
