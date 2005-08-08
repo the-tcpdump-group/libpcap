@@ -24,7 +24,7 @@ static const char copyright[] _U_ =
     "@(#) Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 2000\n\
 The Regents of the University of California.  All rights reserved.\n";
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/filtertest.c,v 1.1 2005-08-08 17:44:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/filtertest.c,v 1.2 2005-08-08 17:50:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -242,53 +242,11 @@ main(int argc, char **argv)
 	exit(0);
 }
 
-#ifdef WIN32
-	/*
-	 * XXX - there should really be libpcap calls to get the version
-	 * number as a string (the string would be generated from #defines
-	 * at run time, so that it's not generated from string constants
-	 * in the library, as, on many UNIX systems, those constants would
-	 * be statically linked into the application executable image, and
-	 * would thus reflect the version of libpcap on the system on
-	 * which the application was *linked*, not the system on which it's
-	 * *running*.
-	 *
-	 * That routine should be documented, unlike the "version[]"
-	 * string, so that UNIX vendors providing their own libpcaps
-	 * don't omit it (as a couple of vendors have...).
-	 *
-	 * Packet.dll should perhaps also export a routine to return the
-	 * version number of the Packet.dll code, to supply the
-	 * "Wpcap_version" information on Windows.
-	 */
-	char WDversion[]="current-cvs.tcpdump.org";
-	char pcap_version[]="current-cvs.tcpdump.org";
-	char Wpcap_version[]="3.1";
-#endif
-
 static void
 usage(void)
 {
-#ifndef HAVE_PCAP_LIB_VERSION
-#if defined(WIN32) || defined(HAVE_PCAP_VERSION)
-	extern char pcap_version[];
-#else /* defined(WIN32) || defined(HAVE_PCAP_VERSION) */
-	static char pcap_version[] = "unknown";
-#endif /* defined(WIN32) || defined(HAVE_PCAP_VERSION) */
-#endif /* HAVE_PCAP_LIB_VERSION */
-
-#ifdef HAVE_PCAP_LIB_VERSION
 	(void)fprintf(stderr, "%s, with %s\n", program_name,
 	    pcap_lib_version());
-#else /* HAVE_PCAP_LIB_VERSION */
-#ifdef WIN32
-	(void)fprintf(stderr, "%s, with WinPcap version %s, based on libpcap version %s\n",
-	    program_name, Wpcap_version, pcap_version);
-#else /* WIN32 */
-	(void)fprintf(stderr, "%s, with libpcap version %s\n", program_name,
-	    pcap_version);
-#endif /* WIN32 */
-#endif /* HAVE_PCAP_LIB_VERSION */
 	(void)fprintf(stderr,
 	    "Usage: %s [-dO] [ -F file ] [ -s snaplen ] dlt [ expression ]\n",
 	    program_name);
