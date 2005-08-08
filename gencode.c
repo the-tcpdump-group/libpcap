@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.255 2005-07-31 19:01:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.256 2005-08-08 02:38:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -205,7 +205,7 @@ static struct block *gen_thostop(const u_char *, int);
 static struct block *gen_wlanhostop(const u_char *, int);
 static struct block *gen_ipfchostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int);
-static struct block *gen_null(int);
+static struct block *gen_mpls_linktype(int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
 #ifdef INET6
 static struct block *gen_host6(struct in6_addr *, struct in6_addr *, int, int);
@@ -701,6 +701,11 @@ static u_int off_mac;
 static u_int off_linktype;
 
 /*
+ * TRUE if we're checking MPLS-encapsulated packets.
+ */
+static int is_mpls = 0;
+
+/*
  * TRUE if the link layer includes an ATM pseudo-header.
  */
 static int is_atm = 0;
@@ -779,6 +784,14 @@ init_linktype(p)
 	off_proto = -1;
 	off_payload = -1;
 
+	/*
+	 * Assume also that we're not checking MPLS-encapsulated packets.
+	 */
+	is_mpls = 0;
+
+	/*
+	 * And assume we're not doing SS7.
+	 */
 	off_sio = -1;
 	off_opc = -1;
 	off_dpc = -1;
@@ -1854,22 +1867,24 @@ gen_linktype(proto)
 {
 	struct block *b0, *b1, *b2;
 
-        /* has the linktype been poisoned by MPLS expression ? */
-        if (off_linktype == (u_int)-1) {
-                switch(proto) {
-                    /* FIXME add other L3 proto IDs */
-                case ETHERTYPE_IP:
-                case PPP_IP:
-                        return gen_null(Q_IP); 
-                    /* FIXME add other L3 proto IDs */
-                case ETHERTYPE_IPV6:
-                case PPP_IPV6:
-                        return gen_null(Q_IPV6); 
-                default:
-                    bpf_error("unsupported protocol over mpls");
-                    /* NOTREACHED */
-            }
-        }
+	/* are we checking MPLS-encapsulated packets? */
+	if (is_mpls) {
+		switch (proto) {
+		case ETHERTYPE_IP:
+		case PPP_IP:
+		/* FIXME add other L3 proto IDs */
+			return gen_mpls_linktype(Q_IP); 
+
+		case ETHERTYPE_IPV6:
+		case PPP_IPV6:
+		/* FIXME add other L3 proto IDs */
+			return gen_mpls_linktype(Q_IPV6); 
+
+		default:
+			bpf_error("unsupported protocol over mpls");
+			/* NOTREACHED */
+		}
+	}
 
 	switch (linktype) {
 
@@ -2469,7 +2484,7 @@ gen_hostop(addr, mask, dir, proto, src_off, dst_off)
 	default:
 		abort();
 	}
-        b0 = gen_linktype(proto);
+	b0 = gen_linktype(proto);
 	b1 = gen_mcmp(OR_NET, offset, BPF_W, (bpf_int32)addr, mask);
 	gen_and(b0, b1);
 	return b1;
@@ -3055,34 +3070,36 @@ gen_dnhostop(addr, dir)
 	return b1;
 }
 
-/* generate a null link-layer encapsulation
- *
- * which is matching for 0x4 in the first byte of the IPv4 header
- *          matching for 0x6 in the first byte of the IPv6 header
- *
- * we need this for matching to an IP payload in MPLS packets
+/*
+ * Generate a check for IPv4 or IPv6 for MPLS-encapsulated packets;
+ * test the bottom-of-stack bit, and then check the version number
+ * field in the IP header.
  */
 static struct block *
-gen_null(proto)
+gen_mpls_linktype(proto)
 	int proto;
 {
 	struct block *b0, *b1;
+
         switch (proto) {
+
         case Q_IP:
                 /* match the bottom-of-stack bit */
                 b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
                 /* match the IPv4 version number */
                 b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x40, 0xf0);
-                gen_and(b0,b1);
+                gen_and(b0, b1);
                 return b1;
-        case Q_IPV6:
+ 
+       case Q_IPV6:
                 /* match the bottom-of-stack bit */
                 b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
                 /* match the IPv4 version number */
                 b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x60, 0xf0);
-                gen_and(b0,b1);
+                gen_and(b0, b1);
                 return b1;
-        default:
+ 
+       default:
                 abort();
         }
 }
@@ -3100,11 +3117,15 @@ gen_host(addr, mask, proto, dir)
 
 	case Q_DEFAULT:
 		b0 = gen_host(addr, mask, Q_IP, dir);
-		if (off_linktype != (u_int)-1) {
-		    b1 = gen_host(addr, mask, Q_ARP, dir);
-		    gen_or(b0, b1);
-		    b0 = gen_host(addr, mask, Q_RARP, dir);
-		    gen_or(b1, b0);
+		/*
+		 * Only check for non-IPv4 addresses if we're not
+		 * checking MPLS-encapsulated packets.
+		 */
+		if (!is_mpls) {
+			b1 = gen_host(addr, mask, Q_ARP, dir);
+			gen_or(b0, b1);
+			b0 = gen_host(addr, mask, Q_RARP, dir);
+			gen_or(b1, b0);
 		}
 		return b0;
 
@@ -3454,7 +3475,7 @@ gen_proto_abbrev(proto)
 		break;
 
 	case Q_IP:
-                b1 = gen_linktype(ETHERTYPE_IP);
+		b1 =  gen_linktype(ETHERTYPE_IP);
 		break;
 
 	case Q_ARP:
@@ -4447,7 +4468,7 @@ gen_proto(v, proto, dir)
 		 * So we always check for ETHERTYPE_IP.
 		 */
 
-                b0 = gen_linktype(ETHERTYPE_IP);
+		b0 = gen_linktype(ETHERTYPE_IP);
 #ifndef CHASE_CHAIN
 		b1 = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)v);
 #else
@@ -6230,7 +6251,11 @@ struct block *
 gen_vlan(vlan_num)
 	int vlan_num;
 {
-	struct	block	*b0,*b1;
+	struct	block	*b0, *b1;
+
+	/* can't check for VLAN-encapsulated packets inside MPLS */
+	if (is_mpls)
+		bpf_error("no VLAN match after MPLS");
 
 	/*
 	 * Change the offsets to point to the type and data fields within
@@ -6262,28 +6287,25 @@ gen_vlan(vlan_num)
 	 * be done assuming a VLAN, even though the "or" could be viewed
 	 * as meaning "or, if this isn't a VLAN packet...".
 	 */
-        orig_linktype = off_linktype;	/* save original values */
-        orig_nl = off_nl;
+	orig_linktype = off_linktype;	/* save original values */
+	orig_nl = off_nl;
 
-        switch (linktype) {
+	switch (linktype) {
 
-        case DLT_EN10MB:
-                off_linktype += 4;
-                off_nl_nosnap += 4;
-                off_nl += 4;
-                break;
+	case DLT_EN10MB:
+		off_linktype += 4;
+		off_nl_nosnap += 4;
+		off_nl += 4;
+		break;
 
-        default:
-                bpf_error("no VLAN support for data link type %d",
-                      linktype);
-            /*NOTREACHED*/
-        }
+	default:
+		bpf_error("no VLAN support for data link type %d",
+		      linktype);
+		/*NOTREACHED*/
+	}
 
 	/* check for VLAN */
-        if (orig_linktype != (u_int)-1)
-                b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
-        else
-                bpf_error("no VLAN match after MPLS");
+	b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
 
 	/* If a specific VLAN is requested, check VLAN id */
 	if (vlan_num >= 0) {
@@ -6314,34 +6336,35 @@ gen_mpls(label_num)
 	 *
 	 * XXX - this is a bit of a kludge.  See comments in gen_vlan().
 	 */
-        orig_linktype = off_linktype;	/* save original values */
         orig_nl = off_nl;
 
         if (label_stack_depth > 0) {
             /* just match the bottom-of-stack bit clear */
             b0 = gen_mcmp(OR_LINK, orig_nl-2, BPF_B, 0, 0x01);
         } else {
-
-            /* poison the linktype to make sure higher level
-             * code generators don't try to match against IP related protocols like
-             * Q_ARP, Q_RARP etc. */
-            off_linktype = -1;
+            /*
+             * Indicate that we're checking MPLS-encapsulated headers,
+             * to make sure higher level code generators don't try to
+             * match against IP-related protocols such as Q_ARP, Q_RARP
+             * etc.
+             */
+            is_mpls = 1;
             switch (linktype) {
                 
             case DLT_C_HDLC: /* fall through */
             case DLT_EN10MB:
-                    b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
+                    b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
                                  (bpf_int32)ETHERTYPE_MPLS);
                     break;
                 
             case DLT_PPP:
-                    b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H,
+                    b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
                                  (bpf_int32)PPP_MPLS_UCAST);
                     break;
                 
-                /* FIXME add other DLT_s ...
-                 * for Frame-Relay/and ATM this may get messy due to SNAP headers
-                 * leave it for now */
+                    /* FIXME add other DLT_s ...
+                     * for Frame-Relay/and ATM this may get messy due to SNAP headers
+                     * leave it for now */
                 
             default:
                     bpf_error("no MPLS support for data link type %d",
