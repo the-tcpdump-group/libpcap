@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.257 2005-08-08 07:24:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.258 2005-08-12 19:23:30 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1121,6 +1121,9 @@ init_linktype(p)
         case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
+        case DLT_JUNIPER_PPP:
+        case DLT_JUNIPER_CHDLC:
+        case DLT_JUNIPER_FRELAY:
                 off_linktype = 4;
 		off_nl = 4;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
@@ -1141,6 +1144,7 @@ init_linktype(p)
 		/* frames captured on a Juniper PPPoE service PIC
 		 * contain raw ethernet frames */
 	case DLT_JUNIPER_PPPOE:
+        case DLT_JUNIPER_ETHER:
 		off_linktype = 16;
 		off_nl = 18;		/* Ethernet II */
 		off_nl_nosnap = 21;	/* 802.3+802.2 */
@@ -2276,6 +2280,10 @@ gen_linktype(proto)
         case DLT_JUNIPER_ES:
         case DLT_JUNIPER_MONITOR:
         case DLT_JUNIPER_SERVICES:
+        case DLT_JUNIPER_ETHER:
+        case DLT_JUNIPER_PPP:
+        case DLT_JUNIPER_FRELAY:
+        case DLT_JUNIPER_CHDLC:
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
@@ -6059,6 +6067,10 @@ gen_inbound(dir)
         case DLT_JUNIPER_ES:
         case DLT_JUNIPER_MONITOR:
         case DLT_JUNIPER_SERVICES:
+        case DLT_JUNIPER_ETHER:
+        case DLT_JUNIPER_PPP:
+        case DLT_JUNIPER_FRELAY:
+        case DLT_JUNIPER_CHDLC:
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
 		if (dir) {
