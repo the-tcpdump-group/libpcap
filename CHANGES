@@ -1,6 +1,12 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.3 2005-07-11 20:09:47 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.4 2005-08-19 15:29:59 ken Exp $ (LBL)
 
-Tue. 	July 5, 2005.  ken@xelerance.com. Summary for 0.9.x libpcap
+Mon. 	August 21, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
+
+	Support for radiotap on Linux (Mike Kershaw)
+	Fixes for HP-UX
+	Support for additional Juniper link-layer types
+
+Tue. 	July 5, 2005.  ken@xelerance.com. Summary for 0.9.3 libpcap release
 
 	Fixes for compiling on nearly every platform,
 		including improved 64bit support
