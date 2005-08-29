@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.12 2005-08-13 22:29:44 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.13 2005-08-29 21:05:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -70,6 +70,12 @@ static const char rcsid[] _U_ =
  * as per a request from Dumas Hwang <dumas.hwang@navtelcom.com>.
  */
 #define NAVTEL_TCPDUMP_MAGIC	0xa12b3c4d
+
+/*
+ * Normal libpcap format, except for seconds/nanoseconds timestamps,
+ * as per a request by Ulf Lamping <ulf.lamping@web.de>
+ */
+#define NSEC_TCPDUMP_MAGIC	0xa1b23c4d
 
 /*
  * We use the "receiver-makes-right" approach to byte order,
