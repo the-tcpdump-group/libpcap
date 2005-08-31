@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.258 2005-08-12 19:23:30 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.259 2005-08-31 06:51:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6307,7 +6307,7 @@ gen_vlan(vlan_num)
 	}
 
 	/* check for VLAN */
-	b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
+	b0 = gen_cmp(OR_LINK, orig_linktype, BPF_H, (bpf_int32)ETHERTYPE_8021Q);
 
 	/* If a specific VLAN is requested, check VLAN id */
 	if (vlan_num >= 0) {
