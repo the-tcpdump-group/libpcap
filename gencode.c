@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.259 2005-08-31 06:51:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.260 2005-09-05 09:06:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -100,7 +100,7 @@ static const char rcsid[] _U_ =
 static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
-/* Hack for updating VLAN, MPLS offsets. */
+/* Hack for updating VLAN, MPLS, and PPPoE offsets. */
 static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
 
 /* XXX */
@@ -6389,6 +6389,78 @@ gen_mpls(label_num)
         off_nl += 4;
         label_stack_depth++;
 	return (b0);
+}
+
+/*
+ * Support PPPOE discovery and session.
+ */
+struct block *
+gen_pppoed()
+{
+	/* check for PPPoE discovery */
+	return gen_linktype((bpf_int32)ETHERTYPE_PPPOED);
+}
+
+struct block *
+gen_pppoes()
+{
+	struct block *b0;
+
+	/*
+	 * Test against the PPPoE session link-layer type.
+	 */
+	b0 = gen_linktype((bpf_int32)ETHERTYPE_PPPOES);
+
+	/*
+	 * Change the offsets to point to the type and data fields within
+	 * the PPP packet.
+	 *
+	 * XXX - this is a bit of a kludge.  If we were to split the
+	 * compiler into a parser that parses an expression and
+	 * generates an expression tree, and a code generator that
+	 * takes an expression tree (which could come from our
+	 * parser or from some other parser) and generates BPF code,
+	 * we could perhaps make the offsets parameters of routines
+	 * and, in the handler for an "AND" node, pass to subnodes
+	 * other than the PPPoE node the adjusted offsets.
+	 *
+	 * This would mean that "pppoes" would, instead of changing the
+	 * behavior of *all* tests after it, change only the behavior
+	 * of tests ANDed with it.  That would change the documented
+	 * semantics of "pppoes", which might break some expressions.
+	 * However, it would mean that "(pppoes and ip) or ip" would check
+	 * both for VLAN-encapsulated IP and IP-over-Ethernet, rather than
+	 * checking only for VLAN-encapsulated IP, so that could still
+	 * be considered worth doing; it wouldn't break expressions
+	 * that are of the form "pppoes and ..." which I suspect are the
+	 * most common expressions involving "pppoes".  "pppoes or ..."
+	 * doesn't necessarily do what the user would really want, now,
+	 * as all the "or ..." tests would be done assuming PPPoE, even
+	 * though the "or" could be viewed as meaning "or, if this isn't
+	 * a PPPoE packet...".
+	 */
+	orig_linktype = off_linktype;	/* save original values */
+	orig_nl = off_nl;
+
+	/*
+	 * The "network-layer" protocol is PPPoE, which has a 6-byte
+	 * PPPoE header, followed by PPP payload, so we set the
+	 * offsets to the network layer offset plus 6 bytes for
+	 * the PPPoE header plus the values appropriate for PPP when
+	 * encapsulated in Ethernet (which means there's no HDLC
+	 * encapsulation).
+	 */
+	off_linktype = orig_nl + 6;
+	off_nl = orig_nl + 6 + 2;
+	off_nl_nosnap = orig_nl + 6 + 2;
+
+	/*
+	 * Set the link-layer type to PPP, as all subsequent tests will
+	 * be on the encapsulated PPP header.
+	 */
+	linktype = DLT_PPP;
+
+	return b0;
 }
 
 struct block *
