@@ -1,12 +1,15 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.65 2005-08-31 06:51:46 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.66 2005-09-05 09:17:23 guy Exp $ (LBL)
 
-Tue. 	August 30, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
+Mon. 	September 5, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
 
 	Support for radiotap on Linux (Mike Kershaw)
 	Fixes for HP-UX
 	Support for additional Juniper link-layer types
 	Fixes for filters on MPLS-encapsulated packets
 	"vlan" filter fixed
+	"pppoed" and "pppoes" filters added; the latter modifies later
+	parts of the filter expression to look at the PPP headers and
+	headers in the PPP payload
 
 Tue. 	July 5, 2005.  ken@xelerance.com. Summary for 0.9.3 libpcap release
 
