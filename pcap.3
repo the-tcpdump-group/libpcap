@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.71 2005-07-07 01:57:01 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.72 2005-09-07 08:28:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -689,7 +689,11 @@ supplied to
 as the source link-layer address, if the header contains such an
 address, might be changed to be the address assigned to the interface on
 which the packet it sent, if the platform doesn't support sending
-completely raw and unchanged packets.
+completely raw and unchanged packets.  Even worse, some drivers on some
+platforms might change the link-layer type field to whatever value
+libpcap used when attaching to the device, even on platforms that
+.I do
+nominally support sending completely raw and unchanged packets.
 .PP
 .B pcap_sendpacket()
 is like
