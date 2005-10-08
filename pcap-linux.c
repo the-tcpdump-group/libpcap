@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.116 2005-08-16 04:18:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.117 2005-10-08 11:30:26 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -394,7 +394,16 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		 *
 		 * We can safely pass "recvfrom()" a byte count
 		 * based on the snapshot length.
+		 *
+		 * If we're in cooked mode, make the snapshot length
+		 * large enough to hold a "cooked mode" header plus
+		 * 1 byte of packet data (so we don't pass a byte
+		 * count of 0 to "recvfrom()").
 		 */
+		if (handle->md.cooked) {
+			if (handle->snapshot < SLL_HDR_LEN + 1)
+				handle->snapshot = SLL_HDR_LEN + 1;
+		}
 		handle->bufsize = handle->snapshot;
 	}
 
