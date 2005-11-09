@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.104 2005-11-08 02:32:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.105 2005-11-09 23:49:30 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -86,6 +86,7 @@ W		([0-9A-Fa-f][0-9A-Fa-f]?[0-9A-Fa-f]?[0-9A-Fa-f]?)
 %e 7600
 %k 4550
 %p 27600
+%n 2000
 
 V680		{W}:{W}:{W}:{W}:{W}:{W}:{W}:{W}
 
