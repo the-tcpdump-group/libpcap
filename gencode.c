@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.260 2005-09-05 09:06:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.261 2005-11-17 04:49:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -206,9 +206,9 @@ static struct block *gen_wlanhostop(const u_char *, int);
 static struct block *gen_ipfchostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int);
 static struct block *gen_mpls_linktype(int);
-static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int);
+static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int, int);
 #ifdef INET6
-static struct block *gen_host6(struct in6_addr *, struct in6_addr *, int, int);
+static struct block *gen_host6(struct in6_addr *, struct in6_addr *, int, int, int);
 #endif
 #ifndef INET6
 static struct block *gen_gateway(const u_char *, bpf_u_int32 **, int, int);
@@ -3103,26 +3103,33 @@ gen_mpls_linktype(proto)
 }
 
 static struct block *
-gen_host(addr, mask, proto, dir)
+gen_host(addr, mask, proto, dir, type)
 	bpf_u_int32 addr;
 	bpf_u_int32 mask;
 	int proto;
 	int dir;
+	int type;
 {
 	struct block *b0, *b1;
+	const char *typestr;
+
+	if (type == Q_NET)
+		typestr = "net";
+	else
+		typestr = "host";
 
 	switch (proto) {
 
 	case Q_DEFAULT:
-		b0 = gen_host(addr, mask, Q_IP, dir);
+		b0 = gen_host(addr, mask, Q_IP, dir, type);
 		/*
 		 * Only check for non-IPv4 addresses if we're not
 		 * checking MPLS-encapsulated packets.
 		 */
 		if (label_stack_depth == 0) {
-			b1 = gen_host(addr, mask, Q_ARP, dir);
+			b1 = gen_host(addr, mask, Q_ARP, dir, type);
 			gen_or(b0, b1);
-			b0 = gen_host(addr, mask, Q_RARP, dir);
+			b0 = gen_host(addr, mask, Q_RARP, dir, type);
 			gen_or(b1, b0);
 		}
 		return b0;
@@ -3137,28 +3144,28 @@ gen_host(addr, mask, proto, dir)
 		return gen_hostop(addr, mask, dir, ETHERTYPE_ARP, 14, 24);
 
 	case Q_TCP:
-		bpf_error("'tcp' modifier applied to host");
+		bpf_error("'tcp' modifier applied to %s", typestr);
 
 	case Q_SCTP:
-		bpf_error("'sctp' modifier applied to host");
+		bpf_error("'sctp' modifier applied to %s", typestr);
 
 	case Q_UDP:
-		bpf_error("'udp' modifier applied to host");
+		bpf_error("'udp' modifier applied to %s", typestr);
 
 	case Q_ICMP:
-		bpf_error("'icmp' modifier applied to host");
+		bpf_error("'icmp' modifier applied to %s", typestr);
 
 	case Q_IGMP:
-		bpf_error("'igmp' modifier applied to host");
+		bpf_error("'igmp' modifier applied to %s", typestr);
 
 	case Q_IGRP:
-		bpf_error("'igrp' modifier applied to host");
+		bpf_error("'igrp' modifier applied to %s", typestr);
 
 	case Q_PIM:
-		bpf_error("'pim' modifier applied to host");
+		bpf_error("'pim' modifier applied to %s", typestr);
 
 	case Q_VRRP:
-		bpf_error("'vrrp' modifier applied to host");
+		bpf_error("'vrrp' modifier applied to %s", typestr);
 
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
@@ -3186,38 +3193,38 @@ gen_host(addr, mask, proto, dir)
 		bpf_error("'ip6' modifier applied to ip host");
 
 	case Q_ICMPV6:
-		bpf_error("'icmp6' modifier applied to host");
+		bpf_error("'icmp6' modifier applied to %s", typestr);
 #endif /* INET6 */
 
 	case Q_AH:
-		bpf_error("'ah' modifier applied to host");
+		bpf_error("'ah' modifier applied to %s", typestr);
 
 	case Q_ESP:
-		bpf_error("'esp' modifier applied to host");
+		bpf_error("'esp' modifier applied to %s", typestr);
 
 	case Q_ISO:
 		bpf_error("ISO host filtering not implemented");
 
 	case Q_ESIS:
-		bpf_error("'esis' modifier applied to host");
+		bpf_error("'esis' modifier applied to %s", typestr);
 
 	case Q_ISIS:
-		bpf_error("'isis' modifier applied to host");
+		bpf_error("'isis' modifier applied to %s", typestr);
 
 	case Q_CLNP:
-		bpf_error("'clnp' modifier applied to host");
+		bpf_error("'clnp' modifier applied to %s", typestr);
 
 	case Q_STP:
-		bpf_error("'stp' modifier applied to host");
+		bpf_error("'stp' modifier applied to %s", typestr);
 
 	case Q_IPX:
 		bpf_error("IPX host filtering not implemented");
 
 	case Q_NETBEUI:
-		bpf_error("'netbeui' modifier applied to host");
+		bpf_error("'netbeui' modifier applied to %s", typestr);
 
 	case Q_RADIO:
-		bpf_error("'radio' modifier applied to host");
+		bpf_error("'radio' modifier applied to %s", typestr);
 
 	default:
 		abort();
@@ -3227,49 +3234,57 @@ gen_host(addr, mask, proto, dir)
 
 #ifdef INET6
 static struct block *
-gen_host6(addr, mask, proto, dir)
+gen_host6(addr, mask, proto, dir, type)
 	struct in6_addr *addr;
 	struct in6_addr *mask;
 	int proto;
 	int dir;
+	int type;
 {
+	const char *typestr;
+
+	if (type == Q_NET)
+		typestr = "net";
+	else
+		typestr = "host";
+
 	switch (proto) {
 
 	case Q_DEFAULT:
-		return gen_host6(addr, mask, Q_IPV6, dir);
+		return gen_host6(addr, mask, Q_IPV6, dir, type);
 
 	case Q_IP:
-		bpf_error("'ip' modifier applied to ip6 host");
+		bpf_error("'ip' modifier applied to ip6 %s", typestr);
 
 	case Q_RARP:
-		bpf_error("'rarp' modifier applied to ip6 host");
+		bpf_error("'rarp' modifier applied to ip6 %s", typestr);
 
 	case Q_ARP:
-		bpf_error("'arp' modifier applied to ip6 host");
+		bpf_error("'arp' modifier applied to ip6 %s", typestr);
 
 	case Q_SCTP:
-		bpf_error("'sctp' modifier applied to host");
+		bpf_error("'sctp' modifier applied to %s", typestr);
 
 	case Q_TCP:
-		bpf_error("'tcp' modifier applied to host");
+		bpf_error("'tcp' modifier applied to %s", typestr);
 
 	case Q_UDP:
-		bpf_error("'udp' modifier applied to host");
+		bpf_error("'udp' modifier applied to %s", typestr);
 
 	case Q_ICMP:
-		bpf_error("'icmp' modifier applied to host");
+		bpf_error("'icmp' modifier applied to %s", typestr);
 
 	case Q_IGMP:
-		bpf_error("'igmp' modifier applied to host");
+		bpf_error("'igmp' modifier applied to %s", typestr);
 
 	case Q_IGRP:
-		bpf_error("'igrp' modifier applied to host");
+		bpf_error("'igrp' modifier applied to %s", typestr);
 
 	case Q_PIM:
-		bpf_error("'pim' modifier applied to host");
+		bpf_error("'pim' modifier applied to %s", typestr);
 
 	case Q_VRRP:
-		bpf_error("'vrrp' modifier applied to host");
+		bpf_error("'vrrp' modifier applied to %s", typestr);
 
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
@@ -3278,7 +3293,7 @@ gen_host6(addr, mask, proto, dir)
 		bpf_error("AARP host filtering not implemented");
 
 	case Q_DECNET:
-		bpf_error("'decnet' modifier applied to ip6 host");
+		bpf_error("'decnet' modifier applied to ip6 %s", typestr);
 
 	case Q_SCA:
 		bpf_error("SCA host filtering not implemented");
@@ -3296,37 +3311,37 @@ gen_host6(addr, mask, proto, dir)
 		return gen_hostop6(addr, mask, dir, ETHERTYPE_IPV6, 8, 24);
 
 	case Q_ICMPV6:
-		bpf_error("'icmp6' modifier applied to host");
+		bpf_error("'icmp6' modifier applied to %s", typestr);
 
 	case Q_AH:
-		bpf_error("'ah' modifier applied to host");
+		bpf_error("'ah' modifier applied to %s", typestr);
 
 	case Q_ESP:
-		bpf_error("'esp' modifier applied to host");
+		bpf_error("'esp' modifier applied to %s", typestr);
 
 	case Q_ISO:
 		bpf_error("ISO host filtering not implemented");
 
 	case Q_ESIS:
-		bpf_error("'esis' modifier applied to host");
+		bpf_error("'esis' modifier applied to %s", typestr);
 
 	case Q_ISIS:
-		bpf_error("'isis' modifier applied to host");
+		bpf_error("'isis' modifier applied to %s", typestr);
 
 	case Q_CLNP:
-		bpf_error("'clnp' modifier applied to host");
+		bpf_error("'clnp' modifier applied to %s", typestr);
 
 	case Q_STP:
-		bpf_error("'stp' modifier applied to host");
+		bpf_error("'stp' modifier applied to %s", typestr);
 
 	case Q_IPX:
 		bpf_error("IPX host filtering not implemented");
 
 	case Q_NETBEUI:
-		bpf_error("'netbeui' modifier applied to host");
+		bpf_error("'netbeui' modifier applied to %s", typestr);
 
 	case Q_RADIO:
-		bpf_error("'radio' modifier applied to host");
+		bpf_error("'radio' modifier applied to %s", typestr);
 
 	default:
 		abort();
@@ -3385,9 +3400,10 @@ gen_gateway(eaddr, alist, proto, dir)
 			bpf_error(
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/Fibre Channel");
 
-		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR);
+		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR, Q_HOST);
 		while (*alist) {
-			tmp = gen_host(**alist++, 0xffffffff, proto, Q_OR);
+			tmp = gen_host(**alist++, 0xffffffff, proto, Q_OR,
+			    Q_HOST);
 			gen_or(b1, tmp);
 			b1 = tmp;
 		}
@@ -4671,7 +4687,7 @@ gen_scode(name, q)
 			addr <<= 8;
 			mask <<= 8;
 		}
-		return gen_host(addr, mask, proto, dir);
+		return gen_host(addr, mask, proto, dir, q.addr);
 
 	case Q_DEFAULT:
 	case Q_HOST:
@@ -4756,7 +4772,7 @@ gen_scode(name, q)
 			 * I don't think DECNET hosts can be multihomed, so
 			 * there is no need to build up a list of addresses
 			 */
-			return (gen_host(dn_addr, 0, proto, dir));
+			return (gen_host(dn_addr, 0, proto, dir, q.addr));
 		} else {
 #ifndef INET6
 			alist = pcap_nametoaddr(name);
@@ -4765,10 +4781,10 @@ gen_scode(name, q)
 			tproto = proto;
 			if (off_linktype == (u_int)-1 && tproto == Q_DEFAULT)
 				tproto = Q_IP;
-			b = gen_host(**alist++, 0xffffffff, tproto, dir);
+			b = gen_host(**alist++, 0xffffffff, tproto, dir, q.addr);
 			while (*alist) {
 				tmp = gen_host(**alist++, 0xffffffff,
-					       tproto, dir);
+					       tproto, dir, q.addr);
 				gen_or(b, tmp);
 				b = tmp;
 			}
@@ -4793,7 +4809,7 @@ gen_scode(name, q)
 					sin = (struct sockaddr_in *)
 						res->ai_addr;
 					tmp = gen_host(ntohl(sin->sin_addr.s_addr),
-						0xffffffff, tproto, dir);
+						0xffffffff, tproto, dir, q.addr);
 					break;
 				case AF_INET6:
 					if (tproto6 == Q_IP)
@@ -4802,7 +4818,7 @@ gen_scode(name, q)
 					sin6 = (struct sockaddr_in6 *)
 						res->ai_addr;
 					tmp = gen_host6(&sin6->sin6_addr,
-						&mask128, tproto6, dir);
+						&mask128, tproto6, dir, q.addr);
 					break;
 				default:
 					continue;
@@ -4984,7 +5000,7 @@ gen_mcode(s1, s2, masklen, q)
 	switch (q.addr) {
 
 	case Q_NET:
-		return gen_host(n, m, q.proto, q.dir);
+		return gen_host(n, m, q.proto, q.dir, q.addr);
 
 	default:
 		bpf_error("Mask syntax for networks only");
@@ -5017,7 +5033,7 @@ gen_ncode(s, v, q)
 	case Q_HOST:
 	case Q_NET:
 		if (proto == Q_DECNET)
-			return gen_host(v, 0, proto, dir);
+			return gen_host(v, 0, proto, dir, q.addr);
 		else if (proto == Q_LINK) {
 			bpf_error("illegal link layer address");
 		} else {
@@ -5033,7 +5049,7 @@ gen_ncode(s, v, q)
 				v <<= 32 - vlen;
 				mask <<= 32 - vlen;
 			}
-			return gen_host(v, mask, proto, dir);
+			return gen_host(v, mask, proto, dir, q.addr);
 		}
 
 	case Q_PORT:
@@ -5151,7 +5167,7 @@ gen_mcode6(s1, s2, masklen, q)
 		/* FALLTHROUGH */
 
 	case Q_NET:
-		b = gen_host6(addr, &mask, q.proto, q.dir);
+		b = gen_host6(addr, &mask, q.proto, q.dir, q.addr);
 		freeaddrinfo(res);
 		return b;
 
