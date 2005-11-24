@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.117 2005-10-08 11:30:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.118 2005-11-24 19:27:42 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -704,8 +704,18 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * here, but it's not clear that always incrementing
 	 * the count is more expensive than always testing a flag
 	 * in memory.
+	 *
+	 * We keep the count in "md.packets_read", and use that for
+	 * "ps_recv" if we can't get the statistics from the kernel.
+	 * We do that because, if we *can* get the statistics from
+	 * the kernel, we use "md.stat.ps_recv" and "md.stat.ps_drop"
+	 * as running counts, as reading the statistics from the
+	 * kernel resets the kernel statistics, and if we directly
+	 * increment "md.stat.ps_recv" here, that means it will
+	 * count packets *twice* on systems where we can get kernel
+	 * statistics - once here, and once in pcap_stats_linux().
 	 */
-	handle->md.stat.ps_recv++;
+	handle->md.packets_read++;
 
 	/* Call the user supplied callback function */
 	callback(userdata, &pcap_header, bp);
@@ -853,8 +863,14 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 *
 	 *	"ps_recv" doesn't include packets not yet read from
 	 *	the kernel by libpcap.
+	 *
+	 * We maintain the count of packets processed by libpcap in
+	 * "md.packets_read", for reasons described in the comment
+	 * at the end of pcap_read_packet().  We have no idea how many
+	 * packets were dropped.
 	 */
-	*stats = handle->md.stat;
+	stats->ps_recv = handle->md.packets_read;
+	stats->ps_drop = 0;
 	return 0;
 }
 

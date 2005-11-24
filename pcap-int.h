@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.75 2005-07-07 06:55:20 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.76 2005-11-24 19:27:42 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -88,6 +88,7 @@ struct pcap_md {
 	int	ifindex;	/* interface index of device we're bound to */
 	int	lo_ifindex;	/* interface index of the loopback device */
 	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */
+	u_int	packets_read;	/* count of packets read with recvfrom() */
 #endif
 
 #ifdef HAVE_DAG_API
