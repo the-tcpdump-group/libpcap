@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.140 2005-08-29 21:05:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.141 2005-12-13 13:41:39 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -430,6 +430,11 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_JUNIPER_FRELAY 180
 #define LINKTYPE_JUNIPER_CHDLC  181
 
+/*
+ * Multi Link Frame Relay (FRF.16)
+ */
+#define LINKTYPE_MFR            182
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -635,6 +640,8 @@ static struct linktype_map {
         { DLT_JUNIPER_FRELAY, LINKTYPE_JUNIPER_FRELAY },
         { DLT_JUNIPER_CHDLC, LINKTYPE_JUNIPER_CHDLC },
 
+        /* Multi Link Frame Relay (FRF.16) */
+        { DLT_MFR,              LINKTYPE_MFR },
 
 	{ -1,			-1 }
 };
