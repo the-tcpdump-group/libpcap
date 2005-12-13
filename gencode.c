@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.35 2005-11-17 04:50:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.36 2005-12-13 13:48:37 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1079,6 +1079,17 @@ init_linktype(p)
 		off_linktype = -1;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
+		return;
+
+                /*
+                 * the only BPF-interesting FRF.16 frames are non-control frames;
+                 * Frame Relay has a variable length link-layer
+                 * so lets start with offset 4 for now and increments later on (FIXME);
+                 */
+	case DLT_MFR:
+		off_linktype = -1;
+		off_nl = 4;
+		off_nl_nosnap = 0;	/* XXX - for now -> no 802.2 LLC */
 		return;
 
 	case DLT_APPLE_IP_OVER_IEEE1394:

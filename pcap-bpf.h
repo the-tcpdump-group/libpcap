@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.6 2005-08-13 22:29:47 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.7 2005-12-13 13:48:37 hannes Exp $ (LBL)
  */
 
 /*
@@ -604,6 +604,11 @@ struct bpf_version {
 #define DLT_JUNIPER_PPP         179
 #define DLT_JUNIPER_FRELAY      180
 #define DLT_JUNIPER_CHDLC       181
+
+/*
+ * Multi Link Frame Relay (FRF.16)
+ */
+#define DLT_MFR                 182
 
 /*
  * The instruction encodings.
