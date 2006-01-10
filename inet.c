@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.67 2005-06-20 21:27:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.68 2006-01-10 21:22:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -302,6 +302,19 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 	return (0);
 }
 
+/*
+ * XXX - on FreeBSDs that support it, should it get the sysctl named
+ * "dev.{adapter family name}.{adapter unit}.%desc" to get a description
+ * of the adapter?  Note that "dev.an.0.%desc" is "Aironet PC4500/PC4800"
+ * with my Cisco 350 card, so the name isn't entirely descriptive.  The
+ * "dev.an.0.%pnpinfo" has a better description, although one might argue
+ * that the problem is really a driver bug - if it can find out that it's
+ * a Cisco 340 or 350, rather than an old Aironet card, it should use
+ * that in the description.
+ *
+ * Do NetBSD, DragonflyBSD, or OpenBSD support this as well?
+ * Do any other UN*Xes support getting a description?
+ */
 int
 add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
     struct sockaddr *addr, size_t addr_size,
