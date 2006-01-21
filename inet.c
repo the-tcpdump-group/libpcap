@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.68 2006-01-10 21:22:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.69 2006-01-21 10:45:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -179,14 +179,25 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		 * Fill in the entry.
 		 */
 		curdev->next = NULL;
-		curdev->name = malloc(strlen(name) + 1);
-		strcpy(curdev->name, name);
+		curdev->name = strdup(name);
+		if (curdev->name == NULL) {
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "malloc: %s", pcap_strerror(errno));
+			free(curdev);
+			return (-1);
+		}
 		if (description != NULL) {
 			/*
 			 * We have a description for this interface.
 			 */
-			curdev->description = malloc(strlen(description) + 1);
-			strcpy(curdev->description, description);
+			curdev->description = strdup(description);
+			if (curdev->description == NULL) {
+				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "malloc: %s", pcap_strerror(errno));
+				free(curdev->name);
+				free(curdev);
+				return (-1);
+			}
 		} else {
 			/*
 			 * We don't.
@@ -370,6 +381,8 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 		if (curaddr->netmask == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
+			if (curaddr->addr != NULL)
+				free(curaddr->addr);
 			free(curaddr);
 			return (-1);
 		}
@@ -381,6 +394,10 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 		if (curaddr->broadaddr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
+			if (curaddr->netmask != NULL)
+				free(curaddr->netmask);
+			if (curaddr->addr != NULL)
+				free(curaddr->addr);
 			free(curaddr);
 			return (-1);
 		}
@@ -392,6 +409,12 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 		if (curaddr->dstaddr == NULL) {
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
+			if (curaddr->broadaddr != NULL)
+				free(curaddr->broadaddr);
+			if (curaddr->netmask != NULL)
+				free(curaddr->netmask);
+			if (curaddr->addr != NULL)
+				free(curaddr->addr);
 			free(curaddr);
 			return (-1);
 		}
