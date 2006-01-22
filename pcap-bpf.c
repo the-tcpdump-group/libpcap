@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86.2.8 2005-07-10 10:55:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86.2.9 2006-01-22 05:28:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -746,7 +746,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		u_int i;
 		int is_ethernet;
 
-		bdl.bfl_list = (u_int *) malloc(sizeof(u_int) * bdl.bfl_len + 1);
+		bdl.bfl_list = (u_int *) malloc(sizeof(u_int) * (bdl.bfl_len + 1));
 		if (bdl.bfl_list == NULL) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
