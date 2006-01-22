@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.9 2005-12-13 13:48:37 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.10 2006-01-22 18:25:14 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -808,7 +808,7 @@ pcap_close(pcap_t *p)
 #ifdef HAVE_VERSION_H
 #include "version.h"
 #else
-static const char pcap_version_string[] = "libpcap version 0.9[.x]";
+static const char pcap_version_string[] = "libpcap version 0.9.4";
 #endif
 
 #ifdef WIN32
@@ -817,7 +817,7 @@ static const char pcap_version_string[] = "libpcap version 0.9[.x]";
  * version numbers when building WinPcap.  (It'd be nice to do so for
  * the packet.dll version number as well.)
  */
-static const char wpcap_version_string[] = "3.1";
+static const char wpcap_version_string[] = "3.2 alpha1";
 static const char pcap_version_string_fmt[] =
     "WinPcap version %s, based on %s";
 static const char pcap_version_string_packet_dll_fmt[] =
