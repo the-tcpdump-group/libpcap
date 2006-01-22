@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.118 2005-11-24 19:27:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.119 2006-01-22 20:11:26 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1340,6 +1340,16 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		//handle->md.cooked = 1;
 		break;
 
+	/* ARPHRD_LAPD is unofficial and randomly allocated, if reallocation
+	 * is needed, please report it to <daniele@orlandi.com> */
+#ifndef ARPHRD_LAPD
+#define ARPHRD_LAPD	8445
+#endif
+	case ARPHRD_LAPD:
+		/* Don't expect IP packet out of this interfaces... */
+		handle->linktype = DLT_LINUX_LAPD;
+		break;
+
 	default:
 		handle->linktype = -1;
 		break;
@@ -1421,6 +1431,7 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 			if (handle->linktype == -1 ||
 			    handle->linktype == DLT_LINUX_SLL ||
 			    handle->linktype == DLT_LINUX_IRDA ||
+			    handle->linktype == DLT_LINUX_LAPD ||
 			    (handle->linktype == DLT_EN10MB &&
 			     (strncmp("isdn", device, 4) == 0 ||
 			      strncmp("isdY", device, 4) == 0))) {
@@ -1474,7 +1485,8 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 				}
 				/* IrDA capture is not a real "cooked" capture,
 				 * it's IrLAP frames, not IP packets. */
-				if (handle->linktype != DLT_LINUX_IRDA)
+				if (handle->linktype != DLT_LINUX_IRDA &&
+			    		handle->linktype != DLT_LINUX_LAPD)
 					handle->linktype = DLT_LINUX_SLL;
 			}
 
