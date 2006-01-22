@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/Win32/Include/ip6_misc.h,v 1.4 2004-07-06 23:45:29 risso Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/Win32/Include/ip6_misc.h,v 1.5 2006-01-22 18:02:18 gianluca Exp $ (LBL)
  */
 
 /*
@@ -31,7 +31,9 @@
 #include <ws2tcpip.h>
 #endif /* __MINGW32__ */
 
+#ifndef __MINGW32__
 #define	IN_MULTICAST(a)		IN_CLASSD(a)
+#endif
 
 #define	IN_EXPERIMENTAL(a)	((((u_int32_t) (a)) & 0xf0000000) == 0xf0000000)
 
