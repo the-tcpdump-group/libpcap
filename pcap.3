@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.64.2.8 2005-09-07 08:29:17 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.64.2.9 2006-01-22 20:12:10 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -1079,6 +1079,11 @@ and type bytes.
 Linux-IrDA packets, with a
 .B DLT_LINUX_SLL
 header followed by the IrLAP header.
+.TP 5
+.B DLT_LINUX_LAPD
+LAPD (Q.921) frames, with a
+.B DLT_LINUX_SLL
+header captured via vISDN.
 .RE
 .PP
 .B pcap_list_datalinks()
