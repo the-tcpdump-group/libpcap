@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.68.2.7 2005-11-24 19:28:23 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.68.2.8 2006-02-09 22:26:49 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -189,9 +189,13 @@ struct pcap {
 };
 
 /*
- * This is a timeval as stored in disk in a dumpfile.
+ * This is a timeval as stored in a savefile.
  * It has to use the same types everywhere, independent of the actual
- * `struct timeval'
+ * `struct timeval'; `struct timeval' has 32-bit tv_sec values on some
+ * platforms and 64-bit tv_sec values on other platforms, and writing
+ * out native `struct timeval' values would mean files could only be
+ * read on systems with the same tv_sec size as the system on which
+ * the file was written.
  */
 
 struct pcap_timeval {
@@ -200,7 +204,7 @@ struct pcap_timeval {
 };
 
 /*
- * How a `pcap_pkthdr' is actually stored in the dumpfile.
+ * This is a `pcap_pkthdr' as actually stored in a savefile.
  *
  * Do not change the format of this structure, in any way (this includes
  * changes that only affect the length of fields in this structure),
@@ -232,7 +236,7 @@ struct pcap_sf_pkthdr {
 };
 
 /*
- * How a `pcap_pkthdr' is actually stored in dumpfiles written
+ * How a `pcap_pkthdr' is actually stored in savefiles written
  * by some patched versions of libpcap (e.g. the ones in Red
  * Hat Linux 6.1 and 6.2).
  *
