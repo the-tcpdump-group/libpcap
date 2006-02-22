@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.36 2005-12-13 13:48:37 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.37 2006-02-22 10:23:19 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3379,18 +3379,24 @@ gen_gateway(eaddr, alist, proto, dir)
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		if (linktype == DLT_EN10MB)
-			b0 = gen_ehostop(eaddr, Q_OR);
-		else if (linktype == DLT_FDDI)
-			b0 = gen_fhostop(eaddr, Q_OR);
-		else if (linktype == DLT_IEEE802)
-			b0 = gen_thostop(eaddr, Q_OR);
-		else if (linktype == DLT_IEEE802_11 ||
-		    linktype == DLT_IEEE802_11_RADIO_AVS ||
-		    linktype == DLT_IEEE802_11_RADIO ||
-		    linktype == DLT_PRISM_HEADER)
-			b0 = gen_wlanhostop(eaddr, Q_OR);
-		else if (linktype == DLT_SUNATM && is_lane) {
+                switch (linktype) {
+                case DLT_EN10MB:
+                    b0 = gen_ehostop(eaddr, Q_OR);
+                    break;
+                case DLT_FDDI:
+                    b0 = gen_fhostop(eaddr, Q_OR);
+                    break;
+		case DLT_IEEE802:
+                    b0 = gen_thostop(eaddr, Q_OR);
+                    break;
+		case DLT_IEEE802_11:
+		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_IEEE802_11_RADIO:
+		case DLT_PRISM_HEADER:
+                    b0 = gen_wlanhostop(eaddr, Q_OR);
+                    break;
+                case DLT_SUNATM:
+                    if (is_lane) {
 			/*
 			 * Check that the packet doesn't begin with an
 			 * LE Control marker.  (We've already generated
@@ -3405,12 +3411,15 @@ gen_gateway(eaddr, alist, proto, dir)
 			 */
 			b0 = gen_ehostop(eaddr, Q_OR);
 			gen_and(b1, b0);
-		} else if (linktype == DLT_IP_OVER_FC)
-			b0 = gen_ipfchostop(eaddr, Q_OR);
-		else
-			bpf_error(
+                    }
+                    break;
+		case DLT_IP_OVER_FC:
+                    b0 = gen_ipfchostop(eaddr, Q_OR);
+                    break;
+                default:
+                    bpf_error(
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/Fibre Channel");
-
+                }
 		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR, Q_HOST);
 		while (*alist) {
 			tmp = gen_host(**alist++, 0xffffffff, proto, Q_OR,
@@ -5197,18 +5206,20 @@ gen_ecode(eaddr, q)
 	struct block *b, *tmp;
 
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-		if (linktype == DLT_EN10MB)
-			return gen_ehostop(eaddr, (int)q.dir);
-		if (linktype == DLT_FDDI)
-			return gen_fhostop(eaddr, (int)q.dir);
-		if (linktype == DLT_IEEE802)
-			return gen_thostop(eaddr, (int)q.dir);
-		if (linktype == DLT_IEEE802_11 ||
-		    linktype == DLT_IEEE802_11_RADIO_AVS ||
-		    linktype == DLT_IEEE802_11_RADIO ||
-		    linktype == DLT_PRISM_HEADER)
-			return gen_wlanhostop(eaddr, (int)q.dir);
-		if (linktype == DLT_SUNATM && is_lane) {
+            switch (linktype) {
+            case DLT_EN10MB:
+                return gen_ehostop(eaddr, (int)q.dir);
+            case DLT_FDDI:
+                return gen_fhostop(eaddr, (int)q.dir);
+            case DLT_IEEE802:
+                return gen_thostop(eaddr, (int)q.dir);
+	    case DLT_IEEE802_11:
+	    case DLT_IEEE802_11_RADIO_AVS:
+	    case DLT_IEEE802_11_RADIO:
+	    case DLT_PRISM_HEADER:
+                return gen_wlanhostop(eaddr, (int)q.dir);
+            case DLT_SUNATM:
+		if (is_lane) {
 			/*
 			 * Check that the packet doesn't begin with an
 			 * LE Control marker.  (We've already generated
@@ -5225,9 +5236,13 @@ gen_ecode(eaddr, q)
 			gen_and(tmp, b);
 			return b;
 		}
-		if (linktype == DLT_IP_OVER_FC)
-			return gen_ipfchostop(eaddr, (int)q.dir);
+                break;
+	    case DLT_IP_OVER_FC:
+                return gen_ipfchostop(eaddr, (int)q.dir);
+            default:
 		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
+                break;
+            }
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
@@ -5762,22 +5777,25 @@ gen_broadcast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		if (linktype == DLT_ARCNET || linktype == DLT_ARCNET_LINUX)
-			return gen_ahostop(abroadcast, Q_DST);
-		if (linktype == DLT_EN10MB)
-			return gen_ehostop(ebroadcast, Q_DST);
-		if (linktype == DLT_FDDI)
-			return gen_fhostop(ebroadcast, Q_DST);
-		if (linktype == DLT_IEEE802)
-			return gen_thostop(ebroadcast, Q_DST);
-		if (linktype == DLT_IEEE802_11 ||
-		    linktype == DLT_IEEE802_11_RADIO_AVS ||
-		    linktype == DLT_IEEE802_11_RADIO ||
-		    linktype == DLT_PRISM_HEADER)
-			return gen_wlanhostop(ebroadcast, Q_DST);
-		if (linktype == DLT_IP_OVER_FC)
-			return gen_ipfchostop(ebroadcast, Q_DST);
-		if (linktype == DLT_SUNATM && is_lane) {
+                switch (linktype) {
+                case DLT_ARCNET:
+                case DLT_ARCNET_LINUX:
+                    return gen_ahostop(abroadcast, Q_DST);
+                case DLT_EN10MB:    
+                    return gen_ehostop(ebroadcast, Q_DST);
+                case DLT_FDDI:
+                    return gen_fhostop(ebroadcast, Q_DST);
+                case DLT_IEEE802:
+                    return gen_thostop(ebroadcast, Q_DST);
+                case DLT_IEEE802_11:
+                case DLT_IEEE802_11_RADIO_AVS:
+                case DLT_IEEE802_11_RADIO:
+                case DLT_PRISM_HEADER:
+                    return gen_wlanhostop(ebroadcast, Q_DST);
+                case DLT_IP_OVER_FC:
+                    return gen_ipfchostop(ebroadcast, Q_DST);
+                case DLT_SUNATM:
+                    if (is_lane) {
 			/*
 			 * Check that the packet doesn't begin with an
 			 * LE Control marker.  (We've already generated
@@ -5793,8 +5811,11 @@ gen_broadcast(proto)
 			b0 = gen_ehostop(ebroadcast, Q_DST);
 			gen_and(b1, b0);
 			return b0;
-		}
-		bpf_error("not a broadcast link");
+                    }
+                    break;
+                default:
+                    bpf_error("not a broadcast link");
+                }
 		break;
 
 	case Q_IP:
