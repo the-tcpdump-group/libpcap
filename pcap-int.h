@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.68.2.8 2006-02-09 22:26:49 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.68.2.9 2006-02-22 17:09:54 gianluca Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -43,7 +43,7 @@ extern "C" {
 #include <pcap.h>
 
 #ifdef WIN32
-#include <packet32.h>
+#include <Packet32.h>
 #endif /* WIN32 */
 
 #ifdef MSDOS
