@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.263 2006-02-22 10:22:04 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.264 2006-02-22 10:38:28 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -5862,154 +5862,146 @@ gen_multicast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		if (linktype == DLT_ARCNET || linktype == DLT_ARCNET_LINUX)
-			/* all ARCnet multicasts use the same address */
-			return gen_ahostop(abroadcast, Q_DST);
-
-		if (linktype == DLT_EN10MB) {
-			/* ether[0] & 1 != 0 */
-			return gen_mac_multicast(0);
-		}
-
-		if (linktype == DLT_FDDI) {
-			/*
-			 * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
-			 *
-			 * XXX - was that referring to bit-order issues?
-			 */
-			/* fddi[1] & 1 != 0 */
-			return gen_mac_multicast(1);
-		}
-
-		if (linktype == DLT_IEEE802) {
-			/* tr[2] & 1 != 0 */
-			return gen_mac_multicast(2);
-		}
-
-		if (linktype == DLT_IEEE802_11 ||
-		    linktype == DLT_IEEE802_11_RADIO_AVS ||
-		    linktype == DLT_IEEE802_11_RADIO ||
-		    linktype == DLT_PRISM_HEADER) {
-			/*
-			 * Oh, yuk.
-			 *
-			 *	For control frames, there is no DA.
-			 *
-			 *	For management frames, DA is at an
-			 *	offset of 4 from the beginning of
-			 *	the packet.
-			 *
-			 *	For data frames, DA is at an offset
-			 *	of 4 from the beginning of the packet
-			 *	if To DS is clear and at an offset of
-			 *	16 from the beginning of the packet
-			 *	if To DS is set.
-			 */
-
-			/*
-			 * Generate the tests to be done for data frames.
-			 *
-			 * First, check for To DS set, i.e. "link[1] & 0x01".
-			 */
-			s = gen_load_a(OR_LINK, 1, BPF_B);
-			b1 = new_block(JMP(BPF_JSET));
-			b1->s.k = 0x01;	/* To DS */
-			b1->stmts = s;
-
-			/*
-			 * If To DS is set, the DA is at 16.
-			 */
-			b0 = gen_mac_multicast(16);
-			gen_and(b1, b0);
-
-			/*
-			 * Now, check for To DS not set, i.e. check
-			 * "!(link[1] & 0x01)".
-			 */
-			s = gen_load_a(OR_LINK, 1, BPF_B);
-			b2 = new_block(JMP(BPF_JSET));
-			b2->s.k = 0x01;	/* To DS */
-			b2->stmts = s;
-			gen_not(b2);
-
-			/*
-			 * If To DS is not set, the DA is at 4.
-			 */
-			b1 = gen_mac_multicast(4);
-			gen_and(b2, b1);
-
-			/*
-			 * Now OR together the last two checks.  That gives
-			 * the complete set of checks for data frames.
-			 */
-			gen_or(b1, b0);
-
-			/*
-			 * Now check for a data frame.
-			 * I.e, check "link[0] & 0x08".
-			 */
-			s = gen_load_a(OR_LINK, 0, BPF_B);
-			b1 = new_block(JMP(BPF_JSET));
-			b1->s.k = 0x08;
-			b1->stmts = s;
-
-			/*
-			 * AND that with the checks done for data frames.
-			 */
-			gen_and(b1, b0);
-
-			/*
-			 * If the high-order bit of the type value is 0, this
-			 * is a management frame.
-			 * I.e, check "!(link[0] & 0x08)".
-			 */
-			s = gen_load_a(OR_LINK, 0, BPF_B);
-			b2 = new_block(JMP(BPF_JSET));
-			b2->s.k = 0x08;
-			b2->stmts = s;
-			gen_not(b2);
-
-			/*
-			 * For management frames, the DA is at 4.
-			 */
-			b1 = gen_mac_multicast(4);
-			gen_and(b2, b1);
-
-			/*
-			 * OR that with the checks done for data frames.
-			 * That gives the checks done for management and
-			 * data frames.
-			 */
-			gen_or(b1, b0);
-
-			/*
-			 * If the low-order bit of the type value is 1,
-			 * this is either a control frame or a frame
-			 * with a reserved type, and thus not a
-			 * frame with an SA.
-			 *
-			 * I.e., check "!(link[0] & 0x04)".
-			 */
-			s = gen_load_a(OR_LINK, 0, BPF_B);
-			b1 = new_block(JMP(BPF_JSET));
-			b1->s.k = 0x04;
-			b1->stmts = s;
-			gen_not(b1);
-
-			/*
-			 * AND that with the checks for data and management
-			 * frames.
-			 */
-			gen_and(b1, b0);
-			return b0;
-		}
-
-		if (linktype == DLT_IP_OVER_FC) {
-			b0 = gen_mac_multicast(2);
-			return b0;
-		}
-
-		if (linktype == DLT_SUNATM && is_lane) {
+                switch (linktype) {
+                case DLT_ARCNET:
+                case DLT_ARCNET_LINUX:
+                    /* all ARCnet multicasts use the same address */
+                    return gen_ahostop(abroadcast, Q_DST);
+                case  DLT_EN10MB:
+                    /* ether[0] & 1 != 0 */
+                    return gen_mac_multicast(0);
+                case DLT_FDDI:
+                    /*
+                     * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
+                     *
+                     * XXX - was that referring to bit-order issues?
+                     */
+                    /* fddi[1] & 1 != 0 */
+                    return gen_mac_multicast(1);
+                case DLT_IEEE802:
+                    /* tr[2] & 1 != 0 */
+                    return gen_mac_multicast(2);
+                case DLT_IEEE802_11:
+                case DLT_IEEE802_11_RADIO_AVS:
+                case DLT_IEEE802_11_RADIO:
+                case DLT_PRISM_HEADER:
+                    /*
+                     * Oh, yuk.
+                     *
+                     *	For control frames, there is no DA.
+                     *
+                     *	For management frames, DA is at an
+                     *	offset of 4 from the beginning of
+                     *	the packet.
+                     *
+                     *	For data frames, DA is at an offset
+                     *	of 4 from the beginning of the packet
+                     *	if To DS is clear and at an offset of
+                     *	16 from the beginning of the packet
+                     *	if To DS is set.
+                     */
+                    
+                    /*
+                     * Generate the tests to be done for data frames.
+                     *
+                     * First, check for To DS set, i.e. "link[1] & 0x01".
+                     */
+                    s = gen_load_a(OR_LINK, 1, BPF_B);
+                    b1 = new_block(JMP(BPF_JSET));
+                    b1->s.k = 0x01;	/* To DS */
+                    b1->stmts = s;
+                    
+                    /*
+                     * If To DS is set, the DA is at 16.
+                     */
+                    b0 = gen_mac_multicast(16);
+                    gen_and(b1, b0);
+                    
+                    /*
+                     * Now, check for To DS not set, i.e. check
+                     * "!(link[1] & 0x01)".
+                     */
+                    s = gen_load_a(OR_LINK, 1, BPF_B);
+                    b2 = new_block(JMP(BPF_JSET));
+                    b2->s.k = 0x01;	/* To DS */
+                    b2->stmts = s;
+                    gen_not(b2);
+                    
+                    /*
+                     * If To DS is not set, the DA is at 4.
+                     */
+                    b1 = gen_mac_multicast(4);
+                    gen_and(b2, b1);
+                    
+                    /*
+                     * Now OR together the last two checks.  That gives
+                     * the complete set of checks for data frames.
+                     */
+                    gen_or(b1, b0);
+                    
+                    /*
+                     * Now check for a data frame.
+                     * I.e, check "link[0] & 0x08".
+                     */
+                    s = gen_load_a(OR_LINK, 0, BPF_B);
+                    b1 = new_block(JMP(BPF_JSET));
+                    b1->s.k = 0x08;
+                    b1->stmts = s;
+                    
+                    /*
+                     * AND that with the checks done for data frames.
+                     */
+                    gen_and(b1, b0);
+                    
+                    /*
+                     * If the high-order bit of the type value is 0, this
+                     * is a management frame.
+                     * I.e, check "!(link[0] & 0x08)".
+                     */
+                    s = gen_load_a(OR_LINK, 0, BPF_B);
+                    b2 = new_block(JMP(BPF_JSET));
+                    b2->s.k = 0x08;
+                    b2->stmts = s;
+                    gen_not(b2);
+                    
+                    /*
+                     * For management frames, the DA is at 4.
+                     */
+                    b1 = gen_mac_multicast(4);
+                    gen_and(b2, b1);
+                    
+                    /*
+                     * OR that with the checks done for data frames.
+                     * That gives the checks done for management and
+                     * data frames.
+                     */
+                    gen_or(b1, b0);
+                    
+                    /*
+                     * If the low-order bit of the type value is 1,
+                     * this is either a control frame or a frame
+                     * with a reserved type, and thus not a
+                     * frame with an SA.
+                     *
+                     * I.e., check "!(link[0] & 0x04)".
+                     */
+                    s = gen_load_a(OR_LINK, 0, BPF_B);
+                    b1 = new_block(JMP(BPF_JSET));
+                    b1->s.k = 0x04;
+                    b1->stmts = s;
+                    gen_not(b1);
+                    
+                    /*
+                     * AND that with the checks for data and management
+                     * frames.
+                     */
+                    gen_and(b1, b0);
+                    return b0;
+                case DLT_IP_OVER_FC:
+                    b0 = gen_mac_multicast(2);
+                    return b0;
+                case DLT_SUNATM:
+                    if (is_lane) {
 			/*
 			 * Check that the packet doesn't begin with an
 			 * LE Control marker.  (We've already generated
@@ -6023,10 +6015,13 @@ gen_multicast(proto)
 			b0 = gen_mac_multicast(off_mac);
 			gen_and(b1, b0);
 			return b0;
-		}
-
-		/* Link not known to support multicasts */
-		break;
+                    }
+                    break;
+                default:
+                    break;
+                }
+                /* Link not known to support multicasts */
+                break;
 
 	case Q_IP:
 		b0 = gen_linktype(ETHERTYPE_IP);
