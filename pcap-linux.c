@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.9 2006-01-22 20:12:09 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.10 2006-02-23 07:35:35 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -789,6 +789,23 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS,
 			&kstats, &len) > -1) {
 		/*
+		 * On systems where the PACKET_STATISTICS "getsockopt()"
+		 * argument is supported on PF_PACKET sockets:
+		 *
+		 *	"ps_recv" counts only packets that *passed* the
+		 *	filter, not packets that didn't pass the filter.
+		 *	This includes packets later dropped because we
+		 *	ran out of buffer space.
+		 *
+		 *	"ps_drop" counts packets dropped because we ran
+		 *	out of buffer space.  It doesn't count packets
+		 *	dropped by the interface driver.  It counts only
+		 *	packets that passed the filter.
+		 *
+		 *	Both statistics include packets not yet read from
+		 *	the kernel by libpcap, and thus not yet seen by
+		 *	the application.
+		 *
 		 * In "linux/net/packet/af_packet.c", at least in the
 		 * 2.4.9 kernel, "tp_packets" is incremented for every
 		 * packet that passes the packet filter *and* is
@@ -818,6 +835,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 */
 		handle->md.stat.ps_recv += kstats.tp_packets;
 		handle->md.stat.ps_drop += kstats.tp_drops;
+		*stats = handle->md.stat;
+		return 0;
 	}
 	else
 	{
@@ -836,21 +855,6 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	}
 #endif
 	/*
-	 * On systems where the PACKET_STATISTICS "getsockopt()" argument
-	 * is supported on PF_PACKET sockets:
-	 *
-	 *	"ps_recv" counts only packets that *passed* the filter,
-	 *	not packets that didn't pass the filter.  This includes
-	 *	packets later dropped because we ran out of buffer space.
-	 *
-	 *	"ps_drop" counts packets dropped because we ran out of
-	 *	buffer space.  It doesn't count packets dropped by the
-	 *	interface driver.  It counts only packets that passed
-	 *	the filter.
-	 *
-	 *	Both statistics include packets not yet read from the
-	 *	kernel by libpcap, and thus not yet seen by the application.
-	 *
 	 * On systems where the PACKET_STATISTICS "getsockopt()" argument
 	 * is not supported on PF_PACKET sockets:
 	 *
