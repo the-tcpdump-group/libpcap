@@ -13,6 +13,9 @@
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 
+/* define if you have dag_get_erf_types() */
+#undef HAVE_DAG_GET_ERF_TYPES
+
 /* define if you have streams capable DAG API */
 #undef HAVE_DAG_STREAMS_API
 

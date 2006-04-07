@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.24 2005-07-10 22:09:16 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.25 2006-04-07 07:07:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -46,8 +46,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "dagnew.h"
 #include "dagapi.h"
 
-#define MIN_DAG_SNAPLEN		12
-#define MAX_DAG_SNAPLEN		2040
 #define ATM_CELL_SIZE		52
 #define ATM_HDR_SIZE		4
 
@@ -222,7 +220,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * If non-block is specified it will return immediately. The user
 		 * is then responsible for efficiency.
 		 */
-		p->md.dag_mem_top = dag_advance_stream(p->fd, p->md.dag_stream, (void**)&(p->md.dag_mem_bottom));
+		p->md.dag_mem_top = dag_advance_stream(p->fd, p->md.dag_stream, &(p->md.dag_mem_bottom));
 #else
 		/* dag_offset does not support timeouts */
 		p->md.dag_mem_top = dag_offset(p->fd, &(p->md.dag_mem_bottom), flags);
@@ -282,8 +280,14 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		p->md.dag_mem_bottom += rlen;
 
 		switch(header->type) {
-		case TYPE_AAL5:
 		case TYPE_ATM:
+#ifdef TYPE_AAL5
+		case TYPE_AAL5:
+			if (header->type == TYPE_AAL5) {
+				packet_len = ntohs(header->wlen);
+				caplen = rlen - dag_record_size;
+			}
+#endif
 #ifdef TYPE_MC_ATM
 		case TYPE_MC_ATM:
 			if (header->type == TYPE_MC_ATM) {
@@ -299,10 +303,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				dp+=4;
 			}
 #endif
-			if (header->type == TYPE_AAL5) {
-				packet_len = ntohs(header->wlen);
-				caplen = rlen - dag_record_size;
-			} else if(header->type == TYPE_ATM) {
+			if (header->type == TYPE_ATM) {
 				caplen = packet_len = ATM_CELL_SIZE;
 			}
 			if (p->linktype == DLT_SUNATM) {
@@ -557,7 +558,14 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 
 #endif /* HAVE_DAG_STREAMS_API */
 
+        /* XXX Not calling dag_configure() to set slen; this is unsafe in
+	 * multi-stream environments as the gpp config is global.
+         * Once the firmware provides 'per-stream slen' this can be supported
+	 * again via the Config API without side-effects */
+#if 0
 	/* set the card snap length to the specified snaplen parameter */
+	/* This is a really bad idea, as different cards have different
+	 * valid slen ranges. Should fix in Config API. */
 	if (snaplen == 0 || snaplen > MAX_DAG_SNAPLEN) {
 		snaplen = MAX_DAG_SNAPLEN;
 	} else if (snaplen < MIN_DAG_SNAPLEN) {
@@ -570,7 +578,8 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,"dag_configure %s: %s\n", device, pcap_strerror(errno));
 		goto fail;
 	}
-		
+#endif	
+	
 #ifdef HAVE_DAG_STREAMS_API
 	if(dag_start_stream(handle->fd, handle->md.dag_stream) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_start_stream %s: %s\n", device, pcap_strerror(errno));
@@ -806,81 +815,113 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 static int
 dag_get_datalink(pcap_t *p)
 {
-	int daglinktype;
+	int index=0;
+	uint8_t types[255];
 
-	if (p->dlt_list == NULL && (p->dlt_list = malloc(2*sizeof(*(p->dlt_list)))) == NULL) {
+	memset(types, 0, 255);
+
+	if (p->dlt_list == NULL && (p->dlt_list = malloc(255*sizeof(*(p->dlt_list)))) == NULL) {
 		(void)snprintf(p->errbuf, sizeof(p->errbuf), "malloc: %s", pcap_strerror(errno));
 		return (-1);
 	}
 
-	/* Check the type through a dagapi call. */
-	daglinktype = dag_linktype(p->fd);
+	p->linktype = 0;
 
-	switch(daglinktype) {
-
-	case TYPE_HDLC_POS:
-	case TYPE_COLOR_HDLC_POS:
-		if (p->dlt_list != NULL) {
-			p->dlt_count = 2;
-			p->dlt_list[0] = DLT_CHDLC;
-			p->dlt_list[1] = DLT_PPP_SERIAL;
-			p->dlt_list[2] = DLT_FRELAY;
-		}
-		p->linktype = DLT_CHDLC;
-		break;
-
-	case TYPE_ETH:
-	case TYPE_COLOR_ETH:
-		/*
-		 * This is (presumably) a real Ethernet capture; give it a
-		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
-		 * that an application can let you choose it, in case you're
-		 * capturing DOCSIS traffic that a Cisco Cable Modem
-		 * Termination System is putting out onto an Ethernet (it
-		 * doesn't put an Ethernet header onto the wire, it puts raw
-		 * DOCSIS frames out on the wire inside the low-level
-		 * Ethernet framing).
-		 */
-		if (p->dlt_list != NULL) {
-			p->dlt_count = 2;
-			p->dlt_list[0] = DLT_EN10MB;
-			p->dlt_list[1] = DLT_DOCSIS;
-		}
-		p->linktype = DLT_EN10MB;
-		break;
-
-	case TYPE_AAL5:
-	case TYPE_ATM: 
-	case TYPE_MC_ATM:
-	case TYPE_MC_AAL5:
-		if (p->dlt_list != NULL) {
-			p->dlt_count = 2;
-			p->dlt_list[0] = DLT_ATM_RFC1483;
-			p->dlt_list[1] = DLT_SUNATM;
-		}
-		p->linktype = DLT_ATM_RFC1483;
-		break;
-
-	case TYPE_MC_HDLC:
-		if (p->dlt_list != NULL) {
-			p->dlt_count = 4;
-			p->dlt_list[0] = DLT_CHDLC;
-			p->dlt_list[1] = DLT_PPP_SERIAL;
-			p->dlt_list[2] = DLT_FRELAY;
-			p->dlt_list[3] = DLT_MTP2;
-		}
-		p->linktype = DLT_CHDLC;
-		break;
-
-	case TYPE_LEGACY:
-		p->linktype = DLT_NULL;
-		break;
-
-	default:
-		snprintf(p->errbuf, sizeof(p->errbuf), "unknown DAG linktype %d\n", daglinktype);
-		return (-1);
-
+#ifdef HAVE_DAG_GET_ERF_TYPES
+	/* Get list of possible ERF types for this card */
+	if (dag_get_erf_types(p->fd, types, 255) < 0) {
+		snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_erf_types: %s", pcap_strerror(errno));
+		return (-1);		
 	}
+	
+	while (types[index]) {
+#else
+	/* Check the type through a dagapi call. */
+	types[index] = dag_linktype(p->fd);
+
+	{
+#endif
+		switch(types[index]) {
+
+		case TYPE_HDLC_POS:
+#ifdef TYPE_COLOR_HDLC_POS
+		case TYPE_COLOR_HDLC_POS:
+#endif
+			if (p->dlt_list != NULL) {
+				p->dlt_list[index++] = DLT_CHDLC;
+				p->dlt_list[index++] = DLT_PPP_SERIAL;
+				p->dlt_list[index++] = DLT_FRELAY;
+			}
+			if(!p->linktype)
+				p->linktype = DLT_CHDLC;
+			break;
+
+		case TYPE_ETH:
+#ifdef TYPE_COLOR_ETH
+		case TYPE_COLOR_ETH:
+#endif
+			/*
+			 * This is (presumably) a real Ethernet capture; give it a
+			 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+			 * that an application can let you choose it, in case you're
+			 * capturing DOCSIS traffic that a Cisco Cable Modem
+			 * Termination System is putting out onto an Ethernet (it
+			 * doesn't put an Ethernet header onto the wire, it puts raw
+			 * DOCSIS frames out on the wire inside the low-level
+			 * Ethernet framing).
+			 */
+			if (p->dlt_list != NULL) {
+				p->dlt_list[index++] = DLT_EN10MB;
+				p->dlt_list[index++] = DLT_DOCSIS;
+			}
+			if(!p->linktype)
+				p->linktype = DLT_EN10MB;
+			break;
+
+		case TYPE_ATM: 
+#ifdef TYPE_AAL5
+		case TYPE_AAL5:
+#endif
+#ifdef TYPE_MC_ATM
+		case TYPE_MC_ATM:
+#endif
+#ifdef TYPE_MC_AAL5
+		case TYPE_MC_AAL5:
+#endif
+			if (p->dlt_list != NULL) {
+				p->dlt_list[index++] = DLT_ATM_RFC1483;
+				p->dlt_list[index++] = DLT_SUNATM;
+			}
+			if(!p->linktype)
+				p->linktype = DLT_ATM_RFC1483;
+			break;
+
+#ifdef TYPE_MC_HDLC
+		case TYPE_MC_HDLC:
+			if (p->dlt_list != NULL) {
+				p->dlt_list[index++] = DLT_CHDLC;
+				p->dlt_list[index++] = DLT_PPP_SERIAL;
+				p->dlt_list[index++] = DLT_FRELAY;
+				p->dlt_list[index++] = DLT_MTP2;
+			}
+			if(!p->linktype)
+				p->linktype = DLT_CHDLC;
+			break;
+#endif
+
+		case TYPE_LEGACY:
+			if(!p->linktype)
+				p->linktype = DLT_NULL;
+			break;
+
+		default:
+			snprintf(p->errbuf, sizeof(p->errbuf), "unknown DAG linktype %d", types[index]);
+			return (-1);
+
+		} /* switch */
+	}
+
+	p->dlt_count = index;
 
 	return p->linktype;
 }

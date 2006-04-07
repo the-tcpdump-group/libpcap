@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.127 2005-07-07 06:55:19 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.128 2006-04-07 07:07:25 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.127 $)
+AC_REVISION($Revision: 1.128 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -567,6 +567,9 @@ if test $ac_cv_lbl_dag_api = yes; then
 	saved_ldflags=$LDFLAGS
 	LDFLAGS="-L$dag_lib_dir"
 	AC_CHECK_LIB([dag], [dag_attach_stream], [dag_version="2.5.x"], [dag_version="2.4.x"])
+	AC_CHECK_LIB([dag],[dag_get_erf_types], [
+		AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])]
+	)
 	LDFLAGS=$saved_ldflags
 
 	if test "$dag_version" = 2.5.x; then
