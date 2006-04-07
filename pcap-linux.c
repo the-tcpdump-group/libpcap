@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.10 2006-02-23 07:35:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.11 2006-04-07 08:02:45 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -526,6 +526,22 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 #ifdef HAVE_PF_PACKET_SOCKETS
 	if (!handle->md.sock_packet) {
+		/*
+		 * Unfortunately, there is a window between socket() and
+		 * bind() where the kernel may queue packets from any
+		 * interface.  If we're bound to a particular interface,
+		 * discard packets not from that interface.
+		 *
+		 * (If socket filters are supported, we could do the
+		 * same thing we do when changing the filter; however,
+		 * that won't handle packet sockets without socket
+		 * filter support, and it's a bit more complicated.
+		 * It would save some instructions per packet, however.)
+		 */
+		if (handle->md.ifindex != -1 &&
+		    from.sll_ifindex != handle->md.ifindex)
+			return 0;
+
 		/*
 		 * Do checks based on packet direction.
 		 * We can only do this if we're using PF_PACKET; the
