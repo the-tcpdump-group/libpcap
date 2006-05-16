@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.91 2005-09-05 09:07:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.92 2006-05-16 08:30:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -188,6 +188,14 @@ nid:	  ID			{ $$.b = gen_scode($1, $$.q = $<blk>0.q); }
 	| HID			{
 				  /* Decide how to parse HID based on proto */
 				  $$.q = $<blk>0.q;
+				  if ($$.q.addr == Q_PORT)
+				  	bpf_error("'port' modifier applied to ip host");
+				  else if ($$.q.addr == Q_PORTRANGE)
+				  	bpf_error("'portrange' modifier applied to ip host");
+				  else if ($$.q.addr == Q_PROTO)
+				  	bpf_error("'proto' modifier applied to ip host");
+				  else if ($$.q.addr == Q_PROTOCHAIN)
+				  	bpf_error("'protochain' modifier applied to ip host");
 				  $$.b = gen_ncode($1, 0, $$.q);
 				}
 	| HID6 '/' NUM		{
