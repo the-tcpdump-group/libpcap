@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.141 2005-12-13 13:41:39 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.142 2006-05-18 08:40:52 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -435,6 +435,14 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_MFR            182
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * voice Adapter Card (PIC)
+ */
+#define LINKTYPE_JUNIPER_VP     183
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -642,6 +650,9 @@ static struct linktype_map {
 
         /* Multi Link Frame Relay (FRF.16) */
         { DLT_MFR,              LINKTYPE_MFR },
+
+        /* Juniper Voice PIC */
+        { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
 
 	{ -1,			-1 }
 };

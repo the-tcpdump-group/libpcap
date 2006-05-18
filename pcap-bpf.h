@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.41 2005-12-13 13:41:39 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.42 2006-05-18 08:40:52 hannes Exp $ (LBL)
  */
 
 /*
@@ -609,6 +609,15 @@ struct bpf_version {
  * Multi Link Frame Relay (FRF.16)
  */
 #define DLT_MFR                 182
+
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * voice Adapter Card (PIC)
+ */
+#define DLT_JUNIPER_VP          183
+
 
 /*
  * The instruction encodings.
