@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.42 2006-05-18 08:40:52 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.43 2006-05-20 00:23:45 gianluca Exp $ (LBL)
  */
 
 /*
@@ -617,6 +617,15 @@ struct bpf_version {
  * voice Adapter Card (PIC)
  */
 #define DLT_JUNIPER_VP          183
+
+/*
+ * Controller Area Network (CAN) v. 2.0B packets.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Used to dump CAN packets coming from a CAN Vector board.
+ * More documentation on the CAN v2.0B frames can be found at
+ * http://www.can-cia.org/downloads/?269
+ */
+#define DLT_CAN20B				184
 
 
 /*
