@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.7 2005-12-13 13:48:37 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.8 2006-05-20 00:34:41 gianluca Exp $ (LBL)
  */
 
 /*
@@ -609,6 +609,24 @@ struct bpf_version {
  * Multi Link Frame Relay (FRF.16)
  */
 #define DLT_MFR                 182
+
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * voice Adapter Card (PIC)
+ */
+#define DLT_JUNIPER_VP          183
+
+/*
+ * Controller Area Network (CAN) v. 2.0B packets.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Used to dump CAN packets coming from a CAN Vector board.
+ * More documentation on the CAN v2.0B frames can be found at
+ * http://www.can-cia.org/downloads/?269
+ */
+#define DLT_CAN20B				184
+
 
 /*
  * The instruction encodings.

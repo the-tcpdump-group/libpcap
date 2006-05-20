@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.14 2005-12-13 13:48:37 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.15 2006-05-20 00:34:41 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -435,6 +435,23 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_MFR            182
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * voice Adapter Card (PIC)
+ */
+#define LINKTYPE_JUNIPER_VP     183
+
+/*
+ * Controller Area Network (CAN) v. 2.0B packets.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Used to dump CAN packets coming from a CAN Vector board.
+ * More documentation on the CAN v2.0B frames can be found at
+ * http://www.can-cia.org/downloads/?269
+ */
+#define LINKTYPE_CAN20B			184
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -642,6 +659,12 @@ static struct linktype_map {
 
         /* Multi Link Frame Relay (FRF.16) */
         { DLT_MFR,              LINKTYPE_MFR },
+
+        /* Juniper Voice PIC */
+        { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
+
+		/* Controller Area Network (CAN) v2.0B */
+		{ DLT_CAN20B,				LINKTYPE_CAN20B },
 
 	{ -1,			-1 }
 };
