@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.38 2006-02-22 10:39:49 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.39 2006-05-28 20:13:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -5011,7 +5011,14 @@ gen_mcode(s1, s2, masklen, q)
 		/* Convert mask len to mask */
 		if (masklen > 32)
 			bpf_error("mask length must be <= 32");
-		m = 0xffffffff << (32 - masklen);
+		if (masklen == 0) {
+			/*
+			 * X << 32 is not guaranteed by C to be 0; it's
+			 * undefined.
+			 */
+			m = 0;
+		} else
+			m = 0xffffffff << (32 - masklen);
 		if ((n & ~m) != 0)
 			bpf_error("non-network bits set in \"%s/%d\"",
 			    s1, masklen);
