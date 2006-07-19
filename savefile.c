@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.143 2006-05-20 00:23:45 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.144 2006-07-19 20:51:50 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -444,13 +444,22 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_JUNIPER_VP     183
 
 /*
+ * Arinc 429 frames.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Every frame contains a 32bit A429 label.
+ * More documentation on Arinc 429 can be found at
+ * http://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
+ */
+#define LINKTYPE_A429		184
+
+/*
  * Controller Area Network (CAN) v. 2.0B packets.
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Used to dump CAN packets coming from a CAN Vector board.
  * More documentation on the CAN v2.0B frames can be found at
  * http://www.can-cia.org/downloads/?269
  */
-#define LINKTYPE_CAN20B			184
+#define LINKTYPE_CAN20B		190
 
 static struct linktype_map {
 	int	dlt;
@@ -662,6 +671,9 @@ static struct linktype_map {
 
         /* Juniper Voice PIC */
         { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
+
+		/* Controller Area Network (CAN) v2.0B */
+		{ DLT_A429,				LINKTYPE_A429 },
 
 		/* Controller Area Network (CAN) v2.0B */
 		{ DLT_CAN20B,				LINKTYPE_CAN20B },
