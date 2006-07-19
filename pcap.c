@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.11 2006-01-22 20:12:10 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.12 2006-07-19 20:59:14 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -380,6 +380,9 @@ static struct dlt_choice dlt_choices[] = {
  	DLT_CHOICE(DLT_JUNIPER_FRELAY, "Juniper Frame Relay"),
  	DLT_CHOICE(DLT_JUNIPER_CHDLC, "Juniper C-HDLC"),
 	DLT_CHOICE(DLT_MFR, "FRF.16 Frame Relay"),
+ 	DLT_CHOICE(DLT_JUNIPER_VP, "Juniper Voice PIC"),
+ 	DLT_CHOICE(DLT_A429, "Arinc 429"),
+ 	DLT_CHOICE(DLT_CAN20B, "Controller Area Network (CAN) v. 2.0B"),
 	DLT_CHOICE_SENTINEL
 };
 

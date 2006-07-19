@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.8 2006-05-20 00:34:41 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.9 2006-07-19 20:59:14 gianluca Exp $ (LBL)
  */
 
 /*
@@ -619,13 +619,22 @@ struct bpf_version {
 #define DLT_JUNIPER_VP          183
 
 /*
+ * Arinc 429 frames.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Every frame contains a 32bit A429 label.
+ * More documentation on Arinc 429 can be found at
+ * http://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
+ */
+#define LINKTYPE_A429			184
+
+/*
  * Controller Area Network (CAN) v. 2.0B packets.
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Used to dump CAN packets coming from a CAN Vector board.
  * More documentation on the CAN v2.0B frames can be found at
  * http://www.can-cia.org/downloads/?269
  */
-#define DLT_CAN20B				184
+#define DLT_CAN20B				190
 
 
 /*
