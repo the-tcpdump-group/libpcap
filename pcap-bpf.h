@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.44 2006-07-19 20:51:50 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.45 2006-07-25 21:34:43 gianluca Exp $ (LBL)
  */
 
 /*
@@ -625,7 +625,7 @@ struct bpf_version {
  * More documentation on Arinc 429 can be found at
  * http://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
  */
-#define LINKTYPE_A429			184
+#define DLT_A429			184
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
