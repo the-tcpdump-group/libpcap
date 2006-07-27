@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.144 2006-07-19 20:51:50 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.145 2006-07-27 21:02:57 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -450,7 +450,14 @@ static const char rcsid[] _U_ =
  * More documentation on Arinc 429 can be found at
  * http://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
  */
-#define LINKTYPE_A429		184
+#define LINKTYPE_A429           184
+
+/*
+ * Arinc 653 Interpartition Communication messages.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Please refer to the A653-1 standard for more information.
+ */
+#define LINKTYPE_A653_ICM       185
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
@@ -459,7 +466,7 @@ static const char rcsid[] _U_ =
  * More documentation on the CAN v2.0B frames can be found at
  * http://www.can-cia.org/downloads/?269
  */
-#define LINKTYPE_CAN20B		190
+#define LINKTYPE_CAN20B         190
 
 static struct linktype_map {
 	int	dlt;
@@ -677,6 +684,9 @@ static struct linktype_map {
 
 		/* Controller Area Network (CAN) v2.0B */
 		{ DLT_CAN20B,				LINKTYPE_CAN20B },
+
+		/* Arinc 653 Interpartition Communication messages */
+		{ DLT_A653_ICM,         LINKTYPE_A653_ICM },
 
 	{ -1,			-1 }
 };

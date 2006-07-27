@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.45 2006-07-25 21:34:43 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.46 2006-07-27 21:02:57 gianluca Exp $ (LBL)
  */
 
 /*
@@ -625,7 +625,14 @@ struct bpf_version {
  * More documentation on Arinc 429 can be found at
  * http://www.condoreng.com/support/downloads/tutorials/ARINCTutorial.pdf
  */
-#define DLT_A429			184
+#define DLT_A429                184
+
+/*
+ * Arinc 653 Interpartition Communication messages.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * Please refer to the A653-1 standard for more information.
+ */
+#define DLT_A653_ICM            185
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
@@ -634,7 +641,7 @@ struct bpf_version {
  * More documentation on the CAN v2.0B frames can be found at
  * http://www.can-cia.org/downloads/?269
  */
-#define DLT_CAN20B				190
+#define DLT_CAN20B              190
 
 
 /*
