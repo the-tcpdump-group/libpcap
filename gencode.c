@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.40 2006-09-13 06:57:07 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.41 2006-09-13 07:02:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1287,7 +1287,8 @@ gen_load_a(offrel, offset, size)
 	switch (offrel) {
 
 	case OR_PACKET:
-		s = gen_load_llrel(offset, size);
+                s = new_stmt(BPF_LD|BPF_ABS|size);
+                s->s.k = offset;
 		break;
 
 	case OR_LINK:
