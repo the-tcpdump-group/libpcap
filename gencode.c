@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.39 2006-05-28 20:13:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.40 2006-09-13 06:57:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -668,20 +668,26 @@ gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
 static int reg_ll_size;
 
 /*
- * This is the offset of the beginning of the link-layer header.
+ * This is the offset of the beginning of the link-layer header from
+ * the beginning of the raw packet data.
+ *
  * It's usually 0, except for 802.11 with a fixed-length radio header.
+ * (For 802.11 with a variable-length radio header, we have to generate
+ * code to compute that offset; off_ll is 0 in that case.)
  */
 static u_int off_ll;
 
 /*
  * This is the offset of the beginning of the MAC-layer header.
- * It's usually 0, except for ATM LANE.
+ * It's usually 0, except for ATM LANE, where it's the offset, relative
+ * to the beginning of the raw packet data, of the Ethernet header.
  */
 static u_int off_mac;
 
 /*
  * "off_linktype" is the offset to information in the link-layer header
- * giving the packet type.
+ * giving the packet type.  This offset is relative to the beginning
+ * of the link-layer header (i.e., it doesn't include off_ll).
  *
  * For Ethernet, it's the offset of the Ethernet type field.
  *
@@ -734,6 +740,8 @@ static u_int off_payload;
 
 /*
  * These are offsets to the beginning of the network-layer header.
+ * They are relative to the beginning of the link-layer header (i.e.,
+ * they don't include off_ll).
  *
  * If the link layer never uses 802.2 LLC:
  *
@@ -956,9 +964,9 @@ init_linktype(p)
 		 * the Prism header is fixed-length.
 		 */
 		off_ll = 144;
-		off_linktype = 144+24;
-		off_nl = 144+32;	/* Prism+802.11+802.2+SNAP */
-		off_nl_nosnap = 144+27;	/* Prism+802.11+802.2 */
+		off_linktype = 24;
+		off_nl = 32;	/* Prism+802.11+802.2+SNAP */
+		off_nl_nosnap = 27;	/* Prism+802.11+802.2 */
 		return;
 
 	case DLT_IEEE802_11_RADIO_AVS:
@@ -974,12 +982,23 @@ init_linktype(p)
 		 * more so; this header is also variable-length,
 		 * with the length being the 32-bit big-endian
 		 * number at an offset of 4 from the beginning
-		 * of the radio header.
+		 * of the radio header.  We should handle that the
+		 * same way we handle the length at the beginning
+		 * of the radiotap header.
+		 *
+		 * XXX - in Linux, do any drivers that supply an AVS
+		 * header supply a link-layer type other than
+		 * ARPHRD_IEEE80211_PRISM?  If so, we should map that
+		 * to DLT_IEEE802_11_RADIO_AVS; if not, or if there are
+		 * any drivers that supply an AVS header but supply
+		 * an ARPHRD value of ARPHRD_IEEE80211_PRISM, we'll
+		 * have to check the header in the generated code to
+		 * determine whether it's Prism or AVS.
 		 */
 		off_ll = 64;
-		off_linktype = 64+24;
-		off_nl = 64+32;		/* Radio+802.11+802.2+SNAP */
-		off_nl_nosnap = 64+27;	/* Radio+802.11+802.2 */
+		off_linktype = 24;
+		off_nl = 32;		/* Radio+802.11+802.2+SNAP */
+		off_nl_nosnap = 27;	/* Radio+802.11+802.2 */
 		return;
 
 	case DLT_IEEE802_11_RADIO:
@@ -1240,6 +1259,9 @@ gen_load_llrel(offset, size)
 	 * If "s" is non-null, it has code to arrange that the X register
 	 * contains the length of the prefix preceding the link-layer
 	 * header.
+	 *
+	 * Otherwise, the length of the prefix preceding the link-layer
+	 * header is "off_ll".
 	 */
 	if (s != NULL) {
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
@@ -1247,7 +1269,7 @@ gen_load_llrel(offset, size)
 		sappend(s, s2);
 	} else {
 		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = offset;
+		s->s.k = offset + off_ll;
 	}
 	return s;
 }
@@ -1269,7 +1291,7 @@ gen_load_a(offrel, offset, size)
 		break;
 
 	case OR_LINK:
-		s = gen_load_llrel(off_ll + offset, size);
+		s = gen_load_llrel(offset, size);
 		break;
 
 	case OR_NET:
