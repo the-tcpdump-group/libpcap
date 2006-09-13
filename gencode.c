@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.41 2006-09-13 07:02:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.42 2006-09-13 07:04:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6427,13 +6427,11 @@ gen_mpls(label_num)
                 
             case DLT_C_HDLC: /* fall through */
             case DLT_EN10MB:
-                    b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
-                                 (bpf_int32)ETHERTYPE_MPLS);
+                    b0 = gen_linktype(ETHERTYPE_MPLS);
                     break;
                 
             case DLT_PPP:
-                    b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
-                                 (bpf_int32)PPP_MPLS_UCAST);
+                    b0 = gen_linktype(PPP_MPLS_UCAST);
                     break;
                 
                     /* FIXME add other DLT_s ...
