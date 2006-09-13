@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.269 2006-09-13 06:54:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.270 2006-09-13 07:35:42 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1270,10 +1270,22 @@ gen_load_llrel(offset, size)
 	 * header is "off_ll".
 	 */
 	if (s != NULL) {
+		/*
+		 * There's a variable-length prefix preceding the
+		 * link-layer header.  "s" points to a list of statements
+		 * that put the length of that prefix into the X register.
+		 * do an indirect load, to use the X register as an offset.
+		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
 		s2->s.k = offset;
 		sappend(s, s2);
 	} else {
+		/*
+		 * There is no variable-length header preceding the
+		 * link-layer header; add in off_ll, which, if there's
+		 * a fixed-length header preceding the link-layer header,
+		 * is the length of that header.
+		 */
 		s = new_stmt(BPF_LD|BPF_ABS|size);
 		s->s.k = offset + off_ll;
 	}
@@ -1311,17 +1323,24 @@ gen_load_a(offrel, offset, size)
 
 	case OR_TRAN_IPV4:
 		/*
-		 * Load the X register with the length of the IPv4 header,
-		 * in bytes.
+		 * Load the X register with the length of the IPv4 header
+		 * (plus the offset of the link-layer header, if it's
+		 * preceded by a variable-length header such as a radio
+		 * header), in bytes.
 		 */
 		s = gen_loadx_iphdrlen();
 
 		/*
-		 * Load the item at {length of the link-layer header} +
-		 * {length of the IPv4 header} + {specified offset}.
+		 * Load the item at {offset of the link-layer header} +
+		 * {offset, relative to the start of the link-layer
+		 * header, of the IPv4 header} + {length of the IPv4 header} +
+		 * {specified offset}.
+		 *
+		 * (If the link-layer is variable-length, it's included
+		 * in the value in the X register, and off_ll is 0.)
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = off_nl + offset;
+		s2->s.k = off_ll + off_nl + offset;
 		sappend(s, s2);
 		break;
 
@@ -1379,12 +1398,12 @@ gen_loadx_iphdrlen()
 	} else {
 		/*
 		 * There is no variable-length header preceding the
-		 * link-layer header; if there's a fixed-length
-		 * header preceding it, its length is included in
-		 * the off_ variables, so it doesn't need to be added.
+		 * link-layer header; add in off_ll, which, if there's
+		 * a fixed-length header preceding the link-layer header,
+		 * is the length of that header.
 		 */
 		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-		s->s.k = off_nl;
+		s->s.k = off_ll + off_nl;
 	}
 	return s;
 }
@@ -4243,11 +4262,11 @@ gen_protochain(v, proto, dir)
 
 		/* A = ip->ip_p */
 		s[i] = new_stmt(BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = off_nl + 9;
+		s[i]->s.k = off_ll + off_nl + 9;
 		i++;
 		/* X = ip->ip_hl << 2 */
 		s[i] = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-		s[i]->s.k = off_nl;
+		s[i]->s.k = off_ll + off_nl;
 		i++;
 		break;
 #ifdef INET6
@@ -4256,7 +4275,7 @@ gen_protochain(v, proto, dir)
 
 		/* A = ip6->ip_nxt */
 		s[i] = new_stmt(BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = off_nl + 6;
+		s[i]->s.k = off_ll + off_nl + 6;
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(BPF_LDX|BPF_IMM);
@@ -4336,7 +4355,7 @@ gen_protochain(v, proto, dir)
 		i++;
 		/* A = P[X + packet head] */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = off_nl;
+		s[i]->s.k = off_ll + off_nl;
 		i++;
 		/* MEM[reg2] = A */
 		s[i] = new_stmt(BPF_ST);
@@ -4354,7 +4373,7 @@ gen_protochain(v, proto, dir)
 		i++;
 		/* A = P[X + packet head]; */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = off_nl;
+		s[i]->s.k = off_ll + off_nl;
 		i++;
 		/* A += 1 */
 		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
@@ -4413,7 +4432,7 @@ gen_protochain(v, proto, dir)
 	i++;
 	/* A = P[X + packet head]; */
 	s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-	s[i]->s.k = off_nl;
+	s[i]->s.k = off_ll + off_nl;
 	i++;
 	/* MEM[reg2] = A */
 	s[i] = new_stmt(BPF_ST);
@@ -4431,7 +4450,7 @@ gen_protochain(v, proto, dir)
 	i++;
 	/* A = P[X + packet head] */
 	s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-	s[i]->s.k = off_nl;
+	s[i]->s.k = off_ll + off_nl;
 	i++;
 	/* A += 2 */
 	s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
@@ -5465,11 +5484,14 @@ gen_load(proto, index, size)
 
 		/*
 		 * Load the item at the sum of the offset we've put in the
-		 * X register and the offset of the start of the network
-		 * layer header.
+		 * X register, the offset of the start of the network
+		 * layer header, and the offset of the start of the link
+		 * layer header (which is 0 if the radio header is
+		 * variable-length; that header length is what we put
+		 * into the X register and then added to the index).
 		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
-		tmp->s.k = off_nl;
+		tmp->s.k = off_ll + off_nl;
 		sappend(s, tmp);
 		sappend(index->s, s);
 
@@ -5494,6 +5516,11 @@ gen_load(proto, index, size)
 		/*
 		 * The offset is relative to the beginning of
 		 * the transport-layer header.
+		 *
+		 * Load the X register with the length of the IPv4 header
+		 * (plus the offset of the link-layer header, if it's
+		 * a variable-length header), in bytes.
+		 *
 		 * XXX - are there any cases where we want
 		 * off_nl_nosnap?
 		 * XXX - we should, if we're built with
@@ -5503,22 +5530,24 @@ gen_load(proto, index, size)
 		s = gen_loadx_iphdrlen();
 
 		/*
-		 * The X register now contains the sum of the offset
-		 * of the beginning of the link-layer header and
-		 * the length of the network-layer header.  Load
-		 * into the A register the offset relative to
+		 * The X register now contains the sum of the length
+		 * of any variable-length header preceding the link-layer
+		 * header and the length of the network-layer header.
+		 * Load into the A register the offset relative to
 		 * the beginning of the transport layer header,
 		 * add the X register to that, move that to the
 		 * X register, and load with an offset from the
 		 * X register equal to the offset of the network
 		 * layer header relative to the beginning of
-		 * the link-layer header.
+		 * the link-layer header plus the length of any
+		 * fixed-length header preceding the link-layer
+		 * header.
 		 */
 		sappend(s, xfer_to_a(index));
 		sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
 		sappend(s, tmp = new_stmt(BPF_LD|BPF_IND|size));
-		tmp->s.k = off_nl;
+		tmp->s.k = off_ll + off_nl;
 		sappend(index->s, s);
 
 		/*
