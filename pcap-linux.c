@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.121 2006-04-07 08:02:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.122 2006-09-18 17:32:30 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -682,7 +682,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
 		snprintf(handle->errbuf, sizeof(handle->errbuf),
-			 "ioctl: %s", pcap_strerror(errno));
+			 "SIOCGSTAMP: %s", pcap_strerror(errno));
 		return -1;
 	}
 	pcap_header.caplen	= caplen;
@@ -1614,7 +1614,7 @@ iface_get_id(int fd, const char *device, char *ebuf)
 
 	if (ioctl(fd, SIOCGIFINDEX, &ifr) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			 "ioctl: %s", pcap_strerror(errno));
+			 "SIOCGIFINDEX: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -1831,7 +1831,7 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 			strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 				snprintf(ebuf, PCAP_ERRBUF_SIZE,
-					 "ioctl: %s", pcap_strerror(errno));
+					 "SIOCGIFFLAGS: %s", pcap_strerror(errno));
 				break;
 			}
 			if ((ifr.ifr_flags & IFF_PROMISC) == 0) {
@@ -1865,7 +1865,7 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 				ifr.ifr_flags |= IFF_PROMISC;
 				if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1) {
 				        snprintf(ebuf, PCAP_ERRBUF_SIZE,
-						 "ioctl: %s",
+						 "SIOCSIFFLAGS: %s",
 						 pcap_strerror(errno));
 					break;
 				}
@@ -1949,7 +1949,7 @@ iface_get_mtu(int fd, const char *device, char *ebuf)
 
 	if (ioctl(fd, SIOCGIFMTU, &ifr) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			 "ioctl: %s", pcap_strerror(errno));
+			 "SIOCGIFMTU: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -1969,7 +1969,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 
 	if (ioctl(fd, SIOCGIFHWADDR, &ifr) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			 "ioctl: %s", pcap_strerror(errno));
+			 "SIOCGIFHWADDR: %s", pcap_strerror(errno));
 		return -1;
 	}
 
