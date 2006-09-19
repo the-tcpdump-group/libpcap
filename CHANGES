@@ -1,4 +1,29 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.8 2005-09-05 09:17:47 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.9 2006-09-19 17:49:59 ken Exp $ (LBL)
+
+Tue.	September 19, 2006. ken@xelerance.com. Summary for 0.9.5 libpcap release
+
+	Support for LAPD frames with vISDN
+	Support for ERF on channelized T1/E1 cards via DAG API
+	Fix capitalization that caused issues crossc compiling on Linux
+	Better failure detection on PacketGetAdapterNames()
+	Fixes for MPLS packet generation (link layer)
+	OP_PACKET now matches the beginning of the packet, instead of
+	 beginning+link-layer
+	Add DLT/LINKTYPE for carrying FRF.16 Multi-link Frame Relay
+	Fix allocation of buffer for list of link-layer types  
+	Added a new DLT and LINKTYPE value for ARINC 653 Interpartition Communcation Messages
+	Fixed a typo in a DLT value: it should start with DLT_ and not LINKTYPE_
+	Redefined DLT_CAN20B and LINKTYPE_CAN20B as #190 (as this is the right value for CAN).
+	Added definition for DLT_A429 and LINKTYPE_A429 as #184.
+	Added a new DLT and LINKTYPE value for CAN v2.0B frames.
+	Add support for DLT_JUNIPER_VP.
+	Don't double-count received packets on Linux systems that 
+	 support the PACKET_STATISTICS getsockopt() argument on 
+	 PF_PACKET sockets.
+	Add support for DLT_IEEE802_11 and DLT_IEEE802_11_RADIO link 
+	 layers in Windows
+	Add support to build libpcap.lib and wpcap.dll under Cygnus and 
+	 MingW32.
 
 Mon. 	September 5, 2005.  ken@xelerance.com. Summary for 0.9.4 libpcap release
 
