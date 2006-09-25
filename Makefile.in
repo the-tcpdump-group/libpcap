@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.99 2003-12-15 01:35:03 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.99.2.1 2006-09-25 18:06:00 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -46,6 +46,7 @@ CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
 LIBS = @V_LIBS@
+DAGLIBS = @DAGLIBS@
 DYEXT = @DYEXT@
 
 # Standard CFLAGS
@@ -112,7 +113,7 @@ shared: libpcap.$(DYEXT)
 #
 libpcap.so: $(OBJ)
 	@rm -f $@
-	ld -shared -o $@.`cat VERSION` $(OBJ)
+	$(CC) -shared -o $@.`cat VERSION` $(OBJ) $(DAGLIBS)
 
 # the following rule succeeds, but the result is untested.
 libpcap.dylib: $(OBJ)
