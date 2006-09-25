@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.21.2.4 2006-04-07 07:08:50 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.21.2.5 2006-09-25 18:18:30 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -327,6 +327,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 			break;
 
+#ifdef TYPE_DSM_COLOR_ETH
+		case TYPE_DSM_COLOR_ETH:
+#endif
 #ifdef TYPE_COLOR_ETH
 		case TYPE_COLOR_ETH:
 #endif
@@ -339,6 +342,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 			dp += 2;
 			break;
+#ifdef TYPE_DSM_COLOR_HDLC_POS
+		case TYPE_DSM_COLOR_HDLC_POS:
+#endif
 #ifdef TYPE_COLOR_HDLC_POS
 		case TYPE_COLOR_HDLC_POS:
 #endif
@@ -361,6 +367,11 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			dp += 4;
 			break;
 #endif
+		default:
+			/* Unhandled ERF type.
+			 * Ignore rather than generating error
+			 */
+			continue;
 		}
  
 		if (caplen > p->snapshot)
@@ -378,6 +389,17 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		case TYPE_COLOR_ETH:
 			break;
 #endif
+#ifdef TYPE_DSM_COLOR_HDLC_POS
+			/* in this type the color value overwrites the lctr */
+		case TYPE_DSM_COLOR_HDLC_POS:
+			break;
+#endif
+#ifdef TYPE_DSM_COLOR_ETH
+			/* in this type the color value overwrites the lctr */
+		case TYPE_DSM_COLOR_ETH:
+			break;
+#endif
+
 		default:
 			if (header->lctr) {
 				if (p->md.stat.ps_drop > (UINT_MAX - ntohs(header->lctr))) {
@@ -446,6 +468,9 @@ dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
  *  cards are always promiscuous.  The to_ms parameter is also ignored as it is
  *  not supported in hardware.
  *  
+ *  snaplen is now also ignored, until we get per-stream slen support. Set
+ *  slen with approprite DAG tool BEFORE pcap_open_live().
+ *
  *  See also pcap(3).
  */
 pcap_t *
@@ -658,7 +683,8 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	handle->setnonblock_op = dag_setnonblock;
 	handle->stats_op = dag_stats;
 	handle->close_op = dag_platform_close;
-
+	handle->md.stat.ps_drop = 0;
+	handle->md.stat.ps_recv = 0;
 	return handle;
 
 fail:
@@ -847,6 +873,9 @@ dag_get_datalink(pcap_t *p)
 #ifdef TYPE_COLOR_HDLC_POS
 		case TYPE_COLOR_HDLC_POS:
 #endif
+#ifdef TYPE_DSM_COLOR_HDLC_POS
+		case TYPE_DSM_COLOR_HDLC_POS:
+#endif
 			if (p->dlt_list != NULL) {
 				p->dlt_list[index++] = DLT_CHDLC;
 				p->dlt_list[index++] = DLT_PPP_SERIAL;
@@ -859,6 +888,9 @@ dag_get_datalink(pcap_t *p)
 		case TYPE_ETH:
 #ifdef TYPE_COLOR_ETH
 		case TYPE_COLOR_ETH:
+#endif
+#ifdef TYPE_DSM_COLOR_ETH
+		case TYPE_DSM_COLOR_ETH:
 #endif
 			/*
 			 * This is (presumably) a real Ethernet capture; give it a
