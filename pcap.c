@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.13 2006-07-27 21:06:17 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.14 2006-09-25 18:17:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -360,30 +360,31 @@ static struct dlt_choice dlt_choices[] = {
         DLT_CHOICE(DLT_JUNIPER_ATM1, "Juniper ATM1 PIC"),
         DLT_CHOICE(DLT_JUNIPER_ATM2, "Juniper ATM2 PIC"),
         DLT_CHOICE(DLT_JUNIPER_MLPPP, "Juniper Multi-Link PPP"),
- 	DLT_CHOICE(DLT_PPP_PPPD, "PPP for pppd, with direction flag"),
- 	DLT_CHOICE(DLT_JUNIPER_PPPOE, "Juniper PPPoE"),
- 	DLT_CHOICE(DLT_JUNIPER_PPPOE_ATM, "Juniper PPPoE/ATM"),
- 	DLT_CHOICE(DLT_GPRS_LLC, "GPRS LLC"),
- 	DLT_CHOICE(DLT_GPF_T, "GPF-T"),
- 	DLT_CHOICE(DLT_GPF_F, "GPF-F"),
- 	DLT_CHOICE(DLT_JUNIPER_PIC_PEER, "Juniper PIC Peer"),
- 	DLT_CHOICE(DLT_JUNIPER_MLFR, "Juniper Multi-Link Frame Relay"),
+	DLT_CHOICE(DLT_PPP_PPPD, "PPP for pppd, with direction flag"),
+	DLT_CHOICE(DLT_JUNIPER_PPPOE, "Juniper PPPoE"),
+	DLT_CHOICE(DLT_JUNIPER_PPPOE_ATM, "Juniper PPPoE/ATM"),
+	DLT_CHOICE(DLT_GPRS_LLC, "GPRS LLC"),
+	DLT_CHOICE(DLT_GPF_T, "GPF-T"),
+	DLT_CHOICE(DLT_GPF_F, "GPF-F"),
+	DLT_CHOICE(DLT_JUNIPER_PIC_PEER, "Juniper PIC Peer"),
+	DLT_CHOICE(DLT_JUNIPER_MLFR, "Juniper Multi-Link Frame Relay"),
 	DLT_CHOICE(DLT_ERF_ETH,	"Ethernet with Endace ERF header"),
 	DLT_CHOICE(DLT_ERF_POS, "Packet-over-SONET with Endace ERF header"),
         DLT_CHOICE(DLT_JUNIPER_GGSN, "Juniper GGSN PIC"),
         DLT_CHOICE(DLT_JUNIPER_ES, "Juniper Encryption Services PIC"),
         DLT_CHOICE(DLT_JUNIPER_MONITOR, "Juniper Passive Monitor PIC"),
         DLT_CHOICE(DLT_JUNIPER_SERVICES, "Juniper Advanced Services PIC"),
- 	DLT_CHOICE(DLT_JUNIPER_MFR, "Juniper FRF.16 Frame Relay"),
- 	DLT_CHOICE(DLT_JUNIPER_ETHER, "Juniper Ethernet"),
- 	DLT_CHOICE(DLT_JUNIPER_PPP, "Juniper PPP"),
- 	DLT_CHOICE(DLT_JUNIPER_FRELAY, "Juniper Frame Relay"),
- 	DLT_CHOICE(DLT_JUNIPER_CHDLC, "Juniper C-HDLC"),
+	DLT_CHOICE(DLT_JUNIPER_MFR, "Juniper FRF.16 Frame Relay"),
+	DLT_CHOICE(DLT_JUNIPER_ETHER, "Juniper Ethernet"),
+	DLT_CHOICE(DLT_JUNIPER_PPP, "Juniper PPP"),
+	DLT_CHOICE(DLT_JUNIPER_FRELAY, "Juniper Frame Relay"),
+	DLT_CHOICE(DLT_JUNIPER_CHDLC, "Juniper C-HDLC"),
 	DLT_CHOICE(DLT_MFR, "FRF.16 Frame Relay"),
- 	DLT_CHOICE(DLT_JUNIPER_VP, "Juniper Voice PIC"),
- 	DLT_CHOICE(DLT_A429, "Arinc 429"),
- 	DLT_CHOICE(DLT_CAN20B, "Controller Area Network (CAN) v. 2.0B"),
-    DLT_CHOICE(DLT_A653_ICM, "Arinc 653 Interpartition Communication"),
+	DLT_CHOICE(DLT_JUNIPER_VP, "Juniper Voice PIC"),
+	DLT_CHOICE(DLT_MTP2, "SS7 MTP2"),
+	DLT_CHOICE(DLT_A429, "Arinc 429"),
+	DLT_CHOICE(DLT_CAN20B, "Controller Area Network (CAN) v. 2.0B"),
+	DLT_CHOICE(DLT_A653_ICM, "Arinc 653 Interpartition Communication"),
 	DLT_CHOICE_SENTINEL
 };
 
