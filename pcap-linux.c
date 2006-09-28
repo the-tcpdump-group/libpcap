@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.122 2006-09-18 17:32:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.123 2006-09-28 07:34:36 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -962,6 +962,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 		 * sake of correctness I added this check.
 		 */
 		fprintf(stderr, "Warning: Filter too complex for kernel\n");
+		fcode.len = 0;
 		fcode.filter = NULL;
 		can_filter_in_kernel = 0;
 	} else
