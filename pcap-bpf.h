@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.11 2006-07-27 21:06:17 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.12 2006-10-03 00:12:57 guy Exp $ (LBL)
  */
 
 /*
@@ -635,6 +635,11 @@ struct bpf_version {
 #define DLT_A653_ICM            185
 
 /*
+ * USB packets; requested by Paolo Abeni <paolo.abeni@email.it>.
+ */
+#define DLT_USB			186
+
+/*
  * Controller Area Network (CAN) v. 2.0B packets.
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Used to dump CAN packets coming from a CAN Vector board.
@@ -642,7 +647,6 @@ struct bpf_version {
  * http://www.can-cia.org/downloads/?269
  */
 #define DLT_CAN20B              190
-
 
 /*
  * The instruction encodings.
