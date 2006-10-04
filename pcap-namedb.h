@@ -30,10 +30,13 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.12 2006-10-04 18:09:22 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-namedb.h,v 1.13 2006-10-04 18:13:32 guy Exp $ (LBL)
  */
 
 /*
  * For backwards compatibility.
+ *
+ * Note to OS vendors: do NOT get rid of this file!  Some applications
+ * might expect to be able to include <pcap-namedb.h>.
  */
 #include <pcap/namedb.h>
