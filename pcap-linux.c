@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.123 2006-09-28 07:34:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.124 2006-10-04 15:50:26 hannes Exp $ (LBL)";
 #endif
 
 /*
@@ -185,6 +185,13 @@ typedef int		socklen_t;
 #define BIGGER_THAN_ALL_MTUS	(64*1024)
 
 /*
+ * Prototypes for usb related functions
+ */
+int usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
+pcap_t* usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg);
+
+
+/*
  * Prototypes for internal functions
  */
 static void map_arphrd_to_dlt(pcap_t *, int, int);
@@ -254,6 +261,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return septel_open_live(device, snaplen, promisc, to_ms, ebuf);
 	}
 #endif /* HAVE_SEPTEL_API */
+
+        if (strstr(device, "usb")) {
+                return usb_open_live(device, snaplen, promisc, to_ms, ebuf);
+        }
 
 	/* Allocate a handle for this session. */
 
@@ -914,6 +925,9 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	if (septel_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_SEPTEL_API */
+
+	if (usb_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
 
 	return (0);
 }
