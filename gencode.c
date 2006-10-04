@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.271 2006-10-04 16:47:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.272 2006-10-04 18:09:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -71,7 +71,7 @@ static const char rcsid[] _U_ =
 #include "atmuni31.h"
 #include "sunatmpos.h"
 #include "ppp.h"
-#include "sll.h"
+#include "pcap/sll.h"
 #include "arcnet.h"
 #include "pf.h"
 #ifndef offsetof
@@ -82,7 +82,7 @@ static const char rcsid[] _U_ =
 #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* WIN32 */
 #endif /*INET6*/
-#include <pcap-namedb.h>
+#include <pcap/namedb.h>
 
 #define ETHERMTU	1500
 

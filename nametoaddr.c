@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.80 2005-04-20 11:12:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.81 2006-10-04 18:09:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -80,7 +80,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-int.h"
 
 #include "gencode.h"
-#include <pcap-namedb.h>
+#include <pcap/namedb.h>
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"

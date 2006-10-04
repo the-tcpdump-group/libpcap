@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.124 2006-10-04 15:50:26 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.125 2006-10-04 18:09:22 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -78,7 +78,7 @@ static const char rcsid[] _U_ =
 #endif
 
 #include "pcap-int.h"
-#include "sll.h"
+#include "pcap/sll.h"
 
 #ifdef HAVE_DAG_API
 #include "pcap-dag.h"

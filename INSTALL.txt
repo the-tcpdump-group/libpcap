@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.15 2005-08-10 06:19:06 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.16 2006-10-04 18:09:22 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -350,8 +350,13 @@ nlpid.h		- OSI network layer protocol identifier definitions
 net		- symlink to bpf/net
 optimize.c	- BPF optimization routines
 packaging	- packaging information for building libpcap RPMs
+pcap/pcap-bpf.h	- BPF definitions
+pcap/namedb.h	- public libpcap name database definitions
+pcap/pcap.h	- public libpcap definitions
+pcap/sll.h	- public definition of DLT_LINUX_SLL header
+pcap/usb.h	- public definition of DLT_USB headeer
 pcap-bpf.c	- BSD Packet Filter support
-pcap-bpf.h	- BPF definitions
+pcap-bpf.h	- header for backwards compatibility
 pcap-dag.c	- Endace DAG device capture support
 pcap-dag.h	- Endace DAG device capture support
 pcap-dlpi.c	- Data Link Provider Interface support
@@ -360,26 +365,25 @@ pcap-dos.h	- headers for MS-DOS capture support
 pcap-enet.c	- enet support
 pcap-int.h	- internal libpcap definitions
 pcap-linux.c	- Linux packet socket support
-pcap-namedb.h	- public libpcap name database definitions
+pcap-namedb.h	- header for backwards compatibility
 pcap-nit.c	- SunOS Network Interface Tap support
 pcap-nit.h	- SunOS Network Interface Tap definitions
 pcap-null.c	- dummy monitor support (allows offline use of libpcap)
 pcap-pf.c	- Ultrix and Digital/Tru64 UNIX Packet Filter support
 pcap-pf.h	- Ultrix and Digital/Tru64 UNIX Packet Filter definitions
-pcap-septel.c   - INTEL/Septel device capture support
-pcap-septel.h   - INTEL/Septel device capture support
+pcap-septel.c   - Intel/Septel device capture support
+pcap-septel.h   - Intel/Septel device capture support
 pcap-stdinc.h	- includes and #defines for compiling on Win32 systems
 pcap-snit.c	- SunOS 4.x STREAMS-based Network Interface Tap support
 pcap-snoop.c	- IRIX Snoop network monitoring support
+pcap-usb-linux.c - USB capture support for Linux
 pcap-win32.c	- WinPcap capture support
 pcap.3		- manual entry
 pcap.c		- pcap utility routines
-pcap.h		- public libpcap definitions
+pcap.h		- header for backwards compatibility
 pf.h		- OpenBSD DLT_PFLOG definitions
 ppp.h		- Point to Point Protocol definitions
-rawss7.h	- information on DLT_ types for SS7
 savefile.c	- offline support
 scanner.l	- filter string scanner
-sll.h		- definitions for Linux cooked mode fake link-layer header
 sunatmpos.h	- definitions for SunATM capturing
 Win32		- headers and routines for building on Win32 systems

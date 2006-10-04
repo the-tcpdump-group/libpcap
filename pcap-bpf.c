@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.95 2006-01-22 05:28:12 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.96 2006-10-04 18:09:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -40,7 +40,7 @@ static const char rcsid[] _U_ =
 #ifdef _AIX
 
 /*
- * Make "pcap.h" not include "pcap-bpf.h"; we are going to include the
+ * Make "pcap.h" not include "pcap/bpf.h"; we are going to include the
  * native OS version, as we need "struct bpf_config" from it.
  */
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
@@ -571,7 +571,7 @@ bpf_open(pcap_t *p, char *errbuf)
 }
 
 /*
- * We include the OS's <net/bpf.h>, not our "pcap-bpf.h", so we probably
+ * We include the OS's <net/bpf.h>, not our "pcap/bpf.h", so we probably
  * don't get DLT_DOCSIS defined.
  */
 #ifndef DLT_DOCSIS

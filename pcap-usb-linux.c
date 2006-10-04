@@ -39,7 +39,7 @@
 #endif
 
 #include "pcap-int.h"
-#include "sll.h"
+#include "pcap/usb.h"
 
 #ifdef NEED_STRERROR_H
 #include "strerror.h"

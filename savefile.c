@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.145 2006-07-27 21:02:57 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.146 2006-10-04 18:09:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -313,7 +313,7 @@ static const char rcsid[] _U_ =
  * would have to read them.
  *
  * Instead, in those cases, ask "tcpdump-workers@tcpdump.org" for a new DLT_
- * and LINKTYPE_ value, as per the comment in pcap-bpf.h, and use the type
+ * and LINKTYPE_ value, as per the comment in pcap/bpf.h, and use the type
  * you're given.
  */
 #define LINKTYPE_USER0		147

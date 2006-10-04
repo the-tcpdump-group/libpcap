@@ -74,6 +74,11 @@ nlpid.h
 optimize.c
 packaging/pcap.spec
 packaging/pcap.spec.in
+pcap/bpf.h
+pcap/namedb.h
+pcap/pcap.h
+pcap/sll.h
+pcap/usb.h
 pcap-bpf.c
 pcap-bpf.h
 pcap-dag.c
@@ -95,6 +100,7 @@ pcap-septel.h
 pcap-stdinc.h
 pcap-snit.c
 pcap-snoop.c
+pcap-usb-linux.c
 pcap-win32.c
 pcap.3
 pcap.c
@@ -103,7 +109,6 @@ pf.h
 ppp.h
 savefile.c
 scanner.l
-sll.h
 sunatmpos.h
 Win32/Include/Gnuc.h
 Win32/Include/addrinfo.h

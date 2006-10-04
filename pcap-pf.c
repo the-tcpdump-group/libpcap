@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.93 2005-05-03 18:54:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.94 2006-10-04 18:09:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -62,7 +62,7 @@ struct rtentry;
 #include <unistd.h>
 
 /*
- * Make "pcap.h" not include "pcap-bpf.h"; we are going to include the
+ * Make "pcap.h" not include "pcap/bpf.h"; we are going to include the
  * native OS version, as we need various BPF ioctls from it.
  */
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
@@ -285,7 +285,7 @@ pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 }
 
 /*
- * We include the OS's <net/bpf.h>, not our "pcap-bpf.h", so we probably
+ * We include the OS's <net/bpf.h>, not our "pcap/bpf.h", so we probably
  * don't get DLT_DOCSIS defined.
  */
 #ifndef DLT_DOCSIS
