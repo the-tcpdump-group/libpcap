@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.130 2006-10-04 15:50:26 hannes Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.131 2006-10-04 16:46:31 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.130 $)
+AC_REVISION($Revision: 1.131 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -795,7 +795,7 @@ dnl check for usb sniffing support
 AC_MSG_CHECKING(for USB sniffing support)
 case "$host_os" in
 linux*)
-       AC_DEFINE(PCAP_SUPPORT_USB, 1, [target host support usb sniffing])
+       AC_DEFINE(PCAP_SUPPORT_USB, 1, [target host supports USB sniffing])
        USB_SRC=pcap-usb-linux.c
        AC_MSG_RESULT(yes)
        ;;
