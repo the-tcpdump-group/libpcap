@@ -161,13 +161,7 @@
 /* /dev/dlpi directory */
 #undef PCAP_DEV_PREFIX
 
-/* if have usb sniffing support */
-#undef PCAP_SUPPORT_USB
-
-/* if have usb sniffing support */
-#undef PCAP_SUPPORT_USB
-
-/* if have usb sniffing support */
+/* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB
 
 /* Define to 1 if you have the ANSI C header files. */
