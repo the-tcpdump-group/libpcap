@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.102 2006-09-25 18:04:40 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.103 2006-10-04 16:50:33 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -72,7 +72,7 @@ YACC = @V_YACC@
 	@rm -f $@
 	$(CC) $(CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c
+PSRC =	pcap-@V_PCAP@.c @USB_SRC@
 FSRC =  fad-@V_FINDALLDEVS@.c
 SSRC =  @SSRC@
 CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
@@ -191,6 +191,8 @@ install: libpcap.a
 	    $(DESTDIR)$(includedir)/pcap-bpf.h
 	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
 	    $(DESTDIR)$(includedir)/pcap-namedb.h
+	$(INSTALL_DATA) $(srcdir)/pcap-usb.h \
+	    $(DESTDIR)$(includedir)/pcap-usb.h
 	[ -d $(DESTDIR)$(mandir)/man3 ] || \
 		(mkdir -p $(DESTDIR)$(mandir)/man3; chmod 755 $(DESTDIR)$(mandir)/man3)
 	$(INSTALL_DATA) $(srcdir)/pcap.3 \
