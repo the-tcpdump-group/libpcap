@@ -35,7 +35,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/sll.h,v 1.1 2006-10-05 06:38:07 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/sll.h,v 1.2 2006-10-05 10:23:35 guy Exp $ (LBL)
  */
 
 /*
@@ -72,6 +72,9 @@
  * can be told apart and programs that read them can dissect the
  * packets in them.
  */
+
+#ifndef lib_pcap_sll_h
+#define lib_pcap_sll_h
 
 /*
  * A DLT_LINUX_SLL fake link-layer header.
@@ -122,3 +125,5 @@ struct sll_header {
  */
 #define LINUX_SLL_P_802_3	0x0001	/* Novell 802.3 frames without 802.2 LLC header */
 #define LINUX_SLL_P_802_2	0x0004	/* 802.2 frames (not D/I/X Ethernet) */
+
+#endif
