@@ -353,7 +353,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	 * a partial information.
  	 * At least until linux 2.6.17 there is no way to set usbmon intenal buffer
 	 * length and default value is 130. */
-	while ((string[0] != 0) && (string[1] != 0) && (pkth.caplen < handle->snaplen))
+	while ((string[0] != 0) && (string[1] != 0) && (pkth.caplen < handle->snapshot))
 	{
 		rawdata[0] = ascii_to_int(string[0]) * 16 + ascii_to_int(string[1]);
 		rawdata++;
@@ -367,6 +367,7 @@ got:
 	handle->md.packets_read++;
 	if (pkth.caplen > handle->snapshot)
 		pkth.caplen = handle->snapshot;
+
 
 	callback(user, &pkth, handle->buffer);
 	return 1;
