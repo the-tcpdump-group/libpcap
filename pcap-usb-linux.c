@@ -181,7 +181,7 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 static inline int 
 ascii_to_int(char c)
 {
-	return c < 'A' ? c- '0': ((c<'a') ? c- 'A': c-'a');
+	return c < 'A' ? c- '0': ((c<'a') ? c - 'A' + 10: c-'a'+10);
 }
 
 /*
@@ -331,12 +331,13 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	string += cnt;
 	handle->md.packets_read++;
 	
-	/* urb tag is not present if urb length is 0 */
-	pkth.len += pkth.caplen;
+	/* urb tag is not present if urb length is 0, so we can stop here 
+	 * text parsing */
+	pkth.len += pkth.caplen;	
 	if (pkth.len == pkth.caplen)
 		return 1;
 	
-	/* check for data presence */
+	/* check for data presence; data is present if and only if urb tag is '=' */
 	if (sscanf(string, " %c", &urb_tag) != 1)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -347,9 +348,12 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	if (urb_tag != '=')
 	    	goto got;
 	
-	/* read all urb data; if urb length is less then our string we get only
-	* a partial information  */
-	while ((string[0] != 0) && (string[1] != 0))
+	/* read all urb data; if urb length is greater then the usbmon internal 
+	 * buffer length used by the kernel to spool the URB, we get only
+	 * a partial information.
+ 	 * At least until linux 2.6.17 there is no way to set usbmon intenal buffer
+	 * length and default value is 130. */
+	while ((string[0] != 0) && (string[1] != 0) && (pkth.caplen < handle->snaplen))
 	{
 		rawdata[0] = ascii_to_int(string[0]) * 16 + ascii_to_int(string[1]);
 		rawdata++;
