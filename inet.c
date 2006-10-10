@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.69 2006-01-21 10:45:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.70 2006-10-10 07:09:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -135,37 +135,41 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 	int this_instance;
 
 	/*
-	 * Can we open this interface for live capture?
-	 *
-	 * We do this check so that interfaces that ae supplied
-	 * by the interface enumeration mechanism we're using
-	 * but that don't support packet capture aren't included
-	 * in the list.  An example of this is loopback interfaces
-	 * on Solaris; we don't just omit loopback interfaces
-	 * becaue you *can* capture on loopback interfaces on some
-	 * OSes.
-	 */
-	p = pcap_open_live(name, 68, 0, 0, errbuf);
-	if (p == NULL) {
-		/*
-		 * No.  Don't bother including it.
-		 * Don't treat this as an error, though.
-		 */
-		*curdev_ret = NULL;
-		return (0);
-	}
-	pcap_close(p);
-
-	/*
 	 * Is there already an entry in the list for this interface?
 	 */
 	for (curdev = *alldevs; curdev != NULL; curdev = curdev->next) {
 		if (strcmp(name, curdev->name) == 0)
 			break;	/* yes, we found it */
 	}
+
 	if (curdev == NULL) {
 		/*
 		 * No, we didn't find it.
+		 *
+		 * Can we open this interface for live capture?
+		 *
+		 * We do this check so that interfaces that are
+		 * supplied by the interface enumeration mechanism
+		 * we're using but that don't support packet capture
+		 * aren't included in the list.  Loopback interfaces
+		 * on Solaris are an example of this; we don't just
+		 * omit loopback interfaces on all platforms because
+		 * you *can* capture on loopback interfaces on some
+		 * OSes.
+		 */
+		p = pcap_open_live(name, 68, 0, 0, errbuf);
+		if (p == NULL) {
+			/*
+			 * No.  Don't bother including it.
+			 * Don't treat this as an error, though.
+			 */
+			*curdev_ret = NULL;
+			return (0);
+		}
+		pcap_close(p);
+
+		/*
+		 * Yes, we can open it.
 		 * Allocate a new entry.
 		 */
 		curdev = malloc(sizeof(pcap_if_t));
