@@ -228,8 +228,8 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	* not mandatory, so does not count on it*/
 	string[ret] = 0;
 	ret = sscanf(string, "%x %d %c %c%c:%d:%d %s%n", &tag, &timestamp, &etype, 
-	&pipeid1, &pipeid2, &dev_addr, &ep_num, status, 
-	&cnt);
+		&pipeid1, &pipeid2, &dev_addr, &ep_num, status, 
+		&cnt);
 	if (ret < 8)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -310,11 +310,11 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		
 		/* try to convert to corresponding integer */
 		shdr = (pcap_usb_setup*)rawdata;
-		shdr->bmRequestType = htonl(strtol(str1, 0, 16));
-		shdr->bRequest = htonl(strtol(str2, 0, 16));
-		shdr->wValue = htonl(strtol(str3, 0, 16));
-		shdr->wIndex = htonl(strtol(str4, 0, 16));
-		shdr->wLength = htonl(strtol(str5, 0, 16));
+		shdr->bmRequestType = strtoul(str1, 0, 16);
+		shdr->bRequest = strtoul(str2, 0, 16);
+		shdr->wValue = htons(strtoul(str3, 0, 16));
+		shdr->wIndex = htons(strtoul(str4, 0, 16));
+		shdr->wLength = htons(strtoul(str5, 0, 16));
 		
 		pkth.caplen = sizeof(pcap_usb_setup);
 		rawdata += sizeof(pcap_usb_setup);

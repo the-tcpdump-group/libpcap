@@ -56,12 +56,16 @@ typedef struct _usb_header {
   bpf_u_int32 setup_packet;
 } pcap_usb_header;
 
+
+/*
+ * defined in USB specification 
+ */
 typedef struct _usb_setup {
-  bpf_u_int32 bmRequestType;
-  bpf_u_int32 bRequest;
-  bpf_u_int32 wValue;
-  bpf_u_int32 wIndex;
-  bpf_u_int32 wLength;
+  u_int8_t bmRequestType;
+  u_int8_t bRequest;
+  u_int16_t wValue;
+  u_int16_t wIndex;
+  u_int16_t wLength;
 } pcap_usb_setup;
 
 #endif
