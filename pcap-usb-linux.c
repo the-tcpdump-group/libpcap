@@ -290,7 +290,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	
 	/* check if this is a setup packet */
 	ret = sscanf(status, "%d", &dummy);
-	if (ret == 0)
+	if (ret != 1)
 	{
 		/* this a setup packet, setup data can be filled with underscore if
 		* usbmon has not been able to read them, so we must parse this fields as 
@@ -302,8 +302,8 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (ret < 5)
 		{
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't parse usb bus message '%s', too few token (expected 5 got %d)",
-			string, ret);
+				"Can't parse usb bus message '%s', too few token (expected 5 got %d)",
+				string, ret);
 			return -1;
 		}
 		string += cnt;
@@ -315,10 +315,14 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		shdr->wValue = htons(strtoul(str3, 0, 16));
 		shdr->wIndex = htons(strtoul(str4, 0, 16));
 		shdr->wLength = htons(strtoul(str5, 0, 16));
+		uhdr->setup_packet = 1;
 		
-		pkth.caplen = sizeof(pcap_usb_setup);
+		
+		pkth.caplen += sizeof(pcap_usb_setup);
 		rawdata += sizeof(pcap_usb_setup);
 	}
+	else 
+		uhdr->setup_packet = 0;
 	
 	/* read urb data */
 	ret = sscanf(string, " %d%n", &pkth.len, &cnt);
