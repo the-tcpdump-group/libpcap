@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.13 2006-09-28 07:35:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.110.2.14 2006-10-12 17:26:58 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -2207,8 +2207,13 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 static int
 reset_kernel_filter(pcap_t *handle)
 {
-	/* setsockopt() barfs unless it get a dummy parameter */
-	int dummy;
+	/*
+	 * setsockopt() barfs unless it get a dummy parameter.
+	 * valgrind whines unless the value is initialized,
+	 * as it has no idea that setsockopt() ignores its
+	 * parameter.
+	 */
+	int dummy = 0;
 
 	return setsockopt(handle->fd, SOL_SOCKET, SO_DETACH_FILTER,
 				   &dummy, sizeof(dummy));
