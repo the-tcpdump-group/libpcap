@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.73 2006-01-22 20:11:26 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.74 2006-10-12 07:59:54 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -1145,12 +1145,13 @@ or NULL, if a network device was opened with
 .BR pcap_open_live() .
 .PP
 .B pcap_stats()
-returns 0 and fills in a
+returns 0 and fills in the
 .B pcap_stat
-struct. The values represent packet statistics from the start of the
-run to the time of the call. If there is an error or the underlying
-packet capture doesn't support packet statistics, \-1 is returned and
-the error text can be obtained with
+structure pointed to by its second argument.  The values represent
+packet statistics from the start of the run to the time of the call.  If
+there is an error or the underlying packet capture doesn't support
+packet statistics, \-1 is returned and the error text can be obtained
+with
 .B pcap_perror()
 or
 .BR pcap_geterr() .
