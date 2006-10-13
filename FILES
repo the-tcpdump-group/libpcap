@@ -82,6 +82,7 @@ pcap/usb.h
 pcap-bpf.c
 pcap-bpf.h
 pcap-bt-linux.c
+pcap-bt-linux.h
 pcap-dag.c
 pcap-dag.h
 pcap-dlpi.c
@@ -102,6 +103,7 @@ pcap-stdinc.h
 pcap-snit.c
 pcap-snoop.c
 pcap-usb-linux.c
+pcap-usb-linux.h
 pcap-win32.c
 pcap.3
 pcap.c

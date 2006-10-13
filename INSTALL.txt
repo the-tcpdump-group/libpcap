@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.17 2006-10-13 17:36:41 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.18 2006-10-13 17:46:45 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -358,6 +358,7 @@ pcap/usb.h	- public definition of DLT_USB headeer
 pcap-bpf.c	- BSD Packet Filter support
 pcap-bpf.h	- header for backwards compatibility
 pcap-bt-linux.c	- Bluetooth capture support for Linux
+pcap-bt-linux.h	- Bluetooth capture support for Linux
 pcap-dag.c	- Endace DAG device capture support
 pcap-dag.h	- Endace DAG device capture support
 pcap-dlpi.c	- Data Link Provider Interface support
@@ -378,6 +379,7 @@ pcap-stdinc.h	- includes and #defines for compiling on Win32 systems
 pcap-snit.c	- SunOS 4.x STREAMS-based Network Interface Tap support
 pcap-snoop.c	- IRIX Snoop network monitoring support
 pcap-usb-linux.c - USB capture support for Linux
+pcap-usb-linux.h - USB capture support for Linux
 pcap-win32.c	- WinPcap capture support
 pcap.3		- manual entry
 pcap.c		- pcap utility routines

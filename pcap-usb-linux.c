@@ -29,7 +29,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * USB sniffig API implementation for linux platform
+ * USB sniffing API implementation for Linux platform
  * By Paolo Abeni <paolo.abeni@email.com>
  *
  */
@@ -39,6 +39,7 @@
 #endif
 
 #include "pcap-int.h"
+#include "pcap-usb-linux.h"
 #include "pcap/usb.h"
 
 #ifdef NEED_STRERROR_H
