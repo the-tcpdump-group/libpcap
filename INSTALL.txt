@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.16 2006-10-04 18:09:22 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.17 2006-10-13 17:36:41 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -357,6 +357,7 @@ pcap/sll.h	- public definition of DLT_LINUX_SLL header
 pcap/usb.h	- public definition of DLT_USB headeer
 pcap-bpf.c	- BSD Packet Filter support
 pcap-bpf.h	- header for backwards compatibility
+pcap-bt-linux.c	- Bluetooth capture support for Linux
 pcap-dag.c	- Endace DAG device capture support
 pcap-dag.h	- Endace DAG device capture support
 pcap-dlpi.c	- Data Link Provider Interface support

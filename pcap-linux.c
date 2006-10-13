@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.126 2006-10-12 17:26:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.127 2006-10-13 17:34:53 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -184,11 +184,21 @@ typedef int		socklen_t;
  */
 #define BIGGER_THAN_ALL_MTUS	(64*1024)
 
+#ifdef PCAP_SUPPORT_USB
 /*
- * Prototypes for usb related functions
+ * Prototypes for USB-related functions
  */
 int usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
 pcap_t* usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg);
+#endif
+
+#ifdef PCAP_SUPPORT_BT
+/*
+ * Prototypes for Bluetooth-related functions
+ */
+int bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
+pcap_t* bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg);
+#endif
 
 
 /*
@@ -262,9 +272,16 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 #endif /* HAVE_SEPTEL_API */
 
-        if (strstr(device, "usb")) {
-                return usb_open_live(device, snaplen, promisc, to_ms, ebuf);
-        }
+#ifdef PCAP_SUPPORT_BT
+	if (strstr(device, "bluetooth")) {
+		return bt_open_live(device, snaplen, promisc, to_ms, ebuf);
+	}
+#endif
+
+	if (strstr(device, "usb")) {
+		return usb_open_live(device, snaplen, promisc, to_ms, ebuf);
+	}
+
 
 	/* Allocate a handle for this session. */
 
@@ -926,8 +943,15 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		return (-1);
 #endif /* HAVE_SEPTEL_API */
 
+#ifdef PCAP_SUPPORT_BT
+	if (bt_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif
+
+#ifdef PCAP_SUPPORT_USB
 	if (usb_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
+#endif
 
 	return (0);
 }

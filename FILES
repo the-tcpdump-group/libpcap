@@ -81,6 +81,7 @@ pcap/sll.h
 pcap/usb.h
 pcap-bpf.c
 pcap-bpf.h
+pcap-bt-linux.c
 pcap-dag.c
 pcap-dag.h
 pcap-dlpi.c

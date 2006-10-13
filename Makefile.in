@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.104 2006-10-04 18:09:22 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.105 2006-10-13 17:34:53 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -72,7 +72,7 @@ YACC = @V_YACC@
 	@rm -f $@
 	$(CC) $(CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c @USB_SRC@
+PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@
 FSRC =  fad-@V_FINDALLDEVS@.c
 SSRC =  @SSRC@
 CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \

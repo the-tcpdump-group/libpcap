@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.131 2006-10-04 16:46:31 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.132 2006-10-13 17:34:53 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.131 $)
+AC_REVISION($Revision: 1.132 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -805,6 +805,25 @@ linux*)
 esac
 AC_SUBST(PCAP_SUPPORT_USB)
 AC_SUBST(USB_SRC)
+
+dnl check for bluetooth sniffing support
+case "$host_os" in
+linux*)
+       AC_CHECK_HEADER(bluetooth/bluetooth.h,
+       	[
+	  AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
+          BT_SRC=pcap-bt-linux.c
+          AC_MSG_NOTICE(Bluetooth sniffing is supported)
+	],
+	AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+       )
+       ;;
+*)
+       AC_MSG_NOTICE(no Bluetooth sniffing support)
+       ;;
+esac
+AC_SUBST(PCAP_SUPPORT_BT)
+AC_SUBST(BT_SRC)
 
 AC_PROG_INSTALL
 

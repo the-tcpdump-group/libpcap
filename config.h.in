@@ -161,6 +161,9 @@
 /* /dev/dlpi directory */
 #undef PCAP_DEV_PREFIX
 
+/* target host supports Bluetooth sniffing */
+#undef PCAP_SUPPORT_BT
+
 /* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB
 

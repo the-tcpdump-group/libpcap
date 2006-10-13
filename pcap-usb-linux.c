@@ -406,7 +406,8 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	if (fd < 0)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		"Can't open usb stats file %s: %s", string, strerror(errno));
+			"Can't open usb stats file %s: %s", 
+	 		string, strerror(errno));
 		return -1;
 	}
 	
@@ -429,7 +430,8 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	if (ret != 2)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		"Can't parse stat line '%s' expected 2 token got %d", string, ret);
+			"Can't parse stat line '%s' expected 2 token got %d", 
+			string, ret);
 		return -1;
 	}
 	
