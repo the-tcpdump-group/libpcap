@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.43 2006-09-13 07:36:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.44 2006-10-13 08:56:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1210,6 +1210,12 @@ init_linktype(p)
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
+	case DLT_JUNIPER_VP:
+		off_linktype = 18;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
 	case DLT_MTP2:
 		off_sio = 3;
 		off_opc = 4;
@@ -1229,6 +1235,24 @@ init_linktype(p)
 #endif
 
 	case DLT_LINUX_LAPD:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_USB:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_BLUETOOTH_HCI_H4:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
@@ -2337,6 +2361,7 @@ gen_linktype(proto)
         case DLT_JUNIPER_PPP:
         case DLT_JUNIPER_FRELAY:
         case DLT_JUNIPER_CHDLC:
+        case DLT_JUNIPER_VP:
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
@@ -6173,6 +6198,7 @@ gen_inbound(dir)
         case DLT_JUNIPER_PPP:
         case DLT_JUNIPER_FRELAY:
         case DLT_JUNIPER_CHDLC:
+        case DLT_JUNIPER_VP:
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
 		if (dir) {
