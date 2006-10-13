@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.146 2006-10-04 18:09:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.147 2006-10-13 08:46:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -460,6 +460,17 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_A653_ICM       185
 
 /*
+ * USB packets; requested by Paolo Abeni <paolo.abeni@email.it>.
+ */
+#define LINKTYPE_USB		186
+
+/*
+ * Bluetooth HCI UART transport layer (part H:4); requested by
+ * Paolo Abeni.
+ */
+#define LINKTYPE_BLUETOOTH_HCI_H4	187
+
+/*
  * Controller Area Network (CAN) v. 2.0B packets.
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Used to dump CAN packets coming from a CAN Vector board.
@@ -679,14 +690,20 @@ static struct linktype_map {
         /* Juniper Voice PIC */
         { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
 
-		/* Controller Area Network (CAN) v2.0B */
-		{ DLT_A429,				LINKTYPE_A429 },
+	/* Controller Area Network (CAN) v2.0B */
+	{ DLT_A429,				LINKTYPE_A429 },
 
-		/* Controller Area Network (CAN) v2.0B */
-		{ DLT_CAN20B,				LINKTYPE_CAN20B },
+	/* Arinc 653 Interpartition Communication messages */
+	{ DLT_A653_ICM,         LINKTYPE_A653_ICM },
 
-		/* Arinc 653 Interpartition Communication messages */
-		{ DLT_A653_ICM,         LINKTYPE_A653_ICM },
+	/* USB */
+	{ DLT_USB,         LINKTYPE_USB },
+
+	/* Bluetooth HCI UART transport layer */
+	{ DLT_BLUETOOTH_HCI_H4,         LINKTYPE_BLUETOOTH_HCI_H4 },
+
+	/* Controller Area Network (CAN) v2.0B */
+	{ DLT_CAN20B,				LINKTYPE_CAN20B },
 
 	{ -1,			-1 }
 };

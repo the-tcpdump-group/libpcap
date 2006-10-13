@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.1 2006-10-04 18:09:22 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.2 2006-10-13 08:46:23 guy Exp $ (LBL)
  */
 
 /*
@@ -638,6 +638,12 @@ struct bpf_version {
  * USB packets; requested by Paolo Abeni <paolo.abeni@email.it>.
  */
 #define DLT_USB			186
+
+/*
+ * Bluetooth HCI UART transport layer (part H:4); requested by
+ * Paolo Abeni.
+ */
+#define DLT_BLUETOOTH_HCI_H4	187
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
