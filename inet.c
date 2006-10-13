@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.70 2006-10-10 07:09:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.71 2006-10-13 09:06:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -581,6 +581,9 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 #endif
 #ifdef HAVE_SEPTEL_API
 	    || strstr(device, "septel") != NULL
+#endif
+#ifdef PCAP_SUPPORT_USB
+	    || strstr(device, "usb") != NULL
 #endif
 	    ) {
 		*netp = *maskp = 0;
