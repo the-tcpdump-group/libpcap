@@ -241,8 +241,15 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	uhdr->endpoint_number = htonl(ep_num);
 	uhdr->device_address = htonl(dev_addr);
 	string += cnt;
-	pkth.ts.tv_sec = timestamp / 1000000;
-	pkth.ts.tv_usec = timestamp % 1000000;
+
+	/* don't use usbmon provided timestamp, since it have low precision*/
+	if (gettimeofday(&pkth.ts, NULL) < 0) 
+	{
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			"Can't get timestamp for message '%s' %d:%s", 
+			string, errno, strerror(errno));
+		return -1;
+	}
 	
 	/* parse endpoint information */
 	if (pipeid1 == 'C')
@@ -352,6 +359,9 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	
 	if (urb_tag != '=')
 	    	goto got;
+	
+	/* skip urb tag and following space */
+	string += 3;
 	
 	/* read all urb data; if urb length is greater then the usbmon internal 
 	 * buffer length used by the kernel to spool the URB, we get only
