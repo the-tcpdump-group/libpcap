@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.18 2006-10-13 08:56:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.19 2006-11-27 18:37:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -471,6 +471,12 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_BLUETOOTH_HCI_H4	187
 
 /*
+ * IEEE 802.16 MAC Common Part Sublayer; requested by Maria Cruz
+ * <cruz_petagay@bah.com>.
+ */
+#define LINKTYPE_IEEE802_16_MAC_CPS	188
+
+/*
  * Controller Area Network (CAN) v. 2.0B packets.
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Used to dump CAN packets coming from a CAN Vector board.
@@ -701,6 +707,9 @@ static struct linktype_map {
 
 	/* Bluetooth HCI UART transport layer */
 	{ DLT_BLUETOOTH_HCI_H4,         LINKTYPE_BLUETOOTH_HCI_H4 },
+
+	/* IEEE 802.16 MAC Common Part Sublayer */
+	{ DLT_IEEE802_16_MAC_CPS,	LINKTYPE_IEEE802_16_MAC_CPS },
 
 	/* Controller Area Network (CAN) v2.0B */
 	{ DLT_CAN20B,				LINKTYPE_CAN20B },
