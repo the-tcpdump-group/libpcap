@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.2 2006-10-13 08:46:23 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.3 2006-11-27 18:04:29 guy Exp $ (LBL)
  */
 
 /*
@@ -644,6 +644,12 @@ struct bpf_version {
  * Paolo Abeni.
  */
 #define DLT_BLUETOOTH_HCI_H4	187
+
+/*
+ * IEEE 802.16 MAC Common Part Sublayer; requested by Maria Cruz
+ * <cruz_petagay@bah.com>.
+ */
+#define DLT_IEEE802_16_MAC_CPS	188
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
