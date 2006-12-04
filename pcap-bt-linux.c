@@ -107,7 +107,7 @@ bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 		char dev_name[20], dev_descr[30];
 		
 		snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
-		snprintf(dev_descr, 30, "bluetooth adapter number %d", i);
+		snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
 			
 		if (pcap_add_if(&found_dev, dev_name, 0, 
 		       dev_descr, err_str) < 0)
