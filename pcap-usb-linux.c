@@ -93,7 +93,7 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 			int n = name[0] - '0';
 			char dev_name[10], dev_descr[30];
 			snprintf(dev_name, 10, USB_IFACE"%d", n);
-			snprintf(dev_descr, 30, "usb bus number %d", n);
+			snprintf(dev_descr, 30, "USB bus number %d", n);
 			
 			if (pcap_add_if(&devlist, dev_name, 0, 
 			    dev_descr, err_str) < 0)
