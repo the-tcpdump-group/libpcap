@@ -78,7 +78,10 @@ bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 	sock  = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (sock < 0)
 	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "can't open raw by socket %d:%s",
+		/* if bluetooth is not supported this this is not fatal*/ 
+		if (errno == EAFNOSUPPORT)
+			return 0;
+		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't open raw Bluetooth socket %d:%s",
 			errno, strerror(errno));
 		return -1;
 	}
@@ -86,7 +89,7 @@ bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 	dev_list = malloc(HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 	if (!dev_list) 
 	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "can't allocate %d bytes for dev cache",
+		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %d bytes for Bluetooth device list",
 			HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 		ret = -1;
 		goto done;
@@ -96,7 +99,7 @@ bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 
 	if (ioctl(sock, HCIGETDEVLIST, (void *) dev_list) < 0) 
 	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "can't get dev list via ioctl %d:%s",
+		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't get Bluetooth device list via ioctl %d:%s",
 			errno, strerror(errno));
 		ret = -1;
 		goto free;
