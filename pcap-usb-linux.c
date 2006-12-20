@@ -195,7 +195,7 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	handle->md.timeout	= to_ms;
 	handle->bufsize = snaplen;
 	handle->offset = 0;
-	handle->linktype = DLT_USB;
+	handle->linktype = DLT_USB_LINUX;
 
 	/*
 	 * "handle->fd" is a real file , so "select()" and "poll()"
