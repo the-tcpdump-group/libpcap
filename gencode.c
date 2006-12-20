@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.273 2006-10-13 08:48:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.274 2006-12-20 08:20:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1253,6 +1253,15 @@ init_linktype(p)
 		return;
 
 	case DLT_BLUETOOTH_HCI_H4:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_USB_LINUX:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
