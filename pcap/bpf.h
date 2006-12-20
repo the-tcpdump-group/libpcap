@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.3 2006-11-27 18:04:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.4 2006-12-20 03:30:32 guy Exp $ (LBL)
  */
 
 /*
@@ -635,7 +635,8 @@ struct bpf_version {
 #define DLT_A653_ICM            185
 
 /*
- * USB packets; requested by Paolo Abeni <paolo.abeni@email.it>.
+ * USB packets, beginning with a USB setup header; requested by
+ * Paolo Abeni <paolo.abeni@email.it>.
  */
 #define DLT_USB			186
 
@@ -650,6 +651,12 @@ struct bpf_version {
  * <cruz_petagay@bah.com>.
  */
 #define DLT_IEEE802_16_MAC_CPS	188
+
+/*
+ * USB packets, beginning with a Linux USB header; requested by
+ * Paolo Abeni <paolo.abeni@email.it>.
+ */
+#define DLT_USB_LINUX		189
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.

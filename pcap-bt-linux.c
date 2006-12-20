@@ -29,7 +29,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Bluetooth sniffing API implementation for Linux platform
- * By Paolo Abeni <paolo.abeni@email.com>
+ * By Paolo Abeni <paolo.abeni@email.it>
  *
  */
  

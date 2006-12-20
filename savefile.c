@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.148 2006-11-27 18:36:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.149 2006-12-20 03:30:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -460,7 +460,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_A653_ICM       185
 
 /*
- * USB packets; requested by Paolo Abeni <paolo.abeni@email.it>.
+ * USB packets, beginning with a USB setup header; requested by
+ * Paolo Abeni <paolo.abeni@email.it>.
  */
 #define LINKTYPE_USB		186
 
@@ -475,6 +476,12 @@ static const char rcsid[] _U_ =
  * <cruz_petagay@bah.com>.
  */
 #define LINKTYPE_IEEE802_16_MAC_CPS	188
+
+/*
+ * USB packets, beginning with a Linux USB header; requested by
+ * Paolo Abeni <paolo.abeni@email.it>.
+ */
+#define LINKTYPE_USB_LINUX	189
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
@@ -697,22 +704,25 @@ static struct linktype_map {
         { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
 
 	/* Controller Area Network (CAN) v2.0B */
-	{ DLT_A429,				LINKTYPE_A429 },
+	{ DLT_A429,		LINKTYPE_A429 },
 
 	/* Arinc 653 Interpartition Communication messages */
 	{ DLT_A653_ICM,         LINKTYPE_A653_ICM },
 
 	/* USB */
-	{ DLT_USB,         LINKTYPE_USB },
+	{ DLT_USB,		LINKTYPE_USB },
 
 	/* Bluetooth HCI UART transport layer */
-	{ DLT_BLUETOOTH_HCI_H4,         LINKTYPE_BLUETOOTH_HCI_H4 },
+	{ DLT_BLUETOOTH_HCI_H4,	LINKTYPE_BLUETOOTH_HCI_H4 },
 
 	/* IEEE 802.16 MAC Common Part Sublayer */
 	{ DLT_IEEE802_16_MAC_CPS,	LINKTYPE_IEEE802_16_MAC_CPS },
 
+	/* USB with Linux header */
+	{ DLT_USB_LINUX,	LINKTYPE_USB_LINUX },
+
 	/* Controller Area Network (CAN) v2.0B */
-	{ DLT_CAN20B,				LINKTYPE_CAN20B },
+	{ DLT_CAN20B,		LINKTYPE_CAN20B },
 
 	{ -1,			-1 }
 };

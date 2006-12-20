@@ -134,6 +134,9 @@
 /* if unaligned access fails */
 #undef LBL_ALIGN
 
+/* path for device for USB sniffing */
+#undef LINUX_USB_MON_DEV
+
 /* Define to 1 if netinet/ether.h declares `ether_hostton' */
 #undef NETINET_ETHER_H_DECLARES_ETHER_HOSTTON
 

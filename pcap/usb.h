@@ -30,42 +30,60 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Basic USB data struct
- * By Paolo Abeni <paolo.abeni@email.com>
+ * By Paolo Abeni <paolo.abeni@email.it>
  *
  */
  
 #ifndef _PCAP_USB_STRUCTS_H__
 #define _PCAP_USB_STRUCTS_H__
 
-typedef enum { 
-  URB_CONTROL_INPUT,
-  URB_CONTROL_OUTPUT,
-  URB_ISOCHRONOUS_INPUT,
-  URB_ISOCHRONOUS_OUTPUT,
-  URB_INTERRUPT_INPUT,
-  URB_INTERRUPT_OUTPUT,
-  URB_BULK_INPUT,
-  URB_BULK_OUTPUT,
-  URB_UNKNOWN
-} pcap_urb_type_t;
+/* 
+ * possible transfer mode
+ */
+#define URB_TRANSFER_IN   0x80
+#define URB_ISOCHRONOUS   0x0
+#define URB_INTERRUPT     0x1
+#define URB_CONTROL       0x2
+#define URB_BULK          0x3
 
-typedef struct _usb_header {
-  bpf_u_int32 urb_type;  
-  bpf_u_int32 device_address;
-  bpf_u_int32 endpoint_number;
-  bpf_u_int32 setup_packet;
-} pcap_usb_header;
+/*
+ * possible event type
+ */
+#define URB_SUBMIT        'S'
+#define URB_COMPLETE      'C'
+#define URB_ERROR         'E'
+
+/*
+ * USB setup header as defined in USB specification 
+ */
+typedef struct _usb_setup {
+	u_int8_t bmRequestType;
+	u_int8_t bRequest;
+	u_int16_t wValue;
+	u_int16_t wIndex;
+	u_int16_t wLength;
+} pcap_usb_setup;
 
 
 /*
- * defined in USB specification 
+ * Header prepent by linux kernel to each event
  */
-typedef struct _usb_setup {
-  u_int8_t bmRequestType;
-  u_int8_t bRequest;
-  u_int16_t wValue;
-  u_int16_t wIndex;
-  u_int16_t wLength;
-} pcap_usb_setup;
+typedef struct _usb_header {
+	u_int64_t id;
+	u_int8_t event_type;
+	u_int8_t transfer_type;
+	u_int8_t endpoint_number;
+	u_int8_t device_address;
+	u_int16_t bus_id;
+	char setup_flag;/*if !=0 the urb setup header is not present*/
+	char data_flag; /*if !=0 no urb data is present*/
+	int64_t ts_sec;
+	int32_t ts_usec;
+	int32_t status;
+	u_int32_t urb_len;
+	u_int32_t data_len; /* amount of urb data really present in this event*/
+	pcap_usb_setup setup;
+} pcap_usb_header;
+
 
 #endif

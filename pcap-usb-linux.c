@@ -30,7 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * USB sniffing API implementation for Linux platform
- * By Paolo Abeni <paolo.abeni@email.com>
+ * By Paolo Abeni <paolo.abeni@email.it>
  *
  */
  
@@ -52,24 +52,79 @@
 #include <fcntl.h>
 #include <string.h>
 #include <dirent.h>
+#include <byteswap.h>
 #include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
 
 #define USB_IFACE "usb"
 #define USB_DIR "/sys/kernel/debug/usbmon"
 #define USB_LINE_LEN 4096
 
+
+#define PIPE_IN			0x80
+#define PIPE_ISOCHRONOUS	0
+#define PIPE_INTERRUPT		1
+#define PIPE_CONTROL		2
+#define PIPE_BULK		3
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define htols(s) s
+#define htoll(l) l
+#else
+#define htols(s) bswap_16(s)
+#define htoll(l) bswap_32(l)
+#endif
+
+struct mon_bin_stats {
+	u_int32_t queued;
+	u_int32_t dropped;
+};
+
+struct mon_bin_get {
+	pcap_usb_header *hdr;
+	void *data;
+	size_t data_len;   /* Length of data (can be zero) */
+};
+
+struct mon_bin_mfetch {
+	int32_t *offvec;   /* Vector of events fetched */
+	int32_t nfetch;    /* Number of events to fetch (out: fetched) */
+	int32_t nflush;    /* Number of events to flush */
+};
+
+#define MON_IOC_MAGIC 0x92
+
+#define MON_IOCQ_URB_LEN _IO(MON_IOC_MAGIC, 1)
+#define MON_IOCX_URB  _IOWR(MON_IOC_MAGIC, 2, struct mon_bin_hdr)
+#define MON_IOCG_STATS _IOR(MON_IOC_MAGIC, 3, struct mon_bin_stats)
+#define MON_IOCT_RING_SIZE _IO(MON_IOC_MAGIC, 4)
+#define MON_IOCQ_RING_SIZE _IO(MON_IOC_MAGIC, 5)
+#define MON_IOCX_GET   _IOW(MON_IOC_MAGIC, 6, struct mon_bin_get)
+#define MON_IOCX_MFETCH _IOWR(MON_IOC_MAGIC, 7, struct mon_bin_mfetch)
+#define MON_IOCH_MFLUSH _IO(MON_IOC_MAGIC, 8)
+
+#define MON_BIN_SETUP 	0x1 /* setup hdr is present*/
+#define MON_BIN_SETUP_ZERO 	0x2 /* setup buffer is not available */
+#define MON_BIN_DATA_ZERO 	0x4 /* data buffer is not available */
+#define MON_BIN_ERROR 	0x8
+
 /* forward declaration */
+static int usb_stats_linux(pcap_t *, struct pcap_stat *);
+static int usb_stats_linux_bin(pcap_t *, struct pcap_stat *);
 static int usb_read_linux(pcap_t *, int , pcap_handler , u_char *);
+static int usb_read_linux_bin(pcap_t *, int , pcap_handler , u_char *);
+static int usb_read_linux_mmap(pcap_t *, int , pcap_handler , u_char *);
 static int usb_inject_linux(pcap_t *, const void *, size_t);
 static int usb_setfilter_linux(pcap_t *, struct bpf_program *);
 static int usb_setdirection_linux(pcap_t *, pcap_direction_t);
-static int usb_stats_linux(pcap_t *, struct pcap_stat *);
 static void usb_close_linux(pcap_t *);
+static void usb_close_linux_mmap(pcap_t *);
 
 int 
 usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 {
-    	pcap_if_t *devlist = *alldevsp;
+	pcap_if_t *devlist = *alldevsp;
 	struct dirent* data;
 	DIR* dir = opendir(USB_DIR);
 	if (!dir) {
@@ -79,8 +134,8 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 			mount -t debugfs none_debugs /sys/kernel/debug
 		 */
 		return 0;
-	}	
-	
+	}
+
 	/* scan usbmon directory */
 	int ret = 0;
 	while ((data = readdir(dir)) != 0)
@@ -88,7 +143,7 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 		char* name = data->d_name;
 		int len = strlen(name);
 
-	    	if ((len >= 2) && name[len -1]== 't')
+		if ((len >= 2) && name[len -1]== 't')
 		{
 			int n = name[0] - '0';
 			char dev_name[10], dev_descr[30];
@@ -104,15 +159,26 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 		}
 	}
 	closedir(dir);
-	
+
 	*alldevsp = devlist;
 	return ret;
+}
+
+static 
+int usb_mmap(pcap_t* handle)
+{
+	int len = ioctl(handle->fd, MON_IOCQ_RING_SIZE);
+	if (len < 0) 
+		return 0;
+
+	handle->buffer = mmap(0, len, PROT_READ, MAP_SHARED, handle->fd, 0);
+	return handle->buffer != MAP_FAILED;
 }
 
 pcap_t*
 usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg)
 {
-    	char 		full_path[USB_LINE_LEN];
+	char 		full_path[USB_LINE_LEN];
 	pcap_t		*handle;
 
 	/* Allocate a handle for this session. */
@@ -122,61 +188,81 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 			pcap_strerror(errno));
 		return NULL;
 	}
-	
+
 	/* Initialize some components of the pcap structure. */
 	memset(handle, 0, sizeof(*handle));
 	handle->snapshot	= snaplen;
 	handle->md.timeout	= to_ms;
-	handle->bufsize = USB_LINE_LEN;
+	handle->bufsize = snaplen;
 	handle->offset = 0;
 	handle->linktype = DLT_USB;
-	
-	/* get usb bus index from device name */
-	if (sscanf(bus, USB_IFACE"%d", &handle->md.ifindex) != 1)
-	{
-	    	snprintf(errmsg, PCAP_ERRBUF_SIZE,
-			"Can't get usb bus index from %s", bus);
-		free(handle);
-		return NULL;
-	}
-	
-	/* open text output file*/
-	snprintf(full_path, USB_LINE_LEN, USB_DIR"/%dt", handle->md.ifindex);  
-	handle->fd = open(full_path, O_RDONLY, 0);
-	if (handle->fd < 0)
-	{
-		snprintf(errmsg, PCAP_ERRBUF_SIZE,
-			"Can't open usb bus file %s: %s", full_path, strerror(errno));
-		free(handle);
-		return NULL;
-	}
-	
-	handle->buffer = malloc(handle->bufsize + handle->offset);
-	if (!handle->buffer) {
-	        snprintf(errmsg, PCAP_ERRBUF_SIZE,
-			 "malloc: %s", pcap_strerror(errno));
-		usb_close_linux(handle);
-		return NULL;
-	}	
-	
+
 	/*
 	 * "handle->fd" is a real file , so "select()" and "poll()"
 	 * work on it.
 	 */
 	handle->selectable_fd = handle->fd;
 
-	handle->read_op = usb_read_linux;
 	handle->inject_op = usb_inject_linux;
 	handle->setfilter_op = usb_setfilter_linux;
 	handle->setdirection_op = usb_setdirection_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->stats_op = usb_stats_linux;
 	handle->close_op = usb_close_linux;
 
+	/*get usb bus index from device name */
+	if (sscanf(bus, USB_IFACE"%d", &handle->md.ifindex) != 1)
+	{
+		snprintf(errmsg, PCAP_ERRBUF_SIZE,
+			"Can't get USB bus index from %s", bus);
+		free(handle);
+		return NULL;
+	}
+
+	/*now select the read method: try to open binary interface */
+	snprintf(full_path, USB_LINE_LEN, LINUX_USB_MON_DEV"%d", handle->md.ifindex);  
+	handle->fd = open(full_path, O_RDONLY, 0);
+	if (handle->fd >= 0)
+	{
+		/* binary api is available, try to use fast mmap access */
+		if (usb_mmap(handle)) {
+			handle->stats_op = usb_stats_linux_bin;
+			handle->read_op = usb_read_linux_mmap;
+			handle->close_op = usb_close_linux_mmap;
+			return handle;
+		}
+
+		/* can't mmap, use plain binary interface access */
+		handle->stats_op = usb_stats_linux_bin;
+		handle->read_op = usb_read_linux_bin;
+	}
+	else {
+		/*Binary interface not available, try open text interface */
+		snprintf(full_path, USB_LINE_LEN, USB_DIR"/%dt", handle->md.ifindex);  
+		handle->fd = open(full_path, O_RDONLY, 0);
+		if (handle->fd < 0)
+		{
+			/* no more fallback, give it up*/
+			snprintf(errmsg, PCAP_ERRBUF_SIZE,
+				"Can't open USB bus file %s: %s", full_path, strerror(errno));
+			free(handle);
+			return NULL;
+		}
+		handle->stats_op = usb_stats_linux;
+		handle->read_op = usb_read_linux;
+	}
+
+	/* for plain binary access and text access we need to allocate the read
+	 * buffer */
+	handle->buffer = malloc(handle->bufsize);
+	if (!handle->buffer) {
+		snprintf(errmsg, PCAP_ERRBUF_SIZE,
+			 "malloc: %s", pcap_strerror(errno));
+		usb_close_linux(handle);
+		return NULL;
+	}
 	return handle;
-	
 }
 
 static inline int 
@@ -199,13 +285,14 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	*/
 	unsigned timestamp;
 	int tag, cnt, ep_num, dev_addr, dummy, ret;
-	char etype, pipeid1, pipeid2, status[16], urb_tag, line[4096];
+	char etype, pipeid1, pipeid2, status[16], urb_tag, line[USB_LINE_LEN];
 	char *string = line;
 	u_char * rawdata = handle->buffer;
 	struct pcap_pkthdr pkth;
-	pcap_usb_header* uhdr = (pcap_usb_header*)rawdata;
-	pcap_urb_type_t urb_type = URB_UNKNOWN;
-	
+	pcap_usb_header* uhdr = (pcap_usb_header*)handle->buffer;
+	u_char urb_transfer=0;
+	int incoming=0;
+
 	/* ignore interrupt system call errors */
 	do {
 		ret = read(handle->fd, line, USB_LINE_LEN - 1);
@@ -224,7 +311,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		    "Can't read from fd %d: %s", handle->fd, strerror(errno));
 		return -1;
 	}
-	
+
 	/* read urb header; %n argument may increment return value, but it's 
 	* not mandatory, so does not count on it*/
 	string[ret] = 0;
@@ -234,12 +321,15 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	if (ret < 8)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't parse usb bus message '%s', too few token (expected 8 got %d)",
+		    "Can't parse USB bus message '%s', too few tokens (expected 8 got %d)",
 		    string, ret);
 		return -1;
 	}
-	uhdr->endpoint_number = htonl(ep_num);
-	uhdr->device_address = htonl(dev_addr);
+	uhdr->id = tag;
+	uhdr->endpoint_number = ep_num;
+	uhdr->device_address = dev_addr;
+	uhdr->bus_id = htols(handle->md.ifindex);
+	uhdr->status = 0;
 	string += cnt;
 
 	/* don't use usbmon provided timestamp, since it have low precision*/
@@ -250,52 +340,39 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 			string, errno, strerror(errno));
 		return -1;
 	}
-	
+	uhdr->ts_sec = pkth.ts.tv_sec;
+	uhdr->ts_usec = pkth.ts.tv_usec;
+
 	/* parse endpoint information */
 	if (pipeid1 == 'C')
-	{
-		if (pipeid2 =='i')
-			urb_type = URB_CONTROL_INPUT;
-		else
-			urb_type = URB_CONTROL_OUTPUT;
-	}
+		urb_transfer = URB_CONTROL;
 	else if (pipeid1 == 'Z')
-	{
-		if (pipeid2 == 'i')
-			urb_type = URB_ISOCHRONOUS_INPUT;
-		else 
-			urb_type = URB_ISOCHRONOUS_OUTPUT;
-	}
+		urb_transfer = URB_ISOCHRONOUS;
 	else if (pipeid1 == 'I')
-	{
-		if (pipeid2 == 'i')
-			urb_type = URB_INTERRUPT_INPUT;
-		else
-			urb_type = URB_INTERRUPT_OUTPUT;
-	}
+		urb_transfer = URB_INTERRUPT;
 	else if (pipeid1 == 'B')
-	{
-		if (pipeid2 == 'i')
-			urb_type = URB_BULK_INPUT;
-		else
-			urb_type = URB_BULK_OUTPUT;
+		urb_transfer = URB_BULK;
+	if (pipeid2 == 'i') {
+		urb_transfer |= URB_TRANSFER_IN;
+		incoming = 1;
 	}
-	
+	if (etype == 'C')
+		incoming = !incoming;
+
 	/* direction check*/
-	if ((urb_type == URB_BULK_INPUT) || (urb_type == URB_INTERRUPT_INPUT) ||
-	    	(urb_type == URB_ISOCHRONOUS_INPUT) || (urb_type == URB_CONTROL_INPUT))
+	if (incoming)
 	{
-	    	if (handle->direction == PCAP_D_OUT)
-			return 0;	
-	}	    
+		if (handle->direction == PCAP_D_OUT)
+			return 0;
+	}
 	else
-	    	if (handle->direction == PCAP_D_IN)
-			return 0;	
-	
-	uhdr->urb_type = htonl(urb_type);
+		if (handle->direction == PCAP_D_IN)
+			return 0;
+	uhdr->event_type = etype;
+	uhdr->transfer_type = urb_transfer;
 	pkth.caplen = sizeof(pcap_usb_header);
 	rawdata += sizeof(pcap_usb_header);
-	
+
 	/* check if this is a setup packet */
 	ret = sscanf(status, "%d", &dummy);
 	if (ret != 1)
@@ -310,30 +387,27 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (ret < 5)
 		{
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				"Can't parse usb bus message '%s', too few token (expected 5 got %d)",
+				"Can't parse USB bus message '%s', too few tokens (expected 5 got %d)",
 				string, ret);
 			return -1;
 		}
 		string += cnt;
-		
+
 		/* try to convert to corresponding integer */
-		shdr = (pcap_usb_setup*)rawdata;
+		shdr = &uhdr->setup;
 		shdr->bmRequestType = strtoul(str1, 0, 16);
 		shdr->bRequest = strtoul(str2, 0, 16);
-		shdr->wValue = htons(strtoul(str3, 0, 16));
-		shdr->wIndex = htons(strtoul(str4, 0, 16));
-		shdr->wLength = htons(strtoul(str5, 0, 16));
-		uhdr->setup_packet = 1;
-		
-		
-		pkth.caplen += sizeof(pcap_usb_setup);
-		rawdata += sizeof(pcap_usb_setup);
+		shdr->wValue = htols(strtoul(str3, 0, 16));
+		shdr->wIndex = htols(strtoul(str4, 0, 16));
+		shdr->wLength = htols(strtoul(str5, 0, 16));
+
+		uhdr->setup_flag = 0;
 	}
 	else 
-		uhdr->setup_packet = 0;
-	
+		uhdr->setup_flag = 1;
+
 	/* read urb data */
-	ret = sscanf(string, " %d%n", &pkth.len, &cnt);
+	ret = sscanf(string, " %d%n", &uhdr->urb_len, &cnt);
 	if (ret < 1)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -341,14 +415,15 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		return -1;
 	}
 	string += cnt;
-	handle->md.packets_read++;
-	
+
 	/* urb tag is not present if urb length is 0, so we can stop here 
 	 * text parsing */
-	pkth.len += pkth.caplen;	
-	if (pkth.len == pkth.caplen)
-		return 1;
-	
+	pkth.len = uhdr->urb_len+pkth.caplen;
+	uhdr->data_flag = 1;
+	uhdr->data_len = 0;
+	if (uhdr->urb_len == pkth.caplen)
+		goto got;
+
 	/* check for data presence; data is present if and only if urb tag is '=' */
 	if (sscanf(string, " %c", &urb_tag) != 1)
 	{
@@ -356,17 +431,20 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 			"Can't parse urb tag from '%s'", string);
 		return -1;
 	}
-	
-	if (urb_tag != '=')
-	    	goto got;
-	
+
+	if (urb_tag != '=') 
+		goto got;
+
 	/* skip urb tag and following space */
 	string += 3;
-	
+
+	/* if we reach this point we got some urb data*/
+	uhdr->data_flag = 0;
+
 	/* read all urb data; if urb length is greater then the usbmon internal 
 	 * buffer length used by the kernel to spool the URB, we get only
 	 * a partial information.
- 	 * At least until linux 2.6.17 there is no way to set usbmon intenal buffer
+	 * At least until linux 2.6.17 there is no way to set usbmon intenal buffer
 	 * length and default value is 130. */
 	while ((string[0] != 0) && (string[1] != 0) && (pkth.caplen < handle->snapshot))
 	{
@@ -376,13 +454,13 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (string[0] == ' ')
 			string++;
 		pkth.caplen++;
+		uhdr->data_len++;
 	}
-	
+
 got:	
 	handle->md.packets_read++;
 	if (pkth.caplen > handle->snapshot)
 		pkth.caplen = handle->snapshot;
-
 
 	callback(user, &pkth, handle->buffer);
 	return 1;
@@ -392,42 +470,43 @@ static int
 usb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
 	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
-    		"usb devices");
+		"USB devices");
 	return (-1);
-}                           
-
+}
 
 static void
 usb_close_linux(pcap_t* handle)
 {
-    /* handle fill be freed in pcap_close() 'common' code */
-    close(handle->fd);
-    free(handle->buffer);
+	/* handle fill be freed in pcap_close() 'common' code */
+	close(handle->fd);
+	if (handle->buffer)
+		free(handle->buffer);
 }
-
 
 static int 
 usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
-	int dummy, ret;
+	int dummy, ret, consumed, cnt;
 	char string[USB_LINE_LEN];
+	char token[USB_LINE_LEN];
+	char * ptr = string;
 	snprintf(string, USB_LINE_LEN, USB_DIR"/%ds", handle->md.ifindex);
-	
+
 	int fd = open(string, O_RDONLY, 0);
 	if (fd < 0)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't open usb stats file %s: %s", 
-	 		string, strerror(errno));
+			"Can't open USB stats file %s: %s", 
+			string, strerror(errno));
 		return -1;
 	}
-	
+
 	/* read stats line */
 	do {
 		ret = read(fd, string, USB_LINE_LEN-1);
 	} while ((ret == -1) && (errno == EINTR));
 	close(fd);
-	
+
 	if (ret < 0)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -435,17 +514,24 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		return -1;
 	}
 	string[ret] = 0;
-	
+
 	/* extract info on dropped urbs */
-	ret = sscanf(string, "nreaders %d text_lost %d", &dummy, &stats->ps_drop);
-	if (ret != 2)
-	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't parse stat line '%s' expected 2 token got %d", 
-			string, ret);
-		return -1;
+	for (consumed=0; consumed < ret; ) {
+		int ntok = sscanf(ptr, "%s%n", token, &cnt);
+		if (ntok != 2)
+			break;
+		consumed += cnt;
+		ptr += cnt;
+		if (strcmp(token, "nreaders") == 0)
+			ret = sscanf(ptr, "%d", &stats->ps_drop);
+		else 
+			ret = sscanf(ptr, "%d", &dummy);
+		if (ntok != 2)
+			break;
+		consumed += cnt;
+		ptr += cnt;
 	}
-	
+
 	stats->ps_recv = handle->md.packets_read;
 	stats->ps_ifdrop = 0;
 	return 0;
@@ -454,13 +540,166 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int 
 usb_setfilter_linux(pcap_t *p, struct bpf_program *fp)
 {
-    return 0;
+	return 0;
 }
-
 
 static int 
 usb_setdirection_linux(pcap_t *p, pcap_direction_t d)
 {
-    p->direction = d;
-    return 0;
+	p->direction = d;
+	return 0;
+}
+
+
+static int 
+usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
+{
+	int dummy, ret;
+	struct mon_bin_stats st;
+	ret = ioctl(handle->fd, MON_IOCG_STATS, &st);
+	if (ret < 0)
+	{
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			"Can't read stats from fd %d:%s ", handle->fd, strerror(errno));
+		return -1;
+	}
+
+	stats->ps_recv = handle->md.packets_read + st.queued;
+	stats->ps_ifdrop = st.dropped;
+	return 0;
+}
+
+/*
+ * see <linux-kernel-source>/Documentation/usb/usbmon.txt and 
+ * <linux-kernel-source>/drivers/usb/mon/mon_bin.c binary ABI
+ */
+static int
+usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+{
+	struct mon_bin_get info;
+	int ret;
+	struct pcap_pkthdr pkth;
+	int hdr_size;
+	u_short flags = 0;
+	int clen = handle->snapshot - sizeof(pcap_usb_header);
+
+	/* the usb header is going to be part of 'packet' data*/
+	info.hdr = (pcap_usb_header*) handle->buffer;
+	info.data = handle->buffer + sizeof(pcap_usb_header);
+	info.data_len = clen;
+	/* ignore interrupt system call errors */
+	do {
+		ret = ioctl(handle->fd, MON_IOCX_GET, &info);
+		if (handle->break_loop)
+		{
+			handle->break_loop = 0;
+			return -2;
+		}
+	} while ((ret == -1) && (errno == EINTR));
+	if (ret < 0)
+	{
+		if (errno == EAGAIN)
+			return 0;	/* no data there */
+
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "Can't read from fd %d: %s", handle->fd, strerror(errno));
+		return -1;
+	}
+
+	/* we can get less that than really captured from kernel, depending on
+	 * snaplen, so adjust header accordingly */
+	if (info.hdr->data_len < clen)
+		clen = info.hdr->data_len;
+	info.hdr->data_len = clen;
+	pkth.caplen = clen + sizeof(pcap_usb_header);
+	pkth.len = info.hdr->urb_len + sizeof(pcap_usb_header);
+	pkth.ts.tv_sec = info.hdr->ts_sec;
+	pkth.ts.tv_usec = info.hdr->ts_usec;
+
+	handle->md.packets_read++;
+	callback(user, &pkth, handle->buffer);
+	return 1;
+}
+
+/*
+ * see <linux-kernel-source>/Documentation/usb/usbmon.txt and 
+ * <linux-kernel-source>/drivers/usb/mon/mon_bin.c binary ABI
+ */
+#define VEC_SIZE 32
+static int
+usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+{
+	struct mon_bin_mfetch fetch;
+	uint32_t vec[VEC_SIZE];
+	struct pcap_pkthdr pkth;
+	pcap_usb_header* hdr;
+	int nflush = 0;
+	int packets = 0;
+
+	for (;;) {
+		int i, ret;
+		int limit = max_packets - packets;
+		if (limit < 0)
+			limit = VEC_SIZE;
+		if (limit > VEC_SIZE)
+			limit = VEC_SIZE;
+
+		/* try to fetch as many events as possible*/
+		fetch.offvec = vec;
+		fetch.nfetch = limit;
+		fetch.nflush = nflush;
+		/* ignore interrupt system call errors */
+		do {
+			ret = ioctl(handle->fd, MON_IOCX_MFETCH, &fetch);
+			if (handle->break_loop)
+			{
+				handle->break_loop = 0;
+				return -2;
+			}
+		} while ((ret == -1) && (errno == EINTR));
+		if (ret < 0)
+		{
+			if (errno == EAGAIN)
+				return 0;	/* no data there */
+
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't mfetch fd %d: %s", handle->fd, strerror(errno));
+			return -1;
+		}
+
+		/* keep track of processed events, we will flush them later */
+		nflush = fetch.nfetch;
+		for (i=0; i<fetch.nfetch; ++i) {
+			/* discard filler */
+			hdr = (pcap_usb_header*) &handle->buffer[vec[i]];
+			if (hdr->event_type == '@') 
+				continue;
+
+			/* get packet info from header*/
+			pkth.caplen = hdr->data_len + sizeof(pcap_usb_header);
+			pkth.len = hdr->urb_len + sizeof(pcap_usb_header);
+			pkth.ts.tv_sec = hdr->ts_sec;
+			pkth.ts.tv_usec = hdr->ts_usec;
+
+			handle->md.packets_read++;
+			callback(user, &pkth, (u_char*) hdr);
+			packets++;
+		}
+
+		/* with max_packets == -1 we stop afer the first chunk*/
+		if ((max_packets == -1) || (packets == max_packets))
+			break;
+	}
+
+	/* flush pending events*/
+	ioctl(handle->fd, MON_IOCH_MFLUSH, nflush);
+	return packets;
+}
+
+static void
+usb_close_linux_mmap(pcap_t* handle)
+{
+	/* handle fill be freed in pcap_close() 'common' code, buffer must not
+	 * be freed because it's memory mapped */
+	close(handle->fd);
 }
