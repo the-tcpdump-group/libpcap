@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.93 2006-10-04 18:09:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.94 2006-12-21 19:44:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -113,8 +113,9 @@ pcap_parse()
 %type	<i>	atmtype atmmultitype
 %type	<blk>	atmfield
 %type	<blk>	atmfieldvalue atmvalue atmlistvalue
-%type   <blk>   mtp3field
-%type   <blk>   mtp3fieldvalue mtp3value mtp3listvalue
+%type	<i>	mtp2type
+%type	<blk>	mtp3field
+%type	<blk>	mtp3fieldvalue mtp3value mtp3listvalue
 
 
 %token  DST SRC HOST GATEWAY
@@ -140,7 +141,8 @@ pcap_parse()
 %token	OAM OAMF4 CONNECTMSG METACONNECT
 %token	VPI VCI
 %token	RADIO
-%token  SIO OPC DPC SLS
+%token	FISU LSU MSU
+%token	SIO OPC DPC SLS
 
 %type	<s> ID
 %type	<e> EID
@@ -269,6 +271,7 @@ rterm:	  head id		{ $$ = $2; }
 	| atmtype		{ $$.b = gen_atmtype_abbrev($1); $$.q = qerr; }
 	| atmmultitype		{ $$.b = gen_atmmulti_abbrev($1); $$.q = qerr; }
 	| atmfield atmvalue	{ $$.b = $2.b; $$.q = qerr; }
+	| mtp2type		{ $$.b = gen_mtp2type_abbrev($1); $$.q = qerr; }
 	| mtp3field mtp3value	{ $$.b = $2.b; $$.q = qerr; }
 	;
 /* protocol level qualifiers */
@@ -446,6 +449,11 @@ atmfieldvalue: NUM {
 	;
 atmlistvalue: atmfieldvalue
 	| atmlistvalue or atmfieldvalue { gen_or($1.b, $3.b); $$ = $3; }
+	;
+	/* MTP2 types quantifier */
+mtp2type: FISU			{ $$ = M_FISU; }
+	| LSU			{ $$ = M_LSU; }
+	| MSU			{ $$ = M_MSU; }
 	;
 	/* MTP3 field types quantifier */
 mtp3field: SIO			{ $$.mtp3fieldtype = M_SIO; }

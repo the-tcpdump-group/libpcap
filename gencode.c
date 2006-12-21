@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.274 2006-12-20 08:20:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.275 2006-12-21 19:44:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -725,6 +725,11 @@ static u_int off_vci;
 static u_int off_proto;
 
 /*
+ * These are offsets for the MTP2 fields.
+ */
+static u_int off_li;
+
+/*
  * These are offsets for the MTP3 fields.
  */
 static u_int off_sio;
@@ -790,6 +795,7 @@ init_linktype(p)
 	/*
 	 * And assume we're not doing SS7.
 	 */
+	off_li = -1;
 	off_sio = -1;
 	off_opc = -1;
 	off_dpc = -1;
@@ -1217,6 +1223,7 @@ init_linktype(p)
 		return;
 
 	case DLT_MTP2:
+		off_li = 2;
 		off_sio = 3;
 		off_opc = 4;
 		off_dpc = 4;
@@ -6755,6 +6762,47 @@ gen_atmtype_abbrev(type)
 		abort();
 	}
 	return b1;
+}
+
+/* 
+ * Filtering for MTP2 messages based on li value
+ * FISU, length is null
+ * LSU, length is 1 or 2
+ * MSU, length is 3 or more
+ */
+struct block *
+gen_mtp2type_abbrev(type)
+	int type;
+{
+	struct block *b0, *b1;
+
+	switch (type) {
+
+	case M_FISU:
+		if (linktype != DLT_MTP2)
+			bpf_error("'fisu' supported only on MTP2");
+		/* gen_ncmp(offrel, offset, size, mask, jtype, reverse, value) */
+		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JEQ, 0, 0);
+		break;
+
+	case M_LSU:
+		if (linktype != DLT_MTP2)
+			bpf_error("'lsu' supported only on MTP2");
+		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 1, 2);
+		b1 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 0);
+		gen_and(b1, b0);
+		break;
+
+	case M_MSU:
+		if (linktype != DLT_MTP2)
+			bpf_error("'msu' supported only on MTP2");
+		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 2);
+		break;
+
+	default:
+		abort();
+	}
+	return b0;
 }
 
 struct block *
