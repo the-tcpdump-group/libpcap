@@ -54,7 +54,8 @@
 #define URB_ERROR         'E'
 
 /*
- * USB setup header as defined in USB specification 
+ * USB setup header as defined in USB specification.
+ * Appears at the front of each packet in DLT_USB captures.
  */
 typedef struct _usb_setup {
 	u_int8_t bmRequestType;
@@ -66,7 +67,8 @@ typedef struct _usb_setup {
 
 
 /*
- * Header prepent by linux kernel to each event
+ * Header prepended by linux kernel to each event.
+ * Appears at the front of each packet in DLT_USB_LINUX captures.
  */
 typedef struct _usb_header {
 	u_int64_t id;
