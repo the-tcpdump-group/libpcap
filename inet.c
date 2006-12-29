@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.72 2006-10-13 17:34:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.73 2006-12-29 19:33:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -156,7 +156,21 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		 * omit loopback interfaces on all platforms because
 		 * you *can* capture on loopback interfaces on some
 		 * OSes.
+		 *
+		 * On OS X, we don't do this check if the device
+		 * name begins with "wlt"; at least some versions
+		 * of OS X offer monitor mode capturing by having
+		 * a separate "monitor mode" device for each wireless
+		 * adapter, rather than by implementing the ioctls
+		 * that {Free,Net,Open,DragonFly}BSD provide.
+		 * Opening that device puts the adapter into monitor
+		 * mode, which, at least for some adapters, causes
+		 * them to deassociate from the network with which
+		 * they're associated.
 		 */
+#ifdef __APPLE__
+		if (strncmp(name, "wlt", 3) != 0) {
+#endif /* __APPLE */
 		p = pcap_open_live(name, 68, 0, 0, errbuf);
 		if (p == NULL) {
 			/*
@@ -167,6 +181,9 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			return (0);
 		}
 		pcap_close(p);
+#ifdef __APPLE__
+		}
+#endif /* __APPLE */
 
 		/*
 		 * Yes, we can open it.
