@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.73 2006-12-29 19:33:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.74 2006-12-30 09:54:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -167,9 +167,34 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		 * mode, which, at least for some adapters, causes
 		 * them to deassociate from the network with which
 		 * they're associated.
+		 *
+		 * Instead, we try to open the corresponding "en"
+		 * device (so that we don't end up with, for users
+		 * without sufficient privilege to open capture
+		 * devices, a list of adapters that only includes
+		 * the wlt devices).
 		 */
 #ifdef __APPLE__
-		if (strncmp(name, "wlt", 3) != 0) {
+		if (strncmp(name, "wlt", 3) == 0) {
+			char *en_name;
+			size_t en_name_len;
+
+			/*
+			 * Try to allocate a buffer for the "en"
+			 * device's name.
+			 */
+			en_name_len = strlen(name) - 1;
+			en_name = malloc(en_name_len + 1);
+			if (en_name == NULL) {
+				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "malloc: %s", pcap_strerror(errno));
+				return (-1);
+			}
+			strcpy(en_name, "en");
+			strcat(en_name, name + 3);
+			p = pcap_open_live(en_name, 68, 0, 0, errbuf);
+			free(en_name);
+		} else
 #endif /* __APPLE */
 		p = pcap_open_live(name, 68, 0, 0, errbuf);
 		if (p == NULL) {
@@ -181,9 +206,6 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			return (0);
 		}
 		pcap_close(p);
-#ifdef __APPLE__
-		}
-#endif /* __APPLE */
 
 		/*
 		 * Yes, we can open it.
