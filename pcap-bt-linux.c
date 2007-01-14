@@ -263,7 +263,7 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 		
 	if (pkth.caplen < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s",
-                      	handle->md.ifindex, errno, strerror(errno));
+			errno, strerror(errno));
 		return -1;
 	}
 
