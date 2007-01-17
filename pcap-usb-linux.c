@@ -46,6 +46,7 @@
 #include "strerror.h"
 #endif
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -58,7 +59,8 @@
 #include <sys/mman.h>
 
 #define USB_IFACE "usb"
-#define USB_DIR "/sys/kernel/debug/usbmon"
+#define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
+#define USB_BUS_DIR "/proc/bus/usb"
 #define USB_LINE_LEN 4096
 
 
@@ -71,9 +73,11 @@
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define htols(s) s
 #define htoll(l) l
+#define htol64(ll) ll
 #else
 #define htols(s) bswap_16(s)
 #define htoll(l) bswap_32(l)
+#define htol64(ll) bswap_64(ll)
 #endif
 
 struct mon_bin_stats {
@@ -121,46 +125,46 @@ static int usb_setdirection_linux(pcap_t *, pcap_direction_t);
 static void usb_close_linux(pcap_t *);
 static void usb_close_linux_mmap(pcap_t *);
 
+/* facility to add an USB device to the device list*/
+static int 
+usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
+{
+	char dev_name[10];
+	char dev_descr[30]; 
+	snprintf(dev_name, 10, USB_IFACE"%d", n);
+	snprintf(dev_descr, 30, "USB bus number %d", n);
+
+	if (pcap_add_if(alldevsp, dev_name, 0, 
+	    dev_descr, err_str) < 0)
+		return -1;
+	return 0; 
+}
+
 int 
 usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 {
-	pcap_if_t *devlist = *alldevsp;
 	struct dirent* data;
-	DIR* dir = opendir(USB_DIR);
-	if (!dir) {
-		/* it's not fatal, but it would be useful to give a message
-		   about debugfs: 
-			modprobe usbmon
-			mount -t debugfs none_debugs /sys/kernel/debug
-		 */
-		return 0;
-	}
-
-	/* scan usbmon directory */
 	int ret = 0;
-	while ((data = readdir(dir)) != 0)
-	{
+	DIR* dir;
+
+	/* scan profs usb bus directorys */
+	dir = opendir(USB_BUS_DIR);
+	while ((ret == 0) && ((data = readdir(dir)) != 0)) {
+		int n;
 		char* name = data->d_name;
 		int len = strlen(name);
 
-		if ((len >= 2) && name[len -1]== 't')
-		{
-			int n = name[0] - '0';
-			char dev_name[10], dev_descr[30];
-			snprintf(dev_name, 10, USB_IFACE"%d", n);
-			snprintf(dev_descr, 30, "USB bus number %d", n);
-			
-			if (pcap_add_if(&devlist, dev_name, 0, 
-			    dev_descr, err_str) < 0)
-			{
-				ret = -1;
-				break;
-			}
-		}
-	}
-	closedir(dir);
+		/* if this file name does not end with a number it's not of our interest */
+		if ((len < 1) || !isdigit(name[--len]))
+			continue;
+		while (isdigit(name[--len]));
+		if (sscanf(&name[len+1], "%d", &n) != 1) 
+			continue;
 
-	*alldevsp = devlist;
+		ret = usb_dev_add(alldevsp, n, err_str);
+	}
+
+	closedir(dir);
 	return ret;
 }
 
@@ -225,6 +229,8 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	handle->fd = open(full_path, O_RDONLY, 0);
 	if (handle->fd >= 0)
 	{
+		/* header endianess can't be fixed for memory mapped access,
+		 * due to read only access to mmaped buffer, so disable it*/
 		/* binary api is available, try to use fast mmap access */
 		if (usb_mmap(handle)) {
 			handle->stats_op = usb_stats_linux_bin;
@@ -239,7 +245,7 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	}
 	else {
 		/*Binary interface not available, try open text interface */
-		snprintf(full_path, USB_LINE_LEN, USB_DIR"/%dt", handle->md.ifindex);  
+		snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR"/%dt", handle->md.ifindex);  
 		handle->fd = open(full_path, O_RDONLY, 0);
 		if (handle->fd < 0)
 		{
@@ -284,7 +290,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	* for message format
 	*/
 	unsigned timestamp;
-	int tag, cnt, ep_num, dev_addr, dummy, ret;
+	int tag, cnt, ep_num, dev_addr, dummy, ret, urb_len, data_len;
 	char etype, pipeid1, pipeid2, status[16], urb_tag, line[USB_LINE_LEN];
 	char *string = line;
 	u_char * rawdata = handle->buffer;
@@ -328,7 +334,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	uhdr->id = tag;
 	uhdr->endpoint_number = ep_num;
 	uhdr->device_address = dev_addr;
-	uhdr->bus_id = htols(handle->md.ifindex);
+	uhdr->bus_id = handle->md.ifindex;
 	uhdr->status = 0;
 	string += cnt;
 
@@ -407,7 +413,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		uhdr->setup_flag = 1;
 
 	/* read urb data */
-	ret = sscanf(string, " %d%n", &uhdr->urb_len, &cnt);
+	ret = sscanf(string, " %d%n", &urb_len, &cnt);
 	if (ret < 1)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -418,9 +424,10 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 	/* urb tag is not present if urb length is 0, so we can stop here 
 	 * text parsing */
-	pkth.len = uhdr->urb_len+pkth.caplen;
+	pkth.len = urb_len+pkth.caplen;
+	uhdr->urb_len = urb_len;
 	uhdr->data_flag = 1;
-	uhdr->data_len = 0;
+	data_len = 0;
 	if (uhdr->urb_len == pkth.caplen)
 		goto got;
 
@@ -454,10 +461,11 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (string[0] == ' ')
 			string++;
 		pkth.caplen++;
-		uhdr->data_len++;
+		data_len++;
 	}
 
-got:	
+got:
+	uhdr->data_len = data_len;
 	handle->md.packets_read++;
 	if (pkth.caplen > handle->snapshot)
 		pkth.caplen = handle->snapshot;
@@ -490,7 +498,7 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	char string[USB_LINE_LEN];
 	char token[USB_LINE_LEN];
 	char * ptr = string;
-	snprintf(string, USB_LINE_LEN, USB_DIR"/%ds", handle->md.ifindex);
+	snprintf(string, USB_LINE_LEN, USB_TEXT_DIR"/%ds", handle->md.ifindex);
 
 	int fd = open(string, O_RDONLY, 0);
 	if (fd < 0)
@@ -554,7 +562,7 @@ usb_setdirection_linux(pcap_t *p, pcap_direction_t d)
 static int 
 usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 {
-	int dummy, ret;
+	int ret;
 	struct mon_bin_stats st;
 	ret = ioctl(handle->fd, MON_IOCG_STATS, &st);
 	if (ret < 0)
@@ -579,8 +587,6 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 	struct mon_bin_get info;
 	int ret;
 	struct pcap_pkthdr pkth;
-	int hdr_size;
-	u_short flags = 0;
 	int clen = handle->snapshot - sizeof(pcap_usb_header);
 
 	/* the usb header is going to be part of 'packet' data*/
@@ -630,7 +636,7 @@ static int
 usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
 	struct mon_bin_mfetch fetch;
-	uint32_t vec[VEC_SIZE];
+	int32_t vec[VEC_SIZE];
 	struct pcap_pkthdr pkth;
 	pcap_usb_header* hdr;
 	int nflush = 0;
