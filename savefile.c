@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.149 2006-12-20 03:30:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.150 2007-01-29 20:08:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -44,6 +44,7 @@ static const char rcsid[] _U_ =
 #include <string.h>
 
 #include "pcap-int.h"
+#include "pcap/usb.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -1196,6 +1197,44 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 			}
 			return (-1);
 		}
+	}
+
+	/*
+	 * The DLT_USB_LINUX header is in host byte order when capturing
+	 * (it's supplied directly from a memory-mapped buffer shared
+	 * by the kernel).
+	 *
+	 * When reading a DLT_USB_LINUX capture file, we need to convert
+	 * it from the capturing host's byte order to the reading host's
+	 * byte order.
+	 */
+	if (p->sf.swapped && p->linktype == DLT_USB_LINUX) {
+		pcap_usb_header* uhdr = (pcap_usb_header*) buf;
+		/*
+		 * The URB id is a totally opaque value; do we really need to 
+		 * converte it to the reading host's byte order???
+		 */
+		if (hdr->caplen < 8)
+			return 0;
+		uhdr->id = SWAPLL(uhdr->id);
+		if (hdr->caplen < 14)
+			return 0;
+		uhdr->bus_id = SWAPSHORT(uhdr->bus_id);
+		if (hdr->caplen < 24)
+			return 0;
+		uhdr->ts_sec = SWAPLL(uhdr->ts_sec);
+		if (hdr->caplen < 28)
+			return 0;
+		uhdr->ts_usec = SWAPLONG(uhdr->ts_usec);
+		if (hdr->caplen < 32)
+			return 0;
+		uhdr->status = SWAPLONG(uhdr->status);
+		if (hdr->caplen < 36)
+			return 0;
+		uhdr->urb_len = SWAPLONG(uhdr->urb_len);
+		if (hdr->caplen < 40)
+			return 0;
+		uhdr->data_len = SWAPLONG(uhdr->data_len);
 	}
 	return (0);
 }

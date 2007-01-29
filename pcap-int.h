@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.78 2006-02-22 17:09:02 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.79 2007-01-29 20:08:06 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -50,6 +50,19 @@ extern "C" {
 #include <fcntl.h>
 #include <io.h>
 #endif
+
+/*
+ * Swap byte ordering of unsigned long long timestamp on a big endian
+ * machine.
+ */
+#define SWAPLL(ull)  ((ull & 0xff00000000000000LL) >> 56) | \
+                      ((ull & 0x00ff000000000000LL) >> 40) | \
+                      ((ull & 0x0000ff0000000000LL) >> 24) | \
+                      ((ull & 0x000000ff00000000LL) >> 8)  | \
+                      ((ull & 0x00000000ff000000LL) << 8)  | \
+                      ((ull & 0x0000000000ff0000LL) << 24) | \
+                      ((ull & 0x000000000000ff00LL) << 40) | \
+                      ((ull & 0x00000000000000ffLL) << 56)
 
 /*
  * Savefile

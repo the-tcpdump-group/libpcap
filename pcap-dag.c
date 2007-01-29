@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.26 2006-09-25 18:18:18 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.27 2007-01-29 20:08:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -67,19 +67,6 @@ static int atexit_handler_installed = 0;
 static const unsigned short endian_test_word = 0x0100;
 
 #define IS_BIGENDIAN() (*((unsigned char *)&endian_test_word))
-
-/*
- * Swap byte ordering of unsigned long long timestamp on a big endian
- * machine.
- */
-#define SWAP_TS(ull)  ((ull & 0xff00000000000000LL) >> 56) | \
-                      ((ull & 0x00ff000000000000LL) >> 40) | \
-                      ((ull & 0x0000ff0000000000LL) >> 24) | \
-                      ((ull & 0x000000ff00000000LL) >> 8)  | \
-                      ((ull & 0x00000000ff000000LL) << 8)  | \
-                      ((ull & 0x0000000000ff0000LL) << 24) | \
-                      ((ull & 0x000000000000ff00LL) << 40) | \
-                      ((ull & 0x00000000000000ffLL) << 56)
 
 
 #ifdef DAG_ONLY
@@ -417,7 +404,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			register unsigned long long ts;
 				
 			if (IS_BIGENDIAN()) {
-				ts = SWAP_TS(header->ts);
+				ts = SWAPLL(header->ts);
 			} else {
 				ts = header->ts;
 			}
