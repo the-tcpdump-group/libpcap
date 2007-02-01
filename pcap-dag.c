@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.27 2007-01-29 20:08:06 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.28 2007-02-01 02:58:39 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -124,9 +124,6 @@ dag_platform_close(pcap_t *p)
 #endif /* HAVE_DAG_STREAMS_API */
 		if(dag_close(p->fd) < 0)
 			fprintf(stderr,"dag_close: %s\n", strerror(errno));
-#ifdef linux		
-		free(p->md.device);
-#endif
 	}
 	delete_pcap_dag(p);
 	/* Note: don't need to call close(p->fd) here as dag_close(p->fd) does this. */
@@ -468,7 +465,7 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	char *s;
 	int n;
 	daginf_t* daginf;
-	char * newDev;
+	char * newDev = NULL;
 #ifdef HAVE_DAG_STREAMS_API
 	uint32_t mindata;
 	struct timeval maxwait;
@@ -491,9 +488,12 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	
 	memset(handle, 0, sizeof(*handle));
 
-	newDev = (char *)malloc(strlen(device) + 16);
-
 #ifdef HAVE_DAG_STREAMS_API
+	newDev = (char *)malloc(strlen(device) + 16);
+	if (newDev == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
+		goto fail;
+	}
 	
 	/* Parse input name to get dag device and stream number if provided */
 	if (dag_parse_name(device, newDev, strlen(device) + 16, &handle->md.dag_stream) < 0) {
@@ -507,18 +507,15 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 		goto fail;
 	}
 #else
-	if (strstr(device, "/dev") == NULL) {
-		newDev[0] = '\0';
-		strcat(newDev, "/dev/");
-		strcat(newDev,device);
+	if (strncmp(device, "/dev/", 5) != 0) {
+		newDev = (char *)malloc(strlen(device) + 5);
+		if (newDev == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
+			goto fail;
+		}
+		strcpy(newDev, "/dev/");
+		strcat(newDev, device);
 		device = newDev;
-	} else {
-		device = strdup(device);
-	}
-
-	if (device == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "str_dup: %s\n", pcap_strerror(errno));
-		goto fail;
 	}
 #endif /* HAVE_DAG_STREAMS_API */
 
@@ -532,7 +529,7 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	/* Open requested stream. Can fail if already locked or on error */
 	if (dag_attach_stream(handle->fd, handle->md.dag_stream, 0, 0) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_attach_stream: %s\n", pcap_strerror(errno));
-		goto fail;
+		goto failclose;
 	}
 
 	/* Set up default poll parameters for stream
@@ -541,7 +538,7 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	if (dag_get_stream_poll(handle->fd, handle->md.dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
-		goto fail;
+		goto faildetach;
 	}
 	
 	/* Amount of data to collect in Bytes before calling callbacks.
@@ -559,13 +556,13 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	if (dag_set_stream_poll(handle->fd, handle->md.dag_stream,
 				mindata, &maxwait, &poll) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
-		goto fail;
+		goto faildetach;
 	}
 		
 #else
 	if((handle->md.dag_mem_base = dag_mmap(handle->fd)) == MAP_FAILED) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,"dag_mmap %s: %s\n", device, pcap_strerror(errno));
-		goto fail;
+		goto failclose;
 	}
 
 #endif /* HAVE_DAG_STREAMS_API */
@@ -588,19 +585,19 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 
 	if(dag_configure(handle->fd, conf) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,"dag_configure %s: %s\n", device, pcap_strerror(errno));
-		goto fail;
+		goto faildetach;
 	}
 #endif	
 	
 #ifdef HAVE_DAG_STREAMS_API
 	if(dag_start_stream(handle->fd, handle->md.dag_stream) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_start_stream %s: %s\n", device, pcap_strerror(errno));
-		goto fail;
+		goto faildetach;
 	}
 #else
 	if(dag_start(handle->fd) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "dag_start %s: %s\n", device, pcap_strerror(errno));
-		goto fail;
+		goto failclose;
 	}
 #endif /* HAVE_DAG_STREAMS_API */
 
@@ -628,7 +625,7 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 		} else {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				"pcap_open_live %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
-			goto fail;
+			goto failstop;
 		}
 	}
 
@@ -638,14 +635,14 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	handle->linktype = -1;
 	if (dag_get_datalink(handle) < 0) {
 		strcpy(ebuf, handle->errbuf);
-		goto fail;
+		goto failstop;
 	}
 	
 	handle->bufsize = 0;
 
 	if (new_pcap_dag(handle) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
-		goto fail;
+		goto failstop;
 	}
 
 	/*
@@ -653,13 +650,9 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	 */
 	handle->selectable_fd = -1;
 
-#ifdef linux
-	handle->md.device = (char *)device;
-	handle->md.timeout = to_ms;
-#else
-	free((char *)device);
-	device = NULL;
-#endif
+	if (newDev != NULL) {
+		free((char *)newDev);
+	}
 
 	handle->read_op = dag_read;
 	handle->inject_op = dag_inject;
@@ -674,6 +667,34 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	handle->md.stat.ps_recv = 0;
 	return handle;
 
+#ifdef HAVE_DAG_STREAMS_API 
+failstop:
+	if (handle != NULL) {
+		if (dag_stop_stream(handle->fd, handle->md.dag_stream) < 0)
+			fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
+	}
+	
+faildetach:
+	if (handle != NULL) {
+		if (dag_detach_stream(handle->fd, handle->md.dag_stream) < 0)
+			fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
+	}
+#else	
+failstop:
+	if (handle != NULL) {
+		if (dag_stop(p->fd) < 0)
+			fprintf(stderr,"dag_stop: %s\n", strerror(errno));
+	}
+#endif /* HAVE_DAG_STREAMS_API */
+	
+failclose:
+	if (handle != NULL) {
+		if (dag_close(handle->fd) < 0)
+			fprintf(stderr,"dag_close: %s\n", strerror(errno));
+	}
+	if (handle != NULL)
+		delete_pcap_dag(handle);
+	
 fail:
 	if (newDev != NULL) {
 		free((char *)newDev);
