@@ -149,6 +149,7 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 
 	/* scan profs usb bus directorys */
 	dir = opendir(USB_BUS_DIR);
+	if (!dir) return 0;
 	while ((ret == 0) && ((data = readdir(dir)) != 0)) {
 		int n;
 		char* name = data->d_name;
