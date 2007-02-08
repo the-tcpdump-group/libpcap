@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.94 2006-12-21 19:44:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.95 2007-02-08 07:15:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -141,7 +141,7 @@ pcap_parse()
 %token	OAM OAMF4 CONNECTMSG METACONNECT
 %token	VPI VCI
 %token	RADIO
-%token	FISU LSU MSU
+%token	FISU LSSU MSU
 %token	SIO OPC DPC SLS
 
 %type	<s> ID
@@ -452,7 +452,7 @@ atmlistvalue: atmfieldvalue
 	;
 	/* MTP2 types quantifier */
 mtp2type: FISU			{ $$ = M_FISU; }
-	| LSU			{ $$ = M_LSU; }
+	| LSSU			{ $$ = M_LSSU; }
 	| MSU			{ $$ = M_MSU; }
 	;
 	/* MTP3 field types quantifier */

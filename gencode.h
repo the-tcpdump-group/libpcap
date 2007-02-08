@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.67 2006-12-21 19:44:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/gencode.h,v 1.68 2007-02-08 07:15:27 guy Exp $ (LBL)
  */
 
 /*
@@ -175,7 +175,7 @@
 
 /* MTP2 types */
 #define M_FISU		22	/* FISU */
-#define M_LSU		23	/* LSU */
+#define M_LSSU		23	/* LSSU */
 #define M_MSU		24	/* MSU */
 
 /* MTP3 field types */

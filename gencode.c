@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.275 2006-12-21 19:44:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.276 2007-02-08 07:15:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -6767,7 +6767,7 @@ gen_atmtype_abbrev(type)
 /* 
  * Filtering for MTP2 messages based on li value
  * FISU, length is null
- * LSU, length is 1 or 2
+ * LSSU, length is 1 or 2
  * MSU, length is 3 or more
  */
 struct block *
@@ -6785,9 +6785,9 @@ gen_mtp2type_abbrev(type)
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JEQ, 0, 0);
 		break;
 
-	case M_LSU:
+	case M_LSSU:
 		if (linktype != DLT_MTP2)
-			bpf_error("'lsu' supported only on MTP2");
+			bpf_error("'lssu' supported only on MTP2");
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 1, 2);
 		b1 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 0);
 		gen_and(b1, b0);
