@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.133 2006-12-20 03:30:32 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.134 2007-02-08 06:02:42 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.133 $)
+AC_REVISION($Revision: 1.134 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -492,6 +492,11 @@ if test $ac_cv_lbl_dag_api = yes; then
 		ar x $dag_lib_dir/libdag.a dagapi.o
 		if test -r ./dagapi.o; then
 		    dagapi_obj=./dagapi.o
+		else
+		    ar x $dag_lib_dir/libdag.a libdag_la-dagapi.o
+		    if test -r ./libdag_la-dagapi.o; then
+		       dagapi_obj=./libdag_la-dagapi.o
+		    fi		
 		fi
 	fi
 
@@ -518,6 +523,11 @@ if test $ac_cv_lbl_dag_api = yes; then
 		ar x $dag_lib_dir/libdag.a dagopts.o
 		if test -r ./dagopts.o; then
 		    dagopts_obj=./dagopts.o
+		else
+		    ar x $dag_lib_dir/libdag.a libdag_la-dagopts.o
+		    if test -r ./libdag_la-dagopts.o; then
+		       dagopts_obj=./libdag_la-dagopts.o
+		    fi
 		fi
 	fi
 
@@ -542,6 +552,11 @@ if test $ac_cv_lbl_dag_api = yes; then
 			ar x $dag_lib_dir/libdag.a dagreg.o
 			if test -r ./dagreg.o; then
 				dagreg_obj=./dagreg.o
+			else
+				ar x $dag_lib_dir/libdag.a libdag_la-dagreg.o
+				if test -r ./libdag_la-dagreg.o; then
+				   dagreg_obj=./libdag_la-dagreg.o
+				fi
 			fi
 		fi
 
