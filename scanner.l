@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99.2.7 2006-12-21 19:45:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99.2.8 2007-02-08 07:17:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -289,7 +289,8 @@ reason		return PF_REASON;
 action		return PF_ACTION;
 
 fisu		return FISU;
-lsu		return LSU;
+lssu		return LSSU;
+lsu		return LSSU;
 msu		return MSU;
 sio		return SIO;
 opc		return OPC;
