@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999 - 2005 NetGroup, Politecnico di Torino (Italy)
- * Copyright (c) 2005 - 2006 CACE Technologies, Davis (California)
+ * Copyright (c) 2005 - 2007 CACE Technologies, Davis (California)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.31 2006-08-08 16:39:08 loris Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.32 2007-02-19 18:35:06 gianluca Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -500,9 +500,24 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		break;
 	}
 
-	/* Set promisquous mode */
-	if (promisc) PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_PROMISCUOUS);
-	 else PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_ALL_LOCAL);
+	/* Set promiscuous mode */
+	if (promisc) 
+	{
+
+		if (PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_PROMISCUOUS) == FALSE)
+		{
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to promiscuous mode");
+			goto bad;
+		}
+	}
+	else 
+	{
+		if (PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_ALL_LOCAL) == FALSE)
+		{
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
+			goto bad;
+		}
+	}
 
 	/* Set the buffer size */
 	p->bufsize = PcapBufSize;
