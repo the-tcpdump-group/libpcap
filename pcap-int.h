@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.79 2007-01-29 20:08:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.80 2007-03-11 21:44:12 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -124,8 +124,13 @@ struct pcap_md {
 
 /*
  * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
- * Tru64 UNIX, and NetBSD pad to make everything line up on a nice boundary.
+ * Tru64 UNIX, and some versions of NetBSD pad FDDI packets to make everything
+ * line up on a nice boundary.
  */
+#ifdef __NetBSD__
+#include <sys/param.h>	/* needed to declare __NetBSD_Version__ */
+#endif
+
 #if defined(ultrix) || defined(__osf__) || (defined(__NetBSD__) && __NetBSD_Version__ > 106000000)
 #define       PCAP_FDDIPAD 3
 #endif
