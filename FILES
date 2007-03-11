@@ -44,6 +44,7 @@ findalldevstest.c
 gencode.c
 gencode.h
 grammar.y
+ieee80211.h
 inet.c
 install-sh
 lbl/os-aix4.h

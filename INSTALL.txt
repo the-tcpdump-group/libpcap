@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.18 2006-10-13 17:46:45 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.19 2007-03-11 04:35:24 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -338,6 +338,7 @@ findalldevstest.c - test program for pcap_findalldevs()
 gencode.c	- BPF code generation routines
 gencode.h	- BPF code generation definitions
 grammar.y	- filter string grammar
+ieee80211.h	- 802.11 definitions
 inet.c		- network routines
 install-sh	- BSD style install script
 lbl/os-*.h	- OS-dependent defines and prototypes

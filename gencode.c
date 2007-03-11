@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.276 2007-02-08 07:15:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.277 2007-03-11 04:35:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1959,12 +1959,12 @@ gen_linktype(proto)
 		switch (proto) {
 		case ETHERTYPE_IP:
 		case PPP_IP:
-		/* FIXME add other L3 proto IDs */
+			/* FIXME add other L3 proto IDs */
 			return gen_mpls_linktype(Q_IP); 
 
 		case ETHERTYPE_IPV6:
 		case PPP_IPV6:
-		/* FIXME add other L3 proto IDs */
+			/* FIXME add other L3 proto IDs */
 			return gen_mpls_linktype(Q_IPV6); 
 
 		default:
@@ -6224,7 +6224,7 @@ gen_inbound(dir)
 			/* match incoming packets */
 			b0 = gen_mcmp(OR_LINK, 3, BPF_B, 1, 0x01);
 		}
-	    break;
+		break;
 
 	default:
 		bpf_error("inbound/outbound not supported on linktype %d",
@@ -6242,13 +6242,12 @@ gen_pf_ifname(const char *ifname)
 	struct block *b0;
 	u_int len, off;
 
-	if (linktype == DLT_PFLOG) {
-		len = sizeof(((struct pfloghdr *)0)->ifname);
-		off = offsetof(struct pfloghdr, ifname);
-	} else {
-		bpf_error("ifname not supported on linktype 0x%x", linktype);
+	if (linktype != DLT_PFLOG) {
+		bpf_error("ifname supported only on PF linktype");
 		/* NOTREACHED */
 	}
+	len = sizeof(((struct pfloghdr *)0)->ifname);
+	off = offsetof(struct pfloghdr, ifname);
 	if (strlen(ifname) >= len) {
 		bpf_error("ifname interface names can only be %d characters",
 		    len-1);
@@ -6265,14 +6264,16 @@ gen_pf_ruleset(char *ruleset)
 	struct block *b0;
 
 	if (linktype != DLT_PFLOG) {
-		bpf_error("ruleset not supported on linktype 0x%x", linktype);
+		bpf_error("ruleset supported only on PF linktype");
 		/* NOTREACHED */
 	}
+
 	if (strlen(ruleset) >= sizeof(((struct pfloghdr *)0)->ruleset)) {
 		bpf_error("ruleset names can only be %ld characters",
 		    (long)(sizeof(((struct pfloghdr *)0)->ruleset) - 1));
 		/* NOTREACHED */
 	}
+
 	b0 = gen_bcmp(OR_LINK, offsetof(struct pfloghdr, ruleset),
 	    strlen(ruleset), (const u_char *)ruleset);
 	return (b0);
@@ -6284,14 +6285,13 @@ gen_pf_rnr(int rnr)
 {
 	struct block *b0;
 
-	if (linktype == DLT_PFLOG) {
-		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, rulenr), BPF_W,
-			 (bpf_int32)rnr);
-	} else {
-		bpf_error("rnr not supported on linktype 0x%x", linktype);
+	if (linktype != DLT_PFLOG) {
+		bpf_error("rnr supported only on PF linktype");
 		/* NOTREACHED */
 	}
 
+	b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, rulenr), BPF_W,
+		 (bpf_int32)rnr);
 	return (b0);
 }
 
@@ -6302,7 +6302,7 @@ gen_pf_srnr(int srnr)
 	struct block *b0;
 
 	if (linktype != DLT_PFLOG) {
-		bpf_error("srnr not supported on linktype 0x%x", linktype);
+		bpf_error("srnr supported only on PF linktype");
 		/* NOTREACHED */
 	}
 
@@ -6317,14 +6317,13 @@ gen_pf_reason(int reason)
 {
 	struct block *b0;
 
-	if (linktype == DLT_PFLOG) {
-		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, reason), BPF_B,
-		    (bpf_int32)reason);
-	} else {
-		bpf_error("reason not supported on linktype 0x%x", linktype);
+	if (linktype != DLT_PFLOG) {
+		bpf_error("reason supported only on PF linktype");
 		/* NOTREACHED */
 	}
 
+	b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, reason), BPF_B,
+	    (bpf_int32)reason);
 	return (b0);
 }
 
@@ -6334,14 +6333,36 @@ gen_pf_action(int action)
 {
 	struct block *b0;
 
-	if (linktype == DLT_PFLOG) {
-		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, action), BPF_B,
-		    (bpf_int32)action);
-	} else {
-		bpf_error("action not supported on linktype 0x%x", linktype);
+	if (linktype != DLT_PFLOG) {
+		bpf_error("action supported only on PF linktype");
 		/* NOTREACHED */
 	}
 
+	b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, action), BPF_B,
+	    (bpf_int32)action);
+	return (b0);
+}
+
+/* IEEE 802.11 wireless header */
+struct block *
+gen_p80211_type(int type, int mask)
+{
+	struct block *b0;
+
+	switch (linktype) {
+
+	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
+		b0 = gen_mcmp(OR_LINK, 0, BPF_B, (bpf_int32)type,
+		    (bpf_int32)mask);
+		break;
+
+	default:
+		bpf_error("802.11 link-layer types supported only on 802.11");
+		/* NOTREACHED */
+	}
 	return (b0);
 }
 
@@ -6350,12 +6371,24 @@ gen_acode(eaddr, q)
 	register const u_char *eaddr;
 	struct qual q;
 {
-	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-		if (linktype == DLT_ARCNET || linktype == DLT_ARCNET_LINUX)
-			return gen_ahostop(eaddr, (int)q.dir);
+	switch (linktype) {
+
+	case DLT_ARCNET:
+	case DLT_ARCNET_LINUX:
+		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
+		    q.proto == Q_LINK)
+			return (gen_ahostop(eaddr, (int)q.dir));
+		else {
+			bpf_error("ARCnet address used in non-arc expression");
+			/* NOTREACHED */
+		}
+		break;
+
+	default:
+		bpf_error("aid supported only on ARCnet");
+		/* NOTREACHED */
 	}
-	bpf_error("ARCnet address used in non-arc expression");
-	/* NOTREACHED */
+	return (NULL);
 }
 
 static struct block *
