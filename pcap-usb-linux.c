@@ -33,6 +33,10 @@
  * By Paolo Abeni <paolo.abeni@email.it>
  *
  */
+#ifndef lint
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.15 2007-04-01 21:43:55 guy Exp $ (LBL)";
+#endif
  
 #ifdef HAVE_CONFIG_H
 #include "config.h"
