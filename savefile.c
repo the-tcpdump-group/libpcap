@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.19 2006-11-27 18:37:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.20 2007-04-01 17:08:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -948,6 +948,28 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->tzoff = hdr.thiszone;
 	p->snapshot = hdr.snaplen;
 	p->linktype = linktype_to_dlt(hdr.linktype);
+	if (magic == KUZNETZOV_TCPDUMP_MAGIC && p->linktype == DLT_EN10MB) {
+		/*
+		 * This capture might have been done in raw mode or cooked
+		 * mode.
+		 *
+		 * If it was done in cooked mode, p->snapshot was passed
+		 * to recvfrom() as the buffer size, meaning that the
+		 * most packet data that would be copied would be
+		 * p->snapshot.  However, a faked Ethernet header would
+		 * then have been added to it, so the most data that would
+		 * be in a packet in the file would be p->snapshot + 14.
+		 *
+		 * We can't easily tell whether the capture was done in
+		 * raw mode or cooked mode, so we'll assume it was
+		 * cooked mode, and add 14 to the snapshot length.  That
+		 * means that, for a raw capture, the snapshot length will
+		 * be misleading if you use it to figure out why a capture
+		 * doesn't have all the packet data, but there's not much
+		 * we can do to avoid that.
+		 */
+		p->snapshot += 14;
+	}
 	p->sf.rfile = fp;
 #ifndef WIN32
 	p->bufsize = hdr.snaplen;
