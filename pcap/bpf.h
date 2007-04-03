@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.4 2006-12-20 03:30:32 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.5 2007-04-03 07:18:27 guy Exp $ (LBL)
  */
 
 /*
@@ -666,6 +666,12 @@ struct bpf_version {
  * http://www.can-cia.org/downloads/?269
  */
 #define DLT_CAN20B              190
+
+/*
+ * IEEE 802.15.4, with address fields padded, as is done by Linux
+ * drivers; requested by Juergen Schimmer.
+ */
+#define DLT_IEEE802_15_4_LINUX	191
 
 /*
  * The instruction encodings.

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.151 2007-04-01 17:06:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.152 2007-04-03 07:18:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -493,6 +493,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_CAN20B         190
 
+/*
+ * IEEE 802.15.4, with address fields padded, as is done by Linux
+ * drivers; requested by Juergen Schimmer.
+ */
+#define LINKTYPE_IEEE802_15_4_LINUX	191
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -724,6 +730,9 @@ static struct linktype_map {
 
 	/* Controller Area Network (CAN) v2.0B */
 	{ DLT_CAN20B,		LINKTYPE_CAN20B },
+
+	/* IEEE 802.15.4 with address fields padded */
+	{ DLT_IEEE802_15_4_LINUX,	LINKTYPE_IEEE802_15_4_LINUX },
 
 	{ -1,			-1 }
 };
