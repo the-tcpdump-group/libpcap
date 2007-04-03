@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.20 2007-04-01 17:08:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.21 2007-04-03 07:27:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -460,7 +460,8 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_A653_ICM       185
 
 /*
- * USB packets; requested by Paolo Abeni <paolo.abeni@email.it>.
+ * USB packets, beginning with a USB setup header; requested by
+ * Paolo Abeni <paolo.abeni@email.it>.
  */
 #define LINKTYPE_USB		186
 
@@ -477,6 +478,12 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_IEEE802_16_MAC_CPS	188
 
 /*
+ * USB packets, beginning with a Linux USB header; requested by
+ * Paolo Abeni <paolo.abeni@email.it>.
+ */
+#define LINKTYPE_USB_LINUX	189
+
+/*
  * Controller Area Network (CAN) v. 2.0B packets.
  * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  * Used to dump CAN packets coming from a CAN Vector board.
@@ -484,6 +491,12 @@ static const char rcsid[] _U_ =
  * http://www.can-cia.org/downloads/?269
  */
 #define LINKTYPE_CAN20B         190
+
+/*
+ * IEEE 802.15.4, with address fields padded, as is done by Linux
+ * drivers; requested by Juergen Schimmer.
+ */
+#define LINKTYPE_IEEE802_15_4_LINUX	191
 
 static struct linktype_map {
 	int	dlt;
@@ -697,22 +710,28 @@ static struct linktype_map {
         { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
 
 	/* Controller Area Network (CAN) v2.0B */
-	{ DLT_A429,				LINKTYPE_A429 },
+	{ DLT_A429,		LINKTYPE_A429 },
 
 	/* Arinc 653 Interpartition Communication messages */
 	{ DLT_A653_ICM,         LINKTYPE_A653_ICM },
 
 	/* USB */
-	{ DLT_USB,         LINKTYPE_USB },
+	{ DLT_USB,		LINKTYPE_USB },
 
 	/* Bluetooth HCI UART transport layer */
-	{ DLT_BLUETOOTH_HCI_H4,         LINKTYPE_BLUETOOTH_HCI_H4 },
+	{ DLT_BLUETOOTH_HCI_H4,	LINKTYPE_BLUETOOTH_HCI_H4 },
 
 	/* IEEE 802.16 MAC Common Part Sublayer */
 	{ DLT_IEEE802_16_MAC_CPS,	LINKTYPE_IEEE802_16_MAC_CPS },
 
+	/* USB with Linux header */
+	{ DLT_USB_LINUX,	LINKTYPE_USB_LINUX },
+
 	/* Controller Area Network (CAN) v2.0B */
-	{ DLT_CAN20B,				LINKTYPE_CAN20B },
+	{ DLT_CAN20B,		LINKTYPE_CAN20B },
+
+	/* IEEE 802.15.4 with address fields padded */
+	{ DLT_IEEE802_15_4_LINUX,	LINKTYPE_IEEE802_15_4_LINUX },
 
 	{ -1,			-1 }
 };
