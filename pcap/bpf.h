@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.5 2007-04-03 07:18:27 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.6 2007-04-05 18:43:49 guy Exp $ (LBL)
  */
 
 /*
@@ -246,12 +246,14 @@ struct bpf_version {
  * OpenBSD DLT_LOOP, for loopback devices; it's like DLT_NULL, except
  * that the AF_ type in the link-layer header is in network byte order.
  *
- * OpenBSD defines it as 12, but that collides with DLT_RAW, so we
- * define it as 108 here.  If OpenBSD picks up this file, it should
- * define DLT_LOOP as 12 in its version, as per the comment above -
- * and should not use 108 as a DLT_ value.
+ * DLT_LOOP is 12 in OpenBSD, but that's DLT_RAW in other OSes, so
+ * we don't use 12 for it in OSes other than OpenBSD.
  */
+#ifdef __OpenBSD__
+#define DLT_LOOP	12
+#else
 #define DLT_LOOP	108
+#endif
 
 /*
  * Encapsulated packets for IPsec; DLT_ENC is 13 in OpenBSD, but that's
