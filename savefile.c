@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.153 2007-04-19 17:37:54 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.154 2007-04-19 18:33:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -501,11 +501,9 @@ static const char rcsid[] _U_ =
 
 /*
  * Per Packet Information encapsulated packets.
- * SAVEFILE_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ * LINKTYPE_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
  */
-#define SAVEFILE_PPI			192
-
-
+#define LINKTYPE_PPI			192
 
 static struct linktype_map {
 	int	dlt;
