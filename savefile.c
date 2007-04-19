@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.152 2007-04-03 07:18:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.153 2007-04-19 17:37:54 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -499,6 +499,14 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IEEE802_15_4_LINUX	191
 
+/*
+ * Per Packet Information encapsulated packets.
+ * SAVEFILE_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ */
+#define SAVEFILE_PPI			192
+
+
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -733,6 +741,9 @@ static struct linktype_map {
 
 	/* IEEE 802.15.4 with address fields padded */
 	{ DLT_IEEE802_15_4_LINUX,	LINKTYPE_IEEE802_15_4_LINUX },
+
+	/* Per Packet Information encapsulated packets */
+	{ DLT_PPI,			LINKTYPE_PPI },
 
 	{ -1,			-1 }
 };
