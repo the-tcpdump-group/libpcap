@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.16 2007-04-05 18:44:18 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.17 2007-04-19 17:36:41 gianluca Exp $ (LBL)
  */
 
 /*
@@ -674,6 +674,13 @@ struct bpf_version {
  * drivers; requested by Juergen Schimmer.
  */
 #define DLT_IEEE802_15_4_LINUX	191
+
+/*
+ * Per Packet Information encapsulated packets.
+ * DLT_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
+ */
+#define DLT_PPI			192
+
 
 /*
  * The instruction encodings.
