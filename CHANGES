@@ -1,4 +1,41 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.9 2006-09-19 17:49:59 ken Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.10 2007-04-23 21:22:17 ken Exp $ (LBL)
+
+Wed.	April 25, 2007.  ken@xelerance.com.  Summary for 0.9.6 libpcap release
+
+	Put the public libpcap headers into a pcap subdirectory in both the
+	 source directory and the target include directory, and have include
+	 files at the top-level directory to include those headers, for 
+	 backwards compatibility.
+	Add Bluetooth support
+	Add USB capturing support on Linux
+	Add support for the binary USB sniffing interface in Linux
+	Add support for new FreeBSD BIOCSDIRECTION ioctl
+	Add additional filter operations for 802.11 frame types
+	Add support for filtering on MTP2 frame types
+	Propagate some changes from the main branch, so the x.9 branch has 
+	 all the DLT_ and LINKTYPE_ values that the main branch does
+	Reserved a DLT_ and SAVEFILE_ value for PPI (Per Packet Info) 
+	 encapsulated packets
+	Add LINKTYPE_ for IEEE 802.15.4, with address fields padded as done 
+	 by Linux drivers
+	Add LINKTYPE_ value corresponding to DLT_IEEE802_16_MAC_CPS.
+	Add DLT for IEEE 802.16 (WiMAX) MAC Common Part Sublayer
+	Add DLT for Bluetooth HCI UART transport layer
+	When building a shared library, build with "-fPIC" on Linux to support x86_64
+	Link with "$(CC) -shared" rather than "ld -shared" when building a 
+	 ".so" shared library
+	Add support for autoconf 2.60
+	Fixes to discard unread packets when changing filters
+	Changes to handle name changes in the DAG library resulting from 
+	 switching to libtool.
+	Add support for new DAG ERF types.
+        Add an explicit "-ldag" when building the shared library, so the DAG 
+	 library dependency is explicit.
+	Mac OSX fixes for dealing with "wlt" devices
+	Fixes in add_or_find_if() & pcap_findalldevs() to optimize generating
+	 device lists
+	Fixed a bug in pcap_open_live(). The return value of PacketSetHwFilter
+	 was not checked. 
 
 Tue.	September 19, 2006. ken@xelerance.com. Summary for 0.9.5 libpcap release
 
