@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.17 2007-04-19 17:36:41 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.18 2007-05-04 09:47:45 guy Exp $ (LBL)
  */
 
 /*
@@ -681,6 +681,11 @@ struct bpf_version {
  */
 #define DLT_PPI			192
 
+/*
+ * Header for 802.16 MAC Common Part Sublayer plus a radiotap radio header;
+ * requested by Charles Clancy.
+ */
+#define DLT_IEEE802_16_MAC_CPS_RADIO	193
 
 /*
  * The instruction encodings.

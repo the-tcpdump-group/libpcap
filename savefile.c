@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.23 2007-04-19 18:34:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.24 2007-05-04 09:47:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -505,6 +505,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_PPI			192
 
+/*
+ * Header for 802.16 MAC Common Part Sublayer plus a radiotap radio header;
+ * requested by Charles Clancy.
+ */
+#define LINKTYPE_IEEE802_16_MAC_CPS_RADIO	193
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -742,6 +748,9 @@ static struct linktype_map {
 
 	/* Per Packet Information encapsulated packets */
 	{ DLT_PPI,			LINKTYPE_PPI },
+
+	/* IEEE 802.15 MAC Common Part Sublayer plus radiotap header */
+	{ DLT_IEEE802_16_MAC_CPS_RADIO, LINKTYPE_IEEE802_16_MAC_CPS_RADIO },
 
 	{ -1,			-1 }
 };
