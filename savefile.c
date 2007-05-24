@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.155 2007-05-04 09:46:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.156 2007-05-24 23:57:36 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -511,6 +511,15 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IEEE802_16_MAC_CPS_RADIO	193
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * integrated service module (ISM).
+ */
+#define LINKTYPE_JUNIPER_ISM    194
+
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -751,6 +760,9 @@ static struct linktype_map {
 
 	/* IEEE 802.15 MAC Common Part Sublayer plus radiotap header */
 	{ DLT_IEEE802_16_MAC_CPS_RADIO, LINKTYPE_IEEE802_16_MAC_CPS_RADIO },
+
+        /* Juniper Voice ISM */
+        { DLT_JUNIPER_ISM,      LINKTYPE_JUNIPER_ISM },
 
 	{ -1,			-1 }
 };

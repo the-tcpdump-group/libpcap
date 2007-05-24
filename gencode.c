@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.277 2007-03-11 04:35:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.278 2007-05-24 23:57:36 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1222,6 +1222,12 @@ init_linktype(p)
 		off_nl_nosnap = -1;
 		return;
 
+	case DLT_JUNIPER_ISM:
+		off_linktype = 8;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
 	case DLT_MTP2:
 		off_li = 2;
 		off_sio = 3;
@@ -2378,6 +2384,7 @@ gen_linktype(proto)
         case DLT_JUNIPER_FRELAY:
         case DLT_JUNIPER_CHDLC:
         case DLT_JUNIPER_VP:
+        case DLT_JUNIPER_ISM:
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
@@ -6215,6 +6222,7 @@ gen_inbound(dir)
         case DLT_JUNIPER_FRELAY:
         case DLT_JUNIPER_CHDLC:
         case DLT_JUNIPER_VP:
+        case DLT_JUNIPER_ISM:
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
 		if (dir) {
