@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.46 2007-02-08 07:17:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.47 2007-05-30 18:06:38 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2046,7 +2046,7 @@ gen_linktype(proto)
 	case DLT_RAW:
 		/*
 		 * These types don't provide any type field; packets
-		 * are always IP.
+		 * are always IPv4 or IPv6.
 		 *
 		 * XXX - for IPv4, check for a version number of 4, and,
 		 * for IPv6, check for a version number of 6?
@@ -2054,10 +2054,13 @@ gen_linktype(proto)
 		switch (proto) {
 
 		case ETHERTYPE_IP:
+			/* Check for a version number of 4. */
+			return gen_mcmp(OR_LINK, 0, BPF_B, 0x40, 0xF0);
 #ifdef INET6
 		case ETHERTYPE_IPV6:
+			/* Check for a version number of 6. */
+			return gen_mcmp(OR_LINK, 0, BPF_B, 0x60, 0xF0);
 #endif
-			return gen_true();		/* always true */
 
 		default:
 			return gen_false();		/* always false */
@@ -4575,7 +4578,6 @@ gen_proto(v, proto, dir)
 		 *
 		 * So we always check for ETHERTYPE_IP.
 		 */
-
 		b0 = gen_linktype(ETHERTYPE_IP);
 #ifndef CHASE_CHAIN
 		b1 = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)v);
