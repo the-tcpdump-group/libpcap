@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.156 2007-05-24 23:57:36 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.157 2007-06-05 18:02:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -519,6 +519,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_JUNIPER_ISM    194
 
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ */
+#define LINKTYPE_IEEE802_15_4	195
+
 
 static struct linktype_map {
 	int	dlt;
@@ -758,11 +764,14 @@ static struct linktype_map {
 	/* Per Packet Information encapsulated packets */
 	{ DLT_PPI,			LINKTYPE_PPI },
 
-	/* IEEE 802.15 MAC Common Part Sublayer plus radiotap header */
+	/* IEEE 802.16 MAC Common Part Sublayer plus radiotap header */
 	{ DLT_IEEE802_16_MAC_CPS_RADIO, LINKTYPE_IEEE802_16_MAC_CPS_RADIO },
 
         /* Juniper Voice ISM */
         { DLT_JUNIPER_ISM,      LINKTYPE_JUNIPER_ISM },
+
+	/* IEEE 802.15.4 exactly as it appears in the spec */
+        { DLT_IEEE802_15_4,	LINKTYPE_IEEE802_15_4 },
 
 	{ -1,			-1 }
 };

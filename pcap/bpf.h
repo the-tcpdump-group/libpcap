@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.10 2007-05-24 23:57:36 hannes Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.11 2007-06-05 18:02:29 guy Exp $ (LBL)
  */
 
 /*
@@ -694,6 +694,12 @@ struct bpf_version {
  * integrated service module (ISM).
  */
 #define DLT_JUNIPER_ISM         194
+
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ */
+#define DLT_IEEE802_15_4	195
 
 
 /*
