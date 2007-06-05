@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.24 2007-05-04 09:47:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.126.2.25 2007-06-05 18:07:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -498,7 +498,6 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IEEE802_15_4_LINUX	191
 
-
 /*
  * Per Packet Information encapsulated packets.
  * LINKTYPE_ requested by Gianluca Varenni <gianluca.varenni@cacetech.com>.
@@ -510,6 +509,21 @@ static const char rcsid[] _U_ =
  * requested by Charles Clancy.
  */
 #define LINKTYPE_IEEE802_16_MAC_CPS_RADIO	193
+
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * integrated service module (ISM).
+ */
+#define LINKTYPE_JUNIPER_ISM    194
+
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ */
+#define LINKTYPE_IEEE802_15_4	195
+
 
 static struct linktype_map {
 	int	dlt;
@@ -749,8 +763,14 @@ static struct linktype_map {
 	/* Per Packet Information encapsulated packets */
 	{ DLT_PPI,			LINKTYPE_PPI },
 
-	/* IEEE 802.15 MAC Common Part Sublayer plus radiotap header */
+	/* IEEE 802.16 MAC Common Part Sublayer plus radiotap header */
 	{ DLT_IEEE802_16_MAC_CPS_RADIO, LINKTYPE_IEEE802_16_MAC_CPS_RADIO },
+
+        /* Juniper Voice ISM */
+        { DLT_JUNIPER_ISM,      LINKTYPE_JUNIPER_ISM },
+
+	/* IEEE 802.15.4 exactly as it appears in the spec */
+        { DLT_IEEE802_15_4,	LINKTYPE_IEEE802_15_4 },
 
 	{ -1,			-1 }
 };

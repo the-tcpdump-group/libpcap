@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.18 2007-05-04 09:47:45 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.19 2007-06-05 18:07:03 guy Exp $ (LBL)
  */
 
 /*
@@ -686,6 +686,21 @@ struct bpf_version {
  * requested by Charles Clancy.
  */
 #define DLT_IEEE802_16_MAC_CPS_RADIO	193
+
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for internal communication with a
+ * integrated service module (ISM).
+ */
+#define DLT_JUNIPER_ISM         194
+
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ */
+#define DLT_IEEE802_15_4	195
+
 
 /*
  * The instruction encodings.
