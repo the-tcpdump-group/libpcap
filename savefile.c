@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.157 2007-06-05 18:02:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.158 2007-06-11 10:04:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1374,7 +1374,7 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	sf_hdr.len        = h->len;
 	/* XXX we should check the return status */
 	(void)fwrite(&sf_hdr, sizeof(sf_hdr), 1, f);
-	(void)fwrite((char *)sp, h->caplen, 1, f);
+	(void)fwrite(sp, h->caplen, 1, f);
 }
 
 static pcap_dumper_t *

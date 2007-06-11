@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.74 2006-12-30 09:54:57 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.75 2007-06-11 10:04:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -606,7 +606,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register char *errbuf;
 {
 	register int fd;
-	register struct sockaddr_in *sin;
+	register struct sockaddr_in *sin4;
 	struct ifreq ifr;
 
 	/*
@@ -656,8 +656,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 		(void)close(fd);
 		return (-1);
 	}
-	sin = (struct sockaddr_in *)&ifr.ifr_addr;
-	*netp = sin->sin_addr.s_addr;
+	sin4 = (struct sockaddr_in *)&ifr.ifr_addr;
+	*netp = sin4->sin_addr.s_addr;
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));
@@ -665,7 +665,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 		return (-1);
 	}
 	(void)close(fd);
-	*maskp = sin->sin_addr.s_addr;
+	*maskp = sin4->sin_addr.s_addr;
 	if (*maskp == 0) {
 		if (IN_CLASSA(*netp))
 			*maskp = IN_CLASSA_NET;

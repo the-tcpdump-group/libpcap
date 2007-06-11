@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.279 2007-05-30 18:05:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.280 2007-06-11 10:04:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -348,9 +348,10 @@ int no_optimize;
 
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
-	     char *buf, int optimize, bpf_u_int32 mask)
+	     const char *buf, int optimize, bpf_u_int32 mask)
 {
 	extern int n_errors;
+	const char * volatile xbuf = buf;
 	int len;
 
 	no_optimize = 0;
@@ -372,7 +373,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		return -1;
 	}
 
-	lex_init(buf ? buf : "");
+	lex_init(xbuf ? xbuf : "");
 	init_linktype(p);
 	(void)pcap_parse();
 
@@ -403,7 +404,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 int
 pcap_compile_nopcap(int snaplen_arg, int linktype_arg,
 		    struct bpf_program *program,
-	     char *buf, int optimize, bpf_u_int32 mask)
+	     const char *buf, int optimize, bpf_u_int32 mask)
 {
 	pcap_t *p;
 	int ret;
@@ -4778,7 +4779,7 @@ gen_scode(name, q)
 	bpf_u_int32 **alist;
 #else
 	int tproto6;
-	struct sockaddr_in *sin;
+	struct sockaddr_in *sin4;
 	struct sockaddr_in6 *sin6;
 	struct addrinfo *res, *res0;
 	struct in6_addr mask128;
@@ -4918,9 +4919,9 @@ gen_scode(name, q)
 					if (tproto == Q_IPV6)
 						continue;
 
-					sin = (struct sockaddr_in *)
+					sin4 = (struct sockaddr_in *)
 						res->ai_addr;
-					tmp = gen_host(ntohl(sin->sin_addr.s_addr),
+					tmp = gen_host(ntohl(sin4->sin_addr.s_addr),
 						0xffffffff, tproto, dir, q.addr);
 					break;
 				case AF_INET6:
@@ -4988,12 +4989,9 @@ gen_scode(name, q)
 #ifndef INET6
 		return gen_port(port, real_proto, dir);
 #else
-	    {
-		struct block *b;
 		b = gen_port(port, real_proto, dir);
 		gen_or(gen_port6(port, real_proto, dir), b);
 		return b;
-	    }
 #endif /* INET6 */
 
 	case Q_PORTRANGE:
@@ -5032,12 +5030,9 @@ gen_scode(name, q)
 #ifndef INET6
 		return gen_portrange(port1, port2, real_proto, dir);
 #else
-	    {
-		struct block *b;
 		b = gen_portrange(port1, port2, real_proto, dir);
 		gen_or(gen_portrange6(port1, port2, real_proto, dir), b);
 		return b;
-	    }
 #endif /* INET6 */
 
 	case Q_GATEWAY:
@@ -5390,16 +5385,16 @@ xfer_to_a(a)
  * for "index".
  */
 struct arth *
-gen_load(proto, index, size)
+gen_load(proto, inst, size)
 	int proto;
-	struct arth *index;
+	struct arth *inst;
 	int size;
 {
 	struct slist *s, *tmp;
 	struct block *b;
 	int regno = alloc_reg();
 
-	free_reg(index->regno);
+	free_reg(inst->regno);
 	switch (size) {
 
 	default:
@@ -5436,14 +5431,14 @@ gen_load(proto, index, size)
 		 * Load into the X register the offset computed into the
 		 * register specifed by "index".
 		 */
-		s = xfer_to_x(index);
+		s = xfer_to_x(inst);
 
 		/*
 		 * Load the item at that offset.
 		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
 		sappend(s, tmp);
-		sappend(index->s, s);
+		sappend(inst->s, s);
 		break;
 
 	case Q_LINK:
@@ -5470,11 +5465,11 @@ gen_load(proto, index, size)
 		 * by "index".
 		 */
 		if (s != NULL) {
-			sappend(s, xfer_to_a(index));
+			sappend(s, xfer_to_a(inst));
 			sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 			sappend(s, new_stmt(BPF_MISC|BPF_TAX));
 		} else
-			s = xfer_to_x(index);
+			s = xfer_to_x(inst);
 
 		/*
 		 * Load the item at the sum of the offset we've put in the
@@ -5486,7 +5481,7 @@ gen_load(proto, index, size)
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
 		tmp->s.k = off_ll;
 		sappend(s, tmp);
-		sappend(index->s, s);
+		sappend(inst->s, s);
 		break;
 
 	case Q_IP:
@@ -5519,11 +5514,11 @@ gen_load(proto, index, size)
 		 * by "index".
 		 */
 		if (s != NULL) {
-			sappend(s, xfer_to_a(index));
+			sappend(s, xfer_to_a(inst));
 			sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 			sappend(s, new_stmt(BPF_MISC|BPF_TAX));
 		} else
-			s = xfer_to_x(index);
+			s = xfer_to_x(inst);
 
 		/*
 		 * Load the item at the sum of the offset we've put in the
@@ -5536,16 +5531,16 @@ gen_load(proto, index, size)
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
 		tmp->s.k = off_ll + off_nl;
 		sappend(s, tmp);
-		sappend(index->s, s);
+		sappend(inst->s, s);
 
 		/*
 		 * Do the computation only if the packet contains
 		 * the protocol in question.
 		 */
 		b = gen_proto_abbrev(proto);
-		if (index->b)
-			gen_and(index->b, b);
-		index->b = b;
+		if (inst->b)
+			gen_and(inst->b, b);
+		inst->b = b;
 		break;
 
 	case Q_SCTP:
@@ -5586,12 +5581,12 @@ gen_load(proto, index, size)
 		 * fixed-length header preceding the link-layer
 		 * header.
 		 */
-		sappend(s, xfer_to_a(index));
+		sappend(s, xfer_to_a(inst));
 		sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
 		sappend(s, tmp = new_stmt(BPF_LD|BPF_IND|size));
 		tmp->s.k = off_ll + off_nl;
-		sappend(index->s, s);
+		sappend(inst->s, s);
 
 		/*
 		 * Do the computation only if the packet contains
@@ -5600,12 +5595,12 @@ gen_load(proto, index, size)
 		 * only fragment of that datagram.
 		 */
 		gen_and(gen_proto_abbrev(proto), b = gen_ipfrag());
-		if (index->b)
-			gen_and(index->b, b);
+		if (inst->b)
+			gen_and(inst->b, b);
 #ifdef INET6
 		gen_and(gen_proto_abbrev(Q_IP), b);
 #endif
-		index->b = b;
+		inst->b = b;
 		break;
 #ifdef INET6
 	case Q_ICMPV6:
@@ -5613,12 +5608,12 @@ gen_load(proto, index, size)
 		/*NOTREACHED*/
 #endif
 	}
-	index->regno = regno;
+	inst->regno = regno;
 	s = new_stmt(BPF_ST);
 	s->s.k = regno;
-	sappend(index->s, s);
+	sappend(inst->s, s);
 
-	return index;
+	return inst;
 }
 
 struct block *

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.104 2006-12-20 03:30:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.105 2007-06-11 10:04:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -467,8 +467,8 @@ int
 pcap_strcasecmp(const char *s1, const char *s2)
 {
 	register const u_char	*cm = charmap,
-				*us1 = (u_char *)s1,
-				*us2 = (u_char *)s2;
+				*us1 = (const u_char *)s1,
+				*us2 = (const u_char *)s2;
 
 	while (cm[*us1] == cm[*us2++])
 		if (*us1++ == '\0')
@@ -681,7 +681,7 @@ pcap_win32strerror(void)
 /*
  * Not all systems have strerror().
  */
-char *
+const char *
 pcap_strerror(int errnum)
 {
 #ifdef HAVE_STRERROR
