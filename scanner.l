@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99.2.8 2007-02-08 07:17:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.99.2.9 2007-06-11 09:52:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -361,7 +361,7 @@ tcp-urg			{ yylval.i = 0x20; return NUM; }
 %%
 void
 lex_init(buf)
-	char *buf;
+	const char *buf;
 {
 #ifdef FLEX_SCANNER
 	in_buffer = yy_scan_string(buf);

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86.2.10 2007-03-26 01:38:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.86.2.11 2007-06-11 09:52:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -34,6 +34,13 @@ static const char rcsid[] _U_ =
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
+
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#if defined(__NetBSD__) && defined(_PATH_BPF)
+#define HAVE_CLONING_BPF
+#endif /* __NetBSD__ && _PATH_BPF */
+#endif /* HAVE_PATHS_H */
 
 #include <net/if.h>
 
@@ -523,8 +530,12 @@ static inline int
 bpf_open(pcap_t *p, char *errbuf)
 {
 	int fd;
+#ifdef HAVE_CLONING_BPF
+	static const char device[] = _PATH_BPF;
+#else
 	int n = 0;
 	char device[sizeof "/dev/bpf0000000000"];
+#endif
 
 #ifdef _AIX
 	/*
@@ -536,6 +547,12 @@ bpf_open(pcap_t *p, char *errbuf)
 		return (-1);
 #endif
 
+#ifdef HAVE_CLONING_BPF
+	if ((fd = open(device, O_RDWR)) == -1 &&
+	    (errno != EACCES || (fd = open(device, O_RDONLY)) == -1))
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		  "(cannot open device) %s: %s", device, pcap_strerror(errno));
+#else
 	/*
 	 * Go through all the minors and find one that isn't in use.
 	 */
@@ -566,6 +583,7 @@ bpf_open(pcap_t *p, char *errbuf)
 	if (fd < 0)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "(no devices found) %s: %s",
 		    device, pcap_strerror(errno));
+#endif
 
 	return (fd);
 }
