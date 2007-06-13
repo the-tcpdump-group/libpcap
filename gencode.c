@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.48 2007-06-11 09:52:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.49 2007-06-13 22:51:07 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -189,6 +189,7 @@ static inline struct block *gen_false(void);
 static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static void insert_radiotap_load_llprefixlen(struct block *);
+static void insert_ppi_load_llprefixlen(struct block *);
 static void insert_load_llprefixlen(struct block *);
 static struct slist *gen_llprefixlen(void);
 static struct block *gen_linktype(int);
@@ -1008,6 +1009,22 @@ init_linktype(p)
 		off_nl_nosnap = 27;	/* Radio+802.11+802.2 */
 		return;
 
+		
+		/* 
+		 * TODO GV
+		 *
+		 * At the moment we treat PPI as normal Radiotap encoded
+		 * packets. The difference is in the function that generates
+		 * the code at the beginning to compute the header length.
+		 * Since this code generator of PPI supports bare 802.11
+		 * encapsulation only (i.e. the encapsulated DLT should be
+		 * DLT_IEEE802_11) we should generate code to check for this.
+		 * Unfortunately given the current structure of the code generator,
+		 * generating the proper JMP(x) code to be prepended is problematic.
+		 * We just ignore the DLT in the PPI header.
+		 *
+		 */
+	case DLT_PPI:
 	case DLT_IEEE802_11_RADIO:
 		/*
 		 * Same as 802.11, but with an additional header before
@@ -1317,6 +1334,7 @@ gen_load_llrel(offset, size)
 	}
 	return s;
 }
+
 
 /*
  * Load a value relative to the beginning of the specified header.
@@ -1879,6 +1897,83 @@ insert_radiotap_load_llprefixlen(b)
 	}
 }
 
+/* 
+ * TODO GV
+ *
+ * At the moment we treat PPI as normal Radiotap encoded
+ * packets. The difference is in the function that generates
+ * the code at the beginning to compute the header length.
+ * Since this code generator of PPI supports bare 802.11
+ * encapsulation only (i.e. the encapsulated DLT should be
+ * DLT_IEEE802_11) we should generate code to check for this.
+ * Unfortunately given the current structure of the code generator,
+ * generating the proper JMP(x) code to be prepended is problematic.
+ * We just ignore the DLT in the PPI header.
+ *
+ */
+static void
+insert_ppi_load_llprefixlen(b)
+	struct block *b;
+{
+	struct slist *s1, *s2;
+
+	/*
+	 * Prepend to the statements in this block code to load the
+	 * length of the radiotap header into the register assigned
+	 * to hold that length, if one has been assigned.
+	 */
+	if (reg_ll_size != -1) {
+		/*
+		 * The 2 bytes at offsets of 2 and 3 from the beginning
+		 * of the radiotap header are the length of the radiotap
+		 * header; unfortunately, it's little-endian, so we have
+		 * to load it a byte at a time and construct the value.
+		 */
+
+		/*
+		 * Load the high-order byte, at an offset of 3, shift it
+		 * left a byte, and put the result in the X register.
+		 */
+		s1 = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		s1->s.k = 3;
+		s2 = new_stmt(BPF_ALU|BPF_LSH|BPF_K);
+		sappend(s1, s2);
+		s2->s.k = 8;
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		/*
+		 * Load the next byte, at an offset of 2, and OR the
+		 * value from the X register into it.
+		 */
+		s2 = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+		sappend(s1, s2);
+		s2->s.k = 2;
+		s2 = new_stmt(BPF_ALU|BPF_OR|BPF_X);
+		sappend(s1, s2);
+
+		/*
+		 * Now allocate a register to hold that value and store
+		 * it.
+		 */
+		s2 = new_stmt(BPF_ST);
+		s2->s.k = reg_ll_size;
+		sappend(s1, s2);
+
+		/*
+		 * Now move it into the X register.
+		 */
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		/*
+		 * Now append all the existing statements in this
+		 * block to these statements.
+		 */
+		sappend(s1, b->stmts);
+		b->stmts = s1;
+	}
+}
 
 static void
 insert_load_llprefixlen(b)
@@ -1886,8 +1981,27 @@ insert_load_llprefixlen(b)
 {
 	switch (linktype) {
 
+	/* 
+	 * TODO GV
+	 *
+	 * At the moment we treat PPI as normal Radiotap encoded
+	 * packets. The difference is in the function that generates
+	 * the code at the beginning to compute the header length.
+	 * Since this code generator of PPI supports bare 802.11
+	 * encapsulation only (i.e. the encapsulated DLT should be
+	 * DLT_IEEE802_11) we should generate code to check for this.
+	 * Unfortunately given the current structure of the code generator,
+	 * generating the proper JMP(x) code to be prepended is problematic.
+	 * We just ignore the DLT in the PPI header.
+	 *
+	 */
+	case DLT_PPI:
+		insert_ppi_load_llprefixlen(b);
+		break;
+
 	case DLT_IEEE802_11_RADIO:
 		insert_radiotap_load_llprefixlen(b);
+		break;
 	}
 }
 
@@ -1914,6 +2028,44 @@ gen_radiotap_llprefixlen(void)
 	return s;
 }
 
+/* 
+ * TODO GV
+ *
+ * At the moment we treat PPI as normal Radiotap encoded
+ * packets. The difference is in the function that generates
+ * the code at the beginning to compute the header length.
+ * Since this code generator of PPI supports bare 802.11
+ * encapsulation only (i.e. the encapsulated DLT should be
+ * DLT_IEEE802_11) we should generate code to check for this.
+ * Unfortunately given the current structure of the code generator,
+ * generating the proper JMP(x) code to be prepended is problematic.
+ * We just ignore the DLT in the PPI header.
+ *
+ */
+static struct slist *
+gen_ppi_llprefixlen(void)
+{
+	struct slist *s;
+
+	if (reg_ll_size == -1) {
+		/*
+		 * We haven't yet assigned a register for the length
+		 * of the radiotap header; allocate one.
+		 */
+		reg_ll_size = alloc_reg();
+	}
+
+	/*
+	 * Load the register containing the radiotap length
+	 * into the X register.
+	 */
+	s = new_stmt(BPF_LDX|BPF_MEM);
+	s->s.k = reg_ll_size;
+	return s;
+}
+
+
+
 /*
  * Generate code to compute the link-layer header length, if necessary,
  * putting it into the X register, and to return either a pointer to a
@@ -1925,6 +2077,10 @@ gen_llprefixlen(void)
 {
 	switch (linktype) {
 
+	case DLT_PPI:
+		return gen_ppi_llprefixlen();
+
+	
 	case DLT_IEEE802_11_RADIO:
 		return gen_radiotap_llprefixlen();
 
@@ -1987,6 +2143,7 @@ gen_linktype(proto)
 		}
 		break;
 
+	case DLT_PPI:
 	case DLT_FDDI:
 	case DLT_IEEE802:
 	case DLT_IEEE802_11:
@@ -3469,6 +3626,7 @@ gen_gateway(eaddr, alist, proto, dir)
                     break;
 		case DLT_IEEE802_11:
 		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_PPI:
 		case DLT_IEEE802_11_RADIO:
 		case DLT_PRISM_HEADER:
                     b0 = gen_wlanhostop(eaddr, Q_OR);
@@ -4274,6 +4432,9 @@ gen_protochain(v, proto, dir)
 	if (linktype == DLT_IEEE802_11_RADIO)
 		bpf_error("'protochain' not supported with radiotap headers");
 
+	if (linktype == DLT_PPI)
+		bpf_error("'protochain' not supported with PPI headers");
+
 	no_optimize = 1; /*this code is not compatible with optimzer yet */
 
 	/*
@@ -4532,6 +4693,7 @@ gen_protochain(v, proto, dir)
 	return b;
 #endif
 }
+
 
 /*
  * Generate code that checks whether the packet is a packet for protocol
@@ -4822,6 +4984,7 @@ gen_scode(name, q)
 			case DLT_IEEE802_11_RADIO_AVS:
 			case DLT_IEEE802_11_RADIO:
 			case DLT_PRISM_HEADER:
+			case DLT_PPI:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
@@ -5105,6 +5268,7 @@ gen_mcode(s1, s2, masklen, q)
 		/* NOTREACHED */
 	}
 	/* NOTREACHED */
+	return NULL;
 }
 
 struct block *
@@ -5273,6 +5437,7 @@ gen_mcode6(s1, s2, masklen, q)
 		bpf_error("invalid qualifier against IPv6 address");
 		/* NOTREACHED */
 	}
+	return NULL;
 }
 #endif /*INET6*/
 
@@ -5291,39 +5456,41 @@ gen_ecode(eaddr, q)
                 return gen_fhostop(eaddr, (int)q.dir);
             case DLT_IEEE802:
                 return gen_thostop(eaddr, (int)q.dir);
-	    case DLT_IEEE802_11:
-	    case DLT_IEEE802_11_RADIO_AVS:
-	    case DLT_IEEE802_11_RADIO:
-	    case DLT_PRISM_HEADER:
-                return gen_wlanhostop(eaddr, (int)q.dir);
-            case DLT_SUNATM:
-		if (is_lane) {
-			/*
-			 * Check that the packet doesn't begin with an
-			 * LE Control marker.  (We've already generated
-			 * a test for LANE.)
-			 */
-			tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-			    0xFF00);
-			gen_not(tmp);
+			case DLT_IEEE802_11:
+			case DLT_IEEE802_11_RADIO_AVS:
+			case DLT_IEEE802_11_RADIO:
+			case DLT_PRISM_HEADER:
+			case DLT_PPI:
+				return gen_wlanhostop(eaddr, (int)q.dir);
+			case DLT_SUNATM:
+				if (is_lane) {
+					/*
+					 * Check that the packet doesn't begin with an
+					 * LE Control marker.  (We've already generated
+					 * a test for LANE.)
+					 */
+					tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+						0xFF00);
+					gen_not(tmp);
 
-			/*
-			 * Now check the MAC address.
-			 */
-			b = gen_ehostop(eaddr, (int)q.dir);
-			gen_and(tmp, b);
-			return b;
-		}
-                break;
-	    case DLT_IP_OVER_FC:
+					/*
+					 * Now check the MAC address.
+					 */
+					b = gen_ehostop(eaddr, (int)q.dir);
+					gen_and(tmp, b);
+					return b;
+				}
+				break;
+			case DLT_IP_OVER_FC:
                 return gen_ipfchostop(eaddr, (int)q.dir);
             default:
-		bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
+				bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
                 break;
             }
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
+	return NULL;
 }
 
 void
@@ -5753,6 +5920,7 @@ alloc_reg()
 	}
 	bpf_error("too many registers needed to evaluate expression");
 	/* NOTREACHED */
+	return 0;
 }
 
 /*
@@ -5878,6 +6046,7 @@ gen_broadcast(proto)
                 case DLT_IEEE802_11:
                 case DLT_IEEE802_11_RADIO_AVS:
                 case DLT_IEEE802_11_RADIO:
+				case DLT_PPI:
                 case DLT_PRISM_HEADER:
                     return gen_wlanhostop(ebroadcast, Q_DST);
                 case DLT_IP_OVER_FC:
@@ -5918,6 +6087,7 @@ gen_broadcast(proto)
 	}
 	bpf_error("only link-layer/IP broadcast filters supported");
 	/* NOTREACHED */
+	return NULL;
 }
 
 /*
@@ -5971,6 +6141,7 @@ gen_multicast(proto)
                     return gen_mac_multicast(2);
                 case DLT_IEEE802_11:
                 case DLT_IEEE802_11_RADIO_AVS:
+				case DLT_PPI:
                 case DLT_IEEE802_11_RADIO:
                 case DLT_PRISM_HEADER:
                     /*
@@ -6127,6 +6298,7 @@ gen_multicast(proto)
 	}
 	bpf_error("link-layer multicast filters supported only on ethernet/FDDI/token ring/ARCNET/802.11/ATM LANE/Fibre Channel");
 	/* NOTREACHED */
+	return NULL;
 }
 
 /*
@@ -6344,6 +6516,7 @@ gen_acode(eaddr, q)
 	}
 	bpf_error("ARCnet address used in non-arc expression");
 	/* NOTREACHED */
+	return NULL;
 }
 
 static struct block *
