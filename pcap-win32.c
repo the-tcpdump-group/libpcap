@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.25.2.6 2007-02-19 18:33:37 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.25.2.7 2007-06-14 22:07:14 gianluca Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -493,6 +493,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 	case NdisMediumRadio80211:
 		p->linktype = DLT_IEEE802_11_RADIO;
+		break;
+
+	case NdisMediumPpi:
+		p->linktype = DLT_PPI;
 		break;
 
 	default:
