@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.50 2007-06-14 18:42:43 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.51 2007-06-14 20:54:12 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -243,6 +243,7 @@ static struct slist *xfer_to_a(struct arth *);
 static struct block *gen_mac_multicast(int);
 static struct block *gen_len(int, int);
 
+static struct block *gen_ppi_dlt_check();
 static struct block *gen_msg_abbrev(int type);
 
 static void *
@@ -478,11 +479,20 @@ merge(b0, b1)
 	*p = b1;
 }
 
+
 void
 finish_parse(p)
 	struct block *p;
 {
-	insert_load_llprefixlen(p);
+	struct block *ppi_dlt_check;
+	
+	ppi_dlt_check = gen_ppi_dlt_check();
+
+	if (ppi_dlt_check != NULL)
+	{
+		gen_and(ppi_dlt_check, p);
+	}
+
 	backpatch(p, gen_retblk(snaplen));
 	p->sense = !p->sense;
 	backpatch(p, gen_retblk(0));
@@ -503,6 +513,8 @@ finish_parse(p)
 	 * require the length of that header, doing more for that
 	 * header length isn't really worth the effort.
 	 */
+
+	insert_load_llprefixlen(root);
 }
 
 void
@@ -1908,9 +1920,6 @@ insert_ppi_load_llprefixlen(b)
 	struct block *b;
 {
 	struct slist *s1, *s2;
-	struct slist *s_load_dlt;
-	struct block *new_b;
-	struct block temp;
 	
 	/*
 	 * Prepend to the statements in this block code to load the
@@ -1968,20 +1977,33 @@ insert_ppi_load_llprefixlen(b)
 		sappend(s1, b->stmts);
 		b->stmts = s1;
 
-		temp = *b;
+	}
+}
 	
+static struct block *
+gen_ppi_dlt_check()
+{
+	struct slist *s_load_dlt;
+	struct block *b;
+
+	if (linktype == DLT_PPI)
+	{
 		/* Create the statements that check for the DLT
 		 */
 		s_load_dlt = new_stmt(BPF_LD|BPF_W|BPF_ABS);
 		s_load_dlt->s.k = 4;
 
-		new_b = new_block(JMP(BPF_JEQ));
+		b = new_block(JMP(BPF_JEQ));
 
-		new_b->stmts = s_load_dlt;
-		new_b->s.k = SWAPLONG(DLT_IEEE802_11);
-
-		gen_and(new_b,b);
+		b->stmts = s_load_dlt;
+		b->s.k = SWAPLONG(DLT_IEEE802_11);
 	}
+	else
+	{
+		b = NULL;
+	}
+
+	return b;
 }
 
 static void
