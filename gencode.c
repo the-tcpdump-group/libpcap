@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.49 2007-06-13 22:51:07 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.50 2007-06-14 18:42:43 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -100,8 +100,12 @@ static const char rcsid[] _U_ =
 static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
+#ifdef WIN32
 /* Hack for updating VLAN, MPLS, and PPPoE offsets. */
+static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1;
+#else
 static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
+#endif
 
 /* XXX */
 #ifdef PCAP_FDDIPAD
@@ -478,6 +482,7 @@ void
 finish_parse(p)
 	struct block *p;
 {
+	insert_load_llprefixlen(p);
 	backpatch(p, gen_retblk(snaplen));
 	p->sense = !p->sense;
 	backpatch(p, gen_retblk(0));
@@ -498,7 +503,6 @@ finish_parse(p)
 	 * require the length of that header, doing more for that
 	 * header length isn't really worth the effort.
 	 */
-	insert_load_llprefixlen(root);
 }
 
 void
@@ -1011,18 +1015,12 @@ init_linktype(p)
 
 		
 		/* 
-		 * TODO GV
-		 *
 		 * At the moment we treat PPI as normal Radiotap encoded
 		 * packets. The difference is in the function that generates
 		 * the code at the beginning to compute the header length.
 		 * Since this code generator of PPI supports bare 802.11
 		 * encapsulation only (i.e. the encapsulated DLT should be
-		 * DLT_IEEE802_11) we should generate code to check for this.
-		 * Unfortunately given the current structure of the code generator,
-		 * generating the proper JMP(x) code to be prepended is problematic.
-		 * We just ignore the DLT in the PPI header.
-		 *
+		 * DLT_IEEE802_11) we generate code to check for this too.
 		 */
 	case DLT_PPI:
 	case DLT_IEEE802_11_RADIO:
@@ -1898,32 +1896,29 @@ insert_radiotap_load_llprefixlen(b)
 }
 
 /* 
- * TODO GV
- *
  * At the moment we treat PPI as normal Radiotap encoded
  * packets. The difference is in the function that generates
  * the code at the beginning to compute the header length.
  * Since this code generator of PPI supports bare 802.11
  * encapsulation only (i.e. the encapsulated DLT should be
- * DLT_IEEE802_11) we should generate code to check for this.
- * Unfortunately given the current structure of the code generator,
- * generating the proper JMP(x) code to be prepended is problematic.
- * We just ignore the DLT in the PPI header.
- *
+ * DLT_IEEE802_11) we generate code to check for this too.
  */
 static void
 insert_ppi_load_llprefixlen(b)
 	struct block *b;
 {
 	struct slist *s1, *s2;
-
+	struct slist *s_load_dlt;
+	struct block *new_b;
+	struct block temp;
+	
 	/*
 	 * Prepend to the statements in this block code to load the
 	 * length of the radiotap header into the register assigned
 	 * to hold that length, if one has been assigned.
 	 */
 	if (reg_ll_size != -1) {
-		/*
+	    /*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
 		 * header; unfortunately, it's little-endian, so we have
@@ -1972,6 +1967,20 @@ insert_ppi_load_llprefixlen(b)
 		 */
 		sappend(s1, b->stmts);
 		b->stmts = s1;
+
+		temp = *b;
+	
+		/* Create the statements that check for the DLT
+		 */
+		s_load_dlt = new_stmt(BPF_LD|BPF_W|BPF_ABS);
+		s_load_dlt->s.k = 4;
+
+		new_b = new_block(JMP(BPF_JEQ));
+
+		new_b->stmts = s_load_dlt;
+		new_b->s.k = SWAPLONG(DLT_IEEE802_11);
+
+		gen_and(new_b,b);
 	}
 }
 
@@ -1982,18 +1991,12 @@ insert_load_llprefixlen(b)
 	switch (linktype) {
 
 	/* 
-	 * TODO GV
-	 *
 	 * At the moment we treat PPI as normal Radiotap encoded
 	 * packets. The difference is in the function that generates
 	 * the code at the beginning to compute the header length.
 	 * Since this code generator of PPI supports bare 802.11
 	 * encapsulation only (i.e. the encapsulated DLT should be
-	 * DLT_IEEE802_11) we should generate code to check for this.
-	 * Unfortunately given the current structure of the code generator,
-	 * generating the proper JMP(x) code to be prepended is problematic.
-	 * We just ignore the DLT in the PPI header.
-	 *
+	 * DLT_IEEE802_11) we generate code to check for this too.
 	 */
 	case DLT_PPI:
 		insert_ppi_load_llprefixlen(b);
@@ -2029,18 +2032,12 @@ gen_radiotap_llprefixlen(void)
 }
 
 /* 
- * TODO GV
- *
  * At the moment we treat PPI as normal Radiotap encoded
  * packets. The difference is in the function that generates
  * the code at the beginning to compute the header length.
  * Since this code generator of PPI supports bare 802.11
  * encapsulation only (i.e. the encapsulated DLT should be
- * DLT_IEEE802_11) we should generate code to check for this.
- * Unfortunately given the current structure of the code generator,
- * generating the proper JMP(x) code to be prepended is problematic.
- * We just ignore the DLT in the PPI header.
- *
+ * DLT_IEEE802_11) we generate code to check for this too.
  */
 static struct slist *
 gen_ppi_llprefixlen(void)
@@ -3290,22 +3287,22 @@ gen_dnhostop(addr, dir)
 	tmp = gen_mcmp(OR_NET, 2, BPF_H,
 	    (bpf_int32)ntohs(0x0681), (bpf_int32)ntohs(0x07FF));
 	b1 = gen_cmp(OR_NET, 2 + 1 + offset_lh,
-	    BPF_H, (bpf_int32)ntohs(addr));
+	    BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b1);
 	/* Check for pad = 0, long header case */
 	tmp = gen_mcmp(OR_NET, 2, BPF_B, (bpf_int32)0x06, (bpf_int32)0x7);
-	b2 = gen_cmp(OR_NET, 2 + offset_lh, BPF_H, (bpf_int32)ntohs(addr));
+	b2 = gen_cmp(OR_NET, 2 + offset_lh, BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
 	tmp = gen_mcmp(OR_NET, 2, BPF_H,
 	    (bpf_int32)ntohs(0x0281), (bpf_int32)ntohs(0x07FF));
-	b2 = gen_cmp(OR_NET, 2 + 1 + offset_sh, BPF_H, (bpf_int32)ntohs(addr));
+	b2 = gen_cmp(OR_NET, 2 + 1 + offset_sh, BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
 	tmp = gen_mcmp(OR_NET, 2, BPF_B, (bpf_int32)0x02, (bpf_int32)0x7);
-	b2 = gen_cmp(OR_NET, 2 + offset_sh, BPF_H, (bpf_int32)ntohs(addr));
+	b2 = gen_cmp(OR_NET, 2 + offset_sh, BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 
