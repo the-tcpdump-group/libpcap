@@ -10,6 +10,9 @@
 /* Enable optimizer debugging */
 #undef BDEBUG
 
+/* define if you have a cloning BPF device */
+#undef HAVE_CLONING_BPF
+
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 

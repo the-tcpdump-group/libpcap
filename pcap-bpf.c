@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.98 2007-06-11 10:04:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99 2007-06-15 17:55:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -34,13 +34,6 @@ static const char rcsid[] _U_ =
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
-
-#ifdef HAVE_PATHS_H
-#include <paths.h>
-#if defined(__NetBSD__) && defined(_PATH_BPF)
-#define HAVE_CLONING_BPF
-#endif /* __NetBSD__ && _PATH_BPF */
-#endif /* HAVE_PATHS_H */
 
 #include <net/if.h>
 
@@ -531,7 +524,7 @@ bpf_open(pcap_t *p, char *errbuf)
 {
 	int fd;
 #ifdef HAVE_CLONING_BPF
-	static const char device[] = _PATH_BPF;
+	static const char device[] = "/dev/bpf";
 #else
 	int n = 0;
 	char device[sizeof "/dev/bpf0000000000"];
