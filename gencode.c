@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.283 2007-06-14 20:55:44 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.284 2007-06-22 06:32:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -243,7 +243,7 @@ static struct slist *xfer_to_a(struct arth *);
 static struct block *gen_mac_multicast(int);
 static struct block *gen_len(int, int);
 
-static struct block *gen_ppi_dlt_check();
+static struct block *gen_ppi_dlt_check(void);
 static struct block *gen_msg_abbrev(int type);
 
 static void *
@@ -1267,6 +1267,17 @@ init_linktype(p)
 		off_nl_nosnap = -1;
 		return;
 
+	case DLT_MTP2_WITH_PHDR:
+		off_li = 6;
+		off_sio = 7;
+		off_opc = 8;
+		off_dpc = 8;
+		off_sls = 11;
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
 #ifdef DLT_PFSYNC
 	case DLT_PFSYNC:
 		off_linktype = -1;
@@ -1996,7 +2007,7 @@ insert_ppi_load_llprefixlen(b)
 }
 	
 static struct block *
-gen_ppi_dlt_check()
+gen_ppi_dlt_check(void)
 {
 	struct slist *s_load_dlt;
 	struct block *b;
@@ -7010,14 +7021,16 @@ gen_mtp2type_abbrev(type)
 	switch (type) {
 
 	case M_FISU:
-		if (linktype != DLT_MTP2)
+		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error("'fisu' supported only on MTP2");
 		/* gen_ncmp(offrel, offset, size, mask, jtype, reverse, value) */
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JEQ, 0, 0);
 		break;
 
 	case M_LSSU:
-		if (linktype != DLT_MTP2)
+		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error("'lssu' supported only on MTP2");
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 1, 2);
 		b1 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 0);
@@ -7025,7 +7038,8 @@ gen_mtp2type_abbrev(type)
 		break;
 
 	case M_MSU:
-		if (linktype != DLT_MTP2)
+		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error("'msu' supported only on MTP2");
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 2);
 		break;

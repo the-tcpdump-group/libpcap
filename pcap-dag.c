@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.28 2007-02-01 02:58:39 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.29 2007-06-22 06:32:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -49,6 +49,18 @@ struct rtentry;		/* declarations in <net/if.h> */
 #define ATM_CELL_SIZE		52
 #define ATM_HDR_SIZE		4
 
+/*
+ * A header containing additional MTP information.
+ */
+#define MTP2_SENT_OFFSET		0	/* 1 byte */
+#define MTP2_ANNEX_A_USED_OFFSET	1	/* 1 byte */
+#define MTP2_LINK_NUMBER_OFFSET		2	/* 2 bytes */
+#define MTP2_HDR_LEN			4	/* length of the header */
+
+#define MTP2_ANNEX_A_NOT_USED      0
+#define MTP2_ANNEX_A_USED          1
+#define MTP2_ANNEX_A_USED_UNKNOWN  2
+
 /* SunATM pseudo header */
 struct sunatm_hdr {
 	unsigned char	flags;		/* destination and traffic type */
@@ -77,6 +89,10 @@ static const unsigned short endian_test_word = 0x0100;
 #define dag_open_live pcap_open_live
 #define dag_platform_finddevs pcap_platform_finddevs
 #endif /* DAG_ONLY */
+
+#define MAX_DAG_PACKET 65536
+
+static unsigned char TempPkt[MAX_DAG_PACKET];
 
 static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
@@ -340,6 +356,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				caplen = packet_len;
 			}
 			break;
+#ifdef TYPE_COLOR_MC_HDLC_POS
+		case TYPE_COLOR_MC_HDLC_POS:
+#endif
 #ifdef TYPE_MC_HDLC
 		case TYPE_MC_HDLC:
 			packet_len = ntohs(header->wlen);
@@ -348,7 +367,20 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			if (caplen > packet_len) {
 				caplen = packet_len;
 			}
+			/* jump the MC_HDLC_HEADER */
 			dp += 4;
+			if (p->linktype == DLT_MTP2_WITH_PHDR) {
+				/* Add the MTP2 Pseudo Header */
+				caplen += MTP2_HDR_LEN;
+				packet_len += MTP2_HDR_LEN;
+
+				TempPkt[MTP2_SENT_OFFSET] = 0;
+				TempPkt[MTP2_ANNEX_A_USED_OFFSET] = MTP2_ANNEX_A_USED_UNKNOWN;
+				*(TempPkt+MTP2_LINK_NUMBER_OFFSET) = ((header->rec.mc_hdlc.mc_header>>16)&0x01);
+				*(TempPkt+MTP2_LINK_NUMBER_OFFSET+1) = ((header->rec.mc_hdlc.mc_header>>24)&0xff);
+				memcpy(TempPkt+MTP2_HDR_LEN, dp, caplen);
+				dp = TempPkt;
+			}
 			break;
 #endif
 		default:
@@ -381,6 +413,10 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #ifdef TYPE_DSM_COLOR_ETH
 			/* in this type the color value overwrites the lctr */
 		case TYPE_DSM_COLOR_ETH:
+			break;
+#endif
+#ifdef TYPE_COLOR_MC_HDLC_POS
+		case TYPE_COLOR_MC_HDLC_POS:
 			break;
 #endif
 
@@ -936,6 +972,9 @@ dag_get_datalink(pcap_t *p)
 				p->linktype = DLT_ATM_RFC1483;
 			break;
 
+#ifdef TYPE_COLOR_MC_HDLC_POS
+		case TYPE_COLOR_MC_HDLC_POS:
+#endif
 #ifdef TYPE_MC_HDLC
 		case TYPE_MC_HDLC:
 			if (p->dlt_list != NULL) {
@@ -943,6 +982,7 @@ dag_get_datalink(pcap_t *p)
 				p->dlt_list[index++] = DLT_PPP_SERIAL;
 				p->dlt_list[index++] = DLT_FRELAY;
 				p->dlt_list[index++] = DLT_MTP2;
+				p->dlt_list[index++] = DLT_MTP2_WITH_PHDR;
 			}
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
