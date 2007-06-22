@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.16 2007-06-11 09:52:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.17 2007-06-22 06:43:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -387,6 +387,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_USB, "USB"),
 	DLT_CHOICE(DLT_BLUETOOTH_HCI_H4, "Bluetooth HCI UART transport layer"),
 	DLT_CHOICE(DLT_CAN20B, "Controller Area Network (CAN) v. 2.0B"),
+	DLT_CHOICE(DLT_MTP2_WITH_PHDR, "SS7 MTP2 with Pseudo-header"),
 	DLT_CHOICE_SENTINEL
 };
 
@@ -816,7 +817,7 @@ pcap_close(pcap_t *p)
 #ifdef HAVE_VERSION_H
 #include "version.h"
 #else
-static const char pcap_version_string[] = "libpcap version 0.9.4";
+static const char pcap_version_string[] = "libpcap version 0.9.7";
 #endif
 
 #ifdef WIN32
@@ -825,7 +826,7 @@ static const char pcap_version_string[] = "libpcap version 0.9.4";
  * version numbers when building WinPcap.  (It'd be nice to do so for
  * the packet.dll version number as well.)
  */
-static const char wpcap_version_string[] = "3.2 alpha1";
+static const char wpcap_version_string[] = "4.0";
 static const char pcap_version_string_fmt[] =
     "WinPcap version %s, based on %s";
 static const char pcap_version_string_packet_dll_fmt[] =
