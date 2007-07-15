@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.85.2.1 2007-06-11 09:52:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.85.2.2 2007-07-15 19:55:04 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2216,6 +2216,20 @@ filled:
 /*
  * Convert flowgraph intermediate representation to the
  * BPF array representation.  Set *lenp to the number of instructions.
+ *
+ * This routine does *NOT* leak the memory pointed to by fp.  It *must
+ * not* do free(fp) before returning fp; doing so would make no sense,
+ * as the BPF array pointed to by the return value of icode_to_fcode()
+ * must be valid - it's being returned for use in a bpf_program structure.
+ *
+ * If it appears that icode_to_fcode() is leaking, the problem is that
+ * the program using pcap_compile() is failing to free the memory in
+ * the BPF program when it's done - the leak is in the program, not in
+ * the routine that happens to be allocating the memory.  (By analogy, if
+ * a program calls fopen() without ever calling fclose() on the FILE *,
+ * it will leak the FILE structure; the leak is not in fopen(), it's in
+ * the program.)  Change the program to use pcap_freecode() when it's
+ * done with the filter program.  See the pcap man page.
  */
 struct bpf_insn *
 icode_to_fcode(root, lenp)
