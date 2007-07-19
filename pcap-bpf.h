@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.19 2007-06-05 18:07:03 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-bpf.h,v 1.34.2.20 2007-07-19 06:20:53 guy Exp $ (LBL)
  */
 
 /*
@@ -700,6 +700,12 @@ struct bpf_version {
  * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
  */
 #define DLT_IEEE802_15_4	195
+
+/*
+ * Various link-layer types, with a pseudo-header, for SITA
+ * (http://www.sita.aero/); requested by Fulko Hew (fulko.hew@gmail.com).
+ */
+#define DLT_SITA		196
 
 
 /*
