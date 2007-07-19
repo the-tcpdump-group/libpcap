@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.158 2007-06-11 10:04:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.159 2007-07-19 06:19:54 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -525,6 +525,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IEEE802_15_4	195
 
+/*
+ * Various link-layer types, with a pseudo-header, for SITA
+ * (http://www.sita.aero/); requested by Fulko Hew (fulko.hew@gmail.com).
+ */
+#define LINKTYPE_SITA		196
+
 
 static struct linktype_map {
 	int	dlt;
@@ -772,6 +778,9 @@ static struct linktype_map {
 
 	/* IEEE 802.15.4 exactly as it appears in the spec */
         { DLT_IEEE802_15_4,	LINKTYPE_IEEE802_15_4 },
+
+	/* Various link-layer types for SITA */
+	{ DLT_SITA,		LINKTYPE_SITA },
 
 	{ -1,			-1 }
 };
