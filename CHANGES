@@ -1,6 +1,21 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.10 2007-04-23 21:22:17 ken Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.11 2007-07-24 02:27:32 mcr Exp $ (LBL)
 
-Wed.	April 25, 2007.  ken@xelerance.com.  Summary for 0.9.6 libpcap release
+Wed.	July 23, 2007.  mcr@xelerance.com.  Summary for 0.9.7 libpcap release
+
+	FIXED version file to be 0.9.7 instead of 0.9.5.
+	added flags/configuration for cloning bpf device.
+	added DLT_MTP2_WITH_PHDR support (PPI)
+        "fix" the "memory leak" in icode_to_fcode() -- documentation bug
+        Various link-layer types, with a pseudo-header, for SITA http://www.sita.aero/
+	introduces support for the DAG ERF type TYPE_COLOR_MC_HDLC_POS.
+	Basic BPF filtering support for DLT_MTP2_WITH_PHDR is also added.
+        check for IPv4 and IPv6, even for DLT_RAW 
+	add support for DLT_JUNIPER_ISM
+  	Pick up changes from NetBSD: many from tron, christos, drochner
+	Allocate DLT_ for 802.15.4 without any header munging, for Mikko Saarnivala.
+	Header for 802.16 MAC Common Part Sublayer plus a radiotap radio header
+
+Wed.	April 25, 2007. ken@xelerance.com.  Summary for 0.9.6 libpcap release
 
 	Put the public libpcap headers into a pcap subdirectory in both the
 	 source directory and the target include directory, and have include
