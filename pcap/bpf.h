@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.12 2007-07-19 06:19:54 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.13 2007-08-07 23:51:53 guy Exp $ (LBL)
  */
 
 /*
@@ -706,6 +706,13 @@ struct bpf_version {
  * (http://www.sita.aero/); requested by Fulko Hew (fulko.hew@gmail.com).
  */
 #define DLT_SITA		196
+
+/*
+ * Various link-layer types, with a pseudo-header, for Endace DAG cards;
+ * encapsulates Endace ERF records.  Requested by Stephen Donnelly
+ * <stephen@endace.com>.
+ */
+#define DLT_ERF			197
 
 
 /*

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.159 2007-07-19 06:19:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.160 2007-08-07 23:51:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -531,6 +531,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_SITA		196
 
+/*
+ * Various link-layer types, with a pseudo-header, for Endace DAG cards;
+ * encapsulates Endace ERF records.  Requested by Stephen Donnelly
+ * <stephen@endace.com>.
+ */
+#define LINKTYPE_ERF		197
+
 
 static struct linktype_map {
 	int	dlt;
@@ -781,6 +788,9 @@ static struct linktype_map {
 
 	/* Various link-layer types for SITA */
 	{ DLT_SITA,		LINKTYPE_SITA },
+
+	/* Various link-layer types for Endace */
+	{ DLT_ERF,		LINKTYPE_ERF },
 
 	{ -1,			-1 }
 };
