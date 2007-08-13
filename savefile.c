@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.160 2007-08-07 23:51:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.161 2007-08-13 16:51:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -538,6 +538,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_ERF		197
 
+/*
+ * Special header prepended to Ethernet packets when capturing from a
+ * u10 Networks board.  Requested by Phil Mulholland
+ * <phil@u10networks.com>.
+ */
+#define LINKTYPE_RAIF1		198
+
 
 static struct linktype_map {
 	int	dlt;
@@ -791,6 +798,9 @@ static struct linktype_map {
 
 	/* Various link-layer types for Endace */
 	{ DLT_ERF,		LINKTYPE_ERF },
+
+	/* Special header for u10 Networks boards */
+	{ DLT_RAIF1,		LINKTYPE_RAIF1 },
 
 	{ -1,			-1 }
 };

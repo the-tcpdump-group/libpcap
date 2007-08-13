@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.13 2007-08-07 23:51:53 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.14 2007-08-13 16:51:41 guy Exp $ (LBL)
  */
 
 /*
@@ -713,6 +713,13 @@ struct bpf_version {
  * <stephen@endace.com>.
  */
 #define DLT_ERF			197
+
+/*
+ * Special header prepended to Ethernet packets when capturing from a
+ * u10 Networks board.  Requested by Phil Mulholland
+ * <phil@u10networks.com>.
+ */
+#define DLT_RAIF1		198
 
 
 /*
