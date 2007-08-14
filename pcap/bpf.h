@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.14 2007-08-13 16:51:41 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.15 2007-08-14 20:56:01 guy Exp $ (LBL)
  */
 
 /*
@@ -720,6 +720,13 @@ struct bpf_version {
  * <phil@u10networks.com>.
  */
 #define DLT_RAIF1		198
+
+/*
+ * IPMB packet for IPMI, beginning with the I2C slave address, followed
+ * by the netFn and LUN, etc..  Requested by Chanthy Toeung
+ * <chanthy.toeung@ca.kontron.com>.
+ */
+#define DLT_IPMB		199
 
 
 /*
