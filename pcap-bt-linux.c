@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.7 2007-04-01 21:43:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.8 2007-08-18 20:54:52 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -146,7 +146,7 @@ bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg
 	if (sscanf(bus, BT_IFACE"%d", &dev_id) != 1)
 	{
 	    	snprintf(errmsg, PCAP_ERRBUF_SIZE,
-			"Can't get usb bus index from %s", bus);
+			"Can't get Bluetooth bus index from %s", bus);
 		return NULL;
 	}
 	
