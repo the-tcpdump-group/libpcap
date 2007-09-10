@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.162 2007-08-14 20:56:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.163 2007-09-10 20:17:18 hannes Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -552,6 +552,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IPMB		199
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ * The DLT_ is used for capturing data on a secure tunnel interface.
+ */
+#define LINKTYPE_JUNIPER_ST     200
+
 
 static struct linktype_map {
 	int	dlt;
@@ -811,6 +818,10 @@ static struct linktype_map {
 
 	/* IPMB */
 	{ DLT_IPMB,		LINKTYPE_IPMB },
+
+        /* Juniper Secure Tunnel */
+        { DLT_JUNIPER_ST,       LINKTYPE_JUNIPER_ST },
+
 
 	{ -1,			-1 }
 };
