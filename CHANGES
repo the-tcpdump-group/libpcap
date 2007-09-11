@@ -1,4 +1,9 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.11 2007-07-24 02:27:32 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.59.2.12 2007-09-11 00:00:20 ken Exp $ (LBL)
+
+Mon.	September 10, 2007.  ken@xelerance.com.  Summary for 0.9.8 libpcap release
+	Change build process to put public libpcap headers into pcap subir
+	DLT: Add value for IPMI IPMB packets
+	DLT: Add value for u10 Networks boards
 
 Wed.	July 23, 2007.  mcr@xelerance.com.  Summary for 0.9.7 libpcap release
 
