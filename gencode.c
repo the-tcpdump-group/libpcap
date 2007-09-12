@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.52 2007-06-22 06:43:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.53 2007-09-12 19:17:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -73,7 +73,12 @@ static const char rcsid[] _U_ =
 #include "ppp.h"
 #include "sll.h"
 #include "arcnet.h"
-#include "pf.h"
+#ifdef HAVE_NET_PFVAR_H
+#include <sys/socket.h>
+#include <net/if.h>
+#include <net/pfvar.h>
+#include <net/if_pflog.h>
+#endif
 #ifndef offsetof
 #define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
@@ -1175,12 +1180,13 @@ init_linktype(p)
 		off_nl_nosnap = 44;	/* XXX - what does it do with 802.3 packets? */
 		return;
 
+#ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		off_linktype = 0;
-		/* XXX read this from pf.h? */
 		off_nl = PFLOG_HDRLEN;
 		off_nl_nosnap = PFLOG_HDRLEN;	/* no 802.2 LLC */
 		return;
+#endif
 
         case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
@@ -2426,6 +2432,7 @@ gen_linktype(proto)
 		}
 		return (gen_cmp(OR_LINK, 0, BPF_W, (bpf_int32)proto));
 
+#ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		/*
 		 * af field is host byte order in contrast to the rest of
@@ -2443,6 +2450,7 @@ gen_linktype(proto)
 			return gen_false();
 		/*NOTREACHED*/
 		break;
+#endif /* HAVE_NET_PFVAR_H */
 
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
@@ -6374,10 +6382,12 @@ gen_inbound(dir)
 		}
 		break;
 
+#ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		b0 = gen_cmp(OR_LINK, offsetof(struct pfloghdr, dir), BPF_B,
 		    (bpf_int32)((dir == 0) ? PF_IN : PF_OUT));
 		break;
+#endif
 
 	case DLT_PPP_PPPD:
 		if (dir) {
@@ -6425,6 +6435,7 @@ gen_inbound(dir)
 	return (b0);
 }
 
+#ifdef HAVE_NET_PFVAR_H
 /* PF firewall log matched interface */
 struct block *
 gen_pf_ifname(const char *ifname)
@@ -6534,6 +6545,55 @@ gen_pf_action(int action)
 
 	return (b0);
 }
+#else /* !HAVE_NET_PFVAR_H */
+struct block *
+gen_pf_ifname(const char *ifname)
+{
+	bpf_error("libpcap was compiled without pf support");
+	/* NOTREACHED */
+	return (NULL);
+}
+
+struct block *
+gen_pf_ruleset(char *ruleset)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/* NOTREACHED */
+	return (NULL);
+}
+
+struct block *
+gen_pf_rnr(int rnr)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/* NOTREACHED */
+	return (NULL);
+}
+
+struct block *
+gen_pf_srnr(int srnr)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/* NOTREACHED */
+	return (NULL);
+}
+
+struct block *
+gen_pf_reason(int reason)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/* NOTREACHED */
+	return (NULL);
+}
+
+struct block *
+gen_pf_action(int action)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/* NOTREACHED */
+	return (NULL);
+}
+#endif /* HAVE_NET_PFVAR_H */
 
 struct block *
 gen_acode(eaddr, q)

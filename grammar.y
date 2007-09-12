@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.86.2.8 2007-06-11 09:52:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.86.2.9 2007-09-12 19:17:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -52,7 +52,11 @@ struct rtentry;
 #include "pcap-int.h"
 
 #include "gencode.h"
-#include "pf.h"
+#ifdef HAVE_NET_PFVAR_H
+#include <net/if.h>
+#include <net/pfvar.h>
+#include <net/if_pflog.h>
+#endif
 #include <pcap-namedb.h>
 
 #ifdef HAVE_OS_PROTO_H
@@ -85,6 +89,50 @@ pcap_parse()
 }
 #endif
 
+#ifdef HAVE_NET_PFVAR_H
+static int
+pfreason_to_num(const char *reason)
+{
+	const char *reasons[] = PFRES_NAMES;
+	int i;
+
+	for (i = 0; reasons[i]; i++) {
+		if (pcap_strcasecmp(reason, reasons[i]) == 0)
+			return (i);
+	}
+	bpf_error("unknown PF reason");
+	/*NOTREACHED*/
+}
+
+static int
+pfaction_to_num(const char *action)
+{
+	if (pcap_strcasecmp(action, "pass") == 0 ||
+	    pcap_strcasecmp(action, "accept") == 0)
+		return (PF_PASS);
+	else if (pcap_strcasecmp(action, "drop") == 0 ||
+		pcap_strcasecmp(action, "block") == 0)
+		return (PF_DROP);
+	else {
+		bpf_error("unknown PF action");
+		/*NOTREACHED*/
+	}
+}
+#else /* !HAVE_NET_PFVAR_H */
+static int
+pfreason_to_num(const char *reason)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/*NOTREACHED*/
+}
+
+static int
+pfaction_to_num(const char *action)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/*NOTREACHED*/
+}
+#endif /* HAVE_NET_PFVAR_H */
 %}
 
 %union {
@@ -351,28 +399,10 @@ pfvar:	  PF_IFNAME ID		{ $$ = gen_pf_ifname($2); }
 	;
 
 reason:	  NUM			{ $$ = $1; }
-	| ID			{ const char *reasons[] = PFRES_NAMES;
-				  int i;
-				  for (i = 0; reasons[i]; i++) {
-					  if (pcap_strcasecmp($1, reasons[i]) == 0) {
-						  $$ = i;
-						  break;
-					  }
-				  }
-				  if (reasons[i] == NULL)
-					  bpf_error("unknown PF reason");
-				}
+	| ID			{ $$ = pfreason_to_num($1); }
 	;
 
-action:	  ID			{ if (pcap_strcasecmp($1, "pass") == 0 ||
-				      pcap_strcasecmp($1, "accept") == 0)
-					$$ = PF_PASS;
-				  else if (pcap_strcasecmp($1, "drop") == 0 ||
-				      pcap_strcasecmp($1, "block") == 0)
-					$$ = PF_DROP;
-				  else
-					  bpf_error("unknown PF action");
-				}
+action:	  ID			{ $$ = pfaction_to_num($1); }
 	;
 
 relop:	  '>'			{ $$ = BPF_JGT; }
