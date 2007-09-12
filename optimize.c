@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.85.2.2 2007-07-15 19:55:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.85.2.3 2007-09-12 21:29:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1972,7 +1972,7 @@ opt_init(root)
 	 */
 	unMarkAll();
 	n = count_blocks(root);
-	blocks = (struct block **)malloc(n * sizeof(*blocks));
+	blocks = (struct block **)calloc(n, sizeof(*blocks));
 	if (blocks == NULL)
 		bpf_error("malloc");
 	unMarkAll();
@@ -1980,14 +1980,14 @@ opt_init(root)
 	number_blks_r(root);
 
 	n_edges = 2 * n_blocks;
-	edges = (struct edge **)malloc(n_edges * sizeof(*edges));
+	edges = (struct edge **)calloc(n_edges, sizeof(*edges));
 	if (edges == NULL)
 		bpf_error("malloc");
 
 	/*
 	 * The number of levels is bounded by the number of nodes.
 	 */
-	levels = (struct block **)malloc(n_blocks * sizeof(*levels));
+	levels = (struct block **)calloc(n_blocks, sizeof(*levels));
 	if (levels == NULL)
 		bpf_error("malloc");
 
@@ -2034,8 +2034,8 @@ opt_init(root)
 	 * we'll need.
 	 */
 	maxval = 3 * max_stmts;
-	vmap = (struct vmapinfo *)malloc(maxval * sizeof(*vmap));
-	vnode_base = (struct valnode *)malloc(maxval * sizeof(*vnode_base));
+	vmap = (struct vmapinfo *)calloc(maxval, sizeof(*vmap));
+	vnode_base = (struct valnode *)calloc(maxval, sizeof(*vnode_base));
 	if (vmap == NULL || vnode_base == NULL)
 		bpf_error("malloc");
 }

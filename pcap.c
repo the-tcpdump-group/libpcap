@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.17 2007-06-22 06:43:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.18 2007-09-12 21:33:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -240,7 +240,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		**dlt_buffer = p->linktype;
 		return (1);
 	} else {
-		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer) * p->dlt_count);
+		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
 		if (*dlt_buffer == NULL) {
 			(void)snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
