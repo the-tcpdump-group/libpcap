@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.18 2007-09-12 21:33:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.88.2.19 2007-09-19 02:50:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -817,7 +817,7 @@ pcap_close(pcap_t *p)
 #ifdef HAVE_VERSION_H
 #include "version.h"
 #else
-static const char pcap_version_string[] = "libpcap version 0.9.7";
+static const char pcap_version_string[] = "libpcap version 0.9.8";
 #endif
 
 #ifdef WIN32
