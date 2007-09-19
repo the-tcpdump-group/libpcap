@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.163 2007-09-10 20:17:18 hannes Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.164 2007-09-19 02:40:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -559,6 +559,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_JUNIPER_ST     200
 
+/*
+ * Bluetooth HCI UART transport layer (part H:4), with pseudo-header
+ * that includes direction information; requested by Paolo Abeni.
+ */
+#define LINKTYPE_BLUETOOTH_HCI_H4_WITH_PHDR	201
+
 
 static struct linktype_map {
 	int	dlt;
@@ -822,6 +828,8 @@ static struct linktype_map {
         /* Juniper Secure Tunnel */
         { DLT_JUNIPER_ST,       LINKTYPE_JUNIPER_ST },
 
+	/* Bluetooth HCI UART transport layer, with pseudo-header */
+	{ DLT_BLUETOOTH_HCI_H4_WITH_PHDR, LINKTYPE_BLUETOOTH_HCI_H4_WITH_PHDR },
 
 	{ -1,			-1 }
 };

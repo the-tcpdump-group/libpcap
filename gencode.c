@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.286 2007-09-12 19:09:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.287 2007-09-19 02:40:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1326,6 +1326,78 @@ init_linktype(p)
 		return;
 
 	case DLT_USB_LINUX:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_CAN20B:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IEEE802_15_4_LINUX:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IEEE802_16_MAC_CPS_RADIO:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IEEE802_15_4:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_SITA:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_RAIF1:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IPMB:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
