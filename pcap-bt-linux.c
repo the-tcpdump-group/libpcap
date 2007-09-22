@@ -11,8 +11,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the Politecnico di Torino, CACE Technologies 
- * nor the names of its contributors may be used to endorse or promote 
+ * 3. The name of the author may not be used to endorse or promote 
  * products derived from this software without specific prior written 
  * permission.
  *
@@ -34,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.8 2007-08-18 20:54:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.9 2007-09-22 02:10:17 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -43,6 +42,7 @@ static const char rcsid[] _U_ =
 
 #include "pcap-int.h"
 #include "pcap-bt-linux.h"
+#include "pcap/bluetooth.h"
 
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
@@ -55,6 +55,7 @@ static const char rcsid[] _U_ =
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
@@ -162,9 +163,9 @@ bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg
 	memset(handle, 0, sizeof(*handle));
 	handle->snapshot	= snaplen;
 	handle->md.timeout	= to_ms;
-	handle->bufsize = snaplen+BT_CTRL_SIZE;
+	handle->bufsize = snaplen+BT_CTRL_SIZE+sizeof(pcap_bluetooth_h4_header);
 	handle->offset = BT_CTRL_SIZE;
-	handle->linktype = DLT_BLUETOOTH_HCI_H4;
+	handle->linktype = DLT_BLUETOOTH_HCI_H4_WITH_PHDR;
 	
 	handle->read_op = bt_read_linux;
 	handle->inject_op = bt_inject_linux;
@@ -186,7 +187,7 @@ bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg
 		return NULL;
 	}
 
-	handle->buffer = malloc(snaplen+BT_CTRL_SIZE);
+	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
 		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
 			pcap_strerror(errno));
@@ -244,8 +245,10 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	struct msghdr msg;
 	struct iovec  iv;
 	struct pcap_pkthdr pkth;
+	pcap_bluetooth_h4_header* bthdr;
 
-	iv.iov_base = &handle->buffer[handle->offset];
+	bthdr = (pcap_bluetooth_h4_header*) &handle->buffer[handle->offset];
+	iv.iov_base = &handle->buffer[handle->offset+sizeof(pcap_bluetooth_h4_header)];
 	iv.iov_len  = handle->snapshot;
 	
 	memset(&msg, 0, sizeof(msg));
@@ -273,8 +276,8 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 
 	/* get direction and timestamp*/ 
 	cmsg = CMSG_FIRSTHDR(&msg);
+	int in=0;
 	while (cmsg) {
-		int in;
 		switch (cmsg->cmsg_type) {
 			case HCI_CMSG_DIR:
 				in = *((int *) CMSG_DATA(cmsg));
@@ -285,8 +288,14 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 		}
 		cmsg = CMSG_NXTHDR(&msg, cmsg);
 	}
+	if ((in && (handle->direction == PCAP_D_OUT)) || 
+				((!in) && (handle->direction == PCAP_D_IN)))
+		return 0;
+
+	bthdr->direction = htonl(in != 0);
+	pkth.caplen+=sizeof(pcap_bluetooth_h4_header);
 	pkth.len = pkth.caplen;
-	callback(user, &pkth, iv.iov_base);
+	callback(user, &pkth, &handle->buffer[handle->offset]);
 	return 1;
 }
 

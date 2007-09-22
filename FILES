@@ -75,6 +75,7 @@ nlpid.h
 optimize.c
 packaging/pcap.spec
 packaging/pcap.spec.in
+pcap/bluetooth.h
 pcap/bpf.h
 pcap/namedb.h
 pcap/pcap.h
