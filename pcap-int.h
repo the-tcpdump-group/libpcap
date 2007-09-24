@@ -30,13 +30,13 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.81 2007-09-24 23:24:02 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.82 2007-09-24 23:26:12 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
 #define pcap_int_h
 
-#include <pcap.h>
+#include <pcap/pcap.h>
 
 #ifdef __cplusplus
 extern "C" {
