@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.33 2007-06-14 22:08:38 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34 2007-09-25 20:34:36 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -800,4 +800,11 @@ pcap_setmintocopy(pcap_t *p, int size)
 		return -1;
 	}
 	return 0;
+}
+
+/*platform-dependent routine to add devices other than NDIS interfaces*/
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (0);
 }
