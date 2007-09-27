@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.98 2007-09-12 19:09:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.99 2007-09-27 17:58:34 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -129,6 +129,9 @@ pfreason_to_num(const char *reason)
 {
 	bpf_error("libpcap was compiled on a machine without pf support");
 	/*NOTREACHED*/
+
+	/* this is to make the VC compiler happy */
+	return -1;
 }
 
 static int
@@ -136,6 +139,9 @@ pfaction_to_num(const char *action)
 {
 	bpf_error("libpcap was compiled on a machine without pf support");
 	/*NOTREACHED*/
+
+	/* this is to make the VC compiler happy */
+	return -1;
 }
 #endif /* HAVE_NET_PFVAR_H */
 %}
