@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.89 2007-09-12 21:29:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.90 2007-09-27 18:01:51 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -51,6 +51,10 @@ extern int dflag;
 #if defined(MSDOS) && !defined(__DJGPP__)
 extern int _w32_ffs (int mask);
 #define ffs _w32_ffs
+#endif
+
+#if defined(WIN32) && defined (_MSC_VER)
+int ffs(int mask);
 #endif
 
 /*
