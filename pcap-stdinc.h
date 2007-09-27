@@ -28,7 +28,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.9 2007-04-01 21:43:55 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.10 2007-09-27 17:59:45 gianluca Exp $ (LBL)
  */
 
 #define SIZEOF_CHAR 1
@@ -62,4 +62,5 @@
 
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
+#define strdup _strdup
 #define inline __inline 
