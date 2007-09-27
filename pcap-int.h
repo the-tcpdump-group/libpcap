@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.82 2007-09-24 23:26:12 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.83 2007-09-27 18:01:13 gianluca Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -51,6 +51,23 @@ extern "C" {
 #include <io.h>
 #endif
 
+#if (defined(_MSC_VER) && (_MSC_VER <= 1200)) /* we are compiling with Visual Studio 6, that doesn't support the LL suffix*/
+
+/*
+ * Swap byte ordering of unsigned long long timestamp on a big endian
+ * machine.
+ */
+#define SWAPLL(ull)  ((ull & 0xff00000000000000) >> 56) | \
+                      ((ull & 0x00ff000000000000) >> 40) | \
+                      ((ull & 0x0000ff0000000000) >> 24) | \
+                      ((ull & 0x000000ff00000000) >> 8)  | \
+                      ((ull & 0x00000000ff000000) << 8)  | \
+                      ((ull & 0x0000000000ff0000) << 24) | \
+                      ((ull & 0x000000000000ff00) << 40) | \
+                      ((ull & 0x00000000000000ff) << 56)
+
+#else /* A recent Visual studio compiler or not VC */
+
 /*
  * Swap byte ordering of unsigned long long timestamp on a big endian
  * machine.
@@ -63,6 +80,8 @@ extern "C" {
                       ((ull & 0x0000000000ff0000LL) << 24) | \
                       ((ull & 0x000000000000ff00LL) << 40) | \
                       ((ull & 0x00000000000000ffLL) << 56)
+
+#endif /* _MSC_VER */
 
 /*
  * Savefile
