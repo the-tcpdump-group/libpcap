@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.164 2007-09-19 02:40:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.165 2007-09-27 17:59:07 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1206,7 +1206,7 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 	 * header has.
 	 */
 	amt_read = fread(&sf_hdr, 1, p->sf.hdrsize, fp);
-	if (amt_read != p->sf.hdrsize) {
+	if (amt_read != (size_t)p->sf.hdrsize) {
 		if (ferror(fp)) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
