@@ -36,11 +36,11 @@
  * SUCH DAMAGE.
  */
 
-/* $Id: inet_pton.c,v 1.2 2003-11-15 23:24:06 guy Exp $ */
+/* $Id: inet_pton.c,v 1.3 2007-09-27 18:02:20 gianluca Exp $ */
 
 #ifndef lint
 static const char rcsid[] _U_ =
-     "@(#) $Header: /tcpdump/master/libpcap/Win32/Src/inet_pton.c,v 1.2 2003-11-15 23:24:06 guy Exp $";
+     "@(#) $Header: /tcpdump/master/libpcap/Win32/Src/inet_pton.c,v 1.3 2007-09-27 18:02:20 gianluca Exp $";
 #endif
 
 #include <errno.h>
@@ -57,6 +57,8 @@ int* _errno();
 #endif /* __MINGW32__ */
 
 #include <pcap-stdinc.h>
+
+int inet_aton(const char *cp, struct in_addr *addr);
 
 int
 inet_pton(int af, const char *src, void *dst)
