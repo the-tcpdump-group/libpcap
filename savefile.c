@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.166 2007-09-29 00:29:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.167 2007-09-29 19:33:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -834,6 +834,18 @@ static struct linktype_map {
 	{ -1,			-1 }
 };
 
+/*
+ * Mechanism for storing information about a capture in the upper
+ * 6 bits of a linktype value in a capture file.
+ *
+ * LT_LINKTYPE_EXT(x) extracts the additional information.
+ *
+ * The rest of the bits are for a value describing the link-layer
+ * value.  LT_LINKTYPE(x) extracts that value.
+ */
+#define LT_LINKTYPE(x)		((x) & 0x03FFFFFF)
+#define LT_LINKTYPE_EXT(x)	((x) & 0xFC000000)
+
 static int
 dlt_to_linktype(int dlt)
 {
@@ -1064,7 +1076,8 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	}
 	p->tzoff = hdr.thiszone;
 	p->snapshot = hdr.snaplen;
-	p->linktype = linktype_to_dlt(hdr.linktype);
+	p->linktype = linktype_to_dlt(LT_LINKTYPE(hdr.linktype));
+	p->linktype_ext = LT_LINKTYPE_EXT(hdr.linktype);
 	if (magic == KUZNETZOV_TCPDUMP_MAGIC && p->linktype == DLT_EN10MB) {
 		/*
 		 * This capture might have been done in raw mode or cooked
@@ -1479,6 +1492,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		    fname, linktype);
 		return (NULL);
 	}
+	linktype |= p->linktype_ext;
 
 	if (fname[0] == '-' && fname[1] == '\0') {
 		f = stdout;
@@ -1513,6 +1527,7 @@ pcap_dump_fopen(pcap_t *p, FILE *f)
 		    linktype);
 		return (NULL);
 	}
+	linktype |= p->linktype_ext;
 
 	return (pcap_setup_dump(p, linktype, f, "stream"));
 }

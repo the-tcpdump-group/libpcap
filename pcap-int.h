@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.84 2007-09-29 00:29:14 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85 2007-09-29 19:33:29 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -166,7 +166,8 @@ struct pcap {
 	int send_fd;
 #endif /* WIN32 */
 	int snapshot;
-	int linktype;
+	int linktype;		/* Network linktype */
+	int linktype_ext;       /* Extended information stored in the linktype field of a file */
 	int tzoff;		/* timezone offset */
 	int offset;		/* offset for proper alignment */
 

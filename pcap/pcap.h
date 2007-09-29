@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.2 2007-06-11 10:04:25 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.3 2007-09-29 19:33:29 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -119,6 +119,16 @@ struct pcap_file_header {
 	bpf_u_int32 snaplen;	/* max length saved portion of each pkt */
 	bpf_u_int32 linktype;	/* data link type (LINKTYPE_*) */
 };
+
+/*
+ * Macros for the value returned by pcap_datalink_ext().
+ * 
+ * If LT_FCS_LENGTH_PRESENT(x) is true, the LT_FCS_LENGTH(x) macro
+ * gives the FCS length of packets in the capture.
+ */
+#define LT_FCS_LENGTH_PRESENT(x)	((x) & 0x04000000)
+#define LT_FCS_LENGTH(x)		(((x) & 0xF0000000) >> 28)
+#define LT_FCS_DATALINK_EXT(x)		(((x) & 0xF) << 28) | 0x04000000)
 
 typedef enum {
        PCAP_D_INOUT = 0,
@@ -245,6 +255,7 @@ int	pcap_compile_nopcap(int, int, struct bpf_program *,
 	    const char *, int, bpf_u_int32);
 void	pcap_freecode(struct bpf_program *);
 int	pcap_datalink(pcap_t *);
+int	pcap_datalink_ext(pcap_t *);
 int	pcap_list_datalinks(pcap_t *, int **);
 int	pcap_set_datalink(pcap_t *, int);
 int	pcap_datalink_name_to_val(const char *);

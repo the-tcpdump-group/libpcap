@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.17 2007-09-19 02:40:35 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.18 2007-09-29 19:33:29 guy Exp $ (LBL)
  */
 
 /*
@@ -740,6 +740,26 @@ struct bpf_version {
  * that includes direction information; requested by Paolo Abeni.
  */
 #define DLT_BLUETOOTH_HCI_H4_WITH_PHDR	201
+
+
+/*
+ * DLT and savefile link type values are split into a class and
+ * a member of that class.  A class value of 0 indicates a regular
+ * DLT_/LINKTYPE_ value.
+ */
+#define DLT_CLASS(x)		((x) & 0x03ff0000)
+
+/*
+ * NetBSD-specific generic "raw" link type.  The class value indicates
+ * that this is the generic raw type, and the lower 16 bits are the
+ * address family we're dealing with.  Those values are NetBSD-specific;
+ * do not assume that they correspond to AF_ values for your operating
+ * system.
+ */
+#define	DLT_CLASS_NETBSD_RAWAF	0x02240000
+#define	DLT_NETBSD_RAWAF(af)	(DLT_CLASS_NETBSD_RAWAF | (af))
+#define	DLT_NETBSD_RAWAF_AF(x)	((x) & 0x0000ffff)
+#define	DLT_IS_NETBSD_RAWAF(x)	(DLT_CLASS(x) == DLT_CLASS_NETBSD_RAWAF)
 
 
 /*

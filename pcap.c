@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.110 2007-09-19 02:40:34 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.111 2007-09-29 19:33:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -219,6 +219,12 @@ int
 pcap_datalink(pcap_t *p)
 {
 	return (p->linktype);
+}
+
+int
+pcap_datalink_ext(pcap_t *p)
+{
+	return (p->linktype_ext);
 }
 
 int

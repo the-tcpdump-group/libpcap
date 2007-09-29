@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.29 2007-06-22 06:32:06 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.30 2007-09-29 19:33:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -644,24 +644,45 @@ dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebu
 	 */
 	handle->md.dag_mem_bottom = 0;
 	handle->md.dag_mem_top = 0;
-	handle->md.dag_fcs_bits = 32;
 
-	/* Query the card first for special cases. */
+	/*
+	 * Find out how many FCS bits we should strip.
+	 * First, query the card to see if it strips the FCS.
+	 */
 	daginf = dag_info(handle->fd);
-	if ((0x4200 == daginf->device_code) || (0x4230 == daginf->device_code))
-	{
+	if ((0x4200 == daginf->device_code) || (0x4230 == daginf->device_code))	{
 		/* DAG 4.2S and 4.23S already strip the FCS.  Stripping the final word again truncates the packet. */
 		handle->md.dag_fcs_bits = 0;
-	}
 
-	/* Then allow an environment variable to override. */
-	if ((s = getenv("ERF_FCS_BITS")) != NULL) {
-		if ((n = atoi(s)) == 0 || n == 16|| n == 32) {
-			handle->md.dag_fcs_bits = n;
-		} else {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				"pcap_open_live %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
-			goto failstop;
+		/* Note that no FCS will be supplied. */
+		handle->linktype_ext = LT_FCS_DATALINK_EXT(0);
+	} else {
+		/*
+		 * Start out assuming it's 32 bits.
+		 */
+		handle->md.dag_fcs_bits = 32;
+
+		/* Allow an environment variable to override. */
+		if ((s = getenv("ERF_FCS_BITS")) != NULL) {
+			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
+				handle->md.dag_fcs_bits = n;
+			} else {
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+					"pcap_open_live %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
+				goto failstop;
+			}
+		}
+
+		/*
+		 * Did the user request that they not be stripped?
+		 */
+		if ((s = getenv("ERF_DONT_STRIP_FCS")) != NULL) {
+			/* Yes.  Note the number of bytes that will be
+			   supplied. */
+			handle->linktype_ext = LT_FCS_DATALINK_EXT(handle->md.dag_fcs_bits/16);
+
+			/* And don't strip them. */
+			handle->md.dag_fcs_bits = 0;
 		}
 	}
 
