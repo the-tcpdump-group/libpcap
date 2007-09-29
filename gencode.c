@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.287 2007-09-19 02:40:34 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.288 2007-09-29 00:48:05 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3747,48 +3747,48 @@ gen_gateway(eaddr, alist, proto, dir)
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-                switch (linktype) {
-                case DLT_EN10MB:
-                    b0 = gen_ehostop(eaddr, Q_OR);
-                    break;
-                case DLT_FDDI:
-                    b0 = gen_fhostop(eaddr, Q_OR);
-                    break;
+		switch (linktype) {
+		case DLT_EN10MB:
+			b0 = gen_ehostop(eaddr, Q_OR);
+			break;
+		case DLT_FDDI:
+			b0 = gen_fhostop(eaddr, Q_OR);
+			break;
 		case DLT_IEEE802:
-                    b0 = gen_thostop(eaddr, Q_OR);
-                    break;
+			b0 = gen_thostop(eaddr, Q_OR);
+			break;
 		case DLT_IEEE802_11:
 		case DLT_IEEE802_11_RADIO_AVS:
 		case DLT_PPI:
 		case DLT_IEEE802_11_RADIO:
 		case DLT_PRISM_HEADER:
-                    b0 = gen_wlanhostop(eaddr, Q_OR);
-                    break;
-                case DLT_SUNATM:
-                    if (is_lane) {
-			/*
-			 * Check that the packet doesn't begin with an
-			 * LE Control marker.  (We've already generated
-			 * a test for LANE.)
-			 */
-			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-			    0xFF00);
-			gen_not(b1);
+			b0 = gen_wlanhostop(eaddr, Q_OR);
+			break;
+		case DLT_SUNATM:
+			if (is_lane) {
+				/*
+				 * Check that the packet doesn't begin with an
+				 * LE Control marker.  (We've already generated
+				 * a test for LANE.)
+				 */
+				b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
+				    BPF_H, 0xFF00);
+				gen_not(b1);
 
-			/*
-			 * Now check the MAC address.
-			 */
-			b0 = gen_ehostop(eaddr, Q_OR);
-			gen_and(b1, b0);
-                    }
-                    break;
+				/*
+				 * Now check the MAC address.
+				 */
+				b0 = gen_ehostop(eaddr, Q_OR);
+				gen_and(b1, b0);
+			}
+			break;
 		case DLT_IP_OVER_FC:
-                    b0 = gen_ipfchostop(eaddr, Q_OR);
-                    break;
-                default:
-                    bpf_error(
+			b0 = gen_ipfchostop(eaddr, Q_OR);
+			break;
+		default:
+			bpf_error(
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/Fibre Channel");
-                }
+		}
 		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR, Q_HOST);
 		while (*alist) {
 			tmp = gen_host(**alist++, 0xffffffff, proto, Q_OR,
@@ -5582,44 +5582,44 @@ gen_ecode(eaddr, q)
 	struct block *b, *tmp;
 
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-            switch (linktype) {
-            case DLT_EN10MB:
-                return gen_ehostop(eaddr, (int)q.dir);
-            case DLT_FDDI:
-                return gen_fhostop(eaddr, (int)q.dir);
-            case DLT_IEEE802:
-                return gen_thostop(eaddr, (int)q.dir);
-			case DLT_IEEE802_11:
-			case DLT_IEEE802_11_RADIO_AVS:
-			case DLT_IEEE802_11_RADIO:
-			case DLT_PRISM_HEADER:
-			case DLT_PPI:
-				return gen_wlanhostop(eaddr, (int)q.dir);
-			case DLT_SUNATM:
-				if (is_lane) {
-					/*
-					 * Check that the packet doesn't begin with an
-					 * LE Control marker.  (We've already generated
-					 * a test for LANE.)
-					 */
-					tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-						0xFF00);
-					gen_not(tmp);
+		switch (linktype) {
+		case DLT_EN10MB:
+			return gen_ehostop(eaddr, (int)q.dir);
+		case DLT_FDDI:
+			return gen_fhostop(eaddr, (int)q.dir);
+		case DLT_IEEE802:
+			return gen_thostop(eaddr, (int)q.dir);
+		case DLT_IEEE802_11:
+		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_IEEE802_11_RADIO:
+		case DLT_PRISM_HEADER:
+		case DLT_PPI:
+			return gen_wlanhostop(eaddr, (int)q.dir);
+		case DLT_SUNATM:
+			if (is_lane) {
+				/*
+				 * Check that the packet doesn't begin with an
+				 * LE Control marker.  (We've already generated
+				 * a test for LANE.)
+				 */
+				tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
+					0xFF00);
+				gen_not(tmp);
 
-					/*
-					 * Now check the MAC address.
-					 */
-					b = gen_ehostop(eaddr, (int)q.dir);
-					gen_and(tmp, b);
-					return b;
-				}
-				break;
-			case DLT_IP_OVER_FC:
-                return gen_ipfchostop(eaddr, (int)q.dir);
-            default:
-				bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
-                break;
-            }
+				/*
+				 * Now check the MAC address.
+				 */
+				b = gen_ehostop(eaddr, (int)q.dir);
+				gen_and(tmp, b);
+				return b;
+			}
+			break;
+		case DLT_IP_OVER_FC:
+			return gen_ipfchostop(eaddr, (int)q.dir);
+		default:
+			bpf_error("ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
+			break;
+		}
 	}
 	bpf_error("ethernet address used in non-ether expression");
 	/* NOTREACHED */
@@ -6166,46 +6166,46 @@ gen_broadcast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-                switch (linktype) {
-                case DLT_ARCNET:
-                case DLT_ARCNET_LINUX:
-                    return gen_ahostop(abroadcast, Q_DST);
-                case DLT_EN10MB:    
-                    return gen_ehostop(ebroadcast, Q_DST);
-                case DLT_FDDI:
-                    return gen_fhostop(ebroadcast, Q_DST);
-                case DLT_IEEE802:
-                    return gen_thostop(ebroadcast, Q_DST);
-                case DLT_IEEE802_11:
-                case DLT_IEEE802_11_RADIO_AVS:
-                case DLT_IEEE802_11_RADIO:
-				case DLT_PPI:
-                case DLT_PRISM_HEADER:
-                    return gen_wlanhostop(ebroadcast, Q_DST);
-                case DLT_IP_OVER_FC:
-                    return gen_ipfchostop(ebroadcast, Q_DST);
-                case DLT_SUNATM:
-                    if (is_lane) {
-			/*
-			 * Check that the packet doesn't begin with an
-			 * LE Control marker.  (We've already generated
-			 * a test for LANE.)
-			 */
-			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-			    0xFF00);
-			gen_not(b1);
+		switch (linktype) {
+		case DLT_ARCNET:
+		case DLT_ARCNET_LINUX:
+			return gen_ahostop(abroadcast, Q_DST);
+		case DLT_EN10MB:
+			return gen_ehostop(ebroadcast, Q_DST);
+		case DLT_FDDI:
+			return gen_fhostop(ebroadcast, Q_DST);
+		case DLT_IEEE802:
+			return gen_thostop(ebroadcast, Q_DST);
+		case DLT_IEEE802_11:
+		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_IEEE802_11_RADIO:
+		case DLT_PPI:
+		case DLT_PRISM_HEADER:
+			return gen_wlanhostop(ebroadcast, Q_DST);
+		case DLT_IP_OVER_FC:
+			return gen_ipfchostop(ebroadcast, Q_DST);
+		case DLT_SUNATM:
+			if (is_lane) {
+				/*
+				 * Check that the packet doesn't begin with an
+				 * LE Control marker.  (We've already generated
+				 * a test for LANE.)
+				 */
+				b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
+				    BPF_H, 0xFF00);
+				gen_not(b1);
 
-			/*
-			 * Now check the MAC address.
-			 */
-			b0 = gen_ehostop(ebroadcast, Q_DST);
-			gen_and(b1, b0);
-			return b0;
-                    }
-                    break;
-                default:
-                    bpf_error("not a broadcast link");
-                }
+				/*
+				 * Now check the MAC address.
+				 */
+				b0 = gen_ehostop(ebroadcast, Q_DST);
+				gen_and(b1, b0);
+				return b0;
+			}
+			break;
+		default:
+			bpf_error("not a broadcast link");
+		}
 		break;
 
 	case Q_IP:
@@ -6253,167 +6253,167 @@ gen_multicast(proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-                switch (linktype) {
-                case DLT_ARCNET:
-                case DLT_ARCNET_LINUX:
-                    /* all ARCnet multicasts use the same address */
-                    return gen_ahostop(abroadcast, Q_DST);
-                case  DLT_EN10MB:
-                    /* ether[0] & 1 != 0 */
-                    return gen_mac_multicast(0);
-                case DLT_FDDI:
-                    /*
-                     * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
-                     *
-                     * XXX - was that referring to bit-order issues?
-                     */
-                    /* fddi[1] & 1 != 0 */
-                    return gen_mac_multicast(1);
-                case DLT_IEEE802:
-                    /* tr[2] & 1 != 0 */
-                    return gen_mac_multicast(2);
-                case DLT_IEEE802_11:
-                case DLT_IEEE802_11_RADIO_AVS:
-				case DLT_PPI:
-                case DLT_IEEE802_11_RADIO:
-                case DLT_PRISM_HEADER:
-                    /*
-                     * Oh, yuk.
-                     *
-                     *	For control frames, there is no DA.
-                     *
-                     *	For management frames, DA is at an
-                     *	offset of 4 from the beginning of
-                     *	the packet.
-                     *
-                     *	For data frames, DA is at an offset
-                     *	of 4 from the beginning of the packet
-                     *	if To DS is clear and at an offset of
-                     *	16 from the beginning of the packet
-                     *	if To DS is set.
-                     */
-                    
-                    /*
-                     * Generate the tests to be done for data frames.
-                     *
-                     * First, check for To DS set, i.e. "link[1] & 0x01".
-                     */
-                    s = gen_load_a(OR_LINK, 1, BPF_B);
-                    b1 = new_block(JMP(BPF_JSET));
-                    b1->s.k = 0x01;	/* To DS */
-                    b1->stmts = s;
-                    
-                    /*
-                     * If To DS is set, the DA is at 16.
-                     */
-                    b0 = gen_mac_multicast(16);
-                    gen_and(b1, b0);
-                    
-                    /*
-                     * Now, check for To DS not set, i.e. check
-                     * "!(link[1] & 0x01)".
-                     */
-                    s = gen_load_a(OR_LINK, 1, BPF_B);
-                    b2 = new_block(JMP(BPF_JSET));
-                    b2->s.k = 0x01;	/* To DS */
-                    b2->stmts = s;
-                    gen_not(b2);
-                    
-                    /*
-                     * If To DS is not set, the DA is at 4.
-                     */
-                    b1 = gen_mac_multicast(4);
-                    gen_and(b2, b1);
-                    
-                    /*
-                     * Now OR together the last two checks.  That gives
-                     * the complete set of checks for data frames.
-                     */
-                    gen_or(b1, b0);
-                    
-                    /*
-                     * Now check for a data frame.
-                     * I.e, check "link[0] & 0x08".
-                     */
-                    s = gen_load_a(OR_LINK, 0, BPF_B);
-                    b1 = new_block(JMP(BPF_JSET));
-                    b1->s.k = 0x08;
-                    b1->stmts = s;
-                    
-                    /*
-                     * AND that with the checks done for data frames.
-                     */
-                    gen_and(b1, b0);
-                    
-                    /*
-                     * If the high-order bit of the type value is 0, this
-                     * is a management frame.
-                     * I.e, check "!(link[0] & 0x08)".
-                     */
-                    s = gen_load_a(OR_LINK, 0, BPF_B);
-                    b2 = new_block(JMP(BPF_JSET));
-                    b2->s.k = 0x08;
-                    b2->stmts = s;
-                    gen_not(b2);
-                    
-                    /*
-                     * For management frames, the DA is at 4.
-                     */
-                    b1 = gen_mac_multicast(4);
-                    gen_and(b2, b1);
-                    
-                    /*
-                     * OR that with the checks done for data frames.
-                     * That gives the checks done for management and
-                     * data frames.
-                     */
-                    gen_or(b1, b0);
-                    
-                    /*
-                     * If the low-order bit of the type value is 1,
-                     * this is either a control frame or a frame
-                     * with a reserved type, and thus not a
-                     * frame with an SA.
-                     *
-                     * I.e., check "!(link[0] & 0x04)".
-                     */
-                    s = gen_load_a(OR_LINK, 0, BPF_B);
-                    b1 = new_block(JMP(BPF_JSET));
-                    b1->s.k = 0x04;
-                    b1->stmts = s;
-                    gen_not(b1);
-                    
-                    /*
-                     * AND that with the checks for data and management
-                     * frames.
-                     */
-                    gen_and(b1, b0);
-                    return b0;
-                case DLT_IP_OVER_FC:
-                    b0 = gen_mac_multicast(2);
-                    return b0;
-                case DLT_SUNATM:
-                    if (is_lane) {
+		switch (linktype) {
+		case DLT_ARCNET:
+		case DLT_ARCNET_LINUX:
+			/* all ARCnet multicasts use the same address */
+			return gen_ahostop(abroadcast, Q_DST);
+		case DLT_EN10MB:
+			/* ether[0] & 1 != 0 */
+			return gen_mac_multicast(0);
+		case DLT_FDDI:
 			/*
-			 * Check that the packet doesn't begin with an
-			 * LE Control marker.  (We've already generated
-			 * a test for LANE.)
+			 * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
+			 *
+			 * XXX - was that referring to bit-order issues?
 			 */
-			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-			    0xFF00);
+			/* fddi[1] & 1 != 0 */
+			return gen_mac_multicast(1);
+		case DLT_IEEE802:
+			/* tr[2] & 1 != 0 */
+			return gen_mac_multicast(2);
+		case DLT_IEEE802_11:
+		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_PPI:
+		case DLT_IEEE802_11_RADIO:
+		case DLT_PRISM_HEADER:
+			/*
+			 * Oh, yuk.
+			 *
+			 *	For control frames, there is no DA.
+			 *
+			 *	For management frames, DA is at an
+			 *	offset of 4 from the beginning of
+			 *	the packet.
+			 *
+			 *	For data frames, DA is at an offset
+			 *	of 4 from the beginning of the packet
+			 *	if To DS is clear and at an offset of
+			 *	16 from the beginning of the packet
+			 *	if To DS is set.
+			 */
+			
+			/*
+			 * Generate the tests to be done for data frames.
+			 *
+			 * First, check for To DS set, i.e. "link[1] & 0x01".
+			 */
+			s = gen_load_a(OR_LINK, 1, BPF_B);
+			b1 = new_block(JMP(BPF_JSET));
+			b1->s.k = 0x01;	/* To DS */
+			b1->stmts = s;
+			
+			/*
+			 * If To DS is set, the DA is at 16.
+			 */
+			b0 = gen_mac_multicast(16);
+			gen_and(b1, b0);
+			
+			/*
+			 * Now, check for To DS not set, i.e. check
+			 * "!(link[1] & 0x01)".
+			 */
+			s = gen_load_a(OR_LINK, 1, BPF_B);
+			b2 = new_block(JMP(BPF_JSET));
+			b2->s.k = 0x01;	/* To DS */
+			b2->stmts = s;
+			gen_not(b2);
+			
+			/*
+			 * If To DS is not set, the DA is at 4.
+			 */
+			b1 = gen_mac_multicast(4);
+			gen_and(b2, b1);
+			
+			/*
+			 * Now OR together the last two checks.  That gives
+			 * the complete set of checks for data frames.
+			 */
+			gen_or(b1, b0);
+			
+			/*
+			 * Now check for a data frame.
+			 * I.e, check "link[0] & 0x08".
+			 */
+			s = gen_load_a(OR_LINK, 0, BPF_B);
+			b1 = new_block(JMP(BPF_JSET));
+			b1->s.k = 0x08;
+			b1->stmts = s;
+			
+			/*
+			 * AND that with the checks done for data frames.
+			 */
+			gen_and(b1, b0);
+			
+			/*
+			 * If the high-order bit of the type value is 0, this
+			 * is a management frame.
+			 * I.e, check "!(link[0] & 0x08)".
+			 */
+			s = gen_load_a(OR_LINK, 0, BPF_B);
+			b2 = new_block(JMP(BPF_JSET));
+			b2->s.k = 0x08;
+			b2->stmts = s;
+			gen_not(b2);
+			
+			/*
+			 * For management frames, the DA is at 4.
+			 */
+			b1 = gen_mac_multicast(4);
+			gen_and(b2, b1);
+			
+			/*
+			 * OR that with the checks done for data frames.
+			 * That gives the checks done for management and
+			 * data frames.
+			 */
+			gen_or(b1, b0);
+			
+			/*
+			 * If the low-order bit of the type value is 1,
+			 * this is either a control frame or a frame
+			 * with a reserved type, and thus not a
+			 * frame with an SA.
+			 *
+			 * I.e., check "!(link[0] & 0x04)".
+			 */
+			s = gen_load_a(OR_LINK, 0, BPF_B);
+			b1 = new_block(JMP(BPF_JSET));
+			b1->s.k = 0x04;
+			b1->stmts = s;
 			gen_not(b1);
-
-			/* ether[off_mac] & 1 != 0 */
-			b0 = gen_mac_multicast(off_mac);
+			
+			/*
+			 * AND that with the checks for data and management
+			 * frames.
+			 */
 			gen_and(b1, b0);
 			return b0;
-                    }
-                    break;
-                default:
-                    break;
-                }
-                /* Link not known to support multicasts */
-                break;
+		case DLT_IP_OVER_FC:
+			b0 = gen_mac_multicast(2);
+			return b0;
+		case DLT_SUNATM:
+			if (is_lane) {
+				/*
+				 * Check that the packet doesn't begin with an
+				 * LE Control marker.  (We've already generated
+				 * a test for LANE.)
+				 */
+				b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
+				    BPF_H, 0xFF00);
+				gen_not(b1);
+
+				/* ether[off_mac] & 1 != 0 */
+				b0 = gen_mac_multicast(off_mac);
+				gen_and(b1, b0);
+				return b0;
+			}
+			break;
+		default:
+			break;
+		}
+		/* Link not known to support multicasts */
+		break;
 
 	case Q_IP:
 		b0 = gen_linktype(ETHERTYPE_IP);
