@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.30 2007-09-29 19:33:29 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31 2007-10-04 23:06:25 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -220,7 +220,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * If non-block is specified it will return immediately. The user
 		 * is then responsible for efficiency.
 		 */
-		p->md.dag_mem_top = dag_advance_stream(p->fd, p->md.dag_stream, &(p->md.dag_mem_bottom));
+		if ( NULL == (p->md.dag_mem_top = dag_advance_stream(p->fd, p->md.dag_stream, &(p->md.dag_mem_bottom))) ) {
+		     return -1;
+		}
 #else
 		/* dag_offset does not support timeouts */
 		p->md.dag_mem_top = dag_offset(p->fd, &(p->md.dag_mem_bottom), flags);
@@ -783,10 +785,13 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 }
 
 /*
- * Simply submit all possible dag names as candidates.
- * pcap_add_if() internally tests each candidate with pcap_open_live(),
- * so any non-existent devices are dropped.
- * For 2.5 try all rx stream names as well.
+ * Previously we just generated a list of all possible names and let
+ * pcap_add_if() attempt to open each one, but with streams this adds up
+ * to 81 possibilities which is inefficient.
+ *
+ * Since we know more about the devices we can prune the tree here.
+ * pcap_add_if() will still retest each device but the total number of
+ * open attempts will still be much less than the naive approach.
  */
 int
 dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf)
@@ -794,30 +799,46 @@ dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf)
 	char name[12];	/* XXX - pick a size */
 	int ret = 0;
 	int c;
+	char dagname[DAGNAME_BUFSIZE];
+	int dagstream;
+	int dagfd;
 
 	/* Try all the DAGs 0-9 */
 	for (c = 0; c < 9; c++) {
 		snprintf(name, 12, "dag%d", c);
-		if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
-			/*
-			 * Failure.
-			 */
-			ret = -1;
-		}
-#ifdef HAVE_DAG_STREAMS_API
+		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
 		{
-			int stream;
-			for(stream=0;stream<16;stream+=2) {
-				snprintf(name,  10, "dag%d:%d", c, stream);
-				if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
-					/*
-					 * Failure.
-					 */
-					ret = -1;
-				}
-			}				
+			return -1;
 		}
+		if ( (dagfd = dag_open(dagname)) >= 0 ) {
+			if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
+				/*
+				 * Failure.
+				 */
+				ret = -1;
+			}
+#ifdef HAVE_DAG_STREAMS_API
+			{
+				int stream, rxstreams, found=0;
+				rxstreams = dag_rx_get_stream_count(dagfd);
+				for(stream=0;stream<16;stream+=2) {
+					if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
+						dag_detach_stream(dagfd, stream);
+
+						snprintf(name,  10, "dag%d:%d", c, stream);
+						if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
+							/*
+							 * Failure.
+							 */
+							ret = -1;
+						}
+					}
+				}				
+			}
 #endif  /* HAVE_DAG_STREAMS_API */
+			dag_close(dagfd);
+		}
+
 	}
 	return (ret);
 }
@@ -906,7 +927,7 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 static int
 dag_get_datalink(pcap_t *p)
 {
-	int index=0;
+	int index=0, dlt_index=0;
 	uint8_t types[255];
 
 	memset(types, 0, 255);
@@ -918,7 +939,16 @@ dag_get_datalink(pcap_t *p)
 
 	p->linktype = 0;
 
-#ifdef HAVE_DAG_GET_ERF_TYPES
+#ifdef HAVE_DAG_GET_STREAM_ERF_TYPES
+	/* Get list of possible ERF types for this card */
+	if (dag_get_stream_erf_types(p->fd, p->md.dag_stream, types, 255) < 0) {
+		snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_stream_erf_types: %s", pcap_strerror(errno));
+		return (-1);		
+	}
+	
+	while (types[index]) {
+
+#elif defined HAVE_DAG_GET_ERF_TYPES
 	/* Get list of possible ERF types for this card */
 	if (dag_get_erf_types(p->fd, types, 255) < 0) {
 		snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_erf_types: %s", pcap_strerror(errno));
@@ -942,9 +972,9 @@ dag_get_datalink(pcap_t *p)
 		case TYPE_DSM_COLOR_HDLC_POS:
 #endif
 			if (p->dlt_list != NULL) {
-				p->dlt_list[index++] = DLT_CHDLC;
-				p->dlt_list[index++] = DLT_PPP_SERIAL;
-				p->dlt_list[index++] = DLT_FRELAY;
+				p->dlt_list[dlt_index++] = DLT_CHDLC;
+				p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
+				p->dlt_list[dlt_index++] = DLT_FRELAY;
 			}
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
@@ -968,8 +998,8 @@ dag_get_datalink(pcap_t *p)
 			 * Ethernet framing).
 			 */
 			if (p->dlt_list != NULL) {
-				p->dlt_list[index++] = DLT_EN10MB;
-				p->dlt_list[index++] = DLT_DOCSIS;
+				p->dlt_list[dlt_index++] = DLT_EN10MB;
+				p->dlt_list[dlt_index++] = DLT_DOCSIS;
 			}
 			if(!p->linktype)
 				p->linktype = DLT_EN10MB;
@@ -986,8 +1016,8 @@ dag_get_datalink(pcap_t *p)
 		case TYPE_MC_AAL5:
 #endif
 			if (p->dlt_list != NULL) {
-				p->dlt_list[index++] = DLT_ATM_RFC1483;
-				p->dlt_list[index++] = DLT_SUNATM;
+				p->dlt_list[dlt_index++] = DLT_ATM_RFC1483;
+				p->dlt_list[dlt_index++] = DLT_SUNATM;
 			}
 			if(!p->linktype)
 				p->linktype = DLT_ATM_RFC1483;
@@ -999,11 +1029,11 @@ dag_get_datalink(pcap_t *p)
 #ifdef TYPE_MC_HDLC
 		case TYPE_MC_HDLC:
 			if (p->dlt_list != NULL) {
-				p->dlt_list[index++] = DLT_CHDLC;
-				p->dlt_list[index++] = DLT_PPP_SERIAL;
-				p->dlt_list[index++] = DLT_FRELAY;
-				p->dlt_list[index++] = DLT_MTP2;
-				p->dlt_list[index++] = DLT_MTP2_WITH_PHDR;
+				p->dlt_list[dlt_index++] = DLT_CHDLC;
+				p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
+				p->dlt_list[dlt_index++] = DLT_FRELAY;
+				p->dlt_list[dlt_index++] = DLT_MTP2;
+				p->dlt_list[dlt_index++] = DLT_MTP2_WITH_PHDR;
 			}
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
@@ -1020,9 +1050,10 @@ dag_get_datalink(pcap_t *p)
 			return (-1);
 
 		} /* switch */
+		index++;
 	}
 
-	p->dlt_count = index;
+	p->dlt_count = dlt_index;
 
 	return p->linktype;
 }
