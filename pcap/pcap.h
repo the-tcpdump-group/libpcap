@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.3 2007-09-29 19:33:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4 2007-10-04 23:03:02 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -128,7 +128,7 @@ struct pcap_file_header {
  */
 #define LT_FCS_LENGTH_PRESENT(x)	((x) & 0x04000000)
 #define LT_FCS_LENGTH(x)		(((x) & 0xF0000000) >> 28)
-#define LT_FCS_DATALINK_EXT(x)		(((x) & 0xF) << 28) | 0x04000000)
+#define LT_FCS_DATALINK_EXT(x)		((((x) & 0xF) << 28) | 0x04000000)
 
 typedef enum {
        PCAP_D_INOUT = 0,
