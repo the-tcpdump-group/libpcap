@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.167 2007-09-29 19:33:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168 2007-10-05 01:40:15 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -565,6 +565,15 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_BLUETOOTH_HCI_H4_WITH_PHDR	201
 
+/*
+ * AX.25 packet with a 1-byte KISS header; see
+ *
+ *	http://www.ax25.net/kiss.htm
+ *
+ * as per Richard Stearn <richard@rns-stearn.demon.co.uk>.
+ */
+#define LINKTYPE_AX25_KISS	202
+
 
 static struct linktype_map {
 	int	dlt;
@@ -830,6 +839,9 @@ static struct linktype_map {
 
 	/* Bluetooth HCI UART transport layer, with pseudo-header */
 	{ DLT_BLUETOOTH_HCI_H4_WITH_PHDR, LINKTYPE_BLUETOOTH_HCI_H4_WITH_PHDR },
+
+	/* AX.25 with KISS header */
+	{ DLT_AX25_KISS,	LINKTYPE_AX25_KISS },
 
 	{ -1,			-1 }
 };

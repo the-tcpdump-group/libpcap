@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.111 2007-09-29 19:33:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112 2007-10-05 01:40:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -409,6 +409,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_IPMB, "IPMB"),
 	DLT_CHOICE(DLT_JUNIPER_ST, "Juniper Secure Tunnel"),
 	DLT_CHOICE(DLT_BLUETOOTH_HCI_H4_WITH_PHDR, "Bluetooth HCI UART transport layer plus pseudo-header"),
+	DLT_CHOICE(DLT_AX25_KISS, "AX.25 with KISS header"),
 	DLT_CHOICE_SENTINEL
 };
 

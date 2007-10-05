@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.128 2006-10-13 17:46:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129 2007-10-05 01:40:14 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1169,7 +1169,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		break;
 
 	case ARPHRD_AX25:
-		handle->linktype = DLT_AX25;
+		handle->linktype = DLT_AX25_KISS;
 		break;
 
 	case ARPHRD_PRONET:

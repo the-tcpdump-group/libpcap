@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.18 2007-09-29 19:33:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19 2007-10-05 01:40:15 guy Exp $ (LBL)
  */
 
 /*
@@ -740,6 +740,15 @@ struct bpf_version {
  * that includes direction information; requested by Paolo Abeni.
  */
 #define DLT_BLUETOOTH_HCI_H4_WITH_PHDR	201
+
+/*
+ * AX.25 packet with a 1-byte KISS header; see
+ *
+ *	http://www.ax25.net/kiss.htm
+ *
+ * as per Richard Stearn <richard@rns-stearn.demon.co.uk>.
+ */
+#define DLT_AX25_KISS		202
 
 
 /*

@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.289 2007-10-05 01:03:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290 2007-10-05 01:40:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1403,6 +1403,16 @@ init_linktype(p)
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
+
+	case DLT_AX25_KISS:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;	/* variable, min 15, max 71 steps of 7 */
+		off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
+		off_nl_nosnap = -1;	/* no 802.2 LLC */
+		off_mac = 1;		/* step over the kiss length byte */
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -2677,6 +2687,9 @@ gen_linktype(proto)
 
 	case DLT_LINUX_LAPD:
 		bpf_error("LAPD link-layer type filtering not implemented");
+
+	case DLT_AX25_KISS:
+		bpf_error("AX.25 link-layer type filtering not implemented");
 	}
 
 	/*
