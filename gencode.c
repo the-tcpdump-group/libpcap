@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.288 2007-09-29 00:48:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.289 2007-10-05 01:03:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -105,8 +105,8 @@ static const char rcsid[] _U_ =
 static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
-#ifdef WIN32
 /* Hack for updating VLAN, MPLS, and PPPoE offsets. */
+#ifdef WIN32
 static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1;
 #else
 static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
@@ -484,7 +484,6 @@ merge(b0, b1)
 	*p = b1;
 }
 
-
 void
 finish_parse(p)
 	struct block *p;
@@ -518,7 +517,6 @@ finish_parse(p)
 	 * require the length of that header, doing more for that
 	 * header length isn't really worth the effort.
 	 */
-
 	insert_load_llprefixlen(root);
 }
 
@@ -1454,7 +1452,6 @@ gen_load_llrel(offset, size)
 	}
 	return s;
 }
-
 
 /*
  * Load a value relative to the beginning of the specified header.
@@ -4827,7 +4824,6 @@ gen_protochain(v, proto, dir)
 #endif
 }
 
-
 /*
  * Generate code that checks whether the packet is a packet for protocol
  * <proto> and whether the type field in that protocol's header has
@@ -6292,7 +6288,7 @@ gen_multicast(proto)
 			 *	16 from the beginning of the packet
 			 *	if To DS is set.
 			 */
-			
+
 			/*
 			 * Generate the tests to be done for data frames.
 			 *
@@ -6302,13 +6298,13 @@ gen_multicast(proto)
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x01;	/* To DS */
 			b1->stmts = s;
-			
+
 			/*
 			 * If To DS is set, the DA is at 16.
 			 */
 			b0 = gen_mac_multicast(16);
 			gen_and(b1, b0);
-			
+
 			/*
 			 * Now, check for To DS not set, i.e. check
 			 * "!(link[1] & 0x01)".
@@ -6318,19 +6314,19 @@ gen_multicast(proto)
 			b2->s.k = 0x01;	/* To DS */
 			b2->stmts = s;
 			gen_not(b2);
-			
+
 			/*
 			 * If To DS is not set, the DA is at 4.
 			 */
 			b1 = gen_mac_multicast(4);
 			gen_and(b2, b1);
-			
+
 			/*
 			 * Now OR together the last two checks.  That gives
 			 * the complete set of checks for data frames.
 			 */
 			gen_or(b1, b0);
-			
+
 			/*
 			 * Now check for a data frame.
 			 * I.e, check "link[0] & 0x08".
@@ -6339,12 +6335,12 @@ gen_multicast(proto)
 			b1 = new_block(JMP(BPF_JSET));
 			b1->s.k = 0x08;
 			b1->stmts = s;
-			
+
 			/*
 			 * AND that with the checks done for data frames.
 			 */
 			gen_and(b1, b0);
-			
+
 			/*
 			 * If the high-order bit of the type value is 0, this
 			 * is a management frame.
@@ -6355,20 +6351,20 @@ gen_multicast(proto)
 			b2->s.k = 0x08;
 			b2->stmts = s;
 			gen_not(b2);
-			
+
 			/*
 			 * For management frames, the DA is at 4.
 			 */
 			b1 = gen_mac_multicast(4);
 			gen_and(b2, b1);
-			
+
 			/*
 			 * OR that with the checks done for data frames.
 			 * That gives the checks done for management and
 			 * data frames.
 			 */
 			gen_or(b1, b0);
-			
+
 			/*
 			 * If the low-order bit of the type value is 1,
 			 * this is either a control frame or a frame
@@ -6382,7 +6378,7 @@ gen_multicast(proto)
 			b1->s.k = 0x04;
 			b1->stmts = s;
 			gen_not(b1);
-			
+
 			/*
 			 * AND that with the checks for data and management
 			 * frames.
