@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112 2007-10-05 01:40:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.113 2007-10-17 18:52:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -757,6 +757,50 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 	return (-1);
 }
 
+#ifdef WIN32
+int
+pcap_setbuff(pcap_t *p, int dim)
+{
+	return p->setbuff_op(p, dim);
+}
+
+static int
+pcap_setbuff_dead(pcap_t *p, int dim)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The kernel buffer size cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+int
+pcap_setmode(pcap_t *p, int mode)
+{
+	return p->setmode_op(p, mode);
+}
+
+static int
+pcap_setmode_dead(pcap_t *p, int mode)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "impossible to set mode on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+int
+pcap_setmintocopy(pcap_t *p, int size)
+{
+	return p->setintocopy_op(p, size);
+}
+
+static int
+pcap_setmintocopy_dead(pcap_t *p, int size)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+#endif
+
 void
 pcap_close_common(pcap_t *p)
 {
@@ -786,6 +830,11 @@ pcap_open_dead(int linktype, int snaplen)
 	p->snapshot = snaplen;
 	p->linktype = linktype;
 	p->stats_op = pcap_stats_dead;
+#ifdef WIN32
+	p->setbuff_op = pcap_setbuff_dead;
+	p->setmode_op = pcap_setmode_dead;
+	p->setmintocopy_op = pcap_setmintocopy_dead;
+#endif
 	p->close_op = pcap_close_dead;
 	return p;
 }

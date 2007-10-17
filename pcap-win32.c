@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34 2007-09-25 20:34:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.35 2007-10-17 18:52:41 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -97,6 +97,43 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 		return -1;
 	}
 
+	return 0;
+}
+
+/* Set the dimension of the kernel-level capture buffer */
+static int
+pcap_setbuff_win32(pcap_t *p, int dim)
+{
+	if(PacketSetBuff(p->adapter,dim)==FALSE)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
+		return -1;
+	}
+	return 0;
+}
+
+/* Set the driver working mode */
+static int
+pcap_setmode_win32(pcap_t *p, int mode)
+{
+	if(PacketSetMode(p->adapter,mode)==FALSE)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: working mode not recognized");
+		return -1;
+	}
+
+	return 0;
+}
+
+/*set the minimum amount of data that will release a read call*/
+static int
+pcap_setmintocopy_win32(pcap_t *p, int size)
+{
+	if(PacketSetMinToCopy(p->adapter, size)==FALSE)
+	{
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: unable to set the requested mintocopy size");
+		return -1;
+	}
 	return 0;
 }
 
@@ -641,6 +678,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->getnonblock_op = pcap_getnonblock_win32;
 	p->setnonblock_op = pcap_setnonblock_win32;
 	p->stats_op = pcap_stats_win32;
+	p->setbuff_op = pcap_setbuff_win32;
+	p->setmode_op = pcap_setmode_win32;
+	p->setmintocopy_op = pcap_setmintocopy_win32;
 	p->close_op = pcap_close_win32;
 
 	return (p);
@@ -745,61 +785,6 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 	}
 	p->nonblock = (newtimeout == -1);
 	return (0);
-}
-
-/* Set the driver working mode */
-int 
-pcap_setmode(pcap_t *p, int mode){
-	
-	if (p->adapter==NULL)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "impossible to set mode while reading from a file");
-		return -1;
-	}
-
-	if(PacketSetMode(p->adapter,mode)==FALSE)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: working mode not recognized");
-		return -1;
-	}
-
-	return 0;
-}
-
-/* Set the dimension of the kernel-level capture buffer */
-int 
-pcap_setbuff(pcap_t *p, int dim)
-{
-	if (p->adapter==NULL)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "The kernel buffer size cannot be set while reading from a file");
-		return -1;
-	}
-	
-	if(PacketSetBuff(p->adapter,dim)==FALSE)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
-		return -1;
-	}
-	return 0;
-}
-
-/*set the minimum amount of data that will release a read call*/
-int 
-pcap_setmintocopy(pcap_t *p, int size)
-{
-	if (p->adapter==NULL)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Impossible to set the mintocopy parameter on an offline capture");
-		return -1;
-	}	
-
-	if(PacketSetMinToCopy(p->adapter, size)==FALSE)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: unable to set the requested mintocopy size");
-		return -1;
-	}
-	return 0;
 }
 
 /*platform-dependent routine to add devices other than NDIS interfaces*/

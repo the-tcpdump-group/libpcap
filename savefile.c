@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168 2007-10-05 01:40:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.169 2007-10-17 18:52:41 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -953,6 +953,32 @@ sf_stats(pcap_t *p, struct pcap_stat *ps)
 	return (-1);
 }
 
+#ifdef WIN32
+static int
+sf_setbuff(pcap_t *p, int dim)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The kernel buffer size cannot be set while reading from a file");
+	return (-1);
+}
+
+static int
+sf_setmode(pcap_t *p, int mode)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "impossible to set mode while reading from a file");
+	return (-1);
+}
+
+static int
+sf_setmintocopy(pcap_t *p, int size)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The mintocopy parameter cannot be set while reading from a file");
+	return (-1);
+}
+#endif
+
 static int
 sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 {
@@ -1202,6 +1228,11 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->getnonblock_op = sf_getnonblock;
 	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
+#ifdef WIN32
+	p->setbuff_op = sf_setbuff;
+	p->setmode_op = sf_setmode;
+	p->setmintocopy_op = sf_setmintocopy;
+#endif
 	p->close_op = sf_close;
 
 	return (p);

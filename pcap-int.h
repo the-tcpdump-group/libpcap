@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85 2007-09-29 19:33:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.86 2007-10-17 18:52:41 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -212,6 +212,21 @@ struct pcap {
 	int	(*getnonblock_op)(pcap_t *, char *);
 	int	(*setnonblock_op)(pcap_t *, int, char *);
 	int	(*stats_op)(pcap_t *, struct pcap_stat *);
+#ifdef WIN32
+	/*
+	 * Win32-only; given the way the buffer size is set with BPF,
+	 * to make this cross-platform we'll have to set the buffer
+	 * size at open time.
+	 */
+	int	(*setbuff_op)(pcap_t *, int);
+
+	/*
+	 * These are, at least currently, specific to the Win32 NPF
+	 * driver.
+	 */
+	int	(*setmode_op)(pcap_t *, int);
+	int	(*setmintocopy_op)(pcap_t *, int);
+#endif
 	void	(*close_op)(pcap_t *);
 
 	/*
