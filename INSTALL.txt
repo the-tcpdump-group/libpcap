@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.21 2007-09-22 02:10:17 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.22 2007-10-20 01:15:14 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -309,6 +309,7 @@ README.hpux	- notes on using libpcap on HP-UX
 README.linux	- notes on using libpcap on Linux
 README.macosx	- notes on using libpcap on Mac OS X
 README.septel   - notes on using libpcap to capture on Intel/Septel devices
+README.sita	- notes on using libpcap to capture on SITA devices
 README.tru64	- notes on using libpcap on Digital/Tru64 UNIX
 README.Win32	- notes on using libpcap on Win32 systems (with WinPcap)
 SUNOS4		- pre-SunOS 4.1 replacement kernel nit modules
@@ -332,6 +333,7 @@ fad-getad.c	- pcap_findalldevs() for systems with getifaddrs()
 fad-gifc.c	- pcap_findalldevs() for systems with only SIOCGIFLIST
 fad-glifc.c	- pcap_findalldevs() for systems with SIOCGLIFCONF
 fad-null.c	- pcap_findalldevs() for systems without capture support
+fad-sita.c	- pcap_findalldevs() for systems with SITA support
 fad-win32.c	- pcap_findalldevs() for WinPcap
 filtertest.c	- test program for BPF compiler
 findalldevstest.c - test program for pcap_findalldevs()
@@ -377,6 +379,9 @@ pcap-pf.c	- Ultrix and Digital/Tru64 UNIX Packet Filter support
 pcap-pf.h	- Ultrix and Digital/Tru64 UNIX Packet Filter definitions
 pcap-septel.c   - Intel/Septel device capture support
 pcap-septel.h   - Intel/Septel device capture support
+pcap-sita.c	- SITA device capture support
+pcap-sita.h	- SITA device capture support
+pcap-sita.html	- SITA device capture documentation
 pcap-stdinc.h	- includes and #defines for compiling on Win32 systems
 pcap-snit.c	- SunOS 4.x STREAMS-based Network Interface Tap support
 pcap-snoop.c	- IRIX Snoop network monitoring support

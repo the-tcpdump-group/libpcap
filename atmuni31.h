@@ -29,13 +29,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/atmuni31.h,v 1.1 2002-07-11 09:06:32 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/atmuni31.h,v 1.2 2007-10-20 01:15:14 guy Exp $ (LBL)
  */
 
 /* Based on UNI3.1 standard by ATM Forum */
 
 /* ATM traffic types based on VPI=0 and (the following VCI */
-#define PPC			0x05	/* Point-to-point signal msg */
+#define ATM_PPC			0x05	/* Point-to-point signal msg */
 #define BCC			0x02	/* Broadcast signal msg */
 #define OAMF4SC			0x03	/* Segment OAM F4 flow cell */
 #define OAMF4EC			0x04	/* End-to-end OAM F4 flow cell */

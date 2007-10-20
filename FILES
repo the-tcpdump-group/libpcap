@@ -13,6 +13,7 @@ README.hpux
 README.linux
 README.macosx
 README.septel
+README.sita
 README.tru64
 README.Win32
 SUNOS4/nit_if.o.sparc
@@ -38,6 +39,7 @@ fad-getad.c
 fad-gifc.c
 fad-glifc.c
 fad-null.c
+fad-sita.c
 fad-win32.c
 filtertest.c
 findalldevstest.c
@@ -101,6 +103,9 @@ pcap-pf.c
 pcap-pf.h
 pcap-septel.c
 pcap-septel.h
+pcap-sita.h
+pcap-sita.c
+pcap-sita.html
 pcap-stdinc.h
 pcap-snit.c
 pcap-snoop.c
