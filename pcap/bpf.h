@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19 2007-10-05 01:40:15 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.20 2007-10-21 08:39:27 guy Exp $ (LBL)
  */
 
 /*
@@ -749,6 +749,13 @@ struct bpf_version {
  * as per Richard Stearn <richard@rns-stearn.demon.co.uk>.
  */
 #define DLT_AX25_KISS		202
+
+/*
+ * LAPD packets from an ISDN channel, starting with the address field,
+ * with no pseudo-header.
+ * Requested by Varuna De Silva <varunax@gmail.com>.
+ */
+#define DLT_LAPD		203
 
 
 /*

@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.169 2007-10-17 18:52:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.170 2007-10-21 08:39:27 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -574,6 +574,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_AX25_KISS	202
 
+/*
+ * LAPD packets from an ISDN channel, starting with the address field,
+ * with no pseudo-header.
+ * Requested by Varuna De Silva <varunax@gmail.com>.
+ */
+#define LINKTYPE_LAPD		203
+
 
 static struct linktype_map {
 	int	dlt;
@@ -842,6 +849,9 @@ static struct linktype_map {
 
 	/* AX.25 with KISS header */
 	{ DLT_AX25_KISS,	LINKTYPE_AX25_KISS },
+
+	/* Raw LAPD, with no pseudo-header */
+	{ DLT_LAPD,		LINKTYPE_LAPD },
 
 	{ -1,			-1 }
 };
