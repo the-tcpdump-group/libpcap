@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.53 2007-09-12 19:17:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.221.2.54 2007-10-26 00:47:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -134,6 +134,7 @@ bpf_error(const char *fmt, ...)
 
 static void init_linktype(pcap_t *);
 
+static void init_regs(void);
 static int alloc_reg(void);
 static void free_reg(int);
 
@@ -369,6 +370,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	n_errors = 0;
 	root = NULL;
 	bpf_pcap = p;
+	init_regs();
 	if (setjmp(top_ctx)) {
 		lex_cleanup();
 		freechunks();
@@ -5939,6 +5941,16 @@ gen_arth(code, a0, a1)
  */
 static int regused[BPF_MEMWORDS];
 static int curreg;
+
+/*
+ * Initialize the table of used registers and the current register.
+ */
+static void
+init_regs()
+{
+	curreg = 0;
+	memset(regused, 0, sizeof regused);
+}
 
 /*
  * Return the next free register.
