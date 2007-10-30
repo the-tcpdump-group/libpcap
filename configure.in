@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.1 2007-10-20 01:18:50 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.2 2007-10-30 10:18:37 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.1 $)
+AC_REVISION($Revision: 1.138.2.2 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -505,11 +505,11 @@ if test $ac_cv_lbl_dag_api = yes; then
 		dagapi_obj=$dag_lib_dir/dagapi.o
 	elif test -r $dag_lib_dir/libdag.a; then
 		# 2.5.x.
-		ar x $dag_lib_dir/libdag.a dagapi.o
+		ar x $dag_lib_dir/libdag.a dagapi.o 2>/dev/null
 		if test -r ./dagapi.o; then
 		    dagapi_obj=./dagapi.o
 		else
-		    ar x $dag_lib_dir/libdag.a libdag_la-dagapi.o
+		    ar x $dag_lib_dir/libdag.a libdag_la-dagapi.o 2>/dev/null
 		    if test -r ./libdag_la-dagapi.o; then
 		       dagapi_obj=./libdag_la-dagapi.o
 		    fi		
@@ -536,11 +536,11 @@ if test $ac_cv_lbl_dag_api = yes; then
 		dagopts_obj=$dag_lib_dir/dagopts.o
 	elif test -r $dag_lib_dir/libdag.a; then
 		# 2.5.x.
-		ar x $dag_lib_dir/libdag.a dagopts.o
+		ar x $dag_lib_dir/libdag.a dagopts.o 2>/dev/null
 		if test -r ./dagopts.o; then
 		    dagopts_obj=./dagopts.o
 		else
-		    ar x $dag_lib_dir/libdag.a libdag_la-dagopts.o
+		    ar x $dag_lib_dir/libdag.a libdag_la-dagopts.o 2>/dev/null
 		    if test -r ./libdag_la-dagopts.o; then
 		       dagopts_obj=./libdag_la-dagopts.o
 		    fi
@@ -565,11 +565,11 @@ if test $ac_cv_lbl_dag_api = yes; then
 			dagreg_obj=$dag_lib_dir/dagreg.o
 		elif test -r $dag_lib_dir/libdag.a; then
 			# Extract from libdag.a.
-			ar x $dag_lib_dir/libdag.a dagreg.o
+			ar x $dag_lib_dir/libdag.a dagreg.o 2>/dev/null
 			if test -r ./dagreg.o; then
 				dagreg_obj=./dagreg.o
 			else
-				ar x $dag_lib_dir/libdag.a libdag_la-dagreg.o
+				ar x $dag_lib_dir/libdag.a libdag_la-dagreg.o 2>/dev/null
 				if test -r ./libdag_la-dagreg.o; then
 				   dagreg_obj=./libdag_la-dagreg.o
 				fi
@@ -597,28 +597,25 @@ if test $ac_cv_lbl_dag_api = yes; then
 	# included if there's a found-action (arg 3).
 	saved_ldflags=$LDFLAGS
 	LDFLAGS="-L$dag_lib_dir"
-	AC_CHECK_LIB([dag], [dag_attach_stream], [dag_version="2.5.x"], [dag_version="2.4.x"])
+	AC_CHECK_LIB([dag], [dag_attach_stream], [dag_streams="1"], [dag_streams="0"])
 	AC_CHECK_LIB([dag],[dag_get_erf_types], [
 		AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])])
 	AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
 		AC_DEFINE(HAVE_DAG_GET_STREAM_ERF_TYPES, 1, [define if you have dag_get_stream_erf_types()])])
 	LDFLAGS=$saved_ldflags
 
-	if test "$dag_version" = 2.5.x; then
+	if test "$dag_streams" = 1; then
 		AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
 		DAGLIBS="-ldag"
 	fi
 
-	# See if we can find a specific version string.
-	AC_MSG_CHECKING([the DAG API version])
-	if test -r "$dag_root/VERSION"; then
-		dag_version="`cat $dag_root/VERSION`"
-	fi
-	AC_MSG_RESULT([$dag_version])
 	AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
 fi
 
+AC_MSG_CHECKING(whether we have the DAG API)
+
 if test $ac_cv_lbl_dag_api = no; then
+	AC_MSG_RESULT(no)
 	if test "$want_dag" = yes; then
         	# User wanted DAG support but we couldn't find it.
 		AC_MSG_ERROR([DAG API requested, but not found at $dag_root: use --without-dag])
@@ -629,6 +626,8 @@ if test $ac_cv_lbl_dag_api = no; then
 		# found.
 		AC_MSG_ERROR([Specifying the capture type as "dag" requires the DAG API to be present; use the --with-dag options to specify the location. (Try "./configure --help" for more information.)])
 	fi
+else
+	AC_MSG_RESULT(yes)
 fi
 
 AC_ARG_WITH(septel, [  --with-septel[[=DIR]]     include Septel support (located in directory DIR, if supplied).  [default=yes, on Linux, if present]],
