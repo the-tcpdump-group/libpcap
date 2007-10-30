@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31 2007-10-04 23:06:25 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.32 2007-10-30 10:16:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -246,18 +246,18 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	
 	/* Process the packets. */
 	while (p->md.dag_mem_top - p->md.dag_mem_bottom >= dag_record_size) {
-
+		
 		unsigned short packet_len = 0;
 		int caplen = 0;
 		struct pcap_pkthdr	pcap_header;
-
+		
 #ifdef HAVE_DAG_STREAMS_API
 		dag_record_t *header = (dag_record_t *)(p->md.dag_mem_bottom);
 #else
 		dag_record_t *header = (dag_record_t *)(p->md.dag_mem_base + p->md.dag_mem_bottom);
 #endif /* HAVE_DAG_STREAMS_API */
 
-		u_char *dp = ((u_char *)header) + dag_record_size;
+		u_char *dp = ((u_char *)header); /* + dag_record_size; */
 		unsigned short rlen;
  
 		/*
@@ -281,117 +281,156 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 		p->md.dag_mem_bottom += rlen;
 
-		switch(header->type) {
-		case TYPE_ATM:
-#ifdef TYPE_AAL5
-		case TYPE_AAL5:
-			if (header->type == TYPE_AAL5) {
-				packet_len = ntohs(header->wlen);
-				caplen = rlen - dag_record_size;
+		/* ERF encapsulation */
+		/* The Extensible Record Format is not dropped for this kind of encapsulation, 
+		 * and will be handled as a pseudo header by the decoding application.
+		 * The information carried in the ERF header and in the optional subheader (if present)
+		 * could be merged with the libpcap information, to offer a better decoding.
+		 * The packet length is
+		 * o the length of the packet on the link (header->wlen),
+		 * o plus the length of the ERF header (dag_record_size), as the length of the 
+		 *   pseudo header will be adjusted during the decoding,
+		 * o plus the length of the optional subheader (if present).
+		 *
+		 * The capture length is header.rlen and the byte stuffing for alignment will be dropped
+		 * if the capture length is greater than the packet length.
+		 */
+		if (p->linktype == DLT_ERF) {
+			packet_len = ntohs(header->wlen) + dag_record_size;
+			caplen = rlen;
+			switch (header->type) {
+			case TYPE_MC_AAL5:
+			case TYPE_MC_ATM:
+			case TYPE_MC_HDLC:
+				packet_len += 4; /* MC header */
+				break;
+
+			case TYPE_DSM_COLOR_ETH:
+			case TYPE_COLOR_ETH:
+			case TYPE_ETH:
+				packet_len += 2; /* ETH header */
+				break;
+			} /* switch type */
+
+			if (caplen > packet_len) {
+				caplen = packet_len;
 			}
+		} else {
+			/* Other kind of encapsulation according to the header Type */
+			dp += dag_record_size;
+			
+			switch(header->type) {
+			case TYPE_ATM:
+#ifdef TYPE_AAL5
+			case TYPE_AAL5:
+				if (header->type == TYPE_AAL5) {
+					packet_len = ntohs(header->wlen);
+					caplen = rlen - dag_record_size;
+				}
 #endif
 #ifdef TYPE_MC_ATM
-		case TYPE_MC_ATM:
-			if (header->type == TYPE_MC_ATM) {
-				caplen = packet_len = ATM_CELL_SIZE;
-				dp+=4;
-			}
+			case TYPE_MC_ATM:
+				if (header->type == TYPE_MC_ATM) {
+					caplen = packet_len = ATM_CELL_SIZE;
+					dp+=4;
+				}
 #endif
 #ifdef TYPE_MC_AAL5
-		case TYPE_MC_AAL5:
-			if (header->type == TYPE_MC_AAL5) {
-				packet_len = ntohs(header->wlen);
-				caplen = rlen - dag_record_size - 4;
-				dp+=4;
-			}
+			case TYPE_MC_AAL5:
+				if (header->type == TYPE_MC_AAL5) {
+					packet_len = ntohs(header->wlen);
+					caplen = rlen - dag_record_size - 4;
+					dp+=4;
+				}
 #endif
-			if (header->type == TYPE_ATM) {
-				caplen = packet_len = ATM_CELL_SIZE;
-			}
-			if (p->linktype == DLT_SUNATM) {
-				struct sunatm_hdr *sunatm = (struct sunatm_hdr *)dp;
-				unsigned long rawatm;
+				if (header->type == TYPE_ATM) {
+					caplen = packet_len = ATM_CELL_SIZE;
+				}
+				if (p->linktype == DLT_SUNATM) {
+					struct sunatm_hdr *sunatm = (struct sunatm_hdr *)dp;
+					unsigned long rawatm;
 					
-				rawatm = ntohl(*((unsigned long *)dp));
-				sunatm->vci = htons((rawatm >>  4) & 0xffff);
-				sunatm->vpi = (rawatm >> 20) & 0x00ff;
-				sunatm->flags = ((header->flags.iface & 1) ? 0x80 : 0x00) | 
-					((sunatm->vpi == 0 && sunatm->vci == htons(5)) ? 6 :
-					 ((sunatm->vpi == 0 && sunatm->vci == htons(16)) ? 5 : 
-					  ((dp[ATM_HDR_SIZE] == 0xaa &&
-					    dp[ATM_HDR_SIZE+1] == 0xaa &&
-					    dp[ATM_HDR_SIZE+2] == 0x03) ? 2 : 1)));
+					rawatm = ntohl(*((unsigned long *)dp));
+					sunatm->vci = htons((rawatm >>  4) & 0xffff);
+					sunatm->vpi = (rawatm >> 20) & 0x00ff;
+					sunatm->flags = ((header->flags.iface & 1) ? 0x80 : 0x00) | 
+						((sunatm->vpi == 0 && sunatm->vci == htons(5)) ? 6 :
+						 ((sunatm->vpi == 0 && sunatm->vci == htons(16)) ? 5 : 
+						  ((dp[ATM_HDR_SIZE] == 0xaa &&
+						    dp[ATM_HDR_SIZE+1] == 0xaa &&
+						    dp[ATM_HDR_SIZE+2] == 0x03) ? 2 : 1)));
 
-			} else {
-				packet_len -= ATM_HDR_SIZE;
-				caplen -= ATM_HDR_SIZE;
-				dp += ATM_HDR_SIZE;
-			}
-			break;
+				} else {
+					packet_len -= ATM_HDR_SIZE;
+					caplen -= ATM_HDR_SIZE;
+					dp += ATM_HDR_SIZE;
+				}
+				break;
 
 #ifdef TYPE_DSM_COLOR_ETH
-		case TYPE_DSM_COLOR_ETH:
+			case TYPE_DSM_COLOR_ETH:
 #endif
 #ifdef TYPE_COLOR_ETH
-		case TYPE_COLOR_ETH:
+			case TYPE_COLOR_ETH:
 #endif
-		case TYPE_ETH:
-			packet_len = ntohs(header->wlen);
-			packet_len -= (p->md.dag_fcs_bits >> 3);
-			caplen = rlen - dag_record_size - 2;
-			if (caplen > packet_len) {
-				caplen = packet_len;
-			}
-			dp += 2;
-			break;
+			case TYPE_ETH:
+				packet_len = ntohs(header->wlen);
+				packet_len -= (p->md.dag_fcs_bits >> 3);
+				caplen = rlen - dag_record_size - 2;
+				if (caplen > packet_len) {
+					caplen = packet_len;
+				}
+				dp += 2;
+				break;
 #ifdef TYPE_DSM_COLOR_HDLC_POS
-		case TYPE_DSM_COLOR_HDLC_POS:
+			case TYPE_DSM_COLOR_HDLC_POS:
 #endif
 #ifdef TYPE_COLOR_HDLC_POS
-		case TYPE_COLOR_HDLC_POS:
+			case TYPE_COLOR_HDLC_POS:
 #endif
-		case TYPE_HDLC_POS:
-			packet_len = ntohs(header->wlen);
-			packet_len -= (p->md.dag_fcs_bits >> 3);
-			caplen = rlen - dag_record_size;
-			if (caplen > packet_len) {
-				caplen = packet_len;
-			}
-			break;
+			case TYPE_HDLC_POS:
+				packet_len = ntohs(header->wlen);
+				packet_len -= (p->md.dag_fcs_bits >> 3);
+				caplen = rlen - dag_record_size;
+				if (caplen > packet_len) {
+					caplen = packet_len;
+				}
+				break;
 #ifdef TYPE_COLOR_MC_HDLC_POS
-		case TYPE_COLOR_MC_HDLC_POS:
+			case TYPE_COLOR_MC_HDLC_POS:
 #endif
 #ifdef TYPE_MC_HDLC
-		case TYPE_MC_HDLC:
-			packet_len = ntohs(header->wlen);
-			packet_len -= (p->md.dag_fcs_bits >> 3);
-			caplen = rlen - dag_record_size - 4;
-			if (caplen > packet_len) {
-				caplen = packet_len;
-			}
-			/* jump the MC_HDLC_HEADER */
-			dp += 4;
-			if (p->linktype == DLT_MTP2_WITH_PHDR) {
-				/* Add the MTP2 Pseudo Header */
-				caplen += MTP2_HDR_LEN;
-				packet_len += MTP2_HDR_LEN;
+			case TYPE_MC_HDLC:
+				packet_len = ntohs(header->wlen);
+				packet_len -= (p->md.dag_fcs_bits >> 3);
+				caplen = rlen - dag_record_size - 4;
+				if (caplen > packet_len) {
+					caplen = packet_len;
+				}
+				/* jump the MC_HDLC_HEADER */
+				dp += 4;
+				if (p->linktype == DLT_MTP2_WITH_PHDR) {
+					/* Add the MTP2 Pseudo Header */
+					caplen += MTP2_HDR_LEN;
+					packet_len += MTP2_HDR_LEN;
 
-				TempPkt[MTP2_SENT_OFFSET] = 0;
-				TempPkt[MTP2_ANNEX_A_USED_OFFSET] = MTP2_ANNEX_A_USED_UNKNOWN;
-				*(TempPkt+MTP2_LINK_NUMBER_OFFSET) = ((header->rec.mc_hdlc.mc_header>>16)&0x01);
-				*(TempPkt+MTP2_LINK_NUMBER_OFFSET+1) = ((header->rec.mc_hdlc.mc_header>>24)&0xff);
-				memcpy(TempPkt+MTP2_HDR_LEN, dp, caplen);
-				dp = TempPkt;
-			}
-			break;
+					TempPkt[MTP2_SENT_OFFSET] = 0;
+					TempPkt[MTP2_ANNEX_A_USED_OFFSET] = MTP2_ANNEX_A_USED_UNKNOWN;
+					*(TempPkt+MTP2_LINK_NUMBER_OFFSET) = ((header->rec.mc_hdlc.mc_header>>16)&0x01);
+					*(TempPkt+MTP2_LINK_NUMBER_OFFSET+1) = ((header->rec.mc_hdlc.mc_header>>24)&0xff);
+					memcpy(TempPkt+MTP2_HDR_LEN, dp, caplen);
+					dp = TempPkt;
+				}
+				break;
 #endif
-		default:
-			/* Unhandled ERF type.
-			 * Ignore rather than generating error
-			 */
-			continue;
-		}
- 
+			default:
+				/* Unhandled ERF type.
+				 * Ignore rather than generating error
+				 */
+				continue;
+			} /* switch type */
+		} /* ERF encapsulation */
+		
 		if (caplen > p->snapshot)
 			caplen = p->snapshot;
 
@@ -431,10 +470,10 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 			}
 		}
-
+		
 		/* Run the packet filter if there is one. */
 		if ((p->fcode.bf_insns == NULL) || bpf_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
-
+			
 			/* convert between timestamp formats */
 			register unsigned long long ts;
 				
@@ -1034,6 +1073,7 @@ dag_get_datalink(pcap_t *p)
 				p->dlt_list[dlt_index++] = DLT_FRELAY;
 				p->dlt_list[dlt_index++] = DLT_MTP2;
 				p->dlt_list[dlt_index++] = DLT_MTP2_WITH_PHDR;
+				p->dlt_list[dlt_index++] = DLT_LAPD;
 			}
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
@@ -1052,6 +1092,8 @@ dag_get_datalink(pcap_t *p)
 		} /* switch */
 		index++;
 	}
+
+	p->dlt_list[dlt_index++] = DLT_ERF;
 
 	p->dlt_count = dlt_index;
 

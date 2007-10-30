@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.291 2007-10-26 00:44:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.292 2007-10-30 10:16:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1285,6 +1285,17 @@ init_linktype(p)
 		off_opc = 8;
 		off_dpc = 8;
 		off_sls = 11;
+		off_linktype = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_ERF:
+		off_li = 22;
+		off_sio = 23;
+		off_opc = 24;
+		off_dpc = 24;
+		off_sls = 27;
 		off_linktype = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
@@ -7183,6 +7194,7 @@ gen_mtp2type_abbrev(type)
 
 	case M_FISU:
 		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_ERF) &&
 		     (linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error("'fisu' supported only on MTP2");
 		/* gen_ncmp(offrel, offset, size, mask, jtype, reverse, value) */
@@ -7191,6 +7203,7 @@ gen_mtp2type_abbrev(type)
 
 	case M_LSSU:
 		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_ERF) &&
 		     (linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error("'lssu' supported only on MTP2");
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 1, 2);
@@ -7200,6 +7213,7 @@ gen_mtp2type_abbrev(type)
 
 	case M_MSU:
 		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_ERF) &&
 		     (linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error("'msu' supported only on MTP2");
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 2);
