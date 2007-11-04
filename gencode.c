@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.292 2007-10-30 10:16:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.293 2007-11-04 22:15:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1764,9 +1764,11 @@ gen_ether_linktype(proto)
 		 * type of ETHERTYPE_AARP (Appletalk ARP).
 		 */
 		if (proto == ETHERTYPE_ATALK)
-			b1 = gen_snap(0x080007, ETHERTYPE_ATALK, 14);
+			b1 = gen_snap(0x080007, ETHERTYPE_ATALK,
+			    off_linktype + 2);
 		else	/* proto == ETHERTYPE_AARP */
-			b1 = gen_snap(0x000000, ETHERTYPE_AARP, 14);
+			b1 = gen_snap(0x000000, ETHERTYPE_AARP,
+			    off_linktype + 2);
 		gen_and(b0, b1);
 
 		/*
