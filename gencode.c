@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.293 2007-11-04 22:15:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.294 2007-11-04 22:29:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1709,7 +1709,7 @@ gen_ether_linktype(proto)
 		 * Now we add code to check for SNAP frames with
 		 * ETHERTYPE_IPX, i.e. Ethernet_SNAP.
 		 */
-		b0 = gen_snap(0x000000, ETHERTYPE_IPX, 14);
+		b0 = gen_snap(0x000000, ETHERTYPE_IPX, off_linktype + 2);
 		gen_or(b0, b1);
 
 		/*
