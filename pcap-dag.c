@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.32 2007-10-30 10:16:45 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.33 2007-11-05 21:45:07 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -45,6 +45,8 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "dagnew.h"
 #include "dagapi.h"
+
+#include "pcap-dag.h"
 
 #define ATM_CELL_SIZE		52
 #define ATM_HDR_SIZE		4
@@ -83,7 +85,6 @@ static const unsigned short endian_test_word = 0x0100;
 
 #ifdef DAG_ONLY
 /* This code is required when compiling for a DAG device only. */
-#include "pcap-dag.h"
 
 /* Replace dag function names with pcap equivalent. */
 #define dag_open_live pcap_open_live
@@ -180,6 +181,38 @@ new_pcap_dag(pcap_t *p)
 	return 0;
 }
 
+static unsigned int
+dag_erf_ext_header_count(uint8_t * erf, size_t len)
+{
+	uint32_t hdr_num = 0;
+	uint8_t  hdr_type;
+
+	/* basic sanity checks */
+	if ( erf == NULL )
+		return 0;
+	if ( len < 16 )
+		return 0;
+
+	/* check if we have any extension headers */
+	if ( (erf[8] & 0x80) == 0x00 )
+		return 0;
+
+	/* loop over the extension headers */
+	do {
+	
+		/* sanity check we have enough bytes */
+		if ( len <= (24 + (hdr_num * 8)) )
+			return hdr_num;
+
+		/* get the header type */
+		hdr_type = erf[(16 + (hdr_num * 8))];
+		hdr_num++;
+
+	} while ( hdr_type & 0x80 );
+
+	return hdr_num;
+}
+
 /*
  *  Read at most max_packets from the capture stream and call the callback
  *  for each of them. Returns the number of packets handled, -1 if an
@@ -191,6 +224,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	unsigned int processed = 0;
 	int flags = p->md.dag_offset_flags;
 	unsigned int nonblocking = flags & DAGF_NONBLOCK;
+	unsigned int num_ext_hdr = 0;
 
 	/* Get the next bufferful of packets (if necessary). */
 	while (p->md.dag_mem_top - p->md.dag_mem_bottom < dag_record_size) {
@@ -281,6 +315,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 		p->md.dag_mem_bottom += rlen;
 
+		num_ext_hdr = dag_erf_ext_header_count(dp, rlen);
+
 		/* ERF encapsulation */
 		/* The Extensible Record Format is not dropped for this kind of encapsulation, 
 		 * and will be handled as a pseudo header by the decoding application.
@@ -298,13 +334,14 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (p->linktype == DLT_ERF) {
 			packet_len = ntohs(header->wlen) + dag_record_size;
 			caplen = rlen;
-			switch (header->type) {
+			switch ((header->type & 0x7f)) {
 			case TYPE_MC_AAL5:
 			case TYPE_MC_ATM:
 			case TYPE_MC_HDLC:
 				packet_len += 4; /* MC header */
 				break;
 
+			case TYPE_COLOR_HASH_ETH:
 			case TYPE_DSM_COLOR_ETH:
 			case TYPE_COLOR_ETH:
 			case TYPE_ETH:
@@ -312,37 +349,38 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				break;
 			} /* switch type */
 
+			/* Include ERF extension headers */
+			packet_len += (8 * num_ext_hdr);
+
 			if (caplen > packet_len) {
 				caplen = packet_len;
 			}
 		} else {
 			/* Other kind of encapsulation according to the header Type */
+
+			/* Skip over generic ERF header */
 			dp += dag_record_size;
+			/* Skip over extension headers */
+			dp += 8 * num_ext_hdr;
 			
-			switch(header->type) {
+			switch((header->type & 0x7f)) {
 			case TYPE_ATM:
-#ifdef TYPE_AAL5
 			case TYPE_AAL5:
 				if (header->type == TYPE_AAL5) {
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size;
 				}
-#endif
-#ifdef TYPE_MC_ATM
 			case TYPE_MC_ATM:
 				if (header->type == TYPE_MC_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 					dp+=4;
 				}
-#endif
-#ifdef TYPE_MC_AAL5
 			case TYPE_MC_AAL5:
 				if (header->type == TYPE_MC_AAL5) {
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size - 4;
 					dp+=4;
 				}
-#endif
 				if (header->type == TYPE_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 				}
@@ -367,12 +405,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 				break;
 
-#ifdef TYPE_DSM_COLOR_ETH
+			case TYPE_COLOR_HASH_ETH:
 			case TYPE_DSM_COLOR_ETH:
-#endif
-#ifdef TYPE_COLOR_ETH
 			case TYPE_COLOR_ETH:
-#endif
 			case TYPE_ETH:
 				packet_len = ntohs(header->wlen);
 				packet_len -= (p->md.dag_fcs_bits >> 3);
@@ -382,12 +417,10 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 				dp += 2;
 				break;
-#ifdef TYPE_DSM_COLOR_HDLC_POS
+
+			case TYPE_COLOR_HASH_POS:
 			case TYPE_DSM_COLOR_HDLC_POS:
-#endif
-#ifdef TYPE_COLOR_HDLC_POS
 			case TYPE_COLOR_HDLC_POS:
-#endif
 			case TYPE_HDLC_POS:
 				packet_len = ntohs(header->wlen);
 				packet_len -= (p->md.dag_fcs_bits >> 3);
@@ -396,10 +429,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					caplen = packet_len;
 				}
 				break;
-#ifdef TYPE_COLOR_MC_HDLC_POS
+
 			case TYPE_COLOR_MC_HDLC_POS:
-#endif
-#ifdef TYPE_MC_HDLC
 			case TYPE_MC_HDLC:
 				packet_len = ntohs(header->wlen);
 				packet_len -= (p->md.dag_fcs_bits >> 3);
@@ -409,11 +440,12 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 				/* jump the MC_HDLC_HEADER */
 				dp += 4;
+#ifdef DLT_MTP2_WITH_PHDR
 				if (p->linktype == DLT_MTP2_WITH_PHDR) {
 					/* Add the MTP2 Pseudo Header */
 					caplen += MTP2_HDR_LEN;
 					packet_len += MTP2_HDR_LEN;
-
+					
 					TempPkt[MTP2_SENT_OFFSET] = 0;
 					TempPkt[MTP2_ANNEX_A_USED_OFFSET] = MTP2_ANNEX_A_USED_UNKNOWN;
 					*(TempPkt+MTP2_LINK_NUMBER_OFFSET) = ((header->rec.mc_hdlc.mc_header>>16)&0x01);
@@ -421,45 +453,43 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					memcpy(TempPkt+MTP2_HDR_LEN, dp, caplen);
 					dp = TempPkt;
 				}
-				break;
 #endif
+				break;
+
+			case TYPE_IPV4:
+				packet_len = ntohs(header->wlen);
+				caplen = rlen - dag_record_size;
+				if (caplen > packet_len) {
+					caplen = packet_len;
+				}
+				break;
+
 			default:
 				/* Unhandled ERF type.
 				 * Ignore rather than generating error
 				 */
 				continue;
 			} /* switch type */
+
+			/* Skip over extension headers */
+			caplen -= (8 * num_ext_hdr);
+
 		} /* ERF encapsulation */
 		
 		if (caplen > p->snapshot)
 			caplen = p->snapshot;
 
 		/* Count lost packets. */
-		switch(header->type) {
-#ifdef TYPE_COLOR_HDLC_POS
-			/* in this type the color value overwrites the lctr */
+		switch((header->type & 0x7f)) {
+			/* in these types the color value overwrites the lctr */
 		case TYPE_COLOR_HDLC_POS:
-			break;
-#endif
-#ifdef TYPE_COLOR_ETH
-			/* in this type the color value overwrites the lctr */
 		case TYPE_COLOR_ETH:
-			break;
-#endif
-#ifdef TYPE_DSM_COLOR_HDLC_POS
-			/* in this type the color value overwrites the lctr */
 		case TYPE_DSM_COLOR_HDLC_POS:
-			break;
-#endif
-#ifdef TYPE_DSM_COLOR_ETH
-			/* in this type the color value overwrites the lctr */
 		case TYPE_DSM_COLOR_ETH:
-			break;
-#endif
-#ifdef TYPE_COLOR_MC_HDLC_POS
 		case TYPE_COLOR_MC_HDLC_POS:
+		case TYPE_COLOR_HASH_ETH:
+		case TYPE_COLOR_HASH_POS:
 			break;
-#endif
 
 		default:
 			if (header->lctr) {
@@ -537,7 +567,9 @@ dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 pcap_t *
 dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 {
+#if 0
 	char conf[30]; /* dag configure string */
+#endif
 	pcap_t *handle;
 	char *s;
 	int n;
@@ -858,7 +890,7 @@ dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf)
 			}
 #ifdef HAVE_DAG_STREAMS_API
 			{
-				int stream, rxstreams, found=0;
+				int stream, rxstreams;
 				rxstreams = dag_rx_get_stream_count(dagfd);
 				for(stream=0;stream<16;stream+=2) {
 					if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
@@ -1001,15 +1033,13 @@ dag_get_datalink(pcap_t *p)
 
 	{
 #endif
-		switch(types[index]) {
+		switch((types[index] & 0x7f)) {
 
 		case TYPE_HDLC_POS:
-#ifdef TYPE_COLOR_HDLC_POS
 		case TYPE_COLOR_HDLC_POS:
-#endif
-#ifdef TYPE_DSM_COLOR_HDLC_POS
 		case TYPE_DSM_COLOR_HDLC_POS:
-#endif
+		case TYPE_COLOR_HASH_POS:
+
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_CHDLC;
 				p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
@@ -1020,12 +1050,9 @@ dag_get_datalink(pcap_t *p)
 			break;
 
 		case TYPE_ETH:
-#ifdef TYPE_COLOR_ETH
 		case TYPE_COLOR_ETH:
-#endif
-#ifdef TYPE_DSM_COLOR_ETH
 		case TYPE_DSM_COLOR_ETH:
-#endif
+		case TYPE_COLOR_HASH_ETH:
 			/*
 			 * This is (presumably) a real Ethernet capture; give it a
 			 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
@@ -1045,15 +1072,9 @@ dag_get_datalink(pcap_t *p)
 			break;
 
 		case TYPE_ATM: 
-#ifdef TYPE_AAL5
 		case TYPE_AAL5:
-#endif
-#ifdef TYPE_MC_ATM
 		case TYPE_MC_ATM:
-#endif
-#ifdef TYPE_MC_AAL5
 		case TYPE_MC_AAL5:
-#endif
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_ATM_RFC1483;
 				p->dlt_list[dlt_index++] = DLT_SUNATM;
@@ -1062,10 +1083,7 @@ dag_get_datalink(pcap_t *p)
 				p->linktype = DLT_ATM_RFC1483;
 			break;
 
-#ifdef TYPE_COLOR_MC_HDLC_POS
 		case TYPE_COLOR_MC_HDLC_POS:
-#endif
-#ifdef TYPE_MC_HDLC
 		case TYPE_MC_HDLC:
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_CHDLC;
@@ -1078,7 +1096,11 @@ dag_get_datalink(pcap_t *p)
 			if(!p->linktype)
 				p->linktype = DLT_CHDLC;
 			break;
-#endif
+
+		case TYPE_IPV4:
+			if(!p->linktype)
+				p->linktype = DLT_RAW;
+			break;
 
 		case TYPE_LEGACY:
 			if(!p->linktype)
