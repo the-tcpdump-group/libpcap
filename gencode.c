@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.294 2007-11-04 22:29:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.295 2007-11-05 18:37:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2667,6 +2667,9 @@ gen_linktype(proto)
 		/*NOTREACHED*/
 		break;
 
+	case DLT_MFR:
+		bpf_error("Multi-link Frame Relay link-layer type filtering not implemented");
+
         case DLT_JUNIPER_MFR:
         case DLT_JUNIPER_MLFR:
         case DLT_JUNIPER_MLPPP:
@@ -2700,8 +2703,47 @@ gen_linktype(proto)
 	case DLT_DOCSIS:
 		bpf_error("DOCSIS link-layer type filtering not implemented");
 
+	case DLT_MTP2:
+	case DLT_MTP2_WITH_PHDR:
+		bpf_error("MTP2 link-layer type filtering not implemented");
+
+	case DLT_ERF:
+		bpf_error("ERF link-layer type filtering not implemented");
+
+#ifdef DLT_PFSYNC
+	case DLT_PFSYNC:
+		bpf_error("PFSYNC link-layer type filtering not implemented");
+#endif
+
 	case DLT_LINUX_LAPD:
 		bpf_error("LAPD link-layer type filtering not implemented");
+
+	case DLT_USB:
+	case DLT_USB_LINUX:
+		bpf_error("USB link-layer type filtering not implemented");
+
+	case DLT_BLUETOOTH_HCI_H4:
+	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
+		bpf_error("Bluetooth link-layer type filtering not implemented");
+
+	case DLT_CAN20B:
+		bpf_error("CAN20B link-layer type filtering not implemented");
+
+	case DLT_IEEE802_15_4:
+	case DLT_IEEE802_15_4_LINUX:
+		bpf_error("IEEE 802.15.4 link-layer type filtering not implemented");
+
+	case DLT_IEEE802_16_MAC_CPS_RADIO:
+		bpf_error("IEEE 802.16 link-layer type filtering not implemented");
+
+	case DLT_SITA:
+		bpf_error("SITA link-layer type filtering not implemented");
+
+	case DLT_RAIF1:
+		bpf_error("RAIF1 link-layer type filtering not implemented");
+
+	case DLT_IPMB:
+		bpf_error("IPMB link-layer type filtering not implemented");
 
 	case DLT_AX25_KISS:
 		bpf_error("AX.25 link-layer type filtering not implemented");
