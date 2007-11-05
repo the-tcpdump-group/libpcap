@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.6 2007-11-05 21:52:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.7 2007-11-05 23:03:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -7611,8 +7611,9 @@ gen_atmtype_abbrev(type)
 		is_lane = 1;
 		off_mac = off_payload + 2;	/* MAC header */
 		off_linktype = off_mac + 12;
-		off_nl = off_mac + 14;		/* Ethernet II */
-		off_nl_nosnap = off_mac + 17;	/* 802.3+802.2 */
+		off_macpl = off_mac + 14;	/* Ethernet */
+		off_nl = 0;			/* Ethernet II */
+		off_nl_nosnap = 3;		/* 802.3+802.2 */
 		break;
 
 	case A_LLC:
