@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.297 2007-11-05 23:02:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.298 2007-11-06 19:09:10 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2360,15 +2360,15 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 		
 	/*
 	 * If it's set, add 2 to reg_off_macpl, to skip the QoS
-	 * field (the current value of reg_off_macpl is in the
-	 * X register, so store 2 + X in reg_off_macpl).
+	 * field.
 	 * Otherwise, go to the first statement of the rest of the
 	 * program.
 	 */
-	sjset_qos->s.jt = s2 = new_stmt(BPF_LD|BPF_IMM);
-	s2->s.k = 2;
+	sjset_qos->s.jt = s2 = new_stmt(BPF_LD|BPF_MEM);
+	s2->s.k = reg_off_macpl;
 	sappend(s, s2);
-	s2 = new_stmt(BPF_ALU|BPF_ADD|BPF_X);
+	s2 = new_stmt(BPF_ALU|BPF_ADD|BPF_IMM);
+	s2->s.k = 2;
 	sappend(s, s2);
 	s2 = new_stmt(BPF_ST);
 	s2->s.k = reg_off_macpl;
