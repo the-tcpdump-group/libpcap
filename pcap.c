@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.1 2007-10-17 18:57:34 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.2 2007-11-06 16:21:20 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -789,7 +789,7 @@ pcap_setmode_dead(pcap_t *p, int mode)
 int
 pcap_setmintocopy(pcap_t *p, int size)
 {
-	return p->setintocopy_op(p, size);
+	return p->setmintocopy_op(p, size);
 }
 
 static int
