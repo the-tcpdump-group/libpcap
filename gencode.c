@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.8 2007-11-06 19:09:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.9 2007-11-07 19:33:00 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -202,7 +202,7 @@ static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static struct slist *gen_load_radiotap_llprefixlen(void);
 static struct slist *gen_load_ppi_llprefixlen(void);
-static void insert_load_llprefixlen(struct block *);
+static void insert_compute_vloffsets(struct block *);
 static struct slist *gen_llprefixlen(void);
 static struct slist *gen_off_macpl(void);
 static int ethertype_to_ppptype(int);
@@ -496,18 +496,6 @@ finish_parse(p)
 	struct block *p;
 {
 	struct block *ppi_dlt_check;
-	
-	ppi_dlt_check = gen_ppi_dlt_check();
-
-	if (ppi_dlt_check != NULL)
-	{
-		gen_and(ppi_dlt_check, p);
-	}
-
-	backpatch(p, gen_retblk(snaplen));
-	p->sense = !p->sense;
-	backpatch(p, gen_retblk(0));
-	root = p->head;
 
 	/*
 	 * Insert before the statements of the first (root) block any
@@ -518,13 +506,30 @@ finish_parse(p)
 	 * statements of all blocks that use those lengths and that
 	 * have no predecessors that use them, so that we only compute
 	 * the lengths if we need them.  There might be even better
-	 * approaches than that.  However, as we're currently only
-	 * handling variable-length radiotap headers, and as all
-	 * filtering expressions other than raw link[M:N] tests
-	 * require the length of that header, doing more for that
-	 * header length isn't really worth the effort.
+	 * approaches than that.
+	 *
+	 * However, those strategies would be more complicated, and
+	 * as we don't generate code to compute a length if the
+	 * program has no tests that use the length, and as most
+	 * tests will probably use those lengths, we would just
+	 * postpone computing the lengths so that it's not done
+	 * for tests that fail early, and it's not clear that's
+	 * worth the effort.
 	 */
-	insert_load_llprefixlen(root);
+	insert_compute_vloffsets(p->head);
+	
+	/*
+	 * For DLT_PPI captures, generate a check of the per-packet
+	 * DLT value to make sure it's DLT_IEEE802_11.
+	 */
+	ppi_dlt_check = gen_ppi_dlt_check();
+	if (ppi_dlt_check != NULL)
+		gen_and(ppi_dlt_check, p);
+
+	backpatch(p, gen_retblk(snaplen));
+	p->sense = !p->sense;
+	backpatch(p, gen_retblk(0));
+	root = p->head;
 }
 
 void
@@ -2379,15 +2384,16 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 }
 
 static void
-insert_load_llprefixlen(b)
+insert_compute_vloffsets(b)
 	struct block *b;
 {
 	struct slist *s;
 
 	/*
-	 * Generate code to load the length of any variable-length
-	 * header preceding the link-layer header into the register
-	 * assigned to that length, if any.
+	 * For link-layer types that have a variable-length header
+	 * preceding the link-layer header, generate code to load
+	 * the offset of the link-layer header into the register
+	 * assigned to that offset, if any.
 	 */
 	switch (linktype) {
 
@@ -2405,9 +2411,9 @@ insert_load_llprefixlen(b)
 	}
 
 	/*
-	 * Now generate code to load the length of any variable-length
-	 * header preceding the link-layer header into the register
-	 * assigned to that length, if any.
+	 * For link-layer types that have a variable-length link-layer
+	 * header, generate code to load the offset of the MAC-layer
+	 * payload into the register assigned to that offset, if any.
 	 */
 	switch (linktype) {
 
@@ -2421,7 +2427,7 @@ insert_load_llprefixlen(b)
 	}
 
 	/*
-	 * If we have any length loading code, append all the
+	 * If we have any offset-loading code, append all the
 	 * existing statements in the block to those statements,
 	 * and make the resulting list the list of statements
 	 * for the block.
