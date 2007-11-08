@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.9 2007-11-07 19:33:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.10 2007-11-08 01:50:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2275,6 +2275,10 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	struct slist *sjset_data_frame_1;
 	struct slist *sjset_data_frame_2;
 	struct slist *sjset_qos;
+	struct slist *sjset_radiotap_flags;
+	struct slist *sjset_radiotap_tsft;
+	struct slist *sjset_tsft_datapad, *sjset_notsft_datapad;
+	struct slist *s_roundup;
 
 	if (reg_off_macpl == -1) {
 		/*
@@ -2378,7 +2382,102 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	s2 = new_stmt(BPF_ST);
 	s2->s.k = reg_off_macpl;
 	sappend(s, s2);
-	sjset_qos->s.jf = snext;
+
+	/*
+	 * If we have a radiotap header, look at it to see whether
+	 * there's Atheros padding between the MAC-layer header
+	 * and the payload.
+	 *
+	 * Note: all of the fields in the radiotap header are
+	 * little-endian, so we byte-swap all of the values
+	 * we test against, as they will be loaded as big-endian
+	 * values.
+	 */
+	if (linktype == DLT_IEEE802_11_RADIO) {
+		/*
+		 * Is the IEEE80211_RADIOTAP_FLAGS bit (0x0000002) set
+		 * in the presence flag?
+		 */
+		sjset_qos->s.jf = s2 = new_stmt(BPF_LD|BPF_ABS|BPF_W);
+		s2->s.k = 4;
+		sappend(s, s2);
+
+		sjset_radiotap_flags = new_stmt(JMP(BPF_JSET));
+		sjset_radiotap_flags->s.k = SWAPLONG(0x00000002);
+		sappend(s, sjset_radiotap_flags);
+
+		/*
+		 * If not, skip all of this.
+		 */
+		sjset_radiotap_flags->s.jf = snext;
+
+		/*
+		 * Otherwise, is the IEEE80211_RADIOTAP_TSFT bit set?
+		 */
+		sjset_radiotap_tsft = sjset_radiotap_flags->s.jt =
+		    new_stmt(JMP(BPF_JSET));
+		sjset_radiotap_tsft->s.k = SWAPLONG(0x00000001);
+		sappend(s, sjset_radiotap_tsft);
+
+		/*
+		 * If IEEE80211_RADIOTAP_TSFT is set, the flags field is
+		 * at an offset of 16 from the beginning of the raw packet
+		 * data (8 bytes for the radiotap header and 8 bytes for
+		 * the TSFT field).
+		 *
+		 * Test whether the IEEE80211_RADIOTAP_F_DATAPAD bit (0x20)
+		 * is set.
+		 */
+		sjset_radiotap_tsft->s.jt = s2 = new_stmt(BPF_LD|BPF_ABS|BPF_B);
+		s2->s.k = 16;
+		sappend(s, s2);
+
+		sjset_tsft_datapad = new_stmt(JMP(BPF_JSET));
+		sjset_tsft_datapad->s.k = 0x20;
+		sappend(s, sjset_tsft_datapad);
+
+		/*
+		 * If IEEE80211_RADIOTAP_TSFT is not set, the flags field is
+		 * at an offset of 8 from the beginning of the raw packet
+		 * data (8 bytes for the radiotap header).
+		 *
+		 * Test whether the IEEE80211_RADIOTAP_F_DATAPAD bit (0x20)
+		 * is set.
+		 */
+		sjset_radiotap_tsft->s.jf = s2 = new_stmt(BPF_LD|BPF_ABS|BPF_B);
+		s2->s.k = 8;
+		sappend(s, s2);
+
+		sjset_notsft_datapad = new_stmt(JMP(BPF_JSET));
+		sjset_notsft_datapad->s.k = 0x20;
+		sappend(s, sjset_notsft_datapad);
+
+		/*
+		 * In either case, if IEEE80211_RADIOTAP_F_DATAPAD is
+		 * set, round the length of the 802.11 header to
+		 * a multiple of 4.  Do that by adding 3 and then
+		 * dividing by and multiplying by 4, which we do by
+		 * ANDing with ~3.
+		 */
+		s_roundup = new_stmt(BPF_LD|BPF_MEM);
+		s_roundup->s.k = reg_off_macpl;
+		sappend(s, s_roundup);
+		s2 = new_stmt(BPF_ALU|BPF_ADD|BPF_IMM);
+		s2->s.k = 3;
+		sappend(s, s2);
+		s2 = new_stmt(BPF_ALU|BPF_AND|BPF_IMM);
+		s2->s.k = ~3;
+		sappend(s, s2);
+		s2 = new_stmt(BPF_ST);
+		s2->s.k = reg_off_macpl;
+		sappend(s, s2);
+
+		sjset_tsft_datapad->s.jt = s_roundup;
+		sjset_tsft_datapad->s.jf = snext;
+		sjset_notsft_datapad->s.jt = s_roundup;
+		sjset_notsft_datapad->s.jf = snext;
+	} else
+		sjset_qos->s.jf = snext;
 
 	return s;
 }
