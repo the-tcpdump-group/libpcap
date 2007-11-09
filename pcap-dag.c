@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31.2.2 2007-11-05 21:45:29 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31.2.3 2007-11-09 00:57:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -315,6 +315,32 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 		p->md.dag_mem_bottom += rlen;
 
+		/* Count lost packets. */
+		switch((header->type & 0x7f)) {
+			/* in these types the color value overwrites the lctr */
+		case TYPE_COLOR_HDLC_POS:
+		case TYPE_COLOR_ETH:
+		case TYPE_DSM_COLOR_HDLC_POS:
+		case TYPE_DSM_COLOR_ETH:
+		case TYPE_COLOR_MC_HDLC_POS:
+		case TYPE_COLOR_HASH_ETH:
+		case TYPE_COLOR_HASH_POS:
+			break;
+
+		default:
+			if (header->lctr) {
+				if (p->md.stat.ps_drop > (UINT_MAX - ntohs(header->lctr))) {
+					p->md.stat.ps_drop = UINT_MAX;
+				} else {
+					p->md.stat.ps_drop += ntohs(header->lctr);
+				}
+			}
+		}
+		
+		if ((header->type & 0x7f) == TYPE_PAD) {
+			continue;
+		}
+
 		num_ext_hdr = dag_erf_ext_header_count(dp, rlen);
 
 		/* ERF encapsulation */
@@ -479,28 +505,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (caplen > p->snapshot)
 			caplen = p->snapshot;
 
-		/* Count lost packets. */
-		switch((header->type & 0x7f)) {
-			/* in these types the color value overwrites the lctr */
-		case TYPE_COLOR_HDLC_POS:
-		case TYPE_COLOR_ETH:
-		case TYPE_DSM_COLOR_HDLC_POS:
-		case TYPE_DSM_COLOR_ETH:
-		case TYPE_COLOR_MC_HDLC_POS:
-		case TYPE_COLOR_HASH_ETH:
-		case TYPE_COLOR_HASH_POS:
-			break;
-
-		default:
-			if (header->lctr) {
-				if (p->md.stat.ps_drop > (UINT_MAX - ntohs(header->lctr))) {
-					p->md.stat.ps_drop = UINT_MAX;
-				} else {
-					p->md.stat.ps_drop += ntohs(header->lctr);
-				}
-			}
-		}
-		
 		/* Run the packet filter if there is one. */
 		if ((p->fcode.bf_insns == NULL) || bpf_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
 			
@@ -1103,13 +1107,16 @@ dag_get_datalink(pcap_t *p)
 			break;
 
 		case TYPE_LEGACY:
-			if(!p->linktype)
-				p->linktype = DLT_NULL;
-			break;
-
+		case TYPE_MC_RAW:
+		case TYPE_MC_RAW_CHANNEL:
+		case TYPE_IP_COUNTER:
+		case TYPE_TCP_FLOW_COUNTER:
+		case TYPE_INFINIBAND:
+		case TYPE_IPV6:
 		default:
-			snprintf(p->errbuf, sizeof(p->errbuf), "unknown DAG linktype %d", types[index]);
-			return (-1);
+			/* Libpcap cannot deal with these types yet */
+			/* Add no DLTs, but still covered by DLT_ERF */
+			break;
 
 		} /* switch */
 		index++;
@@ -1118,6 +1125,9 @@ dag_get_datalink(pcap_t *p)
 	p->dlt_list[dlt_index++] = DLT_ERF;
 
 	p->dlt_count = dlt_index;
+
+	if(!p->linktype)
+		p->linktype = DLT_ERF;
 
 	return p->linktype;
 }

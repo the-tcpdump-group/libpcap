@@ -7,7 +7,7 @@
  *
  * Author: Richard Littin, Sean Irvine ({richard,sean}@reeltwo.com)
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dag.h,v 1.4.2.1 2007-11-05 21:45:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dag.h,v 1.4.2.2 2007-11-09 00:58:46 guy Exp $ (LBL)
  */
 
 pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf);
@@ -91,4 +91,10 @@ int dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf);
 
 #ifndef TYPE_IPV6
 #define TYPE_IPV6               23
+#endif
+
+
+
+#ifndef TYPE_PAD
+#define TYPE_PAD                48
 #endif
