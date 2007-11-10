@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.10 2007-11-08 01:50:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.11 2007-11-10 21:53:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3553,7 +3553,8 @@ gen_thostop(eaddr, dir)
 }
 
 /*
- * Like gen_ehostop, but for DLT_IEEE802_11 (802.11 wireless LAN)
+ * Like gen_ehostop, but for DLT_IEEE802_11 (802.11 wireless LAN) and
+ * various 802.11 + radio headers.
  */
 static struct block *
 gen_wlanhostop(eaddr, dir)
