@@ -33,12 +33,16 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.35 2007-10-17 18:52:41 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.36 2007-11-13 21:55:51 gianluca Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
 #include <Packet32.h>
-#include <Ntddndis.h>
+#ifdef __MINGW32__
+#include <ddk/ndis.h>
+#else /*__MINGW32__*/
+#include <ntddndis.h>
+#endif /*__MINGW32__*/
 #ifdef HAVE_DAG_API
 #include <dagnew.h>
 #include <dagapi.h>
