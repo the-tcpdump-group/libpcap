@@ -21,32 +21,45 @@
  *
  */
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.56.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.99.2.1 2007-11-14 00:55:37 guy Exp $ (LBL)";
 #endif
 
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/socket.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#ifdef WIN32
+#include <pcap-stdinc.h>
+#else /* WIN32 */
+#include <sys/types.h>
+#include <sys/socket.h>
+#endif /* WIN32 */
+
+#include <stdlib.h>
+
+#ifndef WIN32
 #if __STDC__
 struct mbuf;
 struct rtentry;
 #endif
 
-#include <net/if.h>
-
 #include <netinet/in.h>
-#include <netinet/if_ether.h>
+#endif /* WIN32 */
 
 #include <stdio.h>
 
 #include "pcap-int.h"
 
 #include "gencode.h"
-#include <pcap-namedb.h>
+#ifdef HAVE_NET_PFVAR_H
+#include <net/if.h>
+#include <net/pfvar.h>
+#include <net/if_pflog.h>
+#endif
+#include "ieee80211.h"
+#include <pcap/namedb.h>
 
-#include "gnuc.h"
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -55,12 +68,16 @@ struct rtentry;
 			 (q).dir = (d),\
 			 (q).addr = (a)
 
+static const char *ieee80211_mgt_names[] = IEEE80211_MGT_SUBTYPE_NAMES;
+static const char *ieee80211_ctl_names[] = IEEE80211_CTL_SUBTYPE_NAMES;
+static const char *ieee80211_data_names[] = IEEE80211_DATA_SUBTYPE_NAMES;
+
 int n_errors = 0;
 
 static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 
 static void
-yyerror(char *msg)
+yyerror(const char *msg)
 {
 	++n_errors;
 	bpf_error("%s", msg);
@@ -77,6 +94,66 @@ pcap_parse()
 }
 #endif
 
+#ifdef HAVE_NET_PFVAR_H
+static int
+pfreason_to_num(const char *reason)
+{
+	const char *reasons[] = PFRES_NAMES;
+	int i;
+
+	for (i = 0; reasons[i]; i++) {
+		if (pcap_strcasecmp(reason, reasons[i]) == 0)
+			return (i);
+	}
+	bpf_error("unknown PF reason");
+	/*NOTREACHED*/
+}
+
+static int
+pfaction_to_num(const char *action)
+{
+	if (pcap_strcasecmp(action, "pass") == 0 ||
+	    pcap_strcasecmp(action, "accept") == 0)
+		return (PF_PASS);
+	else if (pcap_strcasecmp(action, "drop") == 0 ||
+		pcap_strcasecmp(action, "block") == 0)
+		return (PF_DROP);
+#if HAVE_PF_NAT_THROUGH_PF_NORDR
+	else if (pcap_strcasecmp(action, "rdr") == 0)
+		return (PF_RDR);
+	else if (pcap_strcasecmp(action, "nat") == 0)
+		return (PF_NAT);
+	else if (pcap_strcasecmp(action, "binat") == 0)
+		return (PF_BINAT);
+	else if (pcap_strcasecmp(action, "nordr") == 0)
+		return (PF_NORDR);
+#endif
+	else {
+		bpf_error("unknown PF action");
+		/*NOTREACHED*/
+	}
+}
+#else /* !HAVE_NET_PFVAR_H */
+static int
+pfreason_to_num(const char *reason)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/*NOTREACHED*/
+
+	/* this is to make the VC compiler happy */
+	return -1;
+}
+
+static int
+pfaction_to_num(const char *action)
+{
+	bpf_error("libpcap was compiled on a machine without pf support");
+	/*NOTREACHED*/
+
+	/* this is to make the VC compiler happy */
+	return -1;
+}
+#endif /* HAVE_NET_PFVAR_H */
 %}
 
 %union {
@@ -88,6 +165,8 @@ pcap_parse()
 	struct arth *a;
 	struct {
 		struct qual q;
+		int atmfieldtype;
+		int mtp3fieldtype;
 		struct block *b;
 	} blk;
 	struct block *rblk;
@@ -99,24 +178,47 @@ pcap_parse()
 %type	<a>	arth narth
 %type	<i>	byteop pname pnum relop irelop
 %type	<blk>	and or paren not null prog
-%type	<rblk>	other
+%type	<rblk>	other pfvar p80211
+%type	<i>	atmtype atmmultitype
+%type	<blk>	atmfield
+%type	<blk>	atmfieldvalue atmvalue atmlistvalue
+%type	<i>	mtp2type
+%type	<blk>	mtp3field
+%type	<blk>	mtp3fieldvalue mtp3value mtp3listvalue
+
 
 %token  DST SRC HOST GATEWAY
-%token  NET MASK PORT LESS GREATER PROTO BYTE
-%token  ARP RARP IP TCP UDP ICMP IGMP IGRP
-%token  ATALK DECNET LAT SCA MOPRC MOPDL
+%token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
+%token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP
+%token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
+%token  PF_IFNAME PF_RSET PF_RNR PF_SRNR PF_REASON PF_ACTION
 %token  LINK
 %token	GEQ LEQ NEQ
-%token	ID EID HID
+%token	ID EID HID HID6 AID
 %token	LSH RSH
 %token  LEN
+%token  IPV6 ICMPV6 AH ESP
+%token	VLAN MPLS
+%token	PPPOED PPPOES
+%token  ISO ESIS CLNP ISIS L1 L2 IIH LSP SNP CSNP PSNP 
+%token  STP
+%token  IPX
+%token  NETBEUI
+%token	LANE LLC METAC BCC SC ILMIC OAMF4EC OAMF4SC
+%token	OAM OAMF4 CONNECTMSG METACONNECT
+%token	VPI VCI
+%token	RADIO
+%token	FISU LSSU MSU
+%token	SIO OPC DPC SLS
+%token	TYPE SUBTYPE
 
 %type	<s> ID
 %type	<e> EID
-%type	<s> HID
-%type	<i> NUM
+%type	<e> AID
+%type	<s> HID HID6
+%type	<i> NUM action reason type subtype type_subtype
 
 %left OR AND
 %nonassoc  '!'
@@ -153,21 +255,57 @@ id:	  nid
 nid:	  ID			{ $$.b = gen_scode($1, $$.q = $<blk>0.q); }
 	| HID '/' NUM		{ $$.b = gen_mcode($1, NULL, $3,
 				    $$.q = $<blk>0.q); }
-	| HID MASK HID		{ $$.b = gen_mcode($1, $3, 0,
+	| HID NETMASK HID	{ $$.b = gen_mcode($1, $3, 0,
 				    $$.q = $<blk>0.q); }
 	| HID			{
 				  /* Decide how to parse HID based on proto */
 				  $$.q = $<blk>0.q;
-				  switch ($$.q.proto) {
-				  case Q_DECNET:
-					$$.b = gen_ncode($1, 0, $$.q);
-					break;
-				  default:
-					$$.b = gen_ncode($1, 0, $$.q);
-					break;
-				  }
+				  if ($$.q.addr == Q_PORT)
+				  	bpf_error("'port' modifier applied to ip host");
+				  else if ($$.q.addr == Q_PORTRANGE)
+				  	bpf_error("'portrange' modifier applied to ip host");
+				  else if ($$.q.addr == Q_PROTO)
+				  	bpf_error("'proto' modifier applied to ip host");
+				  else if ($$.q.addr == Q_PROTOCHAIN)
+				  	bpf_error("'protochain' modifier applied to ip host");
+				  $$.b = gen_ncode($1, 0, $$.q);
 				}
-	| EID			{ $$.b = gen_ecode($1, $$.q = $<blk>0.q); }
+	| HID6 '/' NUM		{
+#ifdef INET6
+				  $$.b = gen_mcode6($1, NULL, $3,
+				    $$.q = $<blk>0.q);
+#else
+				  bpf_error("'ip6addr/prefixlen' not supported "
+					"in this configuration");
+#endif /*INET6*/
+				}
+	| HID6			{
+#ifdef INET6
+				  $$.b = gen_mcode6($1, 0, 128,
+				    $$.q = $<blk>0.q);
+#else
+				  bpf_error("'ip6addr' not supported "
+					"in this configuration");
+#endif /*INET6*/
+				}
+	| EID			{ 
+				  $$.b = gen_ecode($1, $$.q = $<blk>0.q);
+				  /*
+				   * $1 was allocated by "pcap_ether_aton()",
+				   * so we must free it now that we're done
+				   * with it.
+				   */
+				  free($1);
+				}
+	| AID			{
+				  $$.b = gen_acode($1, $$.q = $<blk>0.q);
+				  /*
+				   * $1 was allocated by "pcap_ether_aton()",
+				   * so we must free it now that we're done
+				   * with it.
+				   */
+				  free($1);
+				}
 	| not id		{ gen_not($2.b); $$ = $2; }
 	;
 not:	  '!'			{ $$ = $<blk>0; }
@@ -189,6 +327,7 @@ head:	  pqual dqual aqual	{ QSET($$.q, $1, $2, $3); }
 	| pqual dqual		{ QSET($$.q, $1, $2, Q_DEFAULT); }
 	| pqual aqual		{ QSET($$.q, $1, Q_DEFAULT, $2); }
 	| pqual PROTO		{ QSET($$.q, $1, Q_DEFAULT, Q_PROTO); }
+	| pqual PROTOCHAIN	{ QSET($$.q, $1, Q_DEFAULT, Q_PROTOCHAIN); }
 	| pqual ndaqual		{ QSET($$.q, $1, Q_DEFAULT, $2); }
 	;
 rterm:	  head id		{ $$ = $2; }
@@ -199,6 +338,11 @@ rterm:	  head id		{ $$ = $2; }
 	| arth irelop arth	{ $$.b = gen_relation($2, $1, $3, 1);
 				  $$.q = qerr; }
 	| other			{ $$.b = $1; $$.q = qerr; }
+	| atmtype		{ $$.b = gen_atmtype_abbrev($1); $$.q = qerr; }
+	| atmmultitype		{ $$.b = gen_atmmulti_abbrev($1); $$.q = qerr; }
+	| atmfield atmvalue	{ $$.b = $2.b; $$.q = qerr; }
+	| mtp2type		{ $$.b = gen_mtp2type_abbrev($1); $$.q = qerr; }
+	| mtp3field mtp3value	{ $$.b = $2.b; $$.q = qerr; }
 	;
 /* protocol level qualifiers */
 pqual:	  pname
@@ -216,6 +360,7 @@ dqual:	  SRC			{ $$ = Q_SRC; }
 aqual:	  HOST			{ $$ = Q_HOST; }
 	| NET			{ $$ = Q_NET; }
 	| PORT			{ $$ = Q_PORT; }
+	| PORTRANGE		{ $$ = Q_PORTRANGE; }
 	;
 /* non-directional address type qualifiers */
 ndaqual:  GATEWAY		{ $$ = Q_GATEWAY; }
@@ -224,26 +369,150 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| IP			{ $$ = Q_IP; }
 	| ARP			{ $$ = Q_ARP; }
 	| RARP			{ $$ = Q_RARP; }
+	| SCTP			{ $$ = Q_SCTP; }
 	| TCP			{ $$ = Q_TCP; }
 	| UDP			{ $$ = Q_UDP; }
 	| ICMP			{ $$ = Q_ICMP; }
 	| IGMP			{ $$ = Q_IGMP; }
 	| IGRP			{ $$ = Q_IGRP; }
+	| PIM			{ $$ = Q_PIM; }
+	| VRRP			{ $$ = Q_VRRP; }
 	| ATALK			{ $$ = Q_ATALK; }
+	| AARP			{ $$ = Q_AARP; }
 	| DECNET		{ $$ = Q_DECNET; }
 	| LAT			{ $$ = Q_LAT; }
 	| SCA			{ $$ = Q_SCA; }
 	| MOPDL			{ $$ = Q_MOPDL; }
 	| MOPRC			{ $$ = Q_MOPRC; }
+	| IPV6			{ $$ = Q_IPV6; }
+	| ICMPV6		{ $$ = Q_ICMPV6; }
+	| AH			{ $$ = Q_AH; }
+	| ESP			{ $$ = Q_ESP; }
+	| ISO			{ $$ = Q_ISO; }
+	| ESIS			{ $$ = Q_ESIS; }
+	| ISIS			{ $$ = Q_ISIS; }
+	| L1			{ $$ = Q_ISIS_L1; }
+	| L2			{ $$ = Q_ISIS_L2; }
+	| IIH			{ $$ = Q_ISIS_IIH; }
+	| LSP			{ $$ = Q_ISIS_LSP; }
+	| SNP			{ $$ = Q_ISIS_SNP; }
+	| PSNP			{ $$ = Q_ISIS_PSNP; }
+	| CSNP			{ $$ = Q_ISIS_CSNP; }
+	| CLNP			{ $$ = Q_CLNP; }
+	| STP			{ $$ = Q_STP; }
+	| IPX			{ $$ = Q_IPX; }
+	| NETBEUI		{ $$ = Q_NETBEUI; }
+	| RADIO			{ $$ = Q_RADIO; }
 	;
 other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| pqual TK_MULTICAST	{ $$ = gen_multicast($1); }
 	| LESS NUM		{ $$ = gen_less($2); }
 	| GREATER NUM		{ $$ = gen_greater($2); }
-	| BYTE NUM byteop NUM	{ $$ = gen_byteop($3, $2, $4); }
+	| CBYTE NUM byteop NUM	{ $$ = gen_byteop($3, $2, $4); }
 	| INBOUND		{ $$ = gen_inbound(0); }
 	| OUTBOUND		{ $$ = gen_inbound(1); }
+	| VLAN pnum		{ $$ = gen_vlan($2); }
+	| VLAN			{ $$ = gen_vlan(-1); }
+	| MPLS pnum		{ $$ = gen_mpls($2); }
+	| MPLS			{ $$ = gen_mpls(-1); }
+	| PPPOED		{ $$ = gen_pppoed(); }
+	| PPPOES		{ $$ = gen_pppoes(); }
+	| pfvar			{ $$ = $1; }
+	| pqual p80211		{ $$ = $2; }
 	;
+
+pfvar:	  PF_IFNAME ID		{ $$ = gen_pf_ifname($2); }
+	| PF_RSET ID		{ $$ = gen_pf_ruleset($2); }
+	| PF_RNR NUM		{ $$ = gen_pf_rnr($2); }
+	| PF_SRNR NUM		{ $$ = gen_pf_srnr($2); }
+	| PF_REASON reason	{ $$ = gen_pf_reason($2); }
+	| PF_ACTION action	{ $$ = gen_pf_action($2); }
+	;
+
+p80211:   TYPE type SUBTYPE subtype
+				{ $$ = gen_p80211_type($2 | $4,
+					IEEE80211_FC0_TYPE_MASK |
+					IEEE80211_FC0_SUBTYPE_MASK);
+				}
+	| TYPE type		{ $$ = gen_p80211_type($2,
+					IEEE80211_FC0_TYPE_MASK);
+				}
+	| SUBTYPE type_subtype	{ $$ = gen_p80211_type($2,
+					IEEE80211_FC0_TYPE_MASK |
+					IEEE80211_FC0_SUBTYPE_MASK);
+				}
+	;
+
+type:	  NUM
+	| ID			{ const char *names[] = IEEE80211_TYPE_NAMES;
+				  int i, lim;
+				  lim = (IEEE80211_FC0_TYPE_MASK >> IEEE80211_FC0_TYPE_SHIFT) + 1;
+				  for (i = 0; i < lim; ++i) {
+				  	if (pcap_strcasecmp($1, names[i]) == 0) {
+						$$ = i << IEEE80211_FC0_TYPE_SHIFT;
+						break;
+					}
+				  }
+				  if (i == lim)
+				  	bpf_error("unknown 802.11 type name");
+				}
+	;
+
+subtype:  NUM
+	| ID			{ const char **names;
+				  int i, lim;
+				  if ($<i>-1 == IEEE80211_FC0_TYPE_MGT)
+				  	names = ieee80211_mgt_names;
+				  else if ($<i>-1 == IEEE80211_FC0_TYPE_CTL)
+				  	names = ieee80211_ctl_names;
+				  else if ($<i>-1 == IEEE80211_FC0_TYPE_DATA)
+				  	names = ieee80211_data_names;
+				  else
+				  	bpf_error("unknown 802.11 type");
+				  lim = (IEEE80211_FC0_SUBTYPE_MASK >> IEEE80211_FC0_SUBTYPE_SHIFT) + 1;
+				  for (i = 0; i < lim; ++i) {
+				  	if (pcap_strcasecmp($1, names[i]) == 0) {
+						$$ = i << IEEE80211_FC0_SUBTYPE_SHIFT;
+						break;
+					}
+				  }
+				  if (i == lim)
+				  	bpf_error("unknown 802.11 subtype name");
+				}
+	;
+
+type_subtype:	ID		{ const char **sub_names[] = {
+					ieee80211_mgt_names,
+					ieee80211_ctl_names,
+					ieee80211_data_names
+				  };
+				  int i, j, lim, sub_lim;
+				  sub_lim = sizeof(sub_names) / sizeof(sub_names[0]);
+				  lim = (IEEE80211_FC0_SUBTYPE_MASK >> IEEE80211_FC0_SUBTYPE_SHIFT) + 1;
+				  for (i = 0; i < sub_lim; ++i) {
+				  	const char **names = sub_names[i];
+				  	for (j = 0; j < lim; ++j) {
+						if (pcap_strcasecmp($1, names[j]) == 0)
+							break;
+					}
+					if (j != lim) {
+						$$ = (i << IEEE80211_FC0_TYPE_SHIFT) |
+						     (j << IEEE80211_FC0_SUBTYPE_SHIFT);
+						break;
+					}
+				  }
+				  if (i == sub_lim)
+				  	bpf_error("unknown 802.11 subtype name");
+				}
+		;
+
+reason:	  NUM			{ $$ = $1; }
+	| ID			{ $$ = pfreason_to_num($1); }
+	;
+
+action:	  ID			{ $$ = pfaction_to_num($1); }
+	;
+
 relop:	  '>'			{ $$ = BPF_JGT; }
 	| GEQ			{ $$ = BPF_JGE; }
 	| '='			{ $$ = BPF_JEQ; }
@@ -277,5 +546,66 @@ byteop:	  '&'			{ $$ = '&'; }
 	;
 pnum:	  NUM
 	| paren pnum ')'	{ $$ = $2; }
+	;
+atmtype: LANE			{ $$ = A_LANE; }
+	| LLC			{ $$ = A_LLC; }
+	| METAC			{ $$ = A_METAC;	}
+	| BCC			{ $$ = A_BCC; }
+	| OAMF4EC		{ $$ = A_OAMF4EC; }
+	| OAMF4SC		{ $$ = A_OAMF4SC; }
+	| SC			{ $$ = A_SC; }
+	| ILMIC			{ $$ = A_ILMIC; }
+	;
+atmmultitype: OAM		{ $$ = A_OAM; }
+	| OAMF4			{ $$ = A_OAMF4; }
+	| CONNECTMSG		{ $$ = A_CONNECTMSG; }
+	| METACONNECT		{ $$ = A_METACONNECT; }
+	;
+	/* ATM field types quantifier */
+atmfield: VPI			{ $$.atmfieldtype = A_VPI; }
+	| VCI			{ $$.atmfieldtype = A_VCI; }
+	;
+atmvalue: atmfieldvalue
+	| relop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (bpf_int32)$2, (bpf_u_int32)$1, 0); }
+	| irelop NUM		{ $$.b = gen_atmfield_code($<blk>0.atmfieldtype, (bpf_int32)$2, (bpf_u_int32)$1, 1); }
+	| paren atmlistvalue ')' { $$.b = $2.b; $$.q = qerr; }
+	;
+atmfieldvalue: NUM {
+	$$.atmfieldtype = $<blk>0.atmfieldtype;
+	if ($$.atmfieldtype == A_VPI ||
+	    $$.atmfieldtype == A_VCI)
+		$$.b = gen_atmfield_code($$.atmfieldtype, (bpf_int32) $1, BPF_JEQ, 0);
+	}
+	;
+atmlistvalue: atmfieldvalue
+	| atmlistvalue or atmfieldvalue { gen_or($1.b, $3.b); $$ = $3; }
+	;
+	/* MTP2 types quantifier */
+mtp2type: FISU			{ $$ = M_FISU; }
+	| LSSU			{ $$ = M_LSSU; }
+	| MSU			{ $$ = M_MSU; }
+	;
+	/* MTP3 field types quantifier */
+mtp3field: SIO			{ $$.mtp3fieldtype = M_SIO; }
+	| OPC			{ $$.mtp3fieldtype = M_OPC; }
+	| DPC			{ $$.mtp3fieldtype = M_DPC; }
+	| SLS                   { $$.mtp3fieldtype = M_SLS; }
+	;
+mtp3value: mtp3fieldvalue
+	| relop NUM		{ $$.b = gen_mtp3field_code($<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 0); }
+	| irelop NUM		{ $$.b = gen_mtp3field_code($<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 1); }
+	| paren mtp3listvalue ')' { $$.b = $2.b; $$.q = qerr; }
+	;
+mtp3fieldvalue: NUM {
+	$$.mtp3fieldtype = $<blk>0.mtp3fieldtype;
+	if ($$.mtp3fieldtype == M_SIO ||
+	    $$.mtp3fieldtype == M_OPC ||
+	    $$.mtp3fieldtype == M_DPC ||
+	    $$.mtp3fieldtype == M_SLS )
+		$$.b = gen_mtp3field_code($$.mtp3fieldtype, (u_int) $1, BPF_JEQ, 0);
+	}
+	;
+mtp3listvalue: mtp3fieldvalue
+	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; }
 	;
 %%
