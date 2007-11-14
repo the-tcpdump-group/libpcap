@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.99 2007-09-27 17:58:34 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.100 2007-11-14 00:54:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -118,6 +118,16 @@ pfaction_to_num(const char *action)
 	else if (pcap_strcasecmp(action, "drop") == 0 ||
 		pcap_strcasecmp(action, "block") == 0)
 		return (PF_DROP);
+#if HAVE_PF_NAT_THROUGH_PF_NORDR
+	else if (pcap_strcasecmp(action, "rdr") == 0)
+		return (PF_RDR);
+	else if (pcap_strcasecmp(action, "nat") == 0)
+		return (PF_NAT);
+	else if (pcap_strcasecmp(action, "binat") == 0)
+		return (PF_BINAT);
+	else if (pcap_strcasecmp(action, "nordr") == 0)
+		return (PF_NORDR);
+#endif
 	else {
 		bpf_error("unknown PF action");
 		/*NOTREACHED*/

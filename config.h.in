@@ -68,6 +68,9 @@
 /* Define to 1 if you have the <paths.h> header file. */
 #undef HAVE_PATHS_H
 
+/* define if net/pfvar.h defines PF_NAT through PF_NORDR */
+#undef HAVE_PF_NAT_THROUGH_PF_NORDR
+
 /* define if you have a /proc/net/dev */
 #undef HAVE_PROC_NET_DEV
 
