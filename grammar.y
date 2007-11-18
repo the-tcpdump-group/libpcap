@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.100 2007-11-14 00:54:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/grammar.y,v 1.101 2007-11-18 02:03:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -68,9 +68,91 @@ struct rtentry;
 			 (q).dir = (d),\
 			 (q).addr = (a)
 
-static const char *ieee80211_mgt_names[] = IEEE80211_MGT_SUBTYPE_NAMES;
-static const char *ieee80211_ctl_names[] = IEEE80211_CTL_SUBTYPE_NAMES;
-static const char *ieee80211_data_names[] = IEEE80211_DATA_SUBTYPE_NAMES;
+struct tok {
+	int v;			/* value */
+	const char *s;		/* string */
+};
+
+static const struct tok ieee80211_types[] = {
+	{ IEEE80211_FC0_TYPE_DATA, "data" },
+	{ IEEE80211_FC0_TYPE_MGT, "mgt" },
+	{ IEEE80211_FC0_TYPE_MGT, "management" },
+	{ IEEE80211_FC0_TYPE_CTL, "ctl" },
+	{ IEEE80211_FC0_TYPE_CTL, "control" },
+	{ 0, NULL }
+};
+static const struct tok ieee80211_mgt_subtypes[] = {
+	{ IEEE80211_FC0_SUBTYPE_ASSOC_REQ, "assocreq" },
+	{ IEEE80211_FC0_SUBTYPE_ASSOC_REQ, "assoc-req" },
+	{ IEEE80211_FC0_SUBTYPE_ASSOC_RESP, "assocresp" },
+	{ IEEE80211_FC0_SUBTYPE_ASSOC_RESP, "assoc-resp" },
+	{ IEEE80211_FC0_SUBTYPE_REASSOC_REQ, "reassocreq" },
+	{ IEEE80211_FC0_SUBTYPE_REASSOC_REQ, "reassoc-req" },
+	{ IEEE80211_FC0_SUBTYPE_REASSOC_RESP, "reassocresp" },
+	{ IEEE80211_FC0_SUBTYPE_REASSOC_RESP, "reassoc-resp" },
+	{ IEEE80211_FC0_SUBTYPE_PROBE_REQ, "probereq" },
+	{ IEEE80211_FC0_SUBTYPE_PROBE_REQ, "probe-req" },
+	{ IEEE80211_FC0_SUBTYPE_PROBE_RESP, "proberesp" },
+	{ IEEE80211_FC0_SUBTYPE_PROBE_RESP, "probe-resp" },
+	{ IEEE80211_FC0_SUBTYPE_BEACON, "beacon" },
+	{ IEEE80211_FC0_SUBTYPE_ATIM, "atim" },
+	{ IEEE80211_FC0_SUBTYPE_DISASSOC, "disassoc" },
+	{ IEEE80211_FC0_SUBTYPE_DISASSOC, "disassociation" },
+	{ IEEE80211_FC0_SUBTYPE_AUTH, "auth" },
+	{ IEEE80211_FC0_SUBTYPE_AUTH, "authentication" },
+	{ IEEE80211_FC0_SUBTYPE_DEAUTH, "deauth" },
+	{ IEEE80211_FC0_SUBTYPE_DEAUTH, "deauthentication" },
+	{ 0, NULL }
+};
+static const struct tok ieee80211_ctl_subtypes[] = {
+	{ IEEE80211_FC0_SUBTYPE_PS_POLL, "ps-poll" },
+	{ IEEE80211_FC0_SUBTYPE_RTS, "rts" },
+	{ IEEE80211_FC0_SUBTYPE_CTS, "cts" },
+	{ IEEE80211_FC0_SUBTYPE_ACK, "ack" },
+	{ IEEE80211_FC0_SUBTYPE_CF_END, "cf-end" },
+	{ IEEE80211_FC0_SUBTYPE_CF_END_ACK, "cf-end-ack" },
+	{ 0, NULL }
+};
+static const struct tok ieee80211_data_subtypes[] = {
+	{ IEEE80211_FC0_SUBTYPE_DATA, "data" },
+	{ IEEE80211_FC0_SUBTYPE_CF_ACK, "data-cf-ack" },
+	{ IEEE80211_FC0_SUBTYPE_CF_POLL, "data-cf-poll" },
+	{ IEEE80211_FC0_SUBTYPE_CF_ACPL, "data-cf-ack-poll" },
+	{ IEEE80211_FC0_SUBTYPE_NODATA, "null" },
+	{ IEEE80211_FC0_SUBTYPE_NODATA_CF_ACK, "cf-ack" },
+	{ IEEE80211_FC0_SUBTYPE_NODATA_CF_POLL, "cf-poll"  },
+	{ IEEE80211_FC0_SUBTYPE_NODATA_CF_ACPL, "cf-ack-poll" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_DATA, "qos-data" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_CF_ACK, "qos-data-cf-ack" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_CF_POLL, "qos-data-cf-poll" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_CF_ACPL, "qos-data-cf-ack-poll" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_NODATA, "qos" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_NODATA_CF_POLL, "qos-cf-poll" },
+	{ IEEE80211_FC0_SUBTYPE_QOS|IEEE80211_FC0_SUBTYPE_NODATA_CF_ACPL, "qos-cf-ack-poll" },
+	{ 0, NULL }
+};
+struct type2tok {
+	int type;
+	const struct tok *tok;
+};
+static const struct type2tok ieee80211_type_subtypes[] = {
+	{ IEEE80211_FC0_TYPE_MGT, ieee80211_mgt_subtypes },
+	{ IEEE80211_FC0_TYPE_CTL, ieee80211_ctl_subtypes },
+	{ IEEE80211_FC0_TYPE_DATA, ieee80211_data_subtypes },
+	{ 0, NULL }
+};
+
+static int
+str2tok(const char *str, const struct tok *toks)
+{
+	int i;
+
+	for (i = 0; toks[i].s != NULL; i++) {
+		if (pcap_strcasecmp(toks[i].s, str) == 0)
+			return (toks[i].v);
+	}
+	return (-1);
+}
 
 int n_errors = 0;
 
@@ -194,6 +276,7 @@ pfaction_to_num(const char *action)
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
 %token  PF_IFNAME PF_RSET PF_RNR PF_SRNR PF_REASON PF_ACTION
+%token	TYPE SUBTYPE DIR ADDR1 ADDR2 ADDR3 ADDR4
 %token  LINK
 %token	GEQ LEQ NEQ
 %token	ID EID HID HID6 AID
@@ -212,13 +295,12 @@ pfaction_to_num(const char *action)
 %token	RADIO
 %token	FISU LSSU MSU
 %token	SIO OPC DPC SLS
-%token	TYPE SUBTYPE
 
 %type	<s> ID
 %type	<e> EID
 %type	<e> AID
 %type	<s> HID HID6
-%type	<i> NUM action reason type subtype type_subtype
+%type	<i> NUM action reason type subtype type_subtype dir
 
 %left OR AND
 %nonassoc  '!'
@@ -355,6 +437,10 @@ dqual:	  SRC			{ $$ = Q_SRC; }
 	| DST OR SRC		{ $$ = Q_OR; }
 	| SRC AND DST		{ $$ = Q_AND; }
 	| DST AND SRC		{ $$ = Q_AND; }
+	| ADDR1			{ $$ = Q_ADDR1; }
+	| ADDR2			{ $$ = Q_ADDR2; }
+	| ADDR3			{ $$ = Q_ADDR3; }
+	| ADDR4			{ $$ = Q_ADDR4; }
 	;
 /* address type qualifiers */
 aqual:	  HOST			{ $$ = Q_HOST; }
@@ -441,70 +527,66 @@ p80211:   TYPE type SUBTYPE subtype
 					IEEE80211_FC0_TYPE_MASK |
 					IEEE80211_FC0_SUBTYPE_MASK);
 				}
+	| DIR dir		{ $$ = gen_p80211_fcdir($2); }
 	;
 
 type:	  NUM
-	| ID			{ const char *names[] = IEEE80211_TYPE_NAMES;
-				  int i, lim;
-				  lim = (IEEE80211_FC0_TYPE_MASK >> IEEE80211_FC0_TYPE_SHIFT) + 1;
-				  for (i = 0; i < lim; ++i) {
-				  	if (pcap_strcasecmp($1, names[i]) == 0) {
-						$$ = i << IEEE80211_FC0_TYPE_SHIFT;
-						break;
-					}
-				  }
-				  if (i == lim)
+	| ID			{ $$ = str2tok($1, ieee80211_types);
+				  if ($$ == -1)
 				  	bpf_error("unknown 802.11 type name");
 				}
 	;
 
 subtype:  NUM
-	| ID			{ const char **names;
-				  int i, lim;
-				  if ($<i>-1 == IEEE80211_FC0_TYPE_MGT)
-				  	names = ieee80211_mgt_names;
-				  else if ($<i>-1 == IEEE80211_FC0_TYPE_CTL)
-				  	names = ieee80211_ctl_names;
-				  else if ($<i>-1 == IEEE80211_FC0_TYPE_DATA)
-				  	names = ieee80211_data_names;
-				  else
-				  	bpf_error("unknown 802.11 type");
-				  lim = (IEEE80211_FC0_SUBTYPE_MASK >> IEEE80211_FC0_SUBTYPE_SHIFT) + 1;
-				  for (i = 0; i < lim; ++i) {
-				  	if (pcap_strcasecmp($1, names[i]) == 0) {
-						$$ = i << IEEE80211_FC0_SUBTYPE_SHIFT;
+	| ID			{ const struct tok *types = NULL;
+				  int i;
+				  for (i = 0;; i++) {
+				  	if (ieee80211_type_subtypes[i].tok == NULL) {
+				  		/* Ran out of types */
+						bpf_error("unknown 802.11 type");
+						break;
+					}
+					if ($<i>-1 == ieee80211_type_subtypes[i].type) {
+						types = ieee80211_type_subtypes[i].tok;
 						break;
 					}
 				  }
-				  if (i == lim)
-				  	bpf_error("unknown 802.11 subtype name");
+
+				  $$ = str2tok($1, types);
+				  if ($$ == -1)
+					bpf_error("unknown 802.11 subtype name");
 				}
 	;
 
-type_subtype:	ID		{ const char **sub_names[] = {
-					ieee80211_mgt_names,
-					ieee80211_ctl_names,
-					ieee80211_data_names
-				  };
-				  int i, j, lim, sub_lim;
-				  sub_lim = sizeof(sub_names) / sizeof(sub_names[0]);
-				  lim = (IEEE80211_FC0_SUBTYPE_MASK >> IEEE80211_FC0_SUBTYPE_SHIFT) + 1;
-				  for (i = 0; i < sub_lim; ++i) {
-				  	const char **names = sub_names[i];
-				  	for (j = 0; j < lim; ++j) {
-						if (pcap_strcasecmp($1, names[j]) == 0)
-							break;
+type_subtype:	ID		{ int i;
+				  for (i = 0;; i++) {
+				  	if (ieee80211_type_subtypes[i].tok == NULL) {
+				  		/* Ran out of types */
+						bpf_error("unknown 802.11 type name");
+						break;
 					}
-					if (j != lim) {
-						$$ = (i << IEEE80211_FC0_TYPE_SHIFT) |
-						     (j << IEEE80211_FC0_SUBTYPE_SHIFT);
+					$$ = str2tok($1, ieee80211_type_subtypes[i].tok);
+					if ($$ != -1) {
+						$$ |= ieee80211_type_subtypes[i].type;
 						break;
 					}
 				  }
-				  if (i == sub_lim)
-				  	bpf_error("unknown 802.11 subtype name");
 				}
 		;
+
+dir:	  NUM
+	| ID			{ if (pcap_strcasecmp($1, "nods") == 0)
+					$$ = IEEE80211_FC1_DIR_NODS;
+				  else if (pcap_strcasecmp($1, "tods") == 0)
+					$$ = IEEE80211_FC1_DIR_TODS;
+				  else if (pcap_strcasecmp($1, "fromds") == 0)
+					$$ = IEEE80211_FC1_DIR_FROMDS;
+				  else if (pcap_strcasecmp($1, "dstods") == 0)
+					$$ = IEEE80211_FC1_DIR_DSTODS;
+				  else
+					bpf_error("unknown 802.11 direction");
+				}
+	;
 
 reason:	  NUM			{ $$ = $1; }
 	| ID			{ $$ = pfreason_to_num($1); }

@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.301 2007-11-10 21:53:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.302 2007-11-18 02:03:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -68,6 +68,7 @@ static const char rcsid[] _U_ =
 #include "nlpid.h"
 #include "llc.h"
 #include "gencode.h"
+#include "ieee80211.h"
 #include "atmuni31.h"
 #include "sunatmpos.h"
 #include "ppp.h"
@@ -3840,6 +3841,55 @@ gen_wlanhostop(eaddr, dir)
 		gen_and(b1, b0);
 		return b0;
 
+	/*
+	 * XXX - add RA, TA, and BSSID keywords?
+	 */
+	case Q_ADDR1:
+		return (gen_bcmp(OR_LINK, 4, 6, eaddr));
+
+	case Q_ADDR2:
+		/*
+		 * Not present in CTS or ACK control frames.
+		 */
+		b0 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b1);
+		b2 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b2);
+		gen_and(b1, b2);
+		gen_or(b0, b2);
+		b1 = gen_bcmp(OR_LINK, 10, 6, eaddr);
+		gen_and(b2, b1);
+		return b1;
+
+	case Q_ADDR3:
+		/*
+		 * Not present in control frames.
+		 */
+		b0 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_bcmp(OR_LINK, 16, 6, eaddr);
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_ADDR4:
+		/*
+		 * Present only if the direction mask has both "From DS"
+		 * and "To DS" set.  Neither control frames nor management
+		 * frames should have both of those set, so we don't
+		 * check the frame type.
+		 */
+		b0 = gen_mcmp(OR_LINK, 1, BPF_B,
+			IEEE80211_FC1_DIR_DSTODS, IEEE80211_FC1_DIR_MASK);
+		b1 = gen_bcmp(OR_LINK, 24, 6, eaddr);
+		gen_and(b0, b1);
+		return b1;
+
 	case Q_AND:
 		b0 = gen_wlanhostop(eaddr, Q_SRC);
 		b1 = gen_wlanhostop(eaddr, Q_DST);
@@ -7290,6 +7340,31 @@ gen_p80211_type(int type, int mask)
 		bpf_error("802.11 link-layer types supported only on 802.11");
 		/* NOTREACHED */
 	}
+
+	return (b0);
+}
+
+struct block *
+gen_p80211_fcdir(int fcdir)
+{
+	struct block *b0;
+
+	switch (linktype) {
+
+	case DLT_IEEE802_11:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
+	case DLT_PRISM_HEADER:
+		break;
+
+	default:
+		bpf_error("frame direction supported only with 802.11 headers");
+		/* NOTREACHED */
+	}
+
+	b0 = gen_mcmp(OR_LINK, 1, BPF_B, (bpf_int32)fcdir,
+		(bpf_u_int32)IEEE80211_FC1_DIR_MASK);
+
 	return (b0);
 }
 

@@ -22,7 +22,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.110 2007-06-11 10:04:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/scanner.l,v 1.111 2007-11-18 02:03:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -249,6 +249,11 @@ gateway		return GATEWAY;
 
 type		return TYPE;
 subtype		return SUBTYPE;
+direction|dir	return DIR;
+address1|addr1	return ADDR1;
+address2|addr2	return ADDR2;
+address3|addr3	return ADDR3;
+address4|addr4	return ADDR4;
 
 less		return LESS;
 greater		return GREATER;
