@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.1 2007-10-20 01:18:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.2 2007-11-18 04:37:53 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -989,8 +989,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 
 #ifdef SITA
 	return acn_setfilter(handle->fd, filter);
-#endif
-
+#else
 	/* Make our private copy of the filter */
 
 	if (install_bpf_program(handle, filter) < 0)
@@ -1106,6 +1105,7 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 #endif /* SO_ATTACH_FILTER */
 
 	return 0;
+#endif /* SITA */
 }
 
 /*
@@ -1754,9 +1754,7 @@ static void	pcap_close_linux( pcap_t *handle )
 {
 #ifdef SITA
 	pcap_close_acn(handle);
-	return;
-#endif
-
+#else
 	struct pcap	*p, *prevp;
 	struct ifreq	ifr;
 
@@ -1825,6 +1823,7 @@ static void	pcap_close_linux( pcap_t *handle )
 		free(handle->md.device);
 	handle->md.device = NULL;
 	pcap_close_common(handle);
+#endif /* SITA */
 }
 
 /*
