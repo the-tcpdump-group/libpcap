@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.12 2007-11-18 02:04:55 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.13 2007-11-26 21:12:06 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -3672,7 +3672,7 @@ gen_wlanhostop(eaddr, dir)
 		 * Now check for a data frame.
 		 * I.e, check "link[0] & 0x08".
 		 */
-		gen_load_a(OR_LINK, 0, BPF_B);
+		s = gen_load_a(OR_LINK, 0, BPF_B);
 		b1 = new_block(JMP(BPF_JSET));
 		b1->s.k = 0x08;
 		b1->stmts = s;
