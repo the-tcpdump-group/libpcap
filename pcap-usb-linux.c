@@ -29,11 +29,12 @@
  *
  * USB sniffing API implementation for Linux platform
  * By Paolo Abeni <paolo.abeni@email.it>
+ * Modifications: Kris Katterjohn <katterjohn@gmail.com>
  *
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16 2007-09-14 01:55:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.17 2007-11-30 19:53:06 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -528,8 +529,15 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	/* extract info on dropped urbs */
 	for (consumed=0; consumed < ret; ) {
+		/* from the sscanf man page: 
+ 		 * The C standard says: "Execution of a %n directive does 
+ 		 * not increment the assignment count returned at the completion
+		 * of  execution" but the Corrigendum seems to contradict this.
+		 * Do not make any assumptions on the effect of %n conversions 
+		 * on the return value and explicitly check for cnt assignmet*/
+		cnt = -1;
 		int ntok = sscanf(ptr, "%s%n", token, &cnt);
-		if (ntok != 2)
+		if ((ntok < 1) || (cnt < 0))
 			break;
 		consumed += cnt;
 		ptr += cnt;
@@ -537,7 +545,7 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 			ret = sscanf(ptr, "%d", &stats->ps_drop);
 		else 
 			ret = sscanf(ptr, "%d", &dummy);
-		if (ntok != 2)
+		if (ntok != 1)
 			break;
 		consumed += cnt;
 		ptr += cnt;
