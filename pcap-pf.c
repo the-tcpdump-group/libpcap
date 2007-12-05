@@ -23,8 +23,12 @@
  */
 
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.54.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.94.2.1 2007-12-05 23:38:11 guy Exp $ (LBL)";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <sys/types.h>
@@ -35,11 +39,8 @@ static const char rcsid[] =
 #include <sys/ioctl.h>
 #include <net/pfilt.h>
 
-#if __STDC__
 struct mbuf;
 struct rtentry;
-#endif
-
 #include <net/if.h>
 
 #include <netinet/in.h>
@@ -60,12 +61,20 @@ struct rtentry;
 #include <string.h>
 #include <unistd.h>
 
+/*
+ * Make "pcap.h" not include "pcap/bpf.h"; we are going to include the
+ * native OS version, as we need various BPF ioctls from it.
+ */
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
+#include <net/bpf.h>
+
 #include "pcap-int.h"
 
-#include "gnuc.h"
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
+
+static int pcap_setfilter_pf(pcap_t *, struct bpf_program *);
 
 /*
  * BUFSPACE is the size in bytes of the packet read buffer.  Most tcpdump
@@ -75,11 +84,10 @@ struct rtentry;
  */
 #define BUFSPACE (200 * 256)
 
-int
-pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 {
 	register u_char *p, *bp;
-	struct bpf_insn *fcode;
 	register int cc, n, buflen, inc;
 	register struct enstamp *sp;
 #ifdef LBL_ALIGN
@@ -89,7 +97,6 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	register int pad;
 #endif
 
-	fcode = pc->md.use_bpf ? NULL : pc->fcode.bf_insns;
  again:
 	cc = pc->cc;
 	if (cc == 0) {
@@ -108,7 +115,7 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 				(void)lseek(pc->fd, 0L, SEEK_SET);
 				goto again;
 			}
-			sprintf(pc->errbuf, "pf read: %s",
+			snprintf(pc->errbuf, sizeof(pc->errbuf), "pf read: %s",
 				pcap_strerror(errno));
 			return (-1);
 		}
@@ -120,14 +127,31 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	 */
 	n = 0;
 #ifdef PCAP_FDDIPAD
-	if (pc->linktype == DLT_FDDI)
-		pad = pcap_fddipad;
-	else
-		pad = 0;
+	pad = pc->fddipad;
 #endif
 	while (cc > 0) {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return -2 to indicate
+		 * that we were told to break out of the loop, otherwise
+		 * leave the flag set, so that the *next* call will break
+		 * out of the loop without having read any packets, and
+		 * return the number of packets we've processed so far.
+		 */
+		if (pc->break_loop) {
+			if (n == 0) {
+				pc->break_loop = 0;
+				return (-2);
+			} else {
+				pc->cc = cc;
+				pc->bp = bp;
+				return (n);
+			}
+		}
 		if (cc < sizeof(*sp)) {
-			sprintf(pc->errbuf, "pf short read (%d)", cc);
+			snprintf(pc->errbuf, sizeof(pc->errbuf),
+			    "pf short read (%d)", cc);
 			return (-1);
 		}
 #ifdef LBL_ALIGN
@@ -138,7 +162,8 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 #endif
 			sp = (struct enstamp *)bp;
 		if (sp->ens_stamplen != sizeof(*sp)) {
-			sprintf(pc->errbuf, "pf short stamplen (%d)",
+			snprintf(pc->errbuf, sizeof(pc->errbuf),
+			    "pf short stamplen (%d)",
 			    sp->ens_stamplen);
 			return (-1);
 		}
@@ -152,10 +177,6 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		inc = ENALIGN(buflen + sp->ens_stamplen);
 		cc -= inc;
 		bp += inc;
-#ifdef PCAP_FDDIPAD
-		p += pad;
-		buflen -= pad;
-#endif
 		pc->md.TotPkts++;
 		pc->md.TotDrops += sp->ens_dropped;
 		pc->md.TotMissed = sp->ens_ifoverflows;
@@ -164,10 +185,19 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 
 		/*
 		 * Short-circuit evaluation: if using BPF filter
-		 * in kernel, no need to do it now.
+		 * in kernel, no need to do it now - we already know
+		 * the packet passed the filter.
+		 *
+#ifdef PCAP_FDDIPAD
+		 * Note: the filter code was generated assuming
+		 * that pc->fddipad was the amount of padding
+		 * before the header, as that's what's required
+		 * in the kernel, so we run the filter before
+		 * skipping that padding.
+#endif
 		 */
-		if (fcode == NULL ||
-		    bpf_filter(fcode, p, sp->ens_count, buflen)) {
+		if (pc->md.use_bpf ||
+		    bpf_filter(pc->fcode.bf_insns, p, sp->ens_count, buflen)) {
 			struct pcap_pkthdr h;
 			pc->md.TotAccepted++;
 			h.ts = sp->ens_tstamp;
@@ -175,6 +205,10 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 			h.len = sp->ens_count - pad;
 #else
 			h.len = sp->ens_count;
+#endif
+#ifdef PCAP_FDDIPAD
+			p += pad;
+			buflen -= pad;
 #endif
 			h.caplen = buflen;
 			(*callback)(user, &h, p);
@@ -189,18 +223,77 @@ pcap_read(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	return (n);
 }
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_inject_pf(pcap_t *p, const void *buf, size_t size)
+{
+	int ret;
+
+	ret = write(p->fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
+
+static int
+pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 {
 
+	/*
+	 * If packet filtering is being done in the kernel:
+	 *
+	 *	"ps_recv" counts only packets that passed the filter.
+	 *	This does not include packets dropped because we
+	 *	ran out of buffer space.  (XXX - perhaps it should,
+	 *	by adding "ps_drop" to "ps_recv", for compatibility
+	 *	with some other platforms.  On the other hand, on
+	 *	some platforms "ps_recv" counts only packets that
+	 *	passed the filter, and on others it counts packets
+	 *	that didn't pass the filter....)
+	 *
+	 *	"ps_drop" counts packets that passed the kernel filter
+	 *	(if any) but were dropped because the input queue was
+	 *	full.
+	 *
+	 *	"ps_ifdrop" counts packets dropped by the network
+	 *	inteface (regardless of whether they would have passed
+	 *	the input filter, of course).
+	 *
+	 * If packet filtering is not being done in the kernel:
+	 *
+	 *	"ps_recv" counts only packets that passed the filter.
+	 *
+	 *	"ps_drop" counts packets that were dropped because the
+	 *	input queue was full, regardless of whether they passed
+	 *	the userland filter.
+	 *
+	 *	"ps_ifdrop" counts packets dropped by the network
+	 *	inteface (regardless of whether they would have passed
+	 *	the input filter, of course).
+	 *
+	 * These statistics don't include packets not yet read from
+	 * the kernel by libpcap, but they may include packets not
+	 * yet read from libpcap by the application.
+	 */
 	ps->ps_recv = p->md.TotAccepted;
 	ps->ps_drop = p->md.TotDrops;
 	ps->ps_ifdrop = p->md.TotMissed - p->md.OrigMissed;
 	return (0);
 }
 
+/*
+ * We include the OS's <net/bpf.h>, not our "pcap/bpf.h", so we probably
+ * don't get DLT_DOCSIS defined.
+ */
+#ifndef DLT_DOCSIS
+#define DLT_DOCSIS	143
+#endif
+
 pcap_t *
-pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
+pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
+    char *ebuf)
 {
 	pcap_t *p;
 	short enmode;
@@ -210,14 +303,36 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		sprintf(ebuf, "pcap_open_live: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "pcap_open_live: %s", pcap_strerror(errno));
 		return (0);
 	}
-	bzero((char *)p, sizeof(*p));
-	p->fd = pfopen(device, O_RDONLY);
+	memset(p, 0, sizeof(*p));
+	/*
+	 * Initially try a read/write open (to allow the inject
+	 * method to work).  If that fails due to permission
+	 * issues, fall back to read-only.  This allows a
+	 * non-root user to be granted specific access to pcap
+	 * capabilities via file permissions.
+	 *
+	 * XXX - we should have an API that has a flag that
+	 * controls whether to open read-only or read-write,
+	 * so that denial of permission to send (or inability
+	 * to send, if sending packets isn't supported on
+	 * the device in question) can be indicated at open
+	 * time.
+	 *
+	 * XXX - we assume here that "pfopen()" does not, in fact, modify
+	 * its argument, even though it takes a "char *" rather than a
+	 * "const char *" as its first argument.  That appears to be
+	 * the case, at least on Digital UNIX 4.0.
+	 */
+	p->fd = pfopen(device, O_RDWR);
+	if (p->fd == -1 && errno == EACCES)
+		p->fd = pfopen(device, O_RDONLY);
 	if (p->fd < 0) {
-		sprintf(ebuf, "pf open: %s: %s\n\
-your system may not be properly configured; see \"man packetfilter(4)\"\n",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
+your system may not be properly configured; see the packetfilter(4) man page\n",
 			device, pcap_strerror(errno));
 		goto bad;
 	}
@@ -226,7 +341,8 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 	if (promisc)
 		enmode |= ENPROMISC;
 	if (ioctl(p->fd, EIOCMBIS, (caddr_t)&enmode) < 0) {
-		sprintf(ebuf, "EIOCMBIS: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCMBIS: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 #ifdef	ENCOPYALL
@@ -236,12 +352,14 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 #endif
 	/* set the backlog */
 	if (ioctl(p->fd, EIOCSETW, (caddr_t)&backlog) < 0) {
-		sprintf(ebuf, "EIOCSETW: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCSETW: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	/* discover interface type */
 	if (ioctl(p->fd, EIOCDEVP, (caddr_t)&devparams) < 0) {
-		sprintf(ebuf, "EIOCDEVP: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCDEVP: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	/* HACK: to compile prior to Ultrix 4.2 */
@@ -253,45 +371,102 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 	case ENDT_10MB:
 		p->linktype = DLT_EN10MB;
 		p->offset = 2;
+		/*
+		 * This is (presumably) a real Ethernet capture; give it a
+		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+		 * that an application can let you choose it, in case you're
+		 * capturing DOCSIS traffic that a Cisco Cable Modem
+		 * Termination System is putting out onto an Ethernet (it
+		 * doesn't put an Ethernet header onto the wire, it puts raw
+		 * DOCSIS frames out on the wire inside the low-level
+		 * Ethernet framing).
+		 */
+		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (p->dlt_list != NULL) {
+			p->dlt_list[0] = DLT_EN10MB;
+			p->dlt_list[1] = DLT_DOCSIS;
+			p->dlt_count = 2;
+		}
 		break;
 
 	case ENDT_FDDI:
 		p->linktype = DLT_FDDI;
 		break;
 
-	default:
-		/*
-		 * XXX
-		 * Currently, the Ultrix packet filter supports only
-		 * Ethernet and FDDI.  Eventually, support for SLIP and PPP
-		 * (and possibly others: T1?) should be added.
-		 */
-#ifdef notdef
-		warning(
-		   "Packet filter data-link type %d unknown, assuming Ethernet",
-		    devparams.end_dev_type);
+#ifdef ENDT_SLIP
+	case ENDT_SLIP:
+		p->linktype = DLT_SLIP;
+		break;
 #endif
+
+#ifdef ENDT_PPP
+	case ENDT_PPP:
+		p->linktype = DLT_PPP;
+		break;
+#endif
+
+#ifdef ENDT_LOOPBACK
+	case ENDT_LOOPBACK:
+		/*
+		 * It appears to use Ethernet framing, at least on
+		 * Digital UNIX 4.0.
+		 */
 		p->linktype = DLT_EN10MB;
 		p->offset = 2;
 		break;
+#endif
+
+#ifdef ENDT_TRN
+	case ENDT_TRN:
+		p->linktype = DLT_IEEE802;
+		break;
+#endif
+
+	default:
+		/*
+		 * XXX - what about ENDT_IEEE802?  The pfilt.h header
+		 * file calls this "IEEE 802 networks (non-Ethernet)",
+		 * but that doesn't specify a specific link layer type;
+		 * it could be 802.4, or 802.5 (except that 802.5 is
+		 * ENDT_TRN), or 802.6, or 802.11, or....  That's why
+		 * DLT_IEEE802 was hijacked to mean Token Ring in various
+		 * BSDs, and why we went along with that hijacking.
+		 *
+		 * XXX - what about ENDT_HDLC and ENDT_NULL?
+		 * Presumably, as ENDT_OTHER is just "Miscellaneous
+		 * framing", there's not much we can do, as that
+		 * doesn't specify a particular type of header.
+		 */
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown data-link type %u",
+		    devparams.end_dev_type);
+		goto bad;
 	}
 	/* set truncation */
 #ifdef PCAP_FDDIPAD
-	if (p->linktype == DLT_FDDI)
+	if (p->linktype == DLT_FDDI) {
+		p->fddipad = PCAP_FDDIPAD;
+
 		/* packetfilter includes the padding in the snapshot */
-		snaplen += pcap_fddipad;
+		snaplen += PCAP_FDDIPAD;
+	} else
+		p->fddipad = 0;
 #endif
 	if (ioctl(p->fd, EIOCTRUNCATE, (caddr_t)&snaplen) < 0) {
-		sprintf(ebuf, "EIOCTRUNCATE: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCTRUNCATE: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->snapshot = snaplen;
 	/* accept all packets */
-	bzero((char *)&Filter, sizeof(Filter));
+	memset(&Filter, 0, sizeof(Filter));
 	Filter.enf_Priority = 37;	/* anything > 2 */
 	Filter.enf_FilterLen = 0;	/* means "always true" */
 	if (ioctl(p->fd, EIOCSETF, (caddr_t)&Filter) < 0) {
-		sprintf(ebuf, "EIOCSETF: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCSETF: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
@@ -300,52 +475,135 @@ your system may not be properly configured; see \"man packetfilter(4)\"\n",
 		timeout.tv_sec = to_ms / 1000;
 		timeout.tv_usec = (to_ms * 1000) % 1000000;
 		if (ioctl(p->fd, EIOCSRTIMEOUT, (caddr_t)&timeout) < 0) {
-			sprintf(ebuf, "EIOCSRTIMEOUT: %s",
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "EIOCSRTIMEOUT: %s",
 				pcap_strerror(errno));
 			goto bad;
 		}
 	}
+
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char*)malloc(p->bufsize + p->offset);
+	if (p->buffer == NULL) {
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		goto bad;
+	}
+
+	/*
+	 * "select()" and "poll()" work on packetfilter devices.
+	 */
+	p->selectable_fd = p->fd;
+
+	p->read_op = pcap_read_pf;
+	p->inject_op = pcap_inject_pf;
+	p->setfilter_op = pcap_setfilter_pf;
+	p->setdirection_op = NULL;	/* Not implemented. */
+	p->set_datalink_op = NULL;	/* can't change data link type */
+	p->getnonblock_op = pcap_getnonblock_fd;
+	p->setnonblock_op = pcap_setnonblock_fd;
+	p->stats_op = pcap_stats_pf;
+	p->close_op = pcap_close_common;
 
 	return (p);
  bad:
+	if (p->fd >= 0)
+		close(p->fd);
+	/*
+	 * Get rid of any link-layer type list we allocated.
+	 */
+	if (p->dlt_list != NULL)
+		free(p->dlt_list);
 	free(p);
 	return (NULL);
 }
 
 int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
+	return (0);
+}
+
+static int
+pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
+{
+	struct bpf_version bv;
+
 	/*
-	 * See if BIOCSETF works.  If it does, the kernel supports
-	 * BPF-style filters, and we do not need to do post-filtering.
+	 * See if BIOCVERSION works.  If not, we assume the kernel doesn't
+	 * support BPF-style filters (it's not documented in the bpf(7)
+	 * or packetfiler(7) man pages, but the code used to fail if
+	 * BIOCSETF worked but BIOCVERSION didn't, and I've seen it do
+	 * kernel filtering in DU 4.0, so presumably BIOCVERSION works
+	 * there, at least).
 	 */
-	p->md.use_bpf = (ioctl(p->fd, BIOCSETF, (caddr_t)fp) >= 0);
-	if (p->md.use_bpf) {
-		struct bpf_version bv;
+	if (ioctl(p->fd, BIOCVERSION, (caddr_t)&bv) >= 0) {
+		/*
+		 * OK, we have the version of the BPF interpreter;
+		 * is it the same major version as us, and the same
+		 * or better minor version?
+		 */
+		if (bv.bv_major == BPF_MAJOR_VERSION &&
+		    bv.bv_minor >= BPF_MINOR_VERSION) {
+			/*
+			 * Yes.  Try to install the filter.
+			 */
+			if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
+				snprintf(p->errbuf, sizeof(p->errbuf),
+				    "BIOCSETF: %s", pcap_strerror(errno));
+				return (-1);
+			}
 
-		if (ioctl(p->fd, BIOCVERSION, (caddr_t)&bv) < 0) {
-			sprintf(p->errbuf, "BIOCVERSION: %s",
-				pcap_strerror(errno));
-			return (-1);
-		}
-		else if (bv.bv_major != BPF_MAJOR_VERSION ||
-			 bv.bv_minor < BPF_MINOR_VERSION) {
-			fprintf(stderr,
-		"requires bpf language %d.%d or higher; kernel is %d.%d",
-				BPF_MAJOR_VERSION, BPF_MINOR_VERSION,
-			      bv.bv_major, bv.bv_minor);
-			/* don't give up, just be inefficient */
-			p->md.use_bpf = 0;
-		}
-	} else
-		p->fcode = *fp;
+			/*
+			 * OK, that succeeded.  We're doing filtering in
+			 * the kernel.  (We assume we don't have a
+			 * userland filter installed - that'd require
+			 * a previous version check to have failed but
+			 * this one to succeed.)
+			 *
+			 * XXX - this message should be supplied to the
+			 * application as a warning of some sort,
+			 * except that if it's a GUI application, it's
+			 * not clear that it should be displayed in
+			 * a window to annoy the user.
+			 */
+			fprintf(stderr, "tcpdump: Using kernel BPF filter\n");
+			p->md.use_bpf = 1;
 
-	/*XXX this goes in tcpdump*/
-	if (p->md.use_bpf)
-		fprintf(stderr, "tcpdump: Using kernel BPF filter\n");
-	else
-		fprintf(stderr, "tcpdump: Filtering in user process\n");
+			/*
+			 * Discard any previously-received packets,
+			 * as they might have passed whatever filter
+			 * was formerly in effect, but might not pass
+			 * this filter (BIOCSETF discards packets buffered
+			 * in the kernel, so you can lose packets in any
+			 * case).
+			 */
+			p->cc = 0;
+			return (0);
+		}
+
+		/*
+		 * We can't use the kernel's BPF interpreter; don't give
+		 * up, just log a message and be inefficient.
+		 *
+		 * XXX - this should really be supplied to the application
+		 * as a warning of some sort.
+		 */
+		fprintf(stderr,
+	    "tcpdump: Requires BPF language %d.%d or higher; kernel is %d.%d\n",
+		    BPF_MAJOR_VERSION, BPF_MINOR_VERSION,
+		    bv.bv_major, bv.bv_minor);
+	}
+
+	/*
+	 * We couldn't do filtering in the kernel; do it in userland.
+	 */
+	if (install_bpf_program(p, fp) < 0)
+		return (-1);
+
+	/*
+	 * XXX - this message should be supplied by the application as
+	 * a warning of some sort.
+	 */
+	fprintf(stderr, "tcpdump: Filtering in user process\n");
+	p->md.use_bpf = 0;
 	return (0);
 }

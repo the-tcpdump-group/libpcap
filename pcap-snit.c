@@ -24,8 +24,12 @@
  */
 
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.45.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snit.c,v 1.73.2.1 2007-12-05 23:38:11 guy Exp $ (LBL)";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <sys/types.h>
@@ -56,16 +60,12 @@ static const char rcsid[] =
 
 #include <ctype.h>
 #include <errno.h>
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "pcap-int.h"
 
-#include "gnuc.h"
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -84,19 +84,35 @@ static const char rcsid[] =
 /* Forwards */
 static int nit_setflags(int, int, int, char *);
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_stats_snit(pcap_t *p, struct pcap_stat *ps)
 {
 
+	/*
+	 * "ps_recv" counts packets handed to the filter, not packets
+	 * that passed the filter.  As filtering is done in userland,
+	 * this does not include packets dropped because we ran out
+	 * of buffer space.
+	 *
+	 * "ps_drop" counts packets dropped inside the "/dev/nit"
+	 * device because of flow control requirements or resource
+	 * exhaustion; it doesn't count packets dropped by the
+	 * interface driver, or packets dropped upstream.  As filtering
+	 * is done in userland, it counts packets regardless of whether
+	 * they would've passed the filter.
+	 *
+	 * These statistics don't include packets not yet read from the
+	 * kernel by libpcap or packets not yet read from libpcap by the
+	 * application.
+	 */
 	*ps = p->md.stat;
 	return (0);
 }
 
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	register int cc, n;
-	register struct bpf_insn *fcode = p->fcode.bf_insns;
 	register u_char *bp, *cp, *ep;
 	register struct nit_bufhdr *hdrp;
 	register struct nit_iftime *ntp;
@@ -110,7 +126,7 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (cc < 0) {
 			if (errno == EWOULDBLOCK)
 				return (0);
-			sprintf(p->errbuf, "pcap_read: %s",
+			snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
 				pcap_strerror(errno));
 			return (-1);
 		}
@@ -124,6 +140,26 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	n = 0;
 	ep = bp + cc;
 	while (bp < ep) {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return -2 to indicate
+		 * that we were told to break out of the loop, otherwise
+		 * leave the flag set, so that the *next* call will break
+		 * out of the loop without having read any packets, and
+		 * return the number of packets we've processed so far.
+		 */
+		if (p->break_loop) {
+			if (n == 0) {
+				p->break_loop = 0;
+				return (-2);
+			} else {
+				p->bp = bp;
+				p->cc = ep - bp;
+				return (n);
+			}
+		}
+
 		++p->md.stat.ps_recv;
 		cp = bp;
 
@@ -150,7 +186,7 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (caplen > p->snapshot)
 			caplen = p->snapshot;
 
-		if (bpf_filter(fcode, cp, nlp->nh_pktlen, caplen)) {
+		if (bpf_filter(p->fcode.bf_insns, cp, nlp->nh_pktlen, caplen)) {
 			struct pcap_pkthdr h;
 			h.ts = ntp->nh_timestamp;
 			h.len = nlp->nh_pktlen;
@@ -168,6 +204,29 @@ pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
+pcap_inject_snit(pcap_t *p, const void *buf, size_t size)
+{
+	struct strbuf ctl, data;
+	
+	/*
+	 * XXX - can we just do
+	 *
+	ret = write(pd->f, buf, size);
+	 */
+	ctl.len = sizeof(*sa);	/* XXX - what was this? */
+	ctl.buf = (char *)sa;
+	data.buf = buf;
+	data.len = size;
+	ret = putmsg(p->fd, &ctl, &data);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}
+
+static int
 nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 {
 	bpf_u_int32 flags;
@@ -182,7 +241,8 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 		si.ic_len = sizeof(timeout);
 		si.ic_dp = (char *)&timeout;
 		if (ioctl(fd, I_STR, (char *)&si) < 0) {
-			sprintf(ebuf, "NIOCSTIME: %s", pcap_strerror(errno));
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCSTIME: %s",
+			    pcap_strerror(errno));
 			return (-1);
 		}
 	}
@@ -193,14 +253,16 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 	si.ic_len = sizeof(flags);
 	si.ic_dp = (char *)&flags;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		sprintf(ebuf, "NIOCSFLAGS: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCSFLAGS: %s",
+		    pcap_strerror(errno));
 		return (-1);
 	}
 	return (0);
 }
 
 pcap_t *
-pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
+pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
+    char *ebuf)
 {
 	struct strioctl si;		/* struct for ioctl() */
 	struct ifreq ifr;		/* interface request struct */
@@ -211,7 +273,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
-		strcpy(ebuf, pcap_strerror(errno));
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		return (NULL);
 	}
 
@@ -221,20 +283,39 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 		 */
 		snaplen = 96;
 
-	bzero(p, sizeof(*p));
-	p->fd = fd = open(dev, O_RDONLY);
+	memset(p, 0, sizeof(*p));
+	/*
+	 * Initially try a read/write open (to allow the inject
+	 * method to work).  If that fails due to permission
+	 * issues, fall back to read-only.  This allows a
+	 * non-root user to be granted specific access to pcap
+	 * capabilities via file permissions.
+	 *
+	 * XXX - we should have an API that has a flag that
+	 * controls whether to open read-only or read-write,
+	 * so that denial of permission to send (or inability
+	 * to send, if sending packets isn't supported on
+	 * the device in question) can be indicated at open
+	 * time.
+	 */
+	p->fd = fd = open(dev, O_RDWR);
+	if (fd < 0 && errno == EACCES)
+		p->fd = fd = open(dev, O_RDONLY);
 	if (fd < 0) {
-		sprintf(ebuf, "%s: %s", dev, pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dev,
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	/* arrange to get discrete messages from the STREAM and use NIT_BUF */
 	if (ioctl(fd, I_SRDOPT, (char *)RMSGD) < 0) {
-		sprintf(ebuf, "I_SRDOPT: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "I_SRDOPT: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	if (ioctl(fd, I_PUSH, "nbuf") < 0) {
-		sprintf(ebuf, "push nbuf: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "push nbuf: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	/* set the chunksize */
@@ -243,18 +324,19 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	si.ic_len = sizeof(chunksize);
 	si.ic_dp = (char *)&chunksize;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		sprintf(ebuf, "NIOCSCHUNK: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCSCHUNK: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	/* request the interface */
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
-	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = ' ';
+	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	si.ic_cmd = NIOCBIND;
 	si.ic_len = sizeof(ifr);
 	si.ic_dp = (char *)&ifr;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		sprintf(ebuf, "NIOCBIND: %s: %s",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCBIND: %s: %s",
 			ifr.ifr_name, pcap_strerror(errno));
 		goto bad;
 	}
@@ -264,7 +346,8 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	si.ic_len = sizeof(snaplen);
 	si.ic_dp = (char *)&snaplen;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		sprintf(ebuf, "NIOCSSNAP: %s", pcap_strerror(errno));
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCSSNAP: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->snapshot = snaplen;
@@ -280,9 +363,46 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		strcpy(ebuf, pcap_strerror(errno));
+		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
 	}
+
+	/*
+	 * "p->fd" is an FD for a STREAMS device, so "select()" and
+	 * "poll()" should work on it.
+	 */
+	p->selectable_fd = p->fd;
+
+	/*
+	 * This is (presumably) a real Ethernet capture; give it a
+	 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+	 * that an application can let you choose it, in case you're
+	 * capturing DOCSIS traffic that a Cisco Cable Modem
+	 * Termination System is putting out onto an Ethernet (it
+	 * doesn't put an Ethernet header onto the wire, it puts raw
+	 * DOCSIS frames out on the wire inside the low-level
+	 * Ethernet framing).
+	 */
+	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+	/*
+	 * If that fails, just leave the list empty.
+	 */
+	if (p->dlt_list != NULL) {
+		p->dlt_list[0] = DLT_EN10MB;
+		p->dlt_list[1] = DLT_DOCSIS;
+		p->dlt_count = 2;
+	}
+
+	p->read_op = pcap_read_snit;
+	p->inject_op = pcap_inject_snit;
+	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
+	p->setdirection_op = NULL;	/* Not implemented. */
+	p->set_datalink_op = NULL;	/* can't change data link type */
+	p->getnonblock_op = pcap_getnonblock_fd;
+	p->setnonblock_op = pcap_setnonblock_fd;
+	p->stats_op = pcap_stats_snit;
+	p->close_op = pcap_close_common;
+
 	return (p);
  bad:
 	if (fd >= 0)
@@ -292,9 +412,7 @@ pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
 }
 
 int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-
-	p->fcode = *fp;
 	return (0);
 }
