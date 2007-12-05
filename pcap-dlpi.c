@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116 2006-04-04 05:32:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.117 2007-12-05 23:37:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -245,7 +245,6 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	register int cc, n, caplen, origlen;
 	register u_char *bp, *ep, *pk;
-	register struct bpf_insn *fcode;
 #ifdef HAVE_SYS_BUFMOD_H
 	register struct sb_hdr *sbp;
 #ifdef LBL_ALIGN
@@ -303,7 +302,6 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		bp = p->bp;
 
 	/* Loop through packets */
-	fcode = p->fcode.bf_insns;
 	ep = bp + cc;
 	n = 0;
 #ifdef HAVE_SYS_BUFMOD_H
@@ -346,7 +344,7 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		bp += caplen;
 #endif
 		++p->md.stat.ps_recv;
-		if (bpf_filter(fcode, pk, origlen, caplen)) {
+		if (bpf_filter(p->fcode.bf_insns, pk, origlen, caplen)) {
 #ifdef HAVE_SYS_BUFMOD_H
 			pkthdr.ts.tv_sec = sbp->sbh_timestamp.tv_sec;
 			pkthdr.ts.tv_usec = sbp->sbh_timestamp.tv_usec;

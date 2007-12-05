@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.94 2006-10-04 18:09:22 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.95 2007-12-05 23:37:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -88,7 +88,6 @@ static int
 pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 {
 	register u_char *p, *bp;
-	struct bpf_insn *fcode;
 	register int cc, n, buflen, inc;
 	register struct enstamp *sp;
 #ifdef LBL_ALIGN
@@ -98,7 +97,6 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 	register int pad;
 #endif
 
-	fcode = pc->md.use_bpf ? NULL : pc->fcode.bf_insns;
  again:
 	cc = pc->cc;
 	if (cc == 0) {
@@ -187,7 +185,8 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 
 		/*
 		 * Short-circuit evaluation: if using BPF filter
-		 * in kernel, no need to do it now.
+		 * in kernel, no need to do it now - we already know
+		 * the packet passed the filter.
 		 *
 #ifdef PCAP_FDDIPAD
 		 * Note: the filter code was generated assuming
@@ -197,8 +196,8 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		 * skipping that padding.
 #endif
 		 */
-		if (fcode == NULL ||
-		    bpf_filter(fcode, p, sp->ens_count, buflen)) {
+		if (pc->md.use_bpf ||
+		    bpf_filter(pc->fcode.bf_insns, p, sp->ens_count, buflen)) {
 			struct pcap_pkthdr h;
 			pc->md.TotAccepted++;
 			h.ts = sp->ens_tstamp;

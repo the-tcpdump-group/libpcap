@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58 2005-05-03 18:54:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.59 2007-12-05 23:37:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -99,7 +99,6 @@ static int
 pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	register int cc, n;
-	register struct bpf_insn *fcode = p->fcode.bf_insns;
 	register u_char *bp, *cp, *ep;
 	register struct nit_hdr *nh;
 	register int caplen;
@@ -175,7 +174,7 @@ pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		caplen = nh->nh_wirelen;
 		if (caplen > p->snapshot)
 			caplen = p->snapshot;
-		if (bpf_filter(fcode, cp, nh->nh_wirelen, caplen)) {
+		if (bpf_filter(p->fcode.bf_insns, cp, nh->nh_wirelen, caplen)) {
 			struct pcap_pkthdr h;
 			h.ts = nh->nh_timestamp;
 			h.len = nh->nh_wirelen;

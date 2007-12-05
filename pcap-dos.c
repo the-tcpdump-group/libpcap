@@ -5,7 +5,7 @@
  *  pcap-dos.c: Interface to PKTDRVR, NDIS2 and 32-bit pmode
  *              network drivers.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.2 2005-05-03 18:53:59 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.3 2007-12-05 23:37:26 guy Exp $ (LBL)
  */
 
 #include <stdio.h>
@@ -205,7 +205,6 @@ static int
 pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
 {
   struct pcap_pkthdr pcap;
-  struct bpf_insn   *fcode = p->fcode.bf_insns;
   struct timeval     now, expiry;
   BYTE  *rx_buf;
   int    rx_len = 0;
@@ -258,7 +257,7 @@ pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
       pcap.len    = rx_len;
 
       if (callback &&
-          (!fcode || bpf_filter(fcode, rx_buf, pcap.len, pcap.caplen)))
+          (!p->fcode.bf_insns || bpf_filter(p->fcode.bf_insns, rx_buf, pcap.len, pcap.caplen)))
       {
         filter_count++;
 

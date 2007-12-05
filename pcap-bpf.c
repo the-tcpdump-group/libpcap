@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99 2007-06-15 17:55:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.100 2007-12-05 23:37:26 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -144,12 +144,10 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int n = 0;
 	register u_char *bp, *ep;
 	u_char *datap;
-	struct bpf_insn *fcode;
 #ifdef PCAP_FDDIPAD
 	register int pad;
 #endif
 
-	fcode = p->md.use_bpf ? NULL : p->fcode.bf_insns;
  again:
 	/*
 	 * Has "pcap_breakloop()" been called?
@@ -260,7 +258,8 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		datap = bp + hdrlen;
 		/*
 		 * Short-circuit evaluation: if using BPF filter
-		 * in kernel, no need to do it now.
+		 * in kernel, no need to do it now - we already know
+		 * the packet passed the filter.
 		 *
 #ifdef PCAP_FDDIPAD
 		 * Note: the filter code was generated assuming
@@ -270,8 +269,8 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * skipping that padding.
 #endif
 		 */
-		if (fcode == NULL ||
-		    bpf_filter(fcode, datap, bhp->bh_datalen, caplen)) {
+		if (p->md.use_bpf ||
+		    bpf_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
 			struct pcap_pkthdr pkthdr;
 
 			pkthdr.ts.tv_sec = bhp->bh_tstamp.tv_sec;
