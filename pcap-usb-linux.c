@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.1 2007-11-30 19:53:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.2 2007-12-13 17:28:56 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -150,7 +150,7 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 	int ret = 0;
 	DIR* dir;
 
-	/* scan profs usb bus directorys */
+	/* scan procfs usb bus directory */
 	dir = opendir(USB_BUS_DIR);
 	if (!dir) return 0;
 	while ((ret == 0) && ((data = readdir(dir)) != 0)) {
@@ -233,8 +233,6 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	handle->fd = open(full_path, O_RDONLY, 0);
 	if (handle->fd >= 0)
 	{
-		/* header endianess can't be fixed for memory mapped access,
-		 * due to read only access to mmaped buffer, so disable it*/
 		/* binary api is available, try to use fast mmap access */
 		if (usb_mmap(handle)) {
 			handle->stats_op = usb_stats_linux_bin;
@@ -604,6 +602,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 	info.hdr = (pcap_usb_header*) handle->buffer;
 	info.data = handle->buffer + sizeof(pcap_usb_header);
 	info.data_len = clen;
+
 	/* ignore interrupt system call errors */
 	do {
 		ret = ioctl(handle->fd, MON_IOCX_GET, &info);
@@ -716,7 +715,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 static void
 usb_close_linux_mmap(pcap_t* handle)
 {
-	/* handle fill be freed in pcap_close() 'common' code, buffer must not
+	/* handle will be freed in pcap_close() 'common' code, buffer must not
 	 * be freed because it's memory mapped */
 	close(handle->fd);
 }
