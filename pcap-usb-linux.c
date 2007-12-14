@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.3 2007-12-14 07:53:04 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.4 2007-12-14 08:02:53 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -232,6 +232,12 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 			handle->stats_op = usb_stats_linux_bin;
 			handle->read_op = usb_read_linux_mmap;
 			handle->close_op = usb_close_linux_mmap;
+
+			/*
+			 * "handle->fd" is a real file, so "select()" and
+			 * "poll()" work on it.
+			 */
+			handle->selectable_fd = handle->fd;
 			return handle;
 		}
 
