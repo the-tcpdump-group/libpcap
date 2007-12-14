@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.18 2007-12-13 17:28:38 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.19 2007-12-14 07:52:32 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -205,12 +205,6 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	handle->offset = 0;
 	handle->linktype = DLT_USB_LINUX;
 
-	/*
-	 * "handle->fd" is a real file , so "select()" and "poll()"
-	 * work on it.
-	 */
-	handle->selectable_fd = handle->fd;
-
 	handle->inject_op = usb_inject_linux;
 	handle->setfilter_op = usb_setfilter_linux;
 	handle->setdirection_op = usb_setdirection_linux;
@@ -260,6 +254,12 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 		handle->stats_op = usb_stats_linux;
 		handle->read_op = usb_read_linux;
 	}
+
+	/*
+	 * "handle->fd" is a real file, so "select()" and "poll()"
+	 * work on it.
+	 */
+	handle->selectable_fd = handle->fd;
 
 	/* for plain binary access and text access we need to allocate the read
 	 * buffer */
