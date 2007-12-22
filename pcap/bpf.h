@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.20 2007-10-21 08:39:27 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.21 2007-12-22 01:19:12 guy Exp $ (LBL)
  */
 
 /*
@@ -756,6 +756,22 @@ struct bpf_version {
  * Requested by Varuna De Silva <varunax@gmail.com>.
  */
 #define DLT_LAPD		203
+
+/*
+ * Variants of various link-layer headers, with a one-byte direction
+ * pseudo-header prepended - zero means "received by this host",
+ * non-zero (any non-zero value) means "sent by this host" - as per
+ * Will Barker <w.barker@zen.co.uk>.
+ */
+#define DLT_PPP_WITH_DIR	204	/* PPP - don't confuse with DLT_PPP_WITH_DIRECTION */
+#define DLT_C_HDLC_WITH_DIR	205	/* Cisco HDLC */
+#define DLT_FRELAY_WITH_DIR	206	/* Frame Relay */
+#define DLT_LAPB_WITH_DIR	207	/* LAPB */
+
+/*
+ * 208 is reserved for an as-yet-unspecified proprietary link-layer
+ * type, as requested by Will Barker.
+ */
 
 
 /*
