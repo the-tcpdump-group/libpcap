@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.21 2007-12-22 01:19:12 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.22 2007-12-23 04:40:45 guy Exp $ (LBL)
  */
 
 /*
@@ -773,6 +773,12 @@ struct bpf_version {
  * type, as requested by Will Barker.
  */
 
+
+/*
+ * IPMB with a Linux-specific pseudo-header; as equested by Alexey Neyman
+ * <avn@pigeonpoint.com>.
+ */
+#define DLT_IPMB_LINUX		209
 
 /*
  * DLT and savefile link type values are split into a class and

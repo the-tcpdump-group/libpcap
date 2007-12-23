@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.170 2007-10-21 08:39:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.171 2007-12-23 04:40:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -581,6 +581,29 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_LAPD		203
 
+/*
+ * Variants of various link-layer headers, with a one-byte direction
+ * pseudo-header prepended - zero means "received by this host",
+ * non-zero (any non-zero value) means "sent by this host" - as per
+ * Will Barker <w.barker@zen.co.uk>.
+ */
+#define LINKTYPE_PPP_WITH_DIR	204	/* PPP */
+#define LINKTYPE_C_HDLC_WITH_DIR 205	/* Cisco HDLC */
+#define LINKTYPE_FRELAY_WITH_DIR 206	/* Frame Relay */
+#define LINKTYPE_LAPB_WITH_DIR	207	/* LAPB */
+
+/*
+ * 208 is reserved for an as-yet-unspecified proprietary link-layer
+ * type, as requested by Will Barker.
+ */
+
+
+/*
+ * IPMB with a Linux-specific pseudo-header; as equested by Alexey Neyman
+ * <avn@pigeonpoint.com>.
+ */
+#define LINKTYPE_IPMB_LINUX		209
+
 
 static struct linktype_map {
 	int	dlt;
@@ -852,6 +875,21 @@ static struct linktype_map {
 
 	/* Raw LAPD, with no pseudo-header */
 	{ DLT_LAPD,		LINKTYPE_LAPD },
+
+	/* PPP with one-byte pseudo-header giving direction */
+	{ DLT_PPP_WITH_DIR,	LINKTYPE_PPP_WITH_DIR },
+
+	/* Cisco HDLC with one-byte pseudo-header giving direction */
+	{ DLT_C_HDLC_WITH_DIR,	LINKTYPE_C_HDLC_WITH_DIR },
+
+	/* Frame Relay with one-byte pseudo-header giving direction */
+	{ DLT_FRELAY_WITH_DIR,	LINKTYPE_FRELAY_WITH_DIR },
+
+	/* LAPB with one-byte pseudo-header giving direction */
+	{ DLT_LAPB_WITH_DIR,	LINKTYPE_LAPB_WITH_DIR },
+
+	/* IPMB with Linux pseudo-header */
+	{ DLT_IPMB_LINUX,	LINKTYPE_IPMB_LINUX },
 
 	{ -1,			-1 }
 };
