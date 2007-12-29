@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.14 2007-12-29 02:35:16 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.15 2007-12-29 23:15:43 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -201,9 +201,10 @@ static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
+static struct slist *gen_load_prism_llprefixlen(void);
+static struct slist *gen_load_avs_llprefixlen(void);
 static struct slist *gen_load_radiotap_llprefixlen(void);
 static struct slist *gen_load_ppi_llprefixlen(void);
-static struct slist *gen_load_avs_llprefixlen(void);
 static void insert_compute_vloffsets(struct block *);
 static struct slist *gen_llprefixlen(void);
 static struct slist *gen_off_macpl(void);
@@ -1030,6 +1031,9 @@ init_linktype(p)
 		return;
 
 	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
 		/*
 		 * 802.11 doesn't really have a link-level type field.
 		 * We set "off_linktype" to the offset of the LLC header.
@@ -1038,11 +1042,14 @@ init_linktype(p)
 		 * is being used and pick out the encapsulated Ethernet type.
 		 * XXX - should we generate code to check for SNAP?
 		 *
-		 * XXX - the header is actually variable-length.  We
-		 * assume a 24-byte link-layer header, as appears in
-		 * data frames in networks with no bridges.  If the
-		 * fromds and tods 802.11 header bits are both set,
-		 * it's actually supposed to be 30 bytes.
+		 * We also handle variable-length radio headers here.
+		 * The Prism header is in theory variable-length, but in
+		 * practice it's always 144 bytes long.  However, some
+		 * drivers on Linux use ARPHRD_IEEE80211_PRISM, but
+		 * sometimes or always supply an AVS header, so we
+		 * have to check whether the radio header is a Prism
+		 * header or an AVS header, so, in practice, it's
+		 * variable-length.
 		 */
 		off_linktype = 24;
 		off_macpl = 0;		/* link-layer header is variable-length */
@@ -1051,71 +1058,15 @@ init_linktype(p)
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
 
-	case DLT_PRISM_HEADER:
-		/*
-		 * Same as 802.11, but with an additional header before
-		 * the 802.11 header, containing a bunch of additional
-		 * information including radio-level information.
-		 *
-		 * The header is 144 bytes long.
-		 *
-		 * XXX - same variable-length header problem; at least
-		 * the Prism header is fixed-length.
-		 */
-		off_ll = 144;
-		off_linktype = 24;
-		off_macpl = 0;		/* link-layer header is variable-length */
-		off_macpl_is_variable = 1;
-		off_nl = 8;		/* 802.2+SNAP */
-		off_nl_nosnap = 3;	/* 802.2 */
-		return;
-
-	case DLT_IEEE802_11_RADIO_AVS:
-		/*
-		 * Same as 802.11, but with an additional header before
-		 * the 802.11 header, containing a bunch of additional
-		 * information including radio-level information.
-		 *
-		 * The radiotap header is variable length, and we
-		 * generate code to compute its length and store it
-		 * in a register.  These offsets are relative to the
-		 * beginning of the 802.11 header.
-		 *
-		 * XXX - in Linux, do any drivers that supply an AVS
-		 * header supply a link-layer type other than
-		 * ARPHRD_IEEE80211_PRISM?  If so, we should map that
-		 * to DLT_IEEE802_11_RADIO_AVS; if not, or if there are
-		 * any drivers that supply an AVS header but supply
-		 * an ARPHRD value of ARPHRD_IEEE80211_PRISM, we'll
-		 * have to check the header in the generated code to
-		 * determine whether it's Prism or AVS.
-		 */
-		off_linktype = 24;
-		off_macpl = 0;		/* link-layer header is variable-length */
-		off_macpl_is_variable = 1;
-		off_nl = 8;		/* 802.2+SNAP */
-		off_nl_nosnap = 3;	/* 802.2 */
-		return;
-		
-		/* 
-		 * At the moment we treat PPI as normal Radiotap encoded
-		 * packets. The difference is in the function that generates
-		 * the code at the beginning to compute the header length.
-		 * Since this code generator of PPI supports bare 802.11
-		 * encapsulation only (i.e. the encapsulated DLT should be
-		 * DLT_IEEE802_11) we generate code to check for this too.
-		 */
 	case DLT_PPI:
-	case DLT_IEEE802_11_RADIO:
-		/*
-		 * Same as 802.11, but with an additional header before
-		 * the 802.11 header, containing a bunch of additional
-		 * information including radio-level information.
-		 *
-		 * The radiotap header is variable length, and we
-		 * generate code to compute its length and store it
-		 * in a register.  These offsets are relative to the
-		 * beginning of the 802.11 header.
+		/* 
+		 * At the moment we treat PPI the same way that we treat
+		 * normal Radiotap encoded packets. The difference is in
+		 * the function that generates the code at the beginning
+		 * to compute the header length.  Since this code generator
+		 * of PPI supports bare 802.11 encapsulation only (i.e.
+		 * the encapsulated DLT should be DLT_IEEE802_11) we
+		 * generate code to check for this too.
 		 */
 		off_linktype = 24;
 		off_macpl = 0;		/* link-layer header is variable-length */
@@ -2128,6 +2079,156 @@ gen_linux_sll_linktype(proto)
 }
 
 static struct slist *
+gen_load_prism_llprefixlen()
+{
+	struct slist *s1, *s2;
+	struct slist *sjeq_avs_cookie;
+	struct slist *sjcommon;
+
+	/*
+	 * This code is not compatible with the optimizer, as
+	 * we are generating jmp instructions within a normal
+	 * slist of instructions
+	 */
+	no_optimize = 1;
+
+	/*
+	 * Generate code to load the length of the radio header into
+	 * the register assigned to hold that length, if one has been
+	 * assigned.  (If one hasn't been assigned, no code we've
+	 * generated uses that prefix, so we don't need to generate any
+	 * code to load it.)
+	 *
+	 * Some Linux drivers use ARPHRD_IEEE80211_PRISM but sometimes
+	 * or always use the AVS header rather than the Prism header.
+	 * We load a 4-byte big-endian value at the beginning of the
+	 * raw packet data, and see whether, when masked with 0xFFFFF000,
+	 * it's equal to 0x80211000.  If so, that indicates that it's
+	 * an AVS header (the masked-out bits are the version number).
+	 * Otherwise, it's a Prism header.
+	 *
+	 * XXX - the Prism header is also, in theory, variable-length,
+	 * but no known software generates headers that aren't 144
+	 * bytes long.
+	 */
+	if (reg_off_ll != -1) {
+		/*
+		 * Load the cookie.
+		 */
+		s1 = new_stmt(BPF_LD|BPF_W|BPF_ABS);
+		s1->s.k = 0;
+
+		/*
+		 * AND it with 0xFFFFF000.
+		 */
+		s2 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+		s2->s.k = 0xFFFFF000;
+		sappend(s1, s2);
+
+		/*
+		 * Compare with 0x80211000.
+		 */
+		sjeq_avs_cookie = new_stmt(JMP(BPF_JEQ));
+		sjeq_avs_cookie->s.k = 0x80211000;
+		sappend(s1, sjeq_avs_cookie);
+
+		/*
+		 * If it's AVS:
+		 *
+		 * The 4 bytes at an offset of 4 from the beginning of
+		 * the AVS header are the length of the AVS header.
+		 * That field is big-endian.
+		 */
+		s2 = new_stmt(BPF_LD|BPF_W|BPF_ABS);
+		s2->s.k = 4;
+		sappend(s1, s2);
+		sjeq_avs_cookie->s.jt = s2;
+
+		/*
+		 * Now jump to the code to allocate a register
+		 * into which to save the header length and
+		 * store the length there.  (The "jump always"
+		 * instruction needs to have the k field set;
+		 * it's added to the PC, so, as we're jumping
+		 * over a single instruction, it should be 1.)
+		 */
+		sjcommon = new_stmt(JMP(BPF_JA));
+		sjcommon->s.k = 1;
+		sappend(s1, sjcommon);
+
+		/*
+		 * Now for the code that handles the Prism header.
+		 * Just load the length of the Prism header (144)
+		 * into the A register.  Have the test for an AVS
+		 * header branch here if we don't have an AVS header.
+		 */
+		s2 = new_stmt(BPF_LD|BPF_W|BPF_IMM);
+		s2->s.k = 144;
+		sappend(s1, s2);
+		sjeq_avs_cookie->s.jf = s2;
+
+		/*
+		 * Now allocate a register to hold that value and store
+		 * it.  The code for the AVS header will jump here after
+		 * loading the length of the AVS header.
+		 */
+		s2 = new_stmt(BPF_ST);
+		s2->s.k = reg_off_ll;
+		sappend(s1, s2);
+		sjcommon->s.jf = s2;
+
+		/*
+		 * Now move it into the X register.
+		 */
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		return (s1);
+	} else
+		return (NULL);
+}
+
+static struct slist *
+gen_load_avs_llprefixlen()
+{
+	struct slist *s1, *s2;
+
+	/*
+	 * Generate code to load the length of the AVS header into
+	 * the register assigned to hold that length, if one has been
+	 * assigned.  (If one hasn't been assigned, no code we've
+	 * generated uses that prefix, so we don't need to generate any
+	 * code to load it.)
+	 */
+	if (reg_off_ll != -1) {
+		/*
+		 * The 4 bytes at an offset of 4 from the beginning of
+		 * the AVS header are the length of the AVS header.
+		 * That field is big-endian.
+		 */
+		s1 = new_stmt(BPF_LD|BPF_W|BPF_ABS);
+		s1->s.k = 4;
+
+		/*
+		 * Now allocate a register to hold that value and store
+		 * it.
+		 */
+		s2 = new_stmt(BPF_ST);
+		s2->s.k = reg_off_ll;
+		sappend(s1, s2);
+
+		/*
+		 * Now move it into the X register.
+		 */
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		return (s1);
+	} else
+		return (NULL);
+}
+
+static struct slist *
 gen_load_radiotap_llprefixlen()
 {
 	struct slist *s1, *s2;
@@ -2236,46 +2337,6 @@ gen_load_ppi_llprefixlen()
 		s2->s.k = 2;
 		s2 = new_stmt(BPF_ALU|BPF_OR|BPF_X);
 		sappend(s1, s2);
-
-		/*
-		 * Now allocate a register to hold that value and store
-		 * it.
-		 */
-		s2 = new_stmt(BPF_ST);
-		s2->s.k = reg_off_ll;
-		sappend(s1, s2);
-
-		/*
-		 * Now move it into the X register.
-		 */
-		s2 = new_stmt(BPF_MISC|BPF_TAX);
-		sappend(s1, s2);
-
-		return (s1);
-	} else
-		return (NULL);
-}
-
-static struct slist *
-gen_load_avs_llprefixlen()
-{
-	struct slist *s1, *s2;
-
-	/*
-	 * Generate code to load the length of the AVS header into
-	 * the register assigned to hold that length, if one has been
-	 * assigned.  (If one hasn't been assigned, no code we've
-	 * generated uses that prefix, so we don't need to generate any
-	 * code to load it.)
-	 */
-	if (reg_off_ll != -1) {
-		/*
-		 * The 4 bytes at an offset of 4 from the beginning of
-		 * the AVS header are the length of the AVS header.
-		 * That field is big-endian.
-		 */
-		s1 = new_stmt(BPF_LD|BPF_W|BPF_ABS);
-		s1->s.k = 4;
 
 		/*
 		 * Now allocate a register to hold that value and store
@@ -2531,16 +2592,20 @@ insert_compute_vloffsets(b)
 	 */
 	switch (linktype) {
 
+	case DLT_PRISM_HEADER:
+		s = gen_load_prism_llprefixlen();
+		break;
+
+	case DLT_IEEE802_11_RADIO_AVS:
+		s = gen_load_avs_llprefixlen();
+		break;
+
 	case DLT_IEEE802_11_RADIO:
 		s = gen_load_radiotap_llprefixlen();
 		break;
 
 	case DLT_PPI:
 		s = gen_load_ppi_llprefixlen();
-		break;
-
-	case DLT_IEEE802_11_RADIO_AVS:
-		s = gen_load_avs_llprefixlen();
 		break;
 
 	default:
@@ -2556,9 +2621,9 @@ insert_compute_vloffsets(b)
 	switch (linktype) {
 
 	case DLT_IEEE802_11:
-	case DLT_IEEE802_11_RADIO:
-	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
 	case DLT_PPI:
 		s = gen_load_802_11_header_len(s, b->stmts);
 		break;
@@ -2600,6 +2665,50 @@ gen_ppi_dlt_check(void)
 	}
 
 	return b;
+}
+
+static struct slist *
+gen_prism_llprefixlen(void)
+{
+	struct slist *s;
+
+	if (reg_off_ll == -1) {
+		/*
+		 * We haven't yet assigned a register for the length
+		 * of the radio header; allocate one.
+		 */
+		reg_off_ll = alloc_reg();
+	}
+
+	/*
+	 * Load the register containing the radio length
+	 * into the X register.
+	 */
+	s = new_stmt(BPF_LDX|BPF_MEM);
+	s->s.k = reg_off_ll;
+	return s;
+}
+
+static struct slist *
+gen_avs_llprefixlen(void)
+{
+	struct slist *s;
+
+	if (reg_off_ll == -1) {
+		/*
+		 * We haven't yet assigned a register for the length
+		 * of the AVS header; allocate one.
+		 */
+		reg_off_ll = alloc_reg();
+	}
+
+	/*
+	 * Load the register containing the AVS length
+	 * into the X register.
+	 */
+	s = new_stmt(BPF_LDX|BPF_MEM);
+	s->s.k = reg_off_ll;
+	return s;
 }
 
 static struct slist *
@@ -2654,28 +2763,6 @@ gen_ppi_llprefixlen(void)
 	return s;
 }
 
-static struct slist *
-gen_avs_llprefixlen(void)
-{
-	struct slist *s;
-
-	if (reg_off_ll == -1) {
-		/*
-		 * We haven't yet assigned a register for the length
-		 * of the radiotap header; allocate one.
-		 */
-		reg_off_ll = alloc_reg();
-	}
-
-	/*
-	 * Load the register containing the AVS length
-	 * into the X register.
-	 */
-	s = new_stmt(BPF_LDX|BPF_MEM);
-	s->s.k = reg_off_ll;
-	return s;
-}
-
 /*
  * Generate code to compute the link-layer header length, if necessary,
  * putting it into the X register, and to return either a pointer to a
@@ -2687,14 +2774,17 @@ gen_llprefixlen(void)
 {
 	switch (linktype) {
 
-	case DLT_PPI:
-		return gen_ppi_llprefixlen();
+	case DLT_PRISM_HEADER:
+		return gen_prism_llprefixlen();
+
+	case DLT_IEEE802_11_RADIO_AVS:
+		return gen_avs_llprefixlen();
 
 	case DLT_IEEE802_11_RADIO:
 		return gen_radiotap_llprefixlen();
 
-	case DLT_IEEE802_11_RADIO_AVS:
-		return gen_avs_llprefixlen();
+	case DLT_PPI:
+		return gen_ppi_llprefixlen();
 
 	default:
 		return NULL;
@@ -2860,11 +2950,11 @@ gen_linktype(proto)
 		}
 		break;
 
-	case DLT_PPI:
 	case DLT_IEEE802_11:
-	case DLT_IEEE802_11_RADIO:
-	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
+	case DLT_PPI:
 		/*
 		 * Check that we have a data frame.
 		 */
@@ -4406,10 +4496,10 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_thostop(eaddr, Q_OR);
 			break;
 		case DLT_IEEE802_11:
-		case DLT_IEEE802_11_RADIO_AVS:
-		case DLT_PPI:
-		case DLT_IEEE802_11_RADIO:
 		case DLT_PRISM_HEADER:
+		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_IEEE802_11_RADIO:
+		case DLT_PPI:
 			b0 = gen_wlanhostop(eaddr, Q_OR);
 			break;
 		case DLT_SUNATM:
@@ -5214,9 +5304,9 @@ gen_protochain(v, proto, dir)
 	switch (linktype) {
 
 	case DLT_IEEE802_11:
-	case DLT_IEEE802_11_RADIO:
-	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
 	case DLT_PPI:
 		bpf_error("'protochain' not supported with 802.11");
 	}
@@ -5792,9 +5882,9 @@ gen_scode(name, q)
 				return b;
 
 			case DLT_IEEE802_11:
+			case DLT_PRISM_HEADER:
 			case DLT_IEEE802_11_RADIO_AVS:
 			case DLT_IEEE802_11_RADIO:
-			case DLT_PRISM_HEADER:
 			case DLT_PPI:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
@@ -6267,9 +6357,9 @@ gen_ecode(eaddr, q)
 		case DLT_IEEE802:
 			return gen_thostop(eaddr, (int)q.dir);
 		case DLT_IEEE802_11:
+		case DLT_PRISM_HEADER:
 		case DLT_IEEE802_11_RADIO_AVS:
 		case DLT_IEEE802_11_RADIO:
-		case DLT_PRISM_HEADER:
 		case DLT_PPI:
 			return gen_wlanhostop(eaddr, (int)q.dir);
 		case DLT_SUNATM:
@@ -6870,10 +6960,10 @@ gen_broadcast(proto)
 		case DLT_IEEE802:
 			return gen_thostop(ebroadcast, Q_DST);
 		case DLT_IEEE802_11:
+		case DLT_PRISM_HEADER:
 		case DLT_IEEE802_11_RADIO_AVS:
 		case DLT_IEEE802_11_RADIO:
 		case DLT_PPI:
-		case DLT_PRISM_HEADER:
 			return gen_wlanhostop(ebroadcast, Q_DST);
 		case DLT_IP_OVER_FC:
 			return gen_ipfchostop(ebroadcast, Q_DST);
@@ -6966,10 +7056,10 @@ gen_multicast(proto)
 			/* tr[2] & 1 != 0 */
 			return gen_mac_multicast(2);
 		case DLT_IEEE802_11:
-		case DLT_IEEE802_11_RADIO_AVS:
-		case DLT_PPI:
-		case DLT_IEEE802_11_RADIO:
 		case DLT_PRISM_HEADER:
+		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_IEEE802_11_RADIO:
+		case DLT_PPI:
 			/*
 			 * Oh, yuk.
 			 *
@@ -7415,9 +7505,9 @@ gen_p80211_fcdir(int fcdir)
 	switch (linktype) {
 
 	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
-	case DLT_PRISM_HEADER:
 		break;
 
 	default:
