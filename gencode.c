@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.13 2007-11-26 21:12:06 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.14 2007-12-29 02:35:16 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -203,6 +203,7 @@ static struct block *gen_ether_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static struct slist *gen_load_radiotap_llprefixlen(void);
 static struct slist *gen_load_ppi_llprefixlen(void);
+static struct slist *gen_load_avs_llprefixlen(void);
 static void insert_compute_vloffsets(struct block *);
 static struct slist *gen_llprefixlen(void);
 static struct slist *gen_off_macpl(void);
@@ -1075,16 +1076,10 @@ init_linktype(p)
 		 * the 802.11 header, containing a bunch of additional
 		 * information including radio-level information.
 		 *
-		 * The header is 64 bytes long, at least in its
-		 * current incarnation.
-		 *
-		 * XXX - same variable-length header problem, only
-		 * more so; this header is also variable-length,
-		 * with the length being the 32-bit big-endian
-		 * number at an offset of 4 from the beginning
-		 * of the radio header.  We should handle that the
-		 * same way we handle the length at the beginning
-		 * of the radiotap header.
+		 * The radiotap header is variable length, and we
+		 * generate code to compute its length and store it
+		 * in a register.  These offsets are relative to the
+		 * beginning of the 802.11 header.
 		 *
 		 * XXX - in Linux, do any drivers that supply an AVS
 		 * header supply a link-layer type other than
@@ -1095,7 +1090,6 @@ init_linktype(p)
 		 * have to check the header in the generated code to
 		 * determine whether it's Prism or AVS.
 		 */
-		off_ll = 64;
 		off_linktype = 24;
 		off_macpl = 0;		/* link-layer header is variable-length */
 		off_macpl_is_variable = 1;
@@ -2262,6 +2256,46 @@ gen_load_ppi_llprefixlen()
 		return (NULL);
 }
 
+static struct slist *
+gen_load_avs_llprefixlen()
+{
+	struct slist *s1, *s2;
+
+	/*
+	 * Generate code to load the length of the AVS header into
+	 * the register assigned to hold that length, if one has been
+	 * assigned.  (If one hasn't been assigned, no code we've
+	 * generated uses that prefix, so we don't need to generate any
+	 * code to load it.)
+	 */
+	if (reg_off_ll != -1) {
+		/*
+		 * The 4 bytes at an offset of 4 from the beginning of
+		 * the AVS header are the length of the AVS header.
+		 * That field is big-endian.
+		 */
+		s1 = new_stmt(BPF_LD|BPF_W|BPF_ABS);
+		s1->s.k = 4;
+
+		/*
+		 * Now allocate a register to hold that value and store
+		 * it.
+		 */
+		s2 = new_stmt(BPF_ST);
+		s2->s.k = reg_off_ll;
+		sappend(s1, s2);
+
+		/*
+		 * Now move it into the X register.
+		 */
+		s2 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s1, s2);
+
+		return (s1);
+	} else
+		return (NULL);
+}
+
 /*
  * Load a value relative to the beginning of the link-layer header after the 802.11
  * header, i.e. LLC_SNAP.
@@ -2505,6 +2539,10 @@ insert_compute_vloffsets(b)
 		s = gen_load_ppi_llprefixlen();
 		break;
 
+	case DLT_IEEE802_11_RADIO_AVS:
+		s = gen_load_avs_llprefixlen();
+		break;
+
 	default:
 		s = NULL;
 		break;
@@ -2608,7 +2646,29 @@ gen_ppi_llprefixlen(void)
 	}
 
 	/*
-	 * Load the register containing the radiotap length
+	 * Load the register containing the PPI length
+	 * into the X register.
+	 */
+	s = new_stmt(BPF_LDX|BPF_MEM);
+	s->s.k = reg_off_ll;
+	return s;
+}
+
+static struct slist *
+gen_avs_llprefixlen(void)
+{
+	struct slist *s;
+
+	if (reg_off_ll == -1) {
+		/*
+		 * We haven't yet assigned a register for the length
+		 * of the radiotap header; allocate one.
+		 */
+		reg_off_ll = alloc_reg();
+	}
+
+	/*
+	 * Load the register containing the AVS length
 	 * into the X register.
 	 */
 	s = new_stmt(BPF_LDX|BPF_MEM);
@@ -2629,9 +2689,12 @@ gen_llprefixlen(void)
 
 	case DLT_PPI:
 		return gen_ppi_llprefixlen();
-	
+
 	case DLT_IEEE802_11_RADIO:
 		return gen_radiotap_llprefixlen();
+
+	case DLT_IEEE802_11_RADIO_AVS:
+		return gen_avs_llprefixlen();
 
 	default:
 		return NULL;
