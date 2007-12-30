@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108 2007-07-24 02:36:34 mcr Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.109 2007-12-30 00:28:17 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -90,7 +90,7 @@ OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(
 HDR =	pcap.h pcap-int.h pcap-namedb.h pcap-nit.h pcap-pf.h \
 	ethertype.h gencode.h gnuc.h
 GENHDR = \
-	tokdefs.h version.h
+	scanner.h tokdefs.h version.h
 
 TAGHDR = \
 	pcap-bpf.h
@@ -126,7 +126,7 @@ libpcap.dylib: $(OBJ)
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
-	$(LEX) -t $< > $$$$.$@; mv $$$$.$@ $@
+	./runlex.sh "$(LEX)" -o$@ $<
 
 scanner.o: scanner.c tokdefs.h
 	$(CC) $(CFLAGS) -c scanner.c

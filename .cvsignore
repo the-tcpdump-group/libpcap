@@ -6,6 +6,7 @@ config.h
 stamp-h
 stamp-h.in
 Makefile
+scanner.h
 scanner.c
 grammar.c
 tokdefs.h
