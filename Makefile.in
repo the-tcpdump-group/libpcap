@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.72.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.1 2007-12-30 00:33:20 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -26,12 +26,13 @@
 # Top level hierarchy
 prefix = @prefix@
 exec_prefix = @exec_prefix@
+datarootdir = @datarootdir@
 # Pathname of directory to install the include files
-INCLDEST = @includedir@
+includedir = @includedir@
 # Pathname of directory to install the library
-LIBDEST =  @libdir@
+libdir =  @libdir@
 # Pathname of directory to install the man page
-MANDEST = @mandir@
+mandir = @mandir@
 
 # VPATH
 srcdir = @srcdir@
@@ -44,13 +45,19 @@ VPATH = @srcdir@
 CC = @CC@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
-DEFS = @DEFS@
+DEFS = @DEFS@ @V_DEFS@
+LIBS = @V_LIBS@
+DAGLIBS = @DAGLIBS@
+DYEXT = @DYEXT@
+PROG=libpcap
 
 # Standard CFLAGS
 CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 
 INSTALL = @INSTALL@
-RANLIB = @V_RANLIB@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA = @INSTALL_DATA@
+RANLIB = @RANLIB@
 
 #
 # Flex and bison allow you to specify the prefixes of the global symbols
@@ -67,23 +74,26 @@ YACC = @V_YACC@
 	@rm -f $@
 	$(CC) $(CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c
+PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@
+FSRC =  fad-@V_FINDALLDEVS@.c
+SSRC =  @SSRC@
 CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
-	etherent.c savefile.c bpf_filter.c bpf_image.c
+	etherent.c savefile.c bpf_filter.c bpf_image.c bpf_dump.c
 GENSRC = scanner.c grammar.c version.c
+LIBOBJS = @LIBOBJS@
 
-SRC =	$(PSRC) $(CSRC) $(GENSRC)
+SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
 # hack the extra indirection
-OBJ =	$(PSRC:.c=.o) $(CSRC:.c=.o) $(GENSRC:.c=.o)
+OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
 HDR =	pcap.h pcap-int.h pcap-namedb.h pcap-nit.h pcap-pf.h \
 	ethertype.h gencode.h gnuc.h
 GENHDR = \
-	tokdefs.h
+	scanner.h tokdefs.h version.h
 
 TAGHDR = \
-	bpf/net/bpf.h
+	pcap-bpf.h
 
 TAGFILES = \
 	$(SRC) $(HDR) $(TAGHDR)
@@ -94,14 +104,35 @@ all: libpcap.a
 
 libpcap.a: $(OBJ)
 	@rm -f $@
-	ar rc $@ $(OBJ)
+	ar rc $@ $(OBJ) $(LIBS)
 	$(RANLIB) $@
+
+shared: libpcap.$(DYEXT)
+
+#
+# XXX - this works with GNU ld, but won't necessarily work with native
+# ld on, for example, various SVR4-flavored platforms, or Digital UNIX.
+#
+libpcap.so: $(OBJ)
+	@rm -f $@
+	$(CC) -shared -o $@.`cat VERSION` $(OBJ) $(DAGLIBS)
+
+# the following rule succeeds, but the result is untested.
+libpcap.dylib: $(OBJ)
+	rm -f libpcap*.dylib
+	$(CC) -dynamiclib -undefined error -o libpcap.`cat VERSION`.dylib $(OBJ) \
+		-install_name $(libdir)/libpcap.0.dylib -compatibility_version `cat VERSION` \
+		-current_version `cat VERSION`
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
-	$(LEX) -t $< > $$$$.$@; mv $$$$.$@ $@
+	./runlex.sh "$(LEX)" -o$@ $<
 
 scanner.o: scanner.c tokdefs.h
+	$(CC) $(CFLAGS) -c scanner.c
+
+pcap.o: version.h
+
 tokdefs.h: grammar.c
 grammar.c: $(srcdir)/grammar.y
 	@rm -f grammar.c tokdefs.h
@@ -114,50 +145,115 @@ grammar.o: grammar.c
 	$(CC) $(CFLAGS) -Dyylval=pcap_lval -c grammar.c
 
 version.o: version.c
+	$(CC) $(CFLAGS) -c version.c
+
+snprintf.o: $(srcdir)/missing/snprintf.c
+	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
+
 version.c: $(srcdir)/VERSION
 	@rm -f $@
 	sed -e 's/.*/char pcap_version[] = "&";/' $(srcdir)/VERSION > $@
 
-install: force
-	$(INSTALL) -m 444 -o bin -g bin libpcap.a $(DESTDIR)$(LIBDEST)/libpcap.a
-	$(RANLIB) $(DESTDIR)$(LIBDEST)/libpcap.a
+#
+# NOTE: this really is supposed to be static; importing a string
+# from a shared library does not work very well on many
+# versions of UNIX (Solaris, Linux, and the BSDs, for example),
+# so we make the version string static and return it from
+# a function, which does work.
+#
+version.h: $(srcdir)/VERSION
+	@rm -f $@
+	sed -e 's/.*/static const char pcap_version_string[] = "libpcap version &";/' $(srcdir)/VERSION > $@
 
-install-incl: force
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/pcap.h \
-	    $(DESTDIR)$(INCLDEST)/pcap.h
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/pcap-namedb.h \
-	    $(DESTDIR)$(INCLDEST)/pcap-namedb.h
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/net/bpf.h \
-	    $(DESTDIR)$(INCLDEST)/net/bpf.h
+bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
+	rm -f bpf_filter.c
+	ln -s $(srcdir)/bpf/net/bpf_filter.c bpf_filter.c
 
-install-man: force
-	$(INSTALL) -m 444 -o bin -g bin $(srcdir)/pcap.3 \
-	    $(DESTDIR)$(MANDEST)/man3/pcap.3
+bpf_filter.o: bpf_filter.c
+	$(CC) $(CFLAGS) -c bpf_filter.c
+
+#
+# Test programs - not built by default, and not installed.
+#
+filtertest: filtertest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o filtertest filtertest.c libpcap.a
+
+findalldevstest: findalldevstest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a
+
+install: libpcap.a 
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
+	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
+	$(RANLIB) $(DESTDIR)$(libdir)/libpcap.a
+	[ -d $(DESTDIR)$(includedir) ] || \
+	    (mkdir -p $(DESTDIR)$(includedir); chmod 755 $(DESTDIR)$(includedir))
+	[ -d $(DESTDIR)$(includedir)/pcap ] || \
+	    (mkdir -p $(DESTDIR)$(includedir)/pcap; chmod 755 $(DESTDIR)$(includedir)/pcap)
+	$(INSTALL_DATA) $(srcdir)/pcap/pcap.h \
+	    $(DESTDIR)$(includedir)/pcap/pcap.h
+	$(INSTALL_DATA) $(srcdir)/pcap/bpf.h \
+	    $(DESTDIR)$(includedir)/pcap/bpf.h
+	$(INSTALL_DATA) $(srcdir)/pcap/namedb.h \
+	    $(DESTDIR)$(includedir)/pcap/namedb.h
+	$(INSTALL_DATA) $(srcdir)/pcap/sll.h \
+	    $(DESTDIR)$(includedir)/pcap/sll.h
+	$(INSTALL_DATA) $(srcdir)/pcap/usb.h \
+	    $(DESTDIR)$(includedir)/pcap/usb.h
+	$(INSTALL_DATA) $(srcdir)/pcap.h $(DESTDIR)$(includedir)/pcap.h
+	$(INSTALL_DATA) $(srcdir)/pcap-bpf.h \
+	    $(DESTDIR)$(includedir)/pcap-bpf.h
+	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
+	    $(DESTDIR)$(includedir)/pcap-namedb.h
+	[ -d $(DESTDIR)$(mandir)/man3 ] || \
+		(mkdir -p $(DESTDIR)$(mandir)/man3; chmod 755 $(DESTDIR)$(mandir)/man3)
+	$(INSTALL_DATA) $(srcdir)/pcap.3 \
+	    $(DESTDIR)$(mandir)/man3/pcap.3
+
+install-shared: install-shared-$(DYEXT)
+install-shared-so: libpcap.so
+	$(INSTALL_PROGRAM) libpcap.so.`cat VERSION` $(DESTDIR)$(libdir)/libpcap.so.`cat VERSION`
+install-shared-dylib: libpcap.dylib
+	$(INSTALL_PROGRAM) libpcap.`cat VERSION`.dylib $(DESTDIR)$(libdir)/libpcap.`cat VERSION`.dylib
+	VER=`cat VERSION`; cd $(DESTDIR)$(libdir) && ln -sf libpcap.$$VER.dylib libpcap.0.dylib;  ln -sf libpcap.0.dylib libpcap.dylib
+
+uninstall:
+	rm -f $(DESTDIR)$(libdir)/libpcap.a
+	rm -f $(DESTDIR)$(includedir)/pcap/pcap.h
+	rm -f $(DESTDIR)$(includedir)/pcap/bpf.h
+	rm -f $(DESTDIR)$(includedir)/pcap/namedb.h
+	rm -f $(DESTDIR)$(includedir)/pcap/sll.h
+	rm -f $(DESTDIR)$(includedir)/pcap/usb.h
+	-rmdir $(DESTDIR)$(includedir)/pcap
+	rm -f $(DESTDIR)$(includedir)/pcap.h
+	rm -f $(DESTDIR)$(includedir)/pcap-bpf.h
+	rm -f $(DESTDIR)$(includedir)/pcap-namedb.h
+	rm -f $(DESTDIR)$(mandir)/man3/pcap.3
 
 clean:
-	rm -f $(CLEANFILES)
+	rm -f $(CLEANFILES) libpcap*.dylib libpcap.so*
 
-distclean:
-	rm -f $(CLEANFILES) Makefile config.cache config.log config.status \
-	    gnuc.h os-proto.h bpf_filter.c net
+distclean: clean
+	rm -f Makefile config.cache config.log config.status \
+	    config.h gnuc.h os-proto.h bpf_filter.c stamp-h stamp-h.in
+	rm -rf autom4te.cache
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
-tar:	force
-	@cwd=`pwd` ; dir=`basename $$cwd` ; name=libpcap-`cat VERSION` ; \
-	    list="" ; tar="tar chFFf" ; \
-	    for i in `cat FILES` ; do list="$$list $$name/$$i" ; done; \
-	    echo \
-	    "rm -f ../$$name; ln -s $$dir ../$$name" ; \
-	     rm -f ../$$name; ln -s $$dir ../$$name ; \
-	    echo \
-	    "(cd .. ; $$tar - [lots of files]) | compress > /tmp/$$name.tar.Z" ; \
-	     (cd .. ; $$tar - $$list) | compress > /tmp/$$name.tar.Z ; \
-	    echo \
-	    "rm -f ../$$name" ; \
-	     rm -f ../$$name
+packaging/pcap.spec: packaging/pcap.spec.in VERSION
+	RPMVERSION=`cat VERSION | sed s/-.*//g`; \
+		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
-force:	/tmp
-depend:	$(GENSRC) force
+releasetar:
+	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
+	   list="" ; make distclean; cd ..; mkdir -p n; cd n; ln -s ../$$dir $$name; \
+	   tar -c -z -f $$name.tar.gz $$name/. ;
+
+depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	./mkdep -c $(CC) $(DEFS) $(INCLS) $(SRC)
+
+Makefile: Makefile.in config.status
+	./config.status
+	@echo your Makefile was out of date, now run $(MAKE) again
+	exit 1

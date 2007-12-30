@@ -116,6 +116,7 @@ pcap.3
 pcap.c
 pcap.h
 ppp.h
+runlex.sh
 savefile.c
 scanner.l
 sunatmpos.h
