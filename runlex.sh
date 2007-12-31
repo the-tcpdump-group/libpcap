@@ -7,7 +7,7 @@
 # means that neither Flex nor Lex was found, so we report an error and
 # quit.
 #
-# @(#) $Header: /tcpdump/master/libpcap/runlex.sh,v 1.2 2007-12-31 02:21:09 guy Exp $
+# @(#) $Header: /tcpdump/master/libpcap/runlex.sh,v 1.3 2007-12-31 02:40:21 guy Exp $
 #
 
 #
@@ -67,10 +67,10 @@ done
 #
 # Is it Lex, or is it Flex?
 #
-if expr "${LEX}" : flex >/dev/null
+if [ "${LEX}" = flex ]
 then
 	#
-	# "flex" appears at the beginning of ${LEX}, so it's Flex.
+	# It's Flex.
 	#
 	have_flex=yes
 
