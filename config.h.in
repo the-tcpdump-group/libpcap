@@ -212,5 +212,8 @@
 /* if we have u_int32_t */
 #undef u_int32_t
 
+/* if we have u_int64_t */
+#undef u_int64_t
+
 /* if we have u_int8_t */
 #undef u_int8_t
