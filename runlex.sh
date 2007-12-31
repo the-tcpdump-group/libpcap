@@ -7,7 +7,7 @@
 # means that neither Flex nor Lex was found, so we report an error and
 # quit.
 #
-# @(#) $Header: /tcpdump/master/libpcap/runlex.sh,v 1.3 2007-12-31 02:40:21 guy Exp $
+# @(#) $Header: /tcpdump/master/libpcap/runlex.sh,v 1.4 2007-12-31 03:38:39 guy Exp $
 #
 
 #
@@ -75,16 +75,28 @@ then
 	have_flex=yes
 
 	#
-	# Does it support -R, for generating reentrant scanners?
-	# If so, we're not currently using that feature, but
-	# it'll generate some unused functions anyway - and there
-	# won't be any header file declaring them, so there'll be
-	# defined-but-not-declared warnings.  Therefore, we use
-	# --noXXXX options to suppress generating those functions.
+	# Does it support the --noFUNCTION options?  If so, we pass
+	# --nounput, as at least some versions that support those
+	# options don't support disabling yyunput by defining
+	# YY_NO_UNPUT.
 	#
-	if flex --help | egrep reentrant >/dev/null
+	if flex --help | egrep noFUNCTION >/dev/null
 	then
-		flags="$flags --noyyget_lineno --noyyget_in --noyyget_out --noyyget_leng --noyyget_text --noyyset_lineno --noyyset_in --noyyset_out"
+		flags="$flags --nounput"
+
+		#
+		# Does it support -R, for generating reentrant scanners?
+		# If so, we're not currently using that feature, but
+		# it'll generate some unused functions anyway - and there
+		# won't be any header file declaring them, so there'll be
+		# defined-but-not-declared warnings.  Therefore, we use
+		# --noFUNCTION options to suppress generating those
+		# functions.
+		#
+		if flex --help | egrep reentrant >/dev/null
+		then
+			flags="$flags --noyyget_lineno --noyyget_in --noyyget_out --noyyget_leng --noyyget_text --noyyset_lineno --noyyset_in --noyyset_out"
+		fi
 	fi
 else
 	#
