@@ -7,7 +7,7 @@
 # means that neither Flex nor Lex was found, so we report an error and
 # quit.
 #
-# @(#) $Header: /tcpdump/master/libpcap/runlex.sh,v 1.1.2.1 2007-12-30 00:33:20 guy Exp $
+# @(#) $Header: /tcpdump/master/libpcap/runlex.sh,v 1.1.2.2 2007-12-31 02:32:29 guy Exp $
 #
 
 #
@@ -22,7 +22,7 @@ LEX="$1"
 shift
 
 #
-# Check whether we have it.
+# Check whether we have Lex or Flex.
 #
 if [ -z "${LEX}" ]
 then
@@ -65,6 +65,35 @@ do
 done
 
 #
+# Is it Lex, or is it Flex?
+#
+if expr "${LEX}" : flex >/dev/null
+then
+	#
+	# "flex" appears at the beginning of ${LEX}, so it's Flex.
+	#
+	have_flex=yes
+
+	#
+	# Does it support -R, for generating reentrant scanners?
+	# If so, we're not currently using that feature, but
+	# it'll generate some unused functions anyway - and there
+	# won't be any header file declaring them, so there'll be
+	# defined-but-not-declared warnings.  Therefore, we use
+	# --noXXXX options to suppress generating those functions.
+	#
+	if flex --help | egrep reentrant >/dev/null
+	then
+		flags="$flags --noyyget_lineno --noyyget_in --noyyget_out --noyyget_leng --noyyget_text --noyyset_lineno --noyyset_in --noyyset_out"
+	fi
+else
+	#
+	# It's Lex.
+	#
+	have_flex=no
+fi
+
+#
 # OK, run it.
 # If it's lex, it doesn't support -o, so we just write to
 # lex.yy.c and, if it succeeds, rename it to the right name,
@@ -72,11 +101,8 @@ done
 # If it's flex, it supports -o, so we use that - flex with -P doesn't
 # write to lex.yy.c, it writes to a lex.{prefix from -P}.c.
 #
-if expr "${LEX}" : flex >/dev/null
+if [ $have_flex = yes ]
 then
-	#
-	# "flex" appears at the beginning of ${LEX}, so it's flex.
-	#
 	${LEX} $flags -o"$outfile" "$@"
 
 	#
