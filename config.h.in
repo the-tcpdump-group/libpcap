@@ -35,6 +35,9 @@
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
 
+/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#undef HAVE_FSEEKO
+
 /* on HP-UX 10.20 or later */
 #undef HAVE_HPUX10_20_OR_LATER
 
@@ -194,8 +197,17 @@
 /* Enable parser debugging */
 #undef YYDEBUG
 
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
 /* needed on HP-UX */
 #undef _HPUX_SOURCE
+
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+#undef _LARGEFILE_SOURCE
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
 
 /* define on AIX to get certain functions */
 #undef _SUN
