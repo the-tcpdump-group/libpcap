@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.76.2.1 2007-11-29 18:28:01 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.76.2.2 2008-01-01 04:35:08 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3 "11 June 2007"
+.TH PCAP 3 "31 December 2007"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -1142,6 +1142,17 @@ was opened with
 .BR pcap_open_offline() ,
 or NULL, if a network device was opened with
 .BR pcap_open_live() .
+Note that the Packet Capture library is usually built with large file
+support, so the standard I/O stream of the ``savefile'' might refer to
+a file larger than 2 gigabytes; applications that use
+.B pcap_file()
+should, if possible, use calls that support large files on the return
+value of
+.B pcap_file()
+or the value returned by
+.B fileno()
+when passed the return value of
+.BR pcap_file() .
 .PP
 .B pcap_stats()
 returns 0 and fills in the
