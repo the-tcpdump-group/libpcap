@@ -22,7 +22,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.90 2007-09-27 18:01:51 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/optimize.c,v 1.91 2008-01-02 04:16:46 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -2290,6 +2290,15 @@ int
 install_bpf_program(pcap_t *p, struct bpf_program *fp)
 {
 	size_t prog_size;
+
+	/*
+	 * Validate the program.
+	 */
+	if (!bpf_validate(fp->bf_insns, fp->bf_len)) {
+		snprintf(p->errbuf, sizeof(p->errbuf),
+			"BPF program is not valid");
+		return (-1);
+	}
 
 	/*
 	 * Free up any already installed program.
