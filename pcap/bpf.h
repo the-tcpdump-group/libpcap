@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.3 2007-12-23 04:42:14 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.4 2008-01-02 04:22:16 guy Exp $ (LBL)
  */
 
 /*
@@ -79,7 +79,6 @@ typedef	u_int bpf_u_int32;
 #endif
 #define BPF_WORDALIGN(x) (((x)+(BPF_ALIGNMENT-1))&~(BPF_ALIGNMENT-1))
 
-#define BPF_MAXINSNS 512
 #define BPF_MAXBUFSIZE 0x8000
 #define BPF_MINBUFSIZE 32
 
@@ -873,8 +872,8 @@ struct bpf_insn {
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
 #if __STDC__ || defined(__cplusplus)
-extern int bpf_validate(struct bpf_insn *, int);
-extern u_int bpf_filter(struct bpf_insn *, u_char *, u_int, u_int);
+extern int bpf_validate(const struct bpf_insn *, int);
+extern u_int bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 #else
 extern int bpf_validate();
 extern u_int bpf_filter();
