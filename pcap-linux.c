@@ -23,11 +23,18 @@
  *  THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
  *  IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ *  Modifications:     Added PACKET_MMAP support
+ *                     Paolo Abeni <paolo.abeni@email.it> 
+ *                     
+ *                     based on previous works of:
+ *                     Simon Patarin <patarin@cs.unibo.it>
+ *                     Phil Wood <cpw@lanl.gov>
  */
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.131 2007-11-18 04:37:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.132 2008-01-05 22:32:31 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -95,7 +102,7 @@ static const char rcsid[] _U_ =
 #ifdef PCAP_SUPPORT_BT
 #include "pcap-bt-linux.h"
 #endif
-	  
+
 #ifdef SITA
 #include "pcap-sita.h"
 #endif
@@ -108,10 +115,12 @@ static const char rcsid[] _U_ =
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
+#include <sys/mman.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
+#include <poll.h>
 
 /*
  * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
@@ -154,6 +163,14 @@ static const char rcsid[] _U_ =
 # ifdef PACKET_HOST
 #  define HAVE_PF_PACKET_SOCKETS
 # endif /* PACKET_HOST */
+
+
+ /* check for memory mapped access avaibility. We assume every needed 
+  * struct is defined if the macro TPACKET_HDRLEN is defined, because it
+  * uses many ring related structs and macros */
+# ifdef TPACKET_HDRLEN
+#  define HAVE_PACKET_RING
+# endif /* TPACKET_HDRLEN */
 #endif /* PF_PACKET */
 
 #ifdef SO_ATTACH_FILTER
@@ -200,8 +217,10 @@ typedef int		socklen_t;
  * Prototypes for internal functions
  */
 static void map_arphrd_to_dlt(pcap_t *, int, int);
+static short int map_packet_type_to_sll_type(short int);
 static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
+static int live_open_mmap(pcap_t *, char *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_inject_linux(pcap_t *, const void *, size_t);
@@ -209,6 +228,18 @@ static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static void pcap_close_linux(pcap_t *);
+
+#ifdef HAVE_PACKET_RING
+#define RING_GET_FRAME(h) (((struct tpacket_hdr**)h->buffer)[handle->offset])
+
+static void destroy_ring(pcap_t *handle);
+static int create_ring(pcap_t* handle, unsigned size, char* errmsg);
+static void pcap_close_linux_mmap(pcap_t *);
+static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
+static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
+static int pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf);
+static int pcap_getnonblock_mmap(pcap_t *p, char *errbuf);
+#endif
 
 /*
  * Wrap some ioctl calls
@@ -294,6 +325,22 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	handle->snapshot	= snaplen;
 	handle->md.timeout	= to_ms;
 
+	handle->inject_op = pcap_inject_linux;
+	handle->setfilter_op = pcap_setfilter_linux;
+	handle->setdirection_op = pcap_setdirection_linux;
+	handle->set_datalink_op = NULL;	/* can't change data link type */
+	handle->getnonblock_op = pcap_getnonblock_fd;
+	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->close_op = pcap_close_linux;
+
+#ifdef SITA
+	handle->read_op = pcap_read_acn;
+	handle->stats_op = pcap_stats_acn;
+#else
+	handle->read_op = pcap_read_linux;
+	handle->stats_op = pcap_stats_linux;
+#endif
+
 	/*
 	 * NULL and "any" are special devices which give us the hint to
 	 * monitor all devices.
@@ -334,8 +381,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	handle->fd = live_open_ok;
 	handle->bufsize = handle->snapshot;
 #else
-	if ((err = live_open_new(handle, device, promisc, to_ms, ebuf)) == 1)
+	if ((err = live_open_new(handle, device, promisc, to_ms, ebuf)) == 1) {
 		live_open_ok = 1;
+		if (live_open_mmap(handle, ebuf) == 1)
+			return handle;
+	}
 	else if (err == 0) {
 		/* Non-fatal error; try old way */
 		if (live_open_old(handle, device, promisc, to_ms, ebuf))
@@ -456,22 +506,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * should work on it.
 	 */
 	handle->selectable_fd = handle->fd;
-
-	handle->inject_op = pcap_inject_linux;
-	handle->setfilter_op = pcap_setfilter_linux;
-	handle->setdirection_op = pcap_setdirection_linux;
-	handle->set_datalink_op = NULL;	/* can't change data link type */
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->close_op = pcap_close_linux;
-
-#ifdef SITA
-	handle->read_op = pcap_read_acn;
-	handle->stats_op = pcap_stats_acn;
-#else
-	handle->read_op = pcap_read_linux;
-	handle->stats_op = pcap_stats_linux;
-#endif
 
 	return handle;
 }
@@ -625,42 +659,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		packet_len += SLL_HDR_LEN;
 
 		hdrp = (struct sll_header *)bp;
-
-		/*
-		 * Map the PACKET_ value to a LINUX_SLL_ value; we
-		 * want the same numerical value to be used in
-		 * the link-layer header even if the numerical values
-		 * for the PACKET_ #defines change, so that programs
-		 * that look at the packet type field will always be
-		 * able to handle DLT_LINUX_SLL captures.
-		 */
-		switch (from.sll_pkttype) {
-
-		case PACKET_HOST:
-			hdrp->sll_pkttype = htons(LINUX_SLL_HOST);
-			break;
-
-		case PACKET_BROADCAST:
-			hdrp->sll_pkttype = htons(LINUX_SLL_BROADCAST);
-			break;
-
-		case PACKET_MULTICAST:
-			hdrp->sll_pkttype = htons(LINUX_SLL_MULTICAST);
-			break;
-
-		case PACKET_OTHERHOST:
-			hdrp->sll_pkttype = htons(LINUX_SLL_OTHERHOST);
-			break;
-
-		case PACKET_OUTGOING:
-			hdrp->sll_pkttype = htons(LINUX_SLL_OUTGOING);
-			break;
-
-		default:
-			hdrp->sll_pkttype = -1;
-			break;
-		}
-
+		hdrp->sll_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
 		hdrp->sll_hatype = htons(from.sll_hatype);
 		hdrp->sll_halen = htons(from.sll_halen);
 		memcpy(hdrp->sll_addr, from.sll_addr,
@@ -1128,6 +1127,40 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	snprintf(handle->errbuf, sizeof(handle->errbuf),
 	    "Setting direction is not supported on SOCK_PACKET sockets");
 	return -1;
+}
+
+
+/*
+ * Map the PACKET_ value to a LINUX_SLL_ value; we
+ * want the same numerical value to be used in
+ * the link-layer header even if the numerical values
+ * for the PACKET_ #defines change, so that programs
+ * that look at the packet type field will always be
+ * able to handle DLT_LINUX_SLL captures.
+ */
+static short int
+map_packet_type_to_sll_type(short int sll_pkttype)
+{
+	switch (sll_pkttype) {
+
+	case PACKET_HOST:
+		return htons(LINUX_SLL_HOST);
+
+	case PACKET_BROADCAST:
+		return htons(LINUX_SLL_BROADCAST);
+
+	case PACKET_MULTICAST:
+		return  htons(LINUX_SLL_MULTICAST);
+
+	case PACKET_OTHERHOST:
+		return htons(LINUX_SLL_OTHERHOST);
+
+	case PACKET_OUTGOING:
+		return htons(LINUX_SLL_OUTGOING);
+
+	default:
+		return -1;
+	}
 }
 
 /*
@@ -1652,6 +1685,328 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 	return 0;
 #endif
 }
+
+static int 
+live_open_mmap(pcap_t* handle, char* errmsg)
+{
+#ifdef HAVE_PACKET_RING
+	/* by default request 4M for the ring buffer */
+	int ret = create_ring(handle, 4*1024*1024, errmsg);
+	if (ret == 0)
+		return ret;
+
+	/* override some defaults and inherit the other fields from
+	 * open_live_new
+	 * handle->offset is used to get the current position into the rx ring 
+	 * handle->cc is used to store the ring size */
+	handle->read_op = pcap_read_linux_mmap;
+	handle->close_op = pcap_close_linux_mmap;
+	handle->setfilter_op = pcap_setfilter_linux_mmap;
+	handle->setnonblock_op = pcap_setnonblock_mmap;
+	handle->getnonblock_op = pcap_getnonblock_mmap;
+	handle->selectable_fd = handle->fd;
+	return 1;
+#else /* HAVE_PACKET_RING */
+	return 0;
+#endif /* HAVE_PACKET_RING */
+}
+
+#ifdef HAVE_PACKET_RING
+
+static void
+compute_ring_block(int frame_size, unsigned *block_size, unsigned *frames_per_block)
+{
+	/* compute the minumum block size that will handle this frame. 
+	 * The block has to be page size aligned. 
+	 * The max block size allowed by the kernel is arch-dependent and 
+	 * it's not explicitly checked here. */
+	*block_size = getpagesize();
+	while (*block_size < frame_size) 
+		*block_size <<= 1;
+
+	*frames_per_block = *block_size/frame_size;
+}
+
+static int
+create_ring(pcap_t* handle, unsigned size, char* errmsg)
+{
+	unsigned i, j, ringsize, frames_per_block;
+	struct tpacket_req req;
+
+	/* Note that with large snapshot (say 64K) only a few frames 
+	 * will be available in the ring even with pretty large ring size
+	 * (and a lot of memory will be unused). 
+	 * The snap len should be carefully chosen to achive best
+	 * performance */
+	req.tp_frame_size = TPACKET_ALIGN(handle->snapshot+TPACKET_HDRLEN);
+	req.tp_frame_nr = size/req.tp_frame_size;
+	compute_ring_block(req.tp_frame_size, &req.tp_block_size, &frames_per_block);
+	req.tp_block_nr = req.tp_frame_nr / frames_per_block;
+
+	/* req.tp_frame_nr is requested to match frames_per_block*req.tp_block_nr */
+	req.tp_frame_nr = req.tp_block_nr * frames_per_block;
+
+	/* ask the kernel to create the ring */
+retry:
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
+					(void *) &req, sizeof(req))) {
+		/* try to reduce requested ring size to prevent memory failure */
+		if ((errno == ENOMEM) && (req.tp_block_nr > 1)) {
+			req.tp_frame_nr >>= 1;
+			req.tp_block_nr = req.tp_frame_nr/frames_per_block;
+			goto retry;
+		}
+		snprintf(errmsg, PCAP_ERRBUF_SIZE, "can't create rx ring on "
+				"packet socket %d: %d-%s", handle->fd, errno, 
+				pcap_strerror(errno));
+		return 0;
+	}
+
+	/* memory map the rx ring */
+	ringsize = req.tp_block_nr * req.tp_block_size;
+	handle->bp = mmap(0, ringsize, PROT_READ| PROT_WRITE, MAP_SHARED, 
+					handle->fd, 0);
+	if (handle->bp == MAP_FAILED) {
+		snprintf(errmsg, PCAP_ERRBUF_SIZE, "can't mmap rx ring: %d-%s",
+			errno, pcap_strerror(errno));
+
+		/* clear the allocated ring on error*/
+		destroy_ring(handle);
+		return 0;
+	}
+
+	/* allocate a ring for each frame header pointer*/
+	handle->cc = req.tp_frame_nr;
+	handle->buffer = malloc(handle->cc * sizeof(struct tpacket_hdr*));
+	if (!handle->buffer) {
+		destroy_ring(handle);
+		return 0;
+	}
+
+	/* fill the header ring with proper frame ptr*/
+	handle->offset = 0;
+	for (i=0; i<req.tp_block_nr; ++i) {
+		u_char *base = &handle->bp[i*req.tp_block_size];
+		for (j=0; j<frames_per_block; ++j, ++handle->offset) {
+			RING_GET_FRAME(handle) = (struct tpacket_hdr*) base;
+			base += req.tp_frame_size;
+		}
+	}
+
+	handle->bufsize = req.tp_frame_size;
+	handle->offset = 0;
+	return 1;
+}
+
+/* free all ring related resources*/
+static void
+destroy_ring(pcap_t *handle)
+{
+	/* tell the kernel to destroy the ring*/
+	struct tpacket_req req;
+	memset(&req, 0, sizeof(req));
+	setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
+				(void *) &req, sizeof(req));
+
+	/* if ring is mapped, unmap it*/
+	if (handle->bp) {
+		/* need to re-compute the ring size */
+		unsigned frames_per_block, block_size;
+		compute_ring_block(handle->bufsize, &block_size, &frames_per_block);
+
+		/* do not perform sanity check here: we can't recover any error */
+		munmap(handle->bp, block_size * handle->cc / frames_per_block);
+		handle->bp = 0;
+	}
+
+	/* if the header ring is allocated, clear it*/
+	if (handle->buffer) {
+		free(handle->buffer);
+		handle->buffer = 0;
+	}
+}
+
+static void
+pcap_close_linux_mmap( pcap_t *handle )
+{
+	destroy_ring(handle);
+	pcap_close_linux(handle);
+}
+
+
+int
+pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
+{
+	/* use negative value of timeout to indicate non blocking ops */
+	return (p->md.timeout<0);
+}
+
+int
+pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
+{
+	/* map each value to the corresponding 2's complement, to 
+	 * preserve the timeout value provided with pcap_open_live */
+	if (nonblock) {
+		if (p->md.timeout > 0)
+			p->md.timeout = p->md.timeout*-1 - 1;
+	} else 
+		if (p->md.timeout < 0)
+			p->md.timeout = (p->md.timeout+1)*-1;
+	return 0;
+}
+
+static int
+pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
+		u_char *user)
+{
+	int pkts = 0;
+
+	/* wait for frames availability.*/
+	if ((handle->md.timeout >= 0) && !(RING_GET_FRAME(handle)->tp_status)) {
+		struct pollfd pollinfo;
+		int ret;
+
+		pollinfo.fd = handle->fd;
+		pollinfo.events = POLLIN;
+
+		do {
+			/* poll() requires a negative timeout to wait forever */
+			ret = poll(&pollinfo, 1, (handle->md.timeout > 0)?
+			 			handle->md.timeout: -1);
+			if ((ret < 0) && (errno != EINTR)) {
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+					 "can't poll on packet socket fd %d: %d-%s",
+					handle->fd, errno, pcap_strerror(errno));
+				return -1;
+			}
+			/* check for break loop condition on interrupted syscall*/
+			if (handle->break_loop) {
+				handle->break_loop = 0;
+				return -2;
+			}
+		} while (ret < 0);
+	}
+
+	/* negative values of max_packets are used to require all 
+	 * packets available in the ring */
+	while ((pkts < max_packets) || (max_packets <0)) {
+		int run_bpf;
+		struct sockaddr_ll *sll;
+		struct pcap_pkthdr pcaphdr;
+		unsigned char *bp;
+		struct tpacket_hdr* thdr = RING_GET_FRAME(handle);
+		if (thdr->tp_status == TP_STATUS_KERNEL)
+			break;
+
+		/* perform sanity check on internal offset. */
+		if (thdr->tp_mac+thdr->tp_snaplen > handle->bufsize) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+				"corrupted frame on kernel ring mac "
+				"offset %d + caplen %d > frame len %d\n", 
+				thdr->tp_mac, thdr->tp_snaplen, handle->bufsize);
+			return -1;
+		}
+
+		/* run filter on received packet
+		 * If the kernel filtering is enabled we need to run the
+		 * filter until all the frames present into the ring 
+		 * at filter creation time are processed. 
+		 * In such case md.use_bpf is used as a counter for the 
+		 * packet we need to filter.
+		 * Note: alternatively it could be possible to stop applying 
+		 * the filter when the ring became empty, but it can possibly
+		 * happen a lot later... */
+		bp = (unsigned char*)thdr + thdr->tp_mac;
+		run_bpf = (!handle->md.use_bpf) || 
+			((handle->md.use_bpf>1) && handle->md.use_bpf--);
+		if (run_bpf && handle->fcode.bf_insns && 
+				(bpf_filter(handle->fcode.bf_insns, bp,
+					thdr->tp_len, thdr->tp_snaplen) == 0))
+			goto skip;
+
+		/* check direction and interface index */
+		sll = (void*)thdr + TPACKET_ALIGN(sizeof(*thdr));
+		if ((sll->sll_ifindex == handle->md.lo_ifindex) &&
+					(sll->sll_pkttype == PACKET_OUTGOING))
+			goto skip;
+
+		/* get required packet info from ring header */
+		pcaphdr.ts.tv_sec = thdr->tp_sec;
+		pcaphdr.ts.tv_usec = thdr->tp_usec;
+		pcaphdr.caplen = thdr->tp_snaplen;
+		pcaphdr.len = thdr->tp_len;
+
+		/* if required build in place the sll header*/
+		if (handle->md.cooked) {
+			struct sll_header *hdrp = (struct sll_header *)((char *)bp - sizeof(struct sll_header));
+
+			hdrp->sll_pkttype = map_packet_type_to_sll_type(
+							sll->sll_pkttype);
+			hdrp->sll_hatype = htons(sll->sll_hatype);
+			hdrp->sll_halen = htons(sll->sll_halen);
+			memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
+			hdrp->sll_protocol = sll->sll_protocol;
+
+			/* update packet len */
+			pcaphdr.caplen += SLL_HDR_LEN;
+			pcaphdr.len += SLL_HDR_LEN;
+		}
+
+		/* pass the packet to the user */
+		pkts++;
+		callback(user, &pcaphdr, bp);
+		handle->md.packets_read++;
+
+skip:
+		/* next packet */
+		thdr->tp_status = TP_STATUS_KERNEL;
+		if (++handle->offset >= handle->cc)
+			handle->offset = 0;
+
+		/* check for break loop condition*/
+		if (handle->break_loop) {
+			handle->break_loop = 0;
+			return -2;
+		}
+	}
+	return pkts;
+}
+
+static int 
+pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
+{
+	int n, offset;
+	int ret = pcap_setfilter_linux(handle, filter);
+	if (ret < 0)
+		return ret;
+
+	/* if the kernel filter is enabled, we need to apply the filter on
+	 * all packets present into the ring. Get an upper bound of their number
+	 */
+	if (!handle->md.use_bpf)
+		return ret;
+
+	/* walk the ring backward and count the free slot */
+	offset = handle->offset;
+	if (--handle->offset < 0)
+		handle->offset = handle->cc - 1;
+	for (n=0; n < handle->cc; ++n) {
+		if (--handle->offset < 0)
+			handle->offset = handle->cc - 1;
+		if (RING_GET_FRAME(handle)->tp_status != TP_STATUS_KERNEL)
+			break;
+	}
+
+	/* be careful to not change current ring position */
+	handle->offset = offset;
+
+	/* store the number of packets currently present in the ring */
+	handle->md.use_bpf = 1 + (handle->cc - n);
+	return ret;
+}
+
+#endif /* HAVE_PACKET_RING */
+
 
 #ifdef HAVE_PF_PACKET_SOCKETS
 /*
