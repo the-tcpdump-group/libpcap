@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.143 2008-01-01 03:49:11 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.144 2008-01-06 20:23:17 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.143 $)
+AC_REVISION($Revision: 1.144 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -197,6 +197,18 @@ if test "$enable_protochain" = "disabled"; then
 fi
 AC_MSG_RESULT(${enable_protochain})
 
+#
+# SITA support is mutually exclusive with native capture support;
+# "--with-sita" selects SITA support.
+#
+AC_ARG_WITH(sita, [  --with-sita             include SITA support],
+[
+	AC_DEFINE(SITA,1,[include ACN support])
+	AC_MSG_NOTICE(Enabling SITA ACN support)
+	V_PCAP=sita
+	V_FINDALLDEVS=sita
+],
+[
 dnl
 dnl Not all versions of test support -c (character special) but it's a
 dnl better way of testing since the device might be protected. So we
@@ -335,6 +347,7 @@ else
 			;;
 		esac])
 fi
+])
 
 AC_MSG_CHECKING(if --enable-ipv6 option is specified)
 AC_ARG_ENABLE(ipv6, [  --enable-ipv6           build IPv6-capable version])
@@ -396,13 +409,6 @@ linux)
 		AC_MSG_ERROR(version 2 or higher required; see the INSTALL doc for more info)
 	fi
 	AC_LBL_TPACKET_STATS
-	AC_ARG_WITH(sita, [  --with-sita             include SITA support],
-	[
-		AC_DEFINE(SITA,1,[include ACN support])
-		SSRC="pcap-sita.c"
-		AC_MSG_NOTICE(Enabling SITA ACN support)
-		V_FINDALLDEVS=sita
-	])
 	;;
 
 dag)

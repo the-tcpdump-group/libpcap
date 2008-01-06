@@ -42,6 +42,8 @@
 #include <arpa/inet.h>
 #include "pcap-int.h"
 
+#include "pcap-sita.h"
+
 	/* non-configureable manifests follow */
 
 #define IOP_SNIFFER_PORT	49152			/* TCP port on the IOP used for 'distributed pcap' usage */
@@ -81,7 +83,7 @@ static char			static_buf[32];
 
 pcap_if_t			*acn_if_list;							/* pcap's list of available interfaces */
 
-static void dump_interface_list() {
+static void dump_interface_list(void) {
 	pcap_if_t		*iff;
 	pcap_addr_t		*addr;
 	int				longest_name_len = 0;
@@ -114,7 +116,7 @@ static void dump_interface_list() {
 	}
 }
 
-static dump(unsigned char *ptr, int i, int indent) {
+static void dump(unsigned char *ptr, int i, int indent) {
 	fprintf(stderr, "%*s", indent, " ");
 	for (; i > 0; i--) {
 		fprintf(stderr, "%2.2x ", *ptr++);
@@ -122,11 +124,9 @@ static dump(unsigned char *ptr, int i, int indent) {
 	fprintf(stderr, "\n");
 }
 
-static void dump_interface_list_p() {
+static void dump_interface_list_p(void) {
 	pcap_if_t		*iff;
 	pcap_addr_t		*addr;
-	int				longest_name_len = 0;
-	char			*n, *d, *f;
 	int				if_number = 0;
 
 	iff = acn_if_list;
@@ -144,7 +144,7 @@ static void dump_interface_list_p() {
 	}
 }
 
-static void dump_unit_table() {
+static void dump_unit_table(void) {
 	int		chassis, geoslot;
 	iface_t	*p;
 
@@ -209,7 +209,6 @@ static void empty_unit_iface(unit_t *u) {
 }
 
 static void empty_unit(int chassis, int geoslot) {
-	iface_t	*p, *cur;
 	unit_t	*u = &units[chassis][geoslot];
 
 	empty_unit_iface(u);
@@ -218,7 +217,7 @@ static void empty_unit(int chassis, int geoslot) {
 	}
 }
 
-static void empty_unit_table() {
+static void empty_unit_table(void) {
 	int		chassis, geoslot;
 
 	for (chassis = 0; chassis <= MAX_CHASSIS; chassis++) {
@@ -345,7 +344,7 @@ static void close_with_IOP(int chassis, int geoslot, int flag) {
 	}
 }
 
-void pcap_close_acn(pcap_t *handle) {
+static void pcap_close_acn(pcap_t *handle) {
 	int		chassis, geoslot;
 	unit_t	*u;
 
@@ -373,7 +372,7 @@ static void send_to_fd(int fd, int len, unsigned char *str) {
 	}
 }
 
-static void acn_freealldevs() {
+static void acn_freealldevs(void) {
 
 	pcap_if_t	*iff, *next_iff;
 	pcap_addr_t	*addr, *next_addr;
@@ -408,7 +407,7 @@ static char *unified_port_num(unit_t *u, int IOPportnum) {
 	return static_buf;
 }
 
-static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, ulong iftype) {
+static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 iftype) {
 	iface_t		*iface_ptr, *iface;
 	char		*name;
 	char		buf[32];
@@ -489,7 +488,7 @@ static int if_sort(char *s1, char *s2) {
 	return strcmp(s1_p2, s2_p2);		/* otherwise we return the result of comparing the 2nd half of the string */
 }
 
-static void sort_if_table() {
+static void sort_if_table(void) {
 	pcap_if_t	*p1, *p2, *prev, *temp;
 	int			has_swapped;
 
@@ -534,7 +533,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 	int					address_count;
 	struct sockaddr_in	*s;
 	char				*newname;
-	ulong				interfaceType;
+	bpf_u_int32				interfaceType;
 	unsigned char		flags;
 
 	prev_iff = 0;
@@ -574,7 +573,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 				}
 				ptr++;
 
-				interfaceType = ntohl(*(ulong *)ptr);
+				interfaceType = ntohl(*(bpf_u_int32 *)ptr);
 				ptr += 4;													/* skip over the interface type */
 
 				flags = *ptr++;
@@ -599,7 +598,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 						bzero((char *)s, sizeof(struct sockaddr_in));
 						addr->addr = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
-						s->sin_addr.s_addr	= *(ulong *)(ptr + 1);			/* copy the address in */
+						s->sin_addr.s_addr	= *(bpf_u_int32 *)(ptr + 1);			/* copy the address in */
 						ptr += *ptr;										/* now move the pointer forwards according to the specified length of the address */
 					}
 					ptr++;													/* then forwards one more for the 'length of the address' field */
@@ -611,7 +610,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 						bzero((char *)s, sizeof(struct sockaddr_in));
 						addr->netmask = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
-						s->sin_addr.s_addr	= *(ulong*)(ptr + 1);
+						s->sin_addr.s_addr	= *(bpf_u_int32*)(ptr + 1);
 						ptr += *ptr;
 					}
 					ptr++;
@@ -623,7 +622,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 						bzero((char *)s, sizeof(struct sockaddr_in));
 						addr->broadaddr = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
-						s->sin_addr.s_addr	= *(ulong*)(ptr + 1);
+						s->sin_addr.s_addr	= *(bpf_u_int32*)(ptr + 1);
 						ptr += *ptr;
 					}
 					ptr++;
@@ -635,7 +634,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 						bzero((char *)s, sizeof(struct sockaddr_in));
 						addr->dstaddr = (struct sockaddr *)s;
 						s->sin_family		= AF_INET;
-						s->sin_addr.s_addr	= *(ulong*)(ptr + 1);
+						s->sin_addr.s_addr	= *(bpf_u_int32*)(ptr + 1);
 						ptr += *ptr;
 					}
 					ptr++;
@@ -672,7 +671,7 @@ static int read_client_data (int fd) {
 	return 1;
 }
 
-static void wait_for_all_answers() {
+static void wait_for_all_answers(void) {
 	int		retval;
 	struct	timeval tv;
 	int		fd;
@@ -719,9 +718,10 @@ static char *get_error_response(int fd, char *errbuf) {		/* return a pointer on 
 			*errbuf++ = byte;							/* stick it in */
 			*errbuf = '\0';								/* ensure the string is null terminated just in case we might exceed the buffer's size */
 		}
-		if (byte == '\0')
+		if (byte == '\0') {
 			if (len > 1)	{ return errbuf;	}
 			else			{ return NULL;		}
+		}
 	}
 }
 
@@ -755,7 +755,7 @@ int acn_findalldevs(char *errbuf) {								/* returns: -1 = error, 0 = OK */
 	return 0;
 }
 
-int pcap_stats_acn(pcap_t *handle, struct pcap_stat *ps) {
+static int pcap_stats_acn(pcap_t *handle, struct pcap_stat *ps) {
 	unsigned char	buf[12];
 
 	send_to_fd(handle->fd, 1, (unsigned char *)"S");						/* send the get_stats command to the IOP */
@@ -769,7 +769,7 @@ int pcap_stats_acn(pcap_t *handle, struct pcap_stat *ps) {
 	return 0;
 }
 
-int acn_open_live(char *name, char *errbuf, int *linktype) {		/* returns 0 on error, else returns the file descriptor */
+static int acn_open_live(const char *name, char *errbuf, int *linktype) {		/* returns 0 on error, else returns the file descriptor */
 	int			chassis, geoslot;
 	unit_t		*u;
 	iface_t		*p;
@@ -787,7 +787,7 @@ int acn_open_live(char *name, char *errbuf, int *linktype) {		/* returns 0 on er
 						open_with_IOP(u, LIVE);													/* start a connection with that IOP */
 						send_to_fd(u->fd, strlen(p->IOPname)+1, (unsigned char *)p->IOPname);	/* send the IOP's interface name, and a terminating null */
 						if (get_error_response(u->fd, errbuf)) {
-							return 0;
+							return -1;
 						}
 						return u->fd;															/* and return that open descriptor */
 					}
@@ -796,10 +796,10 @@ int acn_open_live(char *name, char *errbuf, int *linktype) {		/* returns 0 on er
 			}
 		}
 	}
-	return 0;																				/* if the interface wasn't found, return an error */
+	return -1;																				/* if the interface wasn't found, return an error */
 }
 
-void acn_start_monitor(int fd, int snaplen, int timeout, int promiscuous, int direction) {
+static void acn_start_monitor(int fd, int snaplen, int timeout, int promiscuous, int direction) {
 	unsigned char	buf[8];
 	unit_t			*u;
 
@@ -818,7 +818,14 @@ void acn_start_monitor(int fd, int snaplen, int timeout, int promiscuous, int di
 	//printf("acn_start_monitor() complete\n");				// fulko
 }
 
-int acn_setfilter(int fd, struct bpf_program *bpf) {
+static int pcap_inject_acn(pcap_t *p, const void *buf _U_, size_t size _U_) {
+	strlcpy(p->errbuf, "Sending packets isn't supported on ACN adapters",
+	    PCAP_ERRBUF_SIZE);
+	return (-1);
+}
+
+static int pcap_setfilter_acn(pcap_t *handle, struct bpf_program *bpf) {
+	int				fd = handle->fd;
 	int				count;
 	struct bpf_insn	*p;
 	uint16_t		shortInt;
@@ -843,7 +850,13 @@ int acn_setfilter(int fd, struct bpf_program *bpf) {
 	return 0;
 }
 
-int acn_read_n_bytes_with_timeout(pcap_t *handle, int count) {
+static int pcap_setdirection_acn(pcap_t *handle, pcap_direction_t d) {
+	snprintf(handle->errbuf, sizeof(handle->errbuf),
+	    "Setting direction is not supported on ACN adapters");
+	return -1;
+}
+
+static int acn_read_n_bytes_with_timeout(pcap_t *handle, int count) {
 	struct		timeval tv;
 	int			retval, fd;
 	fd_set		r_fds;
@@ -880,7 +893,7 @@ int acn_read_n_bytes_with_timeout(pcap_t *handle, int count) {
 	return 0;
 }
 
-int pcap_read_acn(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user) {
+static int pcap_read_acn(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user) {
 	#define HEADER_SIZE (4 * 4)
 	unsigned char		packet_header[HEADER_SIZE];
 	struct pcap_pkthdr	pcap_header;
@@ -902,4 +915,62 @@ int pcap_read_acn(pcap_t *handle, int max_packets, pcap_handler callback, u_char
 
 	callback(user, &pcap_header, handle->bp);										/* call the user supplied callback function */
 	return 1;
+}
+
+pcap_t *pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf) {
+	pcap_t		*handle;
+	int		fd;
+
+	/* Allocate a handle for this session. */
+
+	handle = malloc(sizeof(*handle));
+	if (handle == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			 pcap_strerror(errno));
+		return NULL;
+	}
+
+	/* Initialize some components of the pcap structure. */
+
+	memset(handle, 0, sizeof(*handle));
+	handle->snapshot	= snaplen;
+	handle->md.timeout	= to_ms;
+
+	handle->inject_op = pcap_inject_acn;
+	handle->setfilter_op = pcap_setfilter_acn;
+	handle->setdirection_op = pcap_setdirection_acn;
+	handle->set_datalink_op = NULL;	/* can't change data link type */
+	handle->getnonblock_op = pcap_getnonblock_fd;
+	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->close_op = pcap_close_acn;
+	handle->read_op = pcap_read_acn;
+	handle->stats_op = pcap_stats_acn;
+
+	fd = acn_open_live(device, ebuf, &handle->linktype);
+	if (fd == -1) {
+		free(handle);
+		return NULL;
+	}
+	handle->md.clear_promisc = promisc;
+	handle->fd = fd;
+	handle->bufsize = handle->snapshot;
+
+	/* Allocate the buffer */
+
+	handle->buffer	 = malloc(handle->bufsize + handle->offset);
+	if (!handle->buffer) {
+	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "malloc: %s", pcap_strerror(errno));
+		pcap_close_acn(handle);
+		free(handle);
+		return NULL;
+	}
+
+	/*
+	 * "handle->fd" is a socket, so "select()" and "poll()"
+	 * should work on it.
+	 */
+	handle->selectable_fd = handle->fd;
+
+	return handle;
 }

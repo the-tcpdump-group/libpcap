@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.86 2007-10-17 18:52:41 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.87 2008-01-06 20:23:17 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -114,20 +114,22 @@ struct pcap_md {
 	char	*device;	/* device name */
 #ifdef linux
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
-	int	timeout;	/* timeout specified to pcap_open_live */
-	int	clear_promisc;	/* must clear promiscuous mode when we close */
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
 	int	ifindex;	/* interface index of device we're bound to */
 	int	lo_ifindex;	/* interface index of the loopback device */
 	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */
 	u_int	packets_read;	/* count of packets read with recvfrom() */
-#endif
+#endif /* linux */
+#if defined(linux) || defined(SITA)
+	int	timeout;	/* timeout specified to pcap_open_live */
+	int	clear_promisc;	/* must clear promiscuous mode when we close */
+#endif /* linux || SITA */
 
 #ifdef HAVE_DAG_API
 #ifdef HAVE_DAG_STREAMS_API
 	u_char	*dag_mem_bottom;	/* DAG card current memory bottom pointer */
 	u_char	*dag_mem_top;	/* DAG card current memory top pointer */
-#else
+#else /* HAVE_DAG_STREAMS_API */
 	void	*dag_mem_base;	/* DAG card memory base address */
 	u_int	dag_mem_bottom;	/* DAG card current memory bottom offset */
 	u_int	dag_mem_top;	/* DAG card current memory top offset */
