@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.21.2.7 2007-06-22 06:43:58 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.21.2.8 2008-01-06 21:28:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -718,7 +718,7 @@ faildetach:
 #else	
 failstop:
 	if (handle != NULL) {
-		if (dag_stop(p->fd) < 0)
+		if (dag_stop(handle->fd) < 0)
 			fprintf(stderr,"dag_stop: %s\n", strerror(errno));
 	}
 #endif /* HAVE_DAG_STREAMS_API */
