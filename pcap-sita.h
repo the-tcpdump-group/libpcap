@@ -6,7 +6,5 @@
  * @(#) $Header: /tcpdump/master/libpcap/pcap-sita.h
  */
 
-void pcap_close_acn(pcap_t *handle);
-int pcap_stats_acn(pcap_t *handle, struct pcap_stat *ps);
-int pcap_read_acn(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user);
-
+extern int acn_parse_hosts_file(char *errbuf);
+extern int acn_findalldevs(char *errbuf);

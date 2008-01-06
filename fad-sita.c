@@ -33,10 +33,9 @@
 #include <string.h>
 #include "pcap-int.h"
 
-extern pcap_if_t	*acn_if_list;								/* pcap's list of available interfaces */
+#include "pcap-sita.h"
 
-extern int acn_parse_hosts_file(char *errbuf);
-extern int acn_findalldevs(char *errbuf);
+extern pcap_if_t	*acn_if_list;								/* pcap's list of available interfaces */
 
 int pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf) {
 

@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.3 2008-01-05 22:33:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.4 2008-01-06 20:24:13 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -101,10 +101,6 @@ static const char rcsid[] _U_ =
 
 #ifdef PCAP_SUPPORT_BT
 #include "pcap-bt-linux.h"
-#endif
-
-#ifdef SITA
-#include "pcap-sita.h"
 #endif
 
 #include <errno.h>
@@ -332,14 +328,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->close_op = pcap_close_linux;
-
-#ifdef SITA
-	handle->read_op = pcap_read_acn;
-	handle->stats_op = pcap_stats_acn;
-#else
 	handle->read_op = pcap_read_linux;
 	handle->stats_op = pcap_stats_linux;
-#endif
 
 	/*
 	 * NULL and "any" are special devices which give us the hint to
@@ -375,12 +365,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * trying both methods with the newer method preferred.
 	 */
 
-#ifdef SITA
-	live_open_ok = acn_open_live((unsigned char *)device, ebuf, &handle->linktype);
-	handle->md.clear_promisc = promisc;
-	handle->fd = live_open_ok;
-	handle->bufsize = handle->snapshot;
-#else
 	if ((err = live_open_new(handle, device, promisc, to_ms, ebuf)) == 1) {
 		live_open_ok = 1;
 		if (live_open_mmap(handle, ebuf) == 1)
@@ -391,7 +375,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		if (live_open_old(handle, device, promisc, to_ms, ebuf))
 			live_open_ok = 1;
 	}
-#endif
 	if (!live_open_ok) {
 		/*
 		 * Both methods to open the packet socket failed. Tidy
@@ -405,7 +388,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		return NULL;
 	}
 
-#ifndef SITA
 	/*
 	 * Compute the buffer size.
 	 *
@@ -488,7 +470,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		}
 		handle->bufsize = handle->snapshot;
 	}
-#endif
 
 	/* Allocate the buffer */
 
@@ -986,9 +967,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 		return -1;
 	}
 
-#ifdef SITA
-	return acn_setfilter(handle->fd, filter);
-#else
 	/* Make our private copy of the filter */
 
 	if (install_bpf_program(handle, filter) < 0)
@@ -1104,7 +1082,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 #endif /* SO_ATTACH_FILTER */
 
 	return 0;
-#endif /* SITA */
 }
 
 /*
@@ -2107,9 +2084,6 @@ static void	pcap_close_all(void)
 
 static void	pcap_close_linux( pcap_t *handle )
 {
-#ifdef SITA
-	pcap_close_acn(handle);
-#else
 	struct pcap	*p, *prevp;
 	struct ifreq	ifr;
 
@@ -2178,7 +2152,6 @@ static void	pcap_close_linux( pcap_t *handle )
 		free(handle->md.device);
 	handle->md.device = NULL;
 	pcap_close_common(handle);
-#endif /* SITA */
 }
 
 /*
