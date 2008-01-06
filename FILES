@@ -115,6 +115,7 @@ pcap-win32.c
 pcap.3
 pcap.c
 pcap.h
+pcap-filter.4
 ppp.h
 runlex.sh
 savefile.c

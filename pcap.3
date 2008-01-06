@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.76.2.2 2008-01-01 04:35:08 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.76.2.3 2008-01-06 21:14:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3 "31 December 2007"
+.TH PCAP 3 "6 January 2008"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -720,7 +720,9 @@ as returned by
 .B pcap_compile()
 is used to compile the string
 .I str
-into a filter program.
+into a filter program.  See
+.BR pcap-filter (4)
+for the syntax of that string.
 .I program
 is a pointer to a
 .I bpf_program
@@ -1294,7 +1296,7 @@ is returned on error.
 closes the ``savefile.''
 .PP
 .SH SEE ALSO
-tcpdump(1), tcpslice(1)
+tcpdump(1), tcpslice(1), pcap-filter(4)
 .SH AUTHORS
 The original authors are:
 .LP
@@ -1313,10 +1315,4 @@ Please send problems, bugs, questions, desirable enhancements, etc. to:
 .LP
 .RS
 tcpdump-workers@tcpdump.org
-.RE
-.LP
-Please send source code contributions, etc. to:
-.LP
-.RS
-patches@tcpdump.org
 .RE
