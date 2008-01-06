@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.23 2007-12-30 00:28:17 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.24 2008-01-06 21:14:16 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -388,9 +388,10 @@ pcap-snoop.c	- IRIX Snoop network monitoring support
 pcap-usb-linux.c - USB capture support for Linux
 pcap-usb-linux.h - USB capture support for Linux
 pcap-win32.c	- WinPcap capture support
-pcap.3		- manual entry
+pcap.3		- manual entry for the library
 pcap.c		- pcap utility routines
 pcap.h		- header for backwards compatibility
+pcap-filter.4	- manual entry for filter syntax
 ppp.h		- Point to Point Protocol definitions
 runlex.sh	- wrapper for Lex/Flex
 savefile.c	- offline support
