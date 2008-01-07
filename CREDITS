@@ -5,7 +5,6 @@ The current maintainers:
 	Fulvio Risso			<risso@polito.it>
 	Guy Harris	 		<guy@alum.mit.edu>
 	Hannes Gredler			<hannes@juniper.net>
-	Jun-ichiro itojun Hagino	<itojun@iijlab.net>
 	Michael Richardson	 	<mcr@sandelman.ottawa.on.ca>
 
 Additional people who have contributed patches:
@@ -114,3 +113,6 @@ The original LBL crew:
 	Steve McCanne
 	Craig Leres
 	Van Jacobson
+
+Past maintainers:
+	Jun-ichiro itojun Hagino	<itojun@iijlab.net>
