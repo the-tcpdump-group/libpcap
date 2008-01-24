@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.4 2008-01-06 20:24:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.5 2008-01-24 20:21:34 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -213,7 +213,9 @@ typedef int		socklen_t;
  * Prototypes for internal functions
  */
 static void map_arphrd_to_dlt(pcap_t *, int, int);
+#ifdef HAVE_PF_PACKET_SOCKETS
 static short int map_packet_type_to_sll_type(short int);
+#endif
 static int live_open_old(pcap_t *, const char *, int, int, char *);
 static int live_open_new(pcap_t *, const char *, int, int, char *);
 static int live_open_mmap(pcap_t *, char *);
@@ -277,10 +279,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
     char *ebuf)
 {
 	pcap_t		*handle;
-	int		mtu;
 	int		err;
 	int		live_open_ok = 0;
-	struct utsname	utsname;
 
 #ifdef HAVE_DAG_API
 	if (strstr(device, "dag")) {
@@ -386,89 +386,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 			free(handle->md.device);
 		free(handle);
 		return NULL;
-	}
-
-	/*
-	 * Compute the buffer size.
-	 *
-	 * If we're using SOCK_PACKET, this might be a 2.0[.x] kernel,
-	 * and might require special handling - check.
-	 */
-	if (handle->md.sock_packet && (uname(&utsname) < 0 ||
-	    strncmp(utsname.release, "2.0", 3) == 0)) {
-		/*
-		 * We're using a SOCK_PACKET structure, and either
-		 * we couldn't find out what kernel release this is,
-		 * or it's a 2.0[.x] kernel.
-		 *
-		 * In the 2.0[.x] kernel, a "recvfrom()" on
-		 * a SOCK_PACKET socket, with MSG_TRUNC set, will
-		 * return the number of bytes read, so if we pass
-		 * a length based on the snapshot length, it'll
-		 * return the number of bytes from the packet
-		 * copied to userland, not the actual length
-		 * of the packet.
-		 *
-		 * This means that, for example, the IP dissector
-		 * in tcpdump will get handed a packet length less
-		 * than the length in the IP header, and will
-		 * complain about "truncated-ip".
-		 *
-		 * So we don't bother trying to copy from the
-		 * kernel only the bytes in which we're interested,
-		 * but instead copy them all, just as the older
-		 * versions of libpcap for Linux did.
-		 *
-		 * The buffer therefore needs to be big enough to
-		 * hold the largest packet we can get from this
-		 * device.  Unfortunately, we can't get the MRU
-		 * of the network; we can only get the MTU.  The
-		 * MTU may be too small, in which case a packet larger
-		 * than the buffer size will be truncated *and* we
-		 * won't get the actual packet size.
-		 *
-		 * However, if the snapshot length is larger than
-		 * the buffer size based on the MTU, we use the
-		 * snapshot length as the buffer size, instead;
-		 * this means that with a sufficiently large snapshot
-		 * length we won't artificially truncate packets
-		 * to the MTU-based size.
-		 *
-		 * This mess just one of many problems with packet
-		 * capture on 2.0[.x] kernels; you really want a
-		 * 2.2[.x] or later kernel if you want packet capture
-		 * to work well.
-		 */
-		mtu = iface_get_mtu(handle->fd, device, ebuf);
-		if (mtu == -1) {
-			pcap_close_linux(handle);
-			free(handle);
-			return NULL;
-		}
-		handle->bufsize = MAX_LINKHEADER_SIZE + mtu;
-		if (handle->bufsize < handle->snapshot)
-			handle->bufsize = handle->snapshot;
-	} else {
-		/*
-		 * This is a 2.2[.x] or later kernel (we know that
-		 * either because we're not using a SOCK_PACKET
-		 * socket - PF_PACKET is supported only in 2.2
-		 * and later kernels - or because we checked the
-		 * kernel version).
-		 *
-		 * We can safely pass "recvfrom()" a byte count
-		 * based on the snapshot length.
-		 *
-		 * If we're in cooked mode, make the snapshot length
-		 * large enough to hold a "cooked mode" header plus
-		 * 1 byte of packet data (so we don't pass a byte
-		 * count of 0 to "recvfrom()").
-		 */
-		if (handle->md.cooked) {
-			if (handle->snapshot < SLL_HDR_LEN + 1)
-				handle->snapshot = SLL_HDR_LEN + 1;
-		}
-		handle->bufsize = handle->snapshot;
 	}
 
 	/* Allocate the buffer */
@@ -1107,6 +1024,7 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 }
 
 
+#ifdef HAVE_PF_PACKET_SOCKETS
 /*
  * Map the PACKET_ value to a LINUX_SLL_ value; we
  * want the same numerical value to be used in
@@ -1139,6 +1057,7 @@ map_packet_type_to_sll_type(short int sll_pkttype)
 		return -1;
 	}
 }
+#endif
 
 /*
  *  Linux uses the ARP hardware type to identify the type of an
@@ -1634,6 +1553,26 @@ live_open_new(pcap_t *handle, const char *device, int promisc,
 				break;
 			}
 		}
+
+		/*
+		 * This is a 2.2[.x] or later kernel (we know that
+		 * because we're not using a SOCK_PACKET socket -
+		 * PF_PACKET is supported only in 2.2 and later
+		 * kernels).
+		 *
+		 * We can safely pass "recvfrom()" a byte count
+		 * based on the snapshot length.
+		 *
+		 * If we're in cooked mode, make the snapshot length
+		 * large enough to hold a "cooked mode" header plus
+		 * 1 byte of packet data (so we don't pass a byte
+		 * count of 0 to "recvfrom()").
+		 */
+		if (handle->md.cooked) {
+			if (handle->snapshot < SLL_HDR_LEN + 1)
+				handle->snapshot = SLL_HDR_LEN + 1;
+		}
+		handle->bufsize = handle->snapshot;
 
 		/* Save the socket FD in the pcap structure */
 
@@ -2165,6 +2104,8 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 {
 	int		arptype;
 	struct ifreq	ifr;
+	struct utsname	utsname;
+	int		mtu;
 
 	do {
 		/* Open the socket */
@@ -2264,6 +2205,72 @@ live_open_old(pcap_t *handle, const char *device, int promisc,
 				handle->md.next = pcaps_to_close;
 				pcaps_to_close = handle;
 			}
+		}
+
+		/*
+		 * Compute the buffer size.
+		 *
+		 * We're using SOCK_PACKET, so this might be a 2.0[.x]
+		 * kernel, and might require special handling - check.
+		 */
+		if (uname(&utsname) < 0 ||
+		    strncmp(utsname.release, "2.0", 3) == 0) {
+			/*
+			 * Either we couldn't find out what kernel release
+			 * this is, or it's a 2.0[.x] kernel.
+			 *
+			 * In the 2.0[.x] kernel, a "recvfrom()" on
+			 * a SOCK_PACKET socket, with MSG_TRUNC set, will
+			 * return the number of bytes read, so if we pass
+			 * a length based on the snapshot length, it'll
+			 * return the number of bytes from the packet
+			 * copied to userland, not the actual length
+			 * of the packet.
+			 *
+			 * This means that, for example, the IP dissector
+			 * in tcpdump will get handed a packet length less
+			 * than the length in the IP header, and will
+			 * complain about "truncated-ip".
+			 *
+			 * So we don't bother trying to copy from the
+			 * kernel only the bytes in which we're interested,
+			 * but instead copy them all, just as the older
+			 * versions of libpcap for Linux did.
+			 *
+			 * The buffer therefore needs to be big enough to
+			 * hold the largest packet we can get from this
+			 * device.  Unfortunately, we can't get the MRU
+			 * of the network; we can only get the MTU.  The
+			 * MTU may be too small, in which case a packet larger
+			 * than the buffer size will be truncated *and* we
+			 * won't get the actual packet size.
+			 *
+			 * However, if the snapshot length is larger than
+			 * the buffer size based on the MTU, we use the
+			 * snapshot length as the buffer size, instead;
+			 * this means that with a sufficiently large snapshot
+			 * length we won't artificially truncate packets
+			 * to the MTU-based size.
+			 *
+			 * This mess just one of many problems with packet
+			 * capture on 2.0[.x] kernels; you really want a
+			 * 2.2[.x] or later kernel if you want packet capture
+			 * to work well.
+			 */
+			mtu = iface_get_mtu(handle->fd, device, ebuf);
+			if (mtu == -1)
+				break;
+			handle->bufsize = MAX_LINKHEADER_SIZE + mtu;
+			if (handle->bufsize < handle->snapshot)
+				handle->bufsize = handle->snapshot;
+		} else {
+			/*
+			 * This is a 2.2[.x] or later kernel.
+			 *
+			 * We can safely pass "recvfrom()" a byte count
+			 * based on the snapshot length.
+			 */
+			handle->bufsize = handle->snapshot;
 		}
 
 		/*
