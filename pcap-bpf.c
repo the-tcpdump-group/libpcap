@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.102 2008-01-29 10:00:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.103 2008-01-29 10:12:55 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -176,16 +176,16 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 *
 				 * For some unknown reason the uiomove()
 				 * operation in the bpf kernel extension
-				 * used to copy the buffer into user 
+				 * used to copy the buffer into user
 				 * space sometimes returns EFAULT. I have
 				 * no idea why this is the case given that
-				 * a kernel debugger shows the user buffer 
-				 * is correct. This problem appears to 
-				 * be mostly mitigated by the memset of 
-				 * the buffer before it is first used. 
+				 * a kernel debugger shows the user buffer
+				 * is correct. This problem appears to
+				 * be mostly mitigated by the memset of
+				 * the buffer before it is first used.
 				 * Very strange.... Shaun Clowes
 				 *
-				 * In any case this means that we shouldn't 
+				 * In any case this means that we shouldn't
 				 * treat EFAULT as a fatal error; as we
 				 * don't have an API for returning
 				 * a "some packets were dropped since
@@ -193,8 +193,8 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * we just ignore EFAULT and keep reading.
 				 */
 				goto again;
-#endif 
-  
+#endif
+
 			case EWOULDBLOCK:
 				return (0);
 #if defined(sun) && !defined(BSD)
@@ -364,7 +364,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 }
 
 #ifdef _AIX
-static int 
+static int
 bpf_odminit(char *errbuf)
 {
 	char *errstr;
@@ -390,7 +390,7 @@ bpf_odminit(char *errbuf)
 	return (0);
 }
 
-static int 
+static int
 bpf_odmcleanup(char *errbuf)
 {
 	char *errstr;
@@ -499,7 +499,7 @@ bpf_load(char *errbuf)
 	cfg_km.cmd = CFG_INIT;
 	cfg_km.kmid = cfg_ld.kmid;
 	cfg_km.mdilen = sizeof(cfg_bpf);
-	cfg_km.mdiptr = (void *)&cfg_bpf; 
+	cfg_km.mdiptr = (void *)&cfg_bpf;
 	for (i = 0; i < BPF_MINORS; i++) {
 		cfg_bpf.devno = domakedev(major, i);
 		if (sysconfig(SYS_CFGKMOD, (void *)&cfg_km, sizeof(cfg_km)) == -1) {
@@ -509,7 +509,7 @@ bpf_load(char *errbuf)
 			return (-1);
 		}
 	}
-	
+
 	bpfloadedflag = 1;
 
 	return (0);
@@ -829,7 +829,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 			p->dlt_count = 2;
 		}
 	}
-		
+
 #if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT)
 	/*
 	 * Do a BIOCSHDRCMPLT, if defined, to turn that flag on, so
@@ -941,7 +941,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		goto bad;
 	}
 #ifdef _AIX
-	/* For some strange reason this seems to prevent the EFAULT 
+	/* For some strange reason this seems to prevent the EFAULT
 	 * problems we have experienced from AIX BPF. */
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
