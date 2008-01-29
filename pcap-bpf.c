@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.101 2008-01-02 04:16:46 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.102 2008-01-29 10:00:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -101,8 +101,6 @@ static int odmlockid = 0;
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
-
-#include "gencode.h"	/* for "no_optimize" */
 
 static int pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp);
 static int pcap_setdirection_bpf(pcap_t *, pcap_direction_t);
@@ -613,10 +611,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 #endif /* HAVE_DAG_API */
 
-#ifdef BIOCGDLTLIST
-	memset(&bdl, 0, sizeof(bdl));
-#endif
-
 	p = (pcap_t *)malloc(sizeof(*p));
 	if (p == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -752,6 +746,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * this interface supports.  If this fails with EINVAL, it's
 	 * not fatal; we just don't get to use the feature later.
 	 */
+	memset(&bdl, 0, sizeof(bdl));
 	if (ioctl(fd, BIOCGDLTLIST, (caddr_t)&bdl) == 0) {
 		u_int i;
 		int is_ethernet;
