@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.1 2007-12-05 23:38:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.2 2008-01-30 09:42:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -865,8 +865,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** less than snaplen size it strips data from the beginning not
 	** the end.
 	**
-	** This bug is supposed to be fixed in 5.3.2. Also, there is a
-	** patch available. Ask for bugid 1149065.
+	** This bug is fixed in 5.3.2. Also, there is a patch available.
+	** Ask for bugid 1149065.
 	*/
 	ss = snaplen;
 #ifdef HAVE_SOLARIS
