@@ -1,114 +1,115 @@
 This file lists people who have contributed to libpcap:
 
 The current maintainers:
-	Bill Fenner			<fenner@research.att.com>
-	Fulvio Risso			<risso@polito.it>
-	Guy Harris	 		<guy@alum.mit.edu>
-	Hannes Gredler			<hannes@juniper.net>
-	Michael Richardson	 	<mcr@sandelman.ottawa.on.ca>
+	Bill Fenner			<fenner [AT] research.att.com>
+	Fulvio Risso			<risso [AT] polito.it>
+	Guy Harris	 		<guy [AT] alum.mit.edu>
+	Hannes Gredler			<hannes [AT] juniper.net>
+	Michael Richardson	 	<mcr [AT] sandelman.ottawa.on.ca>
 
 Additional people who have contributed patches:
 
-	Alan Bawden			<Alan@LCS.MIT.EDU>
-	Alexey Kuznetsov		<kuznet@ms2.inr.ac.ru>
-	Albert Chin			<china@thewrittenword.com>
-	Andrew Brown			<atatat@atatdot.net>
-	Antti Kantee			<pooka@netbsd.org>
-	Arkadiusz Miskiewicz		<misiek@pld.org.pl>
-	Armando L. Caro Jr.		<acaro@mail.eecis.udel.edu>
-	Assar Westerlund	 	<assar@sics.se>
-	Brian Ginsbach			<ginsbach@cray.com>
-	Charles M. Hannum		<mycroft@netbsd.org>
-	Chris G. Demetriou		<cgd@netbsd.org>
-	Chris Lightfoot			<cwrl@users.sourceforge.net>
-	Chris Pepper			<pepper@mail.reppep.com>
-	Daniele Orlandi			<daniele@orlandi.com>
-	Darren Reed			<darrenr@reed.wattle.id.au>
-	David Kaelbling			<drk@sgi.com>
-	David Young			<dyoung@ojctech.com>
-	Dean Gaudet			<dean@arctic.org>
-	Don Ebright			<Don.Ebright@compuware.com> 
-	Dug Song			<dugsong@monkey.org>
-	Eric Anderson			<anderse@hpl.hp.com>
-        Erik de Castro Lopo             <erik.de.castro.lopo@sensorynetworks.com>
-	Florent Drouin			<Florent.Drouin@alcatel-lucent.fr>
-	Franz Schaefer			<schaefer@mond.at>
-	Fulko Hew			<fulko.hew@gmail.com>
-	Gianluca Varenni		<varenni@netgroup-serv.polito.it>
-	Gilbert Hoyek			<gil_hoyek@hotmail.com>
-	Gisle Vanem			<giva@bgnett.no>
-	Graeme Hewson			<ghewson@cix.compulink.co.uk>
-	Greg Stark			<gsstark@mit.edu>
-	Greg Troxel			<gdt@ir.bbn.com>
-	Gregor Maier			<gregor@net.in.tum.de>
-	Guillaume Pelat			<endymion_@users.sourceforge.net>
-	Hyung Sik Yoon			<hsyn@kr.ibm.com>
-	Igor Khristophorov		<igor@atdot.org>
-	Jan-Philip Velders		<jpv@veldersjes.net>
-	Jason R. Thorpe			<thorpej@netbsd.org>
-	Javier Achirica			<achirica@ttd.net>
-	Jean Tourrilhes			<jt@hpl.hp.com>
-	Jefferson Ogata			<jogata@nodc.noaa.gov>
-	Jesper Peterson			<jesper@endace.com>
-	Joerg Mayer			<jmayer@loplof.de>
-	John Bankier			<jbankier@rainfinity.com>
-	Jon Lindgren			<jonl@yubyub.net>
-	Juergen Schoenwaelder		<schoenw@ibr.cs.tu-bs.de>
-	Jung-uk Kim			<jkim@FreeBSD.org>
-	Kazushi Sugyo			<sugyo@pb.jp.nec.com>
-	Klaus Klein			<kleink@netbsd.org>
-	Koryn Grant			<koryn@endace.com>
-	Kris Katterjohn			<katterjohn@gmail.com>
-	Krzysztof Halasa		<khc@pm.waw.pl>
-	Lorenzo Cavallaro		<sullivan@sikurezza.org>
-	Loris Degioanni			<loris@netgroup-serv.polito.it>
-	Love Hörnquist-Åstrand		<lha@stacken.kth.se>
-	Luis Martin Garcia		<luis.mgarc@gmail.com>
-	Maciej W. Rozycki		<macro@ds2.pg.gda.pl>
-	Marcus Felipe Pereira		<marcus@task.com.br>
-	Mark C. Brown			<mbrown@hp.com>
-	Mark Pizzolato			<List-tcpdump-workers@subscriptions.pizzolato.net>
-	Martin Husemann			<martin@netbsd.org>
-	Matthew Luckie			<mjl@luckie.org.nz>
-	Max Laier			<max@love2party.net>
-	Mike Kershaw			<dragorn@kismetwireless.net>
-	Mike Wiacek			<mike@iroot.net>
-	Monroe Williams			<monroe@pobox.com>
-	Nicolas Dade			<ndade@nsd.dyndns.org>
-	Octavian Cerna			<tavy@ylabs.com>
-	Olaf Kirch			<okir@caldera.de>
-	Ollie Wild			<aaw@users.sourceforge.net>
-	Onno van der Linden		<onno@simplex.nl>
-	Patrick Marie			<mycroft@virgaria.org>
-	Paolo Abeni			<paolo.abeni@email.it>
-	Paul Mundt			<lethal@linux-sh.org>
-	Pavel Kankovsky			<kan@dcit.cz>
-	Pawel Pokrywka			<publicpp@gmail.com>
-	Peter Fales			<peter@fales-lorenz.net>
-	Peter Jeremy			<peter.jeremy@alcatel.com.au>
-	Phil Wood			<cpw@lanl.gov>
-	Rafal Maszkowski		<rzm@icm.edu.pl>
-					<rcb-isis@users.sourceforge.net>
-	Richard Stearn			<richard@rns-stearn.demon.co.uk>
-	Rick Jones			<raj@cup.hp.com>
-	Sagun Shakya			<sagun.shakya@sun.com>
-	Scott Barron			<sb125499@ohiou.edu>
-	Scott Gifford			<sgifford@tir.com>
-	Sebastian Krahmer		<krahmer@cs.uni-potsdam.de>
-	Sepherosa Ziehau		<sepherosa@gmail.com>
-	Shaun Clowes			<delius@progsoc.uts.edu.au>
-	Solomon Peachy			<pizza@shaftnet.org>
-	Stefan Hudson			<hudson@mbay.net>
-	Stephen Donnelly		<stephen@endace.com>
-	Takashi Yamamoto		<yamt@mwd.biglobe.ne.jp>
-        Tanaka Shin-ya                  <zstanaka@archer.livedoor.com>
-	Tony Li				<tli@procket.com>
-	Torsten Landschoff	 	<torsten@debian.org>
-	Uns Lider			<unslider@miranda.org>
-	Uwe Girlich			<Uwe.Girlich@philosys.de>
-	Xianjie Zhang			<xzhang@cup.hp.com>
+	Alan Bawden			<Alan [AT] LCS.MIT.EDU>
+	Alexander 'Leo' Bergolth	<Leo.Bergolth [AT] wu-wien.ac.at>
+	Alexey Kuznetsov		<kuznet [AT] ms2.inr.ac.ru>
+	Albert Chin			<china [AT] thewrittenword.com>
+	Andrew Brown			<atatat [AT] atatdot.net>
+	Antti Kantee			<pooka [AT] netbsd.org>
+	Arkadiusz Miskiewicz		<misiek [AT] pld.org.pl>
+	Armando L. Caro Jr.		<acaro [AT] mail.eecis.udel.edu>
+	Assar Westerlund	 	<assar [AT] sics.se>
+	Brian Ginsbach			<ginsbach [AT] cray.com>
+	Charles M. Hannum		<mycroft [AT] netbsd.org>
+	Chris G. Demetriou		<cgd [AT] netbsd.org>
+	Chris Lightfoot			<cwrl [AT] users.sourceforge.net>
+	Chris Pepper			<pepper [AT] mail.reppep.com>
+	Daniele Orlandi			<daniele [AT] orlandi.com>
+	Darren Reed			<darrenr [AT] reed.wattle.id.au>
+	David Kaelbling			<drk [AT] sgi.com>
+	David Young			<dyoung [AT] ojctech.com>
+	Dean Gaudet			<dean [AT] arctic.org>
+	Don Ebright			<Don.Ebright [AT] compuware.com> 
+	Dug Song			<dugsong [AT] monkey.org>
+	Eric Anderson			<anderse [AT] hpl.hp.com>
+	Erik de Castro Lopo		<erik.de.castro.lopo [AT] sensorynetworks.com>
+	Florent Drouin			<Florent.Drouin [AT] alcatel-lucent.fr>
+	Franz Schaefer			<schaefer [AT] mond.at>
+	Fulko Hew			<fulko.hew [AT] gmail.com>
+	Gianluca Varenni		<varenni [AT] netgroup-serv.polito.it>
+	Gilbert Hoyek			<gil_hoyek [AT] hotmail.com>
+	Gisle Vanem			<giva [AT] bgnett.no>
+	Graeme Hewson			<ghewson [AT] cix.compulink.co.uk>
+	Greg Stark			<gsstark [AT] mit.edu>
+	Greg Troxel			<gdt [AT] ir.bbn.com>
+	Gregor Maier			<gregor [AT] net.in.tum.de>
+	Guillaume Pelat			<endymion_ [AT] users.sourceforge.net>
+	Hyung Sik Yoon			<hsyn [AT] kr.ibm.com>
+	Igor Khristophorov		<igor [AT] atdot.org>
+	Jan-Philip Velders		<jpv [AT] veldersjes.net>
+	Jason R. Thorpe			<thorpej [AT] netbsd.org>
+	Javier Achirica			<achirica [AT] ttd.net>
+	Jean Tourrilhes			<jt [AT] hpl.hp.com>
+	Jefferson Ogata			<jogata [AT] nodc.noaa.gov>
+	Jesper Peterson			<jesper [AT] endace.com>
+	Joerg Mayer			<jmayer [AT] loplof.de>
+	John Bankier			<jbankier [AT] rainfinity.com>
+	Jon Lindgren			<jonl [AT] yubyub.net>
+	Juergen Schoenwaelder		<schoenw [AT] ibr.cs.tu-bs.de>
+	Jung-uk Kim			<jkim [AT] FreeBSD.org>
+	Kazushi Sugyo			<sugyo [AT] pb.jp.nec.com>
+	Klaus Klein			<kleink [AT] netbsd.org>
+	Koryn Grant			<koryn [AT] endace.com>
+	Kris Katterjohn			<katterjohn [AT] gmail.com>
+	Krzysztof Halasa		<khc [AT] pm.waw.pl>
+	Lorenzo Cavallaro		<sullivan [AT] sikurezza.org>
+	Loris Degioanni			<loris [AT] netgroup-serv.polito.it>
+	Love Hörnquist-Åstrand		<lha [AT] stacken.kth.se>
+	Luis Martin Garcia		<luis.mgarc [AT] gmail.com>
+	Maciej W. Rozycki		<macro [AT] ds2.pg.gda.pl>
+	Marcus Felipe Pereira		<marcus [AT] task.com.br>
+	Mark C. Brown			<mbrown [AT] hp.com>
+	Mark Pizzolato			<List-tcpdump-workers [AT] subscriptions.pizzolato.net>
+	Martin Husemann			<martin [AT] netbsd.org>
+	Matthew Luckie			<mjl [AT] luckie.org.nz>
+	Max Laier			<max [AT] love2party.net>
+	Mike Kershaw			<dragorn [AT] kismetwireless.net>
+	Mike Wiacek			<mike [AT] iroot.net>
+	Monroe Williams			<monroe [AT] pobox.com>
+	Nicolas Dade			<ndade [AT] nsd.dyndns.org>
+	Octavian Cerna			<tavy [AT] ylabs.com>
+	Olaf Kirch			<okir [AT] caldera.de>
+	Ollie Wild			<aaw [AT] users.sourceforge.net>
+	Onno van der Linden		<onno [AT] simplex.nl>
+	Patrick Marie			<mycroft [AT] virgaria.org>
+	Paolo Abeni			<paolo.abeni [AT] email.it>
+	Paul Mundt			<lethal [AT] linux-sh.org>
+	Pavel Kankovsky			<kan [AT] dcit.cz>
+	Pawel Pokrywka			<publicpp [AT] gmail.com>
+	Peter Fales			<peter [AT] fales-lorenz.net>
+	Peter Jeremy			<peter.jeremy [AT] alcatel.com.au>
+	Phil Wood			<cpw [AT] lanl.gov>
+	Rafal Maszkowski		<rzm [AT] icm.edu.pl>
+					<rcb-isis [AT] users.sourceforge.net>
+	Richard Stearn			<richard [AT] rns-stearn.demon.co.uk>
+	Rick Jones			<raj [AT] cup.hp.com>
+	Sagun Shakya			<sagun.shakya [AT] sun.com>
+	Scott Barron			<sb125499 [AT] ohiou.edu>
+	Scott Gifford			<sgifford [AT] tir.com>
+	Sebastian Krahmer		<krahmer [AT] cs.uni-potsdam.de>
+	Sepherosa Ziehau		<sepherosa [AT] gmail.com>
+	Shaun Clowes			<delius [AT] progsoc.uts.edu.au>
+	Solomon Peachy			<pizza [AT] shaftnet.org>
+	Stefan Hudson			<hudson [AT] mbay.net>
+	Stephen Donnelly		<stephen [AT] endace.com>
+	Takashi Yamamoto		<yamt [AT] mwd.biglobe.ne.jp>
+	Tanaka Shin-ya			<zstanaka [AT] archer.livedoor.com>
+	Tony Li				<tli [AT] procket.com>
+	Torsten Landschoff	 	<torsten [AT] debian.org>
+	Uns Lider			<unslider [AT] miranda.org>
+	Uwe Girlich			<Uwe.Girlich [AT] philosys.de>
+	Xianjie Zhang			<xzhang [AT] cup.hp.com>
 	Yen Yen Lim
-	Yoann Vandoorselaere		<yoann@prelude-ids.org>
+	Yoann Vandoorselaere		<yoann [AT] prelude-ids.org>
 
 The original LBL crew:
 	Steve McCanne
@@ -116,4 +117,4 @@ The original LBL crew:
 	Van Jacobson
 
 Past maintainers:
-	Jun-ichiro itojun Hagino	<itojun@iijlab.net>
+	Jun-ichiro itojun Hagino	<itojun [AT] iijlab.net>
