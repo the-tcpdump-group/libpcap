@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.4 2007-12-14 08:02:53 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.5 2008-02-02 20:51:00 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -661,7 +661,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 	for (;;) {
 		int i, ret;
 		int limit = max_packets - packets;
-		if (limit < 0)
+		if (limit <= 0)
 			limit = VEC_SIZE;
 		if (limit > VEC_SIZE)
 			limit = VEC_SIZE;
@@ -708,8 +708,8 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			packets++;
 		}
 
-		/* with max_packets == -1 we stop afer the first chunk*/
-		if ((max_packets == -1) || (packets == max_packets))
+		/* with max_packets <= 0 we stop afer the first chunk*/
+		if ((max_packets <= 0) || (packets == max_packets))
 			break;
 	}
 
