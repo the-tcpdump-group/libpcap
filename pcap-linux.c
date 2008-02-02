@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.134 2008-01-24 20:20:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.135 2008-02-02 20:56:48 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1803,9 +1803,9 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		} while (ret < 0);
 	}
 
-	/* negative values of max_packets are used to require all 
-	 * packets available in the ring */
-	while ((pkts < max_packets) || (max_packets <0)) {
+	/* non-positive values of max_packets are used to require all 
+	 * packets currently available in the ring */
+	while ((pkts < max_packets) || (max_packets <= 0)) {
 		int run_bpf;
 		struct sockaddr_ll *sll;
 		struct pcap_pkthdr pcaphdr;
