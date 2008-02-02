@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.135 2008-02-02 20:56:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.136 2008-02-02 21:27:28 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -228,7 +228,7 @@ static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static void pcap_close_linux(pcap_t *);
 
 #ifdef HAVE_PACKET_RING
-#define RING_GET_FRAME(h) (((struct tpacket_hdr**)h->buffer)[handle->offset])
+#define RING_GET_FRAME(h) (((struct tpacket_hdr**)h->buffer)[h->offset])
 
 static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t* handle, unsigned size, char* errmsg);
