@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58.2.1 2007-12-05 23:38:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58.2.2 2008-02-02 20:58:31 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -180,7 +180,7 @@ pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			h.len = nh->nh_wirelen;
 			h.caplen = caplen;
 			(*callback)(user, &h, cp);
-			if (++n >= cnt && cnt >= 0) {
+			if (++n >= cnt && cnt > 0) {
 				p->cc = ep - bp;
 				p->bp = bp;
 				return (n);
