@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.118 2008-01-30 09:41:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.119 2008-02-02 20:58:18 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -357,7 +357,7 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			if (pkthdr.caplen > p->snapshot)
 				pkthdr.caplen = p->snapshot;
 			(*callback)(user, &pkthdr, pk);
-			if (++n >= cnt && cnt >= 0) {
+			if (++n >= cnt && cnt > 0) {
 				p->cc = ep - bp;
 				p->bp = bp;
 				return (n);
