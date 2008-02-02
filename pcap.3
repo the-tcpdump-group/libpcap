@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.76.2.3 2008-01-06 21:14:56 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3,v 1.76.2.4 2008-02-02 21:19:52 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -257,7 +257,6 @@ is returned,
 .B pcap_geterr()
 can be used to get the error text.
 .PP
-.PP
 .B pcap_setnonblock()
 puts a capture descriptor, opened with
 .BR pcap_open_live() ,
@@ -430,11 +429,19 @@ specifies the maximum number of packets to process before returning.
 This is not a minimum number; when reading a live capture, only one
 bufferful of packets is read at a time, so fewer than
 .I cnt
-packets may be processed. A
+packets may be processed. A value of \-1 or 0 for
 .I cnt
-of \-1 processes all the packets received in one buffer when reading a
-live capture, or all the packets in the file when reading a
-``savefile''.
+causes all the packets received in one buffer to be processed when
+reading a live capture, and causes all the packets in the file to be
+processed when reading a ``savefile''.
+.ft B
+(In older versions of libpcap, the behavior when
+\fIcnt\fP
+was 0 was undefined; different platforms and devices behaved
+differently, so code that must work with older versions of libpcap
+should use \-1, not 0, as the value of
+\fIcnt\fP.)
+.ft R
 .I callback
 specifies a routine to be called with three arguments:
 a
@@ -532,12 +539,20 @@ and then calling
 .B pcap_dispatch()
 allows the reception and processing of any packets that arrive when the
 timeout occurs.
-A negative
+A value of \-1 or 0 for
 .I cnt
 causes
 .B pcap_loop()
-to loop forever (or at least until an error occurs).  \-1 is returned on
-an error; 0 is returned if
+to loop forever (or at least until an error occurs).
+.ft B
+(In older versions of libpcap, the behavior when
+\fIcnt\fP
+was 0 was undefined; different platforms and devices behaved
+differently, so code that must work with older versions of libpcap
+should use \-1, nor 0, as the value of
+\fIcnt\fP.)
+.ft R
+\-1 is returned on an error; 0 is returned if
 .I cnt
 is exhausted; \-2 is returned if the loop terminated due to a call to
 .B pcap_breakloop()
