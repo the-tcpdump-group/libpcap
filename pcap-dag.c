@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31.2.4 2008-01-06 21:26:14 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31.2.5 2008-02-02 20:42:57 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -538,7 +538,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	
 			/* Only count packets that pass the filter, for consistency with standard Linux behaviour. */
 			processed++;
-			if (processed == cnt)
+			if (processed == cnt && cnt > 0)
 			{
 				/* Reached the user-specified limit. */
 				return cnt;
