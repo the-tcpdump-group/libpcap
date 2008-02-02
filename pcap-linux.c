@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.7 2008-02-02 21:27:40 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.8 2008-02-02 22:28:13 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1818,7 +1818,7 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		if (thdr->tp_mac+thdr->tp_snaplen > handle->bufsize) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
 				"corrupted frame on kernel ring mac "
-				"offset %d + caplen %d > frame len %d\n", 
+				"offset %d + caplen %d > frame len %d", 
 				thdr->tp_mac, thdr->tp_snaplen, handle->bufsize);
 			return -1;
 		}
@@ -1854,8 +1854,34 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 
 		/* if required build in place the sll header*/
 		if (handle->md.cooked) {
-			struct sll_header *hdrp = (struct sll_header *)((char *)bp - sizeof(struct sll_header));
+			struct sll_header *hdrp;
 
+			/*
+			 * The kernel should have left us with enough
+			 * space for an sll header; back up the packet
+			 * data pointer into that space, as that'll be
+			 * the beginning of the packet we pass to the
+			 * callback.
+			 */
+			bp -= SLL_HDR_LEN;
+
+			/*
+			 * Let's make sure that's past the end of
+			 * the tpacket header, i.e. >=
+			 * ((u_char *)thdr + TPACKET_HDRLEN), so we
+			 * don't step on the header when we construct
+			 * the sll header.
+			 */
+			if (bp < (u_char *)thdr + TPACKET_HDRLEN) {
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+					"cooked-mode frame doesn't have room for sll header");
+				return -1;
+			}
+
+			/*
+			 * OK, that worked; construct the sll header.
+			 */
+			hdrp = (struct sll_header *)bp;
 			hdrp->sll_pkttype = map_packet_type_to_sll_type(
 							sll->sll_pkttype);
 			hdrp->sll_hatype = htons(sll->sll_hatype);
