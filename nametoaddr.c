@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.82 2007-06-11 10:04:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/nametoaddr.c,v 1.83 2008-02-06 10:21:30 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -398,7 +398,15 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 }
 
 /*
- * Convert 's' which has the form "xx:xx:xx:xx:xx:xx" into a new
+ * Convert 's', which can have the one of the forms:
+ *
+ *	"xx:xx:xx:xx:xx:xx"
+ *	"xx.xx.xx.xx.xx.xx"
+ *	"xx-xx-xx-xx-xx-xx"
+ *	"xxxx.xxxx.xxxx"
+ *	"xxxxxxxxxxxx"
+ *
+ * (or various mixes of ':', '.', and '-') into a new
  * ethernet address.  Assumes 's' is well formed.
  */
 u_char *
@@ -410,7 +418,7 @@ pcap_ether_aton(const char *s)
 	e = ep = (u_char *)malloc(6);
 
 	while (*s) {
-		if (*s == ':')
+		if (*s == ':' || *s == '.' || *s == '-')
 			s += 1;
 		d = xdtoi(*s++);
 		if (isxdigit((unsigned char)*s)) {
