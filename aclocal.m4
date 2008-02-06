@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.63.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.86.2.1 2008-02-06 10:05:34 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -51,7 +51,7 @@ AC_DEFUN(AC_LBL_C_INIT,
     $1="-O"
     $2=""
     if test "${srcdir}" != "." ; then
-	    $2="-I\$\(srcdir\)"
+	    $2="-I\$(srcdir)"
     fi
     if test "${CFLAGS+set}" = set; then
 	    LBL_CFLAGS="$CFLAGS"
@@ -118,7 +118,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 			    fi
 			    CFLAGS="$savedcflags"
 			    V_CCOPT="-Aa $V_CCOPT"
-			    AC_DEFINE(_HPUX_SOURCE)
+			    AC_DEFINE(_HPUX_SOURCE,1,[needed on HP-UX])
 			    ;;
 
 		    *)
@@ -156,6 +156,57 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    esac
     fi
 ])
+
+#
+# Try compiling a sample of the type of code that appears in
+# gencode.c with "inline", "__inline__", and "__inline".
+#
+# Autoconf's AC_C_INLINE, at least in autoconf 2.13, isn't good enough,
+# as it just tests whether a function returning "int" can be inlined;
+# at least some versions of HP's C compiler can inline that, but can't
+# inline a function that returns a struct pointer.
+#
+# Make sure we use the V_CCOPT flags, because some of those might
+# disable inlining.
+#
+AC_DEFUN(AC_LBL_C_INLINE,
+    [AC_MSG_CHECKING(for inline)
+    save_CFLAGS="$CFLAGS"
+    CFLAGS="$V_CCOPT"
+    AC_CACHE_VAL(ac_cv_lbl_inline, [
+	ac_cv_lbl_inline=""
+	ac_lbl_cc_inline=no
+	for ac_lbl_inline in inline __inline__ __inline
+	do
+	    AC_TRY_COMPILE(
+		[#define inline $ac_lbl_inline
+		static inline struct iltest *foo(void);
+		struct iltest {
+		    int iltest1;
+		    int iltest2;
+		};
+
+		static inline struct iltest *
+		foo()
+		{
+		    static struct iltest xxx;
+
+		    return &xxx;
+		}],,ac_lbl_cc_inline=yes,)
+	    if test "$ac_lbl_cc_inline" = yes ; then
+		break;
+	    fi
+	done
+	if test "$ac_lbl_cc_inline" = yes ; then
+	    ac_cv_lbl_inline=$ac_lbl_inline
+	fi])
+    CFLAGS="$save_CFLAGS"
+    if test ! -z "$ac_cv_lbl_inline" ; then
+	AC_MSG_RESULT($ac_cv_lbl_inline)
+    else
+	AC_MSG_RESULT(no)
+    fi
+    AC_DEFINE_UNQUOTED(inline, $ac_cv_lbl_inline, [Define as token for inline if inlining supported])])
 
 dnl
 dnl Use pfopen.c if available and pfopen() not in standard libraries
@@ -246,14 +297,14 @@ AC_DEFUN(AC_LBL_TYPE_SIGNAL,
     [AC_BEFORE([$0], [AC_LBL_LIBPCAP])
     AC_TYPE_SIGNAL
     if test "$ac_cv_type_signal" = void ; then
-	    AC_DEFINE(RETSIGVAL,)
+	    AC_DEFINE(RETSIGVAL,[],[return value of signal handlers])
     else
-	    AC_DEFINE(RETSIGVAL,(0))
+	    AC_DEFINE(RETSIGVAL,(0),[return value of signal handlers])
     fi
     case "$target_os" in
 
     irix*)
-	    AC_DEFINE(_BSD_SIGNALS)
+	    AC_DEFINE(_BSD_SIGNALS,1,[get BSD semantics on Irix])
 	    ;;
 
     *)
@@ -384,9 +435,9 @@ AC_DEFUN(AC_LBL_UNION_WAIT,
 	    ac_cv_lbl_union_wait=yes))
     AC_MSG_RESULT($ac_cv_lbl_union_wait)
     if test $ac_cv_lbl_union_wait = yes ; then
-	    AC_DEFINE(DECLWAITSTATUS,union wait)
+	    AC_DEFINE(DECLWAITSTATUS,union wait,[type for wait])
     else
-	    AC_DEFINE(DECLWAITSTATUS,int)
+	    AC_DEFINE(DECLWAITSTATUS,int,[type for wait])
     fi])
 
 dnl
@@ -411,7 +462,66 @@ AC_DEFUN(AC_LBL_SOCKADDR_SA_LEN,
 	ac_cv_lbl_sockaddr_has_sa_len=no))
     AC_MSG_RESULT($ac_cv_lbl_sockaddr_has_sa_len)
     if test $ac_cv_lbl_sockaddr_has_sa_len = yes ; then
-	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN)
+	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN,1,[if struct sockaddr has sa_len])
+    fi])
+
+dnl
+dnl Checks to see if there's a sockaddr_storage structure
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_SOCKADDR_STORAGE
+dnl
+dnl results:
+dnl
+dnl	HAVE_SOCKADDR_STORAGE (defined)
+dnl
+AC_DEFUN(AC_LBL_SOCKADDR_STORAGE,
+    [AC_MSG_CHECKING(if sockaddr_storage struct exists)
+    AC_CACHE_VAL(ac_cv_lbl_has_sockaddr_storage,
+	AC_TRY_COMPILE([
+#	include <sys/types.h>
+#	include <sys/socket.h>],
+	[u_int i = sizeof (struct sockaddr_storage)],
+	ac_cv_lbl_has_sockaddr_storage=yes,
+	ac_cv_lbl_has_sockaddr_storage=no))
+    AC_MSG_RESULT($ac_cv_lbl_has_sockaddr_storage)
+    if test $ac_cv_lbl_has_sockaddr_storage = yes ; then
+	    AC_DEFINE(HAVE_SOCKADDR_STORAGE,1,[if struct sockaddr_storage exists])
+    fi])
+
+dnl
+dnl Checks to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
+dnl dl_module_id_1 member
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
+dnl
+dnl results:
+dnl
+dnl	HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1 (defined)
+dnl
+dnl NOTE: any compile failure means we conclude that it doesn't have
+dnl that member, so if we don't have DLPI, don't have a <sys/dlpi_ext.h>
+dnl header, or have one that doesn't declare a dl_hp_ppa_info_t type,
+dnl we conclude it doesn't have that member (which is OK, as either we
+dnl won't be using code that would use that member, or we wouldn't
+dnl compile in any case).
+dnl
+AC_DEFUN(AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1,
+    [AC_MSG_CHECKING(if dl_hp_ppa_info_t struct has dl_module_id_1 member)
+    AC_CACHE_VAL(ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1,
+	AC_TRY_COMPILE([
+#	include <sys/types.h>
+#	include <sys/dlpi.h>
+#	include <sys/dlpi_ext.h>],
+	[u_int i = sizeof(((dl_hp_ppa_info_t *)0)->dl_module_id_1)],
+	ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=yes,
+	ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=no))
+    AC_MSG_RESULT($ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1)
+    if test $ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1 = yes ; then
+	    AC_DEFINE(HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1,1,[if ppa_info_t_dl_module_id exists])
     fi])
 
 dnl
@@ -466,7 +576,7 @@ AC_DEFUN(AC_LBL_CHECK_TYPE,
 	ac_cv_lbl_have_$1=no))
     AC_MSG_RESULT($ac_cv_lbl_have_$1)
     if test $ac_cv_lbl_have_$1 = no ; then
-	    AC_DEFINE($1, $2)
+	    AC_DEFINE($1, $2, [if we have $1])
     fi])
 
 dnl
@@ -483,9 +593,41 @@ dnl
 AC_DEFUN(AC_LBL_UNALIGNED_ACCESS,
     [AC_MSG_CHECKING(if unaligned accesses fail)
     AC_CACHE_VAL(ac_cv_lbl_unaligned_fail,
-	[case "$target_cpu" in
+	[case "$host_cpu" in
 
-	alpha|hp*|mips|sparc)
+	#
+	# These are CPU types where:
+	#
+	#	the CPU faults on an unaligned access, but at least some
+	#	OSes that support that CPU catch the fault and simulate
+	#	the unaligned access (e.g., Alpha/{Digital,Tru64} UNIX) -
+	#	the simulation is slow, so we don't want to use it;
+	#
+	#	the CPU, I infer (from the old
+	#
+	# XXX: should also check that they don't do weird things (like on arm)
+	#
+	#	comment) doesn't fault on unaligned accesses, but doesn't
+	#	do a normal unaligned fetch, either (e.g., presumably, ARM);
+	#
+	#	for whatever reason, the test program doesn't work
+	#	(this has been claimed to be the case for several of those
+	#	CPUs - I don't know what the problem is; the problem
+	#	was reported as "the test program dumps core" for SuperH,
+	#	but that's what the test program is *supposed* to do -
+	#	it dumps core before it writes anything, so the test
+	#	for an empty output file should find an empty output
+	#	file and conclude that unaligned accesses don't work).
+	#
+	# This run-time test won't work if you're cross-compiling, so
+	# in order to support cross-compiling for a particular CPU,
+	# we have to wire in the list of CPU types anyway, as far as
+	# I know, so perhaps we should just have a set of CPUs on
+	# which we know it doesn't work, a set of CPUs on which we
+	# know it does work, and have the script just fail on other
+	# cpu types and update it when such a failure occurs.
+	#
+	alpha*|arm*|bfin*|hp*|mips*|sh*|sparc*|ia64|nv1)
 		ac_cv_lbl_unaligned_fail=yes
 		;;
 
@@ -534,7 +676,7 @@ EOF
 	esac])
     AC_MSG_RESULT($ac_cv_lbl_unaligned_fail)
     if test $ac_cv_lbl_unaligned_fail = yes ; then
-	    AC_DEFINE(LBL_ALIGN)
+	    AC_DEFINE(LBL_ALIGN,1,[if unaligned access fails])
     fi])
 
 dnl
@@ -584,7 +726,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    name="lbl/os-$os.h"
 	    if test -f $name ; then
 		    ln -s $name os-proto.h
-		    AC_DEFINE(HAVE_OS_PROTO_H)
+		    AC_DEFINE(HAVE_OS_PROTO_H,1,[if there's an os_proto.h])
 	    else
 		    AC_MSG_WARN(can't find $name)
 	    fi
@@ -686,21 +828,73 @@ dnl
 AC_DEFUN(AC_LBL_LIBRARY_NET, [
     # Most operating systems have gethostbyname() in the default searched
     # libraries (i.e. libc):
-    AC_CHECK_FUNC(gethostbyname, ,
-	# Some OSes (eg. Solaris) place it in libnsl:
-	AC_LBL_CHECK_LIB(nsl, gethostbyname, , 
-	    # Some strange OSes (SINIX) have it in libsocket:
-	    AC_LBL_CHECK_LIB(socket, gethostbyname, ,
-		# Unfortunately libsocket sometimes depends on libnsl.
-		# AC_CHECK_LIB's API is essentially broken so the
-		# following ugliness is necessary:
-		AC_LBL_CHECK_LIB(socket, gethostbyname,
-		    LIBS="-lsocket -lnsl $LIBS",
-		    AC_CHECK_LIB(resolv, gethostbyname),
-		    -lnsl))))
-    AC_CHECK_FUNC(socket, , AC_CHECK_LIB(socket, socket, ,
-	AC_LBL_CHECK_LIB(socket, socket, LIBS="-lsocket -lnsl $LIBS", ,
-	    -lnsl)))
+    # Some OSes (eg. Solaris) place it in libnsl
+    # Some strange OSes (SINIX) have it in libsocket:
+    AC_SEARCH_LIBS(gethostbyname, nsl socket resolv)
+    # Unfortunately libsocket sometimes depends on libnsl and
+    # AC_SEARCH_LIBS isn't up to the task of handling dependencies like this.
+    if test "$ac_cv_search_gethostbyname" = "no"
+    then
+	AC_CHECK_LIB(socket, gethostbyname,
+                     LIBS="-lsocket -lnsl $LIBS", , -lnsl)
+    fi
+    AC_SEARCH_LIBS(socket, socket, ,
+	AC_CHECK_LIB(socket, socket, LIBS="-lsocket -lnsl $LIBS", , -lnsl))
     # DLPI needs putmsg under HPUX so test for -lstr while we're at it
-    AC_CHECK_LIB(str, putmsg)
+    AC_SEARCH_LIBS(putmsg, str)
     ])
+
+dnl
+dnl Test for __attribute__
+dnl
+
+AC_DEFUN(AC_C___ATTRIBUTE__, [
+AC_MSG_CHECKING(for __attribute__)
+AC_CACHE_VAL(ac_cv___attribute__, [
+AC_COMPILE_IFELSE(
+  AC_LANG_SOURCE([[
+#include <stdlib.h>
+
+static void foo(void) __attribute__ ((noreturn));
+
+static void
+foo(void)
+{
+  exit(1);
+}
+
+int
+main(int argc, char **argv)
+{
+  foo();
+}
+  ]]),
+ac_cv___attribute__=yes,
+ac_cv___attribute__=no)])
+if test "$ac_cv___attribute__" = "yes"; then
+  AC_DEFINE(HAVE___ATTRIBUTE__, 1, [define if your compiler has __attribute__])
+  V_DEFS="$V_DEFS -D_U_=\"__attribute__((unused))\""
+else
+  V_DEFS="$V_DEFS -D_U_=\"\""
+fi
+AC_MSG_RESULT($ac_cv___attribute__)
+])
+
+dnl
+dnl Checks to see if tpacket_stats is defined in linux/if_packet.h
+dnl If so then pcap-linux.c can use this to report proper statistics.
+dnl
+dnl -Scott Barron
+dnl
+AC_DEFUN(AC_LBL_TPACKET_STATS,
+   [AC_MSG_CHECKING(if if_packet.h has tpacket_stats defined)
+   AC_CACHE_VAL(ac_cv_lbl_tpacket_stats,
+   AC_TRY_COMPILE([
+#  include <linux/if_packet.h>],
+   [struct tpacket_stats stats],
+   ac_cv_lbl_tpacket_stats=yes,
+   ac_cv_lbl_tpacket_stats=no))
+   AC_MSG_RESULT($ac_cv_lbl_tpacket_stats)
+   if test $ac_cv_lbl_tpacket_stats = yes; then
+       AC_DEFINE(HAVE_TPACKET_STATS,1,[if if_packet.h has tpacket_stats defined])
+   fi])
