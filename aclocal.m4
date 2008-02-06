@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.87 2008-02-06 10:04:31 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.88 2008-02-06 11:18:57 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -682,7 +682,7 @@ EOF
 dnl
 dnl If using gcc and the file .devel exists:
 dnl	Compile with -g (if supported) and -Wall
-dnl	If using gcc 2, do extra prototype checking
+dnl	If using gcc 2 or later, do extra prototype checking
 dnl	If an os prototype include exists, symlink os-proto.h to it
 dnl
 dnl usage:
@@ -745,6 +745,11 @@ dnl
 dnl results:
 dnl
 dnl	LIBS
+dnl
+dnl XXX - "AC_LBL_LIBRARY_NET" was redone to use "AC_SEARCH_LIBS"
+dnl rather than "AC_LBL_CHECK_LIB", so this isn't used any more.
+dnl We keep it around for reference purposes in case it's ever
+dnl useful in the future.
 dnl
 
 define(AC_LBL_CHECK_LIB,
