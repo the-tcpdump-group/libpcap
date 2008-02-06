@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.86 2005-04-21 03:41:24 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.87 2008-02-06 10:04:31 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -627,7 +627,7 @@ AC_DEFUN(AC_LBL_UNALIGNED_ACCESS,
 	# know it does work, and have the script just fail on other
 	# cpu types and update it when such a failure occurs.
 	#
-	alpha*|arm*|hp*|mips*|sh*|sparc*|ia64|nv1)
+	alpha*|arm*|bfin*|hp*|mips*|sh*|sparc*|ia64|nv1)
 		ac_cv_lbl_unaligned_fail=yes
 		;;
 
