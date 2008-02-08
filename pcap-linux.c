@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.8 2008-02-02 22:28:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.9 2008-02-08 01:36:39 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1750,14 +1750,14 @@ pcap_close_linux_mmap( pcap_t *handle )
 }
 
 
-int
+static int
 pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 {
 	/* use negative value of timeout to indicate non blocking ops */
 	return (p->md.timeout<0);
 }
 
-int
+static int
 pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 {
 	/* map each value to the corresponding 2's complement, to 
