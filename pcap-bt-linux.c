@@ -33,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.9 2007-09-22 02:10:17 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.10 2008-02-14 23:27:42 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -94,7 +94,7 @@ bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 	dev_list = malloc(HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 	if (!dev_list) 
 	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %d bytes for Bluetooth device list",
+		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %zu bytes for Bluetooth device list",
 			HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 		ret = -1;
 		goto done;
