@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.23 2008-01-02 04:16:46 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.24 2008-02-18 20:21:00 guy Exp $ (LBL)
  */
 
 /*
@@ -772,12 +772,32 @@ struct bpf_version {
  * type, as requested by Will Barker.
  */
 
-
 /*
- * IPMB with a Linux-specific pseudo-header; as equested by Alexey Neyman
+ * IPMB with a Linux-specific pseudo-header; as requested by Alexey Neyman
  * <avn@pigeonpoint.com>.
  */
 #define DLT_IPMB_LINUX		209
+
+/*
+ * FlexRay automotive bus - http://www.flexray.com/ - as requested
+ * by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define DLT_FLEXRAY		210
+
+/*
+ * Media Oriented Systems Transport (MOST) bus for multimedia
+ * transport - http://www.mostcooperation.com/ - as requested
+ * by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define DLT_MOST		211
+
+/*
+ * Local Interconnect Network (LIN) bus for vehicle networks -
+ * http://www.lin-subbus.org/ - as requested by Hannes Kaelber
+ * <hannes.kaelber@x2e.de>.
+ */
+#define DLT_LIN			212
+
 
 /*
  * DLT and savefile link type values are split into a class and
