@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.3 2007-12-23 04:42:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.4 2008-02-18 20:21:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -597,12 +597,31 @@ static const char rcsid[] _U_ =
  * type, as requested by Will Barker.
  */
 
-
 /*
- * IPMB with a Linux-specific pseudo-header; as equested by Alexey Neyman
+ * IPMB with a Linux-specific pseudo-header; as requested by Alexey Neyman
  * <avn@pigeonpoint.com>.
  */
 #define LINKTYPE_IPMB_LINUX		209
+
+/*
+ * FlexRay automotive bus - http://www.flexray.com/ - as requested
+ * by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define LINKTYPE_FLEXRAY		210
+
+/*
+ * Media Oriented Systems Transport (MOST) bus for multimedia
+ * transport - http://www.mostcooperation.com/ - as requested
+ * by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define LINKTYPE_MOST			211
+
+/*
+ * Local Interconnect Network (LIN) bus for vehicle networks -
+ * http://www.lin-subbus.org/ - as requested by Hannes Kaelber
+ * <hannes.kaelber@x2e.de>.
+ */
+#define LINKTYPE_LIN			212
 
 
 static struct linktype_map {
@@ -890,6 +909,15 @@ static struct linktype_map {
 
 	/* IPMB with Linux pseudo-header */
 	{ DLT_IPMB_LINUX,	LINKTYPE_IPMB_LINUX },
+
+	/* FlexRay */
+	{ DLT_FLEXRAY,		LINKTYPE_FLEXRAY },
+
+	/* MOST */
+	{ DLT_MOST,		LINKTYPE_MOST },
+
+	/* LIN */
+	{ DLT_LIN,		LINKTYPE_LIN },
 
 	{ -1,			-1 }
 };
