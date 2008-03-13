@@ -32,6 +32,9 @@
 /* define if you have a /dev/dlpi */
 #undef HAVE_DEV_DLPI
 
+/* if passive_req_t primitive exists */
+#undef HAVE_DLPI_PASSIVE
+
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
 
@@ -49,6 +52,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* if libdlpi exists */
+#undef HAVE_LIBDLPI
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H

@@ -33,6 +33,8 @@ config.h.in
 config.sub
 configure
 configure.in
+dlpisubs.c
+dlpisubs.h
 etherent.c
 ethertype.h
 fad-getad.c
@@ -94,6 +96,7 @@ pcap-dos.c
 pcap-dos.h
 pcap-enet.c
 pcap-int.h
+pcap-libdlpi.c
 pcap-linux.c
 pcap-namedb.h
 pcap-nit.c
