@@ -30,16 +30,20 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.87 2008-01-06 20:23:17 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.88 2008-03-13 18:13:57 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
-#define pcap_int_h
+#define	pcap_int_h
 
 #include <pcap/pcap.h>
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef HAVE_LIBDLPI
+#include <libdlpi.h>
 #endif
 
 #ifdef WIN32
@@ -167,6 +171,10 @@ struct pcap {
 	int selectable_fd;
 	int send_fd;
 #endif /* WIN32 */
+
+#ifdef HAVE_LIBDLPI
+	dlpi_handle_t dlpi_hd;
+#endif
 	int snapshot;
 	int linktype;		/* Network linktype */
 	int linktype_ext;       /* Extended information stored in the linktype field of a file */

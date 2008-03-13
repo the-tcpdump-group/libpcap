@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.88 2008-02-06 11:18:57 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.89 2008-03-13 18:13:57 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -903,3 +903,30 @@ AC_DEFUN(AC_LBL_TPACKET_STATS,
    if test $ac_cv_lbl_tpacket_stats = yes; then
        AC_DEFINE(HAVE_TPACKET_STATS,1,[if if_packet.h has tpacket_stats defined])
    fi])
+
+dnl
+dnl Checks to see if Solaris has the dl_passive_req_t struct defined
+dnl in <sys/dlpi.h>.
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_DL_PASSIVE_REQ_T
+dnl
+dnl results:
+dnl 
+dnl 	HAVE_DLPI_PASSIVE (defined)
+dnl
+AC_DEFUN(AC_LBL_DL_PASSIVE_REQ_T,
+        [AC_MSG_CHECKING(if dl_passive_req_t struct exists)
+       AC_CACHE_VAL(ac_cv_lbl_has_dl_passive_req_t,
+                AC_TRY_COMPILE([
+#       include <sys/types.h>
+#       include <sys/dlpi.h>],
+        [u_int i = sizeof(dl_passive_req_t)],
+        ac_cv_lbl_has_dl_passive_req_t=yes,
+        ac_cv_lbl_has_dl_passive_req_t=no))
+    AC_MSG_RESULT($ac_cv_lbl_has_dl_passive_req_t)
+    if test $ac_cv_lbl_has_dl_passive_req_t = yes ; then
+            AC_DEFINE(HAVE_DLPI_PASSIVE,1,[if passive_req_t primitive
+		exists])
+    fi])

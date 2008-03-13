@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.24 2008-01-06 21:14:16 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.25 2008-03-13 18:13:57 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -327,6 +327,8 @@ config.h.in	- autoconf input
 config.sub	- autoconf support
 configure	- configure script (run this first)
 configure.in	- configure script source
+dlpisubs.c	- DLPI-related functions for pcap-dlpi.c and pcap-libdlpi.c
+dlpisubs.h	- DLPI-related function declarations
 etherent.c	- /etc/ethers support routines
 ethertype.h	- Ethernet protocol types and names definitions
 fad-getad.c	- pcap_findalldevs() for systems with getifaddrs()
@@ -370,6 +372,7 @@ pcap-dos.c	- MS-DOS capture support
 pcap-dos.h	- headers for MS-DOS capture support
 pcap-enet.c	- enet support
 pcap-int.h	- internal libpcap definitions
+pcap-libdlpi.c	- Data Link Provider Interface support for systems with libdlpi
 pcap-linux.c	- Linux packet socket support
 pcap-namedb.h	- header for backwards compatibility
 pcap-nit.c	- SunOS Network Interface Tap support
