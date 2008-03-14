@@ -95,6 +95,9 @@
 /* if struct sockaddr_storage exists */
 #undef HAVE_SOCKADDR_STORAGE
 
+/* define if socklen_t is defined */
+#undef HAVE_SOCKLEN_T
+
 /* On solaris */
 #undef HAVE_SOLARIS
 
@@ -151,9 +154,6 @@
 
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
-
-/* Is the socklen_t data type defined? */
-#undef HAVE_SOCKLEN_T
 
 /* IPv6 */
 #undef INET6

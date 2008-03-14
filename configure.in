@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.9 2008-03-14 09:13:33 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.10 2008-03-14 09:13:49 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.9 $)
+AC_REVISION($Revision: 1.138.2.10 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -381,7 +381,7 @@ AC_TRY_COMPILE([
 	have_socklen_t=yes,
 	have_socklen_t=no)
 if test "x$have_socklen_t" = "xyes"; then
-	AC_DEFINE(HAVE_SOCKLEN_T, 1)
+	AC_DEFINE(HAVE_SOCKLEN_T, 1, [define if socklen_t is defined])
 fi
 AC_MSG_RESULT($have_socklen_t)
 
