@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.138 2008-02-08 01:34:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.139 2008-03-14 09:09:14 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -174,7 +174,7 @@ static const char rcsid[] _U_ =
 #include <linux/filter.h>
 #endif
 
-#ifndef __GLIBC__
+#ifndef HAVE_SOCKLEN_T
 typedef int		socklen_t;
 #endif
 
