@@ -152,6 +152,9 @@
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
 
+/* Is the socklen_t data type defined? */
+#undef HAVE_SOCKLEN_T
+
 /* IPv6 */
 #undef INET6
 
