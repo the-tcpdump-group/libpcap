@@ -26,7 +26,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.2 2008-03-15 04:15:26 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.3 2008-03-15 04:26:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -104,7 +104,6 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	pcap_t *p;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
-	bpf_u_int32 ss, chunksize;
 
 	if ((p = (pcap_t *)malloc(sizeof(*p))) == NULL) {
 		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
@@ -177,7 +176,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->fd = dlpi_fd(p->dlpi_hd);
 
 	/* Push and configure bufmod. */
-	if (pcap_conf_bufmod(p, ss, to_ms, ebuf) != 0)
+	if (pcap_conf_bufmod(p, snaplen, to_ms, ebuf) != 0)
 		goto bad;
 
 	/*
