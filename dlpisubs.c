@@ -12,7 +12,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/dlpisubs.c,v 1.1 2008-03-13 18:13:57 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/dlpisubs.c,v 1.2 2008-04-04 19:37:45 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -197,7 +197,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
  * Process the mac type. Returns -1 if no matching mac type found, otherwise 0.
  */
 int
-pcap_process_mactype(pcap_t *p, u_int mactype, char *ebuf)
+pcap_process_mactype(pcap_t *p, u_int mactype)
 {
 	int retv = 0;
 
@@ -247,7 +247,7 @@ pcap_process_mactype(pcap_t *p, u_int mactype, char *ebuf)
 #endif
 
 	default:
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "unknown mactype %u",
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype %u",
 		    mactype);
 		retv = -1;
 	}
@@ -260,7 +260,7 @@ pcap_process_mactype(pcap_t *p, u_int mactype, char *ebuf)
  * Push and configure the buffer module. Returns -1 for error, otherwise 0.
  */
 int
-pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout, char *ebuf)
+pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout)
 {
 	int retv = 0;
 
@@ -268,14 +268,14 @@ pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout, char *ebuf)
 
 	/* Non-standard call to get the data nicely buffered. */
 	if (ioctl(p->fd, I_PUSH, "bufmod") != 0) {
-		pcap_stream_err("I_PUSH bufmod", errno, ebuf);
+		pcap_stream_err("I_PUSH bufmod", errno, p->errbuf);
 		retv = -1;
 	}
 
 	ss = snaplen;
 	if (ss > 0 &&
 	    strioctl(p->fd, SBIOCSSNAP, sizeof(ss), (char *)&ss) != 0) {
-		pcap_stream_err("SBIOCSSNAP", errno, ebuf);
+		pcap_stream_err("SBIOCSSNAP", errno, p->errbuf);
 		retv = -1;
 	}
 
@@ -286,7 +286,7 @@ pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout, char *ebuf)
 		to.tv_sec = timeout / 1000;
 		to.tv_usec = (timeout * 1000) % 1000000;
 		if (strioctl(p->fd, SBIOCSTIME, sizeof(to), (char *)&to) != 0) {
-			pcap_stream_err("SBIOCSTIME", errno, ebuf);
+			pcap_stream_err("SBIOCSTIME", errno, p->errbuf);
 			retv = -1;
 		}
 	}
@@ -295,7 +295,7 @@ pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout, char *ebuf)
 	chunksize = CHUNKSIZE;
 	if (strioctl(p->fd, SBIOCSCHUNK, sizeof(chunksize), (char *)&chunksize)
 	    != 0) {
-		pcap_stream_err("SBIOCSCHUNKP", errno, ebuf);
+		pcap_stream_err("SBIOCSCHUNKP", errno, p->errbuf);
 		retv = -1;
 	}
 
@@ -307,12 +307,12 @@ pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout, char *ebuf)
  * Allocate data buffer. Returns -1 if memory allocation fails, else 0.
  */
 int
-pcap_alloc_databuf(pcap_t *p, char *ebuf)
+pcap_alloc_databuf(pcap_t *p)
 {
 	p->bufsize = PKTBUFSIZE;
 	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		return (-1);
 	}
 

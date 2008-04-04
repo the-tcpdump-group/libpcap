@@ -33,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.10 2008-02-14 23:27:42 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.11 2008-04-04 19:37:45 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -64,6 +64,7 @@ static const char rcsid[] _U_ =
 #define BT_CTRL_SIZE 128
 
 /* forward declaration */
+static int bt_activate(pcap_t *);
 static int bt_read_linux(pcap_t *, int , pcap_handler , u_char *);
 static int bt_inject_linux(pcap_t *, const void *, size_t);
 static int bt_setfilter_linux(pcap_t *, struct bpf_program *);
@@ -134,39 +135,41 @@ done:
 	return ret;
 }
 
-pcap_t*
-bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg)
+pcap_t *
+bt_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = bt_activate;
+	return (p);
+}
+
+static int
+bt_activate(pcap_t* handle)
 {
 	struct sockaddr_hci addr;
 	int opt;
-	pcap_t		*handle;
 	int		dev_id;
 	struct hci_filter	flt;
-	    
+
 	/* get bt interface id */
-	if (sscanf(bus, BT_IFACE"%d", &dev_id) != 1)
+	if (sscanf(handle->opt.source, BT_IFACE"%d", &dev_id) != 1)
 	{
-	    	snprintf(errmsg, PCAP_ERRBUF_SIZE,
-			"Can't get Bluetooth bus index from %s", bus);
-		return NULL;
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			"Can't get Bluetooth device index from %s", 
+			 handle->opt.source);
+		return -1;
 	}
-	
-	/* Allocate a handle for this session. */
-	handle = malloc(sizeof(*handle));
-	if (handle == NULL) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "malloc: %s",
-			pcap_strerror(errno));
-		return NULL;
-	}
-	
+
 	/* Initialize some components of the pcap structure. */
-	memset(handle, 0, sizeof(*handle));
-	handle->snapshot	= snaplen;
-	handle->md.timeout	= to_ms;
-	handle->bufsize = snaplen+BT_CTRL_SIZE+sizeof(pcap_bluetooth_h4_header);
+	handle->bufsize = handle->snapshot+BT_CTRL_SIZE+sizeof(pcap_bluetooth_h4_header);
 	handle->offset = BT_CTRL_SIZE;
 	handle->linktype = DLT_BLUETOOTH_HCI_H4_WITH_PHDR;
-	
+
 	handle->read_op = bt_read_linux;
 	handle->inject_op = bt_inject_linux;
 	handle->setfilter_op = bt_setfilter_linux;
@@ -181,46 +184,41 @@ bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg
 	/* Create HCI socket */
 	handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (handle->fd < 0) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
 			errno, strerror(errno));
-		free(handle);
-		return NULL;
+		return -1;
 	}
 
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
 			pcap_strerror(errno));
-		pcap_close(handle);
-		return NULL;
+		goto close_fail;
 	}
 
 	opt = 1;
 	if (setsockopt(handle->fd, SOL_HCI, HCI_DATA_DIR, &opt, sizeof(opt)) < 0) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't enable data direction info %d:%s",
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't enable data direction info %d:%s",
 			errno, strerror(errno));
-		pcap_close(handle);
-		return NULL;
+		goto close_fail;
 	}
 
 	opt = 1;
 	if (setsockopt(handle->fd, SOL_HCI, HCI_TIME_STAMP, &opt, sizeof(opt)) < 0) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't enable time stamp %d:%s",
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't enable time stamp %d:%s",
 			errno, strerror(errno));
-		pcap_close(handle);
-		return NULL;
+		goto close_fail;
 	}
-	
+
 	/* Setup filter, do not call hci function to avoid dependence on 
 	 * external libs	*/
 	memset(&flt, 0, sizeof(flt));
 	memset((void *) &flt.type_mask, 0xff, sizeof(flt.type_mask));	
 	memset((void *) &flt.event_mask, 0xff, sizeof(flt.event_mask));
 	if (setsockopt(handle->fd, SOL_HCI, HCI_FILTER, &flt, sizeof(flt)) < 0) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't set filter %d:%s",
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't set filter %d:%s",
 			errno, strerror(errno));
-		pcap_close(handle);
-		return NULL;
+		goto close_fail;
 	}
 
 
@@ -228,14 +226,16 @@ bt_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg
 	addr.hci_family = AF_BLUETOOTH;
 	addr.hci_dev = handle->md.ifindex;
 	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "Can't attach to device %d %d:%s",
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't attach to device %d %d:%s",
 			handle->md.ifindex, errno, strerror(errno));
-		pcap_close(handle);
-		return NULL;
+		goto close_fail;
 	}
-	handle->selectable_fd = handle->fd;	
-	
-	return handle;	
+	handle->selectable_fd = handle->fd;
+	return 0;
+
+close_fail:
+	close(handle->fd);
+	return -1;
 }
 
 static int

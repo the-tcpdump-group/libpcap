@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.21 2008-02-02 20:50:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.22 2008-04-04 19:37:45 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -117,6 +117,7 @@ struct mon_bin_mfetch {
 #define MON_BIN_ERROR 	0x8
 
 /* forward declaration */
+static int usb_activate(pcap_t *);
 static int usb_stats_linux(pcap_t *, struct pcap_stat *);
 static int usb_stats_linux_bin(pcap_t *, struct pcap_stat *);
 static int usb_read_linux(pcap_t *, int , pcap_handler , u_char *);
@@ -183,25 +184,26 @@ int usb_mmap(pcap_t* handle)
 	return handle->buffer != MAP_FAILED;
 }
 
-pcap_t*
-usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errmsg)
+pcap_t *
+usb_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = usb_activate;
+	return (p);
+}
+
+static int
+usb_activate(pcap_t* handle)
 {
 	char 		full_path[USB_LINE_LEN];
-	pcap_t		*handle;
-
-	/* Allocate a handle for this session. */
-	handle = malloc(sizeof(*handle));
-	if (handle == NULL) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE, "malloc: %s",
-			pcap_strerror(errno));
-		return NULL;
-	}
 
 	/* Initialize some components of the pcap structure. */
-	memset(handle, 0, sizeof(*handle));
-	handle->snapshot	= snaplen;
-	handle->md.timeout	= to_ms;
-	handle->bufsize = snaplen;
+	handle->bufsize = handle->snapshot;
 	handle->offset = 0;
 	handle->linktype = DLT_USB_LINUX;
 
@@ -214,12 +216,11 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	handle->close_op = usb_close_linux;
 
 	/*get usb bus index from device name */
-	if (sscanf(bus, USB_IFACE"%d", &handle->md.ifindex) != 1)
+	if (sscanf(handle->opt.source, USB_IFACE"%d", &handle->md.ifindex) != 1)
 	{
-		snprintf(errmsg, PCAP_ERRBUF_SIZE,
-			"Can't get USB bus index from %s", bus);
-		free(handle);
-		return NULL;
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			"Can't get USB bus index from %s", handle->opt.source);
+		return -1;
 	}
 
 	/*now select the read method: try to open binary interface */
@@ -238,7 +239,7 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 			 * "poll()" work on it.
 			 */
 			handle->selectable_fd = handle->fd;
-			return handle;
+			return 0;
 		}
 
 		/* can't mmap, use plain binary interface access */
@@ -252,10 +253,9 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 		if (handle->fd < 0)
 		{
 			/* no more fallback, give it up*/
-			snprintf(errmsg, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't open USB bus file %s: %s", full_path, strerror(errno));
-			free(handle);
-			return NULL;
+			return -1;
 		}
 		handle->stats_op = usb_stats_linux;
 		handle->read_op = usb_read_linux;
@@ -271,12 +271,12 @@ usb_open_live(const char* bus, int snaplen, int promisc , int to_ms, char* errms
 	 * buffer */
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		snprintf(errmsg, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
-		usb_close_linux(handle);
-		return NULL;
+		close(handle->fd);
+		return -1;
 	}
-	return handle;
+	return 0;
 }
 
 static inline int 
