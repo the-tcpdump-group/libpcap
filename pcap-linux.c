@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.140 2008-04-04 19:37:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.141 2008-04-04 20:51:43 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -2319,7 +2319,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
 		return PCAP_ERROR;
 	}
-	priv = malloc(ireq.u.data.length);
+	priv = malloc(ireq.u.data.length * sizeof (struct iw_priv_args));
 	if (priv == NULL) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
