@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58.2.2 2008-02-02 20:58:31 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58.2.3 2008-04-04 19:39:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -237,51 +237,43 @@ nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
 	return (0);
 }
 
-static void
-pcap_close_nit(pcap_t *p)
-{
-	pcap_close_common(p);
-	if (p->device != NULL)
-		free(p->device);
-}
-
-pcap_t *
-pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
-    char *ebuf)
+static int
+pcap_activate_nit(pcap_t *p)
 {
 	int fd;
 	struct sockaddr_nit snit;
-	register pcap_t *p;
 
-	p = (pcap_t *)malloc(sizeof(*p));
-	if (p == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
-		return (NULL);
+	if (p->opt.rfmon) {
+		/*
+		 * No monitor mode on SunOS 3.x or earlier (no
+		 * Wi-Fi *devices* for the hardware that supported
+		 * them!).
+		 */
+		return (PCAP_ERROR_RFMON_NOTSUP);
 	}
 
-	if (snaplen < 96)
+	if (p->snapshot < 96)
 		/*
 		 * NIT requires a snapshot length of at least 96.
 		 */
-		snaplen = 96;
+		p->snapshot = 96;
 
 	memset(p, 0, sizeof(*p));
 	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
 	if (fd < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		goto bad;
 	}
 	snit.snit_family = AF_NIT;
-	(void)strncpy(snit.snit_ifname, device, NITIFSIZ);
+	(void)strncpy(snit.snit_ifname, p->opt.source, NITIFSIZ);
 
 	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
 		goto bad;
 	}
-	p->snapshot = snaplen;
-	nit_setflags(p->fd, promisc, to_ms, ebuf);
+	nit_setflags(p->fd, p->opt.promisc, p->md.timeout, p->errbuf);
 
 	/*
 	 * NIT supports only ethernets.
@@ -291,17 +283,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->bufsize = BUFSPACE;
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
-		goto bad;
-	}
-
-	/*
-	 * We need the device name in order to send packets.
-	 */
-	p->device = strdup(device);
-	if (p->device == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
-		free(p->buffer);
+		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
 	}
 
@@ -338,14 +320,26 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_nit;
-	p->close_op = pcap_close_nit;
+	p->close_op = pcap_close_common;
 
-	return (p);
+	return (0);
  bad:
 	if (fd >= 0)
 		close(fd);
-	free(p);
-	return (NULL);
+	return (PCAP_ERROR);
+}
+
+pcap_t *
+pcap_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_nit;
+	return (p);
 }
 
 int

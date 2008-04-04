@@ -917,24 +917,18 @@ static int pcap_read_acn(pcap_t *handle, int max_packets, pcap_handler callback,
 	return 1;
 }
 
-pcap_t *pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf) {
-	pcap_t		*handle;
+static int pcap_activate_sita(pcap_t *handle) {
 	int		fd;
 
-	/* Allocate a handle for this session. */
-
-	handle = malloc(sizeof(*handle));
-	if (handle == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			 pcap_strerror(errno));
-		return NULL;
+	if (handle->opt.rfmon) {
+		/*
+		 * No monitor mode on SITA devices (they're not Wi-Fi
+		 * devices).
+		 */
+		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
 	/* Initialize some components of the pcap structure. */
-
-	memset(handle, 0, sizeof(*handle));
-	handle->snapshot	= snaplen;
-	handle->md.timeout	= to_ms;
 
 	handle->inject_op = pcap_inject_acn;
 	handle->setfilter_op = pcap_setfilter_acn;
@@ -946,12 +940,11 @@ pcap_t *pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, 
 	handle->read_op = pcap_read_acn;
 	handle->stats_op = pcap_stats_acn;
 
-	fd = acn_open_live(device, ebuf, &handle->linktype);
-	if (fd == -1) {
-		free(handle);
-		return NULL;
-	}
-	handle->md.clear_promisc = promisc;
+	fd = acn_open_live(handle->opt.source, handle->errbuf,
+	    &handle->linktype);
+	if (fd == -1)
+		return PCAP_ERROR;
+	handle->md.clear_promisc = handle->md.promisc;
 	handle->fd = fd;
 	handle->bufsize = handle->snapshot;
 
@@ -959,11 +952,10 @@ pcap_t *pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, 
 
 	handle->buffer	 = malloc(handle->bufsize + handle->offset);
 	if (!handle->buffer) {
-	        snprintf(ebuf, PCAP_ERRBUF_SIZE,
+	        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
 		pcap_close_acn(handle);
-		free(handle);
-		return NULL;
+		return PCAP_ERROR;
 	}
 
 	/*
@@ -972,5 +964,16 @@ pcap_t *pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, 
 	 */
 	handle->selectable_fd = handle->fd;
 
-	return handle;
+	return 0;
+}
+
+pcap_t *pcap_create(const char *device, char *ebuf) {
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_sita;
+	return (p);
 }

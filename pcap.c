@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.2 2007-11-06 16:21:20 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.3 2008-04-04 19:39:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -70,10 +70,192 @@ static const char rcsid[] _U_ =
 #include <dagapi.h>
 #endif
 
+int 
+pcap_not_initialized(pcap_t *pcap)
+{
+	/* this means 'not initialized' */
+	return PCAP_ERROR_NOT_ACTIVATED;
+}
+
+/*
+ * Returns 1 if rfmon mode can be set on the pcap_t, 0 if it can't,
+ * a PCAP_ERROR value on an error.
+ */
+int
+pcap_can_set_rfmon(pcap_t *p)
+{
+	return (p->can_set_rfmon_op(p));
+}
+
+/*
+ * For systems where rfmon mode is never supported.
+ */
+static int
+pcap_cant_set_rfmon(pcap_t *p _U_)
+{
+	return (0);
+}
+
+pcap_t *
+pcap_create_common(const char *source, char *ebuf)
+{
+	pcap_t *p;
+
+	p = malloc(sizeof(*p));
+	if (p == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		return (NULL);
+	}
+	memset(p, 0, sizeof(*p));
+
+	p->opt.source = strdup(source);
+	if (p->opt.source == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		free(p);
+		return (NULL);
+	}
+
+	/*
+	 * Default to "can't set rfmon mode"; if it's supported by
+	 * a platform, it can set the op to its routine to check
+	 * whether a particular device supports it.
+	 */
+	p->can_set_rfmon_op = pcap_cant_set_rfmon;
+
+	/*
+	 * Some operations can be performed only on activated pcap_t's;
+	 * have those operations handled by a "not supported" handler
+	 * until the pcap_t is activated.
+	 */
+	p->read_op = (read_op_t)pcap_not_initialized;
+	p->inject_op = (inject_op_t)pcap_not_initialized;
+	p->setfilter_op = (setfilter_op_t)pcap_not_initialized;
+	p->setdirection_op = (setdirection_op_t)pcap_not_initialized;
+	p->set_datalink_op = (set_datalink_op_t)pcap_not_initialized;
+	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
+	p->setnonblock_op = (setnonblock_op_t)pcap_not_initialized;
+	p->stats_op = (stats_op_t)pcap_not_initialized;
+#ifdef WIN32
+	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
+	p->setmode_op = (setmode_op_t)pcap_not_initialized;
+	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
+#endif
+	p->close_op = (close_op_t)pcap_close_common;
+
+	/* put in some defaults*/
+	pcap_set_timeout(p, 0);
+	pcap_set_snaplen(p, 65535);	/* max packet size */
+	p->opt.promisc = 0;
+	p->opt.buffer_size = 0;
+	return (p);
+}
+
+int
+pcap_check_activated(pcap_t *p)
+{
+	if (p->activated) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
+			" operation on activated capture");
+		return -1;
+	}
+	return 0;
+}
+
+int
+pcap_set_snaplen(pcap_t *p, int snaplen)
+{
+	if (pcap_check_activated(p))
+		return PCAP_ERROR_ACTIVATED;
+	p->snapshot = snaplen;
+	return 0;
+}
+
+int
+pcap_set_promisc(pcap_t *p, int promisc)
+{
+	if (pcap_check_activated(p))
+		return PCAP_ERROR_ACTIVATED;
+	p->opt.promisc = promisc;
+	return 0;
+}
+
+int
+pcap_set_rfmon(pcap_t *p, int rfmon)
+{
+	if (pcap_check_activated(p))
+		return PCAP_ERROR_ACTIVATED;
+	p->opt.rfmon = rfmon;
+	return 0;
+}
+
+int
+pcap_set_timeout(pcap_t *p, int timeout_ms)
+{
+	if (pcap_check_activated(p))
+		return PCAP_ERROR_ACTIVATED;
+	p->md.timeout = timeout_ms;
+	return 0;
+}
+
+int
+pcap_set_buffer_size(pcap_t *p, int buffer_size)
+{
+	if (pcap_check_activated(p))
+		return PCAP_ERROR_ACTIVATED;
+	p->opt.buffer_size = buffer_size;
+	return 0;
+}
+
+int
+pcap_activate(pcap_t *p)
+{
+	int err;
+
+	err = p->activate_op(p);
+	if (err == 0)
+		p->activated = 1;
+	return (err);
+}
+
+pcap_t *
+pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *errbuf)
+{
+	pcap_t *p;
+
+	p = pcap_create(source, errbuf);
+	if (p == NULL)
+		return (NULL);
+	if (pcap_set_snaplen(p, snaplen))
+		goto fail;
+	if (pcap_set_promisc(p, promisc))
+		goto fail;
+	if (pcap_set_timeout(p, to_ms))
+		goto fail;
+	/*
+	 * Mark this as opened with pcap_open_live(), so that, for
+	 * example, we show the full list of DLT_ values, rather
+	 * than just the ones that are compatible with capturing
+	 * when not in monitor mode.  That allows existing applications
+	 * to work the way they used to work, but allows new applications
+	 * that know about the new open API to, for example, find out the
+	 * DLT_ values that they can select without changing whether
+	 * the adapter is in monitor mode or not.
+	 */
+	p->oldstyle = 1;
+	if (pcap_activate(p))
+		goto fail;
+	return (p);
+fail:
+	strncpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
+	pcap_close(p);
+	return (NULL);
+}
+
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-
 	return p->read_op(p, cnt, callback, user);
 }
 
@@ -702,22 +884,57 @@ pcap_win32strerror(void)
 
 /*
  * Not all systems have strerror().
+ * We also use this to generate error strings for PCAP_ERROR_ values.
  */
 const char *
 pcap_strerror(int errnum)
 {
-#ifdef HAVE_STRERROR
-	return (strerror(errnum));
-#else
+	static char ebuf[128+1];
+#ifndef HAVE_STRERROR
 	extern int sys_nerr;
 	extern const char *const sys_errlist[];
-	static char ebuf[20];
+#endif
 
-	if ((unsigned int)errnum < sys_nerr)
-		return ((char *)sys_errlist[errnum]);
+	switch (errnum) {
+
+	case PCAP_ERROR:
+		(void)snprintf(ebuf, sizeof ebuf, "Generic error");
+		return(ebuf);
+
+	case PCAP_ERROR_BREAK:
+		(void)snprintf(ebuf, sizeof ebuf, "Loop terminated by pcap_breakloop");
+		return(ebuf);
+
+	case PCAP_ERROR_NOT_ACTIVATED:
+		(void)snprintf(ebuf, sizeof ebuf, "The pcap_t has not been activated");
+		return(ebuf);
+
+	case PCAP_ERROR_ACTIVATED:
+		(void)snprintf(ebuf, sizeof ebuf, "The setting can't be changed after the pcap_t is activated");
+		return(ebuf);
+
+	case PCAP_ERROR_NO_SUCH_DEVICE:
+		(void)snprintf(ebuf, sizeof ebuf, "No such device exists");
+		return(ebuf);
+
+	case PCAP_ERROR_RFMON_NOTSUP:
+		(void)snprintf(ebuf, sizeof ebuf, "That device doesn't support monitor mode");
+		return(ebuf);
+
+	case PCAP_ERROR_NOT_RFMON:
+		(void)snprintf(ebuf, sizeof ebuf, "That operation is supported only in monitor mode");
+		return(ebuf);
+	}
+	if (errnum >= 0) {
+#ifdef HAVE_STRERROR
+		return (strerror(errnum));
+#else
+		if ((unsigned int)errnum < sys_nerr)
+			return ((char *)sys_errlist[errnum]);
+#endif
+	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
-#endif
 }
 
 int
@@ -801,11 +1018,102 @@ pcap_setmintocopy_dead(pcap_t *p, int size)
 }
 #endif
 
+/*
+ * On some platforms, we need to clean up promiscuous or monitor mode
+ * when we close a device - and we want that to happen even if the
+ * application just exits without explicitl closing devices.
+ * On those platforms, we need to register a "close all the pcaps"
+ * routine to be called when we exit, and need to maintain a list of
+ * pcaps that need to be closed to clean up modes.
+ *
+ * XXX - not thread-safe.
+ */
+
+/*
+ * List of pcaps on which we've done something that needs to be
+ * cleaned up.
+ * If there are any such pcaps, we arrange to call "pcap_close_all()"
+ * when we exit, and have it close all of them.
+ */
+static struct pcap *pcaps_to_close;
+
+/*
+ * TRUE if we've already called "atexit()" to cause "pcap_close_all()" to
+ * be called on exit.
+ */
+static int did_atexit;
+
+static void
+pcap_close_all(void)
+{
+	struct pcap *handle;
+
+	while ((handle = pcaps_to_close) != NULL)
+		pcap_close(handle);
+}
+
+int
+pcap_do_addexit(pcap_t *p)
+{
+	/*
+	 * If we haven't already done so, arrange to have
+	 * "pcap_close_all()" called when we exit.
+	 */
+	if (!did_atexit) {
+		if (atexit(pcap_close_all) == -1) {
+			/*
+			 * "atexit()" failed; let our caller know.
+			 */
+			strncpy(p->errbuf, "atexit failed",
+			    PCAP_ERRBUF_SIZE);
+			return (0);
+		}
+		did_atexit = 1;
+	}
+	return (1);
+}
+
+void
+pcap_add_to_pcaps_to_close(pcap_t *p)
+{
+	p->md.next = pcaps_to_close;
+	pcaps_to_close = p;
+}
+
+void
+pcap_remove_from_pcaps_to_close(pcap_t *p)
+{
+	pcap_t *pc, *prevpc;
+
+	for (pc = pcaps_to_close, prevpc = NULL; pc != NULL;
+	    prevpc = pc, pc = pc->md.next) {
+		if (pc == p) {
+			/*
+			 * Found it.  Remove it from the list.
+			 */
+			if (prevpc == NULL) {
+				/*
+				 * It was at the head of the list.
+				 */
+				pcaps_to_close = pc->md.next;
+			} else {
+				/*
+				 * It was in the middle of the list.
+				 */
+				prevpc->md.next = pc->md.next;
+			}
+			break;
+		}
+	}
+}
+
 void
 pcap_close_common(pcap_t *p)
 {
 	if (p->buffer != NULL)
 		free(p->buffer);
+	if (p->opt.source != NULL);
+		free(p->opt.source);
 #if !defined(WIN32) && !defined(MSDOS)
 	if (p->fd >= 0)
 		close(p->fd);
@@ -836,6 +1144,7 @@ pcap_open_dead(int linktype, int snaplen)
 	p->setmintocopy_op = pcap_setmintocopy_dead;
 #endif
 	p->close_op = pcap_close_dead;
+	p->activated = 1;
 	return p;
 }
 

@@ -19,8 +19,12 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 #ifndef lint
-static const char rcsid[] =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.20.1.1 1999-10-07 23:46:40 mcr Exp $ (LBL)";
+static const char rcsid[] _U_ =
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.55.2.1 2008-04-04 19:39:06 guy Exp $ (LBL)";
+#endif
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
 
 #include <sys/param.h>
@@ -50,45 +54,79 @@ static const char rcsid[] =
 
 #include "pcap-int.h"
 
-#include "gnuc.h"
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
 
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int
+pcap_read_snoop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	int cc;
 	register struct snoopheader *sh;
-	register int datalen;
-	register int caplen;
+	register u_int datalen;
+	register u_int caplen;
 	register u_char *cp;
 
 again:
+	/*
+	 * Has "pcap_breakloop()" been called?
+	 */
+	if (p->break_loop) {
+		/*
+		 * Yes - clear the flag that indicates that it
+		 * has, and return -2 to indicate that we were
+		 * told to break out of the loop.
+		 */
+		p->break_loop = 0;
+		return (-2);
+	}
 	cc = read(p->fd, (char *)p->buffer, p->bufsize);
 	if (cc < 0) {
 		/* Don't choke when we get ptraced */
 		switch (errno) {
 
 		case EINTR:
-				goto again;
+			goto again;
 
 		case EWOULDBLOCK:
 			return (0);			/* XXX */
 		}
-		sprintf(p->errbuf, "read: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, sizeof(p->errbuf),
+		    "read: %s", pcap_strerror(errno));
 		return (-1);
 	}
 	sh = (struct snoopheader *)p->buffer;
 	datalen = sh->snoop_packetlen;
+
+	/*
+	 * XXX - Sigh, snoop_packetlen is a 16 bit quantity.  If we
+	 * got a short length, but read a full sized snoop pakcet,
+	 * assume we overflowed and add back the 64K...
+	 */
+	if (cc == (p->snapshot + sizeof(struct snoopheader)) &&
+	    (datalen < p->snapshot))
+		datalen += (64 * 1024);
+
 	caplen = (datalen < p->snapshot) ? datalen : p->snapshot;
 	cp = (u_char *)(sh + 1) + p->offset;		/* XXX */
+
+	/* 
+	 * XXX unfortunately snoop loopback isn't exactly like
+	 * BSD's.  The address family is encoded in the first 2
+	 * bytes rather than the first 4 bytes!  Luckily the last
+	 * two snoop loopback bytes are zeroed.
+	 */
+	if (p->linktype == DLT_NULL && *((short *)(cp + 2)) == 0) {
+		u_int *uip = (u_int *)cp;
+		*uip >>= 16;
+	}
 
 	if (p->fcode.bf_insns == NULL ||
 	    bpf_filter(p->fcode.bf_insns, cp, datalen, caplen)) {
 		struct pcap_pkthdr h;
 		++p->md.stat.ps_recv;
-		h.ts = sh->snoop_timestamp;
+		h.ts.tv_sec = sh->snoop_timestamp.tv_sec;
+		h.ts.tv_usec = sh->snoop_timestamp.tv_usec;
 		h.len = datalen;
 		h.caplen = caplen;
 		(*callback)(user, &h, cp);
@@ -97,120 +135,276 @@ again:
 	return (0);
 }
 
-int
-pcap_stats(pcap_t *p, struct pcap_stat *ps)
+static int
+pcap_inject_snoop(pcap_t *p, const void *buf, size_t size)
+{
+	int ret;
+
+	/*
+	 * XXX - libnet overwrites the source address with what I
+	 * presume is the interface's address; is that required?
+	 */
+	ret = write(p->fd, buf, size);
+	if (ret == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
+}                           
+
+static int
+pcap_stats_snoop(pcap_t *p, struct pcap_stat *ps)
 {
 	register struct rawstats *rs;
 	struct rawstats rawstats;
 
 	rs = &rawstats;
-	bzero((char *)rs, sizeof(*rs));
+	memset(rs, 0, sizeof(*rs));
 	if (ioctl(p->fd, SIOCRAWSTATS, (char *)rs) < 0) {
-		sprintf(p->errbuf, "SIOCRAWSTATS: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, sizeof(p->errbuf),
+		    "SIOCRAWSTATS: %s", pcap_strerror(errno));
 		return (-1);
 	}
 
+	/*
+	 * "ifdrops" are those dropped by the network interface
+	 * due to resource shortages or hardware errors.
+	 *
+	 * "sbdrops" are those dropped due to socket buffer limits.
+	 *
+	 * As filter is done in userland, "sbdrops" counts packets
+	 * regardless of whether they would've passed the filter.
+	 *
+	 * XXX - does this count *all* Snoop or Drain sockets,
+	 * rather than just this socket?  If not, why does it have
+	 * both Snoop and Drain statistics?
+	 */
 	p->md.stat.ps_drop =
 	    rs->rs_snoop.ss_ifdrops + rs->rs_snoop.ss_sbdrops +
 	    rs->rs_drain.ds_ifdrops + rs->rs_drain.ds_sbdrops;
 
+	/*
+	 * "ps_recv" counts only packets that passed the filter.
+	 * As filtering is done in userland, this does not include
+	 * packets dropped because we ran out of buffer space.
+	 */
 	*ps = p->md.stat;
 	return (0);
 }
 
 /* XXX can't disable promiscuous */
-pcap_t *
-pcap_open_live(char *device, int snaplen, int promisc, int to_ms, char *ebuf)
+static int
+pcap_activate_snoop(pcap_t *p)
 {
 	int fd;
 	struct sockaddr_raw sr;
 	struct snoopfilter sf;
 	u_int v;
-	pcap_t *p;
+	int ll_hdrlen;
+	int snooplen;
+	struct ifreq ifr;
 
-	p = (pcap_t *)malloc(sizeof(*p));
-	if (p == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
-		return (NULL);
+	if (p->opt.rfmon) {
+		/*
+		 * No monitor mode on Irix (no Wi-Fi devices on
+		 * hardware supported by Irix).
+		 */
+		return (PCAP_ERROR_RFMON_NOTSUP);
 	}
-	bzero((char *)p, sizeof(*p));
+
 	fd = socket(PF_RAW, SOCK_RAW, RAWPROTO_SNOOP);
 	if (fd < 0) {
-		sprintf(ebuf, "snoop socket: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snoop socket: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	p->fd = fd;
-	bzero((char *)&sr, sizeof(sr));
+	memset(&sr, 0, sizeof(sr));
 	sr.sr_family = AF_RAW;
-	(void)strncpy(sr.sr_ifname, device, sizeof(sr.sr_ifname));
+	(void)strncpy(sr.sr_ifname, p->opt.source, sizeof(sr.sr_ifname));
 	if (bind(fd, (struct sockaddr *)&sr, sizeof(sr))) {
-		sprintf(ebuf, "snoop bind: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snoop bind: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
-	bzero((char *)&sf, sizeof(sf));
+	memset(&sf, 0, sizeof(sf));
 	if (ioctl(fd, SIOCADDSNOOP, &sf) < 0) {
-		sprintf(ebuf, "SIOCADDSNOOP: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCADDSNOOP: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 	v = 64 * 1024;
 	(void)setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
-	if (ioctl(fd, SIOCSNOOPLEN, &snaplen) < 0) {
-		sprintf(ebuf, "SIOCSNOOPLEN: %s", pcap_strerror(errno));
-		goto bad;
-	}
-	p->snapshot = snaplen;
-	v = 1;
-	if (ioctl(fd, SIOCSNOOPING, &v) < 0) {
-		sprintf(ebuf, "SIOCSNOOPING: %s", pcap_strerror(errno));
-		goto bad;
-	}
 	/*
 	 * XXX hack - map device name to link layer type
 	 */
-	if (strncmp("et", device, 2) == 0 ||	/* Challenge 10 Mbit */
-	    strncmp("ec", device, 2) == 0 ||	/* Indigo/Indy 10 Mbit,
-						   O2 10/100 */
-	    strncmp("ef", device, 2) == 0 ||	/* O200/2000 10/100 Mbit */
-	    strncmp("gfe", device, 3) == 0 ||	/* GIO 100 Mbit */
-	    strncmp("fxp", device, 3) == 0 ||	/* Challenge VME Enet */
-	    strncmp("ep", device, 2) == 0 ||	/* Challenge 8x10 Mbit EPLEX */
-	    strncmp("vfe", device, 3) == 0 ||	/* Challenge VME 100Mbit */
-	    strncmp("fa", device, 2) == 0 ||
-	    strncmp("qaa", device, 3) == 0) {
+	if (strncmp("et", p->opt.source, 2) == 0 ||	/* Challenge 10 Mbit */
+	    strncmp("ec", p->opt.source, 2) == 0 ||	/* Indigo/Indy 10 Mbit,
+							   O2 10/100 */
+	    strncmp("ef", p->opt.source, 2) == 0 ||	/* O200/2000 10/100 Mbit */
+	    strncmp("eg", p->opt.source, 2) == 0 ||	/* Octane/O2xxx/O3xxx Gigabit */
+	    strncmp("gfe", p->opt.source, 3) == 0 ||	/* GIO 100 Mbit */
+	    strncmp("fxp", p->opt.source, 3) == 0 ||	/* Challenge VME Enet */
+	    strncmp("ep", p->opt.source, 2) == 0 ||	/* Challenge 8x10 Mbit EPLEX */
+	    strncmp("vfe", p->opt.source, 3) == 0 ||	/* Challenge VME 100Mbit */
+	    strncmp("fa", p->opt.source, 2) == 0 ||
+	    strncmp("qaa", p->opt.source, 3) == 0 ||
+	    strncmp("cip", p->opt.source, 3) == 0 ||
+	    strncmp("el", p->opt.source, 2) == 0) {
 		p->linktype = DLT_EN10MB;
 		p->offset = RAW_HDRPAD(sizeof(struct ether_header));
-	} else if (strncmp("ipg", device, 3) == 0 ||
-		   strncmp("rns", device, 3) == 0 ||	/* O2/200/2000 FDDI */
-		   strncmp("xpi", device, 3) == 0) {
+		ll_hdrlen = sizeof(struct ether_header);
+		/*
+		 * This is (presumably) a real Ethernet capture; give it a
+		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+		 * that an application can let you choose it, in case you're
+		 * capturing DOCSIS traffic that a Cisco Cable Modem
+		 * Termination System is putting out onto an Ethernet (it
+		 * doesn't put an Ethernet header onto the wire, it puts raw
+		 * DOCSIS frames out on the wire inside the low-level
+		 * Ethernet framing).
+		 *
+		 * XXX - are there any sorts of "fake Ethernet" that have
+		 * Ethernet link-layer headers but that *shouldn't offer
+		 * DLT_DOCSIS as a Cisco CMTS won't put traffic onto it
+		 * or get traffic bridged onto it?  "el" is for ATM LANE
+		 * Ethernet devices, so that might be the case for them;
+		 * the same applies for "qaa" classical IP devices.  If
+		 * "fa" devices are for FORE SPANS, that'd apply to them
+		 * as well; what are "cip" devices - some other ATM
+		 * Classical IP devices?
+		 */
+		p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (p->dlt_list != NULL) {
+			p->dlt_list[0] = DLT_EN10MB;
+			p->dlt_list[1] = DLT_DOCSIS;
+			p->dlt_count = 2;
+		}
+	} else if (strncmp("ipg", p->opt.source, 3) == 0 ||
+		   strncmp("rns", p->opt.source, 3) == 0 ||	/* O2/200/2000 FDDI */
+		   strncmp("xpi", p->opt.source, 3) == 0) {
 		p->linktype = DLT_FDDI;
 		p->offset = 3;				/* XXX yeah? */
-	} else if (strncmp("ppp", device, 3) == 0) {
+		ll_hdrlen = 13;
+	} else if (strncmp("ppp", p->opt.source, 3) == 0) {
 		p->linktype = DLT_RAW;
-	} else if (strncmp("lo", device, 2) == 0) {
+		ll_hdrlen = 0;	/* DLT_RAW meaning "no PPP header, just the IP packet"? */
+	} else if (strncmp("qfa", p->opt.source, 3) == 0) {
+		p->linktype = DLT_IP_OVER_FC;
+		ll_hdrlen = 24;
+	} else if (strncmp("pl", p->opt.source, 2) == 0) {
+		p->linktype = DLT_RAW;
+		ll_hdrlen = 0;	/* Cray UNICOS/mp pseudo link */
+	} else if (strncmp("lo", p->opt.source, 2) == 0) {
 		p->linktype = DLT_NULL;
+		ll_hdrlen = 4;
 	} else {
-		sprintf(ebuf, "snoop: unknown physical layer type");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "snoop: unknown physical layer type");
+		goto bad;
+	}
+#ifdef SIOCGIFMTU
+	/*
+	 * XXX - IRIX appears to give you an error if you try to set the
+	 * capture length to be greater than the MTU, so let's try to get
+	 * the MTU first and, if that succeeds, trim the snap length
+	 * to be no greater than the MTU.
+	 */
+	(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+	if (ioctl(fd, SIOCGIFMTU, (char *)&ifr) < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCGIFMTU: %s",
+		    pcap_strerror(errno));
+		goto bad;
+	}
+	/*
+	 * OK, we got it.
+	 *
+	 * XXX - some versions of IRIX 6.5 define "ifr_mtu" and have an
+	 * "ifru_metric" member of the "ifr_ifru" union in an "ifreq"
+	 * structure, others don't.
+	 *
+	 * I've no idea what's going on, so, if "ifr_mtu" isn't defined,
+	 * we define it as "ifr_metric", as using that field appears to
+	 * work on the versions that lack "ifr_mtu" (and, on those that
+	 * don't lack it, "ifru_metric" and "ifru_mtu" are both "int"
+	 * members of the "ifr_ifru" union, which suggests that they
+	 * may be interchangeable in this case).
+	 */
+#ifndef ifr_mtu
+#define ifr_mtu	ifr_metric
+#endif
+	if (p->snapshot > ifr.ifr_mtu + ll_hdrlen)
+		p->snapshot = ifr.ifr_mtu + ll_hdrlen;
+#endif
+
+	/*
+	 * The argument to SIOCSNOOPLEN is the number of link-layer
+	 * payload bytes to capture - it doesn't count link-layer
+	 * header bytes.
+	 */
+	snooplen = p->snapshot - ll_hdrlen;
+	if (snooplen < 0)
+		snooplen = 0;
+	if (ioctl(fd, SIOCSNOOPLEN, &snooplen) < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNOOPLEN: %s",
+		    pcap_strerror(errno));
+		goto bad;
+	}
+	v = 1;
+	if (ioctl(fd, SIOCSNOOPING, &v) < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNOOPING: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	p->bufsize = 4096;				/* XXX */
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		sprintf(ebuf, "malloc: %s", pcap_strerror(errno));
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		goto bad;
 	}
 
-	return (p);
+	/*
+	 * "p->fd" is a socket, so "select()" should work on it.
+	 */
+	p->selectable_fd = p->fd;
+
+	p->read_op = pcap_read_snoop;
+	p->inject_op = pcap_inject_snoop;
+	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
+	p->setdirection_op = NULL;	/* Not implemented. */
+	p->set_datalink_op = NULL;	/* can't change data link type */
+	p->getnonblock_op = pcap_getnonblock_fd;
+	p->setnonblock_op = pcap_setnonblock_fd;
+	p->stats_op = pcap_stats_snoop;
+	p->close_op = pcap_close_common;
+
+	return (0);
  bad:
 	(void)close(fd);
-	free(p);
-	return (NULL);
+	return (PCAP_ERROR);
+}
+
+pcap_t *
+pcap_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_snoop;
+	return (p);
 }
 
 int
-pcap_setfilter(pcap_t *p, struct bpf_program *fp)
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-
-	p->fcode = *fp;
 	return (0);
 }

@@ -7,10 +7,10 @@
  *
  * Author: Richard Littin, Sean Irvine ({richard,sean}@reeltwo.com)
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dag.h,v 1.4.2.2 2007-11-09 00:58:46 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dag.h,v 1.4.2.3 2008-04-04 19:39:06 guy Exp $ (LBL)
  */
 
-pcap_t *dag_open_live(const char *device, int snaplen, int promisc, int to_ms, char *ebuf);
+pcap_t *dag_create(const char *, char *);
 int dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf);
 
 #ifndef TYPE_AAL5

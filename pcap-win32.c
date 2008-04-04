@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.2 2007-11-13 21:56:04 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.3 2008-04-04 19:39:06 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -430,39 +430,36 @@ pcap_close_win32(pcap_t *p)
 	}
 }
 
-pcap_t *
-pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
-    char *ebuf)
+static int
+pcap_activate_win32(pcap_t *p)
 {
-	register pcap_t *p;
 	NetType type;
+
+	if (p->opt.rfmon) {
+		/*
+		 * No monitor mode on Windows.  It could be done on
+		 * Vista with drivers that support the native 802.11
+		 * mechanism and monitor mode.
+		 */
+		return (PCAP_ERROR_RFMON_NOTSUP);
+	}
 
 	/* Init WinSock */
 	wsockinit();
 
-	p = (pcap_t *)malloc(sizeof(*p));
-	if (p == NULL) 
-	{
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
-		return (NULL);
-	}
-	memset(p, 0, sizeof(*p));
-	p->adapter=NULL;
-
-	p->adapter = PacketOpenAdapter((char*)device);
+	p->adapter = PacketOpenAdapter(p->opt.source);
 	
 	if (p->adapter == NULL)
 	{
-		free(p);
 		/* Adapter detected but we are not able to open it. Return failure. */
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Error opening adapter: %s", pcap_win32strerror());
-		return NULL;
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Error opening adapter: %s", pcap_win32strerror());
+		return PCAP_ERROR;
 	}
 	
 	/*get network type*/
 	if(PacketGetNetType (p->adapter,&type) == FALSE)
 	{
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "Cannot determine the network type: %s", pcap_win32strerror());
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Cannot determine the network type: %s", pcap_win32strerror());
 		goto bad;
 	}
 	
@@ -546,12 +543,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 
 	/* Set promiscuous mode */
-	if (promisc) 
+	if (p->opt.promisc) 
 	{
 
 		if (PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_PROMISCUOUS) == FALSE)
 		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to promiscuous mode");
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to promiscuous mode");
 			goto bad;
 		}
 	}
@@ -559,7 +556,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	{
 		if (PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_ALL_LOCAL) == FALSE)
 		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
 			goto bad;
 		}
 	}
@@ -568,12 +565,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->bufsize = PcapBufSize;
 
 	/* Store the timeout. Used by pcap_setnonblock() */
-	p->timeout= to_ms;
+	p->md.timeout= to_ms;
 
 	/* allocate Packet structure used during the capture */
 	if((p->Packet = PacketAllocatePacket())==NULL)
 	{
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to allocate the PACKET structure");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to allocate the PACKET structure");
 		goto bad;
 	}
 
@@ -582,11 +579,22 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	/* 
 	 * Traditional Adapter 
 	 */
+		/*
+		 * If the buffer size wasn't explicitly set, default to
+		 * SIZE_BUF.
+		 */
+	 	if (p->opt.buffer_size == 0)
+	 		p->opt.buffer_size = SIZE_BUF;
+		if(PacketSetBuff(p->adapter,p->opt.buffer_size)==FALSE)
+		{
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
+			goto bad;
+		}
 		
 		p->buffer = (u_char *)malloc(PcapBufSize);
 		if (p->buffer == NULL) 
 		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 			goto bad;
 		}
 		
@@ -597,14 +605,14 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		/* allocate the standard buffer in the driver */
 		if(PacketSetBuff( p->adapter, SIZE_BUF)==FALSE)
 		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,"driver error: not enough memory to allocate the kernel buffer\n");
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"driver error: not enough memory to allocate the kernel buffer\n");
 			goto bad;
 		}
 		
 		/* tell the driver to copy the buffer only if it contains at least 16K */
 		if(PacketSetMinToCopy(p->adapter,16000)==FALSE)
 		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s\n", pcap_win32strerror());
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s\n", pcap_win32strerror());
 			goto bad;
 		}
 	}
@@ -623,7 +631,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		
 		snprintf(keyname, sizeof(keyname), "%s\\CardParams\\%s", 
 			"SYSTEM\\CurrentControlSet\\Services\\DAG",
-			strstr(_strlwr((char*)device), "dag"));
+			strstr(_strlwr(p->opt.source), "dag"));
 		do
 		{
 			status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0, KEY_READ, &dagkey);
@@ -687,23 +695,31 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->setmintocopy_op = pcap_setmintocopy_win32;
 	p->close_op = pcap_close_win32;
 
-	return (p);
+	return (0);
 bad:
 	if (p->adapter)
 	    PacketCloseAdapter(p->adapter);
-	if (p->buffer != NULL)
+	if (p->buffer != NULL) {
 		free(p->buffer);
+		p->buffer = NULL;
+	}
 	if(p->Packet)
 		PacketFreePacket(p->Packet);
-	/*
-	 * Get rid of any link-layer type list we allocated.
-	 */
-	if (p->dlt_list != NULL)
-		free(p->dlt_list);
-	free(p);
-	return (NULL);
+	return (PCAP_ERROR);
 }
 
+pcap_t *
+pcap_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_win32;
+	return (p);
+}
 
 static int
 pcap_setfilter_win32_npf(pcap_t *p, struct bpf_program *fp)
@@ -780,7 +796,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 		 * (Note that this may be -1, in which case we're not
 		 * really leaving non-blocking mode.)
 		 */
-		newtimeout = p->timeout;
+		newtimeout = p->md.timeout;
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,

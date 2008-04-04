@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.4 2008-03-13 18:16:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.5 2008-04-04 19:39:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -321,12 +321,10 @@ pcap_close_dlpi(pcap_t *p)
 		close(p->send_fd);
 }
 
-pcap_t *
-pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
-    char *ebuf)
+static int
+pcap_activate_dlpi(pcap_t *p)
 {
 	register char *cp;
-	register pcap_t *p;
 	int ppa;
 #ifdef HAVE_SOLARIS
 	int isatm = 0;
@@ -345,12 +343,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	char dname2[100];
 #endif
 
-	p = (pcap_t *)malloc(sizeof(*p));
-	if (p == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
-		return (NULL);
+	if (p->opt.rfmon) {
+		/*
+		 * No monitor mode on any platforms that support DLPI.
+		 */
+		return (PCAP_ERROR_RFMON_NOTSUP);
 	}
-	memset(p, 0, sizeof(*p));
+
 	p->fd = -1;	/* indicate that it hasn't been opened yet */
 	p->send_fd = -1;
 
@@ -358,9 +357,9 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	/*
 	** Remove any "/dev/" on the front of the device.
 	*/
-	cp = strrchr(device, '/');
+	cp = strrchr(p->opt.source, '/');
 	if (cp == NULL)
-		strlcpy(dname, device, sizeof(dname));
+		strlcpy(dname, p->opt.source, sizeof(dname));
 	else
 		strlcpy(dname, cp + 1, sizeof(dname));
 
@@ -368,7 +367,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * Split the device name into a device type name and a unit number;
 	 * chop off the unit number, so "dname" is just a device type name.
 	 */
-	cp = split_dname(dname, &ppa, ebuf);
+	cp = split_dname(dname, &ppa, p->errbuf);
 	if (cp == NULL)
 		goto bad;
 	*cp = '\0';
@@ -386,7 +385,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 */
 	cp = "/dev/dlpi";
 	if ((p->fd = open(cp, O_RDWR)) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: %s", cp, pcap_strerror(errno));
 		goto bad;
 	}
@@ -410,7 +409,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * Get a table of all PPAs for that device, and search that
 	 * table for the specified device type name and unit number.
 	 */
-	ppa = get_dlpi_ppa(p->fd, dname, ppa, ebuf);
+	ppa = get_dlpi_ppa(p->fd, dname, ppa, p->errbuf);
 	if (ppa < 0)
 		goto bad;
 #else
@@ -420,17 +419,17 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	 * otherwise, concatenate the device directory name and the
 	 * device name.
 	 */
-	if (*device == '/')
-		strlcpy(dname, device, sizeof(dname));
+	if (*p->opt.source == '/')
+		strlcpy(dname, p->opt.source, sizeof(dname));
 	else
 		snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
-		    device);
+		    p->opt.source);
 
 	/*
 	 * Get the unit number, and a pointer to the end of the device
 	 * type name.
 	 */
-	cp = split_dname(dname, &ppa, ebuf);
+	cp = split_dname(dname, &ppa, p->errbuf);
 	if (cp == NULL)
 		goto bad;
 
@@ -444,7 +443,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	/* Try device without unit number */
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
 		if (errno != ENOENT) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
 			    pcap_strerror(errno));
 			goto bad;
 		}
@@ -467,10 +466,10 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 				 * for the loopback interface is just a
 				 * symptom of that inability.
 				 */
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", device);
 			} else {
-				snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s: %s",
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 				    dname2, pcap_strerror(errno));
 			}
 			goto bad;
@@ -480,13 +479,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	}
 #endif
 
-	p->snapshot = snaplen;
-
 	/*
 	** Attach if "style 2" provider
 	*/
-	if (dlinforeq(p->fd, ebuf) < 0 ||
-	    dlinfoack(p->fd, (char *)buf, ebuf) < 0)
+	if (dlinforeq(p->fd, p->errbuf) < 0 ||
+	    dlinfoack(p->fd, (char *)buf, p->errbuf) < 0)
 		goto bad;
 	infop = &((union DL_primitives *)buf)->info_ack;
 #ifdef HAVE_SOLARIS
@@ -494,11 +491,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		isatm = 1;
 #endif
 	if (infop->dl_provider_style == DL_STYLE2) {
-		if (dl_doattach(p->fd, ppa, ebuf) < 0)
+		if (dl_doattach(p->fd, ppa, p->errbuf) < 0)
 			goto bad;
 #ifdef DL_HP_RAWDLS
 		if (p->send_fd >= 0) {
-			if (dl_doattach(p->send_fd, ppa, ebuf) < 0)
+			if (dl_doattach(p->send_fd, ppa, p->errbuf) < 0)
 				goto bad;
 		}
 #endif
@@ -535,15 +532,15 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** assume the SAP value in a DLPI bind is an LLC SAP for network
 	** types that use 802.2 LLC).
 	*/
-	if ((dlbindreq(p->fd, 1537, ebuf) < 0 &&
-	     dlbindreq(p->fd, 2, ebuf) < 0) ||
-	     dlbindack(p->fd, (char *)buf, ebuf, NULL) < 0)
+	if ((dlbindreq(p->fd, 1537, p->errbuf) < 0 &&
+	     dlbindreq(p->fd, 2, p->errbuf) < 0) ||
+	     dlbindack(p->fd, (char *)buf, p->errbuf, NULL) < 0)
 		goto bad;
 #elif defined(DL_HP_RAWDLS)
 	/*
 	** HP-UX 10.0x and 10.1x.
 	*/
-	if (dl_dohpuxbind(p->fd, ebuf) < 0)
+	if (dl_dohpuxbind(p->fd, p->errbuf) < 0)
 		goto bad;
 	if (p->send_fd >= 0) {
 		/*
@@ -551,7 +548,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		** set it to -1, so that you can't send but can
 		** still receive?
 		*/
-		if (dl_dohpuxbind(p->send_fd, ebuf) < 0)
+		if (dl_dohpuxbind(p->send_fd, p->errbuf) < 0)
 			goto bad;
 	}
 #else /* neither AIX nor HP-UX */
@@ -559,8 +556,8 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** Not Sinix, and neither AIX nor HP-UX - Solaris, and any other
 	** OS using DLPI.
 	**/
-	if (dlbindreq(p->fd, 0, ebuf) < 0 ||
-	    dlbindack(p->fd, (char *)buf, ebuf, NULL) < 0)
+	if (dlbindreq(p->fd, 0, p->errbuf) < 0 ||
+	    dlbindack(p->fd, (char *)buf, p->errbuf, NULL) < 0)
 		goto bad;
 #endif /* AIX vs. HP-UX vs. other */
 #endif /* !HP-UX 9 and !HP-UX 10.20 or later and !SINIX */
@@ -574,18 +571,18 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		** help, and may break things.
 		*/
 		if (strioctl(p->fd, A_PROMISCON_REQ, 0, NULL) < 0) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "A_PROMISCON_REQ: %s",
-			    pcap_strerror(errno));
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "A_PROMISCON_REQ: %s", pcap_strerror(errno));
 			goto bad;
 		}
 	} else
 #endif
-	if (promisc) {
+	if (p->opt.promisc) {
 		/*
 		** Enable promiscuous (not necessary on send FD)
 		*/
-		if (dlpromisconreq(p->fd, DL_PROMISC_PHYS, ebuf) < 0 ||
-		    dlokack(p->fd, "promisc_phys", (char *)buf, ebuf) < 0)
+		if (dlpromisconreq(p->fd, DL_PROMISC_PHYS, p->errbuf) < 0 ||
+		    dlokack(p->fd, "promisc_phys", (char *)buf, p->errbuf) < 0)
 			goto bad;
 
 		/*
@@ -594,10 +591,11 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		** HP-UX or SINIX) (Not necessary on send FD)
 		*/
 #if !defined(__hpux) && !defined(sinix)
-		if (dlpromisconreq(p->fd, DL_PROMISC_MULTI, ebuf) < 0 ||
-		    dlokack(p->fd, "promisc_multi", (char *)buf, ebuf) < 0)
+		if (dlpromisconreq(p->fd, DL_PROMISC_MULTI, p->errbuf) < 0 ||
+		    dlokack(p->fd, "promisc_multi", (char *)buf, p->errbuf) < 0)
 			fprintf(stderr,
-			    "WARNING: DL_PROMISC_MULTI failed (%s)\n", ebuf);
+			    "WARNING: DL_PROMISC_MULTI failed (%s)\n",
+			    p->errbuf);
 #endif
 	}
 	/*
@@ -608,17 +606,17 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 #ifndef sinix
 	if (
 #ifdef __hpux
-	    !promisc &&
+	    !p->opt.promisc &&
 #endif
 #ifdef HAVE_SOLARIS
 	    !isatm &&
 #endif
-	    (dlpromisconreq(p->fd, DL_PROMISC_SAP, ebuf) < 0 ||
-	    dlokack(p->fd, "promisc_sap", (char *)buf, ebuf) < 0)) {
+	    (dlpromisconreq(p->fd, DL_PROMISC_SAP, p->errbuf) < 0 ||
+	    dlokack(p->fd, "promisc_sap", (char *)buf, p->errbuf) < 0)) {
 		/* Not fatal if promisc since the DL_PROMISC_PHYS worked */
-		if (promisc)
+		if (p->opt.promisc)
 			fprintf(stderr,
-			    "WARNING: DL_PROMISC_SAP failed (%s)\n", ebuf);
+			    "WARNING: DL_PROMISC_SAP failed (%s)\n", p->errbuf);
 		else
 			goto bad;
 	}
@@ -629,7 +627,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** promiscuous options.
 	*/
 #if defined(HAVE_HPUX9) || defined(HAVE_HPUX10_20_OR_LATER)
-	if (dl_dohpuxbind(p->fd, ebuf) < 0)
+	if (dl_dohpuxbind(p->fd, p->errbuf) < 0)
 		goto bad;
 	/*
 	** We don't set promiscuous mode on the send FD, but we'll defer
@@ -642,7 +640,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 		** set it to -1, so that you can't send but can
 		** still receive?
 		*/
-		if (dl_dohpuxbind(p->send_fd, ebuf) < 0)
+		if (dl_dohpuxbind(p->send_fd, p->errbuf) < 0)
 			goto bad;
 	}
 #endif
@@ -652,12 +650,12 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** XXX - get SAP length and address length as well, for use
 	** when sending packets.
 	*/
-	if (dlinforeq(p->fd, ebuf) < 0 ||
-	    dlinfoack(p->fd, (char *)buf, ebuf) < 0)
+	if (dlinforeq(p->fd, p->errbuf) < 0 ||
+	    dlinfoack(p->fd, (char *)buf, p->errbuf) < 0)
 		goto bad;
 
 	infop = &((union DL_primitives *)buf)->info_ack;
-	if (pcap_process_mactype(p, infop->dl_mac_type, ebuf) != 0)
+	if (pcap_process_mactype(p, infop->dl_mac_type, p->errbuf) != 0)
 		goto bad;
 
 #ifdef	DLIOCRAW
@@ -666,13 +664,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** header.
 	*/
 	if (strioctl(p->fd, DLIOCRAW, 0, NULL) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "DLIOCRAW: %s",
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "DLIOCRAW: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 #endif
 
-	ss = snaplen;
+	ss = p->snapshot;
 
 	/*
 	** There is a bug in bufmod(7). When dealing with messages of
@@ -695,7 +693,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 
 #ifdef HAVE_SYS_BUFMOD_H
 	/* Push and configure bufmod. */
-	if (pcap_conf_bufmod(p, ss, to_ms, ebuf) != 0)
+	if (pcap_conf_bufmod(p, ss, p->md.timeout) != 0)
 		goto bad;
 #endif
 
@@ -703,13 +701,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	** As the last operation flush the read side.
 	*/
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	/* Allocate data buffer. */
-	if (pcap_alloc_databuf(p, ebuf) != 0)
+	if (pcap_alloc_databuf(p) != 0)
 		goto bad;
 
 	/*
@@ -728,19 +726,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->stats_op = pcap_stats_dlpi;
 	p->close_op = pcap_close_dlpi;
 
-	return (p);
+	return (0);
 bad:
 	if (p->fd >= 0)
 		close(p->fd);
 	if (p->send_fd >= 0)
 		close(p->send_fd);
-	/*
-	 * Get rid of any link-layer type list we allocated.
-	 */
-	if (p->dlt_list != NULL)
-		free(p->dlt_list);
-	free(p);
-	return (NULL);
+	return (PCAP_ERROR);
 }
 
 /*
@@ -1649,3 +1641,16 @@ dlpi_kread(register int fd, register off_t addr,
 	return (cc);
 }
 #endif
+
+pcap_t *
+pcap_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_dlpi;
+	return (p);
+}

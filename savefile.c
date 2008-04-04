@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.4 2008-02-18 20:21:28 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.5 2008-04-04 19:39:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1310,6 +1310,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->setmintocopy_op = sf_setmintocopy;
 #endif
 	p->close_op = sf_close;
+	p->activated = 1;
 
 	return (p);
  bad:

@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.1 2008-01-02 04:22:16 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.2 2008-04-04 19:39:06 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -226,8 +226,27 @@ struct pcap_addr {
 typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 			     const u_char *);
 
+/* list of known error code for pcap API */
+#define PCAP_ERROR			-1	/* generic error code */
+#define PCAP_ERROR_BREAK		-2	/* loop terminated by pcap_breakloop */
+#define PCAP_ERROR_NOT_ACTIVATED	-3	/* the capture needs to be activated */
+#define PCAP_ERROR_ACTIVATED		-4	/* the operation can't be performed on already activated captures */
+#define PCAP_ERROR_NO_SUCH_DEVICE	-5	/* no such device exists */
+#define PCAP_ERROR_RFMON_NOTSUP		-6	/* this device doesn't support rfmon (monitor) mode */
+#define PCAP_ERROR_NOT_RFMON		-7	/* operation supported only in monitor mode */
+
 char	*pcap_lookupdev(char *);
 int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
+
+pcap_t	*pcap_create(const char *, char *);
+int	pcap_set_snaplen(pcap_t *, int);
+int	pcap_set_promisc(pcap_t *, int);
+int	pcap_can_set_rfmon(pcap_t *);
+int	pcap_set_rfmon(pcap_t *, int);
+int	pcap_set_timeout(pcap_t *, int);
+int	pcap_set_buffer_size(pcap_t *, int);
+int	pcap_activate(pcap_t *);
+
 pcap_t	*pcap_open_live(const char *, int, int, int, char *);
 pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_offline(const char *, char *);

@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.3 2008-03-13 18:16:37 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.4 2008-04-04 19:39:06 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -96,6 +96,9 @@ typedef enum {
 	MAYBE_SWAPPED
 } swapped_type_t;
 
+/*
+ * Used when reading a savefile.
+ */
 struct pcap_sf {
 	FILE *rfile;
 	int swapped;
@@ -106,6 +109,9 @@ struct pcap_sf {
 	u_char *base;
 };
 
+/*
+ * Used when doing a live capture.
+ */
 struct pcap_md {
 	struct pcap_stat stat;
 	/*XXX*/
@@ -116,18 +122,17 @@ struct pcap_md {
 	long	TotMissed;	/* missed by i/f during this run */
 	long	OrigMissed;	/* missed by i/f before this run */
 	char	*device;	/* device name */
+	int	timeout;	/* timeout for buffering */
+	int	must_clear;	/* stuff we must clear when we close */
+	struct pcap *next;	/* list of open pcaps that need stuff cleared on close */
 #ifdef linux
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
 	int	ifindex;	/* interface index of device we're bound to */
 	int	lo_ifindex;	/* interface index of the loopback device */
-	struct pcap *next;	/* list of open promiscuous sock_packet pcaps */
 	u_int	packets_read;	/* count of packets read with recvfrom() */
+	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
 #endif /* linux */
-#if defined(linux) || defined(SITA)
-	int	timeout;	/* timeout specified to pcap_open_live */
-	int	clear_promisc;	/* must clear promiscuous mode when we close */
-#endif /* linux || SITA */
 
 #ifdef HAVE_DAG_API
 #ifdef HAVE_DAG_STREAMS_API
@@ -148,6 +153,19 @@ struct pcap_md {
 };
 
 /*
+ * Stuff to clear when we close.
+ */
+#define MUST_CLEAR_PROMISC	0x00000001	/* promiscuous mode */
+#define MUST_CLEAR_RFMON	0x00000002	/* rfmon (monitor) mode */
+
+struct pcap_opt {
+	int	buffer_size;
+	char	*source;
+	int	promisc;
+	int	rfmon;
+};
+
+/*
  * Ultrix, DEC OSF/1^H^H^H^H^H^H^H^H^HDigital UNIX^H^H^H^H^H^H^H^H^H^H^H^H
  * Tru64 UNIX, and some versions of NetBSD pad FDDI packets to make everything
  * line up on a nice boundary.
@@ -160,11 +178,27 @@ struct pcap_md {
 #define       PCAP_FDDIPAD 3
 #endif
 
+typedef int	(*activate_op_t)(pcap_t *);
+typedef int	(*can_set_rfmon_op_t)(pcap_t *);
+typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
+typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
+typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
+typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
+typedef int	(*set_datalink_op_t)(pcap_t *, int);
+typedef int	(*getnonblock_op_t)(pcap_t *, char *);
+typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
+typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
+#ifdef WIN32
+typedef int	(*setbuff_op_t)(pcap_t *, int);
+typedef int	(*setmode_op_t)(pcap_t *, int);
+typedef int	(*setmintocopy_op_t)(pcap_t *, int);
+#endif
+typedef void	(*close_op_t)(pcap_t *);
+
 struct pcap {
 #ifdef WIN32
 	ADAPTER *adapter;
 	LPPACKET Packet;
-	int timeout;
 	int nonblock;
 #else
 	int fd;
@@ -180,6 +214,8 @@ struct pcap {
 	int linktype_ext;       /* Extended information stored in the linktype field of a file */
 	int tzoff;		/* timezone offset */
 	int offset;		/* offset for proper alignment */
+	int activated;		/* true if the capture is really started */
+	int oldstyle;		/* if we're opening with pcap_open_live() */
 
 	int break_loop;		/* flag set to force break from packet-reading loop */
 
@@ -188,12 +224,12 @@ struct pcap {
 #endif
 
 #ifdef MSDOS
-        int inter_packet_wait;   /* offline: wait between packets */
         void (*wait_proc)(void); /*          call proc while waiting */
 #endif
 
 	struct pcap_sf sf;
 	struct pcap_md md;
+	struct pcap_opt opt;
 
 	/*
 	 * Read buffer.
@@ -214,30 +250,27 @@ struct pcap {
 	/*
 	 * Methods.
 	 */
-	int	(*read_op)(pcap_t *, int cnt, pcap_handler, u_char *);
-	int	(*inject_op)(pcap_t *, const void *, size_t);
-	int	(*setfilter_op)(pcap_t *, struct bpf_program *);
-	int	(*setdirection_op)(pcap_t *, pcap_direction_t);
-	int	(*set_datalink_op)(pcap_t *, int);
-	int	(*getnonblock_op)(pcap_t *, char *);
-	int	(*setnonblock_op)(pcap_t *, int, char *);
-	int	(*stats_op)(pcap_t *, struct pcap_stat *);
-#ifdef WIN32
-	/*
-	 * Win32-only; given the way the buffer size is set with BPF,
-	 * to make this cross-platform we'll have to set the buffer
-	 * size at open time.
-	 */
-	int	(*setbuff_op)(pcap_t *, int);
+	activate_op_t activate_op;
+	can_set_rfmon_op_t can_set_rfmon_op;
+	read_op_t read_op;
+	inject_op_t inject_op;
+	setfilter_op_t setfilter_op;
+	setdirection_op_t setdirection_op;
+	set_datalink_op_t set_datalink_op;
+	getnonblock_op_t getnonblock_op;
+	setnonblock_op_t setnonblock_op;
+	stats_op_t stats_op;
 
+#ifdef WIN32
 	/*
 	 * These are, at least currently, specific to the Win32 NPF
 	 * driver.
 	 */
-	int	(*setmode_op)(pcap_t *, int);
-	int	(*setmintocopy_op)(pcap_t *, int);
+	setbuff_op_t setbuff_op;
+	setmode_op_t setmode_op;
+	setmintocopy_op_t setmintocopy_op;
 #endif
-	void	(*close_op)(pcap_t *);
+	close_op_t close_op;
 
 	/*
 	 * Placeholder for filter code if bpf not in kernel.
@@ -354,7 +387,13 @@ int	pcap_getnonblock_fd(pcap_t *, char *);
 int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
 
+pcap_t	*pcap_create_common(const char *, char *);
+int	pcap_do_addexit(pcap_t *);
+void	pcap_add_to_pcaps_to_close(pcap_t *);
+void	pcap_remove_from_pcaps_to_close(pcap_t *);
 void	pcap_close_common(pcap_t *);
+int	pcap_not_initialized(pcap_t *);
+int	pcap_check_activated(pcap_t *);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".

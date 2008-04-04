@@ -26,7 +26,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.1.2.3 2008-03-15 04:26:29 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.1.2.4 2008-04-04 19:39:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -96,57 +96,54 @@ list_interfaces(const char *linkname, void *arg)
 	return (B_FALSE);
 }
 
-pcap_t *
-pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
-    char *ebuf)
+static int
+pcap_activate_libdlpi(pcap_t *p)
 {
 	int retv;
-	pcap_t *p;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
 
-	if ((p = (pcap_t *)malloc(sizeof(*p))) == NULL) {
-		strlcpy(ebuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
-		return (NULL);
+	if (p->opt.rfmon) {
+		/*
+		 * No monitor mode on any platforms that support DLPI.
+		 */
+		return (PCAP_ERROR_RFMON_NOTSUP);
 	}
-	memset(p, 0, sizeof(*p));
+
 	p->fd = -1;	/* indicate that it hasn't been opened yet */
-	p->send_fd = -1;
 
 	/*
 	 * Enable Solaris raw and passive DLPI extensions;
 	 * dlpi_open() will not fail if the underlying link does not support
 	 * passive mode. See dlpi(7P) for details.
 	 */
-	retv = dlpi_open(device, &dh, DLPI_RAW|DLPI_PASSIVE);
+	retv = dlpi_open(p->opt.source, &dh, DLPI_RAW|DLPI_PASSIVE);
 	if (retv != DLPI_SUCCESS) {
-		pcap_libdlpi_err(device, "dlpi_open", retv, ebuf);
+		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv, p->errbuf);
 		goto bad;
 	}
 	p->dlpi_hd = dh;
 
-	p->snapshot = snaplen;
-
 	/* Bind with DLPI_ANY_SAP. */
 	if ((retv = dlpi_bind(p->dlpi_hd, DLPI_ANY_SAP, 0)) != DLPI_SUCCESS) {
-		pcap_libdlpi_err(device, "dlpi_bind", retv, ebuf);
+		pcap_libdlpi_err(p->opt.source, "dlpi_bind", retv, p->errbuf);
 		goto bad;
 	}
 
 	/* Enable promiscuous mode. */
-	if (promisc) {
+	if (p->opt.promisc) {
 		retv = dlpi_promiscon(p->dlpi_hd, DL_PROMISC_PHYS);
 		if (retv != DLPI_SUCCESS) {
-			pcap_libdlpi_err(device, "dlpi_promisc(PHYSICAL)",
-			    retv, ebuf);
+			pcap_libdlpi_err(p->opt.source,
+			    "dlpi_promisc(PHYSICAL)", retv, p->errbuf);
 			goto bad;
 		}
 	} else {
 		/* Try to enable multicast. */
 		retv = dlpi_promiscon(p->dlpi_hd, DL_PROMISC_MULTI);
 		if (retv != DLPI_SUCCESS) {
-			pcap_libdlpi_err(device, "dlpi_promisc(MULTI)",
-			    retv, ebuf);
+			pcap_libdlpi_err(p->opt.source, "dlpi_promisc(MULTI)",
+			    retv, p->errbuf);
 			goto bad;
 		}
 	}
@@ -154,42 +151,42 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	/* Try to enable SAP promiscuity. */
 	if ((retv = dlpi_promiscon(p->dlpi_hd, DL_PROMISC_SAP)) != DLPI_SUCCESS) {
 		if (!promisc) {
-			pcap_libdlpi_err(device, "dlpi_promisc(SAP)",
-			    retv, ebuf);
+			pcap_libdlpi_err(p->opt.source, "dlpi_promisc(SAP)",
+			    retv, p->errbuf);
 			goto bad;
 		}
 
 		/* Not fatal, since the DL_PROMISC_PHYS mode worked. */
 		fprintf(stderr, "WARNING: dlpi_promisc(SAP) failed on"
-		    " %s:(%s)\n", device, dlpi_strerror(retv));
+		    " %s:(%s)\n", p->opt.source, dlpi_strerror(retv));
 	}
 
 	/* Determine link type.  */
 	if ((retv = dlpi_info(p->dlpi_hd, &dlinfo, 0)) != DLPI_SUCCESS) {
-		pcap_libdlpi_err(device, "dlpi_info", retv, ebuf);
+		pcap_libdlpi_err(p->opt.source, "dlpi_info", retv, p->errbuf);
 		goto bad;
 	}
 
-	if (pcap_process_mactype(p, dlinfo.di_mactype, ebuf) != 0)
+	if (pcap_process_mactype(p, dlinfo.di_mactype) != 0)
 		goto bad;
 
 	p->fd = dlpi_fd(p->dlpi_hd);
 
 	/* Push and configure bufmod. */
-	if (pcap_conf_bufmod(p, snaplen, to_ms, ebuf) != 0)
+	if (pcap_conf_bufmod(p, snaplen, p->md.timeout) != 0)
 		goto bad;
 
 	/*
 	 * Flush the read side.
 	 */
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	/* Allocate data buffer. */
-	if (pcap_alloc_databuf(p, ebuf) != 0)
+	if (pcap_alloc_databuf(p) != 0)
 		goto bad;
 
 	/*
@@ -208,14 +205,13 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms,
 	p->stats_op = pcap_stats_dlpi;
 	p->close_op = pcap_close_libdlpi;
 
-	return (p);
+	return (0);
 bad:
 	/* Get rid of any link-layer type list we allocated. */
 	if (p->dlt_list != NULL)
 		free(p->dlt_list);
-	pcap_close_libdlpi(p);
-	free(p);
-	return (NULL);
+	dlpi_close(p->dlpi_hd);
+	return (PCAP_ERROR);
 }
 
 /*
@@ -351,4 +347,17 @@ pcap_libdlpi_err(const char *linkname, const char *func, int err, char *errbuf)
 {
 	snprintf(errbuf, PCAP_ERRBUF_SIZE, "libpcap: %s failed on %s: %s",
 	    func, linkname, dlpi_strerror(err));
+}
+
+pcap_t *
+pcap_create(const char *device, char *ebuf)
+{
+	pcap_t *p;
+
+	p = pcap_create_common(device, ebuf);
+	if (p == NULL)
+		return (NULL);
+
+	p->activate_op = pcap_activate_libdlpi;
+	return (p);
 }
