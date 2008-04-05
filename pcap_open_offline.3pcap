@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_open_offline.3pcap,v 1.1.2.1 2008-04-05 20:21:10 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_open_offline.3pcap,v 1.1.2.2 2008-04-05 20:28:00 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -25,7 +25,7 @@ pcap_open_offline, pcap_fopen_offline \- open a saved capture file for reading
 .SH SYNOPSIS
 .nf
 .ft B
-#include <pcap.h>
+#include <pcap/pcap.h>
 .ft
 .LP
 .nf
