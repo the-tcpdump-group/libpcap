@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_open_live.3pcap,v 1.1 2008-04-05 20:19:42 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_open_live.3pcap,v 1.2 2008-04-05 20:26:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -25,7 +25,7 @@ pcap_open_live \- open a device for capturing
 .SH SYNOPSIS
 .nf
 .ft B
-#include <pcap.h>
+#include <pcap/pcap.h>
 .ft
 .LP
 .nf
