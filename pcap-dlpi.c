@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.5 2008-04-04 19:39:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.6 2008-04-05 05:25:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -467,7 +467,7 @@ pcap_activate_dlpi(pcap_t *p)
 				 * symptom of that inability.
 				 */
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "%s: No DLPI device found", device);
+				    "%s: No DLPI device found", p->opt.source);
 			} else {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 				    dname2, pcap_strerror(errno));
@@ -506,7 +506,7 @@ pcap_activate_dlpi(pcap_t *p)
 	 * Enable Passive mode to be able to capture on aggregated link.
 	 * Not supported in all Solaris versions.
 	 */
-	dlpassive(p->fd, ebuf);
+	dlpassive(p->fd, p->errbuf);
 #endif
 	/*
 	** Bind (defer if using HP-UX 9 or HP-UX 10.20 or later, totally
@@ -655,7 +655,7 @@ pcap_activate_dlpi(pcap_t *p)
 		goto bad;
 
 	infop = &((union DL_primitives *)buf)->info_ack;
-	if (pcap_process_mactype(p, infop->dl_mac_type, p->errbuf) != 0)
+	if (pcap_process_mactype(p, infop->dl_mac_type) != 0)
 		goto bad;
 
 #ifdef	DLIOCRAW
