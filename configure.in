@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.11 2008-04-04 19:39:05 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.12 2008-04-05 04:56:59 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.11 $)
+AC_REVISION($Revision: 1.138.2.12 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -252,6 +252,20 @@ elif test -r /usr/include/odmi.h ; then
 	#
 	V_PCAP=bpf
 elif test -r /usr/include/sys/dlpi.h ; then
+	V_PCAP=dlpi
+elif test -c /dev/bpf0 ; then		# check again in case not readable
+	V_PCAP=bpf
+elif test -c /dev/enet ; then		# check again in case not readable
+	V_PCAP=enet
+elif test -c /dev/nit ; then		# check again in case not readable
+	V_PCAP=snit
+else
+	V_PCAP=null
+fi
+AC_MSG_RESULT($V_PCAP)
+
+if test "$V_PCAP" = dlpi
+then
 	#
 	# Checks to see if Solaris has the public libdlpi(3LIB) library.
 	# Note: The existence of /usr/include/libdlpi.h does not mean it is the
@@ -271,16 +285,7 @@ elif test -r /usr/include/sys/dlpi.h ; then
 		AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists]),
 		V_PCAP=dlpi)
 	LDFLAGS=$saved_ldflags
-elif test -c /dev/bpf0 ; then		# check again in case not readable
-	V_PCAP=bpf
-elif test -c /dev/enet ; then		# check again in case not readable
-	V_PCAP=enet
-elif test -c /dev/nit ; then		# check again in case not readable
-	V_PCAP=snit
-else
-	V_PCAP=null
 fi
-AC_MSG_RESULT($V_PCAP)
 
 dnl
 dnl Now figure out how we get a list of interfaces and addresses,
