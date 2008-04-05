@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99.2.5 2008-04-04 19:39:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99.2.6 2008-04-05 04:33:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1676,7 +1676,14 @@ monitor_mode(pcap_t *p, int set)
 		/*
 		 * Can't get the media types.
 		 */
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCGIFMEDIA: %s",
+		if (errno == EINVAL) {
+			/*
+			 * Interface doesn't support SIOC{G,S}IFMEDIA.
+			 */
+			close(sock);
+			return (PCAP_ERROR_RFMON_NOTSUP);
+		}
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCGIFMEDIA 1: %s",
 		    pcap_strerror(errno));
 		close(sock);
 		return (PCAP_ERROR);
