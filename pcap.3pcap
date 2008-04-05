@@ -1,0 +1,144 @@
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3pcap,v 1.1 2008-04-05 20:19:41 guy Exp $
+.\"
+.\" Copyright (c) 1994, 1996, 1997
+.\"	The Regents of the University of California.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that: (1) source code distributions
+.\" retain the above copyright notice and this paragraph in its entirety, (2)
+.\" distributions including binary code include the above copyright notice and
+.\" this paragraph in its entirety in the documentation or other materials
+.\" provided with the distribution, and (3) all advertising materials mentioning
+.\" features or use of this software display the following acknowledgement:
+.\" ``This product includes software developed by the University of California,
+.\" Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
+.\" the University nor the names of its contributors may be used to endorse
+.\" or promote products derived from this software without specific prior
+.\" written permission.
+.\" THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+.\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.TH PCAP 3PCAP "4 April 2008"
+.SH NAME
+pcap \- Packet Capture library
+.SH SYNOPSIS
+.nf
+.ft B
+#include <pcap.h>
+.LP
+.ft B
+.ft
+.fi
+.SH DESCRIPTION
+The Packet Capture library
+provides a high level interface to packet capture systems. All packets
+on the network, even those destined for other hosts, are accessible
+through this mechanism.
+It also supports saving captured packets to a ``savefile'', and reading
+packets from a ``savefile''.
+.PP
+To open a live capture stream, call
+.BR pcap_open_live() ,
+and to open a ``savefile'' to read the packets in that file, call
+.BR pcap_open_offline() .
+Both routines return a pointer to a
+.BR pcap_t ,
+which is the handle used for reading packets from the capture stream or
+the ``savefile'', and for finding out information about the capture
+stream or ``savefile''.
+.PP
+To open a ``savefile`` to which to write packets, call
+.BR pcap_dump_open() .
+It returns a pointer to a
+.BR pcap_dumper_t ,
+which is the handle used for writing packets to the ``savefile''.
+.PP
+Packets are read with
+.B pcap_dispatch()
+or
+.BR pcap_loop() ,
+which process one or more packets, calling a callback routine for each
+packet, or with
+.B pcap_next()
+or
+.BR pcap_next_ex() ,
+which return the next packet.
+The callback for
+.B pcap_dispatch()
+and
+.BR pcap_loop()
+is supplied a pointer to a
+.IR struct pcap_pkthdr ,
+which includes the following members:
+.RS
+.TP
+.B ts
+a
+.I struct timeval
+containing the time when the packet was captured
+.TP
+.B caplen
+a
+.I bpf_u_int32
+giving the number of bytes of the packet that are available from the
+capture
+.TP
+.B len
+a
+.I bpf_u_int32
+giving the length of the packet, in bytes (which might be more than the
+number of bytes available from the capture, if the length of the packet
+is larger than the maximum number of bytes to capture).
+.RE
+.PP
+.B pcap_next_ex()
+supplies that pointer through a pointer argument.
+.B pcap_next()
+is passed an argument that points to a
+.I struct pcap_pkthdr
+structure, and fills it in.
+.PP
+The callback is also supplied a
+.I const u_char
+pointer to the first
+.B caplen
+(as given in the
+.I struct pcap_pkthdr
+a pointer to which is passed to the callback routine)
+bytes of data from the packet.  This won't necessarily be the entire
+packet; to capture the entire packet, you will have to provide a value
+for
+.I snaplen
+in your call to
+.B pcap_open_live()
+that is sufficiently large to get all of the packet's data - a value of
+65535 should be sufficient on most if not all networks).  When reading
+from a ``savefile'', the snapshot length specified when the capture was
+performed will limit the amount of packet data available.
+.B pcap_next()
+returns that pointer;
+.B pcap_next_ex()
+supplies that pointer through a pointer argument.
+.SH ROUTINES
+.SH SEE ALSO
+tcpdump(1), tcpslice(1), pcap-filter(4)
+.SH AUTHORS
+The original authors of libpcap are:
+.LP
+Van Jacobson,
+Craig Leres and
+Steven McCanne, all of the
+Lawrence Berkeley National Laboratory, University of California, Berkeley, CA.
+.LP
+The current version is available from "The Tcpdump Group"'s Web site at
+.LP
+.RS
+.I http://www.tcpdump.org/
+.RE
+.SH BUGS
+Please send problems, bugs, questions, desirable enhancements, etc. to:
+.LP
+.RS
+tcpdump-workers@tcpdump.org
+.RE

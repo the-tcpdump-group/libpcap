@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.25 2008-03-13 18:13:57 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.26 2008-04-05 20:19:41 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -391,10 +391,48 @@ pcap-snoop.c	- IRIX Snoop network monitoring support
 pcap-usb-linux.c - USB capture support for Linux
 pcap-usb-linux.h - USB capture support for Linux
 pcap-win32.c	- WinPcap capture support
-pcap.3		- manual entry for the library
+pcap.3pcap	- manual entry for the library
 pcap.c		- pcap utility routines
 pcap.h		- header for backwards compatibility
+pcap_breakloop.3pcap - manual entry for pcap_breakloop
+pcap_close.3pcap - manual entry for pcap_close
+pcap_compile.3pcap - manual entry for pcap_compile
+pcap_datalink.3pcap - manual entry for pcap_datalink
+pcap_datalink_name_to_val.3pcap - manual entry for pcap_datalink_name_to_val
+pcap_dump.3pcap	- manual entry for pcap_dump
+pcap_dump_close.3pcap - manual entry for pcap_dump_close
+pcap_dump_file.3pcap - manual entry for pcap_dump_file
+pcap_dump_flush.3pcap - manual entry for pcap_dump_flush
+pcap_dump_ftell.3pcap - manual entry for pcap_dump_ftell
+pcap_dump_open.3pcap - manual entry for pcap_dump_open and pcap_dump_fopen
+pcap_file.3pcap	- manual entry for pcap_file
+pcap_fileno.3pcap - manual entry for pcap_fileno
+pcap_findalldevs.3pcap - manual entry for pcap_findalldevs
+pcap_freealldevs.3pcap - manual entry for pcap_freealldevs
+pcap_freecode.3pcap - manual entry for pcap_freecode
+pcap_get_selectable_fd.3pcap - manual entry for pcap_get_selectable_fd
+pcap_geterr.3pcap - manual entry for pcap_geterr and pcap_perror
+pcap_inject.3pcap - manual entry for pcap_inject and pcap_sendpacket
+pcap_is_swapped.3pcap - manual entry for pcap_is_swapped
+pcap_lib_version.3pcap - manual entry for pcap_lib_version
+pcap_list_datalinks.3pcap - manual entry for pcap_list_datalinks
+pcap_lookupdev.3pcap - manual entry for pcap_lookupdev
+pcap_lookupnet.3pcap - manual entry for pcap_lookupnet
+pcap_loop.3pcap	- manual entry for pcap_loop and pcap_dispatch
+pcap_major_version.3pcap - manual entry for pcap_major_version and pcap_minor_version
+pcap_next_ex.3pcap - manual entry for pcap_next_ex and pcap_next
+pcap_open_dead.3pcap - manual entry for pcap_open_dead
+pcap_open_live.3pcap - manual entry for pcap_open_live
+pcap_open_offline.3pcap - manual entry for pcap_open_offline and pcap_fopen_offline
+pcap_set_datalink.3pcap - manual entry for pcap_set_datalink
+pcap_setdirection.3pcap - manual entry for pcap_setdirection
+pcap_setfilter.3pcap - manual entry for pcap_setfilter
+pcap_setnonblock.3pcap - manual entry for pcap_setnonblock and pcap_getnonblock
+pcap_snapshot.3pcap - manual entry for pcap_snapshot
+pcap_stats.3pcap - manual entry for pcap_stats
+pcap_strerror.3pcap - manual entry for pcap_strerror
 pcap-filter.4	- manual entry for filter syntax
+pcap-linktype.4	- manual entry for link-layer header types
 ppp.h		- Point to Point Protocol definitions
 runlex.sh	- wrapper for Lex/Flex
 savefile.c	- offline support
