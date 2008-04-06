@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_file.3pcap,v 1.3 2008-04-06 02:53:22 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_create.3pcap,v 1.1 2008-04-06 02:53:21 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,41 +19,56 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FILE 3PCAP "5 April 2008"
+.TH PCAP_CREATE 3PCAP "5 April 2008"
 .SH NAME
-pcap_file \- get the standard I/O stream for a savefile being read
+pcap_create \- create a live capture handle
 .SH SYNOPSIS
 .nf
 .ft B
 #include <pcap/pcap.h>
 .ft
 .LP
+.nf
 .ft B
-FILE *pcap_file(pcap_t *p);
+char errbuf[PCAP_ERRBUF_SIZE];
+.ft
+.LP
+.ft B
+pcap_t *pcap_create(const char *source, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_file()
-returns the standard I/O stream of the ``savefile,'' if a ``savefile''
-was opened with
-.BR pcap_open_offline() ,
-or NULL, if a network device was opened with
 .B pcap_create()
-and
-.BR pcap_activate() ,
-or with
-.BR pcap_open_live() .
+is used to create a packet capture handle to look
+at packets on the network.
+.I source
+is a string that specifies the network device to open; on Linux systems
+with 2.2 or later kernels, a
+.I source
+argument of "any" or
+.B NULL
+can be used to capture packets from all interfaces.
 .PP
-Note that the Packet Capture library is usually built with large file
-support, so the standard I/O stream of the ``savefile'' might refer to
-a file larger than 2 gigabytes; applications that use
-.B pcap_file()
-should, if possible, use calls that support large files on the return
-value of
-.B pcap_file()
-or the value returned by
-.B fileno()
-when passed the return value of
-.BR pcap_file() .
+The returned handle must be activated with
+.B pcap_activate()
+before packets can be captured
+with it; options for the capture, such as promiscuous mode, can be set
+on the handle before activating it.
+.SH RETURN VALUE
+.B pcap_create()
+returns a
+.I pcap_t *
+on success and
+.B NULL
+on failure.
+If
+.B NULL
+is returned,
+.I errbuf
+is filled in with an appropriate error message.
+.I errbuf
+is assumed to be able to hold at least
+.B PCAP_ERRBUF_SIZE
+chars.
 .SH SEE ALSO
-pcap(3PCAP), pcap_open_offline(3PCAP)
+pcap(3PCAP), pcap_activate(3PCAP)
