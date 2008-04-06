@@ -132,6 +132,7 @@ pcap_dump_file.3pcap
 pcap_dump_flush.3pcap
 pcap_dump_ftell.3pcap
 pcap_dump_open.3pcap
+pcap_errtostr.3pcap
 pcap_file.3pcap
 pcap_fileno.3pcap
 pcap_findalldevs.3pcap
