@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.115 2008-04-04 19:37:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.116 2008-04-06 19:55:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -883,58 +883,58 @@ pcap_win32strerror(void)
 #endif
 
 /*
- * Not all systems have strerror().
- * We also use this to generate error strings for PCAP_ERROR_ values.
+ * Generate error strings for PCAP_ERROR_ values.
  */
 const char *
-pcap_strerror(int errnum)
+pcap_errtostr(int errnum)
 {
-	static char ebuf[128+1];
-#ifndef HAVE_STRERROR
-	extern int sys_nerr;
-	extern const char *const sys_errlist[];
-#endif
+	static char ebuf[15+10+1];
 
 	switch (errnum) {
 
 	case PCAP_ERROR:
-		(void)snprintf(ebuf, sizeof ebuf, "Generic error");
-		return(ebuf);
+		return("Generic error");
 
 	case PCAP_ERROR_BREAK:
-		(void)snprintf(ebuf, sizeof ebuf, "Loop terminated by pcap_breakloop");
-		return(ebuf);
+		return("Loop terminated by pcap_breakloop");
 
 	case PCAP_ERROR_NOT_ACTIVATED:
-		(void)snprintf(ebuf, sizeof ebuf, "The pcap_t has not been activated");
-		return(ebuf);
+		return("The pcap_t has not been activated");
 
 	case PCAP_ERROR_ACTIVATED:
-		(void)snprintf(ebuf, sizeof ebuf, "The setting can't be changed after the pcap_t is activated");
-		return(ebuf);
+		return ("The setting can't be changed after the pcap_t is activated");
 
 	case PCAP_ERROR_NO_SUCH_DEVICE:
-		(void)snprintf(ebuf, sizeof ebuf, "No such device exists");
-		return(ebuf);
+		return ("No such device exists");
 
 	case PCAP_ERROR_RFMON_NOTSUP:
-		(void)snprintf(ebuf, sizeof ebuf, "That device doesn't support monitor mode");
-		return(ebuf);
+		return ("That device doesn't support monitor mode");
 
 	case PCAP_ERROR_NOT_RFMON:
-		(void)snprintf(ebuf, sizeof ebuf, "That operation is supported only in monitor mode");
-		return(ebuf);
-	}
-	if (errnum >= 0) {
-#ifdef HAVE_STRERROR
-		return (strerror(errnum));
-#else
-		if ((unsigned int)errnum < sys_nerr)
-			return ((char *)sys_errlist[errnum]);
-#endif
+		return ("That operation is supported only in monitor mode");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
+}
+
+/*
+ * Not all systems have strerror().
+ */
+const char *
+pcap_strerror(int errnum)
+{
+#ifdef HAVE_STRERROR
+	return (strerror(errnum));
+#else
+	extern int sys_nerr;
+	extern const char *const sys_errlist[];
+	static char ebuf[15+10+1];
+
+	if ((unsigned int)errnum < sys_nerr)
+		return ((char *)sys_errlist[errnum]);
+	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	return(ebuf);
+#endif
 }
 
 int
