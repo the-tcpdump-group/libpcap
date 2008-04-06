@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.116 2008-04-06 20:16:30 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.117 2008-04-06 20:22:13 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -263,6 +263,8 @@ install: libpcap.a
 	for i in $(MAN3PCAP); do \
 		$(INSTALL_DATA) $(srcdir)/$$i \
 		    $(DESTDIR)$(mandir)/man3/$$i; done
+	ln $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_name.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_dump_open.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_geterr.3pcap \
@@ -303,6 +305,7 @@ uninstall:
 	rm -f $(DESTDIR)$(includedir)/pcap-namedb.h
 	for i in $(MAN3PCAP); do \
 		rm -f $(DESTDIR)$(mandir)/man3/$$i; done
+	rm -f  $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
