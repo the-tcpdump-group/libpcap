@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.5 2008-02-18 20:21:28 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.6 2008-04-06 18:10:08 guy Exp $ (LBL)
  */
 
 /*
@@ -797,6 +797,18 @@ struct bpf_version {
  * <hannes.kaelber@x2e.de>.
  */
 #define DLT_LIN			212
+
+/*
+ * X2E-private data link type used for serial line capture,
+ * as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define DLT_X2E_SERIAL		213
+
+/*
+ * X2E-private data link type used for the Xoraya data logger
+ * family, as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define DLT_X2E_XORAYA		214
 
 
 /*
