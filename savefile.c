@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.173 2008-04-04 19:37:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.174 2008-04-06 18:09:48 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -623,6 +623,18 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_LIN			212
 
+/*
+ * X2E-private data link type used for serial line capture,
+ * as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define LINKTYPE_X2E_SERIAL		213
+
+/*
+ * X2E-private data link type used for the Xoraya data logger
+ * family, as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
+ */
+#define LINKTYPE_X2E_XORAYA		214
+
 
 static struct linktype_map {
 	int	dlt;
@@ -918,6 +930,12 @@ static struct linktype_map {
 
 	/* LIN */
 	{ DLT_LIN,		LINKTYPE_LIN },
+
+	/* X2E-private serial line capture */
+	{ DLT_X2E_SERIAL,	LINKTYPE_X2E_SERIAL },
+
+	/* X2E-private for Xoraya data logger family */
+	{ DLT_X2E_XORAYA,	LINKTYPE_X2E_XORAYA },
 
 	{ -1,			-1 }
 };
