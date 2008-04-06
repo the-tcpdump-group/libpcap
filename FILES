@@ -126,6 +126,7 @@ pcap_compile.3pcap
 pcap_create.3pcap
 pcap_datalink.3pcap
 pcap_datalink_name_to_val.3pcap
+pcap_datalink_val_to_name.3pcap
 pcap_dump.3pcap
 pcap_dump_close.3pcap
 pcap_dump_file.3pcap
