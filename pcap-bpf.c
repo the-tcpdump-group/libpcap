@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.105 2008-04-05 04:33:08 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.106 2008-04-06 22:15:03 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1020,6 +1020,7 @@ pcap_activate_bpf(pcap_t *p)
 	struct ifreq ifr;
 	struct bpf_version bv;
 #ifdef __APPLE__
+	int sockfd;
 	char *wltdev = NULL;
 #endif
 #ifdef BIOCGDLTLIST
@@ -1098,10 +1099,35 @@ pcap_activate_bpf(pcap_t *p)
 				 */
 				if (strncmp(p->opt.source, "en", 2) != 0) {
 					/*
-					 * Not an enN device; no monitor
-					 * mode.
+					 * Not an enN device; check
+					 * whether the device even exists.
 					 */
-					err = PCAP_ERROR_RFMON_NOTSUP;
+					sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+					if (sockfd != -1) {
+						strlcpy(ifr.ifr_name,
+						    p->opt.source,
+						    sizeof(ifr.ifr_name));
+						if (ioctl(sockfd, SIOCGIFFLAGS,
+						    (char *)&ifr) < 0) {
+							/*
+							 * We assume this
+							 * failed because
+							 * the underlying
+							 * device doesn't
+							 * exist.
+							 */
+							err = PCAP_ERROR_NO_SUCH_DEVICE;
+						} else
+							err = PCAP_ERROR_RFMON_NOTSUP;
+						close(sockfd);
+					} else {
+						/*
+						 * We can't find out whether
+						 * the device exists, so just
+						 * report "no such device".
+						 */
+						err = PCAP_ERROR_NO_SUCH_DEVICE;
+					}
 					goto bad;
 				}
 				wltdev = malloc(strlen(p->opt.source) + 2);
