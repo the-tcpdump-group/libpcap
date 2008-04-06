@@ -118,9 +118,12 @@ pcap-win32.c
 pcap.3pcap
 pcap.c
 pcap.h
+pcap_activate.3pcap
 pcap_breakloop.3pcap
+pcap_can_set_rfmon.3pcap
 pcap_close.3pcap
 pcap_compile.3pcap
+pcap_create.3pcap
 pcap_datalink.3pcap
 pcap_datalink_name_to_val.3pcap
 pcap_dump.3pcap
@@ -148,7 +151,12 @@ pcap_next_ex.3pcap
 pcap_open_dead.3pcap
 pcap_open_live.3pcap
 pcap_open_offline.3pcap
+pcap_set_buffer_size.3pcap
 pcap_set_datalink.3pcap
+pcap_set_promisc.3pcap
+pcap_set_rfmon.3pcap
+pcap_set_snaplen.3pcap
+pcap_set_timeout.3pcap
 pcap_setdirection.3pcap
 pcap_setfilter.3pcap
 pcap_setnonblock.3pcap
