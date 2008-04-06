@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.113 2008-04-05 20:19:41 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.114 2008-04-06 17:29:31 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -102,8 +102,10 @@ CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c
 
 MAN3PCAP = pcap.3pcap \
 	pcap_breakloop.3pcap \
+	pcap_can_set_rfmon.3pcap \
 	pcap_close.3pcap \
 	pcap_compile.3pcap \
+	pcap_create.3pcap \
 	pcap_datalink.3pcap \
 	pcap_datalink_name_to_val.3pcap \
 	pcap_dump.3pcap \
@@ -131,7 +133,12 @@ MAN3PCAP = pcap.3pcap \
 	pcap_open_dead.3pcap \
 	pcap_open_live.3pcap \
 	pcap_open_offline.3pcap \
+	pcap_set_buffer_size.3pcap \
 	pcap_set_datalink.3pcap \
+	pcap_set_promisc.3pcap \
+	pcap_set_rfmon.3pcap \
+	pcap_set_snaplen.3pcap \
+	pcap_set_timeout.3pcap \
 	pcap_setdirection.3pcap \
 	pcap_setfilter.3pcap \
 	pcap_setnonblock.3pcap \
