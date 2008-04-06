@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_dump_close.3pcap,v 1.1.2.2 2008-04-05 20:27:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_dump_close.3pcap,v 1.1.2.3 2008-04-06 03:21:55 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DUMP_CLOSE 3PCAP "4 April 2008"
+.TH PCAP_DUMP_CLOSE 3PCAP "5 April 2008"
 .SH NAME
 pcap_dump_close \- close a savefile being written to
 .SH SYNOPSIS
@@ -36,4 +36,4 @@ void pcap_dump_close(pcap_dumper_t *p);
 .B pcap_dump_close()
 closes the ``savefile.''
 .SH SEE ALSO
-pcap_dump_open(3PCAP), pcap_dump(3PCAP)
+pcap(3PCAP), pcap_dump_open(3PCAP), pcap_dump(3PCAP)

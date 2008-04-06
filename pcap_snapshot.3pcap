@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_snapshot.3pcap,v 1.1.2.2 2008-04-05 20:28:00 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_snapshot.3pcap,v 1.1.2.3 2008-04-06 03:21:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SNAPSHOT 3PCAP "4 April 2008"
+.TH PCAP_SNAPSHOT 3PCAP "5 April 2008"
 .SH NAME
 pcap_snapshot \- get the snapshot length
 .SH SYNOPSIS
@@ -35,6 +35,10 @@ int pcap_snapshot(pcap_t *p);
 .SH DESCRIPTION
 .B pcap_snapshot()
 returns the snapshot length specified when
+.B pcap_set_snapshot()
+or
 .B pcap_open_live()
 was called, for a live capture, or the snapshot length from the capture
 file, for a ``savefile''.
+.SH SEE ALSO
+pcap(3PCAP)

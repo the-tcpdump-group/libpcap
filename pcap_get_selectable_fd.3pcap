@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_get_selectable_fd.3pcap,v 1.1.2.2 2008-04-05 20:27:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_get_selectable_fd.3pcap,v 1.1.2.3 2008-04-06 03:21:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_GET_SELECTABLE_FD 3PCAP "4 April 2008"
+.TH PCAP_GET_SELECTABLE_FD 3PCAP "5 April 2008"
 .SH NAME
 pcap_get_selectable_fd \- get a file descriptor on which a select() can
 be done for a live capture
@@ -44,7 +44,11 @@ or
 to wait for it to be possible to read packets without blocking, if such
 a descriptor exists, or \-1, if no such descriptor exists.  Some network
 devices opened with
-.B pcap_open_live()
+.B pcap_create()
+and
+.BR pcap_activate() ,
+or with
+.BR pcap_open_live() ,
 do not support
 .B select()
 or
@@ -63,9 +67,8 @@ being FreeBSD 4.3 and 4.4), a simple
 .B select()
 or
 .B poll()
-will not return even after a timeout specified in
-.B pcap_open_live()
-expires.  To work around this, an application that uses
+will not return even after the read timeout expires.  To work around
+this, an application that uses
 .B select()
 or
 .B poll()
@@ -75,8 +78,7 @@ in non-blocking mode, and must arrange that the
 .B select()
 or
 .B poll()
-have a timeout less than or equal to the timeout specified in
-.BR pcap_open_live() ,
+have a timeout less than or equal to the read timeout,
 and must try to read packets after that timeout expires, regardless of
 whether
 .B select()
@@ -109,4 +111,4 @@ is not available on Windows.
 A selectable file descriptor is returned if one exists; otherwise, \-1
 is returned.
 .SH SEE ALSO
-select(2), poll(2)
+pcap(3PCAP), select(2), poll(2)

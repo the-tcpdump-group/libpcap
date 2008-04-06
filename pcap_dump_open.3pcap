@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_dump_open.3pcap,v 1.1.2.2 2008-04-05 20:27:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_dump_open.3pcap,v 1.1.2.3 2008-04-06 03:21:55 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DUMP_OPEN 3PCAP "4 April 2008"
+.TH PCAP_DUMP_OPEN 3PCAP "5 April 2008"
 .SH NAME
 pcap_dump_open, pcap_dump_fopen \- open a file to which to write packets
 .SH SYNOPSIS
@@ -53,9 +53,11 @@ is called to write data to an existing open stream
 Note that on Windows, that stream should be opened in binary mode.
 .PP
 .I p
-is a
-.B pcap_t
-struct returned by an earlier call to
+is a capture or ``savefile'' handle returned by an earlier call to
+.B pcap_create()
+and activated by an earlier call to
+.BR pcap_activate() ,
+or returned by an earlier call to
 .BR pcap_open_offline() ,
 .BR pcap_open_live() ,
 or
@@ -79,5 +81,6 @@ is returned,
 .B pcap_geterr(\fIp\fB)
 can be used to get the error text.
 .SH SEE ALSO
+pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP),
 pcap_open_offline(3PCAP), pcap_open_live(3PCAP), pcap_open_dead(3PCAP),
 pcap_dump(3PCAP), pcap_dump_close(3PCAP), pcap_geterr(3PCAP)

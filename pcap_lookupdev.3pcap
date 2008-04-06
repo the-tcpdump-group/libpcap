@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_lookupdev.3pcap,v 1.1.2.2 2008-04-05 20:27:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_lookupdev.3pcap,v 1.1.2.3 2008-04-06 03:21:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LOOKUPDEV 3PCAP "4 April 2008"
+.TH PCAP_LOOKUPDEV 3PCAP "5 April 2008"
 .SH NAME
 pcap_lookupdev \- find the default device on which to capture
 .SH SYNOPSIS
@@ -41,8 +41,12 @@ char *pcap_lookupdev(char *errbuf);
 .B pcap_lookupdev()
 returns a pointer to a string giving the name of a network device
 suitable for use with
-.B pcap_open_live()
+.B pcap_create()
 and
+.BR pcap_activate() ,
+or with
+.BR pcap_open_live() ,
+and with
 .BR pcap_lookupnet() .
 If there is an error,
 .B NULL
@@ -54,4 +58,5 @@ is assumed to be able to hold at least
 .B PCAP_ERRBUF_SIZE
 chars.
 .SH SEE ALSO
+pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP),
 pcap_open_live(3PCAP), pcap_lookupnet(3PCAP)

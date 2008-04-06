@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_major_version.3pcap,v 1.1.2.2 2008-04-05 20:28:00 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_major_version.3pcap,v 1.1.2.3 2008-04-06 03:21:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_MAJOR_VERSION 3PCAP "4 April 2008"
+.TH PCAP_MAJOR_VERSION 3PCAP "5 April 2008"
 .SH NAME
 pcap_major_version, pcap_minor_version \- get the version number of a savefile
 .SH SYNOPSIS
@@ -50,3 +50,5 @@ refers to a live capture, the values returned by
 and
 .B pcap_minor_version()
 are not meaningful.
+.SH SEE ALSO
+pcap(3PCAP)

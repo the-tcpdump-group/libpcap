@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_loop.3pcap,v 1.1.2.2 2008-04-05 20:27:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_loop.3pcap,v 1.1.2.3 2008-04-06 03:21:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LOOP 3PCAP "4 April 2008"
+.TH PCAP_LOOP 3PCAP "5 April 2008"
 .SH NAME
 pcap_loop, pcap_dispatch \- process packets from a live capture or savefile
 .SH SYNOPSIS
@@ -108,20 +108,6 @@ pointer to the first
 .I struct pcap_pkthdr
 a pointer to which is passed to the callback routine)
 bytes of data from the packet.
-.PP
-.BR NOTE :
-when reading a live capture,
-.B pcap_dispatch()
-will not necessarily return when the read times out; on some platforms,
-the read timeout isn't supported, and, on other platforms, the timer
-doesn't start until at least one packet arrives.  This means that the
-read timeout should
-.B NOT
-be used in, for example, an interactive application, to allow the packet
-capture loop to ``poll'' for user input periodically, as there's no
-guarantee that
-.B pcap_dispatch()
-will return after the timeout expires.
 .SH RETURN VALUE
 .B pcap_loop()
 returns 0 if
@@ -161,4 +147,4 @@ may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap_geterr(3PCAP), pcap_breakloop(3PCAP)
+pcap(3PCAP), pcap_geterr(3PCAP), pcap_breakloop(3PCAP)

@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_lookupnet.3pcap,v 1.1.2.3 2008-04-06 03:21:56 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_set_snaplen.3pcap,v 1.1.2.1 2008-04-06 03:21:56 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,47 +19,28 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LOOKUPNET 3PCAP "5 April 2008"
+.TH PCAP_SET_SNAPLEN 3PCAP "5 April 2008"
 .SH NAME
-pcap_lookupnet \- find the IPv4 network number and netmask for a device
+pcap_set_snaplen \- set the snapshot length for a not-yet-activated
+capture handle
 .SH SYNOPSIS
 .nf
 .ft B
 #include <pcap/pcap.h>
-.ft
-.LP
-.nf
-.ft B
-char errbuf[PCAP_ERRBUF_SIZE];
-.ft
 .LP
 .ft B
-int pcap_lookupnet(const char *device, bpf_u_int32 *netp,
-.ti +8
-bpf_u_int32 *maskp, char *errbuf);
+int pcap_set_snaplen(pcap_t *p, int snaplen);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_lookupnet()
-is used to determine the IPv4 network number and mask
-associated with the network device
-.IR device .
-Both
-.I netp
-and
-.I maskp
-are
-.I bpf_u_int32
-pointers.
+.B pcap_set_snaplen()
+sets the snapshot length to be used on a capture handle when the handle
+is activated to
+.IR snaplen .
 .SH RETURN VALUE
-.B pcap_lookupnet()
-returns 0 on success and \-1 on failure.
-If \-1 is returned,
-.I errbuf
-is filled in with an appropriate error message.
-.I errbuf
-is assumed to be able to hold at least
-.B PCAP_ERRBUF_SIZE
-chars.
+.B pcap_set_snaplen()
+returns 0 on success or
+.B PCAP_ERROR_ACTIVATED
+if called on a capture handle that has been activated.
 .SH SEE ALSO
-pcap(3PCAP)
+pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP)
