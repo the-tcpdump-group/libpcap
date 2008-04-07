@@ -33,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.9.2.2 2008-04-04 19:39:05 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.9.2.3 2008-04-07 04:06:36 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -162,7 +162,7 @@ bt_activate(pcap_t* handle)
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't get Bluetooth device index from %s", 
 			 handle->opt.source);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/* Initialize some components of the pcap structure. */
@@ -186,7 +186,7 @@ bt_activate(pcap_t* handle)
 	if (handle->fd < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
 			errno, strerror(errno));
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	handle->buffer = malloc(handle->bufsize);
@@ -230,12 +230,26 @@ bt_activate(pcap_t* handle)
 			handle->md.ifindex, errno, strerror(errno));
 		goto close_fail;
 	}
+
+	if (handle->opt.buffer_size == 0) {
+		/*
+		 * Set the socket buffer size to the specified value.
+		 */
+		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
+		    &handle->opt.buffer_size,
+		    sizeof(handle->opt.buffer_size)) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				 "SO_RCVBUF: %s", pcap_strerror(errno));
+			goto close_fail;
+		}
+	}
+
 	handle->selectable_fd = handle->fd;
 	return 0;
 
 close_fail:
 	close(handle->fd);
-	return -1;
+	return PCAP_ERROR;
 }
 
 static int

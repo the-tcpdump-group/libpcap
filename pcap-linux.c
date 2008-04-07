@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.13 2008-04-07 00:39:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.14 2008-04-07 04:06:36 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -553,12 +553,21 @@ pcap_activate_linux(pcap_t *handle)
 		 * up and report our failure (ebuf is expected to be
 		 * set by the functions above).
 		 */
+		goto fail;
+	}
 
-		if (handle->md.device != NULL) {
-			free(handle->md.device);
-			handle->md.device = NULL;
+	if (handle->opt.buffer_size == 0) {
+		/*
+		 * Set the socket buffer size to the specified value.
+		 */
+		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
+		    &handle->opt.buffer_size,
+		    sizeof(handle->opt.buffer_size)) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				 "SO_RCVBUF: %s", pcap_strerror(errno));
+			err = PCAP_ERROR;
+			goto fail;
 		}
-		return err;
 	}
 
 	/* Allocate the buffer */
@@ -567,7 +576,8 @@ pcap_activate_linux(pcap_t *handle)
 	if (!handle->buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
-		return PCAP_ERROR;
+		err = PCAP_ERROR;
+		goto fail;
 	}
 
 	/*
@@ -577,6 +587,14 @@ pcap_activate_linux(pcap_t *handle)
 	handle->selectable_fd = handle->fd;
 
 	return 0;
+
+fail:
+	close(handle->fd);
+	if (handle->md.device != NULL) {
+		free(handle->md.device);
+		handle->md.device = NULL;
+	}
+	return err;
 }
 
 /*
@@ -1775,7 +1793,7 @@ activate_new(pcap_t *handle)
 	handle->bufsize = handle->snapshot;
 
 	/* Save the socket FD in the pcap structure */
-	handle->fd 	 = sock_fd;
+	handle->fd = sock_fd;
 
 	return 1;
 #else
