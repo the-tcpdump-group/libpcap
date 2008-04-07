@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.141 2008-04-04 20:51:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.142 2008-04-07 00:31:47 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -2329,6 +2329,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
+		free(priv);
 		return PCAP_ERROR;
 	}
 
@@ -2481,6 +2482,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 			}
 		}
 	}
+	free(priv);
 
 	/*
 	 * XXX - ipw3945?  islism?
