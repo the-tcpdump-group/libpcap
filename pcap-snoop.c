@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.56 2008-04-04 19:37:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.57 2008-04-07 03:57:32 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -234,7 +234,10 @@ pcap_activate_snoop(pcap_t *p)
 		    pcap_strerror(errno));
 		goto bad;
 	}
-	v = 64 * 1024;
+	if (handle->opt.buffer_size != 0)
+		v = handle->opt.buffer_size;
+	else
+		v = 64 * 1024;	/* default to 64K buffer size */
 	(void)setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (char *)&v, sizeof(v));
 	/*
 	 * XXX hack - map device name to link layer type
