@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.3 2008-04-04 19:39:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.4 2008-04-08 03:06:18 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -564,9 +564,6 @@ pcap_activate_win32(pcap_t *p)
 	/* Set the buffer size */
 	p->bufsize = PcapBufSize;
 
-	/* Store the timeout. Used by pcap_setnonblock() */
-	p->md.timeout= to_ms;
-
 	/* allocate Packet structure used during the capture */
 	if((p->Packet = PacketAllocatePacket())==NULL)
 	{
@@ -665,7 +662,7 @@ pcap_activate_win32(pcap_t *p)
 	goto bad;
 #endif /* HAVE_DAG_API */
 	
-	PacketSetReadTimeout(p->adapter, to_ms);
+	PacketSetReadTimeout(p->adapter, p->md.timeout);
 	
 #ifdef HAVE_DAG_API
 	if(p->adapter->Flags & INFO_FLAG_DAG_CARD)
