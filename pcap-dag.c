@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.37 2008-04-04 19:37:45 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.38 2008-04-08 03:00:14 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -560,8 +560,8 @@ dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 /*
  *  Get a handle for a live capture from the given DAG device.  Passing a NULL
  *  device will result in a failure.  The promisc flag is ignored because DAG
- *  cards are always promiscuous.  The to_ms parameter is also ignored as it is
- *  not supported in hardware.
+ *  cards are always promiscuous.  The to_ms parameter is used in setting the
+ *  API polling parameters.
  *  
  *  snaplen is now also ignored, until we get per-stream slen support. Set
  *  slen with approprite DAG tool BEFORE pcap_activate().
@@ -650,11 +650,11 @@ static int dag_activate(pcap_t* handle)
 	 */
 	mindata = 65536;
 
-	/* Obey to_ms if supplied. This is a good idea!
+	/* Obey md.timeout (was to_ms) if supplied. This is a good idea!
 	 * Recommend 10-100ms. Calls will time out even if no data arrived.
 	 */
-	maxwait.tv_sec = to_ms/1000;
-	maxwait.tv_usec = (to_ms%1000) * 1000;
+	maxwait.tv_sec = handle->md.timeout/1000;
+	maxwait.tv_usec = (handle->md.timeout%1000) * 1000;
 
 	if (dag_set_stream_poll(handle->fd, handle->md.dag_stream,
 				mindata, &maxwait, &poll) < 0) {
@@ -734,7 +734,7 @@ static int dag_activate(pcap_t* handle)
 			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
 				handle->md.dag_fcs_bits = n;
 			} else {
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
 				goto failstop;
 			}
@@ -790,7 +790,7 @@ static int dag_activate(pcap_t* handle)
 
 #ifdef HAVE_DAG_STREAMS_API 
 failstop:
-	if (dag_stop_stream(handle->fd, handle->md.dag_stream) < 0)
+	if (dag_stop_stream(handle->fd, handle->md.dag_stream) < 0) {
 		fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
 	}
 	
