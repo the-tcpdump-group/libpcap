@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.4 2008-04-06 20:03:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.5 2008-04-09 19:58:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -223,15 +223,19 @@ pcap_t *
 pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *errbuf)
 {
 	pcap_t *p;
+	int err;
 
 	p = pcap_create(source, errbuf);
 	if (p == NULL)
 		return (NULL);
-	if (pcap_set_snaplen(p, snaplen))
+	err = pcap_set_snaplen(p, snaplen);
+	if (err < 0)
 		goto fail;
-	if (pcap_set_promisc(p, promisc))
+	err = pcap_set_promisc(p, promisc);
+	if (err < 0)
 		goto fail;
-	if (pcap_set_timeout(p, to_ms))
+	err = pcap_set_timeout(p, to_ms);
+	if (err < 0)
 		goto fail;
 	/*
 	 * Mark this as opened with pcap_open_live(), so that, for
@@ -244,11 +248,17 @@ pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *er
 	 * the adapter is in monitor mode or not.
 	 */
 	p->oldstyle = 1;
-	if (pcap_activate(p))
+	err = pcap_activate(p);
+	if (err < 0)
 		goto fail;
 	return (p);
 fail:
-	strncpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
+	if (err == PCAP_ERROR || err == PCAP_ERROR_NO_SUCH_DEVICE ||
+	    err == PCAP_ERROR_PERM_DENIED)
+		strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
+	else
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		    pcap_errtostr(err));
 	pcap_close(p);
 	return (NULL);
 }
@@ -912,6 +922,9 @@ pcap_errtostr(int errnum)
 
 	case PCAP_ERROR_NOT_RFMON:
 		return ("That operation is supported only in monitor mode");
+
+	case PCAP_ERROR_PERM_DENIED:
+		return ("You don't have permission to capture on that device");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);

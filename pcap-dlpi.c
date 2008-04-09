@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.6 2008-04-05 05:25:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.7 2008-04-09 19:58:34 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -342,13 +342,7 @@ pcap_activate_dlpi(pcap_t *p)
 #ifndef HAVE_DEV_DLPI
 	char dname2[100];
 #endif
-
-	if (p->opt.rfmon) {
-		/*
-		 * No monitor mode on any platforms that support DLPI.
-		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
-	}
+	int err = PCAP_ERROR;
 
 	p->fd = -1;	/* indicate that it hasn't been opened yet */
 	p->send_fd = -1;
@@ -368,8 +362,10 @@ pcap_activate_dlpi(pcap_t *p)
 	 * chop off the unit number, so "dname" is just a device type name.
 	 */
 	cp = split_dname(dname, &ppa, p->errbuf);
-	if (cp == NULL)
+	if (cp == NULL) {
+		err = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto bad;
+	}
 	*cp = '\0';
 
 	/*
@@ -385,6 +381,8 @@ pcap_activate_dlpi(pcap_t *p)
 	 */
 	cp = "/dev/dlpi";
 	if ((p->fd = open(cp, O_RDWR)) < 0) {
+		if (errno == EPERM || errno == EACCES)
+			err = PCAP_ERROR_PERM_DENIED;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: %s", cp, pcap_strerror(errno));
 		goto bad;
@@ -410,8 +408,10 @@ pcap_activate_dlpi(pcap_t *p)
 	 * table for the specified device type name and unit number.
 	 */
 	ppa = get_dlpi_ppa(p->fd, dname, ppa, p->errbuf);
-	if (ppa < 0)
+	if (ppa < 0) {
+		err = ppa;
 		goto bad;
+	}
 #else
 	/*
 	 * If the device name begins with "/", assume it begins with
@@ -430,8 +430,10 @@ pcap_activate_dlpi(pcap_t *p)
 	 * type name.
 	 */
 	cp = split_dname(dname, &ppa, p->errbuf);
-	if (cp == NULL)
+	if (cp == NULL) {
+		err = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto bad;
+	}
 
 	/*
 	 * Make a copy of the device pathname, and then remove the unit
@@ -451,10 +453,18 @@ pcap_activate_dlpi(pcap_t *p)
 		/* Try again with unit number */
 		if ((p->fd = open(dname2, O_RDWR)) < 0) {
 			if (errno == ENOENT) {
+				err = PCAP_ERROR_NO_SUCH_DEVICE;
+
 				/*
-				 * We just report "No DLPI device found"
-				 * with the device name, so people don't
-				 * get confused and think, for example,
+				 * We provide an error message even
+				 * for this error, for diagnostic
+				 * purposes (so that, for example,
+				 * the app can show the message if the
+				 * user requests it).
+				 *
+				 * In it, we just report "No DLPI device
+				 * found" with the device name, so people
+				 * don't get confused and think, for example,
 				 * that if they can't capture on "lo0"
 				 * on Solaris the fix is to change libpcap
 				 * (or the application that uses it) to
@@ -469,6 +479,8 @@ pcap_activate_dlpi(pcap_t *p)
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", p->opt.source);
 			} else {
+				if (errno == EACCES)
+					err = PCAP_ERROR_PERM_DENIED;
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 				    dname2, pcap_strerror(errno));
 			}
@@ -491,7 +503,8 @@ pcap_activate_dlpi(pcap_t *p)
 		isatm = 1;
 #endif
 	if (infop->dl_provider_style == DL_STYLE2) {
-		if (dl_doattach(p->fd, ppa, p->errbuf) < 0)
+		err = dl_doattach(p->fd, ppa, p->errbuf);
+		if (err < 0)
 			goto bad;
 #ifdef DL_HP_RAWDLS
 		if (p->send_fd >= 0) {
@@ -499,6 +512,15 @@ pcap_activate_dlpi(pcap_t *p)
 				goto bad;
 		}
 #endif
+	}
+
+	if (p->opt.rfmon) {
+		/*
+		 * This device exists, but we don't support monitor mode
+		 * any platforms that support DLPI.
+		 */
+		err = PCAP_ERROR_RFMON_NOTSUP;
+		goto bad;
 	}
 
 #ifdef HAVE_DLPI_PASSIVE
@@ -732,7 +754,7 @@ bad:
 		close(p->fd);
 	if (p->send_fd >= 0)
 		close(p->send_fd);
-	return (PCAP_ERROR);
+	return (err);
 }
 
 /*
@@ -788,10 +810,13 @@ static int
 dl_doattach(int fd, int ppa, char *ebuf)
 {
 	bpf_u_int32 buf[MAXDLBUF];
+	int err;
 
-	if (dlattachreq(fd, ppa, ebuf) < 0 ||
-	    dlokack(fd, "attach", (char *)buf, ebuf) < 0)
-		return (-1);
+	if (dlattachreq(fd, ppa, ebuf) < 0)
+		return (PCAP_ERROR);
+	err = dlokack(fd, "attach", (char *)buf, ebuf);
+	if (err < 0)
+		return (err);
 	return (0);
 }
 
@@ -931,7 +956,7 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 	if (getmsg(fd, &ctl, (struct strbuf*)NULL, &flags) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s getmsg: %s",
 		    what, pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	dlp = (union DL_primitives *) ctl.buf;
@@ -955,27 +980,33 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s: UNIX error - %s",
 			    what, pcap_strerror(dlp->error_ack.dl_unix_errno));
+			if (dlp->error_ack.dl_unix_errno == EACCES)
+				return (PCAP_ERROR_PERM_DENIED);
 			break;
 
 		default:
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
 			    what, dlstrerror(dlp->error_ack.dl_errno));
+			if (dlp->error_ack.dl_errno == DL_BADPPA)
+				return (PCAP_ERROR_NO_SUCH_DEVICE);
+			else if (dlp->error_ack.dl_errno == DL_ACCESS)
+				return (PCAP_ERROR_PERM_DENIED);
 			break;
 		}
-		return (-1);
+		return (PCAP_ERROR);
 
 	default:
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Unexpected primitive ack %s",
 		    what, dlprim(dlp->dl_primitive));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	if (ctl.len < size) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Ack too small (%d < %d)",
 		    what, ctl.len, size);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	return (ctl.len);
 }
@@ -1401,7 +1432,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 
 	memset((char *)buf, 0, sizeof(buf));
 	if (send_request(fd, (char *)&req, sizeof(req), "hpppa", ebuf) < 0)
-		return (-1);
+		return (PCAP_ERROR);
 
 	ctl.maxlen = DL_HP_PPA_ACK_SIZE;
 	ctl.len = 0;
@@ -1424,7 +1455,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	if (getmsg(fd, &ctl, (struct strbuf *)NULL, &flags) < 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa getmsg: %s", pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	dlp = (dl_hp_ppa_ack_t *)ctl.buf;
@@ -1432,21 +1463,21 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa unexpected primitive ack 0x%x",
 		    (bpf_u_int32)dlp->dl_primitive);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	if (ctl.len < DL_HP_PPA_ACK_SIZE) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
 		     ctl.len, (unsigned long)DL_HP_PPA_ACK_SIZE);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	/* allocate buffer */
 	if ((ppa_data_buf = (char *)malloc(dlp->dl_length)) == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa malloc: %s", pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	ctl.maxlen = dlp->dl_length;
 	ctl.len = 0;
@@ -1456,14 +1487,14 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa getmsg: %s", pcap_strerror(errno));
 		free(ppa_data_buf);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	if (ctl.len < dlp->dl_length) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %d)",
 		    ctl.len, dlp->dl_length);
 		free(ppa_data_buf);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	ap = (dl_hp_ppa_ack_t *)buf;
@@ -1520,7 +1551,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		if (stat(dname, &statbuf) < 0) {
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "stat: %s: %s",
 			    dname, pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 		majdev = major(statbuf.st_rdev);
 
@@ -1537,13 +1568,13 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	if (i == ap->dl_count) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "can't find /dev/dlpi PPA for %s%d", device, unit);
-		return (-1);
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
 	if (ip->dl_hdw_state == HDW_DEAD) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s%d: hardware state: DOWN\n", device, unit);
 		free(ppa_data_buf);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	ppa = ip->dl_ppa;
 	free(ppa_data_buf);

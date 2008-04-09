@@ -26,7 +26,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.1.2.4 2008-04-04 19:39:06 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.1.2.5 2008-04-09 19:58:35 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -102,13 +102,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	int retv;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
-
-	if (p->opt.rfmon) {
-		/*
-		 * No monitor mode on any platforms that support DLPI.
-		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
-	}
+	int err = PCAP_ERROR;
 
 	p->fd = -1;	/* indicate that it hasn't been opened yet */
 
@@ -119,10 +113,24 @@ pcap_activate_libdlpi(pcap_t *p)
 	 */
 	retv = dlpi_open(p->opt.source, &dh, DLPI_RAW|DLPI_PASSIVE);
 	if (retv != DLPI_SUCCESS) {
-		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv, p->errbuf);
-		goto bad;
+		if (retv == DLPI_ELINKNAMEINVAL || retv == DLPI_ENOLINK)
+			err = PCAP_ERROR_NO_SUCH_DEVICE;
+		else if (retv == DLPI_SYSERR && errno == EACCES)
+			err = PCAP_ERROR_PERM_DENIED;
+		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv,
+		    p->errbuf);
+		return (err);
 	}
 	p->dlpi_hd = dh;
+
+	if (p->opt.rfmon) {
+		/*
+		 * This device exists, but we don't support monitor mode
+		 * any platforms that support DLPI.
+		 */
+		err = PCAP_ERROR_RFMON_NOTSUP;
+		goto bad;
+	}
 
 	/* Bind with DLPI_ANY_SAP. */
 	if ((retv = dlpi_bind(p->dlpi_hd, DLPI_ANY_SAP, 0)) != DLPI_SUCCESS) {
@@ -211,7 +219,7 @@ bad:
 	if (p->dlt_list != NULL)
 		free(p->dlt_list);
 	dlpi_close(p->dlpi_hd);
-	return (PCAP_ERROR);
+	return (err);
 }
 
 /*

@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_activate.3pcap,v 1.1.2.1 2008-04-06 03:21:55 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_activate.3pcap,v 1.1.2.2 2008-04-09 19:58:35 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -43,7 +43,10 @@ returns 0 on success,
 .B PCAP_ERROR_ACTIVATED
 if the handle has already been activated,
 .B PCAP_ERROR_NO_SUCH_DEVICE
-if the capture source specified when the handle was created doesn't exist,
+if the capture source specified when the handle was created doesn't
+exist,
+.B PCAP_ERROR_PERM_DENIED
+if the process doesn't have permission to open the capture source,
 .B PCAP_ERROR_RFMON_NOTSUP
 if monitor mode was specified but the capture source doesn't support
 monitor mode, and
