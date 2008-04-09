@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.7 2008-04-06 19:55:33 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.8 2008-04-09 19:58:02 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -226,7 +226,7 @@ struct pcap_addr {
 typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 			     const u_char *);
 
-/* list of known error code for pcap API */
+/* list of known error codes for pcap API */
 #define PCAP_ERROR			-1	/* generic error code */
 #define PCAP_ERROR_BREAK		-2	/* loop terminated by pcap_breakloop */
 #define PCAP_ERROR_NOT_ACTIVATED	-3	/* the capture needs to be activated */
@@ -234,6 +234,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_NO_SUCH_DEVICE	-5	/* no such device exists */
 #define PCAP_ERROR_RFMON_NOTSUP		-6	/* this device doesn't support rfmon (monitor) mode */
 #define PCAP_ERROR_NOT_RFMON		-7	/* operation supported only in monitor mode */
+#define PCAP_ERROR_PERM_DENIED		-8	/* no permission to open the device */
 
 char	*pcap_lookupdev(char *);
 int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);

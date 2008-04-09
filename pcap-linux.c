@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.143 2008-04-07 03:57:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.144 2008-04-09 19:58:02 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -258,7 +258,7 @@ static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 #ifdef HAVE_PF_PACKET_SOCKETS
 static int 	iface_bind(int fd, int ifindex, char *ebuf);
-static int	has_wext(int sock_fd, const char *device);
+static int	has_wext(int sock_fd, const char *device, char *ebuf);
 static int	enter_rfmon_mode_wext(pcap_t *handle, int sock_fd,
     const char *device);
 #endif
@@ -2223,7 +2223,7 @@ iface_bind(int fd, int ifindex, char *ebuf)
  * if the device doesn't even exist.
  */
 static int
-has_wext(int sock_fd, const char *device)
+has_wext(int sock_fd, const char *device, char *ebuf)
 {
 #ifdef IW_MODE_MONITOR
 	struct iwreq ireq;
@@ -2233,6 +2233,8 @@ has_wext(int sock_fd, const char *device)
 	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
 		return 1;	/* yes */
+	snprintf(ebuf, PCAP_ERRBUF_SIZE,
+	    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
 	if (errno == ENODEV)
 		return PCAP_ERROR_NO_SUCH_DEVICE;
 #endif
@@ -2296,7 +2298,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	/*
 	 * Does this device *support* the Wireless Extensions?
 	 */
-	err = has_wext(sock_fd, device);
+	err = has_wext(sock_fd, device, handle->errbuf);
 	if (err <= 0)
 		return err;	/* either it doesn't or the device doesn't even exist */
 	/*
@@ -3027,14 +3029,14 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFHWADDR, &ifr) == -1) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			 "SIOCGIFHWADDR: %s", pcap_strerror(errno));
 		if (errno == ENODEV) {
 			/*
 			 * No such device.
 			 */
 			return PCAP_ERROR_NO_SUCH_DEVICE;
 		}
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			 "SIOCGIFHWADDR: %s", pcap_strerror(errno));
 		return PCAP_ERROR;
 	}
 

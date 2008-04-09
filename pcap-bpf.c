@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.106 2008-04-06 22:15:03 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.107 2008-04-09 19:58:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -195,14 +195,19 @@ bpf_open(pcap_t *p)
 	 * already exist.
 	 */
 	if (bpf_load(p->errbuf) == -1)
-		return (-1);
+		return (PCAP_ERROR);
 #endif
 
 #ifdef HAVE_CLONING_BPF
 	if ((fd = open(device, O_RDWR)) == -1 &&
-	    (errno != EACCES || (fd = open(device, O_RDONLY)) == -1))
+	    (errno != EACCES || (fd = open(device, O_RDONLY)) == -1)) {
+		if (errno == EACCES)
+			fd = PCAP_ERROR_PERM_DENIED;
+		else
+			fd = PCAP_ERROR;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		  "(cannot open device) %s: %s", device, pcap_strerror(errno));
+	}
 #else
 	/*
 	 * Go through all the minors and find one that isn't in use.
@@ -231,9 +236,14 @@ bpf_open(pcap_t *p)
 	/*
 	 * XXX better message for all minors used
 	 */
-	if (fd < 0)
+	if (fd < 0) {
+		if (errno == EACCES)
+			fd = PCAP_ERROR_PERM_DENIED;
+		else
+			fd = PCAP_ERROR;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "(no devices found) %s: %s",
 		    device, pcap_strerror(errno));
+	}
 #endif
 
 	return (fd);
@@ -396,7 +406,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 */
 	fd = bpf_open(p);
 	if (fd < 0)
-		return (PCAP_ERROR);
+		return (fd);
 
 	/*
 	 * Now bind to the device.
@@ -972,6 +982,7 @@ check_setif_failure(pcap_t *p, int error)
 					 * exist.
 					 */
 					err = PCAP_ERROR_NO_SUCH_DEVICE;
+					strcpy(p->errbuf, "");
 				} else {
 					/*
 					 * The underlying "enN" device
@@ -993,6 +1004,7 @@ check_setif_failure(pcap_t *p, int error)
 				 * just report "no such device".
 				 */
 				err = PCAP_ERROR_NO_SUCH_DEVICE;
+				strcpy(p->errbuf, "");
 			}
 			return (err);
 		}
@@ -1000,6 +1012,7 @@ check_setif_failure(pcap_t *p, int error)
 		/*
 		 * No such device.
 		 */
+		strcpy(p->errbuf, "");
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	} else {
 		/*
@@ -1040,7 +1053,7 @@ pcap_activate_bpf(pcap_t *p)
 
 	fd = bpf_open(p);
 	if (fd < 0) {
-		err = PCAP_ERROR;
+		err = fd;
 		goto bad;
 	}
 
@@ -1117,6 +1130,7 @@ pcap_activate_bpf(pcap_t *p)
 							 * exist.
 							 */
 							err = PCAP_ERROR_NO_SUCH_DEVICE;
+							strcpy(p->errbuf, "");
 						} else
 							err = PCAP_ERROR_RFMON_NOTSUP;
 						close(sockfd);
@@ -1127,6 +1141,7 @@ pcap_activate_bpf(pcap_t *p)
 						 * report "no such device".
 						 */
 						err = PCAP_ERROR_NO_SUCH_DEVICE;
+						strcpy(p->errbuf, "");
 					}
 					goto bad;
 				}
