@@ -1,4 +1,4 @@
-CHANGES
+HANGES
 ChmodBPF/ChmodBPF
 ChmodBPF/StartupParameters.plist
 CREDITS
@@ -133,7 +133,6 @@ pcap_dump_file.3pcap
 pcap_dump_flush.3pcap
 pcap_dump_ftell.3pcap
 pcap_dump_open.3pcap
-pcap_errtostr.3pcap
 pcap_file.3pcap
 pcap_fileno.3pcap
 pcap_findalldevs.3pcap
@@ -164,6 +163,7 @@ pcap_setfilter.3pcap
 pcap_setnonblock.3pcap
 pcap_snapshot.3pcap
 pcap_stats.3pcap
+pcap_statustostr.3pcap
 pcap_strerror.3pcap
 pcap-filter.4
 pcap-linktype.4
