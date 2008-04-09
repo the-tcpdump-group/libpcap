@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_activate.3pcap,v 1.1.2.2 2008-04-09 19:58:35 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_activate.3pcap,v 1.1.2.3 2008-04-09 20:20:59 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -61,5 +61,18 @@ or
 may be called with
 .I p
 as an argument to fetch or display the error text.
+If
+.B PCAP_ERROR_NO_SUCH_DEVICE
+or
+.B PCAP_ERROR_PERM_DENIED
+is returned,
+.B pcap_geterr()
+or
+.B pcap_perror()
+may be called with
+.I p
+as an argument to fetch or display an error message giving additional
+details about the error that might be useful for debugging the error if
+it's unexpected.
 .SH SEE ALSO
 pcap(3PCAP)
