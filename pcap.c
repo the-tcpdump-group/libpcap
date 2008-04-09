@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.6 2008-04-09 21:26:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.7 2008-04-09 21:41:53 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -223,19 +223,19 @@ pcap_t *
 pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *errbuf)
 {
 	pcap_t *p;
-	int err;
+	int status;
 
 	p = pcap_create(source, errbuf);
 	if (p == NULL)
 		return (NULL);
-	err = pcap_set_snaplen(p, snaplen);
-	if (err < 0)
+	status = pcap_set_snaplen(p, snaplen);
+	if (status < 0)
 		goto fail;
-	err = pcap_set_promisc(p, promisc);
-	if (err < 0)
+	status = pcap_set_promisc(p, promisc);
+	if (status < 0)
 		goto fail;
-	err = pcap_set_timeout(p, to_ms);
-	if (err < 0)
+	status = pcap_set_timeout(p, to_ms);
+	if (status < 0)
 		goto fail;
 	/*
 	 * Mark this as opened with pcap_open_live(), so that, for
@@ -248,17 +248,17 @@ pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *er
 	 * the adapter is in monitor mode or not.
 	 */
 	p->oldstyle = 1;
-	err = pcap_activate(p);
-	if (err < 0)
+	status = pcap_activate(p);
+	if (status < 0)
 		goto fail;
 	return (p);
 fail:
-	if (err == PCAP_ERROR || err == PCAP_ERROR_NO_SUCH_DEVICE ||
-	    err == PCAP_ERROR_PERM_DENIED)
+	if (status == PCAP_ERROR || status == PCAP_ERROR_NO_SUCH_DEVICE ||
+	    status == PCAP_ERROR_PERM_DENIED)
 		strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
 	else
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
-		    pcap_errtostr(err));
+		    pcap_statustostr(status));
 	pcap_close(p);
 	return (NULL);
 }
@@ -893,14 +893,20 @@ pcap_win32strerror(void)
 #endif
 
 /*
- * Generate error strings for PCAP_ERROR_ values.
+ * Generate error strings for PCAP_ERROR_ and PCAP_WARNING_ values.
  */
 const char *
-pcap_errtostr(int errnum)
+pcap_statustostr(int errnum)
 {
 	static char ebuf[15+10+1];
 
 	switch (errnum) {
+
+	case PCAP_WARNING:
+		return("Generic warning");
+
+	case PCAP_WARNING_PROMISC_NOTSUP:
+		return ("That device doesn't support promiscuous mode");
 
 	case PCAP_ERROR:
 		return("Generic error");

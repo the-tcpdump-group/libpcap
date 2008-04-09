@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_errtostr.3pcap,v 1.1.2.1 2008-04-06 20:03:13 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_statustostr.3pcap,v 1.1.2.1 2008-04-09 21:41:53 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,9 +19,9 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_ERRTOSTR 3PCAP "6 April 2008"
+.TH PCAP_STATUSTOSTR 3PCAP "9 April 2008"
 .SH NAME
-pcap_errtostr \- convert a PCAP_ERROR_ value to a string
+pcap_statustostr \- convert a PCAP_ERROR_ or PCAP_WARNING_ value to a string
 .SH SYNOPSIS
 .nf
 .ft B
@@ -29,13 +29,15 @@ pcap_errtostr \- convert a PCAP_ERROR_ value to a string
 .ft
 .LP
 .ft B
-const char *pcap_errtostr(int error);
+const char *pcap_statustostr(int error);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_errtostr()
+.B pcap_statustostr()
 converts a
 .B PCAP_ERROR_
+or
+.B PCAP_WARNING_
 value returned by a libpcap routine to an error string.
 .SH SEE ALSO
 pcap(3PCAP)
