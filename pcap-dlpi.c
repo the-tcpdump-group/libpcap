@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.123 2008-04-09 19:58:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.124 2008-04-09 21:26:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -342,7 +342,7 @@ pcap_activate_dlpi(pcap_t *p)
 #ifndef HAVE_DEV_DLPI
 	char dname2[100];
 #endif
-	int err = PCAP_ERROR;
+	int status = PCAP_ERROR;
 
 	p->fd = -1;	/* indicate that it hasn't been opened yet */
 	p->send_fd = -1;
@@ -363,7 +363,7 @@ pcap_activate_dlpi(pcap_t *p)
 	 */
 	cp = split_dname(dname, &ppa, p->errbuf);
 	if (cp == NULL) {
-		err = PCAP_ERROR_NO_SUCH_DEVICE;
+		status = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto bad;
 	}
 	*cp = '\0';
@@ -382,7 +382,7 @@ pcap_activate_dlpi(pcap_t *p)
 	cp = "/dev/dlpi";
 	if ((p->fd = open(cp, O_RDWR)) < 0) {
 		if (errno == EPERM || errno == EACCES)
-			err = PCAP_ERROR_PERM_DENIED;
+			status = PCAP_ERROR_PERM_DENIED;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: %s", cp, pcap_strerror(errno));
 		goto bad;
@@ -409,7 +409,7 @@ pcap_activate_dlpi(pcap_t *p)
 	 */
 	ppa = get_dlpi_ppa(p->fd, dname, ppa, p->errbuf);
 	if (ppa < 0) {
-		err = ppa;
+		status = ppa;
 		goto bad;
 	}
 #else
@@ -431,7 +431,7 @@ pcap_activate_dlpi(pcap_t *p)
 	 */
 	cp = split_dname(dname, &ppa, p->errbuf);
 	if (cp == NULL) {
-		err = PCAP_ERROR_NO_SUCH_DEVICE;
+		status = PCAP_ERROR_NO_SUCH_DEVICE;
 		goto bad;
 	}
 
@@ -453,7 +453,7 @@ pcap_activate_dlpi(pcap_t *p)
 		/* Try again with unit number */
 		if ((p->fd = open(dname2, O_RDWR)) < 0) {
 			if (errno == ENOENT) {
-				err = PCAP_ERROR_NO_SUCH_DEVICE;
+				status = PCAP_ERROR_NO_SUCH_DEVICE;
 
 				/*
 				 * We provide an error message even
@@ -480,7 +480,7 @@ pcap_activate_dlpi(pcap_t *p)
 				    "%s: No DLPI device found", p->opt.source);
 			} else {
 				if (errno == EACCES)
-					err = PCAP_ERROR_PERM_DENIED;
+					status = PCAP_ERROR_PERM_DENIED;
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 				    dname2, pcap_strerror(errno));
 			}
@@ -503,8 +503,8 @@ pcap_activate_dlpi(pcap_t *p)
 		isatm = 1;
 #endif
 	if (infop->dl_provider_style == DL_STYLE2) {
-		err = dl_doattach(p->fd, ppa, p->errbuf);
-		if (err < 0)
+		status = dl_doattach(p->fd, ppa, p->errbuf);
+		if (status < 0)
 			goto bad;
 #ifdef DL_HP_RAWDLS
 		if (p->send_fd >= 0) {
@@ -519,7 +519,7 @@ pcap_activate_dlpi(pcap_t *p)
 		 * This device exists, but we don't support monitor mode
 		 * any platforms that support DLPI.
 		 */
-		err = PCAP_ERROR_RFMON_NOTSUP;
+		status = PCAP_ERROR_RFMON_NOTSUP;
 		goto bad;
 	}
 
@@ -615,9 +615,7 @@ pcap_activate_dlpi(pcap_t *p)
 #if !defined(__hpux) && !defined(sinix)
 		if (dlpromisconreq(p->fd, DL_PROMISC_MULTI, p->errbuf) < 0 ||
 		    dlokack(p->fd, "promisc_multi", (char *)buf, p->errbuf) < 0)
-			fprintf(stderr,
-			    "WARNING: DL_PROMISC_MULTI failed (%s)\n",
-			    p->errbuf);
+			status = PCAP_WARNING;
 #endif
 	}
 	/*
@@ -637,8 +635,7 @@ pcap_activate_dlpi(pcap_t *p)
 	    dlokack(p->fd, "promisc_sap", (char *)buf, p->errbuf) < 0)) {
 		/* Not fatal if promisc since the DL_PROMISC_PHYS worked */
 		if (p->opt.promisc)
-			fprintf(stderr,
-			    "WARNING: DL_PROMISC_SAP failed (%s)\n", p->errbuf);
+			status = PCAP_WARNING;
 		else
 			goto bad;
 	}
@@ -706,10 +703,11 @@ pcap_activate_dlpi(pcap_t *p)
 	release = get_release(&osmajor, &osminor, &osmicro);
 	if (osmajor == 5 && (osminor <= 2 || (osminor == 3 && osmicro < 2)) &&
 	    getenv("BUFMOD_FIXED") == NULL) {
-		fprintf(stderr,
-		"WARNING: bufmod is broken in SunOS %s; ignoring snaplen.\n",
+		snprintf(p->errbuf,
+		"WARNING: bufmod is broken in SunOS %s; ignoring snaplen.",
 		    release);
 		ss = 0;
+		status = PCAP_WARNING;
 	}
 #endif
 
@@ -732,6 +730,10 @@ pcap_activate_dlpi(pcap_t *p)
 	if (pcap_alloc_databuf(p) != 0)
 		goto bad;
 
+	/* Success - but perhaps with a warning */
+	if (status < 0)
+		status = 0;
+
 	/*
 	 * "p->fd" is an FD for a STREAMS device, so "select()" and
 	 * "poll()" should work on it.
@@ -748,13 +750,13 @@ pcap_activate_dlpi(pcap_t *p)
 	p->stats_op = pcap_stats_dlpi;
 	p->close_op = pcap_close_dlpi;
 
-	return (0);
+	return (status);
 bad:
 	if (p->fd >= 0)
 		close(p->fd);
 	if (p->send_fd >= 0)
 		close(p->send_fd);
-	return (err);
+	return (status);
 }
 
 /*

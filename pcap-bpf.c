@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.107 2008-04-09 19:58:02 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.108 2008-04-09 21:26:12 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1028,7 +1028,7 @@ check_setif_failure(pcap_t *p, int error)
 static int
 pcap_activate_bpf(pcap_t *p)
 {
-	int err;
+	int status = 0;
 	int fd;
 	struct ifreq ifr;
 	struct bpf_version bv;
@@ -1053,7 +1053,7 @@ pcap_activate_bpf(pcap_t *p)
 
 	fd = bpf_open(p);
 	if (fd < 0) {
-		err = fd;
+		status = fd;
 		goto bad;
 	}
 
@@ -1062,14 +1062,14 @@ pcap_activate_bpf(pcap_t *p)
 	if (ioctl(fd, BIOCVERSION, (caddr_t)&bv) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCVERSION: %s",
 		    pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 	if (bv.bv_major != BPF_MAJOR_VERSION ||
 	    bv.bv_minor < BPF_MINOR_VERSION) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "kernel bpf filter out of date");
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -1102,7 +1102,7 @@ pcap_activate_bpf(pcap_t *p)
 				/*
 				 * 10.3 (Darwin 7.x) or earlier.
 				 */
-				err = PCAP_ERROR_RFMON_NOTSUP;
+				status = PCAP_ERROR_RFMON_NOTSUP;
 				goto bad;
 			}
 			if (osinfo.release[0] == '8' &&
@@ -1129,10 +1129,10 @@ pcap_activate_bpf(pcap_t *p)
 							 * device doesn't
 							 * exist.
 							 */
-							err = PCAP_ERROR_NO_SUCH_DEVICE;
+							status = PCAP_ERROR_NO_SUCH_DEVICE;
 							strcpy(p->errbuf, "");
 						} else
-							err = PCAP_ERROR_RFMON_NOTSUP;
+							status = PCAP_ERROR_RFMON_NOTSUP;
 						close(sockfd);
 					} else {
 						/*
@@ -1140,7 +1140,7 @@ pcap_activate_bpf(pcap_t *p)
 						 * the device exists, so just
 						 * report "no such device".
 						 */
-						err = PCAP_ERROR_NO_SUCH_DEVICE;
+						status = PCAP_ERROR_NO_SUCH_DEVICE;
 						strcpy(p->errbuf, "");
 					}
 					goto bad;
@@ -1150,7 +1150,7 @@ pcap_activate_bpf(pcap_t *p)
 					(void)snprintf(p->errbuf,
 					    PCAP_ERRBUF_SIZE, "malloc: %s",
 					    pcap_strerror(errno));
-					err = PCAP_ERROR;
+					status = PCAP_ERROR;
 					goto bad;
 				}
 				strcpy(wltdev, "wlt");
@@ -1177,7 +1177,7 @@ pcap_activate_bpf(pcap_t *p)
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "BIOCSBLEN: %s: %s", p->opt.source,
 			    pcap_strerror(errno));
-			err = PCAP_ERROR;
+			status = PCAP_ERROR;
 			goto bad;
 		}
 
@@ -1187,7 +1187,7 @@ pcap_activate_bpf(pcap_t *p)
 		(void)strncpy(ifr.ifr_name, p->opt.source,
 		    sizeof(ifr.ifr_name));
 		if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-			err = check_setif_failure(p, errno);
+			status = check_setif_failure(p, errno);
 			goto bad;
 		}
 	} else {
@@ -1217,7 +1217,7 @@ pcap_activate_bpf(pcap_t *p)
 				break;	/* that size worked; we're done */
 
 			if (errno != ENOBUFS) {
-				err = check_setif_failure(p, errno);
+				status = check_setif_failure(p, errno);
 				goto bad;
 			}
 		}
@@ -1226,7 +1226,7 @@ pcap_activate_bpf(pcap_t *p)
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "BIOCSBLEN: %s: No buffer size worked",
 			    p->opt.source);
-			err = PCAP_ERROR;
+			status = PCAP_ERROR;
 			goto bad;
 		}
 	}
@@ -1235,7 +1235,7 @@ pcap_activate_bpf(pcap_t *p)
 	if (ioctl(fd, BIOCGDLT, (caddr_t)&v) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGDLT: %s",
 		    pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -1268,7 +1268,7 @@ pcap_activate_bpf(pcap_t *p)
 		 */
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown interface type %u",
 		    v);
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 #endif
@@ -1301,7 +1301,7 @@ pcap_activate_bpf(pcap_t *p)
 	 * not fatal; we just don't get to use the feature later.
 	 */
 	if (get_dlt_list(fd, v, &bdl, p->errbuf) == -1) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 	p->dlt_count = bdl.bfl_len;
@@ -1386,7 +1386,7 @@ pcap_activate_bpf(pcap_t *p)
 					 * link-layer types, so they
 					 * can't have it.
 					 */
-					err = PCAP_ERROR_RFMON_NOTSUP;
+					status = PCAP_ERROR_RFMON_NOTSUP;
 					goto bad;
 				}
 			}
@@ -1401,8 +1401,8 @@ pcap_activate_bpf(pcap_t *p)
 		/*
 		 * Try to put the interface into monitor mode.
 		 */
-		err = monitor_mode(p, 1);
-		if (err != 0) {
+		status = monitor_mode(p, 1);
+		if (status != 0) {
 			/*
 			 * We failed.
 			 */
@@ -1479,7 +1479,7 @@ pcap_activate_bpf(pcap_t *p)
 	if (ioctl(fd, BIOCSHDRCMPLT, &spoof_eth_src) == -1) {
 		(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "BIOCSHDRCMPLT: %s", pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 #endif
@@ -1496,7 +1496,7 @@ pcap_activate_bpf(pcap_t *p)
 		if (ioctl(p->fd, BIOCSRTIMEOUT, (caddr_t)&to) < 0) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSRTIMEOUT: %s",
 			    pcap_strerror(errno));
-			err = PCAP_ERROR;
+			status = PCAP_ERROR;
 			goto bad;
 		}
 	}
@@ -1553,7 +1553,7 @@ pcap_activate_bpf(pcap_t *p)
 	if (ioctl(p->fd, BIOCIMMEDIATE, &v) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCIMMEDIATE: %s",
 		    pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 #endif	/* BIOCIMMEDIATE */
@@ -1564,13 +1564,14 @@ pcap_activate_bpf(pcap_t *p)
 		if (ioctl(p->fd, BIOCPROMISC, NULL) < 0) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCPROMISC: %s",
 			    pcap_strerror(errno));
+			status = PCAP_WARNING_PROMISC_NOTSUP;
 		}
 	}
 
 	if (ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGBLEN: %s",
 		    pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 	p->bufsize = v;
@@ -1578,7 +1579,7 @@ pcap_activate_bpf(pcap_t *p)
 	if (p->buffer == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 #ifdef _AIX
@@ -1606,7 +1607,7 @@ pcap_activate_bpf(pcap_t *p)
 	if (ioctl(p->fd, BIOCSETF, (caddr_t)&total_prog) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETF: %s",
 		    pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -1668,14 +1669,14 @@ pcap_activate_bpf(pcap_t *p)
 	p->stats_op = pcap_stats_bpf;
 	p->close_op = pcap_close_bpf;
 
-	return (0);
+	return (status);
  bad:
 	(void)close(fd);
 	if (p->buffer != NULL) {
 		free(p->buffer);
 		p->buffer = NULL;
 	}
-	return (err);
+	return (status);
 }
 
 int

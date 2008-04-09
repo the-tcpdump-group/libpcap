@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.8 2008-04-09 19:58:02 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.9 2008-04-09 21:26:12 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -226,7 +226,12 @@ struct pcap_addr {
 typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 			     const u_char *);
 
-/* list of known error codes for pcap API */
+/*
+ * Error codes for the pcap API.
+ * These will all be negative, so you can check for the success or
+ * failure of a call that returns these codes by checking for a
+ * negative value.
+ */
 #define PCAP_ERROR			-1	/* generic error code */
 #define PCAP_ERROR_BREAK		-2	/* loop terminated by pcap_breakloop */
 #define PCAP_ERROR_NOT_ACTIVATED	-3	/* the capture needs to be activated */
@@ -235,6 +240,14 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_RFMON_NOTSUP		-6	/* this device doesn't support rfmon (monitor) mode */
 #define PCAP_ERROR_NOT_RFMON		-7	/* operation supported only in monitor mode */
 #define PCAP_ERROR_PERM_DENIED		-8	/* no permission to open the device */
+
+/*
+ * Warning codes for the pcap API.
+ * These will all be positive and non-zero, so they won't look like
+ * errors.
+ */
+#define PCAP_WARNING			1	/* generic warning code */
+#define PCAP_WARNING_PROMISC_NOTSUP	2	/* this device doesn't support promiscuous mode */
 
 char	*pcap_lookupdev(char *);
 int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
