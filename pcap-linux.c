@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.15 2008-04-09 19:58:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.16 2008-04-09 21:26:37 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -486,7 +486,7 @@ static int
 pcap_activate_linux(pcap_t *handle)
 {
 	const char	*device;
-	int		err;
+	int		status = 0;
 	int		activate_ok = 0;
 
 	device = handle->opt.source;
@@ -513,6 +513,7 @@ pcap_activate_linux(pcap_t *handle)
 			/* Just a warning. */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "Promiscuous mode not supported on the \"any\" device");
+			status = PCAP_WARNING_PROMISC_NOTSUP;
 		}
 
 	} else
@@ -534,7 +535,7 @@ pcap_activate_linux(pcap_t *handle)
 	 * trying both methods with the newer method preferred.
 	 */
 
-	if ((err = activate_new(handle)) == 1) {
+	if ((status = activate_new(handle)) == 1) {
 		activate_ok = 1;
 		/*
 		 * Try to use memory-mapped access.
@@ -542,9 +543,9 @@ pcap_activate_linux(pcap_t *handle)
 		if (activate_mmap(handle) == 1)
 			return 0;	/* we succeeded; nothing more to do */
 	}
-	else if (err == 0) {
+	else if (status == 0) {
 		/* Non-fatal error; try old way */
-		if ((err = activate_old(handle)) == 1)
+		if ((status = activate_old(handle)) == 1)
 			activate_ok = 1;
 	}
 	if (!activate_ok) {
@@ -565,7 +566,7 @@ pcap_activate_linux(pcap_t *handle)
 		    sizeof(handle->opt.buffer_size)) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				 "SO_RCVBUF: %s", pcap_strerror(errno));
-			err = PCAP_ERROR;
+			status = PCAP_ERROR;
 			goto fail;
 		}
 	}
@@ -576,7 +577,7 @@ pcap_activate_linux(pcap_t *handle)
 	if (!handle->buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto fail;
 	}
 
@@ -586,7 +587,7 @@ pcap_activate_linux(pcap_t *handle)
 	 */
 	handle->selectable_fd = handle->fd;
 
-	return 0;
+	return status;
 
 fail:
 	close(handle->fd);
@@ -594,7 +595,7 @@ fail:
 		free(handle->md.device);
 		handle->md.device = NULL;
 	}
-	return err;
+	return status;
 }
 
 /*

@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.5 2008-04-09 19:58:35 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.6 2008-04-09 21:26:37 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -211,12 +211,12 @@ pcap_set_buffer_size(pcap_t *p, int buffer_size)
 int
 pcap_activate(pcap_t *p)
 {
-	int err;
+	int status;
 
-	err = p->activate_op(p);
-	if (err == 0)
+	status = p->activate_op(p);
+	if (status >= 0)
 		p->activated = 1;
-	return (err);
+	return (status);
 }
 
 pcap_t *

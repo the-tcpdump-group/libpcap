@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_activate.3pcap,v 1.1.2.3 2008-04-09 20:20:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_activate.3pcap,v 1.1.2.4 2008-04-09 21:26:37 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -39,7 +39,12 @@ at packets on the network, with the options that were set on the handle
 being in effect.
 .SH RETURN VALUE
 .B pcap_activate()
-returns 0 on success,
+returns 0 on success without warnings,
+.B PCAP_WARNING_PROMISC_NOTSUP
+on success on a device that doesn't support promiscuous mode if
+promiscuous mode was requested,
+.B PCAP_WARNING
+on success with any other warning,
 .B PCAP_ERROR_ACTIVATED
 if the handle has already been activated,
 .B PCAP_ERROR_NO_SUCH_DEVICE
@@ -53,6 +58,8 @@ monitor mode, and
 .B PCAP_ERROR
 if an error occurred.
 If
+.B PCAP_WARNING
+or
 .B PCAP_ERROR
 is returned,
 .B pcap_geterr()
@@ -60,9 +67,11 @@ or
 .B pcap_perror()
 may be called with
 .I p
-as an argument to fetch or display the error text.
+as an argument to fetch or display a message describing the warning or
+error.
 If
-.B PCAP_ERROR_NO_SUCH_DEVICE
+.BR PCAP_WARNING_PROMISC_NOTSUP ,
+.BR PCAP_ERROR_NO_SUCH_DEVICE ,
 or
 .B PCAP_ERROR_PERM_DENIED
 is returned,
@@ -71,8 +80,8 @@ or
 .B pcap_perror()
 may be called with
 .I p
-as an argument to fetch or display an error message giving additional
-details about the error that might be useful for debugging the error if
-it's unexpected.
+as an argument to fetch or display an message giving additional details
+about the problem that might be useful for debugging the problem if it's
+unexpected.
 .SH SEE ALSO
 pcap(3PCAP)
