@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.4 2008-04-08 03:06:18 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.5 2008-04-09 21:17:54 gianluca Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -596,8 +596,6 @@ pcap_activate_win32(pcap_t *p)
 		}
 		
 		PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
-		
-		p->snapshot = snaplen;
 		
 		/* allocate the standard buffer in the driver */
 		if(PacketSetBuff( p->adapter, SIZE_BUF)==FALSE)
