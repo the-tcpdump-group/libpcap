@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.16 2008-04-09 21:26:37 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.17 2008-04-10 01:26:57 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -2795,7 +2795,7 @@ activate_old(pcap_t *handle)
 	if (handle->fd == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "socket: %s", pcap_strerror(errno));
-		return PCAP_ERROR;
+		return PCAP_ERROR_PERM_DENIED;
 	}
 
 	/* It worked - we are using the old interface */
