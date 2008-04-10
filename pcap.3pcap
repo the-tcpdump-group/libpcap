@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3pcap,v 1.1.2.3 2008-04-06 03:21:55 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3pcap,v 1.1.2.4 2008-04-10 01:52:58 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -176,6 +176,89 @@ packets from being dropped.
 .IP
 The buffer size is set with
 .BR pcap_set_buffer_size() .
+.PP
+Reading packets from a network interface may require that you have
+special privileges:
+.TP
+.B Under SunOS 3.x or 4.x with NIT or BPF:
+You must have read access to
+.I /dev/nit
+or
+.IR /dev/bpf* .
+.TP
+.B Under Solaris with DLPI:
+You must have read/write access to the network pseudo device, e.g.
+.IR /dev/le .
+On at least some versions of Solaris, however, this is not sufficient to
+allow
+.I tcpdump
+to capture in promiscuous mode; on those versions of Solaris, you must
+be root, or the application capturing packets
+must be installed setuid to root, in order to capture in promiscuous
+mode.  Note that, on many (perhaps all) interfaces, if you don't capture
+in promiscuous mode, you will not see any outgoing packets, so a capture
+not done in promiscuous mode may not be very useful.
+.IP
+In newer versions of Solaris, you must have been given the
+.B net_rawaccess
+privilege; this is both necessary and sufficient to give you access to the
+network pseudo-device - there is no need to change the privileges on
+that device.  A user can be given that privilege by, for example, adding
+that privilege to the user's
+.B defaultpriv
+key with the
+.B usermod (1M)
+command.
+.TP
+.B Under HP-UX with DLPI:
+You must be root or the application capturing packets must be installed
+setuid to root.
+.TP
+.B Under IRIX with snoop:
+You must be root or the application capturing packets must be installed
+setuid to root.
+.TP
+.B Under Linux:
+You must be root or the application capturing packets must be installed
+setuid to root (unless your distribution has a kernel
+that supports capability bits such as CAP_NET_RAW and code to allow
+those capability bits to be given to particular accounts and to cause
+those bits to be set on a user's initial processes when they log in, in
+which case you  must have CAP_NET_RAW in order to capture and
+CAP_NET_ADMIN to enumerate network devices with, for example, the
+.B \-D
+flag).
+.TP
+.B Under ULTRIX and Digital UNIX/Tru64 UNIX:
+Any user may capture network traffic.
+However, no user (not even the super-user) can capture in promiscuous
+mode on an interface unless the super-user has enabled promiscuous-mode
+operation on that interface using
+.IR pfconfig (8),
+and no user (not even the super-user) can capture unicast traffic
+received by or sent by the machine on an interface unless the super-user
+has enabled copy-all-mode operation on that interface using
+.IR pfconfig ,
+so
+.I useful
+packet capture on an interface probably requires that either
+promiscuous-mode or copy-all-mode operation, or both modes of
+operation, be enabled on that interface.
+.TP
+.B Under BSD (this includes Mac OS X):
+You must have read access to
+.I /dev/bpf*
+on systems that don't have a cloning BPF device, or to
+.I /dev/bpf
+on systems that do.
+On BSDs with a devfs (this includes Mac OS X), this might involve more
+than just having somebody with super-user access setting the ownership
+or permissions on the BPF devices - it might involve configuring devfs
+to set the ownership or permissions every time the system is booted,
+if the system even supports that; if it doesn't support that, you might
+have to find some other way to make that happen at boot time.
+.PP
+Reading a saved packet file doesn't require special privileges.
 .PP
 To open a ``savefile`` to which to write packets, call
 .BR pcap_dump_open() .
