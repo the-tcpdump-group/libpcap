@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.108 2008-04-09 21:26:12 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.109 2008-04-10 03:10:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1077,7 +1077,8 @@ pcap_activate_bpf(pcap_t *p)
 	if (p->md.device == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
 		     pcap_strerror(errno));
-		return PCAP_ERROR;
+		status = PCAP_ERROR;
+		goto bad;
 	}
 
 	/*
@@ -1672,6 +1673,14 @@ pcap_activate_bpf(pcap_t *p)
 	return (status);
  bad:
 	(void)close(fd);
+	if (p->dlt_list != NULL) {
+		free(p->dlt_list);
+		p->dlt_list = NULL;
+	}
+	if (p->md.device != NULL) {
+		free(p->md.device);
+		p->md.device = NULL;
+	}
 	if (p->buffer != NULL) {
 		free(p->buffer);
 		p->buffer = NULL;
