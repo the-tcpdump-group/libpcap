@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.9 2008-04-09 22:02:59 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.10 2008-04-10 00:50:54 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -445,6 +445,8 @@ pcap_activate_dlpi(pcap_t *p)
 	/* Try device without unit number */
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
 		if (errno != ENOENT) {
+			if (errno == EACCES)
+				status = PCAP_ERROR_PERM_DENIED;
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
 			    pcap_strerror(errno));
 			goto bad;
