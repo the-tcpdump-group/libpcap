@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58.2.3 2008-04-04 19:39:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-nit.c,v 1.58.2.4 2008-04-14 20:41:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -320,12 +320,9 @@ pcap_activate_nit(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_nit;
-	p->close_op = pcap_close_common;
 
 	return (0);
  bad:
-	if (fd >= 0)
-		close(fd);
 	return (PCAP_ERROR);
 }
 

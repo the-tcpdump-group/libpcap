@@ -16,7 +16,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-septel.c,v 1.2.2.1 2008-04-04 19:39:06 guy Exp $";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-septel.c,v 1.2.2.2 2008-04-14 20:41:52 guy Exp $";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -58,12 +58,6 @@ static const char rcsid[] _U_ =
 static int septel_setfilter(pcap_t *p, struct bpf_program *fp);
 static int septel_stats(pcap_t *p, struct pcap_stat *ps);
 static int septel_setnonblock(pcap_t *p, int nonblock, char *errbuf);
-
-static void septel_platform_close(pcap_t *p) {
-
-}
-
-
 
 /*
  *  Read at most max_packets from the capture queue and call the callback
@@ -223,7 +217,6 @@ static pcap_t *septel_activate(pcap_t* handle) {
   handle->getnonblock_op = pcap_getnonblock_fd;
   handle->setnonblock_op = septel_setnonblock;
   handle->stats_op = septel_stats;
-  handle->close_op = septel_platform_close;
 
   return 0;
 }

@@ -17,7 +17,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31.2.7 2008-04-08 03:01:05 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.31.2.8 2008-04-14 20:41:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -125,7 +125,7 @@ delete_pcap_dag(pcap_t *p)
  */
 
 static void
-dag_platform_close(pcap_t *p)
+dag_platform_cleanup(pcap_t *p)
 {
 	
 	if (p != NULL) {
@@ -139,10 +139,14 @@ dag_platform_close(pcap_t *p)
 		if(dag_stop(p->fd) < 0)
 			fprintf(stderr,"dag_stop: %s\n", strerror(errno));
 #endif /* HAVE_DAG_STREAMS_API */
-		if(dag_close(p->fd) < 0)
-			fprintf(stderr,"dag_close: %s\n", strerror(errno));
+		if(p->fd != -1) {
+			if(dag_close(p->fd) < 0)
+				fprintf(stderr,"dag_close: %s\n", strerror(errno));
+			p->fd = -1;
+		}
+		delete_pcap_dag(p);
+		pcap_cleanup_live_common(p);
 	}
-	delete_pcap_dag(p);
 	/* Note: don't need to call close(p->fd) here as dag_close(p->fd) does this. */
 }
 
@@ -151,7 +155,7 @@ atexit_handler(void)
 {
 	while (pcap_dags != NULL) {
 		if (pcap_dags->pid == getpid()) {
-			dag_platform_close(pcap_dags->p);
+			dag_platform_cleanup(pcap_dags->p);
 		} else {
 			delete_pcap_dag(pcap_dags->p);
 		}
@@ -783,7 +787,7 @@ static int dag_activate(pcap_t* handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = dag_setnonblock;
 	handle->stats_op = dag_stats;
-	handle->close_op = dag_platform_close;
+	handle->cleanup_op = dag_platform_cleanup;
 	handle->md.stat.ps_drop = 0;
 	handle->md.stat.ps_recv = 0;
 	return 0;
@@ -809,6 +813,7 @@ failclose:
 	delete_pcap_dag(handle);
 
 fail:
+	pcap_cleanup_live_common(handle);
 	if (newDev != NULL) {
 		free((char *)newDev);
 	}

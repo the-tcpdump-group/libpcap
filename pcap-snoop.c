@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.55.2.2 2008-04-07 04:06:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-snoop.c,v 1.55.2.3 2008-04-14 20:41:52 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -205,14 +205,6 @@ pcap_activate_snoop(pcap_t *p)
 	int snooplen;
 	struct ifreq ifr;
 
-	if (p->opt.rfmon) {
-		/*
-		 * No monitor mode on Irix (no Wi-Fi devices on
-		 * hardware supported by Irix).
-		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
-	}
-
 	fd = socket(PF_RAW, SOCK_RAW, RAWPROTO_SNOOP);
 	if (fd < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snoop socket: %s",
@@ -310,6 +302,15 @@ pcap_activate_snoop(pcap_t *p)
 		    "snoop: unknown physical layer type");
 		goto bad;
 	}
+
+	if (p->opt.rfmon) {
+		/*
+		 * No monitor mode on Irix (no Wi-Fi devices on
+		 * hardware supported by Irix).
+		 */
+		return (PCAP_ERROR_RFMON_NOTSUP);
+	}
+
 #ifdef SIOCGIFMTU
 	/*
 	 * XXX - IRIX appears to give you an error if you try to set the
@@ -385,11 +386,9 @@ pcap_activate_snoop(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_snoop;
-	p->close_op = pcap_close_common;
 
 	return (0);
  bad:
-	(void)close(fd);
 	return (PCAP_ERROR);
 }
 

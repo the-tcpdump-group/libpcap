@@ -33,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.9.2.3 2008-04-07 04:06:36 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.9.2.4 2008-04-14 20:41:51 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -155,6 +155,7 @@ bt_activate(pcap_t* handle)
 	int opt;
 	int		dev_id;
 	struct hci_filter	flt;
+	int err = PCAP_ERROR;
 
 	/* get bt interface id */
 	if (sscanf(handle->opt.source, BT_IFACE"%d", &dev_id) != 1)
@@ -178,7 +179,6 @@ bt_activate(pcap_t* handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->stats_op = bt_stats_linux;
-	handle->close_op = bt_close_linux;
 	handle->md.ifindex = dev_id;
 	
 	/* Create HCI socket */
@@ -231,6 +231,14 @@ bt_activate(pcap_t* handle)
 		goto close_fail;
 	}
 
+	if (p->opt.rfmon) {
+		/*
+		 * Monitor mode doesn't apply to Bluetooth devices.
+		 */
+		err = PCAP_ERROR_RFMON_NOTSUP;
+		goto close_fail;
+	}
+
 	if (handle->opt.buffer_size == 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
@@ -248,8 +256,8 @@ bt_activate(pcap_t* handle)
 	return 0;
 
 close_fail:
-	close(handle->fd);
-	return PCAP_ERROR;
+	pcap_cleanup_live_common(p);
+	return err;
 }
 
 static int
@@ -320,14 +328,6 @@ bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
     		"bluetooth devices");
 	return (-1);
 }                           
-
-
-static void
-bt_close_linux(pcap_t* handle)
-{
-	close(handle->fd);
-	free(handle->buffer);
-}
 
 
 static int 

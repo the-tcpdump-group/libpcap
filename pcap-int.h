@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.4 2008-04-04 19:39:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.5 2008-04-14 20:41:52 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -193,7 +193,7 @@ typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
 #endif
-typedef void	(*close_op_t)(pcap_t *);
+typedef void	(*cleanup_op_t)(pcap_t *);
 
 struct pcap {
 #ifdef WIN32
@@ -270,7 +270,7 @@ struct pcap {
 	setmode_op_t setmode_op;
 	setmintocopy_op_t setmintocopy_op;
 #endif
-	close_op_t close_op;
+	cleanup_op_t cleanup_op;
 
 	/*
 	 * Placeholder for filter code if bpf not in kernel.
@@ -391,7 +391,7 @@ pcap_t	*pcap_create_common(const char *, char *);
 int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);
-void	pcap_close_common(pcap_t *);
+void	pcap_cleanup_live_common(pcap_t *);
 int	pcap_not_initialized(pcap_t *);
 int	pcap_check_activated(pcap_t *);
 

@@ -5,7 +5,7 @@
  *  pcap-dos.c: Interface to PKTDRVR, NDIS2 and 32-bit pmode
  *              network drivers.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.2.2.2 2008-04-04 19:39:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.2.2.3 2008-04-14 20:41:51 guy Exp $ (LBL)
  */
 
 #include <stdio.h>
@@ -177,7 +177,7 @@ static int pcap_activate_dos (pcap_t *pcap)
       pcap->snapshot = ETH_MAX;
 
   pcap->linktype          = DLT_EN10MB;  /* !! */
-  pcap->close_op          = pcap_close_dos;
+  pcap->cleanup_op        = pcap_cleanup_dos;
   pcap->read_op           = pcap_read_dos;
   pcap->stats_op          = pcap_stats_dos;
   pcap->inject_op         = pcap_sendpacket_dos;
@@ -430,7 +430,7 @@ u_long pcap_filter_packets (void)
 /*
  * Close pcap device. Not called for offline captures.
  */
-static void pcap_close_dos (pcap_t *p)
+static void pcap_cleanup_dos (pcap_t *p)
 {
   if (p && !exc_occured)
   {
