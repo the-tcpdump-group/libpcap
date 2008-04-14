@@ -33,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.13 2008-04-14 20:40:58 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.14 2008-04-14 21:07:50 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -231,7 +231,7 @@ bt_activate(pcap_t* handle)
 		goto close_fail;
 	}
 
-	if (p->opt.rfmon) {
+	if (handle->opt.rfmon) {
 		/*
 		 * Monitor mode doesn't apply to Bluetooth devices.
 		 */
@@ -256,7 +256,7 @@ bt_activate(pcap_t* handle)
 	return 0;
 
 close_fail:
-	pcap_cleanup_live_common(p);
+	pcap_cleanup_live_common(handle);
 	return err;
 }
 
