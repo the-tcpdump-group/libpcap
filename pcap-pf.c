@@ -24,7 +24,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.96 2008-04-04 19:37:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-pf.c,v 1.97 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -491,12 +491,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_pf;
-	p->close_op = pcap_close_common;
 
 	return (0);
  bad:
-	if (p->fd >= 0)
-		close(p->fd);
 	return (PCAP_ERROR);
 }
 

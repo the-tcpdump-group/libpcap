@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.174 2008-04-06 18:09:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.175 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1094,7 +1094,7 @@ sf_setdirection(pcap_t *p, pcap_direction_t d)
 }
 
 static void
-sf_close(pcap_t *p)
+sf_cleanup(pcap_t *p)
 {
 	if (p->sf.rfile != stdin)
 		(void)fclose(p->sf.rfile);
@@ -1327,7 +1327,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	p->setmode_op = sf_setmode;
 	p->setmintocopy_op = sf_setmintocopy;
 #endif
-	p->close_op = sf_close;
+	p->cleanup_op = sf_cleanup;
 	p->activated = 1;
 
 	return (p);

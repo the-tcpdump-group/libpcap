@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.39 2008-04-09 21:20:26 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.40 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -417,9 +417,8 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 }
 
 static void
-pcap_close_win32(pcap_t *p)
+pcap_cleanup_win32(pcap_t *p)
 {
-	pcap_close_common(p);
 	if (p->adapter != NULL) {
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;
@@ -428,6 +427,7 @@ pcap_close_win32(pcap_t *p)
 		PacketFreePacket(p->Packet);
 		p->Packet = NULL;
 	}
+	pcap_cleanup_live_common(p);
 }
 
 static int
@@ -688,18 +688,11 @@ pcap_activate_win32(pcap_t *p)
 	p->setbuff_op = pcap_setbuff_win32;
 	p->setmode_op = pcap_setmode_win32;
 	p->setmintocopy_op = pcap_setmintocopy_win32;
-	p->close_op = pcap_close_win32;
+	p->cleanup_op = pcap_cleanup_win32;
 
 	return (0);
 bad:
-	if (p->adapter)
-	    PacketCloseAdapter(p->adapter);
-	if (p->buffer != NULL) {
-		free(p->buffer);
-		p->buffer = NULL;
-	}
-	if(p->Packet)
-		PacketFreePacket(p->Packet);
+	pcap_cleanup_win32(p);
 	return (PCAP_ERROR);
 }
 

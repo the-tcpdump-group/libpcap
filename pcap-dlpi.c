@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.126 2008-04-10 00:50:34 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.127 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -314,11 +314,13 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 #endif /* HAVE_SOLARIS */
 
 static void
-pcap_close_dlpi(pcap_t *p)
+pcap_cleanup_dlpi(pcap_t *p)
 {
-	pcap_close_common(p);
-	if (p->send_fd >= 0)
+	if (p->send_fd >= 0) {
 		close(p->send_fd);
+		p->send_fd = -1;
+	}
+	pcap_cleanup_live_common(p);
 }
 
 static int
@@ -343,9 +345,6 @@ pcap_activate_dlpi(pcap_t *p)
 	char dname2[100];
 #endif
 	int status = PCAP_ERROR;
-
-	p->fd = -1;	/* indicate that it hasn't been opened yet */
-	p->send_fd = -1;
 
 #ifdef HAVE_DEV_DLPI
 	/*
@@ -750,14 +749,11 @@ pcap_activate_dlpi(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_dlpi;
-	p->close_op = pcap_close_dlpi;
+	p->cleanup_op = pcap_cleanup_dlpi;
 
 	return (status);
 bad:
-	if (p->fd >= 0)
-		close(p->fd);
-	if (p->send_fd >= 0)
-		close(p->send_fd);
+	pcap_cleanup_dlpi(p);
 	return (status);
 }
 
@@ -1685,6 +1681,8 @@ pcap_create(const char *device, char *ebuf)
 	p = pcap_create_common(device, ebuf);
 	if (p == NULL)
 		return (NULL);
+
+	p->send_fd = -1;	/* it hasn't been opened yet */
 
 	p->activate_op = pcap_activate_dlpi;
 	return (p);

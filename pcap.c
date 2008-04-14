@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.119 2008-04-09 21:39:21 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.120 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -108,6 +108,9 @@ pcap_create_common(const char *source, char *ebuf)
 		return (NULL);
 	}
 	memset(p, 0, sizeof(*p));
+#ifndef WIN32
+	p->fd = -1;	/* not opened yet */
+#endif 
 
 	p->opt.source = strdup(source);
 	if (p->opt.source == NULL) {
@@ -142,7 +145,7 @@ pcap_create_common(const char *source, char *ebuf)
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
 #endif
-	p->close_op = (close_op_t)pcap_close_common;
+	p->cleanup_op = pcap_cleanup_live_common;
 
 	/* put in some defaults*/
 	pcap_set_timeout(p, 0);
@@ -1127,20 +1130,28 @@ pcap_remove_from_pcaps_to_close(pcap_t *p)
 }
 
 void
-pcap_close_common(pcap_t *p)
+pcap_cleanup_live_common(pcap_t *p)
 {
-	if (p->buffer != NULL)
+	if (p->buffer != NULL) {
 		free(p->buffer);
-	if (p->opt.source != NULL);
-		free(p->opt.source);
+		p->buffer = NULL;
+	}
+	if (p->dlt_list != NULL) {
+		free(p->dlt_list);
+		p->dlt_list = NULL;
+		p->dlt_count = 0;
+	}
+	pcap_freecode(&p->fcode);
 #if !defined(WIN32) && !defined(MSDOS)
-	if (p->fd >= 0)
+	if (p->fd >= 0) {
 		close(p->fd);
+		p->fd = -1;
+	}
 #endif
 }
 
 static void
-pcap_close_dead(pcap_t *p _U_)
+pcap_cleanup_dead(pcap_t *p _U_)
 {
 	/* Nothing to do. */
 }
@@ -1162,7 +1173,7 @@ pcap_open_dead(int linktype, int snaplen)
 	p->setmode_op = pcap_setmode_dead;
 	p->setmintocopy_op = pcap_setmintocopy_dead;
 #endif
-	p->close_op = pcap_close_dead;
+	p->cleanup_op = pcap_cleanup_dead;
 	p->activated = 1;
 	return p;
 }
@@ -1194,10 +1205,9 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 void
 pcap_close(pcap_t *p)
 {
-	p->close_op(p);
-	if (p->dlt_list != NULL)
-		free(p->dlt_list);
-	pcap_freecode(&p->fcode);
+	if (p->opt.source != NULL)
+		free(p->opt.source);
+	p->cleanup_op(p);
 	free(p);
 }
 

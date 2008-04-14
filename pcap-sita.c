@@ -344,7 +344,7 @@ static void close_with_IOP(int chassis, int geoslot, int flag) {
 	}
 }
 
-static void pcap_close_acn(pcap_t *handle) {
+static void pcap_cleanup_acn(pcap_t *handle) {
 	int		chassis, geoslot;
 	unit_t	*u;
 
@@ -353,6 +353,7 @@ static void pcap_close_acn(pcap_t *handle) {
 	close_with_IOP(chassis, geoslot, LIVE);
 	if (u)
 		u->first_time = 0;
+	pcap_cleanup_live_common(handle);
 }
 
 static void send_to_fd(int fd, int len, unsigned char *str) {
@@ -936,7 +937,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->close_op = pcap_close_acn;
+	handle->cleanup_op = pcap_cleanup_acn;
 	handle->read_op = pcap_read_acn;
 	handle->stats_op = pcap_stats_acn;
 
@@ -954,7 +955,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 	if (!handle->buffer) {
 	        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
-		pcap_close_acn(handle);
+		pcap_cleanup_acn(handle);
 		return PCAP_ERROR;
 	}
 

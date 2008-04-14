@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.22 2008-04-04 19:37:45 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.23 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -126,8 +126,7 @@ static int usb_read_linux_mmap(pcap_t *, int , pcap_handler , u_char *);
 static int usb_inject_linux(pcap_t *, const void *, size_t);
 static int usb_setfilter_linux(pcap_t *, struct bpf_program *);
 static int usb_setdirection_linux(pcap_t *, pcap_direction_t);
-static void usb_close_linux(pcap_t *);
-static void usb_close_linux_mmap(pcap_t *);
+static void usb_cleanup_linux_mmap(pcap_t *);
 
 /* facility to add an USB device to the device list*/
 static int 
@@ -213,14 +212,13 @@ usb_activate(pcap_t* handle)
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->close_op = usb_close_linux;
 
 	/*get usb bus index from device name */
 	if (sscanf(handle->opt.source, USB_IFACE"%d", &handle->md.ifindex) != 1)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't get USB bus index from %s", handle->opt.source);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/*now select the read method: try to open binary interface */
@@ -228,11 +226,18 @@ usb_activate(pcap_t* handle)
 	handle->fd = open(full_path, O_RDONLY, 0);
 	if (handle->fd >= 0)
 	{
+		if (p->opt.rfmon) {
+			/*
+			 * Monitor mode doesn't apply to USB devices.
+			 */
+			return PCAP_ERROR_RFMON_NOTSUP;
+		}
+
 		/* binary api is available, try to use fast mmap access */
 		if (usb_mmap(handle)) {
 			handle->stats_op = usb_stats_linux_bin;
 			handle->read_op = usb_read_linux_mmap;
-			handle->close_op = usb_close_linux_mmap;
+			handle->cleanup_op = usb_cleanup_linux_mmap;
 
 			/*
 			 * "handle->fd" is a real file, so "select()" and
@@ -255,10 +260,17 @@ usb_activate(pcap_t* handle)
 			/* no more fallback, give it up*/
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't open USB bus file %s: %s", full_path, strerror(errno));
-			return -1;
+			return PCAP_ERROR;
 		}
 		handle->stats_op = usb_stats_linux;
 		handle->read_op = usb_read_linux;
+	}
+
+	if (p->opt.rfmon) {
+		/*
+		 * Monitor mode doesn't apply to USB devices.
+		 */
+		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
 	/*
@@ -273,8 +285,7 @@ usb_activate(pcap_t* handle)
 	if (!handle->buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
-		close(handle->fd);
-		return -1;
+		return PCAP_ERROR;
 	}
 	return 0;
 }
@@ -488,15 +499,6 @@ usb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
 		"USB devices");
 	return (-1);
-}
-
-static void
-usb_close_linux(pcap_t* handle)
-{
-	/* handle fill be freed in pcap_close() 'common' code */
-	close(handle->fd);
-	if (handle->buffer)
-		free(handle->buffer);
 }
 
 static int 
@@ -719,9 +721,10 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 }
 
 static void
-usb_close_linux_mmap(pcap_t* handle)
+usb_cleanup_linux_mmap(pcap_t* handle)
 {
-	/* handle will be freed in pcap_close() 'common' code, buffer must not
-	 * be freed because it's memory mapped */
-	close(handle->fd);
+	/* buffer must not be freed because it's memory mapped */
+	/* XXX - does it need to be unmapped? */
+	handle->buffer = NULL;
+	pcap_cleanup_live_common(handle);
 }

@@ -26,7 +26,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.5 2008-04-09 19:58:02 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.6 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -103,8 +103,6 @@ pcap_activate_libdlpi(pcap_t *p)
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
 	int err = PCAP_ERROR;
-
-	p->fd = -1;	/* indicate that it hasn't been opened yet */
 
 	/*
 	 * Enable Solaris raw and passive DLPI extensions;
@@ -211,14 +209,11 @@ pcap_activate_libdlpi(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_dlpi;
-	p->close_op = pcap_close_libdlpi;
+	p->cleanup_op = pcap_cleanup_libdlpi;
 
 	return (0);
 bad:
-	/* Get rid of any link-layer type list we allocated. */
-	if (p->dlt_list != NULL)
-		free(p->dlt_list);
-	dlpi_close(p->dlpi_hd);
+	pcap_cleanup_libdlpi(p);
 	return (err);
 }
 
@@ -338,13 +333,17 @@ pcap_inject_libdlpi(pcap_t *p, const void *buf, size_t size)
 }
 
 /*
- * Close dlpi handle and deallocate data buffer.
+ * Close dlpi handle.
  */
 static void
-pcap_close_libdlpi(pcap_t *p)
+pcap_cleanup_libdlpi(pcap_t *p)
 {
-	dlpi_close(p->dlpi_hd);
-	free(p->buffer);
+	if (p->dlpi_hd != NULL) {
+		dlpi_close(p->dlpi_hd);
+		p->dlpi_hd = NULL;
+		p->fd = -1;
+	}
+	pcap_cleanup_live_common(p);
 }
 
 /*

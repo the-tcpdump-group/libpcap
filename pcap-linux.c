@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.146 2008-04-10 01:26:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.147 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -234,14 +234,14 @@ static int pcap_inject_linux(pcap_t *, const void *, size_t);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
-static void pcap_close_linux(pcap_t *);
+static void pcap_cleanup_linux(pcap_t *);
 
 #ifdef HAVE_PACKET_RING
 #define RING_GET_FRAME(h) (((struct tpacket_hdr**)h->buffer)[h->offset])
 
 static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle);
-static void pcap_close_linux_mmap(pcap_t *);
+static void pcap_cleanup_linux_mmap(pcap_t *);
 static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
 static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
 static int pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf);
@@ -383,7 +383,7 @@ pcap_can_set_rfmon_linux(pcap_t *p)
  * Even with newer kernels, we have the same issue with rfmon mode.
  */
 
-static void	pcap_close_linux( pcap_t *handle )
+static void	pcap_cleanup_linux( pcap_t *handle )
 {
 	struct ifreq	ifr;
 #ifdef IW_MODE_MONITOR
@@ -471,7 +471,7 @@ static void	pcap_close_linux( pcap_t *handle )
 		free(handle->md.device);
 		handle->md.device = NULL;
 	}
-	pcap_close_common(handle);
+	pcap_cleanup_live_common(p);
 }
 
 /*
@@ -497,7 +497,7 @@ pcap_activate_linux(pcap_t *handle)
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->close_op = pcap_close_linux;
+	handle->cleanup_op = pcap_cleanup_linux;
 	handle->read_op = pcap_read_linux;
 	handle->stats_op = pcap_stats_linux;
 
@@ -590,11 +590,7 @@ pcap_activate_linux(pcap_t *handle)
 	return status;
 
 fail:
-	close(handle->fd);
-	if (handle->md.device != NULL) {
-		free(handle->md.device);
-		handle->md.device = NULL;
-	}
+	pcap_cleanup_linux(handle);
 	return status;
 }
 
@@ -1824,7 +1820,7 @@ activate_mmap(pcap_t *handle)
 	 * handle->offset is used to get the current position into the rx ring 
 	 * handle->cc is used to store the ring size */
 	handle->read_op = pcap_read_linux_mmap;
-	handle->close_op = pcap_close_linux_mmap;
+	handle->cleanup_op = pcap_cleanup_linux_mmap;
 	handle->setfilter_op = pcap_setfilter_linux_mmap;
 	handle->setnonblock_op = pcap_setnonblock_mmap;
 	handle->getnonblock_op = pcap_getnonblock_mmap;
@@ -1942,19 +1938,13 @@ destroy_ring(pcap_t *handle)
 		munmap(handle->bp, block_size * handle->cc / frames_per_block);
 		handle->bp = 0;
 	}
-
-	/* if the header ring is allocated, clear it*/
-	if (handle->buffer) {
-		free(handle->buffer);
-		handle->buffer = 0;
-	}
 }
 
 static void
-pcap_close_linux_mmap( pcap_t *handle )
+pcap_cleanup_linux_mmap( pcap_t *handle )
 {
 	destroy_ring(handle);
-	pcap_close_linux(handle);
+	pcap_cleanup_linux(handle);
 }
 
 

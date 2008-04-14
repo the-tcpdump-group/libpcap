@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.109 2008-04-10 03:10:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.110 2008-04-14 20:40:58 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -870,7 +870,7 @@ bpf_load(char *errbuf)
  * Turn off rfmon mode if necessary.
  */
 static void
-pcap_close_bpf(pcap_t *p)
+pcap_cleanup_bpf(pcap_t *p)
 {
 #ifdef HAVE_BSD_IEEE80211
 	int sock;
@@ -939,12 +939,14 @@ pcap_close_bpf(pcap_t *p)
 		 * have to take the interface out of some mode.
 		 */
 		pcap_remove_from_pcaps_to_close(p);
+		p->md.must_clear = 0;
 	}
 
-	if (p->md.device != NULL)
+	if (p->md.device != NULL) {
 		free(p->md.device);
-	p->md.device = NULL;
-	pcap_close_common(p);
+		p->md.device = NULL;
+	}
+	pcap_cleanup_live_common(p);
 }
 
 static int
@@ -1561,7 +1563,7 @@ pcap_activate_bpf(pcap_t *p)
 #endif	/* _AIX */
 
 	if (p->opt.promisc) {
-		/* set promiscuous mode, okay if it fails */
+		/* set promiscuous mode, just warn if it fails */
 		if (ioctl(p->fd, BIOCPROMISC, NULL) < 0) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCPROMISC: %s",
 			    pcap_strerror(errno));
@@ -1668,23 +1670,11 @@ pcap_activate_bpf(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_fd;
 	p->setnonblock_op = pcap_setnonblock_fd;
 	p->stats_op = pcap_stats_bpf;
-	p->close_op = pcap_close_bpf;
+	p->cleanup_op = pcap_cleanup_bpf;
 
 	return (status);
  bad:
-	(void)close(fd);
-	if (p->dlt_list != NULL) {
-		free(p->dlt_list);
-		p->dlt_list = NULL;
-	}
-	if (p->md.device != NULL) {
-		free(p->md.device);
-		p->md.device = NULL;
-	}
-	if (p->buffer != NULL) {
-		free(p->buffer);
-		p->buffer = NULL;
-	}
+ 	pcap_cleanup_bpf(p);
 	return (status);
 }
 
