@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.18 2008-04-14 20:41:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.19 2008-04-14 21:05:03 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -471,7 +471,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		free(handle->md.device);
 		handle->md.device = NULL;
 	}
-	pcap_cleanup_live_common(p);
+	pcap_cleanup_live_common(handle);
 }
 
 /*
