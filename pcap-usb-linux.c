@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.7 2008-04-14 20:41:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.8 2008-04-14 21:06:29 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -226,7 +226,7 @@ usb_activate(pcap_t* handle)
 	handle->fd = open(full_path, O_RDONLY, 0);
 	if (handle->fd >= 0)
 	{
-		if (p->opt.rfmon) {
+		if (handle->opt.rfmon) {
 			/*
 			 * Monitor mode doesn't apply to USB devices.
 			 */
@@ -266,7 +266,7 @@ usb_activate(pcap_t* handle)
 		handle->read_op = usb_read_linux;
 	}
 
-	if (p->opt.rfmon) {
+	if (handle->opt.rfmon) {
 		/*
 		 * Monitor mode doesn't apply to USB devices.
 		 */
