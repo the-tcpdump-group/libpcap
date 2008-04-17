@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.76 2008-04-17 18:56:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.77 2008-04-17 19:09:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -392,7 +392,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	 */
 	memset(&ifrdesc, 0, sizeof ifrdesc);
 	strlcpy(ifrdesc.ifr_name, name, sizeof ifrdesc.ifr_name);
-	ifrdesc.ifr_data = (caddr_t)&ifrdesc;
+	ifrdesc.ifr_data = (caddr_t)&ifdescr;
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s >= 0) {
 		if (ioctl(s, SIOCGIFDESCR, &ifrdesc) == 0 &&
