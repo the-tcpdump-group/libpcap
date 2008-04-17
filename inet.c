@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.75 2007-06-11 10:04:25 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.76 2008-04-17 18:56:51 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -378,9 +378,32 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
     char *errbuf)
 {
 	pcap_if_t *curdev;
+	char *description = NULL;
 	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
+#ifdef SIOCGIFDESCR
+	struct ifreq ifrdesc;
+	char ifdescr[IFDESCRSIZE];
+	int s;
+#endif
 
-	if (add_or_find_if(&curdev, alldevs, name, flags, NULL, errbuf) == -1) {
+#ifdef SIOCGIFDESCR
+	/*
+	 * Get the description for the interface.
+	 */
+	memset(&ifrdesc, 0, sizeof ifrdesc);
+	strlcpy(ifrdesc.ifr_name, name, sizeof ifrdesc.ifr_name);
+	ifrdesc.ifr_data = (caddr_t)&ifrdesc;
+	s = socket(AF_INET, SOCK_DGRAM, 0);
+	if (s >= 0) {
+		if (ioctl(s, SIOCGIFDESCR, &ifrdesc) == 0 &&
+		    strlen(ifrdesc.ifr_data) != 0)
+			description = ifrdesc.ifr_data;
+		close(s);
+	}
+#endif
+
+	if (add_or_find_if(&curdev, alldevs, name, flags, description,
+	    errbuf) == -1) {
 		/*
 		 * Error - give up.
 		 */
