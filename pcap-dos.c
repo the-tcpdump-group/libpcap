@@ -5,7 +5,7 @@
  *  pcap-dos.c: Interface to PKTDRVR, NDIS2 and 32-bit pmode
  *              network drivers.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.5 2008-04-14 20:40:58 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.6 2008-04-19 17:49:21 guy Exp $ (LBL)
  */
 
 #include <stdio.h>
@@ -97,10 +97,10 @@ static volatile BOOL exc_occured = 0;
 
 static struct device *handle_to_device [20];
 
-static void pcap_activate_dos (pcap_t *p);
+static int  pcap_activate_dos (pcap_t *p);
 static int  pcap_read_dos (pcap_t *p, int cnt, pcap_handler callback,
                            u_char *data);
-static void pcap_close_dos (pcap_t *p);
+static void pcap_cleanup_dos (pcap_t *p);
 static int  pcap_stats_dos (pcap_t *p, struct pcap_stat *ps);
 static int  pcap_sendpacket_dos (pcap_t *p, const void *buf, size_t len);
 static int  pcap_setfilter_dos (pcap_t *p, struct bpf_program *fp);
@@ -161,9 +161,7 @@ pcap_t *pcap_create (const char *device, char *ebuf)
  */
 static int pcap_activate_dos (pcap_t *pcap)
 { 
-  int err = 0;
-
-  if (p->opt.rfmon) {
+  if (pcap->opt.rfmon) {
     /*
      * No monitor mode on DOS.
      */
@@ -187,24 +185,22 @@ static int pcap_activate_dos (pcap_t *pcap)
 
   if (pcap->fd == 1)  /* first time we're called */
   {
-    if (!init_watt32(pcap, pcap->md.device, pcap->errbuf) ||
-        !first_init(pcap->md.device, pcap->errbuf, pcap->opt.promisc))
+    if (!init_watt32(pcap, pcap->opt.source, pcap->errbuf) ||
+        !first_init(pcap->opt.source, pcap->errbuf, pcap->opt.promisc))
     {
-      free (pcap);
       return (PCAP_ERROR);
     } 
     atexit (close_driver);
   }
-  else if (stricmp(active_dev->name,pcap->md.device))
+  else if (stricmp(active_dev->name,pcap->opt.source))
   {
     snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
               "Cannot use different devices simultaneously "
-              "(`%s' vs. `%s')", active_dev->name, pcap->md.device);
-    free (pcap);
-    err = PCAP_ERROR;
+              "(`%s' vs. `%s')", active_dev->name, pcap->opt.source);
+    return (PCAP_ERROR);
   }
   handle_to_device [pcap->fd-1] = active_dev;
-  return (err);
+  return (0);
 }
 
 /*
@@ -743,7 +739,7 @@ static void exc_handler (int sig)
          fprintf (stderr, "Catching signal %d.\n", sig);
   }
   exc_occured = 1;
-  pcap_close_dos (NULL);
+  pcap_cleanup_dos (NULL);
 }
 #endif  /* __DJGPP__ */
 
