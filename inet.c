@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.75.2.3 2008-04-17 19:17:27 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/inet.c,v 1.75.2.4 2008-04-20 18:19:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -371,7 +371,24 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
  * set with another ioctl that ifconfig supports; we use that to get
  * the description in OpenBSD.
  *
- * Do any other UN*Xes support getting a description?
+ * In OS X, the System Configuration framework can apparently return
+ * names in 10.4 and later; it also appears that freedesktop.org's HAL
+ * offers an "info.product" string, but the HAL specification says
+ * it "should not be used in any UI" and "subsystem/capability
+ * specific properties" should be used instead.  Using that would
+ * require that libpcap applications be linked with the frameworks/
+ * libraries in question, which would be a bit of a pain unless we
+ * offer, for example, a pkg-config:
+ *
+ *	http://pkg-config.freedesktop.org/wiki/
+ *
+ * script, so applications can just use that script to find out what
+ * libraries you need to link with when linking with libpcap.
+ * pkg-config is GPLed; I don't know whether that would prevent its
+ * use with a BSD-licensed library such as libpcap.
+ *
+ * Do any other UN*Xes, or desktop environments support getting a
+ * description?
  */
 int
 add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
