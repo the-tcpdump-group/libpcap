@@ -1,11 +1,11 @@
 /*
  *  This file is part of DOS-libpcap
- *  Ported to DOS/DOSX by G. Vanem <giva@bgnett.no>
+ *  Ported to DOS/DOSX by G. Vanem <gvanem@broadpark.no>
  *
  *  pcap-dos.c: Interface to PKTDRVR, NDIS2 and 32-bit pmode
  *              network drivers.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.2.2.4 2008-04-19 17:49:37 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-dos.c,v 1.2.2.5 2008-04-22 17:16:49 guy Exp $ (LBL)
  */
 
 #include <stdio.h>
@@ -996,7 +996,7 @@ int EISA_bus = 0;  /* Where is natural place for this? */
  * Application config hooks to set various driver parameters.
  */
 
-static struct config_table debug_tab[] = {
+static const struct config_table debug_tab[] = {
             { "PKT.DEBUG",       ARG_ATOI,   &pcap_pkt_debug    },
             { "PKT.VECTOR",      ARG_ATOX_W, NULL               },
             { "NDIS.DEBUG",      ARG_ATOI,   NULL               },
