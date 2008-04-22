@@ -21,7 +21,6 @@
 #include <string.h>
 #include <dos.h>
 
-#include "gnuc.h"
 #include "pcap-dos.h"
 #include "pcap-int.h"
 #include "msdos/pktdrvr.h"
@@ -61,7 +60,7 @@
 
 
 #if (DOSX & (DJGPP|DOS4GW))
-  #include <sys/packon.h>
+  #include <sys/pack_on.h>
 
   struct DPMI_regs {
          DWORD  r_di;
@@ -91,7 +90,7 @@
           WORD       _fanIndex;
           BYTE       _PktReceiver[15]; /* starts on a paragraph (16byte) */
         } PktRealStub;
-  #include <sys/packoff.h>
+  #include <sys/pack_off.h>
 
   static BYTE real_stub_array [] = {
          #include "pkt_stub.inc"       /* generated opcode array */
