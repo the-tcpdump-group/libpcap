@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1999 - 2005 NetGroup, Politecnico di Torino (Italy)
- * Copyright (c) 2005 - 2007 CACE Technologies, Davis (California)
+ * Copyright (c) 2005 - 2008 CACE Technologies, Davis (California)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.6 2008-04-14 20:41:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.7 2008-04-25 20:01:55 gianluca Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -57,8 +57,11 @@ static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
 static int pcap_getnonblock_win32(pcap_t *, char *);
 static int pcap_setnonblock_win32(pcap_t *, int, char *);
 
-#define	PcapBufSize 256000	/*dimension of the buffer in the pcap_t structure*/
-#define	SIZE_BUF 1000000
+/*dimension of the buffer in the pcap_t structure*/
+#define	WIN32_DEFAULT_USER_BUFFER_SIZE 256000
+
+/*dimension of the buffer in the kernel driver NPF */
+#define	WIN32_DEFAULT_KERNEL_BUFFER_SIZE 1000000
 
 /* Equivalent to ntohs(), but a lot faster under Windows */
 #define SWAPS(_X) ((_X & 0xff) << 8) | (_X >> 8)
@@ -562,7 +565,7 @@ pcap_activate_win32(pcap_t *p)
 	}
 
 	/* Set the buffer size */
-	p->bufsize = PcapBufSize;
+	p->bufsize = WIN32_DEFAULT_USER_BUFFER_SIZE;
 
 	/* allocate Packet structure used during the capture */
 	if((p->Packet = PacketAllocatePacket())==NULL)
@@ -578,17 +581,18 @@ pcap_activate_win32(pcap_t *p)
 	 */
 		/*
 		 * If the buffer size wasn't explicitly set, default to
-		 * SIZE_BUF.
+		 * WIN32_DEFAULT_USER_BUFFER_SIZE.
 		 */
 	 	if (p->opt.buffer_size == 0)
-	 		p->opt.buffer_size = SIZE_BUF;
+	 		p->opt.buffer_size = WIN32_DEFAULT_KERNEL_BUFFER_SIZE;
+
 		if(PacketSetBuff(p->adapter,p->opt.buffer_size)==FALSE)
 		{
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
 			goto bad;
 		}
 		
-		p->buffer = (u_char *)malloc(PcapBufSize);
+		p->buffer = (u_char *)malloc(p->bufsize);
 		if (p->buffer == NULL) 
 		{
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
@@ -597,17 +601,10 @@ pcap_activate_win32(pcap_t *p)
 		
 		PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
 		
-		/* allocate the standard buffer in the driver */
-		if(PacketSetBuff( p->adapter, SIZE_BUF)==FALSE)
-		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"driver error: not enough memory to allocate the kernel buffer\n");
-			goto bad;
-		}
-		
 		/* tell the driver to copy the buffer only if it contains at least 16K */
 		if(PacketSetMinToCopy(p->adapter,16000)==FALSE)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s\n", pcap_win32strerror());
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s", pcap_win32strerror());
 			goto bad;
 		}
 	}
