@@ -149,6 +149,7 @@ pcap_lookupnet.3pcap
 pcap_loop.3pcap
 pcap_major_version.3pcap
 pcap_next_ex.3pcap
+pcap_offline_filter.3pcap
 pcap_open_dead.3pcap
 pcap_open_live.3pcap
 pcap_open_offline.3pcap
