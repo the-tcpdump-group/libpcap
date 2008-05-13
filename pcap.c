@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.8 2008-04-14 20:41:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.9 2008-05-13 15:20:44 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1209,6 +1209,24 @@ pcap_close(pcap_t *p)
 		free(p->opt.source);
 	p->cleanup_op(p);
 	free(p);
+}
+
+/*
+ * Given a BPF program, a pcap_pkthdr structure for a packet, and the raw
+ * data for the packet, check whether the packet passes the filter.
+ * Returns the return value of the filter program, which will be zero if
+ * the packet doesn't pass and non-zero if the packet does pass.
+ */
+int
+pcap_offline_filter(struct bpf_program *fp, const struct pcap_pkthdr *h,
+    const u_char *pkt)
+{
+	struct bpf_insn *fcode = fp->bf_insns;
+
+	if (fcode != NULL) 
+		return (bpf_filter(fcode, pkt, h->len, h->caplen));
+	else
+		return (0);
 }
 
 /*

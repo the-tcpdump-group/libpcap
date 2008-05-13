@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.6 2008-04-09 21:41:53 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.7 2008-05-13 15:20:44 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -288,6 +288,8 @@ int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 int	pcap_compile_nopcap(int, int, struct bpf_program *,
 	    const char *, int, bpf_u_int32);
 void	pcap_freecode(struct bpf_program *);
+int	pcap_offline_filter(struct bpf_program *, const struct pcap_pkthdr *,
+	    const u_char *);
 int	pcap_datalink(pcap_t *);
 int	pcap_datalink_ext(pcap_t *);
 int	pcap_list_datalinks(pcap_t *, int **);
