@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.7 2008-04-25 20:01:55 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-win32.c,v 1.34.2.8 2008-05-21 22:11:26 gianluca Exp $ (LBL)";
 #endif
 
 #include <pcap-int.h>
@@ -698,7 +698,38 @@ pcap_create(const char *device, char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf);
+	if (strlen(device) == 1)
+	{
+		/*
+		 * It's probably a unicode string
+		 * Convert to ascii and pass it to pcap_create_common
+		 *
+		 * This wonderful hack is needed because pcap_lookupdev still returns
+		 * unicode strings, and it's used by windump when no device is specified
+		 * in the command line
+		 */
+		size_t length;
+		char* deviceAscii;
+
+		length = wcslen((wchar_t*)device);
+
+		deviceAscii = (char*)malloc(length + 1);
+
+		if (deviceAscii == NULL)
+		{
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "Malloc failed");
+			return NULL;
+		}
+
+		snprintf(deviceAscii, length + 1, "%ws", (wchar_t*)device);
+		p = pcap_create_common(deviceAscii, ebuf);
+		free(deviceAscii);
+	}
+	else
+	{
+		p = pcap_create_common(device, ebuf);
+	}
+
 	if (p == NULL)
 		return (NULL);
 
