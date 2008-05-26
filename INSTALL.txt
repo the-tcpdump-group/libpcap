@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.27 2008-04-06 17:29:31 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.28 2008-05-26 21:05:47 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -298,7 +298,6 @@ CHANGES		- description of differences between releases
 ChmodBPF/*	- Mac OS X startup item to set ownership and permissions
 		  on /dev/bpf*
 CREDITS		- people that have helped libpcap along
-FILES		- list of files exported as part of the distribution
 INSTALL.txt	- this file
 LICENSE		- the license under which tcpdump is distributed
 Makefile.in	- compilation rules (input to the configure script)
