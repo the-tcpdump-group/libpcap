@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.12 2008-05-26 19:58:59 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.13 2008-05-26 21:06:27 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -87,8 +87,28 @@ SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
 # hack the extra indirection
 OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
-HDR =	pcap.h pcap-int.h pcap-namedb.h pcap-nit.h pcap-pf.h \
-	ethertype.h gencode.h gnuc.h
+HDR = \
+	acconfig.h \
+	arcnet.h \
+	atmuni31.h \
+	ethertype.h \
+	gencode.h \
+	ieee80211.h \
+	llc.h \
+	nlpid.h \
+	pcap/bluetooth.h \
+	pcap/bpf.h \
+	pcap/namedb.h \
+	pcap/pcap.h \
+	pcap/sll.h \
+	pcap/usb.h \
+	pcap.h \
+	pcap-int.h \
+	pcap-namedb.h \
+	pcap-stdinc.h \
+	ppp.h \
+	sunatmpos.h
+
 GENHDR = \
 	scanner.h tokdefs.h version.h
 
@@ -101,6 +121,7 @@ TAGFILES = \
 CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c
 
 MAN3PCAP = pcap.3pcap \
+	pcap_activate.3pcap \
 	pcap_breakloop.3pcap \
 	pcap_can_set_rfmon.3pcap \
 	pcap_close.3pcap \
@@ -152,6 +173,125 @@ MAN3PCAP = pcap.3pcap \
 
 MAN4 = pcap-filter.4 \
 	pcap-linktype.4
+
+EXTRA_DIST = \
+	CHANGES \
+	ChmodBPF/ChmodBPF \
+	ChmodBPF/StartupParameters.plist \
+	CREDITS \
+	INSTALL.txt \
+	LICENSE \
+	Makefile.in \
+	README \
+	README.aix \
+	README.dag \
+	README.hpux \
+	README.linux \
+	README.macosx \
+	README.septel \
+	README.sita \
+	README.tru64 \
+	README.Win32 \
+	SUNOS4/nit_if.o.sparc \
+	SUNOS4/nit_if.o.sun3 \
+	SUNOS4/nit_if.o.sun4c.4.0.3c \
+	TODO \
+	VERSION \
+	aclocal.m4 \
+	bpf/net/bpf_filter.c \
+	config.guess \
+	config.h.in \
+	config.sub \
+	configure \
+	configure.in \
+	dlpisubs.c \
+	dlpisubs.h \
+	fad-getad.c \
+	fad-gifc.c \
+	fad-glifc.c \
+	fad-null.c \
+	fad-sita.c \
+	fad-win32.c \
+	filtertest.c \
+	findalldevstest.c \
+	grammar.y \
+	install-sh \
+	lbl/os-aix4.h \
+	lbl/os-hpux11.h \
+	lbl/os-osf4.h \
+	lbl/os-osf5.h \
+	lbl/os-solaris2.h \
+	lbl/os-sunos4.h \
+	lbl/os-ultrix4.h \
+	missing/snprintf.c \
+	mkdep \
+	msdos/bin2c.c \
+	msdos/common.dj \
+	msdos/makefile \
+	msdos/makefile.dj \
+	msdos/makefile.wc \
+	msdos/ndis2.c \
+	msdos/ndis2.h \
+	msdos/ndis_0.asm \
+	msdos/pkt_rx0.asm \
+	msdos/pkt_rx1.s \
+	msdos/pktdrvr.c \
+	msdos/pktdrvr.h \
+	msdos/readme.dos \
+	packaging/pcap.spec \
+	packaging/pcap.spec.in \
+	pcap-bpf.c \
+	pcap-bpf.h \
+	pcap-bt-linux.c \
+	pcap-bt-linux.h \
+	pcap-dag.c \
+	pcap-dag.h \
+	pcap-dlpi.c \
+	pcap-dos.c \
+	pcap-dos.h \
+	pcap-enet.c \
+	pcap-int.h \
+	pcap-libdlpi.c \
+	pcap-linux.c \
+	pcap-namedb.h \
+	pcap-nit.c \
+	pcap-null.c \
+	pcap-pf.c \
+	pcap-septel.c \
+	pcap-septel.h \
+	pcap-sita.h \
+	pcap-sita.c \
+	pcap-sita.html \
+	pcap-snit.c \
+	pcap-snoop.c \
+	pcap-usb-linux.c \
+	pcap-usb-linux.h \
+	pcap-win32.c \
+	runlex.sh \
+	scanner.l \
+	Win32/Include/Gnuc.h \
+	Win32/Include/addrinfo.h \
+	Win32/Include/bittypes.h \
+	Win32/Include/cdecl_ext.h \
+	Win32/Include/inetprivate.h \
+	Win32/Include/ip6_misc.h \
+	Win32/Include/sockstorage.h \
+	Win32/Include/arpa/nameser.h \
+	Win32/Include/net/if.h \
+	Win32/Include/net/netdb.h \
+	Win32/Include/net/paths.h \
+	Win32/Prj/libpcap.dsp \
+	Win32/Prj/libpcap.dsw \
+	Win32/Src/ffs.c \
+	Win32/Src/gai_strerror.c \
+	Win32/Src/getaddrinfo.c \
+	Win32/Src/getnetbynm.c \
+	Win32/Src/getnetent.c \
+	Win32/Src/getopt.c \
+	Win32/Src/getservent.c \
+	Win32/Src/inet_aton.c \
+	Win32/Src/inet_net.c \
+	Win32/Src/inet_pton.c
 
 all: libpcap.a
 
@@ -335,9 +475,11 @@ packaging/pcap.spec: packaging/pcap.spec.in VERSION
 		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
 releasetar:
-	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
-	   list="" ; make distclean; cd ..; mkdir -p n; cd n; ln -s ../$$dir $$name; \
-	   tar -c -z -f $$name.tar.gz $$name/. ;
+	cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
+	   mkdir $$name; \
+	   tar cf - $(CSRC) $(HDR) $(MAN3PCAP) $(MAN4) $(EXTRA_DIST) | (cd $$name; tar xf -); \
+	   tar -c -z -f $$name.tar.gz $$name; \
+	   rm -rf $$name
 
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	./mkdep -c $(CC) $(DEFS) $(INCLS) $(SRC)
