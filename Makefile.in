@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.119 2008-05-13 15:19:56 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.120 2008-05-26 19:58:06 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -120,6 +120,7 @@ MAN3PCAP = pcap.3pcap \
 	pcap_findalldevs.3pcap \
 	pcap_freealldevs.3pcap \
 	pcap_freecode.3pcap \
+	pcap_free_datalinks.3pcap \
 	pcap_get_selectable_fd.3pcap \
 	pcap_geterr.3pcap \
 	pcap_inject.3pcap \
