@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.7 2008-05-13 15:20:44 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.8 2008-05-26 19:58:59 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -294,6 +294,7 @@ int	pcap_datalink(pcap_t *);
 int	pcap_datalink_ext(pcap_t *);
 int	pcap_list_datalinks(pcap_t *, int **);
 int	pcap_set_datalink(pcap_t *, int);
+void	pcap_free_datalinks(int *);
 int	pcap_datalink_name_to_val(const char *);
 const char *pcap_datalink_val_to_name(int);
 const char *pcap_datalink_val_to_description(int);

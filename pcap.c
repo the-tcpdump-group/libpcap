@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.9 2008-05-13 15:20:44 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.112.2.10 2008-05-26 19:58:59 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -451,6 +451,23 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		    sizeof(**dlt_buffer) * p->dlt_count);
 		return (p->dlt_count);
 	}
+}
+
+/*
+ * In Windows, you might have a library built with one version of the
+ * C runtime library and an application built with another version of
+ * the C runtime library, which means that the library might use one
+ * version of malloc() and free() and the application might use another
+ * version of malloc() and free().  If so, that means something
+ * allocated by the library cannot be freed by the application, so we
+ * need to have a pcap_free_datalinks() routine to free up the list
+ * allocated by pcap_list_datalinks(), even though it's just a wrapper
+ * around free().
+ */
+void
+pcap_free_datalinks(int *dlt_list)
+{
+	free(dlt_list);
 }
 
 int
