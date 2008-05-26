@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.13 2008-05-26 21:06:27 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.14 2008-05-26 21:12:38 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -238,6 +238,7 @@ EXTRA_DIST = \
 	msdos/pktdrvr.c \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
+	net/bpf_filter.c \
 	packaging/pcap.spec \
 	packaging/pcap.spec.in \
 	pcap-bpf.c \
