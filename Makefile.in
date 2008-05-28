@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.15 2008-05-27 07:17:28 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.16 2008-05-28 02:15:05 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -199,6 +199,7 @@ EXTRA_DIST = \
 	VERSION \
 	aclocal.m4 \
 	bpf/net/bpf_filter.c \
+	chmod_bpf \
 	config.guess \
 	config.h.in \
 	config.sub \
@@ -239,6 +240,7 @@ EXTRA_DIST = \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
 	net/bpf_filter.c \
+	org.tcpdump.chmod_bpf.plist \
 	packaging/pcap.spec \
 	packaging/pcap.spec.in \
 	pcap-bpf.c \
