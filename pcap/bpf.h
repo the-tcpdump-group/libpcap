@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.25 2008-04-06 18:09:48 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.26 2008-05-30 01:35:33 guy Exp $ (LBL)
  */
 
 /*
@@ -113,12 +113,12 @@ struct bpf_version {
  * Data-link level type codes.
  *
  * Do *NOT* add new values to this list without asking
- * "tcpdump-workers@tcpdump.org" for a value.  Otherwise, you run the
- * risk of using a value that's already being used for some other purpose,
- * and of having tools that read libpcap-format captures not being able
- * to handle captures with your new DLT_ value, with no hope that they
- * will ever be changed to do so (as that would destroy their ability
- * to read captures using that value for that other purpose).
+ * "tcpdump-workers@lists.tcpdump.org" for a value.  Otherwise, you run
+ * the risk of using a value that's already being used for some other
+ * purpose, and of having tools that read libpcap-format captures not
+ * being able to handle captures with your new DLT_ value, with no hope
+ * that they will ever be changed to do so (as that would destroy their
+ * ability to read captures using that value for that other purpose).
  */
 
 /*
@@ -482,7 +482,7 @@ struct bpf_version {
  * for *their* private type and tools using them for *your* private type
  * would have to read them.
  *
- * Instead, ask "tcpdump-workers@tcpdump.org" for a new DLT_ value,
+ * Instead, ask "tcpdump-workers@lists.tcpdump.org" for a new DLT_ value,
  * as per the comment above, and use the type you're given.
  */
 #define DLT_USER0		147

@@ -13,9 +13,9 @@ Using BPF:
 
 (2) If libpcap doesn't compile on your machine when configured to use
     BPF, or if the workarounds fail to make it work correctly, you
-    should send to tcpdump-workers@tcpdump.org a detailed bug report (if
-    the compile fails, send us the compile error messages; if it
-    compiles but fails to work correctly, send us as detailed as
+    should send to tcpdump-workers@lists.tcpdump.org a detailed bug
+    report (if the compile fails, send us the compile error messages;
+    if it compiles but fails to work correctly, send us as detailed as
     possible a description of the symptoms, including indications of the
     network link-layer type being wrong or time stamps being wrong).
 

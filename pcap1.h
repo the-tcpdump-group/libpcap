@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap1.h,v 1.3 2006-10-04 18:09:22 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap1.h,v 1.4 2008-05-30 01:35:33 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -92,8 +92,8 @@ typedef struct pcap_addr pcap_addr_t;
  *	introduce a new structure for the new format, if the layout
  *	of the structure changed;
  *
- *	send mail to "tcpdump-workers@tcpdump.org", requesting a new
- *	magic number for your new capture file format, and, when
+ *	send mail to "tcpdump-workers@lists.tcpdump.org", requesting
+ *	a new magic number for your new capture file format, and, when
  *	you get the new magic number, put it in "savefile.c";
  *
  *	use that magic number for save files with the changed file
