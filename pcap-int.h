@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.6 2008-05-30 01:36:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.7 2008-05-30 01:43:44 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -320,9 +320,12 @@ struct pcap_timeval {
  *	the old record header as well as files with the new record header
  *	(using the magic number to determine the header format).
  *
- * Then supply the changes to "patches@tcpdump.org", so that future
- * versions of libpcap and programs that use it (such as tcpdump) will
- * be able to read your new capture file format.
+ * Then supply the changes as a patch at
+ *
+ *	http://sourceforge.net/projects/libpcap/
+ *
+ * so that future versions of libpcap and programs that use it (such as
+ * tcpdump) will be able to read your new capture file format.
  */
 
 struct pcap_sf_pkthdr {

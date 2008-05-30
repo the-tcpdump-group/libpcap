@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap1.h,v 1.3.2.1 2008-05-30 01:36:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap1.h,v 1.3.2.2 2008-05-30 01:43:45 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_h
@@ -103,9 +103,12 @@ typedef struct pcap_addr pcap_addr_t;
  *	the old file header as well as files with the new file header
  *	(using the magic number to determine the header format).
  *
- * Then supply the changes to "patches@tcpdump.org", so that future
- * versions of libpcap and programs that use it (such as tcpdump) will
- * be able to read your new capture file format.
+ * Then supply the changes as a patch at
+ *
+ *	http://sourceforge.net/projects/libpcap/
+ *
+ * so that future versions of libpcap and programs that use it (such as
+ * tcpdump) will be able to read your new capture file format.
  */
 
 enum pcap1_info_types {
