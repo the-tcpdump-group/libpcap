@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap_datalink_val_to_name.3pcap,v 1.1 2008-04-06 20:16:30 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_datalink_val_to_name.3pcap,v 1.2 2008-05-30 01:32:34 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -42,22 +42,3 @@ name.  NULL is returned on failure.
 .B pcap_datalink_val_to_description()
 translates a data link type value to a short description of that data
 link type.  NULL is returned on failure.
-.SH AUTHORS
-The original authors are:
-.LP
-Van Jacobson,
-Craig Leres and
-Steven McCanne, all of the
-Lawrence Berkeley National Laboratory, University of California, Berkeley, CA.
-.LP
-The current version is available from "The Tcpdump Group"'s Web site at
-.LP
-.RS
-.I http://www.tcpdump.org/
-.RE
-.SH BUGS
-Please send problems, bugs, questions, desirable enhancements, etc. to:
-.LP
-.RS
-tcpdump-workers@tcpdump.org
-.RE
