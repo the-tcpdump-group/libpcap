@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.7 2008-04-14 20:41:52 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.8 2008-05-30 01:36:06 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -147,11 +147,12 @@ static const char rcsid[] _U_ =
  *
  * In order to ensure that a given LINKTYPE_* code's value will refer to
  * the same encapsulation type on all platforms, you should not allocate
- * a new LINKTYPE_* value without consulting "tcpdump-workers@tcpdump.org".
- * The tcpdump developers will allocate a value for you, and will not
- * subsequently allocate it to anybody else; that value will be added to
- * the "pcap.h" in the tcpdump.org CVS repository, so that a future
- * libpcap release will include it.
+ * a new LINKTYPE_* value without consulting
+ * "tcpdump-workers@lists.tcpdump.org".  The tcpdump developers will
+ * allocate a value for you, and will not subsequently allocate it to
+ * anybody else; that value will be added to the "pcap.h" in the
+ * tcpdump.org CVS repository, so that a future libpcap release will
+ * include it.
  *
  * You should, if possible, also contribute patches to libpcap and tcpdump
  * to handle the new encapsulation type, so that they can also be checked
@@ -313,9 +314,9 @@ static const char rcsid[] _U_ =
  * for *their* private type and tools using them for *your* private type
  * would have to read them.
  *
- * Instead, in those cases, ask "tcpdump-workers@tcpdump.org" for a new DLT_
- * and LINKTYPE_ value, as per the comment in pcap/bpf.h, and use the type
- * you're given.
+ * Instead, in those cases, ask "tcpdump-workers@lists.tcpdump.org" for a
+ * new DLT_ and LINKTYPE_ value, as per the comment in pcap/bpf.h, and use
+ * the type you're given.
  */
 #define LINKTYPE_USER0		147
 #define LINKTYPE_USER1		148

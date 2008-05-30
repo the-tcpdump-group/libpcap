@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.5 2008-04-14 20:41:52 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.6 2008-05-30 01:36:06 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -309,8 +309,8 @@ struct pcap_timeval {
  *
  *	introduce a new structure for the new format;
  *
- *	send mail to "tcpdump-workers@tcpdump.org", requesting a new
- *	magic number for your new capture file format, and, when
+ *	send mail to "tcpdump-workers@lists.tcpdump.org", requesting
+ *	a new magic number for your new capture file format, and, when
  *	you get the new magic number, put it in "savefile.c";
  *
  *	use that magic number for save files with the changed record

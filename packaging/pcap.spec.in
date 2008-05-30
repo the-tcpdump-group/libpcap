@@ -15,7 +15,7 @@ URL: http://www.tcpdump.org
 Packet-capture library LIBPCAP @VERSION@
 Now maintained by "The Tcpdump Group"
 See http://www.tcpdump.org
-Please send inquiries/comments/reports to tcpdump-workers@tcpdump.org
+Please send inquiries/comments/reports to tcpdump-workers@lists.tcpdump.org
 
 %prep
 %setup

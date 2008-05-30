@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3pcap,v 1.1.2.5 2008-04-10 01:56:38 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3pcap,v 1.1.2.6 2008-05-30 01:36:06 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -382,5 +382,5 @@ The current version is available from "The Tcpdump Group"'s Web site at
 Please send problems, bugs, questions, desirable enhancements, etc. to:
 .LP
 .RS
-tcpdump-workers@tcpdump.org
+tcpdump-workers@lists.tcpdump.org
 .RE
