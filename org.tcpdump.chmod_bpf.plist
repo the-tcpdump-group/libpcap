@@ -4,8 +4,8 @@
 <dict>
 	<key>Label</key>
 	<string>org.tcpdump.chmod_bpf</string>
-	<key>OnDemand</key>
-	<false/>
+	<key>RunAtLoad</key>
+	<true/>
 	<key>Program</key>
 	<string>/usr/local/bin/chmod_bpf</string>
 	<key>ProgramArguments</key>
