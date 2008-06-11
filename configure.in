@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.13 2008-06-11 08:53:11 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.14 2008-06-11 09:05:43 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.13 $)
+AC_REVISION($Revision: 1.138.2.14 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -390,7 +390,7 @@ if test "x$have_socklen_t" = "xyes"; then
 fi
 AC_MSG_RESULT($have_socklen_t)
 
-AC_ARG_ENABLE(ipv6, [  --enable-ipv6           build IPv6-capable version @<:@default=yes, if available@:>@],
+AC_ARG_ENABLE(ipv6, [  --enable-ipv6           build IPv6-capable version @<:@default=yes, if getaddrinfo available@:>@],
     [],
     [enable_ipv6=ifavailable])
 if test "$enable_ipv6" != "no"; then
