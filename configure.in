@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.14 2008-06-11 09:05:43 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.15 2008-06-12 20:01:10 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.14 $)
+AC_REVISION($Revision: 1.138.2.15 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -422,6 +422,21 @@ AC_MSG_RESULT(${enable_yydebug-no})
 case "$V_PCAP" in
 
 dlpi)
+	AC_MSG_CHECKING(whether <sys/dlpi.h> is usable)
+	AC_CACHE_VAL(ac_cv_sys_dlpi_usable,
+		AC_TRY_COMPILE(
+		    [
+			#include <sys/types.h>
+			#include <sys/time.h>
+			#include <sys/dlpi.h>
+		    ],
+		    [int i = DL_PROMISC_PHYS;],
+		    ac_cv_sys_dlpi_usable=yes,
+		    ac_cv_sys_dlpi_usable=no))
+	AC_MSG_RESULT($ac_cv_sys_dlpi_usable)
+	if test $ac_cv_sys_dlpi_usable = no ; then
+		AC_MSG_ERROR(<sys/dlpi.h> is not usable on this system; it probably has a non-standard DLPI)
+	fi
 	AC_MSG_CHECKING(for /dev/dlpi device)
 	if test -c /dev/dlpi ; then
 		AC_MSG_RESULT(yes)
