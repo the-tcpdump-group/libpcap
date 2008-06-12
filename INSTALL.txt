@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.28 2008-05-26 21:05:47 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/INSTALL.txt,v 1.29 2008-06-12 20:21:51 guy Exp $ (LBL)
 
 To build libpcap, run "./configure" (a shell script). The configure
 script will determine your system attributes and generate an
@@ -211,8 +211,7 @@ Read the README.aix file for information on installing libpcap and
 configuring your system to be able to support libpcap.
 
 If you use NeXTSTEP, you will not be able to build libpcap from this
-release. We hope to support this operating system in some future
-release of libpcap.
+release.
 
 If you use SINIX, you should be able to build libpcap from this
 release. It is known to compile and run on SINIX-Y/N 5.42 with the C-DS
@@ -229,22 +228,22 @@ Another workaround is to use flex and bison.
 
 If you use SCO, you might have trouble building libpcap from this
 release. We do not have a machine running SCO and have not had reports
-of anyone successfully building on it. Since SCO apparently supports
-DLPI, it's possible the current version works. Meanwhile, SCO provides
-a tcpdump binary as part of their "Network/Security Tools" package:
+of anyone successfully building on it; the current release of libpcap
+does not compile on SCO OpenServer 5.  Although SCO apparently supports
+DLPI to some extent, the DLPI in OpenServer 5 is very non-standard, and
+it appears that completely new code would need to be written to capture
+network traffic.  SCO do not appear to provide tcpdump binaries for
+OpenServer 5 or OpenServer 6 as part of SCO Skunkware:
 
-    http://www.sco.com/technology/internet/goodies/#SECURITY
+	http://www.sco.com/skunkware/
 
-There is also a README that explains how to enable packet capture.
-
-If you use UnixWare, you will not be able to build libpcap from this
-release. We hope to support this operating system in some future
-release of libpcap. Meanwhile, there appears to be an UnixWare port of
-libpcap 0.0 (and tcpdump 3.0) in:
-
-    ftp://ftp1.freebird.org/pub/mirror/freebird/internet/systools/
-
-UnixWare appears to use a hacked version of DLPI.
+If you use UnixWare, you might be able to build libpcap from this
+release, or you might not.  We do not have a machine running UnixWare,
+so we have not tested it; however, SCO provide packages for libpcap
+0.6.2 and tcpdump 3.7.1 in the UnixWare 7/Open UNIX 8 part of SCO
+Skunkware, and the source package for libpcap 0.6.2 is not changed from
+the libpcap 0.6.2 source release, so this release of libpcap might also
+build without changes on UnixWare 7.
 
 If linking tcpdump fails with "Undefined: _alloca" when using bison on
 a Sun4, your version of bison is broken. In any case version 1.16 or
