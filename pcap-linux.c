@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.148 2008-04-14 21:04:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.149 2008-06-24 06:44:32 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1537,6 +1537,17 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 	case ARPHRD_LAPD:
 		/* Don't expect IP packet out of this interfaces... */
 		handle->linktype = DLT_LINUX_LAPD;
+		break;
+
+#ifndef ARPHRD_NONE
+#define ARPHRD_NONE	0xFFFE
+#endif
+	case ARPHRD_NONE:
+		/*
+		 * No link-layer header; packets are just IP
+		 * packets, so use DLT_RAW.
+		 */
+		handle->linktype = DLT_RAW;
 		break;
 
 	default:
