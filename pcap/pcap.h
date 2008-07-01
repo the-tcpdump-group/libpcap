@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.9 2008-05-30 01:36:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.10 2008-07-01 08:04:03 guy Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -243,6 +243,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_RFMON_NOTSUP		-6	/* this device doesn't support rfmon (monitor) mode */
 #define PCAP_ERROR_NOT_RFMON		-7	/* operation supported only in monitor mode */
 #define PCAP_ERROR_PERM_DENIED		-8	/* no permission to open the device */
+#define PCAP_ERROR_IFACE_NOT_UP		-9	/* interface isn't up */
 
 /*
  * Warning codes for the pcap API.

@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99.2.11 2008-04-14 20:41:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99.2.12 2008-07-01 08:04:02 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -413,11 +413,23 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 */
 	(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
 	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "BIOCSETIF: %s: %s",
-		    p->opt.source, pcap_strerror(errno));
-		close(fd);
-		return (PCAP_ERROR);
+		if (errno == ENETDOWN) {
+			/*
+			 * Return a "network down" indication, so that
+			 * the application can report that rather than
+			 * saying we had a mysterious failure and
+			 * suggest that they report a problem to the
+			 * libpcap developers.
+			 */
+			close(fd);
+			return (PCAP_ERROR_IFACE_NOT_UP);
+		} else {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "BIOCSETIF: %s: %s",
+			    p->opt.source, pcap_strerror(errno));
+			close(fd);
+			return (PCAP_ERROR);
+		}
 	}
 
 	/*
@@ -1016,6 +1028,15 @@ check_setif_failure(pcap_t *p, int error)
 		 */
 		strcpy(p->errbuf, "");
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
+	} else if (errno == ENETDOWN) {
+		/*
+		 * Return a "network down" indication, so that
+		 * the application can report that rather than
+		 * saying we had a mysterious failure and
+		 * suggest that they report a problem to the
+		 * libpcap developers.
+		 */
+		return (PCAP_ERROR_IFACE_NOT_UP);
 	} else {
 		/*
 		 * Some other error; fill in the error string, and
