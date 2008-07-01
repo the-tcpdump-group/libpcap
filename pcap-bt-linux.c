@@ -33,7 +33,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.14 2008-04-14 21:07:50 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bt-linux.c,v 1.15 2008-07-01 07:05:54 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -70,7 +70,6 @@ static int bt_inject_linux(pcap_t *, const void *, size_t);
 static int bt_setfilter_linux(pcap_t *, struct bpf_program *);
 static int bt_setdirection_linux(pcap_t *, pcap_direction_t);
 static int bt_stats_linux(pcap_t *, struct pcap_stat *);
-static void bt_close_linux(pcap_t *);
 
 int 
 bt_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
