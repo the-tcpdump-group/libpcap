@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.122 2008-05-26 19:58:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.123 2008-07-01 08:02:33 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -951,6 +951,9 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_PERM_DENIED:
 		return ("You don't have permission to capture on that device");
+
+	case PCAP_ERROR_IFACE_NOT_UP:
+		return ("That device is not up");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);

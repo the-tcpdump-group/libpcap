@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.149 2008-06-24 06:44:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.150 2008-07-01 08:02:33 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -646,8 +646,21 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	offset = 0;
 #endif
 
-	/* Receive a single packet from the kernel */
-
+	/*
+	 * Receive a single packet from the kernel.
+	 * We ignore EINTR, as that might just be due to a signal
+	 * being delivered - if the signal should interrupt the
+	 * loop, the signal handler should call pcap_breakloop()
+	 * to set handle->break_loop (we ignore it on other
+	 * platforms as well).
+	 * We also ignore ENETDOWN, so that we can continue to
+	 * capture traffic if the interface goes down and comes
+	 * back up again; comments in the kernel indicate that
+	 * we'll just block waiting for packets if we try to
+	 * receive from a socket that delivered ENETDOWN, and,
+	 * if we're using a memory-mapped buffer, we won't even
+	 * get notified of "network down" events.
+	 */
 	bp = handle->buffer + handle->offset;
 	do {
 		/*
@@ -667,7 +680,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			handle->fd, bp + offset,
 			handle->bufsize - offset, MSG_TRUNC,
 			(struct sockaddr *) &from, &fromlen);
-	} while (packet_len == -1 && errno == EINTR);
+	} while (packet_len == -1 && (errno == EINTR || errno == ENETDOWN));
 
 	/* Check if an error occured */
 
@@ -1722,10 +1735,10 @@ activate_new(pcap_t *handle)
 		}
 
 		if ((err = iface_bind(sock_fd, handle->md.ifindex,
-		    handle->errbuf)) < 0) {
+		    handle->errbuf)) != 1) {
 		    	close(sock_fd);
-			if (err == -2)
-				return PCAP_ERROR;
+			if (err < 0)
+				return err;
 			else
 				return 0;	/* try old mechanism */
 		}
@@ -2183,6 +2196,8 @@ iface_get_id(int fd, const char *device, char *ebuf)
 
 /*
  *  Bind the socket associated with FD to the given device.
+ *  Return 1 on success, 0 if we should try a SOCK_PACKET socket,
+ *  or a PCAP_ERROR_ value on a hard error.
  */
 static int
 iface_bind(int fd, int ifindex, char *ebuf)
@@ -2197,9 +2212,20 @@ iface_bind(int fd, int ifindex, char *ebuf)
 	sll.sll_protocol	= htons(ETH_P_ALL);
 
 	if (bind(fd, (struct sockaddr *) &sll, sizeof(sll)) == -1) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			 "bind: %s", pcap_strerror(errno));
-		return -1;
+		if (errno == ENETDOWN) {
+			/*
+			 * Return a "network down" indication, so that
+			 * the application can report that rather than
+			 * saying we had a mysterious failure and
+			 * suggest that they report a problem to the
+			 * libpcap developers.
+			 */
+			return PCAP_ERROR_IFACE_NOT_UP;
+		} else {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				 "bind: %s", pcap_strerror(errno));
+			return PCAP_ERROR;
+		}
 	}
 
 	/* Any pending errors, e.g., network is down? */
@@ -2207,16 +2233,25 @@ iface_bind(int fd, int ifindex, char *ebuf)
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			"getsockopt: %s", pcap_strerror(errno));
-		return -2;
+		return 0;
 	}
 
-	if (err > 0) {
+	if (err == ENETDOWN) {
+		/*
+		 * Return a "network down" indication, so that
+		 * the application can report that rather than
+		 * saying we had a mysterious failure and
+		 * suggest that they report a problem to the
+		 * libpcap developers.
+		 */
+		return PCAP_ERROR_IFACE_NOT_UP;
+	} else if (err > 0) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			"bind: %s", pcap_strerror(err));
-		return -2;
+		return 0;
 	}
 
-	return 0;
+	return 1;
 }
 
 /*
