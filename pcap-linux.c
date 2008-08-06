@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.26 2008-08-06 07:53:47 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.27 2008-08-06 08:30:05 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -645,7 +645,9 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	struct pcap_pkthdr	pcap_header;
 	struct iovec		iov;
 	struct msghdr		msg;
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 	struct cmsghdr		*cmsg;
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	union {
 		struct cmsghdr	cmsg;
 		char		buf[CMSG_SPACE(sizeof(struct tpacket_auxdata))];
@@ -796,7 +798,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		hdrp->sll_protocol = from.sll_protocol;
 	}
 
-#ifdef HAVE_PACKET_AUXDATA
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 		struct tpacket_auxdata *aux;
 		unsigned int len;
@@ -824,8 +826,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 		packet_len += VLAN_TAG_LEN;
 	}
-#endif /* HAVE_PACKET_AUXDATA */
-#endif
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#endif /* HAVE_PF_PACKET_SOCKETS */
 
 	/*
 	 * XXX: According to the kernel source we should get the real
@@ -1936,8 +1938,10 @@ activate_mmap(pcap_t *handle)
 static int
 prepare_tpacket_socket(pcap_t *handle)
 {
+#ifdef HAVE_TPACKET2
 	socklen_t len;
 	int val;
+#endif
 
 	handle->md.tp_version = TPACKET_V1;
 	handle->md.tp_hdrlen = sizeof(struct tpacket_hdr);
@@ -2209,6 +2213,11 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 			tp_usec	   = h.h2->tp_nsec / 1000;
 			break;
 #endif
+		default:
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+				"unsupported tpacket version %d",
+				handle->md.tp_version);
+			return -1;
 		}
 		/* perform sanity check on internal offset. */
 		if (tp_mac + tp_snaplen > handle->bufsize) {

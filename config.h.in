@@ -59,6 +59,9 @@
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
+/* if tp_vlan_tci exists */
+#undef HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
+
 /* Define to 1 if you have the <linux/wireless.h> header file. */
 #undef HAVE_LINUX_WIRELESS_H
 
