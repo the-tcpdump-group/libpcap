@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.152 2008-08-06 07:45:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.153 2008-08-06 07:49:19 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -177,6 +177,11 @@ static const char rcsid[] _U_ =
   * uses many ring related structs and macros */
 # ifdef TPACKET_HDRLEN
 #  define HAVE_PACKET_RING
+#  ifdef TPACKET2_HDRLEN
+#   define HAVE_TPACKET2
+#  else
+#   define TPACKET_V1	0
+#  endif /* TPACKET2_HDRLEN */
 # endif /* TPACKET_HDRLEN */
 #endif /* PF_PACKET */
 
@@ -240,11 +245,18 @@ static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static void pcap_cleanup_linux(pcap_t *);
 
+union thdr {
+	struct tpacket_hdr	*h1;
+	struct tpacket2_hdr	*h2;
+	void			*raw;
+};
+
 #ifdef HAVE_PACKET_RING
-#define RING_GET_FRAME(h) (((struct tpacket_hdr**)h->buffer)[h->offset])
+#define RING_GET_FRAME(h) (((union thdr **)h->buffer)[h->offset])
 
 static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle);
+static int prepare_tpacket_socket(pcap_t *handle);
 static void pcap_cleanup_linux_mmap(pcap_t *);
 static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
 static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
@@ -1897,6 +1909,9 @@ activate_mmap(pcap_t *handle)
 		/* by default request 2M for the ring buffer */
 		handle->opt.buffer_size = 2*1024*1024;
 	}
+	ret = prepare_tpacket_socket(handle);
+	if (ret == 0)
+		return ret;
 	ret = create_ring(handle);
 	if (ret == 0)
 		return ret;
@@ -1918,6 +1933,41 @@ activate_mmap(pcap_t *handle)
 }
 
 #ifdef HAVE_PACKET_RING
+static int
+prepare_tpacket_socket(pcap_t *handle)
+{
+	socklen_t len;
+	int val;
+
+	handle->md.tp_version = TPACKET_V1;
+	handle->md.tp_hdrlen = sizeof(struct tpacket_hdr);
+
+#ifdef HAVE_TPACKET2
+	/* Probe whether kernel supports TPACKET_V2 */
+	val = TPACKET_V2;
+	len = sizeof(val);
+	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
+		if (errno == ENOPROTOOPT)
+			return 1;
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "can't get TPACKET_V2 header len on socket %d: %d-%s",
+			 handle->fd, errno, pcap_strerror(errno));
+		return 0;
+	}
+	handle->md.tp_hdrlen = val;
+
+	val = TPACKET_V2;
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_VERSION, &val,
+		       sizeof(val)) < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "can't activate TPACKET_V2 on socket %d: %d-%s",
+			 handle->fd, errno, pcap_strerror(errno));
+		return 0;
+	}
+	handle->md.tp_version = TPACKET_V2;
+#endif /* HAVE_TPACKET2 */
+	return 1;
+}
 
 static void
 compute_ring_block(int frame_size, unsigned *block_size, unsigned *frames_per_block)
@@ -1944,7 +1994,9 @@ create_ring(pcap_t *handle)
 	 * (and a lot of memory will be unused). 
 	 * The snap len should be carefully chosen to achive best
 	 * performance */
-	req.tp_frame_size = TPACKET_ALIGN(handle->snapshot+TPACKET_HDRLEN);
+	req.tp_frame_size = TPACKET_ALIGN(handle->snapshot +
+					  TPACKET_ALIGN(handle->md.tp_hdrlen) +
+					  sizeof(struct sockaddr_ll));
 	req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 	compute_ring_block(req.tp_frame_size, &req.tp_block_size, &frames_per_block);
 	req.tp_block_nr = req.tp_frame_nr / frames_per_block;
@@ -1983,7 +2035,7 @@ retry:
 
 	/* allocate a ring for each frame header pointer*/
 	handle->cc = req.tp_frame_nr;
-	handle->buffer = malloc(handle->cc * sizeof(struct tpacket_hdr*));
+	handle->buffer = malloc(handle->cc * sizeof(union thdr *));
 	if (!handle->buffer) {
 		destroy_ring(handle);
 		return 0;
@@ -1992,9 +2044,9 @@ retry:
 	/* fill the header ring with proper frame ptr*/
 	handle->offset = 0;
 	for (i=0; i<req.tp_block_nr; ++i) {
-		u_char *base = &handle->bp[i*req.tp_block_size];
+		void *base = &handle->bp[i*req.tp_block_size];
 		for (j=0; j<frames_per_block; ++j, ++handle->offset) {
-			RING_GET_FRAME(handle) = (struct tpacket_hdr*) base;
+			RING_GET_FRAME(handle) = base;
 			base += req.tp_frame_size;
 		}
 	}
@@ -2055,6 +2107,29 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 	return 0;
 }
 
+static inline union thdr *
+pcap_get_ring_frame(pcap_t *handle, int status)
+{
+	union thdr h;
+
+	h.raw = RING_GET_FRAME(handle);
+	switch (handle->md.tp_version) {
+	case TPACKET_V1:
+		if (status != (h.h1->tp_status ? TP_STATUS_USER :
+						TP_STATUS_KERNEL))
+			return NULL;
+		break;
+#ifdef HAVE_TPACKET2
+	case TPACKET_V2:
+		if (status != (h.h2->tp_status ? TP_STATUS_USER :
+						TP_STATUS_KERNEL))
+			return NULL;
+		break;
+#endif
+	}
+	return h.raw;
+}
+
 static int
 pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
 		u_char *user)
@@ -2062,7 +2137,8 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 	int pkts = 0;
 
 	/* wait for frames availability.*/
-	if ((handle->md.timeout >= 0) && !(RING_GET_FRAME(handle)->tp_status)) {
+	if ((handle->md.timeout >= 0) &&
+	    !pcap_get_ring_frame(handle, TP_STATUS_USER)) {
 		struct pollfd pollinfo;
 		int ret;
 
@@ -2094,16 +2170,41 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		struct sockaddr_ll *sll;
 		struct pcap_pkthdr pcaphdr;
 		unsigned char *bp;
-		struct tpacket_hdr* thdr = RING_GET_FRAME(handle);
-		if (thdr->tp_status == TP_STATUS_KERNEL)
+		union thdr h;
+		unsigned int tp_len;
+		unsigned int tp_mac;
+		unsigned int tp_snaplen;
+		unsigned int tp_sec;
+		unsigned int tp_usec;
+
+		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
+		if (!h.raw)
 			break;
 
+		switch (handle->md.tp_version) {
+		case TPACKET_V1:
+			tp_len	   = h.h1->tp_len;
+			tp_mac	   = h.h1->tp_mac;
+			tp_snaplen = h.h1->tp_snaplen;
+			tp_sec	   = h.h1->tp_sec;
+			tp_usec	   = h.h1->tp_usec;
+			break;
+#ifdef HAVE_TPACKET2
+		case TPACKET_V2:
+			tp_len	   = h.h2->tp_len;
+			tp_mac	   = h.h2->tp_mac;
+			tp_snaplen = h.h2->tp_snaplen;
+			tp_sec	   = h.h2->tp_sec;
+			tp_usec	   = h.h2->tp_nsec / 1000;
+			break;
+#endif
+		}
 		/* perform sanity check on internal offset. */
-		if (thdr->tp_mac+thdr->tp_snaplen > handle->bufsize) {
+		if (tp_mac + tp_snaplen > handle->bufsize) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
 				"corrupted frame on kernel ring mac "
 				"offset %d + caplen %d > frame len %d", 
-				thdr->tp_mac, thdr->tp_snaplen, handle->bufsize);
+				tp_mac, tp_snaplen, handle->bufsize);
 			return -1;
 		}
 
@@ -2116,25 +2217,25 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		 * Note: alternatively it could be possible to stop applying 
 		 * the filter when the ring became empty, but it can possibly
 		 * happen a lot later... */
-		bp = (unsigned char*)thdr + thdr->tp_mac;
+		bp = (unsigned char*)h.raw + tp_mac;
 		run_bpf = (!handle->md.use_bpf) || 
 			((handle->md.use_bpf>1) && handle->md.use_bpf--);
 		if (run_bpf && handle->fcode.bf_insns && 
 				(bpf_filter(handle->fcode.bf_insns, bp,
-					thdr->tp_len, thdr->tp_snaplen) == 0))
+					tp_len, tp_snaplen) == 0))
 			goto skip;
 
 		/* check direction and interface index */
-		sll = (void*)thdr + TPACKET_ALIGN(sizeof(*thdr));
+		sll = (void *)h.raw + TPACKET_ALIGN(handle->md.tp_hdrlen);
 		if ((sll->sll_ifindex == handle->md.lo_ifindex) &&
 					(sll->sll_pkttype == PACKET_OUTGOING))
 			goto skip;
 
 		/* get required packet info from ring header */
-		pcaphdr.ts.tv_sec = thdr->tp_sec;
-		pcaphdr.ts.tv_usec = thdr->tp_usec;
-		pcaphdr.caplen = thdr->tp_snaplen;
-		pcaphdr.len = thdr->tp_len;
+		pcaphdr.ts.tv_sec = tp_sec;
+		pcaphdr.ts.tv_usec = tp_usec;
+		pcaphdr.caplen = tp_snaplen;
+		pcaphdr.len = tp_len;
 
 		/* if required build in place the sll header*/
 		if (handle->md.cooked) {
@@ -2156,7 +2257,9 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 			 * don't step on the header when we construct
 			 * the sll header.
 			 */
-			if (bp < (u_char *)thdr + TPACKET_HDRLEN) {
+			if (bp < (u_char *)h.raw +
+					   TPACKET_ALIGN(handle->md.tp_hdrlen) +
+					   sizeof(struct sockaddr_ll)) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
 					"cooked-mode frame doesn't have room for sll header");
 				return -1;
@@ -2185,7 +2288,16 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 
 skip:
 		/* next packet */
-		thdr->tp_status = TP_STATUS_KERNEL;
+		switch (handle->md.tp_version) {
+		case TPACKET_V1:
+			h.h1->tp_status = TP_STATUS_KERNEL;
+			break;
+#ifdef HAVE_TPACKET2
+		case TPACKET_V2:
+			h.h2->tp_status = TP_STATUS_KERNEL;
+			break;
+#endif
+		}
 		if (++handle->offset >= handle->cc)
 			handle->offset = 0;
 
@@ -2219,7 +2331,7 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	for (n=0; n < handle->cc; ++n) {
 		if (--handle->offset < 0)
 			handle->offset = handle->cc - 1;
-		if (RING_GET_FRAME(handle)->tp_status != TP_STATUS_KERNEL)
+		if (!pcap_get_ring_frame(handle, TP_STATUS_KERNEL))
 			break;
 	}
 

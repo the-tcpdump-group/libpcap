@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.92 2008-05-30 01:43:21 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.93 2008-08-06 07:49:19 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -132,6 +132,8 @@ struct pcap_md {
 	int	lo_ifindex;	/* interface index of the loopback device */
 	u_int	packets_read;	/* count of packets read with recvfrom() */
 	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
+	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
+	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
 #endif /* linux */
 
 #ifdef HAVE_DAG_API
