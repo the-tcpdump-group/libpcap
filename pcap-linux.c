@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.153 2008-08-06 07:49:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.154 2008-08-06 07:51:29 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -1965,6 +1965,17 @@ prepare_tpacket_socket(pcap_t *handle)
 		return 0;
 	}
 	handle->md.tp_version = TPACKET_V2;
+
+	/* Reserve space for VLAN tag reconstruction */
+	val = VLAN_TAG_LEN;
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &val,
+		       sizeof(val)) < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "can't set up reserve on socket %d: %d-%s",
+			 handle->fd, errno, pcap_strerror(errno));
+		return 0;
+	}
+
 #endif /* HAVE_TPACKET2 */
 	return 1;
 }
@@ -2280,6 +2291,23 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 			pcaphdr.caplen += SLL_HDR_LEN;
 			pcaphdr.len += SLL_HDR_LEN;
 		}
+
+#ifdef HAVE_TPACKET2
+		if (handle->md.tp_version == TPACKET_V2 && h.h2->tp_vlan_tci &&
+		    tp_snaplen >= 2 * ETH_ALEN) {
+			struct vlan_tag *tag;
+
+			bp -= VLAN_TAG_LEN;
+			memmove(bp, bp + VLAN_TAG_LEN, 2 * ETH_ALEN);
+
+			tag = (struct vlan_tag *)(bp + 2 * ETH_ALEN);
+			tag->vlan_tpid = htons(ETH_P_8021Q);
+			tag->vlan_tci = htons(h.h2->tp_vlan_tci);
+
+			pcaphdr.caplen += VLAN_TAG_LEN;
+			pcaphdr.len += VLAN_TAG_LEN;
+		}
+#endif
 
 		/* pass the packet to the user */
 		pkts++;
