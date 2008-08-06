@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.89 2008-03-13 18:13:57 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.90 2008-08-06 08:29:07 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -903,6 +903,37 @@ AC_DEFUN(AC_LBL_TPACKET_STATS,
    if test $ac_cv_lbl_tpacket_stats = yes; then
        AC_DEFINE(HAVE_TPACKET_STATS,1,[if if_packet.h has tpacket_stats defined])
    fi])
+
+dnl
+dnl Checks to see if the tpacket_auxdata struct has a tp_vlan_tci member.
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
+dnl
+dnl results:
+dnl
+dnl	HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI (defined)
+dnl
+dnl NOTE: any compile failure means we conclude that it doesn't have
+dnl that member, so if we don't have tpacket_auxdata, we conclude it
+dnl doesn't have that member (which is OK, as either we won't be using
+dnl code that would use that member, or we wouldn't compile in any case).
+dnl
+AC_DEFUN(AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,
+    [AC_MSG_CHECKING(if tpacket_auxdata struct has tp_vlan_tci member)
+    AC_CACHE_VAL(ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1,
+	AC_TRY_COMPILE([
+#	include <sys/types.h>
+#	include <sys/dlpi.h>
+#	include <sys/dlpi_ext.h>],
+	[u_int i = sizeof(((struct tpacket_auxdata *)0)->tp_vlan_tci)],
+	ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=yes,
+	ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=no))
+    AC_MSG_RESULT($ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci)
+    if test $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci = yes ; then
+	    AC_DEFINE(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,1,[if tp_vlan_tci exists])
+    fi])
 
 dnl
 dnl Checks to see if Solaris has the dl_passive_req_t struct defined
