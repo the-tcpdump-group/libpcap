@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.154 2008-08-06 07:51:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.155 2008-08-06 07:53:34 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -573,7 +573,7 @@ pcap_activate_linux(pcap_t *handle)
 		goto fail;
 	}
 
-	if (handle->opt.buffer_size == 0) {
+	if (handle->opt.buffer_size != 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
 		 */
