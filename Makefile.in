@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.17 2008-05-30 01:36:06 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.18 2008-08-06 07:45:59 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -102,6 +102,7 @@ HDR = \
 	pcap/pcap.h \
 	pcap/sll.h \
 	pcap/usb.h \
+	pcap/vlan.h \
 	pcap.h \
 	pcap-int.h \
 	pcap-namedb.h \

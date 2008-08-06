@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.22 2008-08-06 07:40:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.23 2008-08-06 07:45:59 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -108,6 +108,7 @@ static const char rcsid[] _U_ =
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
+#include "pcap/vlan.h"
 
 #ifdef HAVE_DAG_API
 #include "pcap-dag.h"
@@ -165,6 +166,9 @@ static const char rcsid[] _U_ =
   */
 # ifdef PACKET_HOST
 #  define HAVE_PF_PACKET_SOCKETS
+#  ifdef PACKET_AUXDATA
+#   define HAVE_PACKET_AUXDATA
+#  endif /* PACKET_AUXDATA */
 # endif /* PACKET_HOST */
 
 
@@ -629,6 +633,11 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	struct pcap_pkthdr	pcap_header;
 	struct iovec		iov;
 	struct msghdr		msg;
+	struct cmsghdr		*cmsg;
+	union {
+		struct cmsghdr	cmsg;
+		char		buf[CMSG_SPACE(sizeof(struct tpacket_auxdata))];
+	} cmsg_buf;
 #ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is a cooked device, leave extra room for a
@@ -667,8 +676,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	msg.msg_namelen		= sizeof(from);
 	msg.msg_iov		= &iov;
 	msg.msg_iovlen		= 1;
-	msg.msg_control		= NULL;
-	msg.msg_controllen	= 0;
+	msg.msg_control		= &cmsg_buf;
+	msg.msg_controllen	= sizeof(cmsg_buf);
 	msg.msg_flags		= 0;
 
 	iov.iov_len		= handle->bufsize - offset;
@@ -774,6 +783,36 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		      from.sll_halen);
 		hdrp->sll_protocol = from.sll_protocol;
 	}
+
+#ifdef HAVE_PACKET_AUXDATA
+	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+		struct tpacket_auxdata *aux;
+		unsigned int len;
+		struct vlan_tag *tag;
+
+		if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
+		    cmsg->cmsg_level != SOL_PACKET ||
+		    cmsg->cmsg_type != PACKET_AUXDATA)
+			continue;
+
+		aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
+		if (aux->tp_vlan_tci == 0)
+			continue;
+
+		len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
+		if (len < 2 * ETH_ALEN)
+			break;
+
+		bp -= VLAN_TAG_LEN;
+		memmove(bp, bp + VLAN_TAG_LEN, 2 * ETH_ALEN);
+
+		tag = (struct vlan_tag *)(bp + 2 * ETH_ALEN);
+		tag->vlan_tpid = htons(ETH_P_8021Q);
+		tag->vlan_tci = htons(aux->tp_vlan_tci);
+
+		packet_len += VLAN_TAG_LEN;
+	}
+#endif /* HAVE_PACKET_AUXDATA */
 #endif
 
 	/*
@@ -1591,7 +1630,7 @@ static int
 activate_new(pcap_t *handle)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
-	int			sock_fd = -1, arptype;
+	int			sock_fd = -1, arptype, val;
 	int			err = 0;
 	struct packet_mreq	mr;
 	const char* device = handle->opt.source;
@@ -1801,6 +1840,20 @@ activate_new(pcap_t *handle)
 			return PCAP_ERROR;
 		}
 	}
+
+	/* Enable auxillary data if supported and reserve room for
+	 * reconstructing VLAN headers. */
+#ifdef HAVE_PACKET_AUXDATA
+	val = 1;
+	if (setsockopt(sock_fd, SOL_PACKET, PACKET_AUXDATA, &val,
+		       sizeof(val)) == -1 && errno != ENOPROTOOPT) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "setsockopt: %s", pcap_strerror(errno));
+		close(sock_fd);
+		return PCAP_ERROR;
+	}
+	handle->offset += VLAN_TAG_LEN;
+#endif /* HAVE_PACKET_AUXDATA */
 
 	/*
 	 * This is a 2.2[.x] or later kernel (we know that
