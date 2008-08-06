@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.150 2008-07-01 08:02:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.151 2008-08-06 07:39:44 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -625,10 +625,10 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #else
 	struct sockaddr		from;
 #endif
-	socklen_t		fromlen;
 	int			packet_len, caplen;
 	struct pcap_pkthdr	pcap_header;
-
+	struct iovec		iov;
+	struct msghdr		msg;
 #ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is a cooked device, leave extra room for a
@@ -662,6 +662,18 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * get notified of "network down" events.
 	 */
 	bp = handle->buffer + handle->offset;
+
+	msg.msg_name		= &from;
+	msg.msg_namelen		= sizeof(from);
+	msg.msg_iov		= &iov;
+	msg.msg_iovlen		= 1;
+	msg.msg_control		= NULL;
+	msg.msg_controllen	= 0;
+	msg.msg_flags		= 0;
+
+	iov.iov_len		= handle->bufsize - offset;
+	iov.iov_base		= bp + offset;
+
 	do {
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -675,11 +687,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			handle->break_loop = 0;
 			return -2;
 		}
-		fromlen = sizeof(from);
-		packet_len = recvfrom(
-			handle->fd, bp + offset,
-			handle->bufsize - offset, MSG_TRUNC,
-			(struct sockaddr *) &from, &fromlen);
+
+		packet_len = recvmsg(handle->fd, &msg, MSG_TRUNC);
 	} while (packet_len == -1 && (errno == EINTR || errno == ENETDOWN));
 
 	/* Check if an error occured */
