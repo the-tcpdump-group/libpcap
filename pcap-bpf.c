@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.111 2008-07-01 08:02:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.112 2008-09-16 00:20:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -28,12 +28,19 @@ static const char rcsid[] _U_ =
 #endif
 
 #include <sys/param.h>			/* optionally get BSD define */
+#ifdef HAVE_ZEROCOPY_BPF
+#include <sys/mman.h>
+#endif
 #include <sys/time.h>
 #include <sys/timeb.h>
 #include <sys/socket.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
+
+#ifdef HAVE_ZEROCOPY_BPF
+#include <machine/atomic.h>
+#endif
 
 #include <net/if.h>
 
@@ -158,6 +165,227 @@ static int pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp);
 static int pcap_setdirection_bpf(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 
+#ifdef HAVE_ZEROCOPY_BPF
+/*
+ * For zerocopy bpf, we need to override the setnonblock/getnonblock routines
+ * so we don't call select(2) if the pcap handle is in non-blocking mode.  We
+ * preserve the timeout supplied by pcap_open functions to make sure it
+ * does not get clobbered if the pcap handle moves between blocking and non-
+ * blocking mode.
+ */
+static int
+pcap_getnonblock_zbuf(pcap_t *p, char *errbuf)
+{ 
+
+	/*
+	 * Use a negative value for the timeout to represent that the
+	 * pcap handle is in non-blocking mode.
+	 */
+	return (p->md.timeout < 0);
+}
+
+static int
+pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
+{   
+
+	/*
+	 * Map each value to the corresponding 2's complement, to
+         * preserve the timeout value provided with pcap_set_timeout.
+	 * (from pcap-linux.c).
+	 */
+	if (nonblock) {
+		if (p->md.timeout > 0)
+			p->md.timeout = p->md.timeout * -1 - 1;
+	} else
+		if (p->md.timeout < 0)
+			p->md.timeout = (p->md.timeout + 1) * -1;
+        return (0);
+}
+
+/*
+ * Zero-copy specific close method.  Un-map the shred buffers then call
+ * pcap_close_common.
+ */
+static void
+pcap_close_zbuf(pcap_t *p)
+{
+
+	/*
+	 * Check to see if this pcap instance was using the zerocopy buffer
+	 * mode.  If it was, delete the mappings.  Note that p->buffer
+	 * gets initialized to one of the mmaped regions in this case, so
+	 * do not try and free it directly.
+	 *
+	 * If the regular buffer mode was selected, then it is safe to free
+	 * this memory.
+	 */
+	if (p->md.zerocopy == 0) {
+		pcap_cleanup_live_common(p);
+		return;
+	}
+	if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
+		(void) munmap(p->md.zbuf1, p->md.zbufsize);
+	if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
+		(void) munmap(p->md.zbuf2, p->md.zbufsize);
+	p->buffer = NULL;
+	pcap_cleanup_live_common(p);
+}
+
+/*
+ * Zero-copy BPF buffer routines to check for and acknowledge BPF data in
+ * shared memory buffers.
+ *
+ * pcap_next_zbuf_shm(): Check for a newly available shared memory buffer,
+ * and set up p->buffer and cc to reflect one if available.  Notice that if
+ * there was no prior buffer, we select zbuf1 as this will be the first
+ * buffer filled for a fresh BPF session.
+ */
+static int
+pcap_next_zbuf_shm(pcap_t *p, int *cc)
+{
+	struct bpf_zbuf_header *bzh;
+
+	if (p->md.zbuffer == p->md.zbuf2 || p->md.zbuffer == NULL) {
+		bzh = (struct bpf_zbuf_header *)p->md.zbuf1;
+		if (bzh->bzh_user_gen !=
+		    atomic_load_acq_int(&bzh->bzh_kernel_gen)) {
+			p->md.bzh = bzh;
+			p->md.zbuffer = (u_char *)p->md.zbuf1;
+			p->buffer = p->md.zbuffer + sizeof(*bzh);
+			*cc = bzh->bzh_kernel_len;
+			return (1);
+		}
+	} else if (p->md.zbuffer == p->md.zbuf1) {
+		bzh = (struct bpf_zbuf_header *)p->md.zbuf2;
+		if (bzh->bzh_user_gen !=
+		    atomic_load_acq_int(&bzh->bzh_kernel_gen)) {
+			p->md.bzh = bzh;
+			p->md.zbuffer = (u_char *)p->md.zbuf2;
+  			p->buffer = p->md.zbuffer + sizeof(*bzh);
+			*cc = bzh->bzh_kernel_len;
+			return (1);
+		}
+	}
+	*cc = 0;
+	return (0);
+}
+
+/*
+ * pcap_next_zbuf() -- Similar to pcap_next_zbuf_shm(), except wait using
+ * select() for data or a timeout, and possibly force rotation of the buffer
+ * in the event we time out or are in immediate mode.  Invoke the shared
+ * memory check before doing system calls in order to avoid doing avoidable
+ * work.
+ */
+static int
+pcap_next_zbuf(pcap_t *p, int *cc)
+{
+	struct bpf_zbuf bz;
+	struct timeval tv;
+	struct timespec cur;
+	fd_set r_set;
+	int data, r;
+	int expire, tmout;
+
+#define TSTOMILLI(ts) (((ts)->tv_sec * 1000) + ((ts)->tv_nsec / 1000000))
+	/*
+	 * Start out by seeing whether anything is waiting by checking the
+	 * next shared memory buffer for data.
+	 */
+	data = pcap_next_zbuf_shm(p, cc);
+	if (data)
+		return (data);
+	/*
+	 * If a previous sleep was interrupted due to signal delivery, make
+	 * sure that the timeout gets adjusted accordingly.  This requires
+	 * that we analyze when the timeout should be been expired, and
+	 * subtract the current time from that.  If after this operation,
+	 * our timeout is less then or equal to zero, handle it like a
+	 * regular timeout.
+	 */
+	tmout = p->md.timeout;
+	if (tmout)
+		(void) clock_gettime(CLOCK_MONOTONIC, &cur);
+	if (p->md.interrupted && p->md.timeout) {
+		expire = TSTOMILLI(&p->md.firstsel) + p->md.timeout;
+		tmout = expire - TSTOMILLI(&cur);
+#undef TSTOMILLI
+		if (tmout <= 0) {
+			p->md.interrupted = 0;
+			data = pcap_next_zbuf_shm(p, cc);
+			if (data)
+				return (data);
+			if (ioctl(p->fd, BIOCROTZBUF, &bz) < 0) {
+				(void) snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "BIOCROTZBUF: %s", strerror(errno));
+				return (-1);
+			}
+			return (pcap_next_zbuf_shm(p, cc));
+		}
+	}
+	/*
+	 * No data in the buffer, so must use select() to wait for data or
+	 * the next timeout.  Note that we only call select if the handle
+	 * is in blocking mode.
+	 */
+	if (p->md.timeout >= 0) {
+		FD_ZERO(&r_set);
+		FD_SET(p->fd, &r_set);
+		if (tmout != 0) {
+			tv.tv_sec = tmout / 1000;
+			tv.tv_usec = (tmout * 1000) % 1000000;
+		}
+		r = select(p->fd + 1, &r_set, NULL, NULL,
+		    p->md.timeout != 0 ? &tv : NULL);
+		if (r < 0 && errno == EINTR) {
+			if (!p->md.interrupted && p->md.timeout) {
+				p->md.interrupted = 1;
+				p->md.firstsel = cur;
+			}
+			return (0);
+		} else if (r < 0) {
+			(void) snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "select: %s", strerror(errno));
+			return (-1);
+		}
+	}
+	p->md.interrupted = 0;
+	/*
+	 * Check again for data, which may exist now that we've either been
+	 * woken up as a result of data or timed out.  Try the "there's data"
+	 * case first since it doesn't require a system call.
+	 */
+	data = pcap_next_zbuf_shm(p, cc);
+	if (data)
+		return (data);
+	/*
+	 * Try forcing a buffer rotation to dislodge timed out or immediate
+	 * data.
+	 */
+	if (ioctl(p->fd, BIOCROTZBUF, &bz) < 0) {
+		(void) snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "BIOCROTZBUF: %s", strerror(errno));
+		return (-1);
+	}
+	return (pcap_next_zbuf_shm(p, cc));
+}
+
+/*
+ * Notify kernel that we are done with the buffer.  We don't reset zbuffer so
+ * that we know which buffer to use next time around.
+ */
+static int
+pcap_ack_zbuf(pcap_t *p)
+{
+
+	atomic_store_rel_int(&p->md.bzh->bzh_user_gen,
+	    p->md.bzh->bzh_kernel_gen);
+	p->md.bzh = NULL;
+	p->buffer = NULL;
+	return (0);
+}
+#endif
+
 pcap_t *
 pcap_create(const char *device, char *ebuf)
 {
@@ -173,6 +401,11 @@ pcap_create(const char *device, char *ebuf)
 		return (NULL);
 
 	p->activate_op = pcap_activate_bpf;
+#ifdef HAVE_ZEROCOPY_BPF
+	p->cleanup_op = pcap_close_zbuf;
+	p->setnonblock_op = pcap_setnonblock_zbuf;
+	p->getnonblock_op = pcap_getnonblock_zbuf;
+#endif
 	p->can_set_rfmon_op = pcap_can_set_rfmon_bpf;
 	return (p);
 }
@@ -507,6 +740,9 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #ifdef PCAP_FDDIPAD
 	register int pad;
 #endif
+#ifdef HAVE_ZEROCOPY_BPF
+	int i;
+#endif
 
  again:
 	/*
@@ -523,6 +759,25 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	}
 	cc = p->cc;
 	if (p->cc == 0) {
+               /*
+                * When reading without zero-copy from a file descriptor, we
+                * use a single buffer and return a length of data in the
+                * buffer.  With zero-copy, we update the p->buffer pointer
+                * to point at whatever underlying buffer contains the next
+                * data and update cc to reflect the data found in the
+                * buffer.
+                */
+#ifdef HAVE_ZEROCOPY_BPF
+               if (p->md.zerocopy) {
+                       if (p->buffer != NULL)
+                               pcap_ack_zbuf(p);
+                       i = pcap_next_zbuf(p, &cc);
+                       if (i == 0)
+                               goto again;
+                       if (i < 0)
+                               return (-1);
+               } else
+#endif
 		cc = read(p->fd, (char *)p->buffer, p->bufsize);
 		if (cc < 0) {
 			/* Don't choke when we get ptraced */
@@ -954,6 +1209,18 @@ pcap_cleanup_bpf(pcap_t *p)
 		p->md.must_clear = 0;
 	}
 
+#ifdef HAVE_ZEROCOPY_BPF
+        /*
+         * In zero-copy mode, p->buffer is just a pointer into one of the two
+         * memory-mapped buffers, so no need to free it.
+         */
+        if (p->md.zerocopy) {
+                if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
+                        munmap(p->md.zbuf1, p->md.zbufsize);
+                if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
+                        munmap(p->md.zbuf2, p->md.zbufsize);
+        }
+#endif
 	if (p->md.device != NULL) {
 		free(p->md.device);
 		p->md.device = NULL;
@@ -1073,6 +1340,10 @@ pcap_activate_bpf(pcap_t *p)
 	struct bpf_program total_prog;
 	struct utsname osinfo;
 	int have_osinfo = 0;
+#ifdef HAVE_ZEROCOPY_BPF
+	struct bpf_zbuf bz;
+	u_int bufmode, zbufmax;
+#endif
 
 	fd = bpf_open(p);
 	if (fd < 0) {
@@ -1189,7 +1460,63 @@ pcap_activate_bpf(pcap_t *p)
 		}
 	}
 #endif /* __APPLE__ */
-
+#ifdef HAVE_ZEROCOPY_BPF
+        /*
+         * If the BPF extension to set buffer mode is present, try setting
+         * the mode to zero-copy.  If that fails, use regular buffering.  If
+         * it succeeds but other setup fails, return an error to the user.
+         */
+        bufmode = BPF_BUFMODE_ZBUF;
+        if (ioctl(fd, BIOCSETBUFMODE, (caddr_t)&bufmode) == 0) {
+                p->md.zerocopy = 1;
+                /*
+                 * How to pick a buffer size: first, query the maximum buffer
+                 * size supported by zero-copy.  This also lets us quickly
+                 * determine whether the kernel generally supports zero-copy.
+                 * Then, query the default buffer size, which reflects kernel
+                 * policy for a desired default.  Round to the nearest page
+                 * size.
+                 */
+                if (ioctl(fd, BIOCGETZMAX, (caddr_t)&zbufmax) < 0) {
+                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGETZMAX: %s",
+                            pcap_strerror(errno));
+                        goto bad;
+                }
+                if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) || v < 32768)
+                        v = 32768;
+#ifndef roundup
+#define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))  /* to any y */
+#endif
+                p->md.zbufsize = roundup(v, getpagesize());
+                if (p->md.zbufsize > zbufmax)
+                        p->md.zbufsize = zbufmax;
+                p->md.zbuf1 = mmap(NULL, p->md.zbufsize, PROT_READ | PROT_WRITE,
+                    MAP_ANON, -1, 0);
+                p->md.zbuf2 = mmap(NULL, p->md.zbufsize, PROT_READ | PROT_WRITE,
+                    MAP_ANON, -1, 0);
+                if (p->md.zbuf1 == MAP_FAILED || p->md.zbuf2 == MAP_FAILED) {
+                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "mmap: %s",
+                            pcap_strerror(errno));
+                        goto bad;
+                }
+                bzero(&bz, sizeof(bz));
+                bz.bz_bufa = p->md.zbuf1;
+                bz.bz_bufb = p->md.zbuf2;
+                bz.bz_buflen = p->md.zbufsize;
+                if (ioctl(fd, BIOCSETZBUF, (caddr_t)&bz) < 0) {
+                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETZBUF: %s",
+                            pcap_strerror(errno));
+                        goto bad;
+                }
+                (void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+                if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
+                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
+                            p->opt.source, pcap_strerror(errno));
+                        goto bad;
+                }
+                v = p->md.zbufsize - sizeof(struct bpf_zbuf_header);
+        } else
+#endif
 	/*
 	 * Set the buffer size.
 	 */
@@ -1508,7 +1835,11 @@ pcap_activate_bpf(pcap_t *p)
 	}
 #endif
 	/* set timeout */
-	if (p->md.timeout != 0) {
+#ifdef HAVE_ZEROCOPY_BPF
+	if (p->md.timeout != 0 && !p->md.zerocopy) {
+#else
+	if (p->md.timeout) {
+#endif
 		/*
 		 * XXX - is this seconds/nanoseconds in AIX?
 		 * (Treating it as such doesn't fix the timeout
@@ -1599,6 +1930,9 @@ pcap_activate_bpf(pcap_t *p)
 		goto bad;
 	}
 	p->bufsize = v;
+#ifdef HAVE_ZEROCOPY_BPF
+        if (!p->md.zerocopy) {
+#endif
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -1610,6 +1944,9 @@ pcap_activate_bpf(pcap_t *p)
 	/* For some strange reason this seems to prevent the EFAULT
 	 * problems we have experienced from AIX BPF. */
 	memset(p->buffer, 0x0, p->bufsize);
+#endif
+#ifdef HAVE_ZEROCOPY_BPF
+        }
 #endif
 
 	/*
