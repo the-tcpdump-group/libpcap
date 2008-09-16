@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.115 2008-09-16 17:20:32 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.116 2008-09-16 18:42:29 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -205,21 +205,14 @@ pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
  * pcap_cleanup_live_common.
  */
 static void
-pcap_close_zbuf(pcap_t *p)
+pcap_cleanup_zbuf(pcap_t *p)
 {
 	/*
-	 * Check to see if this pcap instance was using the zerocopy buffer
-	 * mode.  If it was, delete the mappings.  Note that p->buffer
-	 * gets initialized to one of the mmaped regions in this case, so
-	 * do not try and free it directly.
-	 *
-	 * If the regular buffer mode was selected, then it is safe to free
-	 * this memory.
+	 * Delete the mappings.  Note that p->buffer gets initialized to one
+	 * of the mmapped regions in this case, so do not try and free it
+	 * directly; null it out so that pcap_cleanup_live_common() doesn't
+	 * try to free it.
 	 */
-	if (p->md.zerocopy == 0) {
-		pcap_cleanup_live_common(p);
-		return;
-	}
 	if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
 		(void) munmap(p->md.zbuf1, p->md.zbufsize);
 	if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
@@ -398,11 +391,6 @@ pcap_create(const char *device, char *ebuf)
 		return (NULL);
 
 	p->activate_op = pcap_activate_bpf;
-#ifdef HAVE_ZEROCOPY_BPF
-	p->cleanup_op = pcap_close_zbuf;
-	p->setnonblock_op = pcap_setnonblock_zbuf;
-	p->getnonblock_op = pcap_getnonblock_zbuf;
-#endif
 	p->can_set_rfmon_op = pcap_can_set_rfmon_bpf;
 	return (p);
 }
@@ -1472,6 +1460,14 @@ pcap_activate_bpf(pcap_t *p)
 		 * We have zerocopy BPF; use it.
 		 */
 		p->md.zerocopy = 1;
+
+		/*
+		 * Set the cleanup and set/get nonblocking mode ops
+		 * as appropriate for zero-copy mode.
+		 */
+		p->cleanup_op = pcap_cleanup_zbuf;
+		p->setnonblock_op = pcap_setnonblock_zbuf;
+		p->getnonblock_op = pcap_getnonblock_zbuf;
 
 		/*
 		 * How to pick a buffer size: first, query the maximum buffer
