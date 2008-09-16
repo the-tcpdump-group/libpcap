@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.113 2008-09-16 06:36:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.114 2008-09-16 07:45:11 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -176,7 +176,6 @@ static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 static int
 pcap_getnonblock_zbuf(pcap_t *p, char *errbuf)
 { 
-
 	/*
 	 * Use a negative value for the timeout to represent that the
 	 * pcap handle is in non-blocking mode.
@@ -187,10 +186,9 @@ pcap_getnonblock_zbuf(pcap_t *p, char *errbuf)
 static int
 pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
 {   
-
 	/*
 	 * Map each value to the corresponding 2's complement, to
-         * preserve the timeout value provided with pcap_set_timeout.
+	 * preserve the timeout value provided with pcap_set_timeout.
 	 * (from pcap-linux.c).
 	 */
 	if (nonblock) {
@@ -199,7 +197,7 @@ pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
 	} else
 		if (p->md.timeout < 0)
 			p->md.timeout = (p->md.timeout + 1) * -1;
-        return (0);
+	return (0);
 }
 
 /*
@@ -209,7 +207,6 @@ pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
 static void
 pcap_close_zbuf(pcap_t *p)
 {
-
 	/*
 	 * Check to see if this pcap instance was using the zerocopy buffer
 	 * mode.  If it was, delete the mappings.  Note that p->buffer
@@ -759,26 +756,28 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	}
 	cc = p->cc;
 	if (p->cc == 0) {
-               /*
-                * When reading without zero-copy from a file descriptor, we
-                * use a single buffer and return a length of data in the
-                * buffer.  With zero-copy, we update the p->buffer pointer
-                * to point at whatever underlying buffer contains the next
-                * data and update cc to reflect the data found in the
-                * buffer.
-                */
+		/*
+		 * When reading without zero-copy from a file descriptor, we
+		 * use a single buffer and return a length of data in the
+		 * buffer.  With zero-copy, we update the p->buffer pointer
+		 * to point at whatever underlying buffer contains the next
+		 * data and update cc to reflect the data found in the
+		 * buffer.
+		 */
 #ifdef HAVE_ZEROCOPY_BPF
-               if (p->md.zerocopy) {
-                       if (p->buffer != NULL)
-                               pcap_ack_zbuf(p);
-                       i = pcap_next_zbuf(p, &cc);
-                       if (i == 0)
-                               goto again;
-                       if (i < 0)
-                               return (-1);
-               } else
+		if (p->md.zerocopy) {
+			if (p->buffer != NULL)
+				pcap_ack_zbuf(p);
+			i = pcap_next_zbuf(p, &cc);
+			if (i == 0)
+				goto again;
+			if (i < 0)
+				return (-1);
+		} else
 #endif
-		cc = read(p->fd, (char *)p->buffer, p->bufsize);
+		{
+			cc = read(p->fd, (char *)p->buffer, p->bufsize);
+		}
 		if (cc < 0) {
 			/* Don't choke when we get ptraced */
 			switch (errno) {
@@ -1210,16 +1209,16 @@ pcap_cleanup_bpf(pcap_t *p)
 	}
 
 #ifdef HAVE_ZEROCOPY_BPF
-        /*
-         * In zero-copy mode, p->buffer is just a pointer into one of the two
-         * memory-mapped buffers, so no need to free it.
-         */
-        if (p->md.zerocopy) {
-                if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
-                        munmap(p->md.zbuf1, p->md.zbufsize);
-                if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
-                        munmap(p->md.zbuf2, p->md.zbufsize);
-        }
+	/*
+	 * In zero-copy mode, p->buffer is just a pointer into one of the two
+	 * memory-mapped buffers, so no need to free it.
+	 */
+	if (p->md.zerocopy) {
+		if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
+			munmap(p->md.zbuf1, p->md.zbufsize);
+		if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
+			munmap(p->md.zbuf2, p->md.zbufsize);
+	}
 #endif
 	if (p->md.device != NULL) {
 		free(p->md.device);
@@ -1461,124 +1460,143 @@ pcap_activate_bpf(pcap_t *p)
 	}
 #endif /* __APPLE__ */
 #ifdef HAVE_ZEROCOPY_BPF
-        /*
-         * If the BPF extension to set buffer mode is present, try setting
-         * the mode to zero-copy.  If that fails, use regular buffering.  If
-         * it succeeds but other setup fails, return an error to the user.
-         */
-        bufmode = BPF_BUFMODE_ZBUF;
-        if (ioctl(fd, BIOCSETBUFMODE, (caddr_t)&bufmode) == 0) {
-                p->md.zerocopy = 1;
-                /*
-                 * How to pick a buffer size: first, query the maximum buffer
-                 * size supported by zero-copy.  This also lets us quickly
-                 * determine whether the kernel generally supports zero-copy.
-                 * Then, query the default buffer size, which reflects kernel
-                 * policy for a desired default.  Round to the nearest page
-                 * size.
-                 */
-                if (ioctl(fd, BIOCGETZMAX, (caddr_t)&zbufmax) < 0) {
-                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGETZMAX: %s",
-                            pcap_strerror(errno));
-                        goto bad;
-                }
-                if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) || v < 32768)
-                        v = 32768;
+	/*
+	 * If the BPF extension to set buffer mode is present, try setting
+	 * the mode to zero-copy.  If that fails, use regular buffering.  If
+	 * it succeeds but other setup fails, return an error to the user.
+	 */
+	bufmode = BPF_BUFMODE_ZBUF;
+	if (ioctl(fd, BIOCSETBUFMODE, (caddr_t)&bufmode) == 0) {
+		/*
+		 * We have zerocopy BPF; use it.
+		 */
+		p->md.zerocopy = 1;
+
+		/*
+		 * How to pick a buffer size: first, query the maximum buffer
+		 * size supported by zero-copy.  This also lets us quickly
+		 * determine whether the kernel generally supports zero-copy.
+		 * Then, if a buffer size was specified, use that, otherwise
+		 * query the default buffer size, which reflects kernel
+		 * policy for a desired default.  Round to the nearest page
+		 * size.
+		 */
+		if (ioctl(fd, BIOCGETZMAX, (caddr_t)&zbufmax) < 0) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGETZMAX: %s",
+			    pcap_strerror(errno));
+			goto bad;
+		}
+
+		if (p->opt.buffer_size != 0) {
+			/*
+			 * A buffer size was explicitly specified; use it.
+			 */
+			v = p->opt.buffer_size;
+		} else {
+			if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) ||
+			    v < 32768)
+				v = 32768;
+		}
 #ifndef roundup
 #define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))  /* to any y */
 #endif
-                p->md.zbufsize = roundup(v, getpagesize());
-                if (p->md.zbufsize > zbufmax)
-                        p->md.zbufsize = zbufmax;
-                p->md.zbuf1 = mmap(NULL, p->md.zbufsize, PROT_READ | PROT_WRITE,
-                    MAP_ANON, -1, 0);
-                p->md.zbuf2 = mmap(NULL, p->md.zbufsize, PROT_READ | PROT_WRITE,
-                    MAP_ANON, -1, 0);
-                if (p->md.zbuf1 == MAP_FAILED || p->md.zbuf2 == MAP_FAILED) {
-                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "mmap: %s",
-                            pcap_strerror(errno));
-                        goto bad;
-                }
-                bzero(&bz, sizeof(bz));
-                bz.bz_bufa = p->md.zbuf1;
-                bz.bz_bufb = p->md.zbuf2;
-                bz.bz_buflen = p->md.zbufsize;
-                if (ioctl(fd, BIOCSETZBUF, (caddr_t)&bz) < 0) {
-                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETZBUF: %s",
-                            pcap_strerror(errno));
-                        goto bad;
-                }
-                (void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
-                if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
-                            p->opt.source, pcap_strerror(errno));
-                        goto bad;
-                }
-                v = p->md.zbufsize - sizeof(struct bpf_zbuf_header);
-        } else
-#endif
-	/*
-	 * Set the buffer size.
-	 */
-	if (p->opt.buffer_size != 0) {
-		/*
-		 * A buffer size was explicitly specified; use it.
-		 */
-		if (ioctl(fd, BIOCSBLEN, (caddr_t)&p->opt.buffer_size) < 0) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "BIOCSBLEN: %s: %s", p->opt.source,
+		p->md.zbufsize = roundup(v, getpagesize());
+		if (p->md.zbufsize > zbufmax)
+			p->md.zbufsize = zbufmax;
+		p->md.zbuf1 = mmap(NULL, p->md.zbufsize, PROT_READ | PROT_WRITE,
+		    MAP_ANON, -1, 0);
+		p->md.zbuf2 = mmap(NULL, p->md.zbufsize, PROT_READ | PROT_WRITE,
+		    MAP_ANON, -1, 0);
+		if (p->md.zbuf1 == MAP_FAILED || p->md.zbuf2 == MAP_FAILED) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "mmap: %s",
 			    pcap_strerror(errno));
-			status = PCAP_ERROR;
 			goto bad;
 		}
-
-		/*
-		 * Now bind to the device.
-		 */
-		(void)strncpy(ifr.ifr_name, p->opt.source,
-		    sizeof(ifr.ifr_name));
+		bzero(&bz, sizeof(bz));
+		bz.bz_bufa = p->md.zbuf1;
+		bz.bz_bufb = p->md.zbuf2;
+		bz.bz_buflen = p->md.zbufsize;
+		if (ioctl(fd, BIOCSETZBUF, (caddr_t)&bz) < 0) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETZBUF: %s",
+			    pcap_strerror(errno));
+			goto bad;
+		}
+		(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
 		if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-			status = check_setif_failure(p, errno);
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
+			    p->opt.source, pcap_strerror(errno));
 			goto bad;
 		}
-	} else {
+		v = p->md.zbufsize - sizeof(struct bpf_zbuf_header);
+	} else
+#endif
+	{
 		/*
-		 * No buffer size was explicitly specified.
-		 *
-		 * Try finding a good size for the buffer; 32768 may
-		 * be too big, so keep cutting it in half until we
-		 * find a size that works, or run out of sizes to try.
-		 * If the default is larger, don't make it smaller.
+		 * We don't have zerocopy BPF.
+		 * Set the buffer size.
 		 */
-		if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) || v < 32768)
-			v = 32768;
-		for ( ; v != 0; v >>= 1) {
+		if (p->opt.buffer_size != 0) {
 			/*
-			 * Ignore the return value - this is because the
-			 * call fails on BPF systems that don't have
-			 * kernel malloc.  And if the call fails, it's
-			 * no big deal, we just continue to use the
-			 * standard buffer size.
+			 * A buffer size was explicitly specified; use it.
 			 */
-			(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
+			if (ioctl(fd, BIOCSBLEN,
+			    (caddr_t)&p->opt.buffer_size) < 0) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "BIOCSBLEN: %s: %s", p->opt.source,
+				    pcap_strerror(errno));
+				status = PCAP_ERROR;
+				goto bad;
+			}
 
+			/*
+			 * Now bind to the device.
+			 */
 			(void)strncpy(ifr.ifr_name, p->opt.source,
 			    sizeof(ifr.ifr_name));
-			if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) >= 0)
-				break;	/* that size worked; we're done */
-
-			if (errno != ENOBUFS) {
+			if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
 				status = check_setif_failure(p, errno);
 				goto bad;
 			}
-		}
+		} else {
+			/*
+			 * No buffer size was explicitly specified.
+			 *
+			 * Try finding a good size for the buffer; 32768 may
+			 * be too big, so keep cutting it in half until we
+			 * find a size that works, or run out of sizes to try.
+			 * If the default is larger, don't make it smaller.
+			 */
+			if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) ||
+			    v < 32768)
+				v = 32768;
+			for ( ; v != 0; v >>= 1) {
+				/*
+				 * Ignore the return value - this is because the
+				 * call fails on BPF systems that don't have
+				 * kernel malloc.  And if the call fails, it's
+				 * no big deal, we just continue to use the
+				 * standard buffer size.
+				 */
+				(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
 
-		if (v == 0) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "BIOCSBLEN: %s: No buffer size worked",
-			    p->opt.source);
-			status = PCAP_ERROR;
-			goto bad;
+				(void)strncpy(ifr.ifr_name, p->opt.source,
+				    sizeof(ifr.ifr_name));
+				if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) >= 0)
+					break;	/* that size worked; we're done */
+
+				if (errno != ENOBUFS) {
+					status = check_setif_failure(p, errno);
+					goto bad;
+				}
+			}
+
+			if (v == 0) {
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "BIOCSBLEN: %s: No buffer size worked",
+				    p->opt.source);
+				status = PCAP_ERROR;
+				goto bad;
+			}
 		}
 	}
 
@@ -1931,7 +1949,7 @@ pcap_activate_bpf(pcap_t *p)
 	}
 	p->bufsize = v;
 #ifdef HAVE_ZEROCOPY_BPF
-        if (!p->md.zerocopy) {
+	if (!p->md.zerocopy) {
 #endif
 	p->buffer = (u_char *)malloc(p->bufsize);
 	if (p->buffer == NULL) {
@@ -1946,7 +1964,7 @@ pcap_activate_bpf(pcap_t *p)
 	memset(p->buffer, 0x0, p->bufsize);
 #endif
 #ifdef HAVE_ZEROCOPY_BPF
-        }
+	}
 #endif
 
 	/*
