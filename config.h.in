@@ -161,6 +161,9 @@
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
 
+/* define if the system supports zerocopy BPF */
+#undef HAVE_ZEROCOPY_BPF
+
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
 

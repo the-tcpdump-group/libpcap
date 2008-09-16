@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.16 2008-08-06 08:30:04 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.17 2008-09-16 00:21:08 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.16 $)
+AC_REVISION($Revision: 1.138.2.17 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -37,7 +37,7 @@ AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h limits.h paths.h)
 AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
 #include <sys/socket.h>
 #include <net/if.h>])
-if test "$ac_cv_header_net_pfvar_h" == yes; then
+if test "$ac_cv_header_net_pfvar_h" = yes; then
 	#
 	# Check for various PF actions.
 	#
@@ -264,8 +264,8 @@ else
 fi
 AC_MSG_RESULT($V_PCAP)
 
-if test "$V_PCAP" = dlpi
-then
+case "$V_PCAP" in
+dlpi)
 	#
 	# Checks to see if Solaris has the public libdlpi(3LIB) library.
 	# Note: The existence of /usr/include/libdlpi.h does not mean it is the
@@ -285,7 +285,24 @@ then
 		AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists]),
 		V_PCAP=dlpi)
 	LDFLAGS=$saved_ldflags
-fi
+	;;
+
+bpf)
+	AC_MSG_CHECKING(whether the system supports zerocopy BPF)
+	AC_TRY_COMPILE(
+	    [#include <sys/socket.h>
+	    #include <sys/ioctl.h>
+	    #include <net/if.h>
+	    #include <net/bpf.h>],
+	    [return (BIOCROTZBUF + BPF_BUFMODE_ZBUF);],
+	    [  
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_ZEROCOPY_BPF, 1,
+		[define if the system supports zerocopy BPF])
+	    ],
+	    AC_MSG_RESULT(no))
+	;;
+esac
 
 dnl
 dnl Now figure out how we get a list of interfaces and addresses,

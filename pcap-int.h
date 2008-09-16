@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.8 2008-08-06 07:49:59 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-int.h,v 1.85.2.9 2008-09-16 00:21:08 guy Exp $ (LBL)
  */
 
 #ifndef pcap_int_h
@@ -152,6 +152,28 @@ struct pcap_md {
 				 * Same as in linux above, introduce
 				 * generally? */
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_ZEROCOPY_BPF
+       /*
+        * Zero-copy read buffer -- for zero-copy BPF.  'buffer' above will
+        * alternative between these two actual mmap'd buffers as required.
+        * As there is a header on the front size of the mmap'd buffer, only
+        * some of the buffer is exposed to libpcap as a whole via bufsize;
+        * zbufsize is the true size.  zbuffer tracks the current zbuf
+        * assocated with buffer so that it can be used to decide which the
+        * next buffer to read will be.
+        */
+       u_char *zbuf1, *zbuf2, *zbuffer;
+       u_int zbufsize;
+       u_int zerocopy;
+       u_int interrupted;
+       struct timespec firstsel;
+       /*
+        * If there's currently a buffer being actively processed, then it is
+        * referenced here; 'buffer' is also pointed at it, but offset by the
+        * size of the header.
+        */
+       struct bpf_zbuf_header *bzh;
+#endif /* HAVE_ZEROCOPY_BPF */
 };
 
 /*
