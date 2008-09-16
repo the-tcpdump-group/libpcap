@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99.2.15 2008-09-16 07:45:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.99.2.16 2008-09-16 17:20:50 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -315,7 +315,7 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 			if (ioctl(p->fd, BIOCROTZBUF, &bz) < 0) {
 				(void) snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "BIOCROTZBUF: %s", strerror(errno));
-				return (-1);
+				return (PCAP_ERROR);
 			}
 			return (pcap_next_zbuf_shm(p, cc));
 		}
@@ -343,7 +343,7 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 		} else if (r < 0) {
 			(void) snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "select: %s", strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 	}
 	p->md.interrupted = 0;
@@ -362,7 +362,7 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 	if (ioctl(p->fd, BIOCROTZBUF, &bz) < 0) {
 		(void) snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "BIOCROTZBUF: %s", strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	return (pcap_next_zbuf_shm(p, cc));
 }
@@ -424,7 +424,7 @@ bpf_open(pcap_t *p)
 	 * and create the BPF device entries, if they don't
 	 * already exist.
 	 */
-	if (bpf_load(p->errbuf) == -1)
+	if (bpf_load(p->errbuf) == PCAP_ERROR)
 		return (PCAP_ERROR);
 #endif
 
@@ -492,14 +492,14 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 		if (bdlp->bfl_list == NULL) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 
 		if (ioctl(fd, BIOCGDLTLIST, (caddr_t)bdlp) < 0) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
 			free(bdlp->bfl_list);
-			return (-1);
+			return (PCAP_ERROR);
 		}
 
 		/*
@@ -544,7 +544,7 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 		if (errno != EINVAL) {
 			(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 	}
 	return (0);
@@ -669,7 +669,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 * (We don't care about DLT_DOCSIS, so we pass DLT_NULL
 	 * as the default DLT for this adapter.)
 	 */
-	if (get_dlt_list(fd, DLT_NULL, &bdl, p->errbuf) == -1) {
+	if (get_dlt_list(fd, DLT_NULL, &bdl, p->errbuf) == PCAP_ERROR) {
 		close(fd);
 		return (PCAP_ERROR);
 	}
@@ -719,7 +719,7 @@ pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 	if (ioctl(p->fd, BIOCGSTATS, (caddr_t)&s) < 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGSTATS: %s",
 		    pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	ps->ps_recv = s.bs_recv;
@@ -748,11 +748,11 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	if (p->break_loop) {
 		/*
 		 * Yes - clear the flag that indicates that it
-		 * has, and return -2 to indicate that we were
-		 * told to break out of the loop.
+		 * has, and return PCAP_ERROR_BREAK to indicate
+		 * that we were told to break out of the loop.
 		 */
 		p->break_loop = 0;
-		return (-2);
+		return (PCAP_ERROR_BREAK);
 	}
 	cc = p->cc;
 	if (p->cc == 0) {
@@ -772,7 +772,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			if (i == 0)
 				goto again;
 			if (i < 0)
-				return (-1);
+				return (PCAP_ERROR);
 		} else
 #endif
 		{
@@ -830,7 +830,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read: %s",
 			    pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 		bp = p->buffer;
 	} else
@@ -850,16 +850,17 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 * If so, return immediately - if we haven't read any
-		 * packets, clear the flag and return -2 to indicate
-		 * that we were told to break out of the loop, otherwise
-		 * leave the flag set, so that the *next* call will break
-		 * out of the loop without having read any packets, and
-		 * return the number of packets we've processed so far.
+		 * packets, clear the flag and return PCAP_ERROR_BREAK
+		 * to indicate that we were told to break out of the loop,
+		 * otherwise leave the flag set, so that the *next* call
+		 * will break out of the loop without having read any
+		 * packets, and return the number of packets we've
+		 * processed so far.
 		 */
 		if (p->break_loop) {
 			if (n == 0) {
 				p->break_loop = 0;
-				return (-2);
+				return (PCAP_ERROR_BREAK);
 			} else {
 				p->bp = bp;
 				p->cc = ep - bp;
@@ -962,7 +963,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 			(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "send: can't turn off BIOCSHDRCMPLT: %s",
 			    pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 
 		/*
@@ -974,7 +975,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 	if (ret == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	return (ret);
 }
@@ -991,7 +992,7 @@ bpf_odminit(char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_initialize failed: %s",
 		    errstr);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	if ((odmlockid = odm_lock("/etc/objrepos/config_lock", ODM_WAIT)) == -1) {
@@ -1000,7 +1001,7 @@ bpf_odminit(char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_lock of /etc/objrepos/config_lock failed: %s",
 		    errstr);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	return (0);
@@ -1017,7 +1018,7 @@ bpf_odmcleanup(char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_unlock failed: %s",
 		    errstr);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	if (odm_terminate() == -1) {
@@ -1026,7 +1027,7 @@ bpf_odmcleanup(char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_terminate failed: %s",
 		    errstr);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	return (0);
@@ -1051,14 +1052,14 @@ bpf_load(char *errbuf)
 	if (bpfloadedflag)
 		return (0);
 
-	if (bpf_odminit(errbuf) != 0)
-		return (-1);
+	if (bpf_odminit(errbuf) == PCAP_ERROR)
+		return (PCAP_ERROR);
 
 	major = genmajor(BPF_NAME);
 	if (major == -1) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: genmajor failed: %s", pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	minors = getminor(major, &numminors, BPF_NAME);
@@ -1068,19 +1069,19 @@ bpf_load(char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: genminor failed: %s",
 			    pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 	}
 
-	if (bpf_odmcleanup(errbuf))
-		return (-1);
+	if (bpf_odmcleanup(errbuf) == PCAP_ERROR)
+		return (PCAP_ERROR);
 
 	rc = stat(BPF_NODE "0", &sbuf);
 	if (rc == -1 && errno != ENOENT) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: can't stat %s: %s",
 		    BPF_NODE "0", pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 
 	if (rc == -1 || getmajor(sbuf.st_rdev) != major) {
@@ -1091,7 +1092,7 @@ bpf_load(char *errbuf)
 				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "bpf_load: can't mknod %s: %s",
 				    buf, pcap_strerror(errno));
-				return (-1);
+				return (PCAP_ERROR);
 			}
 		}
 	}
@@ -1107,7 +1108,7 @@ bpf_load(char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: could not load driver: %s",
 			    strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 	}
 
@@ -1122,7 +1123,7 @@ bpf_load(char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: could not configure driver: %s",
 			    strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 	}
 
