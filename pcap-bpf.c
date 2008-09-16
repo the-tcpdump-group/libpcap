@@ -20,7 +20,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.112 2008-09-16 00:20:23 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-bpf.c,v 1.113 2008-09-16 06:36:23 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -203,8 +203,8 @@ pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
 }
 
 /*
- * Zero-copy specific close method.  Un-map the shred buffers then call
- * pcap_close_common.
+ * Zero-copy specific close method.  Un-map the shared buffers then call
+ * pcap_cleanup_live_common.
  */
 static void
 pcap_close_zbuf(pcap_t *p)
