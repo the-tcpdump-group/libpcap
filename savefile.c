@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.176 2008-05-30 01:35:33 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.177 2008-09-22 20:14:19 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -636,6 +636,17 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_X2E_XORAYA		214
 
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing), but with the PHY-level data for non-ASK PHYs (4 octets
+ * of 0 as preamble, one octet of SFD, one octet of frame length+
+ * reserved bit, and then the MAC-layer data, starting with the
+ * frame control field).
+ *
+ * Requested by Max Filippov <jcmvbkbc@gmail.com>.
+ */
+#define LINKTYPE_IEEE802_15_4_NONASK_PHY	215
+
 
 static struct linktype_map {
 	int	dlt;
@@ -937,6 +948,9 @@ static struct linktype_map {
 
 	/* X2E-private for Xoraya data logger family */
 	{ DLT_X2E_XORAYA,	LINKTYPE_X2E_XORAYA },
+
+	/* IEEE 802.15.4 with PHY data for non-ASK PHYs */
+	{ DLT_IEEE802_15_4_NONASK_PHY, LINKTYPE_IEEE802_15_4_NONASK_PHY },
 
 	{ -1,			-1 }
 };
