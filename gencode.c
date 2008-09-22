@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.15 2007-12-29 23:15:43 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.16 2008-09-22 20:16:01 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1486,6 +1486,16 @@ init_linktype(p)
 		off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		off_mac = 1;		/* step over the kiss length byte */
+		return;
+
+	case DLT_IEEE802_15_4_NONASK_PHY:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
 		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
@@ -3351,6 +3361,7 @@ gen_linktype(proto)
 
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
+	case DLT_IEEE802_15_4_NONASK_PHY:
 		bpf_error("IEEE 802.15.4 link-layer type filtering not implemented");
 
 	case DLT_IEEE802_16_MAC_CPS_RADIO:

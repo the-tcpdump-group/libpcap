@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.7 2008-05-30 01:36:06 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.8 2008-09-22 20:16:01 guy Exp $ (LBL)
  */
 
 /*
@@ -809,6 +809,17 @@ struct bpf_version {
  * family, as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
  */
 #define DLT_X2E_XORAYA		214
+
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing), but with the PHY-level data for non-ASK PHYs (4 octets
+ * of 0 as preamble, one octet of SFD, one octet of frame length+
+ * reserved bit, and then the MAC-layer data, starting with the
+ * frame control field).
+ *
+ * Requested by Max Filippov <jcmvbkbc@gmail.com>.
+ */
+#define DLT_IEEE802_15_4_NONASK_PHY	215
 
 
 /*
