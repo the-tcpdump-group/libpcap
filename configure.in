@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.156 2008-09-16 07:10:31 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.157 2008-09-23 18:04:01 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.156 $)
+AC_REVISION($Revision: 1.157 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -872,6 +872,10 @@ case "$host_os" in
 aix*)
 	dnl Workaround to enable certain features
 	AC_DEFINE(_SUN,1,[define on AIX to get certain functions])
+
+	# We need "-lodm" and "-lcfg", as libpcap requires them on
+	# AIX.
+	DEPLIBS="-lodm -lcfg"
 	;;
 
 hpux9*)
@@ -955,6 +959,7 @@ AC_SUBST(V_YACC)
 AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
 AC_SUBST(DAGLIBS)
+AC_SUBST(DEPLIBS)
 
 dnl check for USB sniffing support
 AC_MSG_CHECKING(for USB sniffing support)
