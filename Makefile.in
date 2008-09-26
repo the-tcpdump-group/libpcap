@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.20 2008-09-26 21:49:10 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.21 2008-09-26 21:53:13 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -331,7 +331,7 @@ libpcap.so: $(OBJ)
 libpcap.dylib: $(OBJ)
 	rm -f libpcap*.dylib
 	$(CC) -dynamiclib -undefined error -o libpcap.`cat VERSION`.dylib $(OBJ) \
-		-install_name $(libdir)/libpcap.0.dylib \
+		-install_name $(libdir)/libpcap.A.dylib \
 		-compatibility_version 1 \
 		-current_version `cat VERSION`
 
@@ -468,7 +468,7 @@ install-shared-so: libpcap.so
 	$(INSTALL_PROGRAM) libpcap.so.`cat VERSION` $(DESTDIR)$(libdir)/libpcap.so.`cat VERSION`
 install-shared-dylib: libpcap.dylib
 	$(INSTALL_PROGRAM) libpcap.`cat VERSION`.dylib $(DESTDIR)$(libdir)/libpcap.`cat VERSION`.dylib
-	VER=`cat VERSION`; cd $(DESTDIR)$(libdir) && ln -sf libpcap.$$VER.dylib libpcap.0.dylib;  ln -sf libpcap.0.dylib libpcap.dylib
+	VER=`cat VERSION`; cd $(DESTDIR)$(libdir) && ln -sf libpcap.$$VER.dylib libpcap.A.dylib;  ln -sf libpcap.A.dylib libpcap.dylib
 
 uninstall:
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
