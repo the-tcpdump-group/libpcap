@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.129 2008-09-26 21:53:01 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.130 2008-09-26 23:48:50 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -317,7 +317,7 @@ shared: libpcap.$(DYEXT)
 #
 libpcap.so: $(OBJ)
 	@rm -f $@
-	$(CC) -shared -o $@.`cat VERSION` $(OBJ) $(DAGLIBS)
+	$(CC) -shared -Wl,-soname,$@.1 -o $@.`cat VERSION` $(OBJ) $(DAGLIBS)
 
 #
 # The following rule succeeds, but the result is untested.
