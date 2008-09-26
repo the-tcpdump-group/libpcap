@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.127 2008-09-23 18:04:01 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.128 2008-09-26 21:48:49 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -319,11 +319,20 @@ libpcap.so: $(OBJ)
 	@rm -f $@
 	$(CC) -shared -o $@.`cat VERSION` $(OBJ) $(DAGLIBS)
 
-# the following rule succeeds, but the result is untested.
+#
+# The following rule succeeds, but the result is untested.
+#
+# XXX - OS X installs the library as "libpcap.A.dylib", with that as the
+# install_name, and sets the current version to 1 as well.  VERSION
+# might contain a not-purely-numeric version number, but
+# -current_version requires a purely numeric version, so this won't
+# work with top-of-tree builds.
+#
 libpcap.dylib: $(OBJ)
 	rm -f libpcap*.dylib
 	$(CC) -dynamiclib -undefined error -o libpcap.`cat VERSION`.dylib $(OBJ) \
-		-install_name $(libdir)/libpcap.0.dylib -compatibility_version `cat VERSION` \
+		-install_name $(libdir)/libpcap.0.dylib \
+		-compatibility_version 1 \
 		-current_version `cat VERSION`
 
 scanner.c: $(srcdir)/scanner.l
