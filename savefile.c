@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.9 2008-09-22 20:16:01 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.10 2008-10-06 15:38:39 gianluca Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1154,6 +1154,33 @@ pcap_open_offline(const char *fname, char *errbuf)
 	return (p);
 }
 
+#ifdef WIN32
+pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
+{
+	int fd;
+	FILE *file;
+
+	fd = _open_osfhandle(osfd, _O_RDONLY);
+	if ( fd < 0 ) 
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		return NULL;
+	}
+
+	file = _fdopen(fd, "rb");
+	if ( file == NULL ) 
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		return NULL;
+	}
+
+	return pcap_fopen_offline(file, errbuf);
+}
+#endif
+
+#ifdef WIN32
+static
+#endif
 pcap_t *
 pcap_fopen_offline(FILE *fp, char *errbuf)
 {

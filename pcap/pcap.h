@@ -31,7 +31,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.10 2008-07-01 08:04:03 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/pcap.h,v 1.4.2.11 2008-10-06 15:38:39 gianluca Exp $ (LBL)
  */
 
 #ifndef lib_pcap_pcap_h
@@ -268,7 +268,18 @@ int	pcap_activate(pcap_t *);
 pcap_t	*pcap_open_live(const char *, int, int, int, char *);
 pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_offline(const char *, char *);
+#if defined(WIN32)
+pcap_t  *pcap_hopen_offline(intptr_t, char *);
+#if !defined(LIBPCAP_EXPORTS)
+#define pcap_fopen_offline(f,b) \
+	pcap_hopen_offline(_get_osfhandle(_fileno(f)), b)
+#else /*LIBPCAP_EXPORTS*/
+static pcap_t *pcap_fopen_offline(FILE *, char *);
+#endif
+#else /*WIN32*/
 pcap_t	*pcap_fopen_offline(FILE *, char *);
+#endif /*WIN32*/
+
 void	pcap_close(pcap_t *);
 int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
 int	pcap_dispatch(pcap_t *, int, pcap_handler, u_char *);
