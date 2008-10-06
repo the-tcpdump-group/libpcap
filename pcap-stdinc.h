@@ -28,7 +28,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.10 2007-09-27 17:59:45 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.11 2008-10-06 15:27:32 gianluca Exp $ (LBL)
  */
 
 #define SIZEOF_CHAR 1
@@ -64,3 +64,27 @@
 #define vsnprintf _vsnprintf
 #define strdup _strdup
 #define inline __inline 
+
+#ifdef __MINGW32__
+#include <stdint.h>
+#else /*__MINGW32__*/
+/* MSVC compiler */
+#ifndef _UINTPTR_T_DEFINED
+#ifdef  _WIN64
+typedef unsigned __int64    uintptr_t;
+#else
+typedef _W64 unsigned int   uintptr_t;
+#endif
+#define _UINTPTR_T_DEFINED
+#endif
+
+#ifndef _INTPTR_T_DEFINED
+#ifdef  _WIN64
+typedef __int64    intptr_t;
+#else
+typedef _W64 int   intptr_t;
+#endif
+#define _INTPTR_T_DEFINED
+#endif 
+
+#endif /*__MINGW32__*/
