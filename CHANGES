@@ -1,4 +1,30 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67.2.1 2008-10-15 23:24:57 ken Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67.2.2 2008-10-15 23:51:02 ken Exp $ (LBL)
+
+Mon.    October 27, 2008.  ken@netfunctional.ca.  Summary for 1.0.0 libpcap release
+	Compile with IPv6 support by default
+	Compile with large file support on by default
+	Add pcap-config script, which deals with -I/-L flags for compiling
+	DLT: Add IPMB
+	DLT: Add LAPD
+	DLT: Add AX25 (AX.25 w/KISS header)
+	DLT: Add JUNIPER_ST
+	802.15.4 support
+	Variable length 802.11 header support
+	X2E data type support 
+	SITA ACN Interface support - see README.sita
+	Support for zerocopy BPF on platforms that support it
+	Better support for dealing with VLAN tagging/stripping on Linux
+	Fix dynamic library support on OSX
+	Return PCAP_ERROR_IFACE_NOT_UP if the interface isn't 'UP', so applications
+	 can print better diagnostic information
+	Return PCAP_ERROR_PERM_DENIED if we don't have permission to open a device, so
+	 applications can tell the user they need to go play with permissions
+	On Linux, ignore ENETDOWN so we can continue to capture packets if the 
+	 interface goes down and comes back up again.
+	On Linux, support new tpacket frame headers (2.6.27+)
+	On Mac OS X, add scripts for changing permissions on /dev/pbf* and launchd plist
+	On Solaris, support 'passive mode' on systems that support it
+	Fixes to autoconf and general build environment
 
 Mon.    September 10, 2007.  ken@xelerance.com.  Summary for 0.9.8 libpcap release
         Change build process to put public libpcap headers into pcap subir
