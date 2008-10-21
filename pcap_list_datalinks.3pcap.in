@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_open_dead.3pcap,v 1.3 2008-04-06 02:53:22 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_list_datalinks.3pcap.in,v 1.1 2008-10-21 07:33:02 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,10 +19,10 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_OPEN_DEAD 3PCAP "5 April 2008"
+.TH PCAP_LIST_DATALINKS 3PCAP "5 April 2008"
 .SH NAME
-pcap_open_dead \- open a fake pcap_t for compiling filters or opening a
-capture for output
+pcap_list_datalinks \- get a list of link-layer header types supported
+by a capture device
 .SH SYNOPSIS
 .nf
 .ft B
@@ -30,23 +30,29 @@ capture for output
 .ft
 .LP
 .ft B
-pcap_t *pcap_open_dead(int linktype, int snaplen);
+int pcap_list_datalinks(pcap_t *p, int **dlt_buf);
 .ft
 .fi
 .SH DESCRIPTION
-.PP
-.B pcap_open_dead()
-is used for creating a
-.B pcap_t
-structure to use when calling the other functions in libpcap.  It is
-typically used when just using libpcap for compiling BPF code.
-.PP
-.I linktype
-specifies the link-layer type for the
-.BR pcap_t .
-.PP
-.I snaplen
-specifies the snapshot length for the
-.BR pcap_t .
+.B pcap_list_datalinks()
+is used to get a list of the supported data link types of the interface
+associated with the pcap descriptor.
+.B pcap_list_datalinks()
+allocates an array to hold the list and sets
+.IR *dlt_buf .
+The caller is responsible for freeing the array with
+.BR pcap_free_datalinks (3PCAP).
+.SH RETURN VALUE
+.B pcap_list_datalinks()
+returns the number of data link types in the array on success and \-1
+on failure.
+If \-1 is returned,
+.B pcap_geterr()
+or
+.B pcap_perror()
+may be called with
+.I p
+as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap-linktype(4)
+pcap(3PCAP), pcap_geterr(3PCAP), pcap_free_datalinks(3PCAP),
+pcap-linktype(@MAN_MISC_INFO@)

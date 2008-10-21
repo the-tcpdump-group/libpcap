@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.130 2008-09-26 23:48:50 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.131 2008-10-21 07:33:01 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -126,14 +126,19 @@ CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c
 
 MAN1 = pcap-config.1
 
-MAN3PCAP = pcap.3pcap \
+MAN3PCAP_EXPAND = \
+	pcap.3pcap.in \
+	pcap_compile.3pcap.in \
+	pcap_datalink.3pcap.in \
+	pcap_list_datalinks.3pcap.in \
+	pcap_open_dead.3pcap.in
+
+MAN3PCAP_NOEXPAND = \
 	pcap_activate.3pcap \
 	pcap_breakloop.3pcap \
 	pcap_can_set_rfmon.3pcap \
 	pcap_close.3pcap \
-	pcap_compile.3pcap \
 	pcap_create.3pcap \
-	pcap_datalink.3pcap \
 	pcap_datalink_name_to_val.3pcap \
 	pcap_datalink_val_to_name.3pcap \
 	pcap_dump.3pcap \
@@ -153,14 +158,12 @@ MAN3PCAP = pcap.3pcap \
 	pcap_inject.3pcap \
 	pcap_is_swapped.3pcap \
 	pcap_lib_version.3pcap \
-	pcap_list_datalinks.3pcap \
 	pcap_lookupdev.3pcap \
 	pcap_lookupnet.3pcap \
 	pcap_loop.3pcap \
 	pcap_major_version.3pcap \
 	pcap_next_ex.3pcap \
 	pcap_offline_filter.3pcap \
-	pcap_open_dead.3pcap \
 	pcap_open_live.3pcap \
 	pcap_open_offline.3pcap \
 	pcap_set_buffer_size.3pcap \
@@ -177,8 +180,10 @@ MAN3PCAP = pcap.3pcap \
 	pcap_statustostr.3pcap \
 	pcap_strerror.3pcap
 
-MAN4 = pcap-filter.4 \
-	pcap-linktype.4
+MAN3PCAP = $(MAN3PCAP_NOEXPAND) $(MAN3PCAP_EXPAND:.in=)
+
+MANMISC = pcap-filter.manmisc.in \
+	pcap-linktype.manmisc.in
 
 EXTRA_DIST = \
 	CHANGES \
@@ -417,8 +422,8 @@ install: libpcap.a pcap-config
 	    (mkdir -p $(DESTDIR)$(mandir)/man1; chmod 755 $(DESTDIR)$(mandir)/man1)
 	[ -d $(DESTDIR)$(mandir)/man3 ] || \
 	    (mkdir -p $(DESTDIR)$(mandir)/man3; chmod 755 $(DESTDIR)$(mandir)/man3)
-	[ -d $(DESTDIR)$(mandir)/man4 ] || \
-	    (mkdir -p $(DESTDIR)$(mandir)/man4; chmod 755 $(DESTDIR)$(mandir)/man4)
+	[ -d $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@ ] || \
+	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@)
 	$(INSTALL_DATA) $(srcdir)/pcap/pcap.h \
 	    $(DESTDIR)$(includedir)/pcap/pcap.h
 	$(INSTALL_DATA) $(srcdir)/pcap/bpf.h \
@@ -459,9 +464,9 @@ install: libpcap.a pcap-config
 		 $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_setnonblock.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
-	for i in $(MAN4); do \
-		$(INSTALL_DATA) $(srcdir)/$$i \
-		    $(DESTDIR)$(mandir)/man4/$$i; done
+	for i in $(MANMISC); do \
+		$(INSTALL_DATA) $(srcdir)/`echo $$i | sed 's/.manmisc.in/.manmisc/'` \
+		    $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
 
 install-shared: install-shared-$(DYEXT)
 install-shared-so: libpcap.so
@@ -494,8 +499,8 @@ uninstall:
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
-	for i in $(MAN4); do \
-		rm -f $(DESTDIR)$(mandir)/man4/$$i; done
+	for i in $(MANMISC); do \
+		rm -f $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
 
 clean:
 	rm -f $(CLEANFILES) libpcap*.dylib libpcap.so*
@@ -504,6 +509,7 @@ distclean: clean
 	rm -f Makefile config.cache config.log config.status \
 	    config.h gnuc.h os-proto.h bpf_filter.c pcap-config \
 	    stamp-h stamp-h.in
+	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
 
 tags: $(TAGFILES)
@@ -516,7 +522,8 @@ packaging/pcap.spec: packaging/pcap.spec.in VERSION
 releasetar:
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
-	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP) $(MAN4) $(EXTRA_DIST) | (cd $$name; tar xf -); \
+	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
+	      $(MAN3PCAP_NOEXPAND) $(MANMISC) $(EXTRA_DIST) | (cd $$name; tar xf -); \
 	   tar -c -z -f $$name.tar.gz $$name; \
 	   rm -rf $$name
 
