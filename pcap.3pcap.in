@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap.3pcap,v 1.1.2.6 2008-05-30 01:36:06 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap.3pcap.in,v 1.1.2.2 2008-10-21 07:44:57 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -363,7 +363,7 @@ use an
 script or some other configuration script to check whether the libpcap
 1.0 APIs are available and use them only if they are.
 .SH SEE ALSO
-autoconf(1), tcpdump(1), tcpslice(1), pcap-filter(4), pfconfig(8),
+autoconf(1), tcpdump(1), tcpslice(1), pcap-filter(@MAN_MISC_INFO@), pfconfig(8),
 usermod(1M)
 .SH AUTHORS
 The original authors of libpcap are:

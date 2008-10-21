@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/Attic/pcap_datalink.3pcap,v 1.1.2.3 2008-04-06 03:21:55 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap_open_dead.3pcap.in,v 1.1.2.2 2008-10-21 07:44:57 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -19,9 +19,10 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DATALINK 3PCAP "5 April 2008"
+.TH PCAP_OPEN_DEAD 3PCAP "5 April 2008"
 .SH NAME
-pcap_datalink \- get the link-layer header type
+pcap_open_dead \- open a fake pcap_t for compiling filters or opening a
+capture for output
 .SH SYNOPSIS
 .nf
 .ft B
@@ -29,13 +30,23 @@ pcap_datalink \- get the link-layer header type
 .ft
 .LP
 .ft B
-int pcap_datalink(pcap_t *p);
+pcap_t *pcap_open_dead(int linktype, int snaplen);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_datalink()
-returns the link layer type for the live capture or ``savefile''
-specified by
-.IR p .
+.PP
+.B pcap_open_dead()
+is used for creating a
+.B pcap_t
+structure to use when calling the other functions in libpcap.  It is
+typically used when just using libpcap for compiling BPF code.
+.PP
+.I linktype
+specifies the link-layer type for the
+.BR pcap_t .
+.PP
+.I snaplen
+specifies the snapshot length for the
+.BR pcap_t .
 .SH SEE ALSO
-pcap(3PCAP), pcap-linktype(4)
+pcap(3PCAP), pcap-linktype(@MAN_MISC_INFO@)
