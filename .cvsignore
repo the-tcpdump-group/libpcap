@@ -1,8 +1,12 @@
+*.so
+*.sl
+*.dylib
 config.log
 config.cache
 config.status
 config.h
 .devel
+pcap-config
 pcap-filter.manmisc
 pcap-linktype.manmisc
 pcap.3pcap
