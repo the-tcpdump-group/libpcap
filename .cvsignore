@@ -3,6 +3,12 @@ config.cache
 config.status
 config.h
 .devel
+pcap-filter.manmisc
+pcap-linktype.manmisc
+pcap.3pcap
+pcap_datalink.3pcap
+pcap_list_datalinks.3pcap
+pcap_open_dead.3pcap
 stamp-h
 stamp-h.in
 Makefile
