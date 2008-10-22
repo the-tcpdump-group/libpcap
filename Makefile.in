@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.23 2008-10-21 07:44:56 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.24 2008-10-22 17:53:13 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -338,7 +338,7 @@ libpcap.dylib: $(OBJ)
 	$(CC) -dynamiclib -undefined error -o libpcap.`cat VERSION`.dylib $(OBJ) \
 		-install_name $(libdir)/libpcap.A.dylib \
 		-compatibility_version 1 \
-		-current_version `cat VERSION`
+		-current_version `cat VERSION | sed 's/[^0-9.]*$$//'`
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
