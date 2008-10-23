@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.133 2008-10-22 18:02:36 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.134 2008-10-23 05:56:59 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -130,8 +130,10 @@ MAN3PCAP_EXPAND = \
 	pcap.3pcap.in \
 	pcap_compile.3pcap.in \
 	pcap_datalink.3pcap.in \
+	pcap_dump_open.3pcap.in \
 	pcap_list_datalinks.3pcap.in \
-	pcap_open_dead.3pcap.in
+	pcap_open_dead.3pcap.in \
+	pcap_open_offline.3pcap.in
 
 MAN3PCAP_NOEXPAND = \
 	pcap_activate.3pcap \
@@ -146,7 +148,6 @@ MAN3PCAP_NOEXPAND = \
 	pcap_dump_file.3pcap \
 	pcap_dump_flush.3pcap \
 	pcap_dump_ftell.3pcap \
-	pcap_dump_open.3pcap \
 	pcap_file.3pcap \
 	pcap_fileno.3pcap \
 	pcap_findalldevs.3pcap \
@@ -165,7 +166,6 @@ MAN3PCAP_NOEXPAND = \
 	pcap_next_ex.3pcap \
 	pcap_offline_filter.3pcap \
 	pcap_open_live.3pcap \
-	pcap_open_offline.3pcap \
 	pcap_set_buffer_size.3pcap \
 	pcap_set_datalink.3pcap \
 	pcap_set_promisc.3pcap \
@@ -182,7 +182,11 @@ MAN3PCAP_NOEXPAND = \
 
 MAN3PCAP = $(MAN3PCAP_NOEXPAND) $(MAN3PCAP_EXPAND:.in=)
 
-MANMISC = pcap-filter.manmisc.in \
+MANFILE = \
+	pcap-savefile.manfile.in
+
+MANMISC = \
+	pcap-filter.manmisc.in \
 	pcap-linktype.manmisc.in
 
 EXTRA_DIST = \
@@ -422,6 +426,8 @@ install: libpcap.a pcap-config
 	    (mkdir -p $(DESTDIR)$(mandir)/man1; chmod 755 $(DESTDIR)$(mandir)/man1)
 	[ -d $(DESTDIR)$(mandir)/man3 ] || \
 	    (mkdir -p $(DESTDIR)$(mandir)/man3; chmod 755 $(DESTDIR)$(mandir)/man3)
+	[ -d $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@ ] || \
+	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@)
 	[ -d $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@ ] || \
 	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@)
 	$(INSTALL_DATA) $(srcdir)/pcap/pcap.h \
@@ -464,6 +470,9 @@ install: libpcap.a pcap-config
 		 $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_setnonblock.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
+	for i in $(MANFILE); do \
+		$(INSTALL_DATA) $(srcdir)/`echo $$i | sed 's/.manfile.in/.manfile/'` \
+		    $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 	for i in $(MANMISC); do \
 		$(INSTALL_DATA) $(srcdir)/`echo $$i | sed 's/.manmisc.in/.manmisc/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
@@ -499,6 +508,8 @@ uninstall:
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
 	rm -f  $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
+	for i in $(MANFILE); do \
+		rm -f $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 	for i in $(MANMISC); do \
 		rm -f $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
 
@@ -509,7 +520,7 @@ distclean: clean
 	rm -f Makefile config.cache config.log config.status \
 	    config.h gnuc.h os-proto.h bpf_filter.c pcap-config \
 	    stamp-h stamp-h.in
-	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANMISC:.in=)
+	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
 
 tags: $(TAGFILES)
@@ -523,7 +534,8 @@ releasetar:
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
 	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
-	      $(MAN3PCAP_NOEXPAND) $(MANMISC) $(EXTRA_DIST) | (cd $$name; tar xf -); \
+	      $(MAN3PCAP_NOEXPAND) $(MANFILE) $(MANMISC) $(EXTRA_DIST) | \
+	      (cd $$name; tar xf -); \
 	   tar -c -z -f $$name.tar.gz $$name; \
 	   rm -rf $$name
 
