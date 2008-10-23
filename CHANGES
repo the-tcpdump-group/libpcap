@@ -1,4 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67.2.2 2008-10-15 23:51:02 ken Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67.2.3 2008-10-23 17:28:15 ken Exp $ (LBL)
 
 Mon.    October 27, 2008.  ken@netfunctional.ca.  Summary for 1.0.0 libpcap release
 	Compile with IPv6 support by default
@@ -25,6 +25,7 @@ Mon.    October 27, 2008.  ken@netfunctional.ca.  Summary for 1.0.0 libpcap rele
 	On Mac OS X, add scripts for changing permissions on /dev/pbf* and launchd plist
 	On Solaris, support 'passive mode' on systems that support it
 	Fixes to autoconf and general build environment
+	Man page reorganization + cleanup
 
 Mon.    September 10, 2007.  ken@xelerance.com.  Summary for 0.9.8 libpcap release
         Change build process to put public libpcap headers into pcap subir
