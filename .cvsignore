@@ -9,7 +9,9 @@ config.h
 pcap-config
 pcap-filter.manmisc
 pcap-linktype.manmisc
+pcap-savefile.manfile
 pcap.3pcap
+pcap_compile.3pcap
 pcap_datalink.3pcap
 pcap_list_datalinks.3pcap
 pcap_open_dead.3pcap
