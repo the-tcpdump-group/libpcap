@@ -1,5 +1,5 @@
 '\" t
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap-savefile.manfile.in,v 1.1 2008-10-23 05:56:59 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap-savefile.manfile.in,v 1.2 2008-10-24 07:33:50 guy Exp $
 .\"
 .\" Copyright (c) 1994, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -89,7 +89,11 @@ bytes of a packet longer than
 bytes will be saved in the capture.
 .IP
 a 4-byte number giving the link-layer header type for packets in the
-capture.
+capture; see
+.BR pcap-linktype (@MAN_MISC_INFO@)
+for the
+.B LINKTYPE_
+values that can appear in this field.
 .PP
 Following the per-file header are zero or more packets; each packet
 begins with a per-packet header, which is immediately followed by the
@@ -120,4 +124,4 @@ been present had the packet not been truncated by the snapshot length.
 The two lengths will be equal if the number of bytes of packet data are
 less than or equal to the snapshot length.
 .SH SEE ALSO
-pcap(3PCAP)
+pcap(3PCAP), pcap-linktype(@MAN_MISC_INFO@)
