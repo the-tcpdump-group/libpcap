@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.159 2008-10-23 05:56:59 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.160 2008-10-24 07:29:34 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.159 $)
+AC_REVISION($Revision: 1.160 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -883,12 +883,11 @@ aix*)
 	# We need "-lodm" and "-lcfg", as libpcap requires them on
 	# AIX.
 	DEPLIBS="-lodm -lcfg"
+	;;
 
-	#
-	# Assume System V conventions for man pages.
-	#
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
+darwin*)
+	DYEXT="dylib"
+	V_CCOPT="$V_CCOPT -fno-common"
 	;;
 
 hpux9*)
@@ -935,6 +934,26 @@ hpux*)
 	MAN_MISC_INFO=5
 	;;
 
+irix*)
+	#
+	# Use System V conventions for man pages.
+	#
+	MAN_FILE_FORMATS=4
+	MAN_MISC_INFO=5
+	;;
+
+linux*)
+	V_CCOPT="$V_CCOPT -fPIC"
+	;;
+
+osf*)
+	#
+	# Use System V conventions for man pages.
+	#
+	MAN_FILE_FORMATS=4
+	MAN_MISC_INFO=5
+	;;
+
 sinix*)
 	AC_MSG_CHECKING(if SINIX compiler defines sinix)
 	AC_CACHE_VAL(ac_cv_cc_sinix_defined,
@@ -958,16 +977,6 @@ solaris*)
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
 	;;
-
-darwin*)
-	DYEXT="dylib"
-	V_CCOPT="$V_CCOPT -fno-common"
-	;;
-
-linux*)
-	V_CCOPT="$V_CCOPT -fPIC"
-	;;
-
 esac
 
 AC_PROG_RANLIB
