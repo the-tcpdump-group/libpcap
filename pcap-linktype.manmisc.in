@@ -1,4 +1,4 @@
-.\" @(#) $Header: /tcpdump/master/libpcap/pcap-linktype.manmisc.in,v 1.1.2.2 2008-10-21 07:44:56 guy Exp $
+.\" @(#) $Header: /tcpdump/master/libpcap/pcap-linktype.manmisc.in,v 1.1.2.3 2008-10-24 07:34:06 guy Exp $
 .\"
 .\" Copyright (c) 1987, 1988, 1989, 1990, 1991, 1992, 1994, 1995, 1996, 1997
 .\"	The Regents of the University of California.  All rights reserved.
@@ -20,22 +20,42 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-LINKTYPE @MAN_MISC_INFO@ "4 April 2008"
+.TH PCAP-LINKTYPE @MAN_MISC_INFO@ "23 October 2008"
 .SH NAME
 pcap-linktype \- link-layer header types supported by libpcap
 .SH DESCRIPTION
-Libpcap supplies for a live capture or ``savefile'' value that indicates
-the type of link-layer header at the beginning of the packets it
-provides.  This is not necessarily the type of link-layer header that
-the packets being captured have on the network from which they're being
-captured; for example, packets from an IEEE 802.11 network might be
-provided by libpcap with Ethernet headers that the network adapter or
-the network adapter driver generates from the 802.11 headers.
+For a live capture or ``savefile'', libpcap supplies, as the return
+value of the
+.BR pcap_datalink (3PCAP)
+routine, a value that indicates the type of link-layer header at the
+beginning of the packets it provides.  This is not necessarily the type
+of link-layer header that the packets being captured have on the network
+from which they're being captured; for example, packets from an IEEE
+802.11 network might be provided by libpcap with Ethernet headers that
+the network adapter or the network adapter driver generates from the
+802.11 headers.  The names for those values begin with
+.BR DLT_ ,
+so they are sometimes called "DLT_ values".
 .PP
-The link-layer header types supported by libpcap are:
+The values stored in the link-layer header type field in the savefile
+header are, in most but not all cases, the same as the values returned
+by
+.BR pcap_datalink() .
+The names for those values begin with
+.BR LINKTYPE_ .
+.PP
+The link-layer header types supported by libpcap are listed here.  The
+value corresponding to
+.B LINKTYPE_
+names are given; the value corresponding to
+.B DLT_
+values are, in some cases, platform dependent, and are not given;
+applications should check for particular
+.B DLT_
+values by name.
 .RS 5
 .TP 5
-.B DLT_NULL
+.BR DLT_NULL ", " LINKTYPE_NULL = 0
 BSD loopback encapsulation; the link layer header is a 4-byte field, in
 .I host
 byte order, containing a PF_ value from
@@ -52,16 +72,24 @@ values are
 .I not
 necessarily those of the machine reading the capture file.
 .TP 5
-.B DLT_EN10MB
-Ethernet (10Mb, 100Mb, 1000Mb, and up)
+.BR DLT_EN10MB ", " LINKTYPE_ETHERNET = 1
+Ethernet (10Mb, 100Mb, 1000Mb, and up); the
+.B 10MB
+in the
+.B DLT_
+name is historical.
 .TP 5
-.B DLT_IEEE802
-IEEE 802.5 Token Ring
+.BR DLT_IEEE802 ", " LINKTYPE_TOKEN_RING = 6
+IEEE 802.5 Token Ring; the
+.B IEEE802
+in the
+.B DLT_
+name is historical.
 .TP 5
-.B DLT_ARCNET
+.BR DLT_ARCNET ", " LINKTYPE_ARCNET = 7
 ARCNET
 .TP 5
-.B DLT_SLIP
+.BR DLT_SLIP ", " LINKTYPE_SLIP = 8
 SLIP; the link layer header contains, in order:
 .RS 10
 .LP
@@ -93,40 +121,40 @@ COMPRESSED_TCP, the compressed TCP/IP datagram header;
 for a total of 16 bytes; the uncompressed IP datagram follows the header.
 .RE
 .TP 5
-.B DLT_PPP
+.BR DLT_PPP ", " LINKTYPE_PPP = 9
 PPP; if the first 2 bytes are 0xff and 0x03, it's PPP in HDLC-like
 framing, with the PPP header following those two bytes, otherwise it's
 PPP without framing, and the packet begins with the PPP header.
 .TP 5
-.B DLT_FDDI
+.BR DLT_FDDI ", " LINKTYPE_FDDI = 10
 FDDI
 .TP 5
-.B DLT_ATM_RFC1483
+.BR DLT_ATM_RFC1483 ", " LINKTYPE_ATM_RFC1483 = 100
 RFC 1483 LLC/SNAP-encapsulated ATM; the packet begins with an IEEE 802.2
 LLC header.
 .TP 5
-.B DLT_RAW
+.BR DLT_RAW ", " LINKTYPE_RAW = 101
 raw IP; the packet begins with an IP header.
 .TP 5
-.B DLT_PPP_SERIAL
+.BR DLT_PPP_SERIAL ", " LINKTYPE_PPP_HDLC = 50
 PPP in HDLC-like framing, as per RFC 1662, or Cisco PPP with HDLC
 framing, as per section 4.3.1 of RFC 1547; the first byte will be 0xFF
 for PPP in HDLC-like framing, and will be 0x0F or 0x8F for Cisco PPP
 with HDLC framing.
 .TP 5
-.B DLT_PPP_ETHER
+.BR DLT_PPP_ETHER ", " LINKTYPE_PPP_ETHER = 51
 PPPoE; the packet begins with a PPPoE header, as per RFC 2516.
 .TP 5
-.B DLT_C_HDLC
+.BR DLT_C_HDLC ", " LINKTYPE_C_HDLC = 104
 Cisco PPP with HDLC framing, as per section 4.3.1 of RFC 1547.
 .TP 5
-.B DLT_IEEE802_11
+.BR DLT_IEEE802_11 ", " LINKTYPE_IEEE802_11 = 105
 IEEE 802.11 wireless LAN
 .TP 5
-.B DLT_FRELAY
+.BR DLT_FRELAY ", " LINKTYPE_FRELAY = 107
 Frame Relay
 .TP 5
-.B DLT_LOOP
+.BR DLT_LOOP ", " LINKTYPE_LOOP = 108
 OpenBSD loopback encapsulation; the link layer header is a 4-byte field, in
 .I network
 byte order, containing a PF_ value from OpenBSD's
@@ -137,7 +165,7 @@ Note that, if a ``savefile'' is being read, those PF_ values are
 .I not
 necessarily those of the machine reading the capture file.
 .TP 5
-.B DLT_LINUX_SLL
+.BR DLT_LINUX_SLL ", " LINKTYPE_LINUX_SLL = 113
 Linux "cooked" capture encapsulation; the link layer header contains, in
 order:
 .RS 10
@@ -175,82 +203,25 @@ order, or containing 1 for Novell 802.3 frames without an 802.2 LLC
 header or 4 for frames beginning with an 802.2 LLC header.
 .RE
 .TP 5
-.B DLT_LTALK
+.BR DLT_LTALK ", " LINKTYPE_LTALK = 104
 Apple LocalTalk; the packet begins with an AppleTalk LLAP header.
 .TP 5
-.B DLT_PFLOG
-OpenBSD pflog; the link layer header contains, in order:
-.RS 10
-.LP
-a 1-byte header length, in host byte order;
-.LP
-a 4-byte PF_ value, in host byte order;
-.LP
-a 2-byte action code, in network byte order, which is one of:
-.RS 5
+.BR DLT_PFLOG ", " LINKTYPE_PFLOG = 117
+OpenBSD pflog; the link layer header contains a
+.B "struct pfloghdr"
+structure, as defined by the host on which the file was saved.  (This
+differs from operating system to operating system and release to
+release; there is nothing in the file to indicate what the layout of
+that structure is.)
 .TP 5
-0
-passed
-.TP 5
-1
-dropped
-.TP 5
-2
-scrubbed
-.RE
-.LP
-a 2-byte reason code, in network byte order, which is one of:
-.RS 5
-.TP 5
-0
-match
-.TP 5
-1
-bad offset
-.TP 5
-2
-fragment
-.TP 5
-3
-short
-.TP 5
-4
-normalize
-.TP 5
-5
-memory
-.RE
-.LP
-a 16-character interface name;
-.LP
-a 16-character ruleset name (only meaningful if subrule is set);
-.LP
-a 4-byte rule number, in network byte order;
-.LP
-a 4-byte subrule number, in network byte order;
-.LP
-a 1-byte direction, in network byte order, which is one of:
-.RS 5
-.TP 5
-0
-incoming or outgoing
-.TP 5
-1
-incoming
-.TP 5
-2
-outgoing
-.RE
-.RE
-.TP 5
-.B DLT_PRISM_HEADER
+.BR DLT_PRISM_HEADER ", " LINKTYPE_PRISM_HEADER = 119
 Prism monitor mode information followed by an 802.11 header.
 .TP 5
-.B DLT_IP_OVER_FC
+.BR DLT_IP_OVER_FC ", " LINKTYPE_IP_OVER_FC = 122
 RFC 2625 IP-over-Fibre Channel, with the link-layer header being the
 Network_Header as described in that RFC.
 .TP 5
-.B DLT_SUNATM
+.BR DLT_SUNATM ", " LINKTYPE_SUNATM = 123
 SunATM devices; the link layer header contains, in order:
 .RS 10
 .LP
@@ -287,23 +258,25 @@ a 1-byte VPI value;
 a 2-byte VCI field, in network byte order.
 .RE
 .TP 5
-.B DLT_IEEE802_11_RADIO
+.BR DLT_IEEE802_11_RADIO ", " LINKTYPE_IEEE802_11_RADIO = 127
 link-layer information followed by an 802.11 header - see
 http://www.shaftnet.org/~pizza/software/capturefrm.txt for a description
 of the link-layer information.
 .TP 5
-.B DLT_ARCNET_LINUX
+.BR DLT_ARCNET_LINUX ", " LINKTYPE_ARCNET_LINUX = 129
 ARCNET, with no exception frames, reassembled packets rather than raw
 frames, and an extra 16-bit offset field between the destination host
 and type bytes.
 .TP 5
-.B DLT_LINUX_IRDA
+.BR DLT_LINUX_IRDA ", " LINKTYPE_LINUX_IRDA = 144
 Linux-IrDA packets, with a
 .B DLT_LINUX_SLL
 header followed by the IrLAP header.
 .TP 5
-.B DLT_LINUX_LAPD
+.BR DLT_LINUX_LAPD ", " LINKTYPE_LINUX_LAPD = 177
 LAPD (Q.921) frames, with a
 .B DLT_LINUX_SLL
 header captured via vISDN.
 .RE
+.SH SEE ALSO
+pcap_datalink(3PCAP)
