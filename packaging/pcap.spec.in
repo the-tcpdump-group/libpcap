@@ -49,8 +49,10 @@ rm -rf $RPM_BUILD_ROOT
 %doc LICENSE CHANGES INSTALL.txt README.linux TODO VERSION CREDITS packaging/pcap.spec
 /usr/lib/libpcap.a
 /usr/share/man/man3/*
-/usr/share/man/man4/*
+/usr/share/man/man5/*
+/usr/share/man/man7/*
 /usr/include/pcap.h
+/usr/include/pcap/*.h
 /usr/include/pcap-bpf.h
 /usr/include/pcap-namedb.h
 /usr/lib/libpcap.so*
