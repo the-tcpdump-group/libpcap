@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.28 2008-09-22 01:13:15 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.29 2008-10-28 00:50:39 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -641,17 +641,20 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #else
 	struct sockaddr		from;
 #endif
-	int			packet_len, caplen;
-	struct pcap_pkthdr	pcap_header;
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 	struct iovec		iov;
 	struct msghdr		msg;
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 	struct cmsghdr		*cmsg;
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	union {
 		struct cmsghdr	cmsg;
 		char		buf[CMSG_SPACE(sizeof(struct tpacket_auxdata))];
 	} cmsg_buf;
+#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+	socklen_t		fromlen;
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+	int			packet_len, caplen;
+	struct pcap_pkthdr	pcap_header;
+
 #ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is a cooked device, leave extra room for a
@@ -686,6 +689,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 */
 	bp = handle->buffer + handle->offset;
 
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 	msg.msg_name		= &from;
 	msg.msg_namelen		= sizeof(from);
 	msg.msg_iov		= &iov;
@@ -696,6 +700,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	iov.iov_len		= handle->bufsize - offset;
 	iov.iov_base		= bp + offset;
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
 
 	do {
 		/*
@@ -711,7 +716,15 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			return -2;
 		}
 
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 		packet_len = recvmsg(handle->fd, &msg, MSG_TRUNC);
+#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+		fromlen = sizeof(from);
+		packet_len = recvfrom(
+			handle->fd, bp + offset,
+			handle->bufsize - offset, MSG_TRUNC,
+			(struct sockaddr *) &from, &fromlen);
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	} while (packet_len == -1 && (errno == EINTR || errno == ENETDOWN));
 
 	/* Check if an error occured */
