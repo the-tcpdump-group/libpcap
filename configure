@@ -675,6 +675,7 @@ CPP
 GREP
 EGREP
 LIBOBJS
+HAVE_LINUX_TPACKET_AUXDATA
 V_LEX
 V_YACC
 RANLIB
@@ -6912,6 +6913,8 @@ fi
     { echo "$as_me:$LINENO: result: $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci" >&5
 echo "${ECHO_T}$ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci" >&6; }
     if test $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci = yes ; then
+	    HAVE_LINUX_TPACKET_AUXDATA=tp_vlan_tci
+
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI 1
@@ -10165,6 +10168,7 @@ CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
+HAVE_LINUX_TPACKET_AUXDATA!$HAVE_LINUX_TPACKET_AUXDATA$ac_delim
 V_LEX!$V_LEX$ac_delim
 V_YACC!$V_YACC$ac_delim
 RANLIB!$RANLIB$ac_delim
@@ -10190,7 +10194,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 84; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 85; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

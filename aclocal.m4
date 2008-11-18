@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.86.2.6 2008-09-28 17:13:37 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/aclocal.m4,v 1.86.2.7 2008-11-18 07:30:44 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.
@@ -930,6 +930,8 @@ AC_DEFUN(AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,
 	ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=no))
     AC_MSG_RESULT($ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci)
     if test $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci = yes ; then
+	    HAVE_LINUX_TPACKET_AUXDATA=tp_vlan_tci
+	    AC_SUBST(HAVE_LINUX_TPACKET_AUXDATA)
 	    AC_DEFINE(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,1,[if tp_vlan_tci exists])
     fi])
 
