@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.8 2008-09-22 20:16:01 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.9 2008-11-18 07:51:54 guy Exp $ (LBL)
  */
 
 /*
@@ -820,6 +820,14 @@ struct bpf_version {
  * Requested by Max Filippov <jcmvbkbc@gmail.com>.
  */
 #define DLT_IEEE802_15_4_NONASK_PHY	215
+
+/* 
+ * David Gibson <david@gibson.dropbear.id.au> requested this for
+ * captures from the Linux kernel /dev/input/eventN devices. This
+ * is used to communicate keystrokes and mouse movements from the
+ * Linux kernel to display systems, such as Xorg. 
+ */
+#define DLT_LINUX_EVDEV			216
 
 
 /*
