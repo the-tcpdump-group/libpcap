@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.30 2008-11-18 07:30:44 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.31 2008-11-18 09:02:22 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -333,11 +333,20 @@ libpcap.so: $(OBJ)
 #
 # The following rule succeeds, but the result is untested.
 #
-# XXX - OS X installs the library as "libpcap.A.dylib", with that as the
-# install_name, and sets the current version to 1 as well.  VERSION
-# might contain a not-purely-numeric version number, but
-# -current_version requires a purely numeric version, so this won't
-# work with top-of-tree builds.
+# In Mac OS X, the libpcap dylib has the name "libpcap.A.dylib", with
+# its full path as the install_name, and with the compatibility and
+# current version both set to 1.  The compatibility version is set to
+# 1 so that programs built with a newer version of the library will run
+# against older versions; multi-platform software probably will fail if
+# it uses APIs added in the newer version, but Mac OS X-specific software
+# will use weak linking and check at run time whether those APIs are
+# available.
+#
+# We also use "A" as the major version, and 1 as the compatibility version,
+# but set the current version to the value in VERSION, with any non-numeric
+# stuff stripped off (the compatibility and current version must be of the
+# form X[.Y[.Z]], with Y and Z possibly absent, and with all components
+# numeric).
 #
 libpcap.dylib: $(OBJ)
 	rm -f libpcap*.dylib
