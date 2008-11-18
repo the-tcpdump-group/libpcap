@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.136 2008-10-23 22:12:52 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.137 2008-11-18 06:50:29 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -445,6 +445,8 @@ install: libpcap.a pcap-config
 	    $(DESTDIR)$(includedir)/pcap-bpf.h
 	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
 	    $(DESTDIR)$(includedir)/pcap-namedb.h
+	[ -d $(DESTDIR)$(bindir) ] || \
+	    (mkdir -p $(DESTDIR)$(bindir); chmod 755 $(DESTDIR)$(bindir))
 	$(INSTALL_PROGRAM) pcap-config $(DESTDIR)$(bindir)/pcap-config
 	for i in $(MAN1); do \
 		$(INSTALL_DATA) $(srcdir)/$$i \
