@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.178 2008-10-06 15:27:32 gianluca Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.179 2008-11-18 07:48:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -647,6 +647,14 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IEEE802_15_4_NONASK_PHY	215
 
+/* 
+ * David Gibson <david@gibson.dropbear.id.au> requested this for
+ * captures from the Linux kernel /dev/input/eventN devices. This
+ * is used to communicate keystrokes and mouse movements from the
+ * Linux kernel to display systems, such as Xorg. 
+ */
+#define LINKTYPE_LINUX_EVDEV			216
+
 
 static struct linktype_map {
 	int	dlt;
@@ -951,6 +959,9 @@ static struct linktype_map {
 
 	/* IEEE 802.15.4 with PHY data for non-ASK PHYs */
 	{ DLT_IEEE802_15_4_NONASK_PHY, LINKTYPE_IEEE802_15_4_NONASK_PHY },
+
+	/* Input device events from Linux /dev/input/eventN devices */
+	{ DLT_LINUX_EVDEV,	LINKTYPE_LINUX_EVDEV },
 
 	{ -1,			-1 }
 };
