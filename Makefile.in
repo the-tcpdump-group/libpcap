@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.137 2008-11-18 06:50:29 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.138 2008-11-18 07:29:48 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -84,6 +84,8 @@ CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
 	etherent.c savefile.c bpf_filter.c bpf_image.c bpf_dump.c
 GENSRC = scanner.c grammar.c version.c
 LIBOBJS = @LIBOBJS@
+
+HAVE_LINUX_TPACKET_AUXDATA = @HAVE_LINUX_TPACKET_AUXDATA@
 
 SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 
@@ -434,6 +436,14 @@ install: libpcap.a pcap-config
 	    $(DESTDIR)$(includedir)/pcap/pcap.h
 	$(INSTALL_DATA) $(srcdir)/pcap/bpf.h \
 	    $(DESTDIR)$(includedir)/pcap/bpf.h
+	if test ! -z "@HAVE_LINUX_TPACKET_AUXDATA@" ; then \
+		$(INSTALL_DATA) $(srcdir)/pcap/vlan.h \
+		    $(DESTDIR)$(includedir)/pcap/vlan.h ; \
+	fi
+	if test ! -z "@BT_SRC@" ; then \
+		$(INSTALL_DATA) $(srcdir)/pcap/bluetooth.h \
+		    $(DESTDIR)$(includedir)/pcap/bluetooth.h ; \
+	fi
 	$(INSTALL_DATA) $(srcdir)/pcap/namedb.h \
 	    $(DESTDIR)$(includedir)/pcap/namedb.h
 	$(INSTALL_DATA) $(srcdir)/pcap/sll.h \
