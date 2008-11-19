@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.160 2008-11-19 10:01:30 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.161 2008-11-19 17:36:52 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -2097,7 +2097,7 @@ retry:
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "can't create rx ring on packet socket: %s",
 		    pcap_strerror(errno));
-		return 0;
+		return -1;
 	}
 
 	/* memory map the rx ring */
@@ -2105,20 +2105,24 @@ retry:
 	handle->bp = mmap(0, ringsize, PROT_READ| PROT_WRITE, MAP_SHARED, 
 					handle->fd, 0);
 	if (handle->bp == MAP_FAILED) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "can't mmap rx ring: %d-%s",
-			errno, pcap_strerror(errno));
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "can't mmap rx ring: %s", pcap_strerror(errno));
 
 		/* clear the allocated ring on error*/
 		destroy_ring(handle);
-		return 0;
+		return -1;
 	}
 
 	/* allocate a ring for each frame header pointer*/
 	handle->cc = req.tp_frame_nr;
 	handle->buffer = malloc(handle->cc * sizeof(union thdr *));
 	if (!handle->buffer) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "can't allocate ring of frame headers: %s",
+		    pcap_strerror(errno));
+
 		destroy_ring(handle);
-		return 0;
+		return -1;
 	}
 
 	/* fill the header ring with proper frame ptr*/
