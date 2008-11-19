@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.30 2008-11-19 08:21:11 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.31 2008-11-19 10:01:58 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -508,7 +508,6 @@ pcap_activate_linux(pcap_t *handle)
 {
 	const char	*device;
 	int		status = 0;
-	int		activate_ok = 0;
 
 	device = handle->opt.source;
 
@@ -555,27 +554,56 @@ pcap_activate_linux(pcap_t *handle)
 	 */
 
 	if ((status = activate_new(handle)) == 1) {
-		activate_ok = 1;
 		/*
+		 * Success.
 		 * Try to use memory-mapped access.
 		 */
-		if (activate_mmap(handle) == 1)
-			return 0;	/* we succeeded; nothing more to do */
+		switch (activate_mmap(handle)) {
+
+		case 1:
+			/* we succeeded; nothing more to do */
+			return 0;
+
+		case 0:
+			/*
+			 * Kernel doesn't support it - just continue
+			 * with non-memory-mapped access.
+			 */
+			break;
+
+		case -1:
+			/*
+			 * We failed to set up to use it, or kernel
+			 * supports it, but we failed to enable it;
+			 * return an error.  handle->errbuf contains
+			 * an error message.
+			 */
+			status = PCAP_ERROR;
+			goto fail;
+		}
 	}
 	else if (status == 0) {
 		/* Non-fatal error; try old way */
-		if ((status = activate_old(handle)) == 1)
-			activate_ok = 1;
-	}
-	if (!activate_ok) {
+		if ((status = activate_old(handle)) != 1) {
+			/*
+			 * Both methods to open the packet socket failed.
+			 * Tidy up and report our failure (handle->errbuf
+			 * is expected to be set by the functions above).
+			 */
+			goto fail;
+		}
+	} else {
 		/*
-		 * Both methods to open the packet socket failed. Tidy
-		 * up and report our failure (ebuf is expected to be
-		 * set by the functions above).
+		 * Fatal error with the new way; just fail.
+		 * status has the error return; if it's PCAP_ERROR,
+		 * handle->errbuf has been set appropriately.
 		 */
 		goto fail;
 	}
 
+	/*
+	 * We set up the socket, but not with memory-mapped access.
+	 */
 	if (handle->opt.buffer_size != 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
@@ -1941,10 +1969,10 @@ activate_mmap(pcap_t *handle)
 		handle->opt.buffer_size = 2*1024*1024;
 	}
 	ret = prepare_tpacket_socket(handle);
-	if (ret == 0)
+	if (ret != 1)
 		return ret;
 	ret = create_ring(handle);
-	if (ret == 0)
+	if (ret != 1)
 		return ret;
 
 	/* override some defaults and inherit the other fields from
@@ -1981,11 +2009,13 @@ prepare_tpacket_socket(pcap_t *handle)
 	len = sizeof(val);
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
 		if (errno == ENOPROTOOPT)
-			return 1;
+			return 1;	/* no - just drive on */
+
+		/* Yes - treat as a failure. */
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			 "can't get TPACKET_V2 header len on socket %d: %d-%s",
-			 handle->fd, errno, pcap_strerror(errno));
-		return 0;
+		    "can't get TPACKET_V2 header len on packet socket: %s",
+		    pcap_strerror(errno));
+		return -1;
 	}
 	handle->md.tp_hdrlen = val;
 
@@ -1993,9 +2023,9 @@ prepare_tpacket_socket(pcap_t *handle)
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_VERSION, &val,
 		       sizeof(val)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			 "can't activate TPACKET_V2 on socket %d: %d-%s",
-			 handle->fd, errno, pcap_strerror(errno));
-		return 0;
+		    "can't activate TPACKET_V2 on packet socket: %s",
+		    pcap_strerror(errno));
+		return -1;
 	}
 	handle->md.tp_version = TPACKET_V2;
 
@@ -2004,9 +2034,9 @@ prepare_tpacket_socket(pcap_t *handle)
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &val,
 		       sizeof(val)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			 "can't set up reserve on socket %d: %d-%s",
-			 handle->fd, errno, pcap_strerror(errno));
-		return 0;
+		    "can't set up reserve on packet socket: %s",
+		    pcap_strerror(errno));
+		return -1;
 	}
 
 #endif /* HAVE_TPACKET2 */
@@ -2058,9 +2088,15 @@ retry:
 			req.tp_block_nr = req.tp_frame_nr/frames_per_block;
 			goto retry;
 		}
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "can't create rx ring on "
-				"packet socket %d: %d-%s", handle->fd, errno, 
-				pcap_strerror(errno));
+		if (errno == ENOPROTOOPT) {
+			/*
+			 * We don't have ring buffer support in this kernel.
+			 */
+			return 0;
+		}
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "can't create rx ring on packet socket: %s",
+		    pcap_strerror(errno));
 		return 0;
 	}
 
