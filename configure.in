@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.163 2008-11-18 07:23:04 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.164 2008-11-19 11:13:46 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.163 $)
+AC_REVISION($Revision: 1.164 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -363,7 +363,6 @@ linux)
 #include <net/if.h>
 #include <linux/types.h>
 	])
-	AC_CHECK_HEADERS()
 	AC_LBL_TPACKET_STATS
 	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 	;;
