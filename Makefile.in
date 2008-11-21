@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.31 2008-11-18 09:02:22 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.32 2008-11-21 19:23:55 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -328,7 +328,9 @@ shared: libpcap.$(DYEXT)
 #
 libpcap.so: $(OBJ)
 	@rm -f $@
-	$(CC) -shared -Wl,-soname,$@.1 -o $@.`cat $(srcdir)/VERSION` $(OBJ) $(DAGLIBS)
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	$(CC) -shared -Wl,-soname,$@.$$MAJOR_VER -o $@.$$VER $(OBJ) $(DAGLIBS)
 
 #
 # The following rule succeeds, but the result is untested.
@@ -350,10 +352,14 @@ libpcap.so: $(OBJ)
 #
 libpcap.dylib: $(OBJ)
 	rm -f libpcap*.dylib
-	$(CC) -dynamiclib -undefined error -o libpcap.`cat $(srcdir)/VERSION`.dylib $(OBJ) \
-		-install_name $(libdir)/libpcap.A.dylib \
-		-compatibility_version 1 \
-		-current_version `sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=A; \
+	COMPAT_VER=1; \
+	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
+	$(CC) -dynamiclib -undefined error -o libpcap.$$VER.dylib $(OBJ) \
+		-install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
+		-compatibility_version $$COMPAT_VER \
+		-current_version $$CURRENT_VER
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
@@ -500,10 +506,17 @@ install: libpcap.a pcap-config
 
 install-shared: install-shared-$(DYEXT)
 install-shared-so: libpcap.so
-	$(INSTALL_PROGRAM) libpcap.so.`cat VERSION` $(DESTDIR)$(libdir)/libpcap.so.`cat VERSION`
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	$(INSTALL_PROGRAM) libpcap.so.$$VER $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
+	ln -sf libpcap.so.$$VER $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
+	ln -sf libpcap.so.$$MAJOR_VER $(DESTDIR)$(libdir)/libpcap.so
 install-shared-dylib: libpcap.dylib
-	$(INSTALL_PROGRAM) libpcap.`cat VERSION`.dylib $(DESTDIR)$(libdir)/libpcap.`cat VERSION`.dylib
-	VER=`cat VERSION`; cd $(DESTDIR)$(libdir) && ln -sf libpcap.$$VER.dylib libpcap.A.dylib;  ln -sf libpcap.A.dylib libpcap.dylib
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=A; \
+	$(INSTALL_PROGRAM) libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
+	ln -sf libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
+	ln -sf libpcap.$$MAJOR_VER.dylib $(DESTDIR)$(libdir)/libpcap.dylib
 
 uninstall:
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
@@ -533,6 +546,20 @@ uninstall:
 		rm -f $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 	for i in $(MANMISC); do \
 		rm -f $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
+
+uninstall-shared: uninstall-shared-$(DYEXT)
+uninstall-shared-so:
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	rm -f  $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
+	rm -f  $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
+	rm -f  $(DESTDIR)$(libdir)/libpcap.so
+uninstall-shared-dylib:
+	VER=`cat $(srcdir)/VERSION`; \
+	MAJOR_VER=A; \
+	rm -f  $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
+	rm -f  $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
+	rm -f  $(DESTDIR)$(libdir)/libpcap.dylib
 
 clean:
 	rm -f $(CLEANFILES) libpcap*.dylib libpcap.so*
