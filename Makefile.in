@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.140 2008-11-21 19:23:19 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.141 2008-11-21 22:54:59 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -363,7 +363,7 @@ libpcap.dylib: $(OBJ)
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
-	./runlex.sh $(LEX) -o$@ $<
+	$(srcdir)/runlex.sh $(LEX) -o$@ $<
 
 scanner.o: scanner.c tokdefs.h
 	$(CC) $(CFLAGS) -c scanner.c
@@ -412,12 +412,12 @@ bpf_filter.o: bpf_filter.c
 #
 # Generate the pcap-config script.
 #
-pcap-config: pcap-config.in Makefile
+pcap-config: $(srcdir)/pcap-config.in Makefile
 	@rm -f $@ $@.tmp
 	sed -e 's|@includedir[@]|$(includedir)|g' \
 	    -e 's|@libdir[@]|$(libdir)|g' \
 	    -e 's|@DEPLIBS[@]|$(DEPLIBS)|g' \
-	    pcap-config.in >$@.tmp
+	    $(srcdir)/pcap-config.in >$@.tmp
 	mv $@.tmp $@
 	chmod a+x $@
 
@@ -476,8 +476,11 @@ install: libpcap.a pcap-config
 	for i in $(MAN1); do \
 		$(INSTALL_DATA) $(srcdir)/$$i \
 		    $(DESTDIR)$(mandir)/man1/$$i; done
-	for i in $(MAN3PCAP); do \
+	for i in $(MAN3PCAP_NOEXPAND); do \
 		$(INSTALL_DATA) $(srcdir)/$$i \
+		    $(DESTDIR)$(mandir)/man3/$$i; done
+	for i in $(MAN3PCAP_EXPAND:.in=); do \
+		$(INSTALL_DATA) $$i \
 		    $(DESTDIR)$(mandir)/man3/$$i; done
 	ln $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_name.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
@@ -498,10 +501,10 @@ install: libpcap.a pcap-config
 	ln $(DESTDIR)$(mandir)/man3/pcap_setnonblock.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
 	for i in $(MANFILE); do \
-		$(INSTALL_DATA) $(srcdir)/`echo $$i | sed 's/.manfile.in/.manfile/'` \
+		$(INSTALL_DATA) `echo $$i | sed 's/.manfile.in/.manfile/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 	for i in $(MANMISC); do \
-		$(INSTALL_DATA) $(srcdir)/`echo $$i | sed 's/.manmisc.in/.manmisc/'` \
+		$(INSTALL_DATA) `echo $$i | sed 's/.manmisc.in/.manmisc/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
 
 install-shared: install-shared-$(DYEXT)
