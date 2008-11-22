@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.33 2008-11-21 22:56:57 guy Exp $ (LBL)
+# @(#) $Header: /tcpdump/master/libpcap/Makefile.in,v 1.108.2.34 2008-11-22 17:32:18 guy Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -85,14 +85,24 @@ CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
 GENSRC = scanner.c grammar.c version.c
 LIBOBJS = @LIBOBJS@
 
-HAVE_LINUX_TPACKET_AUXDATA = @HAVE_LINUX_TPACKET_AUXDATA@
-
 SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
 # hack the extra indirection
 OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
-HDR = \
+PUBHDR = \
+	pcap.h \
+	pcap-bpf.h \
+	pcap-namedb.h \
+	pcap/bpf.h \
+	pcap/bluetooth.h \
+	pcap/namedb.h \
+	pcap/pcap.h \
+	pcap/sll.h \
+	pcap/vlan.h \
+	pcap/usb.h
+
+HDR = $(PUBHDR) \
 	acconfig.h \
 	arcnet.h \
 	atmuni31.h \
@@ -101,16 +111,7 @@ HDR = \
 	ieee80211.h \
 	llc.h \
 	nlpid.h \
-	pcap/bluetooth.h \
-	pcap/bpf.h \
-	pcap/namedb.h \
-	pcap/pcap.h \
-	pcap/sll.h \
-	pcap/usb.h \
-	pcap/vlan.h \
-	pcap.h \
 	pcap-int.h \
-	pcap-namedb.h \
 	pcap-stdinc.h \
 	ppp.h \
 	sunatmpos.h
@@ -118,11 +119,8 @@ HDR = \
 GENHDR = \
 	scanner.h tokdefs.h version.h
 
-TAGHDR = \
-	pcap-bpf.h
-
 TAGFILES = \
-	$(SRC) $(HDR) $(TAGHDR)
+	$(SRC) $(HDR)
 
 CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c
 
@@ -260,7 +258,6 @@ EXTRA_DIST = \
 	org.tcpdump.chmod_bpf.plist \
 	packaging/pcap.spec.in \
 	pcap-bpf.c \
-	pcap-bpf.h \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \
 	pcap-config.in \
@@ -447,29 +444,9 @@ install: libpcap.a pcap-config
 	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@)
 	[ -d $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@ ] || \
 	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@)
-	$(INSTALL_DATA) $(srcdir)/pcap/pcap.h \
-	    $(DESTDIR)$(includedir)/pcap/pcap.h
-	$(INSTALL_DATA) $(srcdir)/pcap/bpf.h \
-	    $(DESTDIR)$(includedir)/pcap/bpf.h
-	if test ! -z "@HAVE_LINUX_TPACKET_AUXDATA@" ; then \
-		$(INSTALL_DATA) $(srcdir)/pcap/vlan.h \
-		    $(DESTDIR)$(includedir)/pcap/vlan.h ; \
-	fi
-	if test ! -z "@BT_SRC@" ; then \
-		$(INSTALL_DATA) $(srcdir)/pcap/bluetooth.h \
-		    $(DESTDIR)$(includedir)/pcap/bluetooth.h ; \
-	fi
-	$(INSTALL_DATA) $(srcdir)/pcap/namedb.h \
-	    $(DESTDIR)$(includedir)/pcap/namedb.h
-	$(INSTALL_DATA) $(srcdir)/pcap/sll.h \
-	    $(DESTDIR)$(includedir)/pcap/sll.h
-	$(INSTALL_DATA) $(srcdir)/pcap/usb.h \
-	    $(DESTDIR)$(includedir)/pcap/usb.h
-	$(INSTALL_DATA) $(srcdir)/pcap.h $(DESTDIR)$(includedir)/pcap.h
-	$(INSTALL_DATA) $(srcdir)/pcap-bpf.h \
-	    $(DESTDIR)$(includedir)/pcap-bpf.h
-	$(INSTALL_DATA) $(srcdir)/pcap-namedb.h \
-	    $(DESTDIR)$(includedir)/pcap-namedb.h
+	for i in $(PUBHDR); do \
+		$(INSTALL_DATA) $(srcdir)/$$i \
+		    $(DESTDIR)$(includedir)/$$i; done
 	[ -d $(DESTDIR)$(bindir) ] || \
 	    (mkdir -p $(DESTDIR)$(bindir); chmod 755 $(DESTDIR)$(bindir))
 	$(INSTALL_PROGRAM) pcap-config $(DESTDIR)$(bindir)/pcap-config
@@ -482,22 +459,31 @@ install: libpcap.a pcap-config
 	for i in $(MAN3PCAP_EXPAND:.in=); do \
 		$(INSTALL_DATA) $$i \
 		    $(DESTDIR)$(mandir)/man3/$$i; done
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_name.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_dump_open.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_geterr.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_inject.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_loop.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_major_version.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_next_ex.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_open_offline.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_setnonblock.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
 	for i in $(MANFILE); do \
@@ -523,28 +509,22 @@ install-shared-dylib: libpcap.dylib
 
 uninstall:
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
-	rm -f $(DESTDIR)$(includedir)/pcap/pcap.h
-	rm -f $(DESTDIR)$(includedir)/pcap/bpf.h
-	rm -f $(DESTDIR)$(includedir)/pcap/namedb.h
-	rm -f $(DESTDIR)$(includedir)/pcap/sll.h
-	rm -f $(DESTDIR)$(includedir)/pcap/usb.h
+	for i in $(PUBHDR); do \
+		rm -f $(DESTDIR)$(includedir)/$$i; done
 	-rmdir $(DESTDIR)$(includedir)/pcap
-	rm -f $(DESTDIR)$(includedir)/pcap.h
-	rm -f $(DESTDIR)$(includedir)/pcap-bpf.h
-	rm -f $(DESTDIR)$(includedir)/pcap-namedb.h
 	for i in $(MAN1); do \
 		rm -f $(DESTDIR)$(mandir)/man1/$$i; done
 	for i in $(MAN3PCAP); do \
 		rm -f $(DESTDIR)$(mandir)/man3/$$i; done
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
-	rm -f  $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
 	for i in $(MANFILE); do \
 		rm -f $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 	for i in $(MANMISC); do \
@@ -554,15 +534,15 @@ uninstall-shared: uninstall-shared-$(DYEXT)
 uninstall-shared-so:
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
-	rm -f  $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
-	rm -f  $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
-	rm -f  $(DESTDIR)$(libdir)/libpcap.so
+	rm -f $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.so
 uninstall-shared-dylib:
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=A; \
-	rm -f  $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
-	rm -f  $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
-	rm -f  $(DESTDIR)$(libdir)/libpcap.dylib
+	rm -f $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.dylib
 
 clean:
 	rm -f $(CLEANFILES) libpcap*.dylib libpcap.so*
