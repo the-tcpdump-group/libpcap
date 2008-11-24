@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.10 2008-11-24 18:07:06 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.11 2008-11-24 18:50:20 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -655,6 +655,9 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 	pcap_usb_header* hdr;
 	int nflush = 0;
 	int packets = 0;
+	int clen, max_clen;
+
+	max_clen = handle->snapshot - sizeof(pcap_usb_header);
 
 	for (;;) {
 		int i, ret;
@@ -695,8 +698,14 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			if (hdr->event_type == '@') 
 				continue;
 
+			/* we can get less that than really captured from kernel, depending on
+	 		* snaplen, so adjust header accordingly */
+			clen = max_clen;
+			if (hdr->data_len < clen)
+				clen = hdr->data_len;
+
 			/* get packet info from header*/
-			pkth.caplen = hdr->data_len + sizeof(pcap_usb_header);
+			pkth.caplen = clen + sizeof(pcap_usb_header);
 			pkth.len = hdr->urb_len + sizeof(pcap_usb_header);
 			pkth.ts.tv_sec = hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
