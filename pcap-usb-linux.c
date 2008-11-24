@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.8 2008-04-14 21:06:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.9 2008-11-24 17:41:00 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -351,7 +351,6 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		return -1;
 	}
 	uhdr->id = tag;
-	uhdr->endpoint_number = ep_num;
 	uhdr->device_address = dev_addr;
 	uhdr->bus_id = handle->md.ifindex;
 	uhdr->status = 0;
@@ -378,7 +377,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	else if (pipeid1 == 'B')
 		urb_transfer = URB_BULK;
 	if (pipeid2 == 'i') {
-		urb_transfer |= URB_TRANSFER_IN;
+		ep_num |= URB_TRANSFER_IN;
 		incoming = 1;
 	}
 	if (etype == 'C')
@@ -395,6 +394,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 			return 0;
 	uhdr->event_type = etype;
 	uhdr->transfer_type = urb_transfer;
+	uhdr->endpoint_number = ep_num;
 	pkth.caplen = sizeof(pcap_usb_header);
 	rawdata += sizeof(pcap_usb_header);
 
@@ -447,7 +447,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	uhdr->urb_len = urb_len;
 	uhdr->data_flag = 1;
 	data_len = 0;
-	if (uhdr->urb_len == pkth.caplen)
+	if (uhdr->urb_len == 0)
 		goto got;
 
 	/* check for data presence; data is present if and only if urb tag is '=' */
