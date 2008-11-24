@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.9 2008-11-24 17:41:00 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.10 2008-11-24 18:07:06 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -65,13 +65,6 @@ static const char rcsid[] _U_ =
 #define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
 #define USB_BUS_DIR "/proc/bus/usb"
 #define USB_LINE_LEN 4096
-
-
-#define PIPE_IN			0x80
-#define PIPE_ISOCHRONOUS	0
-#define PIPE_INTERRUPT		1
-#define PIPE_CONTROL		2
-#define PIPE_BULK		3
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define htols(s) s
@@ -230,6 +223,7 @@ usb_activate(pcap_t* handle)
 			/*
 			 * Monitor mode doesn't apply to USB devices.
 			 */
+			close(handle->fd);
 			return PCAP_ERROR_RFMON_NOTSUP;
 		}
 
@@ -262,15 +256,17 @@ usb_activate(pcap_t* handle)
 				"Can't open USB bus file %s: %s", full_path, strerror(errno));
 			return PCAP_ERROR;
 		}
+
+		if (handle->opt.rfmon) {
+			/*
+			 * Monitor mode doesn't apply to USB devices.
+			 */
+			close(handle->fd);
+			return PCAP_ERROR_RFMON_NOTSUP;
+		}
+
 		handle->stats_op = usb_stats_linux;
 		handle->read_op = usb_read_linux;
-	}
-
-	if (handle->opt.rfmon) {
-		/*
-		 * Monitor mode doesn't apply to USB devices.
-		 */
-		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
 	/*
