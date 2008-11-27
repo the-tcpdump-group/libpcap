@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.11 2008-11-18 07:51:54 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.12 2008-11-27 19:48:24 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -655,6 +655,14 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_LINUX_EVDEV			216
 
+/*
+ * GSM Um and Abis interfaces, preceded by a "gsmtap" header.
+ *
+ * Requested by Harald Welte <laforge@gnumonks.org>.
+ */
+#define LINKTYPE_GSMTAP_UM			217
+#define LINKTYPE_GSMTAP_ABIS			218
+
 
 static struct linktype_map {
 	int	dlt;
@@ -962,6 +970,10 @@ static struct linktype_map {
 
 	/* Input device events from Linux /dev/input/eventN devices */
 	{ DLT_LINUX_EVDEV,	LINKTYPE_LINUX_EVDEV },
+
+	/* GSM types */
+	{ DLT_GSMTAP_UM,	LINKTYPE_GSMTAP_UM },
+	{ DLT_GSMTAP_ABIS,	LINKTYPE_GSMTAP_ABIS },
 
 	{ -1,			-1 }
 };

@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.9 2008-11-18 07:51:54 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.10 2008-11-27 19:48:24 guy Exp $ (LBL)
  */
 
 /*
@@ -828,6 +828,14 @@ struct bpf_version {
  * Linux kernel to display systems, such as Xorg. 
  */
 #define DLT_LINUX_EVDEV			216
+
+/*
+ * GSM Um and Abis interfaces, preceded by a "gsmtap" header.
+ *
+ * Requested by Harald Welte <laforge@gnumonks.org>.
+ */
+#define DLT_GSMTAP_UM			217
+#define DLT_GSMTAP_ABIS			218
 
 
 /*
