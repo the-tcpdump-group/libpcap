@@ -12,11 +12,15 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/dlpisubs.c,v 1.2 2008-04-04 19:37:45 guy Exp $ (LBL)";
+	"@(#) $Header: /tcpdump/master/libpcap/dlpisubs.c,v 1.3 2008-12-02 16:40:19 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifndef DL_IPATM
+#define DL_IPATM	0x12	/* ATM Classical IP interface */
 #endif
 
 #ifdef HAVE_SYS_BUFMOD_H
@@ -41,6 +45,7 @@ static const char rcsid[] _U_ =
 	 * what the value used to be - there's no particular reason why it
 	 * should be tied to MAXDLBUF, but we'll leave it as this for now.
 	 */
+#define	MAXDLBUF	8192
 #define	PKTBUFSIZE	(MAXDLBUF * sizeof(bpf_u_int32))
 
 #endif
