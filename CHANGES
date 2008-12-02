@@ -1,4 +1,16 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67.2.5 2008-10-29 21:19:14 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67.2.6 2008-12-02 18:52:47 ken Exp $ (LBL)
+
+Mon.    December 8, 2008.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
+	Install headers unconditionally, and include vlan.h/bluetooth.h if enabled
+	Autoconf fixes+cleanup
+	Support enabling/disabling bluetooth (--{en,dis}able-bluetooth)
+	Support disabling SITA support (--without-sita)
+	Return -1 on failure to create packet ring (if supported but creation failed)
+	Fix handling of 'any' device - no longer attempt to open it in Monitor mode
+	Add support for snapshot length for Memory-Mapped Interface
+	DLT: Add DLT_LINUX_EVDEV
+	DLT: Add DLT_GSMTAP_UM
+	DLT: Add DLT_GSMTAP_ABIS
 
 Mon.    October 27, 2008.  ken@netfunctional.ca.  Summary for 1.0.0 libpcap release
 	Compile with IPv6 support by default
