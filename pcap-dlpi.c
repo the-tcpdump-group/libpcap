@@ -70,7 +70,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.11 2008-04-14 20:41:51 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-dlpi.c,v 1.116.2.12 2008-12-02 16:21:36 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -690,6 +690,7 @@ pcap_activate_dlpi(pcap_t *p)
 	}
 #endif
 
+#ifdef HAVE_SYS_BUFMOD_H
 	ss = p->snapshot;
 
 	/*
@@ -712,7 +713,6 @@ pcap_activate_dlpi(pcap_t *p)
 	}
 #endif
 
-#ifdef HAVE_SYS_BUFMOD_H
 	/* Push and configure bufmod. */
 	if (pcap_conf_bufmod(p, ss, p->md.timeout) != 0)
 		goto bad;
