@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.165 2008-12-14 20:17:14 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.166 2008-12-14 21:03:07 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.165 $)
+AC_REVISION($Revision: 1.166 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -364,6 +364,16 @@ linux)
 	#
 	AC_CHECK_HEADERS(linux/wireless.h, [],
 	[
+		#
+		# It didn't work without <net/if.h>; try it with
+		# <net/if.h>.
+		#
+		# Unset ac_cv_header_linux_wireless_h so we don't
+		# treat the previous failure as a cached value and
+		# suppress the next test.
+		#
+		AC_MSG_NOTICE([Rechecking with some additional includes])
+		unset ac_cv_header_linux_wireless_h
 		AC_CHECK_HEADERS(linux/wireless.h, [], [],
 		[
 #include <sys/socket.h>
