@@ -1,4 +1,42 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.67 2007-07-24 02:25:19 mcr Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.68 2008-12-14 08:23:30 guy Exp $ (LBL)
+
+Mon.    October 27, 2008.  ken@netfunctional.ca.  Summary for 1.0.0 libpcap release
+	Compile with IPv6 support by default
+	Compile with large file support on by default
+	Add pcap-config script, which deals with -I/-L flags for compiling
+	DLT: Add IPMB
+	DLT: Add LAPD
+	DLT: Add AX25 (AX.25 w/KISS header)
+	DLT: Add JUNIPER_ST
+	802.15.4 support
+	Variable length 802.11 header support
+	X2E data type support 
+	SITA ACN Interface support - see README.sita
+	Support for memory-mapped capture on Linux
+	Support for zerocopy BPF on platforms that support it
+	Support for setting buffer size when opening devices
+	Support for setting monitor mode when opening 802.11 devices
+	Better support for dealing with VLAN tagging/stripping on Linux
+	Fix dynamic library support on OSX
+	Return PCAP_ERROR_IFACE_NOT_UP if the interface isn't 'UP', so applications
+	 can print better diagnostic information
+	Return PCAP_ERROR_PERM_DENIED if we don't have permission to open a device, so
+	 applications can tell the user they need to go play with permissions
+	On Linux, ignore ENETDOWN so we can continue to capture packets if the 
+	 interface goes down and comes back up again.
+	On Linux, support new tpacket frame headers (2.6.27+)
+	On Mac OS X, add scripts for changing permissions on /dev/bpf* and launchd plist
+	On Solaris, support 'passive mode' on systems that support it
+	Fixes to autoconf and general build environment
+	Man page reorganization + cleanup
+	Autogenerate VERSION numbers better
+
+Mon.    September 10, 2007.  ken@xelerance.com.  Summary for 0.9.8 libpcap release
+        Change build process to put public libpcap headers into pcap subir
+        DLT: Add value for IPMI IPMB packets
+        DLT: Add value for u10 Networks boards
+        Require <net/pfvar.h> for pf definitions - allows reading of pflog formatted 
+         libpcap files on an OS other than where the file was generated
 
 Wed.	April 25, 2007.  ken@xelerance.com.  Summary for 0.9.6 libpcap release
 
