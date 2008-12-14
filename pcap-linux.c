@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.33 2008-12-14 20:05:26 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.34 2008-12-14 20:30:29 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -93,18 +93,20 @@ static const char rcsid[] _U_ =
 #include <sys/ioctl.h>
 #include <sys/utsname.h>
 #include <sys/mman.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <linux/if_ether.h>
-#include <net/if_arp.h>
-#include <poll.h>
 
 /*
  * Got Wireless Extensions?
  */
 #ifdef HAVE_LINUX_WIRELESS_H
 #include <linux/wireless.h>
+#else
+#include <net/if.h>
 #endif
+
+#include <netinet/in.h>
+#include <linux/if_ether.h>
+#include <net/if_arp.h>
+#include <poll.h>
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
