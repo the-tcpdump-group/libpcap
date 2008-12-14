@@ -1,6 +1,6 @@
-@(#) $Header: /tcpdump/master/libpcap/README,v 1.30.4.3 2008-10-17 10:39:20 ken Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/README,v 1.30.4.4 2008-12-14 19:42:39 guy Exp $ (LBL)
 
-LIBPCAP 1.0.0
+LIBPCAP 1.0.1
 
 www.tcpdump.org
 
@@ -12,8 +12,8 @@ Anonymous CVS is available via:
 	(password "anoncvs")
 	cvs -d :pserver:tcpdump@cvs.tcpdump.org:/tcpdump/master checkout libpcap
 
-Version 1.0.0 of LIBPCAP can be retrieved with the CVS tag "libpcap_1_0":
-	cvs -d :pserver:tcpdump@cvs.tcpdump.org:/tcpdump/master checkout -r libpcap_1_0 libpcap
+Version 1.0.1 of LIBPCAP can be retrieved with the CVS tag "libpcap_1_0rel1":
+	cvs -d :pserver:tcpdump@cvs.tcpdump.org:/tcpdump/master checkout -r libpcap_1_0rel1 libpcap
 
 Please submit patches against the master copy to the libpcap project on
 sourceforge.net.
@@ -83,7 +83,7 @@ There's now a rule to make a shared library, which should work on Linux
 and *BSD (and OS X).
 
 It sets the soname of the library to "libpcap.so.1"; this is what it 
-should be, *NOT* libpcap.so.1.0 or libpcap.so.1.0.0 or something such as 
+should be, *NOT* libpcap.so.1.0 or libpcap.so.1.0.1 or something such as 
 that.
 
 We've been maintaining binary compatibility between libpcap releases for 
