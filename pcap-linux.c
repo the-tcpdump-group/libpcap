@@ -34,7 +34,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.32 2008-11-19 17:37:14 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.129.2.33 2008-12-14 20:05:26 guy Exp $ (LBL)";
 #endif
 
 /*
@@ -274,10 +274,12 @@ static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 #ifdef HAVE_PF_PACKET_SOCKETS
 static int 	iface_bind(int fd, int ifindex, char *ebuf);
+#ifdef IW_MODE_MONITOR
 static int	has_wext(int sock_fd, const char *device, char *ebuf);
+#endif /* IW_MODE_MONITOR */
 static int	enter_rfmon_mode_wext(pcap_t *handle, int sock_fd,
     const char *device);
-#endif
+#endif /* HAVE_PF_PACKET_SOCKETS */
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 #ifdef SO_ATTACH_FILTER
@@ -2534,6 +2536,7 @@ iface_bind(int fd, int ifindex, char *ebuf)
 	return 1;
 }
 
+#ifdef IW_MODE_MONITOR
 /*
  * Check whether the device supports the Wireless Extensions.
  * Returns 1 if it does, 0 if it doesn't, PCAP_ERROR_NO_SUCH_DEVICE
@@ -2542,7 +2545,6 @@ iface_bind(int fd, int ifindex, char *ebuf)
 static int
 has_wext(int sock_fd, const char *device, char *ebuf)
 {
-#ifdef IW_MODE_MONITOR
 	struct iwreq ireq;
 
 	strncpy(ireq.ifr_ifrn.ifrn_name, device,
@@ -2554,9 +2556,9 @@ has_wext(int sock_fd, const char *device, char *ebuf)
 	    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
 	if (errno == ENODEV)
 		return PCAP_ERROR_NO_SUCH_DEVICE;
-#endif
 	return 0;
 }
+#endif
 
 /*
  * Per me si va ne la citta dolente,
