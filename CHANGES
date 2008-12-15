@@ -1,6 +1,6 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.70 2008-12-15 00:20:07 guy Exp $ (LBL)
+@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.71 2008-12-15 00:27:54 guy Exp $ (LBL)
 
-Mon.    December 8, 2008.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
+Mon.    December 15, 2008.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
 	Install headers unconditionally, and include vlan.h/bluetooth.h if enabled
 	Autoconf fixes+cleanup
 	Support enabling/disabling bluetooth (--{en,dis}able-bluetooth)
