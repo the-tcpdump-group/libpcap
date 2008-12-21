@@ -99,6 +99,8 @@ typedef unsigned short u_int64_t;
 #else  /* XXX */
 #error "there's no appropriate type for u_int64_t"
 #endif
+#define HAVE_U_INT64_T 1
+#define HAVE_INT64_T 1
 
 #endif /* HAVE_U_INT64_T */
 
