@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.306 2008-09-22 20:14:19 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.307 2008-12-21 19:28:56 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1489,6 +1489,16 @@ init_linktype(p)
 		return;
 
 	case DLT_IEEE802_15_4_NONASK_PHY:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_MPLS:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
