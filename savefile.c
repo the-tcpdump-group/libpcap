@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.12 2008-11-27 19:48:24 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.13 2008-12-21 19:29:49 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -663,6 +663,13 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_GSMTAP_UM			217
 #define LINKTYPE_GSMTAP_ABIS			218
 
+/*
+ * MPLS, with an MPLS label as the link-layer header.
+ * Requested by Michele Marchetto <michele@openbsd.org> on behalf
+ * of OpenBSD.
+ */
+#define LINKTYPE_MPLS				219
+
 
 static struct linktype_map {
 	int	dlt;
@@ -974,6 +981,9 @@ static struct linktype_map {
 	/* GSM types */
 	{ DLT_GSMTAP_UM,	LINKTYPE_GSMTAP_UM },
 	{ DLT_GSMTAP_ABIS,	LINKTYPE_GSMTAP_ABIS },
+
+	/* MPLS, with an MPLS label as the link-layer header */
+	{ DLT_MPLS,		LINKTYPE_MPLS },
 
 	{ -1,			-1 }
 };

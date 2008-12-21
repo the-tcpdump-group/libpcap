@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.10 2008-11-27 19:48:24 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.11 2008-12-21 19:29:49 guy Exp $ (LBL)
  */
 
 /*
@@ -827,15 +827,22 @@ struct bpf_version {
  * is used to communicate keystrokes and mouse movements from the
  * Linux kernel to display systems, such as Xorg. 
  */
-#define DLT_LINUX_EVDEV			216
+#define DLT_LINUX_EVDEV		216
 
 /*
  * GSM Um and Abis interfaces, preceded by a "gsmtap" header.
  *
  * Requested by Harald Welte <laforge@gnumonks.org>.
  */
-#define DLT_GSMTAP_UM			217
-#define DLT_GSMTAP_ABIS			218
+#define DLT_GSMTAP_UM		217
+#define DLT_GSMTAP_ABIS		218
+
+/*
+ * MPLS, with an MPLS label as the link-layer header.
+ * Requested by Michele Marchetto <michele@openbsd.org> on behalf
+ * of OpenBSD.
+ */
+#define DLT_MPLS		219
 
 
 /*
