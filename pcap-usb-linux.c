@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.12 2008-12-23 18:04:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.13 2008-12-23 19:05:48 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -613,7 +613,8 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 	}
 
 	stats->ps_recv = handle->md.packets_read + st.queued;
-	stats->ps_ifdrop = st.dropped;
+	stats->ps_ifdrop = 0;
+	stats->ps_drop = st.dropped;
 	return 0;
 }
 
