@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.181 2008-12-21 19:28:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.182 2008-12-23 18:03:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -483,7 +483,7 @@ static const char rcsid[] _U_ =
  * USB packets, beginning with a Linux USB header; requested by
  * Paolo Abeni <paolo.abeni@email.it>.
  */
-#define LINKTYPE_USB_LINUX	189
+#define LINKTYPE_USB_LINUX		189
 
 /*
  * Controller Area Network (CAN) v. 2.0B packets.
@@ -669,6 +669,12 @@ static const char rcsid[] _U_ =
  * of OpenBSD.
  */
 #define LINKTYPE_MPLS				219
+
+/*
+ * USB packets, beginning with a Linux USB header, with the USB header
+ * padded to 64 bytes; required for memory-mapped access.
+ */
+#define LINKTYPE_USB_LINUX_MMAP			220
 
 
 static struct linktype_map {
@@ -984,6 +990,9 @@ static struct linktype_map {
 
 	/* MPLS, with an MPLS label as the link-layer header */
 	{ DLT_MPLS,		LINKTYPE_MPLS },
+
+	/* USB with padded Linux header */
+	{ DLT_USB_LINUX_MMAP,	LINKTYPE_USB_LINUX_MMAP },
 
 	{ -1,			-1 }
 };
@@ -1555,19 +1564,20 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 	}
 
 	/*
-	 * The DLT_USB_LINUX header is in host byte order when capturing
-	 * (it's supplied directly from a memory-mapped buffer shared
-	 * by the kernel).
+	 * The DLT_USB_LINUX and DLT_USB_LINUX_MMAP headers are in host
+	 * byte order when capturing (it's supplied directly from a
+	 * memory-mapped buffer shared by the kernel).
 	 *
-	 * When reading a DLT_USB_LINUX capture file, we need to convert
-	 * it from the capturing host's byte order to the reading host's
-	 * byte order.
+	 * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAP capture file,
+	 * we need to convert it from the capturing host's byte order to
+	 * the reading host's byte order.
 	 */
-	if (p->sf.swapped && p->linktype == DLT_USB_LINUX) {
+	if (p->sf.swapped &&
+	    (p->linktype == DLT_USB_LINUX || p->linktype == DLT_USB_LINUX_MMAP)) {
 		pcap_usb_header* uhdr = (pcap_usb_header*) buf;
 		/*
 		 * The URB id is a totally opaque value; do we really need to 
-		 * converte it to the reading host's byte order???
+		 * convert it to the reading host's byte order???
 		 */
 		if (hdr->caplen < 8)
 			return 0;

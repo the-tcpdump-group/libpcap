@@ -33,7 +33,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.126 2008-12-21 19:28:56 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap.c,v 1.127 2008-12-23 18:03:22 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -624,6 +624,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_AX25_KISS, "AX.25 with KISS header"),
 	DLT_CHOICE(DLT_IEEE802_15_4_NONASK_PHY, "IEEE 802.15.4 with non-ASK PHY data"),
 	DLT_CHOICE(DLT_MPLS, "MPLS with label as link-layer header"),
+	DLT_CHOICE(DLT_USB_LINUX_MMAP, "USB with padded Linux header"),
 	DLT_CHOICE_SENTINEL
 };
 
