@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.30 2008-12-23 20:13:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.31 2008-12-23 20:49:26 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -60,6 +60,9 @@ static const char rcsid[] _U_ =
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#ifdef HAVE_LINUX_USBDEVICE_FS_H
+#include <linux/usbdevice_fs.h>
+#endif
 
 #define USB_IFACE "usb"
 #define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
@@ -202,6 +205,59 @@ int usb_mmap(pcap_t* handle)
 	return handle->buffer != MAP_FAILED;
 }
 
+#define CTRL_TIMEOUT    (5*1000)        /* milliseconds */
+
+#define USB_ENDPOINT_IN		0x80
+#define USB_TYPE_STANDARD	0x00
+#define USB_RECIP_DEVICE	0x00
+
+#define USB_REQ_GET_DESCRIPTOR	6
+
+#define USB_DT_DEVICE		1
+
+static void
+probe_devices(int bus)
+{
+	struct usbdevfs_ctrltransfer ctrl;
+	struct dirent* data;
+	int ret = 0;
+	char buf[40];
+	DIR* dir;
+
+	/* scan profs usb bus directories */
+	snprintf(buf, sizeof buf, "/dev/bus/usb/%03d", bus);
+	dir = opendir(buf);
+	if (!dir)
+		return 0;
+	while ((ret >= 0) && ((data = readdir(dir)) != 0)) {
+		int fd;
+		char* name = data->d_name;
+
+		if (name[0] == '.')
+			continue;
+
+		snprintf(buf, sizeof buf, "/dev/bus/usb/%03d/%s", bus, data->d_name);
+		
+		fd = open(buf, O_RDWR);
+		if (fd == -1)
+			continue;
+
+		ctrl.bRequestType = USB_ENDPOINT_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+		ctrl.bRequest = USB_REQ_GET_DESCRIPTOR;
+		ctrl.wValue = USB_DT_DEVICE << 8;
+		ctrl.wIndex = 0;
+		ctrl.wLength = sizeof buf;
+
+		ctrl.data = buf;
+		ctrl.timeout = CTRL_TIMEOUT;
+
+		ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
+
+		close(fd);
+	}
+	closedir(dir);
+}
+
 pcap_t *
 usb_create(const char *device, char *ebuf)
 {
@@ -259,6 +315,7 @@ usb_activate(pcap_t* handle)
 			handle->stats_op = usb_stats_linux_bin;
 			handle->read_op = usb_read_linux_mmap;
 			handle->cleanup_op = usb_cleanup_linux_mmap;
+			probe_devices(handle->md.ifindex);
 
 			/*
 			 * "handle->fd" is a real file, so "select()" and
@@ -271,6 +328,7 @@ usb_activate(pcap_t* handle)
 		/* can't mmap, use plain binary interface access */
 		handle->stats_op = usb_stats_linux_bin;
 		handle->read_op = usb_read_linux_bin;
+		probe_devices(handle->md.ifindex);
 	}
 	else {
 		/*Binary interface not available, try open text interface */
