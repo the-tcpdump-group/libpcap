@@ -21,7 +21,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.17 2008-12-21 19:29:49 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/gencode.c,v 1.290.2.18 2008-12-23 18:04:28 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -1499,6 +1499,16 @@ init_linktype(p)
 		return;
 
 	case DLT_MPLS:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_USB_LINUX_MMAP:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
@@ -3360,6 +3370,7 @@ gen_linktype(proto)
 
 	case DLT_USB:
 	case DLT_USB_LINUX:
+	case DLT_USB_LINUX_MMAP:
 		bpf_error("USB link-layer type filtering not implemented");
 
 	case DLT_BLUETOOTH_HCI_H4:

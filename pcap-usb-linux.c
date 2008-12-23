@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.11 2008-11-24 18:50:20 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.12 2008-12-23 18:04:29 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -63,7 +63,8 @@ static const char rcsid[] _U_ =
 
 #define USB_IFACE "usb"
 #define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
-#define USB_BUS_DIR "/proc/bus/usb"
+#define SYS_USB_BUS_DIR "/sys/bus/usb/devices"
+#define PROC_USB_BUS_DIR "/proc/bus/usb"
 #define USB_LINE_LEN 4096
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -142,27 +143,52 @@ usb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 	struct dirent* data;
 	int ret = 0;
 	DIR* dir;
+	int n;
+	char* name;
+	size_t len;
 
-	/* scan procfs usb bus directory */
-	dir = opendir(USB_BUS_DIR);
-	if (!dir) return 0;
-	while ((ret == 0) && ((data = readdir(dir)) != 0)) {
-		int n;
-		char* name = data->d_name;
-		int len = strlen(name);
+	/* try scanning sysfs usb bus directory */
+	dir = opendir(SYS_USB_BUS_DIR);
+	if (dir != NULL) {
+		while ((ret == 0) && ((data = readdir(dir)) != 0)) {
+			name = data->d_name;
 
-		/* if this file name does not end with a number it's not of our interest */
-		if ((len < 1) || !isdigit(name[--len]))
-			continue;
-		while (isdigit(name[--len]));
-		if (sscanf(&name[len+1], "%d", &n) != 1) 
-			continue;
+			if (strncmp(name, "usb", 3) != 0)
+				continue;
 
-		ret = usb_dev_add(alldevsp, n, err_str);
+			if (sscanf(&name[3], "%d", &n) == 0) 
+				continue;
+
+			ret = usb_dev_add(alldevsp, n, err_str);
+		}
+
+		closedir(dir);
+		return ret;
 	}
 
-	closedir(dir);
-	return ret;
+	/* that didn't work; try scanning procfs usb bus directory */
+	dir = opendir(PROC_USB_BUS_DIR);
+	if (dir != NULL) {
+		while ((ret == 0) && ((data = readdir(dir)) != 0)) {
+			name = data->d_name;
+			len = strlen(name);
+
+			/* if this file name does not end with a number it's not of our interest */
+			if ((len < 1) || !isdigit(name[--len]))
+				continue;
+			while (isdigit(name[--len]));
+			if (sscanf(&name[len+1], "%d", &n) != 1) 
+				continue;
+
+			ret = usb_dev_add(alldevsp, n, err_str);
+		}
+
+		closedir(dir);
+		return ret;
+	}
+
+	/* neither of them worked */
+	return 0;
 }
 
 static 
@@ -229,6 +255,7 @@ usb_activate(pcap_t* handle)
 
 		/* binary api is available, try to use fast mmap access */
 		if (usb_mmap(handle)) {
+			handle->linktype = DLT_USB_LINUX_MMAP;
 			handle->stats_op = usb_stats_linux_bin;
 			handle->read_op = usb_read_linux_mmap;
 			handle->cleanup_op = usb_cleanup_linux_mmap;
@@ -632,7 +659,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 		clen = info.hdr->data_len;
 	info.hdr->data_len = clen;
 	pkth.caplen = clen + sizeof(pcap_usb_header);
-	pkth.len = info.hdr->urb_len + sizeof(pcap_usb_header);
+	pkth.len = info.hdr->data_len + sizeof(pcap_usb_header);
 	pkth.ts.tv_sec = info.hdr->ts_sec;
 	pkth.ts.tv_usec = info.hdr->ts_usec;
 
@@ -705,8 +732,8 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 				clen = hdr->data_len;
 
 			/* get packet info from header*/
-			pkth.caplen = clen + sizeof(pcap_usb_header);
-			pkth.len = hdr->urb_len + sizeof(pcap_usb_header);
+			pkth.caplen = clen + MMAPPED_USB_HEADER_SIZE;
+			pkth.len = hdr->data_len + MMAPPED_USB_HEADER_SIZE;
 			pkth.ts.tv_sec = hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
 
