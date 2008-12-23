@@ -30,7 +30,7 @@
 
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.14 2008-12-23 18:04:29 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.168.2.15 2008-12-23 20:14:13 guy Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H
@@ -674,7 +674,7 @@ static const char rcsid[] _U_ =
  * USB packets, beginning with a Linux USB header, with the USB header
  * padded to 64 bytes; required for memory-mapped access.
  */
-#define LINKTYPE_USB_LINUX_MMAP			220
+#define LINKTYPE_USB_LINUX_MMAPPED		220
 
 
 static struct linktype_map {
@@ -992,7 +992,7 @@ static struct linktype_map {
 	{ DLT_MPLS,		LINKTYPE_MPLS },
 
 	/* USB with padded Linux header */
-	{ DLT_USB_LINUX_MMAP,	LINKTYPE_USB_LINUX_MMAP },
+	{ DLT_USB_LINUX_MMAPPED, LINKTYPE_USB_LINUX_MMAPPED },
 
 	{ -1,			-1 }
 };
@@ -1564,16 +1564,16 @@ sf_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char *buf, u_int buflen)
 	}
 
 	/*
-	 * The DLT_USB_LINUX and DLT_USB_LINUX_MMAP headers are in host
+	 * The DLT_USB_LINUX and DLT_USB_LINUX_MMAPPED headers are in host
 	 * byte order when capturing (it's supplied directly from a
 	 * memory-mapped buffer shared by the kernel).
 	 *
-	 * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAP capture file,
+	 * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAPPED capture file,
 	 * we need to convert it from the capturing host's byte order to
 	 * the reading host's byte order.
 	 */
 	if (p->sf.swapped &&
-	    (p->linktype == DLT_USB_LINUX || p->linktype == DLT_USB_LINUX_MMAP)) {
+	    (p->linktype == DLT_USB_LINUX || p->linktype == DLT_USB_LINUX_MMAPPED)) {
 		pcap_usb_header* uhdr = (pcap_usb_header*) buf;
 		/*
 		 * The URB id is a totally opaque value; do we really need to 

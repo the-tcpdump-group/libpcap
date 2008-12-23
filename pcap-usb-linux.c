@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.13 2008-12-23 19:05:48 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.14 2008-12-23 20:14:13 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -255,7 +255,7 @@ usb_activate(pcap_t* handle)
 
 		/* binary api is available, try to use fast mmap access */
 		if (usb_mmap(handle)) {
-			handle->linktype = DLT_USB_LINUX_MMAP;
+			handle->linktype = DLT_USB_LINUX_MMAPPED;
 			handle->stats_op = usb_stats_linux_bin;
 			handle->read_op = usb_read_linux_mmap;
 			handle->cleanup_op = usb_cleanup_linux_mmap;
@@ -733,8 +733,8 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 				clen = hdr->data_len;
 
 			/* get packet info from header*/
-			pkth.caplen = clen + MMAPPED_USB_HEADER_SIZE;
-			pkth.len = hdr->data_len + MMAPPED_USB_HEADER_SIZE;
+			pkth.caplen = clen + sizeof(pcap_usb_header_mmapped);
+			pkth.len = hdr->data_len + sizeof(pcap_usb_header_mmapped);
 			pkth.ts.tv_sec = hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
 

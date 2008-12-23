@@ -30,7 +30,7 @@
  * Basic USB data struct
  * By Paolo Abeni <paolo.abeni@email.it>
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/usb.h,v 1.6.2.2 2008-12-23 18:13:02 guy Exp $
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/usb.h,v 1.6.2.3 2008-12-23 20:14:13 guy Exp $
  */
  
 #ifndef _PCAP_USB_STRUCTS_H__
@@ -68,8 +68,6 @@ typedef struct _usb_setup {
 /*
  * Header prepended by linux kernel to each event.
  * Appears at the front of each packet in DLT_USB_LINUX captures.
- * Appears at the front of each packet, followed by padding to a multiple
- * of 64 bytes, in DLT_USB_LINUX_MMAP captures.
  */
 typedef struct _usb_header {
 	u_int64_t id;
@@ -89,8 +87,26 @@ typedef struct _usb_header {
 } pcap_usb_header;
 
 /*
- * In DLT_USB_LINUX_MMAP captures, the header is padded to 64 bytes.
+ * Header prepended by linux kernel to each event, plus padding in the
+ * internal buffer.
+ * Appears at the front of each packet in DLT_USB_LINUX_MMAPPED captures.
  */
-#define MMAPPED_USB_HEADER_SIZE	((sizeof (pcap_usb_header) + 63) & ~63)
+typedef struct _usb_header_mmapped {
+	u_int64_t id;
+	u_int8_t event_type;
+	u_int8_t transfer_type;
+	u_int8_t endpoint_number;
+	u_int8_t device_address;
+	u_int16_t bus_id;
+	char setup_flag;/*if !=0 the urb setup header is not present*/
+	char data_flag; /*if !=0 no urb data is present*/
+	int64_t ts_sec;
+	int32_t ts_usec;
+	int32_t status;
+	u_int32_t urb_len;
+	u_int32_t data_len; /* amount of urb data really present in this event*/
+	pcap_usb_setup setup;
+	u_int8_t padding[16];
+} pcap_usb_header_mmapped;
 
 #endif

@@ -37,7 +37,7 @@
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.12 2008-12-23 18:04:29 guy Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.19.2.13 2008-12-23 20:14:13 guy Exp $ (LBL)
  */
 
 /*
@@ -848,7 +848,7 @@ struct bpf_version {
  * USB packets, beginning with a Linux USB header, with the USB header
  * padded to 64 bytes; required for memory-mapped access.
  */
-#define DLT_USB_LINUX_MMAP	220
+#define DLT_USB_LINUX_MMAPPED	220
 
 
 /*
