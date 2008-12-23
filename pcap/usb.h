@@ -30,7 +30,7 @@
  * Basic USB data struct
  * By Paolo Abeni <paolo.abeni@email.it>
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/usb.h,v 1.6.2.1 2008-12-23 18:04:29 guy Exp $
+ * @(#) $Header: /tcpdump/master/libpcap/pcap/usb.h,v 1.6.2.2 2008-12-23 18:13:02 guy Exp $
  */
  
 #ifndef _PCAP_USB_STRUCTS_H__
@@ -91,6 +91,6 @@ typedef struct _usb_header {
 /*
  * In DLT_USB_LINUX_MMAP captures, the header is padded to 64 bytes.
  */
-#define MMAPPED_USB_HEADER_SIZE	(sizeof (pcap_usb_header) + 63) & ~63)
+#define MMAPPED_USB_HEADER_SIZE	((sizeof (pcap_usb_header) + 63) & ~63)
 
 #endif
