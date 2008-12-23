@@ -62,6 +62,9 @@
 /* if tp_vlan_tci exists */
 #undef HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 
+/* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
+#undef HAVE_LINUX_USBDEVICE_FS_H
+
 /* Define to 1 if you have the <linux/wireless.h> header file. */
 #undef HAVE_LINUX_WIRELESS_H
 

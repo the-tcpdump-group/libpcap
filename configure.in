@@ -1,4 +1,4 @@
-dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.29 2008-12-14 22:00:04 guy Exp $ (LBL)
+dnl @(#) $Header: /tcpdump/master/libpcap/configure.in,v 1.138.2.30 2008-12-23 20:51:13 guy Exp $ (LBL)
 dnl
 dnl Copyright (c) 1994, 1995, 1996, 1997
 dnl	The Regents of the University of California.  All rights reserved.
@@ -6,7 +6,7 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
-AC_REVISION($Revision: 1.138.2.29 $)
+AC_REVISION($Revision: 1.138.2.30 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
 
@@ -1039,6 +1039,7 @@ linux*)
        fi
        AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
        AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
+       AC_CHECK_HEADERS(linux/usbdevice_fs.h)
        ;;
 *)
        AC_MSG_RESULT(no)
