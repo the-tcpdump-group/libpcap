@@ -34,7 +34,7 @@
  */
 #ifndef lint
 static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.15 2008-12-23 20:51:13 guy Exp $ (LBL)";
+    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.16.2.16 2008-12-23 20:55:40 guy Exp $ (LBL)";
 #endif
  
 #ifdef HAVE_CONFIG_H
@@ -228,7 +228,7 @@ probe_devices(int bus)
 	snprintf(buf, sizeof buf, "/dev/bus/usb/%03d", bus);
 	dir = opendir(buf);
 	if (!dir)
-		return 0;
+		return;
 	while ((ret >= 0) && ((data = readdir(dir)) != 0)) {
 		int fd;
 		char* name = data->d_name;
