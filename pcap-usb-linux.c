@@ -60,7 +60,6 @@ static const char rcsid[] _U_ =
 #include <netinet/in.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <linux/usb/ch9.h>
 #ifdef HAVE_LINUX_USBDEVICE_FS_H
 #include <linux/usbdevice_fs.h>
 #endif
@@ -208,6 +207,14 @@ int usb_mmap(pcap_t* handle)
 
 #define CTRL_TIMEOUT    (5*1000)        /* milliseconds */
 
+#define USB_DIR_IN		0x80
+#define USB_TYPE_STANDARD	0x00
+#define USB_RECIP_DEVICE	0x00
+
+#define USB_REQ_GET_DESCRIPTOR	6
+
+#define USB_DT_DEVICE		1
+
 /* probe the descriptors of the devices attached to the bus */
 /* the descriptors will end up in the captured packet stream */
 /* and be decoded by external apps like wireshark */
@@ -216,7 +223,6 @@ static void
 probe_devices(int bus)
 {
 	struct usbdevfs_ctrltransfer ctrl;
-	struct usb_device_descriptor device;
 	struct dirent* data;
 	int ret = 0;
 	char buf[40];
@@ -245,8 +251,8 @@ probe_devices(int bus)
 		ctrl.bRequest = USB_REQ_GET_DESCRIPTOR;
 		ctrl.wValue = USB_DT_DEVICE << 8;
 		ctrl.wIndex = 0;
- 		ctrl.wLength = sizeof(device);
-		ctrl.data = &device;
+ 		ctrl.wLength = sizeof(buf);
+		ctrl.data = buf;
 		ctrl.timeout = CTRL_TIMEOUT;
 
 		ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
