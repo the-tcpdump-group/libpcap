@@ -31,6 +31,11 @@ static const char rcsid[] _U_ =
 #include "config.h"
 #endif
 
+#ifdef DECNETLIB
+#include <sys/types.h>
+#include <netdnet/dnetdb.h>
+#endif
+
 #ifdef WIN32
 #include <pcap-stdinc.h>
 
@@ -43,13 +48,6 @@ static const char rcsid[] _U_ =
 
 #include <netinet/in.h>
 #endif /* WIN32 */
-
-/*
- * XXX - why was this included even on UNIX?
- */
-#ifdef __MINGW32__
-#include "IP6_misc.h"
-#endif
 
 #ifndef WIN32
 #ifdef HAVE_ETHER_HOSTTON
