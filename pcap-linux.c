@@ -2316,11 +2316,33 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 					tp_len, tp_snaplen) == 0))
 			goto skip;
 
-		/* check direction and interface index */
+		/*
+		 * Do checks based on packet direction.
+		 */
 		sll = (void *)h.raw + TPACKET_ALIGN(handle->md.tp_hdrlen);
-		if ((sll->sll_ifindex == handle->md.lo_ifindex) &&
-					(sll->sll_pkttype == PACKET_OUTGOING))
-			goto skip;
+		if (sll->sll_pkttype == PACKET_OUTGOING) {
+			/*
+			 * Outgoing packet.
+			 * If this is from the loopback device, reject it;
+			 * we'll see the packet as an incoming packet as well,
+			 * and we don't want to see it twice.
+			 */
+			if (sll->sll_ifindex == handle->md.lo_ifindex)
+				goto skip;
+
+			/*
+			 * If the user only wants incoming packets, reject it.
+			 */
+			if (handle->direction == PCAP_D_IN)
+				goto skip;
+		} else {
+			/*
+			 * Incoming packet.
+			 * If the user only wants outgoing packets, reject it.
+			 */
+			if (handle->direction == PCAP_D_OUT)
+				goto skip;
+		}
 
 		/* get required packet info from ring header */
 		pcaphdr.ts.tv_sec = tp_sec;
