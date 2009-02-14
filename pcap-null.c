@@ -40,9 +40,9 @@ static const char rcsid[] _U_ =
 static char nosup[] = "live packet capture not supported on this system";
 
 pcap_t *
-pcap_activate(pcap_t *p)
+pcap_create(const char *device, char *ebuf)
 {
-	(void)strlcpy(p->errbuf, nosup, PCAP_ERRBUF_SIZE);
+	(void)strlcpy(ebuf, nosup, PCAP_ERRBUF_SIZE);
 	return (NULL);
 }
 
