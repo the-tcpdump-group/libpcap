@@ -30,6 +30,8 @@
  *
  * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.11 2008-10-06 15:27:32 gianluca Exp $ (LBL)
  */
+#ifndef pcap_stdinc_h
+#define pcap_stdinc_h
 
 #define SIZEOF_CHAR 1
 #define SIZEOF_SHORT 2
@@ -54,9 +56,7 @@
 #include <time.h>
 #include <io.h>
 
-#ifndef __MINGW32__
 #include "IP6_misc.h"
-#endif
 
 #define caddr_t char*
 
@@ -88,3 +88,4 @@ typedef _W64 int   intptr_t;
 #endif 
 
 #endif /*__MINGW32__*/
+#endif /* pcap_stdinc_h */
