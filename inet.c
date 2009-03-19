@@ -669,7 +669,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	    || strstr(device, "bluetooth") != NULL
 #endif
 #ifdef PCAP_SUPPORT_USB
-	    || strstr(device, "usb") != NULL
+	    || strstr(device, "usbmon") != NULL
 #endif
 	    ) {
 		*netp = *maskp = 0;

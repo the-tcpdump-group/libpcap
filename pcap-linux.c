@@ -324,7 +324,7 @@ pcap_create(const char *device, char *ebuf)
 #endif
 
 #ifdef PCAP_SUPPORT_USB
-	if (strstr(device, "usb")) {
+	if (strstr(device, "usbmon")) {
 		return usb_create(device, ebuf);
 	}
 #endif

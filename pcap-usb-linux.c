@@ -64,7 +64,7 @@ static const char rcsid[] _U_ =
 #include <linux/usbdevice_fs.h>
 #endif
 
-#define USB_IFACE "usb"
+#define USB_IFACE "usbmon"
 #define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
 #define SYS_USB_BUS_DIR "/sys/bus/usb/devices"
 #define PROC_USB_BUS_DIR "/proc/bus/usb"
