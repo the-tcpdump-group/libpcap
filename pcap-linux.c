@@ -2216,6 +2216,24 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 	return h.raw;
 }
 
+static inline void
+pcap_release_previous_ring_frame(pcap_t *handle)
+{
+	if (handle->prev_pkt.raw != NULL) {
+		switch (handle->md.tp_version) {
+		case TPACKET_V1:
+			handle->prev_pkt.h1->tp_status = TP_STATUS_KERNEL;
+			break;
+#ifdef HAVE_TPACKET2
+		case TPACKET_V2:
+			handle->prev_pkt.h2->tp_status = TP_STATUS_KERNEL;
+			break;
+#endif
+		}
+		handle->prev_pkt.raw = NULL;
+	}
+}
+
 static int
 pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
 		u_char *user)
@@ -2263,9 +2281,43 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		unsigned int tp_sec;
 		unsigned int tp_usec;
 
+		/*
+		 * Check for break loop condition; a callback might have
+		 * set it.
+		 */
+		if (handle->break_loop) {
+			handle->break_loop = 0;
+			return -2;
+		}
+
 		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
 		if (!h.raw)
 			break;
+
+		/*
+		 * We have a packet; release the previous packet,
+		 * if any.
+		 *
+		 * Libpcap has never guaranteed that, if we get a
+		 * packet from the underlying packet capture
+		 * mechanism, the data passed to callbacks for
+		 * any previous packets is still valid.  It did
+		 * implicitly guarantee that the data will still
+		 * be available after the callback returns, by
+		 * virtue of implementing pcap_next() by calling
+		 * pcap_dispatch() with a count of 1 and a callback
+		 * that fills in a structure with a pointer to
+		 * the packet data, meaning that pointer is
+		 * expected to point to valid data after the
+		 * callback returns and pcap_next() returns,
+		 * so we can't release the packet when the
+		 * callback returns.
+		 *
+		 * Therefore, we remember the packet that
+		 * needs to be released after handing it
+		 * to the callback, and release it up here.
+		 */
+		pcap_release_previous_ring_frame(handle);
 
 		switch (handle->md.tp_version) {
 		case TPACKET_V1:
@@ -2417,17 +2469,14 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		handle->md.packets_read++;
 
 skip:
-		/* next packet */
-		switch (handle->md.tp_version) {
-		case TPACKET_V1:
-			h.h1->tp_status = TP_STATUS_KERNEL;
-			break;
-#ifdef HAVE_TPACKET2
-		case TPACKET_V2:
-			h.h2->tp_status = TP_STATUS_KERNEL;
-			break;
-#endif
-		}
+		/*
+		 * As per the comment above, we can't yet release this
+		 * packet, even though the callback has returned, as
+		 * some users of pcap_loop() and pcap_dispatch() - such
+		 * as pcap_next() and pcap_next_ex() - expect the packet
+		 * to be available until the next pcap_dispatch() call.
+		 */
+		handle->prev_pkt = h;
 		if (++handle->offset >= handle->cc)
 			handle->offset = 0;
 

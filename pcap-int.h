@@ -134,6 +134,7 @@ struct pcap_md {
 	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
 	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
+	union thdr prev_pkt;	/* previous packet handed to the callback */
 #endif /* linux */
 
 #ifdef HAVE_DAG_API
