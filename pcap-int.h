@@ -109,6 +109,14 @@ struct pcap_sf {
 	u_char *base;
 };
 
+#ifdef linux
+union thdr {
+	struct tpacket_hdr	*h1;
+	struct tpacket2_hdr	*h2;
+	void			*raw;
+};
+#endif
+
 /*
  * Used when doing a live capture.
  */

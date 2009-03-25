@@ -245,12 +245,6 @@ static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static void pcap_cleanup_linux(pcap_t *);
 
-union thdr {
-	struct tpacket_hdr	*h1;
-	struct tpacket2_hdr	*h2;
-	void			*raw;
-};
-
 #ifdef HAVE_PACKET_RING
 #define RING_GET_FRAME(h) (((union thdr **)h->buffer)[h->offset])
 
