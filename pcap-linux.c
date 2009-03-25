@@ -565,6 +565,7 @@ pcap_activate_linux(pcap_t *handle)
 			 * Kernel doesn't support it - just continue
 			 * with non-memory-mapped access.
 			 */
+			status = 0;
 			break;
 
 		case -1:
