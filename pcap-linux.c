@@ -2213,18 +2213,18 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 static inline void
 pcap_release_previous_ring_frame(pcap_t *handle)
 {
-	if (handle->prev_pkt.raw != NULL) {
+	if (handle->md.prev_pkt.raw != NULL) {
 		switch (handle->md.tp_version) {
 		case TPACKET_V1:
-			handle->prev_pkt.h1->tp_status = TP_STATUS_KERNEL;
+			handle->md.prev_pkt.h1->tp_status = TP_STATUS_KERNEL;
 			break;
 #ifdef HAVE_TPACKET2
 		case TPACKET_V2:
-			handle->prev_pkt.h2->tp_status = TP_STATUS_KERNEL;
+			handle->md.prev_pkt.h2->tp_status = TP_STATUS_KERNEL;
 			break;
 #endif
 		}
-		handle->prev_pkt.raw = NULL;
+		handle->md.prev_pkt.raw = NULL;
 	}
 }
 
@@ -2470,7 +2470,7 @@ skip:
 		 * as pcap_next() and pcap_next_ex() - expect the packet
 		 * to be available until the next pcap_dispatch() call.
 		 */
-		handle->prev_pkt = h;
+		handle->md.prev_pkt = h;
 		if (++handle->offset >= handle->cc)
 			handle->offset = 0;
 
