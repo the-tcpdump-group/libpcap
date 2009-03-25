@@ -1,6 +1,6 @@
 @(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.72 2008-12-23 20:13:29 guy Exp $ (LBL)
 
-Tue.    December 23, 2008.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
+Tue.    March 25, 2000.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
 	Install headers unconditionally, and include vlan.h/bluetooth.h if enabled
 	Autoconf fixes+cleanup
 	Support enabling/disabling bluetooth (--{en,dis}able-bluetooth)
@@ -10,6 +10,8 @@ Tue.    December 23, 2008.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap rel
 	  attempt to open it in Monitor mode
 	Add support for snapshot length for USB Memory-Mapped Interface
 	Fix configure and build on recent Linux kernels
+	Fix memory-mapped Linux capture to support pcap_next() and
+	  pcap_next_ex()
 	Fixes for Linux USB capture
 	DLT: Add DLT_LINUX_EVDEV
 	DLT: Add DLT_GSMTAP_UM
