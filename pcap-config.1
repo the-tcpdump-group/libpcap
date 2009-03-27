@@ -20,12 +20,15 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-CONFIG 1 "23 September 2008"
+.TH PCAP-CONFIG 1 "26 March 2009"
 .SH NAME
 pcap-config \- write libpcap compiler and linker flags to standard output
 .SH SYNOPSIS
 .na
 .B pcap-config
+[
+.B \-\-static
+]
 [
 .B \-\-cflags | \-\-libs
 ]
@@ -50,5 +53,11 @@ and
 linker required to link with libpcap, including
 .B \-l
 flags for libraries required by libpcap.
+.LP
+By default, it writes flags appropriate for compiling with a
+dynamically-linked version of libpcap; the
+.B \-\-static
+flag causes it to write flags appropriate for compiling with a
+statically-linked version of libpcap.
 .SH "SEE ALSO"
 pcap(3PCAP)

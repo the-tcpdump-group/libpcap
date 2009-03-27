@@ -4,13 +4,56 @@
 # Script to give the appropriate compiler flags and linker flags
 # to use when building code that uses libpcap.
 #
-case "$1" in
+static=0
+show_cflags=0
+show_libs=0
+while [ "$#" != 0 ]
+do
+	case "$1" in
 
---cflags)
-	echo "-I @includedir@"
-	;;
+	--static)
+		static=1
+		;;
 
---libs)
-	echo "-L @libdir@ -lpcap @DEPLIBS@"
-	;;
-esac
+	--cflags)
+		show_cflags=1
+		;;
+
+	--libs)
+		show_libs=1
+		;;
+	esac
+	shift
+done
+if [ "$static" = 1 ]
+then
+	#
+	# Include DEPLIBS so that the flags include libraries containing
+	# routines that libpcap uses.
+	#
+	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
+	then
+		echo "-I @includedir@ -L @libdir@ -lpcap @DEPLIBS@"
+	elif [ "$show_cflags" = 1 ]
+	then
+		echo "-I @includedir@"
+	elif [ "$show_libs" = 1 ]
+	then
+		echo "-L @libdir@ -lpcap @DEPLIBS@"
+	fi
+else
+	#
+	# Omit DEPLIBS - libpcap is assumed to be linked with those
+	# libraries, so there's no need to do so explicitly.
+	#
+	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
+	then
+		echo "-I @includedir@ -L @libdir@ -lpcap"
+	elif [ "$show_cflags" = 1 ]
+	then
+		echo "-I @includedir@"
+	elif [ "$show_libs" = 1 ]
+	then
+		echo "-L @libdir@ -lpcap"
+	fi
+fi
