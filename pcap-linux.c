@@ -2796,8 +2796,10 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 			 * Hostap driver, use this one.
 			 * Set monitor mode first.
 			 * You can set it to 0 to get DLT_IEEE80211,
-			 * 1 to get DLT_PRISM, or 2 to get
-			 * DLT_IEEE80211_RADIO_AVS.
+			 * 1 to get DLT_PRISM, 2 to get
+			 * DLT_IEEE80211_RADIO_AVS, and, with more
+			 * recent versions of the driver, 3 to get
+			 * DLT_IEEE80211_RADIO.
 			 */
 			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
 				break;
@@ -3060,8 +3062,19 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 
 	case MONITOR_HOSTAP:
 		/*
-		 * Select the AVS header if we can, otherwise
-		 * select the Prism header.
+		 * Try to select the radiotap header.
+		 */
+		memset(&ireq, 0, sizeof ireq);
+		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		    sizeof ireq.ifr_ifrn.ifrn_name);
+		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
+		args[0] = 3;	/* request radiotap header */
+		memcpy(ireq.u.name, args, sizeof (int));
+		if (ioctl(sock_fd, cmd, &ireq) != -1)
+			break;	/* success */
+
+		/*
+		 * That failed.  Try to select the AVS header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
 		strncpy(ireq.ifr_ifrn.ifrn_name, device,
@@ -3069,18 +3082,19 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 2;	/* request AVS header */
 		memcpy(ireq.u.name, args, sizeof (int));
-		if (ioctl(sock_fd, cmd, &ireq) == -1) {
-			/*
-			 * Failure - try the Prism header.
-			 */
-			memset(&ireq, 0, sizeof ireq);
-			strncpy(ireq.ifr_ifrn.ifrn_name, device,
-			    sizeof ireq.ifr_ifrn.ifrn_name);
-			ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
-			args[0] = 1;	/* request Prism header */
-			memcpy(ireq.u.name, args, sizeof (int));
-			ioctl(sock_fd, cmd, &ireq);
-		}
+		if (ioctl(sock_fd, cmd, &ireq) != -1)
+			break;	/* success */
+
+		/*
+		 * That failed.  Try to select the Prism header.
+		 */
+		memset(&ireq, 0, sizeof ireq);
+		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		    sizeof ireq.ifr_ifrn.ifrn_name);
+		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
+		args[0] = 1;	/* request Prism header */
+		memcpy(ireq.u.name, args, sizeof (int));
+		ioctl(sock_fd, cmd, &ireq);
 		break;
 
 	case MONITOR_PRISM:
