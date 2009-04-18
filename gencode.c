@@ -155,6 +155,17 @@ enum e_offrel {
 	OR_TRAN_IPV6	/* relative to the transport-layer header, with IPv6 network layer */
 };
 
+#ifdef INET6
+/*
+ * As errors are handled by a longjmp, anything allocated must be freed
+ * in the longjmp handler, so it must be reachable from that handler.
+ * One thing that's allocated is the result of pcap_nametoaddrinfo();
+ * it must be freed with freeaddrinfo().  This variable points to any
+ * addrinfo structure that would need to be freed.
+ */
+static struct addrinfo *ai;
+#endif
+
 /*
  * We divy out chunks of memory rather than call malloc each time so
  * we don't have to worry about leaking memory.  It's probably
@@ -380,6 +391,12 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	bpf_pcap = p;
 	init_regs();
 	if (setjmp(top_ctx)) {
+#ifdef INET6
+		if (ai != NULL) {
+			freeaddrinfo(ai);
+			ai = NULL;
+		}
+#endif
 		lex_cleanup();
 		freechunks();
 		return (-1);
@@ -4535,29 +4552,30 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_wlanhostop(eaddr, Q_OR);
 			break;
 		case DLT_SUNATM:
-			if (is_lane) {
-				/*
-				 * Check that the packet doesn't begin with an
-				 * LE Control marker.  (We've already generated
-				 * a test for LANE.)
-				 */
-				b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
-				    BPF_H, 0xFF00);
-				gen_not(b1);
+			if (!is_lane)
+				bpf_error(
+				    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
+			/*
+			 * Check that the packet doesn't begin with an
+			 * LE Control marker.  (We've already generated
+			 * a test for LANE.)
+			 */
+			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
+			    BPF_H, 0xFF00);
+			gen_not(b1);
 
-				/*
-				 * Now check the MAC address.
-				 */
-				b0 = gen_ehostop(eaddr, Q_OR);
-				gen_and(b1, b0);
-			}
+			/*
+			 * Now check the MAC address.
+			 */
+			b0 = gen_ehostop(eaddr, Q_OR);
+			gen_and(b1, b0);
 			break;
 		case DLT_IP_OVER_FC:
 			b0 = gen_ipfchostop(eaddr, Q_OR);
 			break;
 		default:
 			bpf_error(
-			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/Fibre Channel");
+			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
 		}
 		b1 = gen_host(**alist++, 0xffffffff, proto, Q_OR, Q_HOST);
 		while (*alist) {
@@ -5987,6 +6005,7 @@ gen_scode(name, q)
 			res0 = res = pcap_nametoaddrinfo(name);
 			if (res == NULL)
 				bpf_error("unknown host '%s'", name);
+			ai = res;
 			b = tmp = NULL;
 			tproto = tproto6 = proto;
 			if (off_linktype == -1 && tproto == Q_DEFAULT) {
@@ -6020,6 +6039,7 @@ gen_scode(name, q)
 					gen_or(b, tmp);
 				b = tmp;
 			}
+			ai = NULL;
 			freeaddrinfo(res0);
 			if (b == NULL) {
 				bpf_error("unknown host '%s'%s", name,
@@ -6332,6 +6352,7 @@ gen_mcode6(s1, s2, masklen, q)
 	res = pcap_nametoaddrinfo(s1);
 	if (!res)
 		bpf_error("invalid ip6 address %s", s1);
+	ai = res;
 	if (res->ai_next)
 		bpf_error("%s resolved to multiple address", s1);
 	addr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
@@ -6362,6 +6383,7 @@ gen_mcode6(s1, s2, masklen, q)
 
 	case Q_NET:
 		b = gen_host6(addr, &mask, q.proto, q.dir, q.addr);
+		ai = NULL;
 		freeaddrinfo(res);
 		return b;
 

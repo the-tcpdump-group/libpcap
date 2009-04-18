@@ -334,6 +334,7 @@ ${B}			{ yylval.e = pcap_ether_aton(((char *)yytext)+1);
 			  if (getaddrinfo(yytext, NULL, &hints, &res))
 				bpf_error("bogus IPv6 address %s", yytext);
 			  else {
+				freeaddrinfo(res);
 				yylval.s = sdup((char *)yytext); return HID6;
 			  }
 #else
