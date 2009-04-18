@@ -6302,10 +6302,10 @@ elif test -r /usr/include/odmi.h ; then
 	# We check for odmi.h instead.
 	#
 	V_PCAP=bpf
-elif test -r /usr/include/sys/dlpi.h ; then
-	V_PCAP=dlpi
 elif test -c /dev/bpf0 ; then		# check again in case not readable
 	V_PCAP=bpf
+elif test -r /usr/include/sys/dlpi.h ; then
+	V_PCAP=dlpi
 elif test -c /dev/enet ; then		# check again in case not readable
 	V_PCAP=enet
 elif test -c /dev/nit ; then		# check again in case not readable

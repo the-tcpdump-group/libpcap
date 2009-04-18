@@ -32,10 +32,24 @@ static const char rcsid[] _U_ =
 #include <sys/mman.h>
 #endif
 #include <sys/time.h>
-#include <sys/timeb.h>
 #include <sys/socket.h>
-#include <sys/file.h>
+/*
+ * <net/bpf.h> defines ioctls, but doesn't include <sys/ioccom.h>.
+ *
+ * We include <sys/ioctl.h> as it might be necessary to declare ioctl();
+ * at least on *BSD and Mac OS X, it also defines various SIOC ioctls -
+ * we could include <sys/sockio.h>, but if we're already including
+ * <sys/ioctl.h>, which includes <sys/sockio.h> on those platforms,
+ * there's not much point in doing so.
+ *
+ * If we have <sys/ioccom.h>, we include it as well, to handle systems
+ * such as Solaris which don't arrange to include <sys/ioccom.h> if you
+ * include <sys/ioctl.h>
+ */
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_IOCCOM_H
+#include <sys/ioccom.h>
+#endif
 #include <sys/utsname.h>
 
 #ifdef HAVE_ZEROCOPY_BPF
@@ -92,6 +106,7 @@ static int odmlockid = 0;
 #endif /* _AIX */
 
 #include <ctype.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -801,7 +816,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 			case EWOULDBLOCK:
 				return (0);
-#if defined(sun) && !defined(BSD)
+#if defined(sun) && !defined(BSD) && !defined(__svr4__) && !defined(__SVR4)
 			/*
 			 * Due to a SunOS bug, after 2^31 bytes, the kernel
 			 * file offset overflows and read fails with EINVAL.

@@ -28,10 +28,13 @@ AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
 dnl
-dnl libpcap doesn't itself use <sys/ioccom.h>; however, the test program
-dnl in "AC_LBL_FIXINCLUDES" in "aclocal.m4" uses it, so we have to
-dnl test for it and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
-dnl "AC_LBL_FIXINCLUDES" won't work on some platforms such as Solaris.
+dnl Even if <net/bpf.h> were, on all OSes that support BPF, fixed to
+dnl include <sys/ioccom.h>, and we were to drop support for older
+dnl releases without that fix, so that pcap-bpf.c doesn't need to
+dnl include <sys/ioccom.h>, the test program in "AC_LBL_FIXINCLUDES"
+dnl in "aclocal.m4" uses it, so we would still have to test for it
+dnl and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
+dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
 dnl
 AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h limits.h paths.h)
 AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
@@ -256,10 +259,10 @@ elif test -r /usr/include/odmi.h ; then
 	# We check for odmi.h instead.
 	#
 	V_PCAP=bpf
-elif test -r /usr/include/sys/dlpi.h ; then
-	V_PCAP=dlpi
 elif test -c /dev/bpf0 ; then		# check again in case not readable
 	V_PCAP=bpf
+elif test -r /usr/include/sys/dlpi.h ; then
+	V_PCAP=dlpi
 elif test -c /dev/enet ; then		# check again in case not readable
 	V_PCAP=enet
 elif test -c /dev/nit ; then		# check again in case not readable
