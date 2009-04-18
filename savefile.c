@@ -742,6 +742,9 @@ static struct linktype_map {
 	/* OpenBSD loopback */
 	{ DLT_LOOP,		LINKTYPE_LOOP },
 
+	/* OpenBSD IPSEC enc */
+	{ DLT_ENC,		LINKTYPE_ENC },
+
 	/* Linux cooked socket capture */
 	{ DLT_LINUX_SLL,	LINKTYPE_LINUX_SLL },
 
