@@ -850,6 +850,12 @@ struct bpf_version {
  */
 #define DLT_USB_LINUX_MMAPPED	220
 
+/*
+ * DECT packets, with a pseudo-header; requested by
+ * Matthias Wenzel <tcpdump@mazzoo.de>.
+ */
+#define DLT_DECT		221
+
 
 /*
  * DLT and savefile link type values are split into a class and

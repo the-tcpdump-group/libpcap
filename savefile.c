@@ -676,6 +676,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_USB_LINUX_MMAPPED		220
 
+/*
+ * DECT packets, with a pseudo-header; requested by
+ * Matthias Wenzel <tcpdump@mazzoo.de>.
+ */
+#define LINKTYPE_DECT				221
+
 
 static struct linktype_map {
 	int	dlt;
@@ -996,6 +1002,9 @@ static struct linktype_map {
 
 	/* USB with padded Linux header */
 	{ DLT_USB_LINUX_MMAPPED, LINKTYPE_USB_LINUX_MMAPPED },
+
+	/* DECT packets with a pseudo-header */
+	{ DLT_DECT,		LINKTYPE_DECT },
 
 	{ -1,			-1 }
 };
