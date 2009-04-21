@@ -179,7 +179,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    # Note: spaces after V_SONAME_OPT are significant; GCC's
 	    # option is "-Wl,-soname,{soname}", with the soname part
 	    # of the option, while other C compiler drivers take it
-	    # as a regular optio with the soname following the option.
+	    # as a regular option with the soname following the option.
 	    #
 	    case "$host_os" in
 
