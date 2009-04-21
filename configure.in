@@ -6,6 +6,15 @@ dnl
 dnl Process this file with autoconf to produce a configure script.
 dnl
 
+#
+# See
+#
+#	http://ftp.gnu.org/gnu/config/README
+#
+# for the URLs to use to fetch new versions of config.guess and
+# config.sub.
+#
+
 AC_REVISION($Revision: 1.168 $)
 AC_PREREQ(2.50)
 AC_INIT(pcap.c)
@@ -940,6 +949,18 @@ hpux*)
 	dnl for 32-bit PA-RISC, but should be left as "so" for
 	dnl 64-bit PA-RISC or, I suspect, IA-64.
 	AC_DEFINE(HAVE_HPUX10_20_OR_LATER,1,[on HP-UX 10.20 or later])
+	if [ "`uname -m`" = "ia64" ]
+	then
+		DYEXT="so"
+	else
+		DYEXT="sl"
+	fi
+
+	#
+	# "-b" builds a shared library; "+h" sets the soname.
+	#
+	SHLIB_OPT="-b"
+	SONAME_OPT="+h"
 
 	#
 	# Use System V conventions for man pages.
@@ -956,7 +977,8 @@ irix*)
 	MAN_MISC_INFO=5
 	;;
 
-linux*)
+linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
+	DYEXT="so"
 	V_CCOPT="$V_CCOPT -fPIC"
 	;;
 
@@ -985,6 +1007,7 @@ sinix*)
 solaris*)
 	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 
+	DYEXT="so"
 	#
 	# Use System V conventions for man pages.
 	#
@@ -1016,11 +1039,14 @@ ln -s ${srcdir}/bpf/net net
 
 AC_SUBST(V_CCOPT)
 AC_SUBST(V_DEFS)
+AC_SUBST(V_FINDALLDEVS)
 AC_SUBST(V_INCLS)
 AC_SUBST(V_LIBS)
 AC_SUBST(V_LEX)
 AC_SUBST(V_PCAP)
-AC_SUBST(V_FINDALLDEVS)
+AC_SUBST(V_SHLIB_CMD)
+AC_SUBST(V_SHLIB_OPT)
+AC_SUBST(V_SONAME_OPT)
 AC_SUBST(V_YACC)
 AC_SUBST(SSRC)
 AC_SUBST(DYEXT)

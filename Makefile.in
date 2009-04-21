@@ -49,6 +49,7 @@ CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
 LIBS = @V_LIBS@
+LDFLAGS = @LDFLAGS@
 DAGLIBS = @DAGLIBS@
 DEPLIBS = @DEPLIBS@
 DYEXT = @DYEXT@
@@ -310,7 +311,7 @@ EXTRA_DIST = \
 	Win32/Src/inet_net.c \
 	Win32/Src/inet_pton.c
 
-all: libpcap.a pcap-config
+all: libpcap.a shared pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
@@ -319,15 +320,14 @@ libpcap.a: $(OBJ)
 
 shared: libpcap.$(DYEXT)
 
-#
-# XXX - this works with GNU ld, but won't necessarily work with native
-# ld on, for example, various SVR4-flavored platforms, or Digital UNIX.
-#
 libpcap.so: $(OBJ)
 	@rm -f $@
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
-	$(CC) -shared -Wl,-soname,$@.$$MAJOR_VER -o $@.$$VER $(OBJ) $(DAGLIBS)
+	$(CC) -shared -Wl,-soname,$@.$$MAJOR_VER $(LDFLAGS) -o $@.$$VER \
+	    $(OBJ) $(DAGLIBS)
+	@V_SHLIB_CMD@ @V_SHLIB_OPT@ @V_SONAME_OPT@$@.$$MAJOR_VER $(LDFLAGS) \
+	    -o $@.$$VER $(OBJ) $(DAGLIBS)
 
 #
 # The following rule succeeds, but the result is untested.
@@ -353,10 +353,24 @@ libpcap.dylib: $(OBJ)
 	MAJOR_VER=A; \
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
-	$(CC) -dynamiclib -undefined error -o libpcap.$$VER.dylib $(OBJ) \
-		-install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
-		-compatibility_version $$COMPAT_VER \
-		-current_version $$CURRENT_VER
+	$(CC) -dynamiclib -undefined error $(LDFLAGS) \
+	    -o libpcap.$$VER.dylib $(OBJ) \
+	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
+	    -compatibility_version $$COMPAT_VER \
+	    -current_version $$CURRENT_VER
+
+#
+# XXX - the HP-UX linker manual seems to indicate that the
+# convention for a versioned library is libXXX.{number}, not
+# libXXX.sl.{number}.  That might just be a convention, or it
+# might actually be enforced by the run-time linker.
+#
+# It also says "library-level versioning" (think "sonames") was
+# added in HP-UX 10.0.
+#
+libpcap.sl: $(OBJ)
+	@rm -f $@
+	ld -b $(LDFLAGS) -o $@ +h $@.1 $(OBJ) $(LIBS)
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
@@ -545,7 +559,7 @@ uninstall-shared-dylib:
 	rm -f $(DESTDIR)$(libdir)/libpcap.dylib
 
 clean:
-	rm -f $(CLEANFILES) libpcap*.dylib libpcap.so*
+	rm -f $(CLEANFILES) libpcap.$(DYEXT)
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \

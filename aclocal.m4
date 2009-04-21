@@ -90,6 +90,22 @@ AC_DEFUN(AC_LBL_C_INIT,
 			    $1="-O2"
 		    fi
 	    fi
+
+	    #
+	    # On platforms where we build a shared library, add options
+	    # to generate position-independent code, if necessary
+	    # (it's the default in Darwin/OS X), and define the
+	    # appropriate options for building the shared library.
+	    #
+	    case "$host_os" in
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*|solaris*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    ;;
+	    esac
     else
 	    AC_MSG_CHECKING(that $CC handles ansi prototypes)
 	    AC_CACHE_VAL(ac_cv_lbl_cc_ansi_prototypes,
@@ -152,6 +168,40 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    if test $ac_cv_lbl_cc_const_proto = no ; then
 			    AC_DEFINE(const,)
 		    fi
+		    ;;
+	    esac
+
+	    #
+	    # On platforms where we build a shared library, add options
+	    # to generate position-independent code, if necessary
+	    # (it's the default in Darwin/OS X), and define the
+	    # appropriate options for building the shared library.
+	    # Note: spaces after V_SONAME_OPT are significant; GCC's
+	    # option is "-Wl,-soname,{soname}", with the soname part
+	    # of the option, while other C compiler drivers take it
+	    # as a regular optio with the soname following the option.
+	    #
+	    case "$host_os" in
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CMD="\$(LD)"
+		    V_SHLIB_OPT="-b"
+		    V_SONAME_OPT="+h "
+		    ;;
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -Kpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-G"
+		    V_SONAME_OPT="-h "
 		    ;;
 	    esac
     fi

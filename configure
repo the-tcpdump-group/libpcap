@@ -681,10 +681,13 @@ V_YACC
 RANLIB
 V_CCOPT
 V_DEFS
+V_FINDALLDEVS
 V_INCLS
 V_LIBS
 V_PCAP
-V_FINDALLDEVS
+V_SHLIB_CMD
+V_SHLIB_OPT
+V_SONAME_OPT
 SSRC
 DYEXT
 DAGLIBS
@@ -2911,6 +2914,22 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 			    V_CCOPT="-O2"
 		    fi
 	    fi
+
+	    #
+	    # On platforms where we build a shared library, add options
+	    # to generate position-independent code, if necessary
+	    # (it's the default in Darwin/OS X), and define the
+	    # appropriate options for building the shared library.
+	    #
+	    case "$host_os" in
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*|solaris*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    ;;
+	    esac
     else
 	    { echo "$as_me:$LINENO: checking that $CC handles ansi prototypes" >&5
 echo $ECHO_N "checking that $CC handles ansi prototypes... $ECHO_C" >&6; }
@@ -3111,6 +3130,40 @@ echo "${ECHO_T}$ac_cv_lbl_cc_const_proto" >&6; }
 _ACEOF
 
 		    fi
+		    ;;
+	    esac
+
+	    #
+	    # On platforms where we build a shared library, add options
+	    # to generate position-independent code, if necessary
+	    # (it's the default in Darwin/OS X), and define the
+	    # appropriate options for building the shared library.
+	    # Note: spaces after V_SONAME_OPT are significant; GCC's
+	    # option is "-Wl,-soname,{soname}", with the soname part
+	    # of the option, while other C compiler drivers take it
+	    # as a regular optio with the soname following the option.
+	    #
+	    case "$host_os" in
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CMD="\$(LD)"
+		    V_SHLIB_OPT="-b"
+		    V_SONAME_OPT="+h "
+		    ;;
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -Kpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-G"
+		    V_SONAME_OPT="-h "
 		    ;;
 	    esac
     fi
@@ -8513,6 +8566,18 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_HPUX10_20_OR_LATER 1
 _ACEOF
 
+	if  "`uname -m`" = "ia64"
+	then
+		DYEXT="so"
+	else
+		DYEXT="sl"
+	fi
+
+	#
+	# "-b" builds a shared library; "+h" sets the soname.
+	#
+	SHLIB_OPT="-b"
+	SONAME_OPT="+h"
 
 	#
 	# Use System V conventions for man pages.
@@ -8529,7 +8594,8 @@ irix*)
 	MAN_MISC_INFO=5
 	;;
 
-linux*)
+linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
+	DYEXT="so"
 	V_CCOPT="$V_CCOPT -fPIC"
 	;;
 
@@ -8608,6 +8674,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+	DYEXT="so"
 	#
 	# Use System V conventions for man pages.
 	#
@@ -9044,6 +9111,9 @@ _ACEOF
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
+
+
+
 
 
 
@@ -10175,10 +10245,13 @@ V_YACC!$V_YACC$ac_delim
 RANLIB!$RANLIB$ac_delim
 V_CCOPT!$V_CCOPT$ac_delim
 V_DEFS!$V_DEFS$ac_delim
+V_FINDALLDEVS!$V_FINDALLDEVS$ac_delim
 V_INCLS!$V_INCLS$ac_delim
 V_LIBS!$V_LIBS$ac_delim
 V_PCAP!$V_PCAP$ac_delim
-V_FINDALLDEVS!$V_FINDALLDEVS$ac_delim
+V_SHLIB_CMD!$V_SHLIB_CMD$ac_delim
+V_SHLIB_OPT!$V_SHLIB_OPT$ac_delim
+V_SONAME_OPT!$V_SONAME_OPT$ac_delim
 SSRC!$SSRC$ac_delim
 DYEXT!$DYEXT$ac_delim
 DAGLIBS!$DAGLIBS$ac_delim
@@ -10195,7 +10268,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 85; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 88; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
