@@ -368,6 +368,10 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case TYPE_MC_AAL5:
 			case TYPE_MC_ATM:
 			case TYPE_MC_HDLC:
+			case TYPE_MC_RAW_CHANNEL:
+			case TYPE_MC_RAW:
+			case TYPE_MC_AAL2:
+			case TYPE_COLOR_MC_HDLC_POS:
 				packet_len += 4; /* MC header */
 				break;
 
@@ -487,6 +491,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				break;
 
 			case TYPE_IPV4:
+			case TYPE_IPV6:
 				packet_len = ntohs(header->wlen);
 				caplen = rlen - dag_record_size;
 				if (caplen > packet_len) {
@@ -494,6 +499,14 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 				break;
 
+			/* These types have no matching 'native' DLT, but can be used with DLT_ERF above */
+			case TYPE_MC_RAW:
+			case TYPE_MC_RAW_CHANNEL:
+			case TYPE_IP_COUNTER:
+			case TYPE_TCP_FLOW_COUNTER:
+			case TYPE_INFINIBAND:
+			case TYPE_RAW_LINK:
+			case TYPE_INFINIBAND_LINK:
 			default:
 				/* Unhandled ERF type.
 				 * Ignore rather than generating error
@@ -1089,6 +1102,7 @@ dag_get_datalink(pcap_t *p)
 			break;
 
 		case TYPE_IPV4:
+		case TYPE_IPV6:
 			if(!p->linktype)
 				p->linktype = DLT_RAW;
 			break;
@@ -1099,10 +1113,11 @@ dag_get_datalink(pcap_t *p)
 		case TYPE_IP_COUNTER:
 		case TYPE_TCP_FLOW_COUNTER:
 		case TYPE_INFINIBAND:
-		case TYPE_IPV6:
+		case TYPE_RAW_LINK:
+		case TYPE_INFINIBAND_LINK:
 		default:
 			/* Libpcap cannot deal with these types yet */
-			/* Add no DLTs, but still covered by DLT_ERF */
+			/* Add no 'native' DLTs, but still covered by DLT_ERF */
 			break;
 
 		} /* switch */

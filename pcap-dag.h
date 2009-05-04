@@ -93,6 +93,14 @@ int dag_platform_finddevs(pcap_if_t **devlistp, char *errbuf);
 #define TYPE_IPV6               23
 #endif
 
+#ifndef TYPE_RAW_LINK
+#define TYPE_RAW_LINK           24
+#endif
+
+#ifndef TYPE_INFINIBAND_LINK
+#define TYPE_INFINIBAND_LINK    25
+#endif
+
 
 
 #ifndef TYPE_PAD
