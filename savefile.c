@@ -682,6 +682,17 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_DECT				221
 
+/*
+ * From: "Lidwa, Eric (GSFC-582.0)[SGT INC]" <eric.lidwa-1@nasa.gov>
+ * Date: Mon, 11 May 2009 11:18:30 -0500
+ *
+ * DLT_AOS. We need it for AOS Space Data Link Protocol.
+ *   I have already written dissectors for but need an OK from
+ *   legal before I can submit a patch.
+ *
+ */
+#define LINKTYPE_AOS				222
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1005,6 +1016,9 @@ static struct linktype_map {
 
 	/* DECT packets with a pseudo-header */
 	{ DLT_DECT,		LINKTYPE_DECT },
+
+	/* AOS Space Data Link Protocol */
+	{ DLT_AOS,		LINKTYPE_AOS },
 
 	{ -1,			-1 }
 };
