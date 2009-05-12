@@ -856,6 +856,17 @@ struct bpf_version {
  */
 #define DLT_DECT		221
 
+/*
+ * From: "Lidwa, Eric (GSFC-582.0)[SGT INC]" <eric.lidwa-1@nasa.gov>
+ * Date: Mon, 11 May 2009 11:18:30 -0500
+ *
+ * DLT_AOS. We need it for AOS Space Data Link Protocol.
+ *   I have already written dissectors for but need an OK from
+ *   legal before I can submit a patch.
+ *
+ */
+#define DLT_AOS                 222
+
 
 /*
  * DLT and savefile link type values are split into a class and
