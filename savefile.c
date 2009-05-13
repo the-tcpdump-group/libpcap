@@ -1734,6 +1734,16 @@ pcap_dump_open(pcap_t *p, const char *fname)
 	FILE *f;
 	int linktype;
 
+	/*
+	 * If this pcap_t hasn't been activated, it doesn't have a
+	 * link-layer type, so we can't use it.
+	 */
+	if (!p->activated) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: not-yet-activated pcap_t passed to pcap_dump_open",
+		    fname);
+		return (NULL);
+	}
 	linktype = dlt_to_linktype(p->linktype);
 	if (linktype == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
