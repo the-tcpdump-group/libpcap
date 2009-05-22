@@ -30,7 +30,7 @@ pcap-config \- write libpcap compiler and linker flags to standard output
 .B \-\-static
 ]
 [
-.B \-\-cflags | \-\-libs
+.B \-\-cflags | \-\-libs | \-\-additional-libs
 ]
 .ad
 .SH DESCRIPTION
@@ -50,9 +50,20 @@ writes to the standard output the
 .B \-L
 and
 .B \-l
-linker required to link with libpcap, including
+linker flags required to link with libpcap, including
 .B \-l
 flags for libraries required by libpcap.
+When run with the
+.B \-\-additional-libs
+option,
+.I pcap-config
+writes to the standard output the
+.B \-L
+and
+.B \-l
+flags for libraries required by libpcap, but not the
+.B \-lpcap
+flag to link with libpcap itself.
 .LP
 By default, it writes flags appropriate for compiling with a
 dynamically-linked version of libpcap; the

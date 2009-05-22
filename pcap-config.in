@@ -22,6 +22,10 @@ do
 	--libs)
 		show_libs=1
 		;;
+
+	--additional-libs)
+		show_additional_libs=1
+		;;
 	esac
 	shift
 done
@@ -34,12 +38,18 @@ then
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
 		echo "-I @includedir@ -L @libdir@ -lpcap @DEPLIBS@"
+	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
+	then
+		echo "-I @includedir@ -L @libdir@ @DEPLIBS@"
 	elif [ "$show_cflags" = 1 ]
 	then
 		echo "-I @includedir@"
 	elif [ "$show_libs" = 1 ]
 	then
 		echo "-L @libdir@ -lpcap @DEPLIBS@"
+	elif [ "$show_additional_libs" = 1 ]
+	then
+		echo "@DEPLIBS@"
 	fi
 else
 	#
@@ -49,6 +59,9 @@ else
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
 		echo "-I @includedir@ -L @libdir@ -lpcap"
+	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
+	then
+		echo "-I @includedir@"
 	elif [ "$show_cflags" = 1 ]
 	then
 		echo "-I @includedir@"
