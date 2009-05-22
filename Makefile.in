@@ -48,10 +48,9 @@ CC = @CC@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
+ADDLOBJ = @ADDLOBJ@
 LIBS = @V_LIBS@
 LDFLAGS = @LDFLAGS@
-DAGLIBS = @DAGLIBS@
-DEPLIBS = @DEPLIBS@
 DYEXT = @DYEXT@
 PROG=libpcap
 
@@ -315,7 +314,7 @@ all: libpcap.a shared pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
-	$(AR) rc $@ $(OBJ) $(LIBS)
+	$(AR) rc $@ $(OBJ) $(ADDLOBJ)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
@@ -324,10 +323,8 @@ libpcap.so: $(OBJ)
 	@rm -f $@
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
-	$(CC) -shared -Wl,-soname,$@.$$MAJOR_VER $(LDFLAGS) -o $@.$$VER \
-	    $(OBJ) $(DAGLIBS)
 	@V_SHLIB_CMD@ @V_SHLIB_OPT@ @V_SONAME_OPT@$@.$$MAJOR_VER $(LDFLAGS) \
-	    -o $@.$$VER $(OBJ) $(DAGLIBS)
+	    -o $@.$$VER $(OBJ) $(ADDLOBJ) $(LIBS)
 
 #
 # The following rule succeeds, but the result is untested.
@@ -354,7 +351,7 @@ libpcap.dylib: $(OBJ)
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
 	$(CC) -dynamiclib -undefined error $(LDFLAGS) \
-	    -o libpcap.$$VER.dylib $(OBJ) \
+	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJ) $(LIBS) \
 	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
 	    -compatibility_version $$COMPAT_VER \
 	    -current_version $$CURRENT_VER
@@ -370,7 +367,7 @@ libpcap.dylib: $(OBJ)
 #
 libpcap.sl: $(OBJ)
 	@rm -f $@
-	ld -b $(LDFLAGS) -o $@ +h $@.1 $(OBJ) $(LIBS)
+	ld -b $(LDFLAGS) -o $@ +h $@.1 $(OBJ) $(ADDLOBJ) $(LIBS)
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
@@ -427,7 +424,7 @@ pcap-config: $(srcdir)/pcap-config.in Makefile
 	@rm -f $@ $@.tmp
 	sed -e 's|@includedir[@]|$(includedir)|g' \
 	    -e 's|@libdir[@]|$(libdir)|g' \
-	    -e 's|@DEPLIBS[@]|$(DEPLIBS)|g' \
+	    -e 's|@LIBS[@]|$(LIBS)|g' \
 	    $(srcdir)/pcap-config.in >$@.tmp
 	mv $@.tmp $@
 	chmod a+x $@

@@ -688,10 +688,9 @@ V_PCAP
 V_SHLIB_CMD
 V_SHLIB_OPT
 V_SONAME_OPT
+ADDLOBJ
 SSRC
 DYEXT
-DAGLIBS
-DEPLIBS
 MAN_FILE_FORMATS
 MAN_MISC_INFO
 PCAP_SUPPORT_USB
@@ -3141,7 +3140,7 @@ _ACEOF
 	    # Note: spaces after V_SONAME_OPT are significant; GCC's
 	    # option is "-Wl,-soname,{soname}", with the soname part
 	    # of the option, while other C compiler drivers take it
-	    # as a regular optio with the soname following the option.
+	    # as a regular option with the soname following the option.
 	    #
 	    case "$host_os" in
 
@@ -7969,7 +7968,7 @@ fi
 
 if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
-	V_LIBS="$V_LIBS $dagapi_obj $dagopts_obj $dagreg_obj"
+	ADDLOBJ="$dagapi_obj $dagopts_obj $dagreg_obj"
 	if test $V_PCAP != dag ; then
 		 SSRC="pcap-dag.c"
 	fi
@@ -8194,7 +8193,7 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_DAG_STREAMS_API 1
 _ACEOF
 
-		DAGLIBS="-ldag"
+		V_LIBS="$V_LIBS -ldag"
 	fi
 
 
@@ -8520,7 +8519,7 @@ _ACEOF
 
 	# We need "-lodm" and "-lcfg", as libpcap requires them on
 	# AIX.
-	DEPLIBS="-lodm -lcfg"
+	V_LIBS="-lodm -lcfg"
 	;;
 
 darwin*)
@@ -9111,7 +9110,6 @@ _ACEOF
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
-
 
 
 
@@ -10252,10 +10250,9 @@ V_PCAP!$V_PCAP$ac_delim
 V_SHLIB_CMD!$V_SHLIB_CMD$ac_delim
 V_SHLIB_OPT!$V_SHLIB_OPT$ac_delim
 V_SONAME_OPT!$V_SONAME_OPT$ac_delim
+ADDLOBJ!$ADDLOBJ$ac_delim
 SSRC!$SSRC$ac_delim
 DYEXT!$DYEXT$ac_delim
-DAGLIBS!$DAGLIBS$ac_delim
-DEPLIBS!$DEPLIBS$ac_delim
 MAN_FILE_FORMATS!$MAN_FILE_FORMATS$ac_delim
 MAN_MISC_INFO!$MAN_MISC_INFO$ac_delim
 PCAP_SUPPORT_USB!$PCAP_SUPPORT_USB$ac_delim
@@ -10268,7 +10265,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 88; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

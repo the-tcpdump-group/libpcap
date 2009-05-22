@@ -744,7 +744,7 @@ fi
 
 if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
-	V_LIBS="$V_LIBS $dagapi_obj $dagopts_obj $dagreg_obj"
+	ADDLOBJ="$dagapi_obj $dagopts_obj $dagreg_obj"
 	if test $V_PCAP != dag ; then
 		 SSRC="pcap-dag.c"
 	fi
@@ -763,7 +763,7 @@ if test $ac_cv_lbl_dag_api = yes; then
 
 	if test "$dag_streams" = 1; then
 		AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
-		DAGLIBS="-ldag"
+		V_LIBS="$V_LIBS -ldag"
 	fi
 
 	AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
@@ -905,7 +905,7 @@ aix*)
 
 	# We need "-lodm" and "-lcfg", as libpcap requires them on
 	# AIX.
-	DEPLIBS="-lodm -lcfg"
+	V_LIBS="-lodm -lcfg"
 	;;
 
 darwin*)
@@ -1048,10 +1048,9 @@ AC_SUBST(V_SHLIB_CMD)
 AC_SUBST(V_SHLIB_OPT)
 AC_SUBST(V_SONAME_OPT)
 AC_SUBST(V_YACC)
+AC_SUBST(ADDLOBJ)
 AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
-AC_SUBST(DAGLIBS)
-AC_SUBST(DEPLIBS)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 

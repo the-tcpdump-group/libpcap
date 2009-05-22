@@ -32,28 +32,28 @@ done
 if [ "$static" = 1 ]
 then
 	#
-	# Include DEPLIBS so that the flags include libraries containing
+	# Include LIBS so that the flags include libraries containing
 	# routines that libpcap uses.
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I @includedir@ -L @libdir@ -lpcap @DEPLIBS@"
+		echo "-I @includedir@ -L @libdir@ -lpcap @LIBS@"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
-		echo "-I @includedir@ -L @libdir@ @DEPLIBS@"
+		echo "-I @includedir@ -L @libdir@ @LIBS@"
 	elif [ "$show_cflags" = 1 ]
 	then
 		echo "-I @includedir@"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "-L @libdir@ -lpcap @DEPLIBS@"
+		echo "-L @libdir@ -lpcap @LIBS@"
 	elif [ "$show_additional_libs" = 1 ]
 	then
-		echo "@DEPLIBS@"
+		echo "@LIBS@"
 	fi
 else
 	#
-	# Omit DEPLIBS - libpcap is assumed to be linked with those
+	# Omit LIBS - libpcap is assumed to be linked with those
 	# libraries, so there's no need to do so explicitly.
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
