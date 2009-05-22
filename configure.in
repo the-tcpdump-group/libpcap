@@ -375,6 +375,15 @@ linux)
 #include <linux/if.h>
 #include <linux/types.h>
 	])
+	if test "$ac_cv_header_linux_wireless_h" = yes; then
+		#
+		# We have the wireless extensions; check whether
+		# we have libnl.
+		#
+		AC_CHECK_LIB(nl, nl_handle_alloc,
+			V_LIBS="-lnl $V_LIBS"
+			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),)
+	fi
 	AC_LBL_TPACKET_STATS
 	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 	;;

@@ -131,7 +131,7 @@ struct pcap_md {
 	long	OrigMissed;	/* missed by i/f before this run */
 	char	*device;	/* device name */
 	int	timeout;	/* timeout for buffering */
-	int	must_clear;	/* stuff we must clear when we close */
+	int	must_do_on_close; /* stuff we must do when we close */
 	struct pcap *next;	/* list of open pcaps that need stuff cleared on close */
 #ifdef linux
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
@@ -140,6 +140,7 @@ struct pcap_md {
 	int	lo_ifindex;	/* interface index of the loopback device */
 	u_int	packets_read;	/* count of packets read with recvfrom() */
 	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
+	char	*mondevice;	/* mac80211 monitor device we created */
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
 	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
 	union thdr prev_pkt;	/* previous packet handed to the callback */
@@ -186,10 +187,11 @@ struct pcap_md {
 };
 
 /*
- * Stuff to clear when we close.
+ * Stuff to do when we close.
  */
-#define MUST_CLEAR_PROMISC	0x00000001	/* promiscuous mode */
-#define MUST_CLEAR_RFMON	0x00000002	/* rfmon (monitor) mode */
+#define MUST_CLEAR_PROMISC	0x00000001	/* clear promiscuous mode */
+#define MUST_CLEAR_RFMON	0x00000002	/* clear rfmon (monitor) mode */
+#define MUST_DELETE_MONIF	0x00000004	/* delete monitor-mode interface */
 
 struct pcap_opt {
 	int	buffer_size;

@@ -1148,13 +1148,13 @@ pcap_cleanup_bpf(pcap_t *p)
 	struct ifreq ifr;
 #endif
 
-	if (p->md.must_clear != 0) {
+	if (p->md.must_do_on_close != 0) {
 		/*
 		 * There's something we have to do when closing this
 		 * pcap_t.
 		 */
 #ifdef HAVE_BSD_IEEE80211
-		if (p->md.must_clear & MUST_CLEAR_RFMON) {
+		if (p->md.must_do_on_close & MUST_CLEAR_RFMON) {
 			/*
 			 * We put the interface into rfmon mode;
 			 * take it out of rfmon mode.
@@ -1209,7 +1209,7 @@ pcap_cleanup_bpf(pcap_t *p)
 		 * have to take the interface out of some mode.
 		 */
 		pcap_remove_from_pcaps_to_close(p);
-		p->md.must_clear = 0;
+		p->md.must_do_on_close = 0;
 	}
 
 #ifdef HAVE_ZEROCOPY_BPF
@@ -2207,7 +2207,7 @@ monitor_mode(pcap_t *p, int set)
 				return (PCAP_ERROR);
 			}
 
-			p->md.must_clear |= MUST_CLEAR_RFMON;
+			p->md.must_do_on_close |= MUST_CLEAR_RFMON;
 
 			/*
 			 * Add this to the list of pcaps to close when we exit.
