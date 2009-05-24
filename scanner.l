@@ -66,7 +66,7 @@ static inline int xdtoi(int);
 #define YY_NO_UNPUT
 static YY_BUFFER_STATE in_buffer;
 #else
-static char *in_buffer;
+static const char *in_buffer;
 
 #undef getc
 #define getc(fp)  (*in_buffer == 0 ? EOF : *in_buffer++)
