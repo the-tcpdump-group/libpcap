@@ -382,6 +382,207 @@ pcap_create(const char *device, char *ebuf)
 	return handle;
 }
 
+#ifdef HAVE_LIBNL
+/*
+	 *
+	 * If interface {if} is a mac80211 driver, the file
+	 * /sys/class/net/{if}/phy80211 is a symlink to
+	 * /sys/class/ieee80211/{phydev}, for some {phydev}.
+	 *
+	 * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
+	 * least, has a "wmaster0" device and a "wlan0" device; the
+	 * latter is the one with the IP address.  Both show up in
+	 * "tcpdump -D" output.  Capturing on the wmaster0 device
+	 * captures with 802.11 headers.
+	 *
+	 * airmon-ng searches through /sys/class/net for devices named
+	 * monN, starting with mon0; as soon as one *doesn't* exist,
+	 * it chooses that as the monitor device name.  If the "iw"
+	 * command exists, it does "iw dev {if} interface add {monif}
+	 * type monitor", where {monif} is the monitor device.  It
+	 * then (sigh) sleeps .1 second, and then configures the
+	 * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
+	 * is a file, it writes {mondev}, without a newline, to that file,
+	 * and again (sigh) sleeps .1 second, and then iwconfig's that
+	 * device into monitor mode and configures it up.  Otherwise,
+	 * you can't do monitor mode.
+	 *
+	 * All these devices are "glued" together by having the
+	 * /sys/class/net/{device}/phy80211 links pointing to the same
+	 * place, so, given a wmaster, wlan, or mon device, you can
+	 * find the other devices by looking for devices with
+	 * the same phy80211 link.
+	 *
+	 * To turn monitor mode off, delete the monitor interface,
+	 * either with "iw dev {monif} interface del" or by sending
+	 * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
+	 *
+	 * Note: if you try to create a monitor device named "monN", and
+	 * there's already a "monN" device, it fails, as least with
+	 * the netlink interface (which is what iw uses), with a return
+	 * value of -ENFILE.  (Return values are negative errnos.)  We
+	 * could probably use that to find an unused device.
+	 *
+	 * Yes, you can have multiple monitor devices for a given
+	 * physical device.
+*/
+
+/*
+ * Is this a mac80211 device?  If so, fill in the physical device path and
+ * return 1; if not, return 0.  On an error, fill in handle->errbuf and
+ * return PCAP_ERROR.
+ */
+static int
+get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
+    size_t phydev_max_pathlen)
+{
+	char *pathstr;
+	ssize_t bytes_read;
+
+	/*
+	 * Generate the path string for the symlink to the physical device.
+	 */
+	if (asprintf(&pathstr, "/sys/class/net/%s/phy80211", device) == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: Can't generate path name string for /sys/class/net device",
+		    device);
+		return PCAP_ERROR;
+	}
+	bytes_read = readlink(pathstr, phydev_path, phydev_max_pathlen);
+	if (bytes_read == -1) {
+		if (errno == ENOENT || errno == EINVAL) {
+			/*
+			 * Doesn't exist, or not a symlink; assume that
+			 * means it's not a mac80211 device.
+			 */
+			free(pathstr);
+			return 0;
+		}
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: Can't readlink %s: %s", device, pathstr,
+		    strerror(errno));
+		free(pathstr);
+		return PCAP_ERROR;
+	}
+	free(pathstr);
+	phydev_path[bytes_read] = '\0';
+	return 1;
+}
+
+static int
+enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
+{
+	int ret;
+	char phydev_path[PATH_MAX+1];
+	struct nl80211_state nlstate;
+	struct ifreq ifr;
+	u_int n;
+
+	/*
+	 * Is this a mac80211 device?
+	 */
+	ret = get_mac80211_phydev(handle, device, phydev_path, PATH_MAX);
+	if (ret < 0)
+		return ret;	/* error */
+	if (ret == 0)
+		return 0;	/* no error, but not mac80211 device */
+
+	/*
+	 * XXX - is this already a monN device?
+	 * If so, we're done.
+	 * Is that determined by old Wireless Extensions ioctls?
+	 */
+
+	/*
+	 * OK, it's apparently a mac80211 device.
+	 * Try to find an unused monN device for it.
+	 */
+	ret = nl80211_init(handle, &nlstate, device);
+	if (ret != 0)
+		return ret;
+	for (n = 0; n < UINT_MAX; n++) {
+		/*
+		 * Try mon{n}.
+		 */
+		char mondevice[3+10+1];	/* mon{UINT_MAX}\0 */
+
+		snprintf(mondevice, sizeof mondevice, "mon%u", n);
+		ret = add_mon_if(handle, sock_fd, &nlstate, device, mondevice);
+		if (ret == 1) {
+			handle->md.mondevice = strdup(mondevice);
+			goto added;
+		}
+		if (ret < 0) {
+			/*
+			 * Hard failure.  Just return ret; handle->errbuf
+			 * has already been set.
+			 */
+			nl80211_cleanup(&nlstate);
+			return ret;
+		}
+	}
+
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    "%s: No free monN interfaces", device);
+	nl80211_cleanup(&nlstate);
+	return PCAP_ERROR;
+
+added:
+
+#if 0
+	/*
+	 * Sleep for .1 seconds.
+	 */
+	delay.tv_sec = 0;
+	delay.tv_nsec = 500000000;
+	nanosleep(&delay, NULL);
+#endif
+
+	/*
+	 * Now configure the monitor interface up.
+	 */
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, handle->md.mondevice, sizeof(ifr.ifr_name));
+	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: Can't get flags for %s: %s", device,
+		    handle->md.mondevice, strerror(errno));
+		del_mon_if(handle, sock_fd, &nlstate, device,
+		    handle->md.mondevice);
+		nl80211_cleanup(&nlstate);
+		return PCAP_ERROR;
+	}
+	ifr.ifr_flags |= IFF_UP|IFF_RUNNING;
+	if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: Can't set flags for %s: %s", device,
+		    handle->md.mondevice, strerror(errno));
+		del_mon_if(handle, sock_fd, &nlstate, device,
+		    handle->md.mondevice);
+		nl80211_cleanup(&nlstate);
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * Success.  Clean up the libnl state.
+	 */
+	nl80211_cleanup(&nlstate);
+
+	/*
+	 * Note that we have to delete the monitor device when we close
+	 * the handle.
+	 */
+	handle->md.must_do_on_close |= MUST_DELETE_MONIF;
+
+	/*
+	 * Add this to the list of pcaps to close when we exit.
+	 */
+	pcap_add_to_pcaps_to_close(handle);
+
+	return 1;
+}
+#endif /* HAVE_LIBNL */
+
 static int
 pcap_can_set_rfmon_linux(pcap_t *handle)
 {
@@ -2929,207 +3130,6 @@ iface_bind(int fd, int ifindex, char *ebuf)
 
 	return 1;
 }
-
-#ifdef HAVE_LIBNL
-/*
-	 *
-	 * If interface {if} is a mac80211 driver, the file
-	 * /sys/class/net/{if}/phy80211 is a symlink to
-	 * /sys/class/ieee80211/{phydev}, for some {phydev}.
-	 *
-	 * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
-	 * least, has a "wmaster0" device and a "wlan0" device; the
-	 * latter is the one with the IP address.  Both show up in
-	 * "tcpdump -D" output.  Capturing on the wmaster0 device
-	 * captures with 802.11 headers.
-	 *
-	 * airmon-ng searches through /sys/class/net for devices named
-	 * monN, starting with mon0; as soon as one *doesn't* exist,
-	 * it chooses that as the monitor device name.  If the "iw"
-	 * command exists, it does "iw dev {if} interface add {monif}
-	 * type monitor", where {monif} is the monitor device.  It
-	 * then (sigh) sleeps .1 second, and then configures the
-	 * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
-	 * is a file, it writes {mondev}, without a newline, to that file,
-	 * and again (sigh) sleeps .1 second, and then iwconfig's that
-	 * device into monitor mode and configures it up.  Otherwise,
-	 * you can't do monitor mode.
-	 *
-	 * All these devices are "glued" together by having the
-	 * /sys/class/net/{device}/phy80211 links pointing to the same
-	 * place, so, given a wmaster, wlan, or mon device, you can
-	 * find the other devices by looking for devices with
-	 * the same phy80211 link.
-	 *
-	 * To turn monitor mode off, delete the monitor interface,
-	 * either with "iw dev {monif} interface del" or by sending
-	 * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
-	 *
-	 * Note: if you try to create a monitor device named "monN", and
-	 * there's already a "monN" device, it fails, as least with
-	 * the netlink interface (which is what iw uses), with a return
-	 * value of -ENFILE.  (Return values are negative errnos.)  We
-	 * could probably use that to find an unused device.
-	 *
-	 * Yes, you can have multiple monitor devices for a given
-	 * physical device.
-*/
-
-/*
- * Is this a mac80211 device?  If so, fill in the physical device path and
- * return 1; if not, return 0.  On an error, fill in handle->errbuf and
- * return PCAP_ERROR.
- */
-static int
-get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
-    size_t phydev_max_pathlen)
-{
-	char *pathstr;
-	ssize_t bytes_read;
-
-	/*
-	 * Generate the path string for the symlink to the physical device.
-	 */
-	if (asprintf(&pathstr, "/sys/class/net/%s/phy80211", device) == -1) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: Can't generate path name string for /sys/class/net device",
-		    device);
-		return PCAP_ERROR;
-	}
-	bytes_read = readlink(pathstr, phydev_path, phydev_max_pathlen);
-	if (bytes_read == -1) {
-		if (errno == ENOENT || errno == EINVAL) {
-			/*
-			 * Doesn't exist, or not a symlink; assume that
-			 * means it's not a mac80211 device.
-			 */
-			free(pathstr);
-			return 0;
-		}
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: Can't readlink %s: %s", device, pathstr,
-		    strerror(errno));
-		free(pathstr);
-		return PCAP_ERROR;
-	}
-	free(pathstr);
-	phydev_path[bytes_read] = '\0';
-	return 1;
-}
-
-static int
-enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
-{
-	int ret;
-	char phydev_path[PATH_MAX+1];
-	struct nl80211_state nlstate;
-	struct ifreq ifr;
-	u_int n;
-
-	/*
-	 * Is this a mac80211 device?
-	 */
-	ret = get_mac80211_phydev(handle, device, phydev_path, PATH_MAX);
-	if (ret < 0)
-		return ret;	/* error */
-	if (ret == 0)
-		return 0;	/* no error, but not mac80211 device */
-
-	/*
-	 * XXX - is this already a monN device?
-	 * If so, we're done.
-	 * Is that determined by old Wireless Extensions ioctls?
-	 */
-
-	/*
-	 * OK, it's apparently a mac80211 device.
-	 * Try to find an unused monN device for it.
-	 */
-	ret = nl80211_init(handle, &nlstate, device);
-	if (ret != 0)
-		return ret;
-	for (n = 0; n < UINT_MAX; n++) {
-		/*
-		 * Try mon{n}.
-		 */
-		char mondevice[3+10+1];	/* mon{UINT_MAX}\0 */
-
-		snprintf(mondevice, sizeof mondevice, "mon%u", n);
-		ret = add_mon_if(handle, sock_fd, &nlstate, device, mondevice);
-		if (ret == 1) {
-			handle->md.mondevice = strdup(mondevice);
-			goto added;
-		}
-		if (ret < 0) {
-			/*
-			 * Hard failure.  Just return ret; handle->errbuf
-			 * has already been set.
-			 */
-			nl80211_cleanup(&nlstate);
-			return ret;
-		}
-	}
-
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-	    "%s: No free monN interfaces", device);
-	nl80211_cleanup(&nlstate);
-	return PCAP_ERROR;
-
-added:
-
-#if 0
-	/*
-	 * Sleep for .1 seconds.
-	 */
-	delay.tv_sec = 0;
-	delay.tv_nsec = 500000000;
-	nanosleep(&delay, NULL);
-#endif
-
-	/*
-	 * Now configure the monitor interface up.
-	 */
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, handle->md.mondevice, sizeof(ifr.ifr_name));
-	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: Can't get flags for %s: %s", device,
-		    handle->md.mondevice, strerror(errno));
-		del_mon_if(handle, sock_fd, &nlstate, device,
-		    handle->md.mondevice);
-		nl80211_cleanup(&nlstate);
-		return PCAP_ERROR;
-	}
-	ifr.ifr_flags |= IFF_UP|IFF_RUNNING;
-	if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: Can't set flags for %s: %s", device,
-		    handle->md.mondevice, strerror(errno));
-		del_mon_if(handle, sock_fd, &nlstate, device,
-		    handle->md.mondevice);
-		nl80211_cleanup(&nlstate);
-		return PCAP_ERROR;
-	}
-
-	/*
-	 * Success.  Clean up the libnl state.
-	 */
-	nl80211_cleanup(&nlstate);
-
-	/*
-	 * Note that we have to delete the monitor device when we close
-	 * the handle.
-	 */
-	handle->md.must_do_on_close |= MUST_DELETE_MONIF;
-
-	/*
-	 * Add this to the list of pcaps to close when we exit.
-	 */
-	pcap_add_to_pcaps_to_close(handle);
-
-	return 1;
-}
-#endif /* HAVE_LIBNL */
 
 #ifdef IW_MODE_MONITOR
 /*
