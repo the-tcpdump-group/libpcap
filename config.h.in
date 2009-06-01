@@ -56,6 +56,9 @@
 /* if libdlpi exists */
 #undef HAVE_LIBDLPI
 
+/* if libnl exists */
+#undef HAVE_LIBNL
+
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
