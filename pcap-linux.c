@@ -141,6 +141,7 @@ static const char rcsid[] _U_ =
  */
 #ifdef HAVE_LINUX_WIRELESS_H
 #include <linux/wireless.h>
+#endif /* HAVE_LINUX_WIRELESS_H */
 
 /*
  * Got libnl?
@@ -154,8 +155,6 @@ static const char rcsid[] _U_ =
 #include <netlink/msg.h>
 #include <netlink/attr.h>
 #endif /* HAVE_LIBNL */
-
-#endif /* HAVE_LINUX_WIRELESS_H */
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -384,19 +383,44 @@ pcap_create(const char *device, char *ebuf)
 }
 
 static int
-pcap_can_set_rfmon_linux(pcap_t *p)
+pcap_can_set_rfmon_linux(pcap_t *handle)
 {
+#ifdef HAVE_LIBNL
+	char phydev_path[PATH_MAX+1];
+	int ret;
+#endif
 #ifdef IW_MODE_MONITOR
 	int sock_fd;
 	struct iwreq ireq;
 #endif
 
-	if (strcmp(p->opt.source, "any") == 0) {
+	if (strcmp(handle->opt.source, "any") == 0) {
 		/*
 		 * Monitor mode makes no sense on the "any" device.
 		 */
 		return 0;
 	}
+
+#ifdef HAVE_LIBNL
+	/*
+	 * Bleah.  There doesn't seem to be a way to ask a mac80211
+	 * device, through libnl, whether it supports monitor mode;
+	 * we'll just check whether the device appears to be a
+	 * mac80211 device and, if so, assume the device supports
+	 * monitor mode.
+	 *
+	 * wmaster devices don't appear to support the Wireless
+	 * Extensions, but we can create a mon device for a
+	 * wmaster device, so we don't bother checking whether
+	 * a mac80211 device supports the Wireless Extensions.
+	 */
+	ret = get_mac80211_phydev(handle, handle->opt.source, phydev_path,
+	    PATH_MAX);
+	if (ret < 0)
+		return ret;	/* error */
+	if (ret == 1)
+		return 1;	/* mac80211 device */
+#endif
 
 #ifdef IW_MODE_MONITOR
 	/*
@@ -408,14 +432,10 @@ pcap_can_set_rfmon_linux(pcap_t *p)
 	 * Open a socket on which to attempt to get the mode.
 	 * (We assume that if we have Wireless Extensions support
 	 * we also have PF_PACKET support.)
-	 *
-	 * This also presumes that the mac80211 framework supports the
-	 * Wireless Extensions, which appears to be the case at least
-	 * as far back as the 2.6.22.6 kernel.
 	 */
 	sock_fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 	if (sock_fd == -1) {
-		(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		(void)snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		return PCAP_ERROR;
 	}
@@ -423,7 +443,7 @@ pcap_can_set_rfmon_linux(pcap_t *p)
 	/*
 	 * Attempt to get the current mode.
 	 */
-	strncpy(ireq.ifr_ifrn.ifrn_name, p->opt.source,
+	strncpy(ireq.ifr_ifrn.ifrn_name, handle->opt.source,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
@@ -443,7 +463,7 @@ pcap_can_set_rfmon_linux(pcap_t *p)
 	return 0;
 }
 
-#if defined(IW_MODE_MONITOR) && defined(HAVE_LIBNL)
+#ifdef HAVE_LIBNL
 
 struct nl80211_state {
 	struct nl_handle *nl_handle;
@@ -660,7 +680,7 @@ nla_put_failure:
 	return PCAP_ERROR;
 }
 
-#endif /* defined(IW_MODE_MONITOR) && defined(HAVE_LIBNL) */
+#endif /* HAVE_LIBNL */
 
 /*
  * With older kernels promiscuous mode is kind of interesting because we
@@ -677,11 +697,11 @@ nla_put_failure:
 static void	pcap_cleanup_linux( pcap_t *handle )
 {
 	struct ifreq	ifr;
-#ifdef IW_MODE_MONITOR
 #ifdef HAVE_LIBNL
 	struct nl80211_state nlstate;
 	int ret;
 #endif /* HAVE_LIBNL */
+#ifdef IW_MODE_MONITOR
 	struct iwreq ireq;
 #endif /* IW_MODE_MONITOR */
 
@@ -728,7 +748,6 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			}
 		}
 
-#ifdef IW_MODE_MONITOR
 #ifdef HAVE_LIBNL
 		if (handle->md.must_do_on_close & MUST_DELETE_MONIF) {
 			ret = nl80211_init(handle, &nlstate, handle->md.device);
@@ -746,6 +765,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		}
 #endif /* HAVE_LIBNL */
 
+#ifdef IW_MODE_MONITOR
 		if (handle->md.must_do_on_close & MUST_CLEAR_RFMON) {
 			/*
 			 * We put the interface into rfmon mode;
@@ -2910,50 +2930,7 @@ iface_bind(int fd, int ifindex, char *ebuf)
 	return 1;
 }
 
-#ifdef IW_MODE_MONITOR
-/*
- * Check whether the device supports the Wireless Extensions.
- * Returns 1 if it does, 0 if it doesn't, PCAP_ERROR_NO_SUCH_DEVICE
- * if the device doesn't even exist.
- */
-static int
-has_wext(int sock_fd, const char *device, char *ebuf)
-{
-	struct iwreq ireq;
-
-	strncpy(ireq.ifr_ifrn.ifrn_name, device,
-	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
-	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
-		return 1;	/* yes */
-	snprintf(ebuf, PCAP_ERRBUF_SIZE,
-	    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
-	if (errno == ENODEV)
-		return PCAP_ERROR_NO_SUCH_DEVICE;
-	return 0;
-}
-
-/*
- * Per me si va ne la citta dolente,
- * Per me si va ne l'etterno dolore,
- *	...
- * Lasciate ogne speranza, voi ch'intrate.
- *
- * XXX - airmon-ng does special stuff with the Orinoco driver and the
- * wlan-ng driver.
- */
-typedef enum {
-	MONITOR_WEXT,
-	MONITOR_HOSTAP,
-	MONITOR_PRISM,
-	MONITOR_PRISM54,
-	MONITOR_ACX100,
-	MONITOR_RT2500,
-	MONITOR_RT2570,
-	MONITOR_RT73,
-	MONITOR_RTL8XXX
-} monitor_type;
-
+#ifdef HAVE_LIBNL
 /*
 	 *
 	 * If interface {if} is a mac80211 driver, the file
@@ -2998,7 +2975,6 @@ typedef enum {
 	 * physical device.
 */
 
-#ifdef HAVE_LIBNL
 /*
  * Is this a mac80211 device?  If so, fill in the physical device path and
  * return 1; if not, return 0.  On an error, fill in handle->errbuf and
@@ -3154,6 +3130,50 @@ added:
 	return 1;
 }
 #endif /* HAVE_LIBNL */
+
+#ifdef IW_MODE_MONITOR
+/*
+ * Check whether the device supports the Wireless Extensions.
+ * Returns 1 if it does, 0 if it doesn't, PCAP_ERROR_NO_SUCH_DEVICE
+ * if the device doesn't even exist.
+ */
+static int
+has_wext(int sock_fd, const char *device, char *ebuf)
+{
+	struct iwreq ireq;
+
+	strncpy(ireq.ifr_ifrn.ifrn_name, device,
+	    sizeof ireq.ifr_ifrn.ifrn_name);
+	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
+	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
+		return 1;	/* yes */
+	snprintf(ebuf, PCAP_ERRBUF_SIZE,
+	    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
+	if (errno == ENODEV)
+		return PCAP_ERROR_NO_SUCH_DEVICE;
+	return 0;
+}
+
+/*
+ * Per me si va ne la citta dolente,
+ * Per me si va ne l'etterno dolore,
+ *	...
+ * Lasciate ogne speranza, voi ch'intrate.
+ *
+ * XXX - airmon-ng does special stuff with the Orinoco driver and the
+ * wlan-ng driver.
+ */
+typedef enum {
+	MONITOR_WEXT,
+	MONITOR_HOSTAP,
+	MONITOR_PRISM,
+	MONITOR_PRISM54,
+	MONITOR_ACX100,
+	MONITOR_RT2500,
+	MONITOR_RT2570,
+	MONITOR_RT73,
+	MONITOR_RTL8XXX
+} monitor_type;
 
 /*
  * Use the Wireless Extensions, if we have them, to try to turn monitor mode
@@ -3729,8 +3749,9 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 static int
 enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 {
-#ifdef IW_MODE_MONITOR
+#if defined(HAVE_LIBNL) || defined(IW_MODE_MONITOR)
 	int ret;
+#endif
 
 #ifdef HAVE_LIBNL
 	ret = enter_rfmon_mode_mac80211(handle, sock_fd, device);
@@ -3740,6 +3761,7 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 		return 1;	/* success */
 #endif /* HAVE_LIBNL */
 
+#ifdef IW_MODE_MONITOR
 	ret = enter_rfmon_mode_wext(handle, sock_fd, device);
 	if (ret < 0)
 		return ret;	/* error attempting to do so */

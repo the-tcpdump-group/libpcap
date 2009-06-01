@@ -369,21 +369,24 @@ linux)
 	if test $ac_cv_linux_vers -lt 2 ; then
 		AC_MSG_ERROR(version 2 or higher required; see the INSTALL doc for more info)
 	fi
+
+	#
+	# Do we have the wireless extensions?
+	#
 	AC_CHECK_HEADERS(linux/wireless.h, [], [],
 	[
 #include <sys/socket.h>
 #include <linux/if.h>
 #include <linux/types.h>
 	])
-	if test "$ac_cv_header_linux_wireless_h" = yes; then
-		#
-		# We have the wireless extensions; check whether
-		# we have libnl.
-		#
-		AC_CHECK_LIB(nl, nl_handle_alloc,
-			V_LIBS="-lnl $V_LIBS"
-			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),)
-	fi
+
+	#
+	# Do we have libnl?
+	#
+	AC_CHECK_LIB(nl, nl_handle_alloc,
+		V_LIBS="-lnl $V_LIBS"
+		AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),)
+
 	AC_LBL_TPACKET_STATS
 	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 	;;
