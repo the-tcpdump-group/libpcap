@@ -6655,6 +6655,10 @@ echo "$as_me: error: version 2 or higher required; see the INSTALL doc for more 
    { (exit 1); exit 1; }; }
 	fi
 
+	#
+	# Do we have the wireless extensions?
+	#
+
 for ac_header in linux/wireless.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -6716,12 +6720,11 @@ fi
 
 done
 
-	if test "$ac_cv_header_linux_wireless_h" = yes; then
-		#
-		# We have the wireless extensions; check whether
-		# we have libnl.
-		#
-		{ echo "$as_me:$LINENO: checking for nl_handle_alloc in -lnl" >&5
+
+	#
+	# Do we have libnl?
+	#
+	{ echo "$as_me:$LINENO: checking for nl_handle_alloc in -lnl" >&5
 echo $ECHO_N "checking for nl_handle_alloc in -lnl... $ECHO_C" >&6; }
 if test "${ac_cv_lib_nl_nl_handle_alloc+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -6791,7 +6794,7 @@ _ACEOF
 
 fi
 
-	fi
+
 	{ echo "$as_me:$LINENO: checking if if_packet.h has tpacket_stats defined" >&5
 echo $ECHO_N "checking if if_packet.h has tpacket_stats defined... $ECHO_C" >&6; }
    if test "${ac_cv_lbl_tpacket_stats+set}" = set; then
