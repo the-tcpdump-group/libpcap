@@ -2,7 +2,11 @@ Makefile
 *~
 *.o
 bpf_filter.c
-config.*
+config.h
+config.log
+config.cache
+config.status
+.devel
 grammar.c
 libpcap.a
 libpcap.*.dylib
