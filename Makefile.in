@@ -556,7 +556,7 @@ uninstall-shared-dylib:
 	rm -f $(DESTDIR)$(libdir)/libpcap.dylib
 
 clean:
-	rm -f $(CLEANFILES) libpcap.$(DYEXT)
+	rm -f $(CLEANFILES) libpcap.$(DYEXT) $(PROG)-`cat VERSION`.tar.gz
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
