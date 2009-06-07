@@ -438,7 +438,7 @@ filtertest: filtertest.c libpcap.a
 findalldevstest: findalldevstest.c libpcap.a
 	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a
 
-install: libpcap.a pcap-config
+install: install-shared libpcap.a pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
@@ -517,8 +517,10 @@ install-shared-dylib: libpcap.dylib
 	$(INSTALL_PROGRAM) libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
 	ln -sf libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
 	ln -sf libpcap.$$MAJOR_VER.dylib $(DESTDIR)$(libdir)/libpcap.dylib
+install-shared-sl: libpcap.sl
+	$(INSTALL_PROGRAM) libpcap.sl $(DESTDIR)$(libdir)
 
-uninstall:
+uninstall: uninstall-shared
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
 	for i in $(PUBHDR); do \
 		rm -f $(DESTDIR)$(includedir)/$$i; done
@@ -554,6 +556,8 @@ uninstall-shared-dylib:
 	rm -f $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.dylib
+uninstall-shared-sl:
+	rm -f $(DESTDIR)$(libdir)/libpcap.sl
 
 clean:
 	rm -f $(CLEANFILES) libpcap.$(DYEXT) $(PROG)-`cat VERSION`.tar.gz
