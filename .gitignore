@@ -5,6 +5,9 @@ bpf_filter.c
 config.*
 grammar.c
 libpcap.a
+libpcap.*.dylib
+libpcap.sl
+libpcap.so.*
 pcap-config
 pcap-filter.manmisc
 pcap-linktype.manmisc
