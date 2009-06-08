@@ -525,6 +525,7 @@ uninstall: uninstall-shared
 	for i in $(PUBHDR); do \
 		rm -f $(DESTDIR)$(includedir)/$$i; done
 	-rmdir $(DESTDIR)$(includedir)/pcap
+	rm -f $(DESTDIR)/$(bindir)/pcap-config
 	for i in $(MAN1); do \
 		rm -f $(DESTDIR)$(mandir)/man1/$$i; done
 	for i in $(MAN3PCAP); do \
