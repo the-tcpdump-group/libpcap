@@ -37,16 +37,16 @@ then
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I @includedir@ -L @libdir@ -lpcap @LIBS@"
+		echo "-I@includedir@ -L@libdir@ -lpcap @LIBS@"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
-		echo "-I @includedir@ -L @libdir@ @LIBS@"
+		echo "-I@includedir@ -L@libdir@ @LIBS@"
 	elif [ "$show_cflags" = 1 ]
 	then
-		echo "-I @includedir@"
+		echo "-I@includedir@"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "-L @libdir@ -lpcap @LIBS@"
+		echo "-L@libdir@ -lpcap @LIBS@"
 	elif [ "$show_additional_libs" = 1 ]
 	then
 		echo "@LIBS@"
@@ -58,15 +58,15 @@ else
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I @includedir@ -L @libdir@ -lpcap"
+		echo "-I@includedir@ -L@libdir@ -lpcap"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
-		echo "-I @includedir@"
+		echo "-I@includedir@"
 	elif [ "$show_cflags" = 1 ]
 	then
-		echo "-I @includedir@"
+		echo "-I@includedir@"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "-L @libdir@ -lpcap"
+		echo "-L@libdir@ -lpcap"
 	fi
 fi
