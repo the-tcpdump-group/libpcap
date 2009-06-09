@@ -123,7 +123,7 @@ GENHDR = \
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c
+CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c pcap-config
 
 MAN1 = pcap-config.1
 
