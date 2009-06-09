@@ -688,6 +688,7 @@ V_PCAP
 V_SHLIB_CMD
 V_SHLIB_OPT
 V_SONAME_OPT
+V_RPATH_OPT
 ADDLOBJ
 SSRC
 DYEXT
@@ -2918,7 +2919,9 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 	    # On platforms where we build a shared library, add options
 	    # to generate position-independent code, if necessary
 	    # (it's the default in Darwin/OS X), and define the
-	    # appropriate options for building the shared library.
+	    # appropriate options for building the shared library
+	    # and for specifying, at link time, a directory to add
+	    # to the run-time search path.
 	    #
 	    case "$host_os" in
 
@@ -2927,6 +2930,7 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 	    esac
     else
@@ -3156,6 +3160,7 @@ _ACEOF
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    solaris*)
@@ -3163,6 +3168,7 @@ _ACEOF
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G"
 		    V_SONAME_OPT="-h "
+		    V_RPATH_OPT="-R"
 		    ;;
 	    esac
     fi
@@ -8671,6 +8677,14 @@ irix*)
 linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
 	DYEXT="so"
 	V_CCOPT="$V_CCOPT -fPIC"
+
+	#
+	# Compiler assumed to be GCC; run-time linker may require a -R
+	# flag.
+	#
+	if test "$libdir" != "/usr/lib"; then
+		V_RFLAGS=-Wl,-R$libdir
+	fi
 	;;
 
 osf*)
@@ -9185,6 +9199,7 @@ _ACEOF
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
+
 
 
 
@@ -10325,6 +10340,7 @@ V_PCAP!$V_PCAP$ac_delim
 V_SHLIB_CMD!$V_SHLIB_CMD$ac_delim
 V_SHLIB_OPT!$V_SHLIB_OPT$ac_delim
 V_SONAME_OPT!$V_SONAME_OPT$ac_delim
+V_RPATH_OPT!$V_RPATH_OPT$ac_delim
 ADDLOBJ!$ADDLOBJ$ac_delim
 SSRC!$SSRC$ac_delim
 DYEXT!$DYEXT$ac_delim
@@ -10340,7 +10356,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 88; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
