@@ -101,12 +101,24 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    #
 	    case "$host_os" in
 
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*|solaris*)
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*)
 		    V_CCOPT="$V_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    #
+		    # XXX - this assumes GCC is using the Sun linker,
+		    # rather than the GNU linker.
+		    #
+		    V_SONAME_OPT="-Wl,-h,"
+		    V_RPATH_OPT="-Wl,-R,"
 		    ;;
 	    esac
     else
