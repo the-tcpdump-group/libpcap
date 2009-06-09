@@ -508,18 +508,24 @@ install: install-shared libpcap.a pcap-config
 
 install-shared: install-shared-$(DYEXT)
 install-shared-so: libpcap.so
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	$(INSTALL_PROGRAM) libpcap.so.$$VER $(DESTDIR)$(libdir)/libpcap.so.$$VER; \
 	ln -sf libpcap.so.$$VER $(DESTDIR)$(libdir)/libpcap.so.$$MAJOR_VER; \
 	ln -sf libpcap.so.$$MAJOR_VER $(DESTDIR)$(libdir)/libpcap.so
 install-shared-dylib: libpcap.dylib
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=A; \
 	$(INSTALL_PROGRAM) libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$VER.dylib; \
 	ln -sf libpcap.$$VER.dylib $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
 	ln -sf libpcap.$$MAJOR_VER.dylib $(DESTDIR)$(libdir)/libpcap.dylib
 install-shared-sl: libpcap.sl
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	$(INSTALL_PROGRAM) libpcap.sl $(DESTDIR)$(libdir)
 
 uninstall: uninstall-shared
