@@ -34,7 +34,7 @@ then
 	#
 	# If libdir isn't /usr/lib, add it to the run-time linker path.
 	#
-	if [ "@libdir@" != "/usr/lib ]
+	if [ "@libdir@" != "/usr/lib" ]
 	then
 		RPATH=@V_RPATH_OPT@@libdir@
 	fi
