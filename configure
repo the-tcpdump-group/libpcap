@@ -8658,8 +8658,7 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_HPUX10_20_OR_LATER 1
 _ACEOF
 
-	if  "`uname -m`" = "ia64"
-	then
+	if test "`uname -m`" = "ia64"; then
 		DYEXT="so"
 	else
 		DYEXT="sl"

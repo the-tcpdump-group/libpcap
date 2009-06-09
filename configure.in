@@ -957,8 +957,7 @@ hpux*)
 	dnl for 32-bit PA-RISC, but should be left as "so" for
 	dnl 64-bit PA-RISC or, I suspect, IA-64.
 	AC_DEFINE(HAVE_HPUX10_20_OR_LATER,1,[on HP-UX 10.20 or later])
-	if [ "`uname -m`" = "ia64" ]
-	then
+	if test "`uname -m`" = "ia64"; then
 		DYEXT="so"
 	else
 		DYEXT="sl"
