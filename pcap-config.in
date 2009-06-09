@@ -29,6 +29,16 @@ do
 	esac
 	shift
 done
+if [ "@V_RPATH_OPT@" != "" ]
+then
+	#
+	# If libdir isn't /usr/lib, add it to the run-time linker path.
+	#
+	if [ "@libdir@" != "/usr/lib ]
+	then
+		RPATH=@V_RPATH_OPT@@libdir@
+	fi
+fi
 if [ "$static" = 1 ]
 then
 	#
@@ -58,7 +68,7 @@ else
 	#
 	if [ "$show_cflags" = 1 -a "$show_libs" = 1 ]
 	then
-		echo "-I@includedir@ -L@libdir@ -lpcap"
+		echo "-I@includedir@ -L@libdir@ $RPATH -lpcap"
 	elif [ "$show_cflags" = 1 -a "$show_additional_libs" = 1 ]
 	then
 		echo "-I@includedir@"
@@ -67,6 +77,6 @@ else
 		echo "-I@includedir@"
 	elif [ "$show_libs" = 1 ]
 	then
-		echo "-L@libdir@ -lpcap"
+		echo "-L@libdir@ $RPATH -lpcap"
 	fi
 fi

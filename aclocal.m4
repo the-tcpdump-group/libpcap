@@ -95,7 +95,9 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    # On platforms where we build a shared library, add options
 	    # to generate position-independent code, if necessary
 	    # (it's the default in Darwin/OS X), and define the
-	    # appropriate options for building the shared library.
+	    # appropriate options for building the shared library
+	    # and for specifying, at link time, a directory to add
+	    # to the run-time search path.
 	    #
 	    case "$host_os" in
 
@@ -104,6 +106,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 	    esac
     else
@@ -195,6 +198,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    solaris*)
@@ -202,6 +206,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G"
 		    V_SONAME_OPT="-h "
+		    V_RPATH_OPT="-R"
 		    ;;
 	    esac
     fi

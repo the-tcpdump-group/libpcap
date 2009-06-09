@@ -988,6 +988,14 @@ irix*)
 linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
 	DYEXT="so"
 	V_CCOPT="$V_CCOPT -fPIC"
+
+	#
+	# Compiler assumed to be GCC; run-time linker may require a -R
+	# flag.
+	#
+	if test "$libdir" != "/usr/lib"; then
+		V_RFLAGS=-Wl,-R$libdir
+	fi
 	;;
 
 osf*)
@@ -1055,6 +1063,7 @@ AC_SUBST(V_PCAP)
 AC_SUBST(V_SHLIB_CMD)
 AC_SUBST(V_SHLIB_OPT)
 AC_SUBST(V_SONAME_OPT)
+AC_SUBST(V_RPATH_OPT)
 AC_SUBST(V_YACC)
 AC_SUBST(ADDLOBJ)
 AC_SUBST(SSRC)

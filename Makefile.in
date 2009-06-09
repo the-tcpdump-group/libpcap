@@ -425,6 +425,7 @@ pcap-config: $(srcdir)/pcap-config.in Makefile
 	sed -e 's|@includedir[@]|$(includedir)|g' \
 	    -e 's|@libdir[@]|$(libdir)|g' \
 	    -e 's|@LIBS[@]|$(LIBS)|g' \
+	    -e 's|@V_RPATH_OPT[@]|$(V_RPATH_OPT)|g' \
 	    $(srcdir)/pcap-config.in >$@.tmp
 	mv $@.tmp $@
 	chmod a+x $@
