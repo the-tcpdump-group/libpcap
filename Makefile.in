@@ -255,7 +255,6 @@ EXTRA_DIST = \
 	msdos/pktdrvr.c \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
-	net/bpf_filter.c \
 	org.tcpdump.chmod_bpf.plist \
 	packaging/pcap.spec.in \
 	pcap-bpf.c \
