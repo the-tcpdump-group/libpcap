@@ -358,17 +358,20 @@ libpcap.dylib: $(OBJ)
 	    -current_version $$CURRENT_VER
 
 #
-# XXX - the HP-UX linker manual seems to indicate that the
-# convention for a versioned library is libXXX.{number}, not
-# libXXX.sl.{number}.  That might just be a convention, or it
-# might actually be enforced by the run-time linker.
+# The HP-UX linker manual says that the convention for a versioned library
+# is libXXX.{number}, not libXXX.sl.{number}.  That appears to be the case
+# on at least one HP-UX 11.00 system; libXXX.sl is a symlink to
+# libXXX.{number}.
 #
-# It also says "library-level versioning" (think "sonames") was
+# The manual also says "library-level versioning" (think "sonames") was
 # added in HP-UX 10.0.
 #
 libpcap.sl: $(OBJ)
-	@rm -f $@
-	ld -b $(LDFLAGS) -o $@ +h $@.1 $(OBJ) $(ADDLOBJ) $(LIBS)
+	@MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	rm -f libpcap.$$MAJOR_VER
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	ld -b $(LDFLAGS) -o libpcap.$$MAJOR_VER +h libpcap.$$MAJOR_VER \
+	    $(OBJ) $(ADDLOBJ) $(LIBS)
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
@@ -526,7 +529,9 @@ install-shared-dylib: libpcap.dylib
 install-shared-sl: libpcap.sl
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
-	$(INSTALL_PROGRAM) libpcap.sl $(DESTDIR)$(libdir)
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	$(INSTALL_PROGRAM) libpcap.$$MAJOR_VER $(DESTDIR)$(libdir)
+	ln -sf libpcap.$$MAJOR_VER $(DESTDIR)$(libdir)/libpcap.sl
 
 uninstall: uninstall-shared
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
@@ -566,6 +571,8 @@ uninstall-shared-dylib:
 	rm -f $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER.dylib; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.dylib
 uninstall-shared-sl:
+	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
+	rm -f $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.sl
 
 clean:
