@@ -101,7 +101,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    #
 	    case "$host_os" in
 
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*|osf*)
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
 	    	    #
 		    # Platforms where the linker is the GNU linker
 		    # or accepts command-line arguments like
@@ -112,6 +112,17 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
+		    ;;
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    #
+		    # XXX - this assumes GCC is using the HP linker,
+		    # rather than the GNU linker.
+		    #
+		    V_SONAME_OPT="-Wl,-soname,"
 		    ;;
 
 	    solaris*)
