@@ -315,7 +315,7 @@ all: libpcap.a shared pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
-	$(AR) rc $@ $(OBJ) $(ADDLOBJ)
+	ar rc $@ $(OBJ) $(ADDLOBJ)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
