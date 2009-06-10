@@ -101,7 +101,12 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    #
 	    case "$host_os" in
 
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*)
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|hpux*|osf*)
+	    	    #
+		    # Platforms where the linker is the GNU linker
+		    # or accepts command-line arguments like
+		    # those the GNU linker accepts.
+		    #
 		    V_CCOPT="$V_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
@@ -206,12 +211,28 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
+		    #
+		    # "cc" is GCC.
+		    #
 		    V_CCOPT="$V_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
+
+	    osf*)
+	    	    #
+		    # Presumed to be DEC OSF/1, Digital UNIX, or
+		    # Tru64 UNIX.
+		    #
+		    V_CCOPT="$V_CCOPT"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-soname "
+		    V_RPATH_OPT="-rpath "
+		    ;;
+
 
 	    solaris*)
 		    V_CCOPT="$V_CCOPT -Kpic"
