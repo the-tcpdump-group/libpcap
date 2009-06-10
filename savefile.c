@@ -1748,7 +1748,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 	if (linktype == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: link-layer type %d isn't supported in savefiles",
-		    fname, linktype);
+		    fname, p->linktype);
 		return (NULL);
 	}
 	linktype |= p->linktype_ext;
@@ -1783,7 +1783,7 @@ pcap_dump_fopen(pcap_t *p, FILE *f)
 	if (linktype == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "stream: link-layer type %d isn't supported in savefiles",
-		    linktype);
+		    p->linktype);
 		return (NULL);
 	}
 	linktype |= p->linktype_ext;
