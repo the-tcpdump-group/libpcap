@@ -99,6 +99,8 @@ static const char rcsid[] _U_ =
 static int bpfloadedflag = 0;
 static int odmlockid = 0;
 
+static int bpf_load(char *errbuf);
+
 #else /* _AIX */
 
 #include <net/bpf.h>

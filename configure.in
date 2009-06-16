@@ -911,9 +911,42 @@ aix*)
 	dnl Workaround to enable certain features
 	AC_DEFINE(_SUN,1,[define on AIX to get certain functions])
 
-	# We need "-lodm" and "-lcfg", as libpcap requires them on
-	# AIX.
-	V_LIBS="-lodm -lcfg"
+	#
+	# AIX makes it fun to build shared and static libraries,
+	# because they're *both* ".a" archive libraries.  We
+	# build the static library for the benefit of the traditional
+	# scheme of building libpcap and tcpdump in subdirectories of
+	# the same directory, with tcpdump statically linked with the
+	# libpcap in question, but we also build a shared library as
+	# "libpcap.shareda" and install *it*, rather than the static
+	# library, as "libpcap.a".
+	#
+	DYEXT="shareda"
+
+	case "$V_PCAP" in
+
+	dlpi)
+		#
+		# If we're using DLPI, applications will need to
+		# use /lib/pse.exp if present, as we use the
+		# STREAMS routines.
+		#
+		pseexe="/lib/pse.exp"
+		AC_MSG_CHECKING(for $pseexe)
+		if test -f $pseexe ; then
+			AC_MSG_RESULT(yes)
+			V_LIBS="-I:$pseexe"
+		fi
+		;;
+
+	bpf)
+		#
+		# If we're using BPF, we need "-lodm" and "-lcfg", as
+		# we use them to load the BPF module.
+		#
+		V_LIBS="-lodm -lcfg"
+		;;
+	esac
 	;;
 
 darwin*)

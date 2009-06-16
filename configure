@@ -2916,14 +2916,22 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 	    fi
 
 	    #
-	    # On platforms where we build a shared library, add options
-	    # to generate position-independent code, if necessary
-	    # (it's the default in Darwin/OS X), and define the
-	    # appropriate options for building the shared library
-	    # and for specifying, at link time, a directory to add
-	    # to the run-time search path.
+	    # On platforms where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in Darwin/OS X);
+	    #
+	    #	if we generate ".so" shared libraries, define the
+	    #	appropriate options for building the shared library;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
 	    #
 	    case "$host_os" in
+
+	    aix*)
+		    V_SHLIB_OPT="-shared"
+		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
 	    	    #
@@ -2940,13 +2948,19 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 
 	    hpux*)
 		    V_CCOPT="$V_CCOPT -fpic"
+	    	    #
+		    # XXX - assume that, for HP-UX with ".so"
+		    # shared libraries (Itanium?), we use the
+		    # HP linker options.
+		    #
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,+h,"
 		    #
-		    # XXX - this assumes GCC is using the HP linker,
-		    # rather than the GNU linker.
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
 		    #
-		    V_SONAME_OPT="-Wl,-soname,"
 		    ;;
 
 	    solaris*)
@@ -3165,10 +3179,17 @@ _ACEOF
 	    esac
 
 	    #
-	    # On platforms where we build a shared library, add options
-	    # to generate position-independent code, if necessary
-	    # (it's the default in Darwin/OS X), and define the
-	    # appropriate options for building the shared library.
+	    # On platforms where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in Darwin/OS X);
+	    #
+	    #	if we generate ".so" shared libraries, define the
+	    #	appropriate options for building the shared library;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
+	    #
 	    # Note: spaces after V_SONAME_OPT are significant; GCC's
 	    # option is "-Wl,-soname,{soname}", with the soname part
 	    # of the option, while other C compiler drivers take it
@@ -3176,11 +3197,8 @@ _ACEOF
 	    #
 	    case "$host_os" in
 
-	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
-		    V_SHLIB_CMD="\$(LD)"
-		    V_SHLIB_OPT="-b"
-		    V_SONAME_OPT="+h "
+	    aix*)
+		    V_SHLIB_OPT="-G -bnoentry -bexpall"
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
@@ -3194,6 +3212,18 @@ _ACEOF
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
+	    hpux*)
+		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CMD="\$(LD)"
+		    V_SHLIB_OPT="-b"
+		    V_SONAME_OPT="+h "
+		    #
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
+		    #
+		    ;;
+
 	    osf*)
 	    	    #
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
@@ -3205,7 +3235,6 @@ _ACEOF
 		    V_SONAME_OPT="-soname "
 		    V_RPATH_OPT="-rpath "
 		    ;;
-
 
 	    solaris*)
 		    V_CCOPT="$V_CCOPT -Kpic"
@@ -8642,9 +8671,44 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-	# We need "-lodm" and "-lcfg", as libpcap requires them on
-	# AIX.
-	V_LIBS="-lodm -lcfg"
+	#
+	# AIX makes it fun to build shared and static libraries,
+	# because they're *both* ".a" archive libraries.  We
+	# build the static library for the benefit of the traditional
+	# scheme of building libpcap and tcpdump in subdirectories of
+	# the same directory, with tcpdump statically linked with the
+	# libpcap in question, but we also build a shared library as
+	# "libpcap.shareda" and install *it*, rather than the static
+	# library, as "libpcap.a".
+	#
+	DYEXT="shareda"
+
+	case "$V_PCAP" in
+
+	dlpi)
+		#
+		# If we're using DLPI, applications will need to
+		# use /lib/pse.exp if present, as we use the
+		# STREAMS routines.
+		#
+		pseexe="/lib/pse.exp"
+		{ echo "$as_me:$LINENO: checking for $pseexe" >&5
+echo $ECHO_N "checking for $pseexe... $ECHO_C" >&6; }
+		if test -f $pseexe ; then
+			{ echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+			V_LIBS="-I:$pseexe"
+		fi
+		;;
+
+	bpf)
+		#
+		# If we're using BPF, we need "-lodm" and "-lcfg", as
+		# we use them to load the BPF module.
+		#
+		V_LIBS="-lodm -lcfg"
+		;;
+	esac
 	;;
 
 darwin*)

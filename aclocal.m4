@@ -92,14 +92,22 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    fi
 
 	    #
-	    # On platforms where we build a shared library, add options
-	    # to generate position-independent code, if necessary
-	    # (it's the default in Darwin/OS X), and define the
-	    # appropriate options for building the shared library
-	    # and for specifying, at link time, a directory to add
-	    # to the run-time search path.
+	    # On platforms where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in Darwin/OS X);
+	    #
+	    #	if we generate ".so" shared libraries, define the
+	    #	appropriate options for building the shared library;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
 	    #
 	    case "$host_os" in
+
+	    aix*)
+		    V_SHLIB_OPT="-shared"
+		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
 	    	    #
@@ -116,13 +124,19 @@ AC_DEFUN(AC_LBL_C_INIT,
 
 	    hpux*)
 		    V_CCOPT="$V_CCOPT -fpic"
+	    	    #
+		    # XXX - assume that, for HP-UX with ".so"
+		    # shared libraries (Itanium?), we use the
+		    # HP linker options.
+		    #
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,+h,"
 		    #
-		    # XXX - this assumes GCC is using the HP linker,
-		    # rather than the GNU linker.
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
 		    #
-		    V_SONAME_OPT="-Wl,-soname,"
 		    ;;
 
 	    solaris*)
@@ -203,10 +217,17 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    esac
 
 	    #
-	    # On platforms where we build a shared library, add options
-	    # to generate position-independent code, if necessary
-	    # (it's the default in Darwin/OS X), and define the
-	    # appropriate options for building the shared library.
+	    # On platforms where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in Darwin/OS X);
+	    #
+	    #	if we generate ".so" shared libraries, define the
+	    #	appropriate options for building the shared library;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
+	    #
 	    # Note: spaces after V_SONAME_OPT are significant; GCC's
 	    # option is "-Wl,-soname,{soname}", with the soname part
 	    # of the option, while other C compiler drivers take it
@@ -214,11 +235,8 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    #
 	    case "$host_os" in
 
-	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
-		    V_SHLIB_CMD="\$(LD)"
-		    V_SHLIB_OPT="-b"
-		    V_SONAME_OPT="+h "
+	    aix*)
+		    V_SHLIB_OPT="-G -bnoentry -bexpall"
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
@@ -232,6 +250,18 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
+	    hpux*)
+		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CMD="\$(LD)"
+		    V_SHLIB_OPT="-b"
+		    V_SONAME_OPT="+h "
+		    #
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
+		    #
+		    ;;
+
 	    osf*)
 	    	    #
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
@@ -243,7 +273,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SONAME_OPT="-soname "
 		    V_RPATH_OPT="-rpath "
 		    ;;
-
 
 	    solaris*)
 		    V_CCOPT="$V_CCOPT -Kpic"

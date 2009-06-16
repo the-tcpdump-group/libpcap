@@ -365,12 +365,29 @@ libpcap.dylib: $(OBJ)
 # The manual also says "library-level versioning" (think "sonames") was
 # added in HP-UX 10.0.
 #
+# XXX - this assumes we're using the HP linker, rather than the GNU
+# linker, even with GCC.
+#
 libpcap.sl: $(OBJ)
 	@MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	rm -f libpcap.$$MAJOR_VER
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	ld -b $(LDFLAGS) -o libpcap.$$MAJOR_VER +h libpcap.$$MAJOR_VER \
 	    $(OBJ) $(ADDLOBJ) $(LIBS)
+
+#
+# AIX is different from everybody else.  A shared library is an archive
+# library with one or more shared-object components.  We still build a
+# normal static archive library on AIX, for the benefit of the traditional
+# scheme of building libpcap and tcpdump in subdirectories of the
+# same directory, with tcpdump statically linked with the libpcap
+# in question, but we also build a shared library as "libpcap.shareda"
+# and install *it*, rather than the static library, as "libpcap.a".
+#
+libpcap.shareda: $(OBJ)
+	@rm -f $@ shr.o
+	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJ) $(LIBS)
+	ar rc $@ shr.o
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
@@ -442,11 +459,9 @@ filtertest: filtertest.c libpcap.a
 findalldevstest: findalldevstest.c libpcap.a
 	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a
 
-install: install-shared libpcap.a pcap-config
+install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
-	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
-	$(RANLIB) $(DESTDIR)$(libdir)/libpcap.a
 	[ -d $(DESTDIR)$(includedir) ] || \
 	    (mkdir -p $(DESTDIR)$(includedir); chmod 755 $(DESTDIR)$(includedir))
 	[ -d $(DESTDIR)$(includedir)/pcap ] || \
@@ -531,6 +546,30 @@ install-shared-sl: libpcap.sl
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	$(INSTALL_PROGRAM) libpcap.$$MAJOR_VER $(DESTDIR)$(libdir)
 	ln -sf libpcap.$$MAJOR_VER $(DESTDIR)$(libdir)/libpcap.sl
+install-shared-shareda: libpcap.shareda
+	#
+	# AIX shared libraries are weird.  They're archive libraries
+	# with one or more shared object components.
+	#
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
+	$(INSTALL_PROGRAM) libpcap.shareda $(DESTDIR)$(libdir)/libpcap.a
+
+install-archive: install-archive-$(DYEXT)
+install-archive-so install-archive-dylib install-archive-sl: libpcap.a
+	#
+	# Most platforms have separate suffixes for shared and
+	# archive libraries, so we install both.
+	#
+	[ -d $(DESTDIR)$(libdir) ] || \
+	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
+	$(INSTALL_DATA) libpcap.a $(DESTDIR)$(libdir)/libpcap.a
+	$(RANLIB) $(DESTDIR)$(libdir)/libpcap.a
+install-archive-shareda:
+	#
+	# AIX, however, doesn't, so we don't install the archive
+	# library on AIX.
+	#
 
 uninstall: uninstall-shared
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
@@ -573,6 +612,8 @@ uninstall-shared-sl:
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.$$MAJOR_VER; \
 	rm -f $(DESTDIR)$(libdir)/libpcap.sl
+uninstall-shared-shareda:
+	rm -f $(DESTDIR)$(libdir)/libpcap.a
 
 clean:
 	rm -f $(CLEANFILES) libpcap.$(DYEXT) $(PROG)-`cat VERSION`.tar.gz
