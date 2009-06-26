@@ -693,6 +693,15 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_AOS				222
 
+/*
+ * Wireless HART (Highway Addressable Remote Transducer)
+ * From the HART Communication Foundation
+ * IES/PAS 62591
+ *
+ * From Sam Roberts <vieuxtech@gmail.com>
+ */
+#define LINKTYPE_WIHART				223
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1019,6 +1028,9 @@ static struct linktype_map {
 
 	/* AOS Space Data Link Protocol */
 	{ DLT_AOS,		LINKTYPE_AOS },
+
+	/* Wireless HART */
+	{ DLT_WIHART,		LINKTYPE_WIHART },
 
 	{ -1,			-1 }
 };

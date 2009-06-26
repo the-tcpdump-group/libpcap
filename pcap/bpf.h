@@ -867,6 +867,15 @@ struct bpf_version {
  */
 #define DLT_AOS                 222
 
+/*
+ * Wireless HART (Highway Addressable Remote Transducer)
+ * From the HART Communication Foundation
+ * IES/PAS 62591
+ *
+ * From Sam Roberts <vieuxtech@gmail.com>
+ */
+#define DLT_WIHART		223
+
 
 /*
  * DLT and savefile link type values are split into a class and
