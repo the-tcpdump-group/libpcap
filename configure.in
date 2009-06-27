@@ -898,11 +898,11 @@ if test "$V_LEX" = lex ; then
 fi
 
 #
-# Assume a.out/ELF convention for shared library names (".so"), and
-# V7/BSD convention for man pages (file formats in section 5,
-# miscellaneous info in section 7).
+# Assume, by default, no support for shared libraries and V7/BSD convention
+# for man pages (file formats in section 5, miscellaneous info in section 7).
+# Individual cases can override this.
 #
-DYEXT="so"
+DYEXT="none"
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
 case "$host_os" in
@@ -1031,6 +1031,8 @@ linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
 	;;
 
 osf*)
+	DYEXT="so"
+
 	#
 	# Use System V conventions for man pages.
 	#

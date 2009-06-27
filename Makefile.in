@@ -389,6 +389,12 @@ libpcap.shareda: $(OBJ)
 	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJ) $(LIBS)
 	ar rc $@ shr.o
 
+#
+# For platforms that don't support shared libraries (or on which we
+# don't support shared libraries).
+#
+libpcap.none:
+
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@
 	$(srcdir)/runlex.sh $(LEX) -o$@ $<
@@ -554,9 +560,10 @@ install-shared-shareda: libpcap.shareda
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	$(INSTALL_PROGRAM) libpcap.shareda $(DESTDIR)$(libdir)/libpcap.a
+install-shared-none:
 
 install-archive: install-archive-$(DYEXT)
-install-archive-so install-archive-dylib install-archive-sl: libpcap.a
+install-archive-so install-archive-dylib install-archive-sl install-archive-none: libpcap.a
 	#
 	# Most platforms have separate suffixes for shared and
 	# archive libraries, so we install both.
@@ -614,6 +621,7 @@ uninstall-shared-sl:
 	rm -f $(DESTDIR)$(libdir)/libpcap.sl
 uninstall-shared-shareda:
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
+uninstall-shared-none:
 
 clean:
 	rm -f $(CLEANFILES) libpcap.$(DYEXT) $(PROG)-`cat VERSION`.tar.gz

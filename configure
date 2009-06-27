@@ -2919,18 +2919,19 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 	    # On platforms where we build a shared library:
 	    #
 	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in Darwin/OS X);
+	    #	if necessary (it's the default in AIX and Darwin/OS X);
 	    #
-	    #	if we generate ".so" shared libraries, define the
-	    #	appropriate options for building the shared library;
+	    #	define option to set the soname of the shared library,
+	    #	if the OS supports that;
 	    #
 	    #	add options to specify, at link time, a directory to
 	    #	add to the run-time search path, if that's necessary.
 	    #
+	    V_SHLIB_CMD="\$(CC)"
+	    V_SHLIB_OPT="-shared"
 	    case "$host_os" in
 
 	    aix*)
-		    V_SHLIB_OPT="-shared"
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
@@ -2940,8 +2941,6 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 		    # those the GNU linker accepts.
 		    #
 		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
@@ -2949,12 +2948,11 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 	    hpux*)
 		    V_CCOPT="$V_CCOPT -fpic"
 	    	    #
-		    # XXX - assume that, for HP-UX with ".so"
-		    # shared libraries (Itanium?), we use the
-		    # HP linker options.
+		    # XXX - this assumes GCC is using the HP linker,
+		    # rather than the GNU linker, and that the "+h"
+		    # option is used on all HP-UX platforms, both .sl
+		    # and .so.
 		    #
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,+h,"
 		    #
 		    # By default, directories specifed with -L
@@ -2965,8 +2963,6 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 
 	    solaris*)
 		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
 		    #
 		    # XXX - this assumes GCC is using the Sun linker,
 		    # rather than the GNU linker.
@@ -3107,14 +3103,78 @@ echo "$as_me: error: see the INSTALL doc for more info" >&2;}
 	    V_INCLS="$V_INCLS -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
 
+	    #
+	    # Set the appropriate compiler flags and, on platforms
+	    # where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in Darwin/OS X);
+	    #
+	    #	if we generate ".so" shared libraries, define the
+	    #	appropriate options for building the shared library;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
+	    #
+	    # Note: spaces after V_SONAME_OPT are significant; on
+	    # some platforms the soname is passed with a GCC-like
+	    # "-Wl,-soname,{soname}" option, with the soname part
+	    # of the option, while on other platforms the C compiler
+	    # driver takes it as a regular option with the soname
+	    # following the option.  The same applies to V_RPATH_OPT.
+	    #
 	    case "$host_os" in
+
+	    aix*)
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-G -bnoentry -bexpall"
+		    ;;
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
+		    #
+		    # "cc" is GCC.
+		    #
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
+		    ;;
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CMD="\$(LD)"
+		    V_SHLIB_OPT="-b"
+		    V_SONAME_OPT="+h "
+		    #
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
+		    #
+		    ;;
 
 	    irix*)
 		    V_CCOPT="$V_CCOPT -xansi -signed -g3"
 		    ;;
 
 	    osf*)
+	    	    #
+		    # Presumed to be DEC OSF/1, Digital UNIX, or
+		    # Tru64 UNIX.
+		    #
 		    V_CCOPT="$V_CCOPT -std1 -g3"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-soname "
+		    V_RPATH_OPT="-rpath "
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -Kpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-G"
+		    V_SONAME_OPT="-h "
+		    V_RPATH_OPT="-R"
 		    ;;
 
 	    ultrix*)
@@ -3175,73 +3235,6 @@ echo "${ECHO_T}$ac_cv_lbl_cc_const_proto" >&6; }
 _ACEOF
 
 		    fi
-		    ;;
-	    esac
-
-	    #
-	    # On platforms where we build a shared library:
-	    #
-	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in Darwin/OS X);
-	    #
-	    #	if we generate ".so" shared libraries, define the
-	    #	appropriate options for building the shared library;
-	    #
-	    #	add options to specify, at link time, a directory to
-	    #	add to the run-time search path, if that's necessary.
-	    #
-	    # Note: spaces after V_SONAME_OPT are significant; GCC's
-	    # option is "-Wl,-soname,{soname}", with the soname part
-	    # of the option, while other C compiler drivers take it
-	    # as a regular option with the soname following the option.
-	    #
-	    case "$host_os" in
-
-	    aix*)
-		    V_SHLIB_OPT="-G -bnoentry -bexpall"
-		    ;;
-
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
-		    #
-		    # "cc" is GCC.
-		    #
-		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
-		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
-		    ;;
-
-	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
-		    V_SHLIB_CMD="\$(LD)"
-		    V_SHLIB_OPT="-b"
-		    V_SONAME_OPT="+h "
-		    #
-		    # By default, directories specifed with -L
-		    # are added to the run-time search path, so
-		    # we don't add them in pcap-config.
-		    #
-		    ;;
-
-	    osf*)
-	    	    #
-		    # Presumed to be DEC OSF/1, Digital UNIX, or
-		    # Tru64 UNIX.
-		    #
-		    V_CCOPT="$V_CCOPT"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
-		    V_SONAME_OPT="-soname "
-		    V_RPATH_OPT="-rpath "
-		    ;;
-
-	    solaris*)
-		    V_CCOPT="$V_CCOPT -Kpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-G"
-		    V_SONAME_OPT="-h "
-		    V_RPATH_OPT="-R"
 		    ;;
 	    esac
     fi
@@ -8655,11 +8648,11 @@ echo "$as_me: error: Your operating system's lex is insufficient to compile
 fi
 
 #
-# Assume a.out/ELF convention for shared library names (".so"), and
-# V7/BSD convention for man pages (file formats in section 5,
-# miscellaneous info in section 7).
+# Assume, by default, no support for shared libraries and V7/BSD convention
+# for man pages (file formats in section 5, miscellaneous info in section 7).
+# Individual cases can override this.
 #
-DYEXT="so"
+DYEXT="none"
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
 case "$host_os" in
@@ -8795,6 +8788,8 @@ linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
 	;;
 
 osf*)
+	DYEXT="so"
+
 	#
 	# Use System V conventions for man pages.
 	#

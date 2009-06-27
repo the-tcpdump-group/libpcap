@@ -95,18 +95,19 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    # On platforms where we build a shared library:
 	    #
 	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in Darwin/OS X);
+	    #	if necessary (it's the default in AIX and Darwin/OS X);
 	    #
-	    #	if we generate ".so" shared libraries, define the
-	    #	appropriate options for building the shared library;
+	    #	define option to set the soname of the shared library,
+	    #	if the OS supports that;
 	    #
 	    #	add options to specify, at link time, a directory to
 	    #	add to the run-time search path, if that's necessary.
 	    #
+	    V_SHLIB_CMD="\$(CC)"
+	    V_SHLIB_OPT="-shared"
 	    case "$host_os" in
 
 	    aix*)
-		    V_SHLIB_OPT="-shared"
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
@@ -116,8 +117,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # those the GNU linker accepts.
 		    #
 		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
@@ -125,12 +124,11 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    hpux*)
 		    V_CCOPT="$V_CCOPT -fpic"
 	    	    #
-		    # XXX - assume that, for HP-UX with ".so"
-		    # shared libraries (Itanium?), we use the
-		    # HP linker options.
+		    # XXX - this assumes GCC is using the HP linker,
+		    # rather than the GNU linker, and that the "+h"
+		    # option is used on all HP-UX platforms, both .sl
+		    # and .so.
 		    #
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,+h,"
 		    #
 		    # By default, directories specifed with -L
@@ -141,8 +139,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 
 	    solaris*)
 		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
 		    #
 		    # XXX - this assumes GCC is using the Sun linker,
 		    # rather than the GNU linker.
@@ -190,34 +186,9 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    $2="$$2 -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
 
-	    case "$host_os" in
-
-	    irix*)
-		    V_CCOPT="$V_CCOPT -xansi -signed -g3"
-		    ;;
-
-	    osf*)
-		    V_CCOPT="$V_CCOPT -std1 -g3"
-		    ;;
-
-	    ultrix*)
-		    AC_MSG_CHECKING(that Ultrix $CC hacks const in prototypes)
-		    AC_CACHE_VAL(ac_cv_lbl_cc_const_proto,
-			AC_TRY_COMPILE(
-			    [#include <sys/types.h>],
-			    [struct a { int b; };
-			    void c(const struct a *)],
-			    ac_cv_lbl_cc_const_proto=yes,
-			    ac_cv_lbl_cc_const_proto=no))
-		    AC_MSG_RESULT($ac_cv_lbl_cc_const_proto)
-		    if test $ac_cv_lbl_cc_const_proto = no ; then
-			    AC_DEFINE(const,)
-		    fi
-		    ;;
-	    esac
-
 	    #
-	    # On platforms where we build a shared library:
+	    # Set the appropriate compiler flags and, on platforms
+	    # where we build a shared library:
 	    #
 	    #	add options to generate position-independent code,
 	    #	if necessary (it's the default in Darwin/OS X);
@@ -228,14 +199,17 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    #	add options to specify, at link time, a directory to
 	    #	add to the run-time search path, if that's necessary.
 	    #
-	    # Note: spaces after V_SONAME_OPT are significant; GCC's
-	    # option is "-Wl,-soname,{soname}", with the soname part
-	    # of the option, while other C compiler drivers take it
-	    # as a regular option with the soname following the option.
+	    # Note: spaces after V_SONAME_OPT are significant; on
+	    # some platforms the soname is passed with a GCC-like
+	    # "-Wl,-soname,{soname}" option, with the soname part
+	    # of the option, while on other platforms the C compiler
+	    # driver takes it as a regular option with the soname
+	    # following the option.  The same applies to V_RPATH_OPT.
 	    #
 	    case "$host_os" in
 
 	    aix*)
+		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G -bnoentry -bexpall"
 		    ;;
 
@@ -262,12 +236,16 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    #
 		    ;;
 
+	    irix*)
+		    V_CCOPT="$V_CCOPT -xansi -signed -g3"
+		    ;;
+
 	    osf*)
 	    	    #
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
 		    # Tru64 UNIX.
 		    #
-		    V_CCOPT="$V_CCOPT"
+		    V_CCOPT="$V_CCOPT -std1 -g3"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-soname "
@@ -280,6 +258,21 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SHLIB_OPT="-G"
 		    V_SONAME_OPT="-h "
 		    V_RPATH_OPT="-R"
+		    ;;
+
+	    ultrix*)
+		    AC_MSG_CHECKING(that Ultrix $CC hacks const in prototypes)
+		    AC_CACHE_VAL(ac_cv_lbl_cc_const_proto,
+			AC_TRY_COMPILE(
+			    [#include <sys/types.h>],
+			    [struct a { int b; };
+			    void c(const struct a *)],
+			    ac_cv_lbl_cc_const_proto=yes,
+			    ac_cv_lbl_cc_const_proto=no))
+		    AC_MSG_RESULT($ac_cv_lbl_cc_const_proto)
+		    if test $ac_cv_lbl_cc_const_proto = no ; then
+			    AC_DEFINE(const,)
+		    fi
 		    ;;
 	    esac
     fi
