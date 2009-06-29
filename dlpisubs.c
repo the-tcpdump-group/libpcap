@@ -69,7 +69,9 @@ static const char rcsid[] _U_ =
 #include "pcap-int.h"
 #include "dlpisubs.h"
 
+#ifdef HAVE_SYS_BUFMOD_H
 static void pcap_stream_err(const char *, int, char *);
+#endif
 
 /*
  * Get the packet statistics.
@@ -344,6 +346,7 @@ strioctl(int fd, int cmd, int len, char *dp)
 	return (str.ic_len);
 }
 
+#ifdef HAVE_SYS_BUFMOD_H
 /*
  * Write stream error message to errbuf.
  */
@@ -352,3 +355,4 @@ pcap_stream_err(const char *func, int err, char *errbuf)
 {
 	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", func, pcap_strerror(err));
 }
+#endif
