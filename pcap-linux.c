@@ -2203,7 +2203,10 @@ activate_new(pcap_t *handle)
 #ifdef HAVE_PF_PACKET_SOCKETS
 	const char		*device = handle->opt.source;
 	int			is_any_device = (strcmp(device, "any") == 0);
-	int			sock_fd = -1, arptype, val;
+	int			sock_fd = -1, arptype;
+#ifdef HAVE_PACKET_AUXDATA
+	int			val;
+#endif
 	int			err = 0;
 	struct packet_mreq	mr;
 
