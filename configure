@@ -683,7 +683,6 @@ V_CCOPT
 V_DEFS
 V_FINDALLDEVS
 V_INCLS
-V_LIBS
 V_PCAP
 V_SHLIB_CMD
 V_SHLIB_OPT
@@ -6858,7 +6857,7 @@ fi
 { echo "$as_me:$LINENO: result: $ac_cv_lib_nl_nl_handle_alloc" >&5
 echo "${ECHO_T}$ac_cv_lib_nl_nl_handle_alloc" >&6; }
 if test $ac_cv_lib_nl_nl_handle_alloc = yes; then
-  V_LIBS="-lnl $V_LIBS"
+  LIBS="-lnl $LIBS"
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBNL 1
@@ -8344,7 +8343,7 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_DAG_STREAMS_API 1
 _ACEOF
 
-		V_LIBS="$V_LIBS -ldag"
+		LIBS="$LIBS -ldag"
 	fi
 
 
@@ -8690,7 +8689,7 @@ echo $ECHO_N "checking for $pseexe... $ECHO_C" >&6; }
 		if test -f $pseexe ; then
 			{ echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6; }
-			V_LIBS="-I:$pseexe"
+			LIBS="-I:$pseexe"
 		fi
 		;;
 
@@ -8699,7 +8698,7 @@ echo "${ECHO_T}yes" >&6; }
 		# If we're using BPF, we need "-lodm" and "-lcfg", as
 		# we use them to load the BPF module.
 		#
-		V_LIBS="-lodm -lcfg"
+		LIBS="-lodm -lcfg"
 		;;
 	esac
 	;;
@@ -9301,7 +9300,6 @@ _ACEOF
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
-
 
 
 
@@ -10437,7 +10435,6 @@ V_CCOPT!$V_CCOPT$ac_delim
 V_DEFS!$V_DEFS$ac_delim
 V_FINDALLDEVS!$V_FINDALLDEVS$ac_delim
 V_INCLS!$V_INCLS$ac_delim
-V_LIBS!$V_LIBS$ac_delim
 V_PCAP!$V_PCAP$ac_delim
 V_SHLIB_CMD!$V_SHLIB_CMD$ac_delim
 V_SHLIB_OPT!$V_SHLIB_OPT$ac_delim
@@ -10458,7 +10455,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 88; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
