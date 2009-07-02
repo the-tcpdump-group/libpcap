@@ -384,7 +384,7 @@ linux)
 	# Do we have libnl?
 	#
 	AC_CHECK_LIB(nl, nl_handle_alloc,
-		V_LIBS="-lnl $V_LIBS"
+		LIBS="-lnl $LIBS"
 		AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),)
 
 	AC_LBL_TPACKET_STATS
@@ -775,7 +775,7 @@ if test $ac_cv_lbl_dag_api = yes; then
 
 	if test "$dag_streams" = 1; then
 		AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
-		V_LIBS="$V_LIBS -ldag"
+		LIBS="$LIBS -ldag"
 	fi
 
 	AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
@@ -935,7 +935,7 @@ aix*)
 		AC_MSG_CHECKING(for $pseexe)
 		if test -f $pseexe ; then
 			AC_MSG_RESULT(yes)
-			V_LIBS="-I:$pseexe"
+			LIBS="-I:$pseexe"
 		fi
 		;;
 
@@ -944,7 +944,7 @@ aix*)
 		# If we're using BPF, we need "-lodm" and "-lcfg", as
 		# we use them to load the BPF module.
 		#
-		V_LIBS="-lodm -lcfg"
+		LIBS="-lodm -lcfg"
 		;;
 	esac
 	;;
@@ -1091,7 +1091,7 @@ AC_SUBST(V_CCOPT)
 AC_SUBST(V_DEFS)
 AC_SUBST(V_FINDALLDEVS)
 AC_SUBST(V_INCLS)
-AC_SUBST(V_LIBS)
+AC_SUBST(LIBS)
 AC_SUBST(V_LEX)
 AC_SUBST(V_PCAP)
 AC_SUBST(V_SHLIB_CMD)

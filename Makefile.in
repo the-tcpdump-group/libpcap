@@ -49,7 +49,7 @@ CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
 ADDLOBJ = @ADDLOBJ@
-LIBS = @V_LIBS@
+LIBS = @LIBS@
 LDFLAGS = @LDFLAGS@
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
@@ -446,7 +446,7 @@ bpf_filter.o: bpf_filter.c
 #
 # Generate the pcap-config script.
 #
-pcap-config: $(srcdir)/pcap-config.in Makefile
+pcap-config: $(srcdir)/pcap-config.in
 	@rm -f $@ $@.tmp
 	sed -e 's|@includedir[@]|$(includedir)|g' \
 	    -e 's|@libdir[@]|$(libdir)|g' \
@@ -460,10 +460,10 @@ pcap-config: $(srcdir)/pcap-config.in Makefile
 # Test programs - not built by default, and not installed.
 #
 filtertest: filtertest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o filtertest filtertest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o filtertest filtertest.c libpcap.a $(LIBS)
 
 findalldevstest: findalldevstest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
