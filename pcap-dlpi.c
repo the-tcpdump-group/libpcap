@@ -1491,8 +1491,8 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	}
 	if (ctl.len < dlp->dl_length) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "get_dlpi_ppa: hpppa ack too small (%d < %d)",
-		    ctl.len, dlp->dl_length);
+		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
+		    ctl.len, (unsigned long)dlp->dl_length);
 		free(ppa_data_buf);
 		return (PCAP_ERROR);
 	}
