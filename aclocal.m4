@@ -271,7 +271,8 @@ AC_DEFUN(AC_LBL_C_INIT,
 			    ac_cv_lbl_cc_const_proto=no))
 		    AC_MSG_RESULT($ac_cv_lbl_cc_const_proto)
 		    if test $ac_cv_lbl_cc_const_proto = no ; then
-			    AC_DEFINE(const,)
+			    AC_DEFINE(const,[],
+			        [to handle Ultrix compilers that don't support const in prototypes])
 		    fi
 		    ;;
 	    esac
@@ -328,114 +329,6 @@ AC_DEFUN(AC_LBL_C_INLINE,
 	AC_MSG_RESULT(no)
     fi
     AC_DEFINE_UNQUOTED(inline, $ac_cv_lbl_inline, [Define as token for inline if inlining supported])])
-
-dnl
-dnl Use pfopen.c if available and pfopen() not in standard libraries
-dnl Require libpcap
-dnl Look for libpcap in ..
-dnl Use the installed libpcap if there is no local version
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_LIBPCAP(pcapdep, incls)
-dnl
-dnl results:
-dnl
-dnl	$1 (pcapdep set)
-dnl	$2 (incls appended)
-dnl	LIBS
-dnl	LBL_LIBS
-dnl
-AC_DEFUN(AC_LBL_LIBPCAP,
-    [AC_REQUIRE([AC_LBL_LIBRARY_NET])
-    dnl
-    dnl save a copy before locating libpcap.a
-    dnl
-    LBL_LIBS="$LIBS"
-    pfopen=/usr/examples/packetfilter/pfopen.c
-    if test -f $pfopen ; then
-	    AC_CHECK_FUNCS(pfopen)
-	    if test $ac_cv_func_pfopen = "no" ; then
-		    AC_MSG_RESULT(Using $pfopen)
-		    LIBS="$LIBS $pfopen"
-	    fi
-    fi
-    AC_MSG_CHECKING(for local pcap library)
-    libpcap=FAIL
-    lastdir=FAIL
-    places=`ls .. | sed -e 's,/$,,' -e 's,^,../,' | \
-	egrep '/libpcap-[[0-9]]*\.[[0-9]]*(\.[[0-9]]*)?([[ab]][[0-9]]*)?$'`
-    for dir in $places ../libpcap libpcap ; do
-	    basedir=`echo $dir | sed -e 's/[[ab]][[0-9]]*$//'`
-	    if test $lastdir = $basedir ; then
-		    dnl skip alphas when an actual release is present
-		    continue;
-	    fi
-	    lastdir=$dir
-	    if test -r $dir/pcap.c ; then
-		    libpcap=$dir/libpcap.a
-		    d=$dir
-		    dnl continue and select the last one that exists
-	    fi
-    done
-    if test $libpcap = FAIL ; then
-	    AC_MSG_RESULT(not found)
-	    AC_CHECK_LIB(pcap, main, libpcap="-lpcap")
-	    if test $libpcap = FAIL ; then
-		    AC_MSG_ERROR(see the INSTALL doc for more info)
-	    fi
-    else
-	    $1=$libpcap
-	    $2="-I$d $$2"
-	    AC_MSG_RESULT($libpcap)
-    fi
-    LIBS="$libpcap $LIBS"
-    case "$host_os" in
-
-    aix*)
-	    pseexe="/lib/pse.exp"
-	    AC_MSG_CHECKING(for $pseexe)
-	    if test -f $pseexe ; then
-		    AC_MSG_RESULT(yes)
-		    LIBS="$LIBS -I:$pseexe"
-	    fi
-	    ;;
-    esac])
-
-dnl
-dnl Define RETSIGTYPE and RETSIGVAL
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_TYPE_SIGNAL
-dnl
-dnl results:
-dnl
-dnl	RETSIGTYPE (defined)
-dnl	RETSIGVAL (defined)
-dnl
-AC_DEFUN(AC_LBL_TYPE_SIGNAL,
-    [AC_BEFORE([$0], [AC_LBL_LIBPCAP])
-    AC_TYPE_SIGNAL
-    if test "$ac_cv_type_signal" = void ; then
-	    AC_DEFINE(RETSIGVAL,[],[return value of signal handlers])
-    else
-	    AC_DEFINE(RETSIGVAL,(0),[return value of signal handlers])
-    fi
-    case "$host_os" in
-
-    irix*)
-	    AC_DEFINE(_BSD_SIGNALS,1,[get BSD semantics on Irix])
-	    ;;
-
-    *)
-	    dnl prefer sigset() to sigaction()
-	    AC_CHECK_FUNCS(sigset)
-	    if test $ac_cv_func_sigset = no ; then
-		    AC_CHECK_FUNCS(sigaction)
-	    fi
-	    ;;
-    esac])
 
 dnl
 dnl If using gcc, make sure we have ANSI ioctl definitions
@@ -573,7 +466,7 @@ dnl
 dnl	HAVE_SOCKADDR_SA_LEN (defined)
 dnl
 AC_DEFUN(AC_LBL_SOCKADDR_SA_LEN,
-    [AC_MSG_CHECKING(if sockaddr struct has sa_len member)
+    [AC_MSG_CHECKING(if sockaddr struct has the sa_len member)
     AC_CACHE_VAL(ac_cv_lbl_sockaddr_has_sa_len,
 	AC_TRY_COMPILE([
 #	include <sys/types.h>
@@ -583,7 +476,7 @@ AC_DEFUN(AC_LBL_SOCKADDR_SA_LEN,
 	ac_cv_lbl_sockaddr_has_sa_len=no))
     AC_MSG_RESULT($ac_cv_lbl_sockaddr_has_sa_len)
     if test $ac_cv_lbl_sockaddr_has_sa_len = yes ; then
-	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN,1,[if struct sockaddr has sa_len])
+	    AC_DEFINE(HAVE_SOCKADDR_SA_LEN,1,[if struct sockaddr has the sa_len member])
     fi])
 
 dnl
@@ -847,7 +740,8 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    name="lbl/os-$os.h"
 	    if test -f $name ; then
 		    ln -s $name os-proto.h
-		    AC_DEFINE(HAVE_OS_PROTO_H,1,[if there's an os_proto.h])
+		    AC_DEFINE(HAVE_OS_PROTO_H, 1,
+			[if there's an os_proto.h for this platform, to use additional prototypes])
 	    else
 		    AC_MSG_WARN(can't find $name)
 	    fi
@@ -875,10 +769,11 @@ dnl
 
 define(AC_LBL_CHECK_LIB,
 [AC_MSG_CHECKING([for $2 in -l$1])
-dnl Use a cache variable name containing both the library and function name,
-dnl because the test really is for library $1 defining function $2, not
-dnl just for library $1.  Separate tests with the same $1 and different $2's
-dnl may have different results.
+dnl Use a cache variable name containing the library, function
+dnl name, and extra libraries to link with, because the test really is
+dnl for library $1 defining function $2, when linked with potinal
+dnl library $5, not just for library $1.  Separate tests with the same
+dnl $1 and different $2's or $5's may have different results.
 ac_lib_var=`echo $1['_']$2['_']$5 | sed 'y%./+- %__p__%'`
 AC_CACHE_VAL(ac_cv_lbl_lib_$ac_lib_var,
 [ac_save_LIBS="$LIBS"

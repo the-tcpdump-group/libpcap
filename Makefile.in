@@ -104,7 +104,6 @@ PUBHDR = \
 	pcap/usb.h
 
 HDR = $(PUBHDR) \
-	acconfig.h \
 	arcnet.h \
 	atmuni31.h \
 	ethertype.h \

@@ -1,11 +1,4 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
-/* Long story short: aclocal.m4 depends on autoconf 2.13
- * implementation details wrt "const"; newer versions
- * have different implementation details so for now we
- * put "const" here.  This may cause duplicate definitions
- * in config.h but that should be OK since they're the same.
- */
-#undef const
 
 /* Enable optimizer debugging */
 #undef BDEBUG
@@ -86,7 +79,7 @@
 /* Define to 1 if you have the <net/pfvar.h> header file. */
 #undef HAVE_NET_PFVAR_H
 
-/* if there's an os_proto.h */
+/* if there's an os_proto.h for this platform, to use additional prototypes */
 #undef HAVE_OS_PROTO_H
 
 /* Define to 1 if you have the <paths.h> header file. */
@@ -104,7 +97,7 @@
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
 
-/* if struct sockaddr has sa_len */
+/* if struct sockaddr has the sa_len member */
 #undef HAVE_SOCKADDR_SA_LEN
 
 /* if struct sockaddr_storage exists */
@@ -238,6 +231,9 @@
 
 /* define on AIX to get certain functions */
 #undef _SUN
+
+/* to handle Ultrix compilers that don't support const in prototypes */
+#undef const
 
 /* Define as token for inline if inlining supported */
 #undef inline
