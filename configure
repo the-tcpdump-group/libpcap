@@ -8776,7 +8776,6 @@ irix*)
 
 linux*|freebsd*|netbsd*|openbsd*|dragonfly*)
 	DYEXT="so"
-	V_CCOPT="$V_CCOPT -fPIC"
 
 	#
 	# Compiler assumed to be GCC; run-time linker may require a -R
