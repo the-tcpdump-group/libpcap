@@ -55,7 +55,7 @@ main(int argc, char **argv)
 	register int op;
 	bpf_u_int32 localnet, netmask;
 	register char *cp, *cmdbuf, *device;
-	int doselect, dotimeout;
+	int doselect, dotimeout, dononblock;
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	int status;
@@ -63,13 +63,14 @@ main(int argc, char **argv)
 	device = NULL;
 	doselect = 0;
 	dotimeout = 0;
+	dononblock = 0;
 	if ((cp = strrchr(argv[0], '/')) != NULL)
 		program_name = cp + 1;
 	else
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "i:st")) != -1)
+	while ((op = getopt(argc, argv, "i:stn")) != -1)
 		switch (op) {
 
 		case 'i':
@@ -82,6 +83,10 @@ main(int argc, char **argv)
 
 		case 't':
 			dotimeout = 1;
+			break;
+
+		case 'n':
+			dononblock = 1;
 			break;
 
 		default:
@@ -114,8 +119,12 @@ main(int argc, char **argv)
 		error("%s", pcap_geterr(pd));
 	if (pcap_get_selectable_fd(pd) == -1)
 		error("pcap_get_selectable_fd() fails");
+	if (dononblock) {
+		if (pcap_setnonblock(pd, 1, ebuf) == -1)
+			error("pcap_setnonblock failed: %s", ebuf);
+	}
 	if (doselect) {
-		do {
+		for (;;) {
 			fd_set set1;
 			struct timeval timeout;
 
@@ -129,7 +138,14 @@ main(int argc, char **argv)
 			} else
 				select(pcap_fileno(pd) + 1, &set1, NULL, NULL, NULL);
 			status = pcap_dispatch(pd, -1, printme, NULL);
-		} while (status >= 0);
+			if (status < 0)
+				break;
+			else if (status == 0)
+				printf("No packets seen after select returns\n");
+			else 
+				printf("%d packets seen after select returns\n",
+				    status);
+		}
 	} else
 		status = pcap_loop(pd, -1, printme, NULL);
 	if (status == -2) {
@@ -161,7 +177,7 @@ printme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "Usage: %s [ -st ] [ -i interface ] [expression]\n",
+	(void)fprintf(stderr, "Usage: %s [ -stn ] [ -i interface ] [expression]\n",
 	    program_name);
 	exit(1);
 }
