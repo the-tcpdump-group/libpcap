@@ -123,6 +123,7 @@ main(int argc, char **argv)
 		if (pcap_setnonblock(pd, 1, ebuf) == -1)
 			error("pcap_setnonblock failed: %s", ebuf);
 	}
+	printf("Listening on %s\n", device);
 	if (doselect) {
 		for (;;) {
 			fd_set set1;
