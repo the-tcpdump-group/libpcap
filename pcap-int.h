@@ -109,14 +109,6 @@ struct pcap_sf {
 	u_char *base;
 };
 
-#ifdef linux
-union thdr {
-	struct tpacket_hdr	*h1;
-	struct tpacket2_hdr	*h2;
-	void			*raw;
-};
-#endif
-
 /*
  * Used when doing a live capture.
  */
@@ -143,7 +135,6 @@ struct pcap_md {
 	char	*mondevice;	/* mac80211 monitor device we created */
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
 	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
-	union thdr prev_pkt;	/* previous packet handed to the callback */
 #endif /* linux */
 
 #ifdef HAVE_DAG_API
