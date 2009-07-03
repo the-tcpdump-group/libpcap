@@ -122,7 +122,9 @@ GENHDR = \
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.a $(GENSRC) $(GENHDR) lex.yy.c pcap-config
+CLEANFILES = $(OBJ) libpcap.* filtertest findalldevstest seltest \
+	$(PROG)-`cat VERSION`.tar.gz $(GENSRC) $(GENHDR) lex.yy.c \
+	pcap-config
 
 MAN1 = pcap-config.1
 
@@ -627,7 +629,7 @@ uninstall-shared-shareda:
 uninstall-shared-none:
 
 clean:
-	rm -f $(CLEANFILES) libpcap.$(DYEXT) $(PROG)-`cat VERSION`.tar.gz
+	rm -f $(CLEANFILES)
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
