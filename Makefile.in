@@ -285,6 +285,7 @@ EXTRA_DIST = \
 	pcap-win32.c \
 	runlex.sh \
 	scanner.l \
+	seltest.c \
 	Win32/Include/Gnuc.h \
 	Win32/Include/addrinfo.h \
 	Win32/Include/bittypes.h \
@@ -463,6 +464,9 @@ filtertest: filtertest.c libpcap.a
 
 findalldevstest: findalldevstest.c libpcap.a
 	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a $(LIBS)
+
+seltest: seltest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o seltest seltest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
