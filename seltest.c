@@ -26,7 +26,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #endif
 
 #include <pcap.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,7 +37,6 @@ The Regents of the University of California.  All rights reserved.\n";
 char *program_name;
 
 /* Forwards */
-static void cleanup(int);
 static void printme(u_char *, const struct pcap_pkthdr *, const u_char *);
 static void usage(void) __attribute__((noreturn));
 static void error(const char *, ...);
@@ -59,7 +57,6 @@ main(int argc, char **argv)
 	register char *cp, *cmdbuf, *device;
 	int doselect, dotimeout;
 	struct bpf_program fcode;
-	void (*oldhandler)(int);
 	char ebuf[PCAP_ERRBUF_SIZE];
 	int status;
 
@@ -113,13 +110,6 @@ main(int argc, char **argv)
 	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
 		error("%s", pcap_geterr(pd));
 
-	(void)signal(SIGPIPE, cleanup);
-	(void)signal(SIGTERM, cleanup);
-	(void)signal(SIGINT, cleanup);
-	/* Cooperate with nohup(1) */
-	if ((oldhandler = signal(SIGHUP, cleanup)) != SIG_DFL)
-		(void)signal(SIGHUP, oldhandler);
-
 	if (pcap_setfilter(pd, &fcode) < 0)
 		error("%s", pcap_geterr(pd));
 	if (pcap_get_selectable_fd(pd) == -1)
@@ -160,35 +150,6 @@ main(int argc, char **argv)
 	}
 	pcap_close(pd);
 	exit(status == -1 ? 1 : 0);
-}
-
-/* make a clean exit on interrupts */
-static void
-cleanup(int sign)
-{
-#if defined(HAVE_ALARM)
-	alarm(0);
-#endif
-
-#ifdef HAVE_PCAP_BREAKLOOP
-	/*
-	 * We have "pcap_breakloop()"; use it, so that we do as little
-	 * as possible in the signal handler (it's probably not safe
-	 * to do anything with standard I/O streams in a signal handler -
-	 * the ANSI C standard doesn't say it is).
-	 */
-	pcap_breakloop(pd);
-#else
-	/*
-	 * We don't have "pcap_breakloop()"; this isn't safe, but
-	 * it's the best we can do.  We got interrupted, so perhaps
-	 * we didn't manage to finish a line we were printing.
-	 * Print an extra newline, just in case.
-	 */
-	putchar('\n');
-	(void)fflush(stdout);
-	exit(0);
-#endif
 }
 
 static void
