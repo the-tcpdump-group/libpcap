@@ -3229,7 +3229,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	strncpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
-	ireq.u.data.pointer = args;
+	ireq.u.data.pointer = (void *)args;
 	ireq.u.data.length = 0;
 	ireq.u.data.flags = 0;
 	if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) != -1) {
@@ -3259,7 +3259,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 			 "malloc: %s", pcap_strerror(errno));
 		return PCAP_ERROR;
 	}
-	ireq.u.data.pointer = priv;
+	ireq.u.data.pointer = (void *)priv;
 	if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
