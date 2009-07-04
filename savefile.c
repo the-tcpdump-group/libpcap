@@ -698,9 +698,15 @@ static const char rcsid[] _U_ =
  * From the HART Communication Foundation
  * IES/PAS 62591
  *
- * From Sam Roberts <vieuxtech@gmail.com>
+ * Requested by Sam Roberts <vieuxtech@gmail.com>.
  */
 #define LINKTYPE_WIHART				223
+
+/*
+ * Fibre Channel FC-2 frames, beginning with a Frame_Header.
+ * Requested by Kahou Lei <kahou82@gmail.com>.
+ */
+#define LINKTYPE_FC_2				224
 
 
 static struct linktype_map {
@@ -1031,6 +1037,9 @@ static struct linktype_map {
 
 	/* Wireless HART */
 	{ DLT_WIHART,		LINKTYPE_WIHART },
+
+	/* Fibre Channel FC-2 frames */
+	{ DLT_FC_2,		LINKTYPE_FC_2 },
 
 	{ -1,			-1 }
 };

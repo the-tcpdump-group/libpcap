@@ -872,9 +872,15 @@ struct bpf_version {
  * From the HART Communication Foundation
  * IES/PAS 62591
  *
- * From Sam Roberts <vieuxtech@gmail.com>
+ * Requested by Sam Roberts <vieuxtech@gmail.com>.
  */
 #define DLT_WIHART		223
+
+/*
+ * Fibre Channel FC-2 frames, beginning with a Frame_Header.
+ * Requested by Kahou Lei <kahou82@gmail.com>.
+ */
+#define DLT_FC_2		224
 
 
 /*
