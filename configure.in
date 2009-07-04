@@ -1117,6 +1117,26 @@ linux*)
        AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
        AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
        AC_CHECK_HEADERS(linux/usbdevice_fs.h)
+       if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
+         #
+         # OK, does it define bRequestType?  Older versions of the kernel
+         # define fields with names like "requesttype, "request", and
+         # "value", rather than "bRequestType", "bRequest", and
+         # "wValue".
+         #
+         AC_MSG_CHECKING(if usbdevfs_ctrltransfer struct has bRequestType member)
+         AC_CACHE_VAL(ac_cv_usbdevfs_ctrltransfer_has_bRequestType,
+           AC_TRY_COMPILE([
+#            include <linux/usbdevice_fs.h>],
+             [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
+             ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes,
+             ac_cv_usbdevfs_ctrltransfer_has_bRequestType=no))
+         AC_MSG_RESULT($ac_cv_usbdevfs_ctrltransfer_has_bRequestType)
+         if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
+	    AC_DEFINE(HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE,1,
+              [if struct usbdevfs_ctrltransfer has bRequestType])
+         fi
+       fi
        ;;
 *)
        AC_MSG_RESULT(no)

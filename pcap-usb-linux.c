@@ -247,11 +247,23 @@ probe_devices(int bus)
 		if (fd == -1)
 			continue;
 
+		/*
+		 * Sigh.  Different kernels have different member names
+		 * for this structure.
+		 */
+#ifdef HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 		ctrl.bRequestType = USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 		ctrl.bRequest = USB_REQ_GET_DESCRIPTOR;
 		ctrl.wValue = USB_DT_DEVICE << 8;
 		ctrl.wIndex = 0;
  		ctrl.wLength = sizeof(buf);
+#else
+		ctrl.requesttype = USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
+		ctrl.request = USB_REQ_GET_DESCRIPTOR;
+		ctrl.value = USB_DT_DEVICE << 8;
+		ctrl.index = 0;
+ 		ctrl.length = sizeof(buf);
+#endif
 		ctrl.data = buf;
 		ctrl.timeout = CTRL_TIMEOUT;
 
@@ -593,9 +605,10 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	char string[USB_LINE_LEN];
 	char token[USB_LINE_LEN];
 	char * ptr = string;
-	snprintf(string, USB_LINE_LEN, USB_TEXT_DIR"/%ds", handle->md.ifindex);
+	int fd;
 
-	int fd = open(string, O_RDONLY, 0);
+	snprintf(string, USB_LINE_LEN, USB_TEXT_DIR"/%ds", handle->md.ifindex);
+	fd = open(string, O_RDONLY, 0);
 	if (fd < 0)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -626,8 +639,10 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * of  execution" but the Corrigendum seems to contradict this.
 		 * Do not make any assumptions on the effect of %n conversions 
 		 * on the return value and explicitly check for cnt assignmet*/
+		int ntok;
+
 		cnt = -1;
-		int ntok = sscanf(ptr, "%s%n", token, &cnt);
+		ntok = sscanf(ptr, "%s%n", token, &cnt);
 		if ((ntok < 1) || (cnt < 0))
 			break;
 		consumed += cnt;
