@@ -174,8 +174,26 @@ AC_DEFUN(AC_LBL_C_INIT,
 				    AC_MSG_ERROR(see the INSTALL doc for more info)
 			    fi
 			    CFLAGS="$savedcflags"
-			    V_CCOPT="-Aa $V_CCOPT"
+			    $1="-Aa $$1"
 			    AC_DEFINE(_HPUX_SOURCE,1,[needed on HP-UX])
+			    ;;
+
+		    osf*)
+			    AC_MSG_CHECKING(for ansi mode in DEC compiler ($CC -std1))
+			    savedcflags="$CFLAGS"
+			    CFLAGS="-std1"
+			    AC_CACHE_VAL(ac_cv_lbl_cc_osf1_cc_std1,
+				AC_TRY_COMPILE(
+				    [#include <sys/types.h>],
+				    [int frob(int, char *)],
+				    ac_cv_lbl_cc_osf1_cc_std1=yes,
+				    ac_cv_lbl_cc_osf1_cc_std1=no))
+			    AC_MSG_RESULT($ac_cv_lbl_cc_osf1_cc_std1)
+			    if test $ac_cv_lbl_cc_osf1_cc_std1 = no ; then
+				    AC_MSG_ERROR(see the INSTALL doc for more info)
+			    fi
+			    CFLAGS="$savedcflags"
+			    $1="-std1 $$1"
 			    ;;
 
 		    *)
@@ -217,7 +235,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    #
 		    # "cc" is GCC.
 		    #
-		    V_CCOPT="$V_CCOPT -fpic"
+		    $1="$$1 -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
@@ -225,7 +243,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    ;;
 
 	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
+		    $1="$$1 +z"
 		    V_SHLIB_CMD="\$(LD)"
 		    V_SHLIB_OPT="-b"
 		    V_SONAME_OPT="+h "
@@ -237,7 +255,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    ;;
 
 	    irix*)
-		    V_CCOPT="$V_CCOPT -xansi -signed -g3"
+		    $1="$$1 -xansi -signed -g3"
 		    ;;
 
 	    osf*)
@@ -245,7 +263,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
 		    # Tru64 UNIX.
 		    #
-		    V_CCOPT="$V_CCOPT -std1 -g3"
+		    $1="$$1 -g3"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-soname "
