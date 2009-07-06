@@ -209,11 +209,26 @@ pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
 	 * (from pcap-linux.c).
 	 */
 	if (nonblock) {
-		if (p->md.timeout > 0)
+		if (p->md.timeout >= 0) {
+			/*
+			 * Timeout is non-negative, so we're not already
+			 * in non-blocking mode; set it to the 2's
+			 * complement, to make it negative, as an
+			 * indication that we're in non-blocking mode.
+			 */
 			p->md.timeout = p->md.timeout * -1 - 1;
-	} else
-		if (p->md.timeout < 0)
+		}
+	} else {
+		if (p->md.timeout < 0) {
+			/*
+			 * Timeout is negative, so we're not already
+			 * in blocking mode; reverse the previous
+			 * operation, to make the timeout non-negative
+			 * again.
+			 */
 			p->md.timeout = (p->md.timeout + 1) * -1;
+		}
+	}
 	return (0);
 }
 
