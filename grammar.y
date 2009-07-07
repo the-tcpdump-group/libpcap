@@ -45,6 +45,7 @@ struct rtentry;
 #endif
 
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #endif /* WIN32 */
 
 #include <stdio.h>

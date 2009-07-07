@@ -49,6 +49,7 @@ static const char rcsid[] _U_ =
 #endif
 
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #endif /* WIN32 */
 
