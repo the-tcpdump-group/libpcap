@@ -437,9 +437,19 @@ linux)
 	#
 	# Do we have libnl?
 	#
-	AC_CHECK_LIB(nl, nl_handle_alloc,
-		LIBS="-lnl $LIBS"
-		AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),)
+	AC_ARG_WITH(libnl,
+	AC_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
+		with_libnl=$withval,,)
+
+	if test x$with_libnl != xno ; then
+		AC_CHECK_LIB(nl, nl_handle_alloc,
+			LIBS="-lnl $LIBS"
+			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),
+			if test x$with_libnl = xyes ; then
+				AC_MSG_ERROR([libnl support requested but libnl not found])
+			fi
+		)
+	fi
 
 	AC_LBL_TPACKET_STATS
 	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI

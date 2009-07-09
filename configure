@@ -1299,6 +1299,8 @@ Optional Packages:
   --without-gcc           don't use gcc
   --with-sita             include SITA support
   --with-pcap=TYPE        use packet capture TYPE
+  --without-libnl         disable libnl support [default=yes, on Linux, if
+                          present]
   --with-dag[=DIR]        include Endace DAG support ["yes", "no" or DIR;
                           default="yes" on BSD and Linux if present]
   --with-dag-includes=DIR Endace DAG include directory
@@ -7283,7 +7285,15 @@ done
 	#
 	# Do we have libnl?
 	#
-	{ echo "$as_me:$LINENO: checking for nl_handle_alloc in -lnl" >&5
+
+# Check whether --with-libnl was given.
+if test "${with_libnl+set}" = set; then
+  withval=$with_libnl; with_libnl=$withval
+fi
+
+
+	if test x$with_libnl != xno ; then
+		{ echo "$as_me:$LINENO: checking for nl_handle_alloc in -lnl" >&5
 echo $ECHO_N "checking for nl_handle_alloc in -lnl... $ECHO_C" >&6; }
 if test "${ac_cv_lib_nl_nl_handle_alloc+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -7351,8 +7361,16 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBNL 1
 _ACEOF
 
+else
+  if test x$with_libnl = xyes ; then
+				{ { echo "$as_me:$LINENO: error: libnl support requested but libnl not found" >&5
+echo "$as_me: error: libnl support requested but libnl not found" >&2;}
+   { (exit 1); exit 1; }; }
+			fi
+
 fi
 
+	fi
 
 	{ echo "$as_me:$LINENO: checking if if_packet.h has tpacket_stats defined" >&5
 echo $ECHO_N "checking if if_packet.h has tpacket_stats defined... $ECHO_C" >&6; }
