@@ -2577,7 +2577,7 @@ prepare_tpacket_socket(pcap_t *handle)
 static int
 create_ring(pcap_t *handle)
 {
-	unsigned i, j, ringsize, frames_per_block;
+	unsigned i, j, frames_per_block;
 	struct tpacket_req req;
 
 	/* Note that with large snapshot (say 64K) only a few frames 
@@ -2629,7 +2629,6 @@ retry:
 
 	/* memory map the rx ring */
 	handle->md.mmapbuflen = req.tp_block_nr * req.tp_block_size;
-	ringsize = handle->md.mmapbuflen;
 	handle->md.mmapbuf = mmap(0, handle->md.mmapbuflen,
 	    PROT_READ|PROT_WRITE, MAP_SHARED, handle->fd, 0);
 	if (handle->md.mmapbuf == MAP_FAILED) {
