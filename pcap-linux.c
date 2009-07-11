@@ -2574,20 +2574,6 @@ prepare_tpacket_socket(pcap_t *handle)
 	return 1;
 }
 
-static void
-compute_ring_block(int frame_size, unsigned *block_size, unsigned *frames_per_block)
-{
-	/* compute the minumum block size that will handle this frame. 
-	 * The block has to be page size aligned. 
-	 * The max block size allowed by the kernel is arch-dependent and 
-	 * it's not explicitly checked here. */
-	*block_size = getpagesize();
-	while (*block_size < frame_size) 
-		*block_size <<= 1;
-
-	*frames_per_block = *block_size/frame_size;
-}
-
 static int
 create_ring(pcap_t *handle)
 {
@@ -2603,7 +2589,17 @@ create_ring(pcap_t *handle)
 					  TPACKET_ALIGN(handle->md.tp_hdrlen) +
 					  sizeof(struct sockaddr_ll));
 	req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
-	compute_ring_block(req.tp_frame_size, &req.tp_block_size, &frames_per_block);
+
+	/* compute the minumum block size that will handle this frame. 
+	 * The block has to be page size aligned. 
+	 * The max block size allowed by the kernel is arch-dependent and 
+	 * it's not explicitly checked here. */
+	req.tp_block_size = getpagesize();
+	while (req.tp_block_size < req.tp_frame_size) 
+		req.tp_block_size <<= 1;
+
+	frames_per_block = req.tp_block_size/req.tp_frame_size;
+
 	req.tp_block_nr = req.tp_frame_nr / frames_per_block;
 
 	/* req.tp_frame_nr is requested to match frames_per_block*req.tp_block_nr */
@@ -2632,10 +2628,11 @@ retry:
 	}
 
 	/* memory map the rx ring */
-	ringsize = req.tp_block_nr * req.tp_block_size;
-	handle->bp = mmap(0, ringsize, PROT_READ| PROT_WRITE, MAP_SHARED, 
-					handle->fd, 0);
-	if (handle->bp == MAP_FAILED) {
+	handle->md.mmapbuflen = req.tp_block_nr * req.tp_block_size;
+	ringsize = handle->md.mmapbuflen;
+	handle->md.mmapbuf = mmap(0, handle->md.mmapbuflen,
+	    PROT_READ|PROT_WRITE, MAP_SHARED, handle->fd, 0);
+	if (handle->md.mmapbuf == MAP_FAILED) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "can't mmap rx ring: %s", pcap_strerror(errno));
 
@@ -2659,7 +2656,7 @@ retry:
 	/* fill the header ring with proper frame ptr*/
 	handle->offset = 0;
 	for (i=0; i<req.tp_block_nr; ++i) {
-		void *base = &handle->bp[i*req.tp_block_size];
+		void *base = &handle->md.mmapbuf[i*req.tp_block_size];
 		for (j=0; j<frames_per_block; ++j, ++handle->offset) {
 			RING_GET_FRAME(handle) = base;
 			base += req.tp_frame_size;
@@ -2682,14 +2679,10 @@ destroy_ring(pcap_t *handle)
 				(void *) &req, sizeof(req));
 
 	/* if ring is mapped, unmap it*/
-	if (handle->bp) {
-		/* need to re-compute the ring size */
-		unsigned frames_per_block, block_size;
-		compute_ring_block(handle->bufsize, &block_size, &frames_per_block);
-
-		/* do not perform sanity check here: we can't recover any error */
-		munmap(handle->bp, block_size * handle->cc / frames_per_block);
-		handle->bp = 0;
+	if (handle->md.mmapbuf) {
+		/* do not test for mmap failure, as we can't recover from any error */
+		munmap(handle->md.mmapbuf, handle->md.mmapbuflen);
+		handle->md.mmapbuf = NULL;
 	}
 }
 

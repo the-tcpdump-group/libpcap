@@ -201,8 +201,10 @@ int usb_mmap(pcap_t* handle)
 	if (len < 0) 
 		return 0;
 
-	handle->buffer = mmap(0, len, PROT_READ, MAP_SHARED, handle->fd, 0);
-	return handle->buffer != MAP_FAILED;
+	handle->md.mmapbuflen = len;
+	handle->md.mmapbuf = mmap(0, handle->md.mmapbuflen, PROT_READ,
+	    MAP_SHARED, handle->fd, 0);
+	return handle->md.mmapbuf != MAP_FAILED;
 }
 
 #define CTRL_TIMEOUT    (5*1000)        /* milliseconds */
@@ -799,7 +801,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 		nflush = fetch.nfetch;
 		for (i=0; i<fetch.nfetch; ++i) {
 			/* discard filler */
-			hdr = (pcap_usb_header*) &handle->buffer[vec[i]];
+			hdr = (pcap_usb_header*) &handle->md.mmapbuf[vec[i]];
 			if (hdr->event_type == '@') 
 				continue;
 
@@ -833,8 +835,10 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 static void
 usb_cleanup_linux_mmap(pcap_t* handle)
 {
-	/* buffer must not be freed because it's memory mapped */
-	/* XXX - does it need to be unmapped? */
-	handle->buffer = NULL;
+	/* if we have a memory-mapped buffer, unmap it */
+	if (handle->md.mmapbuf != NULL) {
+		munmap(handle->md.mmapbuf, handle->md.mmapbuflen);
+		handle->md.mmapbuf = NULL;
+	}
 	pcap_cleanup_live_common(handle);
 }
