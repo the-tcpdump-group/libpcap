@@ -7,6 +7,8 @@ config.log
 config.cache
 config.status
 .devel
+filtertest
+findalldevstest
 grammar.c
 libpcap.a
 libpcap.*.dylib
@@ -26,6 +28,7 @@ pcap_open_dead.3pcap
 pcap_open_offline.3pcap
 scanner.c
 scanner.h
+seltest
 tokdefs.h
 version.c
 version.h
