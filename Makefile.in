@@ -48,7 +48,8 @@ CC = @CC@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
-ADDLOBJ = @ADDLOBJ@
+ADDLOBJS = @ADDLOBJS@
+ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
 LIBS = @LIBS@
 LDFLAGS = @LDFLAGS@
 DYEXT = @DYEXT@
@@ -316,7 +317,7 @@ all: libpcap.a shared pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
-	ar rc $@ $(OBJ) $(ADDLOBJ)
+	ar rc $@ $(OBJ) $(ADDLARCHIVEOBJS)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
@@ -326,7 +327,7 @@ libpcap.so: $(OBJ)
 	VER=`cat $(srcdir)/VERSION`; \
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	@V_SHLIB_CMD@ @V_SHLIB_OPT@ @V_SONAME_OPT@$@.$$MAJOR_VER $(LDFLAGS) \
-	    -o $@.$$VER $(OBJ) $(ADDLOBJ) $(LIBS)
+	    -o $@.$$VER $(OBJ) $(ADDLOBJS) $(LIBS)
 
 #
 # The following rule succeeds, but the result is untested.
@@ -353,7 +354,7 @@ libpcap.dylib: $(OBJ)
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
 	$(CC) -dynamiclib -undefined error $(LDFLAGS) \
-	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJ) $(LIBS) \
+	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJS) $(LIBS) \
 	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
 	    -compatibility_version $$COMPAT_VER \
 	    -current_version $$CURRENT_VER
@@ -375,7 +376,7 @@ libpcap.sl: $(OBJ)
 	rm -f libpcap.$$MAJOR_VER
 	MAJOR_VER=`sed 's/\([0-9][0-9]*\)\..*/\1/' $(srcdir)/VERSION`; \
 	ld -b $(LDFLAGS) -o libpcap.$$MAJOR_VER +h libpcap.$$MAJOR_VER \
-	    $(OBJ) $(ADDLOBJ) $(LIBS)
+	    $(OBJ) $(ADDLOBJS) $(LIBS)
 
 #
 # AIX is different from everybody else.  A shared library is an archive
@@ -388,7 +389,7 @@ libpcap.sl: $(OBJ)
 #
 libpcap.shareda: $(OBJ)
 	@rm -f $@ shr.o
-	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJ) $(LIBS)
+	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LIBS)
 	ar rc $@ shr.o
 
 #

@@ -820,7 +820,7 @@ fi
 
 if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
-	ADDLOBJ="$ADDLOBJ $dagapi_obj $dagopts_obj $dagreg_obj"
+	ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $dagapi_obj $dagopts_obj $dagreg_obj"
 	if test $V_PCAP != dag ; then
 		 SSRC="pcap-dag.c"
 	fi
@@ -920,7 +920,8 @@ if test "$with_septel" != no; then
 	ac_cv_lbl_septel_api=no
 	if test -r "$septel_include_dir/msg.h"; then
 		V_INCLS="$V_INCLS -I$septel_include_dir"
-		ADDLOBJ="$ADDLOBJ $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
+		ADDLOBJS="$ADDLOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
+		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
 			 SSRC="pcap-septel.c"
@@ -1161,7 +1162,8 @@ AC_SUBST(V_SHLIB_OPT)
 AC_SUBST(V_SONAME_OPT)
 AC_SUBST(V_RPATH_OPT)
 AC_SUBST(V_YACC)
-AC_SUBST(ADDLOBJ)
+AC_SUBST(ADDLOBJS)
+AC_SUBST(ADDLARCHIVEOBJS)
 AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)

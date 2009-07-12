@@ -688,7 +688,8 @@ V_SHLIB_CMD
 V_SHLIB_OPT
 V_SONAME_OPT
 V_RPATH_OPT
-ADDLOBJ
+ADDLOBJS
+ADDLARCHIVEOBJS
 SSRC
 DYEXT
 MAN_FILE_FORMATS
@@ -8624,7 +8625,7 @@ fi
 
 if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
-	ADDLOBJ="$ADDLOBJ $dagapi_obj $dagopts_obj $dagreg_obj"
+	ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $dagapi_obj $dagopts_obj $dagreg_obj"
 	if test $V_PCAP != dag ; then
 		 SSRC="pcap-dag.c"
 	fi
@@ -8949,7 +8950,8 @@ echo $ECHO_N "checking whether we have Septel API... $ECHO_C" >&6; }
 	ac_cv_lbl_septel_api=no
 	if test -r "$septel_include_dir/msg.h"; then
 		V_INCLS="$V_INCLS -I$septel_include_dir"
-		ADDLOBJ="$ADDLOBJ $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
+		ADDLOBJS="$ADDLOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
+		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
 			 SSRC="pcap-septel.c"
@@ -9805,6 +9807,7 @@ _ACEOF
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
+
 
 
 
@@ -11011,7 +11014,8 @@ V_SHLIB_CMD!$V_SHLIB_CMD$ac_delim
 V_SHLIB_OPT!$V_SHLIB_OPT$ac_delim
 V_SONAME_OPT!$V_SONAME_OPT$ac_delim
 V_RPATH_OPT!$V_RPATH_OPT$ac_delim
-ADDLOBJ!$ADDLOBJ$ac_delim
+ADDLOBJS!$ADDLOBJS$ac_delim
+ADDLARCHIVEOBJS!$ADDLARCHIVEOBJS$ac_delim
 SSRC!$SSRC$ac_delim
 DYEXT!$DYEXT$ac_delim
 MAN_FILE_FORMATS!$MAN_FILE_FORMATS$ac_delim
@@ -11026,7 +11030,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 88; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
