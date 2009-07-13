@@ -1193,6 +1193,10 @@ linux*)
          AC_MSG_CHECKING(if usbdevfs_ctrltransfer struct has bRequestType member)
          AC_CACHE_VAL(ac_cv_usbdevfs_ctrltransfer_has_bRequestType,
            AC_TRY_COMPILE([
+AC_INCLUDES_DEFAULT
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif
 #            include <linux/usbdevice_fs.h>],
              [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
              ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes,
