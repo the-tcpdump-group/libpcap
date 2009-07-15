@@ -377,10 +377,35 @@ syntax()
 static bpf_u_int32 netmask;
 static int snaplen;
 int no_optimize;
+#ifdef WIN32
+static int
+pcap_compile_unsafe(pcap_t *p, struct bpf_program *program,
+	     const char *buf, int optimize, bpf_u_int32 mask);
 
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
+{
+	int result;
+
+	EnterCriticalSection(&g_PcapCompileCriticalSection);
+	OutputDebugString("Hello my dear, I locked myself\n");
+
+	result = pcap_compile_unsafe(p, program, buf, optimize, mask);
+
+	LeaveCriticalSection(&g_PcapCompileCriticalSection);
+	
+	return result;
+}
+
+static int
+pcap_compile_unsafe(pcap_t *p, struct bpf_program *program,
+	     const char *buf, int optimize, bpf_u_int32 mask)
+#else /* WIN32 */
+int
+pcap_compile(pcap_t *p, struct bpf_program *program,
+	     const char *buf, int optimize, bpf_u_int32 mask)
+#endif /* WIN32 */
 {
 	extern int n_errors;
 	const char * volatile xbuf = buf;

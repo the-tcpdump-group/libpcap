@@ -78,6 +78,23 @@ struct bpf_hdr {
 					   plus alignment padding) */
 };
 
+CRITICAL_SECTION g_PcapCompileCriticalSection;
+
+BOOL WINAPI DllMain(
+  HANDLE hinstDLL,
+  DWORD dwReason,
+  LPVOID lpvReserved
+)
+{
+	if (dwReason == DLL_PROCESS_ATTACH)
+	{
+		OutputDebugString("Hello my dear, I INITIALIZED THE CS\n");
+		InitializeCriticalSection(&g_PcapCompileCriticalSection);
+	}
+
+	return TRUE;
+}
+
 /* Start winsock */
 int 
 wsockinit()

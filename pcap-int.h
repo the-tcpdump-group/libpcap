@@ -48,6 +48,7 @@ extern "C" {
 
 #ifdef WIN32
 #include <Packet32.h>
+extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #endif /* WIN32 */
 
 #ifdef MSDOS
