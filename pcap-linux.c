@@ -2600,19 +2600,29 @@ create_ring(pcap_t *handle)
 
 	frames_per_block = req.tp_block_size/req.tp_frame_size;
 
+	/* ask the kernel to create the ring */
+retry:
 	req.tp_block_nr = req.tp_frame_nr / frames_per_block;
 
 	/* req.tp_frame_nr is requested to match frames_per_block*req.tp_block_nr */
 	req.tp_frame_nr = req.tp_block_nr * frames_per_block;
-
-	/* ask the kernel to create the ring */
-retry:
+	
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
 					(void *) &req, sizeof(req))) {
-		/* try to reduce requested ring size to prevent memory failure */
 		if ((errno == ENOMEM) && (req.tp_block_nr > 1)) {
-			req.tp_frame_nr >>= 1;
-			req.tp_block_nr = req.tp_frame_nr/frames_per_block;
+			/*
+			 * Memory failure; try to reduce the requested ring
+			 * size.
+			 *
+			 * We used to reduce this by half -- do 5% instead.
+			 * That may result in more iterations and a longer
+			 * startup, but the user will be much happier with
+			 * the resulting buffer size.
+			 */
+			if (req.tp_frame_nr < 20)
+				req.tp_frame_nr -= 1;
+			else
+				req.tp_frame_nr -= req.tp_frame_nr/20;
 			goto retry;
 		}
 		if (errno == ENOPROTOOPT) {
