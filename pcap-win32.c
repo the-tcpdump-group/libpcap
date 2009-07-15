@@ -88,7 +88,6 @@ BOOL WINAPI DllMain(
 {
 	if (dwReason == DLL_PROCESS_ATTACH)
 	{
-		OutputDebugString("Hello my dear, I INITIALIZED THE CS\n");
 		InitializeCriticalSection(&g_PcapCompileCriticalSection);
 	}
 

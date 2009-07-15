@@ -389,7 +389,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	int result;
 
 	EnterCriticalSection(&g_PcapCompileCriticalSection);
-	OutputDebugString("Hello my dear, I locked myself\n");
 
 	result = pcap_compile_unsafe(p, program, buf, optimize, mask);
 
