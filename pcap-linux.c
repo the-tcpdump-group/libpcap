@@ -312,6 +312,8 @@ static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
 static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
 static int pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf);
 static int pcap_getnonblock_mmap(pcap_t *p, char *errbuf);
+static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
+    const u_char *bytes);
 #endif
 
 /*
@@ -333,7 +335,8 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 #ifdef SO_ATTACH_FILTER
-static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
+static int	fix_program(pcap_t *handle, struct sock_fprog *fcode,
+    int is_mapped);
 static int	fix_offset(struct bpf_insn *p);
 static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
 static int	reset_kernel_filter(pcap_t *handle);
@@ -1692,7 +1695,8 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
  *  Attach the given BPF code to the packet capture device.
  */
 static int
-pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
+pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
+    int is_mmapped)
 {
 #ifdef SO_ATTACH_FILTER
 	struct sock_fprog	fcode;
@@ -1745,13 +1749,13 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 		 *
 		 * Oh, and we also need to fix it up so that all "ret"
 		 * instructions with non-zero operands have 65535 as the
-		 * operand, and so that, if we're in cooked mode, all
-		 * memory-reference instructions use special magic offsets
-		 * in references to the link-layer header and assume that
-		 * the link-layer payload begins at 0; "fix_program()"
-		 * will do that.
+		 * operand if we're not capturing in memory-mapped modee,
+		 * and so that, if we're in cooked mode, all memory-reference
+		 * instructions use special magic offsets in references to
+		 * the link-layer header and assume that the link-layer
+		 * payload begins at 0; "fix_program()" will do that.
 		 */
-		switch (fix_program(handle, &fcode)) {
+		switch (fix_program(handle, &fcode, is_mmapped)) {
 
 		case -1:
 		default:
@@ -1824,6 +1828,13 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 
 	return 0;
 }
+
+static int
+pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
+{
+	return pcap_setfilter_linux_common(handle, filter, 0);
+}
+
 
 /*
  * Set direction flag: Which packets do we accept on a forwarding
@@ -2495,16 +2506,32 @@ activate_mmap(pcap_t *handle)
 #ifdef HAVE_PACKET_RING
 	int ret;
 
+	/*
+	 * Attempt to allocate a buffer to hold the contents of one
+	 * packet, for use by the oneshot callback.
+	 */
+	handle->md.oneshot_buffer = malloc(handle->snapshot);
+	if (handle->md.oneshot_buffer == NULL) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "can't allocate oneshot buffer: %s",
+			 pcap_strerror(errno));
+		return PCAP_ERROR;
+	}
+
 	if (handle->opt.buffer_size == 0) {
 		/* by default request 2M for the ring buffer */
 		handle->opt.buffer_size = 2*1024*1024;
 	}
 	ret = prepare_tpacket_socket(handle);
-	if (ret != 1)
+	if (ret != 1) {
+		free(handle->md.oneshot_buffer);
 		return ret;
+	}
 	ret = create_ring(handle);
-	if (ret != 1)
+	if (ret != 1) {
+		free(handle->md.oneshot_buffer);
 		return ret;
+	}
 
 	/* override some defaults and inherit the other fields from
 	 * activate_new
@@ -2515,6 +2542,7 @@ activate_mmap(pcap_t *handle)
 	handle->setfilter_op = pcap_setfilter_linux_mmap;
 	handle->setnonblock_op = pcap_setnonblock_mmap;
 	handle->getnonblock_op = pcap_getnonblock_mmap;
+	handle->oneshot_callback = pcap_oneshot_mmap;
 	handle->selectable_fd = handle->fd;
 	return 1;
 #else /* HAVE_PACKET_RING */
@@ -2695,10 +2723,43 @@ destroy_ring(pcap_t *handle)
 	}
 }
 
+/*
+ * Special one-shot callback, used for pcap_next() and pcap_next_ex(),
+ * for Linux mmapped capture.
+ *
+ * The problem is that pcap_next() and pcap_next_ex() expect the packet
+ * data handed to the callback to be valid after the callback returns,
+ * but pcap_read_linux_mmap() has to release that packet as soon as
+ * the callback returns (otherwise, the kernel thinks there's still
+ * at least one unprocessed packet available in the ring, so a select()
+ * will immediately return indicating that there's data to process), so,
+ * in the callback, we have to make a copy of the packet.
+ *
+ * Yes, this means that, if the capture is using the ring buffer, using
+ * pcap_next() or pcap_next_ex() requires more copies than using
+ * pcap_loop() or pcap_dispatch().  If that bothers you, don't use
+ * pcap_next() or pcap_next_ex().
+ */
+static void
+pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
+    const u_char *bytes)
+{
+	struct pkt_for_oneshot *sp = (struct pkt_for_oneshot *)user;
+	bpf_u_int32 copylen;
+
+	*sp->hdr = *h;
+	memcpy(sp->pd->md.oneshot_buffer, bytes, h->caplen);
+	*sp->pkt = sp->pd->md.oneshot_buffer;
+}
+    
 static void
 pcap_cleanup_linux_mmap( pcap_t *handle )
 {
 	destroy_ring(handle);
+	if (handle->md.oneshot_buffer != NULL) {
+		free(handle->md.oneshot_buffer);
+		handle->md.oneshot_buffer = NULL;
+	}
 	pcap_cleanup_linux(handle);
 }
 
@@ -2957,6 +3018,18 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 #endif
 
+		/*
+		 * The only way to tell the kernel to cut off the
+		 * packet at a snapshot length is with a filter program;
+		 * if there's no filter program, the kernel won't cut
+		 * the packet off.
+		 *
+		 * Trim the snapshot length to be no longer than the
+		 * specified snapshot length.
+		 */
+		if (pcaphdr.snaplen > handle->snapshot)
+			pcaphdr.snaplen = handle->snapshot;
+
 		/* pass the packet to the user */
 		pkts++;
 		callback(user, &pcaphdr, bp);
@@ -2990,7 +3063,15 @@ static int
 pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 {
 	int n, offset;
-	int ret = pcap_setfilter_linux(handle, filter);
+	int ret;
+
+	/*
+	 * Don't rewrite "ret" instructions; we don't need to, as
+	 * we're not reading packets with recvmsg(), and we don't
+	 * want to, as, by not rewriting them, the kernel can avoid
+	 * copying extra data.
+	 */
+	ret = pcap_setfilter_linux_common(handle, filter, 1);
 	if (ret < 0)
 		return ret;
 
@@ -4024,7 +4105,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 
 #ifdef SO_ATTACH_FILTER
 static int
-fix_program(pcap_t *handle, struct sock_fprog *fcode)
+fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 {
 	size_t prog_size;
 	register int i;
@@ -4057,26 +4138,33 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode)
 
 		case BPF_RET:
 			/*
-			 * It's a return instruction; is the snapshot
-			 * length a constant, rather than the contents
-			 * of the accumulator?
+			 * It's a return instruction; are we capturing
+			 * in memory-mapped mode?
 			 */
-			if (BPF_MODE(p->code) == BPF_K) {
+			if (!is_mmapped) {
 				/*
-				 * Yes - if the value to be returned,
-				 * i.e. the snapshot length, is anything
-				 * other than 0, make it 65535, so that
-				 * the packet is truncated by "recvfrom()",
-				 * not by the filter.
-				 *
-				 * XXX - there's nothing we can easily do
-				 * if it's getting the value from the
-				 * accumulator; we'd have to insert
-				 * code to force non-zero values to be
-				 * 65535.
+				 * No; is the snapshot length a constant,
+				 * rather than the contents of the
+				 * accumulator?
 				 */
-				if (p->k != 0)
-					p->k = 65535;
+				if (BPF_MODE(p->code) == BPF_K) {
+					/*
+					 * Yes - if the value to be returned,
+					 * i.e. the snapshot length, is
+					 * anything other than 0, make it
+					 * 65535, so that the packet is
+					 * truncated by "recvfrom()",
+					 * not by the filter.
+					 *
+					 * XXX - there's nothing we can
+					 * easily do if it's getting the
+					 * value from the accumulator; we'd
+					 * have to insert code to force
+					 * non-zero values to be 65535.
+					 */
+					if (p->k != 0)
+						p->k = 65535;
+				}
 			}
 			break;
 

@@ -96,6 +96,84 @@ pcap_cant_set_rfmon(pcap_t *p _U_)
 	return (0);
 }
 
+/*
+ * Default one-shot callback; overridden for capture types where the
+ * packet data cannot be guaranteed to be available after the callback
+ * returns, so that a copy must be made.
+ */
+static void
+pcap_oneshot(u_char *user, const struct pcap_pkthdr *h, const u_char *pkt)
+{
+	struct oneshot_userdata *sp = (struct oneshot_userdata *)user;
+
+	*sp->hdr = *h;
+	*sp->pkt = pkt;
+}
+
+const u_char *
+pcap_next(pcap_t *p, struct pcap_pkthdr *h)
+{
+	struct oneshot_userdata s;
+	const u_char *pkt;
+
+	s.hdr = h;
+	s.pkt = &pkt;
+	s.pd = p;
+	if (pcap_dispatch(p, 1, p->oneshot_callback, (u_char *)&s) <= 0)
+		return (0);
+	return (pkt);
+}
+
+int 
+pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
+    const u_char **pkt_data)
+{
+	struct oneshot_userdata s;
+
+	s.hdr = &p->pcap_header;
+	s.pkt = pkt_data;
+	s.pd = p;
+
+	/* Saves a pointer to the packet headers */
+	*pkt_header= &p->pcap_header;
+
+	if (p->sf.rfile != NULL) {
+		int status;
+
+		/* We are on an offline capture */
+		status = pcap_offline_read(p, 1, pcap_oneshot,
+		    (u_char *)&s);
+
+		/*
+		 * Return codes for pcap_offline_read() are:
+		 *   -  0: EOF
+		 *   - -1: error
+		 *   - >1: OK
+		 * The first one ('0') conflicts with the return code of
+		 * 0 from pcap_read() meaning "no packets arrived before
+		 * the timeout expired", so we map it to -2 so you can
+		 * distinguish between an EOF from a savefile and a
+		 * "no packets arrived before the timeout expired, try
+		 * again" from a live capture.
+		 */
+		if (status == 0)
+			return (-2);
+		else
+			return (status);
+	}
+
+	/*
+	 * Return codes for pcap_read() are:
+	 *   -  0: timeout
+	 *   - -1: error
+	 *   - -2: loop was broken out of with pcap_breakloop()
+	 *   - >1: OK
+	 * The first one ('0') conflicts with the return code of 0 from
+	 * pcap_offline_read() meaning "end of file".
+	*/
+	return (p->read_op(p, 1, pcap_oneshot, (u_char *)&s));
+}
+
 pcap_t *
 pcap_create_common(const char *source, char *ebuf)
 {
@@ -146,6 +224,12 @@ pcap_create_common(const char *source, char *ebuf)
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
 #endif
 	p->cleanup_op = pcap_cleanup_live_common;
+
+	/*
+	 * In most cases, the standard one-short callback can
+	 * be used for pcap_next()/pcap_next_ex().
+	 */
+	p->oneshot_callback = pcap_oneshot;
 
 	/* put in some defaults*/
 	pcap_set_timeout(p, 0);
@@ -310,95 +394,6 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (0);
 		}
 	}
-}
-
-struct singleton {
-	struct pcap_pkthdr *hdr;
-	const u_char *pkt;
-};
-
-
-static void
-pcap_oneshot(u_char *userData, const struct pcap_pkthdr *h, const u_char *pkt)
-{
-	struct singleton *sp = (struct singleton *)userData;
-	*sp->hdr = *h;
-	sp->pkt = pkt;
-}
-
-const u_char *
-pcap_next(pcap_t *p, struct pcap_pkthdr *h)
-{
-	struct singleton s;
-
-	s.hdr = h;
-	if (pcap_dispatch(p, 1, pcap_oneshot, (u_char*)&s) <= 0)
-		return (0);
-	return (s.pkt);
-}
-
-struct pkt_for_fakecallback {
-	struct pcap_pkthdr *hdr;
-	const u_char **pkt;
-};
-
-static void
-pcap_fakecallback(u_char *userData, const struct pcap_pkthdr *h,
-    const u_char *pkt)
-{
-	struct pkt_for_fakecallback *sp = (struct pkt_for_fakecallback *)userData;
-
-	*sp->hdr = *h;
-	*sp->pkt = pkt;
-}
-
-int 
-pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
-    const u_char **pkt_data)
-{
-	struct pkt_for_fakecallback s;
-
-	s.hdr = &p->pcap_header;
-	s.pkt = pkt_data;
-
-	/* Saves a pointer to the packet headers */
-	*pkt_header= &p->pcap_header;
-
-	if (p->sf.rfile != NULL) {
-		int status;
-
-		/* We are on an offline capture */
-		status = pcap_offline_read(p, 1, pcap_fakecallback,
-		    (u_char *)&s);
-
-		/*
-		 * Return codes for pcap_offline_read() are:
-		 *   -  0: EOF
-		 *   - -1: error
-		 *   - >1: OK
-		 * The first one ('0') conflicts with the return code of
-		 * 0 from pcap_read() meaning "no packets arrived before
-		 * the timeout expired", so we map it to -2 so you can
-		 * distinguish between an EOF from a savefile and a
-		 * "no packets arrived before the timeout expired, try
-		 * again" from a live capture.
-		 */
-		if (status == 0)
-			return (-2);
-		else
-			return (status);
-	}
-
-	/*
-	 * Return codes for pcap_read() are:
-	 *   -  0: timeout
-	 *   - -1: error
-	 *   - -2: loop was broken out of with pcap_breakloop()
-	 *   - >1: OK
-	 * The first one ('0') conflicts with the return code of 0 from
-	 * pcap_offline_read() meaning "end of file".
-	*/
-	return (p->read_op(p, 1, pcap_fakecallback, (u_char *)&s));
 }
 
 /*

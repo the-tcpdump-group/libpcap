@@ -138,6 +138,7 @@ struct pcap_md {
 	size_t	mmapbuflen;	/* size of region */
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
 	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
+	u_char	*oneshot_buffer; /* buffer for copy of packet */
 #endif /* linux */
 
 #ifdef HAVE_DAG_API
@@ -290,6 +291,11 @@ struct pcap {
 	setnonblock_op_t setnonblock_op;
 	stats_op_t stats_op;
 
+	/*
+	 * Routine to use as callback for pcap_next()/pcap_next_ex().
+	 */
+	pcap_handler oneshot_callback;
+
 #ifdef WIN32
 	/*
 	 * These are, at least currently, specific to the Win32 NPF
@@ -380,6 +386,16 @@ struct pcap_sf_patched_pkthdr {
     int		index;
     unsigned short protocol;
     unsigned char pkt_type;
+};
+
+/*
+ * User data structure for the one-shot callback used for pcap_next()
+ * and pcap_next_ex().
+ */
+struct oneshot_userdata {
+	struct pcap_pkthdr *hdr;
+	const u_char **pkt;
+	pcap_t *pd;
 };
 
 int	yylex(void);
