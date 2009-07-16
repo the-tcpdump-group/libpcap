@@ -27,9 +27,7 @@
 
 #include <winsock2.h>
 
-#ifndef __MINGW32__
 #include <ws2tcpip.h>
-#endif /* __MINGW32__ */
 
 #ifndef __MINGW32__
 #define	IN_MULTICAST(a)		IN_CLASSD(a)
@@ -39,7 +37,7 @@
 
 #define	IN_LOOPBACKNET		127
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 /* IPv6 address */
 struct in6_addr
   {
@@ -60,12 +58,12 @@ struct in6_addr
 #endif /* __MINGW32__ */
 
 
-#if (defined WIN32) || (defined __MINGW32__)
+#if (defined _MSC_VER) || (defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF))
 typedef unsigned short	sa_family_t;
 #endif
 
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 
 #define	__SOCKADDR_COMMON(sa_prefix) \
   sa_family_t sa_prefix##family
@@ -149,7 +147,7 @@ struct sockaddr_in6
 #define IP6OPT_MUTABLE		0x20
 
 
-#ifdef __MINGW32__
+#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 #ifndef EAI_ADDRFAMILY
 struct addrinfo {
 	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */

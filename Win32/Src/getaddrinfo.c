@@ -252,6 +252,7 @@ do { \
 #define MATCH(x, y, w) \
 	((x) == (y) || ((w) && ((x) == ANY || (y) == ANY)))
 
+#if  defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 char *
 gai_strerror(ecode)
 	int ecode;
@@ -260,6 +261,7 @@ gai_strerror(ecode)
 		ecode = EAI_MAX;
 	return ai_errlist[ecode];
 }
+#endif
 
 void
 freeaddrinfo(ai)
