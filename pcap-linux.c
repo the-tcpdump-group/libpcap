@@ -3027,8 +3027,8 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		 * Trim the snapshot length to be no longer than the
 		 * specified snapshot length.
 		 */
-		if (pcaphdr.snaplen > handle->snapshot)
-			pcaphdr.snaplen = handle->snapshot;
+		if (pcaphdr.caplen > handle->snapshot)
+			pcaphdr.caplen = handle->snapshot;
 
 		/* pass the packet to the user */
 		pkts++;
