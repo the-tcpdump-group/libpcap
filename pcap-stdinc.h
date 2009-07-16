@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002 - 2003
- * NetGroup, Politecnico di Torino (Italy)
+ * Copyright (c) 2002 - 2005 NetGroup, Politecnico di Torino (Italy)
+ * Copyright (c) 2005 - 2009 CACE Technologies, Inc. Davis (California)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.11 2008-10-06 15:27:32 gianluca Exp $ (LBL)
+ * @(#) $Header: /tcpdump/master/libpcap/pcap-stdinc.h,v 1.10.2.1 2008-10-06 15:38:39 gianluca Exp $ (LBL)
  */
 #ifndef pcap_stdinc_h
 #define pcap_stdinc_h
@@ -56,13 +56,18 @@
 #include <time.h>
 #include <io.h>
 
+#ifndef __MINGW32__
 #include "IP6_misc.h"
+#endif
 
 #define caddr_t char*
 
+#if _MSC_VER < 1500
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define strdup _strdup
+#endif
+
 #define inline __inline 
 
 #ifdef __MINGW32__
