@@ -722,6 +722,20 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_FC_2				224
 
+/*
+ * Fibre Channel FC-2 frames, beginning with an encoding of the
+ * SOF, and ending with an encoding of the EOF.
+ *
+ * The encodings represent the frame delimiters as 4-byte sequences
+ * representing the corresponding ordered sets, with K28.5
+ * represented as 0xBC, and the D symbols as the corresponding
+ * byte values; for example, SOFi2, which is K28.5 - D21.5 - D1.2 - D21.2,
+ * is represented as 0xBC 0xB5 0x55 0x55.
+ *
+ * Requested by Kahou Lei <kahou82@gmail.com>.
+ */
+#define LINKTYPE_FC_2_WITH_FRAME_DELIMS		225
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1052,8 +1066,11 @@ static struct linktype_map {
 	/* Wireless HART */
 	{ DLT_WIHART,		LINKTYPE_WIHART },
 
-	/* Fibre Channel FC-2 frames */
+	/* Fibre Channel FC-2 frames without SOF or EOF */
 	{ DLT_FC_2,		LINKTYPE_FC_2 },
+
+	/* Fibre Channel FC-2 frames with SOF and EOF */
+	{ DLT_FC_2_WITH_FRAME_DELIMS, LINKTYPE_FC_2_WITH_FRAME_DELIMS },
 
 	{ -1,			-1 }
 };
