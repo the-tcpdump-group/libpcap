@@ -2744,7 +2744,7 @@ static void
 pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes)
 {
-	struct pkt_for_oneshot *sp = (struct pkt_for_oneshot *)user;
+	struct oneshot_userdata *sp = (struct oneshot_userdata *)user;
 	bpf_u_int32 copylen;
 
 	*sp->hdr = *h;
