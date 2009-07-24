@@ -126,26 +126,28 @@ main(int argc, char **argv)
 	printf("Listening on %s\n", device);
 	if (doselect) {
 		for (;;) {
+			int selectable_fd;
 			fd_set setread, setexcept;
 			struct timeval timeout;
 
+			selectable_fd = pcap_get_selectable_fd(pd);
 			FD_ZERO(&setread);
-			FD_SET(pcap_fileno(pd), &setread);
+			FD_SET(selectable_fd, &setread);
 			FD_ZERO(&setexcept);
-			FD_SET(pcap_fileno(pd), &setexcept);
+			FD_SET(selectable_fd, &setexcept);
 			if (dotimeout) {
 				timeout.tv_sec = 0;
 				timeout.tv_usec = 1000;
-				select(pcap_fileno(pd) + 1, &setread, NULL,
+				select(selectable_fd + 1, &setread, NULL,
 				    &setexcept, &timeout);
 			} else
-				select(pcap_fileno(pd) + 1, &setread, NULL,
+				select(selectable_fd + 1, &setread, NULL,
 				    &setexcept, NULL);
-			if (FD_ISSET(pcap_fileno(pd), &setread))
+			if (FD_ISSET(selectable_fd, &setread))
 				printf("Select says descriptor is readable\n");
 			else
 				printf("Select doesn't say descriptor is readable\n");
-			if (FD_ISSET(pcap_fileno(pd), &setexcept))
+			if (FD_ISSET(selectable_fd, &setexcept))
 				printf("Select says descriptor has exceptional condition\n");
 			else
 				printf("Select doesn't say descriptor has exceptional condition\n");
