@@ -123,7 +123,7 @@ GENHDR = \
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.* filtertest findalldevstest seltest \
+CLEANFILES = $(OBJ) libpcap.* filtertest findalldevstest selpolltest \
 	$(PROG)-`cat VERSION`.tar.gz $(GENSRC) $(GENHDR) lex.yy.c \
 	pcap-config
 
@@ -288,7 +288,7 @@ EXTRA_DIST = \
 	pcap-win32.c \
 	runlex.sh \
 	scanner.l \
-	seltest.c \
+	selpolltest.c \
 	Win32/Include/Gnuc.h \
 	Win32/Include/addrinfo.h \
 	Win32/Include/bittypes.h \
@@ -468,8 +468,8 @@ filtertest: filtertest.c libpcap.a
 findalldevstest: findalldevstest.c libpcap.a
 	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a $(LIBS)
 
-seltest: seltest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o seltest seltest.c libpcap.a $(LIBS)
+selpolltest: selpolltest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o selpolltest selpolltest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \

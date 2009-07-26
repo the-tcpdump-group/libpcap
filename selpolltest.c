@@ -33,6 +33,8 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/select.h>
+#include <poll.h>
 
 char *program_name;
 
@@ -55,13 +57,16 @@ main(int argc, char **argv)
 	register int op;
 	bpf_u_int32 localnet, netmask;
 	register char *cp, *cmdbuf, *device;
-	int doselect, dotimeout, dononblock;
+	int doselect, dopoll, dotimeout, dononblock;
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
+	int selectable_fd;
 	int status;
+	int packet_count;
 
 	device = NULL;
 	doselect = 0;
+	dopoll = 0;
 	dotimeout = 0;
 	dononblock = 0;
 	if ((cp = strrchr(argv[0], '/')) != NULL)
@@ -70,7 +75,7 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "i:stn")) != -1)
+	while ((op = getopt(argc, argv, "i:sptn")) != -1) {
 		switch (op) {
 
 		case 'i':
@@ -79,6 +84,10 @@ main(int argc, char **argv)
 
 		case 's':
 			doselect = 1;
+			break;
+
+		case 'p':
+			dopoll = 1;
 			break;
 
 		case 't':
@@ -93,7 +102,16 @@ main(int argc, char **argv)
 			usage();
 			/* NOTREACHED */
 		}
+	}
 
+	if (doselect && dopoll) {
+		fprintf(stderr, "selpolltest: choose select (-s) or poll (-p), but not both\n");
+		return 1;
+	}
+	if (dotimeout && !doselect && !dopoll) {
+		fprintf(stderr, "selpolltest: timeout (-t) requires select (-s) or poll (-p)\n");
+		return 1;
+	}
 	if (device == NULL) {
 		device = pcap_lookupdev(ebuf);
 		if (device == NULL)
@@ -123,45 +141,101 @@ main(int argc, char **argv)
 		if (pcap_setnonblock(pd, 1, ebuf) == -1)
 			error("pcap_setnonblock failed: %s", ebuf);
 	}
+	selectable_fd = pcap_get_selectable_fd(pd);
 	printf("Listening on %s\n", device);
 	if (doselect) {
 		for (;;) {
-			int selectable_fd;
 			fd_set setread, setexcept;
-			struct timeval timeout;
+			struct timeval seltimeout;
 
-			selectable_fd = pcap_get_selectable_fd(pd);
 			FD_ZERO(&setread);
 			FD_SET(selectable_fd, &setread);
 			FD_ZERO(&setexcept);
 			FD_SET(selectable_fd, &setexcept);
 			if (dotimeout) {
-				timeout.tv_sec = 0;
-				timeout.tv_usec = 1000;
-				select(selectable_fd + 1, &setread, NULL,
-				    &setexcept, &timeout);
-			} else
-				select(selectable_fd + 1, &setread, NULL,
-				    &setexcept, NULL);
-			if (FD_ISSET(selectable_fd, &setread))
-				printf("Select says descriptor is readable\n");
-			else
-				printf("Select doesn't say descriptor is readable\n");
-			if (FD_ISSET(selectable_fd, &setexcept))
-				printf("Select says descriptor has exceptional condition\n");
-			else
-				printf("Select doesn't say descriptor has exceptional condition\n");
-			status = pcap_dispatch(pd, -1, printme, NULL);
-			if (status < 0)
-				break;
-			else if (status == 0)
-				printf("No packets seen after select returns\n");
-			else 
-				printf("%d packets seen after select returns\n",
-				    status);
+				seltimeout.tv_sec = 0;
+				seltimeout.tv_usec = 1000;
+				status = select(selectable_fd + 1, &setread,
+				    NULL, &setexcept, &seltimeout);
+			} else {
+				status = select(selectable_fd + 1, &setread,
+				    NULL, &setexcept, NULL);
+			}
+			if (status == -1) {
+				printf("Select returns error (%s)\n",
+				    strerror(errno));
+			} else {
+				if (status == 0)
+					printf("Select timed out: ");
+				else
+					printf("Select returned a descriptor: ");
+				if (FD_ISSET(selectable_fd, &setread))
+					printf("readable, ");
+				else
+					printf("not readable, ");
+				if (FD_ISSET(selectable_fd, &setexcept))
+					printf("exceptional condition\n");
+				else
+					printf("no exceptional condition\n");
+				packet_count = 0;
+				status = pcap_dispatch(pd, -1, printme,
+				    (u_char *)&packet_count);
+				if (status < 0)
+					break;
+				printf("\n%d packets seen, %d packets counted after select returns\n",
+				    status, packet_count);
+			}
 		}
-	} else
-		status = pcap_loop(pd, -1, printme, NULL);
+	} else if (dopoll) {
+		for (;;) {
+			struct pollfd fd;
+			int polltimeout;
+
+			fd.fd = selectable_fd;
+			fd.events = POLLIN;
+			if (dotimeout)
+				polltimeout = 1;
+			else
+				polltimeout = -1;
+			status = poll(&fd, 1, polltimeout);
+			if (status == -1) {
+				printf("Poll returns error (%s)\n",
+				    strerror(errno));
+			} else {
+				if (status == 0)
+					printf("Poll timed out\n");
+				else {
+					printf("Poll returned a descriptor: ");
+					if (fd.revents & POLLIN)
+						printf("readable, ");
+					else
+						printf("not readable, ");
+					if (fd.revents & POLLERR)
+						printf("exceptional condition, ");
+					else
+						printf("no exceptional condition, ");
+					if (fd.revents & POLLHUP)
+						printf("disconnect\n");
+					else
+						printf("no disconnect\n");
+				}
+				packet_count = 0;
+				status = pcap_dispatch(pd, -1, printme,
+				    (u_char *)&packet_count);
+				if (status < 0)
+					break;
+				printf("\n%d packets seen, %d packets counted after poll returns\n",
+				    status, packet_count);
+			}
+		}
+	} else {
+		packet_count = 0;
+		status = pcap_loop(pd, -1, printme, (u_char *)&packet_count);
+		if (status >= 0) {
+			printf("\n%d packets seen, %d packets counted by pcap_loop\n",
+			    status, packet_count);
+		}
+	}
 	if (status == -2) {
 		/*
 		 * We got interrupted, so perhaps we didn't
@@ -185,7 +259,11 @@ main(int argc, char **argv)
 static void
 printme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 {
-	printf("Saw a packet\n");
+	int *counterp = (int *)user;
+
+	printf(".");
+	fflush(stdout);
+	(*counterp)++;
 }
 
 static void
