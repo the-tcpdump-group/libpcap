@@ -39,7 +39,7 @@ The Regents of the University of California.  All rights reserved.\n";
 char *program_name;
 
 /* Forwards */
-static void printme(u_char *, const struct pcap_pkthdr *, const u_char *);
+static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);
 static void usage(void) __attribute__((noreturn));
 static void error(const char *, ...);
 static void warning(const char *, ...);
@@ -178,12 +178,10 @@ main(int argc, char **argv)
 				else
 					printf("no exceptional condition\n");
 				packet_count = 0;
-				status = pcap_dispatch(pd, -1, printme,
+				status = pcap_dispatch(pd, -1, countme,
 				    (u_char *)&packet_count);
 				if (status < 0)
 					break;
-				if (packet_count != 0)
-					putchar('\n');	/* finish line of .'s */
 				printf("%d packets seen, %d packets counted after select returns\n",
 				    status, packet_count);
 			}
@@ -226,12 +224,10 @@ main(int argc, char **argv)
 						printf("not invalid\n");
 				}
 				packet_count = 0;
-				status = pcap_dispatch(pd, -1, printme,
+				status = pcap_dispatch(pd, -1, countme,
 				    (u_char *)&packet_count);
 				if (status < 0)
 					break;
-				if (packet_count != 0)
-					putchar('\n');	/* finish line of .'s */
 				printf("%d packets seen, %d packets counted after poll returns\n",
 				    status, packet_count);
 			}
@@ -239,12 +235,10 @@ main(int argc, char **argv)
 	} else {
 		for (;;) {
 			packet_count = 0;
-			status = pcap_dispatch(pd, -1, printme,
+			status = pcap_dispatch(pd, -1, countme,
 			    (u_char *)&packet_count);
 			if (status < 0)
 				break;
-			if (packet_count != 0)
-				putchar('\n');	/* finish line of .'s */
 			printf("%d packets seen, %d packets counted after pcap_dispatch returns\n",
 			    status, packet_count);
 		}
@@ -270,11 +264,10 @@ main(int argc, char **argv)
 }
 
 static void
-printme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
+countme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 {
 	int *counterp = (int *)user;
 
-	printf(".");
 	(*counterp)++;
 }
 
