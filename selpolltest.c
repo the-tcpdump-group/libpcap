@@ -182,7 +182,9 @@ main(int argc, char **argv)
 				    (u_char *)&packet_count);
 				if (status < 0)
 					break;
-				printf("\n%d packets seen, %d packets counted after select returns\n",
+				if (packet_count != 0)
+					putchar('\n');	/* finish line of .'s */
+				printf("%d packets seen, %d packets counted after select returns\n",
 				    status, packet_count);
 			}
 		}
@@ -215,24 +217,35 @@ main(int argc, char **argv)
 					else
 						printf("no exceptional condition, ");
 					if (fd.revents & POLLHUP)
-						printf("disconnect\n");
+						printf("disconnect, ");
 					else
-						printf("no disconnect\n");
+						printf("no disconnect, ");
+					if (fd.revents & POLLNVAL)
+						printf("invalid\n");
+					else
+						printf("not invalid\n");
 				}
 				packet_count = 0;
 				status = pcap_dispatch(pd, -1, printme,
 				    (u_char *)&packet_count);
 				if (status < 0)
 					break;
-				printf("\n%d packets seen, %d packets counted after poll returns\n",
+				if (packet_count != 0)
+					putchar('\n');	/* finish line of .'s */
+				printf("%d packets seen, %d packets counted after poll returns\n",
 				    status, packet_count);
 			}
 		}
 	} else {
-		packet_count = 0;
-		status = pcap_loop(pd, -1, printme, (u_char *)&packet_count);
-		if (status >= 0) {
-			printf("\n%d packets seen, %d packets counted by pcap_loop\n",
+		for (;;) {
+			packet_count = 0;
+			status = pcap_dispatch(pd, -1, printme,
+			    (u_char *)&packet_count);
+			if (status < 0)
+				break;
+			if (packet_count != 0)
+				putchar('\n');	/* finish line of .'s */
+			printf("%d packets seen, %d packets counted after pcap_dispatch returns\n",
 			    status, packet_count);
 		}
 	}
@@ -262,7 +275,6 @@ printme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	int *counterp = (int *)user;
 
 	printf(".");
-	fflush(stdout);
 	(*counterp)++;
 }
 
