@@ -778,6 +778,9 @@ static const char rcsid[] _U_ =
  * A zone number of 0 is the global zone; a zone number of 0xffffffff
  * means that the packet arrived from another host on the network, not
  * from another zone on the same machine.
+ *
+ * An IPv4 or IPv6 datagram follows the pseudo-header; dli_family indicates
+ * which of those it is.
  */
 #define LINKTYPE_IPNET				226
 
