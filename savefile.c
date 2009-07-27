@@ -736,6 +736,51 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_FC_2_WITH_FRAME_DELIMS		225
 
+/*
+ * Solaris ipnet pseudo-header; requested by Darren Reed <Darren.Reed@Sun.COM>.
+ *
+ * The pseudo-header starts with a one-byte version number; for version 2,
+ * the pseudo-header is:
+ *
+ * struct dl_ipnetinfo {
+ *     u_int8_t   dli_version;
+ *     u_int8_t   dli_family;
+ *     u_int16_t  dli_htype;
+ *     u_int32_t  dli_pktlen;
+ *     u_int32_t  dli_ifindex;
+ *     u_int32_t  dli_grifindex;
+ *     u_int32_t  dli_zsrc;
+ *     u_int32_t  dli_zdst;
+ * };
+ *
+ * dli_version is 2 for the current version of the pseudo-header.
+ *
+ * dli_family is a Solaris address family value, so it's 2 for IPv4
+ * and 26 for IPv6.
+ *
+ * dli_htype is a "hook type" - 0 for incoming packets, 1 for outgoing
+ * packets, and 2 for packets arriving from another zone on the same
+ * machine.
+ *
+ * dli_pktlen is the length of the packet data following the pseudo-header
+ * (so the captured length minus dli_pktlen is the length of the
+ * pseudo-header, assuming the entire pseudo-header was captured).
+ *
+ * dli_ifindex is the interface index of the interface on which the
+ * packet arrived.
+ *
+ * dli_grifindex is the group interface index number (for IPMP interfaces).
+ *
+ * dli_zsrc is the zone identifier for the source of the packet.
+ *
+ * dli_zdst is the zone identifier for the destination of the packet.
+ *
+ * A zone number of 0 is the global zone; a zone number of 0xffffffff
+ * means that the packet arrived from another host on the network, not
+ * from another zone on the same machine.
+ */
+#define LINKTYPE_IPNET				226
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1071,6 +1116,9 @@ static struct linktype_map {
 
 	/* Fibre Channel FC-2 frames with SOF and EOF */
 	{ DLT_FC_2_WITH_FRAME_DELIMS, LINKTYPE_FC_2_WITH_FRAME_DELIMS },
+
+	/* Solaris IPNET */
+	{ DLT_IPNET,		LINKTYPE_IPNET },
 
 	{ -1,			-1 }
 };
