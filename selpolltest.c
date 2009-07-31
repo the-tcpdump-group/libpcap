@@ -274,7 +274,7 @@ countme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "Usage: %s [ -stn ] [ -i interface ] [expression]\n",
+	(void)fprintf(stderr, "Usage: %s [ -sptn ] [ -i interface ] [expression]\n",
 	    program_name);
 	exit(1);
 }
