@@ -28,7 +28,7 @@ pcap_open_dead.3pcap
 pcap_open_offline.3pcap
 scanner.c
 scanner.h
-seltest
+selpolltest
 tokdefs.h
 version.c
 version.h
