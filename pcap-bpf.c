@@ -1283,7 +1283,9 @@ check_setif_failure(pcap_t *p, int error)
 					 * exist.
 					 */
 					err = PCAP_ERROR_NO_SUCH_DEVICE;
-					strcpy(p->errbuf, "");
+					snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					    "SIOCGIFFLAGS on %s failed: %s",
+					    ifr.ifr_name, pcap_strerror(errno));
 				} else {
 					/*
 					 * The underlying "enN" device
@@ -1305,7 +1307,9 @@ check_setif_failure(pcap_t *p, int error)
 				 * just report "no such device".
 				 */
 				err = PCAP_ERROR_NO_SUCH_DEVICE;
-				strcpy(p->errbuf, "");
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "socket() failed: %s",
+				    pcap_strerror(errno));
 			}
 			return (err);
 		}
@@ -1313,7 +1317,8 @@ check_setif_failure(pcap_t *p, int error)
 		/*
 		 * No such device.
 		 */
-		strcpy(p->errbuf, "");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF failed: %s",
+		    pcap_strerror(errno));
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	} else if (errno == ENETDOWN) {
 		/*
@@ -1445,7 +1450,10 @@ pcap_activate_bpf(pcap_t *p)
 							 * exist.
 							 */
 							status = PCAP_ERROR_NO_SUCH_DEVICE;
-							strcpy(p->errbuf, "");
+							snprintf(p->errbuf,
+							    PCAP_ERRBUF_SIZE,
+							    "SIOCGIFFLAGS failed: %s",
+							    pcap_strerror(errno));
 						} else
 							status = PCAP_ERROR_RFMON_NOTSUP;
 						close(sockfd);
@@ -1456,7 +1464,10 @@ pcap_activate_bpf(pcap_t *p)
 						 * report "no such device".
 						 */
 						status = PCAP_ERROR_NO_SUCH_DEVICE;
-						strcpy(p->errbuf, "");
+						snprintf(p->errbuf,
+						    PCAP_ERRBUF_SIZE,
+						    "socket() failed: %s",
+						    pcap_strerror(errno));
 					}
 					goto bad;
 				}

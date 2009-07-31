@@ -340,9 +340,13 @@ pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *er
 		goto fail;
 	return (p);
 fail:
-	if (status == PCAP_ERROR || status == PCAP_ERROR_NO_SUCH_DEVICE ||
+	if (status == PCAP_ERROR)
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		    p->errbuf);
+	else if(status == PCAP_ERROR_NO_SUCH_DEVICE ||
 	    status == PCAP_ERROR_PERM_DENIED)
-		strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
+		    pcap_statustostr(status), p->errbuf);
 	else
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    pcap_statustostr(status));

@@ -880,6 +880,8 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	}
 	if (errno == ENODEV) {
 		/* The device doesn't even exist. */
+		(void)snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "SIOCGIWMODE failed: %s", pcap_strerror(errno));
 		close(sock_fd);
 		return PCAP_ERROR_NO_SUCH_DEVICE;
 	}
