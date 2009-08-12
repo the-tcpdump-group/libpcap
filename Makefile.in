@@ -124,8 +124,8 @@ TAGFILES = \
 	$(SRC) $(HDR)
 
 CLEANFILES = $(OBJ) libpcap.* filtertest findalldevstest selpolltest \
-	$(PROG)-`cat VERSION`.tar.gz $(GENSRC) $(GENHDR) lex.yy.c \
-	pcap-config
+	opentest $(PROG)-`cat VERSION`.tar.gz $(GENSRC) $(GENHDR) \
+	lex.yy.c pcap-config
 
 MAN1 = pcap-config.1
 
@@ -470,6 +470,9 @@ findalldevstest: findalldevstest.c libpcap.a
 
 selpolltest: selpolltest.c libpcap.a
 	$(CC) $(CFLAGS) -I. -L. -o selpolltest selpolltest.c libpcap.a $(LIBS)
+
+opentest: opentest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o opentest opentest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
