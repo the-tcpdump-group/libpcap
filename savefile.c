@@ -1361,7 +1361,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	bpf_u_int32 magic;
 	int linklen;
 
-	p = pcap_create_common("(savefile)", errbuf);
+	p = pcap_create_common(NULL, errbuf);
 	if (p == NULL)
 		return (NULL);
 
