@@ -303,6 +303,16 @@ pcap_activate(pcap_t *p)
 	status = p->activate_op(p);
 	if (status >= 0)
 		p->activated = 1;
+	else if (p->errbuf[0] == '\0') {
+		/*
+		 * No error message supplied by the activate routine;
+		 * for the benefit of programs that don't specially
+		 * handle errors other than PCAP_ERROR, return the
+		 * error message corresponding to the status.
+		 */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
+		    pcap_statustostr(status));
+	}
 	return (status);
 }
 
@@ -343,7 +353,7 @@ fail:
 	if (status == PCAP_ERROR)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    p->errbuf);
-	else if(status == PCAP_ERROR_NO_SUCH_DEVICE ||
+	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
 	    status == PCAP_ERROR_PERM_DENIED)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
 		    pcap_statustostr(status), p->errbuf);
