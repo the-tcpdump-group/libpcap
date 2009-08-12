@@ -190,14 +190,12 @@ pcap_create_common(const char *source, char *ebuf)
 	p->fd = -1;	/* not opened yet */
 #endif 
 
-	if (source != NULL) {
-		p->opt.source = strdup(source);
-		if (p->opt.source == NULL) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			    pcap_strerror(errno));
-			free(p);
-			return (NULL);
-		}
+	p->opt.source = strdup(source);
+	if (p->opt.source == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		free(p);
+		return (NULL);
 	}
 
 	/*
