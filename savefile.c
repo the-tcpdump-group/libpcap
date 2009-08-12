@@ -1361,13 +1361,9 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	bpf_u_int32 magic;
 	int linklen;
 
-	p = (pcap_t *)malloc(sizeof(*p));
-	if (p == NULL) {
-		strlcpy(errbuf, "out of swap", PCAP_ERRBUF_SIZE);
+	p = pcap_create_common("(savefile)", errbuf);
+	if (p == NULL)
 		return (NULL);
-	}
-
-	memset((char *)p, 0, sizeof(*p));
 
 	amt_read = fread((char *)&hdr, 1, sizeof(hdr), fp);
 	if (amt_read != sizeof(hdr)) {
