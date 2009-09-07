@@ -890,6 +890,60 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	return 0;
 }
 
+/* grabs the number of dropped packets by the interface from /proc/net/dev */
+static long int
+linux_if_drops(const char * if_name)
+{
+	char buffer[512];
+	char * bufptr;
+	FILE * file;
+	int field_to_convert = 3, if_name_sz = strlen(if_name);
+	long int dropped_pkts = 0;
+	
+	file = fopen("/proc/net/dev", "r");
+	if (!file)
+		return 0;
+
+	while (!dropped_pkts && fgets( buffer, sizeof(buffer), file ))
+	{
+		/* 	search for 'bytes' -- if its in there, then
+			that means we need to grab the fourth field. otherwise
+			grab the third field. */
+		if (field_to_convert != 4 && strstr(buffer, "bytes"))
+		{
+			field_to_convert = 4;
+			continue;
+		}
+	
+		/* find iface and make sure it actually matches -- space before the name and : after it */
+		if ((bufptr = strstr(buffer, if_name)) &&
+			(bufptr == buffer || *(bufptr-1) == ' ') &&
+			*(bufptr + if_name_sz) == ':')
+		{
+			bufptr = bufptr + if_name_sz + 1;
+
+			/* grab the nth field from it */
+			while( --field_to_convert && *bufptr != '\0')
+			{
+				while (*bufptr != '\0' && *(bufptr++) == ' ');
+				while (*bufptr != '\0' && *(bufptr++) != ' ');
+			}
+			
+			/* get rid of any final spaces */
+			while (*bufptr != '\0' && *bufptr == ' ') bufptr++;
+			
+			if (*bufptr != '\0')
+				dropped_pkts = strtol(bufptr, NULL, 10);
+
+			break;
+		}
+	}
+	
+	fclose(file);
+	return dropped_pkts;
+} 
+
+
 /*
  * With older kernels promiscuous mode is kind of interesting because we
  * have to reset the interface before exiting. The problem can't really
@@ -1065,6 +1119,14 @@ pcap_activate_linux(pcap_t *handle)
 			 pcap_strerror(errno) );
 		return PCAP_ERROR;
 	}
+	
+	/*
+	 * If we're in promiscuous mode, then we probably want 
+	 * to see when the interface drops packets too, so get an
+	 * initial count from /proc/net/dev
+	 */
+	if (handle->opt.promisc)
+		handle->md.proc_dropped = linux_if_drops(handle->md.device);
 
 	/*
 	 * Current Linux kernels use the protocol family PF_PACKET to
@@ -1563,6 +1625,18 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	socklen_t len = sizeof (struct tpacket_stats);
 #endif
 
+	long if_dropped = 0;
+	
+	/* 
+	 *	To fill in ps_ifdrop, we parse /proc/net/dev for the number
+	 */
+	if (handle->opt.promisc)
+	{
+		if_dropped = handle->md.proc_dropped;
+		handle->md.proc_dropped = linux_if_drops(handle->md.device);
+		handle->md.stat.ps_ifdrop += (handle->md.proc_dropped - if_dropped);
+	}
+
 #ifdef HAVE_TPACKET_STATS
 	/*
 	 * Try to get the packet counts from the kernel.
@@ -1582,6 +1656,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 *	out of buffer space.  It doesn't count packets
 		 *	dropped by the interface driver.  It counts only
 		 *	packets that passed the filter.
+		 *
+		 *	See above for ps_ifdrop. 
 		 *
 		 *	Both statistics include packets not yet read from
 		 *	the kernel by libpcap, and thus not yet seen by
@@ -1646,16 +1722,22 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 *
 	 *	"ps_drop" is not supported.
 	 *
+	 *	"ps_ifdrop" is supported. It will return the number
+	 *	of drops the interface reports in /proc/net/dev
+	 *
 	 *	"ps_recv" doesn't include packets not yet read from
 	 *	the kernel by libpcap.
 	 *
 	 * We maintain the count of packets processed by libpcap in
 	 * "md.packets_read", for reasons described in the comment
 	 * at the end of pcap_read_packet().  We have no idea how many
-	 * packets were dropped.
+	 * packets were dropped by the kernel buffers -- but we know 
+	 * how many the interface dropped, so we can return that.
 	 */
+	 
 	stats->ps_recv = handle->md.packets_read;
 	stats->ps_drop = 0;
+	stats->ps_ifdrop = handle->md.stat.ps_drop;
 	return 0;
 }
 

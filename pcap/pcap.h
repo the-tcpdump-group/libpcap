@@ -163,7 +163,7 @@ struct pcap_pkthdr {
 struct pcap_stat {
 	u_int ps_recv;		/* number of packets received */
 	u_int ps_drop;		/* number of packets dropped */
-	u_int ps_ifdrop;	/* drops by interface XXX not yet supported */
+	u_int ps_ifdrop;	/* drops by interface -- only supported on some platforms */
 #ifdef WIN32
 	u_int bs_capt;		/* number of packets that reach the application */
 #endif /* WIN32 */

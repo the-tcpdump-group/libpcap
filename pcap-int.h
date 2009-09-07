@@ -139,6 +139,7 @@ struct pcap_md {
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
 	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
 	u_char	*oneshot_buffer; /* buffer for copy of packet */
+	long	proc_dropped; /* packets reported dropped by /proc/net/dev */
 #endif /* linux */
 
 #ifdef HAVE_DAG_API
