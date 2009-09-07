@@ -692,8 +692,8 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 	}
 
 	stats->ps_recv = handle->md.packets_read + st.queued;
-	stats->ps_ifdrop = 0;
 	stats->ps_drop = st.dropped;
+	stats->ps_ifdrop = 0;
 	return 0;
 }
 
