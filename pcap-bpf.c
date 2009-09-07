@@ -744,6 +744,7 @@ pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 
 	ps->ps_recv = s.bs_recv;
 	ps->ps_drop = s.bs_drop;
+	ps->ps_ifdrop = 0;
 	return (0);
 }
 
