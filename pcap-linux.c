@@ -1723,7 +1723,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 *	"ps_drop" is not supported.
 	 *
 	 *	"ps_ifdrop" is supported. It will return the number
-	 *	of drops the interface reports in /proc/net/dev
+	 *	of drops the interface reports in /proc/net/dev,
+	 *	if that is available.
 	 *
 	 *	"ps_recv" doesn't include packets not yet read from
 	 *	the kernel by libpcap.
