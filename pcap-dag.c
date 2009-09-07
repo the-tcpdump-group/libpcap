@@ -803,6 +803,7 @@ static int dag_activate(pcap_t* handle)
 	handle->cleanup_op = dag_platform_cleanup;
 	handle->md.stat.ps_drop = 0;
 	handle->md.stat.ps_recv = 0;
+	handle->md.stat.ps_ifdrop = 0;
 	return 0;
 
 #ifdef HAVE_DAG_STREAMS_API 
