@@ -890,7 +890,14 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	return 0;
 }
 
-/* grabs the number of dropped packets by the interface from /proc/net/dev */
+/*
+ * Grabs the number of dropped packets by the interface from /proc/net/dev.
+ *
+ * XXX - what about /sys/class/net/{interface name}/rx_*?  There are
+ * individual devices giving, in ASCII, various rx_ and tx_ statistics.
+ *
+ * Or can we get them in binary form from netlink?
+ */
 static long int
 linux_if_drops(const char * if_name)
 {
