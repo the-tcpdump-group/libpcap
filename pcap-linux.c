@@ -1745,7 +1745,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 
 	stats->ps_recv = handle->md.packets_read;
 	stats->ps_drop = 0;
-	stats->ps_ifdrop = handle->md.stat.ps_drop;
+	stats->ps_ifdrop = handle->md.stat.ps_ifdrop;
 	return 0;
 }
 
