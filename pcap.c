@@ -174,41 +174,13 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	return (p->read_op(p, 1, pcap_oneshot, (u_char *)&s));
 }
 
-pcap_t *
-pcap_create_common(const char *source, char *ebuf)
+static void
+initialize_ops(pcap_t *p)
 {
-	pcap_t *p;
-
-	p = malloc(sizeof(*p));
-	if (p == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		return (NULL);
-	}
-	memset(p, 0, sizeof(*p));
-#ifndef WIN32
-	p->fd = -1;	/* not opened yet */
-#endif 
-
-	p->opt.source = strdup(source);
-	if (p->opt.source == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		free(p);
-		return (NULL);
-	}
-
 	/*
-	 * Default to "can't set rfmon mode"; if it's supported by
-	 * a platform, it can set the op to its routine to check
-	 * whether a particular device supports it.
-	 */
-	p->can_set_rfmon_op = pcap_cant_set_rfmon;
-
-	/*
-	 * Some operations can be performed only on activated pcap_t's;
-	 * have those operations handled by a "not supported" handler
-	 * until the pcap_t is activated.
+	 * Set operation pointers for operations that only work on
+	 * an activated pcap_t to point to a routine that returns
+	 * a "this isn't activated" error.
 	 */
 	p->read_op = (read_op_t)pcap_not_initialized;
 	p->inject_op = (inject_op_t)pcap_not_initialized;
@@ -223,6 +195,12 @@ pcap_create_common(const char *source, char *ebuf)
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
 #endif
+
+	/*
+	 * Default cleanup operation - implementations can override
+	 * this, but should call pcap_cleanup_live_common() after
+	 * doing their own additional cleanup.
+	 */
 	p->cleanup_op = pcap_cleanup_live_common;
 
 	/*
@@ -230,6 +208,43 @@ pcap_create_common(const char *source, char *ebuf)
 	 * be used for pcap_next()/pcap_next_ex().
 	 */
 	p->oneshot_callback = pcap_oneshot;
+}
+
+pcap_t *
+pcap_create_common(const char *source, char *ebuf)
+{
+	pcap_t *p;
+
+	p = malloc(sizeof(*p));
+	if (p == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		return (NULL);
+	}
+	memset(p, 0, sizeof(*p));
+#ifndef WIN32
+	p->fd = -1;	/* not opened yet */
+	p->selectable_fd = -1;
+	p->send_fd = -1;
+#endif 
+
+	p->opt.source = strdup(source);
+	if (p->opt.source == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		free(p);
+		return (NULL);
+	}
+
+	/*
+	 * Default to "can't set rfmon mode"; if it's supported by
+	 * a platform, the create routine that called us can set
+	 * the op to its routine to check whether a particular
+	 * device supports it.
+	 */
+	p->can_set_rfmon_op = pcap_cant_set_rfmon;
+
+	initialize_ops(p);
 
 	/* put in some defaults*/
 	pcap_set_timeout(p, 0);
@@ -303,15 +318,23 @@ pcap_activate(pcap_t *p)
 	status = p->activate_op(p);
 	if (status >= 0)
 		p->activated = 1;
-	else if (p->errbuf[0] == '\0') {
+	else {
+		if (p->errbuf[0] == '\0') {
+			/*
+			 * No error message supplied by the activate routine;
+			 * for the benefit of programs that don't specially
+			 * handle errors other than PCAP_ERROR, return the
+			 * error message corresponding to the status.
+			 */
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
+			    pcap_statustostr(status));
+		}
+
 		/*
-		 * No error message supplied by the activate routine;
-		 * for the benefit of programs that don't specially
-		 * handle errors other than PCAP_ERROR, return the
-		 * error message corresponding to the status.
+		 * Undo any operation pointer setting, etc. done by
+		 * the activate operation.
 		 */
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
-		    pcap_statustostr(status));
+		initialize_ops(p);
 	}
 	return (status);
 }
@@ -1179,6 +1202,8 @@ pcap_cleanup_live_common(pcap_t *p)
 		close(p->fd);
 		p->fd = -1;
 	}
+	p->selectable_fd = -1;
+	p->send_fd = -1;
 #endif
 }
 

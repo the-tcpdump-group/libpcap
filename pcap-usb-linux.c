@@ -384,6 +384,7 @@ usb_activate(pcap_t* handle)
 	if (!handle->buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
+		close(handle->fd);
 		return PCAP_ERROR;
 	}
 	return 0;

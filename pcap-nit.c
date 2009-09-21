@@ -323,6 +323,7 @@ pcap_activate_nit(pcap_t *p)
 
 	return (0);
  bad:
+	pcap_cleanup_live_common(p);
 	return (PCAP_ERROR);
 }
 

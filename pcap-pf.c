@@ -494,6 +494,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 
 	return (0);
  bad:
+	pcap_cleanup_live_common(p);
 	return (PCAP_ERROR);
 }
 
