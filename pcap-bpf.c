@@ -1341,6 +1341,13 @@ check_setif_failure(pcap_t *p, int error)
 	}
 }
 
+/*
+ * Default capture buffer size.
+ * 32K isn't very much for modern machines with fast networks; we
+ * pick .5M, as that's the maximum on at least some systems with BPF.
+ */
+#define DEFAULT_BUFSIZE	524288
+
 static int
 pcap_activate_bpf(pcap_t *p)
 {
@@ -1535,8 +1542,8 @@ pcap_activate_bpf(pcap_t *p)
 			v = p->opt.buffer_size;
 		} else {
 			if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) ||
-			    v < 32768)
-				v = 32768;
+			    v < DEFAULT_BUFSIZE)
+				v = DEFAULT_BUFSIZE;
 		}
 #ifndef roundup
 #define roundup(x, y)   ((((x)+((y)-1))/(y))*(y))  /* to any y */
@@ -1602,14 +1609,15 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * No buffer size was explicitly specified.
 			 *
-			 * Try finding a good size for the buffer; 32768 may
-			 * be too big, so keep cutting it in half until we
-			 * find a size that works, or run out of sizes to try.
+			 * Try finding a good size for the buffer;
+			 * DEFAULT_BUFSIZE may be too big, so keep
+			 * cutting it in half until we find a size
+			 * that works, or run out of sizes to try.
 			 * If the default is larger, don't make it smaller.
 			 */
 			if ((ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) ||
-			    v < 32768)
-				v = 32768;
+			    v < DEFAULT_BUFSIZE)
+				v = DEFAULT_BUFSIZE;
 			for ( ; v != 0; v >>= 1) {
 				/*
 				 * Ignore the return value - this is because the
