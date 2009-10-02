@@ -1371,7 +1371,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 				"The interface went down");
 			return PCAP_ERROR;
 
-		default
+		default:
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				 "recvfrom: %s", pcap_strerror(errno));
 			return PCAP_ERROR;
