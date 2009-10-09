@@ -1022,6 +1022,7 @@ bpf_odminit(char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_lock of /etc/objrepos/config_lock failed: %s",
 		    errstr);
+		(void)odm_terminate();
 		return (PCAP_ERROR);
 	}
 
@@ -1080,6 +1081,7 @@ bpf_load(char *errbuf)
 	if (major == -1) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: genmajor failed: %s", pcap_strerror(errno));
+		(void)bpf_odmcleanup(errbuf);
 		return (PCAP_ERROR);
 	}
 
@@ -1090,6 +1092,7 @@ bpf_load(char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: genminor failed: %s",
 			    pcap_strerror(errno));
+			(void)bpf_odmcleanup(errbuf);
 			return (PCAP_ERROR);
 		}
 	}
