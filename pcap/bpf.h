@@ -944,6 +944,15 @@ struct bpf_version {
  */
 #define DLT_IPNET			226
 
+/*
+ * CAN (Controller Area Network) frames, with a pseudo-header as supplied
+ * by Linux SocketCAN.  See Documentation/networking/can.txt in the Linux
+ * source.
+ *
+ * Requested by Felix Obenhuber <felix@obenhuber.de>.
+ */
+#define DLT_CAN_SOCKETCAN		227
+
 
 /*
  * DLT and savefile link type values are split into a class and

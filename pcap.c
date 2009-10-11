@@ -657,6 +657,13 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_IEEE802_15_4_NONASK_PHY, "IEEE 802.15.4 with non-ASK PHY data"),
 	DLT_CHOICE(DLT_MPLS, "MPLS with label as link-layer header"),
 	DLT_CHOICE(DLT_USB_LINUX_MMAPPED, "USB with padded Linux header"),
+	DLT_CHOICE(DLT_DECT, "DECT"),
+	DLT_CHOICE(DLT_AOS, "AOS Space Data Link protocol"),
+	DLT_CHOICE(DLT_WIHART, "Wireless HART"),
+	DLT_CHOICE(DLT_FC_2, "Fibre Channel FC-2"),
+	DLT_CHOICE(DLT_FC_2_WITH_FRAME_DELIMS, "Fibre Channel FC-2 with frame delimiters"),
+	DLT_CHOICE(DLT_IPNET, "Solaris ipnet"),
+	DLT_CHOICE(DLT_CAN_SOCKETCAN, "CAN-bus with SocketCAN headers"),
 	DLT_CHOICE_SENTINEL
 };
 

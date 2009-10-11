@@ -784,6 +784,15 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IPNET				226
 
+/*
+ * CAN (Controller Area Network) frames, with a pseudo-header as supplied
+ * by Linux SocketCAN.  See Documentation/networking/can.txt in the Linux
+ * source.
+ *
+ * Requested by Felix Obenhuber <felix@obenhuber.de>.
+ */
+#define LINKTYPE_CAN_SOCKETCAN			227
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1122,6 +1131,9 @@ static struct linktype_map {
 
 	/* Solaris IPNET */
 	{ DLT_IPNET,		LINKTYPE_IPNET },
+
+	/* CAN frames with SocketCAN headers */
+	{ DLT_CAN_SOCKETCAN,	LINKTYPE_CAN_SOCKETCAN },
 
 	{ -1,			-1 }
 };

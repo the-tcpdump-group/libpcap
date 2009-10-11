@@ -1559,6 +1559,16 @@ init_linktype(p)
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
+
+	case DLT_CAN_SOCKETCAN:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -3420,7 +3430,8 @@ gen_linktype(proto)
 		bpf_error("Bluetooth link-layer type filtering not implemented");
 
 	case DLT_CAN20B:
-		bpf_error("CAN20B link-layer type filtering not implemented");
+	case DLT_CAN_SOCKETCAN:
+		bpf_error("CAN link-layer type filtering not implemented");
 
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
