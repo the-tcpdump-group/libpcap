@@ -1050,20 +1050,24 @@ bpf_odmcleanup(char *errbuf)
 	char *errstr;
 
 	if (odm_unlock(odmlockid) == -1) {
-		if (odm_err_msg(odmerrno, &errstr) == -1)
-			errstr = "Unknown error";
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "bpf_load: odm_unlock failed: %s",
-		    errstr);
+		if (errbuf != NULL) {
+			if (odm_err_msg(odmerrno, &errstr) == -1)
+				errstr = "Unknown error";
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "bpf_load: odm_unlock failed: %s",
+			    errstr);
+		}
 		return (PCAP_ERROR);
 	}
 
 	if (odm_terminate() == -1) {
-		if (odm_err_msg(odmerrno, &errstr) == -1)
-			errstr = "Unknown error";
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "bpf_load: odm_terminate failed: %s",
-		    errstr);
+		if (errbuf != NULL) {
+			if (odm_err_msg(odmerrno, &errstr) == -1)
+				errstr = "Unknown error";
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "bpf_load: odm_terminate failed: %s",
+			    errstr);
+		}
 		return (PCAP_ERROR);
 	}
 
@@ -1096,7 +1100,7 @@ bpf_load(char *errbuf)
 	if (major == -1) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: genmajor failed: %s", pcap_strerror(errno));
-		(void)bpf_odmcleanup(errbuf);
+		(void)bpf_odmcleanup(NULL);
 		return (PCAP_ERROR);
 	}
 
@@ -1107,7 +1111,7 @@ bpf_load(char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: genminor failed: %s",
 			    pcap_strerror(errno));
-			(void)bpf_odmcleanup(errbuf);
+			(void)bpf_odmcleanup(NULL);
 			return (PCAP_ERROR);
 		}
 	}
