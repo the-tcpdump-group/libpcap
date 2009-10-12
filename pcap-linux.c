@@ -1365,7 +1365,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			 *
 			 * XXX - we should really return
 			 * PCAP_ERROR_IFACE_NOT_UP, but pcap_dispatch()
-			 * etc. aren't defined to retur that.
+			 * etc. aren't defined to return that.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"The interface went down");
@@ -2934,6 +2934,7 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	int pkts = 0;
+	char c;
 
 	/* wait for frames availability.*/
 	if ((handle->md.timeout >= 0) &&
@@ -2970,9 +2971,35 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 					return PCAP_ERROR;
 				}
 				if (pollinfo.revents & POLLERR) {
-					snprintf(handle->errbuf,
-						PCAP_ERRBUF_SIZE, 
-						"Error condition on packet socket");
+					/*
+					 * A recv() will give us the
+					 * actual error code.
+					 *
+					 * XXX - make the socket non-blocking?
+					 */
+					if (recv(handle->fd, c, sizeof c,
+					    MSG_PEEK) != -1)
+						continue;	/* what, no error? */
+					if (errno == ENETDOWN) {
+						/*
+						 * The device on which we're
+						 * capturing went away.
+						 *
+						 * XXX - we should really return
+						 * PCAP_ERROR_IFACE_NOT_UP,
+						 * but pcap_dispatch() etc.
+						 * aren't defined to return
+						 * that.
+						 */
+						snprintf(handle->errbuf,
+							PCAP_ERRBUF_SIZE,
+							"The interface went down");
+					} else {
+						snprintf(handle->errbuf,
+							PCAP_ERRBUF_SIZE, 
+							"Error condition on packet socket: %s",
+							strerror(errno));
+					}
 					return PCAP_ERROR;
 				}
 				if (pollinfo.revents & POLLNVAL) {
