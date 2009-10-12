@@ -104,6 +104,36 @@ can be used on the descriptor returned by
 .B poll()
 cannot be used on it those versions of Mac OS X.  Kqueues also don't
 work on that descriptor.
+.BR poll() ,
+but not kqueues, work on that descriptor in Mac OS X releases prior to
+10.4;
+.B poll()
+and kqueues work on that descriptor in Mac OS X 10.6 and later.
+.PP
+On Linux, if the network interface on which you're capturing disappears
+(e.g., if a USB interface is unplugged), select) will return an
+indication that the descriptor has data available to read.  If libpcap
+is not using memory-mapped mode to capture, the attempt to read the next
+packet will return an error; however, if it is using memory-mapped mode
+to capture, which it will do if the kernel includes support for
+memory-mapped mode, no packet or error will be returned if you have put
+the
+.B pcap_t
+into non-blocking mode.  You must use
+.B poll()
+in this case;
+.B poll()
+will return a
+.B POLLERR
+indication; a
+.BR recv (2),
+.BR recvfrom(2),
+or
+.BR recvmsg (2)
+on the descriptor will return \-1 and set
+.B errno
+to
+.B ENETDOWN.
 .PP
 .B pcap_get_selectable_fd()
 is not available on Windows.
@@ -111,4 +141,4 @@ is not available on Windows.
 A selectable file descriptor is returned if one exists; otherwise, \-1
 is returned.
 .SH SEE ALSO
-pcap(3PCAP), select(2), poll(2)
+pcap(3PCAP), select(2), poll(2), recv(2)
