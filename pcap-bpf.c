@@ -834,6 +834,21 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 			case EWOULDBLOCK:
 				return (0);
+
+			case ENXIO:
+				/*
+				 * The device on which we're capturing
+				 * went away.
+				 *
+				 * XXX - we should really return
+				 * PCAP_ERROR_IFACE_NOT_UP, but
+				 * pcap_dispatch() etc. aren't
+				 * defined to retur that.
+				 */
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "The interface went down");
+				return (PCAP_ERROR);
+
 #if defined(sun) && !defined(BSD) && !defined(__svr4__) && !defined(__SVR4)
 			/*
 			 * Due to a SunOS bug, after 2^31 bytes, the kernel

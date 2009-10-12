@@ -1332,12 +1332,12 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 */
 		if (handle->break_loop) {
 			/*
-			 * Yes - clear the flag that indicates that it
-			 * has, and return -2 as an indication that we
-			 * were told to break out of the loop.
+			 * Yes - clear the flag that indicates that it has,
+			 * and return PCAP_ERROR_BREAK as an indication that
+			 * we were told to break out of the loop.
 			 */
 			handle->break_loop = 0;
-			return -2;
+			return PCAP_ERROR_BREAK;
 		}
 
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
@@ -1349,17 +1349,32 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			handle->bufsize - offset, MSG_TRUNC,
 			(struct sockaddr *) &from, &fromlen);
 #endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
-	} while (packet_len == -1 && (errno == EINTR || errno == ENETDOWN));
+	} while (packet_len == -1 && errno == EINTR);
 
 	/* Check if an error occured */
 
 	if (packet_len == -1) {
-		if (errno == EAGAIN)
+		switch (errno) {
+
+		case EAGAIN:
 			return 0;	/* no packet there */
-		else {
+
+		case ENETDOWN:
+			/*
+			 * The device on which we're capturing went away.
+			 *
+			 * XXX - we should really return
+			 * PCAP_ERROR_IFACE_NOT_UP, but pcap_dispatch()
+			 * etc. aren't defined to retur that.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"The interface went down");
+			return PCAP_ERROR;
+
+		default
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				 "recvfrom: %s", pcap_strerror(errno));
-			return -1;
+			return PCAP_ERROR;
 		}
 	}
 
@@ -1517,7 +1532,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "SIOCGSTAMP: %s", pcap_strerror(errno));
-		return -1;
+		return PCAP_ERROR;
 	}
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= packet_len;
@@ -2935,14 +2950,42 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 			 			handle->md.timeout: -1);
 			if ((ret < 0) && (errno != EINTR)) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
-					 "can't poll on packet socket fd %d: %d-%s",
-					handle->fd, errno, pcap_strerror(errno));
-				return -1;
-			}
+					"can't poll on packet socket: %s",
+					pcap_strerror(errno));
+				return PCAP_ERROR;
+			} else if (ret > 0) {
+				/*
+				 * There's some indication on the descriptor.
+				 * Check for indications other than
+				 * "you can read on this descriptor".
+				 */
+#ifdef POLLRDHUP
+				if (pollinfo.revents & (POLLHUP | POLLRDHUP)) {
+#else
+				if (pollinfo.revents & POLLHUP) {
+#endif
+					snprintf(handle->errbuf,
+						PCAP_ERRBUF_SIZE,
+						"Hangup on packet socket");
+					return PCAP_ERROR;
+				}
+				if (pollinfo.revents & POLLERR) {
+					snprintf(handle->errbuf,
+						PCAP_ERRBUF_SIZE, 
+						"Error condition on packet socket");
+					return PCAP_ERROR;
+				}
+				if (pollinfo.revents & POLLNVAL) {
+					snprintf(handle->errbuf,
+						PCAP_ERRBUF_SIZE, 
+						"Invalid polling request on packet socket");
+					return PCAP_ERROR;
+				}
+  			}
 			/* check for break loop condition on interrupted syscall*/
 			if (handle->break_loop) {
 				handle->break_loop = 0;
-				return -2;
+				return PCAP_ERROR_BREAK;
 			}
 		} while (ret < 0);
 	}
@@ -3144,7 +3187,7 @@ skip:
 		/* check for break loop condition*/
 		if (handle->break_loop) {
 			handle->break_loop = 0;
-			return -2;
+			return PCAP_ERROR_BREAK;
 		}
 	}
 	return pkts;
