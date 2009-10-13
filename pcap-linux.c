@@ -2982,7 +2982,7 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 					 *
 					 * XXX - make the socket non-blocking?
 					 */
-					if (recv(handle->fd, c, sizeof c,
+					if (recv(handle->fd, &c, sizeof c,
 					    MSG_PEEK) != -1)
 						continue;	/* what, no error? */
 					if (errno == ENETDOWN) {
