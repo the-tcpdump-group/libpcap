@@ -104,6 +104,11 @@ can be used on the descriptor returned by
 .B poll()
 cannot be used on it those versions of Mac OS X.  Kqueues also don't
 work on that descriptor.
+.BR poll() ,
+but not kqueues, work on that descriptor in Mac OS X releases prior to
+10.4;
+.B poll()
+and kqueues work on that descriptor in Mac OS X 10.6 and later.
 .PP
 .B pcap_get_selectable_fd()
 is not available on Windows.

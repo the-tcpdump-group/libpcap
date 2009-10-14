@@ -2929,42 +2929,47 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 	return h.raw;
 }
 
+#ifndef POLLRDHUP
+#define POLLRDHUP 0
+#endif
+
 static int
 pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
 		u_char *user)
 {
+	int timeout;
 	int pkts = 0;
 	char c;
 
 	/* wait for frames availability.*/
-	if ((handle->md.timeout >= 0) &&
-	    !pcap_get_ring_frame(handle, TP_STATUS_USER)) {
+	if (!pcap_get_ring_frame(handle, TP_STATUS_USER)) {
 		struct pollfd pollinfo;
 		int ret;
 
 		pollinfo.fd = handle->fd;
 		pollinfo.events = POLLIN;
 
+		if (handle->md.timeout == 0)
+			timeout = -1;	/* block forever */
+		else if (handle->md.timeout > 0)
+			timeout = handle->md.timeout;	/* block for that amount of time */
+		else
+			timeout = 0;	/* non-blocking mode - poll to pick up errors */
 		do {
-			/* poll() requires a negative timeout to wait forever */
-			ret = poll(&pollinfo, 1, (handle->md.timeout > 0)?
-			 			handle->md.timeout: -1);
-			if ((ret < 0) && (errno != EINTR)) {
+			ret = poll(&pollinfo, 1, timeout);
+			if (ret < 0 && errno != EINTR) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
 					"can't poll on packet socket: %s",
 					pcap_strerror(errno));
 				return PCAP_ERROR;
-			} else if (ret > 0) {
+			} else if (ret > 0 &&
+			    (pollinfo.revents & (POLLHUP|POLLRDHUP|POLLERR|POLLNVAL))) {
 				/*
-				 * There's some indication on the descriptor.
-				 * Check for indications other than
-				 * "you can read on this descriptor".
+				 * There's some indication other than
+				 * "you can read on this descriptor" on
+				 * the descriptor.
 				 */
-#ifdef POLLRDHUP
 				if (pollinfo.revents & (POLLHUP | POLLRDHUP)) {
-#else
-				if (pollinfo.revents & POLLHUP) {
-#endif
 					snprintf(handle->errbuf,
 						PCAP_ERRBUF_SIZE,
 						"Hangup on packet socket");
@@ -2977,7 +2982,7 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 					 *
 					 * XXX - make the socket non-blocking?
 					 */
-					if (recv(handle->fd, c, sizeof c,
+					if (recv(handle->fd, &c, sizeof c,
 					    MSG_PEEK) != -1)
 						continue;	/* what, no error? */
 					if (errno == ENETDOWN) {
