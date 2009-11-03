@@ -65,7 +65,8 @@ static const char rcsid[] _U_ =
 #endif
 
 #define USB_IFACE "usbmon"
-#define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
+#define USB_TEXT_DIR_OLD "/sys/kernel/debug/usbmon"
+#define USB_TEXT_DIR "/sys/kernel/debug/usb/usbmon"
 #define SYS_USB_BUS_DIR "/sys/bus/usb/devices"
 #define PROC_USB_BUS_DIR "/proc/bus/usb"
 #define USB_LINE_LEN 4096
@@ -354,10 +355,21 @@ usb_activate(pcap_t* handle)
 		handle->fd = open(full_path, O_RDONLY, 0);
 		if (handle->fd < 0)
 		{
-			/* no more fallback, give it up*/
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				"Can't open USB bus file %s: %s", full_path, strerror(errno));
-			return PCAP_ERROR;
+			if (errno == ENOENT)
+			{
+				/*
+				 * Not found at the new location; try
+				 * the old location.
+				 */
+				snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%dt", handle->md.ifindex);  
+				handle->fd = open(full_path, O_RDONLY, 0);
+			}
+			if (handle->fd < 0) {
+				/* no more fallback, give it up*/
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"Can't open USB bus file %s: %s", full_path, strerror(errno));
+				return PCAP_ERROR;
+			}
 		}
 
 		if (handle->opt.rfmon) {
@@ -614,10 +626,21 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	fd = open(string, O_RDONLY, 0);
 	if (fd < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't open USB stats file %s: %s", 
-			string, strerror(errno));
-		return -1;
+		if (errno == ENOENT)
+		{
+			/*
+			 * Not found at the new location; try the old
+			 * location.
+			 */
+			snprintf(string, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%ds", handle->md.ifindex);
+			fd = open(string, O_RDONLY, 0);
+		}
+		if (fd < 0) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"Can't open USB stats file %s: %s", 
+				string, strerror(errno));
+			return -1;
+		}
 	}
 
 	/* read stats line */
