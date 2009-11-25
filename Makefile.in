@@ -44,6 +44,7 @@ VPATH = @srcdir@
 # You shouldn't need to edit anything below.
 #
 
+LD = /usr/bin/ld
 CC = @CC@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@

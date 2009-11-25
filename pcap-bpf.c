@@ -51,6 +51,7 @@ static const char rcsid[] _U_ =
 #include <sys/ioccom.h>
 #endif
 #include <sys/utsname.h>
+#include <fcntl.h>
 
 #ifdef HAVE_ZEROCOPY_BPF
 #include <machine/atomic.h>
@@ -542,7 +543,8 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 		if (v == DLT_EN10MB) {
 			is_ethernet = 1;
 			for (i = 0; i < bdlp->bfl_len; i++) {
-				if (bdlp->bfl_list[i] != DLT_EN10MB) {
+				if (bdlp->bfl_list[i] != DLT_EN10MB  &&
+				    bdlp->bfl_list[i] != DLT_IPNET) {
 					is_ethernet = 0;
 					break;
 				}

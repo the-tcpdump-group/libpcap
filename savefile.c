@@ -793,6 +793,8 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_CAN_SOCKETCAN			227
 
+#define	LINKTYPE_IPNET		226
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1134,6 +1136,9 @@ static struct linktype_map {
 
 	/* CAN frames with SocketCAN headers */
 	{ DLT_CAN_SOCKETCAN,	LINKTYPE_CAN_SOCKETCAN },
+
+	/* Solaris IPNET */
+	{ DLT_IPNET,		LINKTYPE_IPNET },
 
 	{ -1,			-1 }
 };

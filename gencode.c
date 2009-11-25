@@ -212,6 +212,7 @@ static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_ether_linktype(int);
+static struct block *gen_ipnet_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static struct slist *gen_load_prism_llprefixlen(void);
 static struct slist *gen_load_avs_llprefixlen(void);
@@ -1569,6 +1570,13 @@ init_linktype(p)
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
+
+	case DLT_IPNET:
+		off_linktype = 1;
+		off_macpl = 24;		/* ipnet header length */
+		off_nl = 0;
+		off_nl_nosnap = -1;
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -2000,6 +2008,33 @@ gen_ether_linktype(proto)
 			    (bpf_int32)proto);
 		}
 	}
+}
+
+/*
+ * "proto" is an Ethernet type value and for IPNET, if it is not IPv4
+ * or IPv6 then we have an error.
+ */
+static struct block *
+gen_ipnet_linktype(proto)
+	register int proto;
+{
+	struct block *b0, *b1;
+
+	switch (proto) {
+	case ETHERTYPE_IP:
+		return gen_cmp(OR_LINK, off_linktype, BPF_B,
+		    (bpf_int32)AF_INET);
+		/* NOTREACHED */
+
+	case ETHERTYPE_IPV6:
+		return gen_cmp(OR_LINK, off_linktype, BPF_B,
+		    (bpf_int32)AF_INET6);
+		/* NOTREACHED */
+	default :
+		break;
+	}
+
+	return gen_false();
 }
 
 /*
@@ -3398,6 +3433,9 @@ gen_linktype(proto)
 		 * FIXME encapsulation specific BPF_ filters
 		 */
 		return gen_mcmp(OR_LINK, 0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
+
+	case DLT_IPNET:
+		return gen_ipnet_linktype(proto);
 
 	case DLT_LINUX_IRDA:
 		bpf_error("IrDA link-layer type filtering not implemented");
@@ -7328,6 +7366,18 @@ gen_inbound(dir)
 			  gen_loadi(0),
 			  dir);
 		break;
+
+#ifdef DL_IPNET
+	case DLT_IPNET:
+		if (dir) {
+			/* match outgoing packets */
+			b0 = gen_cmp(OR_LINK, 2, BPF_H, IPNET_OUTBOUND);
+		} else {
+			/* match incoming packets */
+			b0 = gen_cmp(OR_LINK, 2, BPF_H, IPNET_INBOUND);
+		}
+		break;
+#endif
 
 	case DLT_LINUX_SLL:
 		if (dir) {

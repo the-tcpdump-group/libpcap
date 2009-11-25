@@ -953,6 +953,15 @@ struct bpf_version {
  */
 #define DLT_CAN_SOCKETCAN		227
 
+#define	DLT_IPNET		226	/* Assigned by tcpdump.org */
+#define	DLT_IPOIB		162	/* Private until we know what it is */
+
+/*
+ * IPNET
+ */
+#define	IPNET_OUTBOUND		1
+#define	IPNET_INBOUND		2
+
 
 /*
  * DLT and savefile link type values are split into a class and

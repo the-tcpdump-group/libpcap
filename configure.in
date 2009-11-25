@@ -295,7 +295,7 @@ AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 AC_MSG_CHECKING(packet capture type)
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
-elif test -r /dev/bpf ; then
+elif test -r /dev/bpf -o -h /dev/bpf ; then
 	#
 	# Cloning BPF device.
 	#
