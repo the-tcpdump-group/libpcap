@@ -2018,8 +2018,6 @@ static struct block *
 gen_ipnet_linktype(proto)
 	register int proto;
 {
-	struct block *b0, *b1;
-
 	switch (proto) {
 	case ETHERTYPE_IP:
 		return gen_cmp(OR_LINK, off_linktype, BPF_B,
@@ -7367,7 +7365,6 @@ gen_inbound(dir)
 			  dir);
 		break;
 
-#ifdef DL_IPNET
 	case DLT_IPNET:
 		if (dir) {
 			/* match outgoing packets */
@@ -7377,7 +7374,6 @@ gen_inbound(dir)
 			b0 = gen_cmp(OR_LINK, 2, BPF_H, IPNET_INBOUND);
 		}
 		break;
-#endif
 
 	case DLT_LINUX_SLL:
 		if (dir) {
