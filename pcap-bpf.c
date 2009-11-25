@@ -539,12 +539,20 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 		 * right thing to do, but I suspect it is - Ethernet <->
 		 * 802.11 bridges would probably badly mishandle frames
 		 * that don't have Ethernet headers).
+		 *
+		 * On Solaris with BPF, Ethernet devices also offer
+		 * DLT_IPNET, so we, if DLT_IPNET is defined, we don't
+		 * treat it as an indication that the device isn't an
+		 * Ethernet.
 		 */
 		if (v == DLT_EN10MB) {
 			is_ethernet = 1;
 			for (i = 0; i < bdlp->bfl_len; i++) {
-				if (bdlp->bfl_list[i] != DLT_EN10MB  &&
-				    bdlp->bfl_list[i] != DLT_IPNET) {
+				if (bdlp->bfl_list[i] != DLT_EN10MB
+#ifdef DLT_IPNET
+				    && bdlp->bfl_list[i] != DLT_IPNET
+#endif
+				    ) {
 					is_ethernet = 0;
 					break;
 				}
