@@ -6885,7 +6885,7 @@ fi
 echo $ECHO_N "checking packet capture type... $ECHO_C" >&6; }
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
-elif test -r /dev/bpf ; then
+elif test -r /dev/bpf -o -h /dev/bpf ; then
 	#
 	# Cloning BPF device.
 	#
