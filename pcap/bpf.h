@@ -953,9 +953,6 @@ struct bpf_version {
  */
 #define DLT_CAN_SOCKETCAN		227
 
-#define	DLT_IPNET		226	/* Assigned by tcpdump.org */
-#define	DLT_IPOIB		162	/* Private until we know what it is */
-
 /*
  * IPNET
  */
