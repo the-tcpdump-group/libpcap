@@ -253,6 +253,12 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_WARNING			1	/* generic warning code */
 #define PCAP_WARNING_PROMISC_NOTSUP	2	/* this device doesn't support promiscuous mode */
 
+/*
+ * Value to pass to pcap_compile() as the netmask if you don't know what
+ * the netmask is.
+ */
+#define PCAP_NETMASK_UNKNOWN	0xffffffff
+
 char	*pcap_lookupdev(char *);
 int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
 

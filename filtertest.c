@@ -166,7 +166,7 @@ main(int argc, char **argv)
 	int Oflag;
 	long snaplen;
 	int dlt;
-	bpf_u_int32 netmask = 0xffffffff;
+	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
 	char *cmdbuf;
 	pcap_t *pd;
 	struct bpf_program fcode;

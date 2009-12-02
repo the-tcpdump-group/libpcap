@@ -7119,10 +7119,11 @@ gen_broadcast(proto)
 
 	case Q_IP:
 		/*
-		 * We treat a netmask of 0xffffffff as an indication
-		 * that we don't know the netmask, and fail.
+		 * We treat a netmask of PCAP_NETMASK_UNKNOWN (0xffffffff)
+		 * as an indication that we don't know the netmask, and fail
+		 * in that case.
 		 */
-		if (netmask == 0xffffffff)
+		if (netmask == PCAP_NETMASK_UNKNOWN)
 			bpf_error("netmask not known, so 'ip broadcast' not supported");
 		b0 = gen_linktype(ETHERTYPE_IP);
 		hostmask = ~netmask;
