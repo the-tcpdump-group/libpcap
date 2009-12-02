@@ -7118,6 +7118,12 @@ gen_broadcast(proto)
 		break;
 
 	case Q_IP:
+		/*
+		 * We treat a netmask of 0xffffffff as an indication
+		 * that we don't know the netmask, and fail.
+		 */
+		if (netmask == 0xffffffff)
+			bpf_error("netmask not known, so 'ip broadcast' not supported");
 		b0 = gen_linktype(ETHERTYPE_IP);
 		hostmask = ~netmask;
 		b1 = gen_mcmp(OR_NET, 16, BPF_W, (bpf_int32)0, hostmask);
