@@ -51,7 +51,6 @@ static const char rcsid[] _U_ =
 #include <sys/ioccom.h>
 #endif
 #include <sys/utsname.h>
-#include <fcntl.h>
 
 #ifdef HAVE_ZEROCOPY_BPF
 #include <machine/atomic.h>
