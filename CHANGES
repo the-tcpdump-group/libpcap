@@ -1,6 +1,34 @@
 @(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.72 2008-12-23 20:13:29 guy Exp $ (LBL)
 
-	updated pcap-dag.c from Stephen Donnelly <stephen@endace.com>	
+Mon.	December 21, 2009.  ken@netfunctional.ca.  Summary for 1.0.2 libpcap release
+	Update Endace DAG ERF support
+	Add support for shared libraries on Solaris and HP-UX
+	Don't build/install shared libraries on on platforms we don't support
+	In the lexical analyzer, free up any addrinfo structure we got back from getaddrinfo().
+	Add support for OpenSolaris (And SXCE)
+	Hyphenate "link-layer" everywhere
+	Add /sys/kernel/debug/usb/usbmon to the list of usbmon locations
+	In pcap_read_linux_mmap(), if there are no frames available, call poll() 
+	 even if we're in non-blocking mode
+	Use poll() on Snow Leopard for BPF devices (and ttys)
+	If an ENXIO is received, it may mean the device has gone away.  Deal with it.
+	For BPF, raise the default capture buffer size to from 32k to 512k
+	Support ps_ifdrop on Linux
+	Added a bunch of #ifdef directives to make wpcap.dll (WinPcap) compile
+	 under cygwin.
+	Changes to Linux mmapped captures.
+	Fix bug where create_ring would fail for particular snaplen and
+      	 buffer size combinations
+	Add workaround for threadsafeness on Windows
+	Add missing mapping for DLT_ENC <-> LINKTYPE_ENC
+	DLT: Add DLT_CAN_SOCKETCAN
+	DLT: Add Solaris ipnet
+	Don't check for DLT_IPNET if it's not defined
+	Add link-layer types for Fibre Channel FC-2
+	Add link-layer types for Wireless HART
+	Add link-layer types for AOS
+	Add link-layer types for DECT
+	Autoconf fixes (AIX, HP-UX, OSF/1, Tru64 cleanups)
 
 Tue.    March 25, 2009.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
 	Install headers unconditionally, and include vlan.h/bluetooth.h if enabled
