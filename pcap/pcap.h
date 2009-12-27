@@ -57,6 +57,13 @@
 extern "C" {
 #endif
 
+/*
+ * Version number of the current version of the pcap file format.
+ *
+ * NOTE: this is *NOT* the version number of the libpcap library.
+ * To fetch the version information for the version of libpcap
+ * you're using, use pcap_lib_version().
+ */
 #define PCAP_VERSION_MAJOR 2
 #define PCAP_VERSION_MINOR 4
 
