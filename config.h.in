@@ -214,6 +214,9 @@
 /* target host supports Bluetooth sniffing */
 #undef PCAP_SUPPORT_BT
 
+/* target host supports CAN sniffing */
+#undef PCAP_SUPPORT_CAN
+
 /* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB
 

@@ -176,6 +176,10 @@ static const char rcsid[] _U_ =
 #include "pcap-bt-linux.h"
 #endif
 
+#ifdef PCAP_SUPPORT_CAN
+#include "pcap-can-linux.h"
+#endif
+
 /*
  * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
  * sockets rather than SOCK_PACKET sockets.
@@ -373,6 +377,12 @@ pcap_create(const char *device, char *ebuf)
 #ifdef PCAP_SUPPORT_BT
 	if (strstr(device, "bluetooth")) {
 		return bt_create(device, ebuf);
+	}
+#endif
+
+#ifdef PCAP_SUPPORT_CAN
+	if (strstr(device, "can") || strstr(device, "vcan")) {
+		return can_create(device, ebuf);
 	}
 #endif
 
@@ -2072,6 +2082,12 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 
 	case ARPHRD_CHAOS:
 		handle->linktype = DLT_CHAOS;
+		break;
+#ifndef ARPHRD_CAN
+#define ARPHRD_CAN 280
+#endif
+	case ARPHRD_CAN:
+		handle->linktype = DLT_CAN_SOCKETCAN;
 		break;
 
 #ifndef ARPHRD_IEEE802_TR
