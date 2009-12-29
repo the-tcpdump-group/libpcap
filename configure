@@ -1293,9 +1293,9 @@ Optional Features:
                           getaddrinfo available]
   --enable-optimizer-dbg  build optimizer debugging code
   --enable-yydebug        build parser debugging code
-  --enable-bluetooth      enable bluetooth support [default=yes, if support
+  --enable-bluetooth      enable Bluetooth support [default=yes, if support
                           available]
-  --enable-can            enable can support [default=yes, if support
+  --enable-can            enable CAN support [default=yes, if support
                           available]
 
 Optional Packages:

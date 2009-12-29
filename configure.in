@@ -1259,11 +1259,11 @@ AC_SUBST(PCAP_SUPPORT_USB)
 AC_SUBST(USB_SRC)
 
 AC_ARG_ENABLE([bluetooth],
-[AC_HELP_STRING([--enable-bluetooth],[enable bluetooth support @<:@default=yes, if support available@:>@])],
+[AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
 ,enable_bluetooth=yes)
 
 if test "x$enable_bluetooth" != "xno" ; then
-	dnl check for bluetooth sniffing support
+	dnl check for Bluetooth sniffing support
 	case "$host_os" in
 	linux*)
 	       AC_CHECK_HEADER(bluetooth/bluetooth.h,
@@ -1284,7 +1284,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 fi
 
 AC_ARG_ENABLE([can],
-[AC_HELP_STRING([--enable-can],[enable can support @<:@default=yes, if support available@:>@])],
+[AC_HELP_STRING([--enable-can],[enable CAN support @<:@default=yes, if support available@:>@])],
 ,enable_can=yes)
 
 if test "x$enable_can" != "xno" ; then
