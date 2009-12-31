@@ -1276,7 +1276,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 	       )
 	       ;;
 	*)
-	       AC_MSG_NOTICE(no Bluetooth sniffing support)
+	       AC_MSG_NOTICE(no Bluetooth sniffing support implemented for $host_os)
 	       ;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_BT)
@@ -1291,11 +1291,13 @@ if test "x$enable_can" != "xno" ; then
 	dnl check for CAN sniffing support
 	case "$host_os" in
 	linux*)
-		AC_CHECK_HEADER(linux/can/version.h,
+		AC_CHECK_HEADER(linux/can.h,
 			[ AC_DEFINE(PCAP_SUPPORT_CAN, 1, [target host supports CAN sniffing])
 			CAN_SRC=pcap-can-linux.c
 			AC_MSG_NOTICE(CAN sniffing is supported)],
-			AC_MSG_NOTICE(CAN sniffing is not supported) )
+			AC_MSG_NOTICE(CAN sniffing is not supported),
+			[#include <sys/socket.h>]
+		   )
 		;;
 	*)
 		AC_MSG_NOTICE(no CAN sniffing support implemented for $host_os)
