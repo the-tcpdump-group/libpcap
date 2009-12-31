@@ -51,6 +51,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <net/if.h>
+#include <arpa/inet.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -88,7 +89,6 @@ can_create(const char *device, char *ebuf)
 static int
 can_activate(pcap_t* handle)
 {
-	int err = PCAP_ERROR;
 	struct sockaddr_can addr;
 	struct ifreq ifr;
 
@@ -117,7 +117,7 @@ can_activate(pcap_t* handle)
 	/* get interface index */
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
-	if ((handle->fd, SIOCGIFINDEX, &ifr) < 0)
+	if (ioctl(handle->fd, SIOCGIFINDEX, &ifr) < 0)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Unable to get interface index: %s",
@@ -166,7 +166,6 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 {
 	struct msghdr msg;
 	struct pcap_pkthdr pkth;
-	struct timeval tv;
 	struct iovec iv;
 	struct can_frame* cf;
 
