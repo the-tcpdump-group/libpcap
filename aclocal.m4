@@ -28,13 +28,14 @@ dnl
 dnl It appears that newer versions of autoconf (2.64 and later) will,
 dnl if you use AC_TRY_COMPILE in a macro, stick AC_PROG_CC at the
 dnl beginning of the macro, even if the macro itself calls AC_PROG_CC.
-dnl See section 20.8 "Expanded Before Required" in the Autoconf
-dnl documentation.
+dnl See the "Prerequisite Macros" and "Expanded Before Required" sections
+dnl in the Autoconf documentation.
 dnl
 dnl This causes a steaming heap of fail in our case, as we were, in
-dnl AC_LBL_C_INIT, doing the tests we now do in AC_LBL_C_PREPARE,
+dnl AC_LBL_C_INIT, doing the tests we now do in AC_LBL_C_INIT_BEFORE_CC,
 dnl calling AC_PROG_CC, and then doing the tests we now do in
-dnl AC_LBL_C_INIT.
+dnl AC_LBL_C_INIT.  Now, we run AC_LBL_C_INIT_BEFORE_CC, AC_PROG_CC,
+dnl and AC_LBL_C_INIT at the top level.
 dnl
 AC_DEFUN(AC_LBL_C_INIT_BEFORE_CC,
 [
