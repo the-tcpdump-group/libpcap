@@ -1909,6 +1909,10 @@ test -n "$target_alias" &&
 
 
 
+
+
+
+
 # Check whether --with-gcc was given.
 if test "${with_gcc+set}" = set; then
   withval=$with_gcc;
@@ -2898,6 +2902,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
     if test "$GCC" = yes ; then
 	    if test "$SHLICC2" = yes ; then
 		    ac_cv_lbl_gcc_vers=2
@@ -2921,63 +2926,6 @@ echo "${ECHO_T}$ac_cv_lbl_gcc_vers" >&6; }
 			    V_CCOPT="-O2"
 		    fi
 	    fi
-
-	    #
-	    # On platforms where we build a shared library:
-	    #
-	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in AIX and Darwin/OS X);
-	    #
-	    #	define option to set the soname of the shared library,
-	    #	if the OS supports that;
-	    #
-	    #	add options to specify, at link time, a directory to
-	    #	add to the run-time search path, if that's necessary.
-	    #
-	    V_SHLIB_CMD="\$(CC)"
-	    V_SHLIB_OPT="-shared"
-	    case "$host_os" in
-
-	    aix*)
-		    ;;
-
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
-	    	    #
-		    # Platforms where the linker is the GNU linker
-		    # or accepts command-line arguments like
-		    # those the GNU linker accepts.
-		    #
-		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
-		    ;;
-
-	    hpux*)
-		    V_CCOPT="$V_CCOPT -fpic"
-	    	    #
-		    # XXX - this assumes GCC is using the HP linker,
-		    # rather than the GNU linker, and that the "+h"
-		    # option is used on all HP-UX platforms, both .sl
-		    # and .so.
-		    #
-		    V_SONAME_OPT="-Wl,+h,"
-		    #
-		    # By default, directories specifed with -L
-		    # are added to the run-time search path, so
-		    # we don't add them in pcap-config.
-		    #
-		    ;;
-
-	    solaris*)
-		    V_CCOPT="$V_CCOPT -fpic"
-		    #
-		    # XXX - this assumes GCC is using the Sun linker,
-		    # rather than the GNU linker.
-		    #
-		    V_SONAME_OPT="-Wl,-h,"
-		    V_RPATH_OPT="-Wl,-R,"
-		    ;;
-	    esac
     else
 	    { echo "$as_me:$LINENO: checking that $CC handles ansi prototypes" >&5
 echo $ECHO_N "checking that $CC handles ansi prototypes... $ECHO_C" >&6; }
@@ -3172,55 +3120,7 @@ echo "$as_me: error: see the INSTALL doc for more info" >&2;}
 	    V_INCLS="$V_INCLS -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
 
-	    #
-	    # Set the appropriate compiler flags and, on platforms
-	    # where we build a shared library:
-	    #
-	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in Darwin/OS X);
-	    #
-	    #	if we generate ".so" shared libraries, define the
-	    #	appropriate options for building the shared library;
-	    #
-	    #	add options to specify, at link time, a directory to
-	    #	add to the run-time search path, if that's necessary.
-	    #
-	    # Note: spaces after V_SONAME_OPT are significant; on
-	    # some platforms the soname is passed with a GCC-like
-	    # "-Wl,-soname,{soname}" option, with the soname part
-	    # of the option, while on other platforms the C compiler
-	    # driver takes it as a regular option with the soname
-	    # following the option.  The same applies to V_RPATH_OPT.
-	    #
 	    case "$host_os" in
-
-	    aix*)
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-G -bnoentry -bexpall"
-		    ;;
-
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
-		    #
-		    # "cc" is GCC.
-		    #
-		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
-		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
-		    ;;
-
-	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
-		    V_SHLIB_CMD="\$(LD)"
-		    V_SHLIB_OPT="-b"
-		    V_SONAME_OPT="+h "
-		    #
-		    # By default, directories specifed with -L
-		    # are added to the run-time search path, so
-		    # we don't add them in pcap-config.
-		    #
-		    ;;
 
 	    irix*)
 		    V_CCOPT="$V_CCOPT -xansi -signed -g3"
@@ -3232,18 +3132,6 @@ echo "$as_me: error: see the INSTALL doc for more info" >&2;}
 		    # Tru64 UNIX.
 		    #
 		    V_CCOPT="$V_CCOPT -g3"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-shared"
-		    V_SONAME_OPT="-soname "
-		    V_RPATH_OPT="-rpath "
-		    ;;
-
-	    solaris*)
-		    V_CCOPT="$V_CCOPT -Kpic"
-		    V_SHLIB_CMD="\$(CC)"
-		    V_SHLIB_OPT="-G"
-		    V_SONAME_OPT="-h "
-		    V_RPATH_OPT="-R"
 		    ;;
 
 	    ultrix*)
@@ -3305,6 +3193,136 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 		    fi
+		    ;;
+	    esac
+    fi
+
+
+    if test "$GCC" = yes ; then
+	    #
+	    # On platforms where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in AIX and Darwin/OS X);
+	    #
+	    #	define option to set the soname of the shared library,
+	    #	if the OS supports that;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
+	    #
+	    V_SHLIB_CMD="\$(CC)"
+	    V_SHLIB_OPT="-shared"
+	    case "$host_os" in
+
+	    aix*)
+		    ;;
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
+	    	    #
+		    # Platforms where the linker is the GNU linker
+		    # or accepts command-line arguments like
+		    # those the GNU linker accepts.
+		    #
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
+		    ;;
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT -fpic"
+	    	    #
+		    # XXX - this assumes GCC is using the HP linker,
+		    # rather than the GNU linker, and that the "+h"
+		    # option is used on all HP-UX platforms, both .sl
+		    # and .so.
+		    #
+		    V_SONAME_OPT="-Wl,+h,"
+		    #
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
+		    #
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    #
+		    # XXX - this assumes GCC is using the Sun linker,
+		    # rather than the GNU linker.
+		    #
+		    V_SONAME_OPT="-Wl,-h,"
+		    V_RPATH_OPT="-Wl,-R,"
+		    ;;
+	    esac
+    else
+	    #
+	    # Set the appropriate compiler flags and, on platforms
+	    # where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in Darwin/OS X);
+	    #
+	    #	if we generate ".so" shared libraries, define the
+	    #	appropriate options for building the shared library;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
+	    #
+	    # Note: spaces after V_SONAME_OPT are significant; on
+	    # some platforms the soname is passed with a GCC-like
+	    # "-Wl,-soname,{soname}" option, with the soname part
+	    # of the option, while on other platforms the C compiler
+	    # driver takes it as a regular option with the soname
+	    # following the option.  The same applies to V_RPATH_OPT.
+	    #
+	    case "$host_os" in
+
+	    aix*)
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-G -bnoentry -bexpall"
+		    ;;
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*)
+		    #
+		    # "cc" is GCC.
+		    #
+		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
+		    ;;
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CMD="\$(LD)"
+		    V_SHLIB_OPT="-b"
+		    V_SONAME_OPT="+h "
+		    #
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
+		    #
+		    ;;
+
+	    osf*)
+	    	    #
+		    # Presumed to be DEC OSF/1, Digital UNIX, or
+		    # Tru64 UNIX.
+		    #
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-shared"
+		    V_SONAME_OPT="-soname "
+		    V_RPATH_OPT="-rpath "
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -Kpic"
+		    V_SHLIB_CMD="\$(CC)"
+		    V_SHLIB_OPT="-G"
+		    V_SONAME_OPT="-h "
+		    V_RPATH_OPT="-R"
 		    ;;
 	    esac
     fi
