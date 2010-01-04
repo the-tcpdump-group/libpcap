@@ -663,6 +663,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_FC_2_WITH_FRAME_DELIMS, "Fibre Channel FC-2 with frame delimiters"),
 	DLT_CHOICE(DLT_IPNET, "Solaris ipnet"),
 	DLT_CHOICE(DLT_CAN_SOCKETCAN, "CAN-bus with SocketCAN headers"),
+	DLT_CHOICE(DLT_IPV4, "Raw IPv4"),
+	DLT_CHOICE(DLT_IPV6, "Raw IPv6"),
 	DLT_CHOICE_SENTINEL
 };
 

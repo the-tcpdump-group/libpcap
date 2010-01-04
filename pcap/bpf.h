@@ -954,11 +954,17 @@ struct bpf_version {
 #define DLT_CAN_SOCKETCAN		227
 
 /*
+ * Raw IPv4/IPv6; different from DLT_RAW in that the DLT_ value specifies
+ * whether it's v4 or v6.  Requested by Darren Reed <Darren.Reed@Sun.COM>.
+ */
+#define DLT_IPV4			228
+#define DLT_IPV6			229
+
+/*
  * IPNET
  */
 #define	IPNET_OUTBOUND		1
 #define	IPNET_INBOUND		2
-
 
 /*
  * DLT and savefile link type values are split into a class and

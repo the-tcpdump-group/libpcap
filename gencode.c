@@ -1155,6 +1155,8 @@ init_linktype(p)
 		return;
 
 	case DLT_RAW:
+	case DLT_IPV4:
+	case DLT_IPV6:
 		off_linktype = -1;
 		off_macpl = 0;
 		off_nl = 0;
@@ -3173,6 +3175,32 @@ gen_linktype(proto)
 		default:
 			return gen_false();		/* always false */
 		}
+		/*NOTREACHED*/
+		break;
+
+	case DLT_IPV4:
+		/*
+		 * Raw IPv4, so no type field.
+		 */
+		if (proto == ETHERTYPE_IP)
+			return gen_true();		/* always true */
+
+		/* Checking for something other than IPv4; always false */
+		return gen_false();
+		/*NOTREACHED*/
+		break;
+
+	case DLT_IPV6:
+		/*
+		 * Raw IPv6, so no type field.
+		 */
+#ifdef INET6
+		if (proto == ETHERTYPE_IPV6)
+			return gen_true();		/* always true */
+#endif
+
+		/* Checking for something other than IPv6; always false */
+		return gen_false();
 		/*NOTREACHED*/
 		break;
 

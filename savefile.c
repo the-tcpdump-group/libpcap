@@ -793,7 +793,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_CAN_SOCKETCAN			227
 
-#define	LINKTYPE_IPNET		226
+/*
+ * Raw IPv4/IPv6; different from DLT_RAW in that the DLT_ value specifies
+ * whether it's v4 or v6.  Requested by Darren Reed <Darren.Reed@Sun.COM>.
+ */
+#define LINKTYPE_IPV4				228
+#define LINKTYPE_IPV6				229
 
 
 static struct linktype_map {
@@ -1137,8 +1142,9 @@ static struct linktype_map {
 	/* CAN frames with SocketCAN headers */
 	{ DLT_CAN_SOCKETCAN,	LINKTYPE_CAN_SOCKETCAN },
 
-	/* Solaris IPNET */
-	{ DLT_IPNET,		LINKTYPE_IPNET },
+	/* Raw IPv4/IPv6 */
+	{ DLT_IPV4,		LINKTYPE_IPV4 },
+	{ DLT_IPV6,		LINKTYPE_IPV6 },
 
 	{ -1,			-1 }
 };
