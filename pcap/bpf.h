@@ -961,12 +961,6 @@ struct bpf_version {
 #define DLT_IPV6			229
 
 /*
- * IPNET
- */
-#define	IPNET_OUTBOUND		1
-#define	IPNET_INBOUND		2
-
-/*
  * DLT and savefile link type values are split into a class and
  * a member of that class.  A class value of 0 indicates a regular
  * DLT_/LINKTYPE_ value.

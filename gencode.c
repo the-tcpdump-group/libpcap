@@ -74,6 +74,7 @@ static const char rcsid[] _U_ =
 #include "sunatmpos.h"
 #include "ppp.h"
 #include "pcap/sll.h"
+#include "pcap/ipnet.h"
 #include "arcnet.h"
 #ifdef HAVE_NET_PFVAR_H
 #include <sys/socket.h>
@@ -2021,16 +2022,18 @@ gen_ipnet_linktype(proto)
 	register int proto;
 {
 	switch (proto) {
+
 	case ETHERTYPE_IP:
 		return gen_cmp(OR_LINK, off_linktype, BPF_B,
-		    (bpf_int32)AF_INET);
+		    (bpf_int32)IPH_AF_INET);
 		/* NOTREACHED */
 
 	case ETHERTYPE_IPV6:
 		return gen_cmp(OR_LINK, off_linktype, BPF_B,
-		    (bpf_int32)AF_INET6);
+		    (bpf_int32)IPH_AF_INET6);
 		/* NOTREACHED */
-	default :
+
+	default:
 		break;
 	}
 
