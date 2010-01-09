@@ -702,6 +702,12 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	}
 	sin4 = (struct sockaddr_in *)&ifr.ifr_addr;
 	*netp = sin4->sin_addr.s_addr;
+	memset(&ifr, 0, sizeof(ifr));
+#ifdef linux
+	/* XXX Work around Linux kernel bug */
+	ifr.ifr_addr.sa_family = AF_INET;
+#endif
+	(void)strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));
