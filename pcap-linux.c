@@ -1891,14 +1891,17 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 			break;
 		}
 	}
-	if (errno != 0) {
+	if (ret != -1) {
 		/*
-		 * Error reading the directory.
+		 * Well, we didn't fail for any other reason; did we
+		 * fail due to an error reading the directory?
 		 */
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Error reading /sys/class/net: %s",
-		    pcap_strerror(errno));
-		ret = -1;
+		if (errno != 0) {
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Error reading /sys/class/net: %s",
+			    pcap_strerror(errno));
+			ret = -1;
+		}
 	}
 
 	(void)close(fd);
