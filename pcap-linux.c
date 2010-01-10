@@ -136,6 +136,7 @@ static const char rcsid[] _U_ =
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
 #include <poll.h>
+#include <dirent.h>
 
 /*
  * Got Wireless Extensions?
@@ -1776,7 +1777,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 }
 
 /*
- * Get from "/proc/net/dev" all interfaces listed there; if they're
+ * Get from "/sys/class/net" all interfaces listed there; if they're
  * already in the list of interfaces we have, that won't add another
  * instance, but if they're not, that'll add them.
  *
@@ -1785,8 +1786,133 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
  * although some other types of addresses can be fetched with SIOCGIFADDR,
  * we don't bother with them for now.
  *
- * We also don't fail if we couldn't open "/proc/net/dev"; we just leave
- * the list of interfaces as is.
+ * We also don't fail if we couldn't open "/sys/class/net"; we just leave
+ * the list of interfaces as is, and return 0, so that we can try
+ * scanning /proc/net/dev.
+ */
+static int
+scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
+{
+	DIR *sys_class_net_d;
+	int fd;
+	struct dirent *ent;
+	char linebuf[512];
+	int linenum;
+	char *p;
+	char name[512];	/* XXX - pick a size */
+	char *q, *saveq;
+	struct ifreq ifrflags;
+	int ret = 1;
+
+	sys_class_net_d = opendir("/sys/class/net");
+	if (sys_class_net_d == NULL && errno == ENOENT)
+		return (0);
+
+	/*
+	 * Create a socket from which to fetch interface information.
+	 */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "socket: %s", pcap_strerror(errno));
+		return (-1);
+	}
+
+	for (;;) {
+		errno = 0;
+		ent = readdir(sys_class_net_d);
+		if (ent == NULL) {
+			/*
+			 * Error or EOF; if errno != 0, it's an error.
+			 */
+			break;
+		}
+
+		/*
+		 * Get the interface name.
+		 */
+		q = &ent->d_name[0];
+		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
+			if (*p == ':') {
+				/*
+				 * This could be the separator between a
+				 * name and an alias number, or it could be
+				 * the separator between a name with no
+				 * alias number and the next field.
+				 *
+				 * If there's a colon after digits, it
+				 * separates the name and the alias number,
+				 * otherwise it separates the name and the
+				 * next field.
+				 */
+				saveq = q;
+				while (isascii(*p) && isdigit(*p))
+					*q++ = *p++;
+				if (*p != ':') {
+					/*
+					 * That was the next field,
+					 * not the alias number.
+					 */
+					q = saveq;
+				}
+				break;
+			} else
+				*q++ = *p++;
+		}
+		*q = '\0';
+
+		/*
+		 * Get the flags for this interface, and skip it if
+		 * it's not up.
+		 */
+		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
+			if (errno == ENXIO)
+				continue;
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFFLAGS: %.*s: %s",
+			    (int)sizeof(ifrflags.ifr_name),
+			    ifrflags.ifr_name,
+			    pcap_strerror(errno));
+			ret = -1;
+			break;
+		}
+		if (!(ifrflags.ifr_flags & IFF_UP))
+			continue;
+
+		/*
+		 * Add an entry for this interface, with no addresses.
+		 */
+		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
+		    errbuf) == -1) {
+			/*
+			 * Failure.
+			 */
+			ret = -1;
+			break;
+		}
+	}
+	if (errno != 0) {
+		/*
+		 * Error reading the directory.
+		 */
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Error reading /sys/class/net: %s",
+		    pcap_strerror(errno));
+		ret = -1;
+	}
+
+	(void)close(fd);
+	(void)closedir(sys_class_net_d);
+	return (ret);
+}
+
+/*
+ * Get from "/proc/net/dev" all interfaces listed there; if they're
+ * already in the list of interfaces we have, that won't add another
+ * instance, but if they're not, that'll add them.
+ *
+ * See comments from scan_sys_class_net().
  */
 static int
 scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
@@ -1802,7 +1928,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	int ret = 0;
 
 	proc_net_f = fopen("/proc/net/dev", "r");
-	if (proc_net_f == NULL)
+	if (proc_net_f == NULL && errno == ENOENT)
 		return (0);
 
 	/*
@@ -1923,16 +2049,26 @@ static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
+	int ret;
+
 	/*
-	 * Read "/proc/net/dev", and add to the list of interfaces all
+	 * Read "/sys/class/net", and add to the list of interfaces all
 	 * interfaces listed there that we don't already have, because,
 	 * on Linux, SIOCGIFCONF reports only interfaces with IPv4 addresses,
 	 * and even getifaddrs() won't return information about
-	 * interfaces with no addresses, so you need to read "/proc/net/dev"
+	 * interfaces with no addresses, so you need to read "/sys/class/net"
 	 * to get the names of the rest of the interfaces.
 	 */
-	if (scan_proc_net_dev(alldevsp, errbuf) == -1)
-		return (-1);
+	ret = scan_sys_class_net(alldevsp, errbuf);
+	if (ret == -1)
+		return (-1);	/* failed */
+	if (ret == 0) {
+		/*
+		 * No /sys/class/net; try reading /proc/net/dev instead.
+		 */
+		if (scan_proc_net_dev(alldevsp, errbuf) == -1)
+			return (-1);
+	}
 
 	/*
 	 * Add the "any" device.
