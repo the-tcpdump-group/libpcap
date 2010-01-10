@@ -122,6 +122,7 @@ static const char rcsid[] _U_ =
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
@@ -1795,7 +1796,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	int fd;
 	char linebuf[512];
 	int linenum;
-	unsigned char *p;
+	char *p;
 	char name[512];	/* XXX - pick a size */
 	char *q, *saveq;
 	struct ifreq ifrflags;
@@ -1828,7 +1829,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 		/*
 		 * Skip leading white space.
 		 */
-		while (*p != '\0' && isspace(*p))
+		while (*p != '\0' && isascii(*p) && isspace(*p))
 			p++;
 		if (*p == '\0' || *p == '\n')
 			continue;	/* blank line */
@@ -1837,7 +1838,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 		 * Get the interface name.
 		 */
 		q = &name[0];
-		while (*p != '\0' && !isspace(*p)) {
+		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
 			if (*p == ':') {
 				/*
 				 * This could be the separator between a
@@ -1851,7 +1852,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 				 * next field.
 				 */
 				saveq = q;
-				while (isdigit(*p))
+				while (isascii(*p) && isdigit(*p))
 					*q++ = *p++;
 				if (*p != ':') {
 					/*
