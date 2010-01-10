@@ -1827,6 +1827,12 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		}
 
 		/*
+		 * Ignore directories (".", "..", and any subdirectories).
+		 */
+		if (ent->d_type == DT_DIR)
+			continue;
+
+		/*
 		 * Get the interface name.
 		 */
 		p = &ent->d_name[0];
