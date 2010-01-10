@@ -83,8 +83,9 @@ YACC = @V_YACC@
 PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @CAN_SRC@
 FSRC =  fad-@V_FINDALLDEVS@.c
 SSRC =  @SSRC@
-CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
-	etherent.c savefile.c bpf_filter.c bpf_image.c bpf_dump.c
+CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c etherent.c \
+	savefile.c sf-pcap.c sf-pcap-ng.c pcap-common.c bpf_filter.c \
+	bpf_image.c bpf_dump.c
 GENSRC = scanner.c grammar.c version.c
 LIBOBJS = @LIBOBJS@
 
@@ -117,6 +118,8 @@ HDR = $(PUBHDR) \
 	pcap-int.h \
 	pcap-stdinc.h \
 	ppp.h \
+	sf-pcap.h \
+	sf-pcap-ng.h \
 	sunatmpos.h
 
 GENHDR = \

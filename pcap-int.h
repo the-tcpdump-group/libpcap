@@ -102,12 +102,16 @@ typedef enum {
  */
 struct pcap_sf {
 	FILE *rfile;
+	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 	int swapped;
 	size_t hdrsize;
 	swapped_type_t lengths_swapped;
 	int version_major;
 	int version_minor;
-	u_char *base;
+	bpf_u_int32 ifcount;	/* number of interfaces seen in this capture */
+	u_int tsresol;		/* time stamp resolution */
+	u_int tsscale;		/* scaling factor for resolution -> microseconds */
+	u_int64_t tsoffset;	/* time stamp offset */
 };
 
 /*
