@@ -115,6 +115,7 @@ HDR = $(PUBHDR) \
 	ieee80211.h \
 	llc.h \
 	nlpid.h \
+	pcap-common.h \
 	pcap-int.h \
 	pcap-stdinc.h \
 	ppp.h \
