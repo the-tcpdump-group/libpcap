@@ -1796,8 +1796,6 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	DIR *sys_class_net_d;
 	int fd;
 	struct dirent *ent;
-	char linebuf[512];
-	int linenum;
 	char *p;
 	char name[512];	/* XXX - pick a size */
 	char *q, *saveq;
@@ -1831,7 +1829,8 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		/*
 		 * Get the interface name.
 		 */
-		q = &ent->d_name[0];
+		p = &ent->d_name[0];
+		q = &name[0];
 		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
 			if (*p == ':') {
 				/*
