@@ -1775,7 +1775,6 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	return 0;
 }
 
-#ifdef HAVE_PROC_NET_DEV
 /*
  * Get from "/proc/net/dev" all interfaces listed there; if they're
  * already in the list of interfaces we have, that won't add another
@@ -1915,7 +1914,6 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	(void)fclose(proc_net_f);
 	return (ret);
 }
-#endif /* HAVE_PROC_NET_DEV */
 
 /*
  * Description string for the "any" device.
@@ -1925,7 +1923,6 @@ static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-#ifdef HAVE_PROC_NET_DEV
 	/*
 	 * Read "/proc/net/dev", and add to the list of interfaces all
 	 * interfaces listed there that we don't already have, because,
@@ -1936,7 +1933,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	if (scan_proc_net_dev(alldevsp, errbuf) == -1)
 		return (-1);
-#endif
 
 	/*
 	 * Add the "any" device.

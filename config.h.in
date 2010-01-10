@@ -88,9 +88,6 @@
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
 
-/* define if you have a /proc/net/dev */
-#undef HAVE_PROC_NET_DEV
-
 /* define if you have a Septel API */
 #undef HAVE_SEPTEL_API
 

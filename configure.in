@@ -641,17 +641,6 @@ if test "$enable_yydebug" = "yes"; then
 fi
 AC_MSG_RESULT(${enable_yydebug-no})
 
-AC_MSG_CHECKING(whether we have /proc/net/dev)
-if test -r /proc/net/dev ; then
-	ac_cv_lbl_proc_net_dev=yes
-else
-	ac_cv_lbl_proc_net_dev=no
-fi
-if test $ac_cv_lbl_proc_net_dev = yes; then
-	AC_DEFINE(HAVE_PROC_NET_DEV, 1, [define if you have a /proc/net/dev])
-fi
-AC_MSG_RESULT($ac_cv_lbl_proc_net_dev)
-
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),

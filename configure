@@ -8497,23 +8497,6 @@ fi
 { echo "$as_me:$LINENO: result: ${enable_yydebug-no}" >&5
 echo "${ECHO_T}${enable_yydebug-no}" >&6; }
 
-{ echo "$as_me:$LINENO: checking whether we have /proc/net/dev" >&5
-echo $ECHO_N "checking whether we have /proc/net/dev... $ECHO_C" >&6; }
-if test -r /proc/net/dev ; then
-	ac_cv_lbl_proc_net_dev=yes
-else
-	ac_cv_lbl_proc_net_dev=no
-fi
-if test $ac_cv_lbl_proc_net_dev = yes; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_PROC_NET_DEV 1
-_ACEOF
-
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lbl_proc_net_dev" >&5
-echo "${ECHO_T}$ac_cv_lbl_proc_net_dev" >&6; }
-
 # Check for Endace DAG card support.
 
 # Check whether --with-dag was given.
