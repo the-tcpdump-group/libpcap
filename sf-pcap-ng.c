@@ -267,7 +267,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block in pcap-ng dump file has a length of %u < %lu",
 		    bhdr.total_length,
-		    sizeof(struct block_header) + sizeof(struct block_trailer));
+		    (unsigned long)(sizeof(struct block_header) + sizeof(struct block_trailer)));
 		return (-1);
 	}
 
@@ -587,7 +587,7 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Section Header Block in pcap-ng dump file has a length of %u < %lu",
 		    total_length,
-		    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer));
+		    (unsigned long)(sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)));
 		return (-1);
 	}
 
