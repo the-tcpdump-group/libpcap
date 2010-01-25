@@ -1100,8 +1100,11 @@ found:
 		switch (p->linktype) {
 
 		case DLT_USB_LINUX:
+			swap_linux_usb_header(hdr, *data, 0);
+			break;
+
 		case DLT_USB_LINUX_MMAPPED:
-			swap_linux_usb_header(hdr, *data);
+			swap_linux_usb_header(hdr, *data, 1);
 			break;
 		}
 	}

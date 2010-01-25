@@ -1123,9 +1123,10 @@ linktype_to_dlt(int linktype)
  * the reading host's byte order.
  */
 void
-swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf)
+swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
+    int header_len_64_bytes)
 {
-	pcap_usb_header *uhdr = (pcap_usb_header *)buf;
+	pcap_usb_header_mmapped *uhdr = (pcap_usb_header_mmapped *)buf;
 
 	/*
 	 * The URB id is a totally opaque value; do we really need to 
@@ -1152,4 +1153,27 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	if (hdr->caplen < 40)
 		return;
 	uhdr->data_len = SWAPLONG(uhdr->data_len);
+
+	if (header_len_64_bytes) {
+		/*
+		 * This is either the "version 1" header, with
+		 * 16 bytes of additional fields at the end, or
+		 * a "version 0" header from a memory-mapped
+		 * capture, with 16 bytes of zeroed-out padding
+		 * at the end.  Byte swap them as if this were
+		 * a "version 1" header.
+		 */
+		if (hdr->caplen < 52)
+			return;
+		uhdr->interval = SWAPLONG(uhdr->interval);
+		if (hdr->caplen < 56)
+			return;
+		uhdr->start_frame = SWAPLONG(uhdr->start_frame);
+		if (hdr->caplen < 60)
+			return;
+		uhdr->xfer_flags = SWAPLONG(uhdr->xfer_flags);
+		if (hdr->caplen < 64)
+			return;
+		uhdr->ndesc = SWAPLONG(uhdr->ndesc);
+	}	
 }

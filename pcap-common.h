@@ -21,4 +21,5 @@ extern int dlt_to_linktype(int dlt);
 
 extern int linktype_to_dlt(int linktype);
 
-extern void swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf);
+extern void swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
+    int header_len_64_bytes);
