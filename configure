@@ -1313,6 +1313,11 @@ Optional Packages:
                           Endace DAG library directory
   --with-septel[=DIR]     include Septel support (located in directory DIR, if
                           supplied). [default=yes, on Linux, if present]
+  --with-snf[=DIR]        include Myricom SNF support ["yes", "no" or DIR;
+                          default="yes" on BSD and Linux if present]
+  --with-snf-includes=DIR Myricom SNF include directory
+  --with-snf-libraries=DIR
+                          Myricom SNF library directory
   --without-flex          don't use flex
   --without-bison         don't use bison
 
@@ -7800,6 +7805,10 @@ septel)
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
 	;;
 
+snf)
+	V_DEFS="$V_DEFS -DSNF_ONLY"
+	;;
+
 null)
 	{ echo "$as_me:$LINENO: WARNING: cannot determine packet capture interface" >&5
 echo "$as_me: WARNING: cannot determine packet capture interface" >&2;}
@@ -9095,6 +9104,206 @@ echo "$as_me: error: Specifying the capture type as 'septel' requires the Septel
    { (exit 1); exit 1; }; }
 fi
 
+# Check for Myricom SNF support.
+
+# Check whether --with-snf was given.
+if test "${with_snf+set}" = set; then
+  withval=$with_snf;
+	if test "$withval" = no
+	then
+		# User explicitly doesn't want SNF
+		want_snf=no
+	elif test "$withval" = yes
+	then
+		# User wants SNF support but hasn't specific a directory.
+		want_snf=yes
+	else
+		# User wants SNF support with a specified directory.
+		want_snf=yes
+		snf_root=$withval
+	fi
+
+else
+
+	#
+	# Use Sniffer API if present, otherwise don't
+	#
+	want_snf=ifpresent
+
+fi
+
+
+
+# Check whether --with-snf-includes was given.
+if test "${with_snf_includes+set}" = set; then
+  withval=$with_snf_includes;
+	# User wants SNF with specific header directory
+	want_snf=yes
+	snf_include_dir=$withval
+
+fi
+
+
+
+# Check whether --with-snf-libraries was given.
+if test "${with_snf_libraries+set}" = set; then
+  withval=$with_snf_libraries;
+	# User wants SNF with specific lib directory
+	want_snf=yes
+	snf_lib_dir=$withval
+
+fi
+
+
+case "$V_PCAP" in
+bpf|linux|snf)
+	#
+	# We support the Sniffer API if we're on BSD, Linux, or if we're
+	# building a Sniffer-only libpcap.
+	#
+	;;
+*)
+	#
+	# If the user explicitly requested Sniffer, tell them it's not
+	# supported.
+	#
+	# If they expressed no preference, don't include it.
+	#
+	if test $want_snf = yes; then
+		{ { echo "$as_me:$LINENO: error: Myricom SNF support only available with 'bpf' 'linux' and 'snf' packet capture types" >&5
+echo "$as_me: error: Myricom SNF support only available with 'bpf' 'linux' and 'snf' packet capture types" >&2;}
+   { (exit 1); exit 1; }; }
+	elif test $want_snf = yes; then
+		want_snf=no
+	fi
+	;;
+esac
+
+ac_cv_lbl_snf_api=no
+if test "$with_snf" != no; then
+
+	{ echo "$as_me:$LINENO: checking whether we have Myricom Sniffer API" >&5
+echo $ECHO_N "checking whether we have Myricom Sniffer API... $ECHO_C" >&6; }
+
+	if test -z "$snf_root"; then
+		snf_root=/opt/snf
+	fi
+
+	if test -z "$snf_include_dir"; then
+		snf_include_dir="$snf_root/include"
+	fi
+
+	if test -z "$snf_lib_dir"; then
+		snf_lib_dir="$snf_root/lib"
+	fi
+
+	if test -f "$snf_include_dir/snf.h"; then
+		ac_cv_lbl_snf_api=yes
+	fi
+	{ echo "$as_me:$LINENO: result: $ac_cv_lbl_snf_api ($snf_root)" >&5
+echo "${ECHO_T}$ac_cv_lbl_snf_api ($snf_root)" >&6; }
+
+	if test $ac_cv_lbl_snf_api = no; then
+		if test "$want_snf" = yes; then
+			{ { echo "$as_me:$LINENO: error: SNF API headers not found under $snf_include_dir; use --without-snf" >&5
+echo "$as_me: error: SNF API headers not found under $snf_include_dir; use --without-snf" >&2;}
+   { (exit 1); exit 1; }; }
+		fi
+	else
+		saved_ldflags=$LDFLAGS
+		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+		{ echo "$as_me:$LINENO: checking for snf_init in -lsnf" >&5
+echo $ECHO_N "checking for snf_init in -lsnf... $ECHO_C" >&6; }
+if test "${ac_cv_lib_snf_snf_init+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lsnf  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char snf_init ();
+int
+main ()
+{
+return snf_init ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_snf_snf_init=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_snf_snf_init=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_snf_snf_init" >&5
+echo "${ECHO_T}$ac_cv_lib_snf_snf_init" >&6; }
+if test $ac_cv_lib_snf_snf_init = yes; then
+  ac_cv_lbl_snf_api="yes"
+else
+  ac_cv_lbl_snf_api="no"
+fi
+
+		LDFLAGS="$saved_ldflags"
+
+		if test $ac_cv_lbl_snf_api = no; then
+			if test "$want_snf" = yes; then
+				{ { echo "$as_me:$LINENO: error: SNF API cannot correctly be linked check config.log; use --without-snf" >&5
+echo "$as_me: error: SNF API cannot correctly be linked check config.log; use --without-snf" >&2;}
+   { (exit 1); exit 1; }; }
+			fi
+		else
+			V_INCLS="$V_INCLS -I$snf_include_dir"
+			LIBS="$LIBS -L$snf_lib_dir -lsnf"
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_SNF_API 1
+_ACEOF
+
+		fi
+	fi
+fi
+
+if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
+	{ { echo "$as_me:$LINENO: error: Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR" >&5
+echo "$as_me: error: Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR" >&2;}
+   { (exit 1); exit 1; }; }
+fi
 
 
 # Check whether --with-flex was given.

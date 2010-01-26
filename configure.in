@@ -500,6 +500,10 @@ septel)
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
 	;;
 
+snf)
+	V_DEFS="$V_DEFS -DSNF_ONLY"
+	;;
+
 null)
 	AC_MSG_WARN(cannot determine packet capture interface)
 	AC_MSG_WARN((see the INSTALL doc for more info))
@@ -978,6 +982,115 @@ if test "$V_PCAP" = septel -a "$ac_cv_lbl_septel_api" = no; then
 	AC_MSG_ERROR(Specifying the capture type as 'septel' requires the Septel API to be present; use --with-septel=DIR)
 fi
 
+# Check for Myricom SNF support.
+AC_ARG_WITH([snf],
+AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
+[
+	if test "$withval" = no
+	then
+		# User explicitly doesn't want SNF
+		want_snf=no
+	elif test "$withval" = yes
+	then
+		# User wants SNF support but hasn't specific a directory.
+		want_snf=yes
+	else
+		# User wants SNF support with a specified directory.
+		want_snf=yes
+		snf_root=$withval
+	fi
+],[
+	#
+	# Use Sniffer API if present, otherwise don't
+	#
+	want_snf=ifpresent
+])
+
+AC_ARG_WITH([snf-includes],
+AC_HELP_STRING([--with-snf-includes=DIR],[Myricom SNF include directory]),
+[
+	# User wants SNF with specific header directory
+	want_snf=yes
+	snf_include_dir=$withval
+],[])
+
+AC_ARG_WITH([snf-libraries],
+AC_HELP_STRING([--with-snf-libraries=DIR],[Myricom SNF library directory]),
+[
+	# User wants SNF with specific lib directory
+	want_snf=yes
+	snf_lib_dir=$withval
+],[])
+
+case "$V_PCAP" in
+bpf|linux|snf)
+	#
+	# We support the Sniffer API if we're on BSD, Linux, or if we're
+	# building a Sniffer-only libpcap.
+	#
+	;;
+*)
+	#
+	# If the user explicitly requested Sniffer, tell them it's not
+	# supported.
+	#
+	# If they expressed no preference, don't include it.
+	#
+	if test $want_snf = yes; then
+		AC_MSG_ERROR(Myricom SNF support only available with 'bpf' 'linux' and 'snf' packet capture types)
+	elif test $want_snf = yes; then
+		want_snf=no
+	fi
+	;;
+esac
+
+ac_cv_lbl_snf_api=no
+if test "$with_snf" != no; then
+
+	AC_MSG_CHECKING(whether we have Myricom Sniffer API)
+
+	if test -z "$snf_root"; then
+		snf_root=/opt/snf
+	fi
+
+	if test -z "$snf_include_dir"; then
+		snf_include_dir="$snf_root/include"
+	fi
+
+	if test -z "$snf_lib_dir"; then
+		snf_lib_dir="$snf_root/lib"
+	fi
+
+	if test -f "$snf_include_dir/snf.h"; then
+		ac_cv_lbl_snf_api=yes
+	fi
+	AC_MSG_RESULT([$ac_cv_lbl_snf_api ($snf_root)])
+
+	if test $ac_cv_lbl_snf_api = no; then
+		if test "$want_snf" = yes; then
+			AC_MSG_ERROR(SNF API headers not found under $snf_include_dir; use --without-snf)
+		fi
+	else
+		saved_ldflags=$LDFLAGS
+		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"], [ac_cv_lbl_snf_api="no"])
+		LDFLAGS="$saved_ldflags"
+
+		if test $ac_cv_lbl_snf_api = no; then
+			if test "$want_snf" = yes; then
+				AC_MSG_ERROR(SNF API cannot correctly be linked check config.log; use --without-snf)
+			fi
+		else
+			V_INCLS="$V_INCLS -I$snf_include_dir"
+			LIBS="$LIBS -L$snf_lib_dir -lsnf"
+			AC_DEFINE(HAVE_SNF_API, 1, [define if you have Myricom SNF API])
+		fi
+	fi
+fi
+
+if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
+	AC_MSG_ERROR(Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR)
+fi
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)
 if test "$V_LEX" = lex ; then

@@ -126,6 +126,10 @@ static int bpf_load(char *errbuf);
 #include "pcap-dag.h"
 #endif /* HAVE_DAG_API */
 
+#ifdef HAVE_SNF_API
+#include "pcap-snf.h"
+#endif /* HAVE_SNF_API */
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -417,6 +421,10 @@ pcap_create(const char *device, char *ebuf)
 	if (strstr(device, "dag"))
 		return (dag_create(device, ebuf));
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_SNF_API
+	if (strstr(device, "snf"))
+		return (snf_create(device, ebuf));
+#endif /* HAVE_SNF_API */
 
 	p = pcap_create_common(device, ebuf);
 	if (p == NULL)
@@ -2170,6 +2178,10 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	if (dag_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_SNF_API
+	if (snf_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif /* HAVE_SNF_API */
 
 	return (0);
 }

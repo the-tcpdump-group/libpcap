@@ -56,6 +56,10 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #include <io.h>
 #endif
 
+#ifdef HAVE_SNF_API
+#include <snf.h>
+#endif
+
 #if (defined(_MSC_VER) && (_MSC_VER <= 1200)) /* we are compiling with Visual Studio 6, that doesn't support the LL suffix*/
 
 /*
@@ -162,6 +166,13 @@ struct pcap_md {
 				 * Same as in linux above, introduce
 				 * generally? */
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_SNF_API
+	snf_handle_t snf_handle; /* opaque device handle */
+	snf_ring_t   snf_ring;   /* opaque device ring handle */
+        int          snf_timeout;
+        int          snf_boardnum;
+#endif /*HAVE_SNF_API*/
+
 #ifdef HAVE_ZEROCOPY_BPF
        /*
         * Zero-copy read buffer -- for zero-copy BPF.  'buffer' above will

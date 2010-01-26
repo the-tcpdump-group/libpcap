@@ -91,6 +91,9 @@
 /* define if you have a Septel API */
 #undef HAVE_SEPTEL_API
 
+/* define if you have Myricom SNF API */
+#undef HAVE_SNF_API
+
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
 

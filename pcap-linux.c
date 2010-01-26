@@ -170,6 +170,10 @@ static const char rcsid[] _U_ =
 #include "pcap-septel.h"
 #endif /* HAVE_SEPTEL_API */
 
+#ifdef HAVE_SNF_API
+#include "pcap-snf.h"
+#endif /* HAVE_SNF_API */
+
 #ifdef PCAP_SUPPORT_USB
 #include "pcap-usb-linux.h"
 #endif
@@ -375,6 +379,13 @@ pcap_create(const char *device, char *ebuf)
 		return septel_create(device, ebuf);
 	}
 #endif /* HAVE_SEPTEL_API */
+
+#ifdef HAVE_SNF_API
+        handle = snf_create(device, ebuf);
+        if (strstr(device, "snf") || handle != NULL)
+		return handle;
+
+#endif /* HAVE_SNF_API */
 
 #ifdef PCAP_SUPPORT_BT
 	if (strstr(device, "bluetooth")) {
@@ -2099,6 +2110,11 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	if (septel_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_SEPTEL_API */
+
+#ifdef HAVE_SNF_API
+	if (snf_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif /* HAVE_SNF_API */
 
 #ifdef PCAP_SUPPORT_BT
 	/*

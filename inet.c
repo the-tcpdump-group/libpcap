@@ -671,6 +671,9 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 #ifdef PCAP_SUPPORT_USB
 	    || strstr(device, "usbmon") != NULL
 #endif
+#ifdef HAVE_SNF_API
+	    || strstr(device, "snf") != NULL
+#endif
 	    ) {
 		*netp = *maskp = 0;
 		return 0;
