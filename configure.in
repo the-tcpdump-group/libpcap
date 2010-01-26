@@ -1082,7 +1082,11 @@ if test "$with_snf" != no; then
 			fi
 		else
 			V_INCLS="$V_INCLS -I$snf_include_dir"
-			LIBS="$LIBS -L$snf_lib_dir -lsnf"
+			LIBS="$LIBS -lsnf"
+			LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+			if test "$V_PCAP" != snf ; then
+				SSRC="pcap-snf.c"
+			fi
 			AC_DEFINE(HAVE_SNF_API, 1, [define if you have Myricom SNF API])
 		fi
 	fi
