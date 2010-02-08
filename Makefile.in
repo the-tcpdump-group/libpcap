@@ -437,7 +437,13 @@ snprintf.o: $(srcdir)/missing/snprintf.c
 
 version.c: $(srcdir)/VERSION
 	@rm -f $@
-	sed -e 's/.*/char pcap_version[] = "&";/' $(srcdir)/VERSION > $@
+	if grep GIT ${srcdir}/VERSION >/dev/null; then \
+		read ver <${srcdir}/VERSION; \
+		echo $$ver | tr -d '\012'; \
+		date +_%Y_%m_%d; \
+	else \
+		cat ${srcdir}/VERSION; \
+	fi | sed -e 's/.*/char pcap_version[] = "&";/' > $@
 
 #
 # NOTE: this really is supposed to be static; importing a string
