@@ -93,12 +93,12 @@ static const char rcsid[] _U_ =
  * "tcpdump-workers@lists.tcpdump.org".  The tcpdump developers will
  * allocate a value for you, and will not subsequently allocate it to
  * anybody else; that value will be added to the "pcap.h" in the
- * tcpdump.org CVS repository, so that a future libpcap release will
+ * tcpdump.org Git repository, so that a future libpcap release will
  * include it.
  *
  * You should, if possible, also contribute patches to libpcap and tcpdump
  * to handle the new encapsulation type, so that they can also be checked
- * into the tcpdump.org CVS repository and so that they will appear in
+ * into the tcpdump.org Git repository and so that they will appear in
  * future libpcap and tcpdump releases.
  *
  * Do *NOT* assume that any values after the largest value in this file
