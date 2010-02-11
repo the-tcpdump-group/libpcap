@@ -2401,7 +2401,8 @@ find_802_11(struct bpf_dltlist *bdlp)
 
 #if defined(__APPLE__) && defined(BIOCGDLTLIST)
 /*
- * Remove DLT_EN10MB from the list of DLT_ values.
+ * Remove DLT_EN10MB from the list of DLT_ values, as we're in monitor mode,
+ * and DLT_EN10MB isn't supported in monitor mode.
  */
 static void
 remove_en(pcap_t *p)
@@ -2442,10 +2443,9 @@ remove_en(pcap_t *p)
 }
 
 /*
- * Remove DLT_EN10MB from the list of DLT_ values, and look for the
- * best 802.11 link-layer type in that list and return it.
- * Radiotap is better than anything else; 802.11 with any other radio
- * header is better than 802.11 with no radio header.
+ * Remove 802.11 link-layer types from the list of DLT_ values, as
+ * we're not in monitor mode, and those DLT_ values will switch us
+ * to monitor mode.
  */
 static void
 remove_802_11(pcap_t *p)
