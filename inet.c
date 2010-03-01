@@ -402,10 +402,15 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	char *description = NULL;
 	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
 #ifdef SIOCGIFDESCR
-	struct ifreq ifrdesc;
-	char ifdescr[IFDESCRSIZE];
 	int s;
-#endif
+	struct ifreq ifrdesc;
+#ifndef IFDESCRSIZE
+#define _IFDESCRSIZE 64
+	char ifdescr[_IFDESCRSIZE];
+#else /* IFDESCRSIZE */
+	char ifdescr[IFDESCRSIZE];
+#endif /* IFDESCRSIZE */
+#endif /* SIOCGIFDESCR */
 
 #ifdef SIOCGIFDESCR
 	/*
@@ -413,15 +418,20 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	 */
 	memset(&ifrdesc, 0, sizeof ifrdesc);
 	strlcpy(ifrdesc.ifr_name, name, sizeof ifrdesc.ifr_name);
-	ifrdesc.ifr_data = (caddr_t)&ifdescr;
+#ifdef __FreeBSD__
+	ifrdesc.ifr_buffer.buffer = ifdescr;
+	ifrdesc.ifr_buffer.length = sizeof(ifdescr);
+#else /* __FreeBSD__ */
+	ifrdesc.ifr_data = (caddr_t)ifdescr;
+#endif /* __FreeBSD__ */
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s >= 0) {
 		if (ioctl(s, SIOCGIFDESCR, &ifrdesc) == 0 &&
-		    strlen(ifrdesc.ifr_data) != 0)
-			description = ifrdesc.ifr_data;
+		    strlen(ifdescr) != 0)
+			description = ifdescr;
 		close(s);
 	}
-#endif
+#endif /* SIOCGIFDESCR */
 
 	if (add_or_find_if(&curdev, alldevs, name, flags, description,
 	    errbuf) == -1) {
