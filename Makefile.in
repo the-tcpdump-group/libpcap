@@ -84,9 +84,9 @@ PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @CAN_SRC@
 FSRC =  fad-@V_FINDALLDEVS@.c
 SSRC =  @SSRC@
 CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c etherent.c \
-	savefile.c sf-pcap.c sf-pcap-ng.c pcap-common.c bpf_filter.c \
+	savefile.c sf-pcap.c sf-pcap-ng.c pcap-common.c \
 	bpf_image.c bpf_dump.c
-GENSRC = scanner.c grammar.c version.c
+GENSRC = scanner.c grammar.c bpf_filter.c version.c
 LIBOBJS = @LIBOBJS@
 
 SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
@@ -672,7 +672,7 @@ packaging/pcap.spec: packaging/pcap.spec.in VERSION
 	RPMVERSION=`cat VERSION | sed s/-.*//g`; \
 		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
-releasetar: bpf_filter.c
+releasetar: 
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
 	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
