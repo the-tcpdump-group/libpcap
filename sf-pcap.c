@@ -68,6 +68,19 @@ static const char rcsid[] _U_ =
 #include "sf-pcap.h"
 
 /*
+ * Setting O_BINARY on DOS/Windows is a bit tricky
+ */
+#if defined(WIN32)
+  #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
+#elif defined(MSDOS)
+  #if defined(__HIGHC__)
+  #define SET_BINMODE(f)  setmode(f, O_BINARY)
+  #else
+  #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
+  #endif
+#endif
+
+/*
  * Standard libpcap format.
  */
 #define TCPDUMP_MAGIC		0xa1b2c3d4
