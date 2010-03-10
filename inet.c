@@ -417,10 +417,9 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	int s;
 	struct ifreq ifrdesc;
 #ifndef IFDESCRSIZE
-#define _IFDESCRSIZE 64
-	char ifdescr[_IFDESCRSIZE];
-#else /* IFDESCRSIZE */
-	char ifdescr[IFDESCRSIZE];
+	size_t descrlen = 64;
+#else
+	size_t descrlen = IFDESCRSIZE;
 #endif /* IFDESCRSIZE */
 #endif /* SIOCGIFDESCR */
 
@@ -430,28 +429,45 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	 */
 	memset(&ifrdesc, 0, sizeof ifrdesc);
 	strlcpy(ifrdesc.ifr_name, name, sizeof ifrdesc.ifr_name);
-#ifdef __FreeBSD__
-	ifrdesc.ifr_buffer.buffer = ifdescr;
-	ifrdesc.ifr_buffer.length = sizeof(ifdescr);
-#else /* __FreeBSD__ */
-	ifrdesc.ifr_data = (caddr_t)ifdescr;
-#endif /* __FreeBSD__ */
 	s = socket(AF_INET, SOCK_DGRAM, 0);
 	if (s >= 0) {
-		if (ioctl(s, SIOCGIFDESCR, &ifrdesc) == 0 &&
-		    strlen(ifdescr) != 0)
-			description = ifdescr;
+		for (;;) {
+			free(description);
+			if ((description = malloc(descrlen)) != NULL) {
+#ifdef __FreeBSD__
+				ifrdesc.ifr_buffer.buffer = description;
+				ifrdesc.ifr_buffer.length = descrlen;
+#else /* __FreeBSD__ */
+				ifrdesc.ifr_data = (caddr_t)description;
+#endif /* __FreeBSD__ */
+				if (ioctl(s, SIOCGIFDESCR, &ifrdesc) == 0)
+					break;
+#ifdef __FreeBSD__
+				else if (errno == ENAMETOOLONG)
+					descrlen = ifrdesc.ifr_buffer.length;
+#endif /* __FreeBSD__ */
+				else
+					break;
+			} else
+				break;
+		}
 		close(s);
+		if (description != NULL && strlen(description) == 0) {
+			free(description);
+			description = NULL;
+		}
 	}
 #endif /* SIOCGIFDESCR */
 
 	if (add_or_find_if(&curdev, alldevs, name, flags, description,
 	    errbuf) == -1) {
+		free(description);
 		/*
 		 * Error - give up.
 		 */
 		return (-1);
 	}
+	free(description);
 	if (curdev == NULL) {
 		/*
 		 * Device wasn't added because it can't be opened.
