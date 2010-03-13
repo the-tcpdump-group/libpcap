@@ -1,6 +1,4 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.72 2008-12-23 20:13:29 guy Exp $ (LBL)
-
-Mon.	December 21, 2009.  ken@netfunctional.ca.  Summary for 1.0.2 libpcap release
+Mon.	December 21, 2009.  ken@netfunctional.ca.  Summary for 1.1 libpcap release
 	Update Endace DAG ERF support
 	Add support for shared libraries on Solaris and HP-UX
 	Don't build/install shared libraries on on platforms we don't support
