@@ -400,7 +400,7 @@ libpcap.sl: $(OBJ)
 #
 libpcap.shareda: $(OBJ)
 	@rm -f $@ shr.o
-	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LIBS)
+	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LDFLAGS) $(LIBS)
 	ar rc $@ shr.o
 
 #
