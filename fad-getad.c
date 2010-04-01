@@ -62,9 +62,12 @@ static const char rcsid[] _U_ =
 
 #ifdef AF_PACKET
 # ifdef __Lynx__
-#  include <netpacket/if_packet.h>	/* LynxOS */
+/* LynxOS */
+#  include <netpacket/if_packet.h>
 # else
-#  include <linux/if_packet.h>		/* Linux */
+/* Linux */
+#  include <linux/types.h>
+#  include <linux/if_packet.h>
 # endif
 #endif
 
