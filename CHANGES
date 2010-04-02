@@ -1,5 +1,11 @@
-Mon.	April 1, 2010.  ken@netfunctional.ca/guy@alum.mit.edu.
-Summary for 1.1 libpcap release
+Thu.    April 1, 2010.  guy@alum.mit.edu.
+Summary for 1.1.1 libpcap release
+	Update CHANGES to reflect more of the changes in 1.1.0.
+	Fix build on RHEL5.
+	Fix shared library build on AIX.
+
+Thu.	April 1, 2010.  ken@netfunctional.ca/guy@alum.mit.edu.
+Summary for 1.1.0 libpcap release
 	Add SocketCAN capture support
 	Add Myricom SNF API support
 	Update Endace DAG and ERF support
