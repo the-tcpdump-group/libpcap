@@ -4,7 +4,7 @@ Summary for 1.1.1 libpcap release
 	Fix build on RHEL5.
 	Fix shared library build on AIX.
 
-Thu.	April 1, 2010.  ken@netfunctional.ca/guy@alum.mit.edu.
+Thu.	March 11, 2010.  ken@netfunctional.ca/guy@alum.mit.edu.
 Summary for 1.1.0 libpcap release
 	Add SocketCAN capture support
 	Add Myricom SNF API support
