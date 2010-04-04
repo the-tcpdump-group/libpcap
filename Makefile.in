@@ -51,7 +51,6 @@ INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
-ARCHFLAGS = @ARCHFLAGS@
 LIBS = @LIBS@
 LDFLAGS = @LDFLAGS@
 DYEXT = @DYEXT@
@@ -59,7 +58,7 @@ V_RPATH_OPT = @V_RPATH_OPT@
 PROG=libpcap
 
 # Standard CFLAGS
-CFLAGS = $(CCOPT) $(ARCHFLAGS) $(INCLS) $(DEFS)
+CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -376,7 +375,7 @@ libpcap.dylib: $(OBJ)
 	MAJOR_VER=A; \
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
-	$(CC) $(ARCHFLAGS) -dynamiclib -undefined error $(LDFLAGS) \
+	$(CC) -dynamiclib -undefined error $(LDFLAGS) \
 	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJS) $(LIBS) \
 	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
 	    -compatibility_version $$COMPAT_VER \
