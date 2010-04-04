@@ -9557,7 +9557,7 @@ fi
 			# run on PPC, so PPC libpcap runs under
 			# Rosetta, and Rosetta doesn't support BPF
 			# ioctls, so PPC programs can't do live
-			# captures.
+			# captures.)
 			#
 			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386 -arch ppc"
 			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386 -arch ppc"
