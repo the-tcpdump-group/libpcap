@@ -1293,7 +1293,7 @@ Optional Features:
                           getaddrinfo available]
   --enable-optimizer-dbg  build optimizer debugging code
   --enable-yydebug        build parser debugging code
-  --disable-universal     don't build universal
+  --disable-universal     don't build universal on OS X
   --enable-bluetooth      enable Bluetooth support [default=yes, if support
                           available]
   --enable-can            enable CAN support [default=yes, if support
