@@ -9549,12 +9549,22 @@ fi
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
+		darwin9.*)
+			#
+			# Leopard.  Build for 32-bit PowerPC, 64-bit
+			# PowerPC, x86, and x86-64, with 32-bit PowerPC
+			# first.  (That's what Apple does.)
+			#
+			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			;;
+
 		darwin10.*)
 			#
 			# Snow Leopard.  Build for x86-64, x86, and
-			# PPC, with x86-64 first.  (That's what Apple
-			# does, even though Snow Leopard doesn't
-			# run on PPC, so PPC libpcap runs under
+			# 32-bit PowerPC, with x86-64 first.  (That's
+			# what Apple does, even though Snow Leopard
+			# doesn't run on PPC, so PPC libpcap runs under
 			# Rosetta, and Rosetta doesn't support BPF
 			# ioctls, so PPC programs can't do live
 			# captures.)
