@@ -123,14 +123,28 @@ HDR = $(PUBHDR) \
 	sf-pcap-ng.h \
 	sunatmpos.h
 
+TESTS = \
+	filtertest \
+	findalldevstest \
+	nonblocktest \
+	opentest \
+	selpolltest
+
+TESTS_SRC = \
+	tests/filtertest.c \
+	tests/findalldevstest.c \
+	tests/nonblocktest.c \
+	tests/opentest.c \
+	tests/selpolltest.c
+
 GENHDR = \
 	scanner.h tokdefs.h version.h
 
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.* filtertest findalldevstest selpolltest \
-	opentest $(PROG)-`cat $(srcdir)/VERSION`.tar.gz $(GENSRC) $(GENHDR) \
+CLEANFILES = $(OBJ) libpcap.* $(TESTS) \
+	$(PROG)-`cat $(srcdir)/VERSION`.tar.gz $(GENSRC) $(GENHDR) \
 	lex.yy.c pcap-config
 
 MAN1 = pcap-config.1
@@ -199,6 +213,7 @@ MANMISC = \
 	pcap-linktype.manmisc.in
 
 EXTRA_DIST = \
+	$(TESTS_SRC) \
 	CHANGES \
 	ChmodBPF/ChmodBPF \
 	ChmodBPF/StartupParameters.plist \
@@ -237,8 +252,6 @@ EXTRA_DIST = \
 	fad-null.c \
 	fad-sita.c \
 	fad-win32.c \
-	filtertest.c \
-	findalldevstest.c \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \
@@ -263,7 +276,6 @@ EXTRA_DIST = \
 	msdos/pktdrvr.c \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
-	opentest.c \
 	org.tcpdump.chmod_bpf.plist \
 	packaging/pcap.spec.in \
 	pcap-bpf.c \
@@ -299,7 +311,6 @@ EXTRA_DIST = \
 	pcap-win32.c \
 	runlex.sh \
 	scanner.l \
-	selpolltest.c \
 	Win32/Include/Gnuc.h \
 	Win32/Include/addrinfo.h \
 	Win32/Include/bittypes.h \
@@ -400,7 +411,7 @@ libpcap.sl: $(OBJ)
 #
 libpcap.shareda: $(OBJ)
 	@rm -f $@ shr.o
-	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LIBS)
+	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LDFLAGS) $(LIBS)
 	ar rc $@ shr.o
 
 #
@@ -485,17 +496,22 @@ pcap-config: $(srcdir)/pcap-config.in
 #
 # Test programs - not built by default, and not installed.
 #
-filtertest: filtertest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o filtertest $(srcdir)/filtertest.c libpcap.a $(LIBS)
+tests: $(TESTS)
 
-findalldevstest: findalldevstest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o findalldevstest $(srcdir)/findalldevstest.c libpcap.a $(LIBS)
+filtertest: tests/filtertest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(LIBS)
 
-selpolltest: selpolltest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o selpolltest $(srcdir)/selpolltest.c libpcap.a $(LIBS)
+findalldevstest: tests/findalldevstest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o findalldevstest $(srcdir)/tests/findalldevstest.c libpcap.a $(LIBS)
 
-opentest: opentest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c libpcap.a $(LIBS)
+nonblocktest: tests/nonblocktest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o nonblocktest $(srcdir)/tests/nonblocktest.c libpcap.a $(LIBS)
+
+opentest: tests/opentest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o opentest $(srcdir)/tests/opentest.c libpcap.a $(LIBS)
+
+selpolltest: tests/selpolltest.c libpcap.a
+	$(CC) $(CFLAGS) -I. -L. -o selpolltest $(srcdir)/tests/selpolltest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
