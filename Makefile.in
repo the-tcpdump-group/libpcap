@@ -52,13 +52,14 @@ DEFS = @DEFS@ @V_DEFS@
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
 LIBS = @LIBS@
+CFLAGS = @CFLAGS@
 LDFLAGS = @LDFLAGS@
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 PROG=libpcap
 
 # Standard CFLAGS
-CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
+FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -78,7 +79,7 @@ YACC = @V_YACC@
 # problem if you don't own the file but can write to the directory.
 .c.o:
 	@rm -f $@
-	$(CC) $(CFLAGS) -c $(srcdir)/$*.c
+	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
 PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @CAN_SRC@
 FSRC =  fad-@V_FINDALLDEVS@.c
@@ -414,7 +415,7 @@ scanner.c: $(srcdir)/scanner.l
 	$(srcdir)/runlex.sh $(LEX) -o$@ $<
 
 scanner.o: scanner.c tokdefs.h
-	$(CC) $(CFLAGS) -c scanner.c
+	$(CC) $(FULL_CFLAGS) -c scanner.c
 
 pcap.o: version.h
 
@@ -427,13 +428,13 @@ grammar.c: $(srcdir)/grammar.y
 
 grammar.o: grammar.c
 	@rm -f $@
-	$(CC) $(CFLAGS) -Dyylval=pcap_lval -c grammar.c
+	$(CC) $(FULL_CFLAGS) -Dyylval=pcap_lval -c grammar.c
 
 version.o: version.c
-	$(CC) $(CFLAGS) -c version.c
+	$(CC) $(FULL_CFLAGS) -c version.c
 
 snprintf.o: $(srcdir)/missing/snprintf.c
-	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
 
 version.c: $(srcdir)/VERSION
 	@rm -f $@
@@ -467,7 +468,7 @@ bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	ln -s $(srcdir)/bpf/net/bpf_filter.c bpf_filter.c
 
 bpf_filter.o: bpf_filter.c
-	$(CC) $(CFLAGS) -c bpf_filter.c
+	$(CC) $(FULL_CFLAGS) -c bpf_filter.c
 
 #
 # Generate the pcap-config script.
@@ -486,16 +487,16 @@ pcap-config: $(srcdir)/pcap-config.in
 # Test programs - not built by default, and not installed.
 #
 filtertest: filtertest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o filtertest $(srcdir)/filtertest.c libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/filtertest.c libpcap.a $(LIBS)
 
 findalldevstest: findalldevstest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o findalldevstest $(srcdir)/findalldevstest.c libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/findalldevstest.c libpcap.a $(LIBS)
 
 selpolltest: selpolltest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o selpolltest $(srcdir)/selpolltest.c libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/selpolltest.c libpcap.a $(LIBS)
 
 opentest: opentest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
