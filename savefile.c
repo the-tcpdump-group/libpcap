@@ -161,6 +161,7 @@ sf_cleanup(pcap_t *p)
 		(void)fclose(p->sf.rfile);
 	if (p->buffer != NULL)
 		free(p->buffer);
+	pcap_freecode(&p->fcode);
 }
 
 pcap_t *
