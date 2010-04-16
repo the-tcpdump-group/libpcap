@@ -1313,6 +1313,7 @@ solaris*)
 esac
 
 AC_PROG_RANLIB
+AC_CHECK_TOOL([AR], [ar])
 
 AC_LBL_DEVEL(V_CCOPT)
 

@@ -46,6 +46,7 @@ VPATH = @srcdir@
 
 LD = /usr/bin/ld
 CC = @CC@
+AR = @AR@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
@@ -340,7 +341,7 @@ all: libpcap.a shared pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
-	ar rc $@ $(OBJ) $(ADDLARCHIVEOBJS)
+	$(AR) rc $@ $(OBJ) $(ADDLARCHIVEOBJS)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
@@ -413,7 +414,7 @@ libpcap.sl: $(OBJ)
 libpcap.shareda: $(OBJ)
 	@rm -f $@ shr.o
 	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LDFLAGS) $(LIBS)
-	ar rc $@ shr.o
+	$(AR) rc $@ shr.o
 
 #
 # For platforms that don't support shared libraries (or on which we
