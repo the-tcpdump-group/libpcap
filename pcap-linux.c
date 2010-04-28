@@ -1883,7 +1883,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		 */
 		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
-			if (errno == ENXIO)
+			if (errno == ENXIO || errno == ENODEV)
 				continue;
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGIFFLAGS: %.*s: %s",
