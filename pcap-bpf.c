@@ -435,6 +435,10 @@ pcap_create(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * On success, returns a file descriptor for a BPF device.
+ * On failure, returns a PCAP_ERROR_ value, and sets p->errbuf.
+ */
 static int
 bpf_open(pcap_t *p)
 {
@@ -495,12 +499,52 @@ bpf_open(pcap_t *p)
 	 * XXX better message for all minors used
 	 */
 	if (fd < 0) {
-		if (errno == EACCES)
-			fd = PCAP_ERROR_PERM_DENIED;
-		else
+		switch (errno) {
+
+		case ENOENT:
 			fd = PCAP_ERROR;
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "(no devices found) %s: %s",
-		    device, pcap_strerror(errno));
+			if (n == 1) {
+				/*
+				 * /dev/bpf0 doesn't exist, which
+				 * means we probably have no BPF
+				 * devices.
+				 */
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "(there are no BPF devices)");
+			} else {
+				/*
+				 * We got EBUSY on at least one
+				 * BPF device, so we have BPF
+				 * devices, but all the ones
+				 * that exist are busy.
+				 */
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "(all BPF devices are busy)");
+			}
+			break;
+
+		case EACCES:
+			/*
+			 * Got EACCES on the last device we tried,
+			 * and EBUSY on all devices before that,
+			 * if any.
+			 */
+			fd = PCAP_ERROR_PERM_DENIED;
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "(cannot open BPF device) %s: %s", device,
+			    pcap_strerror(errno));
+			break;
+
+		default:
+			/*
+			 * Some other problem.
+			 */
+			fd = PCAP_ERROR;
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "(cannot open BPF device) %s: %s", device,
+			    pcap_strerror(errno));
+			break;
+		}
 	}
 #endif
 
@@ -672,19 +716,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 * First, open a BPF device.
 	 */
 	fd = bpf_open(p);
-	if (fd < 0) {
-		if (errno == EACCES) {
-			/*
-			 * Sorry, you don't have permission to do capturing.
-			 */
-			return (PCAP_ERROR_PERM_DENIED);
-		} else {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "Can't open BPF device for %s: %s",
-			    p->opt.source, pcap_strerror(errno));
-			return (PCAP_ERROR);
-		}
-	}
+	if (fd < 0)
+		return (fd);	/* fd is the appropriate error code */
 
 	/*
 	 * Now bind to the device.
