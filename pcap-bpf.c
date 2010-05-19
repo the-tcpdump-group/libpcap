@@ -672,15 +672,35 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 * First, open a BPF device.
 	 */
 	fd = bpf_open(p);
-	if (fd < 0)
-		return (fd);
+	if (fd < 0) {
+		if (errno == EACCES) {
+			/*
+			 * Sorry, you don't have permission to do capturing.
+			 */
+			return (PCAP_ERROR_PERM_DENIED);
+		} else {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't open BPF device for %s: %s",
+			    p->opt.source, pcap_strerror(errno));
+			return (PCAP_ERROR);
+		}
+	}
 
 	/*
 	 * Now bind to the device.
 	 */
 	(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
 	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-		if (errno == ENETDOWN) {
+		switch (errno) {
+
+		case ENXIO:
+			/*
+			 * There's no such device.
+			 */
+			close(fd);
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+		case ENETDOWN:
 			/*
 			 * Return a "network down" indication, so that
 			 * the application can report that rather than
@@ -690,7 +710,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			 */
 			close(fd);
 			return (PCAP_ERROR_IFACE_NOT_UP);
-		} else {
+
+		default:
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "BIOCSETIF: %s: %s",
 			    p->opt.source, pcap_strerror(errno));
