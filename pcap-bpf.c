@@ -2268,17 +2268,28 @@ monitor_mode(pcap_t *p, int set)
 		/*
 		 * Can't get the media types.
 		 */
-		if (errno == EINVAL) {
+		switch (errno) {
+
+		case ENXIO:
+			/*
+			 * There's no such device.
+			 */
+			close(sock);
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+		case EINVAL:
 			/*
 			 * Interface doesn't support SIOC{G,S}IFMEDIA.
 			 */
 			close(sock);
 			return (PCAP_ERROR_RFMON_NOTSUP);
+
+		default:
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFMEDIA 1: %s", pcap_strerror(errno));
+			close(sock);
+			return (PCAP_ERROR);
 		}
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCGIFMEDIA 1: %s",
-		    pcap_strerror(errno));
-		close(sock);
-		return (PCAP_ERROR);
 	}
 	if (req.ifm_count == 0) {
 		/*
