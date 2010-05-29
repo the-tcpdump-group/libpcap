@@ -6197,6 +6197,10 @@ gen_scode(name, q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+		if (port < 0)
+			bpf_error("illegal port number %d < 0", port);
+		if (port > 65535)
+			bpf_error("illegal port number %d > 65535", port);
 #ifndef INET6
 		return gen_port(port, real_proto, dir);
 #else
@@ -6238,6 +6242,15 @@ gen_scode(name, q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;	
 		}
+		if (port1 < 0)
+			bpf_error("illegal port number %d < 0", port1);
+		if (port1 > 65535)
+			bpf_error("illegal port number %d > 65535", port1);
+		if (port2 < 0)
+			bpf_error("illegal port number %d < 0", port2);
+		if (port2 > 65535)
+			bpf_error("illegal port number %d > 65535", port2);
+
 #ifndef INET6
 		return gen_portrange(port1, port2, real_proto, dir);
 #else
@@ -6389,6 +6402,9 @@ gen_ncode(s, v, q)
 		else
 			bpf_error("illegal qualifier of 'port'");
 
+		if (v > 65535)
+			bpf_error("illegal port number %u > 65535", v);
+
 #ifndef INET6
 		return gen_port((int)v, proto, dir);
 #else
@@ -6411,6 +6427,9 @@ gen_ncode(s, v, q)
 			proto = PROTO_UNDEF;
 		else
 			bpf_error("illegal qualifier of 'portrange'");
+
+		if (v > 65535)
+			bpf_error("illegal port number %u > 65535", v);
 
 #ifndef INET6
 		return gen_portrange((int)v, (int)v, proto, dir);
