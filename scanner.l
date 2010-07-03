@@ -273,6 +273,8 @@ address1|addr1	return ADDR1;
 address2|addr2	return ADDR2;
 address3|addr3	return ADDR3;
 address4|addr4	return ADDR4;
+ra		return RA;
+ta		return TA;
 
 less		return LESS;
 greater		return GREATER;
