@@ -3801,6 +3801,14 @@ gen_ehostop(eaddr, dir)
 	case Q_ADDR4:
 		bpf_error("'addr4' is only supported on 802.11 with 802.11 headers");
 		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11 with 802.11 headers");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3859,6 +3867,14 @@ gen_fhostop(eaddr, dir)
 	case Q_ADDR4:
 		bpf_error("'addr4' is only supported on 802.11");
 		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3908,6 +3924,14 @@ gen_thostop(eaddr, dir)
 
 	case Q_ADDR4:
 		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
 		break;
 	}
 	abort();
@@ -4202,8 +4226,79 @@ gen_wlanhostop(eaddr, dir)
 		gen_and(b1, b0);
 		return b0;
 
+	case Q_RA:
+		/*
+		 * Not present in management frames; addr1 in other
+		 * frames.
+		 */
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "(link[0] & 0x08)".
+		 */
+		s = gen_load_a(OR_LINK, 0, BPF_B);
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		/*
+		 * Check addr1.
+		 */
+		b0 = gen_bcmp(OR_LINK, 4, 6, eaddr);
+
+		/*
+		 * AND that with the check of addr1.
+		 */
+		gen_and(b1, b0);
+		return (b0);
+
+	case Q_TA:
+		/*
+		 * Not present in management frames; addr2, if present,
+		 * in other frames.
+		 */
+
+		/*
+		 * Not present in CTS or ACK control frames.
+		 */
+		b0 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b1);
+		b2 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b2);
+		gen_and(b1, b2);
+		gen_or(b0, b2);
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "(link[0] & 0x08)".
+		 */
+		s = gen_load_a(OR_LINK, 0, BPF_B);
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		/*
+		 * AND that with the check for frames other than
+		 * CTS and ACK frames.
+		 */
+		gen_and(b1, b2);
+
+		/*
+		 * Check addr2.
+		 */
+		b1 = gen_bcmp(OR_LINK, 10, 6, eaddr);
+		gen_and(b2, b1);
+		return b1;
+
 	/*
-	 * XXX - add RA, TA, and BSSID keywords?
+	 * XXX - add BSSID keyword?
 	 */
 	case Q_ADDR1:
 		return (gen_bcmp(OR_LINK, 4, 6, eaddr));
@@ -4314,6 +4409,14 @@ gen_ipfchostop(eaddr, dir)
 
 	case Q_ADDR4:
 		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
 		break;
 	}
 	abort();
@@ -7855,6 +7958,14 @@ gen_ahostop(eaddr, dir)
 
 	case Q_ADDR4:
 		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
 		break;
 	}
 	abort();
