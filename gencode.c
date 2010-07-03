@@ -3785,6 +3785,22 @@ gen_ehostop(eaddr, dir)
 		b1 = gen_ehostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11 with 802.11 headers");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3827,6 +3843,22 @@ gen_fhostop(eaddr, dir)
 		b1 = gen_fhostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3861,6 +3893,22 @@ gen_thostop(eaddr, dir)
 		b1 = gen_thostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -4251,6 +4299,22 @@ gen_ipfchostop(eaddr, dir)
 		b1 = gen_ipfchostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
