@@ -6728,7 +6728,7 @@ gen_load(proto, inst, size)
 
 		/*
 		 * Load into the X register the offset computed into the
-		 * register specifed by "index".
+		 * register specified by "index".
 		 */
 		s = xfer_to_x(inst);
 
@@ -6760,7 +6760,7 @@ gen_load(proto, inst, size)
 		 * the link-layer header.  Add to it the offset computed
 		 * into the register specified by "index", and move that
 		 * into the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specifed
+		 * register the offset computed into the register specified
 		 * by "index".
 		 */
 		if (s != NULL) {
@@ -6809,7 +6809,7 @@ gen_load(proto, inst, size)
 		 * payload.  Add to it the offset computed into the
 		 * register specified by "index", and move that into
 		 * the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specifed
+		 * register the offset computed into the register specified
 		 * by "index".
 		 */
 		if (s != NULL) {
@@ -7840,6 +7840,22 @@ gen_ahostop(eaddr, dir)
 		b1 = gen_ahostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
