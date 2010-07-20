@@ -1,3 +1,32 @@
+Tue.    July 20, 2010.  guy@alum.mit.edu.
+Summary for 1.1.2 libpcap release
+	Return DLT_ values, not raw LINKTYPE_ values from
+	  pcap_datalink() when reading pcap-ng files
+	Add support for "wlan ra" and "wlan ta", to check the RA and TA
+	  of WLAN frames that have them
+	Don't crash if "wlan addr{1,2,3,4}" are used without 802.11
+	  headers
+	Do filtering on USB and Bluetooth capturing
+	On FreeBSD/SPARC64, use -fPIC - it's apparently necessary
+	Check for valid port numbers (fit in a 16-bit unsigned field) in
+	  "port" filters
+	Reject attempts to put savefiles into non-blocking mode
+	Check for "no such device" for the "get the media types" ioctl
+	  in *BSD
+	Improve error messages from bpf_open(), and let it do the error
+	  handling
+	Return more specific errors from pcap_can_set_rfmon(); fix
+	  documentation
+	Update description fetching code for FreeBSD, fix code for
+	  OpenBSD
+	Ignore /sys/net/dev files if we get ENODEV for them, not just
+	  ENXIO; fixes handling of bonding devices on Linux
+	Fix check for a constant 0 argument to BPF_DIV
+	Use the right version of ar when cross-building
+	Free any filter set on a savefile when the savefile is closed
+	Include the CFLAGS setting when configure was run in the
+	  compiler flags
+
 Thu.    April 1, 2010.  guy@alum.mit.edu.
 Summary for 1.1.1 libpcap release
 	Update CHANGES to reflect more of the changes in 1.1.0.
