@@ -746,7 +746,7 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 done:
 	p->tzoff = 0;	/* XXX - not used in pcap */
 	p->snapshot = idbp->snaplen;
-	p->linktype = idbp->linktype;
+	p->linktype = linktype_to_dlt(idbp->linktype);
 	p->linktype_ext = 0;
 
 	p->sf.next_packet_op = pcap_ng_next_packet;
