@@ -1,4 +1,4 @@
-Tue.    July 20, 2010.  guy@alum.mit.edu.
+Fri.    August 6, 2010.  guy@alum.mit.edu.
 Summary for 1.1.2 libpcap release
 	Return DLT_ values, not raw LINKTYPE_ values from
 	  pcap_datalink() when reading pcap-ng files
@@ -26,6 +26,7 @@ Summary for 1.1.2 libpcap release
 	Free any filter set on a savefile when the savefile is closed
 	Include the CFLAGS setting when configure was run in the
 	  compiler flags
+	Add support for 802.15.4 interfaces on Linux
 
 Thu.    April 1, 2010.  guy@alum.mit.edu.
 Summary for 1.1.1 libpcap release
