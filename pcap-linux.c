@@ -2301,6 +2301,13 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	return -1;
 }
 
+#ifndef ARPHRD_IEEE802154
+#define ARPHRD_IEEE802154      804
+#endif
+       case ARPHRD_IEEE802154:
+               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
+               break;
+
 
 #ifdef HAVE_PF_PACKET_SOCKETS
 /*
