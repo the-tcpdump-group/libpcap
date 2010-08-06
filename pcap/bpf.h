@@ -697,6 +697,8 @@ struct bpf_version {
 /*
  * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
  * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ * For this one, we expect the FCS to be present at the end of the frame;
+ * if the frame has no FCS, DLT_IEEE802_15_4_NOFCS should be used.
  */
 #define DLT_IEEE802_15_4	195
 
@@ -959,6 +961,13 @@ struct bpf_version {
  */
 #define DLT_IPV4			228
 #define DLT_IPV6			229
+
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing), and with no FCS at the end of the frame; requested by
+ * Jon Smirl <jonsmirl@gmail.com>.
+ */
+#define DLT_IEEE802_15_4_NOFCS		230
 
 /*
  * DLT and savefile link type values are split into a class and
