@@ -1588,6 +1588,16 @@ init_linktype(p)
 		off_nl = 0;
 		off_nl_nosnap = -1;
 		return;
+
+	case DLT_IEEE802_15_4_NOFCS:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
@@ -3511,6 +3521,7 @@ gen_linktype(proto)
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
 	case DLT_IEEE802_15_4_NONASK_PHY:
+	case DLT_IEEE802_15_4_NOFCS:
 		bpf_error("IEEE 802.15.4 link-layer type filtering not implemented");
 
 	case DLT_IEEE802_16_MAC_CPS_RADIO:

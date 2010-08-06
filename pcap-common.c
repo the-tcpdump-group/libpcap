@@ -728,6 +728,13 @@ static const char rcsid[] _U_ =
 #define LINKTYPE_IPV4				228
 #define LINKTYPE_IPV6				229
 
+/*
+ * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
+ * nothing), and with no FCS at the end of the frame; requested by
+ * Jon Smirl <jonsmirl@gmail.com>.
+ */
+#define LINKTYPE_IEEE802_15_4_NOFCS		230
+
 
 static struct linktype_map {
 	int	dlt;
@@ -976,8 +983,8 @@ static struct linktype_map {
         /* Juniper Voice ISM */
         { DLT_JUNIPER_ISM,      LINKTYPE_JUNIPER_ISM },
 
-	/* IEEE 802.15.4 exactly as it appears in the spec */
-        { DLT_IEEE802_15_4,	LINKTYPE_IEEE802_15_4 },
+	/* IEEE 802.15.4 exactly as it appears in the spec, with FCS */
+	{ DLT_IEEE802_15_4,	LINKTYPE_IEEE802_15_4 },
 
 	/* Various link-layer types for SITA */
 	{ DLT_SITA,		LINKTYPE_SITA },
@@ -1073,6 +1080,9 @@ static struct linktype_map {
 	/* Raw IPv4/IPv6 */
 	{ DLT_IPV4,		LINKTYPE_IPV4 },
 	{ DLT_IPV6,		LINKTYPE_IPV6 },
+
+	/* IEEE 802.15.4 exactly as it appears in the spec, without FCS */
+	{ DLT_IEEE802_15_4_NOFCS, LINKTYPE_IEEE802_15_4_NOFCS },
 
 	{ -1,			-1 }
 };

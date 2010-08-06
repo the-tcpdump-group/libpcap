@@ -653,7 +653,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_PPI, "Per-Packet Information"),
 	DLT_CHOICE(DLT_IEEE802_16_MAC_CPS_RADIO, "IEEE 802.16 MAC Common Part Sublayer plus radiotap header"),
 	DLT_CHOICE(DLT_JUNIPER_ISM, "Juniper Integrated Service Module"),
-	DLT_CHOICE(DLT_IEEE802_15_4, "IEEE 802.15.4"),
+	DLT_CHOICE(DLT_IEEE802_15_4, "IEEE 802.15.4 with FCS"),
 	DLT_CHOICE(DLT_SITA, "SITA pseudo-header"),
 	DLT_CHOICE(DLT_ERF, "Endace ERF header"),
 	DLT_CHOICE(DLT_RAIF1, "Ethernet with u10 Networks pseudo-header"),
@@ -673,6 +673,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_CAN_SOCKETCAN, "CAN-bus with SocketCAN headers"),
 	DLT_CHOICE(DLT_IPV4, "Raw IPv4"),
 	DLT_CHOICE(DLT_IPV6, "Raw IPv6"),
+	DLT_CHOICE(DLT_IEEE802_15_4_NOFCS, "IEEE 802.15.4 without FCS"),
 	DLT_CHOICE_SENTINEL
 };
 
