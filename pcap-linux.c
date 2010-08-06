@@ -2301,14 +2301,6 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	return -1;
 }
 
-#ifndef ARPHRD_IEEE802154
-#define ARPHRD_IEEE802154      804
-#endif
-       case ARPHRD_IEEE802154:
-               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
-               break;
-
-
 #ifdef HAVE_PF_PACKET_SOCKETS
 /*
  * Map the PACKET_ value to a LINUX_SLL_ value; we
@@ -2654,6 +2646,13 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		 */
 		handle->linktype = DLT_RAW;
 		break;
+
+#ifndef ARPHRD_IEEE802154
+#define ARPHRD_IEEE802154      804
+#endif
+       case ARPHRD_IEEE802154:
+               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
+               break;
 
 	default:
 		handle->linktype = -1;
