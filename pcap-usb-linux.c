@@ -65,7 +65,8 @@ static const char rcsid[] _U_ =
 #endif
 
 #define USB_IFACE "usbmon"
-#define USB_TEXT_DIR "/sys/kernel/debug/usbmon"
+#define USB_TEXT_DIR_OLD "/sys/kernel/debug/usbmon"
+#define USB_TEXT_DIR "/sys/kernel/debug/usb/usbmon"
 #define SYS_USB_BUS_DIR "/sys/bus/usb/devices"
 #define PROC_USB_BUS_DIR "/proc/bus/usb"
 #define USB_LINE_LEN 4096
@@ -121,7 +122,6 @@ static int usb_read_linux(pcap_t *, int , pcap_handler , u_char *);
 static int usb_read_linux_bin(pcap_t *, int , pcap_handler , u_char *);
 static int usb_read_linux_mmap(pcap_t *, int , pcap_handler , u_char *);
 static int usb_inject_linux(pcap_t *, const void *, size_t);
-static int usb_setfilter_linux(pcap_t *, struct bpf_program *);
 static int usb_setdirection_linux(pcap_t *, pcap_direction_t);
 static void usb_cleanup_linux_mmap(pcap_t *);
 
@@ -300,7 +300,7 @@ usb_activate(pcap_t* handle)
 	handle->linktype = DLT_USB_LINUX;
 
 	handle->inject_op = usb_inject_linux;
-	handle->setfilter_op = usb_setfilter_linux;
+	handle->setfilter_op = install_bpf_program; /* no kernel filtering */
 	handle->setdirection_op = usb_setdirection_linux;
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
@@ -354,10 +354,21 @@ usb_activate(pcap_t* handle)
 		handle->fd = open(full_path, O_RDONLY, 0);
 		if (handle->fd < 0)
 		{
-			/* no more fallback, give it up*/
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				"Can't open USB bus file %s: %s", full_path, strerror(errno));
-			return PCAP_ERROR;
+			if (errno == ENOENT)
+			{
+				/*
+				 * Not found at the new location; try
+				 * the old location.
+				 */
+				snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%dt", handle->md.ifindex);  
+				handle->fd = open(full_path, O_RDONLY, 0);
+			}
+			if (handle->fd < 0) {
+				/* no more fallback, give it up*/
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"Can't open USB bus file %s: %s", full_path, strerror(errno));
+				return PCAP_ERROR;
+			}
 		}
 
 		if (handle->opt.rfmon) {
@@ -585,12 +596,17 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 got:
 	uhdr->data_len = data_len;
-	handle->md.packets_read++;
 	if (pkth.caplen > handle->snapshot)
 		pkth.caplen = handle->snapshot;
 
-	callback(user, &pkth, handle->buffer);
-	return 1;
+	if (handle->fcode.bf_insns == NULL ||
+	    bpf_filter(handle->fcode.bf_insns, handle->buffer,
+	      pkth.len, pkth.caplen)) {
+		handle->md.packets_read++;
+		callback(user, &pkth, handle->buffer);
+		return 1;
+	}
+	return 0;	/* didn't pass filter */
 }
 
 static int
@@ -614,10 +630,21 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	fd = open(string, O_RDONLY, 0);
 	if (fd < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't open USB stats file %s: %s", 
-			string, strerror(errno));
-		return -1;
+		if (errno == ENOENT)
+		{
+			/*
+			 * Not found at the new location; try the old
+			 * location.
+			 */
+			snprintf(string, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%ds", handle->md.ifindex);
+			fd = open(string, O_RDONLY, 0);
+		}
+		if (fd < 0) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"Can't open USB stats file %s: %s", 
+				string, strerror(errno));
+			return -1;
+		}
 	}
 
 	/* read stats line */
@@ -662,12 +689,6 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	stats->ps_recv = handle->md.packets_read;
 	stats->ps_ifdrop = 0;
-	return 0;
-}
-
-static int 
-usb_setfilter_linux(pcap_t *p, struct bpf_program *fp)
-{
 	return 0;
 }
 
@@ -744,9 +765,15 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 	pkth.ts.tv_sec = info.hdr->ts_sec;
 	pkth.ts.tv_usec = info.hdr->ts_usec;
 
-	handle->md.packets_read++;
-	callback(user, &pkth, handle->buffer);
-	return 1;
+	if (handle->fcode.bf_insns == NULL ||
+	    bpf_filter(handle->fcode.bf_insns, handle->buffer,
+	      pkth.len, pkth.caplen)) {
+		handle->md.packets_read++;
+		callback(user, &pkth, handle->buffer);
+		return 1;
+	}
+
+	return 0;	/* didn't pass filter */
 }
 
 /*
@@ -818,9 +845,13 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			pkth.ts.tv_sec = hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
 
-			handle->md.packets_read++;
-			callback(user, &pkth, (u_char*) hdr);
-			packets++;
+			if (handle->fcode.bf_insns == NULL ||
+			    bpf_filter(handle->fcode.bf_insns, (u_char*) hdr,
+			      pkth.len, pkth.caplen)) {
+				handle->md.packets_read++;
+				callback(user, &pkth, (u_char*) hdr);
+				packets++;
+			}
 		}
 
 		/* with max_packets <= 0 we stop afer the first chunk*/

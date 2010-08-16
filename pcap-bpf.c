@@ -126,6 +126,10 @@ static int bpf_load(char *errbuf);
 #include "pcap-dag.h"
 #endif /* HAVE_DAG_API */
 
+#ifdef HAVE_SNF_API
+#include "pcap-snf.h"
+#endif /* HAVE_SNF_API */
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -417,6 +421,10 @@ pcap_create(const char *device, char *ebuf)
 	if (strstr(device, "dag"))
 		return (dag_create(device, ebuf));
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_SNF_API
+	if (strstr(device, "snf"))
+		return (snf_create(device, ebuf));
+#endif /* HAVE_SNF_API */
 
 	p = pcap_create_common(device, ebuf);
 	if (p == NULL)
@@ -427,6 +435,10 @@ pcap_create(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * On success, returns a file descriptor for a BPF device.
+ * On failure, returns a PCAP_ERROR_ value, and sets p->errbuf.
+ */
 static int
 bpf_open(pcap_t *p)
 {
@@ -487,12 +499,52 @@ bpf_open(pcap_t *p)
 	 * XXX better message for all minors used
 	 */
 	if (fd < 0) {
-		if (errno == EACCES)
-			fd = PCAP_ERROR_PERM_DENIED;
-		else
+		switch (errno) {
+
+		case ENOENT:
 			fd = PCAP_ERROR;
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "(no devices found) %s: %s",
-		    device, pcap_strerror(errno));
+			if (n == 1) {
+				/*
+				 * /dev/bpf0 doesn't exist, which
+				 * means we probably have no BPF
+				 * devices.
+				 */
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "(there are no BPF devices)");
+			} else {
+				/*
+				 * We got EBUSY on at least one
+				 * BPF device, so we have BPF
+				 * devices, but all the ones
+				 * that exist are busy.
+				 */
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "(all BPF devices are busy)");
+			}
+			break;
+
+		case EACCES:
+			/*
+			 * Got EACCES on the last device we tried,
+			 * and EBUSY on all devices before that,
+			 * if any.
+			 */
+			fd = PCAP_ERROR_PERM_DENIED;
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "(cannot open BPF device) %s: %s", device,
+			    pcap_strerror(errno));
+			break;
+
+		default:
+			/*
+			 * Some other problem.
+			 */
+			fd = PCAP_ERROR;
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "(cannot open BPF device) %s: %s", device,
+			    pcap_strerror(errno));
+			break;
+		}
 	}
 #endif
 
@@ -538,11 +590,20 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 		 * right thing to do, but I suspect it is - Ethernet <->
 		 * 802.11 bridges would probably badly mishandle frames
 		 * that don't have Ethernet headers).
+		 *
+		 * On Solaris with BPF, Ethernet devices also offer
+		 * DLT_IPNET, so we, if DLT_IPNET is defined, we don't
+		 * treat it as an indication that the device isn't an
+		 * Ethernet.
 		 */
 		if (v == DLT_EN10MB) {
 			is_ethernet = 1;
 			for (i = 0; i < bdlp->bfl_len; i++) {
-				if (bdlp->bfl_list[i] != DLT_EN10MB) {
+				if (bdlp->bfl_list[i] != DLT_EN10MB
+#ifdef DLT_IPNET
+				    && bdlp->bfl_list[i] != DLT_IPNET
+#endif
+				    ) {
 					is_ethernet = 0;
 					break;
 				}
@@ -656,14 +717,23 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 */
 	fd = bpf_open(p);
 	if (fd < 0)
-		return (fd);
+		return (fd);	/* fd is the appropriate error code */
 
 	/*
 	 * Now bind to the device.
 	 */
 	(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
 	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-		if (errno == ENETDOWN) {
+		switch (errno) {
+
+		case ENXIO:
+			/*
+			 * There's no such device.
+			 */
+			close(fd);
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+		case ENETDOWN:
 			/*
 			 * Return a "network down" indication, so that
 			 * the application can report that rather than
@@ -673,7 +743,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			 */
 			close(fd);
 			return (PCAP_ERROR_IFACE_NOT_UP);
-		} else {
+
+		default:
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "BIOCSETIF: %s: %s",
 			    p->opt.source, pcap_strerror(errno));
@@ -2161,6 +2232,10 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	if (dag_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_SNF_API
+	if (snf_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif /* HAVE_SNF_API */
 
 	return (0);
 }
@@ -2193,17 +2268,28 @@ monitor_mode(pcap_t *p, int set)
 		/*
 		 * Can't get the media types.
 		 */
-		if (errno == EINVAL) {
+		switch (errno) {
+
+		case ENXIO:
+			/*
+			 * There's no such device.
+			 */
+			close(sock);
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+		case EINVAL:
 			/*
 			 * Interface doesn't support SIOC{G,S}IFMEDIA.
 			 */
 			close(sock);
 			return (PCAP_ERROR_RFMON_NOTSUP);
+
+		default:
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFMEDIA 1: %s", pcap_strerror(errno));
+			close(sock);
+			return (PCAP_ERROR);
 		}
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCGIFMEDIA 1: %s",
-		    pcap_strerror(errno));
-		close(sock);
-		return (PCAP_ERROR);
 	}
 	if (req.ifm_count == 0) {
 		/*
@@ -2380,7 +2466,8 @@ find_802_11(struct bpf_dltlist *bdlp)
 
 #if defined(__APPLE__) && defined(BIOCGDLTLIST)
 /*
- * Remove DLT_EN10MB from the list of DLT_ values.
+ * Remove DLT_EN10MB from the list of DLT_ values, as we're in monitor mode,
+ * and DLT_EN10MB isn't supported in monitor mode.
  */
 static void
 remove_en(pcap_t *p)
@@ -2421,10 +2508,9 @@ remove_en(pcap_t *p)
 }
 
 /*
- * Remove DLT_EN10MB from the list of DLT_ values, and look for the
- * best 802.11 link-layer type in that list and return it.
- * Radiotap is better than anything else; 802.11 with any other radio
- * header is better than 802.11 with no radio header.
+ * Remove 802.11 link-layer types from the list of DLT_ values, as
+ * we're not in monitor mode, and those DLT_ values will switch us
+ * to monitor mode.
  */
 static void
 remove_802_11(pcap_t *p)

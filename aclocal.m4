@@ -23,27 +23,23 @@ dnl LBL autoconf macros
 dnl
 
 dnl
-dnl Determine which compiler we're using (cc or gcc)
-dnl If using gcc, determine the version number
-dnl If using cc, require that it support ansi prototypes
-dnl If using gcc, use -O2 (otherwise use -O)
-dnl If using cc, explicitly specify /usr/local/include
+dnl Do whatever AC_LBL_C_INIT work is necessary before using AC_PROG_CC.
 dnl
-dnl usage:
+dnl It appears that newer versions of autoconf (2.64 and later) will,
+dnl if you use AC_TRY_COMPILE in a macro, stick AC_PROG_CC at the
+dnl beginning of the macro, even if the macro itself calls AC_PROG_CC.
+dnl See the "Prerequisite Macros" and "Expanded Before Required" sections
+dnl in the Autoconf documentation.
 dnl
-dnl	AC_LBL_C_INIT(copt, incls)
+dnl This causes a steaming heap of fail in our case, as we were, in
+dnl AC_LBL_C_INIT, doing the tests we now do in AC_LBL_C_INIT_BEFORE_CC,
+dnl calling AC_PROG_CC, and then doing the tests we now do in
+dnl AC_LBL_C_INIT.  Now, we run AC_LBL_C_INIT_BEFORE_CC, AC_PROG_CC,
+dnl and AC_LBL_C_INIT at the top level.
 dnl
-dnl results:
-dnl
-dnl	$1 (copt set)
-dnl	$2 (incls set)
-dnl	CC
-dnl	LDFLAGS
-dnl	ac_cv_lbl_gcc_vers
-dnl	LBL_CFLAGS
-dnl
-AC_DEFUN(AC_LBL_C_INIT,
-    [AC_PREREQ(2.12)
+AC_DEFUN(AC_LBL_C_INIT_BEFORE_CC,
+    [AC_PREREQ(2.50)
+    AC_BEFORE([$0], [AC_LBL_C_INIT])
     AC_BEFORE([$0], [AC_PROG_CC])
     AC_BEFORE([$0], [AC_LBL_FIXINCLUDES])
     AC_BEFORE([$0], [AC_LBL_DEVEL])
@@ -72,7 +68,33 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    CC=cc
 	    export CC
     fi
-    AC_PROG_CC
+])
+
+dnl
+dnl Determine which compiler we're using (cc or gcc)
+dnl If using gcc, determine the version number
+dnl If using cc, require that it support ansi prototypes
+dnl If using gcc, use -O2 (otherwise use -O)
+dnl If using cc, explicitly specify /usr/local/include
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_C_INIT(copt, incls)
+dnl
+dnl results:
+dnl
+dnl	$1 (copt set)
+dnl	$2 (incls set)
+dnl	CC
+dnl	LDFLAGS
+dnl	ac_cv_lbl_gcc_vers
+dnl	LBL_CFLAGS
+dnl
+AC_DEFUN(AC_LBL_C_INIT,
+    [AC_PREREQ(2.50)
+    AC_BEFORE([$0], [AC_LBL_FIXINCLUDES])
+    AC_BEFORE([$0], [AC_LBL_DEVEL])
+    AC_BEFORE([$0], [AC_LBL_SHLIBS_INIT])
     if test "$GCC" = yes ; then
 	    if test "$SHLICC2" = yes ; then
 		    ac_cv_lbl_gcc_vers=2
@@ -90,63 +112,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 			    $1="-O2"
 		    fi
 	    fi
-
-	    #
-	    # On platforms where we build a shared library:
-	    #
-	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in AIX and Darwin/OS X);
-	    #
-	    #	define option to set the soname of the shared library,
-	    #	if the OS supports that;
-	    #
-	    #	add options to specify, at link time, a directory to
-	    #	add to the run-time search path, if that's necessary.
-	    #
-	    V_SHLIB_CMD="\$(CC)"
-	    V_SHLIB_OPT="-shared"
-	    case "$host_os" in
-
-	    aix*)
-		    ;;
-
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
-	    	    #
-		    # Platforms where the linker is the GNU linker
-		    # or accepts command-line arguments like
-		    # those the GNU linker accepts.
-		    #
-		    V_CCOPT="$V_CCOPT -fpic"
-		    V_SONAME_OPT="-Wl,-soname,"
-		    V_RPATH_OPT="-Wl,-rpath,"
-		    ;;
-
-	    hpux*)
-		    V_CCOPT="$V_CCOPT -fpic"
-	    	    #
-		    # XXX - this assumes GCC is using the HP linker,
-		    # rather than the GNU linker, and that the "+h"
-		    # option is used on all HP-UX platforms, both .sl
-		    # and .so.
-		    #
-		    V_SONAME_OPT="-Wl,+h,"
-		    #
-		    # By default, directories specifed with -L
-		    # are added to the run-time search path, so
-		    # we don't add them in pcap-config.
-		    #
-		    ;;
-
-	    solaris*)
-		    V_CCOPT="$V_CCOPT -fpic"
-		    #
-		    # XXX - this assumes GCC is using the Sun linker,
-		    # rather than the GNU linker.
-		    #
-		    V_SONAME_OPT="-Wl,-h,"
-		    V_RPATH_OPT="-Wl,-R,"
-		    ;;
-	    esac
     else
 	    AC_MSG_CHECKING(that $CC handles ansi prototypes)
 	    AC_CACHE_VAL(ac_cv_lbl_cc_ansi_prototypes,
@@ -204,6 +169,131 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    $2="$$2 -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
 
+	    case "$host_os" in
+
+	    irix*)
+		    $1="$$1 -xansi -signed -g3"
+		    ;;
+
+	    osf*)
+	    	    #
+		    # Presumed to be DEC OSF/1, Digital UNIX, or
+		    # Tru64 UNIX.
+		    #
+		    $1="$$1 -g3"
+		    ;;
+
+	    ultrix*)
+		    AC_MSG_CHECKING(that Ultrix $CC hacks const in prototypes)
+		    AC_CACHE_VAL(ac_cv_lbl_cc_const_proto,
+			AC_TRY_COMPILE(
+			    [#include <sys/types.h>],
+			    [struct a { int b; };
+			    void c(const struct a *)],
+			    ac_cv_lbl_cc_const_proto=yes,
+			    ac_cv_lbl_cc_const_proto=no))
+		    AC_MSG_RESULT($ac_cv_lbl_cc_const_proto)
+		    if test $ac_cv_lbl_cc_const_proto = no ; then
+			    AC_DEFINE(const,[],
+			        [to handle Ultrix compilers that don't support const in prototypes])
+		    fi
+		    ;;
+	    esac
+    fi
+])
+
+dnl
+dnl Determine what options are needed to build a shared library
+dnl
+dnl usage:
+dnl
+dnl	AC_LBL_SHLIBS_INIT
+dnl
+dnl results:
+dnl
+dnl	V_CCOPT (modified to build position-independent code)
+dnl	V_SHLIB_CMD
+dnl	V_SHLIB_OPT
+dnl	V_SONAME_OPT
+dnl	V_RPATH_OPT
+dnl
+AC_DEFUN(AC_LBL_SHLIBS_INIT,
+    [AC_PREREQ(2.50)
+    if test "$GCC" = yes ; then
+	    #
+	    # On platforms where we build a shared library:
+	    #
+	    #	add options to generate position-independent code,
+	    #	if necessary (it's the default in AIX and Darwin/OS X);
+	    #
+	    #	define option to set the soname of the shared library,
+	    #	if the OS supports that;
+	    #
+	    #	add options to specify, at link time, a directory to
+	    #	add to the run-time search path, if that's necessary.
+	    #
+	    V_SHLIB_CMD="\$(CC)"
+	    V_SHLIB_OPT="-shared"
+	    case "$host_os" in
+
+	    aix*)
+		    ;;
+
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
+	    	    #
+		    # Platforms where the linker is the GNU linker
+		    # or accepts command-line arguments like
+		    # those the GNU linker accepts.
+		    #
+		    # Some instruction sets require -fPIC on some
+		    # operating systems.  Check for them.  If you
+		    # have a combination that requires it, add it
+		    # here.
+		    #
+		    PIC_OPT=-fpic
+		    case "$host_cpu" in
+
+		    sparc64*)
+			case "$host_os" in
+
+			freebsd*)
+			    PIC_OPT=-fPIC
+			    ;;
+			esac
+			;;
+		    esac
+		    V_CCOPT="$V_CCOPT $PIC_OPT"
+		    V_SONAME_OPT="-Wl,-soname,"
+		    V_RPATH_OPT="-Wl,-rpath,"
+		    ;;
+
+	    hpux*)
+		    V_CCOPT="$V_CCOPT -fpic"
+	    	    #
+		    # XXX - this assumes GCC is using the HP linker,
+		    # rather than the GNU linker, and that the "+h"
+		    # option is used on all HP-UX platforms, both .sl
+		    # and .so.
+		    #
+		    V_SONAME_OPT="-Wl,+h,"
+		    #
+		    # By default, directories specifed with -L
+		    # are added to the run-time search path, so
+		    # we don't add them in pcap-config.
+		    #
+		    ;;
+
+	    solaris*)
+		    V_CCOPT="$V_CCOPT -fpic"
+		    #
+		    # XXX - this assumes GCC is using the Sun linker,
+		    # rather than the GNU linker.
+		    #
+		    V_SONAME_OPT="-Wl,-h,"
+		    V_RPATH_OPT="-Wl,-R,"
+		    ;;
+	    esac
+    else
 	    #
 	    # Set the appropriate compiler flags and, on platforms
 	    # where we build a shared library:
@@ -235,7 +325,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    #
 		    # "cc" is GCC.
 		    #
-		    $1="$$1 -fpic"
+		    V_CCOPT="$V_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
@@ -243,7 +333,7 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    ;;
 
 	    hpux*)
-		    $1="$$1 +z"
+		    V_CCOPT="$V_CCOPT +z"
 		    V_SHLIB_CMD="\$(LD)"
 		    V_SHLIB_OPT="-b"
 		    V_SONAME_OPT="+h "
@@ -254,16 +344,11 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    #
 		    ;;
 
-	    irix*)
-		    $1="$$1 -xansi -signed -g3"
-		    ;;
-
 	    osf*)
 	    	    #
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
 		    # Tru64 UNIX.
 		    #
-		    $1="$$1 -g3"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-soname "
@@ -276,22 +361,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    V_SHLIB_OPT="-G"
 		    V_SONAME_OPT="-h "
 		    V_RPATH_OPT="-R"
-		    ;;
-
-	    ultrix*)
-		    AC_MSG_CHECKING(that Ultrix $CC hacks const in prototypes)
-		    AC_CACHE_VAL(ac_cv_lbl_cc_const_proto,
-			AC_TRY_COMPILE(
-			    [#include <sys/types.h>],
-			    [struct a { int b; };
-			    void c(const struct a *)],
-			    ac_cv_lbl_cc_const_proto=yes,
-			    ac_cv_lbl_cc_const_proto=no))
-		    AC_MSG_RESULT($ac_cv_lbl_cc_const_proto)
-		    if test $ac_cv_lbl_cc_const_proto = no ; then
-			    AC_DEFINE(const,[],
-			        [to handle Ultrix compilers that don't support const in prototypes])
-		    fi
 		    ;;
 	    esac
     fi
@@ -577,7 +646,7 @@ AC_DEFUN(AC_LBL_HAVE_RUN_PATH,
 	else
 		ac_cv_lbl_have_run_path=no
 	fi
-	rm -f conftest*])
+	rm -f -r conftest*])
     AC_MSG_RESULT($ac_cv_lbl_have_run_path)
     ])
 
@@ -673,7 +742,7 @@ EOF
 				ac_cv_lbl_unaligned_fail=no
 			fi
 		fi
-		rm -f conftest* core core.conftest
+		rm -f -r conftest* core core.conftest
 		;;
 	esac])
     AC_MSG_RESULT($ac_cv_lbl_unaligned_fail)

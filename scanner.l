@@ -29,6 +29,20 @@ static const char rcsid[] _U_ =
 #include "config.h"
 #endif
 
+#ifdef WIN32
+#include <pcap-stdinc.h>
+#else /* WIN32 */
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#elif HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif
+#include <sys/types.h>
+#endif /* WIN32 */
+
 #include <ctype.h>
 #include <string.h>
 
@@ -259,6 +273,8 @@ address1|addr1	return ADDR1;
 address2|addr2	return ADDR2;
 address3|addr3	return ADDR3;
 address4|addr4	return ADDR4;
+ra		return RA;
+ta		return TA;
 
 less		return LESS;
 greater		return GREATER;

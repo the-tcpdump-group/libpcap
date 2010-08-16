@@ -56,6 +56,10 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #include <io.h>
 #endif
 
+#ifdef HAVE_SNF_API
+#include <snf.h>
+#endif
+
 #if (defined(_MSC_VER) && (_MSC_VER <= 1200)) /* we are compiling with Visual Studio 6, that doesn't support the LL suffix*/
 
 /*
@@ -102,12 +106,16 @@ typedef enum {
  */
 struct pcap_sf {
 	FILE *rfile;
+	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 	int swapped;
 	size_t hdrsize;
 	swapped_type_t lengths_swapped;
 	int version_major;
 	int version_minor;
-	u_char *base;
+	bpf_u_int32 ifcount;	/* number of interfaces seen in this capture */
+	u_int tsresol;		/* time stamp resolution */
+	u_int tsscale;		/* scaling factor for resolution -> microseconds */
+	u_int64_t tsoffset;	/* time stamp offset */
 };
 
 /*
@@ -158,6 +166,13 @@ struct pcap_md {
 				 * Same as in linux above, introduce
 				 * generally? */
 #endif /* HAVE_DAG_API */
+#ifdef HAVE_SNF_API
+	snf_handle_t snf_handle; /* opaque device handle */
+	snf_ring_t   snf_ring;   /* opaque device ring handle */
+        int          snf_timeout;
+        int          snf_boardnum;
+#endif /*HAVE_SNF_API*/
+
 #ifdef HAVE_ZEROCOPY_BPF
        /*
         * Zero-copy read buffer -- for zero-copy BPF.  'buffer' above will

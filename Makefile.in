@@ -44,20 +44,23 @@ VPATH = @srcdir@
 # You shouldn't need to edit anything below.
 #
 
+LD = /usr/bin/ld
 CC = @CC@
+AR = @AR@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
 LIBS = @LIBS@
+CFLAGS = @CFLAGS@
 LDFLAGS = @LDFLAGS@
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 PROG=libpcap
 
 # Standard CFLAGS
-CFLAGS = $(CCOPT) $(INCLS) $(DEFS)
+FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -77,14 +80,15 @@ YACC = @V_YACC@
 # problem if you don't own the file but can write to the directory.
 .c.o:
 	@rm -f $@
-	$(CC) $(CFLAGS) -c $(srcdir)/$*.c
+	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@
+PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @CAN_SRC@
 FSRC =  fad-@V_FINDALLDEVS@.c
 SSRC =  @SSRC@
-CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
-	etherent.c savefile.c bpf_filter.c bpf_image.c bpf_dump.c
-GENSRC = scanner.c grammar.c version.c
+CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c etherent.c \
+	savefile.c sf-pcap.c sf-pcap-ng.c pcap-common.c \
+	bpf_image.c bpf_dump.c
+GENSRC = scanner.c grammar.c bpf_filter.c version.c
 LIBOBJS = @LIBOBJS@
 
 SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
@@ -98,6 +102,7 @@ PUBHDR = \
 	pcap-namedb.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
+	pcap/ipnet.h \
 	pcap/namedb.h \
 	pcap/pcap.h \
 	pcap/sll.h \
@@ -112,10 +117,27 @@ HDR = $(PUBHDR) \
 	ieee80211.h \
 	llc.h \
 	nlpid.h \
+	pcap-common.h \
 	pcap-int.h \
 	pcap-stdinc.h \
 	ppp.h \
+	sf-pcap.h \
+	sf-pcap-ng.h \
 	sunatmpos.h
+
+TESTS = \
+	filtertest \
+	findalldevstest \
+	nonblocktest \
+	opentest \
+	selpolltest
+
+TESTS_SRC = \
+	tests/filtertest.c \
+	tests/findalldevstest.c \
+	tests/nonblocktest.c \
+	tests/opentest.c \
+	tests/selpolltest.c
 
 GENHDR = \
 	scanner.h tokdefs.h version.h
@@ -123,8 +145,8 @@ GENHDR = \
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.* filtertest findalldevstest selpolltest \
-	opentest $(PROG)-`cat VERSION`.tar.gz $(GENSRC) $(GENHDR) \
+CLEANFILES = $(OBJ) libpcap.* $(TESTS) \
+	$(PROG)-`cat $(srcdir)/VERSION`.tar.gz $(GENSRC) $(GENHDR) \
 	lex.yy.c pcap-config
 
 MAN1 = pcap-config.1
@@ -193,6 +215,7 @@ MANMISC = \
 	pcap-linktype.manmisc.in
 
 EXTRA_DIST = \
+	$(TESTS_SRC) \
 	CHANGES \
 	ChmodBPF/ChmodBPF \
 	ChmodBPF/StartupParameters.plist \
@@ -231,8 +254,6 @@ EXTRA_DIST = \
 	fad-null.c \
 	fad-sita.c \
 	fad-win32.c \
-	filtertest.c \
-	findalldevstest.c \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \
@@ -257,12 +278,13 @@ EXTRA_DIST = \
 	msdos/pktdrvr.c \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
-	opentest.c \
 	org.tcpdump.chmod_bpf.plist \
 	packaging/pcap.spec.in \
 	pcap-bpf.c \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \
+	pcap-can-linux.c \
+	pcap-can-linux.h \
 	pcap-config.in \
 	pcap-dag.c \
 	pcap-dag.h \
@@ -282,6 +304,8 @@ EXTRA_DIST = \
 	pcap-sita.h \
 	pcap-sita.c \
 	pcap-sita.html \
+	pcap-snf.c \
+	pcap-snf.h \
 	pcap-snit.c \
 	pcap-snoop.c \
 	pcap-usb-linux.c \
@@ -289,7 +313,6 @@ EXTRA_DIST = \
 	pcap-win32.c \
 	runlex.sh \
 	scanner.l \
-	selpolltest.c \
 	Win32/Include/Gnuc.h \
 	Win32/Include/addrinfo.h \
 	Win32/Include/bittypes.h \
@@ -318,7 +341,7 @@ all: libpcap.a shared pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
-	ar rc $@ $(OBJ) $(ADDLARCHIVEOBJS)
+	$(AR) rc $@ $(OBJ) $(ADDLARCHIVEOBJS)
 	$(RANLIB) $@
 
 shared: libpcap.$(DYEXT)
@@ -390,8 +413,8 @@ libpcap.sl: $(OBJ)
 #
 libpcap.shareda: $(OBJ)
 	@rm -f $@ shr.o
-	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LIBS)
-	ar rc $@ shr.o
+	$(CC) @V_SHLIB_OPT@ -o shr.o $(OBJ) $(ADDLOBJS) $(LDFLAGS) $(LIBS)
+	$(AR) rc $@ shr.o
 
 #
 # For platforms that don't support shared libraries (or on which we
@@ -404,7 +427,7 @@ scanner.c: $(srcdir)/scanner.l
 	$(srcdir)/runlex.sh $(LEX) -o$@ $<
 
 scanner.o: scanner.c tokdefs.h
-	$(CC) $(CFLAGS) -c scanner.c
+	$(CC) $(FULL_CFLAGS) -c scanner.c
 
 pcap.o: version.h
 
@@ -417,17 +440,23 @@ grammar.c: $(srcdir)/grammar.y
 
 grammar.o: grammar.c
 	@rm -f $@
-	$(CC) $(CFLAGS) -Dyylval=pcap_lval -c grammar.c
+	$(CC) $(FULL_CFLAGS) -Dyylval=pcap_lval -c grammar.c
 
 version.o: version.c
-	$(CC) $(CFLAGS) -c version.c
+	$(CC) $(FULL_CFLAGS) -c version.c
 
 snprintf.o: $(srcdir)/missing/snprintf.c
-	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
 
 version.c: $(srcdir)/VERSION
 	@rm -f $@
-	sed -e 's/.*/char pcap_version[] = "&";/' $(srcdir)/VERSION > $@
+	if grep GIT ${srcdir}/VERSION >/dev/null; then \
+		read ver <${srcdir}/VERSION; \
+		echo $$ver | tr -d '\012'; \
+		date +_%Y_%m_%d; \
+	else \
+		cat ${srcdir}/VERSION; \
+	fi | sed -e 's/.*/char pcap_version[] = "&";/' > $@
 
 #
 # NOTE: this really is supposed to be static; importing a string
@@ -438,14 +467,20 @@ version.c: $(srcdir)/VERSION
 #
 version.h: $(srcdir)/VERSION
 	@rm -f $@
-	sed -e 's/.*/static const char pcap_version_string[] = "libpcap version &";/' $(srcdir)/VERSION > $@
+	if grep GIT ${srcdir}/VERSION >/dev/null; then \
+		read ver <${srcdir}/VERSION; \
+		echo $$ver | tr -d '\012'; \
+		date +_%Y_%m_%d; \
+	else \
+		cat ${srcdir}/VERSION; \
+	fi | sed -e 's/.*/static const char pcap_version_string[] = "libpcap version &";/' > $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c
 	ln -s $(srcdir)/bpf/net/bpf_filter.c bpf_filter.c
 
 bpf_filter.o: bpf_filter.c
-	$(CC) $(CFLAGS) -c bpf_filter.c
+	$(CC) $(FULL_CFLAGS) -c bpf_filter.c
 
 #
 # Generate the pcap-config script.
@@ -463,17 +498,22 @@ pcap-config: $(srcdir)/pcap-config.in
 #
 # Test programs - not built by default, and not installed.
 #
-filtertest: filtertest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o filtertest filtertest.c libpcap.a $(LIBS)
+tests: $(TESTS)
 
-findalldevstest: findalldevstest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o findalldevstest findalldevstest.c libpcap.a $(LIBS)
+filtertest: tests/filtertest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(LIBS)
 
-selpolltest: selpolltest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o selpolltest selpolltest.c libpcap.a $(LIBS)
+findalldevstest: tests/findalldevstest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/tests/findalldevstest.c libpcap.a $(LIBS)
 
-opentest: opentest.c libpcap.a
-	$(CC) $(CFLAGS) -I. -L. -o opentest opentest.c libpcap.a $(LIBS)
+nonblocktest: tests/nonblocktest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o nonblocktest $(srcdir)/tests/nonblocktest.c libpcap.a $(LIBS)
+
+opentest: tests/opentest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/tests/opentest.c libpcap.a $(LIBS)
+
+selpolltest: tests/selpolltest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/tests/selpolltest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
@@ -650,7 +690,7 @@ packaging/pcap.spec: packaging/pcap.spec.in VERSION
 	RPMVERSION=`cat VERSION | sed s/-.*//g`; \
 		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
-releasetar:
+releasetar: 
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
 	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \

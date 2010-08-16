@@ -277,7 +277,7 @@ pfaction_to_num(const char *action)
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
 %token  PF_IFNAME PF_RSET PF_RNR PF_SRNR PF_REASON PF_ACTION
-%token	TYPE SUBTYPE DIR ADDR1 ADDR2 ADDR3 ADDR4
+%token	TYPE SUBTYPE DIR ADDR1 ADDR2 ADDR3 ADDR4 RA TA
 %token  LINK
 %token	GEQ LEQ NEQ
 %token	ID EID HID HID6 AID
@@ -442,6 +442,8 @@ dqual:	  SRC			{ $$ = Q_SRC; }
 	| ADDR2			{ $$ = Q_ADDR2; }
 	| ADDR3			{ $$ = Q_ADDR3; }
 	| ADDR4			{ $$ = Q_ADDR4; }
+	| RA			{ $$ = Q_RA; }
+	| TA			{ $$ = Q_TA; }
 	;
 /* address type qualifiers */
 aqual:	  HOST			{ $$ = Q_HOST; }

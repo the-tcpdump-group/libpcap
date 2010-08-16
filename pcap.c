@@ -43,6 +43,14 @@ static const char rcsid[] _U_ =
 #ifdef WIN32
 #include <pcap-stdinc.h>
 #else /* WIN32 */
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#elif HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif
 #include <sys/types.h>
 #endif /* WIN32 */
 
@@ -141,8 +149,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 		int status;
 
 		/* We are on an offline capture */
-		status = pcap_offline_read(p, 1, pcap_oneshot,
-		    (u_char *)&s);
+		status = pcap_offline_read(p, 1, pcap_oneshot, (u_char *)&s);
 
 		/*
 		 * Return codes for pcap_offline_read() are:
@@ -646,7 +653,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_PPI, "Per-Packet Information"),
 	DLT_CHOICE(DLT_IEEE802_16_MAC_CPS_RADIO, "IEEE 802.16 MAC Common Part Sublayer plus radiotap header"),
 	DLT_CHOICE(DLT_JUNIPER_ISM, "Juniper Integrated Service Module"),
-	DLT_CHOICE(DLT_IEEE802_15_4, "IEEE 802.15.4"),
+	DLT_CHOICE(DLT_IEEE802_15_4, "IEEE 802.15.4 with FCS"),
 	DLT_CHOICE(DLT_SITA, "SITA pseudo-header"),
 	DLT_CHOICE(DLT_ERF, "Endace ERF header"),
 	DLT_CHOICE(DLT_RAIF1, "Ethernet with u10 Networks pseudo-header"),
@@ -664,6 +671,9 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_FC_2_WITH_FRAME_DELIMS, "Fibre Channel FC-2 with frame delimiters"),
 	DLT_CHOICE(DLT_IPNET, "Solaris ipnet"),
 	DLT_CHOICE(DLT_CAN_SOCKETCAN, "CAN-bus with SocketCAN headers"),
+	DLT_CHOICE(DLT_IPV4, "Raw IPv4"),
+	DLT_CHOICE(DLT_IPV6, "Raw IPv6"),
+	DLT_CHOICE(DLT_IEEE802_15_4_NOFCS, "IEEE 802.15.4 without FCS"),
 	DLT_CHOICE_SENTINEL
 };
 

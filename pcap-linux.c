@@ -122,6 +122,7 @@ static const char rcsid[] _U_ =
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
@@ -135,6 +136,7 @@ static const char rcsid[] _U_ =
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
 #include <poll.h>
+#include <dirent.h>
 
 /*
  * Got Wireless Extensions?
@@ -168,12 +170,20 @@ static const char rcsid[] _U_ =
 #include "pcap-septel.h"
 #endif /* HAVE_SEPTEL_API */
 
+#ifdef HAVE_SNF_API
+#include "pcap-snf.h"
+#endif /* HAVE_SNF_API */
+
 #ifdef PCAP_SUPPORT_USB
 #include "pcap-usb-linux.h"
 #endif
 
 #ifdef PCAP_SUPPORT_BT
 #include "pcap-bt-linux.h"
+#endif
+
+#ifdef PCAP_SUPPORT_CAN
+#include "pcap-can-linux.h"
 #endif
 
 /*
@@ -370,9 +380,22 @@ pcap_create(const char *device, char *ebuf)
 	}
 #endif /* HAVE_SEPTEL_API */
 
+#ifdef HAVE_SNF_API
+        handle = snf_create(device, ebuf);
+        if (strstr(device, "snf") || handle != NULL)
+		return handle;
+
+#endif /* HAVE_SNF_API */
+
 #ifdef PCAP_SUPPORT_BT
 	if (strstr(device, "bluetooth")) {
 		return bt_create(device, ebuf);
+	}
+#endif
+
+#ifdef PCAP_SUPPORT_CAN
+	if (strstr(device, "can") || strstr(device, "vcan")) {
+		return can_create(device, ebuf);
 	}
 #endif
 
@@ -393,47 +416,46 @@ pcap_create(const char *device, char *ebuf)
 
 #ifdef HAVE_LIBNL
 /*
-	 *
-	 * If interface {if} is a mac80211 driver, the file
-	 * /sys/class/net/{if}/phy80211 is a symlink to
-	 * /sys/class/ieee80211/{phydev}, for some {phydev}.
-	 *
-	 * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
-	 * least, has a "wmaster0" device and a "wlan0" device; the
-	 * latter is the one with the IP address.  Both show up in
-	 * "tcpdump -D" output.  Capturing on the wmaster0 device
-	 * captures with 802.11 headers.
-	 *
-	 * airmon-ng searches through /sys/class/net for devices named
-	 * monN, starting with mon0; as soon as one *doesn't* exist,
-	 * it chooses that as the monitor device name.  If the "iw"
-	 * command exists, it does "iw dev {if} interface add {monif}
-	 * type monitor", where {monif} is the monitor device.  It
-	 * then (sigh) sleeps .1 second, and then configures the
-	 * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
-	 * is a file, it writes {mondev}, without a newline, to that file,
-	 * and again (sigh) sleeps .1 second, and then iwconfig's that
-	 * device into monitor mode and configures it up.  Otherwise,
-	 * you can't do monitor mode.
-	 *
-	 * All these devices are "glued" together by having the
-	 * /sys/class/net/{device}/phy80211 links pointing to the same
-	 * place, so, given a wmaster, wlan, or mon device, you can
-	 * find the other devices by looking for devices with
-	 * the same phy80211 link.
-	 *
-	 * To turn monitor mode off, delete the monitor interface,
-	 * either with "iw dev {monif} interface del" or by sending
-	 * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
-	 *
-	 * Note: if you try to create a monitor device named "monN", and
-	 * there's already a "monN" device, it fails, as least with
-	 * the netlink interface (which is what iw uses), with a return
-	 * value of -ENFILE.  (Return values are negative errnos.)  We
-	 * could probably use that to find an unused device.
-	 *
-	 * Yes, you can have multiple monitor devices for a given
-	 * physical device.
+ * If interface {if} is a mac80211 driver, the file
+ * /sys/class/net/{if}/phy80211 is a symlink to
+ * /sys/class/ieee80211/{phydev}, for some {phydev}.
+ *
+ * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
+ * least, has a "wmaster0" device and a "wlan0" device; the
+ * latter is the one with the IP address.  Both show up in
+ * "tcpdump -D" output.  Capturing on the wmaster0 device
+ * captures with 802.11 headers.
+ *
+ * airmon-ng searches through /sys/class/net for devices named
+ * monN, starting with mon0; as soon as one *doesn't* exist,
+ * it chooses that as the monitor device name.  If the "iw"
+ * command exists, it does "iw dev {if} interface add {monif}
+ * type monitor", where {monif} is the monitor device.  It
+ * then (sigh) sleeps .1 second, and then configures the
+ * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
+ * is a file, it writes {mondev}, without a newline, to that file,
+ * and again (sigh) sleeps .1 second, and then iwconfig's that
+ * device into monitor mode and configures it up.  Otherwise,
+ * you can't do monitor mode.
+ *
+ * All these devices are "glued" together by having the
+ * /sys/class/net/{device}/phy80211 links pointing to the same
+ * place, so, given a wmaster, wlan, or mon device, you can
+ * find the other devices by looking for devices with
+ * the same phy80211 link.
+ *
+ * To turn monitor mode off, delete the monitor interface,
+ * either with "iw dev {monif} interface del" or by sending
+ * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
+ *
+ * Note: if you try to create a monitor device named "monN", and
+ * there's already a "monN" device, it fails, as least with
+ * the netlink interface (which is what iw uses), with a return
+ * value of -ENFILE.  (Return values are negative errnos.)  We
+ * could probably use that to find an unused device.
+ *
+ * Yes, you can have multiple monitor devices for a given
+ * physical device.
 */
 
 /*
@@ -1765,6 +1787,279 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 }
 
 /*
+ * Get from "/sys/class/net" all interfaces listed there; if they're
+ * already in the list of interfaces we have, that won't add another
+ * instance, but if they're not, that'll add them.
+ *
+ * We don't bother getting any addresses for them; it appears you can't
+ * use SIOCGIFADDR on Linux to get IPv6 addresses for interfaces, and,
+ * although some other types of addresses can be fetched with SIOCGIFADDR,
+ * we don't bother with them for now.
+ *
+ * We also don't fail if we couldn't open "/sys/class/net"; we just leave
+ * the list of interfaces as is, and return 0, so that we can try
+ * scanning /proc/net/dev.
+ */
+static int
+scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
+{
+	DIR *sys_class_net_d;
+	int fd;
+	struct dirent *ent;
+	char *p;
+	char name[512];	/* XXX - pick a size */
+	char *q, *saveq;
+	struct ifreq ifrflags;
+	int ret = 1;
+
+	sys_class_net_d = opendir("/sys/class/net");
+	if (sys_class_net_d == NULL && errno == ENOENT)
+		return (0);
+
+	/*
+	 * Create a socket from which to fetch interface information.
+	 */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "socket: %s", pcap_strerror(errno));
+		return (-1);
+	}
+
+	for (;;) {
+		errno = 0;
+		ent = readdir(sys_class_net_d);
+		if (ent == NULL) {
+			/*
+			 * Error or EOF; if errno != 0, it's an error.
+			 */
+			break;
+		}
+
+		/*
+		 * Ignore directories (".", "..", and any subdirectories).
+		 */
+		if (ent->d_type == DT_DIR)
+			continue;
+
+		/*
+		 * Get the interface name.
+		 */
+		p = &ent->d_name[0];
+		q = &name[0];
+		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
+			if (*p == ':') {
+				/*
+				 * This could be the separator between a
+				 * name and an alias number, or it could be
+				 * the separator between a name with no
+				 * alias number and the next field.
+				 *
+				 * If there's a colon after digits, it
+				 * separates the name and the alias number,
+				 * otherwise it separates the name and the
+				 * next field.
+				 */
+				saveq = q;
+				while (isascii(*p) && isdigit(*p))
+					*q++ = *p++;
+				if (*p != ':') {
+					/*
+					 * That was the next field,
+					 * not the alias number.
+					 */
+					q = saveq;
+				}
+				break;
+			} else
+				*q++ = *p++;
+		}
+		*q = '\0';
+
+		/*
+		 * Get the flags for this interface, and skip it if
+		 * it's not up.
+		 */
+		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
+			if (errno == ENXIO || errno == ENODEV)
+				continue;
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFFLAGS: %.*s: %s",
+			    (int)sizeof(ifrflags.ifr_name),
+			    ifrflags.ifr_name,
+			    pcap_strerror(errno));
+			ret = -1;
+			break;
+		}
+		if (!(ifrflags.ifr_flags & IFF_UP))
+			continue;
+
+		/*
+		 * Add an entry for this interface, with no addresses.
+		 */
+		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
+		    errbuf) == -1) {
+			/*
+			 * Failure.
+			 */
+			ret = -1;
+			break;
+		}
+	}
+	if (ret != -1) {
+		/*
+		 * Well, we didn't fail for any other reason; did we
+		 * fail due to an error reading the directory?
+		 */
+		if (errno != 0) {
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Error reading /sys/class/net: %s",
+			    pcap_strerror(errno));
+			ret = -1;
+		}
+	}
+
+	(void)close(fd);
+	(void)closedir(sys_class_net_d);
+	return (ret);
+}
+
+/*
+ * Get from "/proc/net/dev" all interfaces listed there; if they're
+ * already in the list of interfaces we have, that won't add another
+ * instance, but if they're not, that'll add them.
+ *
+ * See comments from scan_sys_class_net().
+ */
+static int
+scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
+{
+	FILE *proc_net_f;
+	int fd;
+	char linebuf[512];
+	int linenum;
+	char *p;
+	char name[512];	/* XXX - pick a size */
+	char *q, *saveq;
+	struct ifreq ifrflags;
+	int ret = 0;
+
+	proc_net_f = fopen("/proc/net/dev", "r");
+	if (proc_net_f == NULL && errno == ENOENT)
+		return (0);
+
+	/*
+	 * Create a socket from which to fetch interface information.
+	 */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "socket: %s", pcap_strerror(errno));
+		return (-1);
+	}
+
+	for (linenum = 1;
+	    fgets(linebuf, sizeof linebuf, proc_net_f) != NULL; linenum++) {
+		/*
+		 * Skip the first two lines - they're headers.
+		 */
+		if (linenum <= 2)
+			continue;
+
+		p = &linebuf[0];
+
+		/*
+		 * Skip leading white space.
+		 */
+		while (*p != '\0' && isascii(*p) && isspace(*p))
+			p++;
+		if (*p == '\0' || *p == '\n')
+			continue;	/* blank line */
+
+		/*
+		 * Get the interface name.
+		 */
+		q = &name[0];
+		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
+			if (*p == ':') {
+				/*
+				 * This could be the separator between a
+				 * name and an alias number, or it could be
+				 * the separator between a name with no
+				 * alias number and the next field.
+				 *
+				 * If there's a colon after digits, it
+				 * separates the name and the alias number,
+				 * otherwise it separates the name and the
+				 * next field.
+				 */
+				saveq = q;
+				while (isascii(*p) && isdigit(*p))
+					*q++ = *p++;
+				if (*p != ':') {
+					/*
+					 * That was the next field,
+					 * not the alias number.
+					 */
+					q = saveq;
+				}
+				break;
+			} else
+				*q++ = *p++;
+		}
+		*q = '\0';
+
+		/*
+		 * Get the flags for this interface, and skip it if
+		 * it's not up.
+		 */
+		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
+			if (errno == ENXIO)
+				continue;
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFFLAGS: %.*s: %s",
+			    (int)sizeof(ifrflags.ifr_name),
+			    ifrflags.ifr_name,
+			    pcap_strerror(errno));
+			ret = -1;
+			break;
+		}
+		if (!(ifrflags.ifr_flags & IFF_UP))
+			continue;
+
+		/*
+		 * Add an entry for this interface, with no addresses.
+		 */
+		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
+		    errbuf) == -1) {
+			/*
+			 * Failure.
+			 */
+			ret = -1;
+			break;
+		}
+	}
+	if (ret != -1) {
+		/*
+		 * Well, we didn't fail for any other reason; did we
+		 * fail due to an error reading the file?
+		 */
+		if (ferror(proc_net_f)) {
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Error reading /proc/net/dev: %s",
+			    pcap_strerror(errno));
+			ret = -1;
+		}
+	}
+
+	(void)close(fd);
+	(void)fclose(proc_net_f);
+	return (ret);
+}
+
+/*
  * Description string for the "any" device.
  */
 static const char any_descr[] = "Pseudo-device that captures on all interfaces";
@@ -1772,25 +2067,66 @@ static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
+	int ret;
+
+	/*
+	 * Read "/sys/class/net", and add to the list of interfaces all
+	 * interfaces listed there that we don't already have, because,
+	 * on Linux, SIOCGIFCONF reports only interfaces with IPv4 addresses,
+	 * and even getifaddrs() won't return information about
+	 * interfaces with no addresses, so you need to read "/sys/class/net"
+	 * to get the names of the rest of the interfaces.
+	 */
+	ret = scan_sys_class_net(alldevsp, errbuf);
+	if (ret == -1)
+		return (-1);	/* failed */
+	if (ret == 0) {
+		/*
+		 * No /sys/class/net; try reading /proc/net/dev instead.
+		 */
+		if (scan_proc_net_dev(alldevsp, errbuf) == -1)
+			return (-1);
+	}
+
+	/*
+	 * Add the "any" device.
+	 */
 	if (pcap_add_if(alldevsp, "any", 0, any_descr, errbuf) < 0)
 		return (-1);
 
 #ifdef HAVE_DAG_API
+	/*
+	 * Add DAG devices.
+	 */
 	if (dag_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_DAG_API */
 
 #ifdef HAVE_SEPTEL_API
+	/*
+	 * Add Septel devices.
+	 */
 	if (septel_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif /* HAVE_SEPTEL_API */
 
+#ifdef HAVE_SNF_API
+	if (snf_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif /* HAVE_SNF_API */
+
 #ifdef PCAP_SUPPORT_BT
+	/*
+	 * Add Bluetooth devices.
+	 */
 	if (bt_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif
 
 #ifdef PCAP_SUPPORT_USB
+	/*
+	 * Add USB devices.
+	 */
 	if (usb_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif
@@ -1965,7 +2301,6 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	return -1;
 }
 
-
 #ifdef HAVE_PF_PACKET_SOCKETS
 /*
  * Map the PACKET_ value to a LINUX_SLL_ value; we
@@ -2072,6 +2407,12 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 
 	case ARPHRD_CHAOS:
 		handle->linktype = DLT_CHAOS;
+		break;
+#ifndef ARPHRD_CAN
+#define ARPHRD_CAN 280
+#endif
+	case ARPHRD_CAN:
+		handle->linktype = DLT_CAN_SOCKETCAN;
 		break;
 
 #ifndef ARPHRD_IEEE802_TR
@@ -2305,6 +2646,13 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		 */
 		handle->linktype = DLT_RAW;
 		break;
+
+#ifndef ARPHRD_IEEE802154
+#define ARPHRD_IEEE802154      804
+#endif
+       case ARPHRD_IEEE802154:
+               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
+               break;
 
 	default:
 		handle->linktype = -1;

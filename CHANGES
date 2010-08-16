@@ -1,13 +1,97 @@
-@(#) $Header: /tcpdump/master/libpcap/CHANGES,v 1.72 2008-12-23 20:13:29 guy Exp $ (LBL)
+Fri.    August 6, 2010.  guy@alum.mit.edu.
+Summary for 1.1.2 libpcap release
+	Return DLT_ values, not raw LINKTYPE_ values from
+	  pcap_datalink() when reading pcap-ng files
+	Add support for "wlan ra" and "wlan ta", to check the RA and TA
+	  of WLAN frames that have them
+	Don't crash if "wlan addr{1,2,3,4}" are used without 802.11
+	  headers
+	Do filtering on USB and Bluetooth capturing
+	On FreeBSD/SPARC64, use -fPIC - it's apparently necessary
+	Check for valid port numbers (fit in a 16-bit unsigned field) in
+	  "port" filters
+	Reject attempts to put savefiles into non-blocking mode
+	Check for "no such device" for the "get the media types" ioctl
+	  in *BSD
+	Improve error messages from bpf_open(), and let it do the error
+	  handling
+	Return more specific errors from pcap_can_set_rfmon(); fix
+	  documentation
+	Update description fetching code for FreeBSD, fix code for
+	  OpenBSD
+	Ignore /sys/net/dev files if we get ENODEV for them, not just
+	  ENXIO; fixes handling of bonding devices on Linux
+	Fix check for a constant 0 argument to BPF_DIV
+	Use the right version of ar when cross-building
+	Free any filter set on a savefile when the savefile is closed
+	Include the CFLAGS setting when configure was run in the
+	  compiler flags
+	Add support for 802.15.4 interfaces on Linux
 
-	updated pcap-dag.c from Stephen Donnelly <stephen@endace.com>	
+Thu.    April 1, 2010.  guy@alum.mit.edu.
+Summary for 1.1.1 libpcap release
+	Update CHANGES to reflect more of the changes in 1.1.0.
+	Fix build on RHEL5.
+	Fix shared library build on AIX.
 
-Tue.    March 25, 2009.  ken@netfunctional.ca.  Summary for 1.0.1 libpcap release
-	Install headers unconditionally, and include vlan.h/bluetooth.h if enabled
+Thu.	March 11, 2010.  ken@netfunctional.ca/guy@alum.mit.edu.
+Summary for 1.1.0 libpcap release
+	Add SocketCAN capture support
+	Add Myricom SNF API support
+	Update Endace DAG and ERF support
+	Add support for shared libraries on Solaris, HP-UX, and AIX
+	Build, install, and un-install shared libraries by default;
+	  don't build/install shared libraries on platforms we don't support
+	Fix building from a directory other than the source directory
+	Fix compiler warnings and builds on some platforms
+	Update config.guess and config.sub
+	Support monitor mode on mac80211 devices on Linux
+	Fix USB memory-mapped capturing on Linux; it requires a new DLT_
+	  value
+	On Linux, scan /sys/class/net for devices if we have it; scan
+	  it, or /proc/net/dev if we don't have /sys/class/net, even if
+	  we have getifaddrs(), as it'll find interfaces with no
+	  addresses
+	Add limited support for reading pcap-ng files
+	Fix BPF driver-loading error handling on AIX
+	Support getting the full-length interface description on FreeBSD
+	In the lexical analyzer, free up any addrinfo structure we got back
+	  from getaddrinfo().
+	Add support for BPF and libdlpi in OpenSolaris (and SXCE)
+	Hyphenate "link-layer" everywhere
+	Add /sys/kernel/debug/usb/usbmon to the list of usbmon locations
+	In pcap_read_linux_mmap(), if there are no frames available, call
+	  poll() even if we're in non-blocking mode, so we pick up
+	  errors, and check for the errors in question.
+	Note that poll() works on BPF devices is Snow Leopard
+	If an ENXIO or ENETDOWN is received, it may mean the device has
+	  gone away.  Deal with it.
+	For BPF, raise the default capture buffer size to from 32k to 512k
+	Support ps_ifdrop on Linux
+	Added a bunch of #ifdef directives to make wpcap.dll (WinPcap) compile
+	 under cygwin.
+	Changes to Linux mmapped captures.
+	Fix bug where create_ring would fail for particular snaplen and
+	  buffer size combinations
+	Update pcap-config so that it handles libpcap requiring
+	  additional libraries
+	Add workaround for threadsafeness on Windows
+	Add missing mapping for DLT_ENC <-> LINKTYPE_ENC
+	DLT: Add DLT_CAN_SOCKETCAN
+	DLT: Add Solaris ipnet
+	Don't check for DLT_IPNET if it's not defined
+	Add link-layer types for Fibre Channel FC-2
+	Add link-layer types for Wireless HART
+	Add link-layer types for AOS
+	Add link-layer types for DECT
+	Autoconf fixes (AIX, HP-UX, OSF/1, Tru64 cleanups)
+	Install headers unconditionally, and include vlan.h/bluetooth.h if
+	  enabled
 	Autoconf fixes+cleanup
 	Support enabling/disabling bluetooth (--{en,dis}able-bluetooth)
 	Support disabling SITA support (--without-sita)
-	Return -1 on failure to create packet ring (if supported but creation failed)
+	Return -1 on failure to create packet ring (if supported but
+	  creation failed)
 	Fix handling of 'any' device, so that it can be opened, and no longer
 	  attempt to open it in Monitor mode
 	Add support for snapshot length for USB Memory-Mapped Interface

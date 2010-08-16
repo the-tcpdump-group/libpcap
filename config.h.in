@@ -88,11 +88,11 @@
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
 
-/* define if you have a /proc/net/dev */
-#undef HAVE_PROC_NET_DEV
-
 /* define if you have a Septel API */
 #undef HAVE_SEPTEL_API
+
+/* define if you have Myricom SNF API */
+#undef HAVE_SNF_API
 
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
@@ -213,6 +213,9 @@
 
 /* target host supports Bluetooth sniffing */
 #undef PCAP_SUPPORT_BT
+
+/* target host supports CAN sniffing */
+#undef PCAP_SUPPORT_CAN
 
 /* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB

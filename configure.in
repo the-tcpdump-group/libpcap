@@ -21,7 +21,10 @@ AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
 
+AC_LBL_C_INIT_BEFORE_CC(V_CCOPT, V_INCLS)
+AC_PROG_CC
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
+AC_LBL_SHLIBS_INIT
 AC_LBL_C_INLINE
 AC_C___ATTRIBUTE__
 
@@ -295,7 +298,7 @@ AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 AC_MSG_CHECKING(packet capture type)
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
-elif test -r /dev/bpf ; then
+elif test -r /dev/bpf -o -h /dev/bpf ; then
 	#
 	# Cloning BPF device.
 	#
@@ -497,6 +500,10 @@ septel)
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
 	;;
 
+snf)
+	V_DEFS="$V_DEFS -DSNF_ONLY"
+	;;
+
 null)
 	AC_MSG_WARN(cannot determine packet capture interface)
 	AC_MSG_WARN((see the INSTALL doc for more info))
@@ -637,17 +644,6 @@ if test "$enable_yydebug" = "yes"; then
 	AC_DEFINE(YYDEBUG,1,[Enable parser debugging])
 fi
 AC_MSG_RESULT(${enable_yydebug-no})
-
-AC_MSG_CHECKING(whether we have /proc/net/dev)
-if test -r /proc/net/dev ; then
-	ac_cv_lbl_proc_net_dev=yes
-else
-	ac_cv_lbl_proc_net_dev=no
-fi
-if test $ac_cv_lbl_proc_net_dev = yes; then
-	AC_DEFINE(HAVE_PROC_NET_DEV, 1, [define if you have a /proc/net/dev])
-fi
-AC_MSG_RESULT($ac_cv_lbl_proc_net_dev)
 
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
@@ -986,6 +982,119 @@ if test "$V_PCAP" = septel -a "$ac_cv_lbl_septel_api" = no; then
 	AC_MSG_ERROR(Specifying the capture type as 'septel' requires the Septel API to be present; use --with-septel=DIR)
 fi
 
+# Check for Myricom SNF support.
+AC_ARG_WITH([snf],
+AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
+[
+	if test "$withval" = no
+	then
+		# User explicitly doesn't want SNF
+		want_snf=no
+	elif test "$withval" = yes
+	then
+		# User wants SNF support but hasn't specific a directory.
+		want_snf=yes
+	else
+		# User wants SNF support with a specified directory.
+		want_snf=yes
+		snf_root=$withval
+	fi
+],[
+	#
+	# Use Sniffer API if present, otherwise don't
+	#
+	want_snf=ifpresent
+])
+
+AC_ARG_WITH([snf-includes],
+AC_HELP_STRING([--with-snf-includes=DIR],[Myricom SNF include directory]),
+[
+	# User wants SNF with specific header directory
+	want_snf=yes
+	snf_include_dir=$withval
+],[])
+
+AC_ARG_WITH([snf-libraries],
+AC_HELP_STRING([--with-snf-libraries=DIR],[Myricom SNF library directory]),
+[
+	# User wants SNF with specific lib directory
+	want_snf=yes
+	snf_lib_dir=$withval
+],[])
+
+case "$V_PCAP" in
+bpf|linux|snf)
+	#
+	# We support the Sniffer API if we're on BSD, Linux, or if we're
+	# building a Sniffer-only libpcap.
+	#
+	;;
+*)
+	#
+	# If the user explicitly requested Sniffer, tell them it's not
+	# supported.
+	#
+	# If they expressed no preference, don't include it.
+	#
+	if test $want_snf = yes; then
+		AC_MSG_ERROR(Myricom SNF support only available with 'bpf' 'linux' and 'snf' packet capture types)
+	elif test $want_snf = yes; then
+		want_snf=no
+	fi
+	;;
+esac
+
+ac_cv_lbl_snf_api=no
+if test "$with_snf" != no; then
+
+	AC_MSG_CHECKING(whether we have Myricom Sniffer API)
+
+	if test -z "$snf_root"; then
+		snf_root=/opt/snf
+	fi
+
+	if test -z "$snf_include_dir"; then
+		snf_include_dir="$snf_root/include"
+	fi
+
+	if test -z "$snf_lib_dir"; then
+		snf_lib_dir="$snf_root/lib"
+	fi
+
+	if test -f "$snf_include_dir/snf.h"; then
+		ac_cv_lbl_snf_api=yes
+	fi
+	AC_MSG_RESULT([$ac_cv_lbl_snf_api ($snf_root)])
+
+	if test $ac_cv_lbl_snf_api = no; then
+		if test "$want_snf" = yes; then
+			AC_MSG_ERROR(SNF API headers not found under $snf_include_dir; use --without-snf)
+		fi
+	else
+		saved_ldflags=$LDFLAGS
+		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"], [ac_cv_lbl_snf_api="no"])
+		LDFLAGS="$saved_ldflags"
+
+		if test $ac_cv_lbl_snf_api = no; then
+			if test "$want_snf" = yes; then
+				AC_MSG_ERROR(SNF API cannot correctly be linked check config.log; use --without-snf)
+			fi
+		else
+			V_INCLS="$V_INCLS -I$snf_include_dir"
+			LIBS="$LIBS -lsnf"
+			LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+			if test "$V_PCAP" != snf ; then
+				SSRC="pcap-snf.c"
+			fi
+			AC_DEFINE(HAVE_SNF_API, 1, [define if you have Myricom SNF API])
+		fi
+	fi
+fi
+
+if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
+	AC_MSG_ERROR(Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR)
+fi
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)
 if test "$V_LEX" = lex ; then
@@ -1060,6 +1169,36 @@ aix*)
 darwin*)
 	DYEXT="dylib"
 	V_CCOPT="$V_CCOPT -fno-common"
+	AC_ARG_ENABLE(universal,
+	AC_HELP_STRING([--disable-universal],[don't build universal on OS X]))
+	if test "$enable_universal" != "no"; then
+		case "$host_os" in
+
+		darwin9.*)
+			#
+			# Leopard.  Build for 32-bit PowerPC, 64-bit
+			# PowerPC, x86, and x86-64, with 32-bit PowerPC
+			# first.  (That's what Apple does.)
+			#
+			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			;;
+
+		darwin10.*)
+			#
+			# Snow Leopard.  Build for x86-64, x86, and
+			# 32-bit PowerPC, with x86-64 first.  (That's
+			# what Apple does, even though Snow Leopard
+			# doesn't run on PPC, so PPC libpcap runs under
+			# Rosetta, and Rosetta doesn't support BPF
+			# ioctls, so PPC programs can't do live
+			# captures.)
+			#
+			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386 -arch ppc"
+			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386 -arch ppc"
+			;;
+		esac
+	fi
 	;;
 
 hpux9*)
@@ -1174,6 +1313,7 @@ solaris*)
 esac
 
 AC_PROG_RANLIB
+AC_CHECK_TOOL([AR], [ar])
 
 AC_LBL_DEVEL(V_CCOPT)
 
@@ -1259,11 +1399,11 @@ AC_SUBST(PCAP_SUPPORT_USB)
 AC_SUBST(USB_SRC)
 
 AC_ARG_ENABLE([bluetooth],
-[AC_HELP_STRING([--enable-bluetooth],[enable bluetooth support @<:@default=yes, if support available@:>@])],
+[AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
 ,enable_bluetooth=yes)
 
 if test "x$enable_bluetooth" != "xno" ; then
-	dnl check for bluetooth sniffing support
+	dnl check for Bluetooth sniffing support
 	case "$host_os" in
 	linux*)
 	       AC_CHECK_HEADER(bluetooth/bluetooth.h,
@@ -1276,11 +1416,35 @@ if test "x$enable_bluetooth" != "xno" ; then
 	       )
 	       ;;
 	*)
-	       AC_MSG_NOTICE(no Bluetooth sniffing support)
+	       AC_MSG_NOTICE(no Bluetooth sniffing support implemented for $host_os)
 	       ;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_BT)
 	AC_SUBST(BT_SRC)
+fi
+
+AC_ARG_ENABLE([can],
+[AC_HELP_STRING([--enable-can],[enable CAN support @<:@default=yes, if support available@:>@])],
+,enable_can=yes)
+
+if test "x$enable_can" != "xno" ; then
+	dnl check for CAN sniffing support
+	case "$host_os" in
+	linux*)
+		AC_CHECK_HEADER(linux/can.h,
+			[ AC_DEFINE(PCAP_SUPPORT_CAN, 1, [target host supports CAN sniffing])
+			CAN_SRC=pcap-can-linux.c
+			AC_MSG_NOTICE(CAN sniffing is supported)],
+			AC_MSG_NOTICE(CAN sniffing is not supported),
+			[#include <sys/socket.h>]
+		   )
+		;;
+	*)
+		AC_MSG_NOTICE(no CAN sniffing support implemented for $host_os)
+		;;
+	esac
+	AC_SUBST(PCAP_SUPPORT_CAN)
+	AC_SUBST(CAN_SRC)
 fi
 
 AC_PROG_INSTALL

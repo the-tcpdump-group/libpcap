@@ -31,6 +31,14 @@ static const char rcsid[] _U_ =
 #ifdef WIN32
 #include <pcap-stdinc.h>
 #else /* WIN32 */
+#if HAVE_INTTYPES_H
+#include <inttypes.h>
+#elif HAVE_STDINT_H
+#include <stdint.h>
+#endif
+#ifdef HAVE_SYS_BITYPES_H
+#include <sys/bitypes.h>
+#endif
 #include <sys/types.h>
 #include <sys/socket.h>
 #endif /* WIN32 */
@@ -74,6 +82,7 @@ static const char rcsid[] _U_ =
 #include "sunatmpos.h"
 #include "ppp.h"
 #include "pcap/sll.h"
+#include "pcap/ipnet.h"
 #include "arcnet.h"
 #ifdef HAVE_NET_PFVAR_H
 #include <sys/socket.h>
@@ -212,6 +221,7 @@ static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
 static struct block *gen_ether_linktype(int);
+static struct block *gen_ipnet_linktype(int);
 static struct block *gen_linux_sll_linktype(int);
 static struct slist *gen_load_prism_llprefixlen(void);
 static struct slist *gen_load_avs_llprefixlen(void);
@@ -1154,6 +1164,8 @@ init_linktype(p)
 		return;
 
 	case DLT_RAW:
+	case DLT_IPV4:
+	case DLT_IPV6:
 		off_linktype = -1;
 		off_macpl = 0;
 		off_nl = 0;
@@ -1561,6 +1573,23 @@ init_linktype(p)
 		return;
 
 	case DLT_CAN_SOCKETCAN:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IPNET:
+		off_linktype = 1;
+		off_macpl = 24;		/* ipnet header length */
+		off_nl = 0;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IEEE802_15_4_NOFCS:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
@@ -2000,6 +2029,33 @@ gen_ether_linktype(proto)
 			    (bpf_int32)proto);
 		}
 	}
+}
+
+/*
+ * "proto" is an Ethernet type value and for IPNET, if it is not IPv4
+ * or IPv6 then we have an error.
+ */
+static struct block *
+gen_ipnet_linktype(proto)
+	register int proto;
+{
+	switch (proto) {
+
+	case ETHERTYPE_IP:
+		return gen_cmp(OR_LINK, off_linktype, BPF_B,
+		    (bpf_int32)IPH_AF_INET);
+		/* NOTREACHED */
+
+	case ETHERTYPE_IPV6:
+		return gen_cmp(OR_LINK, off_linktype, BPF_B,
+		    (bpf_int32)IPH_AF_INET6);
+		/* NOTREACHED */
+
+	default:
+		break;
+	}
+
+	return gen_false();
 }
 
 /*
@@ -3143,6 +3199,32 @@ gen_linktype(proto)
 		/*NOTREACHED*/
 		break;
 
+	case DLT_IPV4:
+		/*
+		 * Raw IPv4, so no type field.
+		 */
+		if (proto == ETHERTYPE_IP)
+			return gen_true();		/* always true */
+
+		/* Checking for something other than IPv4; always false */
+		return gen_false();
+		/*NOTREACHED*/
+		break;
+
+	case DLT_IPV6:
+		/*
+		 * Raw IPv6, so no type field.
+		 */
+#ifdef INET6
+		if (proto == ETHERTYPE_IPV6)
+			return gen_true();		/* always true */
+#endif
+
+		/* Checking for something other than IPv6; always false */
+		return gen_false();
+		/*NOTREACHED*/
+		break;
+
 	case DLT_PPP:
 	case DLT_PPP_PPPD:
 	case DLT_PPP_SERIAL:
@@ -3399,6 +3481,9 @@ gen_linktype(proto)
 		 */
 		return gen_mcmp(OR_LINK, 0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
 
+	case DLT_IPNET:
+		return gen_ipnet_linktype(proto);
+
 	case DLT_LINUX_IRDA:
 		bpf_error("IrDA link-layer type filtering not implemented");
 
@@ -3436,6 +3521,7 @@ gen_linktype(proto)
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
 	case DLT_IEEE802_15_4_NONASK_PHY:
+	case DLT_IEEE802_15_4_NOFCS:
 		bpf_error("IEEE 802.15.4 link-layer type filtering not implemented");
 
 	case DLT_IEEE802_16_MAC_CPS_RADIO:
@@ -3710,6 +3796,30 @@ gen_ehostop(eaddr, dir)
 		b1 = gen_ehostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11 with 802.11 headers");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3752,6 +3862,30 @@ gen_fhostop(eaddr, dir)
 		b1 = gen_fhostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3786,6 +3920,30 @@ gen_thostop(eaddr, dir)
 		b1 = gen_thostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -4079,8 +4237,79 @@ gen_wlanhostop(eaddr, dir)
 		gen_and(b1, b0);
 		return b0;
 
+	case Q_RA:
+		/*
+		 * Not present in management frames; addr1 in other
+		 * frames.
+		 */
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "(link[0] & 0x08)".
+		 */
+		s = gen_load_a(OR_LINK, 0, BPF_B);
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		/*
+		 * Check addr1.
+		 */
+		b0 = gen_bcmp(OR_LINK, 4, 6, eaddr);
+
+		/*
+		 * AND that with the check of addr1.
+		 */
+		gen_and(b1, b0);
+		return (b0);
+
+	case Q_TA:
+		/*
+		 * Not present in management frames; addr2, if present,
+		 * in other frames.
+		 */
+
+		/*
+		 * Not present in CTS or ACK control frames.
+		 */
+		b0 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b1);
+		b2 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b2);
+		gen_and(b1, b2);
+		gen_or(b0, b2);
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "(link[0] & 0x08)".
+		 */
+		s = gen_load_a(OR_LINK, 0, BPF_B);
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		/*
+		 * AND that with the check for frames other than
+		 * CTS and ACK frames.
+		 */
+		gen_and(b1, b2);
+
+		/*
+		 * Check addr2.
+		 */
+		b1 = gen_bcmp(OR_LINK, 10, 6, eaddr);
+		gen_and(b2, b1);
+		return b1;
+
 	/*
-	 * XXX - add RA, TA, and BSSID keywords?
+	 * XXX - add BSSID keyword?
 	 */
 	case Q_ADDR1:
 		return (gen_bcmp(OR_LINK, 4, 6, eaddr));
@@ -4176,6 +4405,30 @@ gen_ipfchostop(eaddr, dir)
 		b1 = gen_ipfchostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -6122,6 +6375,10 @@ gen_scode(name, q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+		if (port < 0)
+			bpf_error("illegal port number %d < 0", port);
+		if (port > 65535)
+			bpf_error("illegal port number %d > 65535", port);
 #ifndef INET6
 		return gen_port(port, real_proto, dir);
 #else
@@ -6163,6 +6420,15 @@ gen_scode(name, q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;	
 		}
+		if (port1 < 0)
+			bpf_error("illegal port number %d < 0", port1);
+		if (port1 > 65535)
+			bpf_error("illegal port number %d > 65535", port1);
+		if (port2 < 0)
+			bpf_error("illegal port number %d < 0", port2);
+		if (port2 > 65535)
+			bpf_error("illegal port number %d > 65535", port2);
+
 #ifndef INET6
 		return gen_portrange(port1, port2, real_proto, dir);
 #else
@@ -6314,6 +6580,9 @@ gen_ncode(s, v, q)
 		else
 			bpf_error("illegal qualifier of 'port'");
 
+		if (v > 65535)
+			bpf_error("illegal port number %u > 65535", v);
+
 #ifndef INET6
 		return gen_port((int)v, proto, dir);
 #else
@@ -6336,6 +6605,9 @@ gen_ncode(s, v, q)
 			proto = PROTO_UNDEF;
 		else
 			bpf_error("illegal qualifier of 'portrange'");
+
+		if (v > 65535)
+			bpf_error("illegal port number %u > 65535", v);
 
 #ifndef INET6
 		return gen_portrange((int)v, (int)v, proto, dir);
@@ -6570,7 +6842,7 @@ gen_load(proto, inst, size)
 
 		/*
 		 * Load into the X register the offset computed into the
-		 * register specifed by "index".
+		 * register specified by "index".
 		 */
 		s = xfer_to_x(inst);
 
@@ -6602,7 +6874,7 @@ gen_load(proto, inst, size)
 		 * the link-layer header.  Add to it the offset computed
 		 * into the register specified by "index", and move that
 		 * into the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specifed
+		 * register the offset computed into the register specified
 		 * by "index".
 		 */
 		if (s != NULL) {
@@ -6651,7 +6923,7 @@ gen_load(proto, inst, size)
 		 * payload.  Add to it the offset computed into the
 		 * register specified by "index", and move that into
 		 * the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specifed
+		 * register the offset computed into the register specified
 		 * by "index".
 		 */
 		if (s != NULL) {
@@ -7082,6 +7354,13 @@ gen_broadcast(proto)
 		break;
 
 	case Q_IP:
+		/*
+		 * We treat a netmask of PCAP_NETMASK_UNKNOWN (0xffffffff)
+		 * as an indication that we don't know the netmask, and fail
+		 * in that case.
+		 */
+		if (netmask == PCAP_NETMASK_UNKNOWN)
+			bpf_error("netmask not known, so 'ip broadcast' not supported");
 		b0 = gen_linktype(ETHERTYPE_IP);
 		hostmask = ~netmask;
 		b1 = gen_mcmp(OR_NET, 16, BPF_W, (bpf_int32)0, hostmask);
@@ -7327,6 +7606,16 @@ gen_inbound(dir)
 			  gen_load(Q_LINK, gen_loadi(0), 1),
 			  gen_loadi(0),
 			  dir);
+		break;
+
+	case DLT_IPNET:
+		if (dir) {
+			/* match outgoing packets */
+			b0 = gen_cmp(OR_LINK, 2, BPF_H, IPNET_OUTBOUND);
+		} else {
+			/* match incoming packets */
+			b0 = gen_cmp(OR_LINK, 2, BPF_H, IPNET_INBOUND);
+		}
 		break;
 
 	case DLT_LINUX_SLL:
@@ -7665,6 +7954,30 @@ gen_ahostop(eaddr, dir)
 		b1 = gen_ahostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
