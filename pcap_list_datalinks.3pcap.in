@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LIST_DATALINKS 3PCAP "5 April 2008"
+.TH PCAP_LIST_DATALINKS 3PCAP "22 August 2010"
 .SH NAME
 pcap_list_datalinks, pcap_free_datalinks \- get a list of link-layer header
 types supported by a capture device, and free that list
@@ -59,4 +59,6 @@ may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP), pcap-linktype(@MAN_MISC_INFO@)
+pcap(3PCAP), pcap_geterr(3PCAP),
+pcap_datalink_val_to_name(3PCAP),
+pcap-linktype(@MAN_MISC_INFO@)

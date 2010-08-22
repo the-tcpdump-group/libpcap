@@ -19,7 +19,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SET_DATALINK 3PCAP "5 April 2008"
+.TH PCAP_SET_DATALINK 3PCAP "22 August 2010"
 .SH NAME
 pcap_set_datalink \- set the link-layer header type to be used by a
 capture device
@@ -49,4 +49,5 @@ may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP)
+pcap(3PCAP), pcap_geterr(3PCAP),
+pcap_datalink_name_to_val(3PCAP)
