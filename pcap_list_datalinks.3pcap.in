@@ -36,8 +36,8 @@ void pcap_free_datalinks(int *dlt_list);
 .fi
 .SH DESCRIPTION
 .B pcap_list_datalinks()
-is used to get a list of the supported data link types of the interface
-associated with the pcap descriptor.
+is used to get a list of the supported link-layer header types of the
+interface associated with the pcap descriptor.
 .B pcap_list_datalinks()
 allocates an array to hold the list and sets
 .IR *dlt_buf 
@@ -45,12 +45,12 @@ to point to that array.
 .LP
 The caller is responsible for freeing the array with
 .BR pcap_free_datalinks() ,
-which frees the list of data links pointed to by
+which frees the list of link-layer header types pointed to by
 .IR dlt_list .
 .SH RETURN VALUE
 .B pcap_list_datalinks()
-returns the number of data link types in the array on success and \-1
-on failure.
+returns the number of link-layer header types in the array on success
+and \-1 on failure.
 If \-1 is returned,
 .B pcap_geterr()
 or
