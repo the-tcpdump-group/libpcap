@@ -162,9 +162,7 @@ MAN3PCAP_NOEXPAND = \
 	pcap_file.3pcap \
 	pcap_fileno.3pcap \
 	pcap_findalldevs.3pcap \
-	pcap_freealldevs.3pcap \
 	pcap_freecode.3pcap \
-	pcap_free_datalinks.3pcap \
 	pcap_get_selectable_fd.3pcap \
 	pcap_geterr.3pcap \
 	pcap_inject.3pcap \
@@ -535,12 +533,18 @@ install: install-shared install-archive pcap-config
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_dump_open.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_freealldevs.3pcap
+	ln $(DESTDIR)$(mandir)/man3/pcap_findalldevs.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_freealldevs.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_geterr.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_inject.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
+	ln $(DESTDIR)$(mandir)/man3/pcap_list_datalinks.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_loop.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
@@ -624,8 +628,10 @@ uninstall: uninstall-shared
 		rm -f $(DESTDIR)$(mandir)/man3/$$i; done
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_freealldevs.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
