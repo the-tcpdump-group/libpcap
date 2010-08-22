@@ -21,7 +21,8 @@
 .\"
 .TH PCAP_FINDALLDEVS 3PCAP "5 April 2008"
 .SH NAME
-pcap_findalldevs \- get a list of capture devices
+pcap_findalldevs, pcap_freealldevs \- get a list of capture devices, and
+free that list
 .SH SYNOPSIS
 .nf
 .ft B
@@ -35,6 +36,7 @@ char errbuf[PCAP_ERRBUF_SIZE];
 .LP
 .ft B
 int pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf);
+void pcap_freealldevs(pcap_if_t *alldevs);
 .ft
 .fi
 .SH DESCRIPTION
@@ -140,7 +142,9 @@ member of the
 before interpreting the contents of the address.
 .PP
 The list of devices must be freed with
-.BR pcap_freealldevs() .
+.BR pcap_freealldevs() ,
+whch frees the list pointed to by
+.IR alldevs .
 .SH RETURN VALUE
 .B pcap_findalldevs()
 returns 0 on success and \-1 on failure.
@@ -153,4 +157,4 @@ is assumed to be able to hold at least
 chars.
 .SH SEE ALSO
 pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP),
-pcap_open_live(3PCAP), pcap_freealldevs(3PCAP)
+pcap_open_live(3PCAP)

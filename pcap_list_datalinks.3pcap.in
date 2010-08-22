@@ -21,8 +21,8 @@
 .\"
 .TH PCAP_LIST_DATALINKS 3PCAP "5 April 2008"
 .SH NAME
-pcap_list_datalinks \- get a list of link-layer header types supported
-by a capture device
+pcap_list_datalinks, pcap_free_datalinks \- get a list of link-layer header
+types supported by a capture device, and free that list
 .SH SYNOPSIS
 .nf
 .ft B
@@ -31,6 +31,7 @@ by a capture device
 .LP
 .ft B
 int pcap_list_datalinks(pcap_t *p, int **dlt_buf);
+void pcap_free_datalinks(int *dlt_list);
 .ft
 .fi
 .SH DESCRIPTION
@@ -39,9 +40,13 @@ is used to get a list of the supported data link types of the interface
 associated with the pcap descriptor.
 .B pcap_list_datalinks()
 allocates an array to hold the list and sets
-.IR *dlt_buf .
+.IR *dlt_buf 
+to point to that array.
+.LP
 The caller is responsible for freeing the array with
-.BR pcap_free_datalinks (3PCAP).
+.BR pcap_free_datalinks() ,
+which frees the list of data links pointed to by
+.IR dlt_list .
 .SH RETURN VALUE
 .B pcap_list_datalinks()
 returns the number of data link types in the array on success and \-1
@@ -54,5 +59,4 @@ may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP), pcap_free_datalinks(3PCAP),
-pcap-linktype(@MAN_MISC_INFO@)
+pcap(3PCAP), pcap_geterr(3PCAP), pcap-linktype(@MAN_MISC_INFO@)
