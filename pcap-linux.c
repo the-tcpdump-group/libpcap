@@ -138,6 +138,11 @@ static const char rcsid[] _U_ =
 #include <poll.h>
 #include <dirent.h>
 
+#ifdef HAVE_LINUX_NET_TSTAMP_H
+#include <linux/net_tstamp.h>
+#include <linux/sockios.h>
+#endif
+
 /*
  * Got Wireless Extensions?
  */
@@ -411,6 +416,28 @@ pcap_create(const char *device, char *ebuf)
 
 	handle->activate_op = pcap_activate_linux;
 	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
+	/*
+	 * We claim that we support:
+	 *
+	 *	software time stamps, with no details about their precision;
+	 *	hardware time stamps, synced to the host time;
+	 *	hardware time stamps, not synced to the host time.
+	 *
+	 * XXX - we can't ask a device whether it supports
+	 * hardware time stamps, so we just claim all devices do.
+	 */
+	handle->tstamp_type_count = 3;
+	handle->tstamp_type_list = malloc(3 * sizeof(u_int));
+	if (handle->tstamp_type_list == NULL) {
+		free(handle);
+		return NULL;
+	}
+	handle->tstamp_type_list[0] = PCAP_TSTAMP_HOST;
+	handle->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER;
+	handle->tstamp_type_list[2] = PCAP_TSTAMP_ADAPTER_UNSYNC;
+#endif
+
 	return handle;
 }
 
@@ -1172,7 +1199,8 @@ pcap_activate_linux(pcap_t *handle)
 		 * Success.
 		 * Try to use memory-mapped access.
 		 */
-		switch (activate_mmap(handle)) {
+		status = activate_mmap(handle);
+		switch (status) {
 
 		case 1:
 			/* we succeeded; nothing more to do */
@@ -1183,17 +1211,16 @@ pcap_activate_linux(pcap_t *handle)
 			 * Kernel doesn't support it - just continue
 			 * with non-memory-mapped access.
 			 */
-			status = 0;
 			break;
 
-		case -1:
+		default:
 			/*
 			 * We failed to set up to use it, or kernel
 			 * supports it, but we failed to enable it;
-			 * return an error.  handle->errbuf contains
-			 * an error message.
+			 * the return value is the error status to
+			 * return and, if it's PCAP_ERROR, handle->errbuf
+			 * contains the error message.
 			 */
-			status = PCAP_ERROR;
 			goto fail;
 		}
 	}
@@ -3083,6 +3110,86 @@ create_ring(pcap_t *handle)
 
 	frames_per_block = req.tp_block_size/req.tp_frame_size;
 
+	/*
+	 * PACKET_TIMESTAMP was added after linux/net_tstamp.h was,
+	 * so we check for PACKET_TIMESTAMP.  We check for
+	 * linux/net_tstamp.h just in case a system somehow has
+	 * PACKET_TIMESTAMP but not linux/net_tstamp.h; that might
+	 * be unnecessary.
+	 *
+	 * SIOCSHWTSTAMP was introduced in the patch that introduced
+	 * linux/net_tstamp.h, so we don't bother checking whether
+	 * SIOCSHWTSTAMP is defined (if your Linux system has
+	 * linux/net_tstamp.h but doesn't define SIOCSHWTSTAMP, your
+	 * Linux system is badly broken).
+	 */
+#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
+	/*
+	 * If we were told to do so, ask the kernel and the driver
+	 * to use hardware timestamps.
+	 *
+	 * Hardware timestamps are only supported with mmapped
+	 * captures.
+	 */
+	if (handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER ||
+	    handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER_UNSYNCED) {
+		struct hwtstamp_config hwconfig;
+		struct ifreq ifr;
+		int timesource;
+
+		/*
+		 * Ask for hardware time stamps on all packets,
+		 * including transmitted packets.
+		 */
+		memset(&hwconfig, 0, sizeof(hwconfig));
+		hwconfig.tx_type = HWTSTAMP_TX_ON;
+		hwconfig.rx_filter = HWTSTAMP_FILTER_ALL;
+
+		memset(&ifr, 0, sizeof(ifr));
+		strcpy(ifr.ifr_name, handle->opt.source);
+		ifr.ifr_data = (void *)&hwconfig;
+
+		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
+			switch (errno) {
+
+			case EPERM:
+				return PCAP_ERROR_PERM_DENIED;
+
+			case EOPNOTSUPP:
+				return PCAP_ERROR_TSTAMP_TYPE_NOTSUP:
+
+			default:
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"SIOCSHWTSTAMP failed: %s",
+					pcap_strerror(errno));
+				return PCAP_ERROR;
+			}
+		}
+
+		if (handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER) {
+			/*
+			 * Hardware timestamp, synchronized
+			 * with the system clock.
+			 */
+			timesource = SOF_TIMESTAMPING_SYS_HARDWARE;
+		} else {
+			/*
+			 * PCAP_TSTAMP_ADAPTER_UNSYNCED - hardware
+			 * timestamp, not synchronized with the
+			 * system clock.
+			 */
+			timesource = SOF_TIMESTAMPING_RAW_HARDWARE;
+		}
+		if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
+			(void *)&timesource, sizeof(timesource))) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+				"can't set PACKET_TIMESTAMP: %s", 
+				pcap_strerror(errno));
+			return PCAP_ERROR;
+		}
+	}
+#endif /* HAVE_LINUX_NET_TSTAMP_H && PACKET_TIMESTAMP */
+
 	/* ask the kernel to create the ring */
 retry:
 	req.tp_block_nr = req.tp_frame_nr / frames_per_block;
@@ -3117,7 +3224,7 @@ retry:
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "can't create rx ring on packet socket: %s",
 		    pcap_strerror(errno));
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/* memory map the rx ring */
@@ -3130,7 +3237,7 @@ retry:
 
 		/* clear the allocated ring on error*/
 		destroy_ring(handle);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/* allocate a ring for each frame header pointer*/
@@ -3142,7 +3249,7 @@ retry:
 		    pcap_strerror(errno));
 
 		destroy_ring(handle);
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/* fill the header ring with proper frame ptr*/

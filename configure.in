@@ -1447,15 +1447,26 @@ if test "x$enable_can" != "xno" ; then
 	AC_SUBST(CAN_SRC)
 fi
 
+dnl check for hardware timestamp support
+case "$host_os" in
+linux*)
+	AC_CHECK_HEADERS([linux/net_tstamp.h])
+	;;
+*)
+	AC_MSG_NOTICE(no hardware timestamp support implemented for $host_os)
+	;;
+esac
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
 
 AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
-	pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap
-	pcap_datalink.3pcap pcap_dump_open.3pcap
-	pcap_list_datalinks.3pcap pcap_open_dead.3pcap
-	pcap_open_offline.3pcap)
+	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap
+	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
+	pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap
+	pcap_open_dead.3pcap pcap_open_offline.3pcap
+	pcap_set_tstamp_type.3pcap)
 
 if test -f .devel ; then
 	make depend

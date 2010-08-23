@@ -56,7 +56,11 @@ if the process doesn't have permission to open the capture source,
 if monitor mode was specified but the capture source doesn't support
 monitor mode,
 .B PCAP_ERROR_IFACE_NOT_UP
-if the capture source is not up, and
+if the capture source is not up,
+.B PCAP_ERROR_TSTAMP_TYPE_NOTSUP
+if the time stamp specified in a previous
+.B pcap_set_tstamp_type()
+call isn't supported by the capture source, and
 .B PCAP_ERROR
 if another error occurred.
 If
