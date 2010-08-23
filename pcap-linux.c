@@ -435,7 +435,7 @@ pcap_create(const char *device, char *ebuf)
 	}
 	handle->tstamp_type_list[0] = PCAP_TSTAMP_HOST;
 	handle->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER;
-	handle->tstamp_type_list[2] = PCAP_TSTAMP_ADAPTER_UNSYNC;
+	handle->tstamp_type_list[2] = PCAP_TSTAMP_ADAPTER_UNSYNCED;
 #endif
 
 	return handle;
@@ -3234,7 +3234,7 @@ create_ring(pcap_t *handle, int *status)
 				 * time stamps.  We'll just fall back
 				 * on the standard host time stamps.
 				 */
-				*status = PCAP_WARNING_TSTAMP_TYPE_NOTSUP:
+				*status = PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
 				break;
 
 			default:

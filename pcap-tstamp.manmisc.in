@@ -116,7 +116,7 @@ Time stamp provided by the network adapter on which the capture is being
 done.  This is a high-precision time stamp, synchronized with the host
 operating system's clock.
 .TP 5
-.BR PCAP_TSTAMP_ADAPTER_UNSYNC
+.BR PCAP_TSTAMP_ADAPTER_UNSYNCED
 Time stamp provided by the network adapter on which the capture is being
 done.  This is a high-precision time stamp; it is not synchronized with
 the host operating system's clock.
