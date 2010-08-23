@@ -391,7 +391,7 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 	 * No.  We support setting the time stamp type, but not to this
 	 * particular value.
 	 */
-	return PCAP_ERROR_TSTAMP_TYPE_NOTSUP;
+	return PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
 }
 
 int
@@ -1114,6 +1114,9 @@ pcap_statustostr(int errnum)
 	case PCAP_WARNING:
 		return("Generic warning");
 
+	case PCAP_WARNING_TSTAMP_TYPE_NOTSUP:
+		return ("That type of time stamp is not supported by that device");
+
 	case PCAP_WARNING_PROMISC_NOTSUP:
 		return ("That device doesn't support promiscuous mode");
 
@@ -1146,9 +1149,6 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_CANTSET_TSTAMP_TYPE:
 		return ("That device doesn't support setting the time stamp type");
-
-	case PCAP_ERROR_TSTAMP_TYPE_NOTSUP:
-		return ("That type of time stamp is not supported by that device");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);

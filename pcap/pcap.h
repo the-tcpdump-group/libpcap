@@ -252,7 +252,6 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_PERM_DENIED		-8	/* no permission to open the device */
 #define PCAP_ERROR_IFACE_NOT_UP		-9	/* interface isn't up */
 #define PCAP_ERROR_CANTSET_TSTAMP_TYPE	-10	/* this device doesn't support setting the time stamp type */
-#define PCAP_ERROR_TSTAMP_TYPE_NOTSUP	-11	/* the requested time stamp type is not supported */
 
 /*
  * Warning codes for the pcap API.
@@ -261,6 +260,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
  */
 #define PCAP_WARNING			1	/* generic warning code */
 #define PCAP_WARNING_PROMISC_NOTSUP	2	/* this device doesn't support promiscuous mode */
+#define PCAP_WARNING_TSTAMP_TYPE_NOTSUP	3	/* the requested time stamp type is not supported */
 
 /*
  * Value to pass to pcap_compile() as the netmask if you don't know what

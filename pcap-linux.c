@@ -300,7 +300,7 @@ static short int map_packet_type_to_sll_type(short int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_old(pcap_t *);
 static int activate_new(pcap_t *);
-static int activate_mmap(pcap_t *);
+static int activate_mmap(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -320,7 +320,7 @@ union thdr {
 #define RING_GET_FRAME(h) (((union thdr **)h->buffer)[h->offset])
 
 static void destroy_ring(pcap_t *handle);
-static int create_ring(pcap_t *handle);
+static int create_ring(pcap_t *handle, int *status);
 static int prepare_tpacket_socket(pcap_t *handle);
 static void pcap_cleanup_linux_mmap(pcap_t *);
 static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
@@ -1193,18 +1193,30 @@ pcap_activate_linux(pcap_t *handle)
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 */
-
-	if ((status = activate_new(handle)) == 1) {
+	status = activate_new(handle);
+	if (status < 0) {
+		/*
+		 * Fatal error with the new way; just fail.
+		 * status has the error return; if it's PCAP_ERROR,
+		 * handle->errbuf has been set appropriately.
+		 */
+		goto fail;
+	}
+	if (status == 1) {
 		/*
 		 * Success.
 		 * Try to use memory-mapped access.
 		 */
-		status = activate_mmap(handle);
-		switch (status) {
+		switch (activate_mmap(handle, &status)) {
 
 		case 1:
-			/* we succeeded; nothing more to do */
-			return 0;
+			/*
+			 * We succeeded.  status has been
+			 * set to the status to return,
+			 * which might be 0, or might be
+			 * a PCAP_WARNING_ value.
+			 */
+			return status;
 
 		case 0:
 			/*
@@ -1213,11 +1225,11 @@ pcap_activate_linux(pcap_t *handle)
 			 */
 			break;
 
-		default:
+		case -1:
 			/*
-			 * We failed to set up to use it, or kernel
-			 * supports it, but we failed to enable it;
-			 * the return value is the error status to
+			 * We failed to set up to use it, or the kernel
+			 * supports it, but we failed to enable it.
+			 * status has been set to the error status to
 			 * return and, if it's PCAP_ERROR, handle->errbuf
 			 * contains the error message.
 			 */
@@ -1234,18 +1246,12 @@ pcap_activate_linux(pcap_t *handle)
 			 */
 			goto fail;
 		}
-	} else {
-		/*
-		 * Fatal error with the new way; just fail.
-		 * status has the error return; if it's PCAP_ERROR,
-		 * handle->errbuf has been set appropriately.
-		 */
-		goto fail;
 	}
 
 	/*
 	 * We set up the socket, but not with memory-mapped access.
 	 */
+	status = 0;
 	if (handle->opt.buffer_size != 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
@@ -2982,10 +2988,22 @@ activate_new(pcap_t *handle)
 #endif
 }
 
-static int 
-activate_mmap(pcap_t *handle)
-{
 #ifdef HAVE_PACKET_RING
+/*
+ * Attempt to activate with memory-mapped access.
+ *
+ * On success, returns 1, and sets *status to 0 if there are no warnings
+ * or to a PCAP_WARNING_ code if there is a warning.
+ *
+ * On failure due to lack of support for memory-mapped capture, returns
+ * 0.
+ *
+ * On error, returns -1, and sets *status to the appropriate error code;
+ * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
+ */
+static int 
+activate_mmap(pcap_t *handle, int *status)
+{
 	int ret;
 
 	/*
@@ -2997,7 +3015,8 @@ activate_mmap(pcap_t *handle)
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "can't allocate oneshot buffer: %s",
 			 pcap_strerror(errno));
-		return PCAP_ERROR;
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	if (handle->opt.buffer_size == 0) {
@@ -3005,20 +3024,38 @@ activate_mmap(pcap_t *handle)
 		handle->opt.buffer_size = 2*1024*1024;
 	}
 	ret = prepare_tpacket_socket(handle);
-	if (ret != 1) {
+	if (ret == -1) {
 		free(handle->md.oneshot_buffer);
+		*status = PCAP_ERROR;
 		return ret;
 	}
-	ret = create_ring(handle);
-	if (ret != 1) {
+	ret = create_ring(handle, status);
+	if (ret == 0) {
+		/*
+		 * We don't support memory-mapped capture; our caller
+		 * will fall back on reading from the socket.
+		 */
 		free(handle->md.oneshot_buffer);
-		return ret;
+		return 0;
+	}
+	if (ret == -1) {
+		/*
+		 * Error attempting to enable memory-mapped capture;
+		 * fail.  create_ring() has set *status.
+		 */
+		free(handle->md.oneshot_buffer);
+		return -1;
 	}
 
-	/* override some defaults and inherit the other fields from
-	 * activate_new
-	 * handle->offset is used to get the current position into the rx ring 
-	 * handle->cc is used to store the ring size */
+	/*
+	 * Success.  *status has been set either to 0 if there are no
+	 * warnings or to a PCAP_WARNING_ value if there is a warning.
+	 *
+	 * Override some defaults and inherit the other fields from
+	 * activate_new.
+	 * handle->offset is used to get the current position into the rx ring.
+	 * handle->cc is used to store the ring size.
+	 */
 	handle->read_op = pcap_read_linux_mmap;
 	handle->cleanup_op = pcap_cleanup_linux_mmap;
 	handle->setfilter_op = pcap_setfilter_linux_mmap;
@@ -3027,12 +3064,21 @@ activate_mmap(pcap_t *handle)
 	handle->oneshot_callback = pcap_oneshot_mmap;
 	handle->selectable_fd = handle->fd;
 	return 1;
-#else /* HAVE_PACKET_RING */
-	return 0;
-#endif /* HAVE_PACKET_RING */
 }
+#else /* HAVE_PACKET_RING */
+static int 
+activate_mmap(pcap_t *handle _U_, int *status _U_)
+{
+	return 0;
+}
+#endif /* HAVE_PACKET_RING */
 
 #ifdef HAVE_PACKET_RING
+/*
+ * Attempt to set the socket to version 2 of the memory-mapped header.
+ * Return 1 if we succeed or if we fail because version 2 isn't
+ * supported; return -1 on any other error, and set handle->errbuf.
+ */
 static int
 prepare_tpacket_socket(pcap_t *handle)
 {
@@ -3084,11 +3130,28 @@ prepare_tpacket_socket(pcap_t *handle)
 	return 1;
 }
 
+/*
+ * Attempt to set up memory-mapped access.
+ *
+ * On success, returns 1, and sets *status to 0 if there are no warnings
+ * or to a PCAP_WARNING_ code if there is a warning.
+ *
+ * On failure due to lack of support for memory-mapped capture, returns
+ * 0.
+ *
+ * On error, returns -1, and sets *status to the appropriate error code;
+ * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
+ */
 static int
-create_ring(pcap_t *handle)
+create_ring(pcap_t *handle, int *status)
 {
 	unsigned i, j, frames_per_block;
 	struct tpacket_req req;
+
+	/*
+	 * Start out assuming no warnings or errors.
+	 */
+	*status = 0;
 
 	/* Note that with large snapshot (say 64K) only a few frames 
 	 * will be available in the ring even with pretty large ring size
@@ -3153,39 +3216,62 @@ create_ring(pcap_t *handle)
 			switch (errno) {
 
 			case EPERM:
-				return PCAP_ERROR_PERM_DENIED;
+				/*
+				 * Treat this as an error, as the
+				 * user should try to run this
+				 * with the appropriate privileges -
+				 * and, if they can't, shouldn't
+				 * try requesting hardware time stamps.
+				 */
+				*status = PCAP_ERROR_PERM_DENIED;
+				return -1;
 
 			case EOPNOTSUPP:
-				return PCAP_ERROR_TSTAMP_TYPE_NOTSUP:
+				/*
+				 * Treat this as a warning, as the
+				 * only way to fix the warning is to
+				 * get an adapter that supports hardware
+				 * time stamps.  We'll just fall back
+				 * on the standard host time stamps.
+				 */
+				*status = PCAP_WARNING_TSTAMP_TYPE_NOTSUP:
+				break;
 
 			default:
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"SIOCSHWTSTAMP failed: %s",
 					pcap_strerror(errno));
-				return PCAP_ERROR;
+				*status = PCAP_ERROR;
+				return -1;
 			}
-		}
-
-		if (handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER) {
-			/*
-			 * Hardware timestamp, synchronized
-			 * with the system clock.
-			 */
-			timesource = SOF_TIMESTAMPING_SYS_HARDWARE;
 		} else {
 			/*
-			 * PCAP_TSTAMP_ADAPTER_UNSYNCED - hardware
-			 * timestamp, not synchronized with the
-			 * system clock.
+			 * Well, that worked.  Now specify the type of
+			 * hardware time stamp we want for this
+			 * socket.
 			 */
-			timesource = SOF_TIMESTAMPING_RAW_HARDWARE;
-		}
-		if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
-			(void *)&timesource, sizeof(timesource))) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
-				"can't set PACKET_TIMESTAMP: %s", 
-				pcap_strerror(errno));
-			return PCAP_ERROR;
+			if (handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER) {
+				/*
+				 * Hardware timestamp, synchronized
+				 * with the system clock.
+				 */
+				timesource = SOF_TIMESTAMPING_SYS_HARDWARE;
+			} else {
+				/*
+				 * PCAP_TSTAMP_ADAPTER_UNSYNCED - hardware
+				 * timestamp, not synchronized with the
+				 * system clock.
+				 */
+				timesource = SOF_TIMESTAMPING_RAW_HARDWARE;
+			}
+			if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
+				(void *)&timesource, sizeof(timesource))) {
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+					"can't set PACKET_TIMESTAMP: %s", 
+					pcap_strerror(errno));
+				*status = PCAP_ERROR;
+				return -1;
+			}
 		}
 	}
 #endif /* HAVE_LINUX_NET_TSTAMP_H && PACKET_TIMESTAMP */
@@ -3224,7 +3310,8 @@ retry:
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "can't create rx ring on packet socket: %s",
 		    pcap_strerror(errno));
-		return PCAP_ERROR;
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	/* memory map the rx ring */
@@ -3237,7 +3324,8 @@ retry:
 
 		/* clear the allocated ring on error*/
 		destroy_ring(handle);
-		return PCAP_ERROR;
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	/* allocate a ring for each frame header pointer*/
@@ -3249,7 +3337,8 @@ retry:
 		    pcap_strerror(errno));
 
 		destroy_ring(handle);
-		return PCAP_ERROR;
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	/* fill the header ring with proper frame ptr*/

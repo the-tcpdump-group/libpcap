@@ -43,6 +43,11 @@ returns 0 on success without warnings,
 .B PCAP_WARNING_PROMISC_NOTSUP
 on success on a device that doesn't support promiscuous mode if
 promiscuous mode was requested,
+.B PCAP_WARNING_TSTAMP_TYPE_NOTSUP
+on success if the time stamp type specified in a previous
+.B pcap_set_tstamp_type()
+call isn't supported by the capture source (the time stamp type is
+left as the default),
 .B PCAP_WARNING
 on success with any other warning,
 .B PCAP_ERROR_ACTIVATED
@@ -56,11 +61,7 @@ if the process doesn't have permission to open the capture source,
 if monitor mode was specified but the capture source doesn't support
 monitor mode,
 .B PCAP_ERROR_IFACE_NOT_UP
-if the capture source is not up,
-.B PCAP_ERROR_TSTAMP_TYPE_NOTSUP
-if the time stamp specified in a previous
-.B pcap_set_tstamp_type()
-call isn't supported by the capture source, and
+if the capture source is not up, and
 .B PCAP_ERROR
 if another error occurred.
 If
