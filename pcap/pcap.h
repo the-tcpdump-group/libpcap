@@ -310,7 +310,7 @@ const char *pcap_tstamp_type_val_to_description(int);
  * PCAP_TSTAMP_ADAPTER is a high-precision time stamp supplied by the
  * capture device; it's synchronized with the system clock.
  *
- * PCAP_TSTAMP_ADAPTER_UNSYNC is a high-precision time stamp supplied by
+ * PCAP_TSTAMP_ADAPTER_UNSYNCED is a high-precision time stamp supplied by
  * the capture device; it's not synchronized with the system clock.
  *
  * Note that time stamps synchronized with the system clock can go
