@@ -143,8 +143,10 @@ MAN3PCAP_EXPAND = \
 	pcap_datalink.3pcap.in \
 	pcap_dump_open.3pcap.in \
 	pcap_list_datalinks.3pcap.in \
+	pcap_list_tstamp_types.3pcap.in \
 	pcap_open_dead.3pcap.in \
-	pcap_open_offline.3pcap.in
+	pcap_open_offline.3pcap.in \
+	pcap_set_tstamp_type.3pcap.in
 
 MAN3PCAP_NOEXPAND = \
 	pcap_activate.3pcap \
@@ -187,7 +189,9 @@ MAN3PCAP_NOEXPAND = \
 	pcap_snapshot.3pcap \
 	pcap_stats.3pcap \
 	pcap_statustostr.3pcap \
-	pcap_strerror.3pcap
+	pcap_strerror.3pcap \
+	pcap_tstamp_type_name_to_val.3pcap \
+	pcap_tstamp_type_val_to_name.3pcap
 
 MAN3PCAP = $(MAN3PCAP_NOEXPAND) $(MAN3PCAP_EXPAND:.in=)
 
@@ -196,7 +200,8 @@ MANFILE = \
 
 MANMISC = \
 	pcap-filter.manmisc.in \
-	pcap-linktype.manmisc.in
+	pcap-linktype.manmisc.in \
+	pcap-tstamp.manmisc.in
 
 EXTRA_DIST = \
 	CHANGES \
@@ -545,6 +550,9 @@ install: install-shared install-archive pcap-config
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_list_datalinks.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_tstamp_types.3pcap
+	ln $(DESTDIR)$(mandir)/man3/pcap_list_tstamp_types.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_free_tstamp_types.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_loop.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
@@ -632,6 +640,7 @@ uninstall: uninstall-shared
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_tstamp_types.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
