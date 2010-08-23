@@ -91,36 +91,42 @@ routine can be used after a
 call and before a
 .B pcap_activate()
 call to specify the type of time stamp to be used on the device.
-The time stamp types are:
+The time stamp types are listed here; the first value is the #define to
+use in code, the second value is the value returned by
+.B pcap_tstamp_type_val_to_name()
+and accepted by
+.BR pcap_tstamp_name_to_val() .
 .RS 5
 .TP 5
-.BR PCAP_TSTAMP_HOST
+.BR PCAP_TSTAMP_HOST " - " host
 Time stamp provided by the host on which the capture is being done.  The
 precision of this time stamp is unspecified; it might or might not be
 synchronized with the host operating system's clock.
 .TP 5
-.BR PCAP_TSTAMP_HOST_LOWPREC
+.BR PCAP_TSTAMP_HOST_LOWPREC " - " host_lowprec
 Time stamp provided by the host on which the capture is being done. 
 This is a low-precision time stamp, synchronized with the host operating
 system's clock.
 .TP 5
-.BR PCAP_TSTAMP_HOST_HIPREC
+.BR PCAP_TSTAMP_HOST_HIPREC " - " host_hiprec
 Time stamp provided by the host on which the capture is being done. 
 This is a high-precision time stamp; it might or might not be
 synchronized with the host operating system's clock.  It might be more
 expensive to fetch than
 .BR PCAP_TSTAMP_HOST_LOWPREC .
 .TP 5
-.BR PCAP_TSTAMP_ADAPTER
+.BR PCAP_TSTAMP_ADAPTER " - " adapter
 Time stamp provided by the network adapter on which the capture is being
 done.  This is a high-precision time stamp, synchronized with the host
 operating system's clock.
 .TP 5
-.BR PCAP_TSTAMP_ADAPTER_UNSYNCED
+.BR PCAP_TSTAMP_ADAPTER_UNSYNCED " - " adapter_unsynced
 Time stamp provided by the network adapter on which the capture is being
 done.  This is a high-precision time stamp; it is not synchronized with
 the host operating system's clock.
 .RE
 .SH SEE ALSO
 pcap_set_tstamp_type(3PCAP),
-pcap_list_tstamp_types(3PCAP)
+pcap_list_tstamp_types(3PCAP),
+pcap_tstamp_type_val_to_name(3PCAP),
+pcap_tstamp_name_to_val(3PCAP)
