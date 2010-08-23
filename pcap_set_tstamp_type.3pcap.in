@@ -49,13 +49,15 @@ See
 for a list of all the time stamp types.
 .SH RETURN VALUE
 .B pcap_set_tstamp_type()
-returns 0 on success,
+returns 0 on success if the specified time stamp type is expected to be
+supported by the capture device,
+.B PCAP_WARNING_TSTAMP_TYPE_NOTSUP
+on success if the specified time stamp type is not supported by the
+capture device,
 .B PCAP_ERROR_ACTIVATED
-if called on a capture handle that has been activated,
+if called on a capture handle that has been activated, and
 .B PCAP_ERROR_CANTSET_TSTAMP_TYPE
-if the capture device doesn't support setting the time stamp type, and
-.B PCAP_ERROR_TSTAMP_TYPE_NOTSUP
-if the specified time stamp type is not supported by the capture device.
+if the capture device doesn't support setting the time stamp type.
 .SH SEE ALSO
 pcap(3PCAP),
 pcap_list_tstamp_types(3PCAP),
