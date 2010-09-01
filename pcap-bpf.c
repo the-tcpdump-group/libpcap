@@ -955,14 +955,28 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * processed so far.
 		 */
 		if (p->break_loop) {
+			p->bp = bp;
+			p->cc = ep - bp;
+			/*
+			 * ep is set based on the return value of read(),
+			 * but read() from a BPF device doesn't necessarily
+			 * return a value that's a multiple of the alignment
+			 * value for BPF_WORDALIGN().  However, whenever we
+			 * increment bp, we round up the increment value by
+			 * a value rounded up by BPF_WORDALIGN(), so we
+			 * could increment bp past ep after processing the
+			 * last packet in the buffer.
+			 *
+			 * We treat ep < bp as an indication that this
+			 * happened, and just set p->cc to 0.
+			 */
+			if (p->cc < 0)
+				p->cc = 0;
 			if (n == 0) {
 				p->break_loop = 0;
 				return (PCAP_ERROR_BREAK);
-			} else {
-				p->bp = bp;
-				p->cc = ep - bp;
+			} else
 				return (n);
-			}
 		}
 
 		caplen = bhp->bh_caplen;
@@ -1014,6 +1028,11 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			if (++n >= cnt && cnt > 0) {
 				p->bp = bp;
 				p->cc = ep - bp;
+				/*
+				 * See comment above about p->cc < 0.
+				 */
+				if (p->cc < 0)
+					p->cc = 0;
 				return (n);
 			}
 		} else {
