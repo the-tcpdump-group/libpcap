@@ -252,6 +252,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_PERM_DENIED		-8	/* no permission to open the device */
 #define PCAP_ERROR_IFACE_NOT_UP		-9	/* interface isn't up */
 #define PCAP_ERROR_CANTSET_TSTAMP_TYPE	-10	/* this device doesn't support setting the time stamp type */
+#define PCAP_ERROR_PROMISC_PERM_DENIED	-11	/* you don't have permission to capture in promiscuous mode */
 
 /*
  * Warning codes for the pcap API.

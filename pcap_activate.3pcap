@@ -57,6 +57,9 @@ if the capture source specified when the handle was created doesn't
 exist,
 .B PCAP_ERROR_PERM_DENIED
 if the process doesn't have permission to open the capture source,
+.B PCAP_ERROR_PROMISC_PERM_DENIED
+if the process has permission to open the capture source but doesn't
+have permission to put it into promiscuous mode,
 .B PCAP_ERROR_RFMON_NOTSUP
 if monitor mode was specified but the capture source doesn't support
 monitor mode,
