@@ -449,7 +449,7 @@ pcap_activate_dlpi(pcap_t *p)
 	/* Try device without unit number */
 	if ((p->fd = open(dname, O_RDWR)) < 0) {
 		if (errno != ENOENT) {
-			if (errno == EACCES)
+			if (errno == EPERM || errno == EACCES)
 				status = PCAP_ERROR_PERM_DENIED;
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
 			    pcap_strerror(errno));
@@ -485,7 +485,7 @@ pcap_activate_dlpi(pcap_t *p)
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", p->opt.source);
 			} else {
-				if (errno == EACCES)
+				if (errno == EPERM || errno == EACCES)
 					status = PCAP_ERROR_PERM_DENIED;
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
 				    dname2, pcap_strerror(errno));
@@ -1018,7 +1018,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s: UNIX error - %s",
 			    what, pcap_strerror(dlp->error_ack.dl_unix_errno));
-			if (dlp->error_ack.dl_unix_errno == EACCES)
+			if (dlp->error_ack.dl_unix_errno == EPERM ||
+			    dlp->error_ack.dl_unix_errno == EACCES)
 				return (PCAP_ERROR_PERM_DENIED);
 			break;
 

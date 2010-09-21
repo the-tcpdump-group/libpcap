@@ -115,7 +115,8 @@ pcap_activate_libdlpi(pcap_t *p)
 	if (retv != DLPI_SUCCESS) {
 		if (retv == DLPI_ELINKNAMEINVAL || retv == DLPI_ENOLINK)
 			err = PCAP_ERROR_NO_SUCH_DEVICE;
-		else if (retv == DL_SYSERR && errno == EACCES)
+		else if (retv == DL_SYSERR &&
+		    (errno == EPERM || errno == EACCES))
 			err = PCAP_ERROR_PERM_DENIED;
 		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv,
 		    p->errbuf);
@@ -238,7 +239,8 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 
 	retv = dlpi_promiscon(p->hd, level);
 	if (retv != DLPI_SUCCESS) {
-		if (retv == DL_SYSERR && errno == EACCES)
+		if (retv == DL_SYSERR &&
+		    (errno == EPERM || errno == EACCES))
 			err = PCAP_ERROR_PERM_DENIED;
 		else
 			err = PCAP_ERROR;
