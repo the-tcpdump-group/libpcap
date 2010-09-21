@@ -470,7 +470,8 @@ fail:
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    p->errbuf);
 	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
-	    status == PCAP_ERROR_PERM_DENIED)
+	    status == PCAP_ERROR_PERM_DENIED ||
+	    status == PCAP_ERROR_PROMISC_PERM_DENIED)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
 		    pcap_statustostr(status), p->errbuf);
 	else
@@ -1149,6 +1150,9 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_CANTSET_TSTAMP_TYPE:
 		return ("That device doesn't support setting the time stamp type");
+
+	case PCAP_ERROR_PROMISC_PERM_DENIED:
+		return ("You don't have permission to capture in promiscuous mode on that device");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
