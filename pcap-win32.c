@@ -39,7 +39,12 @@ static const char rcsid[] _U_ =
 #include <pcap-int.h>
 #include <Packet32.h>
 #ifdef __MINGW32__
-#include <ddk/ndis.h>
+#ifdef __MINGW64__
+#include <ntddndis.h>
+#else  /*__MINGW64__*/
+#include <ddk/ntddndis.h>
+#include <ndis.h>
+#endif /*__MINGW64__*/
 #else /*__MINGW32__*/
 #include <ntddndis.h>
 #endif /*__MINGW32__*/

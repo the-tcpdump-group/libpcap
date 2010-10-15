@@ -47,7 +47,7 @@ static const char rcsid[] _U_ =
  * XXX - why was this included even on UNIX?
  */
 #ifdef __MINGW32__
-#include "IP6_misc.h"
+#include "ip6_misc.h"
 #endif
 
 #ifndef WIN32
