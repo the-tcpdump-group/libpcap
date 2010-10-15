@@ -43,7 +43,7 @@ static const char rcsid[] _U_ =
 #include <ntddndis.h>
 #else  /*__MINGW64__*/
 #include <ddk/ntddndis.h>
-#include <ndis.h>
+#include <ddk/ndis.h>
 #endif /*__MINGW64__*/
 #else /*__MINGW32__*/
 #include <ntddndis.h>
