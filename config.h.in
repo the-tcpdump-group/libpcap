@@ -52,6 +52,9 @@
 /* if libnl exists */
 #undef HAVE_LIBNL
 
+/* if libnl exists and is version 2.x */
+#undef HAVE_LIBNL_2_x
+
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
