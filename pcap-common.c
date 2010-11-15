@@ -735,6 +735,24 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_IEEE802_15_4_NOFCS		230
 
+/*
+ * Raw D-Bus:
+ *
+ *	http://www.freedesktop.org/wiki/Software/dbus
+ *
+ * messages:
+ *
+ *	http://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-messages
+ *
+ * starting with the endianness flag, followed by the message type, etc.,
+ * but without the authentication handshake before the message sequence:
+ *
+ *	http://dbus.freedesktop.org/doc/dbus-specification.html#auth-protocol
+ *
+ * Requested by Martin Vidner <martin@vidner.net>.
+ */
+#define LINKTYPE_DBUS				231
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1083,6 +1101,9 @@ static struct linktype_map {
 
 	/* IEEE 802.15.4 exactly as it appears in the spec, without FCS */
 	{ DLT_IEEE802_15_4_NOFCS, LINKTYPE_IEEE802_15_4_NOFCS },
+
+	/* D-Bus messages */
+	{ DLT_DBUS,		LINKTYPE_DBUS },
 
 	{ -1,			-1 }
 };
