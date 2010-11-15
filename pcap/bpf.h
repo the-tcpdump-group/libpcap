@@ -970,6 +970,24 @@ struct bpf_version {
 #define DLT_IEEE802_15_4_NOFCS		230
 
 /*
+ * Raw D-Bus:
+ *
+ *	http://www.freedesktop.org/wiki/Software/dbus
+ *
+ * messages:
+ *
+ *	http://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-messages
+ *
+ * starting with the endianness flag, followed by the message type, etc.,
+ * but without the authentication handshake before the message sequence:
+ *
+ *	http://dbus.freedesktop.org/doc/dbus-specification.html#auth-protocol
+ *
+ * Requested by Martin Vidner <martin@vidner.net>.
+ */
+#define DLT_DBUS			231
+
+/*
  * DLT and savefile link type values are split into a class and
  * a member of that class.  A class value of 0 indicates a regular
  * DLT_/LINKTYPE_ value.
