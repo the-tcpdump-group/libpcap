@@ -62,12 +62,14 @@ static const char rcsid[] _U_ =
 #include <sys/mman.h>
 #ifdef HAVE_LINUX_USBDEVICE_FS_H
 /*
- * We assume that any Linux that supports USB sniffing has <linux/compiler.h>;
- * we might need it for <linux/usbdevice_fs.h> to define __user.
+ * We might need <linux/compiler.h> to define __user for
+ * <linux/usbdevice_fs.h>.
  */
+#ifdef HAVE_LINUX_COMPILER_H
 #include <linux/compiler.h>
+#endif /* HAVE_LINUX_COMPILER_H */
 #include <linux/usbdevice_fs.h>
-#endif
+#endif /* HAVE_LINUX_USBDEVICE_FS_H */
 
 #define USB_IFACE "usbmon"
 #define USB_TEXT_DIR_OLD "/sys/kernel/debug/usbmon"
