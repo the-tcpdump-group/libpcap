@@ -61,6 +61,11 @@ static const char rcsid[] _U_ =
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #ifdef HAVE_LINUX_USBDEVICE_FS_H
+/*
+ * We assume that any Linux that supports USB sniffing has <linux/compiler.h>;
+ * we might need it for <linux/usbdevice_fs.h> to define __user.
+ */
+#include <linux/compiler.h>
 #include <linux/usbdevice_fs.h>
 #endif
 
