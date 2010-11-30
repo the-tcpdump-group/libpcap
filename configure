@@ -10758,6 +10758,9 @@ $ac_includes_default
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
+#ifdef HAVE_LINUX_COMPILER_H
+#include <linux/compiler.h>
+#endif
 #            include <linux/usbdevice_fs.h>
 int
 main ()

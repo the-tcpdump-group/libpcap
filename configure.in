@@ -1388,6 +1388,9 @@ AC_INCLUDES_DEFAULT
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
 #endif
+#ifdef HAVE_LINUX_COMPILER_H
+#include <linux/compiler.h>
+#endif
 #            include <linux/usbdevice_fs.h>],
              [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
              ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes,
