@@ -490,11 +490,7 @@ bpf_filter.o: bpf_filter.c
 #
 pcap-config: $(srcdir)/pcap-config.in
 	@rm -f $@ $@.tmp
-	sed -e 's|@includedir[@]|$(includedir)|g' \
-	    -e 's|@libdir[@]|$(libdir)|g' \
-	    -e 's|@LIBS[@]|$(LIBS)|g' \
-	    -e 's|@V_RPATH_OPT[@]|$(V_RPATH_OPT)|g' \
-	    $(srcdir)/pcap-config.in >$@.tmp
+	./config.status --file=$@.tmp:$<
 	mv $@.tmp $@
 	chmod a+x $@
 
