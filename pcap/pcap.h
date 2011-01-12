@@ -451,4 +451,4 @@ int	pcap_get_selectable_fd(pcap_t *);
 }
 #endif
 
-#endif
+#endif /* lib_pcap_pcap_h */
