@@ -48,10 +48,28 @@
  * "pcap-bpf.c" will include the native OS version, as it deals with
  * the OS's BPF implementation.
  *
- * XXX - should this all just be moved to "pcap.h"?
+ * At least two programs found by Google Code Search explicitly includes
+ * <pcap/bpf.h> (even though <pcap.h>/<pcap/pcap.h> includes it for you),
+ * so moving that stuff to <pcap/pcap.h> would break the build for some
+ * programs.
  */
 
-#ifndef BPF_MAJOR_VERSION
+/*
+ * If we've already included <net/bpf.h>, don't re-define this stuff.
+ * We assume BSD-style multiple-include protection in <net/bpf.h>,
+ * which is true of all but the oldest versions of FreeBSD and NetBSD,
+ * or Tru64 UNIX-style multiple-include protection (or, at least,
+ * Tru64 UNIX 5.x-style; I don't have earlier versions available to check).
+ *
+ * We do not check for BPF_MAJOR_VERSION, as that's defined by
+ * <linux/filter.h>, which is directly or indirectly included in some
+ * programs that also include pcap.h, and <linux/filter.h> doesn't
+ * define stuff we need.
+ *
+ * This also provides our own multiple-include protection.
+ */
+#if !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(lib_pcap_bpf_h)
+#define lib_pcap_bpf_h
 
 #ifdef __cplusplus
 extern "C" {
@@ -70,7 +88,9 @@ typedef	u_int bpf_u_int32;
 
 /*
  * Alignment macros.  BPF_WORDALIGN rounds up to the next 
- * even multiple of BPF_ALIGNMENT. 
+ * even multiple of BPF_ALIGNMENT.
+ *
+ * Tcpdump's print-pflog.c uses this, so we define it here.
  */
 #ifndef __NetBSD__
 #define BPF_ALIGNMENT sizeof(bpf_int32)
@@ -78,9 +98,6 @@ typedef	u_int bpf_u_int32;
 #define BPF_ALIGNMENT sizeof(long)
 #endif
 #define BPF_WORDALIGN(x) (((x)+(BPF_ALIGNMENT-1))&~(BPF_ALIGNMENT-1))
-
-#define BPF_MAXBUFSIZE 0x8000
-#define BPF_MINBUFSIZE 32
 
 /*
  * Structure for "pcap_compile()", "pcap_setfilter()", etc..
@@ -90,25 +107,6 @@ struct bpf_program {
 	struct bpf_insn *bf_insns;
 };
  
-/*
- * Struct return by BIOCVERSION.  This represents the version number of 
- * the filter language described by the instruction encodings below.
- * bpf understands a program iff kernel_major == filter_major &&
- * kernel_minor >= filter_minor, that is, if the value returned by the
- * running kernel has the same major number and a minor number equal
- * equal to or less than the filter being downloaded.  Otherwise, the
- * results are undefined, meaning an error may be returned or packets
- * may be accepted haphazardly.
- * It has nothing to do with the source code version.
- */
-struct bpf_version {
-	u_short bv_major;
-	u_short bv_minor;
-};
-/* Current version number of filter architecture. */
-#define BPF_MAJOR_VERSION 1
-#define BPF_MINOR_VERSION 1
-
 /*
  * Data-link level type codes.
  *
@@ -1096,4 +1094,4 @@ extern u_int bpf_filter();
 }
 #endif
 
-#endif
+#endif /* !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(lib_pcap_bpf_h) */

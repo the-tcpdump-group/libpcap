@@ -237,7 +237,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * XXX A bpf_hdr matches a pcap_pkthdr.
 		 */
 		(*callback)(user, (struct pcap_pkthdr*)bp, bp + hdrlen);
-		bp += BPF_WORDALIGN(caplen + hdrlen);
+		bp += Packet_WORDALIGN(caplen + hdrlen);
 		if (++n >= cnt && cnt > 0) {
 			p->bp = bp;
 			p->cc = ep - bp;
