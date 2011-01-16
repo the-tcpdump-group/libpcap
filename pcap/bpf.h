@@ -59,7 +59,9 @@
  * We assume BSD-style multiple-include protection in <net/bpf.h>,
  * which is true of all but the oldest versions of FreeBSD and NetBSD,
  * or Tru64 UNIX-style multiple-include protection (or, at least,
- * Tru64 UNIX 5.x-style; I don't have earlier versions available to check).
+ * Tru64 UNIX 5.x-style; I don't have earlier versions available to check),
+ * or AIX-style multiple-include protection (or, at least, AIX 5.x-style;
+ * I don't have earlier versions available to check).
  *
  * We do not check for BPF_MAJOR_VERSION, as that's defined by
  * <linux/filter.h>, which is directly or indirectly included in some
@@ -68,7 +70,7 @@
  *
  * This also provides our own multiple-include protection.
  */
-#if !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(lib_pcap_bpf_h)
+#if !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
 #define lib_pcap_bpf_h
 
 #ifdef __cplusplus
@@ -1094,4 +1096,4 @@ extern u_int bpf_filter();
 }
 #endif
 
-#endif /* !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(lib_pcap_bpf_h) */
+#endif /* !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h) */
