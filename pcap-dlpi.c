@@ -633,14 +633,16 @@ pcap_activate_dlpi(pcap_t *p)
 	** under SINIX) (Not necessary on send FD)
 	*/
 #ifndef sinix
-	if (
-#ifdef __hpux
-	    !p->opt.promisc &&
+#if defined(__hpux)
+	/* HP-UX - only do this when not in promiscuous mode */
+	if (!p->opt.promisc) {
+#elif defined(HAVE_SOLARIS)
+	/* Solaris - don't do this on SunATM devices */
+	if (!isatm) {
+#else
+	/* Everything else (except for SINIX) - always do this */
+	{
 #endif
-#ifdef HAVE_SOLARIS
-	    !isatm
-#endif
-	    ) {
 		status = dlpromiscon(p, DL_PROMISC_SAP);
 		if (status < 0) {
 			/*
