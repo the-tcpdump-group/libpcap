@@ -479,7 +479,7 @@ bpf_filter.o: bpf_filter.c
 #
 pcap-config: $(srcdir)/pcap-config.in
 	@rm -f $@ $@.tmp
-	./config.status --file=$@.tmp:$<
+	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
 	mv $@.tmp $@
 	chmod a+x $@
 
