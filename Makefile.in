@@ -477,6 +477,17 @@ bpf_filter.o: bpf_filter.c
 #
 # Generate the pcap-config script.
 #
+# Some Makes, e.g. AIX Make and Solaris Make, can't handle "--file=$@.tmp:$<";
+# for example, the Solaris 9 make man page says
+#
+#	Because make assigns $< and $* as it would for implicit rules
+#	(according to the suffixes list and the directory contents),
+#	they may be unreliable when used within explicit target entries.
+#
+# and this is an explicit target entry.
+#
+# Therefore, instead of using $<, we explicitly put in $(srcdir)/pcap-config.in.
+#
 pcap-config: $(srcdir)/pcap-config.in
 	@rm -f $@ $@.tmp
 	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
