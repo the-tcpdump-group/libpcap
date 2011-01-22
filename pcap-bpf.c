@@ -31,8 +31,8 @@ static const char rcsid[] _U_ =
 #ifdef HAVE_ZEROCOPY_BPF
 #include <sys/mman.h>
 #endif
-#include <sys/time.h>
 #include <sys/socket.h>
+#include <time.h>
 /*
  * <net/bpf.h> defines ioctls, but doesn't include <sys/ioccom.h>.
  *
