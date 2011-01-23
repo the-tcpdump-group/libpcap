@@ -476,8 +476,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 				free(description);
 				description = NULL;
 			}
-		} else
-			break;
+		}
 #endif /* __FreeBSD__ */
 		close(s);
 		if (description != NULL && strlen(description) == 0) {
