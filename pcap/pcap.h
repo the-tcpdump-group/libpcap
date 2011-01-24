@@ -403,14 +403,13 @@ void	pcap_freealldevs(pcap_if_t *);
 const char *pcap_lib_version(void);
 
 /*
- * We don't declare bpf_filter() here, as it might also be declared in
- * <net/bpf.h>; we declare it in <pcap/bpf.h>, so that source files that
- * include <net/bpf.h> can define PCAP_DONT_INCLUDE_PCAP_BPF_H and get
- * only the declaration from <net/bpf.h>, so that the compile doesn't
- * file with incompatible declarations.
- *
- * XXX - should all of those be declared in <pcap/bpf.h>?
+ * XXX - on at least some versions of NetBSD, we don't want to declare
+ * bpf_filter() here, as it's also be declared in <net/bpf.h>, with a
+ * different signature, but, on other BSD-flavored UN*Xes, it's not
+ * declared in <net/bpf.h>, so we *do* want to declare it here, so it's
+ * declared when we build pcap-bpf.c.
  */
+u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 int	bpf_validate(const struct bpf_insn *f, int len);
 char	*bpf_image(const struct bpf_insn *, int);
 void	bpf_dump(const struct bpf_program *, int);
