@@ -403,13 +403,15 @@ void	pcap_freealldevs(pcap_if_t *);
 const char *pcap_lib_version(void);
 
 /*
- * XXX - on at least some versions of NetBSD, we don't want to declare
+ * On at least some versions of NetBSD, we don't want to declare
  * bpf_filter() here, as it's also be declared in <net/bpf.h>, with a
  * different signature, but, on other BSD-flavored UN*Xes, it's not
  * declared in <net/bpf.h>, so we *do* want to declare it here, so it's
  * declared when we build pcap-bpf.c.
  */
+#ifndef __NetBSD__
 u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+#endif
 int	bpf_validate(const struct bpf_insn *f, int len);
 char	*bpf_image(const struct bpf_insn *, int);
 void	bpf_dump(const struct bpf_program *, int);
