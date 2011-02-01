@@ -77,6 +77,7 @@ static int stoi(char *);
 static inline int xdtoi(int);
 
 #ifdef FLEX_SCANNER
+#define YY_NO_INPUT
 #define YY_NO_UNPUT
 static YY_BUFFER_STATE in_buffer;
 #else
