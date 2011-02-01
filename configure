@@ -7577,7 +7577,7 @@ _ACEOF
    fi
 	{ echo "$as_me:$LINENO: checking if tpacket_auxdata struct has tp_vlan_tci member" >&5
 echo $ECHO_N "checking if tpacket_auxdata struct has tp_vlan_tci member... $ECHO_C" >&6; }
-    if test "${ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1+set}" = set; then
+    if test "${ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -7587,6 +7587,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+#	include <sys/types.h>
 #	include <linux/if_packet.h>
 int
 main ()
