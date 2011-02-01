@@ -16,6 +16,7 @@ libpcap.sl
 libpcap.so.*
 libpcap-*.tar.gz
 net
+os-proto.h
 pcap-config
 pcap-filter.manmisc
 pcap-linktype.manmisc
