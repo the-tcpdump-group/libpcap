@@ -199,7 +199,8 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 		int status;
 
 		/* We are on an offline capture */
-		status = pcap_offline_read(p, 1, pcap_oneshot, (u_char *)&s);
+		status = pcap_offline_read(p, 1, p->oneshot_callback,
+		    (u_char *)&s);
 
 		/*
 		 * Return codes for pcap_offline_read() are:
@@ -228,7 +229,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcap_offline_read() meaning "end of file".
 	*/
-	return (p->read_op(p, 1, pcap_oneshot, (u_char *)&s));
+	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
 
 static void
