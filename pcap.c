@@ -847,6 +847,9 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_IPV4, "Raw IPv4"),
 	DLT_CHOICE(DLT_IPV6, "Raw IPv6"),
 	DLT_CHOICE(DLT_IEEE802_15_4_NOFCS, "IEEE 802.15.4 without FCS"),
+	DLT_CHOICE(DLT_JUNIPER_VS, "Juniper Virtual Server"),
+	DLT_CHOICE(DLT_JUNIPER_SRX_E2E, "Juniper SRX E2E"),
+	DLT_CHOICE(DLT_JUNIPER_FIBRECHANNEL, "Juniper Fibrechannel"),
 	DLT_CHOICE_SENTINEL
 };
 

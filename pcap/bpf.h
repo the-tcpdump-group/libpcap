@@ -988,6 +988,14 @@ struct bpf_program {
 #define DLT_DBUS			231
 
 /*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>.
+ */
+#define DLT_JUNIPER_VS			232
+#define DLT_JUNIPER_SRX_E2E		233
+#define DLT_JUNIPER_FIBRECHANNEL	234
+
+/*
  * DLT and savefile link type values are split into a class and
  * a member of that class.  A class value of 0 indicates a regular
  * DLT_/LINKTYPE_ value.

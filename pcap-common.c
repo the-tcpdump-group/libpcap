@@ -753,6 +753,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_DBUS				231
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ */
+#define LINKTYPE_JUNIPER_VS			232
+#define LINKTYPE_JUNIPER_SRX_E2E		233
+#define LINKTYPE_JUNIPER_FIBRECHANNEL		234
 
 static struct linktype_map {
 	int	dlt;
@@ -1104,6 +1111,15 @@ static struct linktype_map {
 
 	/* D-Bus messages */
 	{ DLT_DBUS,		LINKTYPE_DBUS },
+
+        /* Juniper Virtual Server */
+	{ DLT_JUNIPER_VS,	LINKTYPE_JUNIPER_VS },
+
+        /* Juniper SRX E2E debugging */
+	{ DLT_JUNIPER_SRX_E2E,	LINKTYPE_JUNIPER_SRX_E2E },
+
+        /* Juniper Fibrechannel */
+	{ DLT_JUNIPER_FIBRECHANNEL, LINKTYPE_JUNIPER_FIBRECHANNEL },
 
 	{ -1,			-1 }
 };
