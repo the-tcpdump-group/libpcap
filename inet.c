@@ -476,8 +476,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 				free(description);
 				description = NULL;
 			}
-		} else
-			break;
+		}
 #endif /* __FreeBSD__ */
 		close(s);
 		if (description != NULL && strlen(description) == 0) {
@@ -878,8 +877,10 @@ pcap_lookupdev(errbuf)
 		 */
 		while(NAdapts--)
 		{
-			strcpy((char*)tUstr, tAstr);
-			(char*)tUstr += strlen(tAstr) + 1;;
+			char* tmp = (char*)tUstr;
+			strcpy(tmp, tAstr);
+			tmp += strlen(tAstr) + 1;
+			tUstr = (WCHAR*)tmp;
 			tAstr += strlen(tAstr) + 1;
 		}
 

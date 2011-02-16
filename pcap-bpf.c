@@ -31,8 +31,8 @@ static const char rcsid[] _U_ =
 #ifdef HAVE_ZEROCOPY_BPF
 #include <sys/mman.h>
 #endif
-#include <sys/time.h>
 #include <sys/socket.h>
+#include <time.h>
 /*
  * <net/bpf.h> defines ioctls, but doesn't include <sys/ioccom.h>.
  *
@@ -186,77 +186,67 @@ static int pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp);
 static int pcap_setdirection_bpf(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 
-#ifdef HAVE_ZEROCOPY_BPF
 /*
- * For zerocopy bpf, we need to override the setnonblock/getnonblock routines
- * so we don't call select(2) if the pcap handle is in non-blocking mode.  We
- * preserve the timeout supplied by pcap_open functions to make sure it
- * does not get clobbered if the pcap handle moves between blocking and non-
- * blocking mode.
+ * For zerocopy bpf, the setnonblock/getnonblock routines need to modify
+ * p->md.timeout so we don't call select(2) if the pcap handle is in non-
+ * blocking mode.  We preserve the timeout supplied by pcap_open functions
+ * to make sure it does not get clobbered if the pcap handle moves between
+ * blocking and non-blocking mode.
  */
 static int
-pcap_getnonblock_zbuf(pcap_t *p, char *errbuf)
+pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
 { 
-	/*
-	 * Use a negative value for the timeout to represent that the
-	 * pcap handle is in non-blocking mode.
-	 */
-	return (p->md.timeout < 0);
+#ifdef HAVE_ZEROCOPY_BPF
+	if (p->md.zerocopy) {
+		/*
+		 * Use a negative value for the timeout to represent that the
+		 * pcap handle is in non-blocking mode.
+		 */
+		return (p->md.timeout < 0);
+	}
+#endif
+	return (pcap_getnonblock_fd(p, errbuf));
 }
 
 static int
-pcap_setnonblock_zbuf(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 {   
-	/*
-	 * Map each value to the corresponding 2's complement, to
-	 * preserve the timeout value provided with pcap_set_timeout.
-	 * (from pcap-linux.c).
-	 */
-	if (nonblock) {
-		if (p->md.timeout >= 0) {
-			/*
-			 * Timeout is non-negative, so we're not already
-			 * in non-blocking mode; set it to the 2's
-			 * complement, to make it negative, as an
-			 * indication that we're in non-blocking mode.
-			 */
-			p->md.timeout = p->md.timeout * -1 - 1;
+#ifdef HAVE_ZEROCOPY_BPF
+	if (p->md.zerocopy) {
+		/*
+		 * Map each value to the corresponding 2's complement, to
+		 * preserve the timeout value provided with pcap_set_timeout.
+		 * (from pcap-linux.c).
+		 */
+		if (nonblock) {
+			if (p->md.timeout >= 0) {
+				/*
+				 * Timeout is non-negative, so we're not
+				 * currently in non-blocking mode; set it
+				 * to the 2's complement, to make it
+				 * negative, as an indication that we're
+				 * in non-blocking mode.
+				 */
+				p->md.timeout = p->md.timeout * -1 - 1;
+			}
+		} else {
+			if (p->md.timeout < 0) {
+				/*
+				 * Timeout is negative, so we're currently
+				 * in blocking mode; reverse the previous
+				 * operation, to make the timeout non-negative
+				 * again.
+				 */
+				p->md.timeout = (p->md.timeout + 1) * -1;
+			}
 		}
-	} else {
-		if (p->md.timeout < 0) {
-			/*
-			 * Timeout is negative, so we're not already
-			 * in blocking mode; reverse the previous
-			 * operation, to make the timeout non-negative
-			 * again.
-			 */
-			p->md.timeout = (p->md.timeout + 1) * -1;
-		}
+		return (0);
 	}
-	return (0);
+#endif
+	return (pcap_setnonblock_fd(p, nonblock, errbuf));
 }
 
-/*
- * Zero-copy specific close method.  Un-map the shared buffers then call
- * pcap_cleanup_live_common.
- */
-static void
-pcap_cleanup_zbuf(pcap_t *p)
-{
-	/*
-	 * Delete the mappings.  Note that p->buffer gets initialized to one
-	 * of the mmapped regions in this case, so do not try and free it
-	 * directly; null it out so that pcap_cleanup_live_common() doesn't
-	 * try to free it.
-	 */
-	if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
-		(void) munmap(p->md.zbuf1, p->md.zbufsize);
-	if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
-		(void) munmap(p->md.zbuf2, p->md.zbufsize);
-	p->buffer = NULL;
-	pcap_cleanup_live_common(p);
-}
-
+#ifdef HAVE_ZEROCOPY_BPF
 /*
  * Zero-copy BPF buffer routines to check for and acknowledge BPF data in
  * shared memory buffers.
@@ -410,7 +400,7 @@ pcap_ack_zbuf(pcap_t *p)
 	p->buffer = NULL;
 	return (0);
 }
-#endif
+#endif /* HAVE_ZEROCOPY_BPF */
 
 pcap_t *
 pcap_create(const char *device, char *ebuf)
@@ -965,14 +955,28 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * processed so far.
 		 */
 		if (p->break_loop) {
+			p->bp = bp;
+			p->cc = ep - bp;
+			/*
+			 * ep is set based on the return value of read(),
+			 * but read() from a BPF device doesn't necessarily
+			 * return a value that's a multiple of the alignment
+			 * value for BPF_WORDALIGN().  However, whenever we
+			 * increment bp, we round up the increment value by
+			 * a value rounded up by BPF_WORDALIGN(), so we
+			 * could increment bp past ep after processing the
+			 * last packet in the buffer.
+			 *
+			 * We treat ep < bp as an indication that this
+			 * happened, and just set p->cc to 0.
+			 */
+			if (p->cc < 0)
+				p->cc = 0;
 			if (n == 0) {
 				p->break_loop = 0;
 				return (PCAP_ERROR_BREAK);
-			} else {
-				p->bp = bp;
-				p->cc = ep - bp;
+			} else
 				return (n);
-			}
 		}
 
 		caplen = bhp->bh_caplen;
@@ -1024,6 +1028,11 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			if (++n >= cnt && cnt > 0) {
 				p->bp = bp;
 				p->cc = ep - bp;
+				/*
+				 * See comment above about p->cc < 0.
+				 */
+				if (p->cc < 0)
+					p->cc = 0;
 				return (n);
 			}
 		} else {
@@ -1324,15 +1333,19 @@ pcap_cleanup_bpf(pcap_t *p)
 	}
 
 #ifdef HAVE_ZEROCOPY_BPF
-	/*
-	 * In zero-copy mode, p->buffer is just a pointer into one of the two
-	 * memory-mapped buffers, so no need to free it.
-	 */
 	if (p->md.zerocopy) {
+		/*
+		 * Delete the mappings.  Note that p->buffer gets
+		 * initialized to one of the mmapped regions in
+		 * this case, so do not try and free it directly;
+		 * null it out so that pcap_cleanup_live_common()
+		 * doesn't try to free it.
+		 */
 		if (p->md.zbuf1 != MAP_FAILED && p->md.zbuf1 != NULL)
-			munmap(p->md.zbuf1, p->md.zbufsize);
+			(void) munmap(p->md.zbuf1, p->md.zbufsize);
 		if (p->md.zbuf2 != MAP_FAILED && p->md.zbuf2 != NULL)
-			munmap(p->md.zbuf2, p->md.zbufsize);
+			(void) munmap(p->md.zbuf2, p->md.zbufsize);
+		p->buffer = NULL;
 	}
 #endif
 	if (p->md.device != NULL) {
@@ -1604,14 +1617,6 @@ pcap_activate_bpf(pcap_t *p)
 		 * We have zerocopy BPF; use it.
 		 */
 		p->md.zerocopy = 1;
-
-		/*
-		 * Set the cleanup and set/get nonblocking mode ops
-		 * as appropriate for zero-copy mode.
-		 */
-		p->cleanup_op = pcap_cleanup_zbuf;
-		p->setnonblock_op = pcap_setnonblock_zbuf;
-		p->getnonblock_op = pcap_getnonblock_zbuf;
 
 		/*
 		 * How to pick a buffer size: first, query the maximum buffer
@@ -2214,8 +2219,8 @@ pcap_activate_bpf(pcap_t *p)
 	p->setfilter_op = pcap_setfilter_bpf;
 	p->setdirection_op = pcap_setdirection_bpf;
 	p->set_datalink_op = pcap_set_datalink_bpf;
-	p->getnonblock_op = pcap_getnonblock_fd;
-	p->setnonblock_op = pcap_setnonblock_fd;
+	p->getnonblock_op = pcap_getnonblock_bpf;
+	p->setnonblock_op = pcap_setnonblock_bpf;
 	p->stats_op = pcap_stats_bpf;
 	p->cleanup_op = pcap_cleanup_bpf;
 

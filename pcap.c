@@ -57,7 +57,7 @@ static const char rcsid[] _U_ =
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if !defined(_MSC_VER) && !defined(__BORLANDC__)
+#if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__MINGW32__)
 #include <unistd.h>
 #endif
 #include <fcntl.h>
@@ -105,6 +105,56 @@ pcap_cant_set_rfmon(pcap_t *p _U_)
 }
 
 /*
+ * Sets *tstamp_typesp to point to an array 1 or more supported time stamp
+ * types; the return value is the number of supported time stamp types.
+ * The list should be freed by a call to pcap_free_tstamp_types() when
+ * you're done with it.
+ *
+ * A return value of 0 means "you don't get a choice of time stamp type",
+ * in which case *tstamp_typesp is set to null.
+ *
+ * PCAP_ERROR is returned on error.
+ */
+int
+pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
+{
+	if (p->tstamp_type_count == 0) {
+		/*
+		 * We don't support multiple time stamp types.
+		 */
+		*tstamp_typesp = NULL;
+	} else {
+		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
+		    p->tstamp_type_count);
+		if (*tstamp_typesp == NULL) {
+			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			    "malloc: %s", pcap_strerror(errno));
+			return (PCAP_ERROR);
+		}
+		(void)memcpy(*tstamp_typesp, p->tstamp_type_list,
+		    sizeof(**tstamp_typesp) * p->tstamp_type_count);
+	}
+	return (p->tstamp_type_count);
+}
+
+/*
+ * In Windows, you might have a library built with one version of the
+ * C runtime library and an application built with another version of
+ * the C runtime library, which means that the library might use one
+ * version of malloc() and free() and the application might use another
+ * version of malloc() and free().  If so, that means something
+ * allocated by the library cannot be freed by the application, so we
+ * need to have a pcap_free_tstamp_types() routine to free up the list
+ * allocated by pcap_list_tstamp_types(), even though it's just a wrapper
+ * around free().
+ */
+void
+pcap_free_tstamp_types(int *tstamp_type_list)
+{
+	free(tstamp_type_list);
+}
+
+/*
  * Default one-shot callback; overridden for capture types where the
  * packet data cannot be guaranteed to be available after the callback
  * returns, so that a copy must be made.
@@ -149,7 +199,8 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 		int status;
 
 		/* We are on an offline capture */
-		status = pcap_offline_read(p, 1, pcap_oneshot, (u_char *)&s);
+		status = pcap_offline_read(p, 1, p->oneshot_callback,
+		    (u_char *)&s);
 
 		/*
 		 * Return codes for pcap_offline_read() are:
@@ -178,7 +229,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 * The first one ('0') conflicts with the return code of 0 from
 	 * pcap_offline_read() meaning "end of file".
 	*/
-	return (p->read_op(p, 1, pcap_oneshot, (u_char *)&s));
+	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
 
 static void
@@ -258,6 +309,7 @@ pcap_create_common(const char *source, char *ebuf)
 	pcap_set_snaplen(p, 65535);	/* max packet size */
 	p->opt.promisc = 0;
 	p->opt.buffer_size = 0;
+	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
 	return (p);
 }
 
@@ -306,6 +358,41 @@ pcap_set_timeout(pcap_t *p, int timeout_ms)
 		return PCAP_ERROR_ACTIVATED;
 	p->md.timeout = timeout_ms;
 	return 0;
+}
+
+int
+pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
+{
+	int i;
+
+	if (pcap_check_activated(p))
+		return PCAP_ERROR_ACTIVATED;
+
+	/*
+	 * If p->tstamp_type_count is 0, we don't support setting
+	 * the time stamp type at all.
+	 */
+	if (p->tstamp_type_count == 0)
+		return PCAP_ERROR_CANTSET_TSTAMP_TYPE;
+
+	/*
+	 * Check whether we claim to support this type of time stamp.
+	 */
+	for (i = 0; i < p->tstamp_type_count; i++) {
+		if (p->tstamp_type_list[i] == tstamp_type) {
+			/*
+			 * Yes.
+			 */
+			p->opt.tstamp_type = tstamp_type;
+			return 0;
+		}
+	}
+
+	/*
+	 * No.  We support setting the time stamp type, but not to this
+	 * particular value.
+	 */
+	return PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
 }
 
 int
@@ -384,7 +471,8 @@ fail:
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    p->errbuf);
 	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
-	    status == PCAP_ERROR_PERM_DENIED)
+	    status == PCAP_ERROR_PERM_DENIED ||
+	    status == PCAP_ERROR_PROMISC_PERM_DENIED)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
 		    pcap_statustostr(status), p->errbuf);
 	else
@@ -571,6 +659,91 @@ unsupported:
 	return (-1);
 }
 
+/*
+ * This array is designed for mapping upper and lower case letter
+ * together for a case independent comparison.  The mappings are
+ * based upon ascii character sequences.
+ */
+static const u_char charmap[] = {
+	(u_char)'\000', (u_char)'\001', (u_char)'\002', (u_char)'\003',
+	(u_char)'\004', (u_char)'\005', (u_char)'\006', (u_char)'\007',
+	(u_char)'\010', (u_char)'\011', (u_char)'\012', (u_char)'\013',
+	(u_char)'\014', (u_char)'\015', (u_char)'\016', (u_char)'\017',
+	(u_char)'\020', (u_char)'\021', (u_char)'\022', (u_char)'\023',
+	(u_char)'\024', (u_char)'\025', (u_char)'\026', (u_char)'\027',
+	(u_char)'\030', (u_char)'\031', (u_char)'\032', (u_char)'\033',
+	(u_char)'\034', (u_char)'\035', (u_char)'\036', (u_char)'\037',
+	(u_char)'\040', (u_char)'\041', (u_char)'\042', (u_char)'\043',
+	(u_char)'\044', (u_char)'\045', (u_char)'\046', (u_char)'\047',
+	(u_char)'\050', (u_char)'\051', (u_char)'\052', (u_char)'\053',
+	(u_char)'\054', (u_char)'\055', (u_char)'\056', (u_char)'\057',
+	(u_char)'\060', (u_char)'\061', (u_char)'\062', (u_char)'\063',
+	(u_char)'\064', (u_char)'\065', (u_char)'\066', (u_char)'\067',
+	(u_char)'\070', (u_char)'\071', (u_char)'\072', (u_char)'\073',
+	(u_char)'\074', (u_char)'\075', (u_char)'\076', (u_char)'\077',
+	(u_char)'\100', (u_char)'\141', (u_char)'\142', (u_char)'\143',
+	(u_char)'\144', (u_char)'\145', (u_char)'\146', (u_char)'\147',
+	(u_char)'\150', (u_char)'\151', (u_char)'\152', (u_char)'\153',
+	(u_char)'\154', (u_char)'\155', (u_char)'\156', (u_char)'\157',
+	(u_char)'\160', (u_char)'\161', (u_char)'\162', (u_char)'\163',
+	(u_char)'\164', (u_char)'\165', (u_char)'\166', (u_char)'\167',
+	(u_char)'\170', (u_char)'\171', (u_char)'\172', (u_char)'\133',
+	(u_char)'\134', (u_char)'\135', (u_char)'\136', (u_char)'\137',
+	(u_char)'\140', (u_char)'\141', (u_char)'\142', (u_char)'\143',
+	(u_char)'\144', (u_char)'\145', (u_char)'\146', (u_char)'\147',
+	(u_char)'\150', (u_char)'\151', (u_char)'\152', (u_char)'\153',
+	(u_char)'\154', (u_char)'\155', (u_char)'\156', (u_char)'\157',
+	(u_char)'\160', (u_char)'\161', (u_char)'\162', (u_char)'\163',
+	(u_char)'\164', (u_char)'\165', (u_char)'\166', (u_char)'\167',
+	(u_char)'\170', (u_char)'\171', (u_char)'\172', (u_char)'\173',
+	(u_char)'\174', (u_char)'\175', (u_char)'\176', (u_char)'\177',
+	(u_char)'\200', (u_char)'\201', (u_char)'\202', (u_char)'\203',
+	(u_char)'\204', (u_char)'\205', (u_char)'\206', (u_char)'\207',
+	(u_char)'\210', (u_char)'\211', (u_char)'\212', (u_char)'\213',
+	(u_char)'\214', (u_char)'\215', (u_char)'\216', (u_char)'\217',
+	(u_char)'\220', (u_char)'\221', (u_char)'\222', (u_char)'\223',
+	(u_char)'\224', (u_char)'\225', (u_char)'\226', (u_char)'\227',
+	(u_char)'\230', (u_char)'\231', (u_char)'\232', (u_char)'\233',
+	(u_char)'\234', (u_char)'\235', (u_char)'\236', (u_char)'\237',
+	(u_char)'\240', (u_char)'\241', (u_char)'\242', (u_char)'\243',
+	(u_char)'\244', (u_char)'\245', (u_char)'\246', (u_char)'\247',
+	(u_char)'\250', (u_char)'\251', (u_char)'\252', (u_char)'\253',
+	(u_char)'\254', (u_char)'\255', (u_char)'\256', (u_char)'\257',
+	(u_char)'\260', (u_char)'\261', (u_char)'\262', (u_char)'\263',
+	(u_char)'\264', (u_char)'\265', (u_char)'\266', (u_char)'\267',
+	(u_char)'\270', (u_char)'\271', (u_char)'\272', (u_char)'\273',
+	(u_char)'\274', (u_char)'\275', (u_char)'\276', (u_char)'\277',
+	(u_char)'\300', (u_char)'\341', (u_char)'\342', (u_char)'\343',
+	(u_char)'\344', (u_char)'\345', (u_char)'\346', (u_char)'\347',
+	(u_char)'\350', (u_char)'\351', (u_char)'\352', (u_char)'\353',
+	(u_char)'\354', (u_char)'\355', (u_char)'\356', (u_char)'\357',
+	(u_char)'\360', (u_char)'\361', (u_char)'\362', (u_char)'\363',
+	(u_char)'\364', (u_char)'\365', (u_char)'\366', (u_char)'\367',
+	(u_char)'\370', (u_char)'\371', (u_char)'\372', (u_char)'\333',
+	(u_char)'\334', (u_char)'\335', (u_char)'\336', (u_char)'\337',
+	(u_char)'\340', (u_char)'\341', (u_char)'\342', (u_char)'\343',
+	(u_char)'\344', (u_char)'\345', (u_char)'\346', (u_char)'\347',
+	(u_char)'\350', (u_char)'\351', (u_char)'\352', (u_char)'\353',
+	(u_char)'\354', (u_char)'\355', (u_char)'\356', (u_char)'\357',
+	(u_char)'\360', (u_char)'\361', (u_char)'\362', (u_char)'\363',
+	(u_char)'\364', (u_char)'\365', (u_char)'\366', (u_char)'\367',
+	(u_char)'\370', (u_char)'\371', (u_char)'\372', (u_char)'\373',
+	(u_char)'\374', (u_char)'\375', (u_char)'\376', (u_char)'\377',
+};
+
+int
+pcap_strcasecmp(const char *s1, const char *s2)
+{
+	register const u_char	*cm = charmap,
+				*us1 = (const u_char *)s1,
+				*us2 = (const u_char *)s2;
+
+	while (cm[*us1] == cm[*us2++])
+		if (*us1++ == '\0')
+			return(0);
+	return (cm[*us1] - cm[*--us2]);
+}
+
 struct dlt_choice {
 	const char *name;
 	const char *description;
@@ -674,93 +847,11 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_IPV4, "Raw IPv4"),
 	DLT_CHOICE(DLT_IPV6, "Raw IPv6"),
 	DLT_CHOICE(DLT_IEEE802_15_4_NOFCS, "IEEE 802.15.4 without FCS"),
+	DLT_CHOICE(DLT_JUNIPER_VS, "Juniper Virtual Server"),
+	DLT_CHOICE(DLT_JUNIPER_SRX_E2E, "Juniper SRX E2E"),
+	DLT_CHOICE(DLT_JUNIPER_FIBRECHANNEL, "Juniper Fibrechannel"),
 	DLT_CHOICE_SENTINEL
 };
-
-/*
- * This array is designed for mapping upper and lower case letter
- * together for a case independent comparison.  The mappings are
- * based upon ascii character sequences.
- */
-static const u_char charmap[] = {
-	(u_char)'\000', (u_char)'\001', (u_char)'\002', (u_char)'\003',
-	(u_char)'\004', (u_char)'\005', (u_char)'\006', (u_char)'\007',
-	(u_char)'\010', (u_char)'\011', (u_char)'\012', (u_char)'\013',
-	(u_char)'\014', (u_char)'\015', (u_char)'\016', (u_char)'\017',
-	(u_char)'\020', (u_char)'\021', (u_char)'\022', (u_char)'\023',
-	(u_char)'\024', (u_char)'\025', (u_char)'\026', (u_char)'\027',
-	(u_char)'\030', (u_char)'\031', (u_char)'\032', (u_char)'\033',
-	(u_char)'\034', (u_char)'\035', (u_char)'\036', (u_char)'\037',
-	(u_char)'\040', (u_char)'\041', (u_char)'\042', (u_char)'\043',
-	(u_char)'\044', (u_char)'\045', (u_char)'\046', (u_char)'\047',
-	(u_char)'\050', (u_char)'\051', (u_char)'\052', (u_char)'\053',
-	(u_char)'\054', (u_char)'\055', (u_char)'\056', (u_char)'\057',
-	(u_char)'\060', (u_char)'\061', (u_char)'\062', (u_char)'\063',
-	(u_char)'\064', (u_char)'\065', (u_char)'\066', (u_char)'\067',
-	(u_char)'\070', (u_char)'\071', (u_char)'\072', (u_char)'\073',
-	(u_char)'\074', (u_char)'\075', (u_char)'\076', (u_char)'\077',
-	(u_char)'\100', (u_char)'\141', (u_char)'\142', (u_char)'\143',
-	(u_char)'\144', (u_char)'\145', (u_char)'\146', (u_char)'\147',
-	(u_char)'\150', (u_char)'\151', (u_char)'\152', (u_char)'\153',
-	(u_char)'\154', (u_char)'\155', (u_char)'\156', (u_char)'\157',
-	(u_char)'\160', (u_char)'\161', (u_char)'\162', (u_char)'\163',
-	(u_char)'\164', (u_char)'\165', (u_char)'\166', (u_char)'\167',
-	(u_char)'\170', (u_char)'\171', (u_char)'\172', (u_char)'\133',
-	(u_char)'\134', (u_char)'\135', (u_char)'\136', (u_char)'\137',
-	(u_char)'\140', (u_char)'\141', (u_char)'\142', (u_char)'\143',
-	(u_char)'\144', (u_char)'\145', (u_char)'\146', (u_char)'\147',
-	(u_char)'\150', (u_char)'\151', (u_char)'\152', (u_char)'\153',
-	(u_char)'\154', (u_char)'\155', (u_char)'\156', (u_char)'\157',
-	(u_char)'\160', (u_char)'\161', (u_char)'\162', (u_char)'\163',
-	(u_char)'\164', (u_char)'\165', (u_char)'\166', (u_char)'\167',
-	(u_char)'\170', (u_char)'\171', (u_char)'\172', (u_char)'\173',
-	(u_char)'\174', (u_char)'\175', (u_char)'\176', (u_char)'\177',
-	(u_char)'\200', (u_char)'\201', (u_char)'\202', (u_char)'\203',
-	(u_char)'\204', (u_char)'\205', (u_char)'\206', (u_char)'\207',
-	(u_char)'\210', (u_char)'\211', (u_char)'\212', (u_char)'\213',
-	(u_char)'\214', (u_char)'\215', (u_char)'\216', (u_char)'\217',
-	(u_char)'\220', (u_char)'\221', (u_char)'\222', (u_char)'\223',
-	(u_char)'\224', (u_char)'\225', (u_char)'\226', (u_char)'\227',
-	(u_char)'\230', (u_char)'\231', (u_char)'\232', (u_char)'\233',
-	(u_char)'\234', (u_char)'\235', (u_char)'\236', (u_char)'\237',
-	(u_char)'\240', (u_char)'\241', (u_char)'\242', (u_char)'\243',
-	(u_char)'\244', (u_char)'\245', (u_char)'\246', (u_char)'\247',
-	(u_char)'\250', (u_char)'\251', (u_char)'\252', (u_char)'\253',
-	(u_char)'\254', (u_char)'\255', (u_char)'\256', (u_char)'\257',
-	(u_char)'\260', (u_char)'\261', (u_char)'\262', (u_char)'\263',
-	(u_char)'\264', (u_char)'\265', (u_char)'\266', (u_char)'\267',
-	(u_char)'\270', (u_char)'\271', (u_char)'\272', (u_char)'\273',
-	(u_char)'\274', (u_char)'\275', (u_char)'\276', (u_char)'\277',
-	(u_char)'\300', (u_char)'\341', (u_char)'\342', (u_char)'\343',
-	(u_char)'\344', (u_char)'\345', (u_char)'\346', (u_char)'\347',
-	(u_char)'\350', (u_char)'\351', (u_char)'\352', (u_char)'\353',
-	(u_char)'\354', (u_char)'\355', (u_char)'\356', (u_char)'\357',
-	(u_char)'\360', (u_char)'\361', (u_char)'\362', (u_char)'\363',
-	(u_char)'\364', (u_char)'\365', (u_char)'\366', (u_char)'\367',
-	(u_char)'\370', (u_char)'\371', (u_char)'\372', (u_char)'\333',
-	(u_char)'\334', (u_char)'\335', (u_char)'\336', (u_char)'\337',
-	(u_char)'\340', (u_char)'\341', (u_char)'\342', (u_char)'\343',
-	(u_char)'\344', (u_char)'\345', (u_char)'\346', (u_char)'\347',
-	(u_char)'\350', (u_char)'\351', (u_char)'\352', (u_char)'\353',
-	(u_char)'\354', (u_char)'\355', (u_char)'\356', (u_char)'\357',
-	(u_char)'\360', (u_char)'\361', (u_char)'\362', (u_char)'\363',
-	(u_char)'\364', (u_char)'\365', (u_char)'\366', (u_char)'\367',
-	(u_char)'\370', (u_char)'\371', (u_char)'\372', (u_char)'\373',
-	(u_char)'\374', (u_char)'\375', (u_char)'\376', (u_char)'\377',
-};
-
-int
-pcap_strcasecmp(const char *s1, const char *s2)
-{
-	register const u_char	*cm = charmap,
-				*us1 = (const u_char *)s1,
-				*us2 = (const u_char *)s2;
-
-	while (cm[*us1] == cm[*us2++])
-		if (*us1++ == '\0')
-			return(0);
-	return (cm[*us1] - cm[*--us2]);
-}
 
 int
 pcap_datalink_name_to_val(const char *name)
@@ -795,6 +886,57 @@ pcap_datalink_val_to_description(int dlt)
 	for (i = 0; dlt_choices[i].name != NULL; i++) {
 		if (dlt_choices[i].dlt == dlt)
 			return (dlt_choices[i].description);
+	}
+	return (NULL);
+}
+
+struct tstamp_type_choice {
+	const char *name;
+	const char *description;
+	int	type;
+};
+
+static struct tstamp_type_choice tstamp_type_choices[] = {
+	{ "host", "Host", PCAP_TSTAMP_HOST },
+	{ "host_lowprec", "Host, low precision", PCAP_TSTAMP_HOST_LOWPREC },
+	{ "host_hiprec", "Host, high precision", PCAP_TSTAMP_HOST_HIPREC },
+	{ "adapter", "Adapter", PCAP_TSTAMP_ADAPTER },
+	{ "adapter_unsynced", "Adapter, not synced with system time", PCAP_TSTAMP_ADAPTER_UNSYNCED },
+	{ NULL, NULL, 0 }
+};
+
+int
+pcap_tstamp_type_name_to_val(const char *name)
+{
+	int i;
+
+	for (i = 0; tstamp_type_choices[i].name != NULL; i++) {
+		if (pcap_strcasecmp(tstamp_type_choices[i].name, name) == 0)
+			return (tstamp_type_choices[i].type);
+	}
+	return (PCAP_ERROR);
+}
+
+const char *
+pcap_tstamp_type_val_to_name(int tstamp_type)
+{
+	int i;
+
+	for (i = 0; tstamp_type_choices[i].name != NULL; i++) {
+		if (tstamp_type_choices[i].type == tstamp_type)
+			return (tstamp_type_choices[i].name);
+	}
+	return (NULL);
+}
+
+const char *
+pcap_tstamp_type_val_to_description(int tstamp_type)
+{
+	int i;
+
+	for (i = 0; tstamp_type_choices[i].name != NULL; i++) {
+		if (tstamp_type_choices[i].type == tstamp_type)
+			return (tstamp_type_choices[i].description);
 	}
 	return (NULL);
 }
@@ -977,6 +1119,9 @@ pcap_statustostr(int errnum)
 	case PCAP_WARNING:
 		return("Generic warning");
 
+	case PCAP_WARNING_TSTAMP_TYPE_NOTSUP:
+		return ("That type of time stamp is not supported by that device");
+
 	case PCAP_WARNING_PROMISC_NOTSUP:
 		return ("That device doesn't support promiscuous mode");
 
@@ -1006,6 +1151,12 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_IFACE_NOT_UP:
 		return ("That device is not up");
+
+	case PCAP_ERROR_CANTSET_TSTAMP_TYPE:
+		return ("That device doesn't support setting the time stamp type");
+
+	case PCAP_ERROR_PROMISC_PERM_DENIED:
+		return ("You don't have permission to capture in promiscuous mode on that device");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
@@ -1212,6 +1363,11 @@ pcap_cleanup_live_common(pcap_t *p)
 		free(p->dlt_list);
 		p->dlt_list = NULL;
 		p->dlt_count = 0;
+	}
+	if (p->tstamp_type_list != NULL) {
+		free(p->tstamp_type_list);
+		p->tstamp_type_list = NULL;
+		p->tstamp_type_count = 0;
 	}
 	pcap_freecode(&p->fcode);
 #if !defined(WIN32) && !defined(MSDOS)

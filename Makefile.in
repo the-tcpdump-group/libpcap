@@ -157,8 +157,10 @@ MAN3PCAP_EXPAND = \
 	pcap_datalink.3pcap.in \
 	pcap_dump_open.3pcap.in \
 	pcap_list_datalinks.3pcap.in \
+	pcap_list_tstamp_types.3pcap.in \
 	pcap_open_dead.3pcap.in \
-	pcap_open_offline.3pcap.in
+	pcap_open_offline.3pcap.in \
+	pcap_set_tstamp_type.3pcap.in
 
 MAN3PCAP_NOEXPAND = \
 	pcap_activate.3pcap \
@@ -176,9 +178,7 @@ MAN3PCAP_NOEXPAND = \
 	pcap_file.3pcap \
 	pcap_fileno.3pcap \
 	pcap_findalldevs.3pcap \
-	pcap_freealldevs.3pcap \
 	pcap_freecode.3pcap \
-	pcap_free_datalinks.3pcap \
 	pcap_get_selectable_fd.3pcap \
 	pcap_geterr.3pcap \
 	pcap_inject.3pcap \
@@ -203,7 +203,9 @@ MAN3PCAP_NOEXPAND = \
 	pcap_snapshot.3pcap \
 	pcap_stats.3pcap \
 	pcap_statustostr.3pcap \
-	pcap_strerror.3pcap
+	pcap_strerror.3pcap \
+	pcap_tstamp_type_name_to_val.3pcap \
+	pcap_tstamp_type_val_to_name.3pcap
 
 MAN3PCAP = $(MAN3PCAP_NOEXPAND) $(MAN3PCAP_EXPAND:.in=)
 
@@ -212,7 +214,8 @@ MANFILE = \
 
 MANMISC = \
 	pcap-filter.manmisc.in \
-	pcap-linktype.manmisc.in
+	pcap-linktype.manmisc.in \
+	pcap-tstamp.manmisc.in
 
 EXTRA_DIST = \
 	$(TESTS_SRC) \
@@ -485,13 +488,20 @@ bpf_filter.o: bpf_filter.c
 #
 # Generate the pcap-config script.
 #
+# Some Makes, e.g. AIX Make and Solaris Make, can't handle "--file=$@.tmp:$<";
+# for example, the Solaris 9 make man page says
+#
+#	Because make assigns $< and $* as it would for implicit rules
+#	(according to the suffixes list and the directory contents),
+#	they may be unreliable when used within explicit target entries.
+#
+# and this is an explicit target entry.
+#
+# Therefore, instead of using $<, we explicitly put in $(srcdir)/pcap-config.in.
+#
 pcap-config: $(srcdir)/pcap-config.in
 	@rm -f $@ $@.tmp
-	sed -e 's|@includedir[@]|$(includedir)|g' \
-	    -e 's|@libdir[@]|$(libdir)|g' \
-	    -e 's|@LIBS[@]|$(LIBS)|g' \
-	    -e 's|@V_RPATH_OPT[@]|$(V_RPATH_OPT)|g' \
-	    $(srcdir)/pcap-config.in >$@.tmp
+	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
 	mv $@.tmp $@
 	chmod a+x $@
 
@@ -551,12 +561,21 @@ install: install-shared install-archive pcap-config
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_dump_open.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_freealldevs.3pcap
+	ln $(DESTDIR)$(mandir)/man3/pcap_findalldevs.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_freealldevs.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_geterr.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_inject.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
+	ln $(DESTDIR)$(mandir)/man3/pcap_list_datalinks.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_tstamp_types.3pcap
+	ln $(DESTDIR)$(mandir)/man3/pcap_list_tstamp_types.3pcap \
+		 $(DESTDIR)$(mandir)/man3/pcap_free_tstamp_types.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	ln $(DESTDIR)$(mandir)/man3/pcap_loop.3pcap \
 		 $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
@@ -640,8 +659,11 @@ uninstall: uninstall-shared
 		rm -f $(DESTDIR)$(mandir)/man3/$$i; done
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_datalink_val_to_description.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dump_fopen.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_freealldevs.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_perror.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_sendpacket.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_datalinks.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_free_tstamp_types.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
@@ -678,7 +700,7 @@ clean:
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
-	    config.h gnuc.h os-proto.h bpf_filter.c pcap-config \
+	    config.h gnuc.h net os-proto.h bpf_filter.c pcap-config \
 	    stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache

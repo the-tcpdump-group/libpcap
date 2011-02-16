@@ -995,8 +995,9 @@ dnl code that would use that member, or we wouldn't compile in any case).
 dnl
 AC_DEFUN(AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,
     [AC_MSG_CHECKING(if tpacket_auxdata struct has tp_vlan_tci member)
-    AC_CACHE_VAL(ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1,
+    AC_CACHE_VAL(ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci,
 	AC_TRY_COMPILE([
+#	include <sys/types.h>
 #	include <linux/if_packet.h>],
 	[u_int i = sizeof(((struct tpacket_auxdata *)0)->tp_vlan_tci)],
 	ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=yes,

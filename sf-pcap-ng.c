@@ -1053,7 +1053,7 @@ found:
 	/*
 	 * Is the interface ID an interface we know?
 	 */
-	if (interface_id > p->sf.ifcount) {
+	if (interface_id >= p->sf.ifcount) {
 		/*
 		 * Yes.  Fail.
 		 */

@@ -47,7 +47,7 @@ static const char rcsid[] _U_ =
  * XXX - why was this included even on UNIX?
  */
 #ifdef __MINGW32__
-#include "IP6_misc.h"
+#include "ip6_misc.h"
 #endif
 
 #ifndef WIN32
@@ -1360,6 +1360,15 @@ init_linktype(p)
 		return;
 
 	case DLT_JUNIPER_ISM:
+		off_linktype = 8;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_JUNIPER_VS:
+	case DLT_JUNIPER_SRX_E2E:
+	case DLT_JUNIPER_FIBRECHANNEL:
 		off_linktype = 8;
 		off_macpl = -1;
 		off_nl = -1;
@@ -3472,6 +3481,10 @@ gen_linktype(proto)
         case DLT_JUNIPER_VP:
         case DLT_JUNIPER_ST:
         case DLT_JUNIPER_ISM:
+        case DLT_JUNIPER_VS:
+        case DLT_JUNIPER_SRX_E2E:
+        case DLT_JUNIPER_FIBRECHANNEL:
+
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
@@ -7674,6 +7687,10 @@ gen_inbound(dir)
         case DLT_JUNIPER_VP:
         case DLT_JUNIPER_ST:
         case DLT_JUNIPER_ISM:
+        case DLT_JUNIPER_VS:
+        case DLT_JUNIPER_SRX_E2E:
+        case DLT_JUNIPER_FIBRECHANNEL:
+
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
 		if (dir) {
