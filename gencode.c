@@ -47,7 +47,7 @@ static const char rcsid[] _U_ =
  * XXX - why was this included even on UNIX?
  */
 #ifdef __MINGW32__
-#include "IP6_misc.h"
+#include "ip6_misc.h"
 #endif
 
 #ifndef WIN32
@@ -1366,6 +1366,15 @@ init_linktype(p)
 		off_nl_nosnap = -1;
 		return;
 
+	case DLT_JUNIPER_VS:
+	case DLT_JUNIPER_SRX_E2E:
+	case DLT_JUNIPER_FIBRECHANNEL:
+		off_linktype = 8;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
 	case DLT_MTP2:
 		off_li = 2;
 		off_sio = 3;
@@ -1586,6 +1595,16 @@ init_linktype(p)
 		off_linktype = 1;
 		off_macpl = 24;		/* ipnet header length */
 		off_nl = 0;
+		off_nl_nosnap = -1;
+		return;
+
+	case DLT_IEEE802_15_4_NOFCS:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
 	}
@@ -3462,6 +3481,10 @@ gen_linktype(proto)
         case DLT_JUNIPER_VP:
         case DLT_JUNIPER_ST:
         case DLT_JUNIPER_ISM:
+        case DLT_JUNIPER_VS:
+        case DLT_JUNIPER_SRX_E2E:
+        case DLT_JUNIPER_FIBRECHANNEL:
+
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
 		 * and need a lot of heuristics to figure out that the payload
@@ -3511,6 +3534,7 @@ gen_linktype(proto)
 	case DLT_IEEE802_15_4:
 	case DLT_IEEE802_15_4_LINUX:
 	case DLT_IEEE802_15_4_NONASK_PHY:
+	case DLT_IEEE802_15_4_NOFCS:
 		bpf_error("IEEE 802.15.4 link-layer type filtering not implemented");
 
 	case DLT_IEEE802_16_MAC_CPS_RADIO:
@@ -3785,6 +3809,30 @@ gen_ehostop(eaddr, dir)
 		b1 = gen_ehostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11 with 802.11 headers");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11 with 802.11 headers");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3827,6 +3875,30 @@ gen_fhostop(eaddr, dir)
 		b1 = gen_fhostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -3861,6 +3933,30 @@ gen_thostop(eaddr, dir)
 		b1 = gen_thostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -4154,8 +4250,79 @@ gen_wlanhostop(eaddr, dir)
 		gen_and(b1, b0);
 		return b0;
 
+	case Q_RA:
+		/*
+		 * Not present in management frames; addr1 in other
+		 * frames.
+		 */
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "(link[0] & 0x08)".
+		 */
+		s = gen_load_a(OR_LINK, 0, BPF_B);
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		/*
+		 * Check addr1.
+		 */
+		b0 = gen_bcmp(OR_LINK, 4, 6, eaddr);
+
+		/*
+		 * AND that with the check of addr1.
+		 */
+		gen_and(b1, b0);
+		return (b0);
+
+	case Q_TA:
+		/*
+		 * Not present in management frames; addr2, if present,
+		 * in other frames.
+		 */
+
+		/*
+		 * Not present in CTS or ACK control frames.
+		 */
+		b0 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b1);
+		b2 = gen_mcmp(OR_LINK, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b2);
+		gen_and(b1, b2);
+		gen_or(b0, b2);
+
+		/*
+		 * If the high-order bit of the type value is 0, this
+		 * is a management frame.
+		 * I.e, check "(link[0] & 0x08)".
+		 */
+		s = gen_load_a(OR_LINK, 0, BPF_B);
+		b1 = new_block(JMP(BPF_JSET));
+		b1->s.k = 0x08;
+		b1->stmts = s;
+
+		/*
+		 * AND that with the check for frames other than
+		 * CTS and ACK frames.
+		 */
+		gen_and(b1, b2);
+
+		/*
+		 * Check addr2.
+		 */
+		b1 = gen_bcmp(OR_LINK, 10, 6, eaddr);
+		gen_and(b2, b1);
+		return b1;
+
 	/*
-	 * XXX - add RA, TA, and BSSID keywords?
+	 * XXX - add BSSID keyword?
 	 */
 	case Q_ADDR1:
 		return (gen_bcmp(OR_LINK, 4, 6, eaddr));
@@ -4251,6 +4418,30 @@ gen_ipfchostop(eaddr, dir)
 		b1 = gen_ipfchostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */
@@ -6197,6 +6388,10 @@ gen_scode(name, q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;
 		}
+		if (port < 0)
+			bpf_error("illegal port number %d < 0", port);
+		if (port > 65535)
+			bpf_error("illegal port number %d > 65535", port);
 #ifndef INET6
 		return gen_port(port, real_proto, dir);
 #else
@@ -6238,6 +6433,15 @@ gen_scode(name, q)
 				/* override PROTO_UNDEF */
 				real_proto = IPPROTO_SCTP;	
 		}
+		if (port1 < 0)
+			bpf_error("illegal port number %d < 0", port1);
+		if (port1 > 65535)
+			bpf_error("illegal port number %d > 65535", port1);
+		if (port2 < 0)
+			bpf_error("illegal port number %d < 0", port2);
+		if (port2 > 65535)
+			bpf_error("illegal port number %d > 65535", port2);
+
 #ifndef INET6
 		return gen_portrange(port1, port2, real_proto, dir);
 #else
@@ -6389,6 +6593,9 @@ gen_ncode(s, v, q)
 		else
 			bpf_error("illegal qualifier of 'port'");
 
+		if (v > 65535)
+			bpf_error("illegal port number %u > 65535", v);
+
 #ifndef INET6
 		return gen_port((int)v, proto, dir);
 #else
@@ -6411,6 +6618,9 @@ gen_ncode(s, v, q)
 			proto = PROTO_UNDEF;
 		else
 			bpf_error("illegal qualifier of 'portrange'");
+
+		if (v > 65535)
+			bpf_error("illegal port number %u > 65535", v);
 
 #ifndef INET6
 		return gen_portrange((int)v, (int)v, proto, dir);
@@ -6645,7 +6855,7 @@ gen_load(proto, inst, size)
 
 		/*
 		 * Load into the X register the offset computed into the
-		 * register specifed by "index".
+		 * register specified by "index".
 		 */
 		s = xfer_to_x(inst);
 
@@ -6677,7 +6887,7 @@ gen_load(proto, inst, size)
 		 * the link-layer header.  Add to it the offset computed
 		 * into the register specified by "index", and move that
 		 * into the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specifed
+		 * register the offset computed into the register specified
 		 * by "index".
 		 */
 		if (s != NULL) {
@@ -6726,7 +6936,7 @@ gen_load(proto, inst, size)
 		 * payload.  Add to it the offset computed into the
 		 * register specified by "index", and move that into
 		 * the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specifed
+		 * register the offset computed into the register specified
 		 * by "index".
 		 */
 		if (s != NULL) {
@@ -7477,6 +7687,10 @@ gen_inbound(dir)
         case DLT_JUNIPER_VP:
         case DLT_JUNIPER_ST:
         case DLT_JUNIPER_ISM:
+        case DLT_JUNIPER_VS:
+        case DLT_JUNIPER_SRX_E2E:
+        case DLT_JUNIPER_FIBRECHANNEL:
+
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
 		if (dir) {
@@ -7757,6 +7971,30 @@ gen_ahostop(eaddr, dir)
 		b1 = gen_ahostop(eaddr, Q_DST);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error("'addr1' is only supported on 802.11");
+		break;
+
+	case Q_ADDR2:
+		bpf_error("'addr2' is only supported on 802.11");
+		break;
+
+	case Q_ADDR3:
+		bpf_error("'addr3' is only supported on 802.11");
+		break;
+
+	case Q_ADDR4:
+		bpf_error("'addr4' is only supported on 802.11");
+		break;
+
+	case Q_RA:
+		bpf_error("'ra' is only supported on 802.11");
+		break;
+
+	case Q_TA:
+		bpf_error("'ta' is only supported on 802.11");
+		break;
 	}
 	abort();
 	/* NOTREACHED */

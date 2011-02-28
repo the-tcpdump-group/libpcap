@@ -136,6 +136,8 @@
 #define Q_ADDR2		6
 #define Q_ADDR3		7
 #define Q_ADDR4		8
+#define Q_RA		9
+#define Q_TA		10
 
 #define Q_DEFAULT	0
 #define Q_UNDEF		255

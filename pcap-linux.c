@@ -138,6 +138,11 @@ static const char rcsid[] _U_ =
 #include <poll.h>
 #include <dirent.h>
 
+#ifdef HAVE_LINUX_NET_TSTAMP_H
+#include <linux/net_tstamp.h>
+#include <linux/sockios.h>
+#endif
+
 /*
  * Got Wireless Extensions?
  */
@@ -295,7 +300,7 @@ static short int map_packet_type_to_sll_type(short int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_old(pcap_t *);
 static int activate_new(pcap_t *);
-static int activate_mmap(pcap_t *);
+static int activate_mmap(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -315,7 +320,7 @@ union thdr {
 #define RING_GET_FRAME(h) (((union thdr **)h->buffer)[h->offset])
 
 static void destroy_ring(pcap_t *handle);
-static int create_ring(pcap_t *handle);
+static int create_ring(pcap_t *handle, int *status);
 static int prepare_tpacket_socket(pcap_t *handle);
 static void pcap_cleanup_linux_mmap(pcap_t *);
 static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
@@ -411,52 +416,73 @@ pcap_create(const char *device, char *ebuf)
 
 	handle->activate_op = pcap_activate_linux;
 	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
+	/*
+	 * We claim that we support:
+	 *
+	 *	software time stamps, with no details about their precision;
+	 *	hardware time stamps, synced to the host time;
+	 *	hardware time stamps, not synced to the host time.
+	 *
+	 * XXX - we can't ask a device whether it supports
+	 * hardware time stamps, so we just claim all devices do.
+	 */
+	handle->tstamp_type_count = 3;
+	handle->tstamp_type_list = malloc(3 * sizeof(u_int));
+	if (handle->tstamp_type_list == NULL) {
+		free(handle);
+		return NULL;
+	}
+	handle->tstamp_type_list[0] = PCAP_TSTAMP_HOST;
+	handle->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER;
+	handle->tstamp_type_list[2] = PCAP_TSTAMP_ADAPTER_UNSYNCED;
+#endif
+
 	return handle;
 }
 
 #ifdef HAVE_LIBNL
 /*
-	 *
-	 * If interface {if} is a mac80211 driver, the file
-	 * /sys/class/net/{if}/phy80211 is a symlink to
-	 * /sys/class/ieee80211/{phydev}, for some {phydev}.
-	 *
-	 * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
-	 * least, has a "wmaster0" device and a "wlan0" device; the
-	 * latter is the one with the IP address.  Both show up in
-	 * "tcpdump -D" output.  Capturing on the wmaster0 device
-	 * captures with 802.11 headers.
-	 *
-	 * airmon-ng searches through /sys/class/net for devices named
-	 * monN, starting with mon0; as soon as one *doesn't* exist,
-	 * it chooses that as the monitor device name.  If the "iw"
-	 * command exists, it does "iw dev {if} interface add {monif}
-	 * type monitor", where {monif} is the monitor device.  It
-	 * then (sigh) sleeps .1 second, and then configures the
-	 * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
-	 * is a file, it writes {mondev}, without a newline, to that file,
-	 * and again (sigh) sleeps .1 second, and then iwconfig's that
-	 * device into monitor mode and configures it up.  Otherwise,
-	 * you can't do monitor mode.
-	 *
-	 * All these devices are "glued" together by having the
-	 * /sys/class/net/{device}/phy80211 links pointing to the same
-	 * place, so, given a wmaster, wlan, or mon device, you can
-	 * find the other devices by looking for devices with
-	 * the same phy80211 link.
-	 *
-	 * To turn monitor mode off, delete the monitor interface,
-	 * either with "iw dev {monif} interface del" or by sending
-	 * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
-	 *
-	 * Note: if you try to create a monitor device named "monN", and
-	 * there's already a "monN" device, it fails, as least with
-	 * the netlink interface (which is what iw uses), with a return
-	 * value of -ENFILE.  (Return values are negative errnos.)  We
-	 * could probably use that to find an unused device.
-	 *
-	 * Yes, you can have multiple monitor devices for a given
-	 * physical device.
+ * If interface {if} is a mac80211 driver, the file
+ * /sys/class/net/{if}/phy80211 is a symlink to
+ * /sys/class/ieee80211/{phydev}, for some {phydev}.
+ *
+ * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
+ * least, has a "wmaster0" device and a "wlan0" device; the
+ * latter is the one with the IP address.  Both show up in
+ * "tcpdump -D" output.  Capturing on the wmaster0 device
+ * captures with 802.11 headers.
+ *
+ * airmon-ng searches through /sys/class/net for devices named
+ * monN, starting with mon0; as soon as one *doesn't* exist,
+ * it chooses that as the monitor device name.  If the "iw"
+ * command exists, it does "iw dev {if} interface add {monif}
+ * type monitor", where {monif} is the monitor device.  It
+ * then (sigh) sleeps .1 second, and then configures the
+ * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
+ * is a file, it writes {mondev}, without a newline, to that file,
+ * and again (sigh) sleeps .1 second, and then iwconfig's that
+ * device into monitor mode and configures it up.  Otherwise,
+ * you can't do monitor mode.
+ *
+ * All these devices are "glued" together by having the
+ * /sys/class/net/{device}/phy80211 links pointing to the same
+ * place, so, given a wmaster, wlan, or mon device, you can
+ * find the other devices by looking for devices with
+ * the same phy80211 link.
+ *
+ * To turn monitor mode off, delete the monitor interface,
+ * either with "iw dev {monif} interface del" or by sending
+ * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
+ *
+ * Note: if you try to create a monitor device named "monN", and
+ * there's already a "monN" device, it fails, as least with
+ * the netlink interface (which is what iw uses), with a return
+ * value of -ENFILE.  (Return values are negative errnos.)  We
+ * could probably use that to find an unused device.
+ *
+ * Yes, you can have multiple monitor devices for a given
+ * physical device.
 */
 
 /*
@@ -501,8 +527,41 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 	return 1;
 }
 
+#ifdef HAVE_LIBNL_2_x
+#define get_nl_errmsg	nl_geterror
+#else
+/* libnl 2.x compatibility code */
+
+#define nl_sock nl_handle
+
+static inline struct nl_handle *
+nl_socket_alloc(void)
+{
+	return nl_handle_alloc();
+}
+
+static inline void
+nl_socket_free(struct nl_handle *h)
+{
+	nl_handle_destroy(h);
+}
+
+#define get_nl_errmsg	strerror
+
+static inline int
+__genl_ctrl_alloc_cache(struct nl_handle *h, struct nl_cache **cache)
+{
+	struct nl_cache *tmp = genl_ctrl_alloc_cache(h);
+	if (!tmp)
+		return -ENOMEM;
+	*cache = tmp;
+	return 0;
+}
+#define genl_ctrl_alloc_cache __genl_ctrl_alloc_cache
+#endif /* !HAVE_LIBNL_2_x */
+
 struct nl80211_state {
-	struct nl_handle *nl_handle;
+	struct nl_sock *nl_sock;
 	struct nl_cache *nl_cache;
 	struct genl_family *nl80211;
 };
@@ -510,23 +569,26 @@ struct nl80211_state {
 static int
 nl80211_init(pcap_t *handle, struct nl80211_state *state, const char *device)
 {
-	state->nl_handle = nl_handle_alloc();
-	if (!state->nl_handle) {
+	int err;
+
+	state->nl_sock = nl_socket_alloc();
+	if (!state->nl_sock) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to allocate netlink handle", device);
 		return PCAP_ERROR;
 	}
 
-	if (genl_connect(state->nl_handle)) {
+	if (genl_connect(state->nl_sock)) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to connect to generic netlink", device);
 		goto out_handle_destroy;
 	}
 
-	state->nl_cache = genl_ctrl_alloc_cache(state->nl_handle);
-	if (!state->nl_cache) {
+	err = genl_ctrl_alloc_cache(state->nl_sock, &state->nl_cache);
+	if (err < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: failed to allocate generic netlink cache", device);
+		    "%s: failed to allocate generic netlink cache: %s",
+		    device, get_nl_errmsg(-err));
 		goto out_handle_destroy;
 	}
 
@@ -542,7 +604,7 @@ nl80211_init(pcap_t *handle, struct nl80211_state *state, const char *device)
 out_cache_free:
 	nl_cache_free(state->nl_cache);
 out_handle_destroy:
-	nl_handle_destroy(state->nl_handle);
+	nl_socket_free(state->nl_sock);
 	return PCAP_ERROR;
 }
 
@@ -551,7 +613,7 @@ nl80211_cleanup(struct nl80211_state *state)
 {
 	genl_family_put(state->nl80211);
 	nl_cache_free(state->nl_cache);
-	nl_handle_destroy(state->nl_handle);
+	nl_socket_free(state->nl_sock);
 }
 
 static int
@@ -579,12 +641,19 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	NLA_PUT_STRING(msg, NL80211_ATTR_IFNAME, mondevice);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
 
-	err = nl_send_auto_complete(state->nl_handle, msg);
+	err = nl_send_auto_complete(state->nl_sock, msg);
 	if (err < 0) {
+#ifdef HAVE_LIBNL_2_x
+		if (err == -NLE_FAILURE) {
+#else
 		if (err == -ENFILE) {
+#endif
 			/*
 			 * Device not available; our caller should just
-			 * keep trying.
+			 * keep trying.  (libnl 2.x maps ENFILE to
+			 * NLE_FAILURE; it can also map other errors
+			 * to that, but there's not much we can do
+			 * about that.)
 			 */
 			nlmsg_free(msg);
 			return 0;
@@ -595,17 +664,24 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_send_auto_complete failed adding %s interface: %s",
-			    device, mondevice, strerror(-err));
+			    device, mondevice, get_nl_errmsg(-err));
 			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
 	}
-	err = nl_wait_for_ack(state->nl_handle);
+	err = nl_wait_for_ack(state->nl_sock);
 	if (err < 0) {
+#ifdef HAVE_LIBNL_2_x
+		if (err == -NLE_FAILURE) {
+#else
 		if (err == -ENFILE) {
+#endif
 			/*
 			 * Device not available; our caller should just
-			 * keep trying.
+			 * keep trying.  (libnl 2.x maps ENFILE to
+			 * NLE_FAILURE; it can also map other errors
+			 * to that, but there's not much we can do
+			 * about that.)
 			 */
 			nlmsg_free(msg);
 			return 0;
@@ -616,7 +692,7 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_wait_for_ack failed adding %s interface: %s",
-			    device, mondevice, strerror(-err));
+			    device, mondevice, get_nl_errmsg(-err));
 			nlmsg_free(msg);
 			return PCAP_ERROR;
 		}
@@ -659,47 +735,21 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		    0, NL80211_CMD_DEL_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
 
-	err = nl_send_auto_complete(state->nl_handle, msg);
+	err = nl_send_auto_complete(state->nl_sock, msg);
 	if (err < 0) {
-		if (err == -ENFILE) {
-			/*
-			 * Device not available; our caller should just
-			 * keep trying.
-			 */
-			nlmsg_free(msg);
-			return 0;
-		} else {
-			/*
-			 * Real failure, not just "that device is not
-			 * available.
-			 */
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_send_auto_complete failed deleting %s interface: %s",
-			    device, mondevice, strerror(-err));
-			nlmsg_free(msg);
-			return PCAP_ERROR;
-		}
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: nl_send_auto_complete failed deleting %s interface: %s",
+		    device, mondevice, get_nl_errmsg(-err));
+		nlmsg_free(msg);
+		return PCAP_ERROR;
 	}
-	err = nl_wait_for_ack(state->nl_handle);
+	err = nl_wait_for_ack(state->nl_sock);
 	if (err < 0) {
-		if (err == -ENFILE) {
-			/*
-			 * Device not available; our caller should just
-			 * keep trying.
-			 */
-			nlmsg_free(msg);
-			return 0;
-		} else {
-			/*
-			 * Real failure, not just "that device is not
-			 * available.
-			 */
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "%s: nl_wait_for_ack failed adding %s interface: %s",
-			    device, mondevice, strerror(-err));
-			nlmsg_free(msg);
-			return PCAP_ERROR;
-		}
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: nl_wait_for_ack failed adding %s interface: %s",
+		    device, mondevice, get_nl_errmsg(-err));
+		nlmsg_free(msg);
+		return PCAP_ERROR;
 	}
 
 	/*
@@ -1167,34 +1217,46 @@ pcap_activate_linux(pcap_t *handle)
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 */
-
-	if ((status = activate_new(handle)) == 1) {
+	status = activate_new(handle);
+	if (status < 0) {
+		/*
+		 * Fatal error with the new way; just fail.
+		 * status has the error return; if it's PCAP_ERROR,
+		 * handle->errbuf has been set appropriately.
+		 */
+		goto fail;
+	}
+	if (status == 1) {
 		/*
 		 * Success.
 		 * Try to use memory-mapped access.
 		 */
-		switch (activate_mmap(handle)) {
+		switch (activate_mmap(handle, &status)) {
 
 		case 1:
-			/* we succeeded; nothing more to do */
-			return 0;
+			/*
+			 * We succeeded.  status has been
+			 * set to the status to return,
+			 * which might be 0, or might be
+			 * a PCAP_WARNING_ value.
+			 */
+			return status;
 
 		case 0:
 			/*
 			 * Kernel doesn't support it - just continue
 			 * with non-memory-mapped access.
 			 */
-			status = 0;
 			break;
 
 		case -1:
 			/*
-			 * We failed to set up to use it, or kernel
-			 * supports it, but we failed to enable it;
-			 * return an error.  handle->errbuf contains
-			 * an error message.
+			 * We failed to set up to use it, or the kernel
+			 * supports it, but we failed to enable it.
+			 * status has been set to the error status to
+			 * return and, if it's PCAP_ERROR, handle->errbuf
+			 * contains the error message.
 			 */
-			status = PCAP_ERROR;
 			goto fail;
 		}
 	}
@@ -1208,18 +1270,12 @@ pcap_activate_linux(pcap_t *handle)
 			 */
 			goto fail;
 		}
-	} else {
-		/*
-		 * Fatal error with the new way; just fail.
-		 * status has the error return; if it's PCAP_ERROR,
-		 * handle->errbuf has been set appropriately.
-		 */
-		goto fail;
 	}
 
 	/*
 	 * We set up the socket, but not with memory-mapped access.
 	 */
+	status = 0;
 	if (handle->opt.buffer_size != 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
@@ -1883,7 +1939,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		 */
 		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
-			if (errno == ENXIO)
+			if (errno == ENXIO || errno == ENODEV)
 				continue;
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGIFFLAGS: %.*s: %s",
@@ -2302,7 +2358,6 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	return -1;
 }
 
-
 #ifdef HAVE_PF_PACKET_SOCKETS
 /*
  * Map the PACKET_ value to a LINUX_SLL_ value; we
@@ -2649,6 +2704,13 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		handle->linktype = DLT_RAW;
 		break;
 
+#ifndef ARPHRD_IEEE802154
+#define ARPHRD_IEEE802154      804
+#endif
+       case ARPHRD_IEEE802154:
+               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
+               break;
+
 	default:
 		handle->linktype = -1;
 		break;
@@ -2950,10 +3012,22 @@ activate_new(pcap_t *handle)
 #endif
 }
 
-static int 
-activate_mmap(pcap_t *handle)
-{
 #ifdef HAVE_PACKET_RING
+/*
+ * Attempt to activate with memory-mapped access.
+ *
+ * On success, returns 1, and sets *status to 0 if there are no warnings
+ * or to a PCAP_WARNING_ code if there is a warning.
+ *
+ * On failure due to lack of support for memory-mapped capture, returns
+ * 0.
+ *
+ * On error, returns -1, and sets *status to the appropriate error code;
+ * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
+ */
+static int 
+activate_mmap(pcap_t *handle, int *status)
+{
 	int ret;
 
 	/*
@@ -2965,7 +3039,8 @@ activate_mmap(pcap_t *handle)
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "can't allocate oneshot buffer: %s",
 			 pcap_strerror(errno));
-		return PCAP_ERROR;
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	if (handle->opt.buffer_size == 0) {
@@ -2973,20 +3048,38 @@ activate_mmap(pcap_t *handle)
 		handle->opt.buffer_size = 2*1024*1024;
 	}
 	ret = prepare_tpacket_socket(handle);
-	if (ret != 1) {
+	if (ret == -1) {
 		free(handle->md.oneshot_buffer);
+		*status = PCAP_ERROR;
 		return ret;
 	}
-	ret = create_ring(handle);
-	if (ret != 1) {
+	ret = create_ring(handle, status);
+	if (ret == 0) {
+		/*
+		 * We don't support memory-mapped capture; our caller
+		 * will fall back on reading from the socket.
+		 */
 		free(handle->md.oneshot_buffer);
-		return ret;
+		return 0;
+	}
+	if (ret == -1) {
+		/*
+		 * Error attempting to enable memory-mapped capture;
+		 * fail.  create_ring() has set *status.
+		 */
+		free(handle->md.oneshot_buffer);
+		return -1;
 	}
 
-	/* override some defaults and inherit the other fields from
-	 * activate_new
-	 * handle->offset is used to get the current position into the rx ring 
-	 * handle->cc is used to store the ring size */
+	/*
+	 * Success.  *status has been set either to 0 if there are no
+	 * warnings or to a PCAP_WARNING_ value if there is a warning.
+	 *
+	 * Override some defaults and inherit the other fields from
+	 * activate_new.
+	 * handle->offset is used to get the current position into the rx ring.
+	 * handle->cc is used to store the ring size.
+	 */
 	handle->read_op = pcap_read_linux_mmap;
 	handle->cleanup_op = pcap_cleanup_linux_mmap;
 	handle->setfilter_op = pcap_setfilter_linux_mmap;
@@ -2995,12 +3088,21 @@ activate_mmap(pcap_t *handle)
 	handle->oneshot_callback = pcap_oneshot_mmap;
 	handle->selectable_fd = handle->fd;
 	return 1;
-#else /* HAVE_PACKET_RING */
-	return 0;
-#endif /* HAVE_PACKET_RING */
 }
+#else /* HAVE_PACKET_RING */
+static int 
+activate_mmap(pcap_t *handle _U_, int *status _U_)
+{
+	return 0;
+}
+#endif /* HAVE_PACKET_RING */
 
 #ifdef HAVE_PACKET_RING
+/*
+ * Attempt to set the socket to version 2 of the memory-mapped header.
+ * Return 1 if we succeed or if we fail because version 2 isn't
+ * supported; return -1 on any other error, and set handle->errbuf.
+ */
 static int
 prepare_tpacket_socket(pcap_t *handle)
 {
@@ -3052,11 +3154,28 @@ prepare_tpacket_socket(pcap_t *handle)
 	return 1;
 }
 
+/*
+ * Attempt to set up memory-mapped access.
+ *
+ * On success, returns 1, and sets *status to 0 if there are no warnings
+ * or to a PCAP_WARNING_ code if there is a warning.
+ *
+ * On failure due to lack of support for memory-mapped capture, returns
+ * 0.
+ *
+ * On error, returns -1, and sets *status to the appropriate error code;
+ * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
+ */
 static int
-create_ring(pcap_t *handle)
+create_ring(pcap_t *handle, int *status)
 {
 	unsigned i, j, frames_per_block;
 	struct tpacket_req req;
+
+	/*
+	 * Start out assuming no warnings or errors.
+	 */
+	*status = 0;
 
 	/* Note that with large snapshot (say 64K) only a few frames 
 	 * will be available in the ring even with pretty large ring size
@@ -3077,6 +3196,109 @@ create_ring(pcap_t *handle)
 		req.tp_block_size <<= 1;
 
 	frames_per_block = req.tp_block_size/req.tp_frame_size;
+
+	/*
+	 * PACKET_TIMESTAMP was added after linux/net_tstamp.h was,
+	 * so we check for PACKET_TIMESTAMP.  We check for
+	 * linux/net_tstamp.h just in case a system somehow has
+	 * PACKET_TIMESTAMP but not linux/net_tstamp.h; that might
+	 * be unnecessary.
+	 *
+	 * SIOCSHWTSTAMP was introduced in the patch that introduced
+	 * linux/net_tstamp.h, so we don't bother checking whether
+	 * SIOCSHWTSTAMP is defined (if your Linux system has
+	 * linux/net_tstamp.h but doesn't define SIOCSHWTSTAMP, your
+	 * Linux system is badly broken).
+	 */
+#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
+	/*
+	 * If we were told to do so, ask the kernel and the driver
+	 * to use hardware timestamps.
+	 *
+	 * Hardware timestamps are only supported with mmapped
+	 * captures.
+	 */
+	if (handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER ||
+	    handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER_UNSYNCED) {
+		struct hwtstamp_config hwconfig;
+		struct ifreq ifr;
+		int timesource;
+
+		/*
+		 * Ask for hardware time stamps on all packets,
+		 * including transmitted packets.
+		 */
+		memset(&hwconfig, 0, sizeof(hwconfig));
+		hwconfig.tx_type = HWTSTAMP_TX_ON;
+		hwconfig.rx_filter = HWTSTAMP_FILTER_ALL;
+
+		memset(&ifr, 0, sizeof(ifr));
+		strcpy(ifr.ifr_name, handle->opt.source);
+		ifr.ifr_data = (void *)&hwconfig;
+
+		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
+			switch (errno) {
+
+			case EPERM:
+				/*
+				 * Treat this as an error, as the
+				 * user should try to run this
+				 * with the appropriate privileges -
+				 * and, if they can't, shouldn't
+				 * try requesting hardware time stamps.
+				 */
+				*status = PCAP_ERROR_PERM_DENIED;
+				return -1;
+
+			case EOPNOTSUPP:
+				/*
+				 * Treat this as a warning, as the
+				 * only way to fix the warning is to
+				 * get an adapter that supports hardware
+				 * time stamps.  We'll just fall back
+				 * on the standard host time stamps.
+				 */
+				*status = PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
+				break;
+
+			default:
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"SIOCSHWTSTAMP failed: %s",
+					pcap_strerror(errno));
+				*status = PCAP_ERROR;
+				return -1;
+			}
+		} else {
+			/*
+			 * Well, that worked.  Now specify the type of
+			 * hardware time stamp we want for this
+			 * socket.
+			 */
+			if (handle->opt.tstamp_type == PCAP_TSTAMP_ADAPTER) {
+				/*
+				 * Hardware timestamp, synchronized
+				 * with the system clock.
+				 */
+				timesource = SOF_TIMESTAMPING_SYS_HARDWARE;
+			} else {
+				/*
+				 * PCAP_TSTAMP_ADAPTER_UNSYNCED - hardware
+				 * timestamp, not synchronized with the
+				 * system clock.
+				 */
+				timesource = SOF_TIMESTAMPING_RAW_HARDWARE;
+			}
+			if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
+				(void *)&timesource, sizeof(timesource))) {
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+					"can't set PACKET_TIMESTAMP: %s", 
+					pcap_strerror(errno));
+				*status = PCAP_ERROR;
+				return -1;
+			}
+		}
+	}
+#endif /* HAVE_LINUX_NET_TSTAMP_H && PACKET_TIMESTAMP */
 
 	/* ask the kernel to create the ring */
 retry:
@@ -3112,6 +3334,7 @@ retry:
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "can't create rx ring on packet socket: %s",
 		    pcap_strerror(errno));
+		*status = PCAP_ERROR;
 		return -1;
 	}
 
@@ -3125,6 +3348,7 @@ retry:
 
 		/* clear the allocated ring on error*/
 		destroy_ring(handle);
+		*status = PCAP_ERROR;
 		return -1;
 	}
 
@@ -3137,6 +3361,7 @@ retry:
 		    pcap_strerror(errno));
 
 		destroy_ring(handle);
+		*status = PCAP_ERROR;
 		return -1;
 	}
 

@@ -445,13 +445,39 @@ linux)
 		with_libnl=$withval,,)
 
 	if test x$with_libnl != xno ; then
-		AC_CHECK_LIB(nl, nl_handle_alloc,
-			LIBS="-lnl $LIBS"
-			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists]),
-			if test x$with_libnl = xyes ; then
-				AC_MSG_ERROR([libnl support requested but libnl not found])
-			fi
-		)
+		#
+		# Try libnl 2.x first.
+		#
+		AC_CHECK_LIB(nl, nl_socket_alloc,
+		[
+			#
+			# Yes, we have libnl 2.x.
+			#
+			LIBS="-lnl-genl -lnl $LIBS"
+			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+			AC_DEFINE(HAVE_LIBNL_2_x,1,[if libnl exists and is version 2.x])
+		],
+		[
+			#
+			# No, we don't; do we have libnl 1.x?
+			#
+			AC_CHECK_LIB(nl, nl_handle_alloc,
+			[
+				#
+				# Yes.
+				#
+				LIBS="-lnl $LIBS"
+				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+			],
+			[
+				#
+				# No, we don't have libnl at all.
+				#
+				if test x$with_libnl = xyes ; then
+					AC_MSG_ERROR([libnl support requested but libnl not found])
+				fi
+			])
+		])
 	fi
 
 	AC_LBL_TPACKET_STATS
@@ -1313,6 +1339,7 @@ solaris*)
 esac
 
 AC_PROG_RANLIB
+AC_CHECK_TOOL([AR], [ar])
 
 AC_LBL_DEVEL(V_CCOPT)
 
@@ -1364,7 +1391,19 @@ linux*)
        fi
        AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
        AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
-       AC_CHECK_HEADERS(linux/usbdevice_fs.h)
+       #
+       # Do we have a version of <linux/compiler.h> available?
+       # If so, we might need it for <linux/usbdevice_fs.h>.
+       #
+       AC_CHECK_HEADERS(linux/compiler.h)
+       if test "$ac_cv_header_linux_compiler_h" = yes; then
+         #
+	 # Yes - include it when testing for <linux/usbdevice_fs.h>.
+	 #
+         AC_CHECK_HEADERS(linux/usbdevice_fs.h,,,[#include <linux/compiler.h>])
+       else
+         AC_CHECK_HEADERS(linux/usbdevice_fs.h)
+       fi
        if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
          #
          # OK, does it define bRequestType?  Older versions of the kernel
@@ -1378,6 +1417,9 @@ linux*)
 AC_INCLUDES_DEFAULT
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
+#endif
+#ifdef HAVE_LINUX_COMPILER_H
+#include <linux/compiler.h>
 #endif
 #            include <linux/usbdevice_fs.h>],
              [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
@@ -1446,15 +1488,26 @@ if test "x$enable_can" != "xno" ; then
 	AC_SUBST(CAN_SRC)
 fi
 
+dnl check for hardware timestamp support
+case "$host_os" in
+linux*)
+	AC_CHECK_HEADERS([linux/net_tstamp.h])
+	;;
+*)
+	AC_MSG_NOTICE(no hardware timestamp support implemented for $host_os)
+	;;
+esac
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
 
 AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
-	pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap
-	pcap_datalink.3pcap pcap_dump_open.3pcap
-	pcap_list_datalinks.3pcap pcap_open_dead.3pcap
-	pcap_open_offline.3pcap)
+	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap
+	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
+	pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap
+	pcap_open_dead.3pcap pcap_open_offline.3pcap
+	pcap_set_tstamp_type.3pcap)
 
 if test -f .devel ; then
 	make depend
