@@ -850,6 +850,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_JUNIPER_VS, "Juniper Virtual Server"),
 	DLT_CHOICE(DLT_JUNIPER_SRX_E2E, "Juniper SRX E2E"),
 	DLT_CHOICE(DLT_JUNIPER_FIBRECHANNEL, "Juniper Fibrechannel"),
+	DLT_CHOICE(DLT_DVB_CI, "DVB-CI"),
 	DLT_CHOICE_SENTINEL
 };
 
