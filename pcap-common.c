@@ -753,6 +753,13 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_DBUS				231
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ */
+#define LINKTYPE_JUNIPER_VS			232
+#define LINKTYPE_JUNIPER_SRX_E2E		233
+#define LINKTYPE_JUNIPER_FIBRECHANNEL		234
 
 /*
  * DVB-CI (DVB Common Interface for communication between a PC Card
