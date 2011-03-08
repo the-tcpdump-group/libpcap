@@ -773,6 +773,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_DVB_CI				235
 
+/*
+ * Variant of 3GPP TS 27.010 multiplexing protocol.  Requested
+ * by Hans-Christoph Schemmel <hans-christoph.schemmel@cinterion.com>.
+ */
+#define LINKTYPE_MUX27010			236
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -1135,6 +1141,9 @@ static struct linktype_map {
 
         /* DVB-CI */
 	{ DLT_DVB_CI,		LINKTYPE_DVB_CI },
+
+	/* Variant of 3GPP TS 27.010 */
+	{ DLT_MUX27010,		LINKTYPE_MUX27010 },
 
 	{ -1,			-1 }
 };

@@ -1008,6 +1008,13 @@ struct bpf_program {
 #define DLT_DVB_CI			235
 
 /*
+ * Variant of 3GPP TS 27.010 multiplexing protocol (similar to, but
+ * *not* the same as, 27.010).  Requested by Hans-Christoph Schemmel
+ * <hans-christoph.schemmel@cinterion.com>.
+ */
+#define DLT_MUX27010			236
+
+/*
  * DLT and savefile link type values are split into a class and
  * a member of that class.  A class value of 0 indicates a regular
  * DLT_/LINKTYPE_ value.
