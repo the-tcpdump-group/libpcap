@@ -1880,6 +1880,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	if (fd < 0) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
+		(void)closedir(sys_class_net_d);
 		return (-1);
 	}
 
@@ -2013,6 +2014,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	if (fd < 0) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
+		(void)fclose(proc_net_f);
 		return (-1);
 	}
 
