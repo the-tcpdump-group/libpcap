@@ -1015,6 +1015,13 @@ struct bpf_program {
 #define DLT_MUX27010			236
 
 /*
+ * STANAG 5066 D_PDUs.  Requested by M. Baris Demiray
+ * <barisdemiray@gmail.com>.
+ */
+#define DLT_STANAG_5066_D_PDU		237
+ 
+
+/*
  * DLT and savefile link type values are split into a class and
  * a member of that class.  A class value of 0 indicates a regular
  * DLT_/LINKTYPE_ value.

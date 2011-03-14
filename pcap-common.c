@@ -779,6 +779,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_MUX27010			236
 
+/*
+ * STANAG 5066 D_PDUs.  Requested by M. Baris Demiray
+ * <barisdemiray@gmail.com>.
+ */
+#define LINKTYPE_STANAG_5066_D_PDU		237
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -1144,6 +1150,9 @@ static struct linktype_map {
 
 	/* Variant of 3GPP TS 27.010 */
 	{ DLT_MUX27010,		LINKTYPE_MUX27010 },
+
+	/* STANAG 5066 D_PDUs */
+	{ DLT_STANAG_5066_D_PDU, LINKTYPE_STANAG_5066_D_PDU },
 
 	{ -1,			-1 }
 };
