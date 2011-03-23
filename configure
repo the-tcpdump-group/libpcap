@@ -8719,7 +8719,7 @@ echo $ECHO_N "checking whether we have DAG API headers... $ECHO_C" >&6; }
 
 	if test -z "$dag_tools_dir"; then
 	    dag_tools_dir="$dag_root/tools"
-		fi
+	fi
 
 	if test -r $dag_include_dir/dagapi.h; then
 		ac_cv_lbl_dag_api=yes
@@ -8729,142 +8729,8 @@ echo "${ECHO_T}$ac_cv_lbl_dag_api ($dag_include_dir)" >&6; }
 fi
 
 if test $ac_cv_lbl_dag_api = yes; then
-
-	{ echo "$as_me:$LINENO: checking dagapi.o" >&5
-echo $ECHO_N "checking dagapi.o... $ECHO_C" >&6; }
-	dagapi_obj=no
-	if test -r $dag_tools_dir/dagapi.o; then
-		# 2.4.x.
-		dagapi_obj=$dag_tools_dir/dagapi.o
-	elif test -r $dag_lib_dir/dagapi.o; then
-		# 2.5.x.
-		dagapi_obj=$dag_lib_dir/dagapi.o
-	elif test -r $dag_lib_dir/libdag.a; then
-		# 2.5.x.
-		ar x $dag_lib_dir/libdag.a dagapi.o 2>/dev/null
-		if test -r ./dagapi.o; then
-		    dagapi_obj=./dagapi.o
-		else
-		    ar x $dag_lib_dir/libdag.a libdag_la-dagapi.o 2>/dev/null
-		    if test -r ./libdag_la-dagapi.o; then
-		       dagapi_obj=./libdag_la-dagapi.o
-		    fi
-		fi
-	fi
-
-	if test $dagapi_obj = no; then
-		{ echo "$as_me:$LINENO: result: no (checked $dag_lib_dir  $dag_tools_dir  $dag_lib_dir/libdag.a)" >&5
-echo "${ECHO_T}no (checked $dag_lib_dir  $dag_tools_dir  $dag_lib_dir/libdag.a)" >&6; }
-			ac_cv_lbl_dag_api=no
-	else
-		{ echo "$as_me:$LINENO: result: yes ($dagapi_obj)" >&5
-echo "${ECHO_T}yes ($dagapi_obj)" >&6; }
-	fi
-fi
-
-if test $ac_cv_lbl_dag_api = yes; then
-
-	{ echo "$as_me:$LINENO: checking dagopts.o" >&5
-echo $ECHO_N "checking dagopts.o... $ECHO_C" >&6; }
-	dagopts_obj=no
-	if test -r $dag_tools_dir/dagopts.o; then
-		# 2.4.x.
-		dagopts_obj=$dag_tools_dir/dagopts.o
-	elif test -r $dag_lib_dir/dagopts.o; then
-		# 2.5.x.
-		dagopts_obj=$dag_lib_dir/dagopts.o
-	elif test -r $dag_lib_dir/libdag.a; then
-		# 2.5.x.
-		ar x $dag_lib_dir/libdag.a dagopts.o 2>/dev/null
-		if test -r ./dagopts.o; then
-		    dagopts_obj=./dagopts.o
-		else
-		    ar x $dag_lib_dir/libdag.a libdag_la-dagopts.o 2>/dev/null
-		    if test -r ./libdag_la-dagopts.o; then
-		       dagopts_obj=./libdag_la-dagopts.o
-		    fi
-		fi
-	fi
-
-	if test $dagopts_obj = no; then
-		{ echo "$as_me:$LINENO: result: no (checked $dag_lib_dir  $dag_tools_dir  $dag_lib_dir/libdag.a)" >&5
-echo "${ECHO_T}no (checked $dag_lib_dir  $dag_tools_dir  $dag_lib_dir/libdag.a)" >&6; }
-		ac_cv_lbl_dag_api=no
-	else
-		{ echo "$as_me:$LINENO: result: yes ($dagopts_obj)" >&5
-echo "${ECHO_T}yes ($dagopts_obj)" >&6; }
-	fi
-fi
-
-if test $ac_cv_lbl_dag_api = yes; then
-	# Under 2.5.x only we need to add dagreg.o.
-	if test -r $dag_include_dir/dagreg.h; then
-		{ echo "$as_me:$LINENO: checking dagreg.o" >&5
-echo $ECHO_N "checking dagreg.o... $ECHO_C" >&6; }
-		dagreg_obj=no
-		if test -r $dag_lib_dir/dagreg.o; then
-			# Object file is ready and waiting.
-			dagreg_obj=$dag_lib_dir/dagreg.o
-		elif test -r $dag_lib_dir/libdag.a; then
-			# Extract from libdag.a.
-			ar x $dag_lib_dir/libdag.a dagreg.o 2>/dev/null
-			if test -r ./dagreg.o; then
-				dagreg_obj=./dagreg.o
-			else
-				ar x $dag_lib_dir/libdag.a libdag_la-dagreg.o 2>/dev/null
-				if test -r ./libdag_la-dagreg.o; then
-				   dagreg_obj=./libdag_la-dagreg.o
-				fi
-			fi
-		fi
-
-		if test $dagreg_obj = no; then
-			{ echo "$as_me:$LINENO: result: no (checked $dag_lib_dir  $dag_lib_dir/libdag.a)" >&5
-echo "${ECHO_T}no (checked $dag_lib_dir  $dag_lib_dir/libdag.a)" >&6; }
-			ac_cv_lbl_dag_api=no
-		else
-			{ echo "$as_me:$LINENO: result: yes ($dagreg_obj)" >&5
-echo "${ECHO_T}yes ($dagreg_obj)" >&6; }
-		fi
-	fi
-fi
-
-if test $ac_cv_lbl_dag_api = yes; then
-        # Under 2.5.x only we need to add dagutil.o.
-        if test -r $dag_include_dir/dagutil.h; then
-                { echo "$as_me:$LINENO: checking dagutil.o" >&5
-echo $ECHO_N "checking dagutil.o... $ECHO_C" >&6; }
-                dagutil_obj=no
-                if test -r $dag_lib_dir/dagutil.o; then
-                        # Object file is ready and waiting.
-                        dagutil_obj=$dag_lib_dir/dagutil.o
-                elif test -r $dag_lib_dir/libdag.a; then
-                        # Extract from libdag.a.
-                        ar x $dag_lib_dir/libdag.a dagutil.o 2>/dev/null
-                        if test -r ./dagutil.o; then
-                                dagutil_obj=./dagutil.o
-                        else
-                                ar x $dag_lib_dir/libdag.a libdag_la-dagutil.o 2>/dev/null
-                                if test -r ./libdag_la-dagutil.o; then
-                                   dagutil_obj=./libdag_la-dagutil.o
-                                fi
-                        fi
-                fi
-
-                if test $dagutil_obj = no; then
-                        { echo "$as_me:$LINENO: result: no (checked $dag_lib_dir  $dag_lib_dir/libdag.a)" >&5
-echo "${ECHO_T}no (checked $dag_lib_dir  $dag_lib_dir/libdag.a)" >&6; }
-                        ac_cv_lbl_dag_api=no
-                else
-                        { echo "$as_me:$LINENO: result: yes ($dagutil_obj)" >&5
-echo "${ECHO_T}yes ($dagutil_obj)" >&6; }
-                fi
-        fi
-fi
-
-if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
-	ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $dagapi_obj $dagopts_obj $dagreg_obj $dagutil_obj"
+
 	if test $V_PCAP != dag ; then
 		 SSRC="pcap-dag.c"
 	fi
@@ -9081,7 +8947,6 @@ _ACEOF
 
 fi
 
-	LDFLAGS=$saved_ldflags
 
 	if test "$dag_streams" = 1; then
 
@@ -9090,7 +8955,85 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 		LIBS="$LIBS -ldag"
+
+		{ echo "$as_me:$LINENO: checking for vdag_set_device_info in -lvdag" >&5
+echo $ECHO_N "checking for vdag_set_device_info in -lvdag... $ECHO_C" >&6; }
+if test "${ac_cv_lib_vdag_vdag_set_device_info+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lvdag  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char vdag_set_device_info ();
+int
+main ()
+{
+return vdag_set_device_info ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_vdag_vdag_set_device_info=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_vdag_vdag_set_device_info=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_vdag_vdag_set_device_info" >&5
+echo "${ECHO_T}$ac_cv_lib_vdag_vdag_set_device_info" >&6; }
+if test $ac_cv_lib_vdag_vdag_set_device_info = yes; then
+  ac_dag_have_vdag="1"
+else
+  ac_dag_have_vdag="0"
+fi
+
+		if test "$ac_dag_have_vdag" = 1; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_DAG_VDAG 1
+_ACEOF
+
+			LIBS="$LIBS -lpthread"
+		fi
 	fi
+
+	LDFLAGS=$saved_ldflags
 
 
 cat >>confdefs.h <<\_ACEOF
