@@ -3173,6 +3173,8 @@ create_ring(pcap_t *handle, int *status)
 {
 	unsigned i, j, frames_per_block;
 	struct tpacket_req req;
+	socklen_t len;
+	unsigned int sk_type, tp_reserve, maclen, tp_hdrlen, netoff, macoff;
 
 	/*
 	 * Start out assuming no warnings or errors.
@@ -3184,9 +3186,52 @@ create_ring(pcap_t *handle, int *status)
 	 * (and a lot of memory will be unused). 
 	 * The snap len should be carefully chosen to achive best
 	 * performance */
-	req.tp_frame_size = TPACKET_ALIGN(handle->snapshot +
-					  TPACKET_ALIGN(handle->md.tp_hdrlen) +
-					  sizeof(struct sockaddr_ll));
+	
+	/* NOTE: calculus matching those in tpacket_rcv()
+	 * in linux-2.6/net/packet/af_packet.c
+	 */
+	len = sizeof(sk_type);
+	if (getsockopt(handle->fd, SOL_SOCKET, SO_TYPE, &sk_type, &len) < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "getsockopt: %s", pcap_strerror(errno));
+		*status = PCAP_ERROR;
+		return -1;
+	}
+	len = sizeof(tp_reserve);
+	if (getsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &tp_reserve, &len) < 0) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "getsockopt: %s", pcap_strerror(errno));
+		*status = PCAP_ERROR;
+		return -1;
+	}
+	maclen = (sk_type == SOCK_DGRAM) ? 0 : MAX_LINKHEADER_SIZE;
+		/* XXX: in the kernel maclen is calculated from
+		 * LL_ALLOCATED_SPACE(dev) and vnet_hdr.hdr_len
+		 * in:  packet_snd()           in linux-2.6/net/packet/af_packet.c
+		 * then packet_alloc_skb()     in linux-2.6/net/packet/af_packet.c
+		 * then sock_alloc_send_pskb() in linux-2.6/net/core/sock.c
+		 * but I see no way to get those sizes in userspace,
+		 * like for instance with an ifreq ioctl();
+		 * the best thing I've found so far is MAX_HEADER in the kernel
+		 * part of linux-2.6/include/linux/netdevice.h
+		 * which goes up to 128+48=176; since pcap-linux.c defines
+		 * a MAX_LINKHEADER_SIZE of 256 which is greater than that,
+		 * let's use it.. maybe is it even large enough to directly
+		 * replace macoff..
+		 */
+	tp_hdrlen = TPACKET_ALIGN(handle->md.tp_hdrlen) + sizeof(struct sockaddr_ll) ;
+	netoff = TPACKET_ALIGN(tp_hdrlen + (maclen < 16 ? 16 : maclen)) + tp_reserve;
+		/* NOTE: AFAICS tp_reserve may break the TPACKET_ALIGN of
+		 * netoff, which contradicts
+		 * linux-2.6/Documentation/networking/packet_mmap.txt
+		 * documenting that:
+		 * "- Gap, chosen so that packet data (Start+tp_net)
+		 * aligns to TPACKET_ALIGNMENT=16"
+		 */
+		/* NOTE: in linux-2.6/include/linux/skbuff.h:
+		 * "CPUs often take a performance hit
+		 *  when accessing unaligned memory locations"
+		 */
+	macoff = netoff - maclen;
+	req.tp_frame_size = TPACKET_ALIGN(macoff + handle->snapshot);
 	req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 
 	/* compute the minumum block size that will handle this frame. 
