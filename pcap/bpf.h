@@ -1019,8 +1019,13 @@ struct bpf_program {
  * <barisdemiray@gmail.com>.
  */
 #define DLT_STANAG_5066_D_PDU		237
- 
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>.
+ */
+#define DLT_JUNIPER_ATM_CEMIC		238
+ 
 /*
  * DLT and savefile link type values are split into a class and
  * a member of that class.  A class value of 0 indicates a regular

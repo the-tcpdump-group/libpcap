@@ -785,6 +785,12 @@ static const char rcsid[] _U_ =
  */
 #define LINKTYPE_STANAG_5066_D_PDU		237
 
+/*
+ * Juniper-private data link type, as per request from
+ * Hannes Gredler <hannes@juniper.net>. 
+ */
+#define LINKTYPE_JUNIPER_ATM_CEMIC		238
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -1153,6 +1159,9 @@ static struct linktype_map {
 
 	/* STANAG 5066 D_PDUs */
 	{ DLT_STANAG_5066_D_PDU, LINKTYPE_STANAG_5066_D_PDU },
+
+        /* Juniper ATM CE MIC */
+	{ DLT_JUNIPER_ATM_CEMIC, LINKTYPE_JUNIPER_ATM_CEMIC },
 
 	{ -1,			-1 }
 };

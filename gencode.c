@@ -1369,6 +1369,7 @@ init_linktype(p)
 	case DLT_JUNIPER_VS:
 	case DLT_JUNIPER_SRX_E2E:
 	case DLT_JUNIPER_FIBRECHANNEL:
+	case DLT_JUNIPER_ATM_CEMIC:
 		off_linktype = 8;
 		off_macpl = -1;
 		off_nl = -1;
@@ -3484,6 +3485,7 @@ gen_linktype(proto)
         case DLT_JUNIPER_VS:
         case DLT_JUNIPER_SRX_E2E:
         case DLT_JUNIPER_FIBRECHANNEL:
+	case DLT_JUNIPER_ATM_CEMIC:
 
 		/* just lets verify the magic number for now -
 		 * on ATM we may have up to 6 different encapsulations on the wire
@@ -7690,6 +7692,7 @@ gen_inbound(dir)
         case DLT_JUNIPER_VS:
         case DLT_JUNIPER_SRX_E2E:
         case DLT_JUNIPER_FIBRECHANNEL:
+	case DLT_JUNIPER_ATM_CEMIC:
 
 		/* juniper flags (including direction) are stored
 		 * the byte after the 3-byte magic number */
