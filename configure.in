@@ -779,9 +779,12 @@ if test $ac_cv_lbl_dag_api = yes; then
 	AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
 		AC_DEFINE(HAVE_DAG_GET_STREAM_ERF_TYPES, 1, [define if you have dag_get_stream_erf_types()])])
 
+	LDFLAGS=$saved_ldflags
+
 	if test "$dag_streams" = 1; then
 		AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
 		LIBS="$LIBS -ldag"
+		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 		
 		AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
 		if test "$ac_dag_have_vdag" = 1; then
@@ -789,8 +792,6 @@ if test $ac_cv_lbl_dag_api = yes; then
 			LIBS="$LIBS -lpthread"
 		fi
 	fi
-
-	LDFLAGS=$saved_ldflags
 
 	AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
 fi
