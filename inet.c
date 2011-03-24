@@ -133,6 +133,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
 	int this_instance;
+	char open_errbuf[PCAP_ERRBUF_SIZE];
 
 	/*
 	 * Is there already an entry in the list for this interface?
@@ -192,11 +193,11 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			}
 			strcpy(en_name, "en");
 			strcat(en_name, name + 3);
-			p = pcap_open_live(en_name, 68, 0, 0, errbuf);
+			p = pcap_open_live(en_name, 68, 0, 0, open_errbuf);
 			free(en_name);
 		} else
 #endif /* __APPLE */
-		p = pcap_open_live(name, 68, 0, 0, errbuf);
+		p = pcap_open_live(name, 68, 0, 0, open_errbuf);
 		if (p == NULL) {
 			/*
 			 * No.  Don't bother including it.
