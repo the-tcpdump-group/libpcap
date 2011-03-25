@@ -110,7 +110,7 @@ struct bpf_program {
 };
  
 /*
- * Data-link level type codes.
+ * Link-layer header type codes.
  *
  * Do *NOT* add new values to this list without asking
  * "tcpdump-workers@lists.tcpdump.org" for a value.  Otherwise, you run
@@ -119,6 +119,12 @@ struct bpf_program {
  * being able to handle captures with your new DLT_ value, with no hope
  * that they will ever be changed to do so (as that would destroy their
  * ability to read captures using that value for that other purpose).
+ *
+ * See
+ *
+ *	http://www.tcpdump.org/linktypes.html
+ *
+ * for detailed descriptions of some of these link-layer header types.
  */
 
 /*
