@@ -3196,12 +3196,16 @@ create_ring(pcap_t *handle, int *status)
 		*status = PCAP_ERROR;
 		return -1;
 	}
+#ifdef PACKET_RESERVE
 	len = sizeof(tp_reserve);
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &tp_reserve, &len) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "getsockopt: %s", pcap_strerror(errno));
 		*status = PCAP_ERROR;
 		return -1;
 	}
+#else
+	tp_reserve = 0;	/* older kernel, reserve not supported */
+#endif
 	maclen = (sk_type == SOCK_DGRAM) ? 0 : MAX_LINKHEADER_SIZE;
 		/* XXX: in the kernel maclen is calculated from
 		 * LL_ALLOCATED_SPACE(dev) and vnet_hdr.hdr_len
