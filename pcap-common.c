@@ -18,20 +18,8 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * savefile.c - supports offline use of tcpdump
- *	Extraction/creation by Jeffrey Mogul, DECWRL
- *	Modified by Steve McCanne, LBL.
- *
- * Used to save the received packet headers, after filtering, to
- * a file, and then read them later.
- * The first record in the file contains saved values for the machine
- * dependent values so we can print the dump file on any architecture.
+ * pcap-common.c - common code for pcap and pcap-ng files
  */
-
-#ifndef lint
-static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/savefile.c,v 1.183 2008-12-23 20:13:29 guy Exp $ (LBL)";
-#endif
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -1216,32 +1204,71 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
     int header_len_64_bytes)
 {
 	pcap_usb_header_mmapped *uhdr = (pcap_usb_header_mmapped *)buf;
+	bpf_u_int32 offset = 0;
+	usb_isodesc *pisodesc;
+	int32_t numdesc, i;
+
+	/*
+	 * "offset" is the offset *past* the field we're swapping;
+	 * we skip the field *before* checking to make sure
+	 * the captured data length includes the entire field.
+	 */
 
 	/*
 	 * The URB id is a totally opaque value; do we really need to 
 	 * convert it to the reading host's byte order???
 	 */
-	if (hdr->caplen < 8)
+	offset += 8;			/* skip past id */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->id = SWAPLL(uhdr->id);
-	if (hdr->caplen < 14)
+
+	offset += 4;			/* skip past various 1-byte fields */
+
+	offset += 2;			/* skip past bus_id */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->bus_id = SWAPSHORT(uhdr->bus_id);
-	if (hdr->caplen < 24)
+
+	offset += 2;			/* skip past various 1-byte fields */
+
+	offset += 8;			/* skip past ts_sec */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->ts_sec = SWAPLL(uhdr->ts_sec);
-	if (hdr->caplen < 28)
+
+	offset += 4;			/* skip past ts_usec */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->ts_usec = SWAPLONG(uhdr->ts_usec);
-	if (hdr->caplen < 32)
+
+	offset += 4;			/* skip past status */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->status = SWAPLONG(uhdr->status);
-	if (hdr->caplen < 36)
+
+	offset += 4;			/* skip past urb_len */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->urb_len = SWAPLONG(uhdr->urb_len);
-	if (hdr->caplen < 40)
+
+	offset += 4;			/* skip past data_len */
+	if (hdr->caplen < offset)
 		return;
 	uhdr->data_len = SWAPLONG(uhdr->data_len);
+
+	if (uhdr->transfer_type == URB_ISOCHRONOUS) {
+		offset += 4;			/* skip past s.iso.error_count */
+		if (hdr->caplen < offset)
+			return;
+		uhdr->s.iso.error_count = SWAPLONG(uhdr->s.iso.error_count);
+
+		offset += 4;			/* skip past s.iso.numdesc */
+		if (hdr->caplen < offset)
+			return;
+		uhdr->s.iso.numdesc = SWAPLONG(uhdr->s.iso.numdesc);
+	} else
+		offset += 8;			/* skip USB setup header */
 
 	if (header_len_64_bytes) {
 		/*
@@ -1252,17 +1279,50 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 		 * at the end.  Byte swap them as if this were
 		 * a "version 1" header.
 		 */
-		if (hdr->caplen < 52)
+		offset += 4;			/* skip past interval */
+		if (hdr->caplen < offset)
 			return;
 		uhdr->interval = SWAPLONG(uhdr->interval);
-		if (hdr->caplen < 56)
+
+		offset += 4;			/* skip past start_frame */
+		if (hdr->caplen < offset)
 			return;
 		uhdr->start_frame = SWAPLONG(uhdr->start_frame);
-		if (hdr->caplen < 60)
+
+		offset += 4;			/* skip past xfer_flags */
+		if (hdr->caplen < offset)
 			return;
 		uhdr->xfer_flags = SWAPLONG(uhdr->xfer_flags);
-		if (hdr->caplen < 64)
+
+		offset += 4;			/* skip past ndesc */
+		if (hdr->caplen < offset)
 			return;
 		uhdr->ndesc = SWAPLONG(uhdr->ndesc);
 	}	
+
+	if (uhdr->transfer_type == URB_ISOCHRONOUS) {
+		/* swap the values in struct linux_usb_isodesc */
+		pisodesc = (usb_isodesc *)(void *)(buf+offset);
+		numdesc = uhdr->s.iso.numdesc;
+		for (i = 0; i < numdesc; i++) {
+			offset += 4;		/* skip past status */
+			if (hdr->caplen < offset)
+				return;
+			pisodesc->status = SWAPLONG(pisodesc->status);
+
+			offset += 4;		/* skip past offset */
+			if (hdr->caplen < offset)
+				return;
+			pisodesc->offset = SWAPLONG(pisodesc->offset);
+
+			offset += 4;		/* skip past len */
+			if (hdr->caplen < offset)
+				return;
+			pisodesc->len = SWAPLONG(pisodesc->len);
+
+			offset += 4;		/* skip past padding */
+
+			pisodesc++;
+		}
+	}
 }
