@@ -2285,6 +2285,30 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 		}
 	}
 
+	/*
+	 * NOTE: at this point, we've set both the "len" and "filter"
+	 * fields of "fcode".  As of the 2.6.32.4 kernel, at least,
+	 * those are the only members of the "sock_fprog" structure,
+	 * so we initialize every member of that structure.
+	 *
+	 * If there is anything in "fcode" that is not initialized,
+	 * it is either a field added in a later kernel, or it's
+	 * padding.
+	 *
+	 * If a new field is added, this code needs to be updated
+	 * to set it correctly.
+	 *
+	 * If there are no other fields, then:
+	 *
+	 *	if the Linux kernel looks at the padding, it's
+	 *	buggy;
+	 *
+	 *	if the Linux kernel doesn't look at the padding,
+	 *	then if some tool complains that we're passing
+	 *	uninitialized data to the kernel, then the tool
+	 *	is buggy and needs to understand that it's just
+	 *	padding.
+	 */
 	if (can_filter_in_kernel) {
 		if ((err = set_kernel_filter(handle, &fcode)) == 0)
 		{
