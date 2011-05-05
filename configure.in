@@ -152,7 +152,7 @@ needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
 	[needsnprintf=yes])
 if test $needsnprintf = yes; then
-	AC_LIBOBJ(snprintf)
+	AC_LIBOBJ([snprintf])
 fi
 
 #
