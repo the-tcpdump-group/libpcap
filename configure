@@ -7233,37 +7233,6 @@ _ACEOF
 	;;
 
 linux)
-	{ echo "$as_me:$LINENO: checking Linux kernel version" >&5
-echo $ECHO_N "checking Linux kernel version... $ECHO_C" >&6; }
- 	if test "$cross_compiling" = yes; then
- 		if test "${ac_cv_linux_vers+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_cv_linux_vers=unknown
-fi
-
- 	else
- 		if test "${ac_cv_linux_vers+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_cv_linux_vers=`uname -r 2>&1 | \
- 			sed -n -e '$s/.* //' -e '$s/\..*//p'`
-fi
-
- 	fi
-	{ echo "$as_me:$LINENO: result: $ac_cv_linux_vers" >&5
-echo "${ECHO_T}$ac_cv_linux_vers" >&6; }
- 	if test $ac_cv_linux_vers = unknown ; then
- 		{ { echo "$as_me:$LINENO: error: cannot determine linux version when cross-compiling" >&5
-echo "$as_me: error: cannot determine linux version when cross-compiling" >&2;}
-   { (exit 1); exit 1; }; }
- 	fi
-	if test $ac_cv_linux_vers -lt 2 ; then
-		{ { echo "$as_me:$LINENO: error: version 2 or higher required; see the INSTALL doc for more info" >&5
-echo "$as_me: error: version 2 or higher required; see the INSTALL doc for more info" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-
 	#
 	# Do we have the wireless extensions?
 	#
@@ -8949,6 +8918,8 @@ _ACEOF
 fi
 
 
+	LDFLAGS=$saved_ldflags
+
 	if test "$dag_streams" = 1; then
 
 cat >>confdefs.h <<\_ACEOF
@@ -8956,6 +8927,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 		LIBS="$LIBS -ldag"
+		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 
 		{ echo "$as_me:$LINENO: checking for vdag_set_device_info in -lvdag" >&5
 echo $ECHO_N "checking for vdag_set_device_info in -lvdag... $ECHO_C" >&6; }
@@ -9033,8 +9005,6 @@ _ACEOF
 			LIBS="$LIBS -lpthread"
 		fi
 	fi
-
-	LDFLAGS=$saved_ldflags
 
 
 cat >>confdefs.h <<\_ACEOF
