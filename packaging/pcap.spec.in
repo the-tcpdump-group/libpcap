@@ -6,7 +6,7 @@ Name: libpcap
 Version: %version
 Release: 1
 Group: Development/Libraries
-Copyright: BSD
+License: BSD
 Source: @NAME@.tar.gz
 BuildRoot: /tmp/%{name}-buildroot
 URL: http://www.tcpdump.org
@@ -47,12 +47,10 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %doc LICENSE CHANGES INSTALL.txt README.linux TODO VERSION CREDITS packaging/pcap.spec
-/usr/lib/libpcap.a
-/usr/share/man/man3/*
-/usr/share/man/man5/*
-/usr/share/man/man7/*
-/usr/include/pcap.h
-/usr/include/pcap/*.h
-/usr/include/pcap-bpf.h
-/usr/include/pcap-namedb.h
-/usr/lib/libpcap.so*
+%{_libdir}/libpcap.a
+%{_datadir}/man/man3/*
+%{_datadir}/man/man5/*
+%{_datadir}/man/man7/*
+%{_includedir}/pcap/*.h
+%{_includedir}/pcap.h
+%{_libdir}/libpcap.so*
