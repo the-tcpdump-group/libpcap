@@ -3223,9 +3223,17 @@ create_ring(pcap_t *handle, int *status)
 #ifdef PACKET_RESERVE
 	len = sizeof(tp_reserve);
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &tp_reserve, &len) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "getsockopt: %s", pcap_strerror(errno));
-		*status = PCAP_ERROR;
-		return -1;
+		if (errno != ENOPROTOOPT) {
+			/*
+			 * ENOPROTOOPT means "kernel doesn't support
+			 * PACKET_RESERVE", in which case we fall back
+			 * as best we can.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "getsockopt: %s", pcap_strerror(errno));
+			*status = PCAP_ERROR;
+			return -1;
+		}
+		tp_reserve = 0;	/* older kernel, reserve not supported */
 	}
 #else
 	tp_reserve = 0;	/* older kernel, reserve not supported */
