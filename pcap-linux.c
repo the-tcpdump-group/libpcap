@@ -3205,11 +3205,17 @@ create_ring(pcap_t *handle, int *status)
 	 */
 	*status = 0;
 
-	/* Note that with large snapshot (say 64K) only a few frames 
-	 * will be available in the ring even with pretty large ring size
-	 * (and a lot of memory will be unused). 
-	 * The snap len should be carefully chosen to achive best
-	 * performance */
+	/* Note that with large snapshot length (say 64K, which is the default
+	 * for recent versions of tcpdump, the value that "-s 0" has given
+	 * for a long time with tcpdump, and the default in Wireshark/TShark)
+	 * only a few frames will be available in the ring even with pretty
+	 * large ring size (and a lot of memory will be unused).
+	 *
+	 * The snapshot length should be carefully chosen to achive best
+	 * performance; good luck with that if you're capturing on, for
+	 * example, a monitor-mode device, as the radiotap header counts
+	 * against the snapshot length, and the maximum radiotap header
+	 * length is device-dependent. */
 	
 	/* NOTE: calculus matching those in tpacket_rcv()
 	 * in linux-2.6/net/packet/af_packet.c
