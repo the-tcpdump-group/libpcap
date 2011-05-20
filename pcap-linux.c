@@ -3199,6 +3199,7 @@ create_ring(pcap_t *handle, int *status)
 	struct tpacket_req req;
 	socklen_t len;
 	unsigned int sk_type, tp_reserve, maclen, tp_hdrlen, netoff, macoff;
+	unsigned int frame_size;
 
 	/*
 	 * Start out assuming no warnings or errors.
@@ -3207,15 +3208,42 @@ create_ring(pcap_t *handle, int *status)
 
 	/* Note that with large snapshot length (say 64K, which is the default
 	 * for recent versions of tcpdump, the value that "-s 0" has given
-	 * for a long time with tcpdump, and the default in Wireshark/TShark)
+	 * for a long time with tcpdump, and the default in Wireshark/TShark),
+	 * if we use the snapshot length to calculate the frame length,
 	 * only a few frames will be available in the ring even with pretty
 	 * large ring size (and a lot of memory will be unused).
 	 *
-	 * The snapshot length should be carefully chosen to achive best
-	 * performance; good luck with that if you're capturing on, for
-	 * example, a monitor-mode device, as the radiotap header counts
-	 * against the snapshot length, and the maximum radiotap header
-	 * length is device-dependent. */
+	 * Ideally, we should choose a frame length based on the
+	 * minimum of the specified snapshot length and the maximum
+	 * packet size.  That's not as easy as it sounds; consider, for
+	 * example, an 802.11 interface in monitor mode, where the
+	 * frame would include a radiotap header, where the maximum
+	 * radiotap header length is device-dependent.
+	 *
+	 * So, for now, we just do this for Ethernet devices, where
+	 * there's no metadata header, and the link-layer header is
+	 * fixed length.  We can get the maximum packet size by
+	 * adding 18, the Ethernet header length plus the CRC length
+	 * (just in case we happen to get the CRC in the packet), to
+	 * the MTU of the interface; we fetch the MTU in the hopes
+	 * that it reflects support for jumbo frames.  (Even if the
+	 * interface is just being used for passive snooping, the driver
+	 * might set the size of buffers in the receive ring based on
+	 * the MTU, so that the MTU limits the maximum size of packets
+	 * that we can receive.) */
+	frame_size = handle->snapshot;
+	if (handle->linktype == DLT_EN10MB) {
+		int mtu;
+	
+		mtu = iface_get_mtu(handle->fd, handle->opt.source,
+		    handle->errbuf);
+		if (mtu == -1) {
+			*status = PCAP_ERROR;
+			return -1;
+		}
+		if (frame_size > mtu + 18)
+			frame_size = mtu + 18;
+	}
 	
 	/* NOTE: calculus matching those in tpacket_rcv()
 	 * in linux-2.6/net/packet/af_packet.c
@@ -3273,7 +3301,7 @@ create_ring(pcap_t *handle, int *status)
 		 *  when accessing unaligned memory locations"
 		 */
 	macoff = netoff - maclen;
-	req.tp_frame_size = TPACKET_ALIGN(macoff + handle->snapshot);
+	req.tp_frame_size = TPACKET_ALIGN(macoff + frame_size);
 	req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 
 	/* compute the minumum block size that will handle this frame. 
