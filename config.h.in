@@ -64,6 +64,9 @@
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #undef HAVE_LINUX_COMPILER_H
 
+/* Define to 1 if you have the <linux/ethtool.h> header file. */
+#undef HAVE_LINUX_ETHTOOL_H
+
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #undef HAVE_LINUX_NET_TSTAMP_H
 

@@ -163,6 +163,14 @@ static const char rcsid[] _U_ =
 #include <netlink/attr.h>
 #endif /* HAVE_LIBNL */
 
+/*
+ * Got ethtool support?
+ */
+#ifdef HAVE_LINUX_ETHTOOL_H
+#include <linux/ethtool.h>
+#include <linux/sockios.h>
+#endif /* HAVE_LINUX_ETHTOOL_H */
+
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
@@ -336,7 +344,7 @@ static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
  */
 #ifdef HAVE_PF_PACKET_SOCKETS
 static int	iface_get_id(int fd, const char *device, char *ebuf);
-#endif
+#endif /* HAVE_PF_PACKET_SOCKETS */
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -347,6 +355,7 @@ static int	has_wext(int sock_fd, const char *device, char *ebuf);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
 #endif /* HAVE_PF_PACKET_SOCKETS */
+static int	iface_get_offload(pcap_t *handle);
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 #ifdef SO_ATTACH_FILTER
@@ -360,7 +369,7 @@ static struct sock_filter	total_insn
 	= BPF_STMT(BPF_RET | BPF_K, 0);
 static struct sock_fprog	total_fcode
 	= { 1, &total_insn };
-#endif
+#endif /* SO_ATTACH_FILTER */
 
 pcap_t *
 pcap_create(const char *device, char *ebuf)
@@ -3230,19 +3239,31 @@ create_ring(pcap_t *handle, int *status)
 	 * interface is just being used for passive snooping, the driver
 	 * might set the size of buffers in the receive ring based on
 	 * the MTU, so that the MTU limits the maximum size of packets
-	 * that we can receive.) */
+	 * that we can receive.)
+	 *
+	 * We don't do that if segmentation/fragmentation or receive
+	 * offload are enabled, so we don't get rudely surprised by
+	 * "packets" bigger than the MTU. */
 	frame_size = handle->snapshot;
 	if (handle->linktype == DLT_EN10MB) {
 		int mtu;
-	
-		mtu = iface_get_mtu(handle->fd, handle->opt.source,
-		    handle->errbuf);
-		if (mtu == -1) {
+		int offload;
+
+		offload = iface_get_offload(handle);
+		if (offload == -1) {
 			*status = PCAP_ERROR;
 			return -1;
 		}
-		if (frame_size > mtu + 18)
-			frame_size = mtu + 18;
+		if (!offload) {
+			mtu = iface_get_mtu(handle->fd, handle->opt.source,
+			    handle->errbuf);
+			if (mtu == -1) {
+				*status = PCAP_ERROR;
+				return -1;
+			}
+			if (frame_size > mtu + 18)
+				frame_size = mtu + 18;
+		}
 	}
 	
 	/* NOTE: calculus matching those in tpacket_rcv()
@@ -4681,6 +4702,88 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 	 */
 	return 0;
 }
+
+/*
+ * Find out if we have any form of fragmentation/reassembly offloading.
+ */
+#ifdef SIOCETHTOOL
+static int
+iface_ethtool_ioctl(pcap_t *handle, int cmd)
+{
+	struct ifreq	ifr;
+	struct ethtool_value eval;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	eval.cmd = cmd;
+	ifr.ifr_data = (caddr_t)&eval;
+	if (ioctl(handle->fd, SIOCETHTOOL, &ifr) == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: 0x%08x ioctl failed: %s", handle->opt.source,
+		    cmd, strerror(errno));
+		return -1;
+	}
+	return eval.data;	
+}
+
+static int
+iface_get_offload(pcap_t *handle)
+{
+	int ret;
+
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GTSO);
+	if (ret == -1)
+		return -1;
+	if (ret)
+		return 1;	/* TCP segmentation offloading on */
+
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GUFO);
+	if (ret == -1)
+		return -1;
+	if (ret)
+		return 1;	/* UDP fragmentation offloading on */
+
+	/*
+	 * XXX - will this cause large unsegmented packets to be
+	 * handed to PF_PACKET sockets on transmission?  If not,
+	 * this need not be checked.
+	 */
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGSO);
+	if (ret == -1)
+		return -1;
+	if (ret)
+		return 1;	/* generic segmentation offloading on */
+
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GFLAGS);
+	if (ret == -1)
+		return -1;
+	if (ret & ETH_FLAG_LRO)
+		return 1;	/* large receive offloading on */
+
+	/*
+	 * XXX - will this cause large reassembled packets to be
+	 * handed to PF_PACKET sockets on receipt?  If not,
+	 * this need not be checked.
+	 */
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGRO);
+	if (ret == -1)
+		return -1;
+	if (ret)
+		return 1;	/* generic (large) receive offloading on */
+
+	return 0;
+}
+#else /* SIOCETHTOOL */
+static int
+iface_get_offload(pcap_t *handle _U_)
+{
+	/*
+	 * XXX - do we need to get this information if we don't
+	 * have the ethtool ioctls?  If so, how do we do that?
+	 */
+	return 0;
+}
+#endif /* SIOCETHTOOL */
 
 #endif /* HAVE_PF_PACKET_SOCKETS */
 
