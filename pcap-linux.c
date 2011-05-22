@@ -4708,7 +4708,7 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
  */
 #ifdef SIOCETHTOOL
 static int
-iface_ethtool_ioctl(pcap_t *handle, int cmd)
+iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 {
 	struct ifreq	ifr;
 	struct ethtool_value eval;
@@ -4718,9 +4718,18 @@ iface_ethtool_ioctl(pcap_t *handle, int cmd)
 	eval.cmd = cmd;
 	ifr.ifr_data = (caddr_t)&eval;
 	if (ioctl(handle->fd, SIOCETHTOOL, &ifr) == -1) {
+		if (errno == EOPNOTSUPP) {
+			/*
+			 * OK, let's just return 0, which, in our
+			 * case, either means "no, what we're asking
+			 * about is not enabled" or "all the flags
+			 * are clear (i.e., nothing is enabled)".
+			 */
+			return 0;
+		}
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: 0x%08x ioctl failed: %s", handle->opt.source,
-		    cmd, strerror(errno));
+		    "%s: SIOETHTOOL(%s) ioctl failed: %s", handle->opt.source,
+		    cmdname, strerror(errno));
 		return -1;
 	}
 	return eval.data;	
@@ -4731,13 +4740,13 @@ iface_get_offload(pcap_t *handle)
 {
 	int ret;
 
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GTSO);
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO");
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* TCP segmentation offloading on */
 
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GUFO);
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO");
 	if (ret == -1)
 		return -1;
 	if (ret)
@@ -4748,13 +4757,13 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on transmission?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGSO);
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO");
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* generic segmentation offloading on */
 
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GFLAGS);
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
 	if (ret == -1)
 		return -1;
 	if (ret & ETH_FLAG_LRO)
@@ -4765,7 +4774,7 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on receipt?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGRO);
+	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO");
 	if (ret == -1)
 		return -1;
 	if (ret)
