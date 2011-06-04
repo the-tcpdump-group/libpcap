@@ -1459,7 +1459,15 @@ pcap_activate_bpf(pcap_t *p)
 {
 	int status = 0;
 	int fd;
+#ifdef LIFNAMSIZ
+	struct lifreq ifr;
+	char *ifrname = ifr.lifr_name;
+	const size_t ifnamsiz = sizeof(ifr.lifr_name);
+#else
 	struct ifreq ifr;
+	char *ifrname = ifr.ifr_name;
+	const size_t ifnamsiz = sizeof(ifr.ifr_name);
+#endif
 	struct bpf_version bv;
 #ifdef __APPLE__
 	int sockfd;
@@ -1551,9 +1559,8 @@ pcap_activate_bpf(pcap_t *p)
 					 */
 					sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 					if (sockfd != -1) {
-						strlcpy(ifr.ifr_name,
-						    p->opt.source,
-						    sizeof(ifr.ifr_name));
+						strlcpy(ifrname,
+						    p->opt.source, ifnamsiz);
 						if (ioctl(sockfd, SIOCGIFFLAGS,
 						    (char *)&ifr) < 0) {
 							/*
@@ -1667,7 +1674,7 @@ pcap_activate_bpf(pcap_t *p)
 			    pcap_strerror(errno));
 			goto bad;
 		}
-		(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+		(void)strncpy(ifrname, p->opt.source, ifnamsiz);
 		if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
 			    p->opt.source, pcap_strerror(errno));
@@ -1697,9 +1704,13 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * Now bind to the device.
 			 */
-			(void)strncpy(ifr.ifr_name, p->opt.source,
-			    sizeof(ifr.ifr_name));
-			if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
+			(void)strncpy(ifrname, p->opt.source, ifnamsiz);
+#ifdef BIOCSETLIF
+			if (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr) < 0)
+#else
+			if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0)
+#endif
+			{
 				status = check_setif_failure(p, errno);
 				goto bad;
 			}
@@ -1726,9 +1737,12 @@ pcap_activate_bpf(pcap_t *p)
 				 */
 				(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
 
-				(void)strncpy(ifr.ifr_name, p->opt.source,
-				    sizeof(ifr.ifr_name));
+				(void)strncpy(ifrname, p->opt.source, ifnamsiz);
+#ifdef BIOCSETLIF
+				if (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr) >= 0)
+#else
 				if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) >= 0)
+#endif
 					break;	/* that size worked; we're done */
 
 				if (errno != ENOBUFS) {
