@@ -4769,6 +4769,7 @@ iface_get_offload(pcap_t *handle)
 	if (ret & ETH_FLAG_LRO)
 		return 1;	/* large receive offloading on */
 
+#ifdef ETHTOOL_GGRO
 	/*
 	 * XXX - will this cause large reassembled packets to be
 	 * handed to PF_PACKET sockets on receipt?  If not,
@@ -4779,6 +4780,7 @@ iface_get_offload(pcap_t *handle)
 		return -1;
 	if (ret)
 		return 1;	/* generic (large) receive offloading on */
+#endif
 
 	return 0;
 }
