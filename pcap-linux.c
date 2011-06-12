@@ -4763,11 +4763,13 @@ iface_get_offload(pcap_t *handle)
 	if (ret)
 		return 1;	/* generic segmentation offloading on */
 
+#ifdef ETHTOOL_GFLAGS
 	ret = iface_ethtool_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
 	if (ret == -1)
 		return -1;
 	if (ret & ETH_FLAG_LRO)
 		return 1;	/* large receive offloading on */
+#endif
 
 #ifdef ETHTOOL_GGRO
 	/*
