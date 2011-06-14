@@ -237,7 +237,7 @@ bt_activate(pcap_t* handle)
 		goto close_fail;
 	}
 
-	if (handle->opt.buffer_size == 0) {
+	if (handle->opt.buffer_size != 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
 		 */
@@ -342,7 +342,7 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct hci_dev_stats * s = &dev_info.stat;
 	dev_info.dev_id = handle->md.ifindex;
 	
-	/* ingnore eintr */
+	/* ignore eintr */
 	do {
 		ret = ioctl(handle->fd, HCIGETDEVINFO, (void *)&dev_info);
 	} while ((ret == -1) && (errno == EINTR));
