@@ -10745,24 +10745,24 @@ cat >>confdefs.h <<\_ACEOF
 #define PCAP_SUPPORT_USB 1
 _ACEOF
 
-       USB_SRC=pcap-usb-linux.c
-       { echo "$as_me:$LINENO: result: yes" >&5
+	USB_SRC=pcap-usb-linux.c
+	{ echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6; }
-       ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
-       if test $? -ne 0 ; then
-               ac_usb_dev_name="usbmon"
-       fi
+	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
+	if test $? -ne 0 ; then
+	  ac_usb_dev_name="usbmon"
+	fi
 
 cat >>confdefs.h <<_ACEOF
 #define LINUX_USB_MON_DEV "/dev/$ac_usb_dev_name"
 _ACEOF
 
-       { echo "$as_me:$LINENO: Device for USB sniffing is /dev/$ac_usb_dev_name" >&5
+	{ echo "$as_me:$LINENO: Device for USB sniffing is /dev/$ac_usb_dev_name" >&5
 echo "$as_me: Device for USB sniffing is /dev/$ac_usb_dev_name" >&6;}
-       #
-       # Do we have a version of <linux/compiler.h> available?
-       # If so, we might need it for <linux/usbdevice_fs.h>.
-       #
+	#
+	# Do we have a version of <linux/compiler.h> available?
+	# If so, we might need it for <linux/usbdevice_fs.h>.
+	#
 
 for ac_header in linux/compiler.h
 do
@@ -10903,10 +10903,10 @@ fi
 
 done
 
-       if test "$ac_cv_header_linux_compiler_h" = yes; then
-         #
-	 # Yes - include it when testing for <linux/usbdevice_fs.h>.
-	 #
+	if test "$ac_cv_header_linux_compiler_h" = yes; then
+	  #
+	  # Yes - include it when testing for <linux/usbdevice_fs.h>.
+	  #
 
 for ac_header in linux/usbdevice_fs.h
 do
@@ -10965,7 +10965,7 @@ fi
 
 done
 
-       else
+	else
 
 for ac_header in linux/usbdevice_fs.h
 do
@@ -11106,17 +11106,17 @@ fi
 
 done
 
-       fi
-       if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
-         #
-         # OK, does it define bRequestType?  Older versions of the kernel
-         # define fields with names like "requesttype, "request", and
-         # "value", rather than "bRequestType", "bRequest", and
-         # "wValue".
-         #
-         { echo "$as_me:$LINENO: checking if usbdevfs_ctrltransfer struct has bRequestType member" >&5
+	fi
+	if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
+	  #
+	  # OK, does it define bRequestType?  Older versions of the kernel
+	  # define fields with names like "requesttype, "request", and
+	  # "value", rather than "bRequestType", "bRequest", and
+	  # "wValue".
+	  #
+	  { echo "$as_me:$LINENO: checking if usbdevfs_ctrltransfer struct has bRequestType member" >&5
 echo $ECHO_N "checking if usbdevfs_ctrltransfer struct has bRequestType member... $ECHO_C" >&6; }
-         if test "${ac_cv_usbdevfs_ctrltransfer_has_bRequestType+set}" = set; then
+	  if test "${ac_cv_usbdevfs_ctrltransfer_has_bRequestType+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -11133,7 +11133,7 @@ $ac_includes_default
 #ifdef HAVE_LINUX_COMPILER_H
 #include <linux/compiler.h>
 #endif
-#            include <linux/usbdevice_fs.h>
+#include <linux/usbdevice_fs.h>
 int
 main ()
 {
@@ -11170,42 +11170,108 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
-         { echo "$as_me:$LINENO: result: $ac_cv_usbdevfs_ctrltransfer_has_bRequestType" >&5
+	    { echo "$as_me:$LINENO: result: $ac_cv_usbdevfs_ctrltransfer_has_bRequestType" >&5
 echo "${ECHO_T}$ac_cv_usbdevfs_ctrltransfer_has_bRequestType" >&6; }
-         if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
+	    if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 _ACEOF
 
-         fi
-       fi
-       ;;
+	    fi
+	fi
+	;;
 *)
-       { echo "$as_me:$LINENO: result: no" >&5
+	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
-       ;;
+	;;
 esac
 
 
 
-{ echo "$as_me:$LINENO: checking for netfilter sniffing support" >&5
-echo $ECHO_N "checking for netfilter sniffing support... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking whether the platform could support netfilter sniffing" >&5
+echo $ECHO_N "checking whether the platform could support netfilter sniffing... $ECHO_C" >&6; }
 case "$host_os" in
 linux*)
+	{ echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+	#
+	# Life's too short to deal with trying to get this to compile
+	# if you don't get the right types defined with
+	# __KERNEL_STRICT_NAMES getting defined by some other include.
+	#
+	# Check whether the includes Just Work.  If not, don't turn on
+	# netfilter support.
+	#
+	{ echo "$as_me:$LINENO: checking whether we can compile the netfilter support" >&5
+echo $ECHO_N "checking whether we can compile the netfilter support... $ECHO_C" >&6; }
+	if test "${ac_cv_netfilter_can_compile+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+$ac_includes_default
+#include <linux/types.h>
+
+#include <linux/netlink.h>
+#include <linux/netfilter/nfnetlink.h>
+#include <linux/netfilter/nfnetlink_log.h>
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_netfilter_can_compile=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_netfilter_can_compile=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+	{ echo "$as_me:$LINENO: result: $ac_cv_netfilter_can_compile" >&5
+echo "${ECHO_T}$ac_cv_netfilter_can_compile" >&6; }
+	if test $ac_cv_netfilter_can_compile = yes ; then
 
 cat >>confdefs.h <<\_ACEOF
 #define PCAP_SUPPORT_NETFILTER 1
 _ACEOF
 
-       NETFILTER_SRC=pcap-netfilter-linux.c
-       { echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6; }
-       ;;
+	  NETFILTER_SRC=pcap-netfilter-linux.c
+	fi
+	;;
 *)
-       { echo "$as_me:$LINENO: result: no" >&5
+	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
-       ;;
+	;;
 esac
 
 
@@ -11221,7 +11287,7 @@ fi
 if test "x$enable_bluetooth" != "xno" ; then
 		case "$host_os" in
 	linux*)
-	       if test "${ac_cv_header_bluetooth_bluetooth_h+set}" = set; then
+		if test "${ac_cv_header_bluetooth_bluetooth_h+set}" = set; then
   { echo "$as_me:$LINENO: checking for bluetooth/bluetooth.h" >&5
 echo $ECHO_N "checking for bluetooth/bluetooth.h... $ECHO_C" >&6; }
 if test "${ac_cv_header_bluetooth_bluetooth_h+set}" = set; then
@@ -11353,8 +11419,8 @@ cat >>confdefs.h <<\_ACEOF
 #define PCAP_SUPPORT_BT 1
 _ACEOF
 
-	          BT_SRC=pcap-bt-linux.c
-	          { echo "$as_me:$LINENO: Bluetooth sniffing is supported" >&5
+		  BT_SRC=pcap-bt-linux.c
+		  { echo "$as_me:$LINENO: Bluetooth sniffing is supported" >&5
 echo "$as_me: Bluetooth sniffing is supported" >&6;}
 
 else
@@ -11364,11 +11430,11 @@ echo "$as_me: Bluetooth sniffing is not supported; install bluez-lib devel to en
 fi
 
 
-	       ;;
+		;;
 	*)
-	       { echo "$as_me:$LINENO: no Bluetooth sniffing support implemented for $host_os" >&5
+		{ echo "$as_me:$LINENO: no Bluetooth sniffing support implemented for $host_os" >&5
 echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
-	       ;;
+		;;
 	esac
 
 

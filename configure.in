@@ -1254,38 +1254,38 @@ dnl check for USB sniffing support
 AC_MSG_CHECKING(for USB sniffing support)
 case "$host_os" in
 linux*)
-       AC_DEFINE(PCAP_SUPPORT_USB, 1, [target host supports USB sniffing])
-       USB_SRC=pcap-usb-linux.c
-       AC_MSG_RESULT(yes)
-       ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
-       if test $? -ne 0 ; then
-               ac_usb_dev_name="usbmon"
-       fi
-       AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
-       AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
-       #
-       # Do we have a version of <linux/compiler.h> available?
-       # If so, we might need it for <linux/usbdevice_fs.h>.
-       #
-       AC_CHECK_HEADERS(linux/compiler.h)
-       if test "$ac_cv_header_linux_compiler_h" = yes; then
-         #
-	 # Yes - include it when testing for <linux/usbdevice_fs.h>.
-	 #
-         AC_CHECK_HEADERS(linux/usbdevice_fs.h,,,[#include <linux/compiler.h>])
-       else
-         AC_CHECK_HEADERS(linux/usbdevice_fs.h)
-       fi
-       if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
-         #
-         # OK, does it define bRequestType?  Older versions of the kernel
-         # define fields with names like "requesttype, "request", and
-         # "value", rather than "bRequestType", "bRequest", and
-         # "wValue".
-         #
-         AC_MSG_CHECKING(if usbdevfs_ctrltransfer struct has bRequestType member)
-         AC_CACHE_VAL(ac_cv_usbdevfs_ctrltransfer_has_bRequestType,
-           AC_TRY_COMPILE([
+	AC_DEFINE(PCAP_SUPPORT_USB, 1, [target host supports USB sniffing])
+	USB_SRC=pcap-usb-linux.c
+	AC_MSG_RESULT(yes)
+	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
+	if test $? -ne 0 ; then
+	  ac_usb_dev_name="usbmon"
+	fi
+	AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
+	AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
+	#
+	# Do we have a version of <linux/compiler.h> available?
+	# If so, we might need it for <linux/usbdevice_fs.h>.
+	#
+	AC_CHECK_HEADERS(linux/compiler.h)
+	if test "$ac_cv_header_linux_compiler_h" = yes; then
+	  #
+	  # Yes - include it when testing for <linux/usbdevice_fs.h>.
+	  #
+	  AC_CHECK_HEADERS(linux/usbdevice_fs.h,,,[#include <linux/compiler.h>])
+	else
+	  AC_CHECK_HEADERS(linux/usbdevice_fs.h)
+	fi
+	if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
+	  #
+	  # OK, does it define bRequestType?  Older versions of the kernel
+	  # define fields with names like "requesttype, "request", and
+	  # "value", rather than "bRequestType", "bRequest", and
+	  # "wValue".
+	  #
+	  AC_MSG_CHECKING(if usbdevfs_ctrltransfer struct has bRequestType member)
+	  AC_CACHE_VAL(ac_cv_usbdevfs_ctrltransfer_has_bRequestType,
+	    AC_TRY_COMPILE([
 AC_INCLUDES_DEFAULT
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
@@ -1293,35 +1293,59 @@ AC_INCLUDES_DEFAULT
 #ifdef HAVE_LINUX_COMPILER_H
 #include <linux/compiler.h>
 #endif
-#            include <linux/usbdevice_fs.h>],
-             [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
-             ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes,
-             ac_cv_usbdevfs_ctrltransfer_has_bRequestType=no))
-         AC_MSG_RESULT($ac_cv_usbdevfs_ctrltransfer_has_bRequestType)
-         if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
-	    AC_DEFINE(HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE,1,
-              [if struct usbdevfs_ctrltransfer has bRequestType])
-         fi
-       fi
-       ;;
+#include <linux/usbdevice_fs.h>],
+	      [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
+	      ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes,
+	      ac_cv_usbdevfs_ctrltransfer_has_bRequestType=no))
+	    AC_MSG_RESULT($ac_cv_usbdevfs_ctrltransfer_has_bRequestType)
+	    if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
+	      AC_DEFINE(HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE,1,
+	        [if struct usbdevfs_ctrltransfer has bRequestType])
+	    fi
+	fi
+	;;
 *)
-       AC_MSG_RESULT(no)
-       ;;
+	AC_MSG_RESULT(no)
+	;;
 esac
 AC_SUBST(PCAP_SUPPORT_USB)
 AC_SUBST(USB_SRC)
 
 dnl check for netfilter sniffing support
-AC_MSG_CHECKING(for netfilter sniffing support)
+AC_MSG_CHECKING(whether the platform could support netfilter sniffing)
 case "$host_os" in
 linux*)
-       AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1, [target host supports netfilter sniffing])
-       NETFILTER_SRC=pcap-netfilter-linux.c
-       AC_MSG_RESULT(yes)
-       ;;
+	AC_MSG_RESULT(yes)
+	#
+	# Life's too short to deal with trying to get this to compile
+	# if you don't get the right types defined with
+	# __KERNEL_STRICT_NAMES getting defined by some other include.
+	#
+	# Check whether the includes Just Work.  If not, don't turn on
+	# netfilter support.
+	#
+	AC_MSG_CHECKING(whether we can compile the netfilter support)
+	AC_CACHE_VAL(ac_cv_netfilter_can_compile,
+	  AC_TRY_COMPILE([
+AC_INCLUDES_DEFAULT
+#include <linux/types.h>
+
+#include <linux/netlink.h>
+#include <linux/netfilter/nfnetlink.h>
+#include <linux/netfilter/nfnetlink_log.h>],
+	    [],
+	    ac_cv_netfilter_can_compile=yes,
+	    ac_cv_netfilter_can_compile=no))
+	AC_MSG_RESULT($ac_cv_netfilter_can_compile)
+	if test $ac_cv_netfilter_can_compile = yes ; then
+	  AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
+	    [target host supports netfilter sniffing])
+	  NETFILTER_SRC=pcap-netfilter-linux.c
+	fi
+	;;
 *)
-       AC_MSG_RESULT(no)
-       ;;
+	AC_MSG_RESULT(no)
+	;;
 esac
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
 AC_SUBST(NETFILTER_SRC)
@@ -1334,18 +1358,18 @@ if test "x$enable_bluetooth" != "xno" ; then
 	dnl check for Bluetooth sniffing support
 	case "$host_os" in
 	linux*)
-	       AC_CHECK_HEADER(bluetooth/bluetooth.h,
-	       	[
+		AC_CHECK_HEADER(bluetooth/bluetooth.h,
+		[
 		  AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
-	          BT_SRC=pcap-bt-linux.c
-	          AC_MSG_NOTICE(Bluetooth sniffing is supported)
+		  BT_SRC=pcap-bt-linux.c
+		  AC_MSG_NOTICE(Bluetooth sniffing is supported)
 		],
 		AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
-	       )
-	       ;;
+		)
+		;;
 	*)
-	       AC_MSG_NOTICE(no Bluetooth sniffing support implemented for $host_os)
-	       ;;
+		AC_MSG_NOTICE(no Bluetooth sniffing support implemented for $host_os)
+		;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_BT)
 	AC_SUBST(BT_SRC)
