@@ -697,6 +697,8 @@ MAN_FILE_FORMATS
 MAN_MISC_INFO
 PCAP_SUPPORT_USB
 USB_SRC
+PCAP_SUPPORT_NETFILTER
+NETFILTER_SRC
 PCAP_SUPPORT_BT
 BT_SRC
 PCAP_SUPPORT_CAN
@@ -11187,6 +11189,27 @@ esac
 
 
 
+{ echo "$as_me:$LINENO: checking for netfilter sniffing support" >&5
+echo $ECHO_N "checking for netfilter sniffing support... $ECHO_C" >&6; }
+case "$host_os" in
+linux*)
+
+cat >>confdefs.h <<\_ACEOF
+#define PCAP_SUPPORT_NETFILTER 1
+_ACEOF
+
+       NETFILTER_SRC=pcap-netfilter-linux.c
+       { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+       ;;
+*)
+       { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+       ;;
+esac
+
+
+
 # Check whether --enable-bluetooth was given.
 if test "${enable_bluetooth+set}" = set; then
   enableval=$enable_bluetooth;
@@ -12379,6 +12402,8 @@ MAN_FILE_FORMATS!$MAN_FILE_FORMATS$ac_delim
 MAN_MISC_INFO!$MAN_MISC_INFO$ac_delim
 PCAP_SUPPORT_USB!$PCAP_SUPPORT_USB$ac_delim
 USB_SRC!$USB_SRC$ac_delim
+PCAP_SUPPORT_NETFILTER!$PCAP_SUPPORT_NETFILTER$ac_delim
+NETFILTER_SRC!$NETFILTER_SRC$ac_delim
 PCAP_SUPPORT_BT!$PCAP_SUPPORT_BT$ac_delim
 BT_SRC!$BT_SRC$ac_delim
 PCAP_SUPPORT_CAN!$PCAP_SUPPORT_CAN$ac_delim
@@ -12389,7 +12414,7 @@ INSTALL_DATA!$INSTALL_DATA$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 91; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 93; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

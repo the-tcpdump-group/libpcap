@@ -199,6 +199,11 @@ static const char rcsid[] _U_ =
 #include "pcap-can-linux.h"
 #endif
 
+#ifdef PCAP_SUPPORT_NETFILTER
+int netfilter_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
+pcap_t *nflog_create(const char *device, char *ebuf);
+#endif
+
 /*
  * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
  * sockets rather than SOCK_PACKET sockets.
@@ -416,6 +421,12 @@ pcap_create(const char *device, char *ebuf)
 #ifdef PCAP_SUPPORT_USB
 	if (strstr(device, "usbmon")) {
 		return usb_create(device, ebuf);
+	}
+#endif
+
+#ifdef PCAP_SUPPORT_NETFILTER
+	if (strncmp(device, "nflog", strlen("nflog")) == 0) {
+		return nflog_create(device, ebuf);
 	}
 #endif
 
@@ -2196,6 +2207,14 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 * Add USB devices.
 	 */
 	if (usb_platform_finddevs(alldevsp, errbuf) < 0)
+		return (-1);
+#endif
+
+#ifdef PCAP_SUPPORT_NETFILTER
+	/*
+	 * Add netfilter devices.
+	 */
+	if (netfilter_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
 #endif
 
