@@ -2804,9 +2804,28 @@ activate_new(pcap_t *handle)
 		socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
 	if (sock_fd == -1) {
+		if (errno == EINVAL || errno == EAFNOSUPPORT) {
+			/*
+			 * We don't support PF_PACKET/SOCK_whatever
+			 * sockets; try the old mechanism.
+			 */
+			return 0;
+		}
+
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "socket: %s",
 			 pcap_strerror(errno) );
-		return 0;	/* try old mechanism */
+		if (errno == EPERM || errno == EACCES) {
+			/*
+			 * You don't have permission to open the
+			 * socket.
+			 */
+			return PCAP_ERROR_PERM_DENIED;
+		} else {
+			/*
+			 * Other error.
+			 */
+			return PCAP_ERROR;
+		}
 	}
 
 	/* It seems the kernel supports the new interface. */
@@ -2903,7 +2922,18 @@ activate_new(pcap_t *handle)
 			if (sock_fd == -1) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				    "socket: %s", pcap_strerror(errno));
-				return PCAP_ERROR;
+				if (errno == EPERM || errno == EACCES) {
+					/*
+					 * You don't have permission to
+					 * open the socket.
+					 */
+					return PCAP_ERROR_PERM_DENIED;
+				} else {
+					/*
+					 * Other error.
+					 */
+					return PCAP_ERROR;
+				}
 			}
 			handle->md.cooked = 1;
 
@@ -4840,7 +4870,18 @@ activate_old(pcap_t *handle)
 	if (handle->fd == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "socket: %s", pcap_strerror(errno));
-		return PCAP_ERROR_PERM_DENIED;
+		if (errno == EPERM || errno == EACCES) {
+			/*
+			 * You don't have permission to open the
+			 * socket.
+			 */
+			return PCAP_ERROR_PERM_DENIED;
+		} else {
+			/*
+			 * Other error.
+			 */
+			return PCAP_ERROR;
+		}
 	}
 
 	/* It worked - we are using the old interface */
