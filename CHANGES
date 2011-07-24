@@ -1,3 +1,21 @@
+Sunday  July 24, 2011.  mcr@sandelman.ca.
+Summary for 1.2 libpcap release
+        All of the changes listed below for 1.1.1 and 1.1.2.
+        Changes to error handling for pcap_findalldevs().
+        Fix the calculation of the frame size in memory-mapped captures.
+        Add a link-layer header type for STANAG 5066 D_PDUs.
+        Add a link-layer type for a variant of 3GPP TS 27.010.
+        Noted real nature of LINKTYPE_ARCNET.
+        Add a link-layer type for DVB-CI.
+        Fix configure-script discovery of VLAN acceleration support.
+         see http://netoptimizer.blogspot.com/2010/09/tcpdump-vs-vlan-tags.html
+        Linux, HP-UX, AIX, NetBSD and OpenBSD compilation/conflict fixes.
+        Protect against including AIX 5.x's <net/bpf.h> having been included.
+        Add DLT_DBUS, for raw D-Bus messages.
+        Treat either EPERM or EACCES as "no soup for you".
+        Changes to permissions on DLPI systems.
+        Add DLT_IEEE802_15_4_NOFCS for 802.15.4 interfaces.
+
 Fri.    August 6, 2010.  guy@alum.mit.edu.
 Summary for 1.1.2 libpcap release
 	Return DLT_ values, not raw LINKTYPE_ values from
