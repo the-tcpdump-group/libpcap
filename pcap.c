@@ -82,7 +82,7 @@ int
 pcap_not_initialized(pcap_t *pcap)
 {
 	/* this means 'not initialized' */
-	return PCAP_ERROR_NOT_ACTIVATED;
+	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
 /*
@@ -319,45 +319,45 @@ pcap_check_activated(pcap_t *p)
 	if (p->activated) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
 			" operation on activated capture");
-		return -1;
+		return (-1);
 	}
-	return 0;
+	return (0);
 }
 
 int
 pcap_set_snaplen(pcap_t *p, int snaplen)
 {
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 	p->snapshot = snaplen;
-	return 0;
+	return (0);
 }
 
 int
 pcap_set_promisc(pcap_t *p, int promisc)
 {
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 	p->opt.promisc = promisc;
-	return 0;
+	return (0);
 }
 
 int
 pcap_set_rfmon(pcap_t *p, int rfmon)
 {
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 	p->opt.rfmon = rfmon;
-	return 0;
+	return (0);
 }
 
 int
 pcap_set_timeout(pcap_t *p, int timeout_ms)
 {
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 	p->md.timeout = timeout_ms;
-	return 0;
+	return (0);
 }
 
 int
@@ -366,14 +366,14 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 	int i;
 
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 
 	/*
 	 * If p->tstamp_type_count is 0, we don't support setting
 	 * the time stamp type at all.
 	 */
 	if (p->tstamp_type_count == 0)
-		return PCAP_ERROR_CANTSET_TSTAMP_TYPE;
+		return (PCAP_ERROR_CANTSET_TSTAMP_TYPE);
 
 	/*
 	 * Check whether we claim to support this type of time stamp.
@@ -384,7 +384,7 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 			 * Yes.
 			 */
 			p->opt.tstamp_type = tstamp_type;
-			return 0;
+			return (0);
 		}
 	}
 
@@ -392,16 +392,16 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 	 * No.  We support setting the time stamp type, but not to this
 	 * particular value.
 	 */
-	return PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
+	return (PCAP_WARNING_TSTAMP_TYPE_NOTSUP);
 }
 
 int
 pcap_set_buffer_size(pcap_t *p, int buffer_size)
 {
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 	p->opt.buffer_size = buffer_size;
-	return 0;
+	return (0);
 }
 
 int
@@ -409,6 +409,15 @@ pcap_activate(pcap_t *p)
 {
 	int status;
 
+	/*
+	 * Catch attempts to re-activate an already-activated
+	 * pcap_t; this should, for example, catch code that
+	 * calls pcap_open_live() followed by pcap_activate(),
+	 * as some code that showed up in a Stack Exchange
+	 * question did.
+	 */
+	if (pcap_check_activated(p))
+		return (PCAP_ERROR_ACTIVATED);
 	status = p->activate_op(p);
 	if (status >= 0)
 		p->activated = 1;
@@ -485,7 +494,7 @@ fail:
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	return p->read_op(p, cnt, callback, user);
+	return (p->read_op(p, cnt, callback, user));
 }
 
 /*
@@ -495,7 +504,7 @@ int
 pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 
-	return p->read_op(p, cnt, callback, user);
+	return (p->read_op(p, cnt, callback, user));
 }
 
 int
@@ -1009,7 +1018,7 @@ pcap_geterr(pcap_t *p)
 int
 pcap_getnonblock(pcap_t *p, char *errbuf)
 {
-	return p->getnonblock_op(p, errbuf);
+	return (p->getnonblock_op(p, errbuf));
 }
 
 /*
@@ -1041,7 +1050,7 @@ pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 int
 pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
-	return p->setnonblock_op(p, nonblock, errbuf);
+	return (p->setnonblock_op(p, nonblock, errbuf));
 }
 
 #if !defined(WIN32) && !defined(MSDOS)
@@ -1187,7 +1196,7 @@ pcap_strerror(int errnum)
 int
 pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
-	return p->setfilter_op(p, fp);
+	return (p->setfilter_op(p, fp));
 }
 
 /*
@@ -1202,15 +1211,15 @@ pcap_setdirection(pcap_t *p, pcap_direction_t d)
 	if (p->setdirection_op == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Setting direction is not implemented on this platform");
-		return -1;
+		return (-1);
 	} else
-		return p->setdirection_op(p, d);
+		return (p->setdirection_op(p, d));
 }
 
 int
 pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
-	return p->stats_op(p, ps);
+	return (p->stats_op(p, ps));
 }
 
 static int
@@ -1225,7 +1234,7 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 int
 pcap_setbuff(pcap_t *p, int dim)
 {
-	return p->setbuff_op(p, dim);
+	return (p->setbuff_op(p, dim));
 }
 
 static int
@@ -1239,7 +1248,7 @@ pcap_setbuff_dead(pcap_t *p, int dim)
 int
 pcap_setmode(pcap_t *p, int mode)
 {
-	return p->setmode_op(p, mode);
+	return (p->setmode_op(p, mode));
 }
 
 static int
@@ -1253,7 +1262,7 @@ pcap_setmode_dead(pcap_t *p, int mode)
 int
 pcap_setmintocopy(pcap_t *p, int size)
 {
-	return p->setmintocopy_op(p, size);
+	return (p->setmintocopy_op(p, size));
 }
 
 static int
@@ -1407,7 +1416,7 @@ pcap_open_dead(int linktype, int snaplen)
 #endif
 	p->cleanup_op = pcap_cleanup_dead;
 	p->activated = 1;
-	return p;
+	return (p);
 }
 
 /*
