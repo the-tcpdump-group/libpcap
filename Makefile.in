@@ -137,6 +137,7 @@ TESTS_SRC = \
 	tests/findalldevstest.c \
 	tests/nonblocktest.c \
 	tests/opentest.c \
+	tests/reactivatetest.c \
 	tests/selpolltest.c
 
 GENHDR = \
