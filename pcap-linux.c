@@ -4789,18 +4789,23 @@ iface_get_offload(pcap_t *handle)
 {
 	int ret;
 
+#ifdef ETHTOOL_GTSO
 	ret = iface_ethtool_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO");
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* TCP segmentation offloading on */
+#endif
 
+#ifdef ETHTOOL_GUFO
 	ret = iface_ethtool_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO");
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* UDP fragmentation offloading on */
+#endif
 
+#ifdef ETHTOOL_GGSO
 	/*
 	 * XXX - will this cause large unsegmented packets to be
 	 * handed to PF_PACKET sockets on transmission?  If not,
@@ -4811,6 +4816,7 @@ iface_get_offload(pcap_t *handle)
 		return -1;
 	if (ret)
 		return 1;	/* generic segmentation offloading on */
+#endif
 
 #ifdef ETHTOOL_GFLAGS
 	ret = iface_ethtool_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
