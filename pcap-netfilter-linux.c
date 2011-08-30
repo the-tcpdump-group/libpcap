@@ -92,34 +92,42 @@ nflog_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char 
 		if (NFNL_SUBSYS_ID(nlh->nlmsg_type) == NFNL_SUBSYS_ULOG && 
 			NFNL_MSG_TYPE(nlh->nlmsg_type) == NFULNL_MSG_PACKET) 
 		{
-			const struct nfattr *payload_attr = NULL;
+			const unsigned char *payload = NULL;
+			struct pcap_pkthdr pkth;
 
-			if (nlh->nlmsg_len < HDR_LENGTH) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Malformed message: (nlmsg_len: %u)", nlh->nlmsg_len);
-				return -1;
-			}
+			if (handle->linktype != DLT_NFLOG) {
+				const struct nfattr *payload_attr = NULL;
 
-			if (nlh->nlmsg_len > HDR_LENGTH) {
-				struct nfattr *attr = NFM_NFA(NLMSG_DATA(nlh));
-				int attr_len = nlh->nlmsg_len - NLMSG_ALIGN(HDR_LENGTH);
-
-				while (NFA_OK(attr, attr_len)) {
-					switch (NFA_TYPE(attr)) {
-						case NFULA_PAYLOAD:
-							payload_attr = attr;
-							break;
-					}
-					attr = NFA_NEXT(attr, attr_len);
+				if (nlh->nlmsg_len < HDR_LENGTH) {
+					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Malformed message: (nlmsg_len: %u)", nlh->nlmsg_len);
+					return -1;
 				}
+
+				if (nlh->nlmsg_len > HDR_LENGTH) {
+					struct nfattr *attr = NFM_NFA(NLMSG_DATA(nlh));
+					int attr_len = nlh->nlmsg_len - NLMSG_ALIGN(HDR_LENGTH);
+
+					while (NFA_OK(attr, attr_len)) {
+						switch (NFA_TYPE(attr)) {
+							case NFULA_PAYLOAD:
+								payload_attr = attr;
+								break;
+						}
+						attr = NFA_NEXT(attr, attr_len);
+					}
+				}
+
+				if (payload_attr) {
+					payload = NFA_DATA(payload_attr);
+					pkth.len = pkth.caplen = NFA_PAYLOAD(payload_attr);
+				}
+
+			} else {
+				payload = NLMSG_DATA(nlh);
+				pkth.caplen = pkth.len = nlh->nlmsg_len-NLMSG_ALIGN(sizeof(struct nlmsghdr));
 			}
 
-			if (payload_attr) {
-				struct pcap_pkthdr pkth;
-
-				const unsigned char *payload = NFA_DATA(payload_attr);
-				int payload_len = NFA_PAYLOAD(payload_attr);
-
-				pkth.len = pkth.caplen = payload_len;
+			if (payload) {
 				/* pkth.caplen = min (payload_len, handle->snapshot); */
 
 				gettimeofday(&pkth.ts, NULL);
@@ -141,6 +149,13 @@ nflog_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char 
 		buf += msg_len;
 	}
 	return count;
+}
+
+static int
+netfilter_set_datalink(pcap_t *handle, int dlt)
+{
+	handle->linktype = dlt;
+	return 0;
 }
 
 static int
@@ -334,12 +349,13 @@ nflog_activate(pcap_t* handle)
 	/* Initialize some components of the pcap structure. */
 	handle->bufsize = 128 + handle->snapshot;
 	handle->offset = 0;
-	handle->linktype = DLT_IPV4;
+	handle->linktype = DLT_NFLOG;
 	handle->read_op = nflog_read_linux;
 	handle->inject_op = netfilter_inject_linux;
 	handle->setfilter_op = install_bpf_program; /* no kernel filtering */
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;
+	handle->set_datalink_op = netfilter_set_datalink;
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->stats_op = netfilter_stats_linux;
@@ -349,6 +365,13 @@ nflog_activate(pcap_t* handle)
 	if (handle->fd < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s", errno, pcap_strerror(errno));
 		return PCAP_ERROR;
+	}
+
+	handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+	if (handle->dlt_list != NULL) {
+		handle->dlt_list[0] = DLT_NFLOG;
+		handle->dlt_list[1] = DLT_IPV4;
+		handle->dlt_count = 2;
 	}
 
 	handle->buffer = malloc(handle->bufsize);
