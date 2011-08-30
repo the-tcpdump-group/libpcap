@@ -779,6 +779,14 @@
  */
 #define LINKTYPE_JUNIPER_ATM_CEMIC		238
 
+/*
+ * NetFilter LOG messages 
+ * (payload of netlink NFNL_SUBSYS_ULOG/NFULNL_MSG_PACKET packets)
+ *
+ * Requested by Jakub Zawadzki <darkjames-ws@darkjames.pl>
+ */
+#define LINKTYPE_NFLOG				239
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -1150,6 +1158,9 @@ static struct linktype_map {
 
         /* Juniper ATM CE MIC */
 	{ DLT_JUNIPER_ATM_CEMIC, LINKTYPE_JUNIPER_ATM_CEMIC },
+
+        /* Linux NetFilter LOG messages */
+	{ DLT_NFLOG,		LINKTYPE_NFLOG },
 
 	{ -1,			-1 }
 };

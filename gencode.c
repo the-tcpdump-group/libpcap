@@ -1608,6 +1608,16 @@ init_linktype(p)
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
+
+	case DLT_NFLOG:
+		/*
+		 * Currently, only raw "link[N:M]" filtering is supported.
+		 */
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */

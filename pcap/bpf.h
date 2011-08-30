@@ -1031,6 +1031,14 @@ struct bpf_program {
  * Hannes Gredler <hannes@juniper.net>.
  */
 #define DLT_JUNIPER_ATM_CEMIC		238
+
+/*
+ * NetFilter LOG messages 
+ * (payload of netlink NFNL_SUBSYS_ULOG/NFULNL_MSG_PACKET packets)
+ *
+ * Requested by Jakub Zawadzki <darkjames-ws@darkjames.pl>
+ */
+#define DLT_NFLOG			239
  
 /*
  * DLT and savefile link type values are split into a class and
