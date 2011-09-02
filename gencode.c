@@ -5976,6 +5976,11 @@ gen_proto(v, proto, dir)
 	int dir;
 {
 	struct block *b0, *b1;
+#ifdef INET6
+#ifndef CHASE_CHAIN
+	struct block *b2;
+#endif
+#endif
 
 	if (dir != Q_DEFAULT)
 		bpf_error("direction applied to 'proto'");
@@ -6140,7 +6145,15 @@ gen_proto(v, proto, dir)
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
 #ifndef CHASE_CHAIN
-		b1 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)v);
+		/*
+		 * Also check for a fragment header before the final
+		 * header.
+		 */
+		b2 = gen_cmp(OR_NET, 6, BPF_B, IPPROTO_FRAGMENT);
+		b1 = gen_cmp(OR_NET, 40, BPF_B, (bpf_int32)v);
+		gen_and(b2, b1);
+		b2 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)v);
+		gen_or(b2, b1);
 #else
 		b1 = gen_protochain(v, Q_IPV6);
 #endif
