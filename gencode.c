@@ -5160,7 +5160,7 @@ gen_ipfrag()
 	struct slist *s;
 	struct block *b;
 
-	/* not ip frag */
+	/* not IPv4 frag other than the first frag */
 	s = gen_load_a(OR_NET, 6, BPF_H);
 	b = new_block(JMP(BPF_JSET));
 	b->s.k = 0x1fff;
@@ -5203,7 +5203,7 @@ gen_portop(port, proto, dir)
 {
 	struct block *b0, *b1, *tmp;
 
-	/* ip proto 'proto' */
+	/* ip proto 'proto' and not a fragment other than the first fragment */
 	tmp = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)proto);
 	b0 = gen_ipfrag();
 	gen_and(tmp, b0);
@@ -5295,6 +5295,7 @@ gen_portop6(port, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip6 proto 'proto' */
+	/* XXX - catch the first fragment of a fragmented packet? */
 	b0 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
@@ -5396,7 +5397,7 @@ gen_portrangeop(port1, port2, proto, dir)
 {
 	struct block *b0, *b1, *tmp;
 
-	/* ip proto 'proto' */
+	/* ip proto 'proto' and not a fragment other than the first fragment */
 	tmp = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)proto);
 	b0 = gen_ipfrag();
 	gen_and(tmp, b0);
@@ -5500,6 +5501,7 @@ gen_portrangeop6(port1, port2, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip6 proto 'proto' */
+	/* XXX - catch the first fragment of a fragmented packet? */
 	b0 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
