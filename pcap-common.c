@@ -787,6 +787,26 @@
  */
 #define LINKTYPE_NFLOG				239
 
+/*
+ * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
+ * for Ethernet packets with a 4-byte pseudo-header and always
+ * with the payload including the FCS.
+ *
+ * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
+ */
+#define LINKTYPE_ETHERNET_HILSCHER		240
+
+/*
+ * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
+ * for Ethernet packets with a 4-byte pseudo-header and FCS and
+ * with the Ethernet header preceded by 7 bytes of preamble and
+ * 1 byte of SFD.
+ *
+ * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
+ */
+#define LINKTYPE_ETHERNET_HILSCHER_TRANSPARENT	241
+
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
@@ -1161,6 +1181,12 @@ static struct linktype_map {
 
         /* Linux NetFilter LOG messages */
 	{ DLT_NFLOG,		LINKTYPE_NFLOG },
+
+	/* Ethernet with Hilscher pseudo-header */
+	{ DLT_ETHERNET_HILSCHER, LINKTYPE_ETHERNET_HILSCHER },
+
+	/* Ethernet with Hilscher pseudo-header and preamble/SFD */
+	{ DLT_ETHERNET_HILSCHER_TRANSPARENT, LINKTYPE_ETHERNET_HILSCHER_TRANSPARENT },
 
 	{ -1,			-1 }
 };
