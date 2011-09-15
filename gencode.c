@@ -772,7 +772,8 @@ static int reg_off_ll;
  * This is the offset of the beginning of the MAC-layer header from
  * the beginning of the link-layer header.
  * It's usually 0, except for ATM LANE, where it's the offset, relative
- * to the beginning of the raw packet data, of the Ethernet header.
+ * to the beginning of the raw packet data, of the Ethernet header, and
+ * for Ethernet with various additional information.
  */
 static u_int off_mac;
 
@@ -1620,6 +1621,7 @@ init_linktype(p)
 		return;
 
 	case DLT_ETHERNET_HILSCHER:
+		off_mac = 4;		/* MAC header is past 4-byte pseudo-header */
 		off_linktype = 16;	/* includes 4-byte pseudo-header */
 		off_macpl = 18;		/* pseudo-header+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
@@ -1627,6 +1629,7 @@ init_linktype(p)
 		return;
 
 	case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+		off_mac = 12;		/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
 		off_linktype = 24;	/* includes 4-byte pseudo-header+preamble+SFD */
 		off_macpl = 26;		/* pseudo-header+preamble+SFD+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
