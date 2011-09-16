@@ -1043,21 +1043,23 @@ struct bpf_program {
 /*
  * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
  * for Ethernet packets with a 4-byte pseudo-header and always
- * with the payload including the FCS.
+ * with the payload including the FCS, as supplied by their
+ * netANALYZER hardware and software.
  *
  * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
  */
-#define DLT_ETHERNET_HILSCHER		240
+#define DLT_NETANALYZER			240
 
 /*
  * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
  * for Ethernet packets with a 4-byte pseudo-header and FCS and
  * with the Ethernet header preceded by 7 bytes of preamble and
- * 1 byte of SFD.
+ * 1 byte of SFD, as supplied by their netANALYZER hardware and
+ * software.
  *
  * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
  */
-#define DLT_ETHERNET_HILSCHER_TRANSPARENT	241
+#define DLT_NETANALYZER_TRANSPARENT	241
 
 
 /*

@@ -862,8 +862,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_DVB_CI, "DVB-CI"),
 	DLT_CHOICE(DLT_JUNIPER_ATM_CEMIC, "Juniper ATM CEMIC"),
 	DLT_CHOICE(DLT_NFLOG, "Linux netfilter log messages"),
-	DLT_CHOICE(DLT_ETHERNET_HILSCHER, "Ethernet with Hilscher pseudo-header"),
-	DLT_CHOICE(DLT_ETHERNET_HILSCHER_TRANSPARENT, "Ethernet with Hilscher pseudo-header and preamble/SFD"),
+	DLT_CHOICE(DLT_NETANALYZER, "Ethernet with Hilscher netANALYZER pseudo-header"),
+	DLT_CHOICE(DLT_NETANALYZER_TRANSPARENT, "Ethernet with Hilscher netANALYZER pseudo-header and with preamble and SFD"),
 	DLT_CHOICE_SENTINEL
 };
 
