@@ -790,21 +790,22 @@
 /*
  * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
  * for Ethernet packets with a 4-byte pseudo-header and always
- * with the payload including the FCS.
+ * with the payload including the FCS, as supplied by their
+ * netANALYZER hardware and software.
  *
  * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
  */
-#define LINKTYPE_ETHERNET_HILSCHER		240
+#define LINKTYPE_NETANALYZER		240
 
 /*
  * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
  * for Ethernet packets with a 4-byte pseudo-header and FCS and
- * with the Ethernet header preceded by 7 bytes of preamble and
- * 1 byte of SFD.
+ * 1 byte of SFD, as supplied by their netANALYZER hardware and
+ * software.
  *
  * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
  */
-#define LINKTYPE_ETHERNET_HILSCHER_TRANSPARENT	241
+#define LINKTYPE_NETANALYZER_TRANSPARENT	241
 
 
 static struct linktype_map {
@@ -1182,11 +1183,11 @@ static struct linktype_map {
         /* Linux NetFilter LOG messages */
 	{ DLT_NFLOG,		LINKTYPE_NFLOG },
 
-	/* Ethernet with Hilscher pseudo-header */
-	{ DLT_ETHERNET_HILSCHER, LINKTYPE_ETHERNET_HILSCHER },
+	/* Ethernet with Hilscher netANALYZER pseudo-header */
+	{ DLT_NETANALYZER,	LINKTYPE_NETANALYZER },
 
-	/* Ethernet with Hilscher pseudo-header and preamble/SFD */
-	{ DLT_ETHERNET_HILSCHER_TRANSPARENT, LINKTYPE_ETHERNET_HILSCHER_TRANSPARENT },
+	/* Ethernet with Hilscher netANALYZER pseudo-header and with preamble/SFD */
+	{ DLT_NETANALYZER_TRANSPARENT, LINKTYPE_NETANALYZER_TRANSPARENT },
 
 	{ -1,			-1 }
 };

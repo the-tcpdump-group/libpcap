@@ -1620,7 +1620,7 @@ init_linktype(p)
 		off_nl_nosnap = -1;
 		return;
 
-	case DLT_ETHERNET_HILSCHER:
+	case DLT_NETANALYZER:
 		off_mac = 4;		/* MAC header is past 4-byte pseudo-header */
 		off_linktype = 16;	/* includes 4-byte pseudo-header */
 		off_macpl = 18;		/* pseudo-header+Ethernet header length */
@@ -1628,7 +1628,7 @@ init_linktype(p)
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
 
-	case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+	case DLT_NETANALYZER_TRANSPARENT:
 		off_mac = 12;		/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
 		off_linktype = 24;	/* includes 4-byte pseudo-header+preamble+SFD */
 		off_macpl = 26;		/* pseudo-header+preamble+SFD+Ethernet header length */
@@ -3106,8 +3106,8 @@ gen_linktype(proto)
 	switch (linktype) {
 
 	case DLT_EN10MB:
-	case DLT_ETHERNET_HILSCHER:
-	case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+	case DLT_NETANALYZER:
+	case DLT_NETANALYZER_TRANSPARENT:
 		return gen_ether_linktype(proto);
 		/*NOTREACHED*/
 		break;
@@ -4869,8 +4869,8 @@ gen_gateway(eaddr, alist, proto, dir)
 	case Q_RARP:
 		switch (linktype) {
 		case DLT_EN10MB:
-		case DLT_ETHERNET_HILSCHER:
-		case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+		case DLT_NETANALYZER:
+		case DLT_NETANALYZER_TRANSPARENT:
 			b0 = gen_ehostop(eaddr, Q_OR);
 			break;
 		case DLT_FDDI:
@@ -6255,8 +6255,8 @@ gen_scode(name, q)
 			switch (linktype) {
 
 			case DLT_EN10MB:
-			case DLT_ETHERNET_HILSCHER:
-			case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+			case DLT_NETANALYZER:
+			case DLT_NETANALYZER_TRANSPARENT:
 				eaddr = pcap_ether_hostton(name);
 				if (eaddr == NULL)
 					bpf_error(
@@ -6776,8 +6776,8 @@ gen_ecode(eaddr, q)
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
 		switch (linktype) {
 		case DLT_EN10MB:
-		case DLT_ETHERNET_HILSCHER:
-		case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+		case DLT_NETANALYZER:
+		case DLT_NETANALYZER_TRANSPARENT:
 			return gen_ehostop(eaddr, (int)q.dir);
 		case DLT_FDDI:
 			return gen_fhostop(eaddr, (int)q.dir);
@@ -7381,8 +7381,8 @@ gen_broadcast(proto)
 		case DLT_ARCNET_LINUX:
 			return gen_ahostop(abroadcast, Q_DST);
 		case DLT_EN10MB:
-		case DLT_ETHERNET_HILSCHER:
-		case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+		case DLT_NETANALYZER:
+		case DLT_NETANALYZER_TRANSPARENT:
 			return gen_ehostop(ebroadcast, Q_DST);
 		case DLT_FDDI:
 			return gen_fhostop(ebroadcast, Q_DST);
@@ -7478,8 +7478,8 @@ gen_multicast(proto)
 			/* all ARCnet multicasts use the same address */
 			return gen_ahostop(abroadcast, Q_DST);
 		case DLT_EN10MB:
-		case DLT_ETHERNET_HILSCHER:
-		case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+		case DLT_NETANALYZER:
+		case DLT_NETANALYZER_TRANSPARENT:
 			/* ether[0] & 1 != 0 */
 			return gen_mac_multicast(0);
 		case DLT_FDDI:
@@ -8106,8 +8106,8 @@ gen_vlan(vlan_num)
 	switch (linktype) {
 
 	case DLT_EN10MB:
-	case DLT_ETHERNET_HILSCHER:
-	case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+	case DLT_NETANALYZER:
+	case DLT_NETANALYZER_TRANSPARENT:
 		/* check for VLAN */
 		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 		    (bpf_int32)ETHERTYPE_8021Q);
@@ -8171,8 +8171,8 @@ gen_mpls(label_num)
                 
             case DLT_C_HDLC: /* fall through */
             case DLT_EN10MB:
-            case DLT_ETHERNET_HILSCHER:
-            case DLT_ETHERNET_HILSCHER_TRANSPARENT:
+            case DLT_NETANALYZER:
+            case DLT_NETANALYZER_TRANSPARENT:
                     b0 = gen_linktype(ETHERTYPE_MPLS);
                     break;
                 
