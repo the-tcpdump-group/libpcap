@@ -272,7 +272,7 @@ pfaction_to_num(const char *action)
 
 %token  DST SRC HOST GATEWAY
 %token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
-%token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP
+%token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP CARP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
 %token  NUM INBOUND OUTBOUND
@@ -466,6 +466,7 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| IGRP			{ $$ = Q_IGRP; }
 	| PIM			{ $$ = Q_PIM; }
 	| VRRP			{ $$ = Q_VRRP; }
+	| CARP 			{ $$ = Q_CARP; }
 	| ATALK			{ $$ = Q_ATALK; }
 	| AARP			{ $$ = Q_AARP; }
 	| DECNET		{ $$ = Q_DECNET; }

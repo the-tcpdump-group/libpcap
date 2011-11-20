@@ -4666,6 +4666,9 @@ gen_host(addr, mask, proto, dir, type)
 	case Q_VRRP:
 		bpf_error("'vrrp' modifier applied to %s", typestr);
 
+	case Q_CARP:
+		bpf_error("'carp' modifier applied to %s", typestr);
+
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
 
@@ -4784,6 +4787,9 @@ gen_host6(addr, mask, proto, dir, type)
 
 	case Q_VRRP:
 		bpf_error("'vrrp' modifier applied to %s", typestr);
+
+	case Q_CARP:
+		bpf_error("'carp' modifier applied to %s", typestr);
 
 	case Q_ATALK:
 		bpf_error("ATALK host filtering not implemented");
@@ -4998,6 +5004,14 @@ gen_proto_abbrev(proto)
 
 	case Q_VRRP:
 		b1 = gen_proto(IPPROTO_VRRP, Q_IP, Q_DEFAULT);
+		break;
+
+#ifndef IPPROTO_CARP
+#define IPPROTO_CARP	112
+#endif
+
+	case Q_CARP:
+		b1 = gen_proto(IPPROTO_CARP, Q_IP, Q_DEFAULT);
 		break;
 
 	case Q_IP:
@@ -6159,6 +6173,10 @@ gen_proto(v, proto, dir)
 		bpf_error("'vrrp proto' is bogus");
 		/* NOTREACHED */
 
+	case Q_CARP:
+		bpf_error("'carp proto' is bogus");
+		/* NOTREACHED */
+
 #ifdef INET6
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
@@ -7020,6 +7038,7 @@ gen_load(proto, inst, size)
 	case Q_IGRP:
 	case Q_PIM:
 	case Q_VRRP:
+	case Q_CARP:
 		/*
 		 * The offset is relative to the beginning of
 		 * the transport-layer header.
