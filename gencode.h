@@ -126,6 +126,8 @@
 
 #define Q_RADIO		40
 
+#define Q_CARP		41
+
 /* Directional qualifiers. */
 
 #define Q_SRC		1

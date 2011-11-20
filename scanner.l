@@ -203,6 +203,7 @@ igmp		return IGMP;
 igrp		return IGRP;
 pim		return PIM;
 vrrp		return VRRP;
+carp		return CARP;
 radio		return RADIO;
 
 ip6		{
