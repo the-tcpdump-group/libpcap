@@ -807,6 +807,13 @@
  */
 #define LINKTYPE_NETANALYZER_TRANSPARENT	241
 
+/*
+ * IP-over-Infiniband, as specified by RFC 4391.
+ *
+ * Requested by Petr Sumbera <petr.sumbera@oracle.com>.
+ */
+#define LINKTYPE_IPOIB				242
+
 
 static struct linktype_map {
 	int	dlt;
@@ -1188,6 +1195,9 @@ static struct linktype_map {
 
 	/* Ethernet with Hilscher netANALYZER pseudo-header and with preamble/SFD */
 	{ DLT_NETANALYZER_TRANSPARENT, LINKTYPE_NETANALYZER_TRANSPARENT },
+
+	/* RFC 4391 IP-over-Infiniband */
+	{ DLT_IPOIB,		LINKTYPE_IPOIB },
 
 	{ -1,			-1 }
 };

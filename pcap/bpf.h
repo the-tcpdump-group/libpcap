@@ -1061,6 +1061,13 @@ struct bpf_program {
  */
 #define DLT_NETANALYZER_TRANSPARENT	241
 
+/*
+ * IP-over-Infiniband, as specified by RFC 4391.
+ *
+ * Requested by Petr Sumbera <petr.sumbera@oracle.com>.
+ */
+#define DLT_IPOIB			242
+
 
 /*
  * DLT and savefile link type values are split into a class and
