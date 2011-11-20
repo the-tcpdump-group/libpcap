@@ -8095,9 +8095,13 @@ gen_vlan(vlan_num)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
-		/* check for VLAN */
+		/* check for VLAN, including QinQ */
 		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 		    (bpf_int32)ETHERTYPE_8021Q);
+		b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+		    (bpf_int32)ETHERTYPE_8021QINQ);
+		gen_or(b0,b1);
+		b0 = b1;
 
 		/* If a specific VLAN is requested, check VLAN id */
 		if (vlan_num >= 0) {
