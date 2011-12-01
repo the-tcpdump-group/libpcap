@@ -1890,8 +1890,20 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	int ret = 1;
 
 	sys_class_net_d = opendir("/sys/class/net");
-	if (sys_class_net_d == NULL && errno == ENOENT)
-		return (0);
+	if (sys_class_net_d == NULL) {
+		/*
+		 * Don't fail if it doesn't exist at all.
+		 */
+		if (errno == ENOENT)
+			return (0);
+
+		/*
+		 * Fail if we got some other error.
+		 */
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Can't open /sys/class/net: %s", pcap_strerror(errno));
+		return (-1);
+	}
 
 	/*
 	 * Create a socket from which to fetch interface information.
@@ -2024,8 +2036,20 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	int ret = 0;
 
 	proc_net_f = fopen("/proc/net/dev", "r");
-	if (proc_net_f == NULL && errno == ENOENT)
-		return (0);
+	if (proc_net_f == NULL) {
+		/*
+		 * Don't fail if it doesn't exist at all.
+		 */
+		if (errno == ENOENT)
+			return (0);
+
+		/*
+		 * Fail if we got some other error.
+		 */
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Can't open /proc/net/dev: %s", pcap_strerror(errno));
+		return (-1);
+	}
 
 	/*
 	 * Create a socket from which to fetch interface information.
