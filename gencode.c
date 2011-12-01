@@ -5814,12 +5814,9 @@ gen_protochain(v, proto, dir)
 
 		/*
 		 * in short,
-		 * A = P[X];
-		 * X = X + (P[X + 1] + 1) * 8;
+		 * A = P[X + packet head];
+		 * X = X + (P[X + packet head + 1] + 1) * 8;
 		 */
-		/* A = X */
-		s[i] = new_stmt(BPF_MISC|BPF_TXA);
-		i++;
 		/* A = P[X + packet head] */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
 		s[i]->s.k = off_macpl + off_nl;
@@ -5828,19 +5825,9 @@ gen_protochain(v, proto, dir)
 		s[i] = new_stmt(BPF_ST);
 		s[i]->s.k = reg2;
 		i++;
-		/* A = X */
-		s[i] = new_stmt(BPF_MISC|BPF_TXA);
-		i++;
-		/* A += 1 */
-		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
-		s[i]->s.k = 1;
-		i++;
-		/* X = A */
-		s[i] = new_stmt(BPF_MISC|BPF_TAX);
-		i++;
-		/* A = P[X + packet head]; */
+		/* A = P[X + packet head + 1]; */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = off_macpl + off_nl;
+		s[i]->s.k = off_macpl + off_nl + 1;
 		i++;
 		/* A += 1 */
 		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
@@ -5849,6 +5836,10 @@ gen_protochain(v, proto, dir)
 		/* A *= 8 */
 		s[i] = new_stmt(BPF_ALU|BPF_MUL|BPF_K);
 		s[i]->s.k = 8;
+		i++;
+		/* A += X */
+		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_X);
+		s[i]->s.k = 0;
 		i++;
 		/* X = A; */
 		s[i] = new_stmt(BPF_MISC|BPF_TAX);
