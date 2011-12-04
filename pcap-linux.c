@@ -138,39 +138,6 @@ static const char rcsid[] _U_ =
 #include <poll.h>
 #include <dirent.h>
 
-#ifdef HAVE_LINUX_NET_TSTAMP_H
-#include <linux/net_tstamp.h>
-#include <linux/sockios.h>
-#endif
-
-/*
- * Got Wireless Extensions?
- */
-#ifdef HAVE_LINUX_WIRELESS_H
-#include <linux/wireless.h>
-#endif /* HAVE_LINUX_WIRELESS_H */
-
-/*
- * Got libnl?
- */
-#ifdef HAVE_LIBNL
-#include <linux/nl80211.h>
-
-#include <netlink/genl/genl.h>
-#include <netlink/genl/family.h>
-#include <netlink/genl/ctrl.h>
-#include <netlink/msg.h>
-#include <netlink/attr.h>
-#endif /* HAVE_LIBNL */
-
-/*
- * Got ethtool support?
- */
-#ifdef HAVE_LINUX_ETHTOOL_H
-#include <linux/ethtool.h>
-#include <linux/sockios.h>
-#endif /* HAVE_LINUX_ETHTOOL_H */
-
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
@@ -266,6 +233,46 @@ pcap_t *nflog_create(const char *device, char *ebuf);
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
 #include <linux/filter.h>
+#endif
+
+/*
+ * We need linux/sockios.h if we have linux/net_tstamp.h (for time stamp
+ * specification) or linux/ethtool.h (for ethtool ioctls to get offloading
+ * information).
+ */
+#if defined(HAVE_LINUX_NET_TSTAMP_H) || defined(HAVE_LINUX_ETHTOOL_H)
+#include <linux/sockios.h>
+#endif
+
+#ifdef HAVE_LINUX_NET_TSTAMP_H
+#include <linux/net_tstamp.h>
+#endif
+
+/*
+ * Got Wireless Extensions?
+ */
+#ifdef HAVE_LINUX_WIRELESS_H
+#include <linux/wireless.h>
+#endif /* HAVE_LINUX_WIRELESS_H */
+
+/*
+ * Got libnl?
+ */
+#ifdef HAVE_LIBNL
+#include <linux/nl80211.h>
+
+#include <netlink/genl/genl.h>
+#include <netlink/genl/family.h>
+#include <netlink/genl/ctrl.h>
+#include <netlink/msg.h>
+#include <netlink/attr.h>
+#endif /* HAVE_LIBNL */
+
+/*
+ * Got ethtool support?
+ */
+#ifdef HAVE_LINUX_ETHTOOL_H
+#include <linux/ethtool.h>
 #endif
 
 #ifndef HAVE_SOCKLEN_T
@@ -4778,8 +4785,13 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 
 /*
  * Find out if we have any form of fragmentation/reassembly offloading.
+ *
+ * We do so using SIOCETHTOOL checking for various types of offloading;
+ * if SIOCETHTOOL isn't defined, or we don't have any #defines for any
+ * of the types of offloading, there's nothing we can do to check, so
+ * we just say "no, we don't".
  */
-#ifdef SIOCETHTOOL
+#if defined(SIOCETHTOOL) && (defined(ETHTOOL_GTSO) || defined(ETHTOOL_GUFO) || defined(ETHTOOL_GGSO) || defined(ETHTOOL_GFLAGS) || defined(ETHTOOL_GGRO))
 static int
 iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 {

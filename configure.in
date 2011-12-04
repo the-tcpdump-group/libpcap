@@ -465,7 +465,11 @@ linux)
 		])
 	fi
 
-	AC_CHECK_HEADERS(linux/ethtool.h)
+	AC_CHECK_HEADERS(linux/ethtool.h,,,
+	    [
+AC_INCLUDES_DEFAULT
+#include <linux/types.h>
+	    ])
 	AC_LBL_TPACKET_STATS
 	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 	;;
