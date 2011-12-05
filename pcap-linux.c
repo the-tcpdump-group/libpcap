@@ -1071,6 +1071,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 	int ret;
 #endif /* HAVE_LIBNL */
 #ifdef IW_MODE_MONITOR
+	int oldflags;
 	struct iwreq ireq;
 #endif /* IW_MODE_MONITOR */
 
@@ -1094,10 +1095,10 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			    sizeof(ifr.ifr_name));
 			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 				fprintf(stderr,
-				    "Can't restore interface flags (SIOCGIFFLAGS failed: %s).\n"
+				    "Can't restore interface %s flags (SIOCGIFFLAGS failed: %s).\n"
 				    "Please adjust manually.\n"
 				    "Hint: This can't happen with Linux >= 2.2.0.\n",
-				    strerror(errno));
+				    handle->md.device, strerror(errno));
 			} else {
 				if (ifr.ifr_flags & IFF_PROMISC) {
 					/*
@@ -1108,9 +1109,10 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 					if (ioctl(handle->fd, SIOCSIFFLAGS,
 					    &ifr) == -1) {
 						fprintf(stderr,
-						    "Can't restore interface flags (SIOCSIFFLAGS failed: %s).\n"
+						    "Can't restore interface %s flags (SIOCSIFFLAGS failed: %s).\n"
 						    "Please adjust manually.\n"
 						    "Hint: This can't happen with Linux >= 2.2.0.\n",
+						    handle->md.device,
 						    strerror(errno));
 					}
 				}
@@ -1144,6 +1146,29 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			 * mode, this code cannot know that, so it'll take
 			 * it out of rfmon mode.
 			 */
+
+			/*
+			 * First, take the interface down if it's up;
+			 * otherwise, we might get EBUSY.
+			 * If we get errors, just drive on and print
+			 * a warning if we can't restore the mode.
+			 */
+			oldflags = 0;
+			memset(&ifr, 0, sizeof(ifr));
+			strncpy(ifr.ifr_name, handle->md.device,
+			    sizeof(ifr.ifr_name));
+			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) != -1) {
+				if (ifr.ifr_flags & IFF_UP) {
+					oldflags = ifr.ifr_flags;
+					ifr.ifr_flags &= ~IFF_UP;
+					if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1)
+						oldflags = 0;	/* didn't set, don't restore */
+				}
+			}
+
+			/*
+			 * Now restore the mode.
+			 */
 			strncpy(ireq.ifr_ifrn.ifrn_name, handle->md.device,
 			    sizeof ireq.ifr_ifrn.ifrn_name);
 			ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1]
@@ -1154,9 +1179,23 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 				 * Scientist, you've failed.
 				 */
 				fprintf(stderr,
-				    "Can't restore interface wireless mode (SIOCSIWMODE failed: %s).\n"
+				    "Can't restore interface %s wireless mode (SIOCSIWMODE failed: %s).\n"
 				    "Please adjust manually.\n",
-				    strerror(errno));
+				    handle->md.device, strerror(errno));
+			}
+
+			/*
+			 * Now bring the interface back up if we brought
+			 * it down.
+			 */
+			if (oldflags != 0) {
+				ifr.ifr_flags = oldflags;
+				if (ioctl(handle->fd, SIOCSIFFLAGS, &ifr) == -1) {
+					fprintf(stderr,
+					    "Can't bring interface %s back up (SIOCSIFFLAGS failed: %s).\n"
+					    "Please adjust manually.\n",
+					    handle->md.device, strerror(errno));
+				}
 			}
 		}
 #endif /* IW_MODE_MONITOR */
@@ -4256,6 +4295,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	monitor_type montype;
 	int i;
 	__u32 cmd;
+	struct ifreq ifr;
+	int oldflags;
 	int args[2];
 	int channel;
 
@@ -4265,6 +4306,12 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	err = has_wext(sock_fd, device, handle->errbuf);
 	if (err <= 0)
 		return err;	/* either it doesn't or the device doesn't even exist */
+	/*
+	 * Start out assuming we have no private extensions to control
+	 * radio metadata.
+	 */
+	montype = MONITOR_WEXT;
+
 	/*
 	 * Try to get all the Wireless Extensions private ioctls
 	 * supported by this device.
@@ -4288,187 +4335,190 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		    device);
 		return PCAP_ERROR;
 	}
-	if (errno == EOPNOTSUPP) {
+	if (errno != EOPNOTSUPP) {
 		/*
-		 * No private ioctls, so we assume that there's only one
-		 * DLT_ for monitor mode.
+		 * OK, it's not as if there are no private ioctls.
 		 */
-		return 0;
-	}
-	if (errno != E2BIG) {
+		if (errno != E2BIG) {
+			/*
+			 * Failed.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: SIOCGIWPRIV: %s", device,
+			    pcap_strerror(errno));
+			return PCAP_ERROR;
+		}
+
 		/*
-		 * Failed.
+		 * OK, try to get the list of private ioctls.
 		 */
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
-		return PCAP_ERROR;
-	}
-	priv = malloc(ireq.u.data.length * sizeof (struct iw_priv_args));
-	if (priv == NULL) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			 "malloc: %s", pcap_strerror(errno));
-		return PCAP_ERROR;
-	}
-	ireq.u.data.pointer = (void *)priv;
-	if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) == -1) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
-		free(priv);
-		return PCAP_ERROR;
-	}
+		priv = malloc(ireq.u.data.length * sizeof (struct iw_priv_args));
+		if (priv == NULL) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "malloc: %s", pcap_strerror(errno));
+			return PCAP_ERROR;
+		}
+		ireq.u.data.pointer = (void *)priv;
+		if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: SIOCGIWPRIV: %s", device,
+			    pcap_strerror(errno));
+			free(priv);
+			return PCAP_ERROR;
+		}
 
-	/*
-	 * Look for private ioctls to turn monitor mode on or, if
-	 * monitor mode is on, to set the header type.
-	 */
-	montype = MONITOR_WEXT;
-	cmd = 0;
-	for (i = 0; i < ireq.u.data.length; i++) {
-		if (strcmp(priv[i].name, "monitor_type") == 0) {
-			/*
-			 * Hostap driver, use this one.
-			 * Set monitor mode first.
-			 * You can set it to 0 to get DLT_IEEE80211,
-			 * 1 to get DLT_PRISM, 2 to get
-			 * DLT_IEEE80211_RADIO_AVS, and, with more
-			 * recent versions of the driver, 3 to get
-			 * DLT_IEEE80211_RADIO.
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-				break;
-			if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-				break;
-			if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-				break;
-			montype = MONITOR_HOSTAP;
-			cmd = priv[i].cmd;
-			break;
-		}
-		if (strcmp(priv[i].name, "set_prismhdr") == 0) {
-			/*
-			 * Prism54 driver, use this one.
-			 * Set monitor mode first.
-			 * You can set it to 2 to get DLT_IEEE80211
-			 * or 3 or get DLT_PRISM.
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-				break;
-			if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-				break;
-			if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-				break;
-			montype = MONITOR_PRISM54;
-			cmd = priv[i].cmd;
-			break;
-		}
-		if (strcmp(priv[i].name, "forceprismheader") == 0) {
-			/*
-			 * RT2570 driver, use this one.
-			 * Do this after turning monitor mode on.
-			 * You can set it to 1 to get DLT_PRISM or 2
-			 * to get DLT_IEEE80211.
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-				break;
-			if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-				break;
-			if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-				break;
-			montype = MONITOR_RT2570;
-			cmd = priv[i].cmd;
-			break;
-		}
-		if (strcmp(priv[i].name, "forceprism") == 0) {
-			/*
-			 * RT73 driver, use this one.
-			 * Do this after turning monitor mode on.
-			 * Its argument is a *string*; you can
-			 * set it to "1" to get DLT_PRISM or "2"
-			 * to get DLT_IEEE80211.
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_CHAR)
-				break;
-			if (priv[i].set_args & IW_PRIV_SIZE_FIXED)
-				break;
-			montype = MONITOR_RT73;
-			cmd = priv[i].cmd;
-			break;
-		}
-		if (strcmp(priv[i].name, "prismhdr") == 0) {
-			/*
-			 * One of the RTL8xxx drivers, use this one.
-			 * It can only be done after monitor mode
-			 * has been turned on.  You can set it to 1
-			 * to get DLT_PRISM or 0 to get DLT_IEEE80211.
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-				break;
-			if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-				break;
-			if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
-				break;
-			montype = MONITOR_RTL8XXX;
-			cmd = priv[i].cmd;
-			break;
-		}
-		if (strcmp(priv[i].name, "rfmontx") == 0) {
-			/*
-			 * RT2500 or RT61 driver, use this one.
-			 * It has one one-byte parameter; set
-			 * u.data.length to 1 and u.data.pointer to
-			 * point to the parameter.
-			 * It doesn't itself turn monitor mode on.
-			 * You can set it to 1 to allow transmitting
-			 * in monitor mode(?) and get DLT_IEEE80211,
-			 * or set it to 0 to disallow transmitting in
-			 * monitor mode(?) and get DLT_PRISM.
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-				break;
-			if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 2)
-				break;
-			montype = MONITOR_RT2500;
-			cmd = priv[i].cmd;
-			break;
-		}
-		if (strcmp(priv[i].name, "monitor") == 0) {
-			/*
-			 * Either ACX100 or hostap, use this one.
-			 * It turns monitor mode on.
-			 * If it takes two arguments, it's ACX100;
-			 * the first argument is 1 for DLT_PRISM
-			 * or 2 for DLT_IEEE80211, and the second
-			 * argument is the channel on which to
-			 * run.  If it takes one argument, it's
-			 * HostAP, and the argument is 2 for
-			 * DLT_IEEE80211 and 3 for DLT_PRISM.
-			 *
-			 * If we see this, we don't quit, as this
-			 * might be a version of the hostap driver
-			 * that also supports "monitor_type".
-			 */
-			if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
-				break;
-			if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
-				break;
-			switch (priv[i].set_args & IW_PRIV_SIZE_MASK) {
-
-			case 1:
-				montype = MONITOR_PRISM;
+		/*
+		 * Look for private ioctls to turn monitor mode on or, if
+		 * monitor mode is on, to set the header type.
+		 */
+		cmd = 0;
+		for (i = 0; i < ireq.u.data.length; i++) {
+			if (strcmp(priv[i].name, "monitor_type") == 0) {
+				/*
+				 * Hostap driver, use this one.
+				 * Set monitor mode first.
+				 * You can set it to 0 to get DLT_IEEE80211,
+				 * 1 to get DLT_PRISM, 2 to get
+				 * DLT_IEEE80211_RADIO_AVS, and, with more
+				 * recent versions of the driver, 3 to get
+				 * DLT_IEEE80211_RADIO.
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
+					break;
+				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
+					break;
+				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
+					break;
+				montype = MONITOR_HOSTAP;
 				cmd = priv[i].cmd;
-				break;
-
-			case 2:
-				montype = MONITOR_ACX100;
-				cmd = priv[i].cmd;
-				break;
-
-			default:
 				break;
 			}
+			if (strcmp(priv[i].name, "set_prismhdr") == 0) {
+				/*
+				 * Prism54 driver, use this one.
+				 * Set monitor mode first.
+				 * You can set it to 2 to get DLT_IEEE80211
+				 * or 3 or get DLT_PRISM.
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
+					break;
+				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
+					break;
+				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
+					break;
+				montype = MONITOR_PRISM54;
+				cmd = priv[i].cmd;
+				break;
+			}
+			if (strcmp(priv[i].name, "forceprismheader") == 0) {
+				/*
+				 * RT2570 driver, use this one.
+				 * Do this after turning monitor mode on.
+				 * You can set it to 1 to get DLT_PRISM or 2
+				 * to get DLT_IEEE80211.
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
+					break;
+				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
+					break;
+				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
+					break;
+				montype = MONITOR_RT2570;
+				cmd = priv[i].cmd;
+				break;
+			}
+			if (strcmp(priv[i].name, "forceprism") == 0) {
+				/*
+				 * RT73 driver, use this one.
+				 * Do this after turning monitor mode on.
+				 * Its argument is a *string*; you can
+				 * set it to "1" to get DLT_PRISM or "2"
+				 * to get DLT_IEEE80211.
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_CHAR)
+					break;
+				if (priv[i].set_args & IW_PRIV_SIZE_FIXED)
+					break;
+				montype = MONITOR_RT73;
+				cmd = priv[i].cmd;
+				break;
+			}
+			if (strcmp(priv[i].name, "prismhdr") == 0) {
+				/*
+				 * One of the RTL8xxx drivers, use this one.
+				 * It can only be done after monitor mode
+				 * has been turned on.  You can set it to 1
+				 * to get DLT_PRISM or 0 to get DLT_IEEE80211.
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
+					break;
+				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
+					break;
+				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 1)
+					break;
+				montype = MONITOR_RTL8XXX;
+				cmd = priv[i].cmd;
+				break;
+			}
+			if (strcmp(priv[i].name, "rfmontx") == 0) {
+				/*
+				 * RT2500 or RT61 driver, use this one.
+				 * It has one one-byte parameter; set
+				 * u.data.length to 1 and u.data.pointer to
+				 * point to the parameter.
+				 * It doesn't itself turn monitor mode on.
+				 * You can set it to 1 to allow transmitting
+				 * in monitor mode(?) and get DLT_IEEE80211,
+				 * or set it to 0 to disallow transmitting in
+				 * monitor mode(?) and get DLT_PRISM.
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
+					break;
+				if ((priv[i].set_args & IW_PRIV_SIZE_MASK) != 2)
+					break;
+				montype = MONITOR_RT2500;
+				cmd = priv[i].cmd;
+				break;
+			}
+			if (strcmp(priv[i].name, "monitor") == 0) {
+				/*
+				 * Either ACX100 or hostap, use this one.
+				 * It turns monitor mode on.
+				 * If it takes two arguments, it's ACX100;
+				 * the first argument is 1 for DLT_PRISM
+				 * or 2 for DLT_IEEE80211, and the second
+				 * argument is the channel on which to
+				 * run.  If it takes one argument, it's
+				 * HostAP, and the argument is 2 for
+				 * DLT_IEEE80211 and 3 for DLT_PRISM.
+				 *
+				 * If we see this, we don't quit, as this
+				 * might be a version of the hostap driver
+				 * that also supports "monitor_type".
+				 */
+				if ((priv[i].set_args & IW_PRIV_TYPE_MASK) != IW_PRIV_TYPE_INT)
+					break;
+				if (!(priv[i].set_args & IW_PRIV_SIZE_FIXED))
+					break;
+				switch (priv[i].set_args & IW_PRIV_SIZE_MASK) {
+
+				case 1:
+					montype = MONITOR_PRISM;
+					cmd = priv[i].cmd;
+					break;
+
+				case 2:
+					montype = MONITOR_ACX100;
+					cmd = priv[i].cmd;
+					break;
+
+				default:
+					break;
+				}
+			}
 		}
+		free(priv);
 	}
-	free(priv);
 
 	/*
 	 * XXX - ipw3945?  islism?
@@ -4563,7 +4613,29 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	}
 
 	/*
-	 * First, turn monitor mode on.
+	 * First, take the interface down if it's up; otherwise, we
+	 * might get EBUSY.
+	 */
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: Can't get flags: %s", device, strerror(errno));
+		return PCAP_ERROR;
+	}
+	oldflags = 0;
+	if (ifr.ifr_flags & IFF_UP) {
+		oldflags = ifr.ifr_flags;
+		ifr.ifr_flags &= ~IFF_UP;
+		if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: Can't set flags: %s", device, strerror(errno));
+			return PCAP_ERROR;
+		}
+	}
+
+	/*
+	 * Then turn monitor mode on.
 	 */
 	strncpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
@@ -4572,7 +4644,14 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	if (ioctl(sock_fd, SIOCSIWMODE, &ireq) == -1) {
 		/*
 		 * Scientist, you've failed.
+		 * Bring the interface back up if we shut it down.
 		 */
+		ifr.ifr_flags = oldflags;
+		if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: Can't set flags: %s", device, strerror(errno));
+			return PCAP_ERROR;
+		}
 		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
@@ -4732,6 +4811,32 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		memcpy(ireq.u.name, args, sizeof (int));
 		ioctl(sock_fd, cmd, &ireq);
 		break;
+	}
+
+	/*
+	 * Now bring the interface back up if we brought it down.
+	 */
+	if (oldflags != 0) {
+		ifr.ifr_flags = oldflags;
+		if (ioctl(sock_fd, SIOCSIFFLAGS, &ifr) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: Can't set flags: %s", device, strerror(errno));
+
+			/*
+			 * At least try to restore the old mode on the
+			 * interface.
+			 */
+			if (ioctl(handle->fd, SIOCSIWMODE, &ireq) == -1) {
+				/*
+				 * Scientist, you've failed.
+				 */
+				fprintf(stderr,
+				    "Can't restore interface wireless mode (SIOCSIWMODE failed: %s).\n"
+				    "Please adjust manually.\n",
+				    strerror(errno));
+			}
+			return PCAP_ERROR;
+		}
 	}
 
 	/*
