@@ -862,6 +862,18 @@ added:
 #endif
 
 	/*
+	 * If we haven't already done so, arrange to have
+	 * "pcap_close_all()" called when we exit.
+	 */
+	if (!pcap_do_addexit(handle)) {
+		/*
+		 * "atexit()" failed; don't put the interface
+		 * in rfmon mode, just give up.
+		 */
+		return PCAP_ERROR_RFMON_NOTSUP;
+	}
+
+	/*
 	 * Now configure the monitor interface up.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
@@ -901,18 +913,6 @@ added:
 	 * Add this to the list of pcaps to close when we exit.
 	 */
 	pcap_add_to_pcaps_to_close(handle);
-
-	/*
-	 * If we haven't already done so, arrange to have
-	 * "pcap_close_all()" called when we exit.
-	 */
-	if (!pcap_do_addexit(handle)) {
-		/*
-		 * "atexit()" failed; don't put the interface
-		 * in rfmon mode, just give up.
-		 */
-		return PCAP_ERROR_RFMON_NOTSUP;
-	}
 
 	return 1;
 }
