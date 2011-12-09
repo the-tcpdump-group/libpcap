@@ -4311,6 +4311,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * radio metadata.
 	 */
 	montype = MONITOR_WEXT;
+	cmd = 0;
 
 	/*
 	 * Try to get all the Wireless Extensions private ioctls
@@ -4371,7 +4372,6 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Look for private ioctls to turn monitor mode on or, if
 		 * monitor mode is on, to set the header type.
 		 */
-		cmd = 0;
 		for (i = 0; i < ireq.u.data.length; i++) {
 			if (strcmp(priv[i].name, "monitor_type") == 0) {
 				/*
