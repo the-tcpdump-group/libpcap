@@ -902,6 +902,18 @@ added:
 	 */
 	pcap_add_to_pcaps_to_close(handle);
 
+	/*
+	 * If we haven't already done so, arrange to have
+	 * "pcap_close_all()" called when we exit.
+	 */
+	if (!pcap_do_addexit(handle)) {
+		/*
+		 * "atexit()" failed; don't put the interface
+		 * in rfmon mode, just give up.
+		 */
+		return PCAP_ERROR_RFMON_NOTSUP;
+	}
+
 	return 1;
 }
 #endif /* HAVE_LIBNL */
