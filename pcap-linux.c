@@ -167,8 +167,7 @@ static const char rcsid[] _U_ =
 #endif
 
 #ifdef PCAP_SUPPORT_NETFILTER
-int netfilter_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
-pcap_t *nflog_create(const char *device, char *ebuf);
+#include "pcap-netfilter-linux.h"
 #endif
 
 /*

@@ -301,6 +301,7 @@ EXTRA_DIST = \
 	pcap-linux.c \
 	pcap-namedb.h \
 	pcap-netfilter-linux.c \
+	pcap-netfilter-linux.h \
 	pcap-nit.c \
 	pcap-null.c \
 	pcap-pf.c \

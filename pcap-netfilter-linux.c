@@ -54,6 +54,8 @@
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_log.h>
 
+#include "pcap-netfilter-linux.h"
+
 #define HDR_LENGTH (NLMSG_LENGTH(NLMSG_ALIGN(sizeof(struct nfgenmsg))))
 
 #define NFLOG_IFACE "nflog"
