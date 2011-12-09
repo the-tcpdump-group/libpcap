@@ -31,5 +31,5 @@
 /*
  * Prototypes for netlink-related functions
  */
-int nflog_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
+int netfilter_platform_finddevs(pcap_if_t **alldevsp, char *err_str);
 pcap_t *nflog_create(const char *device, char *ebuf);
