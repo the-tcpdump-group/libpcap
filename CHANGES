@@ -1,3 +1,26 @@
+Friday  December 9, 2011.  guy@alum.mit.edu.
+Summary for 1.2.1 libpcap release
+	Update README file.
+	Fix typoes in README.linux file.
+	Clean up some compiler warnings.
+	Fix Linux compile problems and tests for ethtool.h.
+	Treat Debian/kFreeBSD and GNU/Hurd as systems with GNU
+	 toolchains.
+	Support 802.1 QinQ as a form of VLAN in filters.
+	Treat "carp" as equivalent to "vrrp" in filters.
+	Fix code generated for "ip6 protochain".
+	Add some new link-layer header types.
+	Support capturing NetFilter log messages on Linux.
+	Clean up some error messages.
+	Turn off monitor mode on exit for mac80211 interfaces on Linux.
+	Fix problems turning monitor mode on for non-mac80211 interfaces
+	 on Linux.
+	Properly fail if /sys/class/net or /proc/net/dev exist but can't
+	 be opened.
+	Fail if pcap_activate() is called on an already-activated
+	 pcap_t, and add a test program for that.
+	Fix filtering in pcap-ng files.
+
 Sunday  July 24, 2011.  mcr@sandelman.ca.
 Summary for 1.2 libpcap release
         All of the changes listed below for 1.1.1 and 1.1.2.
