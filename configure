@@ -9947,6 +9947,16 @@ fi
 			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386 -arch ppc"
 			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386 -arch ppc"
 			;;
+
+		darwin11.*)
+			#
+			# Lion.  Build for x86-64 and x86, with x86-64
+			# first.  (That's probably what Apple does,
+			# given that Rosetta is gone.)
+			#
+			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386"
+			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386"
+			;;
 		esac
 	fi
 	;;
