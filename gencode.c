@@ -418,7 +418,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 {
 	extern int n_errors;
 	const char * volatile xbuf = buf;
-	int len;
+	u_int len;
 
 	no_optimize = 0;
 	n_errors = 0;
