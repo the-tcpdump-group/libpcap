@@ -1239,26 +1239,6 @@ init_linktype(p)
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
-	case DLT_LINUX_IRDA:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_DOCSIS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
 	case DLT_SYMANTEC_FIREWALL:
 		off_linktype = 6;
 		off_macpl = 44;
@@ -1422,126 +1402,6 @@ init_linktype(p)
 		return;
 #endif
 
-	case DLT_LINUX_LAPD:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_USB:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_BLUETOOTH_HCI_H4:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_USB_LINUX:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_CAN20B:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_IEEE802_15_4_LINUX:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_IEEE802_16_MAC_CPS_RADIO:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_IEEE802_15_4:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_SITA:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_RAIF1:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_IPMB:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_BLUETOOTH_HCI_H4_WITH_PHDR:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
 	case DLT_AX25_KISS:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
@@ -1553,70 +1413,10 @@ init_linktype(p)
 		off_mac = 1;		/* step over the kiss length byte */
 		return;
 
-	case DLT_IEEE802_15_4_NONASK_PHY:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_MPLS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_USB_LINUX_MMAPPED:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_CAN_SOCKETCAN:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
 	case DLT_IPNET:
 		off_linktype = 1;
 		off_macpl = 24;		/* ipnet header length */
 		off_nl = 0;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_IEEE802_15_4_NOFCS:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
-		off_nl_nosnap = -1;
-		return;
-
-	case DLT_NFLOG:
-		/*
-		 * Currently, only raw "link[N:M]" filtering is supported.
-		 */
-		off_linktype = -1;
-		off_macpl = -1;
-		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
 
@@ -1635,6 +1435,21 @@ init_linktype(p)
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
+
+	default:
+		/*
+		 * For values in the range in which we've assigned new
+		 * DLT_ values, only raw "link[N:M]" filtering is supported.
+		 */
+		if (linktype >= DLT_MATCHING_MIN &&
+		    linktype <= DLT_MATCHING_MAX) {
+			off_linktype = -1;
+			off_macpl = -1;
+			off_nl = -1;
+			off_nl_nosnap = -1;
+			return;
+		}
+
 	}
 	bpf_error("unknown data link type %d", linktype);
 	/* NOTREACHED */
