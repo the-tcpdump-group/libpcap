@@ -94,6 +94,23 @@
  * file, and new values after that one might have been assigned.  Also,
  * do *NOT* use any values below 100 - those might already have been
  * taken by one (or more!) organizations.
+ *
+ * Any platform that defines additional DLT_* codes should:
+ *
+ *	request a LINKTYPE_* code and value from tcpdump.org,
+ *	as per the above;
+ *
+ *	add, in their version of libpcap, an entry to map
+ *	those DLT_* codes to the corresponding LINKTYPE_*
+ *	code;
+ *
+ *	redefine, in their "net/bpf.h", any DLT_* values
+ *	that collide with the values used by their additional
+ *	DLT_* codes, to remove those collisions (but without
+ *	making them collide with any of the LINKTYPE_*
+ *	values equal to 50 or above; they should also avoid
+ *	defining DLT_* values that collide with those
+ *	LINKTYPE_* values, either).
  */
 #define LINKTYPE_NULL		DLT_NULL
 #define LINKTYPE_ETHERNET	DLT_EN10MB	/* also for 100Mb and up */
@@ -128,10 +145,29 @@
 
 #define LINKTYPE_SYMANTEC_FIREWALL 99		/* Symantec Enterprise Firewall */
 
+/*
+ * These correspond to DLT_s that have different values on different
+ * platforms; we map between these values in capture files and
+ * the DLT_ values as returned by pcap_datalink() and passed to
+ * pcap_open_dead().
+ */
 #define LINKTYPE_ATM_RFC1483	100		/* LLC/SNAP-encapsulated ATM */
 #define LINKTYPE_RAW		101		/* raw IP */
 #define LINKTYPE_SLIP_BSDOS	102		/* BSD/OS SLIP BPF header */
 #define LINKTYPE_PPP_BSDOS	103		/* BSD/OS PPP BPF header */
+
+/*
+ * Values starting with 104 are used for newly-assigned link-layer
+ * header type values; for those link-layer header types, the DLT_
+ * value returned by pcap_datalink() and passed to pcap_open_dead(),
+ * and the LINKTYPE_ value that appears in capture files, are the
+ * same.
+ *
+ * LINKTYPE_MATCHING_MIN is the lowest such value; LINKTYPE_MATCHING_MAX
+ * is the highest such value.
+ */
+#define LINKTYPE_MATCHING_MIN	104		/* lowest value in the "matching" range */
+
 #define LINKTYPE_C_HDLC		104		/* Cisco HDLC */
 #define LINKTYPE_IEEE802_11	105		/* IEEE 802.11 (wireless) */
 #define LINKTYPE_ATM_CLIP	106		/* Linux Classical IP over ATM */
@@ -532,39 +568,39 @@
  * IPMB with a Linux-specific pseudo-header; as requested by Alexey Neyman
  * <avn@pigeonpoint.com>.
  */
-#define LINKTYPE_IPMB_LINUX		209
+#define LINKTYPE_IPMB_LINUX	209
 
 /*
  * FlexRay automotive bus - http://www.flexray.com/ - as requested
  * by Hannes Kaelber <hannes.kaelber@x2e.de>.
  */
-#define LINKTYPE_FLEXRAY		210
+#define LINKTYPE_FLEXRAY	210
 
 /*
  * Media Oriented Systems Transport (MOST) bus for multimedia
  * transport - http://www.mostcooperation.com/ - as requested
  * by Hannes Kaelber <hannes.kaelber@x2e.de>.
  */
-#define LINKTYPE_MOST			211
+#define LINKTYPE_MOST		211
 
 /*
  * Local Interconnect Network (LIN) bus for vehicle networks -
  * http://www.lin-subbus.org/ - as requested by Hannes Kaelber
  * <hannes.kaelber@x2e.de>.
  */
-#define LINKTYPE_LIN			212
+#define LINKTYPE_LIN		212
 
 /*
  * X2E-private data link type used for serial line capture,
  * as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
  */
-#define LINKTYPE_X2E_SERIAL		213
+#define LINKTYPE_X2E_SERIAL	213
 
 /*
  * X2E-private data link type used for the Xoraya data logger
  * family, as requested by Hannes Kaelber <hannes.kaelber@x2e.de>.
  */
-#define LINKTYPE_X2E_XORAYA		214
+#define LINKTYPE_X2E_XORAYA	214
 
 /*
  * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
@@ -583,22 +619,22 @@
  * is used to communicate keystrokes and mouse movements from the
  * Linux kernel to display systems, such as Xorg. 
  */
-#define LINKTYPE_LINUX_EVDEV			216
+#define LINKTYPE_LINUX_EVDEV	216
 
 /*
  * GSM Um and Abis interfaces, preceded by a "gsmtap" header.
  *
  * Requested by Harald Welte <laforge@gnumonks.org>.
  */
-#define LINKTYPE_GSMTAP_UM			217
-#define LINKTYPE_GSMTAP_ABIS			218
+#define LINKTYPE_GSMTAP_UM	217
+#define LINKTYPE_GSMTAP_ABIS	218
 
 /*
  * MPLS, with an MPLS label as the link-layer header.
  * Requested by Michele Marchetto <michele@openbsd.org> on behalf
  * of OpenBSD.
  */
-#define LINKTYPE_MPLS				219
+#define LINKTYPE_MPLS		219
 
 /*
  * USB packets, beginning with a Linux USB header, with the USB header
@@ -610,7 +646,7 @@
  * DECT packets, with a pseudo-header; requested by
  * Matthias Wenzel <tcpdump@mazzoo.de>.
  */
-#define LINKTYPE_DECT				221
+#define LINKTYPE_DECT		221
 
 /*
  * From: "Lidwa, Eric (GSFC-582.0)[SGT INC]" <eric.lidwa-1@nasa.gov>
@@ -621,7 +657,7 @@
  *   legal before I can submit a patch.
  *
  */
-#define LINKTYPE_AOS				222
+#define LINKTYPE_AOS		222
 
 /*
  * Wireless HART (Highway Addressable Remote Transducer)
@@ -630,13 +666,13 @@
  *
  * Requested by Sam Roberts <vieuxtech@gmail.com>.
  */
-#define LINKTYPE_WIHART				223
+#define LINKTYPE_WIHART		223
 
 /*
  * Fibre Channel FC-2 frames, beginning with a Frame_Header.
  * Requested by Kahou Lei <kahou82@gmail.com>.
  */
-#define LINKTYPE_FC_2				224
+#define LINKTYPE_FC_2		224
 
 /*
  * Fibre Channel FC-2 frames, beginning with an encoding of the
@@ -698,7 +734,7 @@
  * An IPv4 or IPv6 datagram follows the pseudo-header; dli_family indicates
  * which of those it is.
  */
-#define LINKTYPE_IPNET				226
+#define LINKTYPE_IPNET		226
 
 /*
  * CAN (Controller Area Network) frames, with a pseudo-header as supplied
@@ -707,14 +743,14 @@
  *
  * Requested by Felix Obenhuber <felix@obenhuber.de>.
  */
-#define LINKTYPE_CAN_SOCKETCAN			227
+#define LINKTYPE_CAN_SOCKETCAN	227
 
 /*
  * Raw IPv4/IPv6; different from DLT_RAW in that the DLT_ value specifies
  * whether it's v4 or v6.  Requested by Darren Reed <Darren.Reed@Sun.COM>.
  */
-#define LINKTYPE_IPV4				228
-#define LINKTYPE_IPV6				229
+#define LINKTYPE_IPV4		228
+#define LINKTYPE_IPV6		229
 
 /*
  * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
@@ -739,7 +775,7 @@
  *
  * Requested by Martin Vidner <martin@vidner.net>.
  */
-#define LINKTYPE_DBUS				231
+#define LINKTYPE_DBUS		231
 
 /*
  * Juniper-private data link type, as per request from
@@ -759,13 +795,13 @@
  *
  * Requested by Martin Kaiser <martin@kaiser.cx>.
  */
-#define LINKTYPE_DVB_CI				235
+#define LINKTYPE_DVB_CI		235
 
 /*
  * Variant of 3GPP TS 27.010 multiplexing protocol.  Requested
  * by Hans-Christoph Schemmel <hans-christoph.schemmel@cinterion.com>.
  */
-#define LINKTYPE_MUX27010			236
+#define LINKTYPE_MUX27010	236
 
 /*
  * STANAG 5066 D_PDUs.  Requested by M. Baris Demiray
@@ -785,7 +821,7 @@
  *
  * Requested by Jakub Zawadzki <darkjames-ws@darkjames.pl>
  */
-#define LINKTYPE_NFLOG				239
+#define LINKTYPE_NFLOG		239
 
 /*
  * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
@@ -795,7 +831,7 @@
  *
  * Requested by Holger P. Frommer <HPfrommer@hilscher.com>
  */
-#define LINKTYPE_NETANALYZER		240
+#define LINKTYPE_NETANALYZER	240
 
 /*
  * Hilscher Gesellschaft fuer Systemautomation mbH link-layer type
@@ -812,8 +848,9 @@
  *
  * Requested by Petr Sumbera <petr.sumbera@oracle.com>.
  */
-#define LINKTYPE_IPOIB				242
+#define LINKTYPE_IPOIB		242
 
+#define LINKTYPE_MATCHING_MAX	242		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
@@ -871,333 +908,11 @@ static struct linktype_map {
 	/* NetBSD PPP over Ethernet */
 	{ DLT_PPP_ETHER,	LINKTYPE_PPP_ETHER },
 
-	/* IEEE 802.11 wireless */
-	{ DLT_IEEE802_11,	LINKTYPE_IEEE802_11 },
-
-	/* Frame Relay */
-	{ DLT_FRELAY,		LINKTYPE_FRELAY },
-
-	/* OpenBSD loopback */
-	{ DLT_LOOP,		LINKTYPE_LOOP },
-
-	/* OpenBSD IPSEC enc */
-	{ DLT_ENC,		LINKTYPE_ENC },
-
-	/* Linux cooked socket capture */
-	{ DLT_LINUX_SLL,	LINKTYPE_LINUX_SLL },
-
-	/* Apple LocalTalk hardware */
-	{ DLT_LTALK,		LINKTYPE_LTALK },
-
-	/* Acorn Econet */
-	{ DLT_ECONET,		LINKTYPE_ECONET },
-
-	/* OpenBSD DLT_PFLOG */
-	{ DLT_PFLOG,		LINKTYPE_PFLOG },
-
-	/* For Cisco-internal use */
-	{ DLT_CISCO_IOS,	LINKTYPE_CISCO_IOS },
-
-	/* Prism II monitor-mode header plus 802.11 header */
-	{ DLT_PRISM_HEADER,	LINKTYPE_PRISM_HEADER },
-
-	/* FreeBSD Aironet driver stuff */
-	{ DLT_AIRONET_HEADER,	LINKTYPE_AIRONET_HEADER },
-
-	/* Siemens HiPath HDLC */
-	{ DLT_HHDLC,		LINKTYPE_HHDLC },
-
-	/* RFC 2625 IP-over-Fibre Channel */
-	{ DLT_IP_OVER_FC,	LINKTYPE_IP_OVER_FC },
-
-	/* Solaris+SunATM */
-	{ DLT_SUNATM,		LINKTYPE_SUNATM },
-
-	/* RapidIO */
-	{ DLT_RIO,		LINKTYPE_RIO },
-
-	/* PCI Express */
-	{ DLT_PCI_EXP,		LINKTYPE_PCI_EXP },
-
-	/* Xilinx Aurora link layer */
-	{ DLT_AURORA,		LINKTYPE_AURORA },
-
-	/* 802.11 plus BSD radio header */
-	{ DLT_IEEE802_11_RADIO,	LINKTYPE_IEEE802_11_RADIO },
-
-	/* Tazmen Sniffer Protocol */
-	{ DLT_TZSP,		LINKTYPE_TZSP },
-
-	/* Arcnet with Linux-style link-layer headers */
-	{ DLT_ARCNET_LINUX,	LINKTYPE_ARCNET_LINUX },
-
-        /* Juniper-internal chassis encapsulation */
-        { DLT_JUNIPER_MLPPP,    LINKTYPE_JUNIPER_MLPPP },
-        { DLT_JUNIPER_MLFR,     LINKTYPE_JUNIPER_MLFR },
-        { DLT_JUNIPER_ES,       LINKTYPE_JUNIPER_ES },
-        { DLT_JUNIPER_GGSN,     LINKTYPE_JUNIPER_GGSN },
-        { DLT_JUNIPER_MFR,      LINKTYPE_JUNIPER_MFR },
-        { DLT_JUNIPER_ATM2,     LINKTYPE_JUNIPER_ATM2 },
-        { DLT_JUNIPER_SERVICES, LINKTYPE_JUNIPER_SERVICES },
-        { DLT_JUNIPER_ATM1,     LINKTYPE_JUNIPER_ATM1 },
-
-	/* Apple IP-over-IEEE 1394 cooked header */
-	{ DLT_APPLE_IP_OVER_IEEE1394, LINKTYPE_APPLE_IP_OVER_IEEE1394 },
-
-	/* SS7 */
-	{ DLT_MTP2_WITH_PHDR,	LINKTYPE_MTP2_WITH_PHDR },
-	{ DLT_MTP2,		LINKTYPE_MTP2 },
-	{ DLT_MTP3,		LINKTYPE_MTP3 },
-	{ DLT_SCCP,		LINKTYPE_SCCP },
-
-	/* DOCSIS MAC frames */
-	{ DLT_DOCSIS,		LINKTYPE_DOCSIS },
-
-	/* IrDA IrLAP packets + Linux-cooked header */
-	{ DLT_LINUX_IRDA,	LINKTYPE_LINUX_IRDA },
-
-	/* IBM SP and Next Federation switches */
-	{ DLT_IBM_SP,		LINKTYPE_IBM_SP },
-	{ DLT_IBM_SN,		LINKTYPE_IBM_SN },
-
-	/* 802.11 plus AVS radio header */
-	{ DLT_IEEE802_11_RADIO_AVS, LINKTYPE_IEEE802_11_RADIO_AVS },
-
 	/*
-	 * Any platform that defines additional DLT_* codes should:
-	 *
-	 *	request a LINKTYPE_* code and value from tcpdump.org,
-	 *	as per the above;
-	 *
-	 *	add, in their version of libpcap, an entry to map
-	 *	those DLT_* codes to the corresponding LINKTYPE_*
-	 *	code;
-	 *
-	 *	redefine, in their "net/bpf.h", any DLT_* values
-	 *	that collide with the values used by their additional
-	 *	DLT_* codes, to remove those collisions (but without
-	 *	making them collide with any of the LINKTYPE_*
-	 *	values equal to 50 or above; they should also avoid
-	 *	defining DLT_* values that collide with those
-	 *	LINKTYPE_* values, either).
+	 * All LINKTYPE_ values between LINKTYPE_MATCHING_MIN
+	 * and LINKTYPE_MATCHING_MAX are mapped to identical
+	 * DLT_ values.
 	 */
-
-	/* Juniper-internal chassis encapsulation */
-	{ DLT_JUNIPER_MONITOR,	LINKTYPE_JUNIPER_MONITOR },
-
-	/* BACnet MS/TP */
-	{ DLT_BACNET_MS_TP,	LINKTYPE_BACNET_MS_TP },
-
-	/* PPP for pppd, with direction flag in the PPP header */
-	{ DLT_PPP_PPPD,		LINKTYPE_PPP_PPPD},
-
-	/* Juniper-internal chassis encapsulation */
-        { DLT_JUNIPER_PPPOE,    LINKTYPE_JUNIPER_PPPOE },
-        { DLT_JUNIPER_PPPOE_ATM,LINKTYPE_JUNIPER_PPPOE_ATM },
-
-	/* GPRS LLC */
-	{ DLT_GPRS_LLC,		LINKTYPE_GPRS_LLC },
-
-	/* Transparent Generic Framing Procedure (ITU-T G.7041/Y.1303) */
-	{ DLT_GPF_T,		LINKTYPE_GPF_T },
-
-	/* Framed Generic Framing Procedure (ITU-T G.7041/Y.1303) */
-	{ DLT_GPF_F,		LINKTYPE_GPF_F },
-
-	{ DLT_GCOM_T1E1,	LINKTYPE_GCOM_T1E1 },
-	{ DLT_GCOM_SERIAL,	LINKTYPE_GCOM_SERIAL },
-
-        /* Juniper-internal chassis encapsulation */
-        { DLT_JUNIPER_PIC_PEER, LINKTYPE_JUNIPER_PIC_PEER },
-
-	/* Endace types */
-	{ DLT_ERF_ETH,		LINKTYPE_ERF_ETH },
-	{ DLT_ERF_POS,		LINKTYPE_ERF_POS },
-
-	/* viSDN LAPD */
-	{ DLT_LINUX_LAPD,	LINKTYPE_LINUX_LAPD },
-
-        /* Juniper meta-information before Ether, PPP, Frame Relay, C-HDLC Frames */
-        { DLT_JUNIPER_ETHER, LINKTYPE_JUNIPER_ETHER },
-        { DLT_JUNIPER_PPP, LINKTYPE_JUNIPER_PPP },
-        { DLT_JUNIPER_FRELAY, LINKTYPE_JUNIPER_FRELAY },
-        { DLT_JUNIPER_CHDLC, LINKTYPE_JUNIPER_CHDLC },
-
-        /* Multi Link Frame Relay (FRF.16) */
-        { DLT_MFR,              LINKTYPE_MFR },
-
-        /* Juniper Voice PIC */
-        { DLT_JUNIPER_VP,       LINKTYPE_JUNIPER_VP },
-
-	/* Controller Area Network (CAN) v2.0B */
-	{ DLT_A429,		LINKTYPE_A429 },
-
-	/* Arinc 653 Interpartition Communication messages */
-	{ DLT_A653_ICM,         LINKTYPE_A653_ICM },
-
-	/* USB */
-	{ DLT_USB,		LINKTYPE_USB },
-
-	/* Bluetooth HCI UART transport layer */
-	{ DLT_BLUETOOTH_HCI_H4,	LINKTYPE_BLUETOOTH_HCI_H4 },
-
-	/* IEEE 802.16 MAC Common Part Sublayer */
-	{ DLT_IEEE802_16_MAC_CPS,	LINKTYPE_IEEE802_16_MAC_CPS },
-
-	/* USB with Linux header */
-	{ DLT_USB_LINUX,	LINKTYPE_USB_LINUX },
-
-	/* Controller Area Network (CAN) v2.0B */
-	{ DLT_CAN20B,		LINKTYPE_CAN20B },
-
-	/* IEEE 802.15.4 with address fields padded */
-	{ DLT_IEEE802_15_4_LINUX,	LINKTYPE_IEEE802_15_4_LINUX },
-
-	/* Per Packet Information encapsulated packets */
-	{ DLT_PPI,			LINKTYPE_PPI },
-
-	/* IEEE 802.16 MAC Common Part Sublayer plus radiotap header */
-	{ DLT_IEEE802_16_MAC_CPS_RADIO, LINKTYPE_IEEE802_16_MAC_CPS_RADIO },
-
-        /* Juniper Voice ISM */
-        { DLT_JUNIPER_ISM,      LINKTYPE_JUNIPER_ISM },
-
-	/* IEEE 802.15.4 exactly as it appears in the spec, with FCS */
-	{ DLT_IEEE802_15_4,	LINKTYPE_IEEE802_15_4 },
-
-	/* Various link-layer types for SITA */
-	{ DLT_SITA,		LINKTYPE_SITA },
-
-	/* Various link-layer types for Endace */
-	{ DLT_ERF,		LINKTYPE_ERF },
-
-	/* Special header for u10 Networks boards */
-	{ DLT_RAIF1,		LINKTYPE_RAIF1 },
-
-	/* IPMB */
-	{ DLT_IPMB,		LINKTYPE_IPMB },
-
-        /* Juniper Secure Tunnel */
-        { DLT_JUNIPER_ST,       LINKTYPE_JUNIPER_ST },
-
-	/* Bluetooth HCI UART transport layer, with pseudo-header */
-	{ DLT_BLUETOOTH_HCI_H4_WITH_PHDR, LINKTYPE_BLUETOOTH_HCI_H4_WITH_PHDR },
-
-	/* AX.25 with KISS header */
-	{ DLT_AX25_KISS,	LINKTYPE_AX25_KISS },
-
-	/* Raw LAPD, with no pseudo-header */
-	{ DLT_LAPD,		LINKTYPE_LAPD },
-
-	/* PPP with one-byte pseudo-header giving direction */
-	{ DLT_PPP_WITH_DIR,	LINKTYPE_PPP_WITH_DIR },
-
-	/* Cisco HDLC with one-byte pseudo-header giving direction */
-	{ DLT_C_HDLC_WITH_DIR,	LINKTYPE_C_HDLC_WITH_DIR },
-
-	/* Frame Relay with one-byte pseudo-header giving direction */
-	{ DLT_FRELAY_WITH_DIR,	LINKTYPE_FRELAY_WITH_DIR },
-
-	/* LAPB with one-byte pseudo-header giving direction */
-	{ DLT_LAPB_WITH_DIR,	LINKTYPE_LAPB_WITH_DIR },
-
-	/* IPMB with Linux pseudo-header */
-	{ DLT_IPMB_LINUX,	LINKTYPE_IPMB_LINUX },
-
-	/* FlexRay */
-	{ DLT_FLEXRAY,		LINKTYPE_FLEXRAY },
-
-	/* MOST */
-	{ DLT_MOST,		LINKTYPE_MOST },
-
-	/* LIN */
-	{ DLT_LIN,		LINKTYPE_LIN },
-
-	/* X2E-private serial line capture */
-	{ DLT_X2E_SERIAL,	LINKTYPE_X2E_SERIAL },
-
-	/* X2E-private for Xoraya data logger family */
-	{ DLT_X2E_XORAYA,	LINKTYPE_X2E_XORAYA },
-
-	/* IEEE 802.15.4 with PHY data for non-ASK PHYs */
-	{ DLT_IEEE802_15_4_NONASK_PHY, LINKTYPE_IEEE802_15_4_NONASK_PHY },
-
-	/* Input device events from Linux /dev/input/eventN devices */
-	{ DLT_LINUX_EVDEV,	LINKTYPE_LINUX_EVDEV },
-
-	/* GSM types */
-	{ DLT_GSMTAP_UM,	LINKTYPE_GSMTAP_UM },
-	{ DLT_GSMTAP_ABIS,	LINKTYPE_GSMTAP_ABIS },
-
-	/* MPLS, with an MPLS label as the link-layer header */
-	{ DLT_MPLS,		LINKTYPE_MPLS },
-
-	/* USB with padded Linux header */
-	{ DLT_USB_LINUX_MMAPPED, LINKTYPE_USB_LINUX_MMAPPED },
-
-	/* DECT packets with a pseudo-header */
-	{ DLT_DECT,		LINKTYPE_DECT },
-
-	/* AOS Space Data Link Protocol */
-	{ DLT_AOS,		LINKTYPE_AOS },
-
-	/* Wireless HART */
-	{ DLT_WIHART,		LINKTYPE_WIHART },
-
-	/* Fibre Channel FC-2 frames without SOF or EOF */
-	{ DLT_FC_2,		LINKTYPE_FC_2 },
-
-	/* Fibre Channel FC-2 frames with SOF and EOF */
-	{ DLT_FC_2_WITH_FRAME_DELIMS, LINKTYPE_FC_2_WITH_FRAME_DELIMS },
-
-	/* Solaris IPNET */
-	{ DLT_IPNET,		LINKTYPE_IPNET },
-
-	/* CAN frames with SocketCAN headers */
-	{ DLT_CAN_SOCKETCAN,	LINKTYPE_CAN_SOCKETCAN },
-
-	/* Raw IPv4/IPv6 */
-	{ DLT_IPV4,		LINKTYPE_IPV4 },
-	{ DLT_IPV6,		LINKTYPE_IPV6 },
-
-	/* IEEE 802.15.4 exactly as it appears in the spec, without FCS */
-	{ DLT_IEEE802_15_4_NOFCS, LINKTYPE_IEEE802_15_4_NOFCS },
-
-	/* D-Bus messages */
-	{ DLT_DBUS,		LINKTYPE_DBUS },
-
-        /* Juniper Virtual Server */
-	{ DLT_JUNIPER_VS,	LINKTYPE_JUNIPER_VS },
-
-        /* Juniper SRX E2E debugging */
-	{ DLT_JUNIPER_SRX_E2E,	LINKTYPE_JUNIPER_SRX_E2E },
-
-        /* Juniper Fibrechannel */
-	{ DLT_JUNIPER_FIBRECHANNEL, LINKTYPE_JUNIPER_FIBRECHANNEL },
-
-        /* DVB-CI */
-	{ DLT_DVB_CI,		LINKTYPE_DVB_CI },
-
-	/* Variant of 3GPP TS 27.010 */
-	{ DLT_MUX27010,		LINKTYPE_MUX27010 },
-
-	/* STANAG 5066 D_PDUs */
-	{ DLT_STANAG_5066_D_PDU, LINKTYPE_STANAG_5066_D_PDU },
-
-        /* Juniper ATM CE MIC */
-	{ DLT_JUNIPER_ATM_CEMIC, LINKTYPE_JUNIPER_ATM_CEMIC },
-
-        /* Linux NetFilter LOG messages */
-	{ DLT_NFLOG,		LINKTYPE_NFLOG },
-
-	/* Ethernet with Hilscher netANALYZER pseudo-header */
-	{ DLT_NETANALYZER,	LINKTYPE_NETANALYZER },
-
-	/* Ethernet with Hilscher netANALYZER pseudo-header and with preamble/SFD */
-	{ DLT_NETANALYZER_TRANSPARENT, LINKTYPE_NETANALYZER_TRANSPARENT },
-
-	/* RFC 4391 IP-over-Infiniband */
-	{ DLT_IPOIB,		LINKTYPE_IPOIB },
 
 	{ -1,			-1 }
 };
@@ -1207,6 +922,15 @@ dlt_to_linktype(int dlt)
 {
 	int i;
 
+	/*
+	 * Map the values in the matching range.
+	 */
+	if (dlt >= DLT_MATCHING_MIN && dlt <= DLT_MATCHING_MAX)
+		return (dlt);
+
+	/*
+	 * Map the values outside that range.
+	 */
 	for (i = 0; map[i].dlt != -1; i++) {
 		if (map[i].dlt == dlt)
 			return (map[i].linktype);
@@ -1214,8 +938,8 @@ dlt_to_linktype(int dlt)
 
 	/*
 	 * If we don't have a mapping for this DLT_ code, return an
-	 * error; that means that the table above needs to have an
-	 * entry added.
+	 * error; that means that this is a value with no corresponding
+	 * LINKTYPE_ code, and we need to assign one.
 	 */
 	return (-1);
 }
@@ -1225,6 +949,16 @@ linktype_to_dlt(int linktype)
 {
 	int i;
 
+	/*
+	 * Map the values in the matching range.
+	 */
+	if (linktype >= LINKTYPE_MATCHING_MIN &&
+	    linktype <= LINKTYPE_MATCHING_MAX)
+		return (linktype);
+
+	/*
+	 * Map the values outside that range.
+	 */
 	for (i = 0; map[i].linktype != -1; i++) {
 		if (map[i].linktype == linktype)
 			return (map[i].dlt);
