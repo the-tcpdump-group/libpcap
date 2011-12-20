@@ -5403,13 +5403,19 @@ fix_offset(struct bpf_insn *p)
 		 * header.
 		 */
 		p->k -= SLL_HDR_LEN;
+	} else if (p->k == 0) {
+		/*
+		 * It's the packet type field; map it to the special magic
+		 * kernel offset for that field.
+		 */
+		p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
 	} else if (p->k == 14) {
 		/*
 		 * It's the protocol field; map it to the special magic
 		 * kernel offset for that field.
 		 */
 		p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
-	} else {
+	} else if ((bpf_int32)(p->k) > 0) {
 		/*
 		 * It's within the header, but it's not one of those
 		 * fields; we can't do that in the kernel, so punt

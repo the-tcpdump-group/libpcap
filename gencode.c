@@ -84,6 +84,10 @@ static const char rcsid[] _U_ =
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
+#if defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+#include <linux/if_packet.h>
+#include <linux/filter.h>
+#endif
 #ifdef HAVE_NET_PFVAR_H
 #include <sys/socket.h>
 #include <net/if.h>
@@ -7481,9 +7485,13 @@ gen_multicast(proto)
 }
 
 /*
- * generate command for inbound/outbound.  It's here so we can
- * make it link-type specific.  'dir' = 0 implies "inbound",
- * = 1 implies "outbound".
+ * Filter on inbound (dir == 0) or outbound (dir == 1) traffic.
+ * Outbound traffic is sent by this machine, while inbound traffic is
+ * sent by a remote machine (and may include packets destined for a
+ * unicast or multicast link-layer address we are not subscribing to).
+ * These are the same definitions implemented by pcap_setdirection().
+ * Capturing only unicast traffic destined for this host is probably
+ * better accomplished using a higher-layer filter.
  */
 struct block *
 gen_inbound(dir)
@@ -7513,23 +7521,11 @@ gen_inbound(dir)
 		break;
 
 	case DLT_LINUX_SLL:
-		if (dir) {
-			/*
-			 * Match packets sent by this machine.
-			 */
-			b0 = gen_cmp(OR_LINK, 0, BPF_H, LINUX_SLL_OUTGOING);
-		} else {
-			/*
-			 * Match packets sent to this machine.
-			 * (No broadcast or multicast packets, or
-			 * packets sent to some other machine and
-			 * received promiscuously.)
-			 *
-			 * XXX - packets sent to other machines probably
-			 * shouldn't be matched, but what about broadcast
-			 * or multicast packets we received?
-			 */
-			b0 = gen_cmp(OR_LINK, 0, BPF_H, LINUX_SLL_HOST);
+		/* match outgoing packets */
+		b0 = gen_cmp(OR_LINK, 0, BPF_H, LINUX_SLL_OUTGOING);
+		if (!dir) {
+			/* to filter on inbound traffic, invert the match */
+			gen_not(b0);
 		}
 		break;
 
@@ -7585,10 +7581,20 @@ gen_inbound(dir)
 		break;
 
 	default:
+#if defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+		/* match outgoing packets */
+		b0 = gen_cmp(OR_LINK, SKF_AD_OFF + SKF_AD_PKTTYPE, BPF_H,
+		             PACKET_OUTGOING);
+		if (!dir) {
+			/* to filter on inbound traffic, invert the match */
+			gen_not(b0);
+		}
+#else /* defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 		bpf_error("inbound/outbound not supported on linktype %d",
 		    linktype);
 		b0 = NULL;
 		/* NOTREACHED */
+#endif /* defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 	}
 	return (b0);
 }
