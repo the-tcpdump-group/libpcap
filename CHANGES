@@ -22,6 +22,7 @@ Summary for 1.2.1 libpcap release
 	Fix filtering in pcap-ng files.
 	Don't build for PowerPC on Mac OS X Lion.
 	Simplify handling of new DLT_/LINKTYPE_ values.
+	Expand pcap(3PCAP) man page.
 
 Sunday  July 24, 2011.  mcr@sandelman.ca.
 Summary for 1.2 libpcap release
