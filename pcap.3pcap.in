@@ -430,9 +430,11 @@ opposite byte order
 .TP
 .BR pcap_major_version (3PCAP)
 .PD 0
+.TP
 .BR pcap_minor_version (3PCAP)
 get the major and minor version of the file format version for a
 ``savefile''
+.PD
 .RE
 .SS Selecting a link-layer header type for a live capture
 Some devices may provide more than one link-layer header type.  To
