@@ -7581,7 +7581,25 @@ gen_inbound(dir)
 		break;
 
 	default:
+		/*
+		 * If we have packet meta-data indicating a direction,
+		 * check it, otherwise give up as this link-layer type
+		 * has nothing in the packet data.
+		 */
 #if defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+		/*
+		 * We infer that this is Linux with PF_PACKET support.
+		 * If this is a *live* capture, we can look at
+		 * special meta-data in the filter expression;
+		 * if it's a savefile, we can't.
+		 */
+		if (bpf_pcap->sf.rfile != NULL) {
+			/* We have a FILE *, so this is a savefile */
+			bpf_error("inbound/outbound not supported on linktype %d when reading savefiles",
+			    linktype);
+			b0 = NULL;
+			/* NOTREACHED */
+		}
 		/* match outgoing packets */
 		b0 = gen_cmp(OR_LINK, SKF_AD_OFF + SKF_AD_PKTTYPE, BPF_H,
 		             PACKET_OUTGOING);
