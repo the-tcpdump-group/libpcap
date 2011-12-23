@@ -77,7 +77,7 @@ struct canusb_t
 {
   libusb_context *ctx;
   libusb_device_handle *dev;
-  pcap_t *pcap;
+  char* src;
   pthread_t worker;
   int rdpipe, wrpipe;
   volatile int* loop;
@@ -214,7 +214,7 @@ canusb_create(const char *device, char *ebuf)
 	
 	p->activate_op = canusb_activate;
 	
-	canusb.pcap = p;	
+	canusb.src = strdup(p->opt.source);
 	return (p);
 }
 
@@ -232,7 +232,7 @@ static void* canusb_capture_thread(struct canusb_t *canusb)
   
   libusb_init(&ctx);
   
-  char *serial = canusb->pcap->opt.source + strlen(CANUSB_IFACE);  
+  char *serial = canusb->src + strlen(CANUSB_IFACE);  
   dev = canusb_opendevice(ctx, serial);
   
   fcntl(canusb->wrpipe, F_SETFL, O_NONBLOCK);  
@@ -263,16 +263,16 @@ static void* canusb_capture_thread(struct canusb_t *canusb)
 static int canusb_startcapture(struct canusb_t* this)
 {
   int pipefd[2];
-  
+
   if (pipe(pipefd) == -1) return -1;
-  
-  canusb.wrpipe = pipefd[0];
-  canusb.rdpipe = pipefd[1];
+
+  canusb.rdpipe = pipefd[0];
+  canusb.wrpipe = pipefd[1];
   canusb.loop = &loop;
-  
+
   loop = 1;  
   pthread_create(&this->worker, NULL, canusb_capture_thread, &canusb);
-  
+
   return canusb.rdpipe;
 }
 
@@ -292,9 +292,9 @@ static void canusb_clearbufs(struct canusb_t* this)
 
 static void canusb_close(pcap_t* handle)
 {
-  loop = 1;
+  loop = 0;
   pthread_join(canusb.worker, NULL);
-  
+
   if (canusb.dev)
   {
     libusb_close(canusb.dev);
@@ -330,7 +330,6 @@ static int canusb_activate(pcap_t* handle)
   	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device:");  
    	return PCAP_ERROR;
  	}
-
 
   canusb_clearbufs(&canusb);
 
