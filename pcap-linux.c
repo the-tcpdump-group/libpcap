@@ -166,6 +166,10 @@ static const char rcsid[] _U_ =
 #include "pcap-can-linux.h"
 #endif
 
+#if PCAP_SUPPORT_CANUSB
+#include "pcap-canusb-linux.h"
+#endif
+
 #ifdef PCAP_SUPPORT_NETFILTER
 #include "pcap-netfilter-linux.h"
 #endif
@@ -417,6 +421,13 @@ pcap_create(const char *device, char *ebuf)
 		return bt_create(device, ebuf);
 	}
 #endif
+
+#if PCAP_SUPPORT_CANUSB
+  if (strstr(device, "canusb")) {
+    return canusb_create(device, ebuf);
+  }
+#endif
+
 
 #ifdef PCAP_SUPPORT_CAN
 	if (strstr(device, "can") || strstr(device, "vcan")) {
@@ -2297,6 +2308,11 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	if (netfilter_platform_finddevs(alldevsp, errbuf) < 0)
 		return (-1);
+#endif
+
+#if PCAP_SUPPORT_CANUSB
+  if (canusb_platform_finddevs(alldevsp, errbuf) < 0)
+    return (-1);
 #endif
 
 	return (0);
