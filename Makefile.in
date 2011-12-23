@@ -502,7 +502,7 @@ bpf_filter.o: bpf_filter.c
 #
 # Therefore, instead of using $<, we explicitly put in $(srcdir)/pcap-config.in.
 #
-pcap-config: $(srcdir)/pcap-config.in
+pcap-config: $(srcdir)/pcap-config.in ./config.status
 	@rm -f $@ $@.tmp
 	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
 	mv $@.tmp $@
