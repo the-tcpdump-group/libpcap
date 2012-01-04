@@ -1224,6 +1224,10 @@ solaris*)
 	;;
 esac
 
+AC_ARG_ENABLE(shared,
+AC_HELP_STRING([--enable-shared],[build shared libraries @<:@default=yes, if support available@:>@]))
+test "x$enable_shared" = "xno" && DYEXT="none"
+
 AC_PROG_RANLIB
 AC_CHECK_TOOL([AR], [ar])
 
