@@ -1081,7 +1081,14 @@ struct bpf_program {
  */
 #define DLT_IPOIB		242
 
-#define DLT_MATCHING_MAX	242	/* highest value in the "matching" range */
+/*
+ * MPEG-2 transport stream (ISO 13818-1/ITU-T H.222.0).
+ *
+ * Requested by Guy Martin (Guy Martin <gmsoft@tuxicoman.be>).
+ */
+#define DLT_MPEG_2_TS		243
+
+#define DLT_MATCHING_MAX	243	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

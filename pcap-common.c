@@ -850,7 +850,14 @@
  */
 #define LINKTYPE_IPOIB		242
 
-#define LINKTYPE_MATCHING_MAX	242		/* highest value in the "matching" range */
+/*
+ * MPEG-2 transport stream (ISO 13818-1/ITU-T H.222.0).
+ *
+ * Requested by Guy Martin (Guy Martin <gmsoft@tuxicoman.be>).
+ */
+#define LINKTYPE_MPEG_2_TS	243
+
+#define LINKTYPE_MATCHING_MAX	243		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
