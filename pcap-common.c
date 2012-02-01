@@ -853,11 +853,19 @@
 /*
  * MPEG-2 transport stream (ISO 13818-1/ITU-T H.222.0).
  *
- * Requested by Guy Martin (Guy Martin <gmsoft@tuxicoman.be>).
+ * Requested by Guy Martin <gmsoft@tuxicoman.be>.
  */
 #define LINKTYPE_MPEG_2_TS	243
 
-#define LINKTYPE_MATCHING_MAX	243		/* highest value in the "matching" range */
+/*
+ * ng4T GmbH's UMTS Iub/Iur-over-ATM and Iub/Iur-over-IP format as
+ * used by their ng40 protocol tester.
+ *
+ * Requested by Jens Grimmer <jens.grimmer@ng4t.com>.
+ */
+#define LINKTYPE_NG40		244
+
+#define LINKTYPE_MATCHING_MAX	244		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
