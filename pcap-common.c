@@ -865,7 +865,17 @@
  */
 #define LINKTYPE_NG40		244
 
-#define LINKTYPE_MATCHING_MAX	244		/* highest value in the "matching" range */
+/*
+ * Pseudo-header giving adapter number and flags, followed by an NFC
+ * (Near-Field Communications) Logical Link Control Protocol (LLCP) PDU,
+ * as specified by NFC Forum Logical Link Control Protocol Technical
+ * Specification LLCP 1.1.
+ *
+ * Requested by Mike Wakerly <mikey@google.com>.
+ */
+#define LINKTYPE_NFC_LLCP	245
+
+#define LINKTYPE_MATCHING_MAX	245		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
