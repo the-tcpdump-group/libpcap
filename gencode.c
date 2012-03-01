@@ -1397,14 +1397,12 @@ init_linktype(p)
 		off_nl_nosnap = -1;
 		return;
 
-#ifdef DLT_PFSYNC
 	case DLT_PFSYNC:
 		off_linktype = -1;
 		off_macpl = 4;
 		off_nl = 0;
 		off_nl_nosnap = 0;
 		return;
-#endif
 
 	case DLT_AX25_KISS:
 		/*
@@ -3360,10 +3358,8 @@ gen_linktype(proto)
 	case DLT_ERF:
 		bpf_error("ERF link-layer type filtering not implemented");
 
-#ifdef DLT_PFSYNC
 	case DLT_PFSYNC:
 		bpf_error("PFSYNC link-layer type filtering not implemented");
-#endif
 
 	case DLT_LINUX_LAPD:
 		bpf_error("LAPD link-layer type filtering not implemented");
