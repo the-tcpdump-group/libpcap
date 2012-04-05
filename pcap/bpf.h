@@ -600,7 +600,7 @@ struct bpf_program {
 #define DLT_JUNIPER_MONITOR     164
 
 /*
- * Reserved for BACnet MS/TP.
+ * BACnet MS/TP frames.
  */
 #define DLT_BACNET_MS_TP	165
 
