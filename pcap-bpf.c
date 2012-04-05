@@ -1456,7 +1456,11 @@ check_setif_failure(pcap_t *p, int error)
  * 32K isn't very much for modern machines with fast networks; we
  * pick .5M, as that's the maximum on at least some systems with BPF.
  */
+#ifdef _AIX
+#define DEFAULT_BUFSIZE	32768
+#else
 #define DEFAULT_BUFSIZE	524288
+#endif
 
 static int
 pcap_activate_bpf(pcap_t *p)
