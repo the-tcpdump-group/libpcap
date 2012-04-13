@@ -118,7 +118,7 @@
 #define LINKTYPE_AX25		DLT_AX25
 #define LINKTYPE_PRONET		DLT_PRONET
 #define LINKTYPE_CHAOS		DLT_CHAOS
-#define LINKTYPE_TOKEN_RING	DLT_IEEE802	/* DLT_IEEE802 is used for Token Ring */
+#define LINKTYPE_IEEE802_5	DLT_IEEE802	/* DLT_IEEE802 is used for 802.5 Token Ring */
 #define LINKTYPE_ARCNET_BSD	DLT_ARCNET	/* BSD-style headers */
 #define LINKTYPE_SLIP		DLT_SLIP
 #define LINKTYPE_PPP		DLT_PPP
@@ -193,8 +193,8 @@
 
 #define LINKTYPE_PFLOG		117		/* OpenBSD DLT_PFLOG */
 #define LINKTYPE_CISCO_IOS	118		/* For Cisco-internal use */
-#define LINKTYPE_PRISM_HEADER	119		/* 802.11+Prism II monitor mode */
-#define LINKTYPE_AIRONET_HEADER	120		/* FreeBSD Aironet driver stuff */
+#define LINKTYPE_IEEE802_11_PRISM 119		/* 802.11 plus Prism II monitor mode radio metadata header */
+#define LINKTYPE_IEEE802_11_AIRONET 120		/* 802.11 plus FreeBSD Aironet driver radio metadata header */
 
 /*
  * Reserved for Siemens HiPath HDLC.
@@ -212,7 +212,7 @@
 #define LINKTYPE_PCI_EXP	125		/* PCI Express */
 #define LINKTYPE_AURORA		126		/* Xilinx Aurora link layer */
 
-#define LINKTYPE_IEEE802_11_RADIO 127		/* 802.11 plus BSD radio header */
+#define LINKTYPE_IEEE802_11_RADIOTAP 127	/* 802.11 plus radiotap radio metadata header */
 
 /*
  * Reserved for the TZSP encapsulation, as per request from
@@ -307,11 +307,8 @@
  * including radio information:
  *
  *	http://www.shaftnet.org/~pizza/software/capturefrm.txt
- *
- * but could and arguably should also be used by non-AVS Linux
- * 802.11 drivers; that may happen in the future.
  */
-#define LINKTYPE_IEEE802_11_RADIO_AVS 163	/* 802.11 plus AVS radio header */
+#define LINKTYPE_IEEE802_11_AVS	163	/* 802.11 plus AVS radio metadata header */
 
 /*
  * Juniper-private data link type, as per request from
@@ -891,7 +888,7 @@ static struct linktype_map {
 	{ DLT_AX25,		LINKTYPE_AX25 },
 	{ DLT_PRONET,		LINKTYPE_PRONET },
 	{ DLT_CHAOS,		LINKTYPE_CHAOS },
-	{ DLT_IEEE802,		LINKTYPE_TOKEN_RING },
+	{ DLT_IEEE802,		LINKTYPE_IEEE802_5 },
 	{ DLT_ARCNET,		LINKTYPE_ARCNET_BSD },
 	{ DLT_SLIP,		LINKTYPE_SLIP },
 	{ DLT_PPP,		LINKTYPE_PPP },
