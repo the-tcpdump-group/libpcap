@@ -428,9 +428,9 @@ pcap_create(const char *device, char *ebuf)
   }
 #endif
 
-
 #ifdef PCAP_SUPPORT_CAN
-	if (strstr(device, "can") || strstr(device, "vcan")) {
+	if ((strncmp(device, "can", 3) == 0 && isdigit(device[3])) ||
+	    (strncmp(device, "vcan", 4) == 0 && isigit(device[4]))) {
 		return can_create(device, ebuf);
 	}
 #endif
