@@ -454,6 +454,18 @@ int	pcap_getnonblock_fd(pcap_t *, char *);
 int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
 
+/*
+ * Internal interfaces for "pcap_create()".
+ *
+ * "pcap_create_interface()" is the routine to do a pcap_create on
+ * a regular network interface.  There are multiple implementations
+ * of this, one for each platform type (Linux, BPF, DLPI, etc.),
+ * with the one used chosen by the configure script.
+ *
+ * "pcap_create_common()" allocates and fills in a pcap_t, for use
+ * by pcap_create routines.
+ */
+pcap_t	*pcap_create_interface(const char *, char *);
 pcap_t	*pcap_create_common(const char *, char *);
 int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
@@ -465,12 +477,16 @@ int	pcap_check_activated(pcap_t *);
 /*
  * Internal interfaces for "pcap_findalldevs()".
  *
- * "pcap_platform_finddevs()" is a platform-dependent routine to
- * add devices not found by the "standard" mechanisms (SIOCGIFCONF,
- * "getifaddrs()", etc..
+ * "pcap_findalldevs_interfaces()" finds interfaces using the
+ * "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
  *
- * "pcap_add_if()" adds an interface to the list of interfaces.
+ * "pcap_platform_finddevs()" is a platform-dependent routine to
+ * add devices not found by the "standard" mechanisms.
+ *
+ * "pcap_add_if()" adds an interface to the list of interfaces, for
+ * use by various "find interfaces" routines.
  */
+int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
 int	pcap_platform_finddevs(pcap_if_t **, char *);
 int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
 	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,

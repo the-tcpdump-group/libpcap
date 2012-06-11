@@ -776,7 +776,7 @@ static int acn_open_live(const char *name, char *errbuf, int *linktype) {		/* re
 	iface_t		*p;
 	pcap_if_t	*alldevsp;
 
-	pcap_findalldevs(&alldevsp, errbuf);
+	pcap_findalldevs_interfaces(&alldevsp, errbuf);
 	for (chassis = 0; chassis <= MAX_CHASSIS; chassis++) {										/* scan the table... */
 		for (geoslot = 0; geoslot <= MAX_GEOSLOT; geoslot++) {
 			u = &units[chassis][geoslot];
@@ -968,7 +968,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 	return 0;
 }
 
-pcap_t *pcap_create(const char *device, char *ebuf) {
+pcap_t *pcap_create_interface(const char *device, char *ebuf) {
 	pcap_t *p;
 
 	p = pcap_create_common(device, ebuf);

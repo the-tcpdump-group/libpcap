@@ -75,20 +75,17 @@ struct CAN_Msg
 
 struct canusb_t
 {
-  libusb_context *ctx;
-  libusb_device_handle *dev;
-  char* src;
-  pthread_t worker;
-  int rdpipe, wrpipe;
-  volatile int* loop;
+    libusb_context *ctx;
+    libusb_device_handle *dev;
+    pthread_t worker;
+    int rdpipe, wrpipe;
+    volatile int* loop;
 };
 
 static struct canusb_t canusb;
 static volatile int loop;
 
-
-
-int canusb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
+int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
     libusb_context *fdctx;
     libusb_device** devs;
@@ -108,27 +105,27 @@ int canusb_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
         libusb_get_device_descriptor(devs[i],&desc);
 
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID)) 
-          continue; //It is not, check next device
+            continue; //It is not, check next device
           
         //It is!
         libusb_device_handle *dh = NULL;
 
         if (ret = libusb_open(devs[i],&dh) == 0)
         {
-          	char dev_name[30];
-	          char dev_descr[50]; 
+            char dev_name[30];
+            char dev_descr[50]; 
             int n = libusb_get_string_descriptor_ascii(dh,desc.iSerialNumber,sernum,64);
             sernum[n] = 0;
 
-          	snprintf(dev_name, 30, CANUSB_IFACE"%s", sernum);
-          	snprintf(dev_descr, 50, "CanUSB [%s]", sernum);
+            snprintf(dev_name, 30, CANUSB_IFACE"%s", sernum);
+            snprintf(dev_descr, 50, "CanUSB [%s]", sernum);
             
             libusb_close(dh);
             
             if (pcap_add_if(alldevsp, dev_name, 0, dev_descr, err_str) < 0)
             {
-              libusb_free_device_list(devs,1);
-              return -1;
+                libusb_free_device_list(devs,1);
+                return -1;
             }
         }
     }
@@ -199,23 +196,50 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
 
 
 pcap_t *
-canusb_create(const char *device, char *ebuf)
+canusb_create(const char *device, char *ebuf, int *is_ours)
 { 
-  pcap_t* p;
+    char *cp, *cpend;
+    long devnum;
+    pcap_t* p;
   		
-  libusb_init(&canusb.ctx);
-  
-	p = pcap_create_common(device, ebuf);
-	if (p == NULL)
-		return (NULL);
+    libusb_init(&canusb.ctx);
+
+    /* Does this look like a DAG device? */
+    cp = strrchr(device, '/');
+    if (cp == NULL)
+        cp = device;
+    /* Does it begin with "canusb"? */
+    if (strncmp(cp, "canusb", 6) != 0) {
+        /* Nope, doesn't begin with "canusb" */
+        *is_ours = 0;
+        return NULL;
+    }
+    /* Yes - is "canusb" followed by a number? */
+    cp += 6;
+    devnum = strtol(cp, &cpend, 10);
+    if (cpend == cp || *cpend != '\0') {
+        /* Not followed by a number. */
+        *is_ours = 0;
+        return NULL;
+    }
+    if (devnum < 0) {
+        /* Followed by a non-valid number. */
+        *is_ours = 0;
+        return NULL;
+    }
+
+    /* OK, it's probably ours. */
+    *is_ours = 1;
+
+    p = pcap_create_common(device, ebuf);
+    if (p == NULL)
+        return (NULL);
+
+    memset(&canusb, 0x00, sizeof(canusb));
 		
-  memset(&canusb, 0x00, sizeof(canusb));
-		
+    p->activate_op = canusb_activate;
 	
-	p->activate_op = canusb_activate;
-	
-	canusb.src = strdup(p->opt.source);
-	return (p);
+    return (p);
 }
 
 

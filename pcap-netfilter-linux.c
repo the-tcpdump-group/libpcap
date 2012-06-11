@@ -434,7 +434,32 @@ close_fail:
 pcap_t *
 nflog_create(const char *device, char *ebuf)
 {
+	char *cp;
 	pcap_t *p;
+
+	/* Does this look like an nflog device? */
+	cp = strrchr(device, '/');
+	if (cp == NULL)
+		cp = device;
+	/* Does it begin with NFLOG_IFACE? */
+	if (strncmp(cp, NFLOG_IFACE, sizeof NFLOG_IFACE - 1) != 0) {
+		/* Nope, doesn't begin with NFLOG_IFACE */
+		*is_ours = 0;
+		return NULL;
+	}
+	/*
+	 * Yes - is that either the end of the name, or is it followed
+	 * by a colon?
+	 */
+	cp += sizeof NFLOG_IFACE - 1;
+	if (*cp != ':' && *cp != '\0') {
+		/* Nope */
+		*is_ours = 0;
+		return NULL;
+	}
+
+	/* OK, it's probably ours. */
+	*is_ours = 1;
 
 	p = pcap_create_common(device, ebuf);
 	if (p == NULL)
@@ -445,7 +470,7 @@ nflog_create(const char *device, char *ebuf)
 }
 
 int 
-netfilter_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
+nflog_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
 	pcap_if_t *found_dev = *alldevsp;
 	int sock;
@@ -465,4 +490,3 @@ netfilter_platform_finddevs(pcap_if_t **alldevsp, char *err_str)
 		return -1;
 	return 0;
 }
-

@@ -74,8 +74,35 @@ static const char rcsid[] _U_ =
 #include "pcap-int.h"
 
 #ifdef HAVE_DAG_API
-#include <dagnew.h>
-#include <dagapi.h>
+#include "pcap-dag.h"
+#endif /* HAVE_DAG_API */
+
+#ifdef HAVE_SEPTEL_API
+#include "pcap-septel.h"
+#endif /* HAVE_SEPTEL_API */
+
+#ifdef HAVE_SNF_API
+#include "pcap-snf.h"
+#endif /* HAVE_SNF_API */
+
+#ifdef PCAP_SUPPORT_USB
+#include "pcap-usb-linux.h"
+#endif
+
+#ifdef PCAP_SUPPORT_BT
+#include "pcap-bt-linux.h"
+#endif
+
+#ifdef PCAP_SUPPORT_CAN
+#include "pcap-can-linux.h"
+#endif
+
+#ifdef PCAP_SUPPORT_CANUSB
+#include "pcap-canusb-linux.h"
+#endif
+
+#ifdef PCAP_SUPPORT_NETFILTER
+#include "pcap-netfilter-linux.h"
 #endif
 
 int 
@@ -231,6 +258,174 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	*/
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
+
+#if defined(DAG_ONLY)
+int
+pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (dag_findalldevs(alldevsp, errbuf));
+}
+
+pcap_t *
+pcap_create(const char *source, char *errbuf)
+{
+	return (dag_create(source, errbuf));
+}
+#elif defined(SEPTEL_ONLY)
+int
+pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (septel_findalldevs(alldevsp, errbuf));
+}
+
+pcap_t *
+pcap_create(const char *source, char *errbuf)
+{
+	return (septel_create(source, errbuf));
+}
+#elif defined(SNF_ONLY)
+int
+pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (snf_findalldevs(alldevsp, errbuf));
+}
+
+pcap_t *
+pcap_create(const char *source, char *errbuf)
+{
+	return (snf_create(source, errbuf));
+}
+#else /* regular pcap */
+struct capture_source_type {
+	int (*findalldevs_op)(pcap_if_t **, char *);
+	pcap_t *(*create_op)(const char *, char *, int *);
+} capture_source_types[] = {
+#ifdef HAVE_DAG_API
+	{ dag_findalldevs, dag_create },
+#endif
+#ifdef HAVE_SEPTEL_API
+	{ septel_findalldevs, septel_create },
+#endif
+#ifdef HAVE_SNF_API
+	{ snf_findalldevs, snf_create },
+#endif
+#ifdef PCAP_SUPPORT_BT
+	{ bt_findalldevs, bt_create },
+#endif
+#if PCAP_SUPPORT_CANUSB
+	{ canusb_findalldevs, canusb_create },
+#endif
+#ifdef PCAP_SUPPORT_CAN
+	{ can_findalldevs, can_create },
+#endif
+#ifdef PCAP_SUPPORT_USB
+	{ usb_findalldevs, usb_create },
+#endif
+#ifdef PCAP_SUPPORT_NETFILTER
+	{ nflog_findalldevs, nflog_create },
+#endif
+};
+
+#define N_CAPTURE_SOURCE_TYPES	(sizeof capture_source_types / sizeof capture_source_types[0])
+
+/*
+ * Get a list of all capture sources that are up and that we can open.
+ * Returns -1 on error, 0 otherwise.
+ * The list, as returned through "alldevsp", may be null if no interfaces
+ * were up and could be opened.
+ */
+int
+pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	size_t i;
+
+	/*
+	 * Get the list of regular interfaces first.
+	 */ 
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+		return (-1);	/* failure */
+
+	/*
+	 * Add any interfaces that need a platform-specific mechanism
+	 * to find.
+	 */
+	if (pcap_platform_finddevs(alldevsp, errbuf) == -1) {
+		/*
+		 * We had an error; free the list we've been
+		 * constructing.
+		 */
+		if (*alldevsp != NULL) {
+			pcap_freealldevs(*alldevsp);
+			*alldevsp = NULL;
+		}
+		return (-1);
+	}
+
+	/*
+	 * Ask each of the non-local-network-interface capture
+	 * source types what interfaces they have.
+	 */
+	for (i = 0; i < N_CAPTURE_SOURCE_TYPES; i++) {
+		if (capture_source_types[i].findalldevs_op(alldevsp, errbuf) == -1) {
+			/*
+			 * We had an error; free the list we've been
+			 * constructing.
+			 */
+			if (*alldevsp != NULL) {
+				pcap_freealldevs(*alldevsp);
+				*alldevsp = NULL;
+			}
+			return (-1);
+		}
+	}
+	return (0);
+}
+
+pcap_t *
+pcap_create(const char *source, char *errbuf)
+{
+	size_t i;
+	int is_theirs;
+	pcap_t *p;
+
+	/*
+	 * A null source name is equivalent to the "any" device -
+	 * which might not be supported on this platform, but
+	 * this means that you'll get a "not supported" error
+	 * rather than, say, a crash when we try to dereference
+	 * the null pointer.
+	 */
+	if (source == NULL)
+		source = "any";
+
+	/*
+	 * Try each of the non-local-network-interface capture
+	 * source types until we find one that works for this
+	 * device or run out of types.
+	 */
+	for (i = 0; i < N_CAPTURE_SOURCE_TYPES; i++) {
+		is_theirs = 0;
+		p = capture_source_types[i].create_op(source, errbuf, &is_theirs);
+		if (is_theirs) {
+			/*
+			 * The device name refers to a device of the
+			 * type in question; either it succeeded,
+			 * in which case p refers to a pcap_t to
+			 * later activate for the device, or it
+			 * failed, in which case p is null and we
+			 * should return that to report the failure
+			 * to create.
+			 */
+			return (p);
+		}
+	}
+
+	/*
+	 * OK, try it as a regular network interface.
+	 */
+	return (pcap_create_interface(source, errbuf));
+}
+#endif
 
 static void
 initialize_ops(pcap_t *p)

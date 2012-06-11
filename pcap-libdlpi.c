@@ -391,7 +391,7 @@ pcap_libdlpi_err(const char *linkname, const char *func, int err, char *errbuf)
 }
 
 pcap_t *
-pcap_create(const char *device, char *ebuf)
+pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *p;
 

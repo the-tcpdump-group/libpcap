@@ -142,38 +142,6 @@ static const char rcsid[] _U_ =
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
 
-#ifdef HAVE_DAG_API
-#include "pcap-dag.h"
-#endif /* HAVE_DAG_API */
-
-#ifdef HAVE_SEPTEL_API
-#include "pcap-septel.h"
-#endif /* HAVE_SEPTEL_API */
-
-#ifdef HAVE_SNF_API
-#include "pcap-snf.h"
-#endif /* HAVE_SNF_API */
-
-#ifdef PCAP_SUPPORT_USB
-#include "pcap-usb-linux.h"
-#endif
-
-#ifdef PCAP_SUPPORT_BT
-#include "pcap-bt-linux.h"
-#endif
-
-#ifdef PCAP_SUPPORT_CAN
-#include "pcap-can-linux.h"
-#endif
-
-#if PCAP_SUPPORT_CANUSB
-#include "pcap-canusb-linux.h"
-#endif
-
-#ifdef PCAP_SUPPORT_NETFILTER
-#include "pcap-netfilter-linux.h"
-#endif
-
 /*
  * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
  * sockets rather than SOCK_PACKET sockets.
@@ -387,65 +355,9 @@ static struct sock_fprog	total_fcode
 #endif /* SO_ATTACH_FILTER */
 
 pcap_t *
-pcap_create(const char *device, char *ebuf)
+pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *handle;
-
-	/*
-	 * A null device name is equivalent to the "any" device.
-	 */
-	if (device == NULL)
-		device = "any";
-
-#ifdef HAVE_DAG_API
-	if (strstr(device, "dag")) {
-		return dag_create(device, ebuf);
-	}
-#endif /* HAVE_DAG_API */
-
-#ifdef HAVE_SEPTEL_API
-	if (strstr(device, "septel")) {
-		return septel_create(device, ebuf);
-	}
-#endif /* HAVE_SEPTEL_API */
-
-#ifdef HAVE_SNF_API
-        handle = snf_create(device, ebuf);
-        if (strstr(device, "snf") || handle != NULL)
-		return handle;
-
-#endif /* HAVE_SNF_API */
-
-#ifdef PCAP_SUPPORT_BT
-	if (strstr(device, "bluetooth")) {
-		return bt_create(device, ebuf);
-	}
-#endif
-
-#if PCAP_SUPPORT_CANUSB
-  if (strstr(device, "canusb")) {
-    return canusb_create(device, ebuf);
-  }
-#endif
-
-#ifdef PCAP_SUPPORT_CAN
-	if ((strncmp(device, "can", 3) == 0 && isdigit(device[3])) ||
-	    (strncmp(device, "vcan", 4) == 0 && isdigit(device[4]))) {
-		return can_create(device, ebuf);
-	}
-#endif
-
-#ifdef PCAP_SUPPORT_USB
-	if (strstr(device, "usbmon")) {
-		return usb_create(device, ebuf);
-	}
-#endif
-
-#ifdef PCAP_SUPPORT_NETFILTER
-	if (strncmp(device, "nflog", strlen("nflog")) == 0) {
-		return nflog_create(device, ebuf);
-	}
-#endif
 
 	handle = pcap_create_common(device, ebuf);
 	if (handle == NULL)
@@ -2264,56 +2176,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	if (pcap_add_if(alldevsp, "any", 0, any_descr, errbuf) < 0)
 		return (-1);
-
-#ifdef HAVE_DAG_API
-	/*
-	 * Add DAG devices.
-	 */
-	if (dag_platform_finddevs(alldevsp, errbuf) < 0)
-		return (-1);
-#endif /* HAVE_DAG_API */
-
-#ifdef HAVE_SEPTEL_API
-	/*
-	 * Add Septel devices.
-	 */
-	if (septel_platform_finddevs(alldevsp, errbuf) < 0)
-		return (-1);
-#endif /* HAVE_SEPTEL_API */
-
-#ifdef HAVE_SNF_API
-	if (snf_platform_finddevs(alldevsp, errbuf) < 0)
-		return (-1);
-#endif /* HAVE_SNF_API */
-
-#ifdef PCAP_SUPPORT_BT
-	/*
-	 * Add Bluetooth devices.
-	 */
-	if (bt_platform_finddevs(alldevsp, errbuf) < 0)
-		return (-1);
-#endif
-
-#ifdef PCAP_SUPPORT_USB
-	/*
-	 * Add USB devices.
-	 */
-	if (usb_platform_finddevs(alldevsp, errbuf) < 0)
-		return (-1);
-#endif
-
-#ifdef PCAP_SUPPORT_NETFILTER
-	/*
-	 * Add netfilter devices.
-	 */
-	if (netfilter_platform_finddevs(alldevsp, errbuf) < 0)
-		return (-1);
-#endif
-
-#if PCAP_SUPPORT_CANUSB
-  if (canusb_platform_finddevs(alldevsp, errbuf) < 0)
-    return (-1);
-#endif
 
 	return (0);
 }
