@@ -137,7 +137,8 @@ done:
 pcap_t *
 bt_create(const char *device, char *ebuf, int *is_ours)
 {
-	const char *cp, *cpend;
+	const char *cp;
+	char *cpend;
 	long devnum;
 	pcap_t *p;
 
