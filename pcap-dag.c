@@ -834,7 +834,7 @@ fail:
 
 pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 {
-	char *cp, *cpend;
+	const char *cp, *cpend;
 	long devnum;
 	pcap_t *p;
 

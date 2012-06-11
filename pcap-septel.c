@@ -213,7 +213,7 @@ static pcap_t *septel_activate(pcap_t* handle) {
 }
 
 pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
-	char *cp;
+	const char *cp;
 	pcap_t *p;
 
 	/* Does this look like the Septel device? */

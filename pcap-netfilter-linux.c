@@ -434,7 +434,7 @@ close_fail:
 pcap_t *
 nflog_create(const char *device, char *ebuf)
 {
-	char *cp;
+	const char *cp;
 	pcap_t *p;
 
 	/* Does this look like an nflog device? */

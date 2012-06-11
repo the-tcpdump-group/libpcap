@@ -286,7 +286,7 @@ probe_devices(int bus)
 pcap_t *
 usb_create(const char *device, char *ebuf, int *is_ours)
 {
-	char *cp, *cpend;
+	const char *cp, *cpend;
 	long devnum;
 	pcap_t *p;
 

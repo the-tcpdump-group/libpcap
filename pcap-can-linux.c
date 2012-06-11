@@ -87,7 +87,7 @@ can_findalldevs(pcap_if_t **devlistp, char *errbuf)
 pcap_t *
 can_create(const char *device, char *ebuf, int *is_ours)
 {
-	char *cp, *cpend;
+	const char *cp, *cpend;
 	long devnum;
 	pcap_t* p;
 

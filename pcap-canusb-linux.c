@@ -198,7 +198,7 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
 pcap_t *
 canusb_create(const char *device, char *ebuf, int *is_ours)
 { 
-    char *cp, *cpend;
+    const char *cp, *cpend;
     long devnum;
     pcap_t* p;
   		
