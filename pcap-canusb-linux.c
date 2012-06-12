@@ -202,7 +202,7 @@ canusb_create(const char *device, char *ebuf, int *is_ours)
     char *cpend;
     long devnum;
     pcap_t* p;
-  		
+
     libusb_init(&canusb.ctx);
 
     /* Does this look like a DAG device? */
@@ -237,9 +237,9 @@ canusb_create(const char *device, char *ebuf, int *is_ours)
         return (NULL);
 
     memset(&canusb, 0x00, sizeof(canusb));
-		
+
     p->activate_op = canusb_activate;
-	
+
     return (p);
 }
 
@@ -303,65 +303,67 @@ static int canusb_startcapture(struct canusb_t* this)
 
 static void canusb_clearbufs(struct canusb_t* this)
 {
-        unsigned char cmd[16];
-        int al;
+    unsigned char cmd[16];
+    int al;
 
-        cmd[0] = 1;  //Empty incoming buffer
-        cmd[1] = 1;  //Empty outgoing buffer
-        cmd[3] = 0;  //Not a write to serial number
-        memset(&cmd[4],0,16-4);
+    cmd[0] = 1;  //Empty incoming buffer
+    cmd[1] = 1;  //Empty outgoing buffer
+    cmd[3] = 0;  //Not a write to serial number
+    memset(&cmd[4],0,16-4);
         
-        libusb_interrupt_transfer(this->dev, 0x1,cmd,16,&al,100);
+    libusb_interrupt_transfer(this->dev, 0x1,cmd,16,&al,100);
 }
 
 
 static void canusb_close(pcap_t* handle)
 {
-  loop = 0;
-  pthread_join(canusb.worker, NULL);
+    loop = 0;
+    pthread_join(canusb.worker, NULL);
 
-  if (canusb.dev)
-  {
-    libusb_close(canusb.dev);
-    canusb.dev = NULL;    
-  }    
+    if (canusb.dev)
+    {
+        libusb_close(canusb.dev);
+        canusb.dev = NULL;    
+    }    
 }
 
 
 
 static int canusb_activate(pcap_t* handle)
 {
-	handle->read_op = canusb_read_linux;
+    char *serial;
 
-	handle->inject_op = canusb_inject_linux;
-	handle->setfilter_op = canusb_setfilter_linux;
-	handle->setdirection_op = canusb_setdirection_linux;
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->stats_op = canusb_stats_linux;
-	handle->cleanup_op = canusb_close;
+    handle->read_op = canusb_read_linux;
 
-	/* Initialize some components of the pcap structure. */
-	handle->bufsize = 32;
-	handle->offset = 8;
-	handle->linktype = DLT_CAN_SOCKETCAN;
-	handle->set_datalink_op = NULL;
+    handle->inject_op = canusb_inject_linux;
+    handle->setfilter_op = canusb_setfilter_linux;
+    handle->setdirection_op = canusb_setdirection_linux;
+    handle->getnonblock_op = pcap_getnonblock_fd;
+    handle->setnonblock_op = pcap_setnonblock_fd;
+    handle->stats_op = canusb_stats_linux;
+    handle->cleanup_op = canusb_close;
 
-  char* serial = handle->opt.source + strlen("canusb");
+    /* Initialize some components of the pcap structure. */
+    handle->bufsize = 32;
+    handle->offset = 8;
+    handle->linktype = DLT_CAN_SOCKETCAN;
+    handle->set_datalink_op = NULL;
 
-  canusb.dev = canusb_opendevice(canusb.ctx,serial);
-  if (!canusb.dev)
-  {
-  	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device:");  
-   	return PCAP_ERROR;
- 	}
+    serial = handle->opt.source + strlen("canusb");
 
-  canusb_clearbufs(&canusb);
+    canusb.dev = canusb_opendevice(canusb.ctx,serial);
+    if (!canusb.dev)
+    {
+        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device:");  
+        return PCAP_ERROR;
+    }
 
-  handle->fd = canusb_startcapture(&canusb);
-	handle->selectable_fd = handle->fd;
-			
-	return 0;
+    canusb_clearbufs(&canusb);
+
+    handle->fd = canusb_startcapture(&canusb);
+    handle->selectable_fd = handle->fd;
+
+    return 0;
 }
 
 
@@ -370,83 +372,85 @@ static int canusb_activate(pcap_t* handle)
 static int
 canusb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-  static struct timeval firstpacket = { -1, -1};
+    static struct timeval firstpacket = { -1, -1};
   
-  int msgsent = 0;
-  int i = 0;
-  struct CAN_Msg msg;
-	struct pcap_pkthdr pkth;
+    int msgsent = 0;
+    int i = 0;
+    struct CAN_Msg msg;
+    struct pcap_pkthdr pkth;
   
-  while(i < max_packets)
-  {
-    usleep(10 * 1000);
-    int n = read(handle->fd, &msg, sizeof(msg));
-    if (n <= 0) break;
-    pkth.caplen = pkth.len = n;
-    pkth.caplen -= 4;
-    pkth.caplen -= 8 - msg.length;
-    
-    if ((firstpacket.tv_sec == -1) && (firstpacket.tv_usec == -1))
-      gettimeofday(&firstpacket, NULL);
-      
-    pkth.ts.tv_usec = firstpacket.tv_usec + (msg.timestamp % 100) * 10000;
-    pkth.ts.tv_sec = firstpacket.tv_usec + (msg.timestamp / 100);
-    if (pkth.ts.tv_usec > 1000000)
+    while(i < max_packets)
     {
-      pkth.ts.tv_usec -= 1000000;
-      pkth.ts.tv_sec++;
-    }
+        int n;
+        usleep(10 * 1000);
+        n = read(handle->fd, &msg, sizeof(msg));
+        if (n <= 0)
+            break;
+        pkth.caplen = pkth.len = n;
+        pkth.caplen -= 4;
+        pkth.caplen -= 8 - msg.length;
+    
+        if ((firstpacket.tv_sec == -1) && (firstpacket.tv_usec == -1))
+            gettimeofday(&firstpacket, NULL);
+      
+        pkth.ts.tv_usec = firstpacket.tv_usec + (msg.timestamp % 100) * 10000;
+        pkth.ts.tv_sec = firstpacket.tv_usec + (msg.timestamp / 100);
+        if (pkth.ts.tv_usec > 1000000)
+        {
+            pkth.ts.tv_usec -= 1000000;
+            pkth.ts.tv_sec++;
+        }
 
-    callback(user, &pkth, (void*)&msg.id);
-    i++;
-  }
+        callback(user, &pkth, (void*)&msg.id);
+        i++;
+    }
   
-  return i;
+    return i;
 }
 
 
 static int
 canusb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-	/* not yet implemented */
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on canusb devices");
-	return (-1);
+    /* not yet implemented */
+    snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on canusb devices");
+    return (-1);
 }
 
 
 static int
 canusb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
-	/* not yet implemented */
-	stats->ps_recv = 0;			 /* number of packets received */
-	stats->ps_drop = 0;			 /* number of packets dropped */
-	stats->ps_ifdrop = 0;		 /* drops by interface -- only supported on some platforms */
-	return 0;
+    /* not yet implemented */
+    stats->ps_recv = 0;     /* number of packets received */
+    stats->ps_drop = 0;     /* number of packets dropped */
+    stats->ps_ifdrop = 0;   /* drops by interface -- only supported on some platforms */
+    return 0;
 }
 
 
 static int
 canusb_setfilter_linux(pcap_t *p, struct bpf_program *fp)
 {
-	/* not yet implemented */
-	return 0;
+    /* not yet implemented */
+    return 0;
 }
 
 
 static int
 canusb_setdirection_linux(pcap_t *p, pcap_direction_t d)
 {
-	/* no support for PCAP_D_OUT */
-	if (d == PCAP_D_OUT)
-	{
-		snprintf(p->errbuf, sizeof(p->errbuf),
-			"Setting direction to PCAP_D_OUT is not supported on this interface");
-		return -1;
-	}
+    /* no support for PCAP_D_OUT */
+    if (d == PCAP_D_OUT)
+    {
+        snprintf(p->errbuf, sizeof(p->errbuf),
+            "Setting direction to PCAP_D_OUT is not supported on this interface");
+        return -1;
+    }
 
-	p->direction = d;
+    p->direction = d;
 
-	return 0;
+    return 0;
 }
 
 
