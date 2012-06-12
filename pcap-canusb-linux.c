@@ -246,59 +246,60 @@ canusb_create(const char *device, char *ebuf, int *is_ours)
 
 static void* canusb_capture_thread(struct canusb_t *canusb)
 {
-  struct libusb_context *ctx;
-  libusb_device_handle *dev;
-
-  int i, n;  
-  struct 
-  {
-    uint8_t rxsz, txsz;
-  } status;
-  
-  libusb_init(&ctx);
-  
-  char *serial = canusb->src + strlen(CANUSB_IFACE);  
-  dev = canusb_opendevice(ctx, serial);
-  
-  fcntl(canusb->wrpipe, F_SETFL, O_NONBLOCK);  
-
-  while(*canusb->loop)
-  {
-    int sz, ret;
-    struct CAN_Msg msg;
-    
-    libusb_interrupt_transfer(dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);
-    //HACK!!!!! -> drop buffered data, read new one by reading twice.        
-    ret = libusb_interrupt_transfer(dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);                                   
-
-    for(i = 0; i<status.rxsz; i++)
+    struct libusb_context *ctx;
+    libusb_device_handle *dev;
+    int i, n;  
+    struct 
     {
-      libusb_bulk_transfer(dev, 0x85, (unsigned char*)&msg, sizeof(msg), &sz, 100);      
-      n = write(canusb->wrpipe, &msg, sizeof(msg));
-    }
+      uint8_t rxsz, txsz;
+    } status;
+    char *serial;
+  
+    libusb_init(&ctx);
+  
+    serial = canusb->src + strlen(CANUSB_IFACE);  
+    dev = canusb_opendevice(ctx, serial);
+  
+    fcntl(canusb->wrpipe, F_SETFL, O_NONBLOCK);  
 
-  }
+    while(*canusb->loop)
+    {
+        int sz, ret;
+        struct CAN_Msg msg;
+    
+        libusb_interrupt_transfer(dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);
+        //HACK!!!!! -> drop buffered data, read new one by reading twice.        
+        ret = libusb_interrupt_transfer(dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);                                   
+
+        for(i = 0; i<status.rxsz; i++)
+        {
+            libusb_bulk_transfer(dev, 0x85, (unsigned char*)&msg, sizeof(msg), &sz, 100);      
+            n = write(canusb->wrpipe, &msg, sizeof(msg));
+        }
+
+    }
   
-  libusb_close(dev);
-  libusb_exit(ctx);
+    libusb_close(dev);
+    libusb_exit(ctx);
   
-  return NULL;
+    return NULL;
 }
 
 static int canusb_startcapture(struct canusb_t* this)
 {
-  int pipefd[2];
+    int pipefd[2];
 
-  if (pipe(pipefd) == -1) return -1;
+    if (pipe(pipefd) == -1)
+        return -1;
 
-  canusb.rdpipe = pipefd[0];
-  canusb.wrpipe = pipefd[1];
-  canusb.loop = &loop;
+    canusb.rdpipe = pipefd[0];
+    canusb.wrpipe = pipefd[1];
+    canusb.loop = &loop;
 
-  loop = 1;  
-  pthread_create(&this->worker, NULL, canusb_capture_thread, &canusb);
+    loop = 1;  
+    pthread_create(&this->worker, NULL, canusb_capture_thread, &canusb);
 
-  return canusb.rdpipe;
+    return canusb.rdpipe;
 }
 
 static void canusb_clearbufs(struct canusb_t* this)
