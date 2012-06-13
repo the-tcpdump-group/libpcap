@@ -1395,7 +1395,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 fi
 
 AC_ARG_ENABLE([canusb],
-[AC_HELP_STRING([--enable-canusb],[enable canusb support @<:@default=yes, if support available@:>@])]
+[AC_HELP_STRING([--enable-canusb],[enable canusb support @<:@default=yes, if support available@:>@])],
 ,enable_canusb=yes)
 
 if test "x$enable_canusb" != "xno" ; then
