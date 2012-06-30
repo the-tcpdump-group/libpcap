@@ -9832,6 +9832,12 @@ echo "$as_me: WARNING: don't have both flex and bison; reverting to lex/yacc" >&
     if test "$V_LEX" = flex -a -n "pcap_" ; then
 	    V_LEX="$V_LEX -Ppcap_"
 	    V_YACC="$V_YACC -p pcap_"
+    else
+
+cat >>confdefs.h <<\_ACEOF
+#define NEED_YYPARSE_WRAPPER 1
+_ACEOF
+
     fi
 if test "$V_LEX" = lex ; then
 # Some versions of lex can't handle the definitions section of scanner.l .
