@@ -11529,7 +11529,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 		    CANUSB_SRC=pcap-canusb-linux.c
-		    LIBS="-lusb-1.0 $LIBS"
+		    LIBS="-lusb-1.0 -lpthread $LIBS"
 		    { echo "$as_me:$LINENO: canusb sniffing is supported" >&5
 echo "$as_me: canusb sniffing is supported" >&6;}
 
