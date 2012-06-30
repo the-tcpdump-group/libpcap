@@ -2,6 +2,8 @@ Saturday June 30, 2012 guy@alum.mit.edu
 Summary for 1.3.1 libpcap release
 	Fix pcap-config to include -lpthread if canusb support is
 	    present
+	Try to fix "pcap_parse not defined" problems when --without-flex
+	    and --without-bison are used when you have Flex and Bison
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
