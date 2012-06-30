@@ -1406,7 +1406,7 @@ if test "x$enable_canusb" != "xno" ; then
 		[
 		    AC_DEFINE(PCAP_SUPPORT_CANUSB, 1, [target host supports canusb])
 		    CANUSB_SRC=pcap-canusb-linux.c
-		    LIBS="-lusb-1.0 $LIBS"
+		    LIBS="-lusb-1.0 -lpthread $LIBS"
 		    AC_MSG_NOTICE(canusb sniffing is supported)
 		],
 		AC_MSG_NOTICE(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
