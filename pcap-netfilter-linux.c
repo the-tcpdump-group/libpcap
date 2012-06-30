@@ -432,7 +432,7 @@ close_fail:
 }
 
 pcap_t *
-nflog_create(const char *device, char *ebuf)
+nflog_create(const char *device, char *ebuf, int *is_ours)
 {
 	const char *cp;
 	pcap_t *p;
