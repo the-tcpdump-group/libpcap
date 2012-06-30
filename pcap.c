@@ -322,7 +322,7 @@ struct capture_source_type {
 	{ usb_findalldevs, usb_create },
 #endif
 #ifdef PCAP_SUPPORT_NETFILTER
-	{ nflog_findalldevs, nflog_create },
+	{ netfilter_findalldevs, netfilter_create },
 #endif
 };
 
