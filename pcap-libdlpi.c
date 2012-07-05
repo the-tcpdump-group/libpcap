@@ -237,7 +237,7 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 {
 	int err;
 
-	retv = dlpi_promiscon(p->hd, level);
+	retv = dlpi_promiscon(p->dlpi_hd, level);
 	if (retv != DLPI_SUCCESS) {
 		if (retv == DL_SYSERR &&
 		    (errno == EPERM || errno == EACCES))
