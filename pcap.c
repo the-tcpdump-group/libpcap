@@ -322,7 +322,7 @@ struct capture_source_type {
 	{ usb_findalldevs, usb_create },
 #endif
 #ifdef PCAP_SUPPORT_NETFILTER
-	{ nflog_findalldevs, nflog_create },
+	{ netfilter_findalldevs, netfilter_create },
 #endif
 };
 
@@ -1218,7 +1218,18 @@ pcap_geterr(pcap_t *p)
 int
 pcap_getnonblock(pcap_t *p, char *errbuf)
 {
-	return (p->getnonblock_op(p, errbuf));
+	int ret;
+
+	ret = p->getnonblock_op(p, errbuf);
+	if (ret == -1) {
+		/*
+		 * In case somebody depended on the bug wherein
+		 * the error message was put into p->errbuf
+		 * by pcap_getnonblock_fd().
+		 */
+		strlcpy(p->errbuf, errbuf, PCAP_ERRBUF_SIZE);
+	}
+	return (ret);
 }
 
 /*
@@ -1236,7 +1247,7 @@ pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1250,7 +1261,18 @@ pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 int
 pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
-	return (p->setnonblock_op(p, nonblock, errbuf));
+	int ret;
+
+	ret = p->setnonblock_op(p, nonblock, errbuf);
+	if (ret == -1) {
+		/*
+		 * In case somebody depended on the bug wherein
+		 * the error message was put into p->errbuf
+		 * by pcap_setnonblock_fd().
+		 */
+		strlcpy(p->errbuf, errbuf, PCAP_ERRBUF_SIZE);
+	}
+	return (ret);
 }
 
 #if !defined(WIN32) && !defined(MSDOS)
@@ -1267,7 +1289,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1276,7 +1298,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 	else
 		fdflags &= ~O_NONBLOCK;
 	if (fcntl(p->fd, F_SETFL, fdflags) == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}

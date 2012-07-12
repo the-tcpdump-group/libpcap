@@ -425,6 +425,15 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	const char * volatile xbuf = buf;
 	u_int len;
 
+	/*
+	 * If this pcap_t hasn't been activated, it doesn't have a
+	 * link-layer type, so we can't use it.
+	 */
+	if (!p->activated) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "not-yet-activated pcap_t passed to pcap_compile");
+		return (-1);
+	}
 	no_optimize = 0;
 	n_errors = 0;
 	root = NULL;

@@ -1,3 +1,17 @@
+Saturday June 30, 2012 guy@alum.mit.edu
+Summary for 1.3.1 libpcap release
+	Fix pcap-config to include -lpthread if canusb support is
+	    present
+	Try to fix "pcap_parse not defined" problems when --without-flex
+	    and --without-bison are used when you have Flex and Bison
+	Fix some issues with the pcap_loop man page.
+	Fix pcap_getnonblock() and pcap_setnonblock() to fill in the
+	    supplied error message buffer
+	Fix typo that, it appeared, would cause pcap-libdlpi.c not to
+	    compile (perhaps systems with libdlpi also have BPF and use
+	    that instead)
+	Catch attempts to call pcap_compile() on a non-activated pcap_t
+
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
         Handle DLT_PFSYNC in {FreeBSD, other *BSD+Mac OS X, other}.
