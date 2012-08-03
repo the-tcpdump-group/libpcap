@@ -1010,6 +1010,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_LINUX_IRDA, "Linux IrDA"),
 	DLT_CHOICE(DLT_IEEE802_11_RADIO_AVS, "802.11 plus AVS radio information header"),
         DLT_CHOICE(DLT_JUNIPER_MONITOR, "Juniper Passive Monitor PIC"),
+	DLT_CHOICE(DLT_BACNET_MS_TP, "BACnet MS/TP"),
 	DLT_CHOICE(DLT_PPP_PPPD, "PPP for pppd, with direction flag"),
 	DLT_CHOICE(DLT_JUNIPER_PPPOE, "Juniper PPPoE"),
 	DLT_CHOICE(DLT_JUNIPER_PPPOE_ATM, "Juniper PPPoE/ATM"),

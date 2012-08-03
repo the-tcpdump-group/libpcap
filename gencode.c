@@ -1343,6 +1343,13 @@ init_linktype(p)
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
+	case DLT_BACNET_MS_TP:
+		off_linktype = -1;
+		off_macpl = -1;
+		off_nl = -1;
+		off_nl_nosnap = -1;
+		return;
+
 	case DLT_JUNIPER_SERVICES:
 		off_linktype = 12;
 		off_macpl = -1;		/* L3 proto location dep. on cookie type */
@@ -3353,6 +3360,9 @@ gen_linktype(proto)
 		 * FIXME encapsulation specific BPF_ filters
 		 */
 		return gen_mcmp(OR_LINK, 0, BPF_W, 0x4d474300, 0xffffff00); /* compare the magic number */
+
+	case DLT_BACNET_MS_TP:
+		return gen_mcmp(OR_LINK, 0, BPF_W, 0x55FF0000, 0xffff0000);
 
 	case DLT_IPNET:
 		return gen_ipnet_linktype(proto);
