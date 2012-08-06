@@ -11,6 +11,7 @@ Summary for 1.3.1 libpcap release
 	    compile (perhaps systems with libdlpi also have BPF and use
 	    that instead)
 	Catch attempts to call pcap_compile() on a non-activated pcap_t
+	Fix crash on Linux with CAN-USB support without usbfs
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
