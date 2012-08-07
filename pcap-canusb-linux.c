@@ -93,8 +93,15 @@ int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
     unsigned char buf[96];
     int cnt, i;
     
-    libusb_init(&fdctx);
-        
+    if (libusb_init(&fdctx) != 0) {
+        /*
+         * XXX - if this doesn't just mean "no USB file system mounted",
+         * perhaps we should report a real error rather than just
+         * saying "no CANUSB devices".
+         */
+        return 0;
+    } 
+
     cnt = libusb_get_device_list(fdctx,&devs);
 
     for(i=0;i<cnt;i++)
