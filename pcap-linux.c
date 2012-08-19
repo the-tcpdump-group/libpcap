@@ -1530,7 +1530,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	}
 
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
-	if (handle->md.add_vlan_tags) {
+	if (handle->md.vlan_offset != -1) {
 		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			struct tpacket_auxdata *aux;
 			unsigned int len;
@@ -1546,13 +1546,13 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 				continue;
 
 			len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
-			if (len < 2 * ETH_ALEN)
+			if (len < (unsigned int) handle->md.vlan_offset)
 				break;
 
 			bp -= VLAN_TAG_LEN;
-			memmove(bp, bp + VLAN_TAG_LEN, 2 * ETH_ALEN);
+			memmove(bp, bp + VLAN_TAG_LEN, handle->md.vlan_offset);
 
-			tag = (struct vlan_tag *)(bp + 2 * ETH_ALEN);
+			tag = (struct vlan_tag *)(bp + handle->md.vlan_offset);
 			tag->vlan_tpid = htons(ETH_P_8021Q);
 			tag->vlan_tci = htons(aux->tp_vlan_tci);
 
@@ -3046,17 +3046,22 @@ activate_new(pcap_t *handle)
 	handle->bufsize = handle->snapshot;
 
 	/*
-	 * Only enable the insertion of VLAN tags if the link-layer
-	 * header type is Ethernet.  If it should be supported on
-	 * any other link-layer type, the code that inserts them
-	 * must be modified to insert them in the proper place, which
-	 * differs from link-layer header type to link-layer header
-	 * type.
+	 * Set the offset at which to insert VLAN tags.
 	 */
-	if (handle->linktype == DLT_EN10MB)
-		handle->md.add_vlan_tags = 1;
-	else
-		handle->md.add_vlan_tags = 0;
+	switch (handle->linktype) {
+
+	case DLT_EN10MB:
+		handle->md.vlan_offset = 2 * ETH_ALEN;
+		break;
+
+	case DLT_LINUX_SLL:
+		handle->md.vlan_offset = 14;
+		break;
+
+	default:
+		handle->md.vlan_offset = -1; /* unknown */
+		break;
+	}
 
 	/* Save the socket FD in the pcap structure */
 	handle->fd = sock_fd;
@@ -3145,14 +3150,6 @@ activate_mmap(pcap_t *handle, int *status)
 	handle->getnonblock_op = pcap_getnonblock_mmap;
 	handle->oneshot_callback = pcap_oneshot_mmap;
 	handle->selectable_fd = handle->fd;
-
-	/*
-	 * We only support inserting VLAN tags for tpacket V2;
-	 * if we're using v1, disable it.
-	 */
-	if (handle->md.tp_version == TPACKET_V1)
-		handle->md.add_vlan_tags = 0;
-
 	return 1;
 }
 #else /* HAVE_PACKET_RING */
@@ -3905,14 +3902,15 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 
 #ifdef HAVE_TPACKET2
-		if (handle->md.add_vlan_tags && h.h2->tp_vlan_tci &&
-		    tp_snaplen >= 2 * ETH_ALEN) {
+		if (handle->md.tp_version == TPACKET_V2 && h.h2->tp_vlan_tci &&
+		    handle->md.vlan_offset != -1 &&
+		    tp_snaplen >= (unsigned int) handle->md.vlan_offset) {
 			struct vlan_tag *tag;
 
 			bp -= VLAN_TAG_LEN;
-			memmove(bp, bp + VLAN_TAG_LEN, 2 * ETH_ALEN);
+			memmove(bp, bp + VLAN_TAG_LEN, handle->md.vlan_offset);
 
-			tag = (struct vlan_tag *)(bp + 2 * ETH_ALEN);
+			tag = (struct vlan_tag *)(bp + handle->md.vlan_offset);
 			tag->vlan_tpid = htons(ETH_P_8021Q);
 			tag->vlan_tci = htons(h.h2->tp_vlan_tci);
 
@@ -5099,9 +5097,10 @@ activate_old(pcap_t *handle)
 	handle->offset	 = 0;
 
 	/*
-	 * No support for getting VLAN tags to insert.
+	 * SOCK_PACKET sockets don't supply information from
+	 * stripped VLAN tags.
 	 */
-	handle->md.add_vlan_tags = 0;
+	handle->md.vlan_offset = -1; /* unknown */
 
 	return 1;
 }
