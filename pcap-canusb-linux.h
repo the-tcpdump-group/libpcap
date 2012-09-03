@@ -33,5 +33,5 @@
  * Prototypes for SocketCAN related functions
  */
 pcap_t* canusb_create(const char *device, char *ebuf, int *is_ours);
-int canusb_findalldevspcap_if_t **pdevlist, char* errbuf);
+int canusb_findalldevs(pcap_if_t **pdevlist, char* errbuf);
 
