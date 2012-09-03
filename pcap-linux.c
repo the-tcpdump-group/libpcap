@@ -1530,32 +1530,34 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	}
 
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
-	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-		struct tpacket_auxdata *aux;
-		unsigned int len;
-		struct vlan_tag *tag;
+	if (handle->md.vlan_offset != -1) {
+		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+			struct tpacket_auxdata *aux;
+			unsigned int len;
+			struct vlan_tag *tag;
 
-		if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
-		    cmsg->cmsg_level != SOL_PACKET ||
-		    cmsg->cmsg_type != PACKET_AUXDATA)
-			continue;
+			if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
+			    cmsg->cmsg_level != SOL_PACKET ||
+			    cmsg->cmsg_type != PACKET_AUXDATA)
+				continue;
 
-		aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
-		if (aux->tp_vlan_tci == 0)
-			continue;
+			aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
+			if (aux->tp_vlan_tci == 0)
+				continue;
 
-		len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
-		if (len < 2 * ETH_ALEN)
-			break;
+			len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
+			if (len < (unsigned int) handle->md.vlan_offset)
+				break;
 
-		bp -= VLAN_TAG_LEN;
-		memmove(bp, bp + VLAN_TAG_LEN, 2 * ETH_ALEN);
+			bp -= VLAN_TAG_LEN;
+			memmove(bp, bp + VLAN_TAG_LEN, handle->md.vlan_offset);
 
-		tag = (struct vlan_tag *)(bp + 2 * ETH_ALEN);
-		tag->vlan_tpid = htons(ETH_P_8021Q);
-		tag->vlan_tci = htons(aux->tp_vlan_tci);
+			tag = (struct vlan_tag *)(bp + handle->md.vlan_offset);
+			tag->vlan_tpid = htons(ETH_P_8021Q);
+			tag->vlan_tci = htons(aux->tp_vlan_tci);
 
-		packet_len += VLAN_TAG_LEN;
+			packet_len += VLAN_TAG_LEN;
+		}
 	}
 #endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
 #endif /* HAVE_PF_PACKET_SOCKETS */
@@ -3043,6 +3045,24 @@ activate_new(pcap_t *handle)
 	}
 	handle->bufsize = handle->snapshot;
 
+	/*
+	 * Set the offset at which to insert VLAN tags.
+	 */
+	switch (handle->linktype) {
+
+	case DLT_EN10MB:
+		handle->md.vlan_offset = 2 * ETH_ALEN;
+		break;
+
+	case DLT_LINUX_SLL:
+		handle->md.vlan_offset = 14;
+		break;
+
+	default:
+		handle->md.vlan_offset = -1; /* unknown */
+		break;
+	}
+
 	/* Save the socket FD in the pcap structure */
 	handle->fd = sock_fd;
 
@@ -3883,13 +3903,14 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 
 #ifdef HAVE_TPACKET2
 		if (handle->md.tp_version == TPACKET_V2 && h.h2->tp_vlan_tci &&
-		    tp_snaplen >= 2 * ETH_ALEN) {
+		    handle->md.vlan_offset != -1 &&
+		    tp_snaplen >= (unsigned int) handle->md.vlan_offset) {
 			struct vlan_tag *tag;
 
 			bp -= VLAN_TAG_LEN;
-			memmove(bp, bp + VLAN_TAG_LEN, 2 * ETH_ALEN);
+			memmove(bp, bp + VLAN_TAG_LEN, handle->md.vlan_offset);
 
-			tag = (struct vlan_tag *)(bp + 2 * ETH_ALEN);
+			tag = (struct vlan_tag *)(bp + handle->md.vlan_offset);
 			tag->vlan_tpid = htons(ETH_P_8021Q);
 			tag->vlan_tci = htons(h.h2->tp_vlan_tci);
 
@@ -5074,6 +5095,12 @@ activate_old(pcap_t *handle)
 	 * on a 4-byte boundary.
 	 */
 	handle->offset	 = 0;
+
+	/*
+	 * SOCK_PACKET sockets don't supply information from
+	 * stripped VLAN tags.
+	 */
+	handle->md.vlan_offset = -1; /* unknown */
 
 	return 1;
 }
