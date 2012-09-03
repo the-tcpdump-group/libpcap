@@ -77,6 +77,7 @@ struct canusb_t
 {
     libusb_context *ctx;
     libusb_device_handle *dev;
+    char *serial;
     pthread_t worker;
     int rdpipe, wrpipe;
     volatile int* loop;
@@ -264,7 +265,7 @@ static void* canusb_capture_thread(struct canusb_t *canusb)
   
     libusb_init(&ctx);
   
-    serial = canusb->src + strlen(CANUSB_IFACE);  
+    serial = canusb->serial;
     dev = canusb_opendevice(ctx, serial);
   
     fcntl(canusb->wrpipe, F_SETFL, O_NONBLOCK);  
@@ -357,7 +358,8 @@ static int canusb_activate(pcap_t* handle)
     handle->linktype = DLT_CAN_SOCKETCAN;
     handle->set_datalink_op = NULL;
 
-    serial = handle->opt.source + strlen("canusb");
+    serial = handle->opt.source + strlen(CANUSB_IFACE);
+    canusb.serial = strdup(serial);
 
     canusb.dev = canusb_opendevice(canusb.ctx,serial);
     if (!canusb.dev)
