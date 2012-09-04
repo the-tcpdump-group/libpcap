@@ -1684,7 +1684,7 @@ pcap_activate_bpf(pcap_t *p)
 			    pcap_strerror(errno));
 			goto bad;
 		}
-		bzero(&bz, sizeof(bz));
+		memset(&bz, 0, sizeof(bz)); /* bzero() deprecated, replaced with memset() */
 		bz.bz_bufa = p->md.zbuf1;
 		bz.bz_bufb = p->md.zbuf2;
 		bz.bz_buflen = p->md.zbufsize;
