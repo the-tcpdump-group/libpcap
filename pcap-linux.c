@@ -4956,7 +4956,7 @@ iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	eval.cmd = cmd;
 	ifr.ifr_data = (caddr_t)&eval;
 	if (ioctl(handle->fd, SIOCETHTOOL, &ifr) == -1) {
-		if (errno == EOPNOTSUPP) {
+		if (errno == EOPNOTSUPP || errno == EINVAL) {
 			/*
 			 * OK, let's just return 0, which, in our
 			 * case, either means "no, what we're asking
