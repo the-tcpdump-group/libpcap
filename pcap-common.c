@@ -841,7 +841,7 @@
 #define LINKTYPE_NETANALYZER_TRANSPARENT	241
 
 /*
- * IP-over-Infiniband, as specified by RFC 4391.
+ * IP-over-InfiniBand, as specified by RFC 4391.
  *
  * Requested by Petr Sumbera <petr.sumbera@oracle.com>.
  */
@@ -883,7 +883,14 @@
  */
 #define LINKTYPE_PFSYNC		246
 
-#define LINKTYPE_MATCHING_MAX	246		/* highest value in the "matching" range */
+/*
+ * Raw InfiniBand packets, starting with the Local Routing Header.
+ *
+ * Requested by Oren Kladnitsky <orenk@mellanox.com>.
+ */
+#define LINKTYPE_INFINIBAND	247
+
+#define LINKTYPE_MATCHING_MAX	247		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
