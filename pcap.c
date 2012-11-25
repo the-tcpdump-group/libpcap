@@ -1681,10 +1681,10 @@ pcap_close(pcap_t *p)
  * the packet doesn't pass and non-zero if the packet does pass.
  */
 int
-pcap_offline_filter(struct bpf_program *fp, const struct pcap_pkthdr *h,
+pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
     const u_char *pkt)
 {
-	struct bpf_insn *fcode = fp->bf_insns;
+	const struct bpf_insn *fcode = fp->bf_insns;
 
 	if (fcode != NULL) 
 		return (bpf_filter(fcode, pkt, h->len, h->caplen));

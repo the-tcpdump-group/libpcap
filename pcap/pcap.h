@@ -370,8 +370,8 @@ int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 int	pcap_compile_nopcap(int, int, struct bpf_program *,
 	    const char *, int, bpf_u_int32);
 void	pcap_freecode(struct bpf_program *);
-int	pcap_offline_filter(struct bpf_program *, const struct pcap_pkthdr *,
-	    const u_char *);
+int	pcap_offline_filter(const struct bpf_program *,
+	    const struct pcap_pkthdr *, const u_char *);
 int	pcap_datalink(pcap_t *);
 int	pcap_datalink_ext(pcap_t *);
 int	pcap_list_datalinks(pcap_t *, int **);
