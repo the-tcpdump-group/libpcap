@@ -890,7 +890,14 @@
  */
 #define LINKTYPE_INFINIBAND	247
 
-#define LINKTYPE_MATCHING_MAX	247		/* highest value in the "matching" range */
+/*
+ * SCTP, with no lower-level protocols (i.e., no IPv4 or IPv6).
+ *
+ * Requested by Michael Tuexen <Michael.Tuexen@lurchi.franken.de>.
+ */
+#define LINKTYPE_SCTP		248
+
+#define LINKTYPE_MATCHING_MAX	248		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

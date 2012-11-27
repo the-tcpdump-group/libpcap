@@ -1182,7 +1182,14 @@ struct bpf_program {
  */
 #define DLT_INFINIBAND		247
 
-#define DLT_MATCHING_MAX	247	/* highest value in the "matching" range */
+/*
+ * SCTP, with no lower-level protocols (i.e., no IPv4 or IPv6).
+ *
+ * Requested by Michael Tuexen <Michael.Tuexen@lurchi.franken.de>.
+ */
+#define DLT_SCTP		248
+
+#define DLT_MATCHING_MAX	248	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
