@@ -1,0 +1,5 @@
+language: c
+
+script:
+  - ./configure
+  - make
