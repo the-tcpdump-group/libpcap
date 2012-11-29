@@ -1,4 +1,4 @@
-Saturday August 18, 2012 guy@alum.mit.edu
+Wednesday November 28, 2012 guy@alum.mit.edu
 Summary for 1.3.1 libpcap release
 	Fix pcap-config to include -lpthread if canusb support is
 	    present
@@ -16,6 +16,9 @@ Summary for 1.3.1 libpcap release
 	Check for both EOPNOTSUPP and EINVAL after SIOCETHTOOL ioctl, so
 	    that the driver can report either one if it doesn't support
 	    SIOCETHTOOL
+	Add DLT_INFINIBAND and DLT_SCTP
+	Describe "proto XXX" and "protochain XXX" in the pcap-filter man
+	    page
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
