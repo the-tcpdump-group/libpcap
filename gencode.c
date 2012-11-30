@@ -107,6 +107,18 @@ static const char rcsid[] _U_ =
 
 #define ETHERMTU	1500
 
+#ifndef IPPROTO_HOPOPTS
+#define IPPROTO_HOPOPTS 0
+#endif
+#ifndef IPPROTO_ROUTING
+#define IPPROTO_ROUTING 43
+#endif
+#ifndef IPPROTO_FRAGMENT
+#define IPPROTO_FRAGMENT 44
+#endif
+#ifndef IPPROTO_DSTOPTS
+#define IPPROTO_DSTOPTS 60
+#endif
 #ifndef IPPROTO_SCTP
 #define IPPROTO_SCTP 132
 #endif
@@ -240,7 +252,9 @@ static struct block *gen_linktype(int);
 static struct block *gen_snap(bpf_u_int32, bpf_u_int32);
 static struct block *gen_llc_linktype(int);
 static struct block *gen_hostop(bpf_u_int32, bpf_u_int32, int, int, u_int, u_int);
+#ifdef INET6
 static struct block *gen_hostop6(struct in6_addr *, struct in6_addr *, int, int, u_int, u_int);
+#endif
 static struct block *gen_ahostop(const u_char *, int);
 static struct block *gen_ehostop(const u_char *, int);
 static struct block *gen_fhostop(const u_char *, int);
@@ -250,7 +264,9 @@ static struct block *gen_ipfchostop(const u_char *, int);
 static struct block *gen_dnhostop(bpf_u_int32, int);
 static struct block *gen_mpls_linktype(int);
 static struct block *gen_host(bpf_u_int32, bpf_u_int32, int, int, int);
+#ifdef INET6
 static struct block *gen_host6(struct in6_addr *, struct in6_addr *, int, int, int);
+#endif
 #ifndef INET6
 static struct block *gen_gateway(const u_char *, bpf_u_int32 **, int, int);
 #endif
@@ -3566,6 +3582,7 @@ gen_hostop(addr, mask, dir, proto, src_off, dst_off)
 	return b1;
 }
 
+#ifdef INET6
 static struct block *
 gen_hostop6(addr, mask, dir, proto, src_off, dst_off)
 	struct in6_addr *addr;
@@ -3617,6 +3634,7 @@ gen_hostop6(addr, mask, dir, proto, src_off, dst_off)
 	gen_and(b0, b1);
 	return b1;
 }
+#endif
 
 static struct block *
 gen_ehostop(eaddr, dir)
@@ -4536,6 +4554,7 @@ gen_host(addr, mask, proto, dir, type)
 	/* NOTREACHED */
 }
 
+#ifdef INET6
 static struct block *
 gen_host6(addr, mask, proto, dir, type)
 	struct in6_addr *addr;
@@ -4654,6 +4673,7 @@ gen_host6(addr, mask, proto, dir, type)
 	}
 	/* NOTREACHED */
 }
+#endif
 
 #ifndef INET6
 static struct block *
