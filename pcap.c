@@ -324,9 +324,8 @@ struct capture_source_type {
 #ifdef PCAP_SUPPORT_NETFILTER
 	{ netfilter_findalldevs, netfilter_create },
 #endif
+	{ NULL, NULL }
 };
-
-#define N_CAPTURE_SOURCE_TYPES	(sizeof capture_source_types / sizeof capture_source_types[0])
 
 /*
  * Get a list of all capture sources that are up and that we can open.
@@ -365,7 +364,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	 * Ask each of the non-local-network-interface capture
 	 * source types what interfaces they have.
 	 */
-	for (i = 0; i < N_CAPTURE_SOURCE_TYPES; i++) {
+	for (i = 0; capture_source_types[i].findalldevs_op != NULL; i++) {
 		if (capture_source_types[i].findalldevs_op(alldevsp, errbuf) == -1) {
 			/*
 			 * We had an error; free the list we've been
@@ -403,7 +402,7 @@ pcap_create(const char *source, char *errbuf)
 	 * source types until we find one that works for this
 	 * device or run out of types.
 	 */
-	for (i = 0; i < N_CAPTURE_SOURCE_TYPES; i++) {
+	for (i = 0; capture_source_types[i].create_op != NULL; i++) {
 		is_theirs = 0;
 		p = capture_source_types[i].create_op(source, errbuf, &is_theirs);
 		if (is_theirs) {
