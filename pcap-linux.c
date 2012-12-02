@@ -1865,6 +1865,8 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	DIR *sys_class_net_d;
 	int fd;
 	struct dirent *ent;
+	char subsystem_path[PATH_MAX+1];
+	struct stat statb;
 	char *p;
 	char name[512];	/* XXX - pick a size */
 	char *q, *saveq;
@@ -1909,10 +1911,31 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		}
 
 		/*
-		 * Ignore directories (".", "..", and any subdirectories).
+		 * Ignore "." and "..".
 		 */
-		if (ent->d_type == DT_DIR)
+		if (strcmp(ent->d_name, ".") == 0 ||
+		    strcmp(ent->d_name, "..") == 0)
 			continue;
+
+		/*
+		 * Ignore plain files.
+		 */
+		if (ent->d_type == DT_REG)
+			continue;
+
+		/*
+		 * Is there a "subsystem" file under that name?
+		 * (We don't care whether it's a directory or
+		 * a symlink; older kernels have directories
+		 * for devices, newer kernels have symlinks to
+		 * directories.)
+		 */
+		snprintf(subsystem_path, sizeof subsystem_path,
+		    "/sys/class/net/%s/subsystem", ent->d_name);
+		if (lstat(subsystem_path, &statb) != 0) {
+			/* Stat failed, ignore */
+			continue;
+		}
 
 		/*
 		 * Get the interface name.
