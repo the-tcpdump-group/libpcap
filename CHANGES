@@ -19,6 +19,8 @@ Summary for 1.3.1 libpcap release
 	Add DLT_INFINIBAND and DLT_SCTP
 	Describe "proto XXX" and "protochain XXX" in the pcap-filter man
 	    page
+	Handle either directories, or symlinks to directories, that
+	    correspond to interfaces in /sys/class/net
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
