@@ -1919,22 +1919,32 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 			continue;
 
 		/*
-		 * Ignore plain files.
+		 * Ignore plain files; they do not have subdirectories
+		 * and thus have no attributes.
 		 */
 		if (ent->d_type == DT_REG)
 			continue;
 
 		/*
-		 * Is there a "subsystem" file under that name?
+		 * Is there an "ifindex" file under that name?
 		 * (We don't care whether it's a directory or
 		 * a symlink; older kernels have directories
 		 * for devices, newer kernels have symlinks to
 		 * directories.)
 		 */
 		snprintf(subsystem_path, sizeof subsystem_path,
-		    "/sys/class/net/%s/subsystem", ent->d_name);
+		    "/sys/class/net/%s/ifindex", ent->d_name);
 		if (lstat(subsystem_path, &statb) != 0) {
-			/* Stat failed, ignore */
+			/*
+			 * Stat failed.  Either there was an error
+			 * other than ENOENT, and we don't know if
+			 * this is an interface, or it's ENOENT,
+			 * and either some part of "/sys/class/net/{if}"
+			 * disappeared, in which case it probably means
+			 * the interface disappeared, or there's no
+			 * "ifindex" file, which means it's not a
+			 * network interface.
+			 */
 			continue;
 		}
 
