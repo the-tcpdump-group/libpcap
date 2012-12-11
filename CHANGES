@@ -1,11 +1,11 @@
-Thursday December 11, 2012 guy@alum.mit.edu
+Tuesday December 11, 2012 guy@alum.mit.edu
 Summary for 1.4.0 libpcap release
 	Add netfilter/nfqueue interface.
 	If we don't have support for IPv6 address resolution, support,
 	    in filter expressions, what IPv6 stuff we can.
 	Checks added for malloc()/realloc()/etc. failures.
 
-Wednesday December 11, 2012 guy@alum.mit.edu
+Tuesday December 11, 2012 guy@alum.mit.edu
 Summary for 1.3.1 libpcap release
 	Fix pcap-config to include -lpthread if canusb support is
 	    present
