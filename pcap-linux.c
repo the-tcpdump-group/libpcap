@@ -133,6 +133,7 @@ static const char rcsid[] _U_ =
 #include <sys/utsname.h>
 #include <sys/mman.h>
 #include <linux/if.h>
+#include <linux/if_packet.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
@@ -1543,7 +1544,13 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 				continue;
 
 			aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
-			if (aux->tp_vlan_tci == 0)
+#if defined(TP_STATUS_VLAN_VALID)
+			if ((aux->tp_vlan_tci == 0) && !(aux->tp_status & TP_STATUS_VLAN_VALID))
+#else
+			if (aux->tp_vlan_tci == 0) /* this is ambigious but without the
+						TP_STATUS_VLAN_VALID flag, there is
+						nothing that we can do */
+#endif
 				continue;
 
 			len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
@@ -3930,7 +3937,12 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 
 #ifdef HAVE_TPACKET2
-		if (handle->md.tp_version == TPACKET_V2 && h.h2->tp_vlan_tci &&
+		if ((handle->md.tp_version == TPACKET_V2) &&
+#if defined(TP_STATUS_VLAN_VALID)
+		(h.h2->tp_vlan_tci || (h.h2->tp_status & TP_STATUS_VLAN_VALID)) &&
+#else
+		h.h2->tp_vlan_tci &&
+#endif
 		    handle->md.vlan_offset != -1 &&
 		    tp_snaplen >= (unsigned int) handle->md.vlan_offset) {
 			struct vlan_tag *tag;
