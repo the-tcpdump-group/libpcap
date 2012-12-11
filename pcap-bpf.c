@@ -210,30 +210,21 @@ pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 #ifdef HAVE_ZEROCOPY_BPF
 	if (p->md.zerocopy) {
 		/*
-		 * Map each value to the corresponding 2's complement, to
+		 * Map each value to their corresponding negation to
 		 * preserve the timeout value provided with pcap_set_timeout.
 		 * (from pcap-linux.c).
 		 */
 		if (nonblock) {
 			if (p->md.timeout >= 0) {
 				/*
-				 * Timeout is non-negative, so we're not
-				 * currently in non-blocking mode; set it
-				 * to the 2's complement, to make it
-				 * negative, as an indication that we're
-				 * in non-blocking mode.
+				 * Indicate that we're switching to
+				 * non-blocking mode.
 				 */
-				p->md.timeout = p->md.timeout * -1 - 1;
+				p->md.timeout = ~p->md.timeout;
 			}
 		} else {
 			if (p->md.timeout < 0) {
-				/*
-				 * Timeout is negative, so we're currently
-				 * in blocking mode; reverse the previous
-				 * operation, to make the timeout non-negative
-				 * again.
-				 */
-				p->md.timeout = (p->md.timeout + 1) * -1;
+				p->md.timeout = ~p->md.timeout;
 			}
 		}
 		return (0);

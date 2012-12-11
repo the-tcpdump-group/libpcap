@@ -133,6 +133,7 @@ static const char rcsid[] _U_ =
 #include <sys/utsname.h>
 #include <sys/mman.h>
 #include <linux/if.h>
+#include <linux/if_packet.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
@@ -1543,7 +1544,13 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 				continue;
 
 			aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
-			if (aux->tp_vlan_tci == 0)
+#if defined(TP_STATUS_VLAN_VALID)
+			if ((aux->tp_vlan_tci == 0) && !(aux->tp_status & TP_STATUS_VLAN_VALID))
+#else
+			if (aux->tp_vlan_tci == 0) /* this is ambigious but without the
+						TP_STATUS_VLAN_VALID flag, there is
+						nothing that we can do */
+#endif
 				continue;
 
 			len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
@@ -3648,27 +3655,21 @@ pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 static int
 pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 {
-	/* map each value to the corresponding 2's complement, to 
-	 * preserve the timeout value provided with pcap_set_timeout */
+	/*
+	 * Map each value to their corresponding negation to
+	 * preserve the timeout value provided with pcap_set_timeout.
+	 */
 	if (nonblock) {
 		if (p->md.timeout >= 0) {
 			/*
-			 * Timeout is non-negative, so we're not already
-			 * in non-blocking mode; set it to the 2's
-			 * complement, to make it negative, as an
-			 * indication that we're in non-blocking mode.
+			 * Indicate that we're switching to
+			 * non-blocking mode.
 			 */
-			p->md.timeout = p->md.timeout*-1 - 1;
+			p->md.timeout = ~p->md.timeout;
 		}
 	} else {
 		if (p->md.timeout < 0) {
-			/*
-			 * Timeout is negative, so we're not already
-			 * in blocking mode; reverse the previous
-			 * operation, to make the timeout non-negative
-			 * again.
-			 */
-			p->md.timeout = (p->md.timeout+1)*-1;
+			p->md.timeout = ~p->md.timeout;
 		}
 	}
 	return 0;
@@ -3936,7 +3937,12 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 
 #ifdef HAVE_TPACKET2
-		if (handle->md.tp_version == TPACKET_V2 && h.h2->tp_vlan_tci &&
+		if ((handle->md.tp_version == TPACKET_V2) &&
+#if defined(TP_STATUS_VLAN_VALID)
+		(h.h2->tp_vlan_tci || (h.h2->tp_status & TP_STATUS_VLAN_VALID)) &&
+#else
+		h.h2->tp_vlan_tci &&
+#endif
 		    handle->md.vlan_offset != -1 &&
 		    tp_snaplen >= (unsigned int) handle->md.vlan_offset) {
 			struct vlan_tag *tag;
