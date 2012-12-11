@@ -875,12 +875,6 @@ The current version is available from "The Tcpdump Group"'s Web site at
 .RS
 .I http://www.tcpdump.org/
 .RE
-.LP
-The last distribution from LBL is available via anonymous ftp:
-.LP
-.RS
-.I ftp://ftp.ee.lbl.gov/old/libpcap-0.4.tar.Z
-.RE
 .SH BUGS
 Please send problems, bugs, questions, desirable enhancements, etc. to:
 .LP
