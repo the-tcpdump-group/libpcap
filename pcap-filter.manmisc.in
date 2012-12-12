@@ -159,7 +159,7 @@ True if the IPv4/v6 destination field of the packet is \fIhost\fP,
 which may be either an address or a name.
 .IP "\fBsrc host \fIhost\fR"
 True if the IPv4/v6 source field of the packet is \fIhost\fP.
-.IP "\fBhost \fIhost\fP
+.IP "\fBhost \fIhost\fP"
 True if either the IPv4/v6 source or destination of the packet is \fIhost\fP.
 .IP
 Any of the above host expressions can be prepended with the keywords,
@@ -177,17 +177,17 @@ which is equivalent to:
 .in -.5i
 If \fIhost\fR is a name with multiple IP addresses, each address will
 be checked for a match.
-.IP "\fBether dst \fIehost\fP
+.IP "\fBether dst \fIehost\fP"
 True if the Ethernet destination address is \fIehost\fP.
 \fIEhost\fP
 may be either a name from /etc/ethers or a number (see
 .IR ethers (3N)
 for numeric format).
-.IP "\fBether src \fIehost\fP
+.IP "\fBether src \fIehost\fP"
 True if the Ethernet source address is \fIehost\fP.
-.IP "\fBether host \fIehost\fP
+.IP "\fBether host \fIehost\fP"
 True if either the Ethernet source or destination address is \fIehost\fP.
-.IP "\fBgateway\fP \fIhost\fP
+.IP "\fBgateway\fP \fIhost\fP"
 True if the packet used \fIhost\fP as a gateway.
 I.e., the Ethernet
 source or destination address was \fIhost\fP but neither the IP source
@@ -682,11 +682,11 @@ Abbreviations for:
 where \fIp\fR is one of the above protocols.
 .IP "\fBl1\fR, \fBl2\fR, \fBiih\fR, \fBlsp\fR, \fBsnp\fR, \fBcsnp\fR, \fBpsnp\fR"
 Abbreviations for IS-IS PDU types.
-.IP "\fBvpi\fP \fIn\fR
+.IP "\fBvpi\fP \fIn\fR"
 True if the packet is an ATM packet, for SunATM on Solaris, with a
 virtual path identifier of
 .IR n .
-.IP "\fBvci\fP \fIn\fR
+.IP "\fBvci\fP \fIn\fR"
 True if the packet is an ATM packet, for SunATM on Solaris, with a
 virtual channel identifier of
 .IR n .
