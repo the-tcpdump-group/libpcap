@@ -45,6 +45,7 @@ Primitives usually consist of an
 There are three
 different kinds of qualifier:
 .IP \fItype\fP
+.I type
 qualifiers say what kind of thing the id name or number refers to.
 Possible types are
 .BR host ,
@@ -58,6 +59,7 @@ qualifier,
 .B host
 is assumed.
 .IP \fIdir\fP
+.I dir
 qualifiers specify a particular transfer direction to and/or from
 .IR id .
 Possible directions are
@@ -93,6 +95,7 @@ and
 .B outbound
 qualifiers can be used to specify a desired direction.
 .IP \fIproto\fP
+.I proto
 qualifiers restrict the match to a particular protocol.
 Possible
 protos are:
