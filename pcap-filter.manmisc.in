@@ -929,27 +929,6 @@ icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply
 .RE
 .SH "SEE ALSO"
 pcap(3PCAP)
-.SH AUTHORS
-The original authors are:
-.LP
-Van Jacobson,
-Craig Leres and
-Steven McCanne, all of the
-Lawrence Berkeley National Laboratory, University of California, Berkeley, CA.
-.LP
-It is currently being maintained by tcpdump.org.
-.LP
-The current version of libpcap is available via http:
-.LP
-.RS
-.I http://www.tcpdump.org/
-.RE
-.LP
-The original distribution is available via anonymous ftp:
-.LP
-.RS
-.I ftp://ftp.ee.lbl.gov/tcpdump.tar.Z
-.RE
 .SH BUGS
 Please send problems, bugs, questions, desirable enhancements, etc. to:
 .LP
