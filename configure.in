@@ -430,19 +430,39 @@ linux)
 		with_libnl=$withval,,)
 
 	if test x$with_libnl != xno ; then
+		have_any_nl="no"
+
 		#
-		# Try libnl 2.x first.
+		# Try libnl 3.x first.
 		#
-		AC_CHECK_LIB(nl, nl_socket_alloc,
+		AC_CHECK_LIB(nl-3, nl_socket_alloc,
 		[
 			#
-			# Yes, we have libnl 2.x.
+			# Yes, we have libnl 3.x.
 			#
-			LIBS="-lnl-genl -lnl $LIBS"
+			LIBS="-lnl-genl-3 -lnl-3 $LIBS"
 			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-			AC_DEFINE(HAVE_LIBNL_2_x,1,[if libnl exists and is version 2.x])
-		],
-		[
+			AC_DEFINE(HAVE_LIBNL_3_x,1,[if libnl exists and is version 3.x])
+			have_any_nl="yes"
+		])
+
+		if test x$have_any_nl = xno ; then
+			#
+			# Try libnl 2.x
+			#
+			AC_CHECK_LIB(nl, nl_socket_alloc,
+			[
+				#
+				# Yes, we have libnl 2.x.
+				#
+				LIBS="-lnl-genl -lnl $LIBS"
+				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
+				AC_DEFINE(HAVE_LIBNL_2_x,1,[if libnl exists and is version 2.x])
+				have_any_nl="yes"
+			])
+		fi
+
+		if test x$have_any_nl = xno ; then
 			#
 			# No, we don't; do we have libnl 1.x?
 			#
@@ -453,16 +473,18 @@ linux)
 				#
 				LIBS="-lnl $LIBS"
 				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
-			],
-			[
-				#
-				# No, we don't have libnl at all.
-				#
-				if test x$with_libnl = xyes ; then
-					AC_MSG_ERROR([libnl support requested but libnl not found])
-				fi
+				have_any_nl="yes"
 			])
-		])
+		fi
+
+		if test x$have_any_nl = xno ; then
+			#
+			# No, we don't have libnl at all.
+			#
+			if test x$with_libnl = xyes ; then
+				AC_MSG_ERROR([libnl support requested but libnl not found])
+			fi
+		fi
 	fi
 
 	AC_CHECK_HEADERS(linux/ethtool.h,,,
