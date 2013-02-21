@@ -1,12 +1,9 @@
-Thursday November 29, 2012 guy@alum.mit.edu
+Tuesday February 19, 2013 guy@alum.mit.edu
 Summary for 1.4.0 libpcap release
 	Add netfilter/nfqueue interface.
 	If we don't have support for IPv6 address resolution, support,
 	    in filter expressions, what IPv6 stuff we can.
 	Checks added for malloc()/realloc()/etc. failures.
-
-Wednesday November 28, 2012 guy@alum.mit.edu
-Summary for 1.3.1 libpcap release
 	Fix pcap-config to include -lpthread if canusb support is
 	    present
 	Try to fix "pcap_parse not defined" problems when --without-flex
@@ -28,6 +25,9 @@ Summary for 1.3.1 libpcap release
 	    page
 	Handle either directories, or symlinks to directories, that
 	    correspond to interfaces in /sys/class/net
+	Fix handling of VLAN tag insertion to check, on Linux 3.x
+	    kernels, for VLAN tag valid flag
+	Clean up some man pages
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
