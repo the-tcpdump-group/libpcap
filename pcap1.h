@@ -103,12 +103,13 @@ typedef struct pcap_addr pcap_addr_t;
  *	the old file header as well as files with the new file header
  *	(using the magic number to determine the header format).
  *
- * Then supply the changes as a patch at
+ * Then supply the changes by forking the branch at
  *
- *	http://sourceforge.net/projects/libpcap/
+ *	https://github.com/mcr/libpcap/issues
  *
- * so that future versions of libpcap and programs that use it (such as
- * tcpdump) will be able to read your new capture file format.
+ * and issuing a pull request, so that future versions of libpcap and
+ * programs that use it (such as tcpdump) will be able to read your new
+ * capture file format.
  */
 
 enum pcap1_info_types {
