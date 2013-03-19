@@ -478,7 +478,7 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 	return 1;
 }
 
-#ifdef HAVE_LIBNL_2_x
+#ifdef HAVE_LIBNL_SOCKETS
 #define get_nl_errmsg	nl_geterror
 #else
 /* libnl 2.x compatibility code */
@@ -509,7 +509,7 @@ __genl_ctrl_alloc_cache(struct nl_handle *h, struct nl_cache **cache)
 	return 0;
 }
 #define genl_ctrl_alloc_cache __genl_ctrl_alloc_cache
-#endif /* !HAVE_LIBNL_2_x */
+#endif /* !HAVE_LIBNL_SOCKETS */
 
 struct nl80211_state {
 	struct nl_sock *nl_sock;
@@ -594,7 +594,7 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 
 	err = nl_send_auto_complete(state->nl_sock, msg);
 	if (err < 0) {
-#ifdef HAVE_LIBNL_2_x
+#if defined HAVE_LIBNL_NLE
 		if (err == -NLE_FAILURE) {
 #else
 		if (err == -ENFILE) {
@@ -622,7 +622,7 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	}
 	err = nl_wait_for_ack(state->nl_sock);
 	if (err < 0) {
-#ifdef HAVE_LIBNL_2_x
+#if defined HAVE_LIBNL_NLE
 		if (err == -NLE_FAILURE) {
 #else
 		if (err == -ENFILE) {
