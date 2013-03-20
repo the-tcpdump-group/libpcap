@@ -4934,6 +4934,7 @@ iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	memset(&ifr, 0, sizeof(ifr));
 	strncpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
 	eval.cmd = cmd;
+	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
 	if (ioctl(handle->fd, SIOCETHTOOL, &ifr) == -1) {
 		if (errno == EOPNOTSUPP || errno == EINVAL) {
