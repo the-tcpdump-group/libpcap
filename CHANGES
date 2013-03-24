@@ -1,4 +1,4 @@
-Tuesday February 19, 2013 guy@alum.mit.edu
+Monday March 18, 2013 guy@alum.mit.edu
 Summary for 1.4.0 libpcap release
 	Add netfilter/nfqueue interface.
 	If we don't have support for IPv6 address resolution, support,
@@ -28,6 +28,7 @@ Summary for 1.4.0 libpcap release
 	Fix handling of VLAN tag insertion to check, on Linux 3.x
 	    kernels, for VLAN tag valid flag
 	Clean up some man pages
+	Support libnl3 as well as libnl1 and libnl2 on Linux
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release

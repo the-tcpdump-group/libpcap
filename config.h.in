@@ -58,6 +58,15 @@
 /* if libnl exists and is version 2.x */
 #undef HAVE_LIBNL_2_x
 
+/* if libnl exists and is version 3.x */
+#undef HAVE_LIBNL_3_x
+
+/* libnl has NLE_FAILURE */
+#undef HAVE_LIBNL_NLE
+
+/* libnl has new-style socket api */
+#undef HAVE_LIBNL_SOCKETS
+
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
