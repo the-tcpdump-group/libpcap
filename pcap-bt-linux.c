@@ -78,7 +78,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	struct hci_dev_req *dev_req;
 	int i, sock;
 	int ret = 0;
-	
+
 	sock  = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (sock < 0)
 	{
@@ -254,6 +254,7 @@ bt_activate(pcap_t* handle)
 	/* Bind socket to the HCI device */
 	addr.hci_family = AF_BLUETOOTH;
 	addr.hci_dev = handle->md.ifindex;
+	addr.hci_channel = HCI_CHANNEL_RAW;
 	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't attach to device %d: %s", handle->md.ifindex,
