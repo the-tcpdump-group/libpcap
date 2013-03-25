@@ -11489,6 +11489,71 @@ _ACEOF
 		  { echo "$as_me:$LINENO: Bluetooth sniffing is supported" >&5
 echo "$as_me: Bluetooth sniffing is supported" >&6;}
 
+		  #
+		  # OK, does struct sockaddr_hci have an hci_channel
+		  # member?
+		  #
+		  { echo "$as_me:$LINENO: checking if struct sockaddr_hci has hci_channel member" >&5
+echo $ECHO_N "checking if struct sockaddr_hci has hci_channel member... $ECHO_C" >&6; }
+		  if test "${ac_cv_lbl_sockaddr_hci_has_hci_channel+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+
+int
+main ()
+{
+u_int i = sizeof(((struct sockaddr_hci *)0)->hci_channel)
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_lbl_sockaddr_hci_has_hci_channel=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lbl_sockaddr_hci_has_hci_channel=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+		    { echo "$as_me:$LINENO: result: $ac_cv_lbl_sockaddr_hci_has_hci_channel" >&5
+echo "${ECHO_T}$ac_cv_lbl_sockaddr_hci_has_hci_channel" >&6; }
+		    if test $ac_cv_lbl_sockaddr_hci_has_hci_channel = yes ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define SOCKADDR_HCI_HAS_HCI_CHANNEL
+_ACEOF
+
+		    fi
+
 else
   { echo "$as_me:$LINENO: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
 echo "$as_me: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&6;}

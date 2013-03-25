@@ -1413,6 +1413,26 @@ if test "x$enable_bluetooth" != "xno" ; then
 		  AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
 		  BT_SRC=pcap-bt-linux.c
 		  AC_MSG_NOTICE(Bluetooth sniffing is supported)
+
+		  #
+		  # OK, does struct sockaddr_hci have an hci_channel
+		  # member?
+		  #
+		  AC_MSG_CHECKING(if struct sockaddr_hci has hci_channel member)
+		  AC_CACHE_VAL(ac_cv_lbl_sockaddr_hci_has_hci_channel,
+		    AC_TRY_COMPILE(
+[
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+],
+		      [u_int i = sizeof(((struct sockaddr_hci *)0)->hci_channel)],
+		      ac_cv_lbl_sockaddr_hci_has_hci_channel=yes,
+		      ac_cv_lbl_sockaddr_hci_has_hci_channel=no))
+		    AC_MSG_RESULT($ac_cv_lbl_sockaddr_hci_has_hci_channel)
+		    if test $ac_cv_lbl_sockaddr_hci_has_hci_channel = yes ; then
+		      AC_DEFINE(SOCKADDR_HCI_HAS_HCI_CHANNEL,,
+			[if struct sockaddr_hci has hci_channel member])
+		    fi
 		],
 		AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
 		)

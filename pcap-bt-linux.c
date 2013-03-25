@@ -254,6 +254,9 @@ bt_activate(pcap_t* handle)
 	/* Bind socket to the HCI device */
 	addr.hci_family = AF_BLUETOOTH;
 	addr.hci_dev = handle->md.ifindex;
+#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
+	addr.hci_channel = HCI_CHANNEL_RAW;
+#endif
 	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't attach to device %d: %s", handle->md.ifindex,
