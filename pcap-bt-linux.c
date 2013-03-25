@@ -78,7 +78,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	struct hci_dev_req *dev_req;
 	int i, sock;
 	int ret = 0;
-	
+
 	sock  = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (sock < 0)
 	{
