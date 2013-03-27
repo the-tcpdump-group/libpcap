@@ -897,7 +897,14 @@
  */
 #define LINKTYPE_SCTP		248
 
-#define LINKTYPE_MATCHING_MAX	248		/* highest value in the "matching" range */
+/*
+ * USB packets, beginning with a USBPcap header.
+ *
+ * Requested by Tomasz Mon <desowin@gmail.com>
+ */
+#define LINKTYPE_USBPCAP	249
+
+#define LINKTYPE_MATCHING_MAX	249		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
