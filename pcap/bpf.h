@@ -1189,7 +1189,14 @@ struct bpf_program {
  */
 #define DLT_SCTP		248
 
-#define DLT_MATCHING_MAX	248	/* highest value in the "matching" range */
+/*
+ * USB packets, beginning with a USBPcap header.
+ *
+ * Requested by Tomasz Mon <desowin@gmail.com>
+ */
+#define DLT_USBPCAP		249
+ 
+#define DLT_MATCHING_MAX	249	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
