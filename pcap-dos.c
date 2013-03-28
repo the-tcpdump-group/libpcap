@@ -143,7 +143,7 @@ static struct device *get_device (int fd)
   return handle_to_device [fd-1];
 }
 
-pcap_t *pcap_create (const char *device, char *ebuf)
+pcap_t *pcap_create_interface (const char *device, char *ebuf)
 {
 	pcap_t *p;
 
@@ -211,7 +211,7 @@ static int
 pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
 {
   struct pcap_pkthdr pcap;
-  struct timeval     now, expiry;
+  struct timeval     now, expiry = { 0,0 };
   BYTE  *rx_buf;
   int    rx_len = 0;
 
@@ -287,7 +287,7 @@ pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
       return (1);
     }
 
-    /* If not to wait for a packet or pcap_close() called from
+    /* If not to wait for a packet or pcap_cleanup_dos() called from
      * e.g. SIGINT handler, exit loop now.
      */
     if (p->md.timeout <= 0 || (volatile int)p->fd <= 0)
