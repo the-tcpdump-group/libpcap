@@ -7533,9 +7533,9 @@ gen_inbound(dir)
 		 * check it, otherwise give up as this link-layer type
 		 * has nothing in the packet data.
 		 */
-#if defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+#if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
 		/*
-		 * We infer that this is Linux with PF_PACKET support.
+		 * This is Linux with PF_PACKET support.
 		 * If this is a *live* capture, we can look at
 		 * special meta-data in the filter expression;
 		 * if it's a savefile, we can't.
@@ -7554,12 +7554,12 @@ gen_inbound(dir)
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
-#else /* defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
+#else /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 		bpf_error("inbound/outbound not supported on linktype %d",
 		    linktype);
 		b0 = NULL;
 		/* NOTREACHED */
-#endif /* defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
+#endif /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 	}
 	return (b0);
 }
