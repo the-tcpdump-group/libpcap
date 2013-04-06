@@ -84,7 +84,7 @@ static const char rcsid[] _U_ =
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
-#if defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+#if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
