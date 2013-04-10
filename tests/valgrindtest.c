@@ -52,13 +52,9 @@ static const char rcsid[] _U_ =
 #endif
 
 #if defined(USE_BPF)
+
 #include <sys/ioctl.h>
 #include <net/bpf.h>
-#elif defined(USE_SOCKET_FILTERS)
-#include <sys/socket.h>
-#include <linux/types.h>
-#include <linux/filter.h>
-#endif
 
 /*
  * Make "pcap.h" not include "pcap/bpf.h"; we are going to include the
@@ -67,6 +63,14 @@ static const char rcsid[] _U_ =
  * checked by libpcap before being handed to BPF.
  */
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
+
+#elif defined(USE_SOCKET_FILTERS)
+
+#include <sys/socket.h>
+#include <linux/types.h>
+#include <linux/filter.h>
+
+#endif
 
 #include <pcap.h>
 #ifndef HAVE___ATTRIBUTE__
