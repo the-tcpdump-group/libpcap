@@ -222,7 +222,7 @@ main(int argc, char **argv)
 #if defined(USE_BPF)
 	struct bpf_program bad_fcode;
 	struct bpf_insn uninitialized[INSN_COUNT];
-#elif define(USE_SOCKET_FILTERS)
+#elif defined(USE_SOCKET_FILTERS)
 	struct sock_fprog bad_fcode;
 	struct sock_filter uninitialized[INSN_COUNT];
 #endif
