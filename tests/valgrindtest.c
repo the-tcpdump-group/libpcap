@@ -31,7 +31,6 @@ static const char rcsid[] _U_ =
 #include "config.h"
 #endif
 
-#include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,6 +42,33 @@ static const char rcsid[] _U_ =
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
+/* BSD-flavored OS - use BPF */
+#define USE_BPF
+#elif defined(linux)
+/* Linux - use socket filters */
+#else
+#error "Unknown platform or platform that doesn't support Valgrind"
+#endif
+
+#if defined(USE_BPF)
+#include <sys/ioctl.h>
+#include <net/bpf.h>
+#elif defined(USE_SOCKET_FILTERS)
+#include <sys/socket.h>
+#include <linux/types.h>
+#include <linux/filter.h>
+#endif
+
+/*
+ * Make "pcap.h" not include "pcap/bpf.h"; we are going to include the
+ * native OS version, as we're going to be doing our own ioctls to
+ * make sure that, in the uninitialized-data tests, the filters aren't
+ * checked by libpcap before being handed to BPF.
+ */
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
+
+#include <pcap.h>
 #ifndef HAVE___ATTRIBUTE__
 #define __attribute__(x)
 #endif
@@ -188,8 +214,15 @@ main(int argc, char **argv)
 	char *cmdbuf;
 	pcap_t *pd;
 	int status = 0;
-	struct bpf_program fcode;
+	int pcap_fd;
+#if defined(USE_BPF)
+	struct bpf_program bad_fcode;
 	struct bpf_insn uninitialized[INSN_COUNT];
+#elif define(USE_SOCKET_FILTERS)
+	struct sock_fprog bad_fcode;
+	struct sock_filter uninitialized[INSN_COUNT];
+#endif
+	struct bpf_program fcode;
 
 	device = NULL;
 	dorfmon = 0;
@@ -308,6 +341,8 @@ main(int argc, char **argv)
 			warning("%s", ebuf);
 	}
 
+	pcap_fd = pcap_fileno(pd);
+
 	/*
 	 * Try setting a filter with an uninitialized bpf_program
 	 * structure.  This should cause valgrind to report a
@@ -316,7 +351,12 @@ main(int argc, char **argv)
 	 * We don't check for errors, because it could get an
 	 * error due to a bad pointer or count.
 	 */
-	pcap_setfilter(pd, &fcode);
+#if defined(USE_BPF)
+	ioctl(pcap_fd, BIOCSETF, &bad_fcode);
+#elif defined(USE_SOCKET_FILTERS)
+	setsockopt(pcap_fd, SOL_SOCKET, SO_ATTACH_FILTER, &bad_fcode,
+	    sizeof(bad_fcode));
+#endif
 
 	/*
 	 * Try setting a filter with an initialized bpf_program
@@ -326,9 +366,16 @@ main(int argc, char **argv)
 	 * We don't check for errors, because it could get an
 	 * error due to a bad pointer or count.
 	 */
-	fcode.bf_len = INSN_COUNT;
-	fcode.bf_insns = uninitialized;
-	pcap_setfilter(pd, &fcode);
+#if defined(USE_BPF)
+	bad_fcode.bf_len = INSN_COUNT;
+	bad_fcode.bf_insns = uninitialized;
+	ioctl(pcap_fd, BIOCSETF, &bad_fcode);
+#elif defined(USE_SOCKET_FILTERS)
+	bad_fcode.len = INSN_COUNT;
+	bad_fcode.filter = uninitialized;
+	setsockopt(pcap_fd, SOL_SOCKET, SO_ATTACH_FILTER, &bad_fcode,
+	    sizeof(bad_fcode));
+#endif
 
 	/*
 	 * Now compile a filter and set the filter with that.
