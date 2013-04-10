@@ -130,7 +130,8 @@ TESTS = \
 	findalldevstest \
 	nonblocktest \
 	opentest \
-	selpolltest
+	selpolltest \
+	valgrindtest
 
 TESTS_SRC = \
 	tests/filtertest.c \
@@ -138,7 +139,8 @@ TESTS_SRC = \
 	tests/nonblocktest.c \
 	tests/opentest.c \
 	tests/reactivatetest.c \
-	tests/selpolltest.c
+	tests/selpolltest.c \
+	tests/valgrindtest.c
 
 GENHDR = \
 	scanner.h tokdefs.h version.h
@@ -529,6 +531,9 @@ opentest: tests/opentest.c libpcap.a
 
 selpolltest: tests/selpolltest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/tests/selpolltest.c libpcap.a $(LIBS)
+
+valgrindtest: tests/valgrindtest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o valgrindtest $(srcdir)/tests/valgrindtest.c libpcap.a $(LIBS)
 
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
