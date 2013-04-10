@@ -47,6 +47,7 @@ static const char rcsid[] _U_ =
 #define USE_BPF
 #elif defined(linux)
 /* Linux - use socket filters */
+#define USE_SOCKET_FILTERS
 #else
 #error "Unknown platform or platform that doesn't support Valgrind"
 #endif
