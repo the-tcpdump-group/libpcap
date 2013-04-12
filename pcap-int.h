@@ -196,6 +196,8 @@ struct pcap_md {
         */
        struct bpf_zbuf_header *bzh;
 #endif /* HAVE_ZEROCOPY_BPF */
+
+       void *priv;
 };
 
 /*

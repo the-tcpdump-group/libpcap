@@ -105,6 +105,11 @@ static const char rcsid[] _U_ =
 #include "pcap-netfilter-linux.h"
 #endif
 
+#ifdef PCAP_SUPPORT_DBUS
+int dbus_findalldevs(pcap_if_t **alldevsp, char *err_str);
+pcap_t *dbus_create(const char *device, char *ebuf, int *is_ours);
+#endif
+
 int 
 pcap_not_initialized(pcap_t *pcap)
 {
@@ -323,6 +328,9 @@ struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_NETFILTER
 	{ netfilter_findalldevs, netfilter_create },
+#endif
+#ifdef PCAP_SUPPORT_DBUS
+	{ dbus_findalldevs, dbus_create },
 #endif
 	{ NULL, NULL }
 };

@@ -1497,6 +1497,31 @@ if test "x$enable_can" != "xno" ; then
 	AC_SUBST(CAN_SRC)
 fi
 
+AC_ARG_ENABLE([dbus],
+[AC_HELP_STRING([--enable-can],[enable dbus support @<:@default=yes, if support available@:>@])],
+    [],
+    [enable_dbus=yes])
+
+if test "x$enable_dbus" != "xno"; then
+	AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
+	if test "x$PKGCONFIG" != "xno"; then
+		AC_MSG_CHECKING([for D-Bus])
+		DBUS_LIBS=$($PKGCONFIG --libs dbus-1)
+		DBUS_CFLAGS=$($PKGCONFIG --cflags dbus-1)
+		if test "x$DBUS_LIBS" != "x" -o "x$DBUS_CFLAGS" != "x"; then
+			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
+			AC_MSG_RESULT([yes])
+			DBUS_SRC=pcap-dbus.c
+			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			LIBS="$LIBS $DBUS_LIBS"
+		else
+			AC_MSG_RESULT([no])
+		fi
+	fi
+	AC_SUBST(PCAP_SUPPORT_DBUS)
+	AC_SUBST(DBUS_SRC)
+fi
+
 dnl check for hardware timestamp support
 case "$host_os" in
 linux*)
