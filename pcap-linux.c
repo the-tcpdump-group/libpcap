@@ -301,6 +301,7 @@ static int pcap_inject_linux(pcap_t *, const void *, size_t);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
+static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
 
 union thdr {
@@ -1173,7 +1174,7 @@ pcap_activate_linux(pcap_t *handle)
 	handle->inject_op = pcap_inject_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
 	handle->setdirection_op = pcap_setdirection_linux;
-	handle->set_datalink_op = NULL;	/* can't change data link type */
+	handle->set_datalink_op = pcap_set_datalink_linux;
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->cleanup_op = pcap_cleanup_linux;
@@ -1328,6 +1329,13 @@ pcap_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *
 	 * so we don't loop.
 	 */
 	return pcap_read_packet(handle, callback, user);
+}
+
+static int
+pcap_set_datalink_linux(pcap_t *handle, int dlt)
+{
+	handle->linktype = dlt;
+	return 0;
 }
 
 /*
@@ -2720,6 +2728,16 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 #define ARPHRD_FCFABRIC	787
 #endif
 	case ARPHRD_FCFABRIC:
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (handle->dlt_list != NULL) {
+			handle->dlt_list[0] = DLT_IP_OVER_FC;
+			handle->dlt_list[1] = DLT_FC_2;
+			handle->dlt_list[2] = DLT_FC_2_WITH_FRAME_DELIMS;
+			handle->dlt_count = 3;
+		}
 		/*
 		 * We assume that those all mean RFC 2625 IP-over-
 		 * Fibre Channel, with the RFC 2625 header at
