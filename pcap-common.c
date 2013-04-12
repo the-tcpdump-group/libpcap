@@ -904,7 +904,14 @@
  */
 #define LINKTYPE_USBPCAP	249
 
-#define LINKTYPE_MATCHING_MAX	249		/* highest value in the "matching" range */
+/*
+ * Linux Kernel Messages aka /dev/kmsg
+ *
+ * Requested by Michal Labedzki <michal.labedzki@tieto.com>.
+ */
+#define LINKTYPE_KMSG_LINUX		250
+
+#define LINKTYPE_MATCHING_MAX	250		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

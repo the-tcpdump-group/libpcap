@@ -1528,6 +1528,31 @@ if test "x$enable_dbus" != "xno"; then
 	AC_SUBST(DBUS_SRC)
 fi
 
+AC_ARG_ENABLE([kmsg],
+[AC_HELP_STRING([--enable-linux-kmsg],[enable Linux kernel @<:@default=yes, if support available@:>@])],
+    [],
+    [enable_linux_kmsg=yes])
+
+if test "enable_linux_kmsg" != "xno"; then
+#	AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
+#	if test "x$PKGCONFIG" != "xno"; then
+		AC_MSG_CHECKING([for Linux kernel messages support])
+#		DBUS_LIBS=$($PKGCONFIG --libs dbus-1)
+#		DBUS_CFLAGS=$($PKGCONFIG --cflags dbus-1)
+#		if test "x$DBUS_LIBS" != "x" -o "x$DBUS_CFLAGS" != "x"; then
+			AC_DEFINE(PCAP_SUPPORT_LINUX_KMSG, 1, [support Linux kernel messages])
+			AC_MSG_RESULT([yes])
+			LINUX_KMSG_SRC=pcap-kmsg-linux.c
+#			V_INCLS="$V_INCLS $LINUX_KMSG_CFLAGS"
+#			LIBS="$LIBS $DBUS_LIBS"
+#		else
+#			AC_MSG_RESULT([no])
+#		fi
+#	fi
+	AC_SUBST(PCAP_SUPPORT_LINUX_KMSG)
+	AC_SUBST(LINUX_KMSG_SRC)
+fi
+
 dnl check for hardware timestamp support
 case "$host_os" in
 linux*)
