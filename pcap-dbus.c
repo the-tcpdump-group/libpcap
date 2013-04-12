@@ -39,8 +39,8 @@
 
 #include <dbus/dbus.h>
 
-#include "pcap-dbus.h"
 #include "pcap-int.h"
+#include "pcap-dbus.h"
 
 static int
 dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
