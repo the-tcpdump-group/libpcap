@@ -15,8 +15,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "snf.h"
 #include "pcap-int.h"
+#include "pcap-snf.h"
 
 static int
 snf_set_datalink(pcap_t *p, int dlt)
