@@ -296,6 +296,8 @@ EXTRA_DIST = \
 	pcap-config.in \
 	pcap-dag.c \
 	pcap-dag.h \
+	pcap-dbus.c \
+	pcap-dbus.h \
 	pcap-dlpi.c \
 	pcap-dos.c \
 	pcap-dos.h \

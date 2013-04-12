@@ -106,8 +106,7 @@ static const char rcsid[] _U_ =
 #endif
 
 #ifdef PCAP_SUPPORT_DBUS
-int dbus_findalldevs(pcap_if_t **alldevsp, char *err_str);
-pcap_t *dbus_create(const char *device, char *ebuf, int *is_ours);
+#include "pcap-dbus.h"
 #endif
 
 int 

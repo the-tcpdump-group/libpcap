@@ -32,14 +32,15 @@
 #include "config.h"
 #endif
 
-#include "pcap-int.h"
-
 #include <string.h>
 
 #include <time.h>
 #include <sys/time.h>
 
 #include <dbus/dbus.h>
+
+#include "pcap-dbus.h"
+#include "pcap-int.h"
 
 static int
 dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
@@ -81,9 +82,10 @@ dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 		/* pkth.caplen = min (payload_len, handle->snapshot); */
 
 		gettimeofday(&pkth.ts, NULL);
-		if (handle->fcode.bf_insns == NULL || bpf_filter(handle->fcode.bf_insns, raw_msg, pkth.len, pkth.caplen)) {
+		if (handle->fcode.bf_insns == NULL ||
+		    bpf_filter(handle->fcode.bf_insns, (u_char *)raw_msg, pkth.len, pkth.caplen)) {
 			handle->md.packets_read++;
-			callback(user, &pkth, raw_msg);
+			callback(user, &pkth, (u_char *)raw_msg);
 			count++;
 		}
 
