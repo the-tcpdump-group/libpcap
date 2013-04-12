@@ -11826,7 +11826,7 @@ fi
 if test "${enable_dbus+set}" = set; then
   enableval=$enable_dbus;
 else
-  enable_dbus=yes
+  enable_dbus=ifavailable
 fi
 
 
@@ -11888,9 +11888,11 @@ echo "${ECHO_T}yes" >&6; }
 		else
 			{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
-			{ { echo "$as_me:$LINENO: error: --enable-dbus was given, but the dbus-1 package is not installed" >&5
+			if test "x$enable_dbus" = "xyes"; then
+				{ { echo "$as_me:$LINENO: error: --enable-dbus was given, but the dbus-1 package is not installed" >&5
 echo "$as_me: error: --enable-dbus was given, but the dbus-1 package is not installed" >&2;}
    { (exit 1); exit 1; }; }
+			fi
 		fi
 	fi
 
