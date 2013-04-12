@@ -1506,9 +1506,9 @@ if test "x$enable_dbus" != "xno"; then
 	AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
 	if test "x$PKGCONFIG" != "xno"; then
 		AC_MSG_CHECKING([for D-Bus])
-		DBUS_LIBS=$($PKGCONFIG --libs dbus-1)
-		DBUS_CFLAGS=$($PKGCONFIG --cflags dbus-1)
-		if test "x$DBUS_LIBS" != "x" -o "x$DBUS_CFLAGS" != "x"; then
+		if "$PKGCONFIG" dbus-1; then
+			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
+			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
 			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
 			AC_MSG_RESULT([yes])
 			DBUS_SRC=pcap-dbus.c
@@ -1516,6 +1516,7 @@ if test "x$enable_dbus" != "xno"; then
 			LIBS="$LIBS $DBUS_LIBS"
 		else
 			AC_MSG_RESULT([no])
+			AC_MSG_ERROR([--enable-dbus was given, but the dbus-1 package is not installed])
 		fi
 	fi
 	AC_SUBST(PCAP_SUPPORT_DBUS)

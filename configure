@@ -11872,9 +11872,9 @@ fi
 	if test "x$PKGCONFIG" != "xno"; then
 		{ echo "$as_me:$LINENO: checking for D-Bus" >&5
 echo $ECHO_N "checking for D-Bus... $ECHO_C" >&6; }
-		DBUS_LIBS=$($PKGCONFIG --libs dbus-1)
-		DBUS_CFLAGS=$($PKGCONFIG --cflags dbus-1)
-		if test "x$DBUS_LIBS" != "x" -o "x$DBUS_CFLAGS" != "x"; then
+		if "$PKGCONFIG" dbus-1; then
+			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
+			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
 
 cat >>confdefs.h <<\_ACEOF
 #define PCAP_SUPPORT_DBUS 1
@@ -11888,6 +11888,9 @@ echo "${ECHO_T}yes" >&6; }
 		else
 			{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
+			{ { echo "$as_me:$LINENO: error: --enable-dbus was given, but the dbus-1 package is not installed" >&5
+echo "$as_me: error: --enable-dbus was given, but the dbus-1 package is not installed" >&2;}
+   { (exit 1); exit 1; }; }
 		fi
 	fi
 
