@@ -131,7 +131,7 @@ dbus_cleanup(pcap_t *handle)
 	handle->md.priv = NULL;
 	dbus_connection_unref(conn);
 
-	pcap_live_cleanup_common(handle);
+	pcap_cleanup_live_common(handle);
 }
 
 static int
