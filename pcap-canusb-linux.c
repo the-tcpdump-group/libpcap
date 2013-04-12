@@ -38,12 +38,13 @@
 
 #include <libusb-1.0/libusb.h>
 
-#include "pcap-int.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 
+#include "pcap-int.h"
+#include "pcap-canusb-linux.h"
 
 #define CANUSB_IFACE "canusb"
 
