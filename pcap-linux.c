@@ -2712,6 +2712,25 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		handle->linktype = DLT_LTALK;
 		break;
 
+	case 18:
+		/*
+		 * RFC 4338 defines an encapsulation for IP and ARP
+		 * packets that's compatible with the RFC 2625
+		 * encapsulation, but that uses a different ARP
+		 * hardware type and hardware addresses.  That
+		 * ARP hardware type is 18; Linux doesn't define
+		 * any ARPHRD_ value as 18, but if it ever officially
+		 * supports RFC 4338-style IP-over-FC, it should define
+		 * one.
+		 *
+		 * For now, we map it to DLT_IP_OVER_FC, in the hopes
+		 * that this will encourage its use in the future,
+		 * should Linux ever officially support RFC 4338-style
+		 * IP-over-FC.
+		 */
+		handle->linktype = DLT_IP_OVER_FC;
+		break;
+
 #ifndef ARPHRD_FCPP
 #define ARPHRD_FCPP	784
 #endif
@@ -2728,22 +2747,63 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 #define ARPHRD_FCFABRIC	787
 #endif
 	case ARPHRD_FCFABRIC:
+		/*
+		 * Back in 2002, Donald Lee at Cray wanted a DLT_ for
+		 * IP-over-FC:
+		 *
+		 *	http://www.mail-archive.com/tcpdump-workers@sandelman.ottawa.on.ca/msg01043.html
+		 *
+		 * and one was assigned.
+		 *
+		 * In a later private discussion (spun off from a message
+		 * on the ethereal-users list) on how to get that DLT_
+		 * value in libpcap on Linux, I ended up deciding that
+		 * the best thing to do would be to have him tweak the
+		 * driver to set the ARPHRD_ value to some ARPHRD_FCxx
+		 * type, and map all those types to DLT_IP_OVER_FC:
+		 *
+		 *	I've checked into the libpcap and tcpdump CVS tree
+		 *	support for DLT_IP_OVER_FC.  In order to use that,
+		 *	you'd have to modify your modified driver to return
+		 *	one of the ARPHRD_FCxxx types, in "fcLINUXfcp.c" -
+		 *	change it to set "dev->type" to ARPHRD_FCFABRIC, for
+		 *	example (the exact value doesn't matter, it can be
+		 *	any of ARPHRD_FCPP, ARPHRD_FCAL, ARPHRD_FCPL, or
+		 *	ARPHRD_FCFABRIC).
+		 *
+		 * 11 years later, Christian Svensson wanted to map
+		 * various ARPHRD_ values to DLT_FC_2 and
+		 * DLT_FC_2_WITH_FRAME_DELIMS for raw Fibre Channel
+		 * frames:
+		 *
+		 *	https://github.com/mcr/libpcap/pull/29
+		 *
+		 * There doesn't seem to be any network drivers that uses
+		 * any of the ARPHRD_FC* values for IP-over-FC, and
+		 * it's not exactly clear what the "Dummy types for non
+		 * ARP hardware" are supposed to mean (link-layer
+		 * header type?  Physical network type?), so it's
+		 * not exactly clear why the ARPHRD_FC* types exist
+		 * in the first place.
+		 *
+		 * For now, we map them to DLT_FC_2, and provide an
+		 * option of DLT_FC_2_WITH_FRAME_DELIMS, as well as
+		 * DLT_IP_OVER_FC just in case there's some old
+		 * driver out there that uses one of those types for
+		 * IP-over-FC on which somebody wants to capture
+		 * packets.
+		 */
 		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 		/*
 		 * If that fails, just leave the list empty.
 		 */
 		if (handle->dlt_list != NULL) {
-			handle->dlt_list[0] = DLT_IP_OVER_FC;
-			handle->dlt_list[1] = DLT_FC_2;
-			handle->dlt_list[2] = DLT_FC_2_WITH_FRAME_DELIMS;
+			handle->dlt_list[0] = DLT_FC_2;
+			handle->dlt_list[1] = DLT_FC_2_WITH_FRAME_DELIMS;
+			handle->dlt_list[2] = DLT_IP_OVER_FC;
 			handle->dlt_count = 3;
 		}
-		/*
-		 * We assume that those all mean RFC 2625 IP-over-
-		 * Fibre Channel, with the RFC 2625 header at
-		 * the beginning of the packet.
-		 */
-		handle->linktype = DLT_IP_OVER_FC;
+		handle->linktype = DLT_FC_2;
 		break;
 
 #ifndef ARPHRD_IRDA
