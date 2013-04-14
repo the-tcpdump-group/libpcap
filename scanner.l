@@ -325,8 +325,12 @@ sls		return SLS;
 "<<"			return LSH;
 ">>"			return RSH;
 ${B}			{ yylval.e = pcap_ether_aton(((char *)yytext)+1);
+			  if (yylval.e == NULL)
+				bpf_error("malloc");
 			  return AID; }
 {MAC}			{ yylval.e = pcap_ether_aton((char *)yytext);
+			  if (yylval.e == NULL)
+				bpf_error("malloc");
 			  return EID; }
 {N}			{ yylval.i = stoi((char *)yytext); return NUM; }
 ({N}\.{N})|({N}\.{N}\.{N})|({N}\.{N}\.{N}\.{N})	{
