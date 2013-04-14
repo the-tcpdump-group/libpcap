@@ -1068,6 +1068,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_NETANALYZER, "Ethernet with Hilscher netANALYZER pseudo-header"),
 	DLT_CHOICE(DLT_NETANALYZER_TRANSPARENT, "Ethernet with Hilscher netANALYZER pseudo-header and with preamble and SFD"),
 	DLT_CHOICE(DLT_IPOIB, "RFC 4391 IP-over-Infiniband"),
+	DLT_CHOICE(DLT_DBUS, "D-Bus"),
 	DLT_CHOICE_SENTINEL
 };
 
