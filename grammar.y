@@ -294,8 +294,9 @@ pfaction_to_num(const char *action)
 %token	OAM OAMF4 CONNECTMSG METACONNECT
 %token	VPI VCI
 %token	RADIO
-%token	FISU LSSU MSU
-%token	SIO OPC DPC SLS
+%token	FISU LSSU MSU HFISU HLSSU HMSU
+%token	SIO OPC DPC SLS HSIO HOPC HDPC HSLS
+ 
 
 %type	<s> ID
 %type	<e> EID
@@ -670,12 +671,19 @@ atmlistvalue: atmfieldvalue
 mtp2type: FISU			{ $$ = M_FISU; }
 	| LSSU			{ $$ = M_LSSU; }
 	| MSU			{ $$ = M_MSU; }
+	| HFISU			{ $$ = MH_FISU; }
+	| HLSSU			{ $$ = MH_LSSU; }
+	| HMSU			{ $$ = MH_MSU; }
 	;
 	/* MTP3 field types quantifier */
 mtp3field: SIO			{ $$.mtp3fieldtype = M_SIO; }
 	| OPC			{ $$.mtp3fieldtype = M_OPC; }
 	| DPC			{ $$.mtp3fieldtype = M_DPC; }
 	| SLS                   { $$.mtp3fieldtype = M_SLS; }
+	| HSIO			{ $$.mtp3fieldtype = MH_SIO; }
+	| HOPC			{ $$.mtp3fieldtype = MH_OPC; }
+	| HDPC			{ $$.mtp3fieldtype = MH_DPC; }
+	| HSLS                  { $$.mtp3fieldtype = MH_SLS; }
 	;
 mtp3value: mtp3fieldvalue
 	| relop NUM		{ $$.b = gen_mtp3field_code($<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 0); }
@@ -687,7 +695,11 @@ mtp3fieldvalue: NUM {
 	if ($$.mtp3fieldtype == M_SIO ||
 	    $$.mtp3fieldtype == M_OPC ||
 	    $$.mtp3fieldtype == M_DPC ||
-	    $$.mtp3fieldtype == M_SLS )
+	    $$.mtp3fieldtype == M_SLS ||
+	    $$.mtp3fieldtype == MH_SIO ||
+	    $$.mtp3fieldtype == MH_OPC ||
+	    $$.mtp3fieldtype == MH_DPC ||
+	    $$.mtp3fieldtype == MH_SLS)
 		$$.b = gen_mtp3field_code($$.mtp3fieldtype, (u_int) $1, BPF_JEQ, 0);
 	}
 	;

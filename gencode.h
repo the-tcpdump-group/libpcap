@@ -186,11 +186,22 @@
 #define M_LSSU		23	/* LSSU */
 #define M_MSU		24	/* MSU */
 
+/* MTP2 HSL types */
+#define MH_FISU		25	/* FISU for HSL */
+#define MH_LSSU		26	/* LSSU */
+#define MH_MSU		27	/* MSU */
+
 /* MTP3 field types */
 #define M_SIO		1
 #define M_OPC		2
 #define M_DPC		3
 #define M_SLS		4
+
+/* MTP3 field types in case of MTP2 HSL */
+#define MH_SIO		5
+#define MH_OPC		6
+#define MH_DPC		7
+#define MH_SLS		8
 
 
 struct slist;
