@@ -1752,6 +1752,8 @@ pcap_lib_version(void)
 			    strlen(pcap_version_string);
 			full_pcap_version_string =
 			    malloc(full_pcap_version_string_len);
+			if (full_pcap_version_string == NULL)
+				return (NULL);
 			sprintf(full_pcap_version_string,
 			    pcap_version_string_fmt, wpcap_version_string,
 			    pcap_version_string);
@@ -1769,7 +1771,8 @@ pcap_lib_version(void)
 			    strlen(packet_version_string) +
 			    strlen(pcap_version_string);
 			full_pcap_version_string = malloc(full_pcap_version_string_len);
-
+			if (full_pcap_version_string == NULL)
+				return (NULL);
 			sprintf(full_pcap_version_string,
 			    pcap_version_string_packet_dll_fmt,
 			    wpcap_version_string, packet_version_string,
@@ -1798,6 +1801,8 @@ pcap_lib_version (void)
 		    sizeof dospfx + strlen(pcap_version_string);
 		full_pcap_version_string =
 		    malloc(full_pcap_version_string_len);
+		if (full_pcap_version_string == NULL)
+			return (NULL);
 		strcpy(full_pcap_version_string, dospfx);
 		strcat(full_pcap_version_string, pcap_version_string);
 	}
