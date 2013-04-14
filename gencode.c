@@ -876,6 +876,7 @@ static u_int off_proto;
  * These are offsets for the MTP2 fields.
  */
 static u_int off_li;
+static u_int off_li_hsl;
 
 /*
  * These are offsets for the MTP3 fields.
@@ -949,6 +950,7 @@ init_linktype(p)
 	 * And assume we're not doing SS7.
 	 */
 	off_li = -1;
+	off_li_hsl = -1;
 	off_sio = -1;
 	off_opc = -1;
 	off_dpc = -1;
@@ -1381,6 +1383,7 @@ init_linktype(p)
 
 	case DLT_MTP2:
 		off_li = 2;
+		off_li_hsl = 4;
 		off_sio = 3;
 		off_opc = 4;
 		off_dpc = 4;
@@ -1393,6 +1396,7 @@ init_linktype(p)
 
 	case DLT_MTP2_WITH_PHDR:
 		off_li = 6;
+		off_li_hsl = 8;
 		off_sio = 7;
 		off_opc = 8;
 		off_dpc = 8;
@@ -1405,6 +1409,7 @@ init_linktype(p)
 
 	case DLT_ERF:
 		off_li = 22;
+		off_li_hsl = 24;
 		off_sio = 23;
 		off_opc = 24;
 		off_dpc = 24;
@@ -8250,6 +8255,7 @@ gen_atmtype_abbrev(type)
  * FISU, length is null
  * LSSU, length is 1 or 2
  * MSU, length is 3 or more
+ * For MTP2_HSL, sequences are on 2 bytes, and length on 9 bits
  */
 struct block *
 gen_mtp2type_abbrev(type)
@@ -8286,6 +8292,33 @@ gen_mtp2type_abbrev(type)
 		b0 = gen_ncmp(OR_PACKET, off_li, BPF_B, 0x3f, BPF_JGT, 0, 2);
 		break;
 
+	case MH_FISU:
+		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_ERF) &&
+		     (linktype != DLT_MTP2_WITH_PHDR) )
+			bpf_error("'hfisu' supported only on MTP2_HSL");
+		/* gen_ncmp(offrel, offset, size, mask, jtype, reverse, value) */
+		b0 = gen_ncmp(OR_PACKET, off_li_hsl, BPF_H, 0xff80, BPF_JEQ, 0, 0);
+		break;
+
+	case MH_LSSU:
+		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_ERF) &&
+		     (linktype != DLT_MTP2_WITH_PHDR) )
+			bpf_error("'hlssu' supported only on MTP2_HSL");
+		b0 = gen_ncmp(OR_PACKET, off_li_hsl, BPF_H, 0xff80, BPF_JGT, 1, 0x0100);
+		b1 = gen_ncmp(OR_PACKET, off_li_hsl, BPF_H, 0xff80, BPF_JGT, 0, 0);
+		gen_and(b1, b0);
+		break;
+
+	case MH_MSU:
+		if ( (linktype != DLT_MTP2) &&
+		     (linktype != DLT_ERF) &&
+		     (linktype != DLT_MTP2_WITH_PHDR) )
+			bpf_error("'hmsu' supported only on MTP2_HSL");
+		b0 = gen_ncmp(OR_PACKET, off_li_hsl, BPF_H, 0xff80, BPF_JGT, 0, 0x0100);
+		break;
+
 	default:
 		abort();
 	}
@@ -8301,8 +8334,16 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 {
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
+	u_int newoff_sio=off_sio;
+	u_int newoff_opc=off_opc;
+	u_int newoff_dpc=off_dpc;
+	u_int newoff_sls=off_sls;
 
 	switch (mtp3field) {
+
+	case MH_SIO:
+		newoff_sio += 3; /* offset for MTP2_HSL */
+		/* FALLTHROUGH */
 
 	case M_SIO:
 		if (off_sio == (u_int)-1)
@@ -8311,10 +8352,12 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 		if(jvalue > 255)
 		        bpf_error("sio value %u too big; max value = 255",
 		            jvalue);
-		b0 = gen_ncmp(OR_PACKET, off_sio, BPF_B, 0xffffffff,
+		b0 = gen_ncmp(OR_PACKET, newoff_sio, BPF_B, 0xffffffff,
 		    (u_int)jtype, reverse, (u_int)jvalue);
 		break;
 
+	case MH_OPC:
+		newoff_opc+=3;
         case M_OPC:
 	        if (off_opc == (u_int)-1)
 			bpf_error("'opc' supported only on SS7");
@@ -8331,9 +8374,13 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 		val3 = jvalue & 0x00000003;
 		val3 = val3 <<22;
 		jvalue = val1 + val2 + val3;
-		b0 = gen_ncmp(OR_PACKET, off_opc, BPF_W, 0x00c0ff0f,
+		b0 = gen_ncmp(OR_PACKET, newoff_opc, BPF_W, 0x00c0ff0f,
 		    (u_int)jtype, reverse, (u_int)jvalue);
 		break;
+
+	case MH_DPC:
+		newoff_dpc += 3;
+		/* FALLTHROUGH */
 
 	case M_DPC:
 	        if (off_dpc == (u_int)-1)
@@ -8349,10 +8396,12 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 		val2 = jvalue & 0x00003f00;
 		val2 = val2 << 8;
 		jvalue = val1 + val2;
-		b0 = gen_ncmp(OR_PACKET, off_dpc, BPF_W, 0xff3f0000,
+		b0 = gen_ncmp(OR_PACKET, newoff_dpc, BPF_W, 0xff3f0000,
 		    (u_int)jtype, reverse, (u_int)jvalue);
 		break;
 
+	case MH_SLS:
+	  newoff_sls+=3;
 	case M_SLS:
 	        if (off_sls == (u_int)-1)
 			bpf_error("'sls' supported only on SS7");
@@ -8363,7 +8412,7 @@ gen_mtp3field_code(mtp3field, jvalue, jtype, reverse)
 		/* the following instruction is made to convert jvalue
 		 * to the forme used to write sls in an ss7 message*/
 		jvalue = jvalue << 4;
-		b0 = gen_ncmp(OR_PACKET, off_sls, BPF_B, 0xf0,
+		b0 = gen_ncmp(OR_PACKET, newoff_sls, BPF_B, 0xf0,
 		    (u_int)jtype,reverse, (u_int)jvalue);
 		break;
 

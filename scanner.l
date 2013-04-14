@@ -311,10 +311,17 @@ fisu		return FISU;
 lssu		return LSSU;
 lsu		return LSSU;
 msu		return MSU;
+hfisu		return HFISU;
+hlssu		return HLSSU;
+hmsu		return HMSU;
 sio		return SIO;
 opc		return OPC;
 dpc		return DPC;
 sls		return SLS;
+hsio		return HSIO;
+hopc		return HOPC;
+hdpc		return HDPC;
+hsls		return HSLS;
 
 [ \r\n\t]		;
 [+\-*/:\[\]!<>()&|=]	return yytext[0];
