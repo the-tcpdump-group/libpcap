@@ -415,6 +415,8 @@ pcap_ether_aton(const char *s)
 	register u_int d;
 
 	e = ep = (u_char *)malloc(6);
+	if (e == NULL)
+		return (NULL);
 
 	while (*s) {
 		if (*s == ':' || *s == '.' || *s == '-')
