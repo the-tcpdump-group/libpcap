@@ -1195,8 +1195,10 @@ struct bpf_program {
  * Requested by Tomasz Mon <desowin@gmail.com>
  */
 #define DLT_USBPCAP		249
- 
-#define DLT_MATCHING_MAX	249	/* highest value in the "matching" range */
+
+#define DLT_KMSG_LINUX 		250
+
+#define DLT_MATCHING_MAX	250	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

@@ -15,7 +15,7 @@ Version 1.x.y of LIBPCAP can be retrieved with the CVS tag "libpcap_1_{x}rel{y}"
 
 Please submit patches by forking the branch on GitHub at
 
-	http://github.com/mcr/libpcap/tree/master
+	http://github.com/the-tcpdump-group/libpcap/tree/master
 
 and issuing a pull request.
 
@@ -97,12 +97,12 @@ to the address "tcpdump-workers@lists.tcpdump.org".  Bugs, support
 requests, and feature requests may also be submitted on the GitHub issue
 tracker for libpcap at
 
-	https://github.com/mcr/libpcap/issues
+	https://github.com/the-tcpdump-group/libpcap/issues
 
 Source code contributions, etc. should be sent to the email address
 above or submitted by forking the branch on GitHub at
 
-	http://github.com/mcr/libpcap/tree/master
+	http://github.com/the-tcpdump-group/libpcap/tree/master
 
 and issuing a pull request.
 

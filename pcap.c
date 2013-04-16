@@ -109,6 +109,10 @@ static const char rcsid[] _U_ =
 #include "pcap-dbus.h"
 #endif
 
+#ifdef PCAP_SUPPORT_LINUX_KMSG
+#include "pcap-kmsg-linux.h"
+#endif
+
 int 
 pcap_not_initialized(pcap_t *pcap)
 {
@@ -330,6 +334,9 @@ struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_DBUS
 	{ dbus_findalldevs, dbus_create },
+#endif
+#ifdef PCAP_SUPPORT_LINUX_KMSG
+	{ linux_kmsg_findalldevs, linux_kmsg_create },
 #endif
 	{ NULL, NULL }
 };
@@ -1068,6 +1075,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_NETANALYZER, "Ethernet with Hilscher netANALYZER pseudo-header"),
 	DLT_CHOICE(DLT_NETANALYZER_TRANSPARENT, "Ethernet with Hilscher netANALYZER pseudo-header and with preamble and SFD"),
 	DLT_CHOICE(DLT_IPOIB, "RFC 4391 IP-over-Infiniband"),
+	DLT_CHOICE(DLT_DBUS, "D-Bus"),
+	DLT_CHOICE(DLT_KMSG_LINUX, "Linux Kernel Messages"),
 	DLT_CHOICE_SENTINEL
 };
 
