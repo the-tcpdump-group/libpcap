@@ -202,7 +202,7 @@ dag_erf_ext_header_count(uint8_t * erf, size_t len)
 	do {
 	
 		/* sanity check we have enough bytes */
-		if ( len <= (24 + (hdr_num * 8)) )
+		if ( len < (24 + (hdr_num * 8)) )
 			return hdr_num;
 
 		/* get the header type */
