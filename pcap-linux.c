@@ -26,10 +26,13 @@
  *
  *  Modifications:     Added PACKET_MMAP support
  *                     Paolo Abeni <paolo.abeni@email.it> 
+ *                     Added TPACKET_V3 support
+ *                     Jakub Zawadzki <darkjames@darkjames.pl>
  *                     
  *                     based on previous works of:
  *                     Simon Patarin <patarin@cs.unibo.it>
  *                     Phil Wood <cpw@lanl.gov>
+ *                     Daniel Borkmann <borkmann@redhat.com>
  *
  * Monitor-mode support for mac80211 includes code taken from the iw
  * command; the copyright notice for that code is
@@ -195,6 +198,9 @@ static const char rcsid[] _U_ =
   * uses many ring related structs and macros */
 # ifdef TPACKET_HDRLEN
 #  define HAVE_PACKET_RING
+#  ifdef TPACKET3_HDRLEN
+#   define HAVE_TPACKET3
+#  endif
 #  ifdef TPACKET2_HDRLEN
 #   define HAVE_TPACKET2
 #  else
@@ -307,6 +313,9 @@ static void pcap_cleanup_linux(pcap_t *);
 union thdr {
 	struct tpacket_hdr	*h1;
 	struct tpacket2_hdr	*h2;
+#ifdef HAVE_TPACKET3
+	struct tpacket_block_desc *h3;
+#endif
 	void			*raw;
 };
 
@@ -317,7 +326,10 @@ static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle, int *status);
 static int prepare_tpacket_socket(pcap_t *handle);
 static void pcap_cleanup_linux_mmap(pcap_t *);
-static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler , u_char *);
+static int pcap_read_linux_mmap(pcap_t *, int, pcap_handler, u_char *);
+#ifdef HAVE_TPACKET3
+static int pcap_read_linux_mmap_v3(pcap_t *, int, pcap_handler, u_char *);
+#endif
 static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
 static int pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf);
 static int pcap_getnonblock_mmap(pcap_t *p, char *errbuf);
@@ -1753,8 +1765,20 @@ static int
 pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 #ifdef HAVE_TPACKET_STATS
-	struct tpacket_stats kstats;
-	socklen_t len = sizeof (struct tpacket_stats);
+	union {
+		struct tpacket_stats v2;
+# ifdef HAVE_TPACKET3
+		struct tpacket_stats_v3 v3;
+# endif
+	} kstats;
+# ifdef HAVE_TPACKET3
+	socklen_t len = 
+		(handle->md.tp_version == TPACKET_V3) ?
+			sizeof(struct tpacket_stats_v3) :
+			sizeof(struct tpacket_stats);
+# else
+	socklen_t len = sizeof(struct tpacket_stats);
+# endif
 #endif
 
 	long if_dropped = 0;
@@ -1822,8 +1846,19 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 *    getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS, ....
 		 * resets the counters to zero.
 		 */
-		handle->md.stat.ps_recv += kstats.tp_packets;
-		handle->md.stat.ps_drop += kstats.tp_drops;
+
+#ifdef HAVE_TPACKET3
+		if (handle->md.tp_version == TPACKET_V3) {
+			handle->md.stat.ps_recv += kstats.v3.tp_packets;
+			handle->md.stat.ps_drop += kstats.v3.tp_drops;
+			/* XXX, tp_freeze_q_cnt */
+
+		} else
+#endif
+		{
+			handle->md.stat.ps_recv += kstats.v2.tp_packets;
+			handle->md.stat.ps_drop += kstats.v2.tp_drops;
+		}
 		*stats = handle->md.stat;
 		return 0;
 	}
@@ -3275,6 +3310,11 @@ activate_mmap(pcap_t *handle, int *status)
 	 * handle->offset is used to get the current position into the rx ring.
 	 * handle->cc is used to store the ring size.
 	 */
+#ifdef HAVE_TPACKET3
+	if (handle->md.tp_version == TPACKET_V3)
+		handle->read_op = pcap_read_linux_mmap_v3;
+	else
+#endif
 	handle->read_op = pcap_read_linux_mmap;
 	handle->cleanup_op = pcap_cleanup_linux_mmap;
 	handle->setfilter_op = pcap_setfilter_linux_mmap;
@@ -3302,6 +3342,7 @@ static int
 prepare_tpacket_socket(pcap_t *handle)
 {
 #ifdef HAVE_TPACKET2
+	int ver = TPACKET_V2;
 	socklen_t len;
 	int val;
 #endif
@@ -3310,8 +3351,22 @@ prepare_tpacket_socket(pcap_t *handle)
 	handle->md.tp_hdrlen = sizeof(struct tpacket_hdr);
 
 #ifdef HAVE_TPACKET2
-	/* Probe whether kernel supports TPACKET_V2 */
-	val = TPACKET_V2;
+#ifdef HAVE_TPACKET3
+	if (getenv("PCAP_USE_TPACKET3") != NULL) {
+		/* test if V3 works, sample from Documentation/networking/packet_mmap.txt */
+		val = TPACKET_V3;
+		setsockopt(handle->fd, SOL_PACKET, PACKET_VERSION, &val, sizeof(val));
+		val = -1;
+		len = sizeof(val);
+		getsockopt(handle->fd, SOL_PACKET, PACKET_VERSION, &val, &len);
+
+		if (val == TPACKET_V3)
+			ver = TPACKET_V3;
+	}
+#endif
+
+	/* Probe whether kernel supports that version */
+	val = ver;
 	len = sizeof(val);
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
 		if (errno == ENOPROTOOPT)
@@ -3319,21 +3374,21 @@ prepare_tpacket_socket(pcap_t *handle)
 
 		/* Yes - treat as a failure. */
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "can't get TPACKET_V2 header len on packet socket: %s",
-		    pcap_strerror(errno));
+		    "can't get tpacket version %d header len on packet socket: %s",
+		    ver + 1, pcap_strerror(errno));
 		return -1;
 	}
 	handle->md.tp_hdrlen = val;
 
-	val = TPACKET_V2;
+	val = ver;
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_VERSION, &val,
 		       sizeof(val)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "can't activate TPACKET_V2 on packet socket: %s",
-		    pcap_strerror(errno));
+		    "can't activate tpacket version %d on packet socket: %s",
+		    ver + 1, pcap_strerror(errno));
 		return -1;
 	}
-	handle->md.tp_version = TPACKET_V2;
+	handle->md.tp_version = ver;
 
 	/* Reserve space for VLAN tag reconstruction */
 	val = VLAN_TAG_LEN;
@@ -3365,7 +3420,18 @@ static int
 create_ring(pcap_t *handle, int *status)
 {
 	unsigned i, j, frames_per_block;
+#ifdef HAVE_TPACKET3
+	struct tpacket_req3 req;
+	const int use_v3 = (handle->md.tp_version == TPACKET_V3);
+	const size_t reqlen =
+		(use_v3) ?
+			sizeof(struct tpacket_req3) :
+			sizeof(struct tpacket_req);
+#else
 	struct tpacket_req req;
+	const size_t reqlen = sizeof(req);
+	const int use_v3 = 0;
+#endif
 	socklen_t len;
 	unsigned int sk_type, tp_reserve, maclen, tp_hdrlen, netoff, macoff;
 	unsigned int frame_size;
@@ -3604,9 +3670,19 @@ retry:
 
 	/* req.tp_frame_nr is requested to match frames_per_block*req.tp_block_nr */
 	req.tp_frame_nr = req.tp_block_nr * frames_per_block;
-	
+
+#ifdef HAVE_TPACKET3
+	if (use_v3) {
+		/* req.tp_retire_blk_tov = 0;    */
+		req.tp_retire_blk_tov = 100;  /* XXX, I receive lots of drop if I let kernel calculate it (0 value), we should probably depend this value on timeout. for now make it 100ms */
+		req.tp_sizeof_priv = 0;
+		req.tp_feature_req_word = 0;  /* TP_FT_REQ_FILL_RXHASH */
+	}
+#endif
+
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
-					(void *) &req, sizeof(req))) {
+					(void *) &req, reqlen))
+	{
 		if ((errno == ENOMEM) && (req.tp_block_nr > 1)) {
 			/*
 			 * Memory failure; try to reduce the requested ring
@@ -3651,7 +3727,7 @@ retry:
 	}
 
 	/* allocate a ring for each frame header pointer*/
-	handle->cc = req.tp_frame_nr;
+	handle->cc = (use_v3) ? req.tp_block_nr : req.tp_frame_nr;
 	handle->buffer = malloc(handle->cc * sizeof(union thdr *));
 	if (!handle->buffer) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -3665,6 +3741,15 @@ retry:
 
 	/* fill the header ring with proper frame ptr*/
 	handle->offset = 0;
+#ifdef HAVE_TPACKET3
+	if (use_v3) {
+		for (i=0; i<req.tp_block_nr; ++i) {
+ 			void *base = &handle->md.mmapbuf[i*req.tp_block_size];
+			RING_GET_FRAME(handle) = base;
+			++handle->offset;
+		}
+	} else
+#endif
 	for (i=0; i<req.tp_block_nr; ++i) {
 		void *base = &handle->md.mmapbuf[i*req.tp_block_size];
 		for (j=0; j<frames_per_block; ++j, ++handle->offset) {
@@ -3782,6 +3867,13 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 	case TPACKET_V2:
 		if (status != (h.h2->tp_status ? TP_STATUS_USER :
 						TP_STATUS_KERNEL))
+			return NULL;
+		break;
+#endif
+#ifdef HAVE_TPACKET3
+	case TPACKET_V3:
+		if (status != ((h.h3->hdr.bh1.block_status & TP_STATUS_USER) ?
+			TP_STATUS_USER : TP_STATUS_KERNEL))
 			return NULL;
 		break;
 #endif
@@ -4100,6 +4192,85 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 	}
 	return pkts;
 }
+
+#ifdef HAVE_TPACKET3
+static int
+pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback, 
+		u_char *user)
+{
+	int pkts = 0;
+	int ret;
+
+	ret = pcap_read_linux_mmap_wait(handle);
+	if (ret != 0)
+		return ret;
+
+	/* non-positive values of max_packets are used to require all 
+	 * packets currently available in the ring */
+	while ((pkts < max_packets) || (max_packets <= 0)) {
+		int run_bpf;
+		struct sockaddr_ll *sll;
+		struct pcap_pkthdr pcaphdr;
+		union thdr h;
+		unsigned int vlan_tci = ~0;
+
+		int num_pkts;
+		char *ppd;
+
+		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
+		if (!h.raw)
+			break;
+
+		num_pkts = h.h3->hdr.bh1.num_pkts;
+		/* fprintf(stderr, "in block: %d packets\n", num_pkts); */
+
+		ppd = (char *)h.raw + h.h3->hdr.bh1.offset_to_first_pkt;
+
+		while (num_pkts-- && !handle->break_loop) {
+			const struct tpacket3_hdr *_ppd = (const struct tpacket3_hdr *) ppd;
+			unsigned char *bp;
+
+			/* get required packet info from ring header */
+			bp = (unsigned char*)ppd + _ppd->tp_mac;
+
+			pcaphdr.len = _ppd->tp_len;
+			pcaphdr.caplen = _ppd->tp_snaplen;
+			pcaphdr.ts.tv_sec = _ppd->tp_sec;
+			pcaphdr.ts.tv_usec = _ppd->tp_nsec / 1000;
+
+			ppd = ppd + _ppd->tp_next_offset;
+
+			/* XXX perform sanity check on internal offset. */
+
+			if (_ppd->tp_status & TP_STATUS_VLAN_VALID)
+				vlan_tci = _ppd->hv1.tp_vlan_tci;
+
+			switch (pcap_read_linux_mmap_common(handle, &pcaphdr, _ppd->tp_mac, vlan_tci)) {
+				case -1:
+					return -1;
+				case 1:
+					/* pass the packet to the user */
+					pkts++;
+					callback(user, &pcaphdr, bp - (pcaphdr.caplen - _ppd->tp_snaplen));
+					handle->md.packets_read++;
+			}
+		}
+
+		/* next block */
+		h.h3->hdr.bh1.block_status = TP_STATUS_KERNEL;
+
+		if (++handle->offset >= handle->cc)
+			handle->offset = 0;
+
+		/* check for break loop condition*/
+		if (handle->break_loop) {
+			handle->break_loop = 0;
+			return PCAP_ERROR_BREAK;
+		}
+	}
+	return pkts;
+}
+#endif
 
 static int 
 pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
