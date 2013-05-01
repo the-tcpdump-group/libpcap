@@ -1339,6 +1339,40 @@ pcap_set_datalink_linux(pcap_t *handle, int dlt)
 }
 
 /*
+ * linux_check_direction()
+ *
+ * Do checks based on packet direction.
+ */
+static inline int
+linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
+{
+	if (sll->sll_pkttype == PACKET_OUTGOING) {
+		/*
+		 * Outgoing packet.
+		 * If this is from the loopback device, reject it;
+		 * we'll see the packet as an incoming packet as well,
+		 * and we don't want to see it twice.
+		 */
+		if (sll->sll_ifindex == handle->md.lo_ifindex)
+			return 0;
+
+		/*
+		 * If the user only wants incoming packets, reject it.
+		 */
+		if (handle->direction == PCAP_D_IN)
+			return 0;
+	} else {
+		/*
+		 * Incoming packet.
+		 * If the user only wants outgoing packets, reject it.
+		 */
+		if (handle->direction == PCAP_D_OUT)
+			return 0;
+	}
+	return 1;
+}
+
+/*
  *  Read a packet from the socket calling the handler provided by
  *  the user. Returns the number of packets received or -1 if an
  *  error occured.
@@ -1491,29 +1525,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 * address returned for SOCK_PACKET is a "sockaddr_pkt"
 		 * which lacks the relevant packet type information.
 		 */
-		if (from.sll_pkttype == PACKET_OUTGOING) {
-			/*
-			 * Outgoing packet.
-			 * If this is from the loopback device, reject it;
-			 * we'll see the packet as an incoming packet as well,
-			 * and we don't want to see it twice.
-			 */
-			if (from.sll_ifindex == handle->md.lo_ifindex)
-				return 0;
-
-			/*
-			 * If the user only wants incoming packets, reject it.
-			 */
-			if (handle->direction == PCAP_D_IN)
-				return 0;
-		} else {
-			/*
-			 * Incoming packet.
-			 * If the user only wants outgoing packets, reject it.
-			 */
-			if (handle->direction == PCAP_D_OUT)
-				return 0;
-		}
+		if (!linux_check_direction(handle, &from))
+			return 0;
 	}
 #endif
 
@@ -3936,33 +3949,9 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 					tp_len, tp_snaplen) == 0))
 			goto skip;
 
-		/*
-		 * Do checks based on packet direction.
-		 */
 		sll = (void *)h.raw + TPACKET_ALIGN(handle->md.tp_hdrlen);
-		if (sll->sll_pkttype == PACKET_OUTGOING) {
-			/*
-			 * Outgoing packet.
-			 * If this is from the loopback device, reject it;
-			 * we'll see the packet as an incoming packet as well,
-			 * and we don't want to see it twice.
-			 */
-			if (sll->sll_ifindex == handle->md.lo_ifindex)
-				goto skip;
-
-			/*
-			 * If the user only wants incoming packets, reject it.
-			 */
-			if (handle->direction == PCAP_D_IN)
-				goto skip;
-		} else {
-			/*
-			 * Incoming packet.
-			 * If the user only wants outgoing packets, reject it.
-			 */
-			if (handle->direction == PCAP_D_OUT)
-				goto skip;
-		}
+		if (!linux_check_direction(handle, sll))
+			goto skip;
 
 		/* get required packet info from ring header */
 		pcaphdr.ts.tv_sec = tp_sec;
