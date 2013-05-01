@@ -4009,32 +4009,30 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		struct pcap_pkthdr pcaphdr;
 		unsigned char *bp;
 		union thdr h;
-		unsigned int tp_len;
 		unsigned int tp_mac;
 		unsigned int tp_snaplen;
-		unsigned int tp_sec;
-		unsigned int tp_usec;
 		unsigned int vlan_tci = ~0;
 
 		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
 		if (!h.raw)
 			break;
 
+		/* get required packet info from ring header */
 		switch (handle->md.tp_version) {
 		case TPACKET_V1:
-			tp_len	   = h.h1->tp_len;
-			tp_mac	   = h.h1->tp_mac;
-			tp_snaplen = h.h1->tp_snaplen;
-			tp_sec	   = h.h1->tp_sec;
-			tp_usec	   = h.h1->tp_usec;
+			tp_mac = h.h1->tp_mac;
+			pcaphdr.len    = h.h1->tp_len;
+			pcaphdr.caplen = h.h1->tp_snaplen;
+			pcaphdr.ts.tv_sec  = h.h1->tp_sec;
+			pcaphdr.ts.tv_usec = h.h1->tp_usec;
 			break;
 #ifdef HAVE_TPACKET2
 		case TPACKET_V2:
-			tp_len	   = h.h2->tp_len;
-			tp_mac	   = h.h2->tp_mac;
-			tp_snaplen = h.h2->tp_snaplen;
-			tp_sec	   = h.h2->tp_sec;
-			tp_usec	   = h.h2->tp_nsec / 1000;
+			tp_mac = h.h2->tp_mac;
+			pcaphdr.len    = h.h2->tp_len;
+			pcaphdr.caplen = h.h2->tp_snaplen;
+			pcaphdr.ts.tv_sec  = h.h2->tp_sec;
+			pcaphdr.ts.tv_usec = h.h2->tp_nsec / 1000;
 			break;
 #endif
 		default:
@@ -4043,6 +4041,8 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 				handle->md.tp_version + 1);
 			return -1;
 		}
+
+		tp_snaplen = pcaphdr.caplen;
 
 		/* perform sanity check on internal offset. */
 		if (tp_mac + tp_snaplen > handle->bufsize) {
@@ -4054,12 +4054,6 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 
 		bp = (unsigned char*)h.raw + tp_mac;
-
-		/* get required packet info from ring header */
-		pcaphdr.ts.tv_sec = tp_sec;
-		pcaphdr.ts.tv_usec = tp_usec;
-		pcaphdr.caplen = tp_snaplen;
-		pcaphdr.len = tp_len;
 
 #ifdef HAVE_TPACKET2
 		if ((handle->md.tp_version == TPACKET_V2) &&
