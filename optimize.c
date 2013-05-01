@@ -622,10 +622,6 @@ fold_op(struct stmt *s, int v0, int v1)
 		a >>= b;
 		break;
 
-	case BPF_NEG:
-		a = -a;
-		break;
-
 	default:
 		abort();
 	}
