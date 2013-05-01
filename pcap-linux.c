@@ -3793,12 +3793,10 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 #define POLLRDHUP 0
 #endif
 
-static int
-pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
-		u_char *user)
+static inline int
+pcap_read_linux_mmap_wait(pcap_t *handle)
 {
 	int timeout;
-	int pkts = 0;
 	char c;
 
 	/* wait for frames availability.*/
@@ -3882,11 +3880,132 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		} while (ret < 0);
 	}
 
+	return 0;
+}
+
+static inline int
+pcap_read_linux_mmap_common(pcap_t *handle, struct pcap_pkthdr *pcaphdr, int tp_mac, unsigned int vlan_tci)
+{
+	unsigned int tp_snaplen = pcaphdr->caplen;
+	struct sockaddr_ll *sll;
+	int run_bpf;
+
+	void *hraw;
+	unsigned char *bp;
+
+	hraw = RING_GET_FRAME(handle);
+
+	/* run filter on received packet
+	 * If the kernel filtering is enabled we need to run the
+	 * filter until all the frames present into the ring 
+	 * at filter creation time are processed. 
+	 * In such case md.use_bpf is used as a counter for the 
+	 * packet we need to filter.
+	 * Note: alternatively it could be possible to stop applying 
+	 * the filter when the ring became empty, but it can possibly
+	 * happen a lot later... */
+	bp = (unsigned char*)hraw + tp_mac;
+	run_bpf = (!handle->md.use_bpf) || 
+		((handle->md.use_bpf>1) && handle->md.use_bpf--);
+	if (run_bpf && handle->fcode.bf_insns && 
+			(bpf_filter(handle->fcode.bf_insns, bp,
+				pcaphdr->len, pcaphdr->caplen) == 0))
+		return 0;
+
+	sll = (void *)hraw + TPACKET_ALIGN(handle->md.tp_hdrlen);
+	if (!linux_check_direction(handle, sll))
+		return 0;
+
+	/* if required build in place the sll header*/
+	if (handle->md.cooked) {
+		struct sll_header *hdrp;
+
+		/*
+		 * The kernel should have left us with enough
+		 * space for an sll header; back up the packet
+		 * data pointer into that space, as that'll be
+		 * the beginning of the packet we pass to the
+		 * callback.
+		 */
+		bp -= SLL_HDR_LEN;
+
+		/*
+		 * Let's make sure that's past the end of
+		 * the tpacket header, i.e. >=
+		 * ((u_char *)thdr + TPACKET_HDRLEN), so we
+		 * don't step on the header when we construct
+		 * the sll header.
+		 */
+		if (bp < (u_char *)hraw +
+				   TPACKET_ALIGN(handle->md.tp_hdrlen) +
+				   sizeof(struct sockaddr_ll)) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
+				"cooked-mode frame doesn't have room for sll header");
+			return -1;
+		}
+
+		/*
+		 * OK, that worked; construct the sll header.
+		 */
+		hdrp = (struct sll_header *)bp;
+		hdrp->sll_pkttype = map_packet_type_to_sll_type(
+						sll->sll_pkttype);
+		hdrp->sll_hatype = htons(sll->sll_hatype);
+		hdrp->sll_halen = htons(sll->sll_halen);
+		memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
+		hdrp->sll_protocol = sll->sll_protocol;
+
+		/* update packet len */
+		pcaphdr->caplen += SLL_HDR_LEN;
+		pcaphdr->len += SLL_HDR_LEN;
+	}
+
+	if (vlan_tci != ~0 &&
+	    handle->md.vlan_offset != -1 &&
+	    tp_snaplen >= (unsigned int) handle->md.vlan_offset)
+	{
+		struct vlan_tag *tag;
+
+		bp -= VLAN_TAG_LEN;
+		memmove(bp, bp + VLAN_TAG_LEN, handle->md.vlan_offset);
+
+		tag = (struct vlan_tag *)(bp + handle->md.vlan_offset);
+		tag->vlan_tpid = htons(ETH_P_8021Q);
+		tag->vlan_tci = htons( ((u_int16_t) vlan_tci));
+
+		pcaphdr->caplen += VLAN_TAG_LEN;
+		pcaphdr->len += VLAN_TAG_LEN;
+	}
+
+	/*
+	 * The only way to tell the kernel to cut off the
+	 * packet at a snapshot length is with a filter program;
+	 * if there's no filter program, the kernel won't cut
+	 * the packet off.
+	 *
+	 * Trim the snapshot length to be no longer than the
+	 * specified snapshot length.
+	 */
+	if (pcaphdr->caplen > handle->snapshot)
+		pcaphdr->caplen = handle->snapshot;
+
+	return 1;
+}
+
+static int
+pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
+		u_char *user)
+{
+	int pkts = 0;
+	int ret;
+
+	ret = pcap_read_linux_mmap_wait(handle);
+	if (ret != 0)
+		return ret;
+
 	/* non-positive values of max_packets are used to require all 
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || (max_packets <= 0)) {
-		int run_bpf;
-		struct sockaddr_ll *sll;
 		struct pcap_pkthdr pcaphdr;
 		unsigned char *bp;
 		union thdr h;
@@ -3895,6 +4014,7 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		unsigned int tp_snaplen;
 		unsigned int tp_sec;
 		unsigned int tp_usec;
+		unsigned int vlan_tci = ~0;
 
 		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
 		if (!h.raw)
@@ -3920,9 +4040,10 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		default:
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
 				"unsupported tpacket version %d",
-				handle->md.tp_version);
+				handle->md.tp_version + 1);
 			return -1;
 		}
+
 		/* perform sanity check on internal offset. */
 		if (tp_mac + tp_snaplen > handle->bufsize) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
@@ -3932,26 +4053,7 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 			return -1;
 		}
 
-		/* run filter on received packet
-		 * If the kernel filtering is enabled we need to run the
-		 * filter until all the frames present into the ring 
-		 * at filter creation time are processed. 
-		 * In such case md.use_bpf is used as a counter for the 
-		 * packet we need to filter.
-		 * Note: alternatively it could be possible to stop applying 
-		 * the filter when the ring became empty, but it can possibly
-		 * happen a lot later... */
 		bp = (unsigned char*)h.raw + tp_mac;
-		run_bpf = (!handle->md.use_bpf) || 
-			((handle->md.use_bpf>1) && handle->md.use_bpf--);
-		if (run_bpf && handle->fcode.bf_insns && 
-				(bpf_filter(handle->fcode.bf_insns, bp,
-					tp_len, tp_snaplen) == 0))
-			goto skip;
-
-		sll = (void *)h.raw + TPACKET_ALIGN(handle->md.tp_hdrlen);
-		if (!linux_check_direction(handle, sll))
-			goto skip;
 
 		/* get required packet info from ring header */
 		pcaphdr.ts.tv_sec = tp_sec;
@@ -3959,91 +4061,29 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 		pcaphdr.caplen = tp_snaplen;
 		pcaphdr.len = tp_len;
 
-		/* if required build in place the sll header*/
-		if (handle->md.cooked) {
-			struct sll_header *hdrp;
-
-			/*
-			 * The kernel should have left us with enough
-			 * space for an sll header; back up the packet
-			 * data pointer into that space, as that'll be
-			 * the beginning of the packet we pass to the
-			 * callback.
-			 */
-			bp -= SLL_HDR_LEN;
-
-			/*
-			 * Let's make sure that's past the end of
-			 * the tpacket header, i.e. >=
-			 * ((u_char *)thdr + TPACKET_HDRLEN), so we
-			 * don't step on the header when we construct
-			 * the sll header.
-			 */
-			if (bp < (u_char *)h.raw +
-					   TPACKET_ALIGN(handle->md.tp_hdrlen) +
-					   sizeof(struct sockaddr_ll)) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
-					"cooked-mode frame doesn't have room for sll header");
-				return -1;
-			}
-
-			/*
-			 * OK, that worked; construct the sll header.
-			 */
-			hdrp = (struct sll_header *)bp;
-			hdrp->sll_pkttype = map_packet_type_to_sll_type(
-							sll->sll_pkttype);
-			hdrp->sll_hatype = htons(sll->sll_hatype);
-			hdrp->sll_halen = htons(sll->sll_halen);
-			memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
-			hdrp->sll_protocol = sll->sll_protocol;
-
-			/* update packet len */
-			pcaphdr.caplen += SLL_HDR_LEN;
-			pcaphdr.len += SLL_HDR_LEN;
-		}
-
 #ifdef HAVE_TPACKET2
 		if ((handle->md.tp_version == TPACKET_V2) &&
 #if defined(TP_STATUS_VLAN_VALID)
-		(h.h2->tp_vlan_tci || (h.h2->tp_status & TP_STATUS_VLAN_VALID)) &&
+		(h.h2->tp_vlan_tci || (h.h2->tp_status & TP_STATUS_VLAN_VALID))
 #else
-		h.h2->tp_vlan_tci &&
+		h.h2->tp_vlan_tci
 #endif
-		    handle->md.vlan_offset != -1 &&
-		    tp_snaplen >= (unsigned int) handle->md.vlan_offset) {
-			struct vlan_tag *tag;
-
-			bp -= VLAN_TAG_LEN;
-			memmove(bp, bp + VLAN_TAG_LEN, handle->md.vlan_offset);
-
-			tag = (struct vlan_tag *)(bp + handle->md.vlan_offset);
-			tag->vlan_tpid = htons(ETH_P_8021Q);
-			tag->vlan_tci = htons(h.h2->tp_vlan_tci);
-
-			pcaphdr.caplen += VLAN_TAG_LEN;
-			pcaphdr.len += VLAN_TAG_LEN;
+		)
+		{
+			vlan_tci = h.h2->tp_vlan_tci;
 		}
 #endif
 
-		/*
-		 * The only way to tell the kernel to cut off the
-		 * packet at a snapshot length is with a filter program;
-		 * if there's no filter program, the kernel won't cut
-		 * the packet off.
-		 *
-		 * Trim the snapshot length to be no longer than the
-		 * specified snapshot length.
-		 */
-		if (pcaphdr.caplen > handle->snapshot)
-			pcaphdr.caplen = handle->snapshot;
+		switch (pcap_read_linux_mmap_common(handle, &pcaphdr, tp_mac, vlan_tci)) {
+			case -1:
+				return -1;
+			case 1:
+				/* pass the packet to the user */
+				pkts++;
+				callback(user, &pcaphdr, bp - (pcaphdr.caplen - tp_snaplen));
+				handle->md.packets_read++;
+		}
 
-		/* pass the packet to the user */
-		pkts++;
-		callback(user, &pcaphdr, bp);
-		handle->md.packets_read++;
-
-skip:
 		/* next packet */
 		switch (handle->md.tp_version) {
 		case TPACKET_V1:
