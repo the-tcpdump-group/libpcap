@@ -579,6 +579,10 @@ vstore(struct stmt *s, int *valp, int newval, int alter)
 		*valp = newval;
 }
 
+/*
+ * Do constant-folding on binary operators.
+ * (Unary operators are handled elsewhere.)
+ */
 static void
 fold_op(struct stmt *s, int v0, int v1)
 {
