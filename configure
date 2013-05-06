@@ -11887,18 +11887,82 @@ fi
 		{ echo "$as_me:$LINENO: checking for D-Bus" >&5
 echo $ECHO_N "checking for D-Bus... $ECHO_C" >&6; }
 		if "$PKGCONFIG" dbus-1; then
-			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
 			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
+			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
+			save_CFLAGS="$CFLAGS"
+			save_LIBS="$LIBS"
+			CFLAGS="$CFLAGS $DBUS_CFLAGS"
+			LIBS="$LIBS $DBUS_LIBS"
+			{ echo "$as_me:$LINENO: checking whether the D-Bus library defines dbus_connection_read_write" >&5
+echo $ECHO_N "checking whether the D-Bus library defines dbus_connection_read_write... $ECHO_C" >&6; }
+			cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <string.h>
+
+			     #include <time.h>
+			     #include <sys/time.h>
+
+			     #include <dbus/dbus.h>
+int
+main ()
+{
+return dbus_connection_read_write(NULL, 0);
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+
+				{ echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define PCAP_SUPPORT_DBUS 1
 _ACEOF
 
-			{ echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6; }
-			DBUS_SRC=pcap-dbus.c
-			V_INCLS="$V_INCLS $DBUS_CFLAGS"
-			LIBS="$LIBS $DBUS_LIBS"
+				DBUS_SRC=pcap-dbus.c
+				V_INCLS="$V_INCLS $DBUS_CFLAGS"
+
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+				{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+				if test "x$enable_dbus" = "xyes"; then
+				    { { echo "$as_me:$LINENO: error: --enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()" >&5
+echo "$as_me: error: --enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()" >&2;}
+   { (exit 1); exit 1; }; }
+				fi
+				LIBS="$save_LIBS"
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+			CFLAGS="$save_CFLAGS"
 		else
 			{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }

@@ -1510,13 +1510,35 @@ if test "x$enable_dbus" != "xno"; then
 	if test "x$PKGCONFIG" != "xno"; then
 		AC_MSG_CHECKING([for D-Bus])
 		if "$PKGCONFIG" dbus-1; then
-			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
 			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
-			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
-			AC_MSG_RESULT([yes])
-			DBUS_SRC=pcap-dbus.c
-			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
+			save_CFLAGS="$CFLAGS"
+			save_LIBS="$LIBS"
+			CFLAGS="$CFLAGS $DBUS_CFLAGS"
 			LIBS="$LIBS $DBUS_LIBS"
+			AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
+			AC_TRY_LINK(
+			    [#include <string.h>
+
+			     #include <time.h>
+			     #include <sys/time.h>
+
+			     #include <dbus/dbus.h>],
+			    [return dbus_connection_read_write(NULL, 0);],
+			    [
+				AC_MSG_RESULT([ye]s)
+				AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
+				DBUS_SRC=pcap-dbus.c
+				V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			    ],
+			    [
+				AC_MSG_RESULT([no])
+				if test "x$enable_dbus" = "xyes"; then
+				    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
+				fi
+				LIBS="$save_LIBS"
+			     ])
+			CFLAGS="$save_CFLAGS"
 		else
 			AC_MSG_RESULT([no])
 			if test "x$enable_dbus" = "xyes"; then
