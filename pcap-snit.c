@@ -84,9 +84,17 @@ static const char rcsid[] _U_ =
 /* Forwards */
 static int nit_setflags(int, int, int, char *);
 
+/*
+ * Private data for capturing on STREAMS NIT devices.
+ */
+struct pcap_snit {
+	struct pcap_stat stat;
+};
+
 static int
 pcap_stats_snit(pcap_t *p, struct pcap_stat *ps)
 {
+	struct pcap_snit *psn = p->private;
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
@@ -105,13 +113,14 @@ pcap_stats_snit(pcap_t *p, struct pcap_stat *ps)
 	 * kernel by libpcap or packets not yet read from libpcap by the
 	 * application.
 	 */
-	*ps = p->md.stat;
+	*ps = psn->stat;
 	return (0);
 }
 
 static int
 pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
+	struct pcap_snit *psn = p->private;
 	register int cc, n;
 	register u_char *bp, *cp, *ep;
 	register struct nit_bufhdr *hdrp;
@@ -160,7 +169,7 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 
-		++p->md.stat.ps_recv;
+		++psn->stat.ps_recv;
 		cp = bp;
 
 		/* get past NIT buffer  */
@@ -172,7 +181,7 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		cp += sizeof(*ntp);
 
 		ndp = (struct nit_ifdrops *)cp;
-		p->md.stat.ps_drop = ndp->nh_drops;
+		psn->stat.ps_drop = ndp->nh_drops;
 		cp += sizeof *ndp;
 
 		/* get past packet len  */
@@ -349,7 +358,7 @@ pcap_activate_snit(pcap_t *p)
 		    pcap_strerror(errno));
 		goto bad;
 	}
-	if (nit_setflags(p->fd, p->opt.promisc, p->md.timeout, p->errbuf) < 0)
+	if (nit_setflags(p->fd, p->opt.promisc, p->opt.timeout, p->errbuf) < 0)
 		goto bad;
 
 	(void)ioctl(fd, I_FLUSH, (char *)FLUSHR);
@@ -411,7 +420,7 @@ pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf);
+	p = pcap_create_common(device, ebuf, sizeof (struct pcap_snit));
 	if (p == NULL)
 		return (NULL);
 

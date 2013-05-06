@@ -163,8 +163,8 @@ sf_setdirection(pcap_t *p, pcap_direction_t d)
 static void
 sf_cleanup(pcap_t *p)
 {
-	if (p->sf.rfile != stdin)
-		(void)fclose(p->sf.rfile);
+	if (p->rfile != stdin)
+		(void)fclose(p->rfile);
 	if (p->buffer != NULL)
 		free(p->buffer);
 	pcap_freecode(&p->fcode);
@@ -231,7 +231,7 @@ pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
 }
 #endif
 
-static int (*check_headers[])(pcap_t *, bpf_u_int32, FILE *, char *) = {
+static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, char *, int *) = {
 	pcap_check_header,
 	pcap_ng_check_header
 };
@@ -248,10 +248,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	bpf_u_int32 magic;
 	size_t amt_read;
 	u_int i;
-
-	p = pcap_create_common("(savefile)", errbuf);
-	if (p == NULL)
-		return (NULL);
+	int err;
 
 	/*
 	 * Read the first 4 bytes of the file; the network analyzer dump
@@ -272,26 +269,23 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 			    (unsigned long)sizeof(magic),
 			    (unsigned long)amt_read);
 		}
-		goto bad;
+		return (NULL);
 	}
 
 	/*
 	 * Try all file types.
 	 */
 	for (i = 0; i < N_FILE_TYPES; i++) {
-		switch ((*check_headers[i])(p, magic, fp, errbuf)) {
-
-		case -1:
+		p = (*check_headers[i])(magic, fp, errbuf, &err);
+		if (p != NULL) {
+			/* Yup, that's it. */
+			goto found;
+		}
+		if (err) {
 			/*
 			 * Error trying to read the header.
 			 */
-			goto bad;
-
-		case 1:
-			/*
-			 * Yup, that's it.
-			 */
-			goto found;
+			return (NULL);
 		}
 	}
 
@@ -299,15 +293,13 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	 * Well, who knows what this mess is....
 	 */
 	snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
-	goto bad;
+	return (NULL);
 
 found:
-	p->sf.rfile = fp;
+	p->rfile = fp;
 
-#ifdef PCAP_FDDIPAD
 	/* Padding only needed for live capture fcode */
 	p->fddipad = 0;
-#endif
 
 #if !defined(WIN32) && !defined(MSDOS)
 	/*
@@ -337,9 +329,6 @@ found:
 	p->activated = 1;
 
 	return (p);
- bad:
-	free(p);
-	return (NULL);
 }
 
 /*
@@ -375,7 +364,7 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (n);
 		}
 
-		status = p->sf.next_packet_op(p, &h, &data);
+		status = p->next_packet_op(p, &h, &data);
 		if (status) {
 			if (status == 1)
 				return (0);

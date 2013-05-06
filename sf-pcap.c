@@ -123,14 +123,36 @@ static const char rcsid[] _U_ =
 static int pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **datap);
 
 /*
+ * Private data for reading pcap savefiles.
+ */
+typedef enum {
+	NOT_SWAPPED,
+	SWAPPED,
+	MAYBE_SWAPPED
+} swapped_type_t;
+
+struct pcap_sf {
+	size_t hdrsize;
+	swapped_type_t lengths_swapped;
+};
+
+/*
  * Check whether this is a pcap savefile and, if it is, extract the
  * relevant information from the header.
  */
-int
-pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
+pcap_t *
+pcap_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 {
 	struct pcap_file_header hdr;
 	size_t amt_read;
+	pcap_t *p;
+	int swapped = 0;
+	struct pcap_sf *ps;
+
+	/*
+	 * Assume no read errors.
+	 */
+	*err = 0;
 
 	/*
 	 * Check whether the first 4 bytes of the file are the magic
@@ -140,8 +162,8 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC) {
 		magic = SWAPLONG(magic);
 		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC)
-			return (0);	/* nope */
-		p->sf.swapped = 1;
+			return (NULL);	/* nope */
+		swapped = 1;
 	}
 
 	/*
@@ -162,13 +184,14 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			    (unsigned long)sizeof(hdr),
 			    (unsigned long)amt_read);
 		}
-		return (-1);
+		*err = 1;
+		return (NULL);
 	}
 
 	/*
 	 * If it's a byte-swapped capture file, byte-swap the header.
 	 */
-	if (p->sf.swapped) {
+	if (swapped) {
 		hdr.version_major = SWAPSHORT(hdr.version_major);
 		hdr.version_minor = SWAPSHORT(hdr.version_minor);
 		hdr.thiszone = SWAPLONG(hdr.thiszone);
@@ -180,16 +203,31 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 	if (hdr.version_major < PCAP_VERSION_MAJOR) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "archaic pcap savefile format");
-		return (-1);
+		*err = 1;
+		return (NULL);
 	}
-	p->sf.version_major = hdr.version_major;
-	p->sf.version_minor = hdr.version_minor;
+
+	/*
+	 * OK, this is a good pcap file.
+	 * Allocate a pcap_t for it.
+	 */
+	p = pcap_open_offline_common(errbuf, sizeof (struct pcap_sf));
+	if (p == NULL) {
+		/* Allocation failed. */
+		*err = 1;
+		return (NULL);
+	}
+	p->swapped = swapped;
+	p->version_major = hdr.version_major;
+	p->version_minor = hdr.version_minor;
 	p->tzoff = hdr.thiszone;
 	p->snapshot = hdr.snaplen;
 	p->linktype = linktype_to_dlt(LT_LINKTYPE(hdr.linktype));
 	p->linktype_ext = LT_LINKTYPE_EXT(hdr.linktype);
 
-	p->sf.next_packet_op = pcap_next_packet;
+	p->next_packet_op = pcap_next_packet;
+
+	ps = p->private;
 
 	/*
 	 * We interchanged the caplen and len fields at version 2.3,
@@ -205,19 +243,19 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 
 	case 2:
 		if (hdr.version_minor < 3)
-			p->sf.lengths_swapped = SWAPPED;
+			ps->lengths_swapped = SWAPPED;
 		else if (hdr.version_minor == 3)
-			p->sf.lengths_swapped = MAYBE_SWAPPED;
+			ps->lengths_swapped = MAYBE_SWAPPED;
 		else
-			p->sf.lengths_swapped = NOT_SWAPPED;
+			ps->lengths_swapped = NOT_SWAPPED;
 		break;
 
 	case 543:
-		p->sf.lengths_swapped = SWAPPED;
+		ps->lengths_swapped = SWAPPED;
 		break;
 
 	default:
-		p->sf.lengths_swapped = NOT_SWAPPED;
+		ps->lengths_swapped = NOT_SWAPPED;
 		break;
 	}
 
@@ -239,7 +277,7 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 		 * data ourselves and read from that buffer in order to
 		 * make that work.
 		 */
-		p->sf.hdrsize = sizeof(struct pcap_sf_patched_pkthdr);
+		ps->hdrsize = sizeof(struct pcap_sf_patched_pkthdr);
 
 		if (p->linktype == DLT_EN10MB) {
 			/*
@@ -265,7 +303,7 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			p->snapshot += 14;
 		}
 	} else
-		p->sf.hdrsize = sizeof(struct pcap_sf_pkthdr);
+		ps->hdrsize = sizeof(struct pcap_sf_pkthdr);
 
 	/*
 	 * Allocate a buffer for the packet data.
@@ -280,10 +318,12 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
-		return (-1);
+		free(p);
+		*err = 1;
+		return (NULL);
 	}
 
-	return (1);
+	return (p);
 }
 
 /*
@@ -294,8 +334,9 @@ pcap_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 static int
 pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 {
+	struct pcap_sf *ps = p->private;
 	struct pcap_sf_patched_pkthdr sf_hdr;
-	FILE *fp = p->sf.rfile;
+	FILE *fp = p->rfile;
 	size_t amt_read;
 	bpf_u_int32 t;
 
@@ -306,8 +347,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	 * unpatched libpcap we only read as many bytes as the regular
 	 * header has.
 	 */
-	amt_read = fread(&sf_hdr, 1, p->sf.hdrsize, fp);
-	if (amt_read != p->sf.hdrsize) {
+	amt_read = fread(&sf_hdr, 1, ps->hdrsize, fp);
+	if (amt_read != ps->hdrsize) {
 		if (ferror(fp)) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
@@ -317,7 +358,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			if (amt_read != 0) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "truncated dump file; tried to read %lu header bytes, only got %lu",
-				    (unsigned long)p->sf.hdrsize,
+				    (unsigned long)ps->hdrsize,
 				    (unsigned long)amt_read);
 				return (-1);
 			}
@@ -326,7 +367,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		}
 	}
 
-	if (p->sf.swapped) {
+	if (p->swapped) {
 		/* these were written in opposite byte order */
 		hdr->caplen = SWAPLONG(sf_hdr.caplen);
 		hdr->len = SWAPLONG(sf_hdr.len);
@@ -339,7 +380,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		hdr->ts.tv_usec = sf_hdr.ts.tv_usec;
 	}
 	/* Swap the caplen and len fields, if necessary. */
-	switch (p->sf.lengths_swapped) {
+	switch (ps->lengths_swapped) {
 
 	case NOT_SWAPPED:
 		break;
@@ -430,7 +471,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	}
 	*data = p->buffer;
 
-	if (p->sf.swapped) {
+	if (p->swapped) {
 		/*
 		 * Convert pseudo-headers from the byte order of
 		 * the host on which the file was saved to our

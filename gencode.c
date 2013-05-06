@@ -141,9 +141,7 @@ static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
 #endif
 
 /* XXX */
-#ifdef PCAP_FDDIPAD
 static int	pcap_fddipad;
-#endif
 
 /* VARARGS */
 void
@@ -926,9 +924,7 @@ init_linktype(p)
 	pcap_t *p;
 {
 	linktype = pcap_datalink(p);
-#ifdef PCAP_FDDIPAD
 	pcap_fddipad = p->fddipad;
-#endif
 
 	/*
 	 * Assume it's not raw ATM with a pseudo-header, for now.
@@ -1066,13 +1062,9 @@ init_linktype(p)
 		 * XXX - should we generate code to check for SNAP?
 		 */
 		off_linktype = 13;
-#ifdef PCAP_FDDIPAD
 		off_linktype += pcap_fddipad;
-#endif
 		off_macpl = 13;		/* FDDI MAC header length */
-#ifdef PCAP_FDDIPAD
 		off_macpl += pcap_fddipad;
-#endif
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
@@ -3205,8 +3197,7 @@ gen_linktype(proto)
 			 * Then we run it through "htonl()", and
 			 * generate code to compare against the result.
 			 */
-			if (bpf_pcap->sf.rfile != NULL &&
-			    bpf_pcap->sf.swapped)
+			if (bpf_pcap->rfile != NULL && bpf_pcap->swapped)
 				proto = SWAPLONG(proto);
 			proto = htonl(proto);
 		}
@@ -3718,18 +3709,10 @@ gen_fhostop(eaddr, dir)
 
 	switch (dir) {
 	case Q_SRC:
-#ifdef PCAP_FDDIPAD
 		return gen_bcmp(OR_LINK, 6 + 1 + pcap_fddipad, 6, eaddr);
-#else
-		return gen_bcmp(OR_LINK, 6 + 1, 6, eaddr);
-#endif
 
 	case Q_DST:
-#ifdef PCAP_FDDIPAD
 		return gen_bcmp(OR_LINK, 0 + 1 + pcap_fddipad, 6, eaddr);
-#else
-		return gen_bcmp(OR_LINK, 0 + 1, 6, eaddr);
-#endif
 
 	case Q_AND:
 		b0 = gen_fhostop(eaddr, Q_SRC);
@@ -7555,7 +7538,7 @@ gen_inbound(dir)
 		 * special meta-data in the filter expression;
 		 * if it's a savefile, we can't.
 		 */
-		if (bpf_pcap->sf.rfile != NULL) {
+		if (bpf_pcap->rfile != NULL) {
 			/* We have a FILE *, so this is a savefile */
 			bpf_error("inbound/outbound not supported on linktype %d when reading savefiles",
 			    linktype);

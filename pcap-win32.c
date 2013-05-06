@@ -72,6 +72,17 @@ static int pcap_setnonblock_win32(pcap_t *, int, char *);
 #define SWAPS(_X) ((_X & 0xff) << 8) | (_X >> 8)
 
 /*
+ * Private data for capturing on WinPcap devices.
+ */
+struct pcap_win {
+	int nonblock;
+
+#ifdef HAVE_DAG_API
+	int	dag_fcs_bits;	/* Number of checksum bits from link layer */
+#endif
+};
+
+/*
  * Header that the WinPcap driver associates to the packets.
  * Once was in bpf.h
  */
@@ -253,6 +264,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 static int
 pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
+	struct pcap_win *pw = p->private;
 	u_char *dp = NULL;
 	int	packet_len = 0, caplen = 0;
 	struct pcap_pkthdr	pcap_header;
@@ -295,7 +307,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			break;
 
 		/* Increase the number of captured packets */
-		p->md.stat.ps_recv++;
+		pw->stat.ps_recv++;
 		
 		/* Find the beginning of the packet */
 		dp = ((u_char *)header) + dag_record_size;
@@ -312,7 +324,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 		case TYPE_ETH:
 			swt = SWAPS(header->wlen);
-			packet_len = swt - (p->md.dag_fcs_bits);
+			packet_len = swt - (pw->dag_fcs_bits);
 			caplen = erf_record_len - dag_record_size - 2;
 			if (caplen > packet_len)
 			{
@@ -324,7 +336,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		
 		case TYPE_HDLC_POS:
 			swt = SWAPS(header->wlen);
-			packet_len = swt - (p->md.dag_fcs_bits);
+			packet_len = swt - (pw->dag_fcs_bits);
 			caplen = erf_record_len - dag_record_size;
 			if (caplen > packet_len)
 			{
@@ -457,6 +469,7 @@ pcap_cleanup_win32(pcap_t *p)
 static int
 pcap_activate_win32(pcap_t *p)
 {
+	struct pcap_win *pw = p->private;
 	NetType type;
 
 	if (p->opt.rfmon) {
@@ -672,13 +685,13 @@ pcap_activate_win32(pcap_t *p)
 		
 		/* Set the length of the FCS associated to any packet. This value 
 		 * will be subtracted to the packet length */
-		p->md.dag_fcs_bits = p->adapter->DagFcsLen;
+		pw->dag_fcs_bits = p->adapter->DagFcsLen;
 	}
 #else
 	goto bad;
 #endif /* HAVE_DAG_API */
 	
-	PacketSetReadTimeout(p->adapter, p->md.timeout);
+	PacketSetReadTimeout(p->adapter, p->opt.timeout);
 	
 #ifdef HAVE_DAG_API
 	if(p->adapter->Flags & INFO_FLAG_DAG_CARD)
@@ -743,12 +756,12 @@ pcap_create_interface(const char *device, char *ebuf)
 		}
 
 		snprintf(deviceAscii, length + 1, "%ws", (wchar_t*)device);
-		p = pcap_create_common(deviceAscii, ebuf);
+		p = pcap_create_common(deviceAscii, ebuf, sizeof (struct pcap_win));
 		free(deviceAscii);
 	}
 	else
 	{
-		p = pcap_create_common(device, ebuf);
+		p = pcap_create_common(device, ebuf, sizeof (struct pcap_win));
 	}
 
 	if (p == NULL)
@@ -801,25 +814,26 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 		return -1;
 	}
 	
-	p->md.use_bpf = 0;
-	
 	return (0);
 }
 
 static int
 pcap_getnonblock_win32(pcap_t *p, char *errbuf)
 {
+	struct pcap_win *pw = p->private;
+
 	/*
 	 * XXX - if there were a PacketGetReadTimeout() call, we
 	 * would use it, and return 1 if the timeout is -1
 	 * and 0 otherwise.
 	 */
-	return (p->nonblock);
+	return (pw->nonblock);
 }
 
 static int
 pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 {
+	struct pcap_win *pw = p->private;
 	int newtimeout;
 
 	if (nonblock) {
@@ -833,14 +847,14 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 		 * (Note that this may be -1, in which case we're not
 		 * really leaving non-blocking mode.)
 		 */
-		newtimeout = p->md.timeout;
+		newtimeout = p->opt.timeout;
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketSetReadTimeout: %s", pcap_win32strerror());
 		return (-1);
 	}
-	p->nonblock = (newtimeout == -1);
+	pw->nonblock = (newtimeout == -1);
 	return (0);
 }
 

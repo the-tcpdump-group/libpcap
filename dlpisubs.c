@@ -66,6 +66,8 @@ static const char rcsid[] _U_ =
 #include <stropts.h>
 #include <unistd.h>
 
+#include <libdlpi.h>
+
 #include "pcap-int.h"
 #include "dlpisubs.h"
 
@@ -79,6 +81,7 @@ static void pcap_stream_err(const char *, int, char *);
 int
 pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 {
+	struct pcap_dlpi *pd = p->private;
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
@@ -103,7 +106,7 @@ pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 	 * the kernel by libpcap, but they may include packets not
 	 * yet read from libpcap by the application.
 	 */
-	*ps = p->md.stat;
+	*ps = pd->stat;
 
 	/*
 	 * Add in the drop count, as per the above comment.
@@ -120,6 +123,7 @@ int
 pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 	int count, u_char *bufp, int len)
 {
+	struct pcap_dlpi *pd = p->private;
 	int n, caplen, origlen;
 	u_char *ep, *pk;
 	struct pcap_pkthdr pkthdr;
@@ -162,7 +166,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 		} else
 #endif
 			sbp = (struct sb_hdr *)bufp;
-		p->md.stat.ps_drop = sbp->sbh_drops;
+		pd->stat.ps_drop = sbp->sbh_drops;
 		pk = bufp + sizeof(*sbp);
 		bufp += sbp->sbh_totlen;
 		origlen = sbp->sbh_origlen;
@@ -173,7 +177,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 		pk = bufp;
 		bufp += caplen;
 #endif
-		++p->md.stat.ps_recv;
+		++pd->stat.ps_recv;
 		if (bpf_filter(p->fcode.bf_insns, pk, origlen, caplen)) {
 #ifdef HAVE_SYS_BUFMOD_H
 			pkthdr.ts.tv_sec = sbp->sbh_timestamp.tv_sec;
