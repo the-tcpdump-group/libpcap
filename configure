@@ -11887,6 +11887,8 @@ fi
 		{ echo "$as_me:$LINENO: checking for D-Bus" >&5
 echo $ECHO_N "checking for D-Bus... $ECHO_C" >&6; }
 		if "$PKGCONFIG" dbus-1; then
+			{ echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
 			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
 			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
 			save_CFLAGS="$CFLAGS"
