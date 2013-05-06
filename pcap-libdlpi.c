@@ -52,7 +52,6 @@ static const char rcsid[] _U_ =
 static int dlpromiscon(pcap_t *, bpf_u_int32);
 static int pcap_read_libdlpi(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_inject_libdlpi(pcap_t *, const void *, size_t);
-static void pcap_close_libdlpi(pcap_t *);
 static void pcap_libdlpi_err(const char *, const char *, int, char *);
 static void pcap_cleanup_libdlpi(pcap_t *);
 
@@ -235,6 +234,7 @@ bad:
 static int
 dlpromiscon(pcap_t *p, bpf_u_int32 level)
 {
+	int retv;
 	int err;
 
 	retv = dlpi_promiscon(p->dlpi_hd, level);
