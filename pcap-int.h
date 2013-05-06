@@ -134,12 +134,12 @@ struct pcap_md {
 	int	timeout;	/* timeout for buffering */
 	int	must_do_on_close; /* stuff we must do when we close */
 	struct pcap *next;	/* list of open pcaps that need stuff cleared on close */
+	u_int	packets_read;	/* count of packets read with recvfrom() */
 #ifdef linux
 	int	sock_packet;	/* using Linux 2.0 compatible interface */
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
 	int	ifindex;	/* interface index of device we're bound to */
 	int	lo_ifindex;	/* interface index of the loopback device */
-	u_int	packets_read;	/* count of packets read with recvfrom() */
 	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
 	char	*mondevice;	/* mac80211 monitor device we created */
 	u_char	*mmapbuf;	/* memory-mapped region pointer */
