@@ -346,6 +346,11 @@ AC_MSG_RESULT($V_PCAP)
 case "$V_PCAP" in
 dlpi)
 	#
+	# Checks for some header files.
+	#
+	AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h)
+
+	#
 	# Checks to see if Solaris has the public libdlpi(3LIB) library.
 	# Note: The existence of /usr/include/libdlpi.h does not mean it is the
 	# public libdlpi(3LIB) version. Before libdlpi was made public, a 
@@ -359,9 +364,11 @@ dlpi)
 	saved_ldflags=$LDFLAGS
 	LDFLAGS="$LIBS -L/lib"
 	AC_CHECK_LIB(dlpi, dlpi_walk,
-		LIBS="-ldlpi $LIBS"
-		V_PCAP=libdlpi
-		AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists]),
+		[
+			LIBS="-ldlpi $LIBS"
+			V_PCAP=libdlpi
+			AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists])
+		],
 		V_PCAP=dlpi)
 	LDFLAGS=$saved_ldflags
 
@@ -600,7 +607,6 @@ else
 		case "$V_PCAP" in
 
 		dlpi|libdlpi)
-			AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h)
 			#
 			# This might be Solaris 8 or later, with
 			# SIOCGLIFCONF, or it might be some other OS
