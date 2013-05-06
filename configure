@@ -7274,6 +7274,11 @@ echo "${ECHO_T}$V_PCAP" >&6; }
 case "$V_PCAP" in
 dlpi)
 	#
+	# Needed for common functions used by pcap-[dlpi,libdlpi].c
+	#
+ 	SSRC="dlpisubs.c"
+
+	#
 	# Checks for some header files.
 	#
 
@@ -8839,10 +8844,6 @@ echo "${ECHO_T}$ac_cv_lbl_have_siocglifconf" >&6; }
 			else
 				V_FINDALLDEVS=gifc
 			fi
-			#
-			# Needed for common functions used by pcap-[dlpi,libdlpi].c
-			#
-		 	SSRC="dlpisubs.c"
 			;;
 
 		*)

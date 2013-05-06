@@ -346,6 +346,11 @@ AC_MSG_RESULT($V_PCAP)
 case "$V_PCAP" in
 dlpi)
 	#
+	# Needed for common functions used by pcap-[dlpi,libdlpi].c
+	#
+ 	SSRC="dlpisubs.c"
+
+	#
 	# Checks for some header files.
 	#
 	AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h)
@@ -630,10 +635,6 @@ else
 			else
 				V_FINDALLDEVS=gifc
 			fi
-			#
-			# Needed for common functions used by pcap-[dlpi,libdlpi].c
-			#
-		 	SSRC="dlpisubs.c"
 			;;
 
 		*)
