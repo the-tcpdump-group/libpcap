@@ -66,7 +66,9 @@ static const char rcsid[] _U_ =
 #include <stropts.h>
 #include <unistd.h>
 
+#ifdef HAVE_LIBDLPI
 #include <libdlpi.h>
+#endif
 
 #include "pcap-int.h"
 #include "dlpisubs.h"
