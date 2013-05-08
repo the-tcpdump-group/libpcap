@@ -275,44 +275,51 @@ pcap_process_mactype(pcap_t *p, u_int mactype)
 int
 pcap_conf_bufmod(pcap_t *p, int snaplen)
 {
-	int retv = 0;
-
+	struct timeval to;
 	bpf_u_int32 ss, chunksize;
 
 	/* Non-standard call to get the data nicely buffered. */
 	if (ioctl(p->fd, I_PUSH, "bufmod") != 0) {
 		pcap_stream_err("I_PUSH bufmod", errno, p->errbuf);
-		retv = -1;
+		return (-1);
 	}
 
 	ss = snaplen;
 	if (ss > 0 &&
 	    strioctl(p->fd, SBIOCSSNAP, sizeof(ss), (char *)&ss) != 0) {
 		pcap_stream_err("SBIOCSSNAP", errno, p->errbuf);
-		retv = -1;
+		return (-1);
 	}
 
-	/* Set up the bufmod timeout. */
-	if (!p->opt.immediate && p->opt.timeout != 0) {
-		struct timeval to;
-
-		to.tv_sec = p->opt.timeout / 1000;
-		to.tv_usec = (p->opt.timeout * 1000) % 1000000;
+	if (p->opt.immediate) {
+		/* Set the timeout to zero, for immediate delivery. */
+		to.tv_sec = 0;
+		to.tv_usec = 0;
 		if (strioctl(p->fd, SBIOCSTIME, sizeof(to), (char *)&to) != 0) {
 			pcap_stream_err("SBIOCSTIME", errno, p->errbuf);
-			retv = -1;
+			return (-1);
+		}
+	} else {
+		/* Set up the bufmod timeout. */
+		if (p->opt.timeout != 0) {
+			to.tv_sec = p->opt.timeout / 1000;
+			to.tv_usec = (p->opt.timeout * 1000) % 1000000;
+			if (strioctl(p->fd, SBIOCSTIME, sizeof(to), (char *)&to) != 0) {
+				pcap_stream_err("SBIOCSTIME", errno, p->errbuf);
+				return (-1);
+			}
+		}
+
+		/* Set the chunk length. */
+		chunksize = CHUNKSIZE;
+		if (strioctl(p->fd, SBIOCSCHUNK, sizeof(chunksize), (char *)&chunksize)
+		    != 0) {
+			pcap_stream_err("SBIOCSCHUNKP", errno, p->errbuf);
+			return (-1);
 		}
 	}
 
-	/* Set the chunk length. */
-	chunksize = CHUNKSIZE;
-	if (strioctl(p->fd, SBIOCSCHUNK, sizeof(chunksize), (char *)&chunksize)
-	    != 0) {
-		pcap_stream_err("SBIOCSCHUNKP", errno, p->errbuf);
-		retv = -1;
-	}
-
-	return (retv);
+	return (0);
 }
 #endif /* HAVE_SYS_BUFMOD_H */
 
