@@ -2128,9 +2128,12 @@ pcap_activate_bpf(pcap_t *p)
 	 *
 	 * so we turn BIOCIMMEDIATE mode on if this is AIX.
 	 *
-	 * We don't, by default, turn it on for other platforms, as that
-	 * means we get woken up for every packet, which may not be what
-	 * we want; we only turn it on if requested.
+	 * For other platforms, we don't turn immediate mode on by default,
+	 * as that would mean we get woken up for every packet, which
+	 * probably isn't what you want for a packet sniffer.
+	 *
+	 * We set immediate mode if the caller requested it by calling
+	 * pcap_set_immediate() before calling pcap_activate().
 	 */
 #ifndef _AIX
 	if (p->opt.immediate) {
@@ -2145,6 +2148,15 @@ pcap_activate_bpf(pcap_t *p)
 #ifndef _AIX
 	}
 #endif	/* _AIX */
+#else /* BIOCIMMEDIATE */
+	if (p->opt.immediate) {
+		/*
+		 * We don't support immediate mode.  Fail.
+		 */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Immediate mode not supported");
+		status = PCAP_ERROR;
+		goto bad;
+	}
 #endif	/* BIOCIMMEDIATE */
 
 	if (p->opt.promisc) {
