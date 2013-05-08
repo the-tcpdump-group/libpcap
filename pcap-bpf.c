@@ -2126,7 +2126,7 @@ pcap_activate_bpf(pcap_t *p)
 	 *	is reducing things to only a few packets (i.e. one every
 	 *	second or so).
 	 *
-	 * so we turn BIOCIMMEDIATE mode on if this is AIX.
+	 * so we always turn BIOCIMMEDIATE mode on if this is AIX.
 	 *
 	 * For other platforms, we don't turn immediate mode on by default,
 	 * as that would mean we get woken up for every packet, which
