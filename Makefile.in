@@ -48,6 +48,7 @@ LD = /usr/bin/ld
 CC = @CC@
 AR = @AR@
 LN_S = @LN_S@
+MKDEP = @MKDEP@
 CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@ @V_DEFS@
@@ -58,6 +59,7 @@ CFLAGS = @CFLAGS@
 LDFLAGS = @LDFLAGS@
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
+DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
 
 # Standard CFLAGS
@@ -725,7 +727,7 @@ releasetar:
 	   rm -rf $$name
 
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
-	./mkdep -c $(CC) $(DEFS) $(INCLS) $(SRC)
+	$(MKDEP) -c $(CC) -m $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
 
 Makefile: Makefile.in config.status
 	./config.status
