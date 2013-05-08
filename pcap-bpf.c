@@ -2147,7 +2147,7 @@ pcap_activate_bpf(pcap_t *p)
 		}
 #ifndef _AIX
 	}
-#endif	/* _AIX */
+#endif /* _AIX */
 #else /* BIOCIMMEDIATE */
 	if (p->opt.immediate) {
 		/*
@@ -2157,7 +2157,7 @@ pcap_activate_bpf(pcap_t *p)
 		status = PCAP_ERROR;
 		goto bad;
 	}
-#endif	/* BIOCIMMEDIATE */
+#endif /* BIOCIMMEDIATE */
 
 	if (p->opt.promisc) {
 		/* set promiscuous mode, just warn if it fails */
@@ -2277,7 +2277,7 @@ pcap_activate_bpf(pcap_t *p)
 
 	return (status);
  bad:
- 	pcap_cleanup_bpf(p);
+	pcap_cleanup_bpf(p);
 	return (status);
 }
 
