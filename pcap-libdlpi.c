@@ -192,7 +192,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	p->fd = dlpi_fd(pd->dlpi_hd);
 
 	/* Push and configure bufmod. */
-	if (pcap_conf_bufmod(p, p->snapshot, p->opt.timeout) != 0)
+	if (pcap_conf_bufmod(p, p->snapshot) != 0)
 		goto bad;
 
 	/*

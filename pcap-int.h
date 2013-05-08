@@ -85,11 +85,12 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #endif /* _MSC_VER */
 
 struct pcap_opt {
+	char	*source;
 	int	timeout;	/* timeout for buffering */
 	int	buffer_size;
-	char	*source;
 	int	promisc;
-	int	rfmon;
+	int	rfmon;		/* monitor mode */
+	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
 	int	tstamp_type;
 };
 

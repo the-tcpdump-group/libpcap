@@ -635,11 +635,23 @@ pcap_activate_win32(pcap_t *p)
 		
 		PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
 		
-		/* tell the driver to copy the buffer only if it contains at least 16K */
-		if(PacketSetMinToCopy(p->adapter,16000)==FALSE)
+		if (p-opt.immediate)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s", pcap_win32strerror());
-			goto bad;
+			/* tell the driver to copy the buffer as soon as data arrives */
+			if(PacketSetMinToCopy(p->adapter,0)==FALSE)
+			{
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s", pcap_win32strerror());
+				goto bad;
+			}
+		}
+		else
+		{
+			/* tell the driver to copy the buffer only if it contains at least 16K */
+			if(PacketSetMinToCopy(p->adapter,16000)==FALSE)
+			{
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error calling PacketSetMinToCopy: %s", pcap_win32strerror());
+				goto bad;
+			}
 		}
 	}
 	else

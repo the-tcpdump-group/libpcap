@@ -280,6 +280,7 @@ int	pcap_can_set_rfmon(pcap_t *);
 int	pcap_set_rfmon(pcap_t *, int);
 int	pcap_set_timeout(pcap_t *, int);
 int	pcap_set_tstamp_type(pcap_t *, int);
+int	pcap_set_immediate_mode(pcap_t *, int);
 int	pcap_set_buffer_size(pcap_t *, int);
 int	pcap_activate(pcap_t *);
 

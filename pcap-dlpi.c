@@ -739,7 +739,7 @@ pcap_activate_dlpi(pcap_t *p)
 #endif
 
 	/* Push and configure bufmod. */
-	if (pcap_conf_bufmod(p, ss, p->opt.timeout) != 0)
+	if (pcap_conf_bufmod(p, ss) != 0)
 		goto bad;
 #endif
 

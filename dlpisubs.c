@@ -273,7 +273,7 @@ pcap_process_mactype(pcap_t *p, u_int mactype)
  * Push and configure the buffer module. Returns -1 for error, otherwise 0.
  */
 int
-pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout)
+pcap_conf_bufmod(pcap_t *p, int snaplen)
 {
 	int retv = 0;
 
@@ -293,11 +293,11 @@ pcap_conf_bufmod(pcap_t *p, int snaplen, int timeout)
 	}
 
 	/* Set up the bufmod timeout. */
-	if (timeout != 0) {
+	if (!p->opt.immediate && p->opt.timeout != 0) {
 		struct timeval to;
 
-		to.tv_sec = timeout / 1000;
-		to.tv_usec = (timeout * 1000) % 1000000;
+		to.tv_sec = p->opt.timeout / 1000;
+		to.tv_usec = (p->opt.timeout * 1000) % 1000000;
 		if (strioctl(p->fd, SBIOCSTIME, sizeof(to), (char *)&to) != 0) {
 			pcap_stream_err("SBIOCSTIME", errno, p->errbuf);
 			retv = -1;

@@ -541,10 +541,12 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 	initialize_ops(p);
 
 	/* put in some defaults*/
-	pcap_set_timeout(p, 0);
-	pcap_set_snaplen(p, 65535);	/* max packet size */
+ 	pcap_set_snaplen(p, 65535);	/* max packet size */
+	p->opt.timeout = 0;		/* no timeout specified */
+	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
-	p->opt.buffer_size = 0;
+	p->opt.rfmon = 0;
+	p->opt.immediate = 0;
 	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
 	return (p);
 }
@@ -629,6 +631,15 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 	 * particular value.
 	 */
 	return (PCAP_WARNING_TSTAMP_TYPE_NOTSUP);
+}
+
+int
+pcap_set_immediate_mode(pcap_t *p, int immediate)
+{
+	if (pcap_check_activated(p))
+		return (PCAP_ERROR_ACTIVATED);
+	p->opt.immediate = immediate;
+	return (0);
 }
 
 int

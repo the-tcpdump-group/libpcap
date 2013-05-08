@@ -683,11 +683,18 @@ static int dag_activate(pcap_t* handle)
 		goto faildetach;
 	}
 	
-	/* Amount of data to collect in Bytes before calling callbacks.
-	 * Important for efficiency, but can introduce latency
-	 * at low packet rates if to_ms not set!
-	 */
-	mindata = 65536;
+	if (handle->opt.immediate) {
+		/* Call callback immediately.
+		 * XXX - is this the right way to handle this?
+		 */
+		mindata = 0;
+	} else {
+		/* Amount of data to collect in Bytes before calling callbacks.
+		 * Important for efficiency, but can introduce latency
+		 * at low packet rates if to_ms not set!
+		 */
+		mindata = 65536;
+	}
 
 	/* Obey opt.timeout (was to_ms) if supplied. This is a good idea!
 	 * Recommend 10-100ms. Calls will time out even if no data arrived.

@@ -218,28 +218,42 @@ pcap_inject_nit(pcap_t *p, const void *buf, size_t size)
 }                           
 
 static int
-nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
+nit_setflags(pcap_t *p)
 {
 	struct nit_ioc nioc;
 
 	memset(&nioc, 0, sizeof(nioc));
-	nioc.nioc_bufspace = BUFSPACE;
-	nioc.nioc_chunksize = CHUNKSIZE;
 	nioc.nioc_typetomatch = NT_ALLTYPES;
 	nioc.nioc_snaplen = p->snapshot;
 	nioc.nioc_bufalign = sizeof(int);
 	nioc.nioc_bufoffset = 0;
 
-	if (to_ms != 0) {
-		nioc.nioc_flags |= NF_TIMEOUT;
-		nioc.nioc_timeout.tv_sec = to_ms / 1000;
-		nioc.nioc_timeout.tv_usec = (to_ms * 1000) % 1000000;
+	if (p->opt.buffer_size != 0)
+		nioc.nioc_bufspace = p->opt.buffer_size;
+	else {
+		/* Default buffer size */
+		nioc.nioc_bufspace = BUFSPACE;
 	}
-	if (promisc)
+
+	if (p->opt.immediate) {
+		/*
+		 * XXX - will this cause packets to be delivered immediately?
+		 * XXX - given that this is for SunOS prior to 4.0, do
+		 * we care?
+		 */
+		nioc.nioc_chunksize = 0;
+	} else
+		nioc.nioc_chunksize = CHUNKSIZE;
+	if (p->opt.timeout != 0) {
+		nioc.nioc_flags |= NF_TIMEOUT;
+		nioc.nioc_timeout.tv_sec = p->opt.timeout / 1000;
+		nioc.nioc_timeout.tv_usec = (p->opt.timeout * 1000) % 1000000;
+	}
+	if (p->opt.promisc)
 		nioc.nioc_flags |= NF_PROMISC;
 
-	if (ioctl(fd, SIOCSNIT, &nioc) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
+	if (ioctl(p->fd, SIOCSNIT, &nioc) < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -282,7 +296,8 @@ pcap_activate_nit(pcap_t *p)
 		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
 		goto bad;
 	}
-	nit_setflags(p->fd, p->opt.promisc, p->opt.timeout, p->errbuf);
+	if (nit_setflags(p) < 0)
+		goto bad;
 
 	/*
 	 * NIT supports only ethernets.

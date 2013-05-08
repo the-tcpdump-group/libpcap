@@ -337,7 +337,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		goto bad;
 	}
 	pf->OrigMissed = -1;
-	enmode = ENTSTAMP|ENBATCH|ENNONEXCL;
+	enmode = ENTSTAMP|ENNONEXCL;
+	if (!p->opt.immediate)
+		enmode |= ENBATCH;
 	if (p->opt.promisc)
 		enmode |= ENPROMISC;
 	if (ioctl(p->fd, EIOCMBIS, (caddr_t)&enmode) < 0) {

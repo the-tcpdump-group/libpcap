@@ -143,31 +143,31 @@ struct pcap_bpf {
 #endif
 
 #ifdef HAVE_ZEROCOPY_BPF
-       /*
-        * Zero-copy read buffer -- for zero-copy BPF.  'buffer' above will
-        * alternative between these two actual mmap'd buffers as required.
-        * As there is a header on the front size of the mmap'd buffer, only
-        * some of the buffer is exposed to libpcap as a whole via bufsize;
-        * zbufsize is the true size.  zbuffer tracks the current zbuf
-        * assocated with buffer so that it can be used to decide which the
-        * next buffer to read will be.
-        */
-       u_char *zbuf1, *zbuf2, *zbuffer;
-       u_int zbufsize;
-       u_int zerocopy;
-       u_int interrupted;
-       struct timespec firstsel;
-       /*
-        * If there's currently a buffer being actively processed, then it is
-        * referenced here; 'buffer' is also pointed at it, but offset by the
-        * size of the header.
-        */
-       struct bpf_zbuf_header *bzh;
+	/*
+	 * Zero-copy read buffer -- for zero-copy BPF.  'buffer' above will
+	 * alternative between these two actual mmap'd buffers as required.
+	 * As there is a header on the front size of the mmap'd buffer, only
+	 * some of the buffer is exposed to libpcap as a whole via bufsize;
+	 * zbufsize is the true size.  zbuffer tracks the current zbuf
+	 * assocated with buffer so that it can be used to decide which the
+	 * next buffer to read will be.
+	 */
+	u_char *zbuf1, *zbuf2, *zbuffer;
+	u_int zbufsize;
+	u_int zerocopy;
+	u_int interrupted;
+	struct timespec firstsel;
+	/*
+	 * If there's currently a buffer being actively processed, then it is
+	 * referenced here; 'buffer' is also pointed at it, but offset by the
+	 * size of the header.
+	 */
+	struct bpf_zbuf_header *bzh;
+	int nonblock;		/* true if in nonblocking mode */
 #endif /* HAVE_ZEROCOPY_BPF */
 
 	char *device;		/* device name */
 	int filtering_in_kernel; /* using kernel filter */
-	int timeout;		/* timeout for buffering */
 	int must_do_on_close;	/* stuff we must do when we close */
 };
 
@@ -234,10 +234,8 @@ static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
 
 /*
  * For zerocopy bpf, the setnonblock/getnonblock routines need to modify
- * pb->timeout so we don't call select(2) if the pcap handle is in non-
- * blocking mode.  We preserve the timeout supplied by pcap_open functions
- * to make sure it does not get clobbered if the pcap handle moves between
- * blocking and non-blocking mode.
+ * pb->nonblock so we don't call select(2) if the pcap handle is in non-
+ * blocking mode.
  */
 static int
 pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
@@ -245,13 +243,8 @@ pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->private;
 
-	if (pb->zerocopy) {
-		/*
-		 * Use a negative value for the timeout to represent that the
-		 * pcap handle is in non-blocking mode.
-		 */
-		return (pb->timeout < 0);
-	}
+	if (pb->zerocopy)
+		return (pb->nonblock);
 #endif
 	return (pcap_getnonblock_fd(p, errbuf));
 }
@@ -263,30 +256,7 @@ pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 	struct pcap_bpf *pb = p->private;
 
 	if (pb->zerocopy) {
-		/*
-		 * Map each value to their corresponding negation to
-		 * preserve the timeout value provided with pcap_set_timeout.
-		 * (from pcap-linux.c).
-		 */
-		if (nonblock) {
-			if (pb->timeout >= 0) {
-				/*
-				 * Indicate that we're switching to
-				 * non-blocking mode.
-				 */
-				pb->timeout = ~pb->timeout;
-			}
-		} else {
-			if (pb->timeout < 0) {
-				/*
-				 * Timeout is negative, so we're currently
-				 * in blocking mode; reverse the previous
-				 * operation, to make the timeout non-negative
-				 * again.
-				 */
-				pb->timeout = ~pb->timeout;
-			}
-		}
+		pb->nonblock = nonblock;
 		return (0);
 	}
 #endif
@@ -368,11 +338,11 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 	 * our timeout is less then or equal to zero, handle it like a
 	 * regular timeout.
 	 */
-	tmout = pb->timeout;
+	tmout = p->opt.timeout;
 	if (tmout)
 		(void) clock_gettime(CLOCK_MONOTONIC, &cur);
-	if (pb->interrupted && pb->timeout) {
-		expire = TSTOMILLI(&pb->firstsel) + pb->timeout;
+	if (pb->interrupted && p->opt.timeout) {
+		expire = TSTOMILLI(&pb->firstsel) + p->opt.timeout;
 		tmout = expire - TSTOMILLI(&cur);
 #undef TSTOMILLI
 		if (tmout <= 0) {
@@ -393,7 +363,7 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 	 * the next timeout.  Note that we only call select if the handle
 	 * is in blocking mode.
 	 */
-	if (pb->timeout >= 0) {
+	if (!pb->nonblock) {
 		FD_ZERO(&r_set);
 		FD_SET(p->fd, &r_set);
 		if (tmout != 0) {
@@ -401,9 +371,9 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 			tv.tv_usec = (tmout * 1000) % 1000000;
 		}
 		r = select(p->fd + 1, &r_set, NULL, NULL,
-		    pb->timeout != 0 ? &tv : NULL);
+		    p->opt.timeout != 0 ? &tv : NULL);
 		if (r < 0 && errno == EINTR) {
-			if (!pb->interrupted && pb->timeout) {
+			if (!pb->interrupted && p->opt.timeout) {
 				pb->interrupted = 1;
 				pb->firstsel = cur;
 			}
@@ -2090,11 +2060,15 @@ pcap_activate_bpf(pcap_t *p)
 	}
 #endif
 	/* set timeout */
-	pb->timeout = p->opt.timeout;
 #ifdef HAVE_ZEROCOPY_BPF
-	if (pb->timeout != 0 && !pb->zerocopy) {
+	/*
+	 * In zero-copy mode, we just use the timeout in select().
+	 * XXX - what if we're in non-blocking mode and the *application*
+	 * is using select() or poll() or kqueues or....?
+	 */
+	if (p->opt.timeout && !pb->zerocopy) {
 #else
-	if (pb->timeout) {
+	if (p->opt.timeout) {
 #endif
 		/*
 		 * XXX - is this seconds/nanoseconds in AIX?
@@ -2118,8 +2092,8 @@ pcap_activate_bpf(pcap_t *p)
 		struct BPF_TIMEVAL bpf_to;
 
 		if (IOCPARM_LEN(BIOCSRTIMEOUT) != sizeof(struct timeval)) {
-			bpf_to.tv_sec = pb->timeout / 1000;
-			bpf_to.tv_usec = (pb->timeout * 1000) % 1000000;
+			bpf_to.tv_sec = p->opt.timeout / 1000;
+			bpf_to.tv_usec = (p->opt.timeout * 1000) % 1000000;
 			if (ioctl(p->fd, BIOCSRTIMEOUT, (caddr_t)&bpf_to) < 0) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "BIOCSRTIMEOUT: %s", pcap_strerror(errno));
@@ -2128,8 +2102,8 @@ pcap_activate_bpf(pcap_t *p)
 			}
 		} else {
 #endif
-			to.tv_sec = pb->timeout / 1000;
-			to.tv_usec = (pb->timeout * 1000) % 1000000;
+			to.tv_sec = p->opt.timeout / 1000;
+			to.tv_usec = (p->opt.timeout * 1000) % 1000000;
 			if (ioctl(p->fd, BIOCSRTIMEOUT, (caddr_t)&to) < 0) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "BIOCSRTIMEOUT: %s", pcap_strerror(errno));
@@ -2141,7 +2115,6 @@ pcap_activate_bpf(pcap_t *p)
 #endif
 	}
 
-#ifdef _AIX
 #ifdef	BIOCIMMEDIATE
 	/*
 	 * Darren Reed notes that
@@ -2155,49 +2128,24 @@ pcap_activate_bpf(pcap_t *p)
 	 *
 	 * so we turn BIOCIMMEDIATE mode on if this is AIX.
 	 *
-	 * We don't turn it on for other platforms, as that means we
-	 * get woken up for every packet, which may not be what we want;
-	 * in the Winter 1993 USENIX paper on BPF, they say:
-	 *
-	 *	Since a process might want to look at every packet on a
-	 *	network and the time between packets can be only a few
-	 *	microseconds, it is not possible to do a read system call
-	 *	per packet and BPF must collect the data from several
-	 *	packets and return it as a unit when the monitoring
-	 *	application does a read.
-	 *
-	 * which I infer is the reason for the timeout - it means we
-	 * wait that amount of time, in the hopes that more packets
-	 * will arrive and we'll get them all with one read.
-	 *
-	 * Setting BIOCIMMEDIATE mode on FreeBSD (and probably other
-	 * BSDs) causes the timeout to be ignored.
-	 *
-	 * On the other hand, some platforms (e.g., Linux) don't support
-	 * timeouts, they just hand stuff to you as soon as it arrives;
-	 * if that doesn't cause a problem on those platforms, it may
-	 * be OK to have BIOCIMMEDIATE mode on BSD as well.
-	 *
-	 * (Note, though, that applications may depend on the read
-	 * completing, even if no packets have arrived, when the timeout
-	 * expires, e.g. GUI applications that have to check for input
-	 * while waiting for packets to arrive; a non-zero timeout
-	 * prevents "select()" from working right on FreeBSD and
-	 * possibly other BSDs, as the timer doesn't start until a
-	 * "read()" is done, so the timer isn't in effect if the
-	 * application is blocked on a "select()", and the "select()"
-	 * doesn't get woken up for a BPF device until the buffer
-	 * fills up.)
+	 * We don't, by default, turn it on for other platforms, as that
+	 * means we get woken up for every packet, which may not be what
+	 * we want; we only turn it on if requested.
 	 */
-	v = 1;
-	if (ioctl(p->fd, BIOCIMMEDIATE, &v) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCIMMEDIATE: %s",
-		    pcap_strerror(errno));
-		status = PCAP_ERROR;
-		goto bad;
+#ifndef _AIX
+	if (p->opt.immediate) {
+#endif /* _AIX */
+		v = 1;
+		if (ioctl(p->fd, BIOCIMMEDIATE, &v) < 0) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "BIOCIMMEDIATE: %s", pcap_strerror(errno));
+			status = PCAP_ERROR;
+			goto bad;
+		}
+#ifndef _AIX
 	}
-#endif	/* BIOCIMMEDIATE */
 #endif	/* _AIX */
+#endif	/* BIOCIMMEDIATE */
 
 	if (p->opt.promisc) {
 		/* set promiscuous mode, just warn if it fails */

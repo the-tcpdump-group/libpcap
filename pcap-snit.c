@@ -236,33 +236,48 @@ pcap_inject_snit(pcap_t *p, const void *buf, size_t size)
 }
 
 static int
-nit_setflags(int fd, int promisc, int to_ms, char *ebuf)
+nit_setflags(pcap_t *p)
 {
 	bpf_u_int32 flags;
 	struct strioctl si;
+	u_int zero = 0;
 	struct timeval timeout;
 
+	if (p->opt.immediate) {
+		/*
+		 * Set the chunk size to zero, so that chunks get sent
+		 * up immediately.
+		 */
+		si.ic_cmd = NIOCSCHUNK;
+		si.ic_len = sizeof(zero);
+		si.ic_dp = (char *)&zero;
+		if (ioctl(p->fd, I_STR, (char *)&si) < 0) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSCHUNK: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+	}
 	si.ic_timout = INFTIM;
-	if (to_ms != 0) {
-		timeout.tv_sec = to_ms / 1000;
-		timeout.tv_usec = (to_ms * 1000) % 1000000;
+	if (p->opt.timeout != 0) {
+		timeout.tv_sec = p->opt.timeout / 1000;
+		timeout.tv_usec = (p->opt.timeout * 1000) % 1000000;
 		si.ic_cmd = NIOCSTIME;
 		si.ic_len = sizeof(timeout);
 		si.ic_dp = (char *)&timeout;
-		if (ioctl(fd, I_STR, (char *)&si) < 0) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCSTIME: %s",
+		if (ioctl(p->fd, I_STR, (char *)&si) < 0) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSTIME: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
 	}
 	flags = NI_TIMESTAMP | NI_LEN | NI_DROPS;
-	if (promisc)
+	if (p->opt.promisc)
 		flags |= NI_PROMISC;
 	si.ic_cmd = NIOCSFLAGS;
 	si.ic_len = sizeof(flags);
 	si.ic_dp = (char *)&flags;
-	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "NIOCSFLAGS: %s",
+	if (ioctl(p->fd, I_STR, (char *)&si) < 0) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSFLAGS: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -358,7 +373,7 @@ pcap_activate_snit(pcap_t *p)
 		    pcap_strerror(errno));
 		goto bad;
 	}
-	if (nit_setflags(p->fd, p->opt.promisc, p->opt.timeout, p->errbuf) < 0)
+	if (nit_setflags(p) < 0)
 		goto bad;
 
 	(void)ioctl(fd, I_FLUSH, (char *)FLUSHR);
