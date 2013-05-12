@@ -16,7 +16,7 @@ dnl
 #
 
 AC_REVISION($Revision: 1.168 $)
-AC_PREREQ(2.50)
+AC_PREREQ(2.61)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
