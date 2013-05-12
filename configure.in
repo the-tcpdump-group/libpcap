@@ -1572,6 +1572,8 @@ AC_PROG_INSTALL
 AC_CONFIG_HEADER(config.h)
 
 AC_OUTPUT_COMMANDS([if test -f .devel; then
+	echo timestamp > stamp-h
+	cat Makefile-devel-adds >> Makefile
 	make depend
 fi])
 AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
