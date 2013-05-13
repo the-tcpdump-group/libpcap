@@ -15,8 +15,7 @@ dnl
 # config.sub.
 #
 
-AC_REVISION($Revision: 1.168 $)
-AC_PREREQ(2.50)
+AC_PREREQ(2.61)
 AC_INIT(pcap.c)
 
 AC_CANONICAL_SYSTEM
@@ -346,6 +345,16 @@ AC_MSG_RESULT($V_PCAP)
 case "$V_PCAP" in
 dlpi)
 	#
+	# Needed for common functions used by pcap-[dlpi,libdlpi].c
+	#
+ 	SSRC="dlpisubs.c"
+
+	#
+	# Checks for some header files.
+	#
+	AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h)
+
+	#
 	# Checks to see if Solaris has the public libdlpi(3LIB) library.
 	# Note: The existence of /usr/include/libdlpi.h does not mean it is the
 	# public libdlpi(3LIB) version. Before libdlpi was made public, a 
@@ -359,9 +368,11 @@ dlpi)
 	saved_ldflags=$LDFLAGS
 	LDFLAGS="$LIBS -L/lib"
 	AC_CHECK_LIB(dlpi, dlpi_walk,
-		LIBS="-ldlpi $LIBS"
-		V_PCAP=libdlpi
-		AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists]),
+		[
+			LIBS="-ldlpi $LIBS"
+			V_PCAP=libdlpi
+			AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists])
+		],
 		V_PCAP=dlpi)
 	LDFLAGS=$saved_ldflags
 
@@ -600,7 +611,6 @@ else
 		case "$V_PCAP" in
 
 		dlpi|libdlpi)
-			AC_CHECK_HEADERS(sys/bufmod.h sys/dlpi_ext.h)
 			#
 			# This might be Solaris 8 or later, with
 			# SIOCGLIFCONF, or it might be some other OS
@@ -624,10 +634,6 @@ else
 			else
 				V_FINDALLDEVS=gifc
 			fi
-			#
-			# Needed for common functions used by pcap-[dlpi,libdlpi].c
-			#
-		 	SSRC="dlpisubs.c"
 			;;
 
 		*)
@@ -1510,13 +1516,36 @@ if test "x$enable_dbus" != "xno"; then
 	if test "x$PKGCONFIG" != "xno"; then
 		AC_MSG_CHECKING([for D-Bus])
 		if "$PKGCONFIG" dbus-1; then
-			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
-			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
-			AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
 			AC_MSG_RESULT([yes])
-			DBUS_SRC=pcap-dbus.c
-			V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
+			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
+			save_CFLAGS="$CFLAGS"
+			save_LIBS="$LIBS"
+			CFLAGS="$CFLAGS $DBUS_CFLAGS"
 			LIBS="$LIBS $DBUS_LIBS"
+			AC_MSG_CHECKING(whether the D-Bus library defines dbus_connection_read_write)
+			AC_TRY_LINK(
+			    [#include <string.h>
+
+			     #include <time.h>
+			     #include <sys/time.h>
+
+			     #include <dbus/dbus.h>],
+			    [return dbus_connection_read_write(NULL, 0);],
+			    [
+				AC_MSG_RESULT([yes])
+				AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
+				DBUS_SRC=pcap-dbus.c
+				V_INCLS="$V_INCLS $DBUS_CFLAGS"
+			    ],
+			    [
+				AC_MSG_RESULT([no])
+				if test "x$enable_dbus" = "xyes"; then
+				    AC_MSG_ERROR([--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()])
+				fi
+				LIBS="$save_LIBS"
+			     ])
+			CFLAGS="$save_CFLAGS"
 		else
 			AC_MSG_RESULT([no])
 			if test "x$enable_dbus" = "xyes"; then
@@ -1542,14 +1571,15 @@ AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
 
+AC_OUTPUT_COMMANDS([if test -f .devel; then
+	echo timestamp > stamp-h
+	cat Makefile-devel-adds >> Makefile
+	make depend
+fi])
 AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
 	pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap
 	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
 	pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap
 	pcap_open_dead.3pcap pcap_open_offline.3pcap
 	pcap_set_tstamp_type.3pcap)
-
-if test -f .devel ; then
-	make depend
-fi
 exit 0

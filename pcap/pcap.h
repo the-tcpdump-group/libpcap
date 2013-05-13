@@ -115,7 +115,7 @@ typedef struct pcap_addr pcap_addr_t;
  *
  * Then supply the changes by forking the branch at
  *
- *	https://github.com/mcr/libpcap/issues
+ *	https://github.com/the-tcpdump-group/libpcap/issues
  *
  * and issuing a pull request, so that future versions of libpcap and
  * programs that use it (such as tcpdump) will be able to read your new
@@ -280,6 +280,7 @@ int	pcap_can_set_rfmon(pcap_t *);
 int	pcap_set_rfmon(pcap_t *, int);
 int	pcap_set_timeout(pcap_t *, int);
 int	pcap_set_tstamp_type(pcap_t *, int);
+int	pcap_set_immediate_mode(pcap_t *, int);
 int	pcap_set_buffer_size(pcap_t *, int);
 int	pcap_activate(pcap_t *);
 

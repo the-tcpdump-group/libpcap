@@ -226,7 +226,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	/* Saves a pointer to the packet headers */
 	*pkt_header= &p->pcap_header;
 
-	if (p->sf.rfile != NULL) {
+	if (p->rfile != NULL) {
 		int status;
 
 		/* We are on an offline capture */
@@ -469,23 +469,58 @@ initialize_ops(pcap_t *p)
 	p->oneshot_callback = pcap_oneshot;
 }
 
-pcap_t *
-pcap_create_common(const char *source, char *ebuf)
+static pcap_t *
+pcap_alloc_pcap_t(char *ebuf, size_t size)
 {
+	char *chunk;
 	pcap_t *p;
 
-	p = malloc(sizeof(*p));
-	if (p == NULL) {
+	/*
+	 * Allocate a chunk of memory big enough for a pcap_t
+	 * plus a structure following it of size "size".  The
+	 * structure following it is a private data structure
+	 * for the routines that handle this pcap_t.
+	 */
+	chunk = malloc(sizeof (pcap_t) + size);
+	if (chunk == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		return (NULL);
 	}
-	memset(p, 0, sizeof(*p));
+	memset(chunk, 0, sizeof (pcap_t) + size);
+
+	/*
+	 * Get a pointer to the pcap_t at the beginning.
+	 */
+	p = (pcap_t *)chunk;
+
 #ifndef WIN32
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
-	p->send_fd = -1;
 #endif 
+
+	if (size == 0) {
+		/* No private data was requested. */
+		p->private = NULL;
+	} else {
+		/*
+		 * Set the pointer to the private data; that's the structure
+		 * of size "size" following the pcap_t.
+		 */
+		p->private = (void *)(chunk + sizeof (pcap_t));
+	}
+
+	return (p);
+}
+
+pcap_t *
+pcap_create_common(const char *source, char *ebuf, size_t size)
+{
+	pcap_t *p;
+
+	p = pcap_alloc_pcap_t(ebuf, size);
+	if (p == NULL)
+		return (NULL);
 
 	p->opt.source = strdup(source);
 	if (p->opt.source == NULL) {
@@ -506,10 +541,12 @@ pcap_create_common(const char *source, char *ebuf)
 	initialize_ops(p);
 
 	/* put in some defaults*/
-	pcap_set_timeout(p, 0);
-	pcap_set_snaplen(p, 65535);	/* max packet size */
+ 	pcap_set_snaplen(p, 65535);	/* max packet size */
+	p->opt.timeout = 0;		/* no timeout specified */
+	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
-	p->opt.buffer_size = 0;
+	p->opt.rfmon = 0;
+	p->opt.immediate = 0;
 	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
 	return (p);
 }
@@ -557,7 +594,7 @@ pcap_set_timeout(pcap_t *p, int timeout_ms)
 {
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
-	p->md.timeout = timeout_ms;
+	p->opt.timeout = timeout_ms;
 	return (0);
 }
 
@@ -594,6 +631,15 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 	 * particular value.
 	 */
 	return (PCAP_WARNING_TSTAMP_TYPE_NOTSUP);
+}
+
+int
+pcap_set_immediate_mode(pcap_t *p, int immediate)
+{
+	if (pcap_check_activated(p))
+		return (PCAP_ERROR_ACTIVATED);
+	p->opt.immediate = immediate;
+	return (0);
 }
 
 int
@@ -692,6 +738,26 @@ fail:
 	return (NULL);
 }
 
+pcap_t *
+pcap_open_offline_common(char *ebuf, size_t size)
+{
+	pcap_t *p;
+
+	p = pcap_alloc_pcap_t(ebuf, size);
+	if (p == NULL)
+		return (NULL);
+
+	p->opt.source = strdup("(savefile)");
+	if (p->opt.source == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		free(p);
+		return (NULL);
+	}
+
+	return (p);
+}
+
 int
 pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
@@ -714,7 +780,7 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	register int n;
 
 	for (;;) {
-		if (p->sf.rfile != NULL) {
+		if (p->rfile != NULL) {
 			/*
 			 * 0 means EOF, so don't loop if we get 0.
 			 */
@@ -1169,25 +1235,25 @@ pcap_snapshot(pcap_t *p)
 int
 pcap_is_swapped(pcap_t *p)
 {
-	return (p->sf.swapped);
+	return (p->swapped);
 }
 
 int
 pcap_major_version(pcap_t *p)
 {
-	return (p->sf.version_major);
+	return (p->version_major);
 }
 
 int
 pcap_minor_version(pcap_t *p)
 {
-	return (p->sf.version_minor);
+	return (p->version_minor);
 }
 
 FILE *
 pcap_file(pcap_t *p)
 {
-	return (p->sf.rfile);
+	return (p->rfile);
 }
 
 int
@@ -1562,7 +1628,7 @@ pcap_do_addexit(pcap_t *p)
 void
 pcap_add_to_pcaps_to_close(pcap_t *p)
 {
-	p->md.next = pcaps_to_close;
+	p->next = pcaps_to_close;
 	pcaps_to_close = p;
 }
 
@@ -1572,7 +1638,7 @@ pcap_remove_from_pcaps_to_close(pcap_t *p)
 	pcap_t *pc, *prevpc;
 
 	for (pc = pcaps_to_close, prevpc = NULL; pc != NULL;
-	    prevpc = pc, pc = pc->md.next) {
+	    prevpc = pc, pc = pc->next) {
 		if (pc == p) {
 			/*
 			 * Found it.  Remove it from the list.
@@ -1581,12 +1647,12 @@ pcap_remove_from_pcaps_to_close(pcap_t *p)
 				/*
 				 * It was at the head of the list.
 				 */
-				pcaps_to_close = pc->md.next;
+				pcaps_to_close = pc->next;
 			} else {
 				/*
 				 * It was in the middle of the list.
 				 */
-				prevpc->md.next = pc->md.next;
+				prevpc->next = pc->next;
 			}
 			break;
 		}
@@ -1617,7 +1683,6 @@ pcap_cleanup_live_common(pcap_t *p)
 		p->fd = -1;
 	}
 	p->selectable_fd = -1;
-	p->send_fd = -1;
 #endif
 }
 

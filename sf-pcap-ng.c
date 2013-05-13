@@ -201,6 +201,13 @@ struct block_cursor {
 	bpf_u_int32	block_type;
 };
 
+struct pcap_ng_sf {
+	bpf_u_int32 ifcount;	/* number of interfaces seen in this capture */
+	u_int tsresol;		/* time stamp resolution */
+	u_int tsscale;		/* scaling factor for resolution -> microseconds */
+	u_int64_t tsoffset;	/* time stamp offset */
+};
+
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
     u_char **data);
 
@@ -239,7 +246,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	if (status <= 0)
 		return (status);	/* error or EOF */
 
-	if (p->sf.swapped) {
+	if (p->swapped) {
 		bhdr.block_type = SWAPLONG(bhdr.block_type);
 		bhdr.total_length = SWAPLONG(bhdr.total_length);
 	}
@@ -346,7 +353,7 @@ get_opthdr_from_block_data(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	/*
 	 * Byte-swap it if necessary.
 	 */
-	if (p->sf.swapped) {
+	if (p->swapped) {
 		opthdr->option_code = SWAPSHORT(opthdr->option_code);
 		opthdr->option_length = SWAPSHORT(opthdr->option_length);
 	}
@@ -481,7 +488,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 			}
 			saw_tsoffset = 1;
 			memcpy(tsoffset, optvalue, sizeof(*tsoffset));
-			if (p->sf.swapped)
+			if (p->swapped)
 				*tsoffset = SWAPLL(*tsoffset);
 			break;
 
@@ -498,17 +505,25 @@ done:
  * Check whether this is a pcap-ng savefile and, if it is, extract the
  * relevant information from the header.
  */
-int
-pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
+pcap_t *
+pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 {
 	size_t amt_read;
 	bpf_u_int32 total_length;
 	bpf_u_int32 byte_order_magic;
 	struct block_header *bhdrp;
 	struct section_header_block *shbp;
+	pcap_t *p;
+	int swapped = 0;
+	struct pcap_ng_sf *ps;
 	int status;
 	struct block_cursor cursor;
 	struct interface_description_block *idbp;
+
+	/*
+	 * Assume no read errors.
+	 */
+	*err = 0;
 
 	/*
 	 * Check whether the first 4 bytes of the file are the block
@@ -524,7 +539,7 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 		 * this as possibly being a pcap-ng file transferred
 		 * between UN*X and Windows in text file format?
 		 */
-		return (0);	/* nope */
+		return (NULL);	/* nope */
 	}
 
 	/*
@@ -544,14 +559,15 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
 			    pcap_strerror(errno));
-			return (-1);	/* fail */
+			*err = 1;
+			return (NULL);	/* fail */
 		}
 
 		/*
 		 * Possibly a weird short text file, so just say
 		 * "not pcap-ng".
 		 */
-		return (0);
+		return (NULL);
 	}
 	amt_read = fread(&byte_order_magic, 1, sizeof(byte_order_magic), fp);
 	if (amt_read < sizeof(byte_order_magic)) {
@@ -559,14 +575,15 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
 			    pcap_strerror(errno));
-			return (-1);	/* fail */
+			*err = 1;
+			return (NULL);	/* fail */
 		}
 
 		/*
 		 * Possibly a weird short text file, so just say
 		 * "not pcap-ng".
 		 */
-		return (0);
+		return (NULL);
 	}
 	if (byte_order_magic != BYTE_ORDER_MAGIC) {
 		byte_order_magic = SWAPLONG(byte_order_magic);
@@ -574,9 +591,9 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			/*
 			 * Not a pcap-ng file.
 			 */
-			return (0);
+			return (NULL);
 		}
-		p->sf.swapped = 1;
+		swapped = 1;
 		total_length = SWAPLONG(total_length);
 	}
 
@@ -588,8 +605,22 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 		    "Section Header Block in pcap-ng dump file has a length of %u < %lu",
 		    total_length,
 		    (unsigned long)(sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)));
-		return (-1);
+		*err = 1;
+		return (NULL);
 	}
+
+	/*
+	 * OK, this is a good pcap-ng file.
+	 * Allocate a pcap_t for it.
+	 */
+	p = pcap_open_offline_common(errbuf, sizeof (struct pcap_ng_sf));
+	if (p == NULL) {
+		/* Allocation failed. */
+		*err = 1;
+		return (NULL);
+	}
+	p->swapped = swapped;
+	ps = p->private;
 
 	/*
 	 * Allocate a buffer into which to read blocks.  We default to
@@ -609,7 +640,9 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
-		return (-1);
+		free(p);
+		*err = 1;
+		return (NULL);
 	}
 
 	/*
@@ -627,7 +660,7 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 	    1, errbuf) == -1)
 		goto fail;
 
-	if (p->sf.swapped) {
+	if (p->swapped) {
 		/*
 		 * Byte-swap the fields we've read.
 		 */
@@ -644,15 +677,15 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 		    shbp->major_version);
 		goto fail;
 	}
-	p->sf.version_major = shbp->major_version;
-	p->sf.version_minor = shbp->minor_version;
+	p->version_major = shbp->major_version;
+	p->version_minor = shbp->minor_version;
 
 	/*
 	 * Set the default time stamp resolution and offset.
 	 */
-	p->sf.tsresol = 1000000;	/* microsecond resolution */
-	p->sf.tsscale = 1;		/* multiply by 1 to scale to microseconds */
-	p->sf.tsoffset = 0;		/* absolute timestamps */
+	ps->tsresol = 1000000;	/* microsecond resolution */
+	ps->tsscale = 1;	/* multiply by 1 to scale to microseconds */
+	ps->tsoffset = 0;	/* absolute timestamps */
 
 	/*
 	 * Now start looking for an Interface Description Block.
@@ -685,7 +718,7 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			/*
 			 * Byte-swap it if necessary.
 			 */
-			if (p->sf.swapped) {
+			if (p->swapped) {
 				idbp->linktype = SWAPSHORT(idbp->linktype);
 				idbp->snaplen = SWAPLONG(idbp->snaplen);
 			}
@@ -693,14 +726,14 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			/*
 			 * Count this interface.
 			 */
-			p->sf.ifcount++;
+			ps->ifcount++;
 
 			/*
 			 * Now look for various time stamp options, so
 			 * we know how to interpret the time stamps.
 			 */
-			if (process_idb_options(p, &cursor, &p->sf.tsresol,
-			    &p->sf.tsoffset, errbuf) == -1)
+			if (process_idb_options(p, &cursor, &ps->tsresol,
+			    &ps->tsoffset, errbuf) == -1)
 				goto fail;
 
 			/*
@@ -708,18 +741,18 @@ pcap_ng_check_header(pcap_t *p, bpf_u_int32 magic, FILE *fp, char *errbuf)
 			 * sub-second part of the time stamp to
 			 * microseconds.
 			 */
-			if (p->sf.tsresol > 1000000) {
+			if (ps->tsresol > 1000000) {
 				/*
 				 * Higher than microsecond resolution;
 				 * scale down to microseconds.
 				 */
-				p->sf.tsscale = (p->sf.tsresol / 1000000);
+				ps->tsscale = (ps->tsresol / 1000000);
 			} else {
 				/*
 				 * Lower than microsecond resolution;
 				 * scale up to microseconds.
 				 */
-				p->sf.tsscale = (1000000 / p->sf.tsresol);
+				ps->tsscale = (1000000 / ps->tsresol);
 			}
 			goto done;
 
@@ -749,13 +782,15 @@ done:
 	p->linktype = linktype_to_dlt(idbp->linktype);
 	p->linktype_ext = 0;
 
-	p->sf.next_packet_op = pcap_ng_next_packet;
+	p->next_packet_op = pcap_ng_next_packet;
 
-	return (1);
+	return (p);
 
 fail:
 	free(p->buffer);
-	return (-1);
+	free(p);
+	*err = 1;
+	return (NULL);
 }
 
 /*
@@ -766,6 +801,7 @@ fail:
 static int
 pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 {
+	struct pcap_ng_sf *ps = p->private;
 	struct block_cursor cursor;
 	int status;
 	struct enhanced_packet_block *epbp;
@@ -774,7 +810,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	bpf_u_int32 interface_id = 0xFFFFFFFF;
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
-	FILE *fp = p->sf.rfile;
+	FILE *fp = p->rfile;
 	u_int tsresol;
 	u_int64_t tsoffset;
 	u_int64_t t, sec, frac;
@@ -808,7 +844,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Byte-swap it if necessary.
 			 */
-			if (p->sf.swapped) {
+			if (p->swapped) {
 				/* these were written in opposite byte order */
 				interface_id = SWAPLONG(epbp->interface_id);
 				hdr->caplen = SWAPLONG(epbp->caplen);
@@ -843,7 +879,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Byte-swap it if necessary.
 			 */
-			if (p->sf.swapped) {
+			if (p->swapped) {
 				/* these were written in opposite byte order */
 				hdr->len = SWAPLONG(spbp->len);
 			} else
@@ -873,7 +909,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Byte-swap it if necessary.
 			 */
-			if (p->sf.swapped) {
+			if (p->swapped) {
 				/* these were written in opposite byte order */
 				interface_id = SWAPSHORT(pbp->interface_id);
 				hdr->caplen = SWAPLONG(pbp->caplen);
@@ -902,7 +938,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Byte-swap it if necessary.
 			 */
-			if (p->sf.swapped) {
+			if (p->swapped) {
 				idbp->linktype = SWAPSHORT(idbp->linktype);
 				idbp->snaplen = SWAPLONG(idbp->snaplen);
 			}
@@ -931,7 +967,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Count this interface.
 			 */
-			p->sf.ifcount++;
+			ps->ifcount++;
 
 			/*
 			 * Set the default time stamp resolution and offset.
@@ -950,12 +986,12 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			if (process_idb_options(p, &cursor, &tsresol, &tsoffset,
 			    p->errbuf) == -1)
 				return (-1);
-			if (tsresol != p->sf.tsresol) {
+			if (tsresol != ps->tsresol) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a time stamp resolution different from the time stamp resolution of the first interface");
 				return (-1);
 			}
-			if (tsoffset != p->sf.tsoffset) {
+			if (tsoffset != ps->tsoffset) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a time stamp offset different from the time stamp offset of the first interface");
 				return (-1);
@@ -977,7 +1013,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * the same as that of the previous section.
 			 * We'll check for that later.
 			 */
-			if (p->sf.swapped) {
+			if (p->swapped) {
 				shbp->byte_order_magic =
 				    SWAPLONG(shbp->byte_order_magic);
 				shbp->major_version =
@@ -1034,7 +1070,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * any IDBs, we'll fail when we see a packet
 			 * block.)
 			 */
-			p->sf.ifcount = 0;
+			ps->ifcount = 0;
 			break;
 
 		default:
@@ -1049,7 +1085,7 @@ found:
 	/*
 	 * Is the interface ID an interface we know?
 	 */
-	if (interface_id >= p->sf.ifcount) {
+	if (interface_id >= ps->ifcount) {
 		/*
 		 * Yes.  Fail.
 		 */
@@ -1062,20 +1098,20 @@ found:
 	/*
 	 * Convert the time stamp to a struct timeval.
 	 */
-	sec = t / p->sf.tsresol + p->sf.tsoffset;
-	frac = t % p->sf.tsresol;
-	if (p->sf.tsresol > 1000000) {
+	sec = t / ps->tsresol + ps->tsoffset;
+	frac = t % ps->tsresol;
+	if (ps->tsresol > 1000000) {
 		/*
 		 * Higher than microsecond resolution; scale down to
 		 * microseconds.
 		 */
-		frac /= p->sf.tsscale;
+		frac /= ps->tsscale;
 	} else {
 		/*
 		 * Lower than microsecond resolution; scale up to
 		 * microseconds.
 		 */
-		frac *= p->sf.tsscale;
+		frac *= ps->tsscale;
 	}
 	hdr->ts.tv_sec = sec;
 	hdr->ts.tv_usec = frac;
@@ -1087,7 +1123,7 @@ found:
 	if (*data == NULL)
 		return (-1);
 
-	if (p->sf.swapped) {
+	if (p->swapped) {
 		/*
 		 * Convert pseudo-headers from the byte order of
 		 * the host on which the file was saved to our

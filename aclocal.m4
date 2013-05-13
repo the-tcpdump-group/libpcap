@@ -113,65 +113,31 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    fi
 	    fi
     else
-	    AC_MSG_CHECKING(that $CC handles ansi prototypes)
-	    AC_CACHE_VAL(ac_cv_lbl_cc_ansi_prototypes,
-		AC_TRY_COMPILE(
-		    [#include <sys/types.h>],
-		    [int frob(int, char *)],
-		    ac_cv_lbl_cc_ansi_prototypes=yes,
-		    ac_cv_lbl_cc_ansi_prototypes=no))
-	    AC_MSG_RESULT($ac_cv_lbl_cc_ansi_prototypes)
-	    if test $ac_cv_lbl_cc_ansi_prototypes = no ; then
-		    case "$host_os" in
-
-		    hpux*)
-			    AC_MSG_CHECKING(for HP-UX ansi compiler ($CC -Aa -D_HPUX_SOURCE))
-			    savedcflags="$CFLAGS"
-			    CFLAGS="-Aa -D_HPUX_SOURCE $CFLAGS"
-			    AC_CACHE_VAL(ac_cv_lbl_cc_hpux_cc_aa,
-				AC_TRY_COMPILE(
-				    [#include <sys/types.h>],
-				    [int frob(int, char *)],
-				    ac_cv_lbl_cc_hpux_cc_aa=yes,
-				    ac_cv_lbl_cc_hpux_cc_aa=no))
-			    AC_MSG_RESULT($ac_cv_lbl_cc_hpux_cc_aa)
-			    if test $ac_cv_lbl_cc_hpux_cc_aa = no ; then
-				    AC_MSG_ERROR(see the INSTALL doc for more info)
-			    fi
-			    CFLAGS="$savedcflags"
-			    $1="-Aa $$1"
-			    AC_DEFINE(_HPUX_SOURCE,1,[needed on HP-UX])
-			    ;;
-
-		    osf*)
-			    AC_MSG_CHECKING(for ansi mode in DEC compiler ($CC -std1))
-			    savedcflags="$CFLAGS"
-			    CFLAGS="-std1"
-			    AC_CACHE_VAL(ac_cv_lbl_cc_osf1_cc_std1,
-				AC_TRY_COMPILE(
-				    [#include <sys/types.h>],
-				    [int frob(int, char *)],
-				    ac_cv_lbl_cc_osf1_cc_std1=yes,
-				    ac_cv_lbl_cc_osf1_cc_std1=no))
-			    AC_MSG_RESULT($ac_cv_lbl_cc_osf1_cc_std1)
-			    if test $ac_cv_lbl_cc_osf1_cc_std1 = no ; then
-				    AC_MSG_ERROR(see the INSTALL doc for more info)
-			    fi
-			    CFLAGS="$savedcflags"
-			    $1="-std1 $$1"
-			    ;;
-
-		    *)
-			    AC_MSG_ERROR(see the INSTALL doc for more info)
-			    ;;
-		    esac
-	    fi
 	    $2="$$2 -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
 
 	    case "$host_os" in
 
+	    hpux*)
+		    #
+		    # HP C, which is what we presume we're using, doesn't
+		    # exit with a non-zero exit status if we hand it an
+		    # invalid -W flag, can't be forced to do so even with
+		    # +We, and doesn't handle GCC-style -W flags, so we
+		    # don't want to try using GCC-style -W flags.
+		    #
+		    ac_lbl_cc_dont_try_gcc_dashW=yes
+		    ;;
+
 	    irix*)
+		    #
+		    # MIPS C, which is what we presume we're using, doesn't
+		    # necessarily exit with a non-zero exit status if we
+		    # hand it an invalid -W flag, can't be forced to do
+		    # so, and doesn't handle GCC-style -W flags, so we
+		    # don't want to try using GCC-style -W flags.
+		    #
+		    ac_lbl_cc_dont_try_gcc_dashW=yes
 		    $1="$$1 -xansi -signed -g3"
 		    ;;
 
@@ -180,6 +146,13 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
 		    # Tru64 UNIX.
 		    #
+		    # The DEC C compiler, which is what we presume we're
+		    # using, doesn't exit with a non-zero exit status if we
+		    # hand it an invalid -W flag, can't be forced to do
+		    # so, and doesn't handle GCC-style -W flags, so we
+		    # don't want to try using GCC-style -W flags.
+		    #
+		    ac_lbl_cc_dont_try_gcc_dashW=yes
 		    $1="$$1 -g3"
 		    ;;
 
@@ -366,7 +339,8 @@ AC_DEFUN(AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT,
 		#
 		MKDEP=:
 	fi
-	AC_SUBST(DEPENDENCY_CFLAG MKDEP)
+	AC_SUBST(DEPENDENCY_CFLAG)
+	AC_SUBST(MKDEP)
     ])
 
 dnl
@@ -935,10 +909,11 @@ EOF
     fi])
 
 dnl
-dnl If using gcc and the file .devel exists:
-dnl	Compile with -g (if supported) and -Wall
-dnl	If using gcc 2 or later, do extra prototype checking
+dnl If the file .devel exists:
+dnl	Add some warning flags if the compiler supports them
 dnl	If an os prototype include exists, symlink os-proto.h to it
+dnl	If we're using gcc:
+dnl	    Compile with -g (if supported)
 dnl
 dnl usage:
 dnl
@@ -957,15 +932,9 @@ AC_DEFUN(AC_LBL_DEVEL,
     fi
     if test -f .devel ; then
 	    #
-	    # At least one version of HP's C compiler will not
-	    # exit with a non-zero exit status when given an
-	    # unknown -W flag, even if you use +We and the
-	    # number of the warning it gives for that issue.
+	    # Skip all the warning option stuff on some compilers.
 	    #
-	    # We therefore skip all the warning option stuff
-	    # on HP-UX.
-	    #
-	    if test "$ac_lbl_cc_is_hp_c" != yes; then
+	    if test "$ac_lbl_cc_dont_try_gcc_dashW" != yes; then
 		    AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR()
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-prototypes)
@@ -976,10 +945,6 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    if test "${LBL_CFLAGS+set}" != set; then
 			    if test "$ac_cv_prog_cc_g" = yes ; then
 				    $1="-g $$1"
-			    fi
-			    $1="$$1 -Wall"
-			    if test $ac_cv_lbl_gcc_vers -gt 1 ; then
-				    $1="$$1 -Wmissing-prototypes -Wstrict-prototypes"
 			    fi
 		    fi
 	    else

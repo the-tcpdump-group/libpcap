@@ -42,10 +42,18 @@
 #include "pcap-int.h"
 #include "pcap-dbus.h"
 
+/*
+ * Private data for capturing on D-Bus.
+ */
+struct pcap_dbus {
+	DBusConnection *conn;
+	u_int	packets_read;	/* count of packets read */
+};
+
 static int
 dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	DBusConnection *conn = handle->md.priv;
+	struct pcap_dbus *handlep = handle->private;
 
 	struct pcap_pkthdr pkth;
 	DBusMessage *message;
@@ -55,11 +63,11 @@ dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 
 	int count = 0;
 
-	message = dbus_connection_pop_message(conn);
+	message = dbus_connection_pop_message(handlep->conn);
 
 	while (!message) {
-		// XXX p->md.timeout = timeout_ms;
-		if (!dbus_connection_read_write(conn, 100)) {
+		// XXX handle->opt.timeout = timeout_ms;
+		if (!dbus_connection_read_write(handlep->conn, 100)) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Connection closed");
 			return -1;
 		}
@@ -69,7 +77,7 @@ dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 			return -2;
 		}
 
-		message = dbus_connection_pop_message(conn);
+		message = dbus_connection_pop_message(handlep->conn);
 	}
 
 	if (dbus_message_is_signal(message, DBUS_INTERFACE_LOCAL, "Disconnected")) {
@@ -84,7 +92,7 @@ dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 		gettimeofday(&pkth.ts, NULL);
 		if (handle->fcode.bf_insns == NULL ||
 		    bpf_filter(handle->fcode.bf_insns, (u_char *)raw_msg, pkth.len, pkth.caplen)) {
-			handle->md.packets_read++;
+			handlep->packets_read++;
 			callback(user, &pkth, (u_char *)raw_msg);
 			count++;
 		}
@@ -98,7 +106,7 @@ static int
 dbus_write(pcap_t *handle, const void *buf, size_t size)
 {
 	/* XXX, not tested */
-	DBusConnection *conn = handle->md.priv;
+	struct pcap_dbus *handlep = handle->private;
 
 	DBusError error = DBUS_ERROR_INIT;
 	DBusMessage *msg;
@@ -109,8 +117,8 @@ dbus_write(pcap_t *handle, const void *buf, size_t size)
 		return -1;
 	}
 
-	dbus_connection_send(conn, msg, NULL);
-	dbus_connection_flush(conn);
+	dbus_connection_send(handlep->conn, msg, NULL);
+	dbus_connection_flush(handlep->conn);
 
 	dbus_message_unref(msg);
 	return 0;
@@ -119,7 +127,9 @@ dbus_write(pcap_t *handle, const void *buf, size_t size)
 static int
 dbus_stats(pcap_t *handle, struct pcap_stat *stats)
 {
-	stats->ps_recv = handle->md.packets_read;
+	struct pcap_dbus *handlep = handle->private;
+
+	stats->ps_recv = handlep->packets_read;
 	stats->ps_drop = 0;
 	stats->ps_ifdrop = 0;
 	return 0;
@@ -128,10 +138,9 @@ dbus_stats(pcap_t *handle, struct pcap_stat *stats)
 static void
 dbus_cleanup(pcap_t *handle)
 {
-	DBusConnection *conn = handle->md.priv;
+	struct pcap_dbus *handlep = handle->private;
 
-	handle->md.priv = NULL;
-	dbus_connection_unref(conn);
+	dbus_connection_unref(handlep->conn);
 
 	pcap_cleanup_live_common(handle);
 }
@@ -150,21 +159,21 @@ dbus_activate(pcap_t *handle)
 
 	#define N_RULES sizeof(rules)/sizeof(rules[0])
 
+	struct pcap_dbus *handlep = handle->private;
 	const char *dev = handle->opt.source;
 
 	DBusError error = DBUS_ERROR_INIT;
-	DBusConnection *conn;
 	int i;
 
 	if (strcmp(dev, "dbus-system") == 0) {
-		if (!(conn = dbus_bus_get(DBUS_BUS_SYSTEM, &error))) {
+		if (!(handlep->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &error))) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to get system bus: %s", error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
 		}
 
 	} else if (strcmp(dev, "dbus-session") == 0) {
-		if (!(conn = dbus_bus_get(DBUS_BUS_SESSION, &error))) {
+		if (!(handlep->conn = dbus_bus_get(DBUS_BUS_SESSION, &error))) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to get session bus: %s", error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
@@ -173,13 +182,13 @@ dbus_activate(pcap_t *handle)
 	} else if (strncmp(dev, "dbus://", 7) == 0) {
 		const char *addr = dev + 7;
 
-		if (!(conn = dbus_connection_open(addr, &error))) {
+		if (!(handlep->conn = dbus_connection_open(addr, &error))) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to open connection to: %s: %s", addr, error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
 		}
 
-		if (!dbus_bus_register(conn, &error)) {
+		if (!dbus_bus_register(handlep->conn, &error)) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to register bus %s: %s\n", addr, error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
@@ -204,7 +213,6 @@ dbus_activate(pcap_t *handle)
 	handle->stats_op = dbus_stats;
 
 	handle->selectable_fd = handle->fd = -1;
-	handle->md.priv = conn;
 
 	if (handle->opt.rfmon) {
 		/*
@@ -214,17 +222,17 @@ dbus_activate(pcap_t *handle)
 		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
-	/* dbus_connection_set_max_message_size(conn, handle->snapshot); */
+	/* dbus_connection_set_max_message_size(handlep->conn, handle->snapshot); */
 	if (handle->opt.buffer_size != 0)
-		dbus_connection_set_max_received_size(conn, handle->opt.buffer_size);
+		dbus_connection_set_max_received_size(handlep->conn, handle->opt.buffer_size);
 
 	for (i = 0; i < N_RULES; i++) {
-		dbus_bus_add_match(conn, rules[i], &error);
+		dbus_bus_add_match(handlep->conn, rules[i], &error);
 		if (dbus_error_is_set(&error)) {
 			dbus_error_free(&error);
 
 			/* try without eavesdrop */
-			dbus_bus_add_match(conn, rules[i] + strlen(EAVESDROPPING_RULE), &error);
+			dbus_bus_add_match(handlep->conn, rules[i] + strlen(EAVESDROPPING_RULE), &error);
 			if (dbus_error_is_set(&error)) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to add bus match: %s\n", error.message);
 				dbus_error_free(&error);
@@ -251,7 +259,7 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 	}
 
 	*is_ours = 1;
-	p = pcap_create_common(device, ebuf);
+	p = pcap_create_common(device, ebuf, sizeof (struct pcap_dbus));
 	if (p == NULL)
 		return (NULL);
 
@@ -264,9 +272,9 @@ dbus_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
 	pcap_if_t *found_dev = *alldevsp;
 
-	if (pcap_add_if(&found_dev, "dbus-system", 0, "D-BUS system bus", err_str) < 0)
+	if (pcap_add_if(&found_dev, "dbus-system", 0, "D-Bus system bus", err_str) < 0)
 		return -1;
-	if (pcap_add_if(&found_dev, "dbus-session", 0, "D-BUS session bus", err_str) < 0)
+	if (pcap_add_if(&found_dev, "dbus-session", 0, "D-Bus session bus", err_str) < 0)
 		return -1;
 	return 0;
 }

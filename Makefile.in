@@ -199,6 +199,7 @@ MAN3PCAP_NOEXPAND = \
 	pcap_open_live.3pcap \
 	pcap_set_buffer_size.3pcap \
 	pcap_set_datalink.3pcap \
+	pcap_set_immediate_mode.3pcap \
 	pcap_set_promisc.3pcap \
 	pcap_set_rfmon.3pcap \
 	pcap_set_snaplen.3pcap \
@@ -232,6 +233,7 @@ EXTRA_DIST = \
 	INSTALL.txt \
 	LICENSE \
 	Makefile.in \
+	Makefile-devel-adds \
 	README \
 	README.aix \
 	README.dag \
@@ -728,8 +730,3 @@ releasetar:
 
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	$(MKDEP) -c $(CC) -m $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
-
-Makefile: Makefile.in config.status
-	./config.status
-	@echo your Makefile was out of date, now run $(MAKE) again
-	exit 1
