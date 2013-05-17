@@ -8017,9 +8017,10 @@ gen_pppoed()
 }
 
 struct block *
-gen_pppoes()
+gen_pppoes(sess_num)
+	int sess_num;
 {
-	struct block *b0;
+	struct block *b0, *b1;
 
 	/*
 	 * Test against the PPPoE session link-layer type.
@@ -8058,6 +8059,14 @@ gen_pppoes()
 	orig_linktype = off_linktype;	/* save original values */
 	orig_nl = off_nl;
 	is_pppoes = 1;
+
+	/* If a specific session is requested, check PPPoE session id */
+	if (sess_num >= 0) {
+		b1 = gen_mcmp(OR_MACPL, orig_nl, BPF_W,
+		    (bpf_int32)sess_num, 0x0000ffff);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
 
 	/*
 	 * The "network-layer" protocol is PPPoE, which has a 6-byte

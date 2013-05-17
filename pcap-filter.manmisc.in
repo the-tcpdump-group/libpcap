@@ -657,9 +657,11 @@ any outer label.
 .IP \fBpppoed\fP
 True if the packet is a PPP-over-Ethernet Discovery packet (Ethernet
 type 0x8863).
-.IP \fBpppoes\fP
+.IP "\fBpppoes \fI[session_id]\fR"
 True if the packet is a PPP-over-Ethernet Session packet (Ethernet
 type 0x8864).
+If \fI[session_id]\fR is specified, only true if the packet has the specified
+\fIsession_id\fR.
 Note that the first \fBpppoes\fR keyword encountered in \fIexpression\fR
 changes the decoding offsets for the remainder of \fIexpression\fR on
 the assumption that the packet is a PPPoE session packet.
@@ -667,10 +669,10 @@ the assumption that the packet is a PPPoE session packet.
 For example:
 .in +.5i
 .nf
-\fBpppoes && ip\fR
+\fBpppoes 0x27 && ip\fR
 .fi
 .in -.5i
-filters IPv4 protocols encapsulated in PPPoE.
+filters IPv4 protocols encapsulated in PPPoE session id 0x27.
 .IP "\fBiso proto \fIprotocol\fR"
 True if the packet is an OSI packet of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names
