@@ -548,6 +548,7 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 	p->opt.rfmon = 0;
 	p->opt.immediate = 0;
 	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
+	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
 	return (p);
 }
 
@@ -652,6 +653,38 @@ pcap_set_buffer_size(pcap_t *p, int buffer_size)
 }
 
 int
+pcap_set_tstamp_precision(pcap_t *p, int precision)
+{
+	if (pcap_check_activated(p) && strcmp(p->opt.source, "(savefile)"))
+		return PCAP_ERROR_ACTIVATED;
+
+	if (precision == PCAP_TSTAMP_PRECISION_NANO) {
+#ifdef HAVE_LINUX_TSTAMP_NANO
+                /* We should be able to get timestamp with nanosecond precision */
+		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
+#else
+		/* TODO: We don't know anything about other platforms yet */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "nanosecond timestamps are not supported");
+		return PCAP_WARNING_TSTAMP_PRECISION_NOTSUP;
+#endif
+	} else if (precision == PCAP_TSTAMP_PRECISION_MICRO) {
+		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
+	} else {
+		/* unknown precision requested */
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "nanosecond timestamps are not supported");
+		return PCAP_WARNING_TSTAMP_PRECISION_NOTSUP;
+	}
+
+	return 0;
+}
+
+int
+pcap_get_tstamp_precision(pcap_t *p)
+{
+        return p->opt.tstamp_precision;
+}
+
+int
 pcap_activate(pcap_t *p)
 {
 	int status;
@@ -747,6 +780,7 @@ pcap_open_offline_common(char *ebuf, size_t size)
 	if (p == NULL)
 		return (NULL);
 
+	p->opt.tstamp_type = PCAP_TSTAMP_PRECISION_MICRO;
 	p->opt.source = strdup("(savefile)");
 	if (p->opt.source == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",

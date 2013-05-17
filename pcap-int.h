@@ -92,6 +92,7 @@ struct pcap_opt {
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
 	int	tstamp_type;
+	int	tstamp_precision;
 };
 
 typedef int	(*activate_op_t)(pcap_t *);

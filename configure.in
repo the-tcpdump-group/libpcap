@@ -503,6 +503,16 @@ linux)
 		fi
 	fi
 
+	# Do we have support for nanosecond timestamps in kernel?
+	AC_MSG_CHECKING(whether the system supports timestamps with nanosecond resolution)
+	AC_TRY_COMPILE([
+		#include <linux/sockios.h>
+		#include <linux/net.h>],
+		[return SIOCGSTAMPNS && SO_TIMESTAMPNS],
+		[AC_MSG_RESULT(yes)
+			AC_DEFINE([HAVE_LINUX_TSTAMP_NANO], 1, [define if we can use nanosecond timestamps])],
+		AC_MSG_RESULT(no))
+
 	AC_CHECK_HEADERS(linux/ethtool.h,,,
 	    [
 AC_INCLUDES_DEFAULT
