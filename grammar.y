@@ -507,7 +507,8 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| MPLS pnum		{ $$ = gen_mpls($2); }
 	| MPLS			{ $$ = gen_mpls(-1); }
 	| PPPOED		{ $$ = gen_pppoed(); }
-	| PPPOES		{ $$ = gen_pppoes(); }
+	| PPPOES pnum		{ $$ = gen_pppoes($2); }
+	| PPPOES		{ $$ = gen_pppoes(-1); }
 	| pfvar			{ $$ = $1; }
 	| pqual p80211		{ $$ = $2; }
 	;
