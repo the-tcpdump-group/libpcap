@@ -1195,8 +1195,16 @@ struct bpf_program {
  * Requested by Tomasz Mon <desowin@gmail.com>
  */
 #define DLT_USBPCAP		249
- 
-#define DLT_MATCHING_MAX	249	/* highest value in the "matching" range */
+
+/*
+ * Schweitzer Engineering Laboratories "RTAC" product serial-line
+ * packets.
+ *
+ * Requested by Chris Bontje <chris_bontje@selinc.com>.
+ */
+#define DLT_RTAC_SERIAL		250
+
+#define DLT_MATCHING_MAX	250	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

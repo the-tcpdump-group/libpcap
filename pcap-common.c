@@ -904,7 +904,15 @@
  */
 #define LINKTYPE_USBPCAP	249
 
-#define LINKTYPE_MATCHING_MAX	249		/* highest value in the "matching" range */
+/*
+ * Schweitzer Engineering Laboratories "RTAC" product serial-line
+ * packets.
+ *
+ * Requested by Chris Bontje <chris_bontje@selinc.com>.
+ */
+#define DLT_RTAC_SERIAL		250
+
+#define LINKTYPE_MATCHING_MAX	250		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
