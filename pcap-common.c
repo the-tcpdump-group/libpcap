@@ -912,7 +912,14 @@
  */
 #define DLT_RTAC_SERIAL		250
 
-#define LINKTYPE_MATCHING_MAX	250		/* highest value in the "matching" range */
+/*
+ * Bluetooth Low Energy air interface link-layer packets.
+ *
+ * Requested by Mike Kershaw <dragorn@kismetwireless.net>.
+ */
+#define LINKTYPE_BLUETOOTH_LE_LL	251
+
+#define LINKTYPE_MATCHING_MAX	251		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

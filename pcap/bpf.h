@@ -1204,7 +1204,14 @@ struct bpf_program {
  */
 #define DLT_RTAC_SERIAL		250
 
-#define DLT_MATCHING_MAX	250	/* highest value in the "matching" range */
+/*
+ * Bluetooth Low Energy air interface link-layer packets.
+ *
+ * Requested by Mike Kershaw <dragorn@kismetwireless.net>.
+ */
+#define DLT_BLUETOOTH_LE_LL	251
+
+#define DLT_MATCHING_MAX	251	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
