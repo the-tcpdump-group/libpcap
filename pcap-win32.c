@@ -176,6 +176,13 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 	return 0;
 }
 
+/*return the Adapter for a pcap_t*/
+static Adapter *
+pcap_getadapter_win32(pcap_t *p)
+{
+	return p->adapter;
+}
+
 static int
 pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
@@ -731,6 +738,7 @@ pcap_activate_win32(pcap_t *p)
 	p->setbuff_op = pcap_setbuff_win32;
 	p->setmode_op = pcap_setmode_win32;
 	p->setmintocopy_op = pcap_setmintocopy_win32;
+	p->getadapter_op = pcap_getadapter_win32;
 	p->cleanup_op = pcap_cleanup_win32;
 
 	return (0);

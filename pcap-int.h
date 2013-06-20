@@ -108,6 +108,7 @@ typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
+typedef Adapter *(*getadapter_op_t)(pcap_t *);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
 
@@ -218,6 +219,7 @@ struct pcap {
 	setbuff_op_t setbuff_op;
 	setmode_op_t setmode_op;
 	setmintocopy_op_t setmintocopy_op;
+	getadapter_op_t getadapter_op;
 #endif
 	cleanup_op_t cleanup_op;
 };

@@ -110,11 +110,19 @@ static const char rcsid[] _U_ =
 #endif
 
 int 
-pcap_not_initialized(pcap_t *pcap)
+pcap_not_initialized(pcap_t *pcap _U_)
 {
 	/* this means 'not initialized' */
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
+
+#ifdef WIN32
+Adapter *
+pcap_no_adapter(pcap_t *pcap _U_)
+{
+	return (NULL);
+}
+#endif
 
 /*
  * Returns 1 if rfmon mode can be set on the pcap_t, 0 if it can't,
@@ -453,6 +461,7 @@ initialize_ops(pcap_t *p)
 	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
+	p->getadapter_op = pcap_no_adapter;
 #endif
 
 	/*
@@ -1559,6 +1568,12 @@ int
 pcap_setmintocopy(pcap_t *p, int size)
 {
 	return (p->setmintocopy_op(p, size));
+}
+
+Adapter *
+pcap_get_adapter(pcap_t *p)
+{
+	return (p->getadapter_op(p));
 }
 
 static int
