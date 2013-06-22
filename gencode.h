@@ -336,7 +336,11 @@ struct block *gen_p80211_fcdir(int);
 
 void bpf_optimize(struct block **);
 void bpf_error(const char *, ...)
-    __attribute__((noreturn, format (printf, 1, 2)));
+    __attribute__((noreturn))
+#ifdef __ATTRIBUTE___FORMAT_OK
+    __attribute__((format (printf, 1, 2)))
+#endif /* __ATTRIBUTE___FORMAT_OK */
+    ;
 
 void finish_parse(struct block *);
 char *sdup(const char *);
