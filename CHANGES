@@ -1,9 +1,17 @@
+Saturday June 22, 2013 guy@alum.mit.edu
+Summary for 1.4.1 libpcap release
+	Point users to the the-tcpdump-group repository on GitHub rather
+	    than the mcr repository
+	Checks added for malloc()/realloc()/etc. failures
+	Fixed build on Solaris 11
+	Support filtering filtering E1 SS7 traffic on MTP2 layer Annex A
+	Use "ln -s" to link man pages by default
+
 Saturday April 6, 2013 guy@alum.mit.edu
 Summary for 1.4.0 libpcap release
 	Add netfilter/nfqueue interface.
 	If we don't have support for IPv6 address resolution, support,
 	    in filter expressions, what IPv6 stuff we can.
-	Checks added for malloc()/realloc()/etc. failures.
 	Fix pcap-config to include -lpthread if canusb support is
 	    present
 	Try to fix "pcap_parse not defined" problems when --without-flex
@@ -30,7 +38,6 @@ Summary for 1.4.0 libpcap release
 	Clean up some man pages
 	Support libnl3 as well as libnl1 and libnl2 on Linux
 	Fix handling of Bluetooth devices on 3.x Linux kernels
-	Fixed build on Solaris 11
 
 Friday  March 30, 2012.  mcr@sandelman.ca
 Summary for 1.3.0 libpcap release
