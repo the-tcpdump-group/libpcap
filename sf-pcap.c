@@ -134,7 +134,7 @@ typedef enum {
 struct pcap_sf {
 	size_t hdrsize;
 	swapped_type_t lengths_swapped;
-	int tstamp_ns;
+        uint32_t hdrmagic;
 };
 
 /*
@@ -142,7 +142,7 @@ struct pcap_sf {
  * relevant information from the header.
  */
 pcap_t *
-pcap_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
+pcap_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, int *err)
 {
 	struct pcap_file_header hdr;
 	size_t amt_read;
@@ -324,9 +324,10 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 		return (NULL);
 	}
 
-	/* savefile contains timestamps with nanosecond precisions */
-	if (magic == NSEC_TCPDUMP_MAGIC)
-		ps->tstamp_ns = 1;
+	if (nsec_tstamps)
+		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
+
+	ps->hdrmagic = magic;
 
 	return (p);
 }
@@ -385,9 +386,9 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		hdr->ts.tv_usec = sf_hdr.ts.tv_usec;
 	}
 
-	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_MICRO && ps->tstamp_ns)
+	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_MICRO && ps->hdrmagic == NSEC_TCPDUMP_MAGIC)
 		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) / 1000 : sf_hdr.ts.tv_usec / 1000;
-	else if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO && !ps->tstamp_ns)
+	else if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO && ps->hdrmagic != NSEC_TCPDUMP_MAGIC)
 		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) * 1000 : sf_hdr.ts.tv_usec * 1000;
 	else
 		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) : sf_hdr.ts.tv_usec;
@@ -510,7 +511,7 @@ sf_write_header(pcap_t *p, FILE *fp, int linktype, int thiszone, int snaplen)
 {
 	struct pcap_file_header hdr;
 
-	hdr.magic = p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_MICRO ? TCPDUMP_MAGIC : NSEC_TCPDUMP_MAGIC;
+	hdr.magic = p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO ? NSEC_TCPDUMP_MAGIC : TCPDUMP_MAGIC;
 	hdr.version_major = PCAP_VERSION_MAJOR;
 	hdr.version_minor = PCAP_VERSION_MINOR;
 

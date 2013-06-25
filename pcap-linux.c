@@ -1682,18 +1682,19 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	/* Fill in our own header data */
 
 	/* get timestamp for this packet */
-	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO)
+	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
 		if (ioctl(handle->fd, SIOCGSTAMPNS, &pcap_header.ts) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"SIOCGSTAMPNS: %s", pcap_strerror(errno));
 			return PCAP_ERROR;
 		}
-	else
+        } else {
 		if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"SIOCGSTAMP: %s", pcap_strerror(errno));
 			return PCAP_ERROR;
 		}
+        }
 
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= packet_len;
@@ -3259,9 +3260,9 @@ activate_new(pcap_t *handle)
 	handle->fd = sock_fd;
 
 	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
-		int tstamp_ns = 1;
+		int nsec_tstamps = 1;
 
-		if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMPNS, &tstamp_ns, sizeof(tstamp_ns)) < 0) {
+		if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMPNS, &nsec_tstamps, sizeof(nsec_tstamps)) < 0) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "setsockopt: unable to set SO_TIMESTAMPNS");
 			return PCAP_ERROR;
 		}

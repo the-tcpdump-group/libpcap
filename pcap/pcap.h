@@ -343,16 +343,22 @@ const char *pcap_tstamp_type_val_to_description(int);
 pcap_t	*pcap_open_live(const char *, int, int, int, char *);
 pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_offline(const char *, char *);
+pcap_t	*pcap_open_offline_nsectime(const char *, char *);
 #if defined(WIN32)
 pcap_t  *pcap_hopen_offline(intptr_t, char *);
+pcap_t  *pcap_hopen_offline_nsectime(intptr_t, char *);
 #if !defined(LIBPCAP_EXPORTS)
 #define pcap_fopen_offline(f,b) \
 	pcap_hopen_offline(_get_osfhandle(_fileno(f)), b)
+#define pcap_fopen_offline_nsectime(f,b) \
+	pcap_hopen_offline_nsectime(_get_osfhandle(_fileno(f)), b)
 #else /*LIBPCAP_EXPORTS*/
 static pcap_t *pcap_fopen_offline(FILE *, char *);
+static pcap_t *pcap_fopen_offline_nsectime(FILE *, char *);
 #endif
 #else /*WIN32*/
 pcap_t	*pcap_fopen_offline(FILE *, char *);
+pcap_t	*pcap_fopen_offline_nsectime(FILE *, char *);
 #endif /*WIN32*/
 
 void	pcap_close(pcap_t *);

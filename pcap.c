@@ -655,12 +655,12 @@ pcap_set_buffer_size(pcap_t *p, int buffer_size)
 int
 pcap_set_tstamp_precision(pcap_t *p, int precision)
 {
-	if (pcap_check_activated(p) && strcmp(p->opt.source, "(savefile)"))
+	if (pcap_check_activated(p))
 		return PCAP_ERROR_ACTIVATED;
 
 	if (precision == PCAP_TSTAMP_PRECISION_NANO) {
 #ifdef HAVE_LINUX_TSTAMP_NANO
-                /* We should be able to get timestamp with nanosecond precision */
+		/* We should be able to get timestamp with nanosecond precision */
 		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
 #else
 		/* TODO: We don't know anything about other platforms yet */
@@ -780,7 +780,7 @@ pcap_open_offline_common(char *ebuf, size_t size)
 	if (p == NULL)
 		return (NULL);
 
-	p->opt.tstamp_type = PCAP_TSTAMP_PRECISION_MICRO;
+	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
 	p->opt.source = strdup("(savefile)");
 	if (p->opt.source == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -1726,6 +1726,19 @@ pcap_cleanup_dead(pcap_t *p _U_)
 	/* Nothing to do. */
 }
 
+static void
+pcap_open_dead_set_common_properties(pcap_t *p)
+{
+	p->stats_op = pcap_stats_dead;
+#ifdef WIN32
+	p->setbuff_op = pcap_setbuff_dead;
+	p->setmode_op = pcap_setmode_dead;
+	p->setmintocopy_op = pcap_setmintocopy_dead;
+#endif
+	p->cleanup_op = pcap_cleanup_dead;
+	p->activated = 1;
+}
+
 pcap_t *
 pcap_open_dead(int linktype, int snaplen)
 {
@@ -1735,17 +1748,33 @@ pcap_open_dead(int linktype, int snaplen)
 	if (p == NULL)
 		return NULL;
 	memset (p, 0, sizeof(*p));
+
 	p->snapshot = snaplen;
 	p->linktype = linktype;
-	p->stats_op = pcap_stats_dead;
-#ifdef WIN32
-	p->setbuff_op = pcap_setbuff_dead;
-	p->setmode_op = pcap_setmode_dead;
-	p->setmintocopy_op = pcap_setmintocopy_dead;
-#endif
-	p->cleanup_op = pcap_cleanup_dead;
-	p->activated = 1;
+
+	pcap_open_dead_set_common_properties(p);
+
 	return (p);
+}
+
+pcap_t *
+pcap_open_dead_nsectime(int linktype, int snaplen)
+{
+	pcap_t *p;
+
+	p = malloc(sizeof(*p));
+	if (!p)
+		return NULL;
+	memset(p, 0, sizeof(*p));
+
+	p->snapshot = snaplen;
+	p->linktype = linktype;
+
+	pcap_open_dead_set_common_properties(p);
+
+	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
+
+	return p;
 }
 
 /*
