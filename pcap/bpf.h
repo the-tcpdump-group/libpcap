@@ -1211,7 +1211,21 @@ struct bpf_program {
  */
 #define DLT_BLUETOOTH_LE_LL	251
 
-#define DLT_MATCHING_MAX	251	/* highest value in the "matching" range */
+/*
+ * DLT type for upper-protocol layer PDU saves from wireshark.
+ * 
+ * the actual contents are determined by two TAGs stored with each
+ * packet:
+ *   EXP_PDU_TAG_LINKTYPE          the link type (DLT value) of the
+ *				   original packet.
+ *
+ *   EXP_PDU_TAG_PROTO_NAME        the name of the wireshark dissector
+ * 				   that can make sense of the data stored.
+ */
+#define DLT_WIRESHARK_UPPER_PDU	252
+
+
+#define DLT_MATCHING_MAX	252	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
