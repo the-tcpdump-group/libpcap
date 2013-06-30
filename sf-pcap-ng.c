@@ -384,6 +384,15 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 }
 
 static int
+get_tstamp_resolution(pcap_t *p)
+{
+	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO)
+		return 1000000000;
+
+	return 1000000;
+}
+
+static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
     u_int64_t *tsoffset, char *errbuf)
 {
@@ -506,7 +515,7 @@ done:
  * relevant information from the header.
  */
 pcap_t *
-pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
+pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, int *err)
 {
 	size_t amt_read;
 	bpf_u_int32 total_length;
@@ -683,8 +692,13 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 	/*
 	 * Set the default time stamp resolution and offset.
 	 */
-	ps->tsresol = 1000000;	/* microsecond resolution */
-	ps->tsscale = 1;	/* multiply by 1 to scale to microseconds */
+	if (nsec_tstamps) {
+		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
+		ps->tsresol = 1000000000;
+	} else
+		ps->tsresol = 1000000;
+
+	ps->tsscale = 1;	/* multiply by 1 to scale */
 	ps->tsoffset = 0;	/* absolute timestamps */
 
 	/*
@@ -741,18 +755,16 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 			 * sub-second part of the time stamp to
 			 * microseconds.
 			 */
-			if (ps->tsresol > 1000000) {
+			if (ps->tsresol > get_tstamp_resolution(p)) {
 				/*
-				 * Higher than microsecond resolution;
-				 * scale down to microseconds.
+				 * Higher than given resolution, scale down
 				 */
-				ps->tsscale = (ps->tsresol / 1000000);
+				ps->tsscale = (ps->tsresol / get_tstamp_resolution(p));
 			} else {
 				/*
-				 * Lower than microsecond resolution;
-				 * scale up to microseconds.
+				 * Lower than given resolution, scale up 
 				 */
-				ps->tsscale = (1000000 / ps->tsresol);
+				ps->tsscale = (get_tstamp_resolution(p) / ps->tsresol);
 			}
 			goto done;
 
@@ -972,7 +984,11 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			/*
 			 * Set the default time stamp resolution and offset.
 			 */
-			tsresol = 1000000;	/* microsecond resolution */
+			if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO)
+				tsresol = 1000000000;	/* nanosecond resolution */
+			else
+				tsresol = 1000000;	/* microsecond resolution */
+
 			tsoffset = 0;		/* absolute timestamps */
 
 			/*
@@ -1100,7 +1116,7 @@ found:
 	 */
 	sec = t / ps->tsresol + ps->tsoffset;
 	frac = t % ps->tsresol;
-	if (ps->tsresol > 1000000) {
+	if (ps->tsresol > get_tstamp_resolution(p)) {
 		/*
 		 * Higher than microsecond resolution; scale down to
 		 * microseconds.

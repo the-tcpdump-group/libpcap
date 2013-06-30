@@ -134,6 +134,7 @@ typedef enum {
 struct pcap_sf {
 	size_t hdrsize;
 	swapped_type_t lengths_swapped;
+        uint32_t hdrmagic;
 };
 
 /*
@@ -141,7 +142,7 @@ struct pcap_sf {
  * relevant information from the header.
  */
 pcap_t *
-pcap_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
+pcap_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, int *err)
 {
 	struct pcap_file_header hdr;
 	size_t amt_read;
@@ -159,9 +160,9 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 	 * number for a pcap savefile, or for a byte-swapped pcap
 	 * savefile.
 	 */
-	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC) {
+	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC && magic != NSEC_TCPDUMP_MAGIC) {
 		magic = SWAPLONG(magic);
-		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC)
+		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC && magic != NSEC_TCPDUMP_MAGIC)
 			return (NULL);	/* nope */
 		swapped = 1;
 	}
@@ -323,6 +324,11 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, char *errbuf, int *err)
 		return (NULL);
 	}
 
+	if (nsec_tstamps)
+		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
+
+	ps->hdrmagic = magic;
+
 	return (p);
 }
 
@@ -379,6 +385,14 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		hdr->ts.tv_sec = sf_hdr.ts.tv_sec;
 		hdr->ts.tv_usec = sf_hdr.ts.tv_usec;
 	}
+
+	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_MICRO && ps->hdrmagic == NSEC_TCPDUMP_MAGIC)
+		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) / 1000 : sf_hdr.ts.tv_usec / 1000;
+	else if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO && ps->hdrmagic != NSEC_TCPDUMP_MAGIC)
+		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) * 1000 : sf_hdr.ts.tv_usec * 1000;
+	else
+		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) : sf_hdr.ts.tv_usec;
+
 	/* Swap the caplen and len fields, if necessary. */
 	switch (ps->lengths_swapped) {
 
@@ -493,11 +507,11 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 }
 
 static int
-sf_write_header(FILE *fp, int linktype, int thiszone, int snaplen)
+sf_write_header(pcap_t *p, FILE *fp, int linktype, int thiszone, int snaplen)
 {
 	struct pcap_file_header hdr;
 
-	hdr.magic = TCPDUMP_MAGIC;
+	hdr.magic = p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO ? NSEC_TCPDUMP_MAGIC : TCPDUMP_MAGIC;
 	hdr.version_major = PCAP_VERSION_MAJOR;
 	hdr.version_minor = PCAP_VERSION_MINOR;
 
@@ -548,7 +562,7 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 	else
 		setbuf(f, NULL);
 #endif
-	if (sf_write_header(f, linktype, p->tzoff, p->snapshot) == -1) {
+	if (sf_write_header(p, f, linktype, p->tzoff, p->snapshot) == -1) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't write to %s: %s",
 		    fname, pcap_strerror(errno));
 		if (f != stdout)
