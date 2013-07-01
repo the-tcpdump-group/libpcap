@@ -348,6 +348,7 @@ const char *pcap_tstamp_type_val_to_description(int);
 
 pcap_t	*pcap_open_live(const char *, int, int, int, char *);
 pcap_t	*pcap_open_dead(int, int);
+pcap_t	*pcap_open_dead_with_tstamp_precision(int, int, u_int);
 pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int, char *);
 pcap_t	*pcap_open_offline(const char *, char *);
 #if defined(WIN32)

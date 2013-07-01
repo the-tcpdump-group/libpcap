@@ -1741,9 +1741,27 @@ pcap_cleanup_dead(pcap_t *p _U_)
 	/* Nothing to do. */
 }
 
-static void
-pcap_open_dead_set_common_properties(pcap_t *p)
+pcap_t *
+pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 {
+	pcap_t *p;
+
+	switch (precision) {
+
+	case PCAP_TSTAMP_PRECISION_MICRO:
+	case PCAP_TSTAMP_PRECISION_NANO:
+		break;
+
+	default:
+		return NULL;
+	}
+	p = malloc(sizeof(*p));
+	if (p == NULL)
+		return NULL;
+	memset (p, 0, sizeof(*p));
+	p->snapshot = snaplen;
+	p->linktype = linktype;
+	p->opt.tstamp_precision = precision;
 	p->stats_op = pcap_stats_dead;
 #ifdef WIN32
 	p->setbuff_op = pcap_setbuff_dead;
@@ -1752,44 +1770,14 @@ pcap_open_dead_set_common_properties(pcap_t *p)
 #endif
 	p->cleanup_op = pcap_cleanup_dead;
 	p->activated = 1;
+	return (p);
 }
 
 pcap_t *
 pcap_open_dead(int linktype, int snaplen)
 {
-	pcap_t *p;
-
-	p = malloc(sizeof(*p));
-	if (p == NULL)
-		return NULL;
-	memset (p, 0, sizeof(*p));
-
-	p->snapshot = snaplen;
-	p->linktype = linktype;
-
-	pcap_open_dead_set_common_properties(p);
-
-	return (p);
-}
-
-pcap_t *
-pcap_open_dead_nsectime(int linktype, int snaplen)
-{
-	pcap_t *p;
-
-	p = malloc(sizeof(*p));
-	if (!p)
-		return NULL;
-	memset(p, 0, sizeof(*p));
-
-	p->snapshot = snaplen;
-	p->linktype = linktype;
-
-	pcap_open_dead_set_common_properties(p);
-
-	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
-
-	return p;
+	return (pcap_open_dead_with_tstamp_precision(linktype, snaplen,
+	    PCAP_TSTAMP_PRECISION_MICRO));
 }
 
 /*
