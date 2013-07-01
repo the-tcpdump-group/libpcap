@@ -924,7 +924,7 @@
  * 
  * the actual contents are determined by two TAGs stored with each
  * packet:
- *   EXP_PDU_TAG_LINKTYPE          the link type (DLT value) of the
+ *   EXP_PDU_TAG_LINKTYPE          the link type (LINKTYPE_ value) of the
  *				   original packet.
  *
  *   EXP_PDU_TAG_PROTO_NAME        the name of the wireshark dissector
