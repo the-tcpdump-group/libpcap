@@ -1224,7 +1224,6 @@ struct bpf_program {
  */
 #define DLT_WIRESHARK_UPPER_PDU	252
 
-
 #define DLT_MATCHING_MAX	252	/* highest value in the "matching" range */
 
 /*
