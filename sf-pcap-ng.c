@@ -201,13 +201,29 @@ struct block_cursor {
 	bpf_u_int32	block_type;
 };
 
-struct pcap_ng_sf {
-	bpf_u_int32 ifcount;	/* number of interfaces seen in this capture */
-	u_int tsresol;		/* time stamp resolution */
-	u_int tsscale;		/* scaling factor for resolution -> microseconds */
-	u_int64_t tsoffset;	/* time stamp offset */
+typedef enum {
+	PASS_THROUGH,
+	SCALE_UP,
+	SCALE_DOWN
+} tstamp_scale_type_t;
+
+/*
+ * Per-interface information.
+ */
+struct pcap_ng_if {
+	u_int tsresol;			/* time stamp resolution */
+	u_int64_t tsoffset;		/* time stamp offset */
+	tstamp_scale_type_t scale_type;	/* how to scale */
 };
 
+struct pcap_ng_sf {
+	u_int user_tsresol;		/* time stamp resolution requested by the user */
+	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
+	bpf_u_int32 ifaces_size;	/* size of arrary below */
+	struct pcap_ng_if *ifaces;	/* array of interface information */
+};
+
+static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
     u_char **data);
 
@@ -384,15 +400,6 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 }
 
 static int
-get_tstamp_resolution(pcap_t *p)
-{
-	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO)
-		return 1000000000;
-
-	return 1000000;
-}
-
-static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
     u_int64_t *tsoffset, char *errbuf)
 {
@@ -508,6 +515,126 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 
 done:
 	return (0);
+}
+
+static int
+add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
+{
+	struct pcap_ng_sf *ps;
+	u_int tsresol;
+	u_int64_t tsoffset;
+
+	ps = p->private;
+
+	/*
+	 * Count this interface.
+	 */
+	ps->ifcount++;
+
+	/*
+	 * Grow the array of per-interface information as necessary.
+	 */
+	if (ps->ifcount > ps->ifaces_size) {
+		/*
+		 * We need to grow the array.
+		 */
+		if (ps->ifaces == NULL) {
+			/*
+			 * It's currently empty.
+			 */
+			ps->ifaces_size = 1;
+			ps->ifaces = malloc(sizeof (struct pcap_ng_if));
+		} else {
+			/*
+			 * It's not currently empty; double its size.
+			 * (Perhaps overkill once we have a lot of interfaces.)
+			 */
+			ps->ifaces_size *= 2;
+			ps->ifaces = realloc(ps->ifaces, ps->ifaces_size * sizeof (struct pcap_ng_if));
+		}
+		if (ps->ifaces == NULL) {
+			/*
+			 * We ran out of memory.
+			 * Give up.
+			 */
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "out of memory for per-interface information (%u interfaces)",
+			    ps->ifcount);
+			return (0);
+		}
+	}
+
+	/*
+	 * Set the default time stamp resolution and offset.
+	 */
+	tsresol = 1000000;	/* microsecond resolution */
+	tsoffset = 0;		/* absolute timestamps */
+
+	/*
+	 * Now look for various time stamp options, so we know
+	 * how to interpret the time stamps for this interface.
+	 */
+	if (process_idb_options(p, cursor, &tsresol, &tsoffset, errbuf) == -1)
+		return (0);
+
+	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
+	ps->ifaces[ps->ifcount - 1].tsoffset = tsoffset;
+
+	/*
+	 * Determine whether we're scaling up or down or not
+	 * at all for this interface.
+	 */
+	switch (p->opt.tstamp_precision) {
+
+	case PCAP_TSTAMP_PRECISION_MICRO:
+		if (tsresol == 1000000) {
+			/*
+			 * The resolution is 1 microsecond,
+			 * so we don't have to do scaling.
+			 */
+			ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
+		} else if (tsresol > 1000000) {
+			/*
+			 * The resolution is greater than
+			 * 1 microsecond, so we have to
+			 * scale the timestamps down.
+			 */
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN;
+		} else {
+			/*
+			 * The resolution is less than 1
+			 * microsecond, so we have to scale
+			 * the timestamps up.
+			 */
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP;
+		}
+		break;
+
+	case PCAP_TSTAMP_PRECISION_NANO:
+		if (tsresol == 1000000000) {
+			/*
+			 * The resolution is 1 nanosecond,
+			 * so we don't have to do scaling.
+			 */
+			ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
+		} else if (tsresol > 1000000000) {
+			/*
+			 * The resolution is greater than
+			 * 1 nanosecond, so we have to
+			 * scale the timestamps down.
+			 */
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN;
+		} else {
+			/*
+			 * The resolution is less than 1
+			 * nanosecond, so we have to scale
+			 * the timestamps up.
+			 */
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP;
+		}
+		break;
+	}
+	return (1);
 }
 
 /*
@@ -633,6 +760,29 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	ps = p->private;
 
 	/*
+	 * What precision does the user want?
+	 */
+	switch (precision) {
+
+	case PCAP_TSTAMP_PRECISION_MICRO:
+		ps->user_tsresol = 1000000;
+		break;
+
+	case PCAP_TSTAMP_PRECISION_NANO:
+		ps->user_tsresol = 1000000000;
+		break;
+
+	default:
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "unknown time stamp resolution %u", precision);
+		free(p);
+		*err = 1;
+		return (NULL);
+	}
+
+	p->opt.tstamp_precision = precision;
+
+	/*
 	 * Allocate a buffer into which to read blocks.  We default to
 	 * the maximum of:
 	 *
@@ -691,29 +841,9 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	p->version_minor = shbp->minor_version;
 
 	/*
-	 * Set the default time stamp resolution and offset, based
-	 * on the resolution the application or library calling
-	 * us has indicated it wants to see.
+	 * Save the time stamp resolution the user requested.
 	 */
-	switch (precision) {
-
-	case PCAP_TSTAMP_PRECISION_MICRO:
-		ps->tsresol = 1000000;
-		break;
-
-	case PCAP_TSTAMP_PRECISION_NANO:
-		ps->tsresol = 1000000000;
-		break;
-
-	default:
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "unknown time stamp resolution %u", precision);
-		goto fail;
-	}
 	p->opt.tstamp_precision = precision;
-
-	ps->tsscale = 1;	/* multiply by 1 to scale */
-	ps->tsoffset = 0;	/* absolute timestamps */
 
 	/*
 	 * Now start looking for an Interface Description Block.
@@ -752,34 +882,10 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			}
 
 			/*
-			 * Count this interface.
+			 * Try to add this interface.
 			 */
-			ps->ifcount++;
-
-			/*
-			 * Now look for various time stamp options, so
-			 * we know how to interpret the time stamps.
-			 */
-			if (process_idb_options(p, &cursor, &ps->tsresol,
-			    &ps->tsoffset, errbuf) == -1)
+			if (!add_interface(p, &cursor, errbuf))
 				goto fail;
-
-			/*
-			 * Compute the scaling factor to convert the
-			 * sub-second part of the time stamp to
-			 * microseconds.
-			 */
-			if (ps->tsresol > get_tstamp_resolution(p)) {
-				/*
-				 * Higher than given resolution, scale down
-				 */
-				ps->tsscale = (ps->tsresol / get_tstamp_resolution(p));
-			} else {
-				/*
-				 * Lower than given resolution, scale up 
-				 */
-				ps->tsscale = (get_tstamp_resolution(p) / ps->tsresol);
-			}
 			goto done;
 
 		case BT_EPB:
@@ -809,14 +915,25 @@ done:
 	p->linktype_ext = 0;
 
 	p->next_packet_op = pcap_ng_next_packet;
+	p->cleanup_op = pcap_ng_cleanup;
 
 	return (p);
 
 fail:
+	free(ps->ifaces);
 	free(p->buffer);
 	free(p);
 	*err = 1;
 	return (NULL);
+}
+
+static void
+pcap_ng_cleanup(pcap_t *p)
+{
+	struct pcap_ng_sf *ps = p->private;
+
+	free(ps->ifaces);
+	sf_cleanup(p);
 }
 
 /*
@@ -837,8 +954,6 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
 	FILE *fp = p->rfile;
-	u_int tsresol;
-	u_int64_t tsoffset;
 	u_int64_t t, sec, frac;
 
 	/*
@@ -991,41 +1106,10 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			}
 
 			/*
-			 * Count this interface.
+			 * Try to add this interface.
 			 */
-			ps->ifcount++;
-
-			/*
-			 * Set the default time stamp resolution and offset.
-			 */
-			if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO)
-				tsresol = 1000000000;	/* nanosecond resolution */
-			else
-				tsresol = 1000000;	/* microsecond resolution */
-
-			tsoffset = 0;		/* absolute timestamps */
-
-			/*
-			 * Now look for various time stamp options, to
-			 * make sure they're the same.
-			 *
-			 * XXX - we could, in theory, handle multiple
-			 * different resolutions and offsets, but we
-			 * don't do so for now.
-			 */
-			if (process_idb_options(p, &cursor, &tsresol, &tsoffset,
-			    p->errbuf) == -1)
+			if (!add_interface(p, &cursor, p->errbuf))
 				return (-1);
-			if (tsresol != ps->tsresol) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "an interface has a time stamp resolution different from the time stamp resolution of the first interface");
-				return (-1);
-			}
-			if (tsoffset != ps->tsoffset) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "an interface has a time stamp offset different from the time stamp offset of the first interface");
-				return (-1);
-			}
 			break;
 
 		case BT_SHB:
@@ -1128,20 +1212,52 @@ found:
 	/*
 	 * Convert the time stamp to a struct timeval.
 	 */
-	sec = t / ps->tsresol + ps->tsoffset;
-	frac = t % ps->tsresol;
-	if (ps->tsresol > get_tstamp_resolution(p)) {
+	sec = t / ps->ifaces[interface_id].tsresol + ps->ifaces[interface_id].tsoffset;
+	frac = t % ps->ifaces[interface_id].tsresol;
+	switch (ps->ifaces[interface_id].scale_type) {
+
+	case PASS_THROUGH:
 		/*
-		 * Higher than microsecond resolution; scale down to
-		 * microseconds.
+		 * The interface resolution is what the user wants,
+		 * so we're done.
 		 */
-		frac /= ps->tsscale;
-	} else {
+		break;
+
+	case SCALE_UP:
 		/*
-		 * Lower than microsecond resolution; scale up to
-		 * microseconds.
+		 * The interface resolution is less than what the user
+		 * wants; scale up to that resolution.
+		 *
+		 * XXX - if ps->ifaces[interface_id].tsresol is a power
+		 * of 10, we could just multiply by the quotient of
+		 * ps->ifaces[interface_id].tsresol and ps->user_tsresol,
+		 * as we know that's an integer.  That runs less risk of
+		 * overflow.
+		 *
+		 * Is there something clever we could do if
+		 * ps->ifaces[interface_id].tsresol is a power of 2?
 		 */
-		frac *= ps->tsscale;
+		frac *= ps->ifaces[interface_id].tsresol;
+		frac /= ps->user_tsresol;
+		break;
+
+	case SCALE_DOWN:
+		/*
+		 * The interface resolution is greater than what the user
+		 * wants; scale down to that resolution.
+		 *
+		 * XXX - if ps->ifaces[interface_id].tsresol is a power
+		 * of 10, we could just divide by the quotient of
+		 * ps->user_tsresol and ps->ifaces[interface_id].tsresol,
+		 * as we know that's an integer.  That runs less risk of
+		 * overflow.
+		 *
+		 * Is there something clever we could do if
+		 * ps->ifaces[interface_id].tsresol is a power of 2?
+		 */
+		frac *= ps->user_tsresol;
+		frac /= ps->ifaces[interface_id].tsresol;
+		break;
 	}
 	hdr->ts.tv_sec = sec;
 	hdr->ts.tv_usec = frac;

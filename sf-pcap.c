@@ -383,6 +383,8 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		return (NULL);
 	}
 
+	p->cleanup_op = sf_cleanup;
+
 	return (p);
 }
 

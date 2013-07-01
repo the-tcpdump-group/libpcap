@@ -160,7 +160,7 @@ sf_setdirection(pcap_t *p, pcap_direction_t d)
 	return (-1);
 }
 
-static void
+void
 sf_cleanup(pcap_t *p)
 {
 	if (p->rfile != stdin)
@@ -342,7 +342,6 @@ found:
 	p->setmode_op = sf_setmode;
 	p->setmintocopy_op = sf_setmintocopy;
 #endif
-	p->cleanup_op = sf_cleanup;
 	p->activated = 1;
 
 	return (p);

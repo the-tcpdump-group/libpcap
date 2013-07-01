@@ -389,8 +389,13 @@ int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
  *
  * "pcap_open_offline_common()" allocates and fills in a pcap_t, for use
  * by pcap_open_offline routines.
+ *
+ * "sf_cleanup()" closes the file handle associated with a pcap_t, if
+ * appropriate, and frees all data common to all modules for handling
+ * savefile types.
  */
 pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
+void	sf_cleanup(pcap_t *p);
 
 #ifdef WIN32
 char	*pcap_win32strerror(void);
