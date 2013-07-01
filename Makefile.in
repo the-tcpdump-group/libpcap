@@ -594,6 +594,9 @@ install: install-shared install-archive pcap-config
 	$(LN_S) pcap_major_version.3pcap pcap_minor_version.3pcap && \
 	rm -f pcap_next.3pcap && \
 	$(LN_S) pcap_next_ex.3pcap pcap_next.3pcap && \
+	rm -f pcap_open_dead_with_tstamp_precision.3pcap && \
+	$(LN_S) pcap_open_dead.3pcap \
+		 pcap_open_dead_with_tstamp_precision.3pcap && \
 	rm -f pcap_open_offline_with_tstamp_precision.3pcap && \
 	$(LN_S) pcap_open_offline.3pcap pcap_open_offline_with_tstamp_precision.3pcap && \
 	rm -f pcap_fopen_offline.3pcap && \
