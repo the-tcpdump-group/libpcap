@@ -337,28 +337,34 @@ const char *pcap_tstamp_type_val_to_description(int);
 #define PCAP_TSTAMP_ADAPTER		3	/* device-provided, synced with the system clock */
 #define PCAP_TSTAMP_ADAPTER_UNSYNCED	4	/* device-provided, not synced with the system clock */
 
-#define PCAP_TSTAMP_PRECISION_NANO      5       /* use timestamps with nanosecond precision */
-#define PCAP_TSTAMP_PRECISION_MICRO     6       /* use timestamps with microsecond precision, default */
+/*
+ * Time stamp resolution types.
+ * Not all systems and interfaces will necessarily support all of these
+ * resolutions when doing live captures; all of them can be requested
+ * when reading a savefile.
+ */
+#define PCAP_TSTAMP_PRECISION_MICRO	0	/* use timestamps with microsecond precision, default */
+#define PCAP_TSTAMP_PRECISION_NANO	1	/* use timestamps with nanosecond precision */
 
 pcap_t	*pcap_open_live(const char *, int, int, int, char *);
 pcap_t	*pcap_open_dead(int, int);
+pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int, char *);
 pcap_t	*pcap_open_offline(const char *, char *);
-pcap_t	*pcap_open_offline_nsectime(const char *, char *);
 #if defined(WIN32)
+pcap_t  *pcap_hopen_offline_with_tstamp_precision(intptr_t, u_int, char *);
 pcap_t  *pcap_hopen_offline(intptr_t, char *);
-pcap_t  *pcap_hopen_offline_nsectime(intptr_t, char *);
 #if !defined(LIBPCAP_EXPORTS)
+#define pcap_fopen_offline_with_tstamp_precision(f,p,b) \
+	pcap_hopen_offline_with_tstamp_precision(_get_osfhandle(_fileno(f)), p, b)
 #define pcap_fopen_offline(f,b) \
 	pcap_hopen_offline(_get_osfhandle(_fileno(f)), b)
-#define pcap_fopen_offline_nsectime(f,b) \
-	pcap_hopen_offline_nsectime(_get_osfhandle(_fileno(f)), b)
 #else /*LIBPCAP_EXPORTS*/
+static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 static pcap_t *pcap_fopen_offline(FILE *, char *);
-static pcap_t *pcap_fopen_offline_nsectime(FILE *, char *);
 #endif
 #else /*WIN32*/
+pcap_t	*pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 pcap_t	*pcap_fopen_offline(FILE *, char *);
-pcap_t	*pcap_fopen_offline_nsectime(FILE *, char *);
 #endif /*WIN32*/
 
 void	pcap_close(pcap_t *);

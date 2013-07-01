@@ -131,10 +131,16 @@ typedef enum {
 	MAYBE_SWAPPED
 } swapped_type_t;
 
+typedef enum {
+	PASS_THROUGH,
+	SCALE_UP,
+	SCALE_DOWN
+} tstamp_scale_type_t;
+
 struct pcap_sf {
 	size_t hdrsize;
 	swapped_type_t lengths_swapped;
-        uint32_t hdrmagic;
+	tstamp_scale_type_t scale_type;
 };
 
 /*
@@ -142,7 +148,8 @@ struct pcap_sf {
  * relevant information from the header.
  */
 pcap_t *
-pcap_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, int *err)
+pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
+    int *err)
 {
 	struct pcap_file_header hdr;
 	size_t amt_read;
@@ -160,9 +167,11 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, i
 	 * number for a pcap savefile, or for a byte-swapped pcap
 	 * savefile.
 	 */
-	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC && magic != NSEC_TCPDUMP_MAGIC) {
+	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC &&
+	    magic != NSEC_TCPDUMP_MAGIC) {
 		magic = SWAPLONG(magic);
-		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC && magic != NSEC_TCPDUMP_MAGIC)
+		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC &&
+		    magic != NSEC_TCPDUMP_MAGIC)
 			return (NULL);	/* nope */
 		swapped = 1;
 	}
@@ -229,6 +238,56 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, i
 	p->next_packet_op = pcap_next_packet;
 
 	ps = p->private;
+
+	p->opt.tstamp_precision = precision;
+
+	/*
+	 * Will we need to scale the timestamps to match what the
+	 * user wants?
+	 */
+	switch (precision) {
+
+	case PCAP_TSTAMP_PRECISION_MICRO:
+		if (magic == NSEC_TCPDUMP_MAGIC) {
+			/*
+			 * The file has nanoseconds, the user
+			 * wants microseconds; scale the
+			 * precision down.
+			 */
+			ps->scale_type = SCALE_DOWN;
+		} else {
+			/*
+			 * The file has microseconds, the
+			 * user wants microseconds; nothing to do.
+			 */
+			ps->scale_type = PASS_THROUGH;
+		}
+		break;
+
+	case PCAP_TSTAMP_PRECISION_NANO:
+		if (magic == NSEC_TCPDUMP_MAGIC) {
+			/*
+			 * The file has nanoseconds, the
+			 * user wants nanoseconds; nothing to do.
+			 */
+			ps->scale_type = PASS_THROUGH;
+		} else {
+			/*
+			 * The file has microoseconds, the user
+			 * wants nanoseconds; scale the
+			 * precision up.
+			 */
+			ps->scale_type = SCALE_UP;
+		}
+		break;
+
+	default:
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "unknown time stamp resolution %u", precision);
+		free(p);
+		*err = 1;
+		return (NULL);
+	}
 
 	/*
 	 * We interchanged the caplen and len fields at version 2.3,
@@ -324,11 +383,6 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, i
 		return (NULL);
 	}
 
-	if (nsec_tstamps)
-		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
-
-	ps->hdrmagic = magic;
-
 	return (p);
 }
 
@@ -386,12 +440,30 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		hdr->ts.tv_usec = sf_hdr.ts.tv_usec;
 	}
 
-	if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_MICRO && ps->hdrmagic == NSEC_TCPDUMP_MAGIC)
-		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) / 1000 : sf_hdr.ts.tv_usec / 1000;
-	else if (p->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO && ps->hdrmagic != NSEC_TCPDUMP_MAGIC)
-		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) * 1000 : sf_hdr.ts.tv_usec * 1000;
-	else
-		hdr->ts.tv_usec = p->swapped ? SWAPLONG(sf_hdr.ts.tv_usec) : sf_hdr.ts.tv_usec;
+	switch (ps->scale_type) {
+
+	case PASS_THROUGH:
+		/*
+		 * Just pass the time stamp through.
+		 */
+		break;
+
+	case SCALE_UP:
+		/*
+		 * File has microseconds, user wants nanoseconds; convert
+		 * it.
+		 */
+		hdr->ts.tv_usec = hdr->ts.tv_usec * 1000;
+		break;
+
+	case SCALE_DOWN:
+		/*
+		 * File has nanoseconds, user wants microseconds; convert
+		 * it.
+		 */
+		hdr->ts.tv_usec = hdr->ts.tv_usec / 1000;
+		break;
+	}
 
 	/* Swap the caplen and len fields, if necessary. */
 	switch (ps->lengths_swapped) {

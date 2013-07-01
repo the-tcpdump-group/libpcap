@@ -515,7 +515,8 @@ done:
  * relevant information from the header.
  */
 pcap_t *
-pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf, int *err)
+pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
+    int *err)
 {
 	size_t amt_read;
 	bpf_u_int32 total_length;
@@ -690,13 +691,26 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, int nsec_tstamps, char *errbuf
 	p->version_minor = shbp->minor_version;
 
 	/*
-	 * Set the default time stamp resolution and offset.
+	 * Set the default time stamp resolution and offset, based
+	 * on the resolution the application or library calling
+	 * us has indicated it wants to see.
 	 */
-	if (nsec_tstamps) {
-		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
-		ps->tsresol = 1000000000;
-	} else
+	switch (precision) {
+
+	case PCAP_TSTAMP_PRECISION_MICRO:
 		ps->tsresol = 1000000;
+		break;
+
+	case PCAP_TSTAMP_PRECISION_NANO:
+		ps->tsresol = 1000000000;
+		break;
+
+	default:
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "unknown time stamp resolution %u", precision);
+		goto fail;
+	}
+	p->opt.tstamp_precision = precision;
 
 	ps->tsscale = 1;	/* multiply by 1 to scale */
 	ps->tsoffset = 0;	/* absolute timestamps */

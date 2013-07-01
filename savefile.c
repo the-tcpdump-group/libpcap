@@ -170,12 +170,15 @@ sf_cleanup(pcap_t *p)
 	pcap_freecode(&p->fcode);
 }
 
-static FILE *
-sf_open(const char *fname)
+pcap_t *
+pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
+    char *errbuf)
 {
-	FILE *fp = NULL;
+	FILE *fp;
+	pcap_t *p;
 
-	if (fname[0] == '-' && fname[1] == '\0') {
+	if (fname[0] == '-' && fname[1] == '\0')
+	{
 		fp = stdin;
 #if defined(WIN32) || defined(MSDOS)
 		/*
@@ -184,20 +187,148 @@ sf_open(const char *fname)
 		 */
 		SET_BINMODE(fp);
 #endif
-	} else {
+	}
+	else {
 #if !defined(WIN32) && !defined(MSDOS)
 		fp = fopen(fname, "r");
 #else
 		fp = fopen(fname, "rb");
 #endif
+		if (fp == NULL) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
+			    pcap_strerror(errno));
+			return (NULL);
+		}
 	}
-
-	return fp;
+	p = pcap_fopen_offline_with_tstamp_precision(fp, precision, errbuf);
+	if (p == NULL) {
+		if (fp != stdin)
+			fclose(fp);
+	}
+	return (p);
 }
 
-static void
-pcap_open_offline_set_common_properties(pcap_t *p)
+pcap_t *
+pcap_open_offline(const char *fname, char *errbuf)
 {
+	return (pcap_open_offline_with_tstamp_precision(fname,
+	    PCAP_TSTAMP_PRECISION_MICRO, errbuf));
+}
+
+#ifdef WIN32
+pcap_t* pcap_hopen_offline_with_tstamp_precision(intptr_t osfd, u_int precision,
+    char *errbuf)
+{
+	int fd;
+	FILE *file;
+
+	fd = _open_osfhandle(osfd, _O_RDONLY);
+	if ( fd < 0 ) 
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		return NULL;
+	}
+
+	file = _fdopen(fd, "rb");
+	if ( file == NULL ) 
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		return NULL;
+	}
+
+	return pcap_fopen_offline_with_tstamp_precision(file, precision,
+	    errbuf);
+}
+
+pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
+{
+	return pcap_hopen_offline_with_tstamp_precision(osfd,
+	    PCAP_TSTAMP_PRECISION_MICRO, errbuf);
+}
+#endif
+
+static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, u_int, char *, int *) = {
+	pcap_check_header,
+	pcap_ng_check_header
+};
+
+#define	N_FILE_TYPES	(sizeof check_headers / sizeof check_headers[0])
+
+#ifdef WIN32
+static
+#endif
+pcap_t *
+pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
+    char *errbuf)
+{
+	register pcap_t *p;
+	bpf_u_int32 magic;
+	size_t amt_read;
+	u_int i;
+	int err;
+
+	/*
+	 * Read the first 4 bytes of the file; the network analyzer dump
+	 * file formats we support (pcap and pcap-ng), and several other
+	 * formats we might support in the future (such as snoop, DOS and
+	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
+	 * numbers that are unique in their first 4 bytes.
+	 */
+	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
+	if (amt_read != sizeof(magic)) {
+		if (ferror(fp)) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "error reading dump file: %s",
+			    pcap_strerror(errno));
+		} else {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
+			    (unsigned long)sizeof(magic),
+			    (unsigned long)amt_read);
+		}
+		return (NULL);
+	}
+
+	/*
+	 * Try all file types.
+	 */
+	for (i = 0; i < N_FILE_TYPES; i++) {
+		p = (*check_headers[i])(magic, fp, precision, errbuf, &err);
+		if (p != NULL) {
+			/* Yup, that's it. */
+			goto found;
+		}
+		if (err) {
+			/*
+			 * Error trying to read the header.
+			 */
+			return (NULL);
+		}
+	}
+
+	/*
+	 * Well, who knows what this mess is....
+	 */
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
+	return (NULL);
+
+found:
+	p->rfile = fp;
+
+	/* Padding only needed for live capture fcode */
+	p->fddipad = 0;
+
+#if !defined(WIN32) && !defined(MSDOS)
+	/*
+	 * You can do "select()" and "poll()" on plain files on most
+	 * platforms, and should be able to do so on pipes.
+	 *
+	 * You can't do "select()" on anything other than sockets in
+	 * Windows, so, on Win32 systems, we don't have "selectable_fd".
+	 */
+	p->selectable_fd = fileno(fp);
+#endif
+
 	p->read_op = pcap_offline_read;
 	p->inject_op = sf_inject;
 	p->setfilter_op = install_bpf_program;
@@ -213,175 +344,6 @@ pcap_open_offline_set_common_properties(pcap_t *p)
 #endif
 	p->cleanup_op = sf_cleanup;
 	p->activated = 1;
-}
-
-pcap_t *
-pcap_open_offline(const char *fname, char *errbuf)
-{
-	FILE *fp;
-	pcap_t *p;
-
-	fp = sf_open(fname);
-	if (!fp) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname, pcap_strerror(errno));
-		return NULL;
-	}
-
-	p = pcap_fopen_offline(fp, errbuf);
-	if (!p && fp != stdin)
-		fclose(fp);
-
-	return p;
-}
-
-pcap_t *
-pcap_open_offline_nsectime(const char *fname, char *errbuf)
-{
-	FILE *fp;
-	pcap_t *p;
-
-	fp = sf_open(fname);
-	if (!fp) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname, pcap_strerror(errno));
-		return NULL;
-	}
-
-	p = pcap_fopen_offline_nsectime(fp, errbuf);
-	if (!p && fp != stdin) {
-		fclose(fp);
-	}
-
-	return p;
-}
-
-#ifdef WIN32
-pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
-{
-	int fd;
-	FILE *file;
-
-	fd = _open_osfhandle(osfd, _O_RDONLY);
-	if ( fd < 0 ) 
-	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
-		return NULL;
-	}
-
-	file = _fdopen(fd, "rb");
-	if ( file == NULL ) 
-	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
-		return NULL;
-	}
-
-	return pcap_fopen_offline(file, errbuf);
-}
-
-pcap_t* pcap_hopen_offline_nsectime(intptr_t osfd, char *errbuf)
-{
-	int fd;
-	FILE *file;
-
-	fd = _open_osfhandle(osfd, _O_RDONLY);
-	if ( fd < 0 ) 
-	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
-		return NULL;
-	}
-
-	file = _fdopen(fd, "rb");
-	if ( file == NULL ) 
-	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
-		return NULL;
-	}
-
-	return pcap_fopen_offline_nsectime(file, errbuf);
-}
-#endif
-
-static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, int, char *, int *) = {
-	pcap_check_header,
-	pcap_ng_check_header
-};
-
-#define	N_FILE_TYPES	(sizeof check_headers / sizeof check_headers[0])
-
-#ifdef WIN32
-static
-#endif
-pcap_t *
-pcap_fopen_offline(FILE *fp, char *errbuf)
-{
-	register pcap_t *p;
-	bpf_u_int32 magic;
-	size_t amt_read;
-	u_int i;
-	int err;
-
-	/*
-	 * Read the first 4 bytes of the file; the network analyzer dump
-	 * file formats we support (pcap and pcap-ng), and several other
-	 * formats we might support in the future (such as snoop, DOS and
-	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
-	 * numbers that are unique in their first 4 bytes.
-	 */
-	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
-	if (amt_read != sizeof(magic)) {
-		if (ferror(fp)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
-		} else {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
-			    (unsigned long)sizeof(magic),
-			    (unsigned long)amt_read);
-		}
-		return (NULL);
-	}
-
-	/*
-	 * Try all file types.
-	 */
-	for (i = 0; i < N_FILE_TYPES; i++) {
-		p = (*check_headers[i])(magic, fp, 0, errbuf, &err);
-		if (p != NULL) {
-			/* Yup, that's it. */
-			goto found;
-		}
-		if (err) {
-			/*
-			 * Error trying to read the header.
-			 */
-			return (NULL);
-		}
-	}
-
-	/*
-	 * Well, who knows what this mess is....
-	 */
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
-	return (NULL);
-
-found:
-	p->rfile = fp;
-
-	/* Padding only needed for live capture fcode */
-	p->fddipad = 0;
-
-#if !defined(WIN32) && !defined(MSDOS)
-	/*
-	 * You can do "select()" and "poll()" on plain files on most
-	 * platforms, and should be able to do so on pipes.
-	 *
-	 * You can't do "select()" on anything other than sockets in
-	 * Windows, so, on Win32 systems, we don't have "selectable_fd".
-	 */
-	p->selectable_fd = fileno(fp);
-#endif
-
-	pcap_open_offline_set_common_properties(p);
 
 	return (p);
 }
@@ -390,79 +352,10 @@ found:
 static
 #endif
 pcap_t *
-pcap_fopen_offline_nsectime(FILE *fp, char *errbuf)
+pcap_fopen_offline(FILE *fp, char *errbuf)
 {
-	register pcap_t *p;
-	bpf_u_int32 magic;
-	size_t amt_read;
-	u_int i;
-	int err;
-
-	/*
-	 * Read the first 4 bytes of the file; the network analyzer dump
-	 * file formats we support (pcap and pcap-ng), and several other
-	 * formats we might support in the future (such as snoop, DOS and
-	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
-	 * numbers that are unique in their first 4 bytes.
-	 */
-	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
-	if (amt_read != sizeof(magic)) {
-		if (ferror(fp)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
-		} else {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
-			    (unsigned long)sizeof(magic),
-			    (unsigned long)amt_read);
-		}
-		return (NULL);
-	}
-
-	/*
-	 * Try all file types.
-	 */
-	for (i = 0; i < N_FILE_TYPES; i++) {
-		p = (*check_headers[i])(magic, fp, 1, errbuf, &err);
-		if (p != NULL) {
-			/* Yup, that's it. */
-			goto found;
-		}
-		if (err) {
-			/*
-			 * Error trying to read the header.
-			 */
-			return (NULL);
-		}
-	}
-
-	/*
-	 * Well, who knows what this mess is....
-	 */
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
-	return (NULL);
-
-found:
-	p->rfile = fp;
-
-	/* Padding only needed for live capture fcode */
-	p->fddipad = 0;
-
-#if !defined(WIN32) && !defined(MSDOS)
-	/*
-	 * You can do "select()" and "poll()" on plain files on most
-	 * platforms, and should be able to do so on pipes.
-	 *
-	 * You can't do "select()" on anything other than sockets in
-	 * Windows, so, on Win32 systems, we don't have "selectable_fd".
-	 */
-	p->selectable_fd = fileno(fp);
-#endif
-
-	pcap_open_offline_set_common_properties(p);
-
-	return p;
+	return (pcap_fopen_offline_with_tstamp_precision(fp,
+	    PCAP_TSTAMP_PRECISION_MICRO, errbuf));
 }
 
 /*
