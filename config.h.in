@@ -85,9 +85,6 @@
 /* if tp_vlan_tci exists */
 #undef HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 
-/* define if we can use nanosecond timestamps */
-#undef HAVE_LINUX_TSTAMP_NANO
-
 /* Define to 1 if you have the <linux/types.h> header file. */
 #undef HAVE_LINUX_TYPES_H
 

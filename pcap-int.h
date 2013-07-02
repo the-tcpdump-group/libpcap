@@ -191,6 +191,8 @@ struct pcap {
 	u_int *dlt_list;
 	int tstamp_type_count;
 	u_int *tstamp_type_list;
+	int tstamp_precision_count;
+	u_int *tstamp_precision_list;
 
 	struct pcap_pkthdr pcap_header;	/* This is needed for the pcap_next_ex() to work */
 

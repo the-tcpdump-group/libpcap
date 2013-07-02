@@ -254,6 +254,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_IFACE_NOT_UP		-9	/* interface isn't up */
 #define PCAP_ERROR_CANTSET_TSTAMP_TYPE	-10	/* this device doesn't support setting the time stamp type */
 #define PCAP_ERROR_PROMISC_PERM_DENIED	-11	/* you don't have permission to capture in promiscuous mode */
+#define PCAP_ERROR_TSTAMP_PRECISION_NOTSUP -12  /* the requested time stamp precision is not supported */
 
 /*
  * Warning codes for the pcap API.
@@ -263,7 +264,6 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_WARNING			1	/* generic warning code */
 #define PCAP_WARNING_PROMISC_NOTSUP	2	/* this device doesn't support promiscuous mode */
 #define PCAP_WARNING_TSTAMP_TYPE_NOTSUP	3	/* the requested time stamp type is not supported */
-#define  PCAP_WARNING_TSTAMP_PRECISION_NOTSUP  4  /* the requested time stamp precision is not supported */
 
 /*
  * Value to pass to pcap_compile() as the netmask if you don't know what

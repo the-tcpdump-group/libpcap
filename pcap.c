@@ -617,28 +617,31 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 		return (PCAP_ERROR_ACTIVATED);
 
 	/*
-	 * If p->tstamp_type_count is 0, we don't support setting
-	 * the time stamp type at all.
+	 * If p->tstamp_type_count is 0, we only support PCAP_TSTAMP_HOST;
+	 * the default time stamp type is PCAP_TSTAMP_HOST.
 	 */
-	if (p->tstamp_type_count == 0)
-		return (PCAP_ERROR_CANTSET_TSTAMP_TYPE);
-
-	/*
-	 * Check whether we claim to support this type of time stamp.
-	 */
-	for (i = 0; i < p->tstamp_type_count; i++) {
-		if (p->tstamp_type_list[i] == tstamp_type) {
-			/*
-			 * Yes.
-			 */
+	if (p->tstamp_type_count == 0) {
+		if (tstamp_type == PCAP_TSTAMP_HOST) {
 			p->opt.tstamp_type = tstamp_type;
 			return (0);
+		}
+	} else {
+		/*
+		 * Check whether we claim to support this type of time stamp.
+		 */
+		for (i = 0; i < p->tstamp_type_count; i++) {
+			if (p->tstamp_type_list[i] == tstamp_type) {
+				/*
+				 * Yes.
+				 */
+				p->opt.tstamp_type = tstamp_type;
+				return (0);
+			}
 		}
 	}
 
 	/*
-	 * No.  We support setting the time stamp type, but not to this
-	 * particular value.
+	 * We don't support this type of time stamp.
 	 */
 	return (PCAP_WARNING_TSTAMP_TYPE_NOTSUP);
 }
@@ -662,29 +665,45 @@ pcap_set_buffer_size(pcap_t *p, int buffer_size)
 }
 
 int
-pcap_set_tstamp_precision(pcap_t *p, int precision)
+pcap_set_tstamp_precision(pcap_t *p, int tstamp_precision)
 {
+	int i;
+
 	if (pcap_check_activated(p))
 		return PCAP_ERROR_ACTIVATED;
 
-	if (precision == PCAP_TSTAMP_PRECISION_NANO) {
-#ifdef HAVE_LINUX_TSTAMP_NANO
-		/* We should be able to get timestamp with nanosecond precision */
-		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_NANO;
-#else
-		/* TODO: We don't know anything about other platforms yet */
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "nanosecond timestamps are not supported");
-		return PCAP_WARNING_TSTAMP_PRECISION_NOTSUP;
-#endif
-	} else if (precision == PCAP_TSTAMP_PRECISION_MICRO) {
-		p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
+	/*
+	 * If p->tstamp_precision_count is 0, we only support setting
+	 * the time stamp precision to microsecond precision; every
+	 * pcap module *MUST* support microsecond precision, even if
+	 * it does so by converting the native precision to
+	 * microseconds.
+	 */
+	if (p->tstamp_precision_count == 0) {
+		if (tstamp_precision == PCAP_TSTAMP_PRECISION_MICRO) {
+			p->opt.tstamp_precision = tstamp_precision;
+			return (0);
+		}
 	} else {
-		/* unknown precision requested */
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "nanosecond timestamps are not supported");
-		return PCAP_WARNING_TSTAMP_PRECISION_NOTSUP;
+		/*
+		 * Check whether we claim to support this precision of
+		 * time stamp.
+		 */
+		for (i = 0; i < p->tstamp_precision_count; i++) {
+			if (p->tstamp_precision_list[i] == tstamp_precision) {
+				/*
+				 * Yes.
+				 */
+				p->opt.tstamp_precision = tstamp_precision;
+				return (0);
+			}
+		}
 	}
 
-	return 0;
+	/*
+	 * We don't support this time stamp precision.
+	 */
+	return (PCAP_ERROR_TSTAMP_PRECISION_NOTSUP);
 }
 
 int
@@ -1507,6 +1526,9 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_PROMISC_PERM_DENIED:
 		return ("You don't have permission to capture in promiscuous mode on that device");
+
+	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
+		return ("That device doesn't support that time stamp precision");
 	}
 	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
@@ -1724,6 +1746,11 @@ pcap_cleanup_live_common(pcap_t *p)
 		free(p->tstamp_type_list);
 		p->tstamp_type_list = NULL;
 		p->tstamp_type_count = 0;
+	}
+	if (p->tstamp_precision_list != NULL) {
+		free(p->tstamp_precision_list);
+		p->tstamp_precision_list = NULL;
+		p->tstamp_precision_count = 0;
 	}
 	pcap_freecode(&p->fcode);
 #if !defined(WIN32) && !defined(MSDOS)

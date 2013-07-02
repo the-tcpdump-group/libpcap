@@ -134,6 +134,7 @@ static const char rcsid[] _U_ =
 #include <sys/mman.h>
 #include <linux/if.h>
 #include <linux/if_packet.h>
+#include <linux/sockios.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <net/if_arp.h>
@@ -206,15 +207,6 @@ static const char rcsid[] _U_ =
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
 #include <linux/filter.h>
-#endif
-
-/*
- * We need linux/sockios.h if we have linux/net_tstamp.h (for time stamp
- * specification) or linux/ethtool.h (for ethtool ioctls to get offloading
- * information).
- */
-#if defined(HAVE_LINUX_NET_TSTAMP_H) || defined(HAVE_LINUX_ETHTOOL_H)
-#include <linux/sockios.h>
 #endif
 
 #ifdef HAVE_LINUX_NET_TSTAMP_H
@@ -422,6 +414,27 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER;
 	handle->tstamp_type_list[2] = PCAP_TSTAMP_ADAPTER_UNSYNCED;
 #endif
+
+#if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
+	/*
+	 * We claim that we support microsecond and nanosecond time
+	 * stamps.
+	 *
+	 * XXX - with adapter-supplied time stamps, can we choose
+	 * microsecond or nanosecond time stamps on arbitrary
+	 * adapters?
+	 */
+	handle->tstamp_precision_count = 2;
+	handle->tstamp_type_list = malloc(2 * sizeof(u_int));
+	if (handle->tstamp_type_list == NULL) {
+		if (handle->tstamp_type_list != NULL)
+			free(handle->tstamp_type_list);
+		free(handle);
+		return NULL;
+	}
+	handle->tstamp_type_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+	handle->tstamp_type_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+#endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
 	return handle;
 }
@@ -1682,13 +1695,16 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	/* Fill in our own header data */
 
 	/* get timestamp for this packet */
+#if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
 	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
 		if (ioctl(handle->fd, SIOCGSTAMPNS, &pcap_header.ts) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"SIOCGSTAMPNS: %s", pcap_strerror(errno));
 			return PCAP_ERROR;
 		}
-        } else {
+        } else
+#endif
+	{
 		if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"SIOCGSTAMP: %s", pcap_strerror(errno));
@@ -3259,6 +3275,7 @@ activate_new(pcap_t *handle)
 	/* Save the socket FD in the pcap structure */
 	handle->fd = sock_fd;
 
+#if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
 	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
 		int nsec_tstamps = 1;
 
@@ -3267,14 +3284,15 @@ activate_new(pcap_t *handle)
 			return PCAP_ERROR;
 		}
 	}
+#endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
 	return 1;
-#else
+#else /* HAVE_PF_PACKET_SOCKETS */
 	strncpy(ebuf,
 		"New packet capturing interface not supported by build "
 		"environment", PCAP_ERRBUF_SIZE);
 	return 0;
-#endif
+#endif /* HAVE_PF_PACKET_SOCKETS */
 }
 
 #ifdef HAVE_PACKET_RING
