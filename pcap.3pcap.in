@@ -510,20 +510,13 @@ number of bytes available from the capture, if the length of the packet
 is larger than the maximum number of bytes to capture).
 .RE
 .PP
-.BR pcap_next_ex ()
-supplies that pointer through a pointer argument.
-.BR pcap_next ()
-is passed an argument that points to a
-.I struct pcap_pkthdr
-structure, and fills it in.
-.PP
 The callback is also supplied a
 .I const u_char
 pointer to the first
 .B caplen
 (as given in the
 .I struct pcap_pkthdr
-a pointer to which is passed to the callback routine)
+mentioned above)
 bytes of data from the packet.  This won't necessarily be the entire
 packet; to capture the entire packet, you will have to provide a value
 for
@@ -534,10 +527,28 @@ that is sufficiently large to get all of the packet's data - a value of
 65535 should be sufficient on most if not all networks).  When reading
 from a ``savefile'', the snapshot length specified when the capture was
 performed will limit the amount of packet data available.
+.PP
 .BR pcap_next ()
-returns that pointer;
+is passed an argument that points to a
+.I struct pcap_pkthdr
+structure, and fills it in with the time stamp and length values for the
+packet.  It returns a
+.I const u_char
+to the first
+.B caplen
+bytes of the packet on success, and NULL on error.
+.PP
 .BR pcap_next_ex ()
-supplies that pointer through a pointer argument.
+is passed two pointer arguments, one of which points to a
+.IR struct pcap_pkthdr *
+and one of which points to a 
+.IR "const u_char" *.
+It sets the first pointer to point to a
+.I struct pcap_pkthdr
+structure with the time stamp and length values for the packet, and sets
+the second pointer to point to the first
+.B caplen
+bytes of the packet.
 .PP
 To force the loop in
 .BR pcap_dispatch ()
