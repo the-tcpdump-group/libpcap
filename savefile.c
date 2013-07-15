@@ -342,6 +342,13 @@ found:
 	p->setmode_op = sf_setmode;
 	p->setmintocopy_op = sf_setmintocopy;
 #endif
+
+	/*
+	 * For offline captures, the standard one-shot callback can
+	 * be used for pcap_next()/pcap_next_ex().
+	 */
+	p->oneshot_callback = pcap_oneshot;
+
 	p->activated = 1;
 
 	return (p);

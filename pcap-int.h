@@ -399,6 +399,15 @@ int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
 pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
 void	sf_cleanup(pcap_t *p);
 
+/*
+ * Internal interfaces for both "pcap_create()" and routines that
+ * open savefiles.
+ *
+ * "pcap_oneshot()" is the standard one-shot callback for "pcap_next()"
+ * and "pcap_next_ex()".
+ */
+void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
+
 #ifdef WIN32
 char	*pcap_win32strerror(void);
 #endif

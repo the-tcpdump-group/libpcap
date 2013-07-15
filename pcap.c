@@ -198,7 +198,7 @@ pcap_free_tstamp_types(int *tstamp_type_list)
  * packet data cannot be guaranteed to be available after the callback
  * returns, so that a copy must be made.
  */
-static void
+void
 pcap_oneshot(u_char *user, const struct pcap_pkthdr *h, const u_char *pkt)
 {
 	struct oneshot_userdata *sp = (struct oneshot_userdata *)user;
@@ -472,7 +472,7 @@ initialize_ops(pcap_t *p)
 	p->cleanup_op = pcap_cleanup_live_common;
 
 	/*
-	 * In most cases, the standard one-short callback can
+	 * In most cases, the standard one-shot callback can
 	 * be used for pcap_next()/pcap_next_ex().
 	 */
 	p->oneshot_callback = pcap_oneshot;
