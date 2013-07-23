@@ -855,7 +855,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		status = read_block(fp, p, &cursor, errbuf);
 		if (status == 0) {
 			/* EOF - no IDB in this file */
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "the capture file has no Interface Description Blocks");
 			goto fail;
 		}
@@ -896,7 +896,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			 * not valid, as we don't know what link-layer
 			 * encapsulation the packet has.
 			 */
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "the capture file has a packet block before any Interface Description Blocks");
 			goto fail;
 
