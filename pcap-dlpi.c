@@ -246,7 +246,7 @@ static int
 pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 {
 #ifdef DL_HP_RAWDLS
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 #endif
 	int ret;
 
@@ -325,7 +325,7 @@ static void
 pcap_cleanup_dlpi(pcap_t *p)
 {
 #ifdef DL_HP_RAWDLS
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 
 	if (pd->send_fd >= 0) {
 		close(pd->send_fd);
@@ -339,7 +339,7 @@ static int
 pcap_activate_dlpi(pcap_t *p)
 {
 #ifdef DL_HP_RAWDLS
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 #endif
 	register char *cp;
 	int ppa;
@@ -1715,7 +1715,7 @@ pcap_create_interface(const char *device, char *ebuf)
 		return (NULL);
 
 #ifdef DL_HP_RAWDLS
-	pd = p->private;
+	pd = p->priv;
 	pd->send_fd = -1;	/* it hasn't been opened yet */
 #endif
 

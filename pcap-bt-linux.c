@@ -187,7 +187,7 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 static int
 bt_activate(pcap_t* handle)
 {
-	struct pcap_bt *handlep = handle->private;
+	struct pcap_bt *handlep = handle->priv;
 	struct sockaddr_hci addr;
 	int opt;
 	int		dev_id;
@@ -382,7 +382,7 @@ bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
 static int 
 bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
-	struct pcap_bt *handlep = handle->private;
+	struct pcap_bt *handlep = handle->priv;
 	int ret;
 	struct hci_dev_info dev_info;
 	struct hci_dev_stats * s = &dev_info.stat;

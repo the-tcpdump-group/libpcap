@@ -241,7 +241,7 @@ static int
 pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
 { 
 #ifdef HAVE_ZEROCOPY_BPF
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 
 	if (pb->zerocopy)
 		return (pb->nonblock);
@@ -253,7 +253,7 @@ static int
 pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 {   
 #ifdef HAVE_ZEROCOPY_BPF
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 
 	if (pb->zerocopy) {
 		pb->nonblock = nonblock;
@@ -276,7 +276,7 @@ pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 static int
 pcap_next_zbuf_shm(pcap_t *p, int *cc)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 	struct bpf_zbuf_header *bzh;
 
 	if (pb->zbuffer == pb->zbuf2 || pb->zbuffer == NULL) {
@@ -314,7 +314,7 @@ pcap_next_zbuf_shm(pcap_t *p, int *cc)
 static int
 pcap_next_zbuf(pcap_t *p, int *cc)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 	struct bpf_zbuf bz;
 	struct timeval tv;
 	struct timespec cur;
@@ -412,7 +412,7 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 static int
 pcap_ack_zbuf(pcap_t *p)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 
 	atomic_store_rel_int(&pb->bzh->bzh_user_gen,
 	    pb->bzh->bzh_kernel_gen);
@@ -823,7 +823,7 @@ pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 static int
 pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 	int cc;
 	int n = 0;
 	register u_char *bp, *ep;
@@ -1274,7 +1274,7 @@ bpf_load(char *errbuf)
 static void
 pcap_cleanup_bpf(pcap_t *p)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 #ifdef HAVE_BSD_IEEE80211
 	int sock;
 	struct ifmediareq req;
@@ -1478,7 +1478,7 @@ check_setif_failure(pcap_t *p, int error)
 static int
 pcap_activate_bpf(pcap_t *p)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 	int status = 0;
 	int fd;
 #ifdef LIFNAMSIZ
@@ -2291,7 +2291,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 static int
 monitor_mode(pcap_t *p, int set)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 	int sock;
 	struct ifmediareq req;
 	int *media_list;
@@ -2606,7 +2606,7 @@ remove_802_11(pcap_t *p)
 static int
 pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 {
-	struct pcap_bpf *pb = p->private;
+	struct pcap_bpf *pb = p->priv;
 
 	/*
 	 * Free any user-mode filter we might happen to have installed.

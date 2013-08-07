@@ -86,7 +86,7 @@ static int nfqueue_send_verdict(const pcap_t *handle, u_int16_t group_id, u_int3
 static int
 netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	struct pcap_netfilter *handlep = handle->private;
+	struct pcap_netfilter *handlep = handle->priv;
 	const unsigned char *buf;
 	int count = 0;
 	int len;
@@ -219,7 +219,7 @@ netfilter_set_datalink(pcap_t *handle, int dlt)
 static int
 netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
-	struct pcap_netfilter *handlep = handle->private;
+	struct pcap_netfilter *handlep = handle->priv;
 
 	stats->ps_recv = handlep->packets_read;
 	stats->ps_drop = 0;

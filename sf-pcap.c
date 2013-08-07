@@ -237,7 +237,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 	p->next_packet_op = pcap_next_packet;
 
-	ps = p->private;
+	ps = p->priv;
 
 	p->opt.tstamp_precision = precision;
 
@@ -396,7 +396,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 static int
 pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 {
-	struct pcap_sf *ps = p->private;
+	struct pcap_sf *ps = p->priv;
 	struct pcap_sf_patched_pkthdr sf_hdr;
 	FILE *fp = p->rfile;
 	size_t amt_read;

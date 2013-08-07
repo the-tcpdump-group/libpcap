@@ -242,7 +242,7 @@ canusb_create(const char *device, char *ebuf, int *is_ours)
     if (p == NULL)
         return (NULL);
 
-    canusb = p->private;
+    canusb = p->priv;
     canusb->ctx = NULL;
     canusb->dev = NULL;
     canusb->rdpipe = -1;
@@ -317,7 +317,7 @@ static void canusb_clearbufs(struct pcap_canusb* this)
 
 static void canusb_close(pcap_t* handle)
 {
-    struct pcap_canusb *canusb = handle->private;
+    struct pcap_canusb *canusb = handle->priv;
 
     canusb->loop = 0;
     pthread_join(canusb->worker, NULL);
@@ -338,7 +338,7 @@ static void canusb_close(pcap_t* handle)
 
 static int canusb_activate(pcap_t* handle)
 {
-    struct pcap_canusb *canusb = handle->private;
+    struct pcap_canusb *canusb = handle->priv;
     char *serial;
 
     if (libusb_init(&canusb->ctx) != 0) {

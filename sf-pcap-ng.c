@@ -524,7 +524,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	u_int tsresol;
 	u_int64_t tsoffset;
 
-	ps = p->private;
+	ps = p->priv;
 
 	/*
 	 * Count this interface.
@@ -757,7 +757,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		return (NULL);
 	}
 	p->swapped = swapped;
-	ps = p->private;
+	ps = p->priv;
 
 	/*
 	 * What precision does the user want?
@@ -930,7 +930,7 @@ fail:
 static void
 pcap_ng_cleanup(pcap_t *p)
 {
-	struct pcap_ng_sf *ps = p->private;
+	struct pcap_ng_sf *ps = p->priv;
 
 	free(ps->ifaces);
 	sf_cleanup(p);
@@ -944,7 +944,7 @@ pcap_ng_cleanup(pcap_t *p)
 static int
 pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 {
-	struct pcap_ng_sf *ps = p->private;
+	struct pcap_ng_sf *ps = p->priv;
 	struct block_cursor cursor;
 	int status;
 	struct enhanced_packet_block *epbp;

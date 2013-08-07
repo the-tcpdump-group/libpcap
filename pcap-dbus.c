@@ -53,7 +53,7 @@ struct pcap_dbus {
 static int
 dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	struct pcap_dbus *handlep = handle->private;
+	struct pcap_dbus *handlep = handle->priv;
 
 	struct pcap_pkthdr pkth;
 	DBusMessage *message;
@@ -106,7 +106,7 @@ static int
 dbus_write(pcap_t *handle, const void *buf, size_t size)
 {
 	/* XXX, not tested */
-	struct pcap_dbus *handlep = handle->private;
+	struct pcap_dbus *handlep = handle->priv;
 
 	DBusError error = DBUS_ERROR_INIT;
 	DBusMessage *msg;
@@ -127,7 +127,7 @@ dbus_write(pcap_t *handle, const void *buf, size_t size)
 static int
 dbus_stats(pcap_t *handle, struct pcap_stat *stats)
 {
-	struct pcap_dbus *handlep = handle->private;
+	struct pcap_dbus *handlep = handle->priv;
 
 	stats->ps_recv = handlep->packets_read;
 	stats->ps_drop = 0;
@@ -138,7 +138,7 @@ dbus_stats(pcap_t *handle, struct pcap_stat *stats)
 static void
 dbus_cleanup(pcap_t *handle)
 {
-	struct pcap_dbus *handlep = handle->private;
+	struct pcap_dbus *handlep = handle->priv;
 
 	dbus_connection_unref(handlep->conn);
 
@@ -159,7 +159,7 @@ dbus_activate(pcap_t *handle)
 
 	#define N_RULES sizeof(rules)/sizeof(rules[0])
 
-	struct pcap_dbus *handlep = handle->private;
+	struct pcap_dbus *handlep = handle->priv;
 	const char *dev = handle->opt.source;
 
 	DBusError error = DBUS_ERROR_INIT;

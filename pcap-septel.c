@@ -64,7 +64,7 @@ struct pcap_septel {
  */
 static int septel_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user) {
 
-  struct pcap_septel *ps = p->private;
+  struct pcap_septel *ps = p->priv;
   HDR *h;
   MSG *m;
   int processed = 0 ;
@@ -246,7 +246,7 @@ pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
 }
 
 static int septel_stats(pcap_t *p, struct pcap_stat *ps) {
-  struct pcap_septel *handlep = p->private;
+  struct pcap_septel *handlep = p->priv;
   /*handlep->stat.ps_recv = 0;*/
   /*handlep->stat.ps_drop = 0;*/
   

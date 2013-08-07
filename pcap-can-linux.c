@@ -143,7 +143,7 @@ can_create(const char *device, char *ebuf, int *is_ours)
 static int
 can_activate(pcap_t* handle)
 {
-	struct pcap_can *handlep = handle->private;
+	struct pcap_can *handlep = handle->priv;
 	struct sockaddr_can addr;
 	struct ifreq ifr;
 

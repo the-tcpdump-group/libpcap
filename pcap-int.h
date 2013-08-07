@@ -147,7 +147,7 @@ struct pcap {
 
 	int break_loop;		/* flag set to force break from packet-reading loop */
 
-	void *private;		/* private data for methods */
+	void *priv;		/* private data for methods */
 
 	int swapped;
 	FILE *rfile;		/* null if live capture, non-null if savefile */

@@ -81,7 +81,7 @@ struct pcap_nit {
 static int
 pcap_stats_nit(pcap_t *p, struct pcap_stat *ps)
 {
-	struct pcap_nit *pn = p->private;
+	struct pcap_nit *pn = p->priv;
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
@@ -106,7 +106,7 @@ pcap_stats_nit(pcap_t *p, struct pcap_stat *ps)
 static int
 pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_nit *pn = p->private;
+	struct pcap_nit *pn = p->priv;
 	register int cc, n;
 	register u_char *bp, *cp, *ep;
 	register struct nit_hdr *nh;

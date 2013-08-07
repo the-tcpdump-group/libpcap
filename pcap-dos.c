@@ -169,7 +169,7 @@ pcap_t *pcap_create_interface (const char *device, char *ebuf)
  */
 static int pcap_activate_dos (pcap_t *pcap)
 { 
-  struct pcap_dos *pcapd = pcap->private;
+  struct pcap_dos *pcapd = pcap->priv;
 
   if (pcap->opt.rfmon) {
     /*
@@ -220,7 +220,7 @@ static int pcap_activate_dos (pcap_t *pcap)
 static int
 pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
 {
-  struct pcap_dos *pd = p->private;
+  struct pcap_dos *pd = p->priv;
   struct pcap_pkthdr pcap;
   struct timeval     now, expiry = { 0,0 };
   BYTE  *rx_buf;
@@ -332,7 +332,7 @@ pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
 static int
 pcap_read_dos (pcap_t *p, int cnt, pcap_handler callback, u_char *data)
 {
-  struct pcap_dos *pd = p->private;
+  struct pcap_dos *pd = p->priv;
   int rc, num = 0;
 
   while (num <= cnt || (cnt < 0))
@@ -372,7 +372,7 @@ static int pcap_stats_dos (pcap_t *p, struct pcap_stat *ps)
 
   FLUSHK();
 
-  pd = p->private;
+  pd = p->priv;
   pd->stat.ps_recv   = stats->rx_packets;
   pd->stat.ps_drop  += stats->rx_missed_errors;
   pd->stat.ps_ifdrop = stats->rx_dropped +  /* queue full */
@@ -446,7 +446,7 @@ static void pcap_cleanup_dos (pcap_t *p)
 
   if (p && !exc_occured)
   {
-    pd = p->private;
+    pd = p->priv;
     if (pcap_stats(p,NULL) < 0)
        pd->stat.ps_drop = 0;
     if (!get_device(p->fd))
@@ -610,7 +610,7 @@ void pcap_set_wait (pcap_t *p, void (*yield)(void), int wait)
   struct pcap_dos *pd;
   if (p)
   {
-    pd                   = p->private;
+    pd                   = p->priv;
     pd->wait_proc        = yield;
     p->opt.timeout        = wait;
   }

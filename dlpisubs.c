@@ -83,7 +83,7 @@ static void pcap_stream_err(const char *, int, char *);
 int
 pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
@@ -125,7 +125,7 @@ int
 pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 	int count, u_char *bufp, int len)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 	int n, caplen, origlen;
 	u_char *ep, *pk;
 	struct pcap_pkthdr pkthdr;

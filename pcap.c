@@ -510,13 +510,13 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 
 	if (size == 0) {
 		/* No private data was requested. */
-		p->private = NULL;
+		p->priv = NULL;
 	} else {
 		/*
 		 * Set the pointer to the private data; that's the structure
 		 * of size "size" following the pcap_t.
 		 */
-		p->private = (void *)(chunk + sizeof (pcap_t));
+		p->priv = (void *)(chunk + sizeof (pcap_t));
 	}
 
 	return (p);

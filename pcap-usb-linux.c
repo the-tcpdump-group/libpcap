@@ -214,7 +214,7 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 static 
 int usb_mmap(pcap_t* handle)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	int len = ioctl(handle->fd, MON_IOCQ_RING_SIZE);
 	if (len < 0) 
 		return 0;
@@ -340,7 +340,7 @@ usb_create(const char *device, char *ebuf, int *is_ours)
 static int
 usb_activate(pcap_t* handle)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	char 		full_path[USB_LINE_LEN];
 
 	/* Initialize some components of the pcap structure. */
@@ -468,7 +468,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	* /usr/src/linux/Documentation/usb/usbmon.txt 
 	* for message format
 	*/
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	unsigned timestamp;
 	int tag, cnt, ep_num, dev_addr, dummy, ret, urb_len, data_len;
 	char etype, pipeid1, pipeid2, status[16], urb_tag, line[USB_LINE_LEN];
@@ -670,7 +670,7 @@ usb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 static int 
 usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	int dummy, ret, consumed, cnt;
 	char string[USB_LINE_LEN];
 	char token[USB_LINE_LEN];
@@ -754,7 +754,7 @@ usb_setdirection_linux(pcap_t *p, pcap_direction_t d)
 static int 
 usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	int ret;
 	struct mon_bin_stats st;
 	ret = ioctl(handle->fd, MON_IOCG_STATS, &st);
@@ -778,7 +778,7 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 static int
 usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	struct mon_bin_get info;
 	int ret;
 	struct pcap_pkthdr pkth;
@@ -837,7 +837,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 static int
 usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 	struct mon_bin_mfetch fetch;
 	int32_t vec[VEC_SIZE];
 	struct pcap_pkthdr pkth;
@@ -921,7 +921,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 static void
 usb_cleanup_linux_mmap(pcap_t* handle)
 {
-	struct pcap_usb_linux *handlep = handle->private;
+	struct pcap_usb_linux *handlep = handle->priv;
 
 	/* if we have a memory-mapped buffer, unmap it */
 	if (handlep->mmapbuf != NULL) {

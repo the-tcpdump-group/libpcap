@@ -271,7 +271,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 static int
 pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_win *pw = p->private;
+	struct pcap_win *pw = p->priv;
 	u_char *dp = NULL;
 	int	packet_len = 0, caplen = 0;
 	struct pcap_pkthdr	pcap_header;
@@ -476,7 +476,7 @@ pcap_cleanup_win32(pcap_t *p)
 static int
 pcap_activate_win32(pcap_t *p)
 {
-	struct pcap_win *pw = p->private;
+	struct pcap_win *pw = p->priv;
 	NetType type;
 
 	if (p->opt.rfmon) {
@@ -840,7 +840,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 static int
 pcap_getnonblock_win32(pcap_t *p, char *errbuf)
 {
-	struct pcap_win *pw = p->private;
+	struct pcap_win *pw = p->priv;
 
 	/*
 	 * XXX - if there were a PacketGetReadTimeout() call, we
@@ -853,7 +853,7 @@ pcap_getnonblock_win32(pcap_t *p, char *errbuf)
 static int
 pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 {
-	struct pcap_win *pw = p->private;
+	struct pcap_win *pw = p->priv;
 	int newtimeout;
 
 	if (nonblock) {

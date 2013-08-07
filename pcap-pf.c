@@ -105,7 +105,7 @@ static int pcap_setfilter_pf(pcap_t *, struct bpf_program *);
 static int
 pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_pf *pf = pc->private;
+	struct pcap_pf *pf = pc->priv;
 	register u_char *p, *bp;
 	register int cc, n, buflen, inc;
 	register struct enstamp *sp;
@@ -247,7 +247,7 @@ pcap_inject_pf(pcap_t *p, const void *buf, size_t size)
 static int
 pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 {
-	struct pcap_pf *pf = p->private;
+	struct pcap_pf *pf = p->priv;
 
 	/*
 	 * If packet filtering is being done in the kernel:
@@ -302,7 +302,7 @@ pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)
 static int
 pcap_activate_pf(pcap_t *p)
 {
-	struct pcap_pf *pf = p->private;
+	struct pcap_pf *pf = p->priv;
 	short enmode;
 	int backlog = -1;	/* request the most */
 	struct enfilter Filter;
@@ -529,7 +529,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 static int
 pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 {
-	struct pcap_pf *pf = p->private;
+	struct pcap_pf *pf = p->priv;
 	struct bpf_version bv;
 
 	/*

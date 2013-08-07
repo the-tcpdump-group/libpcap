@@ -767,7 +767,7 @@ nla_put_failure:
 static int
 enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int ret;
 	char phydev_path[PATH_MAX+1];
 	struct nl80211_state nlstate;
@@ -1049,7 +1049,7 @@ linux_if_drops(const char * if_name)
 
 static void	pcap_cleanup_linux( pcap_t *handle )
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	struct ifreq	ifr;
 #ifdef HAVE_LIBNL
 	struct nl80211_state nlstate;
@@ -1214,7 +1214,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 static int
 pcap_activate_linux(pcap_t *handle)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	const char	*device;
 	int		status = 0;
 
@@ -1398,7 +1398,7 @@ pcap_set_datalink_linux(pcap_t *handle, int dlt)
 static inline int
 linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 {
-	struct pcap_linux	*handlep = handle->private;
+	struct pcap_linux	*handlep = handle->priv;
 
 	if (sll->sll_pkttype == PACKET_OUTGOING) {
 		/*
@@ -1434,7 +1434,7 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 static int
 pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 {
-	struct pcap_linux	*handlep = handle->private;
+	struct pcap_linux	*handlep = handle->priv;
 	u_char			*bp;
 	int			offset;
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -1770,7 +1770,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 static int
 pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int ret;
 
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -1822,7 +1822,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 static int
 pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 #ifdef HAVE_TPACKET_STATS
 	struct tpacket_stats kstats;
 	socklen_t len = sizeof (struct tpacket_stats);
@@ -2337,7 +2337,7 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 		return -1;
 	}
 
-	handlep = handle->private;
+	handlep = handle->priv;
 
 	/* Make our private copy of the filter */
 
@@ -2495,7 +2495,7 @@ static int
 pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 
 	if (!handlep->sock_packet) {
 		handle->direction = d;
@@ -2953,7 +2953,7 @@ static int
 activate_new(pcap_t *handle)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.source;
 	int			is_any_device = (strcmp(device, "any") == 0);
 	int			sock_fd = -1, arptype;
@@ -3311,7 +3311,7 @@ activate_new(pcap_t *handle)
 static int 
 activate_mmap(pcap_t *handle, int *status)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int ret;
 
 	/*
@@ -3390,7 +3390,7 @@ activate_mmap(pcap_t *handle _U_, int *status _U_)
 static int
 prepare_tpacket_socket(pcap_t *handle)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 #ifdef HAVE_TPACKET2
 	socklen_t len;
 	int val;
@@ -3454,7 +3454,7 @@ prepare_tpacket_socket(pcap_t *handle)
 static int
 create_ring(pcap_t *handle, int *status)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	unsigned i, j, frames_per_block;
 	struct tpacket_req req;
 	socklen_t len;
@@ -3773,7 +3773,7 @@ retry:
 static void
 destroy_ring(pcap_t *handle)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 
 	/* tell the kernel to destroy the ring*/
 	struct tpacket_req req;
@@ -3812,7 +3812,7 @@ pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 {
 	struct oneshot_userdata *sp = (struct oneshot_userdata *)user;
 	pcap_t *handle = sp->pd;
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 
 	*sp->hdr = *h;
 	memcpy(handlep->oneshot_buffer, bytes, h->caplen);
@@ -3822,7 +3822,7 @@ pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 static void
 pcap_cleanup_linux_mmap( pcap_t *handle )
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 
 	destroy_ring(handle);
 	if (handlep->oneshot_buffer != NULL) {
@@ -3836,7 +3836,7 @@ pcap_cleanup_linux_mmap( pcap_t *handle )
 static int
 pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 {
-	struct pcap_linux *handlep = p->private;
+	struct pcap_linux *handlep = p->priv;
 
 	/* use negative value of timeout to indicate non blocking ops */
 	return (handlep->timeout<0);
@@ -3845,7 +3845,7 @@ pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 static int
 pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 {
-	struct pcap_linux *handlep = p->private;
+	struct pcap_linux *handlep = p->priv;
 
 	/*
 	 * Map each value to their corresponding negation to
@@ -3870,7 +3870,7 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 static inline union thdr *
 pcap_get_ring_frame(pcap_t *handle, int status)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	union thdr h;
 
 	h.raw = RING_GET_FRAME(handle);
@@ -3899,7 +3899,7 @@ static int
 pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, 
 		u_char *user)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int timeout;
 	int pkts = 0;
 	char c;
@@ -4173,7 +4173,7 @@ skip:
 static int 
 pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int n, offset;
 	int ret;
 
@@ -4410,7 +4410,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * value of -ENFILE.  (Return values are negative errnos.)  We
 	 * could probably use that to find an unused device.
 	 */
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int err;
 	struct iwreq ireq;
 	struct iw_priv_args *priv;
@@ -5128,7 +5128,7 @@ iface_get_offload(pcap_t *handle _U_)
 static int
 activate_old(pcap_t *handle)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	int		arptype;
 	struct ifreq	ifr;
 	const char	*device = handle->opt.source;
@@ -5411,7 +5411,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 static int
 fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 {
-	struct pcap_linux *handlep = handle->private;
+	struct pcap_linux *handlep = handle->priv;
 	size_t prog_size;
 	register int i;
 	register struct bpf_insn *p;

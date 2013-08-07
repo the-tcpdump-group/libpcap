@@ -94,7 +94,7 @@ struct pcap_snit {
 static int
 pcap_stats_snit(pcap_t *p, struct pcap_stat *ps)
 {
-	struct pcap_snit *psn = p->private;
+	struct pcap_snit *psn = p->priv;
 
 	/*
 	 * "ps_recv" counts packets handed to the filter, not packets
@@ -120,7 +120,7 @@ pcap_stats_snit(pcap_t *p, struct pcap_stat *ps)
 static int
 pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_snit *psn = p->private;
+	struct pcap_snit *psn = p->priv;
 	register int cc, n;
 	register u_char *bp, *cp, *ep;
 	register struct nit_bufhdr *hdrp;

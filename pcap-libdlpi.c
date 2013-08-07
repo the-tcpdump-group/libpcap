@@ -100,7 +100,7 @@ list_interfaces(const char *linkname, void *arg)
 static int
 pcap_activate_libdlpi(pcap_t *p)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 	int retv;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
@@ -235,7 +235,7 @@ bad:
 static int
 dlpromiscon(pcap_t *p, bpf_u_int32 level)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 	int retv;
 	int err;
 
@@ -301,7 +301,7 @@ done:
 static int
 pcap_read_libdlpi(pcap_t *p, int count, pcap_handler callback, u_char *user)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 	int len;
 	u_char *bufp;
 	size_t msglen;
@@ -353,7 +353,7 @@ process_pkts:
 static int
 pcap_inject_libdlpi(pcap_t *p, const void *buf, size_t size)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 	int retv;
 
 	retv = dlpi_send(pd->dlpi_hd, NULL, 0, buf, size, NULL);
@@ -376,7 +376,7 @@ pcap_inject_libdlpi(pcap_t *p, const void *buf, size_t size)
 static void
 pcap_cleanup_libdlpi(pcap_t *p)
 {
-	struct pcap_dlpi *pd = p->private;
+	struct pcap_dlpi *pd = p->priv;
 
 	if (pd->dlpi_hd != NULL) {
 		dlpi_close(pd->dlpi_hd);

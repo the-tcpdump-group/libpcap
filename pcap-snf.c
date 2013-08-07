@@ -57,7 +57,7 @@ snf_pcap_stats(pcap_t *p, struct pcap_stat *ps)
 static void
 snf_platform_cleanup(pcap_t *p)
 {
-	struct pcap_snf *ps = p->private;
+	struct pcap_snf *ps = p->priv;
 
 	if (p == NULL)
 		return;
@@ -70,7 +70,7 @@ snf_platform_cleanup(pcap_t *p)
 static int
 snf_getnonblock(pcap_t *p, char *errbuf)
 {
-	struct pcap_snf *ps = p->private;
+	struct pcap_snf *ps = p->priv;
 
 	return (ps->snf_timeout == 0);
 }
@@ -78,7 +78,7 @@ snf_getnonblock(pcap_t *p, char *errbuf)
 static int
 snf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
-	struct pcap_snf *ps = p->private;
+	struct pcap_snf *ps = p->priv;
 
 	if (nonblock)
 		ps->snf_timeout = 0;
@@ -109,7 +109,7 @@ snf_timestamp_to_timeval(const int64_t ts_nanosec)
 static int
 snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_snf *ps = p->private;
+	struct pcap_snf *ps = p->priv;
 	struct pcap_pkthdr hdr;
 	int i, flags, err, caplen, n;
 	struct snf_recv_req req;
@@ -191,7 +191,7 @@ snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 static int
 snf_activate(pcap_t* p)
 {
-	struct pcap_snf *ps = p->private;
+	struct pcap_snf *ps = p->priv;
 	char *device = p->opt.source;
 	const char *nr = NULL;
 	int err;
@@ -322,7 +322,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	p = pcap_create_common(device, ebuf, sizeof (struct pcap_snf));
 	if (p == NULL)
 		return NULL;
-	ps = p->private;
+	ps = p->priv;
 
 	p->activate_op = snf_activate;
 	ps->snf_boardnum = boardnum;

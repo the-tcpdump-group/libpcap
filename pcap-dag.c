@@ -148,7 +148,7 @@ dag_platform_cleanup(pcap_t *p)
 	struct pcap_dag *pd;
 
 	if (p != NULL) {
-		pd = p->private;
+		pd = p->priv;
 #ifdef HAVE_DAG_STREAMS_API
 		if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
 			fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
@@ -245,7 +245,7 @@ dag_erf_ext_header_count(uint8_t * erf, size_t len)
 static int
 dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_dag *pd = p->private;
+	struct pcap_dag *pd = p->priv;
 	unsigned int processed = 0;
 	int flags = pd->dag_offset_flags;
 	unsigned int nonblocking = flags & DAGF_NONBLOCK;
@@ -608,7 +608,7 @@ dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
  */
 static int dag_activate(pcap_t* handle)
 {
-	struct pcap_dag *handlep = handle->private;
+	struct pcap_dag *handlep = handle->priv;
 #if 0
 	char conf[30]; /* dag configure string */
 #endif
@@ -908,7 +908,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 
 static int
 dag_stats(pcap_t *p, struct pcap_stat *ps) {
-	struct pcap_dag *pd = p->private;
+	struct pcap_dag *pd = p->priv;
 
 	/* This needs to be filled out correctly.  Hopefully a dagapi call will
 		 provide all necessary information.
@@ -1020,7 +1020,7 @@ dag_set_datalink(pcap_t *p, int dlt)
 static int
 dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
-	struct pcap_dag *pd = p->private;
+	struct pcap_dag *pd = p->priv;
 
 	/*
 	 * Set non-blocking mode on the FD.
@@ -1069,7 +1069,7 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 static int
 dag_get_datalink(pcap_t *p)
 {
-	struct pcap_dag *pd = p->private;
+	struct pcap_dag *pd = p->priv;
 	int index=0, dlt_index=0;
 	uint8_t types[255];
 
