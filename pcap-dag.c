@@ -50,9 +50,12 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 /*
  * DAG devices have names beginning with "dag", followed by a number
- * from 0 to MAXDAG.
+ * from 0 to DAG_MAX_BOARDS, then optionally a colon and a stream number
+ * from 0 to DAG_STREAM_MAX.
  */
-#define MAXDAG	31
+#ifndef DAG_MAX_BOARDS
+#define DAG_MAX_BOARDS 32
+#endif
 
 #define ATM_CELL_SIZE		52
 #define ATM_HDR_SIZE		4
@@ -838,6 +841,9 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	char *cpend;
 	long devnum;
 	pcap_t *p;
+#ifdef HAVE_DAG_STREAMS_API
+	long stream = 0;
+#endif
 
 	/* Does this look like a DAG device? */
 	cp = strrchr(device, '/');
@@ -849,19 +855,32 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 		*is_ours = 0;
 		return NULL;
 	}
-	/* Yes - is "dag" followed by a number from 0 to MAXDAG? */
+	/* Yes - is "dag" followed by a number from 0 to DAG_MAX_BOARDS-1 */
 	cp += 3;
 	devnum = strtol(cp, &cpend, 10);
+#ifdef HAVE_DAG_STREAMS_API
+	if (*cpend == ':') {
+		/* Followed by a stream number. */
+		stream = strtol(++cpend, &cpend, 10);
+	}
+#endif
 	if (cpend == cp || *cpend != '\0') {
 		/* Not followed by a number. */
 		*is_ours = 0;
 		return NULL;
 	}
-	if (devnum < 0 || devnum > MAXDAG) {
+	if (devnum < 0 || devnum >= DAG_MAX_BOARDS) {
 		/* Followed by a non-valid number. */
 		*is_ours = 0;
 		return NULL;
 	}
+#ifdef HAVE_DAG_STREAMS_API
+	if (stream <0 || stream >= DAG_STREAM_MAX) {
+		/* Followed by a non-valid stream number. */
+		*is_ours = 0;
+		return NULL;
+	}
+#endif
 
 	/* OK, it's probably ours. */
 	*is_ours = 1;
@@ -906,8 +925,8 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	int dagstream;
 	int dagfd;
 
-	/* Try all the DAGs 0-MAXDAG */
-	for (c = 0; c <= MAXDAG; c++) {
+	/* Try all the DAGs 0-DAG_MAX_BOARDS */
+	for (c = 0; c < DAG_MAX_BOARDS; c++) {
 		snprintf(name, 12, "dag%d", c);
 		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
 		{
