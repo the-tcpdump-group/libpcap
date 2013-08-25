@@ -2262,20 +2262,15 @@ void dump_block(struct block *b) {
 static void
 dot_dump_node(struct block *block, struct bpf_program *prog, FILE *out)
 {
-	int noffset;
+	int icount, noffset;
 	int i;
 
 	if (block == NULL || isMarked(block))
 		return;
 	Mark(block);
 
-	if (JT(block))
-		noffset = min(JT(block)->offset, JF(block)->offset);
-	else {
-		// hack: TRUE & FALSE only has 1 instruction
-		noffset = block->offset + 1;
-	}
-	noffset = min(noffset, (int)prog->bf_len);
+	icount = slength(block->stmts) + 1 + block->longjt + block->longjf;
+	noffset = min(block->offset + icount, (int)prog->bf_len);
 
 	fprintf(out, "\tblock%d [shape=ellipse, id=\"block-%d\" label=\"block%d\\n", block->id, block->id, block->id);
 	for (i = block->offset; i < noffset; i++) {
