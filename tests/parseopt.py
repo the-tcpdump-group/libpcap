@@ -5,6 +5,10 @@ import string
 import subprocess
 import json
 
+# the generated pages is not properly shown on chromium 
+# if using file:// protocol to access it
+# run chromium --disable-web-security
+
 html_template = string.Template("""
 <html>
   <head>
