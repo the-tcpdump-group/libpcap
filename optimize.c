@@ -2277,7 +2277,7 @@ dot_dump_node(struct block *block, struct bpf_program *prog, FILE *out)
 	}
 	noffset = min(noffset, (int)prog->bf_len);
 
-	fprintf(out, "\tblock%d [shape=ellipse, label=\"block%d\\n", block->id, block->id);
+	fprintf(out, "\tblock%d [shape=ellipse, id=\"block-%d\" label=\"block%d\\n", block->id, block->id, block->id);
 	for (i = block->offset; i < noffset; i++) {
 		fprintf(out, "\\n%s", bpf_image(prog->bf_insns + i, i));
 	}
@@ -2340,8 +2340,10 @@ plain_dump(struct block *root)
 static void
 opt_dump(struct block *root)
 {
-	//plain_dump(root);
-	dot_dump(root);
+	if (dflag >= 2) 
+		dot_dump(root);
+	else
+		plain_dump(root);
 }
 
 #endif

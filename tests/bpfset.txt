@@ -1,0 +1,5 @@
+#host 192.168.1.1 # common block merging, same block elimination, result propogation
+
+tcp[tcpflags]&tcp-syn != 0 or tcp[tcpflags]&tcp-fin != 0 or tcp[tcpflags]&tcp-rst != 0
+
+
