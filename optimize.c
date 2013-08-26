@@ -2272,10 +2272,16 @@ dot_dump_node(struct block *block, struct bpf_program *prog, FILE *out)
 	icount = slength(block->stmts) + 1 + block->longjt + block->longjf;
 	noffset = min(block->offset + icount, (int)prog->bf_len);
 
-	fprintf(out, "\tblock%d [shape=ellipse, id=\"block-%d\" label=\"block%d\\n", block->id, block->id, block->id);
+	fprintf(out, "\tblock%d [shape=ellipse, id=\"block-%d\" label=\"BLOCK%d\\n", block->id, block->id, block->id);
 	for (i = block->offset; i < noffset; i++) {
 		fprintf(out, "\\n%s", bpf_image(prog->bf_insns + i, i));
 	}
+	fprintf(out, "\" tooltip=\"");
+	for (i = 0; i < BPF_MEMWORDS; i++) 
+		if (block->val[i] != 0) 
+			fprintf(out, "val[%d]=%d ", i, block->val[i]);
+	fprintf(out, "val[A]=%d ", block->val[A_ATOM]);
+	fprintf(out, "val[X]=%d", block->val[X_ATOM]);
 	fprintf(out, "\"");
 	if (JT(block) == NULL)
 		fprintf(out, ", peripheries=2");
@@ -2292,9 +2298,9 @@ dot_dump_edge(struct block *block, FILE *out)
 	Mark(block);
 
 	if (JT(block)) {
-		fprintf(out, "\t\"block%d\":sw -> \"block%d\":n [label=\"T\"]; \n",
+		fprintf(out, "\t\"block%d\":se -> \"block%d\":n [label=\"T\"]; \n",
 				block->id, JT(block)->id);
-		fprintf(out, "\t\"block%d\":se -> \"block%d\":n [label=\"F\"]; \n",
+		fprintf(out, "\t\"block%d\":sw -> \"block%d\":n [label=\"F\"]; \n",
 			   block->id, JF(block)->id);
 	}
 	dot_dump_edge(JT(block), out);

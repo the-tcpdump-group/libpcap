@@ -23,6 +23,7 @@ html_template = string.Template("""
     </style>
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"/></script>
+    <!--script type="text/javascript" src="./jquery.min.js"/></script-->
     <script type="text/javascript">
       var expr = '$expr';
       var exprid = $exprid;
@@ -151,10 +152,10 @@ html_template = string.Template("""
           $$("#rselect").val(index).change();
         });        
         $$("#forward").click(function() {
-          var index = parseInt($$("#lselect option:selected").val());
-          if (index >= gcount - 2) return;
-          $$("#lselect").val(index + 1).change();
-          $$("#rselect").val(index + 2).change();
+          var index = parseInt($$("#rselect option:selected").val());
+          if (index >= gcount - 1) return;
+          $$("#lselect").val(index).change();
+          $$("#rselect").val(index + 1).change();
         });
 
         if (gcount >= 1) $$("#lselect").val(0).change();

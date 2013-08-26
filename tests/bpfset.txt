@@ -1,5 +1,14 @@
 #host 192.168.1.1 # common block merging, same block elimination, result propogation
 
+#port 80 # common block merging
+
 tcp[tcpflags]&tcp-syn != 0 or tcp[tcpflags]&tcp-fin != 0 or tcp[tcpflags]&tcp-rst != 0
 
+#ether[12:2] = 0x800 or ether[12:2] = 0x8100 or ether[0] & 0x80 != 0 or ether[12:2] = 0x9100 # or pullup
+
+#vlan 186 and ip
+
+ip and ((icmp and dst host 1.1.1.1 and not host 2.2.2.2) or (host 1.1.1.1 and src host 3.3.3.3))
+
+not vlan and tcp port 80
 
