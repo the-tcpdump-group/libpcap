@@ -425,15 +425,13 @@ pcap_create_interface(const char *device, char *ebuf)
 	 * adapters?
 	 */
 	handle->tstamp_precision_count = 2;
-	handle->tstamp_type_list = malloc(2 * sizeof(u_int));
-	if (handle->tstamp_type_list == NULL) {
-		if (handle->tstamp_type_list != NULL)
-			free(handle->tstamp_type_list);
+	handle->tstamp_precision_list = malloc(2 * sizeof(u_int));
+	if (handle->tstamp_precision_list == NULL) {
 		free(handle);
 		return NULL;
 	}
-	handle->tstamp_type_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
-	handle->tstamp_type_list[1] = PCAP_TSTAMP_PRECISION_NANO;
+	handle->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+	handle->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 #endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
 	return handle;
