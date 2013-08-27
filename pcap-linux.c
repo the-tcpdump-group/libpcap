@@ -427,6 +427,8 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->tstamp_precision_count = 2;
 	handle->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (handle->tstamp_precision_list == NULL) {
+		if (handle->tstamp_type_list != NULL)
+			free(handle->tstamp_type_list);
 		free(handle);
 		return NULL;
 	}
