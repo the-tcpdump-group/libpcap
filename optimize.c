@@ -2233,8 +2233,102 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 }
 
 #ifdef BDEBUG
+
+void dump_block(struct block *b) {
+	struct slist *stmts;
+	struct stmt *s;
+	struct bpf_insn insn = {0, 0, 0, 0};
+	int i = 0;
+
+	for (stmts = b->stmts; stmts; stmts = stmts->next) {
+		s = &stmts->s;
+
+		if (s->code == NOP) {
+			printf("(%03d) nop\n", i);
+		}
+		else {
+			insn.code = s->code;
+			insn.k = s->k;
+			printf("%s\n", bpf_image(&insn, i));
+		}
+		i++;
+	}
+
+	insn.code = b->s.code;
+	insn.k = b->s.k;
+	printf("%s\n", bpf_image(&insn, i));
+}
+
 static void
-opt_dump(struct block *root)
+dot_dump_node(struct block *block, struct bpf_program *prog, FILE *out)
+{
+	int icount, noffset;
+	int i;
+
+	if (block == NULL || isMarked(block))
+		return;
+	Mark(block);
+
+	icount = slength(block->stmts) + 1 + block->longjt + block->longjf;
+	noffset = min(block->offset + icount, (int)prog->bf_len);
+
+	fprintf(out, "\tblock%d [shape=ellipse, id=\"block-%d\" label=\"BLOCK%d\\n", block->id, block->id, block->id);
+	for (i = block->offset; i < noffset; i++) {
+		fprintf(out, "\\n%s", bpf_image(prog->bf_insns + i, i));
+	}
+	fprintf(out, "\" tooltip=\"");
+	for (i = 0; i < BPF_MEMWORDS; i++) 
+		if (block->val[i] != 0) 
+			fprintf(out, "val[%d]=%d ", i, block->val[i]);
+	fprintf(out, "val[A]=%d ", block->val[A_ATOM]);
+	fprintf(out, "val[X]=%d", block->val[X_ATOM]);
+	fprintf(out, "\"");
+	if (JT(block) == NULL)
+		fprintf(out, ", peripheries=2");
+	fprintf(out, "];\n");
+
+	dot_dump_node(JT(block), prog, out);
+	dot_dump_node(JF(block), prog, out);
+}
+static void
+dot_dump_edge(struct block *block, FILE *out)
+{
+	if (block == NULL || isMarked(block))
+		return;
+	Mark(block);
+
+	if (JT(block)) {
+		fprintf(out, "\t\"block%d\":se -> \"block%d\":n [label=\"T\"]; \n",
+				block->id, JT(block)->id);
+		fprintf(out, "\t\"block%d\":sw -> \"block%d\":n [label=\"F\"]; \n",
+			   block->id, JF(block)->id);
+	}
+	dot_dump_edge(JT(block), out);
+	dot_dump_edge(JF(block), out);
+}
+static void
+dot_dump(struct block *root)
+{
+	struct bpf_program f;
+	FILE *out = stdout;
+
+	memset(bids, 0, sizeof bids);
+	f.bf_insns = icode_to_fcode(root, &f.bf_len);
+	//bpf_dump(&f, 1);
+	//putchar('\n');
+
+	fprintf(out, "digraph BPF {\n");
+	unMarkAll();
+	dot_dump_node(root, &f, out);
+	unMarkAll();
+	dot_dump_edge(root, out);
+	fprintf(out, "}\n");
+
+	free((char *)f.bf_insns);
+}
+
+static void
+plain_dump(struct block *root)
 {
 	struct bpf_program f;
 
@@ -2244,4 +2338,13 @@ opt_dump(struct block *root)
 	putchar('\n');
 	free((char *)f.bf_insns);
 }
+static void
+opt_dump(struct block *root)
+{
+	if (dflag >= 2) 
+		dot_dump(root);
+	else
+		plain_dump(root);
+}
+
 #endif
