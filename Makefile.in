@@ -542,9 +542,6 @@ selpolltest: tests/selpolltest.c libpcap.a
 valgrindtest: tests/valgrindtest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o valgrindtest $(srcdir)/tests/valgrindtest.c libpcap.a $(LIBS)
 
-bpfopt: tests/bpfopt.c libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o bpfopt $(srcdir)/tests/bpfopt.c libpcap.a $(LIBS)
-
 install: install-shared install-archive pcap-config
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))

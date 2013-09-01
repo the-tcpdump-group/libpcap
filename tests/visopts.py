@@ -1,13 +1,42 @@
 #!/usr/bin/env python
 
+"""
+This program parse the output from pcap_compile() to visualize the CFG after
+each optimize phase.
+
+Usage guide:
+1. Enable optimizier debugging code when configure libpcap, 
+   and build libpcap & filtertest
+       ./configure --enable-optimizer-dbg
+       make
+       make filtertest
+2. Run filtertest to compile BPF expression, save to output a.txt
+       ./filtertest EN10MB host 192.168.1.1 > a.txt
+3. Send a.txt to this program's standard input
+       cat a.txt | tests/visopts.py
+4. Step 2&3 can be merged: 
+       ./filtertest EN10MB host 192.168.1.1 | tests/visopts.py
+5. The standard output is something like this:
+       generated files under directory: /tmp/visopts-W9ekBw
+         the directory will be removed when this programs finished.
+       open this link: http://localhost:39062/expr1.html
+6. Using open link at the 3rd line `http://localhost:39062/expr1.html' 
+
+Note:
+1. CFG graph is translated to SVG document, expr1.html embeded them as external
+   document. If you open expr1.html as local file using file:// protocol, some 
+   browsers will deny such requests so the web pages will not shown properly.
+   For chrome, you can run it using following command to avoid this: 
+       chromium --disable-web-security
+   That's why this program start a localhost http server.
+2. expr1.html use jquery from http://ajax.googleapis.com, so you need internet 
+   access to show the web page. 
+"""
+
 import sys, os
 import string
 import subprocess
 import json
-
-# the generated pages is not properly shown on chromium 
-# if using file:// protocol to access it
-# run chromium --disable-web-security
 
 html_template = string.Template("""
 <html>
@@ -26,7 +55,7 @@ html_template = string.Template("""
     <!--script type="text/javascript" src="./jquery.min.js"/></script-->
     <script type="text/javascript">
       var expr = '$expr';
-      var exprid = $exprid;
+      var exprid = 1;
       var gcount = $gcount;
       var logs = JSON.parse('$logs');
       logs[gcount] = "";
@@ -193,24 +222,26 @@ html_template = string.Template("""
   </body>
 </html>
 """)
-expr_id = 1
 
-def write_html(expid, expr, gcount, logs):
+def write_html(expr, gcount, logs):
     logs = map(lambda s: s.strip().replace("\n", "<br/>"), logs)
     
     global html_template
-    html = html_template.safe_substitute(exprid=expid, expr=expr, gcount=gcount, logs=json.dumps(logs).encode("string-escape"))
-    with file("expr%d.html" % (expid), "wt") as f:
+    html = html_template.safe_substitute(expr=expr.encode("string-escape"), gcount=gcount, logs=json.dumps(logs).encode("string-escape"))
+    with file("expr1.html", "wt") as f:
         f.write(html)
 
-def consume_one(expid, expr, finput):
+def render_on_html(infile):
+    expr = None
     gid = 1
     log = ""
     dot = ""
     indot = 0
     logs = []
-    for line in finput:
-        if line.startswith("========"):
+
+    for line in infile:
+        if line.startswith("machine codes for filter:"):
+            expr = line[len("machine codes for filter:"):].strip()
             break
         elif line.startswith("digraph BPF {"):
             indot = 1
@@ -225,7 +256,7 @@ def consume_one(expid, expr, finput):
         if indot == 2:
             p = subprocess.Popen(['dot', '-Tsvg'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             svg = p.communicate(dot)[0]
-            with file("expr%d_g%03d.svg" % (expid, gid), "wt") as f:
+            with file("expr1_g%03d.svg" % (gid), "wt") as f:
                 f.write(svg)
 
             logs.append(log)
@@ -235,37 +266,44 @@ def consume_one(expid, expr, finput):
             indot = 0
             
     if indot != 0:
-        print >>sys.stderr, "unterminated dot graph for expression", expr
-    
-    write_html(expid, expr, gid - 1, logs)
+        #unterminated dot graph for expression
+        return False
+    if expr is None:
+        # BPF parser encounter error(s)
+        return False
+    write_html(expr, gid - 1, logs)
+    return True
 
 def run_httpd():
     import SimpleHTTPServer
     import SocketServer
-    PORT = 8888
     
     class MySocketServer(SocketServer.TCPServer):
         allow_reuse_address = True
     Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-    httpd = MySocketServer(("", PORT), Handler)
-    print "html pages generated, access them by following url:"
-    for i in range(1, expr_id):
-        print "  http://localhost:%d/expr%d.html" % (PORT, i)
+    httpd = MySocketServer(("localhost", 0), Handler)
+    print "open this link: http://localhost:%d/expr1.html" % (httpd.server_address[1])
     try:
         httpd.serve_forever()
     except KeyboardInterrupt as e:
-        sys.exit(0)
+        pass
 
 def main():
-    global expr_id
-    finput = sys.stdin
-    for line in finput:
-        if line.startswith("compile BPF expression: "):
-            bpfexpr = line[len("compile BPF expression: "):].strip()
-            consume_one(expr_id, bpfexpr, finput)
-            expr_id += 1
-    if expr_id > 1:
-        run_httpd()
+    import tempfile
+    import atexit
+    import shutil
+    os.chdir(tempfile.mkdtemp(prefix="visopts-"))
+    atexit.register(shutil.rmtree, os.getcwd())
+    print "generated files under directory: %s" % os.getcwd()
+    print "  the directory will be removed when this programs finished."
+
+    if not render_on_html(sys.stdin):
+        return 1
+    run_httpd()
+    return 0
     
 if __name__ == "__main__":
-    main()
+    if '-h' in sys.argv or '--help' in sys.argv:
+        print __doc__
+        exit(0)
+    exit(main())

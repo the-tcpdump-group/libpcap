@@ -2233,32 +2233,6 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 }
 
 #ifdef BDEBUG
-
-void dump_block(struct block *b) {
-	struct slist *stmts;
-	struct stmt *s;
-	struct bpf_insn insn = {0, 0, 0, 0};
-	int i = 0;
-
-	for (stmts = b->stmts; stmts; stmts = stmts->next) {
-		s = &stmts->s;
-
-		if (s->code == NOP) {
-			printf("(%03d) nop\n", i);
-		}
-		else {
-			insn.code = s->code;
-			insn.k = s->k;
-			printf("%s\n", bpf_image(&insn, i));
-		}
-		i++;
-	}
-
-	insn.code = b->s.code;
-	insn.k = b->s.k;
-	printf("%s\n", bpf_image(&insn, i));
-}
-
 static void
 dot_dump_node(struct block *block, struct bpf_program *prog, FILE *out)
 {
@@ -2306,6 +2280,25 @@ dot_dump_edge(struct block *block, FILE *out)
 	dot_dump_edge(JT(block), out);
 	dot_dump_edge(JF(block), out);
 }
+/* Output the block CFG using graphviz/DOT language
+ * In the CFG, block's code, value index for each registers at EXIT,
+ * and the jump relationship is show. 
+ *
+ * example DOT for BPF `ip src host 1.1.1.1' is:
+    digraph BPF {
+    	block0 [shape=ellipse, id="block-0" label="BLOCK0\n\n(000) ldh      [12]\n(001) jeq      #0x800           jt 2	jf 5" tooltip="val[A]=0 val[X]=0"];
+    	block1 [shape=ellipse, id="block-1" label="BLOCK1\n\n(002) ld       [26]\n(003) jeq      #0x1010101       jt 4	jf 5" tooltip="val[A]=0 val[X]=0"];
+    	block2 [shape=ellipse, id="block-2" label="BLOCK2\n\n(004) ret      #68" tooltip="val[A]=0 val[X]=0", peripheries=2];
+    	block3 [shape=ellipse, id="block-3" label="BLOCK3\n\n(005) ret      #0" tooltip="val[A]=0 val[X]=0", peripheries=2];
+    	"block0":se -> "block1":n [label="T"]; 
+    	"block0":sw -> "block3":n [label="F"]; 
+    	"block1":se -> "block2":n [label="T"]; 
+    	"block1":sw -> "block3":n [label="F"]; 
+    }
+ *
+ *  After install graphviz on http://www.graphviz.org/, save it as bpf.dot 
+ *  and run `dot -Tpng -O bpf.dot' to draw the graph.
+ */
 static void
 dot_dump(struct block *root)
 {
@@ -2314,8 +2307,6 @@ dot_dump(struct block *root)
 
 	memset(bids, 0, sizeof bids);
 	f.bf_insns = icode_to_fcode(root, &f.bf_len);
-	//bpf_dump(&f, 1);
-	//putchar('\n');
 
 	fprintf(out, "digraph BPF {\n");
 	unMarkAll();
@@ -2341,7 +2332,11 @@ plain_dump(struct block *root)
 static void
 opt_dump(struct block *root)
 {
-	if (dflag >= 2) 
+	/* if optimizer debugging is enabled, output DOT graph
+	 * `dflag=4' is equivalent to -dddd to follow -d/-dd/-ddd 
+     * convention in tcpdump command line
+	 */
+	if (dflag > 3) 
 		dot_dump(root);
 	else
 		plain_dump(root);
