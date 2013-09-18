@@ -670,7 +670,7 @@ pcap_set_tstamp_precision(pcap_t *p, int tstamp_precision)
 	int i;
 
 	if (pcap_check_activated(p))
-		return PCAP_ERROR_ACTIVATED;
+		return (PCAP_ERROR_ACTIVATED);
 
 	/*
 	 * If p->tstamp_precision_count is 0, we only support setting
@@ -709,7 +709,7 @@ pcap_set_tstamp_precision(pcap_t *p, int tstamp_precision)
 int
 pcap_get_tstamp_precision(pcap_t *p)
 {
-        return p->opt.tstamp_precision;
+        return (p->opt.tstamp_precision);
 }
 
 int
@@ -892,10 +892,10 @@ pcap_datalink_ext(pcap_t *p)
 }
 
 int
-pcap_list_datalinks(pcap_t *p, int **dlt_buffer);
+pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 {
 	if (!p->activated)
-		return (PCAP_ERROR_NOT_ACTIVATED)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	if (p->dlt_count == 0) {
 		/*
 		 * We couldn't fetch the list of DLTs, which means
@@ -1297,24 +1297,32 @@ pcap_tstamp_type_val_to_description(int tstamp_type)
 int
 pcap_snapshot(pcap_t *p)
 {
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	return (p->snapshot);
 }
 
 int
 pcap_is_swapped(pcap_t *p)
 {
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	return (p->swapped);
 }
 
 int
 pcap_major_version(pcap_t *p)
 {
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	return (p->version_major);
 }
 
 int
 pcap_minor_version(pcap_t *p)
 {
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	return (p->version_minor);
 }
 
@@ -1333,7 +1341,7 @@ pcap_fileno(pcap_t *p)
 	if (p->adapter != NULL)
 		return ((int)(DWORD)p->adapter->hFile);
 	else
-		return (-1);
+		return (PCAP_ERROR);
 #endif
 }
 
