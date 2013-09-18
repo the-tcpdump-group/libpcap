@@ -878,33 +878,24 @@ pcap_breakloop(pcap_t *p)
 int
 pcap_datalink(pcap_t *p)
 {
-	if (!p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "can't get link-layer header type for non-activated capture");
-		return (-1);
-	}
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	return (p->linktype);
 }
 
 int
 pcap_datalink_ext(pcap_t *p)
 {
-	if (!p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "can't get link-layer header type for non-activated capture");
-		return (-1);
-	}
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
 	return (p->linktype_ext);
 }
 
 int
-pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
+pcap_list_datalinks(pcap_t *p, int **dlt_buffer);
 {
-	if (!p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "can't get list of supported link-layer header types for non-activated capture");
-		return (-1);
-	}
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED)
 	if (p->dlt_count == 0) {
 		/*
 		 * We couldn't fetch the list of DLTs, which means
@@ -916,7 +907,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		if (*dlt_buffer == NULL) {
 			(void)snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 		**dlt_buffer = p->linktype;
 		return (1);
@@ -925,7 +916,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		if (*dlt_buffer == NULL) {
 			(void)snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
-			return (-1);
+			return (PCAP_ERROR);
 		}
 		(void)memcpy(*dlt_buffer, p->dlt_list,
 		    sizeof(**dlt_buffer) * p->dlt_count);

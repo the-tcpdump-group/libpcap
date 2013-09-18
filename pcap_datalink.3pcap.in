@@ -37,5 +37,15 @@ int pcap_datalink(pcap_t *p);
 returns the link-layer header type for the live capture or ``savefile''
 specified by
 .IR p .
+.PP
+It must not be called on a pcap descriptor created by
+.B pcap_create()
+that has not yet been activated by
+.BR pcap_activate() .
+.SH RETURN VALUE
+.B pcap_datalink()
+returns the link-layer header type on success and
+.B PCAP_ERROR_NOT_ACTIVATED
+if called on a capture handle that has been created but not activated.
 .SH SEE ALSO
 pcap(3PCAP), pcap-linktype(@MAN_MISC_INFO@)
