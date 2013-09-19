@@ -580,7 +580,7 @@ install: install-shared install-archive pcap-config
 		 pcap_datalink_val_to_description.3pcap && \
 	rm -f pcap_dump_fopen.3pcap && \
 	$(LN_S) pcap_dump_open.3pcap pcap_dump_fopen.3pcap && \
-	rm -f $pcap_freealldevs.3pcap && \
+	rm -f pcap_freealldevs.3pcap && \
 	$(LN_S) pcap_findalldevs.3pcap pcap_freealldevs.3pcap && \
 	rm -f pcap_perror.3pcap && \
 	$(LN_S) pcap_geterr.3pcap pcap_perror.3pcap && \
@@ -728,7 +728,7 @@ packaging/pcap.spec: packaging/pcap.spec.in VERSION
 	RPMVERSION=`cat VERSION | sed s/-.*//g`; \
 		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
-releasetar: 
+releasetar:
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
 	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
