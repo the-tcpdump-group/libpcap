@@ -162,13 +162,13 @@ MAN3PCAP_EXPAND = \
 	pcap_compile.3pcap.in \
 	pcap_datalink.3pcap.in \
 	pcap_dump_open.3pcap.in \
+	pcap_get_tstamp_precision.3pcap.in \
 	pcap_list_datalinks.3pcap.in \
 	pcap_list_tstamp_types.3pcap.in \
 	pcap_open_dead.3pcap.in \
 	pcap_open_offline.3pcap.in \
-	pcap_set_tstamp_type.3pcap.in \
 	pcap_set_tstamp_precision.3pcap.in \
-	pcap_get_tstamp_precision.3pcap.in
+	pcap_set_tstamp_type.3pcap.in
 
 MAN3PCAP_NOEXPAND = \
 	pcap_activate.3pcap \
