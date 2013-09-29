@@ -80,7 +80,6 @@ struct pcap_bt {
 int 
 bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
-	pcap_if_t *found_dev = *alldevsp;
 	struct hci_dev_list_req *dev_list;
 	struct hci_dev_req *dev_req;
 	int i, sock;
@@ -124,7 +123,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
 		snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
 			
-		if (pcap_add_if(&found_dev, dev_name, 0, 
+		if (pcap_add_if(alldevsp, dev_name, 0, 
 		       dev_descr, err_str) < 0)
 		{
 			ret = -1;
