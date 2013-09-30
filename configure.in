@@ -1113,6 +1113,45 @@ darwin*)
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
+		darwin[0-7].*)
+			#
+			# Pre-Tiger.  Build only for 32-bit PowerPC; no
+			# need for any special compiler or linker flags.
+			#
+			;;
+
+		darwin8.[0123]*)
+			#
+			# Tiger, prior to Intel support.  Build for 32-bit
+			# PowerPC and 64-bit PowerPC, with 32-bit PowerPC
+			# first.  (I'm guessing that's what Apple does.)
+			#
+			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64"
+			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64"
+			;;
+
+		darwin8.[456]*)
+			#
+			# Tiger, subsequent to Intel support but prior to
+			# x86-64 support.  Build for 32-bit PowerPC, 64-bit
+			# PowerPC, and x86, with 32-bit PowerPC first.
+			# (I'm guessing that's what Apple does.)
+			#
+			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386"
+			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386"
+			;;
+
+		darwin8.*)
+			#
+			# All other Tiger, so subsequent to x86-64
+			# support. Build for 32-bit PowerPC, 64-bit
+			# PowerPC, x86, and x86-64, and with 32-bit PowerPC
+			# first.  (I'm guessing that's what Apple does.)
+			#
+			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			;;
+
 		darwin9.*)
 			#
 			# Leopard.  Build for 32-bit PowerPC, 64-bit
@@ -1137,11 +1176,13 @@ darwin*)
 			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386 -arch ppc"
 			;;
 
-		darwin11.*)
+		darwin*)
 			#
-			# Lion.  Build for x86-64 and x86, with x86-64
-			# first.  (That's probably what Apple does,
-			# given that Rosetta is gone.)
+			# Post-Snow Leopard.  Build for x86-64 and
+			# x86, with x86-64 first.  (That's probably what
+			# Apple does, given that Rosetta is gone.)
+			# XXX - update if and when Apple drops support
+			# for 32-bit x86 code.
 			#
 			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386"
 			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386"
