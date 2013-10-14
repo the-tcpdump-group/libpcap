@@ -309,6 +309,19 @@ handle, call
 lists the values it returns and describes the packet formats that
 correspond to those values.
 .PP
+Do
+.B NOT
+assume that the packets for a given capture or ``savefile`` will have
+any given link-layer header type, such as
+.B DLT_EN10MB
+for Ethernet.  For example, the "any" device on Linux will have a
+link-layer header type of
+.B DLT_LINUX_SLL
+even if all devices on the system at the time the "any" device is opened
+have some other data link type, such as
+.B DLT_EN10MB
+for Ethernet.
+.PP
 To obtain the
 .B "FILE\ *"
 corresponding to a
