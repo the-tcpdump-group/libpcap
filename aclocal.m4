@@ -92,7 +92,6 @@ dnl	$1 (copt set)
 dnl	$2 (incls set)
 dnl	CC
 dnl	LDFLAGS
-dnl	ac_cv_lbl_gcc_vers
 dnl	LBL_CFLAGS
 dnl
 AC_DEFUN(AC_LBL_C_INIT,
@@ -101,19 +100,6 @@ AC_DEFUN(AC_LBL_C_INIT,
     AC_BEFORE([$0], [AC_LBL_DEVEL])
     AC_BEFORE([$0], [AC_LBL_SHLIBS_INIT])
     if test "$GCC" = yes ; then
-	    if test "$SHLICC2" = yes ; then
-		    ac_cv_lbl_gcc_vers=2
-	    else
-		    AC_MSG_CHECKING(gcc version)
-		    AC_CACHE_VAL(ac_cv_lbl_gcc_vers,
-			ac_cv_lbl_gcc_vers=`$CC -v 2>&1 | \
-			    sed -e '/^gcc version /!d' \
-				-e 's/^gcc version //' \
-				-e 's/ .*//' -e 's/^[[[^0-9]]]*//' \
-				-e 's/\..*//'`)
-		    AC_MSG_RESULT($ac_cv_lbl_gcc_vers)
-	    fi
-
 	    #
 	    # -Werror forces warnings to be errors.
 	    #
