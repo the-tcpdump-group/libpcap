@@ -3369,9 +3369,6 @@ $as_echo "$ac_cv_lbl_gcc_vers" >&6; }
 		    ;;
 
 	    osf*)
-	    	    #
-		    # Presumed to be DEC OSF/1, Digital UNIX, or
-		    # Tru64 UNIX.
 		    #
 		    # The DEC C compiler, which is what we presume we're
 		    # using, doesn't exit with a non-zero exit status if we

@@ -76,6 +76,7 @@ dnl If using cc:
 dnl     require that it support ansi prototypes
 dnl     use -O (AC_PROG_CC will use -g -O2 on gcc, so we don't need to
 dnl     do that ourselves for gcc)
+dnl     add -g flags, as appropriate
 dnl     explicitly specify /usr/local/include
 dnl
 dnl NOTE WELL: with newer versions of autoconf, "gcc" means any compiler
@@ -155,9 +156,6 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    ;;
 
 	    osf*)
-	    	    #
-		    # Presumed to be DEC OSF/1, Digital UNIX, or
-		    # Tru64 UNIX.
 		    #
 		    # The DEC C compiler, which is what we presume we're
 		    # using, doesn't exit with a non-zero exit status if we
