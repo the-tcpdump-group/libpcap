@@ -2453,10 +2453,9 @@ if test "${with_gcc+set}" = set; then :
   withval=$with_gcc;
 fi
 
-    V_CCOPT="-O"
-    V_INCLS=""
+    V_CCOPT=""
     if test "${srcdir}" != "." ; then
-	    V_INCLS="-I\$(srcdir)"
+	    V_CCOPT="-I\$(srcdir)"
     fi
     if test "${CFLAGS+set}" = set; then
 	    LBL_CFLAGS="$CFLAGS"
@@ -3311,7 +3310,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
     if test "$GCC" = yes ; then
 	    if test "$SHLICC2" = yes ; then
 		    ac_cv_lbl_gcc_vers=2
-		    V_CCOPT="-O2"
 	    else
 		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking gcc version" >&5
 $as_echo_n "checking gcc version... " >&6; }
@@ -3327,9 +3325,6 @@ fi
 
 		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_gcc_vers" >&5
 $as_echo "$ac_cv_lbl_gcc_vers" >&6; }
-		    if test $ac_cv_lbl_gcc_vers -gt 1 ; then
-			    V_CCOPT="-O2"
-		    fi
 	    fi
 
 	    #
@@ -3432,6 +3427,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    fi
 		    ;;
 	    esac
+	    V_CCOPT="$V_CCOPT -O"
     fi
 
 
@@ -7553,13 +7549,7 @@ $as_echo "no" >&6; }
 
 
 
-	    if test "$GCC" = yes ; then
-		    if test "${LBL_CFLAGS+set}" != set; then
-			    if test "$ac_cv_prog_cc_g" = yes ; then
-				    V_CCOPT="-g $V_CCOPT"
-			    fi
-		    fi
-	    else
+	    if test "$GCC" != yes ; then
 		    case "$host_os" in
 
 		    irix6*)
