@@ -153,10 +153,19 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # 1989 and the early '90's, so maybe we can just
 		    # drop support for those compilers.)
 		    #
+		    # -g is equivalent to -g2, which turns off
+		    # optimization; we choose -g3, which generates
+		    # debugging information but doesn't turn off
+		    # optimization (even if the optimization would
+		    # cause inaccuracies in debugging).
+		    #
 		    $1="$$1 -xansi -signed -g3"
 		    ;;
 
 	    osf*)
+		    #
+		    # Presumed to be DEC OSF/1, Digital UNIX, or
+		    # Tru64 UNIX.
 		    #
 		    # The DEC C compiler, which is what we presume we're
 		    # using, doesn't exit with a non-zero exit status if we
@@ -165,6 +174,13 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # don't want to try using GCC-style -W flags.
 		    #
 		    ac_lbl_cc_dont_try_gcc_dashW=yes
+		    #
+		    # -g is equivalent to -g2, which turns off
+		    # optimization; we choose -g3, which generates
+		    # debugging information but doesn't turn off
+		    # optimization (even if the optimization would
+		    # cause inaccuracies in debugging).
+		    #
 		    $1="$$1 -g3"
 		    ;;
 
@@ -960,17 +976,14 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
-	    if test "$GCC" != yes ; then
-		    case "$host_os" in
-
-		    irix6*)
-			    V_CCOPT="$V_CCOPT -n32"
-			    ;;
-
-		    *)
-			    ;;
-		    esac
-	    fi
+	    #
+	    # We used to set -n32 for IRIX 6 when not using GCC (presumed
+	    # to mean that we're using MIPS C or MIPSpro C); it specified
+	    # the "new" faster 32-bit ABI, introduced in IRIX 6.2.  I'm
+	    # not sure why that would be something to do *only* with a
+	    # .devel file; why should the ABI for which we produce code
+	    # depend on .devel?
+	    #
 	    os=`echo $host_os | sed -e 's/\([[0-9]][[0-9]]*\)[[^0-9]].*$/\1/'`
 	    name="lbl/os-$os.h"
 	    if test -f $name ; then
