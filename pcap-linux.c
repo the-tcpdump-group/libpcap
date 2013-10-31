@@ -3579,7 +3579,13 @@ create_ring(pcap_t *handle, int *status)
 	 *
 	 * We don't do that if segmentation/fragmentation or receive
 	 * offload are enabled, so we don't get rudely surprised by
-	 * "packets" bigger than the MTU. */
+	 * "packets" bigger than the MTU.
+	 *
+	 * XXX - PLEASE tell me that TPACKET_V3 blocks don't have
+	 * fixed-size packet slots in them!  PLEASE PLEASE PLEASE!
+	 * Fixed-size packet slots are HORRIBLY bad for packet
+	 * capture, unless there's a medium-independent way of
+	 * getting an appropriate slot size. */
 	frame_size = handle->snapshot;
 	if (handle->linktype == DLT_EN10MB) {
 		int mtu;
@@ -4233,7 +4239,7 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 
 	/* wait for frames availability.*/
 	ret = pcap_wait_for_frames_mmap(handle);
-	if(ret) {
+	if (ret) {
 		return ret;
 	}
 
@@ -4258,10 +4264,10 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 				h.h1->tp_usec,
 				0,
 				0);
-		if(ret == 1) {
+		if (ret == 1) {
 			pkts++;
 			handlep->packets_read++;
-		} else if(ret < 0) {
+		} else if (ret < 0) {
 			return ret;
 		}
 
@@ -4293,7 +4299,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 
 	/* wait for frames availability.*/
 	ret = pcap_wait_for_frames_mmap(handle);
-	if(ret) {
+	if (ret) {
 		return ret;
 	}
 
@@ -4322,10 +4328,10 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 				h.h2->tp_vlan_tci != 0,
 #endif
 				h.h2->tp_vlan_tci);
-		if(ret == 1) {
+		if (ret == 1) {
 			pkts++;
 			handlep->packets_read++;
-		} else if(ret < 0) {
+		} else if (ret < 0) {
 			return ret;
 		}
 
@@ -4356,10 +4362,10 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 	char c;
 	int ret;
 
-	if(handlep->current_packet == NULL) {
+	if (handlep->current_packet == NULL) {
 		/* wait for frames availability.*/
 		ret = pcap_wait_for_frames_mmap(handle);
-		if(ret) {
+		if (ret) {
 			return ret;
 		}
 	}
@@ -4369,7 +4375,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 	while ((pkts < max_packets) || (max_packets <= 0)) {
 		union thdr h;
 
-		if(handlep->current_packet == NULL) {
+		if (handlep->current_packet == NULL) {
 			h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
 			if (!h.raw)
 				break;
@@ -4379,7 +4385,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 		int packets_to_read = handlep->packets_left;
 
-		if(max_packets >= 0 && packets_to_read > max_packets) {
+		if (max_packets >= 0 && packets_to_read > max_packets) {
 			packets_to_read = max_packets;
 		}
 
@@ -4401,10 +4407,10 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 					tp3_hdr->hv1.tp_vlan_tci != 0,
 #endif
 					tp3_hdr->hv1.tp_vlan_tci);
-			if(ret == 1) {
+			if (ret == 1) {
 				pkts++;
 				handlep->packets_read++;
-			} else if(ret < 0) {
+			} else if (ret < 0) {
 				handlep->current_packet = NULL;
 				return ret;
 			}
@@ -4412,7 +4418,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 			handlep->packets_left--;
 		}
 
-		if(handlep->packets_left <= 0) {
+		if (handlep->packets_left <= 0) {
 			/* next block */
 			h.h3->hdr.bh1.block_status = TP_STATUS_KERNEL;
 
