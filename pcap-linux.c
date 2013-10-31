@@ -197,14 +197,14 @@ static const char rcsid[] _U_ =
   * struct is defined if the macro TPACKET_HDRLEN is defined, because it
   * uses many ring related structs and macros */
 # ifdef TPACKET_HDRLEN
-#ifdef TPACKET3_HDRLEN
-#define HAVE_TPACKET3
-#endif
 #  define HAVE_PACKET_RING
+#  ifdef TPACKET3_HDRLEN
+#   define HAVE_TPACKET3
+#  endif /* TPACKET3_HDRLEN */
 #  ifdef TPACKET2_HDRLEN
 #   define HAVE_TPACKET2
-#  else
-#   define TPACKET_V1	0
+#  else  /* TPACKET2_HDRLEN */
+#   define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
 #  endif /* TPACKET2_HDRLEN */
 # endif /* TPACKET_HDRLEN */
 #endif /* PF_PACKET */
@@ -339,14 +339,14 @@ static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
 
 union thdr {
-	struct tpacket_hdr	*h1;
+	struct tpacket_hdr		*h1;
 #ifdef HAVE_TPACKET2
-	struct tpacket2_hdr	*h2;
+	struct tpacket2_hdr		*h2;
 #endif
 #ifdef HAVE_TPACKET3
 	struct tpacket_block_desc	*h3;
 #endif
-	void			*raw;
+	void				*raw;
 };
 
 #ifdef HAVE_PACKET_RING
@@ -3423,8 +3423,16 @@ activate_mmap(pcap_t *handle _U_, int *status _U_)
 #ifdef HAVE_PACKET_RING
 
 #if defined(HAVE_TPACKET2) || defined(HAVE_TPACKET3)
+/*
+ * Attempt to set the socket to the specified version of the memory-mapped
+ * header.
+ *
+ * Return 0 if we succeed; return 1 if we fail because that version isn't
+ * supported; return -1 on any other error, and set handle->errbuf.
+ */
 static int
-init_tpacket(pcap_t *handle, int version, const char *version_str) {
+init_tpacket(pcap_t *handle, int version, const char *version_str)
+{
 	struct pcap_linux *handlep = handle->priv;
 	int val = version;
 	socklen_t len = sizeof(val);
@@ -3432,9 +3440,9 @@ init_tpacket(pcap_t *handle, int version, const char *version_str) {
 	/* Probe whether kernel supports the specified TPACKET version */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
 		if (errno == ENOPROTOOPT)
-			return 1;	/* no - just drive on */
+			return 1;	/* no */
 
-		/* Yes - treat as a failure. */
+		/* Failed to even find out; this is a fatal error. */
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"can't get %s header len on packet socket: %s",
 			version_str,
@@ -3469,7 +3477,11 @@ init_tpacket(pcap_t *handle, int version, const char *version_str) {
 #endif /* defined HAVE_TPACKET2 || defined HAVE_TPACKET3 */
 
 /*
- * Attempt to set the socket to version 2 or 3 of the memory-mapped header.
+ * Attempt to set the socket to version 3 of the memory-mapped header and,
+ * if that fails because version 3 isn't supported, attempt to fall
+ * back to version 2.  If version 2 isn't supported, just leave it at
+ * version 1.
+ *
  * Return 1 if we succeed or if we fail because neither version 2 nor 3 is
  * supported; return -1 on any other error, and set handle->errbuf.
  */
@@ -3486,16 +3498,16 @@ prepare_tpacket_socket(pcap_t *handle)
 
 #ifdef HAVE_TPACKET3
 	ret = init_tpacket(handle, TPACKET_V3, "TPACKET_V3");
-	if(-1 == ret) {
+	if (-1 == ret) {
 		/* Error during setting up TPACKET_V3. */
 		return -1;
-	} else if(1 == ret) {
+	} else if (1 == ret) {
 		/* TPACKET_V3 not supported - fall back to TPACKET_V2. */
 #endif /* HAVE_TPACKET3 */
 
 #ifdef HAVE_TPACKET2
 		ret = init_tpacket(handle, TPACKET_V2, "TPACKET_V2");
-		if(-1 == ret) {
+		if (-1 == ret) {
 			/* Error during setting up TPACKET_V2. */
 			return -1;
 		}
@@ -3985,7 +3997,8 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 #endif
 
 /* wait for frames availability.*/
-static int pcap_wait_for_frames_mmap(pcap_t *handle) {
+static int pcap_wait_for_frames_mmap(pcap_t *handle)
+{
 	if (!pcap_get_ring_frame(handle, TP_STATUS_USER)) {
 		struct pcap_linux *handlep = handle->priv;
 		int timeout;
