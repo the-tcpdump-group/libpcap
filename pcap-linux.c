@@ -4378,6 +4378,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
+	union thdr h;
 	int pkts = 0;
 	int ret;
 
@@ -4388,12 +4389,13 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 			return ret;
 		}
 	}
+	h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
+	if (!h.raw)
+		return pkts;
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || (max_packets <= 0)) {
-		union thdr h;
-
 		if (handlep->current_packet == NULL) {
 			h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
 			if (!h.raw)
