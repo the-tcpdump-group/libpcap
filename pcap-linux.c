@@ -1845,12 +1845,26 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct pcap_linux *handlep = handle->priv;
 #ifdef HAVE_TPACKET_STATS
 #ifdef HAVE_TPACKET3
+	/*
+	 * For sockets using TPACKET_V1 or TPACKET_V2, the extra
+	 * stuff at the end of a struct tpacket_stats_v3 will not
+	 * be filled in, and we don't look at it so this is OK even
+	 * for those sockets.  In addition, the PF_PACKET socket
+	 * code in the kernel only uses the length parameter to
+	 * compute how much data to copy out and to indicate how
+	 * much data was copied out, so it's OK to base it on the
+	 * size of a struct tpacket_stats.
+	 *
+	 * XXX - it's probably OK, in fact, to just use a
+	 * struct tpacket_stats for V3 sockets, as we don't
+	 * care about the tp_freeze_q_cnt stat.
+	 */
 	struct tpacket_stats_v3 kstats;
-#else
+#else /* HAVE_TPACKET3 */
 	struct tpacket_stats kstats;
-#endif
+#endif /* HAVE_TPACKET3 */
 	socklen_t len = sizeof (struct tpacket_stats);
-#endif
+#endif /* HAVE_TPACKET_STATS */
 
 	long if_dropped = 0;
 	
