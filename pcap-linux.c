@@ -3694,14 +3694,14 @@ create_ring(pcap_t *handle, int *status)
 
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
-		/* The "frame size" (tp_frame_size) and "frame count"
-		 * (tp_frame_nr) values aren't used for TPACKET_V3, except
-		 * that the kernel still does sanity checks on their values,
-		 * so we have to give *some* value.
+		/* The "frames" for this are actually buffers that
+		 * contain multiple variable-sized frames.
 		 *
-		 * We just pick a frame size of 64K and run with that. */
-		req.tp_frame_size = 65536;
-		req.tp_frame_nr = handle->opt.buffer_size/65536;
+		 * We pick a "frame" size of 128K to leave enough
+		 * room for at least one reasonably-sized packet
+		 * in the "frame". */
+		req.tp_frame_size = 131072;
+		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 		break;
 #endif
 	}
