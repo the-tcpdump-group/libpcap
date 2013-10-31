@@ -1,5 +1,6 @@
-Saturday June 22, 2013 guy@alum.mit.edu
-Summary for 1.4.1 libpcap release
+Wednesday October 30, 2013 guy@alum.mit.edu
+Summary for 1.5.0 libpcap release
+	TPACKET_V3 support added for Linux
 	Point users to the the-tcpdump-group repository on GitHub rather
 	    than the mcr repository
 	Checks added for malloc()/realloc()/etc. failures
