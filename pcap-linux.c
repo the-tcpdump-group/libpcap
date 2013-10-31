@@ -4257,9 +4257,7 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
-	int timeout;
 	int pkts = 0;
-	char c;
 	int ret;
 
 	/* wait for frames availability.*/
@@ -4317,9 +4315,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
-	int timeout;
 	int pkts = 0;
-	char c;
 	int ret;
 
 	/* wait for frames availability.*/
@@ -4382,9 +4378,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
-	int timeout;
 	int pkts = 0;
-	char c;
 	int ret;
 
 	if (handlep->current_packet == NULL) {
