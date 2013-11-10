@@ -4573,6 +4573,9 @@ gen_host6(addr, mask, proto, dir, type)
 	case Q_DEFAULT:
 		return gen_host6(addr, mask, Q_IPV6, dir, type);
 
+	case Q_LINK:
+		bpf_error("link-layer modifier applied to ip6 %s", typestr);
+
 	case Q_IP:
 		bpf_error("'ip' modifier applied to ip6 %s", typestr);
 
