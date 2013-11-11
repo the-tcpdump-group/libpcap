@@ -7,6 +7,9 @@ Summary for 1.5.0 libpcap release
 	Fixed build on Solaris 11
 	Support filtering filtering E1 SS7 traffic on MTP2 layer Annex A
 	Use "ln -s" to link man pages by default
+        Added pcap_open_dead_with_tstamp_precision API interface.
+        Many changes to autoconf to deal better with non-GCC compilers
+        added many new DLT types
 
 Saturday April 6, 2013 guy@alum.mit.edu
 Summary for 1.4.0 libpcap release
