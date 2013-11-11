@@ -6,6 +6,9 @@ config.h
 config.log
 config.cache
 config.status
+stamp-h
+stamp-h.in
+autom4te.cache/
 .devel
 filtertest
 findalldevstest
