@@ -2972,6 +2972,19 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
                handle->linktype =  DLT_IEEE802_15_4_NOFCS;
                break;
 
+#ifndef ARPHRD_NETLINK
+#define ARPHRD_NETLINK	824
+#endif
+	case ARPHRD_NETLINK:
+		handle->linktype = DLT_NETLINK;
+		/*
+		 * We need to use cooked mode, so that in sll_protocol we
+		 * pick up the netlink protocol type such as NETLINK_ROUTE,
+		 * NETLINK_GENERIC, NETLINK_FIB_LOOKUP, etc.
+		 */
+		handle->cooked = 1;
+		break;
+
 	default:
 		handle->linktype = -1;
 		break;

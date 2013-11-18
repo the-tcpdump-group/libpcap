@@ -1224,7 +1224,12 @@ struct bpf_program {
  */
 #define DLT_WIRESHARK_UPPER_PDU	252
 
-#define DLT_MATCHING_MAX	252	/* highest value in the "matching" range */
+/*
+ * DLT type for the netlink protocol (nlmon devices).
+ */
+#define DLT_NETLINK		253
+
+#define DLT_MATCHING_MAX	253	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

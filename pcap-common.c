@@ -932,7 +932,12 @@
  */
 #define LINKTYPE_WIRESHARK_UPPER_PDU	252
 
-#define LINKTYPE_MATCHING_MAX	252		/* highest value in the "matching" range */
+/*
+ * Link-layer header type for the netlink protocol (nlmon devices).
+ */
+#define LINKTYPE_NETLINK		253
+
+#define LINKTYPE_MATCHING_MAX	253		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
