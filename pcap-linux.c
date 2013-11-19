@@ -2982,7 +2982,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		 * pick up the netlink protocol type such as NETLINK_ROUTE,
 		 * NETLINK_GENERIC, NETLINK_FIB_LOOKUP, etc.
 		 */
-		handle->cooked = 1;
+		handlep->cooked = 1;
 		break;
 
 	default:
