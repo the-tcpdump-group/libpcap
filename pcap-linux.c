@@ -2604,8 +2604,6 @@ map_packet_type_to_sll_type(short int sll_pkttype)
  */
 static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 {
-	struct pcap_linux *handlep = handle->priv;
-
 	switch (arptype) {
 
 	case ARPHRD_ETHER:
