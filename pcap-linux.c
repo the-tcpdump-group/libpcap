@@ -2940,7 +2940,9 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		/* Don't expect IP packet out of this interfaces... */
 		handle->linktype = DLT_LINUX_IRDA;
 		/* We need to save packet direction for IrDA decoding,
-		 * so let's use "Linux-cooked" mode. Jean II */
+		 * so let's use "Linux-cooked" mode. Jean II
+		 *
+		 * XXX - this is handled in activate_new(). */
 		//handlep->cooked = 1;
 		break;
 
@@ -2981,8 +2983,10 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
 		 * We need to use cooked mode, so that in sll_protocol we
 		 * pick up the netlink protocol type such as NETLINK_ROUTE,
 		 * NETLINK_GENERIC, NETLINK_FIB_LOOKUP, etc.
+		 *
+		 * XXX - this is handled in activate_new().
 		 */
-		handlep->cooked = 1;
+		//handlep->cooked = 1;
 		break;
 
 	default:
@@ -3121,6 +3125,7 @@ activate_new(pcap_t *handle)
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
 		    handle->linktype == DLT_LINUX_LAPD ||
+		    handle->linktype == DLT_NETLINK ||
 		    (handle->linktype == DLT_EN10MB &&
 		     (strncmp("isdn", device, 4) == 0 ||
 		      strncmp("isdY", device, 4) == 0))) {
