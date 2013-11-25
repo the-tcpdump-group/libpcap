@@ -683,7 +683,10 @@ uninstall: uninstall-shared
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_dispatch.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_minor_version.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_next.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_open_dead_with_tstamp_precision.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_open_offline_with_tstamp_precision.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_fopen_offline_with_tstamp_precision.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
 	for i in $(MANFILE); do \
 		rm -f $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
