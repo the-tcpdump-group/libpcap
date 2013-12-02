@@ -109,6 +109,10 @@ static const char rcsid[] _U_ =
 #include "pcap-dbus.h"
 #endif
 
+#ifdef PCAP_SUPPORT_DVB
+#include "pcap-dvb.h"
+#endif
+
 int 
 pcap_not_initialized(pcap_t *pcap _U_)
 {
@@ -338,6 +342,9 @@ struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_DBUS
 	{ dbus_findalldevs, dbus_create },
+#endif
+#ifdef PCAP_SUPPORT_DVB
+	{ dvb_findalldevs, dvb_create },
 #endif
 	{ NULL, NULL }
 };

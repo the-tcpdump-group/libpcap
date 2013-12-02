@@ -1602,6 +1602,46 @@ if test "x$enable_dbus" != "xno"; then
 	AC_SUBST(DBUS_SRC)
 fi
 
+dnl check for MPEG-TS capturing support
+AC_MSG_CHECKING(whether the platform could support DVB capturing)
+case "$host_os" in
+linux*)
+	AC_MSG_RESULT(yes)
+	#
+	# Life's too short to deal with trying to get this to compile
+	# if you don't get the right types defined with
+	# __KERNEL_STRICT_NAMES getting defined by some other include.
+	#
+	# Check whether the includes Just Work.  If not, don't turn on
+	# netfilter support.
+	#
+	AC_MSG_CHECKING(whether we can compile the netfilter support)
+	AC_CACHE_VAL(ac_cv_linux_dvb_can_compile,
+	  AC_TRY_COMPILE([
+AC_INCLUDES_DEFAULT
+#include <sys/ioctl.h>
+#include <linux/dvb/dmx.h>
+],
+	    [
+	    ioctl(0, DMX_SET_BUFFER_SIZE, (char *)0);
+	    ioctl(0, DMX_START, (char *)0);
+	    ioctl(0, DMX_SET_PES_FILTER, (struct dmx_pes_filter_params*)0);
+	    ],
+	    ac_cv_linux_dvb_can_compile=yes,
+	    ac_cv_linux_dvb_can_compile=no))
+	AC_MSG_RESULT($ac_cv_linux_dvb_can_compile)
+	if test $ac_cv_linux_dvb_can_compile = yes ; then
+	  AC_DEFINE(PCAP_SUPPORT_DVB, 1, [target host support Linux DVB capturing (v3 API)])
+	  DVB_SRC=pcap-dvb-linux.c
+	fi
+	;;
+*)
+	AC_MSG_RESULT(no)
+	;;
+esac
+AC_SUBST(PCAP_SUPPORT_DVB)
+AC_SUBST(DVB_SRC)
+
 dnl check for hardware timestamp support
 case "$host_os" in
 linux*)
