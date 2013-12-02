@@ -3453,7 +3453,7 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 
 	/* Probe whether kernel supports the specified TPACKET version */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
-		if (errno == ENOPROTOOPT)
+		if (errno == ENOPROTOOPT || errno == EINVAL)
 			return 1;	/* no */
 
 		/* Failed to even find out; this is a fatal error. */
