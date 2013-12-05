@@ -3410,6 +3410,13 @@ gen_linktype(proto)
 
 	case DLT_AX25_KISS:
 		bpf_error("AX.25 link-layer type filtering not implemented");
+
+	case DLT_NFLOG:
+		/* Using the fixed-size NFLOG header it is possible to tell only
+		 * the address family of the packet, other meaningful data is
+		 * either missing or behind TLVs.
+		 */
+		bpf_error("NFLOG link-layer type filtering not implemented");
 	}
 
 	/*
