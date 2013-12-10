@@ -4054,9 +4054,29 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 		pollinfo.fd = handle->fd;
 		pollinfo.events = POLLIN;
 
-		if (handlep->timeout == 0)
-			timeout = -1;	/* block forever */
-		else if (handlep->timeout > 0)
+		if (handlep->timeout == 0) {
+			/*
+			 * XXX - due to a set of (mis)features in the
+			 * TPACKET_V3 kernel code, blocking forever with
+			 * a TPACKET_V3 socket can, if few packets
+			 * are arriving and passing the socket filter,
+			 * cause most packets to be dropped.  See
+			 * libpcap issue #335 for the full painful
+			 * story.  The workaround is to have poll()
+			 * time out very quickly, so we grab the
+			 * frames handed to us, and return them to
+			 * the kernel, ASAP.
+			 *
+			 * If those issues are ever fixed, we might
+			 * want to check the kernel version and block
+			 * forever with TPACKET_V3 if we're running
+			 * with a kernel that has the fix.
+			 */
+			if (handlep->tp_version == TPACKET_V3)
+				timeout = 1;	/* don't block for very long */
+			else
+				timeout = -1;	/* block forever */
+		} else if (handlep->timeout > 0)
 			timeout = handlep->timeout;	/* block for that amount of time */
 		else
 			timeout = 0;	/* non-blocking mode - poll to pick up errors */
