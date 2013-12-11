@@ -174,9 +174,11 @@ arbitrarily long period of time.
 .IP
 Not all platforms support a read timeout; on platforms that
 don't, the read timeout is ignored.  A zero value for the timeout,
-on platforms that support a read timeout,
-will cause a read to wait forever to allow enough packets to
-arrive, with no timeout.
+on platforms that support a read timeout, has platform-dependent
+behavior that could cause a read to wait for an unlimited amount
+of time until the capture buffer fills up or could cause a read timeout
+of 1 millisecond to be used.  We recommend that a value of zero not be
+used.
 .IP
 .BR NOTE :
 the read timeout cannot be used to cause calls that read
