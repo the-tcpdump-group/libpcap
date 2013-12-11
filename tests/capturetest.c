@@ -87,12 +87,20 @@ main(int argc, char **argv)
 
 		case 't':
 			longarg = strtol(optarg, &p, 10);
-			if (p == optarg || *p != '\0')
-				error("Invalid timeout \"%s\"", optarg);
-			if (longarg < 0)
-				error("Negative timeout %ld", longarg);
-			if (longarg > INT_MAX)
-				error("Too-large timeout %ld", longarg);
+			if (p == optarg || *p != '\0') {
+				error("Timeout value \"%s\" is not a number",
+				    optarg);
+				/* NOTREACHED */
+			}
+			if (longarg < 0) {
+				error("Timeout value %ld is negative", longarg);
+				/* NOTREACHED */
+			}
+			if (longarg > INT_MAX) {
+				error("Timeout value %ld is too large (> %d)",
+				    longarg, INT_MAX);
+				/* NOTREACHED */
+			}
 			timeout = (int)longarg;
 			break;
 
