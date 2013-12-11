@@ -3530,7 +3530,19 @@ prepare_tpacket_socket(pcap_t *handle)
 	handlep->tp_hdrlen = sizeof(struct tpacket_hdr);
 
 #ifdef HAVE_TPACKET3
-	ret = init_tpacket(handle, TPACKET_V3, "TPACKET_V3");
+	/*
+	 * The only mode in which buffering is done on PF_PACKET
+	 * sockets, so that packets might not be delivered
+	 * immediately, is TPACKET_V3 mode.
+	 *
+	 * The buffering cannot be disabled in that mode, so
+	 * if the user has requested immediate mode, we don't
+	 * use TPACKET_V3.
+	 */
+	if (handle->opt.immediate)
+		ret = 1; /* pretend TPACKET_V3 couldn't be set */
+	else
+		ret = init_tpacket(handle, TPACKET_V3, "TPACKET_V3");
 	if (-1 == ret) {
 		/* Error during setting up TPACKET_V3. */
 		return -1;
