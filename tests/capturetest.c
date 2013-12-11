@@ -135,6 +135,10 @@ main(int argc, char **argv)
 			error("%s: pcap_set_immediate_mode failed: %s",
 			    device, pcap_statustostr(status));
 	}
+	status = pcap_set_timeout(pd, 1000);
+	if (status != 0)
+		error("%s: pcap_set_timeout failed: %s",
+		    device, pcap_statustostr(status));
 	status = pcap_activate(pd);
 	if (status < 0) {
 		/*
