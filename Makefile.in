@@ -129,17 +129,17 @@ HDR = $(PUBHDR) \
 	sunatmpos.h
 
 TESTS = \
+	capturetest \
 	filtertest \
 	findalldevstest \
-	nonblocktest \
 	opentest \
 	selpolltest \
 	valgrindtest
 
 TESTS_SRC = \
+	tests/capturetest.c \
 	tests/filtertest.c \
 	tests/findalldevstest.c \
-	tests/nonblocktest.c \
 	tests/opentest.c \
 	tests/reactivatetest.c \
 	tests/selpolltest.c \
@@ -526,14 +526,14 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 #
 tests: $(TESTS)
 
+capturetest: tests/capturetest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o capturetest $(srcdir)/tests/capturetest.c libpcap.a $(LIBS)
+
 filtertest: tests/filtertest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(LIBS)
 
 findalldevstest: tests/findalldevstest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/tests/findalldevstest.c libpcap.a $(LIBS)
-
-nonblocktest: tests/nonblocktest.c libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o nonblocktest $(srcdir)/tests/nonblocktest.c libpcap.a $(LIBS)
 
 opentest: tests/opentest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/tests/opentest.c libpcap.a $(LIBS)
