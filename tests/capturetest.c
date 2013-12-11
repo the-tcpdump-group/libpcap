@@ -61,6 +61,7 @@ main(int argc, char **argv)
 	long longarg;
 	char *p;
 	int timeout = 1000;
+	int immediate = 0;
 	int nonblock = 0;
 	bpf_u_int32 localnet, netmask;
 	struct bpf_program fcode;
@@ -75,12 +76,17 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "i:nt:")) != -1) {
+	while ((op = getopt(argc, argv, "i:mnt:")) != -1) {
 		switch (op) {
 
 		case 'i':
 			device = optarg;
 			break;
+
+		case 'm':
+			immediate = 1;
+			break;
+
 		case 'n':
 			nonblock = 1;
 			break;
@@ -116,11 +122,34 @@ main(int argc, char **argv)
 			error("%s", ebuf);
 	}
 	*ebuf = '\0';
-	pd = pcap_open_live(device, 65535, 0, timeout, ebuf);
+	pd = pcap_create(device, ebuf);
 	if (pd == NULL)
 		error("%s", ebuf);
-	else if (*ebuf)
-		warning("%s", ebuf);
+	status = pcap_set_snaplen(pd, 65535);
+	if (status != 0)
+		error("%s: pcap_set_snaplen failed: %s",
+			    device, pcap_statustostr(status));
+	if (immediate) {
+		status = pcap_set_immediate_mode(pd, 1);
+		if (status != 0)
+			error("%s: pcap_set_immediate_mode failed: %s",
+			    device, pcap_statustostr(status));
+	}
+	status = pcap_activate(pd);
+	if (status < 0) {
+		/*
+		 * pcap_activate() failed.
+		 */
+		error("%s: %s\n(%s)", device,
+		    pcap_statustostr(status), pcap_geterr(pd));
+	} else if (status > 0) {
+		/*
+		 * pcap_activate() succeeded, but it's warning us
+		 * of a problem it had.
+		 */
+		warning("%s: %s\n(%s)", device,
+		    pcap_statustostr(status), pcap_geterr(pd));
+	}
 	if (pcap_lookupnet(device, &localnet, &netmask, ebuf) < 0) {
 		localnet = 0;
 		netmask = 0;
@@ -178,7 +207,7 @@ countme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "Usage: %s [ -sptn ] [ -i interface ] [expression]\n",
+	(void)fprintf(stderr, "Usage: %s [ -mn ] [ -i interface ] [ -t timeout] [expression]\n",
 	    program_name);
 	exit(1);
 }
