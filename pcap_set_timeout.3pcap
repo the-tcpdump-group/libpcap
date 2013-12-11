@@ -38,6 +38,9 @@ sets the read timeout that will be used on a capture handle when
 the handle is activated to
 .IR to_ms ,
 which is in units of milliseconds.
+.LP
+The behavior, if the timeout isn't specified, is undefined.  We
+recommend always setting the timeout to a non-zero value.
 .SH RETURN VALUE
 .B pcap_set_timeout()
 returns 0 on success or
