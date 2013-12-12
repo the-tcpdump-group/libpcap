@@ -39,7 +39,11 @@ returns the precision of the time stamp returned in packet captures on the pcap
 descriptor.
 .SH RETURN VALUE
 .B pcap_get_tstamp_precision()
-returns PCAP_TSTAMP_PRECISION_MICRO or PCAP_TSTAMP_PRECISION_NANO, which indicates
+returns
+.B PCAP_TSTAMP_PRECISION_MICRO
+or
+.B PCAP_TSTAMP_PRECISION_NANO,
+which indicates
 that pcap captures contains time stamps in microseconds or nanoseconds respectively.
 .SH SEE ALSO
 pcap(3PCAP),
