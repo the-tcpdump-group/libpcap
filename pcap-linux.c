@@ -4452,7 +4452,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 		int packets_to_read = handlep->packets_left;
 
-		if (max_packets >= 0 && packets_to_read > max_packets) {
+		if (max_packets > 0 && packets_to_read > max_packets) {
 			packets_to_read = max_packets;
 		}
 
