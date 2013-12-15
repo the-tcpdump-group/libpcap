@@ -579,7 +579,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	
 			/* Only count packets that pass the filter, for consistency with standard Linux behaviour. */
 			processed++;
-			if (processed == cnt && cnt > 0)
+			if (processed == cnt && !PACKET_COUNT_IS_UNLIMITED(cnt))
 			{
 				/* Reached the user-specified limit. */
 				return cnt;

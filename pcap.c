@@ -858,7 +858,7 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 		if (n <= 0)
 			return (n);
-		if (cnt > 0) {
+		if (!PACKET_COUNT_IS_UNLIMITED(cnt)) {
 			cnt -= n;
 			if (cnt <= 0)
 				return (0);

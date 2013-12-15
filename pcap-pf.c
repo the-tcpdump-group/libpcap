@@ -219,7 +219,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 			buflen -= pad;
 			h.caplen = buflen;
 			(*callback)(user, &h, p);
-			if (++n >= cnt && cnt > 0) {
+			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				pc->cc = cc;
 				pc->bp = bp;
 				return (n);

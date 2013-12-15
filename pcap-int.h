@@ -337,6 +337,12 @@ extern int vsnprintf (char *, size_t, const char *, va_list ap);
 #endif
 
 /*
+ * Does the packet count argument to a module's read routine say
+ * "supply packets until you run out of packets"?
+ */
+#define PACKET_COUNT_IS_UNLIMITED(count)	((count) <= 0)
+
+/*
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(WIN32) && !defined(MSDOS)

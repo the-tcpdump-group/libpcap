@@ -335,7 +335,7 @@ pcap_read_dos (pcap_t *p, int cnt, pcap_handler callback, u_char *data)
   struct pcap_dos *pd = p->priv;
   int rc, num = 0;
 
-  while (num <= cnt || (cnt < 0))
+  while (num <= cnt || PACKET_COUNT_IS_UNLIMITED(cnt))
   {
     if (p->fd <= 0)
        return (-1);
