@@ -4086,6 +4086,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 		pollinfo.events = POLLIN;
 
 		if (handlep->timeout == 0) {
+#ifdef TPACKET_V3
 			/*
 			 * XXX - due to a set of (mis)features in the
 			 * TPACKET_V3 kernel code, blocking forever with
@@ -4106,6 +4107,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			if (handlep->tp_version == TPACKET_V3)
 				timeout = 1;	/* don't block for very long */
 			else
+#endif
 				timeout = -1;	/* block forever */
 		} else if (handlep->timeout > 0)
 			timeout = handlep->timeout;	/* block for that amount of time */
