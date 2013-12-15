@@ -4316,7 +4316,7 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
-	while ((pkts < max_packets) || (max_packets <= 0)) {
+	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
 		union thdr h;
 
 		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
@@ -4374,7 +4374,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
-	while ((pkts < max_packets) || (max_packets <= 0)) {
+	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
 		union thdr h;
 
 		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
@@ -4443,7 +4443,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
-	while ((pkts < max_packets) || (max_packets <= 0)) {
+	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
 		if (handlep->current_packet == NULL) {
 			h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
 			if (!h.raw)
@@ -4454,7 +4454,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 		int packets_to_read = handlep->packets_left;
 
-		if (max_packets > 0 && packets_to_read > max_packets) {
+		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) && packets_to_read > max_packets) {
 			packets_to_read = max_packets;
 		}
 

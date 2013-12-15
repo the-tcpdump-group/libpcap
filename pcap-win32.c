@@ -256,7 +256,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		(*callback)(user, (struct pcap_pkthdr*)bp, bp + hdrlen);
 		bp += Packet_WORDALIGN(caplen + hdrlen);
-		if (++n >= cnt && cnt > 0) {
+		if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 			p->bp = bp;
 			p->cc = ep - bp;
 			return (n);
@@ -416,7 +416,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		header = (dag_record_t*)((char*)header + erf_record_len);
 
 		/* Stop if the number of packets requested by user has been reached*/
-		if (++n >= cnt && cnt > 0) 
+		if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) 
 		{
 			p->bp = (char*)header;
 			p->cc = endofbuf - (char*)header;

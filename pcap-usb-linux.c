@@ -908,8 +908,8 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			}
 		}
 
-		/* with max_packets <= 0 we stop afer the first chunk*/
-		if ((max_packets <= 0) || (packets == max_packets))
+		/* with max_packets specifying "unlimited" we stop afer the first chunk*/
+		if (PACKET_COUNT_IS_UNLIMITED(max_packets) || (packets == max_packets))
 			break;
 	}
 

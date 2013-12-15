@@ -1037,7 +1037,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif
 			(*callback)(user, &pkthdr, datap);
 			bp += BPF_WORDALIGN(caplen + hdrlen);
-			if (++n >= cnt && cnt > 0) {
+			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
 				p->cc = ep - bp;
 				/*
