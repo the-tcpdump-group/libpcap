@@ -2,6 +2,7 @@ Makefile
 *~
 *.o
 bpf_filter.c
+capturetest
 config.h
 config.log
 config.cache
