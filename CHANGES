@@ -1,12 +1,13 @@
 Wednesday December 4, 2013 guy@alum.mit.edu
 Summary for 1.5.2 libpcap release
 	Fix libpcap to work when compiled with TPACKET_V3 support and
-	running on a kernel without TPACKET_V3 support.
+	running on a kernel without TPACKET_V3 support. (GitHub issue
+	#329)
 
 Wednesday November 20, 2013 guy@alum.mit.edu
 Summary for 1.5.1 libpcap release
 	Report an error, rather than crashing, if an IPv6 address is
-	used for link-layer filtering.
+	used for link-layer filtering.  (Wireshark bug 9376)
 
 Wednesday October 30, 2013 guy@alum.mit.edu
 Summary for 1.5.0 libpcap release
