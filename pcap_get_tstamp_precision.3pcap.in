@@ -42,9 +42,10 @@ descriptor.
 returns
 .B PCAP_TSTAMP_PRECISION_MICRO
 or
-.B PCAP_TSTAMP_PRECISION_NANO,
+.BR PCAP_TSTAMP_PRECISION_NANO ,
 which indicates
-that pcap captures contains time stamps in microseconds or nanoseconds respectively.
+that pcap captures contains time stamps in microseconds or nanoseconds
+respectively.
 .SH SEE ALSO
 pcap(3PCAP),
 pcap_set_tstamp_precision(3PCAP),
