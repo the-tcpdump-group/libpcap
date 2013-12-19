@@ -1,13 +1,24 @@
+Wednesday December 18, 2013 guy@alum.mit.edu
+Summary for 1.5.3 libpcap release
+	Don't let packets that don't match the current filter get to the
+	    application when TPACKET_V3 is used. (GitHub issue #331)
+	Fix handling of pcap_loop()/pcap_dispatch() with a packet count
+	    of 0 on some platforms (including Linux with TPACKET_V3).
+	    (GitHub issue #333)
+	Work around TPACKET_V3 deficiency that causes packets to be lost
+	    when a timeout of 0 is specified. (GitHub issue #335)
+	Man page formatting fixes.
+
 Wednesday December 4, 2013 guy@alum.mit.edu
 Summary for 1.5.2 libpcap release
 	Fix libpcap to work when compiled with TPACKET_V3 support and
-	running on a kernel without TPACKET_V3 support. (GitHub issue
-	#329)
+	    running on a kernel without TPACKET_V3 support. (GitHub
+	    issue #329)
 
 Wednesday November 20, 2013 guy@alum.mit.edu
 Summary for 1.5.1 libpcap release
 	Report an error, rather than crashing, if an IPv6 address is
-	used for link-layer filtering.  (Wireshark bug 9376)
+	    used for link-layer filtering.  (Wireshark bug 9376)
 
 Wednesday October 30, 2013 guy@alum.mit.edu
 Summary for 1.5.0 libpcap release
@@ -18,7 +29,8 @@ Summary for 1.5.0 libpcap release
 	Fixed build on Solaris 11
 	Support filtering filtering E1 SS7 traffic on MTP2 layer Annex A
 	Use "ln -s" to link man pages by default
-        Added pcap_open_dead_with_tstamp_precision API interface.
+        Add support for getting nanosecond-resolution time stamps when
+	    capturing and reading capture files
         Many changes to autoconf to deal better with non-GCC compilers
         added many new DLT types
 
