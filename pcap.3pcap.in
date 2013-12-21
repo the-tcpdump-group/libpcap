@@ -425,7 +425,7 @@ get name for a time stamp type
 .BR pcap_tstamp_type_val_to_description (3PCAP)
 get description for a time stamp type
 .TP
-.BR pcap_tstamp_name_to_val (3PCAP)
+.BR pcap_tstamp_type_name_to_val (3PCAP)
 get time stamp type corresponding to a name
 .TP
 .BR pcap_datalink (3PCAP)
