@@ -847,12 +847,12 @@ get a string for an error or warning status code
 .RE
 .SS Getting library version information
 To get a string giving version information about libpcap, call
-.BR pcap_library_version ().
+.BR pcap_lib_version ().
 .TP
 .B Routines
 .RS
 .TP
-.BR pcap_library_version (3PCAP)
+.BR pcap_lib_version (3PCAP)
 get library version string
 .RE
 .SH BACKWARDS COMPATIBILITY

@@ -487,7 +487,7 @@ name of an anchored ruleset (applies only to packets logged by OpenBSD's
 or FreeBSD's
 .BR pf (4)).
 .IP "\fBruleset \fIname\fR"
-Synonomous with the
+Synonymous with the
 .B rset
 modifier.
 .IP "\fBsrnr \fInum\fR"
@@ -496,7 +496,7 @@ of an anchored ruleset (applies only to packets logged by OpenBSD's or
 FreeBSD's
 .BR pf (4)).
 .IP "\fBsubrulenum \fInum\fR"
-Synonomous with the
+Synonymous with the
 .B srnr
 modifier.
 .IP "\fBaction \fIact\fR"

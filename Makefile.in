@@ -605,6 +605,8 @@ install: install-shared install-archive pcap-config
 	$(LN_S) pcap_open_offline.3pcap pcap_fopen_offline.3pcap && \
 	rm -f pcap_fopen_offline_with_tstamp_precision.3pcap && \
 	$(LN_S) pcap_open_offline.3pcap pcap_fopen_offline_with_tstamp_precision.3pcap && \
+	rm -f pcap_tstamp_type_val_to_description.3pcap && \
+	$(LN_S) pcap_tstamp_type_val_to_name.3pcap pcap_tstamp_type_val_to_description.3pcap && \
 	rm -f pcap_getnonblock.3pcap && \
 	$(LN_S) pcap_setnonblock.3pcap pcap_getnonblock.3pcap)
 	for i in $(MANFILE); do \
@@ -688,6 +690,7 @@ uninstall: uninstall-shared
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_fopen_offline.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_fopen_offline_with_tstamp_precision.3pcap
 	rm -f $(DESTDIR)$(mandir)/man3/pcap_getnonblock.3pcap
+	rm -f $(DESTDIR)$(mandir)/man3/pcap_tstamp_type_val_to_description.3pcap
 	for i in $(MANFILE); do \
 		rm -f $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 	for i in $(MANMISC); do \
