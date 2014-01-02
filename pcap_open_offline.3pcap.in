@@ -59,7 +59,7 @@ and
 .BR tcpslice (1),
 or can have the pcap-ng file format, although not all pcap-ng files can
 be read.
-The name "-" in a synonym for
+The name "-" is a synonym for
 .BR stdin .
 .PP
 .B pcap_open_offline_with_tstamp_precision()

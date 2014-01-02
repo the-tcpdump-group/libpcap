@@ -43,7 +43,7 @@ the same format as those used by
 .BR tcpdump (1)
 and
 .BR tcpslice (1).
-The name "-" in a synonym
+The name "-" is a synonym
 for
 .BR stdout .
 .PP
