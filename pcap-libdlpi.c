@@ -24,11 +24,6 @@
  * Packet capture routines for DLPI using libdlpi under SunOS 5.11.
  */
 
-#ifndef lint
-static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-libdlpi.c,v 1.6 2008-04-14 20:40:58 guy Exp $ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

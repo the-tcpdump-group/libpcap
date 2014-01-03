@@ -67,11 +67,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-linux.c,v 1.164 2008-12-14 22:00:57 guy Exp $ (LBL)";
-#endif
-
 /*
  * Known problems with 2.0[.x] kernels:
  *

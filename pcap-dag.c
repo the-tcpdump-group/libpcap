@@ -15,11 +15,6 @@
  *                Stephen Donnelly <support@endace.com>
  */
 
-#ifndef lint
-static const char rcsid[] _U_ =
-	"@(#) $Header: /tcpdump/master/libpcap/pcap-dag.c,v 1.39 2008-04-14 20:40:58 guy Exp $ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

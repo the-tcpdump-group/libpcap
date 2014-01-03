@@ -32,10 +32,6 @@
  * Modifications: Kris Katterjohn <katterjohn@gmail.com>
  *
  */
-#ifndef lint
-static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/pcap-usb-linux.c,v 1.33 2008-12-23 21:38:50 guy Exp $ (LBL)";
-#endif
  
 #ifdef HAVE_CONFIG_H
 #include "config.h"

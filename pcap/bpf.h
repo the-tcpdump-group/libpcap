@@ -36,8 +36,6 @@
  * SUCH DAMAGE.
  *
  *      @(#)bpf.h       7.1 (Berkeley) 5/7/91
- *
- * @(#) $Header: /tcpdump/master/libpcap/pcap/bpf.h,v 1.32 2008-12-23 20:13:29 guy Exp $ (LBL)
  */
 
 /*

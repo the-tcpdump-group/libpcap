@@ -38,11 +38,6 @@
  *	@(#)bpf.c	7.5 (Berkeley) 7/15/91
  */
 
-#if !(defined(lint) || defined(KERNEL) || defined(_KERNEL))
-static const char rcsid[] _U_ =
-    "@(#) $Header: /tcpdump/master/libpcap/bpf/net/bpf_filter.c,v 1.46 2008-01-02 04:16:46 guy Exp $ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
