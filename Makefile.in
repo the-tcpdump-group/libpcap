@@ -742,4 +742,4 @@ releasetar:
 	   rm -rf $$name
 
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
-	$(MKDEP) -c $(CC) -m $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
+	$(MKDEP) -c $(CC) -m $(CFLAGS) $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
