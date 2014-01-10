@@ -259,6 +259,10 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		curdev->flags = 0;
 		if (ISLOOPBACK(name, flags))
 			curdev->flags |= PCAP_IF_LOOPBACK;
+		if (ISUP(flags))
+			curdev->flags |= PCAP_IF_UP;
+		if (ISRUNNING(flags))
+			curdev->flags |= PCAP_IF_RUNNING;
 
 		/*
 		 * Add it to the list, in the appropriate location.
