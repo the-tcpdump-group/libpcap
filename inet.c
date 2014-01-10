@@ -85,6 +85,18 @@ struct rtentry;		/* declarations in <net/if.h> */
     (isdigit((unsigned char)((name)[2])) || (name)[2] == '\0'))
 #endif
 
+#ifdef IFF_UP
+#define ISUP(flags) ((flags) & IFF_UP)
+#else
+#define ISUP(flags) 0
+#endif
+
+#ifdef IFF_RUNNING
+#define ISRUNNING(flags) ((flags) & IFF_RUNNING)
+#else
+#define ISRUNNING(flags) 0
+#endif
+
 struct sockaddr *
 dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 {
