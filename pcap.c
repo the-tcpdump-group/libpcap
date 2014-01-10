@@ -104,7 +104,7 @@
 #include "pcap-dbus.h"
 #endif
 
-int 
+int
 pcap_not_initialized(pcap_t *pcap _U_)
 {
 	/* this means 'not initialized' */
@@ -216,7 +216,7 @@ pcap_next(pcap_t *p, struct pcap_pkthdr *h)
 	return (pkt);
 }
 
-int 
+int
 pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
     const u_char **pkt_data)
 {
@@ -264,6 +264,66 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	 * pcap_offline_read() meaning "end of file".
 	*/
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
+}
+
+/*
+ *   Sort the interfaces in order to have UP & RUNNING ones first
+ */
+int pcap_if_sort(pcap_if_t **alldevsp, char* errbuf)
+{
+    pcap_if_t* newlist = NULL;
+    unsigned index = 0;
+    pcap_if_t* curdev;
+    unsigned i;
+    unsigned n_int = 0;
+
+    /* Group 1: PCAP_IF_RUNNING - PCAP_IF_UP - !PCAP_IF_LOOPBACK */
+    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
+        if ((curdev->flags & PCAP_IF_RUNNING) && (curdev->flags & PCAP_IF_UP) &&
+                !(curdev->flags & PCAP_IF_LOOPBACK)) {
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
+        }
+    }
+
+    /* Group 2: !PCAP_IF_RUNNING - PCAP_IF_UP - !PCAP_IF_LOOPBACK */
+    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
+        if (!(curdev->flags & PCAP_IF_RUNNING) && (curdev->flags & PCAP_IF_UP) &&
+                !(curdev->flags & PCAP_IF_LOOPBACK)) {
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
+        }
+    }
+
+    /* Group 3: !PCAP_IF_RUNNING - !PCAP_IF_UP - !PCAP_IF_LOOPBACK */
+    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
+        if (!(curdev->flags & PCAP_IF_RUNNING) && !(curdev->flags & PCAP_IF_UP) &&
+                !(curdev->flags & PCAP_IF_LOOPBACK)) {
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
+        }
+    }
+
+    /* Group 4: PCAP_IF_LOOPBACK */
+    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
+        if (curdev->flags & PCAP_IF_LOOPBACK) {
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
+        }
+    }
+
+    pcap_freealldevs(*alldevsp);
+    *alldevsp = newlist;
+
+    return (0);
 }
 
 #if defined(DAG_ONLY)
@@ -350,7 +410,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 
 	/*
 	 * Get the list of regular interfaces first.
-	 */ 
+	 */
 	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
 		return (-1);	/* failure */
 
@@ -387,6 +447,13 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 			return (-1);
 		}
 	}
+
+	if (pcap_if_sort(alldevsp, errbuf) == -1) {
+    	pcap_freealldevs(*alldevsp);
+		*alldevsp = NULL;
+	    return (-1);
+	}
+
 	return (0);
 }
 
@@ -501,7 +568,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 #ifndef WIN32
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
-#endif 
+#endif
 
 	if (size == 0) {
 		/* No private data was requested. */
@@ -1454,7 +1521,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 
 #ifdef WIN32
 /*
- * Generate a string for the last Win32-specific error (i.e. an error generated when 
+ * Generate a string for the last Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
  * For errors occurred during standard C calls, we still use pcap_strerror()
  */
@@ -1862,7 +1929,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 {
 	const struct bpf_insn *fcode = fp->bf_insns;
 
-	if (fcode != NULL) 
+	if (fcode != NULL)
 		return (bpf_filter(fcode, pkt, h->len, h->caplen));
 	else
 		return (0);

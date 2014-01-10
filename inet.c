@@ -85,6 +85,18 @@ struct rtentry;		/* declarations in <net/if.h> */
     (isdigit((unsigned char)((name)[2])) || (name)[2] == '\0'))
 #endif
 
+#ifdef IFF_UP
+#define ISUP(flags) ((flags) & IFF_UP)
+#else
+#define ISUP(flags) 0
+#endif
+
+#ifdef IFF_RUNNING
+#define ISRUNNING(flags) ((flags) & IFF_RUNNING)
+#else
+#define ISRUNNING(flags) 0
+#endif
+
 struct sockaddr *
 dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 {
@@ -247,6 +259,10 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		curdev->flags = 0;
 		if (ISLOOPBACK(name, flags))
 			curdev->flags |= PCAP_IF_LOOPBACK;
+		if (ISUP(flags))
+			curdev->flags |= PCAP_IF_UP;
+		if (ISRUNNING(flags))
+			curdev->flags |= PCAP_IF_RUNNING;
 
 		/*
 		 * Add it to the list, in the appropriate location.
@@ -812,14 +828,14 @@ pcap_lookupdev(errbuf)
 	DWORD dwWindowsMajorVersion;
 	dwVersion = GetVersion();	/* get the OS version */
 	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-	
+
 	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
 		/*
 		 * Windows 95, 98, ME.
 		 */
 		ULONG NameLength = 8192;
 		static char AdaptersName[8192];
-		
+
 		if (PacketGetAdapterNames(AdaptersName,&NameLength) )
 			return (AdaptersName);
 		else
@@ -882,7 +898,7 @@ pcap_lookupdev(errbuf)
 
 		free(TAdaptersName);
 		return (char *)(AdaptersName);
-	}	
+	}
 }
 
 
@@ -892,7 +908,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register bpf_u_int32 *netp, *maskp;
 	register char *errbuf;
 {
-	/* 
+	/*
 	 * We need only the first IPv4 address, so we must scan the array returned by PacketGetNetInfo()
 	 * in order to skip non IPv4 (i.e. IPv6 addresses)
 	 */
@@ -918,7 +934,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 			*netp &= *maskp;
 			return (0);
 		}
-				
+
 	}
 
 	*netp = *maskp = 0;
