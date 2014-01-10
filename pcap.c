@@ -271,26 +271,20 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
  */
 int pcap_if_sort(pcap_if_t **alldevsp, char* errbuf)
 {
-    pcap_if_t* temp;
+    pcap_if_t* newlist = NULL;
     unsigned index = 0;
     pcap_if_t* curdev;
     unsigned i;
     unsigned n_int = 0;
 
-    /* Count how many interfaces we have */
-    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
-        n_int++;
-    }
-
-    temp = (pcap_if_t*)malloc(sizeof(pcap_if_t) * n_int);
-
     /* Group 1: PCAP_IF_RUNNING - PCAP_IF_UP - !PCAP_IF_LOOPBACK */
     for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
         if ((curdev->flags & PCAP_IF_RUNNING) && (curdev->flags & PCAP_IF_UP) &&
                 !(curdev->flags & PCAP_IF_LOOPBACK)) {
-            temp[index] = *curdev;
-            temp[index].next = &temp[index + 1];
-            index++;
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
         }
     }
 
@@ -298,9 +292,10 @@ int pcap_if_sort(pcap_if_t **alldevsp, char* errbuf)
     for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
         if (!(curdev->flags & PCAP_IF_RUNNING) && (curdev->flags & PCAP_IF_UP) &&
                 !(curdev->flags & PCAP_IF_LOOPBACK)) {
-            temp[index] = *curdev;
-            temp[index].next = &temp[index + 1];
-            index++;
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
         }
     }
 
@@ -308,33 +303,25 @@ int pcap_if_sort(pcap_if_t **alldevsp, char* errbuf)
     for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
         if (!(curdev->flags & PCAP_IF_RUNNING) && !(curdev->flags & PCAP_IF_UP) &&
                 !(curdev->flags & PCAP_IF_LOOPBACK)) {
-            temp[index] = *curdev;
-            temp[index].next = &temp[index + 1];
-            index++;
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
         }
     }
 
     /* Group 4: PCAP_IF_LOOPBACK */
     for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
         if (curdev->flags & PCAP_IF_LOOPBACK) {
-            temp[index] = *curdev;
-            temp[index].next = &temp[index + 1];
-            index++;
+            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
+                    curdev->description, errbuf) == -1) {
+                return (-1);
+            }
         }
     }
 
-    /* force NULL-terminate the list */
-    temp[index - 1].next = NULL;
-
-    /* Sanity Check */
-    if (index != n_int) {
-        (void)snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcap_if_sort: sorting failed. "
-            "%u/%lu interfaces sorted", index, n_int);
-		return (-1);
-    }
-
-    free(*alldevsp);
-    *alldevsp = temp;
+    pcap_freealldevs(*alldevsp);
+    *alldevsp = newlist;
 
     return (0);
 }
