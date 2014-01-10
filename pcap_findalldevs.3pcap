@@ -163,9 +163,19 @@ pointer can be interpreted as if it pointed to a
 for IPv6 addresses, it can be interpreted as if it pointed to a
 .BR "struct sockaddr_in6".
 .PP
+The resulting list is sorted in order to have:
+.BR "UP&RUNNING"
+interfaces first, then
+.BR UP
+interfaces (but not running, such as a disconnected ethernet),
+.BR DOWN
+interfaces, and
+.BR LOOPBACK
+interfaces at the end.
+.PP
 The list of devices must be freed with
 .BR pcap_freealldevs() ,
-whch frees the list pointed to by
+which frees the list pointed to by
 .IR alldevs .
 .SH RETURN VALUE
 .B pcap_findalldevs()
