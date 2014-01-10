@@ -812,14 +812,14 @@ pcap_lookupdev(errbuf)
 	DWORD dwWindowsMajorVersion;
 	dwVersion = GetVersion();	/* get the OS version */
 	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-	
+
 	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
 		/*
 		 * Windows 95, 98, ME.
 		 */
 		ULONG NameLength = 8192;
 		static char AdaptersName[8192];
-		
+
 		if (PacketGetAdapterNames(AdaptersName,&NameLength) )
 			return (AdaptersName);
 		else
@@ -882,7 +882,7 @@ pcap_lookupdev(errbuf)
 
 		free(TAdaptersName);
 		return (char *)(AdaptersName);
-	}	
+	}
 }
 
 
@@ -892,7 +892,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register bpf_u_int32 *netp, *maskp;
 	register char *errbuf;
 {
-	/* 
+	/*
 	 * We need only the first IPv4 address, so we must scan the array returned by PacketGetNetInfo()
 	 * in order to skip non IPv4 (i.e. IPv6 addresses)
 	 */
@@ -918,7 +918,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 			*netp &= *maskp;
 			return (0);
 		}
-				
+
 	}
 
 	*netp = *maskp = 0;

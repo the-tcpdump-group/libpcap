@@ -104,7 +104,7 @@
 #include "pcap-dbus.h"
 #endif
 
-int 
+int
 pcap_not_initialized(pcap_t *pcap _U_)
 {
 	/* this means 'not initialized' */
@@ -216,7 +216,7 @@ pcap_next(pcap_t *p, struct pcap_pkthdr *h)
 	return (pkt);
 }
 
-int 
+int
 pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
     const u_char **pkt_data)
 {
@@ -350,7 +350,7 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 
 	/*
 	 * Get the list of regular interfaces first.
-	 */ 
+	 */
 	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
 		return (-1);	/* failure */
 
@@ -501,7 +501,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 #ifndef WIN32
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
-#endif 
+#endif
 
 	if (size == 0) {
 		/* No private data was requested. */
@@ -1454,7 +1454,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 
 #ifdef WIN32
 /*
- * Generate a string for the last Win32-specific error (i.e. an error generated when 
+ * Generate a string for the last Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
  * For errors occurred during standard C calls, we still use pcap_strerror()
  */
@@ -1862,7 +1862,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 {
 	const struct bpf_insn *fcode = fp->bf_insns;
 
-	if (fcode != NULL) 
+	if (fcode != NULL)
 		return (bpf_filter(fcode, pkt, h->len, h->caplen));
 	else
 		return (0);
