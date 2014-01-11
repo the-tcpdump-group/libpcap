@@ -266,64 +266,6 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
 
-/*
- * Sort the interfaces in order to have UP & RUNNING ones first
- */
-static int
-pcap_if_sort(pcap_if_t **alldevsp, char* errbuf)
-{
-    pcap_if_t* newlist = NULL;
-    pcap_if_t* curdev;
-
-    /* Group 1: PCAP_IF_RUNNING - PCAP_IF_UP - !PCAP_IF_LOOPBACK */
-    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
-        if ((curdev->flags & PCAP_IF_RUNNING) && (curdev->flags & PCAP_IF_UP) &&
-                !(curdev->flags & PCAP_IF_LOOPBACK)) {
-            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
-                    curdev->description, errbuf) == -1) {
-                return (-1);
-            }
-        }
-    }
-
-    /* Group 2: !PCAP_IF_RUNNING - PCAP_IF_UP - !PCAP_IF_LOOPBACK */
-    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
-        if (!(curdev->flags & PCAP_IF_RUNNING) && (curdev->flags & PCAP_IF_UP) &&
-                !(curdev->flags & PCAP_IF_LOOPBACK)) {
-            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
-                    curdev->description, errbuf) == -1) {
-                return (-1);
-            }
-        }
-    }
-
-    /* Group 3: !PCAP_IF_RUNNING - !PCAP_IF_UP - !PCAP_IF_LOOPBACK */
-    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
-        if (!(curdev->flags & PCAP_IF_RUNNING) && !(curdev->flags & PCAP_IF_UP) &&
-                !(curdev->flags & PCAP_IF_LOOPBACK)) {
-            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
-                    curdev->description, errbuf) == -1) {
-                return (-1);
-            }
-        }
-    }
-
-    /* Group 4: PCAP_IF_LOOPBACK */
-    for (curdev = *alldevsp; curdev != NULL; curdev = curdev->next) {
-        if (curdev->flags & PCAP_IF_LOOPBACK) {
-            if (pcap_add_if(&newlist, curdev->name, curdev->flags,
-                    curdev->description, errbuf) == -1) {
-                return (-1);
-            }
-        }
-    }
-
-    pcap_freealldevs(*alldevsp);
-    *alldevsp = newlist;
-
-    return (0);
-}
-
 #if defined(DAG_ONLY)
 int
 pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
@@ -444,12 +386,6 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 			}
 			return (-1);
 		}
-	}
-
-	if (pcap_if_sort(alldevsp, errbuf) == -1) {
-		pcap_freealldevs(*alldevsp);
-		*alldevsp = NULL;
-		return (-1);
 	}
 
 	return (0);
