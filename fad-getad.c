@@ -174,16 +174,6 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	}
 	for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
 		/*
-		 * Is this interface up?
-		 */
-		if (!(ifa->ifa_flags & IFF_UP)) {
-			/*
-			 * No, so don't add it to the list.
-			 */
-			continue;
-		}
-
-		/*
 		 * "ifa_addr" was apparently null on at least one
 		 * interface on some system.
 		 *
