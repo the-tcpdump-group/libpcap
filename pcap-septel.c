@@ -254,13 +254,8 @@ static int septel_stats(pcap_t *p, struct pcap_stat *ps) {
 int
 septel_findalldevs(pcap_if_t **devlistp, char *errbuf)
 {
-unsigned char *p;
-  const char description[512]= "Intel/Septel device";
-  char name[512]="septel" ;
-  int ret = 0;
-  pcap_add_if(devlistp,name,0,description,errbuf);
-
-  return (ret); 
+  return (pcap_add_if(devlistp,"septel",0,
+                      "Intel/Septel device",errbuf));
 }
 
 
