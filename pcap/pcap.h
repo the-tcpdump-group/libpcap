@@ -220,7 +220,7 @@ struct pcap_if {
 };
 
 #define PCAP_IF_LOOPBACK	0x00000001	/* interface is loopback */
-#define PCAP_IF_UP			0x00000002	/* interface is up */
+#define PCAP_IF_UP		0x00000002	/* interface is up */
 #define PCAP_IF_RUNNING		0x00000004	/* interface is running */
 
 /*

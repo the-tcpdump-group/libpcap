@@ -2116,8 +2116,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		*q = '\0';
 
 		/*
-		 * Get the flags for this interface, and skip it if
-		 * it's not up.
+		 * Get the flags for this interface.
 		 */
 		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
@@ -2131,8 +2130,6 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 			ret = -1;
 			break;
 		}
-		if (!(ifrflags.ifr_flags & IFF_UP))
-			continue;
 
 		/*
 		 * Add an entry for this interface, with no addresses.
@@ -2263,8 +2260,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 		*q = '\0';
 
 		/*
-		 * Get the flags for this interface, and skip it if
-		 * it's not up.
+		 * Get the flags for this interface.
 		 */
 		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
@@ -2278,8 +2274,6 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 			ret = -1;
 			break;
 		}
-		if (!(ifrflags.ifr_flags & IFF_UP))
-			continue;
 
 		/*
 		 * Add an entry for this interface, with no addresses.

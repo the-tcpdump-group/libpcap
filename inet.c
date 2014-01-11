@@ -107,29 +107,53 @@ dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 	return (memcpy(newsa, sa, sa_length));
 }
 
-static int
-get_instance(const char *name)
+/*
+ * Construct a "figure of merit" for an interface, for use when sorting
+ * the list of interfaces, in which interfaces that are up are superior
+ * to interfaces that aren't up, interfaces that are up and running are
+ * superior to interfaces that are up but not running, and non-loopback
+ * interfaces that are up and running are superior to loopback interfaces,
+ * and interfaces with the same flags have a figure of merit that's higher
+ * the lower the instance number.
+ *
+ * The goal is to try to put the interfaces most likely to be useful for
+ * capture at the beginning of the list.
+ *
+ * The figure of merit, which is lower the "better" the interface is,
+ * has the uppermost bit set if the interface isn't running, the bit
+ * below that set if the interface isn't up, the bit below that set
+ * if the interface is a loopback interface, and the interface index
+ * in the 29 bits below that.  (Yes, we assume u_int is 32 bits.)
+ */
+static u_int
+get_figure_of_merit(pcap_if_t *dev)
 {
 	const char *cp, *endcp;
-	int n;
+	u_int n;
 
-	if (strcmp(name, "any") == 0) {
+	if (strcmp(dev->name, "any") == 0) {
 		/*
 		 * Give the "any" device an artificially high instance
 		 * number, so it shows up after all other non-loopback
 		 * interfaces.
 		 */
-		return INT_MAX;
+		n = 0x1FFFFFFF;	/* 29 all-1 bits */
 	}
 
-	endcp = name + strlen(name);
-	for (cp = name; cp < endcp && !isdigit((unsigned char)*cp); ++cp)
+	endcp = dev->name + strlen(dev->name);
+	for (cp = dev->name; cp < endcp && !isdigit((unsigned char)*cp); ++cp)
 		continue;
 
 	if (isdigit((unsigned char)*cp))
 		n = atoi(cp);
 	else
 		n = 0;
+	if (!(dev->flags & PCAP_IF_RUNNING))
+		n |= 0x80000000;
+	if (!(dev->flags & PCAP_IF_UP))
+		n |= 0x40000000;
+	if (dev->flags & PCAP_IF_LOOPBACK)
+		n |= 0x20000000;
 	return (n);
 }
 
@@ -139,7 +163,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 {
 	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
-	int this_instance;
+	u_int this_figure_of_merit, nextdev_figure_of_merit;
 	char open_errbuf[PCAP_ERRBUF_SIZE];
 
 	/*
@@ -266,17 +290,15 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 
 		/*
 		 * Add it to the list, in the appropriate location.
-		 * First, get the instance number of this interface.
+		 * First, get the "figure of merit" for this
+		 * interface.
 		 */
-		this_instance = get_instance(name);
+		this_figure_of_merit = get_figure_of_merit(curdev);
 
 		/*
-		 * Now look for the last interface with an instance number
-		 * less than or equal to the new interface's instance
-		 * number - except that non-loopback interfaces are
-		 * arbitrarily treated as having interface numbers less
-		 * than those of loopback interfaces, so the loopback
-		 * interfaces are put at the end of the list.
+		 * Now look for the last interface with an figure of merit
+		 * less than or equal to the new interface's figure of
+		 * merit.
 		 *
 		 * We start with "prevdev" being NULL, meaning we're before
 		 * the first element in the list.
@@ -306,34 +328,13 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			}
 
 			/*
-			 * Is the new interface a non-loopback interface
-			 * and the next interface a loopback interface?
+			 * Is the new interface's figure of merit less
+			 * than the next interface's figure of merit,
+			 * meaning that the new interface is better
+			 * than the next interface?
 			 */
-			if (!(curdev->flags & PCAP_IF_LOOPBACK) &&
-			    (nextdev->flags & PCAP_IF_LOOPBACK)) {
-				/*
-				 * Yes, we should put the new entry
-				 * before "nextdev", i.e. after "prevdev".
-				 */
-				break;
-			}
-
-			/*
-			 * Is the new interface's instance number less
-			 * than the next interface's instance number,
-			 * and is it the case that the new interface is a
-			 * non-loopback interface or the next interface is
-			 * a loopback interface?
-			 *
-			 * (The goal of both loopback tests is to make
-			 * sure that we never put a loopback interface
-			 * before any non-loopback interface and that we
-			 * always put a non-loopback interface before all
-			 * loopback interfaces.)
-			 */
-			if (this_instance < get_instance(nextdev->name) &&
-			    (!(curdev->flags & PCAP_IF_LOOPBACK) ||
-			       (nextdev->flags & PCAP_IF_LOOPBACK))) {
+			nextdev_figure_of_merit = get_figure_of_merit(nextdev);
+			if (this_figure_of_merit < nextdev_figure_of_merit) {
 				/*
 				 * Yes - we should put the new entry
 				 * before "nextdev", i.e. after "prevdev".
@@ -424,7 +425,6 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 {
 	pcap_if_t *curdev;
 	char *description = NULL;
-	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
 #ifdef SIOCGIFDESCR
 	int s;
 	struct ifreq ifrdesc;
@@ -521,6 +521,26 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	 *
 	 * Allocate the new entry and fill it in.
 	 */
+	return (add_addr_to_dev(curdev, addr, addr_size, netmask, netmask_size,
+	    broadaddr, broadaddr_size, dstaddr, dstaddr_size, errbuf));
+}
+
+/*
+ * Add an entry to the list of addresses for an interface.
+ * "curdev" is the entry for that interface.
+ * If this is the first IP address added to the interface, move it
+ * in the list as appropriate.
+ */
+int
+add_addr_to_dev(pcap_if_t *curdev,
+    struct sockaddr *addr, size_t addr_size,
+    struct sockaddr *netmask, size_t netmask_size,
+    struct sockaddr *broadaddr, size_t broadaddr_size,
+    struct sockaddr *dstaddr, size_t dstaddr_size,
+    char *errbuf)
+{
+	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
+
 	curaddr = malloc(sizeof(pcap_addr_t));
 	if (curaddr == NULL) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,

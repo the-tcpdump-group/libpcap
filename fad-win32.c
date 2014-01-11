@@ -40,102 +40,6 @@
 #include <Packet32.h>
 
 #include <errno.h>
-	
-/*
- * Add an entry to the list of addresses for an interface.
- * "curdev" is the entry for that interface.
- */
-static int
-add_addr_to_list(pcap_if_t *curdev, struct sockaddr *addr,
-    struct sockaddr *netmask, struct sockaddr *broadaddr,
-    struct sockaddr *dstaddr, char *errbuf)
-{
-	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
-
-	/*
-	 * Allocate the new entry and fill it in.
-	 */
-	curaddr = (pcap_addr_t*)malloc(sizeof(pcap_addr_t));
-	if (curaddr == NULL) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
-		return (-1);
-	}
-
-	curaddr->next = NULL;
-	if (addr != NULL) {
-		curaddr->addr = (struct sockaddr*)dup_sockaddr(addr, sizeof(struct sockaddr_storage));
-		if (curaddr->addr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
-			free(curaddr);
-			return (-1);
-		}
-	} else
-		curaddr->addr = NULL;
-
-	if (netmask != NULL) {
-		curaddr->netmask = (struct sockaddr*)dup_sockaddr(netmask, sizeof(struct sockaddr_storage));
-		if (curaddr->netmask == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
-			free(curaddr);
-			return (-1);
-		}
-	} else
-		curaddr->netmask = NULL;
-		
-	if (broadaddr != NULL) {
-		curaddr->broadaddr = (struct sockaddr*)dup_sockaddr(broadaddr, sizeof(struct sockaddr_storage));
-		if (curaddr->broadaddr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
-			free(curaddr);
-			return (-1);
-		}
-	} else
-		curaddr->broadaddr = NULL;
-		
-	if (dstaddr != NULL) {
-		curaddr->dstaddr = (struct sockaddr*)dup_sockaddr(dstaddr, sizeof(struct sockaddr_storage));
-		if (curaddr->dstaddr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
-			free(curaddr);
-			return (-1);
-		}
-	} else
-		curaddr->dstaddr = NULL;
-		
-	/*
-	 * Find the end of the list of addresses.
-	 */
-	for (prevaddr = curdev->addresses; prevaddr != NULL; prevaddr = nextaddr) {
-		nextaddr = prevaddr->next;
-		if (nextaddr == NULL) {
-			/*
-			 * This is the end of the list.
-			 */
-			break;
-		}
-	}
-
-	if (prevaddr == NULL) {
-		/*
-		 * The list was empty; this is the first member.
-		 */
-		curdev->addresses = curaddr;
-	} else {
-		/*
-		 * "prevaddr" is the last member of the list; append
-		 * this member to it.
-		 */
-		prevaddr->next = curaddr;
-	}
-
-	return (0);
-}
-
 
 static int
 pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
@@ -184,12 +88,16 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 		 */
 		if(curdev == NULL)
 			break;
-		res = add_addr_to_list(curdev,
+		res = add_addr_to_dev(curdev,
 		    (struct sockaddr *)&if_addrs[if_addr_size].IPAddress,
+		    sizeof (struct sockaddr_storage),
 		    (struct sockaddr *)&if_addrs[if_addr_size].SubnetMask,
+		    sizeof (struct sockaddr_storage),
 		    (struct sockaddr *)&if_addrs[if_addr_size].Broadcast,
+		    sizeof (struct sockaddr_storage),
 		    NULL,
-			errbuf);
+		    0,
+		    errbuf);
 		if (res == -1) {
 			/*
 			 * Failure.

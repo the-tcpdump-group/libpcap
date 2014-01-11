@@ -92,6 +92,12 @@ device flags:
 .TP
 .B PCAP_IF_LOOPBACK
 set if the device is a loopback interface
+.TP
+.B PCAP_IF_UP
+set if the device is up
+.TP
+.B PCAP_IF_RUNNING
+set if the device is running
 .RE
 .RE
 .PP

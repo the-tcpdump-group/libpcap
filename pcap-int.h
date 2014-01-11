@@ -385,6 +385,9 @@ int	pcap_platform_finddevs(pcap_if_t **, char *);
 int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
 	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, char *);
+int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *dstaddr, size_t, char *errbuf);
 int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
 struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
 int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,

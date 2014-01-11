@@ -237,8 +237,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 			continue;
 
 		/*
-		 * Get the flags for this interface, and skip it if it's
-		 * not up.
+		 * Get the flags for this interface.
 		 */
 		strncpy(ifrflags.ifr_name, ifrp->ifr_name,
 		    sizeof(ifrflags.ifr_name));
@@ -253,8 +252,6 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 			ret = -1;
 			break;
 		}
-		if (!(ifrflags.ifr_flags & IFF_UP))
-			continue;
 
 		/*
 		 * Get the netmask for this address on this interface.
