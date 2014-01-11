@@ -424,7 +424,6 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 {
 	pcap_if_t *curdev;
 	char *description = NULL;
-	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
 #ifdef SIOCGIFDESCR
 	int s;
 	struct ifreq ifrdesc;
@@ -521,6 +520,26 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 	 *
 	 * Allocate the new entry and fill it in.
 	 */
+	return (add_addr_to_dev(curdev, addr, addr_size, netmask, netmask_size,
+	    broadaddr, broadaddr_size, dstaddr, dstaddr_size, errbuf));
+}
+
+/*
+ * Add an entry to the list of addresses for an interface.
+ * "curdev" is the entry for that interface.
+ * If this is the first IP address added to the interface, move it
+ * in the list as appropriate.
+ */
+int
+add_addr_to_dev(pcap_if_t *curdev,
+    struct sockaddr *addr, size_t addr_size,
+    struct sockaddr *netmask, size_t netmask_size,
+    struct sockaddr *broadaddr, size_t broadaddr_size,
+    struct sockaddr *dstaddr, size_t dstaddr_size,
+    char *errbuf)
+{
+	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
+
 	curaddr = malloc(sizeof(pcap_addr_t));
 	if (curaddr == NULL) {
 		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
