@@ -370,6 +370,9 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 }
 
 /*
+ * Try to get a description for a given device.
+ * Returns a mallocated description if it could and NULL if it couldn't.
+ *
  * XXX - on FreeBSDs that support it, should it get the sysctl named
  * "dev.{adapter family name}.{adapter unit}.%desc" to get a description
  * of the adapter?  Note that "dev.an.0.%desc" is "Aironet PC4500/PC4800"
@@ -415,17 +418,11 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
  * Do any other UN*Xes, or desktop environments support getting a
  * description?
  */
-int
-add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
-    struct sockaddr *addr, size_t addr_size,
-    struct sockaddr *netmask, size_t netmask_size,
-    struct sockaddr *broadaddr, size_t broadaddr_size,
-    struct sockaddr *dstaddr, size_t dstaddr_size,
-    char *errbuf)
+static char *
+get_if_description(const char *name)
 {
-	pcap_if_t *curdev;
-	char *description = NULL;
 #ifdef SIOCGIFDESCR
+	char *description = NULL;
 	int s;
 	struct ifreq ifrdesc;
 #ifndef IFDESCRSIZE
@@ -433,9 +430,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 #else
 	size_t descrlen = IFDESCRSIZE;
 #endif /* IFDESCRSIZE */
-#endif /* SIOCGIFDESCR */
 
-#ifdef SIOCGIFDESCR
 	/*
 	 * Get the description for the interface.
 	 */
@@ -496,8 +491,25 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 			description = NULL;
 		}
 	}
-#endif /* SIOCGIFDESCR */
 
+	return (description);
+#else /* SIOCGIFDESCR */
+	return (NULL);
+#endif /* SIOCGIFDESCR */
+}
+
+int
+add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
+    struct sockaddr *addr, size_t addr_size,
+    struct sockaddr *netmask, size_t netmask_size,
+    struct sockaddr *broadaddr, size_t broadaddr_size,
+    struct sockaddr *dstaddr, size_t dstaddr_size,
+    char *errbuf)
+{
+	pcap_if_t *curdev;
+	char *description;
+
+	description = get_if_description(name);
 	if (add_or_find_if(&curdev, alldevs, name, flags, description,
 	    errbuf) == -1) {
 		free(description);
