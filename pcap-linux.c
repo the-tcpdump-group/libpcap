@@ -1979,6 +1979,77 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	return 0;
 }
 
+static int
+add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
+{
+	const char *p;
+	char name[512];	/* XXX - pick a size */
+	char *q, *saveq;
+	struct ifreq ifrflags;
+
+	/*
+	 * Get the interface name.
+	 */
+	p = ifname;
+	q = &name[0];
+	while (*p != '\0' && isascii(*p) && !isspace(*p)) {
+		if (*p == ':') {
+			/*
+			 * This could be the separator between a
+			 * name and an alias number, or it could be
+			 * the separator between a name with no
+			 * alias number and the next field.
+			 *
+			 * If there's a colon after digits, it
+			 * separates the name and the alias number,
+			 * otherwise it separates the name and the
+			 * next field.
+			 */
+			saveq = q;
+			while (isascii(*p) && isdigit(*p))
+				*q++ = *p++;
+			if (*p != ':') {
+				/*
+				 * That was the next field,
+				 * not the alias number.
+				 */
+				q = saveq;
+			}
+			break;
+		} else
+			*q++ = *p++;
+	}
+	*q = '\0';
+
+	/*
+	 * Get the flags for this interface.
+	 */
+	strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+	if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
+		if (errno == ENXIO || errno == ENODEV)
+			return (0);	/* device doesn't actually exist - ignore it */
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "SIOCGIFFLAGS: %.*s: %s",
+		    (int)sizeof(ifrflags.ifr_name),
+		    ifrflags.ifr_name,
+		    pcap_strerror(errno));
+		return (-1);
+	}
+
+	/*
+	 * Add an entry for this interface, with no addresses.
+	 */
+	if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
+	    errbuf) == -1) {
+		/*
+		 * Failure.
+		 */
+		return (-1);
+	}
+
+	return (0);
+}
+
 /*
  * Get from "/sys/class/net" all interfaces listed there; if they're
  * already in the list of interfaces we have, that won't add another
@@ -1992,6 +2063,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
  * We also don't fail if we couldn't open "/sys/class/net"; we just leave
  * the list of interfaces as is, and return 0, so that we can try
  * scanning /proc/net/dev.
+ *
+ * Otherwise, we return 1 if we don't get an error and -1 if we do.
  */
 static int
 scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
@@ -2001,10 +2074,6 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	struct dirent *ent;
 	char subsystem_path[PATH_MAX+1];
 	struct stat statb;
-	char *p;
-	char name[512];	/* XXX - pick a size */
-	char *q, *saveq;
-	struct ifreq ifrflags;
 	int ret = 1;
 
 	sys_class_net_d = opendir("/sys/class/net");
@@ -2082,63 +2151,10 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 		}
 
 		/*
-		 * Get the interface name.
+		 * Attempt to add the interface.
 		 */
-		p = &ent->d_name[0];
-		q = &name[0];
-		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
-			if (*p == ':') {
-				/*
-				 * This could be the separator between a
-				 * name and an alias number, or it could be
-				 * the separator between a name with no
-				 * alias number and the next field.
-				 *
-				 * If there's a colon after digits, it
-				 * separates the name and the alias number,
-				 * otherwise it separates the name and the
-				 * next field.
-				 */
-				saveq = q;
-				while (isascii(*p) && isdigit(*p))
-					*q++ = *p++;
-				if (*p != ':') {
-					/*
-					 * That was the next field,
-					 * not the alias number.
-					 */
-					q = saveq;
-				}
-				break;
-			} else
-				*q++ = *p++;
-		}
-		*q = '\0';
-
-		/*
-		 * Get the flags for this interface.
-		 */
-		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
-		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
-			if (errno == ENXIO || errno == ENODEV)
-				continue;
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "SIOCGIFFLAGS: %.*s: %s",
-			    (int)sizeof(ifrflags.ifr_name),
-			    ifrflags.ifr_name,
-			    pcap_strerror(errno));
-			ret = -1;
-			break;
-		}
-
-		/*
-		 * Add an entry for this interface, with no addresses.
-		 */
-		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
-		    errbuf) == -1) {
-			/*
-			 * Failure.
-			 */
+		if (add_linux_if(devlistp, &ent->d_name[0], fd, errbuf) == -1) {
+			/* Fail. */
 			ret = -1;
 			break;
 		}
@@ -2176,9 +2192,6 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	char linebuf[512];
 	int linenum;
 	char *p;
-	char name[512];	/* XXX - pick a size */
-	char *q, *saveq;
-	struct ifreq ifrflags;
 	int ret = 0;
 
 	proc_net_f = fopen("/proc/net/dev", "r");
@@ -2227,62 +2240,10 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 			continue;	/* blank line */
 
 		/*
-		 * Get the interface name.
+		 * Attempt to add the interface.
 		 */
-		q = &name[0];
-		while (*p != '\0' && isascii(*p) && !isspace(*p)) {
-			if (*p == ':') {
-				/*
-				 * This could be the separator between a
-				 * name and an alias number, or it could be
-				 * the separator between a name with no
-				 * alias number and the next field.
-				 *
-				 * If there's a colon after digits, it
-				 * separates the name and the alias number,
-				 * otherwise it separates the name and the
-				 * next field.
-				 */
-				saveq = q;
-				while (isascii(*p) && isdigit(*p))
-					*q++ = *p++;
-				if (*p != ':') {
-					/*
-					 * That was the next field,
-					 * not the alias number.
-					 */
-					q = saveq;
-				}
-				break;
-			} else
-				*q++ = *p++;
-		}
-		*q = '\0';
-
-		/*
-		 * Get the flags for this interface.
-		 */
-		strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
-		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
-			if (errno == ENXIO)
-				continue;
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "SIOCGIFFLAGS: %.*s: %s",
-			    (int)sizeof(ifrflags.ifr_name),
-			    ifrflags.ifr_name,
-			    pcap_strerror(errno));
-			ret = -1;
-			break;
-		}
-
-		/*
-		 * Add an entry for this interface, with no addresses.
-		 */
-		if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
-		    errbuf) == -1) {
-			/*
-			 * Failure.
-			 */
+		if (add_linux_if(devlistp, p, fd, errbuf) == -1) {
+			/* Fail. */
 			ret = -1;
 			break;
 		}

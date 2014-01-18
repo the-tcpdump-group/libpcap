@@ -157,6 +157,23 @@ get_figure_of_merit(pcap_if_t *dev)
 	return (n);
 }
 
+/*
+ * Look for a given device in the specified list of devices.
+ *
+ * If we find it, return 0 and set *curdev_ret to point to it.
+ *
+ * If we don't find it, check whether we can open it:
+ *
+ *     If that fails with PCAP_ERROR_NO_SUCH_DEVICE or
+ *     PCAP_ERROR_IFACE_NOT_UP, don't attempt to add an entry for
+ *     it, as that probably means it exists but doesn't support
+ *     packet capture.
+ *
+ *     Otherwise, attempt to add an entry for it, with the specified
+ *     ifnet flags and description, and, if that succeeds, return 0
+ *     and set *curdev_ret to point to the new entry, otherwise
+ *     return PCAP_ERROR and set errbuf to an error message.
+ */
 int
 add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
     u_int flags, const char *description, char *errbuf)
@@ -165,6 +182,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 	pcap_if_t *curdev, *prevdev, *nextdev;
 	u_int this_figure_of_merit, nextdev_figure_of_merit;
 	char open_errbuf[PCAP_ERRBUF_SIZE];
+	int ret;
 
 	/*
 	 * Is there already an entry in the list for this interface?
@@ -224,23 +242,72 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			}
 			strcpy(en_name, "en");
 			strcat(en_name, name + 3);
-			p = pcap_open_live(en_name, 68, 0, 0, open_errbuf);
+			p = pcap_create(en_name, open_errbuf);
 			free(en_name);
 		} else
 #endif /* __APPLE */
-		p = pcap_open_live(name, 68, 0, 0, open_errbuf);
+		p = pcap_create(name, open_errbuf);
 		if (p == NULL) {
 			/*
-			 * No.  Don't bother including it.
-			 * Don't treat this as an error, though.
+			 * The attempt to create the pcap_t failed;
+			 * that's probably an indication that we're
+			 * out of memory.
+			 *
+			 * Don't bother including this interface,
+			 * but don't treat it as an error.
 			 */
 			*curdev_ret = NULL;
 			return (0);
 		}
+		/* Small snaplen, so we don't try to allocate much memory. */
+		pcap_set_snaplen(p, 68);
+		ret = pcap_activate(p);
 		pcap_close(p);
+		switch (ret) {
+
+		case PCAP_ERROR_NO_SUCH_DEVICE:
+		case PCAP_ERROR_IFACE_NOT_UP:
+			/*
+			 * We expect these two errors - they're the
+			 * reason we try to open the device.
+			 *
+			 * PCAP_ERROR_NO_SUCH_DEVICE typically means
+			 * "there's no such device *known to the
+			 * OS's capture mechanism*", so, even though
+			 * it might be a valid network interface, you
+			 * can't capture on it (e.g., the loopback
+			 * device in Solaris up to Solaris 10, or
+			 * the vmnet devices in OS X with VMware
+			 * Fusion).  We don't include those devices
+			 * in our list of devices, as there's no
+			 * point in doing so - they're not available
+			 * for capture.
+			 *
+			 * PCAP_ERROR_IFACE_NOT_UP means that the
+			 * OS's capture mechanism doesn't work on
+			 * interfaces not marked as up; some capture
+			 * mechanisms *do* support that, so we no
+			 * longer reject those interfaces out of hand,
+			 * but we *do* want to reject them if they
+			 * can't be opened for capture.
+			 */
+			*curdev_ret = NULL;
+			return (0);
+		}
 
 		/*
-		 * Yes, we can open it.
+		 * Yes, we can open it, or we can't, for some other
+		 * reason.
+		 *
+		 * If we can open it, we want to offer it for
+		 * capture, as you can capture on it.  If we can't,
+		 * we want to offer it for capture, so that, if
+		 * the user tries to capture on it, they'll get
+		 * an error and they'll know why they can't
+		 * capture on it (e.g., insufficient permissions)
+		 * or they'll report it as a problem (and then
+		 * have the error message to provide as information).
+		 *
 		 * Allocate a new entry.
 		 */
 		curdev = malloc(sizeof(pcap_if_t));
@@ -370,6 +437,9 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 }
 
 /*
+ * Try to get a description for a given device.
+ * Returns a mallocated description if it could and NULL if it couldn't.
+ *
  * XXX - on FreeBSDs that support it, should it get the sysctl named
  * "dev.{adapter family name}.{adapter unit}.%desc" to get a description
  * of the adapter?  Note that "dev.an.0.%desc" is "Aironet PC4500/PC4800"
@@ -415,17 +485,11 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
  * Do any other UN*Xes, or desktop environments support getting a
  * description?
  */
-int
-add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
-    struct sockaddr *addr, size_t addr_size,
-    struct sockaddr *netmask, size_t netmask_size,
-    struct sockaddr *broadaddr, size_t broadaddr_size,
-    struct sockaddr *dstaddr, size_t dstaddr_size,
-    char *errbuf)
+static char *
+get_if_description(const char *name)
 {
-	pcap_if_t *curdev;
-	char *description = NULL;
 #ifdef SIOCGIFDESCR
+	char *description = NULL;
 	int s;
 	struct ifreq ifrdesc;
 #ifndef IFDESCRSIZE
@@ -433,9 +497,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 #else
 	size_t descrlen = IFDESCRSIZE;
 #endif /* IFDESCRSIZE */
-#endif /* SIOCGIFDESCR */
 
-#ifdef SIOCGIFDESCR
 	/*
 	 * Get the description for the interface.
 	 */
@@ -496,8 +558,44 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
 			description = NULL;
 		}
 	}
-#endif /* SIOCGIFDESCR */
 
+	return (description);
+#else /* SIOCGIFDESCR */
+	return (NULL);
+#endif /* SIOCGIFDESCR */
+}
+
+/*
+ * Try to get a description for a given device, and then look for that
+ * device in the specified list of devices.
+ *
+ * If we find it, add the specified address to it and return 0.
+ *
+ * If we don't find it, check whether we can open it:
+ *
+ *     If that fails with PCAP_ERROR_NO_SUCH_DEVICE or
+ *     PCAP_ERROR_IFACE_NOT_UP, don't attempt to add an entry for
+ *     it, as that probably means it exists but doesn't support
+ *     packet capture.
+ *
+ *     Otherwise, attempt to add an entry for it, with the specified
+ *     ifnet flags and description, and, if that succeeds, add the
+ *     specified address to it, set *curdev_ret to point to the new
+ *     entry, and return 0, otherwise return PCAP_ERROR and set errbuf
+ *     to an error message.
+ */
+int
+add_addr_to_iflist(pcap_if_t **alldevs, const char *name, u_int flags,
+    struct sockaddr *addr, size_t addr_size,
+    struct sockaddr *netmask, size_t netmask_size,
+    struct sockaddr *broadaddr, size_t broadaddr_size,
+    struct sockaddr *dstaddr, size_t dstaddr_size,
+    char *errbuf)
+{
+	char *description;
+	pcap_if_t *curdev;
+
+	description = get_if_description(name);
 	if (add_or_find_if(&curdev, alldevs, name, flags, description,
 	    errbuf) == -1) {
 		free(description);
@@ -634,6 +732,23 @@ add_addr_to_dev(pcap_if_t *curdev,
 	return (0);
 }
 
+/*
+ * Look for a given device in the specified list of devices.
+ *
+ * If we find it, return 0.
+ *
+ * If we don't find it, check whether we can open it:
+ *
+ *     If that fails with PCAP_ERROR_NO_SUCH_DEVICE or
+ *     PCAP_ERROR_IFACE_NOT_UP, don't attempt to add an entry for
+ *     it, as that probably means it exists but doesn't support
+ *     packet capture.
+ *
+ *     Otherwise, attempt to add an entry for it, with the specified
+ *     ifnet flags and description, and, if that succeeds, return 0
+ *     and set *curdev_ret to point to the new entry, otherwise
+ *     return PCAP_ERROR and set errbuf to an error message.
+ */
 int
 pcap_add_if(pcap_if_t **devlist, const char *name, u_int flags,
     const char *description, char *errbuf)
