@@ -140,6 +140,8 @@ static const char rcsid[] _U_ =
 #include <net/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/utsname.h>
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -329,8 +331,21 @@ static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
 
+// hack for 64bit arch
+struct tpacket_hdr_64 {
+	uint64_t   tp_status;
+	unsigned int    tp_len;
+	unsigned int    tp_snaplen;
+	unsigned short  tp_mac;
+	unsigned short  tp_net;
+	unsigned int    tp_sec;
+	unsigned int    tp_usec;
+};
+#define TPACKET_V1_64 99
+
 union thdr {
 	struct tpacket_hdr	*h1;
+	struct tpacket_hdr_64 *h1_64;
 	struct tpacket2_hdr	*h2;
 	void			*raw;
 };
@@ -3436,6 +3451,20 @@ prepare_tpacket_socket(pcap_t *handle)
 	}
 
 #endif /* HAVE_TPACKET2 */
+
+	// 32bit userspace + 64bit kernel + tpacket_v1 = not work
+	// so we make a hack and introduce TPACKET_V1_64
+	if (handlep->tp_version == TPACKET_V1 && sizeof(long) == 4) {
+		struct utsname utsname;
+		uname(&utsname);
+		if (!strcmp("x86_64", utsname.machine)) {
+			fprintf(stderr,
+				"pcap: old 64bit kernel detected, apply workaround for tpacket_v1 interface\n");
+			handlep->tp_version = TPACKET_V1_64;
+			handlep->tp_hdrlen = sizeof(struct tpacket_hdr_64);
+		}
+	}
+
 	return 1;
 }
 
@@ -3876,6 +3905,7 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 	h.raw = RING_GET_FRAME(handle);
 	switch (handlep->tp_version) {
 	case TPACKET_V1:
+	case TPACKET_V1_64:
 		if (status != (h.h1->tp_status ? TP_STATUS_USER :
 						TP_STATUS_KERNEL))
 			return NULL;
@@ -4010,6 +4040,13 @@ pcap_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback,
 			tp_snaplen = h.h1->tp_snaplen;
 			tp_sec	   = h.h1->tp_sec;
 			tp_usec	   = h.h1->tp_usec;
+			break;
+		case TPACKET_V1_64:
+			tp_len     = h.h1_64->tp_len;
+			tp_mac     = h.h1_64->tp_mac;
+			tp_snaplen = h.h1_64->tp_snaplen;
+			tp_sec     = h.h1_64->tp_sec;
+			tp_usec    = h.h1_64->tp_usec;
 			break;
 #ifdef HAVE_TPACKET2
 		case TPACKET_V2:
@@ -4150,6 +4187,7 @@ skip:
 		/* next packet */
 		switch (handlep->tp_version) {
 		case TPACKET_V1:
+		case TPACKET_V1_64:
 			h.h1->tp_status = TP_STATUS_KERNEL;
 			break;
 #ifdef HAVE_TPACKET2
