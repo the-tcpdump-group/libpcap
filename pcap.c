@@ -828,8 +828,61 @@ pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 int
 pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-
 	return (p->read_op(p, cnt, callback, user));
+}
+
+/*
+ * A dummy pcap handler
+ */
+static void
+pcap_dummy_handler(u_char *user _U_, const struct pcap_pkthdr *h _U_, const u_char *data _U_)
+{
+}
+
+/*
+ * Works as pcap_loop, but runs the callback every n packets
+ */
+int
+pcap_loop_sample(pcap_t *p, int cnt, pcap_handler callback, u_char *user, unsigned n)
+{
+    unsigned packets;
+    int ret;
+
+    while(1) {
+        if (cnt > 0)
+            packets = (cnt > n ? n : cnt);
+        else
+            packets = n;
+
+        // First, call the dummy handler that does nothing
+        ret = pcap_loop(p, packets - 1, pcap_dummy_handler, user);
+        switch(ret) {
+            case -2:
+                return (0);
+                break;
+            case -1:
+                return (-1);
+                break;
+        }
+        // Then call the reall callback on one packet
+        ret = pcap_loop(p, 1, callback, user);
+        switch(ret) {
+            case -2:
+                return (0);
+                break;
+            case -1:
+                return (-1);
+                break;
+        }
+
+        if (cnt > 0)
+            cnt -= packets;
+
+        if (cnt == 0)
+            return (0);
+    }
+    // Never reached
+    return (0);
 }
 
 int
