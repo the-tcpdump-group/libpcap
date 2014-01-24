@@ -8157,7 +8157,27 @@ fi
 
 
 if test "x$enable_dbus" != "xno"; then
-	# Extract the first word of "pkg-config", so it can be a program name with args.
+	if test "x$enable_dbus" = "xyes"; then
+		case "$host_os" in
+
+		darwin*)
+			#
+			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
+			#
+			as_fn_error $? "Due to freedesktop.org bug 74029, D-Bus capture support is not available on OS X" "$LINENO" 5
+			;;
+		esac
+	else
+		case "$host_os" in
+
+		darwin*)
+			#
+			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
+			#
+			;;
+
+		*)
+			# Extract the first word of "pkg-config", so it can be a program name with args.
 set dummy pkg-config; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
@@ -8195,28 +8215,28 @@ $as_echo "no" >&6; }
 fi
 
 
-	if test "x$PKGCONFIG" != "xno"; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for D-Bus" >&5
+			if test "x$PKGCONFIG" != "xno"; then
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for D-Bus" >&5
 $as_echo_n "checking for D-Bus... " >&6; }
-		if "$PKGCONFIG" dbus-1; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+				if "$PKGCONFIG" dbus-1; then
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-			DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
-			DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
-			save_CFLAGS="$CFLAGS"
-			save_LIBS="$LIBS"
-			CFLAGS="$CFLAGS $DBUS_CFLAGS"
-			LIBS="$LIBS $DBUS_LIBS"
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the D-Bus library defines dbus_connection_read_write" >&5
+					DBUS_CFLAGS=`"$PKGCONFIG" --cflags dbus-1`
+					DBUS_LIBS=`"$PKGCONFIG" --libs dbus-1`
+					save_CFLAGS="$CFLAGS"
+					save_LIBS="$LIBS"
+					CFLAGS="$CFLAGS $DBUS_CFLAGS"
+					LIBS="$LIBS $DBUS_LIBS"
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the D-Bus library defines dbus_connection_read_write" >&5
 $as_echo_n "checking whether the D-Bus library defines dbus_connection_read_write... " >&6; }
-			cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+					cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <string.h>
 
-			     #include <time.h>
-			     #include <sys/time.h>
+					     #include <time.h>
+					     #include <sys/time.h>
 
-			     #include <dbus/dbus.h>
+					     #include <dbus/dbus.h>
 int
 main ()
 {
@@ -8227,34 +8247,37 @@ return dbus_connection_read_write(NULL, 0);
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+						{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_DBUS 1" >>confdefs.h
 
-				DBUS_SRC=pcap-dbus.c
-				V_INCLS="$V_INCLS $DBUS_CFLAGS"
+						DBUS_SRC=pcap-dbus.c
+						V_INCLS="$V_INCLS $DBUS_CFLAGS"
 
 else
 
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+						{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-				if test "x$enable_dbus" = "xyes"; then
-				    as_fn_error $? "--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()" "$LINENO" 5
-				fi
-				LIBS="$save_LIBS"
+						if test "x$enable_dbus" = "xyes"; then
+						    as_fn_error $? "--enable-dbus was given, but the D-Bus library doesn't define dbus_connection_read_write()" "$LINENO" 5
+						fi
+						LIBS="$save_LIBS"
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-			CFLAGS="$save_CFLAGS"
-		else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+					CFLAGS="$save_CFLAGS"
+				else
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-			if test "x$enable_dbus" = "xyes"; then
-				as_fn_error $? "--enable-dbus was given, but the dbus-1 package is not installed" "$LINENO" 5
+					if test "x$enable_dbus" = "xyes"; then
+						as_fn_error $? "--enable-dbus was given, but the dbus-1 package is not installed" "$LINENO" 5
+					fi
+				fi
 			fi
-		fi
+			;;
+		esac
 	fi
 
 
