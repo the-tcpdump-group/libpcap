@@ -19,7 +19,7 @@
 .\"
 .TH PCAP_LOOP 3PCAP "24 December 2008"
 .SH NAME
-pcap_loop, pcap_dispatch \- process packets from a live capture or savefile
+pcap_loop, pcap_loop_sample, pcap_dispatch \- process packets from a live capture or savefile
 .SH SYNOPSIS
 .nf
 .ft B
@@ -36,6 +36,9 @@ typedef void (*pcap_handler)(u_char *user, const struct pcap_pkthdr *h,
 int pcap_loop(pcap_t *p, int cnt,
 .ti +8
 pcap_handler callback, u_char *user);
+int pcap_loop_sample(pcap_t *p, int cnt,
+.ti +8
+pcap_handler callback, u_char *user, unsigned n);
 int pcap_dispatch(pcap_t *p, int cnt,
 .ti +8
 pcap_handler callback, u_char *user);
@@ -56,6 +59,13 @@ A value of \-1 or 0 for
 .I cnt
 is equivalent to infinity, so that packets are processed until another
 ending condition occurs.
+.PP
+.B pcap_loop_sample()
+works as
+.B pcap_loop()
+except that it runs the callback function once every
+.B n
+packets.
 .PP
 .B pcap_dispatch()
 processes packets from a live capture or ``savefile'' until
