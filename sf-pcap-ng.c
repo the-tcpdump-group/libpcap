@@ -1269,23 +1269,8 @@ found:
 	if (*data == NULL)
 		return (-1);
 
-	if (p->swapped) {
-		/*
-		 * Convert pseudo-headers from the byte order of
-		 * the host on which the file was saved to our
-		 * byte order, as necessary.
-		 */
-		switch (p->linktype) {
-
-		case DLT_USB_LINUX:
-			swap_linux_usb_header(hdr, *data, 0);
-			break;
-
-		case DLT_USB_LINUX_MMAPPED:
-			swap_linux_usb_header(hdr, *data, 1);
-			break;
-		}
-	}
+	if (p->swapped)
+		swap_pseudo_headers(p->linktype, hdr, *data);
 
 	return (0);
 }

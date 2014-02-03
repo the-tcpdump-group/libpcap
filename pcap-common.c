@@ -41,6 +41,7 @@
 
 #include "pcap-int.h"
 #include "pcap/usb.h"
+#include "pcap/nflog.h"
 
 #include "pcap-common.h"
 
@@ -1080,10 +1081,10 @@ linktype_to_dlt(int linktype)
  * memory-mapped buffer shared by the kernel).
  *
  * When reading a DLT_USB_LINUX or DLT_USB_LINUX_MMAPPED capture file,
- * we need to convert it from the capturing host's byte order to
- * the reading host's byte order.
+ * we need to convert it from the byte order of the host that wrote
+ * the file to this host's byte order.
  */
-void
+static void
 swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
     int header_len_64_bytes)
 {
@@ -1208,5 +1209,95 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 
 			pisodesc++;
 		}
+	}
+}
+
+/*
+ * The DLT_NFLOG "packets" have a mixture of big-endian and host-byte-order
+ * data.  They begin with a fixed-length header with big-endian fields,
+ * followed by a set of TLVs, where the type and length are in host
+ * byte order but the values are either big-endian or are a raw byte
+ * sequence that's the same regardless of the host's byte order.
+ *
+ * When reading a DLT_NFLOG capture file, we need to convert the type
+ * and length values from the byte order of the host that wrote the
+ * file to the byte order of this host.
+ */
+static void
+swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_char *p = buf;
+	nflog_hdr_t *nfhdr = (nflog_hdr_t *)buf;
+	nflog_tlv_t *tlv;
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	u_int16_t size;
+
+	if (caplen < (int) sizeof(nflog_hdr_t) || length < (int) sizeof(nflog_hdr_t)) {
+		/* Not enough data to have any TLVs. */
+		return;
+	}
+
+	if (!(nfhdr->nflog_version) == 0) {
+		/* Unknown NFLOG version */
+		return;
+	}
+
+	length -= sizeof(nflog_hdr_t);
+	caplen -= sizeof(nflog_hdr_t);
+	p += sizeof(nflog_hdr_t);
+
+	while (caplen >= sizeof(nflog_tlv_t)) {
+		tlv = (nflog_tlv_t *) p;
+
+		/* Swap the type and length. */
+		tlv->tlv_type = SWAPSHORT(tlv->tlv_type);
+		tlv->tlv_length = SWAPSHORT(tlv->tlv_length);
+
+		/* Get the length of the TLV. */
+		size = tlv->tlv_length;
+		if (size % 4 != 0)
+			size += 4 - size % 4;
+
+		/* Is the TLV's length less than the minimum? */
+		if (size < sizeof(nflog_tlv_t)) {
+			/* Yes. Give up now. */
+			return;
+		}
+
+		/* Do we have enough data for the full TLV? */
+		if (caplen < size || length < size) {
+			/* No. */
+			return;
+		}
+
+		/* Skip over the TLV. */
+		length -= size;
+		caplen -= size;
+		p += size;
+	}
+}
+
+void
+swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
+{
+	/*
+	 * Convert pseudo-headers from the byte order of
+	 * the host on which the file was saved to our
+	 * byte order, as necessary.
+	 */
+	switch (linktype) {
+
+	case DLT_USB_LINUX:
+		swap_linux_usb_header(hdr, data, 0);
+		break;
+
+	case DLT_USB_LINUX_MMAPPED:
+		swap_linux_usb_header(hdr, data, 1);
+		break;
+
+	case DLT_NFLOG:
+		swap_nflog_header(hdr, data);
+		break;
 	}
 }
