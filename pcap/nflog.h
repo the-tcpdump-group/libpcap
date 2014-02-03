@@ -48,7 +48,7 @@ typedef struct nflog_hdr {
 typedef struct nflog_tlv {
 	u_int16_t	tlv_length;		/* tlv length */
 	u_int16_t	tlv_type;		/* tlv type */
-	void*		tlv_value;		/* tlv value */
+	/* value follows this */
 } nflog_tlv_t;
 
 /*
