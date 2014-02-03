@@ -1242,7 +1242,7 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	caplen -= sizeof(nflog_hdr_t);
 	p += sizeof(nflog_hdr_t);
 
-	while (length >= sizeof(nflog_tlv_t)) {
+	while (caplen >= sizeof(nflog_tlv_t)) {
 		tlv = (nflog_tlv_t *) p;
 
 		/* Swap the type and length. */
@@ -1254,8 +1254,14 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 		if (size % 4 != 0)
 			size += 4 - size % 4;
 
+		/* Is the TLV's length less than the minimum? */
+		if (size < sizeof(nflog_tlv_t)) {
+			/* Yes. Give up now. */
+			return;
+		}
+
 		/* Do we have enough data for the full TLV? */
-		if (size > length || size > caplen) {
+		if (caplen < size || length < size) {
 			/* No. */
 			return;
 		}
