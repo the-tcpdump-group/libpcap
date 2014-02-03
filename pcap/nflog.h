@@ -51,9 +51,42 @@ typedef struct nflog_tlv {
 	/* value follows this */
 } nflog_tlv_t;
 
+typedef struct nflog_packet_hdr {
+	u_int16_t	hw_protocol;	/* hw protocol */
+	u_int8_t	hook;		/* netfilter hook */
+	u_int8_t	pad;		/* padding to 32 bits */
+} nflog_packet_hdr_t;
+
+typedef struct nflog_hwaddr {
+	u_int16_t	hw_addrlen;	/* address length */
+	u_int16_t	pad;		/* padding to 32-bit boundary */
+	u_int8_t	hw_addr[8];	/* address, up to 8 bytes */
+} nflog_hwaddr_t;
+
+typedef struct nflog_timestamp {
+	u_int64_t	sec;
+	u_int64_t	usec;
+} nflog_timestamp_t;
+
 /*
  * TLV types.
  */
-#define NFULA_PAYLOAD 9				/* packet payload */
+#define NFULA_PACKET_HDR		1	/* nflog_packet_hdr_t */
+#define NFULA_MARK			2	/* packet mark from skbuff */
+#define NFULA_TIMESTAMP			3	/* nflog_timestamp_t for skbuff's time stamp */
+#define NFULA_IFINDEX_INDEV		4	/* ifindex of device on which packet received (possibly bridge group) */
+#define NFULA_IFINDEX_OUTDEV		5	/* ifindex of device on which packet transmitted (possibly bridge group) */
+#define NFULA_IFINDEX_PHYSINDEV		6	/* ifindex of physical device on which packet received (not bridge group) */
+#define NFULA_IFINDEX_PHYSOUTDEV	7	/* ifindex of physical device on which packet transmitted (not bridge group) */
+#define NFULA_HWADDR			8	/* nflog_hwaddr_t for hardware address */
+#define NFULA_PAYLOAD			9	/* packet payload */
+#define NFULA_PREFIX			10	/* text string - null-terminated, count includes NUL */
+#define NFULA_UID			11	/* UID owning socket on which packet was sent/received */
+#define NFULA_SEQ			12	/* sequence number of packets on this NFLOG socket */
+#define NFULA_SEQ_GLOBAL		13	/* sequence number of pakets on all NFLOG sockets */
+#define NFULA_GID			14	/* GID owning socket on which packet was sent/received */
+#define NFULA_HWTYPE			15	/* ARPHRD_ type of skbuff's device */
+#define NFULA_HWHEADER			16	/* skbuff's MAC-layer header */
+#define NFULA_HWLEN			17	/* length of skbuff's MAC-layer header */
 
 #endif
