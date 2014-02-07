@@ -40,7 +40,7 @@
  * data, etc.).
  */
 typedef struct nflog_hdr {
-	u_int8_t	nflog_family;		/* adress family */
+	u_int8_t	nflog_family;		/* address family */
 	u_int8_t	nflog_version;		/* version */
 	u_int16_t	nflog_rid;		/* resource ID */
 } nflog_hdr_t;
