@@ -1227,7 +1227,12 @@ struct bpf_program {
  */
 #define DLT_NETLINK		253
 
-#define DLT_MATCHING_MAX	253	/* highest value in the "matching" range */
+/*
+ * Bluetooth Linux Monitor headers for the BlueZ stack.
+ */
+#define DLT_BLUETOOTH_LINUX_MONITOR	254
+
+#define DLT_MATCHING_MAX	254	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

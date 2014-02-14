@@ -938,7 +938,12 @@
  */
 #define LINKTYPE_NETLINK		253
 
-#define LINKTYPE_MATCHING_MAX	253		/* highest value in the "matching" range */
+/*
+ * Bluetooth Linux Monitor headers for the BlueZ stack.
+ */
+#define LINKTYPE_BLUETOOTH_LINUX_MONITOR	254
+
+#define LINKTYPE_MATCHING_MAX	254		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
