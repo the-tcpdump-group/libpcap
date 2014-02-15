@@ -630,6 +630,7 @@ CAN_SRC
 PCAP_SUPPORT_CAN
 CANUSB_SRC
 PCAP_SUPPORT_CANUSB
+BT_MONITOR_SRC
 BT_SRC
 PCAP_SUPPORT_BT
 NETFILTER_SRC
@@ -8013,6 +8014,7 @@ if test "x$ac_cv_header_bluetooth_bluetooth_h" = xyes; then :
 $as_echo "#define PCAP_SUPPORT_BT 1" >>confdefs.h
 
 		  BT_SRC=pcap-bt-linux.c
+		  BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 		  { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
 $as_echo "$as_me: Bluetooth sniffing is supported" >&6;}
 
@@ -8068,6 +8070,7 @@ fi
 $as_echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
 		;;
 	esac
+
 
 
 fi

@@ -1465,6 +1465,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 		[
 		  AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
 		  BT_SRC=pcap-bt-linux.c
+		  BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 		  AC_MSG_NOTICE(Bluetooth sniffing is supported)
 
 		  #
@@ -1496,6 +1497,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 	esac
 	AC_SUBST(PCAP_SUPPORT_BT)
 	AC_SUBST(BT_SRC)
+	AC_SUBST(BT_MONITOR_SRC)
 fi
 
 AC_ARG_ENABLE([canusb],
