@@ -943,7 +943,18 @@
  */
 #define LINKTYPE_BLUETOOTH_LINUX_MONITOR	254
 
-#define LINKTYPE_MATCHING_MAX	254		/* highest value in the "matching" range */
+/*
+ * Bluetooth Basic Rate/Enhanced Data Rate baseband packets, as
+ * captured by Ubertooth.
+ */
+#define LINKTYPE_BLUETOOTH_BREDR_BB	255
+
+/*
+ * Bluetooth Low Energy link layer packets, as captured by Ubertooth.
+ */
+#define LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR	256
+
+#define LINKTYPE_MATCHING_MAX	256		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

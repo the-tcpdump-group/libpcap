@@ -1232,7 +1232,18 @@ struct bpf_program {
  */
 #define DLT_BLUETOOTH_LINUX_MONITOR	254
 
-#define DLT_MATCHING_MAX	254	/* highest value in the "matching" range */
+/*
+ * Bluetooth Basic Rate/Enhanced Data Rate baseband packets, as
+ * captured by Ubertooth.
+ */
+#define DLT_BLUETOOTH_BREDR_BB	255
+
+/*
+ * Bluetooth Low Energy link layer packets, as captured by Ubertooth.
+ */
+#define DLT_BLUETOOTH_LE_LL_WITH_PHDR	256
+
+#define DLT_MATCHING_MAX	256	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
