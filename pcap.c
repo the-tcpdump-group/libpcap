@@ -86,12 +86,11 @@
 
 #ifdef PCAP_SUPPORT_BT
 #include "pcap-bt-linux.h"
-
-#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
-#include "pcap-bt-monitor-linux.h"
 #endif
 
-#endif /* PCAP_SUPPORT_BT */
+#ifdef PCAP_SUPPORT_BT_MONITOR
+#include "pcap-bt-monitor-linux.h"
+#endif
 
 #ifdef PCAP_SUPPORT_CAN
 #include "pcap-can-linux.h"
@@ -323,10 +322,10 @@ struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_BT
 	{ bt_findalldevs, bt_create },
-#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
+#endif
+#ifdef PCAP_SUPPORT_BT_MONITOR
 	{ bt_monitor_findalldevs, bt_monitor_create },
 #endif
-#endif /* PCAP_SUPPORT_BT */
 #if PCAP_SUPPORT_CANUSB
 	{ canusb_findalldevs, canusb_create },
 #endif

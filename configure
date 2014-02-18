@@ -8014,7 +8014,6 @@ if test "x$ac_cv_header_bluetooth_bluetooth_h" = xyes; then :
 $as_echo "#define PCAP_SUPPORT_BT 1" >>confdefs.h
 
 		  BT_SRC=pcap-bt-linux.c
-		  BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 		  { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
 $as_echo "$as_me: Bluetooth sniffing is supported" >&6;}
 
@@ -8055,6 +8054,45 @@ $as_echo "$ac_cv_lbl_sockaddr_hci_has_hci_channel" >&6; }
 
 $as_echo "#define SOCKADDR_HCI_HAS_HCI_CHANNEL /**/" >>confdefs.h
 
+
+		      #
+		      # OK, is HCI_CHANNEL_MONITOR defined?
+		      #
+		      { $as_echo "$as_me:${as_lineno-$LINENO}: checking if HCI_CHANNEL_MONITOR is defined" >&5
+$as_echo_n "checking if HCI_CHANNEL_MONITOR is defined... " >&6; }
+		      if ${ac_cv_lbl_hci_channel_monitor_is_defined+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+
+int
+main ()
+{
+u_int i = HCI_CHANNEL_MONITOR
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_lbl_hci_channel_monitor_is_defined=yes
+else
+  ac_cv_lbl_hci_channel_monitor_is_defined=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+		      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_hci_channel_monitor_is_defined" >&5
+$as_echo "$ac_cv_lbl_hci_channel_monitor_is_defined" >&6; }
+		      if test $ac_cv_lbl_hci_channel_monitor_is_defined = yes ; then
+
+$as_echo "#define PCAP_SUPPORT_BT_MONITOR /**/" >>confdefs.h
+
+			BT_MONITOR_SRC=pcap-bt-monitor-linux.c
+		      fi
 		    fi
 
 else

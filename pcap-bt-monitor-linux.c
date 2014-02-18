@@ -33,8 +33,6 @@
 #include "config.h"
 #endif
 
-#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
-
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -241,4 +239,3 @@ bt_monitor_create(const char *device, char *ebuf, int *is_ours)
 
     return p;
 }
-#endif /* SOCKADDR_HCI_HAS_HCI_CHANNEL */
