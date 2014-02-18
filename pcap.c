@@ -86,7 +86,12 @@
 
 #ifdef PCAP_SUPPORT_BT
 #include "pcap-bt-linux.h"
+
+#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
+#include "pcap-bt-monitor-linux.h"
 #endif
+
+#endif /* PCAP_SUPPORT_BT */
 
 #ifdef PCAP_SUPPORT_CAN
 #include "pcap-can-linux.h"
@@ -318,7 +323,10 @@ struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_BT
 	{ bt_findalldevs, bt_create },
+#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
+	{ bt_monitor_findalldevs, bt_monitor_create },
 #endif
+#endif /* PCAP_SUPPORT_BT */
 #if PCAP_SUPPORT_CANUSB
 	{ canusb_findalldevs, canusb_create },
 #endif
@@ -1200,6 +1208,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_IPOIB, "RFC 4391 IP-over-Infiniband"),
 	DLT_CHOICE(DLT_DBUS, "D-Bus"),
 	DLT_CHOICE(DLT_NETLINK, "Linux netlink"),
+	DLT_CHOICE(DLT_BLUETOOTH_LINUX_MONITOR, "Bluetooth Linux Monitor"),
 	DLT_CHOICE_SENTINEL
 };
 
