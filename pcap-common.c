@@ -954,7 +954,12 @@
  */
 #define LINKTYPE_BLUETOOTH_LE_LL_WITH_PHDR	256
 
-#define LINKTYPE_MATCHING_MAX	256		/* highest value in the "matching" range */
+/*
+ * PROFIBUS data link layer.
+ */
+#define LINKTYPE_PROFIBUS_DL		257
+
+#define LINKTYPE_MATCHING_MAX	257		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

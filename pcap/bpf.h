@@ -1243,7 +1243,12 @@ struct bpf_program {
  */
 #define DLT_BLUETOOTH_LE_LL_WITH_PHDR	256
 
-#define DLT_MATCHING_MAX	256	/* highest value in the "matching" range */
+/*
+ * PROFIBUS data link layer.
+ */
+#define DLT_PROFIBUS_DL		257
+
+#define DLT_MATCHING_MAX	257	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
