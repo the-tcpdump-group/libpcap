@@ -321,7 +321,7 @@ struct pcap_linux {
 /*
  * Prototypes for internal functions and methods.
  */
-static void map_arphrd_to_dlt(pcap_t *, int, int);
+static void map_arphrd_to_dlt(pcap_t *, int, const char *, int);
 #ifdef HAVE_PF_PACKET_SOCKETS
 static short int map_packet_type_to_sll_type(short int);
 #endif
@@ -2606,11 +2606,31 @@ map_packet_type_to_sll_type(short int sll_pkttype)
  *
  *  Sets the link type to -1 if unable to map the type.
  */
-static void map_arphrd_to_dlt(pcap_t *handle, int arptype, int cooked_ok)
+static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
+			      int cooked_ok)
 {
+	static const char cdma_rmnet[] = "cdma_rmnet";
+
 	switch (arptype) {
 
 	case ARPHRD_ETHER:
+		/*
+		 * For various annoying reasons having to do with DHCP
+		 * software, some versions of Android give the mobile-
+		 * phone-network interface an ARPHRD_ value of
+		 * ARPHRD_ETHER, even though the packet supplied by
+		 * that interface have no link-layer header, and begin
+		 * with an IP header, so that the ARPHRD_ value should
+		 * be ARPHRD_NONE.
+		 *
+		 * Detect those devices by checking the device name, and
+		 * use DLT_RAW for them.
+		 */
+		if (strncmp(device, cdma_rmnet, sizeof cdma_rmnet - 1) == 0) {
+			handle->linktype = DLT_RAW;
+			return;
+		}
+	
 		/*
 		 * This is (presumably) a real Ethernet capture; give it a
 		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
@@ -3107,7 +3127,7 @@ activate_new(pcap_t *handle)
 			close(sock_fd);
 			return arptype;
 		}
-		map_arphrd_to_dlt(handle, arptype, 1);
+		map_arphrd_to_dlt(handle, arptype, device, 1);
 		if (handle->linktype == -1 ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
@@ -5606,7 +5626,7 @@ activate_old(pcap_t *handle)
 	 * Try to find the DLT_ type corresponding to that
 	 * link-layer type.
 	 */
-	map_arphrd_to_dlt(handle, arptype, 0);
+	map_arphrd_to_dlt(handle, arptype, device, 0);
 	if (handle->linktype == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "unknown arptype %d", arptype);
