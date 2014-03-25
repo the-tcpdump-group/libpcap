@@ -5124,7 +5124,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		ireq.u.data.length = 1;	/* 1 argument */
 		args[0] = 3;	/* request Prism header */
-		memcpy(ireq.u.name, args, IFNAMSIZ);
+		memcpy(ireq.u.name, args, sizeof (int));
 		if (ioctl(sock_fd, cmd, &ireq) != -1) {
 			/*
 			 * Success.
