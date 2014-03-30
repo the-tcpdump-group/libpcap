@@ -1248,7 +1248,32 @@ struct bpf_program {
  */
 #define DLT_PROFIBUS_DL		257
 
-#define DLT_MATCHING_MAX	257	/* highest value in the "matching" range */
+/*
+ * Apple's DLT_PKTAP headers.
+ *
+ * Sadly, the folks at Apple either had no clue that the DLT_USERn values
+ * are for internal use within an organization and partners only, and
+ * didn't know that the right way to get a link-layer header type is to
+ * ask tcpdump.org for one, or knew and didn't care, so they just
+ * used DLT_USER2, which causes problems for everything except for
+ * their version of tcpdump.
+ *
+ * So I'll just give them one; hopefully this will show up in a
+ * libpcap release in time for them to get this into 10.10 Big Sur
+ * or whatever Mavericks' successor is called.  LINKTYPE_PKTAP
+ * will be 258 *even on OS X*; that is *intentional*, so that
+ * PKTAP files look the same on *all* OSes (different OSes can have
+ * different numerical values for a given DLT_, but *MUST NOT* have
+ * different values for what goes in a file, as files can be moved
+ * between OSes!).
+ */
+#ifdef __APPLE__
+#define DLT_PKTAP	DLT_USER2
+#else
+#define DLT_PKTAP	258
+#endif
+
+#define DLT_MATCHING_MAX	258	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
