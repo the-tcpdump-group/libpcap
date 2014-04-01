@@ -1266,6 +1266,31 @@ struct bpf_program {
  * different numerical values for a given DLT_, but *MUST NOT* have
  * different values for what goes in a file, as files can be moved
  * between OSes!).
+ *
+ * When capturing, on a system with a Darwin-based OS, on a device
+ * that returns 149 (DLT_USER2 and Apple's DLT_PKTAP) with this
+ * version of libpcap, the DLT_ value for the pcap_t  will be DLT_PKTAP,
+ * and that will continue to be DLT_USER2 on Darwin-based OSes. That way,
+ * binary compatibility with Mavericks is preserved for programs using
+ * this version of libpcap.  This does mean that if you were using
+ * DLT_USER2 for some capture device on OS X, you can't do so with
+ * this version of libpcap, just as you can't with Apple's libpcap -
+ * on OS X, they define DLT_PKTAP to be DLT_USER2, so programs won't
+ * be able to distinguish between PKTAP and whatever you were using
+ * DLT_USER2 for.
+ *
+ * If the program saves the capture to a file using this version of
+ * libpcap's pcap_dump code, the LINKTYPE_ value in the file will be
+ * LINKTYPE_PKTAP, which will be 258, even on Darwin-based OSes.
+ * That way, the file will *not* be a DLT_USER2 file.  That means
+ * that the latest version of tcpdump, when built with this version
+ * of libpcap, and sufficiently recent versions of Wireshark will
+ * be able to read those files and interpret them correctly; however,
+ * Apple's version of tcpdump in OS X 10.9 won't be able to handle
+ * them.  (Hopefully, Apple will pick up this version of libpcap,
+ * and the corresponding version of tcpdump, so that tcpdump will
+ * be able to handle the old LINKTYPE_USER2 captures *and* the new
+ * LINKTYPE_PKTAP captures.)
  */
 #ifdef __APPLE__
 #define DLT_PKTAP	DLT_USER2
