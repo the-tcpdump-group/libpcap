@@ -31,7 +31,7 @@
  * By Paolo Abeni <paolo.abeni@email.it>
  *
  */
- 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -51,13 +51,102 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/utsname.h>
 #include <arpa/inet.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
+/* Start of copy of unexported Linux Kernel headers */
+#ifndef AF_BLUETOOTH
+#define AF_BLUETOOTH    31
+#endif
+
+#define BTPROTO_HCI  1
+
+#define SOL_HCI     0
+
+#define HCI_CHANNEL_RAW     0
+
+#define HCI_DATA_DIR    1
+#define HCI_FILTER      2
+#define HCI_TIME_STAMP  3
+
+#define HCI_CMSG_DIR      0x0001
+#define HCI_CMSG_TSTAMP   0x0002
+
+#define HCIGETDEVLIST   _IOR('H', 210, int)
+#define HCIGETDEVINFO   _IOR('H', 211, int)
+
+struct hci_dev_req {
+	uint16_t  dev_id;
+	uint32_t  dev_opt;
+};
+
+struct hci_dev_list_req {
+	uint16_t  dev_num;
+	struct hci_dev_req dev_req[0];  /* hci_dev_req structures */
+};
+
+typedef struct {
+	uint8_t b[6];
+} bdaddr_t;
+
+struct sockaddr_hci_v1 {
+	sa_family_t    hci_family;
+	unsigned short hci_dev;
+};
+
+struct sockaddr_hci_v2 {
+	sa_family_t    hci_family;
+	unsigned short hci_dev;
+	unsigned short hci_channel;
+};
+
+struct hci_filter {
+	uint32_t type_mask;
+	uint32_t event_mask[2];
+	uint16_t opcode;
+};
+
+struct hci_dev_stats {
+	uint32_t err_rx;
+	uint32_t err_tx;
+	uint32_t cmd_tx;
+	uint32_t evt_rx;
+	uint32_t acl_tx;
+	uint32_t acl_rx;
+	uint32_t sco_tx;
+	uint32_t sco_rx;
+	uint32_t byte_rx;
+	uint32_t byte_tx;
+};
+
+struct hci_dev_info {
+	uint16_t dev_id;
+	char  name[8];
+
+	bdaddr_t bdaddr;
+
+	uint32_t flags;
+	uint8_t  type;
+
+	uint8_t  features[8];
+
+	uint32_t pkt_type;
+	uint32_t link_policy;
+	uint32_t link_mode;
+
+	uint16_t acl_mtu;
+	uint16_t acl_pkts;
+	uint16_t sco_mtu;
+	uint16_t sco_pkts;
+
+	struct hci_dev_stats stat;
+};
+/* End of copy of unexported Linux Kernel headers */
 
 #define BT_IFACE "bluetooth"
 #define BT_CTRL_SIZE 128
+
+#define HCI_MAX_DEV 15
 
 /* forward declaration */
 static int bt_activate(pcap_t *);
@@ -84,7 +173,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	sock  = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (sock < 0)
 	{
-		/* if bluetooth is not supported this this is not fatal*/ 
+		/* if bluetooth is not supported this is not fatal*/
 		if (errno == EAFNOSUPPORT)
 			return 0;
 		snprintf(err_str, PCAP_ERRBUF_SIZE,
@@ -183,11 +272,18 @@ static int
 bt_activate(pcap_t* handle)
 {
 	struct pcap_bt *handlep = handle->priv;
-	struct sockaddr_hci addr;
+	struct sockaddr_hci_v1 addr_v1;
+	struct sockaddr_hci_v2 addr_v2;
+	struct sockaddr       *addr;
+	int                    addr_size;
 	int opt;
 	int		dev_id;
 	struct hci_filter	flt;
 	int err = PCAP_ERROR;
+	struct utsname uname_data;
+	unsigned int   version_major;
+	unsigned int   version_minor;
+	unsigned int   version_release;
 
 	/* get bt interface id */
 	if (sscanf(handle->opt.source, BT_IFACE"%d", &dev_id) != 1)
@@ -253,14 +349,30 @@ bt_activate(pcap_t* handle)
 		goto close_fail;
 	}
 
+	if (!(uname(&uname_data) == 0 && sscanf(uname_data.release, "%u.%u.%u", &version_major, &version_minor, &version_release) == 3)) {
+		/* Fallback to older kernel version */
+		version_major = 2;
+		version_minor = 6;
+		version_release = 37;
+	}
+
+	if (!(version_major >= 2 && version_minor >= 6 && version_release >= 38)) {
+		addr_v2.hci_family = AF_BLUETOOTH;
+		addr_v2.hci_dev = handlep->dev_id;
+		addr_v2.hci_channel = HCI_CHANNEL_RAW;
+
+		addr_size = sizeof(struct sockaddr_hci_v2);
+		addr = (struct sockaddr *) &addr_v2;
+	} else {
+		addr_v1.hci_family = AF_BLUETOOTH;
+		addr_v1.hci_dev = handlep->dev_id;
+
+		addr_size = sizeof(struct sockaddr_hci_v1);
+		addr = (struct sockaddr *) &addr_v1;
+	}
 
 	/* Bind socket to the HCI device */
-	addr.hci_family = AF_BLUETOOTH;
-	addr.hci_dev = handlep->dev_id;
-#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
-	addr.hci_channel = HCI_CHANNEL_RAW;
-#endif
-	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+	if (bind(handle->fd,  addr, addr_size) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't attach to device %d: %s", handlep->dev_id,
 		    strerror(errno));
@@ -371,7 +483,7 @@ bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
     		"bluetooth devices");
 	return (-1);
-}                           
+}
 
 
 static int 
@@ -392,7 +504,6 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't get stats via ioctl: %s", strerror(errno));
 		return (-1);
-		
 	}
 
 	/* we receive both rx and tx frames, so comulate all stats */	

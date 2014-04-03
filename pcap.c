@@ -86,9 +86,6 @@
 
 #ifdef PCAP_SUPPORT_BT
 #include "pcap-bt-linux.h"
-#endif
-
-#ifdef PCAP_SUPPORT_BT_MONITOR
 #include "pcap-bt-monitor-linux.h"
 #endif
 
@@ -322,8 +319,6 @@ struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_BT
 	{ bt_findalldevs, bt_create },
-#endif
-#ifdef PCAP_SUPPORT_BT_MONITOR
 	{ bt_monitor_findalldevs, bt_monitor_create },
 #endif
 #if PCAP_SUPPORT_CANUSB
