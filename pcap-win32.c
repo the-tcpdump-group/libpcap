@@ -187,6 +187,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int n = 0;
 	register u_char *bp, *ep;
 	u_char *datap;
+	struct pcap_win *pw = p->priv;
 
 	cc = p->cc;
 	if (p->cc == 0) {
@@ -660,7 +661,7 @@ pcap_activate_win32(pcap_t *p)
 		
 		PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
 		
-		if (p-opt.immediate)
+		if (p->opt.immediate)
 		{
 			/* tell the driver to copy the buffer as soon as data arrives */
 			if(PacketSetMinToCopy(p->adapter,0)==FALSE)
