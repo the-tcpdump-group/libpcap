@@ -5,7 +5,7 @@ compiler:
   - clang
 
 before_script:
-  - sudo apt-get install libusb-1.0-0-dev
+  - sudo apt-get install libusb-1.0-0-dev libdbus-1-dev
 
 script:
   - ./configure
