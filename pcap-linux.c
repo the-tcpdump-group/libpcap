@@ -1229,9 +1229,26 @@ pcap_activate_linux(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 	const char	*device;
+	struct ifreq	ifr;
 	int		status = 0;
 
 	device = handle->opt.source;
+
+	/*
+	 * Make sure the name we were handed will fit into the ioctls we
+	 * might perform on the device; if not, return a "No such device"
+	 * indication, as the Linux kernel shouldn't support creating
+	 * a device whose name won't fit into those ioctls.
+	 *
+	 * "Will fit" means "will fit, complete with a null terminator",
+	 * so if the length, which does *not* include the null terminator,
+	 * is greater than *or equal to* the size of the field into which
+	 * we'll be copying it, that won't fit.
+	 */
+	if (strlen(device) >= sizeof(ifr.ifr_name)) {
+		status = PCAP_ERROR_NO_SUCH_DEVICE;
+		goto fail;
+	}
 
 	handle->inject_op = pcap_inject_linux;
 	handle->setfilter_op = pcap_setfilter_linux;
