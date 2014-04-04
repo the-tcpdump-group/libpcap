@@ -3197,6 +3197,7 @@ activate_new(pcap_t *handle)
 			/*
 			 * It doesn't support monitor mode.
 			 */
+			close(sock_fd);
 			return PCAP_ERROR_RFMON_NOTSUP;
 		}
 
@@ -3303,19 +3304,22 @@ activate_new(pcap_t *handle)
 		break;
 	}
 
-	/* Save the socket FD in the pcap structure */
-	handle->fd = sock_fd;
-
 #if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
 	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
 		int nsec_tstamps = 1;
 
-		if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMPNS, &nsec_tstamps, sizeof(nsec_tstamps)) < 0) {
+		if (setsockopt(sock_fd, SOL_SOCKET, SO_TIMESTAMPNS, &nsec_tstamps, sizeof(nsec_tstamps)) < 0) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "setsockopt: unable to set SO_TIMESTAMPNS");
+			close(sock_fd);
 			return PCAP_ERROR;
 		}
 	}
 #endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
+
+	/*
+	 * We've succeeded. Save the socket FD in the pcap structure.
+	 */
+	handle->fd = sock_fd;
 
 	return 1;
 #else /* HAVE_PF_PACKET_SOCKETS */
