@@ -4,6 +4,9 @@ compiler:
   - gcc
   - clang
 
+before_script:
+  - sudo apt-get install libusb-1.0-0-dev
+
 script:
   - ./configure
   - make
