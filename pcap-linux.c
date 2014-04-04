@@ -866,7 +866,7 @@ added:
 	 * Now configure the monitor interface up.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, handlep->mondevice, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, handlep->mondevice, sizeof(ifr.ifr_name));
 	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: Can't get flags for %s: %s", device,
@@ -968,9 +968,8 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	/*
 	 * Attempt to get the current mode.
 	 */
-	strncpy(ireq.ifr_ifrn.ifrn_name, handle->opt.source,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.source,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
 		/*
 		 * Well, we got the mode; assume we can set it.
@@ -1092,7 +1091,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			 * in 2.0[.x] kernels.
 			 */
 			memset(&ifr, 0, sizeof(ifr));
-			strncpy(ifr.ifr_name, handlep->device,
+			strlcpy(ifr.ifr_name, handlep->device,
 			    sizeof(ifr.ifr_name));
 			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 				fprintf(stderr,
@@ -1156,7 +1155,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			 */
 			oldflags = 0;
 			memset(&ifr, 0, sizeof(ifr));
-			strncpy(ifr.ifr_name, handlep->device,
+			strlcpy(ifr.ifr_name, handlep->device,
 			    sizeof(ifr.ifr_name));
 			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) != -1) {
 				if (ifr.ifr_flags & IFF_UP) {
@@ -1170,10 +1169,8 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			/*
 			 * Now restore the mode.
 			 */
-			strncpy(ireq.ifr_ifrn.ifrn_name, handlep->device,
+			strlcpy(ireq.ifr_ifrn.ifrn_name, handlep->device,
 			    sizeof ireq.ifr_ifrn.ifrn_name);
-			ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1]
-			    = 0;
 			ireq.u.mode = handlep->oldmode;
 			if (ioctl(handle->fd, SIOCSIWMODE, &ireq) == -1) {
 				/*
@@ -2024,7 +2021,7 @@ add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
 	/*
 	 * Get the flags for this interface.
 	 */
-	strncpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+	strlcpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
 	if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
 		if (errno == ENXIO || errno == ENODEV)
 			return (0);	/* device doesn't actually exist - ignore it */
@@ -2321,7 +2318,7 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 	if (!handle)
 		return -1;
 	if (!filter) {
-	        strncpy(handle->errbuf, "setfilter: No filter specified",
+	        strlcpy(handle->errbuf, "setfilter: No filter specified",
 			PCAP_ERRBUF_SIZE);
 		return -1;
 	}
@@ -3323,7 +3320,7 @@ activate_new(pcap_t *handle)
 
 	return 1;
 #else /* HAVE_PF_PACKET_SOCKETS */
-	strncpy(ebuf,
+	strlcpy(ebuf,
 		"New packet capturing interface not supported by build "
 		"environment", PCAP_ERRBUF_SIZE);
 	return 0;
@@ -4643,7 +4640,7 @@ iface_get_id(int fd, const char *device, char *ebuf)
 	struct ifreq	ifr;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFINDEX, &ifr) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -4725,9 +4722,8 @@ has_wext(int sock_fd, const char *device, char *ebuf)
 {
 	struct iwreq ireq;
 
-	strncpy(ireq.ifr_ifrn.ifrn_name, device,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
 		return 1;	/* yes */
 	snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -4863,9 +4859,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * return EOPNOTSUPP.
 	 */
 	memset(&ireq, 0, sizeof ireq);
-	strncpy(ireq.ifr_ifrn.ifrn_name, device,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	ireq.u.data.pointer = (void *)args;
 	ireq.u.data.length = 0;
 	ireq.u.data.flags = 0;
@@ -5066,9 +5061,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	/*
 	 * Get the old mode.
 	 */
-	strncpy(ireq.ifr_ifrn.ifrn_name, device,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) == -1) {
 		/*
 		 * We probably won't be able to set the mode, either.
@@ -5123,9 +5117,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * If it fails, just fall back on SIOCSIWMODE.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		ireq.u.data.length = 1;	/* 1 argument */
 		args[0] = 3;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -5156,7 +5149,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * might get EBUSY.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: Can't get flags: %s", device, strerror(errno));
@@ -5176,9 +5169,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	/*
 	 * Then turn monitor mode on.
 	 */
-	strncpy(ireq.ifr_ifrn.ifrn_name, device,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
-	ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 	ireq.u.mode = IW_MODE_MONITOR;
 	if (ioctl(sock_fd, SIOCSIWMODE, &ireq) == -1) {
 		/*
@@ -5216,9 +5208,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Try to select the radiotap header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 3;	/* request radiotap header */
 		memcpy(ireq.u.name, args, sizeof (int));
 		if (ioctl(sock_fd, cmd, &ireq) != -1)
@@ -5228,9 +5219,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * That failed.  Try to select the AVS header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 2;	/* request AVS header */
 		memcpy(ireq.u.name, args, sizeof (int));
 		if (ioctl(sock_fd, cmd, &ireq) != -1)
@@ -5240,9 +5230,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * That failed.  Try to select the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 1;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
 		ioctl(sock_fd, cmd, &ireq);
@@ -5259,9 +5248,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Select the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 3;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
 		ioctl(sock_fd, cmd, &ireq);
@@ -5272,9 +5260,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Get the current channel.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		if (ioctl(sock_fd, SIOCGIWFREQ, &ireq) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: SIOCGIWFREQ: %s", device,
@@ -5288,9 +5275,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * current value.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 1;		/* request Prism header */
 		args[1] = channel;	/* set channel */
 		memcpy(ireq.u.name, args, 2*sizeof (int));
@@ -5303,9 +5289,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 0;	/* disallow transmitting */
 		memcpy(ireq.u.name, args, sizeof (int));
 		ioctl(sock_fd, cmd, &ireq);
@@ -5316,9 +5301,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Force the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 1;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
 		ioctl(sock_fd, cmd, &ireq);
@@ -5329,9 +5313,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Force the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		ireq.u.data.length = 1;	/* 1 argument */
 		ireq.u.data.pointer = "1";
 		ireq.u.data.flags = 0;
@@ -5343,9 +5326,8 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Force the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strncpy(ireq.ifr_ifrn.ifrn_name, device,
+		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
-		ireq.ifr_ifrn.ifrn_name[sizeof ireq.ifr_ifrn.ifrn_name - 1] = 0;
 		args[0] = 1;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
 		ioctl(sock_fd, cmd, &ireq);
@@ -5443,7 +5425,7 @@ iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	struct ethtool_value eval;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
 	eval.cmd = cmd;
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
@@ -5581,7 +5563,7 @@ activate_old(pcap_t *handle)
 	/* Bind to the given device */
 
 	if (strcmp(device, "any") == 0) {
-		strncpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
+		strlcpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
 			PCAP_ERRBUF_SIZE);
 		return PCAP_ERROR;
 	}
@@ -5610,7 +5592,7 @@ activate_old(pcap_t *handle)
 
 	if (handle->opt.promisc) {
 		memset(&ifr, 0, sizeof(ifr));
-		strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+		strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 		if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				 "SIOCGIFFLAGS: %s", pcap_strerror(errno));
@@ -5748,7 +5730,7 @@ iface_bind_old(int fd, const char *device, char *ebuf)
 	socklen_t	errlen = sizeof(err);
 
 	memset(&saddr, 0, sizeof(saddr));
-	strncpy(saddr.sa_data, device, sizeof(saddr.sa_data));
+	strlcpy(saddr.sa_data, device, sizeof(saddr.sa_data));
 	if (bind(fd, &saddr, sizeof(saddr)) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			 "bind: %s", pcap_strerror(errno));
@@ -5787,7 +5769,7 @@ iface_get_mtu(int fd, const char *device, char *ebuf)
 		return BIGGER_THAN_ALL_MTUS;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFMTU, &ifr) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -5807,7 +5789,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	struct ifreq	ifr;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFHWADDR, &ifr) == -1) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
