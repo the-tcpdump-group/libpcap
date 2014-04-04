@@ -117,12 +117,11 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 
 		if (NFNL_SUBSYS_ID(nlh->nlmsg_type) == NFNL_SUBSYS_ULOG && 
-			NFNL_MSG_TYPE(nlh->nlmsg_type) == NFULNL_MSG_PACKET) 
-				type = NFLOG;
-
-		if (NFNL_SUBSYS_ID(nlh->nlmsg_type) == NFNL_SUBSYS_QUEUE && 
-			NFNL_MSG_TYPE(nlh->nlmsg_type) == NFQNL_MSG_PACKET)
-				type = NFQUEUE;
+		    NFNL_MSG_TYPE(nlh->nlmsg_type) == NFULNL_MSG_PACKET) 
+			type = NFLOG;
+		else if (NFNL_SUBSYS_ID(nlh->nlmsg_type) == NFNL_SUBSYS_QUEUE && 
+		         NFNL_MSG_TYPE(nlh->nlmsg_type) == NFQNL_MSG_PACKET)
+			type = NFQUEUE;
 
 		if (type != OTHER) {
 			const unsigned char *payload = NULL;
