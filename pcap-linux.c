@@ -423,6 +423,8 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->tstamp_type_count = 3;
 	handle->tstamp_type_list = malloc(3 * sizeof(u_int));
 	if (handle->tstamp_type_list == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		free(handle);
 		return NULL;
 	}
@@ -443,6 +445,8 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->tstamp_precision_count = 2;
 	handle->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (handle->tstamp_precision_list == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
 		if (handle->tstamp_type_list != NULL)
 			free(handle->tstamp_type_list);
 		free(handle);
