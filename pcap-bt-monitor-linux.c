@@ -39,6 +39,11 @@
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/utsname.h>
+#include <netinet/in.h>
+
+#include "pcap-int.h"
+#include "pcap/bluetooth.h"
+#include "pcap-bt-monitor-linux.h"
 
 /* Start of copy of unexported Linux Kernel headers */
 
@@ -67,11 +72,6 @@ struct mgmt_hdr {
 #define MGMT_HDR_SIZE   sizeof(struct mgmt_hdr)
 /* End of copy of unexported Linux Kernel headers */
 
-#include "pcap/bluetooth.h"
-#include "pcap-int.h"
-
-#include "pcap-bt-monitor-linux.h"
-
 #define BT_CONTROL_SIZE 32
 #define INTERFACE_NAME "bluetooth-monitor"
 
@@ -88,7 +88,7 @@ bt_monitor_findalldevs(pcap_if_t **alldevsp, char *err_str)
             sscanf(uname_data.release, "%u.%u.%u", &version_major, &version_minor, &version_release) == 3))
         return 0;
 
-    if (!(version_major >= 3 && version_minor >= 4 && version_release >= 0)) return 0;
+    if (!(version_major >= 3 && version_minor >= 4)) return 0;
 
     if (pcap_add_if(alldevsp, INTERFACE_NAME, 0,
                "Bluetooth Linux Monitor", err_str) < 0)
