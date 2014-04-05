@@ -25,10 +25,10 @@
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  *  Modifications:     Added PACKET_MMAP support
- *                     Paolo Abeni <paolo.abeni@email.it> 
+ *                     Paolo Abeni <paolo.abeni@email.it>
  *                     Added TPACKET_V3 support
  *                     Gabor Tatarka <gabor.tatarka@ericsson.com>
- *                     
+ *
  *                     based on previous works of:
  *                     Simon Patarin <patarin@cs.unibo.it>
  *                     Phil Wood <cpw@lanl.gov>
@@ -47,7 +47,7 @@
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
@@ -56,12 +56,12 @@
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
@@ -188,7 +188,7 @@
 # endif /* PACKET_HOST */
 
 
- /* check for memory mapped access avaibility. We assume every needed 
+ /* check for memory mapped access avaibility. We assume every needed
   * struct is defined if the macro TPACKET_HDRLEN is defined, because it
   * uses many ring related structs and macros */
 # ifdef TPACKET_HDRLEN
@@ -1009,7 +1009,7 @@ linux_if_drops(const char * if_name)
 	FILE * file;
 	int field_to_convert = 3, if_name_sz = strlen(if_name);
 	long int dropped_pkts = 0;
-	
+
 	file = fopen("/proc/net/dev", "r");
 	if (!file)
 		return 0;
@@ -1024,7 +1024,7 @@ linux_if_drops(const char * if_name)
 			field_to_convert = 4;
 			continue;
 		}
-	
+
 		/* find iface and make sure it actually matches -- space before the name and : after it */
 		if ((bufptr = strstr(buffer, if_name)) &&
 			(bufptr == buffer || *(bufptr-1) == ' ') &&
@@ -1038,20 +1038,20 @@ linux_if_drops(const char * if_name)
 				while (*bufptr != '\0' && *(bufptr++) == ' ');
 				while (*bufptr != '\0' && *(bufptr++) != ' ');
 			}
-			
+
 			/* get rid of any final spaces */
 			while (*bufptr != '\0' && *bufptr == ' ') bufptr++;
-			
+
 			if (*bufptr != '\0')
 				dropped_pkts = strtol(bufptr, NULL, 10);
 
 			break;
 		}
 	}
-	
+
 	fclose(file);
 	return dropped_pkts;
-} 
+}
 
 
 /*
@@ -1285,12 +1285,12 @@ pcap_activate_linux(pcap_t *handle)
 			 pcap_strerror(errno) );
 		return PCAP_ERROR;
 	}
-	
+
 	/* copy timeout value */
 	handlep->timeout = handle->opt.timeout;
 
 	/*
-	 * If we're in promiscuous mode, then we probably want 
+	 * If we're in promiscuous mode, then we probably want
 	 * to see when the interface drops packets too, so get an
 	 * initial count from /proc/net/dev
 	 */
@@ -1408,7 +1408,7 @@ fail:
  *  error occured.
  */
 static int
-pcap_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+pcap_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	/*
 	 * Currently, on Linux only one packet is delivered per read,
@@ -1736,7 +1736,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 					"SIOCGSTAMPNS: %s", pcap_strerror(errno));
 			return PCAP_ERROR;
 		}
-        } else
+	} else
 #endif
 	{
 		if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
@@ -1744,7 +1744,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 					"SIOCGSTAMP: %s", pcap_strerror(errno));
 			return PCAP_ERROR;
 		}
-        }
+	}
 
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= packet_len;
@@ -1843,7 +1843,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 		return (-1);
 	}
 	return (ret);
-}                           
+}
 
 /*
  *  Get the statistics for the given packet capture handle.
@@ -1881,8 +1881,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 #endif /* HAVE_TPACKET_STATS */
 
 	long if_dropped = 0;
-	
-	/* 
+
+	/*
 	 *	To fill in ps_ifdrop, we parse /proc/net/dev for the number
 	 */
 	if (handle->opt.promisc)
@@ -1912,7 +1912,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 *	dropped by the interface driver.  It counts only
 		 *	packets that passed the filter.
 		 *
-		 *	See above for ps_ifdrop. 
+		 *	See above for ps_ifdrop.
 		 *
 		 *	Both statistics include packets not yet read from
 		 *	the kernel by libpcap, and thus not yet seen by
@@ -1941,7 +1941,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * "tp_packets" as the count of packets and "tp_drops"
 		 * as the count of drops.
 		 *
-		 * Keep a running total because each call to 
+		 * Keep a running total because each call to
 		 *    getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS, ....
 		 * resets the counters to zero.
 		 */
@@ -1987,10 +1987,10 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 * We maintain the count of packets processed by libpcap in
 	 * "handlep->packets_read", for reasons described in the comment
 	 * at the end of pcap_read_packet().  We have no idea how many
-	 * packets were dropped by the kernel buffers -- but we know 
+	 * packets were dropped by the kernel buffers -- but we know
 	 * how many the interface dropped, so we can return that.
 	 */
-	 
+
 	stats->ps_recv = handlep->packets_read;
 	stats->ps_drop = 0;
 	stats->ps_ifdrop = handlep->stat.ps_ifdrop;
@@ -2598,7 +2598,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
 			handle->linktype = DLT_RAW;
 			return;
 		}
-	
+
 		/*
 		 * This is (presumably) a real Ethernet capture; give it a
 		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
@@ -2962,9 +2962,9 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
 #ifndef ARPHRD_IEEE802154
 #define ARPHRD_IEEE802154      804
 #endif
-       case ARPHRD_IEEE802154:
-               handle->linktype =  DLT_IEEE802_15_4_NOFCS;
-               break;
+	case ARPHRD_IEEE802154:
+		handle->linktype =  DLT_IEEE802_15_4_NOFCS;
+		break;
 
 #ifndef ARPHRD_NETLINK
 #define ARPHRD_NETLINK	824
@@ -3361,7 +3361,7 @@ activate_new(pcap_t *handle)
  * On error, returns -1, and sets *status to the appropriate error code;
  * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
  */
-static int 
+static int
 activate_mmap(pcap_t *handle, int *status)
 {
 	struct pcap_linux *handlep = handle->priv;
@@ -3442,7 +3442,7 @@ activate_mmap(pcap_t *handle, int *status)
 	return 1;
 }
 #else /* HAVE_PACKET_RING */
-static int 
+static int
 activate_mmap(pcap_t *handle _U_, int *status _U_)
 {
 	return 0;
@@ -3733,12 +3733,12 @@ create_ring(pcap_t *handle, int *status)
 #endif
 	}
 
-	/* compute the minumum block size that will handle this frame. 
-	 * The block has to be page size aligned. 
-	 * The max block size allowed by the kernel is arch-dependent and 
+	/* compute the minumum block size that will handle this frame.
+	 * The block has to be page size aligned.
+	 * The max block size allowed by the kernel is arch-dependent and
 	 * it's not explicitly checked here. */
 	req.tp_block_size = getpagesize();
-	while (req.tp_block_size < req.tp_frame_size) 
+	while (req.tp_block_size < req.tp_frame_size)
 		req.tp_block_size <<= 1;
 
 	frames_per_block = req.tp_block_size/req.tp_frame_size;
@@ -3836,8 +3836,8 @@ create_ring(pcap_t *handle, int *status)
 			}
 			if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
 				(void *)&timesource, sizeof(timesource))) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
-					"can't set PACKET_TIMESTAMP: %s", 
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"can't set PACKET_TIMESTAMP: %s",
 					pcap_strerror(errno));
 				*status = PCAP_ERROR;
 				return -1;
@@ -3852,7 +3852,7 @@ retry:
 
 	/* req.tp_frame_nr is requested to match frames_per_block*req.tp_block_nr */
 	req.tp_frame_nr = req.tp_block_nr * frames_per_block;
-	
+
 #ifdef HAVE_TPACKET3
 	/* timeout value to retire block - use the configured buffering timeout, or default if <0. */
 	req.tp_retire_blk_tov = (handlep->timeout>=0)?handlep->timeout:0;
@@ -3984,7 +3984,7 @@ pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 	memcpy(handlep->oneshot_buffer, bytes, h->caplen);
 	*sp->pkt = handlep->oneshot_buffer;
 }
-    
+
 static void
 pcap_cleanup_linux_mmap( pcap_t *handle )
 {
@@ -4000,7 +4000,7 @@ pcap_cleanup_linux_mmap( pcap_t *handle )
 
 
 static int
-pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
+pcap_getnonblock_mmap(pcap_t *p, char *errbuf _U_)
 {
 	struct pcap_linux *handlep = p->priv;
 
@@ -4009,7 +4009,7 @@ pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 }
 
 static int
-pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf _U_)
 {
 	struct pcap_linux *handlep = p->priv;
 
@@ -4578,7 +4578,7 @@ again:
 }
 #endif /* HAVE_TPACKET3 */
 
-static int 
+static int
 pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 {
 	struct pcap_linux *handlep = handle->priv;
@@ -5475,7 +5475,7 @@ iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 		    cmdname, strerror(errno));
 		return -1;
 	}
-	return eval.data;	
+	return eval.data;
 }
 
 static int

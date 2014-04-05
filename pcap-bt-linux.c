@@ -11,8 +11,8 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote 
- * products derived from this software without specific prior written 
+ * 3. The name of the author may not be used to endorse or promote
+ * products derived from this software without specific prior written
  * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -54,6 +54,8 @@
 #include <sys/utsname.h>
 #include <arpa/inet.h>
 
+#define HCI_MAX_DEV 15
+
 /* Start of copy of unexported Linux Kernel headers */
 #ifndef AF_BLUETOOTH
 #define AF_BLUETOOTH    31
@@ -82,7 +84,7 @@ struct hci_dev_req {
 
 struct hci_dev_list_req {
 	uint16_t  dev_num;
-	struct hci_dev_req dev_req[0];  /* hci_dev_req structures */
+	struct hci_dev_req dev_req[HCI_MAX_DEV];
 };
 
 typedef struct {
@@ -146,8 +148,6 @@ struct hci_dev_info {
 #define BT_IFACE "bluetooth"
 #define BT_CTRL_SIZE 128
 
-#define HCI_MAX_DEV 15
-
 /* forward declaration */
 static int bt_activate(pcap_t *);
 static int bt_read_linux(pcap_t *, int , pcap_handler , u_char *);
@@ -162,10 +162,10 @@ struct pcap_bt {
 	int dev_id;		/* device ID of device we're bound to */
 };
 
-int 
+int
 bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
-	struct hci_dev_list_req *dev_list;
+	struct hci_dev_list_req dev_list;
 	struct hci_dev_req *dev_req;
 	int i, sock;
 	int ret = 0;
@@ -181,34 +181,25 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		return -1;
 	}
 
-	dev_list = malloc(HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
-	if (!dev_list) 
-	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %zu bytes for Bluetooth device list",
-			HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
-		ret = -1;
-		goto done;
-	}
+	dev_list.dev_num = HCI_MAX_DEV;
 
-	dev_list->dev_num = HCI_MAX_DEV;
-
-	if (ioctl(sock, HCIGETDEVLIST, (void *) dev_list) < 0) 
+	if (ioctl(sock, HCIGETDEVLIST, (void *) &dev_list) < 0)
 	{
 		snprintf(err_str, PCAP_ERRBUF_SIZE,
 		    "Can't get Bluetooth device list via ioctl: %s",
 		    strerror(errno));
 		ret = -1;
-		goto free;
+		goto done;
 	}
 
-	dev_req = dev_list->dev_req;
-	for (i = 0; i < dev_list->dev_num; i++, dev_req++) {
+	dev_req = dev_list.dev_req;
+	for (i = 0; i < dev_list.dev_num; i++) {
 		char dev_name[20], dev_descr[30];
-		
-		snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
+
+		snprintf(dev_name, 20, BT_IFACE"%d", dev_req[i].dev_id);
 		snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
-			
-		if (pcap_add_if(alldevsp, dev_name, 0, 
+
+		if (pcap_add_if(alldevsp, dev_name, 0,
 		       dev_descr, err_str) < 0)
 		{
 			ret = -1;
@@ -216,9 +207,6 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		}
 
 	}
-
-free:
-	free(dev_list);
 
 done:
 	close(sock);
@@ -289,7 +277,7 @@ bt_activate(pcap_t* handle)
 	if (sscanf(handle->opt.source, BT_IFACE"%d", &dev_id) != 1)
 	{
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't get Bluetooth device index from %s", 
+			"Can't get Bluetooth device index from %s",
 			 handle->opt.source);
 		return PCAP_ERROR;
 	}
@@ -308,7 +296,7 @@ bt_activate(pcap_t* handle)
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->stats_op = bt_stats_linux;
 	handlep->dev_id = dev_id;
-	
+
 	/* Create HCI socket */
 	handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (handle->fd < 0) {
@@ -338,10 +326,10 @@ bt_activate(pcap_t* handle)
 		goto close_fail;
 	}
 
-	/* Setup filter, do not call hci function to avoid dependence on 
+	/* Setup filter, do not call hci function to avoid dependence on
 	 * external libs	*/
 	memset(&flt, 0, sizeof(flt));
-	memset((void *) &flt.type_mask, 0xff, sizeof(flt.type_mask));	
+	memset((void *) &flt.type_mask, 0xff, sizeof(flt.type_mask));
 	memset((void *) &flt.event_mask, 0xff, sizeof(flt.event_mask));
 	if (setsockopt(handle->fd, SOL_HCI, HCI_FILTER, &flt, sizeof(flt)) < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -409,7 +397,7 @@ close_fail:
 }
 
 static int
-bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	struct cmsghdr *cmsg;
 	struct msghdr msg;
@@ -417,11 +405,12 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	ssize_t ret;
 	struct pcap_pkthdr pkth;
 	pcap_bluetooth_h4_header* bthdr;
+	int in=0;
 
 	bthdr = (pcap_bluetooth_h4_header*) &handle->buffer[handle->offset];
 	iv.iov_base = &handle->buffer[handle->offset+sizeof(pcap_bluetooth_h4_header)];
 	iv.iov_len  = handle->snapshot;
-	
+
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
@@ -446,22 +435,22 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 
 	pkth.caplen = ret;
 
-	/* get direction and timestamp*/ 
+	/* get direction and timestamp*/
 	cmsg = CMSG_FIRSTHDR(&msg);
-	int in=0;
+
 	while (cmsg) {
 		switch (cmsg->cmsg_type) {
 			case HCI_CMSG_DIR:
 				memcpy(&in, CMSG_DATA(cmsg), sizeof in);
 				break;
-                      	case HCI_CMSG_TSTAMP:
-                      		memcpy(&pkth.ts, CMSG_DATA(cmsg),
-                      		    sizeof pkth.ts);
+			case HCI_CMSG_TSTAMP:
+				memcpy(&pkth.ts, CMSG_DATA(cmsg),
+				sizeof pkth.ts);
 				break;
 		}
 		cmsg = CMSG_NXTHDR(&msg, cmsg);
 	}
-	if ((in && (handle->direction == PCAP_D_OUT)) || 
+	if ((in && (handle->direction == PCAP_D_OUT)) ||
 				((!in) && (handle->direction == PCAP_D_IN)))
 		return 0;
 
@@ -478,7 +467,7 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 }
 
 static int
-bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
+bt_inject_linux(pcap_t *handle, const void *buf _U_, size_t size _U_)
 {
 	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
     		"bluetooth devices");
@@ -486,7 +475,7 @@ bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
 }
 
 
-static int 
+static int
 bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_bt *handlep = handle->priv;
@@ -494,27 +483,27 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct hci_dev_info dev_info;
 	struct hci_dev_stats * s = &dev_info.stat;
 	dev_info.dev_id = handlep->dev_id;
-	
+
 	/* ignore eintr */
 	do {
 		ret = ioctl(handle->fd, HCIGETDEVINFO, (void *)&dev_info);
 	} while ((ret == -1) && (errno == EINTR));
-	    
+
 	if (ret < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't get stats via ioctl: %s", strerror(errno));
 		return (-1);
 	}
 
-	/* we receive both rx and tx frames, so comulate all stats */	
-	stats->ps_recv = s->evt_rx + s->acl_rx + s->sco_rx + s->cmd_tx + 
+	/* we receive both rx and tx frames, so comulate all stats */
+	stats->ps_recv = s->evt_rx + s->acl_rx + s->sco_rx + s->cmd_tx +
 		s->acl_tx +s->sco_tx;
 	stats->ps_drop = s->err_rx + s->err_tx;
 	stats->ps_ifdrop = 0;
 	return 0;
 }
 
-static int 
+static int
 bt_setdirection_linux(pcap_t *p, pcap_direction_t d)
 {
 	p->direction = d;
