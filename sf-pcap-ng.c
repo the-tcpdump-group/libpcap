@@ -1224,39 +1224,24 @@ found:
 		break;
 
 	case SCALE_UP:
+	case SCALE_DOWN:
 		/*
-		 * The interface resolution is less than what the user
-		 * wants; scale up to that resolution.
+		 * The interface resolution is different from what the
+		 * user wants; scale up or down to that resolution.
 		 *
 		 * XXX - if ps->ifaces[interface_id].tsresol is a power
 		 * of 10, we could just multiply by the quotient of
-		 * ps->ifaces[interface_id].tsresol and ps->user_tsresol,
-		 * as we know that's an integer.  That runs less risk of
-		 * overflow.
+		 * ps->ifaces[interface_id].tsresol and ps->user_tsresol
+		 * in the scale-up case, and divide by the quotient of
+		 * ps->user_tsresol and ps->ifaces[interface_id].tsresol
+		 * in the scale-down case, as we know those are integers,
+		 * which would involve fewer arithmetic operations.
 		 *
 		 * Is there something clever we could do if
 		 * ps->ifaces[interface_id].tsresol is a power of 2?
 		 */
 		frac *= ps->ifaces[interface_id].tsresol;
 		frac /= ps->user_tsresol;
-		break;
-
-	case SCALE_DOWN:
-		/*
-		 * The interface resolution is greater than what the user
-		 * wants; scale down to that resolution.
-		 *
-		 * XXX - if ps->ifaces[interface_id].tsresol is a power
-		 * of 10, we could just divide by the quotient of
-		 * ps->user_tsresol and ps->ifaces[interface_id].tsresol,
-		 * as we know that's an integer.  That runs less risk of
-		 * overflow.
-		 *
-		 * Is there something clever we could do if
-		 * ps->ifaces[interface_id].tsresol is a power of 2?
-		 */
-		frac *= ps->user_tsresol;
-		frac /= ps->ifaces[interface_id].tsresol;
 		break;
 	}
 	hdr->ts.tv_sec = sec;
