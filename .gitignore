@@ -13,6 +13,8 @@ autom4te.cache/
 .devel
 filtertest
 findalldevstest
+opentest
+valgrindtest
 grammar.c
 libpcap.a
 libpcap.*.dylib
