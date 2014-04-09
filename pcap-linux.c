@@ -366,6 +366,12 @@ static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 #endif
 
+#ifdef TP_STATUS_VLAN_TPID_VALID
+# define VLAN_TPID(hdr, hv)	(((hv)->tp_vlan_tpid || ((hdr)->tp_status & TP_STATUS_VLAN_TPID_VALID)) ? (hv)->tp_vlan_tpid : ETH_P_8021Q)
+#else
+# define VLAN_TPID(hdr, hv)	ETH_P_8021Q
+#endif
+
 /*
  * Wrap some ioctl calls
  */
@@ -1653,12 +1659,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
 			tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
-#if defined(TP_STATUS_VLAN_TPID_VALID)
-			if (aux->tp_vlan_tpid || (aux->tp_status & TP_STATUS_VLAN_TPID_VALID))
-				tag->vlan_tpid = htons(aux->tp_vlan_tpid);
-			else
-#endif
-				tag->vlan_tpid = htons(ETH_P_8021Q);
+			tag->vlan_tpid = htons(VLAN_TPID(aux, aux));
 			tag->vlan_tci = htons(aux->tp_vlan_tci);
 
 			packet_len += VLAN_TAG_LEN;
@@ -4410,11 +4411,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 				h.h2->tp_vlan_tci != 0,
 #endif
 				h.h2->tp_vlan_tci,
-#if defined(TP_STATUS_VLAN_TPID_VALID)
-				(h.h2->tp_vlan_tpid || (h.h2->tp_status & TP_STATUS_VLAN_TPID_VALID)) ? h.h2->tp_vlan_tpid : ETH_P_8021Q);
-#else
-				ETH_P_8021Q);
-#endif
+				VLAN_TPID(h.h2, h.h2));
 		if (ret == 1) {
 			pkts++;
 			handlep->packets_read++;
@@ -4510,11 +4507,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 					tp3_hdr->hv1.tp_vlan_tci != 0,
 #endif
 					tp3_hdr->hv1.tp_vlan_tci,
-#if defined(TP_STATUS_VLAN_TPID_VALID)
-					(tp3_hdr->hv1.tp_vlan_tpid || (tp3_hdr->tp_status & TP_STATUS_VLAN_TPID_VALID)) ? tp3_hdr->hv1.tp_vlan_tpid : ETH_P_8021Q);
-#else
-					ETH_P_8021Q);
-#endif
+					VLAN_TPID(tp3_hdr, &tp3_hdr->hv1));
 			if (ret == 1) {
 				pkts++;
 				handlep->packets_read++;
