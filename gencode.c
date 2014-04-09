@@ -7912,6 +7912,10 @@ gen_vlan(vlan_num)
 		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 		    (bpf_int32)ETHERTYPE_8021Q);
 		b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+		    (bpf_int32)ETHERTYPE_8021AD);
+		gen_or(b0,b1);
+		b0 = b1;
+		b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 		    (bpf_int32)ETHERTYPE_8021QINQ);
 		gen_or(b0,b1);
 		b0 = b1;
