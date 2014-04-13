@@ -745,6 +745,7 @@ with_flex
 with_bison
 enable_universal
 enable_shared
+enable_usb
 enable_bluetooth
 enable_canusb
 enable_can
@@ -1379,6 +1380,8 @@ Optional Features:
   --enable-yydebug        build parser debugging code
   --disable-universal     don't build universal on OS X
   --enable-shared         build shared libraries [default=yes, if support
+                          available]
+  --enable-usb            enable nusb support [default=yes, if support
                           available]
   --enable-bluetooth      enable Bluetooth support [default=yes, if support
                           available]
@@ -7807,10 +7810,19 @@ ln -s ${srcdir}/bpf/net net
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for USB sniffing support" >&5
+# Check whether --enable-usb was given.
+if test "${enable_usb+set}" = set; then :
+  enableval=$enable_usb;
+else
+  enable_usb=yes
+fi
+
+
+if test "x$enable_usb" != "xno" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for USB sniffing support" >&5
 $as_echo_n "checking for USB sniffing support... " >&6; }
-case "$host_os" in
-linux*)
+   case "$host_os" in
+   linux*)
 
 $as_echo "#define PCAP_SUPPORT_USB 1" >>confdefs.h
 
@@ -7923,11 +7935,12 @@ $as_echo "#define HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1" >>confdefs.h
 	    fi
 	fi
 	;;
-*)
+    *)
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	;;
 esac
+fi
 
 
 
