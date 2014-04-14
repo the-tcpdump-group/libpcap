@@ -4206,20 +4206,7 @@ static int pcap_handle_packet_mmap(
 		return -1;
 	}
 
-	/* run filter on received packet
-	 * If the kernel filtering is enabled we need to run the
-	 * filter until all the frames present into the ring
-	 * at filter creation time are processed.
-	 * In this case, blocks_to_filter_in_userland is used
-	 * as a counter for the packet we need to filter.
-	 * Note: alternatively it could be possible to stop applying
-	 * the filter when the ring became empty, but it can possibly
-	 * happen a lot later... */
 	bp = frame + tp_mac;
-	if (handlep->filter_in_userland && handle->fcode.bf_insns &&
-			(bpf_filter(handle->fcode.bf_insns, bp,
-				tp_len, tp_snaplen) == 0))
-		return 0;
 
 	sll = (void *)frame + TPACKET_ALIGN(handlep->tp_hdrlen);
 	if (!linux_check_direction(handle, sll))
@@ -4293,6 +4280,20 @@ static int pcap_handle_packet_mmap(
 		pcaphdr.len += VLAN_TAG_LEN;
 	}
 #endif
+
+	/* run filter on received packet
+	 * If the kernel filtering is enabled we need to run the
+	 * filter until all the frames present into the ring
+	 * at filter creation time are processed.
+	 * In this case, blocks_to_filter_in_userland is used
+	 * as a counter for the packet we need to filter.
+	 * Note: alternatively it could be possible to stop applying
+	 * the filter when the ring became empty, but it can possibly
+	 * happen a lot later... */
+	if (handlep->filter_in_userland && handle->fcode.bf_insns &&
+			(bpf_filter(handle->fcode.bf_insns, bp,
+				tp_len, tp_snaplen) == 0))
+		return 0;
 
 	/*
 	 * The only way to tell the kernel to cut off the
