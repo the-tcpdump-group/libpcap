@@ -4474,6 +4474,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 	int pkts = 0;
 	int ret;
 
+again:
 	if (handlep->current_packet == NULL) {
 		/* wait for frames availability.*/
 		ret = pcap_wait_for_frames_mmap(handle);
@@ -4482,8 +4483,13 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		}
 	}
 	h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
-	if (!h.raw)
+	if (!h.raw) {
+		if (pkts == 0 && handlep->timeout == 0) {
+			/* Block until we see a packet. */
+			goto again;
+		}
 		return pkts;
+	}
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
@@ -4563,6 +4569,10 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 			handle->break_loop = 0;
 			return PCAP_ERROR_BREAK;
 		}
+	}
+	if (pkts == 0 && handlep->timeout == 0) {
+		/* Block until we see a packet. */
+		goto again;
 	}
 	return pkts;
 }
