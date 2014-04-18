@@ -99,7 +99,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	int retv;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
-	int err = PCAP_ERROR;
+	int err;
 
 	/*
 	 * Enable Solaris raw and passive DLPI extensions;
@@ -113,6 +113,8 @@ pcap_activate_libdlpi(pcap_t *p)
 		else if (retv == DL_SYSERR &&
 		    (errno == EPERM || errno == EACCES))
 			err = PCAP_ERROR_PERM_DENIED;
+		else
+			err = PCAP_ERROR;
 		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv,
 		    p->errbuf);
 		return (err);
@@ -130,6 +132,7 @@ pcap_activate_libdlpi(pcap_t *p)
 
 	/* Bind with DLPI_ANY_SAP. */
 	if ((retv = dlpi_bind(pd->dlpi_hd, DLPI_ANY_SAP, 0)) != DLPI_SUCCESS) {
+		err = PCAP_ERROR;
 		pcap_libdlpi_err(p->opt.source, "dlpi_bind", retv, p->errbuf);
 		goto bad;
 	}
@@ -177,31 +180,39 @@ pcap_activate_libdlpi(pcap_t *p)
 
 	/* Determine link type.  */
 	if ((retv = dlpi_info(pd->dlpi_hd, &dlinfo, 0)) != DLPI_SUCCESS) {
+		err = PCAP_ERROR;
 		pcap_libdlpi_err(p->opt.source, "dlpi_info", retv, p->errbuf);
 		goto bad;
 	}
 
-	if (pcap_process_mactype(p, dlinfo.di_mactype) != 0)
+	if (pcap_process_mactype(p, dlinfo.di_mactype) != 0) {
+		err = PCAP_ERROR;
 		goto bad;
+	}
 
 	p->fd = dlpi_fd(pd->dlpi_hd);
 
 	/* Push and configure bufmod. */
-	if (pcap_conf_bufmod(p, p->snapshot) != 0)
+	if (pcap_conf_bufmod(p, p->snapshot) != 0) {
+		err = PCAP_ERROR;
 		goto bad;
+	}
 
 	/*
 	 * Flush the read side.
 	 */
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
+		err = PCAP_ERROR;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	/* Allocate data buffer. */
-	if (pcap_alloc_databuf(p) != 0)
+	if (pcap_alloc_databuf(p) != 0) {
+		err = PCAP_ERROR;
 		goto bad;
+	}
 
 	/*
 	 * "p->fd" is a FD for a STREAMS device, so "select()" and
