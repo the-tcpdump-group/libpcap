@@ -2275,7 +2275,7 @@ pcap_activate_bpf(pcap_t *p)
 	p->stats_op = pcap_stats_bpf;
 	p->cleanup_op = pcap_cleanup_bpf;
 
-	return (status);
+	return (0);
  bad:
 	pcap_cleanup_bpf(p);
 	return (status);
