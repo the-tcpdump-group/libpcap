@@ -981,7 +981,14 @@
  */
 #define LINKTYPE_PKTAP		258
 
-#define LINKTYPE_MATCHING_MAX	258		/* highest value in the "matching" range */
+/*
+ * Ethernet packets preceded by a header giving the last 6 octets
+ * of the preamble specified by 802.3-2012 Clause 65, section
+ * 65.1.3.2 "Transmit".
+ */
+#define LINKTYPE_EPON		259
+
+#define LINKTYPE_MATCHING_MAX	259		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

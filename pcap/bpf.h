@@ -1298,7 +1298,14 @@ struct bpf_program {
 #define DLT_PKTAP	258
 #endif
 
-#define DLT_MATCHING_MAX	258	/* highest value in the "matching" range */
+/*
+ * Ethernet packets preceded by a header giving the last 6 octets
+ * of the preamble specified by 802.3-2012 Clause 65, section
+ * 65.1.3.2 "Transmit".
+ */
+#define DLT_EPON	259
+
+#define DLT_MATCHING_MAX	259	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
