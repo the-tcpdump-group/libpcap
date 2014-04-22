@@ -355,6 +355,7 @@ pcap_activate_dlpi(pcap_t *p)
 	char dname2[100];
 #endif
 	int status = 0;
+	int err;
 
 #ifdef HAVE_DEV_DLPI
 	/*
@@ -666,16 +667,23 @@ pcap_activate_dlpi(pcap_t *p)
 	/* Everything else (except for SINIX) - always do this */
 	{
 #endif
-		status = dlpromiscon(p, DL_PROMISC_SAP);
-		if (status < 0) {
-			/*
-			 * Not fatal, since the DL_PROMISC_PHYS mode worked.
-			 * Report it as a warning, however.
-			 */
-			if (p->opt.promisc)
+		err = dlpromiscon(p, DL_PROMISC_SAP);
+		if (err < 0) {
+			if (p->opt.promisc) {
+				/*
+				 * Not fatal, since the DL_PROMISC_PHYS mode
+				 * worked.
+				 *
+				 * Report it as a warning, however.
+				 */
 				status = PCAP_WARNING;
-			else
+			} else {
+				/*
+				 * Fatal.
+				 */
+				status = err;
 				goto bad;
+			}
 		}
 	}
 #endif /* sinix */
