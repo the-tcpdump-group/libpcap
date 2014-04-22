@@ -354,7 +354,7 @@ pcap_activate_dlpi(pcap_t *p)
 #ifndef HAVE_DEV_DLPI
 	char dname2[100];
 #endif
-	int status;
+	int status = 0;
 
 #ifdef HAVE_DEV_DLPI
 	/*
@@ -801,7 +801,7 @@ pcap_activate_dlpi(pcap_t *p)
 	p->stats_op = pcap_stats_dlpi;
 	p->cleanup_op = pcap_cleanup_dlpi;
 
-	return (0);
+	return (status);
 bad:
 	pcap_cleanup_dlpi(p);
 	return (status);

@@ -1475,7 +1475,7 @@ static int
 pcap_activate_bpf(pcap_t *p)
 {
 	struct pcap_bpf *pb = p->priv;
-	int status;
+	int status = 0;
 	int fd;
 #ifdef LIFNAMSIZ
 	char *zonesep;
@@ -2275,7 +2275,7 @@ pcap_activate_bpf(pcap_t *p)
 	p->stats_op = pcap_stats_bpf;
 	p->cleanup_op = pcap_cleanup_bpf;
 
-	return (0);
+	return (status);
  bad:
 	pcap_cleanup_bpf(p);
 	return (status);

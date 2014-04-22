@@ -99,7 +99,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	int retv;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
-	int err;
+	int err = 0;
 
 	/*
 	 * Enable Solaris raw and passive DLPI extensions;
@@ -230,7 +230,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	p->stats_op = pcap_stats_dlpi;
 	p->cleanup_op = pcap_cleanup_libdlpi;
 
-	return (0);
+	return (err);
 bad:
 	pcap_cleanup_libdlpi(p);
 	return (err);
