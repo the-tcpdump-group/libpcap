@@ -1235,6 +1235,7 @@ pcap_activate_linux(pcap_t *handle)
 	const char	*device;
 	struct ifreq	ifr;
 	int		status = 0;
+	int		ret;
 
 	device = handle->opt.source;
 
@@ -1306,16 +1307,17 @@ pcap_activate_linux(pcap_t *handle)
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 */
-	status = activate_new(handle);
-	if (status < 0) {
+	ret = activate_new(handle);
+	if (ret < 0) {
 		/*
 		 * Fatal error with the new way; just fail.
-		 * status has the error return; if it's PCAP_ERROR,
+		 * ret has the error return; if it's PCAP_ERROR,
 		 * handle->errbuf has been set appropriately.
 		 */
+		status = ret;
 		goto fail;
 	}
-	if (status == 1) {
+	if (ret == 1) {
 		/*
 		 * Success.
 		 * Try to use memory-mapped access.
@@ -1342,21 +1344,23 @@ pcap_activate_linux(pcap_t *handle)
 			/*
 			 * We failed to set up to use it, or the kernel
 			 * supports it, but we failed to enable it.
-			 * status has been set to the error status to
+			 * ret has been set to the error status to
 			 * return and, if it's PCAP_ERROR, handle->errbuf
 			 * contains the error message.
 			 */
+			status = ret;
 			goto fail;
 		}
 	}
-	else if (status == 0) {
+	else if (ret == 0) {
 		/* Non-fatal error; try old way */
-		if ((status = activate_old(handle)) != 1) {
+		if ((ret = activate_old(handle)) != 1) {
 			/*
 			 * Both methods to open the packet socket failed.
 			 * Tidy up and report our failure (handle->errbuf
 			 * is expected to be set by the functions above).
 			 */
+			status = ret;
 			goto fail;
 		}
 	}
@@ -1364,7 +1368,6 @@ pcap_activate_linux(pcap_t *handle)
 	/*
 	 * We set up the socket, but not with memory-mapped access.
 	 */
-	status = 0;
 	if (handle->opt.buffer_size != 0) {
 		/*
 		 * Set the socket buffer size to the specified value.
