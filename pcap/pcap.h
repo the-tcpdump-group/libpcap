@@ -388,6 +388,8 @@ char	*pcap_geterr(pcap_t *);
 void	pcap_perror(pcap_t *, char *);
 int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 	    bpf_u_int32);
+int pcap_is_raw(const char *);
+int pcap_compile_raw(pcap_t *, struct bpf_program *, const char *);
 int	pcap_compile_nopcap(int, int, struct bpf_program *,
 	    const char *, int, bpf_u_int32);
 void	pcap_freecode(struct bpf_program *);
