@@ -336,6 +336,8 @@ pcap_activate_dlpi(pcap_t *p)
 #ifdef DL_HP_RAWDLS
 	struct pcap_dlpi *pd = p->priv;
 #endif
+	int status = 0;
+	int retv;
 	register char *cp;
 	int ppa;
 #ifdef HAVE_SOLARIS
@@ -354,8 +356,6 @@ pcap_activate_dlpi(pcap_t *p)
 #ifndef HAVE_DEV_DLPI
 	char dname2[100];
 #endif
-	int status = 0;
-	int err;
 
 #ifdef HAVE_DEV_DLPI
 	/*
@@ -523,14 +523,18 @@ pcap_activate_dlpi(pcap_t *p)
 		isatm = 1;
 #endif
 	if (infop->dl_provider_style == DL_STYLE2) {
-		status = dl_doattach(p->fd, ppa, p->errbuf);
-		if (status < 0)
+		retv = dl_doattach(p->fd, ppa, p->errbuf);
+		if (retv < 0) {
+			status = retv;
 			goto bad;
+		}
 #ifdef DL_HP_RAWDLS
 		if (pd->send_fd >= 0) {
-			status = dl_doattach(pd->send_fd, ppa, p->errbuf);
-			if (status < 0)
+			retv = dl_doattach(pd->send_fd, ppa, p->errbuf);
+			if (retv < 0) {
+				status = retv;
 				goto bad;
+			}
 		}
 #endif
 	}
@@ -633,10 +637,12 @@ pcap_activate_dlpi(pcap_t *p)
 		/*
 		** Enable promiscuous (not necessary on send FD)
 		*/
-		status = dlpromiscon(p, DL_PROMISC_PHYS);
-		if (status < 0) {
-			if (status == PCAP_ERROR_PERM_DENIED)
+		retv = dlpromiscon(p, DL_PROMISC_PHYS);
+		if (retv < 0) {
+			if (retv == PCAP_ERROR_PERM_DENIED)
 				status = PCAP_ERROR_PROMISC_PERM_DENIED;
+			else
+				status = retv;
 			goto bad;
 		}
 
@@ -646,8 +652,8 @@ pcap_activate_dlpi(pcap_t *p)
 		** HP-UX or SINIX) (Not necessary on send FD)
 		*/
 #if !defined(__hpux) && !defined(sinix)
-		status = dlpromiscon(p, DL_PROMISC_MULTI);
-		if (status < 0)
+		retv = dlpromiscon(p, DL_PROMISC_MULTI);
+		if (retv < 0)
 			status = PCAP_WARNING;
 #endif
 	}
@@ -667,8 +673,8 @@ pcap_activate_dlpi(pcap_t *p)
 	/* Everything else (except for SINIX) - always do this */
 	{
 #endif
-		err = dlpromiscon(p, DL_PROMISC_SAP);
-		if (err < 0) {
+		retv = dlpromiscon(p, DL_PROMISC_SAP);
+		if (retv < 0) {
 			if (p->opt.promisc) {
 				/*
 				 * Not fatal, since the DL_PROMISC_PHYS mode
@@ -681,7 +687,7 @@ pcap_activate_dlpi(pcap_t *p)
 				/*
 				 * Fatal.
 				 */
-				status = err;
+				status = retv;
 				goto bad;
 			}
 		}

@@ -1476,6 +1476,9 @@ pcap_activate_bpf(pcap_t *p)
 {
 	struct pcap_bpf *pb = p->priv;
 	int status = 0;
+#ifdef HAVE_BSD_IEEE80211
+	int retv;
+#endif
 	int fd;
 #ifdef LIFNAMSIZ
 	char *zonesep;
@@ -1977,11 +1980,12 @@ pcap_activate_bpf(pcap_t *p)
 		/*
 		 * Try to put the interface into monitor mode.
 		 */
-		status = monitor_mode(p, 1);
-		if (status != 0) {
+		retv = monitor_mode(p, 1);
+		if (retv != 0) {
 			/*
 			 * We failed.
 			 */
+			status = retv;
 			goto bad;
 		}
 

@@ -96,10 +96,10 @@ static int
 pcap_activate_libdlpi(pcap_t *p)
 {
 	struct pcap_dlpi *pd = p->priv;
+	int status = 0;
 	int retv;
 	dlpi_handle_t dh;
 	dlpi_info_t dlinfo;
-	int err = 0;
 
 	/*
 	 * Enable Solaris raw and passive DLPI extensions;
@@ -109,15 +109,15 @@ pcap_activate_libdlpi(pcap_t *p)
 	retv = dlpi_open(p->opt.source, &dh, DLPI_RAW|DLPI_PASSIVE);
 	if (retv != DLPI_SUCCESS) {
 		if (retv == DLPI_ELINKNAMEINVAL || retv == DLPI_ENOLINK)
-			err = PCAP_ERROR_NO_SUCH_DEVICE;
+			status = PCAP_ERROR_NO_SUCH_DEVICE;
 		else if (retv == DL_SYSERR &&
 		    (errno == EPERM || errno == EACCES))
-			err = PCAP_ERROR_PERM_DENIED;
+			status = PCAP_ERROR_PERM_DENIED;
 		else
-			err = PCAP_ERROR;
+			status = PCAP_ERROR;
 		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv,
 		    p->errbuf);
-		return (err);
+		return (status);
 	}
 	pd->dlpi_hd = dh;
 
@@ -126,21 +126,21 @@ pcap_activate_libdlpi(pcap_t *p)
 		 * This device exists, but we don't support monitor mode
 		 * any platforms that support DLPI.
 		 */
-		err = PCAP_ERROR_RFMON_NOTSUP;
+		status = PCAP_ERROR_RFMON_NOTSUP;
 		goto bad;
 	}
 
 	/* Bind with DLPI_ANY_SAP. */
 	if ((retv = dlpi_bind(pd->dlpi_hd, DLPI_ANY_SAP, 0)) != DLPI_SUCCESS) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		pcap_libdlpi_err(p->opt.source, "dlpi_bind", retv, p->errbuf);
 		goto bad;
 	}
 
 	/* Enable promiscuous mode. */
 	if (p->opt.promisc) {
-		err = dlpromiscon(p, DL_PROMISC_PHYS);
-		if (err < 0) {
+		retv = dlpromiscon(p, DL_PROMISC_PHYS);
+		if (retv < 0) {
 			/*
 			 * "You don't have permission to capture on
 			 * this device" and "you don't have permission
@@ -154,39 +154,45 @@ pcap_activate_libdlpi(pcap_t *p)
 			 * XXX - you might have to capture in
 			 * promiscuous mode to see outgoing packets.
 			 */
-			if (err == PCAP_ERROR_PERM_DENIED)
-				err = PCAP_ERROR_PROMISC_PERM_DENIED;
+			if (retv == PCAP_ERROR_PERM_DENIED)
+				status = PCAP_ERROR_PROMISC_PERM_DENIED;
+			else
+				status = retv;
 			goto bad;
 		}
 	} else {
 		/* Try to enable multicast. */
-		err = dlpromiscon(p, DL_PROMISC_MULTI);
-		if (err < 0)
+		retv = dlpromiscon(p, DL_PROMISC_MULTI);
+		if (retv < 0) {
+			status = retv;
 			goto bad;
+		}
 	}
 
 	/* Try to enable SAP promiscuity. */
-	err = dlpromiscon(p, DL_PROMISC_SAP);
-	if (err < 0) {
+	retv = dlpromiscon(p, DL_PROMISC_SAP);
+	if (retv < 0) {
 		/*
 		 * Not fatal, since the DL_PROMISC_PHYS mode worked.
 		 * Report it as a warning, however.
 		 */
 		if (p->opt.promisc)
-			err = PCAP_WARNING;
-		else
+			status = PCAP_WARNING;
+		else {
+			status = retv;
 			goto bad;
+		}
 	}
 
 	/* Determine link type.  */
 	if ((retv = dlpi_info(pd->dlpi_hd, &dlinfo, 0)) != DLPI_SUCCESS) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		pcap_libdlpi_err(p->opt.source, "dlpi_info", retv, p->errbuf);
 		goto bad;
 	}
 
 	if (pcap_process_mactype(p, dlinfo.di_mactype) != 0) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -194,7 +200,7 @@ pcap_activate_libdlpi(pcap_t *p)
 
 	/* Push and configure bufmod. */
 	if (pcap_conf_bufmod(p, p->snapshot) != 0) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -202,7 +208,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	 * Flush the read side.
 	 */
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
 		    pcap_strerror(errno));
 		goto bad;
@@ -210,7 +216,7 @@ pcap_activate_libdlpi(pcap_t *p)
 
 	/* Allocate data buffer. */
 	if (pcap_alloc_databuf(p) != 0) {
-		err = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -230,10 +236,10 @@ pcap_activate_libdlpi(pcap_t *p)
 	p->stats_op = pcap_stats_dlpi;
 	p->cleanup_op = pcap_cleanup_libdlpi;
 
-	return (err);
+	return (status);
 bad:
 	pcap_cleanup_libdlpi(p);
-	return (err);
+	return (status);
 }
 
 #define STRINGIFY(n)	#n
