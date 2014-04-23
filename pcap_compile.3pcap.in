@@ -67,6 +67,40 @@ safe to use
 .B pcap_compile()
 in multiple threads in a single process without some form of mutual
 exclusion allowing only one thread to call it at any given time.
+.LP
+NOTE: in libpcap 1.8.2 and later,
+.B pcap_compile()
+accepts "raw filters".
+Raw filters are a decimal-number representation of a BPF filter code.
+For example, the "icmp" filter on an ethernet network gets compiled into
+a 6-instruction filter, where the first instruction ("ldh [12]") is
+represented in decimal as "40 0 0 12".
+.LP
+.nf
+$ ./tcpdump -ddd -i eth0 icmp
+6
+40 0 0 12
+21 0 3 2048
+48 0 0 23
+21 0 1 1
+6 0 0 262144
+6 0 0 0
+.fi
+.DE
+.LP
+pcap_compile() checks for raw filters in both expressions appended in the
+command line, and expressions read from a file ("-F" option). Filters
+starting with an integer and a valid separator (',' or '\\n') are
+considered raw. All other filters are considered (traditional) expressions.
+.LP
+For example, you can check for ICMP packets in an ethernet network using:
+.LP
+.nf
+$ ./tcpdump -n -i eth0 "6,40 0 0 12,21 0 3 2048,48 0 0 23,21 0 1 1,6 0 0 262144,6 0 0 0,"
+11:44:30.557593 IP 1.2.3.4 > 8.8.8.8: ICMP echo request, id 1, seq 2, length 64
+11:44:30.590918 IP 8.8.8.8 > 1.2.3.4: ICMP echo reply, id 1, seq 2, length 64
+.fi
+.DE
 .SH RETURN VALUE
 .B pcap_compile()
 returns 0 on success and
