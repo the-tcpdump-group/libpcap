@@ -404,6 +404,11 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	u_int len;
 	int  rc;
 
+	/*
+	 * XXX - single-thread this code path with pthread calls on
+	 * UN*X, if the platform supports pthreads?  If that requires
+	 * a separate -lpthread, we might not want to do that.
+	 */
 #ifdef WIN32
 	extern int wsockinit (void);
 	static int done = 0;
