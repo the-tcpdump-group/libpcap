@@ -394,38 +394,25 @@ syntax()
 static bpf_u_int32 netmask;
 static int snaplen;
 int no_optimize;
-#ifdef WIN32
-static int
-pcap_compile_unsafe(pcap_t *p, struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask);
 
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
-{
-	int result;
-
-	EnterCriticalSection(&g_PcapCompileCriticalSection);
-
-	result = pcap_compile_unsafe(p, program, buf, optimize, mask);
-
-	LeaveCriticalSection(&g_PcapCompileCriticalSection);
-	
-	return result;
-}
-
-static int
-pcap_compile_unsafe(pcap_t *p, struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask)
-#else /* WIN32 */
-int
-pcap_compile(pcap_t *p, struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask)
-#endif /* WIN32 */
 {
 	extern int n_errors;
 	const char * volatile xbuf = buf;
 	u_int len;
+	int  rc;
+
+#ifdef WIN32
+	extern int wsockinit (void);
+	static int done = 0;
+
+	if (!done)
+		wsockinit();
+	done = 1;
+	EnterCriticalSection(&g_PcapCompileCriticalSection);
+#endif
 
 	/*
 	 * If this pcap_t hasn't been activated, it doesn't have a
@@ -434,13 +421,15 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (!p->activated) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
-		return (-1);
+		rc = -1;
+		goto quit;
 	}
 	no_optimize = 0;
 	n_errors = 0;
 	root = NULL;
 	bpf_pcap = p;
 	init_regs();
+
 	if (setjmp(top_ctx)) {
 #ifdef INET6
 		if (ai != NULL) {
@@ -450,7 +439,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 #endif
 		lex_cleanup();
 		freechunks();
-		return (-1);
+		rc = -1;
+		goto quit;
 	}
 
 	netmask = mask;
@@ -459,7 +449,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (snaplen == 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
-		return -1;
+		rc = -1;
+		goto quit;
 	}
 
 	lex_init(xbuf ? xbuf : "");
@@ -483,7 +474,16 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	lex_cleanup();
 	freechunks();
-	return (0);
+
+	rc = 0;  /* We're all okay */
+
+quit:
+
+#ifdef WIN32
+	LeaveCriticalSection(&g_PcapCompileCriticalSection);
+#endif
+
+	return (rc);
 }
 
 /*
@@ -588,7 +588,7 @@ finish_parse(p)
 	 * worth the effort.
 	 */
 	insert_compute_vloffsets(p->head);
-	
+
 	/*
 	 * For DLT_PPI captures, generate a check of the per-packet
 	 * DLT value to make sure it's DLT_IEEE802_11.
@@ -1124,7 +1124,7 @@ init_linktype(p)
 		return;
 
 	case DLT_PPI:
-		/* 
+		/*
 		 * At the moment we treat PPI the same way that we treat
 		 * normal Radiotap encoded packets. The difference is in
 		 * the function that generates the code at the beginning
@@ -2299,7 +2299,7 @@ gen_load_radiotap_llprefixlen()
 		return (NULL);
 }
 
-/* 
+/*
  * At the moment we treat PPI as normal Radiotap encoded
  * packets. The difference is in the function that generates
  * the code at the beginning to compute the header length.
@@ -2312,7 +2312,7 @@ static struct slist *
 gen_load_ppi_llprefixlen()
 {
 	struct slist *s1, *s2;
-	
+
 	/*
 	 * Generate code to load the length of the radiotap header
 	 * into the register assigned to hold that length, if one has
@@ -2402,7 +2402,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	 * slist of instructions
 	 */
 	no_optimize = 1;
-	
+
 	/*
 	 * If "s" is non-null, it has code to arrange that the X register
 	 * contains the length of the prefix preceding the link-layer
@@ -2453,7 +2453,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	sjset_data_frame_1 = new_stmt(JMP(BPF_JSET));
 	sjset_data_frame_1->s.k = 0x08;
 	sappend(s, sjset_data_frame_1);
-		
+
 	/*
 	 * If b3 is set, test b2, otherwise go to the first statement of
 	 * the rest of the program.
@@ -2472,7 +2472,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(JMP(BPF_JSET));
 	sjset_qos->s.k = 0x80;	/* QoS bit */
 	sappend(s, sjset_qos);
-		
+
 	/*
 	 * If it's set, add 2 to reg_off_macpl, to skip the QoS
 	 * field.
@@ -2743,7 +2743,7 @@ gen_radiotap_llprefixlen(void)
 	return s;
 }
 
-/* 
+/*
  * At the moment we treat PPI as normal Radiotap encoded
  * packets. The difference is in the function that generates
  * the code at the beginning to compute the header length.
@@ -2904,12 +2904,12 @@ gen_linktype(proto)
 		case ETHERTYPE_IP:
 		case PPP_IP:
 			/* FIXME add other L3 proto IDs */
-			return gen_mpls_linktype(Q_IP); 
+			return gen_mpls_linktype(Q_IP);
 
 		case ETHERTYPE_IPV6:
 		case PPP_IPV6:
 			/* FIXME add other L3 proto IDs */
-			return gen_mpls_linktype(Q_IPV6); 
+			return gen_mpls_linktype(Q_IPV6);
 
 		default:
 			bpf_error("unsupported protocol over mpls");
@@ -4410,7 +4410,7 @@ gen_mpls_linktype(proto)
                 b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x40, 0xf0);
                 gen_and(b0, b1);
                 return b1;
- 
+
        case Q_IPV6:
                 /* match the bottom-of-stack bit */
                 b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
@@ -4418,7 +4418,7 @@ gen_mpls_linktype(proto)
                 b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x60, 0xf0);
                 gen_and(b0, b1);
                 return b1;
- 
+
        default:
                 abort();
         }
@@ -5225,7 +5225,7 @@ gen_portrangeatom(off, v1, v2)
 	b1 = gen_cmp_ge(OR_TRAN_IPV4, off, BPF_H, v1);
 	b2 = gen_cmp_le(OR_TRAN_IPV4, off, BPF_H, v2);
 
-	gen_and(b1, b2); 
+	gen_and(b1, b2);
 
 	return b2;
 }
@@ -5327,7 +5327,7 @@ gen_portrangeatom6(off, v1, v2)
 	b1 = gen_cmp_ge(OR_TRAN_IPV6, off, BPF_H, v1);
 	b2 = gen_cmp_le(OR_TRAN_IPV6, off, BPF_H, v2);
 
-	gen_and(b1, b2); 
+	gen_and(b1, b2);
 
 	return b2;
 }
@@ -5777,7 +5777,7 @@ gen_check_802_11_data_frame()
 	b0 = new_block(JMP(BPF_JSET));
 	b0->s.k = 0x08;
 	b0->stmts = s;
-	
+
 	s = gen_load_a(OR_LINK, 0, BPF_B);
 	b1 = new_block(JMP(BPF_JSET));
 	b1->s.k = 0x04;
@@ -6253,7 +6253,7 @@ gen_scode(name, q)
 		if (proto != Q_DEFAULT &&
 		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
 			bpf_error("illegal qualifier of 'portrange'");
-		if (pcap_nametoportrange(name, &port1, &port2, &real_proto) == 0) 
+		if (pcap_nametoportrange(name, &port1, &port2, &real_proto) == 0)
 			bpf_error("unknown port in range '%s'", name);
 		if (proto == Q_UDP) {
 			if (real_proto == IPPROTO_TCP)
@@ -6280,7 +6280,7 @@ gen_scode(name, q)
 				bpf_error("port in range '%s' is tcp", name);
 			else
 				/* override PROTO_UNDEF */
-				real_proto = IPPROTO_SCTP;	
+				real_proto = IPPROTO_SCTP;
 		}
 		if (port1 < 0)
 			bpf_error("illegal port number %d < 0", port1);
@@ -7972,22 +7972,22 @@ gen_mpls(label_num)
              * etc.
              */
             switch (linktype) {
-                
+
             case DLT_C_HDLC: /* fall through */
             case DLT_EN10MB:
             case DLT_NETANALYZER:
             case DLT_NETANALYZER_TRANSPARENT:
                     b0 = gen_linktype(ETHERTYPE_MPLS);
                     break;
-                
+
             case DLT_PPP:
                     b0 = gen_linktype(PPP_MPLS_UCAST);
                     break;
-                
+
                     /* FIXME add other DLT_s ...
                      * for Frame-Relay/and ATM this may get messy due to SNAP headers
                      * leave it for now */
-                
+
             default:
                     bpf_error("no MPLS support for data link type %d",
                           linktype);
@@ -8258,7 +8258,7 @@ gen_atmtype_abbrev(type)
 	return b1;
 }
 
-/* 
+/*
  * Filtering for MTP2 messages based on li value
  * FISU, length is null
  * LSSU, length is 1 or 2
