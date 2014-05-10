@@ -113,16 +113,27 @@ wsockinit()
 {
 	WORD wVersionRequested;
 	WSADATA wsaData;
-	int err;
+	static int err = -1;
+	static int done = 0;
+
+	if (done)
+		return err;
+	
 	wVersionRequested = MAKEWORD( 1, 1); 
 	err = WSAStartup( wVersionRequested, &wsaData );
+	atexit ((void(*)(void))WSACleanup);
+	InitializeCriticalSection(&g_PcapCompileCriticalSection);
+	done = 1;
+	
 	if ( err != 0 )
-	{
-		return -1;
-	}
-	return 0;
+		err = -1;
+	return err;
 }
 
+int pcap_wsockinit()
+{
+       return wsockinit();
+}
 
 static int
 pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
