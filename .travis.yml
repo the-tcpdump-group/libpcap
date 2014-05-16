@@ -1,5 +1,9 @@
 language: c
 
+os:
+  - linux
+  - osx
+
 compiler:
   - gcc
   - clang
@@ -11,7 +15,7 @@ env:
     - secure: "E7nrxhoBrST9SOy6PM+IN89k1EznzXWgsKSvB+fK2oNdLxAD+jaFCbG4JGwYzFzSwmBgd7NEQGSJi4uYotsvBPSxPBwiA/tQPniPvUd/dahTQxB1eJlYb+/hMYuumCHHK09zmPbTNU/v7qLc+NgMUM5bTCUG62dErFkx03WeHPM="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
-    - coverity_scan_run_condition='"$CC" = gcc'
+    - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
@@ -35,8 +39,16 @@ addons:
     # Pattern to match selecting branches that will run analysis
     branch_pattern: coverity_scan
 
+before_install:
+  - uname -a
+  - env | sort -f
+  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get update; fi
+  - if [ "$TRAVIS_OS_NAME" = osx ]; then brew update; fi
+
+install:
+  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get install libusb-1.0-0-dev libdbus-1-dev; fi
+
 before_script:
-  - sudo apt-get install libusb-1.0-0-dev libdbus-1-dev
 
 script:
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then touch .devel configure; fi
