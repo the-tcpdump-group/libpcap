@@ -1329,6 +1329,11 @@ struct bpf_program {
 
 /*
  * The instruction encodings.
+ *
+ * Please inform tcpdump-workers@lists.tcpdump.org if you use any
+ * of the reserved values, so that we can note that they're used
+ * (and perhaps implement it in the reference BPF implementation
+ * and encourage its implementation elsewhere).
  */
 /* instruction classes */
 #define BPF_CLASS(code) ((code) & 0x07)
@@ -1368,8 +1373,8 @@ struct bpf_program {
 #define		BPF_LSH		0x60
 #define		BPF_RSH		0x70
 #define		BPF_NEG		0x80
-#define		BPF_MOD		0x90	/* from Linux */
-#define		BPF_XOR		0xa0	/* from Linux */
+#define		BPF_MOD		0x90
+#define		BPF_XOR		0xa0
 /*				0xb0	reserved */
 /*				0xc0	reserved */
 /*				0xd0	reserved */
