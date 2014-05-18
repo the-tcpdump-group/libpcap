@@ -1335,6 +1335,11 @@ struct bpf_program {
  * (and perhaps implement it in the reference BPF implementation
  * and encourage its implementation elsewhere).
  */
+
+/*
+ * The upper 8 bits of the opcode aren't used. BSD/OS used 0x8000.
+ */
+
 /* instruction classes */
 #define BPF_CLASS(code) ((code) & 0x07)
 #define		BPF_LD		0x00
@@ -1351,7 +1356,7 @@ struct bpf_program {
 #define		BPF_W		0x00
 #define		BPF_H		0x08
 #define		BPF_B		0x10
-/*				0x18	reserved */
+/*				0x18	reserved; used by BSD/OS */
 #define BPF_MODE(code)	((code) & 0xe0)
 #define		BPF_IMM 	0x00
 #define		BPF_ABS		0x20
@@ -1359,8 +1364,8 @@ struct bpf_program {
 #define		BPF_MEM		0x60
 #define		BPF_LEN		0x80
 #define		BPF_MSH		0xa0
-/*				0xc0	reserved */
-/*				0xe0	reserved */
+/*				0xc0	reserved; used by BSD/OS */
+/*				0xe0	reserved; used by BSD/OS */
 
 /* alu/jmp fields */
 #define BPF_OP(code)	((code) & 0xf0)
@@ -1386,7 +1391,7 @@ struct bpf_program {
 #define		BPF_JGT		0x20
 #define		BPF_JGE		0x30
 #define		BPF_JSET	0x40
-/*				0x50	reserved */
+/*				0x50	reserved; used on BSD/OS */
 /*				0x60	reserved */
 /*				0x70	reserved */
 /*				0x80	reserved */
@@ -1417,6 +1422,7 @@ struct bpf_program {
 /*				0x30	reserved */
 /*				0x38	reserved */
 /* #define	BPF_COPX	0x40	NetBSD "coprocessor" extensions */
+/*					also used on BSD/OS */
 /*				0x48	reserved */
 /*				0x50	reserved */
 /*				0x58	reserved */
@@ -1432,7 +1438,7 @@ struct bpf_program {
 /*				0xa8	reserved */
 /*				0xb0	reserved */
 /*				0xb8	reserved */
-/*				0xc0	reserved */
+/*				0xc0	reserved; used on BSD/OS */
 /*				0xc8	reserved */
 /*				0xd0	reserved */
 /*				0xd8	reserved */
