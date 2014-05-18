@@ -1368,8 +1368,8 @@ struct bpf_program {
 #define		BPF_LSH		0x60
 #define		BPF_RSH		0x70
 #define		BPF_NEG		0x80
-/*		BPF_MOD		0x90	Linux modulo (%) operator */
-/* 		BPF_XOR		0xa0	Linux XOR (^) operator */
+#define		BPF_MOD		0x90	/* from Linux */
+#define		BPF_XOR		0xa0	/* from Linux */
 /*				0xb0	reserved */
 /*				0xc0	reserved */
 /*				0xd0	reserved */

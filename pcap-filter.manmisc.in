@@ -330,8 +330,9 @@ The packet may contain, for example,
 authentication header, routing header, or hop-by-hop option header,
 between IPv6 header and TCP header.
 The BPF code emitted by this primitive is complex and
-cannot be optimized by the BPF optimizer code, so this can be somewhat
-slow.
+cannot be optimized by the BPF optimizer code, and is not supported by
+filter engines in the kernel, so this can be somewhat slow, and may
+cause more packets to be dropped.
 .IP "\fBip protochain \fIprotocol\fR"
 Equivalent to \fBip6 protochain \fIprotocol\fR, but this is for IPv4.
 .IP "\fBprotochain \fIprotocol\fR"
@@ -741,11 +742,17 @@ Release, or Release Done message.
 True if the relation holds, where \fIrelop\fR is one of >, <, >=, <=, =,
 !=, and \fIexpr\fR is an arithmetic expression composed of integer
 constants (expressed in standard C syntax), the normal binary operators
-[+, -, *, /, &, |, <<, >>], a length operator, and special packet data
+[+, -, *, /, %, &, |, ^, <<, >>], a length operator, and special packet data
 accessors.  Note that all comparisons are unsigned, so that, for example,
 0x80000000 and 0xffffffff are > 0.
-To access
-data inside the packet, use the following syntax:
+.IP
+The % and ^ operators are currently only supported for filtering in the
+kernel on Linux with 3.7 and later kernels; on all other systems, if
+those operators are used, filtering will be done in user mode, which
+will increase the overhead of capturing packets and may cause more
+packets to be dropped.
+.IP
+To access data inside the packet, use the following syntax:
 .in +.5i
 .nf
 \fIproto\fB [ \fIexpr\fB : \fIsize\fB ]\fR

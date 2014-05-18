@@ -464,12 +464,22 @@ bpf_filter(pc, p, wirelen, buflen)
 			A /= X;
 			continue;
 
+		case BPF_ALU|BPF_MOD|BPF_X:
+			if (X == 0)
+				return 0;
+			A %= X;
+			continue;
+
 		case BPF_ALU|BPF_AND|BPF_X:
 			A &= X;
 			continue;
 
 		case BPF_ALU|BPF_OR|BPF_X:
 			A |= X;
+			continue;
+
+		case BPF_ALU|BPF_XOR|BPF_X:
+			A ^= X;
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_X:
@@ -496,12 +506,20 @@ bpf_filter(pc, p, wirelen, buflen)
 			A /= pc->k;
 			continue;
 
+		case BPF_ALU|BPF_MOD|BPF_K:
+			A %= pc->k;
+			continue;
+
 		case BPF_ALU|BPF_AND|BPF_K:
 			A &= pc->k;
 			continue;
 
 		case BPF_ALU|BPF_OR|BPF_K:
 			A |= pc->k;
+			continue;
+
+		case BPF_ALU|BPF_XOR|BPF_K:
+			A ^= pc->k;
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_K:
@@ -606,13 +624,16 @@ bpf_validate(f, len)
 			case BPF_MUL:
 			case BPF_OR:
 			case BPF_AND:
+			case BPF_XOR:
 			case BPF_LSH:
 			case BPF_RSH:
 			case BPF_NEG:
 				break;
 			case BPF_DIV:
+			case BPF_MOD:
 				/*
-				 * Check for constant division by 0.
+				 * Check for constant division or modulus
+				 * by 0.
 				 */
 				if (BPF_SRC(p->code) == BPF_K && p->k == 0)
 					return 0;
