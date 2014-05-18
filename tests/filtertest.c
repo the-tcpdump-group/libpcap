@@ -51,6 +51,8 @@ static char *program_name;
 static void usage(void) __attribute__((noreturn));
 static void error(const char *, ...)
     __attribute__((noreturn, format (printf, 1, 2)));
+static void warn(const char *, ...)
+    __attribute__((format (printf, 1, 2)));
 
 extern int optind;
 extern int opterr;
@@ -118,6 +120,23 @@ error(const char *fmt, ...)
 	}
 	exit(1);
 	/* NOTREACHED */
+}
+
+/* VARARGS */
+static void
+warn(const char *fmt, ...)
+{
+	va_list ap;
+
+	(void)fprintf(stderr, "%s: WARNING: ", program_name);
+	va_start(ap, fmt);
+	(void)vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	if (*fmt) {
+		fmt += strlen(fmt);
+		if (fmt[-1] != '\n')
+			(void)fputc('\n', stderr);
+	}
 }
 
 /*
@@ -247,6 +266,8 @@ main(int argc, char **argv)
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
 		error("%s", pcap_geterr(pd));
+	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
+		warn("Filter doesn't pass validation");
 	bpf_dump(&fcode, dflag);
 	pcap_close(pd);
 	exit(0);
