@@ -452,6 +452,67 @@ True if the DECNET destination address is
 .IP "\fBdecnet host \fIhost\fR"
 True if either the DECNET source or destination address is
 .IR host .
+.IP \fBllc\fP
+True if the packet has an 802.2 LLC header.  This includes:
+.IP
+Ethernet packets with a length field rather than a type field that
+aren't raw NetWare-over-802.3 packets;
+.IP
+IEEE 802.11 data packets;
+.IP
+Token Ring packets (no check is done for LLC frames);
+.IP
+FDDI packets (no check is done for LLC frames);
+.IP
+LLC-encapsulated ATM packets, for SunATM on Solaris.
+.IP
+
+.IP "\fBllc\fP \Fitype\fR"
+True if the packet has an 802.2 LLC header and has the specified
+.IR type .
+.I type
+can be one of:
+.RS
+.TP
+\fBi\fR
+Information (I) PDUs
+.TP
+\fBs\fR
+Supervisory (S) PDUs
+.TP
+\fBu\fR
+Unnumbered (U) PDUs
+.TP
+\fBrr\fR
+Receiver Ready (RR) S PDUs
+.TP
+\fBrnr\fR
+Receiver Not Ready (RNR) S PDUs
+.TP
+\fBrej\fR
+Reject (REJ) S PDUs
+.TP
+\fBui\fR
+Unnumbered Information (UI) U PDUs
+.TP
+\fBua\fR
+Unnumbered Acknowledgment (UA) U PDUs
+.TP
+\fBdisc\fR
+Disconnect (DISC) U PDUs
+.TP
+\fBsabme\fR
+Set Asynchronous Balanced Mode Extended (SABME) U PDUs
+.TP
+\fBtest\fR
+Test (TEST) U PDUs
+.TP
+\fBxid\fR
+Exchange Identification (XID) U PDUs
+.TP
+\fBfrmr\fR
+Frame Reject (FRMR) U PDUs
+.RE
 .IP "\fBifname \fIinterface\fR"
 True if the packet was logged as coming from the specified interface (applies
 only to packets logged by OpenBSD's or FreeBSD's
@@ -703,9 +764,6 @@ on the assumption that the packet is either a LANE emulated Ethernet
 packet or a LANE LE Control packet.  If \fBlane\fR isn't specified, the
 tests are done under the assumption that the packet is an
 LLC-encapsulated packet.
-.IP \fBllc\fP
-True if the packet is an ATM packet, for SunATM on Solaris, and is
-an LLC-encapsulated packet.
 .IP \fBoamf4s\fP
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 a segment OAM F4 flow cell (VPI=0 & VCI=3).

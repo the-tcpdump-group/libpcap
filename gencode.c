@@ -2986,7 +2986,7 @@ gen_linktype(proto)
 
 	case DLT_FDDI:
 		/*
-		 * XXX - check for asynchronous frames, as per RFC 1103.
+		 * XXX - check for LLC frames.
 		 */
 		return gen_llc_linktype(proto);
 		/*NOTREACHED*/
@@ -3463,6 +3463,178 @@ gen_snap(orgcode, ptype)
 	snapblock[6] = (ptype >> 8);	/* upper 8 bits of protocol type */
 	snapblock[7] = (ptype >> 0);	/* lower 8 bits of protocol type */
 	return gen_bcmp(OR_MACPL, 0, 8, snapblock);
+}
+
+/*
+ * Generate code to match frames with an LLC header.
+ */
+struct block *
+gen_llc(void)
+{
+	struct block *b0, *b1;
+
+	switch (linktype) {
+
+	case DLT_EN10MB:
+		/*
+		 * We check for an Ethernet type field less than
+		 * 1500, which means it's an 802.3 length field.
+		 */
+		b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
+		gen_not(b0);
+
+		/*
+		 * Now check for the purported DSAP and SSAP not being
+		 * 0xFF, to rule out NetWare-over-802.3.
+		 */
+		b1 = gen_cmp(OR_MACPL, 0, BPF_H, (bpf_int32)0xFFFF);
+		gen_not(b1);
+		gen_and(b0, b1);
+		return b1;
+
+	case DLT_SUNATM:
+		/*
+		 * We check for LLC traffic.
+		 */
+		b0 = gen_atmtype_abbrev(A_LLC);
+		return b0;
+
+	case DLT_IEEE802:	/* Token Ring */
+		/*
+		 * XXX - check for LLC frames.
+		 */
+		return gen_true();
+
+	case DLT_FDDI:
+		/*
+		 * XXX - check for LLC frames.
+		 */
+		return gen_true();
+
+	case DLT_ATM_RFC1483:
+		/*
+		 * For LLC encapsulation, these are defined to have an
+		 * 802.2 LLC header.
+		 *
+		 * For VC encapsulation, they don't, but there's no
+		 * way to check for that; the protocol used on the VC
+		 * is negotiated out of band.
+		 */
+		return gen_true();
+
+	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_PPI:
+		/*
+		 * Check that we have a data frame.
+		 */
+		b0 = gen_check_802_11_data_frame();
+		return b0;
+
+	default:
+		bpf_error("'llc' not supported for linktype %d", linktype);
+		/* NOTREACHED */
+	}
+}
+
+struct block *
+gen_llc_i(void)
+{
+	struct block *b0, *b1;
+	struct slist *s;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Load the control byte and test the low-order bit; it must
+	 * be clear for I frames.
+	 */
+	s = gen_load_a(OR_MACPL, 2, BPF_B);
+	b1 = new_block(JMP(BPF_JSET));
+	b1->s.k = 0x01;
+	b1->stmts = s;
+	gen_not(b1);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_s(void)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now compare the low-order 2 bit of the control byte against
+	 * the appropriate value for S frames.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, LLC_S_FMT, 0x03);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_u(void)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now compare the low-order 2 bit of the control byte against
+	 * the appropriate value for U frames.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, LLC_U_FMT, 0x03);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_s_subtype(bpf_u_int32 subtype)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now check for an S frame with the appropriate type.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, subtype, LLC_S_CMD_MASK);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_u_subtype(bpf_u_int32 subtype)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now check for a U frame with the appropriate type.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, subtype, LLC_U_CMD_MASK);
+	gen_and(b0, b1);
+	return b1;
 }
 
 /*
