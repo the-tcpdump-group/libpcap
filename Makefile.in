@@ -443,8 +443,9 @@ libpcap.shareda: $(OBJ)
 libpcap.none:
 
 scanner.c: $(srcdir)/scanner.l
-	@rm -f $@
-	$(srcdir)/runlex.sh $(LEX) -o$@ $<
+	@rm -f $@ $@.bottom
+	$(srcdir)/runlex.sh $(LEX) -o$@.bottom $<
+	cat $@.top $@.bottom > $@
 
 scanner.o: scanner.c tokdefs.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
