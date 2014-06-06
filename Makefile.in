@@ -444,7 +444,8 @@ libpcap.none:
 
 scanner.c: $(srcdir)/scanner.l
 	@rm -f $@ $@.bottom
-	$(srcdir)/runlex.sh $(LEX) -o$@.bottom $<
+	$(srcdir)/runlex.sh $(LEX) -o$@ $<
+	mv $@ $@.bottom
 	cat $@.top $@.bottom > $@
 
 scanner.o: scanner.c tokdefs.h
