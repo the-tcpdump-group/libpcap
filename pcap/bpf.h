@@ -1305,7 +1305,13 @@ struct bpf_program {
  */
 #define DLT_EPON	259
 
-#define DLT_MATCHING_MAX	259	/* highest value in the "matching" range */
+/*
+ * IPMI trace packets, as specified by Table 3-20 "Trace Data Block Format"
+ * in the PICMG HPM.2 specification.
+ */
+#define DLT_IPMI_HPM_2	260
+
+#define DLT_MATCHING_MAX	260	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

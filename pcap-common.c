@@ -988,7 +988,13 @@
  */
 #define LINKTYPE_EPON		259
 
-#define LINKTYPE_MATCHING_MAX	259		/* highest value in the "matching" range */
+/*
+ * IPMI trace packets, as specified by Table 3-20 "Trace Data Block Format"
+ * in the PICMG HPM.2 specification.
+ */
+#define LINKTYPE_IPMI_HPM_2	260
+
+#define LINKTYPE_MATCHING_MAX	260		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
