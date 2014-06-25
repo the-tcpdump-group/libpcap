@@ -85,13 +85,23 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 /*
  * Maximum snapshot length.
  *
- * Somewhat arbitrary, but chosen to be 1) big enough for maximum-size
- * Linux loopback packets and 2) small enough not to cause attempts to
- * allocate huge amounts of memory.
+ * Somewhat arbitrary, but chosen to be:
+ *
+ *    1) big enough for maximum-size Linux loopback packets (65549)
+ *       and some USB packets captured with USBPcap:
+ *
+ *           http://desowin.org/usbpcap/
+ *
+ *       (> 131072, < 262144)
+ *
+ * and
+ *
+ *    2) small enough not to cause attempts to allocate huge amounts of
+ *       memory.
  *
  * We don't enforce this in pcap_set_snaplen(), but we use it internally.
  */
-#define MAXIMUM_SNAPLEN		131072
+#define MAXIMUM_SNAPLEN		262144
 
 struct pcap_opt {
 	char	*source;
