@@ -97,7 +97,9 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
  * and
  *
  *    2) small enough not to cause attempts to allocate huge amounts of
- *       memory.
+ *       memory; some applications might use the snapshot length in a
+ *       savefile header to control the size of the buffer they allocate,
+ *       so a size of, say, 2^31-1 might not work well.
  *
  * We don't enforce this in pcap_set_snaplen(), but we use it internally.
  */
