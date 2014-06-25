@@ -1710,8 +1710,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 *
 	 * We currently handle this by making a copy of the filter
 	 * program, fixing all "ret" instructions with non-zero
-	 * operands to have an operand of 65535 so that the filter
-	 * doesn't truncate the packet, and supplying that modified
+	 * operands to have an operand of MAXIMUM_SNAPLEN so that the
+	 * filter doesn't truncate the packet, and supplying that modified
 	 * filter to the kernel.
 	 */
 
@@ -2385,12 +2385,13 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 		 * of different size. Pointed out by Sebastian
 		 *
 		 * Oh, and we also need to fix it up so that all "ret"
-		 * instructions with non-zero operands have 65535 as the
-		 * operand if we're not capturing in memory-mapped modee,
-		 * and so that, if we're in cooked mode, all memory-reference
-		 * instructions use special magic offsets in references to
-		 * the link-layer header and assume that the link-layer
-		 * payload begins at 0; "fix_program()" will do that.
+		 * instructions with non-zero operands have MAXIMUM_SNAPLEN
+		 * as the operand if we're not capturing in memory-mapped
+		 * mode, and so that, if we're in cooked mode, all memory-
+		 * reference instructions use special magic offsets in
+		 * references to the link-layer header and assume that the
+		 * link-layer payload begins at 0; "fix_program()" will do
+		 * that.
 		 */
 		switch (fix_program(handle, &fcode, is_mmapped)) {
 
@@ -3730,7 +3731,7 @@ create_ring(pcap_t *handle, int *status)
 		 * We pick a "frame" size of 128K to leave enough
 		 * room for at least one reasonably-sized packet
 		 * in the "frame". */
-		req.tp_frame_size = 131072;
+		req.tp_frame_size = MAXIMUM_SNAPLEN;
 		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 		break;
 #endif
@@ -5890,18 +5891,19 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 					 * Yes - if the value to be returned,
 					 * i.e. the snapshot length, is
 					 * anything other than 0, make it
-					 * 65535, so that the packet is
-					 * truncated by "recvfrom()",
+					 * MAXIMUM_SNAPLEN, so that the packet
+					 * is truncated by "recvfrom()",
 					 * not by the filter.
 					 *
 					 * XXX - there's nothing we can
 					 * easily do if it's getting the
 					 * value from the accumulator; we'd
 					 * have to insert code to force
-					 * non-zero values to be 65535.
+					 * non-zero values to be
+					 * MAXIMUM_SNAPLEN.
 					 */
 					if (p->k != 0)
-						p->k = 65535;
+						p->k = MAXIMUM_SNAPLEN;
 				}
 			}
 			break;

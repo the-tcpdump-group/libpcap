@@ -82,6 +82,17 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 
 #endif /* _MSC_VER */
 
+/*
+ * Maximum snapshot length.
+ *
+ * Somewhat arbitrary, but chosen to be 1) big enough for maximum-size
+ * Linux loopback packets and 2) small enough not to cause attempts to
+ * allocate huge amounts of memory.
+ *
+ * We don't enforce this in pcap_set_snaplen(), but we use it internally.
+ */
+#define MAXIMUM_SNAPLEN		131072
+
 struct pcap_opt {
 	char	*source;
 	int	timeout;	/* timeout for buffering */

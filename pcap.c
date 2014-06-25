@@ -553,9 +553,9 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 	initialize_ops(p);
 
 	/* put in some defaults*/
- 	pcap_set_snaplen(p, 65535);	/* max packet size */
-	p->opt.timeout = 0;		/* no timeout specified */
-	p->opt.buffer_size = 0;		/* use the platform's default */
+ 	pcap_set_snaplen(p, MAXIMUM_SNAPLEN);	/* max packet size */
+	p->opt.timeout = 0;			/* no timeout specified */
+	p->opt.buffer_size = 0;			/* use the platform's default */
 	p->opt.promisc = 0;
 	p->opt.rfmon = 0;
 	p->opt.immediate = 0;
