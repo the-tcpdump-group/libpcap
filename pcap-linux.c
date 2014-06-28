@@ -4536,7 +4536,7 @@ again:
 				handlep->current_packet = NULL;
 				return ret;
 			}
-			handlep->current_packet = ((uint8_t *) handlep->current_packet + tp3_hdr->tp_next_offset;
+			handlep->current_packet = (uint8_t *) handlep->current_packet + tp3_hdr->tp_next_offset;
 			handlep->packets_left--;
 		}
 
