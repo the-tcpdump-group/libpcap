@@ -4473,9 +4473,11 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
+    unsigned char * last_packet;
 	union thdr h;
 	int pkts = 0;
 	int ret;
+    unsigned long bytes_with_padding;
 
 again:
 	if (handlep->current_packet == NULL) {
@@ -4536,6 +4538,7 @@ again:
 				handlep->current_packet = NULL;
 				return ret;
 			}
+            last_packet = current_packet;
 			handlep->current_packet = (uint8_t *) handlep->current_packet + tp3_hdr->tp_next_offset;
 			handlep->packets_left--;
 		}
