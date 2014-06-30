@@ -4545,6 +4545,7 @@ again:
 			handlep->packets_left--;
             fflush(stdout);
             last_offset_later = ((struct tpacket3_hdr *)last_packet)->tp_next_offset;
+            __sync_synchronize();
             printf("Pointer %p \tOffset: %i \t Later: %i\n", last_packet, last_offset, last_offset_later);
 		}
         printf("Pointer %p \tOffset: %i \t Later: %i\n", last_packet, last_offset, last_offset_later);
