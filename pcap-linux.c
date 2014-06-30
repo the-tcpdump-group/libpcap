@@ -4473,10 +4473,10 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
-    unsigned char * last_packet;
+    unsigned char volatile * last_packet;
 	union thdr h;
 	int pkts = 0;
-	int ret;
+	int volatile ret;
     unsigned long bytes_with_padding;
 
 again:
