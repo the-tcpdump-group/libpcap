@@ -4478,7 +4478,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 	int pkts = 0;
 	int volatile ret;
     unsigned long bytes_with_padding;
-    unsigned volatile int last_offset;
+    unsigned int last_offset;
 
 again:
 	if (handlep->current_packet == NULL) {
