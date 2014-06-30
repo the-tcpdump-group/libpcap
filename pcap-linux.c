@@ -4542,6 +4542,7 @@ again:
 			handlep->current_packet = (uint8_t *) handlep->current_packet + tp3_hdr->tp_next_offset;
 			handlep->packets_left--;
 		}
+        printf("%p", last_packet);
 
 		if (handlep->packets_left <= 0) {
 			/*
