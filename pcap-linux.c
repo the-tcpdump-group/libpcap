@@ -4516,6 +4516,8 @@ again:
 
 		while(packets_to_read--) {
 			struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
+            last_offset = tp3_hdr->tp_next_offset;
+
 			ret = pcap_handle_packet_mmap(
 					handle,
 					callback,
@@ -4540,12 +4542,10 @@ again:
 				return ret;
 			}
             last_packet = handlep->current_packet;
-            last_offset = tp3_hdr->tp_next_offset;
 			handlep->current_packet = (uint8_t *) last_packet + last_offset;
 			handlep->packets_left--;
             fflush(stdout);
             last_offset_later = ((struct tpacket3_hdr *)last_packet)->tp_next_offset;
-            __sync_synchronize();
             printf("Pointer %p \tOffset: %i \t Later: %i\n", last_packet, last_offset, last_offset_later);
 		}
         printf("Pointer %p \tOffset: %i \t Later: %i\n", last_packet, last_offset, last_offset_later);
