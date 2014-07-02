@@ -4502,6 +4502,9 @@ again:
 			if (!h.raw)
 				break;
 
+            while (((h.h1->block_status) & TP_STATUS_USER) == 0) {
+                ;
+            }
 			handlep->current_packet = h.raw + h.h3->hdr.bh1.offset_to_first_pkt;
 			handlep->packets_left = h.h3->hdr.bh1.num_pkts;
 		}
