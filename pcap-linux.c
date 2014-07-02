@@ -4476,7 +4476,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 	union thdr h;
 	int pkts = 0;
 	int ret;
-    int last_block_status;
+    volatile int last_block_status;
 
 again:
 	if (handlep->current_packet == NULL) {
