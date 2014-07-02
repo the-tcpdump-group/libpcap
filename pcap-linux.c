@@ -4502,9 +4502,6 @@ again:
 			if (!h.raw)
 				break;
 
-            while (((h.h3->hdr.bh1.block_status) & TP_STATUS_USER) == 0) {
-                ;
-            }
 			handlep->current_packet = h.raw + h.h3->hdr.bh1.offset_to_first_pkt;
 			handlep->packets_left = h.h3->hdr.bh1.num_pkts;
 		}
@@ -4515,7 +4512,14 @@ again:
 		}
 
 		while(packets_to_read--) {
-			struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
+			volatile struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
+            while ((h.h3->hdr.bh1->block_status & TP_STATUS_USER) == 0) {
+                ;
+            }
+            if (packet_to_read % 20) {
+                printf(".");
+                fflush(stdout);
+            }
 			ret = pcap_handle_packet_mmap(
 					handle,
 					callback,
