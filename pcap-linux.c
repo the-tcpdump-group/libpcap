@@ -4516,7 +4516,7 @@ again:
             while ((h.h3->hdr.bh1->block_status & TP_STATUS_USER) == 0) {
                 ;
             }
-            if (packet_to_read % 20) {
+            if (packets_to_read % 20) {
                 printf(".");
                 fflush(stdout);
             }
