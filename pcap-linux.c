@@ -4476,6 +4476,7 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 	union thdr h;
 	int pkts = 0;
 	int ret;
+    int last_block_status;
 
 again:
 	if (handlep->current_packet == NULL) {
@@ -4540,6 +4541,7 @@ again:
 				handlep->current_packet = NULL;
 				return ret;
 			}
+            last_block_status = h.h3->hdr.bh1.block_status;
 			handlep->current_packet += tp3_hdr->tp_next_offset;
 			handlep->packets_left--;
 		}
