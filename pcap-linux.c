@@ -4514,9 +4514,6 @@ again:
 		while(packets_to_read--) {
 			volatile struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
             while ((h.h3->hdr.bh1.block_status & TP_STATUS_USER) == 0) {
-                ;
-            }
-            if (packets_to_read % 20) {
                 printf(".");
                 fflush(stdout);
             }
