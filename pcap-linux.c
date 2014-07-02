@@ -4537,7 +4537,7 @@ again:
 				handlep->current_packet = NULL;
 				return ret;
 			}
-            while ((h.h3->hdr.bh1.block_status & TP_STATUS_USER) == 0) {
+            while (tp3_hdr->tp_status & TP_STATUS_USER) == 0) {
                 printf(".");
                 fflush(stdout);
             }
