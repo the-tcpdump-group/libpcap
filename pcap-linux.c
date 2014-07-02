@@ -4514,10 +4514,6 @@ again:
 
 		while(packets_to_read--) {
 			volatile struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
-            while ((h.h3->hdr.bh1.block_status & TP_STATUS_USER) == 0) {
-                printf(".");
-                fflush(stdout);
-            }
 			ret = pcap_handle_packet_mmap(
 					handle,
 					callback,
@@ -4541,6 +4537,10 @@ again:
 				handlep->current_packet = NULL;
 				return ret;
 			}
+            while ((h.h3->hdr.bh1.block_status & TP_STATUS_USER) == 0) {
+                printf(".");
+                fflush(stdout);
+            }
             last_block_status = h.h3->hdr.bh1.block_status;
 			handlep->current_packet += tp3_hdr->tp_next_offset;
 			handlep->packets_left--;
