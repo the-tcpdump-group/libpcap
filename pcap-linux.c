@@ -4058,7 +4058,7 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 #endif
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
-		if (0 != (h.h3->hdr.bh1.block_status & status))
+		if (0 == (h.h3->hdr.bh1.block_status & status))
 			return NULL;
 		break;
 #endif
