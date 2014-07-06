@@ -221,6 +221,8 @@ int usb_mmap(pcap_t* handle)
 	return handlep->mmapbuf != MAP_FAILED;
 }
 
+#ifdef HAVE_LINUX_USBDEVICE_FS_H
+
 #define CTRL_TIMEOUT    (5*1000)        /* milliseconds */
 
 #define USB_DIR_IN		0x80
@@ -289,6 +291,7 @@ probe_devices(int bus)
 	}
 	closedir(dir);
 }
+#endif /* HAVE_LINUX_USBDEVICE_FS_H */
 
 pcap_t *
 usb_create(const char *device, char *ebuf, int *is_ours)
@@ -378,7 +381,9 @@ usb_activate(pcap_t* handle)
 			handle->stats_op = usb_stats_linux_bin;
 			handle->read_op = usb_read_linux_mmap;
 			handle->cleanup_op = usb_cleanup_linux_mmap;
+#ifdef HAVE_LINUX_USBDEVICE_FS_H
 			probe_devices(handlep->bus_index);
+#endif
 
 			/*
 			 * "handle->fd" is a real file, so "select()" and
@@ -391,7 +396,9 @@ usb_activate(pcap_t* handle)
 		/* can't mmap, use plain binary interface access */
 		handle->stats_op = usb_stats_linux_bin;
 		handle->read_op = usb_read_linux_bin;
+#ifdef HAVE_LINUX_USBDEVICE_FS_H
 		probe_devices(handlep->bus_index);
+#endif
 	}
 	else {
 		/*Binary interface not available, try open text interface */
