@@ -8124,7 +8124,10 @@ fi
 if test "x$enable_canusb" != "xno" ; then
 		case "$host_os" in
 	linux*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libusb_init in -lusb-1.0" >&5
+		ac_fn_c_check_header_mongrel "$LINENO" "libusb-1.0/libusb.h" "ac_cv_header_libusb_1_0_libusb_h" "$ac_includes_default"
+if test "x$ac_cv_header_libusb_1_0_libusb_h" = xyes; then :
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libusb_init in -lusb-1.0" >&5
 $as_echo_n "checking for libusb_init in -lusb-1.0... " >&6; }
 if ${ac_cv_lib_usb_1_0_libusb_init+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -8165,9 +8168,9 @@ if test "x$ac_cv_lib_usb_1_0_libusb_init" = xyes; then :
 
 $as_echo "#define PCAP_SUPPORT_CANUSB 1" >>confdefs.h
 
-		    CANUSB_SRC=pcap-canusb-linux.c
-		    LIBS="-lusb-1.0 -lpthread $LIBS"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is supported" >&5
+			CANUSB_SRC=pcap-canusb-linux.c
+			LIBS="-lusb-1.0 -lpthread $LIBS"
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is supported" >&5
 $as_echo "$as_me: canusb sniffing is supported" >&6;}
 
 else
@@ -8175,6 +8178,14 @@ else
 $as_echo "$as_me: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&6;}
 
 fi
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&5
+$as_echo "$as_me: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&6;}
+
+fi
+
 
 		;;
 	*)
