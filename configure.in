@@ -1455,7 +1455,7 @@ AC_SUBST(NETFILTER_SRC)
 AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
     [],
-    [enable_bluetooth=yes])
+    [enable_bluetooth=ifsupportavailable])
 
 if test "x$enable_bluetooth" != "xno" ; then
 	dnl check for Bluetooth sniffing support
@@ -1506,12 +1506,24 @@ if test "x$enable_bluetooth" != "xno" ; then
 			BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 		      fi
 		    fi
+		    ac_lbl_bluetooth_available=yes
 		],
-		AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+		ac_lbl_bluetooth_available=no
 		)
+		if test "x$ac_lbl_bluetooth_available" == "xno" ; then
+		    if test "x$enable_bluetooth" = "xyes" ; then
+			AC_MSG_ERROR(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+		    else
+			AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+		    fi
+		fi
 		;;
 	*)
-		AC_MSG_NOTICE(no Bluetooth sniffing support implemented for $host_os)
+		if test "x$enable_bluetooth" = "xyes" ; then
+		    AC_MSG_ERROR(no Bluetooth sniffing support implemented for $host_os)
+		else
+		    AC_MSG_NOTICE(no Bluetooth sniffing support implemented for $host_os)
+		fi
 		;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_BT)
@@ -1522,7 +1534,7 @@ fi
 AC_ARG_ENABLE([canusb],
 [AC_HELP_STRING([--enable-canusb],[enable canusb support @<:@default=yes, if support available@:>@])],
     [],
-    [enable_canusb=yes])
+    [enable_canusb=ifsupportavailable])
 
 if test "x$enable_canusb" != "xno" ; then
 	dnl check for canusb support
@@ -1535,16 +1547,29 @@ if test "x$enable_canusb" != "xno" ; then
 			AC_DEFINE(PCAP_SUPPORT_CANUSB, 1, [target host supports canusb])
 			CANUSB_SRC=pcap-canusb-linux.c
 			LIBS="-lusb-1.0 -lpthread $LIBS"
-			AC_MSG_NOTICE(canusb sniffing is supported)
+			ac_lbl_has_libusb=yes
 		    ],
-		    AC_MSG_NOTICE(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
+		    ac_lbl_has_libusb=no
 		    )
 		],
-		AC_MSG_NOTICE(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
+		ac_lbl_has_libusb=no
 		)
+		if test "x$ac_lbl_has_libusb" = "xyes" ; then
+		    AC_MSG_NOTICE(canusb sniffing is supported)
+		else
+		    if test "x$enable_canusb" = "xyes" ; then
+			AC_MSG_ERROR(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
+		    else
+			AC_MSG_NOTICE(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
+		    fi
+		fi
 		;;
 	*)
-		AC_MSG_NOTICE(no canusb support implemented for $host_os)
+		if test "x$enable_canusb" = "xyes" ; then
+		    AC_MSG_ERROR(no canusb support implemented for $host_os)
+		else
+		    AC_MSG_NOTICE(no canusb support implemented for $host_os)
+		fi
 		;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_CANUSB)
@@ -1561,15 +1586,27 @@ if test "x$enable_can" != "xno" ; then
 	case "$host_os" in
 	linux*)
 		AC_CHECK_HEADER(linux/can.h,
-			[ AC_DEFINE(PCAP_SUPPORT_CAN, 1, [target host supports CAN sniffing])
-			CAN_SRC=pcap-can-linux.c
-			AC_MSG_NOTICE(CAN sniffing is supported)],
-			AC_MSG_NOTICE(CAN sniffing is not supported),
+			[
+			    AC_DEFINE(PCAP_SUPPORT_CAN, 1, [target host supports CAN sniffing])
+			    CAN_SRC=pcap-can-linux.c
+			    AC_MSG_NOTICE(CAN sniffing is supported)
+			],
+			[
+			    if test "x$enable_can" = "xyes" ; then
+				AC_MSG_ERROR(CAN sniffing is not supported)
+			    else
+				AC_MSG_NOTICE(CAN sniffing is not supported)
+			    fi
+			],
 			[#include <sys/socket.h>]
 		   )
 		;;
 	*)
-		AC_MSG_NOTICE(no CAN sniffing support implemented for $host_os)
+		if test "x$enable_can" = "xyes" ; then
+		    AC_MSG_ERROR(no CAN sniffing support implemented for $host_os)
+		else
+		    AC_MSG_NOTICE(no CAN sniffing support implemented for $host_os)
+		fi
 		;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_CAN)

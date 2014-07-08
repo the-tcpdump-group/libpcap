@@ -8000,7 +8000,7 @@ esac
 if test "${enable_bluetooth+set}" = set; then :
   enableval=$enable_bluetooth;
 else
-  enable_bluetooth=yes
+  enable_bluetooth=ifsupportavailable
 fi
 
 
@@ -8094,18 +8094,30 @@ $as_echo "#define PCAP_SUPPORT_BT_MONITOR /**/" >>confdefs.h
 			BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 		      fi
 		    fi
+		    ac_lbl_bluetooth_available=yes
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
-$as_echo "$as_me: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&6;}
+  ac_lbl_bluetooth_available=no
 
 fi
 
 
+		if test "x$ac_lbl_bluetooth_available" == "xno" ; then
+		    if test "x$enable_bluetooth" = "xyes" ; then
+			as_fn_error $? "Bluetooth sniffing is not supported; install bluez-lib devel to enable it" "$LINENO" 5
+		    else
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
+$as_echo "$as_me: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&6;}
+		    fi
+		fi
 		;;
 	*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: no Bluetooth sniffing support implemented for $host_os" >&5
+		if test "x$enable_bluetooth" = "xyes" ; then
+		    as_fn_error $? "no Bluetooth sniffing support implemented for $host_os" "$LINENO" 5
+		else
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: no Bluetooth sniffing support implemented for $host_os" >&5
 $as_echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
+		fi
 		;;
 	esac
 
@@ -8117,7 +8129,7 @@ fi
 if test "${enable_canusb+set}" = set; then :
   enableval=$enable_canusb;
 else
-  enable_canusb=yes
+  enable_canusb=ifsupportavailable
 fi
 
 
@@ -8170,27 +8182,39 @@ $as_echo "#define PCAP_SUPPORT_CANUSB 1" >>confdefs.h
 
 			CANUSB_SRC=pcap-canusb-linux.c
 			LIBS="-lusb-1.0 -lpthread $LIBS"
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is supported" >&5
+			ac_lbl_has_libusb=yes
+
+else
+  ac_lbl_has_libusb=no
+
+fi
+
+
+else
+  ac_lbl_has_libusb=no
+
+fi
+
+
+		if test "x$ac_lbl_has_libusb" = "xyes" ; then
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is supported" >&5
 $as_echo "$as_me: canusb sniffing is supported" >&6;}
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&5
+		else
+		    if test "x$enable_canusb" = "xyes" ; then
+			as_fn_error $? "canusb sniffing is not supported; install libusb1.0 lib devel to enable it" "$LINENO" 5
+		    else
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&5
 $as_echo "$as_me: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&6;}
-
-fi
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&5
-$as_echo "$as_me: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&6;}
-
-fi
-
-
+		    fi
+		fi
 		;;
 	*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: no canusb support implemented for $host_os" >&5
+		if test "x$enable_canusb" = "xyes" ; then
+		    as_fn_error $? "no canusb support implemented for $host_os" "$LINENO" 5
+		else
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: no canusb support implemented for $host_os" >&5
 $as_echo "$as_me: no canusb support implemented for $host_os" >&6;}
+		fi
 		;;
 	esac
 
@@ -8213,21 +8237,33 @@ if test "x$enable_can" != "xno" ; then
 "
 if test "x$ac_cv_header_linux_can_h" = xyes; then :
 
+
 $as_echo "#define PCAP_SUPPORT_CAN 1" >>confdefs.h
 
-			CAN_SRC=pcap-can-linux.c
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is supported" >&5
+			    CAN_SRC=pcap-can-linux.c
+			    { $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is supported" >&5
 $as_echo "$as_me: CAN sniffing is supported" >&6;}
+
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is not supported" >&5
+
+			    if test "x$enable_can" = "xyes" ; then
+				as_fn_error $? "CAN sniffing is not supported" "$LINENO" 5
+			    else
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is not supported" >&5
 $as_echo "$as_me: CAN sniffing is not supported" >&6;}
+			    fi
+
 fi
 
 
 		;;
 	*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: no CAN sniffing support implemented for $host_os" >&5
+		if test "x$enable_can" = "xyes" ; then
+		    as_fn_error $? "no CAN sniffing support implemented for $host_os" "$LINENO" 5
+		else
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: no CAN sniffing support implemented for $host_os" >&5
 $as_echo "$as_me: no CAN sniffing support implemented for $host_os" >&6;}
+		fi
 		;;
 	esac
 
