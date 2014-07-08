@@ -1528,7 +1528,7 @@ if test "x$enable_canusb" != "xno" ; then
 	dnl check for canusb support
 	case "$host_os" in
 	linux*)
-		AC_CHECK_HEADER(libusb-1.0/libusb.h,
+		AC_CHECK_LIB(usb-1.0, libusb_init,
 		[
 		    AC_DEFINE(PCAP_SUPPORT_CANUSB, 1, [target host supports canusb])
 		    CANUSB_SRC=pcap-canusb-linux.c
