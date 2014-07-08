@@ -256,9 +256,6 @@
 /* target host supports Bluetooth sniffing */
 #undef PCAP_SUPPORT_BT
 
-/* target host supports Bluetooth Monitor */
-#undef PCAP_SUPPORT_BT_MONITOR
-
 /* target host supports CAN sniffing */
 #undef PCAP_SUPPORT_CAN
 
@@ -276,9 +273,6 @@
 
 /* include ACN support */
 #undef SITA
-
-/* if struct sockaddr_hci has hci_channel member */
-#undef SOCKADDR_HCI_HAS_HCI_CHANNEL
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

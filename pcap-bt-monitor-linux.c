@@ -36,13 +36,41 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <sys/socket.h>
+#include <sys/utsname.h>
+#include <netinet/in.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/mgmt.h>
-
-#include "pcap/bluetooth.h"
 #include "pcap-int.h"
+#include "pcap/bluetooth.h"
+#include "pcap-bt-monitor-linux.h"
+
+/* Start of copy of unexported Linux Kernel headers */
+
+#ifndef AF_BLUETOOTH
+#define AF_BLUETOOTH    31
+#endif
+
+#define BTPROTO_HCI 1
+
+#define HCI_CHANNEL_MONITOR 2
+
+#define HCI_DEV_NONE    0xffff
+
+struct sockaddr_hci {
+    sa_family_t    hci_family;
+    unsigned short hci_dev;
+    unsigned short hci_channel;
+};
+
+struct mgmt_hdr {
+    uint16_t  opcode;
+    uint16_t  index;
+    uint16_t  len;
+};
+
+#define MGMT_HDR_SIZE   sizeof(struct mgmt_hdr)
+/* End of copy of unexported Linux Kernel headers */
 
 #define BT_CONTROL_SIZE 32
 #define INTERFACE_NAME "bluetooth-monitor"
@@ -50,7 +78,17 @@
 int
 bt_monitor_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
-    int         ret = 0;
+    int            ret = 0;
+    struct utsname uname_data;
+    unsigned int   version_major;
+    unsigned int   version_minor;
+    unsigned int   version_release;
+
+    if (!(uname(&uname_data) == 0 &&
+            sscanf(uname_data.release, "%u.%u.%u", &version_major, &version_minor, &version_release) == 3))
+        return 0;
+
+    if (!(version_major >= 3 && version_minor >= 4)) return 0;
 
     if (pcap_add_if(alldevsp, INTERFACE_NAME, 0,
                "Bluetooth Linux Monitor", err_str) < 0)
@@ -71,7 +109,6 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     struct pcap_pkthdr pkth;
     pcap_bluetooth_linux_monitor_header *bthdr;
     struct mgmt_hdr hdr;
-    int in = 0;
 
     bthdr = (pcap_bluetooth_linux_monitor_header*) &handle->buffer[handle->offset];
 
