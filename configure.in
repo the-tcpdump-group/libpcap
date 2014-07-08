@@ -1579,7 +1579,7 @@ fi
 AC_ARG_ENABLE([can],
 [AC_HELP_STRING([--enable-can],[enable CAN support @<:@default=yes, if support available@:>@])],
     [],
-    [enable_can=yes])
+    [enable_can=ifsupportavailable])
 
 if test "x$enable_can" != "xno" ; then
 	dnl check for CAN sniffing support
