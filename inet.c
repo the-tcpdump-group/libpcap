@@ -136,22 +136,18 @@ get_figure_of_merit(pcap_if_t *dev)
 		 * Give the "any" device an artificially high instance
 		 * number, so it shows up after all other non-loopback
 		 * interfaces.
-		 *
-		 * It's always considered up and running, so we don't
-		 * turn on the penalty bits for "not running" or "not
-		 * up".
 		 */
-		return (0x1FFFFFFF);	/* 29 all-1 bits */
+		n = 0x1FFFFFFF;	/* 29 all-1 bits */
+	} else {
+		endcp = dev->name + strlen(dev->name);
+		for (cp = dev->name; cp < endcp && !isdigit((unsigned char)*cp); ++cp)
+			continue;
+
+		if (isdigit((unsigned char)*cp))
+			n = atoi(cp);
+		else
+			n = 0;
 	}
-
-	endcp = dev->name + strlen(dev->name);
-	for (cp = dev->name; cp < endcp && !isdigit((unsigned char)*cp); ++cp)
-		continue;
-
-	if (isdigit((unsigned char)*cp))
-		n = atoi(cp);
-	else
-		n = 0;
 	if (!(dev->flags & PCAP_IF_RUNNING))
 		n |= 0x80000000;
 	if (!(dev->flags & PCAP_IF_UP))
