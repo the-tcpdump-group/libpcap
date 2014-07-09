@@ -128,7 +128,7 @@ dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 static u_int
 get_figure_of_merit(pcap_if_t *dev)
 {
-	const char *cp, *endcp;
+	const char *cp;
 	u_int n;
 
 	if (strcmp(dev->name, "any") == 0) {
@@ -139,11 +139,14 @@ get_figure_of_merit(pcap_if_t *dev)
 		 */
 		n = 0x1FFFFFFF;	/* 29 all-1 bits */
 	} else {
-		endcp = dev->name + strlen(dev->name);
-		for (cp = dev->name; cp < endcp && !isdigit((unsigned char)*cp); ++cp)
-			continue;
-
-		if (isdigit((unsigned char)*cp))
+		/*
+		 * A number at the end of the device name string is
+		 * assumed to be a unit number.
+		 */
+		cp = dev->name + strlen(dev->name) - 1;
+		while (cp-1 >= dev->name && *(cp-1) >= '0' && *(cp-1) <= '9')
+			cp--;
+		if (*cp >= '0' && *cp <= '9')
 			n = atoi(cp);
 		else
 			n = 0;
