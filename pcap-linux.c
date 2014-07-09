@@ -2319,7 +2319,8 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Add the "any" device.
 	 */
-	if (pcap_add_if(alldevsp, "any", 0, any_descr, errbuf) < 0)
+	if (pcap_add_if(alldevsp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
+	    any_descr, errbuf) < 0)
 		return (-1);
 
 	return (0);
