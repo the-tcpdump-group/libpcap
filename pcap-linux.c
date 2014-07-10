@@ -2482,7 +2482,7 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 		if (reset_kernel_filter(handle) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "can't remove kernel filter: %s",
-			    pcap_strerror(save_errno));
+			    pcap_strerror(errno));
 			err = -2;	/* fatal error */
 		}
 	}
@@ -6047,13 +6047,13 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		if (save_mode == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "can't get FD flags when changing filter: %s",
-			    pcap_strerror(save_errno));
+			    pcap_strerror(errno));
 			return -2;
 		}
 		if (fcntl(handle->fd, F_SETFL, save_mode | O_NONBLOCK) < 0) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "can't set nonblocking mode when changing filter: %s",
-			    pcap_strerror(save_errno));
+			    pcap_strerror(errno));
 			return -2;
 		}
 		while (recv(handle->fd, &drain, sizeof drain, MSG_TRUNC) >= 0)
@@ -6107,7 +6107,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		if (reset_kernel_filter(handle) == -1) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "can't remove kernel total filter: %s",
-			    pcap_strerror(save_errno));
+			    pcap_strerror(errno));
 			return -2;	/* fatal error */
 		}
 
