@@ -3949,13 +3949,14 @@ destroy_ring(pcap_t *handle)
 	/* tell the kernel to destroy the ring*/
 	struct tpacket_req req;
 	memset(&req, 0, sizeof(req));
-	setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
+	/* do not test for setsockopt failure, as we can't recover from any error */
+	(void)setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
 				(void *) &req, sizeof(req));
 
 	/* if ring is mapped, unmap it*/
 	if (handlep->mmapbuf) {
 		/* do not test for mmap failure, as we can't recover from any error */
-		munmap(handlep->mmapbuf, handlep->mmapbuflen);
+		(void)munmap(handlep->mmapbuf, handlep->mmapbuflen);
 		handlep->mmapbuf = NULL;
 	}
 }
