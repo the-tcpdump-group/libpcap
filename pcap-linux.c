@@ -2478,8 +2478,14 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 	 * calling "pcap_setfilter()".  Otherwise, the kernel filter may
 	 * filter out packets that would pass the new userland filter.
 	 */
-	if (handlep->filter_in_userland)
-		reset_kernel_filter(handle);
+	if (handlep->filter_in_userland) {
+		if (reset_kernel_filter(handle) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "can't remove kernel filter: %s",
+			    pcap_strerror(save_errno));
+			err = -2;	/* fatal error */
+		}
+	}
 
 	/*
 	 * Free up the copy of the filter that was made by "fix_program()".
@@ -6038,20 +6044,40 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		 * "nothing more to be read" error).
 		 */
 		save_mode = fcntl(handle->fd, F_GETFL, 0);
-		if (save_mode != -1 &&
-		    fcntl(handle->fd, F_SETFL, save_mode | O_NONBLOCK) >= 0) {
-			while (recv(handle->fd, &drain, sizeof drain,
-			       MSG_TRUNC) >= 0)
-				;
-			save_errno = errno;
-			fcntl(handle->fd, F_SETFL, save_mode);
-			if (save_errno != EAGAIN) {
-				/* Fatal error */
-				reset_kernel_filter(handle);
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				 "recv: %s", pcap_strerror(save_errno));
-				return -2;
-			}
+		if (save_mode == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "can't get FD flags when changing filter: %s",
+			    pcap_strerror(save_errno));
+			return -2;
+		}
+		if (fcntl(handle->fd, F_SETFL, save_mode | O_NONBLOCK) < 0) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "can't set nonblocking mode when changing filter: %s",
+			    pcap_strerror(save_errno));
+			return -2;
+		}
+		while (recv(handle->fd, &drain, sizeof drain, MSG_TRUNC) >= 0)
+			;
+		save_errno = errno;
+		if (save_errno != EAGAIN) {
+			/*
+			 * Fatal error.
+			 *
+			 * If we can't restore the mode or reset the
+			 * kernel filter, there's nothing we can do.
+			 */
+			(void)fcntl(handle->fd, F_SETFL, save_mode);
+			(void)reset_kernel_filter(handle);
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "recv failed when changing filter: %s",
+			    pcap_strerror(save_errno));
+			return -2;
+		}
+		if (fcntl(handle->fd, F_SETFL, save_mode) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "can't restore FD flags when changing filter: %s",
+			    pcap_strerror(save_errno));
+			return -2;
 		}
 	}
 
@@ -6074,11 +6100,16 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 		save_errno = errno;
 
 		/*
-		 * XXX - if this fails, we're really screwed;
-		 * we have the total filter on the socket,
-		 * and it won't come off.  What do we do then?
+		 * If this fails, we're really screwed; we have the
+		 * total filter on the socket, and it won't come off.
+		 * Report it as a fatal error.
 		 */
-		reset_kernel_filter(handle);
+		if (reset_kernel_filter(handle) == -1) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "can't remove kernel total filter: %s",
+			    pcap_strerror(save_errno));
+			return -2;	/* fatal error */
+		}
 
 		errno = save_errno;
 	}
