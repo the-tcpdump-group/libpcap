@@ -917,7 +917,11 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 	}
 
 	/* flush pending events*/
-	ioctl(handle->fd, MON_IOCH_MFLUSH, nflush);
+	if (ioctl(handle->fd, MON_IOCH_MFLUSH, nflush) == -1) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "Can't mflush fd %d: %s", handle->fd, strerror(errno));
+		return -1;
+	}
 	return packets;
 }
 
