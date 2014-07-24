@@ -697,6 +697,53 @@ if test "$enable_yydebug" = "yes"; then
 fi
 AC_MSG_RESULT(${enable_yydebug-no})
 
+# Check for ODP support.
+AC_ARG_WITH([odp],
+AC_HELP_STRING([--with-odp],[include ODP support]),
+[
+	if test ! "x$withval" = "xno" ; then
+		want_odp=yes
+	fi
+],[
+	want_odp=no
+])
+
+AC_ARG_WITH([odp-netmap],
+AC_HELP_STRING([--with-odp-netmap],[include ODP netmap support]),
+[
+	if test ! "x$withval" = "xno" ; then
+		want_odp_netmap=yes
+	fi
+],[
+	want_odp_netmap=no
+])
+
+AC_ARG_WITH([odp-includes],
+AC_HELP_STRING([--with-odp-includes=DIR],[ODP include directory]),
+[
+	# User wants odp support and has specified a header directory, so use the provided value.
+	ODP_INCLS=$withval
+],[])
+
+AC_ARG_WITH([odp-libdir],
+AC_HELP_STRING([--with-odp-libdir=DIR],[ODP library directory]),
+[
+	# User wants odp support and has specified a library directory, so use the provided value.
+	LIBS="$LIBS -L$withval"
+],[])
+
+if test "$want_odp" = yes; then
+	AC_DEFINE(PCAP_SUPPORT_ODP, 1, [target host supports odp])
+
+	if test "$want_odp_netmap" = yes; then
+		AC_DEFINE(ODP_HAVE_NETMAP, 1, [target host supports netmap odp])
+	fi
+	LIBS="$LIBS -lodp"
+	AC_MSG_NOTICE(ODP is supported)
+	AC_SUBST(ODP_INCLS)
+	AC_SUBST(PCAP_SUPPORT_ODP)
+fi
+
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
