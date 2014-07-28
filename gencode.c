@@ -2902,6 +2902,7 @@ gen_linktype(proto)
 	register int proto;
 {
 	struct block *b0, *b1, *b2;
+	const char *description;
 
 	/* are we checking MPLS-encapsulated packets? */
 	if (label_stack_depth > 0) {
@@ -3418,26 +3419,36 @@ gen_linktype(proto)
 		 * either missing or behind TLVs.
 		 */
 		bpf_error("NFLOG link-layer type filtering not implemented");
+
+	default:
+		/*
+		 * Does this link-layer header type have a field
+		 * indicating the type of the next protocol?  If
+		 * so, off_linktype will be the offset of that
+		 * field in the packet; if not, it will be -1.
+		 */
+		if (off_linktype != (u_int)-1) {
+			/*
+			 * Yes; assume it's an Ethernet type.  (If
+			 * it's not, it needs to be handled specially
+			 * above.)
+			 */
+			return gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
+		} else {
+			/*
+			 * No; report an error.
+			 */
+			description = pcap_datalink_val_to_description(linktype);
+			if (description != NULL) {
+				bpf_error("%s link-layer type filtering not implemented",
+				    description);
+			} else {
+				bpf_error("DLT %u link-layer type filtering not implemented",
+				    linktype);
+			}
+		}
+		break;
 	}
-
-	/*
-	 * All the types that have no encapsulation should either be
-	 * handled as DLT_SLIP, DLT_SLIP_BSDOS, and DLT_RAW are, if
-	 * all packets are IP packets, or should be handled in some
-	 * special case, if none of them are (if some are and some
-	 * aren't, the lack of encapsulation is a problem, as we'd
-	 * have to find some other way of determining the packet type).
-	 *
-	 * Therefore, if "off_linktype" is -1, there's an error.
-	 */
-	if (off_linktype == (u_int)-1)
-		abort();
-
-	/*
-	 * Any type not handled above should always have an Ethernet
-	 * type at an offset of "off_linktype".
-	 */
-	return gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
 }
 
 /*
