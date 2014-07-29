@@ -248,6 +248,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int flags = pd->dag_offset_flags;
 	unsigned int nonblocking = flags & DAGF_NONBLOCK;
 	unsigned int num_ext_hdr = 0;
+	unsigned int ticks_per_second;
 
 	/* Get the next bufferful of packets (if necessary). */
 	while (pd->dag_mem_top - pd->dag_mem_bottom < dag_record_size) {
@@ -553,12 +554,22 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				ts = header->ts;
 			}
 
+			switch (p->opt.tstamp_precision) {
+			case PCAP_TSTAMP_PRECISION_NANO:
+				ticks_per_second = 1000000000;
+				break;
+			case PCAP_TSTAMP_PRECISION_MICRO:
+			default:
+				ticks_per_second = 1000000;
+				break;
+
+			}
 			pcap_header.ts.tv_sec = ts >> 32;
-			ts = (ts & 0xffffffffULL) * 1000000;
+			ts = (ts & 0xffffffffULL) * ticks_per_second;
 			ts += 0x80000000; /* rounding */
 			pcap_header.ts.tv_usec = ts >> 32;		
-			if (pcap_header.ts.tv_usec >= 1000000) {
-				pcap_header.ts.tv_usec -= 1000000;
+			if (pcap_header.ts.tv_usec >= ticks_per_second) {
+				pcap_header.ts.tv_usec -= ticks_per_second;
 				pcap_header.ts.tv_sec++;
 			}
 
@@ -917,6 +928,46 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 		return NULL;
 
 	p->activate_op = dag_activate;
+	/*
+	 * We claim that we support:
+	 *
+	 *	hardware time stamps, synced to the host time;
+	 *	hardware time stamps, not synced to the host time.
+	 *
+	 * XXX - we can't determine whether the user configured the clock to be
+	 * synchronisd to the host clock, a different clock, or is free running,
+	 * so we claim both. We don't support software (HOST) timestamps at all.
+	 */
+	p->tstamp_type_count = 2;
+	p->tstamp_type_list = malloc(2 * sizeof(u_int));
+	if (p->tstamp_type_list == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		free(p);
+		return NULL;
+	}
+	p->tstamp_type_list[0] = PCAP_TSTAMP_ADAPTER;
+	p->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER_UNSYNCED;
+
+	/*
+	 * We claim that we support microsecond and nanosecond time
+	 * stamps.
+	 *
+	 * XXX Our native precision is 2^-32s, but libpcap doesn't support
+	 * power of two precisions yet. We can convert to either MICRO or NANO.
+	 */
+	p->tstamp_precision_count = 2;
+	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
+	if (p->tstamp_precision_list == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		if (p->tstamp_type_list != NULL)
+			free(p->tstamp_type_list);
+		free(p);
+		return NULL;
+	}
+	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 	return p;
 }
 
