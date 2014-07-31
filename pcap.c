@@ -304,7 +304,8 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 pcap_t *
 pcap_create(const char *source, char *errbuf)
 {
-	return (snf_create(source, errbuf));
+	int is_ours;
+	return (snf_create(source, errbuf, &is_ours));
 }
 #else /* regular pcap */
 struct capture_source_type {
