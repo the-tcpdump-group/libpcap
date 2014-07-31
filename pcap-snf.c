@@ -147,7 +147,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		err = snf_ring_recv(ps->snf_ring, timeout, &req);
 
 		if (err) {
-			if (err == EAGAIN) {
+			if (err == EBUSY || err == EAGAIN) {
 				return (n);
 			}
 			else if (err == EINTR) {
