@@ -68,6 +68,9 @@
  *
  * This also provides our own multiple-include protection.
  */
+
+#include <stdint.h>
+
 #if !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
 #define lib_pcap_bpf_h
 
@@ -1469,6 +1472,11 @@ struct bpf_insn {
 	bpf_u_int32 k;
 };
 
+struct bpf_aux_data {
+        uint16_t vlan_tag_present;
+        uint16_t vlan_tag;
+};
+
 /*
  * Macros for insn array initializers.
  */
@@ -1478,8 +1486,10 @@ struct bpf_insn {
 #if __STDC__ || defined(__cplusplus)
 extern int bpf_validate(const struct bpf_insn *, int);
 extern u_int bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+extern u_int bpf_filter1(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);        
 #else
 extern int bpf_validate();
+extern u_int bpf_filter();
 extern u_int bpf_filter();
 #endif
 
