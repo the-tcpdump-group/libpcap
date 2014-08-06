@@ -4035,7 +4035,7 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 			handlep->timeout = ~handlep->timeout;
 		}
 	}
-	return 0;
+	return pcap_setnonblock_fd(p, nonblock, errbuf);
 }
 
 static inline union thdr *
