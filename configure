@@ -5512,6 +5512,13 @@ fi
 	if test x$with_libnl != xno ; then
 		have_any_nl="no"
 
+                incdir=-I/usr/include/libnl3
+                libnldir=
+                if test x$withval != x ; then
+                  libnldir=-L${withval}/lib/.libs
+                  incdir=-I${withval}/include
+                fi
+
 		#
 		# Try libnl 3.x first.
 		#
@@ -5521,7 +5528,7 @@ if ${ac_cv_lib_nl_3_nl_socket_alloc+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnl-3  $LIBS"
+LIBS="-lnl-3 ${incdir} ${libnldir} -lnl-genl-3 -lnl-3  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5556,7 +5563,7 @@ if test "x$ac_cv_lib_nl_3_nl_socket_alloc" = xyes; then :
 			#
 			# Yes, we have libnl 3.x.
 			#
-			LIBS="-lnl-genl-3 -lnl-3 $LIBS"
+			LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -5569,7 +5576,7 @@ $as_echo "#define HAVE_LIBNL_NLE 1" >>confdefs.h
 
 $as_echo "#define HAVE_LIBNL_SOCKETS 1" >>confdefs.h
 
-			V_INCLS="$V_INCLS -I/usr/include/libnl3"
+			V_INCLS="$V_INCLS ${incdir}"
 			have_any_nl="yes"
 
 fi
@@ -5620,7 +5627,7 @@ if test "x$ac_cv_lib_nl_nl_socket_alloc" = xyes; then :
 				#
 				# Yes, we have libnl 2.x.
 				#
-				LIBS="-lnl-genl -lnl $LIBS"
+				LIBS="${libnldir} -lnl-genl -lnl $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -5684,7 +5691,7 @@ if test "x$ac_cv_lib_nl_nl_handle_alloc" = xyes; then :
 				#
 				# Yes.
 				#
-				LIBS="-lnl $LIBS"
+				LIBS="${libnldir} -lnl $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
