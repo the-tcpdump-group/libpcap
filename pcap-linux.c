@@ -4026,6 +4026,13 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 	struct pcap_linux *handlep = p->priv;
 
 	/*
+	 * Set the file descriptor to non-blocking mode, as we use
+	 * it for sending packets.
+	 */
+	if (pcap_setnonblock_fd(p, nonblock, errbuf) == -1)
+		return -1;
+
+	/*
 	 * Map each value to their corresponding negation to
 	 * preserve the timeout value provided with pcap_set_timeout.
 	 */
@@ -4042,7 +4049,7 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 			handlep->timeout = ~handlep->timeout;
 		}
 	}
-	return pcap_setnonblock_fd(p, nonblock, errbuf);
+	return 0;
 }
 
 static inline union thdr *
