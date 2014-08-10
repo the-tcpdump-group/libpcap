@@ -459,7 +459,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 				return (-1);
 			}
 			saw_tsresol = 1;
-			tsresol_opt = *(u_int *)optvalue;
+			memcpy(&tsresol_opt, optvalue, sizeof(tsresol_opt));
 			if (tsresol_opt & 0x80) {
 				/*
 				 * Resolution is negative power of 2.
