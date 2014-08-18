@@ -182,6 +182,7 @@ main(int argc, char **argv)
 	char *infile;
 	int Oflag;
 	long snaplen;
+	char *p;
 	int dlt;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
 	char *cmdbuf;
@@ -252,8 +253,11 @@ main(int argc, char **argv)
 	}
 
 	dlt = pcap_datalink_name_to_val(argv[optind]);
-	if (dlt < 0)
-		error("invalid data link type %s", argv[optind]);
+	if (dlt < 0) {
+		dlt = (int)strtol(argv[optind], &p, 10);
+		if (p == argv[optind] || *p != '\0')
+			error("invalid data link type %s", argv[optind]);
+	}
 	
 	if (infile)
 		cmdbuf = read_infile(infile);

@@ -1,3 +1,12 @@
+Monday Aug. 12, 2014 guy@alum.mit.edu
+  Summary for 1.6.2 tcpdump release
+	Don't crash on filters testing a non-existent link-layer type
+	    field.
+	Fix sending in non-blocking mode on Linux with memory-mapped
+	    capture.
+	Fix timestamps when reading pcap-ng files on big-endian
+	    machines.
+
 Saturday  Jul. 19, 2014 mcr@sandelman.ca
   Summary for 1.6.1 tcpdump release
 	some fixes for the any device
