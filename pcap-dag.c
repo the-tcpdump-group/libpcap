@@ -435,6 +435,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					caplen = rlen - dag_record_size - 4;
 					dp+=4;
 				}
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
+
 				if (header->type == TYPE_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 				}
@@ -466,6 +469,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 2;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -479,6 +484,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -489,6 +496,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 4;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -514,6 +523,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case TYPE_IPV6:
 				packet_len = ntohs(header->wlen);
 				caplen = rlen - dag_record_size;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -533,9 +544,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 */
 				continue;
 			} /* switch type */
-
-			/* Skip over extension headers */
-			caplen -= (8 * num_ext_hdr);
 
 		} /* ERF encapsulation */
 		
