@@ -1538,22 +1538,43 @@ pcap_activate_bpf(pcap_t *p)
 
 #if defined(LIFNAMSIZ) && defined(ZONENAME_MAX) && defined(lifr_zoneid)
 	/*
-	 * Check if the given source network device has a '/' separated
-	 * zonename prefix string. The zonename prefixed source device
-	 * can be used by libpcap consumers to capture network traffic
-	 * in non-global zones from the global zone on Solaris 11 and
-	 * above. If the zonename prefix is present then we strip the
-	 * prefix and pass the zone ID as part of lifr_zoneid.
+	 * Retrieve the zoneid of the zone we are currently executing in.
+	 */
+	if ((ifr.lifr_zoneid = getzoneid()) == -1) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "getzoneid(): %s",
+		    pcap_strerror(errno));
+		status = PCAP_ERROR;
+		goto bad;
+	}
+	/*
+	 * Check if the given source datalink name has a '/' separated
+	 * zonename prefix string.  The zonename prefixed source datalink can
+	 * be used by pcap consumers in the Solaris global zone to capture
+	 * traffic on datalinks in non-global zones.  Non-global zones
+	 * do not have access to datalinks outside of their own namespace.
 	 */
 	if ((zonesep = strchr(p->opt.source, '/')) != NULL) {
-		char zonename[ZONENAME_MAX];
+		char path_zname[ZONENAME_MAX];
 		int  znamelen;
 		char *lnamep;
 
+		if (ifr.lifr_zoneid != GLOBAL_ZONEID) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "zonename/linkname only valid in global zone.");
+			status = PCAP_ERROR;
+			goto bad;
+		}
 		znamelen = zonesep - p->opt.source;
-		(void) strlcpy(zonename, p->opt.source, znamelen + 1);
+		(void) strlcpy(path_zname, p->opt.source, znamelen + 1);
+		ifr.lifr_zoneid = getzoneidbyname(path_zname);
+		if (ifr.lifr_zoneid == -1) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "getzoneidbyname(%s): %s", path_zname,
+			pcap_strerror(errno));
+			status = PCAP_ERROR;
+			goto bad;
+		}
 		lnamep = strdup(zonesep + 1);
-		ifr.lifr_zoneid = getzoneidbyname(zonename);
 		free(p->opt.source);
 		p->opt.source = lnamep;
 	}
