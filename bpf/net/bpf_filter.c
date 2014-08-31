@@ -210,8 +210,8 @@ bpf_filter(pc, p, wirelen, buflen)
 	register u_int buflen;
 {
 	register u_int32 A, X;
-	register int k;
-	int32 mem[BPF_MEMWORDS];
+	register bpf_u_int32 k;
+	u_int32 mem[BPF_MEMWORDS];
 #if defined(KERNEL) || defined(_KERNEL)
 	struct mbuf *m, *n;
 	int merr, len;
@@ -250,7 +250,7 @@ bpf_filter(pc, p, wirelen, buflen)
 
 		case BPF_LD|BPF_W|BPF_ABS:
 			k = pc->k;
-			if (k + sizeof(int32) > buflen) {
+			if (k > buflen || sizeof(int32_t) > buflen - k) {
 #if defined(KERNEL) || defined(_KERNEL)
 				if (m == NULL)
 					return 0;
@@ -267,7 +267,7 @@ bpf_filter(pc, p, wirelen, buflen)
 
 		case BPF_LD|BPF_H|BPF_ABS:
 			k = pc->k;
-			if (k + sizeof(short) > buflen) {
+			if (k > buflen || sizeof(int16_t) > buflen - k) {
 #if defined(KERNEL) || defined(_KERNEL)
 				if (m == NULL)
 					return 0;
@@ -309,7 +309,8 @@ bpf_filter(pc, p, wirelen, buflen)
 
 		case BPF_LD|BPF_W|BPF_IND:
 			k = X + pc->k;
-			if (k + sizeof(int32) > buflen) {
+			if (pc->k > buflen || X > buflen - pc->k ||
+			    sizeof(int32_t) > buflen - k) {
 #if defined(KERNEL) || defined(_KERNEL)
 				if (m == NULL)
 					return 0;
@@ -326,7 +327,8 @@ bpf_filter(pc, p, wirelen, buflen)
 
 		case BPF_LD|BPF_H|BPF_IND:
 			k = X + pc->k;
-			if (k + sizeof(short) > buflen) {
+			if (X > buflen || pc->k > buflen - X ||
+			    sizeof(int16_t) > buflen - k) {
 #if defined(KERNEL) || defined(_KERNEL)
 				if (m == NULL)
 					return 0;
@@ -343,7 +345,7 @@ bpf_filter(pc, p, wirelen, buflen)
 
 		case BPF_LD|BPF_B|BPF_IND:
 			k = X + pc->k;
-			if (k >= buflen) {
+			if (pc->k >= buflen || X >= buflen - pc->k) {
 #if defined(KERNEL) || defined(_KERNEL)
 				if (m == NULL)
 					return 0;
