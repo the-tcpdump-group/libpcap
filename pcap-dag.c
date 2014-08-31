@@ -40,6 +40,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "dagnew.h"
 #include "dagapi.h"
+#include "dagpci.h"
 
 #include "pcap-dag.h"
 
@@ -1012,6 +1013,8 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	char dagname[DAGNAME_BUFSIZE];
 	int dagstream;
 	int dagfd;
+	dag_card_inf_t *inf;
+	char *description;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
@@ -1020,8 +1023,11 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		{
 			return -1;
 		}
+		description = NULL;
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
-			if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
+			if ((inf = dag_pciinfo(dagfd)))
+				description = dag_device_name(inf->device_code, 1);
+			if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
 				/*
 				 * Failure.
 				 */
@@ -1036,7 +1042,7 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 						dag_detach_stream(dagfd, stream);
 
 						snprintf(name,  10, "dag%d:%d", c, stream);
-						if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
+						if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
 							/*
 							 * Failure.
 							 */
