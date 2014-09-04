@@ -722,7 +722,7 @@ AC_ARG_WITH([odp-includes],
 AC_HELP_STRING([--with-odp-includes=DIR],[ODP include directory]),
 [
 	# User wants odp support and has specified a header directory, so use the provided value.
-	ODP_INCLS=$withval
+	ODP_INCLS="-I$withval -I$withval/helper"
 ],[])
 
 AC_ARG_WITH([odp-libdir],
