@@ -6107,7 +6107,7 @@ fi
 if test "${with_odp_includes+set}" = set; then :
   withval=$with_odp_includes;
 	# User wants odp support and has specified a header directory, so use the provided value.
-	ODP_INCLS=$withval
+	ODP_INCLS="-I$withval -I$withval/helper"
 
 fi
 
