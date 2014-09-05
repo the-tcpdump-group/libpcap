@@ -1,5 +1,5 @@
 Monday Aug. 12, 2014 guy@alum.mit.edu
-  Summary for 1.6.2 tcpdump release
+  Summary for 1.6.2 libpcap release
 	Don't crash on filters testing a non-existent link-layer type
 	    field.
 	Fix sending in non-blocking mode on Linux with memory-mapped
@@ -8,12 +8,12 @@ Monday Aug. 12, 2014 guy@alum.mit.edu
 	    machines.
 
 Saturday  Jul. 19, 2014 mcr@sandelman.ca
-  Summary for 1.6.1 tcpdump release
+  Summary for 1.6.1 libpcap release
 	some fixes for the any device
 	changes for how --enable-XXX works
 
 Wednesday Jul. 2, 2014 mcr@sandelman.ca
-  Summary for 1.6.0 tcpdump release
+  Summary for 1.6.0 libpcap release
         Don't support D-Bus sniffing on OS X
         fixes for byte order issues with NFLOG captures
         Handle using cooked mode for DLT_NETLINK in activate_new().
