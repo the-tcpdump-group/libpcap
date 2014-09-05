@@ -1,3 +1,7 @@
+Friday Sep. 5, 2014 guy@alum.mit.edu
+  Summary for 1.6.3 libpcap release
+	Fix handling of zones for BPF on Solaris
+
 Monday Aug. 12, 2014 guy@alum.mit.edu
   Summary for 1.6.2 libpcap release
 	Don't crash on filters testing a non-existent link-layer type
