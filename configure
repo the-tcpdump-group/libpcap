@@ -6078,6 +6078,8 @@ if test "${with_odp+set}" = set; then :
   withval=$with_odp;
 	if test ! "x$withval" = "xno" ; then
 		want_odp=yes
+		ODP_INCLS="-I$withval/include -I$withval/include/helper"
+		LIBS="$LIBS -L$withval/lib"
 	fi
 
 else
