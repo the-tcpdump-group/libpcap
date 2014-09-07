@@ -937,26 +937,6 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 		return NULL;
 
 	p->activate_op = dag_activate;
-	/*
-	 * We claim that we support:
-	 *
-	 *	hardware time stamps, synced to the host time;
-	 *	hardware time stamps, not synced to the host time.
-	 *
-	 * XXX - we can't determine whether the user configured the clock to be
-	 * synchronisd to the host clock, a different clock, or is free running,
-	 * so we claim both. We don't support software (HOST) timestamps at all.
-	 */
-	p->tstamp_type_count = 2;
-	p->tstamp_type_list = malloc(2 * sizeof(u_int));
-	if (p->tstamp_type_list == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		free(p);
-		return NULL;
-	}
-	p->tstamp_type_list[0] = PCAP_TSTAMP_ADAPTER;
-	p->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER_UNSYNCED;
 
 	/*
 	 * We claim that we support microsecond and nanosecond time
