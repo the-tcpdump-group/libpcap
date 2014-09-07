@@ -131,7 +131,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 	n = 0;
 	timeout = ps->snf_timeout;
-	while (n < cnt || PACKET_COUNT_S_UNLIMITED(cnt)) {
+	while (n < cnt || PACKET_COUNT_IS_UNLIMITED(cnt)) {
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 */
