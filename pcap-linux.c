@@ -6188,7 +6188,7 @@ pcap_odp_init(pcap_t *handle)
 	if (pool == ODP_BUFFER_POOL_INVALID) {
 		/* Create packet pool */
 		pool_base = odp_shm_reserve("shm_packet_pool",
-				SHM_PKT_POOL_SIZE, ODP_CACHE_LINE_SIZE);
+				SHM_PKT_POOL_SIZE, ODP_CACHE_LINE_SIZE, 0);
 		if (pool_base == NULL) {
 			fprintf(stderr,
 				"Error: packet pool mem alloc failed.\n");
