@@ -144,11 +144,6 @@
 #define SHM_PKT_POOL_BUF_SIZE  1856
 #endif /* PCAP_SUPPORT_ODP */
 
-#ifdef ODP_HAVE_NETMAP
-#include <helper/odp_linux.h>
-#include <odp_pktio_types.h>
-#endif
-
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
@@ -6212,27 +6207,9 @@ pcap_odp_init(pcap_t *handle)
 	/* Open a packet IO instance for this thread */
 	/* if any device, need ODP support */
 
-	/* for netmap */
-	odp_pktio_params_t pparams;
-#ifdef ODP_HAVE_NETMAP
-	if (handle->is_netmap) {
-		memset(&pparams.nm_params, 0, sizeof(pparams.nm_params));
-		pparams.nm_params.type = ODP_PKTIO_TYPE_NETMAP;
-		pparams.nm_params.netmap_mode = ODP_NETMAP_MODE_HW;
-		pparams.nm_params.ringid = 0;
-		printf("  pktio type: netmap\n");
-	} else {
-#endif
-		memset(&pparams.sock_params, 0, sizeof(pparams.sock_params));
-		pparams.sock_params.type = ODP_PKTIO_TYPE_SOCKET_BASIC;
-		pparams.sock_params.fanout = 0;
-		printf("  pktio type: socket\n");
-#ifdef ODP_HAVE_NETMAP
-	}
-#endif
 	podp = handle->priv;
-	podp->pktio = odp_pktio_open(handle->opt.source, pool, &pparams);
 
+	podp->pktio = odp_pktio_open(handle->opt.source, pool);
 	if (podp->pktio == ODP_QUEUE_INVALID) {
 		fprintf(stderr, "  Error: pktio create failed %s\n", handle->opt.source);
 		return;
