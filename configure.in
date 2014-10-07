@@ -1628,16 +1628,6 @@ if test "x$enable_dbus" != "xno"; then
 			#
 			AC_MSG_ERROR([Due to freedesktop.org bug 74029, D-Bus capture support is not available on OS X])
 			;;
-		esac
-	else		
-		case "$host_os" in
-
-		darwin*)
-			#
-			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
-			#
-			;;
-
 		*)
 			AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
 			if test "x$PKGCONFIG" != "xno"; then
