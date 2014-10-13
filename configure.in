@@ -744,7 +744,10 @@ if test "$want_odp" = yes; then
 	AC_MSG_NOTICE(ODP is supported)
 	AC_SUBST(ODP_INCLS)
 	AC_SUBST(PCAP_SUPPORT_ODP)
+
+	ODP_SRC="pcap-odp.c"
 fi
+AC_SUBST(ODP_SRC)
 
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
