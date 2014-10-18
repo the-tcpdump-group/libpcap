@@ -36,9 +36,9 @@ int pcap_get_selectable_fd(pcap_t *p);
 returns, on UNIX, a file descriptor number for a file descriptor on
 which one can
 do a
-.B select()
-or
-.B poll()
+.BR select() ,
+.BR poll() ,
+or other such call
 to wait for it to be possible to read packets without blocking, if such
 a descriptor exists, or \-1, if no such descriptor exists.  Some network
 devices opened with
@@ -53,6 +53,12 @@ or
 .B poll()
 (for example, regular network devices on FreeBSD 4.3 and 4.4, and Endace
 DAG devices), so \-1 is returned for those devices.
+.PP
+Note that a descriptor on which a read can be done without blocking may,
+on some platforms, not have any packets to read if the read timeout has
+expired.  A call to
+.B pcap_dispatch()
+will return 0 in this case, but will not block.
 .PP
 Note that in:
 .IP

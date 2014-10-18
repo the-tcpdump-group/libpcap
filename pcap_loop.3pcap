@@ -77,6 +77,13 @@ causes all the packets received in one buffer to be processed when
 reading a live capture, and causes all the packets in the file to be
 processed when reading a ``savefile''.
 .PP
+Note that, when doing a live capture on some platforms, if the read
+timeout expires when there are no packets available,
+.B pcap_dispatch()
+will return 0, even when not in non-blocking mode, as there are no
+packets to process.  Applications should be prepared for this to happen,
+but must not rely on it happening.
+.PP
 .ft B
 (In older versions of libpcap, the behavior when
 \fIcnt\fP
