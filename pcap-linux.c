@@ -5530,13 +5530,15 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 static int
 iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 {
+	int i;
+
 	/*
 	 * We don't have an ioctl to use to ask what's supported,
 	 * so say we support everything.
 	 */
 	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
 	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
-	for (i = 0, j = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
+	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
 		handle->tstamp_type_list[i] = sof_ts_type_map[i].pcap_tstamp_val;
 	return 0;
 }
