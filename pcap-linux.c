@@ -382,6 +382,9 @@ static int	has_wext(int sock_fd, const char *device, char *ebuf);
 static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
 #endif /* HAVE_PF_PACKET_SOCKETS */
+#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
+static int	iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf);
+#endif
 static int	iface_get_offload(pcap_t *handle);
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
@@ -409,28 +412,15 @@ pcap_create_interface(const char *device, char *ebuf)
 
 	handle->activate_op = pcap_activate_linux;
 	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 	/*
-	 * We claim that we support:
-	 *
-	 *	software time stamps, with no details about their precision;
-	 *	hardware time stamps, synced to the host time;
-	 *	hardware time stamps, not synced to the host time.
-	 *
-	 * XXX - we can't ask a device whether it supports
-	 * hardware time stamps, so we just claim all devices do.
+	 * See what time stamp types we support.
 	 */
-	handle->tstamp_type_count = 3;
-	handle->tstamp_type_list = malloc(3 * sizeof(u_int));
-	if (handle->tstamp_type_list == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+	if (iface_ethtool_get_ts_info(handle, ebuf) == -1) {
 		free(handle);
 		return NULL;
 	}
-	handle->tstamp_type_list[0] = PCAP_TSTAMP_HOST;
-	handle->tstamp_type_list[1] = PCAP_TSTAMP_ADAPTER;
-	handle->tstamp_type_list[2] = PCAP_TSTAMP_ADAPTER_UNSYNCED;
 #endif
 
 #if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
@@ -5459,6 +5449,101 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 	return 0;
 }
 
+#if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
+/*
+ * Map SOF_TIMESTAMPING_ values to PCAP_TSTAMP_ values.
+ */
+static const struct {
+	int soft_timestamping_val;
+	int pcap_tstamp_val;
+} map[3] = {
+	{ SOF_TIMESTAMPING_SOFTWARE, PCAP_TSTAMP_HOST },
+	{ SOF_TIMESTAMPING_SYS_HARDWARE, PCAP_TSTAMP_ADAPTER },
+	{ SOF_TIMESTAMPING_RAW_HARDWARE, PCAP_TSTAMP_ADAPTER_UNSYNCED }
+};
+#define NUM_SOF_TIMESTAMPING_TYPES	(sizeof map / sizeof map[0])
+
+#ifdef ETHTOOL_GET_TS_INFO
+/*
+ * Get a list of time stamping capabilities.
+ */
+static int
+iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
+{
+	int fd;
+	struct ifreq ifr;
+	struct ethtool_ts_info info;
+	int num_ts_types;
+	int i, j;
+
+	/*
+	 * Create a socket from which to fetch time stamping capabilities.
+	 */
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		(void)snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "socket for SIOCETHTOOL(ETHTOOL_GET_TS_INFO): %s", pcap_strerror(errno));
+		return -1;
+	}
+
+	memset(&ifr, 0, sizeof(ifr));
+	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	memset(&info, 0, sizeof(info));
+	info.cmd = ETHTOOL_GET_TS_INFO;
+	ifr.ifr_data = (caddr_t)&info;
+	if (ioctl(fd, SIOCETHTOOL, &ifr) == -1) {
+		if (errno == EOPNOTSUPP || errno == EINVAL) {
+			/*
+			 * OK, let's just return all the possible time
+			 * stamping types.
+			 */
+			return SOF_TIMESTAMPING_SOFTWARE|SOF_TIMESTAMPING_SYS_HARDWARE|SOF_TIMESTAMPING_RAW_HARDWARE;
+		}
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "%s: SIOETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
+		    strerror(errno));
+		close(fd);
+		return -1;
+	}
+	close(fd);
+
+	num_ts_types = 0;
+	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
+		if (info.so_timestamping & map[i].soft_timestamping_val)
+			num_ts_types++;
+	}
+	handle->tstamp_type_count = num_ts_types;
+	if (num_ts_types != 0) {
+		handle->tstamp_type_list = malloc(num_ts_types * sizeof(u_int));
+		for (i = 0, j = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
+			if (info.so_timestamping & map[i].soft_timestamping_val) {
+				handle->tstamp_type_list[j] = map[i].pcap_tstamp_val;
+				j++;
+			}
+		}
+	} else
+		handle->tstamp_type_list = NULL;
+
+	return 0;
+}
+#else /* ETHTOOL_GET_TS_INFO */
+static int
+iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
+{
+	/*
+	 * We don't have an ioctl to use to ask what's supported,
+	 * so say we support everything.
+	 */
+	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
+	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
+	for (i = 0, j = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
+		handle->tstamp_type_list[i] = map[i].pcap_tstamp_val;
+	return 0;
+}
+#endif /* ETHTOOL_GET_TS_INFO */
+
+#endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
+
 /*
  * Find out if we have any form of fragmentation/reassembly offloading.
  *
@@ -5469,7 +5554,7 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
  */
 #if defined(SIOCETHTOOL) && (defined(ETHTOOL_GTSO) || defined(ETHTOOL_GUFO) || defined(ETHTOOL_GGSO) || defined(ETHTOOL_GFLAGS) || defined(ETHTOOL_GGRO))
 static int
-iface_ethtool_ioctl(pcap_t *handle, int cmd, const char *cmdname)
+iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 {
 	struct ifreq	ifr;
 	struct ethtool_value eval;
@@ -5503,7 +5588,7 @@ iface_get_offload(pcap_t *handle)
 	int ret;
 
 #ifdef ETHTOOL_GTSO
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO");
 	if (ret == -1)
 		return -1;
 	if (ret)
@@ -5511,7 +5596,7 @@ iface_get_offload(pcap_t *handle)
 #endif
 
 #ifdef ETHTOOL_GUFO
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO");
 	if (ret == -1)
 		return -1;
 	if (ret)
@@ -5524,7 +5609,7 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on transmission?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO");
 	if (ret == -1)
 		return -1;
 	if (ret)
@@ -5532,7 +5617,7 @@ iface_get_offload(pcap_t *handle)
 #endif
 
 #ifdef ETHTOOL_GFLAGS
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
 	if (ret == -1)
 		return -1;
 	if (ret & ETH_FLAG_LRO)
@@ -5545,7 +5630,7 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on receipt?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO");
 	if (ret == -1)
 		return -1;
 	if (ret)
