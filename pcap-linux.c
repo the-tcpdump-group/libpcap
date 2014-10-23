@@ -5456,12 +5456,12 @@ enter_rfmon_mode(pcap_t *handle, int sock_fd, const char *device)
 static const struct {
 	int soft_timestamping_val;
 	int pcap_tstamp_val;
-} map[3] = {
+} sof_ts_type_map[3] = {
 	{ SOF_TIMESTAMPING_SOFTWARE, PCAP_TSTAMP_HOST },
 	{ SOF_TIMESTAMPING_SYS_HARDWARE, PCAP_TSTAMP_ADAPTER },
 	{ SOF_TIMESTAMPING_RAW_HARDWARE, PCAP_TSTAMP_ADAPTER_UNSYNCED }
 };
-#define NUM_SOF_TIMESTAMPING_TYPES	(sizeof map / sizeof map[0])
+#define NUM_SOF_TIMESTAMPING_TYPES	(sizeof sof_ts_type_map / sizeof sof_ts_type_map[0])
 
 #ifdef ETHTOOL_GET_TS_INFO
 /*
@@ -5509,15 +5509,15 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 
 	num_ts_types = 0;
 	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
-		if (info.so_timestamping & map[i].soft_timestamping_val)
+		if (info.so_timestamping & sof_ts_type_map[i].soft_timestamping_val)
 			num_ts_types++;
 	}
 	handle->tstamp_type_count = num_ts_types;
 	if (num_ts_types != 0) {
 		handle->tstamp_type_list = malloc(num_ts_types * sizeof(u_int));
 		for (i = 0, j = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
-			if (info.so_timestamping & map[i].soft_timestamping_val) {
-				handle->tstamp_type_list[j] = map[i].pcap_tstamp_val;
+			if (info.so_timestamping & sof_ts_type_map[i].soft_timestamping_val) {
+				handle->tstamp_type_list[j] = sof_ts_type_map[i].pcap_tstamp_val;
 				j++;
 			}
 		}
@@ -5537,7 +5537,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
 	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
 	for (i = 0, j = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
-		handle->tstamp_type_list[i] = map[i].pcap_tstamp_val;
+		handle->tstamp_type_list[i] = sof_ts_type_map[i].pcap_tstamp_val;
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */
