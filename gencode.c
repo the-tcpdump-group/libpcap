@@ -54,6 +54,7 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 #endif /* WIN32 */
 
@@ -131,9 +132,9 @@ static pcap_t *bpf_pcap;
 
 /* Hack for updating VLAN, MPLS, and PPPoE offsets. */
 #ifdef WIN32
-static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1;
+static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1, vlan_stack_depth = (u_int)-1;
 #else
-static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
+static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U, vlan_stack_depth = -1U;
 #endif
 
 /* XXX */
@@ -963,6 +964,7 @@ init_linktype(p)
 	orig_linktype = -1;
 	orig_nl = -1;
         label_stack_depth = 0;
+        vlan_stack_depth = 0;
 
 	reg_off_ll = -1;
 	reg_off_macpl = -1;
@@ -8045,6 +8047,76 @@ gen_ahostop(eaddr, dir)
 	/* NOTREACHED */
 }
 
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+static int skf_ad_vlan_tag_present_supported(int bpf_extensions) {
+        return bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT;
+}
+
+static struct block *
+gen_vlan_bpf_extensions(int vlan_num) {
+        struct block *b0, *b1;
+        struct slist *s;
+        int val = 0, len, r;
+
+        len = sizeof(val);
+        r = getsockopt(bpf_pcap->fd, SOL_SOCKET, SO_BPF_EXTENSIONS, &val, &len);
+        if (r < 0)
+                return NULL;
+
+        if (!skf_ad_vlan_tag_present_supported(val))
+                return NULL;
+
+        /* generate new filter code based on extracting packet
+         * metadata */
+        s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+
+        b0 = new_block(JMP(BPF_JEQ));
+        b0->stmts = s;
+        b0->s.k = 1;
+
+        if (vlan_num >= 0) {
+                s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+                s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG;
+
+                b1 = new_block(JMP(BPF_JEQ));
+                b1->stmts = s;
+                b1->s.k = (bpf_int32) vlan_num;
+
+                gen_and(b0,b1);
+                b0 = b1;
+        }
+
+        return b0;
+}
+#endif
+
+static struct block *
+gen_vlan_no_bpf_extensions(int vlan_num) {
+        struct block *b0, *b1;
+
+        /* check for VLAN, including QinQ */
+        b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+                     (bpf_int32)ETHERTYPE_8021Q);
+        b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+                     (bpf_int32)ETHERTYPE_8021QINQ);
+        gen_or(b0,b1);
+        b0 = b1;
+
+        /* If a specific VLAN is requested, check VLAN id */
+        if (vlan_num >= 0) {
+                b1 = gen_mcmp(OR_MACPL, 0, BPF_H,
+                              (bpf_int32)vlan_num, 0x0fff);
+                gen_and(b0, b1);
+                b0 = b1;
+        }
+
+        off_macpl += 4;
+        off_linktype += 4;
+
+        return b0;
+}
+
 /*
  * support IEEE 802.1Q VLAN trunk over ethernet
  */
@@ -8096,35 +8168,23 @@ gen_vlan(vlan_num)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
-		/* check for VLAN, including QinQ */
-		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
-		    (bpf_int32)ETHERTYPE_8021Q);
-		b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
-		    (bpf_int32)ETHERTYPE_8021QINQ);
-		gen_or(b0,b1);
-		b0 = b1;
-
-		/* If a specific VLAN is requested, check VLAN id */
-		if (vlan_num >= 0) {
-			b1 = gen_mcmp(OR_MACPL, 0, BPF_H,
-			    (bpf_int32)vlan_num, 0x0fff);
-			gen_and(b0, b1);
-			b0 = b1;
-		}
-
-		off_macpl += 4;
-		off_linktype += 4;
-#if 0
-		off_nl_nosnap += 4;
-		off_nl += 4;
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+                if (!vlan_stack_depth) {
+                        b0 = gen_vlan_bpf_extensions(vlan_num);
+                        if (!b0)
+                                b0 = gen_vlan_no_bpf_extensions(vlan_num);
+                }
+                else
 #endif
-		break;
-
+                        b0 = gen_vlan_no_bpf_extensions(vlan_num);
+                break;
 	default:
 		bpf_error("no VLAN support for data link type %d",
 		      linktype);
 		/*NOTREACHED*/
 	}
+
+        vlan_stack_depth++;
 
 	return (b0);
 }
