@@ -1472,6 +1472,11 @@ struct bpf_insn {
 	bpf_u_int32 k;
 };
 
+/*
+ * Auxiliary data, for use when interpreting a filter intended for the
+ * Linux kernel when the kernel rejects the filter (requiring us to
+ * run it in userland).  It contains VLAN tag information.
+ */
 struct bpf_aux_data {
         uint16_t vlan_tag_present;
         uint16_t vlan_tag;
@@ -1486,7 +1491,7 @@ struct bpf_aux_data {
 #if __STDC__ || defined(__cplusplus)
 extern int bpf_validate(const struct bpf_insn *, int);
 extern u_int bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
-extern u_int bpf_filter1(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);        
+extern u_int bpf_filter_with_aux_data(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);        
 #else
 extern int bpf_validate();
 extern u_int bpf_filter();

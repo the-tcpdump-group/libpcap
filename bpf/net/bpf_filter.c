@@ -210,11 +210,14 @@ enum {
  * Execute the filter program starting at pc on the packet p
  * wirelen is the length of the original packet
  * buflen is the amount of data present
+ * aux_data is auxiliary data, currently used only when interpreting
+ * filters intended for the Linux kernel in cases where the kernel
+ * rejects the filter; it contains VLAN tag information
  * For the kernel, p is assumed to be a pointer to an mbuf if buflen is 0,
  * in all other cases, p is a pointer to a buffer and buflen is its size.
  */
 u_int
-bpf_filter1(pc, p, wirelen, buflen, aux_data)
+bpf_filter_with_aux_data(pc, p, wirelen, buflen, aux_data)
 	register const struct bpf_insn *pc;
 	register const u_char *p;
 	u_int wirelen;
@@ -594,7 +597,7 @@ bpf_filter(pc, p, wirelen, buflen)
 	u_int wirelen;
 	register u_int buflen;
 {
-	return bpf_filter1(pc, p, wirelen, buflen, NULL);
+	return bpf_filter_with_aux_data(pc, p, wirelen, buflen, NULL);
 }
 
 

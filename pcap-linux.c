@@ -1717,9 +1717,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	/* Run the packet filter if not using kernel filter */
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		if (bpf_filter1(handle->fcode.bf_insns, bp,
-		                packet_len, caplen, &aux_data) == 0)
-		{
+		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
+		    packet_len, caplen, &aux_data) == 0) {
 			/* rejected by filter */
 			return 0;
 		}
@@ -4232,14 +4231,15 @@ static int pcap_handle_packet_mmap(
 	 * happen a lot later... */
 	bp = frame + tp_mac;
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-                struct bpf_aux_data aux_data;
+		struct bpf_aux_data aux_data;
 
-                aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
-                aux_data.vlan_tag_present = tp_vlan_tci_valid;
+		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
+		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 
-                if (bpf_filter1(handle->fcode.bf_insns, bp, tp_len, tp_snaplen, &aux_data) == 0)
-                        return 0;
-        }
+		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
+		    tp_len, tp_snaplen, &aux_data) == 0)
+			return 0;
+	}
 
 	sll = (void *)frame + TPACKET_ALIGN(handlep->tp_hdrlen);
 	if (!linux_check_direction(handle, sll))
