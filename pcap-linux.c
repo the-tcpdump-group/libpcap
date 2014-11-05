@@ -3015,6 +3015,9 @@ activate_new(pcap_t *handle)
 #endif
 	int			err = 0;
 	struct packet_mreq	mr;
+#ifdef SO_BPF_EXTENSIONS
+	int			bpf_extensions, len;
+#endif
 
 	/*
 	 * Open a socket with protocol family packet. If the
@@ -3344,6 +3347,23 @@ activate_new(pcap_t *handle)
 	 * We've succeeded. Save the socket FD in the pcap structure.
 	 */
 	handle->fd = sock_fd;
+
+#ifdef SO_BPF_EXTENSIONS
+	/*
+	 * Can we generate special code for VLAN checks?
+	 * (XXX - what if we need the special code but it's not supported
+	 * by the OS?  Is that possible?)
+	 */
+	if (getsockopt(sock_fd, SOL_SOCKET, SO_BPF_EXTENSIONS,
+	    &bpf_extensions, &len == 0) {
+		if (bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT) {
+			/*
+			 * Yes, we can.  Request that we do so.
+			 */
+			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
+		}
+	}
+#endif /* SO_BPF_EXTENSIONS */
 
 	return 1;
 #else /* HAVE_PF_PACKET_SOCKETS */

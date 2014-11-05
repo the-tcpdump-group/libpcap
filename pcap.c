@@ -561,6 +561,12 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 	p->opt.immediate = 0;
 	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
 	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
+
+	/*
+	 * Start out with no BPF code generation flags set.
+	 */
+	p->bpf_codegen_flags = 0;
+
 	return (p);
 }
 
@@ -1831,6 +1837,12 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->setmintocopy_op = pcap_setmintocopy_dead;
 #endif
 	p->cleanup_op = pcap_cleanup_dead;
+
+	/*
+	 * A "dead" pcap_t never requires special BPF code generation.
+	 */
+	p->bpf_codegen_flags = 0;
+
 	p->activated = 1;
 	return (p);
 }

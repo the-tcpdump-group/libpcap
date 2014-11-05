@@ -344,6 +344,11 @@ found:
 	 */
 	p->oneshot_callback = pcap_oneshot;
 
+	/*
+	 * Savefiles never require special BPF code generation.
+	 */
+	p->bpf_codegen_flags = 0;
+
 	p->activated = 1;
 
 	return (p);
