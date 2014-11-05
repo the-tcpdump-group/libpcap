@@ -8124,7 +8124,7 @@ struct block *
 gen_vlan(vlan_num)
 	int vlan_num;
 {
-	struct	block	*b0, *b1;
+	struct	block	*b0;
 
 	/* can't check for VLAN-encapsulated packets inside MPLS */
 	if (label_stack_depth > 0)
@@ -8196,7 +8196,7 @@ struct block *
 gen_mpls(label_num)
 	int label_num;
 {
-	struct	block	*b0,*b1;
+	struct	block	*b0, *b1;
 
 	/*
 	 * Change the offsets to point to the type and data fields within
