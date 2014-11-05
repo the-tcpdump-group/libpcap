@@ -195,6 +195,17 @@ m_xhalf(m, k, err)
 }
 #endif
 
+#ifdef __linux__
+#include <linux/if_packet.h>
+#include <linux/filter.h>
+#endif
+
+enum {
+        BPF_S_ANC_NONE,
+        BPF_S_ANC_VLAN_TAG,
+        BPF_S_ANC_VLAN_TAG_PRESENT,
+};
+
 /*
  * Execute the filter program starting at pc on the packet p
  * wirelen is the length of the original packet
@@ -203,11 +214,12 @@ m_xhalf(m, k, err)
  * in all other cases, p is a pointer to a buffer and buflen is its size.
  */
 u_int
-bpf_filter(pc, p, wirelen, buflen)
+bpf_filter1(pc, p, wirelen, buflen, aux_data)
 	register const struct bpf_insn *pc;
 	register const u_char *p;
 	u_int wirelen;
 	register u_int buflen;
+	register const struct bpf_aux_data *aux_data;
 {
 	register u_int32 A, X;
 	register bpf_u_int32 k;
@@ -283,22 +295,50 @@ bpf_filter(pc, p, wirelen, buflen)
 			continue;
 
 		case BPF_LD|BPF_B|BPF_ABS:
-			k = pc->k;
-			if (k >= buflen) {
-#if defined(KERNEL) || defined(_KERNEL)
-				if (m == NULL)
-					return 0;
-				n = m;
-				MINDEX(len, n, k);
-				A = mtod(n, u_char *)[k];
-				continue;
-#else
-				return 0;
-#endif
-			}
-			A = p[k];
-			continue;
+			{
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+				int code = BPF_S_ANC_NONE;
+#define ANCILLARY(CODE) case SKF_AD_OFF + SKF_AD_##CODE:		\
+				code = BPF_S_ANC_##CODE;		\
+                                        if (!aux_data)                  \
+                                                return 0;               \
+                                        break;
 
+				switch (pc->k) {
+					ANCILLARY(VLAN_TAG);
+					ANCILLARY(VLAN_TAG_PRESENT);
+				default :
+#endif
+					k = pc->k;
+					if (k >= buflen) {
+#if defined(KERNEL) || defined(_KERNEL)
+						if (m == NULL)
+							return 0;
+						n = m;
+						MINDEX(len, n, k);
+						A = mtod(n, u_char *)[k];
+						continue;
+#else
+						return 0;
+#endif
+					}
+					A = p[k];
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+				}
+				switch (code) {
+				case BPF_S_ANC_VLAN_TAG:
+					if (aux_data)
+						A = aux_data->vlan_tag;
+					break;
+
+				case BPF_S_ANC_VLAN_TAG_PRESENT:
+					if (aux_data)
+						A = aux_data->vlan_tag_present;
+					break;
+				}
+#endif
+				continue;
+			}
 		case BPF_LD|BPF_W|BPF_LEN:
 			A = wirelen;
 			continue;
@@ -546,6 +586,17 @@ bpf_filter(pc, p, wirelen, buflen)
 		}
 	}
 }
+
+u_int
+bpf_filter(pc, p, wirelen, buflen)
+	register const struct bpf_insn *pc;
+	register const u_char *p;
+	u_int wirelen;
+	register u_int buflen;
+{
+	return bpf_filter1(pc, p, wirelen, buflen, NULL);
+}
+
 
 /*
  * Return true if the 'fcode' is a valid filter program.
