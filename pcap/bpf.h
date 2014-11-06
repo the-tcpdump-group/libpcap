@@ -1475,8 +1475,8 @@ struct bpf_insn {
  * run it in userland).  It contains VLAN tag information.
  */
 struct bpf_aux_data {
-        u_int16_t vlan_tag_present;
-        u_int16_t vlan_tag;
+	u_short vlan_tag_present;
+	u_short vlan_tag;
 };
 
 /*
