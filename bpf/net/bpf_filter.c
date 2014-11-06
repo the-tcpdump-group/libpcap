@@ -196,6 +196,7 @@ m_xhalf(m, k, err)
 #endif
 
 #ifdef __linux__
+#include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
 #endif
