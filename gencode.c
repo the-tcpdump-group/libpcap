@@ -8161,7 +8161,7 @@ gen_vlan(vlan_num)
 			/*
 			 * Do we need special VLAN handling?
 			 */
-                	if (p->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
+			if (bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
 				b0 = gen_vlan_bpf_extensions(vlan_num);
 			else
 				b0 = gen_vlan_no_bpf_extensions(vlan_num);
