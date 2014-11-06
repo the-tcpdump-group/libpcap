@@ -68,9 +68,6 @@
  *
  * This also provides our own multiple-include protection.
  */
-
-#include <stdint.h>
-
 #if !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
 #define lib_pcap_bpf_h
 
@@ -1478,8 +1475,8 @@ struct bpf_insn {
  * run it in userland).  It contains VLAN tag information.
  */
 struct bpf_aux_data {
-        uint16_t vlan_tag_present;
-        uint16_t vlan_tag;
+        u_int16_t vlan_tag_present;
+        u_int16_t vlan_tag;
 };
 
 /*
