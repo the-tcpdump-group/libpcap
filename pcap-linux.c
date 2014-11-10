@@ -3016,7 +3016,8 @@ activate_new(pcap_t *handle)
 	int			err = 0;
 	struct packet_mreq	mr;
 #ifdef SO_BPF_EXTENSIONS
-	int			bpf_extensions, len;
+	int			bpf_extensions;
+	socklen_t		len;
 #endif
 
 	/*
@@ -3355,7 +3356,7 @@ activate_new(pcap_t *handle)
 	 * by the OS?  Is that possible?)
 	 */
 	if (getsockopt(sock_fd, SOL_SOCKET, SO_BPF_EXTENSIONS,
-	    &bpf_extensions, &len == 0) {
+	    &bpf_extensions, &len) == 0) {
 		if (bpf_extensions >= SKF_AD_VLAN_TAG_PRESENT) {
 			/*
 			 * Yes, we can.  Request that we do so.
