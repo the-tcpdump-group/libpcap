@@ -280,7 +280,8 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 pcap_t *
 pcap_create(const char *source, char *errbuf)
 {
-	return (dag_create(source, errbuf));
+	int is_ours;
+	return (dag_create(source, errbuf, &is_ours));
 }
 #elif defined(SEPTEL_ONLY)
 int
@@ -292,7 +293,8 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 pcap_t *
 pcap_create(const char *source, char *errbuf)
 {
-	return (septel_create(source, errbuf));
+	int is_ours;
+	return (septel_create(source, errbuf, &is_ours));
 }
 #elif defined(SNF_ONLY)
 int
