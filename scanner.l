@@ -319,7 +319,7 @@ hdpc		return HDPC;
 hsls		return HSLS;
 
 [ \r\n\t]		;
-[+\-*/:\[\]!<>()&|=]	return yytext[0];
+[+\-*/%:\[\]!<>()&|\^=]	return yytext[0];
 ">="			return GEQ;
 "<="			return LEQ;
 "!="			return NEQ;

@@ -308,6 +308,13 @@ struct block *gen_broadcast(int);
 struct block *gen_multicast(int);
 struct block *gen_inbound(int);
 
+struct block *gen_llc(void);
+struct block *gen_llc_i(void);
+struct block *gen_llc_s(void);
+struct block *gen_llc_u(void);
+struct block *gen_llc_s_subtype(bpf_u_int32);
+struct block *gen_llc_u_subtype(bpf_u_int32);
+
 struct block *gen_vlan(int);
 struct block *gen_mpls(int);
 

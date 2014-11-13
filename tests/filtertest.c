@@ -51,6 +51,8 @@ static char *program_name;
 static void usage(void) __attribute__((noreturn));
 static void error(const char *, ...)
     __attribute__((noreturn, format (printf, 1, 2)));
+static void warn(const char *, ...)
+    __attribute__((format (printf, 1, 2)));
 
 extern int optind;
 extern int opterr;
@@ -120,6 +122,23 @@ error(const char *fmt, ...)
 	/* NOTREACHED */
 }
 
+/* VARARGS */
+static void
+warn(const char *fmt, ...)
+{
+	va_list ap;
+
+	(void)fprintf(stderr, "%s: WARNING: ", program_name);
+	va_start(ap, fmt);
+	(void)vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	if (*fmt) {
+		fmt += strlen(fmt);
+		if (fmt[-1] != '\n')
+			(void)fputc('\n', stderr);
+	}
+}
+
 /*
  * Copy arg vector into a new buffer, concatenating arguments with spaces.
  */
@@ -163,6 +182,7 @@ main(int argc, char **argv)
 	char *infile;
 	int Oflag;
 	long snaplen;
+	char *p;
 	int dlt;
 	bpf_u_int32 netmask = PCAP_NETMASK_UNKNOWN;
 	char *cmdbuf;
@@ -233,8 +253,11 @@ main(int argc, char **argv)
 	}
 
 	dlt = pcap_datalink_name_to_val(argv[optind]);
-	if (dlt < 0)
-		error("invalid data link type %s", argv[optind]);
+	if (dlt < 0) {
+		dlt = (int)strtol(argv[optind], &p, 10);
+		if (p == argv[optind] || *p != '\0')
+			error("invalid data link type %s", argv[optind]);
+	}
 	
 	if (infile)
 		cmdbuf = read_infile(infile);
@@ -247,6 +270,8 @@ main(int argc, char **argv)
 
 	if (pcap_compile(pd, &fcode, cmdbuf, Oflag, netmask) < 0)
 		error("%s", pcap_geterr(pd));
+	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
+		warn("Filter doesn't pass validation");
 	bpf_dump(&fcode, dflag);
 	pcap_close(pd);
 	exit(0);

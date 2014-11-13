@@ -959,7 +959,48 @@
  */
 #define LINKTYPE_PROFIBUS_DL		257
 
-#define LINKTYPE_MATCHING_MAX	257		/* highest value in the "matching" range */
+
+/*
+ * Apple's DLT_PKTAP headers.
+ *
+ * Sadly, the folks at Apple either had no clue that the DLT_USERn values
+ * are for internal use within an organization and partners only, and
+ * didn't know that the right way to get a link-layer header type is to
+ * ask tcpdump.org for one, or knew and didn't care, so they just
+ * used DLT_USER2, which causes problems for everything except for
+ * their version of tcpdump.
+ *
+ * So I'll just give them one; hopefully this will show up in a
+ * libpcap release in time for them to get this into 10.10 Big Sur
+ * or whatever Mavericks' successor is called.  LINKTYPE_PKTAP
+ * will be 258 *even on OS X*; that is *intentional*, so that
+ * PKTAP files look the same on *all* OSes (different OSes can have
+ * different numerical values for a given DLT_, but *MUST NOT* have
+ * different values for what goes in a file, as files can be moved
+ * between OSes!).
+ */
+#define LINKTYPE_PKTAP		258
+
+/*
+ * Ethernet packets preceded by a header giving the last 6 octets
+ * of the preamble specified by 802.3-2012 Clause 65, section
+ * 65.1.3.2 "Transmit".
+ */
+#define LINKTYPE_EPON		259
+
+/*
+ * IPMI trace packets, as specified by Table 3-20 "Trace Data Block Format"
+ * in the PICMG HPM.2 specification.
+ */
+#define LINKTYPE_IPMI_HPM_2	260
+
+/*
+ * per  Joshua Wright <jwright@hasborg.com>, formats for Zwave captures.
+ */
+#define LINKTYPE_ZWAVE_R1_R2	261
+#define LINKTYPE_ZWAVE_R3	262
+
+#define LINKTYPE_MATCHING_MAX	262		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
@@ -1032,13 +1073,20 @@ dlt_to_linktype(int dlt)
 	int i;
 
 	/*
-	 * Map DLT_PFSYNC, whatever it might be, to LINKTYPE_PFSYNC.
+	 * DLTs that, on some platforms, have values in the matching range
+	 * but that *don't* have the same value as the corresponding
+	 * LINKTYPE because, for some reason, not all OSes have the
+	 * same value for that DLT (note that the DLT's value might be
+	 * outside the matching range on some of those OSes).
 	 */
 	if (dlt == DLT_PFSYNC)
 		return (LINKTYPE_PFSYNC);
+	if (dlt == DLT_PKTAP)
+		return (LINKTYPE_PKTAP);
 
 	/*
-	 * Map the values in the matching range.
+	 * For all other values in the matching range, the DLT
+	 * value is the same as the LINKTYPE value.
 	 */
 	if (dlt >= DLT_MATCHING_MIN && dlt <= DLT_MATCHING_MAX)
 		return (dlt);
@@ -1052,9 +1100,9 @@ dlt_to_linktype(int dlt)
 	}
 
 	/*
-	 * If we don't have a mapping for this DLT_ code, return an
+	 * If we don't have a mapping for this DLT, return an
 	 * error; that means that this is a value with no corresponding
-	 * LINKTYPE_ code, and we need to assign one.
+	 * LINKTYPE, and we need to assign one.
 	 */
 	return (-1);
 }
@@ -1065,16 +1113,19 @@ linktype_to_dlt(int linktype)
 	int i;
 
 	/*
-	 * Map LINKTYPE_PFSYNC to DLT_PFSYNC, whatever it might be.
-	 * LINKTYPE_PFSYNC is in the matching range, to make sure
-	 * it's as safe from reuse as we can arrange, so we do
-	 * this test first.
+	 * LINKTYPEs in the matching range that *don't*
+	 * have the same value as the corresponding DLTs
+	 * because, for some reason, not all OSes have the
+	 * same value for that DLT.
 	 */
 	if (linktype == LINKTYPE_PFSYNC)
 		return (DLT_PFSYNC);
+	if (linktype == LINKTYPE_PKTAP)
+		return (DLT_PKTAP);
 
 	/*
-	 * Map the values in the matching range.
+	 * For all other values in the matching range, the LINKTYPE
+	 * value is the same as the DLT value.
 	 */
 	if (linktype >= LINKTYPE_MATCHING_MIN &&
 	    linktype <= LINKTYPE_MATCHING_MAX)
@@ -1089,9 +1140,9 @@ linktype_to_dlt(int linktype)
 	}
 
 	/*
-	 * If we don't have an entry for this link type, return
-	 * the link type value; it may be a DLT_ value from an
-	 * older version of libpcap.
+	 * If we don't have an entry for this LINKTYPE, return
+	 * the link type value; it may be a DLT from an older
+	 * version of libpcap.
 	 */
 	return linktype;
 }

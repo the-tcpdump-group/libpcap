@@ -131,9 +131,9 @@ static pcap_t *bpf_pcap;
 
 /* Hack for updating VLAN, MPLS, and PPPoE offsets. */
 #ifdef WIN32
-static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1;
+static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1, vlan_stack_depth = (u_int)-1;
 #else
-static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U;
+static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U, vlan_stack_depth = -1U;
 #endif
 
 /* XXX */
@@ -394,38 +394,30 @@ syntax()
 static bpf_u_int32 netmask;
 static int snaplen;
 int no_optimize;
-#ifdef WIN32
-static int
-pcap_compile_unsafe(pcap_t *p, struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask);
 
 int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
-{
-	int result;
-
-	EnterCriticalSection(&g_PcapCompileCriticalSection);
-
-	result = pcap_compile_unsafe(p, program, buf, optimize, mask);
-
-	LeaveCriticalSection(&g_PcapCompileCriticalSection);
-	
-	return result;
-}
-
-static int
-pcap_compile_unsafe(pcap_t *p, struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask)
-#else /* WIN32 */
-int
-pcap_compile(pcap_t *p, struct bpf_program *program,
-	     const char *buf, int optimize, bpf_u_int32 mask)
-#endif /* WIN32 */
 {
 	extern int n_errors;
 	const char * volatile xbuf = buf;
 	u_int len;
+	int  rc;
+
+	/*
+	 * XXX - single-thread this code path with pthread calls on
+	 * UN*X, if the platform supports pthreads?  If that requires
+	 * a separate -lpthread, we might not want to do that.
+	 */
+#ifdef WIN32
+	extern int wsockinit (void);
+	static int done = 0;
+
+	if (!done)
+		wsockinit();
+	done = 1;
+	EnterCriticalSection(&g_PcapCompileCriticalSection);
+#endif
 
 	/*
 	 * If this pcap_t hasn't been activated, it doesn't have a
@@ -434,13 +426,15 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (!p->activated) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
-		return (-1);
+		rc = -1;
+		goto quit;
 	}
 	no_optimize = 0;
 	n_errors = 0;
 	root = NULL;
 	bpf_pcap = p;
 	init_regs();
+
 	if (setjmp(top_ctx)) {
 #ifdef INET6
 		if (ai != NULL) {
@@ -450,7 +444,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 #endif
 		lex_cleanup();
 		freechunks();
-		return (-1);
+		rc = -1;
+		goto quit;
 	}
 
 	netmask = mask;
@@ -459,7 +454,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (snaplen == 0) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
-		return -1;
+		rc = -1;
+		goto quit;
 	}
 
 	lex_init(xbuf ? xbuf : "");
@@ -483,7 +479,16 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	lex_cleanup();
 	freechunks();
-	return (0);
+
+	rc = 0;  /* We're all okay */
+
+quit:
+
+#ifdef WIN32
+	LeaveCriticalSection(&g_PcapCompileCriticalSection);
+#endif
+
+	return (rc);
 }
 
 /*
@@ -588,7 +593,7 @@ finish_parse(p)
 	 * worth the effort.
 	 */
 	insert_compute_vloffsets(p->head);
-	
+
 	/*
 	 * For DLT_PPI captures, generate a check of the per-packet
 	 * DLT value to make sure it's DLT_IEEE802_11.
@@ -958,6 +963,7 @@ init_linktype(p)
 	orig_linktype = -1;
 	orig_nl = -1;
         label_stack_depth = 0;
+        vlan_stack_depth = 0;
 
 	reg_off_ll = -1;
 	reg_off_macpl = -1;
@@ -1124,7 +1130,7 @@ init_linktype(p)
 		return;
 
 	case DLT_PPI:
-		/* 
+		/*
 		 * At the moment we treat PPI the same way that we treat
 		 * normal Radiotap encoded packets. The difference is in
 		 * the function that generates the code at the beginning
@@ -2299,7 +2305,7 @@ gen_load_radiotap_llprefixlen()
 		return (NULL);
 }
 
-/* 
+/*
  * At the moment we treat PPI as normal Radiotap encoded
  * packets. The difference is in the function that generates
  * the code at the beginning to compute the header length.
@@ -2312,7 +2318,7 @@ static struct slist *
 gen_load_ppi_llprefixlen()
 {
 	struct slist *s1, *s2;
-	
+
 	/*
 	 * Generate code to load the length of the radiotap header
 	 * into the register assigned to hold that length, if one has
@@ -2402,7 +2408,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	 * slist of instructions
 	 */
 	no_optimize = 1;
-	
+
 	/*
 	 * If "s" is non-null, it has code to arrange that the X register
 	 * contains the length of the prefix preceding the link-layer
@@ -2453,7 +2459,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	sjset_data_frame_1 = new_stmt(JMP(BPF_JSET));
 	sjset_data_frame_1->s.k = 0x08;
 	sappend(s, sjset_data_frame_1);
-		
+
 	/*
 	 * If b3 is set, test b2, otherwise go to the first statement of
 	 * the rest of the program.
@@ -2472,7 +2478,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	sjset_data_frame_2->s.jf = sjset_qos = new_stmt(JMP(BPF_JSET));
 	sjset_qos->s.k = 0x80;	/* QoS bit */
 	sappend(s, sjset_qos);
-		
+
 	/*
 	 * If it's set, add 2 to reg_off_macpl, to skip the QoS
 	 * field.
@@ -2743,7 +2749,7 @@ gen_radiotap_llprefixlen(void)
 	return s;
 }
 
-/* 
+/*
  * At the moment we treat PPI as normal Radiotap encoded
  * packets. The difference is in the function that generates
  * the code at the beginning to compute the header length.
@@ -2897,6 +2903,7 @@ gen_linktype(proto)
 	register int proto;
 {
 	struct block *b0, *b1, *b2;
+	const char *description;
 
 	/* are we checking MPLS-encapsulated packets? */
 	if (label_stack_depth > 0) {
@@ -2904,12 +2911,12 @@ gen_linktype(proto)
 		case ETHERTYPE_IP:
 		case PPP_IP:
 			/* FIXME add other L3 proto IDs */
-			return gen_mpls_linktype(Q_IP); 
+			return gen_mpls_linktype(Q_IP);
 
 		case ETHERTYPE_IPV6:
 		case PPP_IPV6:
 			/* FIXME add other L3 proto IDs */
-			return gen_mpls_linktype(Q_IPV6); 
+			return gen_mpls_linktype(Q_IPV6);
 
 		default:
 			bpf_error("unsupported protocol over mpls");
@@ -2981,7 +2988,7 @@ gen_linktype(proto)
 
 	case DLT_FDDI:
 		/*
-		 * XXX - check for asynchronous frames, as per RFC 1103.
+		 * XXX - check for LLC frames.
 		 */
 		return gen_llc_linktype(proto);
 		/*NOTREACHED*/
@@ -3413,26 +3420,36 @@ gen_linktype(proto)
 		 * either missing or behind TLVs.
 		 */
 		bpf_error("NFLOG link-layer type filtering not implemented");
+
+	default:
+		/*
+		 * Does this link-layer header type have a field
+		 * indicating the type of the next protocol?  If
+		 * so, off_linktype will be the offset of that
+		 * field in the packet; if not, it will be -1.
+		 */
+		if (off_linktype != (u_int)-1) {
+			/*
+			 * Yes; assume it's an Ethernet type.  (If
+			 * it's not, it needs to be handled specially
+			 * above.)
+			 */
+			return gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
+		} else {
+			/*
+			 * No; report an error.
+			 */
+			description = pcap_datalink_val_to_description(linktype);
+			if (description != NULL) {
+				bpf_error("%s link-layer type filtering not implemented",
+				    description);
+			} else {
+				bpf_error("DLT %u link-layer type filtering not implemented",
+				    linktype);
+			}
+		}
+		break;
 	}
-
-	/*
-	 * All the types that have no encapsulation should either be
-	 * handled as DLT_SLIP, DLT_SLIP_BSDOS, and DLT_RAW are, if
-	 * all packets are IP packets, or should be handled in some
-	 * special case, if none of them are (if some are and some
-	 * aren't, the lack of encapsulation is a problem, as we'd
-	 * have to find some other way of determining the packet type).
-	 *
-	 * Therefore, if "off_linktype" is -1, there's an error.
-	 */
-	if (off_linktype == (u_int)-1)
-		abort();
-
-	/*
-	 * Any type not handled above should always have an Ethernet
-	 * type at an offset of "off_linktype".
-	 */
-	return gen_cmp(OR_LINK, off_linktype, BPF_H, (bpf_int32)proto);
 }
 
 /*
@@ -3458,6 +3475,178 @@ gen_snap(orgcode, ptype)
 	snapblock[6] = (ptype >> 8);	/* upper 8 bits of protocol type */
 	snapblock[7] = (ptype >> 0);	/* lower 8 bits of protocol type */
 	return gen_bcmp(OR_MACPL, 0, 8, snapblock);
+}
+
+/*
+ * Generate code to match frames with an LLC header.
+ */
+struct block *
+gen_llc(void)
+{
+	struct block *b0, *b1;
+
+	switch (linktype) {
+
+	case DLT_EN10MB:
+		/*
+		 * We check for an Ethernet type field less than
+		 * 1500, which means it's an 802.3 length field.
+		 */
+		b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
+		gen_not(b0);
+
+		/*
+		 * Now check for the purported DSAP and SSAP not being
+		 * 0xFF, to rule out NetWare-over-802.3.
+		 */
+		b1 = gen_cmp(OR_MACPL, 0, BPF_H, (bpf_int32)0xFFFF);
+		gen_not(b1);
+		gen_and(b0, b1);
+		return b1;
+
+	case DLT_SUNATM:
+		/*
+		 * We check for LLC traffic.
+		 */
+		b0 = gen_atmtype_abbrev(A_LLC);
+		return b0;
+
+	case DLT_IEEE802:	/* Token Ring */
+		/*
+		 * XXX - check for LLC frames.
+		 */
+		return gen_true();
+
+	case DLT_FDDI:
+		/*
+		 * XXX - check for LLC frames.
+		 */
+		return gen_true();
+
+	case DLT_ATM_RFC1483:
+		/*
+		 * For LLC encapsulation, these are defined to have an
+		 * 802.2 LLC header.
+		 *
+		 * For VC encapsulation, they don't, but there's no
+		 * way to check for that; the protocol used on the VC
+		 * is negotiated out of band.
+		 */
+		return gen_true();
+
+	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_PPI:
+		/*
+		 * Check that we have a data frame.
+		 */
+		b0 = gen_check_802_11_data_frame();
+		return b0;
+
+	default:
+		bpf_error("'llc' not supported for linktype %d", linktype);
+		/* NOTREACHED */
+	}
+}
+
+struct block *
+gen_llc_i(void)
+{
+	struct block *b0, *b1;
+	struct slist *s;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Load the control byte and test the low-order bit; it must
+	 * be clear for I frames.
+	 */
+	s = gen_load_a(OR_MACPL, 2, BPF_B);
+	b1 = new_block(JMP(BPF_JSET));
+	b1->s.k = 0x01;
+	b1->stmts = s;
+	gen_not(b1);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_s(void)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now compare the low-order 2 bit of the control byte against
+	 * the appropriate value for S frames.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, LLC_S_FMT, 0x03);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_u(void)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now compare the low-order 2 bit of the control byte against
+	 * the appropriate value for U frames.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, LLC_U_FMT, 0x03);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_s_subtype(bpf_u_int32 subtype)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now check for an S frame with the appropriate type.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, subtype, LLC_S_CMD_MASK);
+	gen_and(b0, b1);
+	return b1;
+}
+
+struct block *
+gen_llc_u_subtype(bpf_u_int32 subtype)
+{
+	struct block *b0, *b1;
+
+	/*
+	 * Check whether this is an LLC frame.
+	 */
+	b0 = gen_llc();
+
+	/*
+	 * Now check for a U frame with the appropriate type.
+	 */
+	b1 = gen_mcmp(OR_MACPL, 2, BPF_B, subtype, LLC_U_CMD_MASK);
+	gen_and(b0, b1);
+	return b1;
 }
 
 /*
@@ -4410,7 +4599,7 @@ gen_mpls_linktype(proto)
                 b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x40, 0xf0);
                 gen_and(b0, b1);
                 return b1;
- 
+
        case Q_IPV6:
                 /* match the bottom-of-stack bit */
                 b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
@@ -4418,7 +4607,7 @@ gen_mpls_linktype(proto)
                 b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x60, 0xf0);
                 gen_and(b0, b1);
                 return b1;
- 
+
        default:
                 abort();
         }
@@ -5225,7 +5414,7 @@ gen_portrangeatom(off, v1, v2)
 	b1 = gen_cmp_ge(OR_TRAN_IPV4, off, BPF_H, v1);
 	b2 = gen_cmp_le(OR_TRAN_IPV4, off, BPF_H, v2);
 
-	gen_and(b1, b2); 
+	gen_and(b1, b2);
 
 	return b2;
 }
@@ -5327,7 +5516,7 @@ gen_portrangeatom6(off, v1, v2)
 	b1 = gen_cmp_ge(OR_TRAN_IPV6, off, BPF_H, v1);
 	b2 = gen_cmp_le(OR_TRAN_IPV6, off, BPF_H, v2);
 
-	gen_and(b1, b2); 
+	gen_and(b1, b2);
 
 	return b2;
 }
@@ -5777,7 +5966,7 @@ gen_check_802_11_data_frame()
 	b0 = new_block(JMP(BPF_JSET));
 	b0->s.k = 0x08;
 	b0->stmts = s;
-	
+
 	s = gen_load_a(OR_LINK, 0, BPF_B);
 	b1 = new_block(JMP(BPF_JSET));
 	b1->s.k = 0x04;
@@ -6253,7 +6442,7 @@ gen_scode(name, q)
 		if (proto != Q_DEFAULT &&
 		    proto != Q_UDP && proto != Q_TCP && proto != Q_SCTP)
 			bpf_error("illegal qualifier of 'portrange'");
-		if (pcap_nametoportrange(name, &port1, &port2, &real_proto) == 0) 
+		if (pcap_nametoportrange(name, &port1, &port2, &real_proto) == 0)
 			bpf_error("unknown port in range '%s'", name);
 		if (proto == Q_UDP) {
 			if (real_proto == IPPROTO_TCP)
@@ -6280,7 +6469,7 @@ gen_scode(name, q)
 				bpf_error("port in range '%s' is tcp", name);
 			else
 				/* override PROTO_UNDEF */
-				real_proto = IPPROTO_SCTP;	
+				real_proto = IPPROTO_SCTP;
 		}
 		if (port1 < 0)
 			bpf_error("illegal port number %d < 0", port1);
@@ -7857,6 +8046,65 @@ gen_ahostop(eaddr, dir)
 	/* NOTREACHED */
 }
 
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+static struct block *
+gen_vlan_bpf_extensions(int vlan_num)
+{
+        struct block *b0, *b1;
+        struct slist *s;
+
+        /* generate new filter code based on extracting packet
+         * metadata */
+        s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+
+        b0 = new_block(JMP(BPF_JEQ));
+        b0->stmts = s;
+        b0->s.k = 1;
+
+        if (vlan_num >= 0) {
+                s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+                s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG;
+
+                b1 = new_block(JMP(BPF_JEQ));
+                b1->stmts = s;
+                b1->s.k = (bpf_int32) vlan_num;
+
+                gen_and(b0,b1);
+                b0 = b1;
+        }
+
+        return b0;
+}
+#endif
+
+static struct block *
+gen_vlan_no_bpf_extensions(int vlan_num)
+{
+        struct block *b0, *b1;
+
+        /* check for VLAN, including QinQ */
+        b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+                     (bpf_int32)ETHERTYPE_8021Q);
+        b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
+                     (bpf_int32)ETHERTYPE_8021QINQ);
+        gen_or(b0,b1);
+        b0 = b1;
+
+        /* If a specific VLAN is requested, check VLAN id */
+        if (vlan_num >= 0) {
+                b1 = gen_mcmp(OR_MACPL, 0, BPF_H,
+                              (bpf_int32)vlan_num, 0x0fff);
+                gen_and(b0, b1);
+                b0 = b1;
+        }
+
+        off_macpl += 4;
+        off_linktype += 4;
+
+        return b0;
+}
+
 /*
  * support IEEE 802.1Q VLAN trunk over ethernet
  */
@@ -7864,7 +8112,7 @@ struct block *
 gen_vlan(vlan_num)
 	int vlan_num;
 {
-	struct	block	*b0, *b1;
+	struct	block	*b0;
 
 	/* can't check for VLAN-encapsulated packets inside MPLS */
 	if (label_stack_depth > 0)
@@ -7908,35 +8156,26 @@ gen_vlan(vlan_num)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
-		/* check for VLAN, including QinQ */
-		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
-		    (bpf_int32)ETHERTYPE_8021Q);
-		b1 = gen_cmp(OR_LINK, off_linktype, BPF_H,
-		    (bpf_int32)ETHERTYPE_8021QINQ);
-		gen_or(b0,b1);
-		b0 = b1;
-
-		/* If a specific VLAN is requested, check VLAN id */
-		if (vlan_num >= 0) {
-			b1 = gen_mcmp(OR_MACPL, 0, BPF_H,
-			    (bpf_int32)vlan_num, 0x0fff);
-			gen_and(b0, b1);
-			b0 = b1;
-		}
-
-		off_macpl += 4;
-		off_linktype += 4;
-#if 0
-		off_nl_nosnap += 4;
-		off_nl += 4;
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+		if (vlan_stack_depth == 0) {
+			/*
+			 * Do we need special VLAN handling?
+			 */
+			if (bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
+				b0 = gen_vlan_bpf_extensions(vlan_num);
+			else
+				b0 = gen_vlan_no_bpf_extensions(vlan_num);
+		} else
 #endif
-		break;
-
+			b0 = gen_vlan_no_bpf_extensions(vlan_num);
+                break;
 	default:
 		bpf_error("no VLAN support for data link type %d",
 		      linktype);
 		/*NOTREACHED*/
 	}
+
+        vlan_stack_depth++;
 
 	return (b0);
 }
@@ -7948,7 +8187,7 @@ struct block *
 gen_mpls(label_num)
 	int label_num;
 {
-	struct	block	*b0,*b1;
+	struct	block	*b0, *b1;
 
 	/*
 	 * Change the offsets to point to the type and data fields within
@@ -7972,22 +8211,22 @@ gen_mpls(label_num)
              * etc.
              */
             switch (linktype) {
-                
+
             case DLT_C_HDLC: /* fall through */
             case DLT_EN10MB:
             case DLT_NETANALYZER:
             case DLT_NETANALYZER_TRANSPARENT:
                     b0 = gen_linktype(ETHERTYPE_MPLS);
                     break;
-                
+
             case DLT_PPP:
                     b0 = gen_linktype(PPP_MPLS_UCAST);
                     break;
-                
+
                     /* FIXME add other DLT_s ...
                      * for Frame-Relay/and ATM this may get messy due to SNAP headers
                      * leave it for now */
-                
+
             default:
                     bpf_error("no MPLS support for data link type %d",
                           linktype);
@@ -8258,7 +8497,7 @@ gen_atmtype_abbrev(type)
 	return b1;
 }
 
-/* 
+/*
  * Filtering for MTP2 messages based on li value
  * FISU, length is null
  * LSSU, length is 1 or 2
