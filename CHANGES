@@ -1,6 +1,11 @@
-Friday Sep. 5, 2014 guy@alum.mit.edu
+Wednesday Nov. 12, 2014 guy@alum.mit.edu/mcr@sandelman.ca
   Summary for 1.7.0 libpcap release
 	Fix handling of zones for BPF on Solaris
+	new DLT for ZWAVE
+	clarifications for read timeouts.
+	added bpf_filter1() with extensions
+	some fixes to compilation without stdint.h
+	EBUSY can now be returned by SNFv3 code.
 
 Monday Aug. 12, 2014 guy@alum.mit.edu
   Summary for 1.6.2 libpcap release
@@ -14,7 +19,7 @@ Monday Aug. 12, 2014 guy@alum.mit.edu
 Saturday  Jul. 19, 2014 mcr@sandelman.ca
   Summary for 1.6.1 libpcap release
 	some fixes for the any device
-	changes for how --enable-XXX works
+	changes for how --enable-XXX (--enable-sniffing, --enable-can) works
 
 Wednesday Jul. 2, 2014 mcr@sandelman.ca
   Summary for 1.6.0 libpcap release
