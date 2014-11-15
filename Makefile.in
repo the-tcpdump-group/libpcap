@@ -291,7 +291,6 @@ EXTRA_DIST = \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
 	org.tcpdump.chmod_bpf.plist \
-	packaging/pcap.spec.in \
 	pcap-bpf.c \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \
@@ -730,10 +729,6 @@ distclean: clean
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
-
-packaging/pcap.spec: packaging/pcap.spec.in VERSION
-	RPMVERSION=`cat VERSION | sed s/-.*//g`; \
-		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
 releasetar:
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
