@@ -409,7 +409,7 @@ const char *pcap_lib_version(void);
  * declared in <net/bpf.h>, so we *do* want to declare it here, so it's
  * declared when we build pcap-bpf.c.
  */
-#if !defined(__NetBSD__) && !defined(__QNX__)
+#ifndef __NetBSD__
 u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 #endif
 int	bpf_validate(const struct bpf_insn *f, int len);
