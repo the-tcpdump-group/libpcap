@@ -59,7 +59,8 @@
  * or Tru64 UNIX-style multiple-include protection (or, at least,
  * Tru64 UNIX 5.x-style; I don't have earlier versions available to check),
  * or AIX-style multiple-include protection (or, at least, AIX 5.x-style;
- * I don't have earlier versions available to check).
+ * I don't have earlier versions available to check), or QNX-style
+ * multiple-include protection (as per GitHub pull request #394).
  *
  * We do not check for BPF_MAJOR_VERSION, as that's defined by
  * <linux/filter.h>, which is directly or indirectly included in some
@@ -68,7 +69,7 @@
  *
  * This also provides our own multiple-include protection.
  */
-#if !defined(_NET_BPF_H_) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
+#if !defined(_NET_BPF_H_) && !defined(_NET_BPF_H_INCLUDED) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
 #define lib_pcap_bpf_h
 
 #ifdef __cplusplus
