@@ -1210,10 +1210,16 @@ found:
 	}
 
 	/*
-	 * Convert the time stamp to a struct timeval.
+	 * Convert the time stamp to seconds and fractions of a second,
+	 * with the fractions being in units of the file-supplied resolution.
 	 */
 	sec = t / ps->ifaces[interface_id].tsresol + ps->ifaces[interface_id].tsoffset;
 	frac = t % ps->ifaces[interface_id].tsresol;
+
+	/*
+	 * Convert the fractions from units of the file-supplied resolution
+	 * to units of the user-requested resolution.
+	 */
 	switch (ps->ifaces[interface_id].scale_type) {
 
 	case PASS_THROUGH:
@@ -1227,21 +1233,28 @@ found:
 	case SCALE_DOWN:
 		/*
 		 * The interface resolution is different from what the
-		 * user wants; scale up or down to that resolution.
+		 * user wants; convert the fractions to units of the
+		 * resolution the user requested by multiplying by the
+		 * quotient of the user-requested resolution and the
+		 * file-supplied resolution.  We do that by multiplying
+		 * by the user-requested resolution and dividing by the
+		 * file-supplied resolution, as the quotient might not
+		 * fit in an integer.
 		 *
 		 * XXX - if ps->ifaces[interface_id].tsresol is a power
 		 * of 10, we could just multiply by the quotient of
-		 * ps->ifaces[interface_id].tsresol and ps->user_tsresol
-		 * in the scale-up case, and divide by the quotient of
 		 * ps->user_tsresol and ps->ifaces[interface_id].tsresol
-		 * in the scale-down case, as we know those are integers,
-		 * which would involve fewer arithmetic operations.
+		 * in the scale-up case, and divide by the quotient of
+		 * ps->ifaces[interface_id].tsresol and ps->user_tsresol
+		 * in the scale-down case, as we know those will be integers.
+		 * That would involve fewer arithmetic operations, and
+		 * would run less risk of overflow.
 		 *
 		 * Is there something clever we could do if
 		 * ps->ifaces[interface_id].tsresol is a power of 2?
 		 */
-		frac *= ps->ifaces[interface_id].tsresol;
-		frac /= ps->user_tsresol;
+		frac *= ps->user_tsresol;
+		frac /= ps->ifaces[interface_id].tsresol;
 		break;
 	}
 	hdr->ts.tv_sec = sec;
