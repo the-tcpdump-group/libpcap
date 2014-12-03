@@ -44,6 +44,8 @@
 #include "pcap/bluetooth.h"
 #include "pcap-int.h"
 
+#include "pcap-bt-monitor-linux.h"
+
 #define BT_CONTROL_SIZE 32
 #define INTERFACE_NAME "bluetooth-monitor"
 
@@ -71,7 +73,6 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     struct pcap_pkthdr pkth;
     pcap_bluetooth_linux_monitor_header *bthdr;
     struct mgmt_hdr hdr;
-    int in = 0;
 
     bthdr = (pcap_bluetooth_linux_monitor_header*) &handle->buffer[handle->offset];
 
