@@ -12,7 +12,7 @@ env:
   global:
     # encrypted COVERITY_SCAN_TOKEN from
     # https://scan.coverity.com/projects/<project_id>/submit_build?tab=travis_ci
-    - secure: "E7nrxhoBrST9SOy6PM+IN89k1EznzXWgsKSvB+fK2oNdLxAD+jaFCbG4JGwYzFzSwmBgd7NEQGSJi4uYotsvBPSxPBwiA/tQPniPvUd/dahTQxB1eJlYb+/hMYuumCHHK09zmPbTNU/v7qLc+NgMUM5bTCUG62dErFkx03WeHPM="
+    - secure: "WnSilJ28kIEu9GID24PgRz6T0xC0VGNFGRPmoWRN3DEj/lPcMqb8HxNcdWpaDt4tQi2PVOIujV5ApHr0xJrw8A9Ix7nBTaZRedrLvsA2uugCTZZMH0OHWJDus7/m6zcdsp3D12ddJIHeqabVe790EfkeSQGDtSBeHlpilQ0BuYU="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
     - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
@@ -41,12 +41,12 @@ addons:
 
 before_install:
   - uname -a
-  - env | sort -f
-  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get update; fi
+  - date
+  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq update; fi
   - if [ "$TRAVIS_OS_NAME" = osx ]; then brew update; fi
 
 install:
-  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get install libusb-1.0-0-dev libdbus-1-dev libbluetooth-dev; fi
+  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq install libusb-1.0-0-dev libdbus-1-dev libbluetooth-dev; fi
 
 before_script:
 
