@@ -5495,6 +5495,17 @@ static const struct {
 };
 #define NUM_SOF_TIMESTAMPING_TYPES	(sizeof sof_ts_type_map / sizeof sof_ts_type_map[0])
 
+static void
+iface_set_default_ts_types(pcap_t *handle)
+{
+	int i;
+
+	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
+	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
+	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
+		handle->tstamp_type_list[i] = sof_ts_type_map[i].pcap_tstamp_val;
+}
+
 #ifdef ETHTOOL_GET_TS_INFO
 /*
  * Get a list of time stamping capabilities.
@@ -5507,6 +5518,12 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	struct ethtool_ts_info info;
 	int num_ts_types;
 	int i, j;
+
+	/* ioctl() will fail for the "any" pseudo-device with ENODEV. */
+	if (! strcmp(handle->opt.source, "any")) {
+			iface_set_default_ts_types(handle);
+			return 0;
+	}
 
 	/*
 	 * Create a socket from which to fetch time stamping capabilities.
@@ -5529,10 +5546,11 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 			 * OK, let's just return all the possible time
 			 * stamping types.
 			 */
-			return SOF_TIMESTAMPING_SOFTWARE|SOF_TIMESTAMPING_SYS_HARDWARE|SOF_TIMESTAMPING_RAW_HARDWARE;
+			iface_set_default_ts_types(handle);
+			return 0;
 		}
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
+		    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
 		    strerror(errno));
 		close(fd);
 		return -1;
@@ -5562,16 +5580,11 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 static int
 iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 {
-	int i;
-
 	/*
 	 * We don't have an ioctl to use to ask what's supported,
 	 * so say we support everything.
 	 */
-	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
-	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
-	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++)
-		handle->tstamp_type_list[i] = sof_ts_type_map[i].pcap_tstamp_val;
+	iface_set_default_ts_types(handle);
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */
@@ -5609,7 +5622,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 			return 0;
 		}
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOETHTOOL(%s) ioctl failed: %s", handle->opt.source,
+		    "%s: SIOCETHTOOL(%s) ioctl failed: %s", handle->opt.source,
 		    cmdname, strerror(errno));
 		return -1;
 	}
