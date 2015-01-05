@@ -103,6 +103,10 @@
 
 #define ETHERMTU	1500
 
+#ifndef ETHERTYPE_TEB
+#define ETHERTYPE_TEB 0x6558
+#endif
+
 #ifndef IPPROTO_HOPOPTS
 #define IPPROTO_HOPOPTS 0
 #endif
@@ -118,6 +122,8 @@
 #ifndef IPPROTO_SCTP
 #define IPPROTO_SCTP 132
 #endif
+
+#define GENEVE_PORT 6081
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -309,6 +315,7 @@ static struct slist *xfer_to_a(struct arth *);
 static struct block *gen_mac_multicast(int);
 static struct block *gen_len(int, int);
 static struct block *gen_check_802_11_data_frame(void);
+static struct block *gen_geneve_ll_check(void);
 
 static struct block *gen_ppi_dlt_check(void);
 static struct block *gen_msg_abbrev(int type);
@@ -826,6 +833,7 @@ static bpf_abs_offset off_outermostlinkhdr;
 	off_linkhdr.is_variable = new_is_variable; \
 	off_linkhdr.constant_part = new_constant_part; \
 	off_linkhdr.reg = new_reg; \
+	is_geneve = 0; \
 }
 
 /*
@@ -862,6 +870,13 @@ static bpf_abs_offset off_linktype;
  * TRUE if the link layer includes an ATM pseudo-header.
  */
 static int is_atm = 0;
+
+/*
+ * TRUE if "geneve" appeared in the filter; it causes us to generate
+ * code that checks for a Geneve header and assume that later filters
+ * apply to the encapsulated payload.
+ */
+static int is_geneve = 0;
 
 /*
  * These are offsets for the ATM pseudo-header.
@@ -964,6 +979,11 @@ init_linktype(p)
 	off_vci = -1;
 	off_proto = -1;
 	off_payload = -1;
+
+	/*
+	 * And not Geneve.
+	 */
+	is_geneve = 0;
 
 	/*
 	 * And assume we're not doing SS7.
@@ -2778,6 +2798,9 @@ gen_prevlinkhdr_check(void)
 {
 	struct block *b0;
 
+	if (is_geneve)
+		return gen_geneve_ll_check();
+
 	switch (prevlinktype) {
 
 	case DLT_SUNATM:
@@ -2839,7 +2862,13 @@ gen_linktype(proto)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
-		b0 = gen_prevlinkhdr_check();
+		/* Geneve has an EtherType regardless of whether there is an
+		 * L2 header. */
+		if (!is_geneve)
+			b0 = gen_prevlinkhdr_check();
+		else
+			b0 = NULL;
+
 		b1 = gen_ether_linktype(proto);
 		if (b0 != NULL)
 			gen_and(b0, b1);
@@ -8136,6 +8165,300 @@ gen_pppoes(sess_num)
 
 	off_nl = 0;
 	off_nl_nosnap = 0;	/* no 802.2 LLC */
+
+	return b0;
+}
+
+/* Check that this is Geneve and the VNI is correct if
+ * specified. Parameterized to handle both IPv4 and IPv6. */
+static struct block *
+gen_geneve_check(struct block *(*gen_portfn)(int, int, int),
+		 enum e_offrel offrel, int vni)
+{
+	struct block *b0, *b1;
+
+	b0 = gen_portfn(GENEVE_PORT, IPPROTO_UDP, Q_DST);
+
+	/* Check that we are operating on version 0. Otherwise, we
+	 * can't decode the rest of the fields. The version is 2 bits
+	 * in the first byte of the Geneve header. */
+	b1 = gen_mcmp(offrel, 8, BPF_B, (bpf_int32)0, 0xc0);
+	gen_and(b0, b1);
+	b0 = b1;
+
+	if (vni >= 0) {
+		vni <<= 8; /* VNI is in the upper 3 bytes */
+		b1 = gen_mcmp(offrel, 12, BPF_W, (bpf_int32)vni,
+			      0xffffff00);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
+
+	return b0;
+}
+
+/* The IPv4 and IPv6 Geneve checks need to do two things:
+ * - Verify that this actually is Geneve with the right VNI.
+ * - Place the IP header length (plus variable link prefix if
+ *   needed) into register A to be used later to compute
+ *   the inner packet offsets. */
+static struct block *
+gen_geneve4(int vni)
+{
+	struct block *b0, *b1;
+	struct slist *s, *s1;
+
+	b0 = gen_geneve_check(gen_port, OR_TRAN_IPV4, vni);
+
+	/* Load the IP header length into A. */
+	s = gen_loadx_iphdrlen();
+
+	s1 = new_stmt(BPF_MISC|BPF_TXA);
+	sappend(s, s1);
+
+	/* Forcibly append these statements to the true condition
+	 * of the protocol check by creating a new block that is
+	 * always true and ANDing them. */
+	b1 = new_block(BPF_JMP|BPF_JEQ|BPF_X);
+	b1->stmts = s;
+	b1->s.k = 0;
+
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+static struct block *
+gen_geneve6(int vni)
+{
+	struct block *b0, *b1;
+	struct slist *s, *s1;
+
+	b0 = gen_geneve_check(gen_port6, OR_TRAN_IPV6, vni);
+
+	/* Load the IP header length. We need to account for a
+	 * variable length link prefix if there is one. */
+	s = gen_abs_offset_varpart(&off_linkpl);
+	if (s) {
+		s1 = new_stmt(BPF_LD|BPF_IMM);
+		s1->s.k = 40;
+		sappend(s, s1);
+
+		s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_X);
+		s1->s.k = 0;
+		sappend(s, s1);
+	} else {
+		s = new_stmt(BPF_LD|BPF_IMM);
+		s->s.k = 40;;
+	}
+
+	/* Forcibly append these statements to the true condition
+	 * of the protocol check by creating a new block that is
+	 * always true and ANDing them. */
+	s1 = new_stmt(BPF_MISC|BPF_TAX);
+	sappend(s, s1);
+
+	b1 = new_block(BPF_JMP|BPF_JEQ|BPF_X);
+	b1->stmts = s;
+	b1->s.k = 0;
+
+	gen_and(b0, b1);
+
+	return b1;
+}
+
+/* We need to store three values based on the Geneve header::
+ * - The offset of the linktype.
+ * - The offset of the end of the Geneve header.
+ * - The offset of the end of the encapsulated MAC header. */
+static struct slist *
+gen_geneve_offsets(void)
+{
+	struct slist *s, *s1, *s_proto;
+
+	/* First we need to calculate the offset of the Geneve header
+	 * itself. This is composed of the IP header previously calculated
+	 * (include any variable link prefix) and stored in A plus the
+	 * fixed sized headers (fixed link prefix, MAC length, and UDP
+	 * header). */
+	s = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s->s.k = off_linkpl.constant_part + off_nl + 8;
+
+	/* Stash this in X since we'll need it later. */ 
+	s1 = new_stmt(BPF_MISC|BPF_TAX);
+	sappend(s, s1);
+
+	/* The EtherType in Geneve is 2 bytes in. Calculate this and
+	 * store it. */
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 2;
+	sappend(s, s1);
+
+	off_linktype.reg = alloc_reg();
+	off_linktype.is_variable = 1;
+	off_linktype.constant_part = 0;
+
+	s1 = new_stmt(BPF_ST);
+	s1->s.k = off_linktype.reg;
+	sappend(s, s1);
+
+	/* Load the Geneve option length and mask and shift to get the
+	 * number of bytes. It is stored in the first byte of the Geneve
+	 * header. */
+	s1 = new_stmt(BPF_LD|BPF_IND|BPF_B);
+	s1->s.k = 0;
+	sappend(s, s1);
+
+	s1 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+	s1->s.k = 0x3f;
+	sappend(s, s1);
+
+	s1 = new_stmt(BPF_ALU|BPF_MUL|BPF_K);
+	s1->s.k = 4;
+	sappend(s, s1);
+
+	/* Add in the rest of the Geneve base header. */
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 8;
+	sappend(s, s1);
+
+	/* Add the Geneve header length to its offset and store. */
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_X);
+	s1->s.k = 0;
+	sappend(s, s1);
+
+	/* Set the encapsulated type as Ethernet. Even though we may
+	 * not actually have Ethernet inside there are two reasons this
+	 * is useful:
+	 * - The linktype field is always in EtherType format regardless
+	 *   of whether it is in Geneve or an inner Ethernet frame.
+	 * - The only link layer that we have specific support for is
+	 *   Ethernet. We will confirm that the packet actually is
+	 *   Ethernet at runtime before executing these checks. */
+	PUSH_LINKHDR(DLT_EN10MB, 1, 0, alloc_reg());
+
+	s1 = new_stmt(BPF_ST);
+	s1->s.k = off_linkhdr.reg;
+	sappend(s, s1);
+
+	/* Calculate whether we have an Ethernet header or just raw IP/
+	 * MPLS/etc. If we have Ethernet, advance the end of the MAC offset
+	 * and linktype by 14 bytes so that the network header can be found
+	 * seamlessly. Otherwise, keep what we've calculated already. */
+
+	/* We have a bare jmp so we can't use the optimizer. */
+	no_optimize = 1;
+
+	/* Load the EtherType in the Geneve header, 2 bytes in. */
+	s1 = new_stmt(BPF_LD|BPF_IND|BPF_H);
+	s1->s.k = 2;
+	sappend(s, s1);
+
+	/* Load X with the end of the Geneve header. */
+	s1 = new_stmt(BPF_LDX|BPF_MEM);
+	s1->s.k = off_linkhdr.reg;
+	sappend(s, s1);
+
+	/* Check if the EtherType is Transparent Ethernet Bridging. At the
+	 * end of this check, we should have the total length in X. In
+	 * the non-Ethernet case, it's already there. */
+	s_proto = new_stmt(JMP(BPF_JEQ));
+	s_proto->s.k = ETHERTYPE_TEB;
+	sappend(s, s_proto);
+
+	s1 = new_stmt(BPF_MISC|BPF_TXA);
+	sappend(s, s1);
+	s_proto->s.jt = s1;
+
+	/* Since this is Ethernet, use the EtherType of the payload
+	 * directly as the linktype. Overwrite what we already have. */
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 12;
+	sappend(s, s1);
+
+	s1 = new_stmt(BPF_ST);
+	s1->s.k = off_linktype.reg;
+	sappend(s, s1);
+
+	/* Advance two bytes further to get the end of the Ethernet
+	 * header. */
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 2;
+	sappend(s, s1);
+
+	/* Move the result to X. */
+	s1 = new_stmt(BPF_MISC|BPF_TAX);
+	sappend(s, s1);
+
+	/* Store the final result of our linkpl calculation. */
+	off_linkpl.reg = alloc_reg();
+	off_linkpl.is_variable = 1;
+	off_linkpl.constant_part = 0;
+
+	s1 = new_stmt(BPF_STX);
+	s1->s.k = off_linkpl.reg;
+	sappend(s, s1);
+	s_proto->s.jf = s1;
+
+	off_nl = 0;
+
+	return s;
+}
+
+/* Check to see if this is a Geneve packet. */
+struct block *
+gen_geneve(int vni)
+{
+	struct block *b0, *b1;
+	struct slist *s;
+
+	b0 = gen_geneve4(vni);
+	b1 = gen_geneve6(vni);
+
+	gen_or(b0, b1);
+	b0 = b1;
+
+	/* Later filters should act on the payload of the Geneve frame,
+	 * update all of the header pointers. Attach this code so that
+	 * it gets executed in the event that the Geneve filter matches. */
+	s = gen_geneve_offsets();
+
+	b1 = gen_true();
+	sappend(s, b1->stmts);
+	b1->stmts = s;
+
+	gen_and(b0, b1);
+
+	is_geneve = 1;
+
+	return b1;
+}
+
+/* Check that the encapsulated frame has a link layer header
+ * for Ethernet filters. */
+static struct block *
+gen_geneve_ll_check()
+{
+	struct block *b0;
+	struct slist *s, *s1;
+
+	/* The easiest way to see if there is a link layer present
+	 * is to check if the link layer header and payload are not
+	 * the same. */
+
+	/* Geneve always generates pure variable offsets so we can
+	 * compare only the registers. */
+	s = new_stmt(BPF_LD|BPF_MEM);
+	s->s.k = off_linkhdr.reg;
+
+	s1 = new_stmt(BPF_LDX|BPF_MEM);
+	s1->s.k = off_linkpl.reg;
+	sappend(s, s1);
+
+	b0 = new_block(BPF_JMP|BPF_JEQ|BPF_X);
+	b0->stmts = s;
+	b0->s.k = 0;
+	gen_not(b0);
 
 	return b0;
 }
