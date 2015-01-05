@@ -321,6 +321,8 @@ struct block *gen_mpls(int);
 struct block *gen_pppoed(void);
 struct block *gen_pppoes(int);
 
+struct block *gen_geneve(int);
+
 struct block *gen_atmfield_code(int atmfield, bpf_int32 jvalue, bpf_u_int32 jtype, int reverse);
 struct block *gen_atmtype_abbrev(int type);
 struct block *gen_atmmulti_abbrev(int type);
