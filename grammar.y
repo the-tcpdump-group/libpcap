@@ -285,7 +285,7 @@ pfaction_to_num(const char *action)
 
 
 %token  DST SRC HOST GATEWAY
-%token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE
+%token  NET NETMASK PORT PORTRANGE LESS GREATER PROTO PROTOCHAIN CBYTE MPTCP
 %token  ARP RARP IP SCTP TCP UDP ICMP IGMP IGRP PIM VRRP CARP
 %token  ATALK AARP DECNET LAT SCA MOPRC MOPDL
 %token  TK_BROADCAST TK_MULTICAST
@@ -508,6 +508,7 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| IPX			{ $$ = Q_IPX; }
 	| NETBEUI		{ $$ = Q_NETBEUI; }
 	| RADIO			{ $$ = Q_RADIO; }
+	| MPTCP			{ $$ = Q_MPTCP; }
 	;
 other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast($1); }
 	| pqual TK_MULTICAST	{ $$ = gen_multicast($1); }

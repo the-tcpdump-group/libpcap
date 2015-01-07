@@ -277,6 +277,8 @@ struct block *gen_portop6(int, int, int);
 static struct block *gen_port6(int, int, int);
 struct block *gen_portrangeop6(int, int, int, int);
 static struct block *gen_portrange6(int, int, int, int);
+static struct block *gen_tcpopt(int, int);
+static struct block *gen_mptcp(void);
 static int lookup_proto(const char *, int);
 static struct block *gen_protochain(int, int, int);
 static struct block *gen_proto(int, int, int);
@@ -4947,6 +4949,224 @@ gen_gateway(eaddr, alist, proto, dir)
 }
 #endif
 
+/* This is the max number of options that we can find. Worst case is only NOP
+ * options (20). This is however a very unlikely situation. most segments
+ * contains < 6-8 options. Iterating over maximum 10 options therefore should
+ * cover all cases while reducing the number of BPF instructions generated.
+ */
+#define TCP_MAX_OPTS 10
+
+static struct block *
+gen_tcpopt(opt_kind, proto)
+	int opt_kind;
+	int proto;
+{
+	struct slist *s0, *s1;
+	struct block *b0, *bs[TCP_MAX_OPTS];
+	int reg0 = alloc_reg(); /* current ptr in the option space */
+	int reg1 = alloc_reg(); /* ptr to end of option space */
+	int reg2 = alloc_reg(); /* current TCP option kind */
+	int i;
+
+	/* The optimizer seems to do weird choices when dealing with this
+	 * complex BPF code. The quick and dirty solution is to disable the
+	 * optimizer.
+	 */
+	no_optimize = 1;
+
+	/* Retrieve the data offset to identify the end of option space */
+	switch (proto) {
+	case Q_IP:
+		b0 = gen_proto(IPPROTO_TCP, Q_IP, Q_DEFAULT);
+		s0 = gen_load_a(OR_TRAN_IPV4, 12, BPF_B);
+		/* X contains the IP HDR len */
+		break;
+	case Q_IPV6:
+		b0 = gen_proto(IPPROTO_TCP, Q_IPV6, Q_DEFAULT);
+		s0 = gen_load_a(OR_TRAN_IPV6, 12, BPF_B);
+
+		/* Need to load the IPv6 HDR len in X */
+		s1 = new_stmt(BPF_LDX|BPF_W);
+		s1->s.k = 40; /* Same hypothesis than in gen_load_a() */
+		sappend(s0, s1);
+
+		break;
+	default:
+		/* Should never happen */
+		return NULL;
+	}
+
+	/* >> 4 */
+	s1 = new_stmt(BPF_ALU|BPF_RSH|BPF_K);
+	s1->s.k = 4;
+	sappend(s0, s1);
+
+	/* data & 0xf */
+	s1 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+	s1->s.k = 0xf;
+	sappend(s0, s1);
+
+	/* << 2 */
+	s1 = new_stmt(BPF_ALU|BPF_LSH|BPF_K);
+	s1->s.k = 2;
+	sappend(s0, s1);
+
+	/* ptr to end of option space = data_off + ip hdr + mac hdr */
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_X);
+	sappend(s0, s1);
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = off_macpl + off_nl;
+	sappend(s0, s1);
+
+	/* Store end ptr in reg1 */
+	s1 = new_stmt(BPF_ST);
+	s1->s.k = reg1;
+	sappend(s0, s1);
+
+	/* ptr to start of option space = 20 (tcp hdr len) + ip hdr + mac hdr */
+	s1 = new_stmt(BPF_MISC|BPF_TXA);
+	sappend(s0, s1);
+
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = off_macpl + off_nl;
+	sappend(s0, s1);
+
+	s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+	s1->s.k = 20;
+	sappend(s0, s1);
+
+	/* Store ptr to start of option space in reg0 */
+	s1 = new_stmt(BPF_ST);
+	s1->s.k = reg0;
+	sappend(s0, s1);
+
+	for (i = 0; i < TCP_MAX_OPTS; ++i) {
+		struct block *bcheck, *bnop, *breg;
+
+		/* We have 2 cases: either we are out of the option space or
+		 * we have to check for the option kind.
+		 * Unfortunately we have to do something specific for the NOP
+		 * and EOL options as they only use 1 byte.
+		 */
+
+		/* Validate that there we are still in the option space */
+		s1 = new_stmt(BPF_LD|BPF_MEM);
+		s1->s.k = reg1;
+		/* In the first iteration, we include the initial statements */
+		if (i > 0)
+			s0 = s1;
+		else
+			sappend(s0, s1);
+
+		s1 = new_stmt(BPF_LDX|BPF_MEM);
+		s1->s.k = reg0;
+		sappend(s0, s1);
+
+		s1 = new_stmt(BPF_ALU|BPF_SUB|BPF_X);
+		sappend(s0, s1);
+
+		bcheck = new_block(JMP(BPF_JGT));
+		bcheck->stmts = s0;
+		bcheck->s.k = 0;
+
+		/* Load the option kind */
+		s0 = new_stmt(BPF_LD|BPF_IND|BPF_B);
+		s0->s.k = 0;
+
+		s1 = new_stmt(BPF_ST);
+		s1->s.k = reg2;
+		sappend(s0, s1);
+
+		/* We already increment the current pointer:
+		 * X = reg0 + 1 to account for the NOP and
+		 * EOL option size. This simplifies stuff
+		 * later.
+		 */
+		s1 = new_stmt(BPF_MISC|BPF_TXA);
+		sappend(s0, s1);
+
+		s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+		s1->s.k = 1;
+		sappend(s0, s1);
+
+		s1 = new_stmt(BPF_MISC|BPF_TAX);
+		sappend(s0, s1);
+
+		/* Load the option kind again */
+		s1 = new_stmt(BPF_LD|BPF_MEM);
+		s1->s.k = reg2;
+		sappend(s0, s1);
+
+		/* is this a NOP/EOL option  ? */
+		bnop = new_block(JMP(BPF_JGT));
+		bnop->s.k = 1;
+		bnop->stmts = s0;
+		/* NOP == 1 and EOL == 0, checking for <= 1 (or ! > 1)
+		 * is enough.
+		 */
+		gen_not(bnop);
+
+		/* This is a regular option, load the option len  */
+		s0 = new_stmt(BPF_LD|BPF_IND|BPF_B);
+		s0->s.k = 0;
+
+		s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_X);
+		sappend(s0, s1);
+
+		/* Account for the +1 due to NOP/EOL option */
+		s1 = new_stmt(BPF_ALU|BPF_SUB|BPF_K);
+		s1->s.k = 1;
+		sappend(s0, s1);
+
+		breg = new_block(BPF_MISC|BPF_TAX);
+		breg->stmts = s0;
+
+		gen_or(bnop, breg);
+		gen_and(bcheck, breg);
+
+		/* Store the new ptr: reg0 = reg0 + opt_len */
+		s0 = new_stmt(BPF_STX);
+		s0->s.k = reg0;
+
+		/* Load the option type and validate that it is
+		 * the required option.
+		 */
+		s1 = new_stmt(BPF_LD|BPF_MEM);
+		s1->s.k = reg2;
+		sappend(s0, s1);
+
+		bs[i] = new_block(JMP(BPF_JEQ));
+		bs[i]->stmts = s0;
+		bs[i]->s.k = opt_kind;
+
+		/* Combine the statements */
+		gen_and(breg, bs[i]);
+		if (i > 0)
+			gen_or(bs[i-1], bs[i]);
+	}
+
+	gen_and(b0, bs[TCP_MAX_OPTS-1]);
+
+	return bs[TCP_MAX_OPTS-1];
+}
+
+#ifndef TCPOPT_MPTCP
+#define TCPOPT_MPTCP 30
+#endif
+
+static struct block *
+gen_mptcp(void)
+{
+	struct block *b0;
+	struct block *b1;
+
+	b0 = gen_tcpopt(TCPOPT_MPTCP, Q_IP);
+	b1 = gen_tcpopt(TCPOPT_MPTCP, Q_IPV6);
+	gen_or(b0, b1);
+
+	return b1;
+}
+
 struct block *
 gen_proto_abbrev(proto)
 	int proto;
@@ -4960,6 +5180,10 @@ gen_proto_abbrev(proto)
 		b1 = gen_proto(IPPROTO_SCTP, Q_IP, Q_DEFAULT);
 		b0 = gen_proto(IPPROTO_SCTP, Q_IPV6, Q_DEFAULT);
 		gen_or(b0, b1);
+		break;
+
+	case Q_MPTCP:
+		b1 = gen_mptcp();
 		break;
 
 	case Q_TCP:
@@ -6580,6 +6804,7 @@ gen_ncode(s, v, q)
 {
 	bpf_u_int32 mask;
 	int proto = q.proto;
+	int orig_proto = proto;
 	int dir = q.dir;
 	register int vlen;
 
@@ -6618,7 +6843,7 @@ gen_ncode(s, v, q)
 	case Q_PORT:
 		if (proto == Q_UDP)
 			proto = IPPROTO_UDP;
-		else if (proto == Q_TCP)
+		else if (proto == Q_TCP || proto == Q_MPTCP)
 			proto = IPPROTO_TCP;
 		else if (proto == Q_SCTP)
 			proto = IPPROTO_SCTP;
@@ -6634,13 +6859,17 @@ gen_ncode(s, v, q)
 		struct block *b;
 		b = gen_port((int)v, proto, dir);
 		gen_or(gen_port6((int)v, proto, dir), b);
+
+		if (orig_proto == Q_MPTCP)
+			gen_and(gen_mptcp(), b);
+
 		return b;
 	    }
 
 	case Q_PORTRANGE:
 		if (proto == Q_UDP)
 			proto = IPPROTO_UDP;
-		else if (proto == Q_TCP)
+		else if (proto == Q_TCP || proto == Q_MPTCP)
 			proto = IPPROTO_TCP;
 		else if (proto == Q_SCTP)
 			proto = IPPROTO_SCTP;
@@ -6656,6 +6885,10 @@ gen_ncode(s, v, q)
 		struct block *b;
 		b = gen_portrange((int)v, (int)v, proto, dir);
 		gen_or(gen_portrange6((int)v, (int)v, proto, dir), b);
+
+		if (orig_proto == Q_MPTCP)
+			gen_and(gen_mptcp(), b);
+
 		return b;
 	    }
 

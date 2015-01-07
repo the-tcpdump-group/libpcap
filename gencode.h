@@ -126,6 +126,8 @@
 
 #define Q_CARP		41
 
+#define Q_MPTCP		42
+
 /* Directional qualifiers. */
 
 #define Q_SRC		1

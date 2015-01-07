@@ -200,6 +200,7 @@ pim		return PIM;
 vrrp		return VRRP;
 carp		return CARP;
 radio		return RADIO;
+mptcp		return MPTCP;
 
 ip6		return IPV6;
 icmp6		return ICMPV6;
