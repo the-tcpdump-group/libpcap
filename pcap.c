@@ -659,7 +659,7 @@ pcap_set_immediate_mode(pcap_t *p, int immediate)
 }
 
 int
-pcap_set_buffer_size(pcap_t *p, int buffer_size)
+pcap_set_buffer_size(pcap_t *p, size_t buffer_size)
 {
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
@@ -1656,7 +1656,7 @@ pcap_setmode_dead(pcap_t *p, int mode)
 }
 
 int
-pcap_setmintocopy(pcap_t *p, int size)
+pcap_setmintocopy(pcap_t *p, size_t size)
 {
 	return (p->setmintocopy_op(p, size));
 }
@@ -1668,7 +1668,7 @@ pcap_get_adapter(pcap_t *p)
 }
 
 static int
-pcap_setmintocopy_dead(pcap_t *p, int size)
+pcap_setmintocopy_dead(pcap_t *p, size_t size)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
@@ -1849,7 +1849,7 @@ pcap_open_dead(int linktype, int snaplen)
  * XXX - what if we get a short write?
  */
 int
-pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
+pcap_sendpacket(pcap_t *p, const u_char *buf, size_t size)
 {
 	if (p->inject_op(p, buf, size) == -1)
 		return (-1);

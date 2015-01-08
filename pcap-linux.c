@@ -298,7 +298,7 @@ struct pcap_linux {
 	size_t	mmapbuflen;	/* size of region */
 	int	vlan_offset;	/* offset at which to insert vlan tags; if -1, don't insert */
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
-	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
+	size_t	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
 	u_char	*oneshot_buffer; /* buffer for copy of packet */
 #ifdef HAVE_TPACKET3
 	unsigned char *current_packet; /* Current packet within the TPACKET_V3 block. Move to next block if NULL. */
@@ -4220,7 +4220,7 @@ static int pcap_handle_packet_mmap(
 	if (tp_mac + tp_snaplen > handle->bufsize) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"corrupted frame on kernel ring mac "
-			"offset %d + caplen %d > frame len %d",
+			"offset %d + caplen %d > frame len %zd",
 			tp_mac, tp_snaplen, handle->bufsize);
 		return -1;
 	}
