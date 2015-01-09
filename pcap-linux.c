@@ -4190,7 +4190,7 @@ static int pcap_handle_packet_mmap(
 	if (tp_mac + tp_snaplen > handle->bufsize) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"corrupted frame on kernel ring mac "
-			"offset %d + caplen %d > frame len %d",
+			"offset %u + caplen %u > frame len %d",
 			tp_mac, tp_snaplen, handle->bufsize);
 		return -1;
 	}
