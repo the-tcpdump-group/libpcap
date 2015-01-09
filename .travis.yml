@@ -46,7 +46,6 @@ before_install:
   - uname -a
   - date
   - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq update; fi
-  - if [ "$TRAVIS_OS_NAME" = osx ]; then brew update; fi
 
 install:
   - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq install libusb-1.0-0-dev libdbus-1-dev libbluetooth-dev; fi
