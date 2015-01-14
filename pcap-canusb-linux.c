@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <string.h>
 #include <pthread.h>
 
@@ -277,7 +278,8 @@ static void* canusb_capture_thread(void *arg)
         for(i = 0; i<status.rxsz; i++)
         {
             libusb_bulk_transfer(canusb->dev, 0x85, (unsigned char*)&msg, sizeof(msg), &sz, 100);      
-            write(canusb->wrpipe, &msg, sizeof(msg));
+            if(write(canusb->wrpipe, &msg, sizeof(msg)) < 0)
+                fprintf(stderr,"write() error: %s\n", strerror(errno));
         }
 
     }
