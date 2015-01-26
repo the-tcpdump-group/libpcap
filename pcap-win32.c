@@ -149,7 +149,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 
 /* Set the dimension of the kernel-level capture buffer */
 static int
-pcap_setbuff_win32(pcap_t *p, int dim)
+pcap_setbuff_win32(pcap_t *p, size_t dim)
 {
 	if(PacketSetBuff(p->adapter,dim)==FALSE)
 	{

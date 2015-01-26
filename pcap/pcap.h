@@ -282,7 +282,7 @@ int	pcap_set_rfmon(pcap_t *, int);
 int	pcap_set_timeout(pcap_t *, int);
 int	pcap_set_tstamp_type(pcap_t *, int);
 int	pcap_set_immediate_mode(pcap_t *, int);
-int	pcap_set_buffer_size(pcap_t *, int);
+int	pcap_set_buffer_size(pcap_t *, size_t);
 int	pcap_set_tstamp_precision(pcap_t *, int);
 int	pcap_get_tstamp_precision(pcap_t *);
 int	pcap_activate(pcap_t *);
@@ -381,7 +381,7 @@ int 	pcap_setdirection(pcap_t *, pcap_direction_t);
 int	pcap_getnonblock(pcap_t *, char *);
 int	pcap_setnonblock(pcap_t *, int, char *);
 int	pcap_inject(pcap_t *, const void *, size_t);
-int	pcap_sendpacket(pcap_t *, const u_char *, int);
+int	pcap_sendpacket(pcap_t *, const u_char *, size_t);
 const char *pcap_statustostr(int);
 const char *pcap_strerror(int);
 char	*pcap_geterr(pcap_t *);
@@ -443,9 +443,9 @@ void	bpf_dump(const struct bpf_program *, int);
  * Win32 definitions
  */
 
-int pcap_setbuff(pcap_t *p, int dim);
+int pcap_setbuff(pcap_t *p, size_t dim);
 int pcap_setmode(pcap_t *p, int mode);
-int pcap_setmintocopy(pcap_t *p, int size);
+int pcap_setmintocopy(pcap_t *p, size_t size);
 Adapter *pcap_get_adapter(pcap_t *p);
 
 #ifdef WPCAP

@@ -27,7 +27,7 @@ capture handle
 #include <pcap/pcap.h>
 .LP
 .ft B
-int pcap_set_buffer_size(pcap_t *p, int buffer_size);
+int pcap_set_buffer_size(pcap_t *p, size_t buffer_size);
 .ft
 .fi
 .SH DESCRIPTION
