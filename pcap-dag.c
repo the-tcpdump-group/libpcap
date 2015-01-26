@@ -1,5 +1,5 @@
 /*
- * pcap-dag.c: Packet capture interface for Endace DAG card.
+ * pcap-dag.c: Packet capture interface for Emulex EndaceDAG cards.
  *
  * The functionality of this code attempts to mimic that of pcap-linux as much
  * as possible.  This code is compiled in several different ways depending on
@@ -10,9 +10,9 @@
  * called as required from their pcap-linux/bpf equivalents.
  *
  * Authors: Richard Littin, Sean Irvine ({richard,sean}@reeltwo.com)
- * Modifications: Jesper Peterson  <support@endace.com>
- *                Koryn Grant      <support@endace.com>
- *                Stephen Donnelly <support@endace.com>
+ * Modifications: Jesper Peterson
+ *                Koryn Grant
+ *                Stephen Donnelly <stephen.donnelly@emulex.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -40,6 +40,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "dagnew.h"
 #include "dagapi.h"
+#include "dagpci.h"
 
 #include "pcap-dag.h"
 
@@ -248,6 +249,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int flags = pd->dag_offset_flags;
 	unsigned int nonblocking = flags & DAGF_NONBLOCK;
 	unsigned int num_ext_hdr = 0;
+	unsigned int ticks_per_second;
 
 	/* Get the next bufferful of packets (if necessary). */
 	while (pd->dag_mem_top - pd->dag_mem_bottom < dag_record_size) {
@@ -434,6 +436,9 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 					caplen = rlen - dag_record_size - 4;
 					dp+=4;
 				}
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
+
 				if (header->type == TYPE_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 				}
@@ -465,6 +470,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 2;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -478,6 +485,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -488,6 +497,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 4;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -513,6 +524,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case TYPE_IPV6:
 				packet_len = ntohs(header->wlen);
 				caplen = rlen - dag_record_size;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
 				if (caplen > packet_len) {
 					caplen = packet_len;
 				}
@@ -533,9 +546,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				continue;
 			} /* switch type */
 
-			/* Skip over extension headers */
-			caplen -= (8 * num_ext_hdr);
-
 		} /* ERF encapsulation */
 		
 		if (caplen > p->snapshot)
@@ -553,12 +563,22 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				ts = header->ts;
 			}
 
+			switch (p->opt.tstamp_precision) {
+			case PCAP_TSTAMP_PRECISION_NANO:
+				ticks_per_second = 1000000000;
+				break;
+			case PCAP_TSTAMP_PRECISION_MICRO:
+			default:
+				ticks_per_second = 1000000;
+				break;
+
+			}
 			pcap_header.ts.tv_sec = ts >> 32;
-			ts = (ts & 0xffffffffULL) * 1000000;
+			ts = (ts & 0xffffffffULL) * ticks_per_second;
 			ts += 0x80000000; /* rounding */
 			pcap_header.ts.tv_usec = ts >> 32;		
-			if (pcap_header.ts.tv_usec >= 1000000) {
-				pcap_header.ts.tv_usec -= 1000000;
+			if (pcap_header.ts.tv_usec >= ticks_per_second) {
+				pcap_header.ts.tv_usec -= ticks_per_second;
 				pcap_header.ts.tv_sec++;
 			}
 
@@ -917,6 +937,26 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 		return NULL;
 
 	p->activate_op = dag_activate;
+
+	/*
+	 * We claim that we support microsecond and nanosecond time
+	 * stamps.
+	 *
+	 * XXX Our native precision is 2^-32s, but libpcap doesn't support
+	 * power of two precisions yet. We can convert to either MICRO or NANO.
+	 */
+	p->tstamp_precision_count = 2;
+	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
+	if (p->tstamp_precision_list == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		if (p->tstamp_type_list != NULL)
+			free(p->tstamp_type_list);
+		free(p);
+		return NULL;
+	}
+	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 	return p;
 }
 
@@ -953,6 +993,8 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	char dagname[DAGNAME_BUFSIZE];
 	int dagstream;
 	int dagfd;
+	dag_card_inf_t *inf;
+	char *description;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
@@ -961,8 +1003,11 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		{
 			return -1;
 		}
+		description = NULL;
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
-			if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
+			if ((inf = dag_pciinfo(dagfd)))
+				description = dag_device_name(inf->device_code, 1);
+			if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
 				/*
 				 * Failure.
 				 */
@@ -977,7 +1022,7 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 						dag_detach_stream(dagfd, stream);
 
 						snprintf(name,  10, "dag%d:%d", c, stream);
-						if (pcap_add_if(devlistp, name, 0, NULL, errbuf) == -1) {
+						if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
 							/*
 							 * Failure.
 							 */
