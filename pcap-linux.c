@@ -3758,6 +3758,12 @@ create_ring(pcap_t *handle, int *status)
 		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 		break;
 #endif
+	default:
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "Internal error: unknown TPACKET_value %d",
+		    handlep->tp_version);
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	/* compute the minumum block size that will handle this frame. 
