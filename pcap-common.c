@@ -1102,7 +1102,7 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 		if (hdr->caplen < offset)
 			return;
 		uhdr->ndesc = SWAPLONG(uhdr->ndesc);
-	}	
+	}
 
 	if (uhdr->transfer_type == URB_ISOCHRONOUS) {
 		/* swap the values in struct linux_usb_isodesc */
