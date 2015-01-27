@@ -3017,7 +3017,7 @@ activate_new(pcap_t *handle)
 	struct packet_mreq	mr;
 #ifdef SO_BPF_EXTENSIONS
 	int			bpf_extensions;
-	socklen_t		len;
+	socklen_t		len = sizeof(bpf_extensions);
 #endif
 
 	/*
