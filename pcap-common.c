@@ -1085,8 +1085,6 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 {
 	pcap_usb_header_mmapped *uhdr = (pcap_usb_header_mmapped *)buf;
 	bpf_u_int32 offset = 0;
-	usb_isodesc *pisodesc;
-	int32_t numdesc, i;
 
 	/*
 	 * "offset" is the offset *past* the field we're swapping;
@@ -1150,6 +1148,17 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 	} else
 		offset += 8;			/* skip USB setup header */
 
+	/*
+	 * With the old header, there are no isochronous descriptors
+	 * after the header.
+	 *
+	 * With the new header, the actual number of descriptors in
+	 * the header is not s.iso.numdesc, it's ndesc - only the
+	 * first N descriptors, for some value of N, are put into
+	 * the header, and ndesc is set to the actual number copied.
+	 * In addition, if s.iso.numdesc is negative, no descriptors
+	 * are captured, and ndesc is set to 0.
+	 */
 	if (header_len_64_bytes) {
 		/*
 		 * This is either the "version 1" header, with
@@ -1178,31 +1187,33 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 		if (hdr->caplen < offset)
 			return;
 		uhdr->ndesc = SWAPLONG(uhdr->ndesc);
-	}
 
-	if (uhdr->transfer_type == URB_ISOCHRONOUS) {
-		/* swap the values in struct linux_usb_isodesc */
-		pisodesc = (usb_isodesc *)(void *)(buf+offset);
-		numdesc = uhdr->s.iso.numdesc;
-		for (i = 0; i < numdesc; i++) {
-			offset += 4;		/* skip past status */
-			if (hdr->caplen < offset)
-				return;
-			pisodesc->status = SWAPLONG(pisodesc->status);
+		if (uhdr->transfer_type == URB_ISOCHRONOUS) {
+			/* swap the values in struct linux_usb_isodesc */
+			usb_isodesc *pisodesc;
+			u_int32_t i;
 
-			offset += 4;		/* skip past offset */
-			if (hdr->caplen < offset)
-				return;
-			pisodesc->offset = SWAPLONG(pisodesc->offset);
+			pisodesc = (usb_isodesc *)(void *)(buf+offset);
+			for (i = 0; i < uhdr->ndesc; i++) {
+				offset += 4;		/* skip past status */
+				if (hdr->caplen < offset)
+					return;
+				pisodesc->status = SWAPLONG(pisodesc->status);
 
-			offset += 4;		/* skip past len */
-			if (hdr->caplen < offset)
-				return;
-			pisodesc->len = SWAPLONG(pisodesc->len);
+				offset += 4;		/* skip past offset */
+				if (hdr->caplen < offset)
+					return;
+				pisodesc->offset = SWAPLONG(pisodesc->offset);
 
-			offset += 4;		/* skip past padding */
+				offset += 4;		/* skip past len */
+				if (hdr->caplen < offset)
+					return;
+				pisodesc->len = SWAPLONG(pisodesc->len);
 
-			pisodesc++;
+				offset += 4;		/* skip past padding */
+
+				pisodesc++;
+			}
 		}
 	}
 }
