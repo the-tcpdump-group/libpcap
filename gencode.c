@@ -129,11 +129,11 @@
 static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
-/* Hack for updating VLAN, MPLS, and PPPoE offsets. */
+/* Hack for handling VLAN and MPLS stacks. */
 #ifdef WIN32
-static u_int	orig_linktype = (u_int)-1, orig_nl = (u_int)-1, label_stack_depth = (u_int)-1, vlan_stack_depth = (u_int)-1;
+static u_int	label_stack_depth = (u_int)-1, vlan_stack_depth = (u_int)-1;
 #else
-static u_int	orig_linktype = -1U, orig_nl = -1U, label_stack_depth = -1U, vlan_stack_depth = -1U;
+static u_int	label_stack_depth = -1U, vlan_stack_depth = -1U;
 #endif
 
 /* XXX */
@@ -960,8 +960,6 @@ init_linktype(p)
 	off_macpl = 0;
 	off_macpl_is_variable = 0;
 
-	orig_linktype = -1;
-	orig_nl = -1;
         label_stack_depth = 0;
         vlan_stack_depth = 0;
 
@@ -8149,8 +8147,6 @@ gen_vlan(vlan_num)
 	 * be done assuming a VLAN, even though the "or" could be viewed
 	 * as meaning "or, if this isn't a VLAN packet...".
 	 */
-	orig_nl = off_nl;
-
 	switch (linktype) {
 
 	case DLT_EN10MB:
@@ -8189,26 +8185,13 @@ gen_mpls(label_num)
 {
 	struct	block	*b0, *b1;
 
-	/*
-	 * Change the offsets to point to the type and data fields within
-	 * the MPLS packet.  Just increment the offsets, so that we
-	 * can support a hierarchy, e.g. "mpls 100000 && mpls 1024" to
-	 * capture packets with an outer label of 100000 and an inner
-	 * label of 1024.
-	 *
-	 * XXX - this is a bit of a kludge.  See comments in gen_vlan().
-	 */
-        orig_nl = off_nl;
-
         if (label_stack_depth > 0) {
             /* just match the bottom-of-stack bit clear */
-            b0 = gen_mcmp(OR_MACPL, orig_nl-2, BPF_B, 0, 0x01);
+            b0 = gen_mcmp(OR_MACPL, off_nl-2, BPF_B, 0, 0x01);
         } else {
             /*
-             * Indicate that we're checking MPLS-encapsulated headers,
-             * to make sure higher level code generators don't try to
-             * match against IP-related protocols such as Q_ARP, Q_RARP
-             * etc.
+             * We're not in an MPLS stack yet, so check the link-layer
+             * type against MPLS.
              */
             switch (linktype) {
 
@@ -8239,12 +8222,26 @@ gen_mpls(label_num)
 	/* If a specific MPLS label is requested, check it */
 	if (label_num >= 0) {
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
-		b1 = gen_mcmp(OR_MACPL, orig_nl, BPF_W, (bpf_int32)label_num,
+		b1 = gen_mcmp(OR_MACPL, off_nl, BPF_W, (bpf_int32)label_num,
 		    0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
 	}
 
+        /*
+         * Change the offsets to point to the type and data fields within
+         * the MPLS packet.  Just increment the offsets, so that we
+         * can support a hierarchy, e.g. "mpls 100000 && mpls 1024" to
+         * capture packets with an outer label of 100000 and an inner
+         * label of 1024.
+         *
+         * Increment the MPLS stack depth as well; this indicates that
+         * we're checking MPLS-encapsulated headers, to make sure higher
+         * level code generators don't try to match against IP-related
+         * protocols such as Q_ARP, Q_RARP etc.
+         *
+         * XXX - this is a bit of a kludge.  See comments in gen_vlan().
+         */
         off_nl_nosnap += 4;
         off_nl += 4;
         label_stack_depth++;
@@ -8271,6 +8268,16 @@ gen_pppoes(sess_num)
 	 * Test against the PPPoE session link-layer type.
 	 */
 	b0 = gen_linktype((bpf_int32)ETHERTYPE_PPPOES);
+
+	/* If a specific session is requested, check PPPoE session id */
+	if (sess_num >= 0) {
+		b1 = gen_mcmp(OR_MACPL, off_nl, BPF_W,
+		    (bpf_int32)sess_num, 0x0000ffff);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
+
+	is_pppoes = 1;
 
 	/*
 	 * Change the offsets to point to the type and data fields within
@@ -8300,20 +8307,7 @@ gen_pppoes(sess_num)
 	 * as all the "or ..." tests would be done assuming PPPoE, even
 	 * though the "or" could be viewed as meaning "or, if this isn't
 	 * a PPPoE packet...".
-	 */
-	orig_linktype = off_linktype;	/* save original values */
-	orig_nl = off_nl;
-	is_pppoes = 1;
-
-	/* If a specific session is requested, check PPPoE session id */
-	if (sess_num >= 0) {
-		b1 = gen_mcmp(OR_MACPL, orig_nl, BPF_W,
-		    (bpf_int32)sess_num, 0x0000ffff);
-		gen_and(b0, b1);
-		b0 = b1;
-	}
-
-	/*
+	 *
 	 * The "network-layer" protocol is PPPoE, which has a 6-byte
 	 * PPPoE header, followed by a PPP packet.
 	 *
