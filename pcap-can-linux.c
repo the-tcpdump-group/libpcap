@@ -1,3 +1,14 @@
+/* (c) 2015 Kai Renken <code[at]koffeinsucht.de>
+ *
+ * adding injection support for SocketCan.
+ * the code contains snipptes of cansend.c from linux-can-utils.c
+ * see git@gitorious.org:linux-can/can-utils.git for details.
+ *
+ * linux-can-utils.c
+ * Copyright (c) 2002-2007 Volkswagen Group Electronic Research
+ * All rights reserved.
+ */
+
 /*
  * Copyright (c) 2009 Felix Obenhuber
  * All rights reserved.
@@ -38,6 +49,7 @@
 
 #include "pcap-int.h"
 #include "pcap-can-linux.h"
+#include "can-helper.h"
 
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
@@ -273,10 +285,50 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 static int
 can_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-	/* not yet implemented */
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
-		"can devices");
-	return (-1);
+	struct pcap_linux *handlep = handle->priv;
+	int ret;
+	int required_mtu;
+	struct canfd_frame frame;
+        int mtu;
+	int enable_canfd = 1;
+
+	/* parse CAN frame */
+	required_mtu = parse_canframe(&buf, &frame);
+	if (!required_mtu){
+		fprintf(stderr, "\nWrong CAN-frame format! Try:\n\n");
+		fprintf(stderr, "    <can_id>#{R|data}          for CAN 2.0 frames\n");
+		fprintf(stderr, "    <can_id>##<flags>{data}    for CAN FD frames\n\n");
+		fprintf(stderr, "<can_id> can have 3 (SFF) or 8 (EFF) hex chars\n");
+		fprintf(stderr, "{data} has 0..8 (0..64 CAN FD) ASCII hex-values (optionally");
+		fprintf(stderr, " separated by '.')\n");
+		fprintf(stderr, "<flags> a single ASCII Hex value (0 .. F) which defines");
+		fprintf(stderr, " canfd_frame.flags\n\n");
+		fprintf(stderr, "e.g. 5A1#11.2233.44556677.88 / 123#DEADBEEF / 5AA# / ");
+		fprintf(stderr, "123##1 / 213##311\n     1F334455#1122334455667788 / 123#R ");
+		fprintf(stderr, "for remote transmission request.\n\n");
+		return (-1);
+	}
+
+	/* disable default receive filter on this RAW socket */
+	/* This is obsolete as we do not read from the socket at all, but for */
+	/* this reason we can remove the receive list in the Kernel to save a */
+	/* little (really a very little!) CPU usage.                          */
+	//setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
+
+	//if (bind(socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		//perror("bind");
+		//return 1;
+	//}
+
+	/* send can frame */
+	ret = write(handle->fd, &frame, required_mtu);
+
+	if (ret != required_mtu) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	return (ret);
 }
 
 
