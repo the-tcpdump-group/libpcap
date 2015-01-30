@@ -88,7 +88,7 @@ FSRC =  fad-@V_FINDALLDEVS@.c
 SSRC =  @SSRC@
 CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c etherent.c \
 	savefile.c sf-pcap.c sf-pcap-ng.c pcap-common.c \
-	bpf_image.c bpf_dump.c
+	bpf_image.c bpf_dump.c can-helper.c
 GENSRC = scanner.c grammar.c bpf_filter.c version.c
 LIBOBJS = @LIBOBJS@
 
@@ -300,6 +300,8 @@ EXTRA_DIST = \
 	pcap-can-linux.h \
 	pcap-canusb-linux.c \
 	pcap-canusb-linux.h \
+	can-helper.c \
+	can-helper.h \
 	pcap-config.in \
 	pcap-dag.c \
 	pcap-dag.h \
