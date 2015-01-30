@@ -293,7 +293,8 @@ can_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	int enable_canfd = 1;
 
 	/* parse CAN frame */
-	required_mtu = parse_canframe(&buf, &frame);
+	required_mtu = parse_canframe(buf, &frame);
+	/* fprint_canframe(stderr, &frame, "\n", 0, CAN_MAX_DLEN); */
 	if (!required_mtu){
 		fprintf(stderr, "\nWrong CAN-frame format! Try:\n\n");
 		fprintf(stderr, "    <can_id>#{R|data}          for CAN 2.0 frames\n");
@@ -308,17 +309,6 @@ can_inject_linux(pcap_t *handle, const void *buf, size_t size)
 		fprintf(stderr, "for remote transmission request.\n\n");
 		return (-1);
 	}
-
-	/* disable default receive filter on this RAW socket */
-	/* This is obsolete as we do not read from the socket at all, but for */
-	/* this reason we can remove the receive list in the Kernel to save a */
-	/* little (really a very little!) CPU usage.                          */
-	//setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0);
-
-	//if (bind(socket, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		//perror("bind");
-		//return 1;
-	//}
 
 	/* send can frame */
 	ret = write(handle->fd, &frame, required_mtu);
