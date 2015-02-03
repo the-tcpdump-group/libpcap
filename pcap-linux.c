@@ -3017,7 +3017,7 @@ activate_new(pcap_t *handle)
 	struct packet_mreq	mr;
 #ifdef SO_BPF_EXTENSIONS
 	int			bpf_extensions;
-	socklen_t		len;
+	socklen_t		len = sizeof(bpf_extensions);
 #endif
 
 	/*
@@ -3758,6 +3758,12 @@ create_ring(pcap_t *handle, int *status)
 		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
 		break;
 #endif
+	default:
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "Internal error: unknown TPACKET_value %d",
+		    handlep->tp_version);
+		*status = PCAP_ERROR;
+		return -1;
 	}
 
 	/* compute the minumum block size that will handle this frame. 
@@ -5541,6 +5547,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
 	if (ioctl(fd, SIOCETHTOOL, &ifr) == -1) {
+		close(fd);
 		if (errno == EOPNOTSUPP || errno == EINVAL) {
 			/*
 			 * OK, let's just return all the possible time
@@ -5552,7 +5559,6 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
 		    strerror(errno));
-		close(fd);
 		return -1;
 	}
 	close(fd);
