@@ -3760,7 +3760,7 @@ create_ring(pcap_t *handle, int *status)
 #endif
 	default:
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Internal error: unknown TPACKET_value %d",
+		    "Internal error: unknown TPACKET_ value %u",
 		    handlep->tp_version);
 		*status = PCAP_ERROR;
 		return -1;
