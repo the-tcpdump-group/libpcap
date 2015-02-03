@@ -5525,10 +5525,14 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	int num_ts_types;
 	int i, j;
 
-	/* ioctl() will fail for the "any" pseudo-device with ENODEV. */
-	if (! strcmp(handle->opt.source, "any")) {
-			iface_set_default_ts_types(handle);
-			return 0;
+	/*
+	 * This doesn't apply to the "any" device; you have to ask
+	 * specific devices for their capabilities, so just default
+	 * to saying we support all of them.
+	 */
+	if (strcmp(handle->opt.source, "any") == 0) {
+		iface_set_default_ts_types(handle);
+		return 0;
 	}
 
 	/*
