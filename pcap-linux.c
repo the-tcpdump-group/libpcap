@@ -5541,6 +5541,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
 	if (ioctl(fd, SIOCETHTOOL, &ifr) == -1) {
+		close(fd);
 		if (errno == EOPNOTSUPP || errno == EINVAL) {
 			/*
 			 * OK, let's just return all the possible time
@@ -5552,7 +5553,6 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
 		    strerror(errno));
-		close(fd);
 		return -1;
 	}
 	close(fd);
