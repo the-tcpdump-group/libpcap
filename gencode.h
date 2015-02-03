@@ -294,9 +294,9 @@ void gen_not(struct block *);
 struct block *gen_scode(const char *, struct qual);
 struct block *gen_ecode(const u_char *, struct qual);
 struct block *gen_acode(const u_char *, struct qual);
-struct block *gen_mcode(const char *, const char *, int, struct qual);
+struct block *gen_mcode(const char *, const char *, unsigned int, struct qual);
 #ifdef INET6
-struct block *gen_mcode6(const char *, const char *, int, struct qual);
+struct block *gen_mcode6(const char *, const char *, unsigned int, struct qual);
 #endif
 struct block *gen_ncode(const char *, bpf_u_int32, struct qual);
 struct block *gen_proto_abbrev(int);

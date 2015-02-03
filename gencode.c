@@ -6525,7 +6525,7 @@ gen_scode(name, q)
 struct block *
 gen_mcode(s1, s2, masklen, q)
 	register const char *s1, *s2;
-	register int masklen;
+	register unsigned int masklen;
 	struct qual q;
 {
 	register int nlen, mlen;
@@ -6684,7 +6684,7 @@ gen_ncode(s, v, q)
 struct block *
 gen_mcode6(s1, s2, masklen, q)
 	register const char *s1, *s2;
-	register int masklen;
+	register unsigned int masklen;
 	struct qual q;
 {
 	struct addrinfo *res;
