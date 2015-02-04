@@ -354,11 +354,24 @@ open a
 .B pcap_t
 for a ``savefile'', given a pathname
 .TP
+.BR pcap_open_offline_with_tstamp_precision (3PCAP)
+open a
+.B pcap_t
+for a ``savefile'', given a pathname, and specify the precision to
+provide for packet time stamps
+.TP
 .BR pcap_fopen_offline (3PCAP)
 open a
 .B pcap_t
 for a ``savefile'', given a
 .B "FILE\ *"
+.TP
+.BR pcap_fopen_offline_with_tstamp_precision (3PCAP)
+open a
+.B pcap_t
+for a ``savefile'', given a
+.BR "FILE\ *" ,
+and specify the precision to provide for packet time stamps
 .TP
 .BR pcap_open_dead (3PCAP)
 create a ``fake''
@@ -423,6 +436,16 @@ get description for a time stamp type
 .TP
 .BR pcap_tstamp_type_name_to_val (3PCAP)
 get time stamp type corresponding to a name
+.TP
+.BR pcap_set_tstamp_precision (3PCAP)
+set time stamp precision for a not-yet-activated
+.B pcap_t
+for live capture
+.TP
+.BR pcap_get_tstamp_precision (3PCAP)
+get the time stamp precision of a
+.B pcap_t
+for live capture
 .TP
 .BR pcap_datalink (3PCAP)
 get link-layer header type for a
