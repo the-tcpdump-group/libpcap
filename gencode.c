@@ -799,34 +799,21 @@ static int reg_off_ll;
 static u_int off_mac;
 
 /*
- * This is the offset of the beginning of the MAC-layer payload,
- * from the beginning of the raw packet data.
+ * The offset of the beginning of the MAC-layer payload, from the beginning
+ * of the raw packet data, is, in the general case, the sum of a variable
+ * value and a constant value; the variable value may be absent, in which
+ * case the offset is only the constant value, and the constant value may
+ * be zero, in which case the offset is only the variable value.
  *
- * I.e., it's the sum of the length of the link-layer header (without,
- * for example, any 802.2 LLC header, so it's the MAC-layer
- * portion of that header), plus any prefix preceding the
- * link-layer header.
+ * off_macpl_constant_part is the constant value.
  *
- * In the event of a variable length MAC header, this is typically
- * 0. However, it can be used as a fixed component added to the
- * variable piece, such as in the case of a VLAN increasing the size
- * of the header.
+ * reg_off_macpl is the register number for a register containing the
+ * variable value, and -1 otherwise.
+ *
+ * off_macpl_is_variable is 1 if there's a variable part.
  */
-static u_int off_macpl;
-
-/*
- * This is 1 if the offset of the beginning of the MAC-layer payload
- * from the beginning of the link-layer header is variable-length.
- */
+static u_int off_macpl_constant_part;
 static int off_macpl_is_variable;
-
-/*
- * If the link layer has variable_length headers, "reg_off_macpl"
- * is the register number for a register containing the length of the
- * link-layer header plus the length of any variable-length header
- * preceding the link-layer header.  Otherwise, "reg_off_macpl"
- * is -1.
- */
 static int reg_off_macpl;
 
 /*
@@ -966,7 +953,7 @@ init_linktype(p)
 	 * Also assume it's not 802.11.
 	 */
 	off_ll = 0;
-	off_macpl = 0;
+	off_macpl_constant_part = 0;
 	off_macpl_is_variable = 0;
 
         label_stack_depth = 0;
@@ -979,21 +966,21 @@ init_linktype(p)
 
 	case DLT_ARCNET:
 		off_linktype = 2;
-		off_macpl = 6;
+		off_macpl_constant_part = 6;
 		off_nl = 0;		/* XXX in reality, variable! */
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_ARCNET_LINUX:
 		off_linktype = 4;
-		off_macpl = 8;
+		off_macpl_constant_part = 8;
 		off_nl = 0;		/* XXX in reality, variable! */
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_EN10MB:
 		off_linktype = 12;
-		off_macpl = 14;		/* Ethernet header length */
+		off_macpl_constant_part = 14;	/* Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
@@ -1004,7 +991,7 @@ init_linktype(p)
 		 * header is hacked into our SLIP driver.
 		 */
 		off_linktype = -1;
-		off_macpl = 16;
+		off_macpl_constant_part = 16;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1013,7 +1000,7 @@ init_linktype(p)
 		/* XXX this may be the same as the DLT_PPP_BSDOS case */
 		off_linktype = -1;
 		/* XXX end */
-		off_macpl = 24;
+		off_macpl_constant_part = 24;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1021,14 +1008,14 @@ init_linktype(p)
 	case DLT_NULL:
 	case DLT_LOOP:
 		off_linktype = 0;
-		off_macpl = 4;
+		off_macpl_constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_ENC:
 		off_linktype = 0;
-		off_macpl = 12;
+		off_macpl_constant_part = 12;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1038,7 +1025,7 @@ init_linktype(p)
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
 		off_linktype = 2;
-		off_macpl = 4;
+		off_macpl_constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1049,14 +1036,14 @@ init_linktype(p)
 		 * only covers session state.
 		 */
 		off_linktype = 6;
-		off_macpl = 8;
+		off_macpl_constant_part = 8;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_PPP_BSDOS:
 		off_linktype = 5;
-		off_macpl = 24;
+		off_macpl_constant_part = 24;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1072,8 +1059,8 @@ init_linktype(p)
 		 */
 		off_linktype = 13;
 		off_linktype += pcap_fddipad;
-		off_macpl = 13;		/* FDDI MAC header length */
-		off_macpl += pcap_fddipad;
+		off_macpl_constant_part = 13;	/* FDDI MAC header length */
+		off_macpl_constant_part += pcap_fddipad;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
@@ -1103,7 +1090,7 @@ init_linktype(p)
 		 * 8 - figure out which byte that is).
 		 */
 		off_linktype = 14;
-		off_macpl = 14;		/* Token Ring MAC header length */
+		off_macpl_constant_part = 14;	/* Token Ring MAC header length */
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
@@ -1130,7 +1117,7 @@ init_linktype(p)
 		 * variable-length.
 		 */
 		off_linktype = 24;
-		off_macpl = 0;		/* link-layer header is variable-length */
+		off_macpl_constant_part = 0;	/* link-layer header is variable-length */
 		off_macpl_is_variable = 1;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
@@ -1147,7 +1134,7 @@ init_linktype(p)
 		 * generate code to check for this too.
 		 */
 		off_linktype = 24;
-		off_macpl = 0;		/* link-layer header is variable-length */
+		off_macpl_constant_part = 0;	/* link-layer header is variable-length */
 		off_macpl_is_variable = 1;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
@@ -1167,7 +1154,7 @@ init_linktype(p)
 		 * PPPo{A,E} and a PPP protocol of IP and....
 		 */
 		off_linktype = 0;
-		off_macpl = 0;		/* packet begins with LLC header */
+		off_macpl_constant_part = 0;	/* packet begins with LLC header */
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
@@ -1184,7 +1171,7 @@ init_linktype(p)
 		off_mac = -1;	/* assume LLC-encapsulated, so no MAC-layer header */
 		off_payload = SUNATM_PKT_BEGIN_POS;
 		off_linktype = off_payload;
-		off_macpl = off_payload;	/* if LLC-encapsulated */
+		off_macpl_constant_part = off_payload;	/* if LLC-encapsulated */
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
@@ -1193,14 +1180,14 @@ init_linktype(p)
 	case DLT_IPV4:
 	case DLT_IPV6:
 		off_linktype = -1;
-		off_macpl = 0;
+		off_macpl_constant_part = 0;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket */
 		off_linktype = 14;
-		off_macpl = 16;
+		off_macpl_constant_part = 16;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1212,7 +1199,7 @@ init_linktype(p)
 		 * "long" DDP packet following.
 		 */
 		off_linktype = -1;
-		off_macpl = 0;
+		off_macpl_constant_part = 0;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1229,7 +1216,7 @@ init_linktype(p)
 		 * 2625 says SNAP should be used.
 		 */
 		off_linktype = 16;
-		off_macpl = 16;
+		off_macpl_constant_part = 16;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		return;
@@ -1240,7 +1227,7 @@ init_linktype(p)
 		 * frames (NLPID of 0x80).
 		 */
 		off_linktype = -1;
-		off_macpl = 0;
+		off_macpl_constant_part = 0;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1252,21 +1239,21 @@ init_linktype(p)
                  */
 	case DLT_MFR:
 		off_linktype = -1;
-		off_macpl = 0;
+		off_macpl_constant_part = 0;
 		off_nl = 4;
 		off_nl_nosnap = 0;	/* XXX - for now -> no 802.2 LLC */
 		return;
 
 	case DLT_APPLE_IP_OVER_IEEE1394:
 		off_linktype = 16;
-		off_macpl = 18;
+		off_macpl_constant_part = 18;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
 
 	case DLT_SYMANTEC_FIREWALL:
 		off_linktype = 6;
-		off_macpl = 44;
+		off_macpl_constant_part = 44;
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 0;	/* XXX - what does it do with 802.3 packets? */
 		return;
@@ -1274,7 +1261,7 @@ init_linktype(p)
 #ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
 		off_linktype = 0;
-		off_macpl = PFLOG_HDRLEN;
+		off_macpl_constant_part = PFLOG_HDRLEN;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -1287,21 +1274,21 @@ init_linktype(p)
         case DLT_JUNIPER_CHDLC:
         case DLT_JUNIPER_FRELAY:
                 off_linktype = 4;
-		off_macpl = 4;
+		off_macpl_constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
                 return;
 
 	case DLT_JUNIPER_ATM1:
-		off_linktype = 4;	/* in reality variable between 4-8 */
-		off_macpl = 4;	/* in reality variable between 4-8 */
+		off_linktype = 4;		/* in reality variable between 4-8 */
+		off_macpl_constant_part = 4;	/* in reality variable between 4-8 */
 		off_nl = 0;
 		off_nl_nosnap = 10;
 		return;
 
 	case DLT_JUNIPER_ATM2:
-		off_linktype = 8;	/* in reality variable between 8-12 */
-		off_macpl = 8;	/* in reality variable between 8-12 */
+		off_linktype = 8;		/* in reality variable between 8-12 */
+		off_macpl_constant_part = 8;	/* in reality variable between 8-12 */
 		off_nl = 0;
 		off_nl_nosnap = 10;
 		return;
@@ -1310,7 +1297,7 @@ init_linktype(p)
 		 * contain raw ethernet frames */
 	case DLT_JUNIPER_PPPOE:
         case DLT_JUNIPER_ETHER:
-        	off_macpl = 14;
+        	off_macpl_constant_part = 14;
 		off_linktype = 16;
 		off_nl = 18;		/* Ethernet II */
 		off_nl_nosnap = 21;	/* 802.3+802.2 */
@@ -1318,63 +1305,63 @@ init_linktype(p)
 
 	case DLT_JUNIPER_PPPOE_ATM:
 		off_linktype = 4;
-		off_macpl = 6;
+		off_macpl_constant_part = 6;
 		off_nl = 0;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
 	case DLT_JUNIPER_GGSN:
 		off_linktype = 6;
-		off_macpl = 12;
+		off_macpl_constant_part = 12;
 		off_nl = 0;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
 	case DLT_JUNIPER_ES:
 		off_linktype = 6;
-		off_macpl = -1;		/* not really a network layer but raw IP addresses */
+		off_macpl_constant_part = -1;	/* not really a network layer but raw IP addresses */
 		off_nl = -1;		/* not really a network layer but raw IP addresses */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
 	case DLT_JUNIPER_MONITOR:
 		off_linktype = 12;
-		off_macpl = 12;
+		off_macpl_constant_part = 12;
 		off_nl = 0;		/* raw IP/IP6 header */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
 	case DLT_BACNET_MS_TP:
 		off_linktype = -1;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
 
 	case DLT_JUNIPER_SERVICES:
 		off_linktype = 12;
-		off_macpl = -1;		/* L3 proto location dep. on cookie type */
+		off_macpl_constant_part = -1;	/* L3 proto location dep. on cookie type */
 		off_nl = -1;		/* L3 proto location dep. on cookie type */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		return;
 
 	case DLT_JUNIPER_VP:
 		off_linktype = 18;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
 
 	case DLT_JUNIPER_ST:
 		off_linktype = 18;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
 
 	case DLT_JUNIPER_ISM:
 		off_linktype = 8;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
@@ -1384,7 +1371,7 @@ init_linktype(p)
 	case DLT_JUNIPER_FIBRECHANNEL:
 	case DLT_JUNIPER_ATM_CEMIC:
 		off_linktype = 8;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
@@ -1397,7 +1384,7 @@ init_linktype(p)
 		off_dpc = 4;
 		off_sls = 7;
 		off_linktype = -1;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
@@ -1410,7 +1397,7 @@ init_linktype(p)
 		off_dpc = 8;
 		off_sls = 11;
 		off_linktype = -1;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
@@ -1423,14 +1410,14 @@ init_linktype(p)
 		off_dpc = 24;
 		off_sls = 27;
 		off_linktype = -1;
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
 		return;
 
 	case DLT_PFSYNC:
 		off_linktype = -1;
-		off_macpl = 4;
+		off_macpl_constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = 0;
 		return;
@@ -1440,7 +1427,7 @@ init_linktype(p)
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
 		off_linktype = -1;	/* variable, min 15, max 71 steps of 7 */
-		off_macpl = -1;
+		off_macpl_constant_part = -1;
 		off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
 		off_mac = 1;		/* step over the kiss length byte */
@@ -1448,7 +1435,7 @@ init_linktype(p)
 
 	case DLT_IPNET:
 		off_linktype = 1;
-		off_macpl = 24;		/* ipnet header length */
+		off_macpl_constant_part = 24;	/* ipnet header length */
 		off_nl = 0;
 		off_nl_nosnap = -1;
 		return;
@@ -1456,7 +1443,7 @@ init_linktype(p)
 	case DLT_NETANALYZER:
 		off_mac = 4;		/* MAC header is past 4-byte pseudo-header */
 		off_linktype = 16;	/* includes 4-byte pseudo-header */
-		off_macpl = 18;		/* pseudo-header+Ethernet header length */
+		off_macpl_constant_part = 18;	/* pseudo-header+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
@@ -1464,7 +1451,7 @@ init_linktype(p)
 	case DLT_NETANALYZER_TRANSPARENT:
 		off_mac = 12;		/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
 		off_linktype = 24;	/* includes 4-byte pseudo-header+preamble+SFD */
-		off_macpl = 26;		/* pseudo-header+preamble+SFD+Ethernet header length */
+		off_macpl_constant_part = 26;	/* pseudo-header+preamble+SFD+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
@@ -1477,7 +1464,7 @@ init_linktype(p)
 		if (linktype >= DLT_MATCHING_MIN &&
 		    linktype <= DLT_MATCHING_MAX) {
 			off_linktype = -1;
-			off_macpl = -1;
+			off_macpl_constant_part = -1;
 			off_nl = -1;
 			off_nl_nosnap = -1;
 			return;
@@ -1547,28 +1534,30 @@ gen_load_macplrel(offset, size)
 	/*
 	 * If s is non-null, the offset of the MAC-layer payload is
 	 * variable, and s points to a list of instructions that
-	 * arrange that the X register contains that offset.
+	 * arrange that the X register contains the variable part
+	 * of that offset.  The sum of that variable part and
+	 * off_macpl_constant_part is the offset.
 	 *
 	 * Otherwise, the offset of the MAC-layer payload is constant,
-	 * and is in off_macpl.
+	 * and is in off_macpl_constant_part.
 	 */
 	if (s != NULL) {
 		/*
-		 * The offset of the MAC-layer payload is in the X
-		 * register.  Do an indirect load, to use the X register
-		 * as an offset.
+		 * The variable part of the offset of the MAC-layer payload
+		 * is in the X register.  Do an indirect load, to use the X
+		 * register as part of the offset of the load.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = off_macpl + offset;
+		s2->s.k = off_macpl_constant_part + offset;
 		sappend(s, s2);
 	} else {
 		/*
 		 * The offset of the MAC-layer payload is constant,
-		 * and is in off_macpl; load the value at that offset
-		 * plus the specified offset.
+		 * and is in off_macpl_constant_part; load the value
+		 * at that offset plus the specified offset.
 		 */
 		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_macpl + offset;
+		s->s.k = off_macpl_constant_part + offset;
 	}
 	return s;
 }
@@ -1621,12 +1610,13 @@ gen_load_a(offrel, offset, size)
 		 * paylod, of the IPv4 header} + {length of the IPv4 header} +
 		 * {specified offset}.
 		 *
-		 * (If the offset of the MAC-layer payload is variable,
-		 * it's included in the value in the X register, and
-		 * off_macpl is 0.)
+		 * If the offset of the MAC-layer payload is variable,
+		 * the variable part of that offset is included in the
+		 * value in the X register, and we include the constant
+		 * part in the offset of the load.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = off_macpl + off_nl + offset;
+		s2->s.k = off_macpl_constant_part + off_nl + offset;
 		sappend(s, s2);
 		break;
 
@@ -1643,8 +1633,8 @@ gen_load_a(offrel, offset, size)
 
 /*
  * Generate code to load into the X register the sum of the length of
- * the IPv4 header and any variable-length header preceding the link-layer
- * header.
+ * the IPv4 header and the variable part of the offset of the MAC-layer
+ * payload.
  */
 static struct slist *
 gen_loadx_iphdrlen()
@@ -1654,11 +1644,9 @@ gen_loadx_iphdrlen()
 	s = gen_off_macpl();
 	if (s != NULL) {
 		/*
-		 * There's a variable-length prefix preceding the
-		 * link-layer header, or the link-layer header is itself
-		 * variable-length.  "s" points to a list of statements
-		 * that put the offset of the MAC-layer payload into
-		 * the X register.
+		 * The offset of the MAC-layer payload has a variable
+		 * part.  "s" points to a list of statements that put
+		 * the variable part of that offset into the X register.
 		 *
 		 * The 4*([k]&0xf) addressing mode can't be used, as we
 		 * don't have a constant offset, so we have to load the
@@ -1676,8 +1664,8 @@ gen_loadx_iphdrlen()
 		sappend(s, s2);
 
 		/*
-		 * The A register now contains the length of the
-		 * IP header.  We need to add to it the offset of
+		 * The A register now contains the length of the IP header.
+		 * We need to add to it the variable part of the offset of
 		 * the MAC-layer payload, which is still in the X
 		 * register, and move the result into the X register.
 		 */
@@ -1685,16 +1673,19 @@ gen_loadx_iphdrlen()
 		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
 	} else {
 		/*
-		 * There is no variable-length header preceding the
-		 * link-layer header, and the link-layer header is
-		 * fixed-length; load the length of the IPv4 header,
-		 * which is at an offset of off_nl from the beginning
-		 * of the MAC-layer payload, and thus at an offset
-		 * of off_mac_pl + off_nl from the beginning of the
-		 * raw packet data.
+		 * The offset of the MAC-layer payload is a constant,
+		 * so no code was generated to load the (non-existent)
+		 * variable part of that offset.
+		 *
+		 * This means we can use the 4*([k]&0xf) addressing
+		 * mode.  Load the length of the IPv4 header, which
+		 * is at an offset of off_nl from the beginning of
+		 * the MAC-layer payload, and thus at an offset of
+		 * off_macpl_constant_part + off_nl from the beginning
+		 * of the raw packet data, using that addressing mode.
 		 */
 		s = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-		s->s.k = off_macpl + off_nl;
+		s->s.k = off_macpl_constant_part + off_nl;
 	}
 	return s;
 }
@@ -2081,7 +2072,7 @@ gen_linux_sll_linktype(proto)
 			 */
 			b0 = gen_cmp(OR_LINK, off_linktype, BPF_H,
 			    LINUX_SLL_P_802_2);
-			b1 = gen_cmp(OR_LINK, off_macpl, BPF_B,
+			b1 = gen_cmp(OR_LINK, off_macpl_constant_part, BPF_B,
 			     (bpf_int32)proto);
 			gen_and(b0, b1);
 			return b1;
@@ -2815,9 +2806,11 @@ gen_llprefixlen(void)
 }
 
 /*
- * Generate code to load the register containing the offset of the
- * MAC-layer payload into the X register; if no register for that offset
- * has been allocated, allocate it first.
+ * Generate code to load the register containing the variable part of
+ * the offset of the MAC-layer payload into the X register; if no
+ * register for that offset has been allocated, allocate it first.
+ * (The code to set that register will be generated later, but will
+ * be placed earlier in the code sequence.)
  */
 static struct slist *
 gen_off_macpl(void)
@@ -2827,23 +2820,24 @@ gen_off_macpl(void)
 	if (off_macpl_is_variable) {
 		if (reg_off_macpl == -1) {
 			/*
-			 * We haven't yet assigned a register for the offset
-			 * of the MAC-layer payload; allocate one.
+			 * We haven't yet assigned a register for the
+			 * variable part of the offset of the MAC-layer
+			 * payload; allocate one.
 			 */
 			reg_off_macpl = alloc_reg();
 		}
 
 		/*
-		 * Load the register containing the offset of the MAC-layer
-		 * payload into the X register.
+		 * Load the register containing the variable part of the
+		 * offset of the MAC-layer payload into the X register.
 		 */
 		s = new_stmt(BPF_LDX|BPF_MEM);
 		s->s.k = reg_off_macpl;
 		return s;
 	} else {
 		/*
-		 * That offset isn't variable, so we don't need to
-		 * generate any code.
+		 * That offset isn't variable, there's no variable part,
+		 * so we don't need to generate any code.
 		 */
 		return NULL;
 	}
@@ -5729,11 +5723,11 @@ gen_protochain(v, proto, dir)
 
 		/* A = ip->ip_p */
 		s[i] = new_stmt(BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = off_macpl + off_nl + 9;
+		s[i]->s.k = off_macpl_constant_part + off_nl + 9;
 		i++;
 		/* X = ip->ip_hl << 2 */
 		s[i] = new_stmt(BPF_LDX|BPF_MSH|BPF_B);
-		s[i]->s.k = off_macpl + off_nl;
+		s[i]->s.k = off_macpl_constant_part + off_nl;
 		i++;
 		break;
 
@@ -5742,7 +5736,7 @@ gen_protochain(v, proto, dir)
 
 		/* A = ip6->ip_nxt */
 		s[i] = new_stmt(BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = off_macpl + off_nl + 6;
+		s[i]->s.k = off_macpl_constant_part + off_nl + 6;
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(BPF_LDX|BPF_IMM);
@@ -5818,7 +5812,7 @@ gen_protochain(v, proto, dir)
 		 */
 		/* A = P[X + packet head] */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = off_macpl + off_nl;
+		s[i]->s.k = off_macpl_constant_part + off_nl;
 		i++;
 		/* MEM[reg2] = A */
 		s[i] = new_stmt(BPF_ST);
@@ -5826,7 +5820,7 @@ gen_protochain(v, proto, dir)
 		i++;
 		/* A = P[X + packet head + 1]; */
 		s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = off_macpl + off_nl + 1;
+		s[i]->s.k = off_macpl_constant_part + off_nl + 1;
 		i++;
 		/* A += 1 */
 		s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
@@ -5887,7 +5881,7 @@ gen_protochain(v, proto, dir)
 	i++;
 	/* A = P[X + packet head]; */
 	s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-	s[i]->s.k = off_macpl + off_nl;
+	s[i]->s.k = off_macpl_constant_part + off_nl;
 	i++;
 	/* MEM[reg2] = A */
 	s[i] = new_stmt(BPF_ST);
@@ -5905,7 +5899,7 @@ gen_protochain(v, proto, dir)
 	i++;
 	/* A = P[X + packet head] */
 	s[i] = new_stmt(BPF_LD|BPF_IND|BPF_B);
-	s[i]->s.k = off_macpl + off_nl;
+	s[i]->s.k = off_macpl_constant_part + off_nl;
 	i++;
 	/* A += 2 */
 	s[i] = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
@@ -6965,12 +6959,12 @@ gen_load(proto, inst, size)
 
 		/*
 		 * If "s" is non-null, it has code to arrange that the
-		 * X register contains the offset of the MAC-layer
-		 * payload.  Add to it the offset computed into the
-		 * register specified by "index", and move that into
-		 * the X register.  Otherwise, just load into the X
-		 * register the offset computed into the register specified
-		 * by "index".
+		 * X register contains the variable part of the offset
+		 * of the MAC-layer payload.  Add to it the offset
+		 * computed into the register specified by "index",
+		 * and move that into the X register.  Otherwise, just
+		 * load into the X register the offset computed into
+		 * the register specified by "index".
 		 */
 		if (s != NULL) {
 			sappend(s, xfer_to_a(inst));
@@ -6983,16 +6977,11 @@ gen_load(proto, inst, size)
 		 * Load the item at the sum of the offset we've put in the
 		 * X register, the offset of the start of the network
 		 * layer header from the beginning of the MAC-layer
-		 * payload, and the purported offset of the start of the
-		 * MAC-layer payload (which might be 0 if there's a
-		 * variable-length prefix before the link-layer header
-		 * or the link-layer header itself is variable-length;
-		 * the variable-length offset of the start of the
-		 * MAC-layer payload is what we put into the X register
-		 * and then added to the index).
+		 * payload, and the constant part of the offset of the
+		 * start of the MAC-layer payload.
 		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
-		tmp->s.k = off_macpl + off_nl;
+		tmp->s.k = off_macpl_constant_part + off_nl;
 		sappend(s, tmp);
 		sappend(inst->s, s);
 
@@ -7032,26 +7021,24 @@ gen_load(proto, inst, size)
 		s = gen_loadx_iphdrlen();
 
 		/*
-		 * The X register now contains the sum of the length
-		 * of any variable-length header preceding the link-layer
-		 * header, any variable-length link-layer header, and the
+		 * The X register now contains the sum of the variable
+		 * part of the offset of the MAC-layer payload and the
 		 * length of the network-layer header.
 		 *
 		 * Load into the A register the offset relative to
 		 * the beginning of the transport layer header,
 		 * add the X register to that, move that to the
 		 * X register, and load with an offset from the
-		 * X register equal to the offset of the network
-		 * layer header relative to the beginning of
-		 * the MAC-layer payload plus the fixed-length
-		 * portion of the offset of the MAC-layer payload
-		 * from the beginning of the raw packet data.
+		 * X register equal to the sum of the constant part of
+		 * the offset of the MAC-layer payload and the offset,
+		 * relative to the beginning of the MAC-layer payload,
+		 * of the network-layer header.
 		 */
 		sappend(s, xfer_to_a(inst));
 		sappend(s, new_stmt(BPF_ALU|BPF_ADD|BPF_X));
 		sappend(s, new_stmt(BPF_MISC|BPF_TAX));
 		sappend(s, tmp = new_stmt(BPF_LD|BPF_IND|size));
-		tmp->s.k = off_macpl + off_nl;
+		tmp->s.k = off_macpl_constant_part + off_nl;
 		sappend(inst->s, s);
 
 		/*
@@ -8108,7 +8095,7 @@ gen_vlan_no_bpf_extensions(int vlan_num)
 	 * The payload follows the full header, including the
 	 * VLAN tags, so skip past this VLAN tag.
 	 */
-        off_macpl += 4;
+        off_macpl_constant_part += 4;
 
 	/*
 	 * The link-layer type information follows the VLAN tags, so
@@ -8488,7 +8475,7 @@ gen_atmtype_abbrev(type)
 		is_lane = 1;
 		off_mac = off_payload + 2;	/* MAC header */
 		off_linktype = off_mac + 12;
-		off_macpl = off_mac + 14;	/* Ethernet */
+		off_macpl_constant_part = off_mac + 14;	/* Ethernet */
 		off_nl = 0;			/* Ethernet II */
 		off_nl_nosnap = 3;		/* 802.3+802.2 */
 		break;
