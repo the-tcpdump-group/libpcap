@@ -827,12 +827,16 @@ static int reg_off_macpl;
 /*
  * "off_linktype" is the offset to information in the link-layer header
  * giving the packet type.  This offset is relative to the beginning
- * of the link-layer header (i.e., it doesn't include off_ll).
+ * of the link-layer header - i.e., it doesn't include off_ll - so
+ * loads with an offset that includes "off_linktype" should use
+ * OR_LINK.
  *
- * For Ethernet, it's the offset of the Ethernet type field.
+ * For Ethernet, it's the offset of the Ethernet type field; this
+ * means that it must have a value that skips VLAN tags.
  *
  * For link-layer types that always use 802.2 headers, it's the
- * offset of the LLC header.
+ * offset of the LLC header; this means that it must have a value
+ * that skips VLAN tags.
  *
  * For PPP, it's the offset of the PPP type field.
  *
@@ -8095,7 +8099,16 @@ gen_vlan_no_bpf_extensions(int vlan_num)
                 b0 = b1;
         }
 
+	/*
+	 * The payload follows the full header, including the
+	 * VLAN tags, so skip past this VLAN tag.
+	 */
         off_macpl += 4;
+
+	/*
+	 * The link-layer type information follows the VLAN tags, so
+	 * skip past this VLAN tag.
+	 */
         off_linktype += 4;
 
         return b0;
