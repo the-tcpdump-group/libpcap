@@ -164,16 +164,16 @@ static struct block *root;
 
 /*
  * Value passed to gen_load_a() to indicate what the offset argument
- * is relative to.
+ * is relative to the beginning of.
  */
 enum e_offrel {
-	OR_PACKET,	/* relative to the beginning of the packet */
-	OR_LINK,	/* relative to the beginning of the link-layer header */
-	OR_LINKPL,	/* relative to the end of the link-layer header */
-	OR_NET,		/* relative to the network-layer header */
-	OR_NET_NOSNAP,	/* relative to the network-layer header, with no SNAP header at the link layer */
-	OR_TRAN_IPV4,	/* relative to the transport-layer header, with IPv4 network layer */
-	OR_TRAN_IPV6	/* relative to the transport-layer header, with IPv6 network layer */
+	OR_PACKET,	/* full packet data */
+	OR_LINK,	/* link-layer header */
+	OR_LINKPL,	/* link-layer payload */
+	OR_NET,		/* network-layer header */
+	OR_NET_NOSNAP,	/* network-layer header, with no SNAP header at the link layer */
+	OR_TRAN_IPV4,	/* transport-layer header, with IPv4 network layer */
+	OR_TRAN_IPV6	/* transport-layer header, with IPv6 network layer */
 };
 
 #ifdef INET6
