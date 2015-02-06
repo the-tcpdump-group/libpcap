@@ -806,6 +806,11 @@ static u_int off_mac;
  * for example, any 802.2 LLC header, so it's the MAC-layer
  * portion of that header), plus any prefix preceding the
  * link-layer header.
+ *
+ * In the event of a variable length MAC header, this is typically
+ * 0. However, it can be used as a fixed component added to the
+ * variable piece, such as in the case of a VLAN increasing the size
+ * of the header.
  */
 static u_int off_macpl;
 
@@ -1554,7 +1559,7 @@ gen_load_macplrel(offset, size)
 		 * as an offset.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = offset;
+		s2->s.k = off_macpl + offset;
 		sappend(s, s2);
 	} else {
 		/*
