@@ -169,6 +169,7 @@ static struct block *root;
 enum e_offrel {
 	OR_PACKET,	/* full packet data */
 	OR_LINK,	/* link-layer header */
+	OR_OUTERLINK,	/* outer link-layer header */
 	OR_LLC,		/* 802.2 LLC header */
 	OR_LINKPL,	/* link-layer payload */
 	OR_MPLSPL,	/* MPLS payload */
@@ -227,6 +228,7 @@ static struct block *gen_bcmp(enum e_offrel, u_int, u_int, const u_char *);
 static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
     bpf_u_int32, bpf_u_int32, int, bpf_int32);
 static struct slist *gen_load_llrel(u_int, u_int);
+static struct slist *gen_load_outerllrel(u_int, u_int);
 static struct slist *gen_load_linkplrel(u_int, u_int);
 static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
 static struct slist *gen_loadx_iphdrlen(void);
@@ -242,6 +244,7 @@ static struct slist *gen_load_radiotap_llprefixlen(void);
 static struct slist *gen_load_ppi_llprefixlen(void);
 static void insert_compute_vloffsets(struct block *);
 static struct slist *gen_llprefixlen(void);
+static struct slist *gen_outerllprefixlen(void);
 static struct slist *gen_off_linkpl(void);
 static int ethertype_to_ppptype(int);
 static struct block *gen_linktype(int);
@@ -792,13 +795,11 @@ static u_int off_ll;
 static int reg_off_ll;
 
 /*
- * This is the offset of the beginning of the MAC-layer header from
- * the beginning of the link-layer header.
- * It's usually 0, except for ATM LANE, where it's the offset, relative
- * to the beginning of the raw packet data, of the Ethernet header, and
- * for Ethernet with various additional information.
+ * If we're checking a link-layer header for a packet encapsulated in
+ * another protocol layer, this is the offset of the outer layers'
+ * link-layer header from the beginning of the raw packet data.
  */
-static u_int off_mac;
+static u_int off_outerll;
 
 /*
  * The offset of the beginning of the link-layer payload, from the beginning
@@ -857,12 +858,6 @@ static int is_pppoes = 0;
 static int is_atm = 0;
 
 /*
- * TRUE if "lane" appeared in the filter; it causes us to generate
- * code that assumes LANE rather than LLC-encapsulated traffic in SunATM.
- */
-static int is_lane = 0;
-
-/*
  * These are offsets for the ATM pseudo-header.
  */
 static u_int off_vpi;
@@ -917,20 +912,26 @@ static u_int off_nl;
 static u_int off_nl_nosnap;
 
 static int linktype;
+static int outerlinktype;
 
 static void
 init_linktype(p)
 	pcap_t *p;
 {
-	linktype = pcap_datalink(p);
+	outerlinktype = pcap_datalink(p);
 	pcap_fddipad = p->fddipad;
+
+	/*
+	 * No link-layer header inside the payload for another
+	 * protocol, for now.
+	 */
+	linktype = outerlinktype;
+	off_outerll = 0;
 
 	/*
 	 * Assume it's not raw ATM with a pseudo-header, for now.
 	 */
-	off_mac = 0;
 	is_atm = 0;
-	is_lane = 0;
 	off_vpi = -1;
 	off_vci = -1;
 	off_proto = -1;
@@ -1170,7 +1171,6 @@ init_linktype(p)
 		off_vpi = SUNATM_VPI_POS;
 		off_vci = SUNATM_VCI_POS;
 		off_proto = PROTO_POS;
-		off_mac = -1;	/* assume LLC-encapsulated, so no MAC-layer header */
 		off_payload = SUNATM_PKT_BEGIN_POS;
 		off_linktype = off_payload;
 		off_linkpl_constant_part = off_payload;	/* if LLC-encapsulated */
@@ -1432,7 +1432,6 @@ init_linktype(p)
 		off_linkpl_constant_part = -1;
 		off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		off_mac = 1;		/* step over the kiss length byte */
 		return;
 
 	case DLT_IPNET:
@@ -1443,17 +1442,17 @@ init_linktype(p)
 		return;
 
 	case DLT_NETANALYZER:
-		off_mac = 4;		/* MAC header is past 4-byte pseudo-header */
-		off_linktype = 16;	/* includes 4-byte pseudo-header */
-		off_linkpl_constant_part = 18;	/* pseudo-header+Ethernet header length */
+		off_ll = 4;		/* Ethernet header is past 4-byte pseudo-header */
+		off_linktype = 12;
+		off_linkpl_constant_part = off_ll + 14;	/* pseudo-header+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
 
 	case DLT_NETANALYZER_TRANSPARENT:
-		off_mac = 12;		/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
-		off_linktype = 24;	/* includes 4-byte pseudo-header+preamble+SFD */
-		off_linkpl_constant_part = 26;	/* pseudo-header+preamble+SFD+Ethernet header length */
+		off_ll = 12;		/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
+		off_linktype = 12;
+		off_linkpl_constant_part = off_ll + 14;	/* pseudo-header+preamble+SFD+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
@@ -1523,6 +1522,54 @@ gen_load_llrel(offset, size)
 }
 
 /*
+ * Load a value relative to the beginning of the outer link-layer header,
+ * if we're also looking at an inner link-layer header encapsulated
+ * within other protocol layers.
+ *
+ * The link-layer header doesn't necessarily begin at the beginning
+ * of the packet data; there might be a variable-length prefix containing
+ * radio information.
+ */
+static struct slist *
+gen_load_outerllrel(offset, size)
+	u_int offset, size;
+{
+	struct slist *s, *s2;
+
+	s = gen_outerllprefixlen();
+
+	/*
+	 * If "s" is non-null, it has code to arrange that the X register
+	 * contains the length of the prefix preceding the link-layer
+	 * header.
+	 *
+	 * Otherwise, the length of the prefix preceding the link-layer
+	 * header is "off_outerll".
+	 */
+	if (s != NULL) {
+		/*
+		 * There's a variable-length prefix preceding the
+		 * link-layer header.  "s" points to a list of statements
+		 * that put the length of that prefix into the X register.
+		 * do an indirect load, to use the X register as an offset.
+		 */
+		s2 = new_stmt(BPF_LD|BPF_IND|size);
+		s2->s.k = offset;
+		sappend(s, s2);
+	} else {
+		/*
+		 * There is no variable-length header preceding the
+		 * link-layer header; add in outer_off_ll, which, if there's
+		 * a fixed-length header preceding the link-layer header,
+		 * is the length of that header.
+		 */
+		s = new_stmt(BPF_LD|BPF_ABS|size);
+		s->s.k = off_outerll + offset;
+	}
+	return s;
+}
+
+/*
  * Load a value relative to the beginning of the link-layer payload.
  */
 static struct slist *
@@ -1583,6 +1630,10 @@ gen_load_a(offrel, offset, size)
 
 	case OR_LINK:
 		s = gen_load_llrel(offset, size);
+		break;
+
+	case OR_OUTERLINK:
+		s = gen_load_outerllrel(offset, size);
 		break;
 
 	case OR_LLC:
@@ -2810,6 +2861,34 @@ gen_llprefixlen(void)
 }
 
 /*
+ * Generate code to compute the outer link-layer header length, if necessary,
+ * putting it into the X register, and to return either a pointer to a
+ * "struct slist" for the list of statements in that code, or NULL if
+ * no code is necessary.
+ */
+static struct slist *
+gen_outerllprefixlen(void)
+{
+	switch (outerlinktype) {
+
+	case DLT_PRISM_HEADER:
+		return gen_prism_llprefixlen();
+
+	case DLT_IEEE802_11_RADIO_AVS:
+		return gen_avs_llprefixlen();
+
+	case DLT_IEEE802_11_RADIO:
+		return gen_radiotap_llprefixlen();
+
+	case DLT_PPI:
+		return gen_ppi_llprefixlen();
+
+	default:
+		return NULL;
+	}
+}
+
+/*
  * Generate code to load the register containing the variable part of
  * the offset of the link-layer payload into the X register; if no
  * register for that offset has been allocated, allocate it first.
@@ -2897,6 +2976,40 @@ ethertype_to_ppptype(proto)
 }
 
 /*
+ * Generate any tests that, for encapsulation of a link-layer packet
+ * inside another protocol stack, need to be done to check for those
+ * link-layer packets (and that haven't already been done by a check
+ * for that encapsulation).
+ */
+static struct block *
+gen_outerll_check(void)
+{
+	struct block *b0;
+
+	switch (outerlinktype) {
+
+	case DLT_SUNATM:
+		/*
+		 * This is LANE-encapsulated Ethernet; check that the LANE
+		 * packet doesn't begin with an LE Control marker, i.e.
+		 * that it's data, not a control message.
+		 *
+		 * (We've already generated a test for LANE.)
+		 */
+		b0 = gen_cmp(OR_OUTERLINK, SUNATM_PKT_BEGIN_POS, BPF_H, 0xFF00);
+		gen_not(b0);
+		return b0;
+
+	default:
+		/*
+		 * No such tests are necessary.
+		 */
+		return NULL;
+	}
+	/*NOTREACHED*/
+}
+
+/*
  * Generate code to match a particular packet type by matching the
  * link-layer type field or fields in the 802.2 LLC header.
  *
@@ -2953,7 +3066,11 @@ gen_linktype(proto)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
-		return gen_ether_linktype(proto);
+		b0 = gen_outerll_check();
+		b1 = gen_ether_linktype(proto);
+		if (b0 != NULL)
+			gen_and(b0, b1);
+		return b1;
 		/*NOTREACHED*/
 		break;
 
@@ -3016,38 +3133,16 @@ gen_linktype(proto)
 
 	case DLT_SUNATM:
 		/*
-		 * If "is_lane" is set, check for a LANE-encapsulated
-		 * version of this protocol, otherwise check for an
-		 * LLC-encapsulated version of this protocol.
+		 * Check for an LLC-encapsulated version of this protocol;
+		 * if we were checking for LANE, linktype would no longer
+		 * be DLT_SUNATM.
 		 *
-		 * We assume LANE means Ethernet, not Token Ring.
+		 * Check for LLC encapsulation and then check the protocol.
 		 */
-		if (is_lane) {
-			/*
-			 * Check that the packet doesn't begin with an
-			 * LE Control marker.  (We've already generated
-			 * a test for LANE.)
-			 */
-			b0 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-			    0xFF00);
-			gen_not(b0);
-
-			/*
-			 * Now generate an Ethernet test.
-			 */
-			b1 = gen_ether_linktype(proto);
-			gen_and(b0, b1);
-			return b1;
-		} else {
-			/*
-			 * Check for LLC encapsulation and then check the
-			 * protocol.
-			 */
-			b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
-			b1 = gen_llc_linktype(proto);
-			gen_and(b0, b1);
-			return b1;
-		}
+		b0 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
+		b1 = gen_llc_linktype(proto);
+		gen_and(b0, b1);
+		return b1;
 		/*NOTREACHED*/
 		break;
 
@@ -3847,10 +3942,10 @@ gen_ehostop(eaddr, dir)
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(OR_LINK, off_mac + 6, 6, eaddr);
+		return gen_bcmp(OR_LINK, 6, 6, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(OR_LINK, off_mac + 0, 6, eaddr);
+		return gen_bcmp(OR_LINK, 0, 6, eaddr);
 
 	case Q_AND:
 		b0 = gen_ehostop(eaddr, Q_SRC);
@@ -4894,7 +4989,10 @@ gen_gateway(eaddr, alist, proto, dir)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+			b1 = gen_outerll_check();
 			b0 = gen_ehostop(eaddr, Q_OR);
+			if (b1 != NULL)
+				gen_and(b1, b0);
 			break;
 		case DLT_FDDI:
 			b0 = gen_fhostop(eaddr, Q_OR);
@@ -4910,23 +5008,13 @@ gen_gateway(eaddr, alist, proto, dir)
 			b0 = gen_wlanhostop(eaddr, Q_OR);
 			break;
 		case DLT_SUNATM:
-			if (!is_lane)
-				bpf_error(
-				    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
 			/*
-			 * Check that the packet doesn't begin with an
-			 * LE Control marker.  (We've already generated
-			 * a test for LANE.)
+			 * This is LLC-multiplexed traffic; if it were
+			 * LANE, linktype would have been set to
+			 * DLT_EN10MB.
 			 */
-			b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
-			    BPF_H, 0xFF00);
-			gen_not(b1);
-
-			/*
-			 * Now check the MAC address.
-			 */
-			b0 = gen_ehostop(eaddr, Q_OR);
-			gen_and(b1, b0);
+			bpf_error(
+			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
 			break;
 		case DLT_IP_OVER_FC:
 			b0 = gen_ipfchostop(eaddr, Q_OR);
@@ -6257,7 +6345,10 @@ gen_scode(name, q)
 				if (eaddr == NULL)
 					bpf_error(
 					    "unknown ether host '%s'", name);
+				tmp = gen_outerll_check();
 				b = gen_ehostop(eaddr, dir);
+				if (tmp != NULL)
+					gen_and(tmp, b);
 				free(eaddr);
 				return b;
 
@@ -6298,28 +6389,6 @@ gen_scode(name, q)
 					bpf_error(
 					    "unknown Fibre Channel host '%s'", name);
 				b = gen_ipfchostop(eaddr, dir);
-				free(eaddr);
-				return b;
-
-			case DLT_SUNATM:
-				if (!is_lane)
-					break;
-
-				/*
-				 * Check that the packet doesn't begin
-				 * with an LE Control marker.  (We've
-				 * already generated a test for LANE.)
-				 */
-				tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
-				    BPF_H, 0xFF00);
-				gen_not(tmp);
-
-				eaddr = pcap_ether_hostton(name);
-				if (eaddr == NULL)
-					bpf_error(
-					    "unknown ether host '%s'", name);
-				b = gen_ehostop(eaddr, dir);
-				gen_and(tmp, b);
 				free(eaddr);
 				return b;
 			}
@@ -6758,7 +6827,11 @@ gen_ecode(eaddr, q)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
-			return gen_ehostop(eaddr, (int)q.dir);
+			tmp = gen_outerll_check();
+			b = gen_ehostop(eaddr, (int)q.dir);
+			if (tmp != NULL)
+				gen_and(tmp, b);
+			return b;
 		case DLT_FDDI:
 			return gen_fhostop(eaddr, (int)q.dir);
 		case DLT_IEEE802:
@@ -6769,25 +6842,6 @@ gen_ecode(eaddr, q)
 		case DLT_IEEE802_11_RADIO:
 		case DLT_PPI:
 			return gen_wlanhostop(eaddr, (int)q.dir);
-		case DLT_SUNATM:
-			if (is_lane) {
-				/*
-				 * Check that the packet doesn't begin with an
-				 * LE Control marker.  (We've already generated
-				 * a test for LANE.)
-				 */
-				tmp = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS, BPF_H,
-					0xFF00);
-				gen_not(tmp);
-
-				/*
-				 * Now check the MAC address.
-				 */
-				b = gen_ehostop(eaddr, (int)q.dir);
-				gen_and(tmp, b);
-				return b;
-			}
-			break;
 		case DLT_IP_OVER_FC:
 			return gen_ipfchostop(eaddr, (int)q.dir);
 		default:
@@ -7351,7 +7405,11 @@ gen_broadcast(proto)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
-			return gen_ehostop(ebroadcast, Q_DST);
+			b1 = gen_outerll_check();
+			b0 = gen_ehostop(ebroadcast, Q_DST);
+			if (b1 != NULL)
+				gen_and(b1, b0);
+			return b0;
 		case DLT_FDDI:
 			return gen_fhostop(ebroadcast, Q_DST);
 		case DLT_IEEE802:
@@ -7364,25 +7422,6 @@ gen_broadcast(proto)
 			return gen_wlanhostop(ebroadcast, Q_DST);
 		case DLT_IP_OVER_FC:
 			return gen_ipfchostop(ebroadcast, Q_DST);
-		case DLT_SUNATM:
-			if (is_lane) {
-				/*
-				 * Check that the packet doesn't begin with an
-				 * LE Control marker.  (We've already generated
-				 * a test for LANE.)
-				 */
-				b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
-				    BPF_H, 0xFF00);
-				gen_not(b1);
-
-				/*
-				 * Now check the MAC address.
-				 */
-				b0 = gen_ehostop(ebroadcast, Q_DST);
-				gen_and(b1, b0);
-				return b0;
-			}
-			break;
 		default:
 			bpf_error("not a broadcast link");
 		}
@@ -7448,8 +7487,12 @@ gen_multicast(proto)
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
+			b1 = gen_outerll_check();
 			/* ether[0] & 1 != 0 */
-			return gen_mac_multicast(0);
+			b0 = gen_mac_multicast(0);
+			if (b1 != NULL)
+				gen_and(b1, b0);
+			return b0;
 		case DLT_FDDI:
 			/*
 			 * XXX TEST THIS: MIGHT NOT PORT PROPERLY XXX
@@ -7581,23 +7624,6 @@ gen_multicast(proto)
 		case DLT_IP_OVER_FC:
 			b0 = gen_mac_multicast(2);
 			return b0;
-		case DLT_SUNATM:
-			if (is_lane) {
-				/*
-				 * Check that the packet doesn't begin with an
-				 * LE Control marker.  (We've already generated
-				 * a test for LANE.)
-				 */
-				b1 = gen_cmp(OR_LINK, SUNATM_PKT_BEGIN_POS,
-				    BPF_H, 0xFF00);
-				gen_not(b1);
-
-				/* ether[off_mac] & 1 != 0 */
-				b0 = gen_mac_multicast(off_mac);
-				gen_and(b1, b0);
-				return b0;
-			}
-			break;
 		default:
 			break;
 		}
@@ -8469,16 +8495,12 @@ gen_atmtype_abbrev(type)
 		 * the offsets appropriately for LANE-encapsulated
 		 * Ethernet.
 		 *
-		 * "off_mac" is the offset of the Ethernet header,
-		 * which is 2 bytes past the ATM pseudo-header
-		 * (skipping the pseudo-header and 2-byte LE Client
-		 * field).  The other offsets are Ethernet offsets
-		 * relative to "off_mac".
+		 * We assume LANE means Ethernet, not Token Ring.
 		 */
-		is_lane = 1;
-		off_mac = off_payload + 2;	/* MAC header */
-		off_linktype = off_mac + 12;
-		off_linkpl_constant_part = off_mac + 14;	/* Ethernet */
+		linktype = DLT_EN10MB;
+		off_ll = off_payload + 2;	/* Ethernet header */
+		off_linktype = 12;
+		off_linkpl_constant_part = off_ll + 14;	/* Ethernet */
 		off_nl = 0;			/* Ethernet II */
 		off_nl_nosnap = 3;		/* 802.3+802.2 */
 		break;
@@ -8488,7 +8510,7 @@ gen_atmtype_abbrev(type)
 		if (!is_atm)
 			bpf_error("'llc' supported only on raw ATM");
 		b1 = gen_atmfield_code(A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
-		is_lane = 0;
+		linktype = outerlinktype;
 		break;
 
 	default:
