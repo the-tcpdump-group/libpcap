@@ -169,7 +169,9 @@ static struct block *root;
 enum e_offrel {
 	OR_PACKET,	/* full packet data */
 	OR_LINK,	/* link-layer header */
+	OR_LLC,		/* 802.2 LLC header */
 	OR_LINKPL,	/* link-layer payload */
+	OR_MPLSPL,	/* MPLS payload */
 	OR_NET,		/* network-layer header */
 	OR_NET_NOSNAP,	/* network-layer header, with no SNAP header at the link layer */
 	OR_TRAN_IPV4,	/* transport-layer header, with IPv4 network layer */
@@ -1583,7 +1585,9 @@ gen_load_a(offrel, offset, size)
 		s = gen_load_llrel(offset, size);
 		break;
 
+	case OR_LLC:
 	case OR_LINKPL:
+	case OR_MPLSPL:
 		s = gen_load_linkplrel(offset, size);
 		break;
 
@@ -1759,7 +1763,7 @@ gen_ether_linktype(proto)
 		 */
 		b0 = gen_cmp_gt(OR_LINK, off_linktype, BPF_H, ETHERMTU);
 		gen_not(b0);
-		b1 = gen_cmp(OR_LINKPL, 0, BPF_H, (bpf_int32)
+		b1 = gen_cmp(OR_LLC, 0, BPF_H, (bpf_int32)
 			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
@@ -1797,8 +1801,8 @@ gen_ether_linktype(proto)
 		 * This generates code to check both for the
 		 * IPX LSAP (Ethernet_802.2) and for Ethernet_802.3.
 		 */
-		b0 = gen_cmp(OR_LINKPL, 0, BPF_B, (bpf_int32)LLCSAP_IPX);
-		b1 = gen_cmp(OR_LINKPL, 0, BPF_H, (bpf_int32)0xFFFF);
+		b0 = gen_cmp(OR_LLC, 0, BPF_B, (bpf_int32)LLCSAP_IPX);
+		b1 = gen_cmp(OR_LLC, 0, BPF_H, (bpf_int32)0xFFFF);
 		gen_or(b0, b1);
 
 		/*
@@ -1966,7 +1970,7 @@ gen_linux_sll_linktype(proto)
 		 * (i.e., other SAP values)?
 		 */
 		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, LINUX_SLL_P_802_2);
-		b1 = gen_cmp(OR_LINKPL, 0, BPF_H, (bpf_int32)
+		b1 = gen_cmp(OR_LLC, 0, BPF_H, (bpf_int32)
 			     ((proto << 8) | proto));
 		gen_and(b0, b1);
 		return b1;
@@ -1997,7 +2001,7 @@ gen_linux_sll_linktype(proto)
 		 * then put a check for LINUX_SLL_P_802_2 frames
 		 * before it.
 		 */
-		b0 = gen_cmp(OR_LINKPL, 0, BPF_B, (bpf_int32)LLCSAP_IPX);
+		b0 = gen_cmp(OR_LLC, 0, BPF_B, (bpf_int32)LLCSAP_IPX);
 		b1 = gen_snap(0x000000, ETHERTYPE_IPX);
 		gen_or(b0, b1);
 		b0 = gen_cmp(OR_LINK, off_linktype, BPF_H, LINUX_SLL_P_802_2);
@@ -3475,7 +3479,7 @@ gen_snap(orgcode, ptype)
 	snapblock[5] = (orgcode >> 0);	/* lower 8 bits of organization code */
 	snapblock[6] = (ptype >> 8);	/* upper 8 bits of protocol type */
 	snapblock[7] = (ptype >> 0);	/* lower 8 bits of protocol type */
-	return gen_bcmp(OR_LINKPL, 0, 8, snapblock);
+	return gen_bcmp(OR_LLC, 0, 8, snapblock);
 }
 
 /*
@@ -3500,7 +3504,7 @@ gen_llc(void)
 		 * Now check for the purported DSAP and SSAP not being
 		 * 0xFF, to rule out NetWare-over-802.3.
 		 */
-		b1 = gen_cmp(OR_LINKPL, 0, BPF_H, (bpf_int32)0xFFFF);
+		b1 = gen_cmp(OR_LLC, 0, BPF_H, (bpf_int32)0xFFFF);
 		gen_not(b1);
 		gen_and(b0, b1);
 		return b1;
@@ -3567,7 +3571,7 @@ gen_llc_i(void)
 	 * Load the control byte and test the low-order bit; it must
 	 * be clear for I frames.
 	 */
-	s = gen_load_a(OR_LINKPL, 2, BPF_B);
+	s = gen_load_a(OR_LLC, 2, BPF_B);
 	b1 = new_block(JMP(BPF_JSET));
 	b1->s.k = 0x01;
 	b1->stmts = s;
@@ -3590,7 +3594,7 @@ gen_llc_s(void)
 	 * Now compare the low-order 2 bit of the control byte against
 	 * the appropriate value for S frames.
 	 */
-	b1 = gen_mcmp(OR_LINKPL, 2, BPF_B, LLC_S_FMT, 0x03);
+	b1 = gen_mcmp(OR_LLC, 2, BPF_B, LLC_S_FMT, 0x03);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -3609,7 +3613,7 @@ gen_llc_u(void)
 	 * Now compare the low-order 2 bit of the control byte against
 	 * the appropriate value for U frames.
 	 */
-	b1 = gen_mcmp(OR_LINKPL, 2, BPF_B, LLC_U_FMT, 0x03);
+	b1 = gen_mcmp(OR_LLC, 2, BPF_B, LLC_U_FMT, 0x03);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -3627,7 +3631,7 @@ gen_llc_s_subtype(bpf_u_int32 subtype)
 	/*
 	 * Now check for an S frame with the appropriate type.
 	 */
-	b1 = gen_mcmp(OR_LINKPL, 2, BPF_B, subtype, LLC_S_CMD_MASK);
+	b1 = gen_mcmp(OR_LLC, 2, BPF_B, subtype, LLC_S_CMD_MASK);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -3645,7 +3649,7 @@ gen_llc_u_subtype(bpf_u_int32 subtype)
 	/*
 	 * Now check for a U frame with the appropriate type.
 	 */
-	b1 = gen_mcmp(OR_LINKPL, 2, BPF_B, subtype, LLC_U_CMD_MASK);
+	b1 = gen_mcmp(OR_LLC, 2, BPF_B, subtype, LLC_U_CMD_MASK);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -3677,10 +3681,9 @@ gen_llc_linktype(proto)
 		/*
 		 * XXX - should we check both the DSAP and the
 		 * SSAP, like this, or should we check just the
-		 * DSAP, as we do for other types <= ETHERMTU
-		 * (i.e., other SAP values)?
+		 * DSAP, as we do for other SAP values?
 		 */
-		return gen_cmp(OR_LINKPL, 0, BPF_H, (bpf_u_int32)
+		return gen_cmp(OR_LLC, 0, BPF_H, (bpf_u_int32)
 			     ((proto << 8) | proto));
 
 	case LLCSAP_IPX:
@@ -3688,7 +3691,7 @@ gen_llc_linktype(proto)
 		 * XXX - are there ever SNAP frames for IPX on
 		 * non-Ethernet 802.x networks?
 		 */
-		return gen_cmp(OR_LINKPL, 0, BPF_B,
+		return gen_cmp(OR_LLC, 0, BPF_B,
 		    (bpf_int32)LLCSAP_IPX);
 
 	case ETHERTYPE_ATALK:
@@ -3713,7 +3716,7 @@ gen_llc_linktype(proto)
 			 * This is an LLC SAP value, so check
 			 * the DSAP.
 			 */
-			return gen_cmp(OR_LINKPL, 0, BPF_B, (bpf_int32)proto);
+			return gen_cmp(OR_LLC, 0, BPF_B, (bpf_int32)proto);
 		} else {
 			/*
 			 * This is an Ethernet type; we assume that it's
@@ -3734,7 +3737,7 @@ gen_llc_linktype(proto)
 			 * I don't know whether it's worth the extra CPU
 			 * time to do the right check or not.
 			 */
-			return gen_cmp(OR_LINKPL, 6, BPF_H, (bpf_int32)proto);
+			return gen_cmp(OR_LLC, 6, BPF_H, (bpf_int32)proto);
 		}
 	}
 }
@@ -8190,7 +8193,7 @@ gen_mpls(label_num)
 
         if (label_stack_depth > 0) {
             /* just match the bottom-of-stack bit clear */
-            b0 = gen_mcmp(OR_LINKPL, off_nl-2, BPF_B, 0, 0x01);
+            b0 = gen_mcmp(OR_MPLSPL, off_nl-2, BPF_B, 0, 0x01);
         } else {
             /*
              * We're not in an MPLS stack yet, so check the link-layer
@@ -8225,7 +8228,7 @@ gen_mpls(label_num)
 	/* If a specific MPLS label is requested, check it */
 	if (label_num >= 0) {
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
-		b1 = gen_mcmp(OR_LINKPL, off_nl, BPF_W, (bpf_int32)label_num,
+		b1 = gen_mcmp(OR_MPLSPL, off_nl, BPF_W, (bpf_int32)label_num,
 		    0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
