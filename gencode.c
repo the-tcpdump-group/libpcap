@@ -846,13 +846,6 @@ static int reg_off_linkpl;
 static u_int off_linktype;
 
 /*
- * TRUE if "pppoes" appeared in the filter; it causes link-layer type
- * checks to check the PPP header, assumed to follow a LAN-style link-
- * layer header and a PPPoE session header.
- */
-static int is_pppoes = 0;
-
-/*
  * TRUE if the link layer includes an ATM pseudo-header.
  */
 static int is_atm = 0;
@@ -936,11 +929,6 @@ init_linktype(p)
 	off_vci = -1;
 	off_proto = -1;
 	off_payload = -1;
-
-	/*
-	 * And that we're not doing PPPoE.
-	 */
-	is_pppoes = 0;
 
 	/*
 	 * And assume we're not doing SS7.
@@ -1027,8 +1015,8 @@ init_linktype(p)
 	case DLT_PPP_PPPD:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
-		off_linktype = 2;
-		off_linkpl_constant_part = 4;
+		off_linktype = 2;	/* skip HDLC-like framing */
+		off_linkpl_constant_part = 4;	/* skip HDLC-like framing and protocol field */
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
 		return;
@@ -3040,25 +3028,6 @@ gen_linktype(proto)
 			bpf_error("unsupported protocol over mpls");
 			/* NOTREACHED */
 		}
-	}
-
-	/*
-	 * Are we testing PPPoE packets?
-	 */
-	if (is_pppoes) {
-		/*
-		 * The PPPoE session header is part of the
-		 * link-layer payload, so all references
-		 * should be relative to the beginning of
-		 * that payload.
-		 */
-
-		/*
-		 * We use Ethernet protocol types inside libpcap;
-		 * map them to the corresponding PPP protocol types.
-		 */
-		proto = ethertype_to_ppptype(proto);
-		return gen_cmp(OR_LINKPL, off_linktype, BPF_H, (bpf_int32)proto);
 	}
 
 	switch (linktype) {
@@ -8309,8 +8278,6 @@ gen_pppoes(sess_num)
 		b0 = b1;
 	}
 
-	is_pppoes = 1;
-
 	/*
 	 * Change the offsets to point to the type and data fields within
 	 * the PPP packet, and note that this is PPPoE rather than
@@ -8350,15 +8317,12 @@ gen_pppoes(sess_num)
 	 * link-layer payload, including any 802.2 LLC header, so
 	 * it's 6 bytes past off_nl.
 	 */
-	off_linktype = off_nl + 6;
-
-	/*
-	 * The network-layer offsets are relative to the beginning
-	 * of the link-layer payload; that's past the 6-byte
-	 * PPPoE header and the 2-byte PPP header.
-	 */
-	off_nl = 6+2;
-	off_nl_nosnap = 6+2;
+	linktype = DLT_PPP;
+	off_ll = off_linkpl_constant_part + off_nl + 6;	/* 6 bytes past the PPPoE header */
+	off_linktype = 0;
+	off_linkpl_constant_part = off_ll + 2;
+	off_nl = 0;
+	off_nl_nosnap = 0;	/* no 802.2 LLC */
 
 	return b0;
 }
