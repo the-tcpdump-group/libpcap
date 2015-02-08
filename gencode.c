@@ -770,8 +770,8 @@ gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
 }
 
 /*
- * Various code constructs need to know the layout of the data link
- * layer.  These variables give the necessary offsets from the beginning
+ * Various code constructs need to know the layout of the packet.
+ * These variables give the necessary offsets from the beginning
  * of the packet data.
  */
 
@@ -1556,9 +1556,9 @@ gen_load_prevlinkhdrrel(offset, size)
 	} else {
 		/*
 		 * There is no variable-length header preceding the
-		 * link-layer header; add in off_prevlinkhdr, which, if there's
-		 * a fixed-length header preceding the link-layer header,
-		 * is the length of that header.
+		 * link-layer header; add in off_prevlinkhdr, which,
+		 * if there's a fixed-length header preceding the
+		 * link-layer header, is the length of that header.
 		 */
 		s = new_stmt(BPF_LD|BPF_ABS|size);
 		s->s.k = off_prevlinkhdr + offset;
@@ -8097,7 +8097,7 @@ gen_vlan_no_bpf_extensions(int vlan_num)
 
         /* If a specific VLAN is requested, check VLAN id */
         if (vlan_num >= 0) {
-                b1 = gen_mcmp(OR_LINKHDR, 0, BPF_H,
+                b1 = gen_mcmp(OR_LINKPL, 0, BPF_H,
                               (bpf_int32)vlan_num, 0x0fff);
                 gen_and(b0, b1);
                 b0 = b1;
@@ -8286,7 +8286,7 @@ gen_pppoes(sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (sess_num >= 0) {
-		b1 = gen_mcmp(OR_LINKHDR, off_nl, BPF_W,
+		b1 = gen_mcmp(OR_LINKPL, off_nl, BPF_W,
 		    (bpf_int32)sess_num, 0x0000ffff);
 		gen_and(b0, b1);
 		b0 = b1;
