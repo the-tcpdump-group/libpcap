@@ -802,6 +802,12 @@ static int reg_off_ll;
 static u_int off_outerll;
 
 /*
+ * This is the offset of the outermost layers' link-layer header from
+ * the beginning of the raw packet data.
+ */
+static u_int off_outermostll;
+
+/*
  * The offset of the beginning of the link-layer payload, from the beginning
  * of the raw packet data, is, in the general case, the sum of a variable
  * value and a constant value; the variable value may be absent, in which
@@ -906,13 +912,16 @@ static u_int off_nl_nosnap;
 
 static int linktype;
 static int outerlinktype;
+static int outermostlinktype;
 
 static void
 init_linktype(p)
 	pcap_t *p;
 {
-	outerlinktype = pcap_datalink(p);
+	outermostlinktype = pcap_datalink(p);
 	pcap_fddipad = p->fddipad;
+	outerlinktype = outermostlinktype;
+	off_outermostll = 0;
 
 	/*
 	 * No link-layer header inside the payload for another
@@ -2456,7 +2465,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	 * header.
 	 *
 	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_ll".
+	 * header is "off_outermostll".
 	 */
 	if (s == NULL) {
 		/*
@@ -2466,10 +2475,10 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 		 * Load the length of the fixed-length prefix preceding
 		 * the link-layer header (if any) into the X register,
 		 * and store it in the reg_off_linkpl register.
-		 * That length is off_ll.
+		 * That length is off_outermostll.
 		 */
 		s = new_stmt(BPF_LDX|BPF_IMM);
-		s->s.k = off_ll;
+		s->s.k = off_outermostll;
 	}
 
 	/*
@@ -2646,8 +2655,13 @@ insert_compute_vloffsets(b)
 	 * preceding the link-layer header, generate code to load
 	 * the offset of the link-layer header into the register
 	 * assigned to that offset, if any.
+	 *
+	 * XXX - this, and the next switch statement, won't handle
+	 * encapsulation of 802.11 or 802.11+radio information in
+	 * some other protocol stack.  That's significantly more
+	 * complicated.
 	 */
-	switch (linktype) {
+	switch (outermostlinktype) {
 
 	case DLT_PRISM_HEADER:
 		s = gen_load_prism_llprefixlen();
@@ -2675,7 +2689,7 @@ insert_compute_vloffsets(b)
 	 * header, generate code to load the offset of the link-layer
 	 * payload into the register assigned to that offset, if any.
 	 */
-	switch (linktype) {
+	switch (outermostlinktype) {
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
