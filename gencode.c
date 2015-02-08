@@ -890,7 +890,7 @@ static u_int off_payload;
 /*
  * These are offsets to the beginning of the network-layer header.
  * They are relative to the beginning of the link-layer payload (i.e.,
- * they don't include off_linkhdr_constant_part or off_linkpl).
+ * they don't include off_linkhdr_constant_part or off_linkpl_constant_part).
  *
  * If the link layer never uses 802.2 LLC:
  *
