@@ -776,36 +776,40 @@ gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
  */
 
 /*
- * This is the offset of the beginning of the link-layer header from
- * the beginning of the raw packet data.
+ * The offset of the beginning of the link-layer payload, from the beginning
+ * of the raw packet data, is, in the general case, the sum of a variable
+ * value and a constant value; the variable value may be absent, in which
+ * case the offset is only the constant value, and the constant value may
+ * be zero, in which case the offset is only the variable value.
  *
- * It's usually 0, except for 802.11 with a fixed-length radio header.
- * (For 802.11 with a variable-length radio header, we have to generate
- * code to compute that offset; off_linkhdr is 0 in that case.)
+ * off_linkhdr_constant_part is the constant value.
+ *
+ * reg_off_linkhdr is the register number for a register containing the
+ * variable value, and -1 otherwise.
+ *
+ * off_linkhdr_is_variable is 1 if there's a variable part.
  */
-static u_int off_linkhdr;
-
-/*
- * If there's a variable-length header preceding the link-layer header,
- * "reg_off_linkhdr" is the register number for a register containing the
- * length of that header, and therefore the offset of the link-layer
- * header from the beginning of the raw packet data.  Otherwise,
- * "reg_off_linkhdr" is -1.
- */
+static u_int off_linkhdr_constant_part;
 static int reg_off_linkhdr;
+static int off_linkhdr_is_variable;
 
 /*
  * If we're checking a link-layer header for a packet encapsulated in
- * another protocol layer, this is the offset of the previous layers'
- * link-layer header from the beginning of the raw packet data.
+ * another protocol layer, this is the equivalent information for the
+ * previous layers' link-layer header from the beginning of the raw
+ * packet data.
  */
-static u_int off_prevlinkhdr;
+static u_int off_prevlinkhdr_constant_part;
+static int reg_off_prevlinkhdr;
+static int off_prevlinkhdr_is_variable;
 
 /*
- * This is the offset of the outermost layers' link-layer header from
- * the beginning of the raw packet data.
+ * This is the equivalent information for the outermost layers' link-layer
+ * header.
  */
-static u_int off_outermostlinkhdr;
+static u_int off_outermostlinkhdr_constant_part;
+static int reg_off_outermostlinkhdr;
+static int off_outermostlinkhdr_is_variable;
 
 /*
  * The offset of the beginning of the link-layer payload, from the beginning
@@ -828,7 +832,7 @@ static int reg_off_linkpl;
 /*
  * "off_linktype" is the offset to information in the link-layer header
  * giving the packet type.  This offset is relative to the beginning
- * of the link-layer header - i.e., it doesn't include off_linkhdr - so
+ * of the link-layer header - i.e., it doesn't include off_linkhdr_constant_part - so
  * loads with an offset that includes "off_linktype" should use
  * OR_LINKHDR.
  *
@@ -886,7 +890,7 @@ static u_int off_payload;
 /*
  * These are offsets to the beginning of the network-layer header.
  * They are relative to the beginning of the link-layer payload (i.e.,
- * they don't include off_linkhdr or off_linkpl).
+ * they don't include off_linkhdr_constant_part or off_linkpl).
  *
  * If the link layer never uses 802.2 LLC:
  *
@@ -918,17 +922,32 @@ static void
 init_linktype(p)
 	pcap_t *p;
 {
-	outermostlinktype = pcap_datalink(p);
 	pcap_fddipad = p->fddipad;
-	prevlinktype = outermostlinktype;
-	off_outermostlinkhdr = 0;
 
 	/*
-	 * No link-layer header inside the payload for another
-	 * protocol, for now.
+	 * We start out with only one link-layer header.
 	 */
-	linktype = prevlinktype;
-	off_prevlinkhdr = 0;
+	outermostlinktype = pcap_datalink(p);
+	off_outermostlinkhdr_constant_part = 0;
+	off_outermostlinkhdr_is_variable = 0;
+	reg_off_outermostlinkhdr = -1;
+
+	prevlinktype = outermostlinktype;
+	off_prevlinkhdr_constant_part = 0;
+	off_prevlinkhdr_is_variable = 0;
+	reg_off_prevlinkhdr = -1;
+
+	linktype = outermostlinktype;
+	off_linkhdr_constant_part = 0;
+	off_linkhdr_is_variable = 0;
+	reg_off_linkhdr = -1;
+
+	/*
+	 * XXX
+	 */
+	off_linkpl_constant_part = 0;
+	off_linkpl_is_variable = 0;
+	reg_off_linkpl = -1;
 
 	/*
 	 * Assume it's not raw ATM with a pseudo-header, for now.
@@ -949,18 +968,8 @@ init_linktype(p)
 	off_dpc = -1;
 	off_sls = -1;
 
-	/*
-	 * Also assume it's not 802.11.
-	 */
-	off_linkhdr = 0;
-	off_linkpl_constant_part = 0;
-	off_linkpl_is_variable = 0;
-
         label_stack_depth = 0;
         vlan_stack_depth = 0;
-
-	reg_off_linkhdr = -1;
-	reg_off_linkpl = -1;
 
 	switch (linktype) {
 
@@ -1439,17 +1448,17 @@ init_linktype(p)
 		return;
 
 	case DLT_NETANALYZER:
-		off_linkhdr = 4;	/* Ethernet header is past 4-byte pseudo-header */
+		off_linkhdr_constant_part = 4;	/* Ethernet header is past 4-byte pseudo-header */
 		off_linktype = 12;
-		off_linkpl_constant_part = off_linkhdr + 14;	/* pseudo-header+Ethernet header length */
+		off_linkpl_constant_part = off_linkhdr_constant_part + 14;	/* pseudo-header+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
 
 	case DLT_NETANALYZER_TRANSPARENT:
-		off_linkhdr = 12;	/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
+		off_linkhdr_constant_part = 12;	/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
 		off_linktype = 12;
-		off_linkpl_constant_part = off_linkhdr + 14;	/* pseudo-header+preamble+SFD+Ethernet header length */
+		off_linkpl_constant_part = off_linkhdr_constant_part + 14;	/* pseudo-header+preamble+SFD+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		return;
@@ -1493,7 +1502,7 @@ gen_load_linkhdrrel(offset, size)
 	 * header.
 	 *
 	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_linkhdr".
+	 * header is "off_linkhdr_constant_part".
 	 */
 	if (s != NULL) {
 		/*
@@ -1503,17 +1512,17 @@ gen_load_linkhdrrel(offset, size)
 		 * do an indirect load, to use the X register as an offset.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = offset;
+		s2->s.k = off_linkhdr_constant_part + offset;
 		sappend(s, s2);
 	} else {
 		/*
 		 * There is no variable-length header preceding the
-		 * link-layer header; add in off_linkhdr, which, if there's
-		 * a fixed-length header preceding the link-layer header,
-		 * is the length of that header.
+		 * link-layer header; add in off_linkhdr_constant_part, which, if
+		 * there's a fixed-length header preceding the
+		 * link-layer header, is the length of that header.
 		 */
 		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = offset + off_linkhdr;
+		s->s.k = off_linkhdr_constant_part + offset;
 	}
 	return s;
 }
@@ -1541,7 +1550,7 @@ gen_load_prevlinkhdrrel(offset, size)
 	 * header.
 	 *
 	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_prevlinkhdr".
+	 * header is "off_prevlinkhdr_constant_part".
 	 */
 	if (s != NULL) {
 		/*
@@ -1551,17 +1560,17 @@ gen_load_prevlinkhdrrel(offset, size)
 		 * do an indirect load, to use the X register as an offset.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = offset;
+		s2->s.k = off_prevlinkhdr_constant_part + offset;
 		sappend(s, s2);
 	} else {
 		/*
 		 * There is no variable-length header preceding the
-		 * link-layer header; add in off_prevlinkhdr, which,
+		 * link-layer header; add in off_prevlinkhdr_constant_part, which,
 		 * if there's a fixed-length header preceding the
 		 * link-layer header, is the length of that header.
 		 */
 		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_prevlinkhdr + offset;
+		s->s.k = off_prevlinkhdr_constant_part + offset;
 	}
 	return s;
 }
@@ -2465,7 +2474,7 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	 * header.
 	 *
 	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_outermostlinkhdr".
+	 * header is "off_outermostlinkhdr_constant_part".
 	 */
 	if (s == NULL) {
 		/*
@@ -2475,10 +2484,10 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 		 * Load the length of the fixed-length prefix preceding
 		 * the link-layer header (if any) into the X register,
 		 * and store it in the reg_off_linkpl register.
-		 * That length is off_outermostlinkhdr.
+		 * That length is off_outermostlinkhdr_constant_part.
 		 */
 		s = new_stmt(BPF_LDX|BPF_IMM);
-		s->s.k = off_outermostlinkhdr;
+		s->s.k = off_outermostlinkhdr_constant_part;
 	}
 
 	/*
@@ -2738,126 +2747,40 @@ gen_ppi_dlt_check(void)
 	return b;
 }
 
-static struct slist *
-gen_prism_llprefixlen(void)
-{
-	struct slist *s;
-
-	if (reg_off_linkhdr == -1) {
-		/*
-		 * We haven't yet assigned a register for the length
-		 * of the radio header; allocate one.
-		 */
-		reg_off_linkhdr = alloc_reg();
-	}
-
-	/*
-	 * Load the register containing the radio length
-	 * into the X register.
-	 */
-	s = new_stmt(BPF_LDX|BPF_MEM);
-	s->s.k = reg_off_linkhdr;
-	return s;
-}
-
-static struct slist *
-gen_avs_llprefixlen(void)
-{
-	struct slist *s;
-
-	if (reg_off_linkhdr == -1) {
-		/*
-		 * We haven't yet assigned a register for the length
-		 * of the AVS header; allocate one.
-		 */
-		reg_off_linkhdr = alloc_reg();
-	}
-
-	/*
-	 * Load the register containing the AVS length
-	 * into the X register.
-	 */
-	s = new_stmt(BPF_LDX|BPF_MEM);
-	s->s.k = reg_off_linkhdr;
-	return s;
-}
-
-static struct slist *
-gen_radiotap_llprefixlen(void)
-{
-	struct slist *s;
-
-	if (reg_off_linkhdr == -1) {
-		/*
-		 * We haven't yet assigned a register for the length
-		 * of the radiotap header; allocate one.
-		 */
-		reg_off_linkhdr = alloc_reg();
-	}
-
-	/*
-	 * Load the register containing the radiotap length
-	 * into the X register.
-	 */
-	s = new_stmt(BPF_LDX|BPF_MEM);
-	s->s.k = reg_off_linkhdr;
-	return s;
-}
-
 /*
- * At the moment we treat PPI as normal Radiotap encoded
- * packets. The difference is in the function that generates
- * the code at the beginning to compute the header length.
- * Since this code generator of PPI supports bare 802.11
- * encapsulation only (i.e. the encapsulated DLT should be
- * DLT_IEEE802_11) we generate code to check for this too.
- */
-static struct slist *
-gen_ppi_llprefixlen(void)
-{
-	struct slist *s;
-
-	if (reg_off_linkhdr == -1) {
-		/*
-		 * We haven't yet assigned a register for the length
-		 * of the radiotap header; allocate one.
-		 */
-		reg_off_linkhdr = alloc_reg();
-	}
-
-	/*
-	 * Load the register containing the PPI length
-	 * into the X register.
-	 */
-	s = new_stmt(BPF_LDX|BPF_MEM);
-	s->s.k = reg_off_linkhdr;
-	return s;
-}
-
-/*
- * Generate code to compute the link-layer header length, if necessary,
- * putting it into the X register, and to return either a pointer to a
- * "struct slist" for the list of statements in that code, or NULL if
- * no code is necessary.
+ * Generate code to load the register containing the variable part of
+ * the offset of the link-layer header into the X register; if no
+ * register for that offset has been allocated, allocate it first.
+ * (The code to set that register will be generated later, but will
+ * be placed earlier in the code sequence.)
  */
 static struct slist *
 gen_llprefixlen(void)
 {
-	switch (linktype) {
+	struct slist *s;
 
-	case DLT_PRISM_HEADER:
-		return gen_prism_llprefixlen();
+	if (off_linkhdr_is_variable) {
+		if (reg_off_linkhdr == -1) {
+			/*
+			 * We haven't yet assigned a register for the
+			 * variable part of the offset of the link-layer
+			 * header; allocate one.
+			 */
+			reg_off_linkhdr = alloc_reg();
+		}
 
-	case DLT_IEEE802_11_RADIO_AVS:
-		return gen_avs_llprefixlen();
-
-	case DLT_IEEE802_11_RADIO:
-		return gen_radiotap_llprefixlen();
-
-	case DLT_PPI:
-		return gen_ppi_llprefixlen();
-
-	default:
+		/*
+		 * Load the register containing the variable part of the
+		 * offset of the link-layer header into the X register.
+		 */
+		s = new_stmt(BPF_LDX|BPF_MEM);
+		s->s.k = reg_off_linkhdr;
+		return s;
+	} else {
+		/*
+		 * That offset isn't variable, there's no variable part,
+		 * so we don't need to generate any code.
+		 */
 		return NULL;
 	}
 }
@@ -2871,21 +2794,30 @@ gen_llprefixlen(void)
 static struct slist *
 gen_prevlinkhdrprefixlen(void)
 {
-	switch (prevlinktype) {
+	struct slist *s;
 
-	case DLT_PRISM_HEADER:
-		return gen_prism_llprefixlen();
+	if (off_prevlinkhdr_is_variable) {
+		if (reg_off_prevlinkhdr == -1) {
+			/*
+			 * We haven't yet assigned a register for the
+			 * variable part of the offset of the link-layer
+			 * header; allocate one.
+			 */
+			reg_off_prevlinkhdr = alloc_reg();
+		}
 
-	case DLT_IEEE802_11_RADIO_AVS:
-		return gen_avs_llprefixlen();
-
-	case DLT_IEEE802_11_RADIO:
-		return gen_radiotap_llprefixlen();
-
-	case DLT_PPI:
-		return gen_ppi_llprefixlen();
-
-	default:
+		/*
+		 * Load the register containing the variable part of the
+		 * offset of the link-layer header into the X register.
+		 */
+		s = new_stmt(BPF_LDX|BPF_MEM);
+		s->s.k = reg_off_prevlinkhdr;
+		return s;
+	} else {
+		/*
+		 * That offset isn't variable, there's no variable part,
+		 * so we don't need to generate any code.
+		 */
 		return NULL;
 	}
 }
@@ -6974,7 +6906,7 @@ gen_load(proto, inst, size)
 		 * into the X register and then added to the index).
 		 */
 		tmp = new_stmt(BPF_LD|BPF_IND|size);
-		tmp->s.k = off_linkhdr;
+		tmp->s.k = off_linkhdr_constant_part;
 		sappend(s, tmp);
 		sappend(inst->s, s);
 		break;
@@ -8331,10 +8263,19 @@ gen_pppoes(sess_num)
 	 * link-layer payload, including any 802.2 LLC header, so
 	 * it's 6 bytes past off_nl.
 	 */
+	prevlinktype = linktype;
+	off_prevlinkhdr_constant_part = off_linkhdr_constant_part;
+	off_prevlinkhdr_is_variable = off_linkhdr_is_variable;
+	reg_off_prevlinkhdr = reg_off_linkhdr;
+
 	linktype = DLT_PPP;
-	off_linkhdr = off_linkpl_constant_part + off_nl + 6;	/* 6 bytes past the PPPoE header */
+	off_linkhdr_constant_part = off_linkpl_constant_part + off_nl + 6;	/* 6 bytes past the PPPoE header */
+	reg_off_linkhdr = reg_off_linkpl;
+	off_linkhdr_is_variable = off_linkpl_is_variable;
+
 	off_linktype = 0;
-	off_linkpl_constant_part = off_linkhdr + 2;
+	off_linkpl_constant_part = off_linkhdr_constant_part + 2;
+
 	off_nl = 0;
 	off_nl_nosnap = 0;	/* no 802.2 LLC */
 
@@ -8475,10 +8416,14 @@ gen_atmtype_abbrev(type)
 		 *
 		 * We assume LANE means Ethernet, not Token Ring.
 		 */
+		prevlinktype = linktype;
+		off_prevlinkhdr_constant_part = off_linkhdr_constant_part;
+		off_prevlinkhdr_is_variable = off_linkhdr_is_variable;
+		reg_off_prevlinkhdr = reg_off_linkhdr;
 		linktype = DLT_EN10MB;
-		off_linkhdr = off_payload + 2;	/* Ethernet header */
+		off_linkhdr_constant_part = off_payload + 2;	/* Ethernet header */
 		off_linktype = 12;
-		off_linkpl_constant_part = off_linkhdr + 14;	/* Ethernet */
+		off_linkpl_constant_part = off_linkhdr_constant_part + 14;	/* Ethernet */
 		off_nl = 0;			/* Ethernet II */
 		off_nl_nosnap = 3;		/* 802.3+802.2 */
 		break;
