@@ -190,16 +190,15 @@ typedef struct {
  * is relative to the beginning of.
  */
 enum e_offrel {
-	OR_PACKET,	/* full packet data */
-	OR_LINKHDR,	/* link-layer header */
-	OR_PREVLINKHDR,	/* previous link-layer header */
-	OR_LLC,		/* 802.2 LLC header */
-	OR_LINKPL,	/* link-layer payload */
-	OR_MPLSPL,	/* MPLS payload */
-	OR_NET,		/* network-layer header */
-	OR_NET_NOSNAP,	/* network-layer header, with no SNAP header at the link layer */
-	OR_TRAN_IPV4,	/* transport-layer header, with IPv4 network layer */
-	OR_TRAN_IPV6	/* transport-layer header, with IPv6 network layer */
+	OR_PACKET,		/* full packet data */
+	OR_LINKHDR,		/* link-layer header */
+	OR_PREVLINKHDR,		/* previous link-layer header */
+	OR_LLC,			/* 802.2 LLC header */
+	OR_MPLSPL,		/* MPLS payload */
+	OR_LINKPL,		/* link-layer payload */
+	OR_LINKPL_NOSNAP,	/* link-layer payload, with no SNAP header at the link layer */
+	OR_TRAN_IPV4,		/* transport-layer header, with IPv4 network layer */
+	OR_TRAN_IPV6		/* transport-layer header, with IPv6 network layer */
 };
 
 #ifdef INET6
@@ -1551,16 +1550,15 @@ gen_load_a(offrel, offset, size)
 		break;
 
 	case OR_LLC:
-	case OR_LINKPL:
 	case OR_MPLSPL:
 		s = gen_load_absoffsetrel(&off_linkpl, offset, size);
 		break;
 
-	case OR_NET:
+	case OR_LINKPL:
 		s = gen_load_absoffsetrel(&off_linkpl, off_nl + offset, size);
 		break;
 
-	case OR_NET_NOSNAP:
+	case OR_LINKPL_NOSNAP:
 		s = gen_load_absoffsetrel(&off_linkpl, off_nl_nosnap + offset, size);
 		break;
 
@@ -3628,7 +3626,7 @@ gen_hostop(addr, mask, dir, proto, src_off, dst_off)
 		abort();
 	}
 	b0 = gen_linktype(proto);
-	b1 = gen_mcmp(OR_NET, offset, BPF_W, (bpf_int32)addr, mask);
+	b1 = gen_mcmp(OR_LINKPL, offset, BPF_W, (bpf_int32)addr, mask);
 	gen_and(b0, b1);
 	return b1;
 }
@@ -3674,12 +3672,12 @@ gen_hostop6(addr, mask, dir, proto, src_off, dst_off)
 	/* this order is important */
 	a = (u_int32_t *)addr;
 	m = (u_int32_t *)mask;
-	b1 = gen_mcmp(OR_NET, offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
-	b0 = gen_mcmp(OR_NET, offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
+	b1 = gen_mcmp(OR_LINKPL, offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
+	b0 = gen_mcmp(OR_LINKPL, offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
 	gen_and(b0, b1);
-	b0 = gen_mcmp(OR_NET, offset + 4, BPF_W, ntohl(a[1]), ntohl(m[1]));
+	b0 = gen_mcmp(OR_LINKPL, offset + 4, BPF_W, ntohl(a[1]), ntohl(m[1]));
 	gen_and(b0, b1);
-	b0 = gen_mcmp(OR_NET, offset + 0, BPF_W, ntohl(a[0]), ntohl(m[0]));
+	b0 = gen_mcmp(OR_LINKPL, offset + 0, BPF_W, ntohl(a[0]), ntohl(m[0]));
 	gen_and(b0, b1);
 	b0 = gen_linktype(proto);
 	gen_and(b0, b1);
@@ -4405,25 +4403,25 @@ gen_dnhostop(addr, dir)
 	}
 	b0 = gen_linktype(ETHERTYPE_DN);
 	/* Check for pad = 1, long header case */
-	tmp = gen_mcmp(OR_NET, 2, BPF_H,
+	tmp = gen_mcmp(OR_LINKPL, 2, BPF_H,
 	    (bpf_int32)ntohs(0x0681), (bpf_int32)ntohs(0x07FF));
-	b1 = gen_cmp(OR_NET, 2 + 1 + offset_lh,
+	b1 = gen_cmp(OR_LINKPL, 2 + 1 + offset_lh,
 	    BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b1);
 	/* Check for pad = 0, long header case */
-	tmp = gen_mcmp(OR_NET, 2, BPF_B, (bpf_int32)0x06, (bpf_int32)0x7);
-	b2 = gen_cmp(OR_NET, 2 + offset_lh, BPF_H, (bpf_int32)ntohs((u_short)addr));
+	tmp = gen_mcmp(OR_LINKPL, 2, BPF_B, (bpf_int32)0x06, (bpf_int32)0x7);
+	b2 = gen_cmp(OR_LINKPL, 2 + offset_lh, BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 1, short header case */
-	tmp = gen_mcmp(OR_NET, 2, BPF_H,
+	tmp = gen_mcmp(OR_LINKPL, 2, BPF_H,
 	    (bpf_int32)ntohs(0x0281), (bpf_int32)ntohs(0x07FF));
-	b2 = gen_cmp(OR_NET, 2 + 1 + offset_sh, BPF_H, (bpf_int32)ntohs((u_short)addr));
+	b2 = gen_cmp(OR_LINKPL, 2 + 1 + offset_sh, BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 	/* Check for pad = 0, short header case */
-	tmp = gen_mcmp(OR_NET, 2, BPF_B, (bpf_int32)0x02, (bpf_int32)0x7);
-	b2 = gen_cmp(OR_NET, 2 + offset_sh, BPF_H, (bpf_int32)ntohs((u_short)addr));
+	tmp = gen_mcmp(OR_LINKPL, 2, BPF_B, (bpf_int32)0x02, (bpf_int32)0x7);
+	b2 = gen_cmp(OR_LINKPL, 2 + offset_sh, BPF_H, (bpf_int32)ntohs((u_short)addr));
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 
@@ -4447,17 +4445,17 @@ gen_mpls_linktype(proto)
 
         case Q_IP:
                 /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
+                b0 = gen_mcmp(OR_LINKPL, -2, BPF_B, 0x01, 0x01);
                 /* match the IPv4 version number */
-                b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x40, 0xf0);
+                b1 = gen_mcmp(OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
                 gen_and(b0, b1);
                 return b1;
 
        case Q_IPV6:
                 /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(OR_NET, -2, BPF_B, 0x01, 0x01);
+                b0 = gen_mcmp(OR_LINKPL, -2, BPF_B, 0x01, 0x01);
                 /* match the IPv4 version number */
-                b1 = gen_mcmp(OR_NET, 0, BPF_B, 0x60, 0xf0);
+                b1 = gen_mcmp(OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
                 gen_and(b0, b1);
                 return b1;
 
@@ -5041,7 +5039,7 @@ gen_ipfrag()
 	struct block *b;
 
 	/* not IPv4 frag other than the first frag */
-	s = gen_load_a(OR_NET, 6, BPF_H);
+	s = gen_load_a(OR_LINKPL, 6, BPF_H);
 	b = new_block(JMP(BPF_JSET));
 	b->s.k = 0x1fff;
 	b->stmts = s;
@@ -5082,7 +5080,7 @@ gen_portop(port, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip proto 'proto' and not a fragment other than the first fragment */
-	tmp = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)proto);
+	tmp = gen_cmp(OR_LINKPL, 9, BPF_B, (bpf_int32)proto);
 	b0 = gen_ipfrag();
 	gen_and(tmp, b0);
 
@@ -5173,7 +5171,7 @@ gen_portop6(port, proto, dir)
 
 	/* ip6 proto 'proto' */
 	/* XXX - catch the first fragment of a fragmented packet? */
-	b0 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)proto);
+	b0 = gen_cmp(OR_LINKPL, 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
 	case Q_SRC:
@@ -5274,7 +5272,7 @@ gen_portrangeop(port1, port2, proto, dir)
 	struct block *b0, *b1, *tmp;
 
 	/* ip proto 'proto' and not a fragment other than the first fragment */
-	tmp = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)proto);
+	tmp = gen_cmp(OR_LINKPL, 9, BPF_B, (bpf_int32)proto);
 	b0 = gen_ipfrag();
 	gen_and(tmp, b0);
 
@@ -5377,7 +5375,7 @@ gen_portrangeop6(port1, port2, proto, dir)
 
 	/* ip6 proto 'proto' */
 	/* XXX - catch the first fragment of a fragmented packet? */
-	b0 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)proto);
+	b0 = gen_cmp(OR_LINKPL, 6, BPF_B, (bpf_int32)proto);
 
 	switch (dir) {
 	case Q_SRC:
@@ -5872,7 +5870,7 @@ gen_proto(v, proto, dir)
 		 */
 		b0 = gen_linktype(ETHERTYPE_IP);
 #ifndef CHASE_CHAIN
-		b1 = gen_cmp(OR_NET, 9, BPF_B, (bpf_int32)v);
+		b1 = gen_cmp(OR_LINKPL, 9, BPF_B, (bpf_int32)v);
 #else
 		b1 = gen_protochain(v, Q_IP);
 #endif
@@ -5912,13 +5910,13 @@ gen_proto(v, proto, dir)
 			 */
 			b0 = gen_linktype(LLCSAP_ISONS<<8 | LLCSAP_ISONS);
 			/* OSI in C-HDLC is stuffed with a fudge byte */
-			b1 = gen_cmp(OR_NET_NOSNAP, 1, BPF_B, (long)v);
+			b1 = gen_cmp(OR_LINKPL_NOSNAP, 1, BPF_B, (long)v);
 			gen_and(b0, b1);
 			return b1;
 
 		default:
 			b0 = gen_linktype(LLCSAP_ISONS);
-			b1 = gen_cmp(OR_NET_NOSNAP, 0, BPF_B, (long)v);
+			b1 = gen_cmp(OR_LINKPL_NOSNAP, 0, BPF_B, (long)v);
 			gen_and(b0, b1);
 			return b1;
 		}
@@ -5929,7 +5927,7 @@ gen_proto(v, proto, dir)
 		 * 4 is the offset of the PDU type relative to the IS-IS
 		 * header.
 		 */
-		b1 = gen_cmp(OR_NET_NOSNAP, 4, BPF_B, (long)v);
+		b1 = gen_cmp(OR_LINKPL_NOSNAP, 4, BPF_B, (long)v);
 		gen_and(b0, b1);
 		return b1;
 
@@ -6011,10 +6009,10 @@ gen_proto(v, proto, dir)
 		 * Also check for a fragment header before the final
 		 * header.
 		 */
-		b2 = gen_cmp(OR_NET, 6, BPF_B, IPPROTO_FRAGMENT);
-		b1 = gen_cmp(OR_NET, 40, BPF_B, (bpf_int32)v);
+		b2 = gen_cmp(OR_LINKPL, 6, BPF_B, IPPROTO_FRAGMENT);
+		b1 = gen_cmp(OR_LINKPL, 40, BPF_B, (bpf_int32)v);
 		gen_and(b2, b1);
-		b2 = gen_cmp(OR_NET, 6, BPF_B, (bpf_int32)v);
+		b2 = gen_cmp(OR_LINKPL, 6, BPF_B, (bpf_int32)v);
 		gen_or(b2, b1);
 #else
 		b1 = gen_protochain(v, Q_IPV6);
@@ -7191,8 +7189,8 @@ gen_broadcast(proto)
 			bpf_error("netmask not known, so 'ip broadcast' not supported");
 		b0 = gen_linktype(ETHERTYPE_IP);
 		hostmask = ~netmask;
-		b1 = gen_mcmp(OR_NET, 16, BPF_W, (bpf_int32)0, hostmask);
-		b2 = gen_mcmp(OR_NET, 16, BPF_W,
+		b1 = gen_mcmp(OR_LINKPL, 16, BPF_W, (bpf_int32)0, hostmask);
+		b2 = gen_mcmp(OR_LINKPL, 16, BPF_W,
 			      (bpf_int32)(~0 & hostmask), hostmask);
 		gen_or(b1, b2);
 		gen_and(b0, b2);
@@ -7386,13 +7384,13 @@ gen_multicast(proto)
 
 	case Q_IP:
 		b0 = gen_linktype(ETHERTYPE_IP);
-		b1 = gen_cmp_ge(OR_NET, 16, BPF_B, (bpf_int32)224);
+		b1 = gen_cmp_ge(OR_LINKPL, 16, BPF_B, (bpf_int32)224);
 		gen_and(b0, b1);
 		return b1;
 
 	case Q_IPV6:
 		b0 = gen_linktype(ETHERTYPE_IPV6);
-		b1 = gen_cmp(OR_NET, 24, BPF_B, (bpf_int32)255);
+		b1 = gen_cmp(OR_LINKPL, 24, BPF_B, (bpf_int32)255);
 		gen_and(b0, b1);
 		return b1;
 	}
@@ -7868,7 +7866,7 @@ gen_vlan_no_bpf_extensions(int vlan_num)
 
         /* If a specific VLAN is requested, check VLAN id */
         if (vlan_num >= 0) {
-                b1 = gen_mcmp(OR_NET, 0, BPF_H,
+                b1 = gen_mcmp(OR_LINKPL, 0, BPF_H,
                               (bpf_int32)vlan_num, 0x0fff);
                 gen_and(b0, b1);
                 b0 = b1;
@@ -8065,7 +8063,7 @@ gen_pppoes(sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (sess_num >= 0) {
-		b1 = gen_mcmp(OR_NET, 0, BPF_W,
+		b1 = gen_mcmp(OR_LINKPL, 0, BPF_W,
 		    (bpf_int32)sess_num, 0x0000ffff);
 		gen_and(b0, b1);
 		b0 = b1;
