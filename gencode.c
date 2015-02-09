@@ -194,7 +194,7 @@ enum e_offrel {
 	OR_LINKHDR,		/* link-layer header */
 	OR_PREVLINKHDR,		/* previous link-layer header */
 	OR_LLC,			/* 802.2 LLC header */
-	OR_MPLSPL,		/* MPLS payload */
+	OR_PREVMPLSHDR,		/* previous MPLS header */
 	OR_LINKPL,		/* link-layer payload */
 	OR_LINKPL_NOSNAP,	/* link-layer payload, with no SNAP header at the link layer */
 	OR_TRAN_IPV4,		/* transport-layer header, with IPv4 network layer */
@@ -1550,8 +1550,11 @@ gen_load_a(offrel, offset, size)
 		break;
 
 	case OR_LLC:
-	case OR_MPLSPL:
 		s = gen_load_absoffsetrel(&off_linkpl, offset, size);
+		break;
+
+	case OR_PREVMPLSHDR:
+		s = gen_load_absoffsetrel(&off_linkpl, off_nl - 4 + offset, size);
 		break;
 
 	case OR_LINKPL:
@@ -7979,7 +7982,7 @@ gen_mpls(label_num)
 
         if (label_stack_depth > 0) {
             /* just match the bottom-of-stack bit clear */
-            b0 = gen_mcmp(OR_MPLSPL, off_nl-2, BPF_B, 0, 0x01);
+            b0 = gen_mcmp(OR_PREVMPLSHDR, 2, BPF_B, 0, 0x01);
         } else {
             /*
              * We're not in an MPLS stack yet, so check the link-layer
@@ -8014,7 +8017,7 @@ gen_mpls(label_num)
 	/* If a specific MPLS label is requested, check it */
 	if (label_num >= 0) {
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
-		b1 = gen_mcmp(OR_MPLSPL, off_nl, BPF_W, (bpf_int32)label_num,
+		b1 = gen_mcmp(OR_LINKPL, 0, BPF_W, (bpf_int32)label_num,
 		    0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
 		b0 = b1;
