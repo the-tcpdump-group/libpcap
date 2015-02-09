@@ -7868,7 +7868,7 @@ gen_vlan_no_bpf_extensions(int vlan_num)
 
         /* If a specific VLAN is requested, check VLAN id */
         if (vlan_num >= 0) {
-                b1 = gen_mcmp(OR_LINKPL, 0, BPF_H,
+                b1 = gen_mcmp(OR_NET, 0, BPF_H,
                               (bpf_int32)vlan_num, 0x0fff);
                 gen_and(b0, b1);
                 b0 = b1;
@@ -7951,6 +7951,14 @@ gen_vlan(vlan_num)
 #endif
 			b0 = gen_vlan_no_bpf_extensions(vlan_num);
                 break;
+
+	case DLT_IEEE802_11:
+	case DLT_PRISM_HEADER:
+	case DLT_IEEE802_11_RADIO_AVS:
+	case DLT_IEEE802_11_RADIO:
+		b0 = gen_vlan_no_bpf_extensions(vlan_num);
+		break;
+
 	default:
 		bpf_error("no VLAN support for data link type %d",
 		      linktype);
