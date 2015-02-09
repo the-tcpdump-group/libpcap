@@ -250,9 +250,7 @@ static struct block *gen_mcmp(enum e_offrel, u_int, u_int, bpf_int32,
 static struct block *gen_bcmp(enum e_offrel, u_int, u_int, const u_char *);
 static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
     bpf_u_int32, bpf_u_int32, int, bpf_int32);
-static struct slist *gen_load_linkhdrrel(u_int, u_int);
-static struct slist *gen_load_prevlinkhdrrel(u_int, u_int);
-static struct slist *gen_load_linkplrel(u_int, u_int);
+static struct slist *gen_load_absoffsetrel(bpf_abs_offset *, u_int, u_int);
 static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
 static struct slist *gen_loadx_iphdrlen(void);
 static struct block *gen_uncond(int);
@@ -1489,136 +1487,40 @@ init_linktype(p)
 }
 
 /*
- * Load a value relative to the beginning of the link-layer header.
- * The link-layer header doesn't necessarily begin at the beginning
- * of the packet data; there might be a variable-length prefix containing
- * radio information.
+ * Load a value relative to the specified absolute offset.
  */
 static struct slist *
-gen_load_linkhdrrel(offset, size)
-	u_int offset, size;
+gen_load_absoffsetrel(bpf_abs_offset *abs_offset, u_int offset, u_int size)
 {
 	struct slist *s, *s2;
 
-	s = gen_abs_offset_varpart(&off_linkhdr);
+	s = gen_abs_offset_varpart(abs_offset);
 
 	/*
 	 * If "s" is non-null, it has code to arrange that the X register
-	 * contains the length of the prefix preceding the link-layer
-	 * header.
+	 * contains the variable part of the absolute offset, so we
+	 * generate a load relative to that, with an offset of
+	 * abs_offset->constant_part + offset.
 	 *
-	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_linkhdr.constant_part".
+	 * Otherwise, we can do an absolute load with an offset of
+	 * abs_offset->constant_part + offset.
 	 */
 	if (s != NULL) {
 		/*
-		 * There's a variable-length prefix preceding the
-		 * link-layer header.  "s" points to a list of statements
-		 * that put the length of that prefix into the X register.
-		 * do an indirect load, to use the X register as an offset.
+		 * "s" points to a list of statements that puts the
+		 * variable part of the absolute offset into the X register.
+		 * Do an indirect load, to use the X register as an offset.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = off_linkhdr.constant_part + offset;
+		s2->s.k = abs_offset->constant_part + offset;
 		sappend(s, s2);
 	} else {
 		/*
-		 * There is no variable-length header preceding the
-		 * link-layer header; add in off_linkhdr.constant_part, which, if
-		 * there's a fixed-length header preceding the
-		 * link-layer header, is the length of that header.
+		 * There is no variable part of the absolute offset, so
+		 * just do an absolute load.
 		 */
 		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_linkhdr.constant_part + offset;
-	}
-	return s;
-}
-
-/*
- * Load a value relative to the beginning of the previous link-layer header,
- * if we're also looking at an inner link-layer header encapsulated
- * within other protocol layers.
- *
- * The link-layer header doesn't necessarily begin at the beginning
- * of the packet data; there might be a variable-length prefix containing
- * radio information.
- */
-static struct slist *
-gen_load_prevlinkhdrrel(offset, size)
-	u_int offset, size;
-{
-	struct slist *s, *s2;
-
-	s = gen_abs_offset_varpart(&off_prevlinkhdr);
-
-	/*
-	 * If "s" is non-null, it has code to arrange that the X register
-	 * contains the length of the prefix preceding the link-layer
-	 * header.
-	 *
-	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_prevlinkhdr.constant_part".
-	 */
-	if (s != NULL) {
-		/*
-		 * There's a variable-length prefix preceding the
-		 * link-layer header.  "s" points to a list of statements
-		 * that put the length of that prefix into the X register.
-		 * do an indirect load, to use the X register as an offset.
-		 */
-		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = off_prevlinkhdr.constant_part + offset;
-		sappend(s, s2);
-	} else {
-		/*
-		 * There is no variable-length header preceding the
-		 * link-layer header; add in off_prevlinkhdr.constant_part, which,
-		 * if there's a fixed-length header preceding the
-		 * link-layer header, is the length of that header.
-		 */
-		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_prevlinkhdr.constant_part + offset;
-	}
-	return s;
-}
-
-/*
- * Load a value relative to the beginning of the link-layer payload.
- */
-static struct slist *
-gen_load_linkplrel(offset, size)
-	u_int offset, size;
-{
-	struct slist *s, *s2;
-
-	s = gen_abs_offset_varpart(&off_linkpl);
-
-	/*
-	 * If s is non-null, the offset of the link-layer payload is
-	 * variable, and s points to a list of instructions that
-	 * arrange that the X register contains the variable part
-	 * of that offset.  The sum of that variable part and
-	 * off_linkpl.constant_part is the offset.
-	 *
-	 * Otherwise, the offset of the link-layer payload is constant,
-	 * and is in off_linkpl.constant_part.
-	 */
-	if (s != NULL) {
-		/*
-		 * The variable part of the offset of the link-layer payload
-		 * is in the X register.  Do an indirect load, to use the X
-		 * register as part of the offset of the load.
-		 */
-		s2 = new_stmt(BPF_LD|BPF_IND|size);
-		s2->s.k = off_linkpl.constant_part + offset;
-		sappend(s, s2);
-	} else {
-		/*
-		 * The offset of the link-layer payload is constant,
-		 * and is in off_linkpl.constant_part; load the value
-		 * at that offset plus the specified offset.
-		 */
-		s = new_stmt(BPF_LD|BPF_ABS|size);
-		s->s.k = off_linkpl.constant_part + offset;
+		s->s.k = abs_offset->constant_part + offset;
 	}
 	return s;
 }
@@ -1641,25 +1543,25 @@ gen_load_a(offrel, offset, size)
 		break;
 
 	case OR_LINKHDR:
-		s = gen_load_linkhdrrel(offset, size);
+		s = gen_load_absoffsetrel(&off_linkhdr, offset, size);
 		break;
 
 	case OR_PREVLINKHDR:
-		s = gen_load_prevlinkhdrrel(offset, size);
+		s = gen_load_absoffsetrel(&off_prevlinkhdr, offset, size);
 		break;
 
 	case OR_LLC:
 	case OR_LINKPL:
 	case OR_MPLSPL:
-		s = gen_load_linkplrel(offset, size);
+		s = gen_load_absoffsetrel(&off_linkpl, offset, size);
 		break;
 
 	case OR_NET:
-		s = gen_load_linkplrel(off_nl + offset, size);
+		s = gen_load_absoffsetrel(&off_linkpl, off_nl + offset, size);
 		break;
 
 	case OR_NET_NOSNAP:
-		s = gen_load_linkplrel(off_nl_nosnap + offset, size);
+		s = gen_load_absoffsetrel(&off_linkpl, off_nl_nosnap + offset, size);
 		break;
 
 	case OR_TRAN_IPV4:
@@ -1688,7 +1590,7 @@ gen_load_a(offrel, offset, size)
 		break;
 
 	case OR_TRAN_IPV6:
-		s = gen_load_linkplrel(off_nl + 40 + offset, size);
+		s = gen_load_absoffsetrel(&off_linkpl, off_nl + 40 + offset, size);
 		break;
 
 	default:
