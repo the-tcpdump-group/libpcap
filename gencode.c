@@ -8065,7 +8065,7 @@ gen_pppoes(sess_num)
 
 	/* If a specific session is requested, check PPPoE session id */
 	if (sess_num >= 0) {
-		b1 = gen_mcmp(OR_LINKPL, off_nl, BPF_W,
+		b1 = gen_mcmp(OR_NET, 0, BPF_W,
 		    (bpf_int32)sess_num, 0x0000ffff);
 		gen_and(b0, b1);
 		b0 = b1;
