@@ -7955,7 +7955,11 @@ gen_vlan(vlan_num)
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
 #if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
-		if (vlan_stack_depth == 0) {
+		/* Verify that this is the outer part of the packet and
+		 * not encapsulated somehow. */
+		if (vlan_stack_depth == 0 && !off_linkhdr.is_variable &&
+		    off_linkhdr.constant_part ==
+		    off_outermostlinkhdr.constant_part) {
 			/*
 			 * Do we need special VLAN handling?
 			 */
