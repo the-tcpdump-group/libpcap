@@ -5557,15 +5557,8 @@ gen_protochain(v, proto, dir)
 	 * branches, and backward branch support is unlikely to appear
 	 * in kernel BPF engines.)
 	 */
-	switch (linktype) {
-
-	case DLT_IEEE802_11:
-	case DLT_PRISM_HEADER:
-	case DLT_IEEE802_11_RADIO_AVS:
-	case DLT_IEEE802_11_RADIO:
-	case DLT_PPI:
-		bpf_error("'protochain' not supported with 802.11");
-	}
+	if (off_linkpl.is_variable)
+		bpf_error("'protochain' not supported with variable length headers");
 
 	no_optimize = 1; /*this code is not compatible with optimzer yet */
 
