@@ -20,7 +20,7 @@ int main(int argc, char **argv)
   pcap_if_t *d;
   char *s;
   bpf_u_int32 net, mask;
-  
+
   char errbuf[PCAP_ERRBUF_SIZE+1];
   if (pcap_findalldevs(&alldevs, errbuf) == -1)
   {
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
   {
     printf("Preferred device is on network: %s/%s\n",iptos(net), iptos(mask));
   }
-  
+
   exit(0);
 }
 
@@ -66,8 +66,8 @@ static void ifprint(pcap_if_t *d)
   printf("\tLoopback: %s\n",(d->flags & PCAP_IF_LOOPBACK)?"yes":"no");
 
   for(a=d->addresses;a;a=a->next) {
-    switch(a->addr->sa_family)
-    {
+    if (a->addr != NULL)
+      switch(a->addr->sa_family) {
       case AF_INET:
         printf("\tAddress Family: AF_INET\n");
         if (a->addr)
@@ -111,7 +111,9 @@ static void ifprint(pcap_if_t *d)
       default:
         printf("\tAddress Family: Unknown (%d)\n", a->addr->sa_family);
         break;
-    }
+      }
+    else
+      fprintf(stderr, "\tWarning: a->addr is NULL, skipping this address.\n");
   }
   printf("\n");
 }
