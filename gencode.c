@@ -1630,7 +1630,7 @@ gen_loadx_iphdrlen()
 		 * the value from the X register.
 		 */
 		s2 = new_stmt(BPF_LD|BPF_IND|BPF_B);
-		s2->s.k = off_nl;
+		s2->s.k = off_linkpl.constant_part + off_nl;
 		sappend(s, s2);
 		s2 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
 		s2->s.k = 0xf;
