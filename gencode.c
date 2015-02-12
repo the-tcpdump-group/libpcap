@@ -981,21 +981,21 @@ init_linktype(p)
 		off_linkpl.constant_part = 6;
 		off_nl = 0;		/* XXX in reality, variable! */
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_ARCNET_LINUX:
 		off_linktype = 4;
 		off_linkpl.constant_part = 8;
 		off_nl = 0;		/* XXX in reality, variable! */
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_EN10MB:
 		off_linktype = 12;
 		off_linkpl.constant_part = 14;	/* Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
-		return;
+		break;
 
 	case DLT_SLIP:
 		/*
@@ -1006,7 +1006,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 16;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_SLIP_BSDOS:
 		/* XXX this may be the same as the DLT_PPP_BSDOS case */
@@ -1015,7 +1015,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 24;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_NULL:
 	case DLT_LOOP:
@@ -1023,14 +1023,14 @@ init_linktype(p)
 		off_linkpl.constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_ENC:
 		off_linktype = 0;
 		off_linkpl.constant_part = 12;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_PPP:
 	case DLT_PPP_PPPD:
@@ -1040,7 +1040,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 4;	/* skip HDLC-like framing and protocol field */
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_PPP_ETHER:
 		/*
@@ -1051,14 +1051,14 @@ init_linktype(p)
 		off_linkpl.constant_part = 8;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_PPP_BSDOS:
 		off_linktype = 5;
 		off_linkpl.constant_part = 24;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_FDDI:
 		/*
@@ -1075,7 +1075,7 @@ init_linktype(p)
 		off_linkpl.constant_part += pcap_fddipad;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_IEEE802:
 		/*
@@ -1105,7 +1105,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 14;	/* Token Ring MAC header length */
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
@@ -1133,7 +1133,7 @@ init_linktype(p)
 		off_linkpl.is_variable = 1;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_PPI:
 		/*
@@ -1150,7 +1150,7 @@ init_linktype(p)
 		off_linkpl.is_variable = 1;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_ATM_RFC1483:
 	case DLT_ATM_CLIP:	/* Linux ATM defines this */
@@ -1169,7 +1169,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 0;	/* packet begins with LLC header */
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_SUNATM:
 		/*
@@ -1185,7 +1185,7 @@ init_linktype(p)
 		off_linkpl.constant_part = off_payload;	/* if LLC-encapsulated */
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_RAW:
 	case DLT_IPV4:
@@ -1194,14 +1194,14 @@ init_linktype(p)
 		off_linkpl.constant_part = 0;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket */
 		off_linktype = 14;
 		off_linkpl.constant_part = 16;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_LTALK:
 		/*
@@ -1213,7 +1213,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 0;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_IP_OVER_FC:
 		/*
@@ -1230,7 +1230,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 16;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
-		return;
+		break;
 
 	case DLT_FRELAY:
 		/*
@@ -1241,7 +1241,7 @@ init_linktype(p)
 		off_linkpl.constant_part = 0;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
                 /*
                  * the only BPF-interesting FRF.16 frames are non-control frames;
@@ -1253,21 +1253,21 @@ init_linktype(p)
 		off_linkpl.constant_part = 0;
 		off_nl = 4;
 		off_nl_nosnap = 0;	/* XXX - for now -> no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_APPLE_IP_OVER_IEEE1394:
 		off_linktype = 16;
 		off_linkpl.constant_part = 18;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_SYMANTEC_FIREWALL:
 		off_linktype = 6;
 		off_linkpl.constant_part = 44;
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 0;	/* XXX - what does it do with 802.3 packets? */
-		return;
+		break;
 
 #ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
@@ -1275,7 +1275,7 @@ init_linktype(p)
 		off_linkpl.constant_part = PFLOG_HDRLEN;
 		off_nl = 0;
 		off_nl_nosnap = 0;	/* no 802.2 LLC */
-		return;
+		break;
 #endif
 
         case DLT_JUNIPER_MFR:
@@ -1288,21 +1288,21 @@ init_linktype(p)
 		off_linkpl.constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-                return;
+                break;
 
 	case DLT_JUNIPER_ATM1:
 		off_linktype = 4;		/* in reality variable between 4-8 */
 		off_linkpl.constant_part = 4;	/* in reality variable between 4-8 */
 		off_nl = 0;
 		off_nl_nosnap = 10;
-		return;
+		break;
 
 	case DLT_JUNIPER_ATM2:
 		off_linktype = 8;		/* in reality variable between 8-12 */
 		off_linkpl.constant_part = 8;	/* in reality variable between 8-12 */
 		off_nl = 0;
 		off_nl_nosnap = 10;
-		return;
+		break;
 
 		/* frames captured on a Juniper PPPoE service PIC
 		 * contain raw ethernet frames */
@@ -1312,70 +1312,70 @@ init_linktype(p)
 		off_linktype = 16;
 		off_nl = 18;		/* Ethernet II */
 		off_nl_nosnap = 21;	/* 802.3+802.2 */
-		return;
+		break;
 
 	case DLT_JUNIPER_PPPOE_ATM:
 		off_linktype = 4;
 		off_linkpl.constant_part = 6;
 		off_nl = 0;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_JUNIPER_GGSN:
 		off_linktype = 6;
 		off_linkpl.constant_part = 12;
 		off_nl = 0;
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_JUNIPER_ES:
 		off_linktype = 6;
 		off_linkpl.constant_part = -1;	/* not really a network layer but raw IP addresses */
 		off_nl = -1;		/* not really a network layer but raw IP addresses */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_JUNIPER_MONITOR:
 		off_linktype = 12;
 		off_linkpl.constant_part = 12;
 		off_nl = 0;		/* raw IP/IP6 header */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_BACNET_MS_TP:
 		off_linktype = -1;
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_JUNIPER_SERVICES:
 		off_linktype = 12;
 		off_linkpl.constant_part = -1;	/* L3 proto location dep. on cookie type */
 		off_nl = -1;		/* L3 proto location dep. on cookie type */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_JUNIPER_VP:
 		off_linktype = 18;
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_JUNIPER_ST:
 		off_linktype = 18;
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_JUNIPER_ISM:
 		off_linktype = 8;
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_JUNIPER_VS:
 	case DLT_JUNIPER_SRX_E2E:
@@ -1385,7 +1385,7 @@ init_linktype(p)
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_MTP2:
 		off_li = 2;
@@ -1398,7 +1398,7 @@ init_linktype(p)
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_MTP2_WITH_PHDR:
 		off_li = 6;
@@ -1411,7 +1411,7 @@ init_linktype(p)
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_ERF:
 		off_li = 22;
@@ -1424,14 +1424,14 @@ init_linktype(p)
 		off_linkpl.constant_part = -1;
 		off_nl = -1;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_PFSYNC:
 		off_linktype = -1;
 		off_linkpl.constant_part = 4;
 		off_nl = 0;
 		off_nl_nosnap = 0;
-		return;
+		break;
 
 	case DLT_AX25_KISS:
 		/*
@@ -1441,14 +1441,14 @@ init_linktype(p)
 		off_linkpl.constant_part = -1;
 		off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
 		off_nl_nosnap = -1;	/* no 802.2 LLC */
-		return;
+		break;
 
 	case DLT_IPNET:
 		off_linktype = 1;
 		off_linkpl.constant_part = 24;	/* ipnet header length */
 		off_nl = 0;
 		off_nl_nosnap = -1;
-		return;
+		break;
 
 	case DLT_NETANALYZER:
 		off_linkhdr.constant_part = 4;	/* Ethernet header is past 4-byte pseudo-header */
@@ -1456,7 +1456,7 @@ init_linktype(p)
 		off_linkpl.constant_part = off_linkhdr.constant_part + 14;	/* pseudo-header+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
-		return;
+		break;
 
 	case DLT_NETANALYZER_TRANSPARENT:
 		off_linkhdr.constant_part = 12;	/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
@@ -1464,7 +1464,7 @@ init_linktype(p)
 		off_linkpl.constant_part = off_linkhdr.constant_part + 14;	/* pseudo-header+preamble+SFD+Ethernet header length */
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
-		return;
+		break;
 
 	default:
 		/*
@@ -1477,12 +1477,13 @@ init_linktype(p)
 			off_linkpl.constant_part = -1;
 			off_nl = -1;
 			off_nl_nosnap = -1;
-			return;
+		} else {
+			bpf_error("unknown data link type %d", linktype);
 		}
-
+		break;
 	}
-	bpf_error("unknown data link type %d", linktype);
-	/* NOTREACHED */
+
+	off_outermostlinkhdr = off_prevlinkhdr = off_linkhdr;
 }
 
 /*
