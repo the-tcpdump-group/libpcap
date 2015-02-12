@@ -1107,10 +1107,14 @@ init_linktype(p)
 		off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
-	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
+		off_linkhdr.is_variable = 1;
+		/* Fall through, 802.11 doesn't have a variable link
+		 * prefix but is otherwise the same. */
+
+	case DLT_IEEE802_11:
 		/*
 		 * 802.11 doesn't really have a link-level type field.
 		 * We set "off_linktype" to the offset of the LLC header.
@@ -1148,6 +1152,7 @@ init_linktype(p)
 		off_linktype = 24;
 		off_linkpl.constant_part = 0;	/* link-layer header is variable-length */
 		off_linkpl.is_variable = 1;
+		off_linkhdr.is_variable = 1;
 		off_nl = 8;		/* 802.2+SNAP */
 		off_nl_nosnap = 3;	/* 802.2 */
 		break;
