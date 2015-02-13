@@ -2574,6 +2574,15 @@ insert_compute_vloffsets(b)
 {
 	struct slist *s;
 
+	/* There is an implicit dependency between the link
+	 * payload and link header since the payload computation
+	 * includes the variable part of the header. Therefore,
+	 * if nobody else has allocated a register for the link
+	 * header and we need it, do it now. */
+	if (off_linkpl.reg != -1 && off_linkhdr.is_variable &&
+	    off_linkhdr.reg == -1)
+		off_linkhdr.reg = alloc_reg();
+
 	/*
 	 * For link-layer types that have a variable-length header
 	 * preceding the link-layer header, generate code to load
