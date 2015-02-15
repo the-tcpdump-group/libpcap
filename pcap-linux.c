@@ -393,7 +393,9 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 static int	iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf);
 #endif
+#ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
+#endif
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 #ifdef SO_ATTACH_FILTER
@@ -5617,6 +5619,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 
 #endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 
+#ifdef HAVE_PACKET_RING
 /*
  * Find out if we have any form of fragmentation/reassembly offloading.
  *
@@ -5723,6 +5726,8 @@ iface_get_offload(pcap_t *handle _U_)
 	return 0;
 }
 #endif /* SIOCETHTOOL */
+
+#endif /* HAVE_PACKET_RING */
 
 #endif /* HAVE_PF_PACKET_SOCKETS */
 
