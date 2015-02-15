@@ -314,6 +314,9 @@ struct capture_source_type {
 	int (*findalldevs_op)(pcap_if_t **, char *);
 	pcap_t *(*create_op)(const char *, char *, int *);
 } capture_source_types[] = {
+#ifdef PCAP_SUPPORT_ODP
+	{ NULL, odp_create },
+#endif
 #ifdef HAVE_DAG_API
 	{ dag_findalldevs, dag_create },
 #endif
@@ -537,13 +540,39 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 	if (p == NULL)
 		return (NULL);
 
-	p->opt.source = strdup(source);
-	if (p->opt.source == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		free(p);
-		return (NULL);
+#ifdef PCAP_SUPPORT_ODP
+	if (strstr(source, ",")) {
+		char *delim = ",";
+		p = pcap_alloc_pcap_t(ebuf, size + sizeof(struct pcap_odp));
+		if (p == NULL)
+			return (NULL);
+
+		p->opt.source = strdup(strtok((char *) source, delim));
+		if (p->opt.source == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+					pcap_strerror(errno));
+			free(p);
+			return (NULL);
+		}
+		p->opt.destination = strdup(strtok(NULL, delim));
+		if (p->opt.destination == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			pcap_strerror(errno));
+			free(p);
+			return (NULL);
+		}
+	} else {
+#endif
+		p->opt.source = strdup(source);
+		if (p->opt.source == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			pcap_strerror(errno));
+			free(p);
+			return (NULL);
+		}
+#ifdef PCAP_SUPPORT_ODP
 	}
+#endif
 
 	/*
 	 * Default to "can't set rfmon mode"; if it's supported by

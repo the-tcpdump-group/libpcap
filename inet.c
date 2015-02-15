@@ -887,12 +887,22 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	register struct sockaddr_in *sin4;
 	struct ifreq ifr;
 
+#ifdef PCAP_SUPPORT_ODP
+	if (!strncmp(device, "odp:", 4))
+		device += 4;
+	else if (!strncmp(device, "netmap:", 7))
+		device += 7;
+#endif /* PCAP_SUPPORT_ODP */
+
 	/*
 	 * The pseudo-device "any" listens on all interfaces and therefore
 	 * has the network address and -mask "0.0.0.0" therefore catching
 	 * all traffic. Using NULL for the interface is the same as "any".
 	 */
 	if (!device || strcmp(device, "any") == 0
+#ifdef PCAP_SUPPORT_ODP
+	    || !strncmp(device, "vale", 4)
+#endif /* PCAP_SUPPORT_ODP */
 #ifdef HAVE_DAG_API
 	    || strstr(device, "dag") != NULL
 #endif

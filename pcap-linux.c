@@ -138,6 +138,12 @@
 #include <poll.h>
 #include <dirent.h>
 
+#ifdef PCAP_SUPPORT_ODP
+#include <sys/time.h>
+#define SHM_PKT_POOL_SIZE      (512*2048)
+#define SHM_PKT_POOL_BUF_SIZE  1856
+#endif /* PCAP_SUPPORT_ODP */
+
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
@@ -2424,6 +2430,11 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 			break;
 		}
 	}
+
+#ifdef PCAP_SUPPORT_ODP
+	/* ODP not yet support filtering_in_kernel */
+	can_filter_in_kernel = 0;
+#endif
 
 	/*
 	 * NOTE: at this point, we've set both the "len" and "filter"

@@ -40,6 +40,13 @@
 extern "C" {
 #endif
 
+#ifdef PCAP_SUPPORT_ODP
+#include <odp.h>
+#include <odph_linux.h>
+#include <odph_eth.h>
+#include <odph_ip.h>
+#endif /* PCAP_SUPPORT_ODP */
+
 #ifdef WIN32
 #include <Packet32.h>
 extern CRITICAL_SECTION g_PcapCompileCriticalSection;
@@ -106,6 +113,9 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #define MAXIMUM_SNAPLEN		262144
 
 struct pcap_opt {
+#ifdef PCAP_SUPPORT_ODP
+	char	*destination;
+#endif
 	char	*source;
 	int	timeout;	/* timeout for buffering */
 	int	buffer_size;
@@ -133,6 +143,14 @@ typedef int	(*setmintocopy_op_t)(pcap_t *, int);
 typedef Adapter *(*getadapter_op_t)(pcap_t *);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
+
+#ifdef PCAP_SUPPORT_ODP
+struct pcap_odp {
+	odp_pktio_t pktio;
+	odp_pktio_t pktio_second;
+	bool is_netmap;
+};
+#endif /* PCAP_SUPPORT_ODP */
 
 /*
  * We put all the stuff used in the read code path at the beginning,
@@ -455,6 +473,10 @@ char	*pcap_win32strerror(void);
 int	install_bpf_program(pcap_t *, struct bpf_program *);
 
 int	pcap_strcasecmp(const char *, const char *);
+
+#ifdef PCAP_SUPPORT_ODP
+pcap_t* odp_create(const char *, char *, int *);
+#endif
 
 #ifdef __cplusplus
 }
