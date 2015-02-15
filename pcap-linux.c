@@ -366,6 +366,12 @@ static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 #endif
 
+#ifdef TP_STATUS_VLAN_TPID_VALID
+# define VLAN_TPID(hdr, hv)	(((hv)->tp_vlan_tpid || ((hdr)->tp_status & TP_STATUS_VLAN_TPID_VALID)) ? (hv)->tp_vlan_tpid : ETH_P_8021Q)
+#else
+# define VLAN_TPID(hdr, hv)	ETH_P_8021Q
+#endif
+
 /*
  * Wrap some ioctl calls
  */
@@ -1665,7 +1671,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
 			tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
-			tag->vlan_tpid = htons(ETH_P_8021Q);
+			tag->vlan_tpid = htons(VLAN_TPID(aux, aux));
 			tag->vlan_tci = htons(aux->tp_vlan_tci);
 
                         /* store vlan tci to bpf_aux_data struct for userland bpf filter */
@@ -4231,7 +4237,8 @@ static int pcap_handle_packet_mmap(
 		unsigned int tp_sec,
 		unsigned int tp_usec,
 		int tp_vlan_tci_valid,
-		__u16 tp_vlan_tci)
+		__u16 tp_vlan_tci,
+		__u16 tp_vlan_tpid)
 {
 	struct pcap_linux *handlep = handle->priv;
 	unsigned char *bp;
@@ -4337,7 +4344,7 @@ static int pcap_handle_packet_mmap(
 		memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
 		tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
-		tag->vlan_tpid = htons(ETH_P_8021Q);
+		tag->vlan_tpid = htons(tp_vlan_tpid);
 		tag->vlan_tci = htons(tp_vlan_tci);
 
 		pcaphdr.caplen += VLAN_TAG_LEN;
@@ -4396,6 +4403,7 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 				h.h1->tp_snaplen,
 				h.h1->tp_sec,
 				h.h1->tp_usec,
+				0,
 				0,
 				0);
 		if (ret == 1) {
@@ -4475,7 +4483,8 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 #else
 				h.h2->tp_vlan_tci != 0,
 #endif
-				h.h2->tp_vlan_tci);
+				h.h2->tp_vlan_tci,
+				VLAN_TPID(h.h2, h.h2));
 		if (ret == 1) {
 			pkts++;
 			handlep->packets_read++;
@@ -4576,7 +4585,8 @@ again:
 #else
 					tp3_hdr->hv1.tp_vlan_tci != 0,
 #endif
-					tp3_hdr->hv1.tp_vlan_tci);
+					tp3_hdr->hv1.tp_vlan_tci,
+					VLAN_TPID(tp3_hdr, &tp3_hdr->hv1));
 			if (ret == 1) {
 				pkts++;
 				handlep->packets_read++;
