@@ -191,6 +191,7 @@
  /* check for memory mapped access avaibility. We assume every needed 
   * struct is defined if the macro TPACKET_HDRLEN is defined, because it
   * uses many ring related structs and macros */
+# ifdef PCAP_SUPPORT_PACKET_RING
 # ifdef TPACKET_HDRLEN
 #  define HAVE_PACKET_RING
 #  ifdef TPACKET3_HDRLEN
@@ -202,6 +203,7 @@
 #   define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
 #  endif /* TPACKET2_HDRLEN */
 # endif /* TPACKET_HDRLEN */
+# endif /* PCAP_SUPPORT_PACKET_RING */
 #endif /* PF_PACKET */
 
 #ifdef SO_ATTACH_FILTER
