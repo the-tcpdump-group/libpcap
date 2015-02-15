@@ -360,11 +360,11 @@ dlpi)
 	#
 	# Checks to see if Solaris has the public libdlpi(3LIB) library.
 	# Note: The existence of /usr/include/libdlpi.h does not mean it is the
-	# public libdlpi(3LIB) version. Before libdlpi was made public, a 
-	# private version also existed, which did not have the same APIs. 
+	# public libdlpi(3LIB) version. Before libdlpi was made public, a
+	# private version also existed, which did not have the same APIs.
 	# Due to a gcc bug, the default search path for 32-bit libraries does
 	# not include /lib, we add it explicitly here.
-	# [http://bugs.opensolaris.org/view_bug.do?bug_id=6619485]. 
+	# [http://bugs.opensolaris.org/view_bug.do?bug_id=6619485].
 	# Also, due to the bug above applications that link to libpcap with
 	# libdlpi will have to add "-L/lib" option to "configure".
 	#
@@ -446,6 +446,13 @@ linux)
 	if test x$with_libnl != xno ; then
 		have_any_nl="no"
 
+                incdir=-I/usr/include/libnl3
+                libnldir=
+                if test x$withval != x ; then
+                  libnldir=-L${withval}/lib/.libs
+                  incdir=-I${withval}/include
+                fi
+
 		#
 		# Try libnl 3.x first.
 		#
@@ -454,13 +461,14 @@ linux)
 			#
 			# Yes, we have libnl 3.x.
 			#
-			LIBS="-lnl-genl-3 -lnl-3 $LIBS"
+			LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
 			AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 			AC_DEFINE(HAVE_LIBNL_3_x,1,[if libnl exists and is version 3.x])
 			AC_DEFINE(HAVE_LIBNL_NLE,1,[libnl has NLE_FAILURE])
 			AC_DEFINE(HAVE_LIBNL_SOCKETS,1,[libnl has new-style socket api])
+			V_INCLS="$V_INCLS ${incdir}"
 			have_any_nl="yes"
-		])
+		],[], ${incdir} ${libnldir} -lnl-genl-3 -lnl-3 )
 
 		if test x$have_any_nl = xno ; then
 			#
@@ -471,7 +479,7 @@ linux)
 				#
 				# Yes, we have libnl 2.x.
 				#
-				LIBS="-lnl-genl -lnl $LIBS"
+				LIBS="${libnldir} -lnl-genl -lnl $LIBS"
 				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 				AC_DEFINE(HAVE_LIBNL_2_x,1,[if libnl exists and is version 2.x])
 				AC_DEFINE(HAVE_LIBNL_NLE,1,[libnl has NLE_FAILURE])
@@ -489,7 +497,7 @@ linux)
 				#
 				# Yes.
 				#
-				LIBS="-lnl $LIBS"
+				LIBS="${libnldir} -lnl $LIBS"
 				AC_DEFINE(HAVE_LIBNL,1,[if libnl exists])
 				have_any_nl="yes"
 			])
@@ -527,7 +535,7 @@ bpf)
 	    #include <net/if.h>
 	    #include <net/bpf.h>],
 	    [return (BIOCROTZBUF + BPF_BUFMODE_ZBUF);],
-	    [  
+	    [
 		AC_MSG_RESULT(yes)
 		AC_DEFINE(HAVE_ZEROCOPY_BPF, 1,
 		[define if the system supports zerocopy BPF])
@@ -775,7 +783,7 @@ if test "$want_dag" != no; then
 	if test -z "$dag_lib_dir"; then
 	    dag_lib_dir="$dag_root/lib"
 	fi
-	
+
 	if test -z "$dag_tools_dir"; then
 	    dag_tools_dir="$dag_root/tools"
 	fi
@@ -810,7 +818,7 @@ if test $ac_cv_lbl_dag_api = yes; then
 		AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
 		LIBS="$LIBS -ldag"
 		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
-		
+
 		AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
 		if test "$ac_dag_have_vdag" = 1; then
 			AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
@@ -1639,7 +1647,7 @@ if test "x$enable_dbus" != "xno"; then
 			#
 			AC_MSG_ERROR([Due to freedesktop.org bug 74029, D-Bus capture support is not available on OS X])
 		esac
-	else		
+	else
 		case "$host_os" in
 
 		darwin*)
