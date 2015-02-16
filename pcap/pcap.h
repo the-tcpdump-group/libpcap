@@ -412,6 +412,7 @@ int	pcap_fileno(pcap_t *);
 
 pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
+pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
 FILE	*pcap_dump_file(pcap_dumper_t *);
 long	pcap_dump_ftell(pcap_dumper_t *);
 int	pcap_dump_flush(pcap_dumper_t *);
