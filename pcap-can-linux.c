@@ -49,7 +49,6 @@
 
 #include "pcap-int.h"
 #include "pcap-can-linux.h"
-#include "can-helper.h"
 
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
@@ -67,6 +66,8 @@
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
+
+#include "can-helper.h"
 
 /* not yet defined anywhere */
 #ifndef PF_CAN
@@ -293,7 +294,7 @@ can_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	int enable_canfd = 1;
 
 	/* parse CAN frame */
-	required_mtu = parse_canframe(buf, &frame);
+	required_mtu = parse_canframe((void*)buf, &frame);
 	/* fprint_canframe(stderr, &frame, "\n", 0, CAN_MAX_DLEN); */
 	if (!required_mtu){
 		fprintf(stderr, "\nWrong CAN-frame format! Try:\n\n");
@@ -336,7 +337,6 @@ can_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int
 can_setfilter_linux(pcap_t *p, struct bpf_program *fp)
 {
-	/* not yet implemented */
 	return 0;
 }
 
