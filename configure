@@ -8193,7 +8193,7 @@ if test "x$ac_cv_lib_usb_1_0_libusb_init" = xyes; then :
 
 $as_echo "#define PCAP_SUPPORT_CANUSB 1" >>confdefs.h
 
-			CANUSB_SRC=can-helper.c pcap-canusb-linux.c
+			CANUSB_SRC=pcap-canusb-linux.c
 			LIBS="-lusb-1.0 -lpthread $LIBS"
 			ac_lbl_has_libusb=yes
 
@@ -8253,7 +8253,7 @@ if test "x$ac_cv_header_linux_can_h" = xyes; then :
 
 $as_echo "#define PCAP_SUPPORT_CAN 1" >>confdefs.h
 
-			    CAN_SRC=can-helper.c pcap-can-linux.c
+			    CAN_SRC=pcap-can-linux.c
 			    { $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is supported" >&5
 $as_echo "$as_me: CAN sniffing is supported" >&6;}
 
