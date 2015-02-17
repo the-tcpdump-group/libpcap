@@ -297,6 +297,8 @@ EXTRA_DIST = \
 	pcap-bt-linux.h \
 	pcap-bt-monitor-linux.c \
 	pcap-bt-monitor-linux.h \
+        can-helper.c \
+	can-helper.h \
 	pcap-can-linux.c \
 	pcap-can-linux.h \
 	pcap-canusb-linux.c \
