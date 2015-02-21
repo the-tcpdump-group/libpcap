@@ -316,7 +316,7 @@ struct pcap_linux {
 /*
  * Prototypes for internal functions and methods.
  */
-static void map_arphrd_to_dlt(pcap_t *, int, const char *, int);
+static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 #ifdef HAVE_PF_PACKET_SOCKETS
 static short int map_packet_type_to_sll_type(short int);
 #endif
@@ -2580,8 +2580,12 @@ map_packet_type_to_sll_type(short int sll_pkttype)
  *
  *  Sets the link type to -1 if unable to map the type.
  */
-static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
-			      int cooked_ok)
+static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd
+#ifndef IW_MODE_MONITOR
+_U_
+#endif
+,
+			      int arptype, const char *device, int cooked_ok)
 {
 	static const char cdma_rmnet[] = "cdma_rmnet";
 
@@ -2624,7 +2628,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
 		 * pcap_can_set_rfmon_linux(); are there any others??
 		 */
 #ifdef IW_MODE_MONITOR
-		if (has_wext(handle->fd, device, handle->errbuf) != 1) {
+		if (has_wext(sock_fd, device, handle->errbuf) == 1) {
 			/*
 			 * It supports the wireless extensions, so it's a Wi-Fi
 			 * device; don't offer DOCSIS.
@@ -3133,7 +3137,7 @@ activate_new(pcap_t *handle)
 			close(sock_fd);
 			return arptype;
 		}
-		map_arphrd_to_dlt(handle, arptype, device, 1);
+		map_arphrd_to_dlt(handle, sock_fd, arptype, device, 1);
 		if (handle->linktype == -1 ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
@@ -5784,7 +5788,7 @@ activate_old(pcap_t *handle)
 	 * Try to find the DLT_ type corresponding to that
 	 * link-layer type.
 	 */
-	map_arphrd_to_dlt(handle, arptype, device, 0);
+	map_arphrd_to_dlt(handle, handle->fd, arptype, device, 0);
 	if (handle->linktype == -1) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "unknown arptype %d", arptype);
