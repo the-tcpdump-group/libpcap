@@ -2439,7 +2439,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
 		}
 	
 		/*
-		 * This is (presumably) a real Ethernet capture; give it a
+		 * Is this a real Ethernet device?  If so, give it a
 		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
 		 * that an application can let you choose it, in case you're
 		 * capturing DOCSIS traffic that a Cisco Cable Modem
@@ -2453,16 +2453,27 @@ static void map_arphrd_to_dlt(pcap_t *handle, int arptype, const char *device,
 		 * a Cisco CMTS won't put traffic onto it or get traffic
 		 * bridged onto it?  ISDN is handled in "activate_new()",
 		 * as we fall back on cooked mode there; are there any
-		 * others?
+		 * others, and we handle 802.11 devices by using
+		 * pcap_can_set_rfmon_linux(); are there any others??
 		 */
-		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-		/*
-		 * If that fails, just leave the list empty.
-		 */
-		if (handle->dlt_list != NULL) {
-			handle->dlt_list[0] = DLT_EN10MB;
-			handle->dlt_list[1] = DLT_DOCSIS;
-			handle->dlt_count = 2;
+#ifdef IW_MODE_MONITOR
+		if (has_wext(handle->fd, device, handle->errbuf) != 1) {
+			/*
+			 * It supports the wireless extensions, so it's a Wi-Fi
+			 * device; don't offer DOCSIS.
+			 */
+		} else
+#endif
+		{
+			handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+			/*
+			 * If that fails, just leave the list empty.
+			 */
+			if (handle->dlt_list != NULL) {
+				handle->dlt_list[0] = DLT_EN10MB;
+				handle->dlt_list[1] = DLT_DOCSIS;
+				handle->dlt_count = 2;
+			}
 		}
 		/* FALLTHROUGH */
 
