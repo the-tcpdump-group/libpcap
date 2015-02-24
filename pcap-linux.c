@@ -2395,6 +2395,51 @@ map_packet_type_to_sll_type(short int sll_pkttype)
 }
 #endif
 
+static int
+is_wifi(int sock_fd
+#ifndef IW_MODE_MONITOR
+_U_
+#endif
+, const char *device)
+{
+	char *pathstr;
+	struct stat statb;
+#ifdef IW_MODE_MONITOR
+	char errbuf[PCAP_ERRBUF_SIZE];
+#endif
+
+	/*
+	 * See if there's a sysfs wireless directory for it.
+	 * If so, it's a wireless interface.
+	 */
+	if (asprintf(&pathstr, "/sys/class/net/%s/wireless", device) == -1) {
+		/*
+		 * Just give up here.
+		 */
+		return 0;
+	}
+	if (stat(pathstr, &statb) == 0) {
+		free(pathstr);
+		return 1;
+	}
+	free(pathstr);
+
+#ifdef IW_MODE_MONITOR
+	/*
+	 * OK, maybe it's not wireless, or maybe this kernel doesn't
+	 * support sysfs.  Try the wireless extensions.
+	 */
+	if (has_wext(sock_fd, device, errbuf) == 1) {
+		/*
+		 * It supports the wireless extensions, so it's a Wi-Fi
+		 * device.
+		 */
+		return 1;
+	}
+#endif
+	return 0;
+}
+
 /*
  *  Linux uses the ARP hardware type to identify the type of an
  *  interface. pcap uses the DLT_xxx constants for this. This
@@ -2413,12 +2458,8 @@ map_packet_type_to_sll_type(short int sll_pkttype)
  *
  *  Sets the link type to -1 if unable to map the type.
  */
-static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd
-#ifndef IW_MODE_MONITOR
-_U_
-#endif
-,
-			      int arptype, const char *device, int cooked_ok)
+static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
+			      const char *device, int cooked_ok)
 {
 	static const char cdma_rmnet[] = "cdma_rmnet";
 
@@ -2429,7 +2470,7 @@ _U_
 		 * For various annoying reasons having to do with DHCP
 		 * software, some versions of Android give the mobile-
 		 * phone-network interface an ARPHRD_ value of
-		 * ARPHRD_ETHER, even though the packet supplied by
+		 * ARPHRD_ETHER, even though the packets supplied by
 		 * that interface have no link-layer header, and begin
 		 * with an IP header, so that the ARPHRD_ value should
 		 * be ARPHRD_NONE.
@@ -2452,23 +2493,18 @@ _U_
 		 * DOCSIS frames out on the wire inside the low-level
 		 * Ethernet framing).
 		 *
-		 * XXX - are there any sorts of "fake Ethernet" that have
-		 * ARPHRD_ETHER but that *shouldn't offer DLT_DOCSIS as
+		 * XXX - are there any other sorts of "fake Ethernet" that
+		 * have ARPHRD_ETHER but that shouldn't offer DLT_DOCSIS as
 		 * a Cisco CMTS won't put traffic onto it or get traffic
 		 * bridged onto it?  ISDN is handled in "activate_new()",
-		 * as we fall back on cooked mode there; are there any
-		 * others, and we handle 802.11 devices by using
-		 * pcap_can_set_rfmon_linux(); are there any others??
+		 * as we fall back on cooked mode there, and we use
+		 * is_wifi() to check for 802.11 devices; are there any
+		 * others?
 		 */
-#ifdef IW_MODE_MONITOR
-		if (has_wext(sock_fd, device, handle->errbuf) == 1) {
+		if (!is_wifi(sock_fd, device)) {
 			/*
-			 * It supports the wireless extensions, so it's a Wi-Fi
-			 * device; don't offer DOCSIS.
+			 * It's not a Wi-Fi device; offer DOCSIS.
 			 */
-		} else
-#endif
-		{
 			handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 			/*
 			 * If that fails, just leave the list empty.
