@@ -18,6 +18,7 @@ valgrindtest
 grammar.c
 libpcap.a
 libpcap.*.dylib
+libpcap.pc
 libpcap.sl
 libpcap.so.*
 libpcap-*.tar.gz

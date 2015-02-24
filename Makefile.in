@@ -61,6 +61,10 @@ V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
 
+# pkgconfig support
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libpcap.pc
+
 # Standard CFLAGS
 FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
@@ -276,6 +280,7 @@ EXTRA_DIST = \
 	lbl/os-solaris2.h \
 	lbl/os-sunos4.h \
 	lbl/os-ultrix4.h \
+	libpcap.pc \
 	missing/snprintf.c \
 	mkdep \
 	msdos/bin2c.c \
