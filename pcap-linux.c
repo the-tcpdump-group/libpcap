@@ -137,6 +137,8 @@
 #include <net/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <sys/utsname.h>
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -336,8 +338,21 @@ static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
 
+// hack for 64bit arch
+struct tpacket_hdr_64 {
+ uint64_t   tp_status;
+ unsigned int    tp_len;
+ unsigned int    tp_snaplen;
+ unsigned short  tp_mac;
+ unsigned short  tp_net;
+ unsigned int    tp_sec;
+ unsigned int    tp_usec;
+};
+#define TPACKET_V1_64 99
+
 union thdr {
 	struct tpacket_hdr		*h1;
+	struct tpacket_hdr_64	*h1_64;
 #ifdef HAVE_TPACKET2
 	struct tpacket2_hdr		*h2;
 #endif
@@ -355,6 +370,7 @@ static int create_ring(pcap_t *handle, int *status);
 static int prepare_tpacket_socket(pcap_t *handle);
 static void pcap_cleanup_linux_mmap(pcap_t *);
 static int pcap_read_linux_mmap_v1(pcap_t *, int, pcap_handler , u_char *);
+static int pcap_read_linux_mmap_v1_64(pcap_t *, int, pcap_handler , u_char *);
 #ifdef HAVE_TPACKET2
 static int pcap_read_linux_mmap_v2(pcap_t *, int, pcap_handler , u_char *);
 #endif
@@ -3510,6 +3526,9 @@ activate_mmap(pcap_t *handle, int *status)
 	case TPACKET_V1:
 		handle->read_op = pcap_read_linux_mmap_v1;
 		break;
+	case TPACKET_V1_64:
+		handle->read_op = pcap_read_linux_mmap_v1_64;
+		break;
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:
 		handle->read_op = pcap_read_linux_mmap_v2;
@@ -3646,6 +3665,22 @@ prepare_tpacket_socket(pcap_t *handle)
 	}
 #endif /* HAVE_TPACKET3 */
 
+	/*
+	 * 32-bit userspace + 64-bit kernel + tpacket_v1 are not compatible with
+	 * each other due to platform-dependent data type size differences.
+	 *
+	 * TPACKET_V1_64 allows using a 64-bit tpacket_v1 header from 32-bit
+	 * userspace.
+	 */
+	if (handlep->tp_version == TPACKET_V1 && sizeof(long) == 4) {
+		 struct utsname utsname;
+		 uname(&utsname);
+		 if (!strcmp("x86_64", utsname.machine)) {
+			 handlep->tp_version = TPACKET_V1_64;
+			 handlep->tp_hdrlen = sizeof(struct tpacket_hdr_64);
+		 }
+	}
+
 	return 1;
 }
 
@@ -3688,6 +3723,7 @@ create_ring(pcap_t *handle, int *status)
 	switch (handlep->tp_version) {
 
 	case TPACKET_V1:
+	case TPACKET_V1_64:
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:
 #endif
@@ -4148,6 +4184,11 @@ pcap_get_ring_frame(pcap_t *handle, int status)
 						TP_STATUS_KERNEL))
 			return NULL;
 		break;
+	case TPACKET_V1_64:
+		if (status != (h.h1_64->tp_status ? TP_STATUS_USER :
+						TP_STATUS_KERNEL))
+			return NULL;
+		break;
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:
 		if (status != (h.h2->tp_status ? TP_STATUS_USER :
@@ -4475,6 +4516,80 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 		 * the one we've just processed.
 		 */
 		h.h1->tp_status = TP_STATUS_KERNEL;
+		if (handlep->blocks_to_filter_in_userland > 0) {
+			handlep->blocks_to_filter_in_userland--;
+			if (handlep->blocks_to_filter_in_userland == 0) {
+				/*
+				 * No more blocks need to be filtered
+				 * in userland.
+				 */
+				handlep->filter_in_userland = 0;
+			}
+		}
+
+		/* next block */
+		if (++handle->offset >= handle->cc)
+			handle->offset = 0;
+
+		/* check for break loop condition*/
+		if (handle->break_loop) {
+			handle->break_loop = 0;
+			return PCAP_ERROR_BREAK;
+		}
+	}
+	return pkts;
+}
+
+static int
+pcap_read_linux_mmap_v1_64(pcap_t *handle, int max_packets, pcap_handler callback,
+		u_char *user)
+{
+	struct pcap_linux *handlep = handle->priv;
+	int pkts = 0;
+	int ret;
+
+	/* wait for frames availability.*/
+	ret = pcap_wait_for_frames_mmap(handle);
+	if (ret) {
+		return ret;
+	}
+
+	/* non-positive values of max_packets are used to require all
+	 * packets currently available in the ring */
+	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+		union thdr h;
+
+		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
+		if (!h.raw)
+			break;
+
+		ret = pcap_handle_packet_mmap(
+				handle,
+				callback,
+				user,
+				h.raw,
+				h.h1_64->tp_len,
+				h.h1_64->tp_mac,
+				h.h1_64->tp_snaplen,
+				h.h1_64->tp_sec,
+				h.h1_64->tp_usec,
+				0,
+				0,
+				0);
+		if (ret == 1) {
+			pkts++;
+			handlep->packets_read++;
+		} else if (ret < 0) {
+			return ret;
+		}
+
+		/*
+		 * Hand this block back to the kernel, and, if we're
+		 * counting blocks that need to be filtered in userland
+		 * after having been filtered by the kernel, count
+		 * the one we've just processed.
+		 */
+		h.h1_64->tp_status = TP_STATUS_KERNEL;
 		if (handlep->blocks_to_filter_in_userland > 0) {
 			handlep->blocks_to_filter_in_userland--;
 			if (handlep->blocks_to_filter_in_userland == 0) {
