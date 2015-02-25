@@ -142,8 +142,6 @@ static const char rcsid[] _U_ =
 #include <net/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
-#include <sys/stat.h>
-#include <sys/utsname.h>
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -355,7 +353,7 @@ struct tpacket_hdr_64 {
 
 union thdr {
 	struct tpacket_hdr		*h1;
-	struct tpacket_hdr_64	*h1_64;
+	struct tpacket_hdr_64		*h1_64;
 #ifdef HAVE_TPACKET2
 	struct tpacket2_hdr		*h2;
 #endif
