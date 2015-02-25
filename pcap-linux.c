@@ -3638,15 +3638,16 @@ prepare_tpacket_socket(pcap_t *handle)
 #endif /* HAVE_TPACKET3 */
 
 	/*
-	 * 32bit userspace + 64bit kernel + tpacket_v1 = not work
-	 * so we make a hack and introduce TPACKET_V1_64
+   * 32-bit userspace + 64-bit kernel + tpacket_v1 are not compatible with each
+   * other due to platform-dependent data type size differences.
+   *
+   * TPACKET_V1_64 allows using a 64-bit tpacket_v1 header from 32-bit
+   * userspace.
 	 */
 	if (handlep->tp_version == TPACKET_V1 && sizeof(long) == 4) {
 		 struct utsname utsname;
 		 uname(&utsname);
 		 if (!strcmp("x86_64", utsname.machine)) {
-			 fprintf(stderr,
-				 "pcap: old 64bit kernel detected, apply workaround for tpacket_v1 interface\n");
 			 handlep->tp_version = TPACKET_V1_64;
 			 handlep->tp_hdrlen = sizeof(struct tpacket_hdr_64);
 		 }
