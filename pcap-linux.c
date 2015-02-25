@@ -3638,11 +3638,11 @@ prepare_tpacket_socket(pcap_t *handle)
 #endif /* HAVE_TPACKET3 */
 
 	/*
-   * 32-bit userspace + 64-bit kernel + tpacket_v1 are not compatible with each
-   * other due to platform-dependent data type size differences.
-   *
-   * TPACKET_V1_64 allows using a 64-bit tpacket_v1 header from 32-bit
-   * userspace.
+	 * 32-bit userspace + 64-bit kernel + tpacket_v1 are not compatible with
+	 * each other due to platform-dependent data type size differences.
+	 *
+	 * TPACKET_V1_64 allows using a 64-bit tpacket_v1 header from 32-bit
+	 * userspace.
 	 */
 	if (handlep->tp_version == TPACKET_V1 && sizeof(long) == 4) {
 		 struct utsname utsname;
