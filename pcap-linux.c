@@ -137,8 +137,6 @@
 #include <net/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
-#include <sys/stat.h>
-#include <sys/utsname.h>
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
