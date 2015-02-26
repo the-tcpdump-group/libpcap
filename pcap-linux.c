@@ -3573,7 +3573,10 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 	int val = version;
 	socklen_t len = sizeof(val);
 
-	/* Probe whether kernel supports the specified TPACKET version */
+	/*
+	 * Probe whether kernel supports the specified TPACKET version;
+	 * this also gets the length of the header for that version.
+	 */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
 		if (errno == ENOPROTOOPT || errno == EINVAL)
 			return 1;	/* no */
@@ -3629,11 +3632,10 @@ prepare_tpacket_socket(pcap_t *handle)
 	int ret;
 #endif
 
-	handlep->tp_version = TPACKET_V1;
-	handlep->tp_hdrlen = sizeof(struct tpacket_hdr);
-
 #ifdef HAVE_TPACKET3
 	/*
+	 * Try setting the version to TPACKET_V3.
+	 *
 	 * The only mode in which buffering is done on PF_PACKET
 	 * sockets, so that packets might not be delivered
 	 * immediately, is TPACKET_V3 mode.
@@ -3642,37 +3644,59 @@ prepare_tpacket_socket(pcap_t *handle)
 	 * if the user has requested immediate mode, we don't
 	 * use TPACKET_V3.
 	 */
-	if (handle->opt.immediate)
-		ret = 1; /* pretend TPACKET_V3 couldn't be set */
-	else
+	if (!handle->opt.immediate) {
 		ret = init_tpacket(handle, TPACKET_V3, "TPACKET_V3");
-	if (-1 == ret) {
-		/* Error during setting up TPACKET_V3. */
-		return -1;
-	} else if (1 == ret) {
-		/* TPACKET_V3 not supported - fall back to TPACKET_V2. */
-#endif /* HAVE_TPACKET3 */
-
-#ifdef HAVE_TPACKET2
-		ret = init_tpacket(handle, TPACKET_V2, "TPACKET_V2");
-		if (-1 == ret) {
-			/* Error during setting up TPACKET_V2. */
+		if (ret == 0) {
+			/*
+			 * Success.
+			 */
+			return 1;
+		}
+		if (ret == -1) {
+			/*
+			 * We failed for some reason other than "the
+			 * kernel doesn't support TPACKET_V3".
+			 */
 			return -1;
 		}
-#endif /* HAVE_TPACKET2 */
-
-#ifdef HAVE_TPACKET3
 	}
 #endif /* HAVE_TPACKET3 */
 
+#ifdef HAVE_TPACKET2
 	/*
-	 * 32-bit userspace + 64-bit kernel + tpacket_v1 are not compatible with
+	 * Try setting the version to TPACKET_V2.
+	 */
+	ret = init_tpacket(handle, TPACKET_V2, "TPACKET_V2");
+	if (ret == 0) {
+		/*
+		 * Success.
+		 */
+		return 1;
+	}
+	if (ret == -1) {
+		/*
+		 * We failed for some reason other than "the
+		 * kernel doesn't support TPACKET_V2".
+		 */
+		return -1;
+	}
+#endif /* HAVE_TPACKET2 */
+
+	/*
+	 * OK, we're using TPACKET_V1, as that's all the kernel supports.
+	 */
+	handlep->tp_version = TPACKET_V1;
+	handlep->tp_hdrlen = sizeof(struct tpacket_hdr);
+
+	/*
+	 * 32-bit userspace + 64-bit kernel + TPACKET_V1 are not compatible with
 	 * each other due to platform-dependent data type size differences.
 	 *
-	 * TPACKET_V1_64 allows using a 64-bit tpacket_v1 header from 32-bit
-	 * userspace.
+	 * If we have a 32-bit userland and a 64-bit kernel, use an
+	 * internally-defined TPACKET_V1_64, with which we use a 64-bit
+	 * version of the data structures.
 	 */
-	if (handlep->tp_version == TPACKET_V1 && sizeof(long) == 4) {
+	if (sizeof(long) == 4) {
 		 struct utsname utsname;
 		 uname(&utsname);
 		 if (!strcmp("x86_64", utsname.machine)) {
