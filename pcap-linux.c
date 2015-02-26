@@ -334,16 +334,25 @@ static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
 
-// hack for 64bit arch
+/*
+ * This is what the header structure looks like in a 64-bit kernel;
+ * we use this, rather than struct tpacket_hdr, if we're using
+ * TPACKET_V1 in 32-bit code running on a 64-bit kernel.
+ */
 struct tpacket_hdr_64 {
- uint64_t   tp_status;
- unsigned int    tp_len;
- unsigned int    tp_snaplen;
- unsigned short  tp_mac;
- unsigned short  tp_net;
- unsigned int    tp_sec;
- unsigned int    tp_usec;
+	uint64_t	tp_status;
+	unsigned int	tp_len;
+	unsigned int	tp_snaplen;
+	unsigned short	tp_mac;
+	unsigned short	tp_net;
+	unsigned int	tp_sec;
+	unsigned int	tp_usec;
 };
+
+/*
+ * We use this internally as the tpacket version for TPACKET_V1 in
+ * 32-bit code on a 64-bit kernel.
+ */
 #define TPACKET_V1_64 99
 
 union thdr {
@@ -3604,6 +3613,36 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 #endif /* defined HAVE_TPACKET2 || defined HAVE_TPACKET3 */
 
 /*
+ * If the instruction set for which we're compiling has both 32-bit
+ * and 64-bit versions, and Linux support for the 64-bit version
+ * predates TPACKET_V2, define ISA_64_BIT as the .machine value
+ * you get from uname() for the 64-bit version.  Otherwise, leave
+ * it undefined.  (This includes ARM, which has a 64-bit version,
+ * but Linux support for it appeared well after TPACKET_V2 support
+ * did, so there should never be a case where 32-bit ARM code is
+ * running o a 64-bit kernel that only supports TPACKET_V1.)
+ *
+ * If we've omitted your favorite such architecture, please contribute
+ * a patch.  (No patch is needed for architectures that are 32-bit-only
+ * or for which Linux has no support for 32-bit userland - or for which,
+ * as noted, 64-bit support appeared in Linux after TPACKET_V2 support
+ * did.)
+ */
+#if defined(__i386__)
+#define ISA_64_BIT	"x86_64"
+#elif defined(__ppc__)
+#define ISA_64_BIT	"ppc64"
+#elif defined(__sparc__)
+#define ISA_64_BIT	"sparc64"
+#elif defined(__s390__)
+#define ISA_64_BIT	"s390x"
+#elif defined(__mips__)
+#define ISA_64_BIT	"mips64"
+#elif defined(__hppa__)
+#define ISA_64_BIT	"parisc64"
+#endif
+
+/*
  * Attempt to set the socket to version 3 of the memory-mapped header and,
  * if that fails because version 3 isn't supported, attempt to fall
  * back to version 2.  If version 2 isn't supported, just leave it at
@@ -3676,6 +3715,7 @@ prepare_tpacket_socket(pcap_t *handle)
 	handlep->tp_version = TPACKET_V1;
 	handlep->tp_hdrlen = sizeof(struct tpacket_hdr);
 
+#ifdef ISA_64_BIT
 	/*
 	 * 32-bit userspace + 64-bit kernel + TPACKET_V1 are not compatible with
 	 * each other due to platform-dependent data type size differences.
@@ -3685,13 +3725,33 @@ prepare_tpacket_socket(pcap_t *handle)
 	 * version of the data structures.
 	 */
 	if (sizeof(long) == 4) {
-		 struct utsname utsname;
-		 uname(&utsname);
-		 if (!strcmp("x86_64", utsname.machine)) {
-			 handlep->tp_version = TPACKET_V1_64;
-			 handlep->tp_hdrlen = sizeof(struct tpacket_hdr_64);
-		 }
+		/*
+		 * This is 32-bit code.
+		 */
+		struct utsname utsname;
+
+		if (uname(&utsname) == -1) {
+			/*
+			 * Failed.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "uname failed: %s", pcap_strerror(errno));
+			return -1;
+		}
+		if (strcmp(utsname.machine, ISA_64_BIT) == 0) {
+			/*
+			 * uname() tells us the machine is 64-bit,
+			 * so we presumably have a 64-bit kernel.
+			 *
+			 * XXX - this presumes that uname() won't lie
+			 * in 32-bit code and claim that the machine
+			 * has the 32-bit version of the ISA.
+			 */
+			handlep->tp_version = TPACKET_V1_64;
+			handlep->tp_hdrlen = sizeof(struct tpacket_hdr_64);
+		}
 	}
+#endif
 
 	return 1;
 }
