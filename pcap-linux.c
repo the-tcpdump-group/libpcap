@@ -4605,7 +4605,6 @@ pcap_read_linux_mmap_v1_64(pcap_t *handle, int max_packets, pcap_handler callbac
 				h.h1_64->tp_sec,
 				h.h1_64->tp_usec,
 				0,
-				0,
 				0);
 		if (ret == 1) {
 			pkts++;
