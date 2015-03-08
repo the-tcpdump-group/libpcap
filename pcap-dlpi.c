@@ -298,7 +298,7 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, size_t size)
 	ret = -1;
 #endif /* raw mode */
 	return (ret);
-}   
+}
 
 #ifndef DL_IPATM
 #define DL_IPATM	0x12	/* ATM Classical IP interface */

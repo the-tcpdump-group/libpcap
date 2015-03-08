@@ -231,7 +231,7 @@ AC_DEFUN(AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR,
 		# We're assuming this is clang, where
 		# -Werror=unknown-warning-option is the appropriate
 		# option to force the compiler to fail.
-		# 
+		#
 		ac_lbl_unknown_warning_option_error="-Werror=unknown-warning-option"
 	    ],
 	    [
@@ -1274,7 +1274,7 @@ dnl
 dnl	AC_LBL_DL_PASSIVE_REQ_T
 dnl
 dnl results:
-dnl 
+dnl
 dnl 	HAVE_DLPI_PASSIVE (defined)
 dnl
 AC_DEFUN(AC_LBL_DL_PASSIVE_REQ_T,

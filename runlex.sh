@@ -177,7 +177,7 @@ else
 	#
 	# OK, rename lex.yy.c to the right output file.
 	#
-	mv lex.yy.c "$outfile" 
+	mv lex.yy.c "$outfile"
 
 	#
 	# Did that succeed?
@@ -228,6 +228,6 @@ cat <<EOF >$header_file
 $prefixline
 #ifndef YY_DECL
 #define YY_DECL int yylex(void)
-#endif  
+#endif
 YY_DECL;
 EOF

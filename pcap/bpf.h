@@ -4,7 +4,7 @@
  *
  * This code is derived from the Stanford/CMU enet packet filter,
  * (net/enet.c) distributed as part of 4.3BSD, and code contributed
- * to Berkeley by Steven McCanne and Van Jacobson both of Lawrence 
+ * to Berkeley by Steven McCanne and Van Jacobson both of Lawrence
  * Berkeley Laboratory.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -88,7 +88,7 @@ typedef	u_int bpf_u_int32;
 #endif
 
 /*
- * Alignment macros.  BPF_WORDALIGN rounds up to the next 
+ * Alignment macros.  BPF_WORDALIGN rounds up to the next
  * even multiple of BPF_ALIGNMENT.
  *
  * Tcpdump's print-pflog.c uses this, so we define it here.
@@ -107,7 +107,7 @@ struct bpf_program {
 	u_int bf_len;
 	struct bpf_insn *bf_insns;
 };
- 
+
 /*
  * Link-layer header type codes.
  *
@@ -429,7 +429,7 @@ struct bpf_program {
  */
 #define DLT_SUNATM		123	/* Solaris+SunATM */
 
-/* 
+/*
  * Reserved as per request from Kent Dahlgren <kent@praesum.com>
  * for private use.
  */
@@ -672,7 +672,7 @@ struct bpf_program {
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ are used for prepending meta-information
  * like interface index, interface name
  * before standard Ethernet, PPP, Frelay & C-HDLC Frames
@@ -689,7 +689,7 @@ struct bpf_program {
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ is used for internal communication with a
  * voice Adapter Card (PIC)
  */
@@ -764,7 +764,7 @@ struct bpf_program {
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ is used for internal communication with a
  * integrated service module (ISM).
  */
@@ -807,7 +807,7 @@ struct bpf_program {
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ is used for capturing data on a secure tunnel interface.
  */
 #define DLT_JUNIPER_ST          200
@@ -899,11 +899,11 @@ struct bpf_program {
  */
 #define DLT_IEEE802_15_4_NONASK_PHY	215
 
-/* 
+/*
  * David Gibson <david@gibson.dropbear.id.au> requested this for
  * captures from the Linux kernel /dev/input/eventN devices. This
  * is used to communicate keystrokes and mouse movements from the
- * Linux kernel to display systems, such as Xorg. 
+ * Linux kernel to display systems, such as Xorg.
  */
 #define DLT_LINUX_EVDEV		216
 
@@ -1103,7 +1103,7 @@ struct bpf_program {
 #define DLT_JUNIPER_ATM_CEMIC	238
 
 /*
- * NetFilter LOG messages 
+ * NetFilter LOG messages
  * (payload of netlink NFNL_SUBSYS_ULOG/NFULNL_MSG_PACKET packets)
  *
  * Requested by Jakub Zawadzki <darkjames-ws@darkjames.pl>
@@ -1212,7 +1212,7 @@ struct bpf_program {
 
 /*
  * DLT type for upper-protocol layer PDU saves from wireshark.
- * 
+ *
  * the actual contents are determined by two TAGs stored with each
  * packet:
  *   EXP_PDU_TAG_LINKTYPE          the link type (LINKTYPE_ value) of the
@@ -1495,7 +1495,7 @@ struct bpf_aux_data {
 #if __STDC__ || defined(__cplusplus)
 extern int bpf_validate(const struct bpf_insn *, int);
 extern u_int bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
-extern u_int bpf_filter_with_aux_data(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);        
+extern u_int bpf_filter_with_aux_data(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);
 #else
 extern int bpf_validate();
 extern u_int bpf_filter();

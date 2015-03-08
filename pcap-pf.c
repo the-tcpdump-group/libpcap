@@ -237,7 +237,7 @@ pcap_inject_pf(pcap_t *p, const void *buf, size_t size)
 		return (-1);
 	}
 	return (ret);
-}                           
+}
 
 static int
 pcap_stats_pf(pcap_t *p, struct pcap_stat *ps)

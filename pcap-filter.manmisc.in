@@ -697,7 +697,7 @@ changes the decoding offsets for the remainder of \fIexpression\fR on
 the assumption that the packet is a MPLS-encapsulated IP packet.  The
 \fBmpls \fI[label_num]\fR expression may be used more than once, to
 filter on MPLS hierarchies.  Each use of that expression increments the
-filter offsets by 4. 
+filter offsets by 4.
 .IP
 For example:
 .in +.5i

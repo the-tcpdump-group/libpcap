@@ -5,7 +5,7 @@ This program parse the output from pcap_compile() to visualize the CFG after
 each optimize phase.
 
 Usage guide:
-1. Enable optimizier debugging code when configure libpcap, 
+1. Enable optimizier debugging code when configure libpcap,
    and build libpcap & filtertest
        ./configure --enable-optimizer-dbg
        make
@@ -14,23 +14,23 @@ Usage guide:
        ./filtertest EN10MB host 192.168.1.1 > a.txt
 3. Send a.txt to this program's standard input
        cat a.txt | tests/visopts.py
-4. Step 2&3 can be merged: 
+4. Step 2&3 can be merged:
        ./filtertest EN10MB host 192.168.1.1 | tests/visopts.py
 5. The standard output is something like this:
        generated files under directory: /tmp/visopts-W9ekBw
          the directory will be removed when this programs finished.
        open this link: http://localhost:39062/expr1.html
-6. Using open link at the 3rd line `http://localhost:39062/expr1.html' 
+6. Using open link at the 3rd line `http://localhost:39062/expr1.html'
 
 Note:
 1. CFG graph is translated to SVG document, expr1.html embeded them as external
-   document. If you open expr1.html as local file using file:// protocol, some 
+   document. If you open expr1.html as local file using file:// protocol, some
    browsers will deny such requests so the web pages will not shown properly.
-   For chrome, you can run it using following command to avoid this: 
+   For chrome, you can run it using following command to avoid this:
        chromium --disable-web-security
    That's why this program start a localhost http server.
-2. expr1.html use jquery from http://ajax.googleapis.com, so you need internet 
-   access to show the web page. 
+2. expr1.html use jquery from http://ajax.googleapis.com, so you need internet
+   access to show the web page.
 """
 
 import sys, os
@@ -67,9 +67,9 @@ html_template = string.Template("""
          index += 1;
          if (index < 10)
            s = "00" + index;
-         else if (index < 100) 
+         else if (index < 100)
            s = "0" + index;
-         else 
+         else
            s = "" + index;
          return "./expr" + exprid + "_g" + s + ".svg"
       }
@@ -82,7 +82,7 @@ html_template = string.Template("""
              $$(this).removeAttr('opacity');
             });
           });
-         
+
          $$(leftsvg).find("[id|='block']").each(function() {
            var has = $$(rightsvg).find("#" + this.id).length != 0;
            if (!has) $$(this).attr("opacity", "0.4");
@@ -106,7 +106,7 @@ html_template = string.Template("""
                 target.focus();
              });
            }
-          });  
+          });
       }
 
       function init_svgroot(svg) {
@@ -160,7 +160,7 @@ html_template = string.Template("""
 
       $$(document).ready(function() {
         for (var i = 0; i < gcount; i++) {
-          var opt = "<option value='" + i + "'>loop" + i + " -- " + logs[i] + "</option>"; 
+          var opt = "<option value='" + i + "'>loop" + i + " -- " + logs[i] + "</option>";
           $$("#lselect").append(opt);
           $$("#rselect").append(opt);
         }
@@ -168,7 +168,7 @@ html_template = string.Template("""
           var index = parseInt($$(this).children("option:selected").val());
           if (this.id == "lselect")
              load_left(index);
-          else 
+          else
              load_right(index);
         }
         $$("#lselect").change(on_selected);
@@ -179,7 +179,7 @@ html_template = string.Template("""
           if (index <= 0) return;
           $$("#lselect").val(index - 1).change();
           $$("#rselect").val(index).change();
-        });        
+        });
         $$("#forward").click(function() {
           var index = parseInt($$("#rselect option:selected").val());
           if (index >= gcount - 1) return;
@@ -225,7 +225,7 @@ html_template = string.Template("""
 
 def write_html(expr, gcount, logs):
     logs = map(lambda s: s.strip().replace("\n", "<br/>"), logs)
-    
+
     global html_template
     html = html_template.safe_substitute(expr=expr.encode("string-escape"), gcount=gcount, logs=json.dumps(logs).encode("string-escape"))
     with file("expr1.html", "wt") as f:
@@ -252,7 +252,7 @@ def render_on_html(infile):
                 indot = 2
         else:
             log += line
-            
+
         if indot == 2:
             p = subprocess.Popen(['dot', '-Tsvg'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             svg = p.communicate(dot)[0]
@@ -264,7 +264,7 @@ def render_on_html(infile):
             log = ""
             dot = ""
             indot = 0
-            
+
     if indot != 0:
         #unterminated dot graph for expression
         return False
@@ -277,7 +277,7 @@ def render_on_html(infile):
 def run_httpd():
     import SimpleHTTPServer
     import SocketServer
-    
+
     class MySocketServer(SocketServer.TCPServer):
         allow_reuse_address = True
     Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
@@ -301,7 +301,7 @@ def main():
         return 1
     run_httpd()
     return 0
-    
+
 if __name__ == "__main__":
     if '-h' in sys.argv or '--help' in sys.argv:
         print __doc__

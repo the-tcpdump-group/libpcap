@@ -476,7 +476,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	ps = p->priv;
 
 	/*
-	 * We support microsecond and nanosecond time stamps. 
+	 * We support microsecond and nanosecond time stamps.
 	 */
 	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));

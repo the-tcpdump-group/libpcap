@@ -161,7 +161,7 @@
 #define A_CONNECTACK	44	/* Connect Ack message */
 #define A_RELEASE	45	/* Release message */
 #define A_RELEASE_DONE	46	/* Release message */
- 
+
 /* ATM field types */
 #define A_VPI		51
 #define A_VCI		52

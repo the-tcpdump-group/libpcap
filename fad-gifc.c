@@ -217,12 +217,12 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		/*
 		 * XXX - The 32-bit compatibility layer for Linux on IA-64
 		 * is slightly broken. It correctly converts the structures
-		 * to and from kernel land from 64 bit to 32 bit but 
-		 * doesn't update ifc.ifc_len, leaving it larger than the 
-		 * amount really used. This means we read off the end 
-		 * of the buffer and encounter an interface with an 
-		 * "empty" name. Since this is highly unlikely to ever 
-		 * occur in a valid case we can just finish looking for 
+		 * to and from kernel land from 64 bit to 32 bit but
+		 * doesn't update ifc.ifc_len, leaving it larger than the
+		 * amount really used. This means we read off the end
+		 * of the buffer and encounter an interface with an
+		 * "empty" name. Since this is highly unlikely to ever
+		 * occur in a valid case we can just finish looking for
 		 * interfaces if we see an empty name.
 		 */
 		if (!(*ifrp->ifr_name))

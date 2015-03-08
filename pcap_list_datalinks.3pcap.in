@@ -38,7 +38,7 @@ is used to get a list of the supported link-layer header types of the
 interface associated with the pcap descriptor.
 .B pcap_list_datalinks()
 allocates an array to hold the list and sets
-.IR *dlt_buf 
+.IR *dlt_buf
 to point to that array.
 .LP
 The caller is responsible for freeing the array with

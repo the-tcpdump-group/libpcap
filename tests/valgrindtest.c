@@ -231,7 +231,7 @@ main(int argc, char **argv)
 	dorfmon = 0;
 	useactivate = 0;
 	infile = NULL;
-  
+
 	if ((cp = strrchr(argv[0], '/')) != NULL)
 		program_name = cp + 1;
 	else

@@ -37,7 +37,7 @@ is used to specify a direction that packets will be captured.
 is one of the constants
 .BR PCAP_D_IN ,
 .B PCAP_D_OUT
-or 
+or
 .BR PCAP_D_INOUT .
 .B PCAP_D_IN
 will only capture packets received by the device,

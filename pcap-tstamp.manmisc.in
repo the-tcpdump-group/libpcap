@@ -104,12 +104,12 @@ precision of this time stamp is unspecified; it might or might not be
 synchronized with the host operating system's clock.
 .TP 5
 .BR PCAP_TSTAMP_HOST_LOWPREC " - " host_lowprec
-Time stamp provided by the host on which the capture is being done. 
+Time stamp provided by the host on which the capture is being done.
 This is a low-precision time stamp, synchronized with the host operating
 system's clock.
 .TP 5
 .BR PCAP_TSTAMP_HOST_HIPREC " - " host_hiprec
-Time stamp provided by the host on which the capture is being done. 
+Time stamp provided by the host on which the capture is being done.
 This is a high-precision time stamp; it might or might not be
 synchronized with the host operating system's clock.  It might be more
 expensive to fetch than
@@ -129,7 +129,7 @@ the host operating system's clock.
 By default, when performing a live capture or reading from a savefile,
 time stamps are supplied as seconds since January 1, 1970, 00:00:00 UTC,
 and microseconds since that seconds value, even if higher-resolution
-time stamps are available from the capture device or in the savefile. 
+time stamps are available from the capture device or in the savefile.
 If, when reading a savefile, the time stamps in the file have a higher
 resolution than one microsecond, the additional digits of resolution are
 discarded.

@@ -104,7 +104,7 @@ depend: $(PREREQUISITES)
 
 #
 # Manually generated dependencies
-#             
+#
 msdos/pktdrvr.c: msdos/pkt_stub.inc
 scanner.c: scanner.l
 grammar.c tokdefs.h: grammar.y

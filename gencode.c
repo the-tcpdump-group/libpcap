@@ -8284,7 +8284,7 @@ gen_geneve_offsets(void)
 	s = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
 	s->s.k = off_linkpl.constant_part + off_nl + 8;
 
-	/* Stash this in X since we'll need it later. */ 
+	/* Stash this in X since we'll need it later. */
 	s1 = new_stmt(BPF_MISC|BPF_TAX);
 	sappend(s, s1);
 

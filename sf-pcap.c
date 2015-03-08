@@ -682,7 +682,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
  */
 pcap_dumper_t *
 pcap_dump_fopen(pcap_t *p, FILE *f)
-{	
+{
 	int linktype;
 
 	linktype = dlt_to_linktype(p->linktype);
