@@ -1192,7 +1192,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * Not a packet block, IDB, or SHB; ignore it.
 			 */
 			break;
-		}		
+		}
 	}
 
 found:

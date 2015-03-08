@@ -2021,7 +2021,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 * packets were dropped by the kernel buffers -- but we know
 	 * how many the interface dropped, so we can return that.
 	 */
-	
+
 	stats->ps_recv = handlep->packets_read;
 	stats->ps_drop = 0;
 	stats->ps_ifdrop = handlep->stat.ps_ifdrop;

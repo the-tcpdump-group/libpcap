@@ -387,7 +387,7 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	do {
 		ret = ioctl(handle->fd, HCIGETDEVINFO, (void *)&dev_info);
 	} while ((ret == -1) && (errno == EINTR));
-	
+
 	if (ret < 0) {
 		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't get stats via ioctl: %s", strerror(errno));
