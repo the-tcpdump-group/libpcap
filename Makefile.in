@@ -53,8 +53,9 @@ DEFS = @DEFS@ @V_DEFS@
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
 LIBS = @LIBS@
-CFLAGS = @CFLAGS@
-LDFLAGS = @LDFLAGS@
+CROSSFLAGS=
+CFLAGS = @CFLAGS@   ${CROSSFLAGS}
+LDFLAGS = @LDFLAGS@ ${CROSSFLAGS}
 DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
@@ -291,7 +292,6 @@ EXTRA_DIST = \
 	msdos/pktdrvr.h \
 	msdos/readme.dos \
 	org.tcpdump.chmod_bpf.plist \
-	packaging/pcap.spec.in \
 	pcap-bpf.c \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \
@@ -332,6 +332,7 @@ EXTRA_DIST = \
 	pcap-usb-linux.h \
 	pcap-win32.c \
 	runlex.sh \
+	scanner.c.top \
 	scanner.l \
 	Win32/Include/Gnuc.h \
 	Win32/Include/addrinfo.h \
@@ -443,8 +444,11 @@ libpcap.shareda: $(OBJ)
 libpcap.none:
 
 scanner.c: $(srcdir)/scanner.l
-	@rm -f $@
+	@rm -f $@ $@.bottom
 	$(srcdir)/runlex.sh $(LEX) -o$@ $<
+	mv $@ $@.bottom
+	cat $@.top $@.bottom > $@
+	@rm $@.bottom
 
 scanner.o: scanner.c tokdefs.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
@@ -730,10 +734,6 @@ distclean: clean
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
-
-packaging/pcap.spec: packaging/pcap.spec.in VERSION
-	RPMVERSION=`cat VERSION | sed s/-.*//g`; \
-		sed -e s/@VERSION@/$$RPMVERSION/ -e s/@NAME@/libpcap-`cat VERSION`/ $<   > $@
 
 releasetar:
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \

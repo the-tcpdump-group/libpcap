@@ -386,7 +386,7 @@
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The Link Types are used for prepending meta-information
  * like interface index, interface name
  * before standard Ethernet, PPP, Frelay & C-HDLC Frames
@@ -403,7 +403,7 @@
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ is used for internal communication with a
  * voice Adapter Card (PIC)
  */
@@ -478,7 +478,7 @@
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ is used for internal communication with a
  * integrated service module (ISM).
  */
@@ -519,7 +519,7 @@
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  * The DLT_ is used for capturing data on a secure tunnel interface.
  */
 #define LINKTYPE_JUNIPER_ST     200
@@ -611,11 +611,11 @@
  */
 #define LINKTYPE_IEEE802_15_4_NONASK_PHY	215
 
-/* 
+/*
  * David Gibson <david@gibson.dropbear.id.au> requested this for
  * captures from the Linux kernel /dev/input/eventN devices. This
  * is used to communicate keystrokes and mouse movements from the
- * Linux kernel to display systems, such as Xorg. 
+ * Linux kernel to display systems, such as Xorg.
  */
 #define LINKTYPE_LINUX_EVDEV	216
 
@@ -777,7 +777,7 @@
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  */
 #define LINKTYPE_JUNIPER_VS			232
 #define LINKTYPE_JUNIPER_SRX_E2E		233
@@ -809,12 +809,12 @@
 
 /*
  * Juniper-private data link type, as per request from
- * Hannes Gredler <hannes@juniper.net>. 
+ * Hannes Gredler <hannes@juniper.net>.
  */
 #define LINKTYPE_JUNIPER_ATM_CEMIC		238
 
 /*
- * NetFilter LOG messages 
+ * NetFilter LOG messages
  * (payload of netlink NFNL_SUBSYS_ULOG/NFULNL_MSG_PACKET packets)
  *
  * Requested by Jakub Zawadzki <darkjames-ws@darkjames.pl>
@@ -922,7 +922,7 @@
 
 /*
  * Link-layer header type for upper-protocol layer PDU saves from wireshark.
- * 
+ *
  * the actual contents are determined by two TAGs stored with each
  * packet:
  *   EXP_PDU_TAG_LINKTYPE          the link type (LINKTYPE_ value) of the
@@ -1170,7 +1170,7 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 	 */
 
 	/*
-	 * The URB id is a totally opaque value; do we really need to 
+	 * The URB id is a totally opaque value; do we really need to
 	 * convert it to the reading host's byte order???
 	 */
 	offset += 8;			/* skip past id */

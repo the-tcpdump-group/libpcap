@@ -178,14 +178,14 @@ packet timestamps aren't very good.  This appears to be due to haphazard
 handling of the timestamp in the kernel.
 
 Note well: there is rumoured to be a version of tcpdump floating around
-called 3.0.3 that includes libpcap and is supposed to support Linux. 
+called 3.0.3 that includes libpcap and is supposed to support Linux.
 You should be advised that neither the Network Research Group at LBNL
-nor the Tcpdump Group ever generated a release with this version number. 
+nor the Tcpdump Group ever generated a release with this version number.
 The LBNL Network Research Group notes with interest that a standard
 cracker trick to get people to install trojans is to distribute bogus
-packages that have a version number higher than the current release. 
+packages that have a version number higher than the current release.
 They also noted with annoyance that 90% of the Linux related bug reports
-they got are due to changes made to unofficial versions of their page. 
+they got are due to changes made to unofficial versions of their page.
 If you are having trouble but aren't using a version that came from
 tcpdump.org, please try that before submitting a bug report!
 
@@ -345,7 +345,6 @@ nametoaddr.c	- hostname to address routines
 nlpid.h		- OSI network layer protocol identifier definitions
 net		- symlink to bpf/net
 optimize.c	- BPF optimization routines
-packaging	- packaging information for building libpcap RPMs
 pcap/bluetooth.h - public definition of DLT_BLUETOOTH_HCI_H4_WITH_PHDR header
 pcap/bpf.h	- BPF definitions
 pcap/namedb.h	- public libpcap name database definitions

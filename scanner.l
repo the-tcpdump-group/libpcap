@@ -20,10 +20,6 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef WIN32
 #include <pcap-stdinc.h>
 #else /* WIN32 */
@@ -279,6 +275,7 @@ vlan		return VLAN;
 mpls		return MPLS;
 pppoed		return PPPOED;
 pppoes		return PPPOES;
+geneve		return GENEVE;
 
 lane		return LANE;
 llc		return LLC;

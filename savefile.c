@@ -218,14 +218,14 @@ pcap_t* pcap_hopen_offline_with_tstamp_precision(intptr_t osfd, u_int precision,
 	FILE *file;
 
 	fd = _open_osfhandle(osfd, _O_RDONLY);
-	if ( fd < 0 ) 
+	if ( fd < 0 )
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
 		return NULL;
 	}
 
 	file = _fdopen(fd, "rb");
-	if ( file == NULL ) 
+	if ( file == NULL )
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
 		return NULL;

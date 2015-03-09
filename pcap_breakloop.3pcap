@@ -91,7 +91,7 @@ If \-2 is returned from
 .B pcap_dispatch()
 or
 .BR pcap_loop() ,
-the flag is cleared, so a subsequent call will resume reading packets. 
+the flag is cleared, so a subsequent call will resume reading packets.
 If a positive number is returned, the flag is not cleared, so a
 subsequent call will return \-2 and clear the flag.
 .SH SEE ALSO

@@ -211,7 +211,7 @@ static int
 pcap_inject_snit(pcap_t *p, const void *buf, size_t size)
 {
 	struct strbuf ctl, data;
-	
+
 	/*
 	 * XXX - can we just do
 	 *

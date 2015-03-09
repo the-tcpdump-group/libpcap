@@ -412,6 +412,7 @@ int	pcap_fileno(pcap_t *);
 
 pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
+pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
 FILE	*pcap_dump_file(pcap_dumper_t *);
 long	pcap_dump_ftell(pcap_dumper_t *);
 int	pcap_dump_flush(pcap_dumper_t *);
@@ -424,13 +425,13 @@ void	pcap_freealldevs(pcap_if_t *);
 const char *pcap_lib_version(void);
 
 /*
- * On at least some versions of NetBSD, we don't want to declare
+ * On at least some versions of NetBSD and QNX, we don't want to declare
  * bpf_filter() here, as it's also be declared in <net/bpf.h>, with a
  * different signature, but, on other BSD-flavored UN*Xes, it's not
  * declared in <net/bpf.h>, so we *do* want to declare it here, so it's
  * declared when we build pcap-bpf.c.
  */
-#ifndef __NetBSD__
+#if !defined(__NetBSD__) && !defined(__QNX__)
 u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 #endif
 int	bpf_validate(const struct bpf_insn *f, int len);

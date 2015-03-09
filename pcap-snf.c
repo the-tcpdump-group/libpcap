@@ -106,14 +106,23 @@ snf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 
 static inline
 struct timeval
-snf_timestamp_to_timeval(const int64_t ts_nanosec)
+snf_timestamp_to_timeval(const int64_t ts_nanosec, const int tstamp_precision)
 {
 	struct timeval tv;
-	int32_t rem;
+	long tv_nsec;
+
 	if (ts_nanosec == 0)
 		return (struct timeval) { 0, 0 };
+
 	tv.tv_sec = ts_nanosec / _NSEC_PER_SEC;
-	tv.tv_usec = (ts_nanosec % _NSEC_PER_SEC) / 1000;
+	tv_nsec = (ts_nanosec % _NSEC_PER_SEC);
+
+	/* libpcap expects tv_usec to be nanos if using nanosecond precision. */
+	if (tstamp_precision == PCAP_TSTAMP_PRECISION_NANO)
+		tv.tv_usec = tv_nsec;
+	else
+		tv.tv_usec = tv_nsec / 1000;
+
 	return tv;
 }
 
@@ -167,7 +176,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 		if ((p->fcode.bf_insns == NULL) ||
 		     bpf_filter(p->fcode.bf_insns, req.pkt_addr, req.length, caplen)) {
-			hdr.ts = snf_timestamp_to_timeval(req.timestamp);
+			hdr.ts = snf_timestamp_to_timeval(req.timestamp, p->opt.tstamp_precision);
 			hdr.caplen = caplen;
 			hdr.len = req.length;
 			callback(user, &hdr, req.pkt_addr);
@@ -465,6 +474,22 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	if (p == NULL)
 		return NULL;
 	ps = p->priv;
+
+	/*
+	 * We support microsecond and nanosecond time stamps.
+	 */
+	p->tstamp_precision_count = 2;
+	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
+	if (p->tstamp_precision_list == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		if (p->tstamp_type_list != NULL)
+			free(p->tstamp_type_list);
+		free(p);
+		return NULL;
+	}
+	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
+	p->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 
 	p->activate_op = snf_activate;
 	ps->snf_boardnum = boardnum;

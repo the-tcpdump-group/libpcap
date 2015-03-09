@@ -1,3 +1,7 @@
+Thursday Feb. 12, 2015 guy@alum.mit.edu/mcr@sandelman.ca
+  Summary for 1.8.0 libpcap release
+	Support for filtering Geneve encapsulated packets.
+
 Wednesday Nov. 12, 2014 guy@alum.mit.edu/mcr@sandelman.ca
   Summary for 1.7.0 libpcap release
 	Fix handling of zones for BPF on Solaris

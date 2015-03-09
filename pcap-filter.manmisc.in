@@ -697,7 +697,7 @@ changes the decoding offsets for the remainder of \fIexpression\fR on
 the assumption that the packet is a MPLS-encapsulated IP packet.  The
 \fBmpls \fI[label_num]\fR expression may be used more than once, to
 filter on MPLS hierarchies.  Each use of that expression increments the
-filter offsets by 4. 
+filter offsets by 4.
 .IP
 For example:
 .in +.5i
@@ -733,6 +733,22 @@ For example:
 .fi
 .in -.5i
 filters IPv4 protocols encapsulated in PPPoE session id 0x27.
+.IP "\fBgeneve \fI[vni]\fR"
+True if the packet is a Geneve packet (UDP port 6081). If \fI[vni]\fR
+is specified, only true if the packet has the specified \fIvni\fR.
+Note that when the \fBgeneve\fR keyword is encountered in
+\fIexpression\fR, it changes the decoding offsets for the remainder of
+\fIexpression\fR on the assumption that the packet is a Geneve packet.
+.IP
+For example:
+.in +.5i
+.nf
+\fBgeneve 0xb && ip\fR
+.fi
+.in -.5i
+filters IPv4 protocols encapsulated in Geneve with VNI 0xb. This will
+match both IP directly encapsulated in Geneve as well as IP contained
+inside an Ethernet frame.
 .IP "\fBiso proto \fIprotocol\fR"
 True if the packet is an OSI packet of protocol type \fIprotocol\fP.
 \fIProtocol\fP can be a number or one of the names

@@ -664,7 +664,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 	/*
 	 * Check whether the first 4 bytes of the file are the block
-	 * type for a pcap-ng savefile. 
+	 * type for a pcap-ng savefile.
 	 */
 	if (magic != BT_SHB) {
 		/*
@@ -1000,7 +1000,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    epbp->timestamp_low;
 			}
 			goto found;
-			
+
 		case BT_SPB:
 			/*
 			 * Get a pointer to the fixed-length portion of the
@@ -1192,7 +1192,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * Not a packet block, IDB, or SHB; ignore it.
 			 */
 			break;
-		}		 
+		}
 	}
 
 found:

@@ -12,9 +12,9 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the Politecnico di Torino, CACE Technologies 
- * nor the names of its contributors may be used to endorse or promote 
- * products derived from this software without specific prior written 
+ * 3. Neither the name of the Politecnico di Torino, CACE Technologies
+ * nor the names of its contributors may be used to endorse or promote
+ * products derived from this software without specific prior written
  * permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
@@ -127,7 +127,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	char *AdaptersName;
 	ULONG NameLength;
 	char *name;
-	
+
 	/*
 	 * Find out how big a buffer we need.
 	 *
@@ -170,7 +170,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot allocate enough memory to list the adapters.");
 		return (-1);
-	}			
+	}
 
 	if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -179,7 +179,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		free(AdaptersName);
 		return (-1);
 	}
-	
+
 	/*
 	 * "PacketGetAdapterNames()" returned a list of
 	 * null-terminated ASCII interface name strings,
@@ -195,7 +195,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	desc = &AdaptersName[0];
 	while (*desc != '\0' || *(desc + 1) != '\0')
 		desc++;
-	
+
 	/*
  	 * Found it - "desc" points to the first of the two
 	 * nulls at the end of the list of names, so the
@@ -203,7 +203,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	 * after it.
 	 */
 	desc += 2;
-	
+
 	/*
 	 * Loop over the elements in the first list.
 	 */
@@ -231,7 +231,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		if (pcap_platform_finddevs(&devlist, errbuf) < 0)
 			ret = -1;
 	}
-	
+
 	if (ret == -1) {
 		/*
 		 * We had an error; free the list we've been constructing.
@@ -241,7 +241,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 			devlist = NULL;
 		}
 	}
-	
+
 	*alldevsp = devlist;
 	free(AdaptersName);
 	return (ret);

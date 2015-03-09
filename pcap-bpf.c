@@ -235,7 +235,7 @@ static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
  */
 static int
 pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
-{ 
+{
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->priv;
 
@@ -247,7 +247,7 @@ pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
 
 static int
 pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
-{   
+{
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->priv;
 

@@ -22,7 +22,7 @@
 pcap-savefile \- libpcap savefile format
 .SH DESCRIPTION
 NOTE: applications and libraries should, if possible, use libpcap to
-read savefiles, rather than having their own code to read savefiles. 
+read savefiles, rather than having their own code to read savefiles.
 If, in the future, a new file format is supported by libpcap,
 applications and libraries using libpcap to read savefiles will be able
 to read the new format of savefiles, but applications and libraries

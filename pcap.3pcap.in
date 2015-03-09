@@ -575,7 +575,7 @@ bytes of the packet on success, and NULL on error.
 .BR pcap_next_ex ()
 is passed two pointer arguments, one of which points to a
 .IR struct pcap_pkthdr *
-and one of which points to a 
+and one of which points to a
 .IR "const u_char" *.
 It sets the first pointer to point to a
 .I struct pcap_pkthdr

@@ -25,10 +25,10 @@
  *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
  *  Modifications:     Added PACKET_MMAP support
- *                     Paolo Abeni <paolo.abeni@email.it> 
+ *                     Paolo Abeni <paolo.abeni@email.it>
  *                     Added TPACKET_V3 support
  *                     Gabor Tatarka <gabor.tatarka@ericsson.com>
- *                     
+ *
  *                     based on previous works of:
  *                     Simon Patarin <patarin@cs.unibo.it>
  *                     Phil Wood <cpw@lanl.gov>
@@ -47,7 +47,7 @@
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
@@ -56,12 +56,12 @@
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
  * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
  * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
  * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
@@ -188,9 +188,10 @@
 # endif /* PACKET_HOST */
 
 
- /* check for memory mapped access avaibility. We assume every needed 
+ /* check for memory mapped access avaibility. We assume every needed
   * struct is defined if the macro TPACKET_HDRLEN is defined, because it
   * uses many ring related structs and macros */
+# ifdef PCAP_SUPPORT_PACKET_RING
 # ifdef TPACKET_HDRLEN
 #  define HAVE_PACKET_RING
 #  ifdef TPACKET3_HDRLEN
@@ -202,6 +203,7 @@
 #   define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
 #  endif /* TPACKET2_HDRLEN */
 # endif /* TPACKET_HDRLEN */
+# endif /* PCAP_SUPPORT_PACKET_RING */
 #endif /* PF_PACKET */
 
 #ifdef SO_ATTACH_FILTER
@@ -389,6 +391,12 @@ static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 #endif
 
+#ifdef TP_STATUS_VLAN_TPID_VALID
+# define VLAN_TPID(hdr, hv)	(((hv)->tp_vlan_tpid || ((hdr)->tp_status & TP_STATUS_VLAN_TPID_VALID)) ? (hv)->tp_vlan_tpid : ETH_P_8021Q)
+#else
+# define VLAN_TPID(hdr, hv)	ETH_P_8021Q
+#endif
+
 /*
  * Wrap some ioctl calls
  */
@@ -408,7 +416,9 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 static int	iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf);
 #endif
+#ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
+#endif
 static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 #ifdef SO_ATTACH_FILTER
@@ -1022,7 +1032,7 @@ linux_if_drops(const char * if_name)
 	FILE * file;
 	int field_to_convert = 3, if_name_sz = strlen(if_name);
 	long int dropped_pkts = 0;
-	
+
 	file = fopen("/proc/net/dev", "r");
 	if (!file)
 		return 0;
@@ -1037,7 +1047,7 @@ linux_if_drops(const char * if_name)
 			field_to_convert = 4;
 			continue;
 		}
-	
+
 		/* find iface and make sure it actually matches -- space before the name and : after it */
 		if ((bufptr = strstr(buffer, if_name)) &&
 			(bufptr == buffer || *(bufptr-1) == ' ') &&
@@ -1051,20 +1061,20 @@ linux_if_drops(const char * if_name)
 				while (*bufptr != '\0' && *(bufptr++) == ' ');
 				while (*bufptr != '\0' && *(bufptr++) != ' ');
 			}
-			
+
 			/* get rid of any final spaces */
 			while (*bufptr != '\0' && *bufptr == ' ') bufptr++;
-			
+
 			if (*bufptr != '\0')
 				dropped_pkts = strtol(bufptr, NULL, 10);
 
 			break;
 		}
 	}
-	
+
 	fclose(file);
 	return dropped_pkts;
-} 
+}
 
 
 /*
@@ -1299,12 +1309,12 @@ pcap_activate_linux(pcap_t *handle)
 			 pcap_strerror(errno) );
 		return PCAP_ERROR;
 	}
-	
+
 	/* copy timeout value */
 	handlep->timeout = handle->opt.timeout;
 
 	/*
-	 * If we're in promiscuous mode, then we probably want 
+	 * If we're in promiscuous mode, then we probably want
 	 * to see when the interface drops packets too, so get an
 	 * initial count from /proc/net/dev
 	 */
@@ -1688,7 +1698,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
 			tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
-			tag->vlan_tpid = htons(ETH_P_8021Q);
+			tag->vlan_tpid = htons(VLAN_TPID(aux, aux));
 			tag->vlan_tci = htons(aux->tp_vlan_tci);
 
                         /* store vlan tci to bpf_aux_data struct for userland bpf filter */
@@ -1864,7 +1874,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 		return (-1);
 	}
 	return (ret);
-}                           
+}
 
 /*
  *  Get the statistics for the given packet capture handle.
@@ -1902,8 +1912,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 #endif /* HAVE_TPACKET_STATS */
 
 	long if_dropped = 0;
-	
-	/* 
+
+	/*
 	 *	To fill in ps_ifdrop, we parse /proc/net/dev for the number
 	 */
 	if (handle->opt.promisc)
@@ -1933,7 +1943,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 *	dropped by the interface driver.  It counts only
 		 *	packets that passed the filter.
 		 *
-		 *	See above for ps_ifdrop. 
+		 *	See above for ps_ifdrop.
 		 *
 		 *	Both statistics include packets not yet read from
 		 *	the kernel by libpcap, and thus not yet seen by
@@ -1962,7 +1972,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * "tp_packets" as the count of packets and "tp_drops"
 		 * as the count of drops.
 		 *
-		 * Keep a running total because each call to 
+		 * Keep a running total because each call to
 		 *    getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS, ....
 		 * resets the counters to zero.
 		 */
@@ -2008,10 +2018,10 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 * We maintain the count of packets processed by libpcap in
 	 * "handlep->packets_read", for reasons described in the comment
 	 * at the end of pcap_read_packet().  We have no idea how many
-	 * packets were dropped by the kernel buffers -- but we know 
+	 * packets were dropped by the kernel buffers -- but we know
 	 * how many the interface dropped, so we can return that.
 	 */
-	 
+
 	stats->ps_recv = handlep->packets_read;
 	stats->ps_drop = 0;
 	stats->ps_ifdrop = handlep->stat.ps_ifdrop;
@@ -2672,7 +2682,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 			handle->linktype = DLT_RAW;
 			return;
 		}
-	
+
 		/*
 		 * Is this a real Ethernet device?  If so, give it a
 		 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
@@ -3462,7 +3472,7 @@ activate_new(pcap_t *handle)
  * On error, returns -1, and sets *status to the appropriate error code;
  * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
  */
-static int 
+static int
 activate_mmap(pcap_t *handle, int *status)
 {
 	struct pcap_linux *handlep = handle->priv;
@@ -3546,7 +3556,7 @@ activate_mmap(pcap_t *handle, int *status)
 	return 1;
 }
 #else /* HAVE_PACKET_RING */
-static int 
+static int
 activate_mmap(pcap_t *handle _U_, int *status _U_)
 {
 	return 0;
@@ -3935,12 +3945,12 @@ create_ring(pcap_t *handle, int *status)
 		return -1;
 	}
 
-	/* compute the minumum block size that will handle this frame. 
-	 * The block has to be page size aligned. 
-	 * The max block size allowed by the kernel is arch-dependent and 
+	/* compute the minumum block size that will handle this frame.
+	 * The block has to be page size aligned.
+	 * The max block size allowed by the kernel is arch-dependent and
 	 * it's not explicitly checked here. */
 	req.tp_block_size = getpagesize();
-	while (req.tp_block_size < req.tp_frame_size) 
+	while (req.tp_block_size < req.tp_frame_size)
 		req.tp_block_size <<= 1;
 
 	frames_per_block = req.tp_block_size/req.tp_frame_size;
@@ -4038,8 +4048,8 @@ create_ring(pcap_t *handle, int *status)
 			}
 			if (setsockopt(handle->fd, SOL_PACKET, PACKET_TIMESTAMP,
 				(void *)&timesource, sizeof(timesource))) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, 
-					"can't set PACKET_TIMESTAMP: %s", 
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"can't set PACKET_TIMESTAMP: %s",
 					pcap_strerror(errno));
 				*status = PCAP_ERROR;
 				return -1;
@@ -4054,7 +4064,7 @@ retry:
 
 	/* req.tp_frame_nr is requested to match frames_per_block*req.tp_block_nr */
 	req.tp_frame_nr = req.tp_block_nr * frames_per_block;
-	
+
 #ifdef HAVE_TPACKET3
 	/* timeout value to retire block - use the configured buffering timeout, or default if <0. */
 	req.tp_retire_blk_tov = (handlep->timeout>=0)?handlep->timeout:0;
@@ -4187,7 +4197,7 @@ pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 	memcpy(handlep->oneshot_buffer, bytes, h->caplen);
 	*sp->pkt = handlep->oneshot_buffer;
 }
-    
+
 static void
 pcap_cleanup_linux_mmap( pcap_t *handle )
 {
@@ -4405,7 +4415,8 @@ static int pcap_handle_packet_mmap(
 		unsigned int tp_sec,
 		unsigned int tp_usec,
 		int tp_vlan_tci_valid,
-		__u16 tp_vlan_tci)
+		__u16 tp_vlan_tci,
+		__u16 tp_vlan_tpid)
 {
 	struct pcap_linux *handlep = handle->priv;
 	unsigned char *bp;
@@ -4431,28 +4442,9 @@ static int pcap_handle_packet_mmap(
 	 * the filter when the ring became empty, but it can possibly
 	 * happen a lot later... */
 	bp = frame + tp_mac;
-	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		struct bpf_aux_data aux_data;
-
-		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
-		aux_data.vlan_tag_present = tp_vlan_tci_valid;
-
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
-		    tp_len, tp_snaplen, &aux_data) == 0)
-			return 0;
-	}
-
-	sll = (void *)frame + TPACKET_ALIGN(handlep->tp_hdrlen);
-	if (!linux_check_direction(handle, sll))
-		return 0;
-
-	/* get required packet info from ring header */
-	pcaphdr.ts.tv_sec = tp_sec;
-	pcaphdr.ts.tv_usec = tp_usec;
-	pcaphdr.caplen = tp_snaplen;
-	pcaphdr.len = tp_len;
 
 	/* if required build in place the sll header*/
+	sll = (void *)frame + TPACKET_ALIGN(handlep->tp_hdrlen);
 	if (handlep->cooked) {
 		struct sll_header *hdrp;
 
@@ -4465,7 +4457,7 @@ static int pcap_handle_packet_mmap(
 		 */
 		bp -= SLL_HDR_LEN;
 
-		/*/*
+		/*
 		 * Let's make sure that's past the end of
 		 * the tpacket header, i.e. >=
 		 * ((u_char *)thdr + TPACKET_HDRLEN), so we
@@ -4490,7 +4482,30 @@ static int pcap_handle_packet_mmap(
 		hdrp->sll_halen = htons(sll->sll_halen);
 		memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
 		hdrp->sll_protocol = sll->sll_protocol;
+	}
 
+	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
+		struct bpf_aux_data aux_data;
+
+		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
+		aux_data.vlan_tag_present = tp_vlan_tci_valid;
+
+		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
+		    tp_len, tp_snaplen, &aux_data) == 0)
+			return 0;
+	}
+
+	if (!linux_check_direction(handle, sll))
+		return 0;
+
+	/* get required packet info from ring header */
+	pcaphdr.ts.tv_sec = tp_sec;
+	pcaphdr.ts.tv_usec = tp_usec;
+	pcaphdr.caplen = tp_snaplen;
+	pcaphdr.len = tp_len;
+
+	/* if required build in place the sll header*/
+	if (handlep->cooked) {
 		/* update packet len */
 		pcaphdr.caplen += SLL_HDR_LEN;
 		pcaphdr.len += SLL_HDR_LEN;
@@ -4507,7 +4522,7 @@ static int pcap_handle_packet_mmap(
 		memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
 		tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
-		tag->vlan_tpid = htons(ETH_P_8021Q);
+		tag->vlan_tpid = htons(tp_vlan_tpid);
 		tag->vlan_tci = htons(tp_vlan_tci);
 
 		pcaphdr.caplen += VLAN_TAG_LEN;
@@ -4566,6 +4581,7 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 				h.h1->tp_snaplen,
 				h.h1->tp_sec,
 				h.h1->tp_usec,
+				0,
 				0,
 				0);
 		if (ret == 1) {
@@ -4639,6 +4655,7 @@ pcap_read_linux_mmap_v1_64(pcap_t *handle, int max_packets, pcap_handler callbac
 				h.h1_64->tp_snaplen,
 				h.h1_64->tp_sec,
 				h.h1_64->tp_usec,
+				0,
 				0,
 				0);
 		if (ret == 1) {
@@ -4718,7 +4735,8 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 #else
 				h.h2->tp_vlan_tci != 0,
 #endif
-				h.h2->tp_vlan_tci);
+				h.h2->tp_vlan_tci,
+				VLAN_TPID(h.h2, h.h2));
 		if (ret == 1) {
 			pkts++;
 			handlep->packets_read++;
@@ -4819,7 +4837,8 @@ again:
 #else
 					tp3_hdr->hv1.tp_vlan_tci != 0,
 #endif
-					tp3_hdr->hv1.tp_vlan_tci);
+					tp3_hdr->hv1.tp_vlan_tci,
+					VLAN_TPID(tp3_hdr, &tp3_hdr->hv1));
 			if (ret == 1) {
 				pkts++;
 				handlep->packets_read++;
@@ -4872,7 +4891,7 @@ again:
 }
 #endif /* HAVE_TPACKET3 */
 
-static int 
+static int
 pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 {
 	struct pcap_linux *handlep = handle->priv;
@@ -5848,6 +5867,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 
 #endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 
+#ifdef HAVE_PACKET_RING
 /*
  * Find out if we have any form of fragmentation/reassembly offloading.
  *
@@ -5883,7 +5903,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 		    cmdname, strerror(errno));
 		return -1;
 	}
-	return eval.data;	
+	return eval.data;
 }
 
 static int
@@ -5954,6 +5974,8 @@ iface_get_offload(pcap_t *handle _U_)
 	return 0;
 }
 #endif /* SIOCETHTOOL */
+
+#endif /* HAVE_PACKET_RING */
 
 #endif /* HAVE_PF_PACKET_SOCKETS */
 

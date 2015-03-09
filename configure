@@ -623,6 +623,7 @@ ac_subst_vars='LTLIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+PCAP_SUPPORT_PACKET_RING
 DBUS_SRC
 PCAP_SUPPORT_DBUS
 PKGCONFIG
@@ -750,6 +751,7 @@ enable_bluetooth
 enable_canusb
 enable_can
 enable_dbus
+enable_packet_ring
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1391,6 +1393,7 @@ Optional Features:
                           available]
   --enable-dbus           enable D-Bus capture support [default=yes, if
                           support available]
+  --enable-packet-ring    enable Linux packet ring support [default=yes]
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -5515,6 +5518,13 @@ fi
 	if test x$with_libnl != xno ; then
 		have_any_nl="no"
 
+                incdir=-I/usr/include/libnl3
+                libnldir=
+                if test x$withval != x ; then
+                  libnldir=-L${withval}/lib/.libs
+                  incdir=-I${withval}/include
+                fi
+
 		#
 		# Try libnl 3.x first.
 		#
@@ -5524,7 +5534,7 @@ if ${ac_cv_lib_nl_3_nl_socket_alloc+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnl-3  $LIBS"
+LIBS="-lnl-3 ${incdir} ${libnldir} -lnl-genl-3 -lnl-3  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5559,7 +5569,7 @@ if test "x$ac_cv_lib_nl_3_nl_socket_alloc" = xyes; then :
 			#
 			# Yes, we have libnl 3.x.
 			#
-			LIBS="-lnl-genl-3 -lnl-3 $LIBS"
+			LIBS="${libnldir} -lnl-genl-3 -lnl-3 $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -5572,7 +5582,7 @@ $as_echo "#define HAVE_LIBNL_NLE 1" >>confdefs.h
 
 $as_echo "#define HAVE_LIBNL_SOCKETS 1" >>confdefs.h
 
-			V_INCLS="$V_INCLS -I/usr/include/libnl3"
+			V_INCLS="$V_INCLS ${incdir}"
 			have_any_nl="yes"
 
 fi
@@ -5623,7 +5633,7 @@ if test "x$ac_cv_lib_nl_nl_socket_alloc" = xyes; then :
 				#
 				# Yes, we have libnl 2.x.
 				#
-				LIBS="-lnl-genl -lnl $LIBS"
+				LIBS="${libnldir} -lnl-genl -lnl $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -5687,7 +5697,7 @@ if test "x$ac_cv_lib_nl_nl_handle_alloc" = xyes; then :
 				#
 				# Yes.
 				#
-				LIBS="-lnl $LIBS"
+				LIBS="${libnldir} -lnl $LIBS"
 
 $as_echo "#define HAVE_LIBNL 1" >>confdefs.h
 
@@ -8148,7 +8158,7 @@ fi
 
 if test "x$enable_canusb" != "xno" ; then
 		case "$host_os" in
-	linux*)
+	linux*|uclinux*)
 		ac_fn_c_check_header_mongrel "$LINENO" "libusb-1.0/libusb.h" "ac_cv_header_libusb_1_0_libusb_h" "$ac_includes_default"
 if test "x$ac_cv_header_libusb_1_0_libusb_h" = xyes; then :
 
@@ -8158,7 +8168,8 @@ if ${ac_cv_lib_usb_1_0_libusb_init+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lusb-1.0  $LIBS"
+LIBS="-lusb-1.0 -lpthread
+		     $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -8199,7 +8210,6 @@ $as_echo "#define PCAP_SUPPORT_CANUSB 1" >>confdefs.h
 
 else
   ac_lbl_has_libusb=no
-
 fi
 
 
@@ -8447,6 +8457,21 @@ done
 $as_echo "$as_me: no hardware timestamp support implemented for $host_os" >&6;}
 	;;
 esac
+
+# Check whether --enable-packet-ring was given.
+if test "${enable_packet_ring+set}" = set; then :
+  enableval=$enable_packet_ring;
+else
+  enable_packet_ring=yes
+fi
+
+
+if test "x$enable_packet_ring" != "xno" ; then
+
+$as_echo "#define PCAP_SUPPORT_PACKET_RING 1" >>confdefs.h
+
+
+fi
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
