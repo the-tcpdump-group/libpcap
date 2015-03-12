@@ -30,6 +30,13 @@ if test "$ac_cv___attribute__" = "yes"; then
 	AC_C___ATTRIBUTE___FORMAT
 fi
 
+if test "x$PACKAGE_VERSION" = "x"; then
+   dnl PACKAGE_VERSION was not specified above, check the VERSION file
+   if test -f "VERSION"; then
+      PACKAGE_VERSION=`head -1 VERSION`
+   fi
+fi
+
 AC_CHECK_HEADERS(sys/bitypes.h)
 
 AC_CHECK_TYPE([int8_t], ,
@@ -1742,6 +1749,7 @@ fi
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)
+AC_CONFIG_FILES([libpcap.pc])
 
 AC_OUTPUT_COMMANDS([if test -f .devel; then
 	echo timestamp > stamp-h

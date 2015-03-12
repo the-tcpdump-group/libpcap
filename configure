@@ -3791,6 +3791,12 @@ $as_echo "$ac_cv___attribute___format" >&6; }
 
 fi
 
+if test "x$PACKAGE_VERSION" = "x"; then
+      if test -f "VERSION"; then
+      PACKAGE_VERSION=`head -1 VERSION`
+   fi
+fi
+
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -8569,6 +8575,8 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 ac_config_headers="$ac_config_headers config.h"
 
+ac_config_files="$ac_config_files libpcap.pc"
+
 
 ac_config_commands="$ac_config_commands default-1"
 
@@ -9274,6 +9282,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
+    "libpcap.pc") CONFIG_FILES="$CONFIG_FILES libpcap.pc" ;;
     "default-1") CONFIG_COMMANDS="$CONFIG_COMMANDS default-1" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "pcap-filter.manmisc") CONFIG_FILES="$CONFIG_FILES pcap-filter.manmisc" ;;

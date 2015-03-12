@@ -18,6 +18,7 @@ valgrindtest
 grammar.c
 libpcap.a
 libpcap.*.dylib
+libpcap.pc
 libpcap.sl
 libpcap.so.*
 libpcap-*.tar.gz
@@ -39,7 +40,7 @@ pcap_open_dead.3pcap
 pcap_open_offline.3pcap
 pcap_set_tstamp_precision.3pcap
 pcap_set_tstamp_type.3pcap
-scanner.c
+scanner.c*
 scanner.h
 selpolltest
 tokdefs.h
