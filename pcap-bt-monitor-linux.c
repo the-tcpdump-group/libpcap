@@ -34,12 +34,12 @@
 #endif
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
-#include <bluetooth/mgmt.h>
 
 #include "pcap/bluetooth.h"
 #include "pcap-int.h"
@@ -48,6 +48,16 @@
 
 #define BT_CONTROL_SIZE 32
 #define INTERFACE_NAME "bluetooth-monitor"
+
+/*
+ * Fields and alignment must match the declaration in the Linux kernel 3.4+.
+ * See struct hci_mon_hdr in include/net/bluetooth/hci_mon.h.
+ */
+struct hci_mon_hdr {
+    uint16_t opcode;
+    uint16_t index;
+    uint16_t len;
+} __attribute__((packed));
 
 int
 bt_monitor_findalldevs(pcap_if_t **alldevsp, char *err_str)
@@ -72,12 +82,12 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     ssize_t ret;
     struct pcap_pkthdr pkth;
     pcap_bluetooth_linux_monitor_header *bthdr;
-    struct mgmt_hdr hdr;
+    struct hci_mon_hdr hdr;
 
     bthdr = (pcap_bluetooth_linux_monitor_header*) &handle->buffer[handle->offset];
 
     iv[0].iov_base = &hdr;
-    iv[0].iov_len = MGMT_HDR_SIZE;
+    iv[0].iov_len = sizeof(hdr);
     iv[1].iov_base = &handle->buffer[handle->offset + sizeof(pcap_bluetooth_linux_monitor_header)];
     iv[1].iov_len = handle->snapshot;
 
@@ -103,7 +113,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
         return -1;
     }
 
-    pkth.caplen = ret - MGMT_HDR_SIZE + sizeof(pcap_bluetooth_linux_monitor_header);
+    pkth.caplen = ret - sizeof(hdr) + sizeof(pcap_bluetooth_linux_monitor_header);
     pkth.len = pkth.caplen;
 
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
