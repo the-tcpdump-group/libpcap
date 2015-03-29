@@ -5071,7 +5071,7 @@ has_wext(int sock_fd, const char *device, char *ebuf)
 	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
 		return 1;	/* yes */
 	snprintf(ebuf, PCAP_ERRBUF_SIZE,
-	    "%s: SIOCGIWPRIV: %s", device, pcap_strerror(errno));
+	    "%s: SIOCGIWNAME: %s", device, pcap_strerror(errno));
 	if (errno == ENODEV)
 		return PCAP_ERROR_NO_SUCH_DEVICE;
 	return 0;
