@@ -130,6 +130,7 @@ HDR = $(PUBHDR) \
 
 TESTS = \
 	capturetest \
+	can_set_rfmon_test \
 	filtertest \
 	findalldevstest \
 	opentest \
@@ -138,6 +139,7 @@ TESTS = \
 
 TESTS_SRC = \
 	tests/capturetest.c \
+	tests/can_set_rfmon_test.c \
 	tests/filtertest.c \
 	tests/findalldevstest.c \
 	tests/opentest.c \
@@ -533,6 +535,9 @@ tests: $(TESTS)
 
 capturetest: tests/capturetest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o capturetest $(srcdir)/tests/capturetest.c libpcap.a $(LIBS)
+
+can_set_rfmon_test: tests/can_set_rfmon_test.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o can_set_rfmon_test $(srcdir)/tests/can_set_rfmon_test.c libpcap.a $(LIBS)
 
 filtertest: tests/filtertest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(LIBS)
