@@ -215,6 +215,14 @@
 #include <linux/net_tstamp.h>
 #endif
 
+#ifdef HAVE_LINUX_SOCKIOS_H
+#include <linux/sockios.h>
+#endif
+
+#ifdef HAVE_LINUX_IF_BONDING_H
+#include <linux/if_bonding.h>
+#endif
+
 /*
  * Got Wireless Extensions?
  */
@@ -934,6 +942,41 @@ added:
 }
 #endif /* HAVE_LIBNL */
 
+#ifdef IW_MODE_MONITOR
+/*
+ * Bonding devices mishandle unknown ioctls; they fail with ENODEV
+ * rather than ENOTSUP, EOPNOTSUPP, or ENOTTY, so Wireless Extensions
+ * will fail with ENODEV if we try to do them on a bonding device,
+ * making us return a "no such device" indication rather than just
+ * saying "no Wireless Extensions".
+ *
+ * So we check for bonding devices, if we can, before trying those
+ * ioctls, by trying a bonding device information query ioctl to see
+ * whether it succeeds.
+ */
+static int
+is_bonding_device(int fd, const char *device)
+{
+#if defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY)
+	struct ifreq ifr;
+	ifbond ifb;
+
+	memset(&ifr, 0, sizeof ifr);
+	strlcpy(ifr.ifr_name, device, sizeof ifr.ifr_name);
+	memset(&ifb, 0, sizeof ifb);
+	ifr.ifr_data = (caddr_t)&ifb;
+#ifdef SIOCBONDINFOQUERY
+	if (ioctl(fd, SIOCBONDINFOQUERY, &ifr) == 0)
+#else /* SIOCBONDINFOQUERY */
+	if (ioctl(fd, BOND_INFO_QUERY_OLD, &ifr) == 0)
+#endif /* SIOCBONDINFOQUERY */
+		return 1;	/* success, so it's a bonding device */
+#endif /* defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY) */
+
+	return 0;	/* no, it's not a bonding device */
+}
+#endif /* IW_MODE_MONITOR */
+
 static int
 pcap_can_set_rfmon_linux(pcap_t *handle)
 {
@@ -990,6 +1033,12 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 		(void)snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		return PCAP_ERROR;
+	}
+
+	if (is_bonding_device(sock_fd, handle->opt.source)) {
+		/* It's a bonding device, so don't even try. */
+		close(sock_fd);
+		return 0;
 	}
 
 	/*
@@ -5065,6 +5114,9 @@ static int
 has_wext(int sock_fd, const char *device, char *ebuf)
 {
 	struct iwreq ireq;
+
+	if (is_bonding_device(sock_fd, device))
+		return 0;	/* bonding device, so don't even try */
 
 	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
