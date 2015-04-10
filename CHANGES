@@ -1,3 +1,7 @@
+Friday Apr. 10, 2015 guy@alum.mit.edu
+  Summary for 1.7.3 libpcap release
+	Work around a Linux bonding driver bug.
+
 Thursday Feb. 12, 2015 guy@alum.mit.edu/mcr@sandelman.ca
   Summary for 1.7.2 libpcap release
 	Support for filtering Geneve encapsulated packets.
