@@ -1,15 +1,23 @@
 Thursday Feb. 12, 2015 guy@alum.mit.edu/mcr@sandelman.ca
   Summary for 1.7.2 libpcap release
 	Support for filtering Geneve encapsulated packets.
+	Generalize encapsulation handling, fixing some bugs.
+	Don't add null addresses to address lists.
+	Add pcap_dump_open_append() to open for appending.
+	Fix the swapping of isochronous descriptors in Linux USB.
+	Attempt to handle TPACKET_V1 with 32-bit userland and 64-bit kernel.
 
 Wednesday Nov. 12, 2014 guy@alum.mit.edu/mcr@sandelman.ca
   Summary for 1.7.0 libpcap release
 	Fix handling of zones for BPF on Solaris
 	new DLT for ZWAVE
 	clarifications for read timeouts.
-	added bpf_filter1() with extensions
+	Use BPF extensions in compiled filters, fixing VLAN filters
 	some fixes to compilation without stdint.h
 	EBUSY can now be returned by SNFv3 code.
+	Fix the range checks in BPF loads
+	Various DAG fixes.
+	Various Linux fixes.
 
 Monday Aug. 12, 2014 guy@alum.mit.edu
   Summary for 1.6.2 libpcap release
