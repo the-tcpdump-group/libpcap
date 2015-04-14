@@ -4715,7 +4715,10 @@ linux*)
 	for ac_header in linux/sockios.h linux/if_bonding.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_c_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "#include <sys/socket.h>
+ac_fn_c_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "
+#include <sys/socket.h>
+#include <linux/if.h>
+
 "
 if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
