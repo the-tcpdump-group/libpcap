@@ -298,7 +298,7 @@ of protocol type \fIprotocol\fP.
 \fBicmp\fP, \fBicmp6\fP, \fBigmp\fP, \fBigrp\fP, \fBpim\fP, \fBah\fP,
 \fBesp\fP, \fBvrrp\fP, \fBudp\fP, or \fBtcp\fP.
 Note that the identifiers \fBtcp\fP, \fBudp\fP, and \fBicmp\fP are also
-keywords and must be escaped via backslash (\\), which is \\\\ in the C-shell.
+keywords and must be escaped via backslash (\\).
 Note that this primitive does not chase the protocol header chain.
 .IP "\fBip6 proto \fIprotocol\fR"
 True if the packet is an IPv6 packet of protocol type \fIprotocol\fP.
@@ -879,8 +879,7 @@ The following TCP flags field values are available: \fBtcp-fin\fP,
 .LP
 Primitives may be combined using:
 .IP
-A parenthesized group of primitives and operators
-(parentheses are special to the Shell and must be escaped).
+A parenthesized group of primitives and operators.
 .IP
 Negation (`\fB!\fP' or `\fBnot\fP').
 .IP
