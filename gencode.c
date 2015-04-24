@@ -7027,6 +7027,17 @@ gen_arth(code, a0, a1)
 {
 	struct slist *s0, *s1, *s2;
 
+	/*
+	 * Disallow division by, or modulus by, zero; we do this here
+	 * so that it gets done even if the optimizer is disabled.
+	 */
+	if (code == BPF_DIV) {
+		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
+			bpf_error("division by zero");
+	} else if (code == BPF_MOD) {
+		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
+			bpf_error("modulus by zero");
+	}
 	s0 = xfer_to_x(a1);
 	s1 = xfer_to_a(a0);
 	s2 = new_stmt(BPF_ALU|BPF_X|code);
