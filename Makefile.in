@@ -70,6 +70,7 @@ EXTRA_NETWORK_LIBS=@EXTRA_NETWORK_LIBS@
 
 # Standard CFLAGS for building members of a shared library
 FULL_CFLAGS = $(CCOPT) @V_LIB_CCOPT_FAT@ $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
+CXXFLAGS = $(CCOPT) @V_LIB_CCOPT_FAT@ $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -86,7 +87,12 @@ YACC = @YACC@
 	@rm -f $@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
+ifeq (@V_PCAP@,haiku)
+PSRC =	pcap-@V_PCAP@.cpp
+else
 PSRC =	pcap-@V_PCAP@.c
+endif
+POBJ =	pcap-@V_PCAP@.o
 MSRC =	@MSRC@
 FSRC =  @V_FINDALLDEVS@
 SSRC =  @SSRC@
@@ -101,7 +107,7 @@ SRC =	$(PSRC) $(MSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
 # hack the extra indirection
-OBJ =	$(PSRC:.c=.o) $(MSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
+OBJ =	$(POBJ) $(MSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
 PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \
