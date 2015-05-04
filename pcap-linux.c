@@ -459,6 +459,8 @@ pcap_create_interface(const char *device, char *ebuf)
 	 * See what time stamp types we support.
 	 */
 	if (iface_ethtool_get_ts_info(handle, ebuf) == -1) {
+		if (handle->opt.source != NULL)
+			free(handle->opt.source);
 		free(handle);
 		return NULL;
 	}
