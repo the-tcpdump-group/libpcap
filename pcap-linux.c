@@ -459,7 +459,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	 * See what time stamp types we support.
 	 */
 	if (iface_ethtool_get_ts_info(handle, ebuf) == -1) {
-		free(handle);
+		pcap_close(handle);
 		return NULL;
 	}
 #endif
@@ -478,9 +478,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	if (handle->tstamp_precision_list == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
-		if (handle->tstamp_type_list != NULL)
-			free(handle->tstamp_type_list);
-		free(handle);
+		pcap_close(handle);
 		return NULL;
 	}
 	handle->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
