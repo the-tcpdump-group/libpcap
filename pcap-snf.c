@@ -483,9 +483,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	if (p->tstamp_precision_list == NULL) {
 		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
-		if (p->tstamp_type_list != NULL)
-			free(p->tstamp_type_list);
-		free(p);
+		pcap_close(p);
 		return NULL;
 	}
 	p->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
