@@ -216,6 +216,8 @@ enum {
  * rejects the filter; it contains VLAN tag information
  * For the kernel, p is assumed to be a pointer to an mbuf if buflen is 0,
  * in all other cases, p is a pointer to a buffer and buflen is its size.
+ *
+ * Thanks to Ani Sinha <ani@arista.com> for providing initial implementation
  */
 u_int
 bpf_filter_with_aux_data(pc, p, wirelen, buflen, aux_data)
