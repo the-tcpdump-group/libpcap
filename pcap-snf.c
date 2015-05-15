@@ -268,7 +268,7 @@ snf_activate(pcap_t* p)
 	err = snf_open(ps->snf_boardnum,
 			0, /* let SNF API parse SNF_NUM_RINGS, if set */
 			NULL, /* default RSS, or use SNF_RSS_FLAGS env */
-			p->opt.buffer_size, /* default to SNF_DATARING_SIZE from env */
+			p->opt.buffer_size < 1048576 ? 1048576 : p->opt.buffer_size, /* default to SNF_DATARING_SIZE from env */
 			flags, /* may want pshared */
 			&ps->snf_handle);
 	if (err != 0) {
