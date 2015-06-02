@@ -4711,7 +4711,7 @@ done
 fi
 
 case "$host_os" in
-linux*)
+linux*|uclinux*)
 	for ac_header in linux/sockios.h linux/if_bonding.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
