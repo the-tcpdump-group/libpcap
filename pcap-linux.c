@@ -955,7 +955,8 @@ added:
 static int
 is_bonding_device(int fd, const char *device)
 {
-#if defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY)
+#if defined(HAVE_LINUX_IF_BONDING_H) && \
+	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY))
 	struct ifreq ifr;
 	ifbond ifb;
 
@@ -969,7 +970,8 @@ is_bonding_device(int fd, const char *device)
 	if (ioctl(fd, BOND_INFO_QUERY_OLD, &ifr) == 0)
 #endif /* SIOCBONDINFOQUERY */
 		return 1;	/* success, so it's a bonding device */
-#endif /* defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY) */
+#endif /* defined(HAVE_LINUX_IF_BONDING_H) && \
+	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY)) */
 
 	return 0;	/* no, it's not a bonding device */
 }
