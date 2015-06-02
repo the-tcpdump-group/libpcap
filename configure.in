@@ -149,7 +149,7 @@ struct rtentry;
 fi
 
 case "$host_os" in
-linux*)
+linux*|uclinux*)
 	AC_CHECK_HEADERS(linux/sockios.h linux/if_bonding.h,,,
 	[
 #include <sys/socket.h>
