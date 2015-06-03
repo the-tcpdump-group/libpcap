@@ -310,6 +310,7 @@ struct pcap_linux {
 	u_int	tp_version;	/* version of tpacket_hdr for mmaped ring */
 	u_int	tp_hdrlen;	/* hdrlen of tpacket_hdr for mmaped ring */
 	u_char	*oneshot_buffer; /* buffer for copy of packet */
+	int	poll_timeout;	/* timeout to use in poll() */
 #ifdef HAVE_TPACKET3
 	unsigned char *current_packet; /* Current packet within the TPACKET_V3 block. Move to next block if NULL. */
 	int packets_left; /* Unhandled packets left within the block from previous call to pcap_read_linux_mmap_v3 in case of TPACKET_V3. */
@@ -1293,6 +1294,42 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 }
 
 /*
+ * Set the timeout to be used in poll() with memory-mapped packet capture.
+ */
+static void
+set_poll_timeout(struct pcap_linux *handlep)
+{
+	if (handlep->timeout == 0) {
+#ifdef HAVE_TPACKET3
+		/*
+		 * XXX - due to a set of (mis)features in the
+		 * TPACKET_V3 kernel code, blocking forever with
+		 * a TPACKET_V3 socket can, if few packets
+		 * are arriving and passing the socket filter,
+		 * cause most packets to be dropped.  See
+		 * libpcap issue #335 for the full painful
+		 * story.  The workaround is to have poll()
+		 * time out very quickly, so we grab the
+		 * frames handed to us, and return them to
+		 * the kernel, ASAP.
+		 *
+		 * If those issues are ever fixed, we might
+		 * want to check the kernel version and block
+		 * forever with TPACKET_V3 if we're running
+		 * with a kernel that has the fix.
+		 */
+		if (handlep->tp_version == TPACKET_V3)
+			handlep->poll_timeout = 1;	/* don't block for very long */
+		else
+#endif
+			handlep->poll_timeout = -1;	/* block forever */
+	} else if (handlep->timeout > 0)
+		handlep->poll_timeout = handlep->timeout;	/* block for that amount of time */
+	else
+		handlep->poll_timeout = 0;	/* non-blocking mode - poll to pick up errors */
+}
+
+/*
  *  Get a handle for a live capture from the given device. You can
  *  pass NULL as device to get all packages (without link level
  *  information of course). If you pass 1 as promisc the interface
@@ -1402,7 +1439,11 @@ pcap_activate_linux(pcap_t *handle)
 			 * set to the status to return,
 			 * which might be 0, or might be
 			 * a PCAP_WARNING_ value.
+			 *
+			 * Set the timeout to use in poll() before
+			 * returning.
 			 */
+			set_poll_timeout(handlep);
 			return status;
 
 		case 0:
@@ -4299,6 +4340,8 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 			handlep->timeout = ~handlep->timeout;
 		}
 	}
+	/* Update the timeout to use in poll(). */
+	set_poll_timeout(handlep);
 	return 0;
 }
 
@@ -4347,7 +4390,6 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 {
 	if (!pcap_get_ring_frame(handle, TP_STATUS_USER)) {
 		struct pcap_linux *handlep = handle->priv;
-		int timeout;
 		char c;
 		struct pollfd pollinfo;
 		int ret;
@@ -4355,36 +4397,8 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 		pollinfo.fd = handle->fd;
 		pollinfo.events = POLLIN;
 
-		if (handlep->timeout == 0) {
-#ifdef HAVE_TPACKET3
-			/*
-			 * XXX - due to a set of (mis)features in the
-			 * TPACKET_V3 kernel code, blocking forever with
-			 * a TPACKET_V3 socket can, if few packets
-			 * are arriving and passing the socket filter,
-			 * cause most packets to be dropped.  See
-			 * libpcap issue #335 for the full painful
-			 * story.  The workaround is to have poll()
-			 * time out very quickly, so we grab the
-			 * frames handed to us, and return them to
-			 * the kernel, ASAP.
-			 *
-			 * If those issues are ever fixed, we might
-			 * want to check the kernel version and block
-			 * forever with TPACKET_V3 if we're running
-			 * with a kernel that has the fix.
-			 */
-			if (handlep->tp_version == TPACKET_V3)
-				timeout = 1;	/* don't block for very long */
-			else
-#endif
-				timeout = -1;	/* block forever */
-		} else if (handlep->timeout > 0)
-			timeout = handlep->timeout;	/* block for that amount of time */
-		else
-			timeout = 0;	/* non-blocking mode - poll to pick up errors */
 		do {
-			ret = poll(&pollinfo, 1, timeout);
+			ret = poll(&pollinfo, 1, handlep->poll_timeout);
 			if (ret < 0 && errno != EINTR) {
 				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"can't poll on packet socket: %s",
