@@ -379,7 +379,8 @@ union thdr {
 };
 
 #ifdef HAVE_PACKET_RING
-#define RING_GET_FRAME(h) (((union thdr **)h->buffer)[h->offset])
+#define RING_GET_FRAME_AT(h, offset) (((union thdr **)h->buffer)[(offset)])
+#define RING_GET_CURRENT_FRAME(h) RING_GET_FRAME_AT(h, h->offset)
 
 static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle, int *status);
@@ -4227,7 +4228,7 @@ retry:
 	for (i=0; i<req.tp_block_nr; ++i) {
 		void *base = &handlep->mmapbuf[i*req.tp_block_size];
 		for (j=0; j<frames_per_block; ++j, ++handle->offset) {
-			RING_GET_FRAME(handle) = base;
+			RING_GET_CURRENT_FRAME(handle) = base;
 			base += req.tp_frame_size;
 		}
 	}
@@ -4345,124 +4346,118 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 	return 0;
 }
 
-static inline union thdr *
-pcap_get_ring_frame(pcap_t *handle, int status)
+/*
+ * Get the status field of the ring buffer frame at a specified offset.
+ */
+static inline int
+pcap_get_ring_frame_status(pcap_t *handle, int offset)
 {
 	struct pcap_linux *handlep = handle->priv;
 	union thdr h;
 
-	h.raw = RING_GET_FRAME(handle);
+	h.raw = RING_GET_FRAME_AT(handle, offset);
 	switch (handlep->tp_version) {
 	case TPACKET_V1:
-		if (status != (h.h1->tp_status ? TP_STATUS_USER :
-						TP_STATUS_KERNEL))
-			return NULL;
+		return (h.h1->tp_status);
 		break;
 	case TPACKET_V1_64:
-		if (status != (h.h1_64->tp_status ? TP_STATUS_USER :
-						TP_STATUS_KERNEL))
-			return NULL;
+		return (h.h1_64->tp_status);
 		break;
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:
-		if (status != (h.h2->tp_status ? TP_STATUS_USER :
-						TP_STATUS_KERNEL))
-			return NULL;
+		return (h.h2->tp_status);
 		break;
 #endif
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
-		if (status != (h.h3->hdr.bh1.block_status ? TP_STATUS_USER :
-						TP_STATUS_KERNEL))
-			return NULL;
+		return (h.h3->hdr.bh1.block_status);
 		break;
 #endif
 	}
-	return h.raw;
+	/* This should not happen. */
+	return 0;
 }
 
 #ifndef POLLRDHUP
 #define POLLRDHUP 0
 #endif
 
-/* wait for frames availability.*/
+/*
+ * Block waiting for frames to be available.
+ */
 static int pcap_wait_for_frames_mmap(pcap_t *handle)
 {
-	if (!pcap_get_ring_frame(handle, TP_STATUS_USER)) {
-		struct pcap_linux *handlep = handle->priv;
-		char c;
-		struct pollfd pollinfo;
-		int ret;
+	struct pcap_linux *handlep = handle->priv;
+	char c;
+	struct pollfd pollinfo;
+	int ret;
 
-		pollinfo.fd = handle->fd;
-		pollinfo.events = POLLIN;
+	pollinfo.fd = handle->fd;
+	pollinfo.events = POLLIN;
 
-		do {
-			ret = poll(&pollinfo, 1, handlep->poll_timeout);
-			if (ret < 0 && errno != EINTR) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-					"can't poll on packet socket: %s",
-					pcap_strerror(errno));
+	do {
+		ret = poll(&pollinfo, 1, handlep->poll_timeout);
+		if (ret < 0 && errno != EINTR) {
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"can't poll on packet socket: %s",
+				pcap_strerror(errno));
+			return PCAP_ERROR;
+		} else if (ret > 0 &&
+			(pollinfo.revents & (POLLHUP|POLLRDHUP|POLLERR|POLLNVAL))) {
+			/*
+			 * There's some indication other than
+			 * "you can read on this descriptor" on
+			 * the descriptor.
+			 */
+			if (pollinfo.revents & (POLLHUP | POLLRDHUP)) {
+				snprintf(handle->errbuf,
+					PCAP_ERRBUF_SIZE,
+					"Hangup on packet socket");
 				return PCAP_ERROR;
-			} else if (ret > 0 &&
-				(pollinfo.revents & (POLLHUP|POLLRDHUP|POLLERR|POLLNVAL))) {
+			}
+			if (pollinfo.revents & POLLERR) {
 				/*
-				 * There's some indication other than
-				 * "you can read on this descriptor" on
-				 * the descriptor.
+				 * A recv() will give us the actual error code.
+				 *
+				 * XXX - make the socket non-blocking?
 				 */
-				if (pollinfo.revents & (POLLHUP | POLLRDHUP)) {
-					snprintf(handle->errbuf,
-						PCAP_ERRBUF_SIZE,
-						"Hangup on packet socket");
-					return PCAP_ERROR;
-				}
-				if (pollinfo.revents & POLLERR) {
+				if (recv(handle->fd, &c, sizeof c,
+					MSG_PEEK) != -1)
+					continue;	/* what, no error? */
+				if (errno == ENETDOWN) {
 					/*
-					 * A recv() will give us the
-					 * actual error code.
+					 * The device on which we're
+					 * capturing went away.
 					 *
-					 * XXX - make the socket non-blocking?
+					 * XXX - we should really return
+					 * PCAP_ERROR_IFACE_NOT_UP, but
+					 * pcap_dispatch() etc. aren't
+					 * defined to return that.
 					 */
-					if (recv(handle->fd, &c, sizeof c,
-						MSG_PEEK) != -1)
-						continue;	/* what, no error? */
-					if (errno == ENETDOWN) {
-						/*
-						 * The device on which we're
-						 * capturing went away.
-						 *
-						 * XXX - we should really return
-						 * PCAP_ERROR_IFACE_NOT_UP,
-						 * but pcap_dispatch() etc.
-						 * aren't defined to return
-						 * that.
-						 */
-						snprintf(handle->errbuf,
-							PCAP_ERRBUF_SIZE,
-							"The interface went down");
-					} else {
-						snprintf(handle->errbuf,
-							PCAP_ERRBUF_SIZE,
-							"Error condition on packet socket: %s",
-							strerror(errno));
-					}
-					return PCAP_ERROR;
-				}
-				if (pollinfo.revents & POLLNVAL) {
 					snprintf(handle->errbuf,
 						PCAP_ERRBUF_SIZE,
-						"Invalid polling request on packet socket");
-					return PCAP_ERROR;
+						"The interface went down");
+				} else {
+					snprintf(handle->errbuf,
+						PCAP_ERRBUF_SIZE,
+						"Error condition on packet socket: %s",
+						strerror(errno));
 				}
+				return PCAP_ERROR;
 			}
-			/* check for break loop condition on interrupted syscall*/
-			if (handle->break_loop) {
-				handle->break_loop = 0;
-				return PCAP_ERROR_BREAK;
+			if (pollinfo.revents & POLLNVAL) {
+				snprintf(handle->errbuf,
+					PCAP_ERRBUF_SIZE,
+					"Invalid polling request on packet socket");
+				return PCAP_ERROR;
 			}
-		} while (ret < 0);
-	}
+		}
+		/* check for break loop condition on interrupted syscall*/
+		if (handle->break_loop) {
+			handle->break_loop = 0;
+			return PCAP_ERROR_BREAK;
+		}
+	} while (ret < 0);
 	return 0;
 }
 
@@ -4616,22 +4611,32 @@ pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
+	union thdr h;
 	int pkts = 0;
 	int ret;
 
 	/* wait for frames availability.*/
-	ret = pcap_wait_for_frames_mmap(handle);
-	if (ret) {
-		return ret;
+	h.raw = RING_GET_CURRENT_FRAME(handle);
+	if (h.h1->tp_status == TP_STATUS_KERNEL) {
+		/*
+		 * The current frame is owned by the kernel; wait for
+		 * a frame to be handed to us.
+		 */
+		ret = pcap_wait_for_frames_mmap(handle);
+		if (ret) {
+			return ret;
+		}
 	}
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
-		union thdr h;
-
-		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
-		if (!h.raw)
+		/*
+		 * Get the current ring buffer frame, and break if
+		 * it's still owned by the kernel.
+		 */
+		h.raw = RING_GET_CURRENT_FRAME(handle);
+		if (h.h1->tp_status == TP_STATUS_KERNEL)
 			break;
 
 		ret = pcap_handle_packet_mmap(
@@ -4690,22 +4695,32 @@ pcap_read_linux_mmap_v1_64(pcap_t *handle, int max_packets, pcap_handler callbac
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
+	union thdr h;
 	int pkts = 0;
 	int ret;
 
 	/* wait for frames availability.*/
-	ret = pcap_wait_for_frames_mmap(handle);
-	if (ret) {
-		return ret;
+	h.raw = RING_GET_CURRENT_FRAME(handle);
+	if (h.h1_64->tp_status == TP_STATUS_KERNEL) {
+		/*
+		 * The current frame is owned by the kernel; wait for
+		 * a frame to be handed to us.
+		 */
+		ret = pcap_wait_for_frames_mmap(handle);
+		if (ret) {
+			return ret;
+		}
 	}
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
-		union thdr h;
-
-		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
-		if (!h.raw)
+		/*
+		 * Get the current ring buffer frame, and break if
+		 * it's still owned by the kernel.
+		 */
+		h.raw = RING_GET_CURRENT_FRAME(handle);
+		if (h.h1_64->tp_status == TP_STATUS_KERNEL)
 			break;
 
 		ret = pcap_handle_packet_mmap(
@@ -4765,22 +4780,32 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
 {
 	struct pcap_linux *handlep = handle->priv;
+	union thdr h;
 	int pkts = 0;
 	int ret;
 
 	/* wait for frames availability.*/
-	ret = pcap_wait_for_frames_mmap(handle);
-	if (ret) {
-		return ret;
+	h.raw = RING_GET_CURRENT_FRAME(handle);
+	if (h.h2->tp_status == TP_STATUS_KERNEL) {
+		/*
+		 * The current frame is owned by the kernel; wait for
+		 * a frame to be handed to us.
+		 */
+		ret = pcap_wait_for_frames_mmap(handle);
+		if (ret) {
+			return ret;
+		}
 	}
 
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
-		union thdr h;
-
-		h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
-		if (!h.raw)
+		/*
+		 * Get the current ring buffer frame, and break if
+		 * it's still owned by the kernel.
+		 */
+		h.raw = RING_GET_CURRENT_FRAME(handle);
+		if (h.h2->tp_status == TP_STATUS_KERNEL)
 			break;
 
 		ret = pcap_handle_packet_mmap(
@@ -4852,13 +4877,20 @@ pcap_read_linux_mmap_v3(pcap_t *handle, int max_packets, pcap_handler callback,
 again:
 	if (handlep->current_packet == NULL) {
 		/* wait for frames availability.*/
-		ret = pcap_wait_for_frames_mmap(handle);
-		if (ret) {
-			return ret;
+		h.raw = RING_GET_CURRENT_FRAME(handle);
+		if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL) {
+			/*
+			 * The current frame is owned by the kernel; wait
+			 * for a frame to be handed to us.
+			 */
+			ret = pcap_wait_for_frames_mmap(handle);
+			if (ret) {
+				return ret;
+			}
 		}
 	}
-	h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
-	if (!h.raw) {
+	h.raw = RING_GET_CURRENT_FRAME(handle);
+	if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL) {
 		if (pkts == 0 && handlep->timeout == 0) {
 			/* Block until we see a packet. */
 			goto again;
@@ -4870,8 +4902,8 @@ again:
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
 		if (handlep->current_packet == NULL) {
-			h.raw = pcap_get_ring_frame(handle, TP_STATUS_USER);
-			if (!h.raw)
+			h.raw = RING_GET_CURRENT_FRAME(handle);
+			if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL)
 				break;
 
 			handlep->current_packet = h.raw + h.h3->hdr.bh1.offset_to_first_pkt;
@@ -4988,12 +5020,12 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	 * walk the ring backward and count the free blocks.
 	 */
 	offset = handle->offset;
-	if (--handle->offset < 0)
-		handle->offset = handle->cc - 1;
+	if (--offset < 0)
+		offset = handle->cc - 1;
 	for (n=0; n < handle->cc; ++n) {
-		if (--handle->offset < 0)
-			handle->offset = handle->cc - 1;
-		if (!pcap_get_ring_frame(handle, TP_STATUS_KERNEL))
+		if (--offset < 0)
+			offset = handle->cc - 1;
+		if (pcap_get_ring_frame_status(handle, offset) != TP_STATUS_KERNEL)
 			break;
 	}
 
@@ -5013,9 +5045,6 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	 */
 	if (n != 0)
 		n--;
-
-	/* be careful to not change current ring position */
-	handle->offset = offset;
 
 	/*
 	 * Set the count of blocks worth of packets to filter
