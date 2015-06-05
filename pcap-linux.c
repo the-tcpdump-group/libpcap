@@ -1370,8 +1370,14 @@ set_poll_timeout(struct pcap_linux *handlep)
 			handlep->poll_timeout = -1;	/* block forever, let TPACKET_V3 wake us up */
 		else
 			handlep->poll_timeout = handlep->timeout;	/* block for that amount of time */
-	} else
-		handlep->poll_timeout = 0;	/* non-blocking mode - poll to pick up errors */
+	} else {
+		/*
+		 * Non-blocking mode; we call poll() to pick up error
+		 * indications, but we don't want it to wait for
+		 * anything.
+		 */
+		handlep->poll_timeout = 0;
+	}
 }
 
 /*
