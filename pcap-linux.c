@@ -4440,6 +4440,14 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 	pollinfo.events = POLLIN;
 
 	do {
+		/*
+		 * Yes, we do this even in non-blocking mode, as it's
+		 * the only way to get error indications from a
+		 * tpacket socket.
+		 *
+		 * The timeout is 0 in non-blocking mode, so poll()
+		 * returns immediately.
+		 */
 		ret = poll(&pollinfo, 1, handlep->poll_timeout);
 		if (ret < 0 && errno != EINTR) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
