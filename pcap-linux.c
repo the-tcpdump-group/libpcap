@@ -1361,6 +1361,7 @@ set_poll_timeout(struct pcap_linux *handlep)
 #endif
 			handlep->poll_timeout = -1;	/* block forever */
 	} else if (handlep->timeout > 0) {
+#ifdef HAVE_TPACKET3
 		/*
 		 * For TPACKET_V3, the timeout is handled by the kernel,
 		 * so block forever; that way, we don't get extra timeouts.
@@ -1369,6 +1370,7 @@ set_poll_timeout(struct pcap_linux *handlep)
 		if (handlep->tp_version == TPACKET_V3 && !broken_tpacket_v3)
 			handlep->poll_timeout = -1;	/* block forever, let TPACKET_V3 wake us up */
 		else
+#endif
 			handlep->poll_timeout = handlep->timeout;	/* block for that amount of time */
 	} else {
 		/*
