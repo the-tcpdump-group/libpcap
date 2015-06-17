@@ -3242,7 +3242,7 @@ activate_new(pcap_t *handle)
 #endif
 	int			err = 0;
 	struct packet_mreq	mr;
-#ifdef SO_BPF_EXTENSIONS
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 	int			bpf_extensions;
 	socklen_t		len = sizeof(bpf_extensions);
 #endif
@@ -3576,7 +3576,7 @@ activate_new(pcap_t *handle)
 	 */
 	handle->fd = sock_fd;
 
-#ifdef SO_BPF_EXTENSIONS
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 	/*
 	 * Can we generate special code for VLAN checks?
 	 * (XXX - what if we need the special code but it's not supported
@@ -3591,7 +3591,7 @@ activate_new(pcap_t *handle)
 			handle->bpf_codegen_flags |= BPF_SPECIAL_VLAN_HANDLING;
 		}
 	}
-#endif /* SO_BPF_EXTENSIONS */
+#endif /* defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT) */
 
 	return 1;
 #else /* HAVE_PF_PACKET_SOCKETS */
