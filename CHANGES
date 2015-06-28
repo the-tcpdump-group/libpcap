@@ -1,3 +1,7 @@
+Saturday Jun. 27, 2015 mcr@sandelman.ca
+  Summary for 1.7.4 libpcap release
+	Include fix for GitHub issue #424 -- out of tree builds.
+
 Friday Apr. 10, 2015 guy@alum.mit.edu
   Summary for 1.7.3 libpcap release
 	Work around a Linux bonding driver bug.
