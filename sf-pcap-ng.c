@@ -203,8 +203,10 @@ struct block_cursor {
 
 typedef enum {
 	PASS_THROUGH,
-	SCALE_UP,
-	SCALE_DOWN
+	SCALE_UP_DEC,
+	SCALE_DOWN_DEC,
+	SCALE_UP_BIN,
+	SCALE_DOWN_BIN
 } tstamp_scale_type_t;
 
 /*
@@ -212,8 +214,9 @@ typedef enum {
  */
 struct pcap_ng_if {
 	u_int tsresol;			/* time stamp resolution */
-	u_int64_t tsoffset;		/* time stamp offset */
 	tstamp_scale_type_t scale_type;	/* how to scale */
+	u_int scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
+	u_int64_t tsoffset;		/* time stamp offset */
 };
 
 struct pcap_ng_sf {
@@ -401,7 +404,7 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 
 static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
-    u_int64_t *tsoffset, char *errbuf)
+    u_int64_t *tsoffset, int *is_binary, char *errbuf)
 {
 	struct option_header *opthdr;
 	void *optvalue;
@@ -464,11 +467,13 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 				/*
 				 * Resolution is negative power of 2.
 				 */
+				*is_binary = 1;
 				*tsresol = 1 << (tsresol_opt & 0x7F);
 			} else {
 				/*
 				 * Resolution is negative power of 10.
 				 */
+				*is_binary = 0;
 				*tsresol = 1;
 				for (i = 0; i < tsresol_opt; i++)
 					*tsresol *= 10;
@@ -523,6 +528,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	struct pcap_ng_sf *ps;
 	u_int tsresol;
 	u_int64_t tsoffset;
+	int is_binary;
 
 	ps = p->priv;
 
@@ -568,13 +574,15 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 * Set the default time stamp resolution and offset.
 	 */
 	tsresol = 1000000;	/* microsecond resolution */
+	is_binary = 0;		/* which is a power of 10 */
 	tsoffset = 0;		/* absolute timestamps */
 
 	/*
 	 * Now look for various time stamp options, so we know
 	 * how to interpret the time stamps for this interface.
 	 */
-	if (process_idb_options(p, cursor, &tsresol, &tsoffset, errbuf) == -1)
+	if (process_idb_options(p, cursor, &tsresol, &tsoffset, &is_binary,
+	    errbuf) == -1)
 		return (0);
 
 	ps->ifaces[ps->ifcount - 1].tsresol = tsresol;
@@ -584,55 +592,40 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 * Determine whether we're scaling up or down or not
 	 * at all for this interface.
 	 */
-	switch (p->opt.tstamp_precision) {
-
-	case PCAP_TSTAMP_PRECISION_MICRO:
-		if (tsresol == 1000000) {
+	if (tsresol == ps->user_tsresol) {
+		/*
+		 * The resolution is the resolution the user wants,
+		 * so we don't have to do scaling.
+		 */
+		ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
+	} else if (tsresol > ps->user_tsresol) {
+		/*
+		 * The resolution is greater than what the user wants,
+		 * so we have to scale the timestamps down.
+		 */
+		if (is_binary)
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_BIN;
+		else {
 			/*
-			 * The resolution is 1 microsecond,
-			 * so we don't have to do scaling.
+			 * Calculate the scale factor.
 			 */
-			ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
-		} else if (tsresol > 1000000) {
-			/*
-			 * The resolution is greater than
-			 * 1 microsecond, so we have to
-			 * scale the timestamps down.
-			 */
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN;
-		} else {
-			/*
-			 * The resolution is less than 1
-			 * microsecond, so we have to scale
-			 * the timestamps up.
-			 */
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP;
+			ps->ifaces[ps->ifcount - 1].scale_factor = tsresol/ps->user_tsresol;
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN_DEC;
 		}
-		break;
-
-	case PCAP_TSTAMP_PRECISION_NANO:
-		if (tsresol == 1000000000) {
+	} else {
+		/*
+		 * The resolution is less than what the user wants,
+		 * so we have to scale the timestamps up.
+		 */
+		if (is_binary)
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_BIN;
+		else {
 			/*
-			 * The resolution is 1 nanosecond,
-			 * so we don't have to do scaling.
+			 * Calculate the scale factor.
 			 */
-			ps->ifaces[ps->ifcount - 1].scale_type = PASS_THROUGH;
-		} else if (tsresol > 1000000000) {
-			/*
-			 * The resolution is greater than
-			 * 1 nanosecond, so we have to
-			 * scale the timestamps down.
-			 */
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_DOWN;
-		} else {
-			/*
-			 * The resolution is less than 1
-			 * nanosecond, so we have to scale
-			 * the timestamps up.
-			 */
-			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP;
+			ps->ifaces[ps->ifcount - 1].scale_factor = ps->user_tsresol/tsresol;
+			ps->ifaces[ps->ifcount - 1].scale_type = SCALE_UP_DEC;
 		}
-		break;
 	}
 	return (1);
 }
@@ -1229,11 +1222,71 @@ found:
 		 */
 		break;
 
-	case SCALE_UP:
-	case SCALE_DOWN:
+	case SCALE_UP_DEC:
 		/*
-		 * The interface resolution is different from what the
-		 * user wants; convert the fractions to units of the
+		 * The interface resolution is less than what the user
+		 * wants; scale the fractional part up to the units of
+		 * the resolution the user requested by multiplying by
+		 * the quotient of the user-requested resolution and the
+		 * file-supplied resolution.
+		 *
+		 * Those resolutions are both powers of 10, and the user-
+		 * requested resolution is greater than the file-supplied
+		 * resolution, so the quotient in question is an integer.
+		 * We've calculated that quotient already, so we just
+		 * multiply by it.
+		 */
+		frac *= ps->ifaces[interface_id].scale_factor;
+		break;
+
+	case SCALE_UP_BIN:
+		/*
+		 * The interface resolution is less than what the user
+		 * wants; scale the fractional part up to the units of
+		 * the resolution the user requested by multiplying by
+		 * the quotient of the user-requested resolution and the
+		 * file-supplied resolution.
+		 *
+		 * The file-supplied resolution is a power of 2, so the
+		 * quotient is not an integer, so, in order to do this
+		 * entirely with integer arithmetic, we multiply by the
+		 * user-requested resolution and divide by the file-
+		 * supplied resolution.
+		 *
+		 * XXX - Is there something clever we could do here,
+		 * given that we know that the file-supplied resolution
+		 * is a power of 2?  Doing a multiplication followed by
+		 * a division runs the risk of overflowing, and involves
+		 * two non-simple arithmetic operations.
+		 */
+		frac *= ps->user_tsresol;
+		frac /= ps->ifaces[interface_id].tsresol;
+		break;
+
+	case SCALE_DOWN_DEC:
+		/*
+		 * The interface resolution is greater than what the user
+		 * wants; scale the fractional part up to the units of
+		 * the resolution the user requested by multiplying by
+		 * the quotient of the user-requested resolution and the
+		 * file-supplied resolution.
+		 *
+		 * Those resolutions are both powers of 10, and the user-
+		 * requested resolution is less than the file-supplied
+		 * resolution, so the quotient in question isn't an
+		 * integer, but its reciprocal is, and we can just divide
+		 * by the reciprocal of the quotient.  We've calculated
+		 * the reciprocal of that quotient already, so we must
+		 * divide by it.
+		 */
+		frac /= ps->ifaces[interface_id].scale_factor;
+		break;
+
+
+	case SCALE_DOWN_BIN:
+		/*
+		 * The interface resolution is greater than what the user
+		 * wants; convert the fractional part to units of the
 		 * resolution the user requested by multiplying by the
 		 * quotient of the user-requested resolution and the
 		 * file-supplied resolution.  We do that by multiplying
@@ -1241,17 +1294,17 @@ found:
 		 * file-supplied resolution, as the quotient might not
 		 * fit in an integer.
 		 *
-		 * XXX - if ps->ifaces[interface_id].tsresol is a power
-		 * of 10, we could just multiply by the quotient of
-		 * ps->user_tsresol and ps->ifaces[interface_id].tsresol
-		 * in the scale-up case, and divide by the quotient of
-		 * ps->ifaces[interface_id].tsresol and ps->user_tsresol
-		 * in the scale-down case, as we know those will be integers.
-		 * That would involve fewer arithmetic operations, and
-		 * would run less risk of overflow.
+		 * The file-supplied resolution is a power of 2, so the
+		 * quotient is not an integer, and neither is its
+		 * reciprocal, so, in order to do this entirely with
+		 * integer arithmetic, we multiply by the user-requested
+		 * resolution and divide by the file-supplied resolution.
 		 *
-		 * Is there something clever we could do if
-		 * ps->ifaces[interface_id].tsresol is a power of 2?
+		 * XXX - Is there something clever we could do here,
+		 * given that we know that the file-supplied resolution
+		 * is a power of 2?  Doing a multiplication followed by
+		 * a division runs the risk of overflowing, and involves
+		 * two non-simple arithmetic operations.
 		 */
 		frac *= ps->user_tsresol;
 		frac /= ps->ifaces[interface_id].tsresol;
