@@ -749,6 +749,20 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	 * Success.
 	 */
 	nlmsg_free(msg);
+
+	/*
+	 * Try to remember the monitor device.
+	 */
+	handlep->mondevice = strdup(mondevice);
+	if (handlep->mondevice == NULL) {
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
+			 pcap_strerror(errno));
+		/*
+		 * Get rid of the monitor device.
+		 */
+		del_mon_if(handle, sock_fd, state, device, >mondevice);
+		return PCAP_ERROR;
+	}
 	return 1;
 
 nla_put_failure:
@@ -854,7 +868,10 @@ enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
 		snprintf(mondevice, sizeof mondevice, "mon%u", n);
 		ret = add_mon_if(handle, sock_fd, &nlstate, device, mondevice);
 		if (ret == 1) {
-			handlep->mondevice = strdup(mondevice);
+			/*
+			 * Success.  We don't clean up the libnl state
+			 * yet, as we'll be using it later.
+			 */
 			goto added;
 		}
 		if (ret < 0) {
@@ -892,7 +909,12 @@ added:
 		 * "atexit()" failed; don't put the interface
 		 * in rfmon mode, just give up.
 		 */
-		return PCAP_ERROR_RFMON_NOTSUP;
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "%s: atexit failed", device);
+		del_mon_if(handle, sock_fd, &nlstate, device,
+		    handlep->mondevice);
+		nl80211_cleanup(&nlstate);
+		return PCAP_ERROR;
 	}
 
 	/*
