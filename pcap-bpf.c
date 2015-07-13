@@ -1575,6 +1575,12 @@ pcap_activate_bpf(pcap_t *p)
 			goto bad;
 		}
 		lnamep = strdup(zonesep + 1);
+		if (lnamep == NULL) {
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
+			    pcap_strerror(errno));
+			status = PCAP_ERROR;
+			goto bad;
+		}
 		free(p->opt.source);
 		p->opt.source = lnamep;
 	}
