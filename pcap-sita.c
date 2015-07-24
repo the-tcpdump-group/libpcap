@@ -209,7 +209,7 @@ static void empty_unit(int chassis, int geoslot) {
 	empty_unit_iface(u);
 	if (u->imsg) {											/* then if an inbound message buffer exists */
 		u->imsg = (char *)realloc(u->imsg, 1);				/* and re-allocate the old large buffer into a new small one */
-		if (u->imsg == NULL) {	/* oops, realloc call failed */
+		if (u->imsg == NULL) /* oops, realloc call failed */
 			fprintf(stderr, "Warning...call to realloc() failed, value of errno is %d\n", errno);
 
 	}
@@ -620,7 +620,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 						snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 						return -1;
 					}
-+					memset((char *)addr, 0, sizeof(pcap_addr_t)); /* bzero() is deprecated, replaced with memset() */
+ 					memset((char *)addr, 0, sizeof(pcap_addr_t)); /* bzero() is deprecated, replaced with memset() */
 					if (iff->addresses == 0) iff->addresses = addr;
 					if (prev_addr) prev_addr->next = addr;							/* insert a forward link */
 					if (*ptr) {														/* if there is a count for the address */
