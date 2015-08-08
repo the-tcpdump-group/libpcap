@@ -497,8 +497,9 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 * correctly in the savefile header.  If the caplen isn't
 		 * grossly wrong, try to salvage.
 		 */
-		static u_char *tp = NULL;
-		static size_t tsize = 0;
+		bpf_u_int32 bytes_to_discard;
+		size_t bytes_to_read, bytes_read;
+		char discard_buf[4096];
 
 		if (hdr->caplen > MAXIMUM_SNAPLEN) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -506,41 +507,67 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			return (-1);
 		}
 
-		if (tsize < hdr->caplen) {
-			tsize = ((hdr->caplen + 1023) / 1024) * 1024;
-			if (tp != NULL)
-				free((u_char *)tp);
-			tp = (u_char *)malloc(tsize);
-			if (tp == NULL) {
-				tsize = 0;
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "BUFMOD hack malloc");
-				return (-1);
-			}
-		}
-		amt_read = fread((char *)tp, 1, hdr->caplen, fp);
-		if (amt_read != hdr->caplen) {
+		/*
+		 * XXX - we don't grow the buffer here because some
+		 * program might assume that it will never get packets
+		 * bigger than the snapshot length; for example, it might
+		 * copy data from our buffer to a buffer of its own,
+		 * allocated based on the return value of pcap_snapshot().
+		 *
+		 * Read the first p->bufsize bytes into the buffer.
+		 */
+		amt_read = fread(p->buffer, 1, p->bufsize, fp);
+		if (amt_read != p->bufsize) {
 			if (ferror(fp)) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "error reading dump file: %s",
 				    pcap_strerror(errno));
 			} else {
+				/*
+				 * Yes, this uses hdr->caplen; technically,
+				 * it's true, because we would try to read
+				 * and discard the rest of those bytes, and
+				 * that would fail because we got EOF before
+				 * the read finished.
+				 */
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "truncated dump file; tried to read %u captured bytes, only got %lu",
 				    hdr->caplen, (unsigned long)amt_read);
 			}
 			return (-1);
 		}
+
 		/*
-		 * We can only keep up to p->bufsize bytes.  Since
-		 * caplen > p->bufsize is exactly how we got here,
-		 * we know we can only keep the first p->bufsize bytes
-		 * and must drop the remainder.  Adjust caplen accordingly,
-		 * so we don't get confused later as to how many bytes we
-		 * have to play with.
+		 * Now read and discard what's left.
+		 */
+		bytes_to_discard = hdr->caplen - p->bufsize;
+		bytes_read = amt_read;
+		while (bytes_to_discard != 0) {
+			bytes_to_read = bytes_to_discard;
+			if (bytes_to_read > sizeof (discard_buf))
+				bytes_to_read = sizeof (discard_buf);
+			amt_read = fread(discard_buf, 1, bytes_to_read, fp);
+			bytes_read += amt_read;
+			if (amt_read != bytes_to_read) {
+				if (ferror(fp)) {
+					snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					    "error reading dump file: %s",
+					    pcap_strerror(errno));
+				} else {
+					snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					    "truncated dump file; tried to read %u captured bytes, only got %lu",
+					    hdr->caplen, (unsigned long)bytes_read);
+				}
+				return (-1);
+			}
+			bytes_to_discard -= amt_read;
+		}
+
+		/*
+		 * Adjust caplen accordingly, so we don't get confused later
+		 * as to how many bytes we have to play with.
 		 */
 		hdr->caplen = p->bufsize;
-		memcpy(p->buffer, (char *)tp, p->bufsize);
 	} else {
 		/* read the packet itself */
 		amt_read = fread(p->buffer, 1, hdr->caplen, fp);
