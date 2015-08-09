@@ -5561,7 +5561,7 @@ gen_protochain(v, proto, dir)
 	int reg2 = alloc_reg();
 
 	memset(s, 0, sizeof(s));
-	fix2 = fix3 = fix4 = fix5 = 0;
+	fix3 = fix4 = fix5 = 0;
 
 	switch (proto) {
 	case Q_IP:
