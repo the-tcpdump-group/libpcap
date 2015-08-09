@@ -371,7 +371,7 @@ pcap_activate_snoop(pcap_t *p)
 	}
 
 	p->bufsize = 4096;				/* XXX */
-	p->buffer = (u_char *)malloc(p->bufsize);
+	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));

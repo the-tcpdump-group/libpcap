@@ -131,7 +131,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 				pcap_strerror(errno));
 			return (-1);
 		}
-		bp = pc->buffer + pc->offset;
+		bp = (u_char *)pc->buffer + pc->offset;
 	} else
 		bp = pc->bp;
 	/*
@@ -476,7 +476,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	}
 
 	p->bufsize = BUFSPACE;
-	p->buffer = (u_char*)malloc(p->bufsize + p->offset);
+	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
 		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;

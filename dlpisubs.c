@@ -326,7 +326,7 @@ int
 pcap_alloc_databuf(pcap_t *p)
 {
 	p->bufsize = PKTBUFSIZE;
-	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
+	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
 		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		return (-1);

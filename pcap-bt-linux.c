@@ -199,8 +199,7 @@ bt_activate(pcap_t* handle)
 	}
 
 	/* Initialize some components of the pcap structure. */
-	handle->bufsize = handle->snapshot+BT_CTRL_SIZE+sizeof(pcap_bluetooth_h4_header);
-	handle->offset = BT_CTRL_SIZE;
+	handle->bufsize = BT_CTRL_SIZE+sizeof(pcap_bluetooth_h4_header)+handle->snapshot;
 	handle->linktype = DLT_BLUETOOTH_HCI_H4_WITH_PHDR;
 
 	handle->read_op = bt_read_linux;
@@ -305,16 +304,18 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	ssize_t ret;
 	struct pcap_pkthdr pkth;
 	pcap_bluetooth_h4_header* bthdr;
+	char *pktd;
 
-	bthdr = (pcap_bluetooth_h4_header*) &handle->buffer[handle->offset];
-	iv.iov_base = &handle->buffer[handle->offset+sizeof(pcap_bluetooth_h4_header)];
+	pktd = (char *)handle->buffer + BT_CTRL_SIZE;
+	bthdr = (pcap_bluetooth_h4_header*)(void *)pktd;
+	iv.iov_base = pktd + sizeof(pcap_bluetooth_h4_header);
 	iv.iov_len  = handle->snapshot;
 
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
 	msg.msg_control = handle->buffer;
-	msg.msg_controllen = handle->offset;
+	msg.msg_controllen = BT_CTRL_SIZE;
 
 	/* ignore interrupt system call error */
 	do {
@@ -357,9 +358,8 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	pkth.caplen+=sizeof(pcap_bluetooth_h4_header);
 	pkth.len = pkth.caplen;
 	if (handle->fcode.bf_insns == NULL ||
-	    bpf_filter(handle->fcode.bf_insns, &handle->buffer[handle->offset],
-	      pkth.len, pkth.caplen)) {
-		callback(user, &pkth, &handle->buffer[handle->offset]);
+	    bpf_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
+		callback(user, &pkth, pktd);
 		return 1;
 	}
 	return 0;	/* didn't pass filter */

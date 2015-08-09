@@ -1715,7 +1715,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * if we're using a memory-mapped buffer, we won't even
 	 * get notified of "network down" events.
 	 */
-	bp = handle->buffer + handle->offset;
+	bp = (u_char *)handle->buffer + handle->offset;
 
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
 	msg.msg_name		= &from;

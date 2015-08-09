@@ -105,7 +105,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		return -1;
 	}
 
-	buf = handle->buffer;
+	buf = (unsigned char *)handle->buffer;
 	while (len >= NLMSG_SPACE(0)) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) buf;
 		u_int32_t msg_len;

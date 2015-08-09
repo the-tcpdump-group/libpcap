@@ -39,6 +39,8 @@
 #include "pcap-int.h"
 #include "pcap-can-linux.h"
 
+#define CAN_CONTROL_SIZE 8
+
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
 #endif
@@ -148,8 +150,7 @@ can_activate(pcap_t* handle)
 	struct ifreq ifr;
 
 	/* Initialize some components of the pcap structure. */
-	handle->bufsize = 24;
-	handle->offset = 8;
+	handle->bufsize = CAN_CONTROL_SIZE + 16;
 	handle->linktype = DLT_CAN_SOCKETCAN;
 	handle->read_op = can_read_linux;
 	handle->inject_op = can_inject_linux;
@@ -221,17 +222,19 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 {
 	struct msghdr msg;
 	struct pcap_pkthdr pkth;
+	char *pktd;
 	struct iovec iv;
 	struct can_frame* cf;
 
-	iv.iov_base = &handle->buffer[handle->offset];
+	pktd = (char *)handle->buffer + CAN_CONTROL_SIZE;
+	iv.iov_base = pktd;
 	iv.iov_len = handle->snapshot;
 
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
 	msg.msg_control = handle->buffer;
-	msg.msg_controllen = handle->offset;
+	msg.msg_controllen = CAN_CONTROL_SIZE;
 
 	do
 	{
@@ -251,8 +254,8 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	}
 
 	/* adjust capture len according to frame len */
-	cf = (struct can_frame*)&handle->buffer[8];
-	pkth.caplen -= 8 - cf->can_dlc;
+	cf = (struct can_frame*)(void *)pktd;
+	pkth.caplen -= CAN_CONTROL_SIZE - cf->can_dlc;
 	pkth.len = pkth.caplen;
 
 	cf->can_id = htonl( cf->can_id );
@@ -264,7 +267,7 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		return -1;
 	}
 
-	callback(user, &pkth, &handle->buffer[8]);
+	callback(user, &pkth, pktd);
 
 	return 1;
 }

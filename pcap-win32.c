@@ -663,7 +663,7 @@ pcap_activate_win32(pcap_t *p)
 			goto bad;
 		}
 
-		p->buffer = (u_char *)malloc(p->bufsize);
+		p->buffer = malloc(p->bufsize);
 		if (p->buffer == NULL)
 		{
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));

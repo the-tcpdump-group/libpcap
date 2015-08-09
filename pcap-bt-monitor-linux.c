@@ -82,13 +82,15 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     ssize_t ret;
     struct pcap_pkthdr pkth;
     pcap_bluetooth_linux_monitor_header *bthdr;
+    char *pktd;
     struct hci_mon_hdr hdr;
 
-    bthdr = (pcap_bluetooth_linux_monitor_header*) &handle->buffer[handle->offset];
+    pktd = (char *)handle->buffer + BT_CONTROL_SIZE;
+    bthdr = (pcap_bluetooth_linux_monitor_header*)(void *)pktd;
 
     iv[0].iov_base = &hdr;
     iv[0].iov_len = sizeof(hdr);
-    iv[1].iov_base = &handle->buffer[handle->offset + sizeof(pcap_bluetooth_linux_monitor_header)];
+    iv[1].iov_base = pktd + sizeof(pcap_bluetooth_linux_monitor_header);
     iv[1].iov_len = handle->snapshot;
 
     memset(&pkth.ts, 0, sizeof(pkth.ts));
@@ -96,7 +98,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     msg.msg_iov = iv;
     msg.msg_iovlen = 2;
     msg.msg_control = handle->buffer;
-    msg.msg_controllen = handle->offset;
+    msg.msg_controllen = BT_CONTROL_SIZE;
 
     do {
         ret = recvmsg(handle->fd, &msg, 0);
@@ -128,9 +130,8 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     bthdr->opcode = htons(hdr.opcode);
 
     if (handle->fcode.bf_insns == NULL ||
-        bpf_filter(handle->fcode.bf_insns, &handle->buffer[handle->offset],
-          pkth.len, pkth.caplen)) {
-        callback(user, &pkth, &handle->buffer[handle->offset]);
+        bpf_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
+        callback(user, &pkth, pktd);
         return 1;
     }
     return 0;   /* didn't pass filter */
@@ -172,8 +173,7 @@ bt_monitor_activate(pcap_t* handle)
         return PCAP_ERROR_RFMON_NOTSUP;
     }
 
-    handle->bufsize = handle->snapshot + BT_CONTROL_SIZE + sizeof(pcap_bluetooth_linux_monitor_header);
-    handle->offset = BT_CONTROL_SIZE;
+    handle->bufsize = BT_CONTROL_SIZE + sizeof(pcap_bluetooth_linux_monitor_header) + handle->snapshot;
     handle->linktype = DLT_BLUETOOTH_LINUX_MONITOR;
 
     handle->read_op = bt_monitor_read;

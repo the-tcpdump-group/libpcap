@@ -134,7 +134,7 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				pcap_strerror(errno));
 			return (-1);
 		}
-		bp = p->buffer;
+		bp = (u_char *)p->buffer;
 	} else
 		bp = p->bp;
 
@@ -378,7 +378,7 @@ pcap_activate_snit(pcap_t *p)
 	p->linktype = DLT_EN10MB;
 
 	p->bufsize = BUFSPACE;
-	p->buffer = (u_char *)malloc(p->bufsize);
+	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;
