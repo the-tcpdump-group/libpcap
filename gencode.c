@@ -259,6 +259,7 @@ static struct block *gen_ncmp(enum e_offrel, bpf_u_int32, bpf_u_int32,
 static struct slist *gen_load_absoffsetrel(bpf_abs_offset *, u_int, u_int);
 static struct slist *gen_load_a(enum e_offrel, u_int, u_int);
 static struct slist *gen_loadx_iphdrlen(void);
+static struct block *gen_load_vlan_indirect(const enum e_offrel, bpf_u_int32, bpf_u_int32);
 static struct block *gen_uncond(int);
 static inline struct block *gen_true(void);
 static inline struct block *gen_false(void);
@@ -793,6 +794,59 @@ gen_ncmp(offrel, offset, size, mask, jtype, reverse, v)
 	if (reverse && (jtype == BPF_JGT || jtype == BPF_JGE))
 		gen_not(b);
 	return b;
+}
+
+/*
+ * Generates indirect load and equality check for vlan tpid and optionally for vlan tci.
+ * In both cases half word is loaded from offset computed as a sum of offrel with value if M[0].
+ */
+static struct block *
+gen_load_vlan_indirect(offrel, tpid, tci)
+        const enum e_offrel offrel;
+        bpf_u_int32 tpid;
+        bpf_u_int32 tci;
+{
+        struct slist *s, *s1;
+        struct block *b, *b1;
+
+        s = new_stmt(BPF_LD|BPF_W|BPF_MEM);
+        s->s.k = 0;
+
+        s1 = new_stmt(BPF_ALU|BPF_ADD|BPF_K);
+        s1->s.k = offrel;
+        sappend(s, s1);
+
+        s1 = new_stmt(BPF_MISC|BPF_TAX);
+        sappend(s, s1);
+
+        s1 = new_stmt(BPF_LD|BPF_H|BPF_IND);
+        sappend(s, s1);
+
+        b = new_block(JMP(BPF_JEQ));
+        b->stmts = s;
+        b->s.k = tpid;
+
+        if (tci > 0) {
+                struct slist *s2;
+                struct block *b2;
+
+                s1 = new_stmt(BPF_LD|BPF_H|BPF_IND);
+                s1->s.k = 2;
+
+                s2 = new_stmt(BPF_ALU|BPF_AND|BPF_K);
+                s2->s.k = 0xfff;
+
+                sappend(s1, s2);
+
+                b1 = new_block(JMP(BPF_JEQ));
+                b1->stmts = s1;
+                b1->s.k = tci;
+
+                gen_and(b, b1);
+                b = b1;
+        }
+
+        return b;
 }
 
 /*
@@ -7880,13 +7934,23 @@ gen_ahostop(eaddr, dir)
 static struct block *
 gen_vlan_bpf_extensions(int vlan_num)
 {
-        struct block *b0, *b1;
-        struct slist *s;
+        struct block *b0, *b1, *b2, *b3;
+        struct slist *s, *s1;
 
         /* generate new filter code based on extracting packet
          * metadata */
-        s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
-        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+        s = new_stmt(BPF_LD|BPF_IMM);
+        s->s.k = 0x0;
+
+        s1 = new_stmt(BPF_ST);
+        s1->s.k = 0x0;
+
+        sappend(s, s1);
+
+        s1 = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+        s1->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+
+        sappend(s, s1);
 
         b0 = new_block(JMP(BPF_JEQ));
         b0->stmts = s;
@@ -7904,6 +7968,58 @@ gen_vlan_bpf_extensions(int vlan_num)
                 b0 = b1;
         }
 
+        s = new_stmt(BPF_LD|BPF_B|BPF_ABS);
+        s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+
+        b1 = new_block(JMP(BPF_JEQ));
+        b1->stmts = s;
+        b1->s.k = 0x0;
+
+        /* In case that SKF_AD_VLAN_TAG_PRESENT is 0 then current packet is
+         * either not vlan tagged at all or contains non-standard vlan tpid value.
+         * If it is vlan tagged then it contains non-standard tpid value (something else
+         * than 0x8100 or 0x88a8). Let's check if it contains tpid 0x9100 and if so store to
+         * memory cell 0 an offset we need to apply to all other vlan related checks which appear
+         * later in the filter expression
+         */
+        b2 = gen_linktype(ETHERTYPE_8021Q);
+        b3 = gen_linktype(ETHERTYPE_8021QINQ);
+
+        gen_or(b2, b3);
+        b2 = b3;
+
+        gen_and(b1, b2);
+        b1 = b2;
+
+        s = new_stmt(BPF_LD|BPF_IMM);
+        s->s.k = 0x4;
+
+        s1 = new_stmt(BPF_ST);
+        s1->s.k = 0x0;
+
+        sappend(s, s1);
+
+        /* XXX: Maybe there is a better place for two previous statements but if I append them
+         * to stmts in b1 then they appear *before* b1 statements, which is wrong. To keep this simple
+         * we put them in their own block, however block it self is just jump to the next intruction.
+         */
+        b2 = new_block(JMP(BPF_JA));
+        b2->stmts = s;
+        b2->s.k = 0x0;
+
+        gen_and(b1, b2);
+        b1 = b2;
+
+        if (vlan_num >= 0) {
+                b2 = gen_mcmp(OR_LINKPL, 0, BPF_H,
+                              (bpf_int32)vlan_num, 0x0fff);
+                gen_and(b1, b2);
+                b1 = b2;
+        }
+
+        gen_or(b0, b1);
+        b0 = b1;
+
         return b0;
 }
 #endif
@@ -7914,14 +8030,20 @@ gen_vlan_no_bpf_extensions(int vlan_num)
         struct block *b0, *b1;
 
         /* check for VLAN, including QinQ */
-        b0 = gen_linktype(ETHERTYPE_8021Q);
-        b1 = gen_linktype(ETHERTYPE_8021QINQ);
+        if (bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING) {
+                b0 = gen_load_vlan_indirect(off_linktype.constant_part, ETHERTYPE_8021Q, vlan_num > 0 ? (bpf_u_int32) vlan_num : 0);
+                b1 = gen_load_vlan_indirect(off_linktype.constant_part, ETHERTYPE_8021QINQ, vlan_num > 0 ? (bpf_u_int32) vlan_num : 0);
+        } else {
+                b0 = gen_linktype(ETHERTYPE_8021Q);
+                b1 = gen_linktype(ETHERTYPE_8021QINQ);
+        }
+
         gen_or(b0,b1);
         b0 = b1;
 
         /* If a specific VLAN is requested, check VLAN id */
-        if (vlan_num >= 0) {
-                b1 = gen_mcmp(OR_LINKPL, 0, BPF_H,
+        if (vlan_num >= 0 && !bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING) {
+               b1 = gen_mcmp(OR_LINKPL, 0, BPF_H,
                               (bpf_int32)vlan_num, 0x0fff);
                 gen_and(b0, b1);
                 b0 = b1;
