@@ -7904,6 +7904,9 @@ gen_vlan_no_bpf_extensions(int vlan_num)
 
         /* check for VLAN, including QinQ */
         b0 = gen_linktype(ETHERTYPE_8021Q);
+        b1 = gen_linktype(ETHERTYPE_8021AD);
+        gen_or(b0,b1);
+        b0 = b1;
         b1 = gen_linktype(ETHERTYPE_8021QINQ);
         gen_or(b0,b1);
         b0 = b1;
