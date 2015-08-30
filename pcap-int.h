@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1994, 1995, 1996
- *  The Regents of the University of California.  All rights reserved.
+ *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -12,8 +12,8 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *  This product includes software developed by the Computer Systems
- *  Engineering Group at Lawrence Berkeley Laboratory.
+ *	This product includes software developed by the Computer Systems
+ *	Engineering Group at Lawrence Berkeley Laboratory.
  * 4. Neither the name of the University nor of the Laboratory may be used
  *    to endorse or promote products derived from this software without
  *    specific prior written permission.
@@ -32,7 +32,7 @@
  */
 
 #ifndef pcap_int_h
-#define pcap_int_h
+#define	pcap_int_h
 
 #include <pcap/pcap.h>
 
@@ -103,160 +103,160 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
  *
  * We don't enforce this in pcap_set_snaplen(), but we use it internally.
  */
-#define MAXIMUM_SNAPLEN     262144
+#define MAXIMUM_SNAPLEN		262144
 
 struct pcap_opt {
-    char    *source;
-    int timeout;    /* timeout for buffering */
-    int buffer_size;
-    int promisc;
-    int rfmon;      /* monitor mode */
-    int immediate;  /* immediate mode - deliver packets as soon as they arrive */
-    int tstamp_type;
-    int tstamp_precision;
+	char	*source;
+	int	timeout;	/* timeout for buffering */
+	int	buffer_size;
+	int	promisc;
+	int	rfmon;		/* monitor mode */
+	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
+	int	tstamp_type;
+	int	tstamp_precision;
 };
 
-typedef int (*activate_op_t)(pcap_t *);
-typedef int (*can_set_rfmon_op_t)(pcap_t *);
-typedef int (*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
-typedef int (*inject_op_t)(pcap_t *, const void *, size_t);
-typedef int (*setfilter_op_t)(pcap_t *, struct bpf_program *);
-typedef int (*setdirection_op_t)(pcap_t *, pcap_direction_t);
-typedef int (*set_datalink_op_t)(pcap_t *, int);
-typedef int (*getnonblock_op_t)(pcap_t *, char *);
-typedef int (*setnonblock_op_t)(pcap_t *, int, char *);
-typedef int (*stats_op_t)(pcap_t *, struct pcap_stat *);
+typedef int	(*activate_op_t)(pcap_t *);
+typedef int	(*can_set_rfmon_op_t)(pcap_t *);
+typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
+typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
+typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
+typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
+typedef int	(*set_datalink_op_t)(pcap_t *, int);
+typedef int	(*getnonblock_op_t)(pcap_t *, char *);
+typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
+typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 #ifdef _WIN32
-typedef int (*setbuff_op_t)(pcap_t *, int);
-typedef int (*setmode_op_t)(pcap_t *, int);
-typedef int (*setmintocopy_op_t)(pcap_t *, int);
-typedef struct _ADAPTER* (*getadapter_op_t)(pcap_t *);
+typedef int	(*setbuff_op_t)(pcap_t *, int);
+typedef int	(*setmode_op_t)(pcap_t *, int);
+typedef int	(*setmintocopy_op_t)(pcap_t *, int);
+typedef ADAPTER *(*getadapter_op_t)(pcap_t *);
 #endif
-typedef void    (*cleanup_op_t)(pcap_t *);
+typedef void	(*cleanup_op_t)(pcap_t *);
 
 /*
  * We put all the stuff used in the read code path at the beginning,
  * to try to keep it together in the same cache line or lines.
  */
 struct pcap {
-    /*
-     * Method to call to read packets on a live capture.
-     */
-    read_op_t read_op;
+	/*
+	 * Method to call to read packets on a live capture.
+	 */
+	read_op_t read_op;
 
-    /*
-     * Method to call to read to read packets from a savefile.
-     */
-    int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
+	/*
+	 * Method to call to read to read packets from a savefile.
+	 */
+	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 
 #ifdef _WIN32
-    LPADAPTER adapter;
-    LPPACKET Packet;
-    int nonblock;
+	ADAPTER *adapter;
+	LPPACKET Packet;
+	int nonblock;
 #else
-    int fd;
-    int selectable_fd;
+	int fd;
+	int selectable_fd;
 #endif /* _WIN32 */
 
-    /*
-     * Read buffer.
-     */
-    int bufsize;
-    void *buffer;
-    u_char *bp;
-    int cc;
+	/*
+	 * Read buffer.
+	 */
+	int bufsize;
+	void *buffer;
+	u_char *bp;
+	int cc;
 
-    int break_loop;     /* flag set to force break from packet-reading loop */
+	int break_loop;		/* flag set to force break from packet-reading loop */
 
-    void *priv;     /* private data for methods */
+	void *priv;		/* private data for methods */
 
-    int swapped;
-    FILE *rfile;        /* null if live capture, non-null if savefile */
-    int fddipad;
-    struct pcap *next;  /* list of open pcaps that need stuff cleared on close */
+	int swapped;
+	FILE *rfile;		/* null if live capture, non-null if savefile */
+	int fddipad;
+	struct pcap *next;	/* list of open pcaps that need stuff cleared on close */
 
-    /*
-     * File version number; meaningful only for a savefile, but we
-     * keep it here so that apps that (mistakenly) ask for the
-     * version numbers will get the same zero values that they
-     * always did.
-     */
-    int version_major;
-    int version_minor;
+	/*
+	 * File version number; meaningful only for a savefile, but we
+	 * keep it here so that apps that (mistakenly) ask for the
+	 * version numbers will get the same zero values that they
+	 * always did.
+	 */
+	int version_major;
+	int version_minor;
 
-    int snapshot;
-    int linktype;       /* Network linktype */
-    int linktype_ext;       /* Extended information stored in the linktype field of a file */
-    int tzoff;      /* timezone offset */
-    int offset;     /* offset for proper alignment */
-    int activated;      /* true if the capture is really started */
-    int oldstyle;       /* if we're opening with pcap_open_live() */
+	int snapshot;
+	int linktype;		/* Network linktype */
+	int linktype_ext;       /* Extended information stored in the linktype field of a file */
+	int tzoff;		/* timezone offset */
+	int offset;		/* offset for proper alignment */
+	int activated;		/* true if the capture is really started */
+	int oldstyle;		/* if we're opening with pcap_open_live() */
 
-    struct pcap_opt opt;
+	struct pcap_opt opt;
 
-    /*
-     * Place holder for pcap_next().
-     */
-    u_char *pkt;
+	/*
+	 * Place holder for pcap_next().
+	 */
+	u_char *pkt;
 
-    /* We're accepting only packets in this direction/these directions. */
-    pcap_direction_t direction;
+	/* We're accepting only packets in this direction/these directions. */
+	pcap_direction_t direction;
 
-    /*
-     * Flags to affect BPF code generation.
-     */
-    int bpf_codegen_flags;
+	/*
+	 * Flags to affect BPF code generation.
+	 */
+	int bpf_codegen_flags;
 
-    /*
-     * Placeholder for filter code if bpf not in kernel.
-     */
-    struct bpf_program fcode;
+	/*
+	 * Placeholder for filter code if bpf not in kernel.
+	 */
+	struct bpf_program fcode;
 
-    char errbuf[PCAP_ERRBUF_SIZE + 1];
-    int dlt_count;
-    u_int *dlt_list;
-    int tstamp_type_count;
-    u_int *tstamp_type_list;
-    int tstamp_precision_count;
-    u_int *tstamp_precision_list;
+	char errbuf[PCAP_ERRBUF_SIZE + 1];
+	int dlt_count;
+	u_int *dlt_list;
+	int tstamp_type_count;
+	u_int *tstamp_type_list;
+	int tstamp_precision_count;
+	u_int *tstamp_precision_list;
 
-    struct pcap_pkthdr pcap_header; /* This is needed for the pcap_next_ex() to work */
+	struct pcap_pkthdr pcap_header;	/* This is needed for the pcap_next_ex() to work */
 
-    /*
-     * More methods.
-     */
-    activate_op_t activate_op;
-    can_set_rfmon_op_t can_set_rfmon_op;
-    inject_op_t inject_op;
-    setfilter_op_t setfilter_op;
-    setdirection_op_t setdirection_op;
-    set_datalink_op_t set_datalink_op;
-    getnonblock_op_t getnonblock_op;
-    setnonblock_op_t setnonblock_op;
-    stats_op_t stats_op;
+	/*
+	 * More methods.
+	 */
+	activate_op_t activate_op;
+	can_set_rfmon_op_t can_set_rfmon_op;
+	inject_op_t inject_op;
+	setfilter_op_t setfilter_op;
+	setdirection_op_t setdirection_op;
+	set_datalink_op_t set_datalink_op;
+	getnonblock_op_t getnonblock_op;
+	setnonblock_op_t setnonblock_op;
+	stats_op_t stats_op;
 
-    /*
-     * Routine to use as callback for pcap_next()/pcap_next_ex().
-     */
-    pcap_handler oneshot_callback;
+	/*
+	 * Routine to use as callback for pcap_next()/pcap_next_ex().
+	 */
+	pcap_handler oneshot_callback;
 
 #ifdef _WIN32
-    /*
-     * These are, at least currently, specific to the Win32 NPF
-     * driver.
-     */
-    setbuff_op_t setbuff_op;
-    setmode_op_t setmode_op;
-    setmintocopy_op_t setmintocopy_op;
-    getadapter_op_t getadapter_op;
+	/*
+	 * These are, at least currently, specific to the Win32 NPF
+	 * driver.
+	 */
+	setbuff_op_t setbuff_op;
+	setmode_op_t setmode_op;
+	setmintocopy_op_t setmintocopy_op;
+	getadapter_op_t getadapter_op;
 #endif
-    cleanup_op_t cleanup_op;
+	cleanup_op_t cleanup_op;
 };
 
 /*
  * BPF code generation flags.
  */
-#define BPF_SPECIAL_VLAN_HANDLING   0x00000001  /* special VLAN handling for Linux */
+#define BPF_SPECIAL_VLAN_HANDLING	0x00000001	/* special VLAN handling for Linux */
 
 /*
  * This is a timeval as stored in a savefile.
@@ -269,8 +269,8 @@ struct pcap {
  */
 
 struct pcap_timeval {
-    bpf_int32 tv_sec;       /* seconds */
-    bpf_int32 tv_usec;      /* microseconds */
+    bpf_int32 tv_sec;		/* seconds */
+    bpf_int32 tv_usec;		/* microseconds */
 };
 
 /*
@@ -281,22 +281,22 @@ struct pcap_timeval {
  * and do not make the time stamp anything other than seconds and
  * microseconds (e.g., seconds and nanoseconds).  Instead:
  *
- *  introduce a new structure for the new format;
+ *	introduce a new structure for the new format;
  *
- *  send mail to "tcpdump-workers@lists.tcpdump.org", requesting
- *  a new magic number for your new capture file format, and, when
- *  you get the new magic number, put it in "savefile.c";
+ *	send mail to "tcpdump-workers@lists.tcpdump.org", requesting
+ *	a new magic number for your new capture file format, and, when
+ *	you get the new magic number, put it in "savefile.c";
  *
- *  use that magic number for save files with the changed record
- *  header;
+ *	use that magic number for save files with the changed record
+ *	header;
  *
- *  make the code in "savefile.c" capable of reading files with
- *  the old record header as well as files with the new record header
- *  (using the magic number to determine the header format).
+ *	make the code in "savefile.c" capable of reading files with
+ *	the old record header as well as files with the new record header
+ *	(using the magic number to determine the header format).
  *
  * Then supply the changes by forking the branch at
  *
- *  https://github.com/the-tcpdump-group/libpcap/issues
+ *	https://github.com/the-tcpdump-group/libpcap/issues
  *
  * and issuing a pull request, so that future versions of libpcap and
  * programs that use it (such as tcpdump) will be able to read your new
@@ -304,9 +304,9 @@ struct pcap_timeval {
  */
 
 struct pcap_sf_pkthdr {
-    struct pcap_timeval ts; /* time stamp */
-    bpf_u_int32 caplen;     /* length of portion present */
-    bpf_u_int32 len;        /* length this packet (off wire) */
+    struct pcap_timeval ts;	/* time stamp */
+    bpf_u_int32 caplen;		/* length of portion present */
+    bpf_u_int32 len;		/* length this packet (off wire) */
 };
 
 /*
@@ -320,10 +320,10 @@ struct pcap_sf_pkthdr {
  */
 
 struct pcap_sf_patched_pkthdr {
-    struct pcap_timeval ts; /* time stamp */
-    bpf_u_int32 caplen;     /* length of portion present */
-    bpf_u_int32 len;        /* length this packet (off wire) */
-    int     index;
+    struct pcap_timeval ts;	/* time stamp */
+    bpf_u_int32 caplen;		/* length of portion present */
+    bpf_u_int32 len;		/* length this packet (off wire) */
+    int		index;
     unsigned short protocol;
     unsigned char pkt_type;
 };
@@ -333,26 +333,26 @@ struct pcap_sf_patched_pkthdr {
  * and pcap_next_ex().
  */
 struct oneshot_userdata {
-    struct pcap_pkthdr *hdr;
-    const u_char **pkt;
-    pcap_t *pd;
+	struct pcap_pkthdr *hdr;
+	const u_char **pkt;
+	pcap_t *pd;
 };
 
-int yylex(void);
+int	yylex(void);
 
 #ifndef min
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
 
 /* XXX should these be in pcap.h? */
-int pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
-int pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
+int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
+int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
 #ifndef HAVE_STRLCPY
 #define strlcpy(x, y, z) \
-    (strncpy((x), (y), (z)), \
-     ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
-     strlen((y)))
+	(strncpy((x), (y), (z)), \
+	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
+	 strlen((y)))
 #endif
 
 #include <stdarg.h>
@@ -371,14 +371,14 @@ extern int vsnprintf (char *, size_t, const char *, va_list ap);
  * Does the packet count argument to a module's read routine say
  * "supply packets until you run out of packets"?
  */
-#define PACKET_COUNT_IS_UNLIMITED(count)    ((count) <= 0)
+#define PACKET_COUNT_IS_UNLIMITED(count)	((count) <= 0)
 
 /*
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
-int pcap_getnonblock_fd(pcap_t *, char *);
-int pcap_setnonblock_fd(pcap_t *p, int, char *);
+int	pcap_getnonblock_fd(pcap_t *, char *);
+int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
 
 /*
@@ -392,14 +392,14 @@ int pcap_setnonblock_fd(pcap_t *p, int, char *);
  * "pcap_create_common()" allocates and fills in a pcap_t, for use
  * by pcap_create routines.
  */
-pcap_t  *pcap_create_interface(const char *, char *);
-pcap_t  *pcap_create_common(const char *, char *, size_t);
-int pcap_do_addexit(pcap_t *);
-void    pcap_add_to_pcaps_to_close(pcap_t *);
-void    pcap_remove_from_pcaps_to_close(pcap_t *);
-void    pcap_cleanup_live_common(pcap_t *);
-int pcap_not_initialized(pcap_t *);
-int pcap_check_activated(pcap_t *);
+pcap_t	*pcap_create_interface(const char *, char *);
+pcap_t	*pcap_create_common(const char *, char *, size_t);
+int	pcap_do_addexit(pcap_t *);
+void	pcap_add_to_pcaps_to_close(pcap_t *);
+void	pcap_remove_from_pcaps_to_close(pcap_t *);
+void	pcap_cleanup_live_common(pcap_t *);
+int	pcap_not_initialized(pcap_t *);
+int	pcap_check_activated(pcap_t *);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".
@@ -413,18 +413,18 @@ int pcap_check_activated(pcap_t *);
  * "pcap_add_if()" adds an interface to the list of interfaces, for
  * use by various "find interfaces" routines.
  */
-int pcap_findalldevs_interfaces(pcap_if_t **, char *);
-int pcap_platform_finddevs(pcap_if_t **, char *);
-int add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
-        size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
-        struct sockaddr *, size_t, char *);
-int add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
-        struct sockaddr *, size_t, struct sockaddr *, size_t,
-        struct sockaddr *dstaddr, size_t, char *errbuf);
-int pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
+int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
+int	pcap_platform_finddevs(pcap_if_t **, char *);
+int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
+	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, char *);
+int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *dstaddr, size_t, char *errbuf);
+int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
 struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
-int add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
-        const char *, char *);
+int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
+	    const char *, char *);
 
 /*
  * Internal interfaces for "pcap_open_offline()".
@@ -436,8 +436,8 @@ int add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
  * appropriate, and frees all data common to all modules for handling
  * savefile types.
  */
-pcap_t  *pcap_open_offline_common(char *ebuf, size_t size);
-void    sf_cleanup(pcap_t *p);
+pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
+void	sf_cleanup(pcap_t *p);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that
@@ -446,15 +446,15 @@ void    sf_cleanup(pcap_t *p);
  * "pcap_oneshot()" is the standard one-shot callback for "pcap_next()"
  * and "pcap_next_ex()".
  */
-void    pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
+void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 #ifdef _WIN32
-char    *pcap_win32strerror(void);
+char	*pcap_win32strerror(void);
 #endif
 
-int install_bpf_program(pcap_t *, struct bpf_program *);
+int	install_bpf_program(pcap_t *, struct bpf_program *);
 
-int pcap_strcasecmp(const char *, const char *);
+int	pcap_strcasecmp(const char *, const char *);
 
 #ifdef __cplusplus
 }
