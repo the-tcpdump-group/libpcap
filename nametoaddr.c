@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998
- *	The Regents of the University of California.  All rights reserved.
+ *  The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that: (1) source code distributions
@@ -37,7 +37,7 @@
 #else /* _WIN32 */
 
 #include <sys/param.h>
-#include <sys/types.h>				/* concession to AIX */
+#include <sys/types.h>              /* concession to AIX */
 #include <sys/socket.h>
 #include <sys/time.h>
 
@@ -51,9 +51,9 @@
  * ether_hostton()?
  */
 #ifdef HAVE_NETINET_IF_ETHER_H
-struct mbuf;		/* Squelch compiler warnings on some platforms for */
-struct rtentry;		/* declarations in <net/if.h> */
-#include <net/if.h>	/* for "struct ifnet" in "struct arpcom" on Solaris */
+struct mbuf;        /* Squelch compiler warnings on some platforms for */
+struct rtentry;     /* declarations in <net/if.h> */
+#include <net/if.h> /* for "struct ifnet" in "struct arpcom" on Solaris */
 #include <netinet/if_ether.h>
 #endif /* HAVE_NETINET_IF_ETHER_H */
 #ifdef NETINET_ETHER_H_DECLARES_ETHER_HOSTTON
@@ -71,6 +71,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdio.h>
 
 #include "pcap-int.h"
+#include "pcap-stdinc.h"
 
 #include "gencode.h"
 #include <pcap/namedb.h>
@@ -94,42 +95,42 @@ bpf_u_int32 **
 pcap_nametoaddr(const char *name)
 {
 #ifndef h_addr
-	static bpf_u_int32 *hlist[2];
+    static bpf_u_int32 *hlist[2];
 #endif
-	bpf_u_int32 **p;
-	struct hostent *hp;
+    bpf_u_int32 **p;
+    struct hostent *hp;
 
-	if ((hp = gethostbyname(name)) != NULL) {
+    if ((hp = gethostbyname(name)) != NULL) {
 #ifndef h_addr
-		hlist[0] = (bpf_u_int32 *)hp->h_addr;
-		NTOHL(hp->h_addr);
-		return hlist;
+        hlist[0] = (bpf_u_int32 *)hp->h_addr;
+        NTOHL(hp->h_addr);
+        return hlist;
 #else
-		for (p = (bpf_u_int32 **)hp->h_addr_list; *p; ++p)
-			NTOHL(**p);
-		return (bpf_u_int32 **)hp->h_addr_list;
+        for (p = (bpf_u_int32 **)hp->h_addr_list; *p; ++p)
+            NTOHL(**p);
+        return (bpf_u_int32 **)hp->h_addr_list;
 #endif
-	}
-	else
-		return 0;
+    }
+    else
+        return 0;
 }
 
 #ifdef INET6
 struct addrinfo *
 pcap_nametoaddrinfo(const char *name)
 {
-	struct addrinfo hints, *res;
-	int error;
+    struct addrinfo hints, *res;
+    int error;
 
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = PF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;	/*not really*/
-	hints.ai_protocol = IPPROTO_TCP;	/*not really*/
-	error = getaddrinfo(name, NULL, &hints, &res);
-	if (error)
-		return NULL;
-	else
-		return res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;    /*not really*/
+    hints.ai_protocol = IPPROTO_TCP;    /*not really*/
+    error = getaddrinfo(name, NULL, &hints, &res);
+    if (error)
+        return NULL;
+    else
+        return res;
 }
 #endif /*INET6*/
 
@@ -141,17 +142,17 @@ bpf_u_int32
 pcap_nametonetaddr(const char *name)
 {
 #ifndef _WIN32
-	struct netent *np;
+    struct netent *np;
 
-	if ((np = getnetbyname(name)) != NULL)
-		return np->n_net;
-	else
-		return 0;
+    if ((np = getnetbyname(name)) != NULL)
+        return np->n_net;
+    else
+        return 0;
 #else
-	/*
-	 * There's no "getnetbyname()" on Windows.
-	 */
-	return 0;
+    /*
+     * There's no "getnetbyname()" on Windows.
+     */
+    return 0;
 #endif
 }
 
@@ -163,50 +164,50 @@ pcap_nametonetaddr(const char *name)
 int
 pcap_nametoport(const char *name, int *port, int *proto)
 {
-	struct servent *sp;
-	int tcp_port = -1;
-	int udp_port = -1;
+    struct servent *sp;
+    int tcp_port = -1;
+    int udp_port = -1;
 
-	/*
-	 * We need to check /etc/services for ambiguous entries.
-	 * If we find the ambiguous entry, and it has the
-	 * same port number, change the proto to PROTO_UNDEF
-	 * so both TCP and UDP will be checked.
-	 */
-	sp = getservbyname(name, "tcp");
-	if (sp != NULL) tcp_port = ntohs(sp->s_port);
-	sp = getservbyname(name, "udp");
-	if (sp != NULL) udp_port = ntohs(sp->s_port);
-	if (tcp_port >= 0) {
-		*port = tcp_port;
-		*proto = IPPROTO_TCP;
-		if (udp_port >= 0) {
-			if (udp_port == tcp_port)
-				*proto = PROTO_UNDEF;
+    /*
+     * We need to check /etc/services for ambiguous entries.
+     * If we find the ambiguous entry, and it has the
+     * same port number, change the proto to PROTO_UNDEF
+     * so both TCP and UDP will be checked.
+     */
+    sp = getservbyname(name, "tcp");
+    if (sp != NULL) tcp_port = ntohs(sp->s_port);
+    sp = getservbyname(name, "udp");
+    if (sp != NULL) udp_port = ntohs(sp->s_port);
+    if (tcp_port >= 0) {
+        *port = tcp_port;
+        *proto = IPPROTO_TCP;
+        if (udp_port >= 0) {
+            if (udp_port == tcp_port)
+                *proto = PROTO_UNDEF;
 #ifdef notdef
-			else
-				/* Can't handle ambiguous names that refer
-				   to different port numbers. */
-				warning("ambiguous port %s in /etc/services",
-					name);
+            else
+                /* Can't handle ambiguous names that refer
+                   to different port numbers. */
+                warning("ambiguous port %s in /etc/services",
+                    name);
 #endif
-		}
-		return 1;
-	}
-	if (udp_port >= 0) {
-		*port = udp_port;
-		*proto = IPPROTO_UDP;
-		return 1;
-	}
+        }
+        return 1;
+    }
+    if (udp_port >= 0) {
+        *port = udp_port;
+        *proto = IPPROTO_UDP;
+        return 1;
+    }
 #if defined(ultrix) || defined(__osf__)
-	/* Special hack in case NFS isn't in /etc/services */
-	if (strcmp(name, "nfs") == 0) {
-		*port = 2049;
-		*proto = PROTO_UNDEF;
-		return 1;
-	}
+    /* Special hack in case NFS isn't in /etc/services */
+    if (strcmp(name, "nfs") == 0) {
+        *port = 2049;
+        *proto = PROTO_UNDEF;
+        return 1;
+    }
 #endif
-	return 0;
+    return 0;
 }
 
 /*
@@ -217,160 +218,160 @@ pcap_nametoport(const char *name, int *port, int *proto)
 int
 pcap_nametoportrange(const char *name, int *port1, int *port2, int *proto)
 {
-	u_int p1, p2;
-	char *off, *cpy;
-	int save_proto;
+    u_int p1, p2;
+    char *off, *cpy;
+    int save_proto;
 
-	if (sscanf(name, "%d-%d", &p1, &p2) != 2) {
-		if ((cpy = strdup(name)) == NULL)
-			return 0;
+    if (sscanf(name, "%d-%d", &p1, &p2) != 2) {
+        if ((cpy = strdup(name)) == NULL)
+            return 0;
 
-		if ((off = strchr(cpy, '-')) == NULL) {
-			free(cpy);
-			return 0;
-		}
+        if ((off = strchr(cpy, '-')) == NULL) {
+            free(cpy);
+            return 0;
+        }
 
-		*off = '\0';
+        *off = '\0';
 
-		if (pcap_nametoport(cpy, port1, proto) == 0) {
-			free(cpy);
-			return 0;
-		}
-		save_proto = *proto;
+        if (pcap_nametoport(cpy, port1, proto) == 0) {
+            free(cpy);
+            return 0;
+        }
+        save_proto = *proto;
 
-		if (pcap_nametoport(off + 1, port2, proto) == 0) {
-			free(cpy);
-			return 0;
-		}
-		free(cpy);
+        if (pcap_nametoport(off + 1, port2, proto) == 0) {
+            free(cpy);
+            return 0;
+        }
+        free(cpy);
 
-		if (*proto != save_proto)
-			*proto = PROTO_UNDEF;
-	} else {
-		*port1 = p1;
-		*port2 = p2;
-		*proto = PROTO_UNDEF;
-	}
+        if (*proto != save_proto)
+            *proto = PROTO_UNDEF;
+    } else {
+        *port1 = p1;
+        *port2 = p2;
+        *proto = PROTO_UNDEF;
+    }
 
-	return 1;
+    return 1;
 }
 
 int
 pcap_nametoproto(const char *str)
 {
-	struct protoent *p;
+    struct protoent *p;
 
-	p = getprotobyname(str);
-	if (p != 0)
-		return p->p_proto;
-	else
-		return PROTO_UNDEF;
+    p = getprotobyname(str);
+    if (p != 0)
+        return p->p_proto;
+    else
+        return PROTO_UNDEF;
 }
 
 #include "ethertype.h"
 
 struct eproto {
-	const char *s;
-	u_short p;
+    const char *s;
+    u_short p;
 };
 
 /* Static data base of ether protocol types. */
 struct eproto eproto_db[] = {
-	{ "pup", ETHERTYPE_PUP },
-	{ "xns", ETHERTYPE_NS },
-	{ "ip", ETHERTYPE_IP },
+    { "pup", ETHERTYPE_PUP },
+    { "xns", ETHERTYPE_NS },
+    { "ip", ETHERTYPE_IP },
 #ifdef INET6
-	{ "ip6", ETHERTYPE_IPV6 },
+    { "ip6", ETHERTYPE_IPV6 },
 #endif
-	{ "arp", ETHERTYPE_ARP },
-	{ "rarp", ETHERTYPE_REVARP },
-	{ "sprite", ETHERTYPE_SPRITE },
-	{ "mopdl", ETHERTYPE_MOPDL },
-	{ "moprc", ETHERTYPE_MOPRC },
-	{ "decnet", ETHERTYPE_DN },
-	{ "lat", ETHERTYPE_LAT },
-	{ "sca", ETHERTYPE_SCA },
-	{ "lanbridge", ETHERTYPE_LANBRIDGE },
-	{ "vexp", ETHERTYPE_VEXP },
-	{ "vprod", ETHERTYPE_VPROD },
-	{ "atalk", ETHERTYPE_ATALK },
-	{ "atalkarp", ETHERTYPE_AARP },
-	{ "loopback", ETHERTYPE_LOOPBACK },
-	{ "decdts", ETHERTYPE_DECDTS },
-	{ "decdns", ETHERTYPE_DECDNS },
-	{ (char *)0, 0 }
+    { "arp", ETHERTYPE_ARP },
+    { "rarp", ETHERTYPE_REVARP },
+    { "sprite", ETHERTYPE_SPRITE },
+    { "mopdl", ETHERTYPE_MOPDL },
+    { "moprc", ETHERTYPE_MOPRC },
+    { "decnet", ETHERTYPE_DN },
+    { "lat", ETHERTYPE_LAT },
+    { "sca", ETHERTYPE_SCA },
+    { "lanbridge", ETHERTYPE_LANBRIDGE },
+    { "vexp", ETHERTYPE_VEXP },
+    { "vprod", ETHERTYPE_VPROD },
+    { "atalk", ETHERTYPE_ATALK },
+    { "atalkarp", ETHERTYPE_AARP },
+    { "loopback", ETHERTYPE_LOOPBACK },
+    { "decdts", ETHERTYPE_DECDTS },
+    { "decdns", ETHERTYPE_DECDNS },
+    { (char *)0, 0 }
 };
 
 int
 pcap_nametoeproto(const char *s)
 {
-	struct eproto *p = eproto_db;
+    struct eproto *p = eproto_db;
 
-	while (p->s != 0) {
-		if (strcmp(p->s, s) == 0)
-			return p->p;
-		p += 1;
-	}
-	return PROTO_UNDEF;
+    while (p->s != 0) {
+        if (strcmp(p->s, s) == 0)
+            return p->p;
+        p += 1;
+    }
+    return PROTO_UNDEF;
 }
 
 #include "llc.h"
 
 /* Static data base of LLC values. */
 static struct eproto llc_db[] = {
-	{ "iso", LLCSAP_ISONS },
-	{ "stp", LLCSAP_8021D },
-	{ "ipx", LLCSAP_IPX },
-	{ "netbeui", LLCSAP_NETBEUI },
-	{ (char *)0, 0 }
+    { "iso", LLCSAP_ISONS },
+    { "stp", LLCSAP_8021D },
+    { "ipx", LLCSAP_IPX },
+    { "netbeui", LLCSAP_NETBEUI },
+    { (char *)0, 0 }
 };
 
 int
 pcap_nametollc(const char *s)
 {
-	struct eproto *p = llc_db;
+    struct eproto *p = llc_db;
 
-	while (p->s != 0) {
-		if (strcmp(p->s, s) == 0)
-			return p->p;
-		p += 1;
-	}
-	return PROTO_UNDEF;
+    while (p->s != 0) {
+        if (strcmp(p->s, s) == 0)
+            return p->p;
+        p += 1;
+    }
+    return PROTO_UNDEF;
 }
 
 /* Hex digit to integer. */
 static inline int
 xdtoi(c)
-	register int c;
+    register int c;
 {
-	if (isdigit(c))
-		return c - '0';
-	else if (islower(c))
-		return c - 'a' + 10;
-	else
-		return c - 'A' + 10;
+    if (isdigit(c))
+        return c - '0';
+    else if (islower(c))
+        return c - 'a' + 10;
+    else
+        return c - 'A' + 10;
 }
 
 int
 __pcap_atoin(const char *s, bpf_u_int32 *addr)
 {
-	u_int n;
-	int len;
+    u_int n;
+    int len;
 
-	*addr = 0;
-	len = 0;
-	while (1) {
-		n = 0;
-		while (*s && *s != '.')
-			n = n * 10 + *s++ - '0';
-		*addr <<= 8;
-		*addr |= n & 0xff;
-		len += 8;
-		if (*s == '\0')
-			return len;
-		++s;
-	}
-	/* NOTREACHED */
+    *addr = 0;
+    len = 0;
+    while (1) {
+        n = 0;
+        while (*s && *s != '.')
+            n = n * 10 + *s++ - '0';
+        *addr <<= 8;
+        *addr |= n & 0xff;
+        len += 8;
+        if (*s == '\0')
+            return len;
+        ++s;
+    }
+    /* NOTREACHED */
 }
 
 int
@@ -380,25 +381,25 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 #define AREAMASK 0176000
 #define NODEMASK 01777
 
-	u_int node, area;
+    u_int node, area;
 
-	if (sscanf(s, "%d.%d", &area, &node) != 2)
-		bpf_error("malformed decnet address '%s'", s);
+    if (sscanf(s, "%d.%d", &area, &node) != 2)
+        bpf_error("malformed decnet address '%s'", s);
 
-	*addr = (area << AREASHIFT) & AREAMASK;
-	*addr |= (node & NODEMASK);
+    *addr = (area << AREASHIFT) & AREAMASK;
+    *addr |= (node & NODEMASK);
 
-	return(32);
+    return(32);
 }
 
 /*
  * Convert 's', which can have the one of the forms:
  *
- *	"xx:xx:xx:xx:xx:xx"
- *	"xx.xx.xx.xx.xx.xx"
- *	"xx-xx-xx-xx-xx-xx"
- *	"xxxx.xxxx.xxxx"
- *	"xxxxxxxxxxxx"
+ *  "xx:xx:xx:xx:xx:xx"
+ *  "xx.xx.xx.xx.xx.xx"
+ *  "xx-xx-xx-xx-xx-xx"
+ *  "xxxx.xxxx.xxxx"
+ *  "xxxxxxxxxxxx"
  *
  * (or various mixes of ':', '.', and '-') into a new
  * ethernet address.  Assumes 's' is well formed.
@@ -406,25 +407,25 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 u_char *
 pcap_ether_aton(const char *s)
 {
-	register u_char *ep, *e;
-	register u_int d;
+    register u_char *ep, *e;
+    register u_int d;
 
-	e = ep = (u_char *)malloc(6);
-	if (e == NULL)
-		return (NULL);
+    e = ep = (u_char *)malloc(6);
+    if (e == NULL)
+        return (NULL);
 
-	while (*s) {
-		if (*s == ':' || *s == '.' || *s == '-')
-			s += 1;
-		d = xdtoi(*s++);
-		if (isxdigit((unsigned char)*s)) {
-			d <<= 4;
-			d |= xdtoi(*s++);
-		}
-		*ep++ = d;
-	}
+    while (*s) {
+        if (*s == ':' || *s == '.' || *s == '-')
+            s += 1;
+        d = xdtoi(*s++);
+        if (isxdigit((unsigned char)*s)) {
+            d <<= 4;
+            d |= xdtoi(*s++);
+        }
+        *ep++ = d;
+    }
 
-	return (e);
+    return (e);
 }
 
 #ifndef HAVE_ETHER_HOSTTON
@@ -432,39 +433,39 @@ pcap_ether_aton(const char *s)
 u_char *
 pcap_ether_hostton(const char *name)
 {
-	register struct pcap_etherent *ep;
-	register u_char *ap;
-	static FILE *fp = NULL;
-	static int init = 0;
+    register struct pcap_etherent *ep;
+    register u_char *ap;
+    static FILE *fp = NULL;
+    static int init = 0;
 
-	if (!init) {
-		fp = fopen(PCAP_ETHERS_FILE, "r");
-		++init;
-		if (fp == NULL)
-			return (NULL);
-	} else if (fp == NULL)
-		return (NULL);
-	else
-		rewind(fp);
+    if (!init) {
+        fp = fopen(PCAP_ETHERS_FILE, "r");
+        ++init;
+        if (fp == NULL)
+            return (NULL);
+    } else if (fp == NULL)
+        return (NULL);
+    else
+        rewind(fp);
 
-	while ((ep = pcap_next_etherent(fp)) != NULL) {
-		if (strcmp(ep->name, name) == 0) {
-			ap = (u_char *)malloc(6);
-			if (ap != NULL) {
-				memcpy(ap, ep->addr, 6);
-				return (ap);
-			}
-			break;
-		}
-	}
-	return (NULL);
+    while ((ep = pcap_next_etherent(fp)) != NULL) {
+        if (strcmp(ep->name, name) == 0) {
+            ap = (u_char *)malloc(6);
+            if (ap != NULL) {
+                memcpy(ap, ep->addr, 6);
+                return (ap);
+            }
+            break;
+        }
+    }
+    return (NULL);
 }
 #else
 
 #if !defined(HAVE_DECL_ETHER_HOSTTON) || !HAVE_DECL_ETHER_HOSTTON
 #ifndef HAVE_STRUCT_ETHER_ADDR
 struct ether_addr {
-	unsigned char ether_addr_octet[6];
+    unsigned char ether_addr_octet[6];
 };
 #endif
 extern int ether_hostton(const char *, struct ether_addr *);
@@ -474,36 +475,36 @@ extern int ether_hostton(const char *, struct ether_addr *);
 u_char *
 pcap_ether_hostton(const char *name)
 {
-	register u_char *ap;
-	u_char a[6];
+    register u_char *ap;
+    u_char a[6];
 
-	ap = NULL;
-	if (ether_hostton(name, (struct ether_addr *)a) == 0) {
-		ap = (u_char *)malloc(6);
-		if (ap != NULL)
-			memcpy((char *)ap, (char *)a, 6);
-	}
-	return (ap);
+    ap = NULL;
+    if (ether_hostton(name, (struct ether_addr *)a) == 0) {
+        ap = (u_char *)malloc(6);
+        if (ap != NULL)
+            memcpy((char *)ap, (char *)a, 6);
+    }
+    return (ap);
 }
 #endif
 
 u_short
 __pcap_nametodnaddr(const char *name)
 {
-#ifdef	DECNETLIB
-	struct nodeent *getnodebyname();
-	struct nodeent *nep;
-	unsigned short res;
+#ifdef  DECNETLIB
+    struct nodeent *getnodebyname();
+    struct nodeent *nep;
+    unsigned short res;
 
-	nep = getnodebyname(name);
-	if (nep == ((struct nodeent *)0))
-		bpf_error("unknown decnet host name '%s'\n", name);
+    nep = getnodebyname(name);
+    if (nep == ((struct nodeent *)0))
+        bpf_error("unknown decnet host name '%s'\n", name);
 
-	memcpy((char *)&res, (char *)nep->n_addr, sizeof(unsigned short));
-	return(res);
+    memcpy((char *)&res, (char *)nep->n_addr, sizeof(unsigned short));
+    return(res);
 #else
-	bpf_error("decnet name support not included, '%s' cannot be translated\n",
-		name);
-	return(0);
+    bpf_error("decnet name support not included, '%s' cannot be translated\n",
+        name);
+    return(0);
 #endif
 }
