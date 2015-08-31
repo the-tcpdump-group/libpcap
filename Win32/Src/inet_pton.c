@@ -38,7 +38,7 @@
 
 #include <errno.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #ifndef EAFNOSUPPORT
 #define	EAFNOSUPPORT	97	/* not present in errno.h provided with VC */
 #endif

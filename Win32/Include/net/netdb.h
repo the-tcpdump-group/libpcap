@@ -81,7 +81,7 @@ struct rpcent {
 	int	r_number;	/* rpc program number */
 };
 
-#ifndef WIN32
+#ifndef _WIN32
 #if defined(_POSIX_THREAD_SAFE_FUNCTIONS) || defined(_REENTRANT)
 
 #define __NETDB_MAXALIASES	35

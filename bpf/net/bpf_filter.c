@@ -42,11 +42,11 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include <pcap-stdinc.h>
 
-#else /* WIN32 */
+#else /* _WIN32 */
 
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
@@ -73,7 +73,7 @@
 # define	MLEN(m)	((m)->m_len)
 #endif /* defined(__hpux) || SOLARIS */
 
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <pcap/bpf.h>
 
@@ -99,7 +99,7 @@
 #endif
 
 #ifndef LBL_ALIGN
-#ifndef WIN32
+#ifndef _WIN32
 #include <netinet/in.h>
 #endif
 

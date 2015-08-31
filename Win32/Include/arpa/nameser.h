@@ -61,7 +61,7 @@
 #ifndef _NAMESER_H_
 #define	_NAMESER_H_
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <sys/param.h>
 #if (!defined(BSD)) || (BSD < 199306)
 # include <sys/bitypes.h>

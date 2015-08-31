@@ -25,9 +25,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -37,7 +37,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,7 +63,7 @@ extern int _w32_ffs (int mask);
 #define ffs _w32_ffs
 #endif
 
-#if defined(WIN32) && defined (_MSC_VER)
+#if defined(_WIN32) && defined (_MSC_VER)
 int ffs(int mask);
 #endif
 

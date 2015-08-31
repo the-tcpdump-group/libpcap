@@ -36,9 +36,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 
 #include <sys/param.h>
 #ifndef MSDOS
@@ -54,7 +54,7 @@ struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
 #include <netinet/in.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <errno.h>
@@ -62,9 +62,9 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if !defined(WIN32) && !defined(__BORLANDC__)
+#if !defined(_WIN32) && !defined(__BORLANDC__)
 #include <unistd.h>
-#endif /* !WIN32 && !__BORLANDC__ */
+#endif /* !_WIN32 && !__BORLANDC__ */
 #ifdef HAVE_LIMITS_H
 #include <limits.h>
 #else
@@ -828,7 +828,7 @@ pcap_freealldevs(pcap_if_t *alldevs)
 	}
 }
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 
 /*
  * Return the name of a network interface attached to the system, or NULL
@@ -970,7 +970,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	return (0);
 }
 
-#elif defined(WIN32)
+#elif defined(_WIN32)
 
 /*
  * Return the name of a network interface attached to the system, or NULL
@@ -1098,4 +1098,4 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	return (0);
 }
 
-#endif /* !WIN32 && !MSDOS */
+#endif /* !_WIN32 && !MSDOS */

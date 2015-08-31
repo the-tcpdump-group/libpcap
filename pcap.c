@@ -35,9 +35,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -47,7 +47,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -115,7 +115,7 @@ pcap_not_initialized(pcap_t *pcap _U_)
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 Adapter *
 pcap_no_adapter(pcap_t *pcap _U_)
 {
@@ -463,7 +463,7 @@ initialize_ops(pcap_t *p)
 	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
 	p->setnonblock_op = (setnonblock_op_t)pcap_not_initialized;
 	p->stats_op = (stats_op_t)pcap_not_initialized;
-#ifdef WIN32
+#ifdef _WIN32
 	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
@@ -509,7 +509,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 */
 	p = (pcap_t *)chunk;
 
-#ifndef WIN32
+#ifndef _WIN32
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
 #endif
@@ -1365,7 +1365,7 @@ pcap_file(pcap_t *p)
 int
 pcap_fileno(pcap_t *p)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	return (p->fd);
 #else
 	if (p->adapter != NULL)
@@ -1375,7 +1375,7 @@ pcap_fileno(pcap_t *p)
 #endif
 }
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 int
 pcap_get_selectable_fd(pcap_t *p)
 {
@@ -1419,7 +1419,7 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
  * We don't look at "p->nonblock", in case somebody tweaked the FD
  * directly.
  */
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 int
 pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 {
@@ -1455,7 +1455,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	return (ret);
 }
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 /*
  * Set non-blocking mode, under the assumption that it's just the
  * standard POSIX non-blocking flag.  (This can be called by the
@@ -1486,7 +1486,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /*
  * Generate a string for the last Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
@@ -1635,7 +1635,7 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 	return (-1);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 int
 pcap_setbuff(pcap_t *p, int dim)
 {
@@ -1797,7 +1797,7 @@ pcap_cleanup_live_common(pcap_t *p)
 		p->tstamp_precision_count = 0;
 	}
 	pcap_freecode(&p->fcode);
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 	if (p->fd >= 0) {
 		close(p->fd);
 		p->fd = -1;
@@ -1834,7 +1834,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->linktype = linktype;
 	p->opt.tstamp_precision = precision;
 	p->stats_op = pcap_stats_dead;
-#ifdef WIN32
+#ifdef _WIN32
 	p->setbuff_op = pcap_setbuff_dead;
 	p->setmode_op = pcap_setmode_dead;
 	p->setmintocopy_op = pcap_setmintocopy_dead;
@@ -1926,7 +1926,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 static const char pcap_version_string[] = "libpcap version 1.x.y";
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /*
  * XXX - it'd be nice if we could somehow generate the WinPcap and libpcap
  * version numbers when building WinPcap.  (It'd be nice to do so for

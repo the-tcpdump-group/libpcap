@@ -59,7 +59,7 @@ getopt(nargc, nargv, ostr)
 	char * const *nargv;
 	const char *ostr;
 {
-#ifdef WIN32
+#ifdef _WIN32
 	char *__progname="windump";
 #else
 	extern char *__progname;

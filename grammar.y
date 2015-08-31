@@ -25,16 +25,16 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #include <sys/types.h>
 #include <sys/socket.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdlib.h>
 
-#ifndef WIN32
+#ifndef _WIN32
 #if __STDC__
 struct mbuf;
 struct rtentry;
@@ -42,7 +42,7 @@ struct rtentry;
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdio.h>
 

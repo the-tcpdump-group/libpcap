@@ -194,9 +194,9 @@ main(int argc, char **argv)
 	pcap_t *pd;
 	struct bpf_program fcode;
 
-#ifdef WIN32
+#ifdef _WIN32
 	if(wsockinit() != 0) return 1;
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #ifndef BDEBUG
 	dflag = 1;

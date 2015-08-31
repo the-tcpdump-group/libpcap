@@ -34,7 +34,7 @@ __FBSDID("$FreeBSD: /repoman/r/ncvs/src/lib/libc/net/gai_strerror.c,v 1.1 2005/0
 
 */
 
-#ifdef WIN32
+#ifdef _WIN32
 
 #include <ws2tcpip.h>
 
