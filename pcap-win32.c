@@ -72,10 +72,12 @@ static int pcap_setnonblock_win32(pcap_t *, int, char *);
 struct pcap_win {
 	int nonblock;
 
-	int filtering_in_kernel; /* using kernel filter */
+	int filtering_in_kernel;	/* using kernel filter */
+
+	struct pcap_stat stat;		/* need this to count captured packets */
 
 #ifdef HAVE_DAG_API
-	int	dag_fcs_bits;	/* Number of checksum bits from link layer */
+	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
 #endif
 };
 
@@ -138,11 +140,41 @@ int pcap_wsockinit()
 static int
 pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 {
+	struct bpf_stat bstats;
 
-	if(PacketGetStats(p->adapter, (struct bpf_stat*)ps) != TRUE){
+	/*
+	 * Copy over any statistics we've had to maintain ourselves,
+	 * such as captured packet counts on DAG devices.
+	 */
+	*ps = pw->stat;
+
+	/*
+	 * Try to get statistics from the driver.
+	 * (Please note - "struct pcap_stat" is *not* the same as
+	 * WinPcap's "struct bpf_stat".)
+	 */
+	if(PacketGetStats(p->adapter, &bstats) != TRUE){
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStats error: %s", pcap_win32strerror());
 		return -1;
 	}
+	if (bstats.bs_recv != 0) {
+		/*
+		 * If it's zero, that might mean that the captured packet
+		 * count isn't maintained, so use our value.
+		 *
+		 * XXX - either Packet.dll should be maintaining the count
+		 * and hiding this dependency from us, or Packet.dll
+		 * shouldn't be handling DAG cards *at all*, they should
+		 * be handled directly by us, with code that runs on top of
+		 * the DAG API on windows (i.e., move Packet.dll's DAG
+		 * card code into pcap, given that we now have our own
+		 * mechanism for handling different adapter types with
+		 * different code).
+		 */
+		ps->ps_recv = bstats.bs_recv;
+	}
+	ps->ps_drop = bstats.bs_drop;
+	ps->ps_ifdrop = bstats.ps_ifdrop;
 
 	return 0;
 }
