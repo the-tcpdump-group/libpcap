@@ -40,10 +40,10 @@
 extern "C" {
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <Packet32.h>
 extern CRITICAL_SECTION g_PcapCompileCriticalSection;
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #ifdef MSDOS
 #include <fcntl.h>
@@ -126,7 +126,7 @@ typedef int	(*set_datalink_op_t)(pcap_t *, int);
 typedef int	(*getnonblock_op_t)(pcap_t *, char *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
-#ifdef WIN32
+#ifdef _WIN32
 typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
@@ -149,14 +149,14 @@ struct pcap {
 	 */
 	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 
-#ifdef WIN32
+#ifdef _WIN32
 	ADAPTER *adapter;
 	LPPACKET Packet;
 	int nonblock;
 #else
 	int fd;
 	int selectable_fd;
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 	/*
 	 * Read buffer.
@@ -240,7 +240,7 @@ struct pcap {
 	 */
 	pcap_handler oneshot_callback;
 
-#ifdef WIN32
+#ifdef _WIN32
 	/*
 	 * These are, at least currently, specific to the Win32 NPF
 	 * driver.
@@ -376,7 +376,7 @@ extern int vsnprintf (char *, size_t, const char *, va_list ap);
 /*
  * Routines that most pcap implementations can use for non-blocking mode.
  */
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 int	pcap_getnonblock_fd(pcap_t *, char *);
 int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
@@ -448,7 +448,7 @@ void	sf_cleanup(pcap_t *p);
  */
 void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
-#ifdef WIN32
+#ifdef _WIN32
 char	*pcap_win32strerror(void);
 #endif
 

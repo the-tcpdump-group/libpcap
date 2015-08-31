@@ -61,7 +61,7 @@ static int pcap_setnonblock_win32(pcap_t *, int, char *);
 #define	WIN32_DEFAULT_USER_BUFFER_SIZE 256000
 
 /*dimension of the buffer in the kernel driver NPF */
-#define	WIN32_DEFAULT_KERNEL_BUFFER_SIZE 1000000
+#define	_WIN32_DEFAULT_KERNEL_BUFFER_SIZE 1000000
 
 /* Equivalent to ntohs(), but a lot faster under Windows */
 #define SWAPS(_X) ((_X & 0xff) << 8) | (_X >> 8)
@@ -655,7 +655,7 @@ pcap_activate_win32(pcap_t *p)
 		 * WIN32_DEFAULT_USER_BUFFER_SIZE.
 		 */
 	 	if (p->opt.buffer_size == 0)
-	 		p->opt.buffer_size = WIN32_DEFAULT_KERNEL_BUFFER_SIZE;
+	 		p->opt.buffer_size = _WIN32_DEFAULT_KERNEL_BUFFER_SIZE;
 
 		if(PacketSetBuff(p->adapter,p->opt.buffer_size)==FALSE)
 		{

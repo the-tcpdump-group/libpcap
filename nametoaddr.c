@@ -31,10 +31,10 @@
 #include <netdnet/dnetdb.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
 
-#else /* WIN32 */
+#else /* _WIN32 */
 
 #include <sys/param.h>
 #include <sys/types.h>				/* concession to AIX */
@@ -42,9 +42,9 @@
 #include <sys/time.h>
 
 #include <netinet/in.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
-#ifndef WIN32
+#ifndef _WIN32
 #ifdef HAVE_ETHER_HOSTTON
 /*
  * XXX - do we need any of this if <netinet/if_ether.h> doesn't declare
@@ -62,7 +62,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #endif /* HAVE_ETHER_HOSTTON */
 #include <arpa/inet.h>
 #include <netdb.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <errno.h>
@@ -140,7 +140,7 @@ pcap_nametoaddrinfo(const char *name)
 bpf_u_int32
 pcap_nametonetaddr(const char *name)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	struct netent *np;
 
 	if ((np = getnetbyname(name)) != NULL)

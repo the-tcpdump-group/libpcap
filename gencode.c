@@ -24,9 +24,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -37,7 +37,7 @@
 #endif
 #include <sys/types.h>
 #include <sys/socket.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /*
  * XXX - why was this included even on UNIX?
@@ -46,7 +46,7 @@
 #include "ip6_misc.h"
 #endif
 
-#ifndef WIN32
+#ifndef _WIN32
 
 #ifdef __NetBSD__
 #include <sys/param.h>
@@ -55,7 +55,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdlib.h>
 #include <string.h>
@@ -95,9 +95,9 @@
 #define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
 #ifdef INET6
-#ifndef WIN32
+#ifndef _WIN32
 #include <netdb.h>	/* for "struct addrinfo" */
-#endif /* WIN32 */
+#endif /* _WIN32 */
 #endif /*INET6*/
 #include <pcap/namedb.h>
 
@@ -136,7 +136,7 @@ static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
 /* Hack for handling VLAN and MPLS stacks. */
-#ifdef WIN32
+#ifdef _WIN32
 static u_int	label_stack_depth = (u_int)-1, vlan_stack_depth = (u_int)-1;
 #else
 static u_int	label_stack_depth = -1U, vlan_stack_depth = -1U;
@@ -440,7 +440,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * UN*X, if the platform supports pthreads?  If that requires
 	 * a separate -lpthread, we might not want to do that.
 	 */
-#ifdef WIN32
+#ifdef _WIN32
 	extern int wsockinit (void);
 	static int done = 0;
 
@@ -515,7 +515,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 quit:
 
-#ifdef WIN32
+#ifdef _WIN32
 	LeaveCriticalSection(&g_PcapCompileCriticalSection);
 #endif
 

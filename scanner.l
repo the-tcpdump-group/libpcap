@@ -20,9 +20,9 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -32,7 +32,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <string.h>
@@ -41,16 +41,16 @@
 
 #include "gencode.h"
 #ifdef INET6
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
 
 #ifdef __MINGW32__
 #include "ip6_misc.h"
 #endif
-#else /* WIN32 */
+#else /* _WIN32 */
 #include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
 #include <netdb.h>	/* for "struct addrinfo" */
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* Workaround for AIX 4.3 */
 #if !defined(AI_NUMERICHOST)

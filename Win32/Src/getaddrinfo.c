@@ -85,7 +85,7 @@
 
 #ifdef NEED_ADDRINFO_H
 #include "addrinfo.h"
-#ifdef WIN32
+#ifdef _WIN32
 #include "ip6_misc.h"
 #endif
 #endif

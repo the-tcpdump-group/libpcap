@@ -35,7 +35,7 @@
 #ifndef lib_pcap_pcap_h
 #define lib_pcap_pcap_h
 
-#if defined(WIN32)
+#if defined(_WIN32)
   #include <pcap-stdinc.h>
 #elif defined(MSDOS)
   #include <sys/types.h>
@@ -43,7 +43,7 @@
 #else /* UN*X */
   #include <sys/types.h>
   #include <sys/time.h>
-#endif /* WIN32/MSDOS/UN*X */
+#endif /* _WIN32/MSDOS/UN*X */
 
 #ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap/bpf.h>
@@ -170,9 +170,9 @@ struct pcap_stat {
 	u_int ps_recv;		/* number of packets received */
 	u_int ps_drop;		/* number of packets dropped */
 	u_int ps_ifdrop;	/* drops by interface -- only supported on some platforms */
-#ifdef WIN32
+#ifdef _WIN32
 	u_int bs_capt;		/* number of packets that reach the application */
-#endif /* WIN32 */
+#endif /* _WIN32 */
 };
 
 #ifdef MSDOS
@@ -351,7 +351,7 @@ pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_dead_with_tstamp_precision(int, int, u_int);
 pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int, char *);
 pcap_t	*pcap_open_offline(const char *, char *);
-#if defined(WIN32)
+#if defined(_WIN32)
 pcap_t  *pcap_hopen_offline_with_tstamp_precision(intptr_t, u_int, char *);
 pcap_t  *pcap_hopen_offline(intptr_t, char *);
 #if !defined(LIBPCAP_EXPORTS)
@@ -363,10 +363,10 @@ pcap_t  *pcap_hopen_offline(intptr_t, char *);
 static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 static pcap_t *pcap_fopen_offline(FILE *, char *);
 #endif
-#else /*WIN32*/
+#else /*_WIN32*/
 pcap_t	*pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 pcap_t	*pcap_fopen_offline(FILE *, char *);
-#endif /*WIN32*/
+#endif /*_WIN32*/
 
 void	pcap_close(pcap_t *);
 int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
@@ -438,7 +438,7 @@ int	bpf_validate(const struct bpf_insn *f, int len);
 char	*bpf_image(const struct bpf_insn *, int);
 void	bpf_dump(const struct bpf_program *, int);
 
-#if defined(WIN32)
+#if defined(_WIN32)
 
 /*
  * Win32 definitions
@@ -476,7 +476,7 @@ u_long pcap_mac_packets (void);
 
 int	pcap_get_selectable_fd(pcap_t *);
 
-#endif /* WIN32/MSDOS/UN*X */
+#endif /* _WIN32/MSDOS/UN*X */
 
 #ifdef __cplusplus
 }

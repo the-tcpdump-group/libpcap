@@ -37,9 +37,9 @@ static const char rcsid[] _U_ =
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -49,7 +49,7 @@ static const char rcsid[] _U_ =
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <errno.h>
 #include <memory.h>
@@ -70,7 +70,7 @@ static const char rcsid[] _U_ =
 /*
  * Setting O_BINARY on DOS/Windows is a bit tricky
  */
-#if defined(WIN32)
+#if defined(_WIN32)
   #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
 #elif defined(MSDOS)
   #if defined(__HIGHC__)
@@ -608,7 +608,7 @@ static pcap_dumper_t *
 pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 {
 
-#if defined(WIN32) || defined(MSDOS)
+#if defined(_WIN32) || defined(MSDOS)
 	/*
 	 * If we're writing to the standard output, put it in binary
 	 * mode, as savefiles are binary files.
@@ -663,7 +663,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		f = stdout;
 		fname = "standard output";
 	} else {
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 		f = fopen(fname, "w");
 #else
 		f = fopen(fname, "wb");
@@ -715,7 +715,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	if (fname[0] == '-' && fname[1] == '\0')
 		return (pcap_setup_dump(p, linktype, stdout, "standard output"));
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 	f = fopen(fname, "r+");
 #else
 	f = fopen(fname, "rb+");
@@ -744,7 +744,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		}
 	}
 
-#if defined(WIN32) || defined(MSDOS)
+#if defined(_WIN32) || defined(MSDOS)
 	/*
 	 * We turn off buffering.
 	 * XXX - why?  And why not on the standard output?

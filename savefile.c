@@ -32,9 +32,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -44,7 +44,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <errno.h>
 #include <memory.h>
@@ -65,7 +65,7 @@
 /*
  * Setting O_BINARY on DOS/Windows is a bit tricky
  */
-#if defined(WIN32)
+#if defined(_WIN32)
   #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
 #elif defined(MSDOS)
   #if defined(__HIGHC__)
@@ -109,7 +109,7 @@ sf_stats(pcap_t *p, struct pcap_stat *ps)
 	return (-1);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static int
 sf_setbuff(pcap_t *p, int dim)
 {
@@ -175,7 +175,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;
-#if defined(WIN32) || defined(MSDOS)
+#if defined(_WIN32) || defined(MSDOS)
 		/*
 		 * We're reading from the standard input, so put it in binary
 		 * mode, as savefiles are binary files.
@@ -184,7 +184,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 #endif
 	}
 	else {
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 		fp = fopen(fname, "r");
 #else
 		fp = fopen(fname, "rb");
@@ -210,7 +210,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 	    PCAP_TSTAMP_PRECISION_MICRO, errbuf));
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 pcap_t* pcap_hopen_offline_with_tstamp_precision(intptr_t osfd, u_int precision,
     char *errbuf)
 {
@@ -249,7 +249,7 @@ static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, u_int, char *, int *) = {
 
 #define	N_FILE_TYPES	(sizeof check_headers / sizeof check_headers[0])
 
-#ifdef WIN32
+#ifdef _WIN32
 static
 #endif
 pcap_t *
@@ -313,7 +313,7 @@ found:
 	/* Padding only needed for live capture fcode */
 	p->fddipad = 0;
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 	/*
 	 * You can do "select()" and "poll()" on plain files on most
 	 * platforms, and should be able to do so on pipes.
@@ -332,7 +332,7 @@ found:
 	p->getnonblock_op = sf_getnonblock;
 	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
-#ifdef WIN32
+#ifdef _WIN32
 	p->setbuff_op = sf_setbuff;
 	p->setmode_op = sf_setmode;
 	p->setmintocopy_op = sf_setmintocopy;
@@ -354,7 +354,7 @@ found:
 	return (p);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static
 #endif
 pcap_t *
