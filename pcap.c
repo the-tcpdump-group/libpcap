@@ -116,7 +116,7 @@ pcap_not_initialized(pcap_t *pcap _U_)
 }
 
 #ifdef _WIN32
-Adapter *
+ADAPTER *
 pcap_no_adapter(pcap_t *pcap _U_)
 {
 	return (NULL);
@@ -1670,7 +1670,7 @@ pcap_setmintocopy(pcap_t *p, int size)
 	return (p->setmintocopy_op(p, size));
 }
 
-Adapter *
+ADAPTER *
 pcap_get_adapter(pcap_t *p)
 {
 	return (p->getadapter_op(p));

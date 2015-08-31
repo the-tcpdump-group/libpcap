@@ -130,7 +130,7 @@ typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
-typedef Adapter *(*getadapter_op_t)(pcap_t *);
+typedef ADAPTER *(*getadapter_op_t)(pcap_t *);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
 

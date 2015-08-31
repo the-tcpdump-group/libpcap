@@ -184,8 +184,8 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 	return 0;
 }
 
-/*return the Adapter for a pcap_t*/
-static Adapter *
+/*return the ADAPTER for a pcap_t*/
+static ADAPTER *
 pcap_getadapter_win32(pcap_t *p)
 {
 	return p->adapter;
