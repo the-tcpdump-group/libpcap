@@ -140,7 +140,19 @@ int pcap_wsockinit()
 static int
 pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 {
+	struct pcap_win *pw = p->priv;
 	struct bpf_stat bstats;
+
+	/*
+	 * Try to get statistics from the driver.
+	 * (Please note - "struct pcap_stat" is *not* the same as
+	 * WinPcap's "struct bpf_stat". It might currently have the
+	 * same layout, but let's not cheat.)
+	 */
+	if (!PacketGetStats(p->adapter, &bstats) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStats error: %s", pcap_win32strerror());
+		return -1;
+	}
 
 	/*
 	 * Copy over any statistics we've had to maintain ourselves,
@@ -148,15 +160,6 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	 */
 	*ps = pw->stat;
 
-	/*
-	 * Try to get statistics from the driver.
-	 * (Please note - "struct pcap_stat" is *not* the same as
-	 * WinPcap's "struct bpf_stat".)
-	 */
-	if(PacketGetStats(p->adapter, &bstats) != TRUE){
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStats error: %s", pcap_win32strerror());
-		return -1;
-	}
 	if (bstats.bs_recv != 0) {
 		/*
 		 * If it's zero, that might mean that the captured packet
@@ -177,6 +180,59 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	ps->ps_ifdrop = bstats.ps_ifdrop;
 
 	return 0;
+}
+
+/*
+ * Win32-only routine for getting statistics.
+ *
+ * This way is definitely safer than passing the pcap_stat * from the userland.
+ * In fact, there could happen than the user allocates a variable which is not
+ * big enough for the new structure, and the library will write in a zone
+ * which is not allocated to this variable.
+ *
+ * In this way, we're pretty sure we are writing on memory allocated to this
+ * variable.
+ *
+ * XXX - but this is the wrong way to handle statistics.  Instead, we should
+ * have an API that returns data in a form like the Options section of a
+ * pcapng Interface Statistics Block:
+ *
+ *    http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=https://raw.githubusercontent.com/pcapng/pcapng/master/draft-tuexen-opsawg-pcapng.xml&modeAsFormat=html/ascii&type=ascii#rfc.section.4.6
+ *
+ * which would let us add new statistics straightforwardly and indicate which
+ * statistics we are and are *not* providing, rather than having to provide
+ * possibly-bogus values for statistics we can't provide.
+ */
+struct pcap_stat *
+pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
+{
+	struct pcap_win *pw = p->priv;
+	struct bpf_stat bstats;
+
+	*pcap_stat_size = sizeof (pw->stat);
+
+#ifdef HAVE_REMOTE
+	if (p->rmt_clientside)
+	{
+		/* We are on an remote capture */
+		return pcap_stats_ex_remote(p);
+	}
+#endif
+
+	/*
+	 * (Please note - "struct pcap_stat" is *not* the same as
+	 * WinPcap's "struct bpf_stat". It might currently have the
+	 * same layout, but let's not cheat.)
+	 */
+	if (!PacketGetStatsEx(p->adapter, &bstats)) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStatsEx error: %s", pcap_win32strerror());
+		return NULL;
+	}
+	pw->stat.ps_recv = bstats.bs_recv;
+	pw->stat.ps_drop = bstats.bs_drop;
+	pw->stat.ps_ifdrop = bstats.ps_ifdrop;
+	pw->stat.ps_capt = bstats.bs_capt;
+	return (&pw->stat);
 }
 
 /* Set the dimension of the kernel-level capture buffer */
