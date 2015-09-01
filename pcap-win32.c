@@ -144,22 +144,31 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	struct bpf_stat bstats;
 
 	/*
-	 * Try to get statistics from the driver.
-	 * (Please note - "struct pcap_stat" is *not* the same as
-	 * WinPcap's "struct bpf_stat". It might currently have the
-	 * same layout, but let's not cheat.)
-	 */
-	if (!PacketGetStats(p->adapter, &bstats) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStats error: %s", pcap_win32strerror());
-		return -1;
-	}
-
-	/*
 	 * Copy over any statistics we've had to maintain ourselves,
 	 * such as captured packet counts on DAG devices.
 	 */
 	*ps = pw->stat;
 
+	/*
+	 * Try to get statistics from the driver.
+	 * (Please note - "struct pcap_stat" is *not* the same as
+	 * WinPcap's "struct bpf_stat". It might currently have the
+	 * same layout, but let's not cheat.)
+	 *
+	 * Don't assume that PacketGetStats() will fill in all fields.
+	 * It doesn't fill in bs_capt for NDIS devices, for example;
+	 * only PacketGetStatsEx() does that, but PacketGetStatsEx()
+	 * doesn't handle some device types that PacketGetStats() does.
+	 * This is a mess and needs to be cleaned up.
+	 */
+	bstats.bs_recv = 0;
+	bstats.bs_drop = 0;
+	bstats.bs_ifdrop = 0;
+	bstats.bs_capt = 0;
+	if (!PacketGetStats(p->adapter, &bstats) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStats error: %s", pcap_win32strerror());
+		return -1;
+	}
 	if (bstats.bs_recv != 0) {
 		/*
 		 * If it's zero, that might mean that the captured packet
@@ -178,6 +187,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	}
 	ps->ps_drop = bstats.bs_drop;
 	ps->ps_ifdrop = bstats.ps_ifdrop;
+	ps->ps_capt = bstats.bs_capt;
 
 	return 0;
 }
