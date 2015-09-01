@@ -447,6 +447,7 @@ void	bpf_dump(const struct bpf_program *, int);
 int pcap_setbuff(pcap_t *p, int dim);
 int pcap_setmode(pcap_t *p, int mode);
 int pcap_setmintocopy(pcap_t *p, int size);
+struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
 ADAPTER *pcap_get_adapter(pcap_t *p);
 
 #ifdef WPCAP
