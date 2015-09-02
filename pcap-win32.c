@@ -81,18 +81,6 @@ struct pcap_win {
 #endif
 };
 
-/*
- * Header that the WinPcap driver associates to the packets.
- * Once was in bpf.h
- */
-struct bpf_hdr {
-	struct timeval	bh_tstamp;	/* time stamp */
-	bpf_u_int32	bh_caplen;	/* length of captured portion */
-	bpf_u_int32	bh_datalen;	/* original length of packet */
-	u_short		bh_hdrlen;	/* length of bpf header (this struct
-					   plus alignment padding) */
-};
-
 CRITICAL_SECTION g_PcapCompileCriticalSection;
 
 BOOL WINAPI DllMain(
