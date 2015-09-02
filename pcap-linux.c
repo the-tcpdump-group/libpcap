@@ -4983,6 +4983,8 @@ again:
 	/* non-positive values of max_packets are used to require all
 	 * packets currently available in the ring */
 	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+		int packets_to_read;
+
 		if (handlep->current_packet == NULL) {
 			h.raw = RING_GET_CURRENT_FRAME(handle);
 			if (h.h3->hdr.bh1.block_status == TP_STATUS_KERNEL)
@@ -4991,7 +4993,7 @@ again:
 			handlep->current_packet = h.raw + h.h3->hdr.bh1.offset_to_first_pkt;
 			handlep->packets_left = h.h3->hdr.bh1.num_pkts;
 		}
-		int packets_to_read = handlep->packets_left;
+		packets_to_read = handlep->packets_left;
 
 		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) && packets_to_read > max_packets) {
 			packets_to_read = max_packets;
