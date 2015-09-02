@@ -144,50 +144,25 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	struct bpf_stat bstats;
 
 	/*
-	 * Copy over any statistics we've had to maintain ourselves,
-	 * such as captured packet counts on DAG devices.
-	 */
-	*ps = pw->stat;
-
-	/*
-	 * Try to get statistics from the driver.
+	 * Try to get statistics.
+	 *
 	 * (Please note - "struct pcap_stat" is *not* the same as
 	 * WinPcap's "struct bpf_stat". It might currently have the
-	 * same layout, but let's not cheat.)
+	 * same layout, but let's not cheat.
 	 *
-	 * Don't assume that PacketGetStats() will fill in all fields.
-	 * It doesn't fill in bs_capt for NDIS devices, for example;
-	 * only PacketGetStatsEx() does that, but PacketGetStatsEx()
-	 * doesn't handle some device types that PacketGetStats() does.
-	 * This is a mess and needs to be cleaned up.
+	 * Note also that we don't fill in ps_capt, as we might have
+	 * been called by code compiled against an earlier version of
+	 * WinPcap that didn't have ps_capt, in which case filling it
+	 * in would stomp on whatever comes after the structure passed
+	 * to us.
 	 */
-	bstats.bs_recv = 0;
-	bstats.bs_drop = 0;
-	bstats.bs_ifdrop = 0;
-	bstats.bs_capt = 0;
-	if (!PacketGetStats(p->adapter, &bstats) {
+	if (!PacketGetStats(p->adapter, &bstats)) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "PacketGetStats error: %s", pcap_win32strerror());
 		return -1;
 	}
-	if (bstats.bs_recv != 0) {
-		/*
-		 * If it's zero, that might mean that the captured packet
-		 * count isn't maintained, so use our value.
-		 *
-		 * XXX - either Packet.dll should be maintaining the count
-		 * and hiding this dependency from us, or Packet.dll
-		 * shouldn't be handling DAG cards *at all*, they should
-		 * be handled directly by us, with code that runs on top of
-		 * the DAG API on windows (i.e., move Packet.dll's DAG
-		 * card code into pcap, given that we now have our own
-		 * mechanism for handling different adapter types with
-		 * different code).
-		 */
-		ps->ps_recv = bstats.bs_recv;
-	}
+	ps->ps_recv = bstats.bs_recv;
 	ps->ps_drop = bstats.bs_drop;
 	ps->ps_ifdrop = bstats.ps_ifdrop;
-	ps->ps_capt = bstats.bs_capt;
 
 	return 0;
 }
@@ -230,6 +205,8 @@ pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
 #endif
 
 	/*
+	 * Try to get statistics.
+	 *
 	 * (Please note - "struct pcap_stat" is *not* the same as
 	 * WinPcap's "struct bpf_stat". It might currently have the
 	 * same layout, but let's not cheat.)
