@@ -664,9 +664,14 @@ nl80211_cleanup(struct nl80211_state *state)
 }
 
 static int
+del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
+    const char *device, const char *mondevice);
+
+static int
 add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
     const char *device, const char *mondevice)
 {
+	struct pcap_linux *handlep = handle->priv;
 	int ifindex;
 	struct nl_msg *msg;
 	int err;
@@ -760,7 +765,7 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		/*
 		 * Get rid of the monitor device.
 		 */
-		del_mon_if(handle, sock_fd, state, device, >mondevice);
+		del_mon_if(handle, sock_fd, state, device, handlep->mondevice);
 		return PCAP_ERROR;
 	}
 	return 1;
