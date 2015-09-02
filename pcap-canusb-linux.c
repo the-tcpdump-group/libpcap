@@ -110,13 +110,15 @@ int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
         int ret;
         // Check if this device is interesting.
         struct libusb_device_descriptor desc;
+        libusb_device_handle *dh;
+
         libusb_get_device_descriptor(devs[i],&desc);
 
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID))
             continue; //It is not, check next device
 
         //It is!
-        libusb_device_handle *dh = NULL;
+        dh = NULL;
 
         if ((ret = libusb_open(devs[i],&dh)) == 0)
         {
@@ -156,13 +158,15 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
     {
         // Check if this device is interesting.
         struct libusb_device_descriptor desc;
+        libusb_device_handle *dh;
+
         libusb_get_device_descriptor(devs[i],&desc);
 
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID))
           continue;
 
         //Found one!
-        libusb_device_handle *dh = NULL;
+        dh = NULL;
 
         if (libusb_open(devs[i],&dh) != 0) continue;
 
