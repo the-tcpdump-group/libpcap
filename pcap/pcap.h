@@ -171,7 +171,11 @@ struct pcap_stat {
 	u_int ps_drop;		/* number of packets dropped */
 	u_int ps_ifdrop;	/* drops by interface -- only supported on some platforms */
 #ifdef _WIN32
-	u_int bs_capt;		/* number of packets that reach the application */
+	u_int ps_capt;		/* number of packets that reach the application */
+#ifdef HAVE_REMOTE
+	u_int ps_sent;		/* number of packets sent by the server on the network */
+	u_int ps_netdrop;	/* number of packets lost on the network */
+#endif /* HAVE_REMOTE */
 #endif /* _WIN32 */
 };
 
