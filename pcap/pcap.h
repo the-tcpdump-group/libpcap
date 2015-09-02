@@ -452,7 +452,32 @@ int pcap_setbuff(pcap_t *p, int dim);
 int pcap_setmode(pcap_t *p, int mode);
 int pcap_setmintocopy(pcap_t *p, int size);
 struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
+
+/*
+ * XXX - this routine exists so that programs don't have to reach inside
+ * the pcap_t structure to get the ADAPTER handle; we do *NOT* want to
+ * expose that structure's layout - it has never been done in the history
+ * of libpcap, at least since libpcap 0.4, and we really don't want to
+ * be forced never to change that structure - so we can't just get rid of
+ * it.
+ *
+ * However, it relies on ADAPTER being declared, if even only as an
+ * incomplete type, which means you need to have included <Packet32.h>.
+ *
+ * We don't want to include <Packet32.h> in this header, as we don't
+ * want it polluting the name space any worse than we've already done,
+ * and we don't want to define any of Packet.dll's data structures
+ * if you're not using them (it's bad enough that they're defined by
+ * Packet32.h, exposing them to programs that include it - you know
+ * somebody will write code that depends on its layout, sigh).
+ *
+ * So we declare it only if we've included <Packet32.h>; we use the
+ * multiple-inclusion protection #define for <Packet32.h> to detect
+ * whether it's been included.
+ */
+#ifdef __PACKET32
 ADAPTER *pcap_get_adapter(pcap_t *p);
+#endif
 
 #ifdef WPCAP
 /* Include file with the wpcap-specific extensions */
