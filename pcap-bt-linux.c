@@ -305,6 +305,7 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	struct pcap_pkthdr pkth;
 	pcap_bluetooth_h4_header* bthdr;
 	char *pktd;
+	int in = 0;
 
 	pktd = (char *)handle->buffer + BT_CTRL_SIZE;
 	bthdr = (pcap_bluetooth_h4_header*)(void *)pktd;
@@ -337,7 +338,6 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 
 	/* get direction and timestamp*/
 	cmsg = CMSG_FIRSTHDR(&msg);
-	int in=0;
 	while (cmsg) {
 		switch (cmsg->cmsg_type) {
 			case HCI_CMSG_DIR:
