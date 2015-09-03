@@ -767,7 +767,7 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 		/*
 		 * Get rid of the monitor device.
 		 */
-		del_mon_if(handle, sock_fd, state, device, handlep->mondevice);
+		del_mon_if(handle, sock_fd, state, device, mondevice);
 		return PCAP_ERROR;
 	}
 	return 1;
