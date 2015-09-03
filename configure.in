@@ -732,10 +732,16 @@ AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support @<:@"yes", "
 		dag_root=$withval
 	fi
 ],[
-	#
-	# Use DAG API if present, otherwise don't
-	#
-	want_dag=ifpresent
+	if test "$V_PCAP" = dag; then
+		# User requested DAG-only libpcap, so we'd better have
+		# the DAG API.
+		want_dag=yes
+	else
+		#
+		# Use DAG API if present, otherwise don't
+		#
+		want_dag=ifpresent
+	fi
 ])
 
 AC_ARG_WITH([dag-includes],
@@ -761,7 +767,7 @@ if test "$want_dag" != no; then
 
 	# If necessary, set default paths for DAG API headers and libraries.
 	if test -z "$dag_root"; then
-	    dag_root=/usr/local
+		dag_root=/usr/local
 	fi
 
 	if test -z "$dag_include_dir"; then
@@ -769,19 +775,20 @@ if test "$want_dag" != no; then
 	fi
 
 	if test -z "$dag_lib_dir"; then
-	    dag_lib_dir="$dag_root/lib"
+		dag_lib_dir="$dag_root/lib"
 	fi
 
 	if test -z "$dag_tools_dir"; then
-	    dag_tools_dir="$dag_root/tools"
+		dag_tools_dir="$dag_root/tools"
 	fi
 
 	if test -r $dag_include_dir/dagapi.h; then
 		ac_cv_lbl_dag_api=yes
 	fi
-	AC_MSG_RESULT([$ac_cv_lbl_dag_api ($dag_include_dir)])
 
-	if test $ac_cv_lbl_dag_api = yes; then
+	if test "$ac_cv_lbl_dag_api" = yes; then
+		AC_MSG_RESULT([yes ($dag_include_dir)])
+
 		V_INCLS="$V_INCLS -I$dag_include_dir"
 
 		if test $V_PCAP != dag ; then
@@ -814,25 +821,20 @@ if test "$want_dag" != no; then
 		fi
 
 		AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
-	fi
-fi
+	else
+		AC_MSG_RESULT(no)
 
-AC_MSG_CHECKING(whether we have the DAG API)
+		if test "$V_PCAP" = dag; then
+			# User requested "dag" capture type but we couldn't
+			# find the DAG API support.
+			AC_MSG_ERROR([DAG support requested with --with-pcap=dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
+		fi
 
-if test $ac_cv_lbl_dag_api = no; then
-	AC_MSG_RESULT(no)
-	if test "$want_dag" = yes; then
-        	# User wanted DAG support but we couldn't find it.
-		AC_MSG_ERROR([DAG API requested, but not found at $dag_root: use --without-dag])
+		if test "$want_dag" = yes; then
+	        	# User wanted DAG support but we couldn't find it.
+			AC_MSG_ERROR([DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
+		fi
 	fi
-
-	if test "$V_PCAP" = dag; then
-		# User requested "dag" capture type but the DAG API wasn't
-		# found.
-		AC_MSG_ERROR([Specifying the capture type as "dag" requires the DAG API to be present; use the --with-dag options to specify the location. (Try "./configure --help" for more information.)])
-	fi
-else
-	AC_MSG_RESULT(yes)
 fi
 
 AC_ARG_WITH(septel,
@@ -850,17 +852,24 @@ AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in d
 		septel_root=$withval
 	fi
 ],[
-	#
-	# Use Septel API if present, otherwise don't
-	#
-	want_septel=ifpresent
-	septel_root=./../septel
+	if test "$V_PCAP" = septel; then
+		# User requested Septel-only libpcap, so we'd better have
+		# the Septel API.
+		want_septel=yes
+	else
+		#
+		# Use Septel API if present, otherwise don't
+		#
+		want_septel=ifpresent
+	fi
 ])
 
 ac_cv_lbl_septel_api=no
 if test "$with_septel" != no; then
-	AC_MSG_CHECKING(whether we have Septel API)
 
+	AC_MSG_CHECKING([whether we have Septel API headers])
+
+	# If necessary, set default paths for Septel API headers and libraries.
 	if test -z "$septel_root"; then
 		septel_root=$srcdir/../septel
 	fi
@@ -868,8 +877,13 @@ if test "$with_septel" != no; then
 	septel_tools_dir="$septel_root"
 	septel_include_dir="$septel_root/INC"
 
-	ac_cv_lbl_septel_api=no
 	if test -r "$septel_include_dir/msg.h"; then
+		ac_cv_lbl_septel_api=yes
+	fi
+
+	if test "$ac_cv_lbl_septel_api" = yes; then
+		AC_MSG_RESULT([yes ($septel_include_dir)])
+
 		V_INCLS="$V_INCLS -I$septel_include_dir"
 		ADDLOBJS="$ADDLOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
@@ -877,21 +891,22 @@ if test "$with_septel" != no; then
 		if test "$V_PCAP" != septel ; then
 			 SSRC="$SSRC pcap-septel.c"
 		fi
-		ac_cv_lbl_septel_api=yes
-	fi
 
-	AC_MSG_RESULT($ac_cv_lbl_septel_api)
-	if test $ac_cv_lbl_septel_api = no; then
-		if test "$want_septel" = yes; then
-			AC_MSG_ERROR(Septel API not found under directory $septel_root; use --without-septel)
-		fi
+		AC_DEFINE(HAVE_SEPTEL_API, 1, [define if you have the Septel API])
 	else
-		AC_DEFINE(HAVE_SEPTEL_API, 1, [define if you have a Septel API])
-	fi
-fi
+		AC_MSG_RESULT(no)
 
-if test "$V_PCAP" = septel -a "$ac_cv_lbl_septel_api" = no; then
-	AC_MSG_ERROR(Specifying the capture type as 'septel' requires the Septel API to be present; use --with-septel=DIR)
+		if test "$V_PCAP" = septel; then
+			# User requested "septel" capture type but
+			# we couldn't find the Septel API support.
+			AC_MSG_ERROR([Septel support requested with --with-pcap=septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support])
+		fi
+
+		if test "$want_septel" = yes; then
+	        	# User wanted Septel support but we couldn't find it.
+			AC_MSG_ERROR([Septel support requested with --with-septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support])
+		fi
+	fi
 fi
 
 # Check for Myricom SNF support.
@@ -912,10 +927,16 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support @<:@"yes", 
 		snf_root=$withval
 	fi
 ],[
-	#
-	# Use Sniffer API if present, otherwise don't
-	#
-	want_snf=ifpresent
+	if test "$V_PCAP" = snf; then
+		# User requested Sniffer-only libpcap, so we'd better have
+		# the Sniffer API.
+		want_snf=yes
+	else
+		#
+		# Use Sniffer API if present, otherwise don't
+		#
+		want_snf=ifpresent
+	fi
 ])
 
 AC_ARG_WITH([snf-includes],
@@ -953,38 +974,41 @@ if test "$with_snf" != no; then
 	fi
 
 	if test -f "$snf_include_dir/snf.h"; then
-		ac_cv_lbl_snf_api=yes
-	fi
-	AC_MSG_RESULT([$ac_cv_lbl_snf_api ($snf_root)])
-
-	if test $ac_cv_lbl_snf_api = no; then
-		if test "$want_snf" = yes; then
-			AC_MSG_ERROR(SNF API headers not found under $snf_include_dir; use --without-snf)
-		fi
-	else
+		# We found a header; make sure we can link with the library
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
-		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"], [ac_cv_lbl_snf_api="no"])
+		AC_CHECK_LIB([snf], [snf_init], [ac_cv_lbl_snf_api="yes"])
 		LDFLAGS="$saved_ldflags"
-
-		if test $ac_cv_lbl_snf_api = no; then
-			if test "$want_snf" = yes; then
-				AC_MSG_ERROR(SNF API cannot correctly be linked check config.log; use --without-snf)
-			fi
-		else
-			V_INCLS="$V_INCLS -I$snf_include_dir"
-			LIBS="$LIBS -lsnf"
-			LDFLAGS="$LDFLAGS -L$snf_lib_dir"
-			if test "$V_PCAP" != snf ; then
-				SSRC="$SSRC pcap-snf.c"
-			fi
-			AC_DEFINE(HAVE_SNF_API, 1, [define if you have Myricom SNF API])
+		if test "$ac_cv_lbl_snf_api" = no; then
+			AC_MSG_ERROR(SNF API cannot correctly be linked; check config.log)
 		fi
 	fi
-fi
 
-if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
-	AC_MSG_ERROR(Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR)
+	if test "$ac_cv_lbl_snf_api" = yes; then
+		AC_MSG_RESULT([yes ($snf_root)])
+
+		V_INCLS="$V_INCLS -I$snf_include_dir"
+		LIBS="$LIBS -lsnf"
+		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+
+		if test "$V_PCAP" != snf ; then
+			SSRC="$SSRC pcap-snf.c"
+		fi
+
+		AC_DEFINE(HAVE_SNF_API, 1, [define if you have the Myricom SNF API])
+	else
+		AC_MSG_RESULT(no)
+
+		if test "$want_snf" = yes; then
+			# User requested "snf" capture type but
+			# we couldn't find the Sniffer API support.
+			AC_MSG_ERROR([Myricom Sniffer support requested with --with-pcap=snf, but the Sniffer headers weren't found at $snf_include_dir: make sure the Sniffer support is installed, specify a different path or paths if necessary, or don't request Sniffer support])
+		fi
+
+		if test "$want_snf" = yes; then
+			AC_MSG_ERROR([Myricom Sniffer support requested with --with-snf, but the Sniffer headers weren't found at $snf_include_dir: make sure the Sniffer support is installed, specify a different path or paths if necessary, or don't request Sniffer support])
+		fi
+	fi
 fi
 
 # Check for Riverbed TurboCap support.
@@ -1012,7 +1036,8 @@ AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support 
 ])
 
 ac_cv_lbl_turbocap_api=no
-if test "$with_turbocap" != no; then
+if test "$want_turbocap" != no; then
+
 	AC_MSG_CHECKING(whether TurboCap is supported)
 
 	AC_TRY_COMPILE(
@@ -1024,19 +1049,23 @@ if test "$with_turbocap" != no; then
 	    TC_INSTANCE i;
 	    (void)TcInstanceCreateByName("foo", &i);
 	],
-	ac_cv_lbl_turbocap_api=yes,
-	ac_cv_lbl_turbocap_api=no)
+	ac_cv_lbl_turbocap_api=yes)
 
-	AC_MSG_RESULT($ac_cv_lbl_turbocap_api)
-	if test $ac_cv_lbl_turbocap_api = no; then
-		if test "$want_turbocap" = yes; then
-			AC_MSG_ERROR(TurboCap API not found)
-		fi
-	else
-		AC_DEFINE(HAVE_TC_API, 1, [define if you have the TurboCap API])
+	if test $ac_cv_lbl_turbocap_api = yes; then
+		AC_MSG_RESULT(yes)
+
 		SSRC="$SSRC pcap-tc.c"
 		LIBS="$LIBS -lTcApi -lpthread -lstdc++"	
-      fi
+
+		AC_DEFINE(HAVE_TC_API, 1, [define if you have the TurboCap API])
+	else
+		AC_MSG_RESULT(no)
+
+		if test "$want_turbocap" = yes; then
+	        	# User wanted Turbo support but we couldn't find it.
+			AC_MSG_ERROR([TurboCap support requested with --with-turbocap, but the TurboCap headers weren't found: make sure the TurboCap support is installed or don't request TurboCap support])
+		fi
+	fi
 fi
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)

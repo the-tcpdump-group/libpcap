@@ -130,10 +130,10 @@
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
 
-/* define if you have a Septel API */
+/* define if you have the Septel API */
 #undef HAVE_SEPTEL_API
 
-/* define if you have Myricom SNF API */
+/* define if you have the Myricom SNF API */
 #undef HAVE_SNF_API
 
 /* Define to 1 if you have the `snprintf' function. */
