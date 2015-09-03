@@ -985,6 +985,7 @@ pcap_lookupdev(errbuf)
 	DWORD dwWindowsMajorVersion;
 	dwVersion = GetVersion();	/* get the OS version */
 	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+	char our_errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
 		/*
@@ -1016,9 +1017,9 @@ pcap_lookupdev(errbuf)
 
 		if ( !PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength) )
 		{
+			pcap_win32_err_to_str(GetLastError(), our_errbuf);
 			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"PacketGetAdapterNames: %s",
-				pcap_win32strerror());
+				"PacketGetAdapterNames: %s", our_errbuf);
 			free(TAdaptersName);
 			return NULL;
 		}
