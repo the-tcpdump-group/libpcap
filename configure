@@ -6139,10 +6139,16 @@ if test "${with_dag+set}" = set; then :
 
 else
 
-	#
-	# Use DAG API if present, otherwise don't
-	#
-	want_dag=ifpresent
+	if test "$V_PCAP" = dag; then
+		# User requested DAG-only libpcap, so we'd better have
+		# the DAG API.
+		want_dag=yes
+	else
+		#
+		# Use DAG API if present, otherwise don't
+		#
+		want_dag=ifpresent
+	fi
 
 fi
 
@@ -6177,7 +6183,7 @@ $as_echo_n "checking whether we have DAG API headers... " >&6; }
 
 	# If necessary, set default paths for DAG API headers and libraries.
 	if test -z "$dag_root"; then
-	    dag_root=/usr/local
+		dag_root=/usr/local
 	fi
 
 	if test -z "$dag_include_dir"; then
@@ -6185,20 +6191,21 @@ $as_echo_n "checking whether we have DAG API headers... " >&6; }
 	fi
 
 	if test -z "$dag_lib_dir"; then
-	    dag_lib_dir="$dag_root/lib"
+		dag_lib_dir="$dag_root/lib"
 	fi
 
 	if test -z "$dag_tools_dir"; then
-	    dag_tools_dir="$dag_root/tools"
+		dag_tools_dir="$dag_root/tools"
 	fi
 
 	if test -r $dag_include_dir/dagapi.h; then
 		ac_cv_lbl_dag_api=yes
 	fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_dag_api ($dag_include_dir)" >&5
-$as_echo "$ac_cv_lbl_dag_api ($dag_include_dir)" >&6; }
 
-	if test $ac_cv_lbl_dag_api = yes; then
+	if test "$ac_cv_lbl_dag_api" = yes; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes ($dag_include_dir)" >&5
+$as_echo "yes ($dag_include_dir)" >&6; }
+
 		V_INCLS="$V_INCLS -I$dag_include_dir"
 
 		if test $V_PCAP != dag ; then
@@ -6401,28 +6408,21 @@ $as_echo "#define HAVE_DAG_VDAG 1" >>confdefs.h
 
 $as_echo "#define HAVE_DAG_API 1" >>confdefs.h
 
-	fi
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have the DAG API" >&5
-$as_echo_n "checking whether we have the DAG API... " >&6; }
-
-if test $ac_cv_lbl_dag_api = no; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	if test "$want_dag" = yes; then
-        	# User wanted DAG support but we couldn't find it.
-		as_fn_error $? "DAG API requested, but not found at $dag_root: use --without-dag" "$LINENO" 5
-	fi
 
-	if test "$V_PCAP" = dag; then
-		# User requested "dag" capture type but the DAG API wasn't
-		# found.
-		as_fn_error $? "Specifying the capture type as \"dag\" requires the DAG API to be present; use the --with-dag options to specify the location. (Try \"./configure --help\" for more information.)" "$LINENO" 5
+		if test "$V_PCAP" = dag; then
+			# User requested "dag" capture type but we couldn't
+			# find the DAG API support.
+			as_fn_error $? "DAG support requested with --with-pcap=dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support" "$LINENO" 5
+		fi
+
+		if test "$want_dag" = yes; then
+	        	# User wanted DAG support but we couldn't find it.
+			as_fn_error $? "DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support" "$LINENO" 5
+		fi
 	fi
-else
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
 fi
 
 
@@ -6443,20 +6443,27 @@ if test "${with_septel+set}" = set; then :
 
 else
 
-	#
-	# Use Septel API if present, otherwise don't
-	#
-	want_septel=ifpresent
-	septel_root=./../septel
+	if test "$V_PCAP" = septel; then
+		# User requested Septel-only libpcap, so we'd better have
+		# the Septel API.
+		want_septel=yes
+	else
+		#
+		# Use Septel API if present, otherwise don't
+		#
+		want_septel=ifpresent
+	fi
 
 fi
 
 
 ac_cv_lbl_septel_api=no
 if test "$with_septel" != no; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have Septel API" >&5
-$as_echo_n "checking whether we have Septel API... " >&6; }
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have Septel API headers" >&5
+$as_echo_n "checking whether we have Septel API headers... " >&6; }
+
+	# If necessary, set default paths for Septel API headers and libraries.
 	if test -z "$septel_root"; then
 		septel_root=$srcdir/../septel
 	fi
@@ -6464,8 +6471,14 @@ $as_echo_n "checking whether we have Septel API... " >&6; }
 	septel_tools_dir="$septel_root"
 	septel_include_dir="$septel_root/INC"
 
-	ac_cv_lbl_septel_api=no
 	if test -r "$septel_include_dir/msg.h"; then
+		ac_cv_lbl_septel_api=yes
+	fi
+
+	if test "$ac_cv_lbl_septel_api" = yes; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes ($septel_include_dir)" >&5
+$as_echo "yes ($septel_include_dir)" >&6; }
+
 		V_INCLS="$V_INCLS -I$septel_include_dir"
 		ADDLOBJS="$ADDLOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
@@ -6473,24 +6486,25 @@ $as_echo_n "checking whether we have Septel API... " >&6; }
 		if test "$V_PCAP" != septel ; then
 			 SSRC="$SSRC pcap-septel.c"
 		fi
-		ac_cv_lbl_septel_api=yes
-	fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_septel_api" >&5
-$as_echo "$ac_cv_lbl_septel_api" >&6; }
-	if test $ac_cv_lbl_septel_api = no; then
-		if test "$want_septel" = yes; then
-			as_fn_error $? "Septel API not found under directory $septel_root; use --without-septel" "$LINENO" 5
-		fi
-	else
 
 $as_echo "#define HAVE_SEPTEL_API 1" >>confdefs.h
 
-	fi
-fi
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 
-if test "$V_PCAP" = septel -a "$ac_cv_lbl_septel_api" = no; then
-	as_fn_error $? "Specifying the capture type as 'septel' requires the Septel API to be present; use --with-septel=DIR" "$LINENO" 5
+		if test "$V_PCAP" = septel; then
+			# User requested "septel" capture type but
+			# we couldn't find the Septel API support.
+			as_fn_error $? "Septel support requested with --with-pcap=septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support" "$LINENO" 5
+		fi
+
+		if test "$want_septel" = yes; then
+	        	# User wanted Septel support but we couldn't find it.
+			as_fn_error $? "Septel support requested with --with-septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support" "$LINENO" 5
+		fi
+	fi
 fi
 
 # Check for Myricom SNF support.
@@ -6514,10 +6528,16 @@ if test "${with_snf+set}" = set; then :
 
 else
 
-	#
-	# Use Sniffer API if present, otherwise don't
-	#
-	want_snf=ifpresent
+	if test "$V_PCAP" = snf; then
+		# User requested Sniffer-only libpcap, so we'd better have
+		# the Sniffer API.
+		want_snf=yes
+	else
+		#
+		# Use Sniffer API if present, otherwise don't
+		#
+		want_snf=ifpresent
+	fi
 
 fi
 
@@ -6564,16 +6584,7 @@ $as_echo_n "checking whether we have Myricom Sniffer API... " >&6; }
 	fi
 
 	if test -f "$snf_include_dir/snf.h"; then
-		ac_cv_lbl_snf_api=yes
-	fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_snf_api ($snf_root)" >&5
-$as_echo "$ac_cv_lbl_snf_api ($snf_root)" >&6; }
-
-	if test $ac_cv_lbl_snf_api = no; then
-		if test "$want_snf" = yes; then
-			as_fn_error $? "SNF API headers not found under $snf_include_dir; use --without-snf" "$LINENO" 5
-		fi
-	else
+		# We found a header; make sure we can link with the library
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for snf_init in -lsnf" >&5
@@ -6614,32 +6625,43 @@ fi
 $as_echo "$ac_cv_lib_snf_snf_init" >&6; }
 if test "x$ac_cv_lib_snf_snf_init" = xyes; then :
   ac_cv_lbl_snf_api="yes"
-else
-  ac_cv_lbl_snf_api="no"
 fi
 
 		LDFLAGS="$saved_ldflags"
+		if test "$ac_cv_lbl_snf_api" = no; then
+			as_fn_error $? "SNF API cannot correctly be linked; check config.log" "$LINENO" 5
+		fi
+	fi
 
-		if test $ac_cv_lbl_snf_api = no; then
-			if test "$want_snf" = yes; then
-				as_fn_error $? "SNF API cannot correctly be linked check config.log; use --without-snf" "$LINENO" 5
-			fi
-		else
-			V_INCLS="$V_INCLS -I$snf_include_dir"
-			LIBS="$LIBS -lsnf"
-			LDFLAGS="$LDFLAGS -L$snf_lib_dir"
-			if test "$V_PCAP" != snf ; then
-				SSRC="$SSRC pcap-snf.c"
-			fi
+	if test "$ac_cv_lbl_snf_api" = yes; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes ($snf_root)" >&5
+$as_echo "yes ($snf_root)" >&6; }
+
+		V_INCLS="$V_INCLS -I$snf_include_dir"
+		LIBS="$LIBS -lsnf"
+		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
+
+		if test "$V_PCAP" != snf ; then
+			SSRC="$SSRC pcap-snf.c"
+		fi
+
 
 $as_echo "#define HAVE_SNF_API 1" >>confdefs.h
 
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+		if test "$want_snf" = yes; then
+			# User requested "snf" capture type but
+			# we couldn't find the Sniffer API support.
+			as_fn_error $? "Myricom Sniffer support requested with --with-pcap=snf, but the Sniffer headers weren't found at $snf_include_dir: make sure the Sniffer support is installed, specify a different path or paths if necessary, or don't request Sniffer support" "$LINENO" 5
+		fi
+
+		if test "$want_snf" = yes; then
+			as_fn_error $? "Myricom Sniffer support requested with --with-snf, but the Sniffer headers weren't found at $snf_include_dir: make sure the Sniffer support is installed, specify a different path or paths if necessary, or don't request Sniffer support" "$LINENO" 5
 		fi
 	fi
-fi
-
-if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
-	as_fn_error $? "Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR" "$LINENO" 5
 fi
 
 # Check for Riverbed TurboCap support.
@@ -6672,7 +6694,8 @@ fi
 
 
 ac_cv_lbl_turbocap_api=no
-if test "$with_turbocap" != no; then
+if test "$want_turbocap" != no; then
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether TurboCap is supported" >&5
 $as_echo_n "checking whether TurboCap is supported... " >&6; }
 
@@ -6695,24 +6718,28 @@ main ()
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   ac_cv_lbl_turbocap_api=yes
-else
-  ac_cv_lbl_turbocap_api=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_turbocap_api" >&5
-$as_echo "$ac_cv_lbl_turbocap_api" >&6; }
-	if test $ac_cv_lbl_turbocap_api = no; then
-		if test "$want_turbocap" = yes; then
-			as_fn_error $? "TurboCap API not found" "$LINENO" 5
-		fi
-	else
-
-$as_echo "#define HAVE_TC_API 1" >>confdefs.h
+	if test $ac_cv_lbl_turbocap_api = yes; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 		SSRC="$SSRC pcap-tc.c"
 		LIBS="$LIBS -lTcApi -lpthread -lstdc++"
-      fi
+
+
+$as_echo "#define HAVE_TC_API 1" >>confdefs.h
+
+	else
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+		if test "$want_turbocap" = yes; then
+	        	# User wanted Turbo support but we couldn't find it.
+			as_fn_error $? "TurboCap support requested with --with-turbocap, but the TurboCap headers weren't found: make sure the TurboCap support is installed or don't request TurboCap support" "$LINENO" 5
+		fi
+	fi
 fi
 
 
