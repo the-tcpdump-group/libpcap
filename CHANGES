@@ -1,10 +1,11 @@
-Wednesday Sep. 2, 2015 guy@alum.mit.edu
+Thursday Sep. 3, 2015 guy@alum.mit.edu
   Summary for 1.7.5 libpcap release
 	Man page cleanups.
 	Add some allocation failure checks.
 	Fix a number of Linux/ucLinux configure/build issues.
 	Fix some memory leaks.
 	Recognize 802.1ad nested VLAN tag in vlan filter.
+	Fix building Bluetooth Linux Monitor support with BlueZ 5.1+
 
 Saturday Jun. 27, 2015 mcr@sandelman.ca
   Summary for 1.7.4 libpcap release
