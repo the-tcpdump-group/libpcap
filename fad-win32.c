@@ -127,6 +127,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	char *AdaptersName;
 	ULONG NameLength;
 	char *name;
+	char our_errbuf[PCAP_ERRBUF_SIZE+1];
 
 	/*
 	 * Find out how big a buffer we need.
@@ -152,9 +153,9 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 
 		if (last_error != ERROR_INSUFFICIENT_BUFFER)
 		{
+			pcap_win32strerror(last_error, our_errbuf);
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"PacketGetAdapterNames: %s",
-				pcap_win32strerror());
+			    "PacketGetAdapterNames: %s", our_errbuf);
 			return (-1);
 		}
 	}
@@ -173,9 +174,9 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	}
 
 	if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			"PacketGetAdapterNames: %s",
-			pcap_win32strerror());
+		pcap_win32strerror(GetLastError(), our_errbuf);
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "PacketGetAdapterNames: %s",
+		    our_errbuf);
 		free(AdaptersName);
 		return (-1);
 	}

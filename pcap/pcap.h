@@ -448,41 +448,65 @@ void	bpf_dump(const struct bpf_program *, int);
  * Win32 definitions
  */
 
+/*!
+  \brief A queue of raw packets that will be sent to the network with pcap_sendqueue_transmit().
+*/
+struct pcap_send_queue
+{
+	u_int maxlen;	///< Maximum size of the the queue, in bytes. This variable contains the size of the buffer field.
+	u_int len;	///< Current size of the queue, in bytes.
+	char *buffer;	///< Buffer containing the packets to be sent.
+};
+
+typedef struct pcap_send_queue pcap_send_queue;
+
+/*!
+  \brief This typedef is a support for the pcap_get_airpcap_handle() function
+*/
+#if !defined(AIRPCAP_HANDLE__EAE405F5_0171_9592_B3C2_C19EC426AD34__DEFINED_)
+#define AIRPCAP_HANDLE__EAE405F5_0171_9592_B3C2_C19EC426AD34__DEFINED_
+typedef struct _AirpcapHandle *PAirpcapHandle;
+#endif
+
 int pcap_setbuff(pcap_t *p, int dim);
 int pcap_setmode(pcap_t *p, int mode);
 int pcap_setmintocopy(pcap_t *p, int size);
-struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
+
+HANDLE pcap_getevent(pcap_t *p);
 
 /*
- * XXX - this routine exists so that programs don't have to reach inside
- * the pcap_t structure to get the ADAPTER handle; we do *NOT* want to
- * expose that structure's layout - it has never been done in the history
- * of libpcap, at least since libpcap 0.4, and we really don't want to
- * be forced never to change that structure - so we can't just get rid of
- * it.
- *
- * However, it relies on ADAPTER being declared, if even only as an
- * incomplete type, which means you need to have included <Packet32.h>.
- *
- * We don't want to include <Packet32.h> in this header, as we don't
- * want it polluting the name space any worse than we've already done,
- * and we don't want to define any of Packet.dll's data structures
- * if you're not using them (it's bad enough that they're defined by
- * Packet32.h, exposing them to programs that include it - you know
- * somebody will write code that depends on its layout, sigh).
- *
- * So we declare it only if we've included <Packet32.h>; we use the
- * multiple-inclusion protection #define for <Packet32.h> to detect
- * whether it's been included.
+ * Same as Packet.dll's PACKET_OID_DATA.
  */
-#ifdef __PACKET32
-ADAPTER *pcap_get_adapter(pcap_t *p);
-#endif
+typedef struct {
+	bpf_u_int32	oid;		/* OID code */
+	bpf_u_int32	length;		/* length of the data field */
+	u_char		data[1];	/* first byte of the data field */
+} pcap_oid_data_t;
 
-#ifdef WPCAP
-/* Include file with the wpcap-specific extensions */
-#include <Win32-Extensions.h>
-#endif /* WPCAP */
+int pcap_oid_get_request(pcap_t *p, pcap_oid_data_t *data);
+int pcap_oid_set_request(pcap_t *p, pcap_oid_data_t *data);
+
+pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
+
+void pcap_sendqueue_destroy(pcap_send_queue* queue);
+
+int pcap_sendqueue_queue(pcap_send_queue* queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data);
+
+u_int pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue* queue, int sync);
+
+struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
+
+int pcap_setuserbuffer(pcap_t *p, int size);
+
+int pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks);
+
+int pcap_live_dump_ended(pcap_t *p, int sync);
+
+int pcap_offline_filter(struct bpf_program *prog, const struct pcap_pkthdr *header, const u_char *pkt_data);
+
+int pcap_start_oem(char* err_str, int flags);
+
+PAirpcapHandle pcap_get_airpcap_handle(pcap_t *p);
 
 #define MODE_CAPT 0
 #define MODE_STAT 1

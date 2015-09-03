@@ -1488,19 +1488,17 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 
 #ifdef _WIN32
 /*
- * Generate a string for the last Win32-specific error (i.e. an error generated when
+ * Generate a string for a Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
  * For errors occurred during standard C calls, we still use pcap_strerror()
  */
-char *
-pcap_win32strerror(void)
+void
+pcap_win32strerror(DWORD error, char *errbuf)
 {
 	DWORD error;
-	static char errbuf[PCAP_ERRBUF_SIZE+1];
 	int errlen;
 	char *p;
 
-	error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
 	    PCAP_ERRBUF_SIZE, NULL);
 
@@ -1514,8 +1512,7 @@ pcap_win32strerror(void)
 		errbuf[errlen - 2] = '\0';
 	}
 	p = strchr(errbuf, '\0');
-	snprintf (p, sizeof(errbuf)-(p-errbuf), " (%lu)", error);
-	return (errbuf);
+	snprintf (p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
 }
 #endif
 

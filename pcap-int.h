@@ -449,7 +449,7 @@ void	sf_cleanup(pcap_t *p);
 void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 #ifdef _WIN32
-char	*pcap_win32strerror(void);
+void	pcap_win32strerror(DWORD, char *);
 #endif
 
 int	install_bpf_program(pcap_t *, struct bpf_program *);
