@@ -1493,7 +1493,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
  * For errors occurred during standard C calls, we still use pcap_strerror()
  */
 void
-pcap_win32strerror(DWORD error, char *errbuf)
+pcap_win32_err_to_str(DWORD error, char *errbuf)
 {
 	DWORD error;
 	int errlen;

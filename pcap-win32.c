@@ -146,7 +146,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	 * to us.
 	 */
 	if (!PacketGetStats(p->adapter, &bstats)) {
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketGetStats error: %s", errbuf);
 		return -1;
@@ -204,7 +204,7 @@ pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
 	 * same layout, but let's not cheat.)
 	 */
 	if (!PacketGetStatsEx(p->adapter, &bstats)) {
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketGetStatsEx error: %s", errbuf);
 		return NULL;
@@ -596,7 +596,7 @@ pcap_activate_win32(pcap_t *p)
 	if (p->adapter == NULL)
 	{
 		/* Adapter detected but we are not able to open it. Return failure. */
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 		return PCAP_ERROR;
@@ -605,7 +605,7 @@ pcap_activate_win32(pcap_t *p)
 	/*get network type*/
 	if(PacketGetNetType (p->adapter,&type) == FALSE)
 	{
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Cannot determine the network type: %s", errbuf);
 		goto bad;
@@ -751,7 +751,7 @@ pcap_activate_win32(pcap_t *p)
 			/* tell the driver to copy the buffer as soon as data arrives */
 			if(PacketSetMinToCopy(p->adapter,0)==FALSE)
 			{
-				pcap_win32strerror(GetLastError(), errbuf);
+				pcap_win32_err_to_str(GetLastError(), errbuf);
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "Error calling PacketSetMinToCopy: %s",
 				    errbuf);
@@ -763,7 +763,7 @@ pcap_activate_win32(pcap_t *p)
 			/* tell the driver to copy the buffer only if it contains at least 16K */
 			if(PacketSetMinToCopy(p->adapter,16000)==FALSE)
 			{
-				pcap_win32strerror(GetLastError(), errbuf);
+				pcap_win32_err_to_str(GetLastError(), errbuf);
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "Error calling PacketSetMinToCopy: %s",
 				    errbuf);
@@ -1016,7 +1016,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 		newtimeout = p->opt.timeout;
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketSetReadTimeout: %s", errbuf);
 		return (-1);
@@ -1059,7 +1059,7 @@ pcap_oid_get_request(pcap_t *p, pcap_oid_data_t *data)
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (!PacketRequest(p->adapter, FALSE, data)) {
-		pcap_win32strerror(errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
 		return PCAP_ERROR;
@@ -1073,7 +1073,7 @@ pcap_oid_set_request(pcap_t *p, pcap_oid_data_t *data)
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (!PacketRequest(p->adapter, TRUE, data)) {
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
 		return PCAP_ERROR;
@@ -1150,7 +1150,7 @@ pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue* queue, int sync)
 		(BOOLEAN)sync);
 
 	if(res != queue->len){
-		pcap_win32strerror(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 	}
