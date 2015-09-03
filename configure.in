@@ -754,28 +754,6 @@ AC_HELP_STRING([--with-dag-libraries=DIR],[Endace DAG library directory]),
 	dag_lib_dir=$withval
 ],[])
 
-case "$V_PCAP" in
-linux|bpf|dag)
-	#
-	# We support the DAG API if we're on Linux or BSD, or if we're
-	# building a DAG-only libpcap.
-	#
-	;;
-*)
-	#
-	# If the user explicitly requested DAG, tell them it's not
-	# supported.
-	#
-	# If they expressed no preference, don't include it.
-	#
-	if test $want_dag = yes; then
-		AC_MSG_ERROR([DAG support is only available with 'linux' 'bpf' and 'dag' packet capture types])
-	elif test $want_dag = yes; then
-		want_dag=no
-	fi
-	;;
-esac
-
 ac_cv_lbl_dag_api=no
 if test "$want_dag" != no; then
 
@@ -878,29 +856,8 @@ AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in d
 	want_septel=ifpresent
 	septel_root=./../septel
 ])
-ac_cv_lbl_septel_api=no
-case "$V_PCAP" in
-linux|septel)
-	#
-	# We support the Septel API if we're on Linux, or if we're building
-	# a Septel-only libpcap.
-	#
-	;;
-*)
-	#
-	# If the user explicitly requested Septel, tell them it's not
-	# supported.
-	#
-	# If they expressed no preference, don't include it.
-	#
-	if test $want_septel = yes; then
-		AC_MSG_ERROR(Septel support only available with 'linux' and 'septel' packet capture types)
-	elif test $want_septel = yes; then
-		want_septel=no
-	fi
-	;;
-esac
 
+ac_cv_lbl_septel_api=no
 if test "$with_septel" != no; then
 	AC_MSG_CHECKING(whether we have Septel API)
 
@@ -976,28 +933,6 @@ AC_HELP_STRING([--with-snf-libraries=DIR],[Myricom SNF library directory]),
 	want_snf=yes
 	snf_lib_dir=$withval
 ],[])
-
-case "$V_PCAP" in
-bpf|linux|snf)
-	#
-	# We support the Sniffer API if we're on BSD, Linux, or if we're
-	# building a Sniffer-only libpcap.
-	#
-	;;
-*)
-	#
-	# If the user explicitly requested Sniffer, tell them it's not
-	# supported.
-	#
-	# If they expressed no preference, don't include it.
-	#
-	if test $want_snf = yes; then
-		AC_MSG_ERROR(Myricom SNF support only available with 'bpf' 'linux' and 'snf' packet capture types)
-	elif test $want_snf = yes; then
-		want_snf=no
-	fi
-	;;
-esac
 
 ac_cv_lbl_snf_api=no
 if test "$with_snf" != no; then

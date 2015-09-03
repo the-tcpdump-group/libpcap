@@ -6169,28 +6169,6 @@ if test "${with_dag_libraries+set}" = set; then :
 fi
 
 
-case "$V_PCAP" in
-linux|bpf|dag)
-	#
-	# We support the DAG API if we're on Linux or BSD, or if we're
-	# building a DAG-only libpcap.
-	#
-	;;
-*)
-	#
-	# If the user explicitly requested DAG, tell them it's not
-	# supported.
-	#
-	# If they expressed no preference, don't include it.
-	#
-	if test $want_dag = yes; then
-		as_fn_error $? "DAG support is only available with 'linux' 'bpf' and 'dag' packet capture types" "$LINENO" 5
-	elif test $want_dag = yes; then
-		want_dag=no
-	fi
-	;;
-esac
-
 ac_cv_lbl_dag_api=no
 if test "$want_dag" != no; then
 
@@ -6473,29 +6451,8 @@ else
 
 fi
 
-ac_cv_lbl_septel_api=no
-case "$V_PCAP" in
-linux|septel)
-	#
-	# We support the Septel API if we're on Linux, or if we're building
-	# a Septel-only libpcap.
-	#
-	;;
-*)
-	#
-	# If the user explicitly requested Septel, tell them it's not
-	# supported.
-	#
-	# If they expressed no preference, don't include it.
-	#
-	if test $want_septel = yes; then
-		as_fn_error $? "Septel support only available with 'linux' and 'septel' packet capture types" "$LINENO" 5
-	elif test $want_septel = yes; then
-		want_septel=no
-	fi
-	;;
-esac
 
+ac_cv_lbl_septel_api=no
 if test "$with_septel" != no; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have Septel API" >&5
 $as_echo_n "checking whether we have Septel API... " >&6; }
@@ -6586,28 +6543,6 @@ if test "${with_snf_libraries+set}" = set; then :
 
 fi
 
-
-case "$V_PCAP" in
-bpf|linux|snf)
-	#
-	# We support the Sniffer API if we're on BSD, Linux, or if we're
-	# building a Sniffer-only libpcap.
-	#
-	;;
-*)
-	#
-	# If the user explicitly requested Sniffer, tell them it's not
-	# supported.
-	#
-	# If they expressed no preference, don't include it.
-	#
-	if test $want_snf = yes; then
-		as_fn_error $? "Myricom SNF support only available with 'bpf' 'linux' and 'snf' packet capture types" "$LINENO" 5
-	elif test $want_snf = yes; then
-		want_snf=no
-	fi
-	;;
-esac
 
 ac_cv_lbl_snf_api=no
 if test "$with_snf" != no; then
