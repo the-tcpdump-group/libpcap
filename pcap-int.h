@@ -127,10 +127,18 @@ typedef int	(*getnonblock_op_t)(pcap_t *, char *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 #ifdef _WIN32
+typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
-typedef ADAPTER *(*getadapter_op_t)(pcap_t *);
+typedef HANDLE	(*getevent_op_t)(pcap_t *);
+typedef int	(*oid_get_request_op_t)(pcap_t *, pcap_oid_data_t *);
+typedef int	(*oid_set_request_op_t)(pcap_t *, pcap_oid_data_t *);
+typedef u_int	(*sendqueue_transmit_op_t)(pcap_t *, pcap_send_queue *, int);
+typedef int	(*setuserbuffer_op_t)(pcap_t *, int);
+typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
+typedef int	(*live_dump_ended_op_t)(pcap_t *, char *, int);
+typedef PAirpcapHandle	(*get_airpcap_handle_op_t)(pcap_t *);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
 
@@ -248,7 +256,14 @@ struct pcap {
 	setbuff_op_t setbuff_op;
 	setmode_op_t setmode_op;
 	setmintocopy_op_t setmintocopy_op;
-	getadapter_op_t getadapter_op;
+	getevent_op_t getevent_op;
+	oid_get_request_op_t oid_get_request_op;
+	oid_set_request_op_t oid_set_request_op;
+	sendqueue_transmit_op_t sendqueue_transmit_op;
+	setuserbuffer_op_t setuserbuffer_op;
+	live_dump_op_t live_dump_op;
+	live_dump_ended_op_t live_dump_ended_op;
+	get_airpcap_handle_op_t get_airpcap_handle_op;
 #endif
 	cleanup_op_t cleanup_op;
 };
@@ -398,7 +413,6 @@ int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);
 void	pcap_cleanup_live_common(pcap_t *);
-int	pcap_not_initialized(pcap_t *);
 int	pcap_check_activated(pcap_t *);
 
 /*

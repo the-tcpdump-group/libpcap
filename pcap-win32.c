@@ -180,7 +180,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
  * possibly-bogus values for statistics we can't provide.
  */
 struct pcap_stat *
-pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
+pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 {
 	struct pcap_win *pw = p->priv;
 	struct bpf_stat bstats;
@@ -253,11 +253,186 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 	return 0;
 }
 
-/*return the ADAPTER for a pcap_t*/
-static ADAPTER *
-pcap_getadapter_win32(pcap_t *p)
+static HANDLE
+pcap_getevent_win32(pcap_t *p)
 {
-	return p->adapter;
+	if (p->TcInstance != NULL)
+		return TcGetReceiveWaitHandle(p);
+	else
+		return PacketGetReadEvent(p->adapter);
+}
+
+static int
+pcap_oid_get_request_win32(pcap_t *p, pcap_oid_data_t *data)
+{
+	char errbuf[PCAP_ERRBUF_SIZE+1];
+
+	if (!PacketRequest(p->adapter, FALSE, data)) {
+		pcap_win32_err_to_str(GetLastError(), errbuf);
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Error calling PacketRequest: %s", errbuf);
+		return PCAP_ERROR;
+	}
+	return 0;
+}
+
+static int
+pcap_oid_set_request_win32(pcap_t *p, pcap_oid_data_t *data)
+{
+	char errbuf[PCAP_ERRBUF_SIZE+1];
+
+	if (!PacketRequest(p->adapter, TRUE, data)) {
+		pcap_win32_err_to_str(GetLastError(), errbuf);
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Error calling PacketRequest: %s", errbuf);
+		return PCAP_ERROR;
+	}
+	return 0;
+}
+pcap_send_queue* 
+pcap_sendqueue_alloc(u_int memsize)
+{
+	pcap_send_queue *tqueue;
+
+	/* Allocate the queue */
+	tqueue = (pcap_send_queue*)malloc(sizeof(pcap_send_queue));
+	if(tqueue == NULL){
+		return NULL;
+	}
+
+	/* Allocate the buffer */
+	tqueue->buffer = (char*)malloc(memsize);
+	if(tqueue->buffer == NULL){
+		free(tqueue);
+		return NULL;
+	}
+
+	tqueue->maxlen = memsize;
+	tqueue->len = 0;
+
+	return tqueue;
+}
+
+void 
+pcap_sendqueue_destroy(pcap_send_queue* queue)
+{
+	free(queue->buffer);
+	free(queue);
+}
+
+int 
+pcap_sendqueue_queue(pcap_send_queue* queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
+{
+
+	if(queue->len + sizeof(struct pcap_pkthdr) + pkt_header->caplen > queue->maxlen){
+		return -1;
+	}
+
+	/* Copy the pcap_pkthdr header*/
+	memcpy(queue->buffer + queue->len, pkt_header, sizeof(struct pcap_pkthdr));
+	queue->len += sizeof(struct pcap_pkthdr);
+
+	/* copy the packet */
+	memcpy(queue->buffer + queue->len, pkt_data, pkt_header->caplen);
+	queue->len += pkt_header->caplen;
+
+	return 0;
+}
+
+static u_int 
+pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	u_int res;
+	char errbuf[PCAP_ERRBUF_SIZE+1];
+
+	if (p->adapter==NULL) {
+		sprintf(p->errbuf, "Cannot transmit a queue to an offline capture or to a TurboCap port");
+		return 0;
+	}	
+
+	res = PacketSendPackets(p->adapter,
+		queue->buffer,
+		queue->len,
+		(BOOLEAN)sync);
+
+	if(res != queue->len){
+		pcap_win32_err_to_str(GetLastError(), errbuf);
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Error opening adapter: %s", errbuf);
+	}
+
+	return res;
+}
+
+static int
+pcap_setuserbuffer_win32(pcap_t *p, int size)
+{
+	unsigned char *new_buff;
+
+	if (size<=0) {
+		/* Bogus parameter */
+		sprintf(p->errbuf,"Error: invalid size %d",size);
+		return -1;
+	}
+
+	/* Allocate the buffer */
+	new_buff=(unsigned char*)malloc(sizeof(char)*size);
+
+	if (!new_buff) {
+		sprintf(p->errbuf,"Error: not enough memory");
+		return -1;
+	}
+
+	free(p->buffer);
+	
+	p->buffer=new_buff;
+	p->bufsize=size;
+
+	/* Associate the buffer with the capture packet */
+	PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
+
+	return 0;
+}
+
+static int
+pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	BOOLEAN res;
+
+	/* Set the packet driver in dump mode */
+	res = PacketSetMode(p->adapter, PACKET_MODE_DUMP);
+	if(res == FALSE){
+		sprintf(p->errbuf, "Error setting dump mode");
+		return -1;
+	}
+
+	/* Set the name of the dump file */
+	res = PacketSetDumpName(p->adapter, filename, strlen(filename));
+	if(res == FALSE){
+		sprintf(p->errbuf, "Error setting kernel dump file name");
+		return -1;
+	}
+
+	/* Set the limits of the dump file */
+	res = PacketSetDumpLimits(p->adapter, maxsize, maxpacks);
+
+	return 0;
+}
+
+static int 
+pcap_live_dump_ended_win32(pcap_t *p, int sync)
+{
+	return PacketIsDumpEnded(p->adapter, (BOOLEAN)sync);
+}
+
+static PAirpcapHandle
+pcap_get_airpcap_handle_win32(pcap_t *p)
+{
+#ifdef HAVE_AIRPCAP_API
+	return PacketGetAirPcapHandle(p->adapter);
+#else
+	return NULL;
+#endif /* HAVE_AIRPCAP_API */
 }
 
 static int
@@ -845,10 +1020,17 @@ pcap_activate_win32(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_win32;
 	p->setnonblock_op = pcap_setnonblock_win32;
 	p->stats_op = pcap_stats_win32;
+	p->stats_ex_op = pcap_stats_ex_win32;
 	p->setbuff_op = pcap_setbuff_win32;
 	p->setmode_op = pcap_setmode_win32;
 	p->setmintocopy_op = pcap_setmintocopy_win32;
-	p->getadapter_op = pcap_getadapter_win32;
+	p->getevent_op = pcap_getevent_win32;
+	p->oid_get_request_op = pcap_oid_get_request_win32;
+	p->oid_set_request_op = pcap_oid_set_request_win32;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_win32;
+	p->live_dump_op = pcap_live_dump_win32;
+	p->live_dump_ended_op = pcap_live_dump_ended_win32;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_win32;
 	p->cleanup_op = pcap_cleanup_win32;
 
 	return (0);
@@ -1030,221 +1212,4 @@ int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	return (0);
-}
-
-/*
- * WinPcap-specific extensions.
- */
-
-HANDLE
-pcap_getevent(pcap_t *p)
-{
-	if (p->TcInstance != NULL)
-	{
-		return TcGetReceiveWaitHandle(p);
-	}
-	else
-	if (p->adapter==NULL)
-	{
-		sprintf(p->errbuf, "The read event cannot be retrieved while reading from a file");
-		return NULL;
-	}	
-
-	return PacketGetReadEvent(p->adapter);
-}
-
-int
-pcap_oid_get_request(pcap_t *p, pcap_oid_data_t *data)
-{
-	char errbuf[PCAP_ERRBUF_SIZE+1];
-
-	if (!PacketRequest(p->adapter, FALSE, data)) {
-		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Error calling PacketRequest: %s", errbuf);
-		return PCAP_ERROR;
-	}
-	return 0;
-}
-
-int
-pcap_oid_set_request(pcap_t *p, pcap_oid_data_t *data)
-{
-	char errbuf[PCAP_ERRBUF_SIZE+1];
-
-	if (!PacketRequest(p->adapter, TRUE, data)) {
-		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Error calling PacketRequest: %s", errbuf);
-		return PCAP_ERROR;
-	}
-	return 0;
-}
-
-pcap_send_queue* 
-pcap_sendqueue_alloc(u_int memsize)
-{
-	pcap_send_queue *tqueue;
-
-	/* Allocate the queue */
-	tqueue = (pcap_send_queue*)malloc(sizeof(pcap_send_queue));
-	if(tqueue == NULL){
-		return NULL;
-	}
-
-	/* Allocate the buffer */
-	tqueue->buffer = (char*)malloc(memsize);
-	if(tqueue->buffer == NULL){
-		free(tqueue);
-		return NULL;
-	}
-
-	tqueue->maxlen = memsize;
-	tqueue->len = 0;
-
-	return tqueue;
-}
-
-void 
-pcap_sendqueue_destroy(pcap_send_queue* queue)
-{
-	free(queue->buffer);
-	free(queue);
-}
-
-int 
-pcap_sendqueue_queue(pcap_send_queue* queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
-{
-
-	if(queue->len + sizeof(struct pcap_pkthdr) + pkt_header->caplen > queue->maxlen){
-		return -1;
-	}
-
-	/* Copy the pcap_pkthdr header*/
-	memcpy(queue->buffer + queue->len, pkt_header, sizeof(struct pcap_pkthdr));
-	queue->len += sizeof(struct pcap_pkthdr);
-
-	/* copy the packet */
-	memcpy(queue->buffer + queue->len, pkt_data, pkt_header->caplen);
-	queue->len += pkt_header->caplen;
-
-	return 0;
-}
-
-u_int 
-pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue* queue, int sync)
-{
-	u_int res;
-	DWORD error;
-	int errlen;
-	char errbuf[PCAP_ERRBUF_SIZE+1];
-
-	if (p->adapter==NULL) {
-		sprintf(p->errbuf, "Cannot transmit a queue to an offline capture or to a TurboCap port");
-		return 0;
-	}	
-
-	res = PacketSendPackets(p->adapter,
-		queue->buffer,
-		queue->len,
-		(BOOLEAN)sync);
-
-	if(res != queue->len){
-		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Error opening adapter: %s", errbuf);
-	}
-
-	return res;
-}
-
-int
-pcap_setuserbuffer(pcap_t *p, int size)
-{
-	unsigned char *new_buff;
-
-	if (!p->adapter) {
-		sprintf(p->errbuf,"Impossible to set user buffer while reading from a file or on a TurboCap port");
-		return -1;
-	}
-
-	if (size<=0) {
-		/* Bogus parameter */
-		sprintf(p->errbuf,"Error: invalid size %d",size);
-		return -1;
-	}
-
-	/* Allocate the buffer */
-	new_buff=(unsigned char*)malloc(sizeof(char)*size);
-
-	if (!new_buff) {
-		sprintf(p->errbuf,"Error: not enough memory");
-		return -1;
-	}
-
-	free(p->buffer);
-	
-	p->buffer=new_buff;
-	p->bufsize=size;
-
-	/* Associate the buffer with the capture packet */
-	PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
-
-	return 0;
-}
-
-int
-pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
-{
-	BOOLEAN res;
-
-	if (p->adapter==NULL) {
-		sprintf(p->errbuf, "live dump needs a physical interface supported by the NPF driver");
-		return -1;
-	}	
-
-	/* Set the packet driver in dump mode */
-	res = PacketSetMode(p->adapter, PACKET_MODE_DUMP);
-	if(res == FALSE){
-		sprintf(p->errbuf, "Error setting dump mode");
-		return -1;
-	}
-
-	/* Set the name of the dump file */
-	res = PacketSetDumpName(p->adapter, filename, strlen(filename));
-	if(res == FALSE){
-		sprintf(p->errbuf, "Error setting kernel dump file name");
-		return -1;
-	}
-
-	/* Set the limits of the dump file */
-	res = PacketSetDumpLimits(p->adapter, maxsize, maxpacks);
-
-	return 0;
-}
-
-int 
-pcap_live_dump_ended(pcap_t *p, int sync)
-{
-	if (p->adapter == NULL)	{
-		sprintf(p->errbuf, "wrong interface type. A physical interface supported by the NPF driver is needed");
-		return -1;
-	}	
-
-	return PacketIsDumpEnded(p->adapter, (BOOLEAN)sync);
-}
-
-PAirpcapHandle
-pcap_get_airpcap_handle(pcap_t *p)
-{
-#ifdef HAVE_AIRPCAP_API
-	if (p->adapter == NULL) {
-		sprintf(p->errbuf, "wrong interface type. A physical interface is needed");
-		return NULL;
-	}
-
-	return PacketGetAirPcapHandle(p->adapter);
-#else
-	return NULL;
-#endif /* HAVE_AIRPCAP_API */
 }
