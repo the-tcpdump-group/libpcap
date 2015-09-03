@@ -108,17 +108,46 @@
 #include "pcap-dbus.h"
 #endif
 
-int
-pcap_not_initialized(pcap_t *pcap _U_)
+static int
+pcap_not_initialized(pcap_t *pcap)
 {
+	/* in case the caller doesn't check for PCAP_ERROR_NOT_ACTIVATED */
+	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
 	/* this means 'not initialized' */
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
 #ifdef _WIN32
-ADAPTER *
-pcap_no_adapter(pcap_t *pcap _U_)
+static void *
+pcap_not_initialized_ptr(pcap_t *pcap)
 {
+	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
+	return (NULL);
+}
+
+static HANDLE
+pcap_getevent_not_initialized(pcap_t *pcap)
+{
+	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
+	return (INVALID_HANDLE_VALUE);
+}
+
+static u_int
+pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, int sync)
+{
+	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
+	return (0);
+}
+
+static PAirpcapHandle
+pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
+{
+	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
 	return (NULL);
 }
 #endif
@@ -464,10 +493,18 @@ initialize_ops(pcap_t *p)
 	p->setnonblock_op = (setnonblock_op_t)pcap_not_initialized;
 	p->stats_op = (stats_op_t)pcap_not_initialized;
 #ifdef _WIN32
+	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
-	p->getadapter_op = pcap_no_adapter;
+	p->getevent_op = pcap_getevent_not_initialized;
+	p->oid_get_request_op = (oid_get_request_op_t)pcap_not_initialized;
+	p->oid_set_request_op = (oid_set_request_op_t)pcap_not_initialized;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_not_initialized;
+	p->setuserbuffer_op = (setuserbuffer_op_t)pcap_not_initialized;
+	p->live_dump_op = (live_dump_op_t)pcap_not_initialized;
+	p->live_dump_ended_op = (live_dump_ended_op_t)pcap_not_initialized;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
 #endif
 
 	/*
@@ -1633,6 +1670,12 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 }
 
 #ifdef _WIN32
+struct pcap_stat *
+pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
+{
+	return (p->stats_ex_op)(p, stat_size));
+}
+
 int
 pcap_setbuff(pcap_t *p, int dim)
 {
@@ -1667,18 +1710,129 @@ pcap_setmintocopy(pcap_t *p, int size)
 	return (p->setmintocopy_op(p, size));
 }
 
-ADAPTER *
-pcap_get_adapter(pcap_t *p)
-{
-	return (p->getadapter_op(p));
-}
-
 static int
 pcap_setmintocopy_dead(pcap_t *p, int size)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
 	return (-1);
+}
+
+HANDLE
+pcap_getevent(pcap_t *p)
+{
+	return (p->getevent_op(p));
+}
+
+static HANDLE
+pcap_getevent_dead(pcap_t *p)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A pcap_open_dead pcap_t has no event handle");
+	return (INVALID_HANDLE_VALUE);
+}
+
+int
+pcap_oid_get_request(pcap_t *p, pcap_oid_data_t *data)
+{
+	return (p->oid_get_request_op(p, data));
+}
+
+static int
+pcap_oid_get_request_dead(pcap_t *p, pcap_oid_data_t *data)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+int
+pcap_oid_set_request(pcap_t *p, pcap_oid_data_t *data)
+{
+	return (p->oid_set_request_op(p, data));
+}
+
+static int
+pcap_oid_set_request_dead(pcap_t *p, pcap_oid_data_t *data)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+u_int
+pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	return (p->sendqueue_transmit_op(p, queue, sync));
+}
+
+static u_int
+pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");
+	return (0);
+}
+
+int
+pcap_setuserbuffer(pcap_t *p, int size)
+{
+	return (p->setuserbuffer_op(p, size));
+}
+
+static int
+pcap_setuserbuffer_dead(pcap_t *p, int size)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The user buffer cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+int
+pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	return (p->live_dump_op(p, filename, maxsize, maxpacks));
+}
+
+static int
+pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+int
+pcap_live_dump_ended(pcap_t *p, int sync)
+{
+	return (p->live_dump_ended_op(p, sync));
+}
+
+static int
+pcap_live_dump_ended_dead(pcap_t *p, int sync)
+{
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+PAirpcapHandle
+pcap_get_airpcap_handle(pcap_t *p)
+{
+	PAirpcapHandle handle;
+
+	handle = p->get_airpcap_handle_op(p);
+	if (handle == NULL) {
+		(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		    "This isn't an AirPcap device");
+	}
+	return (handle);
+}
+
+static PAirpcapHandle
+pcap_get_airpcap_handle_dead(pcap_t *pcap)
+{
+	return (NULL);
 }
 #endif
 
@@ -1832,9 +1986,18 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->opt.tstamp_precision = precision;
 	p->stats_op = pcap_stats_dead;
 #ifdef _WIN32
+	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = pcap_setbuff_dead;
 	p->setmode_op = pcap_setmode_dead;
 	p->setmintocopy_op = pcap_setmintocopy_dead;
+	p->getevent_op = pcap_getevent_dead;
+	p->oid_get_request_op = pcap_oid_get_request_dead;
+	p->oid_set_request_op = pcap_oid_set_request_dead;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_dead;
+	p->setuserbuffer_op = pcap_setuserbuffer_dead;
+	p->live_dump_op = pcap_live_dump_dead;
+	p->live_dump_ended_op = pcap_live_dump_ended_dead;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
 #endif
 	p->cleanup_op = pcap_cleanup_dead;
 
