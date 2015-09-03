@@ -808,7 +808,7 @@ if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
 
 	if test $V_PCAP != dag ; then
-		 SSRC="pcap-dag.c"
+		 SSRC="$SSRC pcap-dag.c"
 	fi
 
 	# See if we can find a general version string.
@@ -918,7 +918,7 @@ if test "$with_septel" != no; then
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
-			 SSRC="pcap-septel.c"
+			 SSRC="$SSRC pcap-septel.c"
 		fi
 		ac_cv_lbl_septel_api=yes
 	fi
@@ -947,7 +947,7 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support @<:@"yes", 
 		want_snf=no
 	elif test "$withval" = yes
 	then
-		# User wants SNF support but hasn't specific a directory.
+		# User wants SNF support but hasn't specified a directory.
 		want_snf=yes
 	else
 		# User wants SNF support with a specified directory.
@@ -1040,7 +1040,7 @@ if test "$with_snf" != no; then
 			LIBS="$LIBS -lsnf"
 			LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 			if test "$V_PCAP" != snf ; then
-				SSRC="pcap-snf.c"
+				SSRC="$SSRC pcap-snf.c"
 			fi
 			AC_DEFINE(HAVE_SNF_API, 1, [define if you have Myricom SNF API])
 		fi
@@ -1049,6 +1049,58 @@ fi
 
 if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
 	AC_MSG_ERROR(Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR)
+fi
+
+# Check for Riverbed TurboCap support.
+AC_ARG_WITH([turbocap],
+AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
+[
+	if test "$withval" = no
+	then
+		# User explicitly doesn't want TurboCap
+		want_turbocap=no
+	elif test "$withval" = yes
+	then
+		# User wants TurboCap support but hasn't specified a directory.
+		want_turbocap=yes
+	else
+		# User wants TurboCap support with a specified directory.
+		want_turbocap=yes
+		turbocap_root=$withval
+	fi
+],[
+	#
+	# Use TurboCap API if present, otherwise don't
+	#
+	want_turbocap=ifpresent
+])
+
+ac_cv_lbl_turbocap_api=no
+if test "$with_turbocap" != no; then
+	AC_MSG_CHECKING(whether TurboCap is supported)
+
+	AC_TRY_COMPILE(
+	[
+	    #include <TcApi.h>
+	],
+	[
+	    TC_INSTANCE a; TC_PORT b; TC_BOARD c; 
+	    TC_INSTANCE i;
+	    (void)TcInstanceCreateByName("foo", &i);
+	],
+	ac_cv_lbl_turbocap_api=yes,
+	ac_cv_lbl_turbocap_api=no)
+
+	AC_MSG_RESULT($ac_cv_lbl_turbocap_api)
+	if test $ac_cv_lbl_turbocap_api = no; then
+		if test "$want_turbocap" = yes; then
+			AC_MSG_ERROR(TurboCap API not found)
+		fi
+	else
+		AC_DEFINE(HAVE_TC_API, 1, [define if you have the TurboCap API])
+		SSRC="$SSRC pcap-tc.c"
+		LIBS="$LIBS -lTcApi -lpthread -lstdc++"	
+      fi
 fi
 
 AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)

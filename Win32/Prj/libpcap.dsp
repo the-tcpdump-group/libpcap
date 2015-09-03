@@ -150,6 +150,14 @@ SOURCE=..\..\optimize.c
 # End Source File
 # Begin Source File
 
+SOURCE="..\..\pcap-tc.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\pcap-tc.h"
+# End Source File
+# Begin Source File
+
 SOURCE="..\..\Pcap-win32.c"
 # End Source File
 # Begin Source File

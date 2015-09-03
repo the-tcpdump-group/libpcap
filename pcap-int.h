@@ -207,6 +207,10 @@ struct pcap {
 	 */
 	u_char *pkt;
 
+#ifdef _WIN32
+	struct pcap_stat stat;		/* used for pcap_stats_ex() */
+#endif
+
 	/* We're accepting only packets in this direction/these directions. */
 	pcap_direction_t direction;
 

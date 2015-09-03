@@ -196,6 +196,9 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* define if you have the TurboCap API */
+#undef HAVE_TC_API
+
 /* if if_packet.h has tpacket_stats defined */
 #undef HAVE_TPACKET_STATS
 

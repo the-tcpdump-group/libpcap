@@ -80,6 +80,10 @@
 #include "pcap-snf.h"
 #endif /* HAVE_SNF_API */
 
+#ifdef HAVE_TC_API
+#include "pcap-tc.h"
+#endif /* HAVE_TC_API */
+
 #ifdef PCAP_SUPPORT_USB
 #include "pcap-usb-linux.h"
 #endif
@@ -351,6 +355,9 @@ struct capture_source_type {
 #endif
 #ifdef HAVE_SNF_API
 	{ snf_findalldevs, snf_create },
+#endif
+#ifdef HAVE_TC_API
+	{ TcFindAllDevs, TcCreate },
 #endif
 #ifdef PCAP_SUPPORT_BT
 	{ bt_findalldevs, bt_create },

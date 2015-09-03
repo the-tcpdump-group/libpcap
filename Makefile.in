@@ -328,6 +328,8 @@ EXTRA_DIST = \
 	pcap-snf.h \
 	pcap-snit.c \
 	pcap-snoop.c \
+	pcap-tc.c \
+	pcap-tc.h \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	pcap-win32.c \
