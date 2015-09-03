@@ -48,7 +48,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq update; fi
 
 install:
-  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq install libusb-1.0-0-dev libdbus-1-dev libbluetooth-dev; fi
+  - if [ "$TRAVIS_OS_NAME" = linux ]; then sudo apt-get -qq install libusb-1.0-0-dev libdbus-1-dev libbluetooth-dev libnl-genl-3-dev; fi
 
 before_script:
 
