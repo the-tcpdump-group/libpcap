@@ -628,6 +628,15 @@ finish_parse(p)
 	/*
 	 * For DLT_PPI captures, generate a check of the per-packet
 	 * DLT value to make sure it's DLT_IEEE802_11.
+	 *
+	 * XXX - TurboCap cards use DLT_PPI for Ethernet.
+	 * Can we just define some DLT_ETHERNET_WITH_PHDR pseudo-header
+	 * with appropriate Ethernet information and use that rather
+	 * than using something such as DLT_PPI where you don't know
+	 * the link-layer header type until runtime, which, in the
+	 * general case, would force us to generate both Ethernet *and*
+	 * 802.11 code (*and* anything else for which PPI is used)
+	 * and choose between them early in the BPF program?
 	 */
 	ppi_dlt_check = gen_ppi_dlt_check();
 	if (ppi_dlt_check != NULL)

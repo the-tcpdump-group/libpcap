@@ -52,6 +52,8 @@ int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
 
+#include "pcap-tc.h"
+
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
 static int pcap_getnonblock_win32(pcap_t *, char *);
@@ -73,8 +75,6 @@ struct pcap_win {
 	int nonblock;
 
 	int filtering_in_kernel;	/* using kernel filter */
-
-	struct pcap_stat stat;		/* need this to count captured packets */
 
 #ifdef HAVE_DAG_API
 	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
@@ -182,19 +182,10 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 struct pcap_stat *
 pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 {
-	struct pcap_win *pw = p->priv;
 	struct bpf_stat bstats;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
-	*pcap_stat_size = sizeof (pw->stat);
-
-#ifdef HAVE_REMOTE
-	if (p->rmt_clientside)
-	{
-		/* We are on an remote capture */
-		return pcap_stats_ex_remote(p);
-	}
-#endif
+	*pcap_stat_size = sizeof (p->stat);
 
 	/*
 	 * Try to get statistics.
@@ -209,11 +200,11 @@ pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 		    "PacketGetStatsEx error: %s", errbuf);
 		return NULL;
 	}
-	pw->stat.ps_recv = bstats.bs_recv;
-	pw->stat.ps_drop = bstats.bs_drop;
-	pw->stat.ps_ifdrop = bstats.ps_ifdrop;
-	pw->stat.ps_capt = bstats.bs_capt;
-	return (&pw->stat);
+	p->stat.ps_recv = bstats.bs_recv;
+	p->stat.ps_drop = bstats.bs_drop;
+	p->stat.ps_ifdrop = bstats.ps_ifdrop;
+	p->stat.ps_capt = bstats.bs_capt;
+	return (&p->stat);
 }
 
 /* Set the dimension of the kernel-level capture buffer */
@@ -256,10 +247,7 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 static HANDLE
 pcap_getevent_win32(pcap_t *p)
 {
-	if (p->TcInstance != NULL)
-		return TcGetReceiveWaitHandle(p);
-	else
-		return PacketGetReadEvent(p->adapter);
+	return PacketGetReadEvent(p->adapter);
 }
 
 static int
@@ -539,7 +527,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			break;
 
 		/* Increase the number of captured packets */
-		pw->stat.ps_recv++;
+		p->stat.ps_recv++;
 
 		/* Find the beginning of the packet */
 		dp = ((u_char *)header) + dag_record_size;
@@ -1155,12 +1143,5 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 		return (-1);
 	}
 	pw->nonblock = (newtimeout == -1);
-	return (0);
-}
-
-/*platform-dependent routine to add devices other than NDIS interfaces*/
-int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
-{
 	return (0);
 }

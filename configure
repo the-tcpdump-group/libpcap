@@ -742,6 +742,7 @@ with_septel
 with_snf
 with_snf_includes
 with_snf_libraries
+with_turbocap
 with_flex
 with_bison
 enable_universal
@@ -1415,6 +1416,8 @@ Optional Packages:
   --with-snf-includes=DIR Myricom SNF include directory
   --with-snf-libraries=DIR
                           Myricom SNF library directory
+  --with-turbocap[=DIR]   include Riverbed TurboCap support ["yes", "no" or
+                          DIR; default="yes" on BSD and Linux if present]
   --without-flex          don't use flex
   --without-bison         don't use bison
 
@@ -6222,7 +6225,7 @@ if test $ac_cv_lbl_dag_api = yes; then
 	V_INCLS="$V_INCLS -I$dag_include_dir"
 
 	if test $V_PCAP != dag ; then
-		 SSRC="pcap-dag.c"
+		 SSRC="$SSRC pcap-dag.c"
 	fi
 
 	# See if we can find a general version string.
@@ -6511,7 +6514,7 @@ $as_echo_n "checking whether we have Septel API... " >&6; }
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
-			 SSRC="pcap-septel.c"
+			 SSRC="$SSRC pcap-septel.c"
 		fi
 		ac_cv_lbl_septel_api=yes
 	fi
@@ -6544,7 +6547,7 @@ if test "${with_snf+set}" = set; then :
 		want_snf=no
 	elif test "$withval" = yes
 	then
-		# User wants SNF support but hasn't specific a directory.
+		# User wants SNF support but hasn't specified a directory.
 		want_snf=yes
 	else
 		# User wants SNF support with a specified directory.
@@ -6690,7 +6693,7 @@ fi
 			LIBS="$LIBS -lsnf"
 			LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 			if test "$V_PCAP" != snf ; then
-				SSRC="pcap-snf.c"
+				SSRC="$SSRC pcap-snf.c"
 			fi
 
 $as_echo "#define HAVE_SNF_API 1" >>confdefs.h
@@ -6701,6 +6704,79 @@ fi
 
 if test "$V_PCAP" = snf -a "$ac_cv_lbl_snf_api" = no; then
 	as_fn_error $? "Specifying the capture type as 'snf' requires the Myricom Sniffer API to be present; use --with-snf=DIR" "$LINENO" 5
+fi
+
+# Check for Riverbed TurboCap support.
+
+# Check whether --with-turbocap was given.
+if test "${with_turbocap+set}" = set; then :
+  withval=$with_turbocap;
+	if test "$withval" = no
+	then
+		# User explicitly doesn't want TurboCap
+		want_turbocap=no
+	elif test "$withval" = yes
+	then
+		# User wants TurboCap support but hasn't specified a directory.
+		want_turbocap=yes
+	else
+		# User wants TurboCap support with a specified directory.
+		want_turbocap=yes
+		turbocap_root=$withval
+	fi
+
+else
+
+	#
+	# Use TurboCap API if present, otherwise don't
+	#
+	want_turbocap=ifpresent
+
+fi
+
+
+ac_cv_lbl_turbocap_api=no
+if test "$with_turbocap" != no; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether TurboCap is supported" >&5
+$as_echo_n "checking whether TurboCap is supported... " >&6; }
+
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+	    #include <TcApi.h>
+
+int
+main ()
+{
+
+	    TC_INSTANCE a; TC_PORT b; TC_BOARD c;
+	    TC_INSTANCE i;
+	    (void)TcInstanceCreateByName("foo", &i);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_lbl_turbocap_api=yes
+else
+  ac_cv_lbl_turbocap_api=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_turbocap_api" >&5
+$as_echo "$ac_cv_lbl_turbocap_api" >&6; }
+	if test $ac_cv_lbl_turbocap_api = no; then
+		if test "$want_turbocap" = yes; then
+			as_fn_error $? "TurboCap API not found" "$LINENO" 5
+		fi
+	else
+
+$as_echo "#define HAVE_TC_API 1" >>confdefs.h
+
+		SSRC="$SSRC pcap-tc.c"
+		LIBS="$LIBS -lTcApi -lpthread -lstdc++"
+      fi
 fi
 
 
