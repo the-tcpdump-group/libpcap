@@ -99,7 +99,7 @@ BOOL WINAPI DllMain(
 
 /* Start winsock */
 int
-wsockinit()
+wsockinit(void)
 {
 	WORD wVersionRequested;
 	WSADATA wsaData;
@@ -120,7 +120,8 @@ wsockinit()
 	return err;
 }
 
-int pcap_wsockinit()
+int
+pcap_wsockinit(void)
 {
        return wsockinit();
 }

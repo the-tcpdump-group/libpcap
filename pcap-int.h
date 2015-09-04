@@ -468,6 +468,7 @@ void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 #ifdef _WIN32
 void	pcap_win32_err_to_str(DWORD, char *);
+void	pcap_wsockinit (void);
 #endif
 
 int	install_bpf_program(pcap_t *, struct bpf_program *);

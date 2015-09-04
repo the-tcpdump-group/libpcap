@@ -441,11 +441,10 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * a separate -lpthread, we might not want to do that.
 	 */
 #ifdef _WIN32
-	extern int wsockinit (void);
 	static int done = 0;
 
 	if (!done)
-		wsockinit();
+		pcap_wsockinit();
 	done = 1;
 	EnterCriticalSection(&g_PcapCompileCriticalSection);
 #endif
