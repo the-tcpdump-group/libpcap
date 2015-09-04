@@ -1404,20 +1404,23 @@ Optional Packages:
   --with-pcap=TYPE        use packet capture TYPE
   --without-libnl         disable libnl support [default=yes, on Linux, if
                           present]
-  --with-dag[=DIR]        include Endace DAG support ["yes", "no" or DIR;
-                          default="yes" on BSD and Linux if present]
-  --with-dag-includes=DIR Endace DAG include directory
-  --with-dag-libraries=DIR
-                          Endace DAG library directory
+  --with-dag[=DIR]        include Endace DAG support (located in directory
+                          DIR, if supplied). [default=yes, if present]
+  --with-dag-includes=IDIR
+                          Endace DAG include directory, if not DIR/include
+  --with-dag-libraries=LDIR
+                          Endace DAG library directory, if not DIR/lib
   --with-septel[=DIR]     include Septel support (located in directory DIR, if
-                          supplied). [default=yes, on Linux, if present]
-  --with-snf[=DIR]        include Myricom SNF support ["yes", "no" or DIR;
-                          default="yes" on BSD and Linux if present]
-  --with-snf-includes=DIR Myricom SNF include directory
-  --with-snf-libraries=DIR
-                          Myricom SNF library directory
-  --with-turbocap[=DIR]   include Riverbed TurboCap support ["yes", "no" or
-                          DIR; default="yes" on BSD and Linux if present]
+                          supplied). [default=yes, if present]
+  --with-snf[=DIR]        include Myricom SNF support (located in directory
+                          DIR, if supplied). [default=yes, if present]
+  --with-snf-includes=IDIR
+                          Myricom SNF include directory, if not DIR/include
+  --with-snf-libraries=LDIR
+                          Myricom SNF library directory, if not DIR/lib
+  --with-turbocap[=DIR]   include Riverbed TurboCap support (located in
+                          directory DIR, if supplied). [default=yes, if
+                          present]
   --without-flex          don't use flex
   --without-bison         don't use bison
 
@@ -6699,6 +6702,14 @@ if test "$want_turbocap" != no; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether TurboCap is supported" >&5
 $as_echo_n "checking whether TurboCap is supported... " >&6; }
 
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	if test ! -z "$turbocap_root"; then
+		TURBOCAP_CFLAGS="-I$turbocap_root/include"
+		TURBOCAP_LIBS="-L$turbocap_root/lib"
+		CFLAGS="$CFLAGS $TURBOCAP_CFLAGS"
+	fi
+
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6721,12 +6732,14 @@ if ac_fn_c_try_compile "$LINENO"; then :
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+	CFLAGS="$save_CFLAGS"
 	if test $ac_cv_lbl_turbocap_api = yes; then
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 		SSRC="$SSRC pcap-tc.c"
-		LIBS="$LIBS -lTcApi -lpthread -lstdc++"
+		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
+		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
 
 
 $as_echo "#define HAVE_TC_API 1" >>confdefs.h
