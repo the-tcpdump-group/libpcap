@@ -716,7 +716,7 @@ AC_MSG_RESULT(${enable_yydebug-no})
 
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
-AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
+AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -745,7 +745,7 @@ AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support @<:@"yes", "
 ])
 
 AC_ARG_WITH([dag-includes],
-AC_HELP_STRING([--with-dag-includes=DIR],[Endace DAG include directory]),
+AC_HELP_STRING([--with-dag-includes=IDIR],[Endace DAG include directory, if not DIR/include]),
 [
 	# User wants DAG support and has specified a header directory, so use the provided value.
 	want_dag=yes
@@ -753,7 +753,7 @@ AC_HELP_STRING([--with-dag-includes=DIR],[Endace DAG include directory]),
 ],[])
 
 AC_ARG_WITH([dag-libraries],
-AC_HELP_STRING([--with-dag-libraries=DIR],[Endace DAG library directory]),
+AC_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not DIR/lib]),
 [
 	# User wants DAG support and has specified a library directory, so use the provided value.
 	want_dag=yes
@@ -838,7 +838,7 @@ if test "$want_dag" != no; then
 fi
 
 AC_ARG_WITH(septel,
-AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, on Linux, if present@:>@]),
+AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -911,7 +911,7 @@ fi
 
 # Check for Myricom SNF support.
 AC_ARG_WITH([snf],
-AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
+AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -940,7 +940,7 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support @<:@"yes", 
 ])
 
 AC_ARG_WITH([snf-includes],
-AC_HELP_STRING([--with-snf-includes=DIR],[Myricom SNF include directory]),
+AC_HELP_STRING([--with-snf-includes=IDIR],[Myricom SNF include directory, if not DIR/include]),
 [
 	# User wants SNF with specific header directory
 	want_snf=yes
@@ -948,7 +948,7 @@ AC_HELP_STRING([--with-snf-includes=DIR],[Myricom SNF include directory]),
 ],[])
 
 AC_ARG_WITH([snf-libraries],
-AC_HELP_STRING([--with-snf-libraries=DIR],[Myricom SNF library directory]),
+AC_HELP_STRING([--with-snf-libraries=LDIR],[Myricom SNF library directory, if not DIR/lib]),
 [
 	# User wants SNF with specific lib directory
 	want_snf=yes
@@ -1013,7 +1013,7 @@ fi
 
 # Check for Riverbed TurboCap support.
 AC_ARG_WITH([turbocap],
-AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support @<:@"yes", "no" or DIR; default="yes" on BSD and Linux if present@:>@]),
+AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
 	if test "$withval" = no
 	then
@@ -1040,6 +1040,14 @@ if test "$want_turbocap" != no; then
 
 	AC_MSG_CHECKING(whether TurboCap is supported)
 
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	if test ! -z "$turbocap_root"; then
+		TURBOCAP_CFLAGS="-I$turbocap_root/include"
+		TURBOCAP_LIBS="-L$turbocap_root/lib"
+		CFLAGS="$CFLAGS $TURBOCAP_CFLAGS"
+	fi
+
 	AC_TRY_COMPILE(
 	[
 	    #include <TcApi.h>
@@ -1051,11 +1059,13 @@ if test "$want_turbocap" != no; then
 	],
 	ac_cv_lbl_turbocap_api=yes)
 
+	CFLAGS="$save_CFLAGS"
 	if test $ac_cv_lbl_turbocap_api = yes; then
 		AC_MSG_RESULT(yes)
 
 		SSRC="$SSRC pcap-tc.c"
-		LIBS="$LIBS -lTcApi -lpthread -lstdc++"	
+		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
+		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"	
 
 		AC_DEFINE(HAVE_TC_API, 1, [define if you have the TurboCap API])
 	else
