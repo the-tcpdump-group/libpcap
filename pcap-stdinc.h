@@ -50,7 +50,7 @@
 
 #define caddr_t char*
 
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
   #define snprintf  _snprintf
   #define vsnprintf _vsnprintf
   #define strdup    _strdup
