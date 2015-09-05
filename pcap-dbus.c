@@ -66,7 +66,7 @@ dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 	message = dbus_connection_pop_message(handlep->conn);
 
 	while (!message) {
-		// XXX handle->opt.timeout = timeout_ms;
+		/* XXX handle->opt.timeout = timeout_ms; */
 		if (!dbus_connection_read_write(handlep->conn, 100)) {
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Connection closed");
 			return -1;

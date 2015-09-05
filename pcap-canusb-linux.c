@@ -108,16 +108,16 @@ int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
     for(i=0;i<cnt;i++)
     {
         int ret;
-        // Check if this device is interesting.
+        /* Check if this device is interesting. */
         struct libusb_device_descriptor desc;
         libusb_device_handle *dh;
 
         libusb_get_device_descriptor(devs[i],&desc);
 
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID))
-            continue; //It is not, check next device
+            continue; /* It is not, check next device */
 
-        //It is!
+        /* It is! */
         dh = NULL;
 
         if ((ret = libusb_open(devs[i],&dh)) == 0)
@@ -156,7 +156,7 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
 
     for(i=0;i<cnt;i++)
     {
-        // Check if this device is interesting.
+        /* Check if this device is interesting. */
         struct libusb_device_descriptor desc;
         libusb_device_handle *dh;
 
@@ -165,7 +165,7 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID))
           continue;
 
-        //Found one!
+        /* Found one! */
         dh = NULL;
 
         if (libusb_open(devs[i],&dh) != 0) continue;
@@ -197,7 +197,7 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
             continue;
         }
 
-        //Fount it!
+        /* Fount it! */
         libusb_free_device_list(devs,1);
         return dh;
     }
@@ -276,7 +276,7 @@ static void* canusb_capture_thread(void *arg)
         struct CAN_Msg msg;
 
         libusb_interrupt_transfer(canusb->dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);
-        //HACK!!!!! -> drop buffered data, read new one by reading twice.
+        /* HACK!!!!! -> drop buffered data, read new one by reading twice. */
         libusb_interrupt_transfer(canusb->dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);
 
         for(i = 0; i<status.rxsz; i++)
@@ -312,9 +312,9 @@ static void canusb_clearbufs(struct pcap_canusb* this)
     unsigned char cmd[16];
     int al;
 
-    cmd[0] = 1;  //Empty incoming buffer
-    cmd[1] = 1;  //Empty outgoing buffer
-    cmd[3] = 0;  //Not a write to serial number
+    cmd[0] = 1;  /* Empty incoming buffer */
+    cmd[1] = 1;  /* Empty outgoing buffer */
+    cmd[3] = 0;  /* Not a write to serial number */
     memset(&cmd[4],0,16-4);
 
     libusb_interrupt_transfer(this->dev, 0x1,cmd,16,&al,100);
