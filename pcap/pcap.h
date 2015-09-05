@@ -451,9 +451,10 @@ void	bpf_dump(const struct bpf_program *, int);
 */
 struct pcap_send_queue
 {
-	u_int maxlen;	///< Maximum size of the the queue, in bytes. This variable contains the size of the buffer field.
-	u_int len;	///< Current size of the queue, in bytes.
-	char *buffer;	///< Buffer containing the packets to be sent.
+	u_int maxlen;	/* Maximum size of the the queue, in bytes. This
+			   variable contains the size of the buffer field. */
+	u_int len;	/* Current size of the queue, in bytes. */
+	char *buffer;	/* Buffer containing the packets to be sent. */
 };
 
 typedef struct pcap_send_queue pcap_send_queue;

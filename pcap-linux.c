@@ -3195,7 +3195,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * so let's use "Linux-cooked" mode. Jean II
 		 *
 		 * XXX - this is handled in activate_new(). */
-		//handlep->cooked = 1;
+		/* handlep->cooked = 1; */
 		break;
 
 	/* ARPHRD_LAPD is unofficial and randomly allocated, if reallocation
@@ -3238,7 +3238,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 *
 		 * XXX - this is handled in activate_new().
 		 */
-		//handlep->cooked = 1;
+		/* handlep->cooked = 1; */
 		break;
 
 	default:
