@@ -132,14 +132,13 @@ static struct pcap_stat *TcStatsEx(pcap_t *p, int *pcap_stat_size);
 static int TcSetBuff(pcap_t *p, int dim);
 static int TcSetMode(pcap_t *p, int mode);
 static int TcSetMinToCopy(pcap_t *p, int size);
-static HANDLE TcGetReceiveWaitHandle(pcap_t *p);
 static int TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data);
 static int TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data);
 static u_int TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
-static int TcSetUserBuffer(pcap_t *p, int size);
+//static int TcSetUserBuffer(pcap_t *p, int size);
 static int TcLiveDump(pcap_t *p, char *filename, int maxsize, int maxpacks);
 static int TcLiveDumpEnded(pcap_t *p, int sync);
-static int TcGetAirPcapHandle(pcap_t *p);
+static PAirpcapHandle TcGetAirPcapHandle(pcap_t *p);
 #endif
 
 #ifdef _WIN32
@@ -680,7 +679,7 @@ TcActivate(pcap_t *p)
 	p->oid_get_request_op = TcOidGetRequest;
 	p->oid_set_request_op = TcOidSetRequest;
 	p->sendqueue_transmit_op = TcOidSendqueueTransmit;
-	p->set_userbuffer_op = TcSetUserBuffer;
+//	p->set_userbuffer_op = TcSetUserBuffer;
 	p->live_dump_op = TcLiveDump;
 	p->live_dump_ended_op = TcLiveDumpEnded;
 	p->get_airpcap_handle_op = TcGetAirPcapHandle;
@@ -734,7 +733,7 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 	is_tc = FALSE;
 	for (i = 0; i < numPorts; i++)
 	{
-		if (strcmp(g_TcFunctions.PortGetName(pPorts[i]), source) == 0)
+		if (strcmp(g_TcFunctions.PortGetName(pPorts[i]), device) == 0)
 		{
 			is_tc = TRUE;
 			break;
@@ -1081,7 +1080,7 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 		s.ps_drop = 0xFFFFFFFF;
 	}
 
-#if defined(_WIN32) && define(HAVE_REMOTE)
+#if defined(_WIN32) && defined(HAVE_REMOTE)
 	s.ps_capt = pt->TcAcceptedCount;
 #endif
 	*ps = s;
@@ -1121,7 +1120,6 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	TC_STATISTICS statistics;
 	TC_STATUS status;
 	ULONGLONG counter;
-	struct pcap_stat s;
 
 	*pcap_stat_size = sizeof (p->stat);
 
@@ -1130,7 +1128,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcInstanceQueryStatistics: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return -1;	
+		return (NULL);
 	}
 
 	memset(&p->stat, 0, sizeof(p->stat));
@@ -1139,7 +1137,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcStatisticsQueryValue: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return -1;	
+		return (NULL);
 	}
 	if (counter <= (ULONGLONG)0xFFFFFFFF)
 	{
@@ -1154,7 +1152,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcStatisticsQueryValue: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return -1;	
+		return (NULL);
 	}
 	if (counter <= (ULONGLONG)0xFFFFFFFF)
 	{
@@ -1220,7 +1218,7 @@ TcSetMinToCopy(pcap_t *p, int size)
 	return 0;
 }
 
-static HANDLE
+HANDLE
 TcGetReceiveWaitHandle(pcap_t *p)
 {
 	struct pcap_tc *pt = p->priv;
@@ -1229,7 +1227,7 @@ TcGetReceiveWaitHandle(pcap_t *p)
 }
 
 static int
-TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data _U))
+TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a TurboCap device");
@@ -1237,7 +1235,7 @@ TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data _U))
 }
 
 static int
-TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data _U_))
+TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a TurboCap device");
@@ -1245,13 +1243,14 @@ TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data _U_))
 }
 
 static u_int
-TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_);
+TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets cannot be bulk transmitted on a TurboCap device");
 	return (0);
 }
 
+#if 0
 static int
 TcSetUserBuffer(pcap_t *p, int size _U_)
 {
@@ -1259,6 +1258,7 @@ TcSetUserBuffer(pcap_t *p, int size _U_)
 	    "The user buffer cannot be set on a TurboCap device");
 	return (-1);
 }
+#endif
 
 static int
 TcLiveDump(pcap_t *p, char *filename _U_, int maxsize _U_, int maxpacks _U_)
@@ -1276,7 +1276,7 @@ TcLiveDumpEnded(pcap_t *p, int sync _U_)
 	return (-1);
 }
 
-static int
+static PAirpcapHandle
 TcGetAirPcapHandle(pcap_t *p _U_)
 {
 	return (NULL);
