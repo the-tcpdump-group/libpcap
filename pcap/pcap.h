@@ -501,8 +501,6 @@ int pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks);
 
 int pcap_live_dump_ended(pcap_t *p, int sync);
 
-int pcap_offline_filter(struct bpf_program *prog, const struct pcap_pkthdr *header, const u_char *pkt_data);
-
 int pcap_start_oem(char* err_str, int flags);
 
 PAirpcapHandle pcap_get_airpcap_handle(pcap_t *p);
