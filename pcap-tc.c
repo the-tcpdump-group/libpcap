@@ -135,7 +135,7 @@ static int TcSetMinToCopy(pcap_t *p, int size);
 static HANDLE TcGetReceiveWaitHandle(pcap_t *p);
 static int TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data);
 static int TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data);
-static u_int TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
+static u_int TcSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
 //static int TcSetUserBuffer(pcap_t *p, int size);
 static int TcLiveDump(pcap_t *p, char *filename, int maxsize, int maxpacks);
 static int TcLiveDumpEnded(pcap_t *p, int sync);
@@ -679,7 +679,7 @@ TcActivate(pcap_t *p)
 	p->getevent_op = TcGetReceiveWaitHandle;
 	p->oid_get_request_op = TcOidGetRequest;
 	p->oid_set_request_op = TcOidSetRequest;
-	p->sendqueue_transmit_op = TcOidSendqueueTransmit;
+	p->sendqueue_transmit_op = TcSendqueueTransmit;
 	p->setuserbuffer_op = TcSetUserBuffer;
 	p->live_dump_op = TcLiveDump;
 	p->live_dump_ended_op = TcLiveDumpEnded;
@@ -1244,7 +1244,7 @@ TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data _U_)
 }
 
 static u_int
-TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_)
+TcSendqueueTransmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets cannot be bulk transmitted on a TurboCap device");
