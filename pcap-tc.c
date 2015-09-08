@@ -132,6 +132,7 @@ static struct pcap_stat *TcStatsEx(pcap_t *p, int *pcap_stat_size);
 static int TcSetBuff(pcap_t *p, int dim);
 static int TcSetMode(pcap_t *p, int mode);
 static int TcSetMinToCopy(pcap_t *p, int size);
+static HANDLE TcGetReceiveWaitHandle(pcap_t *p);
 static int TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data);
 static int TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data);
 static u_int TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
@@ -1218,7 +1219,7 @@ TcSetMinToCopy(pcap_t *p, int size)
 	return 0;
 }
 
-HANDLE
+static HANDLE
 TcGetReceiveWaitHandle(pcap_t *p)
 {
 	struct pcap_tc *pt = p->priv;

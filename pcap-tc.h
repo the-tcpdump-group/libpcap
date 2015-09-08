@@ -51,7 +51,4 @@ TcCreate(const char *device, char *ebuf, int *is_ours);
 int
 TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf);
 
-HANDLE 
-TcGetReceiveWaitHandle(pcap_t *p);
-
 #endif
