@@ -679,7 +679,7 @@ TcActivate(pcap_t *p)
 	p->oid_get_request_op = TcOidGetRequest;
 	p->oid_set_request_op = TcOidSetRequest;
 	p->sendqueue_transmit_op = TcOidSendqueueTransmit;
-//	p->set_userbuffer_op = TcSetUserBuffer;
+	p->setuserbuffer_op = TcSetUserBuffer;
 	p->live_dump_op = TcLiveDump;
 	p->live_dump_ended_op = TcLiveDumpEnded;
 	p->get_airpcap_handle_op = TcGetAirPcapHandle;
@@ -1250,7 +1250,6 @@ TcOidSendqueueTransmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_)
 	return (0);
 }
 
-#if 0
 static int
 TcSetUserBuffer(pcap_t *p, int size _U_)
 {
@@ -1258,7 +1257,6 @@ TcSetUserBuffer(pcap_t *p, int size _U_)
 	    "The user buffer cannot be set on a TurboCap device");
 	return (-1);
 }
-#endif
 
 static int
 TcLiveDump(pcap_t *p, char *filename _U_, int maxsize _U_, int maxpacks _U_)
