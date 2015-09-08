@@ -52,8 +52,6 @@ int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
 
-#include "pcap-tc.h"
-
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
 static int pcap_getnonblock_win32(pcap_t *, char *);
