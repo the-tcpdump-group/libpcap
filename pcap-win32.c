@@ -966,6 +966,7 @@ pcap_activate_win32(pcap_t *p)
 	p->oid_get_request_op = pcap_oid_get_request_win32;
 	p->oid_set_request_op = pcap_oid_set_request_win32;
 	p->sendqueue_transmit_op = pcap_sendqueue_transmit_win32;
+	p->setuserbuffer_op = pcap_setuserbuffer_win32;
 	p->live_dump_op = pcap_live_dump_win32;
 	p->live_dump_ended_op = pcap_live_dump_ended_win32;
 	p->get_airpcap_handle_op = pcap_get_airpcap_handle_win32;
