@@ -558,7 +558,7 @@ TcActivate(pcap_t *p)
 		 * No monitor mode on Tc cards; they're Ethernet
 		 * capture adapters.
 		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
+		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
 	pt->PpiPacket = (PCHAR)malloc(sizeof(PPI_HEADER) + MAX_TC_PACKET_SIZE);
@@ -690,10 +690,10 @@ TcActivate(pcap_t *p)
 
 	p->cleanup_op = TcCleanup;
 
-	return (0);
+	return 0;
 bad:
 	TcCleanup(p);
-	return (PCAP_ERROR);
+	return PCAP_ERROR;
 }
 
 pcap_t *
@@ -895,7 +895,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * told to break out of the loop.
 		 */
 		p->break_loop = 0;
-		return (-2);
+		return -2;
 	}
 
 	if (pt->TcPacketsBuffer == NULL)
@@ -904,7 +904,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (status != TC_SUCCESS)
 		{
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error, TcInstanceReceivePackets failure: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-			return (-1);
+			return -1;
 		}
 	}
 
@@ -929,11 +929,11 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			if (n == 0) 
 			{
 				p->break_loop = 0;
-				return (-2);
+				return -2;
 			} 
 			else 
 			{
-				return (n);
+				return n;
 			}
 		}
 
@@ -954,7 +954,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (status != TC_SUCCESS)
 		{
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error, TcPacketsBufferQueryNextPacket failure: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-			return (-1);
+			return -1;
 		}
 
 		/* No underlaying filtering system. We need to filter on our own */
@@ -1023,11 +1023,11 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 		if (++n >= cnt && cnt > 0) 
 		{
-			return (n);
+			return n;
 		}
 	}
 
-	return (n);
+	return n;
 }
 
 static int
@@ -1110,7 +1110,7 @@ TcSetFilter(pcap_t *p, struct bpf_program *fp)
 		return -1;
 	}
 	
-	return (0);
+	return 0;
 }
 
 #ifdef _WIN32
@@ -1129,7 +1129,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcInstanceQueryStatistics: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return (NULL);
+		return NULL;
 	}
 
 	memset(&p->stat, 0, sizeof(p->stat));
@@ -1138,7 +1138,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcStatisticsQueryValue: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return (NULL);
+		return NULL;
 	}
 	if (counter <= (ULONGLONG)0xFFFFFFFF)
 	{
@@ -1153,7 +1153,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcStatisticsQueryValue: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return (NULL);
+		return NULL;
 	}
 	if (counter <= (ULONGLONG)0xFFFFFFFF)
 	{
@@ -1232,7 +1232,7 @@ TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a TurboCap device");
-	return (PCAP_ERROR);
+	return PCAP_ERROR;
 }
 
 static int
@@ -1240,7 +1240,7 @@ TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a TurboCap device");
-	return (PCAP_ERROR);
+	return PCAP_ERROR;
 }
 
 static u_int
@@ -1248,7 +1248,7 @@ TcSendqueueTransmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets cannot be bulk transmitted on a TurboCap device");
-	return (0);
+	return 0;
 }
 
 static int
@@ -1256,7 +1256,7 @@ TcSetUserBuffer(pcap_t *p, int size _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The user buffer cannot be set on a TurboCap device");
-	return (-1);
+	return -1;
 }
 
 static int
@@ -1264,7 +1264,7 @@ TcLiveDump(pcap_t *p, char *filename _U_, int maxsize _U_, int maxpacks _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a TurboCap device");
-	return (-1);
+	return -1;
 }
 
 static int
@@ -1272,12 +1272,12 @@ TcLiveDumpEnded(pcap_t *p, int sync _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a TurboCap device");
-	return (-1);
+	return -1;
 }
 
 static PAirpcapHandle
 TcGetAirPcapHandle(pcap_t *p _U_)
 {
-	return (NULL);
+	return NULL;
 }
 #endif
