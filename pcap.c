@@ -1679,7 +1679,7 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 struct pcap_stat *
 pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
 {
-	return (p->stats_ex_op)(p, stat_size));
+	return (p->stats_ex_op(p, pcap_stat_size));
 }
 
 int
@@ -1878,14 +1878,14 @@ pcap_get_airpcap_handle(pcap_t *p)
 
 	handle = p->get_airpcap_handle_op(p);
 	if (handle == NULL) {
-		(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		(void)snprintf(p->errbuf, sizeof(p->errbuf),
 		    "This isn't an AirPcap device");
 	}
 	return (handle);
 }
 
 static PAirpcapHandle
-pcap_get_airpcap_handle_dead(pcap_t *pcap)
+pcap_get_airpcap_handle_dead(pcap_t *p)
 {
 	return (NULL);
 }
