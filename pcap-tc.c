@@ -639,12 +639,12 @@ TcActivate(pcap_t *p)
 	 * if the timeout is 0, it means INFINITE
 	 */
 	
-	if (p->md.timeout == 0)
+	if (p->opt.timeout == 0)
 	{
 		timeout = 0xFFFFFFFF;
 	}
 	else
-	if (p->md.timeout < 0)
+	if (p->opt.timeout < 0)
 	{
 		/*
 		 *  we insert a minimal timeout here
@@ -653,7 +653,7 @@ TcActivate(pcap_t *p)
 	}
 	else
 	{
-		timeout = p->md.timeout;
+		timeout = p->opt.timeout;
 	}
 
 	status = g_TcFunctions.InstanceSetFeature(pt->TcInstance, TC_INST_FT_READ_TIMEOUT, timeout);
@@ -1109,8 +1109,6 @@ TcSetFilter(pcap_t *p, struct bpf_program *fp)
 			"setfilter, unable to install the filter: %s", pcap_strerror(errno));
 		return -1;
 	}
-	
-	p->md.use_bpf = 0;
 	
 	return (0);
 }
