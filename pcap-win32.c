@@ -152,7 +152,16 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	}
 	ps->ps_recv = bstats.bs_recv;
 	ps->ps_drop = bstats.bs_drop;
+
+	/*
+	 * XXX - PacketGetStats() doesn't fill this in, so we just
+	 * return 0.
+	 */
+#if 0
 	ps->ps_ifdrop = bstats.ps_ifdrop;
+#else
+	ps->ps_ifdrop = 0;
+#endif
 
 	return 0;
 }
