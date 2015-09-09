@@ -137,7 +137,7 @@ typedef int	(*oid_set_request_op_t)(pcap_t *, pcap_oid_data_t *);
 typedef u_int	(*sendqueue_transmit_op_t)(pcap_t *, pcap_send_queue *, int);
 typedef int	(*setuserbuffer_op_t)(pcap_t *, int);
 typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
-typedef int	(*live_dump_ended_op_t)(pcap_t *, char *, int);
+typedef int	(*live_dump_ended_op_t)(pcap_t *, int);
 typedef PAirpcapHandle	(*get_airpcap_handle_op_t)(pcap_t *);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
@@ -257,6 +257,7 @@ struct pcap {
 	 * These are, at least currently, specific to the Win32 NPF
 	 * driver.
 	 */
+	stats_ex_op_t stats_ex_op;
 	setbuff_op_t setbuff_op;
 	setmode_op_t setmode_op;
 	setmintocopy_op_t setmintocopy_op;
@@ -468,7 +469,7 @@ void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 #ifdef _WIN32
 void	pcap_win32_err_to_str(DWORD, char *);
-void	pcap_wsockinit (void);
+int	pcap_wsockinit (void);
 #endif
 
 int	install_bpf_program(pcap_t *, struct bpf_program *);
