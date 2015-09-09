@@ -1121,7 +1121,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 {
 	struct pcap_win *pw = p->priv;
 	int newtimeout;
-	char errbuf[PCAP_ERRBUF_SIZE+1];
+	char win_errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (nonblock) {
 		/*
@@ -1137,9 +1137,9 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 		newtimeout = p->opt.timeout;
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
-		pcap_win32_err_to_str(GetLastError(), errbuf);
+		pcap_win32_err_to_str(GetLastError(), win_errbuf);
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "PacketSetReadTimeout: %s", errbuf);
+		    "PacketSetReadTimeout: %s", win_errbuf);
 		return (-1);
 	}
 	pw->nonblock = (newtimeout == -1);
