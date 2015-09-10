@@ -696,7 +696,9 @@ pcap_cleanup_win32(pcap_t *p)
 static int
 pcap_activate_win32(pcap_t *p)
 {
+#ifdef HAVE_DAG_API
 	struct pcap_win *pw = p->priv;
+#endif
 	NetType type;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
