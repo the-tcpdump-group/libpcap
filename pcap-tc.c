@@ -136,7 +136,7 @@ static HANDLE TcGetReceiveWaitHandle(pcap_t *p);
 static int TcOidGetRequest(pcap_t *p, pcap_oid_data_t *data);
 static int TcOidSetRequest(pcap_t *p, pcap_oid_data_t *data);
 static u_int TcSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
-//static int TcSetUserBuffer(pcap_t *p, int size);
+static int TcSetUserBuffer(pcap_t *p, int size);
 static int TcLiveDump(pcap_t *p, char *filename, int maxsize, int maxpacks);
 static int TcLiveDumpEnded(pcap_t *p, int sync);
 static PAirpcapHandle TcGetAirPcapHandle(pcap_t *p);
