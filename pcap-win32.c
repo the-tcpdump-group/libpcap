@@ -127,7 +127,6 @@ pcap_wsockinit(void)
 static int
 pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 {
-	struct pcap_win *pw = p->priv;
 	struct bpf_stat bstats;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
