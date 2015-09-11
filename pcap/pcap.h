@@ -412,6 +412,10 @@ int	pcap_minor_version(pcap_t *);
 FILE	*pcap_file(pcap_t *);
 int	pcap_fileno(pcap_t *);
 
+#ifdef _WIN32
+int	pcap_wsockinit(void);
+#endif
+
 pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
 pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
