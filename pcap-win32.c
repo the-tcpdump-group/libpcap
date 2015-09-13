@@ -1142,7 +1142,10 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 		/*
 		 * Restore the timeout set when the device was opened.
 		 * (Note that this may be -1, in which case we're not
-		 * really leaving non-blocking mode.)
+		 * really leaving non-blocking mode.  However, although
+		 * the timeout argument to pcap_set_timeout() and
+		 * pcap_open_live() is an int, you're not supposed to
+		 * supply a negative value, so that "shouldn't happen".)
 		 */
 		newtimeout = p->opt.timeout;
 	}
