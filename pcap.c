@@ -1459,9 +1459,6 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 /*
  * Get the current non-blocking mode setting, under the assumption that
  * it's just the standard POSIX non-blocking flag.
- *
- * We don't look at "p->nonblock", in case somebody tweaked the FD
- * directly.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
 int
