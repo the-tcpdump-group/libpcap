@@ -334,9 +334,6 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	p->buffer=new_buff;
 	p->bufsize=size;
 
-	/* Associate the buffer with the capture packet */
-	PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
-
 	return 0;
 }
 
@@ -384,6 +381,7 @@ pcap_get_airpcap_handle_win32(pcap_t *p)
 static int
 pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
+	PACKET Packet;
 	int cc;
 	int n = 0;
 	register u_char *bp, *ep;
@@ -405,15 +403,27 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			return (PCAP_ERROR_BREAK);
 		}
 
-	    /* capture the packets */
-		if(PacketReceivePacket(p->adapter,p->Packet,TRUE)==FALSE){
+		/*
+		 * Capture the packets.
+		 *
+		 * The PACKET structure had a bunch of extra stuff for
+		 * Windows 9x/Me, but the only interesting data in it
+		 * in the versions of Windows that we support is just
+		 * a copy of p->buffer, a copy of p->buflen, and the
+		 * actual number of bytes read returned from
+		 * PacketReceivePacket(), none of which has to be
+		 * retained from call to call, so we just keep one on
+		 * the stack.
+		 */
+		PacketInitPacket(&Packet, (BYTE *)p->buffer, p->bufsize);
+		if (!PacketReceivePacket(p->adapter, &Packet, TRUE)) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
 			return (PCAP_ERROR);
 		}
 
-		cc = p->Packet->ulBytesReceived;
+		cc = Packet.ulBytesReceived;
 
-		bp = p->Packet->Buffer;
+		bp = p->buffer;
 	}
 	else
 		bp = p->bp;
@@ -492,6 +502,7 @@ static int
 pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_win *pw = p->priv;
+	PACKET Packet;
 	u_char *dp = NULL;
 	int	packet_len = 0, caplen = 0;
 	struct pcap_pkthdr	pcap_header;
@@ -507,13 +518,25 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	cc = p->cc;
 	if (cc == 0) /* Get new packets only if we have processed all the ones of the previous read */
 	{
-	    /* Get new packets from the network */
-		if(PacketReceivePacket(p->adapter, p->Packet, TRUE)==FALSE){
+		/*
+		 * Get new packets from the network.
+		 *
+		 * The PACKET structure had a bunch of extra stuff for
+		 * Windows 9x/Me, but the only interesting data in it
+		 * in the versions of Windows that we support is just
+		 * a copy of p->buffer, a copy of p->buflen, and the
+		 * actual number of bytes read returned from
+		 * PacketReceivePacket(), none of which has to be
+		 * retained from call to call, so we just keep one on
+		 * the stack.
+		 */
+		PacketInitPacket(&Packet, (BYTE *)p->buffer, p->bufsize);
+		if (!PacketReceivePacket(p->adapter, &Packet, TRUE)) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
 			return (-1);
 		}
 
-		cc = p->Packet->ulBytesReceived;
+		cc = Packet.ulBytesReceived;
 		if(cc == 0)
 			/* The timeout has expired but we no packets arrived */
 			return 0;
@@ -835,13 +858,6 @@ pcap_activate_win32(pcap_t *p)
 	/* Set the buffer size */
 	p->bufsize = WIN32_DEFAULT_USER_BUFFER_SIZE;
 
-	/* allocate Packet structure used during the capture */
-	if((p->Packet = PacketAllocatePacket())==NULL)
-	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to allocate the PACKET structure");
-		goto bad;
-	}
-
 	if(!(p->adapter->Flags & INFO_FLAG_DAG_CARD))
 	{
 	/*
@@ -866,8 +882,6 @@ pcap_activate_win32(pcap_t *p)
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 			goto bad;
 		}
-
-		PacketInitPacket(p->Packet,(BYTE*)p->buffer,p->bufsize);
 
 		if (p->opt.immediate)
 		{

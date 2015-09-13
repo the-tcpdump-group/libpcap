@@ -159,7 +159,6 @@ struct pcap {
 
 #ifdef _WIN32
 	ADAPTER *adapter;
-	LPPACKET Packet;
 #else
 	int fd;
 	int selectable_fd;
