@@ -210,7 +210,9 @@ pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 	p->stat.ps_recv = bstats.bs_recv;
 	p->stat.ps_drop = bstats.bs_drop;
 	p->stat.ps_ifdrop = bstats.ps_ifdrop;
+#ifdef HAVE_REMOTE
 	p->stat.ps_capt = bstats.bs_capt;
+#endif
 	return (&p->stat);
 }
 
