@@ -92,7 +92,7 @@ BOOL WINAPI DllMain(
 		InitializeCriticalSection(&g_PcapCompileCriticalSection);
 	}
 
-	return TRUE;
+	return (TRUE);
 }
 
 /* Start winsock */
@@ -105,7 +105,7 @@ wsockinit(void)
 	static int done = 0;
 
 	if (done)
-		return err;
+		return (err);
 
 	wVersionRequested = MAKEWORD( 1, 1);
 	err = WSAStartup( wVersionRequested, &wsaData );
@@ -115,13 +115,13 @@ wsockinit(void)
 
 	if ( err != 0 )
 		err = -1;
-	return err;
+	return (err);
 }
 
 int
 pcap_wsockinit(void)
 {
-       return wsockinit();
+       return (wsockinit());
 }
 
 static int
@@ -147,7 +147,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketGetStats error: %s", errbuf);
-		return -1;
+		return (-1);
 	}
 	ps->ps_recv = bstats.bs_recv;
 	ps->ps_drop = bstats.bs_drop;
@@ -162,7 +162,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	ps->ps_ifdrop = 0;
 #endif
 
-	return 0;
+	return (0);
 }
 
 /*
@@ -205,7 +205,7 @@ pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketGetStatsEx error: %s", errbuf);
-		return NULL;
+		return (NULL);
 	}
 	p->stat.ps_recv = bstats.bs_recv;
 	p->stat.ps_drop = bstats.bs_drop;
@@ -223,9 +223,9 @@ pcap_setbuff_win32(pcap_t *p, int dim)
 	if(PacketSetBuff(p->adapter,dim)==FALSE)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
-		return -1;
+		return (-1);
 	}
-	return 0;
+	return (0);
 }
 
 /* Set the driver working mode */
@@ -235,10 +235,10 @@ pcap_setmode_win32(pcap_t *p, int mode)
 	if(PacketSetMode(p->adapter,mode)==FALSE)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: working mode not recognized");
-		return -1;
+		return (-1);
 	}
 
-	return 0;
+	return (0);
 }
 
 /*set the minimum amount of data that will release a read call*/
@@ -248,15 +248,15 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 	if(PacketSetMinToCopy(p->adapter, size)==FALSE)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: unable to set the requested mintocopy size");
-		return -1;
+		return (-1);
 	}
-	return 0;
+	return (0);
 }
 
 static HANDLE
 pcap_getevent_win32(pcap_t *p)
 {
-	return PacketGetReadEvent(p->adapter);
+	return (PacketGetReadEvent(p->adapter));
 }
 
 static int
@@ -276,7 +276,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	if (oid_data_arg == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
-		return PCAP_ERROR);
+		return (PCAP_ERROR);
 	}
 
 	/*
@@ -289,7 +289,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
 		free(oid_data_arg);
-		return PCAP_ERROR;
+		return (PCAP_ERROR);
 	}
 
 	/*
@@ -297,7 +297,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	 */
 	memcpy(data, oid_data_arg->data, len);
 	free(oid_data_arg);
-	return 0;
+	return (0);
 }
 
 static int
@@ -318,7 +318,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	if (oid_data_arg == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
-		return PCAP_ERROR);
+		return (PCAP_ERROR);
 	}
 
 	oid_data_arg->oid = oid;
@@ -329,14 +329,14 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
 		free(oid_data_arg);
-		return PCAP_ERROR;
+		return (PCAP_ERROR);
 	}
 
 	/*
 	 * No need to copy the data - we're doing a set.
 	 */
 	free(oid_data_arg);
-	return 0;
+	return (0);
 }
 
 static u_int 
@@ -347,7 +347,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 
 	if (p->adapter==NULL) {
 		sprintf(p->errbuf, "Cannot transmit a queue to an offline capture or to a TurboCap port");
-		return 0;
+		return (0);
 	}	
 
 	res = PacketSendPackets(p->adapter,
@@ -361,7 +361,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 		    "Error opening adapter: %s", errbuf);
 	}
 
-	return res;
+	return (res);
 }
 
 static int
@@ -372,7 +372,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	if (size<=0) {
 		/* Bogus parameter */
 		sprintf(p->errbuf,"Error: invalid size %d",size);
-		return -1;
+		return (-F)1;
 	}
 
 	/* Allocate the buffer */
@@ -380,7 +380,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 
 	if (!new_buff) {
 		sprintf(p->errbuf,"Error: not enough memory");
-		return -1;
+		return (-1);
 	}
 
 	free(p->buffer);
@@ -388,7 +388,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	p->buffer=new_buff;
 	p->bufsize=size;
 
-	return 0;
+	return (0);
 }
 
 static int
@@ -400,35 +400,35 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	res = PacketSetMode(p->adapter, PACKET_MODE_DUMP);
 	if(res == FALSE){
 		sprintf(p->errbuf, "Error setting dump mode");
-		return -1;
+		return (-1);
 	}
 
 	/* Set the name of the dump file */
 	res = PacketSetDumpName(p->adapter, filename, strlen(filename));
 	if(res == FALSE){
 		sprintf(p->errbuf, "Error setting kernel dump file name");
-		return -1;
+		return (-1);
 	}
 
 	/* Set the limits of the dump file */
 	res = PacketSetDumpLimits(p->adapter, maxsize, maxpacks);
 
-	return 0;
+	return (0);
 }
 
 static int 
 pcap_live_dump_ended_win32(pcap_t *p, int sync)
 {
-	return PacketIsDumpEnded(p->adapter, (BOOLEAN)sync);
+	return (PacketIsDumpEnded(p->adapter, (BOOLEAN)sync));
 }
 
 static PAirpcapHandle
 pcap_get_airpcap_handle_win32(pcap_t *p)
 {
 #ifdef HAVE_AIRPCAP_API
-	return PacketGetAirPcapHandle(p->adapter);
+	return (PacketGetAirPcapHandle(p->adapter));
 #else
-	return NULL;
+	return (NULL);
 #endif /* HAVE_AIRPCAP_API */
 }
 
@@ -593,7 +593,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		cc = Packet.ulBytesReceived;
 		if(cc == 0)
 			/* The timeout has expired but we no packets arrived */
-			return 0;
+			return (0);
 		header = (dag_record_t*)p->adapter->DagBuffer;
 	}
 	else
@@ -722,7 +722,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	}
 	while((u_char*)header < endofbuf);
 
-  return 1;
+	return (1);
 }
 #endif /* HAVE_DAG_API */
 
@@ -736,14 +736,14 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 	if (PacketToSend == NULL)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketAllocatePacket failed");
-		return -1;
+		return (-1);
 	}
 
 	PacketInitPacket(PacketToSend,(PVOID)buf,size);
 	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
 		PacketFreePacket(PacketToSend);
-		return -1;
+		return (-1);
 	}
 
 	PacketFreePacket(PacketToSend);
@@ -753,7 +753,7 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 	 * "pcap_inject()" is expected to return the number of bytes
 	 * sent.
 	 */
-	return size;
+	return (size);
 }
 
 static void
@@ -799,7 +799,7 @@ pcap_activate_win32(pcap_t *p)
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
-		return PCAP_ERROR;
+		return (PCAP_ERROR);
 	}
 
 	/*get network type*/
@@ -1081,7 +1081,7 @@ pcap_create_interface(const char *device, char *ebuf)
 		if (deviceAscii == NULL)
 		{
 			snprintf(ebuf, PCAP_ERRBUF_SIZE, "Malloc failed");
-			return NULL;
+			return (NULL);
 		}
 
 		snprintf(deviceAscii, length + 1, "%ws", (wchar_t*)device);
@@ -1167,7 +1167,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 	if(!fp)
 	{
 		strncpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
-		return -1;
+		return (-1);
 	}
 
 	/* Install a user level filter */
@@ -1175,7 +1175,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 	{
 		snprintf(p->errbuf, sizeof(p->errbuf),
 			"setfilter, unable to install the filter: %s", pcap_strerror(errno));
-		return -1;
+		return (-1);
 	}
 
 	return (0);
