@@ -348,7 +348,8 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (p->adapter==NULL) {
-		sprintf(p->errbuf, "Cannot transmit a queue to an offline capture or to a TurboCap port");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Cannot transmit a queue to an offline capture or to a TurboCap port");
 		return (0);
 	}	
 
@@ -373,7 +374,8 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 
 	if (size<=0) {
 		/* Bogus parameter */
-		sprintf(p->errbuf,"Error: invalid size %d",size);
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Error: invalid size %d",size);
 		return (-1);
 	}
 
@@ -381,7 +383,8 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	new_buff=(unsigned char*)malloc(sizeof(char)*size);
 
 	if (!new_buff) {
-		sprintf(p->errbuf,"Error: not enough memory");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Error: not enough memory");
 		return (-1);
 	}
 
@@ -401,14 +404,16 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	/* Set the packet driver in dump mode */
 	res = PacketSetMode(p->adapter, PACKET_MODE_DUMP);
 	if(res == FALSE){
-		sprintf(p->errbuf, "Error setting dump mode");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Error setting dump mode");
 		return (-1);
 	}
 
 	/* Set the name of the dump file */
 	res = PacketSetDumpName(p->adapter, filename, strlen(filename));
 	if(res == FALSE){
-		sprintf(p->errbuf, "Error setting kernel dump file name");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE
+		    "Error setting kernel dump file name");
 		return (-1);
 	}
 
