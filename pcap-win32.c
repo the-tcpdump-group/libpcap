@@ -322,7 +322,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	oid_data_arg->oid = oid;
 	oid_data_arg->length = len;
 	memcpy(oid_data_arg->data, data, len);
-	if (!PacketRequest(p->adapter, TRUE, data)) {
+	if (!PacketRequest(p->adapter, TRUE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
