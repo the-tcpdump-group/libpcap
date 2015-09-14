@@ -282,8 +282,8 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	/*
 	 * No need to copy the data - we're doing a fetch.
 	 */
-	oid_data_arg->oid = oid;
-	oid_data_arg->length = len;
+	oid_data_arg->Oid = oid;
+	oid_data_arg->Length = len;
 	if (!PacketRequest(p->adapter, FALSE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -295,7 +295,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	/*
 	 * Copy back the data we fetched.
 	 */
-	memcpy(data, oid_data_arg->data, len);
+	memcpy(data, oid_data_arg->Data, len);
 	free(oid_data_arg);
 	return (0);
 }
@@ -321,9 +321,9 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 		return (PCAP_ERROR);
 	}
 
-	oid_data_arg->oid = oid;
-	oid_data_arg->length = len;
-	memcpy(oid_data_arg->data, data, len);
+	oid_data_arg->Oid = oid;
+	oid_data_arg->Length = len;
+	memcpy(oid_data_arg->Data, data, len);
 	if (!PacketRequest(p->adapter, TRUE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
