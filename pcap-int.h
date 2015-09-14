@@ -41,12 +41,7 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-/*
- * If we haven't included Packet32.h, define ADAPTER ourselves.
- */
-#ifndef __PACKET32
-typedef struct _ADAPTER ADAPTER;
-#endif
+#include <Packet32.h>
 extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #endif /* _WIN32 */
 
