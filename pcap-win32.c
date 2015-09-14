@@ -412,7 +412,7 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	/* Set the name of the dump file */
 	res = PacketSetDumpName(p->adapter, filename, strlen(filename));
 	if(res == FALSE){
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error setting kernel dump file name");
 		return (-1);
 	}
