@@ -372,7 +372,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	if (size<=0) {
 		/* Bogus parameter */
 		sprintf(p->errbuf,"Error: invalid size %d",size);
-		return (-F)1;
+		return (-1);
 	}
 
 	/* Allocate the buffer */
