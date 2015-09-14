@@ -1228,7 +1228,7 @@ TcGetReceiveWaitHandle(pcap_t *p)
 }
 
 static int
-TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t len _U_
+TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t len _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a TurboCap device");
