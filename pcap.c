@@ -1736,13 +1736,14 @@ pcap_getevent_dead(pcap_t *p)
 }
 
 int
-pcap_oid_get_request(pcap_t *p, pcap_oid_data_t *data)
+pcap_oid_get_request(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 {
-	return (p->oid_get_request_op(p, data));
+	return (p->oid_get_request_op(p, oid, data, len));
 }
 
 static int
-pcap_oid_get_request_dead(pcap_t *p, pcap_oid_data_t *data)
+pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
+    size_t len _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
@@ -1750,13 +1751,14 @@ pcap_oid_get_request_dead(pcap_t *p, pcap_oid_data_t *data)
 }
 
 int
-pcap_oid_set_request(pcap_t *p, pcap_oid_data_t *data)
+pcap_oid_set_request(pcap_t *p, bpf_u_int32 oid, const void *data, size_t len)
 {
-	return (p->oid_set_request_op(p, data));
+	return (p->oid_set_request_op(p, oid, data, len));
 }
 
 static int
-pcap_oid_set_request_dead(pcap_t *p, pcap_oid_data_t *data)
+pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
+    size_t len _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");

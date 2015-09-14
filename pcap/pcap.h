@@ -477,17 +477,8 @@ int pcap_setmintocopy(pcap_t *p, int size);
 
 HANDLE pcap_getevent(pcap_t *p);
 
-/*
- * Same as Packet.dll's PACKET_OID_DATA.
- */
-typedef struct {
-	bpf_u_int32	oid;		/* OID code */
-	bpf_u_int32	length;		/* length of the data field */
-	u_char		data[1];	/* first byte of the data field */
-} pcap_oid_data_t;
-
-int pcap_oid_get_request(pcap_t *p, pcap_oid_data_t *data);
-int pcap_oid_set_request(pcap_t *p, pcap_oid_data_t *data);
+int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t);
+int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t);
 
 pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
 

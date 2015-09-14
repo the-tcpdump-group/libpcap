@@ -258,30 +258,82 @@ pcap_getevent_win32(pcap_t *p)
 }
 
 static int
-pcap_oid_get_request_win32(pcap_t *p, pcap_oid_data_t *data)
+pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 {
+	PACKET_OID_DATA *oid_data_arg;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
-	if (!PacketRequest(p->adapter, FALSE, data)) {
+	/*
+	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
+	 * It should be big enough to hold "len" bytes of data; it
+	 * will actually be slightly larger, as PACKET_OID_DATA has a
+	 * 1-byte data array at the end, standing in for the variable-length
+	 * data that's actually there.
+	 */
+	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + len);
+	if (oid_data_arg == NULL) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Couldn't allocate argument buffer for PacketRequest");
+		return PCAP_ERROR);
+	}
+
+	/*
+	 * No need to copy the data - we're doing a fetch.
+	 */
+	oid_data_arg->oid = oid;
+	oid_data_arg->length = len;
+	if (!PacketRequest(p->adapter, FALSE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
+		free(oid_data_arg);
 		return PCAP_ERROR;
 	}
+
+	/*
+	 * Copy back the data we fetched.
+	 */
+	memcpy(data, oid_data_arg->data, len);
+	free(oid_data_arg);
 	return 0;
 }
 
 static int
-pcap_oid_set_request_win32(pcap_t *p, pcap_oid_data_t *data)
+pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
+    size_t len)
 {
+	PACKET_OID_DATA *oid_data_arg;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
+	/*
+	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
+	 * It should be big enough to hold "len" bytes of data; it
+	 * will actually be slightly larger, as PACKET_OID_DATA has a
+	 * 1-byte data array at the end, standing in for the variable-length
+	 * data that's actually there.
+	 */
+	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + len);
+	if (oid_data_arg == NULL) {
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Couldn't allocate argument buffer for PacketRequest");
+		return PCAP_ERROR);
+	}
+
+	oid_data_arg->oid = oid;
+	oid_data_arg->length = len;
+	memcpy(oid_data_arg->data, data, len);
 	if (!PacketRequest(p->adapter, TRUE, data)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
+		free(oid_data_arg);
 		return PCAP_ERROR;
 	}
+
+	/*
+	 * No need to copy the data - we're doing a set.
+	 */
+	free(oid_data_arg);
 	return 0;
 }
 
