@@ -104,6 +104,7 @@ PUBHDR = \
 	pcap-namedb.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
+	pcap/dlt.h \
 	pcap/ipnet.h \
 	pcap/namedb.h \
 	pcap/nflog.h \
