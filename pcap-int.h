@@ -41,6 +41,11 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
+/*
+ * Make sure Packet32.h doesn't define BPF structures that we've
+ * probably already defined as a result of including <pcap/pcap.h>.
+ */
+#define BPF_MAJOR_VERSION
 #include <Packet32.h>
 extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #endif /* _WIN32 */

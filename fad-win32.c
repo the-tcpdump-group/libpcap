@@ -35,9 +35,10 @@
 #include "config.h"
 #endif
 
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap.h>
-#include <pcap-int.h>
 #include <Packet32.h>
+#include <pcap-int.h>
 
 #include <errno.h>
 

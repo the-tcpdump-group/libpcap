@@ -31,8 +31,10 @@
  *
  */
 
-#include <pcap-int.h>
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <Packet32.h>
+#include <pcap-int.h>
+#include <pcap/dlt.h>
 #ifdef __MINGW32__
 #ifdef __MINGW64__
 #include <ntddndis.h>
