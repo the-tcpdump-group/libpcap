@@ -763,10 +763,6 @@ pcap_cleanup_win32(pcap_t *p)
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;
 	}
-	if (p->Packet) {
-		PacketFreePacket(p->Packet);
-		p->Packet = NULL;
-	}
 	pcap_cleanup_live_common(p);
 }
 
