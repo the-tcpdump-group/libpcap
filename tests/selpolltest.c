@@ -25,6 +25,14 @@ static const char copyright[] =
 The Regents of the University of California.  All rights reserved.\n";
 #endif
 
+/*
+ * Tests how select() and poll() behave on the selectable file descriptor
+ * for a pcap_t.
+ *
+ * This would be significantly different on Windows, as it'd test
+ * how WaitForMultipleObjects() would work on the event handle for a
+ * pcap_t.
+ */
 #include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>

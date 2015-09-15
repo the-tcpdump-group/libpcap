@@ -30,19 +30,31 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/select.h>
 #include <poll.h>
+#endif
 
 #include <pcap.h>
 
 static char *program_name;
 
+#if defined( _MSC_VER )
+#  define PCAP_NORETURN __declspec(noreturn)
+#elif defined( __GNUC__ )
+#  define PCAP_NORETURN __attribute__((noreturn))
+#else
+#  define PCAP_NORETURN
+#endif
+
 /* Forwards */
 static void countme(u_char *, const struct pcap_pkthdr *, const u_char *);
-static void usage(void) __attribute__((noreturn));
+static void PCAP_NORETURN usage(void);
 static void error(const char *, ...);
 static void warning(const char *, ...);
 static char *copy_argv(char **);

@@ -34,10 +34,17 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
-#include <arpa/inet.h>
+#ifdef _WIN32
+  #include <winsock2.h>
+  typedef unsigned __int32 in_addr_t;
+#else
+  #include <arpa/inet.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 
