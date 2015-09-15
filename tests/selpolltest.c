@@ -33,8 +33,13 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/select.h>
-#include <poll.h>
+
+#ifdef _WIN32
+        d
+#else
+#  include <sys/select.h>
+#  include <poll.h>
+#endif
 
 char *program_name;
 

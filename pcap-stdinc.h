@@ -50,10 +50,16 @@
 
 #define caddr_t char*
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) 
+#  if _MSC_VER >= 1600
+#    define strdup    _strdup
+#    define isatty    _isatty
+#    define fileno    _fileno
+#  endif
+#  if _MSC_VER < 1600
   #define snprintf  _snprintf
   #define vsnprintf _vsnprintf
-  #define strdup    _strdup
+#  endif 
 #endif
 
 #define inline __inline
