@@ -42,11 +42,7 @@
 #include "gencode.h"
 
 #ifdef INET6
-#ifdef _WIN32
-#ifdef __MINGW32__
-#include "ip6_misc.h"
-#endif /* __MINGW32__ */
-#else /* _WIN32 */
+#ifndef _WIN32
 #include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
 #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
