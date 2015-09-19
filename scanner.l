@@ -21,18 +21,18 @@
  */
 
 #ifdef _WIN32
-#include <pcap-stdinc.h>
-#else /* _WIN32 */
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#elif HAVE_STDINT_H
-#include <stdint.h>
-#endif /* HAVE_INTTYPES_H/HAVE_STDINT_H */
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif /* HAVE_SYS_BITYPES_H */
-#include <sys/types.h>
-#endif /* _WIN32 */
+  #include <pcap-stdinc.h>
+#else
+  #if HAVE_INTTYPES_H
+    #include <inttypes.h>
+  #elif HAVE_STDINT_H
+    #include <stdint.h>
+  #endif
+  #ifdef HAVE_SYS_BITYPES_H
+    #include <sys/bitypes.h>
+  #endif
+  #include <sys/types.h>
+#endif
 
 #include <ctype.h>
 #include <string.h>
