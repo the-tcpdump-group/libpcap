@@ -56,7 +56,9 @@
   #define strdup    _strdup
 #endif
 
-#define inline __inline
+#if !defined(__cplusplus)
+  #define inline __inline
+#endif
 
 #ifdef __MINGW32__
   #include <stdint.h>
