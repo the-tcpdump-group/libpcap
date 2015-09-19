@@ -12,29 +12,32 @@ if( MSVC )
     )
 endif( MSVC )
 
-ADD_EXECUTABLE (can_set_rfmon_test can_set_rfmon_test.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( can_set_rfmon_test pcap )
-
-ADD_EXECUTABLE (capturetest capturetest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( capturetest pcap )
-
-ADD_EXECUTABLE (filtertest filtertest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( filtertest pcap )
-
-ADD_EXECUTABLE (indalldevstest findalldevstest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( indalldevstest pcap )
-
-ADD_EXECUTABLE (opentest opentest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( opentest pcap )
-
 #ADD_EXECUTABLE (pcap_compile_test pcap_compile_test.c ${PROJECT_SOURCE_LIST_WIN32_C} )
 #target_link_libraries ( pcap_compile_test pcap )
 
-ADD_EXECUTABLE (reactivatetest reactivatetest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( reactivatetest pcap )
+if( NOT WIN32 )
+    ADD_EXECUTABLE (opentest opentest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( opentest pcap )
 
-ADD_EXECUTABLE (selpolltest selpolltest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( selpolltest pcap )
+    ADD_EXECUTABLE (can_set_rfmon_test can_set_rfmon_test.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( can_set_rfmon_test pcap )
 
-ADD_EXECUTABLE (valgrindtest valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( valgrindtest pcap )
+    ADD_EXECUTABLE (capturetest capturetest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( capturetest pcap )
+
+    ADD_EXECUTABLE (filtertest filtertest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( filtertest pcap )
+
+    ADD_EXECUTABLE (indalldevstest findalldevstest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( indalldevstest pcap )
+
+    ADD_EXECUTABLE (reactivatetest reactivatetest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( reactivatetest pcap )
+
+    ADD_EXECUTABLE (selpolltest selpolltest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( selpolltest pcap )
+
+    ADD_EXECUTABLE (valgrindtest valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+    target_link_libraries ( valgrindtest pcap )
+endif( NOT WIN32 ) 
+

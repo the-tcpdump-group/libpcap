@@ -37,7 +37,7 @@
  * to prevent it from including 'winsock.h')
  */
 #ifdef _WINSOCKAPI_
-#undef _WINSOCKAPI_
+#  undef _WINSOCKAPI_
 #endif
 
 #include <winsock2.h>
@@ -56,10 +56,6 @@
 #    define isatty    _isatty
 #    define fileno    _fileno
 #  endif
-#  if _MSC_VER < 1600
-  #define snprintf  _snprintf
-  #define vsnprintf _vsnprintf
-#  endif 
 #endif
 
 #define inline __inline

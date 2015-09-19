@@ -49,7 +49,7 @@ static int septel_setnonblock(pcap_t *p, int nonblock, char *errbuf);
  * Private data for capturing on Septel devices.
  */
 struct pcap_septel {
-	struct pcap_stat stat;
+    struct pcap_stat stat;
 }
 
 /*
@@ -216,28 +216,28 @@ static pcap_t *septel_activate(pcap_t* handle) {
 }
 
 pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
-	const char *cp;
-	pcap_t *p;
+    const char *cp;
+    pcap_t *p;
 
-	/* Does this look like the Septel device? */
-	cp = strrchr(device, '/');
-	if (cp == NULL)
-		cp = device;
-	if (strcmp(cp, "septel") != 0) {
-		/* Nope, it's not "septel" */
-		*is_ours = 0;
-		return NULL;
-	}
+    /* Does this look like the Septel device? */
+    cp = strrchr(device, '/');
+    if (cp == NULL)
+        cp = device;
+    if (strcmp(cp, "septel") != 0) {
+        /* Nope, it's not "septel" */
+        *is_ours = 0;
+        return NULL;
+    }
 
-	/* OK, it's probably ours. */
-	*is_ours = 1;
+    /* OK, it's probably ours. */
+    *is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_septel));
-	if (p == NULL)
-		return NULL;
+    p = pcap_create_common(device, ebuf, sizeof (struct pcap_septel));
+    if (p == NULL)
+        return NULL;
 
-	p->activate_op = septel_activate;
-	return p;
+    p->activate_op = septel_activate;
+    return p;
 }
 
 static int septel_stats(pcap_t *p, struct pcap_stat *ps) {
@@ -269,15 +269,15 @@ static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
     return -1;
   if (!fp) {
     strncpy(p->errbuf, "setfilter: No filter specified",
-	    sizeof(p->errbuf));
+        sizeof(p->errbuf));
     return -1;
   }
 
   /* Make our private copy of the filter */
 
   if (install_bpf_program(p, fp) < 0) {
-    snprintf(p->errbuf, sizeof(p->errbuf),
-	     "malloc: %s", pcap_strerror(errno));
+    pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+         "malloc: %s", pcap_strerror(errno));
     return -1;
   }
 

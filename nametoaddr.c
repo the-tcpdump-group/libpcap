@@ -71,6 +71,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdio.h>
 
 #include "pcap-int.h"
+#include "pcap-stdinc.h"
 
 #include "gencode.h"
 #include <pcap/namedb.h>

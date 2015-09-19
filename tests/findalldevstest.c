@@ -2,18 +2,12 @@
 #include "config.h"
 #endif
 
-#ifdef _WIN32
-#  include <winsock2.h>
-#else
-#  include <sys/socket.h>
-#  include <netinet/in.h>
-#  include <arpa/inet.h>
-#  include <netdb.h>
-#endif // _WIN32
-
-
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 #include <pcap.h>
 

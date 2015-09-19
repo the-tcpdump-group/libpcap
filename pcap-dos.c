@@ -145,20 +145,20 @@ static struct device *get_device (int fd)
  * Private data for capturing on MS-DOS.
  */
 struct pcap_dos {
-	void (*wait_proc)(void); /*          call proc while waiting */
-	struct pcap_stat stat;
+    void (*wait_proc)(void); /*          call proc while waiting */
+    struct pcap_stat stat;
 };
 
 pcap_t *pcap_create_interface (const char *device, char *ebuf)
 {
-	pcap_t *p;
+    pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_dos));
-	if (p == NULL)
-		return (NULL);
+    p = pcap_create_common(device, ebuf, sizeof (struct pcap_dos));
+    if (p == NULL)
+        return (NULL);
 
-	p->activate_op = pcap_activate_dos;
-	return (p);
+    p->activate_op = pcap_activate_dos;
+    return (p);
 }
 
 /*
@@ -202,7 +202,7 @@ static int pcap_activate_dos (pcap_t *pcap)
   }
   else if (stricmp(active_dev->name,pcap->opt.source))
   {
-    snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
+    pcap_snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
               "Cannot use different devices simultaneously "
               "(`%s' vs. `%s')", active_dev->name, pcap->opt.source);
     return (PCAP_ERROR);

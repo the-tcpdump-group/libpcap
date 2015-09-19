@@ -67,7 +67,7 @@ struct state {
   /* XXX - methods */
 };
 
-#ifndef HAVE_VSNPRINTF
+#if !defined(pcap_vsnprintf)
 static int
 sn_reserve (struct state *state, size_t n)
 {
@@ -124,8 +124,8 @@ as_append_char (struct state *state, unsigned char c)
 
 static int
 append_number(struct state *state,
-	      unsigned long num, unsigned base, char *rep,
-	      int width, int prec, int flags, int minusp)
+          unsigned long num, unsigned base, char *rep,
+          int width, int prec, int flags, int minusp)
 {
   int len = 0;
   int i;
@@ -161,7 +161,7 @@ append_number(struct state *state,
       width--;
     while(width-- > 0){
       if((*state->append_char)(state, '0'))
-	return 1;
+    return 1;
       len++;
     }
   }
@@ -169,7 +169,7 @@ append_number(struct state *state,
   if(flags & alternate_flag && (base == 16 || base == 8)){
     if(base == 16)
       if((*state->append_char)(state, rep[10] + 23)) /* XXX */
-	return 1;
+    return 1;
     if((*state->append_char)(state, '0'))
       return 1;
   }
@@ -213,10 +213,10 @@ append_number(struct state *state,
 
 static int
 append_string (struct state *state,
-	       unsigned char *arg,
-	       int width,
-	       int prec,
-	       int flags)
+           unsigned char *arg,
+           int width,
+           int prec,
+           int flags)
 {
   if(prec != -1)
     width -= prec;
@@ -225,28 +225,28 @@ append_string (struct state *state,
   if(!(flags & minus_flag))
     while(width-- > 0)
       if((*state->append_char) (state, ' '))
-	return 1;
+    return 1;
   if (prec != -1) {
     while (*arg && prec--)
       if ((*state->append_char) (state, *arg++))
-	return 1;
+    return 1;
   } else {
     while (*arg)
       if ((*state->append_char) (state, *arg++))
-	return 1;
+    return 1;
   }
   if(flags & minus_flag)
     while(width-- > 0)
       if((*state->append_char) (state, ' '))
-	return 1;
+    return 1;
   return 0;
 }
 
 static int
 append_char(struct state *state,
-	    unsigned char arg,
-	    int width,
-	    int flags)
+        unsigned char arg,
+        int width,
+        int flags)
 {
   while(!(flags & minus_flag) && --width > 0)
     if((*state->append_char) (state, ' '))
@@ -293,176 +293,176 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 
       /* flags */
       while((c = *format++)){
-	if(c == '-')
-	  flags |= minus_flag;
-	else if(c == '+')
-	  flags |= plus_flag;
-	else if(c == ' ')
-	  flags |= space_flag;
-	else if(c == '#')
-	  flags |= alternate_flag;
-	else if(c == '0')
-	  flags |= zero_flag;
-	else
-	  break;
+    if(c == '-')
+      flags |= minus_flag;
+    else if(c == '+')
+      flags |= plus_flag;
+    else if(c == ' ')
+      flags |= space_flag;
+    else if(c == '#')
+      flags |= alternate_flag;
+    else if(c == '0')
+      flags |= zero_flag;
+    else
+      break;
       }
 
       if((flags & space_flag) && (flags & plus_flag))
-	flags ^= space_flag;
+    flags ^= space_flag;
 
       if((flags & minus_flag) && (flags & zero_flag))
-	flags ^= zero_flag;
+    flags ^= zero_flag;
 
       /* width */
       if (isdigit(c))
-	do {
-	  width = width * 10 + c - '0';
-	  c = *format++;
-	} while(isdigit(c));
+    do {
+      width = width * 10 + c - '0';
+      c = *format++;
+    } while(isdigit(c));
       else if(c == '*') {
-	width = va_arg(ap, int);
-	c = *format++;
+    width = va_arg(ap, int);
+    c = *format++;
       }
 
       /* precision */
       if (c == '.') {
-	prec = 0;
-	c = *format++;
-	if (isdigit(c))
-	  do {
-	    prec = prec * 10 + c - '0';
-	    c = *format++;
-	  } while(isdigit(c));
-	else if (c == '*') {
-	  prec = va_arg(ap, int);
-	  c = *format++;
-	}
+    prec = 0;
+    c = *format++;
+    if (isdigit(c))
+      do {
+        prec = prec * 10 + c - '0';
+        c = *format++;
+      } while(isdigit(c));
+    else if (c == '*') {
+      prec = va_arg(ap, int);
+      c = *format++;
+    }
       }
 
       /* size */
 
       if (c == 'h') {
-	short_flag = 1;
-	c = *format++;
+    short_flag = 1;
+    c = *format++;
       } else if (c == 'l') {
-	long_flag = 1;
-	c = *format++;
+    long_flag = 1;
+    c = *format++;
       }
 
       switch (c) {
       case 'c' :
-	if(append_char(state, va_arg(ap, int), width, flags))
-	  return -1;
-	break;
+    if(append_char(state, va_arg(ap, int), width, flags))
+      return -1;
+    break;
       case 's' :
-	if (append_string(state,
-			  va_arg(ap, unsigned char*),
-			  width,
-			  prec,
-			  flags))
-	  return -1;
-	break;
+    if (append_string(state,
+              va_arg(ap, unsigned char*),
+              width,
+              prec,
+              flags))
+      return -1;
+    break;
       case 'd' :
       case 'i' : {
-	long arg;
-	unsigned long num;
-	int minusp = 0;
+    long arg;
+    unsigned long num;
+    int minusp = 0;
 
-	PARSE_INT_FORMAT(arg, ap, signed);
+    PARSE_INT_FORMAT(arg, ap, signed);
 
-	if (arg < 0) {
-	  minusp = 1;
-	  num = -arg;
-	} else
-	  num = arg;
+    if (arg < 0) {
+      minusp = 1;
+      num = -arg;
+    } else
+      num = arg;
 
-	if (append_number (state, num, 10, "0123456789",
-			   width, prec, flags, minusp))
-	  return -1;
-	break;
+    if (append_number (state, num, 10, "0123456789",
+               width, prec, flags, minusp))
+      return -1;
+    break;
       }
       case 'u' : {
-	unsigned long arg;
+    unsigned long arg;
 
-	PARSE_INT_FORMAT(arg, ap, unsigned);
+    PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (state, arg, 10, "0123456789",
-			   width, prec, flags, 0))
-	  return -1;
-	break;
+    if (append_number (state, arg, 10, "0123456789",
+               width, prec, flags, 0))
+      return -1;
+    break;
       }
       case 'o' : {
-	unsigned long arg;
+    unsigned long arg;
 
-	PARSE_INT_FORMAT(arg, ap, unsigned);
+    PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (state, arg, 010, "01234567",
-			   width, prec, flags, 0))
-	  return -1;
-	break;
+    if (append_number (state, arg, 010, "01234567",
+               width, prec, flags, 0))
+      return -1;
+    break;
       }
       case 'x' : {
-	unsigned long arg;
+    unsigned long arg;
 
-	PARSE_INT_FORMAT(arg, ap, unsigned);
+    PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (state, arg, 0x10, "0123456789abcdef",
-			   width, prec, flags, 0))
-	  return -1;
-	break;
+    if (append_number (state, arg, 0x10, "0123456789abcdef",
+               width, prec, flags, 0))
+      return -1;
+    break;
       }
       case 'X' :{
-	unsigned long arg;
+    unsigned long arg;
 
-	PARSE_INT_FORMAT(arg, ap, unsigned);
+    PARSE_INT_FORMAT(arg, ap, unsigned);
 
-	if (append_number (state, arg, 0x10, "0123456789ABCDEF",
-			   width, prec, flags, 0))
-	  return -1;
-	break;
+    if (append_number (state, arg, 0x10, "0123456789ABCDEF",
+               width, prec, flags, 0))
+      return -1;
+    break;
       }
       case 'p' : {
-	unsigned long arg = (unsigned long)va_arg(ap, void*);
+    unsigned long arg = (unsigned long)va_arg(ap, void*);
 
-	if (append_number (state, arg, 0x10, "0123456789ABCDEF",
-			   width, prec, flags, 0))
-	  return -1;
-	break;
+    if (append_number (state, arg, 0x10, "0123456789ABCDEF",
+               width, prec, flags, 0))
+      return -1;
+    break;
       }
       case 'n' : {
-	int *arg = va_arg(ap, int*);
-	*arg = state->s - state->str;
-	break;
+    int *arg = va_arg(ap, int*);
+    *arg = state->s - state->str;
+    break;
       }
       case '\0' :
-	  --format;
-	  /* FALLTHROUGH */
+      --format;
+      /* FALLTHROUGH */
       case '%' :
-	if ((*state->append_char)(state, c))
-	  return -1;
-	break;
+    if ((*state->append_char)(state, c))
+      return -1;
+    break;
       default :
-	if (   (*state->append_char)(state, '%')
-	    || (*state->append_char)(state, c))
-	  return -1;
-	break;
+    if (   (*state->append_char)(state, '%')
+        || (*state->append_char)(state, c))
+      return -1;
+    break;
       }
     } else
       if ((*state->append_char) (state, c))
-	return -1;
+    return -1;
   }
   return 0;
 }
 
-#ifndef HAVE_SNPRINTF
+#if !defined(pcap_snprintf)
 int
-snprintf (char *str, size_t sz, const char *format, ...)
+pcap_snprintf (char *str, size_t sz, const char *format, ...)
 {
   va_list args;
   int ret;
 
   va_start(args, format);
-  ret = vsnprintf (str, sz, format, args);
+  ret = pcap_vsnprintf (str, sz, format, args);
 
 #ifdef PARANOIA
   {
@@ -598,9 +598,9 @@ vasnprintf (char **ret, size_t max_sz, const char *format, va_list args)
 #endif
 #endif
 
-#ifndef HAVE_VSNPRINTF
+#if !defined(pcap_vsnprintf)
 int
-vsnprintf (char *str, size_t sz, const char *format, va_list args)
+pcap_vsnprintf(char *str, size_t sz, const char *format, va_list args)
 {
   struct state state;
   int ret;

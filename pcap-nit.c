@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 1990, 1991, 1992, 1993, 1994, 1995, 1996
- *	The Regents of the University of California.  All rights reserved.
+ *  The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that: (1) source code distributions
@@ -71,297 +71,297 @@ static int nit_setflags(int, int, int, char *);
  * Private data for capturing on NIT devices.
  */
 struct pcap_nit {
-	struct pcap_stat stat;
+    struct pcap_stat stat;
 };
 
 static int
 pcap_stats_nit(pcap_t *p, struct pcap_stat *ps)
 {
-	struct pcap_nit *pn = p->priv;
+    struct pcap_nit *pn = p->priv;
 
-	/*
-	 * "ps_recv" counts packets handed to the filter, not packets
-	 * that passed the filter.  As filtering is done in userland,
-	 * this does not include packets dropped because we ran out
-	 * of buffer space.
-	 *
-	 * "ps_drop" presumably counts packets dropped by the socket
-	 * because of flow control requirements or resource exhaustion;
-	 * it doesn't count packets dropped by the interface driver.
-	 * As filtering is done in userland, it counts packets regardless
-	 * of whether they would've passed the filter.
-	 *
-	 * These statistics don't include packets not yet read from the
-	 * kernel by libpcap or packets not yet read from libpcap by the
-	 * application.
-	 */
-	*ps = pn->stat;
-	return (0);
+    /*
+     * "ps_recv" counts packets handed to the filter, not packets
+     * that passed the filter.  As filtering is done in userland,
+     * this does not include packets dropped because we ran out
+     * of buffer space.
+     *
+     * "ps_drop" presumably counts packets dropped by the socket
+     * because of flow control requirements or resource exhaustion;
+     * it doesn't count packets dropped by the interface driver.
+     * As filtering is done in userland, it counts packets regardless
+     * of whether they would've passed the filter.
+     *
+     * These statistics don't include packets not yet read from the
+     * kernel by libpcap or packets not yet read from libpcap by the
+     * application.
+     */
+    *ps = pn->stat;
+    return (0);
 }
 
 static int
 pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
-	struct pcap_nit *pn = p->priv;
-	register int cc, n;
-	register u_char *bp, *cp, *ep;
-	register struct nit_hdr *nh;
-	register int caplen;
+    struct pcap_nit *pn = p->priv;
+    register int cc, n;
+    register u_char *bp, *cp, *ep;
+    register struct nit_hdr *nh;
+    register int caplen;
 
-	cc = p->cc;
-	if (cc == 0) {
-		cc = read(p->fd, (char *)p->buffer, p->bufsize);
-		if (cc < 0) {
-			if (errno == EWOULDBLOCK)
-				return (0);
-			snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
-				pcap_strerror(errno));
-			return (-1);
-		}
-		bp = (u_char *)p->buffer;
-	} else
-		bp = p->bp;
+    cc = p->cc;
+    if (cc == 0) {
+        cc = read(p->fd, (char *)p->buffer, p->bufsize);
+        if (cc < 0) {
+            if (errno == EWOULDBLOCK)
+                return (0);
+            pcap_snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
+                pcap_strerror(errno));
+            return (-1);
+        }
+        bp = (u_char *)p->buffer;
+    } else
+        bp = p->bp;
 
-	/*
-	 * Loop through each packet.  The increment expression
-	 * rounds up to the next int boundary past the end of
-	 * the previous packet.
-	 */
-	n = 0;
-	ep = bp + cc;
-	while (bp < ep) {
-		/*
-		 * Has "pcap_breakloop()" been called?
-		 * If so, return immediately - if we haven't read any
-		 * packets, clear the flag and return -2 to indicate
-		 * that we were told to break out of the loop, otherwise
-		 * leave the flag set, so that the *next* call will break
-		 * out of the loop without having read any packets, and
-		 * return the number of packets we've processed so far.
-		 */
-		if (p->break_loop) {
-			if (n == 0) {
-				p->break_loop = 0;
-				return (-2);
-			} else {
-				p->cc = ep - bp;
-				p->bp = bp;
-				return (n);
-			}
-		}
+    /*
+     * Loop through each packet.  The increment expression
+     * rounds up to the next int boundary past the end of
+     * the previous packet.
+     */
+    n = 0;
+    ep = bp + cc;
+    while (bp < ep) {
+        /*
+         * Has "pcap_breakloop()" been called?
+         * If so, return immediately - if we haven't read any
+         * packets, clear the flag and return -2 to indicate
+         * that we were told to break out of the loop, otherwise
+         * leave the flag set, so that the *next* call will break
+         * out of the loop without having read any packets, and
+         * return the number of packets we've processed so far.
+         */
+        if (p->break_loop) {
+            if (n == 0) {
+                p->break_loop = 0;
+                return (-2);
+            } else {
+                p->cc = ep - bp;
+                p->bp = bp;
+                return (n);
+            }
+        }
 
-		nh = (struct nit_hdr *)bp;
-		cp = bp + sizeof(*nh);
+        nh = (struct nit_hdr *)bp;
+        cp = bp + sizeof(*nh);
 
-		switch (nh->nh_state) {
+        switch (nh->nh_state) {
 
-		case NIT_CATCH:
-			break;
+        case NIT_CATCH:
+            break;
 
-		case NIT_NOMBUF:
-		case NIT_NOCLUSTER:
-		case NIT_NOSPACE:
-			pn->stat.ps_drop = nh->nh_dropped;
-			continue;
+        case NIT_NOMBUF:
+        case NIT_NOCLUSTER:
+        case NIT_NOSPACE:
+            pn->stat.ps_drop = nh->nh_dropped;
+            continue;
 
-		case NIT_SEQNO:
-			continue;
+        case NIT_SEQNO:
+            continue;
 
-		default:
-			snprintf(p->errbuf, sizeof(p->errbuf),
-			    "bad nit state %d", nh->nh_state);
-			return (-1);
-		}
-		++pn->stat.ps_recv;
-		bp += ((sizeof(struct nit_hdr) + nh->nh_datalen +
-		    sizeof(int) - 1) & ~(sizeof(int) - 1));
+        default:
+            pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+                "bad nit state %d", nh->nh_state);
+            return (-1);
+        }
+        ++pn->stat.ps_recv;
+        bp += ((sizeof(struct nit_hdr) + nh->nh_datalen +
+            sizeof(int) - 1) & ~(sizeof(int) - 1));
 
-		caplen = nh->nh_wirelen;
-		if (caplen > p->snapshot)
-			caplen = p->snapshot;
-		if (bpf_filter(p->fcode.bf_insns, cp, nh->nh_wirelen, caplen)) {
-			struct pcap_pkthdr h;
-			h.ts = nh->nh_timestamp;
-			h.len = nh->nh_wirelen;
-			h.caplen = caplen;
-			(*callback)(user, &h, cp);
-			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
-				p->cc = ep - bp;
-				p->bp = bp;
-				return (n);
-			}
-		}
-	}
-	p->cc = 0;
-	return (n);
+        caplen = nh->nh_wirelen;
+        if (caplen > p->snapshot)
+            caplen = p->snapshot;
+        if (bpf_filter(p->fcode.bf_insns, cp, nh->nh_wirelen, caplen)) {
+            struct pcap_pkthdr h;
+            h.ts = nh->nh_timestamp;
+            h.len = nh->nh_wirelen;
+            h.caplen = caplen;
+            (*callback)(user, &h, cp);
+            if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
+                p->cc = ep - bp;
+                p->bp = bp;
+                return (n);
+            }
+        }
+    }
+    p->cc = 0;
+    return (n);
 }
 
 static int
 pcap_inject_nit(pcap_t *p, const void *buf, size_t size)
 {
-	struct sockaddr sa;
-	int ret;
+    struct sockaddr sa;
+    int ret;
 
-	memset(&sa, 0, sizeof(sa));
-	strncpy(sa.sa_data, device, sizeof(sa.sa_data));
-	ret = sendto(p->fd, buf, size, 0, &sa, sizeof(sa));
-	if (ret == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
-		    pcap_strerror(errno));
-		return (-1);
-	}
-	return (ret);
+    memset(&sa, 0, sizeof(sa));
+    strncpy(sa.sa_data, device, sizeof(sa.sa_data));
+    ret = sendto(p->fd, buf, size, 0, &sa, sizeof(sa));
+    if (ret == -1) {
+        pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+            pcap_strerror(errno));
+        return (-1);
+    }
+    return (ret);
 }
 
 static int
 nit_setflags(pcap_t *p)
 {
-	struct nit_ioc nioc;
+    struct nit_ioc nioc;
 
-	memset(&nioc, 0, sizeof(nioc));
-	nioc.nioc_typetomatch = NT_ALLTYPES;
-	nioc.nioc_snaplen = p->snapshot;
-	nioc.nioc_bufalign = sizeof(int);
-	nioc.nioc_bufoffset = 0;
+    memset(&nioc, 0, sizeof(nioc));
+    nioc.nioc_typetomatch = NT_ALLTYPES;
+    nioc.nioc_snaplen = p->snapshot;
+    nioc.nioc_bufalign = sizeof(int);
+    nioc.nioc_bufoffset = 0;
 
-	if (p->opt.buffer_size != 0)
-		nioc.nioc_bufspace = p->opt.buffer_size;
-	else {
-		/* Default buffer size */
-		nioc.nioc_bufspace = BUFSPACE;
-	}
+    if (p->opt.buffer_size != 0)
+        nioc.nioc_bufspace = p->opt.buffer_size;
+    else {
+        /* Default buffer size */
+        nioc.nioc_bufspace = BUFSPACE;
+    }
 
-	if (p->opt.immediate) {
-		/*
-		 * XXX - will this cause packets to be delivered immediately?
-		 * XXX - given that this is for SunOS prior to 4.0, do
-		 * we care?
-		 */
-		nioc.nioc_chunksize = 0;
-	} else
-		nioc.nioc_chunksize = CHUNKSIZE;
-	if (p->opt.timeout != 0) {
-		nioc.nioc_flags |= NF_TIMEOUT;
-		nioc.nioc_timeout.tv_sec = p->opt.timeout / 1000;
-		nioc.nioc_timeout.tv_usec = (p->opt.timeout * 1000) % 1000000;
-	}
-	if (p->opt.promisc)
-		nioc.nioc_flags |= NF_PROMISC;
+    if (p->opt.immediate) {
+        /*
+         * XXX - will this cause packets to be delivered immediately?
+         * XXX - given that this is for SunOS prior to 4.0, do
+         * we care?
+         */
+        nioc.nioc_chunksize = 0;
+    } else
+        nioc.nioc_chunksize = CHUNKSIZE;
+    if (p->opt.timeout != 0) {
+        nioc.nioc_flags |= NF_TIMEOUT;
+        nioc.nioc_timeout.tv_sec = p->opt.timeout / 1000;
+        nioc.nioc_timeout.tv_usec = (p->opt.timeout * 1000) % 1000000;
+    }
+    if (p->opt.promisc)
+        nioc.nioc_flags |= NF_PROMISC;
 
-	if (ioctl(p->fd, SIOCSNIT, &nioc) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
-		    pcap_strerror(errno));
-		return (-1);
-	}
-	return (0);
+    if (ioctl(p->fd, SIOCSNIT, &nioc) < 0) {
+        pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
+            pcap_strerror(errno));
+        return (-1);
+    }
+    return (0);
 }
 
 static int
 pcap_activate_nit(pcap_t *p)
 {
-	int fd;
-	struct sockaddr_nit snit;
+    int fd;
+    struct sockaddr_nit snit;
 
-	if (p->opt.rfmon) {
-		/*
-		 * No monitor mode on SunOS 3.x or earlier (no
-		 * Wi-Fi *devices* for the hardware that supported
-		 * them!).
-		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
-	}
+    if (p->opt.rfmon) {
+        /*
+         * No monitor mode on SunOS 3.x or earlier (no
+         * Wi-Fi *devices* for the hardware that supported
+         * them!).
+         */
+        return (PCAP_ERROR_RFMON_NOTSUP);
+    }
 
-	if (p->snapshot < 96)
-		/*
-		 * NIT requires a snapshot length of at least 96.
-		 */
-		p->snapshot = 96;
+    if (p->snapshot < 96)
+        /*
+         * NIT requires a snapshot length of at least 96.
+         */
+        p->snapshot = 96;
 
-	memset(p, 0, sizeof(*p));
-	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
-	if (fd < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "socket: %s", pcap_strerror(errno));
-		goto bad;
-	}
-	snit.snit_family = AF_NIT;
-	(void)strncpy(snit.snit_ifname, p->opt.source, NITIFSIZ);
+    memset(p, 0, sizeof(*p));
+    p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
+    if (fd < 0) {
+        pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+            "socket: %s", pcap_strerror(errno));
+        goto bad;
+    }
+    snit.snit_family = AF_NIT;
+    (void)strncpy(snit.snit_ifname, p->opt.source, NITIFSIZ);
 
-	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
-		goto bad;
-	}
-	if (nit_setflags(p) < 0)
-		goto bad;
+    if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
+        pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+            "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
+        goto bad;
+    }
+    if (nit_setflags(p) < 0)
+        goto bad;
 
-	/*
-	 * NIT supports only ethernets.
-	 */
-	p->linktype = DLT_EN10MB;
+    /*
+     * NIT supports only ethernets.
+     */
+    p->linktype = DLT_EN10MB;
 
-	p->bufsize = BUFSPACE;
-	p->buffer = malloc(p->bufsize);
-	if (p->buffer == NULL) {
-		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
-		goto bad;
-	}
+    p->bufsize = BUFSPACE;
+    p->buffer = malloc(p->bufsize);
+    if (p->buffer == NULL) {
+        strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+        goto bad;
+    }
 
-	/*
-	 * "p->fd" is a socket, so "select()" should work on it.
-	 */
-	p->selectable_fd = p->fd;
+    /*
+     * "p->fd" is a socket, so "select()" should work on it.
+     */
+    p->selectable_fd = p->fd;
 
-	/*
-	 * This is (presumably) a real Ethernet capture; give it a
-	 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
-	 * that an application can let you choose it, in case you're
-	 * capturing DOCSIS traffic that a Cisco Cable Modem
-	 * Termination System is putting out onto an Ethernet (it
-	 * doesn't put an Ethernet header onto the wire, it puts raw
-	 * DOCSIS frames out on the wire inside the low-level
-	 * Ethernet framing).
-	 */
-	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
-	/*
-	 * If that fails, just leave the list empty.
-	 */
-	if (p->dlt_list != NULL) {
-		p->dlt_list[0] = DLT_EN10MB;
-		p->dlt_list[1] = DLT_DOCSIS;
-		p->dlt_count = 2;
-	}
+    /*
+     * This is (presumably) a real Ethernet capture; give it a
+     * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
+     * that an application can let you choose it, in case you're
+     * capturing DOCSIS traffic that a Cisco Cable Modem
+     * Termination System is putting out onto an Ethernet (it
+     * doesn't put an Ethernet header onto the wire, it puts raw
+     * DOCSIS frames out on the wire inside the low-level
+     * Ethernet framing).
+     */
+    p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+    /*
+     * If that fails, just leave the list empty.
+     */
+    if (p->dlt_list != NULL) {
+        p->dlt_list[0] = DLT_EN10MB;
+        p->dlt_list[1] = DLT_DOCSIS;
+        p->dlt_count = 2;
+    }
 
-	p->read_op = pcap_read_nit;
-	p->inject_op = pcap_inject_nit;
-	p->setfilter_op = install_bpf_program;	/* no kernel filtering */
-	p->setdirection_op = NULL;	/* Not implemented. */
-	p->set_datalink_op = NULL;	/* can't change data link type */
-	p->getnonblock_op = pcap_getnonblock_fd;
-	p->setnonblock_op = pcap_setnonblock_fd;
-	p->stats_op = pcap_stats_nit;
+    p->read_op = pcap_read_nit;
+    p->inject_op = pcap_inject_nit;
+    p->setfilter_op = install_bpf_program;  /* no kernel filtering */
+    p->setdirection_op = NULL;  /* Not implemented. */
+    p->set_datalink_op = NULL;  /* can't change data link type */
+    p->getnonblock_op = pcap_getnonblock_fd;
+    p->setnonblock_op = pcap_setnonblock_fd;
+    p->stats_op = pcap_stats_nit;
 
-	return (0);
+    return (0);
  bad:
-	pcap_cleanup_live_common(p);
-	return (PCAP_ERROR);
+    pcap_cleanup_live_common(p);
+    return (PCAP_ERROR);
 }
 
 pcap_t *
 pcap_create_interface(const char *device, char *ebuf)
 {
-	pcap_t *p;
+    pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_nit));
-	if (p == NULL)
-		return (NULL);
+    p = pcap_create_common(device, ebuf, sizeof (struct pcap_nit));
+    if (p == NULL)
+        return (NULL);
 
-	p->activate_op = pcap_activate_nit;
-	return (p);
+    p->activate_op = pcap_activate_nit;
+    return (p);
 }
 
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (0);
+    return (0);
 }

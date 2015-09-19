@@ -27,10 +27,10 @@
 #include <inttypes.h>
 #elif HAVE_STDINT_H
 #include <stdint.h>
-#endif
+#endif /* HAVE_INTTYPES_H/HAVE_STDINT_H */
 #ifdef HAVE_SYS_BITYPES_H
 #include <sys/bitypes.h>
-#endif
+#endif /* HAVE_SYS_BITYPES_H */
 #include <sys/types.h>
 #endif /* _WIN32 */
 
@@ -46,7 +46,7 @@
 
 #ifdef __MINGW32__
 #include "ip6_misc.h"
-#endif
+#endif /* __MINGW32__ */
 #else /* _WIN32 */
 #include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
 #include <netdb.h>	/* for "struct addrinfo" */
