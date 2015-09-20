@@ -429,7 +429,7 @@ struct pcap_tc {
 	TC_INSTANCE TcInstance;
 	TC_PACKETS_BUFFER TcPacketsBuffer;
 	ULONG TcAcceptedCount;
-	PCHAR PpiPacket;
+	u_char *PpiPacket;
 };
 
 int
@@ -561,7 +561,7 @@ TcActivate(pcap_t *p)
 		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
-	pt->PpiPacket = (PCHAR)malloc(sizeof(PPI_HEADER) + MAX_TC_PACKET_SIZE);
+	pt->PpiPacket = malloc(sizeof(PPI_HEADER) + MAX_TC_PACKET_SIZE);
 
 	if (pt->PpiPacket == NULL)
 	{
