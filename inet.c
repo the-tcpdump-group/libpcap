@@ -976,6 +976,10 @@ pcap_lookupnet(device, netp, maskp, errbuf)
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the
  * lowest unit number is preferred; loopback is ignored.
+ *
+ * In the best of all possible worlds, this would be the same as on
+ * UN*X, but there may be software that expects this to return a
+ * full list of devices after the first device.
  */
 char *
 pcap_lookupdev(errbuf)
