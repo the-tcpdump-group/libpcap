@@ -306,11 +306,14 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		/*
 		 * No - make it big enough.
 		 */
-		p->buffer = realloc(p->buffer, bhdr.total_length);
-		if (p->buffer == NULL) {
+		void *bigger_buffer;
+
+		bigger_buffer = realloc(p->buffer, bhdr.total_length);
+		if (bigger_buffer == NULL) {
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 			return (-1);
 		}
+		p->buffer = bigger_buffer;
 	}
 
 	/*
