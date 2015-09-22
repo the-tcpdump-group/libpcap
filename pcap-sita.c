@@ -208,10 +208,14 @@ static void empty_unit(int chassis, int geoslot) {
 
 	empty_unit_iface(u);
 	if (u->imsg) {											/* then if an inbound message buffer exists */
-		u->imsg = (char *)realloc(u->imsg, 1);				/* and re-allocate the old large buffer into a new small one */
-		if (u->imsg == NULL) /* oops, realloc call failed */
-			fprintf(stderr, "Warning...call to realloc() failed, value of errno is %d\n", errno);
+		void *bigger_buffer;
 
+		bigger_buffer = (char *)realloc(u->imsg, 1);				/* and re-allocate the old large buffer into a new small one */
+		if (bigger_buffer == NULL) {	/* oops, realloc call failed */
+			fprintf(stderr, "Warning...call to realloc() failed, value of errno is %d\n", errno);
+			return;
+		}
+		u->imsg = bigger_buffer;
 	}
 }
 
@@ -568,6 +572,7 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 	char				*newname;
 	bpf_u_int32				interfaceType;
 	unsigned char		flags;
+	void *bigger_buffer;
 
 	prev_iff = 0;
 	for (chassis = 0; chassis <= MAX_CHASSIS; chassis++) {
@@ -682,10 +687,12 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 				prev_iff = iff;
 
 				newname = translate_IOP_to_pcap_name(u, iff->name, interfaceType);		/* add a translation entry and get a point to the mangled name */
-				if ((iff->name = realloc(iff->name, strlen(newname) + 1)) == NULL) {	/* we now re-write the name stored in the interface list */
+				bigger_buffer = realloc(iff->name, strlen(newname) + 1));
+				if (bigger_buffer == NULL) {	/* we now re-write the name stored in the interface list */
 					snprintf(errbuf, PCAP_ERRBUF_SIZE, "realloc: %s", pcap_strerror(errno));
 					return -1;
 				}
+				iff->name = bigger_buffer;
 				strcpy(iff->name, newname);												/* to this new name */
 			}
 		}
