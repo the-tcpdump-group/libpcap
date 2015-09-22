@@ -168,7 +168,7 @@ sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
 	return (PCAP_ERROR);
 }
 
-static u_int 
+static u_int
 sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
 {
 	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",

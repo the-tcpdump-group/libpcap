@@ -1789,14 +1789,14 @@ pcap_sendqueue_alloc(u_int memsize)
 	return (tqueue);
 }
 
-void 
+void
 pcap_sendqueue_destroy(pcap_send_queue *queue)
 {
 	free(queue->buffer);
 	free(queue);
 }
 
-int 
+int
 pcap_sendqueue_queue(pcap_send_queue *queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
 {
 	if (queue->len + sizeof(struct pcap_pkthdr) + pkt_header->caplen > queue->maxlen){

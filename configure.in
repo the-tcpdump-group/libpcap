@@ -1053,7 +1053,7 @@ if test "$want_turbocap" != no; then
 	    #include <TcApi.h>
 	],
 	[
-	    TC_INSTANCE a; TC_PORT b; TC_BOARD c; 
+	    TC_INSTANCE a; TC_PORT b; TC_BOARD c;
 	    TC_INSTANCE i;
 	    (void)TcInstanceCreateByName("foo", &i);
 	],
@@ -1065,7 +1065,7 @@ if test "$want_turbocap" != no; then
 
 		SSRC="$SSRC pcap-tc.c"
 		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
-		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"	
+		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
 
 		AC_DEFINE(HAVE_TC_API, 1, [define if you have the TurboCap API])
 	else

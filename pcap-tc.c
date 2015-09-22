@@ -11,7 +11,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 3. Neither the name of CACE Technologies nor the names of its 
+ * 3. Neither the name of CACE Technologies nor the names of its
  * contributors may be used to endorse or promote products derived from
  * this software without specific prior written permission.
  *
@@ -106,13 +106,13 @@ typedef struct _TC_FUNCTIONS
 #endif
 	TcFcnInstanceTransmitPackets InstanceTransmitPackets;
 	TcFcnInstanceQueryStatistics InstanceQueryStatistics;
-	
+
 	TcFcnPacketsBufferCreate	PacketsBufferCreate;
 	TcFcnPacketsBufferDestroy	PacketsBufferDestroy;
 	TcFcnPacketsBufferQueryNextPacket	PacketsBufferQueryNextPacket;
 	TcFcnPacketsBufferCommitNextPacket  PacketsBufferCommitNextPacket;
 
-	TcFcnStatisticsDestroy		StatisticsDestroy;		
+	TcFcnStatisticsDestroy		StatisticsDestroy;
 	TcFcnStatisticsUpdate		StatisticsUpdate;
 	TcFcnStatisticsQueryValue	StatisticsQueryValue;
 }
@@ -143,7 +143,7 @@ static PAirpcapHandle TcGetAirPcapHandle(pcap_t *p);
 #endif
 
 #ifdef _WIN32
-TC_FUNCTIONS g_TcFunctions = 
+TC_FUNCTIONS g_TcFunctions =
 {
 	TC_API_UNLOADED, /* LoadStatus */
 	NULL,  /* hTcApiDllHandle */
@@ -169,7 +169,7 @@ TC_FUNCTIONS g_TcFunctions =
 	NULL  /* StatisticsQueryValue */
 };
 #else
-TC_FUNCTIONS g_TcFunctions = 
+TC_FUNCTIONS g_TcFunctions =
 {
 	TC_API_LOADED, /* LoadStatus */
 	TcQueryPortList,
@@ -277,7 +277,7 @@ HMODULE LoadLibrarySafe(LPCTSTR lpFileName)
 		//
 		break;
 	}
-	
+
 	if (res > MAX_PATH)
 	{
 		//
@@ -324,7 +324,7 @@ TC_API_LOAD_STATUS LoadTcFunctions(void)
 			currentStatus = InterlockedCompareExchange((LONG*)&g_TcFunctions.LoadStatus, TC_API_LOADING, TC_API_LOADING);
 			Sleep(10);
 		}
-		
+
 		/*
 		 * at this point we are either in the LOADED state, unloaded state (i.e. we are the ones loading everything)
 		 * or in cannot load
@@ -333,7 +333,7 @@ TC_API_LOAD_STATUS LoadTcFunctions(void)
 		{
 			return TC_API_LOADED;
 		}
-		
+
 		if (currentStatus == TC_API_CANNOT_LOAD)
 		{
 			return TC_API_CANNOT_LOAD;
@@ -452,7 +452,7 @@ TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
 			result = 0;
 			break;
 		}
-	
+
 		/*
 		 * enumerate the ports, and add them to the list
 		 */
@@ -552,7 +552,7 @@ TcActivate(pcap_t *p)
 	ULONG timeout;
 	PPPI_HEADER pPpiHeader;
 
-	if (p->opt.rfmon) 
+	if (p->opt.rfmon)
 	{
 		/*
 		 * No monitor mode on Tc cards; they're Ethernet
@@ -592,7 +592,7 @@ TcActivate(pcap_t *p)
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Error opening TurboCap adapter: %s", g_TcFunctions.StatusGetString(status));
 		return PCAP_ERROR;
 	}
-	
+
 	p->linktype = DLT_EN10MB;
 	p->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 	/*
@@ -608,7 +608,7 @@ TcActivate(pcap_t *p)
 	 * ignore promiscuous mode
 	 * p->opt.promisc
 	 */
-	
+
 
 	/*
 	 * ignore all the buffer sizes
@@ -638,7 +638,7 @@ TcActivate(pcap_t *p)
 	 * if the timeout is -1, it means immediate return, no timeout
 	 * if the timeout is 0, it means INFINITE
 	 */
-	
+
 	if (p->opt.timeout == 0)
 	{
 		timeout = 0xFFFFFFFF;
@@ -649,7 +649,7 @@ TcActivate(pcap_t *p)
 		/*
 		 *  we insert a minimal timeout here
 		 */
-		timeout = 10; 
+		timeout = 10;
 	}
 	else
 	{
@@ -663,9 +663,9 @@ TcActivate(pcap_t *p)
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,"Error setting the read timeout a TurboCap instance: %s", g_TcFunctions.StatusGetString(status));
 		goto bad;
 	}
-	
-	p->read_op = TcRead; 
-	p->setfilter_op = TcSetFilter; 
+
+	p->read_op = TcRead;
+	p->setfilter_op = TcSetFilter;
 	p->setdirection_op = NULL;	/* Not implemented. */
 	p->set_datalink_op = TcSetDatalink;
 	p->getnonblock_op = TcGetNonBlock;
@@ -715,7 +715,7 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 		*is_ours = 0;
 		return NULL;
 	}
-		
+
 	/*
 	 * enumerate the ports, and add them to the list
 	 */
@@ -796,13 +796,13 @@ static int TcSetNonBlock(pcap_t *p, int nonblock, char *errbuf)
 static void TcCleanup(pcap_t *p)
 {
 	struct pcap_tc *pt = p->priv;
-		
+
 	if (pt->TcPacketsBuffer != NULL)
 	{
 		g_TcFunctions.PacketsBufferDestroy(pt->TcPacketsBuffer);
 		pt->TcPacketsBuffer = NULL;
 	}
-	if (pt->TcInstance != NULL) 
+	if (pt->TcInstance != NULL)
 	{
 		/*
 		 * here we do not check for the error values
@@ -835,7 +835,7 @@ static int TcInject(pcap_t *p, const void *buf, size_t size)
 	}
 
 	status = g_TcFunctions.PacketsBufferCreate(sizeof(TC_PACKET_HEADER) + TC_ALIGN_USHORT_TO_64BIT((USHORT)size), &buffer);
-	
+
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: TcPacketsBufferCreate failure: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
@@ -887,7 +887,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	/*
 	 * Has "pcap_breakloop()" been called?
 	 */
-	if (p->break_loop) 
+	if (p->break_loop)
 	{
 		/*
 		 * Yes - clear the flag that indicates that it
@@ -908,7 +908,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 	}
 
-	while (TRUE) 
+	while (TRUE)
 	{
 		struct pcap_pkthdr hdr;
 		TC_PACKET_HEADER tcHeader;
@@ -924,14 +924,14 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * out of the loop without having read any packets, and
 		 * return the number of packets we've processed so far.
 		 */
-		if (p->break_loop) 
+		if (p->break_loop)
 		{
-			if (n == 0) 
+			if (n == 0)
 			{
 				p->break_loop = 0;
 				return -2;
-			} 
-			else 
+			}
+			else
 			{
 				return n;
 			}
@@ -941,7 +941,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		{
 			break;
 		}
-		
+
 		status = g_TcFunctions.PacketsBufferQueryNextPacket(pt->TcPacketsBuffer, &tcHeader, &data);
 
 		if (status == TC_ERROR_END_OF_BUFFER)
@@ -958,15 +958,15 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		/* No underlaying filtering system. We need to filter on our own */
-		if (p->fcode.bf_insns) 
+		if (p->fcode.bf_insns)
 		{
 			filterResult = bpf_filter(p->fcode.bf_insns, data, tcHeader.Length, tcHeader.CapturedLength);
-			
+
 			if (filterResult == 0)
 			{
 				continue;
 			}
-			
+
 			if (filterResult > tcHeader.CapturedLength)
 			{
 				filterResult = tcHeader.CapturedLength;
@@ -976,9 +976,9 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		{
 			filterResult = tcHeader.CapturedLength;
 		}
-		
+
 		pt->TcAcceptedCount ++;
-		
+
 		hdr.ts.tv_sec = (bpf_u_int32)(tcHeader.Timestamp / (ULONGLONG)(1000  * 1000 * 1000));
 		hdr.ts.tv_usec = (bpf_u_int32)((tcHeader.Timestamp % (ULONGLONG)(1000  * 1000 * 1000)) / 1000);
 
@@ -1021,7 +1021,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 		}
 
-		if (++n >= cnt && cnt > 0) 
+		if (++n >= cnt && cnt > 0)
 		{
 			return n;
 		}
@@ -1044,7 +1044,7 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcInstanceQueryStatistics: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return -1;	
+		return -1;
 	}
 
 	memset(&s, 0, sizeof(s));
@@ -1053,7 +1053,7 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcStatisticsQueryValue: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return -1;	
+		return -1;
 	}
 	if (counter <= (ULONGLONG)0xFFFFFFFF)
 	{
@@ -1068,7 +1068,7 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 	if (status != TC_SUCCESS)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error in TcStatisticsQueryValue: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
-		return -1;	
+		return -1;
 	}
 	if (counter <= (ULONGLONG)0xFFFFFFFF)
 	{
@@ -1093,23 +1093,23 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 /*
  * We filter at user level, since the kernel driver does't process the packets
  */
-static int 
+static int
 TcSetFilter(pcap_t *p, struct bpf_program *fp)
-{	
-	if(!fp) 
+{
+	if(!fp)
 	{
 		strncpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
 		return -1;
 	}
-	
+
 	/* Install a user level filter */
-	if (install_bpf_program(p, fp) < 0) 
+	if (install_bpf_program(p, fp) < 0)
 	{
 		snprintf(p->errbuf, sizeof(p->errbuf),
 			"setfilter, unable to install the filter: %s", pcap_strerror(errno));
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -1215,7 +1215,7 @@ TcSetMinToCopy(pcap_t *p, int size)
 	{
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "TurboCap error setting the mintocopy: %s (%08x)", g_TcFunctions.StatusGetString(status), status);
 	}
-	
+
 	return 0;
 }
 

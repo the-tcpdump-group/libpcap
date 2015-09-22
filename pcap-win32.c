@@ -341,7 +341,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	return (0);
 }
 
-static u_int 
+static u_int
 pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 {
 	u_int res;
@@ -351,7 +351,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Cannot transmit a queue to an offline capture or to a TurboCap port");
 		return (0);
-	}	
+	}
 
 	res = PacketSendPackets(p->adapter,
 		queue->buffer,
@@ -389,7 +389,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	}
 
 	free(p->buffer);
-	
+
 	p->buffer=new_buff;
 	p->bufsize=size;
 
@@ -423,7 +423,7 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	return (0);
 }
 
-static int 
+static int
 pcap_live_dump_ended_win32(pcap_t *p, int sync)
 {
 	return (PacketIsDumpEnded(p->adapter, (BOOLEAN)sync));
