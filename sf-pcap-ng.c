@@ -549,11 +549,14 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		/*
 		 * We need to grow the array.
 		 */
+		bpf_u_int32 new_ifaces_size;
+		struct pcap_ng_if *new_ifaces;
+
 		if (ps->ifaces_size == 0) {
 			/*
 			 * It's currently empty.
 			 *
-			 * (The Clang static analyzer doesn't do enought,
+			 * (The Clang static analyzer doesn't do enough,
 			 * err, umm, dataflow *analysis* to realize that
 			 * ps->ifaces_size == 0 if ps->ifaces == NULL,
 			 * and so complains about a possible zero argument
@@ -566,8 +569,8 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			 * need a pcap-ng file with tens of millions of
 			 * interfaces).)
 			 */
-			ps->ifaces_size = 1;
-			ps->ifaces = malloc(sizeof (struct pcap_ng_if));
+			new_ifaces_size = 1;
+			new_ifaces = malloc(sizeof (struct pcap_ng_if));
 		} else {
 			/*
 			 * It's not currently empty; double its size.
@@ -592,7 +595,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			 * ps->ifaces_size * 2 doesn't overflow, so it's
 			 * safe to multiply.
 			 */
-			ps->ifaces_size *= 2;
+			new_ifaces_size = ps->ifaces_size * 2;
 
 			/*
 			 * Now make sure that's not so big that it overflows
@@ -600,10 +603,10 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			 *
 			 * That can happen on 32-bit platforms, with a 32-bit
 			 * size_t; it shouldn't happen on 64-bit platforms,
-			 * with a 64-bit size_t, as ps->ifaces_size is
+			 * with a 64-bit size_t, as new_ifaces_size is
 			 * 32 bits.
 			 */
-			if (ps->ifaces_size * sizeof (struct pcap_ng_if) < ps->ifaces_size) {
+			if (new_ifaces_size * sizeof (struct pcap_ng_if) < new_ifaces_size) {
 				/*
 				 * As this fails only with 32-bit size_t,
 				 * the multiplication was 32x32->32, and
@@ -618,9 +621,9 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 				    0xFFFFFFFFU / ((u_int)sizeof (struct pcap_ng_if)));
 				return (0);
 			}
-			ps->ifaces = realloc(ps->ifaces, ps->ifaces_size * sizeof (struct pcap_ng_if));
+			new_ifaces = realloc(ps->ifaces, new_ifaces_size * sizeof (struct pcap_ng_if));
 		}
-		if (ps->ifaces == NULL) {
+		if (new_ifaces == NULL) {
 			/*
 			 * We ran out of memory.
 			 * Give up.
@@ -630,6 +633,8 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			    ps->ifcount);
 			return (0);
 		}
+		ps->ifaces_size = new_ifaces_size;
+		ps->ifaces = new_ifaces;
 	}
 
 	/*
