@@ -73,25 +73,73 @@
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
+
 #if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
 #endif
+
 #ifdef HAVE_NET_PFVAR_H
 #include <sys/socket.h>
 #include <net/if.h>
 #include <net/pfvar.h>
 #include <net/if_pflog.h>
 #endif
+
 #ifndef offsetof
 #define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
+
 #ifdef INET6
-#ifndef _WIN32
+#ifdef _WIN32
+#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
+/* IPv6 address */
+struct in6_addr
+  {
+    union
+      {
+	u_int8_t		u6_addr8[16];
+	u_int16_t	u6_addr16[8];
+	u_int32_t	u6_addr32[4];
+      } in6_u;
+#define s6_addr			in6_u.u6_addr8
+#define s6_addr16		in6_u.u6_addr16
+#define s6_addr32		in6_u.u6_addr32
+#define s6_addr64		in6_u.u6_addr64
+  };
+
+typedef unsigned short	sa_family_t;
+
+#define	__SOCKADDR_COMMON(sa_prefix) \
+  sa_family_t sa_prefix##family
+
+/* Ditto, for IPv6.  */
+struct sockaddr_in6
+  {
+    __SOCKADDR_COMMON (sin6_);
+    u_int16_t sin6_port;		/* Transport layer port # */
+    u_int32_t sin6_flowinfo;	/* IPv6 flow information */
+    struct in6_addr sin6_addr;	/* IPv6 address */
+  };
+
+#ifndef EAI_ADDRFAMILY
+struct addrinfo {
+	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
+	int	ai_family;	/* PF_xxx */
+	int	ai_socktype;	/* SOCK_xxx */
+	int	ai_protocol;	/* 0 or IPPROTO_xxx for IPv4 and IPv6 */
+	size_t	ai_addrlen;	/* length of ai_addr */
+	char	*ai_canonname;	/* canonical name for hostname */
+	struct sockaddr *ai_addr;	/* binary address */
+	struct addrinfo *ai_next;	/* next structure in linked list */
+};
+#endif /* EAI_ADDRFAMILY */
+#endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
+#else /* _WIN32 */
 #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
-#endif /*INET6*/
+#endif /* INET6 */
 #include <pcap/namedb.h>
 
 #define ETHERMTU	1500

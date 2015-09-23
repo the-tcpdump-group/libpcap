@@ -53,57 +53,6 @@
 
 #include <ws2tcpip.h>
 
-#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
-/* IPv6 address */
-struct in6_addr
-  {
-    union
-      {
-	u_int8_t		u6_addr8[16];
-	u_int16_t	u6_addr16[8];
-	u_int32_t	u6_addr32[4];
-      } in6_u;
-#define s6_addr			in6_u.u6_addr8
-#define s6_addr16		in6_u.u6_addr16
-#define s6_addr32		in6_u.u6_addr32
-#define s6_addr64		in6_u.u6_addr64
-  };
-#endif /* __MINGW32__ */
-
-#if (defined _MSC_VER) || (defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF))
-typedef unsigned short	sa_family_t;
-#endif
-
-#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
-
-#define	__SOCKADDR_COMMON(sa_prefix) \
-  sa_family_t sa_prefix##family
-
-/* Ditto, for IPv6.  */
-struct sockaddr_in6
-  {
-    __SOCKADDR_COMMON (sin6_);
-    u_int16_t sin6_port;		/* Transport layer port # */
-    u_int32_t sin6_flowinfo;	/* IPv6 flow information */
-    struct in6_addr sin6_addr;	/* IPv6 address */
-  };
-#endif /* __MINGW32__ */
-
-#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
-#ifndef EAI_ADDRFAMILY
-struct addrinfo {
-	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
-	int	ai_family;	/* PF_xxx */
-	int	ai_socktype;	/* SOCK_xxx */
-	int	ai_protocol;	/* 0 or IPPROTO_xxx for IPv4 and IPv6 */
-	size_t	ai_addrlen;	/* length of ai_addr */
-	char	*ai_canonname;	/* canonical name for hostname */
-	struct sockaddr *ai_addr;	/* binary address */
-	struct addrinfo *ai_next;	/* next structure in linked list */
-};
-#endif
-#endif /* __MINGW32__ */
-
 #define caddr_t char*
 
 #ifdef _MSC_VER
