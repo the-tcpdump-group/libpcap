@@ -39,13 +39,6 @@
 #include <sys/socket.h>
 #endif /* _WIN32 */
 
-/*
- * XXX - why was this included even on UNIX?
- */
-#ifdef __MINGW32__
-#include "ip6_misc.h"
-#endif
-
 #ifndef _WIN32
 
 #ifdef __NetBSD__
