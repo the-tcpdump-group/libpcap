@@ -47,10 +47,6 @@
 
 #include "bittypes.h"
 
-/*
- * A bunch of declarations for IPv6 from FreeBSD not present in Windows.
- */
-
 #include <ws2tcpip.h>
 
 #define caddr_t char*
