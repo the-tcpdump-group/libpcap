@@ -118,10 +118,6 @@ SOURCE=..\..\inet.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\inet_net.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\nametoaddr.c
 # End Source File
 # Begin Source File

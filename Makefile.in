@@ -353,8 +353,7 @@ EXTRA_DIST = \
 	Win32/Prj/libpcap.dsw \
 	Win32/Src/gai_strerror.c \
 	Win32/Src/getopt.c \
-	Win32/Src/getservent.c \
-	Win32/Src/inet_net.c
+	Win32/Src/getservent.c
 
 all: libpcap.a shared pcap-config
 
