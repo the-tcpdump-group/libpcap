@@ -102,10 +102,6 @@ SOURCE="..\..\fad-win32.c"
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\ffs.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\gencode.c
 # End Source File
 # Begin Source File

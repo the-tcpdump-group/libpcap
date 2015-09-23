@@ -63,8 +63,26 @@ extern int _w32_ffs (int mask);
 #define ffs _w32_ffs
 #endif
 
+/*
+ * So is the check for _MSC_VER done because MinGW has this?
+ */
 #if defined(_WIN32) && defined (_MSC_VER)
-int ffs(int mask);
+/*
+ * ffs -- vax ffs instruction
+ *
+ * XXX - with versions of VS that have it, use _BitScanForward()?
+ */
+static int
+ffs(int mask)
+{
+	int bit;
+
+	if (mask == 0)
+		return(0);
+	for (bit = 1; !(mask & 1); bit++)
+		mask >>= 1;
+	return(bit);
+}
 #endif
 
 /*

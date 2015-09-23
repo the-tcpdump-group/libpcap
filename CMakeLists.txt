@@ -200,7 +200,6 @@ if( WIN32 )
     file(GLOB PROJECT_SOURCE_LIST_WIN32_C
         fad-win32.c
         pcap-win32.c
-        Win32/Src/ffs.c
         Win32/Src/getservent.c
     )
 
