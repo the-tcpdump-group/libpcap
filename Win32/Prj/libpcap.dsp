@@ -126,15 +126,7 @@ SOURCE=..\..\inet.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\inet_aton.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\Src\inet_net.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\inet_pton.c
 # End Source File
 # Begin Source File
 

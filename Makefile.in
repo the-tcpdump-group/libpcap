@@ -356,9 +356,7 @@ EXTRA_DIST = \
 	Win32/Src/getnetent.c \
 	Win32/Src/getopt.c \
 	Win32/Src/getservent.c \
-	Win32/Src/inet_aton.c \
-	Win32/Src/inet_net.c \
-	Win32/Src/inet_pton.c
+	Win32/Src/inet_net.c
 
 all: libpcap.a shared pcap-config
 
