@@ -76,62 +76,93 @@
 
 #include <ws2tcpip.h>
 
-#ifndef HAVE_U_INT8_T
-typedef unsigned char u_int8_t;
-typedef signed char int8_t;
-#endif /* HAVE_U_INT8_T */
+#if defined(_MSC_VER)
+  /*
+   * MSVC.
+   */
+  #if _MSC_VER >= 1800
+    /*
+     * VS 2013 or newer; we have <inttypes.h>.
+     */
+    #include <inttypes.h>
 
-#ifndef HAVE_U_INT16_T
-typedef unsigned short u_int16_t;
-typedef signed short int16_t;
-#endif /* HAVE_U_INT16_T */
+    #define u_int8_t uint8_t
+    #define u_int16_t uint16_t
+    #define u_int32_t uint32_t
+    #define u_int64_t uint64_t
+  #else
+    /*
+     * Earlier VS; we have to define this stuff ourselves.
+     */
+    #ifndef HAVE_U_INT8_T
+      typedef unsigned char u_int8_t;
+      typedef signed char int8_t;
+    #endif
 
-#ifndef HAVE_U_INT32_T
-typedef unsigned int u_int32_t;
-typedef signed int int32_t;
-#endif /* HAVE_U_INT32_T */
+    #ifndef HAVE_U_INT16_T
+      typedef unsigned short u_int16_t;
+      typedef signed short int16_t;
+    #endif
 
-#ifndef HAVE_U_INT64_T
-#ifdef _MSC_EXTENSIONS
-typedef unsigned _int64 u_int64_t;
-typedef _int64 int64_t;
-#else /* _MSC_EXTENSIONS */
-typedef unsigned long long u_int64_t;
-typedef long long int64_t;
-#endif /* _MSC_EXTENSIONS */
-#endif /* HAVE_U_INT64_T */
+    #ifndef HAVE_U_INT32_T
+      typedef unsigned int u_int32_t;
+      typedef signed int int32_t;
+    #endif
 
+    #ifndef HAVE_U_INT64_T
+      #ifdef _MSC_EXTENSIONS
+        typedef unsigned _int64 u_int64_t;
+        typedef _int64 int64_t;
+      #else /* _MSC_EXTENSIONS */
+        typedef unsigned long long u_int64_t;
+        typedef long long int64_t;
+      #endif
+    #endif
+  #endif
+#elif defined(__MINGW32__)
+  #include <stdint.h>
+#endif
+
+/*
+ * These may be defined by <inttypes.h>.
+ *
+ * XXX - for MSVC, we always want the _MSC_EXTENSIONS versions.
+ * What about other compilers?  If, as the MinGW Web site says MinGW
+ * does, the other compilers just use Microsoft's run-time library,
+ * then they should probably use the _MSC_EXTENSIONS even if the
+ * compiler doesn't define _MSC_EXTENSIONS.
+ */
 #ifndef PRId64
-#ifdef _MSC_EXTENSIONS
-#define PRId64	"I64d"
-#else /* _MSC_EXTENSIONS */
-#define PRId64	"lld"
-#endif /* _MSC_EXTENSIONS */
+  #ifdef _MSC_EXTENSIONS
+    #define PRId64	"I64d"
+  #else
+    #define PRId64	"lld"
+  #endif
 #endif /* PRId64 */
 
 #ifndef PRIo64
-#ifdef _MSC_EXTENSIONS
-#define PRIo64	"I64o"
-#else /* _MSC_EXTENSIONS */
-#define PRIo64	"llo"
-#endif /* _MSC_EXTENSIONS */
+  #ifdef _MSC_EXTENSIONS
+    #define PRIo64	"I64o"
+  #else
+    #define PRIo64	"llo"
+  #endif
 #endif /* PRIo64 */
 
 #ifndef PRIx64
-#ifdef _MSC_EXTENSIONS
-#define PRIx64	"I64x"
-#else /* _MSC_EXTENSIONS */
-#define PRIx64	"llx"
-#endif /* _MSC_EXTENSIONS */
-#endif /* PRIx64 */
+  #ifdef _MSC_EXTENSIONS
+    #define PRIx64	"I64x"
+  #else
+    #define PRIx64	"llx"
+  #endif
+#endif
 
 #ifndef PRIu64
-#ifdef _MSC_EXTENSIONS
-#define PRIu64	"I64u"
-#else /* _MSC_EXTENSIONS */
-#define PRIu64	"llu"
-#endif /* _MSC_EXTENSIONS */
-#endif /* PRIu64 */
+  #ifdef _MSC_EXTENSIONS
+    #define PRIu64	"I64u"
+  #else
+    #define PRIu64	"llu"
+  #endif
+#endif
 
 #define caddr_t char*
 
@@ -144,9 +175,5 @@ typedef long long int64_t;
 #if !defined(__cplusplus)
   #define inline __inline
 #endif
-
-#ifdef __MINGW32__
-  #include <stdint.h>
-#endif /*__MINGW32__*/
 
 #endif /* pcap_stdinc_h */
