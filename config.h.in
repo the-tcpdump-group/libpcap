@@ -124,9 +124,6 @@
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #undef HAVE_OS_PROTO_H
 
-/* Define to 1 if you have the <paths.h> header file. */
-#undef HAVE_PATHS_H
-
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
 
