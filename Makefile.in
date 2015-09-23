@@ -341,12 +341,7 @@ EXTRA_DIST = \
 	scanner.c.top \
 	scanner.l \
 	Win32/Include/Gnuc.h \
-	Win32/Include/addrinfo.h \
 	Win32/Include/bittypes.h \
-	Win32/Include/cdecl_ext.h \
-	Win32/Include/inetprivate.h \
-	Win32/Include/sockstorage.h \
-	Win32/Include/arpa/nameser.h \
 	Win32/Include/net/if.h \
 	Win32/Include/net/netdb.h \
 	Win32/Include/net/paths.h \
