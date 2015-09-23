@@ -106,14 +106,6 @@ SOURCE=..\..\gencode.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\getnetbynm.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\getnetent.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\Src\getservent.c
 # End Source File
 # Begin Source File

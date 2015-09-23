@@ -176,6 +176,15 @@ pcap_nametonetaddr(const char *name)
 #else
 	/*
 	 * There's no "getnetbyname()" on Windows.
+	 *
+	 * XXX - I guess we could use the BSD code to read
+	 * C:\Windows\System32\drivers\etc/networks, assuming
+	 * that's its home on all the versions of Windows
+	 * we use, but that file probably just has the loopback
+	 * network on 127/24 on 99 44/100% of Windows machines.
+	 *
+	 * (Heck, these days it probably just has that on 99 44/100%
+	 * of *UN*X* machines.)
 	 */
 	return 0;
 #endif
