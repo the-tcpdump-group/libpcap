@@ -8,7 +8,7 @@ project( pcap_tests )
 
 if( MSVC )
     file(GLOB PROJECT_SOURCE_LIST_WIN32_C
-        ${pcap_SOURCE_DIR}/Win32/Src/getopt.c
+        ${pcap_SOURCE_DIR}/missing/getopt.c
     )
 endif( MSVC )
 

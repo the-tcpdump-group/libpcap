@@ -279,6 +279,7 @@ EXTRA_DIST = \
 	lbl/os-solaris2.h \
 	lbl/os-sunos4.h \
 	lbl/os-ultrix4.h \
+	missing/getopt.c \
 	missing/snprintf.c \
 	mkdep \
 	msdos/bin2c.c \
@@ -350,8 +351,7 @@ EXTRA_DIST = \
 	Win32/Include/net/netdb.h \
 	Win32/Include/net/paths.h \
 	Win32/Prj/libpcap.dsp \
-	Win32/Prj/libpcap.dsw \
-	Win32/Src/getopt.c
+	Win32/Prj/libpcap.dsw
 
 all: libpcap.a shared pcap-config
 
