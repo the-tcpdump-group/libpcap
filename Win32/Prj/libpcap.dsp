@@ -106,10 +106,6 @@ SOURCE=..\..\gencode.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\getservent.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\grammar.c
 # End Source File
 # Begin Source File
