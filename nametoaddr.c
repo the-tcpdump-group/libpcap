@@ -34,6 +34,32 @@
 #ifdef _WIN32
 #include <pcap-stdinc.h>
 
+#ifdef INET6
+/*
+ * To quote the MSDN page for getaddrinfo() at
+ *
+ *    https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
+ *
+ * "Support for getaddrinfo on Windows 2000 and older versions
+ * The getaddrinfo function was added to the Ws2_32.dll on Windows XP and
+ * later. To execute an application that uses this function on earlier
+ * versions of Windows, then you need to include the Ws2tcpip.h and
+ * Wspiapi.h files. When the Wspiapi.h include file is added, the
+ * getaddrinfo function is defined to the WspiapiGetAddrInfo inline
+ * function in the Wspiapi.h file. At runtime, the WspiapiGetAddrInfo
+ * function is implemented in such a way that if the Ws2_32.dll or the
+ * Wship6.dll (the file containing getaddrinfo in the IPv6 Technology
+ * Preview for Windows 2000) does not include getaddrinfo, then a
+ * version of getaddrinfo is implemented inline based on code in the
+ * Wspiapi.h header file. This inline code will be used on older Windows
+ * platforms that do not natively support the getaddrinfo function."
+ *
+ * We use getaddrinfo(), so we include Wspiapi.h here.  pcap-stdinc.h
+ * includes Ws2tcpip.h, so we don't need to include it ourselves.
+ */
+#include <Wspiapi.h>
+#endif
+
 #else /* _WIN32 */
 
 #include <sys/param.h>
