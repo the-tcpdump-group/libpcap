@@ -344,7 +344,6 @@ EXTRA_DIST = \
 	Win32/Include/bittypes.h \
 	Win32/Include/cdecl_ext.h \
 	Win32/Include/inetprivate.h \
-	Win32/Include/ip6_misc.h \
 	Win32/Include/sockstorage.h \
 	Win32/Include/arpa/nameser.h \
 	Win32/Include/net/if.h \
