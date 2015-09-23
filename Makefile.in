@@ -341,9 +341,7 @@ EXTRA_DIST = \
 	scanner.c.top \
 	scanner.l \
 	Win32/Include/Gnuc.h \
-	Win32/Include/bittypes.h \
 	Win32/Include/net/if.h \
-	Win32/Include/net/paths.h \
 	Win32/Prj/libpcap.dsp \
 	Win32/Prj/libpcap.dsw
 
