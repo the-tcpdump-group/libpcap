@@ -1536,7 +1536,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 void
 pcap_win32_err_to_str(DWORD error, char *errbuf)
 {
-	int errlen;
+	size_t errlen;
 	char *p;
 
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,

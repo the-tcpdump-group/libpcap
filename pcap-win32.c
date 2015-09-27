@@ -285,7 +285,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	 * No need to copy the data - we're doing a fetch.
 	 */
 	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = len;
+	oid_data_arg->Length = (ULONG)len;	/* XXX - check for ridiculously large value? */
 	if (!PacketRequest(p->adapter, FALSE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -324,7 +324,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	}
 
 	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = len;
+	oid_data_arg->Length = (ULONG)len;	/* XXX - check for ridiculously large value? */
 	memcpy(oid_data_arg->Data, data, len);
 	if (!PacketRequest(p->adapter, TRUE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
@@ -410,7 +410,7 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	}
 
 	/* Set the name of the dump file */
-	res = PacketSetDumpName(p->adapter, filename, strlen(filename));
+	res = PacketSetDumpName(p->adapter, filename, (int)strlen(filename));
 	if(res == FALSE){
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error setting kernel dump file name");
@@ -746,7 +746,7 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 		return (-1);
 	}
 
-	PacketInitPacket(PacketToSend,(PVOID)buf,size);
+	PacketInitPacket(PacketToSend, (PVOID)buf, (UINT)size);
 	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
 		PacketFreePacket(PacketToSend);
@@ -760,7 +760,7 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 	 * "pcap_inject()" is expected to return the number of bytes
 	 * sent.
 	 */
-	return (size);
+	return ((int)size);
 }
 
 static void

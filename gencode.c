@@ -271,14 +271,14 @@ static struct addrinfo *ai;
 #define NCHUNKS 16
 #define CHUNK0SIZE 1024
 struct chunk {
-	u_int n_left;
+	size_t n_left;
 	void *m;
 };
 
 static struct chunk chunks[NCHUNKS];
 static int cur_chunk;
 
-static void *newchunk(u_int);
+static void *newchunk(size_t);
 static void freechunks(void);
 static inline struct block *new_block(int);
 static inline struct slist *new_stmt(int);
@@ -362,8 +362,7 @@ static struct block *gen_ppi_dlt_check(void);
 static struct block *gen_msg_abbrev(int type);
 
 static void *
-newchunk(n)
-	u_int n;
+newchunk(size_t n)
 {
 	struct chunk *cp;
 	int k;
@@ -415,7 +414,7 @@ char *
 sdup(s)
 	register const char *s;
 {
-	int n = strlen(s) + 1;
+	size_t n = strlen(s) + 1;
 	char *cp = newchunk(n);
 
 	strlcpy(cp, s, n);

@@ -497,7 +497,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 * correctly in the savefile header.  If the caplen isn't
 		 * grossly wrong, try to salvage.
 		 */
-		bpf_u_int32 bytes_to_discard;
+		size_t bytes_to_discard;
 		size_t bytes_to_read, bytes_read;
 		char discard_buf[4096];
 
@@ -729,7 +729,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 {
 	FILE *f;
 	int linktype;
-	int amt_read;
+	size_t amt_read;
 	struct pcap_file_header ph;
 
 	linktype = dlt_to_linktype(p->linktype);
