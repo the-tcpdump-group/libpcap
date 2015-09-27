@@ -12,6 +12,9 @@ if( MSVC )
     option (USE_STATIC_RT "Use static Runtime" ON)
 endif( MSVC )
 option (BUILD_SHARED_LIBS "Build shared libraries" ON)
+if( WIN32 )
+    set(PACKET_DLL_DIR "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
+endif( WIN32 )
 
 ######################################
 # Project setings
