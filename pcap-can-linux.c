@@ -222,11 +222,11 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 {
 	struct msghdr msg;
 	struct pcap_pkthdr pkth;
-	char *pktd;
+	u_char *pktd;
 	struct iovec iv;
 	struct can_frame* cf;
 
-	pktd = (char *)handle->buffer + CAN_CONTROL_SIZE;
+	pktd = (u_char *)handle->buffer + CAN_CONTROL_SIZE;
 	iv.iov_base = pktd;
 	iv.iov_len = handle->snapshot;
 
