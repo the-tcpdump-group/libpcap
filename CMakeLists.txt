@@ -8,7 +8,9 @@ project( ${PROJECT_NAME} )
 ###################################################################
 
 option (INET6 "Enable IPv6" ON)
-option (USE_STATIC_RT "Use static Runtime" ON)
+if( MSVC )
+    option (USE_STATIC_RT "Use static Runtime" ON)
+endif( MSVC )
 option (BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 ######################################
