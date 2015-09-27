@@ -1078,22 +1078,44 @@ if test "$want_turbocap" != no; then
 	fi
 fi
 
-AC_LBL_LEX_AND_YACC(V_LEX, V_YACC, pcap_)
-if test "$V_LEX" = lex ; then
-# Some versions of lex can't handle the definitions section of scanner.l .
-# Try lexing it and complain if it can't deal.
-	AC_CACHE_CHECK([for capable lex], tcpdump_cv_capable_lex,
-		if lex -t scanner.l > /dev/null 2>&1; then
-			tcpdump_cv_capable_lex=yes
-		else
-			tcpdump_cv_capable_lex=insufficient
-		fi)
-	if test $tcpdump_cv_capable_lex = insufficient ; then
-		AC_MSG_ERROR([Your operating system's lex is insufficient to compile
- libpcap.  flex is a lex replacement that has many advantages, including
- being able to compile libpcap.  For more information, see
- http://www.gnu.org/software/flex/flex.html .])
-	fi
+#
+# Look for {f}lex.
+#
+AC_PROG_LEX
+
+#
+# Make sure {f}lex supports the -P, --header-file, and --nounput flags
+# and supports processing our scanner.l.
+#
+AC_CACHE_CHECK([for capable lex], tcpdump_cv_capable_lex,
+	if $LEX -P pcap_ --header-file=/dev/null --nounput -t scanner.l > /dev/null 2>&1; then
+	    tcpdump_cv_capable_lex=yes
+	else
+	    tcpdump_cv_capable_lex=insufficient
+	fi)
+if test $tcpdump_cv_capable_lex = insufficient ; then
+	AC_MSG_ERROR([$LEX is insufficient to compile libpcap.
+ libpcap requires Flex 2.5.31 or later, or a compatible version of lex.])
+fi
+
+#
+# Look for yacc/bison/byacc.
+#
+AC_PROG_YACC
+
+#
+# Make sure it supports the -p flag and supports processing our
+# grammar.y.
+#
+AC_CACHE_CHECK([for capable yacc/bison], tcpdump_cv_capable_yacc,
+	if $YACC -p pcap_ grammar.y -o /dev/null >/dev/null 2>&1; then
+	    tcpdump_cv_capable_yacc=yes
+	else
+	    tcpdump_cv_capable_yacc=insufficient
+	fi)
+if test $tcpdump_cv_capable_yacc = insufficient ; then
+	AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
+ libpcap requires Bison, Berkeley YACC, or another YACC compatible with them.])
 fi
 
 #

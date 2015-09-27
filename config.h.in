@@ -226,9 +226,6 @@
 /* path for device for USB sniffing */
 #undef LINUX_USB_MON_DEV
 
-/* if we need a pcap_parse wrapper around yyparse */
-#undef NEED_YYPARSE_WRAPPER
-
 /* Define to 1 if netinet/ether.h declares `ether_hostton' */
 #undef NETINET_ETHER_H_DECLARES_ETHER_HOSTTON
 
@@ -294,6 +291,10 @@
 
 /* Enable parser debugging */
 #undef YYDEBUG
+
+/* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
+   `char[]'. */
+#undef YYTEXT_POINTER
 
 /* Enable large inode numbers on Mac OS X 10.5.  */
 #ifndef _DARWIN_USE_64_BIT_INODE

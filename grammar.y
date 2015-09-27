@@ -181,16 +181,6 @@ yyerror(const char *msg)
 	/* NOTREACHED */
 }
 
-#ifdef NEED_YYPARSE_WRAPPER
-int yyparse(void);
-
-int
-pcap_parse()
-{
-	return (yyparse());
-}
-#endif
-
 #ifdef HAVE_NET_PFVAR_H
 static int
 pfreason_to_num(const char *reason)

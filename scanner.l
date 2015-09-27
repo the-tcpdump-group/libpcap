@@ -1,9 +1,14 @@
-%top{
+%top {
 /* Must come first for _LARGE_FILE_API on AIX. */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 }
+
+/*
+ * We don't read from the terminal.
+ */
+%option never-interactive
 
 %{
 /*
@@ -87,7 +92,7 @@
 #endif /*INET6*/
 
 #include <pcap/namedb.h>
-#include "tokdefs.h"
+#include "grammar.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
