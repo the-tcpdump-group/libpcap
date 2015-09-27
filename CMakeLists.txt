@@ -215,6 +215,7 @@ else()
 	set( PCAP_TYPE null )
     endif()
 endif( WIN32 )
+message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
 
 #
@@ -298,6 +299,7 @@ else()
         endif()
     endif()
 endif()
+message(STATUS "Find-interfaces mechanism type: ${FINDALLDEVS_TYPE}")
 set( PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} fad-${FINDALLDEVS_TYPE}.c )
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
@@ -326,6 +328,7 @@ find_program(LEX_EXECUTABLE NAMES flex win_flex lex)
 if( ${LEX_EXECUTABLE} STREQUAL "LEX_EXECUTABLE-NOTFOUND" )
     message(FATAL_ERROR "Neither flex nor win_flex nor lex was found." )
 endif()
+message(STATUS "Lexical analyzer generator: ${LEX_EXECUTABLE}")
 
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/scanner.c ${CMAKE_BINARY_DIR}/scanner.h
@@ -350,8 +353,6 @@ set_source_files_properties(${CMAKE_BINARY_DIR}/scanner.c PROPERTIES
 #
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_BINARY_DIR}/scanner.c)
 
-#set(PROJECT_SOURCE_LIST_L scanner.l)
-
 #
 # Try to find YACC or Bison.
 #
@@ -359,6 +360,7 @@ find_program(YACC_EXECUTABLE bison win_bison byacc yacc)
 if( ${YACC_EXECUTABLE} STREQUAL "YACC_EXECUTABLE-NOTFOUND" )
     message(FATAL_ERROR "Neither bison nor win_bison nor byacc nor yacc was found." )
 endif()
+message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 
 #
 # Create custom command for the scanner.
@@ -367,7 +369,7 @@ endif()
 #
 get_filename_component(YACC_NAME ${YACC_EXECUTABLE} NAME_WE)
 if( "${YACC_NAME}" STREQUAL "bison" OR "${YACC_NAME}" STREQUAL "win_bison" )
-    set( YACC_COMPATIBILITY_FLAGT "-y" )
+    set( YACC_COMPATIBILITY_FLAG "-y" )
 endif()
 add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/grammar.c ${CMAKE_BINARY_DIR}/grammar.h
@@ -383,8 +385,6 @@ add_custom_command(
 set_source_files_properties(${CMAKE_BINARY_DIR}/grammar.c PROPERTIES
     GENERATED TRUE
 )
-
-#set(PROJECT_SOURCE_LIST_Y grammar.y)
 
 #
 # Add grammar.c to the list of sources.
