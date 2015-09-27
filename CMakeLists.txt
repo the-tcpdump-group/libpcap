@@ -30,7 +30,11 @@ include_directories(
 if( WIN32 )
     if( NOT "${PACKET_DLL_DIR}" STREQUAL "" )
         include_directories("${PACKET_DLL_DIR}/Include")
-        link_directories("${PACKET_DLL_DIR}/Lib")
+        if( CMAKE_CL_64 )
+            link_directories("${PACKET_DLL_DIR}/Lib/x64")
+        else( CMAKE_CL_64 )
+            link_directories("${PACKET_DLL_DIR}/Lib")
+        endif( CMAKE_CL_64 )
     endif()
     include_directories(
         ../Common/
