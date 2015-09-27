@@ -6926,6 +6926,9 @@ fi
 rm -f conftest.l $LEX_OUTPUT_ROOT.c
 
 fi
+if test "$LEX" = ":"; then
+	as_fn_error $? "Neither flex nor lex was found." "$LINENO" 5
+fi
 
 #
 # Make sure {f}lex supports the -P, --header-file, and --nounput flags
