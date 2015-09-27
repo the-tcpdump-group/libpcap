@@ -357,7 +357,7 @@ set_source_files_properties(${CMAKE_BINARY_DIR}/scanner.c PROPERTIES
 #
 # Try to find YACC or Bison.
 #
-find_program(YACC_EXECUTABLE bison win_bison byacc yacc)
+find_program(YACC_EXECUTABLE NAMES bison win_bison byacc yacc)
 if( ${YACC_EXECUTABLE} STREQUAL "YACC_EXECUTABLE-NOTFOUND" )
     message(FATAL_ERROR "Neither bison nor win_bison nor byacc nor yacc was found." )
 endif()
