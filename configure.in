@@ -1082,6 +1082,9 @@ fi
 # Look for {f}lex.
 #
 AC_PROG_LEX
+if test "$LEX" = ":"; then
+	AC_MSG_ERROR([Neither flex nor lex was found.])
+fi
 
 #
 # Make sure {f}lex supports the -P, --header-file, and --nounput flags
