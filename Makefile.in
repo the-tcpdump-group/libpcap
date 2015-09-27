@@ -434,7 +434,6 @@ scanner.c: $(srcdir)/scanner.l
 	$(srcdir)/runlex.sh $(LEX) -o$@ $<
 	mv $@ $@.bottom
 	cat $@.top $@.bottom > $@
-	@rm $@.bottom
 
 scanner.o: scanner.c tokdefs.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
