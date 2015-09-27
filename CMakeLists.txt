@@ -9,6 +9,7 @@ project( ${PROJECT_NAME} )
 
 option (USE_IPV6 "Enable IPv6" ON)
 option (USE_STATIC_RT "Use static Runtime" ON)
+option (BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 ######################################
 # Project setings
