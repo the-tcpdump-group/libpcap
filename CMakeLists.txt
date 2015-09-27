@@ -25,6 +25,9 @@ include_directories(
 )
 
 if( WIN32 )
+    if( NOT "${PACKET_DLL_DIR}" STREQUAL "" )
+        include_directories("${PACKET_DLL_DIR}/Include")
+    endif()
     include_directories(
         ../Common/
         Win32/Include
