@@ -1,3 +1,10 @@
+%top{
+/* Must come first for _LARGE_FILE_API on AIX. */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+}
+
 %{
 /*
  * Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997
@@ -19,10 +26,6 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #ifdef _WIN32
   #include <pcap-stdinc.h>
