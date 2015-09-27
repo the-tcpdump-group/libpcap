@@ -230,6 +230,7 @@ EXTRA_DIST = \
 	ChmodBPF/ChmodBPF \
 	ChmodBPF/StartupParameters.plist \
 	CREDITS \
+	CMakeLists.txt \
 	INSTALL.txt \
 	LICENSE \
 	Makefile.in \
@@ -252,6 +253,8 @@ EXTRA_DIST = \
 	aclocal.m4 \
 	bpf/net/bpf_filter.c \
 	chmod_bpf \
+	cmakeconfig.h.in \
+	config/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
 	config.sub \
