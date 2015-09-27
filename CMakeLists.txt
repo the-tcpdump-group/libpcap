@@ -7,7 +7,7 @@ project( ${PROJECT_NAME} )
 #   Parameters
 ###################################################################
 
-option (USE_IPV6 "Enable IPv6" ON)
+option (INET6 "Enable IPv6" ON)
 option (USE_STATIC_RT "Use static Runtime" ON)
 option (BUILD_SHARED_LIBS "Build shared libraries" ON)
 
@@ -112,11 +112,9 @@ check_struct_has_member("struct sockaddr_storage" ss_family sys/socket.h  HAVE_S
 #
 check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_SOCKADDR_SA_LEN )
 
-if( USE_IPV6 )
+if( INET6 )
     MESSAGE( STATUS "Use IPv6" )
-    set( CONFIG_H_CONTENT "${CONFIG_H_CONTENT}#define INET6\n" )
-    add_definitions( -DINET6 )
-endif( USE_IPV6 )
+endif( INET6 )
 
 if( WIN32 )
     add_definitions( -DHAVE_ADDRINFO )
