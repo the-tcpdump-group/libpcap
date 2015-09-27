@@ -1229,3 +1229,9 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 	pw->nonblock = (newtimeout == -1);
 	return (0);
 }
+
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	return (0);
+}
