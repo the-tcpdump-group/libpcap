@@ -338,7 +338,6 @@ EXTRA_DIST = \
 	pcap-usb-linux.h \
 	pcap-win32.c \
 	runlex.sh \
-	scanner.c.top \
 	scanner.l \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
