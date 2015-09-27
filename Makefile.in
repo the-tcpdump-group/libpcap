@@ -440,8 +440,7 @@ grammar.c: $(srcdir)/grammar.y
 	$(YACC) -p pcap_ -o grammar.c -d $<
 
 grammar.o: grammar.c
-	@rm -f $@
-	$(CC) $(FULL_CFLAGS) -Dyylval=pcap_lval -c grammar.c
+	$(CC) $(FULL_CFLAGS) -c grammar.c
 
 version.o: version.c
 	$(CC) $(FULL_CFLAGS) -c version.c
