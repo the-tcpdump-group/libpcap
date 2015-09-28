@@ -1111,7 +1111,7 @@ AC_PROG_YACC
 # grammar.y.
 #
 AC_CACHE_CHECK([for capable yacc/bison], tcpdump_cv_capable_yacc,
-	if $YACC -p pcap_ grammar.y -o /dev/null >/dev/null 2>&1; then
+	if $YACC -p pcap_ -o /dev/null grammar.y >/dev/null 2>&1; then
 	    tcpdump_cv_capable_yacc=yes
 	else
 	    tcpdump_cv_capable_yacc=insufficient
