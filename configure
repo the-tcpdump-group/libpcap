@@ -7550,7 +7550,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wall option" >&5
 $as_echo_n "checking whether the compiler supports the -Wall option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wall"
+	if expr "x-Wall" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wall"
+	elif expr "x-Wall" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wall"
+	elif expr "x-Wall" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wall"
+	else
+	    CFLAGS="$CFLAGS -Wall"
+	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -7582,7 +7593,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-prototypes option" >&5
 $as_echo_n "checking whether the compiler supports the -Wmissing-prototypes option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-prototypes"
+	if expr "x-Wmissing-prototypes" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-prototypes"
+	elif expr "x-Wmissing-prototypes" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
+	elif expr "x-Wmissing-prototypes" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
+	else
+	    CFLAGS="$CFLAGS -Wmissing-prototypes"
+	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -7614,7 +7636,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wstrict-prototypes option" >&5
 $as_echo_n "checking whether the compiler supports the -Wstrict-prototypes option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wstrict-prototypes"
+	if expr "x-Wstrict-prototypes" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wstrict-prototypes"
+	elif expr "x-Wstrict-prototypes" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
+	elif expr "x-Wstrict-prototypes" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
+	else
+	    CFLAGS="$CFLAGS -Wstrict-prototypes"
+	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -7646,7 +7679,18 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wdeclaration-after-statement option" >&5
 $as_echo_n "checking whether the compiler supports the -Wdeclaration-after-statement option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wdeclaration-after-statement"
+	if expr "x-Wdeclaration-after-statement" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wdeclaration-after-statement"
+	elif expr "x-Wdeclaration-after-statement" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wdeclaration-after-statement"
+	elif expr "x-Wdeclaration-after-statement" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wdeclaration-after-statement"
+	else
+	    CFLAGS="$CFLAGS -Wdeclaration-after-statement"
+	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
