@@ -503,7 +503,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 
 		if (hdr->caplen > MAXIMUM_SNAPLEN) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "bogus savefile header");
+			    "bogus savefile header: capture length %u, bigger "
+			    "than maximum of %u", hdr->caplen, MAXIMUM_SNAPLEN);
 			return (-1);
 		}
 
