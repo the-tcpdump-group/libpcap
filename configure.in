@@ -1091,7 +1091,7 @@ fi
 # and supports processing our scanner.l.
 #
 AC_CACHE_CHECK([for capable lex], tcpdump_cv_capable_lex,
-	if $LEX -P pcap_ --header-file=/dev/null --nounput -t scanner.l > /dev/null 2>&1; then
+	if $LEX -P pcap_ --header-file=/dev/null --nounput -t $srcdir/scanner.l > /dev/null 2>&1; then
 	    tcpdump_cv_capable_lex=yes
 	else
 	    tcpdump_cv_capable_lex=insufficient
@@ -1111,7 +1111,7 @@ AC_PROG_YACC
 # grammar.y.
 #
 AC_CACHE_CHECK([for capable yacc/bison], tcpdump_cv_capable_yacc,
-	if $YACC -p pcap_ -o /dev/null grammar.y >/dev/null 2>&1; then
+	if $YACC -p pcap_ -o /dev/null $srcdir/grammar.y >/dev/null 2>&1; then
 	    tcpdump_cv_capable_yacc=yes
 	else
 	    tcpdump_cv_capable_yacc=insufficient
