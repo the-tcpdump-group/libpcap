@@ -158,7 +158,7 @@ struct pcap {
 	read_op_t read_op;
 
 	/*
-	 * Method to call to read to read packets from a savefile.
+	 * Method to call to read packets from a savefile.
 	 */
 	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 
