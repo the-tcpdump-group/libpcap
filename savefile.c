@@ -382,6 +382,12 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 found:
 	p->rfile = fp;
 
+	/* pcap or pcap-ng ? */
+	if (i == 0)
+		p->file_type = PCAP_FILE_TYPE;
+	else
+		p->file_type = PCAP_NG_FILE_TYPE;
+
 	/* Padding only needed for live capture fcode */
 	p->fddipad = 0;
 

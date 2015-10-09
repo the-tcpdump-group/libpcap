@@ -195,6 +195,8 @@ struct pcap {
 	int version_major;
 	int version_minor;
 
+	int file_type;		/* pcap or pcap-ng (for now) */
+
 	int snapshot;
 	int linktype;		/* Network linktype */
 	int linktype_ext;       /* Extended information stored in the linktype field of a file */
