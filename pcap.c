@@ -1385,6 +1385,14 @@ pcap_is_swapped(pcap_t *p)
 }
 
 int
+pcap_file_type(pcap_t *p)
+{
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
+	return (p->file_type);
+}
+
+int
 pcap_major_version(pcap_t *p)
 {
 	if (!p->activated)

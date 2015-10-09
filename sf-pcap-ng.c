@@ -119,8 +119,8 @@ struct section_header_block {
 /*
  * Current version number.  If major_version isn't PCAP_NG_VERSION_MAJOR,
  * that means that this code can't read the file.
+ * PCAP_NG_VERSION_MAJOR is now defined in pcap/pcap.h.
  */
-#define PCAP_NG_VERSION_MAJOR	1
 
 /*
  * Interface Description Block.

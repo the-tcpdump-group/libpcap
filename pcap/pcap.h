@@ -56,6 +56,13 @@ extern "C" {
 #endif
 
 /*
+ * File types supported
+ * now pcap-ng is only supported for reading.
+ */
+#define PCAP_FILE_TYPE    0
+#define PCAP_NG_FILE_TYPE 1
+
+/*
  * Version number of the current version of the pcap file format.
  *
  * NOTE: this is *NOT* the version number of the libpcap library.
@@ -64,6 +71,12 @@ extern "C" {
  */
 #define PCAP_VERSION_MAJOR 2
 #define PCAP_VERSION_MINOR 4
+
+/*
+ * Version number of the current version of the pcap-ng file format.
+ * We only use major for now.
+*/
+#define PCAP_NG_VERSION_MAJOR 1
 
 #define PCAP_ERRBUF_SIZE 256
 
@@ -407,6 +420,7 @@ int	pcap_snapshot(pcap_t *);
 int	pcap_is_swapped(pcap_t *);
 int	pcap_major_version(pcap_t *);
 int	pcap_minor_version(pcap_t *);
+int	pcap_file_type(pcap_t *);
 
 /* XXX */
 FILE	*pcap_file(pcap_t *);
