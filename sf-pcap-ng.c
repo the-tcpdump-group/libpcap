@@ -121,6 +121,7 @@ struct section_header_block {
  * that means that this code can't read the file.
  */
 #define PCAP_NG_VERSION_MAJOR	1
+#define PCAP_NG_VERSION_MINOR	0
 
 /*
  * Interface Description Block.
@@ -891,10 +892,12 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		 * XXX - we don't care about the section length.
 		 */
 	}
-	if (shbp->major_version != PCAP_NG_VERSION_MAJOR) {
+	/* currently only SHB version 1.0 is supported */
+	if (! (shbp->major_version == PCAP_NG_VERSION_MAJOR &&
+	       shbp->minor_version == PCAP_NG_VERSION_MINOR)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "unknown pcap-ng savefile major version number %u",
-		    shbp->major_version);
+		    "unsupported pcap-ng savefile version %u.%u",
+		    shbp->major_version, shbp->minor_version);
 		goto fail;
 	}
 	p->version_major = shbp->major_version;

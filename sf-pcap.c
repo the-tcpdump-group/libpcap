@@ -149,7 +149,7 @@ struct pcap_sf {
  */
 pcap_t *
 pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
-    int *err)
+		  int *err)
 {
 	struct pcap_file_header hdr;
 	size_t amt_read;
@@ -215,6 +215,21 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		    "archaic pcap savefile format");
 		*err = 1;
 		return (NULL);
+	}
+
+	/*
+	 * currently only versions 2.[0-4] are supported with
+	 * the exception of 543.0 for DG/UX tcpdump.
+	 */
+	if (! ((hdr.version_major == PCAP_VERSION_MAJOR &&
+		hdr.version_minor <= PCAP_VERSION_MINOR) ||
+	       (hdr.version_major == 543 &&
+		hdr.version_minor == 0))) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			 "unsupported pcap savefile version %u.%u",
+			 hdr.version_major, hdr.version_minor);
+		*err = 1;
+		return NULL;
 	}
 
 	/*
