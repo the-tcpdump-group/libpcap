@@ -304,10 +304,10 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	ssize_t ret;
 	struct pcap_pkthdr pkth;
 	pcap_bluetooth_h4_header* bthdr;
-	char *pktd;
+	u_char *pktd;
 	int in = 0;
 
-	pktd = (char *)handle->buffer + BT_CTRL_SIZE;
+	pktd = (u_char *)handle->buffer + BT_CTRL_SIZE;
 	bthdr = (pcap_bluetooth_h4_header*)(void *)pktd;
 	iv.iov_base = pktd + sizeof(pcap_bluetooth_h4_header);
 	iv.iov_len  = handle->snapshot;
