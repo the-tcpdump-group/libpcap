@@ -182,9 +182,15 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		 * No binary device; do we have the text device?
 		 */
 		fd = open(USB_TEXT_DIR"/0t", O_RDONLY, 0);
+		if (fd < 0) {
+			/*
+			 * Not at the new location; try the old location.
+			 */
+			fd = open(USB_TEXT_DIR_OLD"/0t", O_RDONLY, 0);
+		}
 		if (fd >= 0) {
 			/*
-			 * Yes.
+			 * We found it.
 			 */
 			close(fd);
 			if (pcap_add_if(alldevsp, "usbmon0", 0, "All USB buses",
