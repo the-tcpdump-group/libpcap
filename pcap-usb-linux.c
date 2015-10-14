@@ -156,6 +156,7 @@ usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
 int
 usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 {
+	int fd;
 	struct dirent* data;
 	int ret = 0;
 	DIR* dir;
@@ -163,7 +164,40 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	char* name;
 	size_t len;
 
-	/* try scanning sysfs usb bus directory */
+	/*
+	 * Do we have a "scan all buses" device?
+	 * First, try the binary device.
+	 */
+	fd = open(LINUX_USB_MON_DEV"0", O_RDONLY, 0);
+	if (fd >= 0) {
+		/*
+		 * Yes.
+		 */
+		close(fd);
+		if (pcap_add_if(alldevsp, "usbmon0", 0, "All USB buses",
+		    err_str) < 0)
+			return -1;
+	} else {
+		/*
+		 * No binary device; do we have the text device?
+		 */
+		fd = open(USB_TEXT_DIR"/0t", O_RDONLY, 0);
+		if (fd >= 0) {
+			/*
+			 * Yes.
+			 */
+			close(fd);
+			if (pcap_add_if(alldevsp, "usbmon0", 0, "All USB buses",
+			    err_str) < 0)
+				return -1;
+		}
+	}
+
+	/*
+	 * Now look for individual USB buses.
+	 *
+	 * First, try scanning sysfs USB bus directory.
+	 */
 	dir = opendir(SYS_USB_BUS_DIR);
 	if (dir != NULL) {
 		while ((ret == 0) && ((data = readdir(dir)) != 0)) {
@@ -182,7 +216,7 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		return ret;
 	}
 
-	/* that didn't work; try scanning procfs usb bus directory */
+	/* That didn't work; try scanning procfs USB bus directory. */
 	dir = opendir(PROC_USB_BUS_DIR);
 	if (dir != NULL) {
 		while ((ret == 0) && ((data = readdir(dir)) != 0)) {
