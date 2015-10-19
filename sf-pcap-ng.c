@@ -949,6 +949,15 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			 */
 			if (!add_interface(p, &cursor, errbuf))
 				goto fail;
+
+			if (idbp->snaplen > MAXIMUM_SNAPLEN) {
+			       snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					"invalid interface capture length %u, "
+					"bigger than maximum of %u",
+					idbp->snaplen, MAXIMUM_SNAPLEN);
+				goto fail;
+			}
+
 			goto done;
 
 		case BT_EPB:
