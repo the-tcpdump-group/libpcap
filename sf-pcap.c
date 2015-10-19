@@ -232,6 +232,14 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		return NULL;
 	}
 
+	if (hdr.snaplen > MAXIMUM_SNAPLEN) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			 "invalid file capture length %u, bigger than "
+			 "maximum of %u", hdr.snaplen, MAXIMUM_SNAPLEN);
+		*err = 1;
+		return NULL;
+	}
+
 	/*
 	 * OK, this is a good pcap file.
 	 * Allocate a pcap_t for it.
@@ -518,8 +526,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 
 		if (hdr->caplen > MAXIMUM_SNAPLEN) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "bogus savefile header: capture length %u, bigger "
-			    "than maximum of %u", hdr->caplen, MAXIMUM_SNAPLEN);
+			    "invalid packet capture length %u, bigger than "
+			    "maximum of %u", hdr->caplen, MAXIMUM_SNAPLEN);
 			return (-1);
 		}
 
