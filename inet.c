@@ -987,9 +987,10 @@ pcap_lookupdev(errbuf)
 {
 	DWORD dwVersion;
 	DWORD dwWindowsMajorVersion;
+	char our_errbuf[PCAP_ERRBUF_SIZE+1];
+
 	dwVersion = GetVersion();	/* get the OS version */
 	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-	char our_errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
 		/*
