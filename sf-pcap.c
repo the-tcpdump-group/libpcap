@@ -517,8 +517,10 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		/*
 		 * This can happen due to Solaris 2.3 systems tripping
 		 * over the BUFMOD problem and not setting the snapshot
-		 * correctly in the savefile header.  If the caplen isn't
-		 * grossly wrong, try to salvage.
+		 * correctly in the savefile header.
+		 * This can also happen with a corrupted savefile or a
+		 * savefile built/modified by a fuzz tester.
+		 * If the caplen isn't grossly wrong, try to salvage.
 		 */
 		size_t bytes_to_discard;
 		size_t bytes_to_read, bytes_read;
