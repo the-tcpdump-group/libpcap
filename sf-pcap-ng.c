@@ -945,11 +945,8 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			}
 
 			/*
-			 * Try to add this interface.
+			 * Interface capture length sanity check
 			 */
-			if (!add_interface(p, &cursor, errbuf))
-				goto fail;
-
 			if (idbp->snaplen > MAXIMUM_SNAPLEN) {
 			       snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					"invalid interface capture length %u, "
@@ -957,6 +954,12 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 					idbp->snaplen, MAXIMUM_SNAPLEN);
 				goto fail;
 			}
+
+			/*
+			 * Try to add this interface.
+			 */
+			if (!add_interface(p, &cursor, errbuf))
+				goto fail;
 
 			goto done;
 
