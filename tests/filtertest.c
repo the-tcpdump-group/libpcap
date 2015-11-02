@@ -34,7 +34,9 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#ifndef _WIN32
+#ifdef _WIN32
+#include "getopt.h"
+#else
 #include <unistd.h>
 #endif
 #include <fcntl.h>
@@ -61,9 +63,6 @@ static void error(const char *, ...)
 static void warn(const char *, ...)
     __attribute__((format (printf, 1, 2)));
 
-extern int optind;
-extern int opterr;
-extern char *optarg;
 #ifdef BDEBUG
 int dflag;
 #endif

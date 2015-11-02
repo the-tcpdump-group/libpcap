@@ -278,6 +278,7 @@ EXTRA_DIST = \
 	lbl/os-sunos4.h \
 	lbl/os-ultrix4.h \
 	missing/getopt.c \
+	missing/getopt.h \
 	missing/snprintf.c \
 	mkdep \
 	msdos/bin2c.c \

@@ -85,10 +85,6 @@ static void error(const char *, ...)
 static void warning(const char *, ...)
     __attribute__((format (printf, 1, 2)));
 
-extern int optind;
-extern int opterr;
-extern char *optarg;
-
 /*
  * On Windows, we need to open the file in binary mode, so that
  * we get all the bytes specified by the size we get from "fstat()".

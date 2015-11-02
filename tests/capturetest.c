@@ -20,7 +20,7 @@
  */
 
 #ifndef lint
-static const char copyright[] =
+static const char copyright[] _U_ =
     "@(#) Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 2000\n\
 The Regents of the University of California.  All rights reserved.\n";
 #endif
@@ -30,15 +30,13 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
-#ifndef _WIN32
+#ifdef _WIN32
+#include "getopt.h"
+#else
 #include <unistd.h>
 #endif
 #include <errno.h>
 #include <sys/types.h>
-#ifndef _WIN32
-#include <sys/select.h>
-#include <poll.h>
-#endif
 
 #include <pcap.h>
 
@@ -60,10 +58,6 @@ static void warning(const char *, ...);
 static char *copy_argv(char **);
 
 static pcap_t *pd;
-
-extern int optind;
-extern int opterr;
-extern char *optarg;
 
 int
 main(int argc, char **argv)
