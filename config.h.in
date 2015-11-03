@@ -184,6 +184,9 @@
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #undef HAVE_SYS_IOCCOM_H
 
+/* Define to 1 if you have the <sys/select.h> header file. */
+#undef HAVE_SYS_SELECT_H
+
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #undef HAVE_SYS_SOCKIO_H
 
