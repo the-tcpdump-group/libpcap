@@ -209,7 +209,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	 */
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
 		status = PCAP_ERROR;
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -284,7 +284,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	dlpi_walk(list_interfaces, &lw, 0);
 
 	if (lw.lw_err != 0) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "dlpi_walk: %s", pcap_strerror(lw.lw_err));
 		retv = -1;
 		goto done;
@@ -404,7 +404,7 @@ pcap_cleanup_libdlpi(pcap_t *p)
 static void
 pcap_libdlpi_err(const char *linkname, const char *func, int err, char *errbuf)
 {
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "libpcap: %s failed on %s: %s",
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "libpcap: %s failed on %s: %s",
 	    func, linkname, dlpi_strerror(err));
 }
 

@@ -194,7 +194,7 @@ bpf_error(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	if (bpf_pcap != NULL)
-		(void)vsnprintf(pcap_geterr(bpf_pcap), PCAP_ERRBUF_SIZE,
+		(void)pcap_vsnprintf(pcap_geterr(bpf_pcap), PCAP_ERRBUF_SIZE,
 		    fmt, ap);
 	va_end(ap);
 	longjmp(top_ctx, 1);
@@ -494,7 +494,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * link-layer type, so we can't use it.
 	 */
 	if (!p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
 		rc = -1;
 		goto quit;
@@ -522,7 +522,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	snaplen = pcap_snapshot(p);
 	if (snaplen == 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
 		rc = -1;
 		goto quit;

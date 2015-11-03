@@ -642,7 +642,7 @@ static int dag_activate(pcap_t* handle)
 #endif
 
 	if (device == NULL) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "device is NULL: %s", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "device is NULL: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -651,26 +651,26 @@ static int dag_activate(pcap_t* handle)
 #ifdef HAVE_DAG_STREAMS_API
 	newDev = (char *)malloc(strlen(device) + 16);
 	if (newDev == NULL) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
 		goto fail;
 	}
 
 	/* Parse input name to get dag device and stream number if provided */
 	if (dag_parse_name(device, newDev, strlen(device) + 16, &handlep->dag_stream) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: %s\n", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: %s\n", pcap_strerror(errno));
 		goto fail;
 	}
 	device = newDev;
 
 	if (handlep->dag_stream%2) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: tx (even numbered) streams not supported for capture\n");
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: tx (even numbered) streams not supported for capture\n");
 		goto fail;
 	}
 #else
 	if (strncmp(device, "/dev/", 5) != 0) {
 		newDev = (char *)malloc(strlen(device) + 5);
 		if (newDev == NULL) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
 			goto fail;
 		}
 		strcpy(newDev, "/dev/");
@@ -681,14 +681,14 @@ static int dag_activate(pcap_t* handle)
 
 	/* setup device parameters */
 	if((handle->fd = dag_open((char *)device)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_open %s: %s", device, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_open %s: %s", device, pcap_strerror(errno));
 		goto fail;
 	}
 
 #ifdef HAVE_DAG_STREAMS_API
 	/* Open requested stream. Can fail if already locked or on error */
 	if (dag_attach_stream(handle->fd, handlep->dag_stream, 0, 0) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_attach_stream: %s\n", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_attach_stream: %s\n", pcap_strerror(errno));
 		goto failclose;
 	}
 
@@ -697,7 +697,7 @@ static int dag_activate(pcap_t* handle)
 	 */
 	if (dag_get_stream_poll(handle->fd, handlep->dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
 		goto faildetach;
 	}
 
@@ -722,13 +722,13 @@ static int dag_activate(pcap_t* handle)
 
 	if (dag_set_stream_poll(handle->fd, handlep->dag_stream,
 				mindata, &maxwait, &poll) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
 		goto faildetach;
 	}
 
 #else
 	if((handlep->dag_mem_base = dag_mmap(handle->fd)) == MAP_FAILED) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,"dag_mmap %s: %s\n", device, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,"dag_mmap %s: %s\n", device, pcap_strerror(errno));
 		goto failclose;
 	}
 
@@ -748,22 +748,22 @@ static int dag_activate(pcap_t* handle)
 		handle->snapshot = MIN_DAG_SNAPLEN;
 	}
 	/* snap len has to be a multiple of 4 */
-	snprintf(conf, 30, "varlen slen=%d", (snaplen + 3) & ~3);
+	pcap_snprintf(conf, 30, "varlen slen=%d", (snaplen + 3) & ~3);
 
 	if(dag_configure(handle->fd, conf) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,"dag_configure %s: %s\n", device, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,"dag_configure %s: %s\n", device, pcap_strerror(errno));
 		goto faildetach;
 	}
 #endif
 
 #ifdef HAVE_DAG_STREAMS_API
 	if(dag_start_stream(handle->fd, handlep->dag_stream) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_start_stream %s: %s\n", device, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_start_stream %s: %s\n", device, pcap_strerror(errno));
 		goto faildetach;
 	}
 #else
 	if(dag_start(handle->fd) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_start %s: %s\n", device, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_start %s: %s\n", device, pcap_strerror(errno));
 		goto failclose;
 	}
 #endif /* HAVE_DAG_STREAMS_API */
@@ -798,7 +798,7 @@ static int dag_activate(pcap_t* handle)
 			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
 				handlep->dag_fcs_bits = n;
 			} else {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
 				goto failstop;
 			}
@@ -826,7 +826,7 @@ static int dag_activate(pcap_t* handle)
 	handle->bufsize = 0;
 
 	if (new_pcap_dag(handle) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
 		goto failstop;
 	}
 
@@ -948,7 +948,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		pcap_close(p);
 		return NULL;
@@ -996,7 +996,7 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
-		snprintf(name, 12, "dag%d", c);
+		pcap_snprintf(name, 12, "dag%d", c);
 		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
 		{
 			return -1;
@@ -1019,7 +1019,7 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 					if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
 						dag_detach_stream(dagfd, stream);
 
-						snprintf(name,  10, "dag%d:%d", c, stream);
+						pcap_snprintf(name,  10, "dag%d:%d", c, stream);
 						if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
 							/*
 							 * Failure.
@@ -1095,7 +1095,7 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 
 		if (dag_get_stream_poll(p->fd, pd->dag_stream,
 					&mindata, &maxwait, &poll) < 0) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
 			return -1;
 		}
 
@@ -1110,7 +1110,7 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 
 		if (dag_set_stream_poll(p->fd, pd->dag_stream,
 					mindata, &maxwait, &poll) < 0) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
 			return -1;
 		}
 	}
@@ -1133,7 +1133,7 @@ dag_get_datalink(pcap_t *p)
 	memset(types, 0, 255);
 
 	if (p->dlt_list == NULL && (p->dlt_list = malloc(255*sizeof(*(p->dlt_list)))) == NULL) {
-		(void)snprintf(p->errbuf, sizeof(p->errbuf), "malloc: %s", pcap_strerror(errno));
+		(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf), "malloc: %s", pcap_strerror(errno));
 		return (-1);
 	}
 
@@ -1142,7 +1142,7 @@ dag_get_datalink(pcap_t *p)
 #ifdef HAVE_DAG_GET_STREAM_ERF_TYPES
 	/* Get list of possible ERF types for this card */
 	if (dag_get_stream_erf_types(p->fd, pd->dag_stream, types, 255) < 0) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_stream_erf_types: %s", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_stream_erf_types: %s", pcap_strerror(errno));
 		return (-1);
 	}
 
@@ -1151,7 +1151,7 @@ dag_get_datalink(pcap_t *p)
 #elif defined HAVE_DAG_GET_ERF_TYPES
 	/* Get list of possible ERF types for this card */
 	if (dag_get_erf_types(p->fd, types, 255) < 0) {
-		snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_erf_types: %s", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "dag_get_erf_types: %s", pcap_strerror(errno));
 		return (-1);
 	}
 

@@ -87,7 +87,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		/* if bluetooth is not supported this this is not fatal*/
 		if (errno == EAFNOSUPPORT)
 			return 0;
-		snprintf(err_str, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE,
 		    "Can't open raw Bluetooth socket: %s", strerror(errno));
 		return -1;
 	}
@@ -95,7 +95,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	dev_list = malloc(HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 	if (!dev_list)
 	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %zu bytes for Bluetooth device list",
+		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't allocate %zu bytes for Bluetooth device list",
 			HCI_MAX_DEV * sizeof(*dev_req) + sizeof(*dev_list));
 		ret = -1;
 		goto done;
@@ -105,7 +105,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 
 	if (ioctl(sock, HCIGETDEVLIST, (void *) dev_list) < 0)
 	{
-		snprintf(err_str, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE,
 		    "Can't get Bluetooth device list via ioctl: %s",
 		    strerror(errno));
 		ret = -1;
@@ -116,8 +116,8 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	for (i = 0; i < dev_list->dev_num; i++, dev_req++) {
 		char dev_name[20], dev_descr[30];
 
-		snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
-		snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
+		pcap_snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
+		pcap_snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
 
 		if (pcap_add_if(alldevsp, dev_name, 0,
 		       dev_descr, err_str) < 0)
@@ -192,7 +192,7 @@ bt_activate(pcap_t* handle)
 	/* get bt interface id */
 	if (sscanf(handle->opt.source, BT_IFACE"%d", &dev_id) != 1)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't get Bluetooth device index from %s",
 			 handle->opt.source);
 		return PCAP_ERROR;
@@ -215,28 +215,28 @@ bt_activate(pcap_t* handle)
 	/* Create HCI socket */
 	handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (handle->fd < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't create raw socket: %s", strerror(errno));
 		return PCAP_ERROR;
 	}
 
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
 			pcap_strerror(errno));
 		goto close_fail;
 	}
 
 	opt = 1;
 	if (setsockopt(handle->fd, SOL_HCI, HCI_DATA_DIR, &opt, sizeof(opt)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't enable data direction info: %s", strerror(errno));
 		goto close_fail;
 	}
 
 	opt = 1;
 	if (setsockopt(handle->fd, SOL_HCI, HCI_TIME_STAMP, &opt, sizeof(opt)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't enable time stamp: %s", strerror(errno));
 		goto close_fail;
 	}
@@ -247,7 +247,7 @@ bt_activate(pcap_t* handle)
 	memset((void *) &flt.type_mask, 0xff, sizeof(flt.type_mask));
 	memset((void *) &flt.event_mask, 0xff, sizeof(flt.event_mask));
 	if (setsockopt(handle->fd, SOL_HCI, HCI_FILTER, &flt, sizeof(flt)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't set filter: %s", strerror(errno));
 		goto close_fail;
 	}
@@ -260,7 +260,7 @@ bt_activate(pcap_t* handle)
 	addr.hci_channel = HCI_CHANNEL_RAW;
 #endif
 	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't attach to device %d: %s", handlep->dev_id,
 		    strerror(errno));
 		goto close_fail;
@@ -281,7 +281,7 @@ bt_activate(pcap_t* handle)
 		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
 		    &handle->opt.buffer_size,
 		    sizeof(handle->opt.buffer_size)) == -1) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				 "SO_RCVBUF: %s", pcap_strerror(errno));
 			goto close_fail;
 		}
@@ -329,7 +329,7 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't receive packet: %s", strerror(errno));
 		return -1;
 	}
@@ -368,7 +368,7 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 static int
 bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
     		"bluetooth devices");
 	return (-1);
 }
@@ -389,7 +389,7 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't get stats via ioctl: %s", strerror(errno));
 		return (-1);
 

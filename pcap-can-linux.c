@@ -165,7 +165,7 @@ can_activate(pcap_t* handle)
 	handle->fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 	if (handle->fd < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
 			errno, strerror(errno));
 		return PCAP_ERROR;
 	}
@@ -175,7 +175,7 @@ can_activate(pcap_t* handle)
 	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
 	if (ioctl(handle->fd, SIOCGIFINDEX, &ifr) < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Unable to get interface index: %s",
 			pcap_strerror(errno));
 		pcap_cleanup_live_common(handle);
@@ -187,7 +187,7 @@ can_activate(pcap_t* handle)
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
 			pcap_strerror(errno));
 		pcap_cleanup_live_common(handle);
 		return PCAP_ERROR;
@@ -198,7 +198,7 @@ can_activate(pcap_t* handle)
 	addr.can_ifindex = handlep->ifindex;
 	if( bind( handle->fd, (struct sockaddr*)&addr, sizeof(addr) ) < 0  )
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't attach to device %d %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't attach to device %d %d:%s",
 			handlep->ifindex, errno, strerror(errno));
 		pcap_cleanup_live_common(handle);
 		return PCAP_ERROR;
@@ -248,7 +248,7 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 	if (pkth.caplen == -1)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s",
 			errno, strerror(errno));
 		return -1;
 	}
@@ -262,7 +262,7 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 	if( -1 == gettimeofday(&pkth.ts, NULL) )
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get time of day %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get time of day %d:%s",
 			errno, strerror(errno));
 		return -1;
 	}
@@ -277,7 +277,7 @@ static int
 can_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
 	/* not yet implemented */
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
 		"can devices");
 	return (-1);
 }
@@ -308,7 +308,7 @@ can_setdirection_linux(pcap_t *p, pcap_direction_t d)
 	/* no support for PCAP_D_OUT */
 	if (d == PCAP_D_OUT)
 	{
-		snprintf(p->errbuf, sizeof(p->errbuf),
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			"Setting direction to PCAP_D_OUT is not supported on can");
 		return -1;
 	}

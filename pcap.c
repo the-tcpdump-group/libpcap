@@ -116,7 +116,7 @@ static int
 pcap_not_initialized(pcap_t *pcap)
 {
 	/* in case the caller doesn't check for PCAP_ERROR_NOT_ACTIVATED */
-	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	/* this means 'not initialized' */
 	return (PCAP_ERROR_NOT_ACTIVATED);
@@ -126,7 +126,7 @@ pcap_not_initialized(pcap_t *pcap)
 static void *
 pcap_not_initialized_ptr(pcap_t *pcap)
 {
-	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (NULL);
 }
@@ -134,7 +134,7 @@ pcap_not_initialized_ptr(pcap_t *pcap)
 static HANDLE
 pcap_getevent_not_initialized(pcap_t *pcap)
 {
-	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (INVALID_HANDLE_VALUE);
 }
@@ -142,7 +142,7 @@ pcap_getevent_not_initialized(pcap_t *pcap)
 static u_int
 pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, int sync)
 {
-	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (0);
 }
@@ -150,7 +150,7 @@ pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, in
 static PAirpcapHandle
 pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
 {
-	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (NULL);
 }
@@ -198,7 +198,7 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
 		    p->tstamp_type_count);
 		if (*tstamp_typesp == NULL) {
-			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
 			return (PCAP_ERROR);
 		}
@@ -542,7 +542,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 */
 	chunk = malloc(sizeof (pcap_t) + size);
 	if (chunk == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		return (NULL);
 	}
@@ -583,7 +583,7 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 
 	p->opt.source = strdup(source);
 	if (p->opt.source == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
 		return (NULL);
@@ -621,7 +621,7 @@ int
 pcap_check_activated(pcap_t *p)
 {
 	if (p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
 			" operation on activated capture");
 		return (-1);
 	}
@@ -793,7 +793,7 @@ pcap_activate(pcap_t *p)
 			 * handle errors other than PCAP_ERROR, return the
 			 * error message corresponding to the status.
 			 */
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
 			    pcap_statustostr(status));
 		}
 
@@ -841,15 +841,15 @@ pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *er
 	return (p);
 fail:
 	if (status == PCAP_ERROR)
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    p->errbuf);
 	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
 	    status == PCAP_ERROR_PERM_DENIED ||
 	    status == PCAP_ERROR_PROMISC_PERM_DENIED)
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
 		    pcap_statustostr(status), p->errbuf);
 	else
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    pcap_statustostr(status));
 	pcap_close(p);
 	return (NULL);
@@ -867,7 +867,7 @@ pcap_open_offline_common(char *ebuf, size_t size)
 	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
 	p->opt.source = strdup("(savefile)");
 	if (p->opt.source == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
 		return (NULL);
@@ -961,7 +961,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		 */
 		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer));
 		if (*dlt_buffer == NULL) {
-			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
 			return (PCAP_ERROR);
 		}
@@ -970,7 +970,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 	} else {
 		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
 		if (*dlt_buffer == NULL) {
-			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
 			return (PCAP_ERROR);
 		}
@@ -1048,11 +1048,11 @@ pcap_set_datalink(pcap_t *p, int dlt)
 unsupported:
 	dlt_name = pcap_datalink_val_to_name(dlt);
 	if (dlt_name != NULL) {
-		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 		    "%s is not one of the DLTs supported by this device",
 		    dlt_name);
 	} else {
-		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 		    "DLT %d is not one of the DLTs supported by this device",
 		    dlt);
 	}
@@ -1468,7 +1468,7 @@ pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1510,7 +1510,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1519,7 +1519,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 	else
 		fdflags &= ~O_NONBLOCK;
 	if (fcntl(p->fd, F_SETFL, fdflags) == -1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1552,7 +1552,7 @@ pcap_win32_err_to_str(DWORD error, char *errbuf)
 		errbuf[errlen - 2] = '\0';
 	}
 	p = strchr(errbuf, '\0');
-	snprintf (p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
+	pcap_snprintf (p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
 }
 #endif
 
@@ -1611,7 +1611,7 @@ pcap_statustostr(int errnum)
 	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
 		return ("That device doesn't support that time stamp precision");
 	}
-	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 }
 
@@ -1630,7 +1630,7 @@ pcap_strerror(int errnum)
 
 	if ((unsigned int)errnum < sys_nerr)
 		return ((char *)sys_errlist[errnum]);
-	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 #endif
 }
@@ -1651,7 +1651,7 @@ int
 pcap_setdirection(pcap_t *p, pcap_direction_t d)
 {
 	if (p->setdirection_op == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Setting direction is not implemented on this platform");
 		return (-1);
 	} else
@@ -1667,7 +1667,7 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 static int
 pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1688,7 +1688,7 @@ pcap_setbuff(pcap_t *p, int dim)
 static int
 pcap_setbuff_dead(pcap_t *p, int dim)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The kernel buffer size cannot be set on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1702,7 +1702,7 @@ pcap_setmode(pcap_t *p, int mode)
 static int
 pcap_setmode_dead(pcap_t *p, int mode)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "impossible to set mode on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1716,7 +1716,7 @@ pcap_setmintocopy(pcap_t *p, int size)
 static int
 pcap_setmintocopy_dead(pcap_t *p, int size)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1730,7 +1730,7 @@ pcap_getevent(pcap_t *p)
 static HANDLE
 pcap_getevent_dead(pcap_t *p)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "A pcap_open_dead pcap_t has no event handle");
 	return (INVALID_HANDLE_VALUE);
 }
@@ -1745,7 +1745,7 @@ static int
 pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
     size_t len _U_)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
 	return (PCAP_ERROR);
 }
@@ -1760,7 +1760,7 @@ static int
 pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
     size_t len _U_)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");
 	return (PCAP_ERROR);
 }
@@ -1823,7 +1823,7 @@ pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
 static u_int
 pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");
 	return (0);
 }
@@ -1837,7 +1837,7 @@ pcap_setuserbuffer(pcap_t *p, int size)
 static int
 pcap_setuserbuffer_dead(pcap_t *p, int size)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The user buffer cannot be set on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1851,7 +1851,7 @@ pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
 static int
 pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1865,7 +1865,7 @@ pcap_live_dump_ended(pcap_t *p, int sync)
 static int
 pcap_live_dump_ended_dead(pcap_t *p, int sync)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1877,7 +1877,7 @@ pcap_get_airpcap_handle(pcap_t *p)
 
 	handle = p->get_airpcap_handle_op(p);
 	if (handle == NULL) {
-		(void)snprintf(p->errbuf, sizeof(p->errbuf),
+		(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 		    "This isn't an AirPcap device");
 	}
 	return (handle);

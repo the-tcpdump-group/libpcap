@@ -127,8 +127,8 @@ int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
             int n = libusb_get_string_descriptor_ascii(dh,desc.iSerialNumber,sernum,64);
             sernum[n] = 0;
 
-            snprintf(dev_name, 30, CANUSB_IFACE"%s", sernum);
-            snprintf(dev_descr, 50, "CanUSB [%s]", sernum);
+            pcap_snprintf(dev_name, 30, CANUSB_IFACE"%s", sernum);
+            pcap_snprintf(dev_descr, 50, "CanUSB [%s]", sernum);
 
             libusb_close(dh);
 
@@ -351,7 +351,7 @@ static int canusb_activate(pcap_t* handle)
         /*
          * XXX - what causes this to fail?
          */
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "libusb_init() failed");
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "libusb_init() failed");
         return PCAP_ERROR;
     }
 
@@ -377,7 +377,7 @@ static int canusb_activate(pcap_t* handle)
     if (!canusb->dev)
     {
         libusb_exit(canusb->ctx);
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device");
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device");
         return PCAP_ERROR;
     }
 
@@ -434,7 +434,7 @@ static int
 canusb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
     /* not yet implemented */
-    snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on canusb devices");
+    pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on canusb devices");
     return (-1);
 }
 
@@ -464,7 +464,7 @@ canusb_setdirection_linux(pcap_t *p, pcap_direction_t d)
     /* no support for PCAP_D_OUT */
     if (d == PCAP_D_OUT)
     {
-        snprintf(p->errbuf, sizeof(p->errbuf),
+        pcap_snprintf(p->errbuf, sizeof(p->errbuf),
             "Setting direction to PCAP_D_OUT is not supported on this interface");
         return -1;
     }

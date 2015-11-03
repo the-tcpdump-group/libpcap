@@ -147,7 +147,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 	 */
 	if (!PacketGetStats(p->adapter, &bstats)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketGetStats error: %s", errbuf);
 		return (-1);
 	}
@@ -205,7 +205,7 @@ pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 	 */
 	if (!PacketGetStatsEx(p->adapter, &bstats)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketGetStatsEx error: %s", errbuf);
 		return (NULL);
 	}
@@ -224,7 +224,7 @@ pcap_setbuff_win32(pcap_t *p, int dim)
 {
 	if(PacketSetBuff(p->adapter,dim)==FALSE)
 	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
 		return (-1);
 	}
 	return (0);
@@ -236,7 +236,7 @@ pcap_setmode_win32(pcap_t *p, int mode)
 {
 	if(PacketSetMode(p->adapter,mode)==FALSE)
 	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: working mode not recognized");
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: working mode not recognized");
 		return (-1);
 	}
 
@@ -249,7 +249,7 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 {
 	if(PacketSetMinToCopy(p->adapter, size)==FALSE)
 	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: unable to set the requested mintocopy size");
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: unable to set the requested mintocopy size");
 		return (-1);
 	}
 	return (0);
@@ -276,7 +276,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	 */
 	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + len);
 	if (oid_data_arg == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
 		return (PCAP_ERROR);
 	}
@@ -288,7 +288,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
 	oid_data_arg->Length = (ULONG)len;	/* XXX - check for ridiculously large value? */
 	if (!PacketRequest(p->adapter, FALSE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
 		free(oid_data_arg);
 		return (PCAP_ERROR);
@@ -318,7 +318,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	 */
 	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + len);
 	if (oid_data_arg == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
 		return (PCAP_ERROR);
 	}
@@ -328,7 +328,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	memcpy(oid_data_arg->Data, data, len);
 	if (!PacketRequest(p->adapter, TRUE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errbuf);
 		free(oid_data_arg);
 		return (PCAP_ERROR);
@@ -348,7 +348,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (p->adapter==NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Cannot transmit a queue to an offline capture or to a TurboCap port");
 		return (0);
 	}
@@ -360,7 +360,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 
 	if(res != queue->len){
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 	}
 
@@ -374,7 +374,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 
 	if (size<=0) {
 		/* Bogus parameter */
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error: invalid size %d",size);
 		return (-1);
 	}
@@ -383,7 +383,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 	new_buff=(unsigned char*)malloc(sizeof(char)*size);
 
 	if (!new_buff) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error: not enough memory");
 		return (-1);
 	}
@@ -404,7 +404,7 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	/* Set the packet driver in dump mode */
 	res = PacketSetMode(p->adapter, PACKET_MODE_DUMP);
 	if(res == FALSE){
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error setting dump mode");
 		return (-1);
 	}
@@ -412,7 +412,7 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	/* Set the name of the dump file */
 	res = PacketSetDumpName(p->adapter, filename, (int)strlen(filename));
 	if(res == FALSE){
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error setting kernel dump file name");
 		return (-1);
 	}
@@ -478,7 +478,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		PacketInitPacket(&Packet, (BYTE *)p->buffer, p->bufsize);
 		if (!PacketReceivePacket(p->adapter, &Packet, TRUE)) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
 			return (PCAP_ERROR);
 		}
 
@@ -593,7 +593,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		PacketInitPacket(&Packet, (BYTE *)p->buffer, p->bufsize);
 		if (!PacketReceivePacket(p->adapter, &Packet, TRUE)) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
 			return (-1);
 		}
 
@@ -742,13 +742,13 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 
 	if (PacketToSend == NULL)
 	{
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketAllocatePacket failed");
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketAllocatePacket failed");
 		return (-1);
 	}
 
 	PacketInitPacket(PacketToSend, (PVOID)buf, (UINT)size);
 	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
 		PacketFreePacket(PacketToSend);
 		return (-1);
 	}
@@ -800,7 +800,7 @@ pcap_activate_win32(pcap_t *p)
 	{
 		/* Adapter detected but we are not able to open it. Return failure. */
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 		return (PCAP_ERROR);
 	}
@@ -809,7 +809,7 @@ pcap_activate_win32(pcap_t *p)
 	if(PacketGetNetType (p->adapter,&type) == FALSE)
 	{
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Cannot determine the network type: %s", errbuf);
 		goto bad;
 	}
@@ -899,7 +899,7 @@ pcap_activate_win32(pcap_t *p)
 
 		if (PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_PROMISCUOUS) == FALSE)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to promiscuous mode");
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to promiscuous mode");
 			goto bad;
 		}
 	}
@@ -907,7 +907,7 @@ pcap_activate_win32(pcap_t *p)
 	{
 		if (PacketSetHwFilter(p->adapter,NDIS_PACKET_TYPE_ALL_LOCAL) == FALSE)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
 			goto bad;
 		}
 	}
@@ -929,14 +929,14 @@ pcap_activate_win32(pcap_t *p)
 
 		if(PacketSetBuff(p->adapter,p->opt.buffer_size)==FALSE)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "driver error: not enough memory to allocate the kernel buffer");
 			goto bad;
 		}
 
 		p->buffer = malloc(p->bufsize);
 		if (p->buffer == NULL)
 		{
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 			goto bad;
 		}
 
@@ -946,7 +946,7 @@ pcap_activate_win32(pcap_t *p)
 			if(PacketSetMinToCopy(p->adapter,0)==FALSE)
 			{
 				pcap_win32_err_to_str(GetLastError(), errbuf);
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "Error calling PacketSetMinToCopy: %s",
 				    errbuf);
 				goto bad;
@@ -958,7 +958,7 @@ pcap_activate_win32(pcap_t *p)
 			if(PacketSetMinToCopy(p->adapter,16000)==FALSE)
 			{
 				pcap_win32_err_to_str(GetLastError(), errbuf);
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "Error calling PacketSetMinToCopy: %s",
 				    errbuf);
 				goto bad;
@@ -978,7 +978,7 @@ pcap_activate_win32(pcap_t *p)
 		int		postype = 0;
 		char	keyname[512];
 
-		snprintf(keyname, sizeof(keyname), "%s\\CardParams\\%s",
+		pcap_snprintf(keyname, sizeof(keyname), "%s\\CardParams\\%s",
 			"SYSTEM\\CurrentControlSet\\Services\\DAG",
 			strstr(_strlwr(p->opt.source), "dag"));
 		do
@@ -1083,11 +1083,11 @@ pcap_create_interface(const char *device, char *ebuf)
 
 		if (deviceAscii == NULL)
 		{
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "Malloc failed");
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "Malloc failed");
 			return (NULL);
 		}
 
-		snprintf(deviceAscii, length + 1, "%ws", (wchar_t*)device);
+		pcap_snprintf(deviceAscii, length + 1, "%ws", (wchar_t*)device);
 		p = pcap_create_common(deviceAscii, ebuf, sizeof (struct pcap_win));
 		free(deviceAscii);
 	}
@@ -1176,7 +1176,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 	/* Install a user level filter */
 	if (install_bpf_program(p, fp) < 0)
 	{
-		snprintf(p->errbuf, sizeof(p->errbuf),
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			"setfilter, unable to install the filter: %s", pcap_strerror(errno));
 		return (-1);
 	}
@@ -1222,7 +1222,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
 		pcap_win32_err_to_str(GetLastError(), win_errbuf);
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketSetReadTimeout: %s", win_errbuf);
 		return (-1);
 	}

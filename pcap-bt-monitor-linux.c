@@ -110,7 +110,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     } while ((ret == -1) && (errno == EINTR));
 
     if (ret < 0) {
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
             "Can't receive packet: %s", strerror(errno));
         return -1;
     }
@@ -140,7 +140,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
 static int
 bt_monitor_inject(pcap_t *handle, const void *buf _U_, size_t size _U_)
 {
-    snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported yet");
+    pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported yet");
     return -1;
 }
 
@@ -187,14 +187,14 @@ bt_monitor_activate(pcap_t* handle)
 
     handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
     if (handle->fd < 0) {
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
             "Can't create raw socket: %s", strerror(errno));
         return PCAP_ERROR;
     }
 
     handle->buffer = malloc(handle->bufsize);
     if (!handle->buffer) {
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
             pcap_strerror(errno));
         goto close_fail;
     }
@@ -205,14 +205,14 @@ bt_monitor_activate(pcap_t* handle)
     addr.hci_channel = HCI_CHANNEL_MONITOR;
 
     if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
             "Can't attach to interface: %s", strerror(errno));
         goto close_fail;
     }
 
     opt = 1;
     if (setsockopt(handle->fd, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt)) < 0) {
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
             "Can't enable time stamp: %s", strerror(errno));
         goto close_fail;
     }

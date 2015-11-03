@@ -240,13 +240,13 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 	amt_read = fread(buf, 1, bytes_to_read, fp);
 	if (amt_read != bytes_to_read) {
 		if (ferror(fp)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
 			    pcap_strerror(errno));
 		} else {
 			if (amt_read == 0 && !fail_on_eof)
 				return (0);	/* EOF */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "truncated dump file; tried to read %lu bytes, only got %lu",
 			    (unsigned long)bytes_to_read,
 			    (unsigned long)amt_read);
@@ -281,7 +281,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 * memory if we read a malformed file.
 	 */
 	if (bhdr.total_length > 16*1024*1024) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "pcap-ng block size %u > maximum %u",
 		    bhdr.total_length, 16*1024*1024);
 		    return (-1);
@@ -293,7 +293,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 */
 	if (bhdr.total_length < sizeof(struct block_header) +
 	    sizeof(struct block_trailer)) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block in pcap-ng dump file has a length of %u < %lu",
 		    bhdr.total_length,
 		    (unsigned long)(sizeof(struct block_header) + sizeof(struct block_trailer)));
@@ -311,7 +311,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 
 		bigger_buffer = realloc(p->buffer, bhdr.total_length);
 		if (bigger_buffer == NULL) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 			return (-1);
 		}
 		p->buffer = bigger_buffer;
@@ -347,7 +347,7 @@ get_from_block_data(struct block_cursor *cursor, size_t chunk_size,
 	 * the block data.
 	 */
 	if (cursor->data_remaining < chunk_size) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "block of type %u in pcap-ng dump file is too short",
 		    cursor->block_type);
 		return (NULL);
@@ -448,7 +448,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 
 		case OPT_ENDOFOPT:
 			if (opthdr->option_length != 0) {
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has opt_endofopt option with length %u != 0",
 				    opthdr->option_length);
 				return (-1);
@@ -457,13 +457,13 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 
 		case IF_TSRESOL:
 			if (opthdr->option_length != 1) {
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has if_tsresol option with length %u != 1",
 				    opthdr->option_length);
 				return (-1);
 			}
 			if (saw_tsresol) {
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has more than one if_tsresol option");
 				return (-1);
 			}
@@ -489,11 +489,11 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 				 * Resolution is too high.
 				 */
 				if (tsresol_opt & 0x80) {
-					snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "Interface Description Block if_tsresol option resolution 2^-%u is too high",
 					    tsresol_opt & 0x7F);
 				} else {
-					snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "Interface Description Block if_tsresol option resolution 10^-%u is too high",
 					    tsresol_opt);
 				}
@@ -503,13 +503,13 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 
 		case IF_TSOFFSET:
 			if (opthdr->option_length != 8) {
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has if_tsoffset option with length %u != 8",
 				    opthdr->option_length);
 				return (-1);
 			}
 			if (saw_tsoffset) {
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Interface Description Block has more than one if_tsoffset option");
 				return (-1);
 			}
@@ -586,7 +586,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 				 * possible 32-bit power of 2, as we do
 				 * size doubling.
 				 */
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "more than %u interfaces in the file",
 				    0x80000000U);
 				return (0);
@@ -617,7 +617,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 				 * (unsigned) value divided by
 				 * sizeof (struct pcap_ng_if).
 				 */
-				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "more than %u interfaces in the file",
 				    0xFFFFFFFFU / ((u_int)sizeof (struct pcap_ng_if)));
 				return (0);
@@ -629,7 +629,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			 * We ran out of memory.
 			 * Give up.
 			 */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "out of memory for per-interface information (%u interfaces)",
 			    ps->ifcount);
 			return (0);
@@ -754,7 +754,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	amt_read = fread(&total_length, 1, sizeof(total_length), fp);
 	if (amt_read < sizeof(total_length)) {
 		if (ferror(fp)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
 			    pcap_strerror(errno));
 			*err = 1;
@@ -770,7 +770,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	amt_read = fread(&byte_order_magic, 1, sizeof(byte_order_magic), fp);
 	if (amt_read < sizeof(byte_order_magic)) {
 		if (ferror(fp)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
 			    pcap_strerror(errno));
 			*err = 1;
@@ -799,7 +799,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 * Check the sanity of the total length.
 	 */
 	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Section Header Block in pcap-ng dump file has a length of %u < %lu",
 		    total_length,
 		    (unsigned long)(sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)));
@@ -834,7 +834,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		break;
 
 	default:
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unknown time stamp resolution %u", precision);
 		free(p);
 		*err = 1;
@@ -860,7 +860,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		p->bufsize = total_length;
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
 		free(p);
 		*err = 1;
 		return (NULL);
@@ -918,7 +918,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		status = read_block(fp, p, &cursor, errbuf);
 		if (status == 0) {
 			/* EOF - no IDB in this file */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "the capture file has no Interface Description Blocks");
 			goto fail;
 		}
@@ -971,7 +971,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			 * not valid, as we don't know what link-layer
 			 * encapsulation the packet has.
 			 */
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "the capture file has a packet block before any Interface Description Blocks");
 			goto fail;
 
@@ -1168,13 +1168,13 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * interfaces?
 			 */
 			if (p->linktype != idbp->linktype) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a type %u different from the type of the first interface",
 				    idbp->linktype);
 				return (-1);
 			}
 			if (p->snapshot != idbp->snaplen) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the type of the first interface",
 				    idbp->snaplen);
 				return (-1);
@@ -1226,7 +1226,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				/*
 				 * Byte order changes.
 				 */
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "the file has sections with different byte orders");
 				return (-1);
 
@@ -1234,7 +1234,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				/*
 				 * Not a valid SHB.
 				 */
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "the file has a section with a bad byte order magic field");
 				return (-1);
 			}
@@ -1244,7 +1244,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * we handle.
 			 */
 			if (shbp->major_version != PCAP_NG_VERSION_MAJOR) {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "unknown pcap-ng savefile major version number %u",
 				    shbp->major_version);
 				return (-1);
@@ -1278,7 +1278,7 @@ found:
 		/*
 		 * Yes.  Fail.
 		 */
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "a packet arrived on interface %u, but there's no Interface Description Block for that interface",
 		    interface_id);
 		return (-1);

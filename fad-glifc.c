@@ -97,7 +97,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	fd4 = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd4 < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		return (-1);
 	}
@@ -107,7 +107,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	fd6 = socket(AF_INET6, SOCK_DGRAM, 0);
 	if (fd6 < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		(void)close(fd4);
 		return (-1);
@@ -120,7 +120,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	ifn.lifn_flags = 0;
 	ifn.lifn_count = 0;
 	if (ioctl(fd4, SIOCGLIFNUM, (char *)&ifn) < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SIOCGLIFNUM: %s", pcap_strerror(errno));
 		(void)close(fd6);
 		(void)close(fd4);
@@ -133,7 +133,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	buf_size = ifn.lifn_count * sizeof (struct lifreq);
 	buf = malloc(buf_size);
 	if (buf == NULL) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "malloc: %s", pcap_strerror(errno));
 		(void)close(fd6);
 		(void)close(fd4);
@@ -149,7 +149,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	ifc.lifc_flags = 0;
 	memset(buf, 0, buf_size);
 	if (ioctl(fd4, SIOCGLIFCONF, (char *)&ifc) < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SIOCGLIFCONF: %s", pcap_strerror(errno));
 		(void)close(fd6);
 		(void)close(fd4);
@@ -210,7 +210,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		if (ioctl(fd, SIOCGLIFFLAGS, (char *)&ifrflags) < 0) {
 			if (errno == ENXIO)
 				continue;
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGLIFFLAGS: %.*s: %s",
 			    (int)sizeof(ifrflags.lifr_name),
 			    ifrflags.lifr_name,
@@ -233,7 +233,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 				 */
 				netmask = NULL;
 			} else {
-				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "SIOCGLIFNETMASK: %.*s: %s",
 				    (int)sizeof(ifrnetmask.lifr_name),
 				    ifrnetmask.lifr_name,
@@ -261,7 +261,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 					 */
 					broadaddr = NULL;
 				} else {
-					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "SIOCGLIFBRDADDR: %.*s: %s",
 					    (int)sizeof(ifrbroadaddr.lifr_name),
 					    ifrbroadaddr.lifr_name,
@@ -296,7 +296,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 					 */
 					dstaddr = NULL;
 				} else {
-					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "SIOCGLIFDSTADDR: %.*s: %s",
 					    (int)sizeof(ifrdstaddr.lifr_name),
 					    ifrdstaddr.lifr_name,

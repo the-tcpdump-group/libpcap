@@ -239,7 +239,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			en_name_len = strlen(name) - 1;
 			en_name = malloc(en_name_len + 1);
 			if (en_name == NULL) {
-				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "malloc: %s", pcap_strerror(errno));
 				return (-1);
 			}
@@ -315,7 +315,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		 */
 		curdev = malloc(sizeof(pcap_if_t));
 		if (curdev == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			return (-1);
 		}
@@ -326,7 +326,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 		curdev->next = NULL;
 		curdev->name = strdup(name);
 		if (curdev->name == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			free(curdev);
 			return (-1);
@@ -337,7 +337,7 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 			 */
 			curdev->description = strdup(description);
 			if (curdev->description == NULL) {
-				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "malloc: %s", pcap_strerror(errno));
 				free(curdev->name);
 				free(curdev);
@@ -663,7 +663,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 
 	curaddr = malloc(sizeof(pcap_addr_t));
 	if (curaddr == NULL) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "malloc: %s", pcap_strerror(errno));
 		return (-1);
 	}
@@ -672,7 +672,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (addr != NULL) {
 		curaddr->addr = dup_sockaddr(addr, addr_size);
 		if (curaddr->addr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			free(curaddr);
 			return (-1);
@@ -683,7 +683,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (netmask != NULL) {
 		curaddr->netmask = dup_sockaddr(netmask, netmask_size);
 		if (curaddr->netmask == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			if (curaddr->addr != NULL)
 				free(curaddr->addr);
@@ -696,7 +696,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (broadaddr != NULL) {
 		curaddr->broadaddr = dup_sockaddr(broadaddr, broadaddr_size);
 		if (curaddr->broadaddr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			if (curaddr->netmask != NULL)
 				free(curaddr->netmask);
@@ -711,7 +711,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (dstaddr != NULL) {
 		curaddr->dstaddr = dup_sockaddr(dstaddr, dstaddr_size);
 		if (curaddr->dstaddr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			if (curaddr->broadaddr != NULL)
 				free(curaddr->broadaddr);
@@ -915,7 +915,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE, "socket: %s",
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "socket: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -927,10 +927,10 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, SIOCGIFADDR, (char *)&ifr) < 0) {
 		if (errno == EADDRNOTAVAIL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: no IPv4 address assigned", device);
 		} else {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGIFADDR: %s: %s",
 			    device, pcap_strerror(errno));
 		}
@@ -946,7 +946,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 #endif
 	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));
 		(void)close(fd);
 		return (-1);
@@ -961,7 +961,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 		else if (IN_CLASSC(*netp))
 			*maskp = IN_CLASSC_NET;
 		else {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "inet class for 0x%x unknown", *netp);
 			return (-1);
 		}
@@ -1016,14 +1016,14 @@ pcap_lookupdev(errbuf)
 
 		if(TAdaptersName == NULL)
 		{
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE, "memory allocation failure");
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "memory allocation failure");
 			return NULL;
 		}
 
 		if ( !PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength) )
 		{
 			pcap_win32_err_to_str(GetLastError(), our_errbuf);
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				"PacketGetAdapterNames: %s", our_errbuf);
 			free(TAdaptersName);
 			return NULL;

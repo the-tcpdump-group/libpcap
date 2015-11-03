@@ -144,8 +144,8 @@ usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
 {
 	char dev_name[10];
 	char dev_descr[30];
-	snprintf(dev_name, 10, USB_IFACE"%d", n);
-	snprintf(dev_descr, 30, "USB bus number %d", n);
+	pcap_snprintf(dev_name, 10, USB_IFACE"%d", n);
+	pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
 
 	if (pcap_add_if(alldevsp, dev_name, 0,
 	    dev_descr, err_str) < 0)
@@ -287,7 +287,7 @@ probe_devices(int bus)
 	DIR* dir;
 
 	/* scan usb bus directories for device nodes */
-	snprintf(buf, sizeof(buf), "/dev/bus/usb/%03d", bus);
+	pcap_snprintf(buf, sizeof(buf), "/dev/bus/usb/%03d", bus);
 	dir = opendir(buf);
 	if (!dir)
 		return;
@@ -299,7 +299,7 @@ probe_devices(int bus)
 		if (name[0] == '.')
 			continue;
 
-		snprintf(buf, sizeof(buf), "/dev/bus/usb/%03d/%s", bus, data->d_name);
+		pcap_snprintf(buf, sizeof(buf), "/dev/bus/usb/%03d/%s", bus, data->d_name);
 
 		fd = open(buf, O_RDWR);
 		if (fd == -1)
@@ -397,13 +397,13 @@ usb_activate(pcap_t* handle)
 	/*get usb bus index from device name */
 	if (sscanf(handle->opt.source, USB_IFACE"%d", &handlep->bus_index) != 1)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't get USB bus index from %s", handle->opt.source);
 		return PCAP_ERROR;
 	}
 
 	/*now select the read method: try to open binary interface */
-	snprintf(full_path, USB_LINE_LEN, LINUX_USB_MON_DEV"%d", handlep->bus_index);
+	pcap_snprintf(full_path, USB_LINE_LEN, LINUX_USB_MON_DEV"%d", handlep->bus_index);
 	handle->fd = open(full_path, O_RDONLY, 0);
 	if (handle->fd >= 0)
 	{
@@ -442,7 +442,7 @@ usb_activate(pcap_t* handle)
 	}
 	else {
 		/*Binary interface not available, try open text interface */
-		snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR"/%dt", handlep->bus_index);
+		pcap_snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR"/%dt", handlep->bus_index);
 		handle->fd = open(full_path, O_RDONLY, 0);
 		if (handle->fd < 0)
 		{
@@ -452,12 +452,12 @@ usb_activate(pcap_t* handle)
 				 * Not found at the new location; try
 				 * the old location.
 				 */
-				snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%dt", handlep->bus_index);
+				pcap_snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%dt", handlep->bus_index);
 				handle->fd = open(full_path, O_RDONLY, 0);
 			}
 			if (handle->fd < 0) {
 				/* no more fallback, give it up*/
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"Can't open USB bus file %s: %s", full_path, strerror(errno));
 				return PCAP_ERROR;
 			}
@@ -485,7 +485,7 @@ usb_activate(pcap_t* handle)
 	 * buffer */
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "malloc: %s", pcap_strerror(errno));
 		close(handle->fd);
 		return PCAP_ERROR;
@@ -536,7 +536,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (errno == EAGAIN)
 			return 0;	/* no data there */
 
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't read from fd %d: %s", handle->fd, strerror(errno));
 		return -1;
 	}
@@ -549,7 +549,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		&cnt);
 	if (ret < 8)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't parse USB bus message '%s', too few tokens (expected 8 got %d)",
 		    string, ret);
 		return -1;
@@ -563,7 +563,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	/* don't use usbmon provided timestamp, since it have low precision*/
 	if (gettimeofday(&pkth.ts, NULL) < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't get timestamp for message '%s' %d:%s",
 			string, errno, strerror(errno));
 		return -1;
@@ -615,7 +615,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		str5, &cnt);
 		if (ret < 5)
 		{
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't parse USB bus message '%s', too few tokens (expected 5 got %d)",
 				string, ret);
 			return -1;
@@ -639,7 +639,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	ret = sscanf(string, " %d%n", &urb_len, &cnt);
 	if (ret < 1)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		  "Can't parse urb length from '%s'", string);
 		return -1;
 	}
@@ -657,7 +657,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	/* check for data presence; data is present if and only if urb tag is '=' */
 	if (sscanf(string, " %c", &urb_tag) != 1)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't parse urb tag from '%s'", string);
 		return -1;
 	}
@@ -705,7 +705,7 @@ got:
 static int
 usb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
 		"USB devices");
 	return (-1);
 }
@@ -720,7 +720,7 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	char * ptr = string;
 	int fd;
 
-	snprintf(string, USB_LINE_LEN, USB_TEXT_DIR"/%ds", handlep->bus_index);
+	pcap_snprintf(string, USB_LINE_LEN, USB_TEXT_DIR"/%ds", handlep->bus_index);
 	fd = open(string, O_RDONLY, 0);
 	if (fd < 0)
 	{
@@ -730,11 +730,11 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 			 * Not found at the new location; try the old
 			 * location.
 			 */
-			snprintf(string, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%ds", handlep->bus_index);
+			pcap_snprintf(string, USB_LINE_LEN, USB_TEXT_DIR_OLD"/%ds", handlep->bus_index);
 			fd = open(string, O_RDONLY, 0);
 		}
 		if (fd < 0) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't open USB stats file %s: %s",
 				string, strerror(errno));
 			return -1;
@@ -749,7 +749,7 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	if (ret < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't read stats from fd %d ", fd);
 		return -1;
 	}
@@ -803,7 +803,7 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 	ret = ioctl(handle->fd, MON_IOCG_STATS, &st);
 	if (ret < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't read stats from fd %d:%s ", handle->fd, strerror(errno));
 		return -1;
 	}
@@ -846,7 +846,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 		if (errno == EAGAIN)
 			return 0;	/* no data there */
 
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't read from fd %d: %s", handle->fd, strerror(errno));
 		return -1;
 	}
@@ -917,7 +917,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			if (errno == EAGAIN)
 				return 0;	/* no data there */
 
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't mfetch fd %d: %s", handle->fd, strerror(errno));
 			return -1;
 		}
@@ -958,7 +958,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 
 	/* flush pending events*/
 	if (ioctl(handle->fd, MON_IOCH_MFLUSH, nflush) == -1) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Can't mflush fd %d: %s", handle->fd, strerror(errno));
 		return -1;
 	}

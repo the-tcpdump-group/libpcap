@@ -114,7 +114,7 @@ pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (cc < 0) {
 			if (errno == EWOULDBLOCK)
 				return (0);
-			snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
+			pcap_snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
 				pcap_strerror(errno));
 			return (-1);
 		}
@@ -168,7 +168,7 @@ pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			continue;
 
 		default:
-			snprintf(p->errbuf, sizeof(p->errbuf),
+			pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "bad nit state %d", nh->nh_state);
 			return (-1);
 		}
@@ -206,7 +206,7 @@ pcap_inject_nit(pcap_t *p, const void *buf, size_t size)
 	strncpy(sa.sa_data, device, sizeof(sa.sa_data));
 	ret = sendto(p->fd, buf, size, 0, &sa, sizeof(sa));
 	if (ret == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -249,7 +249,7 @@ nit_setflags(pcap_t *p)
 		nioc.nioc_flags |= NF_PROMISC;
 
 	if (ioctl(p->fd, SIOCSNIT, &nioc) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -280,7 +280,7 @@ pcap_activate_nit(pcap_t *p)
 	memset(p, 0, sizeof(*p));
 	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
 	if (fd < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		goto bad;
 	}
@@ -288,7 +288,7 @@ pcap_activate_nit(pcap_t *p)
 	(void)strncpy(snit.snit_ifname, p->opt.source, NITIFSIZ);
 
 	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
 		goto bad;
 	}

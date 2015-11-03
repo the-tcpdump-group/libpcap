@@ -306,13 +306,13 @@ bpf_image(p, n)
 		fmt = "";
 		break;
 	}
-	(void)snprintf(operand, sizeof operand, fmt, v);
+	(void)pcap_snprintf(operand, sizeof operand, fmt, v);
 	if (BPF_CLASS(p->code) == BPF_JMP && BPF_OP(p->code) != BPF_JA) {
-		(void)snprintf(image, sizeof image,
+		(void)pcap_snprintf(image, sizeof image,
 			      "(%03d) %-8s %-16s jt %d\tjf %d",
 			      n, op, operand, n + 1 + p->jt, n + 1 + p->jf);
 	} else {
-		(void)snprintf(image, sizeof image,
+		(void)pcap_snprintf(image, sizeof image,
 			      "(%03d) %-8s %s",
 			      n, op, operand);
 	}

@@ -164,11 +164,7 @@
   #endif
 #endif
 
-#define caddr_t char*
-
 #ifdef _MSC_VER
-  #define snprintf  _snprintf
-  #define vsnprintf _vsnprintf
   #define strdup    _strdup
 #endif
 
