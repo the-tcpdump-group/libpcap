@@ -225,7 +225,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		hdr.version_minor <= PCAP_VERSION_MINOR) ||
 	       (hdr.version_major == 543 &&
 		hdr.version_minor == 0))) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			 "unsupported pcap savefile version %u.%u",
 			 hdr.version_major, hdr.version_minor);
 		*err = 1;
@@ -233,7 +233,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	}
 
 	if (hdr.snaplen > MAXIMUM_SNAPLEN) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			 "invalid file capture length %u, bigger than "
 			 "maximum of %u", hdr.snaplen, MAXIMUM_SNAPLEN);
 		*err = 1;

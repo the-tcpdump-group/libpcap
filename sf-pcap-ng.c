@@ -895,7 +895,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	/* currently only SHB version 1.0 is supported */
 	if (! (shbp->major_version == PCAP_NG_VERSION_MAJOR &&
 	       shbp->minor_version == PCAP_NG_VERSION_MINOR)) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "unsupported pcap-ng savefile version %u.%u",
 		    shbp->major_version, shbp->minor_version);
 		goto fail;
@@ -948,10 +948,10 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			 * Interface capture length sanity check
 			 */
 			if (idbp->snaplen > MAXIMUM_SNAPLEN) {
-			       snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					"invalid interface capture length %u, "
-					"bigger than maximum of %u",
-					idbp->snaplen, MAXIMUM_SNAPLEN);
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "invalid interface capture length %u, "
+				    "bigger than maximum of %u",
+				    idbp->snaplen, MAXIMUM_SNAPLEN);
 				goto fail;
 			}
 
