@@ -157,9 +157,13 @@ set(PROJECT_SOURCE_LIST_C
     bpf/net/bpf_filter.c
 )
 
-if( NOT HAVE_SNPRINTF )
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/snprintf.c )
-endif( NOT HAVE_SNPRINTF )
+if( WIN32 )
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/win_snprintf.c )
+else()
+    if( NOT HAVE_SNPRINTF )
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/snprintf.c )
+    endif( NOT HAVE_SNPRINTF )
+endif( WIN32 )
 
 #
 # Determine the main pcap-XXX.c file to use.
