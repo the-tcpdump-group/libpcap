@@ -1864,9 +1864,18 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			if (len < (unsigned int) handlep->vlan_offset)
 				break;
 
+			/*
+			 * Move everything in the header, except the
+			 * type field, down VLAN_TAG_LEN bytes, to
+			 * allow us to insert the VLAN tag between
+			 * that stuff and the type field.
+			 */
 			bp -= VLAN_TAG_LEN;
 			memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
+			/*
+			 * Now insert the tag.
+			 */
 			tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
 			tag->vlan_tpid = htons(VLAN_TPID(aux, aux));
 			tag->vlan_tci = htons(aux->tp_vlan_tci);
@@ -1876,6 +1885,10 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
                         aux_data.vlan_tag = htons(aux->tp_vlan_tci) & 0x0fff;
                         aux_data.vlan_tag_present = (aux->tp_status & TP_STATUS_VLAN_VALID);
 #endif
+
+			/*
+			 * Add the tag to the packet lengths.
+			 */
 			packet_len += VLAN_TAG_LEN;
 		}
 	}
@@ -3570,15 +3583,24 @@ activate_new(pcap_t *handle)
 
 	/*
 	 * Set the offset at which to insert VLAN tags.
+	 * That should be the offset of the type field.
 	 */
 	switch (handle->linktype) {
 
 	case DLT_EN10MB:
+		/*
+		 * The type field is after the destination and source
+		 * MAC address.
+		 */
 		handlep->vlan_offset = 2 * ETH_ALEN;
 		break;
 
 	case DLT_LINUX_SLL:
-		handlep->vlan_offset = 14;
+		/*
+		 * The type field is in the last 2 bytes of the
+		 * DLT_LINUX_SLL header.
+		 */
+		handlep->vlan_offset = SLL_HDR_LEN - 2;
 		break;
 
 	default:
@@ -4663,13 +4685,24 @@ static int pcap_handle_packet_mmap(
 	{
 		struct vlan_tag *tag;
 
+		/*
+		 * Move everything in the header, except the type field,
+		 * down VLAN_TAG_LEN bytes, to allow us to insert the
+		 * VLAN tag between that stuff and the type field.
+		 */
 		bp -= VLAN_TAG_LEN;
 		memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
 
+		/*
+		 * Now insert the tag.
+		 */
 		tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
 		tag->vlan_tpid = htons(tp_vlan_tpid);
 		tag->vlan_tci = htons(tp_vlan_tci);
 
+		/*
+		 * Add the tag to the packet lengths.
+		 */
 		pcaphdr.caplen += VLAN_TAG_LEN;
 		pcaphdr.len += VLAN_TAG_LEN;
 	}
