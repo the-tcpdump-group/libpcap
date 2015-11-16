@@ -8311,7 +8311,7 @@ gen_geneve6(int vni)
 		sappend(s, s1);
 	} else {
 		s = new_stmt(BPF_LD|BPF_IMM);
-		s->s.k = 40;;
+		s->s.k = 40;
 	}
 
 	/* Forcibly append these statements to the true condition
