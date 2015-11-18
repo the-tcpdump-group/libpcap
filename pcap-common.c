@@ -959,7 +959,6 @@
  */
 #define LINKTYPE_PROFIBUS_DL		257
 
-
 /*
  * Apple's DLT_PKTAP headers.
  *
@@ -1000,7 +999,18 @@
 #define LINKTYPE_ZWAVE_R1_R2	261
 #define LINKTYPE_ZWAVE_R3	262
 
-#define LINKTYPE_MATCHING_MAX	262		/* highest value in the "matching" range */
+/*
+ * per Steve Karg <skarg@users.sourceforge.net>, formats for Wattstopper
+ * Digital Lighting Management room bus serial protocol captures.
+ */
+#define LINKTYPE_WATTSTOPPER_DLM 263
+
+/*
+ * ISO 14443 contactless smart card messages.
+ */
+#define LINKTYPE_ISO_14443      264
+
+#define LINKTYPE_MATCHING_MAX	264		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
