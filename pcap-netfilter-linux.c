@@ -79,9 +79,11 @@ typedef enum { OTHER = -1, NFLOG, NFQUEUE } nftype_t;
  */
 struct pcap_netfilter {
 	u_int	packets_read;	/* count of packets read with recvfrom() */
+	u_int   packets_nobufs; /* ENOBUFS counter */
 };
 
 static int nfqueue_send_verdict(const pcap_t *handle, u_int16_t group_id, u_int32_t id, u_int32_t verdict);
+
 
 static int
 netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
@@ -98,8 +100,9 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			handle->break_loop = 0;
 			return -2;
 		}
-	} while ((len == -1) && (errno == EINTR));
-
+		if(errno == ENOBUFS) handlep->packets_nobufs++;
+	} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
+	
 	if (len < 0) {
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
 		return -1;
@@ -224,7 +227,7 @@ netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct pcap_netfilter *handlep = handle->priv;
 
 	stats->ps_recv = handlep->packets_read;
-	stats->ps_drop = 0;
+	stats->ps_drop = handlep->packets_nobufs;
 	stats->ps_ifdrop = 0;
 	return 0;
 }
