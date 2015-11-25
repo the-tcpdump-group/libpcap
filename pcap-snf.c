@@ -324,11 +324,12 @@ snf_activate(pcap_t* p)
 int
 snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 {
-	pcap_if_t *devlist = NULL,*curdev,*prevdev;
+	pcap_if_t *devlist = NULL,*curdev,*prevdev,*nextdev;
 	pcap_addr_t *curaddr;
 	struct snf_ifaddrs *ifaddrs, *ifa;
 	char desc[MAX_DESC_LENGTH];
-	int ret;
+	int ret, found, allports = 0, merge = 0;
+	const char *nr = NULL;
 
 	if (snf_init(SNF_VERSION_API))
 		return (-1);
@@ -339,11 +340,123 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			"snf_getifaddrs: %s", pcap_strerror(errno));
 		return (-1);
 	}
+	if ((nr = getenv("SNF_FLAGS")) && *nr) {
+		errno = 0;
+		merge = strtol(nr, NULL, 0);
+		if (errno)
+			return (-1);
+        	merge = merge & SNF_F_AGGREGATE_PORTMASK;
+	}
+
 	ifa = ifaddrs;
 	while (ifa)
 	{
+		found = 0;
+		nextdev = *devlistp;
 		/*
-		 * Allocate a new entry
+ 		 * Look for a match in passed in devlist
+ 		 */
+		while (nextdev != NULL) {
+			if (!strcmp(nextdev->name,ifa->snf_ifa_name)) {
+			/*
+			 * Update Description if match found
+			 * If port aggregation is set, unit is power of 2
+			 */
+                                (void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
+					merge ? "Merge Bitmask Port " : "",
+                                	merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
+				if (merge) 
+					allports |= 1 << ifa->snf_ifa_portnum;
+                                nextdev->description = strdup(desc);
+                                if (nextdev->description == NULL) {
+                                        (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+                                         "snf_findalldevs strdup: %s", pcap_strerror(errno));
+                                        return (-1);
+				}
+				found = 1;
+				break;
+			}
+			nextdev = nextdev->next;
+		}
+		if (!found) {
+			/*
+			 * Allocate a new entry
+			 */
+			curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
+			if (curdev == NULL) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				"snf_findalldevs malloc: %s", pcap_strerror(errno));
+				return (-1);
+			}
+			if (devlist == NULL) /* save first entry */
+				devlist = curdev;
+			else
+				prevdev->next = curdev;
+			/*
+			 * Fill in the entry.
+			 */
+			curdev->next = NULL;
+			curdev->name = strdup(ifa->snf_ifa_name);
+			if (curdev->name == NULL) {
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "snf_findalldevs strdup: %s", pcap_strerror(errno));
+				free(curdev);
+				return (-1);
+			}
+			(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
+				merge ? "Merge Bitmask Port " : "",
+				merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
+			if (merge) 
+				allports |= 1 << ifa->snf_ifa_portnum;
+			curdev->description = strdup(desc);
+			if (curdev->description == NULL) {
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				"snf_findalldevs strdup1: %s", pcap_strerror(errno));
+				free(curdev->name);
+				free(curdev);
+				return (-1);
+			}
+			curdev->addresses = NULL;
+			curdev->flags = 0;
+	
+			curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
+			if (curaddr == NULL) {
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				     "snf_findalldevs malloc1: %s", pcap_strerror(errno));
+				free(curdev->description);
+				free(curdev->name);
+				free(curdev);
+				return (-1);
+			}
+			curdev->addresses = curaddr;
+			curaddr->next = NULL;
+			curaddr->addr = (struct sockaddr*)malloc(sizeof(struct sockaddr_storage));
+			if (curaddr->addr == NULL) {
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "malloc2: %s", pcap_strerror(errno));
+				free(curdev->description);
+				free(curdev->name);
+				free(curaddr);
+				free(curdev);
+				return (-1);
+			}
+			curaddr->addr->sa_family = AF_INET;
+			curaddr->netmask = NULL;
+			curaddr->broadaddr = NULL;
+			curaddr->dstaddr = NULL;
+			curaddr->next = NULL;
+	
+			prevdev = curdev;
+		} // end of if entry !found
+		ifa = ifa->snf_ifa_next;
+	}
+	snf_freeifaddrs(ifaddrs);
+	/* 
+         * Create a snfX entry if port aggregation is enabled
+       	 */
+	if (merge) {
+		/*
+		 * Allocate a new entry with all ports bitmask
 		 */
 		curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 		if (curdev == NULL) {
@@ -359,15 +472,17 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		 * Fill in the entry.
 		 */
 		curdev->next = NULL;
-		curdev->name = strdup(ifa->snf_ifa_name);
+		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"snf%d",allports);
+		curdev->name = strdup(desc);
 		if (curdev->name == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "snf_findalldevs strdup: %s", pcap_strerror(errno));
 			free(curdev);
 			return (-1);
 		}
-		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom snf%d",
-				ifa->snf_ifa_portnum);
+		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
+				allports);
+		curdev->description = strdup(desc);
 		curdev->description = strdup(desc);
 		if (curdev->description == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -405,12 +520,21 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		curaddr->broadaddr = NULL;
 		curaddr->dstaddr = NULL;
 		curaddr->next = NULL;
-
-		prevdev = curdev;
-		ifa = ifa->snf_ifa_next;
 	}
-	snf_freeifaddrs(ifaddrs);
-	*devlistp = devlist;
+	if (*devlistp == NULL)
+		/*
+		 * The passed in list was empty
+		 */
+		*devlistp = devlist;
+	else {
+		/*
+		 * Find last member of list and append our devlist to it.
+		 */
+		nextdev = *devlistp;
+		while (nextdev->next != NULL)
+			nextdev = nextdev->next;
+		nextdev->next = devlist;
+	}
 
 	/*
 	 * There are no platform-specific devices since each device
