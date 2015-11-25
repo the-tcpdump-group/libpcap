@@ -40,10 +40,15 @@
 extern "C" {
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
+/*
+ * Make sure Packet32.h doesn't define BPF structures that we've
+ * probably already defined as a result of including <pcap/pcap.h>.
+ */
+#define BPF_MAJOR_VERSION
 #include <Packet32.h>
 extern CRITICAL_SECTION g_PcapCompileCriticalSection;
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #ifdef MSDOS
 #include <fcntl.h>
@@ -126,11 +131,19 @@ typedef int	(*set_datalink_op_t)(pcap_t *, int);
 typedef int	(*getnonblock_op_t)(pcap_t *, char *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
-#ifdef WIN32
+#ifdef _WIN32
+typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
-typedef Adapter *(*getadapter_op_t)(pcap_t *);
+typedef HANDLE	(*getevent_op_t)(pcap_t *);
+typedef int	(*oid_get_request_op_t)(pcap_t *, bpf_u_int32, void *, size_t);
+typedef int	(*oid_set_request_op_t)(pcap_t *, bpf_u_int32, const void *, size_t);
+typedef u_int	(*sendqueue_transmit_op_t)(pcap_t *, pcap_send_queue *, int);
+typedef int	(*setuserbuffer_op_t)(pcap_t *, int);
+typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
+typedef int	(*live_dump_ended_op_t)(pcap_t *, int);
+typedef PAirpcapHandle	(*get_airpcap_handle_op_t)(pcap_t *);
 #endif
 typedef void	(*cleanup_op_t)(pcap_t *);
 
@@ -145,24 +158,22 @@ struct pcap {
 	read_op_t read_op;
 
 	/*
-	 * Method to call to read to read packets from a savefile.
+	 * Method to call to read packets from a savefile.
 	 */
 	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 
-#ifdef WIN32
+#ifdef _WIN32
 	ADAPTER *adapter;
-	LPPACKET Packet;
-	int nonblock;
 #else
 	int fd;
 	int selectable_fd;
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 	/*
 	 * Read buffer.
 	 */
 	int bufsize;
-	u_char *buffer;
+	void *buffer;
 	u_char *bp;
 	int cc;
 
@@ -198,6 +209,10 @@ struct pcap {
 	 * Place holder for pcap_next().
 	 */
 	u_char *pkt;
+
+#ifdef _WIN32
+	struct pcap_stat stat;		/* used for pcap_stats_ex() */
+#endif
 
 	/* We're accepting only packets in this direction/these directions. */
 	pcap_direction_t direction;
@@ -240,15 +255,23 @@ struct pcap {
 	 */
 	pcap_handler oneshot_callback;
 
-#ifdef WIN32
+#ifdef _WIN32
 	/*
 	 * These are, at least currently, specific to the Win32 NPF
 	 * driver.
 	 */
+	stats_ex_op_t stats_ex_op;
 	setbuff_op_t setbuff_op;
 	setmode_op_t setmode_op;
 	setmintocopy_op_t setmintocopy_op;
-	getadapter_op_t getadapter_op;
+	getevent_op_t getevent_op;
+	oid_get_request_op_t oid_get_request_op;
+	oid_set_request_op_t oid_set_request_op;
+	sendqueue_transmit_op_t sendqueue_transmit_op;
+	setuserbuffer_op_t setuserbuffer_op;
+	live_dump_op_t live_dump_op;
+	live_dump_ended_op_t live_dump_ended_op;
+	get_airpcap_handle_op_t get_airpcap_handle_op;
 #endif
 	cleanup_op_t cleanup_op;
 };
@@ -357,14 +380,52 @@ int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
 #include <stdarg.h>
 
-#if !defined(HAVE_SNPRINTF)
-#define snprintf pcap_snprintf
-extern int snprintf (char *, size_t, const char *, ...);
+/*
+ * For flagging arguments as format strings in MSVC.
+ */
+#if _MSC_VER >= 1400
+ #include <sal.h>
+ #if _MSC_VER > 1400
+  #define FORMAT_STRING(p) _Printf_format_string_ p
+ #else
+  #define FORMAT_STRING(p) __format_string p
+ #endif
+#else
+ #define FORMAT_STRING(p) p
 #endif
 
-#if !defined(HAVE_VSNPRINTF)
-#define vsnprintf pcap_vsnprintf
-extern int vsnprintf (char *, size_t, const char *, va_list ap);
+/*
+ * On Windows, snprintf(), with that name and with C99 behavior - i.e.,
+ * guaranteeing that the formatted string is null-terminated - didn't
+ * appear until Visual Studio 2015.  Prior to that, the C runtime had
+ * only _snprintf(), which *doesn't* guarantee that the string is
+ * null-terminated if it is truncated due to the buffer being too
+ * small.  We therefore can't just define snprintf to be _snprintf
+ * and define vsnprintf to be _vsnprintf, as we're relying on null-
+ * termination of strings in all cases.
+ *
+ * We also want to allow this to be built with versions of Visual Studio
+ * prior to VS 2015, so we can't rely on snprintf() being present.
+ *
+ * And we want to make sure that, if we support plugins in the future,
+ * a routine with C99 snprintf() behavior will be available to them.
+ * We also don't want it to collide with the C library snprintf() if
+ * there is one.
+ *
+ * So we make pcap_snprintf() and pcap_vsnprintf() available, either by
+ * #defining them to be snprintf or vsnprintf, respectively, or by
+ * defining our own versions and exporting them.
+ */
+#ifdef HAVE_SNPRINTF
+#define pcap_snprintf snprintf
+#else
+extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...);
+#endif
+
+#ifdef HAVE_VSNPRINTF
+#define pcap_vsnprintf vsnprintf
+#else
+extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
 #endif
 
 /*
@@ -376,7 +437,7 @@ extern int vsnprintf (char *, size_t, const char *, va_list ap);
 /*
  * Routines that most pcap implementations can use for non-blocking mode.
  */
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 int	pcap_getnonblock_fd(pcap_t *, char *);
 int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
@@ -398,7 +459,6 @@ int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);
 void	pcap_cleanup_live_common(pcap_t *);
-int	pcap_not_initialized(pcap_t *);
 int	pcap_check_activated(pcap_t *);
 
 /*
@@ -448,8 +508,8 @@ void	sf_cleanup(pcap_t *p);
  */
 void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
-#ifdef WIN32
-char	*pcap_win32strerror(void);
+#ifdef _WIN32
+void	pcap_win32_err_to_str(DWORD, char *);
 #endif
 
 int	install_bpf_program(pcap_t *, struct bpf_program *);

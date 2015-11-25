@@ -69,13 +69,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 RANLIB = @RANLIB@
 
-#
-# Flex and bison allow you to specify the prefixes of the global symbols
-# used by the generated parser.  This allows programs to use lex/yacc
-# and link against libpcap.  If you don't have flex or bison, get them.
-#
-LEX = @V_LEX@
-YACC = @V_YACC@
+LEX = @LEX@
+YACC = @YACC@
 
 # Explicitly define compilation rule since SunOS 4's make doesn't like gcc.
 # Also, gcc does not remove the .o before forking 'as', which can be a
@@ -104,6 +99,7 @@ PUBHDR = \
 	pcap-namedb.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
+	pcap/dlt.h \
 	pcap/ipnet.h \
 	pcap/namedb.h \
 	pcap/nflog.h \
@@ -148,7 +144,7 @@ TESTS_SRC = \
 	tests/valgrindtest.c
 
 GENHDR = \
-	scanner.h tokdefs.h version.h
+	scanner.h grammar.h version.h
 
 TAGFILES = \
 	$(SRC) $(HDR)
@@ -234,6 +230,7 @@ EXTRA_DIST = \
 	ChmodBPF/ChmodBPF \
 	ChmodBPF/StartupParameters.plist \
 	CREDITS \
+	CMakeLists.txt \
 	INSTALL.txt \
 	LICENSE \
 	Makefile.in \
@@ -256,6 +253,8 @@ EXTRA_DIST = \
 	aclocal.m4 \
 	bpf/net/bpf_filter.c \
 	chmod_bpf \
+	cmakeconfig.h.in \
+	config/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
 	config.sub \
@@ -278,6 +277,8 @@ EXTRA_DIST = \
 	lbl/os-solaris2.h \
 	lbl/os-sunos4.h \
 	lbl/os-ultrix4.h \
+	missing/getopt.c \
+	missing/getopt.h \
 	missing/snprintf.c \
 	mkdep \
 	msdos/bin2c.c \
@@ -330,35 +331,16 @@ EXTRA_DIST = \
 	pcap-snf.h \
 	pcap-snit.c \
 	pcap-snoop.c \
+	pcap-tc.c \
+	pcap-tc.h \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	pcap-win32.c \
-	runlex.sh \
-	scanner.c.top \
 	scanner.l \
 	Win32/Include/Gnuc.h \
-	Win32/Include/addrinfo.h \
-	Win32/Include/bittypes.h \
-	Win32/Include/cdecl_ext.h \
-	Win32/Include/inetprivate.h \
-	Win32/Include/ip6_misc.h \
-	Win32/Include/sockstorage.h \
-	Win32/Include/arpa/nameser.h \
 	Win32/Include/net/if.h \
-	Win32/Include/net/netdb.h \
-	Win32/Include/net/paths.h \
 	Win32/Prj/libpcap.dsp \
-	Win32/Prj/libpcap.dsw \
-	Win32/Src/ffs.c \
-	Win32/Src/gai_strerror.c \
-	Win32/Src/getaddrinfo.c \
-	Win32/Src/getnetbynm.c \
-	Win32/Src/getnetent.c \
-	Win32/Src/getopt.c \
-	Win32/Src/getservent.c \
-	Win32/Src/inet_aton.c \
-	Win32/Src/inet_net.c \
-	Win32/Src/inet_pton.c
+	Win32/Prj/libpcap.dsw
 
 all: libpcap.a shared pcap-config
 
@@ -445,28 +427,21 @@ libpcap.shareda: $(OBJ)
 #
 libpcap.none:
 
+scanner.h: scanner.c
 scanner.c: $(srcdir)/scanner.l
-	@rm -f $@ $@.bottom
-	$(srcdir)/runlex.sh $(LEX) -o$@ $<
-	mv $@ $@.bottom
-	cat $(srcdir)/$@.top $@.bottom > $@
-	@rm $@.bottom
+	$(LEX) -P pcap_ --header-file=scanner.h --nounput -o scanner.c $<
 
-scanner.o: scanner.c tokdefs.h
+scanner.o: scanner.c grammar.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
 
 pcap.o: version.h
 
-tokdefs.h: grammar.c
+grammar.h: grammar.c
 grammar.c: $(srcdir)/grammar.y
-	@rm -f grammar.c tokdefs.h
-	$(YACC) -d $<
-	mv y.tab.c grammar.c
-	mv y.tab.h tokdefs.h
+	$(YACC) -p pcap_ -o grammar.c -d $<
 
 grammar.o: grammar.c
-	@rm -f $@
-	$(CC) $(FULL_CFLAGS) -Dyylval=pcap_lval -c grammar.c
+	$(CC) $(FULL_CFLAGS) -c grammar.c
 
 version.o: version.c
 	$(CC) $(FULL_CFLAGS) -c version.c

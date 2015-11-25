@@ -202,7 +202,7 @@ static int pcap_activate_dos (pcap_t *pcap)
   }
   else if (stricmp(active_dev->name,pcap->opt.source))
   {
-    snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
+    pcap_snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
               "Cannot use different devices simultaneously "
               "(`%s' vs. `%s')", active_dev->name, pcap->opt.source);
     return (PCAP_ERROR);

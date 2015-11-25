@@ -108,15 +108,17 @@ int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
     for(i=0;i<cnt;i++)
     {
         int ret;
-        // Check if this device is interesting.
+        /* Check if this device is interesting. */
         struct libusb_device_descriptor desc;
+        libusb_device_handle *dh;
+
         libusb_get_device_descriptor(devs[i],&desc);
 
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID))
-            continue; //It is not, check next device
+            continue; /* It is not, check next device */
 
-        //It is!
-        libusb_device_handle *dh = NULL;
+        /* It is! */
+        dh = NULL;
 
         if ((ret = libusb_open(devs[i],&dh)) == 0)
         {
@@ -125,8 +127,8 @@ int canusb_findalldevs(pcap_if_t **alldevsp, char *err_str)
             int n = libusb_get_string_descriptor_ascii(dh,desc.iSerialNumber,sernum,64);
             sernum[n] = 0;
 
-            snprintf(dev_name, 30, CANUSB_IFACE"%s", sernum);
-            snprintf(dev_descr, 50, "CanUSB [%s]", sernum);
+            pcap_snprintf(dev_name, 30, CANUSB_IFACE"%s", sernum);
+            pcap_snprintf(dev_descr, 50, "CanUSB [%s]", sernum);
 
             libusb_close(dh);
 
@@ -154,15 +156,17 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
 
     for(i=0;i<cnt;i++)
     {
-        // Check if this device is interesting.
+        /* Check if this device is interesting. */
         struct libusb_device_descriptor desc;
+        libusb_device_handle *dh;
+
         libusb_get_device_descriptor(devs[i],&desc);
 
         if ((desc.idVendor != CANUSB_VID) || (desc.idProduct != CANUSB_PID))
           continue;
 
-        //Found one!
-        libusb_device_handle *dh = NULL;
+        /* Found one! */
+        dh = NULL;
 
         if (libusb_open(devs[i],&dh) != 0) continue;
 
@@ -193,7 +197,7 @@ static libusb_device_handle* canusb_opendevice(struct libusb_context *ctx, char*
             continue;
         }
 
-        //Fount it!
+        /* Fount it! */
         libusb_free_device_list(devs,1);
         return dh;
     }
@@ -272,7 +276,7 @@ static void* canusb_capture_thread(void *arg)
         struct CAN_Msg msg;
 
         libusb_interrupt_transfer(canusb->dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);
-        //HACK!!!!! -> drop buffered data, read new one by reading twice.
+        /* HACK!!!!! -> drop buffered data, read new one by reading twice. */
         libusb_interrupt_transfer(canusb->dev, 0x81, (unsigned char*)&status, sizeof(status), &sz, 100);
 
         for(i = 0; i<status.rxsz; i++)
@@ -308,9 +312,9 @@ static void canusb_clearbufs(struct pcap_canusb* this)
     unsigned char cmd[16];
     int al;
 
-    cmd[0] = 1;  //Empty incoming buffer
-    cmd[1] = 1;  //Empty outgoing buffer
-    cmd[3] = 0;  //Not a write to serial number
+    cmd[0] = 1;  /* Empty incoming buffer */
+    cmd[1] = 1;  /* Empty outgoing buffer */
+    cmd[3] = 0;  /* Not a write to serial number */
     memset(&cmd[4],0,16-4);
 
     libusb_interrupt_transfer(this->dev, 0x1,cmd,16,&al,100);
@@ -347,7 +351,7 @@ static int canusb_activate(pcap_t* handle)
         /*
          * XXX - what causes this to fail?
          */
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "libusb_init() failed");
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "libusb_init() failed");
         return PCAP_ERROR;
     }
 
@@ -373,7 +377,7 @@ static int canusb_activate(pcap_t* handle)
     if (!canusb->dev)
     {
         libusb_exit(canusb->ctx);
-        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device");
+        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't open USB Device");
         return PCAP_ERROR;
     }
 
@@ -430,7 +434,7 @@ static int
 canusb_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
     /* not yet implemented */
-    snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on canusb devices");
+    pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on canusb devices");
     return (-1);
 }
 
@@ -460,7 +464,7 @@ canusb_setdirection_linux(pcap_t *p, pcap_direction_t d)
     /* no support for PCAP_D_OUT */
     if (d == PCAP_D_OUT)
     {
-        snprintf(p->errbuf, sizeof(p->errbuf),
+        pcap_snprintf(p->errbuf, sizeof(p->errbuf),
             "Setting direction to PCAP_D_OUT is not supported on this interface");
         return -1;
     }

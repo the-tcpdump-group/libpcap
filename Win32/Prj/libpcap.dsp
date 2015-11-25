@@ -102,23 +102,7 @@ SOURCE="..\..\fad-win32.c"
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\ffs.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\gencode.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\getnetbynm.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\getnetent.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\getservent.c
 # End Source File
 # Begin Source File
 
@@ -130,23 +114,19 @@ SOURCE=..\..\inet.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\Src\inet_aton.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\inet_net.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\Src\inet_pton.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\nametoaddr.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\optimize.c
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\pcap-tc.c"
+# End Source File
+# Begin Source File
+
+SOURCE="..\..\pcap-tc.h"
 # End Source File
 # Begin Source File
 

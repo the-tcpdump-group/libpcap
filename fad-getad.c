@@ -168,7 +168,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	 * those.
 	 */
 	if (getifaddrs(&ifap) != 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "getifaddrs: %s", pcap_strerror(errno));
 		return (-1);
 	}

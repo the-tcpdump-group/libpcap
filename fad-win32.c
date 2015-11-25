@@ -35,9 +35,10 @@
 #include "config.h"
 #endif
 
+#define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap.h>
-#include <pcap-int.h>
 #include <Packet32.h>
+#include <pcap-int.h>
 
 #include <errno.h>
 
@@ -127,6 +128,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	char *AdaptersName;
 	ULONG NameLength;
 	char *name;
+	char our_errbuf[PCAP_ERRBUF_SIZE+1];
 
 	/*
 	 * Find out how big a buffer we need.
@@ -152,9 +154,9 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 
 		if (last_error != ERROR_INSUFFICIENT_BUFFER)
 		{
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"PacketGetAdapterNames: %s",
-				pcap_win32strerror());
+			pcap_win32_err_to_str(last_error, our_errbuf);
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "PacketGetAdapterNames: %s", our_errbuf);
 			return (-1);
 		}
 	}
@@ -168,14 +170,14 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	}
 	if (AdaptersName == NULL)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot allocate enough memory to list the adapters.");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot allocate enough memory to list the adapters.");
 		return (-1);
 	}
 
 	if (!PacketGetAdapterNames(AdaptersName, &NameLength)) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			"PacketGetAdapterNames: %s",
-			pcap_win32strerror());
+		pcap_win32_err_to_str(GetLastError(), our_errbuf);
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "PacketGetAdapterNames: %s",
+		    our_errbuf);
 		free(AdaptersName);
 		return (-1);
 	}

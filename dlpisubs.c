@@ -256,7 +256,7 @@ pcap_process_mactype(pcap_t *p, u_int mactype)
 #endif
 
 	default:
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype %u",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype %u",
 		    mactype);
 		retv = -1;
 	}
@@ -326,7 +326,7 @@ int
 pcap_alloc_databuf(pcap_t *p)
 {
 	p->bufsize = PKTBUFSIZE;
-	p->buffer = (u_char *)malloc(p->bufsize + p->offset);
+	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
 		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		return (-1);
@@ -362,6 +362,6 @@ strioctl(int fd, int cmd, int len, char *dp)
 static void
 pcap_stream_err(const char *func, int err, char *errbuf)
 {
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", func, pcap_strerror(err));
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", func, pcap_strerror(err));
 }
 #endif

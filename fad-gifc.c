@@ -154,7 +154,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
 		return (-1);
 	}
@@ -170,7 +170,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	for (;;) {
 		buf = malloc(buf_size);
 		if (buf == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
 			(void)close(fd);
 			return (-1);
@@ -181,7 +181,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		memset(buf, 0, buf_size);
 		if (ioctl(fd, SIOCGIFCONF, (char *)&ifc) < 0
 		    && errno != EINVAL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGIFCONF: %s", pcap_strerror(errno));
 			(void)close(fd);
 			free(buf);
@@ -244,7 +244,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
 			if (errno == ENXIO)
 				continue;
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "SIOCGIFFLAGS: %.*s: %s",
 			    (int)sizeof(ifrflags.ifr_name),
 			    ifrflags.ifr_name,
@@ -268,7 +268,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 				netmask = NULL;
 				netmask_size = 0;
 			} else {
-				(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "SIOCGIFNETMASK: %.*s: %s",
 				    (int)sizeof(ifrnetmask.ifr_name),
 				    ifrnetmask.ifr_name,
@@ -299,7 +299,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 					broadaddr = NULL;
 					broadaddr_size = 0;
 				} else {
-					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "SIOCGIFBRDADDR: %.*s: %s",
 					    (int)sizeof(ifrbroadaddr.ifr_name),
 					    ifrbroadaddr.ifr_name,
@@ -338,7 +338,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 					dstaddr = NULL;
 					dstaddr_size = 0;
 				} else {
-					(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "SIOCGIFDSTADDR: %.*s: %s",
 					    (int)sizeof(ifrdstaddr.ifr_name),
 					    ifrdstaddr.ifr_name,

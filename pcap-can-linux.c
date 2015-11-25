@@ -39,6 +39,8 @@
 #include "pcap-int.h"
 #include "pcap-can-linux.h"
 
+#define CAN_CONTROL_SIZE 8
+
 #ifdef NEED_STRERROR_H
 #include "strerror.h"
 #endif
@@ -148,8 +150,7 @@ can_activate(pcap_t* handle)
 	struct ifreq ifr;
 
 	/* Initialize some components of the pcap structure. */
-	handle->bufsize = 24;
-	handle->offset = 8;
+	handle->bufsize = CAN_CONTROL_SIZE + 16;
 	handle->linktype = DLT_CAN_SOCKETCAN;
 	handle->read_op = can_read_linux;
 	handle->inject_op = can_inject_linux;
@@ -164,7 +165,7 @@ can_activate(pcap_t* handle)
 	handle->fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 	if (handle->fd < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s",
 			errno, strerror(errno));
 		return PCAP_ERROR;
 	}
@@ -174,7 +175,7 @@ can_activate(pcap_t* handle)
 	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
 	if (ioctl(handle->fd, SIOCGIFINDEX, &ifr) < 0)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Unable to get interface index: %s",
 			pcap_strerror(errno));
 		pcap_cleanup_live_common(handle);
@@ -186,7 +187,7 @@ can_activate(pcap_t* handle)
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
 			pcap_strerror(errno));
 		pcap_cleanup_live_common(handle);
 		return PCAP_ERROR;
@@ -197,7 +198,7 @@ can_activate(pcap_t* handle)
 	addr.can_ifindex = handlep->ifindex;
 	if( bind( handle->fd, (struct sockaddr*)&addr, sizeof(addr) ) < 0  )
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't attach to device %d %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't attach to device %d %d:%s",
 			handlep->ifindex, errno, strerror(errno));
 		pcap_cleanup_live_common(handle);
 		return PCAP_ERROR;
@@ -221,17 +222,19 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 {
 	struct msghdr msg;
 	struct pcap_pkthdr pkth;
+	u_char *pktd;
 	struct iovec iv;
 	struct can_frame* cf;
 
-	iv.iov_base = &handle->buffer[handle->offset];
+	pktd = (u_char *)handle->buffer + CAN_CONTROL_SIZE;
+	iv.iov_base = pktd;
 	iv.iov_len = handle->snapshot;
 
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
 	msg.msg_control = handle->buffer;
-	msg.msg_controllen = handle->offset;
+	msg.msg_controllen = CAN_CONTROL_SIZE;
 
 	do
 	{
@@ -245,26 +248,26 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 	if (pkth.caplen == -1)
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s",
 			errno, strerror(errno));
 		return -1;
 	}
 
 	/* adjust capture len according to frame len */
-	cf = (struct can_frame*)&handle->buffer[8];
-	pkth.caplen -= 8 - cf->can_dlc;
+	cf = (struct can_frame*)(void *)pktd;
+	pkth.caplen -= CAN_CONTROL_SIZE - cf->can_dlc;
 	pkth.len = pkth.caplen;
 
 	cf->can_id = htonl( cf->can_id );
 
 	if( -1 == gettimeofday(&pkth.ts, NULL) )
 	{
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get time of day %d:%s",
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get time of day %d:%s",
 			errno, strerror(errno));
 		return -1;
 	}
 
-	callback(user, &pkth, &handle->buffer[8]);
+	callback(user, &pkth, pktd);
 
 	return 1;
 }
@@ -274,7 +277,7 @@ static int
 can_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
 	/* not yet implemented */
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
 		"can devices");
 	return (-1);
 }
@@ -305,7 +308,7 @@ can_setdirection_linux(pcap_t *p, pcap_direction_t d)
 	/* no support for PCAP_D_OUT */
 	if (d == PCAP_D_OUT)
 	{
-		snprintf(p->errbuf, sizeof(p->errbuf),
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			"Setting direction to PCAP_D_OUT is not supported on can");
 		return -1;
 	}

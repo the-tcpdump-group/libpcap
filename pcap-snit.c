@@ -130,11 +130,11 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (cc < 0) {
 			if (errno == EWOULDBLOCK)
 				return (0);
-			snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
+			pcap_snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
 				pcap_strerror(errno));
 			return (-1);
 		}
-		bp = p->buffer;
+		bp = (u_char *)p->buffer;
 	} else
 		bp = p->bp;
 
@@ -223,7 +223,7 @@ pcap_inject_snit(pcap_t *p, const void *buf, size_t size)
 	data.len = size;
 	ret = putmsg(p->fd, &ctl, &data);
 	if (ret == -1) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -247,7 +247,7 @@ nit_setflags(pcap_t *p)
 		si.ic_len = sizeof(zero);
 		si.ic_dp = (char *)&zero;
 		if (ioctl(p->fd, I_STR, (char *)&si) < 0) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSCHUNK: %s",
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSCHUNK: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -260,7 +260,7 @@ nit_setflags(pcap_t *p)
 		si.ic_len = sizeof(timeout);
 		si.ic_dp = (char *)&timeout;
 		if (ioctl(p->fd, I_STR, (char *)&si) < 0) {
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSTIME: %s",
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSTIME: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -272,7 +272,7 @@ nit_setflags(pcap_t *p)
 	si.ic_len = sizeof(flags);
 	si.ic_dp = (char *)&flags;
 	if (ioctl(p->fd, I_STR, (char *)&si) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSFLAGS: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSFLAGS: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -320,19 +320,19 @@ pcap_activate_snit(pcap_t *p)
 	if (fd < 0 && errno == EACCES)
 		p->fd = fd = open(dev, O_RDONLY);
 	if (fd < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dev,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dev,
 		    pcap_strerror(errno));
 		goto bad;
 	}
 
 	/* arrange to get discrete messages from the STREAM and use NIT_BUF */
 	if (ioctl(fd, I_SRDOPT, (char *)RMSGD) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "I_SRDOPT: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "I_SRDOPT: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
 	if (ioctl(fd, I_PUSH, "nbuf") < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "push nbuf: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "push nbuf: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -342,7 +342,7 @@ pcap_activate_snit(pcap_t *p)
 	si.ic_len = sizeof(chunksize);
 	si.ic_dp = (char *)&chunksize;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSCHUNK: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSCHUNK: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -354,7 +354,7 @@ pcap_activate_snit(pcap_t *p)
 	si.ic_len = sizeof(ifr);
 	si.ic_dp = (char *)&ifr;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCBIND: %s: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCBIND: %s: %s",
 			ifr.ifr_name, pcap_strerror(errno));
 		goto bad;
 	}
@@ -364,7 +364,7 @@ pcap_activate_snit(pcap_t *p)
 	si.ic_len = sizeof(p->snapshot);
 	si.ic_dp = (char *)&p->snapshot;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSSNAP: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCSSNAP: %s",
 		    pcap_strerror(errno));
 		goto bad;
 	}
@@ -378,7 +378,7 @@ pcap_activate_snit(pcap_t *p)
 	p->linktype = DLT_EN10MB;
 
 	p->bufsize = BUFSPACE;
-	p->buffer = (u_char *)malloc(p->bufsize);
+	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
 		goto bad;

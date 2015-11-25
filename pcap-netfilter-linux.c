@@ -79,9 +79,11 @@ typedef enum { OTHER = -1, NFLOG, NFQUEUE } nftype_t;
  */
 struct pcap_netfilter {
 	u_int	packets_read;	/* count of packets read with recvfrom() */
+	u_int   packets_nobufs; /* ENOBUFS counter */
 };
 
 static int nfqueue_send_verdict(const pcap_t *handle, u_int16_t group_id, u_int32_t id, u_int32_t verdict);
+
 
 static int
 netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
@@ -98,21 +100,22 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			handle->break_loop = 0;
 			return -2;
 		}
-	} while ((len == -1) && (errno == EINTR));
-
+		if(errno == ENOBUFS) handlep->packets_nobufs++;
+	} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
+	
 	if (len < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
 		return -1;
 	}
 
-	buf = handle->buffer;
+	buf = (unsigned char *)handle->buffer;
 	while (len >= NLMSG_SPACE(0)) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) buf;
 		u_int32_t msg_len;
 		nftype_t type = OTHER;
 
 		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || len < nlh->nlmsg_len) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %d) (nlmsg_len: %u)", len, nlh->nlmsg_len);
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %d) (nlmsg_len: %u)", len, nlh->nlmsg_len);
 			return -1;
 		}
 
@@ -134,7 +137,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 				const struct nfattr *payload_attr = NULL;
 
 				if (nlh->nlmsg_len < HDR_LENGTH) {
-					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Malformed message: (nlmsg_len: %u)", nlh->nlmsg_len);
+					pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Malformed message: (nlmsg_len: %u)", nlh->nlmsg_len);
 					return -1;
 				}
 
@@ -224,7 +227,7 @@ netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct pcap_netfilter *handlep = handle->priv;
 
 	stats->ps_recv = handlep->packets_read;
-	stats->ps_drop = 0;
+	stats->ps_drop = handlep->packets_nobufs;
 	stats->ps_ifdrop = 0;
 	return 0;
 }
@@ -232,7 +235,7 @@ netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int
 netfilter_inject_linux(pcap_t *handle, const void *buf, size_t size)
 {
-	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on netfilter devices");
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on netfilter devices");
 	return (-1);
 }
 
@@ -439,7 +442,7 @@ netfilter_activate(pcap_t* handle)
 			char *end_dev;
 
 			if (group_count == 32) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 						"Maximum 32 netfilter groups! dev: %s",
 						handle->opt.source);
 				return PCAP_ERROR;
@@ -448,7 +451,7 @@ netfilter_activate(pcap_t* handle)
 			group_id = strtol(dev, &end_dev, 0);
 			if (end_dev != dev) {
 				if (group_id < 0 || group_id > 65535) {
-					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 							"Netfilter group range from 0 to 65535 (got %ld)",
 							group_id);
 					return PCAP_ERROR;
@@ -464,7 +467,7 @@ netfilter_activate(pcap_t* handle)
 	}
 
 	if (type == OTHER || *dev) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't get netfilter group(s) index from %s",
 				handle->opt.source);
 		return PCAP_ERROR;
@@ -491,7 +494,7 @@ netfilter_activate(pcap_t* handle)
 	/* Create netlink socket */
 	handle->fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_NETFILTER);
 	if (handle->fd < 0) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s", errno, pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s", errno, pcap_strerror(errno));
 		return PCAP_ERROR;
 	}
 
@@ -509,54 +512,54 @@ netfilter_activate(pcap_t* handle)
 
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s", pcap_strerror(errno));
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s", pcap_strerror(errno));
 		goto close_fail;
 	}
 
 	if (type == NFLOG) {
 		if (nflog_send_config_cmd(handle, 0, NFULNL_CFG_CMD_PF_UNBIND, AF_INET) < 0) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_CFG_CMD_PF_UNBIND: %s", pcap_strerror(errno));
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_CFG_CMD_PF_UNBIND: %s", pcap_strerror(errno));
 			goto close_fail;
 		}
 
 		if (nflog_send_config_cmd(handle, 0, NFULNL_CFG_CMD_PF_BIND, AF_INET) < 0) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_CFG_CMD_PF_BIND: %s", pcap_strerror(errno));
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_CFG_CMD_PF_BIND: %s", pcap_strerror(errno));
 			goto close_fail;
 		}
 
 		/* Bind socket to the nflog groups */
 		for (i = 0; i < group_count; i++) {
 			if (nflog_send_config_cmd(handle, groups[i], NFULNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't listen on group group index: %s", pcap_strerror(errno));
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't listen on group group index: %s", pcap_strerror(errno));
 				goto close_fail;
 			}
 
 			if (nflog_send_config_mode(handle, groups[i], NFULNL_COPY_PACKET, handle->snapshot) < 0) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_COPY_PACKET: %s", pcap_strerror(errno));
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_COPY_PACKET: %s", pcap_strerror(errno));
 				goto close_fail;
 			}
 		}
 
 	} else {
 		if (nfqueue_send_config_cmd(handle, 0, NFQNL_CFG_CMD_PF_UNBIND, AF_INET) < 0) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_CFG_CMD_PF_UNBIND: %s", pcap_strerror(errno));
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_CFG_CMD_PF_UNBIND: %s", pcap_strerror(errno));
 			goto close_fail;
 		}
 
 		if (nfqueue_send_config_cmd(handle, 0, NFQNL_CFG_CMD_PF_BIND, AF_INET) < 0) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_CFG_CMD_PF_BIND: %s", pcap_strerror(errno));
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_CFG_CMD_PF_BIND: %s", pcap_strerror(errno));
 			goto close_fail;
 		}
 
 		/* Bind socket to the nfqueue groups */
 		for (i = 0; i < group_count; i++) {
 			if (nfqueue_send_config_cmd(handle, groups[i], NFQNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't listen on group group index: %s", pcap_strerror(errno));
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't listen on group group index: %s", pcap_strerror(errno));
 				goto close_fail;
 			}
 
 			if (nfqueue_send_config_mode(handle, groups[i], NFQNL_COPY_PACKET, handle->snapshot) < 0) {
-				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_COPY_PACKET: %s", pcap_strerror(errno));
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_COPY_PACKET: %s", pcap_strerror(errno));
 				goto close_fail;
 			}
 		}
@@ -575,7 +578,7 @@ netfilter_activate(pcap_t* handle)
 		 * Set the socket buffer size to the specified value.
 		 */
 		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF, &handle->opt.buffer_size, sizeof(handle->opt.buffer_size)) == -1) {
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "SO_RCVBUF: %s", pcap_strerror(errno));
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "SO_RCVBUF: %s", pcap_strerror(errno));
 			goto close_fail;
 		}
 	}
@@ -641,7 +644,7 @@ netfilter_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		/* if netlink is not supported this is not fatal */
 		if (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)
 			return 0;
-		snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't open netlink socket %d:%s",
+		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't open netlink socket %d:%s",
 			errno, pcap_strerror(errno));
 		return -1;
 	}

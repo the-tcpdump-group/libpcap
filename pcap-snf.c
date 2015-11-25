@@ -51,7 +51,7 @@ snf_pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	int rc;
 
 	if ((rc = snf_ring_getstats(snfps->snf_ring, &stats))) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_get_stats: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_get_stats: %s",
 			 pcap_strerror(rc));
 		return -1;
 	}
@@ -164,7 +164,7 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				continue;
 			}
 			else {
-				snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_read: %s",
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_read: %s",
 				 	 pcap_strerror(err));
 				return -1;
 			}
@@ -219,7 +219,7 @@ snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
         if (ps->snf_inj == NULL) {
                 rc = snf_inject_open(ps->snf_boardnum, 0, &ps->snf_inj);
                 if (rc) {
-                        snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+                        pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
                                 "snf_inject_open: %s", pcap_strerror(rc));
                         return (-1);
                 }
@@ -230,7 +230,7 @@ snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
                 return (size);
         }
         else {
-                snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_inject_send: %s",
+                pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_inject_send: %s",
                          pcap_strerror(rc));
                 return (-1);
         }
@@ -251,7 +251,7 @@ snf_activate(pcap_t* p)
 	int flags = -1, ring_id = -1;
 
 	if (device == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "device is NULL: %s", pcap_strerror(errno));
 		return -1;
 	}
@@ -272,7 +272,7 @@ snf_activate(pcap_t* p)
 			flags, /* may want pshared */
 			&ps->snf_handle);
 	if (err != 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snf_open failed: %s", pcap_strerror(err));
 		return -1;
 	}
@@ -282,7 +282,7 @@ snf_activate(pcap_t* p)
 	}
 	err = snf_ring_open_id(ps->snf_handle, ring_id, &ps->snf_ring);
 	if (err != 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snf_ring_open_id(ring=%d) failed: %s",
 			 ring_id, pcap_strerror(err));
 		return -1;
@@ -295,7 +295,7 @@ snf_activate(pcap_t* p)
 
 	err = snf_start(ps->snf_handle);
 	if (err != 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snf_start failed: %s", pcap_strerror(err));
 		return -1;
 	}
@@ -335,7 +335,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 
 	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL)
 	{
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			"snf_getifaddrs: %s", pcap_strerror(errno));
 		return (-1);
 	}
@@ -347,7 +347,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		 */
 		curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 		if (curdev == NULL) {
-		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			"snf_findalldevs malloc: %s", pcap_strerror(errno));
 			return (-1);
 		}
@@ -361,16 +361,16 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		curdev->next = NULL;
 		curdev->name = strdup(ifa->snf_ifa_name);
 		if (curdev->name == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "snf_findalldevs strdup: %s", pcap_strerror(errno));
 			free(curdev);
 			return (-1);
 		}
-		(void)snprintf(desc,MAX_DESC_LENGTH,"Myricom snf%d",
+		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom snf%d",
 				ifa->snf_ifa_portnum);
 		curdev->description = strdup(desc);
 		if (curdev->description == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			"snf_findalldevs strdup1: %s", pcap_strerror(errno));
 			free(curdev->name);
 			free(curdev);
@@ -381,7 +381,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 
 		curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
 		if (curaddr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			     "snf_findalldevs malloc1: %s", pcap_strerror(errno));
 			free(curdev->description);
 			free(curdev->name);
@@ -392,7 +392,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		curaddr->next = NULL;
 		curaddr->addr = (struct sockaddr*)malloc(sizeof(struct sockaddr_storage));
 		if (curaddr->addr == NULL) {
-			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc2: %s", pcap_strerror(errno));
 			free(curdev->description);
 			free(curdev->name);
@@ -481,7 +481,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		pcap_close(p);
 		return NULL;

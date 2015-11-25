@@ -25,9 +25,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -37,7 +37,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -63,8 +63,26 @@ extern int _w32_ffs (int mask);
 #define ffs _w32_ffs
 #endif
 
-#if defined(WIN32) && defined (_MSC_VER)
-int ffs(int mask);
+/*
+ * So is the check for _MSC_VER done because MinGW has this?
+ */
+#if defined(_WIN32) && defined (_MSC_VER)
+/*
+ * ffs -- vax ffs instruction
+ *
+ * XXX - with versions of VS that have it, use _BitScanForward()?
+ */
+static int
+ffs(int mask)
+{
+	int bit;
+
+	if (mask == 0)
+		return(0);
+	for (bit = 1; !(mask & 1); bit++)
+		mask >>= 1;
+	return(bit);
+}
 #endif
 
 /*
@@ -2220,7 +2238,7 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	 * Validate the program.
 	 */
 	if (!bpf_validate(fp->bf_insns, fp->bf_len)) {
-		snprintf(p->errbuf, sizeof(p->errbuf),
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			"BPF program is not valid");
 		return (-1);
 	}
@@ -2234,7 +2252,7 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	p->fcode.bf_len = fp->bf_len;
 	p->fcode.bf_insns = (struct bpf_insn *)malloc(prog_size);
 	if (p->fcode.bf_insns == NULL) {
-		snprintf(p->errbuf, sizeof(p->errbuf),
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			 "malloc: %s", pcap_strerror(errno));
 		return (-1);
 	}

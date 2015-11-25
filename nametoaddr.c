@@ -31,10 +31,36 @@
 #include <netdnet/dnetdb.h>
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
 
-#else /* WIN32 */
+#ifdef INET6
+/*
+ * To quote the MSDN page for getaddrinfo() at
+ *
+ *    https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
+ *
+ * "Support for getaddrinfo on Windows 2000 and older versions
+ * The getaddrinfo function was added to the Ws2_32.dll on Windows XP and
+ * later. To execute an application that uses this function on earlier
+ * versions of Windows, then you need to include the Ws2tcpip.h and
+ * Wspiapi.h files. When the Wspiapi.h include file is added, the
+ * getaddrinfo function is defined to the WspiapiGetAddrInfo inline
+ * function in the Wspiapi.h file. At runtime, the WspiapiGetAddrInfo
+ * function is implemented in such a way that if the Ws2_32.dll or the
+ * Wship6.dll (the file containing getaddrinfo in the IPv6 Technology
+ * Preview for Windows 2000) does not include getaddrinfo, then a
+ * version of getaddrinfo is implemented inline based on code in the
+ * Wspiapi.h header file. This inline code will be used on older Windows
+ * platforms that do not natively support the getaddrinfo function."
+ *
+ * We use getaddrinfo(), so we include Wspiapi.h here.  pcap-stdinc.h
+ * includes Ws2tcpip.h, so we don't need to include it ourselves.
+ */
+#include <Wspiapi.h>
+#endif
+
+#else /* _WIN32 */
 
 #include <sys/param.h>
 #include <sys/types.h>				/* concession to AIX */
@@ -42,9 +68,9 @@
 #include <sys/time.h>
 
 #include <netinet/in.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
-#ifndef WIN32
+#ifndef _WIN32
 #ifdef HAVE_ETHER_HOSTTON
 /*
  * XXX - do we need any of this if <netinet/if_ether.h> doesn't declare
@@ -62,7 +88,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #endif /* HAVE_ETHER_HOSTTON */
 #include <arpa/inet.h>
 #include <netdb.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <ctype.h>
 #include <errno.h>
@@ -140,7 +166,7 @@ pcap_nametoaddrinfo(const char *name)
 bpf_u_int32
 pcap_nametonetaddr(const char *name)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	struct netent *np;
 
 	if ((np = getnetbyname(name)) != NULL)
@@ -150,6 +176,15 @@ pcap_nametonetaddr(const char *name)
 #else
 	/*
 	 * There's no "getnetbyname()" on Windows.
+	 *
+	 * XXX - I guess we could use the BSD code to read
+	 * C:\Windows\System32\drivers\etc/networks, assuming
+	 * that's its home on all the versions of Windows
+	 * we use, but that file probably just has the loopback
+	 * network on 127/24 on 99 44/100% of Windows machines.
+	 *
+	 * (Heck, these days it probably just has that on 99 44/100%
+	 * of *UN*X* machines.)
 	 */
 	return 0;
 #endif

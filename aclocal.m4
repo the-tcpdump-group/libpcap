@@ -249,7 +249,18 @@ AC_DEFUN(AC_LBL_CHECK_COMPILER_OPT,
     [
 	AC_MSG_CHECKING([whether the compiler supports the $2 option])
 	save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error $2"
+	if expr "x$2" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error $2"
+	elif expr "x$2" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror $2"
+	elif expr "x$2" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror $2"
+	else
+	    CFLAGS="$CFLAGS $2"
+	fi
 	AC_TRY_COMPILE(
 	    [],
 	    [return 0],
@@ -630,82 +641,6 @@ AC_DEFUN(AC_LBL_FIXINCLUDES,
     fi])
 
 dnl
-dnl Check for flex, default to lex
-dnl Require flex 2.4 or higher
-dnl Check for bison, default to yacc
-dnl Default to lex/yacc if both flex and bison are not available
-dnl
-dnl If we're using flex and bison, pass -P to flex and -p to bison
-dnl to define a prefix string for the lexer and parser
-dnl
-dnl If we're not using flex and bison, don't pass those options
-dnl (as they might not work - although if "lex" is a wrapper for
-dnl Flex and "yacc" is a wrapper for Bison, they will work), and
-dnl define NEED_YYPARSE_WRAPPER (we *CANNOT* use YYBISON to check
-dnl whether the wrapper is needed, as some people apparently, for
-dnl some unknown reason, choose to use --without-flex and
-dnl --without-bison on systems that have Flex and Bison, which
-dnl means that the "yacc" they end up using is a wrapper that
-dnl runs "bison -y", and at least some versions of Bison define
-dnl YYBISON even if run with "-y", so we end up not compiling
-dnl the yyparse wrapper and end up with a libpcap that doesn't
-dnl define pcap_parse())
-dnl
-dnl usage:
-dnl
-dnl	AC_LBL_LEX_AND_YACC(lex, yacc, yyprefix)
-dnl
-dnl results:
-dnl
-dnl	$1 (lex set)
-dnl	$2 (yacc appended)
-dnl	$3 (optional flex and bison -P prefix)
-dnl
-AC_DEFUN(AC_LBL_LEX_AND_YACC,
-    [AC_ARG_WITH(flex, [  --without-flex          don't use flex])
-    AC_ARG_WITH(bison, [  --without-bison         don't use bison])
-    if test "$with_flex" = no ; then
-	    $1=lex
-    else
-	    AC_CHECK_PROGS($1, flex, lex)
-    fi
-    if test "$$1" = flex ; then
-	    # The -V flag was added in 2.4
-	    AC_MSG_CHECKING(for flex 2.4 or higher)
-	    AC_CACHE_VAL(ac_cv_lbl_flex_v24,
-		if flex -V >/dev/null 2>&1; then
-			ac_cv_lbl_flex_v24=yes
-		else
-			ac_cv_lbl_flex_v24=no
-		fi)
-	    AC_MSG_RESULT($ac_cv_lbl_flex_v24)
-	    if test $ac_cv_lbl_flex_v24 = no ; then
-		    s="2.4 or higher required"
-		    AC_MSG_WARN(ignoring obsolete flex executable ($s))
-		    $1=lex
-	    fi
-    fi
-    if test "$with_bison" = no ; then
-	    $2=yacc
-    else
-	    AC_CHECK_PROGS($2, bison, yacc)
-    fi
-    if test "$$2" = bison ; then
-	    $2="$$2 -y"
-    fi
-    if test "$$1" != lex -a "$$2" = yacc -o "$$1" = lex -a "$$2" != yacc ; then
-	    AC_MSG_WARN(don't have both flex and bison; reverting to lex/yacc)
-	    $1=lex
-	    $2=yacc
-    fi
-    if test "$$1" = flex -a -n "$3" ; then
-	    $1="$$1 -P$3"
-	    $2="$$2 -p $3"
-    else
-	    AC_DEFINE(NEED_YYPARSE_WRAPPER,1,[if we need a pcap_parse wrapper around yyparse])
-    fi])
-
-dnl
 dnl Checks to see if union wait is used with WEXITSTATUS()
 dnl
 dnl usage:
@@ -972,6 +907,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-prototypes)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wdeclaration-after-statement)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #

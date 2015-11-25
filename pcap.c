@@ -35,9 +35,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -47,7 +47,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,6 +80,10 @@
 #include "pcap-snf.h"
 #endif /* HAVE_SNF_API */
 
+#ifdef HAVE_TC_API
+#include "pcap-tc.h"
+#endif /* HAVE_TC_API */
+
 #ifdef PCAP_SUPPORT_USB
 #include "pcap-usb-linux.h"
 #endif
@@ -108,17 +112,46 @@
 #include "pcap-dbus.h"
 #endif
 
-int
-pcap_not_initialized(pcap_t *pcap _U_)
+static int
+pcap_not_initialized(pcap_t *pcap)
 {
+	/* in case the caller doesn't check for PCAP_ERROR_NOT_ACTIVATED */
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
 	/* this means 'not initialized' */
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
-#ifdef WIN32
-Adapter *
-pcap_no_adapter(pcap_t *pcap _U_)
+#ifdef _WIN32
+static void *
+pcap_not_initialized_ptr(pcap_t *pcap)
 {
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
+	return (NULL);
+}
+
+static HANDLE
+pcap_getevent_not_initialized(pcap_t *pcap)
+{
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
+	return (INVALID_HANDLE_VALUE);
+}
+
+static u_int
+pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, int sync)
+{
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
+	return (0);
+}
+
+static PAirpcapHandle
+pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
+{
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "This handle hasn't been activated yet");
 	return (NULL);
 }
 #endif
@@ -165,7 +198,7 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
 		    p->tstamp_type_count);
 		if (*tstamp_typesp == NULL) {
-			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
 			return (PCAP_ERROR);
 		}
@@ -323,6 +356,9 @@ struct capture_source_type {
 #ifdef HAVE_SNF_API
 	{ snf_findalldevs, snf_create },
 #endif
+#ifdef HAVE_TC_API
+	{ TcFindAllDevs, TcCreate },
+#endif
 #ifdef PCAP_SUPPORT_BT
 	{ bt_findalldevs, bt_create },
 #endif
@@ -463,11 +499,19 @@ initialize_ops(pcap_t *p)
 	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
 	p->setnonblock_op = (setnonblock_op_t)pcap_not_initialized;
 	p->stats_op = (stats_op_t)pcap_not_initialized;
-#ifdef WIN32
+#ifdef _WIN32
+	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
 	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
-	p->getadapter_op = pcap_no_adapter;
+	p->getevent_op = pcap_getevent_not_initialized;
+	p->oid_get_request_op = (oid_get_request_op_t)pcap_not_initialized;
+	p->oid_set_request_op = (oid_set_request_op_t)pcap_not_initialized;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_not_initialized;
+	p->setuserbuffer_op = (setuserbuffer_op_t)pcap_not_initialized;
+	p->live_dump_op = (live_dump_op_t)pcap_not_initialized;
+	p->live_dump_ended_op = (live_dump_ended_op_t)pcap_not_initialized;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
 #endif
 
 	/*
@@ -498,7 +542,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 */
 	chunk = malloc(sizeof (pcap_t) + size);
 	if (chunk == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		return (NULL);
 	}
@@ -509,7 +553,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 */
 	p = (pcap_t *)chunk;
 
-#ifndef WIN32
+#ifndef _WIN32
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
 #endif
@@ -539,7 +583,7 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 
 	p->opt.source = strdup(source);
 	if (p->opt.source == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
 		return (NULL);
@@ -577,7 +621,7 @@ int
 pcap_check_activated(pcap_t *p)
 {
 	if (p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't perform "
 			" operation on activated capture");
 		return (-1);
 	}
@@ -749,7 +793,7 @@ pcap_activate(pcap_t *p)
 			 * handle errors other than PCAP_ERROR, return the
 			 * error message corresponding to the status.
 			 */
-			snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s",
 			    pcap_statustostr(status));
 		}
 
@@ -797,15 +841,15 @@ pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *er
 	return (p);
 fail:
 	if (status == PCAP_ERROR)
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    p->errbuf);
 	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
 	    status == PCAP_ERROR_PERM_DENIED ||
 	    status == PCAP_ERROR_PROMISC_PERM_DENIED)
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
 		    pcap_statustostr(status), p->errbuf);
 	else
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
 		    pcap_statustostr(status));
 	pcap_close(p);
 	return (NULL);
@@ -823,7 +867,7 @@ pcap_open_offline_common(char *ebuf, size_t size)
 	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
 	p->opt.source = strdup("(savefile)");
 	if (p->opt.source == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
 		return (NULL);
@@ -917,7 +961,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		 */
 		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer));
 		if (*dlt_buffer == NULL) {
-			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
 			return (PCAP_ERROR);
 		}
@@ -926,7 +970,7 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 	} else {
 		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
 		if (*dlt_buffer == NULL) {
-			(void)snprintf(p->errbuf, sizeof(p->errbuf),
+			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			    "malloc: %s", pcap_strerror(errno));
 			return (PCAP_ERROR);
 		}
@@ -1004,11 +1048,11 @@ pcap_set_datalink(pcap_t *p, int dlt)
 unsupported:
 	dlt_name = pcap_datalink_val_to_name(dlt);
 	if (dlt_name != NULL) {
-		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 		    "%s is not one of the DLTs supported by this device",
 		    dlt_name);
 	} else {
-		(void) snprintf(p->errbuf, sizeof(p->errbuf),
+		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 		    "DLT %d is not one of the DLTs supported by this device",
 		    dlt);
 	}
@@ -1365,7 +1409,7 @@ pcap_file(pcap_t *p)
 int
 pcap_fileno(pcap_t *p)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	return (p->fd);
 #else
 	if (p->adapter != NULL)
@@ -1375,7 +1419,7 @@ pcap_fileno(pcap_t *p)
 #endif
 }
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 int
 pcap_get_selectable_fd(pcap_t *p)
 {
@@ -1415,11 +1459,8 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 /*
  * Get the current non-blocking mode setting, under the assumption that
  * it's just the standard POSIX non-blocking flag.
- *
- * We don't look at "p->nonblock", in case somebody tweaked the FD
- * directly.
  */
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 int
 pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 {
@@ -1427,7 +1468,7 @@ pcap_getnonblock_fd(pcap_t *p, char *errbuf)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1455,7 +1496,7 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	return (ret);
 }
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 /*
  * Set non-blocking mode, under the assumption that it's just the
  * standard POSIX non-blocking flag.  (This can be called by the
@@ -1469,7 +1510,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1478,7 +1519,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 	else
 		fdflags &= ~O_NONBLOCK;
 	if (fcntl(p->fd, F_SETFL, fdflags) == -1) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1486,21 +1527,18 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 }
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /*
- * Generate a string for the last Win32-specific error (i.e. an error generated when
+ * Generate a string for a Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
  * For errors occurred during standard C calls, we still use pcap_strerror()
  */
-char *
-pcap_win32strerror(void)
+void
+pcap_win32_err_to_str(DWORD error, char *errbuf)
 {
-	DWORD error;
-	static char errbuf[PCAP_ERRBUF_SIZE+1];
-	int errlen;
+	size_t errlen;
 	char *p;
 
-	error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
 	    PCAP_ERRBUF_SIZE, NULL);
 
@@ -1514,8 +1552,7 @@ pcap_win32strerror(void)
 		errbuf[errlen - 2] = '\0';
 	}
 	p = strchr(errbuf, '\0');
-	snprintf (p, sizeof(errbuf)-(p-errbuf), " (%lu)", error);
-	return (errbuf);
+	pcap_snprintf (p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
 }
 #endif
 
@@ -1574,7 +1611,7 @@ pcap_statustostr(int errnum)
 	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
 		return ("That device doesn't support that time stamp precision");
 	}
-	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 }
 
@@ -1593,7 +1630,7 @@ pcap_strerror(int errnum)
 
 	if ((unsigned int)errnum < sys_nerr)
 		return ((char *)sys_errlist[errnum]);
-	(void)snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
+	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
 #endif
 }
@@ -1614,7 +1651,7 @@ int
 pcap_setdirection(pcap_t *p, pcap_direction_t d)
 {
 	if (p->setdirection_op == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Setting direction is not implemented on this platform");
 		return (-1);
 	} else
@@ -1630,12 +1667,18 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 static int
 pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from a pcap_open_dead pcap_t");
 	return (-1);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
+struct pcap_stat *
+pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
+{
+	return (p->stats_ex_op(p, pcap_stat_size));
+}
+
 int
 pcap_setbuff(pcap_t *p, int dim)
 {
@@ -1645,7 +1688,7 @@ pcap_setbuff(pcap_t *p, int dim)
 static int
 pcap_setbuff_dead(pcap_t *p, int dim)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The kernel buffer size cannot be set on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1659,7 +1702,7 @@ pcap_setmode(pcap_t *p, int mode)
 static int
 pcap_setmode_dead(pcap_t *p, int mode)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "impossible to set mode on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -1670,18 +1713,180 @@ pcap_setmintocopy(pcap_t *p, int size)
 	return (p->setmintocopy_op(p, size));
 }
 
-Adapter *
-pcap_get_adapter(pcap_t *p)
-{
-	return (p->getadapter_op(p));
-}
-
 static int
 pcap_setmintocopy_dead(pcap_t *p, int size)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
 	return (-1);
+}
+
+HANDLE
+pcap_getevent(pcap_t *p)
+{
+	return (p->getevent_op(p));
+}
+
+static HANDLE
+pcap_getevent_dead(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A pcap_open_dead pcap_t has no event handle");
+	return (INVALID_HANDLE_VALUE);
+}
+
+int
+pcap_oid_get_request(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
+{
+	return (p->oid_get_request_op(p, oid, data, len));
+}
+
+static int
+pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
+    size_t len _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+int
+pcap_oid_set_request(pcap_t *p, bpf_u_int32 oid, const void *data, size_t len)
+{
+	return (p->oid_set_request_op(p, oid, data, len));
+}
+
+static int
+pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
+    size_t len _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+pcap_send_queue *
+pcap_sendqueue_alloc(u_int memsize)
+{
+	pcap_send_queue *tqueue;
+
+	/* Allocate the queue */
+	tqueue = (pcap_send_queue *)malloc(sizeof(pcap_send_queue));
+	if (tqueue == NULL){
+		return (NULL);
+	}
+
+	/* Allocate the buffer */
+	tqueue->buffer = (char *)malloc(memsize);
+	if (tqueue->buffer == NULL) {
+		free(tqueue);
+		return (NULL);
+	}
+
+	tqueue->maxlen = memsize;
+	tqueue->len = 0;
+
+	return (tqueue);
+}
+
+void
+pcap_sendqueue_destroy(pcap_send_queue *queue)
+{
+	free(queue->buffer);
+	free(queue);
+}
+
+int
+pcap_sendqueue_queue(pcap_send_queue *queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data)
+{
+	if (queue->len + sizeof(struct pcap_pkthdr) + pkt_header->caplen > queue->maxlen){
+		return (-1);
+	}
+
+	/* Copy the pcap_pkthdr header*/
+	memcpy(queue->buffer + queue->len, pkt_header, sizeof(struct pcap_pkthdr));
+	queue->len += sizeof(struct pcap_pkthdr);
+
+	/* copy the packet */
+	memcpy(queue->buffer + queue->len, pkt_data, pkt_header->caplen);
+	queue->len += pkt_header->caplen;
+
+	return (0);
+}
+
+u_int
+pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	return (p->sendqueue_transmit_op(p, queue, sync));
+}
+
+static u_int
+pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");
+	return (0);
+}
+
+int
+pcap_setuserbuffer(pcap_t *p, int size)
+{
+	return (p->setuserbuffer_op(p, size));
+}
+
+static int
+pcap_setuserbuffer_dead(pcap_t *p, int size)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The user buffer cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+int
+pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	return (p->live_dump_op(p, filename, maxsize, maxpacks));
+}
+
+static int
+pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+int
+pcap_live_dump_ended(pcap_t *p, int sync)
+{
+	return (p->live_dump_ended_op(p, sync));
+}
+
+static int
+pcap_live_dump_ended_dead(pcap_t *p, int sync)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+PAirpcapHandle
+pcap_get_airpcap_handle(pcap_t *p)
+{
+	PAirpcapHandle handle;
+
+	handle = p->get_airpcap_handle_op(p);
+	if (handle == NULL) {
+		(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+		    "This isn't an AirPcap device");
+	}
+	return (handle);
+}
+
+static PAirpcapHandle
+pcap_get_airpcap_handle_dead(pcap_t *p)
+{
+	return (NULL);
 }
 #endif
 
@@ -1797,7 +2002,7 @@ pcap_cleanup_live_common(pcap_t *p)
 		p->tstamp_precision_count = 0;
 	}
 	pcap_freecode(&p->fcode);
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 	if (p->fd >= 0) {
 		close(p->fd);
 		p->fd = -1;
@@ -1834,10 +2039,19 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->linktype = linktype;
 	p->opt.tstamp_precision = precision;
 	p->stats_op = pcap_stats_dead;
-#ifdef WIN32
+#ifdef _WIN32
+	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = pcap_setbuff_dead;
 	p->setmode_op = pcap_setmode_dead;
 	p->setmintocopy_op = pcap_setmintocopy_dead;
+	p->getevent_op = pcap_getevent_dead;
+	p->oid_get_request_op = pcap_oid_get_request_dead;
+	p->oid_set_request_op = pcap_oid_set_request_dead;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_dead;
+	p->setuserbuffer_op = pcap_setuserbuffer_dead;
+	p->live_dump_op = pcap_live_dump_dead;
+	p->live_dump_ended_op = pcap_live_dump_ended_dead;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
 #endif
 	p->cleanup_op = pcap_cleanup_dead;
 
@@ -1926,7 +2140,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 static const char pcap_version_string[] = "libpcap version 1.x.y";
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /*
  * XXX - it'd be nice if we could somehow generate the WinPcap and libpcap
  * version numbers when building WinPcap.  (It'd be nice to do so for

@@ -39,6 +39,8 @@ static char sccsid[] = "@(#)getopt.c	8.3 (Berkeley) 4/27/95";
 #include <stdlib.h>
 #include <string.h>
 
+#include "getopt.h"
+
 int	opterr = 1,		/* if error message should be printed */
 	optind = 1,		/* index into parent argv vector */
 	optopt,			/* character checked for validity */
@@ -59,14 +61,17 @@ getopt(nargc, nargv, ostr)
 	char * const *nargv;
 	const char *ostr;
 {
-#ifdef WIN32
-	char *__progname="windump";
-#else
-	extern char *__progname;
-#endif
+	char *cp;
+	static char *__progname;
 	static char *place = EMSG;		/* option letter processing */
 	char *oli;				/* option letter list index */
 
+	if (__progname == NULL) {
+		if ((cp = strrchr(nargv[0], '/')) != NULL)
+			__progname = cp + 1;
+		else
+			__progname = nargv[0];
+	}
 	if (optreset || !*place) {		/* update scanning pointer */
 		optreset = 0;
 		if (optind >= nargc || *(place = nargv[optind]) != '-') {

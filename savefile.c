@@ -32,9 +32,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -44,7 +44,7 @@
 #include <sys/bitypes.h>
 #endif
 #include <sys/types.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <errno.h>
 #include <memory.h>
@@ -65,7 +65,7 @@
 /*
  * Setting O_BINARY on DOS/Windows is a bit tricky
  */
-#if defined(WIN32)
+#if defined(_WIN32)
   #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
 #elif defined(MSDOS)
   #if defined(__HIGHC__)
@@ -96,7 +96,7 @@ sf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	 * as it would have to handle reading partial packets and
 	 * keeping the state of the read.)
 	 */
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Savefiles cannot be put into non-blocking mode");
 	return (-1);
 }
@@ -104,16 +104,24 @@ sf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 static int
 sf_stats(pcap_t *p, struct pcap_stat *ps)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from savefiles");
 	return (-1);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
+static struct pcap_stat *
+sf_stats_ex(pcap_t *p, int *size)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Statistics aren't available from savefiles");
+	return (NULL);
+}
+
 static int
 sf_setbuff(pcap_t *p, int dim)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The kernel buffer size cannot be set while reading from a file");
 	return (-1);
 }
@@ -121,7 +129,7 @@ sf_setbuff(pcap_t *p, int dim)
 static int
 sf_setmode(pcap_t *p, int mode)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "impossible to set mode while reading from a file");
 	return (-1);
 }
@@ -129,9 +137,73 @@ sf_setmode(pcap_t *p, int mode)
 static int
 sf_setmintocopy(pcap_t *p, int size)
 {
-	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set while reading from a file");
 	return (-1);
+}
+
+static HANDLE
+sf_getevent(pcap_t *pcap)
+{
+	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	    "The read event cannot be retrieved while reading from a file");
+	return (INVALID_HANDLE_VALUE);
+}
+
+static int
+sf_oid_get_request(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
+    size_t len _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID get request cannot be performed on a file");
+	return (PCAP_ERROR);
+}
+
+static int
+sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
+    size_t len _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID set request cannot be performed on a file");
+	return (PCAP_ERROR);
+}
+
+static u_int
+sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
+	    PCAP_ERRBUF_SIZE);
+	return (0);
+}
+
+static int
+sf_setuserbuffer(pcap_t *p, int size)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The user buffer cannot be set when reading from a file");
+	return (-1);
+}
+
+static int
+sf_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed when reading from a file");
+	return (-1);
+}
+
+static int
+sf_live_dump_ended(pcap_t *p, int sync)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static PAirpcapHandle
+sf_get_airpcap_handle(pcap_t *pcap)
+{
+	return (NULL);
 }
 #endif
 
@@ -150,7 +222,7 @@ sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 static int
 sf_setdirection(pcap_t *p, pcap_direction_t d)
 {
-	snprintf(p->errbuf, sizeof(p->errbuf),
+	pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 	    "Setting direction is not supported on savefiles");
 	return (-1);
 }
@@ -175,7 +247,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;
-#if defined(WIN32) || defined(MSDOS)
+#if defined(_WIN32) || defined(MSDOS)
 		/*
 		 * We're reading from the standard input, so put it in binary
 		 * mode, as savefiles are binary files.
@@ -184,13 +256,13 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 #endif
 	}
 	else {
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 		fp = fopen(fname, "r");
 #else
 		fp = fopen(fname, "rb");
 #endif
 		if (fp == NULL) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
 			    pcap_strerror(errno));
 			return (NULL);
 		}
@@ -210,7 +282,7 @@ pcap_open_offline(const char *fname, char *errbuf)
 	    PCAP_TSTAMP_PRECISION_MICRO, errbuf));
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 pcap_t* pcap_hopen_offline_with_tstamp_precision(intptr_t osfd, u_int precision,
     char *errbuf)
 {
@@ -220,14 +292,14 @@ pcap_t* pcap_hopen_offline_with_tstamp_precision(intptr_t osfd, u_int precision,
 	fd = _open_osfhandle(osfd, _O_RDONLY);
 	if ( fd < 0 )
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
 		return NULL;
 	}
 
 	file = _fdopen(fd, "rb");
 	if ( file == NULL )
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
 		return NULL;
 	}
 
@@ -249,7 +321,7 @@ static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, u_int, char *, int *) = {
 
 #define	N_FILE_TYPES	(sizeof check_headers / sizeof check_headers[0])
 
-#ifdef WIN32
+#ifdef _WIN32
 static
 #endif
 pcap_t *
@@ -272,11 +344,11 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
 	if (amt_read != sizeof(magic)) {
 		if (ferror(fp)) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "error reading dump file: %s",
 			    pcap_strerror(errno));
 		} else {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
 			    (unsigned long)sizeof(magic),
 			    (unsigned long)amt_read);
@@ -304,7 +376,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	/*
 	 * Well, who knows what this mess is....
 	 */
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
 	return (NULL);
 
 found:
@@ -313,7 +385,7 @@ found:
 	/* Padding only needed for live capture fcode */
 	p->fddipad = 0;
 
-#if !defined(WIN32) && !defined(MSDOS)
+#if !defined(_WIN32) && !defined(MSDOS)
 	/*
 	 * You can do "select()" and "poll()" on plain files on most
 	 * platforms, and should be able to do so on pipes.
@@ -332,10 +404,19 @@ found:
 	p->getnonblock_op = sf_getnonblock;
 	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
-#ifdef WIN32
+#ifdef _WIN32
+	p->stats_ex_op = sf_stats_ex;
 	p->setbuff_op = sf_setbuff;
 	p->setmode_op = sf_setmode;
 	p->setmintocopy_op = sf_setmintocopy;
+	p->getevent_op = sf_getevent;
+	p->oid_get_request_op = sf_oid_get_request;
+	p->oid_set_request_op = sf_oid_set_request;
+	p->sendqueue_transmit_op = sf_sendqueue_transmit;
+	p->setuserbuffer_op = sf_setuserbuffer;
+	p->live_dump_op = sf_live_dump;
+	p->live_dump_ended_op = sf_live_dump_ended;
+	p->get_airpcap_handle_op = sf_get_airpcap_handle;
 #endif
 
 	/*
@@ -354,7 +435,7 @@ found:
 	return (p);
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 static
 #endif
 pcap_t *

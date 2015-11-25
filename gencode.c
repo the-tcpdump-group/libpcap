@@ -24,9 +24,9 @@
 #include "config.h"
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <pcap-stdinc.h>
-#else /* WIN32 */
+#else /* _WIN32 */
 #if HAVE_INTTYPES_H
 #include <inttypes.h>
 #elif HAVE_STDINT_H
@@ -37,16 +37,9 @@
 #endif
 #include <sys/types.h>
 #include <sys/socket.h>
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
-/*
- * XXX - why was this included even on UNIX?
- */
-#ifdef __MINGW32__
-#include "ip6_misc.h"
-#endif
-
-#ifndef WIN32
+#ifndef _WIN32
 
 #ifdef __NetBSD__
 #include <sys/param.h>
@@ -55,7 +48,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #include <stdlib.h>
 #include <string.h>
@@ -80,25 +73,73 @@
 #include "pcap/sll.h"
 #include "pcap/ipnet.h"
 #include "arcnet.h"
+
 #if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
 #endif
+
 #ifdef HAVE_NET_PFVAR_H
 #include <sys/socket.h>
 #include <net/if.h>
 #include <net/pfvar.h>
 #include <net/if_pflog.h>
 #endif
+
 #ifndef offsetof
 #define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
+
 #ifdef INET6
-#ifndef WIN32
+#ifdef _WIN32
+#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
+/* IPv6 address */
+struct in6_addr
+  {
+    union
+      {
+	u_int8_t		u6_addr8[16];
+	u_int16_t	u6_addr16[8];
+	u_int32_t	u6_addr32[4];
+      } in6_u;
+#define s6_addr			in6_u.u6_addr8
+#define s6_addr16		in6_u.u6_addr16
+#define s6_addr32		in6_u.u6_addr32
+#define s6_addr64		in6_u.u6_addr64
+  };
+
+typedef unsigned short	sa_family_t;
+
+#define	__SOCKADDR_COMMON(sa_prefix) \
+  sa_family_t sa_prefix##family
+
+/* Ditto, for IPv6.  */
+struct sockaddr_in6
+  {
+    __SOCKADDR_COMMON (sin6_);
+    u_int16_t sin6_port;		/* Transport layer port # */
+    u_int32_t sin6_flowinfo;	/* IPv6 flow information */
+    struct in6_addr sin6_addr;	/* IPv6 address */
+  };
+
+#ifndef EAI_ADDRFAMILY
+struct addrinfo {
+	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
+	int	ai_family;	/* PF_xxx */
+	int	ai_socktype;	/* SOCK_xxx */
+	int	ai_protocol;	/* 0 or IPPROTO_xxx for IPv4 and IPv6 */
+	size_t	ai_addrlen;	/* length of ai_addr */
+	char	*ai_canonname;	/* canonical name for hostname */
+	struct sockaddr *ai_addr;	/* binary address */
+	struct addrinfo *ai_next;	/* next structure in linked list */
+};
+#endif /* EAI_ADDRFAMILY */
+#endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
+#else /* _WIN32 */
 #include <netdb.h>	/* for "struct addrinfo" */
-#endif /* WIN32 */
-#endif /*INET6*/
+#endif /* _WIN32 */
+#endif /* INET6 */
 #include <pcap/namedb.h>
 
 #define ETHERMTU	1500
@@ -136,7 +177,7 @@ static jmp_buf top_ctx;
 static pcap_t *bpf_pcap;
 
 /* Hack for handling VLAN and MPLS stacks. */
-#ifdef WIN32
+#ifdef _WIN32
 static u_int	label_stack_depth = (u_int)-1, vlan_stack_depth = (u_int)-1;
 #else
 static u_int	label_stack_depth = -1U, vlan_stack_depth = -1U;
@@ -153,7 +194,7 @@ bpf_error(const char *fmt, ...)
 
 	va_start(ap, fmt);
 	if (bpf_pcap != NULL)
-		(void)vsnprintf(pcap_geterr(bpf_pcap), PCAP_ERRBUF_SIZE,
+		(void)pcap_vsnprintf(pcap_geterr(bpf_pcap), PCAP_ERRBUF_SIZE,
 		    fmt, ap);
 	va_end(ap);
 	longjmp(top_ctx, 1);
@@ -230,14 +271,14 @@ static struct addrinfo *ai;
 #define NCHUNKS 16
 #define CHUNK0SIZE 1024
 struct chunk {
-	u_int n_left;
+	size_t n_left;
 	void *m;
 };
 
 static struct chunk chunks[NCHUNKS];
 static int cur_chunk;
 
-static void *newchunk(u_int);
+static void *newchunk(size_t);
 static void freechunks(void);
 static inline struct block *new_block(int);
 static inline struct slist *new_stmt(int);
@@ -321,8 +362,7 @@ static struct block *gen_ppi_dlt_check(void);
 static struct block *gen_msg_abbrev(int type);
 
 static void *
-newchunk(n)
-	u_int n;
+newchunk(size_t n)
 {
 	struct chunk *cp;
 	int k;
@@ -374,7 +414,7 @@ char *
 sdup(s)
 	register const char *s;
 {
-	int n = strlen(s) + 1;
+	size_t n = strlen(s) + 1;
 	char *cp = newchunk(n);
 
 	strlcpy(cp, s, n);
@@ -440,12 +480,11 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * UN*X, if the platform supports pthreads?  If that requires
 	 * a separate -lpthread, we might not want to do that.
 	 */
-#ifdef WIN32
-	extern int wsockinit (void);
+#ifdef _WIN32
 	static int done = 0;
 
 	if (!done)
-		wsockinit();
+		pcap_wsockinit();
 	done = 1;
 	EnterCriticalSection(&g_PcapCompileCriticalSection);
 #endif
@@ -455,7 +494,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * link-layer type, so we can't use it.
 	 */
 	if (!p->activated) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
 		rc = -1;
 		goto quit;
@@ -483,7 +522,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	snaplen = pcap_snapshot(p);
 	if (snaplen == 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
 		rc = -1;
 		goto quit;
@@ -515,7 +554,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 quit:
 
-#ifdef WIN32
+#ifdef _WIN32
 	LeaveCriticalSection(&g_PcapCompileCriticalSection);
 #endif
 
@@ -628,6 +667,15 @@ finish_parse(p)
 	/*
 	 * For DLT_PPI captures, generate a check of the per-packet
 	 * DLT value to make sure it's DLT_IEEE802_11.
+	 *
+	 * XXX - TurboCap cards use DLT_PPI for Ethernet.
+	 * Can we just define some DLT_ETHERNET_WITH_PHDR pseudo-header
+	 * with appropriate Ethernet information and use that rather
+	 * than using something such as DLT_PPI where you don't know
+	 * the link-layer header type until runtime, which, in the
+	 * general case, would force us to generate both Ethernet *and*
+	 * 802.11 code (*and* anything else for which PPI is used)
+	 * and choose between them early in the BPF program?
 	 */
 	ppi_dlt_check = gen_ppi_dlt_check();
 	if (ppi_dlt_check != NULL)
@@ -5561,7 +5609,7 @@ gen_protochain(v, proto, dir)
 	int reg2 = alloc_reg();
 
 	memset(s, 0, sizeof(s));
-	fix2 = fix3 = fix4 = fix5 = 0;
+	fix3 = fix4 = fix5 = 0;
 
 	switch (proto) {
 	case Q_IP:
@@ -7915,6 +7963,9 @@ gen_vlan_no_bpf_extensions(int vlan_num)
 
         /* check for VLAN, including QinQ */
         b0 = gen_linktype(ETHERTYPE_8021Q);
+        b1 = gen_linktype(ETHERTYPE_8021AD);
+        gen_or(b0,b1);
+        b0 = b1;
         b1 = gen_linktype(ETHERTYPE_8021QINQ);
         gen_or(b0,b1);
         b0 = b1;
@@ -8260,7 +8311,7 @@ gen_geneve6(int vni)
 		sappend(s, s1);
 	} else {
 		s = new_stmt(BPF_LD|BPF_IMM);
-		s->s.k = 40;;
+		s->s.k = 40;
 	}
 
 	/* Forcibly append these statements to the true condition

@@ -35,7 +35,7 @@
 #ifndef lib_pcap_pcap_h
 #define lib_pcap_pcap_h
 
-#if defined(WIN32)
+#if defined(_WIN32)
   #include <pcap-stdinc.h>
 #elif defined(MSDOS)
   #include <sys/types.h>
@@ -43,7 +43,7 @@
 #else /* UN*X */
   #include <sys/types.h>
   #include <sys/time.h>
-#endif /* WIN32/MSDOS/UN*X */
+#endif /* _WIN32/MSDOS/UN*X */
 
 #ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap/bpf.h>
@@ -170,9 +170,11 @@ struct pcap_stat {
 	u_int ps_recv;		/* number of packets received */
 	u_int ps_drop;		/* number of packets dropped */
 	u_int ps_ifdrop;	/* drops by interface -- only supported on some platforms */
-#ifdef WIN32
-	u_int bs_capt;		/* number of packets that reach the application */
-#endif /* WIN32 */
+#if defined(_WIN32) && defined(HAVE_REMOTE)
+	u_int ps_capt;		/* number of packets that reach the application */
+	u_int ps_sent;		/* number of packets sent by the server on the network */
+	u_int ps_netdrop;	/* number of packets lost on the network */
+#endif /* _WIN32 && HAVE_REMOTE */
 };
 
 #ifdef MSDOS
@@ -351,7 +353,7 @@ pcap_t	*pcap_open_dead(int, int);
 pcap_t	*pcap_open_dead_with_tstamp_precision(int, int, u_int);
 pcap_t	*pcap_open_offline_with_tstamp_precision(const char *, u_int, char *);
 pcap_t	*pcap_open_offline(const char *, char *);
-#if defined(WIN32)
+#if defined(_WIN32)
 pcap_t  *pcap_hopen_offline_with_tstamp_precision(intptr_t, u_int, char *);
 pcap_t  *pcap_hopen_offline(intptr_t, char *);
 #if !defined(LIBPCAP_EXPORTS)
@@ -363,10 +365,10 @@ pcap_t  *pcap_hopen_offline(intptr_t, char *);
 static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 static pcap_t *pcap_fopen_offline(FILE *, char *);
 #endif
-#else /*WIN32*/
+#else /*_WIN32*/
 pcap_t	*pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 pcap_t	*pcap_fopen_offline(FILE *, char *);
-#endif /*WIN32*/
+#endif /*_WIN32*/
 
 void	pcap_close(pcap_t *);
 int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
@@ -410,6 +412,10 @@ int	pcap_minor_version(pcap_t *);
 FILE	*pcap_file(pcap_t *);
 int	pcap_fileno(pcap_t *);
 
+#ifdef _WIN32
+int	pcap_wsockinit(void);
+#endif
+
 pcap_dumper_t *pcap_dump_open(pcap_t *, const char *);
 pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
 pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
@@ -438,21 +444,61 @@ int	bpf_validate(const struct bpf_insn *f, int len);
 char	*bpf_image(const struct bpf_insn *, int);
 void	bpf_dump(const struct bpf_program *, int);
 
-#if defined(WIN32)
+#if defined(_WIN32)
 
 /*
  * Win32 definitions
  */
 
+/*!
+  \brief A queue of raw packets that will be sent to the network with pcap_sendqueue_transmit().
+*/
+struct pcap_send_queue
+{
+	u_int maxlen;	/* Maximum size of the the queue, in bytes. This
+			   variable contains the size of the buffer field. */
+	u_int len;	/* Current size of the queue, in bytes. */
+	char *buffer;	/* Buffer containing the packets to be sent. */
+};
+
+typedef struct pcap_send_queue pcap_send_queue;
+
+/*!
+  \brief This typedef is a support for the pcap_get_airpcap_handle() function
+*/
+#if !defined(AIRPCAP_HANDLE__EAE405F5_0171_9592_B3C2_C19EC426AD34__DEFINED_)
+#define AIRPCAP_HANDLE__EAE405F5_0171_9592_B3C2_C19EC426AD34__DEFINED_
+typedef struct _AirpcapHandle *PAirpcapHandle;
+#endif
+
 int pcap_setbuff(pcap_t *p, int dim);
 int pcap_setmode(pcap_t *p, int mode);
 int pcap_setmintocopy(pcap_t *p, int size);
-Adapter *pcap_get_adapter(pcap_t *p);
 
-#ifdef WPCAP
-/* Include file with the wpcap-specific extensions */
-#include <Win32-Extensions.h>
-#endif /* WPCAP */
+HANDLE pcap_getevent(pcap_t *p);
+
+int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t);
+int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t);
+
+pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
+
+void pcap_sendqueue_destroy(pcap_send_queue* queue);
+
+int pcap_sendqueue_queue(pcap_send_queue* queue, const struct pcap_pkthdr *pkt_header, const u_char *pkt_data);
+
+u_int pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue* queue, int sync);
+
+struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
+
+int pcap_setuserbuffer(pcap_t *p, int size);
+
+int pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks);
+
+int pcap_live_dump_ended(pcap_t *p, int sync);
+
+int pcap_start_oem(char* err_str, int flags);
+
+PAirpcapHandle pcap_get_airpcap_handle(pcap_t *p);
 
 #define MODE_CAPT 0
 #define MODE_STAT 1
@@ -476,7 +522,7 @@ u_long pcap_mac_packets (void);
 
 int	pcap_get_selectable_fd(pcap_t *);
 
-#endif /* WIN32/MSDOS/UN*X */
+#endif /* _WIN32/MSDOS/UN*X */
 
 #ifdef __cplusplus
 }

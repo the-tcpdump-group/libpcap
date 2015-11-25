@@ -17,6 +17,7 @@ findalldevstest
 opentest
 valgrindtest
 grammar.c
+grammar.h
 libpcap.a
 libpcap.*.dylib
 libpcap.sl
@@ -44,6 +45,5 @@ scanner.c
 scanner.c.bottom
 scanner.h
 selpolltest
-tokdefs.h
 version.c
 version.h
