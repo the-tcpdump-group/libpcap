@@ -351,7 +351,7 @@
 
 #define LINKTYPE_GPRS_LLC	169		/* GPRS LLC */
 #define LINKTYPE_GPF_T		170		/* GPF-T (ITU-T G.7041/Y.1303) */
-#define LINKTYPE_GPF_F		171		/* GPF-T (ITU-T G.7041/Y.1303) */
+#define LINKTYPE_GPF_F		171		/* GPF-F (ITU-T G.7041/Y.1303) */
 
 /*
  * Requested by Oolan Zimmer <oz@gcom.com> for use in Gcom's T1/E1 line
