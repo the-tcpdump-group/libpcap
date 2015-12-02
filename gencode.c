@@ -1543,6 +1543,12 @@ init_linktype(p)
 		off_nl = 0;		/* Ethernet II */
 		off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
+	case DLT_NFLOG:
+		off_linktype.constant_part = -1;
+		off_linkpl.constant_part = 0;
+		off_nl = 0;
+		off_nl_nosnap = 0;	/* no 802.2 LLC */
+		break;
 
 	default:
 		/*
@@ -3364,11 +3370,7 @@ gen_linktype(proto)
 		bpf_error("AX.25 link-layer type filtering not implemented");
 
 	case DLT_NFLOG:
-		/* Using the fixed-size NFLOG header it is possible to tell only
-		 * the address family of the packet, other meaningful data is
-		 * either missing or behind TLVs.
-		 */
-		bpf_error("NFLOG link-layer type filtering not implemented");
+		return gen_true();		/* always true */
 
 	default:
 		/*

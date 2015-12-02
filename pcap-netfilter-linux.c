@@ -56,6 +56,7 @@
 #include <linux/netfilter/nfnetlink_log.h>
 #include <linux/netfilter/nfnetlink_queue.h>
 
+#include "pcap/nflog.h"
 /* NOTE: if your program drops privilages after pcap_activate() it WON'T work with nfqueue.
  *       It took me quite some time to debug ;/
  *
@@ -181,10 +182,13 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 
 			if (payload) {
 				/* pkth.caplen = min (payload_len, handle->snapshot); */
+				u_char *data = (u_char *)payload;
+				struct pcap_pkthdr pkth2 = pkth;
 
+				int bad_payload = type == NFLOG && !nflog_get_payload(handle,&pkth2,&data);
 				gettimeofday(&pkth.ts, NULL);
-				if (handle->fcode.bf_insns == NULL ||
-						bpf_filter(handle->fcode.bf_insns, payload, pkth.len, pkth.caplen))
+				if (!bad_payload && (handle->fcode.bf_insns == NULL ||
+						bpf_filter(handle->fcode.bf_insns, data, pkth2.len, pkth2.caplen)))
 				{
 					handlep->packets_read++;
 					callback(user, &pkth, payload);
@@ -209,6 +213,87 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		buf += msg_len;
 	}
 	return count;
+}
+
+/*
+ * copy from tcpdump/print-nflog.c
+ * return 0 if wrong format or no payload attribute
+ */
+int nflog_get_payload(pcap_t *handle, struct pcap_pkthdr *h, u_char **data)
+{
+	const nflog_hdr_t *hdr;
+	const nflog_tlv_t *tlv;
+	uint16_t size;
+	uint16_t h_size = sizeof(nflog_hdr_t);
+
+	u_char *p = *data;
+	hdr = (const nflog_hdr_t *)p;
+	u_int caplen = h->caplen;
+
+	u_int length = h->len;
+
+	if (caplen < (int) sizeof(nflog_hdr_t) || length < (int) sizeof(nflog_hdr_t)) {
+		return 0;
+	}
+
+	if (!(hdr->nflog_version) == 0) {
+		return 0;
+	}
+
+	p += sizeof(nflog_hdr_t);
+	length -= sizeof(nflog_hdr_t);
+	caplen -= sizeof(nflog_hdr_t);
+
+	while (length > 0) {
+		/* We have some data.  Do we have enough for the TLV header? */
+		if (caplen < sizeof(nflog_tlv_t) || length < sizeof(nflog_tlv_t)) {
+			/* No. */
+			return 0;
+		}
+
+		tlv = (const nflog_tlv_t *) p;
+		size = tlv->tlv_length;
+		if (size % 4 != 0)
+			size += 4 - size % 4;
+
+		/* Is the TLV's length less than the minimum? */
+		if (size < sizeof(nflog_tlv_t)) {
+			/* Yes. Give up now. */
+			return 0;
+		}
+
+		/* Do we have enough data for the full TLV? */
+		if (caplen < size || length < size) {
+			/* No. */
+			return 0;
+		}
+
+		if (tlv->tlv_type == NFULA_PAYLOAD) {
+			/*
+			 * This TLV's data is the packet payload.
+			 * Skip past the TLV header, and break out
+			 * of the loop so we print the packet data.
+			 */
+			p += sizeof(nflog_tlv_t);
+			h_size += sizeof(nflog_tlv_t);
+			length -= sizeof(nflog_tlv_t);
+			caplen -= sizeof(nflog_tlv_t);
+			/*
+			 * Returns pointer to begin of the packet
+			 * and actual size
+			 */
+			*data = p;
+			h->caplen = caplen;
+			h->len = length;
+			return length;
+		}
+
+		p += size;
+		h_size += size;
+		length -= size;
+		caplen -= size;
+	}
+	return 0;
 }
 
 static int

@@ -33,3 +33,4 @@
  */
 int netfilter_findalldevs(pcap_if_t **alldevsp, char *err_str);
 pcap_t *netfilter_create(const char *device, char *ebuf, int *is_ours);
+int nflog_get_payload(pcap_t *, struct pcap_pkthdr *, u_char **);
