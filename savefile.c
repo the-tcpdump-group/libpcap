@@ -62,7 +62,7 @@
 #include "sf-pcap.h"
 #include "sf-pcap-ng.h"
 
-#ifdef DLT_NFLOG
+#if defined(PCAP_SUPPORT_NETFILTER) && !defined(__APPLE__)
 #include "pcap-netfilter-linux.h"
 #endif
 /*
@@ -488,7 +488,7 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			return (status);
 		}
 		fcode = p->fcode.bf_insns;
-#ifdef DLT_NFLOG
+#if defined(PCAP_SUPPORT_NETFILTER) && !defined(__APPLE__)
 		if (fcode != NULL && p->linktype == DLT_NFLOG ) {
 		    struct pcap_pkthdr h2 = h;
 		    u_char *payload = data;
