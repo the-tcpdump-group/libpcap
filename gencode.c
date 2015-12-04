@@ -548,6 +548,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	program->bf_len = len;
 
 	lex_cleanup();
+	pcap_lex_destroy();
 	freechunks();
 
 	rc = 0;  /* We're all okay */
