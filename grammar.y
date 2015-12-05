@@ -197,7 +197,7 @@ int n_errors = 0;
 static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 
 static void
-yyerror(yyscan_t yyscanner, const char *msg)
+yyerror(void *yyscanner, const char *msg)
 {
 	++n_errors;
 	bpf_error("%s", msg);
