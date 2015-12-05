@@ -353,8 +353,13 @@ void finish_parse(struct block *);
 char *sdup(const char *);
 
 struct bpf_insn *icode_to_fcode(struct block *, u_int *);
-int pcap_parse(void *);
 void sappend(struct slist *, struct slist *);
+
+/*
+ * Older versions of Bison don't put this declaration in
+ * grammar.h.
+ */
+int pcap_parse(void *);
 
 /* XXX */
 #define JT(b)  ((b)->et.succ)
