@@ -443,12 +443,7 @@ grammar.c: $(srcdir)/grammar.y
 grammar.o: grammar.c
 	$(CC) $(FULL_CFLAGS) -c grammar.c
 
-#
-# Temporary debugging hack to see why the OpenCSW builds
-# are failing.
-#
 gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
-	-sed -n '300,350p' grammar.h
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/gencode.c
 
 version.o: version.c
