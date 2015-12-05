@@ -443,6 +443,9 @@ grammar.c: $(srcdir)/grammar.y
 grammar.o: grammar.c
 	$(CC) $(FULL_CFLAGS) -c grammar.c
 
+gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
+	$(CC) $(FULL_CFLAGS) -c $(srcdir)/gencode.c
+
 version.o: version.c
 	$(CC) $(FULL_CFLAGS) -c version.c
 
