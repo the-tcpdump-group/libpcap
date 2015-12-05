@@ -8,8 +8,8 @@
  * handle for the reentrant scanner to the parser, and the
  * parser has to pass it to the lexical analyzer.
  */
-%parse-param   {yyscan_t yyscanner}
-%lex-param   {yyscan_t yyscanner}
+%parse-param   {void *yyscanner}
+%lex-param   {void *yyscanner}
 
 %{
 /*
