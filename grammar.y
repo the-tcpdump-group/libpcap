@@ -7,6 +7,13 @@
  * We also want a reentrant scanner, so we have to pass the
  * handle for the reentrant scanner to the parser, and the
  * parser has to pass it to the lexical analyzer.
+ *
+ * We use void * rather than yyscan_t because, at least with some
+ * versions of Flex and Bison, if you use yyscan_t in %parse-param and
+ * %lex-param, you have to include scanner.h before grammar.h to get
+ * yyscan_t declared, and you have to include grammar.h before scanner.h
+ * to get YYSTYPE declared.  Using void * breaks the cycle; the Flex
+ * documentation says yyscan_t is just a void *.
  */
 %parse-param   {void *yyscanner}
 %lex-param   {void *yyscanner}
