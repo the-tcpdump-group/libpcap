@@ -1,3 +1,16 @@
+/*
+ * We want a reentrant parser.
+ */
+%pure-parser
+
+/*
+ * We also want a reentrant scanner, so we have to pass the
+ * handle for the reentrant scanner to the parser, and the
+ * parser has to pass it to the lexical analyzer.
+ */
+%parse-param   {yyscan_t yyscanner}
+%lex-param   {yyscan_t yyscanner}
+
 %{
 /*
  * Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996
@@ -49,6 +62,9 @@ struct rtentry;
 #include "pcap-int.h"
 
 #include "gencode.h"
+#include "grammar.h"
+#include "scanner.h"
+
 #ifdef HAVE_NET_PFVAR_H
 #include <net/if.h>
 #include <net/pfvar.h>
@@ -174,7 +190,7 @@ int n_errors = 0;
 static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 
 static void
-yyerror(const char *msg)
+yyerror(yyscan_t yyscanner, const char *msg)
 {
 	++n_errors;
 	bpf_error("%s", msg);

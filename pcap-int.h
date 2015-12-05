@@ -361,8 +361,6 @@ struct oneshot_userdata {
 	pcap_t *pd;
 };
 
-int	yylex(void);
-
 #ifndef min
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif

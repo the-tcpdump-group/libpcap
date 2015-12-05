@@ -74,6 +74,9 @@
 #include "pcap/ipnet.h"
 #include "arcnet.h"
 
+#include "grammar.h"
+#include "scanner.h"
+
 #if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
 #include <linux/types.h>
 #include <linux/if_packet.h>
@@ -472,6 +475,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 {
 	extern int n_errors;
 	const char * volatile xbuf = buf;
+	yyscan_t scanner = NULL;
+	YY_BUFFER_STATE in_buffer = NULL;
 	u_int len;
 	int  rc;
 
@@ -512,8 +517,6 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 			ai = NULL;
 		}
 #endif
-		lex_cleanup();
-		freechunks();
 		rc = -1;
 		goto quit;
 	}
@@ -528,9 +531,11 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		goto quit;
 	}
 
-	lex_init(xbuf ? xbuf : "");
+	if (pcap_lex_init(&scanner) != 0)
+		bpf_error("can't initialize scanner: %s", pcap_strerror(errno));
+	in_buffer = pcap__scan_string(xbuf ? xbuf : "", scanner);
 	init_linktype(p);
-	(void)pcap_parse();
+	(void)pcap_parse(scanner);
 
 	if (n_errors)
 		syntax();
@@ -547,13 +552,21 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	program->bf_insns = icode_to_fcode(root, &len);
 	program->bf_len = len;
 
-	lex_cleanup();
-	pcap_lex_destroy();
-	freechunks();
-
 	rc = 0;  /* We're all okay */
 
 quit:
+	/*
+	 * Clean up everything for the lexical analyzer.
+	 */
+	if (in_buffer != NULL)
+		pcap__delete_buffer(in_buffer, scanner);
+	if (scanner != NULL)
+		pcap_lex_destroy(scanner);
+
+	/*
+	 * Clean up our own allocated memory.
+	 */
+	freechunks();
 
 #ifdef _WIN32
 	LeaveCriticalSection(&g_PcapCompileCriticalSection);
