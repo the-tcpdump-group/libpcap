@@ -82,7 +82,7 @@
 #include "grammar.h"
 
 /*
- * Earlier versions of Flex dsn't declare these, so we declare them
+ * Earlier versions of Flex don't declare these, so we declare them
  * ourselves to squelch warnings.
  */
 int pcap_get_column(yyscan_t);
