@@ -427,18 +427,28 @@ libpcap.shareda: $(OBJ)
 #
 libpcap.none:
 
-scanner.h: scanner.c
 scanner.c: $(srcdir)/scanner.l
 	$(LEX) -P pcap_ --header-file=scanner.h --nounput -o scanner.c $<
+scanner.h: scanner.c
+## Recover from the removal of $@
+	@if test -f $@; then :; else \
+		rm -f scanner.c; \
+		$(MAKE) $(MAKEFLAGS) scanner.c; \
+	fi
 
 scanner.o: scanner.c grammar.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
 
 pcap.o: version.h
 
-grammar.h: grammar.c
 grammar.c: $(srcdir)/grammar.y
 	$(YACC) -p pcap_ -o grammar.c -d $<
+grammar.h: grammar.c
+## Recover from the removal of $@
+	@if test -f $@; then :; else \
+		rm -f grammar.c; \
+		$(MAKE) $(MAKEFLAGS) grammar.c; \
+	fi
 
 grammar.o: grammar.c
 	$(CC) $(FULL_CFLAGS) -c grammar.c
