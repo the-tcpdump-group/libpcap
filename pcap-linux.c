@@ -994,10 +994,11 @@ is_bonding_device(int fd, const char *device)
 	memset(&ifb, 0, sizeof ifb);
 	ifr.ifr_data = (caddr_t)&ifb;
 #ifdef SIOCBONDINFOQUERY
-	if (ioctl(fd, SIOCBONDINFOQUERY, &ifr) == 0)
+	int test_device_query = ioctl(fd, SIOCBONDINFOQUERY, &ifr) == 0;
 #else /* SIOCBONDINFOQUERY */
-	if (ioctl(fd, BOND_INFO_QUERY_OLD, &ifr) == 0)
+	int test_device_query = ioctl(fd, BOND_INFO_QUERY_OLD, &ifr) == 0;
 #endif /* SIOCBONDINFOQUERY */
+	if (test_device_query)
 		return 1;	/* success, so it's a bonding device */
 #endif /* defined(HAVE_LINUX_IF_BONDING_H) && \
 	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY)) */
