@@ -221,7 +221,16 @@
 
 #ifdef HAVE_LINUX_IF_BONDING_H
 #include <linux/if_bonding.h>
+
+/*
+ * The ioctl code to use to check whether a device is a bonding device.
+ */
+#if defined(SIOCBONDINFOQUERY)
+	#define BOND_INFO_QUERY_IOCTL SIOCBONDINFOQUERY
+#elif defined(BOND_INFO_QUERY_OLD)
+	#define BOND_INFO_QUERY_IOCTL BOND_INFO_QUERY_OLD
 #endif
+#endif /* HAVE_LINUX_IF_BONDING_H */
 
 /*
  * Got Wireless Extensions?
@@ -984,15 +993,9 @@ added:
 static int
 is_bonding_device(int fd, const char *device)
 {
-#if defined(HAVE_LINUX_IF_BONDING_H) && \
-	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY))
+#ifdef BOND_INFO_QUERY_IOCTL
 	struct ifreq ifr;
 	ifbond ifb;
-#ifdef SIOCBONDINFOQUERY
-	#define BOND_INFO_QUERY_IOCTL SIOCBONDINFOQUERY
-#else /* SIOCBONDINFOQUERY */
-	#define BOND_INFO_QUERY_IOCTL BOND_INFO_QUERY_OLD
-#endif /* SIOCBONDINFOQUERY */
 
 	memset(&ifr, 0, sizeof ifr);
 	strlcpy(ifr.ifr_name, device, sizeof ifr.ifr_name);
@@ -1000,8 +1003,7 @@ is_bonding_device(int fd, const char *device)
 	ifr.ifr_data = (caddr_t)&ifb;
 	if (ioctl(fd, BOND_INFO_QUERY_IOCTL, &ifr) == 0)
 		return 1;	/* success, so it's a bonding device */
-#endif /* defined(HAVE_LINUX_IF_BONDING_H) && \
-	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY)) */
+#endif /* BOND_INFO_QUERY_IOCTL */
 
 	return 0;	/* no, it's not a bonding device */
 }
