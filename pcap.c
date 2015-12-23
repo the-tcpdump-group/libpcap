@@ -882,16 +882,6 @@ pcap_dispatch(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	return (p->read_op(p, cnt, callback, user));
 }
 
-/*
- * XXX - is this necessary?
- */
-int
-pcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
-{
-
-	return (p->read_op(p, cnt, callback, user));
-}
-
 int
 pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {

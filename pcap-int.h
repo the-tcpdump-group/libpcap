@@ -367,7 +367,6 @@ struct oneshot_userdata {
 
 /* XXX should these be in pcap.h? */
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
-int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
 
 #ifndef HAVE_STRLCPY
 #define strlcpy(x, y, z) \
