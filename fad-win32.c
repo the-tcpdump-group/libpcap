@@ -225,15 +225,6 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		desc += strlen(desc) + 1;
 	}
 
-	if (ret != -1) {
-		/*
-		 * We haven't had any errors yet; do any platform-specific
-		 * operations to add devices.
-		 */
-		if (pcap_platform_finddevs(&devlist, errbuf) < 0)
-			ret = -1;
-	}
-
 	if (ret == -1) {
 		/*
 		 * We had an error; free the list we've been constructing.
