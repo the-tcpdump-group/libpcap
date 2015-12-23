@@ -448,7 +448,7 @@ PCAP_INTERNAL int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...
 #ifdef HAVE_VSNPRINTF
 #define pcap_vsnprintf vsnprintf
 #else
-PCAP_INTERNAL extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
+PCAP_INTERNAL int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
 #endif
 
 /*
