@@ -40,19 +40,46 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-/*
- * Make sure Packet32.h doesn't define BPF structures that we've
- * probably already defined as a result of including <pcap/pcap.h>.
- */
-#define BPF_MAJOR_VERSION
-#include <Packet32.h>
-extern CRITICAL_SECTION g_PcapCompileCriticalSection;
-#endif /* _WIN32 */
+#if defined(_WIN32)
+  /*
+   * Make sure Packet32.h doesn't define BPF structures that we've
+   * probably already defined as a result of including <pcap/pcap.h>.
+   */
+  #define BPF_MAJOR_VERSION
+  #include <Packet32.h>
+  extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 
-#ifdef MSDOS
-#include <fcntl.h>
-#include <io.h>
+  /*
+   * Non-API functions; don't export them.
+   */
+  #define PCAP_INTERNAL	extern
+#elif defined(MSDOS)
+  #include <fcntl.h>
+  #include <io.h>
+
+  /* XXX - does this need special treatment? */
+  #define PCAP_INTERNAL	extern
+#else
+  /*
+   * Try to make stuff declared here not visible in the shared library.
+   */
+  #if __GNUC__ >= 4 || defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+    /*
+     * We have __attribute__((visibility()).
+     */
+    #define PCAP_INTERNAL	__attribute__((visibility("hidden")))
+  #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+    /*
+     * We don't have __attribute__((visibility()), but we do have
+     * __hidden.
+     */
+    #define PCAP_INTERNAL	__hidden
+  #else
+    /*
+     * We don't have either of them.
+     */
+    #define PCAP_INTERNAL	extern
+  #endif
 #endif
 
 #if (defined(_MSC_VER) && (_MSC_VER <= 1200)) /* we are compiling with Visual Studio 6, that doesn't support the LL suffix*/
@@ -365,8 +392,7 @@ struct oneshot_userdata {
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
 
-/* XXX should these be in pcap.h? */
-int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
+PCAP_INTERNAL int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
 #ifndef HAVE_STRLCPY
 #define strlcpy(x, y, z) \
@@ -416,13 +442,13 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 #ifdef HAVE_SNPRINTF
 #define pcap_snprintf snprintf
 #else
-extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...);
+PCAP_INTERNAL int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...);
 #endif
 
 #ifdef HAVE_VSNPRINTF
 #define pcap_vsnprintf vsnprintf
 #else
-extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
+PCAP_INTERNAL extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
 #endif
 
 /*
@@ -435,8 +461,8 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_getnonblock_fd(pcap_t *, char *);
-int	pcap_setnonblock_fd(pcap_t *p, int, char *);
+PCAP_INTERNAL int	pcap_getnonblock_fd(pcap_t *, char *);
+PCAP_INTERNAL int	pcap_setnonblock_fd(pcap_t *p, int, char *);
 #endif
 
 /*
@@ -450,13 +476,13 @@ int	pcap_setnonblock_fd(pcap_t *p, int, char *);
  * "pcap_create_common()" allocates and fills in a pcap_t, for use
  * by pcap_create routines.
  */
-pcap_t	*pcap_create_interface(const char *, char *);
-pcap_t	*pcap_create_common(const char *, char *, size_t);
-int	pcap_do_addexit(pcap_t *);
-void	pcap_add_to_pcaps_to_close(pcap_t *);
-void	pcap_remove_from_pcaps_to_close(pcap_t *);
-void	pcap_cleanup_live_common(pcap_t *);
-int	pcap_check_activated(pcap_t *);
+PCAP_INTERNAL pcap_t	*pcap_create_interface(const char *, char *);
+PCAP_INTERNAL pcap_t	*pcap_create_common(const char *, char *, size_t);
+PCAP_INTERNAL int	pcap_do_addexit(pcap_t *);
+PCAP_INTERNAL void	pcap_add_to_pcaps_to_close(pcap_t *);
+PCAP_INTERNAL void	pcap_remove_from_pcaps_to_close(pcap_t *);
+PCAP_INTERNAL void	pcap_cleanup_live_common(pcap_t *);
+PCAP_INTERNAL int	pcap_check_activated(pcap_t *);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".
@@ -470,17 +496,17 @@ int	pcap_check_activated(pcap_t *);
  * "pcap_add_if()" adds an interface to the list of interfaces, for
  * use by various "find interfaces" routines.
  */
-int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
-int	pcap_platform_finddevs(pcap_if_t **, char *);
-int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
+PCAP_INTERNAL int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
+PCAP_INTERNAL int	pcap_platform_finddevs(pcap_if_t **, char *);
+PCAP_INTERNAL int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
 	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, char *);
-int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
+PCAP_INTERNAL int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
-int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
-struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
-int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
+PCAP_INTERNAL int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
+PCAP_INTERNAL struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
+PCAP_INTERNAL int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
 	    const char *, char *);
 
 /*
@@ -493,8 +519,8 @@ int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
  * appropriate, and frees all data common to all modules for handling
  * savefile types.
  */
-pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
-void	sf_cleanup(pcap_t *p);
+PCAP_INTERNAL pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
+PCAP_INTERNAL void	sf_cleanup(pcap_t *p);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that
@@ -503,15 +529,15 @@ void	sf_cleanup(pcap_t *p);
  * "pcap_oneshot()" is the standard one-shot callback for "pcap_next()"
  * and "pcap_next_ex()".
  */
-void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
+PCAP_INTERNAL void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
 #ifdef _WIN32
-void	pcap_win32_err_to_str(DWORD, char *);
+PCAP_INTERNAL void	pcap_win32_err_to_str(DWORD, char *);
 #endif
 
-int	install_bpf_program(pcap_t *, struct bpf_program *);
+PCAP_INTERNAL int	install_bpf_program(pcap_t *, struct bpf_program *);
 
-int	pcap_strcasecmp(const char *, const char *);
+PCAP_INTERNAL int	pcap_strcasecmp(const char *, const char *);
 
 #ifdef __cplusplus
 }
