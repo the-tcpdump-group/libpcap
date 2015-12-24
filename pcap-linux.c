@@ -2330,7 +2330,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	/*
 	 * Create a socket from which to fetch interface information.
 	 */
-	fd = socket(PF_PACKET, SOCK_RAW, 0);
+	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
@@ -2448,7 +2448,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	/*
 	 * Create a socket from which to fetch interface information.
 	 */
-	fd = socket(PF_PACKET, SOCK_RAW, 0);
+	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
@@ -6024,7 +6024,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	/*
 	 * Create a socket from which to fetch time stamping capabilities.
 	 */
-	fd = socket(PF_PACKET, SOCK_RAW, 0);
+	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
 		(void)pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "socket for SIOCETHTOOL(ETHTOOL_GET_TS_INFO): %s", pcap_strerror(errno));
