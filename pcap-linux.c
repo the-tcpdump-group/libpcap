@@ -541,7 +541,7 @@ pcap_create_interface(const char *device, char *ebuf)
  *
  * Yes, you can have multiple monitor devices for a given
  * physical device.
-*/
+ */
 
 /*
  * Is this a mac80211 device?  If so, fill in the physical device path and
