@@ -55,7 +55,28 @@
 #else /* UN*X */
   #include <sys/types.h>
   #include <sys/time.h>
-  #define PCAP_API	extern
+  #ifdef LIBPCAP_EXPORTS
+    /*
+     * We're compiling libpcap, so we should export functions in our API.
+     */
+    #if __GNUC__ >= 4 || defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+      /*
+       * We have __attribute__((visibility()).
+       */
+      #define PCAP_API	__attribute__((visibility("default")))
+    #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+      /*
+       * We don't have __attribute__((visibility()), but we do have
+       * __hidden.
+       */
+      #define PCAP_API	__global
+    #else
+      /*
+       * We don't have either of them.
+       */
+      #define PCAP_API	extern
+    #endif
+  #endif
 #endif /* _WIN32/MSDOS/UN*X */
 
 #ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
