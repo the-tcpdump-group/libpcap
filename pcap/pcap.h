@@ -76,6 +76,8 @@
        */
       #define PCAP_API	extern
     #endif
+  #else
+    #define PCAP_API extern
   #endif
 #endif /* _WIN32/MSDOS/UN*X */
 
