@@ -35,6 +35,11 @@
 #ifndef lib_pcap_pcap_h
 #define lib_pcap_pcap_h
 
+#define IS_AT_LEAST_GNUC_VERSION(major, minor) \
+	(defined(__GNUC__) && \
+	    (__GNUC__ > (major) || \
+	     (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor))))
+
 #if defined(_WIN32)
   #include <pcap-stdinc.h>
   #ifdef LIBPCAP_EXPORTS
@@ -58,25 +63,33 @@
   #ifdef LIBPCAP_EXPORTS
     /*
      * We're compiling libpcap, so we should export functions in our API.
+     * The compiler might be configured not to export functions from a
+     * shared library by default, so we might have to explicitly mark
+     * functions as exported.
      */
-    #if __GNUC__ >= 4 || defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)
+    #if IS_AT_LEAST_GNUC_VERSION(3, 4)
       /*
-       * We have __attribute__((visibility()).
+       * GCC 3.4 or later, or some compiler asserting compatibility with
+       * GCC 3.4 or later, so we have __attribute__((visibility()).
        */
       #define PCAP_API	__attribute__((visibility("default")))
     #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
       /*
-       * We don't have __attribute__((visibility()), but we do have
-       * __hidden.
+       * Sun C 5.5 or later, so we have __global.
+       * (Sun C 5.9 and later also have __attribute__((visibility()),
+       * but there's no reason to prefer it with Sun C.)
        */
       #define PCAP_API	__global
     #else
       /*
-       * We don't have either of them.
+       * We don't have anything to say "export this".
        */
       #define PCAP_API	extern
     #endif
   #else
+    /*
+     * We're not building libpcap, so just say "extern".
+     */
     #define PCAP_API extern
   #endif
 #endif /* _WIN32/MSDOS/UN*X */
