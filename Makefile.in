@@ -125,23 +125,23 @@ HDR = $(PUBHDR) \
 	sunatmpos.h
 
 TESTS = \
+	@VALGRINDTEST@ \
 	capturetest \
 	can_set_rfmon_test \
 	filtertest \
 	findalldevstest \
 	opentest \
-	selpolltest \
-	valgrindtest
+	selpolltest
 
 TESTS_SRC = \
+	tests/valgrindtest.c \
 	tests/capturetest.c \
 	tests/can_set_rfmon_test.c \
 	tests/filtertest.c \
 	tests/findalldevstest.c \
 	tests/opentest.c \
 	tests/reactivatetest.c \
-	tests/selpolltest.c \
-	tests/valgrindtest.c
+	tests/selpolltest.c
 
 GENHDR = \
 	scanner.h grammar.h version.h

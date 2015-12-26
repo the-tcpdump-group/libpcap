@@ -666,6 +666,7 @@ LEXLIB
 LEX_OUTPUT_ROOT
 LEX
 HAVE_LINUX_TPACKET_AUXDATA
+VALGRINDTEST
 LIBOBJS
 EGREP
 GREP
@@ -5394,6 +5395,13 @@ fi
 $as_echo "${enable_protochain}" >&6; }
 
 #
+# valgrindtest directly uses the native capture mechanism, but
+# only tests with BPF and PF_PACKET sockets; only enable it if
+# we have BPF or PF_PACKET sockets.
+#
+VALGRINDTEST=
+
+#
 # SITA support is mutually exclusive with native capture support;
 # "--with-sita" selects SITA support.
 #
@@ -5434,8 +5442,18 @@ elif test -r /dev/bpf -o -h /dev/bpf ; then
 
 $as_echo "#define HAVE_CLONING_BPF 1" >>confdefs.h
 
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /dev/bpf0 ; then
 	V_PCAP=bpf
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/pfilt.h ; then
 	V_PCAP=pf
 elif test -r /dev/enet ; then
@@ -5446,6 +5464,12 @@ elif test -r /usr/include/sys/net/nit.h ; then
 	V_PCAP=nit
 elif test -r /usr/include/linux/socket.h ; then
 	V_PCAP=linux
+
+	#
+	# XXX - this won't work with older kernels that have SOCK_PACKET
+	# sockets but not PF_PACKET sockets.
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/raw.h ; then
 	V_PCAP=snoop
 elif test -r /usr/include/odmi.h ; then
@@ -5457,6 +5481,11 @@ elif test -r /usr/include/odmi.h ; then
 	V_PCAP=bpf
 elif test -c /dev/bpf0 ; then		# check again in case not readable
 	V_PCAP=bpf
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/sys/dlpi.h ; then
 	V_PCAP=dlpi
 elif test -c /dev/enet ; then		# check again in case not readable
@@ -5468,6 +5497,7 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $V_PCAP" >&5
 $as_echo "$V_PCAP" >&6; }
+
 
 #
 # Do capture-mechanism-dependent tests.
