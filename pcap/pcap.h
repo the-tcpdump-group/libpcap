@@ -42,11 +42,15 @@
 
 #if defined(_WIN32)
   #include <pcap-stdinc.h>
-  /*
-   * We're relying on a .def file to export symbols when building on
-   * Windows.
-   */
-  #define PCAP_API	extern
+  #ifdef LIBPCAP_EXPORTS
+    /*
+     * We're compiling libpcap, so we should export functions in our
+     * API.
+     */
+    #define PCAP_API	__declspec(dllexport)
+  #else
+    #define PCAP_API	__declspec(dllimport)
+  #endif
 #elif defined(MSDOS)
   #include <sys/types.h>
   #include <sys/socket.h>  /* u_int, u_char etc. */
