@@ -56,7 +56,7 @@
 	     (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor))))
 
 #if defined(_WIN32)
-  #ifdef LIBPCAP_EXPORTS
+  #ifdef BUILDING_LIBPCAP
     /*
      * We're compiling libpcap, so we should export functions in our
      * API.
@@ -69,7 +69,7 @@
   /* XXX - does this need special treatment? */
   #define PCAP_API_DEF
 #else /* UN*X */
-  #ifdef LIBPCAP_EXPORTS
+  #ifdef BUILDING_LIBPCAP
     /*
      * We're compiling libpcap, so we should export functions in our API.
      * The compiler might be configured not to export functions from a
