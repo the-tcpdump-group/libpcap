@@ -45,7 +45,7 @@ if( WIN32 )
     # Use module file from project directory if none was specified
     #
     if ("${PCAP_DEF_FILE}" STREQUAL "")
-        set( PCAP_DEF_FILE "${pcap_SOURCE_DIR}/Win32/Prj/${PROJECT_NAME}.def")
+        set( PCAP_DEF_FILE "${pcap_SOURCE_DIR}/${PROJECT_NAME}.def")
     endif( )
 endif( WIN32)
 
