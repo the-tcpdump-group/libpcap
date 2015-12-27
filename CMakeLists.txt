@@ -40,6 +40,13 @@ if( WIN32 )
         ../Common/
         Win32/Include
     )
+
+    #
+    # Use module file from project directory if none was specified
+    #
+    if ("${PCAP_DEF_FILE}" STREQUAL "")
+        set( PCAP_DEF_FILE "${pcap_SOURCE_DIR}/Win32/Prj/${PROJECT_NAME}.def")
+    endif( )
 endif( WIN32)
 
 add_definitions( -DLIBPCAP_EXPORTS )
@@ -426,6 +433,15 @@ if( WIN32 )
         packet
         ws2_32
     )
+
+    #
+    # Use a module definition file to export symbols in the DLL
+    #
+    if( MSVC AND (EXISTS "${PCAP_DEF_FILE}") )
+        set_target_properties( ${PROJECT_NAME}
+            PROPERTIES LINK_FLAGS "/DEF:${PCAP_DEF_FILE}")
+        message( STATUS "Using module definition file: ${PCAP_DEF_FILE}" )
+    endif( )
 endif( WIN32 )
 
 ######################################
