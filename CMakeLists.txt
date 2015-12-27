@@ -42,7 +42,7 @@ if( WIN32 )
     )
 endif( WIN32)
 
-add_definitions( -DBUILDING_LIBPCAP )
+add_definitions( -DBUILDING_PCAP )
 
 if( MSVC )
     add_definitions( -D__STDC__ )

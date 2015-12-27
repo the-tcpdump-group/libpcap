@@ -362,7 +362,7 @@ PCAP_API pcap_t	*pcap_open_offline(const char *, char *);
    * If we're building libpcap, these are internal routines in savefile.c,
    * so we mustn't define them as macros.
    */
-  #ifndef BUILDING_LIBPCAP
+  #ifndef BUILDING_PCAP
     #define pcap_fopen_offline_with_tstamp_precision(f,p,b) \
 	pcap_hopen_offline_with_tstamp_precision(_get_osfhandle(_fileno(f)), p, b)
     #define pcap_fopen_offline(f,b) \
