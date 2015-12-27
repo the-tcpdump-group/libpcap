@@ -145,6 +145,8 @@ struct addrinfo {
 #endif /* INET6 */
 #include <pcap/namedb.h>
 
+#include "nametoaddr.h"
+
 #define ETHERMTU	1500
 
 #ifndef ETHERTYPE_TEB

@@ -100,6 +100,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "gencode.h"
 #include <pcap/namedb.h>
+#include "nametoaddr.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -309,8 +310,14 @@ struct eproto {
 	u_short p;
 };
 
-/* Static data base of ether protocol types. */
-struct eproto eproto_db[] = {
+/*
+ * Static data base of ether protocol types.
+ * tcpdump used to import this, and it's declared as an export on
+ * Debian, at least, so make it a public symbol, even though we
+ * don't officially export it by declaring it in a header file.
+ * (Programs *should* do this themselves, as tcpdump now does.)
+ */
+PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "pup", ETHERTYPE_PUP },
 	{ "xns", ETHERTYPE_NS },
 	{ "ip", ETHERTYPE_IP },

@@ -100,6 +100,7 @@ PUBHDR = \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
 	pcap/dlt.h \
+	pcap/export-defs.h \
 	pcap/ipnet.h \
 	pcap/namedb.h \
 	pcap/nflog.h \
@@ -115,6 +116,7 @@ HDR = $(PUBHDR) \
 	gencode.h \
 	ieee80211.h \
 	llc.h \
+	nametoaddr.h \
 	nlpid.h \
 	pcap-common.h \
 	pcap-int.h \
@@ -463,14 +465,21 @@ snprintf.o: $(srcdir)/missing/snprintf.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
 
 version.c: $(srcdir)/VERSION
+	#
+	# Older programs import this if they want to show the
+	# libpcap version number, rather than calling
+	# pcap_lib_version(), so we need to export it.
+	#
 	@rm -f $@
+	echo '#include <pcap/export-defs.h>' > $@
+	echo 'PCAP_API_DEF' >> $@
 	if grep GIT ${srcdir}/VERSION >/dev/null; then \
 		read ver <${srcdir}/VERSION; \
 		echo $$ver | tr -d '\012'; \
 		date +_%Y_%m_%d; \
 	else \
 		cat ${srcdir}/VERSION; \
-	fi | sed -e 's/.*/char pcap_version[] = "&";/' > $@
+	fi | sed -e 's/.*/char pcap_version[] = "&";/' >> $@
 
 #
 # NOTE: this really is supposed to be static; importing a string
