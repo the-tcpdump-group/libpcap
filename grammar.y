@@ -72,10 +72,6 @@ struct rtentry;
 #include "grammar.h"
 #include "scanner.h"
 
-#if YYDEBUG
-PCAP_API_DEF int pcap_debug;
-#endif
-
 #ifdef HAVE_NET_PFVAR_H
 #include <net/if.h>
 #include <net/pfvar.h>

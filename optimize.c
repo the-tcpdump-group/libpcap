@@ -55,7 +55,7 @@
 #endif
 
 #ifdef BDEBUG
-extern int dflag;
+int pcap_optimizer_debug;
 #endif
 
 #if defined(MSDOS) && !defined(__DJGPP__)
@@ -1675,7 +1675,7 @@ opt_loop(struct block *root, int do_stmts)
 {
 
 #ifdef BDEBUG
-	if (dflag > 1) {
+	if (pcap_optimizer_debug > 1) {
 		printf("opt_loop(root, %d) begin\n", do_stmts);
 		opt_dump(root);
 	}
@@ -1689,7 +1689,7 @@ opt_loop(struct block *root, int do_stmts)
 		find_edom(root);
 		opt_blks(root, do_stmts);
 #ifdef BDEBUG
-		if (dflag > 1) {
+		if (pcap_optimizer_debug > 1) {
 			printf("opt_loop(root, %d) bottom, done=%d\n", do_stmts, done);
 			opt_dump(root);
 		}
@@ -1712,14 +1712,14 @@ bpf_optimize(struct block **rootp)
 	opt_loop(root, 1);
 	intern_blocks(root);
 #ifdef BDEBUG
-	if (dflag > 1) {
+	if (pcap_optimizer_debug > 1) {
 		printf("after intern_blocks()\n");
 		opt_dump(root);
 	}
 #endif
 	opt_root(rootp);
 #ifdef BDEBUG
-	if (dflag > 1) {
+	if (pcap_optimizer_debug > 1) {
 		printf("after opt_root()\n");
 		opt_dump(root);
 	}
@@ -2292,6 +2292,7 @@ dot_dump_node(struct block *block, struct bpf_program *prog, FILE *out)
 	dot_dump_node(JT(block), prog, out);
 	dot_dump_node(JF(block), prog, out);
 }
+
 static void
 dot_dump_edge(struct block *block, FILE *out)
 {
@@ -2308,6 +2309,7 @@ dot_dump_edge(struct block *block, FILE *out)
 	dot_dump_edge(JT(block), out);
 	dot_dump_edge(JF(block), out);
 }
+
 /* Output the block CFG using graphviz/DOT language
  * In the CFG, block's code, value index for each registers at EXIT,
  * and the jump relationship is show.
@@ -2357,17 +2359,17 @@ plain_dump(struct block *root)
 	putchar('\n');
 	free((char *)f.bf_insns);
 }
+
 static void
 opt_dump(struct block *root)
 {
 	/* if optimizer debugging is enabled, output DOT graph
-	 * `dflag=4' is equivalent to -dddd to follow -d/-dd/-ddd
-     * convention in tcpdump command line
+	 * `pcap_optimizer_debug=4' is equivalent to -dddd to follow -d/-dd/-ddd
+	 * convention in tcpdump command line
 	 */
-	if (dflag > 3)
+	if (pcap_optimizer_debug > 3)
 		dot_dump(root);
 	else
 		plain_dump(root);
 }
-
 #endif
