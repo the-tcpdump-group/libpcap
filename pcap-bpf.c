@@ -2319,13 +2319,18 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 }
 
 #ifdef HAVE_BSD_IEEE80211
+#ifdef __OpenBSD__
+#define MEDIA_WD_TYPE	uint64_t
+#else
+#define MEDIA_WD_TYPE	int
+#endif
 static int
 monitor_mode(pcap_t *p, int set)
 {
 	struct pcap_bpf *pb = p->priv;
 	int sock;
 	struct ifmediareq req;
-	int *media_list;
+	MEDIA_WD_TYPE *media_list;
 	int i;
 	int can_do;
 	struct ifreq ifr;
@@ -2382,7 +2387,7 @@ monitor_mode(pcap_t *p, int set)
 	 * Allocate a buffer to hold all the media types, and
 	 * get the media types.
 	 */
-	media_list = malloc(req.ifm_count * sizeof(int));
+	media_list = malloc(req.ifm_count * sizeof(MEDIA_WD_TYPE));
 	if (media_list == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
