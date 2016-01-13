@@ -2319,7 +2319,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 }
 
 #ifdef HAVE_BSD_IEEE80211
-#ifdef __OpenBSD__
+#if defined(OpenBSD) && OpenBSD >= 201510
 #define MEDIA_WD_TYPE	uint64_t
 #else
 #define MEDIA_WD_TYPE	int
