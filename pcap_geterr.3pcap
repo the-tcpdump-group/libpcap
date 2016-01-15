@@ -28,7 +28,7 @@ pcap_geterr, pcap_perror \- get or print libpcap error message text
 .LP
 .ft B
 char *pcap_geterr(pcap_t *p);
-void pcap_perror(pcap_t *p, char *prefix);
+void pcap_perror(pcap_t *p, const char *prefix);
 .ft
 .fi
 .SH DESCRIPTION

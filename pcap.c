@@ -1418,7 +1418,7 @@ pcap_get_selectable_fd(pcap_t *p)
 #endif
 
 void
-pcap_perror(pcap_t *p, char *prefix)
+pcap_perror(pcap_t *p, const char *prefix)
 {
 	fprintf(stderr, "%s: %s\n", prefix, p->errbuf);
 }
