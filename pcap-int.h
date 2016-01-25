@@ -469,16 +469,20 @@ int	pcap_check_activated(pcap_t *);
  */
 int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
 int	pcap_platform_finddevs(pcap_if_t **, char *);
-int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
-	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
-	    struct sockaddr *, size_t, char *);
+int	add_addr_to_iflist(pcap_if_t **, const char *, bpf_u_int32,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
 int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
-int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
+int	pcap_add_if(pcap_if_t **, const char *, bpf_u_int32, const char *,
+	    char *);
 struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
-int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
+int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, bpf_u_int32,
 	    const char *, char *);
+#ifndef _WIN32
+bpf_u_int32 if_flags_to_pcap_flags(const char *, u_int);
+#endif
 
 /*
  * Internal interfaces for "pcap_open_offline()".

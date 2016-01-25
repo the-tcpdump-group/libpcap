@@ -255,7 +255,8 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifa->ifa_name,
-		    ifa->ifa_flags, addr, addr_size, netmask, addr_size,
+		    if_flags_to_pcap_flags(ifa->ifa_name, ifa->ifa_flags),
+		    addr, addr_size, netmask, addr_size,
 		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
 		    errbuf) < 0) {
 			ret = -1;
