@@ -2448,8 +2448,9 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	struct slist *sjset_data_frame_1;
 	struct slist *sjset_data_frame_2;
 	struct slist *sjset_qos;
-	struct slist *sjset_radiotap_flags;
-	struct slist *sjset_radiotap_tsft;
+	struct slist *sjset_radiotap_flags_present;
+	struct slist *sjset_radiotap_ext_present;
+	struct slist *sjset_radiotap_tsft_present;
 	struct slist *sjset_tsft_datapad, *sjset_notsft_datapad;
 	struct slist *s_roundup;
 
@@ -2565,32 +2566,54 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 	 * little-endian, so we byte-swap all of the values
 	 * we test against, as they will be loaded as big-endian
 	 * values.
+	 *
+	 * XXX - in the general case, we would have to scan through
+	 * *all* the presence bits, if there's more than one word of
+	 * presence bits.  That would require a loop, meaning that
+	 * we wouldn't be able to run the filter in the kernel.
+	 *
+	 * We assume here that the Atheros adapters that insert the
+	 * annoying padding don't have multiple antennae and therefore
+	 * do not generate radiotap headers with multiple presence words.
 	 */
 	if (linktype == DLT_IEEE802_11_RADIO) {
 		/*
 		 * Is the IEEE80211_RADIOTAP_FLAGS bit (0x0000002) set
-		 * in the presence flag?
+		 * in the first presence flag word?
 		 */
 		sjset_qos->s.jf = s2 = new_stmt(BPF_LD|BPF_ABS|BPF_W);
 		s2->s.k = 4;
 		sappend(s, s2);
 
-		sjset_radiotap_flags = new_stmt(JMP(BPF_JSET));
-		sjset_radiotap_flags->s.k = SWAPLONG(0x00000002);
-		sappend(s, sjset_radiotap_flags);
+		sjset_radiotap_flags_present = new_stmt(JMP(BPF_JSET));
+		sjset_radiotap_flags_present->s.k = SWAPLONG(0x00000002);
+		sappend(s, sjset_radiotap_flags_present);
 
 		/*
 		 * If not, skip all of this.
 		 */
-		sjset_radiotap_flags->s.jf = snext;
+		sjset_radiotap_flags_present->s.jf = snext;
+
+		/*
+		 * Otherwise, is the "extension" bit set in that word?
+		 */
+		sjset_radiotap_ext_present = new_stmt(JMP(BPF_JSET));
+		sjset_radiotap_ext_present->s.k = SWAPLONG(0x80000000);
+		sappend(s, sjset_radiotap_ext_present);
+		sjset_radiotap_flags_present->s.jt = sjset_radiotap_ext_present;
+
+		/*
+		 * If so, skip all of this.
+		 */
+		sjset_radiotap_ext_present->s.jt = snext;
 
 		/*
 		 * Otherwise, is the IEEE80211_RADIOTAP_TSFT bit set?
 		 */
-		sjset_radiotap_tsft = sjset_radiotap_flags->s.jt =
-		    new_stmt(JMP(BPF_JSET));
-		sjset_radiotap_tsft->s.k = SWAPLONG(0x00000001);
-		sappend(s, sjset_radiotap_tsft);
+		sjset_radiotap_tsft_present = new_stmt(JMP(BPF_JSET));
+		sjset_radiotap_tsft_present->s.k = SWAPLONG(0x00000001);
+		sappend(s, sjset_radiotap_tsft_present);
+		sjset_radiotap_ext_present->s.jf = sjset_radiotap_tsft_present;
 
 		/*
 		 * If IEEE80211_RADIOTAP_TSFT is set, the flags field is
@@ -2601,9 +2624,10 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 		 * Test whether the IEEE80211_RADIOTAP_F_DATAPAD bit (0x20)
 		 * is set.
 		 */
-		sjset_radiotap_tsft->s.jt = s2 = new_stmt(BPF_LD|BPF_ABS|BPF_B);
+		s2 = new_stmt(BPF_LD|BPF_ABS|BPF_B);
 		s2->s.k = 16;
 		sappend(s, s2);
+		sjset_radiotap_tsft_present->s.jt = s2;
 
 		sjset_tsft_datapad = new_stmt(JMP(BPF_JSET));
 		sjset_tsft_datapad->s.k = 0x20;
@@ -2617,9 +2641,10 @@ gen_load_802_11_header_len(struct slist *s, struct slist *snext)
 		 * Test whether the IEEE80211_RADIOTAP_F_DATAPAD bit (0x20)
 		 * is set.
 		 */
-		sjset_radiotap_tsft->s.jf = s2 = new_stmt(BPF_LD|BPF_ABS|BPF_B);
+		s2 = new_stmt(BPF_LD|BPF_ABS|BPF_B);
 		s2->s.k = 8;
 		sappend(s, s2);
+		sjset_radiotap_tsft_present->s.jf = s2;
 
 		sjset_notsft_datapad = new_stmt(JMP(BPF_JSET));
 		sjset_notsft_datapad->s.k = 0x20;
