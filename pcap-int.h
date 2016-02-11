@@ -47,7 +47,6 @@ extern "C" {
    */
   #define BPF_MAJOR_VERSION
   #include <Packet32.h>
-  extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #elif defined(MSDOS)
   #include <fcntl.h>
   #include <io.h>

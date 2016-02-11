@@ -11,6 +11,11 @@
 %option reentrant
 
 /*
+ * And we need to pass the compiler state to the scanner.
+ */
+%option extra-type="compiler_state_t *"
+
+/*
  * We don't use input, so don't generate code for it.
  */
 %option noinput
@@ -294,7 +299,7 @@ portrange	return PORTRANGE;
 proto		return PROTO;
 protochain	{
 #ifdef NO_PROTOCHAIN
-		  bpf_error("%s not supported", yytext);
+		  bpf_error(yyextra, "%s not supported", yytext);
 #else
 		  return PROTOCHAIN;
 #endif
@@ -380,15 +385,15 @@ hsls		return HSLS;
 ">>"			return RSH;
 ${B}			{ yylval->e = pcap_ether_aton(((char *)yytext)+1);
 			  if (yylval->e == NULL)
-				bpf_error("malloc");
+				bpf_error(yyextra, "malloc");
 			  return AID; }
 {MAC}			{ yylval->e = pcap_ether_aton((char *)yytext);
 			  if (yylval->e == NULL)
-				bpf_error("malloc");
+				bpf_error(yyextra, "malloc");
 			  return EID; }
 {N}			{ yylval->i = stoi((char *)yytext); return NUM; }
 ({N}\.{N})|({N}\.{N}\.{N})|({N}\.{N}\.{N}\.{N})	{
-			yylval->s = sdup((char *)yytext); return HID; }
+			yylval->s = sdup(yyextra, (char *)yytext); return HID; }
 {V6}			{
 #ifdef INET6
 			  struct addrinfo hints, *res;
@@ -396,16 +401,16 @@ ${B}			{ yylval->e = pcap_ether_aton(((char *)yytext)+1);
 			  hints.ai_family = AF_INET6;
 			  hints.ai_flags = AI_NUMERICHOST;
 			  if (getaddrinfo(yytext, NULL, &hints, &res))
-				bpf_error("bogus IPv6 address %s", yytext);
+				bpf_error(yyextra, "bogus IPv6 address %s", yytext);
 			  else {
 				freeaddrinfo(res);
-				yylval->s = sdup((char *)yytext); return HID6;
+				yylval->s = sdup(yyextra, (char *)yytext); return HID6;
 			  }
 #else
-			  bpf_error("IPv6 address %s not supported", yytext);
+			  bpf_error(yyextra, "IPv6 address %s not supported", yytext);
 #endif /*INET6*/
 			}
-{B}:+({B}:+)+		{ bpf_error("bogus ethernet address %s", yytext); }
+{B}:+({B}:+)+		{ bpf_error(yyextra, "bogus ethernet address %s", yytext); }
 icmptype		{ yylval->i = 0; return NUM; }
 icmpcode		{ yylval->i = 1; return NUM; }
 icmp-echoreply		{ yylval->i = 0; return NUM; }
@@ -431,11 +436,11 @@ tcp-push		{ yylval->i = 0x08; return NUM; }
 tcp-ack			{ yylval->i = 0x10; return NUM; }
 tcp-urg			{ yylval->i = 0x20; return NUM; }
 [A-Za-z0-9]([-_.A-Za-z0-9]*[.A-Za-z0-9])? {
-			 yylval->s = sdup((char *)yytext); return ID; }
-"\\"[^ !()\n\t]+	{ yylval->s = sdup((char *)yytext + 1); return ID; }
+			 yylval->s = sdup(yyextra, (char *)yytext); return ID; }
+"\\"[^ !()\n\t]+	{ yylval->s = sdup(yyextra, (char *)yytext + 1); return ID; }
 [^ \[\]\t\n\-_.A-Za-z0-9!<>()&|=]+ {
-			bpf_error("illegal token: %s", yytext); }
-.			{ bpf_error("illegal char '%c'", *yytext); }
+			bpf_error(yyextra, "illegal token: %s", yytext); }
+.			{ bpf_error(yyextra, "illegal char '%c'", *yytext); }
 %%
 
 /* Hex digit to integer. */

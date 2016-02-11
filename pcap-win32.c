@@ -81,19 +81,12 @@ struct pcap_win {
 #endif
 };
 
-CRITICAL_SECTION g_PcapCompileCriticalSection;
-
 BOOL WINAPI DllMain(
   HANDLE hinstDLL,
   DWORD dwReason,
   LPVOID lpvReserved
 )
 {
-	if (dwReason == DLL_PROCESS_ATTACH)
-	{
-		InitializeCriticalSection(&g_PcapCompileCriticalSection);
-	}
-
 	return (TRUE);
 }
 
@@ -112,7 +105,6 @@ wsockinit(void)
 	wVersionRequested = MAKEWORD( 1, 1);
 	err = WSAStartup( wVersionRequested, &wsaData );
 	atexit ((void(*)(void))WSACleanup);
-	InitializeCriticalSection(&g_PcapCompileCriticalSection);
 	done = 1;
 
 	if ( err != 0 )

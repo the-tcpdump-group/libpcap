@@ -425,7 +425,7 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 	u_int node, area;
 
 	if (sscanf(s, "%d.%d", &area, &node) != 2)
-		bpf_error("malformed decnet address '%s'", s);
+		return(0);
 
 	*addr = (area << AREASHIFT) & AREAMASK;
 	*addr |= (node & NODEMASK);
@@ -529,8 +529,8 @@ pcap_ether_hostton(const char *name)
 }
 #endif
 
-u_short
-__pcap_nametodnaddr(const char *name)
+int
+__pcap_nametodnaddr(const char *name, u_short *res)
 {
 #ifdef	DECNETLIB
 	struct nodeent *getnodebyname();
@@ -539,13 +539,11 @@ __pcap_nametodnaddr(const char *name)
 
 	nep = getnodebyname(name);
 	if (nep == ((struct nodeent *)0))
-		bpf_error("unknown decnet host name '%s'\n", name);
+		return(0);
 
-	memcpy((char *)&res, (char *)nep->n_addr, sizeof(unsigned short));
-	return(res);
+	memcpy((char *)res, (char *)nep->n_addr, sizeof(unsigned short));
+	return(1);
 #else
-	bpf_error("decnet name support not included, '%s' cannot be translated\n",
-		name);
 	return(0);
 #endif
 }
