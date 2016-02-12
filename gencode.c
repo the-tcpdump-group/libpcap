@@ -553,8 +553,10 @@ initchunks(compiler_state_t *cstate)
 {
 	int i;
 
-	for (i = 0; i < NCHUNKS; i++)
+	for (i = 0; i < NCHUNKS; i++) {
+		cstate->chunks[i].n_left = 0;
 		cstate->chunks[i].m = NULL;
+	}
 	cstate->cur_chunk = 0;
 }
 
