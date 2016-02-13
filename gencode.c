@@ -7892,7 +7892,7 @@ gen_ahostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 
 #if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
 static struct block *
-gen_vlan_bpf_extensions(int vlan_num)
+gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
 {
         struct block *b0, *b1;
         struct slist *s;
@@ -8012,12 +8012,12 @@ gen_vlan(compiler_state_t *cstate, int vlan_num)
 		 * not encapsulated somehow. */
 		if (cstate->vlan_stack_depth == 0 && !cstate->off_linkhdr.is_variable &&
 		    cstate->off_linkhdr.constant_part ==
-		    off_outermostlinkhdr.constant_part) {
+		    cstate->off_outermostlinkhdr.constant_part) {
 			/*
 			 * Do we need special VLAN handling?
 			 */
 			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
-				b0 = gen_vlan_bpf_extensions(vlan_num);
+				b0 = gen_vlan_bpf_extensions(cstate, vlan_num);
 			else
 				b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
 		} else
