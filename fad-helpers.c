@@ -117,7 +117,7 @@ if_flags_to_pcap_flags(const char *name _U_, u_int if_flags)
 }
 #endif
 	
-struct sockaddr *
+static struct sockaddr *
 dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 {
 	struct sockaddr *newsa;
