@@ -3386,9 +3386,10 @@ gen_linktype(compiler_state_t *cstate, int proto)
 	case DLT_LINUX_LAPD:
 		bpf_error(cstate, "LAPD link-layer type filtering not implemented");
 
-	case DLT_USB:
+	case DLT_USB_FREEBSD:
 	case DLT_USB_LINUX:
 	case DLT_USB_LINUX_MMAPPED:
+	case DLT_USBPCAP:
 		bpf_error(cstate, "USB link-layer type filtering not implemented");
 
 	case DLT_BLUETOOTH_HCI_H4:

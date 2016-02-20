@@ -645,10 +645,18 @@
 #define DLT_A653_ICM            185
 
 /*
- * USB packets, beginning with a USB setup header; requested by
- * Paolo Abeni <paolo.abeni@email.it>.
+ * This used to be "USB packets, beginning with a USB setup header;
+ * requested by Paolo Abeni <paolo.abeni@email.it>."
+ *
+ * However, that header didn't work all that well - it left out some
+ * useful information - and was abandoned in favor of the DLT_USB_LINUX
+ * header.
+ *
+ * This is now used by FreeBSD for its BPF taps for USB; that has its
+ * own headers.  So it is written, so it is done.
  */
-#define DLT_USB			186
+#define DLT_USB_FREEBSD		186
+#define DLT_USB			DLT_USB_FREEBSD	/* source compatibility */
 
 /*
  * Bluetooth HCI UART transport layer (part H:4); requested by
