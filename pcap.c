@@ -1922,12 +1922,11 @@ pcap_do_addexit(pcap_t *p)
 	 * "pcap_close_all()" called when we exit.
 	 */
 	if (!did_atexit) {
-		if (atexit(pcap_close_all) == -1) {
+		if (atexit(pcap_close_all) != 0) {
 			/*
 			 * "atexit()" failed; let our caller know.
 			 */
-			strncpy(p->errbuf, "atexit failed",
-			    PCAP_ERRBUF_SIZE);
+			strlcpy(p->errbuf, "atexit failed", PCAP_ERRBUF_SIZE);
 			return (0);
 		}
 		did_atexit = 1;

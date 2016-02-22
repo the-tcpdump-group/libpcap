@@ -925,8 +925,6 @@ added:
 		 * "atexit()" failed; don't put the interface
 		 * in rfmon mode, just give up.
 		 */
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: atexit failed", device);
 		del_mon_if(handle, sock_fd, &nlstate, device,
 		    handlep->mondevice);
 		nl80211_cleanup(&nlstate);
