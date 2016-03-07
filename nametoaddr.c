@@ -535,7 +535,6 @@ __pcap_nametodnaddr(const char *name, u_short *res)
 #ifdef	DECNETLIB
 	struct nodeent *getnodebyname();
 	struct nodeent *nep;
-	unsigned short res;
 
 	nep = getnodebyname(name);
 	if (nep == ((struct nodeent *)0))
