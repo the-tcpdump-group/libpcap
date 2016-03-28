@@ -145,6 +145,7 @@ set(PROJECT_SOURCE_LIST_C
     bpf_dump.c
     bpf_image.c
     etherent.c
+    fad-helpers.c
     gencode.c
     inet.c
     nametoaddr.c
@@ -155,7 +156,6 @@ set(PROJECT_SOURCE_LIST_C
     sf-pcap-ng.c
     sf-pcap.c
     bpf/net/bpf_filter.c
-    fad-helpers.c
 )
 
 if( WIN32 )
