@@ -155,6 +155,7 @@ set(PROJECT_SOURCE_LIST_C
     sf-pcap-ng.c
     sf-pcap.c
     bpf/net/bpf_filter.c
+    fad-helpers.c
 )
 
 if( WIN32 )
