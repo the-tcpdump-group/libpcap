@@ -144,28 +144,25 @@ delete_pcap_dag(pcap_t *p)
 static void
 dag_platform_cleanup(pcap_t *p)
 {
-	struct pcap_dag *pd;
+	struct pcap_dag *pd = p->pr;
 
-	if (p != NULL) {
-		pd = p->priv;
 #ifdef HAVE_DAG_STREAMS_API
-		if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
-			fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
+	if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
+		fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
 
-		if(dag_detach_stream(p->fd, pd->dag_stream) < 0)
-			fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
+	if(dag_detach_stream(p->fd, pd->dag_stream) < 0)
+		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
 #else
-		if(dag_stop(p->fd) < 0)
-			fprintf(stderr,"dag_stop: %s\n", strerror(errno));
+	if(dag_stop(p->fd) < 0)
+		fprintf(stderr,"dag_stop: %s\n", strerror(errno));
 #endif /* HAVE_DAG_STREAMS_API */
-		if(p->fd != -1) {
-			if(dag_close(p->fd) < 0)
-				fprintf(stderr,"dag_close: %s\n", strerror(errno));
-			p->fd = -1;
-		}
-		delete_pcap_dag(p);
-		pcap_cleanup_live_common(p);
+	if(p->fd != -1) {
+		if(dag_close(p->fd) < 0)
+			fprintf(stderr,"dag_close: %s\n", strerror(errno));
+		p->fd = -1;
 	}
+	delete_pcap_dag(p);
+	pcap_cleanup_live_common(p);
 	/* Note: don't need to call close(p->fd) here as dag_close(p->fd) does this. */
 }
 
@@ -174,7 +171,8 @@ atexit_handler(void)
 {
 	while (pcap_dags != NULL) {
 		if (pcap_dags->pid == getpid()) {
-			dag_platform_cleanup(pcap_dags->p);
+			if (pcap_dags->p != NULL)
+				dag_platform_cleanup(pcap_dags->p);
 		} else {
 			delete_pcap_dag(pcap_dags->p);
 		}

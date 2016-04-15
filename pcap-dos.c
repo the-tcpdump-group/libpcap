@@ -451,7 +451,7 @@ static void pcap_cleanup_dos (pcap_t *p)
 {
   struct pcap_dos *pd;
 
-  if (p && !exc_occured)
+  if (!exc_occured)
   {
     pd = p->priv;
     if (pcap_stats(p,NULL) < 0)
@@ -783,7 +783,7 @@ static void exc_handler (int sig)
          fprintf (stderr, "Catching signal %d.\n", sig);
   }
   exc_occured = 1;
-  pcap_cleanup_dos (NULL);
+  close_driver();
 }
 #endif  /* __DJGPP__ */
 
