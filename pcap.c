@@ -503,6 +503,26 @@ struct pcap_if_list {
 	pcap_if_t *beginning;
 };
 
+const u_char *
+pcap_next_with_file_offset(pcap_t *p, struct pcap_pkthdr *pkt_header,
+                           long *file_offset)
+{
+    const u_char *ret = pcap_next(p, pkt_header);
+
+    *file_offset = p->lastpkt_offset;
+    return ret;
+}
+
+int
+pcap_next_ex_with_file_offset(pcap_t *p, struct pcap_pkthdr **pkt_header,
+                              const u_char **pkt_data, long *file_offset)
+{
+    int ret = pcap_next_ex(p, pkt_header, pkt_data);
+
+    *file_offset = p->lastpkt_offset;
+    return ret;
+}
+
 static struct capture_source_type {
 	int (*findalldevs_op)(pcap_if_list_t *, char *);
 	pcap_t *(*create_op)(const char *, char *, int *);
