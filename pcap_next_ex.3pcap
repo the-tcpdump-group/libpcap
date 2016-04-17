@@ -19,7 +19,7 @@
 .\"
 .TH PCAP_NEXT_EX 3PCAP "25 July 2018"
 .SH NAME
-pcap_next_ex, pcap_next_ex_with_sf_offset, pcap_next_with_sf_offset
+pcap_next_ex, pcap_next, pcap_next_ex_with_sf_offset, pcap_next_with_sf_offset
 \- read the next packet from a pcap_t
 .SH SYNOPSIS
 .nf
