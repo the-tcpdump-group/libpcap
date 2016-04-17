@@ -444,9 +444,9 @@ PCAP_API int	pcap_loop(pcap_t *, int, pcap_handler, u_char *);
 PCAP_API int	pcap_dispatch(pcap_t *, int, pcap_handler, u_char *);
 PCAP_API const u_char *pcap_next(pcap_t *, struct pcap_pkthdr *);
 PCAP_API int 	pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const u_char **);
-PCAP_API const u_char *pcap_next_with_file_offset(pcap_t *, struct pcap_pkthdr *,
+PCAP_API const u_char *pcap_next_with_sf_offset(pcap_t *, struct pcap_pkthdr *,
         long *);
-PCAP_API int 	pcap_next_ex_with_file_offset(pcap_t *, struct pcap_pkthdr **,
+PCAP_API int 	pcap_next_ex_with_sf_offset(pcap_t *, struct pcap_pkthdr **,
         const u_char **, long *);
 PCAP_API void	pcap_breakloop(pcap_t *);
 PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *);

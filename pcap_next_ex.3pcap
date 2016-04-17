@@ -19,7 +19,8 @@
 .\"
 .TH PCAP_NEXT_EX 3PCAP "25 July 2018"
 .SH NAME
-pcap_next_ex, pcap_next \- read the next packet from a pcap_t
+pcap_next_ex, pcap_next_ex_with_sf_offset, pcap_next_with_sf_offset
+\- read the next packet from a pcap_t
 .SH SYNOPSIS
 .nf
 .ft B
@@ -31,6 +32,14 @@ int pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 .ti +8
 const u_char **pkt_data);
 const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h);
+.LP
+.ft B
+int pcap_next_ex_with_sf_offset(pcap_t *p, struct pcap_pkthdr **pkt_header,
+.ti +8
+const u_char **pkt_data, long *sf_offset);
+const u_char *pcap_next_with_sf_offset(pcap_t *p, struct pcap_pkthdr *h,
+.ti +8
+long *sf_offset);
 .ft
 .fi
 .SH DESCRIPTION
@@ -49,6 +58,8 @@ and the packet data are not to be freed by the caller, and are not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
 .BR pcap_next() ,
+.BR pcap_next_ex_with_sf_offset() ,
+.BR pcap_next_with_sf_offset() ,
 .BR pcap_loop (3PCAP),
 or
 .BR pcap_dispatch (3PCAP);
@@ -66,6 +77,8 @@ packet data is not to be freed by the caller, and is not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
 .BR pcap_next() ,
+.BR pcap_next_ex_with_sf_offset() ,
+.BR pcap_next_with_sf_offset() ,
 .BR pcap_loop() ,
 or
 .BR pcap_dispatch() ;
@@ -75,6 +88,19 @@ The
 structure pointed to by
 .I h
 is filled in with the appropriate values for the packet.
+.PP
+.B pcap_next_with_sf_offset()
+and
+.B pcap_next_ex_with_sf_offset()
+are the same as
+.B pcap_next()
+and
+.B pcap_next_ex()
+except that they take an additional
+.I sf_offset
+pointer argument. The pointed variable will be set to the extracted
+packet's ``savefile`` offset. If the packets are being read from a live capture, the
+pointed variable will be set to -1.
 .PP
 The bytes of data from the packet begin with a link-layer header.  The
 format of the link-layer header is indicated by the return value of the
@@ -112,8 +138,10 @@ have some other data link type, such as
 for Ethernet.
 .SH RETURN VALUE
 .B pcap_next_ex()
-returns 1 if the packet was read without problems, 0 if packets are
-being read from a live capture and the packet buffer timeout expired,
+and
+.B pcap_next_ex_with_sf_offset()
+both return 1 if the packet was read without problems, 0
+if packets are being read from a live capture and the timeout expired,
 .B PCAP_ERROR
 if an error occurred while reading the packet, and
 .B PCAP_ERROR_BREAK
@@ -130,7 +158,9 @@ may be called with
 as an argument to fetch or display the error text.
 .PP
 .B pcap_next()
-returns a pointer to the packet data on success, and returns
+and
+.B pcap_next_with_sf_offset()
+both return a pointer to the packet data on success, and returns
 .B NULL
 if an error occurred, or if no packets were read from a live capture
 (if, for example, they were discarded because they didn't pass the

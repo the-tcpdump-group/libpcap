@@ -416,6 +416,9 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	}
 
 	p->cleanup_op = sf_cleanup;
+    /*
+     * If savefile, initialize current_offset to pcap file's body
+     */
     p->current_offset = sizeof(struct pcap_file_header);
 	return (p);
 }
@@ -715,9 +718,16 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	if (p->swapped)
 		swap_pseudo_headers(p->linktype, hdr, *data);
 
-    p->current_offset += ps->hdrsize;
-    p->lastpkt_offset = p->current_offset;
-    p->current_offset += hdr->caplen;
+    if (p->rfile != NULL) {
+        /*
+         * If savefile:
+         * - we set lastpkt_offset to the offset of the packet we just read
+         * - we set the current_offset to the end of this packet
+         */
+        p->current_offset += ps->hdrsize;
+        p->lastpkt_offset = p->current_offset;
+        p->current_offset += hdr->caplen;
+    }
 	return (0);
 }
 
