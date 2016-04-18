@@ -510,7 +510,7 @@ pcap_next_with_file_offset(pcap_t *p, struct pcap_pkthdr *pkt_header,
     const u_char *ret = pcap_next(p, pkt_header);
 
     // sf_offset is set to -1 if live capture
-    *sf_offset = (p->rfile != NULL ? p->lastpkt_offset : -1);
+    *file_offset = (p->rfile != NULL ? p->lastpkt_offset : -1);
     return ret;
 }
 
@@ -518,11 +518,11 @@ int
 pcap_next_ex_with_file_offset(pcap_t *p, struct pcap_pkthdr **pkt_header,
                               const u_char **pkt_data, long *file_offset)
 {
-    int ret = pcap_next_ex(p, pkt_header, pkt_data);
+	int ret = pcap_next_ex(p, pkt_header, pkt_data);
 
-    // sf_offset is set to -1 if live capture
-    *sf_offset = (p->rfile != NULL ? p->lastpkt_offset : -1);
-    return ret;
+	// sf_offset is set to -1 if live capture
+	*file_offset = (p->rfile != NULL ? p->lastpkt_offset : -1);
+	return ret;
 }
 
 static struct capture_source_type {

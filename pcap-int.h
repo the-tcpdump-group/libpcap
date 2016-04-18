@@ -201,8 +201,8 @@ struct pcap {
 	int activated;		/* true if the capture is really started */
 	int oldstyle;		/* if we're opening with pcap_open_live() */
 
-    long lastpkt_offset;    /* last packet offset in save file */
-    long current_offset;    /* current offset in save file */
+	long lastpkt_offset;    /* last packet offset in save file */
+	long current_offset;    /* current offset in save file */
 
 	struct pcap_opt opt;
 

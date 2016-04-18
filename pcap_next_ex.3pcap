@@ -19,7 +19,7 @@
 .\"
 .TH PCAP_NEXT_EX 3PCAP "25 July 2018"
 .SH NAME
-pcap_next_ex, pcap_next, pcap_next_ex_with_sf_offset, pcap_next_with_sf_offset
+pcap_next_ex, pcap_next_ex_with_sf_offset, pcap_next
 \- read the next packet from a pcap_t
 .SH SYNOPSIS
 .nf
@@ -31,15 +31,14 @@ pcap_next_ex, pcap_next, pcap_next_ex_with_sf_offset, pcap_next_with_sf_offset
 int pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 .ti +8
 const u_char **pkt_data);
-const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h);
-.LP
 .ft B
 int pcap_next_ex_with_sf_offset(pcap_t *p, struct pcap_pkthdr **pkt_header,
 .ti +8
 const u_char **pkt_data, long *sf_offset);
-const u_char *pcap_next_with_sf_offset(pcap_t *p, struct pcap_pkthdr *h,
-.ti +8
-long *sf_offset);
+.BR
+.ft B
+const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h);
+.LP
 .ft
 .fi
 .SH DESCRIPTION
@@ -57,9 +56,8 @@ argument is set to point to the data in the packet.  The
 and the packet data are not to be freed by the caller, and are not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
-.BR pcap_next() ,
 .BR pcap_next_ex_with_sf_offset() ,
-.BR pcap_next_with_sf_offset() ,
+.BR pcap_next() ,
 .BR pcap_loop (3PCAP),
 or
 .BR pcap_dispatch (3PCAP);
@@ -76,9 +74,8 @@ pointer to the data in that packet.  The
 packet data is not to be freed by the caller, and is not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
-.BR pcap_next() ,
 .BR pcap_next_ex_with_sf_offset() ,
-.BR pcap_next_with_sf_offset() ,
+.BR pcap_next() ,
 .BR pcap_loop() ,
 or
 .BR pcap_dispatch() ;
@@ -89,14 +86,10 @@ structure pointed to by
 .I h
 is filled in with the appropriate values for the packet.
 .PP
-.B pcap_next_with_sf_offset()
-and
 .B pcap_next_ex_with_sf_offset()
-are the same as
-.B pcap_next()
-and
+is the same as
 .B pcap_next_ex()
-except that they take an additional
+except that it takes an additional
 .I sf_offset
 pointer argument. The pointed variable will be set to the extracted
 packet's ``savefile`` offset. If the packets are being read from a live capture, the
@@ -158,9 +151,7 @@ may be called with
 as an argument to fetch or display the error text.
 .PP
 .B pcap_next()
-and
-.B pcap_next_with_sf_offset()
-both return a pointer to the packet data on success, and returns
+returns a pointer to the packet data on success, and returns
 .B NULL
 if an error occurred, or if no packets were read from a live capture
 (if, for example, they were discarded because they didn't pass the
