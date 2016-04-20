@@ -23,7 +23,7 @@ endif( WIN32 )
 add_definitions( -DHAVE_CONFIG_H )
 
 include_directories(
-    ${CMAKE_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${pcap_SOURCE_DIR}
 )
 
@@ -119,6 +119,9 @@ check_function_exists( vsnprintf HAVE_VSNPRINTF )
 # so we use check_struct_has_member() and look for ss_family.
 #
 check_struct_has_member("struct sockaddr_storage" ss_family sys/socket.h  HAVE_SOCKADDR_STORAGE)
+set(CMAKE_EXTRA_INCLUDE_FILES unistd.h sys/socket.h)
+check_type_size("socklen_t" SOCKLEN_T)
+set(CMAKE_EXTRA_INCLUDE_FILES unistd.h)
 
 #
 # Structure fields.
@@ -297,7 +300,7 @@ else()
                 # or some older version of Solaris, with
                 # just SIOCGIFCONF.
                 #
-                try_compile( HAVE_SIOCGLIFCONF ${CMAKE_BINARY_DIR} "${pcap_SOURCE_DIR}/config/have_siocglifconf.c"  )
+                try_compile( HAVE_SIOCGLIFCONF ${CMAKE_CURRENT_BINARY_DIR} "${pcap_SOURCE_DIR}/config/have_siocglifconf.c"  )
                 message( STATUS "HAVE_SIOCGLIFCONF = ${HAVE_SIOCGLIFCONF}" )
                 if( HAVE_SIOCGLIFCONF )
                     set( FINDALLDEVS_TYPE glifc )
@@ -348,9 +351,9 @@ endif()
 message(STATUS "Lexical analyzer generator: ${LEX_EXECUTABLE}")
 
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/scanner.c ${CMAKE_BINARY_DIR}/scanner.h
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/scanner.c ${CMAKE_CURRENT_BINARY_DIR}/scanner.h
     SOURCE ${pcap_SOURCE_DIR}/scanner.l
-    COMMAND ${LEX_EXECUTABLE} -P pcap_ --header-file=scanner.h --nounput -o${CMAKE_BINARY_DIR}/scanner.c ${pcap_SOURCE_DIR}/scanner.l
+    COMMAND ${LEX_EXECUTABLE} -P pcap_ --header-file=scanner.h --nounput -o${CMAKE_CURRENT_BINARY_DIR}/scanner.c ${pcap_SOURCE_DIR}/scanner.l
     DEPENDS ${pcap_SOURCE_DIR}/scanner.l
 )
 
@@ -360,15 +363,15 @@ add_custom_command(
 #
 # Since scanner.c includes grammar.h, mark that as a dependency.
 #
-set_source_files_properties(${CMAKE_BINARY_DIR}/scanner.c PROPERTIES
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/scanner.c PROPERTIES
     GENERATED TRUE
-    OBJECT_DEPENDS ${CMAKE_BINARY_DIR}/scanner.h
+    OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/scanner.h
 )
 
 #
 # Add scanner.c to the list of sources.
 #
-#set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_BINARY_DIR}/scanner.c)
+#set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/scanner.c)
 
 #
 # Try to find YACC or Bison.
@@ -389,9 +392,9 @@ if( "${YACC_NAME}" STREQUAL "bison" OR "${YACC_NAME}" STREQUAL "win_bison" )
     set( YACC_COMPATIBILITY_FLAG "-y" )
 endif()
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/grammar.c ${CMAKE_BINARY_DIR}/grammar.h
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/grammar.c ${CMAKE_CURRENT_BINARY_DIR}/grammar.h
     SOURCE ${pcap_SOURCE_DIR}/grammar.y
-    COMMAND ${YACC_EXECUTABLE} ${YACC_COMPATIBILITY_FLAG} -p pcap_ -o ${CMAKE_BINARY_DIR}/grammar.c -d ${pcap_SOURCE_DIR}/grammar.y
+    COMMAND ${YACC_EXECUTABLE} ${YACC_COMPATIBILITY_FLAG} -p pcap_ -o ${CMAKE_CURRENT_BINARY_DIR}/grammar.c -d ${pcap_SOURCE_DIR}/grammar.y
     DEPENDS ${pcap_SOURCE_DIR}/grammar.y
 )
 
@@ -399,14 +402,14 @@ add_custom_command(
 # Since grammar.c does not exists yet when cmake is run, mark
 # it as generated.
 #
-set_source_files_properties(${CMAKE_BINARY_DIR}/grammar.c PROPERTIES
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
     GENERATED TRUE
 )
 
 #
 # Add grammar.c to the list of sources.
 #
-#set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_BINARY_DIR}/grammar.c)
+#set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
@@ -417,8 +420,8 @@ source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 
 add_library(${PROJECT_NAME}
     ${PROJECT_SOURCE_LIST_C}
-    ${CMAKE_BINARY_DIR}/grammar.c
-    ${CMAKE_BINARY_DIR}/scanner.c
+    ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
+    ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
     ${PROJECT_SOURCE_LIST_H}
 )
 
@@ -433,4 +436,4 @@ endif( WIN32 )
 # Write out the config.h file
 ######################################
 
-configure_file(${CMAKE_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_BINARY_DIR}/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
