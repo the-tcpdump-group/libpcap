@@ -4203,12 +4203,20 @@ create_ring(pcap_t *handle, int *status)
 				return -1;
 
 			case EOPNOTSUPP:
+			case ERANGE:
 				/*
 				 * Treat this as a warning, as the
 				 * only way to fix the warning is to
 				 * get an adapter that supports hardware
-				 * time stamps.  We'll just fall back
-				 * on the standard host time stamps.
+				 * time stamps for *all* packets.
+				 * (ERANGE means "we support hardware
+				 * time stamps, but for packets matching
+				 * that particular filter", so it means
+				 * "we don't support hardware time stamps
+				 * for all incoming packets" here.)
+				 *
+				 * We'll just fall back on the standard
+				 * host time stamps.
 				 */
 				*status = PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
 				break;
@@ -5986,8 +5994,11 @@ static const struct {
 };
 #define NUM_SOF_TIMESTAMPING_TYPES	(sizeof sof_ts_type_map / sizeof sof_ts_type_map[0])
 
+/*
+ * Set the list of time stamping types to include all types.
+ */
 static void
-iface_set_default_ts_types(pcap_t *handle)
+iface_set_all_ts_types(pcap_t *handle)
 {
 	int i;
 
@@ -6011,12 +6022,14 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	int i, j;
 
 	/*
-	 * This doesn't apply to the "any" device; you have to ask
-	 * specific devices for their capabilities, so just default
-	 * to saying we support all of them.
+	 * This doesn't apply to the "any" device; you can't say "turn on
+	 * hardware time stamping for all devices that exist now and arrange
+	 * that it be turned on for any device that appears in the future",
+	 * and not all devices even necessarily *support* hardware time
+	 * stamping, so don't report any time stamp types.
 	 */
 	if (strcmp(handle->opt.source, "any") == 0) {
-		iface_set_default_ts_types(handle);
+		handle->tstamp_type_list = NULL;
 		return 0;
 	}
 
@@ -6039,10 +6052,11 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 		close(fd);
 		if (errno == EOPNOTSUPP || errno == EINVAL) {
 			/*
-			 * OK, let's just return all the possible time
-			 * stamping types.
+			 * OK, this OS version or driver doesn't support
+			 * asking for the time stamping types, so let's
+			 * just return all the possible types.
 			 */
-			iface_set_default_ts_types(handle);
+			iface_set_all_ts_types(handle);
 			return 0;
 		}
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
@@ -6051,6 +6065,23 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 		return -1;
 	}
 	close(fd);
+
+	/*
+	 * Do we support hardware time stamping of *all* packets?
+	 */
+	if (!(info.rx_filters & (1 << HWTSTAMP_FILTER_ALL))) {
+		/*
+		 * No, so don't report any time stamp types.
+		 *
+		 * XXX - some devices either don't report
+		 * HWTSTAMP_FILTER_ALL when they do support it, or
+		 * report HWTSTAMP_FILTER_ALL but map it to only
+		 * time stamping a few PTP packets.  See
+		 * http://marc.info/?l=linux-netdev&m=146318183529571&w=2
+		 */
+		handle->tstamp_type_list = NULL;
+		return 0;
+	}
 
 	num_ts_types = 0;
 	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
@@ -6076,10 +6107,22 @@ static int
 iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 {
 	/*
+	 * This doesn't apply to the "any" device; you can't say "turn on
+	 * hardware time stamping for all devices that exist now and arrange
+	 * that it be turned on for any device that appears in the future",
+	 * and not all devices even necessarily *support* hardware time
+	 * stamping, so don't report any time stamp types.
+	 */
+	if (strcmp(handle->opt.source, "any") == 0) {
+		handle->tstamp_type_list = NULL;
+		return 0;
+	}
+
+	/*
 	 * We don't have an ioctl to use to ask what's supported,
 	 * so say we support everything.
 	 */
-	iface_set_default_ts_types(handle);
+	iface_set_all_ts_types(handle);
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */
