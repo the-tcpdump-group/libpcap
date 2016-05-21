@@ -780,6 +780,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		return (1);
 	}
 	free(bdl.bfl_list);
+	close(fd);
 #endif /* BIOCGDLTLIST */
 	return (0);
 #elif defined(HAVE_BSD_IEEE80211)
