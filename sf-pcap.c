@@ -749,6 +749,24 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 
 	f = (FILE *)user;
 	/*
+	 * If the output file handle is in an error state, don't write
+	 * anything.
+	 *
+	 * While in principle a file handle can return from an error state
+	 * to a normal state (for example if a disk that is full has space
+	 * freed), we have possibly left a broken file already, and won't
+	 * be able to clean it up. The safest option is to do nothing.
+	 *
+	 * Note that if we could guarantee that fwrite() was atomic we
+	 * might be able to insure that we don't produce a corrupted file,
+	 * but the standard defines fwrite() as a series of fputc() calls,
+	 * so we really have no insurance that things are not fubared.
+	 *
+	 * http://pubs.opengroup.org/onlinepubs/009695399/functions/fwrite.html
+	 */
+	if (ferror(f))
+		return;
+	/*
 	 * Better not try writing pcap files after
 	 * 2038-01-19 03:14:07 UTC; switch to pcapng.
 	 */
@@ -756,9 +774,17 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	sf_hdr.ts.tv_usec = (bpf_int32)h->ts.tv_usec;
 	sf_hdr.caplen     = h->caplen;
 	sf_hdr.len        = h->len;
-	/* XXX we should check the return status */
-	(void)fwrite(&sf_hdr, sizeof(sf_hdr), 1, f);
-	(void)fwrite(sp, h->caplen, 1, f);
+	/*
+	 * We only write the packet if we can write the header properly.
+	 *
+	 * This doesn't prevent us from having corrupted output, and if we
+	 * for some reason don't get a complete write we don't have any
+	 * way to set ferror() to prevent future writes from being
+	 * attempted, but it is better than nothing.
+	 */
+	if (fwrite(&sf_hdr, sizeof(sf_hdr), 1, f) == 1) {
+		(void)fwrite(sp, h->caplen, 1, f);
+	}
 }
 
 static pcap_dumper_t *
