@@ -479,8 +479,8 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
   PCAP_API HANDLE pcap_getevent(pcap_t *p);
 
-  PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t);
-  PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t);
+  PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t *);
+  PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t *);
 
   PCAP_API pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
 

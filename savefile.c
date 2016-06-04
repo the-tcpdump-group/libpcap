@@ -169,7 +169,7 @@ sf_getevent(pcap_t *pcap)
 
 static int
 sf_oid_get_request(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
-    size_t len _U_)
+    size_t *len _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a file");
@@ -178,7 +178,7 @@ sf_oid_get_request(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
 
 static int
 sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
-    size_t len _U_)
+    size_t *len _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a file");
