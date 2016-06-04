@@ -254,19 +254,19 @@ pcap_getevent_win32(pcap_t *p)
 }
 
 static int
-pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *len)
+pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
 {
 	PACKET_OID_DATA *oid_data_arg;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	/*
 	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
-	 * It should be big enough to hold "len" bytes of data; it
+	 * It should be big enough to hold "*lenp" bytes of data; it
 	 * will actually be slightly larger, as PACKET_OID_DATA has a
 	 * 1-byte data array at the end, standing in for the variable-length
 	 * data that's actually there.
 	 */
-	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + *len);
+	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + *lenp);
 	if (oid_data_arg == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
@@ -277,7 +277,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *len)
 	 * No need to copy the data - we're doing a fetch.
 	 */
 	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = (ULONG)(*len);	/* XXX - check for ridiculously large value? */
+	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
 	if (!PacketRequest(p->adapter, FALSE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -289,31 +289,31 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *len)
 	/*
 	 * Get the length actually supplied.
 	 */
-	*len = oid_data_arg->Length;
+	*lenp = oid_data_arg->Length;
 
 	/*
 	 * Copy back the data we fetched.
 	 */
-	memcpy(data, oid_data_arg->Data, *len);
+	memcpy(data, oid_data_arg->Data, *lenp);
 	free(oid_data_arg);
 	return (0);
 }
 
 static int
 pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
-    size_t *len)
+    size_t *lenp)
 {
 	PACKET_OID_DATA *oid_data_arg;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	/*
 	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
-	 * It should be big enough to hold "len" bytes of data; it
+	 * It should be big enough to hold "*lenp" bytes of data; it
 	 * will actually be slightly larger, as PACKET_OID_DATA has a
 	 * 1-byte data array at the end, standing in for the variable-length
 	 * data that's actually there.
 	 */
-	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + *len);
+	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + *lenp);
 	if (oid_data_arg == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Couldn't allocate argument buffer for PacketRequest");
@@ -321,8 +321,8 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	}
 
 	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = (ULONG)(*len);	/* XXX - check for ridiculously large value? */
-	memcpy(oid_data_arg->Data, data, *len);
+	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
+	memcpy(oid_data_arg->Data, data, *lenp);
 	if (!PacketRequest(p->adapter, TRUE, oid_data_arg)) {
 		pcap_win32_err_to_str(GetLastError(), errbuf);
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -334,7 +334,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 	/*
 	 * Get the length actually copied.
 	 */
-	*len = oid_data_arg->Length;
+	*lenp = oid_data_arg->Length;
 
 	/*
 	 * No need to copy the data - we're doing a set.
