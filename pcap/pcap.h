@@ -78,11 +78,6 @@ typedef	int bpf_int32;
 typedef	u_int bpf_u_int32;
 #endif
 
-struct pcap;
-struct pcap_dumper;
-struct pcap_if;
-struct pcap_addr;
-
 typedef struct pcap pcap_t;
 typedef struct pcap_dumper pcap_dumper_t;
 typedef struct pcap_if pcap_if_t;
