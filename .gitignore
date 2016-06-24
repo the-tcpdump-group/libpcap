@@ -47,3 +47,10 @@ scanner.h
 selpolltest
 version.c
 version.h
+*.log
+*.tlog
+*.obj
+*.sdf
+*.opensdf
+*.suo
+*.pdb
