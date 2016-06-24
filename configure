@@ -8368,6 +8368,15 @@ $as_echo "#define HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1" >>confdefs.h
 	    fi
 	fi
 	;;
+    freebsd*)
+	#
+	# This just uses BPF in FreeBSD 8.4 and later; we don't need
+	# to check for anything special for capturing.
+	#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, in FreeBSD 8.4 and later" >&5
+$as_echo "yes, in FreeBSD 8.4 and later" >&6; }
+	;;
+
     *)
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }

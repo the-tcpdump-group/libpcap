@@ -47,7 +47,6 @@ extern "C" {
    */
   #define BPF_MAJOR_VERSION
   #include <Packet32.h>
-  extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #elif defined(MSDOS)
   #include <fcntl.h>
   #include <io.h>
@@ -135,8 +134,8 @@ typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
 typedef HANDLE	(*getevent_op_t)(pcap_t *);
-typedef int	(*oid_get_request_op_t)(pcap_t *, bpf_u_int32, void *, size_t);
-typedef int	(*oid_set_request_op_t)(pcap_t *, bpf_u_int32, const void *, size_t);
+typedef int	(*oid_get_request_op_t)(pcap_t *, bpf_u_int32, void *, size_t *);
+typedef int	(*oid_set_request_op_t)(pcap_t *, bpf_u_int32, const void *, size_t *);
 typedef u_int	(*sendqueue_transmit_op_t)(pcap_t *, pcap_send_queue *, int);
 typedef int	(*setuserbuffer_op_t)(pcap_t *, int);
 typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
@@ -469,16 +468,19 @@ int	pcap_check_activated(pcap_t *);
  */
 int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
 int	pcap_platform_finddevs(pcap_if_t **, char *);
-int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
-	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
-	    struct sockaddr *, size_t, char *);
+int	add_addr_to_iflist(pcap_if_t **, const char *, bpf_u_int32,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
 int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
-int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
-struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
-int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
+int	pcap_add_if(pcap_if_t **, const char *, bpf_u_int32, const char *,
+	    char *);
+int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, bpf_u_int32,
 	    const char *, char *);
+#ifndef _WIN32
+bpf_u_int32 if_flags_to_pcap_flags(const char *, u_int);
+#endif
 
 /*
  * Internal interfaces for "pcap_open_offline()".

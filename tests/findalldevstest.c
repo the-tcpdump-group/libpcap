@@ -67,12 +67,27 @@ static int ifprint(pcap_if_t *d)
 #ifdef INET6
   char ntop_buf[INET6_ADDRSTRLEN];
 #endif
+  const char *sep;
   int status = 1; /* success */
 
   printf("%s\n",d->name);
   if (d->description)
     printf("\tDescription: %s\n",d->description);
-  printf("\tLoopback: %s\n",(d->flags & PCAP_IF_LOOPBACK)?"yes":"no");
+  printf("\tFlags: ");
+  sep = "";
+  if (d->flags & PCAP_IF_UP) {
+    printf("%sUP", sep);
+    sep = ", ";
+  }
+  if (d->flags & PCAP_IF_RUNNING) {
+    printf("%sRUNNING", sep);
+    sep = ", ";
+  }
+  if (d->flags & PCAP_IF_LOOPBACK) {
+    printf("%sLOOPBACK", sep);
+    sep = ", ";
+  }
+  printf("\n");
 
   for(a=d->addresses;a;a=a->next) {
     if (a->addr != NULL)

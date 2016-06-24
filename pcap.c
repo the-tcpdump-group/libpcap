@@ -1209,7 +1209,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_JUNIPER_VP, "Juniper Voice PIC"),
 	DLT_CHOICE(DLT_A429, "Arinc 429"),
 	DLT_CHOICE(DLT_A653_ICM, "Arinc 653 Interpartition Communication"),
-	DLT_CHOICE(DLT_USB, "USB"),
+	DLT_CHOICE(DLT_USB_FREEBSD, "USB with FreeBSD header"),
 	DLT_CHOICE(DLT_BLUETOOTH_HCI_H4, "Bluetooth HCI UART transport layer"),
 	DLT_CHOICE(DLT_IEEE802_16_MAC_CPS, "IEEE 802.16 MAC Common Part Sublayer"),
 	DLT_CHOICE(DLT_USB_LINUX, "USB with Linux header"),
@@ -1418,7 +1418,7 @@ pcap_get_selectable_fd(pcap_t *p)
 #endif
 
 void
-pcap_perror(pcap_t *p, char *prefix)
+pcap_perror(pcap_t *p, const char *prefix)
 {
 	fprintf(stderr, "%s: %s\n", prefix, p->errbuf);
 }
@@ -1726,14 +1726,14 @@ pcap_getevent_dead(pcap_t *p)
 }
 
 int
-pcap_oid_get_request(pcap_t *p, bpf_u_int32 oid, void *data, size_t len)
+pcap_oid_get_request(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
 {
-	return (p->oid_get_request_op(p, oid, data, len));
+	return (p->oid_get_request_op(p, oid, data, lenp));
 }
 
 static int
 pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
-    size_t len _U_)
+    size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
@@ -1741,14 +1741,14 @@ pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
 }
 
 int
-pcap_oid_set_request(pcap_t *p, bpf_u_int32 oid, const void *data, size_t len)
+pcap_oid_set_request(pcap_t *p, bpf_u_int32 oid, const void *data, size_t *lenp)
 {
-	return (p->oid_set_request_op(p, oid, data, len));
+	return (p->oid_set_request_op(p, oid, data, lenp));
 }
 
 static int
 pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
-    size_t len _U_)
+    size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");
@@ -1922,12 +1922,11 @@ pcap_do_addexit(pcap_t *p)
 	 * "pcap_close_all()" called when we exit.
 	 */
 	if (!did_atexit) {
-		if (atexit(pcap_close_all) == -1) {
+		if (atexit(pcap_close_all) != 0) {
 			/*
 			 * "atexit()" failed; let our caller know.
 			 */
-			strncpy(p->errbuf, "atexit failed",
-			    PCAP_ERRBUF_SIZE);
+			strlcpy(p->errbuf, "atexit failed", PCAP_ERRBUF_SIZE);
 			return (0);
 		}
 		did_atexit = 1;
@@ -2229,5 +2228,53 @@ const char *
 pcap_lib_version(void)
 {
 	return (pcap_version_string);
+}
+#endif
+
+#ifdef YYDEBUG
+/*
+ * Set the internal "debug printout" flag for the filter expression parser.
+ * The code to print that stuff is present only if YYDEBUG is defined, so
+ * the flag, and the routine to set it, are defined only if YYDEBUG is
+ * defined.
+ *
+ * This is intended for libpcap developers, not for general use.
+ * If you want to set these in a program, you'll have to declare this
+ * routine yourself, with the appropriate DLL import attribute on Windows;
+ * it's not declared in any header file, and won't be declared in any
+ * header file provided by libpcap.
+ */
+PCAP_API void pcap_set_parser_debug(int value);
+
+PCAP_API_DEF void
+pcap_set_parser_debug(int value)
+{
+	extern int pcap_debug;
+
+	pcap_debug = value;
+}
+#endif
+
+#ifdef BDEBUG
+/*
+ * Set the internal "debug printout" flag for the filter expression optimizer.
+ * The code to print that stuff is present only if BDEBUG is defined, so
+ * the flag, and the routine to set it, are defined only if BDEBUG is
+ * defined.
+ *
+ * This is intended for libpcap developers, not for general use.
+ * If you want to set these in a program, you'll have to declare this
+ * routine yourself, with the appropriate DLL import attribute on Windows;
+ * it's not declared in any header file, and won't be declared in any
+ * header file provided by libpcap.
+ */
+PCAP_API void pcap_set_optimizer_debug(int value);
+
+PCAP_API_DEF void
+pcap_set_optimizer_debug(int value)
+{
+	extern int pcap_optimizer_debug;
+
+	pcap_optimizer_debug = value;
 }
 #endif

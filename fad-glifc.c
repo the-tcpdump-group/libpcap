@@ -341,7 +341,8 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifrp->lifr_name,
-		    ifrflags.lifr_flags, (struct sockaddr *)&ifrp->lifr_addr,
+		    if_flags_to_pcap_flags(ifrp->lifr_name, ifrflags.lifr_flags),
+		    (struct sockaddr *)&ifrp->lifr_addr,
 		    sizeof (struct sockaddr_storage),
 		    netmask, sizeof (struct sockaddr_storage),
 		    broadaddr, sizeof (struct sockaddr_storage),

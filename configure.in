@@ -1506,6 +1506,14 @@ AC_INCLUDES_DEFAULT
 	    fi
 	fi
 	;;
+    freebsd*)
+	#
+	# This just uses BPF in FreeBSD 8.4 and later; we don't need
+	# to check for anything special for capturing.
+	#
+	AC_MSG_RESULT([yes, in FreeBSD 8.4 and later])
+	;;
+
     *)
 	AC_MSG_RESULT(no)
 	;;

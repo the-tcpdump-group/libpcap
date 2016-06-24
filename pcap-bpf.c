@@ -48,6 +48,15 @@
 #endif
 #include <sys/utsname.h>
 
+#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
+/*
+ * Add support for capturing on FreeBSD usbusN interfaces.
+ */
+static const char usbus_prefix[] = "usbus";
+#define USBUS_PREFIX_LEN	(sizeof(usbus_prefix) - 1)
+#include <dirent.h>
+#endif
+
 #ifdef HAVE_ZEROCOPY_BPF
 #include <machine/atomic.h>
 #endif
@@ -171,6 +180,7 @@ struct pcap_bpf {
  * Stuff to do when we close.
  */
 #define MUST_CLEAR_RFMON	0x00000001	/* clear rfmon (monitor) mode */
+#define MUST_DESTROY_USBUS	0x00000002	/* destroy usbusN interface */
 
 #ifdef BIOCGDLTLIST
 # if (defined(HAVE_NET_IF_MEDIA_H) && defined(IFM_IEEE80211)) && !defined(__APPLE__)
@@ -770,6 +780,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		return (1);
 	}
 	free(bdl.bfl_list);
+	close(fd);
 #endif /* BIOCGDLTLIST */
 	return (0);
 #elif defined(HAVE_BSD_IEEE80211)
@@ -1265,7 +1276,7 @@ bpf_load(char *errbuf)
 #endif
 
 /*
- * Turn off rfmon mode if necessary.
+ * Undo any operations done when opening the device when necessary.
  */
 static void
 pcap_cleanup_bpf(pcap_t *p)
@@ -1333,6 +1344,24 @@ pcap_cleanup_bpf(pcap_t *p)
 		}
 #endif /* HAVE_BSD_IEEE80211 */
 
+#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
+		/*
+		 * Attempt to destroy the usbusN interface that we created.
+		 */
+		if (pb->must_do_on_close & MUST_DESTROY_USBUS) {
+			if (if_nametoindex(pb->device) > 0) {
+				int s;
+
+				s = socket(AF_LOCAL, SOCK_DGRAM, 0);
+				if (s >= 0) {
+					strlcpy(ifr.ifr_name, pb->device,
+					    sizeof(ifr.ifr_name));
+					ioctl(s, SIOCIFDESTROY, &ifr);
+					close(s);
+				}
+			}
+		}
+#endif /* defined(__FreeBSD__) && defined(SIOCIFCREATE2) */
 		/*
 		 * Take this pcap out of the list of pcaps for which we
 		 * have to take the interface out of some mode.
@@ -1684,6 +1713,83 @@ pcap_activate_bpf(pcap_t *p)
 		}
 	}
 #endif /* __APPLE__ */
+
+	/*
+	 * If this is FreeBSD, and the device name begins with "usbus",
+	 * try to create the interface if it's not available.
+	 */
+#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
+	if (strncmp(p->opt.source, usbus_prefix, USBUS_PREFIX_LEN) == 0) {
+		/*
+		 * Do we already have an interface with that name?
+		 */
+		if (if_nametoindex(p->opt.source) == 0) {
+			/*
+			 * No.  We need to create it, and, if we
+			 * succeed, remember that we should destroy
+			 * it when the pcap_t is closed.
+			 */
+			int s;
+
+			/*
+			 * Open a socket to use for ioctls to
+			 * create the interface.
+			 */
+			s = socket(AF_LOCAL, SOCK_DGRAM, 0);
+			if (s < 0) {
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "Can't open socket: %s",
+				    pcap_strerror(errno));
+				status = PCAP_ERROR;
+				goto bad;
+			}
+
+			/*
+			 * If we haven't already done so, arrange to have
+			 * "pcap_close_all()" called when we exit.
+			 */
+			if (!pcap_do_addexit(p)) {
+				/*
+				 * "atexit()" failed; don't create the
+				 * interface, just give up.
+				 */
+				close(s);
+				status = PCAP_ERROR;
+				goto bad;
+			}
+
+			/*
+			 * Create the interface.
+			 */
+			strlcpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+			if (ioctl(s, SIOCIFCREATE2, &ifr) < 0) {
+				if (errno == EINVAL) {
+					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					    "Invalid USB bus interface %s",
+					    p->opt.source);
+				} else {
+					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					    "Can't create interface for %s: %s",
+					    p->opt.source, pcap_strerror(errno));
+				}
+				close(s);
+				status = PCAP_ERROR;
+				goto bad;
+			}
+
+			/*
+			 * Make sure we clean this up when we close.
+			 */
+			pb->must_do_on_close |= MUST_DESTROY_USBUS;
+
+			/*
+			 * Add this to the list of pcaps to close when we exit.
+			 */
+			pcap_add_to_pcaps_to_close(p);
+		}
+	}
+#endif /* defined(__FreeBSD__) && defined(SIOCIFCREATE2) */
+
 #ifdef HAVE_ZEROCOPY_BPF
 	/*
 	 * If the BPF extension to set buffer mode is present, try setting
@@ -2312,11 +2418,85 @@ pcap_activate_bpf(pcap_t *p)
 	return (status);
 }
 
+#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
+/*
+ * We might have USB sniffing support, so try looking for USB interfaces.
+ */
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	/*
+	 * We want to report a usbusN device for each USB bus, but
+	 * usbusN interfaces might, or might not, exist for them -
+	 * we create one if there isn't already one.
+	 *
+	 * So, instead, we look in /dev/usb for all buses and create
+	 * a "usbusN" device for each one.
+	 */
+	DIR *usbdir;
+	struct dirent *usbitem;
+	size_t name_max;
+	char *name;
+
+	usbdir = opendir("/dev/usb");
+	if (usbdir == NULL) {
+		/*
+		 * Just punt.
+		 */
+		return (0);
+	}
+
+	/*
+	 * Leave enough room for a 32-bit (10-digit) bus number.
+	 * Yes, that's overkill, but we won't be using
+	 * the buffer very long.
+	 */
+	name_max = USBUS_PREFIX_LEN + 10 + 1;
+	name = malloc(name_max);
+	if (name == NULL) {
+		closedir(usbdir);
+		return (0);
+	}
+	while ((usbitem = readdir(usbdir)) != NULL) {
+		char *p;
+		size_t busnumlen;
+		int err;
+
+		if (strcmp(usbitem->d_name, ".") == 0 ||
+		    strcmp(usbitem->d_name, "..") == 0) {
+			/*
+			 * Ignore these.
+			 */
+			continue;
+		}
+		p = strchr(usbitem->d_name, '.');
+		if (p == NULL)
+			continue;
+		busnumlen = p - usbitem->d_name;
+		memcpy(name, usbus_prefix, USBUS_PREFIX_LEN);
+		memcpy(name + USBUS_PREFIX_LEN, usbitem->d_name, busnumlen);
+		*(name + USBUS_PREFIX_LEN + busnumlen) = '\0';
+		err = pcap_add_if(alldevsp, name, PCAP_IF_UP, NULL, errbuf);
+		if (err != 0) {
+			free(name);
+			closedir(usbdir);
+			return (err);
+		}
+	}
+	free(name);
+	closedir(usbdir);
+	return (0);
+}
+#else
+/*
+ * Nothing to do on other platforms using BPF.
+ */
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	return (0);
 }
+#endif
 
 #ifdef HAVE_BSD_IEEE80211
 static int
@@ -2444,8 +2624,6 @@ monitor_mode(pcap_t *p, int set)
 				 * "atexit()" failed; don't put the interface
 				 * in monitor mode, just give up.
 				 */
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				     "atexit failed");
 				close(sock);
 				return (PCAP_ERROR);
 			}

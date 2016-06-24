@@ -391,10 +391,10 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifrp->ifr_name,
-		    ifrflags.ifr_flags, &ifrp->ifr_addr,
-		    SA_LEN(&ifrp->ifr_addr), netmask, netmask_size,
-		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
-		    errbuf) < 0) {
+		    if_flags_to_pcap_flags(ifrp->ifr_name, ifrflags.ifr_flags),
+		    &ifrp->ifr_addr, SA_LEN(&ifrp->ifr_addr),
+		    netmask, netmask_size, broadaddr, broadaddr_size,
+		    dstaddr, dstaddr_size, errbuf) < 0) {
 			ret = -1;
 			break;
 		}

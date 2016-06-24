@@ -389,7 +389,7 @@ PCAP_API int	pcap_sendpacket(pcap_t *, const u_char *, int);
 PCAP_API const char *pcap_statustostr(int);
 PCAP_API const char *pcap_strerror(int);
 PCAP_API char	*pcap_geterr(pcap_t *);
-PCAP_API void	pcap_perror(pcap_t *, char *);
+PCAP_API void	pcap_perror(pcap_t *, const char *);
 PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 	    bpf_u_int32);
 PCAP_API int	pcap_compile_nopcap(int, int, struct bpf_program *,
@@ -479,8 +479,8 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
   PCAP_API HANDLE pcap_getevent(pcap_t *p);
 
-  PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t);
-  PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t);
+  PCAP_API int pcap_oid_get_request(pcap_t *, bpf_u_int32, void *, size_t *);
+  PCAP_API int pcap_oid_set_request(pcap_t *, bpf_u_int32, const void *, size_t *);
 
   PCAP_API pcap_send_queue* pcap_sendqueue_alloc(u_int memsize);
 

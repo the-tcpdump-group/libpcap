@@ -133,8 +133,8 @@ static int TcSetBuff(pcap_t *p, int dim);
 static int TcSetMode(pcap_t *p, int mode);
 static int TcSetMinToCopy(pcap_t *p, int size);
 static HANDLE TcGetReceiveWaitHandle(pcap_t *p);
-static int TcOidGetRequest(pcap_t *p, bpf_u_int32 oid, void *data, size_t len);
-static int TcOidSetRequest(pcap_t *p, bpf_u_int32 oid, const void *data, size_t len);
+static int TcOidGetRequest(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp);
+static int TcOidSetRequest(pcap_t *p, bpf_u_int32 oid, const void *data, size_t *lenp);
 static u_int TcSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
 static int TcSetUserBuffer(pcap_t *p, int size);
 static int TcLiveDump(pcap_t *p, char *filename, int maxsize, int maxpacks);
@@ -1228,7 +1228,7 @@ TcGetReceiveWaitHandle(pcap_t *p)
 }
 
 static int
-TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t len _U_)
+TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a TurboCap device");
@@ -1237,7 +1237,7 @@ TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t len _U_)
 
 static int
 TcOidSetRequest(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
-    size_t len _U_)
+    size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a TurboCap device");

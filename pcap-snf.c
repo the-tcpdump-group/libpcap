@@ -66,9 +66,6 @@ snf_platform_cleanup(pcap_t *p)
 {
 	struct pcap_snf *ps = p->priv;
 
-	if (p == NULL)
-		return;
-
 #ifdef SNF_HAVE_INJECT_API
         if (ps->snf_inj)
                 snf_inject_close(ps->snf_inj);
