@@ -54,3 +54,7 @@ version.h
 *.opensdf
 *.suo
 *.pdb
+*.lib
+*.dll
+*.exp
+*.vcxproj.user
