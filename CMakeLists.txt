@@ -1,6 +1,13 @@
 cmake_minimum_required( VERSION 2.8.8 )
 
-set( PROJECT_NAME pcap )
+#
+# Call it wpcap on Windows, for backwards compatibility.
+#
+if( WIN32 )
+    set( PROJECT_NAME wpcap )
+else()
+    set( PROJECT_NAME pcap )
+endif()
 project( ${PROJECT_NAME} )
 
 ###################################################################
