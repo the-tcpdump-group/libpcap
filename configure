@@ -6105,14 +6105,8 @@ $as_echo "$as_me: WARNING: (see the INSTALL doc for more info)" >&2;}
 	;;
 esac
 
-if test "$V_PCAP" = null
+if test "$V_PCAP" != null
 then
-	#
-	# We can't capture, so we can't open any capture
-	# devices, so we won't return any interfaces.
-	#
-	V_FINDALLDEVS=fad-null.c
-else
 	ac_fn_c_check_func "$LINENO" "getifaddrs" "ac_cv_func_getifaddrs"
 if test "x$ac_cv_func_getifaddrs" = xyes; then :
 

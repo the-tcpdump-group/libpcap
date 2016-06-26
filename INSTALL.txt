@@ -308,7 +308,6 @@ ethertype.h	- Ethernet protocol types and names definitions
 fad-getad.c	- pcap_findalldevs() for systems with getifaddrs()
 fad-gifc.c	- pcap_findalldevs() for systems with only SIOCGIFLIST
 fad-glifc.c	- pcap_findalldevs() for systems with SIOCGLIFCONF
-fad-null.c	- pcap_findalldevs() for systems without capture support
 filtertest.c	- test program for BPF compiler
 findalldevstest.c - test program for pcap_findalldevs()
 gencode.c	- BPF code generation routines

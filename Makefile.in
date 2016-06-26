@@ -268,7 +268,6 @@ EXTRA_DIST = \
 	fad-gifc.c \
 	fad-glifc.c \
 	fad-helpers.c \
-	fad-null.c \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \

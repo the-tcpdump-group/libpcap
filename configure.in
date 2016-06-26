@@ -617,14 +617,8 @@ dnl Now figure out how we get a list of interfaces and addresses,
 dnl if we support capturing.  Don't bother if we don't support
 dnl capturing.
 dnl
-if test "$V_PCAP" = null
+if test "$V_PCAP" != null
 then
-	#
-	# We can't capture, so we can't open any capture
-	# devices, so we won't return any interfaces.
-	#
-	V_FINDALLDEVS=fad-null.c
-else
 	AC_CHECK_FUNC(getifaddrs,[
 		#
 		# We have "getifaddrs()"; make sure we have <ifaddrs.h>
