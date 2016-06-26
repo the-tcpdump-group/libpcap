@@ -467,7 +467,7 @@ int	pcap_check_activated(pcap_t *);
  * use by various "find interfaces" routines.
  */
 int	pcap_platform_finddevs(pcap_if_t **, char *);
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(MSDOS)
 int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
 #endif
 int	add_addr_to_iflist(pcap_if_t **, const char *, bpf_u_int32,

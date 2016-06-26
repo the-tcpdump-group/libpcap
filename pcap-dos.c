@@ -542,7 +542,7 @@ int pcap_lookupnet (const char *device, bpf_u_int32 *localnet,
  * The list, as returned through "alldevsp", may be NULL if no interfaces
  * were up and could be opened.
  */
-int pcap_findalldevs_interfaces (pcap_if_t **alldevsp, char *errbuf)
+int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
 {
   struct device     *dev;
   struct sockaddr_in sa_ll_1, sa_ll_2;
@@ -601,18 +601,6 @@ int pcap_findalldevs_interfaces (pcap_if_t **alldevsp, char *errbuf)
 
   *alldevsp = devlist;
   return (ret);
-}
-
-/*
- * platform-dependent routine to add devices or interfaces.
- * We don't have any, so just return 0.
- */
-int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
-{
-  /*
-   * We just return the regular interfaces.
-   */
-  return (pcap_findalldevs_interfaces(alldevsp, errbuf));
 }
 
 /*
