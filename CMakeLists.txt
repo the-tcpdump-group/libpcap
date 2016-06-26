@@ -1,14 +1,14 @@
 cmake_minimum_required( VERSION 2.8.8 )
 
+project( pcap )
 #
-# Call it wpcap on Windows, for backwards compatibility.
+# Call the library "wpcap" on Windows, for backwards compatibility.
 #
 if( WIN32 )
-    set( PROJECT_NAME wpcap )
+    set( LIBRARY_NAME wpcap )
 else()
-    set( PROJECT_NAME pcap )
+    set( LIBRARY_NAME pcap )
 endif()
-project( ${PROJECT_NAME} )
 
 ###################################################################
 #   Parameters
@@ -425,7 +425,7 @@ source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 # Register targets
 ######################################
 
-add_library(${PROJECT_NAME}
+add_library(${LIBRARY_NAME}
     ${PROJECT_SOURCE_LIST_C}
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
@@ -433,7 +433,7 @@ add_library(${PROJECT_NAME}
 )
 
 if( WIN32 )
-    target_link_libraries ( ${PROJECT_NAME}
+    target_link_libraries ( ${LIBRARY_NAME}
         packet
         ws2_32
     )
