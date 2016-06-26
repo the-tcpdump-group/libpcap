@@ -299,7 +299,6 @@ AC_HELP_STRING([--with-sita],[include SITA support]),
 		AC_DEFINE(SITA,1,[include ACN support])
 		AC_MSG_NOTICE(Enabling SITA ACN support)
 		V_PCAP=sita
-		V_FINDALLDEVS=sita
 	fi
 ],
 [
@@ -624,7 +623,7 @@ then
 	# We can't capture, so we can't open any capture
 	# devices, so we won't return any interfaces.
 	#
-	V_FINDALLDEVS=null
+	V_FINDALLDEVS=fad-null.c
 else
 	AC_CHECK_FUNC(getifaddrs,[
 		#
@@ -636,7 +635,7 @@ else
 		    # We have the header, so we use "getifaddrs()" to
 		    # get the list of interfaces.
 		    #
-		    V_FINDALLDEVS=getad
+		    V_FINDALLDEVS=fad-getad.c
 		],[
 		    #
 		    # We don't have the header - give up.
@@ -679,9 +678,9 @@ else
 				ac_cv_lbl_have_siocglifconf=no))
 			AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
 			if test $ac_cv_lbl_have_siocglifconf = yes ; then
-				V_FINDALLDEVS=glifc
+				V_FINDALLDEVS=fad-glifc.c
 			else
-				V_FINDALLDEVS=gifc
+				V_FINDALLDEVS=fad-gifc.c
 			fi
 			;;
 
@@ -692,7 +691,7 @@ else
 			# another mechanism, and we should be using that
 			# instead.)
 			#
-			V_FINDALLDEVS=gifc
+			V_FINDALLDEVS=fad-gifc.c
 			;;
 		esac])
 fi

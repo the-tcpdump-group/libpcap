@@ -5416,7 +5416,6 @@ $as_echo "#define SITA 1" >>confdefs.h
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: Enabling SITA ACN support" >&5
 $as_echo "$as_me: Enabling SITA ACN support" >&6;}
 		V_PCAP=sita
-		V_FINDALLDEVS=sita
 	fi
 
 else
@@ -6112,7 +6111,7 @@ then
 	# We can't capture, so we can't open any capture
 	# devices, so we won't return any interfaces.
 	#
-	V_FINDALLDEVS=null
+	V_FINDALLDEVS=fad-null.c
 else
 	ac_fn_c_check_func "$LINENO" "getifaddrs" "ac_cv_func_getifaddrs"
 if test "x$ac_cv_func_getifaddrs" = xyes; then :
@@ -6128,7 +6127,7 @@ if test "x$ac_cv_header_ifaddrs_h" = xyes; then :
 		    # We have the header, so we use "getifaddrs()" to
 		    # get the list of interfaces.
 		    #
-		    V_FINDALLDEVS=getad
+		    V_FINDALLDEVS=fad-getad.c
 
 else
 
@@ -6196,9 +6195,9 @@ fi
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_have_siocglifconf" >&5
 $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
 			if test $ac_cv_lbl_have_siocglifconf = yes ; then
-				V_FINDALLDEVS=glifc
+				V_FINDALLDEVS=fad-glifc.c
 			else
-				V_FINDALLDEVS=gifc
+				V_FINDALLDEVS=fad-gifc.c
 			fi
 			;;
 
@@ -6209,7 +6208,7 @@ $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
 			# another mechanism, and we should be using that
 			# instead.)
 			#
-			V_FINDALLDEVS=gifc
+			V_FINDALLDEVS=fad-gifc.c
 			;;
 		esac
 fi

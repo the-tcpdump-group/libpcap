@@ -823,7 +823,7 @@ static int acn_open_live(const char *name, char *errbuf, int *linktype) {		/* re
 	iface_t		*p;
 	pcap_if_t	*alldevsp;
 
-	pcap_findalldevs_interfaces(&alldevsp, errbuf);
+	pcap_platform_finddevs(&alldevsp, errbuf);
 	for (chassis = 0; chassis <= MAX_CHASSIS; chassis++) {										/* scan the table... */
 		for (geoslot = 0; geoslot <= MAX_GEOSLOT; geoslot++) {
 			u = &units[chassis][geoslot];
@@ -1023,4 +1023,27 @@ pcap_t *pcap_create_interface(const char *device, char *ebuf) {
 
 	p->activate_op = pcap_activate_sita;
 	return (p);
+}
+
+int pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf) {
+
+	//printf("pcap_findalldevs()\n");				// fulko
+
+	*alldevsp = 0;												/* initialize the returned variables before we do anything */
+	strcpy(errbuf, "");
+	if (acn_parse_hosts_file(errbuf))							/* scan the hosts file for potential IOPs */
+		{
+		//printf("pcap_findalldevs() returning BAD after parsehosts\n");				// fulko
+		return -1;
+		}
+	//printf("pcap_findalldevs() got hostlist now finding devs\n");				// fulko
+	if (acn_findalldevs(errbuf))								/* then ask the IOPs for their monitorable devices */
+		{
+		//printf("pcap_findalldevs() returning BAD after findalldevs\n");				// fulko
+		return -1;
+		}
+	*alldevsp = acn_if_list;
+	acn_if_list = 0;											/* then forget our list head, because someone will call pcap_freealldevs() to empty the malloc'ed stuff */
+	//printf("pcap_findalldevs() returning ZERO OK\n");				// fulko
+	return 0;
 }
