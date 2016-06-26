@@ -395,26 +395,11 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	size_t i;
 
 	/*
-	 * Get the list of regular interfaces first.
+	 * Find all the local network interfaces on which we
+	 * can capture.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
-		return (-1);	/* failure */
-
-	/*
-	 * Add any interfaces that need a platform-specific mechanism
-	 * to find.
-	 */
-	if (pcap_platform_finddevs(alldevsp, errbuf) == -1) {
-		/*
-		 * We had an error; free the list we've been
-		 * constructing.
-		 */
-		if (*alldevsp != NULL) {
-			pcap_freealldevs(*alldevsp);
-			*alldevsp = NULL;
-		}
+	if (pcap_platform_finddevs(alldevsp, errbuf) == -1)
 		return (-1);
-	}
 
 	/*
 	 * Ask each of the non-local-network-interface capture

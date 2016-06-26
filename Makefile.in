@@ -270,7 +270,6 @@ EXTRA_DIST = \
 	fad-helpers.c \
 	fad-null.c \
 	fad-sita.c \
-	fad-win32.c \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \

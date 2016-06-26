@@ -2511,6 +2511,12 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	int ret;
 
 	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+		return (-1);	/* failure */
+
+	/*
 	 * Read "/sys/class/net", and add to the list of interfaces all
 	 * interfaces listed there that we don't already have, because,
 	 * on Linux, SIOCGIFCONF reports only interfaces with IPv4 addresses,

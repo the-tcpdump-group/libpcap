@@ -279,6 +279,12 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	linkwalk_t	lw = {NULL, 0};
 	int 		save_errno;
 
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+		return (-1);	/* failure */
+
 	/* dlpi_walk() for loopback will be added here. */
 
 	dlpi_walk(list_interfaces, &lw, 0);

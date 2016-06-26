@@ -609,9 +609,10 @@ int pcap_findalldevs_interfaces (pcap_if_t **alldevsp, char *errbuf)
  */
 int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
 {
-  (void) alldevsp;
-  (void) errbuf;
-  return (0);
+  /*
+   * We just return the regular interfaces.
+   */
+  return (pcap_findalldevs_interfaces(alldevsp, errbuf));
 }
 
 /*

@@ -2418,13 +2418,19 @@ pcap_activate_bpf(pcap_t *p)
 	return (status);
 }
 
-#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 /*
  * We might have USB sniffing support, so try looking for USB interfaces.
  */
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+		return (-1);	/* failure */
+
+#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 	/*
 	 * We want to report a usbusN device for each USB bus, but
 	 * usbusN interfaces might, or might not, exist for them -
@@ -2485,18 +2491,10 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 	free(name);
 	closedir(usbdir);
-	return (0);
-}
-#else
-/*
- * Nothing to do on other platforms using BPF.
- */
-int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
-{
-	return (0);
-}
 #endif
+
+	return (0);
+}
 
 #ifdef HAVE_BSD_IEEE80211
 static int

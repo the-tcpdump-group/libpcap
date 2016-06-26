@@ -441,5 +441,5 @@ pcap_create_interface(const char *device, char *ebuf)
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (0);
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf));
 }

@@ -457,17 +457,19 @@ int	pcap_check_activated(pcap_t *);
 /*
  * Internal interfaces for "pcap_findalldevs()".
  *
- * "pcap_findalldevs_interfaces()" finds interfaces using the
- * "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
- *
  * "pcap_platform_finddevs()" is a platform-dependent routine to
- * add devices not found by the "standard" mechanisms.
+ * find local network interfaces.
+ *
+ * "pcap_findalldevs_interfaces()" is a helper to find those interfaces
+ * using the "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
  *
  * "pcap_add_if()" adds an interface to the list of interfaces, for
  * use by various "find interfaces" routines.
  */
-int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
 int	pcap_platform_finddevs(pcap_if_t **, char *);
+#ifndef _WIN32
+int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
+#endif
 int	add_addr_to_iflist(pcap_if_t **, const char *, bpf_u_int32,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);

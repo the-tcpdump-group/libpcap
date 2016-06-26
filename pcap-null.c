@@ -45,5 +45,9 @@ pcap_create_interface(const char *device, char *ebuf)
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
+	/*
+	 * There are no interfaces on which we can capture.
+	 */
+	*alldevsp = NULL;
 	return (0);
 }

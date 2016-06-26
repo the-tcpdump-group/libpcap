@@ -250,12 +250,7 @@ set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
 # if we support capturing.  Don't bother if we don't support
 # capturing.
 #
-if( WIN32 )
-    #
-    # WinPcap.
-    #
-    set( FINDALLDEVS_TYPE win32 )
-else()
+if( NOT WIN32 )
     #
     # UN*X - figure out what type of interface list mechanism we
     # have.
@@ -325,9 +320,9 @@ else()
             endif()
         endif()
     endif()
+    message(STATUS "Find-interfaces mechanism type: ${FINDALLDEVS_TYPE}")
+    set( PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} fad-${FINDALLDEVS_TYPE}.c )
 endif()
-message(STATUS "Find-interfaces mechanism type: ${FINDALLDEVS_TYPE}")
-set( PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} fad-${FINDALLDEVS_TYPE}.c )
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
     *.h

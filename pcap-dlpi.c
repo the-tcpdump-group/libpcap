@@ -972,7 +972,15 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	} buf;
 	char baname[2+1+1];
 	u_int i;
+#endif
 
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+		return (-1);	/* failure */
+
+#ifdef HAVE_SOLARIS
 	/*
 	 * We may have to do special magic to get ATM devices.
 	 */
