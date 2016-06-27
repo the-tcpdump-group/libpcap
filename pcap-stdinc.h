@@ -81,7 +81,7 @@
    * MSVC.
    */
 
-#if _MSC_VER >= 1900
+  #if _MSC_VER >= 1900
     /*
      * VS 2015 or newer; we have snprintf() function.
      */
