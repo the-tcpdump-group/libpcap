@@ -255,8 +255,29 @@ pcap_process_mactype(pcap_t *p, u_int mactype)
 		break;
 #endif
 
+#ifdef DL_IPV4
+	case DL_IPV4:
+		p->linktype = DLT_IPV4;
+		p->offset = 0;
+		break;
+#endif
+
+#ifdef DL_IPV6
+	case DL_IPV6:
+		p->linktype = DLT_IPV6;
+		p->offset = 0;
+		break;
+#endif
+
+#ifdef DL_IPNET
+	case DL_IPNET:
+		p->linktype = DLT_IPNET;
+		p->offset = 0;
+		break;
+#endif
+
 	default:
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype %u",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype 0x%x",
 		    mactype);
 		retv = -1;
 	}
