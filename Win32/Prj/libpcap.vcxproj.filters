@@ -55,6 +55,7 @@
     <ClCompile Include="..\..\fad-helpers.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\missing\win_snprintf.c" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
