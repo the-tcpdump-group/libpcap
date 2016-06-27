@@ -6055,8 +6055,13 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
 	if (ioctl(fd, SIOCETHTOOL, &ifr) == -1) {
+		int save_errno = errno;
+
 		close(fd);
-		if (errno == EOPNOTSUPP || errno == EINVAL) {
+		switch (save_errno) {
+
+		case EOPNOTSUPP:
+		case EINVAL:
 			/*
 			 * OK, this OS version or driver doesn't support
 			 * asking for the time stamping types, so let's
@@ -6064,11 +6069,26 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 			 */
 			iface_set_all_ts_types(handle);
 			return 0;
+
+		case ENODEV:
+			/*
+			 * OK, no such device.
+			 * The user will find that out when they try to
+			 * activate the device; just return an empty
+			 * list of time stamp types.
+			 */
+			handle->tstamp_type_list = NULL;
+			return 0;
+
+		default:
+			/*
+			 * Other error.
+			 */
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
+			    strerror(save_errno));
+			return -1;
 		}
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
-		    strerror(errno));
-		return -1;
 	}
 	close(fd);
 
