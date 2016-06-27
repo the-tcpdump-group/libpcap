@@ -409,6 +409,11 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
  * #defining them to be snprintf or vsnprintf, respectively, or by
  * defining our own versions and exporting them.
  */
+
+#if defined(WIN32) && _MSC_VER < 1900
+#define snprintf _snprintf
+#endif
+
 #ifdef HAVE_SNPRINTF
 #define pcap_snprintf snprintf
 #else
