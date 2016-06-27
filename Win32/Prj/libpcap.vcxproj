@@ -61,7 +61,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>../../;../../lbl/;../../bpf/;../include/;../../../../common;../../../../dag/include;../../../../dag/drv/windows;../../../Win32-Extensions;./;Win32-Extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;YY_NEVER_INTERACTIVE;yylval=pcap_lval;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;WIN32;_U_=;HAVE_SNPRINTF;HAVE_VSNPRINTF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;YY_NEVER_INTERACTIVE;yylval=pcap_lval;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;WIN32;_U_=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Release\libpcap.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Release\</ObjectFileName>
@@ -94,7 +94,7 @@
       <MinimalRebuild>true</MinimalRebuild>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <AdditionalIncludeDirectories>../../;../../lbl/;../../bpf/;../include/;../../../../common;../../../../dag/include;../../../../dag/drv/windows;../../../Win32-Extensions;./;Win32-Extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;YY_NEVER_INTERACTIVE;yylval=pcap_lval;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;WIN32;_U_=;HAVE_SNPRINTF;HAVE_VSNPRINTF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;YY_NEVER_INTERACTIVE;yylval=pcap_lval;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;WIN32;_U_=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Debug\libpcap.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Debug\</ObjectFileName>
@@ -123,10 +123,10 @@
     <ClCompile Include="..\..\bpf_image.c" />
     <ClCompile Include="..\..\etherent.c" />
     <ClCompile Include="..\..\fad-helpers.c" />
-    <ClCompile Include="..\..\fad-win32.c" />
     <ClCompile Include="..\..\gencode.c" />
     <ClCompile Include="..\..\grammar.c" />
     <ClCompile Include="..\..\inet.c" />
+    <ClCompile Include="..\..\missing\win_snprintf.c" />
     <ClCompile Include="..\..\nametoaddr.c" />
     <ClCompile Include="..\..\optimize.c" />
     <ClCompile Include="..\..\pcap-common.c" />
@@ -140,6 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\pcap-common.h" />
+    <ClInclude Include="..\..\pcap-int.h" />
     <ClInclude Include="..\..\pcap-stdinc.h" />
     <ClInclude Include="..\..\pcap-tc.h" />
     <ClInclude Include="..\..\pcap.h" />

@@ -80,6 +80,14 @@
   /*
    * MSVC.
    */
+
+#if _MSC_VER >= 1900
+    /*
+     * VS 2015 or newer; we have snprintf() function.
+     */
+    #define HAVE_SNPRINTF
+  #endif
+
   #if _MSC_VER >= 1800
     /*
      * VS 2013 or newer; we have <inttypes.h>.
