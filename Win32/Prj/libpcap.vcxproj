@@ -123,7 +123,6 @@
     <ClCompile Include="..\..\bpf_image.c" />
     <ClCompile Include="..\..\etherent.c" />
     <ClCompile Include="..\..\fad-helpers.c" />
-    <ClCompile Include="..\..\fad-win32.c" />
     <ClCompile Include="..\..\gencode.c" />
     <ClCompile Include="..\..\grammar.c" />
     <ClCompile Include="..\..\inet.c" />
@@ -140,6 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\pcap-common.h" />
+    <ClInclude Include="..\..\pcap-int.h" />
     <ClInclude Include="..\..\pcap-stdinc.h" />
     <ClInclude Include="..\..\pcap-tc.h" />
     <ClInclude Include="..\..\pcap.h" />
