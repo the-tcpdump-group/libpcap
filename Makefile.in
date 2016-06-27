@@ -339,8 +339,9 @@ EXTRA_DIST = \
 	scanner.l \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
-	Win32/Prj/libpcap.dsp \
-	Win32/Prj/libpcap.dsw
+	Win32/Prj/libpcap.sln \
+	Win32/Prj/libpcap.vcxproj \
+	Win32/Prj/libpcap.vcxproj.filters
 
 all: libpcap.a shared pcap-config
 
