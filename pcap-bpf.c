@@ -447,7 +447,7 @@ pcap_create_interface(const char *device, char *ebuf)
  * On failure, returns a PCAP_ERROR_ value, and sets p->errbuf.
  */
 static int
-bpf_open(pcap_t *p)
+bpf_open(char *errbuf)
 {
 	int fd;
 #ifdef HAVE_CLONING_BPF
@@ -463,7 +463,7 @@ bpf_open(pcap_t *p)
 	 * and create the BPF device entries, if they don't
 	 * already exist.
 	 */
-	if (bpf_load(p->errbuf) == PCAP_ERROR)
+	if (bpf_load(errbuf) == PCAP_ERROR)
 		return (PCAP_ERROR);
 #endif
 
@@ -474,7 +474,7 @@ bpf_open(pcap_t *p)
 			fd = PCAP_ERROR_PERM_DENIED;
 		else
 			fd = PCAP_ERROR;
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		  "(cannot open device) %s: %s", device, pcap_strerror(errno));
 	}
 #else
@@ -516,7 +516,7 @@ bpf_open(pcap_t *p)
 				 * means we probably have no BPF
 				 * devices.
 				 */
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "(there are no BPF devices)");
 			} else {
 				/*
@@ -525,7 +525,7 @@ bpf_open(pcap_t *p)
 				 * devices, but all the ones
 				 * that exist are busy.
 				 */
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "(all BPF devices are busy)");
 			}
 			break;
@@ -537,7 +537,7 @@ bpf_open(pcap_t *p)
 			 * if any.
 			 */
 			fd = PCAP_ERROR_PERM_DENIED;
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "(cannot open BPF device) %s: %s", device,
 			    pcap_strerror(errno));
 			break;
@@ -547,7 +547,7 @@ bpf_open(pcap_t *p)
 			 * Some other problem.
 			 */
 			fd = PCAP_ERROR;
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "(cannot open BPF device) %s: %s", device,
 			    pcap_strerror(errno));
 			break;
@@ -555,6 +555,63 @@ bpf_open(pcap_t *p)
 	}
 #endif
 
+	return (fd);
+}
+
+/*
+ * Open and bind to a device; used if we're not actually going to use
+ * the device, but are just testing whether it can be opened, or opening
+ * it to get information about it.
+ *
+ * Returns an error code on failure (always negative), and an FD for
+ * the now-bound BPF device on success (always non-negative).
+ */
+static int
+bpf_open_and_bind(const char *name, char *errbuf)
+{
+	int fd;
+	struct ifreq ifr;
+
+	fd = bpf_open(errbuf);
+	if (fd < 0)
+		return (fd);	/* fd is the appropriate error code */
+
+	/*
+	 * Now bind to the device.
+	 */
+	(void)strncpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
+		switch (errno) {
+
+		case ENXIO:
+			/*
+			 * There's no such device.
+			 */
+			close(fd);
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+		case ENETDOWN:
+			/*
+			 * Return a "network down" indication, so that
+			 * the application can report that rather than
+			 * saying we had a mysterious failure and
+			 * suggest that they report a problem to the
+			 * libpcap developers.
+			 */
+			close(fd);
+			return (PCAP_ERROR_IFACE_NOT_UP);
+
+		default:
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "BIOCSETIF: %s: %s", name, pcap_strerror(errno));
+			close(fd);
+			return (PCAP_ERROR);
+		}
+	}
+
+	/*
+	 * Success.
+	 */
 	return (fd);
 }
 
@@ -722,7 +779,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	 *
 	 * First, open a BPF device.
 	 */
-	fd = bpf_open(p);
+	fd = bpf_open(p->errbuf);
 	if (fd < 0)
 		return (fd);	/* fd is the appropriate error code */
 
@@ -1543,7 +1600,7 @@ pcap_activate_bpf(pcap_t *p)
 	u_int bufmode, zbufmax;
 #endif
 
-	fd = bpf_open(p);
+	fd = bpf_open(p->errbuf);
 	if (fd < 0) {
 		status = fd;
 		goto bad;
@@ -2419,19 +2476,64 @@ pcap_activate_bpf(pcap_t *p)
 }
 
 /*
- * We might have USB sniffing support, so try looking for USB interfaces.
+ * Not all interfaces can be bound to by BPF, so try to bind to
+ * the specified interface; return 0 if we fail with
+ * PCAP_ERROR_NO_SUCH_DEVICE (which means we got an ENXIO when we tried
+ * to bind, which means this interface isn't in the list of interfaces
+ * attached to BPF) and 1 otherwise.
  */
+static int
+check_bpf_bindable(const char *name)
+{
+	int fd;
+	char errbuf[PCAP_ERRBUF_SIZE];
+
+	fd = bpf_open_and_bind(name, errbuf);
+	if (fd < 0) {
+		/*
+		 * Error - was it PCAP_ERROR_NO_SUCH_DEVICE?
+		 */
+		if (fd == PCAP_ERROR_NO_SUCH_DEVICE) {
+			/*
+			 * Yes, so we can't bind to this because it's
+			 * not something supported by BPF.
+			 */
+			return (0);
+		}
+		/*
+		 * No, so we don't know whether it's supported or not;
+		 * say it is, so that the user can at least try to
+		 * open it and report the error (which is probably
+		 * "you don't have permission to open BPF devices";
+		 * reporting those interfaces means users will ask
+		 * "why am I getting a permissions error when I try
+		 * to capture" rather than "why am I not seeing any
+		 * interfaces", making the underlying problem clearer).
+		 */
+		return (1);
+	}
+
+	/*
+	 * Success.
+	 */
+	close(fd);
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf, check_bpf_bindable) == -1)
 		return (-1);	/* failure */
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 	/*
+	 * We might have USB sniffing support, so try looking for USB
+	 * interfaces.
+	 *
 	 * We want to report a usbusN device for each USB bus, but
 	 * usbusN interfaces might, or might not, exist for them -
 	 * we create one if there isn't already one.

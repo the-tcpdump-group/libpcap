@@ -468,7 +468,8 @@ int	pcap_check_activated(pcap_t *);
  */
 int	pcap_platform_finddevs(pcap_if_t **, char *);
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
+int	pcap_findalldevs_interfaces(pcap_if_t **, char *,
+	    int (*)(const char *));
 #endif
 int	add_addr_to_iflist(pcap_if_t **, const char *, bpf_u_int32,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,

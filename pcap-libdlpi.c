@@ -266,6 +266,17 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 }
 
 /*
+ * Presumably everything returned by dlpi_walk() is a DLPI device,
+ * so there's no work to be done here to check whether name refers
+ * to a DLPI device.
+ */
+static int
+is_dlpi_interface(const char *name _U_)
+{
+	return (1);
+}
+
+/*
  * In Solaris, the "standard" mechanism" i.e SIOCGLIFCONF will only find
  * network links that are plumbed and are up. dlpi_walk(3DLPI) will find
  * additional network links present in the system.
@@ -282,7 +293,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf, is_dlpi_interface) == -1)
 		return (-1);	/* failure */
 
 	/* dlpi_walk() for loopback will be added here. */

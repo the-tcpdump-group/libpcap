@@ -75,7 +75,8 @@ struct rtentry;		/* declarations in <net/if.h> */
  * SIOCGLIFCONF rather than SIOCGIFCONF in order to get IPv6 addresses.)
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
+pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
+    int (*check_usable)(const char *))
 {
 	pcap_if_t *devlist = NULL;
 	register int fd4, fd6, fd;
@@ -165,14 +166,6 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 
 	for (; ifrp < ifend; ifrp++) {
 		/*
-		 * IPv6 or not?
-		 */
-		if (((struct sockaddr *)&ifrp->lifr_addr)->sa_family == AF_INET6)
-			fd = fd6;
-		else
-			fd = fd4;
-
-		/*
 		 * Skip entries that begin with "dummy".
 		 * XXX - what are these?  Is this Linux-specific?
 		 * Are there platforms on which we shouldn't do this?
@@ -201,6 +194,24 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 			}
 		}
 #endif
+
+		/*
+		 * Can we capture on this device?
+		 */
+		if (!(*check_usable)(ifrp->lifr_name)) {
+			/*
+			 * No.
+			 */
+			continue;
+		}
+
+		/*
+		 * IPv6 or not?
+		 */
+		if (((struct sockaddr *)&ifrp->lifr_addr)->sa_family == AF_INET6)
+			fd = fd6;
+		else
+			fd = fd4;
 
 		/*
 		 * Get the flags for this interface.

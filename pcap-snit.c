@@ -354,6 +354,11 @@ pcap_activate_snit(pcap_t *p)
 	si.ic_len = sizeof(ifr);
 	si.ic_dp = (char *)&ifr;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
+		/*
+		 * XXX - is there an error that means "no such device"?
+		 * Is there one that means "that device doesn't support
+		 * STREAMS NIT"?
+		 */
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCBIND: %s: %s",
 			ifr.ifr_name, pcap_strerror(errno));
 		goto bad;
@@ -438,8 +443,18 @@ pcap_create_interface(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * XXX - there's probably a NIOCBIND error that means "that device
+ * doesn't support NIT"; if so, we should try an NIOCBIND and use that.
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (pcap_findalldevs_interfaces(alldevsp, errbuf));
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
 }

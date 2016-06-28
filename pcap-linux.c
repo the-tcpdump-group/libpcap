@@ -2505,6 +2505,15 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
  */
 static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 
+/*
+ * A SOCK_PACKET or PF_PACKET socket can be bound to any network interface.
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
@@ -2513,7 +2522,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf) == -1)
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound) == -1)
 		return (-1);	/* failure */
 
 	/*

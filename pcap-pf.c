@@ -321,6 +321,9 @@ pcap_activate_pf(pcap_t *p)
 	 * its argument, even though it takes a "char *" rather than a
 	 * "const char *" as its first argument.  That appears to be
 	 * the case, at least on Digital UNIX 4.0.
+	 *
+	 * XXX - is there an error that means "no such device"?  Is
+	 * there one that means "that device doesn't support pf"?
 	 */
 	p->fd = pfopen(p->opt.source, O_RDWR);
 	if (p->fd == -1 && errno == EACCES)
@@ -515,10 +518,20 @@ pcap_create_interface(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * XXX - is there an error from pfopen() that means "no such device"?
+ * Is there one that means "that device doesn't support pf"?
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (pcap_findalldevs_interfaces(alldevsp, errbuf));
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
 }
 
 static int

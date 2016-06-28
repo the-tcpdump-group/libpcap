@@ -221,6 +221,13 @@ pcap_activate_snoop(pcap_t *p)
 	sr.sr_family = AF_RAW;
 	(void)strncpy(sr.sr_ifname, p->opt.source, sizeof(sr.sr_ifname));
 	if (bind(fd, (struct sockaddr *)&sr, sizeof(sr))) {
+		/*
+		 * XXX - there's probably a particular bind error that
+		 * means "there's no such device" and a particular bind
+		 * error that means "that device doesn't support snoop";
+		 * they might be the same error, if they both end up
+		 * meaning "snoop doesn't know about that device".
+		 */
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snoop bind: %s",
 		    pcap_strerror(errno));
 		goto bad;
@@ -411,8 +418,18 @@ pcap_create_interface(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * XXX - there's probably a particular bind error that means "that device
+ * doesn't support snoop"; if so, we should try a bind and use that.
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (pcap_findalldevs_interfaces(alldevsp, errbuf));
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
 }
