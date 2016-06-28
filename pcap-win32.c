@@ -1233,8 +1233,8 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 }
 
 static int
-pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
-    char *errbuf)
+pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
+    const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
 	npf_if_addr if_addrs[MAX_NETWORK_ADDRESSES];
@@ -1246,7 +1246,8 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, const char *desc,
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	if (add_or_find_if(&curdev, devlist, name, 0, desc, errbuf) == -1) {
+	if (add_or_find_if(&curdev, devlist, name, flags, description,
+	    errbuf) == -1) {
 		/*
 		 * Failure.
 		 */
@@ -1392,10 +1393,32 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	name = &AdaptersName[0];
 	while (*name != '\0') {
+#ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
+		bpf_u_int32 flags = 0;
+		pcap_t p;
+
+		/*
+		 * Is this a loopback interface?
+		 * XXX - it'd be best if there were a way to get a list
+		 * of interfaces *and* flags, including "Up" and "Running"
+		 * as well as "loopback", without having to open the
+		 * interfaces.
+		 */
+		p = pcap_open_live(name, 68, 0, 0, errbuf);
+		if (p != NULL) {
+			if (PacketIsLoopbackAdapter(p->adapter)) {
+				/* Yes */
+				flags |= PCAP_IF_LOOPBACK;
+			}
+			pcap_close(p);
+		}
+#endif
+
 		/*
 		 * Add an entry for this interface.
 		 */
-		if (pcap_add_if_win32(&devlist, name, desc, errbuf) == -1) {
+		if (pcap_add_if_win32(&devlist, name, flags, desc,
+		    errbuf) == -1) {
 			/*
 			 * Failure.
 			 */

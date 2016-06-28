@@ -118,6 +118,13 @@ check_function_exists( strlcpy HAVE_STRLCPY )
 check_function_exists( snprintf HAVE_SNPRINTF )
 check_function_exists( vsnprintf HAVE_VSNPRINTF )
 
+if (WIN32)
+    #
+    # Check for Windows-only functions, such as packet.dll functions.
+    #
+    check_function_exits( PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER )
+endif()
+
 #
 # Data types.
 #
