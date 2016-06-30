@@ -34,7 +34,7 @@
     <ClCompile Include="..\..\pcap-tc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Pcap-win32.c">
+    <ClCompile Include="..\..\pcap-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\savefile.c">
