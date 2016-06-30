@@ -1362,8 +1362,8 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	name = &AdaptersName[0];
 	while (*name != '\0') {
-#ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
 		bpf_u_int32 flags = 0;
+#ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
 		pcap_t p;
 
 		/*
