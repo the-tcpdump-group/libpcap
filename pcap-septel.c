@@ -232,7 +232,7 @@ pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_septel));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_septel));
 	if (p == NULL)
 		return NULL;
 
