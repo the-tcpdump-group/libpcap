@@ -64,14 +64,6 @@
  */
 
 #ifdef _WIN32
-  /*
-   * Make sure we suppress the #include of unistd.h; Windows doesn't have
-   * unistd.h.
-   */
-  #ifndef YY_NO_UNISTD_H
-    #define YY_NO_UNISTD_H
-  #endif
-
   #include <pcap-stdinc.h>
 #else
   #if HAVE_INTTYPES_H
