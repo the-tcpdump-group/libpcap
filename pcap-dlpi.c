@@ -1812,14 +1812,14 @@ dlpi_kread(register int fd, register off_t addr,
 #endif
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(char *ebuf)
 {
 	pcap_t *p;
 #ifdef DL_HP_RAWDLS
 	struct pcap_dlpi *pd;
 #endif
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_dlpi));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_dlpi));
 	if (p == NULL)
 		return (NULL);
 

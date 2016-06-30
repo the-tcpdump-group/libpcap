@@ -428,6 +428,7 @@ pcap_create(const char *device, char *errbuf)
 	size_t i;
 	int is_theirs;
 	pcap_t *p;
+	char *device_str;
 
 	/*
 	 * A null device name is equivalent to the "any" device -
@@ -437,7 +438,39 @@ pcap_create(const char *device, char *errbuf)
 	 * the null pointer.
 	 */
 	if (device == NULL)
-		device = "any";
+		device_str = strdup("any");
+	else {
+#ifdef _WIN32
+		/*
+		 * If the string appears to be little-endian UCS-2/UTF-16,
+		 * convert it to ASCII.
+		 *
+		 * XXX - to UTF-8 instead?  Or report an error if any
+		 * character isn't ASCII?
+		 */
+		if (device[0] != '\0' && device[1] == '\0') {
+			size_t length;
+			char *device_ascii;
+
+			length = wcslen((wchar_t *)device);
+			device_str = (char *)malloc(length + 1);
+			if (device_str == NULL) {
+				pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "malloc: %s", pcap_strerror(errno));
+				return (NULL);
+			}
+
+			pcap_snprintf(device, length + 1, "%ws",
+			    (wchar_t *)device);
+		} else
+#endif
+			device_str = strdup(device);
+	}
+	if (device_str == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "malloc: %s", pcap_strerror(errno));
+		return (NULL);
+	}
 
 	/*
 	 * Try each of the non-local-network-interface capture
@@ -446,7 +479,8 @@ pcap_create(const char *device, char *errbuf)
 	 */
 	for (i = 0; capture_source_types[i].create_op != NULL; i++) {
 		is_theirs = 0;
-		p = capture_source_types[i].create_op(device, errbuf, &is_theirs);
+		p = capture_source_types[i].create_op(device_str, errbuf,
+		    &is_theirs);
 		if (is_theirs) {
 			/*
 			 * The device name refers to a device of the
@@ -457,6 +491,14 @@ pcap_create(const char *device, char *errbuf)
 			 * should return that to report the failure
 			 * to create.
 			 */
+			if (p == NULL) {
+				/*
+				 * We assume the caller filled in errbuf.
+				 */
+				free(device_str);
+				return (NULL);
+			}
+			p->opt.device = device_str;
 			return (p);
 		}
 	}
@@ -464,7 +506,16 @@ pcap_create(const char *device, char *errbuf)
 	/*
 	 * OK, try it as a regular network interface.
 	 */
-	return (pcap_create_interface(device, errbuf));
+	p = pcap_create_interface(errbuf);
+	if (p == NULL) {
+		/*
+		 * We assume the caller filled in errbuf.
+		 */
+		free(device_str);
+		return (NULL);
+	}
+	p->opt.device = device_str;
+	return (p);
 }
 #endif
 
@@ -558,21 +609,13 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 }
 
 pcap_t *
-pcap_create_common(const char *device, char *ebuf, size_t size)
+pcap_create_common(char *ebuf, size_t size)
 {
 	pcap_t *p;
 
 	p = pcap_alloc_pcap_t(ebuf, size);
 	if (p == NULL)
 		return (NULL);
-
-	p->opt.device = strdup(device);
-	if (p->opt.device == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		free(p);
-		return (NULL);
-	}
 
 	/*
 	 * Default to "can't set rfmon mode"; if it's supported by
@@ -850,13 +893,6 @@ pcap_open_offline_common(char *ebuf, size_t size)
 		return (NULL);
 
 	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
-	p->opt.device = strdup("(savefile)");
-	if (p->opt.device == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		free(p);
-		return (NULL);
-	}
 
 	return (p);
 }

@@ -506,11 +506,11 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 }
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_pf));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_pf));
 	if (p == NULL)
 		return (NULL);
 

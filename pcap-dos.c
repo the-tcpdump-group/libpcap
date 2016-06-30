@@ -149,11 +149,11 @@ struct pcap_dos {
 	struct pcap_stat stat;
 };
 
-pcap_t *pcap_create_interface (const char *device, char *ebuf)
+pcap_t *pcap_create_interface (char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_dos));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_dos));
 	if (p == NULL)
 		return (NULL);
 

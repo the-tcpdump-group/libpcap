@@ -1062,42 +1062,11 @@ bad:
 }
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(char *ebuf)
 {
 	pcap_t *p;
 
-	if (strlen(device) == 1)
-	{
-		/*
-		 * It's probably a unicode string
-		 * Convert to ascii and pass it to pcap_create_common
-		 *
-		 * This wonderful hack is needed because pcap_lookupdev still returns
-		 * unicode strings, and it's used by windump when no device is specified
-		 * in the command line
-		 */
-		size_t length;
-		char* deviceAscii;
-
-		length = wcslen((wchar_t*)device);
-
-		deviceAscii = (char*)malloc(length + 1);
-
-		if (deviceAscii == NULL)
-		{
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "Malloc failed");
-			return (NULL);
-		}
-
-		pcap_snprintf(deviceAscii, length + 1, "%ws", (wchar_t*)device);
-		p = pcap_create_common(deviceAscii, ebuf, sizeof (struct pcap_win));
-		free(deviceAscii);
-	}
-	else
-	{
-		p = pcap_create_common(device, ebuf, sizeof (struct pcap_win));
-	}
-
+	p = pcap_create_common(ebuf, sizeof (struct pcap_win));
 	if (p == NULL)
 		return (NULL);
 

@@ -429,11 +429,11 @@ pcap_ack_zbuf(pcap_t *p)
 #endif /* HAVE_ZEROCOPY_BPF */
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_bpf));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_bpf));
 	if (p == NULL)
 		return (NULL);
 

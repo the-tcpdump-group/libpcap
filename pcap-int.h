@@ -446,8 +446,8 @@ int	pcap_setnonblock_fd(pcap_t *p, int, char *);
  * "pcap_create_common()" allocates and fills in a pcap_t, for use
  * by pcap_create routines.
  */
-pcap_t	*pcap_create_interface(const char *, char *);
-pcap_t	*pcap_create_common(const char *, char *, size_t);
+pcap_t	*pcap_create_interface(char *);
+pcap_t	*pcap_create_common(char *, size_t);
 int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);

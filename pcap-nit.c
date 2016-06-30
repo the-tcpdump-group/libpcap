@@ -355,11 +355,11 @@ pcap_activate_nit(pcap_t *p)
 }
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_nit));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_nit));
 	if (p == NULL)
 		return (NULL);
 

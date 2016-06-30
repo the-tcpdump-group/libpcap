@@ -454,11 +454,11 @@ static struct sock_fprog	total_fcode
 #endif /* SO_ATTACH_FILTER */
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(char *ebuf)
 {
 	pcap_t *handle;
 
-	handle = pcap_create_common(device, ebuf, sizeof (struct pcap_linux));
+	handle = pcap_create_common(ebuf, sizeof (struct pcap_linux));
 	if (handle == NULL)
 		return NULL;
 
