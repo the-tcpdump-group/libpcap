@@ -460,8 +460,8 @@ pcap_create(const char *device, char *errbuf)
 				return (NULL);
 			}
 
-			pcap_snprintf(device, length + 1, "%ws",
-			    (wchar_t *)device);
+			pcap_snprintf(device_str, length + 1, "%ws",
+			    (const wchar_t *)device);
 		} else
 #endif
 			device_str = strdup(device);
