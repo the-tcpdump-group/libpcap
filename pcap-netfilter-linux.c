@@ -420,7 +420,7 @@ nfqueue_send_config_mode(const pcap_t *handle, u_int16_t group_id, u_int8_t copy
 static int
 netfilter_activate(pcap_t* handle)
 {
-	const char *dev = handle->opt.source;
+	const char *dev = handle->opt.device;
 	unsigned short groups[32];
 	int group_count = 0;
 	nftype_t type = OTHER;
@@ -444,7 +444,7 @@ netfilter_activate(pcap_t* handle)
 			if (group_count == 32) {
 				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 						"Maximum 32 netfilter groups! dev: %s",
-						handle->opt.source);
+						handle->opt.device);
 				return PCAP_ERROR;
 			}
 
@@ -469,7 +469,7 @@ netfilter_activate(pcap_t* handle)
 	if (type == OTHER || *dev) {
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't get netfilter group(s) index from %s",
-				handle->opt.source);
+				handle->opt.device);
 		return PCAP_ERROR;
 	}
 

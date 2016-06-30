@@ -988,7 +988,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 	handle->read_op = pcap_read_acn;
 	handle->stats_op = pcap_stats_acn;
 
-	fd = acn_open_live(handle->opt.source, handle->errbuf,
+	fd = acn_open_live(handle->opt.device, handle->errbuf,
 	    &handle->linktype);
 	if (fd == -1)
 		return PCAP_ERROR;

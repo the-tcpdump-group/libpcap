@@ -172,7 +172,7 @@ can_activate(pcap_t* handle)
 
 	/* get interface index */
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 	if (ioctl(handle->fd, SIOCGIFINDEX, &ifr) < 0)
 	{
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,

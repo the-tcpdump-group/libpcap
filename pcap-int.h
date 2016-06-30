@@ -108,7 +108,7 @@ extern "C" {
 #define MAXIMUM_SNAPLEN		262144
 
 struct pcap_opt {
-	char	*source;
+	char	*device;
 	int	timeout;	/* timeout for buffering */
 	int	buffer_size;
 	int	promisc;

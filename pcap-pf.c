@@ -325,13 +325,13 @@ pcap_activate_pf(pcap_t *p)
 	 * XXX - is there an error that means "no such device"?  Is
 	 * there one that means "that device doesn't support pf"?
 	 */
-	p->fd = pfopen(p->opt.source, O_RDWR);
+	p->fd = pfopen(p->opt.device, O_RDWR);
 	if (p->fd == -1 && errno == EACCES)
-		p->fd = pfopen(p->opt.source, O_RDONLY);
+		p->fd = pfopen(p->opt.device, O_RDONLY);
 	if (p->fd < 0) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
 your system may not be properly configured; see the packetfilter(4) man page\n",
-			p->opt.source, pcap_strerror(errno));
+			p->opt.device, pcap_strerror(errno));
 		goto bad;
 	}
 	pf->OrigMissed = -1;

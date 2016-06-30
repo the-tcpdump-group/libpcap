@@ -285,7 +285,7 @@ pcap_activate_nit(pcap_t *p)
 		goto bad;
 	}
 	snit.snit_family = AF_NIT;
-	(void)strncpy(snit.snit_ifname, p->opt.source, NITIFSIZ);
+	(void)strncpy(snit.snit_ifname, p->opt.device, NITIFSIZ);
 
 	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
 		/*

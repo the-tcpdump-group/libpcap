@@ -395,10 +395,10 @@ usb_activate(pcap_t* handle)
 	handle->setnonblock_op = pcap_setnonblock_fd;
 
 	/*get usb bus index from device name */
-	if (sscanf(handle->opt.source, USB_IFACE"%d", &handlep->bus_index) != 1)
+	if (sscanf(handle->opt.device, USB_IFACE"%d", &handlep->bus_index) != 1)
 	{
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't get USB bus index from %s", handle->opt.source);
+			"Can't get USB bus index from %s", handle->opt.device);
 		return PCAP_ERROR;
 	}
 

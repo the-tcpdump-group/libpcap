@@ -1019,7 +1019,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	struct iwreq ireq;
 #endif
 
-	if (strcmp(handle->opt.source, "any") == 0) {
+	if (strcmp(handle->opt.device, "any") == 0) {
 		/*
 		 * Monitor mode makes no sense on the "any" device.
 		 */
@@ -1039,7 +1039,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	 * wmaster device, so we don't bother checking whether
 	 * a mac80211 device supports the Wireless Extensions.
 	 */
-	ret = get_mac80211_phydev(handle, handle->opt.source, phydev_path,
+	ret = get_mac80211_phydev(handle, handle->opt.device, phydev_path,
 	    PATH_MAX);
 	if (ret < 0)
 		return ret;	/* error */
@@ -1065,7 +1065,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 		return PCAP_ERROR;
 	}
 
-	if (is_bonding_device(sock_fd, handle->opt.source)) {
+	if (is_bonding_device(sock_fd, handle->opt.device)) {
 		/* It's a bonding device, so don't even try. */
 		close(sock_fd);
 		return 0;
@@ -1074,7 +1074,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	/*
 	 * Attempt to get the current mode.
 	 */
-	strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.source,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
 		/*
@@ -1427,7 +1427,7 @@ pcap_activate_linux(pcap_t *handle)
 	int		status = 0;
 	int		ret;
 
-	device = handle->opt.source;
+	device = handle->opt.device;
 
 	/*
 	 * Make sure the name we were handed will fit into the ioctls we
@@ -3291,7 +3291,7 @@ activate_new(pcap_t *handle)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct pcap_linux *handlep = handle->priv;
-	const char		*device = handle->opt.source;
+	const char		*device = handle->opt.device;
 	int			is_any_device = (strcmp(device, "any") == 0);
 	int			sock_fd = -1, arptype;
 #ifdef HAVE_PACKET_AUXDATA
@@ -4059,7 +4059,7 @@ create_ring(pcap_t *handle, int *status)
 				return -1;
 			}
 			if (!offload) {
-				mtu = iface_get_mtu(handle->fd, handle->opt.source,
+				mtu = iface_get_mtu(handle->fd, handle->opt.device,
 				    handle->errbuf);
 				if (mtu == -1) {
 					*status = PCAP_ERROR;
@@ -4200,7 +4200,7 @@ create_ring(pcap_t *handle, int *status)
 		hwconfig.rx_filter = HWTSTAMP_FILTER_ALL;
 
 		memset(&ifr, 0, sizeof(ifr));
-		strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+		strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 		ifr.ifr_data = (void *)&hwconfig;
 
 		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
@@ -6043,7 +6043,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	 * and not all devices even necessarily *support* hardware time
 	 * stamping, so don't report any time stamp types.
 	 */
-	if (strcmp(handle->opt.source, "any") == 0) {
+	if (strcmp(handle->opt.device, "any") == 0) {
 		handle->tstamp_type_list = NULL;
 		return 0;
 	}
@@ -6059,7 +6059,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 	memset(&info, 0, sizeof(info));
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
@@ -6094,7 +6094,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 			 * Other error.
 			 */
 			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
+			    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.device,
 			    strerror(save_errno));
 			return -1;
 		}
@@ -6148,7 +6148,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 	 * and not all devices even necessarily *support* hardware time
 	 * stamping, so don't report any time stamp types.
 	 */
-	if (strcmp(handle->opt.source, "any") == 0) {
+	if (strcmp(handle->opt.device, "any") == 0) {
 		handle->tstamp_type_list = NULL;
 		return 0;
 	}
@@ -6181,7 +6181,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	struct ethtool_value eval;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 	eval.cmd = cmd;
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
@@ -6196,7 +6196,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 			return 0;
 		}
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCETHTOOL(%s) ioctl failed: %s", handle->opt.source,
+		    "%s: SIOCETHTOOL(%s) ioctl failed: %s", handle->opt.device,
 		    cmdname, strerror(errno));
 		return -1;
 	}
@@ -6288,7 +6288,7 @@ activate_old(pcap_t *handle)
 	struct pcap_linux *handlep = handle->priv;
 	int		arptype;
 	struct ifreq	ifr;
-	const char	*device = handle->opt.source;
+	const char	*device = handle->opt.device;
 	struct utsname	utsname;
 	int		mtu;
 

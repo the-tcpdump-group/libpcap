@@ -194,18 +194,18 @@ static int pcap_activate_dos (pcap_t *pcap)
 
   if (pcap->fd == 1)  /* first time we're called */
   {
-    if (!init_watt32(pcap, pcap->opt.source, pcap->errbuf) ||
-        !first_init(pcap->opt.source, pcap->errbuf, pcap->opt.promisc))
+    if (!init_watt32(pcap, pcap->opt.device, pcap->errbuf) ||
+        !first_init(pcap->opt.device, pcap->errbuf, pcap->opt.promisc))
     {
       return (PCAP_ERROR);
     }
     atexit (close_driver);
   }
-  else if (stricmp(active_dev->name,pcap->opt.source))
+  else if (stricmp(active_dev->name,pcap->opt.device))
   {
     pcap_snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
                    "Cannot use different devices simultaneously "
-                   "(`%s' vs. `%s')", active_dev->name, pcap->opt.source);
+                   "(`%s' vs. `%s')", active_dev->name, pcap->opt.device);
     return (PCAP_ERROR);
   }
   handle_to_device [pcap->fd-1] = active_dev;

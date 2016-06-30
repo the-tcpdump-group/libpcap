@@ -746,7 +746,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		 * 10.4 (Darwin 8.x).  s/en/wlt/, and check
 		 * whether the device exists.
 		 */
-		if (strncmp(p->opt.source, "en", 2) != 0) {
+		if (strncmp(p->opt.device, "en", 2) != 0) {
 			/*
 			 * Not an enN device; no monitor mode.
 			 */
@@ -759,7 +759,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			return (PCAP_ERROR);
 		}
 		strlcpy(ifr.ifr_name, "wlt", sizeof(ifr.ifr_name));
-		strlcat(ifr.ifr_name, p->opt.source + 2, sizeof(ifr.ifr_name));
+		strlcat(ifr.ifr_name, p->opt.device + 2, sizeof(ifr.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
 			/*
 			 * No such device?
@@ -786,7 +786,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	/*
 	 * Now bind to the device.
 	 */
-	(void)strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+	(void)strncpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
 		switch (errno) {
 
@@ -811,7 +811,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		default:
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "BIOCSETIF: %s: %s",
-			    p->opt.source, pcap_strerror(errno));
+			    p->opt.device, pcap_strerror(errno));
 			close(fd);
 			return (PCAP_ERROR);
 		}
@@ -1464,7 +1464,7 @@ check_setif_failure(pcap_t *p, int error)
 		 * No such device exists.
 		 */
 #ifdef __APPLE__
-		if (p->opt.rfmon && strncmp(p->opt.source, "wlt", 3) == 0) {
+		if (p->opt.rfmon && strncmp(p->opt.device, "wlt", 3) == 0) {
 			/*
 			 * Monitor mode was requested, and we're trying
 			 * to open a "wltN" device.  Assume that this
@@ -1476,7 +1476,7 @@ check_setif_failure(pcap_t *p, int error)
 			if (fd != -1) {
 				strlcpy(ifr.ifr_name, "en",
 				    sizeof(ifr.ifr_name));
-				strlcat(ifr.ifr_name, p->opt.source + 3,
+				strlcat(ifr.ifr_name, p->opt.device + 3,
 				    sizeof(ifr.ifr_name));
 				if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
 					/*
@@ -1537,7 +1537,7 @@ check_setif_failure(pcap_t *p, int error)
 		 * return PCAP_ERROR.
 		 */
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
-		    p->opt.source, pcap_strerror(errno));
+		    p->opt.device, pcap_strerror(errno));
 		return (PCAP_ERROR);
 	}
 }
@@ -1639,7 +1639,7 @@ pcap_activate_bpf(pcap_t *p)
 	 * traffic on datalinks in non-global zones.  Non-global zones
 	 * do not have access to datalinks outside of their own namespace.
 	 */
-	if ((zonesep = strchr(p->opt.source, '/')) != NULL) {
+	if ((zonesep = strchr(p->opt.device, '/')) != NULL) {
 		char path_zname[ZONENAME_MAX];
 		int  znamelen;
 		char *lnamep;
@@ -1650,8 +1650,8 @@ pcap_activate_bpf(pcap_t *p)
 			status = PCAP_ERROR;
 			goto bad;
 		}
-		znamelen = zonesep - p->opt.source;
-		(void) strlcpy(path_zname, p->opt.source, znamelen + 1);
+		znamelen = zonesep - p->opt.device;
+		(void) strlcpy(path_zname, p->opt.device, znamelen + 1);
 		ifr.lifr_zoneid = getzoneidbyname(path_zname);
 		if (ifr.lifr_zoneid == -1) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -1667,12 +1667,12 @@ pcap_activate_bpf(pcap_t *p)
 			status = PCAP_ERROR;
 			goto bad;
 		}
-		free(p->opt.source);
-		p->opt.source = lnamep;
+		free(p->opt.device);
+		p->opt.device = lnamep;
 	}
 #endif
 
-	pb->device = strdup(p->opt.source);
+	pb->device = strdup(p->opt.device);
 	if (pb->device == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
 		     pcap_strerror(errno));
@@ -1710,7 +1710,7 @@ pcap_activate_bpf(pcap_t *p)
 				/*
 				 * 10.4 (Darwin 8.x).  s/en/wlt/
 				 */
-				if (strncmp(p->opt.source, "en", 2) != 0) {
+				if (strncmp(p->opt.device, "en", 2) != 0) {
 					/*
 					 * Not an enN device; check
 					 * whether the device even exists.
@@ -1718,7 +1718,7 @@ pcap_activate_bpf(pcap_t *p)
 					sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 					if (sockfd != -1) {
 						strlcpy(ifrname,
-						    p->opt.source, ifnamsiz);
+						    p->opt.device, ifnamsiz);
 						if (ioctl(sockfd, SIOCGIFFLAGS,
 						    (char *)&ifr) < 0) {
 							/*
@@ -1750,7 +1750,7 @@ pcap_activate_bpf(pcap_t *p)
 					}
 					goto bad;
 				}
-				wltdev = malloc(strlen(p->opt.source) + 2);
+				wltdev = malloc(strlen(p->opt.device) + 2);
 				if (wltdev == NULL) {
 					(void)pcap_snprintf(p->errbuf,
 					    PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -1759,9 +1759,9 @@ pcap_activate_bpf(pcap_t *p)
 					goto bad;
 				}
 				strcpy(wltdev, "wlt");
-				strcat(wltdev, p->opt.source + 2);
-				free(p->opt.source);
-				p->opt.source = wltdev;
+				strcat(wltdev, p->opt.device + 2);
+				free(p->opt.device);
+				p->opt.device = wltdev;
 			}
 			/*
 			 * Everything else is 10.5 or later; for those,
@@ -1776,11 +1776,11 @@ pcap_activate_bpf(pcap_t *p)
 	 * try to create the interface if it's not available.
 	 */
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
-	if (strncmp(p->opt.source, usbus_prefix, USBUS_PREFIX_LEN) == 0) {
+	if (strncmp(p->opt.device, usbus_prefix, USBUS_PREFIX_LEN) == 0) {
 		/*
 		 * Do we already have an interface with that name?
 		 */
-		if (if_nametoindex(p->opt.source) == 0) {
+		if (if_nametoindex(p->opt.device) == 0) {
 			/*
 			 * No.  We need to create it, and, if we
 			 * succeed, remember that we should destroy
@@ -1818,16 +1818,16 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * Create the interface.
 			 */
-			strlcpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+			strlcpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
 			if (ioctl(s, SIOCIFCREATE2, &ifr) < 0) {
 				if (errno == EINVAL) {
 					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 					    "Invalid USB bus interface %s",
-					    p->opt.source);
+					    p->opt.device);
 				} else {
 					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 					    "Can't create interface for %s: %s",
-					    p->opt.source, pcap_strerror(errno));
+					    p->opt.device, pcap_strerror(errno));
 				}
 				close(s);
 				status = PCAP_ERROR;
@@ -1912,10 +1912,10 @@ pcap_activate_bpf(pcap_t *p)
 			status = PCAP_ERROR;
 			goto bad;
 		}
-		(void)strncpy(ifrname, p->opt.source, ifnamsiz);
+		(void)strncpy(ifrname, p->opt.device, ifnamsiz);
 		if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
-			    p->opt.source, pcap_strerror(errno));
+			    p->opt.device, pcap_strerror(errno));
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -1934,7 +1934,7 @@ pcap_activate_bpf(pcap_t *p)
 			if (ioctl(fd, BIOCSBLEN,
 			    (caddr_t)&p->opt.buffer_size) < 0) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "BIOCSBLEN: %s: %s", p->opt.source,
+				    "BIOCSBLEN: %s: %s", p->opt.device,
 				    pcap_strerror(errno));
 				status = PCAP_ERROR;
 				goto bad;
@@ -1943,7 +1943,7 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * Now bind to the device.
 			 */
-			(void)strncpy(ifrname, p->opt.source, ifnamsiz);
+			(void)strncpy(ifrname, p->opt.device, ifnamsiz);
 #ifdef BIOCSETLIF
 			if (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr) < 0)
 #else
@@ -1976,7 +1976,7 @@ pcap_activate_bpf(pcap_t *p)
 				 */
 				(void) ioctl(fd, BIOCSBLEN, (caddr_t)&v);
 
-				(void)strncpy(ifrname, p->opt.source, ifnamsiz);
+				(void)strncpy(ifrname, p->opt.device, ifnamsiz);
 #ifdef BIOCSETLIF
 				if (ioctl(fd, BIOCSETLIF, (caddr_t)&ifr) >= 0)
 #else
@@ -1993,7 +1993,7 @@ pcap_activate_bpf(pcap_t *p)
 			if (v == 0) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "BIOCSBLEN: %s: No buffer size worked",
-				    p->opt.source);
+				    p->opt.device);
 				status = PCAP_ERROR;
 				goto bad;
 			}
@@ -2618,7 +2618,7 @@ monitor_mode(pcap_t *p, int set)
 	}
 
 	memset(&req, 0, sizeof req);
-	strncpy(req.ifm_name, p->opt.source, sizeof req.ifm_name);
+	strncpy(req.ifm_name, p->opt.device, sizeof req.ifm_name);
 
 	/*
 	 * Find out how many media types we have.
@@ -2728,7 +2728,7 @@ monitor_mode(pcap_t *p, int set)
 				return (PCAP_ERROR);
 			}
 			memset(&ifr, 0, sizeof(ifr));
-			(void)strncpy(ifr.ifr_name, p->opt.source,
+			(void)strncpy(ifr.ifr_name, p->opt.device,
 			    sizeof(ifr.ifr_name));
 			ifr.ifr_media = req.ifm_current | IFM_IEEE80211_MONITOR;
 			if (ioctl(sock, SIOCSIFMEDIA, &ifr) == -1) {

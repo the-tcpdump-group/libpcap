@@ -796,7 +796,7 @@ pcap_activate_win32(pcap_t *p)
 	/* Init WinSock */
 	wsockinit();
 
-	p->adapter = PacketOpenAdapter(p->opt.source);
+	p->adapter = PacketOpenAdapter(p->opt.device);
 
 	if (p->adapter == NULL)
 	{
@@ -982,7 +982,7 @@ pcap_activate_win32(pcap_t *p)
 
 		pcap_snprintf(keyname, sizeof(keyname), "%s\\CardParams\\%s",
 			"SYSTEM\\CurrentControlSet\\Services\\DAG",
-			strstr(_strlwr(p->opt.source), "dag"));
+			strstr(_strlwr(p->opt.device), "dag"));
 		do
 		{
 			status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0, KEY_READ, &dagkey);

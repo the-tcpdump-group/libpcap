@@ -584,7 +584,7 @@ TcActivate(pcap_t *p)
 	pPpiHeader->Dot3FieldHeader.PfhLength = sizeof(PPI_FIELD_802_3_EXTENSION);
 	pPpiHeader->Dot3FieldHeader.PfhType = PPI_FIELD_TYPE_802_3_EXTENSION;
 
-	status = g_TcFunctions.InstanceOpenByName(p->opt.source, &pt->TcInstance);
+	status = g_TcFunctions.InstanceOpenByName(p->opt.device, &pt->TcInstance);
 
 	if (status != TC_SUCCESS)
 	{

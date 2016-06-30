@@ -371,7 +371,7 @@ static int canusb_activate(pcap_t* handle)
     handle->linktype = DLT_CAN_SOCKETCAN;
     handle->set_datalink_op = NULL;
 
-    serial = handle->opt.source + strlen(CANUSB_IFACE);
+    serial = handle->opt.device + strlen(CANUSB_IFACE);
 
     canusb->dev = canusb_opendevice(canusb->ctx, serial);
     if (!canusb->dev)

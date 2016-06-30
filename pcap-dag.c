@@ -725,7 +725,7 @@ static int dag_activate(pcap_t* handle)
 	int n;
 	daginf_t* daginf;
 	char * newDev = NULL;
-	char * device = handle->opt.source;
+	char * device = handle->opt.device;
 #ifdef HAVE_DAG_STREAMS_API
 	uint32_t mindata;
 	struct timeval maxwait;

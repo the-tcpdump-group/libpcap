@@ -160,7 +160,7 @@ dbus_activate(pcap_t *handle)
 	#define N_RULES sizeof(rules)/sizeof(rules[0])
 
 	struct pcap_dbus *handlep = handle->priv;
-	const char *dev = handle->opt.source;
+	const char *dev = handle->opt.device;
 
 	DBusError error = DBUS_ERROR_INIT;
 	int i;
@@ -195,7 +195,7 @@ dbus_activate(pcap_t *handle)
 		}
 
 	} else {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get bus address from %s", handle->opt.source);
+		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get bus address from %s", handle->opt.device);
 		return PCAP_ERROR;
 	}
 

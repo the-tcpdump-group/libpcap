@@ -311,10 +311,10 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 }
 
 pcap_t *
-pcap_create(const char *source, char *errbuf)
+pcap_create(const char *device, char *errbuf)
 {
 	int is_ours;
-	return (dag_create(source, errbuf, &is_ours));
+	return (dag_create(device, errbuf, &is_ours));
 }
 #elif defined(SEPTEL_ONLY)
 int
@@ -324,10 +324,10 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 }
 
 pcap_t *
-pcap_create(const char *source, char *errbuf)
+pcap_create(const char *device, char *errbuf)
 {
 	int is_ours;
-	return (septel_create(source, errbuf, &is_ours));
+	return (septel_create(device, errbuf, &is_ours));
 }
 #elif defined(SNF_ONLY)
 int
@@ -337,10 +337,10 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 }
 
 pcap_t *
-pcap_create(const char *source, char *errbuf)
+pcap_create(const char *device, char *errbuf)
 {
 	int is_ours;
-	return (snf_create(source, errbuf, &is_ours));
+	return (snf_create(device, errbuf, &is_ours));
 }
 #else /* regular pcap */
 struct capture_source_type {
@@ -423,21 +423,21 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 }
 
 pcap_t *
-pcap_create(const char *source, char *errbuf)
+pcap_create(const char *device, char *errbuf)
 {
 	size_t i;
 	int is_theirs;
 	pcap_t *p;
 
 	/*
-	 * A null source name is equivalent to the "any" device -
+	 * A null device name is equivalent to the "any" device -
 	 * which might not be supported on this platform, but
 	 * this means that you'll get a "not supported" error
 	 * rather than, say, a crash when we try to dereference
 	 * the null pointer.
 	 */
-	if (source == NULL)
-		source = "any";
+	if (device == NULL)
+		device = "any";
 
 	/*
 	 * Try each of the non-local-network-interface capture
@@ -446,7 +446,7 @@ pcap_create(const char *source, char *errbuf)
 	 */
 	for (i = 0; capture_source_types[i].create_op != NULL; i++) {
 		is_theirs = 0;
-		p = capture_source_types[i].create_op(source, errbuf, &is_theirs);
+		p = capture_source_types[i].create_op(device, errbuf, &is_theirs);
 		if (is_theirs) {
 			/*
 			 * The device name refers to a device of the
@@ -464,7 +464,7 @@ pcap_create(const char *source, char *errbuf)
 	/*
 	 * OK, try it as a regular network interface.
 	 */
-	return (pcap_create_interface(source, errbuf));
+	return (pcap_create_interface(device, errbuf));
 }
 #endif
 
@@ -558,7 +558,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 }
 
 pcap_t *
-pcap_create_common(const char *source, char *ebuf, size_t size)
+pcap_create_common(const char *device, char *ebuf, size_t size)
 {
 	pcap_t *p;
 
@@ -566,8 +566,8 @@ pcap_create_common(const char *source, char *ebuf, size_t size)
 	if (p == NULL)
 		return (NULL);
 
-	p->opt.source = strdup(source);
-	if (p->opt.source == NULL) {
+	p->opt.device = strdup(device);
+	if (p->opt.device == NULL) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
@@ -792,12 +792,12 @@ pcap_activate(pcap_t *p)
 }
 
 pcap_t *
-pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *errbuf)
+pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *errbuf)
 {
 	pcap_t *p;
 	int status;
 
-	p = pcap_create(source, errbuf);
+	p = pcap_create(device, errbuf);
 	if (p == NULL)
 		return (NULL);
 	status = pcap_set_snaplen(p, snaplen);
@@ -826,15 +826,15 @@ pcap_open_live(const char *source, int snaplen, int promisc, int to_ms, char *er
 	return (p);
 fail:
 	if (status == PCAP_ERROR)
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", device,
 		    p->errbuf);
 	else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
 	    status == PCAP_ERROR_PERM_DENIED ||
 	    status == PCAP_ERROR_PROMISC_PERM_DENIED)
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)", device,
 		    pcap_statustostr(status), p->errbuf);
 	else
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", source,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", device,
 		    pcap_statustostr(status));
 	pcap_close(p);
 	return (NULL);
@@ -850,8 +850,8 @@ pcap_open_offline_common(char *ebuf, size_t size)
 		return (NULL);
 
 	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
-	p->opt.source = strdup("(savefile)");
-	if (p->opt.source == NULL) {
+	p->opt.device = strdup("(savefile)");
+	if (p->opt.device == NULL) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
@@ -2072,8 +2072,8 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 void
 pcap_close(pcap_t *p)
 {
-	if (p->opt.source != NULL)
-		free(p->opt.source);
+	if (p->opt.device != NULL)
+		free(p->opt.device);
 	p->cleanup_op(p);
 	free(p);
 }

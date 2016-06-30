@@ -106,7 +106,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	 * dlpi_open() will not fail if the underlying link does not support
 	 * passive mode. See dlpi(7P) for details.
 	 */
-	retv = dlpi_open(p->opt.source, &dh, DLPI_RAW|DLPI_PASSIVE);
+	retv = dlpi_open(p->opt.device, &dh, DLPI_RAW|DLPI_PASSIVE);
 	if (retv != DLPI_SUCCESS) {
 		if (retv == DLPI_ELINKNAMEINVAL || retv == DLPI_ENOLINK)
 			status = PCAP_ERROR_NO_SUCH_DEVICE;
@@ -115,7 +115,7 @@ pcap_activate_libdlpi(pcap_t *p)
 			status = PCAP_ERROR_PERM_DENIED;
 		else
 			status = PCAP_ERROR;
-		pcap_libdlpi_err(p->opt.source, "dlpi_open", retv,
+		pcap_libdlpi_err(p->opt.device, "dlpi_open", retv,
 		    p->errbuf);
 		return (status);
 	}
@@ -133,7 +133,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	/* Bind with DLPI_ANY_SAP. */
 	if ((retv = dlpi_bind(pd->dlpi_hd, DLPI_ANY_SAP, 0)) != DLPI_SUCCESS) {
 		status = PCAP_ERROR;
-		pcap_libdlpi_err(p->opt.source, "dlpi_bind", retv, p->errbuf);
+		pcap_libdlpi_err(p->opt.device, "dlpi_bind", retv, p->errbuf);
 		goto bad;
 	}
 
@@ -187,7 +187,7 @@ pcap_activate_libdlpi(pcap_t *p)
 	/* Determine link type.  */
 	if ((retv = dlpi_info(pd->dlpi_hd, &dlinfo, 0)) != DLPI_SUCCESS) {
 		status = PCAP_ERROR;
-		pcap_libdlpi_err(p->opt.source, "dlpi_info", retv, p->errbuf);
+		pcap_libdlpi_err(p->opt.device, "dlpi_info", retv, p->errbuf);
 		goto bad;
 	}
 
@@ -258,7 +258,7 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 			err = PCAP_ERROR_PERM_DENIED;
 		else
 			err = PCAP_ERROR;
-		pcap_libdlpi_err(p->opt.source, "dlpi_promiscon" STRINGIFY(level),
+		pcap_libdlpi_err(p->opt.device, "dlpi_promiscon" STRINGIFY(level),
 		    retv, p->errbuf);
 		return (err);
 	}

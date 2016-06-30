@@ -348,7 +348,7 @@ pcap_activate_snit(pcap_t *p)
 	}
 
 	/* request the interface */
-	strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+	strncpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
 	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	si.ic_cmd = NIOCBIND;
 	si.ic_len = sizeof(ifr);

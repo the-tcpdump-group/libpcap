@@ -242,7 +242,7 @@ static int
 snf_activate(pcap_t* p)
 {
 	struct pcap_snf *ps = p->priv;
-	char *device = p->opt.source;
+	char *device = p->opt.device;
 	const char *nr = NULL;
 	int err;
 	int flags = -1, ring_id = -1;

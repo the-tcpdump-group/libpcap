@@ -500,7 +500,7 @@ pcap_activate_dlpi(pcap_t *p)
 #endif
 	bpf_u_int32 buf[MAXDLBUF];
 
-	p->fd = open_dlpi_device(p->opt.source, &ppa, p->errbuf);
+	p->fd = open_dlpi_device(p->opt.device, &ppa, p->errbuf);
 	if (p->fd < 0) {
 		status = p->fd;
 		goto bad;
