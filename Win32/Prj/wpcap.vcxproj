@@ -195,7 +195,7 @@
     <ClCompile Include="..\..\optimize.c" />
     <ClCompile Include="..\..\pcap-common.c" />
     <ClCompile Include="..\..\pcap-tc.c" />
-    <ClCompile Include="..\..\Pcap-win32.c" />
+    <ClCompile Include="..\..\pcap-win32.c" />
     <ClCompile Include="..\..\pcap.c" />
     <ClCompile Include="..\..\savefile.c" />
     <ClCompile Include="..\..\scanner.c" />
