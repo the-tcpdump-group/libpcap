@@ -242,7 +242,7 @@ bt_monitor_create(const char *device, char *ebuf, int *is_ours)
     }
 
     *is_ours = 1;
-    p = pcap_create_common(device, ebuf, 0);
+    p = pcap_create_common(ebuf, 0);
     if (p == NULL)
         return NULL;
 
