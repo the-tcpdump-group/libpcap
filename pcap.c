@@ -455,7 +455,7 @@ pcap_create(const char *device, char *errbuf)
 			length = wcslen((wchar_t *)device);
 			device_str = (char *)malloc(length + 1);
 			if (device_str == NULL) {
-				pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "malloc: %s", pcap_strerror(errno));
 				return (NULL);
 			}
