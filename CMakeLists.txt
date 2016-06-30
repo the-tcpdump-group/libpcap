@@ -122,7 +122,7 @@ if (WIN32)
     #
     # Check for Windows-only functions, such as packet.dll functions.
     #
-    check_function_exits( PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER )
+    check_function_exists( PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER )
 endif()
 
 #
