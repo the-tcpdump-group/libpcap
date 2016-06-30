@@ -108,6 +108,10 @@
     <Link>
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -131,6 +135,10 @@
     <Link>
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\x64\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -156,6 +164,10 @@
     <Link>
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -180,6 +192,10 @@
     <Link>
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\x64\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\bpf\net\bpf_filter.c" />
