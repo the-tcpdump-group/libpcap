@@ -1014,7 +1014,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 	return 0;
 }
 
-pcap_t *pcap_create_interface(char *ebuf) {
+pcap_t *pcap_create_interface(const char *device _U_, char *ebuf) {
 	pcap_t *p;
 
 	p = pcap_create_common(ebuf, 0);

@@ -433,7 +433,8 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
 #endif /* HAVE_PF_PACKET_SOCKETS */
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
-static int	iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf);
+static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
+    char *ebuf);
 #endif
 #ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
@@ -454,7 +455,7 @@ static struct sock_fprog	total_fcode
 #endif /* SO_ATTACH_FILTER */
 
 pcap_t *
-pcap_create_interface(char *ebuf)
+pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *handle;
 
@@ -469,7 +470,7 @@ pcap_create_interface(char *ebuf)
 	/*
 	 * See what time stamp types we support.
 	 */
-	if (iface_ethtool_get_ts_info(handle, ebuf) == -1) {
+	if (iface_ethtool_get_ts_info(device, handle, ebuf) == -1) {
 		pcap_close(handle);
 		return NULL;
 	}
@@ -6028,7 +6029,7 @@ iface_set_all_ts_types(pcap_t *handle)
  * Get a list of time stamping capabilities.
  */
 static int
-iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
+iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 {
 	int fd;
 	struct ifreq ifr;
@@ -6043,7 +6044,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	 * and not all devices even necessarily *support* hardware time
 	 * stamping, so don't report any time stamp types.
 	 */
-	if (strcmp(handle->opt.device, "any") == 0) {
+	if (strcmp(device, "any") == 0) {
 		handle->tstamp_type_list = NULL;
 		return 0;
 	}
@@ -6059,7 +6060,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	memset(&info, 0, sizeof(info));
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
@@ -6094,7 +6095,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 			 * Other error.
 			 */
 			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.device,
+			    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", device,
 			    strerror(save_errno));
 			return -1;
 		}
@@ -6139,7 +6140,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 }
 #else /* ETHTOOL_GET_TS_INFO */
 static int
-iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
+iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
 {
 	/*
 	 * This doesn't apply to the "any" device; you can't say "turn on
@@ -6148,7 +6149,7 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
 	 * and not all devices even necessarily *support* hardware time
 	 * stamping, so don't report any time stamp types.
 	 */
-	if (strcmp(handle->opt.device, "any") == 0) {
+	if (strcmp(device, "any") == 0) {
 		handle->tstamp_type_list = NULL;
 		return 0;
 	}

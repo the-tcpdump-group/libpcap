@@ -1812,7 +1812,7 @@ dlpi_kread(register int fd, register off_t addr,
 #endif
 
 pcap_t *
-pcap_create_interface(char *ebuf)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 #ifdef DL_HP_RAWDLS

@@ -506,7 +506,7 @@ pcap_create(const char *device, char *errbuf)
 	/*
 	 * OK, try it as a regular network interface.
 	 */
-	p = pcap_create_interface(errbuf);
+	p = pcap_create_interface(device_str, errbuf);
 	if (p == NULL) {
 		/*
 		 * We assume the caller filled in errbuf.

@@ -355,7 +355,7 @@ pcap_activate_nit(pcap_t *p)
 }
 
 pcap_t *
-pcap_create_interface(char *ebuf)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
