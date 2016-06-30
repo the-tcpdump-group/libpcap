@@ -317,7 +317,7 @@ struct eproto {
  * don't officially export it by declaring it in a header file.
  * (Programs *should* do this themselves, as tcpdump now does.)
  */
-PCAP_API_DEF struct eproto eproto_db[] = {
+struct eproto eproto_db[] = {
 	{ "pup", ETHERTYPE_PUP },
 	{ "xns", ETHERTYPE_NS },
 	{ "ip", ETHERTYPE_IP },
