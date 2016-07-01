@@ -303,46 +303,6 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
 
-#if defined(DAG_ONLY)
-int
-pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
-{
-	return (dag_findalldevs(alldevsp, errbuf));
-}
-
-pcap_t *
-pcap_create(const char *device, char *errbuf)
-{
-	int is_ours;
-	return (dag_create(device, errbuf, &is_ours));
-}
-#elif defined(SEPTEL_ONLY)
-int
-pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
-{
-	return (septel_findalldevs(alldevsp, errbuf));
-}
-
-pcap_t *
-pcap_create(const char *device, char *errbuf)
-{
-	int is_ours;
-	return (septel_create(device, errbuf, &is_ours));
-}
-#elif defined(SNF_ONLY)
-int
-pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
-{
-	return (snf_findalldevs(alldevsp, errbuf));
-}
-
-pcap_t *
-pcap_create(const char *device, char *errbuf)
-{
-	int is_ours;
-	return (snf_create(device, errbuf, &is_ours));
-}
-#else /* regular pcap */
 struct capture_source_type {
 	int (*findalldevs_op)(pcap_if_t **, char *);
 	pcap_t *(*create_op)(const char *, char *, int *);
@@ -517,7 +477,6 @@ pcap_create(const char *device, char *errbuf)
 	p->opt.device = device_str;
 	return (p);
 }
-#endif
 
 static void
 initialize_ops(pcap_t *p)

@@ -6086,15 +6086,30 @@ fi
 	;;
 
 dag)
+	#
+	# --with-pcap=dag is the only way to get here, and it means
+	# "DAG support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DDAG_ONLY"
+	xxx_only=yes
 	;;
 
 septel)
+	#
+	# --with-pcap=septel is the only way to get here, and it means
+	# "Septel support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
+	xxx_only=yes
 	;;
 
 snf)
+	#
+	# --with-pcap=snf is the only way to get here, and it means
+	# "SNF support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DSNF_ONLY"
+	xxx_only=yes
 	;;
 
 null)
@@ -6325,6 +6340,10 @@ else
 		# User requested DAG-only libpcap, so we'd better have
 		# the DAG API.
 		want_dag=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want DAG support.
+		want_dag=no
 	else
 		#
 		# Use DAG API if present, otherwise don't
@@ -6629,6 +6648,10 @@ else
 		# User requested Septel-only libpcap, so we'd better have
 		# the Septel API.
 		want_septel=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want Septel support.
+		want_septel=no
 	else
 		#
 		# Use Septel API if present, otherwise don't
@@ -6714,6 +6737,10 @@ else
 		# User requested Sniffer-only libpcap, so we'd better have
 		# the Sniffer API.
 		want_snf=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want SNF support.
+		want_snf=no
 	else
 		#
 		# Use Sniffer API if present, otherwise don't
@@ -6867,10 +6894,16 @@ if test "${with_turbocap+set}" = set; then :
 
 else
 
-	#
-	# Use TurboCap API if present, otherwise don't
-	#
-	want_turbocap=ifpresent
+	if test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want TurboCap support.
+		want_turbocap=no
+	else
+		#
+		# Use TurboCap API if present, otherwise don't
+		#
+		want_turbocap=ifpresent
+	fi
 
 fi
 
@@ -8244,6 +8277,12 @@ else
 fi
 
 
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want USB support.
+	enable_usb=no
+fi
+
 if test "x$enable_usb" != "xno" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for USB sniffing support" >&5
 $as_echo_n "checking for USB sniffing support... " >&6; }
@@ -8379,23 +8418,24 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the platform could support netfilter sniffing" >&5
+if test "xxx_only" != yes; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the platform could support netfilter sniffing" >&5
 $as_echo_n "checking whether the platform could support netfilter sniffing... " >&6; }
-case "$host_os" in
-linux*)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	case "$host_os" in
+	linux*)
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	#
-	# Life's too short to deal with trying to get this to compile
-	# if you don't get the right types defined with
-	# __KERNEL_STRICT_NAMES getting defined by some other include.
-	#
-	# Check whether the includes Just Work.  If not, don't turn on
-	# netfilter support.
-	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the netfilter support" >&5
+		#
+		# Life's too short to deal with trying to get this to compile
+		# if you don't get the right types defined with
+		# __KERNEL_STRICT_NAMES getting defined by some other include.
+		#
+		# Check whether the includes Just Work.  If not, don't turn on
+		# netfilter support.
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the netfilter support" >&5
 $as_echo_n "checking whether we can compile the netfilter support... " >&6; }
-	if ${ac_cv_netfilter_can_compile+:} false; then :
+		if ${ac_cv_netfilter_can_compile+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -8427,20 +8467,21 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_netfilter_can_compile" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_netfilter_can_compile" >&5
 $as_echo "$ac_cv_netfilter_can_compile" >&6; }
-	if test $ac_cv_netfilter_can_compile = yes ; then
+		if test $ac_cv_netfilter_can_compile = yes ; then
 
 $as_echo "#define PCAP_SUPPORT_NETFILTER 1" >>confdefs.h
 
-	  NETFILTER_SRC=pcap-netfilter-linux.c
-	fi
-	;;
-*)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+		  NETFILTER_SRC=pcap-netfilter-linux.c
+		fi
+		;;
+	*)
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	;;
-esac
+		;;
+	esac
+fi
 
 
 
@@ -8451,6 +8492,12 @@ else
   enable_bluetooth=ifsupportavailable
 fi
 
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want Bluetooth support.
+	enable_bluetooth=no
+fi
 
 if test "x$enable_bluetooth" != "xno" ; then
 		case "$host_os" in
@@ -8581,6 +8628,12 @@ else
 fi
 
 
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want canusb support.
+	enable_canusb=no
+fi
+
 if test "x$enable_canusb" != "xno" ; then
 		case "$host_os" in
 	linux*|uclinux*)
@@ -8677,6 +8730,12 @@ else
 fi
 
 
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want CAN support.
+	enable_can=no
+fi
+
 if test "x$enable_can" != "xno" ; then
 		case "$host_os" in
 	linux*)
@@ -8725,6 +8784,12 @@ else
   enable_dbus=ifavailable
 fi
 
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want D-Bus support.
+	enable_dbus=no
+fi
 
 if test "x$enable_dbus" != "xno"; then
 	if test "x$enable_dbus" = "xyes"; then
