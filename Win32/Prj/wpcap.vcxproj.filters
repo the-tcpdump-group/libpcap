@@ -31,9 +31,6 @@
     <ClCompile Include="..\..\pcap.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\pcap-tc.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\pcap-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,9 +65,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\pcap-tc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\pcap-stdinc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
