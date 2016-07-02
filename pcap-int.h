@@ -368,7 +368,7 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 #define strlcpy(x, y, z) \
 	(strncpy((x), (y), (z)), \
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
-	 strlen((y)))
+	 (void) strlen((y)))
 #endif
 
 #include <stdarg.h>
