@@ -387,9 +387,9 @@ open_dlpi_device(const char *name, int *ppa, char *errbuf)
 	 * table for the specified device type name and unit number.
 	 */
 	*ppa = get_dlpi_ppa(fd, dname, *ppa, errbuf);
-	if (ppa < 0) {
+	if (*ppa < 0) {
 		close(fd);
-		return (ppa);
+		return (*ppa);
 	}
 #else
 	/*
