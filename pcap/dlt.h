@@ -295,40 +295,62 @@
 /*
  * Sigh.
  *
- * This was reserved for Siemens HiPath HDLC on 2002-01-25, as
+ * 121 was reserved for Siemens HiPath HDLC on 2002-01-25, as
  * requested by Tomas Kukosa.
  *
  * On 2004-02-25, a FreeBSD checkin to sys/net/bpf.h was made that
- * assigned 121 as DLT_PFSYNC.  Its libpcap does DLT_ <-> LINKTYPE_
- * mapping, so it probably supports capturing on the pfsync device
- * but not saving the captured data to a pcap file.
+ * assigned 121 as DLT_PFSYNC.  In current versions, its libpcap
+ * does DLT_ <-> LINKTYPE_ mapping, mapping DLT_PFSYNC to a
+ * LINKTYPE_PFSYNC value of 246, so it should write out DLT_PFSYNC
+ * dump files with 246 as the link-layer header type.  (Earlier
+ * versions might not have done mapping, in which case they would
+ * have written them out with a link-layer header type of 121.)
  *
  * OpenBSD, from which pf came, however, uses 18 for DLT_PFSYNC;
- * their libpcap does no DLT_ <-> LINKTYPE_ mapping, so it would
- * use 18 in pcap files as well.
+ * its libpcap does no DLT_ <-> LINKTYPE_ mapping, so it would
+ * write out DLT_PFSYNC dump files with use 18 as the link-layer
+ * header type.
  *
- * NetBSD and DragonFly BSD also use 18 for DLT_PFSYNC; their
- * libpcaps do DLT_ <-> LINKTYPE_ mapping, and neither has an entry
- * for DLT_PFSYNC, so it might not be able to write out dump files
- * with 18 as the link-layer header type.  (Earlier versions might
- * not have done mapping, in which case they'd work the same way
- * OpenBSD does.)
+ * NetBSD, DragonFly BSD, and Darwin also use 18 for DLT_PFSYNC; in
+ * current versions, their libpcaps do DLT_ <-> LINKTYPE_ mapping,
+ * mapping DLT_PFSYNC to a LINKTYPE_PFSYNC value of 246, so they
+ * should write out DLT_PFSYNC dump files with 246 as the link-layer
+ * header type.  (Earlier versions might not have done mapping,
+ * in which case they'd work the same way OpenBSD does, writing
+ * them out with a link-layer header type of 18.)
  *
- * Mac OS X defines it as 18, but doesn't appear to use it as of
- * Mac OS X 10.7.3.  Its libpcap does DLT_ <-> LINKTYPE_ mapping.
+ * We'll define DLT_PFSYNC as:
  *
- * We'll define DLT_PFSYNC as 121 on FreeBSD and define it as 18 on
- * all other platforms.  We'll define DLT_HHDLC as 121 on everything
- * except for FreeBSD; anybody who wants to compile, on FreeBSD, code
- * that uses DLT_HHDLC is out of luck.
+ *    18 on NetBSD, OpenBSD, DragonFly BSD, and Darwin;
  *
- * We'll define LINKTYPE_PFSYNC as 18, *even on FreeBSD*, and map
- * it, so that savefiles won't use 121 for PFSYNC - they'll all
- * use 18.  Code that uses pcap_datalink() to determine the link-layer
- * header type of a savefile won't, when built and run on FreeBSD,
- * be able to distinguish between LINKTYPE_PFSYNC and LINKTYPE_HHDLC
- * capture files; code that doesn't, such as the code in Wireshark,
- * will be able to distinguish between them.
+ *    121 on FreeBSD;
+ *
+ *    246 everywhere else.
+ *
+ * We'll define DLT_HHDLC as 121 on everything except for FreeBSD;
+ * anybody who wants to compile, on FreeBSD, code that uses DLT_HHDLC
+ * is out of luck.
+ *
+ * We'll define LINKTYPE_PFSYNC as 246 on *all* platforms, so that
+ * savefiles written using *this* code won't use 18 or 121 for PFSYNC,
+ * they'll all use 246.
+ *
+ * Code that uses pcap_datalink() to determine the link-layer header
+ * type of a savefile won't, when built and run on FreeBSD, be able
+ * to distinguish between LINKTYPE_PFSYNC and LINKTYPE_HHDLC capture
+ * files, as pcap_datalink() will give 121 for both of them.  Code
+ * that doesn't, such as the code in Wireshark, will be able to
+ * distinguish between them.
+ *
+ * FreeBSD's libpcap won't map a link-layer header type of 18 - i.e.,
+ * DLT_PFSYNC files from OpenBSD and possibly older versions of NetBSD,
+ * DragonFly BSD, and OS X - to DLT_PFSYNC, so code built with FreeBSD's
+ * libpcap won't treat those files as DLT_PFSYNC files.
+ *
+ * Other libpcaps won't map a link-layer header type of 121 to DLT_PFSYNC;
+ * this means they can read DLT_HHDLC files, if any exist, but won't
+ * treat pcap files written by any older versions of FreeBSD libpcap that
+ * didn't map to 246 as DLT_PFSYNC files.
  */
 #ifdef __FreeBSD__
 #define DLT_PFSYNC		121
@@ -1105,11 +1127,11 @@
 #define DLT_NFC_LLCP		245
 
 /*
- * 245 is used as LINKTYPE_PFSYNC; do not use it for any other purpose.
+ * 246 is used as LINKTYPE_PFSYNC; do not use it for any other purpose.
  *
  * DLT_PFSYNC has different values on different platforms, and all of
  * them collide with something used elsewhere.  On platforms that
- * don't already define it, define it as 245.
+ * don't already define it, define it as 246.
  */
 #if !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__DragonFly__) && !defined(__APPLE__)
 #define DLT_PFSYNC		246
