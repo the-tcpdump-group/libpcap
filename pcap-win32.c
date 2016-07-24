@@ -789,11 +789,12 @@ pcap_activate_win32(pcap_t *p)
 
 	if (p->opt.rfmon) {
 		/*
-		 * No monitor mode on Windows.  It could be done on
-		 * Vista with drivers that support the native 802.11
-		 * mechanism and monitor mode.
+		 * Monitor mode is supported on Windows Vista and later.
 		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
+		if (PacketSetMonitorMode(p->opt.device, 1) == FALSE)
+		{
+			return PCAP_ERROR;
+		}
 	}
 
 	/* Init WinSock */
@@ -1064,6 +1065,15 @@ bad:
 	return (PCAP_ERROR);
 }
 
+/*
+* Check if rfmon mode is supported on the pcap_t for Windows systems.
+*/
+static int
+pcap_can_set_rfmon_win32(pcap_t *p)
+{
+	return PacketIsMonitorModeSupported(p->opt.device);
+}
+
 pcap_t *
 pcap_create_interface(const char *device _U_, char *ebuf)
 {
@@ -1077,6 +1087,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 		return (NULL);
 
 	p->activate_op = pcap_activate_win32;
+	p->can_set_rfmon_op = pcap_can_set_rfmon_win32;
 	return (p);
 }
 
