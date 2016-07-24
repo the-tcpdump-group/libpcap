@@ -58,3 +58,5 @@ version.h
 *.dll
 *.exp
 *.vcxproj.user
+Debug/
+Release/
