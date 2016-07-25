@@ -53,6 +53,9 @@
 int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
+#ifdef HAVE_REMOTE
+#include "pcap-remote.h"
+#endif /* HAVE_REMOTE */
 
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
@@ -1065,8 +1068,11 @@ pcap_t *
 pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
-
-	p = pcap_create_common(ebuf, sizeof (struct pcap_win));
+#ifdef HAVE_REMOTE
+	p = pcap_create_common(ebuf, sizeof(struct pcap_win) + sizeof(struct pcap_md));
+#else
+	p = pcap_create_common(ebuf, sizeof(struct pcap_win)));
+#endif /* HAVE_REMOTE */
 	if (p == NULL)
 		return (NULL);
 
