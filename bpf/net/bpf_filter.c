@@ -633,7 +633,7 @@ bpf_validate(f, len)
 		return 0;
 #endif
 
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < (u_int)len; ++i) {
 		p = &f[i];
 		switch (BPF_CLASS(p->code)) {
 		/*
