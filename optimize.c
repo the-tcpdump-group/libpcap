@@ -2028,7 +2028,7 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 {
 	struct bpf_insn *dst;
 	struct slist *src;
-	int slen;
+	u_int slen;
 	u_int off;
 	int extrajmps;		/* number of extra jumps inserted */
 	struct slist **offset = NULL;
@@ -2086,7 +2086,7 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 			goto filled;
 
 	    {
-		int i;
+		u_int i;
 		int jt, jf;
 		const char *ljerr = "%s for block-local relative jump: off=%d";
 
