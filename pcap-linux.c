@@ -1862,8 +1862,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #endif
 				continue;
 
-			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : packet_len;
-			if (len < (unsigned int) handlep->vlan_offset)
+			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
+			if (len < (u_int)handlep->vlan_offset)
 				break;
 
 			/*

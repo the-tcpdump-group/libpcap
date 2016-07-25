@@ -887,7 +887,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 	pcap_usb_header* hdr;
 	int nflush = 0;
 	int packets = 0;
-	int clen, max_clen;
+	u_int clen, max_clen;
 
 	max_clen = handle->snapshot - sizeof(pcap_usb_header);
 
