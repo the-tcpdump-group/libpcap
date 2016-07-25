@@ -620,7 +620,7 @@ pllc:	LLC			{ $$ = gen_llc(cstate); }
 				  else if (pcap_strcasecmp($2, "u") == 0)
 					$$ = gen_llc_u(cstate);
 				  else {
-				  	u_int subtype;
+					int subtype;
 
 					subtype = str2tok($2, llc_s_subtypes);
 					if (subtype != -1)

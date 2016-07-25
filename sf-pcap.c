@@ -876,13 +876,13 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 			fclose(f);
 			return (NULL);
 		}
-		if (linktype != ph.linktype) {
+		if ((bpf_u_int32)linktype != ph.linktype) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different linktype, cannot append to file", fname);
 			fclose(f);
 			return (NULL);
 		}
-		if (p->snapshot != ph.snaplen) {
+		if ((bpf_u_int32)p->snapshot != ph.snaplen) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different snaplen, cannot append to file", fname);
 			fclose(f);

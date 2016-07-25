@@ -1107,7 +1107,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * and the packet length.
 			 */
 			hdr->caplen = hdr->len;
-			if (hdr->caplen > p->snapshot)
+			if (hdr->caplen > (bpf_u_int32)p->snapshot)
 				hdr->caplen = p->snapshot;
 			t = 0;	/* no time stamps */
 			goto found;
@@ -1173,7 +1173,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    idbp->linktype);
 				return (-1);
 			}
-			if (p->snapshot != idbp->snaplen) {
+			if ((bpf_u_int32)p->snapshot != idbp->snaplen) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the type of the first interface",
 				    idbp->snaplen);

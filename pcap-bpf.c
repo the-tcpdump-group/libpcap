@@ -2123,7 +2123,7 @@ pcap_activate_bpf(pcap_t *p)
 					 * the default mode, attempt to
 					 * select the new mode.
 					 */
-					if (new_dlt != v) {
+					if ((u_int)new_dlt != v) {
 						if (ioctl(p->fd, BIOCSDLT,
 						    &new_dlt) != -1) {
 							/*
@@ -2765,7 +2765,7 @@ static int
 find_802_11(struct bpf_dltlist *bdlp)
 {
 	int new_dlt;
-	int i;
+	u_int i;
 
 	/*
 	 * Scan the list of DLT_ values, looking for 802.11 values,

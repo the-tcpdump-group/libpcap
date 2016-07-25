@@ -194,6 +194,11 @@ struct addrinfo {
 }
 
 /*
+ * Offset "not set" value.
+ */
+#define OFFSET_NOT_SET	0xffffffffU
+
+/*
  * Absolute offsets, which are offsets from the beginning of the raw
  * packet data, are, in the general case, the sum of a variable value
  * and a constant value; the variable value may be absent, in which
@@ -335,8 +340,8 @@ struct _compiler_state {
 	 *
 	 * For Linux cooked sockets, it's the offset of the type field.
 	 *
-	 * off_linktype.constant_part is set to -1 for no encapsulation,
-	 * in which case, IP is assumed.
+	 * off_linktype.constant_part is set to OFFSET_NOT_SET for no
+	 * encapsulation, in which case, IP is assumed.
 	 */
 	bpf_abs_offset off_linktype;
 
@@ -1107,7 +1112,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * SLIP doesn't have a link level type.  The 16 byte
 		 * header is hacked into our SLIP driver.
 		 */
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 16;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
@@ -1115,7 +1120,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 
 	case DLT_SLIP_BSDOS:
 		/* XXX this may be the same as the DLT_PPP_BSDOS case */
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		/* XXX end */
 		cstate->off_linkpl.constant_part = 24;
 		cstate->off_nl = 0;
@@ -1301,7 +1306,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	case DLT_RAW:
 	case DLT_IPV4:
 	case DLT_IPV6:
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 0;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
@@ -1320,7 +1325,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * but really it just indicates whether there is a "short" or
 		 * "long" DDP packet following.
 		 */
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 0;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
@@ -1348,7 +1353,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * XXX - we should set this to handle SNAP-encapsulated
 		 * frames (NLPID of 0x80).
 		 */
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 0;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
@@ -1360,7 +1365,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
                  * so lets start with offset 4 for now and increments later on (FIXME);
                  */
 	case DLT_MFR:
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 0;
 		cstate->off_nl = 4;
 		cstate->off_nl_nosnap = 0;	/* XXX - for now -> no 802.2 LLC */
@@ -1441,7 +1446,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 
 	case DLT_JUNIPER_ES:
 		cstate->off_linktype.constant_part = 6;
-		cstate->off_linkpl.constant_part = -1;	/* not really a network layer but raw IP addresses */
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
 		cstate->off_nl = -1;		/* not really a network layer but raw IP addresses */
 		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
 		break;
@@ -1454,36 +1459,36 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 
 	case DLT_BACNET_MS_TP:
-		cstate->off_linktype.constant_part = -1;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
 
 	case DLT_JUNIPER_SERVICES:
 		cstate->off_linktype.constant_part = 12;
-		cstate->off_linkpl.constant_part = -1;	/* L3 proto location dep. on cookie type */
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
 		cstate->off_nl = -1;		/* L3 proto location dep. on cookie type */
 		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_VP:
 		cstate->off_linktype.constant_part = 18;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
 
 	case DLT_JUNIPER_ST:
 		cstate->off_linktype.constant_part = 18;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
 
 	case DLT_JUNIPER_ISM:
 		cstate->off_linktype.constant_part = 8;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
@@ -1493,7 +1498,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	case DLT_JUNIPER_FIBRECHANNEL:
 	case DLT_JUNIPER_ATM_CEMIC:
 		cstate->off_linktype.constant_part = 8;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
@@ -1505,8 +1510,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_opc = 4;
 		cstate->off_dpc = 4;
 		cstate->off_sls = 7;
-		cstate->off_linktype.constant_part = -1;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
@@ -1518,8 +1523,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_opc = 8;
 		cstate->off_dpc = 8;
 		cstate->off_sls = 11;
-		cstate->off_linktype.constant_part = -1;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
@@ -1531,14 +1536,14 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_opc = 24;
 		cstate->off_dpc = 24;
 		cstate->off_sls = 27;
-		cstate->off_linktype.constant_part = -1;
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;
 		cstate->off_nl_nosnap = -1;
 		break;
 
 	case DLT_PFSYNC:
-		cstate->off_linktype.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = 4;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;
@@ -1548,8 +1553,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
-		cstate->off_linktype.constant_part = -1;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = -1;
+		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
+		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 		cstate->off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
 		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
 		break;
@@ -1584,8 +1589,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 */
 		if (cstate->linktype >= DLT_MATCHING_MIN &&
 		    cstate->linktype <= DLT_MATCHING_MAX) {
-			cstate->off_linktype.constant_part = -1;
-			cstate->off_linkpl.constant_part = -1;
+			cstate->off_linktype.constant_part = OFFSET_NOT_SET;
+			cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
 			cstate->off_nl = -1;
 			cstate->off_nl_nosnap = -1;
 		} else {
@@ -3428,9 +3433,9 @@ gen_linktype(compiler_state_t *cstate, int proto)
 		 * Does this link-layer header type have a field
 		 * indicating the type of the next protocol?  If
 		 * so, off_linktype.constant_part will be the offset of that
-		 * field in the packet; if not, it will be -1.
+		 * field in the packet; if not, it will be OFFSET_NOT_SET.
 		 */
-		if (cstate->off_linktype.constant_part != (u_int)-1) {
+		if (cstate->off_linktype.constant_part != OFFSET_NOT_SET) {
 			/*
 			 * Yes; assume it's an Ethernet type.  (If
 			 * it's not, it needs to be handled specially
@@ -6248,7 +6253,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			if (alist == NULL || *alist == NULL)
 				bpf_error(cstate, "unknown host '%s'", name);
 			tproto = proto;
-			if (cstate->off_linktype.constant_part == (u_int)-1 &&
+			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
 			    tproto == Q_DEFAULT)
 				tproto = Q_IP;
 			b = gen_host(cstate, **alist++, 0xffffffff, tproto, dir, q.addr);
@@ -6267,7 +6272,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			cstate->ai = res;
 			b = tmp = NULL;
 			tproto = tproto6 = proto;
-			if (cstate->off_linktype.constant_part == -1 &&
+			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
 			    tproto == Q_DEFAULT) {
 				tproto = Q_IP;
 				tproto6 = Q_IPV6;

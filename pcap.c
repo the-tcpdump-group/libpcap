@@ -587,9 +587,9 @@ pcap_create_common(char *ebuf, size_t size)
 	initialize_ops(p);
 
 	/* put in some defaults*/
- 	pcap_set_snaplen(p, MAXIMUM_SNAPLEN);	/* max packet size */
-	p->opt.timeout = 0;			/* no timeout specified */
-	p->opt.buffer_size = 0;			/* use the platform's default */
+ 	p->snapshot = MAXIMUM_SNAPLEN;	/* max packet size */
+	p->opt.timeout = 0;		/* no timeout specified */
+	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
 	p->opt.rfmon = 0;
 	p->opt.immediate = 0;
@@ -620,6 +620,16 @@ pcap_set_snaplen(pcap_t *p, int snaplen)
 {
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
+
+	/*
+	 * Turn invalid values, or excessively large values, into
+	 * the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (snaplen <= 0 || snaplen > MAXIMUM_SNAPLEN)
+		snaplen = MAXIMUM_SNAPLEN;
 	p->snapshot = snaplen;
 	return (0);
 }
@@ -660,6 +670,13 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 		return (PCAP_ERROR_ACTIVATED);
 
 	/*
+	 * The argument should have been u_int, but that's too late
+	 * to change now - it's an API.
+	 */
+	if (tstamp_type < 0)
+		return (PCAP_WARNING_TSTAMP_TYPE_NOTSUP);
+
+	/*
 	 * If p->tstamp_type_count is 0, we only support PCAP_TSTAMP_HOST;
 	 * the default time stamp type is PCAP_TSTAMP_HOST.
 	 */
@@ -673,7 +690,7 @@ pcap_set_tstamp_type(pcap_t *p, int tstamp_type)
 		 * Check whether we claim to support this type of time stamp.
 		 */
 		for (i = 0; i < p->tstamp_type_count; i++) {
-			if (p->tstamp_type_list[i] == tstamp_type) {
+			if (p->tstamp_type_list[i] == (u_int)tstamp_type) {
 				/*
 				 * Yes.
 				 */
@@ -703,6 +720,12 @@ pcap_set_buffer_size(pcap_t *p, int buffer_size)
 {
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
+	if (buffer_size <= 0) {
+		/*
+		 * Silently ignore invalid values.
+		 */
+		return (0);
+	}
 	p->opt.buffer_size = buffer_size;
 	return (0);
 }
@@ -714,6 +737,13 @@ pcap_set_tstamp_precision(pcap_t *p, int tstamp_precision)
 
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
+
+	/*
+	 * The argument should have been u_int, but that's too late
+	 * to change now - it's an API.
+	 */
+	if (tstamp_precision < 0)
+		return (PCAP_ERROR_TSTAMP_PRECISION_NOTSUP);
 
 	/*
 	 * If p->tstamp_precision_count is 0, we only support setting
@@ -733,7 +763,7 @@ pcap_set_tstamp_precision(pcap_t *p, int tstamp_precision)
 		 * time stamp.
 		 */
 		for (i = 0; i < p->tstamp_precision_count; i++) {
-			if (p->tstamp_precision_list[i] == tstamp_precision) {
+			if (p->tstamp_precision_list[i] == (u_int)tstamp_precision) {
 				/*
 				 * Yes.
 				 */
@@ -973,6 +1003,9 @@ pcap_set_datalink(pcap_t *p, int dlt)
 	int i;
 	const char *dlt_name;
 
+	if (dlt < 0)
+		goto unsupported;
+
 	if (p->dlt_count == 0 || p->set_datalink_op == NULL) {
 		/*
 		 * We couldn't fetch the list of DLTs, or we don't
@@ -990,7 +1023,7 @@ pcap_set_datalink(pcap_t *p, int dlt)
 		return (0);
 	}
 	for (i = 0; i < p->dlt_count; i++)
-		if (p->dlt_list[i] == dlt)
+		if (p->dlt_list[i] == (u_int)dlt)
 			break;
 	if (i >= p->dlt_count)
 		goto unsupported;

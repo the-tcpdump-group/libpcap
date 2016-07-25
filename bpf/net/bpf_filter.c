@@ -734,7 +734,7 @@ bpf_validate(f, len)
 #if defined(KERNEL) || defined(_KERNEL)
 				if (from + p->k < from || from + p->k >= len)
 #else
-				if (from + p->k >= len)
+				if (from + p->k >= (u_int)len)
 #endif
 					return 0;
 				break;
@@ -742,7 +742,7 @@ bpf_validate(f, len)
 			case BPF_JGT:
 			case BPF_JGE:
 			case BPF_JSET:
-				if (from + p->jt >= len || from + p->jf >= len)
+				if (from + p->jt >= (u_int)len || from + p->jf >= (u_int)len)
 					return 0;
 				break;
 			default:

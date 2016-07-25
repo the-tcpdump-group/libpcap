@@ -110,7 +110,7 @@ extern "C" {
 struct pcap_opt {
 	char	*device;
 	int	timeout;	/* timeout for buffering */
-	int	buffer_size;
+	u_int	buffer_size;
 	int	promisc;
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
@@ -169,7 +169,7 @@ struct pcap {
 	/*
 	 * Read buffer.
 	 */
-	int bufsize;
+	u_int bufsize;
 	void *buffer;
 	u_char *bp;
 	int cc;

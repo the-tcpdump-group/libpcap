@@ -885,7 +885,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	if (b->s.code == (BPF_JMP|BPF_K|BPF_JSET)) {
 		if (b->s.k == 0)
 			JT(b) = JF(b);
-		if (b->s.k == 0xffffffff)
+		if ((u_int)b->s.k == 0xffffffffU)
 			JF(b) = JT(b);
 	}
 	/*
@@ -913,11 +913,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			break;
 
 		case BPF_JGT:
-			v = (unsigned)v > b->s.k;
+			v = (unsigned)v > (unsigned)b->s.k;
 			break;
 
 		case BPF_JGE:
-			v = (unsigned)v >= b->s.k;
+			v = (unsigned)v >= (unsigned)b->s.k;
 			break;
 
 		case BPF_JSET:
@@ -2046,7 +2046,7 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 	dst = conv_state->ftail -= (slen + 1 + p->longjt + p->longjf);
 		/* inflate length by any extra jumps */
 
-	p->offset = dst - conv_state->fstart;
+	p->offset = (int)(dst - conv_state->fstart);
 
 	/* generate offset[] for convenience  */
 	if (slen) {

@@ -926,6 +926,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    if test "$ac_lbl_cc_dont_try_gcc_dashW" != yes; then
 		    AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR()
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wsign-compare)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-prototypes)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wdeclaration-after-statement)
