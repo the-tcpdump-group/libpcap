@@ -788,6 +788,7 @@ pcap_activate_win32(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 	NetType type;
+	int res;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (p->opt.rfmon) {
@@ -800,10 +801,18 @@ pcap_activate_win32(pcap_t *p)
 		}
 		else
 		{
-			if (PacketSetMonitorMode(p->opt.device, 1) == FALSE)
+			if ((res = PacketSetMonitorMode(p->opt.device, 1)) != 1)
 			{
 				pw->rfmon_selfstart = 0;
-				return PCAP_ERROR;
+				// Monitor mode is not supported.
+				if (res == 0)
+				{
+					return PCAP_ERROR_RFMON_NOTSUP;
+				}
+				else
+				{
+					return PCAP_ERROR;
+				}
 			}
 			else
 			{
@@ -1090,7 +1099,7 @@ bad:
 static int
 pcap_can_set_rfmon_win32(pcap_t *p)
 {
-	return PacketIsMonitorModeSupported(p->opt.device);
+	return (PacketIsMonitorModeSupported(p->opt.device) == 1);
 }
 
 pcap_t *
