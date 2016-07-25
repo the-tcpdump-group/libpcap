@@ -79,7 +79,7 @@ struct activehosts *activeHosts;
  */
 struct pcap_win {
 	int nonblock;
-
+	int rfmon_selfstart;		/* a flag tells whether the monitor mode is set by itself */
 	int filtering_in_kernel;	/* using kernel filter */
 
 #ifdef HAVE_DAG_API

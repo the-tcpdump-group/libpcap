@@ -76,7 +76,7 @@ static int pcap_setnonblock_win32(pcap_t *, int, char *);
  */
 struct pcap_win {
 	int nonblock;
-
+	int rfmon_selfstart;		/* a flag tells whether the monitor mode is set by itself */
 	int filtering_in_kernel;	/* using kernel filter */
 
 #ifdef HAVE_DAG_API
@@ -771,9 +771,14 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 static void
 pcap_cleanup_win32(pcap_t *p)
 {
+	struct pcap_win *pw = p->priv;
 	if (p->adapter != NULL) {
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;
+	}
+	if (pw->rfmon_selfstart)
+	{
+		PacketSetMonitorMode(p->opt.device, 0);
 	}
 	pcap_cleanup_live_common(p);
 }
@@ -781,9 +786,7 @@ pcap_cleanup_win32(pcap_t *p)
 static int
 pcap_activate_win32(pcap_t *p)
 {
-#ifdef HAVE_DAG_API
 	struct pcap_win *pw = p->priv;
-#endif
 	NetType type;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
@@ -791,9 +794,21 @@ pcap_activate_win32(pcap_t *p)
 		/*
 		 * Monitor mode is supported on Windows Vista and later.
 		 */
-		if (PacketSetMonitorMode(p->opt.device, 1) == FALSE)
+		if (PacketGetMonitorMode(p->opt.device) == 1)
 		{
-			return PCAP_ERROR;
+			pw->rfmon_selfstart = 0;
+		}
+		else
+		{
+			if (PacketSetMonitorMode(p->opt.device, 1) == FALSE)
+			{
+				pw->rfmon_selfstart = 0;
+				return PCAP_ERROR;
+			}
+			else
+			{
+				pw->rfmon_selfstart = 1;
+			}
 		}
 	}
 
@@ -806,6 +821,10 @@ pcap_activate_win32(pcap_t *p)
 	{
 		/* Adapter detected but we are not able to open it. Return failure. */
 		pcap_win32_err_to_str(GetLastError(), errbuf);
+		if (pw->rfmon_selfstart)
+		{
+			PacketSetMonitorMode(p->opt.device, 0);
+		}
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 		return (PCAP_ERROR);
@@ -1086,6 +1105,8 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	if (p == NULL)
 		return (NULL);
 
+	struct pcap_win *pw = p->priv;
+	pw->rfmon_selfstart = 0;
 	p->activate_op = pcap_activate_win32;
 	p->can_set_rfmon_op = pcap_can_set_rfmon_win32;
 	return (p);
