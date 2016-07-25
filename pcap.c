@@ -2148,11 +2148,11 @@ static const char pcap_version_string[] = "libpcap version 1.x.y";
  * version numbers when building WinPcap.  (It'd be nice to do so for
  * the packet.dll version number as well.)
  */
-static const char wpcap_version_string[] = "4.0";
+static const char wpcap_version_string[] = WINPCAP_VER_STRING;
 static const char pcap_version_string_fmt[] =
-    "WinPcap version %s, based on %s";
+	WINPCAP_PRODUCT_NAME " version %s, based on %s";
 static const char pcap_version_string_packet_dll_fmt[] =
-    "WinPcap version %s (packet.dll version %s), based on %s";
+	WINPCAP_PRODUCT_NAME " version %s (packet.dll version %s), based on %s";
 static char *full_pcap_version_string;
 
 const char *
