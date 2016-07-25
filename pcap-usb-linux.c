@@ -676,7 +676,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	 * a partial information.
 	 * At least until linux 2.6.17 there is no way to set usbmon intenal buffer
 	 * length and default value is 130. */
-	while ((string[0] != 0) && (string[1] != 0) && (pkth.caplen < handle->snapshot))
+	while ((string[0] != 0) && (string[1] != 0) && (pkth.caplen < (bpf_u_int32)handle->snapshot))
 	{
 		rawdata[0] = ascii_to_int(string[0]) * 16 + ascii_to_int(string[1]);
 		rawdata++;
@@ -689,8 +689,8 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 got:
 	uhdr->data_len = data_len;
-	if (pkth.caplen > handle->snapshot)
-		pkth.caplen = handle->snapshot;
+	if (pkth.caplen > (bpf_u_int32)handle->snapshot)
+		pkth.caplen = (bpf_u_int32)handle->snapshot;
 
 	if (handle->fcode.bf_insns == NULL ||
 	    bpf_filter(handle->fcode.bf_insns, handle->buffer,
@@ -825,7 +825,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 	struct mon_bin_get info;
 	int ret;
 	struct pcap_pkthdr pkth;
-	int clen = handle->snapshot - sizeof(pcap_usb_header);
+	u_int clen = handle->snapshot - sizeof(pcap_usb_header);
 
 	/* the usb header is going to be part of 'packet' data*/
 	info.hdr = (pcap_usb_header*) handle->buffer;

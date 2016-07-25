@@ -1862,7 +1862,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #endif
 				continue;
 
-			len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
+			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : packet_len;
 			if (len < (unsigned int) handlep->vlan_offset)
 				break;
 
@@ -4066,8 +4066,8 @@ create_ring(pcap_t *handle, int *status)
 					*status = PCAP_ERROR;
 					return -1;
 				}
-				if (frame_size > mtu + 18)
-					frame_size = mtu + 18;
+				if (frame_size > (unsigned int)mtu + 18)
+					frame_size = (unsigned int)mtu + 18;
 			}
 		}
 
@@ -4743,7 +4743,7 @@ static int pcap_handle_packet_mmap(
 	 * Trim the snapshot length to be no longer than the
 	 * specified snapshot length.
 	 */
-	if (pcaphdr.caplen > handle->snapshot)
+	if (pcaphdr.caplen > (bpf_u_int32)handle->snapshot)
 		pcaphdr.caplen = handle->snapshot;
 
 	/* pass the packet to the user */
@@ -6016,7 +6016,7 @@ static const struct {
 static void
 iface_set_all_ts_types(pcap_t *handle)
 {
-	int i;
+	u_int i;
 
 	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
 	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
@@ -6035,7 +6035,7 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 	struct ifreq ifr;
 	struct ethtool_ts_info info;
 	int num_ts_types;
-	int i, j;
+	u_int i, j;
 
 	/*
 	 * This doesn't apply to the "any" device; you can't say "turn on
@@ -6450,8 +6450,8 @@ activate_old(pcap_t *handle)
 		if (mtu == -1)
 			return PCAP_ERROR;
 		handle->bufsize = MAX_LINKHEADER_SIZE + mtu;
-		if (handle->bufsize < handle->snapshot)
-			handle->bufsize = handle->snapshot;
+		if (handle->bufsize < (u_int)handle->snapshot)
+			handle->bufsize = (u_int)handle->snapshot;
 	} else {
 		/*
 		 * This is a 2.2[.x] or later kernel.
@@ -6459,7 +6459,7 @@ activate_old(pcap_t *handle)
 		 * We can safely pass "recvfrom()" a byte count
 		 * based on the snapshot length.
 		 */
-		handle->bufsize = handle->snapshot;
+		handle->bufsize = (u_int)handle->snapshot;
 	}
 
 	/*

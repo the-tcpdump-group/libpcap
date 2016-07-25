@@ -109,12 +109,12 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	}
 
 	buf = (unsigned char *)handle->buffer;
-	while (len >= NLMSG_SPACE(0)) {
+	while ((u_int)len >= NLMSG_SPACE(0)) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) buf;
 		u_int32_t msg_len;
 		nftype_t type = OTHER;
 
-		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || len < nlh->nlmsg_len) {
+		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || (u_int)len < nlh->nlmsg_len) {
 			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %d) (nlmsg_len: %u)", len, nlh->nlmsg_len);
 			return -1;
 		}
@@ -205,8 +205,8 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 
 		msg_len = NLMSG_ALIGN(nlh->nlmsg_len);
-		if (msg_len > len)
-			msg_len = len;
+		if (msg_len > (u_int)len)
+			msg_len = (u_int)len;
 
 		len -= msg_len;
 		buf += msg_len;
@@ -310,7 +310,7 @@ netfilter_send_config_msg(const pcap_t *handle, u_int16_t msg_type, int ack, u_i
 		if (snl.nl_pid != 0 || seq_id != nlh->nlmsg_seq)	/* if not from kernel or wrong sequence skip */
 			continue;
 
-		while (len >= NLMSG_SPACE(0) && NLMSG_OK(nlh, len)) {
+		while ((u_int)len >= NLMSG_SPACE(0) && NLMSG_OK(nlh, len)) {
 			if (nlh->nlmsg_type == NLMSG_ERROR || (nlh->nlmsg_type == NLMSG_DONE && nlh->nlmsg_flags & NLM_F_MULTI)) {
 				if (nlh->nlmsg_len < NLMSG_ALIGN(sizeof(struct nlmsgerr))) {
 					errno = EBADMSG;

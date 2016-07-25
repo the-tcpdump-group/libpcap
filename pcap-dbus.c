@@ -163,7 +163,7 @@ dbus_activate(pcap_t *handle)
 	const char *dev = handle->opt.device;
 
 	DBusError error = DBUS_ERROR_INIT;
-	int i;
+	u_int i;
 
 	if (strcmp(dev, "dbus-system") == 0) {
 		if (!(handlep->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &error))) {

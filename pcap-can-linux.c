@@ -225,6 +225,7 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	u_char *pktd;
 	struct iovec iv;
 	struct can_frame* cf;
+	int len;
 
 	pktd = (u_char *)handle->buffer + CAN_CONTROL_SIZE;
 	iv.iov_base = pktd;
@@ -238,20 +239,21 @@ can_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 
 	do
 	{
-		pkth.caplen = recvmsg(handle->fd, &msg, 0);
+		len = recvmsg(handle->fd, &msg, 0);
 		if (handle->break_loop)
 		{
 			handle->break_loop = 0;
 			return -2;
 		}
-	} while ((pkth.caplen == -1) && (errno == EINTR));
+	} while ((len == -1) && (errno == EINTR));
 
-	if (pkth.caplen == -1)
+	if (len == -1)
 	{
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s",
 			errno, strerror(errno));
 		return -1;
 	}
+	pkth.caplen = (bpf_u_int32)len;
 
 	/* adjust capture len according to frame len */
 	cf = (struct can_frame*)(void *)pktd;
