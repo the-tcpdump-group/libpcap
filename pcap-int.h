@@ -365,18 +365,25 @@ struct oneshot_userdata {
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
 #ifndef HAVE_STRLCPY
- #if !defined(_WIN32)
+ /*
+  * Macro that does the same thing as strlcpy().
+  */
+ #ifdef _WIN32
+  /*
+   * strncpy_s() is supported at least back to Visual
+   * Studio 2005.
+   */
+  #define strlcpy(x, y, z) \
+	strncpy_s((x), (z), (y), _TRUNCATE)
+
+ #else
   #define strlcpy(x, y, z) \
 	(strncpy((x), (y), (z)), \
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 (void) strlen((y)))
- #else
-  #define strlcpy(x, y, z) \
-	(strncpy_s((x), PCAP_ERRBUF_SIZE, (y), (z)), \
-	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
-	 (void) strlen((y)))
  #endif
 #endif
+
 #include <stdarg.h>
 
 /*
