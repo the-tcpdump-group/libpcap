@@ -2197,7 +2197,7 @@ pcap_activate_bpf(pcap_t *p)
 			 * If the new mode we want isn't the default mode,
 			 * attempt to select the new mode.
 			 */
-			if (new_dlt != v) {
+			if ((u_int)new_dlt != v) {
 				if (ioctl(p->fd, BIOCSDLT, &new_dlt) != -1) {
 					/*
 					 * We succeeded; make this the
