@@ -365,12 +365,18 @@ struct oneshot_userdata {
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
 
 #ifndef HAVE_STRLCPY
-#define strlcpy(x, y, z) \
+ #if !defined(_WIN32)
+  #define strlcpy(x, y, z) \
 	(strncpy((x), (y), (z)), \
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 (void) strlen((y)))
+ #else
+  #define strlcpy(x, y, z) \
+	(strncpy_s((x), PCAP_ERRBUF_SIZE, (y), (z)), \
+	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
+	 (void) strlen((y)))
+ #endif
 #endif
-
 #include <stdarg.h>
 
 /*

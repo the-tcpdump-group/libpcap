@@ -526,6 +526,11 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
 #endif /* _WIN32/MSDOS/UN*X */
 
+#ifdef HAVE_REMOTE
+  /* Includes most of the public stuff that is needed for the remote capture */
+  #include <remote-ext.h>
+#endif	 /* HAVE_REMOTE */
+
 #ifdef __cplusplus
 }
 #endif

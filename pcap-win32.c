@@ -53,6 +53,9 @@
 int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
+#ifdef HAVE_REMOTE
+#include "pcap-remote.h"
+#endif /* HAVE_REMOTE */
 
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
@@ -73,7 +76,7 @@ static int pcap_setnonblock_win32(pcap_t *, int, char *);
  */
 struct pcap_win {
 	int nonblock;
-
+	int rfmon_selfstart;		/* a flag tells whether the monitor mode is set by itself */
 	int filtering_in_kernel;	/* using kernel filter */
 
 #ifdef HAVE_DAG_API
@@ -768,9 +771,14 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
 static void
 pcap_cleanup_win32(pcap_t *p)
 {
+	struct pcap_win *pw = p->priv;
 	if (p->adapter != NULL) {
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;
+	}
+	if (pw->rfmon_selfstart)
+	{
+		PacketSetMonitorMode(p->opt.device, 0);
 	}
 	pcap_cleanup_live_common(p);
 }
@@ -778,19 +786,39 @@ pcap_cleanup_win32(pcap_t *p)
 static int
 pcap_activate_win32(pcap_t *p)
 {
-#ifdef HAVE_DAG_API
 	struct pcap_win *pw = p->priv;
-#endif
 	NetType type;
+	int res;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (p->opt.rfmon) {
 		/*
-		 * No monitor mode on Windows.  It could be done on
-		 * Vista with drivers that support the native 802.11
-		 * mechanism and monitor mode.
+		 * Monitor mode is supported on Windows Vista and later.
 		 */
-		return (PCAP_ERROR_RFMON_NOTSUP);
+		if (PacketGetMonitorMode(p->opt.device) == 1)
+		{
+			pw->rfmon_selfstart = 0;
+		}
+		else
+		{
+			if ((res = PacketSetMonitorMode(p->opt.device, 1)) != 1)
+			{
+				pw->rfmon_selfstart = 0;
+				// Monitor mode is not supported.
+				if (res == 0)
+				{
+					return PCAP_ERROR_RFMON_NOTSUP;
+				}
+				else
+				{
+					return PCAP_ERROR;
+				}
+			}
+			else
+			{
+				pw->rfmon_selfstart = 1;
+			}
+		}
 	}
 
 	/* Init WinSock */
@@ -802,6 +830,10 @@ pcap_activate_win32(pcap_t *p)
 	{
 		/* Adapter detected but we are not able to open it. Return failure. */
 		pcap_win32_err_to_str(GetLastError(), errbuf);
+		if (pw->rfmon_selfstart)
+		{
+			PacketSetMonitorMode(p->opt.device, 0);
+		}
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 		return (PCAP_ERROR);
@@ -1061,16 +1093,31 @@ bad:
 	return (PCAP_ERROR);
 }
 
+/*
+* Check if rfmon mode is supported on the pcap_t for Windows systems.
+*/
+static int
+pcap_can_set_rfmon_win32(pcap_t *p)
+{
+	return (PacketIsMonitorModeSupported(p->opt.device) == 1);
+}
+
 pcap_t *
 pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
-
-	p = pcap_create_common(ebuf, sizeof (struct pcap_win));
+#ifdef HAVE_REMOTE
+	p = pcap_create_common(ebuf, sizeof(struct pcap_win) + sizeof(struct pcap_md));
+#else
+	p = pcap_create_common(ebuf, sizeof(struct pcap_win)));
+#endif /* HAVE_REMOTE */
 	if (p == NULL)
 		return (NULL);
 
+	struct pcap_win *pw = p->priv;
+	pw->rfmon_selfstart = 0;
 	p->activate_op = pcap_activate_win32;
+	p->can_set_rfmon_op = pcap_can_set_rfmon_win32;
 	return (p);
 }
 
