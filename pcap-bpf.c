@@ -2522,16 +2522,15 @@ check_bpf_bindable(const char *name)
 	return (1);
 }
 
-int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
-{
-	/*
-	 * Get the list of regular interfaces first.
-	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, check_bpf_bindable) == -1)
-		return (-1);	/* failure */
-
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
+static int
+finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
+{
+	DIR *usbdir;
+	struct dirent *usbitem;
+	size_t name_max;
+	char *name;
+
 	/*
 	 * We might have USB sniffing support, so try looking for USB
 	 * interfaces.
@@ -2543,11 +2542,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 * So, instead, we look in /dev/usb for all buses and create
 	 * a "usbusN" device for each one.
 	 */
-	DIR *usbdir;
-	struct dirent *usbitem;
-	size_t name_max;
-	char *name;
-
 	usbdir = opendir("/dev/usb");
 	if (usbdir == NULL) {
 		/*
@@ -2595,6 +2589,22 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 	free(name);
 	closedir(usbdir);
+	return (0);
+}
+#endif
+
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf, check_bpf_bindable) == -1)
+		return (-1);	/* failure */
+
+#if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
+	if (finddevs_usb(alldevsp, errbuf) == -1)
+		return (-1);
 #endif
 
 	return (0);
