@@ -1392,8 +1392,23 @@ found:
 		frac /= ps->ifaces[interface_id].tsresol;
 		break;
 	}
-	hdr->ts.tv_sec = sec;
-	hdr->ts.tv_usec = frac;
+#ifdef _WIN32
+	/*
+	 * tv_sec and tv_used in the Windows struct timeval are both
+	 * longs.
+	 */
+	hdr->ts.tv_sec = (long)sec;
+	hdr->ts.tv_usec = (long)frac;
+#else
+	/*
+	 * tv_sec in the UN*X struct timeval is a time_t; tv_usec is
+	 * suseconds_t in UN*Xes that work the way the current Single
+	 * UNIX Standard specify - but not all older UN*Xes necessarily
+	 * support that type, so just cast to int.
+	 */
+	hdr->ts.tv_sec = (time_t)sec;
+	hdr->ts.tv_usec = (int)frac;
+#endif
 
 	/*
 	 * Get a pointer to the packet data.
