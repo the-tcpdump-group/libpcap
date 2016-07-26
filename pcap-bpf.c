@@ -1810,6 +1810,8 @@ pcap_activate_bpf(pcap_t *p)
 				 * "atexit()" failed; don't create the
 				 * interface, just give up.
 				 */
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				     "atexit failed");
 				close(s);
 				status = PCAP_ERROR;
 				goto bad;
