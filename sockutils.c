@@ -341,7 +341,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 #endif
 
 		/* WARNING: if the address is a mcast one, I should place the proper Win32 code here */
-		if (bind(sock, addrinfo->ai_addr, addrinfo->ai_addrlen) != 0)
+		if (bind(sock, addrinfo->ai_addr, (int) addrinfo->ai_addrlen) != 0)
 		{
 			sock_geterror("bind(): ", errbuf, errbuflen);
 			return -1;
@@ -376,7 +376,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		while (tempaddrinfo)
 		{
 
-			if (connect(sock, tempaddrinfo->ai_addr, tempaddrinfo->ai_addrlen) == -1)
+			if (connect(sock, tempaddrinfo->ai_addr, (int) tempaddrinfo->ai_addrlen) == -1)
 			{
 				size_t msglen;
 				char TmpBuffer[100];
