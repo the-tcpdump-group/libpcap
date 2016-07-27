@@ -453,8 +453,6 @@ struct pcap_md {
 int pcap_opensource_remote(pcap_t *p, struct pcap_rmtauth *auth);
 int pcap_startcapture_remote(pcap_t *fp);
 
-struct pcap_stat *pcap_stats_ex_remote(pcap_t *p);
-
 void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
 int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf);
 int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);

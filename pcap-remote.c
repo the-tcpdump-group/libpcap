@@ -507,8 +507,7 @@ static int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
 		return -1;
 }
 
-
-
+#ifdef _WIN32
 /* \ingroup remote_pri_func
  *
  * \brief It retrieves network statistics from the other peer.
@@ -518,13 +517,12 @@ static int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
  *
  * Parameters and return values are exactly the same of the pcap_stats_ex().
  */
-struct pcap_stat *pcap_stats_ex_remote(pcap_t *p)
+static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p)
 {
 	/* '0' (third param) means 'standard pcap_stats()' */
 	return (rpcap_stats_remote(p, &(p->stat), PCAP_STATS_EX));
 }
-
-
+#endif
 
 /* \ingroup remote_pri_func
  *
@@ -853,6 +851,9 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
 	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
 	fp->stats_op = pcap_stats_remote;
+#ifdef _WIN32
+	fp->stats_ex_op = pcap_stats_ex_remote;
+#endif
 	fp->cleanup_op = pcap_cleanup_remote;
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
