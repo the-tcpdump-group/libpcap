@@ -92,10 +92,13 @@ struct pcap_win {
  * Locally defined functions                        *
  *                                                  *
  ****************************************************/
-int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
-struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode);
-int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog);
-int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog);
+static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
+static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode);
+static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog);
+static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog);
+static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
+static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog);
+static int pcap_setsampling_remote(pcap_t *p);
 
 
 /****************************************************
@@ -207,7 +210,7 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
  * timeout/2 and then it checks again. If packets are still missing, it returns,
  * otherwise it reads packets.
  */
-int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **pkt_data)
+static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **pkt_data)
 {
 	struct rpcap_header *header;			/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet */
@@ -384,7 +387,7 @@ int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **p
  *
  * Parameters and return values are exactly the same of the pcap_read().
  */
-int pcap_read_remote(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int pcap_read_remote(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_pkthdr *pkt_header;
 	u_char *pkt_data;
@@ -417,7 +420,7 @@ int pcap_read_remote(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
  *
  * \warning Since we're closing the connection, we do not check for errors.
  */
-void pcap_cleanup_remote(pcap_t *fp)
+static void pcap_cleanup_remote(pcap_t *fp)
 {
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
@@ -492,7 +495,7 @@ void pcap_cleanup_remote(pcap_t *fp)
  *
  * Parameters and return values are exactly the same of the pcap_stats().
  */
-int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
+static int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
 {
 	struct pcap_stat *retval;
 
@@ -553,7 +556,7 @@ struct pcap_stat *pcap_stats_ex_remote(pcap_t *p)
  * \return The structure that keeps the statistics, or NULL in case of error.
  * The error string is placed in the pcap_t structure.
  */
-struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode)
+static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode)
 {
 	struct rpcap_header header;			/* header of the RPCAP packet */
 	struct rpcap_stats netstats;		/* statistics sent on the network */
@@ -1321,7 +1324,7 @@ error:
  * \return '0' if everything is fine, '-1' otherwise. The error message (if one)
  * is returned into the 'errbuf' field of the pcap_t structure.
  */
-int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog)
+static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog)
 {
 	struct rpcap_filter *filter;
 	struct rpcap_filterbpf_insn *insn;
@@ -1388,7 +1391,7 @@ int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_p
  * If you want to discard all the packets before applying a new filter, you have to close
  * the current capture session and start a new one.
  */
-int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
+static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
 	int retval;						/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
@@ -1458,7 +1461,7 @@ int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
  *
  * Parameters and return values are exactly the same of the pcap_setfilter().
  */
-int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
+static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
 	struct pcap_md *md;				/* structure used when doing a remote live capture */
 
@@ -1491,7 +1494,7 @@ int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
  * \return '0' if everything is fine, '-1' otherwise. The error message (if one)
  * is returned into the 'errbuf' field of the pcap_t structure.
  */
-int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
+static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 {
 	int RetVal = 0;
 	struct pcap_md *md;				/* structure used when doing a remote live capture */
@@ -1605,7 +1608,7 @@ int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
  * \return '0' if everything is OK, '-1' is something goes wrong. The error message is returned
  * in the 'errbuf' member of the pcap_t structure.
  */
-int pcap_setsampling_remote(pcap_t *p)
+static int pcap_setsampling_remote(pcap_t *p)
 {
 	int retval;						/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
@@ -2053,7 +2056,7 @@ int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8
  * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
-int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf)
+static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf)
 {
 	/*
 	 * This is a sample function.

@@ -453,14 +453,7 @@ struct pcap_md {
 int pcap_opensource_remote(pcap_t *p, struct pcap_rmtauth *auth);
 int pcap_startcapture_remote(pcap_t *fp);
 
-int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **pkt_data);
-int pcap_read_remote(pcap_t *p, int cnt, pcap_handler callback, u_char *user);
-int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
-int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog);
-int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps);
-int pcap_setsampling_remote(pcap_t *p);
 struct pcap_stat *pcap_stats_ex_remote(pcap_t *p);
-void pcap_cleanup_remote(pcap_t *p);
 
 void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
 int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf);
