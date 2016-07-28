@@ -212,7 +212,7 @@ void sock_cleanup();
 void sock_geterror(const char *caller, char *errbuf, int errbufsize);
 int sock_initaddress(const char *address, const char *port,
 struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen);
-int sock_recv(SOCKET socket, char *buffer, int size, int receiveall, char *errbuf, int errbuflen);
+ssize_t sock_recv(SOCKET socket, void *buffer, size_t size, int receiveall, char *errbuf, int errbuflen);
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen);
 int sock_close(SOCKET sock, char *errbuf, int errbuflen);
 

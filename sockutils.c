@@ -693,14 +693,12 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
  * \return the number of bytes read if everything is fine, '-1' if some errors occurred.
  * The error message is returned in the 'errbuf' variable.
  */
-int sock_recv(SOCKET sock, char *buffer, int size, int receiveall, char *errbuf, int errbuflen)
+ssize_t sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
+    char *errbuf, int errbuflen)
 {
-	int nread;
-	int totread = 0;
-	/*
-	 * We can obtain the same result using the MSG_WAITALL flag
-	 * However, this is not supported by recv() in Win32
-	 */
+	char *bufp = buffer;
+	size_t remaining;
+	ssize_t nread;
 
 	if (size == 0)
 	{
@@ -708,36 +706,50 @@ int sock_recv(SOCKET sock, char *buffer, int size, int receiveall, char *errbuf,
 		return 0;
 	}
 
-again:
-	nread = recv(sock, &(buffer[totread]), size - totread, 0);
-
-	if (nread == -1)
-	{
-		sock_geterror("recv(): ", errbuf, errbuflen);
-		return -1;
-	}
-
-	if (nread == 0)
-	{
-		if (errbuf)
-			pcap_snprintf(errbuf, errbuflen, "The other host terminated the connection.");
-
-		return -1;
-	}
+	bufp = (char *)buffer;
+	remaining = size;
 
 	/*
-	 * If we want to return as soon as some data has been received, 
-	 * let's do the job
+	 * We don't use MSG_WAITALL because it's not supported in
+	 * Win32.
 	 */
-	if (!receiveall)
-		return nread;
+	for (;;) {
+		nread = recv(sock, bufp, remaining, 0);
 
-	totread += nread;
+		if (nread == -1) {
+#ifndef _WIN32
+			if (errno == EINTR)
+				return -3;
+#endif
+			sock_geterror("recv(): ", errbuf, errbuflen);
+			return -1;
+		}
 
-	if (totread != size)
-		goto again;
+		if (nread == 0) {
+			if (errbuf) {
+				pcap_snprintf(errbuf, errbuflen,
+				    "The other host terminated the connection.");
+			}
+			return -1;
+		}
 
-	return totread;
+		/*
+		 * Do we want to read the amount requested, or just return
+		 * what we got?
+		 */
+		if (!receiveall) {
+			/*
+			 * Just return what we got.
+			 */
+			return nread;
+		}
+
+		bufp += nread;
+		remaining -= nread;
+
+		if (remaining == 0)
+			return size;
+	}
 }
 
 /*
