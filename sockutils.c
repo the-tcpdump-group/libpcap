@@ -30,20 +30,21 @@
  *
  */
 
-
-
 /*
  * \file sockutils.c
  *
- * The goal of this file is to provide a common set of primitives for socket manipulation.
- * Although the socket interface defined in the RFC 2553 (and its updates) is excellent, several
- * minor issues are still hidden in supporting several operating systems.
+ * The goal of this file is to provide a common set of primitives for socket
+ * manipulation.
  *
- * These calls do not want to provide a better socket interface; vice versa, they intend to
- * provide a set of calls that is portable among several operating systems, hiding their
- * differences.
+ * Although the socket interface defined in the RFC 2553 (and its updates)
+ * is excellent, there are still differences between the behavior of those
+ * routines on UN*X and Windows, and between UN*Xes.
+ *
+ * These calls provide an interface similar to the socket interface, but
+ * that hides the differences between operating systems.  It does not
+ * attempt to significantly improve on the socket interface in other
+ * ways.
  */
-
 
 #include <string.h>	/* for strerror() */
 #include <errno.h>	/* for the errno variable */
@@ -53,11 +54,16 @@
 #include "portability.h"
 #include "sockutils.h"
 
-/* Winsock Initialization */
 #ifdef _WIN32
-#define WINSOCK_MAJOR_VERSION 2		/* Ask for Winsock 2.2 */
-#define WINSOCK_MINOR_VERSION 2		/* Ask for Winsock 2.2 */
-int sockcount = 0;					/* Variable that allows calling the WSAStartup() only one time */
+  /*
+   * Winsock initialization.
+   *
+   * Ask for WinSock 2.2.
+   */
+  #define WINSOCK_MAJOR_VERSION 2
+  #define WINSOCK_MINOR_VERSION 2
+
+  static int sockcount = 0;	/*!< Variable that allows calling the WSAStartup() only one time */
 #endif
 
 /* Some minor differences between UNIX and Win32 */
@@ -75,20 +81,13 @@ int sockcount = 0;					/* Variable that allows calling the WSAStartup() only one
 #define SOCKET_NO_PORT_AVAILABLE "No port available"
 #define SOCKET_NAME_NULL_DAD "Null address (possibly DAD Phase)"
 
-
-
-
 /****************************************************
  *                                                  *
  * Locally defined functions                        *
  *                                                  *
  ****************************************************/
 
-int sock_ismcastaddr(const struct sockaddr *saddr);
-
-
-
-
+static int sock_ismcastaddr(const struct sockaddr *saddr);
 
 /****************************************************
  *                                                  *
@@ -123,6 +122,9 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 	int code;
 	TCHAR message[SOCK_ERRBUF_SIZE];	/* It will be char (if we're using ascii) or wchar_t (if we're using unicode) */
 
+	if (errbuf == NULL)
+		return;
+
 	code = GetLastError();
 
 	retval = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS |
@@ -132,39 +134,31 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 
 	if (retval == 0)
 	{
-		if (errbuf)
-		{
-			if ((caller) && (*caller))
-				pcap_snprintf(errbuf, errbuflen, "%sUnable to get the exact error message", caller);
-			else
-				pcap_snprintf(errbuf, errbuflen, "Unable to get the exact error message");
-		}
-
+		if ((caller) && (*caller))
+			pcap_snprintf(errbuf, errbuflen, "%sUnable to get the exact error message", caller);
+		else
+			pcap_snprintf(errbuf, errbuflen, "Unable to get the exact error message");
 		return;
 	}
-
-	if (errbuf)
+	else
 	{
 		if ((caller) && (*caller))
 			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, code);
 		else
 			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, code);
 	}
-
-
 #else
 	char *message;
 
-	message= strerror(errno);
+	if (errbuf == NULL)
+		return;
 
-	if (errbuf)
-	{
-		if ( (caller) && (*caller) )
-			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
-		else
-			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
-	}
+	message = strerror(errno);
 
+	if ( (caller) && (*caller) )
+		pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
+	else
+		pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
 #endif
 }
 
@@ -191,8 +185,8 @@ int sock_init(char *errbuf, int errbuflen)
 	{
 		WSADATA wsaData;			/* helper variable needed to initialize Winsock */
 
-		/* Ask for Winsock version 2.2. */
-		if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+		if (WSAStartup(MAKEWORD(WINSOCK_MAJOR_VERSION,
+		    WINSOCK_MINOR_VERSION), &wsaData) != 0)
 		{
 			if (errbuf)
 				pcap_snprintf(errbuf, errbuflen, "Failed to initialize Winsock\n");
@@ -232,7 +226,7 @@ void sock_cleanup()
  *
  * \return '0' if the address is multicast, '-1' if it is not.
  */
-int sock_ismcastaddr(const struct sockaddr *saddr)
+static int sock_ismcastaddr(const struct sockaddr *saddr)
 {
 	if (saddr->sa_family == PF_INET)
 	{
@@ -441,9 +435,9 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
  * to control that everything is fine (e.g. a TCP socket cannot have a mcast address, and such).
  * If an error occurs, it writes the error message into 'errbuf'.
  *
- * \param address: a pointer to a user-allocated buffer containing the network address to check.
- * It could be both a numeric - literal address, and it can be NULL or "" (useful in case of a server
- * socket which has to bind to all addresses).
+ * \param host: a pointer to a string identifying the host. It can be
+ * a host name, a numeric literal address, or NULL or "" (useful
+ * in case of a server socket which has to bind to all addresses).
  *
  * \param port: a pointer to a user-allocated buffer containing the network port to use.
  *
@@ -472,25 +466,26 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
  * of the one of the corresponding variable used into the standard getaddrinfo() socket function. We suggest
  * the programmer to look at that function in order to set the 'hints' variable appropriately.
  */
-int sock_initaddress(const char *address, const char *port,
-struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
+int sock_initaddress(const char *host, const char *port,
+    struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
 {
 	int retval;
 
-	retval = getaddrinfo(address, port, hints, addrinfo);
+	retval = getaddrinfo(host, port, hints, addrinfo);
 	if (retval != 0)
 	{
 		/*
 		 * if the getaddrinfo() fails, you have to use gai_strerror(), instead of using the standard
-		 * error routines (errno) in UNIX; WIN32 suggests using the GetLastError() instead.
+		 * error routines (errno) in UNIX; Winsock suggests using the GetLastError() instead.
 		 */
 		if (errbuf)
+		{
 #ifdef _WIN32
 			sock_geterror("getaddrinfo(): ", errbuf, errbuflen);
 #else
-			if (errbuf)
-				pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
+			pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
 #endif
+		}
 		return -1;
 	}
 	/*
@@ -498,15 +493,27 @@ struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
 	 * addrinfo has more han one pointers
 	 */
 
-	/* This software only supports PF_INET and PF_INET6. */
-	if (((*addrinfo)->ai_family != PF_INET) && ((*addrinfo)->ai_family != PF_INET6))
+	/*
+	 * This software only supports PF_INET and PF_INET6.
+	 *
+	 * XXX - should we just check that at least *one* address is
+	 * either PF_INET or PF_INET6, and, when using the list,
+	 * ignore all addresses that are neither?  (What, no IPX
+	 * support? :-))
+	 */
+	if (((*addrinfo)->ai_family != PF_INET) &&
+	    ((*addrinfo)->ai_family != PF_INET6))
 	{
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): socket type not supported");
 		return -1;
 	}
 
-	if (((*addrinfo)->ai_socktype == SOCK_STREAM) && (sock_ismcastaddr((*addrinfo)->ai_addr) == 0))
+	/*
+	 * You can't do multicast (or broadcast) TCP.
+	 */
+	if (((*addrinfo)->ai_socktype == SOCK_STREAM) &&
+	    (sock_ismcastaddr((*addrinfo)->ai_addr) == 0))
 	{
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): multicast addresses are not valid when using TCP streams");
@@ -640,7 +647,7 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 			pcap_snprintf(errbuf, errbuflen, "Not enough space in the temporary send buffer.");
 
 		return -1;
-	};
+	}
 
 	if (!checkonly)
 		memcpy(tempbuf + (*offset), buffer, size);
@@ -1019,7 +1026,7 @@ int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int port
  * \brief It retrieves two strings containing the address and the port of a given 'sockaddr' variable.
  *
  * This function is basically an extended version of the inet_ntop(), which does not exist in
- * WIN32 because the same result can be obtained by using the getnameinfo().
+ * Winsock because the same result can be obtained by using the getnameinfo().
  * However, differently from inet_ntop(), this function is able to return also literal names
  * (e.g. 'localhost') dependently from the 'Flags' parameter.
  *
@@ -1120,7 +1127,7 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 /*
  * \brief It translates an address from the 'presentation' form into the 'network' form.
  *
- * This function basically replaces inet_pton(), which does not exist in WIN32 because
+ * This function basically replaces inet_pton(), which does not exist in Winsock because
  * the same result can be obtained by using the getaddrinfo().
  * An additional advantage is that 'Address' can be both a numeric address (e.g. '127.0.0.1',
  * like in inet_pton() ) and a literal name (e.g. 'localhost').
