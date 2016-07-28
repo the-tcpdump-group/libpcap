@@ -45,26 +45,23 @@
  */
 
 
-#include "sockutils.h"
 #include <string.h>	/* for strerror() */
 #include <errno.h>	/* for the errno variable */
 #include <stdio.h>	/* for the stderr file */
 #include <stdlib.h>	/* for malloc() and free() */
 
-
-
-
-
+#include "portability.h"
+#include "sockutils.h"
 
 /* Winsock Initialization */
-#ifdef WIN32
+#ifdef _WIN32
 #define WINSOCK_MAJOR_VERSION 2		/* Ask for Winsock 2.2 */
 #define WINSOCK_MINOR_VERSION 2		/* Ask for Winsock 2.2 */
 int sockcount = 0;					/* Variable that allows calling the WSAStartup() only one time */
 #endif
 
 /* Some minor differences between UNIX and Win32 */
-#ifdef WIN32
+#ifdef _WIN32
 #define SHUT_WR SD_SEND			/* The control code for shutdown() is different in Win32 */
 #endif
 
@@ -122,7 +119,7 @@ int sock_ismcastaddr(const struct sockaddr *saddr);
  */
 void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	int retval;
 	int code;
 	TCHAR message[SOCK_ERRBUF_SIZE];	/* It will be char (if we're using ascii) or wchar_t (if we're using unicode) */
@@ -192,7 +189,7 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
  */
 int sock_init(char *errbuf, int errbuflen)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	if (sockcount == 0)
 	{
 		WSADATA wsaData;			/* helper variable needed to initialize Winsock */
@@ -227,7 +224,7 @@ int sock_init(char *errbuf, int errbuflen)
  */
 void sock_cleanup()
 {
-#ifdef WIN32
+#ifdef _WIN32
 	sockcount--;
 
 	if (sockcount == 0)
@@ -505,7 +502,7 @@ struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
 		 * error routines (errno) in UNIX; WIN32 suggests using the GetLastError() instead.
 		 */
 		if (errbuf)
-#ifdef WIN32
+#ifdef _WIN32
 			sock_geterror("getaddrinfo(): ", errbuf, errbuflen);
 #else
 			if (errbuf)
@@ -1104,7 +1101,7 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 
 	retval = -1;
 
-#ifdef WIN32
+#ifdef _WIN32
 	if (sockaddr->ss_family == AF_INET)
 		sockaddrlen = sizeof(struct sockaddr_in);
 	else
