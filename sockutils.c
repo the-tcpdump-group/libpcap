@@ -68,13 +68,11 @@
 
 /* Some minor differences between UNIX and Win32 */
 #ifdef _WIN32
-#define SHUT_WR SD_SEND			/* The control code for shutdown() is different in Win32 */
+  #define SHUT_WR SD_SEND	/* The control code for shutdown() is different in Win32 */
 #endif
-
 
 /* Size of the buffer that has to keep error messages */
 #define SOCK_ERRBUF_SIZE 1024
-
 
 /* Constants; used in order to keep strings here */
 #define SOCKET_NO_NAME_AVAILABLE "No name available"
@@ -155,7 +153,7 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 
 	message = strerror(errno);
 
-	if ( (caller) && (*caller) )
+	if ((caller) && (*caller))
 		pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
 	else
 		pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
@@ -295,7 +293,6 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		 * This behavior is not clear in the RFC 2553, so each system implements the
 		 * bind() differently from this point of view
 		 */
-
 		if (addrinfo->ai_family == PF_INET6)
 		{
 			int on;
@@ -1184,7 +1181,6 @@ int sock_present2network(const char *address, struct sockaddr_storage *sockaddr,
 
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "More than one socket requested; using the first one returned");
-
 		return -2;
 	}
 
