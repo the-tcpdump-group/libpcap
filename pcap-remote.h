@@ -459,7 +459,7 @@ int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8
 int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf);
 
-int rpcap_remoteact_getsock(const char *host, char *errbuf);
+SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf);
 
 #endif
 

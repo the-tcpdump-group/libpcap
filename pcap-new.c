@@ -363,16 +363,15 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		return -1;
 
 	/* Check for active mode */
-	if ((retval = rpcap_remoteact_getsock(host, errbuf)) == -1)
+	sockctrl = rpcap_remoteact_getsock(host, &active, errbuf);
+	if (sockctrl == INVALID_SOCKET)
 		return -1;
 
-	if (retval)
-	{
-		sockctrl = retval;
-		active = 1;
-	}
-	else	/* we're not in active mode; let's opening a new control connection (if needed) */
-	{
+	if (!active) {
+		/*
+		 * We're not in active mode; let's try to open a new
+		 * control connection.
+		 */
 		addrinfo = NULL;
 
 		memset(&hints, 0, sizeof(struct addrinfo));
@@ -400,9 +399,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 
 		if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
 		{
-			/* Control connection has to be closed only in case the remote machine is in passive mode */
-			if (!active)
-				sock_close(sockctrl, NULL, 0);
+			sock_close(sockctrl, NULL, 0);
 			return -1;
 		}
 	}

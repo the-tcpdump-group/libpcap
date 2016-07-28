@@ -747,19 +747,16 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	if (sock_init(fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
-	retval = rpcap_remoteact_getsock(host, fp->errbuf);
-
-	if (retval == -1)
+	sockctrl = rpcap_remoteact_getsock(host, &active, fp->errbuf);
+	if (sockctrl == INVALID_SOCKET)
 		return -1;
 
-	/* The capturing machine is in active mode */
-	if (retval)
+	if (!active)
 	{
-		sockctrl = retval;
-		active = 1;
-	}
-	else
-	{
+		/*
+		 * We're not in active mode; let's try to open a new
+		 * control connection.
+		 */
 		memset(&hints, 0, sizeof(struct addrinfo));
 		hints.ai_family = PF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
@@ -2081,29 +2078,34 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
 
 /* \ingroup remote_pri_func
  *
- * \brief It returns the socket currently used for this active connection (active mode only).
+ * \brief It returns the socket currently used for this active connection
+ * (active mode only) and provides an indication of whether this connection
+ * is in active mode or not.
  *
- * This function is just for internal use; it returns the socket ID of the active connection
- * currently opened.
+ * This function is just for internal use; it returns the socket ID of the
+ * active connection currently opened.
  *
- * \param host: a string that keeps the host name of the host for which we want to
- * get the socket ID for that active connection.
+ * \param host: a string that keeps the host name of the host for which we
+ * want to get the socket ID for that active connection.
  *
- * \param errbuf: a pointer to a user-allocated buffer (of size PCAP_ERRBUF_SIZE)
- * that will contain the error message (in case there is one).
+ * \param isactive: a pointer to an int that is set to 1 if there's an
+ * active connection to that host and 0 otherwise.
  *
- * \return the socket identifier if everything is fine, '0' if this host is not in the active
- * host list. It returns '-1' in case of error. The error message is returned into the errbuf variable.
+ * \param errbuf: a pointer to a user-allocated buffer (of size
+ * PCAP_ERRBUF_SIZE) that will contain the error message (in case
+ * there is one).
  *
- * \warning Win32: be carefully not to assign the returning value of this call to a SOCKET
- * directly. It should lead to wrong results, since Win32 sockets are unsigned int; therefore
- * a negative value could not be handled correctly.
+ * \return the socket identifier if everything is fine, '0' if this host
+ * is not in the active host list. An indication of whether this host
+ * is in the active host list is returned into the isactive variable.
+ * It returns 'INVALID_SOCKET' in case of error. The error message is
+ * returned into the errbuf variable.
  */
-int rpcap_remoteact_getsock(const char *host, char *errbuf)
+SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 {
 	struct activehosts *temp;					/* temp var needed to scan the host list chain */
 	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
-	int retval;
+	SOCKET retval;
 
 	/* retrieve the network address corresponding to 'host' */
 	addrinfo = NULL;
@@ -2115,7 +2117,8 @@ int rpcap_remoteact_getsock(const char *host, char *errbuf)
 	if (retval != 0)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
-		return -1;
+		*isactive = 0;
+		return INVALID_SOCKET;
 	}
 
 	temp = activeHosts;
@@ -2125,8 +2128,10 @@ int rpcap_remoteact_getsock(const char *host, char *errbuf)
 		ai_next = addrinfo;
 		while (ai_next)
 		{
-			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
+			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0) {
+				*isactive = 1;
 				return (temp->sockctrl);
+			}
 
 			ai_next = ai_next->ai_next;
 		}
@@ -2136,7 +2141,11 @@ int rpcap_remoteact_getsock(const char *host, char *errbuf)
 	if (addrinfo)
 		freeaddrinfo(addrinfo);
 
-	/* The host you want to get the socket ID does not have an active connection */
+	/*
+	 * The host for which you want to get the socket ID does not have an
+	 * active connection.
+	 */
+	*isactive = 0;
 	return 0;
 }
 
