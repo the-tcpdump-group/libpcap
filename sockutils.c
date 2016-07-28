@@ -860,18 +860,16 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 		struct addrinfo *addrinfo, *ai_next;
 		char *temphostlist;
 
-		temphostlist = (char *)malloc(strlen(hostlist) + 1);
+		/*
+		 * The problem is that strtok modifies the original variable by putting '0' at the end of each token
+		 * So, we have to create a new temporary string in which the original content is kept
+		 */
+		temphostlist = strdup(hostlist);
 		if (temphostlist == NULL)
 		{
 			sock_geterror("sock_check_hostlist(), malloc() failed", errbuf, errbuflen);
 			return -2;
 		}
-
-		/*
-		 * The problem is that strtok modifies the original variable by putting '0' at the end of each token
-		 * So, we have to create a new temporary string in which the original content is kept
-		 */
-		strcpy(temphostlist, hostlist);
 
 		token = strtok(temphostlist, sep);
 
