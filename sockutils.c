@@ -96,7 +96,6 @@ int sock_ismcastaddr(const struct sockaddr *saddr);
  *                                                  *
  ****************************************************/
 
-
 /*
  * \brief It retrieves the error message after an error occurred in the socket interface.
  *
@@ -169,8 +168,6 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 #endif
 }
 
-
-
 /*
  * \brief It initializes sockets.
  *
@@ -212,8 +209,6 @@ int sock_init(char *errbuf, int errbuflen)
 	return 0;
 }
 
-
-
 /*
  * \brief It deallocates sockets.
  *
@@ -231,8 +226,6 @@ void sock_cleanup()
 		WSACleanup();
 #endif
 }
-
-
 
 /*
  * \brief It checks if the sockaddr variable contains a multicast address.
@@ -254,8 +247,6 @@ int sock_ismcastaddr(const struct sockaddr *saddr)
 		else return -1;
 	}
 }
-
-
 
 /*
  * \brief It initializes a network connection both from the client and the server side.
@@ -406,9 +397,6 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 	}
 }
 
-
-
-
 /*
  * \brief Closes the present (TCP and UDP) socket connection.
  *
@@ -445,11 +433,6 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
 	closesocket(sock);
 	return 0;
 }
-
-
-
-
-
 
 /*
  * \brief Checks that the address, port and flags given are valids and it returns an 'addrinfo' structure.
@@ -534,8 +517,6 @@ struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
 	return 0;
 }
 
-
-
 /*
  * \brief It sends the amount of data contained into 'buffer' on the given socket.
  *
@@ -594,7 +575,6 @@ send:
 
 	return 0;
 }
-
 
 /*
  * \brief It copies the amount of data contained into 'buffer' into 'tempbuf'.
@@ -669,8 +649,6 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 
 	return 0;
 }
-
-
 
 /*
  * \brief It waits on a connected socket and it manages to receive data.
@@ -754,8 +732,6 @@ again:
 	return totread;
 }
 
-
-
 /*
  * \brief It discards N bytes that are currently waiting to be read on the current socket.
  *
@@ -817,8 +793,6 @@ int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
 
 	return 0;
 }
-
-
 
 /*
  * \brief Checks that one host (identified by the sockaddr_storage structure) belongs to an 'allowed list'.
@@ -937,7 +911,6 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 	return 1;
 }
 
-
 /*
  * \brief Compares two addresses contained into two sockaddr_storage structures.
  *
@@ -978,8 +951,6 @@ int sock_cmpaddr(struct sockaddr_storage *first, struct sockaddr_storage *second
 
 	return -1;
 }
-
-
 
 /*
  * \brief It gets the address/port the system picked for this socket (on connected sockets).
@@ -1043,8 +1014,6 @@ int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int port
 
 	return 0;
 }
-
-
 
 /*
  * \brief It retrieves two strings containing the address and the port of a given 'sockaddr' variable.
@@ -1148,8 +1117,6 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 	return retval;
 }
 
-
-
 /*
  * \brief It translates an address from the 'presentation' form into the 'network' form.
  *
@@ -1217,5 +1184,3 @@ int sock_present2network(const char *address, struct sockaddr_storage *sockaddr,
 	freeaddrinfo(addrinfo);
 	return -1;
 }
-
-
