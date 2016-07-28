@@ -1411,7 +1411,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	while (*name != '\0') {
 		bpf_u_int32 flags = 0;
 #ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
-		pcap_t p;
+		pcap_t *p;
 
 		/*
 		 * Is this a loopback interface?
