@@ -66,7 +66,6 @@ int sockcount = 0;					/* Variable that allows calling the WSAStartup() only one
 /* Some minor differences between UNIX and Win32 */
 #ifdef WIN32
 #define SHUT_WR SD_SEND			/* The control code for shutdown() is different in Win32 */
-#define snprintf _snprintf		/* The snprintf is called _snprintf() in Win32 */
 #endif
 
 
@@ -140,11 +139,9 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 		if (errbuf)
 		{
 			if ((caller) && (*caller))
-				snprintf(errbuf, errbuflen, "%sUnable to get the exact error message", caller);
+				pcap_snprintf(errbuf, errbuflen, "%sUnable to get the exact error message", caller);
 			else
-				snprintf(errbuf, errbuflen, "Unable to get the exact error message");
-
-			errbuf[errbuflen - 1] = 0;
+				pcap_snprintf(errbuf, errbuflen, "Unable to get the exact error message");
 		}
 
 		return;
@@ -153,11 +150,9 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 	if (errbuf)
 	{
 		if ((caller) && (*caller))
-			snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, code);
+			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, code);
 		else
-			snprintf(errbuf, errbuflen, "%s (code %d)", message, code);
-
-		errbuf[errbuflen - 1] = 0;
+			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, code);
 	}
 
 
@@ -169,11 +164,9 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 	if (errbuf)
 	{
 		if ( (caller) && (*caller) )
-			snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
+			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
 		else
-			snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
-
-		errbuf[errbuflen - 1]= 0;
+			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
 	}
 
 #endif
@@ -208,10 +201,7 @@ int sock_init(char *errbuf, int errbuflen)
 		if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 		{
 			if (errbuf)
-			{
-				snprintf(errbuf, errbuflen, "Failed to initialize Winsock\n");
-				errbuf[errbuflen - 1] = 0;
-			}
+				pcap_snprintf(errbuf, errbuflen, "Failed to initialize Winsock\n");
 
 			WSACleanup();
 
@@ -331,10 +321,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 			if (setsockopt(sock, IPPROTO_IPV6, IPV6_BINDV6ONLY, (char *)&on, sizeof (int)) == -1)
 			{
 				if (errbuf)
-				{
-					snprintf(errbuf, errbuflen, "setsockopt(IPV6_BINDV6ONLY)");
-					errbuf[errbuflen - 1]= 0;
-				}
+					pcap_snprintf(errbuf, errbuflen, "setsockopt(IPV6_BINDV6ONLY)");
 				return -1;
 			}
 		} 
@@ -391,7 +378,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 				/* Returns the numeric address of the host that triggered the error */
 				sock_getascii_addrport((struct sockaddr_storage *) tempaddrinfo->ai_addr, TmpBuffer, sizeof(TmpBuffer), NULL, 0, NI_NUMERICHOST, TmpBuffer, sizeof(TmpBuffer));
 
-				snprintf(errbufptr, bufspaceleft, "Is the server properly installed on %s?  connect() failed: %s", TmpBuffer, SocketErrorMessage);
+				pcap_snprintf(errbufptr, bufspaceleft, "Is the server properly installed on %s?  connect() failed: %s", TmpBuffer, SocketErrorMessage);
 
 				/* In case more then one 'connect' fails, we manage to keep all the error messages */
 				msglen = strlen(errbufptr);
@@ -522,10 +509,7 @@ struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
 			sock_geterror("getaddrinfo(): ", errbuf, errbuflen);
 #else
 			if (errbuf)
-			{
-				snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
-				errbuf[errbuflen - 1]= 0;
-			}
+				pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
 #endif
 		return -1;
 	}
@@ -538,20 +522,14 @@ struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen)
 	if (((*addrinfo)->ai_family != PF_INET) && ((*addrinfo)->ai_family != PF_INET6))
 	{
 		if (errbuf)
-		{
-			snprintf(errbuf, errbuflen, "getaddrinfo(): socket type not supported");
-			errbuf[errbuflen - 1] = 0;
-		}
+			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): socket type not supported");
 		return -1;
 	}
 
 	if (((*addrinfo)->ai_socktype == SOCK_STREAM) && (sock_ismcastaddr((*addrinfo)->ai_addr) == 0))
 	{
 		if (errbuf)
-		{
-			snprintf(errbuf, errbuflen, "getaddrinfo(): multicast addresses are not valid when using TCP streams");
-			errbuf[errbuflen - 1] = 0;
-		}
+			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): multicast addresses are not valid when using TCP streams");
 
 		return -1;
 	}
@@ -682,10 +660,7 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 	if ((*offset + size) > totsize)
 	{
 		if (errbuf)
-		{
-			snprintf(errbuf, errbuflen, "Not enough space in the temporary send buffer.");
-			errbuf[errbuflen - 1] = 0;
-		}
+			pcap_snprintf(errbuf, errbuflen, "Not enough space in the temporary send buffer.");
 
 		return -1;
 	};
@@ -762,10 +737,7 @@ again:
 	if (nread == 0)
 	{
 		if (errbuf)
-		{
-			snprintf(errbuf, errbuflen, "The other host terminated the connection.");
-			errbuf[errbuflen - 1] = 0;
-		}
+			pcap_snprintf(errbuf, errbuflen, "The other host terminated the connection.");
 
 		return -1;
 	}
@@ -920,10 +892,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			if (retval != 0)
 			{
 				if (errbuf)
-				{
-					snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
-					errbuf[errbuflen - 1] = 0;
-				}
+					pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
 
 				SOCK_ASSERT(errbuf, 1);
 
@@ -963,10 +932,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 		}
 
 		if (errbuf)
-		{
-			snprintf(errbuf, errbuflen, "The host is not in the allowed host list. Connection refused.");
-			errbuf[errbuflen - 1] = 0;
-		}
+			pcap_snprintf(errbuf, errbuflen, "The host is not in the allowed host list. Connection refused.");
 
 		free(temphostlist);
 		return -1;
@@ -1248,10 +1214,7 @@ int sock_present2network(const char *address, struct sockaddr_storage *sockaddr,
 		freeaddrinfo(addrinfo);
 
 		if (errbuf)
-		{
-			snprintf(errbuf, errbuflen, "More than one socket requested; using the first one returned");
-			errbuf[errbuflen - 1] = 0;
-		}
+			pcap_snprintf(errbuf, errbuflen, "More than one socket requested; using the first one returned");
 
 		return -2;
 	}
