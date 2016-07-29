@@ -1624,7 +1624,16 @@ const char *
 pcap_strerror(int errnum)
 {
 #ifdef HAVE_STRERROR
+#ifdef _WIN32
+	static char errbuf[PCAP_BUF_SIZE];
+	errno_t errno;
+	errno = strerror_s(errbuf, PCAP_BUF_SIZE, errnum);
+	if (errno != 0) /* errno = 0 if successful */
+		strlcpy(errbuf, "strerror_s() error", PCAP_BUF_SIZE);
+	return errbuf;
+#else
 	return (strerror(errnum));
+#endif /* _WIN32 */
 #else
 	extern int sys_nerr;
 	extern const char *const sys_errlist[];
@@ -2179,7 +2188,8 @@ pcap_lib_version(void)
 			    malloc(full_pcap_version_string_len);
 			if (full_pcap_version_string == NULL)
 				return (NULL);
-			sprintf(full_pcap_version_string,
+			pcap_snprintf(full_pcap_version_string,
+				full_pcap_version_string_len,
 			    pcap_version_string_fmt, wpcap_version_string,
 			    pcap_version_string);
 		} else {
@@ -2198,7 +2208,8 @@ pcap_lib_version(void)
 			full_pcap_version_string = malloc(full_pcap_version_string_len);
 			if (full_pcap_version_string == NULL)
 				return (NULL);
-			sprintf(full_pcap_version_string,
+			pcap_snprintf(full_pcap_version_string,
+				full_pcap_version_string_len,
 			    pcap_version_string_packet_dll_fmt,
 			    wpcap_version_string, packet_version_string,
 			    pcap_version_string);

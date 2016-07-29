@@ -556,7 +556,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (PCAP_ERROR_BREAK);
 			} else {
 				p->bp = bp;
-				p->cc = ep - bp;
+				p->cc = (int) (ep - bp);
 				return (n);
 			}
 		}
@@ -586,7 +586,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			bp += Packet_WORDALIGN(caplen + hdrlen);
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
-				p->cc = ep - bp;
+				p->cc = (int) (ep - bp);
 				return (n);
 			}
 		} else {
@@ -1225,7 +1225,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 
 	if(!fp)
 	{
-		strncpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
+		strlcpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
 		return (-1);
 	}
 

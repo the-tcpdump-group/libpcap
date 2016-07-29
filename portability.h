@@ -79,6 +79,19 @@ extern "C" {
 
 #ifdef _MSC_VER
   #define strdup    _strdup
+  #define sscanf	sscanf_s
+char *tokbuf;
+  #define strltok(x, y) \
+	strtok_s((x), (y), &tokbuf)
+  #define strlcat(x, y, z) \
+	strncat_s((x), (z), (y), _TRUNCATE)
+  #define setbuf(x, y) \
+	setvbuf((x), (y), _IONBF, 0)
+  #define fopen(x, y) \
+	fopen_safe((x), (y))
+  FILE *fopen_safe(const char *filename, const char* mode);
+#else
+  #define strltok strtok
 #endif
 
 /*

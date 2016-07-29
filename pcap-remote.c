@@ -241,7 +241,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	 */
 	FD_SET(md->rmt_sockdata, &rfds);
 
-	retval = select(md->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
+	retval = select((int) md->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
 	if (retval == -1)
 	{
 		sock_geterror("select(): ", p->errbuf, PCAP_ERRBUF_SIZE);
@@ -794,9 +794,9 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_OPEN_REQ, 0, strlen(iface));
+	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_OPEN_REQ, 0, (uint32) strlen(iface));
 
-	if (sock_bufferize(iface, strlen(iface), sendbuf, &sendbufidx,
+	if (sock_bufferize(iface, (int) strlen(iface), sendbuf, &sendbufidx,
 		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, fp->errbuf, PCAP_ERRBUF_SIZE))
 		goto error;
 
@@ -1136,7 +1136,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			memset(&hints, 0, sizeof(struct addrinfo));
 			hints.ai_family = ai_family;		/* Use the same address family of the control socket */
 			hints.ai_socktype = (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
-			sprintf(portdata, "%d", ntohs(startcapreply.portdata));
+			pcap_snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
 			if (sock_initaddress(host, portdata, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
@@ -1194,11 +1194,11 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * So, here bufsize is the whole size of the user buffer.
 	 * In case the bufsize returned is too small, let's adjust it accordingly.
 	 */
-	if (fp->bufsize <= fp->snapshot)
+	if (fp->bufsize <= (u_int) fp->snapshot)
 		fp->bufsize += sizeof(struct pcap_pkthdr);
 
 	/* if the current socket buffer is smaller than the desired one */
-	if (sockbufsize < fp->bufsize)
+	if ((u_int) sockbufsize < fp->bufsize)
 	{
 		/* Loop until the buffer size is OK or the original socket buffer size is larger than this one */
 		while (1)
@@ -1214,7 +1214,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			 */
 			fp->bufsize /= 2;
 
-			if (sockbufsize >= fp->bufsize)
+			if ((u_int) sockbufsize >= fp->bufsize)
 			{
 				fp->bufsize = sockbufsize;
 				break;
@@ -1780,8 +1780,8 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 
 		case RPCAP_RMTAUTH_PWD:
 			length = sizeof(struct rpcap_auth);
-			if (auth->username) length += strlen(auth->username);
-			if (auth->password) length += strlen(auth->password);
+			if (auth->username) length += (uint16) strlen(auth->username);
+			if (auth->password) length += (uint16) strlen(auth->password);
 			break;
 
 		default:
@@ -1816,7 +1816,7 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	{
 
 		if (auth->username)
-			rpauth->slen1 = strlen(auth->username);
+			rpauth->slen1 = (uint16) strlen(auth->username);
 		else
 			rpauth->slen1 = 0;
 
@@ -1825,7 +1825,7 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 			return -1;
 
 		if (auth->password)
-			rpauth->slen2 = strlen(auth->password);
+			rpauth->slen2 = (uint16) strlen(auth->password);
 		else
 			rpauth->slen2 = 0;
 
@@ -2107,7 +2107,7 @@ SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 {
 	struct activehosts *temp;					/* temp var needed to scan the host list chain */
 	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
-	SOCKET retval;
+	int retval;
 
 	/* retrieve the network address corresponding to 'host' */
 	addrinfo = NULL;

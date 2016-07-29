@@ -6,7 +6,7 @@ pcap_vsnprintf(char *str, size_t str_size, const char *format, va_list args)
 {
 	int ret;
 
-	ret = _vsnprintf(str, str_size, format, args);
+	ret = _vsnprintf_s(str, str_size, _TRUNCATE, format, args);
 
 	/*
 	 * XXX - _vsnprintf() and _snprintf() do *not* guarantee
