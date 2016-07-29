@@ -425,11 +425,31 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 // \}
 // End of new WinPcap functions
 
-
-
 /*
  * \name Remote Capture functions
  */
+
+/*
+ * Some minor differences between UN*X sockets and and Winsock sockets.
+ */
+#ifndef _WIN32
+  /*!
+   * \brief In Winsock, a socket handle is of type SOCKET; in UN*X, it's
+   * a file descriptor, and therefore a signed integer.
+   * We define SOCKET to be a signed integer on UN*X, so that it can
+   * be used on both platforms.
+   */
+  #define SOCKET int
+
+  /*!
+   * \brief In Winsock, the error return if socket() fails is INVALID_SOCKET;
+   * in UN*X, it's -1.
+   * We define INVALID_SOCKET to be -1 on UN*X, so that it can be used on
+   * both platforms.
+   */
+  #define INVALID_SOCKET -1
+#endif
+
 // \{ 
 PCAP_API SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, char *errbuf);
 PCAP_API int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf);

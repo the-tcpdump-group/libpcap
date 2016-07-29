@@ -30,41 +30,61 @@
  *
  */
 
-
 #ifndef __SOCKUTILS_H__
 #define __SOCKUTILS_H__
-
 
 #if _MSC_VER > 1000
 #pragma once
 #endif
 
-
-#ifdef WIN32
-/* Prevents a compiler warning in case this was already defined (to avoid that */
-/* windows.h includes winsock.h */
-#ifdef _WINSOCKAPI_
-#undef _WINSOCKAPI_
-#endif
-/* Need windef.h for defines used in winsock2.h under MingW32 */
-#ifdef __MINGW32__
-#include <windef.h>
-#endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#ifdef _WIN32
+  /* Windows */
+  /*
+   * Prevents a compiler warning in case this was already defined (to
+   * avoid that windows.h includes winsock.h)
+   */
+  #ifdef _WINSOCKAPI_
+    #undef _WINSOCKAPI_
+  #endif
+  /* Need windef.h for defines used in winsock2.h under MingW32 */
+  #ifdef __MINGW32__
+    #include <windef.h>
+  #endif
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
 #else
-#include <stdio.h>
-#include <string.h>	/* for memset() */
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>	/* DNS lookup */
-#include <unistd.h>	/* close() */
-#include <errno.h>	/* errno() */
-#include <netinet/in.h> /* for sockaddr_in, in BSD at least */
-#include <arpa/inet.h>
-#include <net/if.h>
-#endif
+  /* UN*X */
+  #include <stdio.h>
+  #include <string.h>	/* for memset() */
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  #include <netdb.h>	/* DNS lookup */
+  #include <unistd.h>	/* close() */
+  #include <errno.h>	/* errno() */
+  #include <netinet/in.h> /* for sockaddr_in, in BSD at least */
+  #include <arpa/inet.h>
+  #include <net/if.h>
 
+  /*!
+   * \brief In Winsock, a socket handle is of type SOCKET; in UN*X, it's
+   * a file descriptor, and therefore a signed integer.
+   * We define SOCKET to be a signed integer on UN*X, so that it can
+   * be used on both platforms.
+   */
+  #ifndef SOCKET
+    #define SOCKET int
+  #endif
+
+  /*!
+   * \brief In Winsock, the error return if socket() fails is INVALID_SOCKET;
+   * in UN*X, it's -1.
+   * We define INVALID_SOCKET to be -1 on UN*X, so that it can be used on
+   * both platforms.
+   */
+  #ifndef INVALID_SOCKET
+    #define INVALID_SOCKET -1
+  #endif
+#endif
 
 /*
  * MingW headers include this definition, but only for Windows XP and above.
@@ -75,18 +95,14 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 	char*,DWORD,int);
 #endif
 
-
 /*
  * \defgroup SockUtils Cross-platform socket utilities (IPv4-IPv6)
  */
-
 
 /*
  * \addtogroup SockUtils
  * \{
  */
-
-
 
 /*
  * \defgroup ExportedStruct Exported Structures and Definitions
@@ -97,37 +113,23 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  * \{
  */
 
-
-
-
-/* Some minor differences between UNIX and Win32 */
-#ifdef WIN32
 /*
- * \brief In Win32, sockets use unsigned integers; in UNIX, they use signed integer.
- *
- * So, we define a generic SOCKET in order to be cross-platform compatible.
+ * Some minor differences between UN*X sockets and and Winsock sockets.
  */
-/* #define SOCKET unsigned int */
+#ifdef _WIN32
+  /*
+   * Winsock doesn't have these UN*X types.
+   */
+  typedef int socklen_t;
 #else
-/*
- * \brief In Win32, sockets use unsigned integers; in UNIX, they use signed integer.
- *
- * So, we define a generic SOCKET in order to be cross-platform compatible.
- */
-
-#define SOCKET int
-
-/*
- * \brief In Win32, the close() call cannot be used for socket.
- *
- * So, we define a generic closesocket() call in order to be cross-platform compatible.
- */
-#define closesocket(a) close(a) 
+  /*!
+   * \brief In Winsock, the close() call cannot be used on a socket;
+   * closesocket() must be used.
+   * We define closesocket() to be a wrapper around close() on UN*X,
+   * so that it can be used on both platforms.
+   */
+  #define closesocket(a) close(a) 
 #endif
-
-
-
-
 
 /*
  * \brief DEBUG facility: it prints an error message on the screen (stderr)
@@ -146,21 +148,18 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  * \return No return values.
  */
 #ifdef NDEBUG
-#define SOCK_ASSERT(msg, expr) ((void)0)
+  #define SOCK_ASSERT(msg, expr) ((void)0)
 #else
-#include <assert.h>
-#if (defined(WIN32) && defined(_MSC_VER))
-#include <crtdbg.h>				/* for _CrtDbgReport */
-/* Use MessageBox(NULL, msg, "warning", MB_OK)' instead of the other calls if you want to debug a Win32 service */
-/* Remember to activate the 'allow service to interact with desktop' flag of the service */
-#define SOCK_ASSERT(msg, expr) { _CrtDbgReport(_CRT_WARN, NULL, 0, NULL, "%s\n", msg); fprintf(stderr, "%s\n", msg); assert(expr); }
-#else
-#define SOCK_ASSERT(msg, expr) { fprintf(stderr, "%s\n", msg); assert(expr); }
+  #include <assert.h>
+  #if (defined(_WIN32) && defined(_MSC_VER))
+    #include <crtdbg.h>				/* for _CrtDbgReport */
+    /* Use MessageBox(NULL, msg, "warning", MB_OK)' instead of the other calls if you want to debug a Win32 service */
+    /* Remember to activate the 'allow service to interact with desktop' flag of the service */
+    #define SOCK_ASSERT(msg, expr) { _CrtDbgReport(_CRT_WARN, NULL, 0, NULL, "%s\n", msg); fprintf(stderr, "%s\n", msg); assert(expr); }
+  #else
+    #define SOCK_ASSERT(msg, expr) { fprintf(stderr, "%s\n", msg); assert(expr); }
+  #endif
 #endif
-#endif
-
-
-
 
 /****************************************************
  *                                                  *
@@ -183,18 +182,13 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 /* Changes the behaviour of the sock_recv(); it waits to receive all data */
 #define SOCK_RECEIVEALL_YES 1
 
-
 /*
  * \}
  */
 
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
 
 /*
  * \defgroup ExportedFunc Exported Functions
@@ -205,14 +199,15 @@ extern "C" {
  * \{
  */
 
-
 int sock_init(char *errbuf, int errbuflen);
-void sock_cleanup();
+void sock_cleanup(void);
 /* It is 'public' because there are calls (like accept() ) which are not managed from inside the sockutils files */
 void sock_geterror(const char *caller, char *errbuf, int errbufsize);
 int sock_initaddress(const char *address, const char *port,
-struct addrinfo *hints, struct addrinfo **addrinfo, char *errbuf, int errbuflen);
-ssize_t sock_recv(SOCKET socket, void *buffer, size_t size, int receiveall, char *errbuf, int errbuflen);
+    struct addrinfo *hints, struct addrinfo **addrinfo,
+    char *errbuf, int errbuflen);
+ssize_t sock_recv(SOCKET socket, void *buffer, size_t size, int receiveall,
+    char *errbuf, int errbuflen);
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen);
 int sock_close(SOCKET sock, char *errbuf, int errbuflen);
 
@@ -227,22 +222,16 @@ int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int port
 int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *address, int addrlen, char *port, int portlen, int flags, char *errbuf, int errbuflen);
 int sock_present2network(const char *address, struct sockaddr_storage *sockaddr, int addr_family, char *errbuf, int errbuflen);
 
-
 #ifdef __cplusplus
 }
 #endif
 
+/*
+ * \}
+ */
 
 /*
  * \}
  */
 
-
-
-/*
- * \}
- */
-
-
-
-#endif 
+#endif
