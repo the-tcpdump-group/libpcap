@@ -714,7 +714,7 @@ ssize_t sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 	 * Win32.
 	 */
 	for (;;) {
-		nread = recv(sock, bufp, remaining, 0);
+		nread = recv(sock, bufp, (int) remaining, 0);
 
 		if (nread == -1) {
 #ifndef _WIN32
@@ -748,7 +748,7 @@ ssize_t sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 		remaining -= nread;
 
 		if (remaining == 0)
-			return size;
+			return (ssize_t) size;
 	}
 }
 
