@@ -23,6 +23,14 @@ if( WIN32 )
     set(PACKET_DLL_DIR "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
 endif( WIN32 )
 
+#
+# XXX - this should be an option, defaulting to "yes" for Windows and to
+# "no", for now, on UN*X.
+#
+if( WIN32 )
+    set( HAVE_REMOTE 1 )
+endif( WIN32 )
+
 ######################################
 # Project setings
 ######################################
