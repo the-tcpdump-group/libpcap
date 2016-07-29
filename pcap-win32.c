@@ -1109,7 +1109,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 #ifdef HAVE_REMOTE
 	p = pcap_create_common(ebuf, sizeof(struct pcap_win) + sizeof(struct pcap_md));
 #else
-	p = pcap_create_common(ebuf, sizeof(struct pcap_win)));
+	p = pcap_create_common(ebuf, sizeof(struct pcap_win));
 #endif /* HAVE_REMOTE */
 	if (p == NULL)
 		return (NULL);
