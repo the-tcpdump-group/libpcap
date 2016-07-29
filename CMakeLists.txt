@@ -35,8 +35,8 @@ endif( WIN32 )
 # XXX - these should be settable as options for WinPcap vs. Npcap.
 #
 if( WIN32 )
-    add_definitions( -DWINPCAP_VER_STRING=4.0 )
-    add_definitions( -DWINPCAP_PRODUCT_NAME=WinPcap )
+    add_definitions( -DWINPCAP_VER_STRING=\"4.0\" )
+    add_definitions( -DWINPCAP_PRODUCT_NAME=\"WinPcap\" )
 endif( WIN32 )
 
 ######################################
