@@ -224,6 +224,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
  * UN*X, but there may be software that expects this to return a
  * full list of devices after the first device.
  */
+#define ADAPTERSNAME_LEN	8192
 char *
 pcap_lookupdev(errbuf)
 	register char *errbuf;
@@ -239,8 +240,8 @@ pcap_lookupdev(errbuf)
 		/*
 		 * Windows 95, 98, ME.
 		 */
-		ULONG NameLength = 8192;
-		static char AdaptersName[8192];
+		ULONG NameLength = ADAPTERSNAME_LEN;
+		static char AdaptersName[ADAPTERSNAME_LEN];
 
 		if (PacketGetAdapterNames(AdaptersName,&NameLength) )
 			return (AdaptersName);
@@ -248,13 +249,17 @@ pcap_lookupdev(errbuf)
 			return NULL;
 	} else {
 		/*
-		 * Windows NT (NT 4.0, W2K, WXP). Convert the names to UNICODE for backward compatibility
+		 * Windows NT (NT 4.0 and later).
+		 * Convert the names to Unicode for backward compatibility.
 		 */
-		ULONG NameLength = 8192;
-		static WCHAR AdaptersName[8192];
+		ULONG NameLength = ADAPTERSNAME_LEN;
+		static WCHAR AdaptersName[ADAPTERSNAME_LEN];
+		size_t BufferSpaceLeft;
 		char *tAstr;
-		WCHAR *tUstr;
-		WCHAR *TAdaptersName = (WCHAR*)malloc(8192 * sizeof(WCHAR));
+		WCHAR *Unames;
+		char *Adescs;
+		size_t namelen;
+		WCHAR *TAdaptersName = (WCHAR*)malloc(ADAPTERSNAME_LEN * sizeof(WCHAR));
 		int NAdapts = 0;
 
 		if(TAdaptersName == NULL)
@@ -273,35 +278,80 @@ pcap_lookupdev(errbuf)
 		}
 
 
+		BufferSpaceLeft = ADAPTERSNAME_LEN * sizeof(WCHAR);
 		tAstr = (char*)TAdaptersName;
-		tUstr = (WCHAR*)AdaptersName;
+		Unames = AdaptersName;
 
 		/*
-		 * Convert and copy the device names
+		 * Convert the device names to Unicode into AdapterName.
 		 */
-		while(sscanf(tAstr, "%S", tUstr) > 0)
-		{
-			tAstr += strlen(tAstr) + 1;
-			tUstr += wcslen(tUstr) + 1;
-			NAdapts ++;
-		}
+		do {
+			/*
+			 * Length of the name, including the terminating
+			 * NUL.
+			 */
+			namelen = strlen(tAstr) + 1;
 
-		tAstr++;
-		*tUstr = 0;
-		tUstr++;
+			/*
+			 * Do we have room for the name in the Unicode
+			 * buffer?
+			 */
+			if (BufferSpaceLeft < namelen * sizeof(WCHAR)) {
+				/*
+				 * No.
+				 */
+				goto quit;
+			}
+			BufferSpaceLeft -= namelen * sizeof(WCHAR);
+
+			/*
+			 * Copy the name, converting ASCII to Unicode.
+			 * namelen includes the NUL, so we copy it as
+			 * well.
+			 */
+			for (i = 0; i < namelen; i++)
+				*Unames++ = *tAstr++;
+
+			/*
+			 * Count this adapter.
+			 */
+			NAdapts++;
+		} while (namelen != 1);
 
 		/*
-		 * Copy the descriptions
+		 * Copy the descriptions, but don't convert them from
+		 * ASCII to Unicode.
 		 */
+		Adescs = (char *)Unames;
 		while(NAdapts--)
 		{
-			char* tmp = (char*)tUstr;
-			strcpy(tmp, tAstr);
-			tmp += strlen(tAstr) + 1;
-			tUstr = (WCHAR*)tmp;
-			tAstr += strlen(tAstr) + 1;
+			size_t desclen;
+
+			desclen = strlen(tAstr) + 1;
+
+			/*
+			 * Do we have room for the name in the Unicode
+			 * buffer?
+			 */
+			if (BufferSpaceLeft < desclen) {
+				/*
+				 * No.
+				 */
+				goto quit;
+			}
+
+			/*
+			 * Just copy the ASCII string.
+			 * namelen includes the NUL, so we copy it as
+			 * well.
+			 */
+			memcpy(Adescs, tAstr, desclen);
+			Adescs += desclen;
+			tAstr += desclen;
+			BufferSpaceLeft -= desclen;
 		}
 
+	quit:
 		free(TAdaptersName);
 		return (char *)(AdaptersName);
 	}
