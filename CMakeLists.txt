@@ -191,6 +191,11 @@ else()
     endif( NOT HAVE_SNPRINTF )
 endif( WIN32 )
 
+if( HAVE_REMOTE )
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
+        pcap-new.c pcap-remote.c sockutils.c)
+endif( HAVE_REMOTE )
+
 #
 # Determine the main pcap-XXX.c file to use.
 #
