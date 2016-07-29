@@ -118,8 +118,13 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  */
 #ifdef _WIN32
   /*
-   * Winsock doesn't have these UN*X types.
+   * Winsock doesn't have these UN*X types; they're used in the UN*X
+   * sockets API.
+   *
+   * XXX - do we need to worry about UN*Xes so old that *they* don't
+   * have them, either?
    */
+  typedef int ssize_t;
   typedef int socklen_t;
 #else
   /*!
