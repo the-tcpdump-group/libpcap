@@ -77,6 +77,10 @@ extern "C" {
  #define FORMAT_STRING(p) p
 #endif
 
+#ifdef _MSC_VER
+  #define strdup    _strdup
+#endif
+
 /*
  * On Windows, snprintf(), with that name and with C99 behavior - i.e.,
  * guaranteeing that the formatted string is null-terminated - didn't

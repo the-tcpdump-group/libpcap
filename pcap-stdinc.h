@@ -172,10 +172,6 @@
   #endif
 #endif
 
-#ifdef _MSC_VER
-  #define strdup    _strdup
-#endif
-
 #if !defined(__cplusplus)
   #define inline __inline
 #endif
