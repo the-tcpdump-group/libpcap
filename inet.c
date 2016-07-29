@@ -256,8 +256,8 @@ pcap_lookupdev(errbuf)
 		static WCHAR AdaptersName[ADAPTERSNAME_LEN];
 		size_t BufferSpaceLeft;
 		char *tAstr;
-		WCHAR *Unames;
-		char *Adescs;
+		WCHAR *Unameptr;
+		char *Adescptr;
 		size_t namelen;
 		WCHAR *TAdaptersName = (WCHAR*)malloc(ADAPTERSNAME_LEN * sizeof(WCHAR));
 		int NAdapts = 0;
@@ -280,7 +280,7 @@ pcap_lookupdev(errbuf)
 
 		BufferSpaceLeft = ADAPTERSNAME_LEN * sizeof(WCHAR);
 		tAstr = (char*)TAdaptersName;
-		Unames = AdaptersName;
+		Unameptr = AdaptersName;
 
 		/*
 		 * Convert the device names to Unicode into AdapterName.
@@ -310,7 +310,7 @@ pcap_lookupdev(errbuf)
 			 * well.
 			 */
 			for (i = 0; i < namelen; i++)
-				*Unames++ = *tAstr++;
+				*Unameptr++ = *tAstr++;
 
 			/*
 			 * Count this adapter.
@@ -322,7 +322,7 @@ pcap_lookupdev(errbuf)
 		 * Copy the descriptions, but don't convert them from
 		 * ASCII to Unicode.
 		 */
-		Adescs = (char *)Unames;
+		Adescptr = (char *)Unameptr;
 		while(NAdapts--)
 		{
 			size_t desclen;
@@ -345,8 +345,8 @@ pcap_lookupdev(errbuf)
 			 * namelen includes the NUL, so we copy it as
 			 * well.
 			 */
-			memcpy(Adescs, tAstr, desclen);
-			Adescs += desclen;
+			memcpy(Adescptr, tAstr, desclen);
+			Adescptr += desclen;
 			tAstr += desclen;
 			BufferSpaceLeft -= desclen;
 		}
