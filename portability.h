@@ -87,6 +87,9 @@ char *tokbuf;
 	strncat_s((x), (z), (y), _TRUNCATE)
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
+  #define fopen(x, y) \
+	fopen_safe((x), (y))
+  FILE *fopen_safe(const char *filename, const char* mode);
 #else
   #define strltok strtok
 #endif
