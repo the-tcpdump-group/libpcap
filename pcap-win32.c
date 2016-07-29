@@ -93,6 +93,44 @@ BOOL WINAPI DllMain(
 	return (TRUE);
 }
 
+/*
+ * Define stub versions of the monitor-mode support routines if this
+ * isn't Npcap.  NPF_DRIVER_NAME_NORMAL is defined by Npcap but not
+ * WinPcap.
+ */
+#ifndef NPF_DRIVER_NAME_NORMAL
+static int
+PacketIsMonitorModeSupported(PCHAR AdapterName _U_)
+{
+	/*
+	 * We don't support monitor mode.
+	 */
+	return (0);
+}
+
+static int
+PacketSetMonitorMode(PCHAR AdapterName _U_, int mode _U_)
+{
+	/*
+	 * This should never be called, as PacketIsMonitorModeSupported()
+	 * will return 0, meaning "we don't support monitor mode, so
+	 * don't try to turn it on or off".
+	 */
+	return (0);
+}
+
+static int
+PacketGetMonitorMode(PCHAR AdapterName _U_)
+{
+	/*
+	 * This should fail, so that pcap_activate_win32() returns
+	 * PCAP_ERROR_RFMON_NOTSUP if our caller requested monitor
+	 * mode.
+	 */
+	return (-1);
+}
+#endif
+
 /* Start winsock */
 int
 wsockinit(void)
@@ -776,12 +814,10 @@ pcap_cleanup_win32(pcap_t *p)
 		PacketCloseAdapter(p->adapter);
 		p->adapter = NULL;
 	}
-#ifdef HAVE_PACKET_DLL_MONITOR_MODE_SUPPORT
 	if (pw->rfmon_selfstart)
 	{
 		PacketSetMonitorMode(p->opt.device, 0);
 	}
-#endif
 	pcap_cleanup_live_common(p);
 }
 
@@ -794,7 +830,6 @@ pcap_activate_win32(pcap_t *p)
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (p->opt.rfmon) {
-#ifdef HAVE_PACKET_DLL_MONITOR_MODE_SUPPORT
 		/*
 		 * Monitor mode is supported on Windows Vista and later.
 		 */
@@ -822,9 +857,6 @@ pcap_activate_win32(pcap_t *p)
 				pw->rfmon_selfstart = 1;
 			}
 		}
-#else
-		return PCAP_ERROR_RFMON_NOTSUP;
-#endif
 	}
 
 	/* Init WinSock */
@@ -836,12 +868,10 @@ pcap_activate_win32(pcap_t *p)
 	{
 		/* Adapter detected but we are not able to open it. Return failure. */
 		pcap_win32_err_to_str(GetLastError(), errbuf);
-#ifdef HAVE_PACKET_DLL_MONITOR_MODE_SUPPORT
 		if (pw->rfmon_selfstart)
 		{
 			PacketSetMonitorMode(p->opt.device, 0);
 		}
-#endif
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Error opening adapter: %s", errbuf);
 		return (PCAP_ERROR);
@@ -1107,11 +1137,7 @@ bad:
 static int
 pcap_can_set_rfmon_win32(pcap_t *p)
 {
-#ifdef HAVE_PACKET_DLL_MONITOR_MODE_SUPPORT
 	return (PacketIsMonitorModeSupported(p->opt.device) == 1);
-#else
-	return (0);
-#endif
 }
 
 pcap_t *
