@@ -85,6 +85,8 @@ char *tokbuf;
 	strtok_s((x), (y), &tokbuf)
   #define strlcat(x, y, z) \
 	strncat_s((x), (z), (y), _TRUNCATE)
+  #define setbuf(x, y) \
+	setvbuf((x), (y), _IONBF, 0)
 #else
   #define strltok strtok
 #endif
