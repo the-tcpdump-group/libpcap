@@ -1136,7 +1136,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			memset(&hints, 0, sizeof(struct addrinfo));
 			hints.ai_family = ai_family;		/* Use the same address family of the control socket */
 			hints.ai_socktype = (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
-			sprintf(portdata, "%d", ntohs(startcapreply.portdata));
+			pcap_snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
 			if (sock_initaddress(host, portdata, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
