@@ -1624,7 +1624,16 @@ const char *
 pcap_strerror(int errnum)
 {
 #ifdef HAVE_STRERROR
+#ifdef _WIN32
+	static char errbuf[PCAP_BUF_SIZE];
+	errno_t errno;
+	errno = strerror_s(errbuf, PCAP_BUF_SIZE, errnum);
+	if (errno != 0) /* errno = 0 if successful */
+		strlcpy(errbuf, "strerror_s() error", PCAP_BUF_SIZE);
+	return errbuf;
+#else
 	return (strerror(errnum));
+#endif /* _WIN32 */
 #else
 	extern int sys_nerr;
 	extern const char *const sys_errlist[];
