@@ -579,7 +579,12 @@ bpf_filter_with_aux_data(pc, p, wirelen, buflen, aux_data)
 			continue;
 
 		case BPF_ALU|BPF_NEG:
-			A = -A;
+			/*
+			 * Most BPF arithmetic is unsigned, but negation
+			 * can't be unsigned; throw some casts to
+			 * specify what we're trying to do.
+			 */
+			A = (u_int32)(-(int32)A);
 			continue;
 
 		case BPF_MISC|BPF_TAX:
