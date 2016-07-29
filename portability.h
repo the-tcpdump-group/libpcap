@@ -79,6 +79,14 @@ extern "C" {
 
 #ifdef _MSC_VER
   #define strdup    _strdup
+  #define sscanf	sscanf_s
+char *tokbuf;
+  #define strltok(x, y) \
+	strtok_s((x), (y), &tokbuf)
+  #define strlcat(x, y, z) \
+	strncat_s((x), (z), (y), _TRUNCATE)
+#else
+  #define strltok strtok
 #endif
 
 /*
