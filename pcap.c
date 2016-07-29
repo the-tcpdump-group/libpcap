@@ -410,7 +410,6 @@ pcap_create(const char *device, char *errbuf)
 		 */
 		if (device[0] != '\0' && device[1] == '\0') {
 			size_t length;
-			char *device_ascii;
 
 			length = wcslen((wchar_t *)device);
 			device_str = (char *)malloc(length + 1);
