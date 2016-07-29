@@ -517,9 +517,11 @@ static int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
  *
  * Parameters and return values are exactly the same of the pcap_stats_ex().
  */
-static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p)
+static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p, int *pcap_stat_size)
 {
-	/* '0' (third param) means 'standard pcap_stats()' */
+	*pcap_stat_size = sizeof (p->stat);
+
+	/* PCAP_STATS_EX (third param) means 'extended pcap_stats()' */
 	return (rpcap_stats_remote(p, &(p->stat), PCAP_STATS_EX));
 }
 #endif
