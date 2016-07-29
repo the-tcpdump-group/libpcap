@@ -258,7 +258,7 @@ pcap_lookupdev(errbuf)
 		char *tAstr;
 		WCHAR *Unameptr;
 		char *Adescptr;
-		size_t namelen;
+		size_t namelen, i;
 		WCHAR *TAdaptersName = (WCHAR*)malloc(ADAPTERSNAME_LEN * sizeof(WCHAR));
 		int NAdapts = 0;
 
