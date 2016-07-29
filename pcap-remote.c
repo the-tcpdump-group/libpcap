@@ -1194,11 +1194,11 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * So, here bufsize is the whole size of the user buffer.
 	 * In case the bufsize returned is too small, let's adjust it accordingly.
 	 */
-	if (fp->bufsize <= fp->snapshot)
+	if (fp->bufsize <= (u_int) fp->snapshot)
 		fp->bufsize += sizeof(struct pcap_pkthdr);
 
 	/* if the current socket buffer is smaller than the desired one */
-	if (sockbufsize < fp->bufsize)
+	if ((u_int) sockbufsize < fp->bufsize)
 	{
 		/* Loop until the buffer size is OK or the original socket buffer size is larger than this one */
 		while (1)
@@ -1214,7 +1214,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			 */
 			fp->bufsize /= 2;
 
-			if (sockbufsize >= fp->bufsize)
+			if ((u_int) sockbufsize >= fp->bufsize)
 			{
 				fp->bufsize = sockbufsize;
 				break;
