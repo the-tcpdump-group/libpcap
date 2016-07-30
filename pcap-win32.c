@@ -54,7 +54,7 @@ int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
 #ifdef HAVE_REMOTE
-#include "pcap-remote.h"
+#include "pcap-rpcap.h"
 #endif /* HAVE_REMOTE */
 
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);

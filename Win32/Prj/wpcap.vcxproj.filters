@@ -58,7 +58,7 @@
     <ClCompile Include="..\..\pcap-new.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\pcap-remote.c">
+    <ClCompile Include="..\..\pcap-rpcap.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\sockutils.c">
@@ -89,7 +89,7 @@
     <ClInclude Include="..\..\pcap-int.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\pcap-remote.h">
+    <ClInclude Include="..\..\pcap-rpcap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\remote-ext.h">

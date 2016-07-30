@@ -40,11 +40,11 @@
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
 #include "pcap-int.h"
-#include "pcap-remote.h"
+#include "pcap-rpcap.h"
 #include "sockutils.h"
 
 /*
- * \file pcap-remote.c
+ * \file pcap-rpcap.c
  *
  * This file keeps all the new funtions that are needed for the RPCAP protocol.
  * Almost all the pcap functions need to be modified in order to become compatible

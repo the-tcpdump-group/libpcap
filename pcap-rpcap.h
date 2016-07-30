@@ -31,8 +31,8 @@
  *
  */
 
-#ifndef __PCAP_REMOTE_H__
-#define __PCAP_REMOTE_H__
+#ifndef __PCAP_RPCAP_H__
+#define __PCAP_RPCAP_H__
 
 
 #include "pcap.h"
@@ -40,7 +40,7 @@
 
 
 /*
- * \file pcap-remote.h
+ * \file pcap-pcap.h
  *
  * This file keeps all the new definitions and typedefs that are exported to the user and
  * that are needed for the RPCAP protocol.
