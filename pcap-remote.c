@@ -62,8 +62,8 @@
  * the error on the screen.
  */
 
-#define PCAP_STATS_STANDARD 0	/* Used by pcap_stats_remote to see if we want standard or extended statistics */
-#define PCAP_STATS_EX 1			/* Used by pcap_stats_remote to see if we want standard or extended statistics */
+#define PCAP_STATS_STANDARD	0	/* Used by pcap_stats_remote to see if we want standard or extended statistics */
+#define PCAP_STATS_EX		1	/* Used by pcap_stats_remote to see if we want standard or extended statistics */
 
 /* Keeps a list of all the opened connections in the active mode. */
 struct activehosts *activeHosts;
@@ -178,8 +178,6 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 	*sockaddrout = NULL;
 	return 0;
 }
-
-
 
 /* \ingroup remote_pri_func
  *
@@ -372,7 +370,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 
 }
 
-
 /* \ingroup remote_pri_func
  *
  * \brief It reads a packet from the network socket.
@@ -405,7 +402,6 @@ static int pcap_read_remote(pcap_t *p, int cnt, pcap_handler callback, u_char *u
 	}
 	return n;
 }
-
 
 /* \ingroup remote_pri_func
  *
@@ -483,8 +479,6 @@ static void pcap_cleanup_remote(pcap_t *fp)
 	/* To avoid inconsistencies in the number of sock_init() */
 	sock_cleanup();
 }
-
-
 
 /* \ingroup remote_pri_func
  *
@@ -665,9 +659,6 @@ error:
 
 	return NULL;
 }
-
-
-
 
 /* \ingroup remote_pri_func
  *
@@ -889,7 +880,6 @@ error:
 	return -1;
 }
 
-
 /* \ingroup remote_pri_func
  *
  * \brief It starts a remote capture.
@@ -922,7 +912,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	int retval;				/* store the return value of the functions */
 	int active = 0;				/* '1' if we're in active mode */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
-	char host[INET6_ADDRSTRLEN + 1];/* numeric name of the other host */
+	char host[INET6_ADDRSTRLEN + 1];	/* numeric name of the other host */
 
 	/* socket-related variables*/
 	struct addrinfo hints;			/* temp, needed to open a socket connection */
@@ -933,7 +923,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	int ai_family;				/* temp, keeps the address family used by the control connection */
 
 	/* RPCAP-related variables*/
-	struct rpcap_header header;					/* header of the RPCAP packet */
+	struct rpcap_header header;			/* header of the RPCAP packet */
 	struct rpcap_startcapreq *startcapreq;		/* start capture request message */
 	struct rpcap_startcapreply startcapreply;	/* start capture reply message */
 
@@ -941,7 +931,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	int res, itemp;
 	int sockbufsize = 0;
 
-	struct pcap_md *md;							/* structure used when doing a remote live capture */
+	struct pcap_md *md;			/* structure used when doing a remote live capture */
 
 	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
 
@@ -1306,7 +1296,6 @@ error:
 	return -1;
 }
 
-
 /*
  * \brief Takes a bpf program and sends it to the other host.
  *
@@ -1376,7 +1365,6 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
 
 	return 0;
 }
-
 
 /* \ingroup remote_pri_func
  *
@@ -1453,7 +1441,6 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 	return 0;
 }
 
-
 /*
  * \ingroup remote_pri_func
  *
@@ -1485,7 +1472,6 @@ static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
 
 	return 0;
 }
-
 
 /*
  * \ingroup remote_pri_func
@@ -1682,7 +1668,6 @@ static int pcap_setsampling_remote(pcap_t *p)
 
 }
 
-
 /*********************************************************
  *                                                       *
  * Miscellaneous functions                               *
@@ -1740,7 +1725,6 @@ int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errb
 
 	return 0;
 }
-
 
 /* \ingroup remote_pri_func
  * \brief Sends the authentication message.
@@ -1875,8 +1859,6 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	return 0;
 }
 
-
-
 /* \ingroup remote_pri_func
  * \brief Creates a structure of type rpcap_header.
  *
@@ -1907,8 +1889,6 @@ void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint
 	header->value = htons(value);
 	header->plen = htonl(length);
 }
-
-
 
 /* ingroup remote_pri_func
  * \brief Checks if the header of the received message is correct.
@@ -2029,8 +2009,6 @@ int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8
 	return -2;
 }
 
-
-
 /* \ingroup remote_pri_func
  * \brief Checks if the version contained into the message is compatible with
  * the one handled by this implementation.
@@ -2074,7 +2052,6 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
 
 	return 0;
 }
-
 
 /* \ingroup remote_pri_func
  *
