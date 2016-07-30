@@ -39,11 +39,9 @@
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
-#include "pcap.h"
 #include "pcap-int.h"
 #include "pcap-remote.h"
 #include "sockutils.h"
-
 
 /*
  * \file pcap-remote.c
@@ -64,12 +62,8 @@
  * the error on the screen.
  */
 
-
-
 #define PCAP_STATS_STANDARD 0	/* Used by pcap_stats_remote to see if we want standard or extended statistics */
 #define PCAP_STATS_EX 1			/* Used by pcap_stats_remote to see if we want standard or extended statistics */
-
-
 
 /* Keeps a list of all the opened connections in the active mode. */
 struct activehosts *activeHosts;
@@ -212,16 +206,17 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
  */
 static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **pkt_data)
 {
-	struct rpcap_header *header;			/* general header according to the RPCAP format */
+	struct rpcap_header *header;		/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet */
-	char netbuf[RPCAP_NETBUF_SIZE];			/* size of the network buffer in which the packet is copied, just for UDP */
-	unsigned int nread;						/* number of bytes (of payload) currently read from the network (referred to the current pkt) */
-	int retval;								/* generic return value */
+	char netbuf[RPCAP_NETBUF_SIZE];		/* size of the network buffer in which the packet is copied, just for UDP */
+	uint32 totread;				/* number of bytes (of payload) currently read from the network (referred to the current pkt) */
+	int nread;
+	int retval;				/* generic return value */
 
 	/* Structures needed for the select() call */
-	fd_set rfds;							/* set of socket descriptors we have to check */
-	struct timeval tv;						/* maximum time the select() can block waiting for data */
-	struct pcap_md *md;						/* structure used when doing a remote live capture */
+	fd_set rfds;				/* set of socket descriptors we have to check */
+	struct timeval tv;			/* maximum time the select() can block waiting for data */
+	struct pcap_md *md;			/* structure used when doing a remote live capture */
 
 	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
 
@@ -256,7 +251,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	 * data is here; so, let's copy it into the user buffer.
 	 * I'm going to read a new packet; so I reset the number of bytes (payload only) read
 	 */
-	nread = 0;
+	totread = 0;
 
 	/*
 	 * We have to define 'header' as a pointer to a larger buffer,
@@ -292,10 +287,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 			return 0;	/* Return 'no packets received' */
 
 		default:
-		{
 			SOCK_ASSERT("Internal error", 1);
 			return 0;	/* Return 'no packets received' */
-		};
 		}
 	}
 
@@ -303,9 +296,12 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	if (!(md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		/* Read the RPCAP packet header from the network */
-		if ((nread = sock_recv(md->rmt_sockdata, (char *)net_pkt_header,
-			sizeof(struct rpcap_pkthdr), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		nread = sock_recv(md->rmt_sockdata, (char *)net_pkt_header,
+		    sizeof(struct rpcap_pkthdr), SOCK_RECEIVEALL_YES,
+		    p->errbuf, PCAP_ERRBUF_SIZE);
+		if (nread == -1)
 			return -1;
+		totread += nread;
 	}
 
 	if ((ntohl(net_pkt_header->caplen) + sizeof(struct pcap_pkthdr)) <= ((unsigned)p->bufsize))
@@ -351,13 +347,17 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		else
 		{
 			/* In case of TCP, read the remaining of the packet from the socket */
-			if ((nread += sock_recv(md->rmt_sockdata, *pkt_data, (*pkt_header)->caplen, SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			nread = sock_recv(md->rmt_sockdata, *pkt_data,
+			    (*pkt_header)->caplen, SOCK_RECEIVEALL_YES,
+			    p->errbuf, PCAP_ERRBUF_SIZE);
+			if (nread == -1)
 				return -1;
+			totread += nread;
 
 			/* Checks if all the data has been read; if not, discard the data in excess */
 			/* This check has to be done only on TCP connections */
-			if (nread != ntohl(header->plen))
-				sock_discard(md->rmt_sockdata, ntohl(header->plen) - nread, NULL, 0);
+			if (totread != ntohl(header->plen))
+				sock_discard(md->rmt_sockdata, ntohl(header->plen) - totread, NULL, 0);
 		}
 
 
@@ -558,11 +558,12 @@ static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p, int *pcap_stat_size)
  */
 static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode)
 {
-	struct rpcap_header header;			/* header of the RPCAP packet */
+	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_stats netstats;		/* statistics sent on the network */
-	unsigned int nread = 0;				/* number of bytes of the payload read from the socket */
-	int retval;							/* temp variable which stores functions return value */
-	struct pcap_md *md;					/* structure used when doing a remote live capture */
+	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
+	int nread;
+	int retval;				/* temp variable which stores functions return value */
+	struct pcap_md *md;			/* structure used when doing a remote live capture */
 
 	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
 
@@ -614,22 +615,24 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 			goto error;
 
 		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update nread, since the rpcap_checkmsg() already purged the buffer */
-			nread = ntohl(header.plen);
+			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
+			totread = ntohl(header.plen);
 
 			/* Do nothing; just exit; the error code is already into the errbuf */
 			goto error;
 
 		default:
-		{
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Internal error");
 			goto error;
-		};
 		}
 	}
 
-	if ((nread = sock_recv(md->rmt_sockctrl, (char *)&netstats, sizeof(struct rpcap_stats), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+	nread = sock_recv(md->rmt_sockctrl, (char *)&netstats,
+	    sizeof(struct rpcap_stats), SOCK_RECEIVEALL_YES,
+	    p->errbuf, PCAP_ERRBUF_SIZE);
+	if (nread == -1)
 		goto error;
+	totread += nread;
 
 	if (mode == PCAP_STATS_STANDARD)
 	{
@@ -648,17 +651,17 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 	}
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (nread != ntohl(header.plen))
+	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen) - nread, NULL, 0) == 1)
+		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
 			goto error;
 	}
 
 	return ps;
 
 error:
-	if (nread != ntohl(header.plen))
-		sock_discard(md->rmt_sockctrl, ntohl(header.plen) - nread, NULL, 0);
+	if (totread != ntohl(header.plen))
+		sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
 	return NULL;
 }
@@ -707,21 +710,22 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	char host[PCAP_BUF_SIZE], ctrlport[PCAP_BUF_SIZE], iface[PCAP_BUF_SIZE];
 
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
-	int sendbufidx = 0;					/* index which keeps the number of bytes currently buffered */
-	unsigned int nread = 0;				/* number of bytes of the payload read from the socket */
-	int retval;							/* store the return value of the functions */
-	int active = 0;						/* '1' if we're in active mode */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
+	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
+	int nread;
+	int retval;				/* store the return value of the functions */
+	int active = 0;				/* '1' if we're in active mode */
 
 	/* socket-related variables */
-	struct addrinfo hints;				/* temp, needed to open a socket connection */
-	struct addrinfo *addrinfo;			/* temp, needed to open a socket connection */
-	SOCKET sockctrl = 0;				/* socket descriptor of the control connection */
+	struct addrinfo hints;			/* temp, needed to open a socket connection */
+	struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
+	SOCKET sockctrl = 0;			/* socket descriptor of the control connection */
 
 	/* RPCAP-related variables */
-	struct rpcap_header header;			/* header of the RPCAP packet */
+	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_openreply openreply;	/* open reply message */
 
-	struct pcap_md *md;					/* structure used when doing a remote live capture */
+	struct pcap_md *md;			/* structure used when doing a remote live capture */
 
 	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
 
@@ -820,22 +824,23 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 			goto error;
 
 		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update nread, since the rpcap_checkmsg() already purged the buffer */
-			nread = ntohl(header.plen);
+			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
+			totread = ntohl(header.plen);
 			/* Do nothing; just exit; the error code is already into the errbuf */
 			goto error;
 
 		default:
-		{
 			pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "Internal error");
 			goto error;
-		};
 		}
 	}
 
-
-	if ((nread += sock_recv(sockctrl, (char *)&openreply, sizeof(struct rpcap_openreply), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+	nread = sock_recv(sockctrl, (char *)&openreply,
+	    sizeof(struct rpcap_openreply), SOCK_RECEIVEALL_YES,
+	    fp->errbuf, PCAP_ERRBUF_SIZE);
+	if (nread == -1)
 		goto error;
+	totread += nread;
 
 	/* Set proper fields into the pcap_t struct */
 	fp->linktype = ntohl(openreply.linktype);
@@ -856,9 +861,9 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	fp->cleanup_op = pcap_cleanup_remote;
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (nread != ntohl(header.plen))
+	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - nread, NULL, 0) == 1)
+		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
 			goto error;
 	}
 	return 0;
@@ -872,8 +877,8 @@ error:
 	 *
 	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
-	if (nread != ntohl(header.plen))
-		sock_discard(sockctrl, ntohl(header.plen) - nread, NULL, 0);
+	if (totread != ntohl(header.plen))
+		sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
 	if (addrinfo)
 		freeaddrinfo(addrinfo);
@@ -909,12 +914,13 @@ error:
  */
 int pcap_startcapture_remote(pcap_t *fp)
 {
-	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
-	int sendbufidx = 0;				/* index which keeps the number of bytes currently buffered */
-	char portdata[PCAP_BUF_SIZE];	/* temp variable needed to keep the network port for the the data connection */
-	unsigned int nread = 0;			/* number of bytes of the payload read from the socket */
-	int retval;						/* store the return value of the functions */
-	int active = 0;					/* '1' if we're in active mode */
+	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
+	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the the data connection */
+	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
+	int nread;
+	int retval;				/* store the return value of the functions */
+	int active = 0;				/* '1' if we're in active mode */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
 	char host[INET6_ADDRSTRLEN + 1];/* numeric name of the other host */
 
@@ -922,9 +928,9 @@ int pcap_startcapture_remote(pcap_t *fp)
 	struct addrinfo hints;			/* temp, needed to open a socket connection */
 	struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
 	SOCKET sockdata = 0;			/* socket descriptor of the data connection */
-	struct sockaddr_storage saddr;	/* temp, needed to retrieve the network data port chosen on the local machine */
-	socklen_t saddrlen;				/* temp, needed to retrieve the network data port chosen on the local machine */
-	int ai_family;					/* temp, keeps the address family used by the control connection */
+	struct sockaddr_storage saddr;		/* temp, needed to retrieve the network data port chosen on the local machine */
+	socklen_t saddrlen;			/* temp, needed to retrieve the network data port chosen on the local machine */
+	int ai_family;				/* temp, keeps the address family used by the control connection */
 
 	/* RPCAP-related variables*/
 	struct rpcap_header header;					/* header of the RPCAP packet */
@@ -1099,23 +1105,23 @@ int pcap_startcapture_remote(pcap_t *fp)
 			goto error;
 
 		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update nread, since the rpcap_checkmsg() already purged the buffer */
-			nread = ntohl(header.plen);
+			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
+			totread = ntohl(header.plen);
 			/* Do nothing; just exit; the error code is already into the errbuf */
 			goto error;
 
 		default:
-		{
 			pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "Internal error");
 			goto error;
-		};
 		}
 	}
 
-
-	if ((nread += sock_recv(md->rmt_sockctrl, (char *)&startcapreply,
-		sizeof(struct rpcap_startcapreply), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+	nread = sock_recv(md->rmt_sockctrl, (char *)&startcapreply,
+	    sizeof(struct rpcap_startcapreply), SOCK_RECEIVEALL_YES,
+	    fp->errbuf, PCAP_ERRBUF_SIZE);
+	if (nread == -1)
 		goto error;
+	totread += nread;
 
 	/*
 	 * In case of UDP data stream, the connection is always opened by the daemon
@@ -1239,9 +1245,9 @@ int pcap_startcapture_remote(pcap_t *fp)
 
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (nread != ntohl(header.plen))
+	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen) - nread, NULL, 0) == 1)
+		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
 			goto error;
 	}
 
@@ -1278,8 +1284,8 @@ error:
 	 *
 	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
-	if (nread != ntohl(header.plen))
-		sock_discard(md->rmt_sockctrl, ntohl(header.plen) - nread, NULL, 0);
+	if (totread != ntohl(header.plen))
+		sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
 	if ((sockdata) && (sockdata != -1))		/* we can be here because sockdata said 'error' */
 		sock_close(sockdata, NULL, 0);
@@ -1433,10 +1439,8 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 			return -1;
 
 		default:
-		{
 			SOCK_ASSERT("Internal error", 0);
 			return -1;
-		};
 		}
 	}
 
@@ -1663,10 +1667,8 @@ static int pcap_setsampling_remote(pcap_t *p)
 			return -1;
 
 		default:
-		{
 			SOCK_ASSERT("Internal error", 0);
 			return -1;
-		};
 		}
 	}
 
@@ -1856,15 +1858,11 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 			return -1;
 
 		case RPCAP_MSG_ERROR:
-		{
 			return -1;
-		};
 
 		default:
-		{
 			SOCK_ASSERT("Internal error", 0);
 			return -1;
-		};
 		}
 	}
 
@@ -2150,8 +2148,3 @@ SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 	*isactive = 0;
 	return 0;
 }
-
-
-
-
-
