@@ -124,7 +124,6 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
    * XXX - do we need to worry about UN*Xes so old that *they* don't
    * have them, either?
    */
-  typedef int ssize_t;
   typedef int socklen_t;
 #else
   /*!

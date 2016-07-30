@@ -698,6 +698,17 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
  * \return the number of bytes read if everything is fine, '-1' if some errors occurred.
  * The error message is returned in the 'errbuf' variable.
  */
+
+/*
+ * On UN*X, recv() returns ssize_t.
+ * On Windows, there *is* no ssize_t, and it returns an int.
+ * Define ssize_t as int on Windows so we can use it as the return value
+ * from recv().
+ */
+#ifdef _WIN32
+typedef int ssize_t;
+#endif
+
 int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
     char *errbuf, int errbuflen)
 {
