@@ -54,6 +54,11 @@
 #include <errno.h>	/* for the errno variable */
 #include <stdio.h>	/* for the stderr file */
 #include <stdlib.h>	/* for malloc() and free() */
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#else
+#define INT_MAX		2147483647
+#endif
 
 #include "portability.h"
 #include "sockutils.h"
@@ -693,11 +698,11 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
  * \return the number of bytes read if everything is fine, '-1' if some errors occurred.
  * The error message is returned in the 'errbuf' variable.
  */
-ssize_t sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
+int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
     char *errbuf, int errbuflen)
 {
 	char *bufp = buffer;
-	size_t remaining;
+	int remaining;
 	ssize_t nread;
 
 	if (size == 0)
@@ -705,16 +710,22 @@ ssize_t sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 		SOCK_ASSERT("I have been requested to read zero bytes", 1);
 		return 0;
 	}
+	if (size > INT_MAX)
+	{
+		pcap_snprintf(errbuf, errbuflen, "Can't read more than %u bytes with sock_recv",
+		    INT_MAX);
+		return -1;
+	}
 
 	bufp = (char *)buffer;
-	remaining = size;
+	remaining = (int)size;
 
 	/*
 	 * We don't use MSG_WAITALL because it's not supported in
 	 * Win32.
 	 */
 	for (;;) {
-		nread = recv(sock, bufp, (int) remaining, 0);
+		nread = recv(sock, bufp, remaining, 0);
 
 		if (nread == -1) {
 #ifndef _WIN32
@@ -741,14 +752,14 @@ ssize_t sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 			/*
 			 * Just return what we got.
 			 */
-			return nread;
+			return (int)nread;
 		}
 
 		bufp += nread;
 		remaining -= nread;
 
 		if (remaining == 0)
-			return (ssize_t) size;
+			return size;
 	}
 }
 
