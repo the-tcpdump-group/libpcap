@@ -302,7 +302,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		totread += nread;
 	}
 
-	if ((ntohl(net_pkt_header->caplen) + sizeof(struct pcap_pkthdr)) <= ((unsigned)p->bufsize))
+	if ((ntohl(net_pkt_header->caplen) + sizeof(struct pcap_pkthdr)) <= p->bufsize)
 	{
 		/* Initialize returned structures */
 		*pkt_header = (struct pcap_pkthdr *) p->buffer;
