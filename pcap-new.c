@@ -46,18 +46,14 @@
 #include <dirent.h>		// for readdir
 #endif
 
-
-
 /* Keeps a list of all the opened connections in the active mode. */
 extern struct activehosts *activeHosts;
-
 
 /*
  * \brief Keeps the main socket identifier when we want to accept a new remote connection (active mode only).
  * See the documentation of pcap_remoteact_accept() and pcap_remoteact_cleanup() for more details.
  */
 SOCKET sockmain;
-
 
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_FILE "File"
@@ -90,8 +86,9 @@ struct pcap_win {
 
 int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
-	SOCKET sockctrl;			/* socket descriptor of the control connection */
-	unsigned int nread = 0;		/* number of bytes of the payload read from the socket */
+	SOCKET sockctrl;		/* socket descriptor of the control connection */
+	uint32 totread = 0;		/* number of bytes of the payload read from the socket */
+	int nread;
 	struct addrinfo hints;		/* temp variable needed to resolve hostnames into to socket representation */
 	struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
 	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
@@ -454,9 +451,12 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		tmpstring2[PCAP_BUF_SIZE] = 0;
 
 		/* receive the findalldevs structure from remote host */
-		if ((nread += sock_recv(sockctrl, (char *)&findalldevs_if,
-			sizeof(struct rpcap_findalldevs_if), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		nread = sock_recv(sockctrl, (char *)&findalldevs_if,
+		    sizeof(struct rpcap_findalldevs_if), SOCK_RECEIVEALL_YES,
+		    errbuf, PCAP_ERRBUF_SIZE);
+		if (nread == -1)
 			goto error;
+		totread += nread;
 
 		findalldevs_if.namelen = ntohs(findalldevs_if.namelen);
 		findalldevs_if.desclen = ntohs(findalldevs_if.desclen);
@@ -495,8 +495,12 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 			}
 
 			/* Retrieve adapter name */
-			if ((nread += sock_recv(sockctrl, tmpstring, findalldevs_if.namelen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			nread = sock_recv(sockctrl, tmpstring,
+			    findalldevs_if.namelen, SOCK_RECEIVEALL_YES,
+			    errbuf, PCAP_ERRBUF_SIZE);
+			if (nread == -1)
 				goto error;
+			totread += nread;
 
 			tmpstring[findalldevs_if.namelen] = 0;
 
@@ -526,11 +530,14 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 			}
 
 			/* Retrieve adapter description */
-			if ((nread += sock_recv(sockctrl, tmpstring, findalldevs_if.desclen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			nread = sock_recv(sockctrl, tmpstring,
+			    findalldevs_if.desclen, SOCK_RECEIVEALL_YES,
+			    errbuf, PCAP_ERRBUF_SIZE);
+			if (nread == -1)
 				goto error;
+			totread += nread;
 
 			tmpstring[findalldevs_if.desclen] = 0;
-
 
 			pcap_snprintf(tmpstring2, sizeof(tmpstring2) - 1, "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
 				tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host);
@@ -552,22 +559,29 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		dev->flags = ntohl(findalldevs_if.flags);
 
 		naddr = 0;
+		addr = NULL;
 		/* loop until all addresses have been received */
 		for (j = 0; j < findalldevs_if.naddr; j++)
 		{
 			struct rpcap_findalldevs_ifaddr ifaddr;
 
 			/* Retrieve the interface addresses */
-			if ((nread += sock_recv(sockctrl, (char *)&ifaddr,
-				sizeof(struct rpcap_findalldevs_ifaddr), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			nread = sock_recv(sockctrl, (char *)&ifaddr,
+			    sizeof(struct rpcap_findalldevs_ifaddr),
+			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
+			if (nread == -1)
 				goto error;
+			totread += nread;
 
-			/* WARNING libpcap bug: the address listing is available only for AF_INET */
+			/*
+			 * WARNING libpcap bug: the address listing is
+			 * available only for AF_INET.
+			 *
+			 * XXX - IPv6?
+			 */
 			if (ntohs(ifaddr.addr.ss_family) == AF_INET)
 			{
-				struct pcap_addr *addr;
-
-				if (naddr == 0)
+				if (addr == NULL)
 				{
 					dev->addresses = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
 					addr = dev->addresses;
@@ -612,9 +626,9 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 	}
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (nread != ntohl(header.plen))
+	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - nread, errbuf, PCAP_ERRBUF_SIZE) == 1)
+		if (sock_discard(sockctrl, ntohl(header.plen) - totread, errbuf, PCAP_ERRBUF_SIZE) == 1)
 			return -1;
 	}
 
@@ -645,9 +659,9 @@ error:
 	 *
 	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
-	if (nread != ntohl(header.plen))
+	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - nread, NULL, 0) == 1)
+		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
 			return -1;
 	}
 
@@ -660,7 +674,6 @@ error:
 
 	return -1;
 }
-
 
 int pcap_createsrcstr(char *source, int type, const char *host, const char *port, const char *name, char *errbuf)
 {
@@ -734,7 +747,6 @@ int pcap_createsrcstr(char *source, int type, const char *host, const char *port
 	}
 	}
 }
-
 
 int pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char *name, char *errbuf)
 {
@@ -888,7 +900,6 @@ int pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char
 	}
 };
 
-
 pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
 {
 	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE], name[PCAP_BUF_SIZE];
@@ -985,7 +996,6 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	return fp;
 }
 
-
 struct pcap_samp *pcap_setsampling(pcap_t *p)
 {
 	struct pcap_md *md;				/* structure used when doing a remote live capture */
@@ -993,7 +1003,6 @@ struct pcap_samp *pcap_setsampling(pcap_t *p)
 	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
 	return &(md->rmt_samp);
 }
-
 
 SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, char *errbuf)
 {
@@ -1128,7 +1137,6 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	return sockctrl;
 }
 
-
 int pcap_remoteact_close(const char *host, char *errbuf)
 {
 	struct activehosts *temp, *prev;	/* temp var needed to scan the host list chain */
@@ -1205,8 +1213,7 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	return -1;
 }
 
-
-void pcap_remoteact_cleanup()
+void pcap_remoteact_cleanup(void)
 {
 	/* Very dirty, but it works */
 	if (sockmain)
@@ -1218,7 +1225,6 @@ void pcap_remoteact_cleanup()
 	}
 
 }
-
 
 int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 {
@@ -1263,4 +1269,3 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 
 	return 0;
 }
-
