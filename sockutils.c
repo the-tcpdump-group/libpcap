@@ -366,7 +366,8 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 				/* Returns the numeric address of the host that triggered the error */
 				sock_getascii_addrport((struct sockaddr_storage *) tempaddrinfo->ai_addr, TmpBuffer, sizeof(TmpBuffer), NULL, 0, NI_NUMERICHOST, TmpBuffer, sizeof(TmpBuffer));
 
-				pcap_snprintf(errbufptr, bufspaceleft, "Is the server properly installed on %s?  connect() failed: %s", TmpBuffer, SocketErrorMessage);
+				pcap_snprintf(errbufptr, bufspaceleft,
+				    "Is the server properly installed on %s?  connect() failed: %s", TmpBuffer, SocketErrorMessage);
 
 				/* In case more then one 'connect' fails, we manage to keep all the error messages */
 				msglen = strlen(errbufptr);
@@ -523,7 +524,6 @@ int sock_initaddress(const char *host, const char *port,
 	{
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): multicast addresses are not valid when using TCP streams");
-
 		return -1;
 	}
 
@@ -646,7 +646,6 @@ send:
  */
 int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen)
 {
-
 	if ((*offset + size) > totsize)
 	{
 		if (errbuf)
