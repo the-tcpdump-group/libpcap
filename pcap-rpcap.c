@@ -771,7 +771,7 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 				return -1;
 		}
 
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 
 		freeaddrinfo(addrinfo);
@@ -1003,7 +1003,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			goto error;
 
 		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER,
-			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 
 		/* addrinfo is no longer used */
@@ -1138,7 +1138,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			if (sock_initaddress(host, portdata, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 				goto error;
 
-			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 				goto error;
 
 			/* addrinfo is no longer used */
