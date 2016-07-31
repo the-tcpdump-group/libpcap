@@ -155,17 +155,13 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 			/* Delete the old pointer */
 			free(dev->name);
 
-			dev->name = (char *)malloc(strlen(tmpstring) + 1);
-
+			/* Make a copy of the new device identifier */
+			dev->name = strdup(tmpstring);
 			if (dev->name == NULL)
 			{
 				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 				return -1;
 			}
-
-			/* Copy the new device identifier into the correct memory location */
-			strlcpy(dev->name, tmpstring, strlen(tmpstring) + 1);
-
 
 			/* Create the new device description */
 			if ((dev->description == NULL) || (dev->description[0] == 0))
@@ -178,16 +174,13 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 			/* Delete the old pointer */
 			free(dev->description);
 
-			dev->description = (char *)malloc(strlen(tmpstring) + 1);
-
+			/* Make a copy of the description */
+			dev->description = strdup(tmpstring);
 			if (dev->description == NULL)
 			{
 				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 				return -1;
 			}
-
-			/* Copy the new device description into the correct memory location */
-			strlcpy(dev->description, tmpstring, strlen(tmpstring) + 1);
 
 			dev = dev->next;
 		}
