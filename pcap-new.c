@@ -94,6 +94,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
 	int i, j;		/* temp variables */
 	int naddr;		/* temp var needed to avoid problems with IPv6 addresses */
+	struct pcap_addr *addr;	/* another such temp */
 	int retval;		/* store the return value of the functions */
 	int nif;		/* Number of interfaces listed */
 	int active = 0;	/* 'true' if we the other end-party is in active mode */
