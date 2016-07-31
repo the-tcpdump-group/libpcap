@@ -650,7 +650,6 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 	{
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "Not enough space in the temporary send buffer.");
-
 		return -1;
 	}
 
