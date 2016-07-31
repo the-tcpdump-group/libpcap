@@ -218,7 +218,7 @@ int sock_init(char *errbuf, int errbuflen)
  *
  * \return No error values.
  */
-void sock_cleanup()
+void sock_cleanup(void)
 {
 #ifdef _WIN32
 	sockcount--;
