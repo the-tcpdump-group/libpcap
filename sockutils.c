@@ -728,8 +728,8 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 		return -1;
 	}
 
-	bufp = (char *)buffer;
-	remaining = (int)size;
+	bufp = (char *) buffer;
+	remaining = (int) size;
 
 	/*
 	 * We don't use MSG_WAITALL because it's not supported in
@@ -738,7 +738,8 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 	for (;;) {
 		nread = recv(sock, bufp, remaining, 0);
 
-		if (nread == -1) {
+		if (nread == -1)
+		{
 #ifndef _WIN32
 			if (errno == EINTR)
 				return -3;
@@ -747,8 +748,10 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 			return -1;
 		}
 
-		if (nread == 0) {
-			if (errbuf) {
+		if (nread == 0)
+		{
+			if (errbuf)
+			{
 				pcap_snprintf(errbuf, errbuflen,
 				    "The other host terminated the connection.");
 			}
@@ -759,18 +762,19 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 		 * Do we want to read the amount requested, or just return
 		 * what we got?
 		 */
-		if (!receiveall) {
+		if (!receiveall)
+		{
 			/*
 			 * Just return what we got.
 			 */
-			return (int)nread;
+			return (int) nread;
 		}
 
 		bufp += nread;
 		remaining -= nread;
 
 		if (remaining == 0)
-			return size;
+			return (int) size;
 	}
 }
 
