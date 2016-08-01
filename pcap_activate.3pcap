@@ -116,7 +116,7 @@ should check for positive, negative, and zero return codes, and treat
 all positive return codes as warnings and all negative return
 codes as errors.
 .B pcap_statustostr()
-cal be called, with a warning or error code as an argument, to fetch a
+can be called, with a warning or error code as an argument, to fetch a
 message describing the warning or error code.
 .SH SEE ALSO
 pcap(3PCAP)
