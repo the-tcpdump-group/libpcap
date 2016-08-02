@@ -1144,6 +1144,7 @@ pcap_t *
 pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
+
 #ifdef HAVE_REMOTE
 	p = pcap_create_common(ebuf, sizeof(struct pcap_win) + sizeof(struct pcap_md));
 #else
@@ -1152,8 +1153,6 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	if (p == NULL)
 		return (NULL);
 
-	struct pcap_win *pw = p->priv;
-	pw->rfmon_selfstart = 0;
 	p->activate_op = pcap_activate_win32;
 	p->can_set_rfmon_op = pcap_can_set_rfmon_win32;
 	return (p);
