@@ -131,49 +131,4 @@
   #include <stdint.h>
 #endif
 
-/*
- * These may be defined by <inttypes.h>.
- *
- * XXX - for MSVC, we always want the _MSC_EXTENSIONS versions.
- * What about other compilers?  If, as the MinGW Web site says MinGW
- * does, the other compilers just use Microsoft's run-time library,
- * then they should probably use the _MSC_EXTENSIONS even if the
- * compiler doesn't define _MSC_EXTENSIONS.
- */
-#ifndef PRId64
-  #ifdef _MSC_EXTENSIONS
-    #define PRId64	"I64d"
-  #else
-    #define PRId64	"lld"
-  #endif
-#endif /* PRId64 */
-
-#ifndef PRIo64
-  #ifdef _MSC_EXTENSIONS
-    #define PRIo64	"I64o"
-  #else
-    #define PRIo64	"llo"
-  #endif
-#endif /* PRIo64 */
-
-#ifndef PRIx64
-  #ifdef _MSC_EXTENSIONS
-    #define PRIx64	"I64x"
-  #else
-    #define PRIx64	"llx"
-  #endif
-#endif
-
-#ifndef PRIu64
-  #ifdef _MSC_EXTENSIONS
-    #define PRIu64	"I64u"
-  #else
-    #define PRIu64	"llu"
-  #endif
-#endif
-
-#if !defined(__cplusplus)
-  #define inline __inline
-#endif
-
 #endif /* pcap_stdinc_h */
