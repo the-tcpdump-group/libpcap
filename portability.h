@@ -94,6 +94,18 @@ char *tokbuf;
   #define strltok strtok
 #endif
 
+#ifdef _MSC_VER
+  /*
+   * MSVC.
+   */
+  #if _MSC_VER >= 1900
+    /*
+     * VS 2015 or newer; we have snprintf() function.
+     */
+    #define HAVE_SNPRINTF
+  #endif
+#endif
+
 /*
  * On Windows, snprintf(), with that name and with C99 behavior - i.e.,
  * guaranteeing that the formatted string is null-terminated - didn't
@@ -119,7 +131,11 @@ char *tokbuf;
 #ifdef HAVE_SNPRINTF
 #define pcap_snprintf snprintf
 #else
-extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...);
+extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...)
+#ifdef __ATTRIBUTE___FORMAT_OK
+    __attribute__((format (printf, 3, 4)))
+#endif /* __ATTRIBUTE___FORMAT_OK */
+    ;
 #endif
 
 #ifdef HAVE_VSNPRINTF
