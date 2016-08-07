@@ -143,10 +143,6 @@ static int bpf_load(char *errbuf);
  * Private data for capturing on BPF devices.
  */
 struct pcap_bpf {
-#ifdef PCAP_FDDIPAD
-	u_int fddipad;
-#endif
-
 #ifdef HAVE_ZEROCOPY_BPF
 	/*
 	 * Zero-copy read buffer -- for zero-copy BPF.  'buffer' above will
