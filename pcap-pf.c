@@ -107,7 +107,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 #ifdef LBL_ALIGN
 	struct enstamp stamp;
 #endif
-	register int pad;
+	register u_int pad;
 
  again:
 	cc = pc->cc;
