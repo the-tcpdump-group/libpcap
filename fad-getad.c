@@ -42,19 +42,6 @@
 
 #include <net/if.h>
 
-/*
- * NetBSD insists on having <net/if.h> pull in <net/dlt.h>, so that
- * including <net/if.h> defines a bunch of stuff we later define in our
- * pcap/dlt.h; those definitions will be different, if they haven't
- * picked up all of our changes yet.
- *
- * Undefine some of the offending items.
- */
-#ifdef __NetBSD__
-#undef DLT_USB			/* we now define it as DLT_FREEBSD_USB */
-#undef DLT_MATCHING_MAX		/* we may define more DLT_ values than they do */
-#endif
-
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>

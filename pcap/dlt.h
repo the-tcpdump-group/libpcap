@@ -676,9 +676,15 @@
  *
  * This is now used by FreeBSD for its BPF taps for USB; that has its
  * own headers.  So it is written, so it is done.
+ *
+ * For source-code compatibility, we also define DLT_USB to have this
+ * value.  We do it numerically so that, if code that includes this
+ * file (directly or indirectly) also includes an OS header that also
+ * defines DLT_USB as 186, we don't get a redefinition warning.
+ * (NetBSD 7 does that.)
  */
 #define DLT_USB_FREEBSD		186
-#define DLT_USB			DLT_USB_FREEBSD	/* source compatibility */
+#define DLT_USB			186
 
 /*
  * Bluetooth HCI UART transport layer (part H:4); requested by
@@ -1292,6 +1298,16 @@
  */
 #define DLT_ISO_14443           264
 
+/*
+ * In case the code that includes this file (directly or indirectly)
+ * has also included OS files that happen to define DLT_MATCHING_MAX,
+ * with a different value (perhaps because that OS hasn't picked up
+ * the latest version of our DLT definitions), we undefine the
+ * previous value of DLT_MATCHING_MAX.
+ */
+#ifdef DLT_MATCHING_MAX
+#undef DLT_MATCHING_MAX
+#endif
 #define DLT_MATCHING_MAX	264	/* highest value in the "matching" range */
 
 /*
