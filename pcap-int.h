@@ -180,7 +180,7 @@ struct pcap {
 
 	int swapped;
 	FILE *rfile;		/* null if live capture, non-null if savefile */
-	int fddipad;
+	u_int fddipad;
 	struct pcap *next;	/* list of open pcaps that need stuff cleared on close */
 
 	/*

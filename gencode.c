@@ -275,7 +275,7 @@ struct _compiler_state {
 	u_int vlan_stack_depth;
 
 	/* XXX */
-	int pcap_fddipad;
+	u_int pcap_fddipad;
 
 #ifdef INET6
 	/*

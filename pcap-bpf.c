@@ -144,7 +144,7 @@ static int bpf_load(char *errbuf);
  */
 struct pcap_bpf {
 #ifdef PCAP_FDDIPAD
-	int fddipad;
+	u_int fddipad;
 #endif
 
 #ifdef HAVE_ZEROCOPY_BPF
@@ -909,7 +909,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	register u_char *bp, *ep;
 	u_char *datap;
 #ifdef PCAP_FDDIPAD
-	register int pad;
+	register u_int pad;
 #endif
 #ifdef HAVE_ZEROCOPY_BPF
 	int i;
