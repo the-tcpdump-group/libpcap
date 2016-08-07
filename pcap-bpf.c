@@ -1034,7 +1034,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	pad = p->fddipad;
 #endif
 	while (bp < ep) {
-		register int caplen, hdrlen;
+		register u_int caplen, hdrlen;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
