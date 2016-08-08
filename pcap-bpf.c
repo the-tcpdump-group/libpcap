@@ -181,6 +181,18 @@ struct pcap_bpf {
 #ifdef BIOCGDLTLIST
 # if (defined(HAVE_NET_IF_MEDIA_H) && defined(IFM_IEEE80211)) && !defined(__APPLE__)
 #define HAVE_BSD_IEEE80211
+
+/*
+ * The ifm_ulist member of a struct ifmediareq is an int * on most systems,
+ * but it's a uint64_t on newer versions of OpenBSD.
+ *
+ * We check this by checking whether IFM_GMASK is defined and > 2^32-1.
+ */
+#  if defined(IFM_GMASK) && IFM_GMASK > 0xFFFFFFFF
+#    define IFM_ULIST_TYPE	uint64_t
+#  else
+#    define IFM_ULIST_TYPE	int
+#  endif
 # endif
 
 # if defined(__APPLE__) || defined(HAVE_BSD_IEEE80211)
@@ -2662,7 +2674,7 @@ monitor_mode(pcap_t *p, int set)
 	struct pcap_bpf *pb = p->priv;
 	int sock;
 	struct ifmediareq req;
-	int *media_list;
+	IFM_ULIST_TYPE *media_list;
 	int i;
 	int can_do;
 	struct ifreq ifr;
@@ -2719,7 +2731,7 @@ monitor_mode(pcap_t *p, int set)
 	 * Allocate a buffer to hold all the media types, and
 	 * get the media types.
 	 */
-	media_list = malloc(req.ifm_count * sizeof(int));
+	media_list = malloc(req.ifm_count * sizeof(*media_list));
 	if (media_list == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
