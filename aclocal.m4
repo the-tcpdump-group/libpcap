@@ -929,6 +929,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wsign-compare)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-prototypes)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshadow)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wdeclaration-after-statement)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
