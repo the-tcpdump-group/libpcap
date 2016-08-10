@@ -40,7 +40,7 @@ if( WIN32 )
 endif( WIN32 )
 
 ######################################
-# Project setings
+# Project settings
 ######################################
 
 add_definitions( -DHAVE_CONFIG_H )
