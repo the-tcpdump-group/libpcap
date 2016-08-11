@@ -874,6 +874,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 		char *token;					/* temp, needed to separate items into the hostlist */
 		struct addrinfo *addrinfo, *ai_next;
 		char *temphostlist;
+		char *lasts;
 
 		/*
 		 * The problem is that strtok modifies the original variable by putting '0' at the end of each token
@@ -886,7 +887,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			return -2;
 		}
 
-		token = strltok(temphostlist, sep);
+		token = pcap_strtok_r(temphostlist, sep, &lasts);
 
 		/* it avoids a warning in the compilation ('addrinfo used but not initialized') */
 		addrinfo = NULL;
@@ -910,7 +911,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 				SOCK_ASSERT(errbuf, 1);
 
 				/* Get next token */
-				token = strltok(NULL, sep);
+				token = pcap_strtok_r(NULL, sep, &lasts);
 				continue;
 			}
 
@@ -935,7 +936,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			addrinfo = NULL;
 
 			/* Get next token */
-			token = strltok(NULL, sep);
+			token = pcap_strtok_r(NULL, sep, &lasts);
 		}
 
 		if (addrinfo)

@@ -4978,6 +4978,29 @@ esac
 
 fi
 
+needstrtok_r=no
+for ac_func in strtok_r
+do :
+  ac_fn_c_check_func "$LINENO" "strtok_r" "ac_cv_func_strtok_r"
+if test "x$ac_cv_func_strtok_r" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRTOK_R 1
+_ACEOF
+
+else
+  needstrtok_r=yes
+fi
+done
+
+if test $needstrtok_r = yes; then
+	case " $LIBOBJS " in
+  *" strtok_r.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS strtok_r.$ac_objext"
+ ;;
+esac
+
+fi
+
 #
 # Do this before checking for ether_hostton(), as it's a
 # "gethostbyname() -ish function".

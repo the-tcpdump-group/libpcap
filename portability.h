@@ -80,9 +80,6 @@ extern "C" {
 #ifdef _MSC_VER
   #define strdup    _strdup
   #define sscanf	sscanf_s
-char *tokbuf;
-  #define strltok(x, y) \
-	strtok_s((x), (y), &tokbuf)
   #define strlcat(x, y, z) \
 	strncat_s((x), (z), (y), _TRUNCATE)
   #define setbuf(x, y) \
@@ -90,8 +87,6 @@ char *tokbuf;
   #define fopen(x, y) \
 	fopen_safe((x), (y))
   FILE *fopen_safe(const char *filename, const char* mode);
-#else
-  #define strltok strtok
 #endif
 
 #ifdef _MSC_VER
@@ -143,6 +138,23 @@ extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...)
 #else
 extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
 #endif
+
+#ifdef HAVE_STRTOK_R
+  #define pcap_strtok_r	strtok_r
+#else
+  #ifdef _MSC_VER
+    /*
+     * Microsoft gives it a different name.
+     */
+    #define pcap_strtok_r	strtok_s
+  #else
+    /*
+     * Define it ourselves.
+     */
+    #define NEED_STRTOK_R
+    extern int pcap_strtok_r(char *, const char *, char **);
+  #endif
+#endif /* HAVE_STRTOK_R */
 
 #ifdef _WIN32
   /*

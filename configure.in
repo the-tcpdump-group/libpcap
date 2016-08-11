@@ -169,6 +169,13 @@ if test $needsnprintf = yes; then
 	AC_LIBOBJ([snprintf])
 fi
 
+needstrtok_r=no
+AC_CHECK_FUNCS(strtok_r,,
+	[needstrtok_r=yes])
+if test $needstrtok_r = yes; then
+	AC_LIBOBJ([strtok_r])
+fi
+
 #
 # Do this before checking for ether_hostton(), as it's a
 # "gethostbyname() -ish function".

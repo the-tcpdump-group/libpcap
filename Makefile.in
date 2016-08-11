@@ -281,6 +281,7 @@ EXTRA_DIST = \
 	missing/getopt.c \
 	missing/getopt.h \
 	missing/snprintf.c \
+	missing/strtok_r.c \
 	mkdep \
 	msdos/bin2c.c \
 	msdos/common.dj \
@@ -463,6 +464,9 @@ version.o: version.c
 
 snprintf.o: $(srcdir)/missing/snprintf.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
+
+strtok_r.o: $(srcdir)/missing/strtok_r.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
 
 version.c: $(srcdir)/VERSION
 	#

@@ -133,6 +133,7 @@ check_function_exists( strerror HAVE_STRERROR )
 check_function_exists( strlcpy HAVE_STRLCPY )
 check_function_exists( snprintf HAVE_SNPRINTF )
 check_function_exists( vsnprintf HAVE_VSNPRINTF )
+check_function_exists( strtok_r HAVE_STRTOK_R )
 
 if (WIN32)
     #
@@ -197,6 +198,9 @@ else()
     if( NOT HAVE_SNPRINTF )
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/snprintf.c )
     endif( NOT HAVE_SNPRINTF )
+    if( NOT HAVE_STRTOK_R )
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/strtok_r.c )
+    endif( NOT HAVE_STRTOK_R )
 endif( WIN32 )
 
 if( HAVE_REMOTE )
