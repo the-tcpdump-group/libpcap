@@ -465,7 +465,7 @@ static void
 compute_local_ud(struct block *b)
 {
 	struct slist *s;
-	atomset def = 0, use = 0, kill = 0;
+	atomset def = 0, use = 0, killed = 0;
 	int atom;
 
 	for (s = b->stmts; s; s = s->next) {
@@ -489,7 +489,7 @@ compute_local_ud(struct block *b)
 		atom = atomdef(&s->s);
 		if (atom >= 0) {
 			if (!ATOMELEM(use, atom))
-				kill |= ATOMMASK(atom);
+				killed |= ATOMMASK(atom);
 			def |= ATOMMASK(atom);
 		}
 	}
@@ -515,7 +515,7 @@ compute_local_ud(struct block *b)
 	}
 
 	b->def = def;
-	b->kill = kill;
+	b->kill = killed;
 	b->in_use = use;
 }
 
