@@ -138,7 +138,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 	pcap_if_t *devlist = NULL;
 	register int fd;
 	register struct ifreq *ifrp, *ifend, *ifnext;
-	int n;
+	size_t n;
 	struct ifconf ifc;
 	char *buf = NULL;
 	unsigned buf_size;
