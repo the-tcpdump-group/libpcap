@@ -166,14 +166,6 @@ static int dlpi_kread(int, off_t, void *, u_int, char *);
 static int get_dlpi_ppa(int, const char *, int, char *);
 #endif
 
-/* XXX Needed by HP-UX (at least) */
-static bpf_u_int32 ctlbuf[MAXDLBUF];
-static struct strbuf ctl = {
-	MAXDLBUF,
-	0,
-	(char *)ctlbuf
-};
-
 /*
  * Cast a buffer to "union DL_primitives" without provoking warnings
  * from the compiler.
@@ -186,6 +178,12 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int cc;
 	u_char *bp;
 	int flags;
+	bpf_u_int32 ctlbuf[MAXDLBUF];
+	struct strbuf ctl = {
+		MAXDLBUF,
+		0,
+		(char *)ctlbuf
+	};
 	struct strbuf data;
 
 	flags = 0;
@@ -213,6 +211,9 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			 * would be DL_HP_RAWDATA_IND on HP-UX
 			 * if we're in raw mode?
 			 */
+			ctl.buf = (char *)ctlbuf;
+			ctl.maxlen = MAXDLBUF;
+			ctl.len = 0;
 			if (getmsg(p->fd, &ctl, &data, &flags) < 0) {
 				/* Don't choke when we get ptraced */
 				switch (errno) {
