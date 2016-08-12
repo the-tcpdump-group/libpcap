@@ -1625,24 +1625,24 @@ pcap_strerror(int errnum)
 {
 #ifdef HAVE_STRERROR
 #ifdef _WIN32
-	static char errbuf[PCAP_BUF_SIZE];
+	static char errbuf[PCAP_ERRBUF_SIZE];
 	errno_t errno;
-	errno = strerror_s(errbuf, PCAP_BUF_SIZE, errnum);
+	errno = strerror_s(errbuf, PCAP_ERRBUF_SIZE, errnum);
 	if (errno != 0) /* errno = 0 if successful */
-		strlcpy(errbuf, "strerror_s() error", PCAP_BUF_SIZE);
-	return errbuf;
+		strlcpy(errbuf, "strerror_s() error", PCAP_ERRBUF_SIZE);
+	return (errbuf);
 #else
 	return (strerror(errnum));
 #endif /* _WIN32 */
 #else
 	extern int sys_nerr;
 	extern const char *const sys_errlist[];
-	static char ebuf[15+10+1];
+	static char errbuf[PCAP_ERRBUF_SIZE];
 
 	if ((unsigned int)errnum < sys_nerr)
 		return ((char *)sys_errlist[errnum]);
-	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
-	return(ebuf);
+	(void)pcap_snprintf(errbuf, sizeof errbuf, "Unknown error: %d", errnum);
+	return (errbuf);
 #endif
 }
 
