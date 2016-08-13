@@ -47,7 +47,7 @@ extern "C" {
  /*
   * Macro that does the same thing as strlcpy().
   */
- #ifdef _WIN32
+ #ifdef _MSC_VER
   /*
    * strncpy_s() is supported at least back to Visual
    * Studio 2005.
@@ -78,15 +78,18 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-  #define strdup    _strdup
+  #define strdup	_strdup
   #define sscanf	sscanf_s
-  #define strlcat(x, y, z) \
-	strncat_s((x), (z), (y), _TRUNCATE)
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
   #define fopen(x, y) \
 	fopen_safe((x), (y))
   FILE *fopen_safe(const char *filename, const char* mode);
+#endif
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+  #define strlcat(x, y, z) \
+	strncat_s((x), (z), (y), _TRUNCATE)
 #endif
 
 #ifdef _MSC_VER
