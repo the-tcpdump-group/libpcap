@@ -186,8 +186,8 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 			pkthdr.len = origlen;
 			pkthdr.caplen = caplen;
 			/* Insure caplen does not exceed snapshot */
-			if (pkthdr.caplen > p->snapshot)
-				pkthdr.caplen = p->snapshot;
+			if (pkthdr.caplen > (bpf_u_int32)p->snapshot)
+				pkthdr.caplen = (bpf_u_int32)p->snapshot;
 			(*callback)(user, &pkthdr, pk);
 			if (++n >= count && !PACKET_COUNT_IS_UNLIMITED(count)) {
 				p->cc = ep - bufp;
