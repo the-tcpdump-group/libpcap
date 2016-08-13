@@ -7,12 +7,12 @@ REM
 setlocal enableextensions disabledelayedexpansion
 
 set "search=%%%%LIBPCAP_VERSION%%%%"
-set /p replace=<%0\%1
+set /p replace=<%1
 
-set "inputTextFile=%0\%2"
+set "inputTextFile=%2"
 echo inputTextFile:
 echo %inputTextFile%
-set "outputTextFile=%0\%3"
+set "outputTextFile=%3"
 echo outputTextFile:
 echo %outputTextFile%
 
