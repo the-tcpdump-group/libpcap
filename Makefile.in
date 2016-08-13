@@ -481,9 +481,9 @@ version.c: $(srcdir)/VERSION $(srcdir)/gen_version_c.sh
 	@rm -f $@
 	$(srcdir)/gen_version_c.sh $(srcdir)/VERSION $@
 
-version.h: $(srcdir)/VERSION $(srcdir)/gen_version_h.sh
+version.h: $(srcdir)/VERSION $(srcdir)/version.h.in $(srcdir)/gen_version_h.sh
 	@rm -f $@
-	$(srcdir)/gen_version_h.sh ${srcdir}/VERSION $@
+	$(srcdir)/gen_version_h.sh $(srcdir)/VERSION $(srcdir)/version.h.in $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c
