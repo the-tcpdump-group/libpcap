@@ -153,10 +153,12 @@ static void dlpassive(int, char *);
 static int dlrawdatareq(int, const u_char *, int);
 #endif
 static int recv_ack(int, int, const char *, char *, char *, int *);
-static char *dlstrerror(bpf_u_int32);
-static char *dlprim(bpf_u_int32);
+static char *dlstrerror(char *, size_t, bpf_u_int32);
+static char *dlprim(char *, size_t, bpf_u_int32);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-static char *get_release(bpf_u_int32 *, bpf_u_int32 *, bpf_u_int32 *);
+#define GET_RELEASE_BUFSIZE	32;
+static char *get_release(char *, size_t, bpf_u_int32 *, bpf_u_int32 *,
+    bpf_u_int32 *);
 #endif
 static int send_request(int, char *, int, char *, char *);
 #ifdef HAVE_HPUX9
@@ -495,7 +497,7 @@ pcap_activate_dlpi(pcap_t *p)
 #ifdef HAVE_SYS_BUFMOD_H
 	bpf_u_int32 ss;
 #ifdef HAVE_SOLARIS
-	register char *release;
+	char release[GET_RELEASE_BUFSIZE];
 	bpf_u_int32 osmajor, osminor, osmicro;
 #endif
 #endif
@@ -776,7 +778,7 @@ pcap_activate_dlpi(pcap_t *p)
 	** Ask for bugid 1149065.
 	*/
 #ifdef HAVE_SOLARIS
-	release = get_release(&osmajor, &osminor, &osmicro);
+	get_release(release, sizeof (release), &osmajor, &osminor, &osmicro);
 	if (osmajor == 5 && (osminor <= 2 || (osminor == 3 && osmicro < 2)) &&
 	    getenv("BUFMOD_FIXED") == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -1100,6 +1102,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 	union	DL_primitives	*dlp;
 	struct	strbuf	ctl;
 	int	flags;
+	char	errmsgbuf[PCAP_ERRBUF_SIZE];
+	char	dlprimbuf[64];
 
 	/*
 	 * Clear out "*uerror", so it's only set for DL_ERROR_ACK/DL_SYSERR,
@@ -1146,8 +1150,9 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 			break;
 
 		default:
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
-			    what, dlstrerror(dlp->error_ack.dl_errno));
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "recv_ack: %s: %s", what,
+			    dlstrerror(errmsgbuf, sizeof (errmsgbuf), dlp->error_ack.dl_errno));
 			if (dlp->error_ack.dl_errno == DL_BADPPA)
 				return (PCAP_ERROR_NO_SUCH_DEVICE);
 			else if (dlp->error_ack.dl_errno == DL_ACCESS)
@@ -1159,7 +1164,7 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 	default:
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Unexpected primitive ack %s",
-		    what, dlprim(dlp->dl_primitive));
+		    what, dlprim(dlprimbuf, sizeof (dlprimbuf), dlp->dl_primitive));
 		return (PCAP_ERROR);
 	}
 
@@ -1173,10 +1178,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 }
 
 static char *
-dlstrerror(bpf_u_int32 dl_errno)
+dlstrerror(char *errbuf, size_t errbufsize, bpf_u_int32 dl_errno)
 {
-	static char errstring[6+2+8+1];
-
 	switch (dl_errno) {
 
 	case DL_ACCESS:
@@ -1277,16 +1280,14 @@ dlstrerror(bpf_u_int32 dl_errno)
 		return ("Pending outstanding connect indications");
 
 	default:
-		sprintf(errstring, "Error %02x", dl_errno);
+		pcap_snprintf(errbuf, sizeof (errbuf), "Error %02x", dl_errno);
 		return (errstring);
 	}
 }
 
 static char *
-dlprim(bpf_u_int32 prim)
+dlprim(char *primbuf, size_t primbufsize, bpf_u_int32 prim)
 {
-	static char primbuf[80];
-
 	switch (prim) {
 
 	case DL_INFO_REQ:
@@ -1371,7 +1372,8 @@ dlprim(bpf_u_int32 prim)
 		return ("DL_RESET_CON");
 
 	default:
-		(void) sprintf(primbuf, "unknown primitive 0x%x", prim);
+		pcap_snprintf(primbuf, primbufsize, "unknown primitive 0x%x",
+		    prim);
 		return (primbuf);
 	}
 }
@@ -1483,16 +1485,16 @@ dlrawdatareq(int fd, const u_char *datap, int datalen)
 #endif /* DL_HP_RAWDLS */
 
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-static char *
-get_release(bpf_u_int32 *majorp, bpf_u_int32 *minorp, bpf_u_int32 *microp)
+static void
+get_release(char *buf, size_t bufsize, bpf_u_int32 *majorp,
+    bpf_u_int32 *minorp, bpf_u_int32 *microp)
 {
 	char *cp;
-	static char buf[32];
 
 	*majorp = 0;
 	*minorp = 0;
 	*microp = 0;
-	if (sysinfo(SI_RELEASE, buf, sizeof(buf)) < 0)
+	if (sysinfo(SI_RELEASE, buf, bufsize) < 0)
 		return ("?");
 	cp = buf;
 	if (!isdigit((unsigned char)*cp))
