@@ -1,5 +1,4 @@
 #! /bin/sh
-echo "\$1 is $1"
 echo '#include <pcap/export-defs.h>' > "$2"
 echo 'PCAP_API_DEF' >> "$2"
 if grep GIT "$1" >/dev/null; then
