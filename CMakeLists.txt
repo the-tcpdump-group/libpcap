@@ -451,13 +451,13 @@ if( WIN32 )
     #
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GenVersion_path)
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h.in" version_h_in_path)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/version.h" version_h_path)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/pcap_version.h.in" version_h_in_path)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h" version_h_path)
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
-        SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
+        SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
         COMMAND ${GenVersion_path} ${VERSION_path} ${version_h_in_path} ${version_h_path}
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
+        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
     )
 else( WIN32 )
     add_custom_command(
@@ -467,9 +467,9 @@ else( WIN32 )
         DEPENDS ${pcap_SOURCE_DIR}/VERSION
     )
     add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version_h.sh ${pcap_SOURCE_DIR}/VERSION ${CMAKE_CURRENT_BINARY_DIR}/version.h
+        COMMAND ${pcap_SOURCE_DIR}/gen_version_header.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
         DEPENDS ${pcap_SOURCE_DIR}/VERSION
     )
 
@@ -488,17 +488,17 @@ else( WIN32 )
 endif( WIN32 )
 
 #
-# Since version.h does not exists yet when cmake is run, mark
+# Since pcap_version.h does not exists yet when cmake is run, mark
 # it as generated.
 #
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.h PROPERTIES
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h PROPERTIES
     GENERATED TRUE
 )
 
 #
-# Add version.h to the list of headers.
+# Add pcap_version.h to the list of headers.
 #
-set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h)
 
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})

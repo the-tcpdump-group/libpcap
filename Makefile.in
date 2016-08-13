@@ -147,7 +147,7 @@ TESTS_SRC = \
 	tests/selpolltest.c
 
 GENHDR = \
-	scanner.h grammar.h version.h
+	scanner.h grammar.h pcap_version.h
 
 TAGFILES = \
 	$(SRC) $(HDR)
@@ -271,7 +271,7 @@ EXTRA_DIST = \
 	fad-glifc.c \
 	fad-helpers.c \
 	gen_version_c.sh \
-	gen_version_h.sh \
+	gen_version_header.sh \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \
@@ -342,7 +342,7 @@ EXTRA_DIST = \
 	pcap-usb-linux.h \
 	pcap-win32.c \
 	scanner.l \
-	version.h.in \
+	pcap_version.h.in \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
 	Win32/Prj/wpcap.sln \
@@ -446,7 +446,7 @@ scanner.h: scanner.c
 scanner.o: scanner.c grammar.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
 
-pcap.o: version.h
+pcap.o: pcap_version.h
 
 grammar.c: $(srcdir)/grammar.y
 	$(YACC) -p pcap_ -o grammar.c -d $<
@@ -481,9 +481,9 @@ version.c: $(srcdir)/VERSION $(srcdir)/gen_version_c.sh
 	@rm -f $@
 	$(srcdir)/gen_version_c.sh $(srcdir)/VERSION $@
 
-version.h: $(srcdir)/VERSION $(srcdir)/version.h.in $(srcdir)/gen_version_h.sh
+pcap_version.h: $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $(srcdir)/gen_version_header.sh
 	@rm -f $@
-	$(srcdir)/gen_version_h.sh $(srcdir)/VERSION $(srcdir)/version.h.in $@
+	$(srcdir)/gen_version_header.sh $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c

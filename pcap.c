@@ -2132,7 +2132,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 		return (0);
 }
 
-#include "version.h"
+#include "pcap_version.h"
 
 #ifdef _WIN32
 /*

@@ -12,7 +12,7 @@ print_version_string()
 }
 if test $# != 3
 then
-	echo "Usage: gen_version_h.sh <version file> <template> <output file>" 1>&2
+	echo "Usage: gen_version_header.sh <version file> <template> <output file>" 1>&2
 	exit 1
 fi
 version_string=`print_version_string "$1"`
