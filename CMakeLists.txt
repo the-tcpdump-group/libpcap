@@ -446,10 +446,17 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
 if( WIN32 )
+    #
+    # CMake does not love Windows.
+    #
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GEN_VERSION_PATH)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_PATH)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h.in" VERSION_H_IN_PATH)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h" VERSION_H_PATH)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
-        COMMAND "${pcap_SOURCE_DIR}\\GenVersion.bat" "${pcap_SOURCE_DIR}\\VERSION" "${pcap_SOURCE_DIR}\\version.h.in" "${CMAKE_CURRENT_BINARY_DIR}\\version.h"
+        COMMAND GEN_VERSION_PATH VERSION_PATH VERSION_H_IN_PATH VERSION_PATH
         DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
     )
 else( WIN32 )
