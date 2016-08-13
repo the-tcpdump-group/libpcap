@@ -10,7 +10,11 @@ set "search=%%%%LIBPCAP_VERSION%%%%"
 set /p replace=<%0\%1
 
 set "inputTextFile=%0\%2"
+echo inputTextFile:
+echo %inputTextFile%
 set "outputTextFile=%0\%3"
+echo outputTextFile:
+echo %outputTextFile%
 
 del "%outputTextFile%" 2>nul
 
