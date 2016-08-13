@@ -157,7 +157,7 @@ static char *dlstrerror(char *, size_t, bpf_u_int32);
 static char *dlprim(char *, size_t, bpf_u_int32);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
 #define GET_RELEASE_BUFSIZE	32
-static char *get_release(char *, size_t, bpf_u_int32 *, bpf_u_int32 *,
+static void get_release(char *, size_t, bpf_u_int32 *, bpf_u_int32 *,
     bpf_u_int32 *);
 #endif
 static int send_request(int, char *, int, char *, char *);
@@ -1281,7 +1281,7 @@ dlstrerror(char *errbuf, size_t errbufsize, bpf_u_int32 dl_errno)
 
 	default:
 		pcap_snprintf(errbuf, sizeof (errbuf), "Error %02x", dl_errno);
-		return (errstring);
+		return (errbuf);
 	}
 }
 
@@ -1494,19 +1494,20 @@ get_release(char *buf, size_t bufsize, bpf_u_int32 *majorp,
 	*majorp = 0;
 	*minorp = 0;
 	*microp = 0;
-	if (sysinfo(SI_RELEASE, buf, bufsize) < 0)
-		return ("?");
+	if (sysinfo(SI_RELEASE, buf, bufsize) < 0) {
+		strlcpy(buf, "?", bufsize);
+		return;
+	}
 	cp = buf;
 	if (!isdigit((unsigned char)*cp))
-		return (buf);
+		return;
 	*majorp = strtol(cp, &cp, 10);
 	if (*cp++ != '.')
-		return (buf);
+		return;
 	*minorp =  strtol(cp, &cp, 10);
 	if (*cp++ != '.')
-		return (buf);
+		return;
 	*microp =  strtol(cp, &cp, 10);
-	return (buf);
 }
 #endif
 
