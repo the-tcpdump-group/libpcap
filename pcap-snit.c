@@ -286,7 +286,7 @@ pcap_activate_snit(pcap_t *p)
 	struct ifreq ifr;		/* interface request struct */
 	int chunksize = CHUNKSIZE;
 	int fd;
-	static char dev[] = "/dev/nit";
+	static const char dev[] = "/dev/nit";
 
 	if (p->opt.rfmon) {
 		/*
