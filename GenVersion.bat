@@ -19,6 +19,9 @@ echo Removed "%outputTextFile%" if it exists
 echo About to try to type "%inputTextFile%"
 type "%inputTextFile%"
 echo typed "%inputTextFile%"
+echo About to try to type "%2"
+type "%2"
+echo typed "%2"
 for /f "delims=" %%i in ('type "%inputTextFile%"' ) do (
 	set "line=%%i"
 	setlocal enabledelayedexpansion
