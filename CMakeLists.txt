@@ -445,6 +445,54 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
+if (WIN32)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
+        SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
+        COMMAND ${pcap_SOURCE_DIR}/GenVersion.bat ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/version.h
+        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
+    )
+else()
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
+        SOURCE ${pcap_SOURCE_DIR}/VERSION
+        COMMAND ${pcap_SOURCE_DIR}/gen_version_c.sh ${pcap_SOURCE_DIR}/VERSION ${CMAKE_CURRENT_BINARY_DIR}/version.c
+        DEPENDS ${pcap_SOURCE_DIR}/VERSION
+    )
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
+        SOURCE ${pcap_SOURCE_DIR}/VERSION
+        COMMAND ${pcap_SOURCE_DIR}/gen_version_h.sh ${pcap_SOURCE_DIR}/VERSION ${CMAKE_CURRENT_BINARY_DIR}/version.h
+        DEPENDS ${pcap_SOURCE_DIR}/VERSION
+    )
+
+    #
+    # Since version.c does not exists yet when cmake is run, mark
+    # it as generated.
+    #
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c PROPERTIES
+        GENERATED TRUE
+    )
+
+    #
+    # Add version.c to the list of sources.
+    #
+    #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/version.c)
+endif()
+
+#
+# Since version.h does not exists yet when cmake is run, mark
+# it as generated.
+#
+set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.h PROPERTIES
+    GENERATED TRUE
+)
+
+#
+# Add version.h to the list of headers.
+#
+#set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/version.h)
+
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 
@@ -456,7 +504,9 @@ add_library(${LIBRARY_NAME}
     ${PROJECT_SOURCE_LIST_C}
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
+    ${CMAKE_CURRENT_BINARY_DIR}/version.c
     ${PROJECT_SOURCE_LIST_H}
+    ${CMAKE_CURRENT_BINARY_DIR}/version.h
 )
 
 if( WIN32 )

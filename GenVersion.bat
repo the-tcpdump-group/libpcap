@@ -7,10 +7,10 @@ REM
 setlocal enableextensions disabledelayedexpansion
 
 set "search=%%%%LIBPCAP_VERSION%%%%"
-set /p replace=<%0\..\VERSION
+set /p replace=<%0\%1
 
-set "inputTextFile=%0\..\version.h.in"
-set "outputTextFile=%0\..\version.h"
+set "inputTextFile=%0\%2"
+set "outputTextFile=%0\%3"
 
 del "%outputTextFile%" 2>nul
 

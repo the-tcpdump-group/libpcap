@@ -234,6 +234,7 @@ EXTRA_DIST = \
 	ChmodBPF/StartupParameters.plist \
 	CREDITS \
 	CMakeLists.txt \
+	GenVersion.bat \
 	INSTALL.txt \
 	LICENSE \
 	Makefile.in \
@@ -269,6 +270,8 @@ EXTRA_DIST = \
 	fad-gifc.c \
 	fad-glifc.c \
 	fad-helpers.c \
+	gen_version_c.sh \
+	gen_version_h.sh \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \
@@ -468,39 +471,18 @@ snprintf.o: $(srcdir)/missing/snprintf.c
 strtok_r.o: $(srcdir)/missing/strtok_r.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
 
-version.c: $(srcdir)/VERSION
+version.c: $(srcdir)/VERSION $(srcdir)/gen_version_c.sh
 	#
 	# Older programs import this if they want to show the
 	# libpcap version number, rather than calling
 	# pcap_lib_version(), so we need to export it.
 	#
 	@rm -f $@
-	echo '#include <pcap/export-defs.h>' > $@
-	echo 'PCAP_API_DEF' >> $@
-	if grep GIT ${srcdir}/VERSION >/dev/null; then \
-		read ver <${srcdir}/VERSION; \
-		echo $$ver | tr -d '\012'; \
-		date +_%Y_%m_%d; \
-	else \
-		cat ${srcdir}/VERSION; \
-	fi | sed -e 's/.*/char pcap_version[] = "&";/' >> $@
+	$(srcdir)/gen_version_c.sh $(srcdir)/VERSION $@
 
-#
-# NOTE: this really is supposed to be static; importing a string
-# from a shared library does not work very well on many
-# versions of UNIX (Solaris, Linux, and the BSDs, for example),
-# so we make the version string static and return it from
-# a function, which does work.
-#
-version.h: $(srcdir)/VERSION
+version.h: $(srcdir)/VERSION $(srcdir)/gen_version_h.sh
 	@rm -f $@
-	if grep GIT ${srcdir}/VERSION >/dev/null; then \
-		read ver <${srcdir}/VERSION; \
-		echo $$ver | tr -d '\012'; \
-		date +_%Y_%m_%d; \
-	else \
-		cat ${srcdir}/VERSION; \
-	fi | sed -e 's/.*/static const char pcap_version_string[] = "libpcap version &";/' > $@
+	$(srcdir)/gen_version_h.sh ${srcdir}/VERSION $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c
