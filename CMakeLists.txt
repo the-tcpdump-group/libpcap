@@ -449,14 +449,14 @@ if( WIN32 )
     #
     # CMake does not love Windows.
     #
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GEN_VERSION_PATH)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_PATH)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h.in" VERSION_H_IN_PATH)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h" VERSION_H_PATH)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GenVersion_path)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h.in" version_h_in_path)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h" version_h_path)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
-        COMMAND GEN_VERSION_PATH VERSION_PATH VERSION_H_IN_PATH VERSION_PATH
+        COMMAND ${GenVersion_path} ${VERSION_path} ${version_h_in_path} ${version_h_path}
         DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
     )
 else( WIN32 )
