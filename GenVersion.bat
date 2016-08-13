@@ -12,7 +12,9 @@ set /p replace=<%1
 set "inputTextFile=%2"
 set "outputTextFile=%3"
 
+echo Abuot to try to remove "%outputTextFile%"
 if exist "%outputTextFile%" del "%outputTextFile%" 2>nul
+echo Removed "%outputTextFile%" if it exists
 
 for /f "delims=" %%i in ('type "%inputTextFile%"' ) do (
 	set "line=%%i"
