@@ -1,16 +1,19 @@
 #! /bin/sh
-#
-# NOTE: this really is supposed to be static; importing a string
-# from a shared library does not work very well on many
-# versions of UNIX (Solaris, Linux, and the BSDs, for example),
-# so we make the version string static and return it from
-# a function, which does work.
-#
-if grep GIT "$1" >/dev/null
+print_version_string()
+{
+	if grep GIT "$1" >/dev/null
+	then
+		read ver <"$1"
+		echo $ver | tr -d '\012'
+		date +_%Y_%m_%d
+	else
+		cat "$1"
+	fi
+}
+if test $# != 3
 then
-	read ver <"$1"
-	echo $ver | tr -d '\012'
-	date +_%Y_%m_%d
-else
-	cat "$1"
-fi | sed -e 's/.*/static const char pcap_version_string[] = "libpcap version &";/' > "$2"
+	echo "Usage: gen_version_h.sh <version file> <template> <output file>" 1>&2
+	exit 1
+fi
+version_string=`print_version_string "$1"`
+sed "s/%%LIBPCAP_VERSION%%/$version_string/" "$2" >"$3"
