@@ -16,12 +16,15 @@ set "outputTextFile=%3"
 echo outputTextFile:
 echo %outputTextFile%
 
+echo del "%outputTextFile%" 
 del "%outputTextFile%" 2>nul
 
 for /f "delims=" %%i in ('type "%inputTextFile%"' ) do (
 	set "line=%%i"
 	setlocal enabledelayedexpansion
+echo set "line=!line:%search%=%replace%!"
 	set "line=!line:%search%=%replace%!"
+echo writing
 	>>"%outputTextFile%" echo(!line!
 	endlocal
 )
