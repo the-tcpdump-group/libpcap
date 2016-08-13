@@ -1,5 +1,6 @@
 REM
-REM Automatically generate version.h based on version.h.in for Windows
+REM Automatically generate pcap_version.h based on pcap_version.h.in
+REM for Windows
 REM The version string comes from VERSION
 REM @echo off
 REM
@@ -19,4 +20,4 @@ for /f "delims=" %%i in ('type %2' ) do (
 	endlocal
 )
 
-echo version.h generated
+echo pcap_version.h generated
