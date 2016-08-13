@@ -452,7 +452,7 @@ if( WIN32 )
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GenVersion_path)
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h.in" version_h_in_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.h" version_h_path)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/version.h" version_h_path)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
