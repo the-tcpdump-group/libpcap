@@ -113,7 +113,8 @@
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+      <Command>..\..\GenVersion.bat
+win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
 win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -140,7 +141,8 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\x64\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+      <Command>..\..\GenVersion.bat
+win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
 win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -169,7 +171,8 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+      <Command>..\..\GenVersion.bat
+win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
 win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
@@ -197,7 +200,8 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
       <AdditionalDependencies>ws2_32.lib;..\..\..\..\packetWin7\Dll\Project\x64\Release No NetMon and AirPcap\Packet.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
-      <Command>win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
+      <Command>..\..\GenVersion.bat
+win_flex -Ppcap_ -7 --outfile=..\..\scanner.c --header-file=..\..\scanner.h ..\..\scanner.l
 win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
