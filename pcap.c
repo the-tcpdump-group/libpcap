@@ -2136,9 +2136,9 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 
 #ifdef _WIN32
 /*
- * XXX - it'd be nice if we could somehow generate the WinPcap and libpcap
- * version numbers when building WinPcap.  (It'd be nice to do so for
- * the packet.dll version number as well.)
+ * XXX - it'd be nice if we could somehow generate the WinPcap version number
+ * when building WinPcap.  (It'd be nice to do so for the packet.dll version
+ * number as well.)
  */
 static const char wpcap_version_string[] = WINPCAP_VER_STRING;
 static const char pcap_version_string_fmt[] =
