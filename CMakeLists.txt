@@ -449,7 +449,7 @@ if( WIN32 )
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
-        COMMAND "${pcap_SOURCE_DIR}\GenVersion.bat" "${pcap_SOURCE_DIR}\VERSION" "${pcap_SOURCE_DIR}\version.h.in" "${CMAKE_CURRENT_BINARY_DIR}\version.h"
+        COMMAND "${pcap_SOURCE_DIR}\\GenVersion.bat" "${pcap_SOURCE_DIR}\\VERSION" "${pcap_SOURCE_DIR}\\version.h.in" "${CMAKE_CURRENT_BINARY_DIR}\\version.h"
         DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.h.in
     )
 else( WIN32 )
