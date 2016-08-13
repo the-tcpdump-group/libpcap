@@ -12,21 +12,15 @@ set /p replace=<%1
 set "inputTextFile=%2"
 set "outputTextFile=%3"
 
-echo Abuot to try to remove "%outputTextFile%"
-if exist "%outputTextFile%" del "%outputTextFile%" 2>nul
-echo Removed "%outputTextFile%" if it exists
+echo Abuot to try to remove %3
+if exist %3 del %3 2>nul
+echo Removed %3 if it exists
 
-echo About to try to type "%inputTextFile%"
-type "%inputTextFile%"
-echo typed "%inputTextFile%"
-echo About to try to type "%2"
-type "%2"
-echo typed "%2"
-for /f "delims=" %%i in ('type "%inputTextFile%"' ) do (
+for /f "delims=" %%i in ('type %1' ) do (
 	set "line=%%i"
 	setlocal enabledelayedexpansion
 	set "line=!line:%search%=%replace%!"
-	>>"%outputTextFile%" echo(!line!
+	>>%2 echo(!line!
 	endlocal
 )
 
