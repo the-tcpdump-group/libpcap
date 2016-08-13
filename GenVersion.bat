@@ -16,6 +16,9 @@ echo Abuot to try to remove "%outputTextFile%"
 if exist "%outputTextFile%" del "%outputTextFile%" 2>nul
 echo Removed "%outputTextFile%" if it exists
 
+echo About to try to type "%inputTextFile%"
+type "%inputTextFile%"
+echo typed "%inputTextFile%"
 for /f "delims=" %%i in ('type "%inputTextFile%"' ) do (
 	set "line=%%i"
 	setlocal enabledelayedexpansion
