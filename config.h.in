@@ -211,9 +211,6 @@
 /* if struct usbdevfs_ctrltransfer has bRequestType */
 #undef HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 
-/* define if version.h is generated in the build procedure */
-#undef HAVE_VERSION_H
-
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
 

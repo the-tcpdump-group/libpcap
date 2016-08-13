@@ -205,9 +205,6 @@
 /* if struct usbdevfs_ctrltransfer has bRequestType */
 #cmakedefine HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 
-/* define if version.h is generated in the build procedure */
-#cmakedefine HAVE_VERSION_H 1
-
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
 

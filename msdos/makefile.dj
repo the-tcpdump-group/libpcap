@@ -18,7 +18,7 @@ include ./msdos/common.dj
 DRIVER_DIR = ./msdos/pm_drvr
 
 CFLAGS += -DDEBUG -DNDIS_DEBUG -DHAVE_LIMITS_H -DHAVE_STRERROR -DHAVE_SNPRINTF -DHAVE_VSNPRINTF\
-          -D_U_='__attribute__((unused))' -DHAVE_VERSION_H
+          -D_U_='__attribute__((unused))'
 
 CFLAGS += -Dyylval=pcap_lval # -DBDEBUG -DNDEBUG
 

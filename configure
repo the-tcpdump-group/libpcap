@@ -8349,14 +8349,6 @@ $as_echo "#define LBL_ALIGN 1" >>confdefs.h
 
     fi
 
-#
-# Makefile.in includes rules to generate version.h, so we assume
-# that it will be generated if autoconf is used.
-#
-
-$as_echo "#define HAVE_VERSION_H 1" >>confdefs.h
-
-
 rm -f net
 ln -s ${srcdir}/bpf/net net
 
