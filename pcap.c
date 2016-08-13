@@ -2140,6 +2140,12 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
  * when building WinPcap.  (It'd be nice to do so for the packet.dll version
  * number as well.)
  */
+
+/*
+ * Also include version strings defined by Npcap/WinPcap on Windows.
+ */
+#include "..\..\version.h"
+
 static const char wpcap_version_string[] = WINPCAP_VER_STRING;
 static const char pcap_version_string_fmt[] =
 	WINPCAP_PRODUCT_NAME " version %s, based on %s";
