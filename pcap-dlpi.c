@@ -156,7 +156,7 @@ static int recv_ack(int, int, const char *, char *, char *, int *);
 static char *dlstrerror(char *, size_t, bpf_u_int32);
 static char *dlprim(char *, size_t, bpf_u_int32);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-#define GET_RELEASE_BUFSIZE	32;
+#define GET_RELEASE_BUFSIZE	32
 static char *get_release(char *, size_t, bpf_u_int32 *, bpf_u_int32 *,
     bpf_u_int32 *);
 #endif
