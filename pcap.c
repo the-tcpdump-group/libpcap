@@ -2141,10 +2141,12 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
  * number as well.)
  */
 
+#ifdef HAVE_VERSION_H
 /*
  * Also include version strings defined by Npcap/WinPcap on Windows.
  */
-#include "..\..\version.h"
+#include "../../version.h"
+#endif
 
 static const char wpcap_version_string[] = WINPCAP_VER_STRING;
 static const char pcap_version_string_fmt[] =
