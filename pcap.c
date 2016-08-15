@@ -2135,25 +2135,26 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 #include "pcap_version.h"
 
 #ifdef _WIN32
+
+static char *full_pcap_version_string;
+
+#ifdef HAVE_VERSION_H
 /*
+ * libpcap being built for Windows, as part of a WinPcap/Npcap source
+ * tree.  Include version.h from that source tree to get the WinPcap/Npcap
+ * version.
+ *
  * XXX - it'd be nice if we could somehow generate the WinPcap version number
  * when building WinPcap.  (It'd be nice to do so for the packet.dll version
  * number as well.)
  */
-
-#ifdef HAVE_VERSION_H
-/*
- * Also include version strings defined by Npcap/WinPcap on Windows.
- */
 #include "../../version.h"
-#endif
 
 static const char wpcap_version_string[] = WINPCAP_VER_STRING;
 static const char pcap_version_string_fmt[] =
 	WINPCAP_PRODUCT_NAME " version %s, based on %s";
 static const char pcap_version_string_packet_dll_fmt[] =
 	WINPCAP_PRODUCT_NAME " version %s (packet.dll version %s), based on %s";
-static char *full_pcap_version_string;
 
 const char *
 pcap_lib_version(void)
@@ -2181,8 +2182,9 @@ pcap_lib_version(void)
 			if (full_pcap_version_string == NULL)
 				return (NULL);
 			pcap_snprintf(full_pcap_version_string,
-				full_pcap_version_string_len,
-			    pcap_version_string_fmt, wpcap_version_string,
+			    full_pcap_version_string_len,
+			    pcap_version_string_fmt,
+			    wpcap_version_string,
 			    pcap_version_string);
 		} else {
 			/*
@@ -2201,14 +2203,53 @@ pcap_lib_version(void)
 			if (full_pcap_version_string == NULL)
 				return (NULL);
 			pcap_snprintf(full_pcap_version_string,
-				full_pcap_version_string_len,
+			    full_pcap_version_string_len,
 			    pcap_version_string_packet_dll_fmt,
-			    wpcap_version_string, packet_version_string,
+			    wpcap_version_string,
+			    packet_version_string,
 			    pcap_version_string);
 		}
 	}
 	return (full_pcap_version_string);
 }
+
+#else /* HAVE_VERSION_H */
+
+/*
+ * libpcap being built for Windows, not as part of a WinPcap/Npcap source
+ * tree.
+ */
+static const char pcap_version_string_packet_dll_fmt[] =
+	"%s (packet.dll version %s)";
+const char *
+pcap_lib_version(void)
+{
+	char *packet_version_string;
+	size_t full_pcap_version_string_len;
+
+	if (full_pcap_version_string == NULL) {
+		/*
+		 * Generate the version string.  Report the packet.dll
+		 * version.
+		 */
+		packet_version_string = PacketGetVersion();
+		full_pcap_version_string_len =
+		    (sizeof pcap_version_string_packet_dll_fmt - 4) +
+		    strlen(pcap_version_string) +
+		    strlen(packet_version_string);
+		full_pcap_version_string = malloc(full_pcap_version_string_len);
+		if (full_pcap_version_string == NULL)
+			return (NULL);
+		pcap_snprintf(full_pcap_version_string,
+		    full_pcap_version_string_len,
+		    pcap_version_string_packet_dll_fmt,
+		    pcap_version_string,
+		    packet_version_string);
+	}
+	return (full_pcap_version_string);
+}
+
+#endif /* HAVE_VERSION_H */
 
 #elif defined(MSDOS)
 
