@@ -829,6 +829,66 @@ pcap_activate_win32(pcap_t *p)
 	int res;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
+#ifdef HAVE_REMOTE
+	char host[PCAP_BUF_SIZE + 1];
+	char port[PCAP_BUF_SIZE + 1];
+	char name[PCAP_BUF_SIZE + 1];
+	int srctype;
+	int opensource_remote_result;
+
+	struct pcap_md *md;				/* structure used when doing a remote live capture */
+	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
+
+	/*
+	Retrofit; we have to make older applications compatible with the remote capture
+	So, we're calling the pcap_open_remote() from here, that is a very dirty thing.
+	Obviously, we cannot exploit all the new features; for instance, we cannot
+	send authentication, we cannot use a UDP data connection, and so on.
+	*/
+	if (pcap_parsesrcstr(p->opt.device, &srctype, host, port, name, p->errbuf))
+		return PCAP_ERROR;
+
+	if (srctype == PCAP_SRC_IFREMOTE)
+	{
+		opensource_remote_result = pcap_opensource_remote(p, NULL);
+
+		if (opensource_remote_result != 0)
+			return opensource_remote_result;
+
+		md->rmt_flags = (p->opt.promisc) ? PCAP_OPENFLAG_PROMISCUOUS : 0;
+
+		return 0;
+	}
+
+	if (srctype == PCAP_SRC_IFLOCAL)
+	{
+		/*
+		* If it starts with rpcap://, cut down the string
+		*/
+		if (strncmp(p->opt.device, PCAP_SRC_IF_STRING, strlen(PCAP_SRC_IF_STRING)) == 0)
+		{
+			size_t len = strlen(p->opt.device) - strlen(PCAP_SRC_IF_STRING) + 1;
+			char *new_string;
+			/*
+			* allocate a new string and free the old one
+			*/
+			if (len > 0)
+			{
+				new_string = (char*)malloc(len);
+				if (new_string != NULL)
+				{
+					char *tmp;
+					strcpy_s(new_string, len, p->opt.device + strlen(PCAP_SRC_IF_STRING));
+					tmp = p->opt.device;
+					p->opt.device = new_string;
+					free(tmp);
+				}
+			}
+		}
+	}
+
+#endif	/* HAVE_REMOTE */
+
 	if (p->opt.rfmon) {
 		/*
 		 * Monitor mode is supported on Windows Vista and later.
