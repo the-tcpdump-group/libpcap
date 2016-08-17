@@ -1280,7 +1280,7 @@ dlstrerror(char *errbuf, size_t errbufsize, bpf_u_int32 dl_errno)
 		return ("Pending outstanding connect indications");
 
 	default:
-		pcap_snprintf(errbuf, sizeof (errbuf), "Error %02x", dl_errno);
+		pcap_snprintf(errbuf, errbufsize, "Error %02x", dl_errno);
 		return (errbuf);
 	}
 }
