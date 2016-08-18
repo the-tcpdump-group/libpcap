@@ -53,7 +53,6 @@
 #include <string.h>
 
 #include "pcap-int.h"
-#include "pcap/usb.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
