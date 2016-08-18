@@ -368,7 +368,7 @@ static int canusb_activate(pcap_t* handle)
     /* Initialize some components of the pcap structure. */
     handle->bufsize = 32;
     handle->offset = 8;
-    handle->linktype = DLT_CAN_SOCKETCAN;
+    handle->linktype = DLT_CAN_SOCKETCAN_HOSTENDIAN;
     handle->set_datalink_op = NULL;
 
     serial = handle->opt.device + strlen(CANUSB_IFACE);

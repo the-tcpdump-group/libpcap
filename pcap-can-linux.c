@@ -151,7 +151,7 @@ can_activate(pcap_t* handle)
 
 	/* Initialize some components of the pcap structure. */
 	handle->bufsize = CAN_CONTROL_SIZE + 16;
-	handle->linktype = DLT_CAN_SOCKETCAN;
+	handle->linktype = DLT_CAN_SOCKETCAN_BIGENDIAN;
 	handle->read_op = can_read_linux;
 	handle->inject_op = can_inject_linux;
 	handle->setfilter_op = can_setfilter_linux;

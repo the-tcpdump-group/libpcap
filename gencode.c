@@ -3397,7 +3397,8 @@ gen_linktype(compiler_state_t *cstate, int proto)
 		bpf_error(cstate, "Bluetooth link-layer type filtering not implemented");
 
 	case DLT_CAN20B:
-	case DLT_CAN_SOCKETCAN:
+	case DLT_CAN_SOCKETCAN_BIGENDIAN:
+	case DLT_CAN_SOCKETCAN_HOSTENDIAN:
 		bpf_error(cstate, "CAN link-layer type filtering not implemented");
 
 	case DLT_IEEE802_15_4:

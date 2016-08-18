@@ -99,6 +99,7 @@ PUBHDR = \
 	pcap-namedb.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
+	pcap/can_socketcan.h \
 	pcap/dlt.h \
 	pcap/export-defs.h \
 	pcap/ipnet.h \

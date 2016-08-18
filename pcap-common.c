@@ -42,6 +42,7 @@
 #include "pcap-int.h"
 #include "pcap/usb.h"
 #include "pcap/nflog.h"
+#include "pcap/can_socketcan.h"
 
 #include "pcap-common.h"
 
@@ -743,12 +744,14 @@
 
 /*
  * CAN (Controller Area Network) frames, with a pseudo-header as supplied
- * by Linux SocketCAN.  See Documentation/networking/can.txt in the Linux
- * source.
+ * by Linux SocketCAN, and with multi-byte numerical fields in that header
+ * in big-endian byte order.
+ *
+ * See Documentation/networking/can.txt in the Linux source.
  *
  * Requested by Felix Obenhuber <felix@obenhuber.de>.
  */
-#define LINKTYPE_CAN_SOCKETCAN	227
+#define LINKTYPE_CAN_SOCKETCAN_BIGENDIAN	227
 
 /*
  * Raw IPv4/IPv6; different from DLT_RAW in that the DLT_ value specifies
@@ -1017,7 +1020,16 @@
  */
 #define LINKTYPE_ISO_14443      264
 
-#define LINKTYPE_MATCHING_MAX	264		/* highest value in the "matching" range */
+/*
+ * CAN (Controller Area Network) frames, with a pseudo-header as supplied
+ * by Linux SocketCAN, and with multi-byte numerical fields in that header
+ * in host byte order.
+ *
+ * See Documentation/networking/can.txt in the Linux source.
+ */
+#define LINKTYPE_CAN_SOCKETCAN_HOSTENDIAN	265
+
+#define LINKTYPE_MATCHING_MAX	265		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
@@ -1333,7 +1345,8 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	u_int length = hdr->len;
 	u_int16_t size;
 
-	if (caplen < (int) sizeof(nflog_hdr_t) || length < (int) sizeof(nflog_hdr_t)) {
+	if (caplen < (u_int) sizeof(nflog_hdr_t) ||
+	    length < (u_int) sizeof(nflog_hdr_t)) {
 		/* Not enough data to have any TLVs. */
 		return;
 	}
@@ -1378,6 +1391,31 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	}
 }
 
+/*
+ * The DLT_CAN_SOCKETCAN_HOSTENDIAN header is in host byte order when
+ * capturing (it's filled in by the kernel and provided on a PF_PACKET
+ * socket).
+ *
+ * When reading a DLT_CAN_SOCKETCAN_HOSTENDIAN capture file, we need to
+ * convert it from the byte order of the host that wrote the file to
+ * this host's byte order.
+ */
+static void
+swap_can_socketcan_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	pcap_can_socketcan_hdr *chdr = (pcap_can_socketcan_hdr *)buf;
+
+	if (caplen < (u_int) sizeof(chdr->can_id) ||
+	    length < (u_int) sizeof(chdr->can_id)) {
+		/* Not enough data to have the ID */
+		return;
+	}
+
+	chdr->can_id = SWAPLONG(chdr->can_id);
+}
+
 void
 swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 {
@@ -1398,6 +1436,10 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 
 	case DLT_NFLOG:
 		swap_nflog_header(hdr, data);
+		break;
+
+	case DLT_CAN_SOCKETCAN_HOSTENDIAN:
+		swap_can_socketcan_header(hdr, data);
 		break;
 	}
 }

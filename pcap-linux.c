@@ -2943,7 +2943,24 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 #define ARPHRD_CAN 280
 #endif
 	case ARPHRD_CAN:
-		handle->linktype = DLT_CAN_SOCKETCAN;
+		/*
+		 * DLT_CAN_SOCKETCAN_BIGENDIAN is defined to have the
+		 * can_id field of the pseudo-header in big-endian
+		 * (network) byte order.
+		 *
+		 * The packets delivered to sockets have that field
+		 * in host byte order.
+		 *
+		 * The code that implements it in packet-can-linux.c
+		 * passes that field to htonl() to put it into network
+		 * byte order.
+		 *
+		 * The code that reads from a PF_PACKET socket doesn't
+		 * change the byte order of that field, so we define
+		 * a new DLT_CAN_SOCKETCAN_HOSTENDIAN, where the can_id
+		 * is in host byte order.
+		 */
+		handle->linktype = DLT_CAN_SOCKETCAN_HOSTENDIAN;
 		break;
 
 #ifndef ARPHRD_IEEE802_TR
