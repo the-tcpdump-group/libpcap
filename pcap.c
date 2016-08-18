@@ -1248,7 +1248,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_FC_2, "Fibre Channel FC-2"),
 	DLT_CHOICE(DLT_FC_2_WITH_FRAME_DELIMS, "Fibre Channel FC-2 with frame delimiters"),
 	DLT_CHOICE(DLT_IPNET, "Solaris ipnet"),
-	DLT_CHOICE(DLT_CAN_SOCKETCAN_BIGENDIAN, "CAN-bus with big-endian SocketCAN headers"),
+	DLT_CHOICE(DLT_CAN_SOCKETCAN_BIGENDIAN, "CAN-bus with big-endian CAN ID"),
 	DLT_CHOICE(DLT_IPV4, "Raw IPv4"),
 	DLT_CHOICE(DLT_IPV6, "Raw IPv6"),
 	DLT_CHOICE(DLT_IEEE802_15_4_NOFCS, "IEEE 802.15.4 without FCS"),
@@ -1279,7 +1279,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_PROFIBUS_DL, "PROFIBUS data link layer"),
 	DLT_CHOICE(DLT_PKTAP, "Apple DLT_PKTAP"),
 	DLT_CHOICE(DLT_EPON, "Ethernet with 802.3 Clause 65 EPON preamble"),
-	DLT_CHOICE(DLT_CAN_SOCKETCAN_HOSTENDIAN, "CAN-bus with host-endian SocketCAN headers"),
+	DLT_CHOICE(DLT_CAN_SOCKETCAN_HOSTENDIAN, "CAN-bus with host-endian CAN ID"),
 	DLT_CHOICE_SENTINEL
 };
 
