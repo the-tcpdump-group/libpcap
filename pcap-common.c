@@ -40,6 +40,8 @@
 #endif /* _WIN32 */
 
 #include "pcap-int.h"
+#include "extract.h"
+#include "pcap/sll.h"
 #include "pcap/usb.h"
 #include "pcap/nflog.h"
 #include "pcap/can_socketcan.h"
@@ -1176,6 +1178,48 @@ linktype_to_dlt(int linktype)
 	return linktype;
 }
 
+#define EXTRACT_
+
+/*
+ * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN have
+ * SocketCAN headers in front of the payload, with the CAN ID being
+ * in host byte order.
+ *
+ * When reading a DLT_LINUX_SLL capture file, we need to check for those
+ * packets and convert the CAN ID from the byte order of the host that
+ * wrote the file to this host's byte order.
+ */
+static void
+swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
+{
+	u_int caplen = hdr->caplen;
+	u_int length = hdr->len;
+	struct sll_header *shdr = (struct sll_header *)buf;
+	u_int16_t protocol;
+	pcap_can_socketcan_hdr *chdr;
+
+	if (caplen < (u_int) sizeof(struct sll_header) ||
+	    length < (u_int) sizeof(struct sll_header)) {
+		/* Not enough data to have the protocol field */
+		return;
+	}
+
+	protocol = EXTRACT_16BITS(&shdr->sll_protocol);
+	if (protocol != LINUX_SLL_P_CAN)
+		return;
+
+	/*
+	 * SocketCAN packet; fix up the packet's header.
+	 */
+	chdr = (pcap_can_socketcan_hdr *)(buf + sizeof(struct sll_header));
+	if (caplen < (u_int) sizeof(struct sll_header) + sizeof(chdr->can_id) ||
+	    length < (u_int) sizeof(struct sll_header) + sizeof(chdr->can_id)) {
+		/* Not enough data to have the CAN ID */
+		return;
+	}
+	chdr->can_id = SWAPLONG(chdr->can_id);
+}
+
 /*
  * The DLT_USB_LINUX and DLT_USB_LINUX_MMAPPED headers are in host
  * byte order when capturing (it's supplied directly from a
@@ -1392,9 +1436,9 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 }
 
 /*
- * The DLT_CAN_SOCKETCAN_HOSTENDIAN header is in host byte order when
- * capturing (it's filled in by the kernel and provided on a PF_PACKET
- * socket).
+ * The CAN ID in the DLT_CAN_SOCKETCAN_HOSTENDIAN header is in host byte
+ * order when capturing (the header is filled in by the kernel and provided
+ * on a PF_PACKET socket).
  *
  * When reading a DLT_CAN_SOCKETCAN_HOSTENDIAN capture file, we need to
  * convert it from the byte order of the host that wrote the file to
@@ -1409,7 +1453,7 @@ swap_can_socketcan_header(const struct pcap_pkthdr *hdr, u_char *buf)
 
 	if (caplen < (u_int) sizeof(chdr->can_id) ||
 	    length < (u_int) sizeof(chdr->can_id)) {
-		/* Not enough data to have the ID */
+		/* Not enough data to have the CAN ID */
 		return;
 	}
 
@@ -1425,6 +1469,10 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 	 * byte order, as necessary.
 	 */
 	switch (linktype) {
+
+	case DLT_LINUX_SLL:
+		swap_linux_sll_header(hdr, data);
+		break;
 
 	case DLT_USB_LINUX:
 		swap_linux_usb_header(hdr, data, 0);

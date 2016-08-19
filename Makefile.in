@@ -114,6 +114,7 @@ HDR = $(PUBHDR) \
 	arcnet.h \
 	atmuni31.h \
 	ethertype.h \
+	extract.h \
 	gencode.h \
 	ieee80211.h \
 	llc.h \
