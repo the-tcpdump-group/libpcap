@@ -19,6 +19,8 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include <arpa/inet.h>
+
 /*
  * Macros to extract possibly-unaligned big-endian integral values.
  */
