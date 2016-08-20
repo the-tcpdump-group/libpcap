@@ -312,7 +312,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 					pcap_snprintf(errbuf, errbuflen, "setsockopt(IPV6_BINDV6ONLY)");
 				return -1;
 			}
-		} 
+		}
 #endif
 
 		/* WARNING: if the address is a mcast one, I should place the proper Win32 code here */
@@ -562,9 +562,9 @@ int sock_send(SOCKET socket, const char *buffer, int size, char *errbuf, int err
 send:
 #ifdef linux
 	/*
-	 * Another pain... in Linux there's this flag 
+	 * Another pain... in Linux there's this flag
 	 * MSG_NOSIGNAL
-	 * Requests not to send SIGPIPE on errors on stream-oriented 
+	 * Requests not to send SIGPIPE on errors on stream-oriented
 	 * sockets when the other end breaks the connection.
 	 * The EPIPE error is still returned.
 	 */
@@ -810,7 +810,7 @@ int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
 	/*
 	 * A static allocation avoids the need of a 'malloc()' each time we want to discard a message
 	 * Our feeling is that a buffer if 32KB is enough for most of the application;
-	 * in case this is not enough, the "while" loop discards the message by calling the 
+	 * in case this is not enough, the "while" loop discards the message by calling the
 	 * sockrecv() several times.
 	 * We do not want to create a bigger variable because this causes the program to exit on
 	 * some platforms (e.g. BSD)
@@ -1020,7 +1020,7 @@ int sock_cmpaddr(struct sockaddr_storage *first, struct sockaddr_storage *second
  * must be properly allocated by the user.
  *
  * \param portlen: the length of the 'port' buffer.
- * 
+ *
  * \param flags: a set of flags (the ones defined into the getnameinfo() standard socket function)
  * that determine if the resulting address must be in numeric / literal form, and so on.
  *

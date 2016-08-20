@@ -132,7 +132,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
    * We define closesocket() to be a wrapper around close() on UN*X,
    * so that it can be used on both platforms.
    */
-  #define closesocket(a) close(a) 
+  #define closesocket(a) close(a)
 #endif
 
 /*
@@ -172,7 +172,7 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  ****************************************************/
 
 /* 'checkonly' flag, into the rpsock_bufferize() */
-#define SOCKBUF_CHECKONLY 1	
+#define SOCKBUF_CHECKONLY 1
 /* no 'checkonly' flag, into the rpsock_bufferize() */
 #define SOCKBUF_BUFFERIZE 0
 

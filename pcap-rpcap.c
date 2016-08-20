@@ -277,7 +277,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	{
 		switch (retval)
 		{
-		case -3:		/* Unrecoverable network error */								
+		case -3:		/* Unrecoverable network error */
 			return -1;	/* Do nothing; just exit from here; the error code is already into the errbuf */
 
 		case -2:		/* The other endpoint sent a message that is not allowed here */
@@ -863,7 +863,7 @@ error:
 	/*
 	 * When the connection has been established, we have to close it. So, at the
 	 * beginning of this function, if an error occur we return immediately with
-	 * a return NULL; when the connection is established, we have to come here 
+	 * a return NULL; when the connection is established, we have to come here
 	 * ('goto error;') in order to close everything properly.
 	 *
 	 * Checks if all the data has been read; if not, discard the data in excess
@@ -989,7 +989,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	{
 		/*
 		 * We have to create a new socket to receive packets
-		 * We have to do that immediately, since we have to tell the other 
+		 * We have to do that immediately, since we have to tell the other
 		 * end which network port we picked up
 		 */
 		memset(&hints, 0, sizeof(struct addrinfo));
@@ -1219,7 +1219,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	}
 
 	/*
-	 * Let's allocate the packet; this is required in order to put the packet somewhere when 
+	 * Let's allocate the packet; this is required in order to put the packet somewhere when
 	 * extracting data from the socket
 	 * Since buffering has already been done in the socket buffer, here we need just a buffer,
 	 * whose size is equal to the pcap header plus the snapshot length
@@ -1269,7 +1269,7 @@ error:
 	/*
 	 * When the connection has been established, we have to close it. So, at the
 	 * beginning of this function, if an error occur we return immediately with
-	 * a return NULL; when the connection is established, we have to come here 
+	 * a return NULL; when the connection is established, we have to come here
 	 * ('goto error;') in order to close everything properly.
 	 *
 	 * Checks if all the data has been read; if not, discard the data in excess
@@ -1284,7 +1284,7 @@ error:
 		sock_close(md->rmt_sockctrl, NULL, 0);
 
 	/*
-	 * We do not have to call pcap_close() here, because this function is always called 
+	 * We do not have to call pcap_close() here, because this function is always called
 	 * by the user in case something bad happens
 	 */
 	// 	if (fp)

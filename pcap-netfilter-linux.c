@@ -102,7 +102,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 		if(errno == ENOBUFS) handlep->packets_nobufs++;
 	} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
-	
+
 	if (len < 0) {
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
 		return -1;

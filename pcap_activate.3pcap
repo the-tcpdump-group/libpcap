@@ -55,7 +55,7 @@ call isn't supported by the capture source (the time stamp type is
 left as the default),
 .TP
 .B PCAP_WARNING
-Another warning condition occurred; 
+Another warning condition occurred;
 .B pcap_geterr()
 or
 .B pcap_perror()

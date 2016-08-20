@@ -116,7 +116,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 	 * There are some differences if pcap_findalldevs_ex() is called to list files and remote adapters.
 	 * In the first case, the name of the directory we have to look into must be present (therefore
 	 * the 'name' parameter of the pcap_parsesrcstr() is present).
-	 * In the second case, the name of the adapter is not required (we need just the host). So, we have 
+	 * In the second case, the name of the adapter is not required (we need just the host). So, we have
 	 * to use a first time this function to get the source type, and a second time to get the appropriate
 	 * info, which depends on the source type.
 	 */
@@ -831,7 +831,7 @@ int pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char
 		{
 			/*
 			 * If the user wants the host name, but it cannot be located into the source string, return error
-			 * However, if the user is not interested in the interface name (e.g. if we're called by 
+			 * However, if the user is not interested in the interface name (e.g. if we're called by
 			 * pcap_findalldevs_ex(), which does not have interface name, do not return error
 			 */
 			if (tmpname[0])
@@ -979,7 +979,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 				}
 			}
 		}
-#endif /* WIN32 */			
+#endif /* WIN32 */
 
 		break;
 
