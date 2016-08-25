@@ -265,12 +265,6 @@
 /* target host supports Bluetooth Monitor */
 #cmakedefine PCAP_SUPPORT_BT_MONITOR 1
 
-/* target host supports CAN sniffing */
-#cmakedefine PCAP_SUPPORT_CAN 1
-
-/* target host supports canusb */
-#cmakedefine PCAP_SUPPORT_CANUSB 1
-
 /* support D-Bus sniffing */
 #cmakedefine PCAP_SUPPORT_DBUS 1
 

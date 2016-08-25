@@ -1000,7 +1000,6 @@
  *
  * Requested by Felix Obenhuber <felix@obenhuber.de>.
  */
-#define DLT_CAN_SOCKETCAN_BIGENDIAN	227
 #define DLT_CAN_SOCKETCAN	227
 
 /*
@@ -1302,15 +1301,6 @@
 #define DLT_ISO_14443           264
 
 /*
- * CAN (Controller Area Network) frames, with a pseudo-header as supplied
- * by Linux SocketCAN, and with multi-byte numerical fields in that header
- * in host byte order.
- *
- * See Documentation/networking/can.txt in the Linux source.
- */
-#define DLT_CAN_SOCKETCAN_HOSTENDIAN	265
-
-/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1320,7 +1310,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	265	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	264	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

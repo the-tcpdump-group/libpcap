@@ -265,12 +265,6 @@
 /* target host supports Bluetooth Monitor */
 #undef PCAP_SUPPORT_BT_MONITOR
 
-/* target host supports CAN sniffing */
-#undef PCAP_SUPPORT_CAN
-
-/* target host supports canusb */
-#undef PCAP_SUPPORT_CANUSB
-
 /* support D-Bus sniffing */
 #undef PCAP_SUPPORT_DBUS
 

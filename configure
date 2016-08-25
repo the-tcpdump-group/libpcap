@@ -627,10 +627,6 @@ PCAP_SUPPORT_PACKET_RING
 DBUS_SRC
 PCAP_SUPPORT_DBUS
 PKGCONFIG
-CAN_SRC
-PCAP_SUPPORT_CAN
-CANUSB_SRC
-PCAP_SUPPORT_CANUSB
 BT_MONITOR_SRC
 BT_SRC
 PCAP_SUPPORT_BT
@@ -753,8 +749,6 @@ enable_universal
 enable_shared
 enable_usb
 enable_bluetooth
-enable_canusb
-enable_can
 enable_dbus
 enable_packet_ring
 '
@@ -1393,10 +1387,6 @@ Optional Features:
   --enable-usb            enable nusb support [default=yes, if support
                           available]
   --enable-bluetooth      enable Bluetooth support [default=yes, if support
-                          available]
-  --enable-canusb         enable canusb support [default=yes, if support
-                          available]
-  --enable-can            enable CAN support [default=yes, if support
                           available]
   --enable-dbus           enable D-Bus capture support [default=yes, if
                           support available]
@@ -8760,163 +8750,6 @@ $as_echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
 		;;
 	esac
 
-
-
-fi
-
-# Check whether --enable-canusb was given.
-if test "${enable_canusb+set}" = set; then :
-  enableval=$enable_canusb;
-else
-  enable_canusb=ifsupportavailable
-fi
-
-
-if test "xxx_only" = yes; then
-	# User requested something-else-only pcap, so they don't
-	# want canusb support.
-	enable_canusb=no
-fi
-
-if test "x$enable_canusb" != "xno" ; then
-		case "$host_os" in
-	linux*|uclinux*)
-		ac_fn_c_check_header_mongrel "$LINENO" "libusb-1.0/libusb.h" "ac_cv_header_libusb_1_0_libusb_h" "$ac_includes_default"
-if test "x$ac_cv_header_libusb_1_0_libusb_h" = xyes; then :
-
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libusb_init in -lusb-1.0" >&5
-$as_echo_n "checking for libusb_init in -lusb-1.0... " >&6; }
-if ${ac_cv_lib_usb_1_0_libusb_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lusb-1.0 -lpthread
-		     $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char libusb_init ();
-int
-main ()
-{
-return libusb_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_usb_1_0_libusb_init=yes
-else
-  ac_cv_lib_usb_1_0_libusb_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_usb_1_0_libusb_init" >&5
-$as_echo "$ac_cv_lib_usb_1_0_libusb_init" >&6; }
-if test "x$ac_cv_lib_usb_1_0_libusb_init" = xyes; then :
-
-
-$as_echo "#define PCAP_SUPPORT_CANUSB 1" >>confdefs.h
-
-			CANUSB_SRC=pcap-canusb-linux.c
-			LIBS="-lusb-1.0 -lpthread $LIBS"
-			ac_lbl_has_libusb=yes
-
-else
-  ac_lbl_has_libusb=no
-fi
-
-
-else
-  ac_lbl_has_libusb=no
-
-fi
-
-
-		if test "x$ac_lbl_has_libusb" = "xyes" ; then
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is supported" >&5
-$as_echo "$as_me: canusb sniffing is supported" >&6;}
-		else
-		    if test "x$enable_canusb" = "xyes" ; then
-			as_fn_error $? "canusb sniffing is not supported; install libusb1.0 lib devel to enable it" "$LINENO" 5
-		    else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&5
-$as_echo "$as_me: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&6;}
-		    fi
-		fi
-		;;
-	*)
-		if test "x$enable_canusb" = "xyes" ; then
-		    as_fn_error $? "no canusb support implemented for $host_os" "$LINENO" 5
-		else
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: no canusb support implemented for $host_os" >&5
-$as_echo "$as_me: no canusb support implemented for $host_os" >&6;}
-		fi
-		;;
-	esac
-
-
-fi
-
-# Check whether --enable-can was given.
-if test "${enable_can+set}" = set; then :
-  enableval=$enable_can;
-else
-  enable_can=ifsupportavailable
-fi
-
-
-if test "xxx_only" = yes; then
-	# User requested something-else-only pcap, so they don't
-	# want CAN support.
-	enable_can=no
-fi
-
-if test "x$enable_can" != "xno" ; then
-		case "$host_os" in
-	linux*)
-		ac_fn_c_check_header_compile "$LINENO" "linux/can.h" "ac_cv_header_linux_can_h" "#include <sys/socket.h>
-
-"
-if test "x$ac_cv_header_linux_can_h" = xyes; then :
-
-
-$as_echo "#define PCAP_SUPPORT_CAN 1" >>confdefs.h
-
-			    CAN_SRC=pcap-can-linux.c
-			    { $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is supported" >&5
-$as_echo "$as_me: CAN sniffing is supported" >&6;}
-
-else
-
-			    if test "x$enable_can" = "xyes" ; then
-				as_fn_error $? "CAN sniffing is not supported" "$LINENO" 5
-			    else
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is not supported" >&5
-$as_echo "$as_me: CAN sniffing is not supported" >&6;}
-			    fi
-
-fi
-
-
-		;;
-	*)
-		if test "x$enable_can" = "xyes" ; then
-		    as_fn_error $? "no CAN sniffing support implemented for $host_os" "$LINENO" 5
-		else
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: no CAN sniffing support implemented for $host_os" >&5
-$as_echo "$as_me: no CAN sniffing support implemented for $host_os" >&6;}
-		fi
-		;;
-	esac
 
 
 fi

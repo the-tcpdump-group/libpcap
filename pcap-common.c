@@ -753,7 +753,7 @@
  *
  * Requested by Felix Obenhuber <felix@obenhuber.de>.
  */
-#define LINKTYPE_CAN_SOCKETCAN_BIGENDIAN	227
+#define LINKTYPE_CAN_SOCKETCAN	227
 
 /*
  * Raw IPv4/IPv6; different from DLT_RAW in that the DLT_ value specifies
@@ -1022,16 +1022,7 @@
  */
 #define LINKTYPE_ISO_14443      264
 
-/*
- * CAN (Controller Area Network) frames, with a pseudo-header as supplied
- * by Linux SocketCAN, and with multi-byte numerical fields in that header
- * in host byte order.
- *
- * See Documentation/networking/can.txt in the Linux source.
- */
-#define LINKTYPE_CAN_SOCKETCAN_HOSTENDIAN	265
-
-#define LINKTYPE_MATCHING_MAX	265		/* highest value in the "matching" range */
+#define LINKTYPE_MATCHING_MAX	264		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
@@ -1181,9 +1172,9 @@ linktype_to_dlt(int linktype)
 #define EXTRACT_
 
 /*
- * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN have
- * SocketCAN headers in front of the payload, with the CAN ID being
- * in host byte order.
+ * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN or
+ * LINUX_SLL_P_CANFD have SocketCAN headers in front of the payload,
+ * with the CAN ID being in host byte order.
  *
  * When reading a DLT_LINUX_SLL capture file, we need to check for those
  * packets and convert the CAN ID from the byte order of the host that
@@ -1205,7 +1196,7 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	}
 
 	protocol = EXTRACT_16BITS(&shdr->sll_protocol);
-	if (protocol != LINUX_SLL_P_CAN)
+	if (protocol != LINUX_SLL_P_CAN && protocol != LINUX_SLL_P_CANFD)
 		return;
 
 	/*
@@ -1435,31 +1426,6 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	}
 }
 
-/*
- * The CAN ID in the DLT_CAN_SOCKETCAN_HOSTENDIAN header is in host byte
- * order when capturing (the header is filled in by the kernel and provided
- * on a PF_PACKET socket).
- *
- * When reading a DLT_CAN_SOCKETCAN_HOSTENDIAN capture file, we need to
- * convert it from the byte order of the host that wrote the file to
- * this host's byte order.
- */
-static void
-swap_can_socketcan_header(const struct pcap_pkthdr *hdr, u_char *buf)
-{
-	u_int caplen = hdr->caplen;
-	u_int length = hdr->len;
-	pcap_can_socketcan_hdr *chdr = (pcap_can_socketcan_hdr *)buf;
-
-	if (caplen < (u_int) sizeof(chdr->can_id) ||
-	    length < (u_int) sizeof(chdr->can_id)) {
-		/* Not enough data to have the CAN ID */
-		return;
-	}
-
-	chdr->can_id = SWAPLONG(chdr->can_id);
-}
-
 void
 swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 {
@@ -1484,10 +1450,6 @@ swap_pseudo_headers(int linktype, struct pcap_pkthdr *hdr, u_char *data)
 
 	case DLT_NFLOG:
 		swap_nflog_header(hdr, data);
-		break;
-
-	case DLT_CAN_SOCKETCAN_HOSTENDIAN:
-		swap_can_socketcan_header(hdr, data);
 		break;
 	}
 }
