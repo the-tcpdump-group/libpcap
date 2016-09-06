@@ -101,9 +101,6 @@
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>../../;../../lbl/;../../bpf/;../include/;../../../../common;../../../../dag/include;../../../../dag/drv/windows;../../../Win32-Extensions;./;Win32-Extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_VERSION_H;__STDC_VERSION__=199901L;NDEBUG;YY_NEVER_INTERACTIVE;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;HAVE_REMOTE;WIN32;_U_=;YY_NO_UNISTD_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
-      <ObjectFileName>.\Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0409</Culture>
@@ -129,9 +126,6 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
       <WarningLevel>Level3</WarningLevel>
       <AdditionalIncludeDirectories>../../;../../lbl/;../../bpf/;../include/;../../../../common;../../../../dag/include;../../../../dag/drv/windows;../../../Win32-Extensions;./;Win32-Extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_VERSION_H;__STDC_VERSION__=199901L;NDEBUG;YY_NEVER_INTERACTIVE;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;HAVE_REMOTE;WIN32;_U_=;YY_NO_UNISTD_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Release\</AssemblerListingLocation>
-      <ObjectFileName>.\Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Release\</ProgramDataBaseFileName>
     </ClCompile>
     <ResourceCompile>
       <Culture>0x0409</Culture>
@@ -158,9 +152,6 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <AdditionalIncludeDirectories>../../;../../lbl/;../../bpf/;../include/;../../../../common;../../../../dag/include;../../../../dag/drv/windows;../../../Win32-Extensions;./;Win32-Extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_VERSION_H;__STDC_VERSION__=199901L;_DEBUG;YY_NEVER_INTERACTIVE;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;HAVE_REMOTE;WIN32;_U_=;YY_NO_UNISTD_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
-      <ObjectFileName>.\Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
     </ClCompile>
     <ResourceCompile>
@@ -187,9 +178,6 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <AdditionalIncludeDirectories>../../;../../lbl/;../../bpf/;../include/;../../../../common;../../../../dag/include;../../../../dag/drv/windows;../../../Win32-Extensions;./;Win32-Extensions;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>HAVE_VERSION_H;__STDC_VERSION__=199901L;_DEBUG;YY_NEVER_INTERACTIVE;_USRDLL;BUILDING_PCAP;HAVE_STRERROR;__STDC__;INET6;_WINDOWS;HAVE_ADDRINFO;HAVE_REMOTE;WIN32;_U_=;YY_NO_UNISTD_H;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Debug\</AssemblerListingLocation>
-      <ObjectFileName>.\Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Debug\</ProgramDataBaseFileName>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
     </ClCompile>
     <ResourceCompile>
