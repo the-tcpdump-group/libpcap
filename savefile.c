@@ -276,6 +276,11 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	FILE *fp;
 	pcap_t *p;
 
+	if (fname == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "A null pointer was supplied as the file name");
+		return (NULL);
+	}
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;
