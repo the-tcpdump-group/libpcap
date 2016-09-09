@@ -271,7 +271,7 @@ FILE *fopen_safe(const char *filename, const char* mode)
 
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
-    char *errbuf)
+					char *errbuf)
 {
 	FILE *fp;
 	pcap_t *p;
