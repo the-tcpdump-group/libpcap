@@ -1022,6 +1022,12 @@
  */
 #define LINKTYPE_ISO_14443      264
 
+/*
+ * Radio data system (RDS) groups.  IEC 62106.
+ * Per Jonathan Brucker <jonathan.brucke@gmail.com>.
+ */
+#define LINKTYPE_RDS		265
+
 #define LINKTYPE_MATCHING_MAX	264		/* highest value in the "matching" range */
 
 static struct linktype_map {

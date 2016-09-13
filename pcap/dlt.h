@@ -1298,7 +1298,13 @@
 /*
  * ISO 14443 contactless smart card messages.
  */
-#define DLT_ISO_14443           264
+#define DLT_ISO_14443	264
+
+/*
+ * Radio data system (RDS) groups.  IEC 62106.
+ * Per Jonathan Brucker <jonathan.brucke@gmail.com>.
+ */
+#define DLT_RDS		265
 
 /*
  * In case the code that includes this file (directly or indirectly)
@@ -1310,7 +1316,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	264	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	265	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
