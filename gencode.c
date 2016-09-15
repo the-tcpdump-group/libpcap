@@ -1994,6 +1994,41 @@ gen_ether_linktype(compiler_state_t *cstate, int proto)
 	}
 }
 
+static struct block *
+gen_loopback_linktype(compiler_state_t *cstate, int proto)
+{
+	/*
+	 * For DLT_NULL, the link-layer header is a 32-bit word
+	 * containing an AF_ value in *host* byte order, and for
+	 * DLT_ENC, the link-layer header begins with a 32-bit
+	 * word containing an AF_ value in host byte order.
+	 *
+	 * In addition, if we're reading a saved capture file,
+	 * the host byte order in the capture may not be the
+	 * same as the host byte order on this machine.
+	 *
+	 * For DLT_LOOP, the link-layer header is a 32-bit
+	 * word containing an AF_ value in *network* byte order.
+	 */
+	if (cstate->linktype == DLT_NULL || cstate->linktype == DLT_ENC) {
+		/*
+		 * The AF_ value is in host byte order, but the BPF
+		 * interpreter will convert it to network byte order.
+		 *
+		 * If this is a save file, and it's from a machine
+		 * with the opposite byte order to ours, we byte-swap
+		 * the AF_ value.
+		 *
+		 * Then we run it through "htonl()", and generate
+		 * code to compare against the result.
+		 */
+		if (cstate->bpf_pcap->rfile != NULL && cstate->bpf_pcap->swapped)
+			proto = SWAPLONG(proto);
+		proto = htonl(proto);
+	}
+	return (gen_cmp(cstate, OR_LINKHDR, 0, BPF_W, (bpf_int32)proto));
+}
+
 /*
  * "proto" is an Ethernet type value and for IPNET, if it is not IPv4
  * or IPv6 then we have an error.
@@ -2931,6 +2966,14 @@ gen_prevlinkhdr_check(compiler_state_t *cstate)
 }
 
 /*
+ * The three different values we should check for when checking for an
+ * IPv6 packet with DLT_NULL.
+ */
+#define BSD_AFNUM_INET6_BSD	24	/* NetBSD, OpenBSD, BSD/OS, Npcap */
+#define BSD_AFNUM_INET6_FREEBSD	28	/* FreeBSD */
+#define BSD_AFNUM_INET6_DARWIN	30	/* OS X, iOS, other Darwin-based OSes */
+
+/*
  * Generate code to match a particular packet type by matching the
  * link-layer type field or fields in the 802.2 LLC header.
  *
@@ -3150,39 +3193,71 @@ gen_linktype(compiler_state_t *cstate, int proto)
 	case DLT_NULL:
 	case DLT_LOOP:
 	case DLT_ENC:
-		/*
-		 * For DLT_NULL, the link-layer header is a 32-bit
-		 * word containing an AF_ value in *host* byte order,
-		 * and for DLT_ENC, the link-layer header begins
-		 * with a 32-bit work containing an AF_ value in
-		 * host byte order.
-		 *
-		 * In addition, if we're reading a saved capture file,
-		 * the host byte order in the capture may not be the
-		 * same as the host byte order on this machine.
-		 *
-		 * For DLT_LOOP, the link-layer header is a 32-bit
-		 * word containing an AF_ value in *network* byte order.
-		 *
-		 * XXX - AF_ values may, unfortunately, be platform-
-		 * dependent; for example, FreeBSD's AF_INET6 is 24
-		 * whilst NetBSD's and OpenBSD's is 26.
-		 *
-		 * This means that, when reading a capture file, just
-		 * checking for our AF_INET6 value won't work if the
-		 * capture file came from another OS.
-		 */
 		switch (proto) {
 
 		case ETHERTYPE_IP:
-			proto = AF_INET;
-			break;
+			return (gen_loopback_linktype(cstate, AF_INET));
 
-#ifdef INET6
 		case ETHERTYPE_IPV6:
-			proto = AF_INET6;
-			break;
-#endif
+			/*
+			 * AF_ values may, unfortunately, be platform-
+			 * dependent; AF_INET isn't, because everybody
+			 * used 4.2BSD's value, but AF_INET6 is, because
+			 * 4.2BSD didn't have a value for it (given that
+			 * IPv6 didn't exist back in the early 1980's),
+			 * and they all picked their own values.
+			 *
+			 * This means that, if we're reading from a
+			 * savefile, we need to check for all the
+			 * possible values.
+			 *
+			 * If we're doing a live capture, we only need
+			 * to check for this platform's value; however,
+			 * Npcap uses 24, which isn't Windows's AF_INET6
+			 * value.  (Given the multiple different values,
+			 * programs that read pcap files shouldn't be
+			 * checking for their platform's AF_INET6 value
+			 * anyway, they should check for all of the
+			 * possible values. and they might as well do
+			 * that even for live captures.)
+			 */
+			if (cstate->bpf_pcap->rfile != NULL) {
+				/*
+				 * Savefile - check for all three
+				 * possible IPv6 values.
+				 */
+				b0 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_BSD);
+				b1 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_FREEBSD);
+				gen_or(b0, b1);
+				b0 = gen_loopback_linktype(cstate, BSD_AFNUM_INET6_DARWIN);
+				gen_or(b0, b1);
+				return (b1);
+			} else {
+				/*
+				 * Live capture, so we only need to
+				 * check for the value used on this
+				 * platform.
+				 */
+#ifdef _WIN32
+				/*
+				 * Npcap doesn't use Windows's AF_INET6,
+				 * as that collides with AF_IPX on
+				 * some BSDs (both have the value 23).
+				 * Instead, it uses 24.
+				 */
+				return (gen_loopback_linktype(cstate, 24));
+#else /* _WIN32 */
+#ifdef AF_INET6
+				return (gen_loopback_linktype(cstate, AF_INET6));
+#else /* AF_INET6 */
+				/*
+				 * I guess this platform doesn't support
+				 * IPv6, so we just reject all packets.
+				 */
+				return gen_false(cstate);
+#endif /* AF_INET6 */
+#endif /* _WIN32 */
+			}
 
 		default:
 			/*
@@ -3192,25 +3267,6 @@ gen_linktype(compiler_state_t *cstate, int proto)
 			 */
 			return gen_false(cstate);
 		}
-
-		if (cstate->linktype == DLT_NULL || cstate->linktype == DLT_ENC) {
-			/*
-			 * The AF_ value is in host byte order, but
-			 * the BPF interpreter will convert it to
-			 * network byte order.
-			 *
-			 * If this is a save file, and it's from a
-			 * machine with the opposite byte order to
-			 * ours, we byte-swap the AF_ value.
-			 *
-			 * Then we run it through "htonl()", and
-			 * generate code to compare against the result.
-			 */
-			if (cstate->bpf_pcap->rfile != NULL && cstate->bpf_pcap->swapped)
-				proto = SWAPLONG(proto);
-			proto = htonl(proto);
-		}
-		return (gen_cmp(cstate, OR_LINKHDR, 0, BPF_W, (bpf_int32)proto));
 
 #ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
