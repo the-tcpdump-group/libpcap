@@ -1643,6 +1643,22 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 			return 0;
 
 		/*
+		 * If this is an outgoing CAN or CAN FD frame, and
+		 * the user doesn't only want outgoing packets,
+		 * reject it; CAN devices and drivers, and the CAN
+		 * stack, always arrange to loop back transmitted
+		 * packets, so they also appear as incoming packets.
+		 * We don't want duplicate packets, and we can't
+		 * easily distinguish packets looped back by the CAN
+		 * layer than those received by the CAN layer, so we
+		 * eliminate this packet instead.
+		 */
+		if ((sll->sll_protocol == LINUX_SLL_P_CAN ||
+		     sll->sll_protocol == LINUX_SLL_P_CANFD) &&
+		     handle->direction != PCAP_D_OUT)
+			return 0;
+
+		/*
 		 * If the user only wants incoming packets, reject it.
 		 */
 		if (handle->direction == PCAP_D_IN)
