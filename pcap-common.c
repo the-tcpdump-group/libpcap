@@ -1028,7 +1028,7 @@
  */
 #define LINKTYPE_RDS		265
 
-#define LINKTYPE_MATCHING_MAX	264		/* highest value in the "matching" range */
+#define LINKTYPE_MATCHING_MAX	266		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
