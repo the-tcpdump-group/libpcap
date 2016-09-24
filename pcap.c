@@ -295,7 +295,7 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
 
-struct capture_source_type {
+static struct capture_source_type {
 	int (*findalldevs_op)(pcap_if_t **, char *);
 	pcap_t *(*create_op)(const char *, char *, int *);
 } capture_source_types[] = {
