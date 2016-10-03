@@ -5093,7 +5093,7 @@ again:
 			packets_to_read = max_packets - pkts;
 		}
 
-		while (packets_to_read--) {
+		while (packets_to_read-- && !handle->break_loop) {
 			struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
 			ret = pcap_handle_packet_mmap(
 					handle,
