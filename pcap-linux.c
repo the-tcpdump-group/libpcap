@@ -5082,11 +5082,18 @@ again:
 		}
 		packets_to_read = handlep->packets_left;
 
-		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) && packets_to_read > max_packets) {
-			packets_to_read = max_packets;
+		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) &&
+		    packets_to_read > (max_packets - pkts)) {
+			/*
+			 * We've been given a maximum number of packets
+			 * to process, and there are more packets in
+			 * this buffer than that.  Only process enough
+			 * of them to get us up to that maximum.
+			 */
+			packets_to_read = max_packets - pkts;
 		}
 
-		while(packets_to_read--) {
+		while (packets_to_read--) {
 			struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
 			ret = pcap_handle_packet_mmap(
 					handle,
