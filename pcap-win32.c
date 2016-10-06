@@ -1508,22 +1508,14 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	while (*name != '\0') {
 		bpf_u_int32 flags = 0;
 #ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
-		pcap_t *p;
-
 		/*
 		 * Is this a loopback interface?
-		 * XXX - it'd be best if there were a way to get a list
-		 * of interfaces *and* flags, including "Up" and "Running"
-		 * as well as "loopback", without having to open the
+		 * this method doesn't need to open the
 		 * interfaces.
 		 */
-		p = pcap_open_live(name, 68, 0, 0, errbuf);
-		if (p != NULL) {
-			if (PacketIsLoopbackAdapter(p->adapter)) {
-				/* Yes */
-				flags |= PCAP_IF_LOOPBACK;
-			}
-			pcap_close(p);
+		if (PacketIsLoopbackAdapter(name)) {
+			/* Yes */
+			flags |= PCAP_IF_LOOPBACK;
 		}
 #endif
 
