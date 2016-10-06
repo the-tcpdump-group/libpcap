@@ -1510,8 +1510,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 #ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
 		/*
 		 * Is this a loopback interface?
-		 * this method doesn't need to open the
-		 * interfaces.
 		 */
 		if (PacketIsLoopbackAdapter(name)) {
 			/* Yes */
