@@ -265,7 +265,7 @@ EXTRA_DIST = \
 	config.h.in \
 	config.sub \
 	configure \
-	configure.in \
+	configure.ac \
 	dlpisubs.c \
 	dlpisubs.h \
 	fad-getad.c \
