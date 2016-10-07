@@ -361,6 +361,8 @@ elif test -r /usr/include/linux/socket.h ; then
 	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/raw.h ; then
 	V_PCAP=snoop
+elif test -r /usr/include/hurd.h ; then
+	V_PCAP=hurd
 elif test -r /usr/include/odmi.h ; then
 	#
 	# On AIX, the BPF devices might not yet be present - they're
@@ -599,6 +601,10 @@ bpf)
 #endif
 #include <net/bpf.h>
 		    ])
+	;;
+
+hurd)
+	LIBS="$LIBS -lrt"
 	;;
 
 dag)
