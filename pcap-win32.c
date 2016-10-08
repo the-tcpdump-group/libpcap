@@ -95,10 +95,10 @@ BOOL WINAPI DllMain(
 
 /*
  * Define stub versions of the monitor-mode support routines if this
- * isn't Npcap.  NPF_DRIVER_NAME_NORMAL is defined by Npcap but not
+ * isn't Npcap. HAVE_NPCAP_PACKET_API is defined by Npcap but not
  * WinPcap.
  */
-#ifndef NPF_DRIVER_NAME_NORMAL
+#ifndef HAVE_NPCAP_PACKET_API
 static int
 PacketIsMonitorModeSupported(PCHAR AdapterName _U_)
 {
