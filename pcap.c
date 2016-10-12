@@ -1265,6 +1265,12 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DLT_PROFIBUS_DL, "PROFIBUS data link layer"),
 	DLT_CHOICE(DLT_PKTAP, "Apple DLT_PKTAP"),
 	DLT_CHOICE(DLT_EPON, "Ethernet with 802.3 Clause 65 EPON preamble"),
+	DLT_CHOICE(DLT_IPMI_HPM_2, "IPMI trace packets"),
+	DLT_CHOICE(DLT_ZWAVE_R1_R2, "Z-Wave RF profile R1 and R2 packets"),
+	DLT_CHOICE(DLT_ZWAVE_R3, "Z-Wave RF profile R3 packets"),
+	DLT_CHOICE(DLT_WATTSTOPPER_DLM, "WattStopper Digital Lighting Management (DLM) and Legrand Nitoo Open protocol"),
+	DLT_CHOICE(DLT_ISO_14443, "ISO 14443 messages"),
+	DLT_CHOICE(DLT_RDS, "IEC 62106 Radio Data System groups"),
 	DLT_CHOICE_SENTINEL
 };
 
