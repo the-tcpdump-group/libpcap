@@ -173,28 +173,6 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 		if (strncmp(ifrp->lifr_name, "dummy", 5) == 0)
 			continue;
 
-#ifdef HAVE_SOLARIS
-		/*
-		 * Skip entries that have a ":" followed by a number
-		 * at the end - those are Solaris virtual interfaces
-		 * on which you can't capture.
-		 */
-		p = strchr(ifrp->lifr_name, ':');
-		if (p != NULL) {
-			/*
-			 * We have a ":"; is it followed by a number?
-			 */
-			while (isdigit((unsigned char)*p))
-				p++;
-			if (*p == '\0') {
-				/*
-				 * All digits after the ":" until the end.
-				 */
-				continue;
-			}
-		}
-#endif
-
 		/*
 		 * Can we capture on this device?
 		 */
