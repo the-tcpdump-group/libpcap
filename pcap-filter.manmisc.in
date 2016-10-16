@@ -182,7 +182,7 @@ be checked for a match.
 True if the Ethernet destination address is \fIehost\fP.
 \fIEhost\fP
 may be either a name from /etc/ethers or a number (see
-.IR ethers (3N)
+.IR ethers (@MAN_ETHERS_SECTION@)
 for numeric format).
 .IP "\fBether src \fIehost\fP"
 True if the Ethernet source address is \fIehost\fP.
