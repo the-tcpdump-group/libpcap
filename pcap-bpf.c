@@ -596,6 +596,9 @@ bpf_open_and_bind(const char *name, char *errbuf)
 	int fd;
 	struct ifreq ifr;
 
+	/*
+	 * First, open a BPF device.
+	 */
 	fd = bpf_open(errbuf);
 	if (fd < 0)
 		return (fd);	/* fd is the appropriate error code */
