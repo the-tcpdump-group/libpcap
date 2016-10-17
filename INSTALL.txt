@@ -16,7 +16,7 @@ does support packet capture but libpcap does not support that
 particular type. (If you have HP-UX, see below.) If your system uses a
 packet capture not supported by libpcap, please send us patches; don't
 forget to include an autoconf fragment suitable for use in
-configure.in.
+configure.ac.
 
 It is possible to override the default packet capture type, although
 the circumstance where this works are limited. For example if you have
@@ -300,7 +300,7 @@ config.guess	- autoconf support
 config.h.in	- autoconf input
 config.sub	- autoconf support
 configure	- configure script (run this first)
-configure.in	- configure script source
+configure.ac	- configure script source
 dlpisubs.c	- DLPI-related functions for pcap-dlpi.c and pcap-libdlpi.c
 dlpisubs.h	- DLPI-related function declarations
 etherent.c	- /etc/ethers support routines
