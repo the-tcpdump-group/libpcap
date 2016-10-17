@@ -260,6 +260,7 @@ EXTRA_DIST = \
 	bpf/net/bpf_filter.c \
 	chmod_bpf \
 	cmakeconfig.h.in \
+	cmake/preconfigure.cmake \
 	config/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
@@ -277,6 +278,7 @@ EXTRA_DIST = \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \
+	lbl/os-aix7.h \
 	lbl/os-hpux11.h \
 	lbl/os-osf4.h \
 	lbl/os-osf5.h \
@@ -287,6 +289,7 @@ EXTRA_DIST = \
 	missing/getopt.h \
 	missing/snprintf.c \
 	missing/strtok_r.c \
+	missing/win_snprintf.c \
 	mkdep \
 	msdos/bin2c.c \
 	msdos/common.dj \
@@ -320,11 +323,14 @@ EXTRA_DIST = \
 	pcap-libdlpi.c \
 	pcap-linux.c \
 	pcap-namedb.h \
+	pcap-new.c \
 	pcap-netfilter-linux.c \
 	pcap-netfilter-linux.h \
 	pcap-nit.c \
 	pcap-null.c \
 	pcap-pf.c \
+	pcap-rpcap.c \
+	pcap-rpcap.h \
 	pcap-septel.c \
 	pcap-septel.h \
 	pcap-sita.h \
@@ -339,7 +345,11 @@ EXTRA_DIST = \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	pcap-win32.c \
+	remote-ext.h \
+	sockutils.c \
+	sockutils.h \
 	scanner.l \
+	tests/CMakeLists.txt \
 	pcap_version.h.in \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
