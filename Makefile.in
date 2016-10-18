@@ -136,6 +136,7 @@ TESTS = \
 	filtertest \
 	findalldevstest \
 	opentest \
+	reactivatetest \
 	selpolltest
 
 TESTS_SRC = \
@@ -539,6 +540,9 @@ findalldevstest: tests/findalldevstest.c libpcap.a
 
 opentest: tests/opentest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/tests/opentest.c libpcap.a $(LIBS)
+
+reactivatetest: tests/reactivatetest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o reactivatetest $(srcdir)/tests/reactivatetest.c libpcap.a $(LIBS)
 
 selpolltest: tests/selpolltest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/tests/selpolltest.c libpcap.a $(LIBS)
