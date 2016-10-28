@@ -1166,7 +1166,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 		p->stat.ps_drop = 0xFFFFFFFF;
 	}
 
-#ifdef HAVE_REMOTE
+#if defined(_WIN32) && defined(HAVE_REMOTE)
 	p->stat.ps_capt = pt->TcAcceptedCount;
 #endif
 
