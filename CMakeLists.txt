@@ -29,7 +29,7 @@ endif( WIN32 )
 #
 if( WIN32 )
     option (HAVE_REMOTE "Enable remote capture" ON)
-else
+else()
     option (HAVE_REMOTE "Enable remote capture" OFF)
 endif( WIN32 )
 
