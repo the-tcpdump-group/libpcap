@@ -166,6 +166,9 @@
 /* Define to 1 if you have the `strlcpy' function. */
 #cmakedefine HAVE_STRLCPY 1
 
+/* Define to 1 if you have the `strtok_r' function. */
+#cmakedefine HAVE_STRTOK_R 1
+
 /* Define to 1 if the system has the type `struct BPF_TIMEVAL'. */
 #cmakedefine HAVE_STRUCT_BPF_TIMEVAL 1
 
