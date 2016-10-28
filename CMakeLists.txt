@@ -1,5 +1,14 @@
 cmake_minimum_required( VERSION 2.8.8 )
 
+#
+# Apple doesn't build with an install_name starting with @rpath, and
+# neither do we with autotools; don't do so with CMake, either, and
+# suppress warnings about that.
+#
+if (POLICY CMP0042)
+    cmake_policy(SET CMP0042 OLD)
+endif()
+ 
 project( pcap )
 #
 # Call the library "wpcap" on Windows, for backwards compatibility.
