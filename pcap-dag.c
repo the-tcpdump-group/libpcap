@@ -237,7 +237,7 @@ delete_pcap_dag(pcap_t *p)
 static void
 dag_platform_cleanup(pcap_t *p)
 {
-	struct pcap_dag *pd = p->pr;
+	struct pcap_dag *pd = p->priv;
 
 #ifdef HAVE_DAG_STREAMS_API
 	if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
