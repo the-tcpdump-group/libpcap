@@ -690,7 +690,9 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	}
 	initchunks(&cstate);
 	cstate.no_optimize = 0;
+#ifdef INET6
 	cstate.ai = NULL;
+#endif
 	cstate.ic.root = NULL;
 	cstate.ic.cur_mark = 0;
 	cstate.bpf_pcap = p;
