@@ -362,7 +362,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 				(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
 					merge ? "Merge Bitmask Port " : "",
 					merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
-				if (merge) 
+				if (merge)
 					allports |= 1 << ifa->snf_ifa_portnum;
 				nextdev->description = strdup(desc);
 				if (nextdev->description == NULL) {
@@ -403,7 +403,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
 				merge ? "Merge Bitmask Port " : "",
 				merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
-			if (merge) 
+			if (merge)
 				allports |= 1 << ifa->snf_ifa_portnum;
 			curdev->description = strdup(desc);
 			if (curdev->description == NULL) {
@@ -420,13 +420,13 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			 * XXX - are there any actual IP addresses for
 			 * these devices?
 			 */
-	
+
 			prevdev = curdev;
 		} // end of if entry !found
 		ifa = ifa->snf_ifa_next;
 	}
 	snf_freeifaddrs(ifaddrs);
-	/* 
+	/*
 	 * Create a snfX entry if port aggregation is enabled
        	 */
 	if (merge) {
