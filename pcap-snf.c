@@ -328,7 +328,9 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	int ret, found, allports = 0, merge = 0;
 	const char *nr = NULL;
 
-	if (snf_init(SNF_VERSION_API))
+	if (snf_init(SNF_VERSION_API)) {
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "snf_getifaddrs: snf_init failed");
 		return (-1);
 
 	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL)
@@ -340,36 +342,44 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	if ((nr = getenv("SNF_FLAGS")) && *nr) {
 		errno = 0;
 		merge = strtol(nr, NULL, 0);
-		if (errno)
+		if (errno) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				"snf_getifaddrs: SNF_FLAGS is not a valid number");
 			return (-1);
+		}
 		merge = merge & SNF_F_AGGREGATE_PORTMASK;
 	}
 
-	ifa = ifaddrs;
-	while (ifa)
-	{
+	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->snf_ifa_next) {
 		found = 0;
 		nextdev = *devlistp;
 		/*
- 		 * Look for a match in passed in devlist
+ 		 * Is there already a device with this name in the list
+ 		 * of devices?
  		 */
 		while (nextdev != NULL) {
 			if (strcmp(nextdev->name,ifa->snf_ifa_name) == 0) {
 				/*
-				 * Update Description if match found
-				 * If port aggregation is set, unit is power of 2
+				 * Yes.  Update the description for the
+				 * device.
+				 * If port aggregation is set, unit is
+				 * power of 2
 				 */
+				char *desc_str;
+
 				(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
 					merge ? "Merge Bitmask Port " : "",
 					merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
 				if (merge)
 					allports |= 1 << ifa->snf_ifa_portnum;
-				nextdev->description = strdup(desc);
-				if (nextdev->description == NULL) {
+				desc_str = strdup(desc);
+				if (desc_str == NULL) {
 					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					 "snf_findalldevs strdup: %s", pcap_strerror(errno));
+					    "snf_findalldevs strdup: %s", pcap_strerror(errno));
 					return (-1);
 				}
+				free(nextdev->description);
+				nextdev->description = desc_str;
 				found = 1;
 				break;
 			}
@@ -423,7 +433,6 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 
 			prevdev = curdev;
 		} // end of if entry !found
-		ifa = ifa->snf_ifa_next;
 	}
 	snf_freeifaddrs(ifaddrs);
 	/*
@@ -488,10 +497,6 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		nextdev->next = devlist;
 	}
 
-	/*
-	 * There are no platform-specific devices since each device
-	 * exists as a regular Ethernet device.
-	 */
 	return 0;
 }
 
