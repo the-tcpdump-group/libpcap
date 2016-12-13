@@ -415,33 +415,11 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			}
 			curdev->addresses = NULL;
 			curdev->flags = 0;
-	
-			curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
-			if (curaddr == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				     "snf_findalldevs malloc1: %s", pcap_strerror(errno));
-				free(curdev->description);
-				free(curdev->name);
-				free(curdev);
-				return (-1);
-			}
-			curdev->addresses = curaddr;
-			curaddr->next = NULL;
-			curaddr->addr = (struct sockaddr*)malloc(sizeof(struct sockaddr_storage));
-			if (curaddr->addr == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "malloc2: %s", pcap_strerror(errno));
-				free(curdev->description);
-				free(curdev->name);
-				free(curaddr);
-				free(curdev);
-				return (-1);
-			}
-			curaddr->addr->sa_family = AF_INET;
-			curaddr->netmask = NULL;
-			curaddr->broadaddr = NULL;
-			curaddr->dstaddr = NULL;
-			curaddr->next = NULL;
+
+			/*
+			 * XXX - are there any actual IP addresses for
+			 * these devices?
+			 */
 	
 			prevdev = curdev;
 		} // end of if entry !found
@@ -490,32 +468,10 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		curdev->addresses = NULL;
 		curdev->flags = 0;
 
-		curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
-		if (curaddr == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			     "snf_findalldevs malloc1: %s", pcap_strerror(errno));
-			free(curdev->description);
-			free(curdev->name);
-			free(curdev);
-			return (-1);
-		}
-		curdev->addresses = curaddr;
-		curaddr->next = NULL;
-		curaddr->addr = (struct sockaddr*)malloc(sizeof(struct sockaddr_storage));
-		if (curaddr->addr == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc2: %s", pcap_strerror(errno));
-			free(curdev->description);
-			free(curdev->name);
-			free(curaddr);
-			free(curdev);
-			return (-1);
-		}
-		curaddr->addr->sa_family = AF_INET;
-		curaddr->netmask = NULL;
-		curaddr->broadaddr = NULL;
-		curaddr->dstaddr = NULL;
-		curaddr->next = NULL;
+		/*
+		 * XXX - are there any actual IP addresses for
+		 * these devices?
+		 */
 	}
 	if (*devlistp == NULL)
 		/*
@@ -566,7 +522,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	devlen = strlen(device) + 1;
 	ifa = ifaddrs;
 	while (ifa) {
-		if (!strncmp(device, ifa->snf_ifa_name, devlen)) {
+		if (strncmp(device, ifa->snf_ifa_name, devlen) == 0) {
 			boardnum = ifa->snf_ifa_boardnum;
 			break;
 		}
