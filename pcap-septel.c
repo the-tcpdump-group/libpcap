@@ -232,7 +232,7 @@ pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_septel));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_septel));
 	if (p == NULL)
 		return NULL;
 
@@ -291,3 +291,31 @@ septel_setnonblock(pcap_t *p, int nonblock, char *errbuf)
   fprintf(errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
   return (-1);
 }
+
+#ifdef SEPTEL_ONLY
+/*
+ * This libpcap build supports only Septel cards, not regular network
+ * interfaces.
+ */
+
+/*
+ * There are no regular interfaces, just Septel interfaces.
+ */
+int
+pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+{
+  *alldevsp = NULL;
+  return (0);
+}
+
+/*
+ * Attempts to open a regular interface fail.
+ */
+pcap_t *
+pcap_create_interface(const char *device, char *errbuf)
+{
+  pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+                "This version of libpcap only supports Septel cards");
+  return (NULL);
+}
+#endif

@@ -11,7 +11,7 @@ if( NOT LIBPCAP_PRECONFIGURED )
     # Project setings
     ######################################
 
-    add_definitions( -DLIBPCAP_EXPORTS )
+    add_definitions( -DBUILDING_PCAP )
 
     if( MSVC )
         add_definitions( -D__STDC__ )

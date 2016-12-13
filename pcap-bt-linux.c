@@ -171,7 +171,7 @@ bt_create(const char *device, char *ebuf, int *is_ours)
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_bt));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_bt));
 	if (p == NULL)
 		return (NULL);
 
@@ -190,11 +190,11 @@ bt_activate(pcap_t* handle)
 	int err = PCAP_ERROR;
 
 	/* get bt interface id */
-	if (sscanf(handle->opt.source, BT_IFACE"%d", &dev_id) != 1)
+	if (sscanf(handle->opt.device, BT_IFACE"%d", &dev_id) != 1)
 	{
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't get Bluetooth device index from %s",
-			 handle->opt.source);
+			 handle->opt.device);
 		return PCAP_ERROR;
 	}
 

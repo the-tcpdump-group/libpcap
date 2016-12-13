@@ -186,8 +186,8 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 			pkthdr.len = origlen;
 			pkthdr.caplen = caplen;
 			/* Insure caplen does not exceed snapshot */
-			if (pkthdr.caplen > p->snapshot)
-				pkthdr.caplen = p->snapshot;
+			if (pkthdr.caplen > (bpf_u_int32)p->snapshot)
+				pkthdr.caplen = (bpf_u_int32)p->snapshot;
 			(*callback)(user, &pkthdr, pk);
 			if (++n >= count && !PACKET_COUNT_IS_UNLIMITED(count)) {
 				p->cc = ep - bufp;
@@ -255,8 +255,29 @@ pcap_process_mactype(pcap_t *p, u_int mactype)
 		break;
 #endif
 
+#ifdef DL_IPV4
+	case DL_IPV4:
+		p->linktype = DLT_IPV4;
+		p->offset = 0;
+		break;
+#endif
+
+#ifdef DL_IPV6
+	case DL_IPV6:
+		p->linktype = DLT_IPV6;
+		p->offset = 0;
+		break;
+#endif
+
+#ifdef DL_IPNET
+	case DL_IPNET:
+		p->linktype = DLT_IPNET;
+		p->offset = 0;
+		break;
+#endif
+
 	default:
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype %u",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype 0x%x",
 		    mactype);
 		retv = -1;
 	}

@@ -75,7 +75,8 @@ struct rtentry;		/* declarations in <net/if.h> */
  * SIOCGLIFCONF rather than SIOCGIFCONF in order to get IPv6 addresses.)
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
+pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
+    int (*check_usable)(const char *))
 {
 	pcap_if_t *devlist = NULL;
 	register int fd4, fd6, fd;
@@ -165,14 +166,6 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 
 	for (; ifrp < ifend; ifrp++) {
 		/*
-		 * IPv6 or not?
-		 */
-		if (((struct sockaddr *)&ifrp->lifr_addr)->sa_family == AF_INET6)
-			fd = fd6;
-		else
-			fd = fd4;
-
-		/*
 		 * Skip entries that begin with "dummy".
 		 * XXX - what are these?  Is this Linux-specific?
 		 * Are there platforms on which we shouldn't do this?
@@ -180,27 +173,23 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		if (strncmp(ifrp->lifr_name, "dummy", 5) == 0)
 			continue;
 
-#ifdef HAVE_SOLARIS
 		/*
-		 * Skip entries that have a ":" followed by a number
-		 * at the end - those are Solaris virtual interfaces
-		 * on which you can't capture.
+		 * Can we capture on this device?
 		 */
-		p = strchr(ifrp->lifr_name, ':');
-		if (p != NULL) {
+		if (!(*check_usable)(ifrp->lifr_name)) {
 			/*
-			 * We have a ":"; is it followed by a number?
+			 * No.
 			 */
-			while (isdigit((unsigned char)*p))
-				p++;
-			if (*p == '\0') {
-				/*
-				 * All digits after the ":" until the end.
-				 */
-				continue;
-			}
+			continue;
 		}
-#endif
+
+		/*
+		 * IPv6 or not?
+		 */
+		if (((struct sockaddr *)&ifrp->lifr_addr)->sa_family == AF_INET6)
+			fd = fd6;
+		else
+			fd = fd4;
 
 		/*
 		 * Get the flags for this interface.
@@ -341,7 +330,8 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifrp->lifr_name,
-		    ifrflags.lifr_flags, (struct sockaddr *)&ifrp->lifr_addr,
+		    if_flags_to_pcap_flags(ifrp->lifr_name, ifrflags.lifr_flags),
+		    (struct sockaddr *)&ifrp->lifr_addr,
 		    sizeof (struct sockaddr_storage),
 		    netmask, sizeof (struct sockaddr_storage),
 		    broadaddr, sizeof (struct sockaddr_storage),

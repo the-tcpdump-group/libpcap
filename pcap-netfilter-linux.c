@@ -102,19 +102,19 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 		if(errno == ENOBUFS) handlep->packets_nobufs++;
 	} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
-	
+
 	if (len < 0) {
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
 		return -1;
 	}
 
 	buf = (unsigned char *)handle->buffer;
-	while (len >= NLMSG_SPACE(0)) {
+	while ((u_int)len >= NLMSG_SPACE(0)) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) buf;
 		u_int32_t msg_len;
 		nftype_t type = OTHER;
 
-		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || len < nlh->nlmsg_len) {
+		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || (u_int)len < nlh->nlmsg_len) {
 			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %d) (nlmsg_len: %u)", len, nlh->nlmsg_len);
 			return -1;
 		}
@@ -205,8 +205,8 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 
 		msg_len = NLMSG_ALIGN(nlh->nlmsg_len);
-		if (msg_len > len)
-			msg_len = len;
+		if (msg_len > (u_int)len)
+			msg_len = (u_int)len;
 
 		len -= msg_len;
 		buf += msg_len;
@@ -310,7 +310,7 @@ netfilter_send_config_msg(const pcap_t *handle, u_int16_t msg_type, int ack, u_i
 		if (snl.nl_pid != 0 || seq_id != nlh->nlmsg_seq)	/* if not from kernel or wrong sequence skip */
 			continue;
 
-		while (len >= NLMSG_SPACE(0) && NLMSG_OK(nlh, len)) {
+		while ((u_int)len >= NLMSG_SPACE(0) && NLMSG_OK(nlh, len)) {
 			if (nlh->nlmsg_type == NLMSG_ERROR || (nlh->nlmsg_type == NLMSG_DONE && nlh->nlmsg_flags & NLM_F_MULTI)) {
 				if (nlh->nlmsg_len < NLMSG_ALIGN(sizeof(struct nlmsgerr))) {
 					errno = EBADMSG;
@@ -420,7 +420,7 @@ nfqueue_send_config_mode(const pcap_t *handle, u_int16_t group_id, u_int8_t copy
 static int
 netfilter_activate(pcap_t* handle)
 {
-	const char *dev = handle->opt.source;
+	const char *dev = handle->opt.device;
 	unsigned short groups[32];
 	int group_count = 0;
 	nftype_t type = OTHER;
@@ -444,7 +444,7 @@ netfilter_activate(pcap_t* handle)
 			if (group_count == 32) {
 				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 						"Maximum 32 netfilter groups! dev: %s",
-						handle->opt.source);
+						handle->opt.device);
 				return PCAP_ERROR;
 			}
 
@@ -469,7 +469,7 @@ netfilter_activate(pcap_t* handle)
 	if (type == OTHER || *dev) {
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't get netfilter group(s) index from %s",
-				handle->opt.source);
+				handle->opt.device);
 		return PCAP_ERROR;
 	}
 
@@ -626,7 +626,7 @@ netfilter_create(const char *device, char *ebuf, int *is_ours)
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_netfilter));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_netfilter));
 	if (p == NULL)
 		return (NULL);
 

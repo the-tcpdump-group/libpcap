@@ -1107,7 +1107,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * and the packet length.
 			 */
 			hdr->caplen = hdr->len;
-			if (hdr->caplen > p->snapshot)
+			if (hdr->caplen > (bpf_u_int32)p->snapshot)
 				hdr->caplen = p->snapshot;
 			t = 0;	/* no time stamps */
 			goto found;
@@ -1173,7 +1173,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    idbp->linktype);
 				return (-1);
 			}
-			if (p->snapshot != idbp->snaplen) {
+			if ((bpf_u_int32)p->snapshot != idbp->snaplen) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the type of the first interface",
 				    idbp->snaplen);
@@ -1392,8 +1392,23 @@ found:
 		frac /= ps->ifaces[interface_id].tsresol;
 		break;
 	}
-	hdr->ts.tv_sec = sec;
-	hdr->ts.tv_usec = frac;
+#ifdef _WIN32
+	/*
+	 * tv_sec and tv_used in the Windows struct timeval are both
+	 * longs.
+	 */
+	hdr->ts.tv_sec = (long)sec;
+	hdr->ts.tv_usec = (long)frac;
+#else
+	/*
+	 * tv_sec in the UN*X struct timeval is a time_t; tv_usec is
+	 * suseconds_t in UN*Xes that work the way the current Single
+	 * UNIX Standard specify - but not all older UN*Xes necessarily
+	 * support that type, so just cast to int.
+	 */
+	hdr->ts.tv_sec = (time_t)sec;
+	hdr->ts.tv_usec = (int)frac;
+#endif
 
 	/*
 	 * Get a pointer to the packet data.

@@ -16,7 +16,7 @@ does support packet capture but libpcap does not support that
 particular type. (If you have HP-UX, see below.) If your system uses a
 packet capture not supported by libpcap, please send us patches; don't
 forget to include an autoconf fragment suitable for use in
-configure.in.
+configure.ac.
 
 It is possible to override the default packet capture type, although
 the circumstance where this works are limited. For example if you have
@@ -300,7 +300,7 @@ config.guess	- autoconf support
 config.h.in	- autoconf input
 config.sub	- autoconf support
 configure	- configure script (run this first)
-configure.in	- configure script source
+configure.ac	- configure script source
 dlpisubs.c	- DLPI-related functions for pcap-dlpi.c and pcap-libdlpi.c
 dlpisubs.h	- DLPI-related function declarations
 etherent.c	- /etc/ethers support routines
@@ -308,9 +308,6 @@ ethertype.h	- Ethernet protocol types and names definitions
 fad-getad.c	- pcap_findalldevs() for systems with getifaddrs()
 fad-gifc.c	- pcap_findalldevs() for systems with only SIOCGIFLIST
 fad-glifc.c	- pcap_findalldevs() for systems with SIOCGLIFCONF
-fad-null.c	- pcap_findalldevs() for systems without capture support
-fad-sita.c	- pcap_findalldevs() for systems with SITA support
-fad-win32.c	- pcap_findalldevs() for WinPcap
 filtertest.c	- test program for BPF compiler
 findalldevstest.c - test program for pcap_findalldevs()
 gencode.c	- BPF code generation routines

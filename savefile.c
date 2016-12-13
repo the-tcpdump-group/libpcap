@@ -53,7 +53,6 @@
 #include <string.h>
 
 #include "pcap-int.h"
-#include "pcap/usb.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -61,6 +60,23 @@
 
 #include "sf-pcap.h"
 #include "sf-pcap-ng.h"
+
+#ifdef _WIN32
+/*
+ * These aren't exported on Windows, because they would only work if both
+ * WinPcap and the code using it were to use the Universal CRT; otherwise,
+ * a FILE structure in WinPcap and a FILE structure in the code using it
+ * could be different if they're using different versions of the C runtime.
+ *
+ * Instead, pcap/pcap.h defines them as macros that wrap the hopen versions,
+ * with the wrappers calling _fileno() and _get_osfhandle() themselves,
+ * so that they convert the appropriate CRT version's FILE structure to
+ * a HANDLE (which is OS-defined, not CRT-defined, and is part of the Win32
+ * and Win64 ABIs).
+ */
+static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
+static pcap_t *pcap_fopen_offline(FILE *, char *);
+#endif
 
 /*
  * Setting O_BINARY on DOS/Windows is a bit tricky
@@ -152,7 +168,7 @@ sf_getevent(pcap_t *pcap)
 
 static int
 sf_oid_get_request(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
-    size_t len _U_)
+    size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a file");
@@ -161,7 +177,7 @@ sf_oid_get_request(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
 
 static int
 sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
-    size_t len _U_)
+    size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a file");
@@ -237,13 +253,34 @@ sf_cleanup(pcap_t *p)
 	pcap_freecode(&p->fcode);
 }
 
+/*
+* fopen's safe version on Windows.
+*/
+#ifdef _MSC_VER
+FILE *fopen_safe(const char *filename, const char* mode)
+{
+	FILE *fp = NULL;
+	errno_t errno;
+	errno = fopen_s(&fp, filename, mode);
+	if (errno == 0)
+		return fp;
+	else
+		return NULL;
+}
+#endif
+
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
-    char *errbuf)
+					char *errbuf)
 {
 	FILE *fp;
 	pcap_t *p;
 
+	if (fname == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "A null pointer was supplied as the file name");
+		return (NULL);
+	}
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;

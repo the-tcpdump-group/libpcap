@@ -19,6 +19,30 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+/*
+ * This doesn't actually test libpcap itself; it tests whether
+ * valgrind properly handles the APIs libpcap uses.  If it doesn't,
+ * we end up getting patches submitted to "fix" references that
+ * valgrind claims are being made to uninitialized data, when, in
+ * fact, the OS isn't making any such references - or we get
+ * valgrind *not* detecting *actual* incorrect references.
+ *
+ * Both BPF and Linux socket filters aren't handled correctly
+ * by some versions of valgrind.  See valgrind bug 318203 for
+ * Linux:
+ *
+ *	https://bugs.kde.org/show_bug.cgi?id=318203
+ *
+ * and valgrind bug 312989 for OS X:
+ *
+ *	https://bugs.kde.org/show_bug.cgi?id=312989
+ *
+ * The fixes for both of those are checked into the official valgrind
+ * repository.
+ *
+ * The unofficial FreeBSD port has similar issues to the official OS X
+ * port, for similar reasons.
+ */
 #ifndef lint
 static const char copyright[] _U_ =
     "@(#) Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 2000\n\

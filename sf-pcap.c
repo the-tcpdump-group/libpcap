@@ -712,6 +712,11 @@ pcap_dump_open(pcap_t *p, const char *fname)
 	}
 	linktype |= p->linktype_ext;
 
+	if (fname == NULL) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "A null pointer was supplied as the file name");
+		return NULL;
+	}
 	if (fname[0] == '-' && fname[1] == '\0') {
 		f = stdout;
 		fname = "standard output";
@@ -764,6 +769,12 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		    "%s: link-layer type %d isn't supported in savefiles",
 		    fname, linktype);
 		return (NULL);
+	}
+
+	if (fname == NULL) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "A null pointer was supplied as the file name");
+		return NULL;
 	}
 	if (fname[0] == '-' && fname[1] == '\0')
 		return (pcap_setup_dump(p, linktype, stdout, "standard output"));
@@ -876,13 +887,13 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 			fclose(f);
 			return (NULL);
 		}
-		if (linktype != ph.linktype) {
+		if ((bpf_u_int32)linktype != ph.linktype) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different linktype, cannot append to file", fname);
 			fclose(f);
 			return (NULL);
 		}
-		if (p->snapshot != ph.snaplen) {
+		if ((bpf_u_int32)p->snapshot != ph.snaplen) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different snaplen, cannot append to file", fname);
 			fclose(f);

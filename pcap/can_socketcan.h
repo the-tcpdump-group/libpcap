@@ -1,7 +1,11 @@
-/* -*- Mode: c; tab-width: 8; indent-tabs-mode: 1; c-basic-offset: 8; -*- */
-/*
- * Copyright (c) 1994, 1995, 1996, 1997, 1998
+/*-
+ * Copyright (c) 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997
  *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from the Stanford/CMU enet packet filter,
+ * (net/enet.c) distributed as part of 4.3BSD, and code contributed
+ * to Berkeley by Steven McCanne and Van Jacobson both of Lawrence
+ * Berkeley Laboratory.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -13,11 +17,11 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- *	This product includes software developed by the Computer Systems
- *	Engineering Group at Lawrence Berkeley Laboratory.
- * 4. Neither the name of the University nor of the Laboratory may be used
- *    to endorse or promote products derived from this software without
- *    specific prior written permission.
+ *      This product includes software developed by the University of
+ *      California, Berkeley and its contributors.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -32,29 +36,19 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <pcap.h>
+#ifndef lib_pcap_can_socketcan_h
+#define lib_pcap_can_socketcan_h
 
 /*
- * Get a list of all interfaces that are up and that we can open.
- * Returns -1 on error, 0 otherwise.
- * The list, as returned through "alldevsp", may be null if no interfaces
- * were up and could be opened.
- *
- * This is the implementation used on platforms that have no support for
- * packet capture.
+ * SocketCAN header, as per Documentation/networking/can.txt in the
+ * Linux source.
  */
-int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
-{
-	/*
-	 * Succeed, but don't return any interfaces; we return only those
-	 * we can open, and we can't open any if there's no support
-	 * for packet capture.
-	 */
-	*alldevsp = NULL;
-	return (0);
-}
+typedef struct {
+	u_int32_t can_id;
+	u_int8_t payload_length;
+	u_int8_t pad;
+	u_int8_t reserved1;
+	u_int8_t reserved2;
+} pcap_can_socketcan_hdr;
+
+#endif

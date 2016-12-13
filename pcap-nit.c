@@ -285,9 +285,16 @@ pcap_activate_nit(pcap_t *p)
 		goto bad;
 	}
 	snit.snit_family = AF_NIT;
-	(void)strncpy(snit.snit_ifname, p->opt.source, NITIFSIZ);
+	(void)strncpy(snit.snit_ifname, p->opt.device, NITIFSIZ);
 
 	if (bind(fd, (struct sockaddr *)&snit, sizeof(snit))) {
+		/*
+		 * XXX - there's probably a particular bind error that
+		 * means "there's no such device" and a particular bind
+		 * error that means "that device doesn't support NIT";
+		 * they might be the same error, if they both end up
+		 * meaning "NIT doesn't know about that device".
+		 */
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
 		goto bad;
@@ -348,11 +355,11 @@ pcap_activate_nit(pcap_t *p)
 }
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_nit));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_nit));
 	if (p == NULL)
 		return (NULL);
 
@@ -360,8 +367,18 @@ pcap_create_interface(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * XXX - there's probably a particular bind error that means "that device
+ * doesn't support NIT"; if so, we should try a bind and use that.
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (0);
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
 }

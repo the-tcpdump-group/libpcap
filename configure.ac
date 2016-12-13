@@ -169,6 +169,13 @@ if test $needsnprintf = yes; then
 	AC_LIBOBJ([snprintf])
 fi
 
+needstrtok_r=no
+AC_CHECK_FUNCS(strtok_r,,
+	[needstrtok_r=yes])
+if test $needstrtok_r = yes; then
+	AC_LIBOBJ([strtok_r])
+fi
+
 #
 # Do this before checking for ether_hostton(), as it's a
 # "gethostbyname() -ish function".
@@ -282,6 +289,13 @@ fi
 AC_MSG_RESULT(${enable_protochain})
 
 #
+# valgrindtest directly uses the native capture mechanism, but
+# only tests with BPF and PF_PACKET sockets; only enable it if
+# we have BPF or PF_PACKET sockets.
+#
+VALGRINDTEST=
+
+#
 # SITA support is mutually exclusive with native capture support;
 # "--with-sita" selects SITA support.
 #
@@ -292,7 +306,6 @@ AC_HELP_STRING([--with-sita],[include SITA support]),
 		AC_DEFINE(SITA,1,[include ACN support])
 		AC_MSG_NOTICE(Enabling SITA ACN support)
 		V_PCAP=sita
-		V_FINDALLDEVS=sita
 	fi
 ],
 [
@@ -318,8 +331,18 @@ elif test -r /dev/bpf -o -h /dev/bpf ; then
 	#
 	V_PCAP=bpf
 	AC_DEFINE(HAVE_CLONING_BPF,1,[define if you have a cloning BPF device])
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /dev/bpf0 ; then
 	V_PCAP=bpf
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/pfilt.h ; then
 	V_PCAP=pf
 elif test -r /dev/enet ; then
@@ -330,6 +353,12 @@ elif test -r /usr/include/sys/net/nit.h ; then
 	V_PCAP=nit
 elif test -r /usr/include/linux/socket.h ; then
 	V_PCAP=linux
+
+	#
+	# XXX - this won't work with older kernels that have SOCK_PACKET
+	# sockets but not PF_PACKET sockets.
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/raw.h ; then
 	V_PCAP=snoop
 elif test -r /usr/include/odmi.h ; then
@@ -341,6 +370,11 @@ elif test -r /usr/include/odmi.h ; then
 	V_PCAP=bpf
 elif test -c /dev/bpf0 ; then		# check again in case not readable
 	V_PCAP=bpf
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/sys/dlpi.h ; then
 	V_PCAP=dlpi
 elif test -c /dev/enet ; then		# check again in case not readable
@@ -351,6 +385,7 @@ else
 	V_PCAP=null
 fi
 AC_MSG_RESULT($V_PCAP)
+AC_SUBST(VALGRINDTEST)
 
 #
 # Do capture-mechanism-dependent tests.
@@ -567,15 +602,30 @@ bpf)
 	;;
 
 dag)
+	#
+	# --with-pcap=dag is the only way to get here, and it means
+	# "DAG support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DDAG_ONLY"
+	xxx_only=yes
 	;;
 
 septel)
+	#
+	# --with-pcap=septel is the only way to get here, and it means
+	# "Septel support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
+	xxx_only=yes
 	;;
 
 snf)
+	#
+	# --with-pcap=snf is the only way to get here, and it means
+	# "SNF support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DSNF_ONLY"
+	xxx_only=yes
 	;;
 
 null)
@@ -589,14 +639,8 @@ dnl Now figure out how we get a list of interfaces and addresses,
 dnl if we support capturing.  Don't bother if we don't support
 dnl capturing.
 dnl
-if test "$V_PCAP" = null
+if test "$V_PCAP" != null
 then
-	#
-	# We can't capture, so we can't open any capture
-	# devices, so we won't return any interfaces.
-	#
-	V_FINDALLDEVS=null
-else
 	AC_CHECK_FUNC(getifaddrs,[
 		#
 		# We have "getifaddrs()"; make sure we have <ifaddrs.h>
@@ -607,7 +651,7 @@ else
 		    # We have the header, so we use "getifaddrs()" to
 		    # get the list of interfaces.
 		    #
-		    V_FINDALLDEVS=getad
+		    V_FINDALLDEVS=fad-getad.c
 		],[
 		    #
 		    # We don't have the header - give up.
@@ -650,9 +694,9 @@ else
 				ac_cv_lbl_have_siocglifconf=no))
 			AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
 			if test $ac_cv_lbl_have_siocglifconf = yes ; then
-				V_FINDALLDEVS=glifc
+				V_FINDALLDEVS=fad-glifc.c
 			else
-				V_FINDALLDEVS=gifc
+				V_FINDALLDEVS=fad-gifc.c
 			fi
 			;;
 
@@ -663,7 +707,7 @@ else
 			# another mechanism, and we should be using that
 			# instead.)
 			#
-			V_FINDALLDEVS=gifc
+			V_FINDALLDEVS=fad-gifc.c
 			;;
 		esac])
 fi
@@ -736,6 +780,10 @@ AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in 
 		# User requested DAG-only libpcap, so we'd better have
 		# the DAG API.
 		want_dag=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want DAG support.
+		want_dag=no
 	else
 		#
 		# Use DAG API if present, otherwise don't
@@ -856,6 +904,10 @@ AC_HELP_STRING([--with-septel@<:@=DIR@:>@],[include Septel support (located in d
 		# User requested Septel-only libpcap, so we'd better have
 		# the Septel API.
 		want_septel=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want Septel support.
+		want_septel=no
 	else
 		#
 		# Use Septel API if present, otherwise don't
@@ -931,6 +983,10 @@ AC_HELP_STRING([--with-snf@<:@=DIR@:>@],[include Myricom SNF support (located in
 		# User requested Sniffer-only libpcap, so we'd better have
 		# the Sniffer API.
 		want_snf=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want SNF support.
+		want_snf=no
 	else
 		#
 		# Use Sniffer API if present, otherwise don't
@@ -1029,10 +1085,16 @@ AC_HELP_STRING([--with-turbocap@<:@=DIR@:>@],[include Riverbed TurboCap support 
 		turbocap_root=$withval
 	fi
 ],[
-	#
-	# Use TurboCap API if present, otherwise don't
-	#
-	want_turbocap=ifpresent
+	if test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want TurboCap support.
+		want_turbocap=no
+	else
+		#
+		# Use TurboCap API if present, otherwise don't
+		#
+		want_turbocap=ifpresent
+	fi
 ])
 
 ac_cv_lbl_turbocap_api=no
@@ -1390,12 +1452,6 @@ AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 AC_LBL_UNALIGNED_ACCESS
 
-#
-# Makefile.in includes rules to generate version.h, so we assume
-# that it will be generated if autoconf is used.
-#
-AC_DEFINE(HAVE_VERSION_H, 1, [define if version.h is generated in the build procedure])
-
 rm -f net
 ln -s ${srcdir}/bpf/net net
 
@@ -1421,6 +1477,12 @@ AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable nusb support @<:@default=yes, if support available@:>@])],
     [],
     [enable_usb=yes])
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want USB support.
+	enable_usb=no
+fi
 
 if test "x$enable_usb" != "xno" ; then
    dnl check for USB sniffing support
@@ -1477,6 +1539,14 @@ AC_INCLUDES_DEFAULT
 	    fi
 	fi
 	;;
+    freebsd*)
+	#
+	# This just uses BPF in FreeBSD 8.4 and later; we don't need
+	# to check for anything special for capturing.
+	#
+	AC_MSG_RESULT([yes, in FreeBSD 8.4 and later])
+	;;
+
     *)
 	AC_MSG_RESULT(no)
 	;;
@@ -1486,21 +1556,22 @@ AC_SUBST(PCAP_SUPPORT_USB)
 AC_SUBST(USB_SRC)
 
 dnl check for netfilter sniffing support
-AC_MSG_CHECKING(whether the platform could support netfilter sniffing)
-case "$host_os" in
-linux*)
-	AC_MSG_RESULT(yes)
-	#
-	# Life's too short to deal with trying to get this to compile
-	# if you don't get the right types defined with
-	# __KERNEL_STRICT_NAMES getting defined by some other include.
-	#
-	# Check whether the includes Just Work.  If not, don't turn on
-	# netfilter support.
-	#
-	AC_MSG_CHECKING(whether we can compile the netfilter support)
-	AC_CACHE_VAL(ac_cv_netfilter_can_compile,
-	  AC_TRY_COMPILE([
+if test "xxx_only" != yes; then
+	AC_MSG_CHECKING(whether the platform could support netfilter sniffing)
+	case "$host_os" in
+	linux*)
+		AC_MSG_RESULT(yes)
+		#
+		# Life's too short to deal with trying to get this to compile
+		# if you don't get the right types defined with
+		# __KERNEL_STRICT_NAMES getting defined by some other include.
+		#
+		# Check whether the includes Just Work.  If not, don't turn on
+		# netfilter support.
+		#
+		AC_MSG_CHECKING(whether we can compile the netfilter support)
+		AC_CACHE_VAL(ac_cv_netfilter_can_compile,
+		  AC_TRY_COMPILE([
 AC_INCLUDES_DEFAULT
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -1514,17 +1585,18 @@ AC_INCLUDES_DEFAULT
 	    [],
 	    ac_cv_netfilter_can_compile=yes,
 	    ac_cv_netfilter_can_compile=no))
-	AC_MSG_RESULT($ac_cv_netfilter_can_compile)
-	if test $ac_cv_netfilter_can_compile = yes ; then
-	  AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
-	    [target host supports netfilter sniffing])
-	  NETFILTER_SRC=pcap-netfilter-linux.c
-	fi
-	;;
-*)
-	AC_MSG_RESULT(no)
-	;;
-esac
+		AC_MSG_RESULT($ac_cv_netfilter_can_compile)
+		if test $ac_cv_netfilter_can_compile = yes ; then
+		  AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
+		    [target host supports netfilter sniffing])
+		  NETFILTER_SRC=pcap-netfilter-linux.c
+		fi
+		;;
+	*)
+		AC_MSG_RESULT(no)
+		;;
+	esac
+fi
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
 AC_SUBST(NETFILTER_SRC)
 
@@ -1532,6 +1604,12 @@ AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
     [],
     [enable_bluetooth=ifsupportavailable])
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want Bluetooth support.
+	enable_bluetooth=no
+fi
 
 if test "x$enable_bluetooth" != "xno" ; then
 	dnl check for Bluetooth sniffing support
@@ -1607,93 +1685,16 @@ if test "x$enable_bluetooth" != "xno" ; then
 	AC_SUBST(BT_MONITOR_SRC)
 fi
 
-AC_ARG_ENABLE([canusb],
-[AC_HELP_STRING([--enable-canusb],[enable canusb support @<:@default=yes, if support available@:>@])],
-    [],
-    [enable_canusb=ifsupportavailable])
-
-if test "x$enable_canusb" != "xno" ; then
-	dnl check for canusb support
-	case "$host_os" in
-	linux*|uclinux*)
-		AC_CHECK_HEADER(libusb-1.0/libusb.h,
-		[
-		    AC_CHECK_LIB(usb-1.0, libusb_init,
-		    [
-			AC_DEFINE(PCAP_SUPPORT_CANUSB, 1, [target host supports canusb])
-			CANUSB_SRC=pcap-canusb-linux.c
-			LIBS="-lusb-1.0 -lpthread $LIBS"
-			ac_lbl_has_libusb=yes
-		    ],
-		    ac_lbl_has_libusb=no,
-		    -lpthread
-		    )
-		],
-		ac_lbl_has_libusb=no
-		)
-		if test "x$ac_lbl_has_libusb" = "xyes" ; then
-		    AC_MSG_NOTICE(canusb sniffing is supported)
-		else
-		    if test "x$enable_canusb" = "xyes" ; then
-			AC_MSG_ERROR(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
-		    else
-			AC_MSG_NOTICE(canusb sniffing is not supported; install libusb1.0 lib devel to enable it)
-		    fi
-		fi
-		;;
-	*)
-		if test "x$enable_canusb" = "xyes" ; then
-		    AC_MSG_ERROR(no canusb support implemented for $host_os)
-		else
-		    AC_MSG_NOTICE(no canusb support implemented for $host_os)
-		fi
-		;;
-	esac
-	AC_SUBST(PCAP_SUPPORT_CANUSB)
-	AC_SUBST(CANUSB_SRC)
-fi
-
-AC_ARG_ENABLE([can],
-[AC_HELP_STRING([--enable-can],[enable CAN support @<:@default=yes, if support available@:>@])],
-    [],
-    [enable_can=ifsupportavailable])
-
-if test "x$enable_can" != "xno" ; then
-	dnl check for CAN sniffing support
-	case "$host_os" in
-	linux*)
-		AC_CHECK_HEADER(linux/can.h,
-			[
-			    AC_DEFINE(PCAP_SUPPORT_CAN, 1, [target host supports CAN sniffing])
-			    CAN_SRC=pcap-can-linux.c
-			    AC_MSG_NOTICE(CAN sniffing is supported)
-			],
-			[
-			    if test "x$enable_can" = "xyes" ; then
-				AC_MSG_ERROR(CAN sniffing is not supported)
-			    else
-				AC_MSG_NOTICE(CAN sniffing is not supported)
-			    fi
-			],
-			[#include <sys/socket.h>]
-		   )
-		;;
-	*)
-		if test "x$enable_can" = "xyes" ; then
-		    AC_MSG_ERROR(no CAN sniffing support implemented for $host_os)
-		else
-		    AC_MSG_NOTICE(no CAN sniffing support implemented for $host_os)
-		fi
-		;;
-	esac
-	AC_SUBST(PCAP_SUPPORT_CAN)
-	AC_SUBST(CAN_SRC)
-fi
-
 AC_ARG_ENABLE([dbus],
 [AC_HELP_STRING([--enable-dbus],[enable D-Bus capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_dbus=ifavailable])
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want D-Bus support.
+	enable_dbus=no
+fi
 
 if test "x$enable_dbus" != "xno"; then
 	if test "x$enable_dbus" = "xyes"; then

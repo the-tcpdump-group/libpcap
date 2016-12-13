@@ -1,4 +1,4 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Enable optimizer debugging */
 #undef BDEBUG
@@ -166,6 +166,9 @@
 /* Define to 1 if you have the `strlcpy' function. */
 #undef HAVE_STRLCPY
 
+/* Define to 1 if you have the `strtok_r' function. */
+#undef HAVE_STRTOK_R
+
 /* Define to 1 if the system has the type `struct BPF_TIMEVAL'. */
 #undef HAVE_STRUCT_BPF_TIMEVAL
 
@@ -207,9 +210,6 @@
 
 /* if struct usbdevfs_ctrltransfer has bRequestType */
 #undef HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
-
-/* define if version.h is generated in the build procedure */
-#undef HAVE_VERSION_H
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
@@ -264,12 +264,6 @@
 
 /* target host supports Bluetooth Monitor */
 #undef PCAP_SUPPORT_BT_MONITOR
-
-/* target host supports CAN sniffing */
-#undef PCAP_SUPPORT_CAN
-
-/* target host supports canusb */
-#undef PCAP_SUPPORT_CANUSB
 
 /* support D-Bus sniffing */
 #undef PCAP_SUPPORT_DBUS

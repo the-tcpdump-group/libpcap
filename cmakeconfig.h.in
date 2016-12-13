@@ -124,6 +124,9 @@
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #cmakedefine HAVE_OS_PROTO_H 1
 
+/* Define to 1 if remote packet capture is to be supported */
+#cmakedefine HAVE_REMOTE 1
+
 /* Define to 1 if you have the <paths.h> header file. */
 #cmakedefine HAVE_PATHS_H 1
 
@@ -162,6 +165,9 @@
 
 /* Define to 1 if you have the `strlcpy' function. */
 #cmakedefine HAVE_STRLCPY 1
+
+/* Define to 1 if you have the `strtok_r' function. */
+#cmakedefine HAVE_STRTOK_R 1
 
 /* Define to 1 if the system has the type `struct BPF_TIMEVAL'. */
 #cmakedefine HAVE_STRUCT_BPF_TIMEVAL 1
@@ -202,11 +208,11 @@
 /* if struct usbdevfs_ctrltransfer has bRequestType */
 #cmakedefine HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 
-/* define if version.h is generated in the build procedure */
-#cmakedefine HAVE_VERSION_H 1
-
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
+
+/* Define to 1 if you have the `PacketIsLoopbackAdapter' function. */
+#cmakedefine HAVE_PACKET_IS_LOOPBACK_ADAPTER 1
 
 /* define if the system supports zerocopy BPF */
 #cmakedefine HAVE_ZEROCOPY_BPF 1
@@ -261,12 +267,6 @@
 
 /* target host supports Bluetooth Monitor */
 #cmakedefine PCAP_SUPPORT_BT_MONITOR 1
-
-/* target host supports CAN sniffing */
-#cmakedefine PCAP_SUPPORT_CAN 1
-
-/* target host supports canusb */
-#cmakedefine PCAP_SUPPORT_CANUSB 1
 
 /* support D-Bus sniffing */
 #cmakedefine PCAP_SUPPORT_DBUS 1

@@ -100,6 +100,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "gencode.h"
 #include <pcap/namedb.h>
+#include "nametoaddr.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -309,8 +310,14 @@ struct eproto {
 	u_short p;
 };
 
-/* Static data base of ether protocol types. */
-struct eproto eproto_db[] = {
+/*
+ * Static data base of ether protocol types.
+ * tcpdump used to import this, and it's declared as an export on
+ * Debian, at least, so make it a public symbol, even though we
+ * don't officially export it by declaring it in a header file.
+ * (Programs *should* do this themselves, as tcpdump now does.)
+ */
+PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "pup", ETHERTYPE_PUP },
 	{ "xns", ETHERTYPE_NS },
 	{ "ip", ETHERTYPE_IP },
@@ -418,7 +425,7 @@ __pcap_atodn(const char *s, bpf_u_int32 *addr)
 	u_int node, area;
 
 	if (sscanf(s, "%d.%d", &area, &node) != 2)
-		bpf_error("malformed decnet address '%s'", s);
+		return(0);
 
 	*addr = (area << AREASHIFT) & AREAMASK;
 	*addr |= (node & NODEMASK);
@@ -522,23 +529,20 @@ pcap_ether_hostton(const char *name)
 }
 #endif
 
-u_short
-__pcap_nametodnaddr(const char *name)
+int
+__pcap_nametodnaddr(const char *name, u_short *res)
 {
 #ifdef	DECNETLIB
 	struct nodeent *getnodebyname();
 	struct nodeent *nep;
-	unsigned short res;
 
 	nep = getnodebyname(name);
 	if (nep == ((struct nodeent *)0))
-		bpf_error("unknown decnet host name '%s'\n", name);
+		return(0);
 
-	memcpy((char *)&res, (char *)nep->n_addr, sizeof(unsigned short));
-	return(res);
+	memcpy((char *)res, (char *)nep->n_addr, sizeof(unsigned short));
+	return(1);
 #else
-	bpf_error("decnet name support not included, '%s' cannot be translated\n",
-		name);
 	return(0);
 #endif
 }

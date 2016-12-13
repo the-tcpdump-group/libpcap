@@ -221,7 +221,16 @@
 
 #ifdef HAVE_LINUX_IF_BONDING_H
 #include <linux/if_bonding.h>
+
+/*
+ * The ioctl code to use to check whether a device is a bonding device.
+ */
+#if defined(SIOCBONDINFOQUERY)
+	#define BOND_INFO_QUERY_IOCTL SIOCBONDINFOQUERY
+#elif defined(BOND_INFO_QUERY_OLD)
+	#define BOND_INFO_QUERY_IOCTL BOND_INFO_QUERY_OLD
 #endif
+#endif /* HAVE_LINUX_IF_BONDING_H */
 
 /*
  * Got Wireless Extensions?
@@ -424,7 +433,8 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
     const char *device);
 #endif /* HAVE_PF_PACKET_SOCKETS */
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
-static int	iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf);
+static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
+    char *ebuf);
 #endif
 #ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
@@ -449,7 +459,7 @@ pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *handle;
 
-	handle = pcap_create_common(device, ebuf, sizeof (struct pcap_linux));
+	handle = pcap_create_common(ebuf, sizeof (struct pcap_linux));
 	if (handle == NULL)
 		return NULL;
 
@@ -460,7 +470,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	/*
 	 * See what time stamp types we support.
 	 */
-	if (iface_ethtool_get_ts_info(handle, ebuf) == -1) {
+	if (iface_ethtool_get_ts_info(device, handle, ebuf) == -1) {
 		pcap_close(handle);
 		return NULL;
 	}
@@ -532,7 +542,7 @@ pcap_create_interface(const char *device, char *ebuf)
  *
  * Yes, you can have multiple monitor devices for a given
  * physical device.
-*/
+ */
 
 /*
  * Is this a mac80211 device?  If so, fill in the physical device path and
@@ -916,8 +926,6 @@ added:
 		 * "atexit()" failed; don't put the interface
 		 * in rfmon mode, just give up.
 		 */
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: atexit failed", device);
 		del_mon_if(handle, sock_fd, &nlstate, device,
 		    handlep->mondevice);
 		nl80211_cleanup(&nlstate);
@@ -984,8 +992,7 @@ added:
 static int
 is_bonding_device(int fd, const char *device)
 {
-#if defined(HAVE_LINUX_IF_BONDING_H) && \
-	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY))
+#ifdef BOND_INFO_QUERY_IOCTL
 	struct ifreq ifr;
 	ifbond ifb;
 
@@ -993,14 +1000,9 @@ is_bonding_device(int fd, const char *device)
 	strlcpy(ifr.ifr_name, device, sizeof ifr.ifr_name);
 	memset(&ifb, 0, sizeof ifb);
 	ifr.ifr_data = (caddr_t)&ifb;
-#ifdef SIOCBONDINFOQUERY
-	if (ioctl(fd, SIOCBONDINFOQUERY, &ifr) == 0)
-#else /* SIOCBONDINFOQUERY */
-	if (ioctl(fd, BOND_INFO_QUERY_OLD, &ifr) == 0)
-#endif /* SIOCBONDINFOQUERY */
+	if (ioctl(fd, BOND_INFO_QUERY_IOCTL, &ifr) == 0)
 		return 1;	/* success, so it's a bonding device */
-#endif /* defined(HAVE_LINUX_IF_BONDING_H) && \
-	(defined(BOND_INFO_QUERY_OLD) || defined(SIOCBONDINFOQUERY)) */
+#endif /* BOND_INFO_QUERY_IOCTL */
 
 	return 0;	/* no, it's not a bonding device */
 }
@@ -1018,7 +1020,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	struct iwreq ireq;
 #endif
 
-	if (strcmp(handle->opt.source, "any") == 0) {
+	if (strcmp(handle->opt.device, "any") == 0) {
 		/*
 		 * Monitor mode makes no sense on the "any" device.
 		 */
@@ -1038,7 +1040,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	 * wmaster device, so we don't bother checking whether
 	 * a mac80211 device supports the Wireless Extensions.
 	 */
-	ret = get_mac80211_phydev(handle, handle->opt.source, phydev_path,
+	ret = get_mac80211_phydev(handle, handle->opt.device, phydev_path,
 	    PATH_MAX);
 	if (ret < 0)
 		return ret;	/* error */
@@ -1064,7 +1066,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 		return PCAP_ERROR;
 	}
 
-	if (is_bonding_device(sock_fd, handle->opt.source)) {
+	if (is_bonding_device(sock_fd, handle->opt.device)) {
 		/* It's a bonding device, so don't even try. */
 		close(sock_fd);
 		return 0;
@@ -1073,7 +1075,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	/*
 	 * Attempt to get the current mode.
 	 */
-	strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.source,
+	strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
 		/*
@@ -1426,7 +1428,7 @@ pcap_activate_linux(pcap_t *handle)
 	int		status = 0;
 	int		ret;
 
-	device = handle->opt.source;
+	device = handle->opt.device;
 
 	/*
 	 * Make sure the name we were handed will fit into the ioctls we
@@ -1638,6 +1640,22 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 		 * and we don't want to see it twice.
 		 */
 		if (sll->sll_ifindex == handlep->lo_ifindex)
+			return 0;
+
+		/*
+		 * If this is an outgoing CAN or CAN FD frame, and
+		 * the user doesn't only want outgoing packets,
+		 * reject it; CAN devices and drivers, and the CAN
+		 * stack, always arrange to loop back transmitted
+		 * packets, so they also appear as incoming packets.
+		 * We don't want duplicate packets, and we can't
+		 * easily distinguish packets looped back by the CAN
+		 * layer than those received by the CAN layer, so we
+		 * eliminate this packet instead.
+		 */
+		if ((sll->sll_protocol == LINUX_SLL_P_CAN ||
+		     sll->sll_protocol == LINUX_SLL_P_CANFD) &&
+		     handle->direction != PCAP_D_OUT)
 			return 0;
 
 		/*
@@ -1860,8 +1878,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #endif
 				continue;
 
-			len = packet_len > iov.iov_len ? iov.iov_len : packet_len;
-			if (len < (unsigned int) handlep->vlan_offset)
+			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
+			if (len < (u_int)handlep->vlan_offset)
 				break;
 
 			/*
@@ -2271,7 +2289,8 @@ add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	if (pcap_add_if(devlistp, name, ifrflags.ifr_flags, NULL,
+	if (pcap_add_if(devlistp, name,
+	    if_flags_to_pcap_flags(name, ifrflags.ifr_flags), NULL,
 	    errbuf) == -1) {
 		/*
 		 * Failure.
@@ -2327,7 +2346,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
 	/*
 	 * Create a socket from which to fetch interface information.
 	 */
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
@@ -2445,7 +2464,7 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
 	/*
 	 * Create a socket from which to fetch interface information.
 	 */
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
@@ -2503,10 +2522,25 @@ scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
  */
 static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 
+/*
+ * A SOCK_PACKET or PF_PACKET socket can be bound to any network interface.
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	int ret;
+
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound) == -1)
+		return (-1);	/* failure */
 
 	/*
 	 * Read "/sys/class/net", and add to the list of interfaces all
@@ -2530,7 +2564,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Add the "any" device.
 	 */
-	if (pcap_add_if(alldevsp, "any", IFF_UP|IFF_RUNNING,
+	if (pcap_add_if(alldevsp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
 	    any_descr, errbuf) < 0)
 		return (-1);
 
@@ -2925,7 +2959,14 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 #define ARPHRD_CAN 280
 #endif
 	case ARPHRD_CAN:
-		handle->linktype = DLT_CAN_SOCKETCAN;
+		/*
+		 * Map this to DLT_LINUX_SLL; that way, CAN frames will
+		 * have ETH_P_CAN/LINUX_SLL_P_CAN as the protocol and
+		 * CAN FD frames will have ETH_P_CANFD/LINUX_SLL_P_CANFD
+		 * as the protocol, so they can be distinguished by the
+		 * protocol in the SLL header.
+		 */
+		handle->linktype = DLT_LINUX_SLL;
 		break;
 
 #ifndef ARPHRD_IEEE802_TR
@@ -3274,7 +3315,7 @@ activate_new(pcap_t *handle)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct pcap_linux *handlep = handle->priv;
-	const char		*device = handle->opt.source;
+	const char		*device = handle->opt.device;
 	int			is_any_device = (strcmp(device, "any") == 0);
 	int			sock_fd = -1, arptype;
 #ifdef HAVE_PACKET_AUXDATA
@@ -4042,14 +4083,14 @@ create_ring(pcap_t *handle, int *status)
 				return -1;
 			}
 			if (!offload) {
-				mtu = iface_get_mtu(handle->fd, handle->opt.source,
+				mtu = iface_get_mtu(handle->fd, handle->opt.device,
 				    handle->errbuf);
 				if (mtu == -1) {
 					*status = PCAP_ERROR;
 					return -1;
 				}
-				if (frame_size > mtu + 18)
-					frame_size = mtu + 18;
+				if (frame_size > (unsigned int)mtu + 18)
+					frame_size = (unsigned int)mtu + 18;
 			}
 		}
 
@@ -4183,7 +4224,7 @@ create_ring(pcap_t *handle, int *status)
 		hwconfig.rx_filter = HWTSTAMP_FILTER_ALL;
 
 		memset(&ifr, 0, sizeof(ifr));
-		strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+		strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 		ifr.ifr_data = (void *)&hwconfig;
 
 		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
@@ -4201,12 +4242,20 @@ create_ring(pcap_t *handle, int *status)
 				return -1;
 
 			case EOPNOTSUPP:
+			case ERANGE:
 				/*
 				 * Treat this as a warning, as the
 				 * only way to fix the warning is to
 				 * get an adapter that supports hardware
-				 * time stamps.  We'll just fall back
-				 * on the standard host time stamps.
+				 * time stamps for *all* packets.
+				 * (ERANGE means "we support hardware
+				 * time stamps, but for packets matching
+				 * that particular filter", so it means
+				 * "we don't support hardware time stamps
+				 * for all incoming packets" here.)
+				 *
+				 * We'll just fall back on the standard
+				 * host time stamps.
 				 */
 				*status = PCAP_WARNING_TSTAMP_TYPE_NOTSUP;
 				break;
@@ -4717,7 +4766,7 @@ static int pcap_handle_packet_mmap(
 	 * Trim the snapshot length to be no longer than the
 	 * specified snapshot length.
 	 */
-	if (pcaphdr.caplen > handle->snapshot)
+	if (pcaphdr.caplen > (bpf_u_int32)handle->snapshot)
 		pcaphdr.caplen = handle->snapshot;
 
 	/* pass the packet to the user */
@@ -5033,11 +5082,18 @@ again:
 		}
 		packets_to_read = handlep->packets_left;
 
-		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) && packets_to_read > max_packets) {
-			packets_to_read = max_packets;
+		if (!PACKET_COUNT_IS_UNLIMITED(max_packets) &&
+		    packets_to_read > (max_packets - pkts)) {
+			/*
+			 * We've been given a maximum number of packets
+			 * to process, and there are more packets in
+			 * this buffer than that.  Only process enough
+			 * of them to get us up to that maximum.
+			 */
+			packets_to_read = max_packets - pkts;
 		}
 
-		while(packets_to_read--) {
+		while (packets_to_read-- && !handle->break_loop) {
 			struct tpacket3_hdr* tp3_hdr = (struct tpacket3_hdr*) handlep->current_packet;
 			ret = pcap_handle_packet_mmap(
 					handle,
@@ -5984,10 +6040,13 @@ static const struct {
 };
 #define NUM_SOF_TIMESTAMPING_TYPES	(sizeof sof_ts_type_map / sizeof sof_ts_type_map[0])
 
+/*
+ * Set the list of time stamping types to include all types.
+ */
 static void
-iface_set_default_ts_types(pcap_t *handle)
+iface_set_all_ts_types(pcap_t *handle)
 {
-	int i;
+	u_int i;
 
 	handle->tstamp_type_count = NUM_SOF_TIMESTAMPING_TYPES;
 	handle->tstamp_type_list = malloc(NUM_SOF_TIMESTAMPING_TYPES * sizeof(u_int));
@@ -6000,28 +6059,30 @@ iface_set_default_ts_types(pcap_t *handle)
  * Get a list of time stamping capabilities.
  */
 static int
-iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
+iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 {
 	int fd;
 	struct ifreq ifr;
 	struct ethtool_ts_info info;
 	int num_ts_types;
-	int i, j;
+	u_int i, j;
 
 	/*
-	 * This doesn't apply to the "any" device; you have to ask
-	 * specific devices for their capabilities, so just default
-	 * to saying we support all of them.
+	 * This doesn't apply to the "any" device; you can't say "turn on
+	 * hardware time stamping for all devices that exist now and arrange
+	 * that it be turned on for any device that appears in the future",
+	 * and not all devices even necessarily *support* hardware time
+	 * stamping, so don't report any time stamp types.
 	 */
-	if (strcmp(handle->opt.source, "any") == 0) {
-		iface_set_default_ts_types(handle);
+	if (strcmp(device, "any") == 0) {
+		handle->tstamp_type_list = NULL;
 		return 0;
 	}
 
 	/*
 	 * Create a socket from which to fetch time stamping capabilities.
 	 */
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
 		(void)pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "socket for SIOCETHTOOL(ETHTOOL_GET_TS_INFO): %s", pcap_strerror(errno));
@@ -6029,26 +6090,64 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	memset(&info, 0, sizeof(info));
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
 	if (ioctl(fd, SIOCETHTOOL, &ifr) == -1) {
+		int save_errno = errno;
+
 		close(fd);
-		if (errno == EOPNOTSUPP || errno == EINVAL) {
+		switch (save_errno) {
+
+		case EOPNOTSUPP:
+		case EINVAL:
 			/*
-			 * OK, let's just return all the possible time
-			 * stamping types.
+			 * OK, this OS version or driver doesn't support
+			 * asking for the time stamping types, so let's
+			 * just return all the possible types.
 			 */
-			iface_set_default_ts_types(handle);
+			iface_set_all_ts_types(handle);
 			return 0;
+
+		case ENODEV:
+			/*
+			 * OK, no such device.
+			 * The user will find that out when they try to
+			 * activate the device; just return an empty
+			 * list of time stamp types.
+			 */
+			handle->tstamp_type_list = NULL;
+			return 0;
+
+		default:
+			/*
+			 * Other error.
+			 */
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", device,
+			    strerror(save_errno));
+			return -1;
 		}
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCETHTOOL(ETHTOOL_GET_TS_INFO) ioctl failed: %s", handle->opt.source,
-		    strerror(errno));
-		return -1;
 	}
 	close(fd);
+
+	/*
+	 * Do we support hardware time stamping of *all* packets?
+	 */
+	if (!(info.rx_filters & (1 << HWTSTAMP_FILTER_ALL))) {
+		/*
+		 * No, so don't report any time stamp types.
+		 *
+		 * XXX - some devices either don't report
+		 * HWTSTAMP_FILTER_ALL when they do support it, or
+		 * report HWTSTAMP_FILTER_ALL but map it to only
+		 * time stamping a few PTP packets.  See
+		 * http://marc.info/?l=linux-netdev&m=146318183529571&w=2
+		 */
+		handle->tstamp_type_list = NULL;
+		return 0;
+	}
 
 	num_ts_types = 0;
 	for (i = 0; i < NUM_SOF_TIMESTAMPING_TYPES; i++) {
@@ -6071,13 +6170,25 @@ iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf)
 }
 #else /* ETHTOOL_GET_TS_INFO */
 static int
-iface_ethtool_get_ts_info(pcap_t *handle, char *ebuf _U_)
+iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
 {
+	/*
+	 * This doesn't apply to the "any" device; you can't say "turn on
+	 * hardware time stamping for all devices that exist now and arrange
+	 * that it be turned on for any device that appears in the future",
+	 * and not all devices even necessarily *support* hardware time
+	 * stamping, so don't report any time stamp types.
+	 */
+	if (strcmp(device, "any") == 0) {
+		handle->tstamp_type_list = NULL;
+		return 0;
+	}
+
 	/*
 	 * We don't have an ioctl to use to ask what's supported,
 	 * so say we support everything.
 	 */
-	iface_set_default_ts_types(handle);
+	iface_set_all_ts_types(handle);
 	return 0;
 }
 #endif /* ETHTOOL_GET_TS_INFO */
@@ -6101,7 +6212,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	struct ethtool_value eval;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.source, sizeof(ifr.ifr_name));
+	strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 	eval.cmd = cmd;
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
@@ -6116,7 +6227,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 			return 0;
 		}
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "%s: SIOCETHTOOL(%s) ioctl failed: %s", handle->opt.source,
+		    "%s: SIOCETHTOOL(%s) ioctl failed: %s", handle->opt.device,
 		    cmdname, strerror(errno));
 		return -1;
 	}
@@ -6208,7 +6319,7 @@ activate_old(pcap_t *handle)
 	struct pcap_linux *handlep = handle->priv;
 	int		arptype;
 	struct ifreq	ifr;
-	const char	*device = handle->opt.source;
+	const char	*device = handle->opt.device;
 	struct utsname	utsname;
 	int		mtu;
 
@@ -6369,8 +6480,8 @@ activate_old(pcap_t *handle)
 		if (mtu == -1)
 			return PCAP_ERROR;
 		handle->bufsize = MAX_LINKHEADER_SIZE + mtu;
-		if (handle->bufsize < handle->snapshot)
-			handle->bufsize = handle->snapshot;
+		if (handle->bufsize < (u_int)handle->snapshot)
+			handle->bufsize = (u_int)handle->snapshot;
 	} else {
 		/*
 		 * This is a 2.2[.x] or later kernel.
@@ -6378,7 +6489,7 @@ activate_old(pcap_t *handle)
 		 * We can safely pass "recvfrom()" a byte count
 		 * based on the snapshot length.
 		 */
-		handle->bufsize = handle->snapshot;
+		handle->bufsize = (u_int)handle->snapshot;
 	}
 
 	/*

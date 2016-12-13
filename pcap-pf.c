@@ -107,7 +107,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 #ifdef LBL_ALIGN
 	struct enstamp stamp;
 #endif
-	register int pad;
+	register u_int pad;
 
  again:
 	cc = pc->cc;
@@ -321,14 +321,17 @@ pcap_activate_pf(pcap_t *p)
 	 * its argument, even though it takes a "char *" rather than a
 	 * "const char *" as its first argument.  That appears to be
 	 * the case, at least on Digital UNIX 4.0.
+	 *
+	 * XXX - is there an error that means "no such device"?  Is
+	 * there one that means "that device doesn't support pf"?
 	 */
-	p->fd = pfopen(p->opt.source, O_RDWR);
+	p->fd = pfopen(p->opt.device, O_RDWR);
 	if (p->fd == -1 && errno == EACCES)
-		p->fd = pfopen(p->opt.source, O_RDONLY);
+		p->fd = pfopen(p->opt.device, O_RDONLY);
 	if (p->fd < 0) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
 your system may not be properly configured; see the packetfilter(4) man page\n",
-			p->opt.source, pcap_strerror(errno));
+			p->opt.device, pcap_strerror(errno));
 		goto bad;
 	}
 	pf->OrigMissed = -1;
@@ -503,11 +506,11 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 }
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_pf));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_pf));
 	if (p == NULL)
 		return (NULL);
 
@@ -515,10 +518,20 @@ pcap_create_interface(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * XXX - is there an error from pfopen() that means "no such device"?
+ * Is there one that means "that device doesn't support pf"?
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (0);
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
 }
 
 static int

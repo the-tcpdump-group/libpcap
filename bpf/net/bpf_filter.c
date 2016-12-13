@@ -579,7 +579,12 @@ bpf_filter_with_aux_data(pc, p, wirelen, buflen, aux_data)
 			continue;
 
 		case BPF_ALU|BPF_NEG:
-			A = -A;
+			/*
+			 * Most BPF arithmetic is unsigned, but negation
+			 * can't be unsigned; throw some casts to
+			 * specify what we're trying to do.
+			 */
+			A = (u_int32)(-(int32)A);
 			continue;
 
 		case BPF_MISC|BPF_TAX:
@@ -633,7 +638,7 @@ bpf_validate(f, len)
 		return 0;
 #endif
 
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < (u_int)len; ++i) {
 		p = &f[i];
 		switch (BPF_CLASS(p->code)) {
 		/*
@@ -734,7 +739,7 @@ bpf_validate(f, len)
 #if defined(KERNEL) || defined(_KERNEL)
 				if (from + p->k < from || from + p->k >= len)
 #else
-				if (from + p->k >= len)
+				if (from + p->k >= (u_int)len)
 #endif
 					return 0;
 				break;
@@ -742,7 +747,7 @@ bpf_validate(f, len)
 			case BPF_JGT:
 			case BPF_JGE:
 			case BPF_JSET:
-				if (from + p->jt >= len || from + p->jf >= len)
+				if (from + p->jt >= (u_int)len || from + p->jf >= (u_int)len)
 					return 0;
 				break;
 			default:

@@ -286,7 +286,7 @@ pcap_activate_snit(pcap_t *p)
 	struct ifreq ifr;		/* interface request struct */
 	int chunksize = CHUNKSIZE;
 	int fd;
-	static char dev[] = "/dev/nit";
+	static const char dev[] = "/dev/nit";
 
 	if (p->opt.rfmon) {
 		/*
@@ -348,12 +348,17 @@ pcap_activate_snit(pcap_t *p)
 	}
 
 	/* request the interface */
-	strncpy(ifr.ifr_name, p->opt.source, sizeof(ifr.ifr_name));
+	strncpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
 	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 	si.ic_cmd = NIOCBIND;
 	si.ic_len = sizeof(ifr);
 	si.ic_dp = (char *)&ifr;
 	if (ioctl(fd, I_STR, (char *)&si) < 0) {
+		/*
+		 * XXX - is there an error that means "no such device"?
+		 * Is there one that means "that device doesn't support
+		 * STREAMS NIT"?
+		 */
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "NIOCBIND: %s: %s",
 			ifr.ifr_name, pcap_strerror(errno));
 		goto bad;
@@ -426,11 +431,11 @@ pcap_activate_snit(pcap_t *p)
 }
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_snit));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_snit));
 	if (p == NULL)
 		return (NULL);
 
@@ -438,8 +443,18 @@ pcap_create_interface(const char *device, char *ebuf)
 	return (p);
 }
 
+/*
+ * XXX - there's probably a NIOCBIND error that means "that device
+ * doesn't support NIT"; if so, we should try an NIOCBIND and use that.
+ */
+static int
+can_be_bound(const char *name _U_)
+{
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
-	return (0);
+	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
 }

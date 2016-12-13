@@ -82,10 +82,10 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     ssize_t ret;
     struct pcap_pkthdr pkth;
     pcap_bluetooth_linux_monitor_header *bthdr;
-    char *pktd;
+    u_char *pktd;
     struct hci_mon_hdr hdr;
 
-    pktd = (char *)handle->buffer + BT_CONTROL_SIZE;
+    pktd = (u_char *)handle->buffer + BT_CONTROL_SIZE;
     bthdr = (pcap_bluetooth_linux_monitor_header*)(void *)pktd;
 
     iv[0].iov_base = &hdr;
@@ -242,7 +242,7 @@ bt_monitor_create(const char *device, char *ebuf, int *is_ours)
     }
 
     *is_ours = 1;
-    p = pcap_create_common(device, ebuf, 0);
+    p = pcap_create_common(ebuf, 0);
     if (p == NULL)
         return NULL;
 

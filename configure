@@ -627,10 +627,6 @@ PCAP_SUPPORT_PACKET_RING
 DBUS_SRC
 PCAP_SUPPORT_DBUS
 PKGCONFIG
-CAN_SRC
-PCAP_SUPPORT_CAN
-CANUSB_SRC
-PCAP_SUPPORT_CANUSB
 BT_MONITOR_SRC
 BT_SRC
 PCAP_SUPPORT_BT
@@ -666,6 +662,7 @@ LEXLIB
 LEX_OUTPUT_ROOT
 LEX
 HAVE_LINUX_TPACKET_AUXDATA
+VALGRINDTEST
 LIBOBJS
 EGREP
 GREP
@@ -752,8 +749,6 @@ enable_universal
 enable_shared
 enable_usb
 enable_bluetooth
-enable_canusb
-enable_can
 enable_dbus
 enable_packet_ring
 '
@@ -1392,10 +1387,6 @@ Optional Features:
   --enable-usb            enable nusb support [default=yes, if support
                           available]
   --enable-bluetooth      enable Bluetooth support [default=yes, if support
-                          available]
-  --enable-canusb         enable canusb support [default=yes, if support
-                          available]
-  --enable-can            enable CAN support [default=yes, if support
                           available]
   --enable-dbus           enable D-Bus capture support [default=yes, if
                           support available]
@@ -3329,11 +3320,61 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
     if test "$GCC" = yes ; then
 	    #
 	    # -Werror forces warnings to be errors.
 	    #
 	    ac_lbl_cc_force_warning_errors=-Werror
+
+	    #
+	    # Try to have the compiler default to hiding symbols,
+	    # so that only symbols explicitly exported with
+	    # PCAP_API will be visible outside (shared) libraries.
+	    #
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -fvisibility=hidden option" >&5
+$as_echo_n "checking whether the compiler supports the -fvisibility=hidden option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-fvisibility=hidden" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -fvisibility=hidden"
+	elif expr "x-fvisibility=hidden" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
+	elif expr "x-fvisibility=hidden" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
+	else
+	    CFLAGS="$CFLAGS -fvisibility=hidden"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		CFLAGS="$save_CFLAGS"
+		V_CCOPT="$V_CCOPT -fvisibility=hidden"
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
     else
 	    V_INCLS="$V_INCLS -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
@@ -3346,6 +3387,55 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 		    # of which use -Werror to force warnings to be errors.
 		    #
 		    ac_lbl_cc_force_warning_errors=-Werror
+
+		    #
+		    # Try to have the compiler default to hiding symbols,
+		    # so that only symbols explicitly exported with
+		    # PCAP_API will be visible outside (shared) libraries.
+		    #
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -fvisibility=hidden option" >&5
+$as_echo_n "checking whether the compiler supports the -fvisibility=hidden option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-fvisibility=hidden" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -fvisibility=hidden"
+	elif expr "x-fvisibility=hidden" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
+	elif expr "x-fvisibility=hidden" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -fvisibility=hidden"
+	else
+	    CFLAGS="$CFLAGS -fvisibility=hidden"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		CFLAGS="$save_CFLAGS"
+		V_CCOPT="$V_CCOPT -fvisibility=hidden"
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 		    ;;
 
 	    hpux*)
@@ -3420,6 +3510,55 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 		    # warnings to be treated as errors.
 		    #
 		    ac_lbl_cc_force_warning_errors=-errwarn
+
+		    #
+		    # Try to have the compiler default to hiding symbols,
+		    # so that only symbols explicitly exported with
+		    # PCAP_API will be visible outside (shared) libraries.
+		    #
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -xldscope=hidden option" >&5
+$as_echo_n "checking whether the compiler supports the -xldscope=hidden option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-xldscope=hidden" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -xldscope=hidden"
+	elif expr "x-xldscope=hidden" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -xldscope=hidden"
+	elif expr "x-xldscope=hidden" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -xldscope=hidden"
+	else
+	    CFLAGS="$CFLAGS -xldscope=hidden"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		CFLAGS="$save_CFLAGS"
+		V_CCOPT="$V_CCOPT -xldscope=hidden"
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 		    ;;
 
 	    ultrix*)
@@ -3428,8 +3567,7 @@ $as_echo_n "checking that Ultrix $CC hacks const in prototypes... " >&6; }
 		    if ${ac_cv_lbl_cc_const_proto+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/types.h>
 int
@@ -4830,6 +4968,29 @@ esac
 
 fi
 
+needstrtok_r=no
+for ac_func in strtok_r
+do :
+  ac_fn_c_check_func "$LINENO" "strtok_r" "ac_cv_func_strtok_r"
+if test "x$ac_cv_func_strtok_r" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRTOK_R 1
+_ACEOF
+
+else
+  needstrtok_r=yes
+fi
+done
+
+if test $needstrtok_r = yes; then
+	case " $LIBOBJS " in
+  *" strtok_r.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS strtok_r.$ac_objext"
+ ;;
+esac
+
+fi
+
 #
 # Do this before checking for ether_hostton(), as it's a
 # "gethostbyname() -ish function".
@@ -5247,6 +5408,13 @@ fi
 $as_echo "${enable_protochain}" >&6; }
 
 #
+# valgrindtest directly uses the native capture mechanism, but
+# only tests with BPF and PF_PACKET sockets; only enable it if
+# we have BPF or PF_PACKET sockets.
+#
+VALGRINDTEST=
+
+#
 # SITA support is mutually exclusive with native capture support;
 # "--with-sita" selects SITA support.
 #
@@ -5261,7 +5429,6 @@ $as_echo "#define SITA 1" >>confdefs.h
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: Enabling SITA ACN support" >&5
 $as_echo "$as_me: Enabling SITA ACN support" >&6;}
 		V_PCAP=sita
-		V_FINDALLDEVS=sita
 	fi
 
 else
@@ -5287,8 +5454,18 @@ elif test -r /dev/bpf -o -h /dev/bpf ; then
 
 $as_echo "#define HAVE_CLONING_BPF 1" >>confdefs.h
 
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /dev/bpf0 ; then
 	V_PCAP=bpf
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/pfilt.h ; then
 	V_PCAP=pf
 elif test -r /dev/enet ; then
@@ -5299,6 +5476,12 @@ elif test -r /usr/include/sys/net/nit.h ; then
 	V_PCAP=nit
 elif test -r /usr/include/linux/socket.h ; then
 	V_PCAP=linux
+
+	#
+	# XXX - this won't work with older kernels that have SOCK_PACKET
+	# sockets but not PF_PACKET sockets.
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/net/raw.h ; then
 	V_PCAP=snoop
 elif test -r /usr/include/odmi.h ; then
@@ -5310,6 +5493,11 @@ elif test -r /usr/include/odmi.h ; then
 	V_PCAP=bpf
 elif test -c /dev/bpf0 ; then		# check again in case not readable
 	V_PCAP=bpf
+
+	#
+	# We have BPF, so build valgrindtest with "make test".
+	#
+	VALGRINDTEST=valgrindtest
 elif test -r /usr/include/sys/dlpi.h ; then
 	V_PCAP=dlpi
 elif test -c /dev/enet ; then		# check again in case not readable
@@ -5321,6 +5509,7 @@ else
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $V_PCAP" >&5
 $as_echo "$V_PCAP" >&6; }
+
 
 #
 # Do capture-mechanism-dependent tests.
@@ -5910,15 +6099,30 @@ fi
 	;;
 
 dag)
+	#
+	# --with-pcap=dag is the only way to get here, and it means
+	# "DAG support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DDAG_ONLY"
+	xxx_only=yes
 	;;
 
 septel)
+	#
+	# --with-pcap=septel is the only way to get here, and it means
+	# "Septel support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
+	xxx_only=yes
 	;;
 
 snf)
+	#
+	# --with-pcap=snf is the only way to get here, and it means
+	# "SNF support but nothing else"
+	#
 	V_DEFS="$V_DEFS -DSNF_ONLY"
+	xxx_only=yes
 	;;
 
 null)
@@ -5929,14 +6133,8 @@ $as_echo "$as_me: WARNING: (see the INSTALL doc for more info)" >&2;}
 	;;
 esac
 
-if test "$V_PCAP" = null
+if test "$V_PCAP" != null
 then
-	#
-	# We can't capture, so we can't open any capture
-	# devices, so we won't return any interfaces.
-	#
-	V_FINDALLDEVS=null
-else
 	ac_fn_c_check_func "$LINENO" "getifaddrs" "ac_cv_func_getifaddrs"
 if test "x$ac_cv_func_getifaddrs" = xyes; then :
 
@@ -5951,7 +6149,7 @@ if test "x$ac_cv_header_ifaddrs_h" = xyes; then :
 		    # We have the header, so we use "getifaddrs()" to
 		    # get the list of interfaces.
 		    #
-		    V_FINDALLDEVS=getad
+		    V_FINDALLDEVS=fad-getad.c
 
 else
 
@@ -6019,9 +6217,9 @@ fi
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_have_siocglifconf" >&5
 $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
 			if test $ac_cv_lbl_have_siocglifconf = yes ; then
-				V_FINDALLDEVS=glifc
+				V_FINDALLDEVS=fad-glifc.c
 			else
-				V_FINDALLDEVS=gifc
+				V_FINDALLDEVS=fad-gifc.c
 			fi
 			;;
 
@@ -6032,7 +6230,7 @@ $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
 			# another mechanism, and we should be using that
 			# instead.)
 			#
-			V_FINDALLDEVS=gifc
+			V_FINDALLDEVS=fad-gifc.c
 			;;
 		esac
 fi
@@ -6155,6 +6353,10 @@ else
 		# User requested DAG-only libpcap, so we'd better have
 		# the DAG API.
 		want_dag=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want DAG support.
+		want_dag=no
 	else
 		#
 		# Use DAG API if present, otherwise don't
@@ -6459,6 +6661,10 @@ else
 		# User requested Septel-only libpcap, so we'd better have
 		# the Septel API.
 		want_septel=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want Septel support.
+		want_septel=no
 	else
 		#
 		# Use Septel API if present, otherwise don't
@@ -6544,6 +6750,10 @@ else
 		# User requested Sniffer-only libpcap, so we'd better have
 		# the Sniffer API.
 		want_snf=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want SNF support.
+		want_snf=no
 	else
 		#
 		# Use Sniffer API if present, otherwise don't
@@ -6697,10 +6907,16 @@ if test "${with_turbocap+set}" = set; then :
 
 else
 
-	#
-	# Use TurboCap API if present, otherwise don't
-	#
-	want_turbocap=ifpresent
+	if test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want TurboCap support.
+		want_turbocap=no
+	else
+		#
+		# Use TurboCap API if present, otherwise don't
+		#
+		want_turbocap=ifpresent
+	fi
 
 fi
 
@@ -7590,6 +7806,49 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wsign-compare option" >&5
+$as_echo_n "checking whether the compiler supports the -Wsign-compare option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wsign-compare" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wsign-compare"
+	elif expr "x-Wsign-compare" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
+	elif expr "x-Wsign-compare" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
+	else
+	    CFLAGS="$CFLAGS -Wsign-compare"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		CFLAGS="$save_CFLAGS"
+		V_CCOPT="$V_CCOPT -Wsign-compare"
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-prototypes option" >&5
 $as_echo_n "checking whether the compiler supports the -Wmissing-prototypes option... " >&6; }
 	save_CFLAGS="$CFLAGS"
@@ -7676,6 +7935,49 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshadow option" >&5
+$as_echo_n "checking whether the compiler supports the -Wshadow option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wshadow" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshadow"
+	elif expr "x-Wshadow" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshadow"
+	elif expr "x-Wshadow" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshadow"
+	else
+	    CFLAGS="$CFLAGS -Wshadow"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		CFLAGS="$save_CFLAGS"
+		V_CCOPT="$V_CCOPT -Wshadow"
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wdeclaration-after-statement option" >&5
 $as_echo_n "checking whether the compiler supports the -Wdeclaration-after-statement option... " >&6; }
 	save_CFLAGS="$CFLAGS"
@@ -7708,6 +8010,49 @@ if ac_fn_c_try_compile "$LINENO"; then :
 $as_echo "yes" >&6; }
 		CFLAGS="$save_CFLAGS"
 		V_CCOPT="$V_CCOPT -Wdeclaration-after-statement"
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wused-but-marked-unused option" >&5
+$as_echo_n "checking whether the compiler supports the -Wused-but-marked-unused option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wused-but-marked-unused" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wused-but-marked-unused"
+	elif expr "x-Wused-but-marked-unused" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
+	elif expr "x-Wused-but-marked-unused" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
+	else
+	    CFLAGS="$CFLAGS -Wused-but-marked-unused"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		CFLAGS="$save_CFLAGS"
+		V_CCOPT="$V_CCOPT -Wused-but-marked-unused"
 
 else
 
@@ -8037,14 +8382,6 @@ $as_echo "#define LBL_ALIGN 1" >>confdefs.h
 
     fi
 
-#
-# Makefile.in includes rules to generate version.h, so we assume
-# that it will be generated if autoconf is used.
-#
-
-$as_echo "#define HAVE_VERSION_H 1" >>confdefs.h
-
-
 rm -f net
 ln -s ${srcdir}/bpf/net net
 
@@ -8073,6 +8410,12 @@ else
   enable_usb=yes
 fi
 
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want USB support.
+	enable_usb=no
+fi
 
 if test "x$enable_usb" != "xno" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for USB sniffing support" >&5
@@ -8191,6 +8534,15 @@ $as_echo "#define HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1" >>confdefs.h
 	    fi
 	fi
 	;;
+    freebsd*)
+	#
+	# This just uses BPF in FreeBSD 8.4 and later; we don't need
+	# to check for anything special for capturing.
+	#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, in FreeBSD 8.4 and later" >&5
+$as_echo "yes, in FreeBSD 8.4 and later" >&6; }
+	;;
+
     *)
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -8200,23 +8552,24 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the platform could support netfilter sniffing" >&5
+if test "xxx_only" != yes; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the platform could support netfilter sniffing" >&5
 $as_echo_n "checking whether the platform could support netfilter sniffing... " >&6; }
-case "$host_os" in
-linux*)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	case "$host_os" in
+	linux*)
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	#
-	# Life's too short to deal with trying to get this to compile
-	# if you don't get the right types defined with
-	# __KERNEL_STRICT_NAMES getting defined by some other include.
-	#
-	# Check whether the includes Just Work.  If not, don't turn on
-	# netfilter support.
-	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the netfilter support" >&5
+		#
+		# Life's too short to deal with trying to get this to compile
+		# if you don't get the right types defined with
+		# __KERNEL_STRICT_NAMES getting defined by some other include.
+		#
+		# Check whether the includes Just Work.  If not, don't turn on
+		# netfilter support.
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the netfilter support" >&5
 $as_echo_n "checking whether we can compile the netfilter support... " >&6; }
-	if ${ac_cv_netfilter_can_compile+:} false; then :
+		if ${ac_cv_netfilter_can_compile+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -8248,20 +8601,21 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_netfilter_can_compile" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_netfilter_can_compile" >&5
 $as_echo "$ac_cv_netfilter_can_compile" >&6; }
-	if test $ac_cv_netfilter_can_compile = yes ; then
+		if test $ac_cv_netfilter_can_compile = yes ; then
 
 $as_echo "#define PCAP_SUPPORT_NETFILTER 1" >>confdefs.h
 
-	  NETFILTER_SRC=pcap-netfilter-linux.c
-	fi
-	;;
-*)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+		  NETFILTER_SRC=pcap-netfilter-linux.c
+		fi
+		;;
+	*)
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	;;
-esac
+		;;
+	esac
+fi
 
 
 
@@ -8272,6 +8626,12 @@ else
   enable_bluetooth=ifsupportavailable
 fi
 
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want Bluetooth support.
+	enable_bluetooth=no
+fi
 
 if test "x$enable_bluetooth" != "xno" ; then
 		case "$host_os" in
@@ -8394,151 +8754,6 @@ $as_echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
 
 fi
 
-# Check whether --enable-canusb was given.
-if test "${enable_canusb+set}" = set; then :
-  enableval=$enable_canusb;
-else
-  enable_canusb=ifsupportavailable
-fi
-
-
-if test "x$enable_canusb" != "xno" ; then
-		case "$host_os" in
-	linux*|uclinux*)
-		ac_fn_c_check_header_mongrel "$LINENO" "libusb-1.0/libusb.h" "ac_cv_header_libusb_1_0_libusb_h" "$ac_includes_default"
-if test "x$ac_cv_header_libusb_1_0_libusb_h" = xyes; then :
-
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libusb_init in -lusb-1.0" >&5
-$as_echo_n "checking for libusb_init in -lusb-1.0... " >&6; }
-if ${ac_cv_lib_usb_1_0_libusb_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lusb-1.0 -lpthread
-		     $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char libusb_init ();
-int
-main ()
-{
-return libusb_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_usb_1_0_libusb_init=yes
-else
-  ac_cv_lib_usb_1_0_libusb_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_usb_1_0_libusb_init" >&5
-$as_echo "$ac_cv_lib_usb_1_0_libusb_init" >&6; }
-if test "x$ac_cv_lib_usb_1_0_libusb_init" = xyes; then :
-
-
-$as_echo "#define PCAP_SUPPORT_CANUSB 1" >>confdefs.h
-
-			CANUSB_SRC=pcap-canusb-linux.c
-			LIBS="-lusb-1.0 -lpthread $LIBS"
-			ac_lbl_has_libusb=yes
-
-else
-  ac_lbl_has_libusb=no
-fi
-
-
-else
-  ac_lbl_has_libusb=no
-
-fi
-
-
-		if test "x$ac_lbl_has_libusb" = "xyes" ; then
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is supported" >&5
-$as_echo "$as_me: canusb sniffing is supported" >&6;}
-		else
-		    if test "x$enable_canusb" = "xyes" ; then
-			as_fn_error $? "canusb sniffing is not supported; install libusb1.0 lib devel to enable it" "$LINENO" 5
-		    else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&5
-$as_echo "$as_me: canusb sniffing is not supported; install libusb1.0 lib devel to enable it" >&6;}
-		    fi
-		fi
-		;;
-	*)
-		if test "x$enable_canusb" = "xyes" ; then
-		    as_fn_error $? "no canusb support implemented for $host_os" "$LINENO" 5
-		else
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: no canusb support implemented for $host_os" >&5
-$as_echo "$as_me: no canusb support implemented for $host_os" >&6;}
-		fi
-		;;
-	esac
-
-
-fi
-
-# Check whether --enable-can was given.
-if test "${enable_can+set}" = set; then :
-  enableval=$enable_can;
-else
-  enable_can=ifsupportavailable
-fi
-
-
-if test "x$enable_can" != "xno" ; then
-		case "$host_os" in
-	linux*)
-		ac_fn_c_check_header_compile "$LINENO" "linux/can.h" "ac_cv_header_linux_can_h" "#include <sys/socket.h>
-
-"
-if test "x$ac_cv_header_linux_can_h" = xyes; then :
-
-
-$as_echo "#define PCAP_SUPPORT_CAN 1" >>confdefs.h
-
-			    CAN_SRC=pcap-can-linux.c
-			    { $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is supported" >&5
-$as_echo "$as_me: CAN sniffing is supported" >&6;}
-
-else
-
-			    if test "x$enable_can" = "xyes" ; then
-				as_fn_error $? "CAN sniffing is not supported" "$LINENO" 5
-			    else
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: CAN sniffing is not supported" >&5
-$as_echo "$as_me: CAN sniffing is not supported" >&6;}
-			    fi
-
-fi
-
-
-		;;
-	*)
-		if test "x$enable_can" = "xyes" ; then
-		    as_fn_error $? "no CAN sniffing support implemented for $host_os" "$LINENO" 5
-		else
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: no CAN sniffing support implemented for $host_os" >&5
-$as_echo "$as_me: no CAN sniffing support implemented for $host_os" >&6;}
-		fi
-		;;
-	esac
-
-
-fi
-
 # Check whether --enable-dbus was given.
 if test "${enable_dbus+set}" = set; then :
   enableval=$enable_dbus;
@@ -8546,6 +8761,12 @@ else
   enable_dbus=ifavailable
 fi
 
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want D-Bus support.
+	enable_dbus=no
+fi
 
 if test "x$enable_dbus" != "xno"; then
 	if test "x$enable_dbus" = "xyes"; then

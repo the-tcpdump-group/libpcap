@@ -132,12 +132,13 @@ struct rtentry;		/* declarations in <net/if.h> */
  * we already have that.
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
+pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
+    int (*check_usable)(const char *))
 {
 	pcap_if_t *devlist = NULL;
 	register int fd;
 	register struct ifreq *ifrp, *ifend, *ifnext;
-	int n;
+	size_t n;
 	struct ifconf ifc;
 	char *buf = NULL;
 	unsigned buf_size;
@@ -235,6 +236,16 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 */
 		if (strncmp(ifrp->ifr_name, "dummy", 5) == 0)
 			continue;
+
+		/*
+		 * Can we capture on this device?
+		 */
+		if (!(*check_usable)(ifrp->ifr_name)) {
+			/*
+			 * No.
+			 */
+			continue;
+		}
 
 		/*
 		 * Get the flags for this interface.
@@ -391,10 +402,10 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_iflist(&devlist, ifrp->ifr_name,
-		    ifrflags.ifr_flags, &ifrp->ifr_addr,
-		    SA_LEN(&ifrp->ifr_addr), netmask, netmask_size,
-		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
-		    errbuf) < 0) {
+		    if_flags_to_pcap_flags(ifrp->ifr_name, ifrflags.ifr_flags),
+		    &ifrp->ifr_addr, SA_LEN(&ifrp->ifr_addr),
+		    netmask, netmask_size, broadaddr, broadaddr_size,
+		    dstaddr, dstaddr_size, errbuf) < 0) {
 			ret = -1;
 			break;
 		}

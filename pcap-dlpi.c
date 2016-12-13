@@ -153,10 +153,12 @@ static void dlpassive(int, char *);
 static int dlrawdatareq(int, const u_char *, int);
 #endif
 static int recv_ack(int, int, const char *, char *, char *, int *);
-static char *dlstrerror(bpf_u_int32);
-static char *dlprim(bpf_u_int32);
+static char *dlstrerror(char *, size_t, bpf_u_int32);
+static char *dlprim(char *, size_t, bpf_u_int32);
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-static char *get_release(bpf_u_int32 *, bpf_u_int32 *, bpf_u_int32 *);
+#define GET_RELEASE_BUFSIZE	32
+static void get_release(char *, size_t, bpf_u_int32 *, bpf_u_int32 *,
+    bpf_u_int32 *);
 #endif
 static int send_request(int, char *, int, char *, char *);
 #ifdef HAVE_HPUX9
@@ -165,14 +167,6 @@ static int dlpi_kread(int, off_t, void *, u_int, char *);
 #ifdef HAVE_DEV_DLPI
 static int get_dlpi_ppa(int, const char *, int, char *);
 #endif
-
-/* XXX Needed by HP-UX (at least) */
-static bpf_u_int32 ctlbuf[MAXDLBUF];
-static struct strbuf ctl = {
-	MAXDLBUF,
-	0,
-	(char *)ctlbuf
-};
 
 /*
  * Cast a buffer to "union DL_primitives" without provoking warnings
@@ -186,6 +180,12 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int cc;
 	u_char *bp;
 	int flags;
+	bpf_u_int32 ctlbuf[MAXDLBUF];
+	struct strbuf ctl = {
+		MAXDLBUF,
+		0,
+		(char *)ctlbuf
+	};
 	struct strbuf data;
 
 	flags = 0;
@@ -213,6 +213,9 @@ pcap_read_dlpi(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			 * would be DL_HP_RAWDATA_IND on HP-UX
 			 * if we're in raw mode?
 			 */
+			ctl.buf = (char *)ctlbuf;
+			ctl.maxlen = MAXDLBUF;
+			ctl.len = 0;
 			if (getmsg(p->fd, &ctl, &data, &flags) < 0) {
 				/* Don't choke when we get ptraced */
 				switch (errno) {
@@ -331,28 +334,12 @@ pcap_cleanup_dlpi(pcap_t *p)
 }
 
 static int
-pcap_activate_dlpi(pcap_t *p)
+open_dlpi_device(const char *name, int *ppa, char *errbuf)
 {
-#ifdef DL_HP_RAWDLS
-	struct pcap_dlpi *pd = p->priv;
-#endif
-	int status = 0;
-	int retv;
-	register char *cp;
-	int ppa;
-#ifdef HAVE_SOLARIS
-	int isatm = 0;
-#endif
-	register dl_info_ack_t *infop;
-#ifdef HAVE_SYS_BUFMOD_H
-	bpf_u_int32 ss;
-#ifdef HAVE_SOLARIS
-	register char *release;
-	bpf_u_int32 osmajor, osminor, osmicro;
-#endif
-#endif
-	bpf_u_int32 buf[MAXDLBUF];
+	int status;
 	char dname[100];
+	char *cp;
+	int fd;
 #ifndef HAVE_DEV_DLPI
 	char dname2[100];
 #endif
@@ -361,9 +348,9 @@ pcap_activate_dlpi(pcap_t *p)
 	/*
 	** Remove any "/dev/" on the front of the device.
 	*/
-	cp = strrchr(p->opt.source, '/');
+	cp = strrchr(name, '/');
 	if (cp == NULL)
-		strlcpy(dname, p->opt.source, sizeof(dname));
+		strlcpy(dname, name, sizeof(dname));
 	else
 		strlcpy(dname, cp + 1, sizeof(dname));
 
@@ -371,11 +358,9 @@ pcap_activate_dlpi(pcap_t *p)
 	 * Split the device name into a device type name and a unit number;
 	 * chop off the unit number, so "dname" is just a device type name.
 	 */
-	cp = split_dname(dname, &ppa, p->errbuf);
-	if (cp == NULL) {
-		status = PCAP_ERROR_NO_SUCH_DEVICE;
-		goto bad;
-	}
+	cp = split_dname(dname, ppa, errbuf);
+	if (cp == NULL)
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	*cp = '\0';
 
 	/*
@@ -390,13 +375,137 @@ pcap_activate_dlpi(pcap_t *p)
 	 * device number, rather than hardwiring "/dev/dlpi".
 	 */
 	cp = "/dev/dlpi";
-	if ((p->fd = open(cp, O_RDWR)) < 0) {
+	if ((fd = open(cp, O_RDWR)) < 0) {
 		if (errno == EPERM || errno == EACCES)
 			status = PCAP_ERROR_PERM_DENIED;
 		else
 			status = PCAP_ERROR;
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: %s", cp, pcap_strerror(errno));
+		return (status);
+	}
+
+	/*
+	 * Get a table of all PPAs for that device, and search that
+	 * table for the specified device type name and unit number.
+	 */
+	*ppa = get_dlpi_ppa(fd, dname, *ppa, errbuf);
+	if (*ppa < 0) {
+		close(fd);
+		return (*ppa);
+	}
+#else
+	/*
+	 * If the device name begins with "/", assume it begins with
+	 * the pathname of the directory containing the device to open;
+	 * otherwise, concatenate the device directory name and the
+	 * device name.
+	 */
+	if (*name == '/')
+		strlcpy(dname, name, sizeof(dname));
+	else
+		pcap_snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
+		    name);
+
+	/*
+	 * Get the unit number, and a pointer to the end of the device
+	 * type name.
+	 */
+	cp = split_dname(dname, ppa, errbuf);
+	if (cp == NULL)
+		return (PCAP_ERROR_NO_SUCH_DEVICE);
+
+	/*
+	 * Make a copy of the device pathname, and then remove the unit
+	 * number from the device pathname.
+	 */
+	strlcpy(dname2, dname, sizeof(dname));
+	*cp = '\0';
+
+	/* Try device without unit number */
+	if ((fd = open(dname, O_RDWR)) < 0) {
+		if (errno != ENOENT) {
+			if (errno == EPERM || errno == EACCES)
+				status = PCAP_ERROR_PERM_DENIED;
+			else
+				status = PCAP_ERROR;
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
+			    pcap_strerror(errno));
+			return (status);
+		}
+
+		/* Try again with unit number */
+		if ((fd = open(dname2, O_RDWR)) < 0) {
+			if (errno == ENOENT) {
+				status = PCAP_ERROR_NO_SUCH_DEVICE;
+
+				/*
+				 * We provide an error message even
+				 * for this error, for diagnostic
+				 * purposes (so that, for example,
+				 * the app can show the message if the
+				 * user requests it).
+				 *
+				 * In it, we just report "No DLPI device
+				 * found" with the device name, so people
+				 * don't get confused and think, for example,
+				 * that if they can't capture on "lo0"
+				 * on Solaris prior to Solaris 11 the fix
+				 * is to change libpcap (or the application
+				 * that uses it) to look for something other
+				 * than "/dev/lo0", as the fix is to use
+				 * Solaris 11 or some operating system
+				 * other than Solaris - you just *can't*
+				 * capture on a loopback interface
+				 * on Solaris prior to Solaris 11, the lack
+				 * of a DLPI device for the loopback
+				 * interface is just a symptom of that
+				 * inability.
+				 */
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "%s: No DLPI device found", name);
+			} else {
+				if (errno == EPERM || errno == EACCES)
+					status = PCAP_ERROR_PERM_DENIED;
+				else
+					status = PCAP_ERROR;
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
+				    dname2, pcap_strerror(errno));
+			}
+			return (status);
+		}
+		/* XXX Assume unit zero */
+		*ppa = 0;
+	}
+#endif
+	return (fd);
+}
+
+static int
+pcap_activate_dlpi(pcap_t *p)
+{
+#ifdef DL_HP_RAWDLS
+	struct pcap_dlpi *pd = p->priv;
+#endif
+	int status = 0;
+	int retv;
+	int ppa;
+#ifdef HAVE_SOLARIS
+	int isatm = 0;
+#endif
+	register dl_info_ack_t *infop;
+#ifdef HAVE_SYS_BUFMOD_H
+	bpf_u_int32 ss;
+#ifdef HAVE_SOLARIS
+	char release[GET_RELEASE_BUFSIZE];
+	bpf_u_int32 osmajor, osminor, osmicro;
+#endif
+#endif
+	bpf_u_int32 buf[MAXDLBUF];
+
+	p->fd = open_dlpi_device(p->opt.device, &ppa, p->errbuf);
+	if (p->fd < 0) {
+		status = p->fd;
 		goto bad;
 	}
 
@@ -412,101 +521,7 @@ pcap_activate_dlpi(pcap_t *p)
 	 * to open it for reading only and, if that succeeds, just let
 	 * the send attempts fail.
 	 */
-	pd->send_fd = open(cp, O_RDWR);
-#endif
-
-	/*
-	 * Get a table of all PPAs for that device, and search that
-	 * table for the specified device type name and unit number.
-	 */
-	ppa = get_dlpi_ppa(p->fd, dname, ppa, p->errbuf);
-	if (ppa < 0) {
-		status = ppa;
-		goto bad;
-	}
-#else
-	/*
-	 * If the device name begins with "/", assume it begins with
-	 * the pathname of the directory containing the device to open;
-	 * otherwise, concatenate the device directory name and the
-	 * device name.
-	 */
-	if (*p->opt.source == '/')
-		strlcpy(dname, p->opt.source, sizeof(dname));
-	else
-		pcap_snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
-		    p->opt.source);
-
-	/*
-	 * Get the unit number, and a pointer to the end of the device
-	 * type name.
-	 */
-	cp = split_dname(dname, &ppa, p->errbuf);
-	if (cp == NULL) {
-		status = PCAP_ERROR_NO_SUCH_DEVICE;
-		goto bad;
-	}
-
-	/*
-	 * Make a copy of the device pathname, and then remove the unit
-	 * number from the device pathname.
-	 */
-	strlcpy(dname2, dname, sizeof(dname));
-	*cp = '\0';
-
-	/* Try device without unit number */
-	if ((p->fd = open(dname, O_RDWR)) < 0) {
-		if (errno != ENOENT) {
-			if (errno == EPERM || errno == EACCES)
-				status = PCAP_ERROR_PERM_DENIED;
-			else
-				status = PCAP_ERROR;
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s", dname,
-			    pcap_strerror(errno));
-			goto bad;
-		}
-
-		/* Try again with unit number */
-		if ((p->fd = open(dname2, O_RDWR)) < 0) {
-			if (errno == ENOENT) {
-				status = PCAP_ERROR_NO_SUCH_DEVICE;
-
-				/*
-				 * We provide an error message even
-				 * for this error, for diagnostic
-				 * purposes (so that, for example,
-				 * the app can show the message if the
-				 * user requests it).
-				 *
-				 * In it, we just report "No DLPI device
-				 * found" with the device name, so people
-				 * don't get confused and think, for example,
-				 * that if they can't capture on "lo0"
-				 * on Solaris the fix is to change libpcap
-				 * (or the application that uses it) to
-				 * look for something other than "/dev/lo0",
-				 * as the fix is to look for an operating
-				 * system other than Solaris - you just
-				 * *can't* capture on a loopback interface
-				 * on Solaris, the lack of a DLPI device
-				 * for the loopback interface is just a
-				 * symptom of that inability.
-				 */
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "%s: No DLPI device found", p->opt.source);
-			} else {
-				if (errno == EPERM || errno == EACCES)
-					status = PCAP_ERROR_PERM_DENIED;
-				else
-					status = PCAP_ERROR;
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-				    dname2, pcap_strerror(errno));
-			}
-			goto bad;
-		}
-		/* XXX Assume unit zero */
-		ppa = 0;
-	}
+	pd->send_fd = open("/dev/dlpi", O_RDWR);
 #endif
 
 	/*
@@ -763,7 +778,7 @@ pcap_activate_dlpi(pcap_t *p)
 	** Ask for bugid 1149065.
 	*/
 #ifdef HAVE_SOLARIS
-	release = get_release(&osmajor, &osminor, &osmicro);
+	get_release(release, sizeof (release), &osmajor, &osminor, &osmicro);
 	if (osmajor == 5 && (osminor <= 2 || (osminor == 3 && osmicro < 2)) &&
 	    getenv("BUFMOD_FIXED") == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -960,6 +975,56 @@ dlpromiscon(pcap_t *p, bpf_u_int32 level)
 	return (0);
 }
 
+/*
+ * Not all interfaces are DLPI interfaces, and thus not all interfaces
+ * can be opened with DLPI (for example, the loopback interface is not
+ * a DLPI interface on Solaris prior to Solaris 11), so try to open
+ * the specified interface; return 0 if we fail with PCAP_ERROR_NO_SUCH_DEVICE
+ * and 1 otherwise.
+ */
+static int
+is_dlpi_interface(const char *name)
+{
+	int fd;
+	int ppa;
+	char errbuf[PCAP_ERRBUF_SIZE];
+
+	fd = open_dlpi_device(name, &ppa, errbuf);
+	if (fd < 0) {
+		/*
+		 * Error - was it PCAP_ERROR_NO_SUCH_DEVICE?
+		 */
+		if (fd == PCAP_ERROR_NO_SUCH_DEVICE) {
+			/*
+			 * Yes, so we can't open this because it's
+			 * not a DLPI interface.
+			 */
+			return (0);
+		}
+		/*
+		 * No, so, in the case where there's a single DLPI
+		 * device for all interfaces of this type ("style
+		 * 2" providers?), we don't know whether it's a DLPI
+		 * interface or not, as we didn't try an attach.
+		 * Say it is a DLPI device, so that the user can at
+		 * least try to open it and report the error (which
+		 * is probably "you don't have permission to open that
+		 * DLPI device"; reporting those interfaces means
+		 * users will ask "why am I getting a permissions error
+		 * when I try to capture" rather than "why am I not
+		 * seeing any interfaces", making the underlying problem
+		 * clearer).
+		 */
+		return (1);
+	}
+
+	/*
+	 * Success.
+	 */
+	close(fd);
+	return (1);
+}
+
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 {
@@ -972,7 +1037,15 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	} buf;
 	char baname[2+1+1];
 	u_int i;
+#endif
 
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(alldevsp, errbuf, is_dlpi_interface) == -1)
+		return (-1);	/* failure */
+
+#ifdef HAVE_SOLARIS
 	/*
 	 * We may have to do special magic to get ATM devices.
 	 */
@@ -1029,6 +1102,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 	union	DL_primitives	*dlp;
 	struct	strbuf	ctl;
 	int	flags;
+	char	errmsgbuf[PCAP_ERRBUF_SIZE];
+	char	dlprimbuf[64];
 
 	/*
 	 * Clear out "*uerror", so it's only set for DL_ERROR_ACK/DL_SYSERR,
@@ -1075,8 +1150,9 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 			break;
 
 		default:
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "recv_ack: %s: %s",
-			    what, dlstrerror(dlp->error_ack.dl_errno));
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "recv_ack: %s: %s", what,
+			    dlstrerror(errmsgbuf, sizeof (errmsgbuf), dlp->error_ack.dl_errno));
 			if (dlp->error_ack.dl_errno == DL_BADPPA)
 				return (PCAP_ERROR_NO_SUCH_DEVICE);
 			else if (dlp->error_ack.dl_errno == DL_ACCESS)
@@ -1088,7 +1164,7 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 	default:
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Unexpected primitive ack %s",
-		    what, dlprim(dlp->dl_primitive));
+		    what, dlprim(dlprimbuf, sizeof (dlprimbuf), dlp->dl_primitive));
 		return (PCAP_ERROR);
 	}
 
@@ -1102,10 +1178,8 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 }
 
 static char *
-dlstrerror(bpf_u_int32 dl_errno)
+dlstrerror(char *errbuf, size_t errbufsize, bpf_u_int32 dl_errno)
 {
-	static char errstring[6+2+8+1];
-
 	switch (dl_errno) {
 
 	case DL_ACCESS:
@@ -1206,16 +1280,14 @@ dlstrerror(bpf_u_int32 dl_errno)
 		return ("Pending outstanding connect indications");
 
 	default:
-		sprintf(errstring, "Error %02x", dl_errno);
-		return (errstring);
+		pcap_snprintf(errbuf, errbufsize, "Error %02x", dl_errno);
+		return (errbuf);
 	}
 }
 
 static char *
-dlprim(bpf_u_int32 prim)
+dlprim(char *primbuf, size_t primbufsize, bpf_u_int32 prim)
 {
-	static char primbuf[80];
-
 	switch (prim) {
 
 	case DL_INFO_REQ:
@@ -1300,7 +1372,8 @@ dlprim(bpf_u_int32 prim)
 		return ("DL_RESET_CON");
 
 	default:
-		(void) sprintf(primbuf, "unknown primitive 0x%x", prim);
+		pcap_snprintf(primbuf, primbufsize, "unknown primitive 0x%x",
+		    prim);
 		return (primbuf);
 	}
 }
@@ -1412,28 +1485,29 @@ dlrawdatareq(int fd, const u_char *datap, int datalen)
 #endif /* DL_HP_RAWDLS */
 
 #if defined(HAVE_SOLARIS) && defined(HAVE_SYS_BUFMOD_H)
-static char *
-get_release(bpf_u_int32 *majorp, bpf_u_int32 *minorp, bpf_u_int32 *microp)
+static void
+get_release(char *buf, size_t bufsize, bpf_u_int32 *majorp,
+    bpf_u_int32 *minorp, bpf_u_int32 *microp)
 {
 	char *cp;
-	static char buf[32];
 
 	*majorp = 0;
 	*minorp = 0;
 	*microp = 0;
-	if (sysinfo(SI_RELEASE, buf, sizeof(buf)) < 0)
-		return ("?");
+	if (sysinfo(SI_RELEASE, buf, bufsize) < 0) {
+		strlcpy(buf, "?", bufsize);
+		return;
+	}
 	cp = buf;
 	if (!isdigit((unsigned char)*cp))
-		return (buf);
+		return;
 	*majorp = strtol(cp, &cp, 10);
 	if (*cp++ != '.')
-		return (buf);
+		return;
 	*minorp =  strtol(cp, &cp, 10);
 	if (*cp++ != '.')
-		return (buf);
+		return;
 	*microp =  strtol(cp, &cp, 10);
-	return (buf);
 }
 #endif
 
@@ -1742,14 +1816,14 @@ dlpi_kread(register int fd, register off_t addr,
 #endif
 
 pcap_t *
-pcap_create_interface(const char *device, char *ebuf)
+pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 #ifdef DL_HP_RAWDLS
 	struct pcap_dlpi *pd;
 #endif
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_dlpi));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_dlpi));
 	if (p == NULL)
 		return (NULL);
 
