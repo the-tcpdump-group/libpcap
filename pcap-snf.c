@@ -30,10 +30,10 @@ struct pcap_snf {
 	snf_handle_t snf_handle; /* opaque device handle */
 	snf_ring_t   snf_ring;   /* opaque device ring handle */
 #ifdef SNF_HAVE_INJECT_API
-        snf_inject_t snf_inj;    /* inject handle, if inject is used */
+	snf_inject_t snf_inj;    /* inject handle, if inject is used */
 #endif
-        int          snf_timeout;
-        int          snf_boardnum;
+	int          snf_timeout;
+	int          snf_boardnum;
 };
 
 static int
@@ -67,8 +67,8 @@ snf_platform_cleanup(pcap_t *p)
 	struct pcap_snf *ps = p->priv;
 
 #ifdef SNF_HAVE_INJECT_API
-        if (ps->snf_inj)
-                snf_inject_close(ps->snf_inj);
+	if (ps->snf_inj)
+		snf_inject_close(ps->snf_inj);
 #endif
 	snf_ring_close(ps->snf_ring);
 	snf_close(ps->snf_handle);
@@ -212,25 +212,25 @@ snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 {
 #ifdef SNF_HAVE_INJECT_API
 	struct pcap_snf *ps = p->priv;
-        int rc;
-        if (ps->snf_inj == NULL) {
-                rc = snf_inject_open(ps->snf_boardnum, 0, &ps->snf_inj);
-                if (rc) {
-                        pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-                                "snf_inject_open: %s", pcap_strerror(rc));
-                        return (-1);
-                }
-        }
+	int rc;
+	if (ps->snf_inj == NULL) {
+		rc = snf_inject_open(ps->snf_boardnum, 0, &ps->snf_inj);
+		if (rc) {
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				"snf_inject_open: %s", pcap_strerror(rc));
+			return (-1);
+		}
+	}
 
-        rc = snf_inject_send(ps->snf_inj, -1, 0, buf, size);
-        if (!rc) {
-                return (size);
-        }
-        else {
-                pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_inject_send: %s",
-                         pcap_strerror(rc));
-                return (-1);
-        }
+	rc = snf_inject_send(ps->snf_inj, -1, 0, buf, size);
+	if (!rc) {
+		return (size);
+	}
+	else {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_inject_send: %s",
+			 pcap_strerror(rc));
+		return (-1);
+	}
 #else
 	strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
 	    PCAP_ERRBUF_SIZE);
@@ -312,7 +312,7 @@ snf_activate(pcap_t* p)
 	p->stats_op = snf_pcap_stats;
 	p->cleanup_op = snf_platform_cleanup;
 #ifdef SNF_HAVE_INJECT_API
-        ps->snf_inj = NULL;
+	ps->snf_inj = NULL;
 #endif
 	return 0;
 }
@@ -342,7 +342,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		merge = strtol(nr, NULL, 0);
 		if (errno)
 			return (-1);
-        	merge = merge & SNF_F_AGGREGATE_PORTMASK;
+		merge = merge & SNF_F_AGGREGATE_PORTMASK;
 	}
 
 	ifa = ifaddrs;
@@ -354,21 +354,21 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
  		 * Look for a match in passed in devlist
  		 */
 		while (nextdev != NULL) {
-			if (!strcmp(nextdev->name,ifa->snf_ifa_name)) {
-			/*
-			 * Update Description if match found
-			 * If port aggregation is set, unit is power of 2
-			 */
-                                (void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
+			if (strcmp(nextdev->name,ifa->snf_ifa_name) == 0) {
+				/*
+				 * Update Description if match found
+				 * If port aggregation is set, unit is power of 2
+				 */
+				(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
 					merge ? "Merge Bitmask Port " : "",
-                                	merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
+					merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
 				if (merge) 
 					allports |= 1 << ifa->snf_ifa_portnum;
-                                nextdev->description = strdup(desc);
-                                if (nextdev->description == NULL) {
-                                        (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-                                         "snf_findalldevs strdup: %s", pcap_strerror(errno));
-                                        return (-1);
+				nextdev->description = strdup(desc);
+				if (nextdev->description == NULL) {
+					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					 "snf_findalldevs strdup: %s", pcap_strerror(errno));
+					return (-1);
 				}
 				found = 1;
 				break;
@@ -381,8 +381,8 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			 */
 			curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 			if (curdev == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"snf_findalldevs malloc: %s", pcap_strerror(errno));
+				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "snf_findalldevs malloc: %s", pcap_strerror(errno));
 				return (-1);
 			}
 			if (devlist == NULL) /* save first entry */
@@ -408,7 +408,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			curdev->description = strdup(desc);
 			if (curdev->description == NULL) {
 				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"snf_findalldevs strdup1: %s", pcap_strerror(errno));
+				    "snf_findalldevs strdup1: %s", pcap_strerror(errno));
 				free(curdev->name);
 				free(curdev);
 				return (-1);
@@ -449,7 +449,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	}
 	snf_freeifaddrs(ifaddrs);
 	/* 
-         * Create a snfX entry if port aggregation is enabled
+	 * Create a snfX entry if port aggregation is enabled
        	 */
 	if (merge) {
 		/*
@@ -457,8 +457,8 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		 */
 		curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 		if (curdev == NULL) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			"snf_findalldevs malloc: %s", pcap_strerror(errno));
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "snf_findalldevs malloc: %s", pcap_strerror(errno));
 			return (-1);
 		}
 		if (devlist == NULL) /* save first entry */
@@ -482,7 +482,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		curdev->description = strdup(desc);
 		if (curdev->description == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			"snf_findalldevs strdup1: %s", pcap_strerror(errno));
+			    "snf_findalldevs strdup1: %s", pcap_strerror(errno));
 			free(curdev->name);
 			free(curdev);
 			return (-1);
