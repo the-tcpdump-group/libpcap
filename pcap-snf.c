@@ -265,7 +265,7 @@ snf_activate(pcap_t* p)
 	err = snf_open(ps->snf_boardnum,
 			0, /* let SNF API parse SNF_NUM_RINGS, if set */
 			NULL, /* default RSS, or use SNF_RSS_FLAGS env */
-			p->opt.buffer_size < 1048576 ? 1048576 : p->opt.buffer_size, /* default to SNF_DATARING_SIZE from env */
+			0, /* default to SNF_DATARING_SIZE from env */
 			flags, /* may want pshared */
 			&ps->snf_handle);
 	if (err != 0) {
@@ -478,8 +478,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			return (-1);
 		}
 		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
-				allports);
-		curdev->description = strdup(desc);
+			allports);
 		curdev->description = strdup(desc);
 		if (curdev->description == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
