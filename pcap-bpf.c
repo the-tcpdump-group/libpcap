@@ -2550,6 +2550,44 @@ check_bpf_bindable(const char *name)
 	int fd;
 	char errbuf[PCAP_ERRBUF_SIZE];
 
+	/*
+	 * On macOS, we don't do this check if the device name begins
+	 * with "wlt"; at least some versions of macOS (actually, it
+	 * was called "Mac OS X" then...) offer monitor mode capturing
+	 * by having a separate "monitor mode" device for each wireless
+	 * adapter, rather than by implementing the ioctls that
+	 * {Free,Net,Open,DragonFly}BSD provide. Opening that device
+	 * puts the adapter into monitor mode, which, at least for
+	 * some adapters, causes them to deassociate from the network
+	 * with which they're associated.
+	 *
+	 * Instead, we try to open the corresponding "en" device (so
+	 * that we don't end up with, for users without sufficient
+	 * privilege to open capture devices, a list of adapters that
+	 * only includes the wlt devices).
+	 */
+#ifdef __APPLE__
+	if (strncmp(name, "wlt", 3) == 0) {
+		char *en_name;
+		size_t en_name_len;
+
+		/*
+		 * Try to allocate a buffer for the "en"
+		 * device's name.
+		 */
+		en_name_len = strlen(name) - 1;
+		en_name = malloc(en_name_len + 1);
+		if (en_name == NULL) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "malloc: %s", pcap_strerror(errno));
+			return (-1);
+		}
+		strcpy(en_name, "en");
+		strcat(en_name, name + 3);
+		fd = bpf_open_and_bind(en_name, errbuf);
+		free(en_name);
+	} else
+#endif /* __APPLE */
 	fd = bpf_open_and_bind(name, errbuf);
 	if (fd < 0) {
 		/*

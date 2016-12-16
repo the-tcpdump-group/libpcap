@@ -358,28 +358,18 @@ get_if_description(const char *name)
  *
  * If we find it, return 0 and set *curdev_ret to point to it.
  *
- * If we don't find it, check whether we can open it:
- *
- *     If that fails with PCAP_ERROR_NO_SUCH_DEVICE or
- *     PCAP_ERROR_IFACE_NOT_UP, don't attempt to add an entry for
- *     it, as that probably means it exists but doesn't support
- *     packet capture.
- *
- *     Otherwise, attempt to add an entry for it, with the specified
- *     ifnet flags and description, and, if that succeeds, return 0
- *     and set *curdev_ret to point to the new entry, otherwise
- *     return PCAP_ERROR and set errbuf to an error message.  If we
- *     weren't given a description, try to get one.
+ * If we don't find it, attempt to add an entry for it, with the specified
+ * ifnet flags and description, and, if that succeeds, return 0 and set
+ * *curdev_ret to point to the new entry, otherwise return PCAP_ERROR
+ * and set errbuf to an error message.  If we weren't given a description,
+ * try to get one.
  */
 int
 add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
     bpf_u_int32 flags, const char *description, char *errbuf)
 {
-	pcap_t *p;
 	pcap_if_t *curdev, *prevdev, *nextdev;
 	u_int this_figure_of_merit, nextdev_figure_of_merit;
-	char open_errbuf[PCAP_ERRBUF_SIZE];
-	int ret;
 
 	/*
 	 * Is there already an entry in the list for this interface?
@@ -391,121 +381,8 @@ add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
 
 	if (curdev == NULL) {
 		/*
-		 * No, we didn't find it.
-		 *
-		 * Can we open this interface for live capture?
-		 *
-		 * We do this check so that interfaces that are
-		 * supplied by the interface enumeration mechanism
-		 * we're using but that don't support packet capture
-		 * aren't included in the list.  Loopback interfaces
-		 * on Solaris are an example of this; we don't just
-		 * omit loopback interfaces on all platforms because
-		 * you *can* capture on loopback interfaces on some
-		 * OSes.
-		 *
-		 * On OS X, we don't do this check if the device
-		 * name begins with "wlt"; at least some versions
-		 * of OS X offer monitor mode capturing by having
-		 * a separate "monitor mode" device for each wireless
-		 * adapter, rather than by implementing the ioctls
-		 * that {Free,Net,Open,DragonFly}BSD provide.
-		 * Opening that device puts the adapter into monitor
-		 * mode, which, at least for some adapters, causes
-		 * them to deassociate from the network with which
-		 * they're associated.
-		 *
-		 * Instead, we try to open the corresponding "en"
-		 * device (so that we don't end up with, for users
-		 * without sufficient privilege to open capture
-		 * devices, a list of adapters that only includes
-		 * the wlt devices).
-		 */
-#ifdef __APPLE__
-		if (strncmp(name, "wlt", 3) == 0) {
-			char *en_name;
-			size_t en_name_len;
-
-			/*
-			 * Try to allocate a buffer for the "en"
-			 * device's name.
-			 */
-			en_name_len = strlen(name) - 1;
-			en_name = malloc(en_name_len + 1);
-			if (en_name == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "malloc: %s", pcap_strerror(errno));
-				return (-1);
-			}
-			strcpy(en_name, "en");
-			strcat(en_name, name + 3);
-			p = pcap_create(en_name, open_errbuf);
-			free(en_name);
-		} else
-#endif /* __APPLE */
-		p = pcap_create(name, open_errbuf);
-		if (p == NULL) {
-			/*
-			 * The attempt to create the pcap_t failed;
-			 * that's probably an indication that we're
-			 * out of memory.
-			 *
-			 * Don't bother including this interface,
-			 * but don't treat it as an error.
-			 */
-			*curdev_ret = NULL;
-			return (0);
-		}
-		/* Small snaplen, so we don't try to allocate much memory. */
-		pcap_set_snaplen(p, 68);
-		ret = pcap_activate(p);
-		pcap_close(p);
-		switch (ret) {
-
-		case PCAP_ERROR_NO_SUCH_DEVICE:
-		case PCAP_ERROR_IFACE_NOT_UP:
-			/*
-			 * We expect these two errors - they're the
-			 * reason we try to open the device.
-			 *
-			 * PCAP_ERROR_NO_SUCH_DEVICE typically means
-			 * "there's no such device *known to the
-			 * OS's capture mechanism*", so, even though
-			 * it might be a valid network interface, you
-			 * can't capture on it (e.g., the loopback
-			 * device in Solaris up to Solaris 10, or
-			 * the vmnet devices in OS X with VMware
-			 * Fusion).  We don't include those devices
-			 * in our list of devices, as there's no
-			 * point in doing so - they're not available
-			 * for capture.
-			 *
-			 * PCAP_ERROR_IFACE_NOT_UP means that the
-			 * OS's capture mechanism doesn't work on
-			 * interfaces not marked as up; some capture
-			 * mechanisms *do* support that, so we no
-			 * longer reject those interfaces out of hand,
-			 * but we *do* want to reject them if they
-			 * can't be opened for capture.
-			 */
-			*curdev_ret = NULL;
-			return (0);
-		}
-
-		/*
-		 * Yes, we can open it, or we can't, for some other
-		 * reason.
-		 *
-		 * If we can open it, we want to offer it for
-		 * capture, as you can capture on it.  If we can't,
-		 * we want to offer it for capture, so that, if
-		 * the user tries to capture on it, they'll get
-		 * an error and they'll know why they can't
-		 * capture on it (e.g., insufficient permissions)
-		 * or they'll report it as a problem (and then
-		 * have the error message to provide as information).
-		 *
-		 * Allocate a new entry.
+		 * No, we didn't find it.  Add it to the list of
+		 * devices.
 		 */
 		curdev = malloc(sizeof(pcap_if_t));
 		if (curdev == NULL) {
