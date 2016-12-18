@@ -6131,6 +6131,10 @@ $as_echo "$as_me: WARNING: cannot determine packet capture interface" >&2;}
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (see the INSTALL doc for more info)" >&5
 $as_echo "$as_me: WARNING: (see the INSTALL doc for more info)" >&2;}
 	;;
+
+*)
+	as_fn_error $? "$V_PCAP is not a valid pcap type" "$LINENO" 5
+	;;
 esac
 
 if test "$V_PCAP" != null

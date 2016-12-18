@@ -632,6 +632,10 @@ null)
 	AC_MSG_WARN(cannot determine packet capture interface)
 	AC_MSG_WARN((see the INSTALL doc for more info))
 	;;
+
+*)
+	AC_MSG_ERROR($V_PCAP is not a valid pcap type)
+	;;
 esac
 
 dnl
