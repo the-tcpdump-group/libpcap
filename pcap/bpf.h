@@ -258,15 +258,9 @@ struct bpf_aux_data {
 #define BPF_STMT(code, k) { (u_short)(code), 0, 0, k }
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
-#if __STDC__ || defined(__cplusplus)
 PCAP_API int bpf_validate(const struct bpf_insn *, int);
 PCAP_API u_int bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
 extern u_int bpf_filter_with_aux_data(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);
-#else
-PCAP_API int bpf_validate();
-PCAP_API u_int bpf_filter();
-extern u_int bpf_filter_with_aux_data();
-#endif
 
 /*
  * Number of scratch memory words (for BPF_LD|BPF_MEM and BPF_ST).
