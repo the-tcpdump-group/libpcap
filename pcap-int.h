@@ -73,14 +73,14 @@ extern "C" {
  * Swap byte ordering of unsigned long long timestamp on a big endian
  * machine.
  */
-#define SWAPLL(ull)  ((ull & 0xff00000000000000LL) >> 56) | \
-                      ((ull & 0x00ff000000000000LL) >> 40) | \
-                      ((ull & 0x0000ff0000000000LL) >> 24) | \
-                      ((ull & 0x000000ff00000000LL) >> 8)  | \
-                      ((ull & 0x00000000ff000000LL) << 8)  | \
-                      ((ull & 0x0000000000ff0000LL) << 24) | \
-                      ((ull & 0x000000000000ff00LL) << 40) | \
-                      ((ull & 0x00000000000000ffLL) << 56)
+#define SWAPLL(ull)  ((ull & 0xff00000000000000ULL) >> 56) | \
+                      ((ull & 0x00ff000000000000ULL) >> 40) | \
+                      ((ull & 0x0000ff0000000000ULL) >> 24) | \
+                      ((ull & 0x000000ff00000000ULL) >> 8)  | \
+                      ((ull & 0x00000000ff000000ULL) << 8)  | \
+                      ((ull & 0x0000000000ff0000ULL) << 24) | \
+                      ((ull & 0x000000000000ff00ULL) << 40) | \
+                      ((ull & 0x00000000000000ffULL) << 56)
 
 #endif /* _MSC_VER */
 
