@@ -440,7 +440,33 @@ usb_activate(pcap_t* handle)
 #endif
 	}
 	else {
-		/*Binary interface not available, try open text interface */
+		/*
+		 * The binary interface isn't available; is that because
+		 * we don't have sufficient permission to open it?
+		 */
+		if (errno == EACCES) {
+			/*
+			 * Yes - return that error.
+			 */
+			return PCAP_ERROR_PERM_DENIED;
+		}
+
+		/*
+		 * No - was the problem something other than "it doesn't
+		 * exist"?
+		 */
+		if (errno != ENOENT) {
+			/*
+			 * Yes - return *that* error.
+			 */
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"Can't open USB bus file %s: %s", full_path, strerror(errno));
+			return PCAP_ERROR;
+		}
+
+		/*
+		 * No - try opening the text device.
+		 */
 		pcap_snprintf(full_path, USB_LINE_LEN, USB_TEXT_DIR"/%dt", handlep->bus_index);
 		handle->fd = open(full_path, O_RDONLY, 0);
 		if (handle->fd < 0)
@@ -455,7 +481,22 @@ usb_activate(pcap_t* handle)
 				handle->fd = open(full_path, O_RDONLY, 0);
 			}
 			if (handle->fd < 0) {
-				/* no more fallback, give it up*/
+				/*
+				 * Is the problem that we didn't have
+				 * sufficient permission to open it?
+				 */
+				if (errno == EACCES) {
+					/*
+					 * Yes - return that error.
+					 */
+					return PCAP_ERROR_PERM_DENIED;
+				}
+
+				/*
+				 * No; there's nothing more we can do,
+				 * so just give up and return that
+				 * error.
+				 */
 				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"Can't open USB bus file %s: %s", full_path, strerror(errno));
 				return PCAP_ERROR;
