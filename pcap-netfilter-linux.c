@@ -650,9 +650,9 @@ netfilter_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	}
 	close(sock);
 
-	if (pcap_add_if(alldevsp, NFLOG_IFACE, 0, "Linux netfilter log (NFLOG) interface", err_str) < 0)
+	if (add_dev(alldevsp, NFLOG_IFACE, 0, "Linux netfilter log (NFLOG) interface", err_str) == NULL)
 		return -1;
-	if (pcap_add_if(alldevsp, NFQUEUE_IFACE, 0, "Linux netfilter queue (NFQUEUE) interface", err_str) < 0)
+	if (add_dev(alldevsp, NFQUEUE_IFACE, 0, "Linux netfilter queue (NFQUEUE) interface", err_str) == NULL)
 		return -1;
 	return 0;
 }

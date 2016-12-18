@@ -2678,11 +2678,10 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 		memcpy(name, usbus_prefix, USBUS_PREFIX_LEN);
 		memcpy(name + USBUS_PREFIX_LEN, usbitem->d_name, busnumlen);
 		*(name + USBUS_PREFIX_LEN + busnumlen) = '\0';
-		err = pcap_add_if(alldevsp, name, PCAP_IF_UP, NULL, errbuf);
-		if (err != 0) {
+		if (add_dev(alldevsp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
 			free(name);
 			closedir(usbdir);
-			return (err);
+			return (PCAP_ERROR);
 		}
 	}
 	free(name);

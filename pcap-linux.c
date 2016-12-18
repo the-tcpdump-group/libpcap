@@ -2287,11 +2287,12 @@ add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
 	}
 
 	/*
-	 * Add an entry for this interface, with no addresses.
+	 * Add an entry for this interface, with no addresses, if it's
+	 * not already in the list.
 	 */
-	if (pcap_add_if(devlistp, name,
+	if (find_or_add_dev(devlistp, name,
 	    if_flags_to_pcap_flags(name, ifrflags.ifr_flags), NULL,
-	    errbuf) == -1) {
+	    errbuf) == NULL) {
 		/*
 		 * Failure.
 		 */
@@ -2564,8 +2565,8 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Add the "any" device.
 	 */
-	if (pcap_add_if(alldevsp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
-	    any_descr, errbuf) < 0)
+	if (add_dev(alldevsp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
+	    any_descr, errbuf) == NULL)
 		return (-1);
 
 	return (0);

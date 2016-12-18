@@ -1065,13 +1065,7 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 }
 
 /*
- * Previously we just generated a list of all possible names and let
- * pcap_add_if() attempt to open each one, but with streams this adds up
- * to 81 possibilities which is inefficient.
- *
- * Since we know more about the devices we can prune the tree here.
- * pcap_add_if() will still retest each device but the total number of
- * open attempts will still be much less than the naive approach.
+ * Add all DAG devices.
  */
 int
 dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
@@ -1090,13 +1084,15 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		pcap_snprintf(name, 12, "dag%d", c);
 		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
 		{
+			(void) pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "dag: device name %s can't be parsed", name);
 			return -1;
 		}
-		description = NULL;
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
+			description = NULL;
 			if ((inf = dag_pciinfo(dagfd)))
 				description = dag_device_name(inf->device_code, 1);
-			if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
+			if (add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 				/*
 				 * Failure.
 				 */
@@ -1111,7 +1107,7 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 						dag_detach_stream(dagfd, stream);
 
 						pcap_snprintf(name,  10, "dag%d:%d", c, stream);
-						if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
+						if (add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 							/*
 							 * Failure.
 							 */

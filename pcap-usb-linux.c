@@ -147,8 +147,7 @@ usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
 	pcap_snprintf(dev_name, 10, USB_IFACE"%d", n);
 	pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
 
-	if (pcap_add_if(alldevsp, dev_name, 0,
-	    dev_descr, err_str) < 0)
+	if (add_dev(alldevsp, dev_name, 0, dev_descr, err_str) == NULL)
 		return -1;
 	return 0;
 }
@@ -174,8 +173,8 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		 * Yes.
 		 */
 		close(fd);
-		if (pcap_add_if(alldevsp, "usbmon0", 0, "All USB buses",
-		    err_str) < 0)
+		if (add_dev(alldevsp, "usbmon0", 0, "All USB buses",
+		    err_str) == NULL)
 			return -1;
 	} else {
 		/*
@@ -193,8 +192,8 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 			 * We found it.
 			 */
 			close(fd);
-			if (pcap_add_if(alldevsp, "usbmon0", 0, "All USB buses",
-			    err_str) < 0)
+			if (add_dev(alldevsp, "usbmon0", 0, "All USB buses",
+			    err_str) == NULL)
 				return -1;
 		}
 	}

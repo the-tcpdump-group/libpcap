@@ -119,8 +119,7 @@ bt_findalldevs(pcap_if_t **alldevsp, char *err_str)
 		pcap_snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
 		pcap_snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
 
-		if (pcap_add_if(alldevsp, dev_name, 0,
-		       dev_descr, err_str) < 0)
+		if (add_dev(alldevsp, dev_name, 0, dev_descr, err_str) == NULL)
 		{
 			ret = -1;
 			break;

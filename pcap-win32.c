@@ -1359,8 +1359,8 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	if (add_or_find_if(&curdev, devlist, name, flags, description,
-	    errbuf) == -1) {
+	curdev = add_dev(devlist, name, flags, description, errbuf);
+	if (curdev == NULL) {
 		/*
 		 * Failure.
 		 */
@@ -1391,8 +1391,6 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 		 * "curdev" is an entry for this interface; add an entry for
 		 * this address to its list of addresses.
 		 */
-		if(curdev == NULL)
-			break;
 		res = add_addr_to_dev(curdev,
 		    (struct sockaddr *)&if_addrs[if_addr_size].IPAddress,
 		    sizeof (struct sockaddr_storage),

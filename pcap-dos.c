@@ -573,16 +573,16 @@ int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
     broadaddr = (struct sockaddr*) &sa_ll_2;
     memset (&sa_ll_2.sin_addr, 0xFF, sizeof(sa_ll_2.sin_addr));
 
-    if (pcap_add_if(&devlist, dev->name, dev->flags,
-                    dev->long_name, errbuf) < 0)
+    if (add_dev(&devlist, dev->name, dev->flags,
+                dev->long_name, errbuf) == NULL)
     {
       ret = -1;
       break;
     }
 #if 0   /* Pkt drivers should have no addresses */
-    if (add_addr_to_iflist(&devlist, dev->name, dev->flags, addr, addr_size,
-                           netmask, addr_size, broadaddr, addr_size,
-                           dstaddr, addr_size, errbuf) < 0)
+    if (add_addr_to_dev(curdev, addr, addr_size,
+                        netmask, addr_size, broadaddr, addr_size,
+                        dstaddr, addr_size, errbuf) < 0)
     {
       ret = -1;
       break;

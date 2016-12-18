@@ -180,6 +180,7 @@ get_figure_of_merit(pcap_if_t *dev)
 	return (n);
 }
 
+#ifndef _WIN32
 /*
  * Try to get a description for a given device.
  * Returns a mallocated description if it could and NULL if it couldn't.
@@ -356,175 +357,13 @@ get_if_description(const char *name)
 /*
  * Look for a given device in the specified list of devices.
  *
- * If we find it, return 0 and set *curdev_ret to point to it.
- *
- * If we don't find it, attempt to add an entry for it, with the specified
- * ifnet flags and description, and, if that succeeds, return 0 and set
- * *curdev_ret to point to the new entry, otherwise return PCAP_ERROR
- * and set errbuf to an error message.  If we weren't given a description,
- * try to get one.
- */
-int
-add_or_find_if(pcap_if_t **curdev_ret, pcap_if_t **alldevs, const char *name,
-    bpf_u_int32 flags, const char *description, char *errbuf)
-{
-	pcap_if_t *curdev, *prevdev, *nextdev;
-	u_int this_figure_of_merit, nextdev_figure_of_merit;
-
-	/*
-	 * Is there already an entry in the list for this interface?
-	 */
-	for (curdev = *alldevs; curdev != NULL; curdev = curdev->next) {
-		if (strcmp(name, curdev->name) == 0)
-			break;	/* yes, we found it */
-	}
-
-	if (curdev == NULL) {
-		/*
-		 * No, we didn't find it.  Add it to the list of
-		 * devices.
-		 */
-		curdev = malloc(sizeof(pcap_if_t));
-		if (curdev == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
-			return (-1);
-		}
-
-		/*
-		 * Fill in the entry.
-		 */
-		curdev->next = NULL;
-		curdev->name = strdup(name);
-		if (curdev->name == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
-			free(curdev);
-			return (-1);
-		}
-		if (description == NULL) {
-			/*
-			 * We weren't handed a description for the
-			 * interface, so see if we can generate one
-			 * ourselves.
-			 */
-			curdev->description = get_if_description(name);
-		} else {
-			/*
-			 * We were handed a description; make a copy.
-			 */
-			curdev->description = strdup(description);
-			if (curdev->description == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "malloc: %s", pcap_strerror(errno));
-				free(curdev->name);
-				free(curdev);
-				return (-1);
-			}
-		}
-		curdev->addresses = NULL;	/* list starts out as empty */
-		curdev->flags = flags;
-
-		/*
-		 * Add it to the list, in the appropriate location.
-		 * First, get the "figure of merit" for this
-		 * interface.
-		 */
-		this_figure_of_merit = get_figure_of_merit(curdev);
-
-		/*
-		 * Now look for the last interface with an figure of merit
-		 * less than or equal to the new interface's figure of
-		 * merit.
-		 *
-		 * We start with "prevdev" being NULL, meaning we're before
-		 * the first element in the list.
-		 */
-		prevdev = NULL;
-		for (;;) {
-			/*
-			 * Get the interface after this one.
-			 */
-			if (prevdev == NULL) {
-				/*
-				 * The next element is the first element.
-				 */
-				nextdev = *alldevs;
-			} else
-				nextdev = prevdev->next;
-
-			/*
-			 * Are we at the end of the list?
-			 */
-			if (nextdev == NULL) {
-				/*
-				 * Yes - we have to put the new entry
-				 * after "prevdev".
-				 */
-				break;
-			}
-
-			/*
-			 * Is the new interface's figure of merit less
-			 * than the next interface's figure of merit,
-			 * meaning that the new interface is better
-			 * than the next interface?
-			 */
-			nextdev_figure_of_merit = get_figure_of_merit(nextdev);
-			if (this_figure_of_merit < nextdev_figure_of_merit) {
-				/*
-				 * Yes - we should put the new entry
-				 * before "nextdev", i.e. after "prevdev".
-				 */
-				break;
-			}
-
-			prevdev = nextdev;
-		}
-
-		/*
-		 * Insert before "nextdev".
-		 */
-		curdev->next = nextdev;
-
-		/*
-		 * Insert after "prevdev" - unless "prevdev" is null,
-		 * in which case this is the first interface.
-		 */
-		if (prevdev == NULL) {
-			/*
-			 * This is the first interface.  Pass back a
-			 * pointer to it, and put "curdev" before
-			 * "nextdev".
-			 */
-			*alldevs = curdev;
-		} else
-			prevdev->next = curdev;
-	}
-
-	*curdev_ret = curdev;
-	return (0);
-}
-
-/*
- * Try to get a description for a given device, and then look for that
- * device in the specified list of devices.
- *
  * If we find it, then, if the specified address isn't null, add it to
  * the list of addresses for the device and return 0.
  *
- * If we don't find it, check whether we can open it:
- *
- *     If that fails with PCAP_ERROR_NO_SUCH_DEVICE or
- *     PCAP_ERROR_IFACE_NOT_UP, don't attempt to add an entry for
- *     it, as that probably means it exists but doesn't support
- *     packet capture.
- *
- *     Otherwise, attempt to add an entry for it, with the specified
- *     ifnet flags, and, if that succeeds, add the specified address
- *     to its list of addresses if that address is non-null, set
- *     *curdev_ret to point to the new entry, and return 0, otherwise
- *     return PCAP_ERROR and set errbuf to an error message.
+ * If we don't find it, attempt to add an entry for it, with the specified
+ * flags and description, and, if that succeeds, add the specified
+ * address to its list of addresses if that address is non-null, and
+ * return 0, otherwise return -1 and set errbuf to an error message.
  *
  * (We can get called with a null address because we might get a list
  * of interface name/address combinations from the underlying OS, with
@@ -543,18 +382,17 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
 {
 	pcap_if_t *curdev;
 
-	if (add_or_find_if(&curdev, alldevs, name, flags, NULL, errbuf) == -1) {
+	/*
+	 * Attempt to find an entry for this device; if we don't find one,
+	 * attempt to add one.
+	 */
+	curdev = find_or_add_dev(alldevs, name, flags, get_if_description(name),
+	    errbuf);
+	if (curdev == NULL) {
 		/*
 		 * Error - give up.
 		 */
 		return (-1);
-	}
-	if (curdev == NULL) {
-		/*
-		 * Device wasn't added because it can't be opened.
-		 * Not a fatal error.
-		 */
-		return (0);
 	}
 
 	if (addr == NULL) {
@@ -576,6 +414,7 @@ add_addr_to_iflist(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
 	    netmask_size, broadaddr, broadaddr_size, dstaddr,
 	    dstaddr_size, errbuf));
 }
+#endif /* _WIN32 */
 
 /*
  * Add an entry to the list of addresses for an interface.
@@ -689,30 +528,166 @@ add_addr_to_dev(pcap_if_t *curdev,
 /*
  * Look for a given device in the specified list of devices.
  *
- * If we find it, return 0.
+ * If we find it, return 0 and set *curdev_ret to point to it.
  *
- * If we don't find it, check whether we can open it:
- *
- *     If that fails with PCAP_ERROR_NO_SUCH_DEVICE or
- *     PCAP_ERROR_IFACE_NOT_UP, don't attempt to add an entry for
- *     it, as that probably means it exists but doesn't support
- *     packet capture.
- *
- *     Otherwise, attempt to add an entry for it, with the specified
- *     ifnet flags and description, and, if that succeeds, return 0
- *     and set *curdev_ret to point to the new entry, otherwise
- *     return PCAP_ERROR and set errbuf to an error message.
+ * If we don't find it, attempt to add an entry for it, with the specified
+ * flags and description, and, if that succeeds, return 0, otherwise
+ * return -1 and set errbuf to an error message.
  */
-int
-pcap_add_if(pcap_if_t **devlist, const char *name, u_int flags,
+pcap_if_t *
+find_or_add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
 
-	return (add_or_find_if(&curdev, devlist, name, flags, description,
-	    errbuf));
+	/*
+	 * Is there already an entry in the list for this interface?
+	 */
+	for (curdev = *alldevs; curdev != NULL; curdev = curdev->next) {
+		if (strcmp(name, curdev->name) == 0) {
+			/*
+			 * We found it, so, yes, there is.  No need to
+			 * add it.  Provide the entry we found to our
+			 * caller.
+			 */
+			return (curdev);
+		}
+	}
+
+	/*
+	 * No, we didn't find it.  Try to add it to the list of devices.
+	 */
+	return (add_dev(alldevs, name, flags, description, errbuf));
 }
 
+/*
+ * Attempt to add an entry for a device, with the specified flags
+ * and description, and, if that succeeds, return 0 and return a pointer
+ * to the new entry, otherwise return NULL and set errbuf to an error
+ * message.
+ *
+ * If we weren't given a description, try to get one.
+ */
+pcap_if_t *
+add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
+    const char *description, char *errbuf)
+{
+	pcap_if_t *curdev, *prevdev, *nextdev;
+	u_int this_figure_of_merit, nextdev_figure_of_merit;
+
+	curdev = malloc(sizeof(pcap_if_t));
+	if (curdev == NULL) {
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "malloc: %s", pcap_strerror(errno));
+		return (NULL);
+	}
+
+	/*
+	 * Fill in the entry.
+	 */
+	curdev->next = NULL;
+	curdev->name = strdup(name);
+	if (curdev->name == NULL) {
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "malloc: %s", pcap_strerror(errno));
+		free(curdev);
+		return (NULL);
+	}
+	if (description == NULL) {
+		/*
+		 * We weren't handed a description for the interface.
+		 */
+		curdev->description = NULL;
+	} else {
+		/*
+		 * We were handed a description; make a copy.
+		 */
+		curdev->description = strdup(description);
+		if (curdev->description == NULL) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "malloc: %s", pcap_strerror(errno));
+			free(curdev->name);
+			free(curdev);
+			return (NULL);
+		}
+	}
+	curdev->addresses = NULL;	/* list starts out as empty */
+	curdev->flags = flags;
+
+	/*
+	 * Add it to the list, in the appropriate location.
+	 * First, get the "figure of merit" for this interface.
+	 */
+	this_figure_of_merit = get_figure_of_merit(curdev);
+
+	/*
+	 * Now look for the last interface with an figure of merit
+	 * less than or equal to the new interface's figure of merit.
+	 *
+	 * We start with "prevdev" being NULL, meaning we're before
+	 * the first element in the list.
+	 */
+	prevdev = NULL;
+	for (;;) {
+		/*
+		 * Get the interface after this one.
+		 */
+		if (prevdev == NULL) {
+			/*
+			 * The next element is the first element.
+			 */
+			nextdev = *alldevs;
+		} else
+			nextdev = prevdev->next;
+
+		/*
+		 * Are we at the end of the list?
+		 */
+		if (nextdev == NULL) {
+			/*
+			 * Yes - we have to put the new entry after "prevdev".
+			 */
+			break;
+		}
+
+		/*
+		 * Is the new interface's figure of merit less
+		 * than the next interface's figure of merit,
+		 * meaning that the new interface is better
+		 * than the next interface?
+		 */
+		nextdev_figure_of_merit = get_figure_of_merit(nextdev);
+		if (this_figure_of_merit < nextdev_figure_of_merit) {
+			/*
+			 * Yes - we should put the new entry
+			 * before "nextdev", i.e. after "prevdev".
+			 */
+			break;
+		}
+
+		prevdev = nextdev;
+	}
+
+	/*
+	 * Insert before "nextdev".
+	 */
+	curdev->next = nextdev;
+
+	/*
+	 * Insert after "prevdev" - unless "prevdev" is null,
+	 * in which case this is the first interface.
+	 */
+	if (prevdev == NULL) {
+		/*
+		 * This is the first interface.  Pass back a
+		 * pointer to it, and put "curdev" before
+		 * "nextdev".
+		 */
+		*alldevs = curdev;
+	} else
+		prevdev->next = curdev;
+	return (curdev);
+}
 
 /*
  * Free a list of interfaces.

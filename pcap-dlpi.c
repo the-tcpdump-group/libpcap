@@ -1068,7 +1068,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 	for (i = 0; i < buf.nunits; i++) {
 		pcap_snprintf(baname, sizeof baname, "ba%u", i);
-		if (pcap_add_if(alldevsp, baname, 0, NULL, errbuf) < 0)
+		if (add_dev(alldevsp, baname, 0, NULL, errbuf) == NULL)
 			return (-1);
 	}
 #endif
