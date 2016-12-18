@@ -2677,7 +2677,14 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 		memcpy(name, usbus_prefix, USBUS_PREFIX_LEN);
 		memcpy(name + USBUS_PREFIX_LEN, usbitem->d_name, busnumlen);
 		*(name + USBUS_PREFIX_LEN + busnumlen) = '\0';
-		if (add_dev(alldevsp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
+		/*
+		 * There's an entry in this directory for every USB device,
+		 * not for every bus; if there's more than one device on
+		 * the bus, there'll be more than one entry for that bus,
+		 * so we need to avoid adding multiple capture devices
+		 * for each bus.
+		 */
+		if (find_or_add_dev(alldevsp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
 			free(name);
 			closedir(usbdir);
 			return (PCAP_ERROR);
