@@ -2662,7 +2662,6 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 	while ((usbitem = readdir(usbdir)) != NULL) {
 		char *p;
 		size_t busnumlen;
-		int err;
 
 		if (strcmp(usbitem->d_name, ".") == 0 ||
 		    strcmp(usbitem->d_name, "..") == 0) {
