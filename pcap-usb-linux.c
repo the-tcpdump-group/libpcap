@@ -230,7 +230,10 @@ usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
 	char dev_name[10];
 	char dev_descr[30];
 	pcap_snprintf(dev_name, 10, USB_IFACE"%d", n);
-	pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
+	if (n == 0)
+		pcap_snprintf(dev_descr, 30, "All USB buses");
+	else
+		pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
 
 	if (add_dev(alldevsp, dev_name, 0, dev_descr, err_str) == NULL)
 		return -1;
