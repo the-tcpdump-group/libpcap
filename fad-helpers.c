@@ -161,13 +161,16 @@ get_figure_of_merit(pcap_if_t *dev)
 	} else {
 		/*
 		 * A number at the end of the device name string is
-		 * assumed to be a unit number.
+		 * assumed to be an instance number.  Add 1 to the
+		 * instance number, and use 0 for "no instance
+		 * number", so we don't put "no instance number"
+		 * devices and "instance 0" devices together.
 		 */
 		cp = dev->name + strlen(dev->name) - 1;
 		while (cp-1 >= dev->name && *(cp-1) >= '0' && *(cp-1) <= '9')
 			cp--;
 		if (*cp >= '0' && *cp <= '9')
-			n = atoi(cp);
+			n = atoi(cp) + 1;
 		else
 			n = 0;
 	}
