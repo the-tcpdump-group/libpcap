@@ -543,6 +543,32 @@ find_or_add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
 	/*
 	 * Is there already an entry in the list for this interface?
 	 */
+	curdev = find_dev(alldevs, name);
+	if (curdev != NULL) {
+		/*
+		 * Yes, return it.
+		 */
+		return (curdev);
+	}
+
+	/*
+	 * No, we didn't find it.  Try to add it to the list of devices.
+	 */
+	return (add_dev(alldevs, name, flags, description, errbuf));
+}
+
+/*
+ * Look for a given device in the specified list of devices, and return
+ * the entry for it if we find it or NULL if we don't.
+ */
+pcap_if_t *
+find_dev(pcap_if_t **alldevs, const char *name)
+{
+	pcap_if_t *curdev;
+
+	/*
+	 * Is there an entry in the list for this device?
+	 */
 	for (curdev = *alldevs; curdev != NULL; curdev = curdev->next) {
 		if (strcmp(name, curdev->name) == 0) {
 			/*
@@ -555,9 +581,9 @@ find_or_add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
 	}
 
 	/*
-	 * No, we didn't find it.  Try to add it to the list of devices.
+	 * No.
 	 */
-	return (add_dev(alldevs, name, flags, description, errbuf));
+	return (NULL);
 }
 
 /*

@@ -321,11 +321,11 @@ snf_activate(pcap_t* p)
 int
 snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 {
-	pcap_if_t *devlist = NULL,*curdev,*prevdev,*nextdev;
-	pcap_addr_t *curaddr;
+	pcap_if_t *dev;
 	struct snf_ifaddrs *ifaddrs, *ifa;
+	char name[MAX_DESC_LENGTH];
 	char desc[MAX_DESC_LENGTH];
-	int ret, found, allports = 0, merge = 0;
+	int ret, allports = 0, merge = 0;
 	const char *nr = NULL;
 
 	if (snf_init(SNF_VERSION_API)) {
@@ -351,88 +351,72 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	}
 
 	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->snf_ifa_next) {
-		found = 0;
-		nextdev = *devlistp;
 		/*
- 		 * Is there already a device with this name in the list
- 		 * of devices?
+		 * Myricom SNF adapter ports may appear as regular
+		 * network interfaces, which would already have been
+		 * added to the list of adapters by pcap_platform_finddevs()
+		 * if this isn't an SNF-only version of libpcap.
+		 *
+		 * Our create routine intercepts pcap_create() calls for
+		 * those interfaces and arranges that they will be
+		 * opened using the SNF API instead.
+		 *
+		 * So if we already have an entry for the device, we
+		 * don't add an additional entry for it, we just
+		 * update the description for it, if any, to indicate
+		 * which snfN device it is.  Otherwise, we add an entry
+		 * for it.
+		 *
+		 * In either case, if SNF_F_AGGREGATE_PORTMASK is set
+		 * in SNF_FLAGS, we add this port to the bitmask
+		 * of ports, which we use to generate a device
+		 * we can use to capture on all ports.
+		 *
+		 * Generate the description string.  If port aggregation
+		 * is set, use 2^{port number} as the unit number,
+		 * rather than {port number}.
+		 *
+		 * XXX - do entries in this list have IP addresses for
+		 * the port?  If so, should we add them to the
+		 * entry for the device, if they're not already in the
+		 * list of IP addresses for the device?
  		 */
-		while (nextdev != NULL) {
-			if (strcmp(nextdev->name,ifa->snf_ifa_name) == 0) {
-				/*
-				 * Yes.  Update the description for the
-				 * device.
-				 * If port aggregation is set, unit is
-				 * power of 2
-				 */
-				char *desc_str;
+		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
+			merge ? "Merge Bitmask Port " : "",
+			merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
+		/*
+		 * Add the port to the bitmask.
+		 */
+		if (merge)
+			allports |= 1 << ifa->snf_ifa_portnum;
+		/*
+		 * See if there's already an entry for the device
+		 * with the name ifa->snf_ifa_name.
+		 */
+		dev = find_dev(alldevs, ifa->snf_ifa_name);
+		if (dev != NULL) {
+			/*
+			 * Yes.  Update its description.
+			 */
+			char *desc_str;
 
-				(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
-					merge ? "Merge Bitmask Port " : "",
-					merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
-				if (merge)
-					allports |= 1 << ifa->snf_ifa_portnum;
-				desc_str = strdup(desc);
-				if (desc_str == NULL) {
-					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "snf_findalldevs strdup: %s", pcap_strerror(errno));
-					return (-1);
-				}
-				free(nextdev->description);
-				nextdev->description = desc_str;
-				found = 1;
-				break;
-			}
-			nextdev = nextdev->next;
-		}
-		if (!found) {
-			/*
-			 * Allocate a new entry
-			 */
-			curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
-			if (curdev == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "snf_findalldevs malloc: %s", pcap_strerror(errno));
-				return (-1);
-			}
-			if (devlist == NULL) /* save first entry */
-				devlist = curdev;
-			else
-				prevdev->next = curdev;
-			/*
-			 * Fill in the entry.
-			 */
-			curdev->next = NULL;
-			curdev->name = strdup(ifa->snf_ifa_name);
-			if (curdev->name == NULL) {
+			desc_str = strdup(desc);
+			if (desc_str == NULL) {
 				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "snf_findalldevs strdup: %s", pcap_strerror(errno));
-				free(curdev);
-				return (-1);
+				return -1;
 			}
-			(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
-				merge ? "Merge Bitmask Port " : "",
-				merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
-			if (merge)
-				allports |= 1 << ifa->snf_ifa_portnum;
-			curdev->description = strdup(desc);
-			if (curdev->description == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "snf_findalldevs strdup1: %s", pcap_strerror(errno));
-				free(curdev->name);
-				free(curdev);
-				return (-1);
-			}
-			curdev->addresses = NULL;
-			curdev->flags = 0;
-
+			free(dev->description);
+			dev->description = desc_str;
+		} else {
 			/*
-			 * XXX - are there any actual IP addresses for
-			 * these devices?
+			 * No.  Add an entry for it.
 			 */
-
-			prevdev = curdev;
-		} // end of if entry !found
+			dev = add_dev(alldevs, ifa->snf_ifa_name, 0, desc,
+			    errbuf);
+			if (dev == NULL)
+				return -1;
+		}
 	}
 	snf_freeifaddrs(ifaddrs);
 	/*
@@ -440,61 +424,17 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
        	 */
 	if (merge) {
 		/*
-		 * Allocate a new entry with all ports bitmask
+		 * Add a new entry with all ports bitmask
 		 */
-		curdev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
-		if (curdev == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "snf_findalldevs malloc: %s", pcap_strerror(errno));
-			return (-1);
-		}
-		if (devlist == NULL) /* save first entry */
-			devlist = curdev;
-		else
-			prevdev->next = curdev;
-		/*
-		 * Fill in the entry.
-		 */
-		curdev->next = NULL;
-		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"snf%d",allports);
-		curdev->name = strdup(desc);
-		if (curdev->name == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "snf_findalldevs strdup: %s", pcap_strerror(errno));
-			free(curdev);
-			return (-1);
-		}
+		(void)pcap_snprintf(name,MAX_DESC_LENGTH,"snf%d",allports);
 		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
 			allports);
-		curdev->description = strdup(desc);
-		if (curdev->description == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "snf_findalldevs strdup1: %s", pcap_strerror(errno));
-			free(curdev->name);
-			free(curdev);
+		if (add_dev(alldevs, name, 0, desc, errbuf) == NULL)
 			return (-1);
-		}
-		curdev->addresses = NULL;
-		curdev->flags = 0;
-
 		/*
-		 * XXX - are there any actual IP addresses for
-		 * these devices?
+		 * XXX - should we give it a list of addresses with all
+		 * the addresses for all the ports?
 		 */
-	}
-	if (*devlistp == NULL)
-		/*
-		 * The passed in list was empty
-		 */
-		*devlistp = devlist;
-	else {
-		/*
-		 * Find last member of list and append our devlist to it.
-		 */
-		nextdev = *devlistp;
-		while (nextdev->next != NULL)
-			nextdev = nextdev->next;
-		nextdev->next = devlist;
 	}
 
 	return 0;
@@ -545,7 +485,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 			/* Nope, not a supported name */
 			*is_ours = 0;
 			return NULL;
-		    }
+		}
 	}
 
 	/* OK, it's probably ours. */
@@ -582,7 +522,7 @@ snf_create(const char *device, char *ebuf, int *is_ours)
  */
 
 /*
- * There are no regular interfaces, just DAG interfaces.
+ * There are no regular interfaces, just SNF interfaces.
  */
 int
 pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
