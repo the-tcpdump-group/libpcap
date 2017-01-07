@@ -1028,7 +1028,12 @@
  */
 #define LINKTYPE_RDS		265
 
-#define LINKTYPE_MATCHING_MAX	265		/* highest value in the "matching" range */
+/*
+ * USB packets, beginning with a Darwin (macOS, etc.) header.
+ */
+#define LINKTYPE_USB_DARWIN	266
+
+#define LINKTYPE_MATCHING_MAX	266		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

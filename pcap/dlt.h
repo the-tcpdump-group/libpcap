@@ -1307,6 +1307,11 @@
 #define DLT_RDS		265
 
 /*
+ * USB packets, beginning with a Darwin (macOS, etc.) header.
+ */
+#define DLT_USB_DARWIN	266
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1316,7 +1321,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	265	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	266	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
