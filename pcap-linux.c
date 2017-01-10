@@ -6880,8 +6880,11 @@ reset_kernel_filter(pcap_t *handle)
 	/*
 	 * Ignore ENOENT - it means "we don't have a filter", so there
 	 * was no filter to remove, and there's still no filter.
+	 *
+	 * Also ignore ENONET, as a lot of kernel versions had a
+	 * typo where ENONET, rather than ENOENT, was returned.
 	 */
-	if (ret == -1 && errno != ENOENT)
+	if (ret == -1 && errno != ENOENT && errno != ENONET)
 		return -1;
 	return 0;
 }
