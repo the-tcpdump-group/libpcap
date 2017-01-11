@@ -4156,7 +4156,14 @@ create_ring(pcap_t *handle, int *status)
 			 */
 		macoff = netoff - maclen;
 		req.tp_frame_size = TPACKET_ALIGN(macoff + frame_size);
-		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
+		/*
+		 * Round the buffer size up to a multiple of the
+		 * frame size (rather than rounding down, which
+		 * would give a buffer smaller than our caller asked
+		 * for, and possibly give zero frames if the requested
+		 * buffer size is too small for one frame).
+		 */
+		req.tp_frame_nr = (handle->opt.buffer_size + req.tp_frame_size - 1)/req.tp_frame_size;
 		break;
 
 #ifdef HAVE_TPACKET3
@@ -4164,11 +4171,18 @@ create_ring(pcap_t *handle, int *status)
 		/* The "frames" for this are actually buffers that
 		 * contain multiple variable-sized frames.
 		 *
-		 * We pick a "frame" size of 128K to leave enough
-		 * room for at least one reasonably-sized packet
+		 * We pick a "frame" size of MAXIMUM_SNAPLEN to leave
+		 * enough room for at least one reasonably-sized packet
 		 * in the "frame". */
 		req.tp_frame_size = MAXIMUM_SNAPLEN;
-		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
+		/*
+		 * Round the buffer size up to a multiple of the
+		 * "frame" size (rather than rounding down, which
+		 * would give a buffer smaller than our caller asked
+		 * for, and possibly give zero "frames" if the requested
+		 * buffer size is too small for one "frame").
+		 */
+		req.tp_frame_nr = (handle->opt.buffer_size + req.tp_frame_size - 1)/req.tp_frame_size;
 		break;
 #endif
 	default:
