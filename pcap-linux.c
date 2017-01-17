@@ -4653,6 +4653,7 @@ static int pcap_handle_packet_mmap(
 	unsigned char *bp;
 	struct sockaddr_ll *sll;
 	struct pcap_pkthdr pcaphdr;
+	unsigned int snaplen = tp_snaplen;
 
 	/* perform sanity check on internal offset. */
 	if (tp_mac + tp_snaplen > handle->bufsize) {
@@ -4713,6 +4714,8 @@ static int pcap_handle_packet_mmap(
 		hdrp->sll_halen = htons(sll->sll_halen);
 		memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
 		hdrp->sll_protocol = sll->sll_protocol;
+
+		snaplen += sizeof(struct sll_header);
 	}
 
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
@@ -4721,8 +4724,11 @@ static int pcap_handle_packet_mmap(
 		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
-		    tp_len, tp_snaplen, &aux_data) == 0)
+		if (bpf_filter_with_aux_data(handle->fcode.bf_insns,
+					     bp,
+					     tp_len,
+					     snaplen,
+					     &aux_data) == 0)
 			return 0;
 	}
 
