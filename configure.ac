@@ -1195,6 +1195,8 @@ fi
 DYEXT="none"
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
+MAN_USERMOD_SECTION=1M
+MAN_ETHERS_SECTION=3N
 case "$host_os" in
 
 aix*)
@@ -1427,12 +1429,25 @@ sinix*)
 solaris*)
 	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 
+	case "`uname -r`" in
+	    5.12)
+		MAN_USERMOD_SECTION=8
+		MAN_ETHERS_SECTION=5
+		MAN_FILE_FORMATS=5
+		MAN_MISC_INFO=7
+		;;
+	    *)
+		#
+		# Use System V conventions for man pages.
+		#
+
+		MAN_USERMOD_SECTION=1m
+		MAN_ETHERS_SECTION=4
+		MAN_FILE_FORMATS=4
+		MAN_MISC_INFO=5
+	esac
+
 	DYEXT="so"
-	#
-	# Use System V conventions for man pages.
-	#
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
 	;;
 esac
 
@@ -1476,6 +1491,8 @@ AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
+AC_SUBST(MAN_USERMOD_SECTION)
+AC_SUBST(MAN_ETHERS_SECTION)
 
 AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable nusb support @<:@default=yes, if support available@:>@])],
