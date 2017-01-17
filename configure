@@ -634,7 +634,6 @@ NETFILTER_SRC
 PCAP_SUPPORT_NETFILTER
 USB_SRC
 PCAP_SUPPORT_USB
-MAN_ETHERS_SECTION
 MAN_USERMOD_SECTION
 MAN_MISC_INFO
 MAN_FILE_FORMATS
@@ -7251,8 +7250,7 @@ fi
 DYEXT="none"
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
-MAN_USERMOD_SECTION=1M
-MAN_ETHERS_SECTION=3N
+MAN_USERMOD_SECTION=8
 case "$host_os" in
 
 aix*)
@@ -7511,25 +7509,21 @@ solaris*)
 $as_echo "#define HAVE_SOLARIS 1" >>confdefs.h
 
 
+	DYEXT="so"
+
 	case "`uname -r`" in
-	    5.12)
-		MAN_USERMOD_SECTION=8
-		MAN_ETHERS_SECTION=5
-		MAN_FILE_FORMATS=5
-		MAN_MISC_INFO=7
+
+	5.12)
 		;;
-	    *)
+
+	*)
 		#
 		# Use System V conventions for man pages.
 		#
-
 		MAN_USERMOD_SECTION=1m
-		MAN_ETHERS_SECTION=4
 		MAN_FILE_FORMATS=4
 		MAN_MISC_INFO=5
 	esac
-
-	DYEXT="so"
 	;;
 esac
 
@@ -8405,7 +8399,6 @@ $as_echo "#define LBL_ALIGN 1" >>confdefs.h
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
-
 
 
 

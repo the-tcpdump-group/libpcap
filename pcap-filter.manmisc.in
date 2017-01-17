@@ -181,9 +181,10 @@ be checked for a match.
 .IP "\fBether dst \fIehost\fP"
 True if the Ethernet destination address is \fIehost\fP.
 \fIEhost\fP
-may be either a name from /etc/ethers or a number (see
-.IR ethers (@MAN_ETHERS_SECTION@)
-for numeric format).
+may be either a name from /etc/ethers or a numerical MAC address of the
+form "xx:xx:xx:xx:xx:xx", "xx.xx.xx.xx.xx.xx", "xx-xx-xx-xx-xx-xx",
+"xxxx.xxxx.xxxx", "xxxxxxxxxxxx", or various mixes of ':', '.', and '-',
+where each "x" is a hex digit (0-9, a-f, or A-F).
 .IP "\fBether src \fIehost\fP"
 True if the Ethernet source address is \fIehost\fP.
 .IP "\fBether host \fIehost\fP"
