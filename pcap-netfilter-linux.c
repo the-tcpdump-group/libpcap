@@ -635,7 +635,7 @@ netfilter_create(const char *device, char *ebuf, int *is_ours)
 }
 
 int
-netfilter_findalldevs(pcap_if_t **alldevsp, char *err_str)
+netfilter_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
 	int sock;
 
@@ -650,9 +650,9 @@ netfilter_findalldevs(pcap_if_t **alldevsp, char *err_str)
 	}
 	close(sock);
 
-	if (add_dev(alldevsp, NFLOG_IFACE, 0, "Linux netfilter log (NFLOG) interface", err_str) == NULL)
+	if (add_dev(devlistp, NFLOG_IFACE, 0, "Linux netfilter log (NFLOG) interface", err_str) == NULL)
 		return -1;
-	if (add_dev(alldevsp, NFQUEUE_IFACE, 0, "Linux netfilter queue (NFQUEUE) interface", err_str) == NULL)
+	if (add_dev(devlistp, NFQUEUE_IFACE, 0, "Linux netfilter queue (NFQUEUE) interface", err_str) == NULL)
 		return -1;
 	return 0;
 }

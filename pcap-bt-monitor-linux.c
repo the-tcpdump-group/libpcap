@@ -60,11 +60,11 @@ struct hci_mon_hdr {
 } __attribute__((packed));
 
 int
-bt_monitor_findalldevs(pcap_if_t **alldevsp, char *err_str)
+bt_monitor_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
     int         ret = 0;
 
-    if (add_dev(alldevsp, INTERFACE_NAME, 0,
+    if (add_dev(devlistp, INTERFACE_NAME, 0,
                 "Bluetooth Linux Monitor", err_str) == NULL)
     {
         ret = -1;

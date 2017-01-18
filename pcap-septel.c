@@ -252,7 +252,7 @@ static int septel_stats(pcap_t *p, struct pcap_stat *ps) {
 
 
 int
-septel_findalldevs(pcap_if_t **devlistp, char *errbuf)
+septel_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
   if (add_dev(devlistp,"septel",0,"Intel/Septel device",errbuf) == NULL)
     return -1;
@@ -303,9 +303,8 @@ septel_setnonblock(pcap_t *p, int nonblock, char *errbuf)
  * There are no regular interfaces, just Septel interfaces.
  */
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-  *alldevsp = NULL;
   return (0);
 }
 

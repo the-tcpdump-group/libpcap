@@ -539,17 +539,17 @@ int pcap_lookupnet (const char *device, bpf_u_int32 *localnet,
 /*
  * Get a list of all interfaces that are present and that we probe okay.
  * Returns -1 on error, 0 otherwise.
- * The list, as returned through "alldevsp", may be NULL if no interfaces
- * were up and could be opened.
+ * The list may be NULL epty if no interfaces were up and could be opened.
  */
-int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
+int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
 {
   struct device     *dev;
+#if 0   /* Pkt drivers should have no addresses */
   struct sockaddr_in sa_ll_1, sa_ll_2;
   struct sockaddr   *addr, *netmask, *broadaddr, *dstaddr;
-  pcap_if_t *devlist = NULL;
+#endif
   int       ret = 0;
-  size_t    addr_size = sizeof(*addr);
+  int       found = 0;
 
   for (dev = (struct device*)dev_base; dev; dev = dev->next)
   {
@@ -562,6 +562,14 @@ int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
     FLUSHK();
     (*dev->close) (dev);
 
+    if (add_dev(devlistp, dev->name, dev->flags,
+                dev->long_name, errbuf) == NULL)
+    {
+      ret = -1;
+      break;
+    }
+    found = 1;
+#if 0   /* Pkt drivers should have no addresses */
     memset (&sa_ll_1, 0, sizeof(sa_ll_1));
     memset (&sa_ll_2, 0, sizeof(sa_ll_2));
     sa_ll_1.sin_family = AF_INET;
@@ -573,16 +581,10 @@ int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
     broadaddr = (struct sockaddr*) &sa_ll_2;
     memset (&sa_ll_2.sin_addr, 0xFF, sizeof(sa_ll_2.sin_addr));
 
-    if (add_dev(&devlist, dev->name, dev->flags,
-                dev->long_name, errbuf) == NULL)
-    {
-      ret = -1;
-      break;
-    }
-#if 0   /* Pkt drivers should have no addresses */
-    if (add_addr_to_dev(curdev, addr, addr_size,
-                        netmask, addr_size, broadaddr, addr_size,
-                        dstaddr, addr_size, errbuf) < 0)
+    if (add_addr_to_dev(curdev, addr, sizeof(*addr),
+                        netmask, sizeof(*netmask),
+                        broadaddr, sizeof(*broadaddr),
+                        dstaddr, sizeof(*dstaddr), errbuf) < 0)
     {
       ret = -1;
       break;
@@ -590,16 +592,9 @@ int pcap_platform_finddevs  (pcap_if_t **alldevsp, char *errbuf)
 #endif
   }
 
-  if (devlist && ret < 0)
-  {
-    pcap_freealldevs (devlist);
-    devlist = NULL;
-  }
-  else
-  if (!devlist)
+  if (ret == 0 && !found)
      strcpy (errbuf, "No drivers found");
 
-  *alldevsp = devlist;
   return (ret);
 }
 

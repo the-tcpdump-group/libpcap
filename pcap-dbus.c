@@ -268,11 +268,11 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 }
 
 int
-dbus_findalldevs(pcap_if_t **alldevsp, char *err_str)
+dbus_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
-	if (add_dev(alldevsp, "dbus-system", 0, "D-Bus system bus", err_str) == NULL)
+	if (add_dev(devlistp, "dbus-system", 0, "D-Bus system bus", err_str) == NULL)
 		return -1;
-	if (add_dev(alldevsp, "dbus-session", 0, "D-Bus session bus", err_str) == NULL)
+	if (add_dev(devlistp, "dbus-session", 0, "D-Bus session bus", err_str) == NULL)
 		return -1;
 	return 0;
 }

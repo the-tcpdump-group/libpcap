@@ -144,10 +144,9 @@ get_sa_len(struct sockaddr *addr)
  * could be opened.
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
+pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
     int (*check_usable)(const char *))
 {
-	pcap_if_t *devlist = NULL;
 	struct ifaddrs *ifap, *ifa;
 	struct sockaddr *addr, *netmask, *broadaddr, *dstaddr;
 	size_t addr_size, broadaddr_size, dstaddr_size;
@@ -265,7 +264,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 		/*
 		 * Add information for this address to the list.
 		 */
-		if (add_addr_to_iflist(&devlist, ifa->ifa_name,
+		if (add_addr_to_iflist(devlistp, ifa->ifa_name,
 		    if_flags_to_pcap_flags(ifa->ifa_name, ifa->ifa_flags),
 		    addr, addr_size, netmask, addr_size,
 		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
@@ -277,16 +276,5 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 
 	freeifaddrs(ifap);
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	return (ret);
 }

@@ -529,9 +529,9 @@ can_be_bound(const char *name _U_)
 }
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	return (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound));
+	return (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound));
 }
 
 static int

@@ -315,8 +315,15 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 	return (p->read_op(p, 1, p->oneshot_callback, (u_char *)&s));
 }
 
+/*
+ * Implementation of a pcap_if_list_t.
+ */
+struct pcap_if_list {
+	pcap_if_t *beginning;
+};
+
 static struct capture_source_type {
-	int (*findalldevs_op)(pcap_if_t **, char *);
+	int (*findalldevs_op)(pcap_if_list_t *, char *);
 	pcap_t *(*create_op)(const char *, char *, int *);
 } capture_source_types[] = {
 #ifdef HAVE_DAG_API
@@ -359,32 +366,45 @@ int
 pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 {
 	size_t i;
+	pcap_if_list_t devlist;
 
 	/*
 	 * Find all the local network interfaces on which we
 	 * can capture.
 	 */
-	if (pcap_platform_finddevs(alldevsp, errbuf) == -1)
+	devlist.beginning = NULL;
+	if (pcap_platform_finddevs(&devlist, errbuf) == -1) {
+		/*
+		 * Failed - free all of the entries we were given
+		 * before we failed.
+		 */
+		if (devlist.beginning != NULL)
+			pcap_freealldevs(devlist.beginning);
+		*alldevsp = NULL;
 		return (-1);
+	}
 
 	/*
 	 * Ask each of the non-local-network-interface capture
 	 * source types what interfaces they have.
 	 */
 	for (i = 0; capture_source_types[i].findalldevs_op != NULL; i++) {
-		if (capture_source_types[i].findalldevs_op(alldevsp, errbuf) == -1) {
+		if (capture_source_types[i].findalldevs_op(&devlist, errbuf) == -1) {
 			/*
 			 * We had an error; free the list we've been
 			 * constructing.
 			 */
-			if (*alldevsp != NULL) {
-				pcap_freealldevs(*alldevsp);
-				*alldevsp = NULL;
-			}
+			if (devlist.beginning != NULL)
+				pcap_freealldevs(devlist.beginning);
+			*alldevsp = NULL;
 			return (-1);
 		}
 	}
 
+	/*
+	 * Return the first entry of the list of all devices.
+	 */
+	*alldevsp = devlist.beginning;
 	return (0);
 }
 
@@ -687,7 +707,7 @@ get_if_description(const char *name)
  * add interfaces even if they have no addresses.)
  */
 int
-add_addr_to_iflist(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
+add_addr_to_iflist(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
     struct sockaddr *broadaddr, size_t broadaddr_size,
@@ -849,7 +869,7 @@ add_addr_to_dev(pcap_if_t *curdev,
  * return -1 and set errbuf to an error message.
  */
 pcap_if_t *
-find_or_add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
+find_or_add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
@@ -876,14 +896,14 @@ find_or_add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
  * the entry for it if we find it or NULL if we don't.
  */
 pcap_if_t *
-find_dev(pcap_if_t **alldevs, const char *name)
+find_dev(pcap_if_list_t *alldevs, const char *name)
 {
 	pcap_if_t *curdev;
 
 	/*
 	 * Is there an entry in the list for this device?
 	 */
-	for (curdev = *alldevs; curdev != NULL; curdev = curdev->next) {
+	for (curdev = alldevs->beginning; curdev != NULL; curdev = curdev->next) {
 		if (strcmp(name, curdev->name) == 0) {
 			/*
 			 * We found it, so, yes, there is.  No need to
@@ -909,7 +929,7 @@ find_dev(pcap_if_t **alldevs, const char *name)
  * If we weren't given a description, try to get one.
  */
 pcap_if_t *
-add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
+add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev, *prevdev, *nextdev;
@@ -976,7 +996,7 @@ add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
 			/*
 			 * The next element is the first element.
 			 */
-			nextdev = *alldevs;
+			nextdev = alldevs->beginning;
 		} else
 			nextdev = prevdev->next;
 
@@ -1019,11 +1039,10 @@ add_dev(pcap_if_t **alldevs, const char *name, bpf_u_int32 flags,
 	 */
 	if (prevdev == NULL) {
 		/*
-		 * This is the first interface.  Pass back a
-		 * pointer to it, and put "curdev" before
-		 * "nextdev".
+		 * This is the first interface.  Make it
+		 * the first element in the list of devices.
 		 */
-		*alldevs = curdev;
+		alldevs->beginning = curdev;
 	} else
 		prevdev->next = curdev;
 	return (curdev);

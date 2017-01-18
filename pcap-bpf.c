@@ -2622,7 +2622,7 @@ check_bpf_bindable(const char *name)
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 static int
-finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
+finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 {
 	DIR *usbdir;
 	struct dirent *usbitem;
@@ -2684,7 +2684,7 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 		 * so we need to avoid adding multiple capture devices
 		 * for each bus.
 		 */
-		if (find_or_add_dev(alldevsp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
+		if (find_or_add_dev(devlistp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
 			free(name);
 			closedir(usbdir);
 			return (PCAP_ERROR);
@@ -2697,16 +2697,16 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 #endif
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, check_bpf_bindable) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, check_bpf_bindable) == -1)
 		return (-1);	/* failure */
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
-	if (finddevs_usb(alldevsp, errbuf) == -1)
+	if (finddevs_usb(devlistp, errbuf) == -1)
 		return (-1);
 #endif
 

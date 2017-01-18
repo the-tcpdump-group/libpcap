@@ -2230,7 +2230,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 }
 
 static int
-add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
+add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 {
 	const char *p;
 	char name[512];	/* XXX - pick a size */
@@ -2319,7 +2319,7 @@ add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
  * Otherwise, we return 1 if we don't get an error and -1 if we do.
  */
 static int
-scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
+scan_sys_class_net(pcap_if_list_t *devlistp, char *errbuf)
 {
 	DIR *sys_class_net_d;
 	int fd;
@@ -2437,7 +2437,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
  * See comments from scan_sys_class_net().
  */
 static int
-scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
+scan_proc_net_dev(pcap_if_list_t *devlistp, char *errbuf)
 {
 	FILE *proc_net_f;
 	int fd;
@@ -2533,14 +2533,14 @@ can_be_bound(const char *name _U_)
 }
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	int ret;
 
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound) == -1)
 		return (-1);	/* failure */
 
 	/*
@@ -2551,21 +2551,21 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 * interfaces with no addresses, so you need to read "/sys/class/net"
 	 * to get the names of the rest of the interfaces.
 	 */
-	ret = scan_sys_class_net(alldevsp, errbuf);
+	ret = scan_sys_class_net(devlistp, errbuf);
 	if (ret == -1)
 		return (-1);	/* failed */
 	if (ret == 0) {
 		/*
 		 * No /sys/class/net; try reading /proc/net/dev instead.
 		 */
-		if (scan_proc_net_dev(alldevsp, errbuf) == -1)
+		if (scan_proc_net_dev(devlistp, errbuf) == -1)
 			return (-1);
 	}
 
 	/*
 	 * Add the "any" device.
 	 */
-	if (add_dev(alldevsp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
+	if (add_dev(devlistp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
 	    any_descr, errbuf) == NULL)
 		return (-1);
 

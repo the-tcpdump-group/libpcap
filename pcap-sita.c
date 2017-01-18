@@ -821,9 +821,9 @@ static int acn_open_live(const char *name, char *errbuf, int *linktype) {		/* re
 	int			chassis, geoslot;
 	unit_t		*u;
 	iface_t		*p;
-	pcap_if_t	*alldevsp;
+	pcap_if_list_t	devlist;
 
-	pcap_platform_finddevs(&alldevsp, errbuf);
+	pcap_platform_finddevs(&devlist, errbuf);
 	for (chassis = 0; chassis <= MAX_CHASSIS; chassis++) {										/* scan the table... */
 		for (geoslot = 0; geoslot <= MAX_GEOSLOT; geoslot++) {
 			u = &units[chassis][geoslot];
@@ -1025,7 +1025,7 @@ pcap_t *pcap_create_interface(const char *device _U_, char *ebuf) {
 	return (p);
 }
 
-int pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf) {
+int pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf) {
 
 	//printf("pcap_findalldevs()\n");				// fulko
 
@@ -1042,7 +1042,7 @@ int pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf) {
 		//printf("pcap_findalldevs() returning BAD after findalldevs\n");				// fulko
 		return -1;
 		}
-	*alldevsp = acn_if_list;
+	devlistp->beginning = acn_if_list;
 	acn_if_list = 0;											/* then forget our list head, because someone will call pcap_freealldevs() to empty the malloc'ed stuff */
 	//printf("pcap_findalldevs() returning ZERO OK\n");				// fulko
 	return 0;

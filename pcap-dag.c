@@ -1068,7 +1068,7 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
  * Add all DAG devices.
  */
 int
-dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
+dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	char name[12];	/* XXX - pick a size */
 	int ret = 0;
@@ -1356,9 +1356,8 @@ dag_get_datalink(pcap_t *p)
  * There are no regular interfaces, just DAG interfaces.
  */
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
 {
-	*alldevsp = NULL;
 	return (0);
 }
 

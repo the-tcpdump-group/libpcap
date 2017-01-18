@@ -1346,7 +1346,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 }
 
 static int
-pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
+pcap_add_if_win32(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
@@ -1359,7 +1359,7 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	curdev = add_dev(devlist, name, flags, description, errbuf);
+	curdev = add_dev(devlistp, name, flags, description, errbuf);
 	if (curdev == NULL) {
 		/*
 		 * Failure.
@@ -1413,9 +1413,8 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 }
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	pcap_if_t *devlist = NULL;
 	int ret = 0;
 	const char *desc;
 	char *AdaptersName;
@@ -1454,13 +1453,9 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		}
 	}
 
-	if (NameLength > 0)
-		AdaptersName = (char*) malloc(NameLength);
-	else
-	{
-		*alldevsp = NULL;
+	if (NameLength <= 0)
 		return 0;
-	}
+	AdaptersName = (char*) malloc(NameLength);
 	if (AdaptersName == NULL)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot allocate enough memory to list the adapters.");
@@ -1518,7 +1513,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		/*
 		 * Add an entry for this interface.
 		 */
-		if (pcap_add_if_win32(&devlist, name, flags, desc,
+		if (pcap_add_if_win32(devlistp, name, flags, desc,
 		    errbuf) == -1) {
 			/*
 			 * Failure.
@@ -1530,17 +1525,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		desc += strlen(desc) + 1;
 	}
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	free(AdaptersName);
 	return (ret);
 }

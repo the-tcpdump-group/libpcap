@@ -225,7 +225,7 @@ have_binary_usbmon(void)
 
 /* facility to add an USB device to the device list*/
 static int
-usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
+usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 {
 	char dev_name[10];
 	char dev_descr[30];
@@ -235,13 +235,13 @@ usb_dev_add(pcap_if_t** alldevsp, int n, char *err_str)
 	else
 		pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
 
-	if (add_dev(alldevsp, dev_name, 0, dev_descr, err_str) == NULL)
+	if (add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
 		return -1;
 	return 0;
 }
 
 int
-usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
+usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
 	char usb_mon_dir[PATH_MAX];
 	char *usb_mon_prefix;
@@ -292,7 +292,7 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 				if (sscanf(&name[usb_mon_prefix_len], "%d", &n) == 0)
 					continue;	/* failed */
 
-				ret = usb_dev_add(alldevsp, n, err_str);
+				ret = usb_dev_add(devlistp, n, err_str);
 			}
 
 			closedir(dir);
@@ -329,7 +329,7 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 				if (sscanf(&name[3], "%d", &n) == 0)
 					continue;
 
-				ret = usb_dev_add(alldevsp, n, err_str);
+				ret = usb_dev_add(devlistp, n, err_str);
 			}
 
 			closedir(dir);
@@ -350,7 +350,7 @@ usb_findalldevs(pcap_if_t **alldevsp, char *err_str)
 				if (sscanf(&name[len+1], "%d", &n) != 1)
 					continue;
 
-				ret = usb_dev_add(alldevsp, n, err_str);
+				ret = usb_dev_add(devlistp, n, err_str);
 			}
 
 			closedir(dir);

@@ -319,7 +319,7 @@ snf_activate(pcap_t* p)
 
 #define MAX_DESC_LENGTH 128
 int
-snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
+snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	pcap_if_t *dev;
 	struct snf_ifaddrs *ifaddrs, *ifa;
@@ -393,7 +393,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		 * See if there's already an entry for the device
 		 * with the name ifa->snf_ifa_name.
 		 */
-		dev = find_dev(alldevs, ifa->snf_ifa_name);
+		dev = find_dev(devlistp, ifa->snf_ifa_name);
 		if (dev != NULL) {
 			/*
 			 * Yes.  Update its description.
@@ -412,7 +412,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 			/*
 			 * No.  Add an entry for it.
 			 */
-			dev = add_dev(alldevs, ifa->snf_ifa_name, 0, desc,
+			dev = add_dev(devlistp, ifa->snf_ifa_name, 0, desc,
 			    errbuf);
 			if (dev == NULL)
 				return -1;
@@ -429,7 +429,7 @@ snf_findalldevs(pcap_if_t **devlistp, char *errbuf)
 		(void)pcap_snprintf(name,MAX_DESC_LENGTH,"snf%d",allports);
 		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
 			allports);
-		if (add_dev(alldevs, name, 0, desc, errbuf) == NULL)
+		if (add_dev(devlistp, name, 0, desc, errbuf) == NULL)
 			return (-1);
 		/*
 		 * XXX - should we give it a list of addresses with all
@@ -525,9 +525,8 @@ snf_create(const char *device, char *ebuf, int *is_ours)
  * There are no regular interfaces, just SNF interfaces.
  */
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	*alldevsp = NULL;
 	return (0);
 }
 

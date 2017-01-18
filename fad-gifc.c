@@ -132,10 +132,9 @@ struct rtentry;		/* declarations in <net/if.h> */
  * we already have that.
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
+pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
     int (*check_usable)(const char *))
 {
-	pcap_if_t *devlist = NULL;
 	register int fd;
 	register struct ifreq *ifrp, *ifend, *ifnext;
 	size_t n;
@@ -401,7 +400,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 		/*
 		 * Add information for this address to the list.
 		 */
-		if (add_addr_to_iflist(&devlist, ifrp->ifr_name,
+		if (add_addr_to_iflist(devlistp, ifrp->ifr_name,
 		    if_flags_to_pcap_flags(ifrp->ifr_name, ifrflags.ifr_flags),
 		    &ifrp->ifr_addr, SA_LEN(&ifrp->ifr_addr),
 		    netmask, netmask_size, broadaddr, broadaddr_size,
@@ -413,16 +412,5 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 	free(buf);
 	(void)close(fd);
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	return (ret);
 }
