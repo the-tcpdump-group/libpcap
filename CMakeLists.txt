@@ -182,7 +182,6 @@ set(PROJECT_SOURCE_LIST_C
     bpf_dump.c
     bpf_image.c
     etherent.c
-    fad-helpers.c
     gencode.c
     inet.c
     nametoaddr.c
