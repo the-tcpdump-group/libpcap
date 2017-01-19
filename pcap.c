@@ -667,7 +667,7 @@ get_if_description(const char *name)
  * add interfaces even if they have no addresses.)
  */
 int
-add_addr_to_iflist(pcap_if_list_t *alldevs, const char *name,
+add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
     bpf_u_int32 if_flags,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
@@ -707,7 +707,7 @@ add_addr_to_iflist(pcap_if_list_t *alldevs, const char *name,
 	 * Attempt to find an entry for this device; if we don't find one,
 	 * attempt to add one.
 	 */
-	curdev = find_or_add_dev(alldevs, name, pcap_flags,
+	curdev = find_or_add_dev(devlistp, name, pcap_flags,
 	    get_if_description(name), errbuf);
 	if (curdev == NULL) {
 		/*
@@ -856,15 +856,15 @@ add_addr_to_dev(pcap_if_t *curdev,
  * return -1 and set errbuf to an error message.
  */
 pcap_if_t *
-find_or_add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
+find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
 
 	/*
-	 * Is there already an entry in the list for this interface?
+	 * Is there already an entry in the list for this device?
 	 */
-	curdev = find_dev(alldevs, name);
+	curdev = find_dev(devlistp, name);
 	if (curdev != NULL) {
 		/*
 		 * Yes, return it.
@@ -875,7 +875,7 @@ find_or_add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
 	/*
 	 * No, we didn't find it.  Try to add it to the list of devices.
 	 */
-	return (add_dev(alldevs, name, flags, description, errbuf));
+	return (add_dev(devlistp, name, flags, description, errbuf));
 }
 
 /*
@@ -883,14 +883,15 @@ find_or_add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
  * the entry for it if we find it or NULL if we don't.
  */
 pcap_if_t *
-find_dev(pcap_if_list_t *alldevs, const char *name)
+find_dev(pcap_if_list_t *devlistp, const char *name)
 {
 	pcap_if_t *curdev;
 
 	/*
 	 * Is there an entry in the list for this device?
 	 */
-	for (curdev = alldevs->beginning; curdev != NULL; curdev = curdev->next) {
+	for (curdev = devlistp->beginning; curdev != NULL;
+	    curdev = curdev->next) {
 		if (strcmp(name, curdev->name) == 0) {
 			/*
 			 * We found it, so, yes, there is.  No need to
@@ -916,7 +917,7 @@ find_dev(pcap_if_list_t *alldevs, const char *name)
  * If we weren't given a description, try to get one.
  */
 pcap_if_t *
-add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
+add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev, *prevdev, *nextdev;
@@ -983,7 +984,7 @@ add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
 			/*
 			 * The next element is the first element.
 			 */
-			nextdev = alldevs->beginning;
+			nextdev = devlistp->beginning;
 		} else
 			nextdev = prevdev->next;
 
@@ -1029,7 +1030,7 @@ add_dev(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
 		 * This is the first interface.  Make it
 		 * the first element in the list of devices.
 		 */
-		alldevs->beginning = curdev;
+		devlistp->beginning = curdev;
 	} else
 		prevdev->next = curdev;
 	return (curdev);
