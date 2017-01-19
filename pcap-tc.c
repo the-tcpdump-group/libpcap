@@ -433,7 +433,7 @@ struct pcap_tc {
 };
 
 int
-TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
+TcFindAllDevs(pcap_if_list_t *devlist, char *errbuf)
 {
 	TC_API_LOAD_STATUS loadStatus;
 	ULONG numPorts;
@@ -476,13 +476,15 @@ TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
 				/*
 				 * append it at the end
 				 */
-				if (*alldevsp == NULL)
+				if (devlistp->beginning == NULL)
 				{
-					*alldevsp = dev;
+					devlistp->beginning = dev;
 				}
 				else
 				{
-					for(cursor = *alldevsp; cursor->next != NULL; cursor = cursor->next);
+					for (cursor = devlistp->beginning;
+					    cursor->next != NULL;
+					    cursor = cursor->next);
 					cursor->next = dev;
 				}
 			}
