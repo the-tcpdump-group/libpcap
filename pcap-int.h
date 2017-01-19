@@ -435,7 +435,6 @@ int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
 #ifndef _WIN32
-bpf_u_int32 if_flags_to_pcap_flags(const char *, u_int);
 int	add_addr_to_iflist(pcap_if_list_t *, const char *, bpf_u_int32,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);

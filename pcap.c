@@ -408,46 +408,6 @@ pcap_findalldevs(pcap_if_t **alldevsp, char *errbuf)
 	return (0);
 }
 
-#ifndef _WIN32
-/* Not all systems have IFF_LOOPBACK */
-#ifdef IFF_LOOPBACK
-#define ISLOOPBACK(name, flags) ((flags) & IFF_LOOPBACK)
-#else
-#define ISLOOPBACK(name, flags) ((name)[0] == 'l' && (name)[1] == 'o' && \
-    (isdigit((unsigned char)((name)[2])) || (name)[2] == '\0'))
-#endif
-
-#ifdef IFF_UP
-#define ISUP(flags) ((flags) & IFF_UP)
-#else
-#define ISUP(flags) 0
-#endif
-
-#ifdef IFF_RUNNING
-#define ISRUNNING(flags) ((flags) & IFF_RUNNING)
-#else
-#define ISRUNNING(flags) 0
-#endif
-
-/*
- * Map UN*X-style interface flags to libpcap flags.
- */
-bpf_u_int32
-if_flags_to_pcap_flags(const char *name _U_, u_int if_flags)
-{
-	bpf_u_int32 pcap_flags;
-
-	pcap_flags = 0;
-	if (if_flags & IFF_LOOPBACK)
-		pcap_flags |= PCAP_IF_LOOPBACK;
-	if (if_flags & IFF_UP)
-		pcap_flags |= PCAP_IF_UP;
-	if (if_flags & IFF_RUNNING)
-		pcap_flags |= PCAP_IF_RUNNING;
-	return (pcap_flags);
-}
-#endif
-
 static struct sockaddr *
 dup_sockaddr(struct sockaddr *sa, size_t sa_length)
 {
@@ -695,7 +655,7 @@ get_if_description(const char *name)
  * the list of addresses for the device and return 0.
  *
  * If we don't find it, attempt to add an entry for it, with the specified
- * flags and description, and, if that succeeds, add the specified
+ * IFF_ flags and description, and, if that succeeds, add the specified
  * address to its list of addresses if that address is non-null, and
  * return 0, otherwise return -1 and set errbuf to an error message.
  *
@@ -707,7 +667,8 @@ get_if_description(const char *name)
  * add interfaces even if they have no addresses.)
  */
 int
-add_addr_to_iflist(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
+add_addr_to_iflist(pcap_if_list_t *alldevs, const char *name,
+    bpf_u_int32 if_flags,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
     struct sockaddr *broadaddr, size_t broadaddr_size,
@@ -715,13 +676,39 @@ add_addr_to_iflist(pcap_if_list_t *alldevs, const char *name, bpf_u_int32 flags,
     char *errbuf)
 {
 	pcap_if_t *curdev;
+	bpf_u_int32 pcap_flags;
+
+	/*
+	 * Convert IFF_ flags to pcap flags.
+	 */
+	pcap_flags = 0;
+#ifdef IFF_LOOPBACK
+	if (if_flags & IFF_LOOPBACK)
+		pcap_flags |= PCAP_IF_LOOPBACK;
+#else
+	/*
+	 * We don't have IFF_LOOPBACK, so look at the device name to
+	 * see if it looks like a loopback device.
+	 */
+	if (name[0] == 'l' && name[1] == 'o' &&
+	    (isdigit((unsigned char)(name[2])) || name[2] == '\0')
+		pcap_flags |= PCAP_IF_LOOPBACK;
+#endif
+#ifdef IFF_UP
+	if (if_flags & IFF_UP)
+		pcap_flags |= PCAP_IF_UP;
+#endif
+#ifdef IFF_RUNNING
+	if (if_flags & IFF_RUNNING)
+		pcap_flags |= PCAP_IF_RUNNING;
+#endif
 
 	/*
 	 * Attempt to find an entry for this device; if we don't find one,
 	 * attempt to add one.
 	 */
-	curdev = find_or_add_dev(alldevs, name, flags, get_if_description(name),
-	    errbuf);
+	curdev = find_or_add_dev(alldevs, name, pcap_flags,
+	    get_if_description(name), errbuf);
 	if (curdev == NULL) {
 		/*
 		 * Error - give up.
