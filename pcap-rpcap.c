@@ -219,7 +219,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
 
 	/*
-	 * Define the read timeout, to be used in the select()
+	 * Define the packet buffer timeout, to be used in the select()
 	 * 'timeout', in pcap_t, is in milliseconds; we have to convert it into sec and microsec
 	 */
 	tv.tv_sec = p->opt.timeout / 1000;

@@ -1321,7 +1321,8 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 
 	if (nonblock) {
 		/*
-		 * Set the read timeout to -1 for non-blocking mode.
+		 * Set the packet buffer timeout to -1 for non-blocking
+		 * mode.
 		 */
 		newtimeout = -1;
 	} else {
