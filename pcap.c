@@ -1285,7 +1285,7 @@ pcap_create_common(char *ebuf, size_t size)
 	initialize_ops(p);
 
 	/* put in some defaults*/
- 	p->snapshot = MAXIMUM_SNAPLEN;	/* max packet size */
+	p->snapshot = MAXIMUM_SNAPLEN;	/* max packet size */
 	p->opt.timeout = 0;		/* no timeout specified */
 	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
