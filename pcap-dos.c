@@ -544,6 +544,7 @@ int pcap_lookupnet (const char *device, bpf_u_int32 *localnet,
 int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
 {
   struct device     *dev;
+  pcap_if_t *curdev;
 #if 0   /* Pkt drivers should have no addresses */
   struct sockaddr_in sa_ll_1, sa_ll_2;
   struct sockaddr   *addr, *netmask, *broadaddr, *dstaddr;
@@ -562,8 +563,11 @@ int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
     FLUSHK();
     (*dev->close) (dev);
 
-    if (add_dev(devlistp, dev->name, dev->flags,
-                dev->long_name, errbuf) == NULL)
+    /*
+     * XXX - find out whether it's up or running?  Does that apply here?
+     */
+    if ((curdev = add_dev(devlistp, dev->name, 0,
+                dev->long_name, errbuf)) == NULL)
     {
       ret = -1;
       break;
