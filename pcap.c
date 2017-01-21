@@ -728,8 +728,6 @@ add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
 	 * "curdev" is an entry for this interface, and we have an
 	 * address for it; add an entry for that address to the
 	 * interface's list of addresses.
-	 *
-	 * Allocate the new entry and fill it in.
 	 */
 	return (add_addr_to_dev(curdev, addr, addr_size, netmask,
 	    netmask_size, broadaddr, broadaddr_size, dstaddr,
@@ -740,8 +738,6 @@ add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
 /*
  * Add an entry to the list of addresses for an interface.
  * "curdev" is the entry for that interface.
- * If this is the first IP address added to the interface, move it
- * in the list as appropriate.
  */
 int
 add_addr_to_dev(pcap_if_t *curdev,
@@ -753,7 +749,10 @@ add_addr_to_dev(pcap_if_t *curdev,
 {
 	pcap_addr_t *curaddr, *prevaddr, *nextaddr;
 
-	curaddr = malloc(sizeof(pcap_addr_t));
+	/*
+	 * Allocate the new entry and fill it in.
+	 */
+	curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
 	if (curaddr == NULL) {
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "malloc: %s", pcap_strerror(errno));
@@ -762,7 +761,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 
 	curaddr->next = NULL;
 	if (addr != NULL) {
-		curaddr->addr = dup_sockaddr(addr, addr_size);
+		curaddr->addr = (struct sockaddr *)dup_sockaddr(addr, addr_size);
 		if (curaddr->addr == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -773,7 +772,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 		curaddr->addr = NULL;
 
 	if (netmask != NULL) {
-		curaddr->netmask = dup_sockaddr(netmask, netmask_size);
+		curaddr->netmask = (struct sockaddr *)dup_sockaddr(netmask, netmask_size);
 		if (curaddr->netmask == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -786,7 +785,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 		curaddr->netmask = NULL;
 
 	if (broadaddr != NULL) {
-		curaddr->broadaddr = dup_sockaddr(broadaddr, broadaddr_size);
+		curaddr->broadaddr = (struct sockaddr *)dup_sockaddr(broadaddr, broadaddr_size);
 		if (curaddr->broadaddr == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
@@ -801,7 +800,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 		curaddr->broadaddr = NULL;
 
 	if (dstaddr != NULL) {
-		curaddr->dstaddr = dup_sockaddr(dstaddr, dstaddr_size);
+		curaddr->dstaddr = (struct sockaddr *)dup_sockaddr(dstaddr, dstaddr_size);
 		if (curaddr->dstaddr == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "malloc: %s", pcap_strerror(errno));
