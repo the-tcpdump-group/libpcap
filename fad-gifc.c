@@ -400,7 +400,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		/*
 		 * Add information for this address to the list.
 		 */
-		if (add_addr_to_iflist(devlistp, ifrp->ifr_name,
+		if (add_addr_to_if(devlistp, ifrp->ifr_name,
 		    ifrflags.ifr_flags,
 		    &ifrp->ifr_addr, SA_LEN(&ifrp->ifr_addr),
 		    netmask, netmask_size, broadaddr, broadaddr_size,

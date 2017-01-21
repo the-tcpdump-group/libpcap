@@ -715,7 +715,7 @@ find_or_add_if(pcap_if_list_t *devlistp, const char *name,
  * add interfaces even if they have no addresses.)
  */
 int
-add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
+add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
     bpf_u_int32 if_flags,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
