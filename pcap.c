@@ -651,31 +651,16 @@ get_if_description(const char *name)
 /*
  * Look for a given device in the specified list of devices.
  *
- * If we find it, then, if the specified address isn't null, add it to
- * the list of addresses for the device and return 0.
+ * If we find it, return a pointer to its entry.
  *
  * If we don't find it, attempt to add an entry for it, with the specified
- * IFF_ flags and description, and, if that succeeds, add the specified
- * address to its list of addresses if that address is non-null, and
- * return 0, otherwise return -1 and set errbuf to an error message.
- *
- * (We can get called with a null address because we might get a list
- * of interface name/address combinations from the underlying OS, with
- * the address being absent in some cases, rather than a list of
- * interfaces with each interface having a list of addresses, so this
- * call may be the only call made to add to the list, and we want to
- * add interfaces even if they have no addresses.)
+ * IFF_ flags and description, and, if that succeeds, return a pointer to
+ * the new entry, otherwise return NULL and set errbuf to an error message.
  */
-int
-add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
-    bpf_u_int32 if_flags,
-    struct sockaddr *addr, size_t addr_size,
-    struct sockaddr *netmask, size_t netmask_size,
-    struct sockaddr *broadaddr, size_t broadaddr_size,
-    struct sockaddr *dstaddr, size_t dstaddr_size,
-    char *errbuf)
+pcap_if_t *
+find_or_add_if(pcap_if_list_t *devlistp, const char *name,
+    bpf_u_int32 if_flags, char *errbuf)
 {
-	pcap_if_t *curdev;
 	bpf_u_int32 pcap_flags;
 
 	/*
@@ -707,8 +692,43 @@ add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
 	 * Attempt to find an entry for this device; if we don't find one,
 	 * attempt to add one.
 	 */
-	curdev = find_or_add_dev(devlistp, name, pcap_flags,
-	    get_if_description(name), errbuf);
+	return (find_or_add_dev(devlistp, name, pcap_flags,
+	    get_if_description(name), errbuf));
+}
+
+/*
+ * Look for a given device in the specified list of devices.
+ *
+ * If we find it, then, if the specified address isn't null, add it to
+ * the list of addresses for the device and return 0.
+ *
+ * If we don't find it, attempt to add an entry for it, with the specified
+ * IFF_ flags and description, and, if that succeeds, add the specified
+ * address to its list of addresses if that address is non-null, and
+ * return 0, otherwise return -1 and set errbuf to an error message.
+ *
+ * (We can get called with a null address because we might get a list
+ * of interface name/address combinations from the underlying OS, with
+ * the address being absent in some cases, rather than a list of
+ * interfaces with each interface having a list of addresses, so this
+ * call may be the only call made to add to the list, and we want to
+ * add interfaces even if they have no addresses.)
+ */
+int
+add_addr_to_iflist(pcap_if_list_t *devlistp, const char *name,
+    bpf_u_int32 if_flags,
+    struct sockaddr *addr, size_t addr_size,
+    struct sockaddr *netmask, size_t netmask_size,
+    struct sockaddr *broadaddr, size_t broadaddr_size,
+    struct sockaddr *dstaddr, size_t dstaddr_size,
+    char *errbuf)
+{
+	pcap_if_t *curdev;
+
+	/*
+	 * Check whether the device exists and, if not, add it.
+	 */
+	curdev = find_or_add_if(devlistp, name, if_flags, errbuf);
 	if (curdev == NULL) {
 		/*
 		 * Error - give up.

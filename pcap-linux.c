@@ -2290,7 +2290,7 @@ add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 	 * Add an entry for this interface, with no addresses, if it's
 	 * not already in the list.
 	 */
-	if (find_or_add_dev(devlistp, name, ifrflags.ifr_flags, NULL,
+	if (find_or_add_if(devlistp, name, ifrflags.ifr_flags,
 	    errbuf) == NULL) {
 		/*
 		 * Failure.
