@@ -898,7 +898,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the the data connection */
+	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the data connection */
 	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
 	int nread;
 	int retval;				/* store the return value of the functions */
