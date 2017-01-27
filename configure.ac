@@ -852,7 +852,7 @@ if test "$want_dag" != no; then
 		# included if there's a found-action (arg 3).
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="-L$dag_lib_dir"
-		AC_CHECK_LIB([dag], [dag_attach_stream], [dag_streams="1"], [dag_streams="0"])
+		AC_CHECK_LIB([dag], [dag_attach_stream64], [dag_large_streams="1"], [dag_large_streams="0"])
 		AC_CHECK_LIB([dag],[dag_get_erf_types], [
 			AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])])
 		AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
@@ -860,8 +860,8 @@ if test "$want_dag" != no; then
 
 		LDFLAGS=$saved_ldflags
 
-		if test "$dag_streams" = 1; then
-			AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
+		if test "$dag_large_streams" = 1; then
+			AC_DEFINE(HAVE_DAG_LARGE_STREAMS_API, 1, [define if you have large streams capable DAG API])
 			LIBS="$LIBS -ldag"
 			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 

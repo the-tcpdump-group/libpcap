@@ -15,8 +15,8 @@
 /* define if you have dag_get_stream_erf_types() */
 #undef HAVE_DAG_GET_STREAM_ERF_TYPES
 
-/* define if you have streams capable DAG API */
-#undef HAVE_DAG_STREAMS_API
+/* define if you have large streams capable DAG API */
+#undef HAVE_DAG_LARGE_STREAMS_API
 
 /* define if you have vdag_set_device_info() */
 #undef HAVE_DAG_VDAG
