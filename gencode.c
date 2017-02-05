@@ -683,13 +683,13 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * If this pcap_t hasn't been activated, it doesn't have a
 	 * link-layer type, so we can't use it.
 	 */
+	initchunks(&cstate);
 	if (!p->activated) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
 		rc = -1;
 		goto quit;
 	}
-	initchunks(&cstate);
 	cstate.no_optimize = 0;
 #ifdef INET6
 	cstate.ai = NULL;
