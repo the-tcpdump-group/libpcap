@@ -3510,6 +3510,12 @@ activate_new(pcap_t *handle)
 				handle->linktype = DLT_LINUX_SLL;
 		}
 
+#if defined(__s390__)
+		/* Hack to make things work on s390 ctc interfaces */
+		if (strncmp("ctc", device, 3) == 0)
+		    handle->linktype = DLT_EN10MB;
+#endif
+
 		handlep->ifindex = iface_get_id(sock_fd, device,
 		    handle->errbuf);
 		if (handlep->ifindex == -1) {
