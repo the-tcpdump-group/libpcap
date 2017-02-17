@@ -1548,16 +1548,10 @@ pcap_activate_linux(pcap_t *handle)
 		}
 	}
 	else if (ret == 0) {
-		/* Non-fatal error; try old way */
-		if ((ret = activate_old(handle)) != 1) {
-			/*
-			 * Both methods to open the packet socket failed.
-			 * Tidy up and report our failure (handle->errbuf
-			 * is expected to be set by the functions above).
-			 */
-			status = ret;
-			goto fail;
-		}
+	        snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			 "af_packet module unavailable, missing a reboot to new kernel?");
+		status = PCAP_ERROR;
+		goto fail;
 	}
 
 	/*
