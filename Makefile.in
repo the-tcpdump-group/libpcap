@@ -465,7 +465,7 @@ grammar.h: grammar.c
 		$(MAKE) $(MAKEFLAGS) grammar.c; \
 	fi
 
-grammar.o: grammar.c
+grammar.o: grammar.c scanner.h
 	$(CC) $(FULL_CFLAGS) -c grammar.c
 
 gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
