@@ -59,8 +59,8 @@ int* _errno();
 
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
-static int pcap_getnonblock_win32(pcap_t *, char *);
-static int pcap_setnonblock_win32(pcap_t *, int, char *);
+static int pcap_getnonblock_win32(pcap_t *);
+static int pcap_setnonblock_win32(pcap_t *, int);
 
 /*dimension of the buffer in the pcap_t structure*/
 #define	WIN32_DEFAULT_USER_BUFFER_SIZE 256000
@@ -1300,7 +1300,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 }
 
 static int
-pcap_getnonblock_win32(pcap_t *p, char *errbuf)
+pcap_getnonblock_win32(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -1313,7 +1313,7 @@ pcap_getnonblock_win32(pcap_t *p, char *errbuf)
 }
 
 static int
-pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_win32(pcap_t *p, int nonblock)
 {
 	struct pcap_win *pw = p->priv;
 	int newtimeout;
@@ -1338,7 +1338,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
 		pcap_win32_err_to_str(GetLastError(), win_errbuf);
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketSetReadTimeout: %s", win_errbuf);
 		return (-1);
 	}

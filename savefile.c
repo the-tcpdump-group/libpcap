@@ -92,7 +92,7 @@ static pcap_t *pcap_fopen_offline(FILE *, char *);
 #endif
 
 static int
-sf_getnonblock(pcap_t *p, char *errbuf)
+sf_getnonblock(pcap_t *p)
 {
 	/*
 	 * This is a savefile, not a live capture file, so never say
@@ -102,7 +102,7 @@ sf_getnonblock(pcap_t *p, char *errbuf)
 }
 
 static int
-sf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+sf_setnonblock(pcap_t *p, int nonblock)
 {
 	/*
 	 * This is a savefile, not a live capture file, so reject

@@ -43,7 +43,7 @@
 
 static int septel_setfilter(pcap_t *p, struct bpf_program *fp);
 static int septel_stats(pcap_t *p, struct pcap_stat *ps);
-static int septel_setnonblock(pcap_t *p, int nonblock, char *errbuf);
+static int septel_setnonblock(pcap_t *p, int nonblock);
 
 /*
  * Private data for capturing on Septel devices.
@@ -237,6 +237,7 @@ pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
 		return NULL;
 
 	p->activate_op = septel_activate;
+	p->setnonblock_op = septel_setnonblock; /* not supported */
 	return p;
 }
 
@@ -287,9 +288,9 @@ static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
 
 
 static int
-septel_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+septel_setnonblock(pcap_t *p, int nonblock)
 {
-  fprintf(errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
+  fprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
   return (-1);
 }
 

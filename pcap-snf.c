@@ -76,7 +76,7 @@ snf_platform_cleanup(pcap_t *p)
 }
 
 static int
-snf_getnonblock(pcap_t *p, char *errbuf)
+snf_getnonblock(pcap_t *p)
 {
 	struct pcap_snf *ps = p->priv;
 
@@ -84,7 +84,7 @@ snf_getnonblock(pcap_t *p, char *errbuf)
 }
 
 static int
-snf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+snf_setnonblock(pcap_t *p, int nonblock)
 {
 	struct pcap_snf *ps = p->priv;
 

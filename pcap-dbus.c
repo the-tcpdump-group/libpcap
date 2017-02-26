@@ -211,6 +211,7 @@ dbus_activate(pcap_t *handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->stats_op = dbus_stats;
+	handle->cleanup_op = dbus_cleanup;
 
 	handle->selectable_fd = handle->fd = -1;
 
