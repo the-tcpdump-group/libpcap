@@ -338,7 +338,9 @@ int
 snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	pcap_if_t *dev;
-	pcap_addr_t *curaddr;
+#ifdef _WIN32
+	struct sockaddr_in addr;
+#endif
 	struct snf_ifaddrs *ifaddrs, *ifa;
 	char name[MAX_DESC_LENGTH];
 	char desc[MAX_DESC_LENGTH];
@@ -438,32 +440,23 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			/*
 			 * On Windows, fill in IP# from device name
 			 */
-                        curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
-                        if (curaddr == NULL) {
-                                (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-                                     "snf_findalldevs malloc1: %s", pcap_strerror(errno));
-                                return -1;
-                        }
-                        dev->addresses = curaddr;
-                        curaddr->next = NULL;
-                        curaddr->addr = (struct sockaddr*)malloc(sizeof(struct sockaddr_storage));
-                        if (curaddr->addr == NULL) {
-                                (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-                                    "snf_findalldevs malloc2: %s", pcap_strerror(errno));
-                                return -1;
-                        }
-                        ret = inet_pton(AF_INET, dev->name, &((struct sockaddr_in *)curaddr->addr)->sin_addr);
-                        if (!ret) {
+                        ret = inet_pton(AF_INET, dev->name, &addr.sin_addr);
+                        if (ret == 1) {
+                        	/*
+                        	 * Successful conversion of device name
+                        	 * to IPv4 address.
+                        	 */
+	                        addr.sin_family = AF_INET;
+        	                if (add_addr_to_dev(dev, &addr, sizeof(addr),
+                	            NULL, 0, NULL, 0, NULL, 0, errbuf) == -1)
+                        		return -1;
+                        } else if (ret == -1) {
+				/*
+				 * Error.
+				 */
                                 (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,"sinf_findalldevs inet_pton: %s", pcap_strerror(errno));
-                                free(curaddr->addr);
-                                free(curaddr);
                                 return -1;
                         }
-                        curaddr->addr->sa_family = AF_INET;
-                        curaddr->netmask = NULL;
-                        curaddr->broadaddr = NULL;
-                        curaddr->dstaddr = NULL;
-                        curaddr->next = NULL;
 #endif _WIN32
 		}
 	}
