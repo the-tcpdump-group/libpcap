@@ -286,6 +286,7 @@ README.septel   - notes on using libpcap to capture on Intel/Septel devices
 README.sita	- notes on using libpcap to capture on SITA devices
 README.tru64	- notes on using libpcap on Digital/Tru64 UNIX
 README.Win32	- notes on using libpcap on Win32 systems (with WinPcap)
+CONTRIBUTING	- guidelines for contributing
 SUNOS4		- pre-SunOS 4.1 replacement kernel nit modules
 VERSION		- version of this release
 acconfig.h	- support for post-2.13 autoconf

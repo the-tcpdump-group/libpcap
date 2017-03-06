@@ -252,6 +252,7 @@ EXTRA_DIST = \
 	README.sita \
 	README.tru64 \
 	README.Win32 \
+	CONTRIBUTING \
 	SUNOS4/nit_if.o.sparc \
 	SUNOS4/nit_if.o.sun3 \
 	SUNOS4/nit_if.o.sun4c.4.0.3c \
