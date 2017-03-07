@@ -944,6 +944,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 
 		fp->snapshot = snaplen;
 		fp->opt.timeout = read_timeout;
+		fp->activated = 1;
 		md->rmt_flags = flags;
 		break;
 
