@@ -62,8 +62,8 @@
  * the error on the screen.
  */
 
-#define PCAP_STATS_STANDARD	0	/* Used by pcap_stats_remote to see if we want standard or extended statistics */
-#define PCAP_STATS_EX		1	/* Used by pcap_stats_remote to see if we want standard or extended statistics */
+#define PCAP_STATS_STANDARD	0	/* Used by pcap_stats_rpcap to see if we want standard or extended statistics */
+#define PCAP_STATS_EX		1	/* Used by pcap_stats_rpcap to see if we want standard or extended statistics */
 
 /* Keeps a list of all the opened connections in the active mode. */
 struct activehosts *activeHosts;
@@ -116,11 +116,11 @@ struct pcap_rpcap {
  *                                                  *
  ****************************************************/
 static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
-static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode);
+static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int mode);
 static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog);
 static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog);
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
-static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog);
+static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *p);
 
 
@@ -509,16 +509,16 @@ static void pcap_cleanup_remote(pcap_t *fp)
  *
  * \brief It retrieves network statistics from the other peer.
  *
- * This function is just a void cointainer, since the work is done by the rpcap_stats_remote().
+ * This function is just a void cointainer, since the work is done by the rpcap_stats_rpcap().
  * See that funcion for more details.
  *
  * Parameters and return values are exactly the same of the pcap_stats().
  */
-static int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
+static int pcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps)
 {
 	struct pcap_stat *retval;
 
-	retval = rpcap_stats_remote(p, ps, PCAP_STATS_STANDARD);
+	retval = rpcap_stats_rpcap(p, ps, PCAP_STATS_STANDARD);
 
 	if (retval)
 		return 0;
@@ -531,7 +531,7 @@ static int pcap_stats_remote(pcap_t *p, struct pcap_stat *ps)
  *
  * \brief It retrieves network statistics from the other peer.
  *
- * This function is just a void cointainer, since the work is done by the rpcap_stats_remote().
+ * This function is just a void cointainer, since the work is done by the rpcap_stats_rpcap().
  * See that funcion for more details.
  *
  * Parameters and return values are exactly the same of the pcap_stats_ex().
@@ -541,7 +541,7 @@ static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p, int *pcap_stat_size)
 	*pcap_stat_size = sizeof (p->stat);
 
 	/* PCAP_STATS_EX (third param) means 'extended pcap_stats()' */
-	return (rpcap_stats_remote(p, &(p->stat), PCAP_STATS_EX));
+	return (rpcap_stats_rpcap(p, &(p->stat), PCAP_STATS_EX));
 }
 #endif
 
@@ -575,7 +575,7 @@ static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p, int *pcap_stat_size)
  * \return The structure that keeps the statistics, or NULL in case of error.
  * The error string is placed in the pcap_t structure.
  */
-static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int mode)
+static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int mode)
 {
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_stats netstats;		/* statistics sent on the network */
@@ -854,10 +854,10 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 
 	/* This code is duplicated from the end of this function */
 	fp->read_op = pcap_read_remote;
-	fp->setfilter_op = pcap_setfilter_remote;
+	fp->setfilter_op = pcap_setfilter_rpcap;
 	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
 	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
-	fp->stats_op = pcap_stats_remote;
+	fp->stats_op = pcap_stats_rpcap;
 #ifdef _WIN32
 	fp->stats_ex_op = pcap_stats_ex_remote;
 #endif
@@ -1265,7 +1265,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 		if (pcap_createfilter_norpcappkt(fp, &fcode) == -1)
 			goto error;
 
-		/* We cannot use 'pcap_setfilter_remote' because formally the capture has not been started yet */
+		/* We cannot use 'pcap_setfilter_rpcap' because formally the capture has not been started yet */
 		/* (the 'fp->rmt_capstarted' variable will be updated some lines below) */
 		if (pcap_updatefilter_remote(fp, &fcode) == -1)
 			goto error;
@@ -1460,7 +1460,7 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
  *
  * Parameters and return values are exactly the same of the pcap_setfilter().
  */
-static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
+static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog)
 {
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
