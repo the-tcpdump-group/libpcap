@@ -1748,6 +1748,7 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	uint16 auth_type;
 	struct rpcap_header header;
 	int retval;				/* temp variable which stores functions return value */
+	size_t str_length;
 
 	if (auth)
 	{
@@ -1761,8 +1762,26 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 
 		case RPCAP_RMTAUTH_PWD:
 			length = sizeof(struct rpcap_auth);
-			if (auth->username) length += (uint16) strlen(auth->username);
-			if (auth->password) length += (uint16) strlen(auth->password);
+			if (auth->username)
+			{
+				str_length = strlen(auth->username);
+				if (str_length > 65535)
+				{
+					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "User name is too long (> 65535 bytes)");
+					return -1;
+				}
+				length += (uint16)str_length;
+			}
+			if (auth->password)
+			{
+				str_length = strlen(auth->password);
+				if (str_length > 65535)
+				{
+					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Password is too long (> 65535 bytes)");
+					return -1;
+				}
+				length += (uint16)str_length;
+			}
 			break;
 
 		default:
