@@ -65,19 +65,6 @@ SOCKET sockmain;
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ON_REMOTE_HOST "on remote node"
 
-/*
-* Private data for capturing on WinPcap devices.
-*/
-struct pcap_win {
-	int nonblock;
-	int rfmon_selfstart;		/* a flag tells whether the monitor mode is set by itself */
-	int filtering_in_kernel;	/* using kernel filter */
-
-#ifdef HAVE_DAG_API
-	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
-#endif
-};
-
 /****************************************************
  *                                                  *
  * Function bodies                                  *
