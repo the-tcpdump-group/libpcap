@@ -125,7 +125,6 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *p);
 
-
 /****************************************************
  *                                                  *
  * Function bodies                                  *
@@ -244,8 +243,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	int retval;				/* generic return value */
 
 	/* Structures needed for the select() call */
-	fd_set rfds;				/* set of socket descriptors we have to check */
 	struct timeval tv;			/* maximum time the select() can block waiting for data */
+	fd_set rfds;				/* set of socket descriptors we have to check */
 
 	/*
 	 * Define the packet buffer timeout, to be used in the select()
@@ -394,7 +393,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Received a packet that is larger than the internal buffer size.");
 		return -1;
 	}
-
 }
 
 /* \ingroup remote_pri_func
@@ -443,7 +441,7 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
  *
  * \warning Since we're closing the connection, we do not check for errors.
  */
-static void pcap_cleanup_remote(pcap_t *fp)
+static void pcap_cleanup_rpcap(pcap_t *fp)
 {
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header header;		/* header of the RPCAP packet */
@@ -536,7 +534,7 @@ static int pcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps)
  *
  * Parameters and return values are exactly the same of the pcap_stats_ex().
  */
-static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p, int *pcap_stat_size)
+static struct pcap_stat *pcap_stats_ex_rpcap(pcap_t *p, int *pcap_stat_size)
 {
 	*pcap_stat_size = sizeof (p->stat);
 
@@ -858,9 +856,9 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
 	fp->stats_op = pcap_stats_rpcap;
 #ifdef _WIN32
-	fp->stats_ex_op = pcap_stats_ex_remote;
+	fp->stats_ex_op = pcap_stats_ex_rpcap;
 #endif
-	fp->cleanup_op = pcap_cleanup_remote;
+	fp->cleanup_op = pcap_cleanup_rpcap;
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
 	if (totread != ntohl(header.plen))
@@ -915,6 +913,7 @@ error:
  */
 int pcap_startcapture_remote(pcap_t *fp)
 {
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the data connection */
@@ -943,15 +942,12 @@ int pcap_startcapture_remote(pcap_t *fp)
 	socklen_t itemp;
 	int sockbufsize = 0;
 
-	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
-
 	/*
 	 * Let's check if sampling has been required.
 	 * If so, let's set it first
 	 */
 	if (pcap_setsampling_remote(fp) != 0)
 		return -1;
-
 
 	/* detect if we're in active mode */
 	temp = activeHosts;
@@ -1134,7 +1130,6 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * to tell the port we're using to the remote side; in case we're accepting a TCP
 	 * connection, we have to wait this info from the remote side.
 	 */
-
 	if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		if (!active)
@@ -1243,7 +1238,6 @@ int pcap_startcapture_remote(pcap_t *fp)
 		goto error;
 	}
 
-
 	/* Checks if all the data has been read; if not, discard the data in excess */
 	if (totread != ntohl(header.plen))
 	{
@@ -1265,7 +1259,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 			goto error;
 
 		/* We cannot use 'pcap_setfilter_rpcap' because formally the capture has not been started yet */
-		/* (the 'fp->rmt_capstarted' variable will be updated some lines below) */
+		/* (the 'pr->rmt_capstarted' variable will be updated some lines below) */
 		if (pcap_updatefilter_remote(fp, &fcode) == -1)
 			goto error;
 
@@ -1337,7 +1331,6 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
 	struct bpf_program fake_prog;		/* To be used just in case the user forgot to set a filter */
 	unsigned int i;
 
-
 	if (prog->bf_len == 0)	/* No filters have been specified; so, let's apply a "fake" filter */
 	{
 		if (pcap_compile(fp, &fake_prog, NULL /* buffer */, 1, 0) == -1)
@@ -1399,7 +1392,7 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	int retval;				/* general variable used to keep the return value of other functions */
-	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
+	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
 
