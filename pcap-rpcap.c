@@ -1291,11 +1291,13 @@ error:
 	 * We do not have to call pcap_close() here, because this function is always called
 	 * by the user in case something bad happens
 	 */
-	// 	if (fp)
-	// 	{
-	// 		pcap_close(fp);
-	// 		fp= NULL;
-	// 	}
+#if 0
+	if (fp)
+	{
+		pcap_close(fp);
+		fp= NULL;
+	}
+#endif
 
 	return -1;
 }
