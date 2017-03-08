@@ -233,6 +233,7 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
  */
 static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_char **pkt_data)
 {
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header *header;		/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet */
 	char netbuf[RPCAP_NETBUF_SIZE];		/* size of the network buffer in which the packet is copied, just for UDP */
@@ -243,7 +244,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	/* Structures needed for the select() call */
 	fd_set rfds;				/* set of socket descriptors we have to check */
 	struct timeval tv;			/* maximum time the select() can block waiting for data */
-	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 
 	/*
 	 * Define the packet buffer timeout, to be used in the select()
@@ -367,7 +367,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 				pr->TotNetDrops += (npkt - pr->TotCapt);
 				pr->TotCapt = npkt;
 			}
-
 		}
 		else
 		{
@@ -384,7 +383,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 			if (totread != ntohl(header->plen))
 				sock_discard(pr->rmt_sockdata, ntohl(header->plen) - totread, NULL, 0);
 		}
-
 
 		/* Packet read successfully */
 		return 1;
@@ -417,7 +415,7 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 	u_char *pkt_data;
 	int n = 0;
 
-	while ((n < cnt) || (cnt < 0))
+	while (n < cnt || PACKET_COUNT_IS_UNLIMITED(cnt))
 	{
 		if (pcap_read_nocb_remote(p, &pkt_header, &pkt_data) == 1)
 		{
@@ -445,10 +443,10 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
  */
 static void pcap_cleanup_remote(pcap_t *fp)
 {
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
 	int active = 0;				/* active mode or not? */
-	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	/* detect if we're in active mode */
 	temp = activeHosts;
@@ -577,12 +575,12 @@ static struct pcap_stat *pcap_stats_ex_remote(pcap_t *p, int *pcap_stat_size)
  */
 static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int mode)
 {
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_stats netstats;		/* statistics sent on the network */
 	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
 	int nread;
 	int retval;				/* temp variable which stores functions return value */
-	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 
 	/*
 	 * If the capture has still to start, we cannot ask statistics to the other peer,
@@ -1397,11 +1395,11 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
  */
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
-	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
 		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
@@ -1491,8 +1489,8 @@ static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog)
  */
 static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 {
-	int RetVal = 0;
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
+	int RetVal = 0;
 
 	/* We do not want to capture our RPCAP traffic. So, let's update the filter */
 	if (pr->rmt_flags & PCAP_OPENFLAG_NOCAPTURE_RPCAP)
@@ -1603,12 +1601,12 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
  */
 static int pcap_setsampling_remote(pcap_t *p)
 {
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
 	struct rpcap_sampling *sampling_pars;	/* Structure that is needed to send sampling parameters to the remote host */
-	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 
 	/* If no samping is requested, return 'ok' */
 	if (p->rmt_samp.method == PCAP_SAMP_NOSAMP)
