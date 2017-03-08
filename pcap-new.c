@@ -883,7 +883,7 @@ int pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char
 
 pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
 {
-	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE], name[PCAP_BUF_SIZE];
+	char name[PCAP_BUF_SIZE];
 	int type;
 	pcap_t *fp;
 
@@ -893,10 +893,12 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		return NULL;
 	}
 
-	/* determine the type of the source (file, local, remote) and name if file or local */
+	/*
+	 * Determine the type of the source (file, local, remote) and,
+	 * if it's file or local, the name of the file or capture device.
+	 */
 	if (pcap_parsesrcstr(source, &type, NULL, NULL, name, errbuf) == -1)
 		return NULL;
-
 
 	switch (type)
 	{
@@ -907,8 +909,8 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	case PCAP_SRC_IFREMOTE:
 		/*
 		 * Although we already have host, port and iface, we prefer
-		 * to pass only 'name' to pcap_open_rpcap(), so that it has
-		 * to call pcap_parsesrcstr() again.
+		 * to pass only 'source' to pcap_open_rpcap(), so that it
+		 * has to call pcap_parsesrcstr() again.
 		 * This is less optimized, but much clearer.
 		 */
 		fp = pcap_open_rpcap(source, snaplen, flags, read_timeout, auth, errbuf);
