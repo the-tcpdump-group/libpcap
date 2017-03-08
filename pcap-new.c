@@ -893,8 +893,8 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		return NULL;
 	}
 
-	/* determine the type of the source (file, local, remote) */
-	if (pcap_parsesrcstr(source, &type, host, port, name, errbuf) == -1)
+	/* determine the type of the source (file, local, remote) and name if file or local */
+	if (pcap_parsesrcstr(source, &type, NULL, NULL, name, errbuf) == -1)
 		return NULL;
 
 
@@ -911,7 +911,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		 * to call pcap_parsesrcstr() again.
 		 * This is less optimized, but much clearer.
 		 */
-		fp = pcap_open_rpcap(name, snaplen, flags, read_timeout, auth, errbuf);
+		fp = pcap_open_rpcap(source, snaplen, flags, read_timeout, auth, errbuf);
 		break;
 
 	case PCAP_SRC_IFLOCAL:
