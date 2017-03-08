@@ -1083,7 +1083,6 @@ int pcap_startcapture_remote(pcap_t *fp)
 	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
 		goto error;
 
-
 	/* Receive the RPCAP start capture reply message */
 	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
@@ -1815,7 +1814,7 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	if (auth_type == RPCAP_RMTAUTH_PWD)
 	{
 		if (auth->username)
-			rpauth->slen1 = (uint16) strlen(auth->username);
+			rpauth->slen1 = (uint16)strlen(auth->username);
 		else
 			rpauth->slen1 = 0;
 
@@ -1824,7 +1823,7 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 			return -1;
 
 		if (auth->password)
-			rpauth->slen2 = (uint16) strlen(auth->password);
+			rpauth->slen2 = (uint16)strlen(auth->password);
 		else
 			rpauth->slen2 = 0;
 
@@ -1996,7 +1995,6 @@ int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8
 				/* Put '\0' at the end of the string */
 				errbuf[len] = 0;
 			}
-
 
 			va_end(ap);
 			return header->type;
