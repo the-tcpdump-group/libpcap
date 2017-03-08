@@ -876,7 +876,8 @@ The following ICMP type field values are available: \fBicmp-echoreply\fP,
 
 The following TCP flags field values are available: \fBtcp-fin\fP,
 \fBtcp-syn\fP, \fBtcp-rst\fP, \fBtcp-push\fP,
-\fBtcp-ack\fP, \fBtcp-urg\fP.
+\fBtcp-ack\fP, \fBtcp-urg\fP, \fBtcp-ece\fP,
+\fBtcp-cwr\fP.
 .LP
 Primitives may be combined using:
 .IP
@@ -1011,11 +1012,12 @@ icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply
 .SH "SEE ALSO"
 pcap(3PCAP)
 .SH BUGS
-Please send problems, bugs, questions, desirable enhancements, etc. to:
+To report a security issue please send an e-mail to security@tcpdump.org.
 .LP
-.RS
-tcpdump-workers@lists.tcpdump.org
-.RE
+To report bugs and other problems, contribute patches, request a
+feature, provide generic feedback etc please see the file
+.I CONTRIBUTING
+in the libpcap source tree root.
 .LP
 Filter expressions on fields other than those in Token Ring headers will
 not correctly handle source-routed Token Ring packets.

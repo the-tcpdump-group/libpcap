@@ -4,6 +4,8 @@ Makefile
 bpf_filter.c
 capturetest
 can_set_rfmon_test
+CMakeCache.txt
+CMakeFiles/
 config.h
 config.log
 config.cache

@@ -1196,6 +1196,18 @@ pcap_create(const char *device, char *errbuf)
 	return (p);
 }
 
+/*
+ * Set nonblocking mode on an unactivated pcap_t; this sets a flag
+ * checked by pcap_activate(), which sets the mode after calling
+ * the activate routine.
+ */
+static int
+pcap_setnonblock_unactivated(pcap_t *p, int nonblock)
+{
+	p->opt.nonblock = nonblock;
+	return (0);
+}
+
 static void
 initialize_ops(pcap_t *p)
 {
@@ -1210,7 +1222,6 @@ initialize_ops(pcap_t *p)
 	p->setdirection_op = (setdirection_op_t)pcap_not_initialized;
 	p->set_datalink_op = (set_datalink_op_t)pcap_not_initialized;
 	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
-	p->setnonblock_op = (setnonblock_op_t)pcap_not_initialized;
 	p->stats_op = (stats_op_t)pcap_not_initialized;
 #ifdef _WIN32
 	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
@@ -1301,6 +1312,13 @@ pcap_create_common(char *ebuf, size_t size)
 	 * device supports it.
 	 */
 	p->can_set_rfmon_op = pcap_cant_set_rfmon;
+
+	/*
+	 * If pcap_setnonblock() is called on a not-yet-activated
+	 * pcap_t, default to setting a flag and turning
+	 * on non-blocking mode when activated.
+	 */
+	p->setnonblock_op = pcap_setnonblock_unactivated;
 
 	initialize_ops(p);
 
@@ -1518,9 +1536,25 @@ pcap_activate(pcap_t *p)
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
 	status = p->activate_op(p);
-	if (status >= 0)
+	if (status >= 0) {
+		/*
+		 * If somebody requested non-blocking mode before
+		 * calling pcap_activate(), turn it on now.
+		 */
+		if (p->opt.nonblock) {
+			status = p->setnonblock_op(p, 1);
+			if (status < 0) {
+				/*
+				 * Failed.  Undo everything done by
+				 * the activate operation.
+				 */
+				p->cleanup_op(p);
+				initialize_ops(p);
+				return (status);
+			}
+		}
 		p->activated = 1;
-	else {
+	} else {
 		if (p->errbuf[0] == '\0') {
 			/*
 			 * No error message supplied by the activate routine;
@@ -2005,6 +2039,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(ISO_14443, "ISO 14443 messages"),
 	DLT_CHOICE(RDS, "IEC 62106 Radio Data System groups"),
 	DLT_CHOICE(USB_DARWIN, "USB with Darwin header"),
+	DLT_CHOICE(OPENFLOW, "OpenBSD DLT_OPENFLOW"),
 	DLT_CHOICE_SENTINEL
 };
 
@@ -2171,14 +2206,18 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
 {
 	int ret;
 
-	ret = p->getnonblock_op(p, errbuf);
+	ret = p->getnonblock_op(p);
 	if (ret == -1) {
 		/*
-		 * In case somebody depended on the bug wherein
-		 * the error message was put into p->errbuf
-		 * by pcap_getnonblock_fd().
+		 * The get nonblock operation sets p->errbuf; this
+		 * function *shouldn't* have had a separate errbuf
+		 * argument, as it didn't need one, but I goofed
+		 * when adding it.
+		 *
+		 * We copy the error message to errbuf, so callers
+		 * can find it in either place.
 		 */
-		strlcpy(p->errbuf, errbuf, PCAP_ERRBUF_SIZE);
+		strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
 	}
 	return (ret);
 }
@@ -2189,13 +2228,13 @@ pcap_getnonblock(pcap_t *p, char *errbuf)
  */
 #if !defined(_WIN32) && !defined(MSDOS)
 int
-pcap_getnonblock_fd(pcap_t *p, char *errbuf)
+pcap_getnonblock_fd(pcap_t *p)
 {
 	int fdflags;
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -2211,14 +2250,18 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
 	int ret;
 
-	ret = p->setnonblock_op(p, nonblock, errbuf);
+	ret = p->setnonblock_op(p, nonblock);
 	if (ret == -1) {
 		/*
-		 * In case somebody depended on the bug wherein
-		 * the error message was put into p->errbuf
-		 * by pcap_setnonblock_fd().
+		 * The set nonblock operation sets p->errbuf; this
+		 * function *shouldn't* have had a separate errbuf
+		 * argument, as it didn't need one, but I goofed
+		 * when adding it.
+		 *
+		 * We copy the error message to errbuf, so callers
+		 * can find it in either place.
 		 */
-		strlcpy(p->errbuf, errbuf, PCAP_ERRBUF_SIZE);
+		strlcpy(errbuf, p->errbuf, PCAP_ERRBUF_SIZE);
 	}
 	return (ret);
 }
@@ -2231,13 +2274,13 @@ pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
  * needs to do some additional work.)
  */
 int
-pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_fd(pcap_t *p, int nonblock)
 {
 	int fdflags;
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -2246,7 +2289,7 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock, char *errbuf)
 	else
 		fdflags &= ~O_NONBLOCK;
 	if (fcntl(p->fd, F_SETFL, fdflags) == -1) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}

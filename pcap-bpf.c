@@ -252,7 +252,7 @@ static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
  * blocking mode.
  */
 static int
-pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
+pcap_getnonblock_bpf(pcap_t *p)
 {
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->priv;
@@ -260,11 +260,11 @@ pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
 	if (pb->zerocopy)
 		return (pb->nonblock);
 #endif
-	return (pcap_getnonblock_fd(p, errbuf));
+	return (pcap_getnonblock_fd(p));
 }
 
 static int
-pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_bpf(pcap_t *p, int nonblock)
 {
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->priv;
@@ -274,7 +274,7 @@ pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 		return (0);
 	}
 #endif
-	return (pcap_setnonblock_fd(p, nonblock, errbuf));
+	return (pcap_setnonblock_fd(p, nonblock));
 }
 
 #ifdef HAVE_ZEROCOPY_BPF

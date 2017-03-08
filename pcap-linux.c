@@ -404,8 +404,8 @@ static int pcap_read_linux_mmap_v2(pcap_t *, int, pcap_handler , u_char *);
 static int pcap_read_linux_mmap_v3(pcap_t *, int, pcap_handler , u_char *);
 #endif
 static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
-static int pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf);
-static int pcap_getnonblock_mmap(pcap_t *p, char *errbuf);
+static int pcap_setnonblock_mmap(pcap_t *p, int nonblock);
+static int pcap_getnonblock_mmap(pcap_t *p);
 static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 #endif
@@ -4468,7 +4468,7 @@ pcap_cleanup_linux_mmap( pcap_t *handle )
 
 
 static int
-pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
+pcap_getnonblock_mmap(pcap_t *p)
 {
 	struct pcap_linux *handlep = p->priv;
 
@@ -4477,7 +4477,7 @@ pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 }
 
 static int
-pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_mmap(pcap_t *p, int nonblock)
 {
 	struct pcap_linux *handlep = p->priv;
 
@@ -4485,7 +4485,7 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 	 * Set the file descriptor to non-blocking mode, as we use
 	 * it for sending packets.
 	 */
-	if (pcap_setnonblock_fd(p, nonblock, errbuf) == -1)
+	if (pcap_setnonblock_fd(p, nonblock) == -1)
 		return -1;
 
 	/*

@@ -252,6 +252,7 @@ EXTRA_DIST = \
 	README.sita \
 	README.tru64 \
 	README.Win32 \
+	CONTRIBUTING \
 	SUNOS4/nit_if.o.sparc \
 	SUNOS4/nit_if.o.sun3 \
 	SUNOS4/nit_if.o.sun4c.4.0.3c \
@@ -465,7 +466,7 @@ grammar.h: grammar.c
 		$(MAKE) $(MAKEFLAGS) grammar.c; \
 	fi
 
-grammar.o: grammar.c
+grammar.o: grammar.c scanner.h
 	$(CC) $(FULL_CFLAGS) -c grammar.c
 
 gencode.o: $(srcdir)/gencode.c grammar.h scanner.h

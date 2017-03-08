@@ -1033,7 +1033,12 @@
  */
 #define LINKTYPE_USB_DARWIN	266
 
-#define LINKTYPE_MATCHING_MAX	266		/* highest value in the "matching" range */
+/*
+ * OpenBSD DLT_OPENFLOW.
+ */
+#define LINKTYPE_OPENFLOW	267
+
+#define LINKTYPE_MATCHING_MAX	267		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

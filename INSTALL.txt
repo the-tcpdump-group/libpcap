@@ -272,6 +272,7 @@ CHANGES		- description of differences between releases
 ChmodBPF/*	- Mac OS X startup item to set ownership and permissions
 		  on /dev/bpf*
 CMakeLists.txt	- CMake file
+CONTRIBUTING	- guidelines for contributing
 CREDITS		- people that have helped libpcap along
 INSTALL.txt	- this file
 LICENSE		- the license under which tcpdump is distributed

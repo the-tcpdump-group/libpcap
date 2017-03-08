@@ -214,7 +214,7 @@ static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
 static int dag_get_datalink(pcap_t *p);
-static int dag_setnonblock(pcap_t *p, int nonblock, char *errbuf);
+static int dag_setnonblock(pcap_t *p, int nonblock);
 
 static void
 delete_pcap_dag(pcap_t *p)
@@ -1129,7 +1129,7 @@ dag_set_datalink(pcap_t *p, int dlt)
 }
 
 static int
-dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+dag_setnonblock(pcap_t *p, int nonblock)
 {
 	struct pcap_dag *pd = p->priv;
 	dag_size_t mindata;
@@ -1142,12 +1142,12 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	 * and have a "dag_getnonblock()" function that looks at
 	 * "pd->dag_flags".
 	 */
-	if (pcap_setnonblock_fd(p, nonblock, errbuf) < 0)
+	if (pcap_setnonblock_fd(p, nonblock) < 0)
 		return (-1);
 
 	if (dag_get_stream_poll64(p->fd, pd->dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s", pcap_strerror(errno));
 		return -1;
 	}
 
@@ -1162,7 +1162,7 @@ dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 
 	if (dag_set_stream_poll64(p->fd, pd->dag_stream,
 				mindata, &maxwait, &poll) < 0) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s", pcap_strerror(errno));
 		return -1;
 	}
 

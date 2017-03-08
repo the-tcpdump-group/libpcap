@@ -664,20 +664,15 @@ int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
 {
+#ifdef _WIN32
+	static int done = 0;
+#endif
 	compiler_state_t cstate;
 	const char * volatile xbuf = buf;
 	yyscan_t scanner = NULL;
 	YY_BUFFER_STATE in_buffer = NULL;
 	u_int len;
 	int  rc;
-
-#ifdef _WIN32
-	static int done = 0;
-
-	if (!done)
-		pcap_wsockinit();
-	done = 1;
-#endif
 
 	/*
 	 * If this pcap_t hasn't been activated, it doesn't have a
@@ -687,9 +682,15 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	if (!p->activated) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
-		rc = -1;
-		goto quit;
+		return (-1);
 	}
+
+#ifdef _WIN32
+	if (!done)
+		pcap_wsockinit();
+	done = 1;
+#endif
+	initchunks(&cstate);
 	cstate.no_optimize = 0;
 #ifdef INET6
 	cstate.ai = NULL;

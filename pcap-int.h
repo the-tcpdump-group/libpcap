@@ -114,6 +114,7 @@ struct pcap_opt {
 	int	promisc;
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
+	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */
 	int	tstamp_type;
 	int	tstamp_precision;
 };
@@ -125,8 +126,8 @@ typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
 typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
 typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
 typedef int	(*set_datalink_op_t)(pcap_t *, int);
-typedef int	(*getnonblock_op_t)(pcap_t *, char *);
-typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
+typedef int	(*getnonblock_op_t)(pcap_t *);
+typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
@@ -378,8 +379,8 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_getnonblock_fd(pcap_t *, char *);
-int	pcap_setnonblock_fd(pcap_t *p, int, char *);
+int	pcap_getnonblock_fd(pcap_t *);
+int	pcap_setnonblock_fd(pcap_t *p, int);
 #endif
 
 /*

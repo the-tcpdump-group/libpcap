@@ -2,18 +2,24 @@
 #include "config.h"
 #endif
 
+#ifdef _WIN32
+#include <pcap-stdinc.h>
+#else /* !_WIN32 */
 #include <sys/param.h>
+#endif /* !_WIN32 */
 
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
 #include <ctype.h>
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif /* !_WIN32 */
 
 #include <snf.h>
 #if SNF_VERSION_API >= 0x0003
@@ -76,7 +82,7 @@ snf_platform_cleanup(pcap_t *p)
 }
 
 static int
-snf_getnonblock(pcap_t *p, char *errbuf)
+snf_getnonblock(pcap_t *p)
 {
 	struct pcap_snf *ps = p->priv;
 
@@ -84,7 +90,7 @@ snf_getnonblock(pcap_t *p, char *errbuf)
 }
 
 static int
-snf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+snf_setnonblock(pcap_t *p, int nonblock)
 {
 	struct pcap_snf *ps = p->priv;
 
@@ -107,9 +113,10 @@ snf_timestamp_to_timeval(const int64_t ts_nanosec, const int tstamp_precision)
 {
 	struct timeval tv;
 	long tv_nsec;
+        const static struct timeval zero_timeval;
 
-	if (ts_nanosec == 0)
-		return (struct timeval) { 0, 0 };
+        if (ts_nanosec == 0)
+                return zero_timeval;
 
 	tv.tv_sec = ts_nanosec / _NSEC_PER_SEC;
 	tv_nsec = (ts_nanosec % _NSEC_PER_SEC);
@@ -262,10 +269,17 @@ snf_activate(pcap_t* p)
 	else
 		nr = NULL;
 
+
+        /* Allow pcap_set_buffer_size() to set dataring_size.
+         * Default is zero which allows setting from env SNF_DATARING_SIZE.
+         * pcap_set_buffer_size() is in bytes while snf_open() accepts values
+         * between 0 and 1048576 in Megabytes. Values in this range are
+         * mapped to 1MB.
+         */
 	err = snf_open(ps->snf_boardnum,
 			0, /* let SNF API parse SNF_NUM_RINGS, if set */
 			NULL, /* default RSS, or use SNF_RSS_FLAGS env */
-			0, /* default to SNF_DATARING_SIZE from env */
+                        (p->opt.buffer_size > 0 && p->opt.buffer_size < 1048576) ? 1048576 : p->opt.buffer_size, /* default to SNF_DATARING_SIZE from env */
 			flags, /* may want pshared */
 			&ps->snf_handle);
 	if (err != 0) {
@@ -300,7 +314,9 @@ snf_activate(pcap_t* p)
 	/*
 	 * "select()" and "poll()" don't work on snf descriptors.
 	 */
+#ifndef _WIN32
 	p->selectable_fd = -1;
+#endif /* !_WIN32 */
 	p->linktype = DLT_EN10MB;
 	p->read_op = snf_read;
 	p->inject_op = snf_inject;
@@ -322,6 +338,9 @@ int
 snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	pcap_if_t *dev;
+#ifdef _WIN32
+	struct sockaddr_in addr;
+#endif
 	struct snf_ifaddrs *ifaddrs, *ifa;
 	char name[MAX_DESC_LENGTH];
 	char desc[MAX_DESC_LENGTH];
@@ -332,6 +351,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "snf_getifaddrs: snf_init failed");
 		return (-1);
+	}
 
 	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL)
 	{
@@ -416,6 +436,28 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			    errbuf);
 			if (dev == NULL)
 				return -1;
+#ifdef _WIN32
+			/*
+			 * On Windows, fill in IP# from device name
+			 */
+                        ret = inet_pton(AF_INET, dev->name, &addr.sin_addr);
+                        if (ret == 1) {
+                        	/*
+                        	 * Successful conversion of device name
+                        	 * to IPv4 address.
+                        	 */
+	                        addr.sin_family = AF_INET;
+        	                if (add_addr_to_dev(dev, &addr, sizeof(addr),
+                	            NULL, 0, NULL, 0, NULL, 0, errbuf) == -1)
+                        		return -1;
+                        } else if (ret == -1) {
+				/*
+				 * Error.
+				 */
+                                (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,"sinf_findalldevs inet_pton: %s", pcap_strerror(errno));
+                                return -1;
+                        }
+#endif _WIN32
 		}
 	}
 	snf_freeifaddrs(ifaddrs);
