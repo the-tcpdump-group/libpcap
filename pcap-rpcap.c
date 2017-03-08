@@ -72,28 +72,36 @@ struct activehosts *activeHosts;
  * Private data for capturing remotely using the rpcap protocol.
  */
 struct pcap_rpcap {
-	/*! \brief '1' if we're the network client; needed by several functions (like pcap_setfilter() ) to know if
-	they have to use the socket or they have to open the local adapter. */
+	/*
+	 * This is '1' if we're the network client; it is needed by several
+	 * functions (such as pcap_setfilter()) to know whether they have
+	 * to use the socket or have to open the local adapter.
+	 */
 	int rmt_clientside;
 
-	SOCKET rmt_sockctrl;		//!< socket ID of the socket used for the control connection
-	SOCKET rmt_sockdata;		//!< socket ID of the socket used for the data connection
-	int rmt_flags;				//!< we have to save flags, since they are passed by the pcap_open_live(), but they are used by the pcap_startcapture()
-	int rmt_capstarted;			//!< 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture()
-	char *currentfilter;		//!< Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on.
+	SOCKET rmt_sockctrl;		/* socket ID of the socket used for the control connection */
+	SOCKET rmt_sockdata;		/* socket ID of the socket used for the data connection */
+	int rmt_flags;			/* we have to save flags, since they are passed by the pcap_open_live(), but they are used by the pcap_startcapture() */
+	int rmt_capstarted;		/* 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture() */
+	char *currentfilter;		/* Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on. */
 
-	unsigned int TotNetDrops;		/* keeps the number of packets that have been dropped by the network */
+	unsigned int TotNetDrops;	/* keeps the number of packets that have been dropped by the network */
 
 	/*
-	 * \brief It keeps the number of packets that have been received by the application.
+	 * This keeps the number of packets that have been received by the
+	 * application.
 	 *
-	 * Packets dropped by the kernel buffer are not counted in this variable. The variable is always
-	 * equal to (TotAccepted - TotDrops), except for the case of remote capture, in which we have also
-	 * packets in flight, i.e. that have been transmitted by the remote host, but that have not been
-	 * received (yet) from the client. In this case, (TotAccepted - TotDrops - TotNetDrops) gives a
-	 * wrong result, since this number does not corresponds always to the number of packet received by
-	 * the application. For this reason, in the remote capture we need another variable that takes
-	 * into account of the number of packets actually received by the application.
+	 * Packets dropped by the kernel buffer are not counted in this
+	 * variable. It is always equal to (TotAccepted - TotDrops),
+	 * except for the case of remote capture, in which we have also
+	 * packets in flight, i.e. that have been transmitted by the remote
+	 * host, but that have not been received (yet) from the client.
+	 * In this case, (TotAccepted - TotDrops - TotNetDrops) gives a
+	 * wrong result, since this number does not corresponds always to
+	 * the number of packet received by the application. For this reason,
+	 * in the remote capture we need another variable that takes into
+	 * account of the number of packets actually received by the
+	 * application.
 	 */
 	unsigned int TotCapt;
 
