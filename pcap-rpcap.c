@@ -63,7 +63,9 @@
  */
 
 #define PCAP_STATS_STANDARD	0	/* Used by pcap_stats_rpcap to see if we want standard or extended statistics */
+#ifdef _WIN32
 #define PCAP_STATS_EX		1	/* Used by pcap_stats_rpcap to see if we want standard or extended statistics */
+#endif
 
 /* Keeps a list of all the opened connections in the active mode. */
 struct activehosts *activeHosts;
@@ -1673,7 +1675,6 @@ static int pcap_setsampling_remote(pcap_t *p)
  *                                                       *
  *********************************************************/
 
-
 /* \ingroup remote_pri_func
  * \brief It sends a RPCAP error to the other peer.
  *
@@ -1700,8 +1701,8 @@ static int pcap_setsampling_remote(pcap_t *p)
  */
 int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf)
 {
-	char sendbuf[RPCAP_NETBUF_SIZE];			/* temporary buffer in which data to be sent is buffered */
-	int sendbufidx = 0;							/* index which keeps the number of bytes currently buffered */
+	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	uint16 length;
 
 	length = (uint16)strlen(error);
@@ -1746,12 +1747,12 @@ int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errb
 int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data that has to be sent is buffered */
-	int sendbufidx = 0;					/* index which keeps the number of bytes currently buffered */
-	uint16 length;						/* length of the payload of this message */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
+	uint16 length;				/* length of the payload of this message */
 	struct rpcap_auth *rpauth;
 	uint16 auth_type;
 	struct rpcap_header header;
-	int retval;							/* temp variable which stores functions return value */
+	int retval;				/* temp variable which stores functions return value */
 
 	if (auth)
 	{
@@ -1799,7 +1800,6 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 
 	if (auth_type == RPCAP_RMTAUTH_PWD)
 	{
-
 		if (auth->username)
 			rpauth->slen1 = (uint16) strlen(auth->username);
 		else
@@ -2079,7 +2079,7 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
  */
 SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 {
-	struct activehosts *temp;					/* temp var needed to scan the host list chain */
+	struct activehosts *temp;			/* temp var needed to scan the host list chain */
 	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
 	int retval;
 
@@ -2104,7 +2104,8 @@ SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 		ai_next = addrinfo;
 		while (ai_next)
 		{
-			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0) {
+			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
+			{
 				*isactive = 1;
 				return (temp->sockctrl);
 			}
@@ -2129,7 +2130,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 {
 	pcap_t *fp;
 	char *source_str;
-	struct pcap_rpcap *pr;				/* structure used when doing a remote live capture */
+	struct pcap_rpcap *pr;		/* structure used when doing a remote live capture */
 	int result;
 
 	fp = pcap_create_common(errbuf, sizeof (struct pcap_rpcap));
