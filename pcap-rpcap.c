@@ -411,9 +411,28 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
  */
 static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	struct pcap_pkthdr *pkt_header;
 	u_char *pkt_data;
 	int n = 0;
+
+	/*
+	 * If this is client-side, and we haven't already started
+	 * the capture, start it now.
+	 */
+	if (pr->rmt_clientside)
+	{
+		/* We are on an remote capture */
+		if (!pr->rmt_capstarted)
+		{
+			/*
+			 * The capture isn't started yet, so try to
+			 * start it.
+			 */
+			if (pcap_startcapture_remote(p))
+				return -1;
+		}
+	}
 
 	while (n < cnt || PACKET_COUNT_IS_UNLIMITED(cnt))
 	{
