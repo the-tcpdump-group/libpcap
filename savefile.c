@@ -114,6 +114,8 @@ sf_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 	 */
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Savefiles cannot be put into non-blocking mode");
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	    "Savefiles cannot be put into non-blocking mode");
 	return (-1);
 }
 
