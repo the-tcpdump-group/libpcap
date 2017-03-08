@@ -899,7 +899,6 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE], name[PCAP_BUF_SIZE];
 	int type;
 	pcap_t *fp;
-	int result;
 
 	if (strlen(source) > PCAP_BUF_SIZE)
 	{
@@ -919,33 +918,13 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		break;
 
 	case PCAP_SRC_IFREMOTE:
-		fp = pcap_create(source, errbuf);
-		if (fp == NULL)
-		{
-			return NULL;
-		}
-
 		/*
-		 * Although we already have host, port and iface, we prefer TO PASS only 'pars' to the
-		 * pcap_open_remote() so that it has to call the pcap_parsesrcstr() again.
+		 * Although we already have host, port and iface, we prefer
+		 * to pass only 'name' to pcap_open_rpcap(), so that it has
+		 * to call pcap_parsesrcstr() again.
 		 * This is less optimized, but much clearer.
 		 */
-
-		result = pcap_opensource_remote(fp, auth);
-
-		if (result != 0)
-		{
-			pcap_close(fp);
-			return NULL;
-		}
-
-		struct pcap_md *md;				/* structure used when doing a remote live capture */
-		md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
-
-		fp->snapshot = snaplen;
-		fp->opt.timeout = read_timeout;
-		fp->activated = 1;
-		md->rmt_flags = flags;
+		fp = pcap_open_rpcap(name, snaplen, flags, read_timeout, auth, errbuf);
 		break;
 
 	case PCAP_SRC_IFLOCAL:
@@ -993,10 +972,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 
 struct pcap_samp *pcap_setsampling(pcap_t *p)
 {
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
-	return &(md->rmt_samp);
+	return &p->rmt_samp;
 }
 
 SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, char *errbuf)

@@ -1187,6 +1187,28 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them.])
 fi
 
+dnl
+dnl Allow the user to enable remote capture.
+dnl It's off by default, as that increases the attack surface of
+dnl libpcap, exposing it to malicious servers.
+dnl
+AC_MSG_CHECKING([whether to enable remote packet capture])
+AC_ARG_ENABLE(remote,
+[  --enable-remote         enable remote packet capture @<:@default=no@:>@
+  --disable-remote        disable remote packet capture],,
+   enableval=no)
+case "$enableval" in
+yes)	AC_MSG_RESULT(yes)
+	AC_WARN([Remote packet capture may expose libpcap-based applications])
+	AC_WARN([to attacks by malicious remote capture servers!])
+	AC_DEFINE(HAVE_REMOTE,,
+	    [Define to 1 if remote packet capture is to be supported])
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
+	;;
+*)	AC_MSG_RESULT(no)
+	;;
+esac
+
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention
 # for man pages (file formats in section 5, miscellaneous info in section 7).
@@ -1244,7 +1266,7 @@ darwin*)
 	DYEXT="dylib"
 	V_CCOPT="$V_CCOPT -fno-common"
 	AC_ARG_ENABLE(universal,
-	AC_HELP_STRING([--disable-universal],[don't build universal on OS X]))
+	AC_HELP_STRING([--disable-universal],[don't build universal on macOS]))
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
@@ -1717,20 +1739,20 @@ if test "x$enable_dbus" != "xno"; then
 
 		darwin*)
 			#
-			# We don't support D-Bus sniffing on OS X; see
+			# We don't support D-Bus sniffing on macOS; see
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#
 			# The user requested it, so fail.
 			#
-			AC_MSG_ERROR([Due to freedesktop.org bug 74029, D-Bus capture support is not available on OS X])
+			AC_MSG_ERROR([Due to freedesktop.org bug 74029, D-Bus capture support is not available on macOS])
 		esac
 	else
 		case "$host_os" in
 
 		darwin*)
 			#
-			# We don't support D-Bus sniffing on OS X; see
+			# We don't support D-Bus sniffing on macOS; see
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#

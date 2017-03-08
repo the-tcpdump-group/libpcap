@@ -69,16 +69,37 @@
 struct activehosts *activeHosts;
 
 /*
- * Private data for capturing on WinPcap devices.
+ * Private data for capturing remotely using the rpcap protocol.
  */
-struct pcap_win {
-	int nonblock;
-	int rfmon_selfstart;		/* a flag tells whether the monitor mode is set by itself */
-	int filtering_in_kernel;	/* using kernel filter */
+struct pcap_rpcap {
+	/*! \brief '1' if we're the network client; needed by several functions (like pcap_setfilter() ) to know if
+	they have to use the socket or they have to open the local adapter. */
+	int rmt_clientside;
 
-#ifdef HAVE_DAG_API
-	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
-#endif
+	SOCKET rmt_sockctrl;		//!< socket ID of the socket used for the control connection
+	SOCKET rmt_sockdata;		//!< socket ID of the socket used for the data connection
+	int rmt_flags;				//!< we have to save flags, since they are passed by the pcap_open_live(), but they are used by the pcap_startcapture()
+	int rmt_capstarted;			//!< 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture()
+	char *currentfilter;		//!< Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on.
+
+	unsigned int TotNetDrops;		/* keeps the number of packets that have been dropped by the network */
+
+	/*
+	 * \brief It keeps the number of packets that have been received by the application.
+	 *
+	 * Packets dropped by the kernel buffer are not counted in this variable. The variable is always
+	 * equal to (TotAccepted - TotDrops), except for the case of remote capture, in which we have also
+	 * packets in flight, i.e. that have been transmitted by the remote host, but that have not been
+	 * received (yet) from the client. In this case, (TotAccepted - TotDrops - TotNetDrops) gives a
+	 * wrong result, since this number does not corresponds always to the number of packet received by
+	 * the application. For this reason, in the remote capture we need another variable that takes
+	 * into account of the number of packets actually received by the application.
+	 */
+	unsigned int TotCapt;
+
+	struct pcap_stat stat;
+	/* XXX */
+	struct pcap *next;		/* list of open pcaps that need stuff cleared on close */
 };
 
 /****************************************************
@@ -214,9 +235,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	/* Structures needed for the select() call */
 	fd_set rfds;				/* set of socket descriptors we have to check */
 	struct timeval tv;			/* maximum time the select() can block waiting for data */
-	struct pcap_md *md;			/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 
 	/*
 	 * Define the packet buffer timeout, to be used in the select()
@@ -232,9 +251,9 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	 * 'fp->rmt_sockdata' has always to be set before calling the select(),
 	 * since it is cleared by the select()
 	 */
-	FD_SET(md->rmt_sockdata, &rfds);
+	FD_SET(pr->rmt_sockdata, &rfds);
 
-	retval = select((int) md->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
+	retval = select((int) pr->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
 	if (retval == -1)
 	{
 		sock_geterror("select(): ", p->errbuf, PCAP_ERRBUF_SIZE);
@@ -258,20 +277,20 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	header = (struct rpcap_header *) netbuf;
 	net_pkt_header = (struct rpcap_pkthdr *) (netbuf + sizeof(struct rpcap_header));
 
-	if (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
+	if (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
 	{
 		/* Read the entire message from the network */
-		if (sock_recv(md->rmt_sockdata, netbuf, RPCAP_NETBUF_SIZE, SOCK_RECEIVEALL_NO, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(pr->rmt_sockdata, netbuf, RPCAP_NETBUF_SIZE, SOCK_RECEIVEALL_NO, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 	else
 	{
-		if (sock_recv(md->rmt_sockdata, netbuf, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(pr->rmt_sockdata, netbuf, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 
 	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(p->errbuf, md->rmt_sockdata, header, RPCAP_MSG_PACKET, 0);
+	retval = rpcap_checkmsg(p->errbuf, pr->rmt_sockdata, header, RPCAP_MSG_PACKET, 0);
 
 	if (retval != RPCAP_MSG_PACKET)		/* the message is not the one expected */
 	{
@@ -291,10 +310,10 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	}
 
 	/* In case of TCP, read the remaining of the packet from the socket */
-	if (!(md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
+	if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		/* Read the RPCAP packet header from the network */
-		nread = sock_recv(md->rmt_sockdata, (char *)net_pkt_header,
+		nread = sock_recv(pr->rmt_sockdata, (char *)net_pkt_header,
 		    sizeof(struct rpcap_pkthdr), SOCK_RECEIVEALL_YES,
 		    p->errbuf, PCAP_ERRBUF_SIZE);
 		if (nread == -1)
@@ -317,10 +336,10 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		 * I don't update the counter of the packets dropped by the network since we're using TCP,
 		 * therefore no packets are dropped. Just update the number of packets received correctly
 		 */
-		md->TotCapt++;
+		pr->TotCapt++;
 
 		/* Copies the packet into the data buffer */
-		if (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
+		if (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
 		{
 			unsigned int npkt;
 
@@ -335,17 +354,17 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 			/* We're using UDP, so we need to update the counter of the packets dropped by the network */
 			npkt = ntohl(net_pkt_header->npkt);
 
-			if (md->TotCapt != npkt)
+			if (pr->TotCapt != npkt)
 			{
-				md->TotNetDrops += (npkt - md->TotCapt);
-				md->TotCapt = npkt;
+				pr->TotNetDrops += (npkt - pr->TotCapt);
+				pr->TotCapt = npkt;
 			}
 
 		}
 		else
 		{
 			/* In case of TCP, read the remaining of the packet from the socket */
-			nread = sock_recv(md->rmt_sockdata, *pkt_data,
+			nread = sock_recv(pr->rmt_sockdata, *pkt_data,
 			    (*pkt_header)->caplen, SOCK_RECEIVEALL_YES,
 			    p->errbuf, PCAP_ERRBUF_SIZE);
 			if (nread == -1)
@@ -355,7 +374,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 			/* Checks if all the data has been read; if not, discard the data in excess */
 			/* This check has to be done only on TCP connections */
 			if (totread != ntohl(header->plen))
-				sock_discard(md->rmt_sockdata, ntohl(header->plen) - totread, NULL, 0);
+				sock_discard(pr->rmt_sockdata, ntohl(header->plen) - totread, NULL, 0);
 		}
 
 
@@ -420,16 +439,14 @@ static void pcap_cleanup_remote(pcap_t *fp)
 {
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
-	int active = 0;					/* active mode or not? */
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
+	int active = 0;				/* active mode or not? */
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	/* detect if we're in active mode */
 	temp = activeHosts;
 	while (temp)
 	{
-		if (temp->sockctrl == md->rmt_sockctrl)
+		if (temp->sockctrl == pr->rmt_sockctrl)
 		{
 			active = 1;
 			break;
@@ -442,38 +459,38 @@ static void pcap_cleanup_remote(pcap_t *fp)
 		rpcap_createhdr(&header, RPCAP_MSG_CLOSE, 0, 0);
 
 		/* I don't check for errors, since I'm going to close everything */
-		sock_send(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
+		sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
 	}
 	else
 	{
 		rpcap_createhdr(&header, RPCAP_MSG_ENDCAP_REQ, 0, 0);
 
 		/* I don't check for errors, since I'm going to close everything */
-		sock_send(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
+		sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
 
 		/* wait for the answer */
 		/* Don't check what we got, since the present libpcap does not uses this pcap_t anymore */
-		sock_recv(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, NULL, 0);
+		sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, NULL, 0);
 
 		if (ntohl(header.plen) != 0)
-			sock_discard(md->rmt_sockctrl, ntohl(header.plen), NULL, 0);
+			sock_discard(pr->rmt_sockctrl, ntohl(header.plen), NULL, 0);
 	}
 
-	if (md->rmt_sockdata)
+	if (pr->rmt_sockdata)
 	{
-		sock_close(md->rmt_sockdata, NULL, 0);
-		md->rmt_sockdata = 0;
+		sock_close(pr->rmt_sockdata, NULL, 0);
+		pr->rmt_sockdata = 0;
 	}
 
-	if ((!active) && (md->rmt_sockctrl))
-		sock_close(md->rmt_sockctrl, NULL, 0);
+	if ((!active) && (pr->rmt_sockctrl))
+		sock_close(pr->rmt_sockctrl, NULL, 0);
 
-	md->rmt_sockctrl = 0;
+	pr->rmt_sockctrl = 0;
 
-	if (md->currentfilter)
+	if (pr->currentfilter)
 	{
-		free(md->currentfilter);
-		md->currentfilter = NULL;
+		free(pr->currentfilter);
+		pr->currentfilter = NULL;
 	}
 
 	/* To avoid inconsistencies in the number of sock_init() */
@@ -557,15 +574,13 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
 	int nread;
 	int retval;				/* temp variable which stores functions return value */
-	struct pcap_md *md;			/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 
 	/*
 	 * If the capture has still to start, we cannot ask statistics to the other peer,
 	 * so we return a fake number
 	 */
-	if (!md->rmt_capstarted)
+	if (!pr->rmt_capstarted)
 	{
 		ps->ps_drop = 0;
 		ps->ps_ifdrop = 0;
@@ -585,15 +600,15 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 	rpcap_createhdr(&header, RPCAP_MSG_STATS_REQ, 0, 0);
 
 	/* Send the PCAP_STATS command */
-	if (sock_send(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), p->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), p->errbuf, PCAP_ERRBUF_SIZE))
 		goto error;
 
 	/* Receive the RPCAP stats reply message */
-	if (sock_recv(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
 	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(p->errbuf, md->rmt_sockctrl, &header, RPCAP_MSG_STATS_REPLY, RPCAP_MSG_ERROR, 0);
+	retval = rpcap_checkmsg(p->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_STATS_REPLY, RPCAP_MSG_ERROR, 0);
 
 	if (retval != RPCAP_MSG_STATS_REPLY)		/* the message is not the one expected */
 	{
@@ -617,7 +632,7 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 		}
 	}
 
-	nread = sock_recv(md->rmt_sockctrl, (char *)&netstats,
+	nread = sock_recv(pr->rmt_sockctrl, (char *)&netstats,
 	    sizeof(struct rpcap_stats), SOCK_RECEIVEALL_YES,
 	    p->errbuf, PCAP_ERRBUF_SIZE);
 	if (nread == -1)
@@ -630,8 +645,8 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 #if defined(_WIN32) && defined(HAVE_REMOTE)
 	if (mode == PCAP_STATS_EX)
 	{
-		ps->ps_capt = md->TotCapt;
-		ps->ps_netdrop = md->TotNetDrops;
+		ps->ps_capt = pr->TotCapt;
+		ps->ps_netdrop = pr->TotNetDrops;
 		ps->ps_sent = ntohl(netstats.svrcapt);
 	}
 #endif /* _WIN32 && HAVE_REMOTE */
@@ -639,7 +654,7 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 	/* Checks if all the data has been read; if not, discard the data in excess */
 	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
+		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
 			goto error;
 	}
 
@@ -647,7 +662,7 @@ static struct pcap_stat *rpcap_stats_remote(pcap_t *p, struct pcap_stat *ps, int
 
 error:
 	if (totread != ntohl(header.plen))
-		sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
+		sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
 	return NULL;
 }
@@ -708,10 +723,7 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_openreply openreply;	/* open reply message */
 
-	struct pcap_md *md;			/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
-
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	/*
 	 * determine the type of the source (NULL, file, local, remote)
@@ -828,8 +840,8 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	/* Set proper fields into the pcap_t struct */
 	fp->linktype = ntohl(openreply.linktype);
 	fp->tzoff = ntohl(openreply.tzoff);
-	md->rmt_sockctrl = sockctrl;
-	md->rmt_clientside = 1;
+	pr->rmt_sockctrl = sockctrl;
+	pr->rmt_clientside = 1;
 
 
 	/* This code is duplicated from the end of this function */
@@ -924,9 +936,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	socklen_t itemp;
 	int sockbufsize = 0;
 
-	struct pcap_md *md;			/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	/*
 	 * Let's check if sampling has been required.
@@ -940,7 +950,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	temp = activeHosts;
 	while (temp)
 	{
-		if (temp->sockctrl == md->rmt_sockctrl)
+		if (temp->sockctrl == pr->rmt_sockctrl)
 		{
 			active = 1;
 			break;
@@ -958,7 +968,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * so I would have to call getpeername() anyway
 	 */
 	saddrlen = sizeof(struct sockaddr_storage);
-	if (getpeername(md->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
+	if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 	{
 		sock_geterror("getsockname(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
 		goto error;
@@ -978,7 +988,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * - we're using TCP, and the user wants us to be in active mode
 	 * - we're using UDP
 	 */
-	if ((active) || (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
+	if ((active) || (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		/*
 		 * We have to create a new socket to receive packets
@@ -988,7 +998,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 		memset(&hints, 0, sizeof(struct addrinfo));
 		/* TEMP addrinfo is NULL in case of active */
 		hints.ai_family = ai_family;	/* Use the same address family of the control socket */
-		hints.ai_socktype = (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
+		hints.ai_socktype = (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
 		hints.ai_flags = AI_PASSIVE;	/* Data connection is opened by the server toward the client */
 
 		/* Let's the server pick up a free network port for us */
@@ -1045,7 +1055,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	startcapreq->read_timeout = htonl(fp->opt.timeout);
 
 	/* portdata on the openreq is meaningful only if we're in active mode */
-	if ((active) || (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
+	if ((active) || (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		sscanf(portdata, "%d", (int *)&(startcapreq->portdata));	/* cast to avoid a compiler warning */
 		startcapreq->portdata = htons(startcapreq->portdata);
@@ -1054,9 +1064,9 @@ int pcap_startcapture_remote(pcap_t *fp)
 	startcapreq->snaplen = htonl(fp->snapshot);
 	startcapreq->flags = 0;
 
-	if (md->rmt_flags & PCAP_OPENFLAG_PROMISCUOUS)
+	if (pr->rmt_flags & PCAP_OPENFLAG_PROMISCUOUS)
 		startcapreq->flags |= RPCAP_STARTCAPREQ_FLAG_PROMISC;
-	if (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
+	if (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
 		startcapreq->flags |= RPCAP_STARTCAPREQ_FLAG_DGRAM;
 	if (active)
 		startcapreq->flags |= RPCAP_STARTCAPREQ_FLAG_SERVEROPEN;
@@ -1067,16 +1077,16 @@ int pcap_startcapture_remote(pcap_t *fp)
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, &fp->fcode))
 		goto error;
 
-	if (sock_send(md->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
 		goto error;
 
 
 	/* Receive the RPCAP start capture reply message */
-	if (sock_recv(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
 	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(fp->errbuf, md->rmt_sockctrl, &header, RPCAP_MSG_STARTCAP_REPLY, RPCAP_MSG_ERROR, 0);
+	retval = rpcap_checkmsg(fp->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_STARTCAP_REPLY, RPCAP_MSG_ERROR, 0);
 
 	if (retval != RPCAP_MSG_STARTCAP_REPLY)		/* the message is not the one expected */
 	{
@@ -1099,7 +1109,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 		}
 	}
 
-	nread = sock_recv(md->rmt_sockctrl, (char *)&startcapreply,
+	nread = sock_recv(pr->rmt_sockctrl, (char *)&startcapreply,
 	    sizeof(struct rpcap_startcapreply), SOCK_RECEIVEALL_YES,
 	    fp->errbuf, PCAP_ERRBUF_SIZE);
 	if (nread == -1)
@@ -1118,13 +1128,13 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * connection, we have to wait this info from the remote side.
 	 */
 
-	if (!(md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
+	if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		if (!active)
 		{
 			memset(&hints, 0, sizeof(struct addrinfo));
 			hints.ai_family = ai_family;		/* Use the same address family of the control socket */
-			hints.ai_socktype = (md->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
+			hints.ai_socktype = (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
 			pcap_snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
@@ -1160,7 +1170,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	}
 
 	/* Let's save the socket of the data connection */
-	md->rmt_sockdata = sockdata;
+	pr->rmt_sockdata = sockdata;
 
 	/* Allocates WinPcap/libpcap user buffer, which is a socket buffer in case of a remote capture */
 	/* It has the same size of the one used on the other side of the connection */
@@ -1230,7 +1240,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	/* Checks if all the data has been read; if not, discard the data in excess */
 	if (totread != ntohl(header.plen))
 	{
-		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
+		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
 			goto error;
 	}
 
@@ -1240,7 +1250,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 	 * because when we generate the 'start capture' we do not know (yet) all the ports
 	 * we're currently using.
 	 */
-	if (md->rmt_flags & PCAP_OPENFLAG_NOCAPTURE_RPCAP)
+	if (pr->rmt_flags & PCAP_OPENFLAG_NOCAPTURE_RPCAP)
 	{
 		struct bpf_program fcode;
 
@@ -1255,7 +1265,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 		pcap_freecode(&fcode);
 	}
 
-	md->rmt_capstarted = 1;
+	pr->rmt_capstarted = 1;
 	return 0;
 
 error:
@@ -1268,13 +1278,13 @@ error:
 	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
 	if (totread != ntohl(header.plen))
-		sock_discard(md->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
+		sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
 	if ((sockdata) && (sockdata != -1))		/* we can be here because sockdata said 'error' */
 		sock_close(sockdata, NULL, 0);
 
 	if (!active)
-		sock_close(md->rmt_sockctrl, NULL, 0);
+		sock_close(pr->rmt_sockctrl, NULL, 0);
 
 	/*
 	 * We do not have to call pcap_close() here, because this function is always called
@@ -1380,14 +1390,11 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
  */
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
-	int retval;						/* general variable used to keep the return value of other functions */
+	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
-	int sendbufidx = 0;				/* index which keeps the number of bytes currently buffered */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
-
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
 		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
@@ -1399,15 +1406,15 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, prog))
 		return -1;
 
-	if (sock_send(md->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
 	/* Waits for the answer */
-	if (sock_recv(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
 	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(fp->errbuf, md->rmt_sockctrl, &header, RPCAP_MSG_UPDATEFILTER_REPLY, 0);
+	retval = rpcap_checkmsg(fp->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_UPDATEFILTER_REPLY, 0);
 
 	if (retval != RPCAP_MSG_UPDATEFILTER_REPLY)		/* the message is not the one expected */
 	{
@@ -1427,7 +1434,7 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 
 	if (ntohl(header.plen) != 0)	/* the message has an unexpected size */
 	{
-		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen), fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen), fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 
@@ -1447,11 +1454,9 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
  */
 static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
-	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
-
-	if (!md->rmt_capstarted)
+	if (!pr->rmt_capstarted)
 	{
 		/* copy filter into the pcap_t structure */
 		if (install_bpf_program(fp, prog) == -1)
@@ -1480,12 +1485,10 @@ static int pcap_setfilter_remote(pcap_t *fp, struct bpf_program *prog)
 static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 {
 	int RetVal = 0;
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)fp->priv + sizeof(struct pcap_win));
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 
 	/* We do not want to capture our RPCAP traffic. So, let's update the filter */
-	if (md->rmt_flags & PCAP_OPENFLAG_NOCAPTURE_RPCAP)
+	if (pr->rmt_flags & PCAP_OPENFLAG_NOCAPTURE_RPCAP)
 	{
 		struct sockaddr_storage saddr;		/* temp, needed to retrieve the network data port chosen on the local machine */
 		socklen_t saddrlen;					/* temp, needed to retrieve the network data port chosen on the local machine */
@@ -1500,7 +1503,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 
 		/* Get the name/port of the other peer */
 		saddrlen = sizeof(struct sockaddr_storage);
-		if (getpeername(md->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
+		if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
 			sock_geterror("getpeername(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
 			return -1;
@@ -1515,7 +1518,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 
 		/* We cannot check the data port, because this is available only in case of TCP sockets */
 		/* Get the name/port of the current host */
-		if (getsockname(md->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
+		if (getsockname(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
 			sock_geterror("getsockname(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
 			return -1;
@@ -1530,7 +1533,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		}
 
 		/* Let's now check the data port */
-		if (getsockname(md->rmt_sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
+		if (getsockname(pr->rmt_sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
 			sock_geterror("getsockname(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
 			return -1;
@@ -1543,7 +1546,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			return -1;
 		}
 
-		currentfiltersize = strlen(md->currentfilter);
+		currentfiltersize = strlen(pr->currentfilter);
 
 		newfilter = (char *)malloc(currentfiltersize + newstringsize + 1);
 
@@ -1551,7 +1554,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		{
 			pcap_snprintf(newfilter, currentfiltersize + newstringsize,
 				"(%s) and not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
-				md->currentfilter, myaddress, peeraddress, myctrlport, peerctrlport, myaddress, peeraddress, mydataport);
+				pr->currentfilter, myaddress, peeraddress, myctrlport, peerctrlport, myaddress, peeraddress, mydataport);
 		}
 		else
 		{
@@ -1563,13 +1566,13 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		newfilter[currentfiltersize + newstringsize] = 0;
 
 		/* This is only an hack to make the pcap_compile() working properly */
-		md->rmt_clientside = 0;
+		pr->rmt_clientside = 0;
 
 		if (pcap_compile(fp, prog, newfilter, 1, 0) == -1)
 			RetVal = -1;
 
 		/* This is only an hack to make the pcap_compile() working properly */
-		md->rmt_clientside = 1;
+		pr->rmt_clientside = 1;
 
 		free(newfilter);
 	}
@@ -1593,17 +1596,15 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
  */
 static int pcap_setsampling_remote(pcap_t *p)
 {
-	int retval;						/* general variable used to keep the return value of other functions */
+	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
-	int sendbufidx = 0;				/* index which keeps the number of bytes currently buffered */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
 	struct rpcap_sampling *sampling_pars;	/* Structure that is needed to send sampling parameters to the remote host */
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
-
-	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 
 	/* If no samping is requested, return 'ok' */
-	if (md->rmt_samp.method == PCAP_SAMP_NOSAMP)
+	if (p->rmt_samp.method == PCAP_SAMP_NOSAMP)
 		return 0;
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
@@ -1621,18 +1622,18 @@ static int pcap_setsampling_remote(pcap_t *p)
 
 	memset(sampling_pars, 0, sizeof(struct rpcap_sampling));
 
-	sampling_pars->method = md->rmt_samp.method;
-	sampling_pars->value = htonl(md->rmt_samp.value);
+	sampling_pars->method = p->rmt_samp.method;
+	sampling_pars->value = htonl(p->rmt_samp.value);
 
-	if (sock_send(md->rmt_sockctrl, sendbuf, sendbufidx, p->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, p->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
 	/* Waits for the answer */
-	if (sock_recv(md->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
 	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(p->errbuf, md->rmt_sockctrl, &header, RPCAP_MSG_SETSAMPLING_REPLY, 0);
+	retval = rpcap_checkmsg(p->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_SETSAMPLING_REPLY, 0);
 
 	if (retval != RPCAP_MSG_SETSAMPLING_REPLY)		/* the message is not the one expected */
 	{
@@ -1653,7 +1654,7 @@ static int pcap_setsampling_remote(pcap_t *p)
 
 	if (ntohl(header.plen) != 0)	/* the message has an unexpected size */
 	{
-		if (sock_discard(md->rmt_sockctrl, ntohl(header.plen), p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen), p->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 
@@ -2117,4 +2118,39 @@ SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 	 */
 	*isactive = 0;
 	return 0;
+}
+
+pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
+{
+	pcap_t *fp;
+	char *source_str;
+	struct pcap_rpcap *pr;				/* structure used when doing a remote live capture */
+	int result;
+
+	fp = pcap_create_common(errbuf, sizeof (struct pcap_rpcap));
+	if (fp == NULL)
+	{
+		return NULL;
+	}
+	source_str = strdup(source);
+	if (source_str == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "malloc: %s", pcap_strerror(errno));
+		return NULL;
+	}
+	fp->opt.device = source_str;
+	fp->snapshot = snaplen;
+	fp->opt.timeout = read_timeout;
+	pr = fp->priv;
+	pr->rmt_flags = flags;
+
+	result = pcap_opensource_remote(fp, auth);
+
+	if (result != 0) {
+		pcap_close(fp);
+		return NULL;
+	}
+
+	fp->activated = 1;
+	return fp;
 }

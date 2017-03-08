@@ -179,6 +179,10 @@ struct pcap {
 
 	void *priv;		/* private data for methods */
 
+#ifdef HAVE_REMOTE
+	struct pcap_samp rmt_samp;	/* parameters related to the sampling process. */
+#endif
+
 	int swapped;
 	FILE *rfile;		/* null if live capture, non-null if savefile */
 	u_int fddipad;
@@ -441,6 +445,14 @@ pcap_if_t *find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
 int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
+#endif
+
+#ifdef HAVE_REMOTE
+/*
+ * Internal interfaces for "pcap_open()".
+ */
+pcap_t	*pcap_open_rpcap(const char *source, int snaplen, int flags,
+    int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
 #endif
 
 /*

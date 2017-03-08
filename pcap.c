@@ -1580,6 +1580,53 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 {
 	pcap_t *p;
 	int status;
+#ifdef HAVE_REMOTE
+	char host[PCAP_BUF_SIZE + 1];
+	char port[PCAP_BUF_SIZE + 1];
+	char name[PCAP_BUF_SIZE + 1];
+	int srctype;
+
+	/*
+	 * Retrofit - we have to make older applications compatible with
+	 * remote capture.
+	 * So we're calling pcap_open_remote() from here; this is a very
+	 * dirty hack.
+	 * Obviously, we cannot exploit all the new features; for instance,
+	 * we cannot send authentication, we cannot use a UDP data connection,
+	 * and so on.
+	 */
+	if (pcap_parsesrcstr(device, &srctype, host, port, name, errbuf))
+		return (NULL);
+
+	if (srctype == PCAP_SRC_IFREMOTE) {
+		/*
+		 * Although we already have host, port and iface, we prefer
+		 * to pass only 'device' to pcap_open_rpcap(), so that it has
+		 * to call pcap_parsesrcstr() again.
+		 * This is less optimized, but much clearer.
+		 */
+		return (pcap_open_rpcap(device, snaplen,
+		    promisc ? PCAP_OPENFLAG_PROMISCUOUS : 0, to_ms,
+		    NULL, errbuf));
+	}
+	if (srctype == PCAP_SRC_FILE) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown URL scheme \"file\"");
+		return (NULL);
+	}
+	if (srctype == PCAP_SRC_IFLOCAL) {
+		/*
+		 * If it starts with rpcap://, that refers to a local device
+		 * (no host part in the URL). Remove the rpcap://, and
+		 * fall through to the regular open path.
+		 */
+		if (strncmp(device, PCAP_SRC_IF_STRING, strlen(PCAP_SRC_IF_STRING)) == 0) {
+			size_t len = strlen(device) - strlen(PCAP_SRC_IF_STRING) + 1;
+
+			if (len > 0)
+				device += strlen(PCAP_SRC_IF_STRING);
+		}
+	}
+#endif	/* HAVE_REMOTE */
 
 	p = pcap_create(device, errbuf);
 	if (p == NULL)
