@@ -2029,10 +2029,9 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
 	/*
 	 * This is a sample function.
 	 *
-	 * In the real world, you have to check at the type code,
+	 * In the real world, you have to check the type code,
 	 * and decide accordingly.
 	 */
-
 	if (header->ver != RPCAP_VERSION)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Incompatible version number: message discarded.");
