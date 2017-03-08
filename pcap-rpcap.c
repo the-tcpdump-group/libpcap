@@ -411,7 +411,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
  *
  * Parameters and return values are exactly the same of the pcap_read().
  */
-static int pcap_read_remote(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_pkthdr *pkt_header;
 	u_char *pkt_data;
@@ -851,9 +851,8 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 	pr->rmt_sockctrl = sockctrl;
 	pr->rmt_clientside = 1;
 
-
 	/* This code is duplicated from the end of this function */
-	fp->read_op = pcap_read_remote;
+	fp->read_op = pcap_read_rpcap;
 	fp->setfilter_op = pcap_setfilter_rpcap;
 	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
 	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
