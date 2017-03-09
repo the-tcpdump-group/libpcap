@@ -689,6 +689,28 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		pcap_wsockinit();
 	done = 1;
 #endif
+
+#ifdef HAVE_REMOTE
+	/*
+	 * If the device on which we're capturing need to be notified
+	 * that a new filter is being compiled, do so.
+	 *
+	 * This allows them to save a copy of it, in case, for example,
+	 * they're implementing a form of remote packet capture, and
+	 * want the remote machine to filter out the packets in which
+	 * it's sending the packets it's captured.
+	 *
+	 * XXX - the fact that we happen to be compiling a filter
+	 * doesn't necessarily mean we'll be installing it as the
+	 * filter for this pcap_t; we might be running it from userland
+	 * on captured packets to do packet classification.  We really
+	 * need a better way of handling this, but this is all that
+	 * the WinPcap code did.
+	 */
+	if (p->save_current_filter_op != NULL)
+		(p->save_current_filter_op)(p, buf);
+#endif
+
 	initchunks(&cstate);
 	cstate.no_optimize = 0;
 #ifdef INET6

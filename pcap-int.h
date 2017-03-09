@@ -123,6 +123,7 @@ typedef int	(*activate_op_t)(pcap_t *);
 typedef int	(*can_set_rfmon_op_t)(pcap_t *);
 typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
 typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
+typedef void	(*save_current_filter_op_t)(pcap_t *, const char *);
 typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
 typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
 typedef int	(*set_datalink_op_t)(pcap_t *, int);
@@ -245,6 +246,7 @@ struct pcap {
 	activate_op_t activate_op;
 	can_set_rfmon_op_t can_set_rfmon_op;
 	inject_op_t inject_op;
+	save_current_filter_op_t save_current_filter_op;
 	setfilter_op_t setfilter_op;
 	setdirection_op_t setdirection_op;
 	set_datalink_op_t set_datalink_op;

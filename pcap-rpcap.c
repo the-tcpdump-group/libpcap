@@ -46,7 +46,7 @@
 /*
  * \file pcap-rpcap.c
  *
- * This file keeps all the new funtions that are needed for the RPCAP protocol.
+ * This file keeps all the new functions that are needed for the RPCAP protocol.
  * Almost all the pcap functions need to be modified in order to become compatible
  * with the RPCAP protocol. However, you can find here only the ones that are completely new.
  *
@@ -122,6 +122,7 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struct bpf_program *prog);
 static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog);
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
+static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *p);
 
@@ -709,7 +710,7 @@ error:
  *
  * Instead, we want to "open" the adapter, then send a "start capture" command only
  * when we're ready to start the capture.
- * This funtion does this job: it sends an "open adapter" command (according to the
+ * This function does this job: it sends an "open adapter" command (according to the
  * RPCAP protocol), but it does not start the capture.
  *
  * Since the other libpcap functions do not share this way of life, we have to make
@@ -870,6 +871,7 @@ int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
 
 	/* This code is duplicated from the end of this function */
 	fp->read_op = pcap_read_rpcap;
+	fp->save_current_filter_op = pcap_save_current_filter_rpcap;
 	fp->setfilter_op = pcap_setfilter_rpcap;
 	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
 	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
@@ -1461,6 +1463,32 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 	return 0;
 }
 
+static void
+pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter)
+{
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
+
+	/*
+	 * Check if:
+	 *  - We are on an remote capture
+	 *  - we do not want to capture RPCAP traffic
+	 *
+	 * If so, we have to save the current filter, because we have to
+	 * add some piece of stuff later
+	 */
+	if (pr->rmt_clientside &&
+	    (pr->rmt_flags & PCAP_OPENFLAG_NOCAPTURE_RPCAP))
+	{
+		if (pr->currentfilter)
+			free(pr->currentfilter);
+
+		if (filter == NULL)
+			filter = "";
+
+		pr->currentfilter = strdup(filter);
+	}
+}
+
 /*
  * \ingroup remote_pri_func
  *
@@ -1566,7 +1594,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			return -1;
 		}
 
-		currentfiltersize = pr->currentfilter?strlen(pr->currentfilter):0;
+		currentfiltersize = pr->currentfilter ? strlen(pr->currentfilter) : 0;
 
 		newfilter = (char *)malloc(currentfiltersize + newstringsize + 1);
 
@@ -1585,13 +1613,17 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 
 		newfilter[currentfiltersize + newstringsize] = 0;
 
-		/* This is only an hack to make the pcap_compile() working properly */
+		/*
+		 * This is only an hack to prevent the save_current_filter
+		 * routine, which will be called when we call pcap_compile(),
+		 * from saving the modified filter.
+		 */
 		pr->rmt_clientside = 0;
 
 		if (pcap_compile(fp, prog, newfilter, 1, 0) == -1)
 			RetVal = -1;
 
-		/* This is only an hack to make the pcap_compile() working properly */
+		/* Undo the hack. */
 		pr->rmt_clientside = 1;
 
 		free(newfilter);
