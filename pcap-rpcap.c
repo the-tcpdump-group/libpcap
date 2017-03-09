@@ -702,14 +702,14 @@ error:
  * The difference, here, is the capture thread does not start until the
  * pcap_startcapture_remote() is called.
  *
- * This is because, in remote capture, we cannot start capturing data as soon ad the
+ * This is because, in remote capture, we cannot start capturing data as soon as the
  * 'open adapter' command is sent. Suppose the remote adapter is already overloaded;
  * if we start a capture (which, by default, has a NULL filter) the new traffic can
  * saturate the network.
  *
  * Instead, we want to "open" the adapter, then send a "start capture" command only
  * when we're ready to start the capture.
- * This funtion does this job: it sends a "open adapter" command (according to the
+ * This funtion does this job: it sends an "open adapter" command (according to the
  * RPCAP protocol), but it does not start the capture.
  *
  * Since the other libpcap functions do not share this way of life, we have to make
@@ -912,17 +912,17 @@ error:
  *
  * \brief It starts a remote capture.
  *
- * This function is requires since the RPCAP protocol decouples the 'open' from the
+ * This function is required since the RPCAP protocol decouples the 'open' from the
  * 'start capture' functions.
  * This function takes all the parameters needed (which have been stored into the pcap_t structure)
  * and sends them to the server.
  * If everything is fine, it creates a new child thread that reads data from the network
- * and puts data it into the user buffer.
+ * and puts the data into the user buffer.
  * The pcap_read() will read data from the user buffer, as usual.
  *
  * The remote capture acts like a new "kernel", which puts packets directly into
  * the buffer pointed by pcap_t.
- * In fact, this function does not rely on a kernel that reads packets and put them
+ * In fact, this function does not rely on a kernel that reads packets and puts them
  * into the user buffer; it has to do that on its own.
  *
  * \param fp: the pcap_t descriptor of the device currently open.
@@ -1566,7 +1566,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			return -1;
 		}
 
-		currentfiltersize = strlen(pr->currentfilter);
+		currentfiltersize = pr->currentfilter?strlen(pr->currentfilter):0;
 
 		newfilter = (char *)malloc(currentfiltersize + newstringsize + 1);
 
