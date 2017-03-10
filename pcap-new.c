@@ -36,8 +36,9 @@
 #endif
 
 #include "pcap-int.h"	// for the details of the pcap_t structure
-#include "pcap-rpcap.h"
 #include "sockutils.h"
+#include "rpcap/rpcap-protocol.h"
+#include "pcap-rpcap.h"
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strstr, etc

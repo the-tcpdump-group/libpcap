@@ -40,8 +40,9 @@
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
 #include "pcap-int.h"
-#include "pcap-rpcap.h"
 #include "sockutils.h"
+#include "rpcap/rpcap-protocol.h"
+#include "pcap-rpcap.h"
 
 /*
  * \file pcap-rpcap.c

@@ -125,6 +125,7 @@ HDR = $(PUBHDR) \
 	pcap-stdinc.h \
 	portability.h \
 	ppp.h \
+	rpcap/rpcap-protocol.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \
 	sunatmpos.h
