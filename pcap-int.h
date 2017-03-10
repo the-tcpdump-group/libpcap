@@ -455,6 +455,12 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
  */
 pcap_t	*pcap_open_rpcap(const char *source, int snaplen, int flags,
     int read_timeout, struct pcap_rmtauth *auth, char *errbuf);
+
+/*
+ * Internal interfaces for "pcap_findalldevs_ex()".
+ */
+int	pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth,
+   pcap_if_t **alldevs, char *errbuf);
 #endif
 
 /*

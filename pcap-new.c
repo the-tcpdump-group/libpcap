@@ -62,8 +62,6 @@ SOCKET sockmain;
 
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ON_LOCAL_HOST "on local host"
-/* String identifier to be used in the pcap_findalldevs_ex() */
-#define PCAP_TEXT_SOURCE_ON_REMOTE_HOST "on remote node"
 
 /****************************************************
  *                                                  *
@@ -73,24 +71,13 @@ SOCKET sockmain;
 
 int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
-	SOCKET sockctrl;		/* socket descriptor of the control connection */
-	uint32 totread = 0;		/* number of bytes of the payload read from the socket */
-	int nread;
-	struct addrinfo hints;		/* temp variable needed to resolve hostnames into to socket representation */
-	struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
-	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
-	int i, j;		/* temp variables */
-	int naddr;		/* temp var needed to avoid problems with IPv6 addresses */
-	struct pcap_addr *addr;	/* another such temp */
-	int retval;		/* store the return value of the functions */
-	int nif;		/* Number of interfaces listed */
-	int active = 0;	/* 'true' if we the other end-party is in active mode */
-	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE], name[PCAP_BUF_SIZE], path[PCAP_BUF_SIZE], filename[PCAP_BUF_SIZE];
 	int type;
+	char name[PCAP_BUF_SIZE], path[PCAP_BUF_SIZE], filename[PCAP_BUF_SIZE];
 	pcap_t *fp;
 	char tmpstring[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
 	pcap_if_t *dev;		/* Previous device into the pcap_if_t chain */
 
+	(*alldevs) = NULL;
 
 	if (strlen(source) > PCAP_BUF_SIZE)
 	{
@@ -110,9 +97,10 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 	if (pcap_parsesrcstr(source, &type, NULL, NULL, NULL, errbuf) == -1)
 		return -1;
 
-	if (type == PCAP_SRC_IFLOCAL)
+	switch (type)
 	{
-		if (pcap_parsesrcstr(source, &type, host, NULL, NULL, errbuf) == -1)
+	case PCAP_SRC_IFLOCAL:
+		if (pcap_parsesrcstr(source, &type, NULL, NULL, NULL, errbuf) == -1)
 			return -1;
 
 		/* Initialize temporary string */
@@ -173,11 +161,8 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		}
 
 		return 0;
-	}
 
-	(*alldevs) = NULL;
-
-	if (type == PCAP_SRC_FILE)
+	case PCAP_SRC_FILE:
 	{
 		size_t stringlen;
 #ifdef WIN32
@@ -188,7 +173,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		DIR *unixdir;
 #endif
 
-		if (pcap_parsesrcstr(source, &type, host, port, name, errbuf) == -1)
+		if (pcap_parsesrcstr(source, &type, NULL, NULL, name, errbuf) == -1)
 			return -1;
 
 		/* Check that the filename is correct */
@@ -329,331 +314,13 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		return 0;
 	}
 
-	/* If we come here, it is a remote host */
+	case PCAP_SRC_IFREMOTE:
+		return pcap_findalldevs_ex_remote(source, auth, alldevs, errbuf);
 
-	/* Retrieve the needed data for getting adapter list */
-	if (pcap_parsesrcstr(source, &type, host, port, NULL, errbuf) == -1)
-		return -1;
-
-	/* Warning: this call can be the first one called by the user. */
-	/* For this reason, we have to initialize the WinSock support. */
-	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
-		return -1;
-
-	/* Check for active mode */
-	sockctrl = rpcap_remoteact_getsock(host, &active, errbuf);
-	if (sockctrl == INVALID_SOCKET)
-		return -1;
-
-	if (!active) {
-		/*
-		 * We're not in active mode; let's try to open a new
-		 * control connection.
-		 */
-		addrinfo = NULL;
-
-		memset(&hints, 0, sizeof(struct addrinfo));
-		hints.ai_family = PF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-
-		if (port[0] == 0)
-		{
-			/* the user chose not to specify the port */
-			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-		}
-		else
-		{
-			if (sock_initaddress(host, port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-		}
-
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == -1)
-			goto error;
-
-		/* addrinfo is no longer used */
-		freeaddrinfo(addrinfo);
-		addrinfo = NULL;
-
-		if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
-		{
-			sock_close(sockctrl, NULL, 0);
-			return -1;
-		}
-	}
-
-	/* RPCAP findalldevs command */
-	rpcap_createhdr(&header, RPCAP_MSG_FINDALLIF_REQ, 0, 0);
-
-	if (sock_send(sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
-
-	if (sock_recv(sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
-
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(errbuf, sockctrl, &header, RPCAP_MSG_FINDALLIF_REPLY, RPCAP_MSG_ERROR, 0);
-
-	if (retval != RPCAP_MSG_FINDALLIF_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:	/* Unrecoverable network error */
-		case -2:	/* The other endpoint send a message that is not allowed here */
-		case -1:	/* The other endpoint has a version number that is not compatible with our */
-			break;
-
-		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			break;
-
-		default:
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Internal error");
-			break;
-		};
-		}
-
-		if (!active)
-			sock_close(sockctrl, NULL, 0);
-
+	default:
+		strlcpy(errbuf, "Source type not supported", PCAP_ERRBUF_SIZE);
 		return -1;
 	}
-
-	/* read the number of interfaces */
-	nif = ntohs(header.value);
-
-	/* loop until all interfaces have been received */
-	for (i = 0; i < nif; i++)
-	{
-		struct rpcap_findalldevs_if findalldevs_if;
-		char tmpstring2[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
-		size_t stringlen;
-
-		tmpstring2[PCAP_BUF_SIZE] = 0;
-
-		/* receive the findalldevs structure from remote host */
-		nread = sock_recv(sockctrl, (char *)&findalldevs_if,
-		    sizeof(struct rpcap_findalldevs_if), SOCK_RECEIVEALL_YES,
-		    errbuf, PCAP_ERRBUF_SIZE);
-		if (nread == -1)
-			goto error;
-		totread += nread;
-
-		findalldevs_if.namelen = ntohs(findalldevs_if.namelen);
-		findalldevs_if.desclen = ntohs(findalldevs_if.desclen);
-		findalldevs_if.naddr = ntohs(findalldevs_if.naddr);
-
-		/* allocate the main structure */
-		if (i == 0)
-		{
-			(*alldevs) = (pcap_if_t *)malloc(sizeof(pcap_if_t));
-			dev = (*alldevs);
-		}
-		else
-		{
-			dev->next = (pcap_if_t *)malloc(sizeof(pcap_if_t));
-			dev = dev->next;
-		}
-
-		/* check that the malloc() didn't fail */
-		if (dev == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-			goto error;
-		}
-
-		/* Initialize the structure to 'zero' */
-		memset(dev, 0, sizeof(pcap_if_t));
-
-		/* allocate mem for name and description */
-		if (findalldevs_if.namelen)
-		{
-
-			if (findalldevs_if.namelen >= sizeof(tmpstring))
-			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Interface name too long");
-				goto error;
-			}
-
-			/* Retrieve adapter name */
-			nread = sock_recv(sockctrl, tmpstring,
-			    findalldevs_if.namelen, SOCK_RECEIVEALL_YES,
-			    errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
-				goto error;
-			totread += nread;
-
-			tmpstring[findalldevs_if.namelen] = 0;
-
-			/* Create the new device identifier */
-			if (pcap_createsrcstr(tmpstring2, PCAP_SRC_IFREMOTE, host, port, tmpstring, errbuf) == -1)
-				return -1;
-
-			stringlen = strlen(tmpstring2);
-
-			dev->name = (char *)malloc(stringlen + 1);
-			if (dev->name == NULL)
-			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-				goto error;
-			}
-
-			/* Copy the new device name into the correct memory location */
-			strlcpy(dev->name, tmpstring2, stringlen + 1);
-		}
-
-		if (findalldevs_if.desclen)
-		{
-			if (findalldevs_if.desclen >= sizeof(tmpstring))
-			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Interface description too long");
-				goto error;
-			}
-
-			/* Retrieve adapter description */
-			nread = sock_recv(sockctrl, tmpstring,
-			    findalldevs_if.desclen, SOCK_RECEIVEALL_YES,
-			    errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
-				goto error;
-			totread += nread;
-
-			tmpstring[findalldevs_if.desclen] = 0;
-
-			pcap_snprintf(tmpstring2, sizeof(tmpstring2) - 1, "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
-				tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host);
-
-			stringlen = strlen(tmpstring2);
-
-			dev->description = (char *)malloc(stringlen + 1);
-
-			if (dev->description == NULL)
-			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-				goto error;
-			}
-
-			/* Copy the new device description into the correct memory location */
-			strlcpy(dev->description, tmpstring2, stringlen + 1);
-		}
-
-		dev->flags = ntohl(findalldevs_if.flags);
-
-		naddr = 0;
-		addr = NULL;
-		/* loop until all addresses have been received */
-		for (j = 0; j < findalldevs_if.naddr; j++)
-		{
-			struct rpcap_findalldevs_ifaddr ifaddr;
-
-			/* Retrieve the interface addresses */
-			nread = sock_recv(sockctrl, (char *)&ifaddr,
-			    sizeof(struct rpcap_findalldevs_ifaddr),
-			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
-				goto error;
-			totread += nread;
-
-			/*
-			 * WARNING libpcap bug: the address listing is
-			 * available only for AF_INET.
-			 *
-			 * XXX - IPv6?
-			 */
-			if (ntohs(ifaddr.addr.ss_family) == AF_INET)
-			{
-				if (addr == NULL)
-				{
-					dev->addresses = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
-					addr = dev->addresses;
-				}
-				else
-				{
-					addr->next = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
-					addr = addr->next;
-				}
-				naddr++;
-
-				if (addr == NULL)
-				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-					goto error;
-				}
-				addr->next = NULL;
-
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.addr,
-					(struct sockaddr_storage **) &addr->addr, errbuf) == -1)
-					goto error;
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.netmask,
-					(struct sockaddr_storage **) &addr->netmask, errbuf) == -1)
-					goto error;
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.broadaddr,
-					(struct sockaddr_storage **) &addr->broadaddr, errbuf) == -1)
-					goto error;
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.dstaddr,
-					(struct sockaddr_storage **) &addr->dstaddr, errbuf) == -1)
-					goto error;
-
-				if ((addr->addr == NULL) && (addr->netmask == NULL) &&
-					(addr->broadaddr == NULL) && (addr->dstaddr == NULL))
-				{
-					free(addr);
-					addr = NULL;
-					if (naddr == 1)
-						naddr = 0;	/* the first item of the list had NULL addresses */
-				}
-			}
-		}
-	}
-
-	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - totread, errbuf, PCAP_ERRBUF_SIZE) == 1)
-			return -1;
-	}
-
-	/* Control connection has to be closed only in case the remote machine is in passive mode */
-	if (!active)
-	{
-		/* DO not send RPCAP_CLOSE, since we did not open a pcap_t; no need to free resources */
-		if (sock_close(sockctrl, errbuf, PCAP_ERRBUF_SIZE))
-			return -1;
-	}
-
-	/* To avoid inconsistencies in the number of sock_init() */
-	sock_cleanup();
-
-	return 0;
-
-error:
-	/*
-	 * In case there has been an error, I don't want to overwrite it with a new one
-	 * if the following call fails. I want to return always the original error.
-	 *
-	 * Take care: this connection can already be closed when we try to close it.
-	 * This happens because a previous error in the rpcapd, which requested to
-	 * closed the connection. In that case, we already recognized that into the
-	 * rpspck_isheaderok() and we already acknowledged the closing.
-	 * In that sense, this call is useless here (however it is needed in case
-	 * the client generates the error).
-	 *
-	 * Checks if all the data has been read; if not, discard the data in excess
-	 */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
-			return -1;
-	}
-
-	/* Control connection has to be closed only in case the remote machine is in passive mode */
-	if (!active)
-		sock_close(sockctrl, NULL, 0);
-
-	/* To avoid inconsistencies in the number of sock_init() */
-	sock_cleanup();
-
-	return -1;
 }
 
 int pcap_createsrcstr(char *source, int type, const char *host, const char *port, const char *name, char *errbuf)
@@ -917,7 +584,6 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		break;
 
 	case PCAP_SRC_IFLOCAL:
-
 		fp = pcap_open_live(name, snaplen, (flags & PCAP_OPENFLAG_PROMISCUOUS), read_timeout, errbuf);
 
 #ifdef WIN32
