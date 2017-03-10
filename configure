@@ -634,6 +634,7 @@ NETFILTER_SRC
 PCAP_SUPPORT_NETFILTER
 USB_SRC
 PCAP_SUPPORT_USB
+RPCAPD
 MAN_USERMOD_SECTION
 MAN_MISC_INFO
 MAN_FILE_FORMATS
@@ -7265,6 +7266,7 @@ $as_echo "$as_me: WARNING: to attacks by malicious remote capture servers!" >&2;
 $as_echo "#define HAVE_REMOTE /**/" >>confdefs.h
 
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
+	RPCAPD=rpcapd
 	;;
 *)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -8448,6 +8450,7 @@ ln -s ${srcdir}/bpf/net net
 
 
 
+
 # Check whether --enable-usb was given.
 if test "${enable_usb+set}" = set; then :
   enableval=$enable_usb;
@@ -9084,7 +9087,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_commands="$ac_config_commands default-1"
 
-ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap"
+ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcap/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -9803,6 +9806,7 @@ do
     "pcap_open_offline.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_open_offline.3pcap" ;;
     "pcap_set_tstamp_precision.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_tstamp_precision.3pcap" ;;
     "pcap_set_tstamp_type.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_tstamp_type.3pcap" ;;
+    "rpcap/Makefile") CONFIG_FILES="$CONFIG_FILES rpcap/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

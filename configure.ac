@@ -1204,6 +1204,7 @@ yes)	AC_MSG_RESULT(yes)
 	AC_DEFINE(HAVE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
+	RPCAPD=rpcapd
 	;;
 *)	AC_MSG_RESULT(no)
 	;;
@@ -1509,6 +1510,7 @@ AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_USERMOD_SECTION)
+AC_SUBST(RPCAPD)
 
 AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable nusb support @<:@default=yes, if support available@:>@])],
@@ -1854,5 +1856,5 @@ AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
 	pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap
 	pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap
-	pcap_set_tstamp_type.3pcap)
+	pcap_set_tstamp_type.3pcap rpcap/Makefile)
 exit 0

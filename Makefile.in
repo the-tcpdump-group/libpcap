@@ -60,6 +60,7 @@ DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
+RPCAPD=@RPCAPD@
 
 # Standard CFLAGS
 FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
@@ -125,7 +126,11 @@ HDR = $(PUBHDR) \
 	pcap-stdinc.h \
 	portability.h \
 	ppp.h \
+	rpcap/daemon.c \
+	rpcap/fileconf.c \
 	rpcap/rpcap-protocol.h \
+	rpcap/rpcapd.c \
+	rpcap/utils.c \
 	sf-pcap.h \
 	sf-pcap-ng.h \
 	sunatmpos.h
@@ -359,7 +364,7 @@ EXTRA_DIST = \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
 
-all: libpcap.a shared pcap-config
+all: libpcap.a shared $(RPCAPD) pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
@@ -521,6 +526,12 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
 	mv $@.tmp $@
 	chmod a+x $@
+
+#
+# Remote pcap daemon.
+#
+rpcapd: libpcap.a
+	cd rpcap; $(MAKE)
 
 #
 # Test programs - not built by default, and not installed.
@@ -751,3 +762,5 @@ releasetar:
 
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	$(MKDEP) -c $(CC) -m $(CFLAGS) $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
+	cd rpcap; $(MAKE) depend
+

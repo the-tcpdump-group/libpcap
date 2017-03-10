@@ -409,6 +409,7 @@ PCAP_API int	pcap_snapshot(pcap_t *);
 PCAP_API int	pcap_is_swapped(pcap_t *);
 PCAP_API int	pcap_major_version(pcap_t *);
 PCAP_API int	pcap_minor_version(pcap_t *);
+PCAP_API int	pcap_bufsize(pcap_t *);
 
 /* XXX */
 PCAP_API FILE	*pcap_file(pcap_t *);

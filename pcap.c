@@ -2209,6 +2209,14 @@ pcap_minor_version(pcap_t *p)
 	return (p->version_minor);
 }
 
+int
+pcap_bufsize(pcap_t *p)
+{
+	if (!p->activated)
+		return (PCAP_ERROR_NOT_ACTIVATED);
+	return (p->bufsize);
+}
+
 FILE *
 pcap_file(pcap_t *p)
 {
