@@ -18,6 +18,7 @@ filtertest
 findalldevstest
 opentest
 valgrindtest
+reactivatetest
 grammar.c
 grammar.h
 libpcap.a
