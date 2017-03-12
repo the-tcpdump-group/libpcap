@@ -634,6 +634,7 @@ NETFILTER_SRC
 PCAP_SUPPORT_NETFILTER
 USB_SRC
 PCAP_SUPPORT_USB
+INSTALL_RPCAPD
 RPCAPD
 MAN_USERMOD_SECTION
 MAN_MISC_INFO
@@ -7267,6 +7268,7 @@ $as_echo "#define HAVE_REMOTE /**/" >>confdefs.h
 
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
 	RPCAPD=rpcapd
+	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
@@ -8430,6 +8432,7 @@ $as_echo "#define LBL_ALIGN 1" >>confdefs.h
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
+
 
 
 

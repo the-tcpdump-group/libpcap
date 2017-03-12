@@ -1205,6 +1205,7 @@ yes)	AC_MSG_RESULT(yes)
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
 	RPCAPD=rpcapd
+	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	AC_MSG_RESULT(no)
 	;;
@@ -1511,6 +1512,7 @@ AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_USERMOD_SECTION)
 AC_SUBST(RPCAPD)
+AC_SUBST(INSTALL_RPCAPD)
 
 AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable nusb support @<:@default=yes, if support available@:>@])],

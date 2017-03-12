@@ -107,14 +107,16 @@ clean:
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
-	    config.h gnuc.h net os-proto.h bpf_filter.c pcap-config \
-	    stamp-h stamp-h.in
+	    config.h stamp-h stamp-h.in
 	rm -rf autom4te.cache
 
 install: rpcapd
 	[ -d $(DESTDIR)$(sbindir) ] || \
 	    (mkdir -p $(DESTDIR)$(sbindir); chmod 755 $(DESTDIR)$(sbindir))
 	$(INSTALL_PROGRAM) rpcapd $(DESTDIR)$(sbindir)/rpcapd
+
+uninstall:
+	rm -f $(DESTDIR)$(sbindir)/rpcapd
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
