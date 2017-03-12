@@ -88,7 +88,7 @@ static int daemon_getstatsnopcap(SOCKET sockctrl, unsigned int ifdrops, unsigned
 
 static int daemon_setsampling(SOCKET sockctrl, struct rpcap_sampling *samp_param, int plen, char *errbuf);
 
-static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage *sockaddrout);
+static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout);
 static void *daemon_thrdatamain(void *ptr);
 
 /*!
@@ -780,7 +780,7 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 #ifdef AF_INET6
 			case AF_INET6:
 #endif
-				plen+= ( sizeof(struct sockaddr_storage) * 4);
+				plen+= ( sizeof(struct rpcap_sockaddr) * 4);
 				break;
 
 			default:
@@ -836,7 +836,6 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 				break;
 			}
 		}
-
 		findalldevs_if->naddr= htons(findalldevs_if->naddr);
 
 		if (sock_bufferize(d->name, lname, sendbuf, &sendbufidx, 
@@ -850,7 +849,7 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 		// send all addresses
 		for (address= d->addresses; address != NULL; address= address->next)
 		{
-		struct sockaddr_storage *sockaddr;
+			struct rpcap_sockaddr *sockaddr;
 
 			/*
 			 * Send only IPv4 and IPv6 addresses over the wire.
@@ -861,26 +860,26 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 #ifdef AF_INET6
 			case AF_INET6:
 #endif
-				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL, 
+				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL, 
 					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
 					return -1;
 				daemon_seraddr( (struct sockaddr_storage *) address->addr, sockaddr);
 
-				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL, 
+				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL, 
 					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
 					return -1;
 				daemon_seraddr( (struct sockaddr_storage *) address->netmask, sockaddr);
 
-				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL,
+				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
 					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
 					return -1;
 				daemon_seraddr( (struct sockaddr_storage *) address->broadaddr, sockaddr);
 
-				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL,
+				sockaddr = (struct rpcap_sockaddr *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct rpcap_sockaddr), NULL,
 					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
 					return -1;
 				daemon_seraddr( (struct sockaddr_storage *) address->dstaddr, sockaddr);
@@ -1580,7 +1579,7 @@ error:
 
 	\warning This function supports only AF_INET and AF_INET6 address families.
 */
-void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage *sockaddrout)
+void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout)
 {
 	memset(sockaddrout, 0, sizeof(struct sockaddr_storage) );
 
@@ -1592,26 +1591,31 @@ void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 	{
 	case AF_INET:
 		{
-		struct sockaddr_in *sockaddr;
+		struct sockaddr_in *sockaddrin_ipv4;
+		struct rpcap_sockaddr_in *sockaddrout_ipv4;
 
-		sockaddr= (struct sockaddr_in *) sockaddrin;
-		sockaddr->sin_family= htons(sockaddr->sin_family);
-		sockaddr->sin_port= htons(sockaddr->sin_port);
-		memcpy(sockaddrout, sockaddr, sizeof(struct sockaddr_in) );
+		sockaddrin_ipv4 = (struct sockaddr_in *) sockaddrin;
+		sockaddrout_ipv4 = (struct rpcap_sockaddr_in *) sockaddrout;
+		sockaddrout_ipv4->family = htons(RPCAP_AF_INET);
+		sockaddrout_ipv4->port = htons(sockaddrin_ipv4->sin_port);
+		memcpy(&sockaddrout_ipv4->addr, &sockaddrin_ipv4->sin_addr, sizeof(sockaddrout_ipv4->addr));
+		memset(sockaddrout_ipv4->zero, 0, sizeof(sockaddrout_ipv4->zero));
 		break;
 		}
 
 #ifdef AF_INET6
 	case AF_INET6:
 		{
-		struct sockaddr_in6 *sockaddr;
-	
-		sockaddr= (struct sockaddr_in6 *) sockaddrin;
-		sockaddr->sin6_family= htons(sockaddr->sin6_family);
-		sockaddr->sin6_port= htons(sockaddr->sin6_port);
-		sockaddr->sin6_flowinfo= htonl(sockaddr->sin6_flowinfo);
-		sockaddr->sin6_scope_id= htonl(sockaddr->sin6_scope_id);
-		memcpy(sockaddrout, sockaddr, sizeof(struct sockaddr_in6) );
+		struct sockaddr_in6 *sockaddrin_ipv6;
+		struct rpcap_sockaddr_in6 *sockaddrout_ipv6;
+
+		sockaddrin_ipv6 = (struct sockaddr_in6 *) sockaddrin;
+		sockaddrout_ipv6 = (struct rpcap_sockaddr_in6 *) sockaddrout;
+		sockaddrout_ipv6->family = htons(RPCAP_AF_INET6);
+		sockaddrout_ipv6->port = htons(sockaddrin_ipv6->sin6_port);
+		sockaddrout_ipv6->flowinfo = htonl(sockaddrin_ipv6->sin6_flowinfo);
+		memcpy(&sockaddrout_ipv6->addr, &sockaddrin_ipv6->sin6_addr, sizeof(sockaddrout_ipv6->addr));
+		sockaddrout_ipv6->scope_id = htonl(sockaddrin_ipv6->sin6_scope_id);
 		break;
 		}
 #endif

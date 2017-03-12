@@ -81,13 +81,86 @@ struct rpcap_findalldevs_if
 	uint16 dummy;	/* Must be zero */
 };
 
+/*
+ * Format of an address as sent over the wire.
+ *
+ * Do *NOT* use struct sockaddr_storage, as the layout for that is
+ * machine-dependent.
+ * 
+ * RFC 2553 gives two sample layouts, both of which are 128 bytes long,
+ * both of which are aligned on an 8-byte boundary, and both of which
+ * have 2 bytes before the address data.
+ *
+ * However, one has a 2-byte address family value at the beginning
+ * and the other has a 1-byte address length value and a 1-byte
+ * address family value; this reflects the fact that the original
+ * BSD sockaddr structure had a 2-byte address family value, which
+ * was later changed to a 1-byte address length value and a 1-byte
+ * address family value, when support for variable-length OSI
+ * network-layer addresses was added.
+ *
+ * Furthermore, Solaris's struct sockaddr_storage is 256 bytes
+ * long.
+ *
+ * This structure is supposed to be aligned on an 8-byte boundary;
+ * the message header is 8 bytes long, so we don't have to do
+ * anything to ensure it's aligned on that boundary within a packet,
+ * so we just define it as 128 bytes long, with a 2-byte address
+ * family.  (We only support IPv4 and IPv6 addresses, which are fixed-
+ * length.)  That way, it's the same size as sockaddr_storage on
+ * Windows, and it'll look like what an older Windows client will
+ * expect.
+ *
+ * In addition, do *NOT* use the host's AF_ value for an address,
+ * as the value for AF_INET6 is machine-dependent.  We use the
+ * Windows value, so it'll look like what an older Windows client
+ * will expect.
+ *
+ * (The Windows client is the only one that has been distributed
+ * as a standard part of *pcap; UN*X clients are probably built
+ * from source by the user or administrator, so they're in a
+ * better position to upgrade an old client.  Therefore, we
+ * try to make what goes over the wire look like what comes
+ * from a Windows server.)
+ */
+struct rpcap_sockaddr
+{
+	uint16	family;			/* Address family */
+	char	data[128-2];		/* Data */
+};
+
+/*
+ * Format of an IPv4 address as sent over the wire.
+ */
+#define RPCAP_AF_INET	2		/* Value on all OSes */
+struct rpcap_sockaddr_in
+{
+	uint16	family;			/* Address family */
+	uint16	port;			/* Port number */
+	uint32	addr;			/* IPv4 address */
+	uint8	zero[8];		/* Padding */
+};
+
+/*
+ * Format of an IPv6 address as sent over the wire.
+ */
+#define RPCAP_AF_INET6	23		/* Value on Windows */
+struct rpcap_sockaddr_in6
+{
+	uint16	family;			/* Address family */
+	uint16	port;			/* Port number */
+	uint32	flowinfo;		/* IPv6 flow information */
+	uint8	addr[16];		/* IPv6 address */
+	uint32	scope_id;		/* Scope zone index */
+};
+
 /* Format of the message for the address listing (findalldevs command) */
 struct rpcap_findalldevs_ifaddr
 {
-	struct sockaddr_storage addr;		/* Network address */
-	struct sockaddr_storage netmask;	/* Netmask for that address */
-	struct sockaddr_storage broadaddr;	/* Broadcast address for that address */
-	struct sockaddr_storage dstaddr;	/* P2P destination address for that address */
+	struct rpcap_sockaddr addr;		/* Network address */
+	struct rpcap_sockaddr netmask;		/* Netmask for that address */
+	struct rpcap_sockaddr broadaddr;	/* Broadcast address for that address */
+	struct rpcap_sockaddr dstaddr;		/* P2P destination address for that address */
 };
 
 /*

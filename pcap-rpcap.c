@@ -136,19 +136,67 @@ static int pcap_setsampling_remote(pcap_t *p);
 /*
  * \ingroup remote_pri_func
  *
- * \brief 	It traslates (i.e. de-serializes) a 'sockaddr_storage' structure from
- * the network byte order to the host byte order.
+ * \brief 	It traslates (i.e. de-serializes) a 'rpcap_sockaddr'
+ * structure from the network byte order to a 'sockaddr_in" or
+ * 'sockaddr_in6' structure in the host byte order.
  *
- * It accepts a 'sockaddr_storage' structure as it is received from the network and it
- * converts it into the host byte order (by means of a set of ntoh() ).
- * The function will allocate the 'sockaddrout' variable according to the address family
- * in use. In case the address does not belong to the AF_INET nor AF_INET6 families,
- * 'sockaddrout' is not allocated and a NULL pointer is returned.
- * This usually happens because that address does not exist on the other host, so the
- * RPCAP daemon sent a 'sockaddr_storage' structure containing all 'zero' values.
+ * It accepts an 'rpcap_sockaddr' structure as it is received from the
+ * network, and checks the address family field against various values
+ * to see whether it looks like an IPv4 address, an IPv6 address, or
+ * neither of those.  It checks for multiple values in order to try
+ * to handle older rpcap daemons that sent the native OS's 'sockaddr_in'
+ * or 'sockaddr_in6' structures over the wire with some members
+ * byte-swapped, and to handle the fact that AF_INET6 has different
+ * values on different OSes.
  *
- * \param sockaddrin: a 'sockaddr_storage' pointer to the variable that has to be
- * de-serialized.
+ * For IPv4 addresses, it converts the address family to host byte
+ * order from network byte order and puts it into the structure,
+ * sets the length if a sockaddr structure has a length, converts the
+ * port number to host byte order from network byte order and puts
+ * it into the structure, copies over the IPv4 address, and zeroes
+ * out the zero padding.
+ *
+ * For IPv6 addresses, it converts the address family to host byte
+ * order from network byte order and puts it into the structure,
+ * sets the length if a sockaddr structure has a length, converts the
+ * port number and flow information to host byte order from network
+ * byte order and puts them into the structure, copies over the IPv6
+ * address, and converts the scope ID to host byte order from network
+ * byte order and puts it into the structure.
+ *
+ * The function will allocate the 'sockaddrout' variable according to the
+ * address family in use. In case the address does not belong to the
+ * AF_INET nor AF_INET6 families, 'sockaddrout' is not allocated and a
+ * NULL pointer is returned.  This usually happens because that address
+ * does not exist on the other host, or is of an address family other
+ * than AF_INET or AF_INET6, so the RPCAP daemon sent a 'sockaddr_storage'
+ * structure containing all 'zero' values.
+ *
+ * Older RPCAPDs sent the addresses over the wire in the OS's native
+ * structure format.  For most OSes, this looks like the over-the-wire
+ * format, but might have a different value for AF_INET6 than the value
+ * on the machine receiving the reply.  For OSes with the newer BSD-style
+ * sockaddr structures, this has, instead of a 2-byte address family,
+ * a 1-byte structure length followed by a 1-byte address family.  The
+ * RPCAPD code would put the address family in network byte order before
+ * sending it; that would set it to 0 on a little-endian machine, as
+ * htons() of any value between 1 and 255 would result in a value > 255,
+ * with its lower 8 bits zero, so putting that back into a 1-byte field
+ * would set it to 0.
+ *
+ * Therefore, for older RPCAPDs running on an OS with newer BSD-style
+ * sockaddr structures, the family field, if treated as a big-endian
+ * (network byte order) 16-bit field, would be:
+ *
+ *	(length << 8) | family if sent by a big-endian machine
+ *	(length << 8) if sent by a little-endian machine
+ *
+ * For current RPCAPDs, and for older RPCAPDs running on an OS with
+ * older BSD-style sockaddr structures, the family field, if treated
+ * as a big-endian 16-bit field, would just contain the family.
+ *
+ * \param sockaddrin: a 'rpcap_sockaddr' pointer to the variable that has
+ * to be de-serialized.
  *
  * \param sockaddrout: a 'sockaddr_storage' pointer to the variable that will contain
  * the de-serialized data. The structure returned can be either a 'sockaddr_in' or 'sockaddr_in6'.
@@ -166,18 +214,44 @@ static int pcap_setsampling_remote(pcap_t *p);
  *
  * \warning The sockaddrout (if not NULL) must be deallocated by the user.
  */
-int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf)
+
+/*
+ * Possible IPv4 family values other than the designated over-the-wire value,
+ * which is 2 (because everybody uses 2 for AF_INET4).
+ */
+#define SOCKADDR_IN_LEN		16	/* length of struct sockaddr_in */
+#define SOCKADDR_IN6_LEN	28	/* length of struct sockaddr_in6 */
+#define NEW_BSD_AF_INET_BE	((SOCKADDR_IN_LEN << 8) | 2)
+#define NEW_BSD_AF_INET_LE	(SOCKADDR_IN_LEN << 8)
+
+/*
+ * Possible IPv6 family values other than the designated over-the-wire value,
+ * which is 23 (because that's what Windows uses, and most RPCAP servers
+ * out there are probably running Windows, as WinPcap includes the server
+ * but few if any UN*Xes build and ship it).
+ *
+ * The new BSD sockaddr structure format was in place before 4.4-Lite, so
+ * all the free-software BSDs use it.
+ */
+#define NEW_BSD_AF_INET6_BSD_BE		((SOCKADDR_IN6_LEN << 8) | 24)	/* NetBSD, OpenBSD, BSD/OS */
+#define NEW_BSD_AF_INET6_FREEBSD_BE	((SOCKADDR_IN6_LEN << 8) | 28)	/* FreeBSD, DragonFly BSD */
+#define NEW_BSD_AF_INET6_DARWIN_BE	((SOCKADDR_IN6_LEN << 8) | 30)	/* macOS, iOS, anything else Darwin-based */
+#define NEW_BSD_AF_INET6_LE		(SOCKADDR_IN6_LEN << 8)
+#define LINUX_AF_INET6			10
+#define HPUX_AF_INET6			22
+#define AIX_AF_INET6			24
+#define SOLARIS_AF_INET6		26
+int rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf)
 {
 	/* Warning: we support only AF_INET and AF_INET6 */
-	switch (ntohs(sockaddrin->ss_family))
+	switch (ntohs(sockaddrin->family))
 	{
-	case AF_INET:
+	case RPCAP_AF_INET:
+	case NEW_BSD_AF_INET_BE:
+	case NEW_BSD_AF_INET_LE:
 		{
-		struct sockaddr_in *sockaddr;
-
-		sockaddr = (struct sockaddr_in *) sockaddrin;
-		sockaddr->sin_family = ntohs(sockaddr->sin_family);
-		sockaddr->sin_port = ntohs(sockaddr->sin_port);
+		struct rpcap_sockaddr_in *sockaddrin_ipv4;
+		struct sockaddr_in *sockaddrout_ipv4;
 
 		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in));
 		if ((*sockaddrout) == NULL)
@@ -185,20 +259,28 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 			return -1;
 		}
-		memcpy(*sockaddrout, sockaddr, sizeof(struct sockaddr_in));
+		sockaddrin_ipv4 = (struct rpcap_sockaddr_in *) sockaddrin;
+		sockaddrout_ipv4 = (struct sockaddr_in *) (*sockaddrout);
+		sockaddrout_ipv4->sin_family = AF_INET;
+		sockaddrout_ipv4->sin_port = ntohs(sockaddrin_ipv4->port);
+		memcpy(&sockaddrout_ipv4->sin_addr, &sockaddrin_ipv4->addr, sizeof(sockaddrout_ipv4->sin_addr));
+		memset(sockaddrout_ipv4->sin_zero, 0, sizeof(sockaddrout_ipv4->sin_zero));
 		break;
 		}
 
 #ifdef AF_INET6
-	case AF_INET6:
+	case RPCAP_AF_INET6:
+	case NEW_BSD_AF_INET6_BSD_BE:
+	case NEW_BSD_AF_INET6_FREEBSD_BE:
+	case NEW_BSD_AF_INET6_DARWIN_BE:
+	case NEW_BSD_AF_INET6_LE:
+	case LINUX_AF_INET6:
+	case HPUX_AF_INET6:
+	case AIX_AF_INET6:
+	case SOLARIS_AF_INET6:
 		{
-		struct sockaddr_in6 *sockaddr;
-
-		sockaddr = (struct sockaddr_in6 *) sockaddrin;
-		sockaddr->sin6_family = ntohs(sockaddr->sin6_family);
-		sockaddr->sin6_port = ntohs(sockaddr->sin6_port);
-		sockaddr->sin6_flowinfo = ntohl(sockaddr->sin6_flowinfo);
-		sockaddr->sin6_scope_id = ntohl(sockaddr->sin6_scope_id);
+		struct rpcap_sockaddr_in6 *sockaddrin_ipv6;
+		struct sockaddr_in6 *sockaddrout_ipv6;
 
 		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in6));
 		if ((*sockaddrout) == NULL)
@@ -206,7 +288,13 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 			return -1;
 		}
-		memcpy(*sockaddrout, sockaddr, sizeof(struct sockaddr_in6));
+		sockaddrin_ipv6 = (struct rpcap_sockaddr_in6 *) sockaddrin;
+		sockaddrout_ipv6 = (struct sockaddr_in6 *) (*sockaddrout);
+		sockaddrout_ipv6->sin6_family = AF_INET6;
+		sockaddrout_ipv6->sin6_port = ntohs(sockaddrin_ipv6->port);
+		sockaddrout_ipv6->sin6_flowinfo = ntohl(sockaddrin_ipv6->flowinfo);
+		memcpy(&sockaddrout_ipv6->sin6_addr, &sockaddrin_ipv6->addr, sizeof(sockaddrout_ipv6->sin6_addr));
+		sockaddrout_ipv6->sin6_scope_id = ntohl(sockaddrin_ipv6->scope_id);
 		break;
 		}
 #endif
@@ -2522,25 +2610,25 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			addr->broadaddr = NULL;
 			addr->dstaddr = NULL;
 
-			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.addr,
+			if (rpcap_deseraddr(&ifaddr.addr,
 				(struct sockaddr_storage **) &addr->addr, errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
 			}
-			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.netmask,
+			if (rpcap_deseraddr(&ifaddr.netmask,
 				(struct sockaddr_storage **) &addr->netmask, errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
 			}
-			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.broadaddr,
+			if (rpcap_deseraddr(&ifaddr.broadaddr,
 				(struct sockaddr_storage **) &addr->broadaddr, errbuf) == -1)
 			{
 				freeaddr(addr);
 				goto error;
 			}
-			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.dstaddr,
+			if (rpcap_deseraddr(&ifaddr.dstaddr,
 				(struct sockaddr_storage **) &addr->dstaddr, errbuf) == -1)
 			{
 				freeaddr(addr);
