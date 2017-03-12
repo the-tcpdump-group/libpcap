@@ -101,7 +101,7 @@ EXTRA_DIST = \
 	Makefile-devel-adds
 
 rpcapd: $(OBJ) ../libpcap.a
-	$(CC) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a
+	$(CC) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS)
 clean:
 	rm -f $(CLEANFILES)
 
