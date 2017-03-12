@@ -27,6 +27,8 @@ exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 # Pathname of directory to install the configure program
 bindir = @bindir@
+# Pathname of directory to install the rpcapd daemon
+sbindir = @sbindir@
 # Pathname of directory to install the include files
 includedir = @includedir@
 # Pathname of directory to install the library
@@ -98,6 +100,7 @@ PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \
 	pcap-namedb.h \
+	remote-ext.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
 	pcap/can_socketcan.h \
@@ -633,6 +636,7 @@ install: install-shared install-archive pcap-config
 	for i in $(MANMISC); do \
 		$(INSTALL_DATA) `echo $$i | sed 's/.manmisc.in/.manmisc/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_MISC_INFO@/`echo $$i | sed 's/.manmisc.in/.@MAN_MISC_INFO@/'`; done
+	cd rpcap; $(MAKE) DESTDIR=$(DESTDIR) install
 
 install-shared: install-shared-$(DYEXT)
 install-shared-so: libpcap.so

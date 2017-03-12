@@ -27,6 +27,8 @@ exec_prefix = @exec_prefix@
 datarootdir = @datarootdir@
 # Pathname of directory to install the configure program
 bindir = @bindir@
+# Pathname of directory to install the rpcapd daemon
+sbindir = @sbindir@
 # Pathname of directory to install the include files
 includedir = @includedir@
 # Pathname of directory to install the library
@@ -48,7 +50,7 @@ AR = @AR@
 LN_S = @LN_S@
 MKDEP = @MKDEP@
 CCOPT = @V_CCOPT@
-INCLS = -I. -I.. @V_INCLS@
+INCLS = -I. -I.. -I@srcdir@ -I@srcdir@/.. @V_INCLS@
 DEFS = -DBUILDING_PCAP @DEFS@ @V_DEFS@
 ADDLOBJS = @ADDLOBJS@
 ADDLARCHIVEOBJS = @ADDLARCHIVEOBJS@
@@ -99,7 +101,7 @@ EXTRA_DIST = \
 	Makefile-devel-adds
 
 rpcapd: $(OBJ) ../libpcap.a
-	$(CC) -o $@ $(OBJ) ../libpcap.a
+	$(CC) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a
 clean:
 	rm -f $(CLEANFILES)
 
@@ -108,6 +110,11 @@ distclean: clean
 	    config.h gnuc.h net os-proto.h bpf_filter.c pcap-config \
 	    stamp-h stamp-h.in
 	rm -rf autom4te.cache
+
+install: rpcapd
+	[ -d $(DESTDIR)$(sbindir) ] || \
+	    (mkdir -p $(DESTDIR)$(sbindir); chmod 755 $(DESTDIR)$(sbindir))
+	$(INSTALL_PROGRAM) rpcapd $(DESTDIR)$(sbindir)/rpcapd
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
