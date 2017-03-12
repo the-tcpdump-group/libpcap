@@ -603,7 +603,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * packet is smaller than our target time.
 				 */
 				if (pkt_header->ts.tv_sec < pw->samp_time.tv_sec ||
-				   (pkt_header->ts.tv_sec == pw->samp_time.tv_sec) && pkt_header->ts.tv_usec < pw->samp_time.tv_usec)) {
+				   (pkt_header->ts.tv_sec == pw->samp_time.tv_sec && pkt_header->ts.tv_usec < pw->samp_time.tv_usec)) {
 					bp += Packet_WORDALIGN(caplen + hdrlen);
 					continue;
 				}
@@ -613,7 +613,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * delivered to our caller, so let's update
 				 * the target time.
 				 */
-				pw-samp_time.tv_usec = pkt_header->ts.tv_usec + p->rmt_samp.value * 1000;
+				pw->samp_time.tv_usec = pkt_header->ts.tv_usec + p->rmt_samp.value * 1000;
 				if (pw->samp_time.tv_usec > 1000000) {
 					pw->samp_time.tv_sec = pkt_header->ts.tv_sec + pw->samp_time.tv_usec / 1000000;
 					pw->samp_time.tv_usec = pw->samp_time.tv_usec % 1000000;
