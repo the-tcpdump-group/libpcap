@@ -23,6 +23,8 @@ static int ifprint(pcap_if_t *d);
 static char *iptos(bpf_u_int32 in);
 
 #ifdef _WIN32
+#include "portability.h"
+
 /*
  * Generate a string for a Win32-specific error (i.e. an error generated when
  * calling a Win32 API).
@@ -59,6 +61,7 @@ getpass(const char *prompt)
   HANDLE console_handle = GetStdHandle(STD_INPUT_HANDLE);
   DWORD console_mode, save_console_mode;
   static char password[128+1];
+  char *p;
 
   fprintf(stderr, "%s", prompt);
 
@@ -67,17 +70,17 @@ getpass(const char *prompt)
    */
   if (!GetConsoleMode(console_handle, &console_mode)) {
     fprintf(stderr, "Can't get console mode: %s\n",
-            win32_strerror(GetLastError());
+            win32_strerror(GetLastError()));
     exit(1);
   }
   save_console_mode = console_mode;
   console_mode &= ~ENABLE_ECHO_INPUT;
   if (!SetConsoleMode(console_handle, console_mode)) {
     fprintf(stderr, "Can't set console mode: %s\n",
-            win32_strerror(GetLastError());
+            win32_strerror(GetLastError()));
     exit(1);
   }
-  if (fgets(username, sizeof username, stdin) == NULL) {
+  if (fgets(password, sizeof password, stdin) == NULL) {
     fprintf(stderr, "\n");
     SetConsoleMode(console_handle, save_console_mode);
     exit(1);
