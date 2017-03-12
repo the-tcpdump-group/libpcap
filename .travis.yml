@@ -48,6 +48,7 @@ addons:
 
 git:
   quiet: true
+  depth: 3
 
 before_install:
   - uname -a
