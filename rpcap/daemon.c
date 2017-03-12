@@ -770,7 +770,23 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 		plen+= sizeof(struct rpcap_findalldevs_if);
 
 		for (address= d->addresses; address != NULL; address= address->next)
-			plen+= ( sizeof(struct sockaddr_storage) * 4);
+		{
+			/*
+			 * Send only IPv4 and IPv6 addresses over the wire.
+			 */
+			switch (address->addr->sa_family)
+			{
+			case AF_INET:
+#ifdef AF_INET6
+			case AF_INET6:
+#endif
+				plen+= ( sizeof(struct sockaddr_storage) * 4);
+				break;
+
+			default:
+				break;
+			}
+		}
 	}
 
 	// RPCAP findalldevs command
@@ -803,7 +819,23 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 		findalldevs_if->flags= htonl(d->flags);
 
 		for (address= d->addresses; address != NULL; address= address->next)
-			findalldevs_if->naddr++;
+		{
+			/*
+			 * Send only IPv4 and IPv6 addresses over the wire.
+			 */
+			switch (address->addr->sa_family)
+			{
+			case AF_INET:
+#ifdef AF_INET6
+			case AF_INET6:
+#endif
+				findalldevs_if->naddr++;
+				break;
+
+			default:
+				break;
+			}
+		}
 
 		findalldevs_if->naddr= htons(findalldevs_if->naddr);
 
@@ -820,29 +852,43 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 		{
 		struct sockaddr_storage *sockaddr;
 
-			sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-			if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL, 
-				&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-			daemon_seraddr( (struct sockaddr_storage *) address->addr, sockaddr);
+			/*
+			 * Send only IPv4 and IPv6 addresses over the wire.
+			 */
+			switch (address->addr->sa_family)
+			{
+			case AF_INET:
+#ifdef AF_INET6
+			case AF_INET6:
+#endif
+				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL, 
+					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+					return -1;
+				daemon_seraddr( (struct sockaddr_storage *) address->addr, sockaddr);
 
-			sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-			if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL, 
-				&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-			daemon_seraddr( (struct sockaddr_storage *) address->netmask, sockaddr);
+				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL, 
+					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+					return -1;
+				daemon_seraddr( (struct sockaddr_storage *) address->netmask, sockaddr);
 
-			sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-			if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL,
-				&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-			daemon_seraddr( (struct sockaddr_storage *) address->broadaddr, sockaddr);
+				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL,
+					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+					return -1;
+				daemon_seraddr( (struct sockaddr_storage *) address->broadaddr, sockaddr);
 
-			sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
-			if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL,
-				&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-			daemon_seraddr( (struct sockaddr_storage *) address->dstaddr, sockaddr);
+				sockaddr= (struct sockaddr_storage *) &sendbuf[sendbufidx];
+				if (sock_bufferize(NULL, sizeof(struct sockaddr_storage), NULL,
+					&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+					return -1;
+				daemon_seraddr( (struct sockaddr_storage *) address->dstaddr, sockaddr);
+				break;
+
+			default:
+				break;
+			}
 		}
 	}
 
@@ -1542,18 +1588,23 @@ void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 	if (sockaddrin == NULL) return;
 
 	// Warning: we support only AF_INET and AF_INET6
-	if (sockaddrin->ss_family == AF_INET)
+	switch (sockaddrin->ss_family)
 	{
-	struct sockaddr_in *sockaddr;
+	case AF_INET:
+		{
+		struct sockaddr_in *sockaddr;
 
 		sockaddr= (struct sockaddr_in *) sockaddrin;
 		sockaddr->sin_family= htons(sockaddr->sin_family);
 		sockaddr->sin_port= htons(sockaddr->sin_port);
 		memcpy(sockaddrout, sockaddr, sizeof(struct sockaddr_in) );
-	}
-	else
-	{
-	struct sockaddr_in6 *sockaddr;
+		break;
+		}
+
+#ifdef AF_INET6
+	case AF_INET6:
+		{
+		struct sockaddr_in6 *sockaddr;
 	
 		sockaddr= (struct sockaddr_in6 *) sockaddrin;
 		sockaddr->sin6_family= htons(sockaddr->sin6_family);
@@ -1561,6 +1612,9 @@ void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 		sockaddr->sin6_flowinfo= htonl(sockaddr->sin6_flowinfo);
 		sockaddr->sin6_scope_id= htonl(sockaddr->sin6_scope_id);
 		memcpy(sockaddrout, sockaddr, sizeof(struct sockaddr_in6) );
+		break;
+		}
+#endif
 	}
 }
 
@@ -1598,6 +1652,3 @@ void pthread_suspend(int msec)
 	pthread_cond_destroy(&cond);
 #endif
 }
-
-
-

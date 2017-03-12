@@ -169,8 +169,10 @@ static int pcap_setsampling_remote(pcap_t *p);
 int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf)
 {
 	/* Warning: we support only AF_INET and AF_INET6 */
-	if (ntohs(sockaddrin->ss_family) == AF_INET)
+	switch (ntohs(sockaddrin->ss_family))
 	{
+	case AF_INET:
+		{
 		struct sockaddr_in *sockaddr;
 
 		sockaddr = (struct sockaddr_in *) sockaddrin;
@@ -184,10 +186,12 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 			return -1;
 		}
 		memcpy(*sockaddrout, sockaddr, sizeof(struct sockaddr_in));
-		return 0;
-	}
-	if (ntohs(sockaddrin->ss_family) == AF_INET6)
-	{
+		break;
+		}
+
+#ifdef AF_INET6
+	case AF_INET6:
+		{
 		struct sockaddr_in6 *sockaddr;
 
 		sockaddr = (struct sockaddr_in6 *) sockaddrin;
@@ -203,11 +207,18 @@ int rpcap_deseraddr(struct sockaddr_storage *sockaddrin, struct sockaddr_storage
 			return -1;
 		}
 		memcpy(*sockaddrout, sockaddr, sizeof(struct sockaddr_in6));
-		return 0;
-	}
+		break;
+		}
+#endif
 
-	/* It is neither AF_INET nor AF_INET6 */
-	*sockaddrout = NULL;
+	default:
+		/*
+		 * It is neither AF_INET nor AF_INET6 (or, if the OS doesn't
+		 * support AF_INET6, it's not AF_INET).
+		 */
+		*sockaddrout = NULL;
+		break;
+	}
 	return 0;
 }
 
@@ -2245,6 +2256,16 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ON_REMOTE_HOST "on remote node"
 
+static void
+freeaddr(struct pcap_addr *addr)
+{
+	free(addr->addr);
+	free(addr->netmask);
+	free(addr->broadaddr);
+	free(addr->dstaddr);
+	free(addr);
+}
+
 int
 pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
@@ -2255,8 +2276,6 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
 	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
 	int i, j;		/* temp variables */
-	int naddr;		/* temp var needed to avoid problems with IPv6 addresses */
-	struct pcap_addr *addr;	/* another such temp */
 	int retval;		/* store the return value of the functions */
 	int nif;		/* Number of interfaces listed */
 	int active = 0;	/* 'true' if we the other end-party is in active mode */
@@ -2362,6 +2381,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		struct rpcap_findalldevs_if findalldevs_if;
 		char tmpstring2[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
 		size_t stringlen;
+		struct pcap_addr *addr, *prevaddr;
 
 		tmpstring2[PCAP_BUF_SIZE] = 0;
 
@@ -2473,8 +2493,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 
 		dev->flags = ntohl(findalldevs_if.flags);
 
-		naddr = 0;
-		addr = NULL;
+		prevaddr = NULL;
 		/* loop until all addresses have been received */
 		for (j = 0; j < findalldevs_if.naddr; j++)
 		{
@@ -2489,53 +2508,68 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			totread += nread;
 
 			/*
-			 * WARNING libpcap bug: the address listing is
-			 * available only for AF_INET.
-			 *
-			 * XXX - IPv6?
+			 * Deserialize all the address components.
 			 */
-			if (ntohs(ifaddr.addr.ss_family) == AF_INET)
+			addr = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
+			if (addr == NULL)
 			{
-				if (addr == NULL)
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				goto error;
+			}
+			addr->next = NULL;
+			addr->addr = NULL;
+			addr->netmask = NULL;
+			addr->broadaddr = NULL;
+			addr->dstaddr = NULL;
+
+			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.addr,
+				(struct sockaddr_storage **) &addr->addr, errbuf) == -1)
+			{
+				freeaddr(addr);
+				goto error;
+			}
+			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.netmask,
+				(struct sockaddr_storage **) &addr->netmask, errbuf) == -1)
+			{
+				freeaddr(addr);
+				goto error;
+			}
+			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.broadaddr,
+				(struct sockaddr_storage **) &addr->broadaddr, errbuf) == -1)
+			{
+				freeaddr(addr);
+				goto error;
+			}
+			if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.dstaddr,
+				(struct sockaddr_storage **) &addr->dstaddr, errbuf) == -1)
+			{
+				freeaddr(addr);
+				goto error;
+			}
+
+			if ((addr->addr == NULL) && (addr->netmask == NULL) &&
+				(addr->broadaddr == NULL) && (addr->dstaddr == NULL))
+			{
+				/*
+				 * None of the addresses are IPv4 or IPv6
+				 * addresses, so throw this entry away.
+				 */
+				free(addr);
+			}
+			else
+			{
+				/*
+				 * Add this entry to the list.
+				 */
+				if (prevaddr == NULL)
 				{
-					dev->addresses = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
-					addr = dev->addresses;
+					dev->addresses = addr;
 				}
 				else
 				{
-					addr->next = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
-					addr = addr->next;
+					prevaddr->next = addr;
 				}
-				naddr++;
-
-				if (addr == NULL)
-				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-					goto error;
-				}
-				addr->next = NULL;
-
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.addr,
-					(struct sockaddr_storage **) &addr->addr, errbuf) == -1)
-					goto error;
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.netmask,
-					(struct sockaddr_storage **) &addr->netmask, errbuf) == -1)
-					goto error;
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.broadaddr,
-					(struct sockaddr_storage **) &addr->broadaddr, errbuf) == -1)
-					goto error;
-				if (rpcap_deseraddr((struct sockaddr_storage *) &ifaddr.dstaddr,
-					(struct sockaddr_storage **) &addr->dstaddr, errbuf) == -1)
-					goto error;
-
-				if ((addr->addr == NULL) && (addr->netmask == NULL) &&
-					(addr->broadaddr == NULL) && (addr->dstaddr == NULL))
-				{
-					free(addr);
-					addr = NULL;
-					if (naddr == 1)
-						naddr = 0;	/* the first item of the list had NULL addresses */
-				}
+				prevaddr = addr;
 			}
 		}
 	}
