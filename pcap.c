@@ -780,7 +780,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	}
 
 	curaddr->next = NULL;
-	if (addr != NULL) {
+	if (addr != NULL && addr_size != 0) {
 		curaddr->addr = (struct sockaddr *)dup_sockaddr(addr, addr_size);
 		if (curaddr->addr == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -791,7 +791,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	} else
 		curaddr->addr = NULL;
 
-	if (netmask != NULL) {
+	if (netmask != NULL && netmask_size != 0) {
 		curaddr->netmask = (struct sockaddr *)dup_sockaddr(netmask, netmask_size);
 		if (curaddr->netmask == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -804,7 +804,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	} else
 		curaddr->netmask = NULL;
 
-	if (broadaddr != NULL) {
+	if (broadaddr != NULL && broadaddr_size != 0) {
 		curaddr->broadaddr = (struct sockaddr *)dup_sockaddr(broadaddr, broadaddr_size);
 		if (curaddr->broadaddr == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -819,7 +819,7 @@ add_addr_to_dev(pcap_if_t *curdev,
 	} else
 		curaddr->broadaddr = NULL;
 
-	if (dstaddr != NULL) {
+	if (dstaddr != NULL && dstaddr_size != 0) {
 		curaddr->dstaddr = (struct sockaddr *)dup_sockaddr(dstaddr, dstaddr_size);
 		if (curaddr->dstaddr == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
