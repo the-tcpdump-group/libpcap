@@ -1296,7 +1296,7 @@ int pcap_startcapture_remote(pcap_t *fp)
 
 			socktemp = accept(sockdata, (struct sockaddr *) &saddr, &saddrlen);
 
-			if (socktemp == -1)
+			if (socktemp == INVALID_SOCKET)
 			{
 				sock_geterror("accept(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
 				goto error;
