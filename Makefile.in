@@ -101,7 +101,6 @@ PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \
 	pcap-namedb.h \
-	remote-ext.h \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
 	pcap/can_socketcan.h \
@@ -356,7 +355,6 @@ EXTRA_DIST = \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	pcap-win32.c \
-	remote-ext.h \
 	sockutils.c \
 	sockutils.h \
 	scanner.l \
