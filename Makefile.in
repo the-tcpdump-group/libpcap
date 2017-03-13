@@ -130,15 +130,15 @@ HDR = $(PUBHDR) \
 	portability.h \
 	ppp.h \
 	rpcap-protocol.h \
-	rpcap/Makefile.in \
-	rpcap/daemon.c \
-	rpcap/daemon.h \
-	rpcap/fileconf.c \
-	rpcap/fileconf.h \
-	rpcap/rpcapd.c \
-	rpcap/rpcapd.h \
-	rpcap/utils.c \
-	rpcap/utils.h \
+	rpcapd/Makefile.in \
+	rpcapd/daemon.c \
+	rpcapd/daemon.h \
+	rpcapd/fileconf.c \
+	rpcapd/fileconf.h \
+	rpcapd/rpcapd.c \
+	rpcapd/rpcapd.h \
+	rpcapd/utils.c \
+	rpcapd/utils.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \
 	sunatmpos.h
@@ -538,7 +538,7 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 # Remote pcap daemon.
 #
 rpcapd: libpcap.a
-	cd rpcap; $(MAKE)
+	cd rpcapd; $(MAKE)
 
 #
 # Test programs - not built by default, and not installed.
@@ -691,7 +691,7 @@ install-archive-shareda:
 	#
 
 install-rpcapd:
-	cd rpcap; $(MAKE) DESTDIR=$(DESTDIR) install
+	cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) install
 
 uninstall: uninstall-shared uninstall-rpcapd
 	rm -f $(DESTDIR)$(libdir)/libpcap.a
@@ -746,11 +746,11 @@ uninstall-shared-shareda:
 uninstall-shared-none:
 
 uninstall-rpcapd:
-	cd rpcap; $(MAKE) DESTDIR=$(DESTDIR) uninstall
+	cd rpcapd; $(MAKE) DESTDIR=$(DESTDIR) uninstall
 
 clean:
 	rm -f $(CLEANFILES)
-	cd rpcap; $(MAKE) clean
+	cd rpcapd; $(MAKE) clean
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
@@ -758,7 +758,7 @@ distclean: clean
 	    stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
-	cd rpcap; $(MAKE) distclean
+	cd rpcapd; $(MAKE) distclean
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
@@ -777,4 +777,4 @@ releasetar:
 
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	$(MKDEP) -c $(CC) -m $(CFLAGS) $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
-	cd rpcap; $(MAKE) depend
+	cd rpcapd; $(MAKE) depend
