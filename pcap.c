@@ -1610,7 +1610,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 		    NULL, errbuf));
 	}
 	if (srctype == PCAP_SRC_FILE) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown URL scheme \"file\"");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown URL scheme \"file\"");
 		return (NULL);
 	}
 	if (srctype == PCAP_SRC_IFLOCAL) {
