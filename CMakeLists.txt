@@ -8,7 +8,7 @@ cmake_minimum_required( VERSION 2.8.8 )
 if (POLICY CMP0042)
     cmake_policy(SET CMP0042 OLD)
 endif()
- 
+
 project( pcap )
 #
 # Call the library "wpcap" on Windows, for backwards compatibility.
@@ -54,6 +54,9 @@ include_directories(
 )
 
 if( WIN32 )
+    #
+    # The 'Win32/WpdPack/' directory branch is for an AppVeyor build.
+    #
     if( NOT "${PACKET_DLL_DIR}" STREQUAL "" )
         include_directories("${PACKET_DLL_DIR}/Include")
         if( CMAKE_CL_64 )
@@ -65,6 +68,7 @@ if( WIN32 )
     include_directories(
         ../Common/
         Win32/Include
+        Win32/WpdPack/Include
     )
 endif( WIN32)
 
