@@ -33,7 +33,7 @@
 
 // getopt() is not present in Win32
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <stdio.h>
 #include <string.h>				// for getc()
 
@@ -47,9 +47,7 @@ char    *optarg;                /* argument associated with option */
 #define BADARG  (int)':'
 #define EMSG    ""
 
-#ifdef WIN32
 char *__progname = "rpcapd";
-#endif
 
 /*
  * getopt --
@@ -122,4 +120,3 @@ getopt(nargc, nargv, ostr)
 }
 
 #endif
-

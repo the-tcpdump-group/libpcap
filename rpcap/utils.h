@@ -33,13 +33,10 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-
 // Common functions declaration
 
-#ifdef WIN32
+#ifdef _WIN32
 	int getopt(int nargc, char * const *nargv, const char *ostr);
 #endif
 
-
-#endif
-
+#endif /* __UTILS_H__ */

@@ -43,7 +43,7 @@
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strstr, etc
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <dirent.h>		// for readdir
 #endif
 
@@ -166,7 +166,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 	case PCAP_SRC_FILE:
 	{
 		size_t stringlen;
-#ifdef WIN32
+#ifdef _WIN32
 		WIN32_FIND_DATA filedata;
 		HANDLE filehandle;
 #else
@@ -181,7 +181,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		stringlen = strlen(name);
 
 		/* The directory must end with '\' in Win32 and '/' in UNIX */
-#ifdef WIN32
+#ifdef _WIN32
 #define ENDING_CHAR '\\'
 #else
 #define ENDING_CHAR '/'
@@ -198,7 +198,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		/* Save the path for future reference */
 		pcap_snprintf(path, sizeof(path), "%s", name);
 
-#ifdef WIN32
+#ifdef _WIN32
 		/* To perform directory listing, Win32 must have an 'asterisk' as ending char */
 		if (name[stringlen - 1] != '*')
 		{
@@ -231,7 +231,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		do
 		{
 
-#ifdef WIN32
+#ifdef _WIN32
 			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata.cFileName);
 #else
 			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata->d_name);
@@ -300,14 +300,14 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 				pcap_close(fp);
 			}
 		}
-#ifdef WIN32
+#ifdef _WIN32
 		while (FindNextFile(filehandle, &filedata) != 0);
 #else
 		while ( (filedata= readdir(unixdir)) != NULL);
 #endif
 
 
-#ifdef WIN32
+#ifdef _WIN32
 		/* Close the search handle. */
 		FindClose(filehandle);
 #endif
@@ -587,7 +587,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	case PCAP_SRC_IFLOCAL:
 		fp = pcap_open_live(name, snaplen, (flags & PCAP_OPENFLAG_PROMISCUOUS), read_timeout, errbuf);
 
-#ifdef WIN32
+#ifdef _WIN32
 		/*
 		 * these flags are supported on Windows only
 		 */
@@ -615,7 +615,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 				}
 			}
 		}
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 		break;
 

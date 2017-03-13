@@ -34,6 +34,10 @@
 #include "config.h"
 #endif
 
+#ifdef _WIN32
+#define USE_THREADS		// threads vs. subprocesses
+#endif
+
 #include <errno.h>		// for the errno variable
 #include <string.h>		// for strtok, etc
 #include <stdlib.h>		// for malloc(), free(), ...
@@ -50,7 +54,7 @@
 #include "daemon.h"		// the true main() method of this daemon
 #include "utils.h"		// Missing calls and such
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>		// for exit()
 #include <sys/wait.h>	// waitpid()
 #else
@@ -78,7 +82,7 @@ void main_passive(void *ptr);
 void main_active(void *ptr);
 
 
-#ifndef WIN32
+#ifndef _WIN32
 void main_cleanup_childs(int sign);
 #endif
 
@@ -235,8 +239,8 @@ char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printe
 	if (loadfile[0])
 		fileconf_read(0);
 
-#ifdef linux
-	// SIGTERM (i.e. kill -15) is not generated in WIN32, although it is included for ANSI compatibility
+#ifndef _WIN32
+	// SIGTERM (i.e. kill -15) is not generated in Win32, although it is included for ANSI compatibility
 	signal(SIGTERM, main_cleanup);
 	signal(SIGCHLD, main_cleanup_childs);
 #endif
@@ -244,7 +248,7 @@ char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printe
 	// forking a daemon, if it is needed
 	if (isdaemon)
 	{
-	#ifndef WIN32
+	#ifndef _WIN32
 	int pid;
 
 		// Unix Network Programming, pg 336
@@ -286,7 +290,7 @@ char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printe
 		// Enable the catching of Ctrl+C
 		signal(SIGINT, main_cleanup);
 
-#ifndef WIN32
+#ifndef _WIN32
 		// generated under unix with 'kill -HUP', needed to reload the configuration
 		// We do not have this kind of signal in Win32
 		signal(SIGHUP, fileconf_read);
@@ -310,7 +314,7 @@ void main_startup(void)
 char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 struct addrinfo *addrinfo;				// keeps the addrinfo chain; required to open a new socket
 int i;
-#ifdef WIN32
+#ifdef USE_THREADS
 	pthread_t threadId;					// Pthread variable that keeps the thread structures
 	pthread_attr_t detachedAttribute;	// PThread attribute needed to create the thread as detached
 #else
@@ -326,7 +330,7 @@ int i;
 	{
 		activelist[i].ai_family= mainhints.ai_family;
 		
-#ifdef WIN32
+#ifdef USE_THREADS
 		/* GV we need this to create the thread as detached. */
 		/* GV otherwise, the thread handle is not destroyed  */
 		pthread_attr_init(&detachedAttribute); 
@@ -394,7 +398,7 @@ int i;
 
 			*socktemp= sockmain;
 
-#ifdef WIN32
+#ifdef USE_THREADS
 			/* GV we need this to create the thread as detached. */
 			/* GV otherwise, the thread handle is not destroyed  */
 			pthread_attr_init(&detachedAttribute); 
@@ -445,7 +449,7 @@ int i;
 */
 void main_cleanup(int sign)
 {
-#ifndef WIN32
+#ifndef _WIN32
 	// Sends a KILL signal to all the processes
 	// that share the same process group (i.e. kills all the childs)
 	kill(0, SIGKILL);
@@ -482,7 +486,7 @@ void main_cleanup(int sign)
 
 
 
-#ifdef linux
+#ifndef _WIN32
 
 void main_cleanup_childs(int sign)
 {
@@ -524,7 +528,7 @@ struct sockaddr_storage from;	// generic sockaddr_storage variable
 socklen_t fromlen;				// keeps the length of the sockaddr_storage variable
 SOCKET sockmain;
 
-#ifndef WIN32
+#ifndef USE_THREADS
 	pid_t pid;
 #endif
 
@@ -539,7 +543,7 @@ SOCKET sockmain;
 	// main thread loop
 	while (1)
 	{
-#ifdef WIN32
+#ifdef USE_THREADS
 	pthread_t threadId;					// Pthread variable that keeps the thread structures
 	pthread_attr_t detachedAttribute;
 #endif
@@ -555,7 +559,7 @@ SOCKET sockmain;
 			// The accept() call can return this error when a signal is catched
 			// In this case, we have simply to ignore this error code
 			// Stevens, pg 124
-#ifdef WIN32
+#ifdef _WIN32
 			if (WSAGetLastError() == WSAEINTR)
 #else
 			if (errno == EINTR)
@@ -578,7 +582,7 @@ SOCKET sockmain;
 		}
 
 
-#ifdef WIN32
+#ifdef USE_THREADS
 		// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
 		pars= (struct daemon_slpars *) malloc ( sizeof(struct daemon_slpars) );
 		if (pars == NULL)
@@ -726,4 +730,3 @@ struct daemon_slpars *pars;			// parameters needed by the daemon_serviceloop()
 			break;
 	}
 }
-
