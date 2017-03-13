@@ -554,6 +554,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	char name[PCAP_BUF_SIZE];
 	int type;
 	pcap_t *fp;
+	int status;
 
 	if (strlen(source) > PCAP_BUF_SIZE)
 	{
@@ -574,24 +575,42 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		fp = pcap_open_offline(name, errbuf);
 		break;
 
-	case PCAP_SRC_IFREMOTE:
-		/*
-		 * Although we already have host, port and iface, we prefer
-		 * to pass only 'source' to pcap_open_rpcap(), so that it
-		 * has to call pcap_parsesrcstr() again.
-		 * This is less optimized, but much clearer.
-		 */
-		fp = pcap_open_rpcap(source, snaplen, flags, read_timeout, auth, errbuf);
-		break;
-
 	case PCAP_SRC_IFLOCAL:
-		fp = pcap_open_live(name, snaplen, (flags & PCAP_OPENFLAG_PROMISCUOUS), read_timeout, errbuf);
-
+		fp = pcap_create(source, errbuf);
+		if (fp == NULL)
+			return (NULL);
+		status = pcap_set_snaplen(fp, snaplen);
+		if (status < 0)
+			goto fail;
+		if (flags & PCAP_OPENFLAG_PROMISCUOUS)
+		{
+			status = pcap_set_promisc(fp, 1);
+			if (status < 0)
+				goto fail;
+		}
+		if (flags & PCAP_OPENFLAG_MAX_RESPONSIVENESS)
+		{
+			status = pcap_set_immediate_mode(fp, 1);
+			if (status < 0)
+				goto fail;
+		}
+		status = pcap_set_timeout(fp, read_timeout);
+		if (status < 0)
+			goto fail;
+		status = pcap_activate(fp);
+		if (status < 0)
+			goto fail;
 #ifdef _WIN32
 		/*
-		 * these flags are supported on Windows only
+		 * This flag is supported on Windows only.
+		 * XXX - is there a way to support it with
+		 * the capture mechanisms on UN*X?  It's not
+		 * exactly a "set direction" operation; I
+		 * think it means "do not capture packets
+		 * injected with pcap_sendpacket() or
+		 * pcap_inject()".
 		 */
-		if (fp != NULL && fp->adapter != NULL)
+		if (fp->adapter != NULL)
 		{
 			/* disable loopback capture if requested */
 			if (flags & PCAP_OPENFLAG_NOCAPTURE_LOCAL)
@@ -603,20 +622,33 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 					return NULL;
 				}
 			}
-
-			/* set mintocopy to zero if requested */
-			if (flags & PCAP_OPENFLAG_MAX_RESPONSIVENESS)
-			{
-				if (!PacketSetMinToCopy(fp->adapter, 0))
-				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Unable to set max responsiveness.");
-					pcap_close(fp);
-					return NULL;
-				}
-			}
 		}
 #endif /* _WIN32 */
+		break;
 
+	fail:
+		if (status == PCAP_ERROR)
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
+			    source, fp->errbuf);
+		else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
+		    status == PCAP_ERROR_PERM_DENIED ||
+		    status == PCAP_ERROR_PROMISC_PERM_DENIED)
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)",
+			    source, pcap_statustostr(status), fp->errbuf);
+		else
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
+			    source, pcap_statustostr(status));
+		pcap_close(fp);
+		return NULL;
+
+	case PCAP_SRC_IFREMOTE:
+		/*
+		 * Although we already have host, port and iface, we prefer
+		 * to pass only 'source' to pcap_open_rpcap(), so that it
+		 * has to call pcap_parsesrcstr() again.
+		 * This is less optimized, but much clearer.
+		 */
+		fp = pcap_open_rpcap(source, snaplen, flags, read_timeout, auth, errbuf);
 		break;
 
 	default:

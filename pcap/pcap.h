@@ -695,8 +695,6 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
  * a bridge) that need the best responsiveness.
  *
  * The equivalent with pcap_create()/pcap_activate() is "immediate mode".
- * XXX - this currently uses pcap_open_live() for local capture sources,
- * so this flag currently only works on Windows.
  */
 #define PCAP_OPENFLAG_MAX_RESPONSIVENESS	0x00000010
 
