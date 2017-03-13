@@ -4937,7 +4937,7 @@ $as_echo "$ac_cv_lbl_gcc_fixincludes" >&6; }
 	    fi
     fi
 
-for ac_func in strerror strlcpy
+for ac_func in strerror strlcpy strlcat
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"

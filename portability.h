@@ -47,7 +47,7 @@ extern "C" {
  /*
   * Macro that does the same thing as strlcpy().
   */
- #ifdef _MSC_VER
+ #if defined(_MSC_VER) || defined(__MINGW32__)
   /*
    * strncpy_s() is supported at least back to Visual
    * Studio 2005.
@@ -60,6 +60,28 @@ extern "C" {
 	(strncpy((x), (y), (z)), \
 	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
 	 (void) strlen((y)))
+ #endif
+#endif
+
+#ifndef HAVE_STRLCAT
+ /*
+  * Macro that does the same thing as strlcat().
+  */
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+  /*
+   * strncat_s() is supported at least back to Visual
+   * Studio 2005.
+   */
+  #define strlcat(x, y, z) \
+	strncat_s((x), (z), (y), _TRUNCATE)
+ #else
+  /*
+   * ANSI C says strncat() always null-terminates its first argument,
+   * so 1) we don't need to explicitly null-terminate the string
+   * ourselves and 2) we need to leave room for the null terminator.
+   */
+  #define strlcat(x, y, z) \
+	strncat((x), (y), (z) - strlen((x)) - 1)
  #endif
 #endif
 
@@ -85,11 +107,6 @@ extern "C" {
   #define fopen(x, y) \
 	fopen_safe((x), (y))
   FILE *fopen_safe(const char *filename, const char* mode);
-#endif
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-  #define strlcat(x, y, z) \
-	strncat_s((x), (z), (y), _TRUNCATE)
 #endif
 
 #ifdef _MSC_VER

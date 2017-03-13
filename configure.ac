@@ -160,7 +160,7 @@ esac
 
 AC_LBL_FIXINCLUDES
 
-AC_CHECK_FUNCS(strerror strlcpy)
+AC_CHECK_FUNCS(strerror strlcpy strlcat)
 
 needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
