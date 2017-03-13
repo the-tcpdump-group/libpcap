@@ -42,7 +42,7 @@
 #include "pcap-int.h"
 #include "sockutils.h"
 #include "rpcap/rpcap-protocol.h"
-#include "pcap-rpcap.h"
+#include "pcap-rpcap-int.h"
 
 /*
  * \file pcap-rpcap.c

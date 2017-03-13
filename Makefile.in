@@ -340,7 +340,7 @@ EXTRA_DIST = \
 	pcap-null.c \
 	pcap-pf.c \
 	pcap-rpcap.c \
-	pcap-rpcap.h \
+	pcap-rpcap-int.h \
 	pcap-septel.c \
 	pcap-septel.h \
 	pcap-sita.h \

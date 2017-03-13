@@ -50,7 +50,7 @@
 #include "fileconf.h"		// for the configuration file management
 #include "sockutils.h"		// for socket calls
 #include "rpcap-protocol.h"
-#include "pcap-rpcap.h"
+#include "pcap-rpcap-int.h"
 #include "daemon.h"		// the true main() method of this daemon
 #include "utils.h"		// Missing calls and such
 

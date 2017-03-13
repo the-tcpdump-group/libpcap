@@ -40,7 +40,7 @@
 #include <pthread.h>
 #include "sockutils.h"		// for socket calls
 #include "rpcap-protocol.h"
-#include "pcap-rpcap.h"
+#include "pcap-rpcap-int.h"
 #include "daemon.h"
 
 #ifndef _WIN32			// for select() and such
