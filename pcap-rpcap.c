@@ -41,7 +41,7 @@
 #include <errno.h>		/* for the errno variable */
 #include "pcap-int.h"
 #include "sockutils.h"
-#include "rpcap/rpcap-protocol.h"
+#include "rpcap-protocol.h"
 #include "pcap-rpcap-int.h"
 
 /*

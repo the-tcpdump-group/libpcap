@@ -129,11 +129,16 @@ HDR = $(PUBHDR) \
 	pcap-stdinc.h \
 	portability.h \
 	ppp.h \
+	rpcap-protocol.h \
+	rpcap/Makefile.in \
 	rpcap/daemon.c \
+	rpcap/daemon.h \
 	rpcap/fileconf.c \
-	rpcap/rpcap-protocol.h \
+	rpcap/fileconf.h \
 	rpcap/rpcapd.c \
+	rpcap/rpcapd.h \
 	rpcap/utils.c \
+	rpcap/utils.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \
 	sunatmpos.h
