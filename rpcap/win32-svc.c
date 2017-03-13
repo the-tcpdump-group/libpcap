@@ -39,15 +39,11 @@
 #include "sockutils.h"	// for SOCK_ASSERT
 #include "fileconf.h"
 
-
 SERVICE_STATUS_HANDLE service_status_handle;
 SERVICE_STATUS service_status;
 
-
 void svc_geterr(char *str);
 void WINAPI svc_main(DWORD argc, char **argv);
-
-
 
 int svc_start(void)
 {
@@ -66,14 +62,13 @@ int svc_start(void)
 	return rc; // FALSE if this is not started as a service
 }
 
-
 void svc_geterr(char *str)
 {
-char message[PCAP_ERRBUF_SIZE];
-char string[PCAP_ERRBUF_SIZE];
-int val;
+	char message[PCAP_ERRBUF_SIZE];
+	char string[PCAP_ERRBUF_SIZE];
+	int val;
 
-	val= GetLastError();
+	val = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS |
 				  FORMAT_MESSAGE_MAX_WIDTH_MASK,
 				  NULL, val, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
@@ -84,18 +79,16 @@ int val;
 	SOCK_ASSERT(message, 1);
 }
 
-
-
 void WINAPI svc_control_handler(DWORD Opcode)
 {
-	service_status.dwWin32ExitCode= 0;
-	service_status.dwCheckPoint= 0;
-	service_status.dwWaitHint= 0;
+	service_status.dwWin32ExitCode = 0;
+	service_status.dwCheckPoint = 0;
+	service_status.dwWaitHint = 0;
 
 	switch(Opcode)
 	{
 		case SERVICE_CONTROL_STOP:
-			service_status.dwCurrentState= SERVICE_STOPPED;
+			service_status.dwCurrentState = SERVICE_STOPPED;
 
 			/*
 				Uses ABORT to clean up the service. To be really honest, only the main socket and 
@@ -122,12 +115,12 @@ void WINAPI svc_control_handler(DWORD Opcode)
 			can be needed according to the new configuration.
 		*/
 		case SERVICE_CONTROL_PAUSE:
-			service_status.dwCurrentState= SERVICE_PAUSED;
+			service_status.dwCurrentState = SERVICE_PAUSED;
 			SetServiceStatus(service_status_handle, &service_status);
 			break;
 		
 		case SERVICE_CONTROL_CONTINUE:
-			service_status.dwCurrentState= SERVICE_RUNNING;
+			service_status.dwCurrentState = SERVICE_RUNNING;
 			SetServiceStatus(service_status_handle, &service_status);
 			fileconf_read(0);
 			break;
@@ -144,8 +137,6 @@ void WINAPI svc_control_handler(DWORD Opcode)
 	return;
 }
 
-
-
 void WINAPI svc_main(DWORD argc, char **argv)
 {
 	service_status_handle = RegisterServiceCtrlHandler(PROGRAM_NAME, svc_control_handler);
@@ -153,14 +144,14 @@ void WINAPI svc_main(DWORD argc, char **argv)
 	if (!service_status_handle)
 		return;
 
-	service_status.dwServiceType= SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS;
-	service_status.dwCurrentState= SERVICE_RUNNING;
-	service_status.dwControlsAccepted= SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE;
+	service_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS;
+	service_status.dwCurrentState = SERVICE_RUNNING;
+	service_status.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE;
 	// | SERVICE_ACCEPT_SHUTDOWN ;
-	service_status.dwWin32ExitCode= 0;
-	service_status.dwServiceSpecificExitCode= 0;
-	service_status.dwCheckPoint= 0;
-	service_status.dwWaitHint= 0;
+	service_status.dwWin32ExitCode = 0;
+	service_status.dwServiceSpecificExitCode = 0;
+	service_status.dwCheckPoint = 0;
+	service_status.dwWaitHint = 0;
 
 	SetServiceStatus(service_status_handle, &service_status);
 

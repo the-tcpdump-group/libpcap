@@ -58,21 +58,21 @@ void fileconf_read(int sign)
 	signal(SIGHUP, fileconf_read);
 #endif
 
-	if ((fp= fopen(loadfile, "r") ) != NULL)
+	if ((fp = fopen(loadfile, "r")) != NULL)
 	{
 		char line[MAX_LINE + 1];
 		char *ptr;
 
-		hostlist[0]= 0;
-		i= 0;
+		hostlist[0] = 0;
+		i = 0;
 
-		while ( fgets(line, MAX_LINE, fp) != NULL )
+		while (fgets(line, MAX_LINE, fp) != NULL)
 		{
 			if (line[0] == '\n') continue;	// Blank line
 			if (line[0] == '\r') continue;	// Blank line
 			if (line[0] == '#') continue;	// Comment
 
-			if ( (ptr = strstr(line, "ActiveClient")) )
+			if ((ptr = strstr(line, "ActiveClient")))
 			{
 				char *address, *port;
 				char *lasts;
@@ -80,7 +80,7 @@ void fileconf_read(int sign)
 				ptr = strchr(ptr, '=') + 1;
 				address = pcap_strtok_r(ptr, RPCAP_HOSTLIST_SEP, &lasts);
 
-				if ( (address != NULL) && (i < MAX_ACTIVE_LIST) )
+				if ((address != NULL) && (i < MAX_ACTIVE_LIST))
 				{
 					port = pcap_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
 					strlcpy(activelist[i].address, address, MAX_LINE);
@@ -100,21 +100,21 @@ void fileconf_read(int sign)
 				continue;
 			}
 
-			if ( (ptr= strstr(line, "PassiveClient")) )
+			if ((ptr = strstr(line, "PassiveClient")))
 			{
-				ptr= strchr(ptr, '=') + 1;
+				ptr = strchr(ptr, '=') + 1;
 				strlcat(hostlist, ptr, MAX_HOST_LIST);
 				strlcat(hostlist, ",", MAX_HOST_LIST);
 				continue;
 			}
 
-			if ( (ptr= strstr(line, "NullAuthPermit")) )
+			if ((ptr = strstr(line, "NullAuthPermit")))
 			{
-				ptr= strstr(ptr, "YES");
+				ptr = strstr(ptr, "YES");
 				if (ptr)
-					nullAuthAllowed= 1;
+					nullAuthAllowed = 1;
 				else
-					nullAuthAllowed= 0;
+					nullAuthAllowed = 0;
 				continue;
 			}
 		}
@@ -141,7 +141,7 @@ int fileconf_save(const char *savefile)
 {
 	FILE *fp;
 
-	if ((fp= fopen(savefile, "w") ) != NULL)
+	if ((fp = fopen(savefile, "w")) != NULL)
 	{
 		char *token; /*, *port;*/					// temp, needed to separate items into the hostlist
 		char temphostlist[MAX_HOST_LIST + 1];
@@ -155,10 +155,10 @@ int fileconf_save(const char *savefile)
 		fprintf(fp, "# Format: PassiveClient = <name or address>\n\n");
 
 		strncpy(temphostlist, hostlist, MAX_HOST_LIST);
-		temphostlist[MAX_HOST_LIST]= 0;
+		temphostlist[MAX_HOST_LIST] = 0;
 	
 		token = pcap_strtok_r(temphostlist, RPCAP_HOSTLIST_SEP, &lasts);
-		while( token != NULL )
+		while(token != NULL)
 		{
 			fprintf(fp, "PassiveClient = %s\n", token);
 			token = pcap_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
@@ -171,7 +171,7 @@ int fileconf_save(const char *savefile)
 		fprintf(fp, "# Format: ActiveClient = <name or address>, <port | DEFAULT>\n\n");
 
 
-		while ( (activelist[i].address[0] != 0) && (i < MAX_ACTIVE_LIST) )
+		while ((activelist[i].address[0] != 0) && (i < MAX_ACTIVE_LIST))
 		{
 			fprintf(fp, "ActiveClient = %s, %s\n", activelist[i].address, activelist[i].port);
 			i++;
@@ -199,15 +199,15 @@ int fileconf_save(const char *savefile)
 static int strrem(char *string, char chr)
 {
 	char *pos;
-	int num= 0;
+	int num = 0;
 	int len, i;
 
-	while ( (pos= strchr(string, chr) ) != NULL)
+	while ((pos = strchr(string, chr)) != NULL)
 	{
 		num++;
-		len= strlen(pos);
-		for (i=0; i<len; i++)
-			pos[i]= pos[i+1];
+		len = strlen(pos);
+		for (i = 0; i < len; i++)
+			pos[i] = pos[i+1];
 	}
 
 	return num;

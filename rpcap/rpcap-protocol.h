@@ -38,14 +38,15 @@
 /* Default port on which the client workstation is waiting for connections in case of active mode. */
 #define RPCAP_DEFAULT_NETPORT_ACTIVE "2003"
 #define RPCAP_DEFAULT_NETADDR ""	/* Default network address on which the RPCAP daemon binds to. */
-#define RPCAP_VERSION 0				/* Present version of the RPCAP protocol (0 = Experimental). */
+#define RPCAP_VERSION 0			/* Present version of the RPCAP protocol (0 = Experimental). */
 
 /*
- * \brief Separators used for the host list.
+ * Separators used for the host list.
  *
  * It is used:
  * - by the rpcapd daemon, when you types a list of allowed connecting hosts
- * - by the rpcap in active mode, when the client waits for incoming connections from other hosts
+ * - by the rpcap client in active mode, when the client waits for incoming
+ * connections from other hosts
  */
 #define RPCAP_HOSTLIST_SEP " ,;\n\r"
 
