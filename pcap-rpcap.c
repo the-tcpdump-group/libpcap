@@ -241,6 +241,7 @@ static int pcap_setsampling_remote(pcap_t *p);
 #define HPUX_AF_INET6			22
 #define AIX_AF_INET6			24
 #define SOLARIS_AF_INET6		26
+
 int rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf)
 {
 	/* Warning: we support only AF_INET and AF_INET6 */
