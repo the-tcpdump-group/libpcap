@@ -55,9 +55,22 @@
  * Protocol messages formats                             *
  *                                                       *
  *********************************************************/
-/* WARNING Take care you compiler does not insert padding for better alignments into these structs */
+/*
+ * WARNING: This file defines some structures that are used to transfer
+ * data on the network.
+ * Note that your compiler MUST not insert padding into these structures
+ * for better alignment.
+ * These structures have been created in order to be correctly aligned to
+ * a 32-bit boundary, but be careful in any case.
+ */
 
-/* WARNING: These might need to be changed on other platforms */
+/*
+ * WARNING: These typedefs MUST be of a specific size.
+ * You might have to change them on your platform.
+ *
+ * XXX - use the C99 types?  Microsoft's newer versions of Visual Studio
+ * support them.
+ */
 typedef unsigned char uint8;	/* 8-bit unsigned integer */
 typedef unsigned short uint16;	/* 16-bit unsigned integer */
 typedef unsigned int uint32;	/* 32-bit unsigned integer */

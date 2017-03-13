@@ -31,17 +31,17 @@
  *
  */
 
-#ifndef __PCAP_REMOTE_H__
-#define __PCAP_REMOTE_H__
+#ifndef __PCAP_RPCAP_INT_H__
+#define __PCAP_RPCAP_INT_H__
 
 #include "pcap.h"
 #include "sockutils.h"	/* Needed for some structures (like SOCKET, sockaddr_in) which are used here */
 
 /*
- * \file pcap-rpcap.h
+ * \file pcap-rpcap-int.h
  *
- * This file keeps all the new definitions and typedefs that are exported to the user and
- * that are needed for the RPCAP protocol.
+ * This file keeps all the definitions used by the RPCAP client and server,
+ * other than the protocol definitions.
  *
  * \warning All the RPCAP functions that are allowed to return a buffer containing
  * the error description can return max PCAP_ERRBUF_SIZE characters.
@@ -50,16 +50,6 @@
  * and to insert manually the termination char at the end of the buffer. This will
  * guarantee that no buffer overflows occur even if we use the printf() to show
  * the error on the screen.
- *
- * \warning This file declares some typedefs that MUST be of a specific size.
- * These definitions (i.e. typedefs) could need to be changed on other platforms than
- * Intel IA32.
- *
- * \warning This file defines some structures that are used to transfer data on the network.
- * Be careful that you compiler MUST not insert padding into these structures
- * for better alignment.
- * These structures have been created in order to be correctly aligned to a 32 bits
- * boundary, but be careful in any case.
  */
 
 /*********************************************************
