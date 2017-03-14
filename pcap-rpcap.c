@@ -151,6 +151,7 @@ static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *fp);
 static int pcap_startcapture_remote(pcap_t *fp);
+static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf);
 
 /****************************************************
  *                                                  *
@@ -1765,7 +1766,7 @@ int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errb
  * error message is returned in the 'errbuf' variable.
  * The error message could be also 'the authentication failed'.
  */
-int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
+static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data that has to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
