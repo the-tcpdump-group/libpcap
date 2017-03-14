@@ -2449,9 +2449,9 @@ pcap_strerror(int errnum)
 #ifdef HAVE_STRERROR
 #ifdef _WIN32
 	static char errbuf[PCAP_ERRBUF_SIZE];
-	errno_t errno;
-	errno = strerror_s(errbuf, PCAP_ERRBUF_SIZE, errnum);
-	if (errno != 0) /* errno = 0 if successful */
+	errno_t err = strerror_s(errbuf, PCAP_ERRBUF_SIZE, errnum);
+
+	if (err != 0) /* err = 0 if successful */
 		strlcpy(errbuf, "strerror_s() error", PCAP_ERRBUF_SIZE);
 	return (errbuf);
 #else
