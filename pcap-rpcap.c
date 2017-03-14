@@ -126,6 +126,7 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
 static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *p);
+static int pcap_startcapture_remote(pcap_t *fp);
 
 /****************************************************
  *                                                  *
@@ -888,223 +889,6 @@ rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 
 /* \ingroup remote_pri_func
  *
- * \brief It opens a remote adapter by opening an RPCAP connection and so on.
- *
- * This function does basically the job of pcap_open_live() for a remote interface.
- * In other words, we have a pcap_read for win32, which reads packets from NPF,
- * another for LINUX, and so on. Now, we have a pcap_opensource_remote() as well.
- * The difference, here, is the capture thread does not start until the
- * pcap_startcapture_remote() is called.
- *
- * This is because, in remote capture, we cannot start capturing data as soon as the
- * 'open adapter' command is sent. Suppose the remote adapter is already overloaded;
- * if we start a capture (which, by default, has a NULL filter) the new traffic can
- * saturate the network.
- *
- * Instead, we want to "open" the adapter, then send a "start capture" command only
- * when we're ready to start the capture.
- * This function does this job: it sends an "open adapter" command (according to the
- * RPCAP protocol), but it does not start the capture.
- *
- * Since the other libpcap functions do not share this way of life, we have to make
- * some dirty things in order to make everyting working.
- *
- * \param fp: A pointer to a pcap_t structure that has been previously created with
- * \ref pcap_create().
- * \param source: see pcap_open().
- * \param auth: see pcap_open().
- *
- * \return 0 in case of success, -1 otherwise. In case of success, the pcap_t pointer in fp can be
- * used as a parameter to the following calls (pcap_compile() and so on). In case of
- * problems, fp->errbuf contains a text explanation of error.
- *
- * \warning In case we call the pcap_compile() and the capture is not started, the filter
- * will be saved into the pcap_t structure, and it will be sent to the other host later
- * (when the pcap_startcapture_remote() is called).
- */
-int pcap_opensource_remote(pcap_t *fp, struct pcap_rmtauth *auth)
-{
-	char host[PCAP_BUF_SIZE], ctrlport[PCAP_BUF_SIZE], iface[PCAP_BUF_SIZE];
-
-	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
-	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
-	int nread;
-	int retval;				/* store the return value of the functions */
-	int active = 0;				/* '1' if we're in active mode */
-
-	/* socket-related variables */
-	struct addrinfo hints;			/* temp, needed to open a socket connection */
-	struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
-	SOCKET sockctrl = 0;			/* socket descriptor of the control connection */
-
-	/* RPCAP-related variables */
-	struct rpcap_header header;		/* header of the RPCAP packet */
-	struct rpcap_openreply openreply;	/* open reply message */
-
-	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
-
-	/*
-	 * determine the type of the source (NULL, file, local, remote)
-	 * You must have a valid source string even if we're in active mode, because otherwise
-	 * the call to the following function will fail.
-	 */
-	if (pcap_parsesrcstr(fp->opt.device, &retval, host, ctrlport, iface, fp->errbuf) == -1)
-		return -1;
-
-	if (retval != PCAP_SRC_IFREMOTE)
-	{
-		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "This function is able to open only remote interfaces");
-		return -1;
-	}
-
-	addrinfo = NULL;
-
-	/*
-	 * Warning: this call can be the first one called by the user.
-	 * For this reason, we have to initialize the WinSock support.
-	 */
-	if (sock_init(fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-		return -1;
-
-	sockctrl = rpcap_remoteact_getsock(host, &active, fp->errbuf);
-	if (sockctrl == INVALID_SOCKET)
-		return -1;
-
-	if (!active)
-	{
-		/*
-		 * We're not in active mode; let's try to open a new
-		 * control connection.
-		 */
-		memset(&hints, 0, sizeof(struct addrinfo));
-		hints.ai_family = PF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-
-		if (ctrlport[0] == 0)
-		{
-			/* the user chose not to specify the port */
-			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-		}
-		else
-		{
-			/* the user chose not to specify the port */
-			if (sock_initaddress(host, ctrlport, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-		}
-
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
-			goto error;
-
-		freeaddrinfo(addrinfo);
-		addrinfo = NULL;
-
-		if (rpcap_sendauth(sockctrl, auth, fp->errbuf) == -1)
-			goto error;
-	}
-
-	/*
-	 * Now it's time to start playing with the RPCAP protocol
-	 * RPCAP open command: create the request message
-	 */
-	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
-
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_OPEN_REQ, 0, (uint32) strlen(iface));
-
-	if (sock_bufferize(iface, (int) strlen(iface), sendbuf, &sendbufidx,
-		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, fp->errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
-
-	if (sock_send(sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
-
-	/* Receive the RPCAP open reply message */
-	if (sock_recv(sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
-
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(fp->errbuf, sockctrl, &header, RPCAP_MSG_OPEN_REPLY, RPCAP_MSG_ERROR, 0);
-
-	if (retval != RPCAP_MSG_OPEN_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint send a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			goto error;
-
-		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
-			totread = ntohl(header.plen);
-			/* Do nothing; just exit; the error code is already into the errbuf */
-			goto error;
-
-		default:
-			pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "Internal error");
-			goto error;
-		}
-	}
-
-	nread = sock_recv(sockctrl, (char *)&openreply,
-	    sizeof(struct rpcap_openreply), SOCK_RECEIVEALL_YES,
-	    fp->errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
-		goto error;
-	totread += nread;
-
-	/* Set proper fields into the pcap_t struct */
-	fp->linktype = ntohl(openreply.linktype);
-	fp->tzoff = ntohl(openreply.tzoff);
-	pr->rmt_sockctrl = sockctrl;
-	pr->rmt_clientside = 1;
-
-	/* This code is duplicated from the end of this function */
-	fp->read_op = pcap_read_rpcap;
-	fp->save_current_filter_op = pcap_save_current_filter_rpcap;
-	fp->setfilter_op = pcap_setfilter_rpcap;
-	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
-	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
-	fp->stats_op = pcap_stats_rpcap;
-#ifdef _WIN32
-	fp->stats_ex_op = pcap_stats_ex_rpcap;
-#endif
-	fp->cleanup_op = pcap_cleanup_rpcap;
-
-	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
-			goto error;
-	}
-	return 0;
-
-error:
-	/*
-	 * When the connection has been established, we have to close it. So, at the
-	 * beginning of this function, if an error occur we return immediately with
-	 * a return NULL; when the connection is established, we have to come here
-	 * ('goto error;') in order to close everything properly.
-	 *
-	 * Checks if all the data has been read; if not, discard the data in excess
-	 */
-	if (totread != ntohl(header.plen))
-		sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0);
-
-	if (addrinfo)
-		freeaddrinfo(addrinfo);
-
-	if (!active)
-		sock_close(sockctrl, NULL, 0);
-
-	return -1;
-}
-
-/* \ingroup remote_pri_func
- *
  * \brief It starts a remote capture.
  *
  * This function is required since the RPCAP protocol decouples the 'open' from the
@@ -1125,7 +909,7 @@ error:
  * \return '0' if everything is fine, '-1' otherwise. The error message (if one)
  * is returned into the 'errbuf' field of the pcap_t structure.
  */
-int pcap_startcapture_remote(pcap_t *fp)
+static int pcap_startcapture_remote(pcap_t *fp)
 {
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
@@ -2307,12 +2091,67 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
 	return 0;
 }
 
+/*
+ * \brief It opens a remote adapter by opening an RPCAP connection and so on.
+ *
+ * This function does the job of pcap_open_live() for a remote interface;
+ * it's called by pcap_open() for remote interfaces.
+ * In other words, we have a pcap_read for win32, which reads packets from NPF,
+ * another for Linux, and so on. Now, we have a pcap_open_rpcap() as well.
+ * The difference, here, is the capture thread does not start until the
+ * pcap_startcapture_remote() is called.
+ *
+ * This is because, in remote capture, we cannot start capturing data as
+ * soon as the 'open adapter' command is sent. Suppose the remote adapter
+ * is already overloaded; if we start a capture (which, by default, has
+ * a NULL filter) the new traffic can saturate the network.
+ *
+ * Instead, we want to "open" the adapter, then send a "start capture"
+ * command only when we're ready to start the capture.
+ * This function does this job: it sends an "open adapter" command
+ * (according to the RPCAP protocol), but it does not start the capture.
+ *
+ * Since the other libpcap functions do not share this way of life, we
+ * have to make some dirty things in order to make everyting working.
+ *
+ * \param source: see pcap_open().
+ * \param snaplen: see pcap_open().
+ * \param flags: see pcap_open().
+ * \param read_timeout: see pcap_open().
+ * \param auth: see pcap_open().
+ * \param errbuf: see pcap_open().
+ *
+ * \return a pcap_t pointer in case of success, NULL otherwise. In case of
+ * success, the pcap_t pointer can be used as a parameter to the following
+ * calls (pcap_compile() and so on). In case of problems, errbuf contains
+ * a text explanation of error.
+ *
+ * WARNING: In case we call pcap_compile() and the capture is not started,
+ * the filter will be saved into the pcap_t structure, and it will be sent
+ * to the other host later (when the pcap_startcapture_remote() is called).
+ */
 pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
 {
 	pcap_t *fp;
 	char *source_str;
 	struct pcap_rpcap *pr;		/* structure used when doing a remote live capture */
-	int result;
+	char host[PCAP_BUF_SIZE], ctrlport[PCAP_BUF_SIZE], iface[PCAP_BUF_SIZE];
+
+	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
+	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
+	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
+	int nread;
+	int retval;				/* store the return value of the functions */
+	int active = 0;				/* '1' if we're in active mode */
+
+	/* socket-related variables */
+	struct addrinfo hints;			/* temp, needed to open a socket connection */
+	struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
+	SOCKET sockctrl = 0;			/* socket descriptor of the control connection */
+
+	/* RPCAP-related variables */
+	struct rpcap_header header;		/* header of the RPCAP packet */
+	struct rpcap_openreply openreply;	/* open reply message */
 
 	fp = pcap_create_common(errbuf, sizeof (struct pcap_rpcap));
 	if (fp == NULL)
@@ -2331,17 +2170,182 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	pr = fp->priv;
 	pr->rmt_flags = flags;
 
-	result = pcap_opensource_remote(fp, auth);
-
-	if (result != 0)
+	/*
+	 * determine the type of the source (NULL, file, local, remote)
+	 * You must have a valid source string even if we're in active mode, because otherwise
+	 * the call to the following function will fail.
+	 */
+	if (pcap_parsesrcstr(fp->opt.device, &retval, host, ctrlport, iface, errbuf) == -1)
 	{
-		strcpy(errbuf, fp->errbuf);
 		pcap_close(fp);
 		return NULL;
 	}
 
+	if (retval != PCAP_SRC_IFREMOTE)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "This function is able to open only remote interfaces");
+		pcap_close(fp);
+		return NULL;
+	}
+
+	addrinfo = NULL;
+
+	/*
+	 * Warning: this call can be the first one called by the user.
+	 * For this reason, we have to initialize the WinSock support.
+	 */
+	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
+	{
+		pcap_close(fp);
+		return NULL;
+	}
+
+	sockctrl = rpcap_remoteact_getsock(host, &active, errbuf);
+	if (sockctrl == INVALID_SOCKET)
+	{
+		pcap_close(fp);
+		return NULL;
+	}
+
+	if (!active)
+	{
+		/*
+		 * We're not in active mode; let's try to open a new
+		 * control connection.
+		 */
+		memset(&hints, 0, sizeof(struct addrinfo));
+		hints.ai_family = PF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+
+		if (ctrlport[0] == 0)
+		{
+			/* the user chose not to specify the port */
+			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+			{
+				pcap_close(fp);
+				return NULL;
+			}
+		}
+		else
+		{
+			/* the user chose not to specify the port */
+			if (sock_initaddress(host, ctrlport, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+			{
+				pcap_close(fp);
+				return NULL;
+			}
+		}
+
+		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			goto error;
+
+		freeaddrinfo(addrinfo);
+		addrinfo = NULL;
+
+		if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
+			goto error;
+	}
+
+	/*
+	 * Now it's time to start playing with the RPCAP protocol
+	 * RPCAP open command: create the request message
+	 */
+	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
+		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
+		goto error;
+
+	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_OPEN_REQ, 0, (uint32) strlen(iface));
+
+	if (sock_bufferize(iface, (int) strlen(iface), sendbuf, &sendbufidx,
+		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
+		goto error;
+
+	if (sock_send(sockctrl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE))
+		goto error;
+
+	/* Receive the RPCAP open reply message */
+	if (sock_recv(sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		goto error;
+
+	/* Checks if the message is correct */
+	retval = rpcap_checkmsg(errbuf, sockctrl, &header, RPCAP_MSG_OPEN_REPLY, RPCAP_MSG_ERROR, 0);
+
+	if (retval != RPCAP_MSG_OPEN_REPLY)		/* the message is not the one expected */
+	{
+		switch (retval)
+		{
+		case -3:		/* Unrecoverable network error */
+		case -2:		/* The other endpoint send a message that is not allowed here */
+		case -1:		/* The other endpoint has a version number that is not compatible with our */
+			goto error;
+
+		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
+			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
+			totread = ntohl(header.plen);
+			/* Do nothing; just exit; the error code is already into the errbuf */
+			goto error;
+
+		default:
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Internal error");
+			goto error;
+		}
+	}
+
+	nread = sock_recv(sockctrl, (char *)&openreply,
+	    sizeof(struct rpcap_openreply), SOCK_RECEIVEALL_YES,
+	    errbuf, PCAP_ERRBUF_SIZE);
+	if (nread == -1)
+		goto error;
+	totread += nread;
+
+	/* Checks if all the data has been read; if not, discard the data in excess */
+	if (totread != ntohl(header.plen))
+	{
+		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
+			goto error;
+	}
+
+	/* Set proper fields into the pcap_t struct */
+	fp->linktype = ntohl(openreply.linktype);
+	fp->tzoff = ntohl(openreply.tzoff);
+	pr->rmt_sockctrl = sockctrl;
+	pr->rmt_clientside = 1;
+
+	/* This code is duplicated from the end of this function */
+	fp->read_op = pcap_read_rpcap;
+	fp->save_current_filter_op = pcap_save_current_filter_rpcap;
+	fp->setfilter_op = pcap_setfilter_rpcap;
+	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
+	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
+	fp->stats_op = pcap_stats_rpcap;
+#ifdef _WIN32
+	fp->stats_ex_op = pcap_stats_ex_rpcap;
+#endif
+	fp->cleanup_op = pcap_cleanup_rpcap;
+
 	fp->activated = 1;
 	return fp;
+
+error:
+	/*
+	 * When the connection has been established, we have to close it. So, at the
+	 * beginning of this function, if an error occur we return immediately with
+	 * a return NULL; when the connection is established, we have to come here
+	 * ('goto error;') in order to close everything properly.
+	 *
+	 * Checks if all the data has been read; if not, discard the data in excess
+	 */
+	if (totread != ntohl(header.plen))
+		sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0);
+
+	if (addrinfo)
+		freeaddrinfo(addrinfo);
+
+	if (!active)
+		sock_close(sockctrl, NULL, 0);
+
+	pcap_close(fp);
+	return NULL;
 }
 
 /* String identifier to be used in the pcap_findalldevs_ex() */
