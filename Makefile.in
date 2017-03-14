@@ -139,6 +139,7 @@ HDR = $(PUBHDR) \
 	rpcapd/rpcapd.h \
 	rpcapd/utils.c \
 	rpcapd/utils.h \
+	rpcapd/win32-svc.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \
 	sunatmpos.h
