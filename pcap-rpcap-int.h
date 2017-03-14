@@ -90,11 +90,8 @@ int pcap_opensource_remote(pcap_t *p, struct pcap_rmtauth *auth);
 int pcap_startcapture_remote(pcap_t *fp);
 
 void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
-int rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **sockaddrout, char *errbuf);
 int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);
 int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf);
-
-SOCKET rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf);
 
 #endif
