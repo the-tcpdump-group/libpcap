@@ -67,8 +67,33 @@
 #define PCAP_STATS_EX		1	/* Used by pcap_stats_rpcap to see if we want standard or extended statistics */
 #endif
 
+/*
+ * \brief Keeps a list of all the opened connections in the active mode.
+ *
+ * This structure defines a linked list of items that are needed to keep the info required to
+ * manage the active mode.
+ * In other words, when a new connection in active mode starts, this structure is updated so that
+ * it reflects the list of active mode connections currently opened.
+ * This structure is required by findalldevs() and open_remote() to see if they have to open a new
+ * control connection toward the host, or they already have a control connection in place.
+ */
+struct activehosts
+{
+	struct sockaddr_storage host;
+	SOCKET sockctrl;
+	struct activehosts *next;
+};
+
 /* Keeps a list of all the opened connections in the active mode. */
-struct activehosts *activeHosts;
+static struct activehosts *activeHosts;
+
+/*
+ * Keeps the main socket identifier when we want to accept a new remote
+ * connection (active mode only).
+ * See the documentation of pcap_remoteact_accept() and
+ * pcap_remoteact_cleanup() for more details.
+ */
+static SOCKET sockmain;
 
 /*
  * Private data for capturing remotely using the rpcap protocol.
@@ -2703,4 +2728,277 @@ error:
 	sock_cleanup();
 
 	return -1;
+}
+
+/*
+ * Active mode routines.
+ *
+ * The old libpcap API is somewhat ugly, and makes active mode difficult
+ * to implement; we provide some APIs for it that work only with rpcap.
+ */
+
+SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, char *errbuf)
+{
+	/* socket-related variables */
+	struct addrinfo hints;			/* temporary struct to keep settings needed to open the new socket */
+	struct addrinfo *addrinfo;		/* keeps the addrinfo chain; required to open a new socket */
+	struct sockaddr_storage from;	/* generic sockaddr_storage variable */
+	socklen_t fromlen;				/* keeps the length of the sockaddr_storage variable */
+	SOCKET sockctrl;				/* keeps the main socket identifier */
+	struct activehosts *temp, *prev;	/* temp var needed to scan he host list chain */
+
+	*connectinghost = 0;		/* just in case */
+
+	/* Prepare to open a new server socket */
+	memset(&hints, 0, sizeof(struct addrinfo));
+	/* WARNING Currently it supports only ONE socket family among ipv4 and IPv6  */
+	hints.ai_family = AF_INET;		/* PF_UNSPEC to have both IPv4 and IPv6 server */
+	hints.ai_flags = AI_PASSIVE;	/* Ready to a bind() socket */
+	hints.ai_socktype = SOCK_STREAM;
+
+	/* Warning: this call can be the first one called by the user. */
+	/* For this reason, we have to initialize the WinSock support. */
+	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
+		return -1;
+
+	/* Do the work */
+	if ((port == NULL) || (port[0] == 0))
+	{
+		if (sock_initaddress(address, RPCAP_DEFAULT_NETPORT_ACTIVE, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			SOCK_ASSERT(errbuf, 1);
+			return -2;
+		}
+	}
+	else
+	{
+		if (sock_initaddress(address, port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			SOCK_ASSERT(errbuf, 1);
+			return -2;
+		}
+	}
+
+
+	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+	{
+		SOCK_ASSERT(errbuf, 1);
+		return -2;
+	}
+
+	/* Connection creation */
+	fromlen = sizeof(struct sockaddr_storage);
+
+	sockctrl = accept(sockmain, (struct sockaddr *) &from, &fromlen);
+
+	/* We're not using sock_close, since we do not want to send a shutdown */
+	/* (which is not allowed on a non-connected socket) */
+	closesocket(sockmain);
+	sockmain = 0;
+
+	if (sockctrl == -1)
+	{
+		sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
+		return -2;
+	}
+
+	/* Get the numeric for of the name of the connecting host */
+	if (getnameinfo((struct sockaddr *) &from, fromlen, connectinghost, RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST))
+	{
+		sock_geterror("getnameinfo(): ", errbuf, PCAP_ERRBUF_SIZE);
+		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return -1;
+	}
+
+	/* checks if the connecting host is among the ones allowed */
+	if (sock_check_hostlist((char *)hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
+	{
+		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return -1;
+	}
+
+	/* Send authentication to the remote machine */
+	if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
+	{
+		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return -3;
+	}
+
+	/* Checks that this host does not already have a cntrl connection in place */
+
+	/* Initialize pointers */
+	temp = activeHosts;
+	prev = NULL;
+
+	while (temp)
+	{
+		/* This host already has an active connection in place, so I don't have to update the host list */
+		if (sock_cmpaddr(&temp->host, &from) == 0)
+			return sockctrl;
+
+		prev = temp;
+		temp = temp->next;
+	}
+
+	/* The host does not exist in the list; so I have to update the list */
+	if (prev)
+	{
+		prev->next = (struct activehosts *) malloc(sizeof(struct activehosts));
+		temp = prev->next;
+	}
+	else
+	{
+		activeHosts = (struct activehosts *) malloc(sizeof(struct activehosts));
+		temp = activeHosts;
+	}
+
+	if (temp == NULL)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return -1;
+	}
+
+	memcpy(&temp->host, &from, fromlen);
+	temp->sockctrl = sockctrl;
+	temp->next = NULL;
+
+	return sockctrl;
+}
+
+int pcap_remoteact_close(const char *host, char *errbuf)
+{
+	struct activehosts *temp, *prev;	/* temp var needed to scan the host list chain */
+	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
+	int retval;
+
+	temp = activeHosts;
+	prev = NULL;
+
+	/* retrieve the network address corresponding to 'host' */
+	addrinfo = NULL;
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	retval = getaddrinfo(host, "0", &hints, &addrinfo);
+	if (retval != 0)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
+		return -1;
+	}
+
+	while (temp)
+	{
+		ai_next = addrinfo;
+		while (ai_next)
+		{
+			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
+			{
+				struct rpcap_header header;
+
+				/* Close this connection */
+				rpcap_createhdr(&header, RPCAP_MSG_CLOSE, 0, 0);
+
+				/* I don't check for errors, since I'm going to close everything */
+				sock_send(temp->sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE);
+
+				if (sock_close(temp->sockctrl, errbuf, PCAP_ERRBUF_SIZE))
+				{
+					/* To avoid inconsistencies in the number of sock_init() */
+					sock_cleanup();
+
+					return -1;
+				}
+
+				if (prev)
+					prev->next = temp->next;
+				else
+					activeHosts = temp->next;
+
+				freeaddrinfo(addrinfo);
+
+				free(temp);
+
+				/* To avoid inconsistencies in the number of sock_init() */
+				sock_cleanup();
+
+				return 0;
+			}
+
+			ai_next = ai_next->ai_next;
+		}
+		prev = temp;
+		temp = temp->next;
+	}
+
+	if (addrinfo)
+		freeaddrinfo(addrinfo);
+
+	/* To avoid inconsistencies in the number of sock_init() */
+	sock_cleanup();
+
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The host you want to close the active connection is not known");
+	return -1;
+}
+
+void pcap_remoteact_cleanup(void)
+{
+	/* Very dirty, but it works */
+	if (sockmain)
+	{
+		closesocket(sockmain);
+
+		/* To avoid inconsistencies in the number of sock_init() */
+		sock_cleanup();
+	}
+
+}
+
+int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
+{
+	struct activehosts *temp;	/* temp var needed to scan the host list chain */
+	size_t len;
+	char hoststr[RPCAP_HOSTLIST_SIZE + 1];
+
+	temp = activeHosts;
+
+	len = 0;
+	*hostlist = 0;
+
+	while (temp)
+	{
+		/*int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *address, int addrlen, char *port, int portlen, int flags, char *errbuf, int errbuflen) */
+
+		/* Get the numeric form of the name of the connecting host */
+		if (sock_getascii_addrport((struct sockaddr_storage *) &temp->host, hoststr,
+			RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST, errbuf, PCAP_ERRBUF_SIZE) != -1)
+			/*	if (getnameinfo( (struct sockaddr *) &temp->host, sizeof (struct sockaddr_storage), hoststr, */
+			/*		RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST) ) */
+		{
+			/*	sock_geterror("getnameinfo(): ", errbuf, PCAP_ERRBUF_SIZE); */
+			return -1;
+		}
+
+		len = len + strlen(hoststr) + 1 /* the separator */;
+
+		if ((size < 0) || (len >= (size_t)size))
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The string you provided is not able to keep "
+				"the hostnames for all the active connections");
+			return -1;
+		}
+
+		strlcat(hostlist, hoststr, PCAP_ERRBUF_SIZE);
+		hostlist[len - 1] = sep;
+		hostlist[len] = 0;
+
+		temp = temp->next;
+	}
+
+	return 0;
 }

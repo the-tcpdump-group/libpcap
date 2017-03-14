@@ -64,23 +64,6 @@
  */
 #define RPCAP_NETBUF_SIZE 64000
 
-/*
- * \brief Keeps a list of all the opened connections in the active mode.
- *
- * This structure defines a linked list of items that are needed to keep the info required to
- * manage the active mode.
- * In other words, when a new connection in active mode starts, this structure is updated so that
- * it reflects the list of active mode connections currently opened.
- * This structure is required by findalldevs() and open_remote() to see if they have to open a new
- * control connection toward the host, or they already have a control connection in place.
- */
-struct activehosts
-{
-	struct sockaddr_storage host;
-	SOCKET sockctrl;
-	struct activehosts *next;
-};
-
 /*********************************************************
  *                                                       *
  * Exported function prototypes                          *
