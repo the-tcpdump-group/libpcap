@@ -2333,7 +2333,9 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 
 	result = pcap_opensource_remote(fp, auth);
 
-	if (result != 0) {
+	if (result != 0)
+	{
+		strcpy(errbuf, fp->errbuf);
 		pcap_close(fp);
 		return NULL;
 	}

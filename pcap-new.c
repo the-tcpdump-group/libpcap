@@ -576,7 +576,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		break;
 
 	case PCAP_SRC_IFLOCAL:
-		fp = pcap_create(source, errbuf);
+		fp = pcap_create(name, errbuf);
 		if (fp == NULL)
 			return (NULL);
 		status = pcap_set_snaplen(fp, snaplen);
@@ -629,15 +629,15 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	fail:
 		if (status == PCAP_ERROR)
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-			    source, fp->errbuf);
+			    name, fp->errbuf);
 		else if (status == PCAP_ERROR_NO_SUCH_DEVICE ||
 		    status == PCAP_ERROR_PERM_DENIED ||
 		    status == PCAP_ERROR_PROMISC_PERM_DENIED)
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s (%s)",
-			    source, pcap_statustostr(status), fp->errbuf);
+			    name, pcap_statustostr(status), fp->errbuf);
 		else
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-			    source, pcap_statustostr(status));
+			    name, pcap_statustostr(status));
 		pcap_close(fp);
 		return NULL;
 
