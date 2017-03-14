@@ -125,7 +125,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog);
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog);
 static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
-static int pcap_setsampling_remote(pcap_t *p);
+static int pcap_setsampling_remote(pcap_t *fp);
 static int pcap_startcapture_remote(pcap_t *fp);
 
 /****************************************************
@@ -1623,9 +1623,9 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
  * \return '0' if everything is OK, '-1' is something goes wrong. The error message is returned
  * in the 'errbuf' member of the pcap_t structure.
  */
-static int pcap_setsampling_remote(pcap_t *p)
+static int pcap_setsampling_remote(pcap_t *fp)
 {
-	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
+	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
 	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
@@ -1633,11 +1633,11 @@ static int pcap_setsampling_remote(pcap_t *p)
 	struct rpcap_sampling *sampling_pars;	/* Structure that is needed to send sampling parameters to the remote host */
 
 	/* If no samping is requested, return 'ok' */
-	if (p->rmt_samp.method == PCAP_SAMP_NOSAMP)
+	if (fp->rmt_samp.method == PCAP_SAMP_NOSAMP)
 		return 0;
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, p->errbuf, PCAP_ERRBUF_SIZE))
+		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
 	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_SETSAMPLING_REQ, 0, sizeof(struct rpcap_sampling));
@@ -1646,23 +1646,23 @@ static int pcap_setsampling_remote(pcap_t *p)
 	sampling_pars = (struct rpcap_sampling *) &sendbuf[sendbufidx];
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_sampling), NULL,
-		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, p->errbuf, PCAP_ERRBUF_SIZE))
+		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
 	memset(sampling_pars, 0, sizeof(struct rpcap_sampling));
 
-	sampling_pars->method = p->rmt_samp.method;
-	sampling_pars->value = htonl(p->rmt_samp.value);
+	sampling_pars->method = fp->rmt_samp.method;
+	sampling_pars->value = htonl(fp->rmt_samp.value);
 
-	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, p->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
 	/* Waits for the answer */
-	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
 	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(p->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_SETSAMPLING_REPLY, 0);
+	retval = rpcap_checkmsg(fp->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_SETSAMPLING_REPLY, 0);
 
 	if (retval != RPCAP_MSG_SETSAMPLING_REPLY)		/* the message is not the one expected */
 	{
@@ -1683,7 +1683,7 @@ static int pcap_setsampling_remote(pcap_t *p)
 
 	if (ntohl(header.plen) != 0)	/* the message has an unexpected size */
 	{
-		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen), p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen), fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 
