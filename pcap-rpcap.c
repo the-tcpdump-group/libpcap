@@ -45,22 +45,21 @@
 #include "pcap-rpcap-int.h"
 
 /*
- * \file pcap-rpcap.c
+ * This file contains the pcap module for capturing from a remote machine's
+ * interfaces using the RPCAP protocol.
  *
- * This file keeps all the new functions that are needed for the RPCAP protocol.
- * Almost all the pcap functions need to be modified in order to become compatible
- * with the RPCAP protocol. However, you can find here only the ones that are completely new.
- *
- * This file keeps also the functions that are 'private', i.e. are needed by the RPCAP
- * protocol but are not exported to the user.
- *
- * \warning All the RPCAP functions that are allowed to return a buffer containing
- * the error description can return max PCAP_ERRBUF_SIZE characters.
+ * WARNING: All the RPCAP functions that are allowed to return a buffer
+ * containing the error description can return max PCAP_ERRBUF_SIZE characters.
  * However there is no guarantees that the string will be zero-terminated.
- * Best practice is to define the errbuf variable as a char of size 'PCAP_ERRBUF_SIZE+1'
- * and to insert manually a NULL character at the end of the buffer. This will
- * guarantee that no buffer overflows occur even if we use the printf() to show
- * the error on the screen.
+ * Best practice is to define the errbuf variable as a char of size
+ * 'PCAP_ERRBUF_SIZE+1' and to insert manually a NULL character at the end
+ * of the buffer. This will guarantee that no buffer overflows occur even
+ * if we use the printf() to show the error on the screen.
+ *
+ * XXX - actually, null-terminating the error string is part of the
+ * contract for the pcap API; if there's any place in the pcap code
+ * that doesn't guarantee null-termination, even at the expense of
+ * cutting the message short, that's a bug and needs to be fixed.
  */
 
 #define PCAP_STATS_STANDARD	0	/* Used by pcap_stats_rpcap to see if we want standard or extended statistics */
@@ -135,9 +134,7 @@ static int pcap_startcapture_remote(pcap_t *fp);
  ****************************************************/
 
 /*
- * \ingroup remote_pri_func
- *
- * \brief 	It traslates (i.e. de-serializes) a 'rpcap_sockaddr'
+ * This function translates (i.e. de-serializes) a 'rpcap_sockaddr'
  * structure from the network byte order to a 'sockaddr_in" or
  * 'sockaddr_in6' structure in the host byte order.
  *
@@ -313,18 +310,14 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 	return 0;
 }
 
-/* \ingroup remote_pri_func
+/*
+ * This function reads a packet from the network socket.  It does not
+ * deliver the packet to a pcap_dispatch()/pcap_loop() callback (hence
+ * the "nocb" string into its name).
  *
- * \brief It reads a packet from the network socket. This does not make use of
- * callback (hence the "nocb" string into its name).
+ * This function is called by pcap_read_rpcap().
  *
- * This function is called by the several pcap_next_ex() when they detect that
- * we have a remote capture and they are the client side. In that case, they need
- * to read packets from the socket.
- *
- * Parameters and return values are exactly the same of the pcap_next_ex().
- *
- * \warning By choice, this function does not make use of semaphores. A smarter
+ * WARNING: By choice, this function does not make use of semaphores. A smarter
  * implementation should put a semaphore into the data thread, and a signal will
  * be raised as soon as there is data into the socket buffer.
  * However this is complicated and it does not bring any advantages when reading
@@ -499,19 +492,12 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	}
 }
 
-/* \ingroup remote_pri_func
- *
- * \brief It reads a packet from the network socket.
- *
- * This function is called by the several pcap_read() when they detect that
- * we have a remote capture and they are the client side. In that case, they need
- * to read packets from the socket.
+/*
+ * This function reads a packet from the network socket.
  *
  * This function relies on the pcap_read_nocb_remote to deliver packets. The
  * difference, here, is that as soon as a packet is read, it is delivered
  * to the application by means of a callback function.
- *
- * Parameters and return values are exactly the same of the pcap_read().
  */
 static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
@@ -567,18 +553,13 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 	return n;
 }
 
-/* \ingroup remote_pri_func
+/*
+ * This function sends a CLOSE command to the capture server.
  *
- * \brief It sends a CLOSE command to the capture server.
+ * It is called when the user calls pcap_close().  It sends a command
+ * to the peer that says 'ok, let's stop capturing'.
  *
- * This function is called when the user wants to close a pcap_t adapter.
- * In case we're capturing from the network, it sends a command to the other
- * peer that says 'ok, let's stop capturing'.
- * This function is called automatically when the user calls the pcap_close().
- *
- * Parameters and return values are exactly the same of the pcap_close().
- *
- * \warning Since we're closing the connection, we do not check for errors.
+ * WARNING: Since we're closing the connection, we do not check for errors.
  */
 static void pcap_cleanup_rpcap(pcap_t *fp)
 {
@@ -642,14 +623,9 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 	sock_cleanup();
 }
 
-/* \ingroup remote_pri_func
- *
- * \brief It retrieves network statistics from the other peer.
- *
- * This function is just a void cointainer, since the work is done by the rpcap_stats_rpcap().
- * See that funcion for more details.
- *
- * Parameters and return values are exactly the same of the pcap_stats().
+/*
+ * This function retrieves network statistics from the peer;
+ * it provides only the standard statistics.
  */
 static int pcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps)
 {
@@ -664,14 +640,9 @@ static int pcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps)
 }
 
 #ifdef _WIN32
-/* \ingroup remote_pri_func
- *
- * \brief It retrieves network statistics from the other peer.
- *
- * This function is just a void cointainer, since the work is done by the rpcap_stats_rpcap().
- * See that funcion for more details.
- *
- * Parameters and return values are exactly the same of the pcap_stats_ex().
+/*
+ * This function retrieves network statistics from the other peer;
+ * it provides the additional statistics supported by pcap_stats_ex().
  */
 static struct pcap_stat *pcap_stats_ex_rpcap(pcap_t *p, int *pcap_stat_size)
 {
@@ -682,30 +653,37 @@ static struct pcap_stat *pcap_stats_ex_rpcap(pcap_t *p, int *pcap_stat_size)
 }
 #endif
 
-/* \ingroup remote_pri_func
+/*
+ * This function retrieves network statistics from the other peer.  It
+ * is used by the two previous functions.
  *
- * \brief It retrieves network statistics from the other peer.
+ * It can be called in two modes:
+ * - PCAP_STATS_STANDARD: if we want just standard statistics (i.e.,
+ *   for pcap_stats())
+ * - PCAP_STATS_EX: if we want extended statistics (i.e., for
+ *   pcap_stats_ex())
  *
- * This function can be called in two modes:
- * - PCAP_STATS_STANDARD: if we want just standard statistics (i.e. the pcap_stats() )
- * - PCAP_STATS_EX: if we want extended statistics (i.e. the pcap_stats_ex() )
+ * This 'mode' parameter is needed because in pcap_stats() the variable that
+ * keeps the statistics is allocated by the user. On Windows, this structure
+ * has been extended in order to keep new stats. However, if the user has a
+ * smaller structure and it passes it to pcap_stats(), this function will
+ * try to fill in more data than the size of the structure, so that memory
+ * after the structure will be overwritten.
  *
- * This 'mode' parameter is needed because in the standard pcap_stats() the variable that keeps the
- * statistics is allocated by the user. Unfortunately, this structure has been extended in order
- * to keep new stats. However, if the user has a smaller structure and it passes it to the pcap_stats,
- * thid function will try to fill in more data than the size of the structure, so that the application
- * goes in memory overflow.
- * So, we need to know it we have to copy just the standard fields, or the extended fields as well.
+ * So, we need to know it we have to copy just the standard fields, or the
+ * extended fields as well.
  *
- * In case we want to copy the extended fields as well, the problem of memory overflow does no
- * longer exist because the structure pcap_stat is no longer allocated by the program;
- * it is allocated by the library instead.
+ * In case we want to copy the extended fields as well, the problem of
+ * memory overflow no longer exists because the structure that's filled
+ * in is part of the pcap_t, so that it can be guaranteed to be large
+ * enough for the additional statistics.
  *
  * \param p: the pcap_t structure related to the current instance.
  *
- * \param ps: a 'pcap_stat' structure, needed for compatibility with pcap_stat(), in which
- * the structure is allocated by the user. In case of pcap_stats_ex, this structure and the
- * function return value point to the same variable.
+ * \param ps: a pointer to a 'pcap_stat' structure, needed for compatibility
+ * with pcap_stat(), where the structure is allocated by the user. In case
+ * of pcap_stats_ex(), this structure and the function return value point
+ * to the same variable.
  *
  * \param mode: one of PCAP_STATS_STANDARD or PCAP_STATS_EX.
  *
@@ -812,14 +790,13 @@ error:
 	return NULL;
 }
 
-/* \ingroup remote_pri_func
- *
- * \brief It returns the socket currently used for this active connection
+/*
+ * This function returns the socket currently used for this active connection
  * (active mode only) and provides an indication of whether this connection
  * is in active mode or not.
  *
- * This function is just for internal use; it returns the socket ID of the
- * active connection currently opened.
+ * It is just for internal use; it returns the socket ID of the active
+ * connection currently opened.
  *
  * \param host: a string that keeps the host name of the host for which we
  * want to get the socket ID for that active connection.
@@ -887,27 +864,18 @@ rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 	return 0;
 }
 
-/* \ingroup remote_pri_func
+/*
+ * This function starts a remote capture.
  *
- * \brief It starts a remote capture.
- *
- * This function is required since the RPCAP protocol decouples the 'open' from the
- * 'start capture' functions.
- * This function takes all the parameters needed (which have been stored into the pcap_t structure)
- * and sends them to the server.
- * If everything is fine, it creates a new child thread that reads data from the network
- * and puts the data into the user buffer.
- * The pcap_read() will read data from the user buffer, as usual.
- *
- * The remote capture acts like a new "kernel", which puts packets directly into
- * the buffer pointed by pcap_t.
- * In fact, this function does not rely on a kernel that reads packets and puts them
- * into the user buffer; it has to do that on its own.
+ * This function is required since the RPCAP protocol decouples the 'open'
+ * from the 'start capture' functions.
+ * This function takes all the parameters needed (which have been stored
+ * into the pcap_t structure) and sends them to the server.
  *
  * \param fp: the pcap_t descriptor of the device currently open.
  *
- * \return '0' if everything is fine, '-1' otherwise. The error message (if one)
- * is returned into the 'errbuf' field of the pcap_t structure.
+ * \return '0' if everything is fine, '-1' otherwise. The error message
+ * (if one) is returned into the 'errbuf' field of the pcap_t structure.
  */
 static int pcap_startcapture_remote(pcap_t *fp)
 {
@@ -1300,16 +1268,17 @@ error:
 }
 
 /*
- * \brief Takes a bpf program and sends it to the other host.
+ * This function takes a bpf program and sends it to the other host.
  *
  * This function can be called in two cases:
- * - the pcap_startcapture() is called (we have to send the filter along with
- * the 'start capture' command)
- * - we want to udpate the filter during a capture (i.e. the pcap_setfilter()
- * is called when the capture is still on)
+ * - pcap_startcapture_remote() is called (we have to send the filter
+ *   along with the 'start capture' command)
+ * - we want to udpate the filter during a capture (i.e. pcap_setfilter()
+ *   after the capture has been started)
  *
- * This function serializes the filter into the sending buffer ('sendbuf', passed
- * as a parameter) and return back. It does not send anything on the network.
+ * This function serializes the filter into the sending buffer ('sendbuf',
+ * passed as a parameter) and return back. It does not send anything on
+ * the network.
  *
  * \param fp: the pcap_t descriptor of the device currently opened.
  *
@@ -1368,24 +1337,30 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
 	return 0;
 }
 
-/* \ingroup remote_pri_func
+/*
+ * This function updates a filter on a remote host.
  *
- * \brief Update a filter on a remote host.
- *
- * This function is called when the user wants to update a filter.
- * In case we're capturing from the network, it sends the filter to the other peer.
- * This function is *not* called automatically when the user calls the pcap_setfilter().
+ * It is called when the user wants to update a filter.
+ * In case we're capturing from the network, it sends the filter to the
+ * peer.
+ * This function is *not* called automatically when the user calls
+ * pcap_setfilter().
  * There will be two cases:
- * - the capture is already on: in this case, pcap_setfilter() calls pcap_updatefilter_remote()
- * - the capture has not started yet: in this case, pcap_setfilter() stores the filter into
- * the pcap_t structure, and then the filter is sent with the pcap_startcap().
+ * - the capture has been started: in this case, pcap_setfilter_rpcap()
+ *   calls pcap_updatefilter_remote()
+ * - the capture has not started yet: in this case, pcap_setfilter_rpcap()
+ *   stores the filter into the pcap_t structure, and then the filter is
+ *   sent with pcap_startcap().
  *
- * Parameters and return values are exactly the same of the pcap_setfilter().
+ * WARNING This function *does not* clear the packet currently into the
+ * buffers. Therefore, the user has to expect to receive some packets
+ * that are related to the previous filter.  If you want to discard all
+ * the packets before applying a new filter, you have to close the
+ * current capture session and start a new one.
  *
- * \warning This function *does not* clear the packet currently into the buffers. Therefore,
- * the user has to expect to receive some packets that are related to the previous filter.
- * If you want to discard all the packets before applying a new filter, you have to close
- * the current capture session and start a new one.
+ * XXX - we really should have pcap_setfilter() always discard packets
+ * received with the old filter, and have a separate pcap_setfilter_noflush()
+ * function that doesn't discard any packets.
  */
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
@@ -1467,15 +1442,13 @@ pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter)
 }
 
 /*
- * \ingroup remote_pri_func
- *
- * \brief Send a filter to a remote host.
+ * This function sends a filter to a remote host.
  *
  * This function is called when the user wants to set a filter.
- * In case we're capturing from the network, it sends the filter to the other peer.
- * This function is called automatically when the user calls the pcap_setfilter().
+ * It sends the filter to the peer.
+ * This function is called automatically when the user calls pcap_setfilter().
  *
- * Parameters and return values are exactly the same of the pcap_setfilter().
+ * Parameters and return values are exactly the same of pcap_setfilter().
  */
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog)
 {
@@ -1497,9 +1470,8 @@ static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog)
 }
 
 /*
- * \ingroup remote_pri_func
- *
- * \brief Update the current filter in order not to capture rpcap packets.
+ * This function update the current filter in order not to capture rpcap
+ * packets.
  *
  * This function is called *only* when the user wants exclude RPCAP packets
  * related to the current session from the captured packets.
@@ -1610,18 +1582,17 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 }
 
 /*
- * \ingroup remote_pri_func
+ * This function set sampling parameters in the remote host.
  *
- * \brief Set sampling parameters in the remote host.
- *
- * This function is called when the user wants to set activate sampling on the remote host.
+ * It is called when the user wants to set activate sampling on the
+ * remote host.
  *
  * Sampling parameters are defined into the 'pcap_t' structure.
  *
  * \param p: the pcap_t descriptor of the device currently opened.
  *
- * \return '0' if everything is OK, '-1' is something goes wrong. The error message is returned
- * in the 'errbuf' member of the pcap_t structure.
+ * \return '0' if everything is OK, '-1' is something goes wrong. The
+ * error message is returned in the 'errbuf' member of the pcap_t structure.
  */
 static int pcap_setsampling_remote(pcap_t *fp)
 {
@@ -1697,29 +1668,31 @@ static int pcap_setsampling_remote(pcap_t *fp)
  *                                                       *
  *********************************************************/
 
-/* \ingroup remote_pri_func
- * \brief It sends a RPCAP error to the other peer.
+/*
+ * This function sends a RPCAP error to the peer.
  *
- * This function has to be called when the main program detects an error. This function
- * will send on the other peer the 'buffer' specified by the user.
- * This function *does not* request a RPCAP CLOSE connection. A CLOSE command must be sent
- * explicitly by the program, since we do not know it the error can be recovered in some
- * way or it is a non-recoverable one.
+ * It has to be called when the main program detects an error.
+ * It will send to the peer the 'buffer' specified by the user.
+ * This function *does not* request a RPCAP CLOSE connection. A CLOSE
+ * command must be sent explicitly by the program, since we do not know
+ * whether the error can be recovered in some way or if it is a
+ * non-recoverable one.
  *
  * \param sock: the socket we are currently using.
  *
- * \param error: an user-allocated (and '0' terminated) buffer that contains the error
- * description that has to be transmitted on the other peer. The error message cannot
- * be longer than PCAP_ERRBUF_SIZE.
+ * \param error: an user-allocated (and '0' terminated) buffer that contains
+ * the error description that has to be transmitted on the other peer. The
+ * error message cannot be longer than PCAP_ERRBUF_SIZE.
  *
- * \param errcode: a integer which tells the other party the type of error we had;
- * currently is is not too much used.
+ * \param errcode: a integer which tells the other party the type of error
+ * we had; currently is is not too much used.
  *
- * \param errbuf: a pointer to a user-allocated buffer (of size PCAP_ERRBUF_SIZE)
- * that will contain the error message (in case there is one). It could be network problem.
+ * \param errbuf: a pointer to a user-allocated buffer (of size
+ * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
+ * is one). It could be network problem.
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
- * in the 'errbuf' variable.
+ * \return '0' if everything is fine, '-1' if some errors occurred. The
+ * error message is returned in the 'errbuf' variable.
  */
 int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf)
 {
@@ -1748,22 +1721,23 @@ int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errb
 	return 0;
 }
 
-/* \ingroup remote_pri_func
- * \brief Sends the authentication message.
+/*
+ * This function sends the authentication message.
  *
  * It sends the authentication parameters on the control socket.
- * This function is required in order to open the connection with the other end party.
+ * It is required in order to open the connection with the other end party.
  *
  * \param sock: the socket we are currently using.
  *
  * \param auth: authentication parameters that have to be sent.
  *
- * \param errbuf: a pointer to a user-allocated buffer (of size PCAP_ERRBUF_SIZE)
- * that will contain the error message (in case there is one). It could be network problem
- * of the fact that the authorization failed.
+ * \param errbuf: a pointer to a user-allocated buffer (of size
+ * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
+ * is one). It could be a network problem or the fact that the authorization
+ * failed.
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
- * in the 'errbuf' variable.
+ * \return '0' if everything is fine, '-1' if some errors occurred. The
+ * error message is returned in the 'errbuf' variable.
  * The error message could be also 'the authentication failed'.
  */
 int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
@@ -1899,26 +1873,27 @@ int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	return 0;
 }
 
-/* \ingroup remote_pri_func
- * \brief Creates a structure of type rpcap_header.
+/*
+ * This function fills in a structure of type rpcap_header.
  *
- * This function is provided just because the creation of an rpcap header is quite a common
- * task. It accepts all the values that appears into an rpcap_header, and it puts them in
- * place using the proper hton() calls.
+ * It is provided just because the creation of an rpcap header is a common
+ * task. It accepts all the values that appears into an rpcap_header, and
+ * it puts them in place using the proper hton() calls.
  *
- * \param header: a pointer to a user-allocated buffer which will contain the serialized
- * header, ready to be sent on the network.
+ * \param header: a pointer to a user-allocated buffer which will contain
+ * the serialized header, ready to be sent on the network.
  *
- * \param type: a value (in the host by order) which will be placed into the header.type
- * field and that represents the type of the current message.
+ * \param type: a value (in the host by order) which will be placed into the
+ * header.type field and that represents the type of the current message.
  *
- * \param value: a value (in the host by order) which will be placed into the header.value
- * field and that has a message-dependent meaning.
+ * \param value: a value (in the host by order) which will be placed into
+ * the header.value field and that has a message-dependent meaning.
  *
- * \param length: a value (in the host by order) which will be placed into the header.length
- * field and that represents the payload length of the message.
+ * \param length: a value (in the host by order) which will be placed into
+ * the header.length field, representing the payload length of the message.
  *
- * \return Nothing. The serialized header is returned into the 'header' variable.
+ * \return Nothing. The serialized header is returned into the 'header'
+ * variable.
  */
 void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length)
 {
@@ -1930,48 +1905,53 @@ void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint
 	header->plen = htonl(length);
 }
 
-/* ingroup remote_pri_func
- * \brief Checks if the header of the received message is correct.
+/*
+ * This function checks whether the header of the received message is correct.
  *
- * This function is a way to easily check if the message received, in a certain
- * state of the RPCAP protocol Finite State Machine, is valid. This function accepts,
- * as a parameter, the list of message types that are allowed in a certain situation,
- * and it returns the one which occurs.
+ * It is a way to easily check if the message received, in a certain state
+ * of the RPCAP protocol Finite State Machine, is valid. This function accepts,
+ * as a parameter, the list of message types that are allowed in a certain
+ * situation, and it returns the one that occurs.
  *
- * \param errbuf: a pointer to a user-allocated buffer (of size PCAP_ERRBUF_SIZE)
- * that will contain the error message (in case there is one). It could be either problem
- * occurred inside this function (e.g. a network problem in case it tries to send an
- * error on the other peer and the send() call fails), an error message which has been
- * sent to us from the other party, or a version error (the message receive has a version
- * number that is incompatible with our).
+ * \param errbuf: a pointer to a user-allocated buffer (of size
+ * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
+ * is one). It could either be a problem that occurred inside this function
+ * (e.g. a network problem in case it tries to send an error to the peer
+ * and the send() call fails), an error message thathas been sent to us
+ * from the other party, or a version error (the message received has a
+ * version number that is incompatible with ours).
  *
- * \param sock: the socket that has to be used to receive data. This function can
- * read data from socket in case the version contained into the message is not compatible
- * with our. In that case, all the message is purged from the socket, so that the following
- * recv() calls will return a new message.
+ * \param sock: the socket that has to be used to receive data. This
+ * function can read data from socket in case the version contained into
+ * the message is not compatible with ours. In that case, all the message
+ * is purged from the socket, so that the following recv() calls will
+ * return a new message.
  *
- * \param header: a pointer to and 'rpcap_header' structure that keeps the data received from
- * the network (still in network byte order) and that has to be checked.
+ * \param header: a pointer to and 'rpcap_header' structure that keeps
+ * the data received from the network (still in network byte order) and
+ * that has to be checked.
  *
- * \param first: this function has a variable number of parameters. From this point on,
- * all the messages that are valid in this context must be passed as parameters.
- * The message type list must be terminated with a '0' value, the null message type,
- * which means 'no more types to check'. The RPCAP protocol does not define anything with
- * message type equal to zero, so there is no ambiguity in using this value as a list terminator.
+ * \param first: this function has a variable number of parameters. From
+ * this point on, all the messages that are valid in this context must be
+ * passed as parameters.  The message type list must be terminated with a
+ * '0' value, the null message type, which means 'no more types to check'.
+ * The RPCAP protocol does not define anything with message type equal to
+ * zero, so there is no ambiguity in using this value as a list terminator.
  *
- * \return The message type of the message that has been detected. In case of errors (e.g. the
- * header contains a type that is not listed among the allowed types), this function will
- * return the following codes:
+ * \return The message type of the message that has been detected. In case
+ * of errors (e.g. the header contains a type that is not listed among the
+ * allowed types), this function will return the following codes:
  * - (-1) if the version is incompatible.
  * - (-2) if the code is not among the one listed into the parameters list
  * - (-3) if a network error (connection reset, ...)
- * - RPCAP_MSG_ERROR if the message is an error message (it follow that the RPCAP_MSG_ERROR
- * could not be present in the allowed message-types list, because this function checks
- * for errors anyway)
+ * - RPCAP_MSG_ERROR if the message is an error message (it follows that
+ * the RPCAP_MSG_ERROR could not be present in the allowed message-types
+ * list, because this function checks for errors anyway)
  *
- * In case either the version is incompatible or nothing matches (i.e. it returns '-1' or '-2'),
- * it discards the message body (i.e. it reads the remaining part of the message from the
- * network and it discards it) so that the application is ready to receive a new message.
+ * In case either the version is incompatible or nothing matches (i.e. it
+ * returns '-1' or '-2'), it discards the message body (i.e. it reads the
+ * remaining part of the message from the network and it discards it) so
+ * that the application is ready to receive a new message.
  */
 int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...)
 {
@@ -2048,28 +2028,32 @@ int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8
 	return -2;
 }
 
-/* \ingroup remote_pri_func
- * \brief Checks if the version contained into the message is compatible with
- * the one handled by this implementation.
+/*
+ * This function checks whether the version contained into the message is
+ * compatible with the one handled by this implementation.
  *
- * Right now, this function does not have any sophisticated task: if the versions
- * are different, it returns -1 and it discards the message.
- * It is expected that in the future this message will become more complex.
+ * Right now, this function does not have any sophisticated task: if the
+ * versions are different, it returns -1 and it discards the message.
+ * If new versions of the protocol are created, there will need to be
+ * a negotiation phase early in the process of connecting to the peer,
+ * so that the highest version supported by both sides can be used.
  *
- * \param sock: the socket that has to be used to receive data. This function can
- * read data from socket in case the version contained into the message is not compatible
- * with our. In that case, all the message is purged from the socket, so that the following
- * recv() calls will return a new (clean) message.
+ * \param sock: the socket that has to be used to receive data. This
+ * function can read data from socket in case the version contained into
+ * the message is not compatible with ours. In that case, all the message
+ * is purged from the socket, so that the following recv() calls will
+ * return a new (clean) message.
  *
- * \param header: a pointer to and 'rpcap_header' structure that keeps the data received from
- * the network (still in network byte order) and that has to be checked.
+ * \param header: a pointer to and 'rpcap_header' structure that keeps
+ * the data received from the network (still in network byte order) and
+ * that has to be checked.
  *
- * \param errbuf: a pointer to a user-allocated buffer (of size PCAP_ERRBUF_SIZE)
- * that will contain the error message (in case there is one). The error message is
- * "incompatible version".
+ * \param errbuf: a pointer to a user-allocated buffer (of size
+ * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
+ * is one). The error message is "incompatible version".
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
- * in the 'errbuf' variable.
+ * \return '0' if everything is fine, '-1' if some errors occurred. The
+ * error message is returned in the 'errbuf' variable.
  */
 static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf)
 {
@@ -2092,19 +2076,18 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
 }
 
 /*
- * \brief It opens a remote adapter by opening an RPCAP connection and so on.
+ * This function opens a remote adapter by opening an RPCAP connection and
+ * so on.
  *
- * This function does the job of pcap_open_live() for a remote interface;
- * it's called by pcap_open() for remote interfaces.
- * In other words, we have a pcap_read for win32, which reads packets from NPF,
- * another for Linux, and so on. Now, we have a pcap_open_rpcap() as well.
- * The difference, here, is the capture thread does not start until the
- * pcap_startcapture_remote() is called.
+ * It does the job of pcap_open_live() for a remote interface; it's called
+ * by pcap_open() for remote interfaces.
  *
- * This is because, in remote capture, we cannot start capturing data as
- * soon as the 'open adapter' command is sent. Suppose the remote adapter
- * is already overloaded; if we start a capture (which, by default, has
- * a NULL filter) the new traffic can saturate the network.
+ * We do not start the capture until pcap_startcapture_remote() is called.
+ *
+ * This is because, when doing a remote capture, we cannot start capturing
+ * data as soon as the 'open adapter' command is sent. Suppose the remote
+ * adapter is already overloaded; if we start a capture (which, by default,
+ * has a NULL filter) the new traffic can saturate the network.
  *
  * Instead, we want to "open" the adapter, then send a "start capture"
  * command only when we're ready to start the capture.
@@ -2112,7 +2095,7 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
  * (according to the RPCAP protocol), but it does not start the capture.
  *
  * Since the other libpcap functions do not share this way of life, we
- * have to make some dirty things in order to make everyting working.
+ * have to do some dirty things in order to make everyting working.
  *
  * \param source: see pcap_open().
  * \param snaplen: see pcap_open().
@@ -2126,9 +2109,10 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
  * calls (pcap_compile() and so on). In case of problems, errbuf contains
  * a text explanation of error.
  *
- * WARNING: In case we call pcap_compile() and the capture is not started,
- * the filter will be saved into the pcap_t structure, and it will be sent
- * to the other host later (when the pcap_startcapture_remote() is called).
+ * WARNING: In case we call pcap_compile() and the capture has not yet
+ * been started, the filter will be saved into the pcap_t structure,
+ * and it will be sent to the other host later (when
+ * pcap_startcapture_remote() is called).
  */
 pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
 {
