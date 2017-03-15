@@ -172,7 +172,7 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
      * Define it ourselves.
      */
     #define NEED_STRTOK_R
-    extern int pcap_strtok_r(char *, const char *, char **);
+    extern char *pcap_strtok_r(char *, const char *, char **);
   #endif
 #endif /* HAVE_STRTOK_R */
 

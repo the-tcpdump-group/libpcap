@@ -278,19 +278,19 @@ struct rpcap_sampling
 #define RPCAP_MSG_SETSAMPLING_REQ	11	/* Set sampling parameters */
 
 #define RPCAP_MSG_FINDALLIF_REPLY	(128+RPCAP_MSG_FINDALLIF_REQ)		/* Keeps the list of all the remote interfaces */
-#define RPCAP_MSG_OPEN_REPLY		(128+RPCAP_MSG_OPEN_REQ)			/* The remote device has been opened correctly */
+#define RPCAP_MSG_OPEN_REPLY		(128+RPCAP_MSG_OPEN_REQ)		/* The remote device has been opened correctly */
 #define RPCAP_MSG_STARTCAP_REPLY	(128+RPCAP_MSG_STARTCAP_REQ)		/* The capture is starting correctly */
-#define RPCAP_MSG_UPDATEFILTER_REPLY (128+RPCAP_MSG_UPDATEFILTER_REQ)	/* The filter has been applied correctly on the remote device */
-#define RPCAP_MSG_AUTH_REPLY		(128+RPCAP_MSG_AUTH_REQ)			/* Sends a message that says 'ok, authorization successful' */
-#define RPCAP_MSG_STATS_REPLY		(128+RPCAP_MSG_STATS_REQ)			/* Message that keeps the network statistics */
-#define RPCAP_MSG_ENDCAP_REPLY		(128+RPCAP_MSG_ENDCAP_REQ)			/* Confirms that the capture stopped successfully */
+#define RPCAP_MSG_UPDATEFILTER_REPLY	(128+RPCAP_MSG_UPDATEFILTER_REQ)	/* The filter has been applied correctly on the remote device */
+#define RPCAP_MSG_AUTH_REPLY		(128+RPCAP_MSG_AUTH_REQ)		/* Sends a message that says 'ok, authorization successful' */
+#define RPCAP_MSG_STATS_REPLY		(128+RPCAP_MSG_STATS_REQ)		/* Message that keeps the network statistics */
+#define RPCAP_MSG_ENDCAP_REPLY		(128+RPCAP_MSG_ENDCAP_REQ)		/* Confirms that the capture stopped successfully */
 #define RPCAP_MSG_SETSAMPLING_REPLY	(128+RPCAP_MSG_SETSAMPLING_REQ)		/* Confirms that the capture stopped successfully */
 
 #define RPCAP_STARTCAPREQ_FLAG_PROMISC		0x00000001	/* Enables promiscuous mode (default: disabled) */
 #define RPCAP_STARTCAPREQ_FLAG_DGRAM		0x00000002	/* Use a datagram (i.e. UDP) connection for the data stream (default: use TCP)*/
 #define RPCAP_STARTCAPREQ_FLAG_SERVEROPEN	0x00000004	/* The server has to open the data connection toward the client */
-#define RPCAP_STARTCAPREQ_FLAG_INBOUND		0x00000008	/* Capture only inbound packets (take care: the flag has no effects with promiscuous enabled) */
-#define RPCAP_STARTCAPREQ_FLAG_OUTBOUND		0x00000010	/* Capture only outbound packets (take care: the flag has no effects with promiscuous enabled) */
+#define RPCAP_STARTCAPREQ_FLAG_INBOUND		0x00000008	/* Capture only inbound packets (take care: the flag has no effect with promiscuous enabled) */
+#define RPCAP_STARTCAPREQ_FLAG_OUTBOUND		0x00000010	/* Capture only outbound packets (take care: the flag has no effect with promiscuous enabled) */
 
 #define RPCAP_UPDATEFILTER_BPF 1			/* This code tells us that the filter is encoded with the BPF/NPF syntax */
 
