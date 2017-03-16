@@ -826,25 +826,15 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 /* Send a packet to the network */
 static int
-pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
-	LPPACKET PacketToSend;
+pcap_inject_win32(pcap_t *p, const void *buf, size_t size)
+{
+	PACKET pkt;
 
-	PacketToSend=PacketAllocatePacket();
-
-	if (PacketToSend == NULL)
-	{
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketAllocatePacket failed");
-		return (-1);
-	}
-
-	PacketInitPacket(PacketToSend, (PVOID)buf, (UINT)size);
-	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
+	PacketInitPacket(&pkt, buf, size);
+	if(PacketSendPacket(p->adapter,&pkt,TRUE) == FALSE) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
-		PacketFreePacket(PacketToSend);
 		return (-1);
 	}
-
-	PacketFreePacket(PacketToSend);
 
 	/*
 	 * We assume it all got sent if "PacketSendPacket()" succeeded.
