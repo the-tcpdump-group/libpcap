@@ -830,7 +830,7 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size)
 {
 	PACKET pkt;
 
-	PacketInitPacket(&pkt, buf, size);
+	PacketInitPacket(&pkt, (PVOID)buf, size);
 	if(PacketSendPacket(p->adapter,&pkt,TRUE) == FALSE) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
 		return (-1);
