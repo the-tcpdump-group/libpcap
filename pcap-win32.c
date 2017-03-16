@@ -464,6 +464,11 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 
 	/* Set the limits of the dump file */
 	res = PacketSetDumpLimits(p->adapter, maxsize, maxpacks);
+	if(res == FALSE) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    		"Error setting dump limit");
+		return (-1);
+	}
 
 	return (0);
 }
