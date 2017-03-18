@@ -138,6 +138,7 @@ check_include_file( limits.h HAVE_LIMITS_H )
 #
 check_function_exists( strerror HAVE_STRERROR )
 check_function_exists( strlcpy HAVE_STRLCPY )
+check_function_exists( strlcat HAVE_STRLCAT )
 check_function_exists( snprintf HAVE_SNPRINTF )
 check_function_exists( vsnprintf HAVE_VSNPRINTF )
 check_function_exists( strtok_r HAVE_STRTOK_R )
