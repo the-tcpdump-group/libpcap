@@ -21,11 +21,6 @@
  * sf-pcap-ng.c - pcap-ng-file-format-specific code from savefile.c
  */
 
-#ifndef lint
-static const char rcsid[] _U_ =
-    "@(#) $Header$ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
