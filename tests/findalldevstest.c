@@ -19,6 +19,8 @@
 
 #include <pcap.h>
 
+#include "../funcattrs.h"
+
 static int ifprint(pcap_if_t *d);
 static char *iptos(bpf_u_int32 in);
 

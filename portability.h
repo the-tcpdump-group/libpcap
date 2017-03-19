@@ -39,6 +39,8 @@
  * flavors of UN*X.
  */
 
+#include "funcattrs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -83,20 +85,6 @@ extern "C" {
   #define strlcat(x, y, z) \
 	strncat((x), (y), (z) - strlen((x)) - 1)
  #endif
-#endif
-
-/*
- * For flagging arguments as format strings in MSVC.
- */
-#if _MSC_VER >= 1400
- #include <sal.h>
- #if _MSC_VER > 1400
-  #define FORMAT_STRING(p) _Printf_format_string_ p
- #else
-  #define FORMAT_STRING(p) __format_string p
- #endif
-#else
- #define FORMAT_STRING(p) p
 #endif
 
 #ifdef _MSC_VER
@@ -146,11 +134,8 @@ extern "C" {
 #ifdef HAVE_SNPRINTF
 #define pcap_snprintf snprintf
 #else
-extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...)
-#ifdef __ATTRIBUTE___FORMAT_OK
-    __attribute__((format (printf, 3, 4)))
-#endif /* __ATTRIBUTE___FORMAT_OK */
-    ;
+extern int pcap_snprintf(char *, size_t, PCAP_FORMAT_STRING(const char *), ...)
+    PCAP_PRINTFLIKE(3, 4);
 #endif
 
 #ifdef HAVE_VSNPRINTF

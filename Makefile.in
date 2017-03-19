@@ -119,6 +119,7 @@ HDR = $(PUBHDR) \
 	atmuni31.h \
 	ethertype.h \
 	extract.h \
+	funcattrs.h \
 	gencode.h \
 	ieee80211.h \
 	llc.h \

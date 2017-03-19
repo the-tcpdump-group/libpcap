@@ -316,9 +316,6 @@
 /* define on AIX to get certain functions */
 #undef _SUN
 
-/* define if your compiler allows __attribute__((format)) without a warning */
-#undef __ATTRIBUTE___FORMAT_OK
-
 /* to handle Ultrix compilers that don't support const in prototypes */
 #undef const
 

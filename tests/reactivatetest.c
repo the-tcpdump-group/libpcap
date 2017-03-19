@@ -31,6 +31,8 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 
+#include "../funcattrs.h"
+
 /* Forwards */
 static void error(const char *, ...);
 

@@ -19,6 +19,8 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include "funcattrs.h"
+
 /*
  * ATM support:
  *
@@ -52,10 +54,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef HAVE___ATTRIBUTE__
-#define __attribute__(x)
-#endif /* HAVE___ATTRIBUTE__ */
 
 /* Address qualifiers. */
 
@@ -367,12 +365,8 @@ struct icode {
 
 void bpf_optimize(compiler_state_t *, struct icode *ic);
 void bpf_syntax_error(compiler_state_t *, const char *);
-void bpf_error(compiler_state_t *, const char *, ...)
-    __attribute__((noreturn))
-#ifdef __ATTRIBUTE___FORMAT_OK
-    __attribute__((format (printf, 2, 3)))
-#endif /* __ATTRIBUTE___FORMAT_OK */
-    ;
+void bpf_error(compiler_state_t *, const char *, ...) PCAP_NORETURN
+    PCAP_PRINTFLIKE(2, 3);
 
 void finish_parse(compiler_state_t *, struct block *);
 char *sdup(compiler_state_t *, const char *);

@@ -27,7 +27,6 @@ AC_LBL_C_INLINE
 AC_C___ATTRIBUTE__
 if test "$ac_cv___attribute__" = "yes"; then
 	AC_C___ATTRIBUTE___UNUSED
-	AC_C___ATTRIBUTE___FORMAT
 fi
 
 AC_CHECK_HEADERS(sys/bitypes.h)
