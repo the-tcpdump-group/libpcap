@@ -1195,7 +1195,7 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 	pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
 	
 	// Now we have to create a new thread to receive packets
-	if (pthread_create(threaddata, &detachedAttribute, (void *) daemon_thrdatamain, (void *) session))
+	if (pthread_create(threaddata, &detachedAttribute, daemon_thrdatamain, (void *) session))
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
 		pthread_attr_destroy(&detachedAttribute);
