@@ -538,7 +538,7 @@ int pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char
 
 		return -1;
 	}
-};
+}
 
 pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, struct pcap_rmtauth *auth, char *errbuf)
 {
