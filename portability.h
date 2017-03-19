@@ -88,7 +88,9 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
+  #ifndef _DEBUG
   #define strdup	_strdup
+  #endif
   #define sscanf	sscanf_s
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
