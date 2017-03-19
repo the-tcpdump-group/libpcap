@@ -1051,13 +1051,9 @@ int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int port
 		sock_geterror("getsockname(): ", errbuf, errbuflen);
 		return 0;
 	}
-	else
-	{
-		/* Returns the numeric address of the host that triggered the error */
-		return sock_getascii_addrport(&mysockaddr, address, addrlen, port, portlen, flags, errbuf, errbuflen);
-	}
 
-	return 0;
+	/* Returns the numeric address of the host that triggered the error */
+	return sock_getascii_addrport(&mysockaddr, address, addrlen, port, portlen, flags, errbuf, errbuflen);
 }
 
 /*
