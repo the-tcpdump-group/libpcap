@@ -41,6 +41,24 @@
 
 #include "funcattrs.h"
 
+/*
+ * We include <string.h> ourselves, to make sure strtok_r() gets
+ * declared if we have it.
+ *
+ * On some UN*Xes we need to force it to be declared.
+ * We do *NOT* want to define _POSIX_C_SOURCE, as that tends
+ * to make non-POSIX APIs that we use unavailable.
+ * XXX - is there no portable way to say "please pollute the
+ * namespace to the maximum extent possible"?
+ */
+#if defined(sun) || defined(__sun)
+  #define __EXTENSIONS__
+#elif defined(_hpux) || defined(hpux) || defined(__hpux)
+  #define _REENTRANT
+#endif
+
+#include <string.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

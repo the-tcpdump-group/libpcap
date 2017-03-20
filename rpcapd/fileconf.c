@@ -36,11 +36,10 @@
 #endif
 
 #include <stdio.h>
-#include <string.h>
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
-#include "portability.h"
+#include "portability.h"	// this includes <string.h>
 #include "rpcapd.h"
 #include "fileconf.h"
 #include "sockutils.h"		// for SOCK_ASSERT
