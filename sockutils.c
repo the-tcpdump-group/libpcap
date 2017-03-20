@@ -554,7 +554,7 @@ int sock_initaddress(const char *host, const char *port,
  * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
-int sock_send(SOCKET socket, const char *buffer, int size, char *errbuf, int errbuflen)
+int sock_send(SOCKET sock, const char *buffer, int size, char *errbuf, int errbuflen)
 {
 	int nsent;
 
@@ -567,9 +567,9 @@ send:
 	 * sockets when the other end breaks the connection.
 	 * The EPIPE error is still returned.
 	 */
-	nsent = send(socket, buffer, size, MSG_NOSIGNAL);
+	nsent = send(sock, buffer, size, MSG_NOSIGNAL);
 #else
-	nsent = send(socket, buffer, size, 0);
+	nsent = send(sock, buffer, size, 0);
 #endif
 
 	if (nsent == -1)
