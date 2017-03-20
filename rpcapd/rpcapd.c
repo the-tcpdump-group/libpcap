@@ -38,13 +38,16 @@
 #define USE_THREADS		// threads vs. subprocesses
 #endif
 
+#include "ftmacros.h"
+
 #include <errno.h>		// for the errno variable
+#include <string.h>		// for strtok, etc
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include <signal.h>		// for signal()
 #include <pthread.h>
 
-#include "portability.h"	// this includes <string.h>
+#include "portability.h"
 #include "rpcapd.h"
 #include "fileconf.h"		// for the configuration file management
 #include "sockutils.h"		// for socket calls

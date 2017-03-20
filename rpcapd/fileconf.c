@@ -35,11 +35,14 @@
 #include "config.h"
 #endif
 
+#include "ftmacros.h"
+
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
-#include "portability.h"	// this includes <string.h>
+#include "portability.h"
 #include "rpcapd.h"
 #include "fileconf.h"
 #include "sockutils.h"		// for SOCK_ASSERT

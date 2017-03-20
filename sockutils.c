@@ -50,6 +50,9 @@
  * ways.
  */
 
+#include "ftmacros.h"
+
+#include <string.h>
 #include <errno.h>	/* for the errno variable */
 #include <stdio.h>	/* for the stderr file */
 #include <stdlib.h>	/* for malloc() and free() */
@@ -59,7 +62,7 @@
 #define INT_MAX		2147483647
 #endif
 
-#include "portability.h"	/* this includes <string.h> */
+#include "portability.h"
 #include "sockutils.h"
 
 #ifdef _WIN32

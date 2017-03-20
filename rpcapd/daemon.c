@@ -33,6 +33,8 @@
 #include "config.h"
 #endif
 
+#include "ftmacros.h"
+
 #include <pcap.h>		// for libpcap/WinPcap calls
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
