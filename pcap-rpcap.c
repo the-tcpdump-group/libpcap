@@ -583,7 +583,7 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
  * This function sends a CLOSE command to the capture server.
  *
  * It is called when the user calls pcap_close().  It sends a command
- * to the peer that says 'ok, let's stop capturing'.
+ * to our peer that says 'ok, let's stop capturing'.
  *
  * WARNING: Since we're closing the connection, we do not check for errors.
  */
@@ -650,7 +650,7 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 }
 
 /*
- * This function retrieves network statistics from the peer;
+ * This function retrieves network statistics from our peer;
  * it provides only the standard statistics.
  */
 static int pcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps)
@@ -667,7 +667,7 @@ static int pcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps)
 
 #ifdef _WIN32
 /*
- * This function retrieves network statistics from the other peer;
+ * This function retrieves network statistics from our peer;
  * it provides the additional statistics supported by pcap_stats_ex().
  */
 static struct pcap_stat *pcap_stats_ex_rpcap(pcap_t *p, int *pcap_stat_size)
@@ -680,7 +680,7 @@ static struct pcap_stat *pcap_stats_ex_rpcap(pcap_t *p, int *pcap_stat_size)
 #endif
 
 /*
- * This function retrieves network statistics from the other peer.  It
+ * This function retrieves network statistics from our peer.  It
  * is used by the two previous functions.
  *
  * It can be called in two modes:
@@ -726,8 +726,9 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	int retval;				/* temp variable which stores functions return value */
 
 	/*
-	 * If the capture has still to start, we cannot ask statistics to the other peer,
-	 * so we return a fake number
+	 * If the capture has not yet started, we cannot request statistics
+	 * for the capture from our peer, so we return 0 for all statistics,
+	 * as nothing's been seen yet.
 	 */
 	if (!pr->rmt_capstarted)
 	{
@@ -1367,7 +1368,7 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
  * This function updates a filter on a remote host.
  *
  * It is called when the user wants to update a filter.
- * In case we're capturing from the network, it sends the filter to the
+ * In case we're capturing from the network, it sends the filter to our
  * peer.
  * This function is *not* called automatically when the user calls
  * pcap_setfilter().
@@ -1471,7 +1472,7 @@ pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter)
  * This function sends a filter to a remote host.
  *
  * This function is called when the user wants to set a filter.
- * It sends the filter to the peer.
+ * It sends the filter to our peer.
  * This function is called automatically when the user calls pcap_setfilter().
  *
  * Parameters and return values are exactly the same of pcap_setfilter().
@@ -1496,7 +1497,7 @@ static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog)
 }
 
 /*
- * This function update the current filter in order not to capture rpcap
+ * This function updates the current filter in order not to capture rpcap
  * packets.
  *
  * This function is called *only* when the user wants exclude RPCAP packets
@@ -1524,7 +1525,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		const int newstringsize = 1024;
 		size_t currentfiltersize;
 
-		/* Get the name/port of the other peer */
+		/* Get the name/port of our peer */
 		saddrlen = sizeof(struct sockaddr_storage);
 		if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
@@ -1608,7 +1609,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 }
 
 /*
- * This function set sampling parameters in the remote host.
+ * This function sets sampling parameters in the remote host.
  *
  * It is called when the user wants to set activate sampling on the
  * remote host.
@@ -1695,10 +1696,10 @@ static int pcap_setsampling_remote(pcap_t *fp)
  *********************************************************/
 
 /*
- * This function sends a RPCAP error to the peer.
+ * This function sends a RPCAP error to our peer.
  *
  * It has to be called when the main program detects an error.
- * It will send to the peer the 'buffer' specified by the user.
+ * It will send to our peer the 'buffer' specified by the user.
  * This function *does not* request a RPCAP CLOSE connection. A CLOSE
  * command must be sent explicitly by the program, since we do not know
  * whether the error can be recovered in some way or if it is a
@@ -1707,7 +1708,7 @@ static int pcap_setsampling_remote(pcap_t *fp)
  * \param sock: the socket we are currently using.
  *
  * \param error: an user-allocated (and '0' terminated) buffer that contains
- * the error description that has to be transmitted on the other peer. The
+ * the error description that has to be transmitted to our peer. The
  * error message cannot be longer than PCAP_ERRBUF_SIZE.
  *
  * \param errcode: a integer which tells the other party the type of error
@@ -1942,7 +1943,7 @@ void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint
  * \param errbuf: a pointer to a user-allocated buffer (of size
  * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
  * is one). It could either be a problem that occurred inside this function
- * (e.g. a network problem in case it tries to send an error to the peer
+ * (e.g. a network problem in case it tries to send an error to our peer
  * and the send() call fails), an error message thathas been sent to us
  * from the other party, or a version error (the message received has a
  * version number that is incompatible with ours).
@@ -2061,7 +2062,7 @@ int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8
  * Right now, this function does not have any sophisticated task: if the
  * versions are different, it returns -1 and it discards the message.
  * If new versions of the protocol are created, there will need to be
- * a negotiation phase early in the process of connecting to the peer,
+ * a negotiation phase early in the process of connecting to our peer,
  * so that the highest version supported by both sides can be used.
  *
  * \param sock: the socket that has to be used to receive data. This
@@ -2121,7 +2122,7 @@ static int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf
  * (according to the RPCAP protocol), but it does not start the capture.
  *
  * Since the other libpcap functions do not share this way of life, we
- * have to do some dirty things in order to make everyting working.
+ * have to do some dirty things in order to make everything work.
  *
  * \param source: see pcap_open().
  * \param snaplen: see pcap_open().
