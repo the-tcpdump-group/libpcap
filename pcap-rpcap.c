@@ -2467,10 +2467,8 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			break;
 
 		default:
-		{
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Internal error");
 			break;
-		};
 		}
 
 		if (!active)
