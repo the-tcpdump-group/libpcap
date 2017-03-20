@@ -365,7 +365,7 @@ struct icode {
 
 void bpf_optimize(compiler_state_t *, struct icode *ic);
 void bpf_syntax_error(compiler_state_t *, const char *);
-void bpf_error(compiler_state_t *, const char *, ...) PCAP_NORETURN
+void PCAP_NORETURN bpf_error(compiler_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
 
 void finish_parse(compiler_state_t *, struct block *);
