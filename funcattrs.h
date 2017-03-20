@@ -59,8 +59,10 @@
 #endif
 
 /*
- * PCAP_NORETURN, after a function declaration, means "this function
- * never returns".
+ * PCAP_NORETURN, before a function declaration, means "this function
+ * never returns".  (It must go before the function declaration, e.g.
+ * "extern PCAP_NORETURN func(...)" rather than after the function
+ * declaration, as the MSVC version has to go before the declaration.)
  */
 #if __has_attribute(noreturn) \
     || (defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 205)) \
@@ -68,12 +70,16 @@
     || (defined(__xlC__) && __xlC__ >= 0x0A01) \
     || (defined(__HP_aCC) && __HP_aCC >= 61000)
   /*
-   * Compiler with support for it, or GCC 2.5 and later, or Solaris Studio 12
-   * (Sun C 5.9) and later, or IBM XL C 10.1 and later (do any earlier
-   * versions of XL C support this?), or HP aCC A.06.10 and later.
+   * Compiler with support for __attribute((noreturn)), or GCC 2.5 and
+   * later, or Solaris Studio 12 (Sun C 5.9) and later, or IBM XL C 10.1
+   * and later (do any earlier versions of XL C support this?), or
+   * HP aCC A.06.10 and later.
    */
   #define PCAP_NORETURN __attribute((noreturn))
 #elif defined(_MSC_VER)
+  /*
+   * MSVC.
+   */
   #define PCAP_NORETURN __declspec(noreturn)
 #else
   #define PCAP_NORETURN
