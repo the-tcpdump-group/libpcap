@@ -2091,6 +2091,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(RDS, "IEC 62106 Radio Data System groups"),
 	DLT_CHOICE(USB_DARWIN, "USB with Darwin header"),
 	DLT_CHOICE(OPENFLOW, "OpenBSD DLT_OPENFLOW"),
+	DLT_CHOICE(SDLC, "IBM SDLC frames"),
 	DLT_CHOICE_SENTINEL
 };
 

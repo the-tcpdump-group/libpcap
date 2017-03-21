@@ -1038,7 +1038,12 @@
  */
 #define LINKTYPE_OPENFLOW	267
 
-#define LINKTYPE_MATCHING_MAX	267		/* highest value in the "matching" range */
+/*
+ * SDLC frames containing SNA PDUs.
+ */
+#define LINKTYPE_SDLC		268
+
+#define LINKTYPE_MATCHING_MAX	268		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
