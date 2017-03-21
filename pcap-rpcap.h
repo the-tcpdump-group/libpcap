@@ -34,7 +34,6 @@
 #ifndef pcap_rpcap_h
 #define	pcap_rpcap_h
 
-#ifdef HAVE_REMOTE
 /*
  * Internal interfaces for "pcap_open()".
  */
@@ -46,6 +45,5 @@ pcap_t	*pcap_open_rpcap(const char *source, int snaplen, int flags,
  */
 int	pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth,
    pcap_if_t **alldevs, char *errbuf);
-#endif
 
 #endif
