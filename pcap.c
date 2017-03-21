@@ -1101,6 +1101,10 @@ pcap_freealldevs(pcap_if_t *alldevs)
 	}
 }
 
+#ifdef HAVE_REMOTE
+#include "pcap-rpcap.h"
+#endif
+
 pcap_t *
 pcap_create(const char *device, char *errbuf)
 {
