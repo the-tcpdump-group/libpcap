@@ -5,6 +5,7 @@ bpf_filter.c
 capturetest
 can_set_rfmon_test
 CMakeCache.txt
+cmake_install.cmake
 CMakeFiles/
 config.h
 config.log
@@ -24,6 +25,7 @@ grammar.h
 libpcap.a
 libpcap.*.dylib
 libpcap.sl
+libpcap.so
 libpcap.so.*
 libpcap-*.tar.gz
 net
