@@ -1318,6 +1318,13 @@
 #define DLT_SDLC	268
 
 /*
+ * per "Selvig, Bjorn" <b.selvig@ti.com> used for
+ * TI protocol sniffer.
+ */
+#define DLT_TI_LLN_SNIFFER  269
+
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
