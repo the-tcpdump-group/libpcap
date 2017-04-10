@@ -1043,7 +1043,13 @@
  */
 #define LINKTYPE_SDLC		268
 
-#define LINKTYPE_MATCHING_MAX	268		/* highest value in the "matching" range */
+/*
+ * per "Selvig, Bjorn" <b.selvig@ti.com> used for
+ * TI protocol sniffer.
+ */
+#define LINKTYPE_TI_LLN_SNIFFER	269
+
+#define LINKTYPE_MATCHING_MAX	269		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

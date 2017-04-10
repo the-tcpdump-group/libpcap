@@ -1321,7 +1321,7 @@
  * per "Selvig, Bjorn" <b.selvig@ti.com> used for
  * TI protocol sniffer.
  */
-#define DLT_TI_LLN_SNIFFER  269
+#define DLT_TI_LLN_SNIFFER	269
 
 
 /*
@@ -1334,7 +1334,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	268	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	269	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
