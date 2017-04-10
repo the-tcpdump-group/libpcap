@@ -3226,7 +3226,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * IP-over-FC on which somebody wants to capture
 		 * packets.
 		 */
-		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
 		/*
 		 * If that fails, just leave the list empty.
 		 */
