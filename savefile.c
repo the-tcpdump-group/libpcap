@@ -74,8 +74,10 @@
  * a HANDLE (which is OS-defined, not CRT-defined, and is part of the Win32
  * and Win64 ABIs).
  */
-static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
-static pcap_t *pcap_fopen_offline(FILE *, char *);
+#if defined(LIBPCAP_EXPORTS)
+  static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
+  static pcap_t *pcap_fopen_offline(FILE *, char *);
+#endif
 #endif
 
 /*
@@ -358,6 +360,8 @@ static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, u_int, char *, int *) = {
 
 #define	N_FILE_TYPES	(sizeof check_headers / sizeof check_headers[0])
 
+#if defined(LIBPCAP_EXPORTS)
+
 #ifdef _WIN32
 static
 #endif
@@ -481,6 +485,7 @@ pcap_fopen_offline(FILE *fp, char *errbuf)
 	return (pcap_fopen_offline_with_tstamp_precision(fp,
 	    PCAP_TSTAMP_PRECISION_MICRO, errbuf));
 }
+#endif /* LIBPCAP_EXPORTS */
 
 /*
  * Read packets from a capture file, and call the callback for each
