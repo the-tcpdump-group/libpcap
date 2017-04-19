@@ -1413,7 +1413,7 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 		return;
 	}
 
-	if (nfhdr->nflog_version != 0) {
+	if ((!nfhdr->nflog_version) == 0) {
 		/* Unknown NFLOG version */
 		return;
 	}
