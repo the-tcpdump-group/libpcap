@@ -1396,7 +1396,15 @@ int
 pcap_set_timeout(pcap_t *p, int timeout_ms)
 {
 	if (pcap_check_activated(p))
+#ifdef _WIN32
+		if (p->opt.timeout != timeout_ms)
+			if (PacketSetReadTimeout(p->adapter, p->opt.timeout))
+				return 0;
+			else
+				return PCAP_ERROR;
+#else
 		return (PCAP_ERROR_ACTIVATED);
+#endif
 	p->opt.timeout = timeout_ms;
 	return (0);
 }
