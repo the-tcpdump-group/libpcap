@@ -3999,6 +3999,8 @@ prepare_tpacket_socket(pcap_t *handle)
 	return 1;
 }
 
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
 /*
  * Attempt to set up memory-mapped access.
  *
@@ -4042,10 +4044,10 @@ create_ring(pcap_t *handle, int *status)
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:
 #endif
-		/* Note that with large snapshot length (say 64K, which is
-		 * the default for recent versions of tcpdump, the value that
-		 * "-s 0" has given for a long time with tcpdump, and the
-		 * default in Wireshark/TShark/dumpcap), if we use the snapshot
+		/* Note that with large snapshot length (say 256K, which is
+		 * the default for recent versions of tcpdump, Wireshark,
+		 * TShark, dumpcap or 64K, the value that "-s 0" has given for
+		 * a long time with tcpdump), if we use the snapshot
 		 * length to calculate the frame length, only a few frames
 		 * will be available in the ring even with pretty
 		 * large ring size (and a lot of memory will be unused).
@@ -4069,29 +4071,35 @@ create_ring(pcap_t *handle, int *status)
 		 * based on the MTU, so that the MTU limits the maximum size
 		 * of packets that we can receive.)
 		 *
-		 * We don't do that if segmentation/fragmentation or receive
-		 * offload are enabled, so we don't get rudely surprised by
-		 * "packets" bigger than the MTU. */
+		 * If segmentation/fragmentation or receive offload are
+		 * enabled, we can get reassembled/aggregated packets larger
+		 * than MTU, but bounded to 65535 plus the Ethernet overhead,
+		 * due to kernel and protocol constraints */
 		frame_size = handle->snapshot;
 		if (handle->linktype == DLT_EN10MB) {
+			unsigned int max_frame_len;
 			int mtu;
 			int offload;
 
+			mtu = iface_get_mtu(handle->fd, handle->opt.device,
+			    handle->errbuf);
+			if (mtu == -1) {
+				*status = PCAP_ERROR;
+				return -1;
+			}
 			offload = iface_get_offload(handle);
 			if (offload == -1) {
 				*status = PCAP_ERROR;
 				return -1;
 			}
-			if (!offload) {
-				mtu = iface_get_mtu(handle->fd, handle->opt.device,
-				    handle->errbuf);
-				if (mtu == -1) {
-					*status = PCAP_ERROR;
-					return -1;
-				}
-				if (frame_size > (unsigned int)mtu + 18)
-					frame_size = (unsigned int)mtu + 18;
-			}
+			if (offload)
+				max_frame_len = MAX(mtu, 65535);
+			else
+				max_frame_len = mtu;
+			max_frame_len += 18;
+
+			if (frame_size > max_frame_len)
+				frame_size = max_frame_len;
 		}
 
 		/* NOTE: calculus matching those in tpacket_rcv()
