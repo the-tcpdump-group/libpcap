@@ -33,6 +33,8 @@
 #endif
 
 #include <pcap-types.h>
+#include "ftmacros.h"
+
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
@@ -45,6 +47,10 @@
 #include <string.h>
 
 #include "pcap-int.h"
+
+#ifdef HAVE_ZLIB_H
+#include "zlib.h"
+#endif
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -245,6 +251,108 @@ sf_cleanup(pcap_t *p)
 	pcap_freecode(&p->fcode);
 }
 
+/*
+* fopen's safe version on Windows.
+*/
+#ifdef _MSC_VER
+FILE *fopen_safe(const char *filename, const char* mode)
+{
+	FILE *fp = NULL;
+	errno_t errno;
+	errno = fopen_s(&fp, filename, mode);
+	if (errno == 0)
+		return fp;
+	else
+		return NULL;
+}
+#endif
+
+/*
+ * gzip file reading support
+ */
+
+#if HAVE_ZLIB_H
+#if HAVE_FUNOPEN
+static int
+gzip_cookie_read(void *cookie, char *buf, int size)
+{
+        return gzread((gzFile)cookie, (voidp)buf, (unsigned) size);
+}
+#elif HAVE_FOPENCOOKIE
+static ssize_t
+gzip_cookie_read(void *cookie, char *buf, size_t size)
+{
+        return gzread((gzFile)cookie, (voidp)buf, (unsigned) size);
+}
+#endif
+
+#if HAVE_FUNOPEN || HAVE_FOPENCOOKIE
+static int
+gzip_cookie_close(void *cookie)
+{
+        return gzclose((gzFile)cookie);
+}
+#endif
+
+#if HAVE_FOPENCOOKIE
+static cookie_io_functions_t cookiefuncs = {
+        gzip_cookie_read, NULL, NULL, gzip_cookie_close
+};
+#endif
+
+#endif /* HAVE_ZLIB_H */
+
+static FILE*
+pcap_fopen_savefile(const char *fname, char *errbuf)
+{
+	int wantgzip = 0;
+	FILE *fp = NULL;
+
+#if HAVE_GZOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
+	char *dot = strrchr(fname, '.');
+	if (dot != NULL)
+	{
+		wantgzip = (strcasecmp(dot, ".gz") == 0);
+	}
+
+	if (wantgzip) {
+		gzFile gz = gzopen(fname, "rb");
+		if (gz == NULL)
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzopen: %s", fname,
+			    pcap_strerror(errno));
+			return (NULL);
+		}
+
+#if HAVE_FUNOPEN
+		fp = funopen(gz, gzip_cookie_read, NULL, NULL, gzip_cookie_close);
+		if (fp == NULL)
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: funopen: %s", fname,
+			    pcap_strerror(errno));
+			return (NULL);
+		}
+#elif HAVE_FOPENCOOKIE
+		fp = fopencookie(gz, "rb", cookiefuncs);
+		if (fp == NULL)
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: fopencookie: %s", fname,
+			    pcap_strerror(errno));
+			return (NULL);
+		}
+#endif
+		return fp;
+	}
+#endif /* HAVE_GZOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE) */
+
+#if !defined(_WIN32) && !defined(MSDOS)
+	fp = fopen(fname, "r");
+#else
+	fp = fopen(fname, "rb");
+#endif
+	return fp;
+}
+
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
@@ -269,16 +377,8 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 #endif
 	}
 	else {
-		/*
-		 * "b" is supported as of C90, so *all* UN*Xes should
-		 * support it, even though it does nothing.  It's
-		 * required on Windows, as the file is a binary file
-		 * and must be read in binary mode.
-		 */
-		fp = fopen(fname, "rb");
+		fp = pcap_fopen_savefile(fname, errbuf);
 		if (fp == NULL) {
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "%s", fname);
 			return (NULL);
 		}
 	}
