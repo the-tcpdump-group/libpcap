@@ -2731,6 +2731,11 @@ if test "x$enable_rdma" != "xno"; then
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
 fi
 
+dnl check for gzip support
+AC_CHECK_LIB(z, gzopen)
+AC_CHECK_HEADERS(zlib.h)
+AC_CHECK_FUNCS(gzopen funopen fopencookie)
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)

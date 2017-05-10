@@ -54,6 +54,9 @@
 /* Define to 1 if you have the `ffs' function. */
 #undef HAVE_FFS
 
+/* Define to 1 if you have the `fopencookie' function. */
+#undef HAVE_FOPENCOOKIE
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
@@ -62,6 +65,12 @@
 
 /* Define to 1 if you have a GNU-style `strerror_r' function. */
 #undef HAVE_GNU_STRERROR_R
+
+/* Define to 1 if you have the `funopen' function. */
+#undef HAVE_FUNOPEN
+
+/* Define to 1 if you have the `gzopen' function. */
+#undef HAVE_GZOPEN
 
 /* on HP-UX 10.20 or later */
 #undef HAVE_HPUX10_20_OR_LATER
@@ -92,6 +101,9 @@
 
 /* libnl has new-style socket api */
 #undef HAVE_LIBNL_SOCKETS
+
+/* Define to 1 if you have the `z' library (-lz). */
+#undef HAVE_LIBZ
 
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #undef HAVE_LINUX_COMPILER_H
@@ -294,6 +306,9 @@
 
 /* Define to 1 if you have the `vsyslog' function. */
 #undef HAVE_VSYSLOG
+
+/* Define to 1 if you have the <zlib.h> header file. */
+#undef HAVE_ZLIB_H
 
 /* IPv6 */
 #undef INET6
