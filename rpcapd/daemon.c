@@ -566,7 +566,7 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 				retcode = -1;
 				goto error;
 			}
-			totread = nread;
+			totread += nread;
 			nread = sock_recv(sockctrl, string2, len2,
 			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
 			if (nread == -1)
