@@ -222,6 +222,26 @@ struct pcap_ng_sf {
 	struct pcap_ng_if *ifaces;	/* array of interface information */
 };
 
+/*
+ * Maximum block size; we reject blocks bigger than this, so we don't
+ * consume too much memory with a truly huge block.
+ *
+ * We define it as the size of an EPB with a MAXIMUM_SNAPLEN-sized
+ * packet and 128KB of options.
+ *
+ * XXX - that's an issue on ILP32 platforms, where the maximum block
+ * size of 2^31-1 would eat all but one byte of the entire address space.
+ * It's less of an issue on ILP64/LLP64 platforms, but the actual size
+ * of the address space may be limited by 1) the number of *significant*
+ * address bits (currently, x86-64 only supports 48 bits of address), 2)
+ * any limitations imposed by the operating system; 3) any limitations
+ * imposed by the amount of available backing store for anonymous pages.
+ */
+#define MAX_BLOCKSIZE	(sizeof (struct block_header) + \
+			 sizeof (struct enhanced_packet_block) + \
+			 MAXIMUM_SNAPLEN + 131072 + \
+			 sizeof (struct block_trailer))
+
 static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
     u_char **data);
@@ -300,10 +320,15 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 */
 	if (p->bufsize < bhdr.total_length) {
 		/*
-		 * No - make it big enough.
+		 * No - make it big enough, unless it's too big.
 		 */
 		void *bigger_buffer;
 
+		if (bhdr.total_length > MAX_BLOCKSIZE) {
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "block is larger than maximum block size %u",
+			    (u_int) MAX_BLOCKSIZE);
+			return (-1);
+		}
 		bigger_buffer = realloc(p->buffer, bhdr.total_length);
 		if (bigger_buffer == NULL) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
@@ -940,17 +965,6 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			}
 
 			/*
-			 * Interface capture length sanity check
-			 */
-			if (idbp->snaplen > MAXIMUM_SNAPLEN) {
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "invalid interface capture length %u, "
-				    "bigger than maximum of %u",
-				    idbp->snaplen, MAXIMUM_SNAPLEN);
-				goto fail;
-			}
-
-			/*
 			 * Try to add this interface.
 			 */
 			if (!add_interface(p, &cursor, errbuf))
@@ -1276,6 +1290,13 @@ found:
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "a packet arrived on interface %u, but there's no Interface Description Block for that interface",
 		    interface_id);
+		return (-1);
+	}
+
+	if (hdr->caplen > (bpf_u_int32)p->snapshot) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "invalid packet capture length %u, bigger than "
+		    "snaplen of %d", hdr->caplen, p->snapshot);
 		return (-1);
 	}
 
