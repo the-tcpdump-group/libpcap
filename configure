@@ -634,6 +634,9 @@ NETFILTER_SRC
 PCAP_SUPPORT_NETFILTER
 USB_SRC
 PCAP_SUPPORT_USB
+INSTALL_RPCAPD
+RPCAPD
+MAN_USERMOD_SECTION
 MAN_MISC_INFO
 MAN_FILE_FORMATS
 DYEXT
@@ -745,6 +748,7 @@ with_snf
 with_snf_includes
 with_snf_libraries
 with_turbocap
+enable_remote
 enable_universal
 enable_shared
 enable_usb
@@ -1381,7 +1385,9 @@ Optional Features:
                           getaddrinfo available]
   --enable-optimizer-dbg  build optimizer debugging code
   --enable-yydebug        build parser debugging code
-  --disable-universal     don't build universal on OS X
+  --enable-remote         enable remote packet capture [default=no]
+  --disable-remote        disable remote packet capture
+  --disable-universal     don't build universal on macOS
   --enable-shared         build shared libraries [default=yes, if support
                           available]
   --enable-usb            enable nusb support [default=yes, if support
@@ -3900,48 +3906,6 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv___attribute___unused" >&5
 $as_echo "$ac_cv___attribute___unused" >&6; }
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether __attribute__((format)) can be used without warnings" >&5
-$as_echo_n "checking whether __attribute__((format)) can be used without warnings... " >&6; }
-if ${ac_cv___attribute___format+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <stdlib.h>
-
-extern int foo(const char *fmt, ...)
-		  __attribute__ ((format (printf, 1, 2)));
-
-int
-main(int argc, char **argv)
-{
-  foo("%s", "test");
-}
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv___attribute___format=yes
-else
-  ac_cv___attribute___format=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-CFLAGS="$save_CFLAGS"
-if test "$ac_cv___attribute___format" = "yes"; then
-
-$as_echo "#define __ATTRIBUTE___FORMAT_OK 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv___attribute___format" >&5
-$as_echo "$ac_cv___attribute___format" >&6; }
-
 fi
 
 ac_ext=c
@@ -4931,7 +4895,7 @@ $as_echo "$ac_cv_lbl_gcc_fixincludes" >&6; }
 	    fi
     fi
 
-for ac_func in strerror strlcpy
+for ac_func in strerror strlcpy strlcat
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -6131,6 +6095,10 @@ $as_echo "$as_me: WARNING: cannot determine packet capture interface" >&2;}
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: (see the INSTALL doc for more info)" >&5
 $as_echo "$as_me: WARNING: (see the INSTALL doc for more info)" >&2;}
 	;;
+
+*)
+	as_fn_error $? "$V_PCAP is not a valid pcap type" "$LINENO" 5
+	;;
 esac
 
 if test "$V_PCAP" != null
@@ -6431,9 +6399,9 @@ $as_echo "yes ($dag_include_dir)" >&6; }
 		# included if there's a found-action (arg 3).
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="-L$dag_lib_dir"
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_attach_stream in -ldag" >&5
-$as_echo_n "checking for dag_attach_stream in -ldag... " >&6; }
-if ${ac_cv_lib_dag_dag_attach_stream+:} false; then :
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_attach_stream64 in -ldag" >&5
+$as_echo_n "checking for dag_attach_stream64 in -ldag... " >&6; }
+if ${ac_cv_lib_dag_dag_attach_stream64+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -6447,30 +6415,30 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char dag_attach_stream ();
+char dag_attach_stream64 ();
 int
 main ()
 {
-return dag_attach_stream ();
+return dag_attach_stream64 ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_dag_dag_attach_stream=yes
+  ac_cv_lib_dag_dag_attach_stream64=yes
 else
-  ac_cv_lib_dag_dag_attach_stream=no
+  ac_cv_lib_dag_dag_attach_stream64=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dag_dag_attach_stream" >&5
-$as_echo "$ac_cv_lib_dag_dag_attach_stream" >&6; }
-if test "x$ac_cv_lib_dag_dag_attach_stream" = xyes; then :
-  dag_streams="1"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dag_dag_attach_stream64" >&5
+$as_echo "$ac_cv_lib_dag_dag_attach_stream64" >&6; }
+if test "x$ac_cv_lib_dag_dag_attach_stream64" = xyes; then :
+  dag_large_streams="1"
 else
-  dag_streams="0"
+  dag_large_streams="0"
 fi
 
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_get_erf_types in -ldag" >&5
@@ -6562,9 +6530,9 @@ fi
 
 		LDFLAGS=$saved_ldflags
 
-		if test "$dag_streams" = 1; then
+		if test "$dag_large_streams" = 1; then
 
-$as_echo "#define HAVE_DAG_STREAMS_API 1" >>confdefs.h
+$as_echo "#define HAVE_DAG_LARGE_STREAMS_API 1" >>confdefs.h
 
 			LIBS="$LIBS -ldag"
 			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
@@ -7237,6 +7205,34 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them." "$LINENO" 5
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable remote packet capture" >&5
+$as_echo_n "checking whether to enable remote packet capture... " >&6; }
+# Check whether --enable-remote was given.
+if test "${enable_remote+set}" = set; then :
+  enableval=$enable_remote;
+else
+  enableval=no
+fi
+
+case "$enableval" in
+yes)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Remote packet capture may expose libpcap-based applications" >&5
+$as_echo "$as_me: WARNING: Remote packet capture may expose libpcap-based applications" >&2;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to attacks by malicious remote capture servers!" >&5
+$as_echo "$as_me: WARNING: to attacks by malicious remote capture servers!" >&2;}
+
+$as_echo "#define HAVE_REMOTE /**/" >>confdefs.h
+
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
+	RPCAPD=rpcapd
+	INSTALL_RPCAPD=install-rpcapd
+	;;
+*)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	;;
+esac
+
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention
 # for man pages (file formats in section 5, miscellaneous info in section 7).
@@ -7245,6 +7241,7 @@ fi
 DYEXT="none"
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
+MAN_USERMOD_SECTION=8
 case "$host_os" in
 
 aix*)
@@ -7504,11 +7501,20 @@ $as_echo "#define HAVE_SOLARIS 1" >>confdefs.h
 
 
 	DYEXT="so"
-	#
-	# Use System V conventions for man pages.
-	#
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
+
+	case "`uname -r`" in
+
+	5.12)
+		;;
+
+	*)
+		#
+		# Use System V conventions for man pages.
+		#
+		MAN_USERMOD_SECTION=1m
+		MAN_FILE_FORMATS=4
+		MAN_MISC_INFO=5
+	esac
 	;;
 esac
 
@@ -8403,6 +8409,9 @@ ln -s ${srcdir}/bpf/net net
 
 
 
+
+
+
 # Check whether --enable-usb was given.
 if test "${enable_usb+set}" = set; then :
   enableval=$enable_usb;
@@ -8774,20 +8783,20 @@ if test "x$enable_dbus" != "xno"; then
 
 		darwin*)
 			#
-			# We don't support D-Bus sniffing on OS X; see
+			# We don't support D-Bus sniffing on macOS; see
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#
 			# The user requested it, so fail.
 			#
-			as_fn_error $? "Due to freedesktop.org bug 74029, D-Bus capture support is not available on OS X" "$LINENO" 5
+			as_fn_error $? "Due to freedesktop.org bug 74029, D-Bus capture support is not available on macOS" "$LINENO" 5
 		esac
 	else
 		case "$host_os" in
 
 		darwin*)
 			#
-			# We don't support D-Bus sniffing on OS X; see
+			# We don't support D-Bus sniffing on macOS; see
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#
@@ -9039,7 +9048,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_commands="$ac_config_commands default-1"
 
-ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap"
+ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -9758,6 +9767,7 @@ do
     "pcap_open_offline.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_open_offline.3pcap" ;;
     "pcap_set_tstamp_precision.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_tstamp_precision.3pcap" ;;
     "pcap_set_tstamp_type.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_tstamp_type.3pcap" ;;
+    "rpcapd/Makefile") CONFIG_FILES="$CONFIG_FILES rpcapd/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

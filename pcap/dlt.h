@@ -15,11 +15,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *      This product includes software developed by the University of
- *      California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -1307,6 +1303,28 @@
 #define DLT_RDS		265
 
 /*
+ * USB packets, beginning with a Darwin (macOS, etc.) header.
+ */
+#define DLT_USB_DARWIN	266
+
+/*
+ * OpenBSD DLT_OPENFLOW.
+ */
+#define DLT_OPENFLOW	267
+
+/*
+ * SDLC frames containing SNA PDUs.
+ */
+#define DLT_SDLC	268
+
+/*
+ * per "Selvig, Bjorn" <b.selvig@ti.com> used for
+ * TI protocol sniffer.
+ */
+#define DLT_TI_LLN_SNIFFER	269
+
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1316,7 +1334,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	265	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	269	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

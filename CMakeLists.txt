@@ -1,5 +1,14 @@
 cmake_minimum_required( VERSION 2.8.8 )
 
+#
+# Apple doesn't build with an install_name starting with @rpath, and
+# neither do we with autotools; don't do so with CMake, either, and
+# suppress warnings about that.
+#
+if (POLICY CMP0042)
+    cmake_policy(SET CMP0042 OLD)
+endif()
+
 project( pcap )
 #
 # Call the library "wpcap" on Windows, for backwards compatibility.
@@ -24,11 +33,13 @@ if( WIN32 )
 endif( WIN32 )
 
 #
-# XXX - this should be an option, defaulting to "yes" for Windows and to
-# "no", for now, on UN*X.
+# Default to having remote capture support on Windows and, for now, to
+# not having it on UN*X.
 #
 if( WIN32 )
-    set( HAVE_REMOTE 1 )
+    option (HAVE_REMOTE "Enable remote capture" ON)
+else()
+    option (HAVE_REMOTE "Enable remote capture" OFF)
 endif( WIN32 )
 
 ######################################
@@ -43,6 +54,9 @@ include_directories(
 )
 
 if( WIN32 )
+    #
+    # The 'Win32/WpdPack/' directory branch is for an AppVeyor build.
+    #
     if( NOT "${PACKET_DLL_DIR}" STREQUAL "" )
         include_directories("${PACKET_DLL_DIR}/Include")
         if( CMAKE_CL_64 )
@@ -54,6 +68,7 @@ if( WIN32 )
     include_directories(
         ../Common/
         Win32/Include
+        Win32/WpdPack/Include
     )
 endif( WIN32)
 
@@ -123,6 +138,7 @@ check_include_file( limits.h HAVE_LIMITS_H )
 #
 check_function_exists( strerror HAVE_STRERROR )
 check_function_exists( strlcpy HAVE_STRLCPY )
+check_function_exists( strlcat HAVE_STRLCAT )
 check_function_exists( snprintf HAVE_SNPRINTF )
 check_function_exists( vsnprintf HAVE_VSNPRINTF )
 check_function_exists( strtok_r HAVE_STRTOK_R )
@@ -171,7 +187,6 @@ set(PROJECT_SOURCE_LIST_C
     bpf_dump.c
     bpf_image.c
     etherent.c
-    fad-helpers.c
     gencode.c
     inet.c
     nametoaddr.c

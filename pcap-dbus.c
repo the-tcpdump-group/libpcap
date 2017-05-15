@@ -211,6 +211,7 @@ dbus_activate(pcap_t *handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->stats_op = dbus_stats;
+	handle->cleanup_op = dbus_cleanup;
 
 	handle->selectable_fd = handle->fd = -1;
 
@@ -268,11 +269,11 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 }
 
 int
-dbus_findalldevs(pcap_if_t **alldevsp, char *err_str)
+dbus_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
-	if (pcap_add_if(alldevsp, "dbus-system", 0, "D-Bus system bus", err_str) < 0)
+	if (add_dev(devlistp, "dbus-system", 0, "D-Bus system bus", err_str) == NULL)
 		return -1;
-	if (pcap_add_if(alldevsp, "dbus-session", 0, "D-Bus session bus", err_str) < 0)
+	if (add_dev(devlistp, "dbus-session", 0, "D-Bus session bus", err_str) == NULL)
 		return -1;
 	return 0;
 }

@@ -404,8 +404,8 @@ static int pcap_read_linux_mmap_v2(pcap_t *, int, pcap_handler , u_char *);
 static int pcap_read_linux_mmap_v3(pcap_t *, int, pcap_handler , u_char *);
 #endif
 static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
-static int pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf);
-static int pcap_getnonblock_mmap(pcap_t *p, char *errbuf);
+static int pcap_setnonblock_mmap(pcap_t *p, int nonblock);
+static int pcap_getnonblock_mmap(pcap_t *p);
 static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 #endif
@@ -2230,7 +2230,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 }
 
 static int
-add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
+add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 {
 	const char *p;
 	char name[512];	/* XXX - pick a size */
@@ -2287,11 +2287,11 @@ add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
 	}
 
 	/*
-	 * Add an entry for this interface, with no addresses.
+	 * Add an entry for this interface, with no addresses, if it's
+	 * not already in the list.
 	 */
-	if (pcap_add_if(devlistp, name,
-	    if_flags_to_pcap_flags(name, ifrflags.ifr_flags), NULL,
-	    errbuf) == -1) {
+	if (find_or_add_if(devlistp, name, ifrflags.ifr_flags,
+	    errbuf) == NULL) {
 		/*
 		 * Failure.
 		 */
@@ -2318,7 +2318,7 @@ add_linux_if(pcap_if_t **devlistp, const char *ifname, int fd, char *errbuf)
  * Otherwise, we return 1 if we don't get an error and -1 if we do.
  */
 static int
-scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
+scan_sys_class_net(pcap_if_list_t *devlistp, char *errbuf)
 {
 	DIR *sys_class_net_d;
 	int fd;
@@ -2436,7 +2436,7 @@ scan_sys_class_net(pcap_if_t **devlistp, char *errbuf)
  * See comments from scan_sys_class_net().
  */
 static int
-scan_proc_net_dev(pcap_if_t **devlistp, char *errbuf)
+scan_proc_net_dev(pcap_if_list_t *devlistp, char *errbuf)
 {
 	FILE *proc_net_f;
 	int fd;
@@ -2532,14 +2532,14 @@ can_be_bound(const char *name _U_)
 }
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	int ret;
 
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, can_be_bound) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound) == -1)
 		return (-1);	/* failure */
 
 	/*
@@ -2550,22 +2550,22 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	 * interfaces with no addresses, so you need to read "/sys/class/net"
 	 * to get the names of the rest of the interfaces.
 	 */
-	ret = scan_sys_class_net(alldevsp, errbuf);
+	ret = scan_sys_class_net(devlistp, errbuf);
 	if (ret == -1)
 		return (-1);	/* failed */
 	if (ret == 0) {
 		/*
 		 * No /sys/class/net; try reading /proc/net/dev instead.
 		 */
-		if (scan_proc_net_dev(alldevsp, errbuf) == -1)
+		if (scan_proc_net_dev(devlistp, errbuf) == -1)
 			return (-1);
 	}
 
 	/*
 	 * Add the "any" device.
 	 */
-	if (pcap_add_if(alldevsp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
-	    any_descr, errbuf) < 0)
+	if (add_dev(devlistp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
+	    any_descr, errbuf) == NULL)
 		return (-1);
 
 	return (0);
@@ -3226,7 +3226,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * IP-over-FC on which somebody wants to capture
 		 * packets.
 		 */
-		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 3);
 		/*
 		 * If that fails, just leave the list empty.
 		 */
@@ -4155,7 +4155,14 @@ create_ring(pcap_t *handle, int *status)
 			 */
 		macoff = netoff - maclen;
 		req.tp_frame_size = TPACKET_ALIGN(macoff + frame_size);
-		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
+		/*
+		 * Round the buffer size up to a multiple of the
+		 * frame size (rather than rounding down, which
+		 * would give a buffer smaller than our caller asked
+		 * for, and possibly give zero frames if the requested
+		 * buffer size is too small for one frame).
+		 */
+		req.tp_frame_nr = (handle->opt.buffer_size + req.tp_frame_size - 1)/req.tp_frame_size;
 		break;
 
 #ifdef HAVE_TPACKET3
@@ -4163,11 +4170,18 @@ create_ring(pcap_t *handle, int *status)
 		/* The "frames" for this are actually buffers that
 		 * contain multiple variable-sized frames.
 		 *
-		 * We pick a "frame" size of 128K to leave enough
-		 * room for at least one reasonably-sized packet
+		 * We pick a "frame" size of MAXIMUM_SNAPLEN to leave
+		 * enough room for at least one reasonably-sized packet
 		 * in the "frame". */
 		req.tp_frame_size = MAXIMUM_SNAPLEN;
-		req.tp_frame_nr = handle->opt.buffer_size/req.tp_frame_size;
+		/*
+		 * Round the buffer size up to a multiple of the
+		 * "frame" size (rather than rounding down, which
+		 * would give a buffer smaller than our caller asked
+		 * for, and possibly give zero "frames" if the requested
+		 * buffer size is too small for one "frame").
+		 */
+		req.tp_frame_nr = (handle->opt.buffer_size + req.tp_frame_size - 1)/req.tp_frame_size;
 		break;
 #endif
 	default:
@@ -4454,7 +4468,7 @@ pcap_cleanup_linux_mmap( pcap_t *handle )
 
 
 static int
-pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
+pcap_getnonblock_mmap(pcap_t *p)
 {
 	struct pcap_linux *handlep = p->priv;
 
@@ -4463,7 +4477,7 @@ pcap_getnonblock_mmap(pcap_t *p, char *errbuf)
 }
 
 static int
-pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_mmap(pcap_t *p, int nonblock)
 {
 	struct pcap_linux *handlep = p->priv;
 
@@ -4471,7 +4485,7 @@ pcap_setnonblock_mmap(pcap_t *p, int nonblock, char *errbuf)
 	 * Set the file descriptor to non-blocking mode, as we use
 	 * it for sending packets.
 	 */
-	if (pcap_setnonblock_fd(p, nonblock, errbuf) == -1)
+	if (pcap_setnonblock_fd(p, nonblock) == -1)
 		return -1;
 
 	/*
@@ -4638,6 +4652,7 @@ static int pcap_handle_packet_mmap(
 	unsigned char *bp;
 	struct sockaddr_ll *sll;
 	struct pcap_pkthdr pcaphdr;
+	unsigned int snaplen = tp_snaplen;
 
 	/* perform sanity check on internal offset. */
 	if (tp_mac + tp_snaplen > handle->bufsize) {
@@ -4698,6 +4713,8 @@ static int pcap_handle_packet_mmap(
 		hdrp->sll_halen = htons(sll->sll_halen);
 		memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
 		hdrp->sll_protocol = sll->sll_protocol;
+
+		snaplen += sizeof(struct sll_header);
 	}
 
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
@@ -4706,8 +4723,11 @@ static int pcap_handle_packet_mmap(
 		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
-		    tp_len, tp_snaplen, &aux_data) == 0)
+		if (bpf_filter_with_aux_data(handle->fcode.bf_insns,
+					     bp,
+					     tp_len,
+					     snaplen,
+					     &aux_data) == 0)
 			return 0;
 	}
 
@@ -6865,6 +6885,7 @@ set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode)
 static int
 reset_kernel_filter(pcap_t *handle)
 {
+	int ret;
 	/*
 	 * setsockopt() barfs unless it get a dummy parameter.
 	 * valgrind whines unless the value is initialized,
@@ -6873,7 +6894,17 @@ reset_kernel_filter(pcap_t *handle)
 	 */
 	int dummy = 0;
 
-	return setsockopt(handle->fd, SOL_SOCKET, SO_DETACH_FILTER,
+	ret = setsockopt(handle->fd, SOL_SOCKET, SO_DETACH_FILTER,
 				   &dummy, sizeof(dummy));
+	/*
+	 * Ignore ENOENT - it means "we don't have a filter", so there
+	 * was no filter to remove, and there's still no filter.
+	 *
+	 * Also ignore ENONET, as a lot of kernel versions had a
+	 * typo where ENONET, rather than ENOENT, was returned.
+	 */
+	if (ret == -1 && errno != ENOENT && errno != ENONET)
+		return -1;
+	return 0;
 }
 #endif

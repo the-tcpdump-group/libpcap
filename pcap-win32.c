@@ -53,14 +53,11 @@
 int* _errno();
 #define errno (*_errno())
 #endif /* __MINGW32__ */
-#ifdef HAVE_REMOTE
-#include "pcap-rpcap.h"
-#endif /* HAVE_REMOTE */
 
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
-static int pcap_getnonblock_win32(pcap_t *, char *);
-static int pcap_setnonblock_win32(pcap_t *, int, char *);
+static int pcap_getnonblock_win32(pcap_t *);
+static int pcap_setnonblock_win32(pcap_t *, int);
 
 /*dimension of the buffer in the pcap_t structure*/
 #define	WIN32_DEFAULT_USER_BUFFER_SIZE 256000
@@ -81,6 +78,11 @@ struct pcap_win {
 
 #ifdef HAVE_DAG_API
 	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
+#endif
+
+#ifdef HAVE_REMOTE
+	int samp_npkt;			/* parameter needed for sampling, with '1 out of N' method has been requested */
+	struct timeval samp_time;	/* parameter needed for sampling, with '1 every N ms' method has been requested */
 #endif
 };
 
@@ -462,6 +464,11 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 
 	/* Set the limits of the dump file */
 	res = PacketSetDumpLimits(p->adapter, maxsize, maxpacks);
+	if(res == FALSE) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    		"Error setting dump limit");
+		return (-1);
+	}
 
 	return (0);
 }
@@ -579,6 +586,47 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (pw->filtering_in_kernel ||
 		    p->fcode.bf_insns == NULL ||
 		    bpf_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
+#ifdef HAVE_REMOTE
+			switch (p->rmt_samp.method) {
+
+			case PCAP_SAMP_1_EVERY_N:
+				pw->samp_npkt = (pw->samp_npkt + 1) % p->rmt_samp.value;
+
+				/* Discard all packets that are not '1 out of N' */
+				if (pw->samp_npkt != 0) {
+					bp += Packet_WORDALIGN(caplen + hdrlen);
+					continue;
+				}
+				break;
+
+			case PCAP_SAMP_FIRST_AFTER_N_MS:
+			    {
+				struct pcap_pkthdr *pkt_header = (struct pcap_pkthdr*) bp;
+
+				/*
+				 * Check if the timestamp of the arrived
+				 * packet is smaller than our target time.
+				 */
+				if (pkt_header->ts.tv_sec < pw->samp_time.tv_sec ||
+				   (pkt_header->ts.tv_sec == pw->samp_time.tv_sec && pkt_header->ts.tv_usec < pw->samp_time.tv_usec)) {
+					bp += Packet_WORDALIGN(caplen + hdrlen);
+					continue;
+				}
+
+				/*
+				 * The arrived packet is suitable for being
+				 * delivered to our caller, so let's update
+				 * the target time.
+				 */
+				pw->samp_time.tv_usec = pkt_header->ts.tv_usec + p->rmt_samp.value * 1000;
+				if (pw->samp_time.tv_usec > 1000000) {
+					pw->samp_time.tv_sec = pkt_header->ts.tv_sec + pw->samp_time.tv_usec / 1000000;
+					pw->samp_time.tv_usec = pw->samp_time.tv_usec % 1000000;
+				}
+			    }
+			}
+#endif	/* HAVE_REMOTE */
+
 			/*
 			 * XXX A bpf_hdr matches a pcap_pkthdr.
 			 */
@@ -778,25 +826,15 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 /* Send a packet to the network */
 static int
-pcap_inject_win32(pcap_t *p, const void *buf, size_t size){
-	LPPACKET PacketToSend;
+pcap_inject_win32(pcap_t *p, const void *buf, size_t size)
+{
+	PACKET pkt;
 
-	PacketToSend=PacketAllocatePacket();
-
-	if (PacketToSend == NULL)
-	{
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketAllocatePacket failed");
-		return (-1);
-	}
-
-	PacketInitPacket(PacketToSend, (PVOID)buf, (UINT)size);
-	if(PacketSendPacket(p->adapter,PacketToSend,TRUE) == FALSE){
+	PacketInitPacket(&pkt, (PVOID)buf, size);
+	if(PacketSendPacket(p->adapter,&pkt,TRUE) == FALSE) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send error: PacketSendPacket failed");
-		PacketFreePacket(PacketToSend);
 		return (-1);
 	}
-
-	PacketFreePacket(PacketToSend);
 
 	/*
 	 * We assume it all got sent if "PacketSendPacket()" succeeded.
@@ -828,66 +866,6 @@ pcap_activate_win32(pcap_t *p)
 	NetType type;
 	int res;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
-
-#ifdef HAVE_REMOTE
-	char host[PCAP_BUF_SIZE + 1];
-	char port[PCAP_BUF_SIZE + 1];
-	char name[PCAP_BUF_SIZE + 1];
-	int srctype;
-	int opensource_remote_result;
-
-	struct pcap_md *md;				/* structure used when doing a remote live capture */
-	md = (struct pcap_md *) ((u_char*)p->priv + sizeof(struct pcap_win));
-
-	/*
-	Retrofit; we have to make older applications compatible with the remote capture
-	So, we're calling the pcap_open_remote() from here, that is a very dirty thing.
-	Obviously, we cannot exploit all the new features; for instance, we cannot
-	send authentication, we cannot use a UDP data connection, and so on.
-	*/
-	if (pcap_parsesrcstr(p->opt.device, &srctype, host, port, name, p->errbuf))
-		return PCAP_ERROR;
-
-	if (srctype == PCAP_SRC_IFREMOTE)
-	{
-		opensource_remote_result = pcap_opensource_remote(p, NULL);
-
-		if (opensource_remote_result != 0)
-			return opensource_remote_result;
-
-		md->rmt_flags = (p->opt.promisc) ? PCAP_OPENFLAG_PROMISCUOUS : 0;
-
-		return 0;
-	}
-
-	if (srctype == PCAP_SRC_IFLOCAL)
-	{
-		/*
-		* If it starts with rpcap://, cut down the string
-		*/
-		if (strncmp(p->opt.device, PCAP_SRC_IF_STRING, strlen(PCAP_SRC_IF_STRING)) == 0)
-		{
-			size_t len = strlen(p->opt.device) - strlen(PCAP_SRC_IF_STRING) + 1;
-			char *new_string;
-			/*
-			* allocate a new string and free the old one
-			*/
-			if (len > 0)
-			{
-				new_string = (char*)malloc(len);
-				if (new_string != NULL)
-				{
-					char *tmp;
-					strcpy_s(new_string, len, p->opt.device + strlen(PCAP_SRC_IF_STRING));
-					tmp = p->opt.device;
-					p->opt.device = new_string;
-					free(tmp);
-				}
-			}
-		}
-	}
-
-#endif	/* HAVE_REMOTE */
 
 	if (p->opt.rfmon) {
 		/*
@@ -1205,11 +1183,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 {
 	pcap_t *p;
 
-#ifdef HAVE_REMOTE
-	p = pcap_create_common(ebuf, sizeof(struct pcap_win) + sizeof(struct pcap_md));
-#else
 	p = pcap_create_common(ebuf, sizeof(struct pcap_win));
-#endif /* HAVE_REMOTE */
 	if (p == NULL)
 		return (NULL);
 
@@ -1300,7 +1274,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 }
 
 static int
-pcap_getnonblock_win32(pcap_t *p, char *errbuf)
+pcap_getnonblock_win32(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -1313,7 +1287,7 @@ pcap_getnonblock_win32(pcap_t *p, char *errbuf)
 }
 
 static int
-pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_win32(pcap_t *p, int nonblock)
 {
 	struct pcap_win *pw = p->priv;
 	int newtimeout;
@@ -1321,7 +1295,8 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 
 	if (nonblock) {
 		/*
-		 * Set the read timeout to -1 for non-blocking mode.
+		 * Set the packet buffer timeout to -1 for non-blocking
+		 * mode.
 		 */
 		newtimeout = -1;
 	} else {
@@ -1337,7 +1312,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 	}
 	if (!PacketSetReadTimeout(p->adapter, newtimeout)) {
 		pcap_win32_err_to_str(GetLastError(), win_errbuf);
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "PacketSetReadTimeout: %s", win_errbuf);
 		return (-1);
 	}
@@ -1346,7 +1321,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock, char *errbuf)
 }
 
 static int
-pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
+pcap_add_if_win32(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
@@ -1359,8 +1334,8 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 	/*
 	 * Add an entry for this interface, with no addresses.
 	 */
-	if (add_or_find_if(&curdev, devlist, name, flags, description,
-	    errbuf) == -1) {
+	curdev = add_dev(devlistp, name, flags, description, errbuf);
+	if (curdev == NULL) {
 		/*
 		 * Failure.
 		 */
@@ -1391,8 +1366,6 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 		 * "curdev" is an entry for this interface; add an entry for
 		 * this address to its list of addresses.
 		 */
-		if(curdev == NULL)
-			break;
 		res = add_addr_to_dev(curdev,
 		    (struct sockaddr *)&if_addrs[if_addr_size].IPAddress,
 		    sizeof (struct sockaddr_storage),
@@ -1415,9 +1388,8 @@ pcap_add_if_win32(pcap_if_t **devlist, char *name, bpf_u_int32 flags,
 }
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	pcap_if_t *devlist = NULL;
 	int ret = 0;
 	const char *desc;
 	char *AdaptersName;
@@ -1456,13 +1428,9 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		}
 	}
 
-	if (NameLength > 0)
-		AdaptersName = (char*) malloc(NameLength);
-	else
-	{
-		*alldevsp = NULL;
+	if (NameLength <= 0)
 		return 0;
-	}
+	AdaptersName = (char*) malloc(NameLength);
 	if (AdaptersName == NULL)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot allocate enough memory to list the adapters.");
@@ -1520,7 +1488,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		/*
 		 * Add an entry for this interface.
 		 */
-		if (pcap_add_if_win32(&devlist, name, flags, desc,
+		if (pcap_add_if_win32(devlistp, name, flags, desc,
 		    errbuf) == -1) {
 			/*
 			 * Failure.
@@ -1532,17 +1500,6 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 		desc += strlen(desc) + 1;
 	}
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	free(AdaptersName);
 	return (ret);
 }

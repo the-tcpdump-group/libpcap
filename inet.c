@@ -372,7 +372,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	 * in order to skip non IPv4 (i.e. IPv6 addresses)
 	 */
 	npf_if_addr if_addrs[MAX_NETWORK_ADDRESSES];
-	LONG if_addr_size = 1;
+	LONG if_addr_size = MAX_NETWORK_ADDRESSES;
 	struct sockaddr_in *t_addr;
 	unsigned int i;
 
@@ -381,7 +381,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 		return (0);
 	}
 
-	for(i=0; i<MAX_NETWORK_ADDRESSES; i++)
+	for(i = 0; i < if_addr_size; i++)
 	{
 		if(if_addrs[i].IPAddress.ss_family == AF_INET)
 		{

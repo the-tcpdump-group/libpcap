@@ -73,14 +73,14 @@ extern "C" {
  * Swap byte ordering of unsigned long long timestamp on a big endian
  * machine.
  */
-#define SWAPLL(ull)  ((ull & 0xff00000000000000LL) >> 56) | \
-                      ((ull & 0x00ff000000000000LL) >> 40) | \
-                      ((ull & 0x0000ff0000000000LL) >> 24) | \
-                      ((ull & 0x000000ff00000000LL) >> 8)  | \
-                      ((ull & 0x00000000ff000000LL) << 8)  | \
-                      ((ull & 0x0000000000ff0000LL) << 24) | \
-                      ((ull & 0x000000000000ff00LL) << 40) | \
-                      ((ull & 0x00000000000000ffLL) << 56)
+#define SWAPLL(ull)  ((ull & 0xff00000000000000ULL) >> 56) | \
+                      ((ull & 0x00ff000000000000ULL) >> 40) | \
+                      ((ull & 0x0000ff0000000000ULL) >> 24) | \
+                      ((ull & 0x000000ff00000000ULL) >> 8)  | \
+                      ((ull & 0x00000000ff000000ULL) << 8)  | \
+                      ((ull & 0x0000000000ff0000ULL) << 24) | \
+                      ((ull & 0x000000000000ff00ULL) << 40) | \
+                      ((ull & 0x00000000000000ffULL) << 56)
 
 #endif /* _MSC_VER */
 
@@ -114,6 +114,7 @@ struct pcap_opt {
 	int	promisc;
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
+	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */
 	int	tstamp_type;
 	int	tstamp_precision;
 };
@@ -122,11 +123,12 @@ typedef int	(*activate_op_t)(pcap_t *);
 typedef int	(*can_set_rfmon_op_t)(pcap_t *);
 typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
 typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
+typedef void	(*save_current_filter_op_t)(pcap_t *, const char *);
 typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
 typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
 typedef int	(*set_datalink_op_t)(pcap_t *, int);
-typedef int	(*getnonblock_op_t)(pcap_t *, char *);
-typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
+typedef int	(*getnonblock_op_t)(pcap_t *);
+typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
@@ -177,6 +179,10 @@ struct pcap {
 	int break_loop;		/* flag set to force break from packet-reading loop */
 
 	void *priv;		/* private data for methods */
+
+#ifdef HAVE_REMOTE
+	struct pcap_samp rmt_samp;	/* parameters related to the sampling process. */
+#endif
 
 	int swapped;
 	FILE *rfile;		/* null if live capture, non-null if savefile */
@@ -240,6 +246,7 @@ struct pcap {
 	activate_op_t activate_op;
 	can_set_rfmon_op_t can_set_rfmon_op;
 	inject_op_t inject_op;
+	save_current_filter_op_t save_current_filter_op;
 	setfilter_op_t setfilter_op;
 	setdirection_op_t setdirection_op;
 	set_datalink_op_t set_datalink_op;
@@ -378,8 +385,8 @@ int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_getnonblock_fd(pcap_t *, char *);
-int	pcap_setnonblock_fd(pcap_t *p, int, char *);
+int	pcap_getnonblock_fd(pcap_t *);
+int	pcap_setnonblock_fd(pcap_t *p, int);
 #endif
 
 /*
@@ -404,32 +411,42 @@ int	pcap_check_activated(pcap_t *);
 /*
  * Internal interfaces for "pcap_findalldevs()".
  *
- * "pcap_platform_finddevs()" is a platform-dependent routine to
+ * A pcap_if_list_t * is a reference to a list of devices.
+ *
+ * "pcap_platform_finddevs()" is the platform-dependent routine to
  * find local network interfaces.
  *
  * "pcap_findalldevs_interfaces()" is a helper to find those interfaces
  * using the "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
  *
- * "pcap_add_if()" adds an interface to the list of interfaces, for
- * use by various "find interfaces" routines.
+ * "add_dev()" adds an entry to a pcap_if_list_t.
+ *
+ * "find_dev()" tries to find a device, by name, in a pcap_if_list_t.
+ *
+ * "find_or_add_dev()" checks whether a device is already in a pcap_if_list_t
+ * and, if not, adds an entry for it.
  */
-int	pcap_platform_finddevs(pcap_if_t **, char *);
+struct pcap_if_list;
+typedef struct pcap_if_list pcap_if_list_t;
+int	pcap_platform_finddevs(pcap_if_list_t *, char *);
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_findalldevs_interfaces(pcap_if_t **, char *,
+int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
 	    int (*)(const char *));
 #endif
-int	add_addr_to_iflist(pcap_if_t **, const char *, bpf_u_int32,
-	    struct sockaddr *, size_t, struct sockaddr *, size_t,
-	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
+pcap_if_t *find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
+	    const char *, char *);
+pcap_if_t *find_dev(pcap_if_list_t *, const char *);
+pcap_if_t *add_dev(pcap_if_list_t *, const char *, bpf_u_int32, const char *,
+	    char *);
 int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
-int	pcap_add_if(pcap_if_t **, const char *, bpf_u_int32, const char *,
-	    char *);
-int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, bpf_u_int32,
-	    const char *, char *);
 #ifndef _WIN32
-bpf_u_int32 if_flags_to_pcap_flags(const char *, u_int);
+pcap_if_t *find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
+	    char *);
+int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
 #endif
 
 /*

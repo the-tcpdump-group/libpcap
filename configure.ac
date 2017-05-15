@@ -27,7 +27,6 @@ AC_LBL_C_INLINE
 AC_C___ATTRIBUTE__
 if test "$ac_cv___attribute__" = "yes"; then
 	AC_C___ATTRIBUTE___UNUSED
-	AC_C___ATTRIBUTE___FORMAT
 fi
 
 AC_CHECK_HEADERS(sys/bitypes.h)
@@ -160,7 +159,7 @@ esac
 
 AC_LBL_FIXINCLUDES
 
-AC_CHECK_FUNCS(strerror strlcpy)
+AC_CHECK_FUNCS(strerror strlcpy strlcat)
 
 needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
@@ -632,6 +631,10 @@ null)
 	AC_MSG_WARN(cannot determine packet capture interface)
 	AC_MSG_WARN((see the INSTALL doc for more info))
 	;;
+
+*)
+	AC_MSG_ERROR($V_PCAP is not a valid pcap type)
+	;;
 esac
 
 dnl
@@ -848,7 +851,7 @@ if test "$want_dag" != no; then
 		# included if there's a found-action (arg 3).
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="-L$dag_lib_dir"
-		AC_CHECK_LIB([dag], [dag_attach_stream], [dag_streams="1"], [dag_streams="0"])
+		AC_CHECK_LIB([dag], [dag_attach_stream64], [dag_large_streams="1"], [dag_large_streams="0"])
 		AC_CHECK_LIB([dag],[dag_get_erf_types], [
 			AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])])
 		AC_CHECK_LIB([dag],[dag_get_stream_erf_types], [
@@ -856,8 +859,8 @@ if test "$want_dag" != no; then
 
 		LDFLAGS=$saved_ldflags
 
-		if test "$dag_streams" = 1; then
-			AC_DEFINE(HAVE_DAG_STREAMS_API, 1, [define if you have streams capable DAG API])
+		if test "$dag_large_streams" = 1; then
+			AC_DEFINE(HAVE_DAG_LARGE_STREAMS_API, 1, [define if you have large streams capable DAG API])
 			LIBS="$LIBS -ldag"
 			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 
@@ -1183,6 +1186,30 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them.])
 fi
 
+dnl
+dnl Allow the user to enable remote capture.
+dnl It's off by default, as that increases the attack surface of
+dnl libpcap, exposing it to malicious servers.
+dnl
+AC_MSG_CHECKING([whether to enable remote packet capture])
+AC_ARG_ENABLE(remote,
+[  --enable-remote         enable remote packet capture @<:@default=no@:>@
+  --disable-remote        disable remote packet capture],,
+   enableval=no)
+case "$enableval" in
+yes)	AC_MSG_RESULT(yes)
+	AC_WARN([Remote packet capture may expose libpcap-based applications])
+	AC_WARN([to attacks by malicious remote capture servers!])
+	AC_DEFINE(HAVE_REMOTE,,
+	    [Define to 1 if remote packet capture is to be supported])
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
+	RPCAPD=rpcapd
+	INSTALL_RPCAPD=install-rpcapd
+	;;
+*)	AC_MSG_RESULT(no)
+	;;
+esac
+
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention
 # for man pages (file formats in section 5, miscellaneous info in section 7).
@@ -1191,6 +1218,7 @@ fi
 DYEXT="none"
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
+MAN_USERMOD_SECTION=8
 case "$host_os" in
 
 aix*)
@@ -1239,7 +1267,7 @@ darwin*)
 	DYEXT="dylib"
 	V_CCOPT="$V_CCOPT -fno-common"
 	AC_ARG_ENABLE(universal,
-	AC_HELP_STRING([--disable-universal],[don't build universal on OS X]))
+	AC_HELP_STRING([--disable-universal],[don't build universal on macOS]))
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
@@ -1424,11 +1452,20 @@ solaris*)
 	AC_DEFINE(HAVE_SOLARIS,1,[On solaris])
 
 	DYEXT="so"
-	#
-	# Use System V conventions for man pages.
-	#
-	MAN_FILE_FORMATS=4
-	MAN_MISC_INFO=5
+
+	case "`uname -r`" in
+
+	5.12)
+		;;
+
+	*)
+		#
+		# Use System V conventions for man pages.
+		#
+		MAN_USERMOD_SECTION=1m
+		MAN_FILE_FORMATS=4
+		MAN_MISC_INFO=5
+	esac
 	;;
 esac
 
@@ -1472,6 +1509,9 @@ AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
+AC_SUBST(MAN_USERMOD_SECTION)
+AC_SUBST(RPCAPD)
+AC_SUBST(INSTALL_RPCAPD)
 
 AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable nusb support @<:@default=yes, if support available@:>@])],
@@ -1702,20 +1742,20 @@ if test "x$enable_dbus" != "xno"; then
 
 		darwin*)
 			#
-			# We don't support D-Bus sniffing on OS X; see
+			# We don't support D-Bus sniffing on macOS; see
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#
 			# The user requested it, so fail.
 			#
-			AC_MSG_ERROR([Due to freedesktop.org bug 74029, D-Bus capture support is not available on OS X])
+			AC_MSG_ERROR([Due to freedesktop.org bug 74029, D-Bus capture support is not available on macOS])
 		esac
 	else
 		case "$host_os" in
 
 		darwin*)
 			#
-			# We don't support D-Bus sniffing on OS X; see
+			# We don't support D-Bus sniffing on macOS; see
 			#
 			# https://bugs.freedesktop.org/show_bug.cgi?id=74029
 			#
@@ -1817,5 +1857,5 @@ AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
 	pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap
 	pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap
-	pcap_set_tstamp_type.3pcap)
+	pcap_set_tstamp_type.3pcap rpcapd/Makefile)
 exit 0

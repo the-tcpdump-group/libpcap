@@ -282,7 +282,7 @@ is_dlpi_interface(const char *name _U_)
  * additional network links present in the system.
  */
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	int retv = 0;
 
@@ -293,11 +293,19 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, is_dlpi_interface) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf,
+	    is_dlpi_interface) == -1)
 		return (-1);	/* failure */
 
 	/* dlpi_walk() for loopback will be added here. */
 
+	/*
+	 * Find all DLPI devices in the current zone.
+	 *
+	 * XXX - will pcap_findalldevs_interfaces() find any devices
+	 * outside the current zone?  If not, the only reason to call
+	 * it would be to get the interface addresses.
+	 */
 	dlpi_walk(list_interfaces, &lw, 0);
 
 	if (lw.lw_err != 0) {
@@ -309,7 +317,12 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 
 	/* Add linkname if it does not exist on the list. */
 	for (entry = lw.lw_list; entry != NULL; entry = entry->lnl_next) {
-		if (pcap_add_if(alldevsp, entry->linkname, 0, NULL, errbuf) < 0)
+		/*
+		 * If it isn't already in the list of devices, try to
+		 * add it.
+		 */
+		if (find_or_add_dev(devlistp, entry->linkname, 0, NULL,
+		    errbuf) == NULL)
 			retv = -1;
 	}
 done:

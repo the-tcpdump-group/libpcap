@@ -210,14 +210,14 @@ void sock_geterror(const char *caller, char *errbuf, int errbufsize);
 int sock_initaddress(const char *address, const char *port,
     struct addrinfo *hints, struct addrinfo **addrinfo,
     char *errbuf, int errbuflen);
-int sock_recv(SOCKET socket, void *buffer, size_t size, int receiveall,
+int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
     char *errbuf, int errbuflen);
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen);
 int sock_close(SOCKET sock, char *errbuf, int errbuflen);
 
-int sock_send(SOCKET socket, const char *buffer, int size, char *errbuf, int errbuflen);
+int sock_send(SOCKET sock, const char *buffer, int size, char *errbuf, int errbuflen);
 int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int totsize, int checkonly, char *errbuf, int errbuflen);
-int sock_discard(SOCKET socket, int size, char *errbuf, int errbuflen);
+int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen);
 int	sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage *from, char *errbuf, int errbuflen);
 int sock_cmpaddr(struct sockaddr_storage *first, struct sockaddr_storage *second);
 

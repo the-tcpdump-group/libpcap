@@ -252,7 +252,7 @@ static int pcap_set_datalink_bpf(pcap_t *p, int dlt);
  * blocking mode.
  */
 static int
-pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
+pcap_getnonblock_bpf(pcap_t *p)
 {
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->priv;
@@ -260,11 +260,11 @@ pcap_getnonblock_bpf(pcap_t *p, char *errbuf)
 	if (pb->zerocopy)
 		return (pb->nonblock);
 #endif
-	return (pcap_getnonblock_fd(p, errbuf));
+	return (pcap_getnonblock_fd(p));
 }
 
 static int
-pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
+pcap_setnonblock_bpf(pcap_t *p, int nonblock)
 {
 #ifdef HAVE_ZEROCOPY_BPF
 	struct pcap_bpf *pb = p->priv;
@@ -274,7 +274,7 @@ pcap_setnonblock_bpf(pcap_t *p, int nonblock, char *errbuf)
 		return (0);
 	}
 #endif
-	return (pcap_setnonblock_fd(p, nonblock, errbuf));
+	return (pcap_setnonblock_fd(p, nonblock));
 }
 
 #ifdef HAVE_ZEROCOPY_BPF
@@ -2550,6 +2550,44 @@ check_bpf_bindable(const char *name)
 	int fd;
 	char errbuf[PCAP_ERRBUF_SIZE];
 
+	/*
+	 * On macOS, we don't do this check if the device name begins
+	 * with "wlt"; at least some versions of macOS (actually, it
+	 * was called "Mac OS X" then...) offer monitor mode capturing
+	 * by having a separate "monitor mode" device for each wireless
+	 * adapter, rather than by implementing the ioctls that
+	 * {Free,Net,Open,DragonFly}BSD provide. Opening that device
+	 * puts the adapter into monitor mode, which, at least for
+	 * some adapters, causes them to deassociate from the network
+	 * with which they're associated.
+	 *
+	 * Instead, we try to open the corresponding "en" device (so
+	 * that we don't end up with, for users without sufficient
+	 * privilege to open capture devices, a list of adapters that
+	 * only includes the wlt devices).
+	 */
+#ifdef __APPLE__
+	if (strncmp(name, "wlt", 3) == 0) {
+		char *en_name;
+		size_t en_name_len;
+
+		/*
+		 * Try to allocate a buffer for the "en"
+		 * device's name.
+		 */
+		en_name_len = strlen(name) - 1;
+		en_name = malloc(en_name_len + 1);
+		if (en_name == NULL) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "malloc: %s", pcap_strerror(errno));
+			return (-1);
+		}
+		strcpy(en_name, "en");
+		strcat(en_name, name + 3);
+		fd = bpf_open_and_bind(en_name, errbuf);
+		free(en_name);
+	} else
+#endif /* __APPLE */
 	fd = bpf_open_and_bind(name, errbuf);
 	if (fd < 0) {
 		/*
@@ -2584,7 +2622,7 @@ check_bpf_bindable(const char *name)
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 static int
-finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
+finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 {
 	DIR *usbdir;
 	struct dirent *usbitem;
@@ -2624,7 +2662,6 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 	while ((usbitem = readdir(usbdir)) != NULL) {
 		char *p;
 		size_t busnumlen;
-		int err;
 
 		if (strcmp(usbitem->d_name, ".") == 0 ||
 		    strcmp(usbitem->d_name, "..") == 0) {
@@ -2640,11 +2677,17 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 		memcpy(name, usbus_prefix, USBUS_PREFIX_LEN);
 		memcpy(name + USBUS_PREFIX_LEN, usbitem->d_name, busnumlen);
 		*(name + USBUS_PREFIX_LEN + busnumlen) = '\0';
-		err = pcap_add_if(alldevsp, name, PCAP_IF_UP, NULL, errbuf);
-		if (err != 0) {
+		/*
+		 * There's an entry in this directory for every USB device,
+		 * not for every bus; if there's more than one device on
+		 * the bus, there'll be more than one entry for that bus,
+		 * so we need to avoid adding multiple capture devices
+		 * for each bus.
+		 */
+		if (find_or_add_dev(devlistp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
 			free(name);
 			closedir(usbdir);
-			return (err);
+			return (PCAP_ERROR);
 		}
 	}
 	free(name);
@@ -2654,16 +2697,16 @@ finddevs_usb(pcap_if_t **alldevsp, char *errbuf)
 #endif
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, check_bpf_bindable) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, check_bpf_bindable) == -1)
 		return (-1);	/* failure */
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
-	if (finddevs_usb(alldevsp, errbuf) == -1)
+	if (finddevs_usb(devlistp, errbuf) == -1)
 		return (-1);
 #endif
 

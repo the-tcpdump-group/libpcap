@@ -1028,7 +1028,28 @@
  */
 #define LINKTYPE_RDS		265
 
-#define LINKTYPE_MATCHING_MAX	265		/* highest value in the "matching" range */
+/*
+ * USB packets, beginning with a Darwin (macOS, etc.) header.
+ */
+#define LINKTYPE_USB_DARWIN	266
+
+/*
+ * OpenBSD DLT_OPENFLOW.
+ */
+#define LINKTYPE_OPENFLOW	267
+
+/*
+ * SDLC frames containing SNA PDUs.
+ */
+#define LINKTYPE_SDLC		268
+
+/*
+ * per "Selvig, Bjorn" <b.selvig@ti.com> used for
+ * TI protocol sniffer.
+ */
+#define LINKTYPE_TI_LLN_SNIFFER	269
+
+#define LINKTYPE_MATCHING_MAX	269		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

@@ -28,11 +28,6 @@
  * dependent values so we can print the dump file on any architecture.
  */
 
-#ifndef lint
-static const char rcsid[] _U_ =
-    "@(#) $Header$ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -232,14 +227,6 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		return NULL;
 	}
 
-	if (hdr.snaplen > MAXIMUM_SNAPLEN) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			 "invalid file capture length %u, bigger than "
-			 "maximum of %u", hdr.snaplen, MAXIMUM_SNAPLEN);
-		*err = 1;
-		return NULL;
-	}
-
 	/*
 	 * OK, this is a good pcap file.
 	 * Allocate a pcap_t for it.
@@ -390,9 +377,15 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 	/*
 	 * Allocate a buffer for the packet data.
+	 * Don't allocate more than MAXIMUM_SNAPLEN.
 	 */
 	p->bufsize = p->snapshot;
-	if (p->bufsize <= 0) {
+	if (p->bufsize > MAXIMUM_SNAPLEN) {
+		/*
+		 * Too-large snapshot length; trim it at the maximum.
+		 */
+		p->bufsize = MAXIMUM_SNAPLEN;
+	} else if (p->bufsize <= 0) {
 		/*
 		 * Bogus snapshot length; use the maximum as a fallback.
 		 */

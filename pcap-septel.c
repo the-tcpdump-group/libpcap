@@ -43,7 +43,7 @@
 
 static int septel_setfilter(pcap_t *p, struct bpf_program *fp);
 static int septel_stats(pcap_t *p, struct pcap_stat *ps);
-static int septel_setnonblock(pcap_t *p, int nonblock, char *errbuf);
+static int septel_setnonblock(pcap_t *p, int nonblock);
 
 /*
  * Private data for capturing on Septel devices.
@@ -237,6 +237,7 @@ pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
 		return NULL;
 
 	p->activate_op = septel_activate;
+	p->setnonblock_op = septel_setnonblock; /* not supported */
 	return p;
 }
 
@@ -252,10 +253,11 @@ static int septel_stats(pcap_t *p, struct pcap_stat *ps) {
 
 
 int
-septel_findalldevs(pcap_if_t **devlistp, char *errbuf)
+septel_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-  return (pcap_add_if(devlistp,"septel",0,
-                      "Intel/Septel device",errbuf));
+  if (add_dev(devlistp,"septel",0,"Intel/Septel device",errbuf) == NULL)
+    return -1;
+  return 0;
 }
 
 
@@ -286,9 +288,9 @@ static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
 
 
 static int
-septel_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+septel_setnonblock(pcap_t *p, int nonblock)
 {
-  fprintf(errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
+  fprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
   return (-1);
 }
 
@@ -302,9 +304,8 @@ septel_setnonblock(pcap_t *p, int nonblock, char *errbuf)
  * There are no regular interfaces, just Septel interfaces.
  */
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-  *alldevsp = NULL;
   return (0);
 }
 

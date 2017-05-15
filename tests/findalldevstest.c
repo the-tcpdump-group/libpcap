@@ -3,20 +3,98 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #ifdef _WIN32
+  #include <windows.h>
   #include <winsock2.h>
 #else
   #include <sys/socket.h>
   #include <netinet/in.h>
   #include <arpa/inet.h>
   #include <netdb.h>
+  #include <pwd.h>
+  #include <unistd.h>
 #endif
 
 #include <pcap.h>
 
+#include "../funcattrs.h"
+
 static int ifprint(pcap_if_t *d);
 static char *iptos(bpf_u_int32 in);
+
+#ifdef _WIN32
+#include "portability.h"
+
+/*
+ * Generate a string for a Win32-specific error (i.e. an error generated when
+ * calling a Win32 API).
+ * For errors occurred during standard C calls, we still use pcap_strerror()
+ */
+#define ERRBUF_SIZE	1024
+static const char *
+win32_strerror(DWORD error)
+{
+  static char errbuf[ERRBUF_SIZE+1];
+  size_t errlen;
+  char *p;
+
+  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
+                ERRBUF_SIZE, NULL);
+
+  /*
+   * "FormatMessage()" "helpfully" sticks CR/LF at the end of the
+   * message.  Get rid of it.
+   */
+  errlen = strlen(errbuf);
+  if (errlen >= 2) {
+    errbuf[errlen - 1] = '\0';
+    errbuf[errlen - 2] = '\0';
+  }
+  p = strchr(errbuf, '\0');
+  pcap_snprintf(p, ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
+  return errbuf;
+}
+	
+static char *
+getpass(const char *prompt)
+{
+  HANDLE console_handle = GetStdHandle(STD_INPUT_HANDLE);
+  DWORD console_mode, save_console_mode;
+  static char password[128+1];
+  char *p;
+
+  fprintf(stderr, "%s", prompt);
+
+  /*
+   * Turn off echoing.
+   */
+  if (!GetConsoleMode(console_handle, &console_mode)) {
+    fprintf(stderr, "Can't get console mode: %s\n",
+            win32_strerror(GetLastError()));
+    exit(1);
+  }
+  save_console_mode = console_mode;
+  console_mode &= ~ENABLE_ECHO_INPUT;
+  if (!SetConsoleMode(console_handle, console_mode)) {
+    fprintf(stderr, "Can't set console mode: %s\n",
+            win32_strerror(GetLastError()));
+    exit(1);
+  }
+  if (fgets(password, sizeof password, stdin) == NULL) {
+    fprintf(stderr, "\n");
+    SetConsoleMode(console_handle, save_console_mode);
+    exit(1);
+  }
+  fprintf(stderr, "\n");
+  SetConsoleMode(console_handle, save_console_mode);
+  p = strchr(password, '\n');
+  if (p != NULL)
+    *p = '\0';
+ return password;
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -25,12 +103,47 @@ int main(int argc, char **argv)
   char *s;
   bpf_u_int32 net, mask;
   int exit_status = 0;
-
   char errbuf[PCAP_ERRBUF_SIZE+1];
-  if (pcap_findalldevs(&alldevs, errbuf) == -1)
+#ifdef HAVE_REMOTE
+  struct pcap_rmtauth auth;
+  char username[128+1];
+  char *p;
+  char *password;
+#endif
+
+#ifdef HAVE_REMOTE
+  if (argc >= 2)
   {
-    fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
-    exit(1);
+    if (pcap_findalldevs_ex(argv[1], NULL, &alldevs, errbuf) == -1)
+    {
+      /*
+       * OK, try it with a user name and password.
+       */
+      fprintf(stderr, "User name: ");
+      if (fgets(username, sizeof username, stdin) == NULL)
+        exit(1);
+      p = strchr(username, '\n');
+      if (p != NULL)
+        *p = '\0';
+      password = getpass("Password: ");
+      auth.type = RPCAP_RMTAUTH_PWD;
+      auth.username = username;
+      auth.password = password;
+      if (pcap_findalldevs_ex(argv[1], &auth, &alldevs, errbuf) == -1)
+      {
+        fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
+        exit(1);
+      }
+    }
+  }
+  else
+#endif
+  {
+    if (pcap_findalldevs(&alldevs, errbuf) == -1)
+    {
+      fprintf(stderr,"Error in pcap_findalldevs: %s\n",errbuf);
+      exit(1);
+    }
   }
   for(d=alldevs;d;d=d->next)
   {

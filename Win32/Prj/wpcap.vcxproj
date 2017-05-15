@@ -198,7 +198,6 @@ win_bison -ppcap_ --yacc --output=..\..\grammar.c --defines ..\..\grammar.y</Com
     <ClCompile Include="..\..\bpf_dump.c" />
     <ClCompile Include="..\..\bpf_image.c" />
     <ClCompile Include="..\..\etherent.c" />
-    <ClCompile Include="..\..\fad-helpers.c" />
     <ClCompile Include="..\..\gencode.c" />
     <ClCompile Include="..\..\grammar.c" />
     <ClCompile Include="..\..\inet.c" />

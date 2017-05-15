@@ -75,10 +75,9 @@ struct rtentry;		/* declarations in <net/if.h> */
  * SIOCGLIFCONF rather than SIOCGIFCONF in order to get IPv6 addresses.)
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
+pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
     int (*check_usable)(const char *))
 {
-	pcap_if_t *devlist = NULL;
 	register int fd4, fd6, fd;
 	register struct lifreq *ifrp, *ifend;
 	struct lifnum ifn;
@@ -329,8 +328,8 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 		/*
 		 * Add information for this address to the list.
 		 */
-		if (add_addr_to_iflist(&devlist, ifrp->lifr_name,
-		    if_flags_to_pcap_flags(ifrp->lifr_name, ifrflags.lifr_flags),
+		if (add_addr_to_if(devlistp, ifrp->lifr_name,
+		    ifrflags.lifr_flags,
 		    (struct sockaddr *)&ifrp->lifr_addr,
 		    sizeof (struct sockaddr_storage),
 		    netmask, sizeof (struct sockaddr_storage),
@@ -344,16 +343,5 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf,
 	(void)close(fd6);
 	(void)close(fd4);
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	return (ret);
 }

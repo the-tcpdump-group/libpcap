@@ -1026,7 +1026,7 @@ is_dlpi_interface(const char *name)
 }
 
 int
-pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 #ifdef HAVE_SOLARIS
 	int fd;
@@ -1042,7 +1042,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(alldevsp, errbuf, is_dlpi_interface) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, is_dlpi_interface) == -1)
 		return (-1);	/* failure */
 
 #ifdef HAVE_SOLARIS
@@ -1068,7 +1068,7 @@ pcap_platform_finddevs(pcap_if_t **alldevsp, char *errbuf)
 	}
 	for (i = 0; i < buf.nunits; i++) {
 		pcap_snprintf(baname, sizeof baname, "ba%u", i);
-		if (pcap_add_if(alldevsp, baname, 0, NULL, errbuf) < 0)
+		if (add_dev(devlistp, baname, 0, NULL, errbuf) == NULL)
 			return (-1);
 	}
 #endif

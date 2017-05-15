@@ -39,6 +39,8 @@
  * flavors of UN*X.
  */
 
+#include "funcattrs.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,7 +49,7 @@ extern "C" {
  /*
   * Macro that does the same thing as strlcpy().
   */
- #ifdef _MSC_VER
+ #if defined(_MSC_VER) || defined(__MINGW32__)
   /*
    * strncpy_s() is supported at least back to Visual
    * Studio 2005.
@@ -63,33 +65,38 @@ extern "C" {
  #endif
 #endif
 
-/*
- * For flagging arguments as format strings in MSVC.
- */
-#if _MSC_VER >= 1400
- #include <sal.h>
- #if _MSC_VER > 1400
-  #define FORMAT_STRING(p) _Printf_format_string_ p
+#ifndef HAVE_STRLCAT
+ /*
+  * Macro that does the same thing as strlcat().
+  */
+ #if defined(_MSC_VER) || defined(__MINGW32__)
+  /*
+   * strncat_s() is supported at least back to Visual
+   * Studio 2005.
+   */
+  #define strlcat(x, y, z) \
+	strncat_s((x), (z), (y), _TRUNCATE)
  #else
-  #define FORMAT_STRING(p) __format_string p
+  /*
+   * ANSI C says strncat() always null-terminates its first argument,
+   * so 1) we don't need to explicitly null-terminate the string
+   * ourselves and 2) we need to leave room for the null terminator.
+   */
+  #define strlcat(x, y, z) \
+	strncat((x), (y), (z) - strlen((x)) - 1)
  #endif
-#else
- #define FORMAT_STRING(p) p
 #endif
 
 #ifdef _MSC_VER
+  #ifndef _DEBUG
   #define strdup	_strdup
+  #endif
   #define sscanf	sscanf_s
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
   #define fopen(x, y) \
 	fopen_safe((x), (y))
   FILE *fopen_safe(const char *filename, const char* mode);
-#endif
-
-#if defined(_MSC_VER) || defined(__MINGW32__)
-  #define strlcat(x, y, z) \
-	strncat_s((x), (z), (y), _TRUNCATE)
 #endif
 
 #ifdef _MSC_VER
@@ -129,11 +136,8 @@ extern "C" {
 #ifdef HAVE_SNPRINTF
 #define pcap_snprintf snprintf
 #else
-extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...)
-#ifdef __ATTRIBUTE___FORMAT_OK
-    __attribute__((format (printf, 3, 4)))
-#endif /* __ATTRIBUTE___FORMAT_OK */
-    ;
+extern int pcap_snprintf(char *, size_t, PCAP_FORMAT_STRING(const char *), ...)
+    PCAP_PRINTFLIKE(3, 4);
 #endif
 
 #ifdef HAVE_VSNPRINTF
@@ -155,7 +159,7 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
      * Define it ourselves.
      */
     #define NEED_STRTOK_R
-    extern int pcap_strtok_r(char *, const char *, char **);
+    extern char *pcap_strtok_r(char *, const char *, char **);
   #endif
 #endif /* HAVE_STRTOK_R */
 

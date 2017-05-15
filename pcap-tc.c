@@ -120,8 +120,8 @@ typedef struct _TC_FUNCTIONS
 
 static pcap_if_t* TcCreatePcapIfFromPort(TC_PORT port);
 static int TcSetDatalink(pcap_t *p, int dlt);
-static int TcGetNonBlock(pcap_t *p, char *errbuf);
-static int TcSetNonBlock(pcap_t *p, int nonblock, char *errbuf);
+static int TcGetNonBlock(pcap_t *p);
+static int TcSetNonBlock(pcap_t *p, int nonblock);
 static void TcCleanup(pcap_t *p);
 static int TcInject(pcap_t *p, const void *buf, size_t size);
 static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user);
@@ -433,7 +433,7 @@ struct pcap_tc {
 };
 
 int
-TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
+TcFindAllDevs(pcap_if_list_t *devlist, char *errbuf)
 {
 	TC_API_LOAD_STATUS loadStatus;
 	ULONG numPorts;
@@ -476,13 +476,15 @@ TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
 				/*
 				 * append it at the end
 				 */
-				if (*alldevsp == NULL)
+				if (devlistp->beginning == NULL)
 				{
-					*alldevsp = dev;
+					devlistp->beginning = dev;
 				}
 				else
 				{
-					for(cursor = *alldevsp; cursor->next != NULL; cursor = cursor->next);
+					for (cursor = devlistp->beginning;
+					    cursor->next != NULL;
+					    cursor = cursor->next);
 					cursor->next = dev;
 				}
 			}
@@ -763,6 +765,7 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 		return NULL;
 
 	p->activate_op = TcActivate;
+	p->setnonblock_op = TcSetNonBlock; /* not supported */
 	return p;
 }
 
@@ -774,20 +777,16 @@ static int TcSetDatalink(pcap_t *p, int dlt)
 	return 0;
 }
 
-static int TcGetNonBlock(pcap_t *p, char *errbuf)
+static int TcGetNonBlock(pcap_t *p)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Getting the non blocking status is not available for TurboCap ports");
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Getting the non blocking status is not available for TurboCap ports");
 		return -1;
 
 }
-static int TcSetNonBlock(pcap_t *p, int nonblock, char *errbuf)
+static int TcSetNonBlock(pcap_t *p, int nonblock)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Setting the non blocking status is not available for TurboCap ports");
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Setting the non blocking status is not available for TurboCap ports");
 		return -1;
 }
@@ -1166,7 +1165,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 		p->stat.ps_drop = 0xFFFFFFFF;
 	}
 
-#ifdef HAVE_REMOTE
+#if defined(_WIN32) && defined(HAVE_REMOTE)
 	p->stat.ps_capt = pt->TcAcceptedCount;
 #endif
 
