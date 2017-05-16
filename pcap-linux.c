@@ -6925,13 +6925,13 @@ pcap_platform_lib_version(void)
 {
 #ifdef HAVE_PACKET_RING
  #if defined(HAVE_TPACKET3)
-	return ("with TPACKET_V{1,2,3} support");
+	return ("with TPACKET_V3");
  #elif defined(HAVE_TPACKET2)
-	return ("with TPACKET_V{1,2} support");
+	return ("with TPACKET_V2");
  #else
-	return ("with TPACKET_V1 support");
+	return ("with TPACKET_V1");
  #endif
 #else
-	return ("without TPACKET support");
+	return ("without TPACKET");
 #endif
 }
