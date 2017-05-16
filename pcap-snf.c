@@ -582,4 +582,13 @@ pcap_create_interface(const char *device, char *errbuf)
 	    "This version of libpcap only supports SNF cards");
 	return NULL;
 }
+
+/*
+ * Platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+	return ("SNF-only");
+}
 #endif

@@ -390,6 +390,14 @@ int	pcap_setnonblock_fd(pcap_t *p, int);
 #endif
 
 /*
+ * Internal interfaces for "pcap_lib_version()".
+ *
+ * "pcap_platform_lib_version()" returns platform-specific version
+ * information, or NULL if there isn't any.
+ */
+const char *pcap_platform_lib_version(void);
+
+/*
  * Internal interfaces for "pcap_create()".
  *
  * "pcap_create_interface()" is the routine to do a pcap_create on

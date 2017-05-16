@@ -3149,3 +3149,16 @@ pcap_set_datalink_bpf(pcap_t *p, int dlt)
 #endif
 	return (0);
 }
+
+/*
+ * Platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+#ifdef HAVE_ZEROCOPY_BPF
+	return ("with zerocopy support");
+#else
+	return (NULL);
+#endif
+}

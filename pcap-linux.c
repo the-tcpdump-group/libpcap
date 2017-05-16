@@ -6916,3 +6916,22 @@ reset_kernel_filter(pcap_t *handle)
 	return 0;
 }
 #endif
+
+/*
+ * Platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+#ifdef HAVE_PACKET_RING
+ #if defined(HAVE_TPACKET3)
+	return ("with TPACKET_V{1,2,3} support");
+ #elif defined(HAVE_TPACKET2)
+	return ("with TPACKET_V{1,2} support");
+ #else
+	return ("with TPACKET_V1 support");
+ #endif
+#else
+	return ("without TPACKET support");
+#endif
+}

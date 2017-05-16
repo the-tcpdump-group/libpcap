@@ -433,3 +433,12 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	return (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound));
 }
+
+/*
+ * No platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+	return (NULL);
+}

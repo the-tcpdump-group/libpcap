@@ -1835,3 +1835,12 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	p->activate_op = pcap_activate_dlpi;
 	return (p);
 }
+
+/*
+ * No platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+	return (NULL);
+}

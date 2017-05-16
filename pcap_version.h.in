@@ -9,5 +9,8 @@
  * being the one from the version of the library with which the program
  * was linked, or even weirder things, such as the string being the one
  * from the library but being truncated).
+ *
+ * In addition, we may add additional information to this string, so
+ * pcap_lib_version() might not return this string alone anyway.
  */
 static const char pcap_version_string[] = "libpcap version %%LIBPCAP_VERSION%%";

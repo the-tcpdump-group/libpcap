@@ -620,3 +620,12 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 	pf->filtering_in_kernel = 0;
 	return (0);
 }
+
+/*
+ * No platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+	return (NULL);
+}

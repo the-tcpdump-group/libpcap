@@ -319,4 +319,13 @@ pcap_create_interface(const char *device, char *errbuf)
                 "This version of libpcap only supports Septel cards");
   return (NULL);
 }
+
+/*
+ * Platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+	return ("Septel-only");
+}
 #endif

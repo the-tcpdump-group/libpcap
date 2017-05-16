@@ -1047,3 +1047,12 @@ int pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf) {
 	//printf("pcap_findalldevs() returning ZERO OK\n");				// fulko
 	return 0;
 }
+
+/*
+ * Platform-specific information.
+ */
+const char *
+pcap_platform_lib_version(void)
+{
+	return ("SITA-only");
+}

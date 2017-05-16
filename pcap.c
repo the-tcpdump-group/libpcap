@@ -2963,9 +2963,9 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 
 #include "pcap_version.h"
 
-#ifdef _WIN32
+static const char *pcap_lib_version_string;
 
-static char *full_pcap_version_string;
+#ifdef _WIN32
 
 #ifdef HAVE_VERSION_H
 /*
@@ -2990,8 +2990,9 @@ pcap_lib_version(void)
 {
 	char *packet_version_string;
 	size_t full_pcap_version_string_len;
+	char *full_pcap_version_string;
 
-	if (full_pcap_version_string == NULL) {
+	if (pcap_lib_version_string == NULL) {
 		/*
 		 * Generate the version string.
 		 */
@@ -3038,8 +3039,9 @@ pcap_lib_version(void)
 			    packet_version_string,
 			    pcap_version_string);
 		}
+		pcap_lib_version_string = full_pcap_version_string;
 	}
-	return (full_pcap_version_string);
+	return (pcap_lib_version_string);
 }
 
 #else /* HAVE_VERSION_H */
@@ -3055,8 +3057,9 @@ pcap_lib_version(void)
 {
 	char *packet_version_string;
 	size_t full_pcap_version_string_len;
+	char *full_pcap_version_string;
 
-	if (full_pcap_version_string == NULL) {
+	if (pcap_lib_version_string == NULL) {
 		/*
 		 * Generate the version string.  Report the packet.dll
 		 * version.
@@ -3074,24 +3077,24 @@ pcap_lib_version(void)
 		    pcap_version_string_packet_dll_fmt,
 		    pcap_version_string,
 		    packet_version_string);
+		pcap_lib_version_string = full_pcap_version_string;
 	}
-	return (full_pcap_version_string);
+	return (pcap_lib_version_string);
 }
 
 #endif /* HAVE_VERSION_H */
 
 #elif defined(MSDOS)
 
-static char *full_pcap_version_string;
-
 const char *
-pcap_lib_version (void)
+pcap_lib_version(void)
 {
 	char *packet_version_string;
 	size_t full_pcap_version_string_len;
+	char *full_pcap_version_string;
 	static char dospfx[] = "DOS-";
 
-	if (full_pcap_version_string == NULL) {
+	if (pcap_lib_version_string == NULL) {
 		/*
 		 * Generate the version string.
 		 */
@@ -3103,8 +3106,9 @@ pcap_lib_version (void)
 			return (NULL);
 		strcpy(full_pcap_version_string, dospfx);
 		strcat(full_pcap_version_string, pcap_version_string);
+		pcap_lib_version_string = full_pcap_version_string;
 	}
-	return (full_pcap_version_string);
+	return (pcap_lib_version_string);
 }
 
 #else /* UN*X */
@@ -3112,7 +3116,43 @@ pcap_lib_version (void)
 const char *
 pcap_lib_version(void)
 {
-	return (pcap_version_string);
+	const char *platform_version_string;
+	size_t full_pcap_version_string_len;
+	char *full_pcap_version_string;
+
+	if (pcap_lib_version_string == NULL) {
+		/*
+		 * Generate the version string.
+		 * Get any platform-specific information.
+		 *
+		 * XXX - what about all the local capture modules other
+		 * that the "native interface" one?  That could make
+		 * the version string really long.
+		 */
+		platform_version_string = pcap_platform_lib_version();
+		if (platform_version_string == NULL) {
+			/*
+			 * No platform-specific information.
+			 */
+			pcap_lib_version_string = pcap_version_string;
+		} else {
+			/*
+			 * Add on the platform-specific information.
+			 */
+			full_pcap_version_string_len =
+			    strlen(pcap_version_string) + 2 + strlen(platform_version_string) + 1 + 1;
+			full_pcap_version_string =
+			    malloc(full_pcap_version_string_len);
+			if (full_pcap_version_string == NULL)
+				return (NULL);
+			pcap_snprintf(full_pcap_version_string,
+			    full_pcap_version_string_len,
+			    "%s (%s)", pcap_version_string,
+			    platform_version_string);
+			pcap_lib_version_string = full_pcap_version_string;
+		}
+	}
+	return (pcap_lib_version_string);
 }
 #endif
 
