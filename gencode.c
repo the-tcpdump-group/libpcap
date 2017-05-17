@@ -358,6 +358,11 @@ struct _compiler_state {
 	int is_geneve;
 
 	/*
+	 * TRUE if we need variable length part of VLAN offset
+	 */
+	int is_vlan_vloffset;
+
+	/*
 	 * These are offsets for the ATM pseudo-header.
 	 */
 	u_int off_vpi;
@@ -1095,6 +1100,11 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	 * And not Geneve.
 	 */
 	cstate->is_geneve = 0;
+
+	/*
+	 * No variable length VLAN offset by default
+	 */
+	cstate->is_vlan_vloffset = 0;
 
 	/*
 	 * And assume we're not doing SS7.
@@ -2820,6 +2830,28 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	case DLT_PPI:
 		s = gen_load_802_11_header_len(cstate, s, b->stmts);
 		break;
+	}
+
+	/*
+	 * If there there is no initialization yet and we need variable
+	 * length offsets for VLAN, initialize them to zero
+	 */
+	if (s == NULL && cstate->is_vlan_vloffset) {
+		struct slist *s2;
+
+		if (cstate->off_linkpl.reg == -1)
+			cstate->off_linkpl.reg = alloc_reg(cstate);
+		if (cstate->off_linktype.reg == -1)
+			cstate->off_linktype.reg = alloc_reg(cstate);
+
+		s = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
+		s->s.k = 0;
+		s2 = new_stmt(cstate, BPF_ST);
+		s2->s.k = cstate->off_linkpl.reg;
+		sappend(s, s2);
+		s2 = new_stmt(cstate, BPF_ST);
+		s2->s.k = cstate->off_linktype.reg;
+		sappend(s, s2);
 	}
 
 	/*
@@ -7969,6 +8001,83 @@ gen_ahostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 	/* NOTREACHED */
 }
 
+static void
+gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off, int v, struct slist *s)
+{
+	struct slist *s2;
+
+	if (!off->is_variable)
+		off->is_variable = 1;
+	if (off->reg == -1)
+		off->reg = alloc_reg(cstate);
+
+	s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
+	s2->s.k = off->reg;
+	sappend(s, s2);
+	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_IMM);
+	s2->s.k = v;
+	sappend(s, s2);
+	s2 = new_stmt(cstate, BPF_ST);
+	s2->s.k = off->reg;
+	sappend(s, s2);
+}
+
+static struct block *
+gen_vlan_no_bpf_extensions(compiler_state_t *cstate, int vlan_num, int vloff)
+{
+        struct block *b0, *b1, *b_ins;
+
+        /* check for VLAN, including QinQ */
+        b0 = gen_linktype(cstate, ETHERTYPE_8021Q);
+	b_ins = b0;
+        b1 = gen_linktype(cstate, ETHERTYPE_8021AD);
+        gen_or(b0,b1);
+        b0 = b1;
+        b1 = gen_linktype(cstate, ETHERTYPE_8021QINQ);
+        gen_or(b0,b1);
+        b0 = b1;
+
+        /* If a specific VLAN is requested, check VLAN id */
+        if (vlan_num >= 0) {
+                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_H,
+                              (bpf_int32)vlan_num, 0x0fff);
+                gen_and(b0, b1);
+                b0 = b1;
+        }
+
+	/*
+	 * Both payload and link header type follow the VLAN tags so that
+	 * both need to be updated.
+	 */
+	if (vloff) {
+		/* offset determined at run time, shift variable part */
+		struct slist s;
+
+		s.next = NULL;
+		cstate->is_vlan_vloffset = 1;
+		gen_vlan_vloffset_add(cstate, &cstate->off_linkpl, 4, &s);
+		gen_vlan_vloffset_add(cstate, &cstate->off_linktype, 4, &s);
+
+		/*
+		 * This is tricky. We need to insert the statements updating
+		 * variable parts of offsets before the VCI checks above but
+		 * we do not want this update to affect those checks. That's
+		 * why we generate them later and insert them there.
+		 * This wouldn't work if there already were variable length
+		 * link header when entering this function but we cannot get
+		 * here in that case.
+		 */
+		sappend(s.next, b_ins->stmts);
+		b_ins->stmts = s.next;
+	} else {
+		/* offset determined at compile time, shift constant part */
+		cstate->off_linkpl.constant_part += 4;
+		cstate->off_linktype.constant_part += 4;
+	}
+
+        return b0;
+}
+
 #if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
 static struct block *
 gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
@@ -7997,46 +8106,21 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
                 b0 = b1;
         }
 
+	/*
+	 * Even if kernel supports VLAN BPF extensions, (outermost) VLAN tag
+	 * can be either in metadata or in packet data; therefore if the
+	 * SK_AD_VLAN_TAG_PRESENT test is negative, we need to check link
+	 * header for VLAN tag. As the decision is done at run time,
+	 * we need gen_vlan_no_bpf_extensions() to update variable part of
+	 * the offsets rather than constant part.
+	 */
+        b1 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 1);
+        gen_or(b0, b1);
+        b0 = b1;
+
         return b0;
 }
 #endif
-
-static struct block *
-gen_vlan_no_bpf_extensions(compiler_state_t *cstate, int vlan_num)
-{
-        struct block *b0, *b1;
-
-        /* check for VLAN, including QinQ */
-        b0 = gen_linktype(cstate, ETHERTYPE_8021Q);
-        b1 = gen_linktype(cstate, ETHERTYPE_8021AD);
-        gen_or(b0,b1);
-        b0 = b1;
-        b1 = gen_linktype(cstate, ETHERTYPE_8021QINQ);
-        gen_or(b0,b1);
-        b0 = b1;
-
-        /* If a specific VLAN is requested, check VLAN id */
-        if (vlan_num >= 0) {
-                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_H,
-                              (bpf_int32)vlan_num, 0x0fff);
-                gen_and(b0, b1);
-                b0 = b1;
-        }
-
-	/*
-	 * The payload follows the full header, including the
-	 * VLAN tags, so skip past this VLAN tag.
-	 */
-        cstate->off_linkpl.constant_part += 4;
-
-	/*
-	 * The link-layer type information follows the VLAN tags, so
-	 * skip past this VLAN tag.
-	 */
-        cstate->off_linktype.constant_part += 4;
-
-        return b0;
-}
 
 /*
  * support IEEE 802.1Q VLAN trunk over ethernet
@@ -8098,17 +8182,17 @@ gen_vlan(compiler_state_t *cstate, int vlan_num)
 			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
 				b0 = gen_vlan_bpf_extensions(cstate, vlan_num);
 			else
-				b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
+				b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 0);
 		} else
 #endif
-			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
+			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 0);
                 break;
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
-		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
+		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 0);
 		break;
 
 	default:
