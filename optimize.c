@@ -590,7 +590,7 @@ F(opt_state_t *opt_state, int code, int v0, int v1)
 static inline void
 vstore(struct stmt *s, int *valp, int newval, int alter)
 {
-	if (alter && *valp == newval)
+	if (alter && newval != 0 && *valp == newval)
 		s->code = NOP;
 	else
 		*valp = newval;
