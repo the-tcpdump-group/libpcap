@@ -2346,10 +2346,8 @@ dot_dump(compiler_state_t *cstate, struct icode *ic)
 	f.bf_insns = icode_to_fcode(cstate, ic, ic->root, &f.bf_len);
 
 	fprintf(out, "digraph BPF {\n");
-	ic->cur_mark = 0;
 	unMarkAll(ic);
 	dot_dump_node(ic, ic->root, &f, out);
-	ic->cur_mark = 0;
 	unMarkAll(ic);
 	dot_dump_edge(ic, ic->root, out);
 	fprintf(out, "}\n");
