@@ -13,7 +13,7 @@ env:
   global:
     # encrypted COVERITY_SCAN_TOKEN from
     # https://scan.coverity.com/projects/<project_id>/submit_build?tab=travis_ci
-    - secure: "WnSilJ28kIEu9GID24PgRz6T0xC0VGNFGRPmoWRN3DEj/lPcMqb8HxNcdWpaDt4tQi2PVOIujV5ApHr0xJrw8A9Ix7nBTaZRedrLvsA2uugCTZZMH0OHWJDus7/m6zcdsp3D12ddJIHeqabVe790EfkeSQGDtSBeHlpilQ0BuYU="
+    - secure: "SwNcek+I4lMVcnb5EGGmNm6ljWN6C/mnXzBr82a5rEQNKxAoJfdvvPpKIp0iEfg5j0PtYlcRHoIDyVZ/6QM/WEw0wrio9Z0cio9hkOS6kV8g2QouXfnoNtKJ5nNso7UD2GPJ9+M0GIR1GZ0Edvxr81sHlNAkpVKydYGBwCIMGyg="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
     - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
