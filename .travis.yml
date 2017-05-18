@@ -54,6 +54,7 @@ addons:
       - libdbus-glib-1-dev
       - libbluetooth-dev
       - libnl-genl-3-dev
+      - libibverbs-dev
 
 git:
   quiet: true
