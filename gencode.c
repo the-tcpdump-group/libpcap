@@ -8001,6 +8001,53 @@ gen_ahostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 	/* NOTREACHED */
 }
 
+static struct block *
+gen_vlan_tpid_test(compiler_state_t *cstate)
+{
+	struct block *b0, *b1;
+
+	/* check for VLAN, including QinQ */
+	b0 = gen_linktype(cstate, ETHERTYPE_8021Q);
+	b1 = gen_linktype(cstate, ETHERTYPE_8021AD);
+	gen_or(b0,b1);
+	b0 = b1;
+	b1 = gen_linktype(cstate, ETHERTYPE_8021QINQ);
+	gen_or(b0,b1);
+
+	return b1;
+}
+
+static struct block *
+gen_vlan_vid_test(compiler_state_t *cstate, int vlan_num)
+{
+	return gen_mcmp(cstate, OR_LINKPL, 0, BPF_H, (bpf_int32)vlan_num, 0x0fff);
+}
+
+static struct block *
+gen_vlan_no_bpf_extensions(compiler_state_t *cstate, int vlan_num)
+{
+	struct block *b0, *b1;
+
+	b0 = gen_vlan_tpid_test(cstate);
+
+	if (vlan_num >= 0) {
+		b1 = gen_vlan_vid_test(cstate, vlan_num);
+		gen_and(b0, b1);
+		b0 = b1;
+	}
+
+	/*
+	 * Both payload and link header type follow the VLAN tags so that
+	 * both need to be updated.
+	 */
+	cstate->off_linkpl.constant_part += 4;
+	cstate->off_linktype.constant_part += 4;
+
+	return b0;
+}
+
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+/* add v to variable part of off */
 static void
 gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off, int v, struct slist *s)
 {
@@ -8022,67 +8069,75 @@ gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off, int v, stru
 	sappend(s, s2);
 }
 
-static struct block *
-gen_vlan_no_bpf_extensions(compiler_state_t *cstate, int vlan_num, int vloff)
+/*
+ * patch block b_tpid (VLAN TPID test) to update variable parts of link payload
+ * and link type offsets first
+ */
+static void
+gen_vlan_patch_tpid_test(compiler_state_t *cstate, struct block *b_tpid)
 {
-        struct block *b0, *b1, *b_ins;
+	struct slist s;
 
-        /* check for VLAN, including QinQ */
-        b0 = gen_linktype(cstate, ETHERTYPE_8021Q);
-	b_ins = b0;
-        b1 = gen_linktype(cstate, ETHERTYPE_8021AD);
-        gen_or(b0,b1);
-        b0 = b1;
-        b1 = gen_linktype(cstate, ETHERTYPE_8021QINQ);
-        gen_or(b0,b1);
-        b0 = b1;
+	/* offset determined at run time, shift variable part */
+	s.next = NULL;
+	cstate->is_vlan_vloffset = 1;
+	gen_vlan_vloffset_add(cstate, &cstate->off_linkpl, 4, &s);
+	gen_vlan_vloffset_add(cstate, &cstate->off_linktype, 4, &s);
 
-        /* If a specific VLAN is requested, check VLAN id */
-        if (vlan_num >= 0) {
-                b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_H,
-                              (bpf_int32)vlan_num, 0x0fff);
-                gen_and(b0, b1);
-                b0 = b1;
-        }
-
-	/*
-	 * Both payload and link header type follow the VLAN tags so that
-	 * both need to be updated.
-	 */
-	if (vloff) {
-		/* offset determined at run time, shift variable part */
-		struct slist s;
-
-		s.next = NULL;
-		cstate->is_vlan_vloffset = 1;
-		gen_vlan_vloffset_add(cstate, &cstate->off_linkpl, 4, &s);
-		gen_vlan_vloffset_add(cstate, &cstate->off_linktype, 4, &s);
-
-		/*
-		 * This is tricky. We need to insert the statements updating
-		 * variable parts of offsets before the VCI checks above but
-		 * we do not want this update to affect those checks. That's
-		 * why we generate them later and insert them there.
-		 * This wouldn't work if there already were variable length
-		 * link header when entering this function but we cannot get
-		 * here in that case.
-		 */
-		sappend(s.next, b_ins->stmts);
-		b_ins->stmts = s.next;
-	} else {
-		/* offset determined at compile time, shift constant part */
-		cstate->off_linkpl.constant_part += 4;
-		cstate->off_linktype.constant_part += 4;
-	}
-
-        return b0;
+	/* we get a pointer to a chain of or-ed blocks, patch first of them */
+	sappend(s.next, b_tpid->head->stmts);
+	b_tpid->head->stmts = s.next;
 }
 
-#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+/*
+ * patch block b_vid (VLAN id test) to load VID value either from packet
+ * metadata (using BPF extensions) if SKF_AD_VLAN_TAG_PRESENT is true
+ */
+static void
+gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
+{
+	struct slist *s, *s2, *sjeq;
+	unsigned cnt;
+
+	s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
+	s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT;
+
+	/* true -> next instructions, false -> beginning of b_vid */
+	sjeq = new_stmt(cstate, JMP(BPF_JEQ));
+	sjeq->s.k = 1;
+	sjeq->s.jf = b_vid->stmts;
+	sappend(s, sjeq);
+
+	s2 = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
+	s2->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG;
+	sappend(s, s2);
+	sjeq->s.jt = s2;
+
+	/* jump to the test in b_vid (bypass loading VID from packet data) */
+	cnt = 0;
+	for (s2 = b_vid->stmts; s2; s2 = s2->next)
+		cnt++;
+	s2 = new_stmt(cstate, JMP(BPF_JA));
+	s2->s.k = cnt;
+	sappend(s, s2);
+
+	/* insert our statements at the beginning of b_vid */
+	sappend(s, b_vid->stmts);
+	b_vid->stmts = s;
+}
+
+/*
+ * Generate check for "vlan" or "vlan <id>" on systems with support for BPF
+ * extensions.  Even if kernel supports VLAN BPF extensions, (outermost) VLAN
+ * tag can be either in metadata or in packet data; therefore if the
+ * SKF_AD_VLAN_TAG_PRESENT test is negative, we need to check link
+ * header for VLAN tag. As the decision is done at run time, we need
+ * update variable part of the offsets
+ */
 static struct block *
 gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
 {
-        struct block *b0, *b1;
+        struct block *b0, *b_tpid, *b_vid;
         struct slist *s;
 
         /* generate new filter code based on extracting packet
@@ -8094,29 +8149,29 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
         b0->stmts = s;
         b0->s.k = 1;
 
-        if (vlan_num >= 0) {
-                s = new_stmt(cstate, BPF_LD|BPF_B|BPF_ABS);
-                s->s.k = SKF_AD_OFF + SKF_AD_VLAN_TAG;
-
-                b1 = new_block(cstate, JMP(BPF_JEQ));
-                b1->stmts = s;
-                b1->s.k = (bpf_int32) vlan_num;
-
-                gen_and(b0,b1);
-                b0 = b1;
-        }
-
 	/*
-	 * Even if kernel supports VLAN BPF extensions, (outermost) VLAN tag
-	 * can be either in metadata or in packet data; therefore if the
-	 * SK_AD_VLAN_TAG_PRESENT test is negative, we need to check link
-	 * header for VLAN tag. As the decision is done at run time,
-	 * we need gen_vlan_no_bpf_extensions() to update variable part of
-	 * the offsets rather than constant part.
+	 * This is tricky. We need to insert the statements updating variable
+	 * parts of offsets before the the traditional TPID and VID tests so
+	 * that they are called whenever SKF_AD_VLAN_TAG_PRESENT fails but
+	 * we do not want this update to affect those checks. That's why we
+	 * generate both test blocks first and insert the statements updating
+	 * variable parts of both offsets after that. This wouldn't work if
+	 * there already were variable length link header when entering this
+	 * function but gen_vlan_bpf_extensions() isn't called in that case.
 	 */
-        b1 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 1);
-        gen_or(b0, b1);
-        b0 = b1;
+	b_tpid = gen_vlan_tpid_test(cstate);
+	if (vlan_num >= 0)
+		b_vid = gen_vlan_vid_test(cstate, vlan_num);
+
+	gen_vlan_patch_tpid_test(cstate, b_tpid);
+	gen_or(b0, b_tpid);
+	b0 = b_tpid;
+
+	if (vlan_num >= 0) {
+		gen_vlan_patch_vid_test(cstate, b_vid);
+		gen_and(b0, b_vid);
+		b0 = b_vid;
+	}
 
         return b0;
 }
@@ -8182,17 +8237,17 @@ gen_vlan(compiler_state_t *cstate, int vlan_num)
 			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
 				b0 = gen_vlan_bpf_extensions(cstate, vlan_num);
 			else
-				b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 0);
+				b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
 		} else
 #endif
-			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 0);
+			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
                 break;
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
-		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, 0);
+		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
 		break;
 
 	default:
