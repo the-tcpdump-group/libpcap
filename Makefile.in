@@ -292,6 +292,7 @@ EXTRA_DIST = \
 	fad-getad.c \
 	fad-gifc.c \
 	fad-glifc.c \
+	gen_def.sh \
 	gen_version_c.sh \
 	gen_version_header.sh \
 	grammar.y \
@@ -371,6 +372,7 @@ EXTRA_DIST = \
 	pcap_version.h.in \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
+	Win32/Prj/wpcap.def \
 	Win32/Prj/wpcap.sln \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
