@@ -375,7 +375,7 @@ EXTRA_DIST = \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
 
-all: libpcap.a shared $(RPCAPD) pcap-config
+all: libpcap.a shared $(RPCAPD) pcap-config gen_def
 
 libpcap.a: $(OBJ)
 	@rm -f $@
@@ -537,6 +537,12 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
 	mv $@.tmp $@
 	chmod a+x $@
+
+# 
+# Generate/Update module definition file (Win32/Prj/wpcap.def) 
+# 
+gen_def:
+	$(srcdir)/gen_def.sh
 
 #
 # Remote pcap daemon.
