@@ -544,6 +544,7 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 # Generate/Update module definition file (Win32/Prj/wpcap.def) 
 # 
 gen_def:
+	chmod a+x gen_def.sh
 	$(srcdir)/gen_def.sh
 
 #
