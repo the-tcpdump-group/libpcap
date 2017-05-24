@@ -13,7 +13,7 @@ cpp -dM -undef < /dev/null > /dev/null || stop "Compiler does not support \
 export LC_ALL=C
 
 HEADER='LIBRARY wpcap.dll\nEXPORTS'
-TMPFILE=DELETEME.c
+TMPFILE=DELETEME
 DEF=Win32/Prj/wpcap.def
 
 # Don't include anything and make sure that the names of all PCAP_API
@@ -37,7 +37,7 @@ echo $HEADER > $DEF
 
 # Run the preprocessor on $TMPFILE with *just* these things defined and do some
 # command-line kung-fu with the result.
-cpp -E -undef -D_WIN32 -DBUILDING_PCAP -DINET6 $TMPFILE \
+cpp -E -xc -undef -D_WIN32 -DBUILDING_PCAP -DINET6 $TMPFILE \
 | grep '__declspec(dllexport)' \
 | cut -c 3- \
 | cut -f4 -d" " \
