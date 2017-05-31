@@ -83,7 +83,13 @@ YACC = @YACC@
 	@rm -f $@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @BT_MONITOR_SRC@ @NETFILTER_SRC@ @DBUS_SRC@
+PSRC =	pcap-@V_PCAP@.c \
+	@USB_SRC@ \
+	@BT_SRC@ \
+	@BT_MONITOR_SRC@ \
+	@NETFILTER_SRC@ \
+	@DBUS_SRC@ \
+	@NETMAP_SRC@
 FSRC =  @V_FINDALLDEVS@
 SSRC =  @SSRC@
 CSRC =	pcap.c inet.c gencode.c optimize.c nametoaddr.c \
@@ -345,6 +351,8 @@ EXTRA_DIST = \
 	pcap-new.c \
 	pcap-netfilter-linux.c \
 	pcap-netfilter-linux.h \
+	pcap-netmap.c \
+	pcap-netmap.h \
 	pcap-nit.c \
 	pcap-null.c \
 	pcap-pf.c \

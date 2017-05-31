@@ -277,6 +277,9 @@
 /* target host supports netfilter sniffing */
 #undef PCAP_SUPPORT_NETFILTER
 
+/* target host supports netmap */
+#undef PCAP_SUPPORT_NETMAP
+
 /* use Linux packet ring capture if available */
 #undef PCAP_SUPPORT_PACKET_RING
 

@@ -120,6 +120,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-netfilter-linux.h"
 #endif
 
+#ifdef PCAP_SUPPORT_NETMAP
+#include "pcap-netmap.h"
+#endif
+
 #ifdef PCAP_SUPPORT_DBUS
 #include "pcap-dbus.h"
 #endif
@@ -349,6 +353,9 @@ static struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_NETFILTER
 	{ netfilter_findalldevs, netfilter_create },
+#endif
+#ifdef PCAP_SUPPORT_NETFILTER
+	{ pcap_netmap_findalldevs, pcap_netmap_create },
 #endif
 #ifdef PCAP_SUPPORT_DBUS
 	{ dbus_findalldevs, dbus_create },

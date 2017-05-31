@@ -1640,6 +1640,25 @@ fi
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
 AC_SUBST(NETFILTER_SRC)
 
+AC_ARG_ENABLE([netmap],
+[AC_HELP_STRING([--enable-netmap],[enable netmap support @<:@default=yes, if support available@:>@])],
+    [],
+    [enable_netmap=yes])
+
+if test "x$enable_netmap" != "xno" ; then
+	dnl check for netmap support
+	AC_CHECK_HEADER(net/netmap_user.h,
+		[ AC_DEFINE(PCAP_SUPPORT_NETMAP, 1, [target host supports netmap])
+		NETMAP_SRC=pcap-netmap.c
+		AC_MSG_NOTICE(netmap is supported)],
+		AC_MSG_NOTICE(netmap is not supported),
+		AC_INCLUDES_DEFAULT
+	   )
+	AC_SUBST(PCAP_SUPPORT_NETMAP)
+	AC_SUBST(NETMAP_SRC)
+fi
+
+
 AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
     [],
