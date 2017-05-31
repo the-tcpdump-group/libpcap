@@ -188,19 +188,19 @@ static int
 pcap_netmap_activate(pcap_t *p)
 {
 	struct pcap_netmap *pn = p->priv;
-	struct nm_desc *d = nm_open(p->opt.source, NULL, 0, NULL);
+	struct nm_desc *d = nm_open(p->opt.device, NULL, 0, NULL);
 	uint32_t if_flags = 0;
 
 	if (d == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			"netmap open: cannot access %s: %s\n",
-			p->opt.source, pcap_strerror(errno));
+			p->opt.device, pcap_strerror(errno));
 		pcap_cleanup_live_common(p);
 		return (PCAP_ERROR);
 	}
 	if (0)
 	    fprintf(stderr, "%s device %s priv %p fd %d ports %d..%d\n",
-		__FUNCTION__, p->opt.source, d, d->fd,
+		__FUNCTION__, p->opt.device, d, d->fd,
 		d->first_rx_ring, d->last_rx_ring);
 	pn->d = d;
 	p->fd = d->fd;
