@@ -244,11 +244,12 @@ pcap_netmap_create(const char *device, char *ebuf, int *is_ours)
 }
 
 /*
- * XXX - is there a way to enumerate the netmap devices?
+ * The "device name" for netmap devices isn't a name for a device, it's
+ * an expression that indicates how the device should be set up, so
+ * there's no way to enumerate them.
  */
 int
-pcap_netmap_findalldevs(pcap_if_list_t *devlistp, char *err_str)
+pcap_netmap_findalldevs(pcap_if_list_t *devlistp _U_, char *err_str _U_)
 {
 	return 0;
 }
-
