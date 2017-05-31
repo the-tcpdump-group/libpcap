@@ -354,7 +354,7 @@ static struct capture_source_type {
 #ifdef PCAP_SUPPORT_NETFILTER
 	{ netfilter_findalldevs, netfilter_create },
 #endif
-#ifdef PCAP_SUPPORT_NETFILTER
+#ifdef PCAP_SUPPORT_NETMAP
 	{ pcap_netmap_findalldevs, pcap_netmap_create },
 #endif
 #ifdef PCAP_SUPPORT_DBUS
