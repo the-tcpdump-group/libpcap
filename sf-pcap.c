@@ -242,6 +242,17 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	p->version_minor = hdr.version_minor;
 	p->tzoff = hdr.thiszone;
 	p->snapshot = hdr.snaplen;
+	if (p->snapshot <= 0) {
+		/*
+		 * Bogus snapshot length; use the maximum for this
+		 * link-layer type as a fallback.
+		 *
+		 * XXX - the only reason why snapshot is signed is
+		 * that pcap_snapshot() returns an int, not an
+		 * unsigned int.
+		 */
+		p->snapshot = max_snaplen_for_dlt(hdr.linktype);
+	}
 	p->linktype = linktype_to_dlt(LT_LINKTYPE(hdr.linktype));
 	p->linktype_ext = LT_LINKTYPE_EXT(hdr.linktype);
 
@@ -377,20 +388,16 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 	/*
 	 * Allocate a buffer for the packet data.
-	 * Don't allocate more than MAXIMUM_SNAPLEN.
+	 * Choose the minimum of the file's snapshot length and 2K bytes;
+	 * that should be enough for most network packets - we'll grow it
+	 * if necessary.  That way, we don't allocate a huge chunk of
+	 * memory just because there's a huge snapshot length, as the
+	 * snapshot length might be larger than the size of the largest
+	 * packet.
 	 */
 	p->bufsize = p->snapshot;
-	if (p->bufsize > MAXIMUM_SNAPLEN) {
-		/*
-		 * Too-large snapshot length; trim it at the maximum.
-		 */
-		p->bufsize = MAXIMUM_SNAPLEN;
-	} else if (p->bufsize <= 0) {
-		/*
-		 * Bogus snapshot length; use the maximum as a fallback.
-		 */
-		p->bufsize = MAXIMUM_SNAPLEN;
-	}
+	if (p->bufsize > 2048)
+		p->bufsize = 2048;
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
@@ -402,6 +409,24 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	p->cleanup_op = sf_cleanup;
 
 	return (p);
+}
+
+/*
+ * Grow the packet buffer to the specified size.
+ */
+static int
+grow_buffer(pcap_t *p, u_int bufsize)
+{
+	void *bigger_buffer;
+
+	bigger_buffer = realloc(p->buffer, bufsize);
+	if (bigger_buffer == NULL) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "out of memory");
+		return (0);
+	}
+	p->buffer = bigger_buffer;
+	p->bufsize = bufsize;
+	return (1);
 }
 
 /*
@@ -506,33 +531,71 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		break;
 	}
 
-	if (hdr->caplen > p->bufsize) {
+	/*
+	 * Is the packet bigger than we consider sane?
+	 */
+	if (hdr->caplen > max_snaplen_for_dlt(p->linktype)) {
 		/*
+		 * Yes.  This may be a damaged or fuzzed file.
+		 *
+		 * Is it bigger than the snapshot length?
+		 * (We don't treat that as an error if it's not
+		 * bigger than the maximum we consider sane; see
+		 * below.)
+		 */
+		if (hdr->caplen > (bpf_u_int32)p->snapshot) {
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "invalid packet capture length %u, bigger than "
+			    "snaplen of %d", hdr->caplen, p->snapshot);
+		} else {
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "invalid packet capture length %u, bigger than "
+			    "maximum of %u", hdr->caplen,
+			    max_snaplen_for_dlt(p->linktype));
+		}
+		return (-1);
+	}
+
+	if (hdr->caplen > (bpf_u_int32)p->snapshot) {
+		/*
+		 * The packet is bigger than the snapshot length
+		 * for this file.
+		 *
 		 * This can happen due to Solaris 2.3 systems tripping
 		 * over the BUFMOD problem and not setting the snapshot
-		 * correctly in the savefile header.
-		 * This can also happen with a corrupted savefile or a
-		 * savefile built/modified by a fuzz tester.
-		 * If the caplen isn't grossly wrong, try to salvage.
+		 * length correctly in the savefile header.
+		 *
+		 * libpcap 0.4 and later on Solaris 2.3 should set the
+		 * snapshot length correctly in the pcap file header,
+		 * even though they don't set a snapshot length in bufmod
+		 * (the buggy bufmod chops off the *beginning* of the
+		 * packet if a snapshot length is specified); they should
+		 * also reduce the captured length, as supplied to the
+		 * per-packet callback, to the snapshot length if it's
+		 * greater than the snapshot length, so the code using
+		 * libpcap should see the packet cut off at the snapshot
+		 * length, even though the full packet is copied up to
+		 * userland.
+		 *
+		 * However, perhaps some versions of libpcap failed to
+		 * set the snapshot length currectly in the file header
+		 * or the per-packet header,  or perhaps this is a
+		 * corrupted safefile or a savefile built/modified by a
+		 * fuzz tester, so we check anyway.
 		 */
 		size_t bytes_to_discard;
 		size_t bytes_to_read, bytes_read;
 		char discard_buf[4096];
 
-		if (hdr->caplen > MAXIMUM_SNAPLEN) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "invalid packet capture length %u, bigger than "
-			    "maximum of %u", hdr->caplen, MAXIMUM_SNAPLEN);
-			return (-1);
+		if (hdr->caplen > p->bufsize) {
+			/*
+			 * Grow the buffer to the snapshot length.
+			 */
+			if (!grow_buffer(p, p->snapshot))
+				return (-1);
 		}
 
 		/*
-		 * XXX - we don't grow the buffer here because some
-		 * program might assume that it will never get packets
-		 * bigger than the snapshot length; for example, it might
-		 * copy data from our buffer to a buffer of its own,
-		 * allocated based on the return value of pcap_snapshot().
-		 *
 		 * Read the first p->bufsize bytes into the buffer.
 		 */
 		amt_read = fread(p->buffer, 1, p->bufsize, fp);
@@ -588,6 +651,32 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 */
 		hdr->caplen = p->bufsize;
 	} else {
+		if (hdr->caplen > p->bufsize) {
+			/*
+			 * Grow the buffer to the next power of 2, or
+			 * the snaplen, whichever is lower.
+			 */
+			u_int new_bufsize;
+
+			new_bufsize = hdr->caplen;
+			/*
+			 * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+			 */
+			new_bufsize--;
+			new_bufsize |= new_bufsize >> 1;
+			new_bufsize |= new_bufsize >> 2;
+			new_bufsize |= new_bufsize >> 4;
+			new_bufsize |= new_bufsize >> 8;
+			new_bufsize |= new_bufsize >> 16;
+			new_bufsize++;
+
+			if (new_bufsize > (u_int)p->snapshot)
+				new_bufsize = p->snapshot;
+
+			if (!grow_buffer(p, new_bufsize))
+				return (-1);
+		}
+
 		/* read the packet itself */
 		amt_read = fread(p->buffer, 1, hdr->caplen, fp);
 		if (amt_read != hdr->caplen) {

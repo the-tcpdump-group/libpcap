@@ -1196,7 +1196,22 @@ linktype_to_dlt(int linktype)
 	return linktype;
 }
 
-#define EXTRACT_
+/*
+ * Return the maximum snapshot length for a given DLT_ value.
+ *
+ * For most link-layer types, we use MAXIMUM_SNAPLEN, but for DLT_DBUS,
+ * the maximum is 134217728, as per
+ *
+ *    https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-messages
+ */
+u_int
+max_snaplen_for_dlt(int dlt)
+{
+	if (dlt == DLT_DBUS)
+		return 134217728;
+	else
+		return MAXIMUM_SNAPLEN;
+}
 
 /*
  * DLT_LINUX_SLL packets with a protocol type of LINUX_SLL_P_CAN or

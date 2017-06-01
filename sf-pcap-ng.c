@@ -215,19 +215,15 @@ struct pcap_ng_if {
 	u_int64_t tsoffset;		/* time stamp offset */
 };
 
-struct pcap_ng_sf {
-	u_int user_tsresol;		/* time stamp resolution requested by the user */
-	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
-	bpf_u_int32 ifaces_size;	/* size of array below */
-	struct pcap_ng_if *ifaces;	/* array of interface information */
-};
-
 /*
- * Maximum block size; we reject blocks bigger than this, so we don't
- * consume too much memory with a truly huge block.
+ * Per-pcap_t private data.
  *
- * We define it as the size of an EPB with a MAXIMUM_SNAPLEN-sized
- * packet and 128KB of options.
+ * max_blocksize is the maximum size of a block that we'll accept.  We
+ * reject blocks bigger than this, so we don't consume too much memory
+ * with a truly huge block.  It can change as we see IDBs with different
+ * link-layer header types.  (Currently, we don't support IDBs with
+ * different link-layer header types, but we will support it in the
+ * future, when we offer file-reading APIs that support it.)
  *
  * XXX - that's an issue on ILP32 platforms, where the maximum block
  * size of 2^31-1 would eat all but one byte of the entire address space.
@@ -235,12 +231,28 @@ struct pcap_ng_sf {
  * of the address space may be limited by 1) the number of *significant*
  * address bits (currently, x86-64 only supports 48 bits of address), 2)
  * any limitations imposed by the operating system; 3) any limitations
- * imposed by the amount of available backing store for anonymous pages.
+ * imposed by the amount of available backing store for anonymous pages,
+ * so we impose a limit regardless of the size of a pointer.
  */
-#define MAX_BLOCKSIZE	(sizeof (struct block_header) + \
-			 sizeof (struct enhanced_packet_block) + \
-			 MAXIMUM_SNAPLEN + 131072 + \
-			 sizeof (struct block_trailer))
+struct pcap_ng_sf {
+	u_int user_tsresol;		/* time stamp resolution requested by the user */
+	u_int max_blocksize;		/* don't grow buffer size past this */
+	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
+	bpf_u_int32 ifaces_size;	/* size of array below */
+	struct pcap_ng_if *ifaces;	/* array of interface information */
+};
+
+/*
+ * Maximum block size for a given maximum snapshot length; we calculate
+ * this based 
+ *
+ * We define it as the size of an EPB with a max_snaplen-sized
+ * packet and 128KB of options.
+ */
+#define MAX_BLOCKSIZE(max_snaplen)	(sizeof (struct block_header) + \
+					 sizeof (struct enhanced_packet_block) + \
+					 (max_snaplen) + 131072 + \
+					 sizeof (struct block_trailer))
 
 static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
@@ -274,10 +286,13 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 static int
 read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 {
+	struct pcap_ng_sf *ps;
 	int status;
 	struct block_header bhdr;
 	u_char *bdata;
 	size_t data_remaining;
+
+	ps = p->priv;
 
 	status = read_bytes(fp, &bhdr, sizeof(bhdr), 0, errbuf);
 	if (status <= 0)
@@ -324,9 +339,9 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 		 */
 		void *bigger_buffer;
 
-		if (bhdr.total_length > MAX_BLOCKSIZE) {
+		if (bhdr.total_length > ps->max_blocksize) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "block is larger than maximum block size %u",
-			    (u_int) MAX_BLOCKSIZE);
+			    ps->max_blocksize);
 			return (-1);
 		}
 		bigger_buffer = realloc(p->buffer, bhdr.total_length);
@@ -873,7 +888,11 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 *	Packet Block containing a full-size Ethernet frame, and
 	 *	leaving room for some options.
 	 *
-	 * If we find a bigger block, we reallocate the buffer.
+	 * If we find a bigger block, we reallocate the buffer, up to
+	 * the maximum size.  We start out with a maximum size based
+	 * on a maximum snapshot length of MAXIMUM_SNAPLEN; if we see
+	 * any link-layer header types with a larger maximum snapshot
+	 * length, we boost the maximum.
 	 */
 	p->bufsize = 2048;
 	if (p->bufsize < total_length)
@@ -885,6 +904,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		*err = 1;
 		return (NULL);
 	}
+	ps->max_blocksize = MAX_BLOCKSIZE(MAXIMUM_SNAPLEN);
 
 	/*
 	 * Copy the stuff we've read to the buffer, and read the rest
@@ -995,8 +1015,27 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 done:
 	p->tzoff = 0;	/* XXX - not used in pcap */
 	p->snapshot = idbp->snaplen;
+	if (p->snapshot <= 0) {
+		/*
+		 * Bogus snapshot length; use the maximum for this
+		 * link-layer type as a fallback.
+		 *
+		 * XXX - the only reason why snapshot is signed is
+		 * that pcap_snapshot() returns an int, not an
+		 * unsigned int.
+		 */
+		p->snapshot = max_snaplen_for_dlt(idbp->linktype);
+	}
 	p->linktype = linktype_to_dlt(idbp->linktype);
 	p->linktype_ext = 0;
+
+	/*
+	 * If the maximum block size for a packet with the maximum
+	 * snapshot length for this DLT_ is bigger than the current
+	 * maximum block size, increase the maximum.
+	 */
+	if (MAX_BLOCKSIZE(max_snaplen_for_dlt(p->linktype)) > ps->max_blocksize)
+		ps->max_blocksize = MAX_BLOCKSIZE(max_snaplen_for_dlt(p->linktype));
 
 	p->next_packet_op = pcap_ng_next_packet;
 	p->cleanup_op = pcap_ng_cleanup;
