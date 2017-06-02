@@ -1003,6 +1003,17 @@ pcap_activate_win32(pcap_t *p)
 		break;
 	}
 
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
+
 	/* Set promiscuous mode */
 	if (p->opt.promisc)
 	{
@@ -1074,13 +1085,14 @@ pcap_activate_win32(pcap_t *p)
 				goto bad;
 			}
 		}
-	}
-	else
+	} else {
+		/*
+		 * Dag Card
+		 */
 #ifdef HAVE_DAG_API
-	{
-	/*
-	 * Dag Card
-	 */
+		/*
+		 * We have DAG support.
+		 */
 		LONG	status;
 		HKEY	dagkey;
 		DWORD	lptype;
@@ -1114,15 +1126,18 @@ pcap_activate_win32(pcap_t *p)
 		while(FALSE);
 
 
-		p->snapshot = PacketSetSnapLen(p->adapter, snaplen);
+		p->snapshot = PacketSetSnapLen(p->adapter, p->snapshot);
 
 		/* Set the length of the FCS associated to any packet. This value
 		 * will be subtracted to the packet length */
 		pw->dag_fcs_bits = p->adapter->DagFcsLen;
-	}
-#else
-	goto bad;
+#else /* HAVE_DAG_API */
+		/*
+		 * No DAG support.
+		 */
+		goto bad;
 #endif /* HAVE_DAG_API */
+	}
 
 	PacketSetReadTimeout(p->adapter, p->opt.timeout);
 

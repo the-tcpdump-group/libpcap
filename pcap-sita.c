@@ -992,6 +992,18 @@ static int pcap_activate_sita(pcap_t *handle) {
 	    &handle->linktype);
 	if (fd == -1)
 		return PCAP_ERROR;
+
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
+		handle->snapshot = MAXIMUM_SNAPLEN;
+
 	handle->fd = fd;
 	handle->bufsize = handle->snapshot;
 

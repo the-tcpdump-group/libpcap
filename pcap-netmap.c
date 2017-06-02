@@ -188,9 +188,10 @@ static int
 pcap_netmap_activate(pcap_t *p)
 {
 	struct pcap_netmap *pn = p->priv;
-	struct nm_desc *d = nm_open(p->opt.device, NULL, 0, NULL);
+	struct nm_desc *d;
 	uint32_t if_flags = 0;
 
+	d = nm_open(p->opt.device, NULL, 0, NULL);
 	if (d == NULL) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			"netmap open: cannot access %s: %s\n",
@@ -204,6 +205,18 @@ pcap_netmap_activate(pcap_t *p)
 		d->first_rx_ring, d->last_rx_ring);
 	pn->d = d;
 	p->fd = d->fd;
+
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
+
 	if (p->opt.promisc && !(d->req.nr_ringid & NETMAP_SW_RING)) {
 		pcap_netmap_ioctl(p, SIOCGIFFLAGS, &if_flags); /* fetch flags */
 		if (!(if_flags & IFF_PPROMISC)) {

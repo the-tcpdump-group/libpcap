@@ -479,6 +479,17 @@ netfilter_activate(pcap_t* handle)
 		group_count = 1;
 	}
 
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
+		handle->snapshot = MAXIMUM_SNAPLEN;
+
 	/* Initialize some components of the pcap structure. */
 	handle->bufsize = 128 + handle->snapshot;
 	handle->offset = 0;

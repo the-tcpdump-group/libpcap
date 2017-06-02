@@ -2176,6 +2176,21 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		    "malloc: %s", pcap_strerror(errno));
 		return NULL;
 	}
+
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 *
+	 * XXX - should we leave this up to the remote server to
+	 * do?
+	 */
+	if (snaplen <= 0 || snaplen > MAXIMUM_SNAPLEN)
+		snaplen = MAXIMUM_SNAPLEN;
+
 	fp->opt.device = source_str;
 	fp->snapshot = snaplen;
 	fp->opt.timeout = read_timeout;

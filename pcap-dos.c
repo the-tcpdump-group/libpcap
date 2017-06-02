@@ -174,6 +174,17 @@ static int pcap_activate_dos (pcap_t *pcap)
     return (PCAP_ERROR_RFMON_NOTSUP);
   }
 
+  /*
+   * Turn a negative snapshot value (invalid), a snapshot value of
+   * 0 (unspecified), or a value bigger than the normal maximum
+   * value, into the maximum allowed value.
+   *
+   * If some application really *needs* a bigger snapshot
+   * length, we should just increase MAXIMUM_SNAPLEN.
+   */
+  if (pcap->snapshot <= 0 || pcap->snapshot > MAXIMUM_SNAPLEN)
+    pcap->snapshot = MAXIMUM_SNAPLEN;
+
   if (pcap->snapshot < ETH_MIN+8)
       pcap->snapshot = ETH_MIN+8;
 

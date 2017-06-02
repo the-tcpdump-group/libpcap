@@ -323,6 +323,17 @@ pcap_activate_snoop(pcap_t *p)
 		return (PCAP_ERROR_RFMON_NOTSUP);
 	}
 
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
+
 #ifdef SIOCGIFMTU
 	/*
 	 * XXX - IRIX appears to give you an error if you try to set the

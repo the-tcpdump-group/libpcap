@@ -334,6 +334,18 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 			p->opt.device, pcap_strerror(errno));
 		goto bad;
 	}
+
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
+
 	pf->OrigMissed = -1;
 	enmode = ENTSTAMP|ENNONEXCL;
 	if (!p->opt.immediate)

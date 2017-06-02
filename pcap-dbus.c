@@ -223,6 +223,14 @@ dbus_activate(pcap_t *handle)
 		return PCAP_ERROR_RFMON_NOTSUP;
 	}
 
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum message length for D-Bus (128MB).
+	 */
+	if (handle->snapshot <= 0 || handle->snapshot > 134217728)
+		handle->snapshot = 134217728;
+
 	/* dbus_connection_set_max_message_size(handlep->conn, handle->snapshot); */
 	if (handle->opt.buffer_size != 0)
 		dbus_connection_set_max_received_size(handlep->conn, handle->opt.buffer_size);

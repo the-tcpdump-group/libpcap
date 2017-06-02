@@ -1334,7 +1334,7 @@ pcap_create_common(char *ebuf, size_t size)
 	initialize_ops(p);
 
 	/* put in some defaults*/
-	p->snapshot = MAXIMUM_SNAPLEN;	/* max packet size */
+	p->snapshot = 0;		/* max packet size unspecified */
 	p->opt.timeout = 0;		/* no timeout specified */
 	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
@@ -1367,16 +1367,6 @@ pcap_set_snaplen(pcap_t *p, int snaplen)
 {
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
-
-	/*
-	 * Turn invalid values, or excessively large values, into
-	 * the maximum allowed value.
-	 *
-	 * If some application really *needs* a bigger snapshot
-	 * length, we should just increase MAXIMUM_SNAPLEN.
-	 */
-	if (snaplen <= 0 || snaplen > MAXIMUM_SNAPLEN)
-		snaplen = MAXIMUM_SNAPLEN;
 	p->snapshot = snaplen;
 	return (0);
 }

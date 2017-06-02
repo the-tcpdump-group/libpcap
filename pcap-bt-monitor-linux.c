@@ -173,6 +173,17 @@ bt_monitor_activate(pcap_t* handle)
         return PCAP_ERROR_RFMON_NOTSUP;
     }
 
+    /*
+     * Turn a negative snapshot value (invalid), a snapshot value of
+     * 0 (unspecified), or a value bigger than the normal maximum
+     * value, into the maximum allowed value.
+     *
+     * If some application really *needs* a bigger snapshot
+     * length, we should just increase MAXIMUM_SNAPLEN.
+     */
+    if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
+        handle->snapshot = MAXIMUM_SNAPLEN;
+
     handle->bufsize = BT_CONTROL_SIZE + sizeof(pcap_bluetooth_linux_monitor_header) + handle->snapshot;
     handle->linktype = DLT_BLUETOOTH_LINUX_MONITOR;
 
