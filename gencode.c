@@ -7603,6 +7603,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 	 */
 	switch (cstate->linktype) {
 	case DLT_SLIP:
+	case DLT_PPP:
 		b0 = gen_relation(cstate, BPF_JEQ,
 			  gen_load(cstate, Q_LINK, gen_loadi(cstate, 0), 1),
 			  gen_loadi(cstate, 0),
