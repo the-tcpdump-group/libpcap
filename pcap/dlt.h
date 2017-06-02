@@ -1323,6 +1323,12 @@
  */
 #define DLT_TI_LLN_SNIFFER	269
 
+/*
+ * per: Erik de Jong <erikdejong at gmail.com> for
+ *   https://github.com/eriknl/LoRaTap/releases/tag/v0.1
+ */
+#define DLT_LORATAP             270
+
 
 /*
  * In case the code that includes this file (directly or indirectly)
@@ -1334,7 +1340,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	269	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	270	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
