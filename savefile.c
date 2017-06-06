@@ -270,82 +270,73 @@ FILE *fopen_safe(const char *filename, const char* mode)
 /*
  * gzip file reading support
  */
+#undef CAN_GZIP
+#define CAN_GZIP HAVE_ZLIB_H && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
 
-#if HAVE_ZLIB_H
+#if CAN_GZIP
+
 #if HAVE_FUNOPEN
 static int
 gzip_cookie_read(void *cookie, char *buf, int size)
-{
-        return gzread((gzFile)cookie, (voidp)buf, (unsigned) size);
-}
 #elif HAVE_FOPENCOOKIE
 static ssize_t
 gzip_cookie_read(void *cookie, char *buf, size_t size)
+#endif
 {
         return gzread((gzFile)cookie, (voidp)buf, (unsigned) size);
 }
-#endif
 
-#if HAVE_FUNOPEN || HAVE_FOPENCOOKIE
 static int
 gzip_cookie_close(void *cookie)
 {
         return gzclose((gzFile)cookie);
 }
-#endif
 
-#if HAVE_FOPENCOOKIE
-static cookie_io_functions_t cookiefuncs = {
+static FILE* pcap_open_gzfile(gzFile gz, char *errbuf)
+{
+	FILE *fp = NULL;
+
+#if HAVE_FUNOPEN
+	fp = funopen(gz, gzip_cookie_read, NULL, NULL, gzip_cookie_close);
+	if (fp == NULL)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "funopen: %s",
+		    pcap_strerror(errno));
+		return (NULL);
+	}
+#elif HAVE_FOPENCOOKIE
+	cookie_io_functions_t cookiefuncs = {
         gzip_cookie_read, NULL, NULL, gzip_cookie_close
-};
-#endif
+	};
 
-#endif /* HAVE_ZLIB_H */
+	fp = fopencookie(gz, "rb", cookiefuncs);
+	if (fp == NULL)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "fopencookie: %s",
+		    pcap_strerror(errno));
+		return (NULL);
+	}
+#endif
+	return fp;
+}
+
+#endif /* CAN_GZIP */
 
 static FILE*
 pcap_fopen_savefile(const char *fname, char *errbuf)
 {
-	int wantgzip = 0;
 	FILE *fp = NULL;
 
-#if HAVE_GZOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
-	char *dot = strrchr(fname, '.');
-	if (dot != NULL)
+#if CAN_GZIP
+	gzFile gz = gzopen(fname, "rb");
+	if (gz == NULL)
 	{
-		wantgzip = (strcasecmp(dot, ".gz") == 0);
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzopen: %s", fname,
+		    pcap_strerror(errno));
+		return (NULL);
 	}
-
-	if (wantgzip) {
-		gzFile gz = gzopen(fname, "rb");
-		if (gz == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzopen: %s", fname,
-			    pcap_strerror(errno));
-			return (NULL);
-		}
-
-#if HAVE_FUNOPEN
-		fp = funopen(gz, gzip_cookie_read, NULL, NULL, gzip_cookie_close);
-		if (fp == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: funopen: %s", fname,
-			    pcap_strerror(errno));
-			return (NULL);
-		}
-#elif HAVE_FOPENCOOKIE
-		fp = fopencookie(gz, "rb", cookiefuncs);
-		if (fp == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: fopencookie: %s", fname,
-			    pcap_strerror(errno));
-			return (NULL);
-		}
-#endif
-		return fp;
-	}
-#endif /* HAVE_GZOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE) */
-
-#if !defined(_WIN32) && !defined(MSDOS)
+	fp = pcap_open_gzfile(gz, errbuf);
+#elif !defined(_WIN32) && !defined(MSDOS)
 	fp = fopen(fname, "r");
 #else
 	fp = fopen(fname, "rb");
@@ -367,6 +358,16 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	}
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
+#if CAN_GZIP
+		gzFile gz = gzdopen(fileno(stdin), "r");
+		if (gz == NULL)
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzdopen: %s", fname,
+				pcap_strerror(errno));
+			return (NULL);
+		}
+		fp = pcap_open_gzfile(gz, errbuf);
+#else
 		fp = stdin;
 #if defined(_WIN32) || defined(MSDOS)
 		/*
@@ -374,6 +375,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 		 * mode, as savefiles are binary files.
 		 */
 		SET_BINMODE(fp);
+#endif
 #endif
 	}
 	else {
