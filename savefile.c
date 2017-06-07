@@ -312,6 +312,10 @@ static FILE* pcap_open_gzfile(void *gz, char *errbuf)
 	}
 	return fp;
 }
+#else
+
+/* null function pointer to silence linker error when the real function isn't available */
+static FILE* (*pcap_open_gzfile)(void *gz, char *errbuf) = NULL;
 
 #endif /* HAVE_DLOPEN */
 
