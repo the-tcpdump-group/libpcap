@@ -271,24 +271,30 @@ FILE *fopen_safe(const char *filename, const char* mode)
  * gzip file reading support
  */
 
+static int   zlib_loaded = 0;
 static void *zlib = NULL;
+
 static void *(*gzopen)(const char *path, const char *mode) = NULL;
 static void *(*gzdopen)(int fd, const char *mode) = NULL;
 static void *gzread = NULL;
 static void *gzclose = NULL;
 
-static void *init_zlib()
+static int init_zlib()
 {
 #if HAVE_DLOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
-	zlib = dlopen("libz.so", RTLD_NOW);
-	if (zlib) {
-		gzopen = dlsym(zlib, "gzopen");
-		gzdopen = dlsym(zlib, "gzdopen");
-		gzread = dlsym(zlib, "gzread");
-		gzclose = dlsym(zlib, "gzclose");
+	if (!zlib_loaded) {
+		zlib = dlopen("libz.so", RTLD_NOW);
+		if (zlib != NULL) {
+			gzopen = dlsym(zlib, "gzopen");
+			gzdopen = dlsym(zlib, "gzdopen");
+			gzread = dlsym(zlib, "gzread");
+			gzclose = dlsym(zlib, "gzclose");
+			zlib_loaded = (gzopen != NULL) && (gzdopen != NULL) &&
+						  (gzread != NULL) && (gzclose != NULL);
+		}
 	}
 #endif
-	return zlib;
+	return zlib_loaded;
 }
 
 #if HAVE_DLOPEN
