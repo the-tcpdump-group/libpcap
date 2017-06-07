@@ -11646,13 +11646,13 @@ fi
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gzopen in -lz" >&5
-$as_echo_n "checking for gzopen in -lz... " >&6; }
-if ${ac_cv_lib_z_gzopen+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
+$as_echo_n "checking for dlopen in -ldl... " >&6; }
+if ${ac_cv_lib_dl_dlopen+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lz  $LIBS"
+LIBS="-ldl  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -11662,48 +11662,48 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char gzopen ();
+char dlopen ();
 int
 main ()
 {
-return gzopen ();
+return dlopen ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_z_gzopen=yes
+  ac_cv_lib_dl_dlopen=yes
 else
-  ac_cv_lib_z_gzopen=no
+  ac_cv_lib_dl_dlopen=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_gzopen" >&5
-$as_echo "$ac_cv_lib_z_gzopen" >&6; }
-if test "x$ac_cv_lib_z_gzopen" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dl_dlopen" >&5
+$as_echo "$ac_cv_lib_dl_dlopen" >&6; }
+if test "x$ac_cv_lib_dl_dlopen" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBZ 1
+#define HAVE_LIBDL 1
 _ACEOF
 
-  LIBS="-lz $LIBS"
+  LIBS="-ldl $LIBS"
 
 fi
 
-for ac_header in zlib.h
+for ac_header in dlfcn.h
 do :
-  ac_fn_c_check_header_mongrel "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
-if test "x$ac_cv_header_zlib_h" = xyes; then :
+  ac_fn_c_check_header_mongrel "$LINENO" "dlfcn.h" "ac_cv_header_dlfcn_h" "$ac_includes_default"
+if test "x$ac_cv_header_dlfcn_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_ZLIB_H 1
+#define HAVE_DLFCN_H 1
 _ACEOF
 
 fi
 
 done
 
-for ac_func in gzopen funopen fopencookie
+for ac_func in dlopen funopen fopencookie
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
