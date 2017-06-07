@@ -48,6 +48,12 @@
 /* Define to 1 if the system has the type `dl_passive_req_t'. */
 #undef HAVE_DL_PASSIVE_REQ_T
 
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if you have the `dlopen' function. */
+#undef HAVE_DLOPEN
+
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
 
@@ -69,9 +75,6 @@
 /* Define to 1 if you have the `funopen' function. */
 #undef HAVE_FUNOPEN
 
-/* Define to 1 if you have the `gzopen' function. */
-#undef HAVE_GZOPEN
-
 /* on HP-UX 10.20 or later */
 #undef HAVE_HPUX10_20_OR_LATER
 
@@ -83,6 +86,9 @@
 
 /* Define to 1 if you have the `dag' library (-ldag). */
 #undef HAVE_LIBDAG
+
+/* Define to 1 if you have the `dl' library (-ldl). */
+#undef HAVE_LIBDL
 
 /* if libdlpi exists */
 #undef HAVE_LIBDLPI
@@ -101,9 +107,6 @@
 
 /* libnl has new-style socket api */
 #undef HAVE_LIBNL_SOCKETS
-
-/* Define to 1 if you have the `z' library (-lz). */
-#undef HAVE_LIBZ
 
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #undef HAVE_LINUX_COMPILER_H
@@ -306,9 +309,6 @@
 
 /* Define to 1 if you have the `vsyslog' function. */
 #undef HAVE_VSYSLOG
-
-/* Define to 1 if you have the <zlib.h> header file. */
-#undef HAVE_ZLIB_H
 
 /* IPv6 */
 #undef INET6

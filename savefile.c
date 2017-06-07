@@ -48,8 +48,8 @@
 
 #include "pcap-int.h"
 
-#ifdef HAVE_ZLIB_H
-#include "zlib.h"
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
 #endif
 
 #ifdef HAVE_OS_PROTO_H
@@ -270,77 +270,72 @@ FILE *fopen_safe(const char *filename, const char* mode)
 /*
  * gzip file reading support
  */
-#undef CAN_GZIP
-#define CAN_GZIP HAVE_ZLIB_H && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
 
-#if CAN_GZIP
+static void *zlib = NULL;
+static void *(*gzopen)(const char *path, const char *mode) = NULL;
+static void *(*gzdopen)(int fd, const char *mode) = NULL;
+static void *gzread = NULL;
+static void *gzclose = NULL;
 
-#if HAVE_FUNOPEN
-static int
-gzip_cookie_read(void *cookie, char *buf, int size)
-#elif HAVE_FOPENCOOKIE
-static ssize_t
-gzip_cookie_read(void *cookie, char *buf, size_t size)
+static void *init_zlib()
+{
+#if HAVE_DLOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
+	zlib = dlopen("libz.so", RTLD_NOW);
+	if (zlib) {
+		gzopen = dlsym(zlib, "gzopen");
+		gzdopen = dlsym(zlib, "gzdopen");
+		gzread = dlsym(zlib, "gzread");
+		gzclose = dlsym(zlib, "gzclose");
+	}
 #endif
-{
-        return gzread((gzFile)cookie, (voidp)buf, (unsigned) size);
+	return zlib;
 }
 
-static int
-gzip_cookie_close(void *cookie)
-{
-        return gzclose((gzFile)cookie);
-}
-
-static FILE* pcap_open_gzfile(gzFile gz, char *errbuf)
+#if HAVE_DLOPEN
+static FILE* pcap_open_gzfile(void *gz, char *errbuf)
 {
 	FILE *fp = NULL;
 
 #if HAVE_FUNOPEN
-	fp = funopen(gz, gzip_cookie_read, NULL, NULL, gzip_cookie_close);
-	if (fp == NULL)
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "funopen: %s",
-		    pcap_strerror(errno));
-		return (NULL);
-	}
+	fp = funopen(gz, gzread, NULL, NULL, gzclose);
 #elif HAVE_FOPENCOOKIE
 	cookie_io_functions_t cookiefuncs = {
-        gzip_cookie_read, NULL, NULL, gzip_cookie_close
+        gzread, NULL, NULL, gzclose
 	};
-
 	fp = fopencookie(gz, "rb", cookiefuncs);
+#endif
 	if (fp == NULL)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "fopencookie: %s",
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "funopen / fopencookie: %s",
 		    pcap_strerror(errno));
 		return (NULL);
 	}
-#endif
 	return fp;
 }
 
-#endif /* CAN_GZIP */
+#endif /* HAVE_DLOPEN */
 
 static FILE*
 pcap_fopen_savefile(const char *fname, char *errbuf)
 {
 	FILE *fp = NULL;
 
-#if CAN_GZIP
-	gzFile gz = gzopen(fname, "rb");
-	if (gz == NULL)
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzopen: %s", fname,
-		    pcap_strerror(errno));
-		return (NULL);
-	}
-	fp = pcap_open_gzfile(gz, errbuf);
-#elif !defined(_WIN32) && !defined(MSDOS)
-	fp = fopen(fname, "r");
+	if (init_zlib()) {
+		void *gz = gzopen(fname, "rb");
+		if (gz == NULL)
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzopen: %s", fname,
+				pcap_strerror(errno));
+			return (NULL);
+		}
+		fp = pcap_open_gzfile(gz, errbuf);
+	} else {
+#if !defined(_WIN32) && !defined(MSDOS)
+		fp = fopen(fname, "r");
 #else
-	fp = fopen(fname, "rb");
+		fp = fopen(fname, "rb");
 #endif
+	}
 	return fp;
 }
 
@@ -358,25 +353,25 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	}
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
-#if CAN_GZIP
-		gzFile gz = gzdopen(fileno(stdin), "r");
-		if (gz == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzdopen: %s", fname,
-				pcap_strerror(errno));
-			return (NULL);
-		}
-		fp = pcap_open_gzfile(gz, errbuf);
-#else
-		fp = stdin;
+		if (init_zlib()) {
+			void *gz = gzdopen(fileno(stdin), "r");
+			if (gz == NULL)
+			{
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzdopen: %s", fname,
+					pcap_strerror(errno));
+				return (NULL);
+			}
+			fp = pcap_open_gzfile(gz, errbuf);
+		} else {
+			fp = stdin;
 #if defined(_WIN32) || defined(MSDOS)
-		/*
-		 * We're reading from the standard input, so put it in binary
-		 * mode, as savefiles are binary files.
-		 */
-		SET_BINMODE(fp);
+			/*
+			 * We're reading from the standard input, so put it in binary
+			 * mode, as savefiles are binary files.
+			 */
+			SET_BINMODE(fp);
 #endif
-#endif
+		}
 	}
 	else {
 		fp = pcap_fopen_savefile(fname, errbuf);
