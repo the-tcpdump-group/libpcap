@@ -976,6 +976,9 @@ typedef struct pcap_ioplugin {
 
 typedef const pcap_ioplugin_t* (*pcap_ioplugin_init_fn)();
 
+PCAP_API void pcap_ioplugin_register_fp_cookie(FILE *fp, const void *cookie);
+PCAP_API void pcap_ioplugin_unregister_fp_cookie(const void *cookie);
+
 #ifdef __cplusplus
 }
 #endif

@@ -48,6 +48,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/queue.h>
 
 #include "pcap-int.h"
 
@@ -90,9 +91,6 @@ FILE *fopen_safe(const char *filename, const char* mode)
 }
 #endif
 
-/*
- * file I/O plugin support
- */
 static FILE*
 stdio_open_read(const char *fname, char *errbuf)
 {
@@ -145,11 +143,11 @@ static const pcap_ioplugin_t* pcap_ioplugin_stdio() {
 const pcap_ioplugin_t* pcap_ioplugin_init(const char *name)
 {
 	void *lib = NULL;
-
 	if (name == NULL) {
 		goto fail;
 	}
 
+	dlerror();
 #if HAVE_DLOPEN
 	lib = dlopen(name, RTLD_NOW);
 	if (lib != NULL) {
@@ -165,4 +163,55 @@ const pcap_ioplugin_t* pcap_ioplugin_init(const char *name)
 
 fail:
 	return pcap_ioplugin_stdio();
+}
+
+static int invoked_atexit = 0;
+
+struct file_entry {
+	FILE					*fp;
+	const void				*cookie;
+	TAILQ_ENTRY(file_entry)	 next;
+};
+
+static TAILQ_HEAD(, file_entry) file_list;
+
+static void pcap_ioplugin_closeall()
+{
+	struct file_entry *entry = NULL;
+
+	TAILQ_FOREACH(entry, &file_list, next) {
+		fclose(entry->fp);
+	}
+}
+
+void pcap_ioplugin_register_fp_cookie(FILE *fp, const void *cookie)
+{
+	struct file_entry *entry = (struct file_entry *)malloc(sizeof *entry);
+	if (!entry) {
+		return;
+	}
+	entry->fp = fp;
+	entry->cookie = cookie;
+
+	if (!invoked_atexit) {
+		invoked_atexit = 1;
+		TAILQ_INIT(&file_list);
+		atexit(pcap_ioplugin_closeall);
+	}
+
+	TAILQ_INSERT_TAIL(&file_list, entry, next);
+}
+
+void pcap_ioplugin_unregister_fp_cookie(const void *cookie)
+{
+	struct file_entry *entry = NULL, *tmp = NULL;
+
+	for (entry = TAILQ_FIRST(&file_list); entry != NULL; entry = tmp) {
+		tmp = TAILQ_NEXT(entry, next);
+		if (entry->cookie == cookie) {
+			TAILQ_REMOVE(&file_list, entry, next);
+			free(entry);
+			break;
+		}
+	}
 }
