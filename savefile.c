@@ -87,6 +87,8 @@ static pcap_t *pcap_fopen_offline(FILE *, char *);
   #else
   #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
   #endif
+#else
+  #define SET_BINMODE(f)  (void)f
 #endif
 
 static int
@@ -267,85 +269,51 @@ FILE *fopen_safe(const char *filename, const char* mode)
 }
 #endif
 
+
 /*
- * gzip file reading support
+ * file I/O plugin support
  */
-
-static int   zlib_loaded = 0;
-static void *zlib = NULL;
-
-static void *(*gzopen)(const char *path, const char *mode) = NULL;
-static void *(*gzdopen)(int fd, const char *mode) = NULL;
-static void *gzread = NULL;
-static void *gzclose = NULL;
-
-static int init_zlib()
+static const pcap_ioplugin_t* plugin_init(const char *name)
 {
-#if HAVE_DLOPEN && (HAVE_FUNOPEN || HAVE_FOPENCOOKIE)
-	if (!zlib_loaded) {
-		zlib = dlopen("libz.so", RTLD_NOW);
-		if (zlib != NULL) {
-			gzopen = dlsym(zlib, "gzopen");
-			gzdopen = dlsym(zlib, "gzdopen");
-			gzread = dlsym(zlib, "gzread");
-			gzclose = dlsym(zlib, "gzclose");
-			zlib_loaded = (gzopen != NULL) && (gzdopen != NULL) &&
-						  (gzread != NULL) && (gzclose != NULL);
-		}
+	if (name == NULL) {
+		return NULL;
 	}
-#endif
-	return zlib_loaded;
-}
 
 #if HAVE_DLOPEN
-static FILE* pcap_open_gzfile(void *gz, char *errbuf)
-{
-	FILE *fp = NULL;
-
-#if HAVE_FUNOPEN
-	fp = funopen(gz, gzread, NULL, NULL, gzclose);
-#elif HAVE_FOPENCOOKIE
-	cookie_io_functions_t cookiefuncs = {
-        gzread, NULL, NULL, gzclose
-	};
-	fp = fopencookie(gz, "rb", cookiefuncs);
-#endif
-	if (fp == NULL)
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "funopen / fopencookie: %s",
-		    pcap_strerror(errno));
-		return (NULL);
+	void *lib = dlopen(name, RTLD_NOW);
+	if (lib) {
+		const pcap_ioplugin_t* (*init)() = dlsym(lib, "plugin_init");
+		if (!init) {
+			dlclose(lib);
+			return NULL;
+		} else {
+			return init();
+		}
+	} else {
+		return NULL;
 	}
-	return fp;
-}
 #else
-
-/* null function pointer to silence linker error when the real function isn't available */
-static FILE* (*pcap_open_gzfile)(void *gz, char *errbuf) = NULL;
-
+	return NULL;
 #endif /* HAVE_DLOPEN */
+}
 
 static FILE*
-pcap_fopen_savefile(const char *fname, char *errbuf)
+stdio_open_read(const char *fname, char *errbuf)
 {
 	FILE *fp = NULL;
 
-	if (init_zlib()) {
-		void *gz = gzopen(fname, "rb");
-		if (gz == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzopen: %s", fname,
+	if (strcmp(fname, "-") == 0) {
+		fp = stdin;
+	} else {
+		fp = fopen(fname, "r");
+		if (fp == NULL) {
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: fopen: %s", fname,
 				pcap_strerror(errno));
 			return (NULL);
 		}
-		fp = pcap_open_gzfile(gz, errbuf);
-	} else {
-#if !defined(_WIN32) && !defined(MSDOS)
-		fp = fopen(fname, "r");
-#else
-		fp = fopen(fname, "rb");
-#endif
 	}
+
+	SET_BINMODE(fp);
 	return fp;
 }
 
@@ -353,6 +321,7 @@ pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
 {
+	const pcap_ioplugin_t *plugin = plugin_init(getenv("PCAP_PLUGIN_READ"));
 	FILE *fp;
 	pcap_t *p;
 
@@ -361,34 +330,17 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 		    "A null pointer was supplied as the file name");
 		return (NULL);
 	}
-	if (fname[0] == '-' && fname[1] == '\0')
-	{
-		if (init_zlib()) {
-			void *gz = gzdopen(fileno(stdin), "r");
-			if (gz == NULL)
-			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: gzdopen: %s", fname,
-					pcap_strerror(errno));
-				return (NULL);
-			}
-			fp = pcap_open_gzfile(gz, errbuf);
-		} else {
-			fp = stdin;
-#if defined(_WIN32) || defined(MSDOS)
-			/*
-			 * We're reading from the standard input, so put it in binary
-			 * mode, as savefiles are binary files.
-			 */
-			SET_BINMODE(fp);
-#endif
-		}
+
+	if (plugin && plugin->open_read) {
+		fp = plugin->open_read(fname, errbuf);
+	} else {
+		fp = stdio_open_read(fname, errbuf);
 	}
-	else {
-		fp = pcap_fopen_savefile(fname, errbuf);
-		if (fp == NULL) {
-			return (NULL);
-		}
+
+	if (fp == NULL) {
+		return (NULL);
 	}
+
 	p = pcap_fopen_offline_with_tstamp_precision(fp, precision, errbuf);
 	if (p == NULL) {
 		if (fp != stdin)

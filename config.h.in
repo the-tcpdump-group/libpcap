@@ -60,9 +60,6 @@
 /* Define to 1 if you have the `ffs' function. */
 #undef HAVE_FFS
 
-/* Define to 1 if you have the `fopencookie' function. */
-#undef HAVE_FOPENCOOKIE
-
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
@@ -71,9 +68,6 @@
 
 /* Define to 1 if you have a GNU-style `strerror_r' function. */
 #undef HAVE_GNU_STRERROR_R
-
-/* Define to 1 if you have the `funopen' function. */
-#undef HAVE_FUNOPEN
 
 /* on HP-UX 10.20 or later */
 #undef HAVE_HPUX10_20_OR_LATER
