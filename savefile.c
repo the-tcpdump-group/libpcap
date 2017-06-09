@@ -48,10 +48,6 @@
 
 #include "pcap-int.h"
 
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
@@ -74,21 +70,6 @@
  */
 static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
 static pcap_t *pcap_fopen_offline(FILE *, char *);
-#endif
-
-/*
- * Setting O_BINARY on DOS/Windows is a bit tricky
- */
-#if defined(_WIN32)
-  #define SET_BINMODE(f)  _setmode(_fileno(f), _O_BINARY)
-#elif defined(MSDOS)
-  #if defined(__HIGHC__)
-  #define SET_BINMODE(f)  setmode(f, O_BINARY)
-  #else
-  #define SET_BINMODE(f)  setmode(fileno(f), O_BINARY)
-  #endif
-#else
-  #define SET_BINMODE(f)  (void)f
 #endif
 
 static int
@@ -269,59 +250,11 @@ FILE *fopen_safe(const char *filename, const char* mode)
 }
 #endif
 
-
-/*
- * file I/O plugin support
- */
-static const pcap_ioplugin_t* plugin_init(const char *name)
-{
-	if (name == NULL) {
-		return NULL;
-	}
-
-#if HAVE_DLOPEN
-	void *lib = dlopen(name, RTLD_NOW);
-	if (lib) {
-		const pcap_ioplugin_t* (*init)() = dlsym(lib, "plugin_init");
-		if (!init) {
-			dlclose(lib);
-			return NULL;
-		} else {
-			return init();
-		}
-	} else {
-		return NULL;
-	}
-#else
-	return NULL;
-#endif /* HAVE_DLOPEN */
-}
-
-static FILE*
-stdio_open_read(const char *fname, char *errbuf)
-{
-	FILE *fp = NULL;
-
-	if (strcmp(fname, "-") == 0) {
-		fp = stdin;
-	} else {
-		fp = fopen(fname, "r");
-		if (fp == NULL) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: fopen: %s", fname,
-				pcap_strerror(errno));
-			return (NULL);
-		}
-	}
-
-	SET_BINMODE(fp);
-	return fp;
-}
-
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
 {
-	const pcap_ioplugin_t *plugin = plugin_init(getenv("PCAP_PLUGIN_READ"));
+	const pcap_ioplugin_t *plugin = pcap_ioplugin_init(getenv("PCAP_IOPLUGIN_READ"));
 	FILE *fp;
 	pcap_t *p;
 
@@ -331,12 +264,13 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 		return (NULL);
 	}
 
-	if (plugin && plugin->open_read) {
-		fp = plugin->open_read(fname, errbuf);
-	} else {
-		fp = stdio_open_read(fname, errbuf);
+	if (plugin->open_read == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "No file reading function found");
+		return NULL;
 	}
 
+	fp = plugin->open_read(fname, errbuf);
 	if (fp == NULL) {
 		return (NULL);
 	}
