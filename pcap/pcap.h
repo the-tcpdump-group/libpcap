@@ -974,6 +974,8 @@ typedef struct pcap_ioplugin {
 	pcap_ioplugin_open_write_fn		open_write;
 } pcap_ioplugin_t;
 
+typedef const pcap_ioplugin_t* (*pcap_ioplugin_init_fn)();
+
 #ifdef __cplusplus
 }
 #endif
