@@ -140,6 +140,14 @@ static const pcap_ioplugin_t* pcap_ioplugin_stdio() {
 	return &plugin;
 }
 
+/*
+ * loads an I/O plugin with the given name
+ * (on UNIX, a .so shared library)
+ *
+ * NB: fails silently and falls back to existing uncompressed
+ *     stdio-based output if the plugin fails to load
+ */
+
 const pcap_ioplugin_t* pcap_ioplugin_init(const char *name)
 {
 	void *lib = NULL;
@@ -147,7 +155,6 @@ const pcap_ioplugin_t* pcap_ioplugin_init(const char *name)
 		goto fail;
 	}
 
-	dlerror();
 #if HAVE_DLOPEN
 	lib = dlopen(name, RTLD_NOW);
 	if (lib != NULL) {
