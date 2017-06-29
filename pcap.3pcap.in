@@ -394,6 +394,11 @@ set promiscuous mode for a not-yet-activated
 .B pcap_t
 for live capture
 .TP
+.BR pcap_set_protocol (3PCAP)
+set capture protocol for a not-yet-activated
+.B pcap_t
+for live capture (Linux only)
+.TP
 .BR pcap_set_rfmon (3PCAP)
 set monitor mode for a not-yet-activated
 .B pcap_t

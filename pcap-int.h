@@ -112,6 +112,9 @@ struct pcap_opt {
 	int	timeout;	/* timeout for buffering */
 	u_int	buffer_size;
 	int	promisc;
+#ifdef __linux__
+	int	protocol;
+#endif
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
 	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */

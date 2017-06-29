@@ -1338,6 +1338,9 @@ pcap_create_common(char *ebuf, size_t size)
 	p->opt.timeout = 0;		/* no timeout specified */
 	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
+#ifdef __linux__
+	p->opt.protocol = 0;
+#endif
 	p->opt.rfmon = 0;
 	p->opt.immediate = 0;
 	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
