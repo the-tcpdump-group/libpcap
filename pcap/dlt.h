@@ -1329,6 +1329,14 @@
  */
 #define DLT_LORATAP             270
 
+/*
+ * per: Stefanha at gmail.com for
+ *   http://lists.sandelman.ca/pipermail/tcpdump-workers/2017-May/000772.html
+ * and: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/vsockmon.h
+ * for: http://qemu-project.org/Features/VirtioVsock
+ */
+#define DLT_VSOCK               271
+
 
 /*
  * In case the code that includes this file (directly or indirectly)
@@ -1340,7 +1348,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	270	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	271	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
