@@ -1049,7 +1049,21 @@
  */
 #define LINKTYPE_TI_LLN_SNIFFER	269
 
-#define LINKTYPE_MATCHING_MAX	269		/* highest value in the "matching" range */
+/*
+ * per: Erik de Jong <erikdejong at gmail.com> for
+ *   https://github.com/eriknl/LoRaTap/releases/tag/v0.1
+ */
+#define LINKTYPE_LORATAP        270
+
+/*
+ * per: Stefanha at gmail.com for
+ *   http://lists.sandelman.ca/pipermail/tcpdump-workers/2017-May/000772.html
+ * and: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/vsockmon.h
+ * for: http://qemu-project.org/Features/VirtioVsock
+ */
+#define LINKTYPE_VSOCK          271
+
+#define LINKTYPE_MATCHING_MAX	271		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
