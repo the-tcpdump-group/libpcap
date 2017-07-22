@@ -2090,6 +2090,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(OPENFLOW, "OpenBSD DLT_OPENFLOW"),
 	DLT_CHOICE(SDLC, "IBM SDLC frames"),
 	DLT_CHOICE(TI_LLN_SNIFFER, "TI LLN sniffer frames"),
+	DLT_CHOICE(VSOCK, "Linux vsock"),
 	DLT_CHOICE_SENTINEL
 };
 

@@ -3306,6 +3306,13 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		/* handlep->cooked = 1; */
 		break;
 
+#ifndef ARPHRD_VSOCKMON
+#define ARPHRD_VSOCKMON	826
+#endif
+	case ARPHRD_VSOCKMON:
+		handle->linktype = DLT_VSOCK;
+		break;
+
 	default:
 		handle->linktype = -1;
 		break;
