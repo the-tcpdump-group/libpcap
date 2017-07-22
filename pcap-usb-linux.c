@@ -398,7 +398,7 @@ probe_devices(int bus)
 	struct usbdevfs_ctrltransfer ctrl;
 	struct dirent* data;
 	int ret = 0;
-	char buf[40];
+	char buf[sizeof("/dev/bus/usb/000/") + NAME_MAX];
 	DIR* dir;
 
 	/* scan usb bus directories for device nodes */
