@@ -61,17 +61,22 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-#define	SOLARIS	(defined(sun) && (defined(__SVR4) || defined(__svr4__)))
-#if defined(__hpux) || SOLARIS
+#if defined(sun) && (defined(__SVR4) || defined(__svr4__))
+#define SOLARIS
+#else
+#undef SOLARIS
+#endif
+
+#if defined(__hpux) || defined(SOLARIS)
 # include <sys/sysmacros.h>
 # include <sys/stream.h>
 # define	mbuf	msgb
 # define	m_next	b_cont
 # define	MLEN(m)	((m)->b_wptr - (m)->b_rptr)
 # define	mtod(m,t)	((t)(m)->b_rptr)
-#else /* defined(__hpux) || SOLARIS */
+#else /* defined(__hpux) || defined(SOLARIS) */
 # define	MLEN(m)	((m)->m_len)
-#endif /* defined(__hpux) || SOLARIS */
+#endif /* defined(__hpux) || defined(SOLARIS) */
 
 #endif /* _WIN32 */
 
@@ -118,7 +123,7 @@
 #endif
 
 #if defined(KERNEL) || defined(_KERNEL)
-# if !defined(__hpux) && !SOLARIS
+# if !defined(__hpux) && !defined(SOLARIS)
 #include <sys/mbuf.h>
 # endif
 #define MINDEX(len, _m, _k) \
