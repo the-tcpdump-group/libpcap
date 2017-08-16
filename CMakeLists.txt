@@ -514,12 +514,20 @@ source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 # Register targets
 ######################################
 
-add_library(${LIBRARY_NAME}
+add_library(${LIBRARY_NAME} SHARED
     ${PROJECT_SOURCE_LIST_C}
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
     ${PROJECT_SOURCE_LIST_H}
 )
+
+add_library(${LIBRARY_NAME}_static STATIC
+    ${PROJECT_SOURCE_LIST_C}
+    ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
+    ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
+    ${PROJECT_SOURCE_LIST_H}
+)
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
 
 if( WIN32 )
     target_link_libraries ( ${LIBRARY_NAME}
@@ -533,3 +541,14 @@ endif( WIN32 )
 ######################################
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+
+######################################
+# Install pcap library and include files
+######################################
+install(TARGETS ${LIBRARY_NAME} DESTINATION lib )
+install(TARGETS ${LIBRARY_NAME}_static DESTINATION lib )
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
+
+
