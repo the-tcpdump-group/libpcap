@@ -514,12 +514,23 @@ source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 # Register targets
 ######################################
 
+#
+# Special target to serialize the building of the generated source.
+#
+add_custom_target(SerializeTarget
+    DEPENDS
+    ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
+    ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
+    ${CMAKE_CURRENT_BINARY_DIR}/version.c
+)
+
 add_library(${LIBRARY_NAME} SHARED
     ${PROJECT_SOURCE_LIST_C}
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
     ${PROJECT_SOURCE_LIST_H}
 )
+add_dependencies(${LIBRARY_NAME} SerializeTarget)
 
 add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_SOURCE_LIST_C}
@@ -527,6 +538,7 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
     ${PROJECT_SOURCE_LIST_H}
 )
+add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
 set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
 
 if( WIN32 )
