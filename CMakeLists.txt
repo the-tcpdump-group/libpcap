@@ -517,6 +517,10 @@ source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 #
 # Special target to serialize the building of the generated source.
 #
+# See
+#
+#  http://public.kitware.com/pipermail/cmake/2013-August/055510.html
+#
 add_custom_target(SerializeTarget
     DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
