@@ -1,7 +1,7 @@
 %top {
 /* Must come first for _LARGE_FILE_API on AIX. */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 }
 

@@ -26,7 +26,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #endif
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <pcap.h>
