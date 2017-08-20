@@ -133,7 +133,7 @@
 #define	MAXDLBUF	8192
 
 /* Forwards */
-static char *split_dname(char *, int *, char *);
+static char *split_dname(char *, u_int *, char *);
 static int dl_doattach(int, int, char *);
 #ifdef DL_HP_RAWDLS
 static int dl_dohpuxbind(int, char *);
@@ -165,7 +165,7 @@ static int send_request(int, char *, int, char *, char *);
 static int dlpi_kread(int, off_t, void *, u_int, char *);
 #endif
 #ifdef HAVE_DEV_DLPI
-static int get_dlpi_ppa(int, const char *, int, char *);
+static int get_dlpi_ppa(int, const char *, u_int, u_int *, char *);
 #endif
 
 /*
@@ -334,13 +334,15 @@ pcap_cleanup_dlpi(pcap_t *p)
 }
 
 static int
-open_dlpi_device(const char *name, int *ppa, char *errbuf)
+open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 {
 	int status;
 	char dname[100];
 	char *cp;
 	int fd;
-#ifndef HAVE_DEV_DLPI
+#ifdef HAVE_DEV_DLPI
+	u_int unit;
+#else
 	char dname2[100];
 #endif
 
@@ -358,7 +360,7 @@ open_dlpi_device(const char *name, int *ppa, char *errbuf)
 	 * Split the device name into a device type name and a unit number;
 	 * chop off the unit number, so "dname" is just a device type name.
 	 */
-	cp = split_dname(dname, ppa, errbuf);
+	cp = split_dname(dname, &unit, errbuf);
 	if (cp == NULL)
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	*cp = '\0';
@@ -389,10 +391,10 @@ open_dlpi_device(const char *name, int *ppa, char *errbuf)
 	 * Get a table of all PPAs for that device, and search that
 	 * table for the specified device type name and unit number.
 	 */
-	*ppa = get_dlpi_ppa(fd, dname, *ppa, errbuf);
-	if (*ppa < 0) {
+	status = get_dlpi_ppa(fd, dname, unit, ppa, errbuf);
+	if (status < 0) {
 		close(fd);
-		return (*ppa);
+		return (status);
 	}
 #else
 	/*
@@ -489,7 +491,7 @@ pcap_activate_dlpi(pcap_t *p)
 #endif
 	int status = 0;
 	int retv;
-	int ppa;
+	u_int ppa;
 #ifdef HAVE_SOLARIS
 	int isatm = 0;
 #endif
@@ -856,7 +858,7 @@ bad:
  * Returns NULL on error, and fills "ebuf" with an error message.
  */
 static char *
-split_dname(char *device, int *unitp, char *ebuf)
+split_dname(char *device, u_int *unitp, char *ebuf)
 {
 	char *cp;
 	char *eos;
@@ -892,7 +894,7 @@ split_dname(char *device, int *unitp, char *ebuf)
 		    device);
 		return (NULL);
 	}
-	*unitp = (int)unit;
+	*unitp = (u_int)unit;
 	return (cp);
 }
 
@@ -997,7 +999,7 @@ static int
 is_dlpi_interface(const char *name)
 {
 	int fd;
-	int ppa;
+	u_int ppa;
 	char errbuf[PCAP_ERRBUF_SIZE];
 
 	fd = open_dlpi_device(name, &ppa, errbuf);
@@ -1563,12 +1565,12 @@ echo 'lanc_outbound_promisc_flag/W1' | /usr/bin/adb -w /stand/vmunix /dev/kmem
  * Setting the variable is not necessary on HP-UX 11.x.
  */
 static int
-get_dlpi_ppa(register int fd, register const char *device, register int unit,
-    register char *ebuf)
+get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
+    u_int *ppa, register char *ebuf)
 {
 	register dl_hp_ppa_ack_t *ap;
 	register dl_hp_ppa_info_t *ipstart, *ip;
-	register int i;
+	register u_int i;
 	char dname[100];
 	register u_long majdev;
 	struct stat statbuf;
@@ -1578,7 +1580,6 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	dl_hp_ppa_ack_t	*dlp;
 	struct strbuf ctl;
 	int flags;
-	int ppa;
 
 	memset((char *)&req, 0, sizeof(req));
 	req.dl_primitive = DL_HP_PPA_REQ;
@@ -1610,6 +1611,11 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		    "get_dlpi_ppa: hpppa getmsg: %s", pcap_strerror(errno));
 		return (PCAP_ERROR);
 	}
+	if (ctl.len == -1) {
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa getmsg: control buffer has no data");
+		return (PCAP_ERROR);
+	}
 
 	dlp = (dl_hp_ppa_ack_t *)ctl.buf;
 	if (dlp->dl_primitive != DL_HP_PPA_ACK) {
@@ -1619,7 +1625,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		return (PCAP_ERROR);
 	}
 
-	if (ctl.len < DL_HP_PPA_ACK_SIZE) {
+	if ((size_t)ctl.len < DL_HP_PPA_ACK_SIZE) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
 		     ctl.len, (unsigned long)DL_HP_PPA_ACK_SIZE);
@@ -1642,7 +1648,12 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		free(ppa_data_buf);
 		return (PCAP_ERROR);
 	}
-	if (ctl.len < dlp->dl_length) {
+	if (ctl.len == -1) {
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "get_dlpi_ppa: hpppa getmsg: control buffer has no data");
+		return (PCAP_ERROR);
+	}
+	if ((u_int)ctl.len < dlp->dl_length) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
 		    ctl.len, (unsigned long)dlp->dl_length);
@@ -1700,7 +1711,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		 * device number of a device with the name "/dev/<dev><unit>",
 		 * if such a device exists, as the old code did.
 		 */
-		pcap_snprintf(dname, sizeof(dname), "/dev/%s%d", device, unit);
+		pcap_snprintf(dname, sizeof(dname), "/dev/%s%u", device, unit);
 		if (stat(dname, &statbuf) < 0) {
 			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "stat: %s: %s",
 			    dname, pcap_strerror(errno));
@@ -1720,7 +1731,7 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 	}
 	if (i == ap->dl_count) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "can't find /dev/dlpi PPA for %s%d", device, unit);
+		    "can't find /dev/dlpi PPA for %s%u", device, unit);
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
 	if (ip->dl_hdw_state == HDW_DEAD) {
@@ -1729,9 +1740,9 @@ get_dlpi_ppa(register int fd, register const char *device, register int unit,
 		free(ppa_data_buf);
 		return (PCAP_ERROR);
 	}
-	ppa = ip->dl_ppa;
+	*ppa = ip->dl_ppa;
 	free(ppa_data_buf);
-	return (ppa);
+	return (0);
 }
 #endif
 
@@ -1750,8 +1761,8 @@ static char path_vmunix[] = "/hp-ux";
 
 /* Determine ppa number that specifies ifname */
 static int
-get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
-    register char *ebuf)
+get_dlpi_ppa(register int fd, register const char *ifname, register u_int unit,
+    u_int *ppa, register char *ebuf)
 {
 	register const char *cp;
 	register int kd;
@@ -1765,24 +1776,24 @@ get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
 	if (nlist(path_vmunix, &nl) < 0) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "nlist %s failed",
 		    path_vmunix);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	if (nl[NL_IFNET].n_value == 0) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "could't find %s kernel symbol",
 		    nl[NL_IFNET].n_name);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	kd = open("/dev/kmem", O_RDONLY);
 	if (kd < 0) {
 		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "kmem open: %s",
 		    pcap_strerror(errno));
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	if (dlpi_kread(kd, nl[NL_IFNET].n_value,
 	    &addr, sizeof(addr), ebuf) < 0) {
 		close(kd);
-		return (-1);
+		return (PCAP_ERROR);
 	}
 	for (; addr != NULL; addr = ifnet.if_next) {
 		if (dlpi_kread(kd, (off_t)addr,
@@ -1790,15 +1801,17 @@ get_dlpi_ppa(register int fd, register const char *ifname, register int unit,
 		    dlpi_kread(kd, (off_t)ifnet.if_name,
 		    if_name, sizeof(ifnet.if_name), ebuf) < 0) {
 			(void)close(kd);
-			return (-1);
+			return (PCAP_ERROR);
 		}
 		if_name[sizeof(ifnet.if_name)] = '\0';
-		if (strcmp(if_name, ifname) == 0 && ifnet.if_unit == unit)
-			return (ifnet.if_index);
+		if (strcmp(if_name, ifname) == 0 && ifnet.if_unit == unit) {
+			*ppa = ifnet.if_index;
+			return (0);
+		}
 	}
 
 	pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't find %s", ifname);
-	return (-1);
+	return (PCAP_ERROR_NO_SUCH_DEVICE);
 }
 
 static int

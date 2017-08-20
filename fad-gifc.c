@@ -57,6 +57,12 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <string.h>
 #include <unistd.h>
 
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#else
+#define INT_MAX		2147483647
+#endif
+
 #include "pcap-int.h"
 
 #ifdef HAVE_OS_PROTO_H
@@ -168,6 +174,16 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	 */
 	buf_size = 8192;
 	for (;;) {
+		/*
+		 * Don't let the buffer size get bigger than INT_MAX.
+		 */
+		if (buf_size > INT_MAX) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "interface information requires more than %u bytes",
+			    INT_MAX);
+			(void)close(fd);
+			return (-1);
+		}
 		buf = malloc(buf_size);
 		if (buf == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -187,7 +203,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 			free(buf);
 			return (-1);
 		}
-		if (ifc.ifc_len < buf_size &&
+		if (ifc.ifc_len < (int)buf_size &&
 		    (buf_size - ifc.ifc_len) > sizeof(ifrp->ifr_name) + MAX_SA_LEN)
 			break;
 		free(buf);
