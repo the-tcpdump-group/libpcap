@@ -4494,24 +4494,24 @@ pcap_cleanup_linux_mmap( pcap_t *handle )
 
 
 static int
-pcap_getnonblock_mmap(pcap_t *p)
+pcap_getnonblock_mmap(pcap_t *handle)
 {
-	struct pcap_linux *handlep = p->priv;
+	struct pcap_linux *handlep = handle->priv;
 
 	/* use negative value of timeout to indicate non blocking ops */
 	return (handlep->timeout<0);
 }
 
 static int
-pcap_setnonblock_mmap(pcap_t *p, int nonblock)
+pcap_setnonblock_mmap(pcap_t *handle, int nonblock)
 {
-	struct pcap_linux *handlep = p->priv;
+	struct pcap_linux *handlep = handle->priv;
 
 	/*
 	 * Set the file descriptor to non-blocking mode, as we use
 	 * it for sending packets.
 	 */
-	if (pcap_setnonblock_fd(p, nonblock) == -1)
+	if (pcap_setnonblock_fd(handle, nonblock) == -1)
 		return -1;
 
 	/*
