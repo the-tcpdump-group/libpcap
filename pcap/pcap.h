@@ -331,6 +331,10 @@ PCAP_API int	pcap_tstamp_type_name_to_val(const char *);
 PCAP_API const char *pcap_tstamp_type_val_to_name(int);
 PCAP_API const char *pcap_tstamp_type_val_to_description(int);
 
+#ifdef __linux__
+PCAP_API int	pcap_set_protocol(pcap_t *, int);
+#endif
+
 /*
  * Time stamp types.
  * Not all systems and interfaces will necessarily support all of these.

@@ -425,7 +425,7 @@ static int	iface_get_id(int fd, const char *device, char *ebuf);
 static int	iface_get_mtu(int fd, const char *device, char *ebuf);
 static int 	iface_get_arptype(int fd, const char *device, char *ebuf);
 #ifdef HAVE_PF_PACKET_SOCKETS
-static int 	iface_bind(int fd, int ifindex, char *ebuf);
+static int 	iface_bind(int fd, int ifindex, char *ebuf, int protocol);
 #ifdef IW_MODE_MONITOR
 static int	has_wext(int sock_fd, const char *device, char *ebuf);
 #endif /* IW_MODE_MONITOR */
@@ -1008,6 +1008,17 @@ is_bonding_device(int fd, const char *device)
 }
 #endif /* IW_MODE_MONITOR */
 
+static int pcap_protocol(pcap_t *handle)
+{
+	int protocol;
+
+	protocol = handle->opt.protocol;
+	if (protocol == 0)
+		protocol = ETH_P_ALL;
+
+	return htons(protocol);
+}
+
 static int
 pcap_can_set_rfmon_linux(pcap_t *handle)
 {
@@ -1059,7 +1070,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	 * (We assume that if we have Wireless Extensions support
 	 * we also have PF_PACKET support.)
 	 */
-	sock_fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	sock_fd = socket(PF_PACKET, SOCK_RAW, pcap_protocol(handle));
 	if (sock_fd == -1) {
 		(void)pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "socket: %s", pcap_strerror(errno));
@@ -3335,6 +3346,7 @@ activate_new(pcap_t *handle)
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
 	int			is_any_device = (strcmp(device, "any") == 0);
+	int			protocol = pcap_protocol(handle);
 	int			sock_fd = -1, arptype;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
@@ -3353,8 +3365,8 @@ activate_new(pcap_t *handle)
 	 * try a SOCK_RAW socket for the raw interface.
 	 */
 	sock_fd = is_any_device ?
-		socket(PF_PACKET, SOCK_DGRAM, htons(ETH_P_ALL)) :
-		socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+		socket(PF_PACKET, SOCK_DGRAM, protocol) :
+		socket(PF_PACKET, SOCK_RAW, protocol);
 
 	if (sock_fd == -1) {
 		if (errno == EINVAL || errno == EAFNOSUPPORT) {
@@ -3471,8 +3483,7 @@ activate_new(pcap_t *handle)
 					 "close: %s", pcap_strerror(errno));
 				return PCAP_ERROR;
 			}
-			sock_fd = socket(PF_PACKET, SOCK_DGRAM,
-			    htons(ETH_P_ALL));
+			sock_fd = socket(PF_PACKET, SOCK_DGRAM, protocol);
 			if (sock_fd == -1) {
 				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				    "socket: %s", pcap_strerror(errno));
@@ -3536,7 +3547,7 @@ activate_new(pcap_t *handle)
 		}
 
 		if ((err = iface_bind(sock_fd, handlep->ifindex,
-		    handle->errbuf)) != 1) {
+		    handle->errbuf, protocol)) != 1) {
 		    	close(sock_fd);
 			if (err < 0)
 				return err;
@@ -5317,7 +5328,7 @@ iface_get_id(int fd, const char *device, char *ebuf)
  *  or a PCAP_ERROR_ value on a hard error.
  */
 static int
-iface_bind(int fd, int ifindex, char *ebuf)
+iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 {
 	struct sockaddr_ll	sll;
 	int			err;
@@ -5326,7 +5337,7 @@ iface_bind(int fd, int ifindex, char *ebuf)
 	memset(&sll, 0, sizeof(sll));
 	sll.sll_family		= AF_PACKET;
 	sll.sll_ifindex		= ifindex;
-	sll.sll_protocol	= htons(ETH_P_ALL);
+	sll.sll_protocol	= protocol;
 
 	if (bind(fd, (struct sockaddr *) &sll, sizeof(sll)) == -1) {
 		if (errno == ENETDOWN) {
@@ -6952,4 +6963,13 @@ pcap_platform_lib_version(void)
 #else
 	return ("without TPACKET");
 #endif
+}
+
+int
+pcap_set_protocol(pcap_t *p, int protocol)
+{
+	if (pcap_check_activated(p))
+		return (PCAP_ERROR_ACTIVATED);
+	p->opt.protocol = protocol;
+	return (0);
 }
