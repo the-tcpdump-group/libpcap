@@ -93,38 +93,74 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	int count = 0;
 	int len;
 
+	/*
+	 * Has "pcap_breakloop()" been called?
+	 */
 	if (handle->break_loop) {
+		/*
+		 * Yes - clear the flag that indicates that it
+		 * has, and return PCAP_ERROR_BREAK to indicate
+		 * that we were told to break out of the loop.
+		 */
 		handle->break_loop = 0;
-		return (PCAP_ERROR_BREAK);
+		return PCAP_ERROR_BREAK;
 	}
 	len = handle->cc;
 	if (len == 0) {
+		/*
+		 * The buffer is empty; refill it.
+		 *
+		 * We ignore EINTR, as that might just be due to a signal
+		 * being delivered - if the signal should interrupt the
+		 * loop, the signal handler should call pcap_breakloop()
+		 * to set handle->break_loop (we ignore it on other
+		 * platforms as well).
+		 */
 		do {
 			len = recv(handle->fd, handle->buffer, handle->bufsize, 0);
-			if(errno == ENOBUFS) handlep->packets_nobufs++;
+			if (handle->break_loop) {
+				handle->break_loop = 0;
+				return PCAP_ERROR_BREAK;
+			}
+			if (errno == ENOBUFS)
+				handlep->packets_nobufs++;
 		} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
 
 		if (len < 0) {
 			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
-			return -1;
+			return PCAP_ERROR;
 		}
 
 		bp = (unsigned char *)handle->buffer;
 	} else
 		bp = handle->bp;
 	ep = bp + len;
-	/* ignore interrupt system call error */
 	while (bp < ep) {
+		/*
+		 * Has "pcap_breakloop()" been called?
+		 * If so, return immediately - if we haven't read any
+		 * packets, clear the flag and return PCAP_ERROR_BREAK
+		 * to indicate that we were told to break out of the loop,
+		 * otherwise leave the flag set, so that the *next* call
+		 * will break out of the loop without having read any
+		 * packets, and return the number of packets we've
+		 * processed so far.
+		 */
 		if (handle->break_loop) {
 			handle->bp = bp;
 			handle->cc = ep - bp;
-			if (handle->cc < 0)
-				handle->cc = 0;
 			if (count == 0) {
 				handle->break_loop = 0;
-				return (PCAP_ERROR_BREAK);
+				return PCAP_ERROR_BREAK;
 			} else
-				return (count);
+				return count;
+		}
+		if (ep - bp < NLMSG_SPACE(0)) {
+			/*
+			 * There's less than one netlink message left
+			 * in the buffer.  Give up.
+			 */
+			break;
 		}
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;
 		u_int32_t msg_len;
@@ -221,8 +257,13 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 
 		msg_len = NLMSG_ALIGN(nlh->nlmsg_len);
-		if (msg_len > (u_int)len)
-			msg_len = (u_int)len;
+		/*
+		 * If the message length would run past the end of the
+		 * buffer, truncate it to the remaining space in the
+		 * buffer.
+		 */
+		if (msg_len > ep - bp)
+			msg_len = ep - bp;
 
 		bp += msg_len;
 		if (count >= max_packets && !PACKET_COUNT_IS_UNLIMITED(max_packets)) {
@@ -230,7 +271,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			handle->cc = ep - bp;
 			if (handle->cc < 0)
 				handle->cc = 0;
-			return (count);
+			return count;
 		}
 	}
 
