@@ -89,28 +89,44 @@ static int
 netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
 {
 	struct pcap_netfilter *handlep = handle->priv;
-	const unsigned char *buf;
+	register u_char *bp, *ep;
 	int count = 0;
 	int len;
 
-	/* ignore interrupt system call error */
-	do {
-		len = recv(handle->fd, handle->buffer, handle->bufsize, 0);
-		if (handle->break_loop) {
-			handle->break_loop = 0;
-			return -2;
-		}
-		if(errno == ENOBUFS) handlep->packets_nobufs++;
-	} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
-
-	if (len < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
-		return -1;
+	if (handle->break_loop) {
+		handle->break_loop = 0;
+		return (PCAP_ERROR_BREAK);
 	}
+	len = handle->cc;
+	if (len == 0) {
+		do {
+			len = recv(handle->fd, handle->buffer, handle->bufsize, 0);
+			if(errno == ENOBUFS) handlep->packets_nobufs++;
+		} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
 
-	buf = (unsigned char *)handle->buffer;
-	while ((u_int)len >= NLMSG_SPACE(0)) {
-		const struct nlmsghdr *nlh = (const struct nlmsghdr *) buf;
+		if (len < 0) {
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
+			return -1;
+		}
+
+		bp = (unsigned char *)handle->buffer;
+	} else
+		bp = handle->bp;
+	ep = bp + len;
+	/* ignore interrupt system call error */
+	while (bp < ep) {
+		if (handle->break_loop) {
+			handle->bp = bp;
+			handle->cc = ep - bp;
+			if (handle->cc < 0)
+				handle->cc = 0;
+			if (count == 0) {
+				handle->break_loop = 0;
+				return (PCAP_ERROR_BREAK);
+			} else
+				return (count);
+		}
+		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;
 		u_int32_t msg_len;
 		nftype_t type = OTHER;
 
@@ -208,9 +224,17 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		if (msg_len > (u_int)len)
 			msg_len = (u_int)len;
 
-		len -= msg_len;
-		buf += msg_len;
+		bp += msg_len;
+		if (count >= max_packets && !PACKET_COUNT_IS_UNLIMITED(max_packets)) {
+			handle->bp = bp;
+			handle->cc = ep - bp;
+			if (handle->cc < 0)
+				handle->cc = 0;
+			return (count);
+		}
 	}
+
+	handle->cc = 0;
 	return count;
 }
 
