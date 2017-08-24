@@ -32,13 +32,18 @@ int pcap_set_protocol(pcap_t *p, int protocol);
 .fi
 .SH DESCRIPTION
 .B pcap_set_protocol()
-sets the capture protocol to use on a capture handle when the handle
-is activated.
+sets the protocol to be used in the
+.BR socket (2)
+call to create a capture socket when the handle is activated.  The
+argument is a link-layer protocol value, such as the values in the
+.B <linux/if_ether.h>
+header file, specified in host byte order.
 If
 .I protocol
 is non-zero, packets of that protocol will be captured when the
 handle is activated, otherwise, all packets will be captured.  This
-function is only provided on Linux.
+function is only provided on Linux, and, if it is used on any device
+other than a network interface, it will have no effect.
 .SH RETURN VALUE
 .B pcap_set_protocol()
 returns 0 on success or
