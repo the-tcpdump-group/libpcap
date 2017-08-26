@@ -1063,7 +1063,12 @@
  */
 #define LINKTYPE_VSOCK          271
 
-#define LINKTYPE_MATCHING_MAX	271		/* highest value in the "matching" range */
+/*
+ * Nordic Semiconductor Bluetooth LE sniffer.
+ */
+#define LINKTYPE_NORDIC_BLE	272
+
+#define LINKTYPE_MATCHING_MAX	272		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
