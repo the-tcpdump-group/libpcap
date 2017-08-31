@@ -283,6 +283,9 @@
 /* use Linux packet ring capture if available */
 #undef PCAP_SUPPORT_PACKET_RING
 
+/* target host supports RDMA sniffing */
+#undef PCAP_SUPPORT_RDMASNIFF
+
 /* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB
 

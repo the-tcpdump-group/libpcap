@@ -1861,6 +1861,45 @@ if test "x$enable_packet_ring" != "xno" ; then
 	AC_SUBST(PCAP_SUPPORT_PACKET_RING)
 fi
 
+AC_ARG_ENABLE([rdma],
+[AC_HELP_STRING([--enable-rdma],[enable RDMA capture support @<:@default=yes, if support available@:>@])],
+    [],
+    [enable_rdmasniff=ifavailable])
+
+if test "xxx_only" = yes; then
+	# User requested something-else-only pcap, so they don't
+	# want RDMA support.
+	enable_rdmasniff=no
+fi
+
+if test "x$enable_rdmasniff" != "xno"; then
+	AC_CHECK_LIB(ibverbs, ibv_get_device_list, [
+		AC_CHECK_HEADER(infiniband/verbs.h, [
+			AC_MSG_CHECKING(whether libibverbs defines ibv_create_flow)
+			AC_TRY_LINK(
+				[
+					#include <infiniband/verbs.h>
+				],
+				[
+					(void) ibv_create_flow((struct ibv_qp *) NULL,
+							       (struct ibv_flow_attr *) NULL);
+				],
+				[
+					AC_MSG_RESULT([yes])
+					AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
+					RDMA_SRC=pcap-rdmasniff.c
+					LIBS="-libverbs $LIBS"
+				],
+				[
+					AC_MSG_RESULT([no])
+				]
+			)
+		])
+	])
+	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
+	AC_SUBST(RDMA_SRC)
+fi
+
 AC_PROG_INSTALL
 
 AC_CONFIG_HEADER(config.h)

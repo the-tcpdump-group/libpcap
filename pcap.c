@@ -128,6 +128,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-dbus.h"
 #endif
 
+#ifdef PCAP_SUPPORT_RDMASNIFF
+#include "pcap-rdmasniff.h"
+#endif
+
 static int
 pcap_not_initialized(pcap_t *pcap)
 {
@@ -359,6 +363,9 @@ static struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_DBUS
 	{ dbus_findalldevs, dbus_create },
+#endif
+#ifdef PCAP_SUPPORT_RDMASNIFF
+	{ rdmasniff_findalldevs, rdmasniff_create },
 #endif
 	{ NULL, NULL }
 };
