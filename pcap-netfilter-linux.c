@@ -136,6 +136,9 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		bp = handle->bp;
 	ep = bp + len;
 	while (bp < ep) {
+		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;
+		u_int32_t msg_len;
+		nftype_t type = OTHER;
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 * If so, return immediately - if we haven't read any
@@ -162,9 +165,6 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			 */
 			break;
 		}
-		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;
-		u_int32_t msg_len;
-		nftype_t type = OTHER;
 
 		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || (u_int)len < nlh->nlmsg_len) {
 			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %d) (nlmsg_len: %u)", len, nlh->nlmsg_len);
