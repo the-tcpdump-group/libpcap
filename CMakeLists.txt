@@ -222,7 +222,7 @@ if( WIN32 )
     #
     # WinPcap.
     #
-    set( PCAP_TYPE win32 )
+    set( PCAP_TYPE npf )
 else()
     #
     # UN*X - figure out what type of packet capture mechanism we
