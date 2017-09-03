@@ -41,12 +41,15 @@ extern "C" {
 #endif
 
 #if defined(_WIN32)
+
+#ifdef HAVE_PACKET32
   /*
    * Make sure Packet32.h doesn't define BPF structures that we've
    * probably already defined as a result of including <pcap/pcap.h>.
    */
   #define BPF_MAJOR_VERSION
   #include <Packet32.h>
+#endif
 #elif defined(MSDOS)
   #include <fcntl.h>
   #include <io.h>
@@ -135,6 +138,7 @@ typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
+#ifdef HAVE_PACKET32
 typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
@@ -146,7 +150,8 @@ typedef int	(*setuserbuffer_op_t)(pcap_t *, int);
 typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
 typedef int	(*live_dump_ended_op_t)(pcap_t *, int);
 typedef PAirpcapHandle	(*get_airpcap_handle_op_t)(pcap_t *);
-#endif
+#endif /* HAVE_PACKET32 */
+#endif /* _WIN32 */
 typedef void	(*cleanup_op_t)(pcap_t *);
 
 /*
@@ -165,7 +170,9 @@ struct pcap {
 	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 	ADAPTER *adapter;
+#endif
 #else
 	int fd;
 	int selectable_fd;
@@ -263,11 +270,12 @@ struct pcap {
 	pcap_handler oneshot_callback;
 
 #ifdef _WIN32
+	stats_ex_op_t stats_ex_op;
+#ifdef HAVE_PACKET32
 	/*
 	 * These are, at least currently, specific to the Win32 NPF
 	 * driver.
 	 */
-	stats_ex_op_t stats_ex_op;
 	setbuff_op_t setbuff_op;
 	setmode_op_t setmode_op;
 	setmintocopy_op_t setmintocopy_op;
@@ -279,6 +287,7 @@ struct pcap {
 	live_dump_op_t live_dump_op;
 	live_dump_ended_op_t live_dump_ended_op;
 	get_airpcap_handle_op_t get_airpcap_handle_op;
+#endif
 #endif
 	cleanup_op_t cleanup_op;
 };

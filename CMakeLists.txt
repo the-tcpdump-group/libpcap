@@ -64,6 +64,11 @@ if( WIN32 )
         else( CMAKE_CL_64 )
             link_directories("${PACKET_DLL_DIR}/Lib")
         endif( CMAKE_CL_64 )
+
+        #
+        # If PACKET_DLL_DIR is defined, Packet32 API is available
+        #
+        option (HAVE_PACKET32 "Packet32 (WinPcap NPF driver) is available" ON)
     endif()
     include_directories(
         ../Common/
@@ -143,13 +148,6 @@ check_function_exists( snprintf HAVE_SNPRINTF )
 check_function_exists( vsnprintf HAVE_VSNPRINTF )
 check_function_exists( strtok_r HAVE_STRTOK_R )
 
-if (WIN32)
-    #
-    # Check for Windows-only functions, such as packet.dll functions.
-    #
-    check_function_exists( PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER )
-endif()
-
 #
 # Data types.
 #
@@ -221,9 +219,16 @@ endif( HAVE_REMOTE )
 #
 if( WIN32 )
     #
-    # WinPcap.
+    # Determine the main pcap-XXX.c file from available APIs
     #
-    set( PCAP_TYPE npf )
+    if( HAVE_PACKET32 )
+        #
+        # WinPcap.
+        #
+        set( PCAP_TYPE npf )
+    else()
+        set( PCAP_TYPE null )
+    endif()
 else()
     #
     # UN*X - figure out what type of packet capture mechanism we
@@ -290,7 +295,18 @@ set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
 # if we support capturing.  Don't bother if we don't support
 # capturing.
 #
-if( NOT WIN32 )
+if( WIN32 )
+    if( ${PCAP_TYPE} STREQUAL "npf" )
+        #
+        # WinPcap.
+        #
+        set( FINDALLDEVS_TYPE npf )
+    elseif( ${PCAP_TYPE} STREQUAL "null" )
+        set( FINDALLDEVS_TYPE null )
+    else()
+        message(FATAL_ERROR "Invalid packet capture type: ${PCAP_TYPE}" )
+    endif()
+else()
     #
     # UN*X - figure out what type of interface list mechanism we
     # have.
@@ -547,10 +563,16 @@ add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
 set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
 
 if( WIN32 )
-    target_link_libraries ( ${LIBRARY_NAME}
-        packet
-        ws2_32
-    )
+    if( ${PCAP_TYPE} STREQUAL "npf" )
+        target_link_libraries ( ${LIBRARY_NAME}
+            packet
+            ws2_32
+        )
+    else()
+        target_link_libraries ( ${LIBRARY_NAME}
+            ws2_32
+        )
+    endif()
 endif( WIN32 )
 
 ######################################

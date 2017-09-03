@@ -147,6 +147,7 @@ pcap_not_initialized(pcap_t *pcap)
 }
 
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 static void *
 pcap_not_initialized_ptr(pcap_t *pcap)
 {
@@ -178,6 +179,7 @@ pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
 	    "This handle hasn't been activated yet");
 	return (NULL);
 }
+#endif /* HAVE_PACKET32 */
 #endif
 
 /*
@@ -1246,6 +1248,7 @@ initialize_ops(pcap_t *p)
 	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
 	p->stats_op = (stats_op_t)pcap_not_initialized;
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
 	p->setmode_op = (setmode_op_t)pcap_not_initialized;
@@ -1258,6 +1261,7 @@ initialize_ops(pcap_t *p)
 	p->live_dump_op = (live_dump_op_t)pcap_not_initialized;
 	p->live_dump_ended_op = (live_dump_ended_op_t)pcap_not_initialized;
 	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
+#endif
 #endif
 
 	/*
@@ -2248,10 +2252,15 @@ pcap_fileno(pcap_t *p)
 #ifndef _WIN32
 	return (p->fd);
 #else
+#ifdef HAVE_PACKET32
 	if (p->adapter != NULL)
+		// XXX warning C4311: 'type cast': pointer truncation from 'HANDLE' to 'DWORD'
 		return ((int)(DWORD)p->adapter->hFile);
 	else
 		return (PCAP_ERROR);
+#else
+	return (PCAP_ERROR);
+#endif /* HAVE_PACKET32 */
 #endif
 }
 
@@ -2526,6 +2535,7 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 }
 
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 struct pcap_stat *
 pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
 {
@@ -2741,6 +2751,7 @@ pcap_get_airpcap_handle_dead(pcap_t *p)
 {
 	return (NULL);
 }
+#endif /* HAVE_PACKET32 */
 #endif
 
 /*
@@ -2892,6 +2903,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->opt.tstamp_precision = precision;
 	p->stats_op = pcap_stats_dead;
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = pcap_setbuff_dead;
 	p->setmode_op = pcap_setmode_dead;
@@ -2904,6 +2916,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->live_dump_op = pcap_live_dump_dead;
 	p->live_dump_ended_op = pcap_live_dump_ended_dead;
 	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
+#endif /* HAVE_PACKET32 */
 #endif
 	p->cleanup_op = pcap_cleanup_dead;
 
@@ -2980,6 +2993,7 @@ static const char *pcap_lib_version_string;
 
 #ifdef _WIN32
 
+#ifdef HAVE_PACKET32
 #ifdef HAVE_VERSION_H
 /*
  * libpcap being built for Windows, as part of a WinPcap/Npcap source
@@ -3058,7 +3072,6 @@ pcap_lib_version(void)
 }
 
 #else /* HAVE_VERSION_H */
-
 /*
  * libpcap being built for Windows, not as part of a WinPcap/Npcap source
  * tree.
@@ -3096,6 +3109,21 @@ pcap_lib_version(void)
 }
 
 #endif /* HAVE_VERSION_H */
+
+#else /* HAVE_PACKET32 */
+const char *
+pcap_lib_version(void)
+{
+	if (pcap_lib_version_string == NULL) {
+		/*
+		 * Generate the version string.
+		 */
+		pcap_lib_version_string = pcap_version_string;
+	}
+	return (pcap_version_string);
+}
+
+#endif /* HAVE_PACKET32 */
 
 #elif defined(MSDOS)
 

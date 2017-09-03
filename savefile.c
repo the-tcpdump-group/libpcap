@@ -126,6 +126,7 @@ sf_stats(pcap_t *p, struct pcap_stat *ps)
 }
 
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 static struct pcap_stat *
 sf_stats_ex(pcap_t *p, int *size)
 {
@@ -221,6 +222,7 @@ sf_get_airpcap_handle(pcap_t *pcap)
 {
 	return (NULL);
 }
+#endif /* HAVE_PACKET32 */
 #endif
 
 static int
@@ -442,6 +444,7 @@ found:
 	p->setnonblock_op = sf_setnonblock;
 	p->stats_op = sf_stats;
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 	p->stats_ex_op = sf_stats_ex;
 	p->setbuff_op = sf_setbuff;
 	p->setmode_op = sf_setmode;
@@ -454,6 +457,7 @@ found:
 	p->live_dump_op = sf_live_dump;
 	p->live_dump_ended_op = sf_live_dump_ended;
 	p->get_airpcap_handle_op = sf_get_airpcap_handle;
+#endif
 #endif
 
 	/*

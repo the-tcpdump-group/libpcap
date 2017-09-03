@@ -491,6 +491,9 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
    * Win32 definitions
    */
 
+  PCAP_API struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
+
+#ifdef HAVE_PACKET32
   /*!
     \brief A queue of raw packets that will be sent to the network with pcap_sendqueue_transmit().
   */
@@ -529,8 +532,6 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
   PCAP_API u_int pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue* queue, int sync);
 
-  PCAP_API struct pcap_stat *pcap_stats_ex(pcap_t *p, int *pcap_stat_size);
-
   PCAP_API int pcap_setuserbuffer(pcap_t *p, int size);
 
   PCAP_API int pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks);
@@ -544,6 +545,7 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
   #define MODE_CAPT 0
   #define MODE_STAT 1
   #define MODE_MON 2
+#endif /* HAVE_PACKET32 */
 
 #elif defined(MSDOS)
 

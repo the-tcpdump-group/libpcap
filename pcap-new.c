@@ -612,6 +612,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	if (status < 0)
 		goto fail;
 #ifdef _WIN32
+#ifdef HAVE_PACKET32
 	/*
 	 * This flag is supported on Windows only.
 	 * XXX - is there a way to support it with
@@ -634,6 +635,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 			}
 		}
 	}
+#endif /* HAVE_PACKET32 */
 #endif /* _WIN32 */
 	return fp;
 
