@@ -45,6 +45,10 @@
 #include "pcap-rpcap.h"
 #include "pcap-rpcap-int.h"
 
+#if defined(_MSC_VER) && !defined(strdup)
+#define strdup _strdup
+#endif
+
 /*
  * This file contains the pcap module for capturing from a remote machine's
  * interfaces using the RPCAP protocol.

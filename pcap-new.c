@@ -44,6 +44,10 @@
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strstr, etc
 
+#if defined(_MSC_VER) && !defined(strdup)
+#define strdup _strdup
+#endif
+
 #ifndef _WIN32
 #include <dirent.h>		// for readdir
 #endif
