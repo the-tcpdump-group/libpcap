@@ -42,10 +42,10 @@
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
+#include "sockutils.h"		// for SOCK_ASSERT
 #include "portability.h"
 #include "rpcapd.h"
 #include "fileconf.h"
-#include "sockutils.h"		// for SOCK_ASSERT
 #include "rpcap-protocol.h"
 
 static int strrem(char *string, char chr);

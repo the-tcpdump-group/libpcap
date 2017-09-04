@@ -35,8 +35,13 @@
 #include <config.h>
 #endif
 
-#include "pcap-int.h"	// for the details of the pcap_t structure
+/*
+ * sockutils.h may include <crtdbg.h> on Windows, and pcap-int.h will
+ * include portability.h, and portability.h, on Windows, expects that
+ * <crtdbg.h> has already been included, so include sockutils.h first.
+ */
 #include "sockutils.h"
+#include "pcap-int.h"	// for the details of the pcap_t structure
 #include "pcap-rpcap.h"
 #include "rpcap-protocol.h"
 #include "pcap-rpcap-int.h"
