@@ -1111,201 +1111,6 @@ pcap_freealldevs(pcap_if_t *alldevs)
 #include "pcap-rpcap.h"
 #endif
 
-pcap_t *
-pcap_create(const char *device, char *errbuf)
-{
-	size_t i;
-	int is_theirs;
-	pcap_t *p;
-	char *device_str;
-
-	/*
-	 * A null device name is equivalent to the "any" device -
-	 * which might not be supported on this platform, but
-	 * this means that you'll get a "not supported" error
-	 * rather than, say, a crash when we try to dereference
-	 * the null pointer.
-	 */
-	if (device == NULL)
-		device_str = strdup("any");
-	else {
-#ifdef _WIN32
-		/*
-		 * If the string appears to be little-endian UCS-2/UTF-16,
-		 * convert it to ASCII.
-		 *
-		 * XXX - to UTF-8 instead?  Or report an error if any
-		 * character isn't ASCII?
-		 */
-		if (device[0] != '\0' && device[1] == '\0') {
-			size_t length;
-
-			length = wcslen((wchar_t *)device);
-			device_str = (char *)malloc(length + 1);
-			if (device_str == NULL) {
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "malloc: %s", pcap_strerror(errno));
-				return (NULL);
-			}
-
-			pcap_snprintf(device_str, length + 1, "%ws",
-			    (const wchar_t *)device);
-		} else
-#endif
-			device_str = strdup(device);
-	}
-	if (device_str == NULL) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
-		return (NULL);
-	}
-
-	/*
-	 * Try each of the non-local-network-interface capture
-	 * source types until we find one that works for this
-	 * device or run out of types.
-	 */
-	for (i = 0; capture_source_types[i].create_op != NULL; i++) {
-		is_theirs = 0;
-		p = capture_source_types[i].create_op(device_str, errbuf,
-		    &is_theirs);
-		if (is_theirs) {
-			/*
-			 * The device name refers to a device of the
-			 * type in question; either it succeeded,
-			 * in which case p refers to a pcap_t to
-			 * later activate for the device, or it
-			 * failed, in which case p is null and we
-			 * should return that to report the failure
-			 * to create.
-			 */
-			if (p == NULL) {
-				/*
-				 * We assume the caller filled in errbuf.
-				 */
-				free(device_str);
-				return (NULL);
-			}
-			p->opt.device = device_str;
-			return (p);
-		}
-	}
-
-	/*
-	 * OK, try it as a regular network interface.
-	 */
-	p = pcap_create_interface(device_str, errbuf);
-	if (p == NULL) {
-		/*
-		 * We assume the caller filled in errbuf.
-		 */
-		free(device_str);
-		return (NULL);
-	}
-	p->opt.device = device_str;
-	return (p);
-}
-
-/*
- * Set nonblocking mode on an unactivated pcap_t; this sets a flag
- * checked by pcap_activate(), which sets the mode after calling
- * the activate routine.
- */
-static int
-pcap_setnonblock_unactivated(pcap_t *p, int nonblock)
-{
-	p->opt.nonblock = nonblock;
-	return (0);
-}
-
-static void
-initialize_ops(pcap_t *p)
-{
-	/*
-	 * Set operation pointers for operations that only work on
-	 * an activated pcap_t to point to a routine that returns
-	 * a "this isn't activated" error.
-	 */
-	p->read_op = (read_op_t)pcap_not_initialized;
-	p->inject_op = (inject_op_t)pcap_not_initialized;
-	p->setfilter_op = (setfilter_op_t)pcap_not_initialized;
-	p->setdirection_op = (setdirection_op_t)pcap_not_initialized;
-	p->set_datalink_op = (set_datalink_op_t)pcap_not_initialized;
-	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
-	p->stats_op = (stats_op_t)pcap_not_initialized;
-#ifdef _WIN32
-	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
-	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
-	p->setmode_op = (setmode_op_t)pcap_not_initialized;
-	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
-	p->getevent_op = pcap_getevent_not_initialized;
-	p->oid_get_request_op = (oid_get_request_op_t)pcap_not_initialized;
-	p->oid_set_request_op = (oid_set_request_op_t)pcap_not_initialized;
-	p->sendqueue_transmit_op = pcap_sendqueue_transmit_not_initialized;
-	p->setuserbuffer_op = (setuserbuffer_op_t)pcap_not_initialized;
-	p->live_dump_op = (live_dump_op_t)pcap_not_initialized;
-	p->live_dump_ended_op = (live_dump_ended_op_t)pcap_not_initialized;
-	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
-#endif
-
-	/*
-	 * Default cleanup operation - implementations can override
-	 * this, but should call pcap_cleanup_live_common() after
-	 * doing their own additional cleanup.
-	 */
-	p->cleanup_op = pcap_cleanup_live_common;
-
-	/*
-	 * In most cases, the standard one-shot callback can
-	 * be used for pcap_next()/pcap_next_ex().
-	 */
-	p->oneshot_callback = pcap_oneshot;
-}
-
-static pcap_t *
-pcap_alloc_pcap_t(char *ebuf, size_t size)
-{
-	char *chunk;
-	pcap_t *p;
-
-	/*
-	 * Allocate a chunk of memory big enough for a pcap_t
-	 * plus a structure following it of size "size".  The
-	 * structure following it is a private data structure
-	 * for the routines that handle this pcap_t.
-	 */
-	chunk = malloc(sizeof (pcap_t) + size);
-	if (chunk == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
-		return (NULL);
-	}
-	memset(chunk, 0, sizeof (pcap_t) + size);
-
-	/*
-	 * Get a pointer to the pcap_t at the beginning.
-	 */
-	p = (pcap_t *)chunk;
-
-#ifndef _WIN32
-	p->fd = -1;	/* not opened yet */
-	p->selectable_fd = -1;
-#endif
-
-	if (size == 0) {
-		/* No private data was requested. */
-		p->priv = NULL;
-	} else {
-		/*
-		 * Set the pointer to the private data; that's the structure
-		 * of size "size" following the pcap_t.
-		 */
-		p->priv = (void *)(chunk + sizeof (pcap_t));
-	}
-
-	return (p);
-}
-
 #ifdef HAVE_REMOTE
 int
 pcap_createsrcstr(char *source, int type, const char *host, const char *port, const char *name, char *errbuf)
@@ -1534,6 +1339,201 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char *na
 	}
 }
 #endif
+
+pcap_t *
+pcap_create(const char *device, char *errbuf)
+{
+	size_t i;
+	int is_theirs;
+	pcap_t *p;
+	char *device_str;
+
+	/*
+	 * A null device name is equivalent to the "any" device -
+	 * which might not be supported on this platform, but
+	 * this means that you'll get a "not supported" error
+	 * rather than, say, a crash when we try to dereference
+	 * the null pointer.
+	 */
+	if (device == NULL)
+		device_str = strdup("any");
+	else {
+#ifdef _WIN32
+		/*
+		 * If the string appears to be little-endian UCS-2/UTF-16,
+		 * convert it to ASCII.
+		 *
+		 * XXX - to UTF-8 instead?  Or report an error if any
+		 * character isn't ASCII?
+		 */
+		if (device[0] != '\0' && device[1] == '\0') {
+			size_t length;
+
+			length = wcslen((wchar_t *)device);
+			device_str = (char *)malloc(length + 1);
+			if (device_str == NULL) {
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "malloc: %s", pcap_strerror(errno));
+				return (NULL);
+			}
+
+			pcap_snprintf(device_str, length + 1, "%ws",
+			    (const wchar_t *)device);
+		} else
+#endif
+			device_str = strdup(device);
+	}
+	if (device_str == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "malloc: %s", pcap_strerror(errno));
+		return (NULL);
+	}
+
+	/*
+	 * Try each of the non-local-network-interface capture
+	 * source types until we find one that works for this
+	 * device or run out of types.
+	 */
+	for (i = 0; capture_source_types[i].create_op != NULL; i++) {
+		is_theirs = 0;
+		p = capture_source_types[i].create_op(device_str, errbuf,
+		    &is_theirs);
+		if (is_theirs) {
+			/*
+			 * The device name refers to a device of the
+			 * type in question; either it succeeded,
+			 * in which case p refers to a pcap_t to
+			 * later activate for the device, or it
+			 * failed, in which case p is null and we
+			 * should return that to report the failure
+			 * to create.
+			 */
+			if (p == NULL) {
+				/*
+				 * We assume the caller filled in errbuf.
+				 */
+				free(device_str);
+				return (NULL);
+			}
+			p->opt.device = device_str;
+			return (p);
+		}
+	}
+
+	/*
+	 * OK, try it as a regular network interface.
+	 */
+	p = pcap_create_interface(device_str, errbuf);
+	if (p == NULL) {
+		/*
+		 * We assume the caller filled in errbuf.
+		 */
+		free(device_str);
+		return (NULL);
+	}
+	p->opt.device = device_str;
+	return (p);
+}
+
+/*
+ * Set nonblocking mode on an unactivated pcap_t; this sets a flag
+ * checked by pcap_activate(), which sets the mode after calling
+ * the activate routine.
+ */
+static int
+pcap_setnonblock_unactivated(pcap_t *p, int nonblock)
+{
+	p->opt.nonblock = nonblock;
+	return (0);
+}
+
+static void
+initialize_ops(pcap_t *p)
+{
+	/*
+	 * Set operation pointers for operations that only work on
+	 * an activated pcap_t to point to a routine that returns
+	 * a "this isn't activated" error.
+	 */
+	p->read_op = (read_op_t)pcap_not_initialized;
+	p->inject_op = (inject_op_t)pcap_not_initialized;
+	p->setfilter_op = (setfilter_op_t)pcap_not_initialized;
+	p->setdirection_op = (setdirection_op_t)pcap_not_initialized;
+	p->set_datalink_op = (set_datalink_op_t)pcap_not_initialized;
+	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
+	p->stats_op = (stats_op_t)pcap_not_initialized;
+#ifdef _WIN32
+	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
+	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
+	p->setmode_op = (setmode_op_t)pcap_not_initialized;
+	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
+	p->getevent_op = pcap_getevent_not_initialized;
+	p->oid_get_request_op = (oid_get_request_op_t)pcap_not_initialized;
+	p->oid_set_request_op = (oid_set_request_op_t)pcap_not_initialized;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_not_initialized;
+	p->setuserbuffer_op = (setuserbuffer_op_t)pcap_not_initialized;
+	p->live_dump_op = (live_dump_op_t)pcap_not_initialized;
+	p->live_dump_ended_op = (live_dump_ended_op_t)pcap_not_initialized;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
+#endif
+
+	/*
+	 * Default cleanup operation - implementations can override
+	 * this, but should call pcap_cleanup_live_common() after
+	 * doing their own additional cleanup.
+	 */
+	p->cleanup_op = pcap_cleanup_live_common;
+
+	/*
+	 * In most cases, the standard one-shot callback can
+	 * be used for pcap_next()/pcap_next_ex().
+	 */
+	p->oneshot_callback = pcap_oneshot;
+}
+
+static pcap_t *
+pcap_alloc_pcap_t(char *ebuf, size_t size)
+{
+	char *chunk;
+	pcap_t *p;
+
+	/*
+	 * Allocate a chunk of memory big enough for a pcap_t
+	 * plus a structure following it of size "size".  The
+	 * structure following it is a private data structure
+	 * for the routines that handle this pcap_t.
+	 */
+	chunk = malloc(sizeof (pcap_t) + size);
+	if (chunk == NULL) {
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		return (NULL);
+	}
+	memset(chunk, 0, sizeof (pcap_t) + size);
+
+	/*
+	 * Get a pointer to the pcap_t at the beginning.
+	 */
+	p = (pcap_t *)chunk;
+
+#ifndef _WIN32
+	p->fd = -1;	/* not opened yet */
+	p->selectable_fd = -1;
+#endif
+
+	if (size == 0) {
+		/* No private data was requested. */
+		p->priv = NULL;
+	} else {
+		/*
+		 * Set the pointer to the private data; that's the structure
+		 * of size "size" following the pcap_t.
+		 */
+		p->priv = (void *)(chunk + sizeof (pcap_t));
+	}
+
+	return (p);
+}
 
 pcap_t *
 pcap_create_common(char *ebuf, size_t size)
