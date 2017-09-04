@@ -70,10 +70,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #define INT_MAX		2147483647
 #endif
 
-#if defined(_MSC_VER) && !defined(strdup)
-#define strdup _strdup
-#endif
-
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
