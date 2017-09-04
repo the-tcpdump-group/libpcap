@@ -3,6 +3,25 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+/*
+ * Must come first to avoid warnings on Windows.
+ *
+ * Flex-generated scanners may only include <inttypes.h> if __STDC_VERSION__
+ * is defined with a value >= 199901, meaning "full C99", and MSVC may not
+ * define it with that value, because it isn't 100% C99-compliant, even
+ * though it has an <inttypes.h> capable of defining everything the Flex
+ * scanner needs.
+ *
+ * We, however, will include it if we know we have an MSVC version that has
+ * it; this means that we may define the INTn_MAX and UINTn_MAX values in
+ * scanner.c, and then include <stdint.h>, which may define them differently
+ * (same value, but different string of characters), causing compiler warnings.
+ *
+ * If we include it here, and they're defined, that'll prevent scanner.c
+ * from defining them.
+ */
+#include <pcap-types.h>
 }
 
 /*
@@ -65,16 +84,6 @@
 
 #ifdef _WIN32
   #include <pcap-stdinc.h>
-#else
-  #if HAVE_INTTYPES_H
-    #include <inttypes.h>
-  #elif HAVE_STDINT_H
-    #include <stdint.h>
-  #endif
-  #ifdef HAVE_SYS_BITYPES_H
-    #include <sys/bitypes.h>
-  #endif
-  #include <sys/types.h>
 #endif
 
 #include <ctype.h>

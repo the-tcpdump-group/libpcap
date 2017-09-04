@@ -24,18 +24,10 @@
 #include <config.h>
 #endif
 
+#include <pcap-types.h>
 #ifdef _WIN32
 #include <pcap-stdinc.h>
 #else /* _WIN32 */
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#elif HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-#include <sys/types.h>
 #include <sys/socket.h>
 #endif /* _WIN32 */
 
