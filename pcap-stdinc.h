@@ -76,51 +76,6 @@
 
 #include <ws2tcpip.h>
 
-#if defined(_MSC_VER)
-  /*
-   * MSVC.
-   */
-  #if _MSC_VER >= 1800
-    /*
-     * VS 2013 or newer; we have <inttypes.h>.
-     */
-    #include <inttypes.h>
-
-    #define u_int8_t uint8_t
-    #define u_int16_t uint16_t
-    #define u_int32_t uint32_t
-    #define u_int64_t uint64_t
-  #else
-    /*
-     * Earlier VS; we have to define this stuff ourselves.
-     */
-    #ifndef HAVE_U_INT8_T
-      typedef unsigned char u_int8_t;
-      typedef signed char int8_t;
-    #endif
-
-    #ifndef HAVE_U_INT16_T
-      typedef unsigned short u_int16_t;
-      typedef signed short int16_t;
-    #endif
-
-    #ifndef HAVE_U_INT32_T
-      typedef unsigned int u_int32_t;
-      typedef signed int int32_t;
-    #endif
-
-    #ifndef HAVE_U_INT64_T
-      #ifdef _MSC_EXTENSIONS
-        typedef unsigned _int64 u_int64_t;
-        typedef _int64 int64_t;
-      #else /* _MSC_EXTENSIONS */
-        typedef unsigned long long u_int64_t;
-        typedef long long int64_t;
-      #endif
-    #endif
-  #endif
-#elif defined(__MINGW32__)
-  #include <stdint.h>
-#endif
+#include <pcap-types.h>
 
 #endif /* pcap_stdinc_h */

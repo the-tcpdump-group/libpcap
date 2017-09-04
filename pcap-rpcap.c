@@ -39,8 +39,8 @@
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
-#include "pcap-int.h"
 #include "sockutils.h"
+#include "pcap-int.h"
 #include "rpcap-protocol.h"
 #include "pcap-rpcap.h"
 #include "pcap-rpcap-int.h"

@@ -62,8 +62,8 @@
 #define INT_MAX		2147483647
 #endif
 
-#include "portability.h"
 #include "sockutils.h"
+#include "portability.h"
 
 #if defined(_MSC_VER) && !defined(strdup)
 #define strdup _strdup
