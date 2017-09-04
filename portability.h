@@ -88,7 +88,13 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-  #ifndef _DEBUG
+  /*
+   * If <crtdbg.h> has been included, and _DEBUG is defined, and
+   * __STDC__ is zero, <crtdbg.h> will define strdup() to call
+   * _strdup_dbg().  So if it's already defined, don't redefine
+   * it.
+   */
+  #ifndef strdup
   #define strdup	_strdup
   #endif
   #define sscanf	sscanf_s
