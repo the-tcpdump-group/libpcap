@@ -65,6 +65,10 @@
 #include "sockutils.h"
 #include "portability.h"
 
+#if defined(_MSC_VER) && !defined(strdup)
+#define strdup _strdup
+#endif
+
 #ifdef _WIN32
   /*
    * Winsock initialization.

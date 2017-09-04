@@ -219,6 +219,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 
 #elif defined(_WIN32)
 
+#ifdef HAVE_PACKET32
 /*
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the
@@ -403,5 +404,19 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	*netp = *maskp = 0;
 	return (0);
 }
+#else /* HAVE_PACKET32 */
+char *
+pcap_lookupdev(char *errbuf) {
+	return NULL;
+}
 
+int
+pcap_lookupnet(const char *device,
+	bpf_u_int32 *netp,
+	bpf_u_int32 *maskp,
+	char *errbuf)
+{
+	return 0;
+}
+#endif /* HAVE_PACKET32 */
 #endif /* !_WIN32 && !MSDOS */

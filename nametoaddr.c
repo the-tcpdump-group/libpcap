@@ -102,6 +102,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <pcap/namedb.h>
 #include "nametoaddr.h"
 
+#if defined(_MSC_VER) && !defined(strdup)
+#define strdup _strdup
+#endif
+
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
