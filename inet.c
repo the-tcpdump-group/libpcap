@@ -375,7 +375,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	npf_if_addr if_addrs[MAX_NETWORK_ADDRESSES];
 	LONG if_addr_size = MAX_NETWORK_ADDRESSES;
 	struct sockaddr_in *t_addr;
-	unsigned int i;
+	LONG i;
 
 	if (!PacketGetNetInfoEx((void *)device, if_addrs, &if_addr_size)) {
 		*netp = *maskp = 0;
