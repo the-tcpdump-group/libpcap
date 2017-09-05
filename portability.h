@@ -97,7 +97,6 @@ extern "C" {
   #ifndef strdup
   #define strdup	_strdup
   #endif
-  #define sscanf	sscanf_s
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
   #define fopen(x, y) \
