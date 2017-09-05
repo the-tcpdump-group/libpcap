@@ -26,7 +26,7 @@
 
 #include <pcap-types.h>
 #ifdef _WIN32
-#include <pcap-stdinc.h>
+#include <ws2tcpip.h>
 #else /* _WIN32 */
 #include <sys/socket.h>
 #endif /* _WIN32 */

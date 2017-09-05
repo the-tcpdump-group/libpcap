@@ -36,9 +36,7 @@
 #endif
 
 #include <pcap-types.h>
-#ifdef _WIN32
-#include <pcap-stdinc.h>
-#else /* _WIN32 */
+#ifndef _WIN32
 #include <sys/param.h>
 #ifndef MSDOS
 #include <sys/file.h>

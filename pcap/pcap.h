@@ -72,12 +72,12 @@
 #include <pcap/export-defs.h>
 
 #if defined(_WIN32)
-  #include <pcap-stdinc.h>
+  #include <winsock2.h>		/* u_int, u_char etc. */
 #elif defined(MSDOS)
-  #include <sys/types.h>
-  #include <sys/socket.h>  /* u_int, u_char etc. */
+  #include <sys/types.h>	/* u_int, u_char etc. */
+  #include <sys/socket.h>
 #else /* UN*X */
-  #include <sys/types.h>
+  #include <sys/types.h>	/* u_int, u_char etc. */
   #include <sys/time.h>
 #endif /* _WIN32/MSDOS/UN*X */
 

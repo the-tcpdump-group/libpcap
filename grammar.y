@@ -50,9 +50,7 @@
 #include <config.h>
 #endif
 
-#ifdef _WIN32
-#include <pcap-stdinc.h>
-#else /* _WIN32 */
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/socket.h>
 #endif /* _WIN32 */

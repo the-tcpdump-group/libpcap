@@ -34,7 +34,8 @@
 
 #include <pcap-types.h>
 #ifdef _WIN32
-#include <pcap-stdinc.h>
+#include <io.h>
+#include <fcntl.h>
 #endif /* _WIN32 */
 
 #include <errno.h>

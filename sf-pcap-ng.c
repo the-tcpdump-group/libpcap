@@ -26,9 +26,6 @@
 #endif
 
 #include <pcap-types.h>
-#ifdef _WIN32
-#include <pcap-stdinc.h>
-#endif /* _WIN32 */
 
 #include <errno.h>
 #include <memory.h>
