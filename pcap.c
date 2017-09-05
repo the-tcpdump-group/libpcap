@@ -1109,234 +1109,541 @@ pcap_freealldevs(pcap_if_t *alldevs)
 
 #ifdef HAVE_REMOTE
 #include "pcap-rpcap.h"
-#endif
 
-#ifdef HAVE_REMOTE
-int
-pcap_createsrcstr(char *source, int type, const char *host, const char *port, const char *name, char *errbuf)
+/*
+ * Extract a substring from a string.
+ */
+static char *
+get_substring(const char *p, size_t len, char *ebuf)
 {
-	switch (type)
-	{
-	case PCAP_SRC_FILE:
-	{
-		strlcpy(source, PCAP_SRC_FILE_STRING, PCAP_BUF_SIZE);
-		if ((name) && (*name))
-		{
-			strlcat(source, name, PCAP_BUF_SIZE);
-			return 0;
+	char *token;
+
+	token = malloc(len + 1);
+	if (token == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		return (NULL);
+	}
+	memcpy(token, p, len);
+	token[len] = '\0';
+	return (token);
+}
+
+/*
+ * Parse a capture source that might be a URL.
+ *
+ * If the source is not a URL, *schemep, *userinfop, *hostp, and *portp
+ * are set to NULL, *pathp is set to point to the source, and 0 is
+ * returned.
+ *
+ * If source is a URL, and the URL refers to a local device (a special
+ * case of rpcap:), *schemep, *userinfop, *hostp, and *portp are set
+ * to NULL, *pathp is set to point to the device name, and 0 is returned.
+ *
+ * If source is a URL, and it's not a special case that refers to a local
+ * device, and the parse succeeds:
+ *
+ *    *schemep is set to point to an allocated string containing the scheme;
+ *
+ *    if user information is present in the URL, *userinfop is set to point
+ *    to an allocated string containing the user information, otherwise
+ *    it's set to NULL;
+ *
+ *    if host information is present in the URL, *hostp is set to point
+ *    to an allocated string containing the host information, otherwise
+ *    it's set to NULL;
+ *
+ *    if a port number is present in the URL, *portp is set to point
+ *    to an allocated string containing the port number, otherwise
+ *    it's set to NULL;
+ *
+ *    *pathp is set to point to an allocated string containing the
+ *    path;
+ *
+ * and 0 is returned.
+ *
+ * If the parse fails, ebuf is set to an error string, and -1 is returned.
+ */
+static int
+pcap_parse_source(const char *source, char **schemep, char **userinfop,
+    char **hostp, char **portp, char **pathp, char *ebuf)
+{
+	char *colonp;
+	size_t scheme_len;
+	char *scheme;
+	const char *endp;
+	size_t authority_len;
+	char *authority;
+	char *parsep, *atsignp, *bracketp;
+	char *userinfo, *host, *port, *path;
+
+	/*
+	 * Start out returning nothing.
+	 */
+	*schemep = NULL;
+	*userinfop = NULL;
+	*hostp = NULL;
+	*portp = NULL;
+	*pathp = NULL;
+
+	/*
+	 * RFC 3986 says:
+	 *
+	 *   URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+	 *
+	 *   hier-part   = "//" authority path-abempty
+	 *               / path-absolute
+	 *               / path-rootless
+	 *               / path-empty
+	 *
+	 *   authority   = [ userinfo "@" ] host [ ":" port ]
+	 *
+	 *   userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
+         *
+         * Step 1: look for the ":" at the end of the scheme.
+	 * A colon in the source is *NOT* sufficient to indicate that
+	 * this is a URL, as interface names on some platforms might
+	 * include colons (e.g., I think some Solaris interfaces
+	 * might).
+	 */
+	colonp = strchr(source, ':');
+	if (colonp == NULL) {
+		/*
+		 * The source is the device to open.
+		 * Return a NULL pointer for the scheme, user information,
+		 * host, and port, and return the device as the path.
+		 */
+		*pathp = strdup(source);
+		if (*pathp == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			    pcap_strerror(errno));
+			return (-1);
 		}
-		else
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The file name cannot be NULL.");
-			return -1;
+		return (0);
+	}
+
+	/*
+	 * All schemes must have "//" after them, i.e. we only support
+	 * hier-part   = "//" authority path-abempty, not
+	 * hier-part   = path-absolute
+	 * hier-part   = path-rootless
+	 * hier-part   = path-empty
+	 *
+	 * We need that in order to distinguish between a local device
+	 * name that happens to contain a colon and a URI.
+	 */
+	if (strncmp(colonp + 1, "//", 2) != 0) {
+		/*
+		 * The source is the device to open.
+		 * Return a NULL pointer for the scheme, user information,
+		 * host, and port, and return the device as the path.
+		 */
+		*pathp = strdup(source);
+		if (*pathp == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+		return (0);
+	}
+
+	/*
+	 * XXX - check whether the purported scheme could be a scheme?
+	 */
+
+	/*
+	 * OK, this looks like a URL.
+	 * Get the scheme.
+	 */
+	scheme_len = colonp - source;
+	scheme = malloc(scheme_len + 1);
+	if (scheme == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	memcpy(scheme, source, scheme_len);
+	scheme[scheme_len] = '\0';
+	 
+	/*
+	 * Treat file: specially - take everything after file:// as
+	 * the pathname.
+	 */
+	if (pcap_strcasecmp(scheme, "file") == 0) {
+		*pathp = strdup(colonp + 3);
+		if (*pathp == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+		return (0);
+	}
+
+	/*
+	 * The WinPcap documentation says you can specify a local
+	 * interface with "rpcap://{device}"; we special-case
+	 * that here.  If the scheme is "rpcap", and there are
+	 * no slashes past the "//", we just return the device.
+	 *
+	 * XXX - %-escaping?
+	 */
+	if (pcap_strcasecmp(scheme, "rpcap") == 0 &&
+	    strchr(colonp + 3, '/') == NULL) {
+		/*
+		 * Local device.
+		 *
+		 * Return a NULL pointer for the scheme, user information,
+		 * host, and port, and return the device as the path.
+		 */
+		free(scheme);
+		*pathp = strdup(colonp + 3);
+		if (*pathp == NULL) {
+			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			    pcap_strerror(errno));
+			return (-1);
+		}
+		return (0);
+	}
+
+	/*
+	 * OK, now start parsing the authority.
+	 * Get token, terminated with / or terminated at the end of
+	 * the string.
+	 */
+	authority_len = strcspn(colonp + 3, "/");
+	authority = get_substring(colonp + 3, authority_len, ebuf);
+	if (authority == NULL) {
+		/*
+		 * Error.
+		 */
+		free(scheme);
+		return (-1);
+	}
+	endp = colonp + 3 + authority_len;
+
+	/*
+	 * Now carve the authority field into its components.
+	 */
+	parsep = authority;
+
+	/*
+	 * Is there a userinfo field?
+	 */
+	atsignp = strchr(parsep, '@');
+	if (atsignp != NULL) {
+		/*
+		 * Yes.
+		 */
+		size_t userinfo_len;
+
+		userinfo_len = atsignp - parsep;
+		userinfo = get_substring(parsep, userinfo_len, ebuf);
+		if (userinfo == NULL) {
+			/*
+			 * Error.
+			 */
+			free(authority);
+			free(scheme);
+			return (-1);
+		}
+		parsep = atsignp + 1;
+	} else {
+		/*
+		 * No.
+		 */
+		userinfo = NULL;
+	}
+
+	/*
+	 * Is there a host field?
+	 */
+	if (*parsep == '\0') {
+		/*
+		 * No; there's no host field or port field.
+		 */
+		host = NULL;
+		port = NULL;
+	} else {
+		/*
+		 * Yes.
+		 */
+		size_t host_len;
+
+		/*
+		 * Is it an IP-literal?
+		 */
+		if (*parsep == '[') {
+			/*
+			 * Yes.
+			 * Treat verything up to the closing square
+			 * bracket as the IP-Literal; we don't worry
+			 * about whether it's a valid IPv6address or
+			 * IPvFuture.
+			 */
+			bracketp = strchr(parsep, ']');
+			if (bracketp == NULL) {
+				/*
+				 * There's no closing square bracket.
+				 */
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "IP-literal in URL doesn't end with ]");
+				free(userinfo);
+				free(authority);
+				free(scheme);
+				return (-1);
+			}
+			if (*(bracketp + 1) != '\0' &&
+			    *(bracketp + 1) != ':') {
+				/*
+				 * There's extra crud after the
+				 * closing square bracketn.
+				 */
+				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "Extra text after IP-literal in URL");
+				free(userinfo);
+				free(authority);
+				free(scheme);
+				return (-1);
+			}
+			host_len = (bracketp - 1) - parsep;
+			host = get_substring(parsep + 1, host_len, ebuf);
+			if (host == NULL) {
+				/*
+				 * Error.
+				 */
+				free(userinfo);
+				free(authority);
+				free(scheme);
+				return (-1);
+			}
+			parsep = bracketp + 1;
+		} else {
+			/*
+			 * No.
+			 * Treat everything up to a : or the end of
+			 * the string as the host.
+			 */
+			host_len = strcspn(parsep, ":");
+			host = get_substring(parsep, host_len, ebuf);
+			if (host == NULL) {
+				/*
+				 * Error.
+				 */
+				free(userinfo);
+				free(authority);
+				free(scheme);
+				return (-1);
+			}
+			parsep = parsep + host_len;
+		}
+
+		/*
+		 * Is there a port field?
+		 */
+		if (*parsep == ':') {
+			/*
+			 * Yes.  It's the rest of the authority field.
+			 */
+			size_t port_len;
+
+			parsep++;
+			port_len = strlen(parsep);
+			port = get_substring(parsep, port_len, ebuf);
+			if (port == NULL) {
+				/*
+				 * Error.
+				 */
+				free(host);
+				free(userinfo);
+				free(authority);
+				free(scheme);
+				return (-1);
+			}
+		} else {
+			/*
+			 * No.
+			 */
+			port = NULL;
 		}
 	}
 
+	/*
+	 * Everything else is the path.  Strip off the leading /.
+	 */
+	if (*endp == '\0')
+		path = strdup("");
+	else
+		path = strdup(endp + 1);
+	if (path == NULL) {
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		    pcap_strerror(errno));
+		free(port);
+		free(host);
+		free(userinfo);
+		free(scheme);
+		return (-1);
+	}
+	*schemep = scheme;
+	*userinfop = userinfo;
+	*hostp = host;
+	*portp = port;
+	*pathp = path;
+	return (0);
+}
+
+int
+pcap_createsrcstr(char *source, int type, const char *host, const char *port,
+    const char *name, char *errbuf)
+{
+	switch (type) {
+
+	case PCAP_SRC_FILE:
+		strlcpy(source, PCAP_SRC_FILE_STRING, PCAP_BUF_SIZE);
+		if (name != NULL && *name != '\0') {
+			strlcat(source, name, PCAP_BUF_SIZE);
+			return (0);
+		} else {
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "The file name cannot be NULL.");
+			return (-1);
+		}
+
 	case PCAP_SRC_IFREMOTE:
-	{
 		strlcpy(source, PCAP_SRC_IF_STRING, PCAP_BUF_SIZE);
-		if ((host) && (*host))
-		{
-			if ((strcspn(host, "aAbBcCdDeEfFgGhHjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ")) == strlen(host))
-			{
-				/* the host name does not contains alphabetic chars. So, it is a numeric address */
-				/* In this case we have to include it between square brackets */
+		if (host != NULL && *host != '\0') {
+			if (strchr(host, ':') != NULL) {
+				/*
+				 * The host name contains a colon, so it's
+				 * probably an IPv6 address, and needs to
+				 * be included in square brackets.
+				 */
 				strlcat(source, "[", PCAP_BUF_SIZE);
 				strlcat(source, host, PCAP_BUF_SIZE);
 				strlcat(source, "]", PCAP_BUF_SIZE);
-			}
-			else
+			} else
 				strlcat(source, host, PCAP_BUF_SIZE);
 
-			if ((port) && (*port))
-			{
+			if (port != NULL && *port != '\0') {
 				strlcat(source, ":", PCAP_BUF_SIZE);
 				strlcat(source, port, PCAP_BUF_SIZE);
 			}
 
 			strlcat(source, "/", PCAP_BUF_SIZE);
-		}
-		else
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The host name cannot be NULL.");
-			return -1;
+		} else {
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "The host name cannot be NULL.");
+			return (-1);
 		}
 
-		if ((name) && (*name))
+		if (name != NULL && *name != '\0')
 			strlcat(source, name, PCAP_BUF_SIZE);
 
-		return 0;
-	}
+		return (0);
 
 	case PCAP_SRC_IFLOCAL:
-	{
 		strlcpy(source, PCAP_SRC_IF_STRING, PCAP_BUF_SIZE);
 
-		if ((name) && (*name))
+		if (name != NULL && *name != '\0')
 			strlcat(source, name, PCAP_BUF_SIZE);
 
-		return 0;
-	}
+		return (0);
 
 	default:
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The interface type is not valid.");
-		return -1;
-	}
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "The interface type is not valid.");
+		return (-1);
 	}
 }
 
 int
-pcap_parsesrcstr(const char *source, int *type, char *host, char *port, char *name, char *errbuf)
+pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
+    char *name, char *errbuf)
 {
-	char *ptr;
-	int ntoken;
-	char tmpname[PCAP_BUF_SIZE];
-	char tmphost[PCAP_BUF_SIZE];
-	char tmpport[PCAP_BUF_SIZE];
-	int tmptype;
+	char *scheme, *tmpuserinfo, *tmphost, *tmpport, *tmppath;
 
 	/* Initialization stuff */
-	tmpname[0] = 0;
-	tmphost[0] = 0;
-	tmpport[0] = 0;
-
 	if (host)
-		*host = 0;
+		*host = '\0';
 	if (port)
-		*port = 0;
+		*port = '\0';
 	if (name)
-		*name = 0;
+		*name = '\0';
 
-	/* Look for a 'rpcap://' identifier */
-	if ((ptr = strstr(source, PCAP_SRC_IF_STRING)) != NULL)
-	{
-		if (strlen(PCAP_SRC_IF_STRING) == strlen(source))
-		{
-			/* The source identifier contains only the 'rpcap://' string. */
-			/* So, this is a local capture. */
+	/* Parse the source string */
+	if (pcap_parse_source(source, &scheme, &tmpuserinfo, &tmphost,
+	    &tmpport, &tmppath, errbuf) == -1) {
+		/*
+		 * Fail.
+		 */
+		return (-1);
+	}
+
+	if (scheme == NULL) {
+		/*
+		 * Local device.
+		 */
+		if (name && tmppath)
+			strlcpy(name, tmppath, PCAP_BUF_SIZE);
+		if (type)
 			*type = PCAP_SRC_IFLOCAL;
-			return 0;
-		}
+		free(tmppath);
+		free(tmphost);
+		free(tmpuserinfo);
+		return (0);
+	}
 
-		ptr += strlen(PCAP_SRC_IF_STRING);
-
-		if (strchr(ptr, '[')) /* This is probably a numeric address */
-		{
-			ntoken = sscanf(ptr, "[%[1234567890:.]]:%[^/]/%s", tmphost, tmpport, tmpname);
-
-			if (ntoken == 1)	/* probably the port is missing */
-				ntoken = sscanf(ptr, "[%[1234567890:.]]/%s", tmphost, tmpname);
-
-			tmptype = PCAP_SRC_IFREMOTE;
-		}
-		else
-		{
-			ntoken = sscanf(ptr, "%[^/:]:%[^/]/%s", tmphost, tmpport, tmpname);
-
-			if (ntoken == 1)
-			{
-				/*
-				 * This can be due to two reasons:
-				 * - we want a remote capture, but the network port is missing
-				 * - we want to do a local capture
-				 * To distinguish between the two, we look for the '/' char
-				 */
-				if (strchr(ptr, '/'))
-				{
-					/* We're on a remote capture */
-					sscanf(ptr, "%[^/]/%s", tmphost, tmpname);
-					tmptype = PCAP_SRC_IFREMOTE;
-				}
-				else
-				{
-					/* We're on a local capture */
-					if (*ptr)
-						strlcpy(tmpname, ptr, PCAP_BUF_SIZE);
-
-					/* Clean the host name, since it is a remote capture */
-					/* NOTE: the host name has been assigned in the previous "ntoken= sscanf(...)" line */
-					tmphost[0] = 0;
-
-					tmptype = PCAP_SRC_IFLOCAL;
-				}
-			}
+	if (strcmp(scheme, "rpcap") == 0) {
+		/*
+		 * rpcap://
+		 *
+		 * pcap_parse_source() has already handled the case of
+		 * rpcap://device
+		 */
+		if (host && tmphost) {
+			if (tmpuserinfo)
+				pcap_snprintf(host, PCAP_BUF_SIZE, "%s@%s",
+				    tmpuserinfo, tmphost);
 			else
-				tmptype = PCAP_SRC_IFREMOTE;
+				strlcpy(host, tmphost, PCAP_BUF_SIZE);
 		}
-
-		if (host)
-			strlcpy(host, tmphost, PCAP_BUF_SIZE);
-		if (port)
+		if (port && tmpport)
 			strlcpy(port, tmpport, PCAP_BUF_SIZE);
+		if (name && tmppath)
+			strlcpy(name, tmppath, PCAP_BUF_SIZE);
 		if (type)
-			*type = tmptype;
-
-		if (name)
-		{
-			/*
-			 * If the user wants the host name, but it cannot be located into the source string, return error
-			 * However, if the user is not interested in the interface name (e.g. if we're called by
-			 * pcap_findalldevs_ex(), which does not have interface name, do not return error
-			 */
-			if (tmpname[0])
-			{
-				strlcpy(name, tmpname, PCAP_BUF_SIZE);
-			}
-			else
-			{
-				if (errbuf)
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The interface name has not been specified in the source string.");
-
-				return -1;
-			}
-		}
-
-		return 0;
+			*type = PCAP_SRC_IFREMOTE;
+		free(tmppath);
+		free(tmphost);
+		free(tmpuserinfo);
+		return (0);
 	}
 
-	/* Look for a 'file://' identifier */
-	if ((ptr = strstr(source, PCAP_SRC_FILE_STRING)) != NULL)
-	{
-		ptr += strlen(PCAP_SRC_FILE_STRING);
-		if (*ptr)
-		{
-			if (name)
-				strlcpy(name, ptr, PCAP_BUF_SIZE);
-
-			if (type)
-				*type = PCAP_SRC_FILE;
-
-			return 0;
-		}
-		else
-		{
-			if (errbuf)
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The file name has not been specified in the source string.");
-
-			return -1;
-		}
-
-	}
-
-	/* Backward compatibility; the user didn't use the 'rpcap://, file://'  specifiers */
-	if ((source) && (*source))
-	{
-		if (name)
-			strlcpy(name, source, PCAP_BUF_SIZE);
-
+	if (strcmp(scheme, "file") == 0) {
+		/*
+		 * file://
+		 */
+		if (name && tmppath)
+			strlcpy(name, tmppath, PCAP_BUF_SIZE);
 		if (type)
-			*type = PCAP_SRC_IFLOCAL;
-
-		return 0;
+			*type = PCAP_SRC_FILE;
+		free(tmppath);
+		free(tmphost);
+		free(tmpuserinfo);
+		return (0);
 	}
-	else
-	{
-		if (errbuf)
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The interface name has not been specified in the source string.");
 
-		return -1;
-	}
+	/*
+	 * Neither rpcap: nor file:; just treat the entire string
+	 * as a local device.
+	 */
+	if (name)
+		strlcpy(name, source, PCAP_BUF_SIZE);
+	if (type)
+		*type = PCAP_SRC_IFLOCAL;
+	free(tmppath);
+	free(tmphost);
+	free(tmpuserinfo);
+	return (0);
 }
 #endif
 
