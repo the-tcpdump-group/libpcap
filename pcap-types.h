@@ -34,6 +34,22 @@
 /*
  * Get the integer types we use defined, by hook or by crook.
  */
+#ifdef _WIN32
+/*
+ * Avoids a compiler warning in case this was already defined
+ * (someone defined _WINSOCKAPI_ when including 'windows.h', in order
+ * to prevent it from including 'winsock.h')
+ */
+#ifdef _WINSOCKAPI_
+#undef _WINSOCKAPI_
+#endif
+
+/*
+ * This defines u_int.
+ */
+#include <winsock2.h>
+#endif
+
 #if defined(_MSC_VER)
   /*
    * Target is Windows, compiler is MSVC.
@@ -94,6 +110,9 @@
   #ifdef HAVE_SYS_BITYPES_H
     #include <sys/bitypes.h>
   #endif
+  /*
+   * This defines u_int, among other types.
+   */
   #include <sys/types.h>
 #endif
 

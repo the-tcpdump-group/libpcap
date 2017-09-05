@@ -60,22 +60,12 @@
 #ifndef pcap_stdinc_h
 #define pcap_stdinc_h
 
-/*
- * Avoids a compiler warning in case this was already defined
- * (someone defined _WINSOCKAPI_ when including 'windows.h', in order
- * to prevent it from including 'winsock.h')
- */
-#ifdef _WINSOCKAPI_
-#undef _WINSOCKAPI_
-#endif
+#include <pcap-types.h>
 
-#include <winsock2.h>
 #include <fcntl.h>
 #include <time.h>
 #include <io.h>
 
 #include <ws2tcpip.h>
-
-#include <pcap-types.h>
 
 #endif /* pcap_stdinc_h */
