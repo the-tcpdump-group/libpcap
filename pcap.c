@@ -1466,6 +1466,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 			port = NULL;
 		}
 	}
+	free(authority);
 
 	/*
 	 * Everything else is the path.  Strip off the leading /.
