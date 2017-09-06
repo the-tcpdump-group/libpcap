@@ -1118,7 +1118,7 @@ get_substring(const char *p, size_t len, char *ebuf)
 
 	token = malloc(len + 1);
 	if (token == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		return (NULL);
 	}
@@ -1213,7 +1213,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		 */
 		*pathp = strdup(source);
 		if (*pathp == NULL) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -1238,7 +1238,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		 */
 		*pathp = strdup(source);
 		if (*pathp == NULL) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -1256,7 +1256,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	scheme_len = colonp - source;
 	scheme = malloc(scheme_len + 1);
 	if (scheme == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		return (-1);
 	}
@@ -1270,7 +1270,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	if (pcap_strcasecmp(scheme, "file") == 0) {
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -1296,7 +1296,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		free(scheme);
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
-			snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 			    pcap_strerror(errno));
 			return (-1);
 		}
@@ -1383,7 +1383,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 				/*
 				 * There's no closing square bracket.
 				 */
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				    "IP-literal in URL doesn't end with ]");
 				free(userinfo);
 				free(authority);
@@ -1396,7 +1396,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 				 * There's extra crud after the
 				 * closing square bracketn.
 				 */
-				snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 				    "Extra text after IP-literal in URL");
 				free(userinfo);
 				free(authority);
@@ -1474,7 +1474,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	else
 		path = strdup(endp + 1);
 	if (path == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(port);
 		free(host);
