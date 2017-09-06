@@ -193,7 +193,7 @@ pcap_netmap_activate(pcap_t *p)
 
 	d = nm_open(p->opt.device, NULL, 0, NULL);
 	if (d == NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			"netmap open: cannot access %s: %s\n",
 			p->opt.device, pcap_strerror(errno));
 		pcap_cleanup_live_common(p);

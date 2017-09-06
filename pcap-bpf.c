@@ -455,7 +455,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
-		snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
 		    pcap_strerror(errno));
 		free(p);
 		return (NULL);
@@ -2428,7 +2428,7 @@ pcap_activate_bpf(pcap_t *p)
 #ifdef BIOCSTSTAMP
 	v = BPF_T_BINTIME;
 	if (ioctl(p->fd, BIOCSTSTAMP, &v) < 0) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSTSTAMP: %s",
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSTSTAMP: %s",
 		    pcap_strerror(errno));
 		status = PCAP_ERROR;
 		goto bad;
