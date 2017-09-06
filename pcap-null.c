@@ -23,7 +23,9 @@
 #include <config.h>
 #endif
 
+#ifndef _WIN32
 #include <sys/param.h>			/* optionally get BSD define */
+#endif
 
 #include <string.h>
 
