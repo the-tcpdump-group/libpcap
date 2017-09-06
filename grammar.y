@@ -50,14 +50,12 @@
 #include <config.h>
 #endif
 
-#ifndef _WIN32
-#include <sys/types.h>
-#include <sys/socket.h>
-#endif /* _WIN32 */
-
 #include <stdlib.h>
 
 #ifndef _WIN32
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #if __STDC__
 struct mbuf;
 struct rtentry;
