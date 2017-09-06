@@ -73,6 +73,7 @@
 
 #if defined(_WIN32)
   #include <winsock2.h>		/* u_int, u_char etc. */
+  #include <io.h>		/* _get_osfhandle() */
 #elif defined(MSDOS)
   #include <sys/types.h>	/* u_int, u_char etc. */
   #include <sys/socket.h>
@@ -399,6 +400,15 @@ PCAP_API pcap_t	*pcap_open_offline(const char *, char *);
   /*
    * If we're building libpcap, these are internal routines in savefile.c,
    * so we must not define them as macros.
+   *
+   * If we're not building libpcap, given that the version of the C runtime
+   * with which libpcap was built might be different from the version
+   * of the C runtime with which an application using libpcap was built,
+   * and that a FILE structure may differ between the two versions of the
+   * C runtime, calls to _fileno() must use the version of _fileno() in
+   * the C runtime used to open the FILE *, not the version in the C
+   * runtime with which libpcap was built.  (Maybe once the Universal CRT
+   * rules the world, this will cease to be a problem.)
    */
   #ifndef BUILDING_PCAP
     #define pcap_fopen_offline_with_tstamp_precision(f,p,b) \
