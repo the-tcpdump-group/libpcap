@@ -26,20 +26,16 @@
 
 #include <pcap-types.h>
 #ifdef _WIN32
-#include <ws2tcpip.h>
-#else /* _WIN32 */
-#include <sys/socket.h>
-#endif /* _WIN32 */
+  #include <ws2tcpip.h>
+#else
+  #include <sys/socket.h>
 
-#ifndef _WIN32
+  #ifdef __NetBSD__
+    #include <sys/param.h>
+  #endif
 
-#ifdef __NetBSD__
-#include <sys/param.h>
-#endif
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
 #endif /* _WIN32 */
 
 #include <stdlib.h>
