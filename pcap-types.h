@@ -34,6 +34,22 @@
 /*
  * Get the integer types we use defined, by hook or by crook.
  */
+#ifdef _WIN32
+/*
+ * Avoids a compiler warning in case this was already defined
+ * (someone defined _WINSOCKAPI_ when including 'windows.h', in order
+ * to prevent it from including 'winsock.h')
+ */
+#ifdef _WINSOCKAPI_
+#undef _WINSOCKAPI_
+#endif
+
+/*
+ * This defines u_int.
+ */
+#include <winsock2.h>
+#endif
+
 #if defined(_MSC_VER)
   /*
    * Target is Windows, compiler is MSVC.
@@ -77,6 +93,50 @@
       #endif
     #endif
   #endif
+
+  /*
+   * These may be defined by <inttypes.h>.
+   *
+   * XXX - for MSVC, we always want the _MSC_EXTENSIONS versions.
+   * What about other compilers?  If, as the MinGW Web site says MinGW
+   * does, the other compilers just use Microsoft's run-time library,
+   * then they should probably use the _MSC_EXTENSIONS even if the
+   * compiler doesn't define _MSC_EXTENSIONS.
+   *
+   * XXX - we currently aren't using any of these, but this allows
+   * their use in the future.
+   */
+  #ifndef PRId64
+    #ifdef _MSC_EXTENSIONS
+      #define PRId64	"I64d"
+    #else
+      #define PRId64	"lld"
+    #endif
+  #endif /* PRId64 */
+
+  #ifndef PRIo64
+    #ifdef _MSC_EXTENSIONS
+      #define PRIo64	"I64o"
+    #else
+      #define PRIo64	"llo"
+    #endif
+  #endif /* PRIo64 */
+
+  #ifndef PRIx64
+    #ifdef _MSC_EXTENSIONS
+      #define PRIx64	"I64x"
+    #else
+      #define PRIx64	"llx"
+    #endif
+  #endif
+
+  #ifndef PRIu64
+    #ifdef _MSC_EXTENSIONS
+      #define PRIu64	"I64u"
+    #else
+      #define PRIu64	"llu"
+    #endif
+  #endif
 #elif defined(__MINGW32__)
   /*
    * Target is Windows, compiler is MinGW.
@@ -94,6 +154,9 @@
   #ifdef HAVE_SYS_BITYPES_H
     #include <sys/bitypes.h>
   #endif
+  /*
+   * This defines u_int, among other types.
+   */
   #include <sys/types.h>
 #endif
 

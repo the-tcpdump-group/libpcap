@@ -97,7 +97,6 @@ extern "C" {
   #ifndef strdup
   #define strdup	_strdup
   #endif
-  #define sscanf	sscanf_s
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
   #define fopen(x, y) \
@@ -170,50 +169,6 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
 #endif /* HAVE_STRTOK_R */
 
 #ifdef _WIN32
-  /*
-   * These may be defined by <inttypes.h>.
-   *
-   * XXX - for MSVC, we always want the _MSC_EXTENSIONS versions.
-   * What about other compilers?  If, as the MinGW Web site says MinGW
-   * does, the other compilers just use Microsoft's run-time library,
-   * then they should probably use the _MSC_EXTENSIONS even if the
-   * compiler doesn't define _MSC_EXTENSIONS.
-   *
-   * XXX - we currently aren't using any of these, but this allows
-   * their use in the future.
-   */
-  #ifndef PRId64
-    #ifdef _MSC_EXTENSIONS
-      #define PRId64	"I64d"
-    #else
-      #define PRId64	"lld"
-    #endif
-  #endif /* PRId64 */
-
-  #ifndef PRIo64
-    #ifdef _MSC_EXTENSIONS
-      #define PRIo64	"I64o"
-    #else
-      #define PRIo64	"llo"
-    #endif
-  #endif /* PRIo64 */
-
-  #ifndef PRIx64
-    #ifdef _MSC_EXTENSIONS
-      #define PRIx64	"I64x"
-    #else
-      #define PRIx64	"llx"
-    #endif
-  #endif
-
-  #ifndef PRIu64
-    #ifdef _MSC_EXTENSIONS
-      #define PRIu64	"I64u"
-    #else
-      #define PRIu64	"llu"
-    #endif
-  #endif
-
   #if !defined(__cplusplus)
     #define inline __inline
   #endif

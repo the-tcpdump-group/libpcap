@@ -82,10 +82,6 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifdef _WIN32
-  #include <pcap-stdinc.h>
-#endif
-
 #include <ctype.h>
 #include <string.h>
 
@@ -105,6 +101,8 @@ void pcap_set_column(int, yyscan_t);
 #ifdef INET6
 
 #ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
 /*
  * To quote the MSDN page for getaddrinfo() at
  *
@@ -124,8 +122,7 @@ void pcap_set_column(int, yyscan_t);
  * Wspiapi.h header file. This inline code will be used on older Windows
  * platforms that do not natively support the getaddrinfo function."
  *
- * We use getaddrinfo(), so we include Wspiapi.h here.  pcap-stdinc.h
- * includes Ws2tcpip.h, so we don't need to include it ourselves.
+ * We use getaddrinfo(), so we include Wspiapi.h here.
  */
 #include <Wspiapi.h>
 #else /* _WIN32 */
