@@ -32,7 +32,7 @@
  *
  */
 
-#include "pcap-stdinc.h"
+#include "pcap-types.h"
 
 static WSADATA wsadata;
 
