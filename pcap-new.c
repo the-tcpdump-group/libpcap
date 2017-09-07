@@ -393,7 +393,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	 */
 	/* disable loopback capture if requested */
 	if (flags & PCAP_OPENFLAG_NOCAPTURE_LOCAL)
-		p->opt.nocapture_local = 1;
+		fp->opt.nocapture_local = 1;
 #endif /* _WIN32 */
 	status = pcap_set_timeout(fp, read_timeout);
 	if (status < 0)

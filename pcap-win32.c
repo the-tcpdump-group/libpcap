@@ -406,7 +406,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 	u_int res;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
-	if (2->adapter==NULL) {
+	if (pw->adapter==NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Cannot transmit a queue to an offline capture or to a TurboCap port");
 		return (0);
@@ -1221,7 +1221,7 @@ pcap_activate_win32(pcap_t *p)
 	 * all capture devices are regular OS network
 	 * interfaces.)
 	 */
-	p->handle = adapter->hFile;
+	p->handle = pw->adapter->hFile;
 
 	return (0);
 bad:

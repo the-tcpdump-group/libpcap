@@ -36,7 +36,9 @@
 #endif
 
 #include <pcap-types.h>
-#ifndef _WIN32
+#ifdef _WIN32
+#include <Packet32.h>	/* for PacketGetVersion() */
+#else
 #include <sys/param.h>
 #ifndef MSDOS
 #include <sys/file.h>
