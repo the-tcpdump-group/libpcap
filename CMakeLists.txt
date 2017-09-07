@@ -226,12 +226,6 @@ else()
     #
     # UN*X.
     #
-    # We use the pcap_lookupdev() and pcap_lookupnet() from
-    # inet.c.
-    #
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} inet.c)
-
-    #
     # Figure out what type of packet capture mechanism we have.
     #
     if( EXISTS /dev/bpf )

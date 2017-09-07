@@ -1160,6 +1160,111 @@ pcap_lookupdev(errbuf)
 	pcap_freealldevs(alldevs);
 	return (ret);
 }
+
+/*
+ * We don't just fetch the entire list of devices, search for the
+ * particular device, and use its first IPv4 address, as that's too
+ * much work to get just one device's netmask.
+ *
+ * If we had an API to get attributes for a given device, we could
+ * use that.
+ */
+int
+pcap_lookupnet(device, netp, maskp, errbuf)
+	register const char *device;
+	register bpf_u_int32 *netp, *maskp;
+	register char *errbuf;
+{
+	register int fd;
+	register struct sockaddr_in *sin4;
+	struct ifreq ifr;
+
+	/*
+	 * The pseudo-device "any" listens on all interfaces and therefore
+	 * has the network address and -mask "0.0.0.0" therefore catching
+	 * all traffic. Using NULL for the interface is the same as "any".
+	 */
+	if (!device || strcmp(device, "any") == 0
+#ifdef HAVE_DAG_API
+	    || strstr(device, "dag") != NULL
+#endif
+#ifdef HAVE_SEPTEL_API
+	    || strstr(device, "septel") != NULL
+#endif
+#ifdef PCAP_SUPPORT_BT
+	    || strstr(device, "bluetooth") != NULL
+#endif
+#ifdef PCAP_SUPPORT_USB
+	    || strstr(device, "usbmon") != NULL
+#endif
+#ifdef HAVE_SNF_API
+	    || strstr(device, "snf") != NULL
+#endif
+#ifdef PCAP_SUPPORT_NETMAP
+	    || strncmp(device, "netmap:", 7) == 0
+	    || strncmp(device, "vale", 4) == 0
+#endif
+	    ) {
+		*netp = *maskp = 0;
+		return 0;
+	}
+
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "socket: %s",
+		    pcap_strerror(errno));
+		return (-1);
+	}
+	memset(&ifr, 0, sizeof(ifr));
+#ifdef linux
+	/* XXX Work around Linux kernel bug */
+	ifr.ifr_addr.sa_family = AF_INET;
+#endif
+	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	if (ioctl(fd, SIOCGIFADDR, (char *)&ifr) < 0) {
+		if (errno == EADDRNOTAVAIL) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: no IPv4 address assigned", device);
+		} else {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "SIOCGIFADDR: %s: %s",
+			    device, pcap_strerror(errno));
+		}
+		(void)close(fd);
+		return (-1);
+	}
+	sin4 = (struct sockaddr_in *)&ifr.ifr_addr;
+	*netp = sin4->sin_addr.s_addr;
+	memset(&ifr, 0, sizeof(ifr));
+#ifdef linux
+	/* XXX Work around Linux kernel bug */
+	ifr.ifr_addr.sa_family = AF_INET;
+#endif
+	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
+		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));
+		(void)close(fd);
+		return (-1);
+	}
+	(void)close(fd);
+	*maskp = sin4->sin_addr.s_addr;
+	if (*maskp == 0) {
+		if (IN_CLASSA(*netp))
+			*maskp = IN_CLASSA_NET;
+		else if (IN_CLASSB(*netp))
+			*maskp = IN_CLASSB_NET;
+		else if (IN_CLASSC(*netp))
+			*maskp = IN_CLASSC_NET;
+		else {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "inet class for 0x%x unknown", *netp);
+			return (-1);
+		}
+	}
+	*netp &= *maskp;
+	return (0);
+}
 #endif
 
 #ifdef HAVE_REMOTE

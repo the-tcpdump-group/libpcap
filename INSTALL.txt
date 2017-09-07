@@ -315,7 +315,6 @@ gencode.c	- BPF code generation routines
 gencode.h	- BPF code generation definitions
 grammar.y	- filter string grammar
 ieee80211.h	- 802.11 definitions
-inet.c		- network routines
 install-sh	- BSD style install script
 lbl/os-*.h	- OS-dependent defines and prototypes
 llc.h		- 802.2 LLC SAP definitions
