@@ -31,28 +31,25 @@
  *
  */
 
+#include <errno.h>
 #define PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <Packet32.h>
 #include <pcap-int.h>
 #include <pcap/dlt.h>
-#ifdef __MINGW32__
-#ifdef __MINGW64__
-#include <ntddndis.h>
-#else  /*__MINGW64__*/
-#include <ddk/ntddndis.h>
-#include <ddk/ndis.h>
-#endif /*__MINGW64__*/
-#else /*__MINGW32__*/
-#include <ntddndis.h>
-#endif /*__MINGW32__*/
+
+/* Old-school MinGW have these headers in a different place.
+ */
+#if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
+  #include <ddk/ntddndis.h>
+  #include <ddk/ndis.h>
+#else
+  #include <ntddndis.h>  /* MSVC/TDM-MinGW/MinGW64 */
+#endif
+
 #ifdef HAVE_DAG_API
-#include <dagnew.h>
-#include <dagapi.h>
+  #include <dagnew.h>
+  #include <dagapi.h>
 #endif /* HAVE_DAG_API */
-#ifdef __MINGW32__
-int* _errno();
-#define errno (*_errno())
-#endif /* __MINGW32__ */
 
 static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
