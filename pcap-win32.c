@@ -1772,11 +1772,10 @@ static const char *pcap_lib_version_string;
  */
 #include "../../version.h"
 
-static const char wpcap_version_string[] = WINPCAP_VER_STRING;
-static const char pcap_version_string_fmt[] =
-	WINPCAP_PRODUCT_NAME " version %s, based on %s";
+static const char pcap_version_string[] =
+	WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING ", based on " PCAP_VERSION_STRING;
 static const char pcap_version_string_packet_dll_fmt[] =
-	WINPCAP_PRODUCT_NAME " version %s (packet.dll version %s), based on %s";
+	WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING;
 
 const char *
 pcap_lib_version(void)
@@ -1790,25 +1789,13 @@ pcap_lib_version(void)
 		 * Generate the version string.
 		 */
 		packet_version_string = PacketGetVersion();
-		if (strcmp(wpcap_version_string, packet_version_string) == 0) {
+		if (strcmp(WINPCAP_VER_STRING, packet_version_string) == 0) {
 			/*
 			 * WinPcap version string and packet.dll version
 			 * string are the same; just report the WinPcap
 			 * version.
 			 */
-			full_pcap_version_string_len =
-			    (sizeof pcap_version_string_fmt - 4) +
-			    strlen(wpcap_version_string) +
-			    strlen(pcap_version_string);
-			full_pcap_version_string =
-			    malloc(full_pcap_version_string_len);
-			if (full_pcap_version_string == NULL)
-				return (NULL);
-			pcap_snprintf(full_pcap_version_string,
-			    full_pcap_version_string_len,
-			    pcap_version_string_fmt,
-			    wpcap_version_string,
-			    pcap_version_string);
+			pcap_lib_version_string = pcap_version_string;
 		} else {
 			/*
 			 * WinPcap version string and packet.dll version
@@ -1816,21 +1803,20 @@ pcap_lib_version(void)
 			 * case (the two libraries should come from the
 			 * same version of WinPcap), so we report both
 			 * versions.
+			 *
+			 * The -2 is for the %s in the format string,
+			 * which will be replaced by packet_version_string.
 			 */
 			full_pcap_version_string_len =
-			    (sizeof pcap_version_string_packet_dll_fmt - 6) +
-			    strlen(wpcap_version_string) +
-			    strlen(packet_version_string) +
-			    strlen(pcap_version_string);
+			    (sizeof pcap_version_string_packet_dll_fmt - 2) +
+			    strlen(packet_version_string);
 			full_pcap_version_string = malloc(full_pcap_version_string_len);
 			if (full_pcap_version_string == NULL)
 				return (NULL);
 			pcap_snprintf(full_pcap_version_string,
 			    full_pcap_version_string_len,
 			    pcap_version_string_packet_dll_fmt,
-			    wpcap_version_string,
-			    packet_version_string,
-			    pcap_version_string);
+			    packet_version_string);
 		}
 		pcap_lib_version_string = full_pcap_version_string;
 	}
@@ -1844,7 +1830,7 @@ pcap_lib_version(void)
  * tree.
  */
 static const char pcap_version_string_packet_dll_fmt[] =
-	"%s (packet.dll version %s)";
+	PCAP_VERSION_STRING " (packet.dll version %s)";
 const char *
 pcap_lib_version(void)
 {
@@ -1856,11 +1842,13 @@ pcap_lib_version(void)
 		/*
 		 * Generate the version string.  Report the packet.dll
 		 * version.
+		 *
+		 * The -2 is for the %s in the format string, which will
+		 * be replaced by packet_version_string.
 		 */
 		packet_version_string = PacketGetVersion();
 		full_pcap_version_string_len =
-		    (sizeof pcap_version_string_packet_dll_fmt - 4) +
-		    strlen(pcap_version_string) +
+		    (sizeof pcap_version_string_packet_dll_fmt - 2) +
 		    strlen(packet_version_string);
 		full_pcap_version_string = malloc(full_pcap_version_string_len);
 		if (full_pcap_version_string == NULL)
@@ -1868,7 +1856,6 @@ pcap_lib_version(void)
 		pcap_snprintf(full_pcap_version_string,
 		    full_pcap_version_string_len,
 		    pcap_version_string_packet_dll_fmt,
-		    pcap_version_string,
 		    packet_version_string);
 		pcap_lib_version_string = full_pcap_version_string;
 	}
