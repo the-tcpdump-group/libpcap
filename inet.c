@@ -64,53 +64,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 /*
  * UN*X.
- *
- * Return the name of a network interface attached to the system, or NULL
- * if none can be found.  The interface must be configured up; the
- * lowest unit number is preferred; loopback is ignored.
  */
-char *
-pcap_lookupdev(errbuf)
-	register char *errbuf;
-{
-	pcap_if_t *alldevs;
-/* for old BSD systems, including bsdi3 */
-#ifndef IF_NAMESIZE
-#define IF_NAMESIZE IFNAMSIZ
-#endif
-	static char device[IF_NAMESIZE + 1];
-	char *ret;
-
-	if (pcap_findalldevs(&alldevs, errbuf) == -1)
-		return (NULL);
-
-	if (alldevs == NULL || (alldevs->flags & PCAP_IF_LOOPBACK)) {
-		/*
-		 * There are no devices on the list, or the first device
-		 * on the list is a loopback device, which means there
-		 * are no non-loopback devices on the list.  This means
-		 * we can't return any device.
-		 *
-		 * XXX - why not return a loopback device?  If we can't
-		 * capture on it, it won't be on the list, and if it's
-		 * on the list, there aren't any non-loopback devices,
-		 * so why not just supply it as the default device?
-		 */
-		(void)strlcpy(errbuf, "no suitable device found",
-		    PCAP_ERRBUF_SIZE);
-		ret = NULL;
-	} else {
-		/*
-		 * Return the name of the first device on the list.
-		 */
-		(void)strlcpy(device, alldevs->name, sizeof(device));
-		ret = device;
-	}
-
-	pcap_freealldevs(alldevs);
-	return (ret);
-}
-
 /*
  * We don't just fetch the entire list of devices, search for the
  * particular device, and use its first IPv4 address, as that's too
