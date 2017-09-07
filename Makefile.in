@@ -477,7 +477,19 @@ scanner.h: scanner.c
 scanner.o: scanner.c grammar.h
 	$(CC) $(FULL_CFLAGS) -c scanner.c
 
-pcap.o: pcap_version.h
+pcap-bpf.o: pcap_version.h
+pcap-dag.o: pcap_version.h
+pcap-dlpi.o: pcap_version.h
+pcap-libdlpi.o: pcap_version.h
+pcap-linux.o: pcap_version.h
+pcap-nit.o: pcap_version.h
+pcap-null.o: pcap_version.h
+pcap-pf.o: pcap_version.h
+pcap-septel.o: pcap_version.h
+pcap-sita.o: pcap_version.h
+pcap-snf.o: pcap_version.h
+pcap-snit.o: pcap_version.h
+pcap-snoop.o: pcap_version.h
 
 grammar.c: $(srcdir)/grammar.y
 	$(YACC) -p pcap_ -o grammar.c -d $<
