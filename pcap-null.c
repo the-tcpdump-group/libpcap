@@ -23,13 +23,7 @@
 #include <config.h>
 #endif
 
-#include <sys/param.h>			/* optionally get BSD define */
-
 #include <string.h>
-
-#ifdef HAVE_OS_PROTO_H
-#include "os-proto.h"
-#endif
 
 #include "pcap-int.h"
 
