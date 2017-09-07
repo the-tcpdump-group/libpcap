@@ -36,11 +36,8 @@
 #include <config.h>
 #endif
 
-#ifndef _WIN32
 #include <sys/param.h>
-#ifndef MSDOS
 #include <sys/file.h>
-#endif
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_SOCKIO_H
@@ -51,16 +48,13 @@ struct mbuf;		/* Squelch compiler warnings on some platforms for */
 struct rtentry;		/* declarations in <net/if.h> */
 #include <net/if.h>
 #include <netinet/in.h>
-#endif /* _WIN32 */
 
 #include <errno.h>
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#if !defined(_WIN32) && !defined(__BORLANDC__)
 #include <unistd.h>
-#endif /* !_WIN32 && !__BORLANDC__ */
 
 #include "pcap-int.h"
 
@@ -68,9 +62,9 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "os-proto.h"
 #endif
 
-#if !defined(_WIN32) && !defined(MSDOS)
-
 /*
+ * UN*X.
+ *
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the
  * lowest unit number is preferred; loopback is ignored.
@@ -117,6 +111,11 @@ pcap_lookupdev(errbuf)
 	return (ret);
 }
 
+/*
+ * We don't just fetch the entire list of devices, search for the
+ * particular device, and use its first IPv4 address, as that's too
+ * much work to get just one device's netmask.
+ */
 int
 pcap_lookupnet(device, netp, maskp, errbuf)
 	register const char *device;
@@ -213,192 +212,3 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	*netp &= *maskp;
 	return (0);
 }
-
-#elif defined(_WIN32)
-
-/*
- * Return the name of a network interface attached to the system, or NULL
- * if none can be found.  The interface must be configured up; the
- * lowest unit number is preferred; loopback is ignored.
- *
- * In the best of all possible worlds, this would be the same as on
- * UN*X, but there may be software that expects this to return a
- * full list of devices after the first device.
- */
-#define ADAPTERSNAME_LEN	8192
-char *
-pcap_lookupdev(errbuf)
-	register char *errbuf;
-{
-	DWORD dwVersion;
-	DWORD dwWindowsMajorVersion;
-	char our_errbuf[PCAP_ERRBUF_SIZE+1];
-
-#pragma warning (push)
-#pragma warning (disable: 4996) /* disable MSVC's GetVersion() deprecated warning here */
-	dwVersion = GetVersion();	/* get the OS version */
-#pragma warning (pop)
-	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
-
-	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
-		/*
-		 * Windows 95, 98, ME.
-		 */
-		ULONG NameLength = ADAPTERSNAME_LEN;
-		static char AdaptersName[ADAPTERSNAME_LEN];
-
-		if (PacketGetAdapterNames(AdaptersName,&NameLength) )
-			return (AdaptersName);
-		else
-			return NULL;
-	} else {
-		/*
-		 * Windows NT (NT 4.0 and later).
-		 * Convert the names to Unicode for backward compatibility.
-		 */
-		ULONG NameLength = ADAPTERSNAME_LEN;
-		static WCHAR AdaptersName[ADAPTERSNAME_LEN];
-		size_t BufferSpaceLeft;
-		char *tAstr;
-		WCHAR *Unameptr;
-		char *Adescptr;
-		size_t namelen, i;
-		WCHAR *TAdaptersName = (WCHAR*)malloc(ADAPTERSNAME_LEN * sizeof(WCHAR));
-		int NAdapts = 0;
-
-		if(TAdaptersName == NULL)
-		{
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "memory allocation failure");
-			return NULL;
-		}
-
-		if ( !PacketGetAdapterNames((PTSTR)TAdaptersName,&NameLength) )
-		{
-			pcap_win32_err_to_str(GetLastError(), our_errbuf);
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"PacketGetAdapterNames: %s", our_errbuf);
-			free(TAdaptersName);
-			return NULL;
-		}
-
-
-		BufferSpaceLeft = ADAPTERSNAME_LEN * sizeof(WCHAR);
-		tAstr = (char*)TAdaptersName;
-		Unameptr = AdaptersName;
-
-		/*
-		 * Convert the device names to Unicode into AdapterName.
-		 */
-		do {
-			/*
-			 * Length of the name, including the terminating
-			 * NUL.
-			 */
-			namelen = strlen(tAstr) + 1;
-
-			/*
-			 * Do we have room for the name in the Unicode
-			 * buffer?
-			 */
-			if (BufferSpaceLeft < namelen * sizeof(WCHAR)) {
-				/*
-				 * No.
-				 */
-				goto quit;
-			}
-			BufferSpaceLeft -= namelen * sizeof(WCHAR);
-
-			/*
-			 * Copy the name, converting ASCII to Unicode.
-			 * namelen includes the NUL, so we copy it as
-			 * well.
-			 */
-			for (i = 0; i < namelen; i++)
-				*Unameptr++ = *tAstr++;
-
-			/*
-			 * Count this adapter.
-			 */
-			NAdapts++;
-		} while (namelen != 1);
-
-		/*
-		 * Copy the descriptions, but don't convert them from
-		 * ASCII to Unicode.
-		 */
-		Adescptr = (char *)Unameptr;
-		while(NAdapts--)
-		{
-			size_t desclen;
-
-			desclen = strlen(tAstr) + 1;
-
-			/*
-			 * Do we have room for the name in the Unicode
-			 * buffer?
-			 */
-			if (BufferSpaceLeft < desclen) {
-				/*
-				 * No.
-				 */
-				goto quit;
-			}
-
-			/*
-			 * Just copy the ASCII string.
-			 * namelen includes the NUL, so we copy it as
-			 * well.
-			 */
-			memcpy(Adescptr, tAstr, desclen);
-			Adescptr += desclen;
-			tAstr += desclen;
-			BufferSpaceLeft -= desclen;
-		}
-
-	quit:
-		free(TAdaptersName);
-		return (char *)(AdaptersName);
-	}
-}
-
-
-int
-pcap_lookupnet(device, netp, maskp, errbuf)
-	register const char *device;
-	register bpf_u_int32 *netp, *maskp;
-	register char *errbuf;
-{
-	/*
-	 * We need only the first IPv4 address, so we must scan the array returned by PacketGetNetInfo()
-	 * in order to skip non IPv4 (i.e. IPv6 addresses)
-	 */
-	npf_if_addr if_addrs[MAX_NETWORK_ADDRESSES];
-	LONG if_addr_size = MAX_NETWORK_ADDRESSES;
-	struct sockaddr_in *t_addr;
-	LONG i;
-
-	if (!PacketGetNetInfoEx((void *)device, if_addrs, &if_addr_size)) {
-		*netp = *maskp = 0;
-		return (0);
-	}
-
-	for(i = 0; i < if_addr_size; i++)
-	{
-		if(if_addrs[i].IPAddress.ss_family == AF_INET)
-		{
-			t_addr = (struct sockaddr_in *) &(if_addrs[i].IPAddress);
-			*netp = t_addr->sin_addr.S_un.S_addr;
-			t_addr = (struct sockaddr_in *) &(if_addrs[i].SubnetMask);
-			*maskp = t_addr->sin_addr.S_un.S_addr;
-
-			*netp &= *maskp;
-			return (0);
-		}
-
-	}
-
-	*netp = *maskp = 0;
-	return (0);
-}
-
-#endif /* !_WIN32 && !MSDOS */

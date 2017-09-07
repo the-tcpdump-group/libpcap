@@ -188,7 +188,6 @@ set(PROJECT_SOURCE_LIST_C
     bpf_image.c
     etherent.c
     gencode.c
-    inet.c
     nametoaddr.c
     optimize.c
     pcap-common.c
@@ -225,8 +224,15 @@ if( WIN32 )
     set( PCAP_TYPE win32 )
 else()
     #
-    # UN*X - figure out what type of packet capture mechanism we
-    # have.
+    # UN*X.
+    #
+    # We use the pcap_lookupdev() and pcap_lookupnet() from
+    # inet.c.
+    #
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} inet.c)
+
+    #
+    # Figure out what type of packet capture mechanism we have.
     #
     if( EXISTS /dev/bpf )
 	#
