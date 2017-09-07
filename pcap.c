@@ -1823,7 +1823,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	p = (pcap_t *)chunk;
 
 #ifdef _WIN32
-	p->handle = INVALID_HANDLE;	/* not opened yet */
+	p->handle = INVALID_HANDLE_VALUE;	/* not opened yet */
 #else
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
@@ -2779,7 +2779,7 @@ pcap_fileno(pcap_t *p)
 #ifndef _WIN32
 	return (p->fd);
 #else
-	if (p->handle != INVALID_HANDLE)
+	if (p->handle != INVALID_HANDLE_VALUE)
 		return ((int)(DWORD)p->handle);
 	else
 		return (PCAP_ERROR);
