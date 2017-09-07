@@ -381,12 +381,6 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		if (status < 0)
 			goto fail;
 	}
-	status = pcap_set_timeout(fp, read_timeout);
-	if (status < 0)
-		goto fail;
-	status = pcap_activate(fp);
-	if (status < 0)
-		goto fail;
 #ifdef _WIN32
 	/*
 	 * This flag is supported on Windows only.
@@ -397,20 +391,16 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	 * injected with pcap_sendpacket() or
 	 * pcap_inject()".
 	 */
-	if (fp->adapter != NULL)
-	{
-		/* disable loopback capture if requested */
-		if (flags & PCAP_OPENFLAG_NOCAPTURE_LOCAL)
-		{
-			if (!PacketSetLoopbackBehavior(fp->adapter, NPF_DISABLE_LOOPBACK))
-			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Unable to disable the capture of loopback packets.");
-				pcap_close(fp);
-				return NULL;
-			}
-		}
-	}
+	/* disable loopback capture if requested */
+	if (flags & PCAP_OPENFLAG_NOCAPTURE_LOCAL)
+		p->opt.nocapture_local = 1;
 #endif /* _WIN32 */
+	status = pcap_set_timeout(fp, read_timeout);
+	if (status < 0)
+		goto fail;
+	status = pcap_activate(fp);
+	if (status < 0)
+		goto fail;
 	return fp;
 
 fail:

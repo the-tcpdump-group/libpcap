@@ -1822,7 +1822,9 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 */
 	p = (pcap_t *)chunk;
 
-#ifndef _WIN32
+#ifdef _WIN32
+	p->handle = INVALID_HANDLE;	/* not opened yet */
+#else
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
 #endif
@@ -1872,13 +1874,19 @@ pcap_create_common(char *ebuf, size_t size)
 	p->opt.timeout = 0;		/* no timeout specified */
 	p->opt.buffer_size = 0;		/* use the platform's default */
 	p->opt.promisc = 0;
-#ifdef __linux__
-	p->opt.protocol = 0;
-#endif
 	p->opt.rfmon = 0;
 	p->opt.immediate = 0;
 	p->opt.tstamp_type = -1;	/* default to not setting time stamp type */
 	p->opt.tstamp_precision = PCAP_TSTAMP_PRECISION_MICRO;
+	/*
+	 * Platform-dependent options.
+	 */
+#ifdef __linux__
+	p->opt.protocol = 0;
+#endif
+#ifdef _WIN32
+	p->opt.nocapture_local = 0;
+#endif
 
 	/*
 	 * Start out with no BPF code generation flags set.
@@ -2771,8 +2779,8 @@ pcap_fileno(pcap_t *p)
 #ifndef _WIN32
 	return (p->fd);
 #else
-	if (p->adapter != NULL)
-		return ((int)(DWORD)p->adapter->hFile);
+	if (p->handle != INVALID_HANDLE)
+		return ((int)(DWORD)p->handle);
 	else
 		return (PCAP_ERROR);
 #endif

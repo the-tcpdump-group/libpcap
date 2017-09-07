@@ -40,14 +40,7 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32)
-  /*
-   * Make sure Packet32.h doesn't define BPF structures that we've
-   * probably already defined as a result of including <pcap/pcap.h>.
-   */
-  #define BPF_MAJOR_VERSION
-  #include <Packet32.h>
-#elif defined(MSDOS)
+#ifdef MSDOS
   #include <fcntl.h>
   #include <io.h>
 #endif
@@ -112,14 +105,21 @@ struct pcap_opt {
 	int	timeout;	/* timeout for buffering */
 	u_int	buffer_size;
 	int	promisc;
-#ifdef __linux__
-	int	protocol;
-#endif
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
 	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */
 	int	tstamp_type;
 	int	tstamp_precision;
+
+	/*
+	 * Platform-dependent options.
+	 */
+#ifdef __linux__
+	int	protocol;	/* protocol to use when creating PF_PACKET socket */
+#endif
+#ifdef _WIN32
+	int	nocapture_local;/* disable NPF loopback */
+#endif
 };
 
 typedef int	(*activate_op_t)(pcap_t *);
@@ -165,7 +165,7 @@ struct pcap {
 	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
 
 #ifdef _WIN32
-	ADAPTER *adapter;
+	HANDLE handle;
 #else
 	int fd;
 	int selectable_fd;
