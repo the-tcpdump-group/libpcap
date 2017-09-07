@@ -633,11 +633,13 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 	return (0);
 }
 
+#include "pcap_version.h"
+
 /*
- * No platform-specific information.
+ * Libpcap version string.
  */
 const char *
-pcap_platform_lib_version(void)
+pcap_lib_version(void)
 {
-	return (NULL);
+	return (PCAP_VERSION_STRING);
 }

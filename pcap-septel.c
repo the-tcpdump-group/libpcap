@@ -331,12 +331,14 @@ pcap_create_interface(const char *device, char *errbuf)
   return (NULL);
 }
 
+#include "pcap_version.h"
+
 /*
- * Platform-specific information.
+ * Libpcap version string.
  */
 const char *
-pcap_platform_lib_version(void)
+pcap_lib_version(void)
 {
-	return ("Septel-only");
+  return (PCAP_VERSION_STRING " (Septel-only)");
 }
 #endif

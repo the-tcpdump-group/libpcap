@@ -1523,3 +1523,13 @@ static void pktq_clear (struct rx_ringbuf *q)
 
 #endif /* USE_32BIT_DRIVERS */
 
+#include "pcap_version.h"
+
+/*
+ * Libpcap version string.
+ */
+const char *
+pcap_lib_version(void)
+{
+  return ("DOS-" PCAP_VERSION_STRING);
+}

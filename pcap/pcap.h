@@ -479,6 +479,21 @@ PCAP_API void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);
 PCAP_API int	pcap_findalldevs(pcap_if_t **, char *);
 PCAP_API void	pcap_freealldevs(pcap_if_t *);
 
+/*
+ * We return a pointer to the version string, rather than exporting the
+ * version string directly.
+ *
+ * On at least some UNIXes, if you import data from a shared library into
+ * an program, the data is bound into the program binary, so if the string
+ * in the version of the library with which the program was linked isn't
+ * the same as the string in the version of the library with which the
+ * program is being run, various undesirable things may happen (warnings,
+ * the string being the one from the version of the library with which the
+ * program was linked, or even weirder things, such as the string being the
+ * one from the library but being truncated).
+ *
+ * On Windows, the string is constructed at run time.
+ */
 PCAP_API const char *pcap_lib_version(void);
 
 /*

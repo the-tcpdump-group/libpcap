@@ -6946,25 +6946,6 @@ reset_kernel_filter(pcap_t *handle)
 }
 #endif
 
-/*
- * Platform-specific information.
- */
-const char *
-pcap_platform_lib_version(void)
-{
-#ifdef HAVE_PACKET_RING
- #if defined(HAVE_TPACKET3)
-	return ("with TPACKET_V3");
- #elif defined(HAVE_TPACKET2)
-	return ("with TPACKET_V2");
- #else
-	return ("with TPACKET_V1");
- #endif
-#else
-	return ("without TPACKET");
-#endif
-}
-
 int
 pcap_set_protocol(pcap_t *p, int protocol)
 {
@@ -6972,4 +6953,25 @@ pcap_set_protocol(pcap_t *p, int protocol)
 		return (PCAP_ERROR_ACTIVATED);
 	p->opt.protocol = protocol;
 	return (0);
+}
+
+#include "pcap_version.h"
+
+/*
+ * Libpcap version string.
+ */
+const char *
+pcap_lib_version(void)
+{
+#ifdef HAVE_PACKET_RING
+ #if defined(HAVE_TPACKET3)
+	return (PCAP_VERSION_STRING " (with TPACKET_V3)");
+ #elif defined(HAVE_TPACKET2)
+	return (PCAP_VERSION_STRING " (with TPACKET_V2)");
+ #else
+	return (PCAP_VERSION_STRING " (with TPACKET_V1)");
+ #endif
+#else
+	return (PCAP_VERSION_STRING " (without TPACKET)");
+#endif
 }

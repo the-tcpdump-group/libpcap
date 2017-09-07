@@ -1860,11 +1860,13 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	return (p);
 }
 
+#include "pcap_version.h"
+
 /*
- * No platform-specific information.
+ * Libpcap version string.
  */
 const char *
-pcap_platform_lib_version(void)
+pcap_lib_version(void)
 {
-	return (NULL);
+	return (PCAP_VERSION_STRING);
 }
