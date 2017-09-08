@@ -178,6 +178,40 @@
 #endif
 
 /*
+ * Deprecate a function.
+ * The argument is a string giving the warning message to use if the
+ * compiler supports that.
+ */
+#if __has_attribute(deprecated) \
+    || IS_AT_LEAST_GNUC_VERSION(4, 5) \
+    || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x5130))
+  /*
+   * Compiler that supports __has_attribute and __attribute__((deprecated)),
+   * or GCC 4.5 and later, or Sun/Oracle C 12.4 or later.
+   *
+   * Those support __attribute__((deprecated(msg))) (we assume, perhaps
+   * incorrectly, that anything that supports __has_attribute() is
+   * recent enough to support __attribute__((deprecated(msg)))).
+   */
+  #define PCAP_DEPRECATED(msg)	__attribute__((deprecated(msg)))
+#elif IS_AT_LEAST_GNUC_VERSION(3, 1)
+  /*
+   * GCC 3.1 through 4.4.
+   *
+   * Those support __attribute__((deprecated)) but not
+   * __attribute__((deprecated(msg))).
+   */
+  #define PCAP_DEPRECATED(msg)	__attribute__((deprecated))
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1500))
+  /*
+   * MSVC from Visual Studio 2008 or later.
+   */
+  #define PCAP_DEPRECATED(msg)	__pragma(deprecated)
+#else
+  #define PCAP_DEPRECATED(msg)
+#endif
+
+/*
  * For flagging arguments as format strings in MSVC.
  */
 #if _MSC_VER >= 1400
