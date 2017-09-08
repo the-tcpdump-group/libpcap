@@ -46,11 +46,12 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 }
 
 #ifdef _WIN32
-char *
-pcap_lookupdev(char *errbuf)
+int
+pcap_lookupnet(const char *device _U_, bpf_u_int32 *netp _U_,
+    bpf_u_int32 *maskp _U_, char *errbuf)
 {
 	(void)strlcpy(errbuf, nosup, PCAP_ERRBUF_SIZE);
-	return (NULL);
+	return (-1);
 }
 #endif
 
