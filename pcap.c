@@ -1176,9 +1176,22 @@ pcap_lookupdev(errbuf)
 	register char *errbuf;
 {
 	pcap_if_t *alldevs;
-/* for old BSD systems, including bsdi3 */
-#ifndef IF_NAMESIZE
-#define IF_NAMESIZE IFNAMSIZ
+#ifdef _WIN32
+  /*
+   * Windows - use the same size as the old WinPcap 3.1 code.
+   * XXX - this is probably bigger than it needs to be.
+   */
+  #define IF_NAMESIZE 8192
+#else
+  /*
+   * UN*X - use the system's interface name size.
+   * XXX - that might not be large enough for capture devices
+   * that aren't regular network interfaces.
+   */
+  /* for old BSD systems, including bsdi3 */
+  #ifndef IF_NAMESIZE
+  #define IF_NAMESIZE IFNAMSIZ
+  #endif
 #endif
 	static char device[IF_NAMESIZE + 1];
 	char *ret;
