@@ -45,6 +45,15 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	return (0);
 }
 
+#ifdef _WIN32
+char *
+pcap_lookupdev(char *errbuf)
+{
+	(void)strlcpy(errbuf, nosup, PCAP_ERRBUF_SIZE);
+	return (NULL);
+}
+#endif
+
 #include "pcap_version.h"
 
 /*
