@@ -16,7 +16,7 @@ then
 	exit 1
 fi
 version_string=`print_version_string "$1"`
-echo '#include <pcap/export-defs.h>' > "$2"
+echo '#include <pcap/funcattrs.h>' > "$2"
 echo 'PCAP_API_DEF' >> "$2"
 echo "$version_string" | sed -e 's/.*/char pcap_version[] = "&";/' >> "$2"
 

@@ -68,7 +68,7 @@
 #if !defined(_NET_BPF_H_) && !defined(_NET_BPF_H_INCLUDED) && !defined(_BPF_H_) && !defined(_H_BPF) && !defined(lib_pcap_bpf_h)
 #define lib_pcap_bpf_h
 
-#include <pcap/export-defs.h>
+#include <pcap/funcattrs.h>
 
 #ifdef __cplusplus
 extern "C" {

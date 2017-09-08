@@ -69,7 +69,7 @@
 #ifndef lib_pcap_pcap_h
 #define lib_pcap_pcap_h
 
-#include <pcap/export-defs.h>
+#include <pcap/funcattrs.h>
 
 #if defined(_WIN32)
   #include <winsock2.h>		/* u_int, u_char etc. */
