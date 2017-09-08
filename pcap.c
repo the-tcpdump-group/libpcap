@@ -1212,7 +1212,9 @@ pcap_lookupdev(errbuf)
 	pcap_freealldevs(alldevs);
 	return (ret);
 }
+#endif /* !defined(HAVE_PACKET32) && !defined(MSDOS) */
 
+#if !defined(_WIN32) && !defined(MSDOS)
 /*
  * We don't just fetch the entire list of devices, search for the
  * particular device, and use its first IPv4 address, as that's too
@@ -1317,7 +1319,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	*netp &= *maskp;
 	return (0);
 }
-#endif
+#endif /* !defined(_WIN32) && !defined(MSDOS) */
 
 #ifdef HAVE_REMOTE
 #include "pcap-rpcap.h"
