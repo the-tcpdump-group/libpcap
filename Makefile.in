@@ -120,7 +120,6 @@ HDR = $(PUBHDR) \
 	ethertype.h \
 	extract.h \
 	ftmacros.h \
-	funcattrs.h \
 	gencode.h \
 	ieee80211.h \
 	llc.h \

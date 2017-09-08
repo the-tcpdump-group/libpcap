@@ -50,7 +50,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "../funcattrs.h"
+#include "pcap/funcattrs.h"
 
 static char *program_name;
 

@@ -40,7 +40,7 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include <pcap.h>
 
-#include "../funcattrs.h"
+#include "pcap/funcattrs.h"
 
 static char *program_name;
 

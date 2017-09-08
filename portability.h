@@ -39,7 +39,7 @@
  * flavors of UN*X.
  */
 
-#include "funcattrs.h"
+#include "pcap/funcattrs.h"
 
 #ifdef __cplusplus
 extern "C" {

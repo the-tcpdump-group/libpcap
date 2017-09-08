@@ -64,7 +64,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "../funcattrs.h"
+#include "pcap/funcattrs.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 /* BSD-flavored OS - use BPF */

@@ -19,7 +19,7 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include "funcattrs.h"
+#include "pcap/funcattrs.h"
 
 /*
  * ATM support:

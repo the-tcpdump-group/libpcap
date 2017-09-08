@@ -48,7 +48,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #endif
 #include <poll.h>
 
-#include "../funcattrs.h"
+#include "pcap/funcattrs.h"
 
 char *program_name;
 
