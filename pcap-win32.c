@@ -84,15 +84,6 @@ struct pcap_win {
 #endif
 };
 
-BOOL WINAPI DllMain(
-  HANDLE hinstDLL,
-  DWORD dwReason,
-  LPVOID lpvReserved
-)
-{
-	return (TRUE);
-}
-
 /*
  * Define stub versions of the monitor-mode support routines if this
  * isn't Npcap. HAVE_NPCAP_PACKET_API is defined by Npcap but not
@@ -130,34 +121,6 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
 	return (-1);
 }
 #endif
-
-/* Start winsock */
-int
-wsockinit(void)
-{
-	WORD wVersionRequested;
-	WSADATA wsaData;
-	static int err = -1;
-	static int done = 0;
-
-	if (done)
-		return (err);
-
-	wVersionRequested = MAKEWORD( 1, 1);
-	err = WSAStartup( wVersionRequested, &wsaData );
-	atexit ((void(*)(void))WSACleanup);
-	done = 1;
-
-	if ( err != 0 )
-		err = -1;
-	return (err);
-}
-
-int
-pcap_wsockinit(void)
-{
-       return (wsockinit());
-}
 
 static int
 pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
@@ -916,7 +879,7 @@ pcap_activate_win32(pcap_t *p)
 	}
 
 	/* Init WinSock */
-	wsockinit();
+	pcap_wsockinit();
 
 	pw->adapter = PacketOpenAdapter(p->opt.device);
 

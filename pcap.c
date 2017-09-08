@@ -122,6 +122,55 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-rdmasniff.h"
 #endif
 
+#ifdef _WIN32
+/*
+ * DllMain(), required when built as a Windows DLL.
+ */
+BOOL WINAPI DllMain(
+  HANDLE hinstDLL,
+  DWORD dwReason,
+  LPVOID lpvReserved
+)
+{
+	return (TRUE);
+}
+
+/*
+ * Start WinSock.
+ * Exported in case some applications using WinPcap called it,
+ * even though it wasn't exported.
+ */
+int
+wsockinit(void)
+{
+	WORD wVersionRequested;
+	WSADATA wsaData;
+	static int err = -1;
+	static int done = 0;
+
+	if (done)
+		return (err);
+
+	wVersionRequested = MAKEWORD( 1, 1);
+	err = WSAStartup( wVersionRequested, &wsaData );
+	atexit ((void(*)(void))WSACleanup);
+	done = 1;
+
+	if ( err != 0 )
+		err = -1;
+	return (err);
+}
+
+/*
+ * This is the exported function; new programs should call this.
+ */
+int
+pcap_wsockinit(void)
+{
+       return (wsockinit());
+}
+#endif /* _WIN32 */
+
 static int
 pcap_not_initialized(pcap_t *pcap)
 {
