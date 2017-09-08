@@ -32,8 +32,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lib_pcap_export_defs_h
-#define lib_pcap_export_defs_h
+#ifndef lib_pcap_funcattrs_h
+#define lib_pcap_funcattrs_h
 
 /*
  * PCAP_API_DEF must be used when defining *data* exported from
@@ -105,4 +105,4 @@
 
 #define PCAP_API	PCAP_API_DEF extern
 
-#endif /* lib_pcap_export_defs_h */
+#endif /* lib_pcap_funcattrs_h */
