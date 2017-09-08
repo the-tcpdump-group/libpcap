@@ -357,11 +357,11 @@ elseif(PCAP_TYPE STREQUAL "dlpi")
     # Also, due to the bug above applications that link to libpcap with
     # libdlpi will have to add "-L/lib" option to "configure".
     #
+    cmake_push_check_state()
     set(CMAKE_REQUIRED_FLAGS "-L/lib")
     set(CMAKE_REQUIRED_LIBRARIES dlpi)
     check_function_exists(dlpi_walk HAVE_LIBDLPI)
-    set(CMAKE_REQUIRED_FLAGS "")
-    set(CMAKE_REQUIRED_LIBRARIES "")
+    cmake_pop_check_state()
     if(HAVE_LIBDLPI)
 	#
 	# XXX - add -L/lib
@@ -404,9 +404,10 @@ elseif(PCAP_TYPE STREQUAL "linux")
 	#
 	# Try libnl 3.x first.
 	#
+	cmake_push_check_state()
 	set(CMAKE_REQUIRED_LIBRARIES nl-3)
 	check_function_exists(nl_socket_alloc HAVE_LIBNL)
-	set(CMAKE_REQUIRED_FLAGS "")
+	cmake_pop_check_state()
 	if(HAVE_LIBNL)
 	    #
 	    # Yes, we have libnl 3.x.
@@ -420,9 +421,10 @@ elseif(PCAP_TYPE STREQUAL "linux")
 	    #
 	    # Try libnl 2.x.
 	    #
+	    cmake_push_check_state()
 	    set(CMAKE_REQUIRED_LIBRARIES nl)
 	    check_function_exists(nl_socket_alloc HAVE_LIBNL)
-	    set(CMAKE_REQUIRED_FLAGS "")
+	    cmake_pop_check_state()
 	    if(HAVE_LIBNL)
 		#
 		# Yes, we have libnl 2.x.
@@ -435,9 +437,10 @@ elseif(PCAP_TYPE STREQUAL "linux")
 		#
 		# No, we don't; do we have libnl 1.x?
 		#
+		cmake_push_check_state()
 		set(CMAKE_REQUIRED_LIBRARIES nl)
 		check_function_exists(nl_handle_alloc HAVE_LIBNL)
-		set(CMAKE_REQUIRED_FLAGS "")
+		cmake_pop_check_state()
 		if(HAVE_LIBNL)
 		    set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
 		endif()
