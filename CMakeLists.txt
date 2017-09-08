@@ -42,6 +42,10 @@ else()
     option (HAVE_REMOTE "Enable remote capture" OFF)
 endif( WIN32 )
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(BUILD_WITH_LIBNL "Build with libnl" ON)
+endif()
+
 ######################################
 # Project settings
 ######################################
@@ -136,14 +140,38 @@ include(CheckTypeSize)
 #
 # Header files.
 #
-check_include_file( inttypes.h HAVE_INTTYPES_H )
-check_include_file( stdint.h HAVE_STDINT_H )
-check_include_file( unistd.h HAVE_UNISTD_H )
-if( NOT HAVE_UNISTD_H )
-    add_definitions( -DYY_NO_UNISTD_H )
-endif( NOT HAVE_UNISTD_H )
-check_include_file( bitypes.h HAVE_SYS_BITYPES_H )
-check_include_file( limits.h HAVE_LIMITS_H )
+check_include_file(inttypes.h HAVE_INTTYPES_H)
+check_include_file(stdint.h HAVE_STDINT_H)
+check_include_file(unistd.h HAVE_UNISTD_H)
+if(NOT HAVE_UNISTD_H)
+    add_definitions(-DYY_NO_UNISTD_H)
+endif(NOT HAVE_UNISTD_H)
+check_include_file(bitypes.h HAVE_SYS_BITYPES_H)
+check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
+check_include_file(sys/select.h HAVE_SYS_SELECT_H)
+check_include_file(limits.h HAVE_LIMITS_H)
+check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
+check_include_file(net/pfvar.h HAVE_NET_PFVAR_H)
+if(HAVE_NET_PFVAR_H)
+    check_c_source_compiles(
+"#include <sys/types.h>
+#include <sys/socket.h>
+#include <net/if.h>
+#include <net/pfvar.h>
+
+int
+main(void)
+{
+	return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
+}
+"
+        HAVE_PF_NAT_THROUGH_PF_NORDR)
+endif()
+check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    check_include_file(linux/sockios.h HAVE_LINUX_SOCKIOS_H)
+    check_include_file(linux/if_bonding.h HAVE_LINUX_IF_BONDING_H)
+endif()
 
 #
 # Functions.
@@ -235,11 +263,9 @@ if( WIN32 )
     if (HAVE_PACKET32)
 	#
 	# We have packet.dll.
-	# Set the capture type to NPF, and link with packet.dll before
-	# WinSock2.
+	# Set the capture type to NPF.
 	#
 	set( PCAP_TYPE npf )
-	set(PCAP_LINK_LIBRARIES packet ${PCAP_LINK_LIBRARIES})
     else()
 	#
 	# We don't have any capture type we know about, so just use
@@ -281,15 +307,6 @@ else()
         set( PCAP_TYPE nit )
     elseif( EXISTS /usr/include/linux/socket.h )
         set( PCAP_TYPE linux )
-
-	#
-	# Do we have the wireless extensions?
-	#
-        check_include_file( linux/wireless.h HAVE_LINUX_WIRELESS_H )
-
-        #
-        # XXX - many more Linux checks.
-	#
     elseif( EXISTS /usr/include/net/raw.h )
         set( PCAP_TYPE snoop )
     elseif( EXISTS /usr/include/odmi.h )
@@ -301,16 +318,160 @@ else()
         set( PCAP_TYPE bpf )
     elseif( /usr/include/sys/dlpi.h )
         set( PCAP_TYPE dlpi )
-
-        #
-        # XXX - many more DLPI checks.
-        #
     else()
 	set( PCAP_TYPE null )
     endif()
 endif( WIN32 )
 message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
+
+
+#
+# Do capture-mechanism-dependent tests.
+#
+if(PCAP_TYPE STREQUAL "npf")
+    #
+    # Link with packet.dll before WinSock2.
+    #
+    set(PCAP_LINK_LIBRARIES packet ${PCAP_LINK_LIBRARIES})
+elseif(PCAP_TYPE STREQUAL "dlpi")
+    #
+    # Needed for common functions used by pcap-[dlpi,libdlpi].c
+    #
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} dlpisubs.c)
+
+    #
+    # Checks for some header files.
+    #
+    check_include_files(sys/bufmod.h HAVE_SYS_BUFMOD_H)
+    check_include_files(sys/dlpi_ext.h HAVE_SYS_DLPI_EXT_H)
+
+    #
+    # Checks to see if Solaris has the public libdlpi(3LIB) library.
+    # Note: The existence of /usr/include/libdlpi.h does not mean it is the
+    # public libdlpi(3LIB) version. Before libdlpi was made public, a
+    # private version also existed, which did not have the same APIs.
+    # Due to a gcc bug, the default search path for 32-bit libraries does
+    # not include /lib, we add it explicitly here.
+    # [http://bugs.opensolaris.org/view_bug.do?bug_id=6619485].
+    # Also, due to the bug above applications that link to libpcap with
+    # libdlpi will have to add "-L/lib" option to "configure".
+    #
+    set(CMAKE_REQUIRED_FLAGS "-L/lib")
+    set(CMAKE_REQUIRED_LIBRARIES dlpi)
+    check_function_exists(dlpi_walk HAVE_LIBDLPI)
+    set(CMAKE_REQUIRED_FLAGS "")
+    set(CMAKE_REQUIRED_LIBRARIES "")
+    if(HAVE_LIBDLPI)
+	#
+	# XXX - add -L/lib
+	#
+	set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
+	set(PCAP_TYPE libdlpi)
+    endif()
+
+    #
+    # Check whether we have a /dev/dlpi device or have multiple devices.
+    #
+    if(EXISTS /dev/dlpi)
+	set(HAVE_DEV_DLPI TRUE)
+    else()
+	if(IS_DIRECTORY /dev/dlpi)
+	    set(PCAP_DEV_PREFIX, "/dev/dlpi")
+	endif()
+    endif()
+
+    #
+    # This check is for Solaris with DLPI support for passive modes.
+    # See dlpi(7P) for more details.
+    #
+    # XXX - there's no check_struct() macro that's like
+    # check_struct_has_member() except that it only checks for the
+    # existence of the structure type, so we use
+    # check_struct_has_member() and look for dl_primitive.
+    #
+    check_struct_has_member("dl_passive_req_t" dl_primitive sys/types.h sys/dlpi.h HAVE_DLPI_PASSIVE)
+elseif(PCAP_TYPE STREQUAL "linux")
+    #
+    # Do we have the wireless extensions?
+    #
+    check_include_file( linux/wireless.h HAVE_LINUX_WIRELESS_H )
+
+    #
+    # Do we have libnl?
+    #
+    if(BUILD_WITH_LIBNL)
+	#
+	# Try libnl 3.x first.
+	#
+	set(CMAKE_REQUIRED_LIBRARIES nl-3)
+	check_function_exists(nl_socket_alloc HAVE_LIBNL)
+	set(CMAKE_REQUIRED_FLAGS "")
+	if(HAVE_LIBNL)
+	    #
+	    # Yes, we have libnl 3.x.
+	    #
+	    set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
+	    set(HAVE_LIBNL_3_x ON)
+	    set(HAVE_LIBNL_NLE ON)
+	    set(HAVE_LIBNL_SOCKETS ON)
+	    include_directories("/usr/include/libnl3")
+	else()
+	    #
+	    # Try libnl 2.x.
+	    #
+	    set(CMAKE_REQUIRED_LIBRARIES nl)
+	    check_function_exists(nl_socket_alloc HAVE_LIBNL)
+	    set(CMAKE_REQUIRED_FLAGS "")
+	    if(HAVE_LIBNL)
+		#
+		# Yes, we have libnl 2.x.
+		#
+		set(PCAP_LINK_LIBRARIES nl-genl nl ${PCAP_LINK_LIBRARIES})
+		set(HAVE_LIBNL_2_x ON)
+		set(HAVE_LIBNL_NLE ON)
+		set(HAVE_LIBNL_SOCKETS ON)
+	    else()
+		#
+		# No, we don't; do we have libnl 1.x?
+		#
+		set(CMAKE_REQUIRED_LIBRARIES nl)
+		check_function_exists(nl_handle_alloc HAVE_LIBNL)
+		set(CMAKE_REQUIRED_FLAGS "")
+		if(HAVE_LIBNL)
+		    set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
+		endif()
+	    endif()
+	endif()
+    endif()
+
+    check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
+
+    #
+    # Checks to see if tpacket_stats is defined in linux/if_packet.h
+    # If so then pcap-linux.c can use this to report proper statistics.
+    #
+    check_struct_has_member("struct tpacket_stats" tp_packets linux/if_packet.h HAVE_TPACKET_STATS)
+
+    check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+    if(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+        set(HAVE_LINUX_TPACKET_AUXDATA tp_vlan_tci)
+    endif()
+elseif(PCAP_TYPE STREQUAL "bpf")
+    #
+    # Check whether we have the *BSD-style ioctls.
+    #
+    check_include_file(net/if_media.h HAVE_NET_IF_MEDIA_H)
+
+    #
+    # Check whether we have struct BPF_TIMEVAL.
+    #
+    if(HAVE_SYS_IOCCOM_H)
+        check_struct_has_member("struct BPF_TIMEVAL" tv_sec sys/types.h sys/ioccom.h net/bpf.h HAVE_STRUCT_BPF_TIMEVAL)
+    else()
+        check_struct_has_member("struct BPF_TIMEVAL" tv_sec sys/types.h net/bpf.h HAVE_STRUCT_BPF_TIMEVAL)
+    endif()
+endif()
 
 #
 # Now figure out how we get a list of interfaces and addresses,
@@ -322,7 +483,7 @@ if( NOT WIN32 )
     # UN*X - figure out what type of interface list mechanism we
     # have.
     #
-    if( ${PCAP_TYPE} STREQUAL "null" )
+    if(PCAP_TYPE STREQUAL "null")
         #
         # We can't capture, so we can't open any capture
         # devices, so we won't return any interfaces.
@@ -330,13 +491,13 @@ if( NOT WIN32 )
         set( FINDALLDEVS_TYPE null )
     else()
         check_function_exists( getifaddrs HAVE_GETIFADDRS )
-        if( ${HAVE_GETIFADDRS} )
+        if(HAVE_GETIFADDRS)
             #
             # We have "getifaddrs()"; make sure we have <ifaddrs.h>
             # as well, just in case some platform is really weird.
             #
             check_include_file( ifaddrs.h HAVE_IFADDRS_H )
-            if( ${HAVE_IFADDRS_H} )
+            if(HAVE_IFADDRS_H)
                 #
                 # We have the header, so we use "getifaddrs()" to
                 # get the list of interfaces.
@@ -362,7 +523,7 @@ if( NOT WIN32 )
             # The first thing we use is the type of capture mechanism,
             # which is somewhat of a proxy for the OS we're using.
             #
-            if( ${PCAP_TYPE} STREQUAL "dlpi" OR ${PCAP_TYPE} STREQUAL "libdlpi" )
+            if(PCAP_TYPE STREQUAL "dlpi" OR PCAP_TYPE STREQUAL "libdlpi")
                 #
                 # This might be Solaris 8 or later, with
                 # SIOCGLIFCONF, or it might be some other OS
@@ -414,7 +575,7 @@ endif( WIN32 )
 # Try to find Flex, a Windows version of Flex, or Lex.
 #
 find_program(LEX_EXECUTABLE NAMES flex win_flex lex)
-if( ${LEX_EXECUTABLE} STREQUAL "LEX_EXECUTABLE-NOTFOUND" )
+if(LEX_EXECUTABLE STREQUAL "LEX_EXECUTABLE-NOTFOUND" )
     message(FATAL_ERROR "Neither flex nor win_flex nor lex was found." )
 endif()
 message(STATUS "Lexical analyzer generator: ${LEX_EXECUTABLE}")
@@ -446,7 +607,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/scanner.c PROPERTIES
 # Try to find YACC or Bison.
 #
 find_program(YACC_EXECUTABLE NAMES bison win_bison byacc yacc)
-if( ${YACC_EXECUTABLE} STREQUAL "YACC_EXECUTABLE-NOTFOUND" )
+if(YACC_EXECUTABLE STREQUAL "YACC_EXECUTABLE-NOTFOUND" )
     message(FATAL_ERROR "Neither bison nor win_bison nor byacc nor yacc was found." )
 endif()
 message(STATUS "Parser generator: ${YACC_EXECUTABLE}")

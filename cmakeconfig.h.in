@@ -220,9 +220,6 @@
 /* Define to 1 if you have the `PacketIsLoopbackAdapter' function. */
 #cmakedefine HAVE_PACKET_IS_LOOPBACK_ADAPTER 1
 
-/* define if the system supports zerocopy BPF */
-#cmakedefine HAVE_ZEROCOPY_BPF 1
-
 /* define if your compiler has __attribute__ */
 #cmakedefine HAVE___ATTRIBUTE__ 1
 
@@ -266,7 +263,7 @@
 #cmakedefine PACKAGE_VERSION 1
 
 /* /dev/dlpi directory */
-#cmakedefine PCAP_DEV_PREFIX 1
+#cmakedefine PCAP_DEV_PREFIX ""
 
 /* target host supports Bluetooth sniffing */
 #cmakedefine PCAP_SUPPORT_BT 1

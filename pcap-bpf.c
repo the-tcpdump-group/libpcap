@@ -24,9 +24,6 @@
 #endif
 
 #include <sys/param.h>			/* optionally get BSD define */
-#ifdef HAVE_ZEROCOPY_BPF
-#include <sys/mman.h>
-#endif
 #include <sys/socket.h>
 #include <time.h>
 /*
@@ -57,10 +54,6 @@ static const char usbus_prefix[] = "usbus";
 #include <dirent.h>
 #endif
 
-#ifdef HAVE_ZEROCOPY_BPF
-#include <machine/atomic.h>
-#endif
-
 #include <net/if.h>
 
 #ifdef _AIX
@@ -81,6 +74,16 @@ static const char usbus_prefix[] = "usbus";
 #undef _AIX
 #include <net/bpf.h>
 #define _AIX
+
+/*
+ * If both BIOCROTZBUF and BPF_BUFMODE_ZBUF are defined, we have
+ * zero-copy BPF.
+ */
+#if defined(BIOCROTZBUF) && defined(BPF_BUFMODE_ZBUF)
+  #define HAVE_ZEROCOPY_BPF
+  #include <sys/mman.h>
+  #include <machine/atomic.h>
+#endif
 
 #include <net/if_types.h>		/* for IFT_ values */
 #include <sys/sysconfig.h>

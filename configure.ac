@@ -103,9 +103,8 @@ dnl in "aclocal.m4" uses it, so we would still have to test for it
 dnl and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
 dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/select.h sys/sockio.h limits.h)
-AC_CHECK_HEADERS(linux/types.h)
-AC_CHECK_HEADERS(linux/if_packet.h netpacket/packet.h netpacket/if_packet.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h limits.h)
+AC_CHECK_HEADERS(netpacket/packet.h)
 AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
 #include <sys/socket.h>
 #include <net/if.h>])
@@ -571,20 +570,6 @@ bpf)
 	# Check whether we have the *BSD-style ioctls.
 	#
 	AC_CHECK_HEADERS(net/if_media.h)
-
-	AC_MSG_CHECKING(whether the system supports zerocopy BPF)
-	AC_TRY_COMPILE(
-	    [#include <sys/socket.h>
-	    #include <sys/ioctl.h>
-	    #include <net/if.h>
-	    #include <net/bpf.h>],
-	    [return (BIOCROTZBUF + BPF_BUFMODE_ZBUF);],
-	    [
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_ZEROCOPY_BPF, 1,
-		[define if the system supports zerocopy BPF])
-	    ],
-	    AC_MSG_RESULT(no))
 
 	    #
 	    # Check whether we have struct BPF_TIMEVAL.

@@ -79,9 +79,6 @@
 /* Define to 1 if you have the <linux/if_bonding.h> header file. */
 #undef HAVE_LINUX_IF_BONDING_H
 
-/* Define to 1 if you have the <linux/if_packet.h> header file. */
-#undef HAVE_LINUX_IF_PACKET_H
-
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #undef HAVE_LINUX_NET_TSTAMP_H
 
@@ -90,9 +87,6 @@
 
 /* if tp_vlan_tci exists */
 #undef HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
-
-/* Define to 1 if you have the <linux/types.h> header file. */
-#undef HAVE_LINUX_TYPES_H
 
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #undef HAVE_LINUX_USBDEVICE_FS_H
@@ -108,9 +102,6 @@
 
 /* Define to 1 if you have the <netinet/if_ether.h> header file. */
 #undef HAVE_NETINET_IF_ETHER_H
-
-/* Define to 1 if you have the <netpacket/if_packet.h> header file. */
-#undef HAVE_NETPACKET_IF_PACKET_H
 
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #undef HAVE_NETPACKET_PACKET_H
@@ -193,9 +184,6 @@
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #undef HAVE_SYS_IOCCOM_H
 
-/* Define to 1 if you have the <sys/select.h> header file. */
-#undef HAVE_SYS_SELECT_H
-
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #undef HAVE_SYS_SOCKIO_H
 
@@ -219,9 +207,6 @@
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
-
-/* define if the system supports zerocopy BPF */
-#undef HAVE_ZEROCOPY_BPF
 
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__

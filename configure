@@ -4705,7 +4705,7 @@ $as_echo "#define HAVE_FSEEKO 1" >>confdefs.h
 fi
 
 
-for ac_header in sys/ioccom.h sys/select.h sys/sockio.h limits.h
+for ac_header in sys/ioccom.h sys/sockio.h limits.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -4718,25 +4718,12 @@ fi
 
 done
 
-for ac_header in linux/types.h
+for ac_header in netpacket/packet.h
 do :
-  ac_fn_c_check_header_mongrel "$LINENO" "linux/types.h" "ac_cv_header_linux_types_h" "$ac_includes_default"
-if test "x$ac_cv_header_linux_types_h" = xyes; then :
+  ac_fn_c_check_header_mongrel "$LINENO" "netpacket/packet.h" "ac_cv_header_netpacket_packet_h" "$ac_includes_default"
+if test "x$ac_cv_header_netpacket_packet_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_LINUX_TYPES_H 1
-_ACEOF
-
-fi
-
-done
-
-for ac_header in linux/if_packet.h netpacket/packet.h netpacket/if_packet.h
-do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
-if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
-  cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+#define HAVE_NETPACKET_PACKET_H 1
 _ACEOF
 
 fi
@@ -6018,36 +6005,6 @@ fi
 
 done
 
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the system supports zerocopy BPF" >&5
-$as_echo_n "checking whether the system supports zerocopy BPF... " >&6; }
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <sys/socket.h>
-	    #include <sys/ioctl.h>
-	    #include <net/if.h>
-	    #include <net/bpf.h>
-int
-main ()
-{
-return (BIOCROTZBUF + BPF_BUFMODE_ZBUF);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_ZEROCOPY_BPF 1" >>confdefs.h
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 	    #
 	    # Check whether we have struct BPF_TIMEVAL.
