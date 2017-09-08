@@ -70,6 +70,7 @@ main(int argc, char **argv)
 	int doselect, dopoll, dotimeout, dononblock;
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
+	pcap_if_t *devlist;
 	int selectable_fd;
 	int status;
 	int packet_count;
@@ -123,9 +124,12 @@ main(int argc, char **argv)
 		return 1;
 	}
 	if (device == NULL) {
-		device = pcap_lookupdev(ebuf);
-		if (device == NULL)
+		if (pcap_findalldevs(&devlist, ebuf) == -1)
 			error("%s", ebuf);
+		if (devlist == NULL)
+			error("no interfaces available for capture");
+		device = strdup(devlist->name);
+		pcap_freealldevs(devlist);
 	}
 	*ebuf = '\0';
 	pd = pcap_open_live(device, 65535, 0, 1000, ebuf);

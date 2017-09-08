@@ -232,6 +232,7 @@ main(int argc, char **argv)
 	char ebuf[PCAP_ERRBUF_SIZE];
 	char *infile;
 	char *cmdbuf;
+	pcap_if_t *devlist;
 	pcap_t *pd;
 	int status = 0;
 	int pcap_fd;
@@ -286,11 +287,12 @@ main(int argc, char **argv)
 		 * No interface specified; get whatever pcap_lookupdev()
 		 * finds.
 		 */
-		device = pcap_lookupdev(ebuf);
-		if (device == NULL) {
-			error("couldn't find interface to use: %s",
-			    ebuf);
-		}
+		if (pcap_findalldevs(&devlist, ebuf) == -1)
+			error("%s", ebuf);
+		if (devlist == NULL)
+			error("no interfaces available for capture");
+		device = strdup(devlist->name);
+		pcap_freealldevs(devlist);
 	}
 
 	if (infile != NULL) {

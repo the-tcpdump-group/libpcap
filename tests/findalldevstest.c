@@ -151,16 +151,6 @@ int main(int argc, char **argv)
       exit_status = 2;
   }
 
-  if ( (s = pcap_lookupdev(errbuf)) == NULL)
-  {
-    fprintf(stderr,"Error in pcap_lookupdev: %s\n",errbuf);
-    exit_status = 2;
-  }
-  else
-  {
-    printf("Preferred device name: %s\n",s);
-  }
-
   if (pcap_lookupnet(s, &net, &mask, errbuf) < 0)
   {
     fprintf(stderr,"Error in pcap_lookupnet: %s\n",errbuf);
