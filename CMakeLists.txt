@@ -70,7 +70,7 @@ if( WIN32 )
 	#
 	# We want to build with packet.dll, either from WinPcap or NPcap.
 	#
-	set(HAVE_PACKET32)
+	set(HAVE_PACKET32 TRUE)
 
 	#
 	# Check whether we have the NPcap PacketIsLoopbackAdapter()
