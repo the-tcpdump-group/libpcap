@@ -349,6 +349,7 @@ EXTRA_DIST = \
 	pcap-netmap.c \
 	pcap-netmap.h \
 	pcap-nit.c \
+	pcap-npf.c \
 	pcap-null.c \
 	pcap-pf.c \
 	pcap-rdmasniff.c \
@@ -368,7 +369,6 @@ EXTRA_DIST = \
 	pcap-tc.h \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
-	pcap-win32.c \
 	sockutils.c \
 	sockutils.h \
 	scanner.l \

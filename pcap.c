@@ -1155,14 +1155,17 @@ pcap_freealldevs(pcap_if_t *alldevs)
 }
 
 /*
- * Windows has its own pcap_lookupdev(), for compatibility reasons, as
+ * pcap-npf.c has its own pcap_lookupdev(), for compatibility reasons, as
  * it actually returns the names of all interfaces, with a NUL separator
  * between them; some callers may depend on that.
  *
  * MS-DOS has its own pcap_lookupdev(), but that might be useful only
  * as an optimization.
+ *
+ * In all other cases, we just use pcap_findalldevs() to get a list of
+ * devices, and pick from that list.
  */
-#if !defined(_WIN32) && !defined(MSDOS)
+#if !defined(HAVE_PACKET32) && !defined(MSDOS)
 /*
  * Return the name of a network interface attached to the system, or NULL
  * if none can be found.  The interface must be configured up; the

@@ -64,6 +64,17 @@ if( WIN32 )
         else( CMAKE_CL_64 )
             link_directories("${PACKET_DLL_DIR}/Lib")
         endif( CMAKE_CL_64 )
+
+	#
+	# We want to build with packet.dll, either from WinPcap or NPcap.
+	#
+	set(HAVE_PACKET32)
+
+	#
+	# Check whether we have the NPcap PacketIsLoopbackAdapter()
+	# function.
+	#
+	check_function_exists( PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER )
     endif()
     include_directories(
         ../Common/
@@ -143,13 +154,6 @@ check_function_exists( snprintf HAVE_SNPRINTF )
 check_function_exists( vsnprintf HAVE_VSNPRINTF )
 check_function_exists( strtok_r HAVE_STRTOK_R )
 
-if (WIN32)
-    #
-    # Check for Windows-only functions, such as packet.dll functions.
-    #
-    check_function_exists( PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER )
-endif()
-
 #
 # Data types.
 #
@@ -215,19 +219,42 @@ if( HAVE_REMOTE )
 endif( HAVE_REMOTE )
 
 #
-# Determine the main pcap-XXX.c file to use.
+# Determine the main pcap-XXX.c file to use, and the libraries with
+# which we need to link libpcap, if any.
 #
 if( WIN32 )
     #
-    # WinPcap.
+    # Windows; we need to link with WinSock2.
     #
-    set( PCAP_TYPE win32 )
+    set(PCAP_LINK_LIBRARIES ws2_32)
+
+    #
+    # Check whether we have packet.dll.
+    #
+    if (HAVE_PACKET32)
+	#
+	# We have packet.dll.
+	# Set the capture type to NPF, and link with packet.dll before
+	# WinSock2.
+	#
+	set( PCAP_TYPE npf )
+	set(PCAP_LINK_LIBRARIES packet ${PCAP_LINK_LIBRARIES})
+    else()
+	#
+	# We don't have any capture type we know about, so just use
+	# the null capture type, and only support reading (and writing)
+	# capture files.
+	#
+	set( PCAP_TYPE null )
+    endif()
 else()
     #
     # UN*X.
     #
-    # Figure out what type of packet capture mechanism we have.
+    # Figure out what type of packet capture mechanism we have, and
+    # what libraries we'd need to link libpcap with, if any.
     #
+    set(PCAP_LINK_LIBRARIES "")
     if( EXISTS /dev/bpf )
 	#
 	# Cloning BPF device.
@@ -545,12 +572,7 @@ add_library(${LIBRARY_NAME}_static STATIC
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
 set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
 
-if( WIN32 )
-    target_link_libraries ( ${LIBRARY_NAME}
-        packet
-        ws2_32
-    )
-endif( WIN32 )
+target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
 
 ######################################
 # Write out the config.h file
