@@ -53,6 +53,8 @@ include_directories(
     ${pcap_SOURCE_DIR}
 )
 
+include(CheckFunctionExists)
+
 if( WIN32 )
     #
     # The 'Win32/WpdPack/' directory branch is for an AppVeyor build.
@@ -128,7 +130,6 @@ endif( MSVC )
 ###################################################################
 
 include(CheckIncludeFile)
-include(CheckFunctionExists)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 
