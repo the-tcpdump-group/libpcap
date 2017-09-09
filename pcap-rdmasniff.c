@@ -131,7 +131,7 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		}
 
 		pkth.len = wc.byte_len;
-		pkth.caplen = min(pkth.len, handle->snapshot);
+		pkth.caplen = min(pkth.len, (u_int)handle->snapshot);
 		gettimeofday(&pkth.ts, NULL);
 
 		pktd = (u_char *) handle->buffer + wc.wr_id * RDMASNIFF_RECEIVE_SIZE;
