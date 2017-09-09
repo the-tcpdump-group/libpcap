@@ -37,6 +37,7 @@
 
 #include <infiniband/verbs.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 
 #if !defined(IBV_FLOW_ATTR_SNIFFER)
