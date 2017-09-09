@@ -375,7 +375,7 @@ netfilter_send_config_msg(const pcap_t *handle, u_int16_t msg_type, int ack, u_i
 		if (snl.nl_pid != 0 || seq_id != nlh->nlmsg_seq)	/* if not from kernel or wrong sequence skip */
 			continue;
 
-		while ((u_int)len >= NLMSG_SPACE(0) && NLMSG_OK(nlh, len)) {
+		while ((u_int)len >= NLMSG_SPACE(0) && NLMSG_OK(nlh, (u_int)len)) {
 			if (nlh->nlmsg_type == NLMSG_ERROR || (nlh->nlmsg_type == NLMSG_DONE && nlh->nlmsg_flags & NLM_F_MULTI)) {
 				if (nlh->nlmsg_len < NLMSG_ALIGN(sizeof(struct nlmsgerr))) {
 					errno = EBADMSG;
