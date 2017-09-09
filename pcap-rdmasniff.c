@@ -172,7 +172,6 @@ rdmasniff_activate(pcap_t *handle)
 	struct ibv_qp_init_attr qp_init_attr;
 	struct ibv_qp_attr qp_attr;
 	struct ibv_flow_attr flow_attr;
-	struct ibv_recv_wr wr;
 	struct ibv_port_attr port_attr;
 	int i;
 
