@@ -73,10 +73,59 @@
  * compiler that claims to be "just like GCC" of that version or a
  * later release.
  */
-#define IS_AT_LEAST_GNUC_VERSION(major, minor) \
+#define PCAP_IS_AT_LEAST_GNUC_VERSION(major, minor) \
 	(defined(__GNUC__) && \
 	    (__GNUC__ > (major) || \
 	     (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor))))
+
+/*
+ * Check wehether this is Sun C/SunPro C/Oracle Studio major.minor
+ * or a later release.
+ *
+ * The version number in __SUNPRO_C is encoded in hex BCD, with the
+ * uppermost hex digit being the major version number, the next
+ * one or two hex digits being the minor version number, and
+ * the last digit being the patch version.
+ *
+ * It represents the *compiler* version, not the product version;
+ * see
+ *
+ *    https://sourceforge.net/p/predef/wiki/Compilers/
+ *
+ * for a partial mapping, which we assume continues for later
+ * 12.x product releases.
+ */
+#define PCAP_SUNPRO_VERSION_TO_BCD(major, minor) \
+	(((minor) >= 10) ? \
+	    (((major) << 12) | (((minor)/10) << 8) | (((minor)%10) << 4)) : \
+	    (((major) << 8) | ((minor) << 4)))
+#define PCAP_IS_AT_LEAST_SUNC_VERSION(major, minor) \
+	(defined(__SUNPRO_C) && \
+	    (__SUNPRO_C >= PCAP_SUNPRO_VERSION_TO_BCD((major), (minor))))
+
+/*
+ * Check wehether this is IBM XL C major.minor or a later release.
+ *
+ * The version number in __xlC__ has the major version in the
+ * upper 8 bits and the minor version in the lower 8 bits.
+ */
+#define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
+	(defined(__xlC__) && __xlC__ >= (((major) << 8) | (minor)))
+
+/*
+ * Check wehether this is Sun C/SunPro C/Oracle Studio major.minor
+ * or a later release.
+ *
+ * The version number in __HP_aCC is encoded in zero-padded decimal BCD,
+ * with the "A." stripped off, the uppermost two decimal digits being
+ * the major version number, the next two decimal digits being the minor
+ * version number, and the last two decimal digits being the patch version.
+ * (Strip off the A., remove the . between the major and minor version
+ * number, and add two digits of patch.)
+ */
+#define PCAP_IS_AT_LEAST_HP_C_VERSION(major, minor) \
+	(defined(__HP_aCC) && \
+	    (__HP_aCC >= ((major)*10000 + (minor)*100)))
 
 #if defined(_WIN32)
   #ifdef BUILDING_PCAP
@@ -99,15 +148,15 @@
      * shared library by default, so we might have to explicitly mark
      * functions as exported.
      */
-    #if IS_AT_LEAST_GNUC_VERSION(3, 4) \
-        || (defined(__xlC__) && __xlC__ >= 0x0C00)
+    #if PCAP_IS_AT_LEAST_GNUC_VERSION(3, 4) \
+        || PCAP_IS_AT_LEAST_XL_C_VERSION(12, 0)
       /*
        * GCC 3.4 or later, or some compiler asserting compatibility with
        * GCC 3.4 or later, or XL C 13.0 or later, so we have
        * __attribute__((visibility()).
        */
       #define PCAP_API_DEF	__attribute__((visibility("default")))
-    #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+    #elif PCAP_IS_AT_LEAST_SUNC_VERSION(5, 5)
       /*
        * Sun C 5.5 or later, so we have __global.
        * (Sun C 5.9 and later also have __attribute__((visibility()),
@@ -137,10 +186,10 @@
  * declaration, as the MSVC version has to go before the declaration.)
  */
 #if __has_attribute(noreturn) \
-    || IS_AT_LEAST_GNUC_VERSION(2, 5) \
-    || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)) \
-    || (defined(__xlC__) && __xlC__ >= 0x0A01) \
-    || (defined(__HP_aCC) && __HP_aCC >= 61000)
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(2, 5) \
+    || PCAP_IS_AT_LEAST_SUNC_VERSION(5, 9) \
+    || PCAP_IS_AT_LEAST_XL_C_VERSION(10, 1) \
+    || PCAP_IS_AT_LEAST_HP_C_VERSION(6, 10)
   /*
    * Compiler with support for __attribute((noreturn)), or GCC 2.5 and
    * later, or Solaris Studio 12 (Sun C 5.9) and later, or IBM XL C 10.1
@@ -164,9 +213,9 @@
  * string".
  */
 #if __has_attribute(__format__) \
-    || IS_AT_LEAST_GNUC_VERSION(2, 3) \
-    || (defined(__xlC__) && __xlC__ >= 0x0A01) \
-    || (defined(__HP_aCC) && __HP_aCC >= 61000)
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(2, 3) \
+    || PCAP_IS_AT_LEAST_XL_C_VERSION(10, 1) \
+    || PCAP_IS_AT_LEAST_HP_C_VERSION(6, 10)
   /*
    * Compiler with support for it, or GCC 2.3 and later, or IBM XL C 10.1
    * and later (do any earlier versions of XL C support this?),
@@ -183,18 +232,18 @@
  * compiler supports that.
  */
 #if __has_attribute(deprecated) \
-    || IS_AT_LEAST_GNUC_VERSION(4, 5) \
-    || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x5130))
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(4, 5) \
+    || PCAP_IS_AT_LEAST_SUNC_VERSION(5, 13)
   /*
    * Compiler that supports __has_attribute and __attribute__((deprecated)),
-   * or GCC 4.5 and later, or Sun/Oracle C 12.4 or later.
+   * or GCC 4.5 and later, or Sun/Oracle C 12.4 (Sun C 5.13) or later.
    *
    * Those support __attribute__((deprecated(msg))) (we assume, perhaps
    * incorrectly, that anything that supports __has_attribute() is
    * recent enough to support __attribute__((deprecated(msg)))).
    */
   #define PCAP_DEPRECATED(msg)	__attribute__((deprecated(msg)))
-#elif IS_AT_LEAST_GNUC_VERSION(3, 1)
+#elif PCAP_IS_AT_LEAST_GNUC_VERSION(3, 1)
   /*
    * GCC 3.1 through 4.4.
    *
