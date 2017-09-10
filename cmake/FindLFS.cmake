@@ -32,6 +32,7 @@
 
 include(CheckCSourceCompiles)
 include(FindPackageHandleStandardArgs)
+include(CMakePushCheckState)
 
 # Test program to check for LFS. Requires that off_t has at least 8 byte large
 set(_lfs_test_source
@@ -47,6 +48,7 @@ set(_lfs_test_source
 # This appends to the variables _lfs_cppflags, _lfs_cflags, and _lfs_ldflags,
 # it also sets LFS_FOUND to 1 if it works.
 function(_lfs_check_compiler_option var options definitions libraries)
+    cmake_push_check_state()
     set(CMAKE_REQUIRED_QUIET 1)
     set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS} ${options})
     set(CMAKE_REQUIRED_DEFINITIONS ${CMAKE_REQUIRED_DEFINITIONS} ${definitions})
@@ -54,6 +56,7 @@ function(_lfs_check_compiler_option var options definitions libraries)
 
     message(STATUS "Looking for LFS support using ${options} ${definitions} ${libraries}")
     check_c_source_compiles("${_lfs_test_source}" ${var})
+    cmake_pop_check_state()
 
     if(${var})
         message(STATUS "Looking for LFS support using ${options} ${definitions} ${libraries} - found")
@@ -79,9 +82,11 @@ function(_lfs_check)
     set(_lfs_cppflags)
     set(_lfs_ldflags)
     set(_lfs_libs)
+    cmake_push_check_state()
     set(CMAKE_REQUIRED_QUIET 1)
     message(STATUS "Looking for native LFS support")
     check_c_source_compiles("${_lfs_test_source}" lfs_native)
+    cmake_pop_check_state()
     if (lfs_native)
         message(STATUS "Looking for native LFS support - found")
         set(LFS_FOUND TRUE)
