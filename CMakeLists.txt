@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.6)
 
 #
 # Apple doesn't build with an install_name starting with @rpath, and
