@@ -280,7 +280,7 @@ EXTRA_DIST = \
 	bpf/net/bpf_filter.c \
 	chmod_bpf \
 	cmakeconfig.h.in \
-	cmake/FindLFS.cmake
+	cmake/FindLFS.cmake \
 	cmake/preconfigure.cmake \
 	config/have_siocglifconf.c \
 	config.guess \
