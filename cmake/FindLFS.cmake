@@ -30,7 +30,7 @@
 # LFS_FOUND - If there is Large files support
 #
 
-include(CheckCXXSourceCompiles)
+include(CheckCSourceCompiles)
 include(FindPackageHandleStandardArgs)
 
 # Test program to check for LFS. Requires that off_t has at least 8 byte large
@@ -53,7 +53,7 @@ function(_lfs_check_compiler_option var options definitions libraries)
     set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_DEFINITIONS} ${libraries})
 
     message(STATUS "Looking for LFS support using ${options} ${definitions} ${libraries}")
-    check_cxx_source_compiles("${_lfs_test_source}" ${var})
+    check_c_source_compiles("${_lfs_test_source}" ${var})
 
     if(${var})
         message(STATUS "Looking for LFS support using ${options} ${definitions} ${libraries} - found")
