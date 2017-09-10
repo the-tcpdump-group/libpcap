@@ -302,7 +302,7 @@ else()
 	# Cloning BPF device.
 	#
 	set(PCAP_TYPE bpf)
-	AC_DEFINE(HAVE_CLONING_BPF,1,[define if you have a cloning BPF device])
+	set(HAVE_CLONING_BPF TRUE)
     elseif(EXISTS /dev/bpf0)
 	set(PCAP_TYPE bpf)
 
