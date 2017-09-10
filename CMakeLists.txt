@@ -9,6 +9,8 @@ if(POLICY CMP0042)
     cmake_policy(SET CMP0042 OLD)
 endif()
 
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 project(pcap)
 #
 # Call the library "wpcap" on Windows, for backwards compatibility.
@@ -199,6 +201,19 @@ set(CMAKE_EXTRA_INCLUDE_FILES unistd.h)
 # Structure fields.
 #
 check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_SOCKADDR_SA_LEN)
+
+#
+# Large file support on UN*X, a/k/a LFS.
+#
+if(NOT WIN32)
+  include(FindLFS)
+  if(LFS_FOUND)
+    #
+    # Add the required #defines.
+    #
+    add_definitions(${LFS_DEFINITIONS})
+  endif()
+endif()
 
 if(INET6)
     message(STATUS "Use IPv6")
