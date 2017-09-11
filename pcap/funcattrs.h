@@ -227,7 +227,7 @@
 #endif
 
 /*
- * PCAP_DEPRECATED(func, msg), before a function declaration, marks the
+ * PCAP_DEPRECATED(func, msg), after a function declaration, marks the
  * function as deprecated.
  *
  * The first argument is the name of the function; the second argument is

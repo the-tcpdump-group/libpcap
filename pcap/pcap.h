@@ -315,8 +315,8 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
  * thread-safe, can behave weirdly with WinPcap).  Callers
  * should use pcap_findalldevs() and use the first device.
  */
-PCAP_DEPRECATED(pcap_lookupdev, "use 'pcap_findalldevs' and use the first device")
-PCAP_API char	*pcap_lookupdev(char *);
+PCAP_API char	*pcap_lookupdev(char *)
+PCAP_DEPRECATED(pcap_lookupdev, "use 'pcap_findalldevs' and use the first device");
 
 PCAP_API int	pcap_lookupnet(const char *, bpf_u_int32 *, bpf_u_int32 *, char *);
 
