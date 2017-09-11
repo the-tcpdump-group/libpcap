@@ -42,7 +42,8 @@
 #include <config.h>
 #endif
 
-#include <pcap-types.h>
+#include <pcap/pcap-inttypes.h>
+#include "pcap-types.h"
 
 #ifndef _WIN32
 #include <sys/param.h>
