@@ -106,6 +106,7 @@ PUBHDR = \
 	pcap/can_socketcan.h \
 	pcap/dlt.h \
 	pcap/funcattrs.h \
+	pcap/pcap-inttypes.h \
 	pcap/ipnet.h \
 	pcap/namedb.h \
 	pcap/nflog.h \

@@ -82,7 +82,7 @@ struct pcap_netfilter {
 	u_int   packets_nobufs; /* ENOBUFS counter */
 };
 
-static int nfqueue_send_verdict(const pcap_t *handle, u_int16_t group_id, u_int32_t id, u_int32_t verdict);
+static int nfqueue_send_verdict(const pcap_t *handle, uint16_t group_id, u_int32_t id, u_int32_t verdict);
 
 
 static int
@@ -137,7 +137,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	ep = bp + len;
 	while (bp < ep) {
 		const struct nlmsghdr *nlh = (const struct nlmsghdr *) bp;
-		u_int32_t msg_len;
+		uint32_t msg_len;
 		nftype_t type = OTHER;
 		/*
 		 * Has "pcap_breakloop()" been called?
@@ -305,13 +305,13 @@ netfilter_inject_linux(pcap_t *handle, const void *buf, size_t size)
 }
 
 struct my_nfattr {
-	u_int16_t nfa_len;
-	u_int16_t nfa_type;
+	uint16_t nfa_len;
+	uint16_t nfa_type;
 	void *data;
 };
 
 static int
-netfilter_send_config_msg(const pcap_t *handle, u_int16_t msg_type, int ack, u_int8_t family, u_int16_t res_id, const struct my_nfattr *mynfa)
+netfilter_send_config_msg(const pcap_t *handle, uint16_t msg_type, int ack, u_int8_t family, u_int16_t res_id, const struct my_nfattr *mynfa)
 {
 	char buf[1024] __attribute__ ((aligned));
 
@@ -392,13 +392,13 @@ netfilter_send_config_msg(const pcap_t *handle, u_int16_t msg_type, int ack, u_i
 }
 
 static int
-nflog_send_config_msg(const pcap_t *handle, u_int8_t family, u_int16_t group_id, const struct my_nfattr *mynfa)
+nflog_send_config_msg(const pcap_t *handle, uint8_t family, u_int16_t group_id, const struct my_nfattr *mynfa)
 {
 	return netfilter_send_config_msg(handle, (NFNL_SUBSYS_ULOG << 8) | NFULNL_MSG_CONFIG, 1, family, group_id, mynfa);
 }
 
 static int
-nflog_send_config_cmd(const pcap_t *handle, u_int16_t group_id, u_int8_t cmd, u_int8_t family)
+nflog_send_config_cmd(const pcap_t *handle, uint16_t group_id, u_int8_t cmd, u_int8_t family)
 {
 	struct nfulnl_msg_config_cmd msg;
 	struct my_nfattr nfa;
@@ -413,7 +413,7 @@ nflog_send_config_cmd(const pcap_t *handle, u_int16_t group_id, u_int8_t cmd, u_
 }
 
 static int
-nflog_send_config_mode(const pcap_t *handle, u_int16_t group_id, u_int8_t copy_mode, u_int32_t copy_range)
+nflog_send_config_mode(const pcap_t *handle, uint16_t group_id, u_int8_t copy_mode, u_int32_t copy_range)
 {
 	struct nfulnl_msg_config_mode msg;
 	struct my_nfattr nfa;
@@ -429,7 +429,7 @@ nflog_send_config_mode(const pcap_t *handle, u_int16_t group_id, u_int8_t copy_m
 }
 
 static int
-nfqueue_send_verdict(const pcap_t *handle, u_int16_t group_id, u_int32_t id, u_int32_t verdict)
+nfqueue_send_verdict(const pcap_t *handle, uint16_t group_id, u_int32_t id, u_int32_t verdict)
 {
 	struct nfqnl_msg_verdict_hdr msg;
 	struct my_nfattr nfa;
@@ -445,13 +445,13 @@ nfqueue_send_verdict(const pcap_t *handle, u_int16_t group_id, u_int32_t id, u_i
 }
 
 static int
-nfqueue_send_config_msg(const pcap_t *handle, u_int8_t family, u_int16_t group_id, const struct my_nfattr *mynfa)
+nfqueue_send_config_msg(const pcap_t *handle, uint8_t family, u_int16_t group_id, const struct my_nfattr *mynfa)
 {
 	return netfilter_send_config_msg(handle, (NFNL_SUBSYS_QUEUE << 8) | NFQNL_MSG_CONFIG, 1, family, group_id, mynfa);
 }
 
 static int
-nfqueue_send_config_cmd(const pcap_t *handle, u_int16_t group_id, u_int8_t cmd, u_int16_t pf)
+nfqueue_send_config_cmd(const pcap_t *handle, uint16_t group_id, u_int8_t cmd, u_int16_t pf)
 {
 	struct nfqnl_msg_config_cmd msg;
 	struct my_nfattr nfa;
@@ -467,7 +467,7 @@ nfqueue_send_config_cmd(const pcap_t *handle, u_int16_t group_id, u_int8_t cmd, 
 }
 
 static int
-nfqueue_send_config_mode(const pcap_t *handle, u_int16_t group_id, u_int8_t copy_mode, u_int32_t copy_range)
+nfqueue_send_config_mode(const pcap_t *handle, uint16_t group_id, u_int8_t copy_mode, u_int32_t copy_range)
 {
 	struct nfqnl_msg_config_params msg;
 	struct my_nfattr nfa;

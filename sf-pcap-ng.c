@@ -25,7 +25,7 @@
 #include <config.h>
 #endif
 
-#include <pcap-types.h>
+#include <pcap/pcap-inttypes.h>
 
 #include <errno.h>
 #include <memory.h>
@@ -90,7 +90,7 @@ struct section_header_block {
 	bpf_u_int32	byte_order_magic;
 	u_short		major_version;
 	u_short		minor_version;
-	u_int64_t	section_length;
+	uint64_t	section_length;
 	/* followed by options and trailer */
 };
 
@@ -200,7 +200,7 @@ struct pcap_ng_if {
 	u_int tsresol;			/* time stamp resolution */
 	tstamp_scale_type_t scale_type;	/* how to scale */
 	u_int scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
-	u_int64_t tsoffset;		/* time stamp offset */
+	uint64_t tsoffset;		/* time stamp offset */
 };
 
 /*
@@ -433,7 +433,7 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 
 static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
-    u_int64_t *tsoffset, int *is_binary, char *errbuf)
+    uint64_t *tsoffset, int *is_binary, char *errbuf)
 {
 	struct option_header *opthdr;
 	void *optvalue;
@@ -556,7 +556,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
 	u_int tsresol;
-	u_int64_t tsoffset;
+	uint64_t tsoffset;
 	int is_binary;
 
 	ps = p->priv;
@@ -1065,7 +1065,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
 	FILE *fp = p->rfile;
-	u_int64_t t, sec, frac;
+	uint64_t t, sec, frac;
 
 	/*
 	 * Look for an Enhanced Packet Block, a Simple Packet Block,
@@ -1101,13 +1101,13 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				interface_id = SWAPLONG(epbp->interface_id);
 				hdr->caplen = SWAPLONG(epbp->caplen);
 				hdr->len = SWAPLONG(epbp->len);
-				t = ((u_int64_t)SWAPLONG(epbp->timestamp_high)) << 32 |
+				t = ((uint64_t)SWAPLONG(epbp->timestamp_high)) << 32 |
 				    SWAPLONG(epbp->timestamp_low);
 			} else {
 				interface_id = epbp->interface_id;
 				hdr->caplen = epbp->caplen;
 				hdr->len = epbp->len;
-				t = ((u_int64_t)epbp->timestamp_high) << 32 |
+				t = ((uint64_t)epbp->timestamp_high) << 32 |
 				    epbp->timestamp_low;
 			}
 			goto found;
@@ -1166,13 +1166,13 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				interface_id = SWAPSHORT(pbp->interface_id);
 				hdr->caplen = SWAPLONG(pbp->caplen);
 				hdr->len = SWAPLONG(pbp->len);
-				t = ((u_int64_t)SWAPLONG(pbp->timestamp_high)) << 32 |
+				t = ((uint64_t)SWAPLONG(pbp->timestamp_high)) << 32 |
 				    SWAPLONG(pbp->timestamp_low);
 			} else {
 				interface_id = pbp->interface_id;
 				hdr->caplen = pbp->caplen;
 				hdr->len = pbp->len;
-				t = ((u_int64_t)pbp->timestamp_high) << 32 |
+				t = ((uint64_t)pbp->timestamp_high) << 32 |
 				    pbp->timestamp_low;
 			}
 			goto found;

@@ -86,8 +86,8 @@
 #endif
 
 struct mon_bin_stats {
-	u_int32_t queued;
-	u_int32_t dropped;
+	uint32_t queued;
+	uint32_t dropped;
 };
 
 struct mon_bin_get {

@@ -23,6 +23,8 @@
 #include <arpa/inet.h>
 #endif
 
+#include <pcap/pcap-inttypes.h>
+
 /*
  * Macros to extract possibly-unaligned big-endian integral values.
  */

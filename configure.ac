@@ -29,65 +29,6 @@ if test "$ac_cv___attribute__" = "yes"; then
 	AC_C___ATTRIBUTE___UNUSED
 fi
 
-AC_CHECK_HEADERS(sys/bitypes.h)
-
-AC_CHECK_TYPE([int8_t], ,
-	[AC_DEFINE([int8_t], [signed char],
-	[Define to `signed char' if int8_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([u_int8_t], ,
-	[AC_DEFINE([u_int8_t], [unsigned char],
-	[Define to `unsigned char' if u_int8_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([int16_t], ,
-	[AC_DEFINE([int16_t], [short],
-	[Define to `short' if int16_t not defined.])]
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([u_int16_t], ,
-	[AC_DEFINE([u_int16_t], [unsigned short],
-	[Define to `unsigned short' if u_int16_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([int32_t], ,
-	[AC_DEFINE([int32_t], [int],
-	[Define to `int' if int32_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([u_int32_t], ,
-	[AC_DEFINE([u_int32_t], [unsigned int],
-	[Define to `unsigned int' if u_int32_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([int64_t], ,
-	[AC_DEFINE([int64_t], [long long],
-	[Define to `long long' if int64_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-AC_CHECK_TYPE([u_int64_t], ,
-	[AC_DEFINE([u_int64_t], [unsigned long long],
-	[Define to `unsigned long long' if u_int64_t not defined.])],
-	[AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif])
-
 #
 # Try to arrange for large file support.
 #
@@ -1547,9 +1488,6 @@ if test "x$enable_usb" != "xno" ; then
 	  AC_CACHE_VAL(ac_cv_usbdevfs_ctrltransfer_has_bRequestType,
 	    AC_TRY_COMPILE([
 AC_INCLUDES_DEFAULT
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
 #ifdef HAVE_LINUX_COMPILER_H
 #include <linux/compiler.h>
 #endif

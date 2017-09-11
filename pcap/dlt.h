@@ -946,14 +946,14 @@
  * the pseudo-header is:
  *
  * struct dl_ipnetinfo {
- *     u_int8_t   dli_version;
- *     u_int8_t   dli_family;
- *     u_int16_t  dli_htype;
- *     u_int32_t  dli_pktlen;
- *     u_int32_t  dli_ifindex;
- *     u_int32_t  dli_grifindex;
- *     u_int32_t  dli_zsrc;
- *     u_int32_t  dli_zdst;
+ *     uint8_t   dli_version;
+ *     uint8_t   dli_family;
+ *     uint16_t  dli_htype;
+ *     uint32_t  dli_pktlen;
+ *     uint32_t  dli_ifindex;
+ *     uint32_t  dli_grifindex;
+ *     uint32_t  dli_zsrc;
+ *     uint32_t  dli_zdst;
  * };
  *
  * dli_version is 2 for the current version of the pseudo-header.
