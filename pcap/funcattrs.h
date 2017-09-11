@@ -227,9 +227,13 @@
 #endif
 
 /*
- * Deprecate a function.
- * The argument is a string giving the warning message to use if the
- * compiler supports that.
+ * PCAP_DEPRECATED(func, msg), before a function declaration, marks the
+ * function as deprecated.
+ *
+ * The first argument is the name of the function; the second argument is
+ * a string giving the warning message to use if the compiler supports that.
+ *
+ * (Thank you, Microsoft, for requiring the function name.)
  */
 #if __has_attribute(deprecated) \
     || PCAP_IS_AT_LEAST_GNUC_VERSION(4, 5) \
@@ -242,7 +246,7 @@
    * incorrectly, that anything that supports __has_attribute() is
    * recent enough to support __attribute__((deprecated(msg)))).
    */
-  #define PCAP_DEPRECATED(msg)	__attribute__((deprecated(msg)))
+  #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated(msg)))
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(3, 1)
   /*
    * GCC 3.1 through 4.4.
@@ -250,14 +254,14 @@
    * Those support __attribute__((deprecated)) but not
    * __attribute__((deprecated(msg))).
    */
-  #define PCAP_DEPRECATED(msg)	__attribute__((deprecated))
+  #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated))
 #elif (defined(_MSC_VER) && (_MSC_VER >= 1500))
   /*
    * MSVC from Visual Studio 2008 or later.
    */
-  #define PCAP_DEPRECATED(msg)	__pragma(deprecated)
+  #define PCAP_DEPRECATED(func, msg)	__pragma(deprecated(func))
 #else
-  #define PCAP_DEPRECATED(msg)
+  #define PCAP_DEPRECATED(func, msg)
 #endif
 
 /*
