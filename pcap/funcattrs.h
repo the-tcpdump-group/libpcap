@@ -255,9 +255,13 @@
    * __attribute__((deprecated(msg))).
    */
   #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated))
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1500))
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(BUILDING_PCAP)
   /*
-   * MSVC from Visual Studio 2008 or later.
+   * MSVC from Visual Studio 2008 or later, and we're not building
+   * libpcap itself.
+   *
+   * If we *are* building libpcap, we don't want this, as it'll warn
+   * us even if we *define* the function.
    */
   #define PCAP_DEPRECATED(func, msg)	__pragma(deprecated(func))
 #else
