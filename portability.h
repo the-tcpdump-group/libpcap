@@ -154,7 +154,7 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
 #ifdef HAVE_STRTOK_R
   #define pcap_strtok_r	strtok_r
 #else
-  #ifdef _MSC_VER
+  #ifdef _WIN32
     /*
      * Microsoft gives it a different name.
      */
