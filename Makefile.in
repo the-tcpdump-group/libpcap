@@ -293,6 +293,7 @@ EXTRA_DIST = \
 	fad-getad.c \
 	fad-gifc.c \
 	fad-glifc.c \
+	gen_def.sh \
 	gen_version_c.sh \
 	gen_version_header.sh \
 	grammar.y \
@@ -376,11 +377,12 @@ EXTRA_DIST = \
 	pcap_version.h.in \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
+	Win32/Prj/wpcap.def \
 	Win32/Prj/wpcap.sln \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
 
-all: libpcap.a shared $(RPCAPD) pcap-config
+all: libpcap.a shared $(RPCAPD) pcap-config gen_def
 
 libpcap.a: $(OBJ)
 	@rm -f $@
@@ -554,6 +556,13 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 	./config.status --file=$@.tmp:$(srcdir)/pcap-config.in
 	mv $@.tmp $@
 	chmod a+x $@
+
+# 
+# Generate/Update module definition file (Win32/Prj/wpcap.def) 
+# 
+gen_def:
+	chmod a+x gen_def.sh
+	$(srcdir)/gen_def.sh
 
 #
 # Remote pcap daemon.
