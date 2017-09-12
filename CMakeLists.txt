@@ -778,8 +778,31 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINA
 ######################################
 # Install pcap library and include files
 ######################################
+
+if(WIN32)
+    if(NOT CMAKE_CL_64)
+        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME}_static
+                RUNTIME DESTINATION bin
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib)
+    else(NOT CMAKE_CL_64)
+        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME}_static
+                RUNTIME DESTINATION bin/x64
+                LIBRARY DESTINATION lib/x64
+                ARCHIVE DESTINATION lib/x64)
+    endif(NOT CMAKE_CL_64)
+    if(MSVC)
+        if(CMAKE_CL_64 AND CMAKE_BUILD_TYPE STREQUAL Debug)
+            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LIBRARY_NAME}.pdb DESTINATION bin/x64)
+        else(CMAKE_CL_64 AND CMAKE_BUILD_TYPE STREQUAL Debug)
+                    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LIBRARY_NAME}.pdb DESTINATION bin)
+        endif(CMAKE_CL_64 AND CMAKE_BUILD_TYPE STREQUAL Debug)
+    endif(MSVC)
+else(WIN32)
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
 install(TARGETS ${LIBRARY_NAME}_static DESTINATION lib)
+endif(WIN32)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 
