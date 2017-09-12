@@ -88,7 +88,7 @@ if(WIN32)
 	check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
     endif()
     include_directories(
-        ../Common/
+        ${pcap_SOURCE_DIR}/../../Common/
         Win32/Include
         Win32/WpdPack/Include
     )
