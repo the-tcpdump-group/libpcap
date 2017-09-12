@@ -62,16 +62,55 @@ include_directories(
 include(CheckFunctionExists)
 
 if(WIN32)
+    # Guess the MinGW target architecture.
+    #
+    # The correct target architecture must be know in order to link with the
+    # correct Packet.lib library in ${PACKET_DLL_DIR}/lib.
+    # Many gcc builds are able to build for multiple architectures (-m32 -m64)
+    # on the fly. cmake does not update the cache if that happens.
+    #
+    # This test is therefore meant to ensure that the linker is pointed at the
+    # right Packet.lib library is EVERY TIME cmake or make are executed.
+    #
+    # This won't work when cross-compiling since try_run() can't execute
+    # test programs on the host OS.
+    # On these platforms ${TARGET_IS_MINGW64} must be defined manually
+    # (to 1/true or 0/false).
+    # cmake will output a reminder to let you know, don't worry.
+    # See cmake's docs for try_run() for more information.
+
+    if(MINGW)
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/sizetest.c
+        "#include <stdio.h>
+
+        int main( int argc, char** argv )
+        {
+          size_t size = sizeof(void*);
+          if ( size == 4 )
+            return 0;
+          return 1;
+        }")
+        
+        try_run(TARGET_IS_MINGW64 FAIL_COMPILE
+                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY} 
+                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/sizetest.c)
+
+        if(${FAIL_COMPILE} STREQUAL FALSE AND NOT "${PACKET_DLL_DIR}" STREQUAL "")
+          message(WARNING "Unable to guess the target architecture.
+          See ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeError.log.")
+        endif()
+    endif(MINGW)
+
     #
     # The 'Win32/WpdPack/' directory branch is for an AppVeyor build.
     #
     if(NOT "${PACKET_DLL_DIR}" STREQUAL "")
         include_directories("${PACKET_DLL_DIR}/Include")
-        if(CMAKE_CL_64)
+        if(CMAKE_CL_64 OR TARGET_IS_MINGW64)
             link_directories("${PACKET_DLL_DIR}/Lib/x64")
-        else(CMAKE_CL_64)
+        else(CMAKE_CL_64 OR TARGET_IS_MINGW64)
             link_directories("${PACKET_DLL_DIR}/Lib")
-        endif(CMAKE_CL_64)
+        endif(CMAKE_CL_64 OR TARGET_IS_MINGW64)
 
 	#
 	# We want to build with packet.dll, either from WinPcap or NPcap.
