@@ -57,7 +57,7 @@
  *
  * We use getaddrinfo(), so we include Wspiapi.h here.
  */
-#include <Wspiapi.h>
+#include <wspiapi.h>
 #endif
 
 #else /* _WIN32 */

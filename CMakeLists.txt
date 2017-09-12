@@ -351,7 +351,7 @@ if(PCAP_TYPE STREQUAL "npf")
     #
     # Link with packet.dll before WinSock2.
     #
-    set(PCAP_LINK_LIBRARIES packet ${PCAP_LINK_LIBRARIES})
+    set(PCAP_LINK_LIBRARIES Packet ${PCAP_LINK_LIBRARIES})
 elseif(PCAP_TYPE STREQUAL "dlpi")
     #
     # Needed for common functions used by pcap-[dlpi,libdlpi].c
