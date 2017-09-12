@@ -82,6 +82,9 @@ if(WIN32)
 	# Check whether we have the NPcap PacketIsLoopbackAdapter()
 	# function.
 	#
+    get_directory_property(PACKET_LIB_DIR LINK_DIRECTORIES)
+    set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIB_DIR}/Packet.lib)
+
 	check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
     endif()
     include_directories(
