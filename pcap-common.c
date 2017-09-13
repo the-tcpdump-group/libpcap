@@ -691,14 +691,14 @@
  * the pseudo-header is:
  *
  * struct dl_ipnetinfo {
- *     u_int8_t   dli_version;
- *     u_int8_t   dli_family;
- *     u_int16_t  dli_htype;
- *     u_int32_t  dli_pktlen;
- *     u_int32_t  dli_ifindex;
- *     u_int32_t  dli_grifindex;
- *     u_int32_t  dli_zsrc;
- *     u_int32_t  dli_zdst;
+ *     uint8_t   dli_version;
+ *     uint8_t   dli_family;
+ *     uint16_t  dli_htype;
+ *     uint32_t  dli_pktlen;
+ *     uint32_t  dli_ifindex;
+ *     uint32_t  dli_grifindex;
+ *     uint32_t  dli_zsrc;
+ *     uint32_t  dli_zdst;
  * };
  *
  * dli_version is 2 for the current version of the pseudo-header.
@@ -1235,7 +1235,7 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	u_int caplen = hdr->caplen;
 	u_int length = hdr->len;
 	struct sll_header *shdr = (struct sll_header *)buf;
-	u_int16_t protocol;
+	uint16_t protocol;
 	pcap_can_socketcan_hdr *chdr;
 
 	if (caplen < (u_int) sizeof(struct sll_header) ||
@@ -1381,7 +1381,7 @@ swap_linux_usb_header(const struct pcap_pkthdr *hdr, u_char *buf,
 		if (uhdr->transfer_type == URB_ISOCHRONOUS) {
 			/* swap the values in struct linux_usb_isodesc */
 			usb_isodesc *pisodesc;
-			u_int32_t i;
+			uint32_t i;
 
 			pisodesc = (usb_isodesc *)(void *)(buf+offset);
 			for (i = 0; i < uhdr->ndesc; i++) {
@@ -1427,7 +1427,7 @@ swap_nflog_header(const struct pcap_pkthdr *hdr, u_char *buf)
 	nflog_tlv_t *tlv;
 	u_int caplen = hdr->caplen;
 	u_int length = hdr->len;
-	u_int16_t size;
+	uint16_t size;
 
 	if (caplen < (u_int) sizeof(nflog_hdr_t) ||
 	    length < (u_int) sizeof(nflog_hdr_t)) {

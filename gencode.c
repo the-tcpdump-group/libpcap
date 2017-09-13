@@ -90,9 +90,9 @@ struct in6_addr
   {
     union
       {
-	u_int8_t		u6_addr8[16];
-	u_int16_t	u6_addr16[8];
-	u_int32_t	u6_addr32[4];
+	uint8_t		u6_addr8[16];
+	uint16_t	u6_addr16[8];
+	uint32_t	u6_addr32[4];
       } in6_u;
 #define s6_addr			in6_u.u6_addr8
 #define s6_addr16		in6_u.u6_addr16
@@ -109,8 +109,8 @@ typedef unsigned short	sa_family_t;
 struct sockaddr_in6
   {
     __SOCKADDR_COMMON (sin6_);
-    u_int16_t sin6_port;		/* Transport layer port # */
-    u_int32_t sin6_flowinfo;	/* IPv6 flow information */
+    uint16_t sin6_port;		/* Transport layer port # */
+    uint32_t sin6_flowinfo;	/* IPv6 flow information */
     struct in6_addr sin6_addr;	/* IPv6 address */
   };
 
@@ -3888,7 +3888,7 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 {
 	struct block *b0, *b1;
 	u_int offset;
-	u_int32_t *a, *m;
+	uint32_t *a, *m;
 
 	switch (dir) {
 
@@ -3917,8 +3917,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		abort();
 	}
 	/* this order is important */
-	a = (u_int32_t *)addr;
-	m = (u_int32_t *)mask;
+	a = (uint32_t *)addr;
+	m = (uint32_t *)mask;
 	b1 = gen_mcmp(cstate, OR_LINKPL, offset + 12, BPF_W, ntohl(a[3]), ntohl(m[3]));
 	b0 = gen_mcmp(cstate, OR_LINKPL, offset + 8, BPF_W, ntohl(a[2]), ntohl(m[2]));
 	gen_and(b0, b1);
@@ -6705,7 +6705,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 	struct in6_addr *addr;
 	struct in6_addr mask;
 	struct block *b;
-	u_int32_t *a, *m;
+	uint32_t *a, *m;
 
 	if (s2)
 		bpf_error(cstate, "no mask %s supported", s2);
@@ -6727,8 +6727,8 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 			(0xff << (8 - masklen % 8)) & 0xff;
 	}
 
-	a = (u_int32_t *)addr;
-	m = (u_int32_t *)&mask;
+	a = (uint32_t *)addr;
+	m = (uint32_t *)&mask;
 	if ((a[0] & ~m[0]) || (a[1] & ~m[1])
 	 || (a[2] & ~m[2]) || (a[3] & ~m[3])) {
 		bpf_error(cstate, "non-network bits set in \"%s/%d\"", s1, masklen);
