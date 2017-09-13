@@ -51,10 +51,7 @@ extern int _w32_ffs (int mask);
 #define ffs _w32_ffs
 #endif
 
-/*
- * So is the check for _MSC_VER done because MinGW has this?
- */
-#if defined(_WIN32) && defined (_MSC_VER)
+#ifdef _WIN32
 /*
  * ffs -- vax ffs instruction
  *

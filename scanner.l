@@ -124,7 +124,7 @@ void pcap_set_column(int, yyscan_t);
  *
  * We use getaddrinfo(), so we include Wspiapi.h here.
  */
-#include <Wspiapi.h>
+#include <wspiapi.h>
 #else /* _WIN32 */
 #include <sys/socket.h>	/* for "struct sockaddr" in "struct addrinfo" */
 #include <netdb.h>	/* for "struct addrinfo" */

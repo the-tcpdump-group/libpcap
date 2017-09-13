@@ -62,16 +62,55 @@ include_directories(
 include(CheckFunctionExists)
 
 if(WIN32)
+    # Guess the MinGW target architecture.
+    #
+    # The correct target architecture must be know in order to link with the
+    # correct Packet.lib library in ${PACKET_DLL_DIR}/lib.
+    # Many gcc builds are able to build for multiple architectures (-m32 -m64)
+    # on the fly. cmake does not update the cache if that happens.
+    #
+    # This test is therefore meant to ensure that the linker is pointed at the
+    # right Packet.lib library is EVERY TIME cmake or make are executed.
+    #
+    # This won't work when cross-compiling since try_run() can't execute
+    # test programs on the host OS.
+    # On these platforms ${TARGET_IS_MINGW64} must be defined manually
+    # (to 1/true or 0/false).
+    # cmake will output a reminder to let you know, don't worry.
+    # See cmake's docs for try_run() for more information.
+
+    if(MINGW)
+        file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/sizetest.c
+        "#include <stdio.h>
+
+        int main( int argc, char** argv )
+        {
+          size_t size = sizeof(void*);
+          if ( size == 4 )
+            return 0;
+          return 1;
+        }")
+        
+        try_run(TARGET_IS_MINGW64 FAIL_COMPILE
+                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY} 
+                ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/sizetest.c)
+
+        if(${FAIL_COMPILE} STREQUAL FALSE AND NOT "${PACKET_DLL_DIR}" STREQUAL "")
+          message(WARNING "Unable to guess the target architecture.
+          See ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/CMakeError.log.")
+        endif()
+    endif(MINGW)
+
     #
     # The 'Win32/WpdPack/' directory branch is for an AppVeyor build.
     #
     if(NOT "${PACKET_DLL_DIR}" STREQUAL "")
         include_directories("${PACKET_DLL_DIR}/Include")
-        if(CMAKE_CL_64)
+        if(CMAKE_CL_64 OR TARGET_IS_MINGW64)
             link_directories("${PACKET_DLL_DIR}/Lib/x64")
-        else(CMAKE_CL_64)
+        else(CMAKE_CL_64 OR TARGET_IS_MINGW64)
             link_directories("${PACKET_DLL_DIR}/Lib")
-        endif(CMAKE_CL_64)
+        endif(CMAKE_CL_64 OR TARGET_IS_MINGW64)
 
 	#
 	# We want to build with packet.dll, either from WinPcap or NPcap.
@@ -82,10 +121,13 @@ if(WIN32)
 	# Check whether we have the NPcap PacketIsLoopbackAdapter()
 	# function.
 	#
+    get_directory_property(PACKET_LIB_DIR LINK_DIRECTORIES)
+    set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIB_DIR}/Packet.lib)
+
 	check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
     endif()
     include_directories(
-        ../Common/
+        ${pcap_SOURCE_DIR}/../../Common/
         Win32/Include
         Win32/WpdPack/Include
     )
@@ -348,7 +390,7 @@ if(PCAP_TYPE STREQUAL "npf")
     #
     # Link with packet.dll before WinSock2.
     #
-    set(PCAP_LINK_LIBRARIES packet ${PCAP_LINK_LIBRARIES})
+    set(PCAP_LINK_LIBRARIES Packet ${PCAP_LINK_LIBRARIES})
 elseif(PCAP_TYPE STREQUAL "dlpi")
     #
     # Needed for common functions used by pcap-[dlpi,libdlpi].c
@@ -659,7 +701,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
-if(WIN32)
+if(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
     #
     # CMake does not love Windows.
     #
@@ -667,13 +709,20 @@ if(WIN32)
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/pcap_version.h.in" version_h_in_path)
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h" version_h_path)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/version.c" version_c_path)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
+        SOURCE ${pcap_SOURCE_DIR}/VERSION
+        COMMAND ${GenVersion_path} ${VERSION_path} ${version_h_in_path} ${version_c_path}
+        DEPENDS ${pcap_SOURCE_DIR}/VERSION
+    )
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
         COMMAND ${GenVersion_path} ${VERSION_path} ${version_h_in_path} ${version_h_path}
         DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
     )
-else(WIN32)
+else(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
         SOURCE ${pcap_SOURCE_DIR}/VERSION
@@ -699,7 +748,7 @@ else(WIN32)
     # Add version.c to the list of sources.
     #
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-endif(WIN32)
+endif(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
 
 #
 # Since pcap_version.h does not exists yet when cmake is run, mark
@@ -750,7 +799,12 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_SOURCE_LIST_H}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
+
+if(MSVC)
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}_static")
+else(MSVC)
 set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
+endif(MSVC)
 
 target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
 
@@ -763,8 +817,31 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINA
 ######################################
 # Install pcap library and include files
 ######################################
+
+if(WIN32)
+    if(NOT CMAKE_CL_64)
+        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME}_static
+                RUNTIME DESTINATION bin
+                LIBRARY DESTINATION lib
+                ARCHIVE DESTINATION lib)
+    else(NOT CMAKE_CL_64)
+        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME}_static
+                RUNTIME DESTINATION bin/x64
+                LIBRARY DESTINATION lib/x64
+                ARCHIVE DESTINATION lib/x64)
+    endif(NOT CMAKE_CL_64)
+    if(MSVC)
+        if(CMAKE_CL_64 AND CMAKE_BUILD_TYPE STREQUAL Debug)
+            install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LIBRARY_NAME}.pdb DESTINATION bin/x64)
+        else(CMAKE_CL_64 AND CMAKE_BUILD_TYPE STREQUAL Debug)
+                    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${LIBRARY_NAME}.pdb DESTINATION bin)
+        endif(CMAKE_CL_64 AND CMAKE_BUILD_TYPE STREQUAL Debug)
+    endif(MSVC)
+else(WIN32)
 install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
 install(TARGETS ${LIBRARY_NAME}_static DESTINATION lib)
+endif(WIN32)
+
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 
