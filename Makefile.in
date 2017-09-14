@@ -282,6 +282,7 @@ EXTRA_DIST = \
 	chmod_bpf \
 	cmakeconfig.h.in \
 	cmake/FindLFS.cmake \
+	cmake/FindPacket.cmake \
 	config/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
