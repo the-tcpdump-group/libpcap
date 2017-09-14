@@ -47,7 +47,7 @@ if(NOT PACKET_DLL_DIR)
 endif()
 
 # The 64-bit Packet.lib is located under /x64
-# MinGW user may manually define TARGET_IS_MINGW64 to point to /x64
+# MinGW users may manually define TARGET_IS_MINGW64 to point to /x64
 set(64BIT_SUBDIR "")
 if(CMAKE_CL_64 OR TARGET_IS_MINGW64)
   set(64BIT_SUBDIR "/x64")
@@ -55,8 +55,7 @@ endif()
 
 # Find the header
 find_path(PACKET_INCLUDE_DIR Packet32.h
-  HINTS
-  "${PACKET_DLL_DIR}"
+  HINTS "${PACKET_DLL_DIR}"
   PATH_SUFFIXES include Include
 )
 
@@ -69,8 +68,7 @@ endif()
 # Find the library
 find_library(PACKET_LIBRARY
   NAMES Packet packet
-  HINTS
-  "${PACKET_DLL_DIR}"
+  HINTS "${PACKET_DLL_DIR}"
   PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
 )
 
