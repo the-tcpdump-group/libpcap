@@ -44,11 +44,6 @@
      * VS 2013 or newer; we have <inttypes.h>.
      */
     #include <inttypes.h>
-
-    #define uint8_t uint8_t
-    #define uint16_t uint16_t
-    #define uint32_t uint32_t
-    #define uint64_t uint64_t
   #else
     /*
      * Earlier VS; we have to define this stuff ourselves.
