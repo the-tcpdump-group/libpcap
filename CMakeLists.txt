@@ -62,28 +62,19 @@ include_directories(
 include(CheckFunctionExists)
 
 if(WIN32)
-    #
-    # The 'Win32/WpdPack/' directory branch is for an AppVeyor build.
-    #
-    if(NOT "${PACKET_DLL_DIR}" STREQUAL "")
-        include_directories("${PACKET_DLL_DIR}/Include")
-        if(CMAKE_CL_64)
-            link_directories("${PACKET_DLL_DIR}/Lib/x64")
-        else(CMAKE_CL_64)
-            link_directories("${PACKET_DLL_DIR}/Lib")
-        endif(CMAKE_CL_64)
 
-	#
-	# We want to build with packet.dll, either from WinPcap or NPcap.
-	#
-	set(HAVE_PACKET32 TRUE)
+    find_package(Packet)
+    if(PACKET_FOUND)
+        set(HAVE_PACKET32 TRUE)
+        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARY})
+        include_directories(${PACKET_INCLUDE_DIR})
+        #
+        # Check whether we have the NPcap PacketIsLoopbackAdapter()
+        # function.
+        #
+        check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
+    endif(PACKET_FOUND)
 
-	#
-	# Check whether we have the NPcap PacketIsLoopbackAdapter()
-	# function.
-	#
-	check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
-    endif()
     include_directories(
         ../Common/
         Win32/Include
@@ -348,7 +339,7 @@ if(PCAP_TYPE STREQUAL "npf")
     #
     # Link with packet.dll before WinSock2.
     #
-    set(PCAP_LINK_LIBRARIES packet ${PCAP_LINK_LIBRARIES})
+    set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARY} ${PCAP_LINK_LIBRARIES})
 elseif(PCAP_TYPE STREQUAL "dlpi")
     #
     # Needed for common functions used by pcap-[dlpi,libdlpi].c
