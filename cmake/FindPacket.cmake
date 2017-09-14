@@ -61,7 +61,7 @@ find_path(PACKET_INCLUDE_DIR Packet32.h
 )
 
 if(PACKET_INCLUDE_DIR)
-message(STATUS "Found Packet32.h: ${PACKET_INCLUDE_DIR}")
+  message(STATUS "Found Packet32.h: ${PACKET_INCLUDE_DIR}")
 # else()
 # message(FATAL_ERROR "Could not find Packet32.h. See README.Win32 for more information.")
 endif()
