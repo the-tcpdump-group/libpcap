@@ -293,8 +293,7 @@ EXTRA_DIST = \
 	fad-getad.c \
 	fad-gifc.c \
 	fad-glifc.c \
-	gen_version_c.sh \
-	gen_version_header.sh \
+	gen_version.sh \
 	grammar.y \
 	install-sh \
 	lbl/os-aix4.h \
@@ -369,11 +368,12 @@ EXTRA_DIST = \
 	pcap-tc.h \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
+	pcap_version.h.in \
 	sockutils.c \
 	sockutils.h \
 	scanner.l \
 	tests/CMakeLists.txt \
-	pcap_version.h.in \
+	version.c.in \
 	Win32/Include/Gnuc.h \
 	Win32/Include/net/if.h \
 	Win32/Prj/wpcap.sln \
@@ -515,14 +515,14 @@ snprintf.o: $(srcdir)/missing/snprintf.c
 strtok_r.o: $(srcdir)/missing/strtok_r.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
 
-version.c: $(srcdir)/VERSION $(srcdir)/gen_version_c.sh
+version.c: $(srcdir)/VERSION $(srcdir)/version.c.in $(srcdir)/gen_version_header.sh
 	#
 	# Older programs import this if they want to show the
 	# libpcap version number, rather than calling
 	# pcap_lib_version(), so we need to export it.
 	#
 	@rm -f $@
-	$(srcdir)/gen_version_c.sh $(srcdir)/VERSION $@
+	$(srcdir)/gen_version_header.sh $(srcdir)/VERSION $(srcdir)/version.c.in $@
 
 pcap_version.h: $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $(srcdir)/gen_version_header.sh
 	@rm -f $@

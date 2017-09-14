@@ -661,36 +661,38 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 
 if(WIN32)
     #
-    # CMake does not love Windows.
+    # CMake does not love Windows.  Convert its UN*X-style paths to
+    # Windows-style paths to hand to Windows programs.
     #
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GenVersion_path)
     file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/pcap_version.h.in" version_h_in_path)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h" version_h_path)
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.c.in" version_c_in_path)
     file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/version.c" version_c_path) 
+    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/pcap_version.h.in" pcap_version_h_in_path)
+    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h" pcap_version_h_path)
     add_custom_command( 
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c 
         SOURCE ${pcap_SOURCE_DIR}/VERSION 
-        COMMAND ${GenVersion_path} ${VERSION_path} ${version_h_in_path} ${version_c_path} 
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION 
+        COMMAND ${GenVersion_path} ${VERSION_path} ${version_c_in_path} ${version_c_path} 
+        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.c.in
     ) 
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
-        COMMAND ${GenVersion_path} ${VERSION_path} ${version_h_in_path} ${version_h_path}
+        COMMAND ${GenVersion_path} ${VERSION_path} ${pcap_version_h_in_path} ${pcap_version_h_path}
         DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
     )
 else(WIN32)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
         SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version_c.sh ${pcap_SOURCE_DIR}/VERSION ${CMAKE_CURRENT_BINARY_DIR}/version.c
+        COMMAND ${pcap_SOURCE_DIR}/gen_version.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c
         DEPENDS ${pcap_SOURCE_DIR}/VERSION
     )
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
         SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version_header.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
+        COMMAND ${pcap_SOURCE_DIR}/gen_version.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
         DEPENDS ${pcap_SOURCE_DIR}/VERSION
     )
 
