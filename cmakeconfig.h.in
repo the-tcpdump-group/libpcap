@@ -313,36 +313,6 @@
 #cmakedefine _SUN 1
 
 #if 0
-/* to handle Ultrix compilers that don't support const in prototypes */
-#cmakedefine const 1
-
-/* Define as token for inline if inlining supported */
-#cmakedefine inline 1
-
-/* Define to `short' if int16_t not defined. */
-#cmakedefine int16_t 1
-
-/* Define to `int' if int32_t not defined. */
-#cmakedefine int32_t 1
-
-/* Define to `long long' if int64_t not defined. */
-#cmakedefine int64_t 1
-
-/* Define to `signed char' if int8_t not defined. */
-#cmakedefine int8_t 1
-
 /* on sinix */
 #cmakedefine sinix 1
-
-/* Define to `unsigned short' if u_int16_t not defined. */
-#cmakedefine u_int16_t 1
-
-/* Define to `unsigned int' if u_int32_t not defined. */
-#cmakedefine u_int32_t 1
-
-/* Define to `unsigned long long' if u_int64_t not defined. */
-#cmakedefine u_int64_t 1
-
-/* Define to `unsigned char' if u_int8_t not defined. */
-#cmakedefine u_int8_t 1
 #endif
