@@ -750,7 +750,12 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_SOURCE_LIST_H}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
-set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
+
+if(MSVC)
+    set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}_static")
+else(MSVC)
+    set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
+endif(MSVC)
 
 target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
 
