@@ -515,18 +515,18 @@ snprintf.o: $(srcdir)/missing/snprintf.c
 strtok_r.o: $(srcdir)/missing/strtok_r.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
 
-version.c: $(srcdir)/VERSION $(srcdir)/version.c.in $(srcdir)/gen_version_header.sh
+version.c: $(srcdir)/VERSION $(srcdir)/version.c.in $(srcdir)/gen_version.sh
 	#
 	# Older programs import this if they want to show the
 	# libpcap version number, rather than calling
 	# pcap_lib_version(), so we need to export it.
 	#
 	@rm -f $@
-	$(srcdir)/gen_version_header.sh $(srcdir)/VERSION $(srcdir)/version.c.in $@
+	$(srcdir)/gen_version.sh $(srcdir)/VERSION $(srcdir)/version.c.in $@
 
-pcap_version.h: $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $(srcdir)/gen_version_header.sh
+pcap_version.h: $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $(srcdir)/gen_version.sh
 	@rm -f $@
-	$(srcdir)/gen_version_header.sh $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $@
+	$(srcdir)/gen_version.sh $(srcdir)/VERSION $(srcdir)/pcap_version.h.in $@
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c
