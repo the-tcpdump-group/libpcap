@@ -307,7 +307,8 @@ else()
     #
     # Check for a bunch of headers for various packet capture mechanisms.
     #
-    check_include_file(net/bpf.h HAVE_NET_BPF_H)
+    include(CheckIncludeFiles)
+    check_include_files("sys/types.h;net/bpf.h" HAVE_NET_BPF_H)
     check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
     check_include_file(net/enet.h HAVE_NET_ENET_H)
     check_include_file(net/nit.h HAVE_NET_NIT_H)
@@ -554,11 +555,10 @@ if(NOT WIN32)
             #
             # We have "getifaddrs()"; make sure we have <ifaddrs.h>
             # as well, just in case some platform is really weird.
-            # It may require that sys/param.h be included first,
+            # It may require that sys/types.h be included first,
             # so include it first.
             #
-            include(CheckIncludeFiles)
-            check_include_files("sys/param.h;ifaddrs.h" HAVE_IFADDRS_H)
+            check_include_files("sys/types.h;ifaddrs.h" HAVE_IFADDRS_H)
             if(HAVE_IFADDRS_H)
                 #
                 # We have the header, so we use "getifaddrs()" to
