@@ -303,39 +303,65 @@ else()
     # what libraries we'd need to link libpcap with, if any.
     #
     set(PCAP_LINK_LIBRARIES "")
-    if(EXISTS /dev/bpf)
+
+    #
+    # Check for a bunch of headers for various packet capture mechanisms.
+    #
+    check_include_file(net/bpf.h HAVE_NET_BPF_H)
+    check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
+    check_include_file(net/enet.h HAVE_NET_ENET_H)
+    check_include_file(net/nit.h HAVE_NET_NIT_H)
+    check_include_file(sys/net/nit.h HAVE_SYS_NET_NIT_H)
+    check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
+    check_include_file(net/raw.h HAVE_NET_RAW_H)
+    check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
+
+    if(HAVE_NET_BPF_H)
 	#
-	# Cloning BPF device.
+	# BPF.
+	# Check this before DLPI, so that we pick BPF on
+	# Solaris 11 and later.
 	#
 	set(PCAP_TYPE bpf)
-	set(HAVE_CLONING_BPF TRUE)
-    elseif(EXISTS /dev/bpf0)
-	set(PCAP_TYPE bpf)
-    elseif(EXISTS /usr/include/net/pfilt.h)
+    elseif(HAVE_NET_PFILT_H)
         #
         # DEC OSF/1, Digital UNIX, Tru64 UNIX
         #
 	set(PCAP_TYPE pf)
-    elseif(EXISTS /dev/enet)
+    elseif(HAVE_NET_ENET_H)
+	#
+	# Stanford Enetfilter.
+	#
         set(PCAP_TYPE enet)
-    elseif(EXISTS /dev/nit)
+    elseif(HAVE_NET_NIT_H)
+	#
+	# SunOS 4.x STREAMS NIT.
+	#
         set(PCAP_TYPE snit)
-    elseif(EXISTS /usr/include/sys/net/nit.h)
+    elseif(HAVE_SYS_NET_NIT_H)
+	#
+	# Pre-SunOS 4.x non-STREAMS NIT.
+	#
         set(PCAP_TYPE nit)
-    elseif(EXISTS /usr/include/linux/socket.h)
+    elseif(HAVE_LINUX_SOCKET_H)
+	#
+	# No prizes for guessing this one.
+	#
         set(PCAP_TYPE linux)
-    elseif(EXISTS /usr/include/net/raw.h)
+    elseif(HAVE_NET_RAW_H)
+	#
+	# IRIX snoop.
+	#
         set(PCAP_TYPE snoop)
-    elseif(EXISTS /usr/include/odmi.h)
-        #
-        # On AIX, the BPF devices might not yet be present - they're
-        # created the first time libpcap runs after booting.
-        # We check for odmi.h instead.
-        #
-        set(PCAP_TYPE bpf)
-    elseif(/usr/include/sys/dlpi.h)
+    elseif(HAVE_SYS_DLPI_H)
+	#
+	# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
+	#
         set(PCAP_TYPE dlpi)
     else()
+	#
+	# Nothing we support.
+	#
 	set(PCAP_TYPE null)
     endif()
 endif(WIN32)

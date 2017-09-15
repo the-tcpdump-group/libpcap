@@ -3,9 +3,6 @@
 /* Enable optimizer debugging */
 #undef BDEBUG
 
-/* define if you have a cloning BPF device */
-#undef HAVE_CLONING_BPF
-
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 
@@ -82,6 +79,9 @@
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #undef HAVE_LINUX_NET_TSTAMP_H
 
+/* Define to 1 if you have the <linux/socket.h> header file. */
+#undef HAVE_LINUX_SOCKET_H
+
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #undef HAVE_LINUX_SOCKIOS_H
 
@@ -106,11 +106,26 @@
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #undef HAVE_NETPACKET_PACKET_H
 
+/* Define to 1 if you have the <net/bpf.h> header file. */
+#undef HAVE_NET_BPF_H
+
+/* Define to 1 if you have the <net/enet.h> header file. */
+#undef HAVE_NET_ENET_H
+
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #undef HAVE_NET_IF_MEDIA_H
 
+/* Define to 1 if you have the <net/nit.h> header file. */
+#undef HAVE_NET_NIT_H
+
+/* Define to 1 if you have the <net/pfilt.h> header file. */
+#undef HAVE_NET_PFILT_H
+
 /* Define to 1 if you have the <net/pfvar.h> header file. */
 #undef HAVE_NET_PFVAR_H
+
+/* Define to 1 if you have the <net/raw.h> header file. */
+#undef HAVE_NET_RAW_H
 
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #undef HAVE_OS_PROTO_H
@@ -178,8 +193,14 @@
 /* Define to 1 if you have the <sys/dlpi_ext.h> header file. */
 #undef HAVE_SYS_DLPI_EXT_H
 
+/* Define to 1 if you have the <sys/dlpi.h> header file. */
+#undef HAVE_SYS_DLPI_H
+
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #undef HAVE_SYS_IOCCOM_H
+
+/* Define to 1 if you have the <sys/net/nit.h> header file. */
+#undef HAVE_SYS_NET_NIT_H
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #undef HAVE_SYS_SOCKIO_H

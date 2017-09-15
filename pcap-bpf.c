@@ -477,12 +477,10 @@ static int
 bpf_open(char *errbuf)
 {
 	int fd;
-#ifdef HAVE_CLONING_BPF
-	static const char device[] = "/dev/bpf";
-#else
+	static const char cloning_device[] = "/dev/bpf";
 	int n = 0;
 	char device[sizeof "/dev/bpf0000000000"];
-#endif
+	static int no_cloning_bpf = 0;
 
 #ifdef _AIX
 	/*
@@ -494,19 +492,32 @@ bpf_open(char *errbuf)
 		return (PCAP_ERROR);
 #endif
 
-#ifdef HAVE_CLONING_BPF
-	if ((fd = open(device, O_RDWR)) == -1 &&
-	    (errno != EACCES || (fd = open(device, O_RDONLY)) == -1)) {
-		if (errno == EACCES)
-			fd = PCAP_ERROR_PERM_DENIED;
-		else
-			fd = PCAP_ERROR;
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		  "(cannot open device) %s: %s", device, pcap_strerror(errno));
-	}
-#else
 	/*
-	 * Go through all the minors and find one that isn't in use.
+	 * First, unless we've already tried opening /dev/bpf and
+	 * gotten ENOENT, try opening /dev/bpf.
+	 * If it fails with ENOENT, remember that, so we don't try
+	 * again, and try /dev/bpfN.
+	 */
+	if (!no_cloning_bpf &&
+	    (fd = open(cloning_device, O_RDWR)) == -1 &&
+	    ((errno != EACCES && errno != ENOENT) ||
+	     (fd = open(cloning_device, O_RDONLY)) == -1)) {
+		if (errno != ENOENT) {
+			if (errno == EACCES)
+				fd = PCAP_ERROR_PERM_DENIED;
+			else
+				fd = PCAP_ERROR;
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			  "(cannot open device) %s: %s", device,
+			  pcap_strerror(errno));
+			return (fd);
+		}
+		no_cloning_bpf = 1;
+	}
+
+	/*
+	 * Go through all the /dev/bpfN minors and find one that isn't
+	 * in use.
 	 */
 	do {
 		(void)pcap_snprintf(device, sizeof(device), "/dev/bpf%d", n++);
@@ -580,7 +591,6 @@ bpf_open(char *errbuf)
 			break;
 		}
 	}
-#endif
 
 	return (fd);
 }

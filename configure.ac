@@ -261,68 +261,85 @@ if test -z "$with_pcap" && test "$cross_compiling" = yes; then
 fi
 AC_ARG_WITH(pcap,
 AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
-AC_MSG_CHECKING(packet capture type)
 if test ! -z "$with_pcap" ; then
 	V_PCAP="$withval"
-elif test -r /dev/bpf -o -h /dev/bpf ; then
-	#
-	# Cloning BPF device.
-	#
-	V_PCAP=bpf
-	AC_DEFINE(HAVE_CLONING_BPF,1,[define if you have a cloning BPF device])
-
-	#
-	# We have BPF, so build valgrindtest with "make test".
-	#
-	VALGRINDTEST=valgrindtest
-elif test -r /dev/bpf0 ; then
-	V_PCAP=bpf
-
-	#
-	# We have BPF, so build valgrindtest with "make test".
-	#
-	VALGRINDTEST=valgrindtest
-elif test -r /usr/include/net/pfilt.h ; then
-	V_PCAP=pf
-elif test -r /dev/enet ; then
-	V_PCAP=enet
-elif test -r /dev/nit ; then
-	V_PCAP=snit
-elif test -r /usr/include/sys/net/nit.h ; then
-	V_PCAP=nit
-elif test -r /usr/include/linux/socket.h ; then
-	V_PCAP=linux
-
-	#
-	# XXX - this won't work with older kernels that have SOCK_PACKET
-	# sockets but not PF_PACKET sockets.
-	#
-	VALGRINDTEST=valgrindtest
-elif test -r /usr/include/net/raw.h ; then
-	V_PCAP=snoop
-elif test -r /usr/include/odmi.h ; then
-	#
-	# On AIX, the BPF devices might not yet be present - they're
-	# created the first time libpcap runs after booting.
-	# We check for odmi.h instead.
-	#
-	V_PCAP=bpf
-elif test -c /dev/bpf0 ; then		# check again in case not readable
-	V_PCAP=bpf
-
-	#
-	# We have BPF, so build valgrindtest with "make test".
-	#
-	VALGRINDTEST=valgrindtest
-elif test -r /usr/include/sys/dlpi.h ; then
-	V_PCAP=dlpi
-elif test -c /dev/enet ; then		# check again in case not readable
-	V_PCAP=enet
-elif test -c /dev/nit ; then		# check again in case not readable
-	V_PCAP=snit
 else
-	V_PCAP=null
+	#
+	# Check for a bunch of headers for various packet
+	# capture mechanisms.
+	#
+	AC_CHECK_HEADERS(net/bpf.h net/pfilt.h net/enet.h)
+	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
+	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
+
+	if test "$ac_cv_header_net_bpf_h" = yes; then
+		#
+		# BPF.
+		# Check this before DLPI, so that we pick BPF on
+		# Solaris 11 and later.
+		#
+		V_PCAP=bpf
+
+		#
+		# We have BPF, so build valgrindtest with "make test"
+		# on macOS, FreeBSD, and Linux (add your OS once
+		# there's a valgrind for it).
+		#
+		case "$host_os" in
+
+		freebsd*|darwin*|linux*)
+			VALGRINDTEST=valgrindtest
+			;;
+		esac
+	elif test "$ac_cv_header_net_pfilt_h" = yes; then
+	        #
+	        # DEC OSF/1, Digital UNIX, Tru64 UNIX
+        	#
+		V_PCAP=pf
+	elif test "$ac_cv_header_net_enet_h" = yes; then
+		#
+		# Stanford Enetfilter.
+		#
+		V_PCAP=enet
+	elif test "$ac_header_net_nit_h" = yes; then
+		#
+		# SunOS 4.x STREAMS NIT.
+		#
+		V_PCAP=snit
+	elif test "$ac_header_sys_net_nit_h" = yes; then
+		#
+		# Pre-SunOS 4.x non-STREAMS NIT.
+		#
+		V_PCAP=nit
+	elif test "$ac_header_linux_socket_h" = yes; then
+		#
+		# No prizes for guessing this one.
+		#
+		V_PCAP=linux
+
+		#
+		# XXX - this won't work with older kernels that have
+		# SOCK_PACKET sockets but not PF_PACKET sockets.
+		#
+		VALGRINDTEST=valgrindtest
+	elif test "$ac_header_net_raw_h" = yes; then
+		#
+		# IRIX snoop.
+		#
+		V_PCAP=snoop
+	elif test "$ac_header_sys_dlpi_h" = yes; then
+		#
+		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
+		#
+		V_PCAP=dlpi
+	else
+		#
+		# Nothing we support.
+		#
+		V_PCAP=null
+	fi
 fi
+AC_MSG_CHECKING(packet capture type)
 AC_MSG_RESULT($V_PCAP)
 AC_SUBST(VALGRINDTEST)
 
