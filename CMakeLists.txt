@@ -513,9 +513,9 @@ elseif(PCAP_TYPE STREQUAL "bpf")
     # Check whether we have struct BPF_TIMEVAL.
     #
     if(HAVE_SYS_IOCCOM_H)
-        check_struct_has_member("struct BPF_TIMEVAL" tv_sec sys/types.h sys/ioccom.h net/bpf.h HAVE_STRUCT_BPF_TIMEVAL)
+        check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;sys/ioccom.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
     else()
-        check_struct_has_member("struct BPF_TIMEVAL" tv_sec sys/types.h net/bpf.h HAVE_STRUCT_BPF_TIMEVAL)
+        check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
     endif()
 endif()
 
