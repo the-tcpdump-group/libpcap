@@ -509,8 +509,8 @@ if(NOT WIN32)
         #
         set(FINDALLDEVS_TYPE null)
     else()
-        check_function_exists(getifaddrs STDLIBS_HAVE_GETIFADDRS)
-        if(NOT STDLIBS_HAVE_GETIFADDRS)
+        check_function_exists(getifaddrs HAVE_GETIFADDRS)
+        if(NOT HAVE_GETIFADDRS)
             #
             # It's in libsocket on Solaris and possibly other OSes;
             # check there.
