@@ -1562,9 +1562,9 @@ AC_INCLUDES_DEFAULT
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_log.h>
 #include <linux/netfilter/nfnetlink_queue.h>],
-	    [],
-	    ac_cv_netfilter_can_compile=yes,
-	    ac_cv_netfilter_can_compile=no))
+		    [],
+		    ac_cv_netfilter_can_compile=yes,
+		    ac_cv_netfilter_can_compile=no))
 		AC_MSG_RESULT($ac_cv_netfilter_can_compile)
 		if test $ac_cv_netfilter_can_compile = yes ; then
 		  AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
@@ -1586,14 +1586,27 @@ AC_ARG_ENABLE([netmap],
     [enable_netmap=yes])
 
 if test "x$enable_netmap" != "xno" ; then
-	dnl check for netmap support
-	AC_CHECK_HEADER(net/netmap_user.h,
-		[ AC_DEFINE(PCAP_SUPPORT_NETMAP, 1, [target host supports netmap])
-		NETMAP_SRC=pcap-netmap.c
-		AC_MSG_NOTICE(netmap is supported)],
-		AC_MSG_NOTICE(netmap is not supported),
-		AC_INCLUDES_DEFAULT
-	   )
+	#
+	# Check whether net/netmap_user.h is usable if NETMAP_WITH_LIBS is
+	# defined; it's not usable on DragonFly BSD 4.6 if NETMAP_WITH_LIBS
+	# is defined, for example, as it includes a non-existent malloc.h
+	# header.
+	#
+	AC_MSG_CHECKING(whether we can compile the netmap support)
+	AC_CACHE_VAL(ac_cv_net_netmap_user_can_compile,
+	  AC_TRY_COMPILE([
+AC_INCLUDES_DEFAULT
+#define NETMAP_WITH_LIBS
+#include <net/netmap_user.h>],
+	    [],
+	    ac_cv_net_netmap_user_can_compile=yes,
+	    ac_cv_net_netmap_user_can_compile=no))
+	AC_MSG_RESULT($ac_cv_net_netmap_user_can_compile)
+	if test $ac_cv_net_netmap_user_can_compile = yes ; then
+	  AC_DEFINE(PCAP_SUPPORT_NETMAP, 1,
+	    [target host supports netmap])
+	    NETMAP_SRC=pcap-netmap.c
+	fi
 	AC_SUBST(PCAP_SUPPORT_NETMAP)
 	AC_SUBST(NETMAP_SRC)
 fi
