@@ -296,10 +296,6 @@ else()
 	set(HAVE_CLONING_BPF TRUE)
     elseif(EXISTS /dev/bpf0)
 	set(PCAP_TYPE bpf)
-
-        #
-        # XXX - many more BPF checks.
-        #
     elseif(EXISTS /usr/include/net/pfilt.h)
         #
         # DEC OSF/1, Digital UNIX, Tru64 UNIX
