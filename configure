@@ -5361,17 +5361,17 @@ done
 		# Stanford Enetfilter.
 		#
 		V_PCAP=enet
-	elif test "$ac_header_net_nit_h" = yes; then
+	elif test "$ac_cv_header_net_nit_h" = yes; then
 		#
 		# SunOS 4.x STREAMS NIT.
 		#
 		V_PCAP=snit
-	elif test "$ac_header_sys_net_nit_h" = yes; then
+	elif test "$ac_cv_header_sys_net_nit_h" = yes; then
 		#
 		# Pre-SunOS 4.x non-STREAMS NIT.
 		#
 		V_PCAP=nit
-	elif test "$ac_header_linux_socket_h" = yes; then
+	elif test "$ac_cv_header_linux_socket_h" = yes; then
 		#
 		# No prizes for guessing this one.
 		#
@@ -5382,12 +5382,12 @@ done
 		# SOCK_PACKET sockets but not PF_PACKET sockets.
 		#
 		VALGRINDTEST=valgrindtest
-	elif test "$ac_header_net_raw_h" = yes; then
+	elif test "$ac_cv_header_net_raw_h" = yes; then
 		#
 		# IRIX snoop.
 		#
 		V_PCAP=snoop
-	elif test "$ac_header_sys_dlpi_h" = yes; then
+	elif test "$ac_cv_header_sys_dlpi_h" = yes; then
 		#
 		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
 		#
