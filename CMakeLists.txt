@@ -508,7 +508,7 @@ elseif(PCAP_TYPE STREQUAL "bpf")
     #
     # Check whether we have the *BSD-style ioctls.
     #
-    check_include_file(net/if_media.h HAVE_NET_IF_MEDIA_H)
+    check_include_files("sys/types.h;net/if_media.h" HAVE_NET_IF_MEDIA_H)
 
     #
     # Check whether we have struct BPF_TIMEVAL.
