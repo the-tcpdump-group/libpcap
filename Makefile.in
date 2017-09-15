@@ -283,7 +283,7 @@ EXTRA_DIST = \
 	cmakeconfig.h.in \
 	cmake/FindLFS.cmake \
 	cmake/FindPacket.cmake \
-	config/have_siocglifconf.c \
+	cmake/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
 	config.sub \
