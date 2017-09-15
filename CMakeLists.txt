@@ -179,9 +179,9 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 # Find library needed for gethostbyname.
 check_function_exists("gethostbyname" HAVE_GETHOSTBYNAME)
 if(NOT HAVE_GETHOSTBYNAME)
-    message(STATUS "gethosbyname not found in standard libraries, checking libnsl)
+    message(STATUS "gethosbyname not found in standard libraries, checking libnsl")
     check_library_exists("nsl" "gethostbyname" "" LIB_NSL_HAS_GETHOSTBYNAME)
-    if (LIB_NSL_HAS_GETHOSTBYNAME)
+    if(LIB_NSL_HAS_GETHOSTBYNAME)
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} lnsl)
     endif()
 endif()
@@ -778,5 +778,3 @@ install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
 install(TARGETS ${LIBRARY_NAME}_static DESTINATION lib)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
-
-
