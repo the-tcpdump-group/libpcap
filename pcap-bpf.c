@@ -476,7 +476,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 static int
 bpf_open(char *errbuf)
 {
-	int fd;
+	int fd = -1;
 	static const char cloning_device[] = "/dev/bpf";
 	int n = 0;
 	char device[sizeof "/dev/bpf0000000000"];
@@ -508,37 +508,40 @@ bpf_open(char *errbuf)
 			else
 				fd = PCAP_ERROR;
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			  "(cannot open device) %s: %s", device,
+			  "(cannot open device) %s: %s", cloning_device,
 			  pcap_strerror(errno));
 			return (fd);
 		}
 		no_cloning_bpf = 1;
 	}
 
-	/*
-	 * Go through all the /dev/bpfN minors and find one that isn't
-	 * in use.
-	 */
-	do {
-		(void)pcap_snprintf(device, sizeof(device), "/dev/bpf%d", n++);
+	if (no_cloning_bpf) {
 		/*
-		 * Initially try a read/write open (to allow the inject
-		 * method to work).  If that fails due to permission
-		 * issues, fall back to read-only.  This allows a
-		 * non-root user to be granted specific access to pcap
-		 * capabilities via file permissions.
-		 *
-		 * XXX - we should have an API that has a flag that
-		 * controls whether to open read-only or read-write,
-		 * so that denial of permission to send (or inability
-		 * to send, if sending packets isn't supported on
-		 * the device in question) can be indicated at open
-		 * time.
+		 * We don't have /dev/bpf.
+		 * Go through all the /dev/bpfN minors and find one
+		 * that isn't in use.
 		 */
-		fd = open(device, O_RDWR);
-		if (fd == -1 && errno == EACCES)
-			fd = open(device, O_RDONLY);
-	} while (fd < 0 && errno == EBUSY);
+		do {
+			(void)pcap_snprintf(device, sizeof(device), "/dev/bpf%d", n++);
+			/*
+			 * Initially try a read/write open (to allow the inject
+			 * method to work).  If that fails due to permission
+			 * issues, fall back to read-only.  This allows a
+			 * non-root user to be granted specific access to pcap
+			 * capabilities via file permissions.
+			 *
+			 * XXX - we should have an API that has a flag that
+			 * controls whether to open read-only or read-write,
+			 * so that denial of permission to send (or inability
+			 * to send, if sending packets isn't supported on
+			 * the device in question) can be indicated at open
+			 * time.
+			 */
+			fd = open(device, O_RDWR);
+			if (fd == -1 && errno == EACCES)
+				fd = open(device, O_RDONLY);
+		} while (fd < 0 && errno == EBUSY);
+	}
 
 	/*
 	 * XXX better message for all minors used
