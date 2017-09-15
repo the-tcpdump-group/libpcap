@@ -386,8 +386,8 @@ elseif(PCAP_TYPE STREQUAL "dlpi")
     #
     # Checks for some header files.
     #
-    check_include_files(sys/bufmod.h HAVE_SYS_BUFMOD_H)
-    check_include_files(sys/dlpi_ext.h HAVE_SYS_DLPI_EXT_H)
+    check_include_file(sys/bufmod.h HAVE_SYS_BUFMOD_H)
+    check_include_file(sys/dlpi_ext.h HAVE_SYS_DLPI_EXT_H)
 
     #
     # Checks to see if Solaris has the public libdlpi(3LIB) library.
@@ -554,8 +554,11 @@ if(NOT WIN32)
             #
             # We have "getifaddrs()"; make sure we have <ifaddrs.h>
             # as well, just in case some platform is really weird.
+            # It may require that sys/param.h be included first,
+            # so include it first.
             #
-            check_include_file(ifaddrs.h HAVE_IFADDRS_H)
+            include(CheckIncludeFiles)
+            check_include_files("sys/param.h;ifaddrs.h" HAVE_IFADDRS_H)
             if(HAVE_IFADDRS_H)
                 #
                 # We have the header, so we use "getifaddrs()" to
