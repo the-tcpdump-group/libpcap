@@ -21,7 +21,7 @@
 /*
  * And we need to pass the compiler state to the scanner.
  */
-%parse-param {compiler_state_t *cstate}
+%parse-param { compiler_state_t *cstate }
 
 %{
 /*
