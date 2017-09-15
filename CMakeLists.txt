@@ -180,9 +180,9 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 include(CheckLibraryExists)
 check_function_exists("gethostbyname" HAVE_GETHOSTBYNAME)
 if(NOT HAVE_GETHOSTBYNAME)
-    check_library_exists("nsl" "gethostbyname" "" LIB_NSL_HAS_GETHOSTBYNAME)
-    if(LIB_NSL_HAS_GETHOSTBYNAME)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} lnsl)
+    check_library_exists("nsl" "gethostbyname" "" HAVE_GETHOSTBYNAME)
+    if(HAVE_GETHOSTBYNAME)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} nsl)
     endif()
 endif()
 
@@ -506,6 +506,16 @@ if(NOT WIN32)
         set(FINDALLDEVS_TYPE null)
     else()
         check_function_exists(getifaddrs HAVE_GETIFADDRS)
+        if(NOT HAVE_GETIFADDRS)
+            #
+            # It's in libsocket on Solaris and possibly other OSes;
+            # check there.
+            #
+            check_library_exists("socket" "getifaddrs" "" HAVE_GETIFADDRS)
+            if(HAVE_GETIFADDRS)
+                set(PCAP_LINK_LIBRARIES socket ${PCAP_LINK_LIBRARIES})
+            endif()
+        endif()
         if(HAVE_GETIFADDRS)
             #
             # We have "getifaddrs()"; make sure we have <ifaddrs.h>
