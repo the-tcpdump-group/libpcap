@@ -176,12 +176,16 @@ check_function_exists(snprintf HAVE_SNPRINTF)
 check_function_exists(vsnprintf HAVE_VSNPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
 
+#
 # Find library needed for gethostbyname.
+# NOTE: if you hand check_library_exists as its last argument a variable
+# that's been set, it skips the test, so we need different variables.
+#
 include(CheckLibraryExists)
-check_function_exists("gethostbyname" HAVE_GETHOSTBYNAME)
-if(NOT HAVE_GETHOSTBYNAME)
-    check_library_exists("nsl" "gethostbyname" "" HAVE_GETHOSTBYNAME)
-    if(HAVE_GETHOSTBYNAME)
+check_function_exists(gethostbyname STDLIBS_HAVE_GETHOSTBYNAME)
+if(NOT STDLIBS_HAVE_GETHOSTBYNAME)
+    check_library_exists(nsl gethostbyname "" LIBNSL_HAS_GETHOSTBYNAME)
+    if(LIBNSL_HAS_GETHOSTBYNAME)
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} nsl)
     endif()
 endif()
@@ -505,14 +509,18 @@ if(NOT WIN32)
         #
         set(FINDALLDEVS_TYPE null)
     else()
-        check_function_exists(getifaddrs HAVE_GETIFADDRS)
-        if(NOT HAVE_GETIFADDRS)
+        check_function_exists(getifaddrs STDLIBS_HAVE_GETIFADDRS)
+        if(NOT STDLIBS_HAVE_GETIFADDRS)
             #
             # It's in libsocket on Solaris and possibly other OSes;
             # check there.
             #
-            check_library_exists("socket" "getifaddrs" "" HAVE_GETIFADDRS)
-            if(HAVE_GETIFADDRS)
+            # NOTE: if you hand check_library_exists as its last
+            # argument a variable that's been set, it skips the test,
+            # so we need different variables.
+            #
+            check_library_exists(socket getifaddrs "" SOCKET_HAS_GETIFADDRS)
+            if(SOCKET_HAS_GETIFADDRS)
                 set(PCAP_LINK_LIBRARIES socket ${PCAP_LINK_LIBRARIES})
             endif()
         endif()
