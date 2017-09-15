@@ -177,6 +177,7 @@ check_function_exists(vsnprintf HAVE_VSNPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
 
 # Find library needed for gethostbyname.
+include(CheckLibraryExists)
 check_function_exists("gethostbyname" HAVE_GETHOSTBYNAME)
 if(NOT HAVE_GETHOSTBYNAME)
     message(STATUS "gethosbyname not found in standard libraries, checking libnsl")
