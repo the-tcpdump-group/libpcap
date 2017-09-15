@@ -503,13 +503,11 @@ if(NOT WIN32)
     # UN*X - figure out what type of interface list mechanism we
     # have.
     #
-    if(PCAP_TYPE STREQUAL "null")
-        #
-        # We can't capture, so we can't open any capture
-        # devices, so we won't return any interfaces.
-        #
-        set(FINDALLDEVS_TYPE null)
-    else()
+    # If the capture type is null, that means we can't capture,
+    # so we can't open any capture devices, so we won't return
+    # any interfaces.
+    #
+    if(NOT PCAP_TYPE STREQUAL "null")
         check_function_exists(getifaddrs HAVE_GETIFADDRS)
         if(NOT HAVE_GETIFADDRS)
             #
@@ -582,9 +580,9 @@ if(NOT WIN32)
                 set(FINDALLDEVS_TYPE gifc)
             endif()
         endif()
+        message(STATUS "Find-interfaces mechanism type: ${FINDALLDEVS_TYPE}")
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} fad-${FINDALLDEVS_TYPE}.c)
     endif()
-    message(STATUS "Find-interfaces mechanism type: ${FINDALLDEVS_TYPE}")
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} fad-${FINDALLDEVS_TYPE}.c)
 endif()
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
