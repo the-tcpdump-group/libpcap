@@ -578,7 +578,7 @@ F(opt_state_t *opt_state, int code, int v0, int v1)
 static inline void
 vstore(struct stmt *s, int *valp, int newval, int alter)
 {
-	if (alter && *valp == newval)
+	if (alter && newval != 0 && *valp == newval)
 		s->code = NOP;
 	else
 		*valp = newval;
@@ -2334,10 +2334,8 @@ dot_dump(compiler_state_t *cstate, struct icode *ic)
 	f.bf_insns = icode_to_fcode(cstate, ic, ic->root, &f.bf_len);
 
 	fprintf(out, "digraph BPF {\n");
-	ic->cur_mark = 0;
 	unMarkAll(ic);
 	dot_dump_node(ic, ic->root, &f, out);
-	ic->cur_mark = 0;
 	unMarkAll(ic);
 	dot_dump_edge(ic, ic->root, out);
 	fprintf(out, "}\n");
