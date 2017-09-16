@@ -434,7 +434,7 @@ elseif(PCAP_TYPE STREQUAL "dlpi")
     # existence of the structure type, so we use
     # check_struct_has_member() and look for dl_primitive.
     #
-    check_struct_has_member("dl_passive_req_t" dl_primitive sys/types.h sys/dlpi.h HAVE_DLPI_PASSIVE)
+    check_struct_has_member("dl_passive_req_t" dl_primitive "sys/types.h;sys/dlpi.h" HAVE_DLPI_PASSIVE)
 elseif(PCAP_TYPE STREQUAL "linux")
     #
     # Do we have the wireless extensions?
