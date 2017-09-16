@@ -593,7 +593,6 @@ if(NOT WIN32)
                 # just SIOCGIFCONF.
                 #
                 try_compile(HAVE_SIOCGLIFCONF ${CMAKE_CURRENT_BINARY_DIR} "${pcap_SOURCE_DIR}/cmake/have_siocglifconf.c" )
-                message(STATUS "HAVE_SIOCGLIFCONF = ${HAVE_SIOCGLIFCONF}")
                 if(HAVE_SIOCGLIFCONF)
                     set(FINDALLDEVS_TYPE glifc)
                 else()
