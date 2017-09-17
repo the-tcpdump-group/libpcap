@@ -53,9 +53,67 @@ if(CMAKE_CL_64 OR TARGET_IS_MINGW64)
   set(64BIT_SUBDIR "/x64")
 endif()
 
+# Are we a submodule?
+if(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../Common)
+# We are!
+  set(SUBMOD_INCLUDE_DIR ${CMAKE_HOME_DIRECTORY}/../../Common)
+
+# Are we Npcap or WinPcap?
+  if(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../packetWin7)
+  # We are Npcap!
+  # The only four build configurations Npcap uses and developers are likely to get
+  # support for are "Release No NetMon and AirPcap" and "Debug No NetMon and
+  # AirPcap" (both Win32 and x64).
+  # This module should probably only add the library output directories of these
+  # configurations to HINTS.
+    if(CMAKE_CL_64)
+      if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetWin7/Dll/Project/x64/Debug No NetMon and AirPcap")
+      else()
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetWin7/Dll/Project/x64/Release No NetMon and AirPcap")
+      endif()
+    else()
+      if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetWin7/Dll/Project/Debug No NetMon and AirPcap")
+      else()
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetWin7/Dll/Project/Release No NetMon and AirPcap")
+      endif()
+    endif()
+  elseif(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../Packet9x AND ${CMAKE_HOME_DIRECTORY}/../../Packet9x)
+  # We are WinPcap!
+  # Although most of WinPcap's build configurations seem to work,
+  # the project itself is abandoned. The only libpcap branch it is know to work
+  # with is libpcap_1_0_rel0b.
+  # But there are forks (SoftEtherVPN's Win10Pcap) and many adventures developers.
+  # For them, this module will point the "Release" and "Debug" library output
+  # directories to ${SUBMOD_LIB_DIR}. If you prefer any other output folder, define
+  # ${SUBMOD_LIB_DIR} manually.
+    if(CMAKE_CL_64)
+      if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetNtx/Dll/Project/x64/Debug")
+      else()
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetNtx/Dll/Project/x64/Release")
+      endif()
+    else()
+      if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetNtx/Dll/Project/Debug")
+      else()
+        set(SUBMOD_LIB_DIR "${CMAKE_HOME_DIRECTORY}/../../packetNtx/Dll/Project/Release")
+      endif()
+    endif()
+  else()
+  # something's not right. Point both variables to nothing.
+    set(SUBMOD_LIBDIR_DBG "")
+    set(SUBMOD_LIBDIR_REL "")
+  endif()
+endif()
+
+
 # Find the header
 find_path(PACKET_INCLUDE_DIR Packet32.h
-  HINTS "${PACKET_DLL_DIR}"
+  HINTS
+  "${PACKET_DLL_DIR}"
+  "${SUBMOD_INCLUDE_DIR}"
   PATH_SUFFIXES include Include
 )
 
@@ -68,7 +126,9 @@ endif()
 # Find the library
 find_library(PACKET_LIBRARY
   NAMES Packet packet
-  HINTS "${PACKET_DLL_DIR}"
+  HINTS
+  "${PACKET_DLL_DIR}"
+  "${SUBMOD_LIB_DIR}"
   PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
 )
 
