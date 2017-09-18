@@ -266,6 +266,11 @@ struct block {
 	int val[N_ATOMS];
 };
 
+/*
+ * A value of 0 for val[i] means the value is unknown.
+ */
+#define VAL_UNKNOWN	0
+
 struct arth {
 	struct block *b;	/* protocol checks */
 	struct slist *s;	/* stmt list */

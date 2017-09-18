@@ -578,7 +578,7 @@ F(opt_state_t *opt_state, int code, int v0, int v1)
 static inline void
 vstore(struct stmt *s, int *valp, int newval, int alter)
 {
-	if (alter && newval != 0 && *valp == newval)
+	if (alter && newval != VAL_UNKNOWN && *valp == newval)
 		s->code = NOP;
 	else
 		*valp = newval;
@@ -1242,8 +1242,9 @@ opt_blk(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
 	 * block, can we eliminate it?
 	 */
 	if (do_stmts &&
-	    ((b->out_use == 0 && aval != 0 && b->val[A_ATOM] == aval &&
-	      xval != 0 && b->val[X_ATOM] == xval) ||
+	    ((b->out_use == 0 &&
+	      aval != VAL_UNKNOWN && b->val[A_ATOM] == aval &&
+	      xval != VAL_UNKNOWN && b->val[X_ATOM] == xval) ||
 	     BPF_CLASS(b->s.code) == BPF_RET)) {
 		if (b->stmts != 0) {
 			b->stmts = 0;
@@ -2275,7 +2276,7 @@ dot_dump_node(struct icode *ic, struct block *block, struct bpf_program *prog,
 	}
 	fprintf(out, "\" tooltip=\"");
 	for (i = 0; i < BPF_MEMWORDS; i++)
-		if (block->val[i] != 0)
+		if (block->val[i] != VAL_UNKNOWN)
 			fprintf(out, "val[%d]=%d ", i, block->val[i]);
 	fprintf(out, "val[A]=%d ", block->val[A_ATOM]);
 	fprintf(out, "val[X]=%d", block->val[X_ATOM]);
