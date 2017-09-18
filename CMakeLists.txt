@@ -774,13 +774,15 @@ add_custom_target(SerializeTarget
     ${CMAKE_CURRENT_BINARY_DIR}/version.c
 )
 
-add_library(${LIBRARY_NAME} SHARED
-    ${PROJECT_SOURCE_LIST_C}
-    ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
-    ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-    ${PROJECT_SOURCE_LIST_H}
-)
-add_dependencies(${LIBRARY_NAME} SerializeTarget)
+if(BUILD_SHARED_LIBS)
+    add_library(${LIBRARY_NAME} SHARED
+        ${PROJECT_SOURCE_LIST_C}
+        ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
+        ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
+        ${PROJECT_SOURCE_LIST_H}
+    )
+    add_dependencies(${LIBRARY_NAME} SerializeTarget)
+endif(BUILD_SHARED_LIBS)
 
 add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_SOURCE_LIST_C}
@@ -803,7 +805,9 @@ else(MSVC)
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
 endif(MSVC)
 
-target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
+if(BUILD_SHARED_LIBS)
+    target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
+endif(BUILD_SHARED_LIBS)
 
 ######################################
 # Write out the config.h file
@@ -814,23 +818,35 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINA
 ######################################
 # Install pcap library and include files
 ######################################
+
+set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
+
+if(NOT BUILD_SHARED_LIBS)
+    unset(LIBRARY_NAME)
+endif(NOT BUILD_SHARED_LIBS)
+
 if(WIN32)
     if(CMAKE_CL_64)
-        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME}_static
+        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
                 RUNTIME DESTINATION bin/amd64
                 LIBRARY DESTINATION lib/amd64
                 ARCHIVE DESTINATION lib/amd64)
-        install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION bin/amd64 OPTIONAL)
+        if(BUILD_SHARED_LIBS)
+            install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}>
+                    DESTINATION bin/amd64 OPTIONAL)
+        endif(BUILD_SHARED_LIBS)
     else(CMAKE_CL_64)
-        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME}_static
+        install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
                 RUNTIME DESTINATION bin
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib)
-        install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}> DESTINATION bin OPTIONAL)
+        if(BUILD_SHARED_LIBS)
+            install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}>
+                    DESTINATION bin OPTIONAL)
+        endif(BUILD_SHARED_LIBS)
     endif(CMAKE_CL_64)
 else(WIN32)
-    install(TARGETS ${LIBRARY_NAME} DESTINATION lib)
-    install(TARGETS ${LIBRARY_NAME}_static DESTINATION lib)
+    install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC} DESTINATION lib)
 endif(WIN32)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
