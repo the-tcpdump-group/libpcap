@@ -115,7 +115,7 @@ struct vmapinfo {
 	bpf_int32 const_val;
 };
 
-typedef struct _opt_state {
+typedef struct {
 	/*
 	 * A flag to indicate that further optimization is needed.
 	 * Iterative passes are continued until a given pass yields no
