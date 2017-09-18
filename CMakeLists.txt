@@ -827,6 +827,10 @@ endif(NOT BUILD_SHARED_LIBS)
 
 if(WIN32)
     if(CMAKE_CL_64)
+        #
+        # Install 64-bit code built with MSVC in the amd64 subdirectories,
+        # as that's where it expects it to be.
+        #
         install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
                 RUNTIME DESTINATION bin/amd64
                 LIBRARY DESTINATION lib/amd64
@@ -836,6 +840,11 @@ if(WIN32)
                     DESTINATION bin/amd64 OPTIONAL)
         endif(BUILD_SHARED_LIBS)
     else(CMAKE_CL_64)
+        #
+        # Install 32-bit code, and 64-bit code not built with MSVC
+        # in the top-level directories, as those are where they
+        # expect it to be.
+        #
         install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
                 RUNTIME DESTINATION bin
                 LIBRARY DESTINATION lib
