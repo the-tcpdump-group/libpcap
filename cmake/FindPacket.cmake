@@ -102,9 +102,8 @@ if(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../Common)
       endif()
     endif()
   else()
-  # something's not right. Point both variables to nothing.
-    set(SUBMOD_LIBDIR_DBG "")
-    set(SUBMOD_LIBDIR_REL "")
+  # something's not right. Point SUBMOD_LIB_DIR to nothing.
+    set(SUBMOD_LIB_DIR "")
   endif()
 endif()
 
