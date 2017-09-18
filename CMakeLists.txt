@@ -402,17 +402,6 @@ elseif(PCAP_TYPE STREQUAL "dlpi")
     endif()
 
     #
-    # Check whether we have a /dev/dlpi device or have multiple devices.
-    #
-    if(EXISTS /dev/dlpi)
-	set(HAVE_DEV_DLPI TRUE)
-    else()
-	if(IS_DIRECTORY /dev/dlpi)
-	    set(PCAP_DEV_PREFIX, "/dev/dlpi")
-	endif()
-    endif()
-
-    #
     # This check is for Solaris with DLPI support for passive modes.
     # See dlpi(7P) for more details.
     #

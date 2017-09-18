@@ -3,9 +3,6 @@
 /* Enable optimizer debugging */
 #cmakedefine BDEBUG 1
 
-/* define if you have a cloning BPF device */
-#cmakedefine HAVE_CLONING_BPF 1
-
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
@@ -15,8 +12,8 @@
 /* define if you have dag_get_stream_erf_types() */
 #cmakedefine HAVE_DAG_GET_STREAM_ERF_TYPES 1
 
-/* define if you have streams capable DAG API */
-#cmakedefine HAVE_DAG_STREAMS_API 1
+/* define if you have large streams capable DAG API */
+#cmakedefine HAVE_DAG_LARGE_STREAMS_API 1
 
 /* define if you have vdag_set_device_info() */
 #cmakedefine HAVE_DAG_VDAG 1
@@ -24,9 +21,6 @@
 /* Define to 1 if you have the declaration of `ether_hostton', and to 0 if you
    don't. */
 #cmakedefine HAVE_DECL_ETHER_HOSTTON 1
-
-/* define if you have a /dev/dlpi */
-#cmakedefine HAVE_DEV_DLPI 1
 
 /* if passive_req_t primitive exists */
 #cmakedefine HAVE_DLPI_PASSIVE 1
@@ -79,20 +73,17 @@
 /* Define to 1 if you have the <linux/if_bonding.h> header file. */
 #cmakedefine HAVE_LINUX_IF_BONDING_H 1
 
-/* Define to 1 if you have the <linux/if_packet.h> header file. */
-#cmakedefine HAVE_LINUX_IF_PACKET_H 1
-
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #cmakedefine HAVE_LINUX_NET_TSTAMP_H 1
+
+/* Define to 1 if you have the <linux/socket.h> header file. */
+#cmakedefine HAVE_LINUX_SOCKET_H 1
 
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #cmakedefine HAVE_LINUX_SOCKIOS_H 1
 
 /* if tp_vlan_tci exists */
 #cmakedefine HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI 1
-
-/* Define to 1 if you have the <linux/types.h> header file. */
-#cmakedefine HAVE_LINUX_TYPES_H 1
 
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1
@@ -109,32 +100,41 @@
 /* Define to 1 if you have the <netinet/if_ether.h> header file. */
 #cmakedefine HAVE_NETINET_IF_ETHER_H 1
 
-/* Define to 1 if you have the <netpacket/if_packet.h> header file. */
-#cmakedefine HAVE_NETPACKET_IF_PACKET_H 1
-
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #cmakedefine HAVE_NETPACKET_PACKET_H 1
+
+/* Define to 1 if you have the <net/bpf.h> header file. */
+#cmakedefine HAVE_NET_BPF_H 1
+
+/* Define to 1 if you have the <net/enet.h> header file. */
+#cmakedefine HAVE_NET_ENET_H 1
 
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #cmakedefine HAVE_NET_IF_MEDIA_H 1
 
+/* Define to 1 if you have the <net/nit.h> header file. */
+#cmakedefine HAVE_NET_NIT_H 1
+
+/* Define to 1 if you have the <net/pfilt.h> header file. */
+#cmakedefine HAVE_NET_PFILT_H 1
+
 /* Define to 1 if you have the <net/pfvar.h> header file. */
 #cmakedefine HAVE_NET_PFVAR_H 1
+
+/* Define to 1 if you have the <net/raw.h> header file. */
+#cmakedefine HAVE_NET_RAW_H 1
 
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #cmakedefine HAVE_OS_PROTO_H 1
 
-/* Define to 1 if remote packet capture is to be supported */
-#cmakedefine HAVE_REMOTE 1
-
 /* Define to 1 if Packet32 API (WinPcap NPF driver) is available */
 #cmakedefine HAVE_PACKET32 1
 
-/* Define to 1 if you have the <paths.h> header file. */
-#cmakedefine HAVE_PATHS_H 1
-
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #cmakedefine HAVE_PF_NAT_THROUGH_PF_NORDR 1
+
+/* Define to 1 if remote packet capture is to be supported */
+#cmakedefine HAVE_REMOTE 1
 
 /* define if you have the Septel API */
 #cmakedefine HAVE_SEPTEL_API 1
@@ -166,11 +166,17 @@
 /* Define to 1 if you have the `strerror' function. */
 #cmakedefine HAVE_STRERROR 1
 
-/* Define to 1 if you have the `strlcpy' function. */
-#cmakedefine HAVE_STRLCPY 1
+/* Define to 1 if you have the <strings.h> header file. */
+#cmakedefine HAVE_STRINGS_H 1
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H 1
 
 /* Define to 1 if you have the `strlcat' function. */
 #cmakedefine HAVE_STRLCAT 1
+
+/* Define to 1 if you have the `strlcpy' function. */
+#cmakedefine HAVE_STRLCPY 1
 
 /* Define to 1 if you have the `strtok_r' function. */
 #cmakedefine HAVE_STRTOK_R 1
@@ -181,17 +187,20 @@
 /* Define to 1 if the system has the type `struct ether_addr'. */
 #cmakedefine HAVE_STRUCT_ETHER_ADDR 1
 
-/* Define to 1 if you have the <sys/bitypes.h> header file. */
-#cmakedefine HAVE_SYS_BITYPES_H 1
-
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
 #cmakedefine HAVE_SYS_BUFMOD_H 1
 
 /* Define to 1 if you have the <sys/dlpi_ext.h> header file. */
 #cmakedefine HAVE_SYS_DLPI_EXT_H 1
 
+/* Define to 1 if you have the <sys/dlpi.h> header file. */
+#cmakedefine HAVE_SYS_DLPI_H 1
+
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #cmakedefine HAVE_SYS_IOCCOM_H 1
+
+/* Define to 1 if you have the <sys/net/nit.h> header file. */
+#cmakedefine HAVE_SYS_NET_NIT_H 1
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #cmakedefine HAVE_SYS_SOCKIO_H 1
@@ -232,9 +241,6 @@
 /* path for device for USB sniffing */
 #cmakedefine LINUX_USB_MON_DEV 1
 
-/* if we need a pcap_parse wrapper around yyparse */
-#cmakedefine NEED_YYPARSE_WRAPPER 1
-
 /* Define to 1 if netinet/ether.h declares `ether_hostton' */
 #cmakedefine NETINET_ETHER_H_DECLARES_ETHER_HOSTTON 1
 
@@ -262,9 +268,6 @@
 /* Define to the version of this package. */
 #cmakedefine PACKAGE_VERSION 1
 
-/* /dev/dlpi directory */
-#cmakedefine PCAP_DEV_PREFIX ""
-
 /* target host supports Bluetooth sniffing */
 #cmakedefine PCAP_SUPPORT_BT 1
 
@@ -277,8 +280,14 @@
 /* target host supports netfilter sniffing */
 #cmakedefine PCAP_SUPPORT_NETFILTER 1
 
+/* target host supports netmap */
+#cmakedefine PCAP_SUPPORT_NETMAP 1
+
 /* use Linux packet ring capture if available */
 #cmakedefine PCAP_SUPPORT_PACKET_RING 1
+
+/* target host supports RDMA sniffing */
+#cmakedefine PCAP_SUPPORT_RDMASNIFF 1
 
 /* target host supports USB sniffing */
 #cmakedefine PCAP_SUPPORT_USB 1

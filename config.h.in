@@ -22,9 +22,6 @@
    don't. */
 #undef HAVE_DECL_ETHER_HOSTTON
 
-/* define if you have a /dev/dlpi */
-#undef HAVE_DEV_DLPI
-
 /* if passive_req_t primitive exists */
 #undef HAVE_DLPI_PASSIVE
 
@@ -264,9 +261,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* /dev/dlpi directory */
-#undef PCAP_DEV_PREFIX
 
 /* target host supports Bluetooth sniffing */
 #undef PCAP_SUPPORT_BT

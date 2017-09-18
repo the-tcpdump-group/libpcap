@@ -401,25 +401,6 @@ dlpi)
 	fi
 
 	#
-	# Check whether we have a /dev/dlpi device or have multiple devices.
-	#
-	AC_MSG_CHECKING(for /dev/dlpi device)
-	if test -c /dev/dlpi ; then
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_DEV_DLPI, 1, [define if you have a /dev/dlpi])
-	else
-		AC_MSG_RESULT(no)
-		dir="/dev/dlpi"
-		AC_MSG_CHECKING(for $dir directory)
-		if test -d $dir ; then
-			AC_MSG_RESULT(yes)
-			AC_DEFINE_UNQUOTED(PCAP_DEV_PREFIX, "$dir", [/dev/dlpi directory])
-		else
-			AC_MSG_RESULT(no)
-		fi
-	fi
-
-	#
 	# This check is for Solaris with DLPI support for passive modes.
 	# See dlpi(7P) for more details.
 	#

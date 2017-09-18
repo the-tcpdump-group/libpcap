@@ -122,12 +122,23 @@
 #include "os-proto.h"
 #endif
 
-#ifndef PCAP_DEV_PREFIX
-#ifdef _AIX
-#define PCAP_DEV_PREFIX "/dev/dlpi"
-#else
-#define PCAP_DEV_PREFIX "/dev"
-#endif
+#if defined(__hpux)
+  /*
+   * HP-UX has a /dev/dlpi device; you open it and set the PPA of the actual
+   * network device you want.
+   */
+  #define HAVE_DEV_DLPI
+#elif defined(_AIX)
+  /*
+   * AIX has a /dev/dlpi directory, with devices named after the interfaces
+   * underneath it.
+   */
+  #define PCAP_DEV_PREFIX "/dev/dlpi"
+#elif defined(HAVE_SOLARIS)
+  /*
+   * Solaris has devices named after the interfaces underneath /dev.
+   */
+  #define PCAP_DEV_PREFIX "/dev"
 #endif
 
 #define	MAXDLBUF	8192

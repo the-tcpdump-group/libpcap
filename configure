@@ -5534,37 +5534,6 @@ $as_echo "$ac_cv_sys_dlpi_usable" >&6; }
 	fi
 
 	#
-	# Check whether we have a /dev/dlpi device or have multiple devices.
-	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for /dev/dlpi device" >&5
-$as_echo_n "checking for /dev/dlpi device... " >&6; }
-	if test -c /dev/dlpi ; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-$as_echo "#define HAVE_DEV_DLPI 1" >>confdefs.h
-
-	else
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		dir="/dev/dlpi"
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $dir directory" >&5
-$as_echo_n "checking for $dir directory... " >&6; }
-		if test -d $dir ; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define PCAP_DEV_PREFIX "$dir"
-_ACEOF
-
-		else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		fi
-	fi
-
-	#
 	# This check is for Solaris with DLPI support for passive modes.
 	# See dlpi(7P) for more details.
 	#
