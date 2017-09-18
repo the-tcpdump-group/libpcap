@@ -689,7 +689,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
-if(WIN32)
+if(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
     #
     # CMake does not love Windows.  Convert its UN*X-style paths to
     # Windows-style paths to hand to Windows programs.
@@ -712,7 +712,7 @@ if(WIN32)
         COMMAND ${GenVersion_path} ${VERSION_path} ${pcap_version_h_in_path} ${pcap_version_h_path}
         DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
     )
-else(WIN32)
+else(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
         SOURCE ${pcap_SOURCE_DIR}/VERSION
@@ -738,7 +738,7 @@ else(WIN32)
     # Add version.c to the list of sources.
     #
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-endif(WIN32)
+endif(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
 
 #
 # Since pcap_version.h does not exists yet when cmake is run, mark
