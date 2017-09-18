@@ -371,9 +371,6 @@ void PCAP_NORETURN bpf_error(compiler_state_t *, const char *, ...)
 void finish_parse(compiler_state_t *, struct block *);
 char *sdup(compiler_state_t *, const char *);
 
-struct _opt_state;
-typedef struct _opt_state opt_state_t;
-
 struct bpf_insn *icode_to_fcode(compiler_state_t *, struct icode *,
     struct block *, u_int *);
 void sappend(struct slist *, struct slist *);
