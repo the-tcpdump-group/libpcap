@@ -196,6 +196,122 @@ set(CMAKE_EXTRA_INCLUDE_FILES unistd.h)
 check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_SOCKADDR_SA_LEN)
 
 #
+# You are in a twisty little maze of UN*Xes, all different.
+# Some might not have ether_hostton().
+# Some might have it and declare it in <net/ethernet.h>.
+# Some might have it and declare it in <netinet/ether.h>
+# Some might have it and declare it in <sys/ethernet.h>.
+# Some might have it and declare it in <arpa/inet.h>.
+# Some might have it and declare it in <netinet/if_ether.h>.
+# Some might have it and not declare it in any header file.
+#
+# Before you is a C compiler.
+#
+include(CheckSymbolExists)
+check_function_exists(ether_hostton HAVE_ETHER_HOSTTON)
+if(HAVE_ETHER_HOSTTON)
+    #
+    # OK, we have ether_hostton().  Is it declared in <net/ethernet.h>?
+    #
+    # This test fails if we don't have <net/ethernet.h> or if we do
+    # but it doesn't declare ether_hostton().
+    #
+    check_symbol_exists(ether_hostton net/ethernet.h NET_ETHERNET_H_DECLARES_ETHER_HOSTTON)
+    if(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON)
+        #
+        # Yes - we have it declared.
+        #
+        set(HAVE_DECL_ETHER_HOSTTON TRUE)
+    endif()
+    #
+    # Did that succeed?
+    #
+    if(NOT HAVE_DECL_ETHER_HOSTTON)
+        #
+        # No - how about <netinet/ether.h>, as on Linux?
+        #
+        # This test fails if we don't have <netinet/ether.h>
+        # or if we do but it doesn't declare ether_hostton().
+        #
+        check_symbol_exists(ether_hostton netinet/ether.h NETINET_ETHER_H_DECLARES_ETHER_HOSTTON)
+        if(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON)
+            #
+            # Yes - we have it declared.
+            #
+            set(HAVE_DECL_ETHER_HOSTTON TRUE)
+        endif()
+    endif()
+    #
+    # Did that succeed?
+    #
+    if(NOT HAVE_DECL_ETHER_HOSTTON)
+        #
+        # No - how about <sys/ethernet.h>, as on Solaris 10 and later?
+        #
+        # This test fails if we don't have <sys/ethernet.h>
+        # or if we do but it doesn't declare ether_hostton().
+        #
+        check_symbol_exists(ether_hostton sys/ethernet.h SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON)
+        if(SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON)
+            #
+            # Yes - we have it declared.
+            #
+            set(HAVE_DECL_ETHER_HOSTTON TRUE)
+        endif()
+    endif()
+    #
+    # Did that succeed?
+    #
+    if(NOT HAVE_DECL_ETHER_HOSTTON)
+        #
+        # No, how about <arpa/inet.h>, as on AIX?
+        #
+        # This test fails if we don't have <arpa/inet.h>
+        # or if we do but it doesn't declare ether_hostton().
+        #
+        check_symbol_exists(ether_hostton arpa/inet.h ARPA_INET_H_DECLARES_ETHER_HOSTTON)
+        if(ARPA_INET_H_DECLARES_ETHER_HOSTTON)
+            #
+            # Yes - we have it declared.
+            #
+            set(HAVE_DECL_ETHER_HOSTTON TRUE)
+        endif()
+    endif()
+    #
+    # Did that succeed?
+    #
+    if(NOT HAVE_DECL_ETHER_HOSTTON)
+        #
+        # No, how about <netinet/if_ether.h>?
+        # On some platforms, it requires <net/if.h> and
+        # <netinet/in.h>, and we always include it with
+        # both of them, so test it with both of them.
+        #
+        # This test fails if we don't have <netinet/if_ether.h>
+        # and the headers we include before it, or if we do but
+        # <netinet/if_ether.h> doesn't declare ether_hostton().
+        #
+        check_symbol_exists(ether_hostton "sys/types.h;sys/socket.h;net/if.h;netinet/in.h;netinet/if_ether.h" NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON)
+        if(NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON)
+            #
+            # Yes - we have it declared.
+            #
+            set(HAVE_DECL_ETHER_HOSTTON TRUE)
+        endif()
+    endif()
+    #
+    # After all that, is ether_hostton() declared?
+    #
+    if(NOT HAVE_DECL_ETHER_HOSTTON)
+        #
+        # No, we'll have to declare it ourselves.
+        # Do we have "struct ether_addr" if we include<netinet/if_ether.h>?
+        #
+        check_struct_has_member("struct ether_addr" octet "sys/types.h;sys/socket.h;net/if.h;netinet/in.h;netinet/if_ether.h" HAVE_STRUCT_ETHER_ADDR)
+    endif()
+endif()
+
+#
 # Large file support on UN*X, a/k/a LFS.
 #
 if(NOT WIN32)

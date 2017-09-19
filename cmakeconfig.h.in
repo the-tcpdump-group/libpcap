@@ -1,5 +1,8 @@
 /* cmakeconfig.h.in */
 
+/* Define to 1 if arpa/inet.h declares `ether_hostton' */
+#cmakedefine ARPA_INET_H_DECLARES_ETHER_HOSTTON 1
+
 /* Enable optimizer debugging */
 #cmakedefine BDEBUG 1
 
@@ -18,8 +21,7 @@
 /* define if you have vdag_set_device_info() */
 #cmakedefine HAVE_DAG_VDAG 1
 
-/* Define to 1 if you have the declaration of `ether_hostton', and to 0 if you
-   don't. */
+/* Define to 1 if you have the declaration of `ether_hostton' */
 #cmakedefine HAVE_DECL_ETHER_HOSTTON 1
 
 /* if passive_req_t primitive exists */
@@ -93,12 +95,6 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H 1
-
-/* Define to 1 if you have the <netinet/ether.h> header file. */
-#cmakedefine HAVE_NETINET_ETHER_H 1
-
-/* Define to 1 if you have the <netinet/if_ether.h> header file. */
-#cmakedefine HAVE_NETINET_IF_ETHER_H 1
 
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #cmakedefine HAVE_NETPACKET_PACKET_H 1
@@ -247,6 +243,9 @@
 /* Define to 1 if netinet/if_ether.h declares `ether_hostton' */
 #cmakedefine NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON 1
 
+/* Define to 1 if net/ethernet.h declares `ether_hostton' */
+#cmakedefine NET_ETHERNET_H_DECLARES_ETHER_HOSTTON 1
+
 /* do not use protochain */
 #cmakedefine NO_PROTOCHAIN 1
 
@@ -300,6 +299,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
+
+/* Define to 1 if sys/ethernet.h declares `ether_hostton' */
+#cmakedefine SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON 1
 
 /* Enable parser debugging */
 #cmakedefine YYDEBUG 1

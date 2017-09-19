@@ -32,62 +32,99 @@
 #endif
 
 #ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
 
-#ifdef INET6
-/*
- * To quote the MSDN page for getaddrinfo() at
- *
- *    https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
- *
- * "Support for getaddrinfo on Windows 2000 and older versions
- * The getaddrinfo function was added to the Ws2_32.dll on Windows XP and
- * later. To execute an application that uses this function on earlier
- * versions of Windows, then you need to include the Ws2tcpip.h and
- * Wspiapi.h files. When the Wspiapi.h include file is added, the
- * getaddrinfo function is defined to the WspiapiGetAddrInfo inline
- * function in the Wspiapi.h file. At runtime, the WspiapiGetAddrInfo
- * function is implemented in such a way that if the Ws2_32.dll or the
- * Wship6.dll (the file containing getaddrinfo in the IPv6 Technology
- * Preview for Windows 2000) does not include getaddrinfo, then a
- * version of getaddrinfo is implemented inline based on code in the
- * Wspiapi.h header file. This inline code will be used on older Windows
- * platforms that do not natively support the getaddrinfo function."
- *
- * We use getaddrinfo(), so we include Wspiapi.h here.
- */
-#include <Wspiapi.h>
-#endif
-
+  #ifdef INET6
+    /*
+     * To quote the MSDN page for getaddrinfo() at
+     *
+     *    https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
+     *
+     * "Support for getaddrinfo on Windows 2000 and older versions
+     * The getaddrinfo function was added to the Ws2_32.dll on Windows XP and
+     * later. To execute an application that uses this function on earlier
+     * versions of Windows, then you need to include the Ws2tcpip.h and
+     * Wspiapi.h files. When the Wspiapi.h include file is added, the
+     * getaddrinfo function is defined to the WspiapiGetAddrInfo inline
+     * function in the Wspiapi.h file. At runtime, the WspiapiGetAddrInfo
+     * function is implemented in such a way that if the Ws2_32.dll or the
+     * Wship6.dll (the file containing getaddrinfo in the IPv6 Technology
+     * Preview for Windows 2000) does not include getaddrinfo, then a
+     * version of getaddrinfo is implemented inline based on code in the
+     * Wspiapi.h header file. This inline code will be used on older Windows
+     * platforms that do not natively support the getaddrinfo function."
+     *
+     * We use getaddrinfo(), so we include Wspiapi.h here.
+     */
+    #include <Wspiapi.h>
+  #endif /* INET6 */
 #else /* _WIN32 */
+  #include <sys/param.h>
+  #include <sys/types.h>			/* concession to AIX */
+  #include <sys/socket.h>
+  #include <sys/time.h>
 
-#include <sys/param.h>
-#include <sys/types.h>				/* concession to AIX */
-#include <sys/socket.h>
-#include <sys/time.h>
+  #include <netinet/in.h>
 
-#include <netinet/in.h>
-#endif /* _WIN32 */
+  #ifdef HAVE_ETHER_HOSTTON
+    #if defined(NET_ETHERNET_H_DECLARES_ETHER_HOSTTON)
+      /*
+       * OK, just include <net/ethernet.h>.
+       */
+      #include <net/ethernet.h>
+    #elif defined(NETINET_ETHER_H_DECLARES_ETHER_HOSTTON)
+      /*
+       * OK, just include <netinet/ether.h>
+       */
+      #include <netinet/ether.h>
+    #elif defined(SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON)
+      /*
+       * OK, just include <sys/ethernet.h>
+       */
+      #include <sys/ethernet.h>
+    #elif defined(ARPA_INET_H_DECLARES_ETHER_HOSTTON)
+      /*
+       * OK, just include <arpa/inet.h>
+       */
+      #include <arpa/inet.h>
+    #elif defined(NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON)
+      /*
+       * OK, include <netinet/if_ether.h>, after all the other stuff we
+       * need to include or define for its benefit.
+       */
+      #define NEED_NETINET_IF_ETHER_H
+    #else
+      /*
+       * We'll have to declare it ourselves.
+       * If <netinet/if_ether.h> defines struct ether_addr, include
+       * it.  Otherwise, define it ourselves.
+       */
+      #ifdef HAVE_STRUCT_ETHER_ADDR
+        #define NEED_NETINET_IF_ETHER_H
+      #else /* HAVE_STRUCT_ETHER_ADDR */
+	struct ether_addr {
+		unsigned char ether_addr_octet[6];
+	};
+      #endif /* HAVE_STRUCT_ETHER_ADDR */
+    #endif
 
-#ifndef _WIN32
-#ifdef HAVE_ETHER_HOSTTON
-/*
- * XXX - do we need any of this if <netinet/if_ether.h> doesn't declare
- * ether_hostton()?
- */
-#ifdef HAVE_NETINET_IF_ETHER_H
-struct mbuf;		/* Squelch compiler warnings on some platforms for */
-struct rtentry;		/* declarations in <net/if.h> */
-#include <net/if.h>	/* for "struct ifnet" in "struct arpcom" on Solaris */
-#include <netinet/if_ether.h>
-#endif /* HAVE_NETINET_IF_ETHER_H */
-#ifdef NETINET_ETHER_H_DECLARES_ETHER_HOSTTON
-#include <netinet/ether.h>
-#endif /* NETINET_ETHER_H_DECLARES_ETHER_HOSTTON */
-#endif /* HAVE_ETHER_HOSTTON */
-#include <arpa/inet.h>
-#include <netdb.h>
+    #ifdef NEED_NETINET_IF_ETHER_H
+      #include <net/if.h>	/* Needed on some platforms */
+      #include <netinet/in.h>	/* Needed on some platforms */
+      #include <netinet/if_ether.h>
+    #endif /* NEED_NETINET_IF_ETHER_H */
+
+    #ifndef HAVE_DECL_ETHER_HOSTTON
+      /*
+       * No header declares it, so declare it ourselves.
+       */
+      extern int ether_hostton(const char *, struct ether_addr *);
+    #endif /* defined(HAVE_DECL_ETHER_HOSTTON) || !HAVE_DECL_ETHER_HOSTTON */
+  #endif /* HAVE_ETHER_HOSTTON */
+
+  #include <arpa/inet.h>
+  #include <netdb.h>
 #endif /* _WIN32 */
 
 #include <ctype.h>
@@ -502,16 +539,6 @@ pcap_ether_hostton(const char *name)
 	return (NULL);
 }
 #else
-
-#if !defined(HAVE_DECL_ETHER_HOSTTON) || !HAVE_DECL_ETHER_HOSTTON
-#ifndef HAVE_STRUCT_ETHER_ADDR
-struct ether_addr {
-	unsigned char ether_addr_octet[6];
-};
-#endif
-extern int ether_hostton(const char *, struct ether_addr *);
-#endif
-
 /* Use the os supplied routines */
 u_char *
 pcap_ether_hostton(const char *name)
