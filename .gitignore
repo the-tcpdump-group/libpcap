@@ -65,3 +65,7 @@ version.c
 *.vcxproj.user
 Debug/
 Release/
+msdos/.depend.dj
+msdos/bin2c.exe
+msdos/pkt_rx1.lst
+msdos/pkt_stub.inc
