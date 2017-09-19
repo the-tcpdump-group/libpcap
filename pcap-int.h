@@ -125,6 +125,7 @@ struct pcap_opt {
 typedef int	(*activate_op_t)(pcap_t *);
 typedef int	(*can_set_rfmon_op_t)(pcap_t *);
 typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
+typedef int	(*next_packet_op_t)(pcap_t *, struct pcap_pkthdr *, u_char **);
 typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
 typedef void	(*save_current_filter_op_t)(pcap_t *, const char *);
 typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
@@ -160,9 +161,9 @@ struct pcap {
 	read_op_t read_op;
 
 	/*
-	 * Method to call to read packets from a savefile.
+	 * Method to call to read the next packet from a savefile.
 	 */
-	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
+	next_packet_op_t next_packet_op;
 
 #ifdef _WIN32
 	HANDLE handle;
