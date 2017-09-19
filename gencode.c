@@ -8125,7 +8125,7 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 static struct block *
 gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
 {
-        struct block *b0, *b_tpid, *b_vid;
+        struct block *b0, *b_tpid, *b_vid = NULL;
         struct slist *s;
 
         /* generate new filter code based on extracting packet
