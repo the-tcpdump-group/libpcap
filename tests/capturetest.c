@@ -201,6 +201,7 @@ main(int argc, char **argv)
 		    program_name, pcap_geterr(pd));
 	}
 	pcap_close(pd);
+	pcap_freecode(&fcode);
 	exit(status == -1 ? 1 : 0);
 }
 
