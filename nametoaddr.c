@@ -120,7 +120,7 @@
        * No header declares it, so declare it ourselves.
        */
       extern int ether_hostton(const char *, struct ether_addr *);
-    #endif /* defined(HAVE_DECL_ETHER_HOSTTON) || !HAVE_DECL_ETHER_HOSTTON */
+    #endif /* defined(HAVE_DECL_ETHER_HOSTTON) */
   #endif /* HAVE_ETHER_HOSTTON */
 
   #include <arpa/inet.h>
