@@ -13,13 +13,15 @@
 /* \todo: Use 'g_cfg.color.file' and 'g_cfg.color.text'
  *        set from %HOME%/wpcap.cfg.
  */
+#define TRACE_COLOUR_GREEN (FOREGROUND_INTENSITY | 2)
+#define TRACE_COLOUR_WHITE (FOREGROUND_INTENSITY | 7)
 
 #ifndef TRACE_COLOR_START
-#define TRACE_COLOR_START  (FOREGROUND_INTENSITY | 2)  /* bright green */
+#define TRACE_COLOR_START  TRACE_COLOUR_GREEN
 #endif
 
 #ifndef TRACE_COLOR_ARGS
-#define TRACE_COLOR_ARGS   (FOREGROUND_INTENSITY | 7)  /* bright white */
+#define TRACE_COLOR_ARGS   TRACE_COLOUR_WHITE
 #endif
 
 #ifndef __FILE
@@ -73,25 +75,24 @@
    * All in shining colours.
    */
   #undef  YYFPRINTF
-  #define YYFPRINTF(s, fmt, ...)                               \
-          do {                                                 \
-            if (_pcap_trace_level() >= 1) {                    \
-              int add_prefix = !last_fmt ||                    \
-                   (last_fmt[strlen(last_fmt)-1] == '\n');     \
-                                                               \
-              last_fmt = fmt;                                  \
-              if (add_prefix) {                                \
-                _pcap_trace_color (8 | 2);  /* bright green */ \
-                printf ("%s%s(%u): ", TRACE_PREFIX,            \
-                  _pcap_trace_basename(__FILE()), __LINE__);   \
-                _pcap_trace_color (8 | 7);  /* bright white */ \
-                printf (fmt, ## __VA_ARGS__);                  \
-              }                                                \
-              else                                             \
-                printf (fmt, ## __VA_ARGS__);                  \
-              fflush (stdout);                                 \
-              _pcap_trace_color (0);                           \
-            }                                                  \
+  #define YYFPRINTF(stream_ignore, fmt, ...)               \
+          do {                                             \
+            if (_pcap_trace_level() >= 1) {                \
+              int add_prefix = !last_fmt ||                \
+                   (last_fmt[strlen(last_fmt)-1] == '\n'); \
+                                                           \
+              last_fmt = fmt;                              \
+              if (add_prefix) {                            \
+                _pcap_trace_color (TRACE_COLOUR_GREEN);    \
+                printf ("grammar.c(%u): ", __LINE__);      \
+                _pcap_trace_color (TRACE_COLOUR_WHITE);    \
+                printf (fmt, ## __VA_ARGS__);              \
+              }                                            \
+              else                                         \
+                printf (fmt, ## __VA_ARGS__);              \
+              fflush (stdout);                             \
+              _pcap_trace_color (0);                       \
+            }                                              \
           } while (0)
 
 #else
