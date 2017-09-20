@@ -794,6 +794,44 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
+    # Workaround to enable certain features
+    set(_SUN TRUE)
+    if(PCAP_TYPE STREQUAL "bpf")
+        #
+        # If we're using BPF, we need libodm and libcfg, as
+        # we use them to load the BPF module.
+        #
+	set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} odm cfg)
+    endif()
+elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
+    #
+    if(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*9\.[0-9]*")
+        #
+        # HP-UX 9.x.
+        #
+        set(HAVE_HPUX9 TRUE)
+    elseif(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*10\.0")
+        #
+        # HP-UX 10.0.
+        #
+    elseif(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*10\.1")
+        #
+        # HP-UX 10.1.
+        #
+    else()
+        #
+        # HP-UX 10.20 and later.
+        #
+        set(HAVE_HPUX10_20_OR_LATER TRUE)
+    endif()
+elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
+    #
+    # SunOS 5.x.
+    #
+    set(HAVE_SOLARIS TRUE)
+endif()
+
 if(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
     #
     # CMake does not love Windows.  Convert its UN*X-style paths to
