@@ -5737,7 +5737,7 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 	if (cstate->off_linkpl.is_variable)
 		bpf_error(cstate, "'protochain' not supported with variable length headers");
 
-	cstate->no_optimize = 1; /*this code is not compatible with optimzer yet */
+	cstate->no_optimize = 1; /* this code is not compatible with optimizer yet */
 
 	/*
 	 * s[0] is a dummy entry to protect other BPF insn from damage
