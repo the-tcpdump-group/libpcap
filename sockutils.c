@@ -701,11 +701,13 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 
 /*
  * On UN*X, recv() returns ssize_t.
- * On Windows, there *is* no ssize_t, and it returns an int.
- * Define ssize_t as int on Windows so we can use it as the return value
- * from recv().
+ * On MSVC, there *is* no ssize_t, and it returns an int.
+ * MinGW has ssize_t. It and returns either an int (32 bit)
+ * or a long long (64 bit).
+ * Define ssize_t as int only on MSVC and on those that don't define 
+ * _SSIZE_T_DEFINED so we can use it as the return value from recv().
  */
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
 typedef int ssize_t;
 #endif
 
