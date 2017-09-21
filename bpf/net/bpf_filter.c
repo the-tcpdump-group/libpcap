@@ -39,39 +39,33 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
-#ifdef _WIN32
+#include <pcap/pcap-inttypes.h>
+#include "pcap-types.h"
 
-#include <pcap-stdinc.h>
-
-#else /* _WIN32 */
-
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#elif HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-
+#ifndef _WIN32
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/time.h>
 
-#define	SOLARIS	(defined(sun) && (defined(__SVR4) || defined(__svr4__)))
-#if defined(__hpux) || SOLARIS
+#if defined(sun) && (defined(__SVR4) || defined(__svr4__))
+#define SOLARIS
+#else
+#undef SOLARIS
+#endif
+
+#if defined(__hpux) || defined(SOLARIS)
 # include <sys/sysmacros.h>
 # include <sys/stream.h>
 # define	mbuf	msgb
 # define	m_next	b_cont
 # define	MLEN(m)	((m)->b_wptr - (m)->b_rptr)
 # define	mtod(m,t)	((t)(m)->b_rptr)
-#else /* defined(__hpux) || SOLARIS */
+#else /* defined(__hpux) || defined(SOLARIS) */
 # define	MLEN(m)	((m)->m_len)
-#endif /* defined(__hpux) || SOLARIS */
+#endif /* defined(__hpux) || defined(SOLARIS) */
 
 #endif /* _WIN32 */
 
@@ -118,7 +112,7 @@
 #endif
 
 #if defined(KERNEL) || defined(_KERNEL)
-# if !defined(__hpux) && !SOLARIS
+# if !defined(__hpux) && !defined(SOLARIS)
 #include <sys/mbuf.h>
 # endif
 #define MINDEX(len, _m, _k) \
@@ -579,7 +573,12 @@ bpf_filter_with_aux_data(pc, p, wirelen, buflen, aux_data)
 			continue;
 
 		case BPF_ALU|BPF_NEG:
-			A = -A;
+			/*
+			 * Most BPF arithmetic is unsigned, but negation
+			 * can't be unsigned; throw some casts to
+			 * specify what we're trying to do.
+			 */
+			A = (u_int32)(-(int32)A);
 			continue;
 
 		case BPF_MISC|BPF_TAX:
@@ -633,7 +632,7 @@ bpf_validate(f, len)
 		return 0;
 #endif
 
-	for (i = 0; i < len; ++i) {
+	for (i = 0; i < (u_int)len; ++i) {
 		p = &f[i];
 		switch (BPF_CLASS(p->code)) {
 		/*
@@ -734,7 +733,7 @@ bpf_validate(f, len)
 #if defined(KERNEL) || defined(_KERNEL)
 				if (from + p->k < from || from + p->k >= len)
 #else
-				if (from + p->k >= len)
+				if (from + p->k >= (u_int)len)
 #endif
 					return 0;
 				break;
@@ -742,7 +741,7 @@ bpf_validate(f, len)
 			case BPF_JGT:
 			case BPF_JGE:
 			case BPF_JSET:
-				if (from + p->jt >= len || from + p->jf >= len)
+				if (from + p->jt >= (u_int)len || from + p->jf >= (u_int)len)
 					return 0;
 				break;
 			default:

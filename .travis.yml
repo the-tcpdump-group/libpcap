@@ -13,13 +13,22 @@ env:
   global:
     # encrypted COVERITY_SCAN_TOKEN from
     # https://scan.coverity.com/projects/<project_id>/submit_build?tab=travis_ci
-    - secure: "WnSilJ28kIEu9GID24PgRz6T0xC0VGNFGRPmoWRN3DEj/lPcMqb8HxNcdWpaDt4tQi2PVOIujV5ApHr0xJrw8A9Ix7nBTaZRedrLvsA2uugCTZZMH0OHWJDus7/m6zcdsp3D12ddJIHeqabVe790EfkeSQGDtSBeHlpilQ0BuYU="
+    - secure: "SwNcek+I4lMVcnb5EGGmNm6ljWN6C/mnXzBr82a5rEQNKxAoJfdvvPpKIp0iEfg5j0PtYlcRHoIDyVZ/6QM/WEw0wrio9Z0cio9hkOS6kV8g2QouXfnoNtKJ5nNso7UD2GPJ9+M0GIR1GZ0Edvxr81sHlNAkpVKydYGBwCIMGyg="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
     - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
+  matrix:
+    - REMOTE=disable
+    - REMOTE=enable
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - os: linux
+      env: REMOTE=enable
 
 addons:
   coverity_scan:
@@ -45,9 +54,11 @@ addons:
       - libdbus-glib-1-dev
       - libbluetooth-dev
       - libnl-genl-3-dev
+      - libibverbs-dev
 
 git:
   quiet: true
+  depth: 3
 
 before_install:
   - uname -a
@@ -59,7 +70,11 @@ before_script:
 
 script:
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then touch .devel configure; fi
-  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then ./configure --prefix=/tmp; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then echo '$ ./configure [...]' && echo -n travis_fold:start:script.configure; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then echo -n travis_fold:end:script.configure; fi
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then make -s all findalldevstest; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then echo '$ make install [...]' && echo -n travis_fold:start:script.make_install; fi
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then PATH=$PATH make install; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then echo -n travis_fold:end:script.make_install; fi
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then ./findalldevstest; fi

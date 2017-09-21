@@ -16,7 +16,7 @@ does support packet capture but libpcap does not support that
 particular type. (If you have HP-UX, see below.) If your system uses a
 packet capture not supported by libpcap, please send us patches; don't
 forget to include an autoconf fragment suitable for use in
-configure.in.
+configure.ac.
 
 It is possible to override the default packet capture type, although
 the circumstance where this works are limited. For example if you have
@@ -272,6 +272,7 @@ CHANGES		- description of differences between releases
 ChmodBPF/*	- Mac OS X startup item to set ownership and permissions
 		  on /dev/bpf*
 CMakeLists.txt	- CMake file
+CONTRIBUTING	- guidelines for contributing
 CREDITS		- people that have helped libpcap along
 INSTALL.txt	- this file
 LICENSE		- the license under which tcpdump is distributed
@@ -300,7 +301,7 @@ config.guess	- autoconf support
 config.h.in	- autoconf input
 config.sub	- autoconf support
 configure	- configure script (run this first)
-configure.in	- configure script source
+configure.ac	- configure script source
 dlpisubs.c	- DLPI-related functions for pcap-dlpi.c and pcap-libdlpi.c
 dlpisubs.h	- DLPI-related function declarations
 etherent.c	- /etc/ethers support routines
@@ -308,16 +309,12 @@ ethertype.h	- Ethernet protocol types and names definitions
 fad-getad.c	- pcap_findalldevs() for systems with getifaddrs()
 fad-gifc.c	- pcap_findalldevs() for systems with only SIOCGIFLIST
 fad-glifc.c	- pcap_findalldevs() for systems with SIOCGLIFCONF
-fad-null.c	- pcap_findalldevs() for systems without capture support
-fad-sita.c	- pcap_findalldevs() for systems with SITA support
-fad-win32.c	- pcap_findalldevs() for WinPcap
 filtertest.c	- test program for BPF compiler
 findalldevstest.c - test program for pcap_findalldevs()
 gencode.c	- BPF code generation routines
 gencode.h	- BPF code generation definitions
 grammar.y	- filter string grammar
 ieee80211.h	- 802.11 definitions
-inet.c		- network routines
 install-sh	- BSD style install script
 lbl/os-*.h	- OS-dependent defines and prototypes
 llc.h		- 802.2 LLC SAP definitions
@@ -350,6 +347,7 @@ pcap-linux.c	- Linux packet socket support
 pcap-namedb.h	- header for backwards compatibility
 pcap-nit.c	- SunOS Network Interface Tap support
 pcap-nit.h	- SunOS Network Interface Tap definitions
+pcap-npf.c	- WinPcap capture support
 pcap-null.c	- dummy monitor support (allows offline use of libpcap)
 pcap-pf.c	- Ultrix and Digital/Tru64 UNIX Packet Filter support
 pcap-pf.h	- Ultrix and Digital/Tru64 UNIX Packet Filter definitions
@@ -363,7 +361,6 @@ pcap-snit.c	- SunOS 4.x STREAMS-based Network Interface Tap support
 pcap-snoop.c	- IRIX Snoop network monitoring support
 pcap-usb-linux.c - USB capture support for Linux
 pcap-usb-linux.h - USB capture support for Linux
-pcap-win32.c	- WinPcap capture support
 pcap.3pcap	- manual entry for the library
 pcap.c		- pcap utility routines
 pcap.h		- header for backwards compatibility

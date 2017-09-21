@@ -19,6 +19,30 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+/*
+ * This doesn't actually test libpcap itself; it tests whether
+ * valgrind properly handles the APIs libpcap uses.  If it doesn't,
+ * we end up getting patches submitted to "fix" references that
+ * valgrind claims are being made to uninitialized data, when, in
+ * fact, the OS isn't making any such references - or we get
+ * valgrind *not* detecting *actual* incorrect references.
+ *
+ * Both BPF and Linux socket filters aren't handled correctly
+ * by some versions of valgrind.  See valgrind bug 318203 for
+ * Linux:
+ *
+ *	https://bugs.kde.org/show_bug.cgi?id=318203
+ *
+ * and valgrind bug 312989 for OS X:
+ *
+ *	https://bugs.kde.org/show_bug.cgi?id=312989
+ *
+ * The fixes for both of those are checked into the official valgrind
+ * repository.
+ *
+ * The unofficial FreeBSD port has similar issues to the official OS X
+ * port, for similar reasons.
+ */
 #ifndef lint
 static const char copyright[] _U_ =
     "@(#) Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 2000\n\
@@ -26,7 +50,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #endif
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <stdio.h>
@@ -39,6 +63,8 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include "pcap/funcattrs.h"
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__)
 /* BSD-flavored OS - use BPF */
@@ -74,55 +100,6 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <pcap.h>
 
 static char *program_name;
-
-/*
- * This was introduced by Clang:
- *
- *     http://clang.llvm.org/docs/LanguageExtensions.html#has-attribute
- *
- * in some version (which version?); it has been picked up by GCC 5.0.
- */
-#ifndef __has_attribute
-  /*
-   * It's a macro, so you can check whether it's defined to check
-   * whether it's supported.
-   *
-   * If it's not, define it to always return 0, so that we move on to
-   * the fallback checks.
-   */
-  #define __has_attribute(x) 0
-#endif
-
-#if __has_attribute(noreturn) \
-    || (defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 205)) \
-    || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)) \
-    || (defined(__xlC__) && __xlC__ >= 0x0A01) \
-    || (defined(__HP_aCC) && __HP_aCC >= 61000)
-  /*
-   * Compiler with support for it, or GCC 2.5 and later, or Solaris Studio 12
-   * (Sun C 5.9) and later, or IBM XL C 10.1 and later (do any earlier
-   * versions of XL C support this?), or HP aCC A.06.10 and later.
-   */
-  #define PCAP_NORETURN __attribute((noreturn))
-#elif defined( _MSC_VER )
-  #define PCAP_NORETURN __declspec(noreturn)
-#else
-  #define PCAP_NORETURN
-#endif
-
-#if __has_attribute(__format__) \
-    || (defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 203)) \
-    || (defined(__xlC__) && __xlC__ >= 0x0A01) \
-    || (defined(__HP_aCC) && __HP_aCC >= 61000)
-  /*
-   * Compiler with support for it, or GCC 2.3 and later, or IBM XL C 10.1
-   * and later (do any earlier versions of XL C support this?),
-   * or HP aCC A.06.10 and later.
-   */
-  #define PCAP_PRINTFLIKE(x,y) __attribute__((__format__(__printf__,x,y)))
-#else
-  #define PCAP_PRINTFLIKE(x,y)
-#endif
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);
@@ -255,6 +232,7 @@ main(int argc, char **argv)
 	char ebuf[PCAP_ERRBUF_SIZE];
 	char *infile;
 	char *cmdbuf;
+	pcap_if_t *devlist;
 	pcap_t *pd;
 	int status = 0;
 	int pcap_fd;
@@ -309,11 +287,12 @@ main(int argc, char **argv)
 		 * No interface specified; get whatever pcap_lookupdev()
 		 * finds.
 		 */
-		device = pcap_lookupdev(ebuf);
-		if (device == NULL) {
-			error("couldn't find interface to use: %s",
-			    ebuf);
-		}
+		if (pcap_findalldevs(&devlist, ebuf) == -1)
+			error("%s", ebuf);
+		if (devlist == NULL)
+			error("no interfaces available for capture");
+		device = strdup(devlist->name);
+		pcap_freealldevs(devlist);
 	}
 
 	if (infile != NULL) {

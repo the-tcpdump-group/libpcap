@@ -20,22 +20,10 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
-#ifdef _WIN32
-#include <pcap-stdinc.h>
-#else /* _WIN32 */
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#elif HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-#include <sys/types.h>
-#endif /* _WIN32 */
+#include <pcap-types.h>
 
 #include <ctype.h>
 #include <memory.h>
@@ -101,16 +89,20 @@ pcap_next_etherent(FILE *fp)
 	static struct pcap_etherent e;
 
 	memset((char *)&e, 0, sizeof(e));
-	do {
+	for (;;) {
 		/* Find addr */
 		c = skip_space(fp);
+		if (c == EOF)
+			return (NULL);
 		if (c == '\n')
 			continue;
 
 		/* If this is a comment, or first thing on line
-		   cannot be etehrnet address, skip the line. */
+		   cannot be Ethernet address, skip the line. */
 		if (!isxdigit(c)) {
 			c = skip_line(fp);
+			if (c == EOF)
+				return (NULL);
 			continue;
 		}
 
@@ -118,25 +110,33 @@ pcap_next_etherent(FILE *fp)
 		for (i = 0; i < 6; i += 1) {
 			d = xdtoi(c);
 			c = getc(fp);
+			if (c == EOF)
+				return (NULL);
 			if (isxdigit(c)) {
 				d <<= 4;
 				d |= xdtoi(c);
 				c = getc(fp);
+				if (c == EOF)
+					return (NULL);
 			}
 			e.addr[i] = d;
 			if (c != ':')
 				break;
 			c = getc(fp);
+			if (c == EOF)
+				return (NULL);
 		}
-		if (c == EOF)
-			break;
 
 		/* Must be whitespace */
 		if (!isspace(c)) {
 			c = skip_line(fp);
+			if (c == EOF)
+				return (NULL);
 			continue;
 		}
 		c = skip_space(fp);
+		if (c == EOF)
+			return (NULL);
 
 		/* hit end of line... */
 		if (c == '\n')
@@ -144,6 +144,8 @@ pcap_next_etherent(FILE *fp)
 
 		if (c == '#') {
 			c = skip_line(fp);
+			if (c == EOF)
+				return (NULL);
 			continue;
 		}
 
@@ -154,7 +156,9 @@ pcap_next_etherent(FILE *fp)
 		do {
 			*bp++ = c;
 			c = getc(fp);
-		} while (!isspace(c) && c != EOF && --d > 0);
+			if (c == EOF)
+				return (NULL);
+		} while (!isspace(c) && --d > 0);
 		*bp = '\0';
 
 		/* Eat trailing junk */
@@ -162,8 +166,5 @@ pcap_next_etherent(FILE *fp)
 			(void)skip_line(fp);
 
 		return &e;
-
-	} while (c != EOF);
-
-	return (NULL);
+	}
 }

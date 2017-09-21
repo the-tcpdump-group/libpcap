@@ -33,7 +33,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <sys/param.h>
@@ -56,6 +56,12 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#else
+#define INT_MAX		2147483647
+#endif
 
 #include "pcap-int.h"
 
@@ -132,12 +138,12 @@ struct rtentry;		/* declarations in <net/if.h> */
  * we already have that.
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
+pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
+    int (*check_usable)(const char *))
 {
-	pcap_if_t *devlist = NULL;
 	register int fd;
 	register struct ifreq *ifrp, *ifend, *ifnext;
-	int n;
+	size_t n;
 	struct ifconf ifc;
 	char *buf = NULL;
 	unsigned buf_size;
@@ -168,6 +174,16 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	 */
 	buf_size = 8192;
 	for (;;) {
+		/*
+		 * Don't let the buffer size get bigger than INT_MAX.
+		 */
+		if (buf_size > INT_MAX) {
+			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "interface information requires more than %u bytes",
+			    INT_MAX);
+			(void)close(fd);
+			return (-1);
+		}
 		buf = malloc(buf_size);
 		if (buf == NULL) {
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
@@ -187,7 +203,7 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 			free(buf);
 			return (-1);
 		}
-		if (ifc.ifc_len < buf_size &&
+		if (ifc.ifc_len < (int)buf_size &&
 		    (buf_size - ifc.ifc_len) > sizeof(ifrp->ifr_name) + MAX_SA_LEN)
 			break;
 		free(buf);
@@ -235,6 +251,16 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		 */
 		if (strncmp(ifrp->ifr_name, "dummy", 5) == 0)
 			continue;
+
+		/*
+		 * Can we capture on this device?
+		 */
+		if (!(*check_usable)(ifrp->ifr_name)) {
+			/*
+			 * No.
+			 */
+			continue;
+		}
 
 		/*
 		 * Get the flags for this interface.
@@ -390,11 +416,11 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		/*
 		 * Add information for this address to the list.
 		 */
-		if (add_addr_to_iflist(&devlist, ifrp->ifr_name,
-		    ifrflags.ifr_flags, &ifrp->ifr_addr,
-		    SA_LEN(&ifrp->ifr_addr), netmask, netmask_size,
-		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
-		    errbuf) < 0) {
+		if (add_addr_to_if(devlistp, ifrp->ifr_name,
+		    ifrflags.ifr_flags,
+		    &ifrp->ifr_addr, SA_LEN(&ifrp->ifr_addr),
+		    netmask, netmask_size, broadaddr, broadaddr_size,
+		    dstaddr, dstaddr_size, errbuf) < 0) {
 			ret = -1;
 			break;
 		}
@@ -402,16 +428,5 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 	free(buf);
 	(void)close(fd);
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	return (ret);
 }

@@ -41,9 +41,6 @@
  * <net/if.h> does not depend on <sys/time.h> on most other systems.  This
  * helps userland compatability.  (struct timeval ifi_lastchange)
  */
-#ifndef KERNEL
-#include <pcap-stdinc.h>
-#endif
 
 /*
  * Structure describing information about an interface

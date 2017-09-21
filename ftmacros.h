@@ -1,6 +1,5 @@
-/* -*- Mode: c; tab-width: 8; indent-tabs-mode: 1; c-basic-offset: 8; -*- */
 /*
- * Copyright (c) 1994, 1995, 1996, 1997, 1998
+ * Copyright (c) 1994, 1995, 1996
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,29 +31,28 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <pcap.h>
+#ifndef ftmacros_h
+#define	ftmacros_h
 
 /*
- * Get a list of all interfaces that are up and that we can open.
- * Returns -1 on error, 0 otherwise.
- * The list, as returned through "alldevsp", may be null if no interfaces
- * were up and could be opened.
+ * Define some feature test macros to make sure that everything we want
+ * to be declared gets declared.
  *
- * This is the implementation used on platforms that have no support for
- * packet capture.
+ * On some UN*Xes we need to force strtok_r() to be declared.
+ * We do *NOT* want to define _POSIX_C_SOURCE, as that tends
+ * to make non-POSIX APIs that we use unavailable.
+ * XXX - is there no portable way to say "please pollute the
+ * namespace to the maximum extent possible"?
+ *
+ * We also want to force crypt() to be declared on systems that use
+ * GNU libc, such as most Linux distributions.
  */
-int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
-{
-	/*
-	 * Succeed, but don't return any interfaces; we return only those
-	 * we can open, and we can't open any if there's no support
-	 * for packet capture.
-	 */
-	*alldevsp = NULL;
-	return (0);
-}
+#if defined(sun) || defined(__sun)
+  #define __EXTENSIONS__
+#elif defined(_hpux) || defined(hpux) || defined(__hpux)
+  #define _REENTRANT
+#elif defined(__linux__) || defined(linux) || defined(__linux)
+  #define _GNU_SOURCE
+#endif
+
+#endif

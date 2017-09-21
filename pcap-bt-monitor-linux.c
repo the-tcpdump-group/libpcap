@@ -30,7 +30,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <errno.h>
@@ -60,12 +60,12 @@ struct hci_mon_hdr {
 } __attribute__((packed));
 
 int
-bt_monitor_findalldevs(pcap_if_t **alldevsp, char *err_str)
+bt_monitor_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
     int         ret = 0;
 
-    if (pcap_add_if(alldevsp, INTERFACE_NAME, 0,
-               "Bluetooth Linux Monitor", err_str) < 0)
+    if (add_dev(devlistp, INTERFACE_NAME, 0,
+                "Bluetooth Linux Monitor", err_str) == NULL)
     {
         ret = -1;
     }
@@ -82,10 +82,10 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     ssize_t ret;
     struct pcap_pkthdr pkth;
     pcap_bluetooth_linux_monitor_header *bthdr;
-    char *pktd;
+    u_char *pktd;
     struct hci_mon_hdr hdr;
 
-    pktd = (char *)handle->buffer + BT_CONTROL_SIZE;
+    pktd = (u_char *)handle->buffer + BT_CONTROL_SIZE;
     bthdr = (pcap_bluetooth_linux_monitor_header*)(void *)pktd;
 
     iv[0].iov_base = &hdr;
@@ -173,6 +173,17 @@ bt_monitor_activate(pcap_t* handle)
         return PCAP_ERROR_RFMON_NOTSUP;
     }
 
+    /*
+     * Turn a negative snapshot value (invalid), a snapshot value of
+     * 0 (unspecified), or a value bigger than the normal maximum
+     * value, into the maximum allowed value.
+     *
+     * If some application really *needs* a bigger snapshot
+     * length, we should just increase MAXIMUM_SNAPLEN.
+     */
+    if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
+        handle->snapshot = MAXIMUM_SNAPLEN;
+
     handle->bufsize = BT_CONTROL_SIZE + sizeof(pcap_bluetooth_linux_monitor_header) + handle->snapshot;
     handle->linktype = DLT_BLUETOOTH_LINUX_MONITOR;
 
@@ -242,7 +253,7 @@ bt_monitor_create(const char *device, char *ebuf, int *is_ours)
     }
 
     *is_ours = 1;
-    p = pcap_create_common(device, ebuf, 0);
+    p = pcap_create_common(ebuf, 0);
     if (p == NULL)
         return NULL;
 

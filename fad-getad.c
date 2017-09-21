@@ -33,7 +33,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <sys/types.h>
@@ -144,9 +144,9 @@ get_sa_len(struct sockaddr *addr)
  * could be opened.
  */
 int
-pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
+pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
+    int (*check_usable)(const char *))
 {
-	pcap_if_t *devlist = NULL;
 	struct ifaddrs *ifap, *ifa;
 	struct sockaddr *addr, *netmask, *broadaddr, *dstaddr;
 	size_t addr_size, broadaddr_size, dstaddr_size;
@@ -173,6 +173,45 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		return (-1);
 	}
 	for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
+		/*
+		 * If this entry has a colon followed by a number at
+		 * the end, we assume it's a logical interface.  Those
+		 * are just the way you assign multiple IP addresses to
+		 * a real interface on Linux, so an entry for a logical
+		 * interface should be treated like the entry for the
+		 * real interface; we do that by stripping off the ":"
+		 * and the number.
+		 *
+		 * XXX - should we do this only on Linux?
+		 */
+		p = strchr(ifa->ifa_name, ':');
+		if (p != NULL) {
+			/*
+			 * We have a ":"; is it followed by a number?
+			 */
+			q = p + 1;
+			while (isdigit((unsigned char)*q))
+				q++;
+			if (*q == '\0') {
+				/*
+				 * All digits after the ":" until the end.
+				 * Strip off the ":" and everything after
+				 * it.
+				 */
+			       *p = '\0';
+			}
+		}
+
+		/*
+		 * Can we capture on this device?
+		 */
+		if (!(*check_usable)(ifa->ifa_name)) {
+			/*
+			 * No.
+			 */
+			continue;
+		}
+
 		/*
 		 * "ifa_addr" was apparently null on at least one
 		 * interface on some system.  Therefore, we supply
@@ -223,39 +262,10 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 		}
 
 		/*
-		 * If this entry has a colon followed by a number at
-		 * the end, we assume it's a logical interface.  Those
-		 * are just the way you assign multiple IP addresses to
-		 * a real interface on Linux, so an entry for a logical
-		 * interface should be treated like the entry for the
-		 * real interface; we do that by stripping off the ":"
-		 * and the number.
-		 *
-		 * XXX - should we do this only on Linux?
-		 */
-		p = strchr(ifa->ifa_name, ':');
-		if (p != NULL) {
-			/*
-			 * We have a ":"; is it followed by a number?
-			 */
-			q = p + 1;
-			while (isdigit((unsigned char)*q))
-				q++;
-			if (*q == '\0') {
-				/*
-				 * All digits after the ":" until the end.
-				 * Strip off the ":" and everything after
-				 * it.
-				 */
-			       *p = '\0';
-			}
-		}
-
-		/*
 		 * Add information for this address to the list.
 		 */
-		if (add_addr_to_iflist(&devlist, ifa->ifa_name,
-		    ifa->ifa_flags, addr, addr_size, netmask, addr_size,
+		if (add_addr_to_if(devlistp, ifa->ifa_name, ifa->ifa_flags,
+		    addr, addr_size, netmask, addr_size,
 		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
 		    errbuf) < 0) {
 			ret = -1;
@@ -265,16 +275,5 @@ pcap_findalldevs_interfaces(pcap_if_t **alldevsp, char *errbuf)
 
 	freeifaddrs(ifap);
 
-	if (ret == -1) {
-		/*
-		 * We had an error; free the list we've been constructing.
-		 */
-		if (devlist != NULL) {
-			pcap_freealldevs(devlist);
-			devlist = NULL;
-		}
-	}
-
-	*alldevsp = devlist;
 	return (ret);
 }

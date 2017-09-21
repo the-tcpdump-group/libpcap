@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_GET_SELECTABLE_FD 3PCAP "22 July 2011"
+.TH PCAP_GET_SELECTABLE_FD 3PCAP "20 January 2017"
 .SH NAME
 pcap_get_selectable_fd \- get a file descriptor on which a select() can
 be done for a live capture
@@ -55,8 +55,8 @@ or
 DAG devices), so \-1 is returned for those devices.
 .PP
 Note that a descriptor on which a read can be done without blocking may,
-on some platforms, not have any packets to read if the read timeout has
-expired.  A call to
+on some platforms, not have any packets to read if the packet buffer
+timeout has expired.  A call to
 .B pcap_dispatch()
 will return 0 in this case, but will not block.
 .PP
@@ -81,7 +81,7 @@ being FreeBSD 4.3 and 4.4), but a simple
 or
 .B poll()
 will not indicate that the descriptor is readable until a full buffer's
-worth of packets is received, even if the read timeout expires before
+worth of packets is received, even if the packet timeout expires before
 then.  To work around this, an application that uses
 .B select()
 or
@@ -92,7 +92,7 @@ in non-blocking mode, and must arrange that the
 .B select()
 or
 .B poll()
-have a timeout less than or equal to the read timeout,
+have a timeout less than or equal to the packet buffer timeout,
 and must try to read packets after that timeout expires, regardless of
 whether
 .B select()

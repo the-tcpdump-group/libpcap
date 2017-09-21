@@ -16,7 +16,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <sys/param.h>			/* optionally get BSD define */
@@ -53,6 +53,103 @@ struct rtentry;		/* declarations in <net/if.h> */
 #define DAG_MAX_BOARDS 32
 #endif
 
+
+#ifndef ERF_TYPE_AAL5
+#define ERF_TYPE_AAL5               4
+#endif
+
+#ifndef ERF_TYPE_MC_HDLC
+#define ERF_TYPE_MC_HDLC            5
+#endif
+
+#ifndef ERF_TYPE_MC_RAW
+#define ERF_TYPE_MC_RAW             6
+#endif
+
+#ifndef ERF_TYPE_MC_ATM
+#define ERF_TYPE_MC_ATM             7
+#endif
+
+#ifndef ERF_TYPE_MC_RAW_CHANNEL
+#define ERF_TYPE_MC_RAW_CHANNEL     8
+#endif
+
+#ifndef ERF_TYPE_MC_AAL5
+#define ERF_TYPE_MC_AAL5            9
+#endif
+
+#ifndef ERF_TYPE_COLOR_HDLC_POS
+#define ERF_TYPE_COLOR_HDLC_POS     10
+#endif
+
+#ifndef ERF_TYPE_COLOR_ETH
+#define ERF_TYPE_COLOR_ETH          11
+#endif
+
+#ifndef ERF_TYPE_MC_AAL2
+#define ERF_TYPE_MC_AAL2            12
+#endif
+
+#ifndef ERF_TYPE_IP_COUNTER
+#define ERF_TYPE_IP_COUNTER         13
+#endif
+
+#ifndef ERF_TYPE_TCP_FLOW_COUNTER
+#define ERF_TYPE_TCP_FLOW_COUNTER   14
+#endif
+
+#ifndef ERF_TYPE_DSM_COLOR_HDLC_POS
+#define ERF_TYPE_DSM_COLOR_HDLC_POS 15
+#endif
+
+#ifndef ERF_TYPE_DSM_COLOR_ETH
+#define ERF_TYPE_DSM_COLOR_ETH      16
+#endif
+
+#ifndef ERF_TYPE_COLOR_MC_HDLC_POS
+#define ERF_TYPE_COLOR_MC_HDLC_POS  17
+#endif
+
+#ifndef ERF_TYPE_AAL2
+#define ERF_TYPE_AAL2               18
+#endif
+
+#ifndef ERF_TYPE_COLOR_HASH_POS
+#define ERF_TYPE_COLOR_HASH_POS     19
+#endif
+
+#ifndef ERF_TYPE_COLOR_HASH_ETH
+#define ERF_TYPE_COLOR_HASH_ETH     20
+#endif
+
+#ifndef ERF_TYPE_INFINIBAND
+#define ERF_TYPE_INFINIBAND         21
+#endif
+
+#ifndef ERF_TYPE_IPV4
+#define ERF_TYPE_IPV4               22
+#endif
+
+#ifndef ERF_TYPE_IPV6
+#define ERF_TYPE_IPV6               23
+#endif
+
+#ifndef ERF_TYPE_RAW_LINK
+#define ERF_TYPE_RAW_LINK           24
+#endif
+
+#ifndef ERF_TYPE_INFINIBAND_LINK
+#define ERF_TYPE_INFINIBAND_LINK    25
+#endif
+
+#ifndef ERF_TYPE_META
+#define ERF_TYPE_META               27
+#endif
+
+#ifndef ERF_TYPE_PAD
+#define ERF_TYPE_PAD                48
+#endif
+
 #define ATM_CELL_SIZE		52
 #define ATM_HDR_SIZE		4
 
@@ -80,16 +177,10 @@ struct sunatm_hdr {
  */
 struct pcap_dag {
 	struct pcap_stat stat;
-#ifdef HAVE_DAG_STREAMS_API
 	u_char	*dag_mem_bottom;	/* DAG card current memory bottom pointer */
 	u_char	*dag_mem_top;	/* DAG card current memory top pointer */
-#else /* HAVE_DAG_STREAMS_API */
-	void	*dag_mem_base;	/* DAG card memory base address */
-	u_int	dag_mem_bottom;	/* DAG card current memory bottom offset */
-	u_int	dag_mem_top;	/* DAG card current memory top offset */
-#endif /* HAVE_DAG_STREAMS_API */
 	int	dag_fcs_bits;	/* Number of checksum bits from link layer */
-	int	dag_offset_flags; /* Flags to pass to dag_offset(). */
+	int	dag_flags;	/* Flags */
 	int	dag_stream;	/* DAG stream number */
 	int	dag_timeout;	/* timeout specified to pcap_open_live.
 				 * Same as in linux above, introduce
@@ -112,11 +203,18 @@ static const unsigned short endian_test_word = 0x0100;
 
 static unsigned char TempPkt[MAX_DAG_PACKET];
 
+#ifndef HAVE_DAG_LARGE_STREAMS_API
+#define dag_attach_stream64(a, b, c, d) dag_attach_stream(a, b, c, d)
+#define dag_get_stream_poll64(a, b, c, d, e) dag_get_stream_poll(a, b, c, d, e)
+#define dag_set_stream_poll64(a, b, c, d, e) dag_set_stream_poll(a, b, c, d, e)
+#define dag_size_t uint32_t
+#endif
+
 static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
 static int dag_get_datalink(pcap_t *p);
-static int dag_setnonblock(pcap_t *p, int nonblock, char *errbuf);
+static int dag_setnonblock(pcap_t *p, int nonblock);
 
 static void
 delete_pcap_dag(pcap_t *p)
@@ -144,28 +242,21 @@ delete_pcap_dag(pcap_t *p)
 static void
 dag_platform_cleanup(pcap_t *p)
 {
-	struct pcap_dag *pd;
+	struct pcap_dag *pd = p->priv;
 
-	if (p != NULL) {
-		pd = p->priv;
-#ifdef HAVE_DAG_STREAMS_API
-		if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
-			fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
+	if(dag_stop_stream(p->fd, pd->dag_stream) < 0)
+		fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
 
-		if(dag_detach_stream(p->fd, pd->dag_stream) < 0)
-			fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
-#else
-		if(dag_stop(p->fd) < 0)
-			fprintf(stderr,"dag_stop: %s\n", strerror(errno));
-#endif /* HAVE_DAG_STREAMS_API */
-		if(p->fd != -1) {
-			if(dag_close(p->fd) < 0)
-				fprintf(stderr,"dag_close: %s\n", strerror(errno));
-			p->fd = -1;
-		}
-		delete_pcap_dag(p);
-		pcap_cleanup_live_common(p);
+	if(dag_detach_stream(p->fd, pd->dag_stream) < 0)
+		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
+
+	if(p->fd != -1) {
+		if(dag_close(p->fd) < 0)
+			fprintf(stderr,"dag_close: %s\n", strerror(errno));
+		p->fd = -1;
 	}
+	delete_pcap_dag(p);
+	pcap_cleanup_live_common(p);
 	/* Note: don't need to call close(p->fd) here as dag_close(p->fd) does this. */
 }
 
@@ -174,7 +265,8 @@ atexit_handler(void)
 {
 	while (pcap_dags != NULL) {
 		if (pcap_dags->pid == getpid()) {
-			dag_platform_cleanup(pcap_dags->p);
+			if (pcap_dags->p != NULL)
+				dag_platform_cleanup(pcap_dags->p);
 		} else {
 			delete_pcap_dag(pcap_dags->p);
 		}
@@ -246,8 +338,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	struct pcap_dag *pd = p->priv;
 	unsigned int processed = 0;
-	int flags = pd->dag_offset_flags;
-	unsigned int nonblocking = flags & DAGF_NONBLOCK;
+	unsigned int nonblocking = pd->dag_flags & DAGF_NONBLOCK;
 	unsigned int num_ext_hdr = 0;
 	unsigned int ticks_per_second;
 
@@ -267,7 +358,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			return -2;
 		}
 
-#ifdef HAVE_DAG_STREAMS_API
 		/* dag_advance_stream() will block (unless nonblock is called)
 		 * until 64kB of data has accumulated.
 		 * If to_ms is set, it will timeout before 64kB has accumulated.
@@ -282,10 +372,6 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if ( NULL == (pd->dag_mem_top = dag_advance_stream(p->fd, pd->dag_stream, &(pd->dag_mem_bottom))) ) {
 		     return -1;
 		}
-#else
-		/* dag_offset does not support timeouts */
-		pd->dag_mem_top = dag_offset(p->fd, &(pd->dag_mem_bottom), flags);
-#endif /* HAVE_DAG_STREAMS_API */
 
 		if (nonblocking && (pd->dag_mem_top - pd->dag_mem_bottom < dag_record_size))
 		{
@@ -310,11 +396,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		int caplen = 0;
 		struct pcap_pkthdr	pcap_header;
 
-#ifdef HAVE_DAG_STREAMS_API
 		dag_record_t *header = (dag_record_t *)(pd->dag_mem_bottom);
-#else
-		dag_record_t *header = (dag_record_t *)(pd->dag_mem_base + pd->dag_mem_bottom);
-#endif /* HAVE_DAG_STREAMS_API */
 
 		u_char *dp = ((u_char *)header); /* + dag_record_size; */
 		unsigned short rlen;
@@ -343,13 +425,13 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/* Count lost packets. */
 		switch((header->type & 0x7f)) {
 			/* in these types the color value overwrites the lctr */
-		case TYPE_COLOR_HDLC_POS:
-		case TYPE_COLOR_ETH:
-		case TYPE_DSM_COLOR_HDLC_POS:
-		case TYPE_DSM_COLOR_ETH:
-		case TYPE_COLOR_MC_HDLC_POS:
-		case TYPE_COLOR_HASH_ETH:
-		case TYPE_COLOR_HASH_POS:
+		case ERF_TYPE_COLOR_HDLC_POS:
+		case ERF_TYPE_COLOR_ETH:
+		case ERF_TYPE_DSM_COLOR_HDLC_POS:
+		case ERF_TYPE_DSM_COLOR_ETH:
+		case ERF_TYPE_COLOR_MC_HDLC_POS:
+		case ERF_TYPE_COLOR_HASH_ETH:
+		case ERF_TYPE_COLOR_HASH_POS:
 			break;
 
 		default:
@@ -362,7 +444,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 
-		if ((header->type & 0x7f) == TYPE_PAD) {
+		if ((header->type & 0x7f) == ERF_TYPE_PAD) {
 			continue;
 		}
 
@@ -386,20 +468,20 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			packet_len = ntohs(header->wlen) + dag_record_size;
 			caplen = rlen;
 			switch ((header->type & 0x7f)) {
-			case TYPE_MC_AAL5:
-			case TYPE_MC_ATM:
-			case TYPE_MC_HDLC:
-			case TYPE_MC_RAW_CHANNEL:
-			case TYPE_MC_RAW:
-			case TYPE_MC_AAL2:
-			case TYPE_COLOR_MC_HDLC_POS:
+			case ERF_TYPE_MC_AAL5:
+			case ERF_TYPE_MC_ATM:
+			case ERF_TYPE_MC_HDLC:
+			case ERF_TYPE_MC_RAW_CHANNEL:
+			case ERF_TYPE_MC_RAW:
+			case ERF_TYPE_MC_AAL2:
+			case ERF_TYPE_COLOR_MC_HDLC_POS:
 				packet_len += 4; /* MC header */
 				break;
 
-			case TYPE_COLOR_HASH_ETH:
-			case TYPE_DSM_COLOR_ETH:
-			case TYPE_COLOR_ETH:
-			case TYPE_ETH:
+			case ERF_TYPE_COLOR_HASH_ETH:
+			case ERF_TYPE_DSM_COLOR_ETH:
+			case ERF_TYPE_COLOR_ETH:
+			case ERF_TYPE_ETH:
 				packet_len += 2; /* ETH header */
 				break;
 			} /* switch type */
@@ -419,19 +501,19 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			dp += 8 * num_ext_hdr;
 
 			switch((header->type & 0x7f)) {
-			case TYPE_ATM:
-			case TYPE_AAL5:
-				if (header->type == TYPE_AAL5) {
+			case ERF_TYPE_ATM:
+			case ERF_TYPE_AAL5:
+				if ((header->type & 0x7f) == ERF_TYPE_AAL5) {
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size;
 				}
-			case TYPE_MC_ATM:
-				if (header->type == TYPE_MC_ATM) {
+			case ERF_TYPE_MC_ATM:
+				if ((header->type & 0x7f) == ERF_TYPE_MC_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 					dp+=4;
 				}
-			case TYPE_MC_AAL5:
-				if (header->type == TYPE_MC_AAL5) {
+			case ERF_TYPE_MC_AAL5:
+				if ((header->type & 0x7f) == ERF_TYPE_MC_AAL5) {
 					packet_len = ntohs(header->wlen);
 					caplen = rlen - dag_record_size - 4;
 					dp+=4;
@@ -439,7 +521,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				/* Skip over extension headers */
 				caplen -= (8 * num_ext_hdr);
 
-				if (header->type == TYPE_ATM) {
+				if ((header->type & 0x7f) == ERF_TYPE_ATM) {
 					caplen = packet_len = ATM_CELL_SIZE;
 				}
 				if (p->linktype == DLT_SUNATM) {
@@ -456,17 +538,21 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 						    dp[ATM_HDR_SIZE+1] == 0xaa &&
 						    dp[ATM_HDR_SIZE+2] == 0x03) ? 2 : 1)));
 
-				} else {
+				} else if (p->linktype == DLT_ATM_RFC1483) {
 					packet_len -= ATM_HDR_SIZE;
 					caplen -= ATM_HDR_SIZE;
 					dp += ATM_HDR_SIZE;
-				}
+				} else
+					continue;
 				break;
 
-			case TYPE_COLOR_HASH_ETH:
-			case TYPE_DSM_COLOR_ETH:
-			case TYPE_COLOR_ETH:
-			case TYPE_ETH:
+			case ERF_TYPE_COLOR_HASH_ETH:
+			case ERF_TYPE_DSM_COLOR_ETH:
+			case ERF_TYPE_COLOR_ETH:
+			case ERF_TYPE_ETH:
+				if ((p->linktype != DLT_EN10MB) &&
+				    (p->linktype != DLT_DOCSIS))
+					continue;
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 2;
@@ -478,10 +564,14 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				dp += 2;
 				break;
 
-			case TYPE_COLOR_HASH_POS:
-			case TYPE_DSM_COLOR_HDLC_POS:
-			case TYPE_COLOR_HDLC_POS:
-			case TYPE_HDLC_POS:
+			case ERF_TYPE_COLOR_HASH_POS:
+			case ERF_TYPE_DSM_COLOR_HDLC_POS:
+			case ERF_TYPE_COLOR_HDLC_POS:
+			case ERF_TYPE_HDLC_POS:
+				if ((p->linktype != DLT_CHDLC) &&
+				    (p->linktype != DLT_PPP_SERIAL) &&
+				    (p->linktype != DLT_FRELAY))
+					continue;
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size;
@@ -492,8 +582,15 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 				break;
 
-			case TYPE_COLOR_MC_HDLC_POS:
-			case TYPE_MC_HDLC:
+			case ERF_TYPE_COLOR_MC_HDLC_POS:
+			case ERF_TYPE_MC_HDLC:
+				if ((p->linktype != DLT_CHDLC) &&
+				    (p->linktype != DLT_PPP_SERIAL) &&
+				    (p->linktype != DLT_FRELAY) &&
+				    (p->linktype != DLT_MTP2) &&
+				    (p->linktype != DLT_MTP2_WITH_PHDR) &&
+				    (p->linktype != DLT_LAPD))
+					continue;
 				packet_len = ntohs(header->wlen);
 				packet_len -= (pd->dag_fcs_bits >> 3);
 				caplen = rlen - dag_record_size - 4;
@@ -520,8 +617,23 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif
 				break;
 
-			case TYPE_IPV4:
-			case TYPE_IPV6:
+			case ERF_TYPE_IPV4:
+				if ((p->linktype != DLT_RAW) &&
+				    (p->linktype != DLT_IPV4))
+					continue;
+				packet_len = ntohs(header->wlen);
+				caplen = rlen - dag_record_size;
+				/* Skip over extension headers */
+				caplen -= (8 * num_ext_hdr);
+				if (caplen > packet_len) {
+					caplen = packet_len;
+				}
+				break;
+
+			case ERF_TYPE_IPV6:
+				if ((p->linktype != DLT_RAW) &&
+				    (p->linktype != DLT_IPV6))
+					continue;
 				packet_len = ntohs(header->wlen);
 				caplen = rlen - dag_record_size;
 				/* Skip over extension headers */
@@ -532,13 +644,13 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				break;
 
 			/* These types have no matching 'native' DLT, but can be used with DLT_ERF above */
-			case TYPE_MC_RAW:
-			case TYPE_MC_RAW_CHANNEL:
-			case TYPE_IP_COUNTER:
-			case TYPE_TCP_FLOW_COUNTER:
-			case TYPE_INFINIBAND:
-			case TYPE_RAW_LINK:
-			case TYPE_INFINIBAND_LINK:
+			case ERF_TYPE_MC_RAW:
+			case ERF_TYPE_MC_RAW_CHANNEL:
+			case ERF_TYPE_IP_COUNTER:
+			case ERF_TYPE_TCP_FLOW_COUNTER:
+			case ERF_TYPE_INFINIBAND:
+			case ERF_TYPE_RAW_LINK:
+			case ERF_TYPE_INFINIBAND_LINK:
 			default:
 				/* Unhandled ERF type.
 				 * Ignore rather than generating error
@@ -624,86 +736,77 @@ dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
  *
  *  See also pcap(3).
  */
-static int dag_activate(pcap_t* handle)
+static int dag_activate(pcap_t* p)
 {
-	struct pcap_dag *handlep = handle->priv;
-#if 0
-	char conf[30]; /* dag configure string */
-#endif
+	struct pcap_dag *pd = p->priv;
 	char *s;
 	int n;
 	daginf_t* daginf;
 	char * newDev = NULL;
-	char * device = handle->opt.source;
-#ifdef HAVE_DAG_STREAMS_API
-	uint32_t mindata;
+	char * device = p->opt.device;
+	dag_size_t mindata;
 	struct timeval maxwait;
 	struct timeval poll;
-#endif
 
 	if (device == NULL) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "device is NULL: %s", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL: %s", pcap_strerror(errno));
 		return -1;
 	}
 
 	/* Initialize some components of the pcap structure. */
-
-#ifdef HAVE_DAG_STREAMS_API
 	newDev = (char *)malloc(strlen(device) + 16);
 	if (newDev == NULL) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s", pcap_strerror(errno));
 		goto fail;
 	}
 
 	/* Parse input name to get dag device and stream number if provided */
-	if (dag_parse_name(device, newDev, strlen(device) + 16, &handlep->dag_stream) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: %s\n", pcap_strerror(errno));
+	if (dag_parse_name(device, newDev, strlen(device) + 16, &pd->dag_stream) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: %s", pcap_strerror(errno));
 		goto fail;
 	}
 	device = newDev;
 
-	if (handlep->dag_stream%2) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: tx (even numbered) streams not supported for capture\n");
+	if (pd->dag_stream%2) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: tx (even numbered) streams not supported for capture");
 		goto fail;
 	}
-#else
-	if (strncmp(device, "/dev/", 5) != 0) {
-		newDev = (char *)malloc(strlen(device) + 5);
-		if (newDev == NULL) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate string for device name: %s\n", pcap_strerror(errno));
-			goto fail;
-		}
-		strcpy(newDev, "/dev/");
-		strcat(newDev, device);
-		device = newDev;
-	}
-#endif /* HAVE_DAG_STREAMS_API */
 
 	/* setup device parameters */
-	if((handle->fd = dag_open((char *)device)) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_open %s: %s", device, pcap_strerror(errno));
+	if((p->fd = dag_open((char *)device)) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_open %s: %s", device, pcap_strerror(errno));
 		goto fail;
 	}
 
-#ifdef HAVE_DAG_STREAMS_API
 	/* Open requested stream. Can fail if already locked or on error */
-	if (dag_attach_stream(handle->fd, handlep->dag_stream, 0, 0) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_attach_stream: %s\n", pcap_strerror(errno));
+	if (dag_attach_stream64(p->fd, pd->dag_stream, 0, 0) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_attach_stream: %s", pcap_strerror(errno));
 		goto failclose;
 	}
 
 	/* Set up default poll parameters for stream
 	 * Can be overridden by pcap_set_nonblock()
 	 */
-	if (dag_get_stream_poll(handle->fd, handlep->dag_stream,
+	if (dag_get_stream_poll64(p->fd, pd->dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s", pcap_strerror(errno));
 		goto faildetach;
 	}
 
-	if (handle->opt.immediate) {
+	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
+
+	if (p->opt.immediate) {
 		/* Call callback immediately.
-		 * XXX - is this the right way to handle this?
+		 * XXX - is this the right way to p this?
 		 */
 		mindata = 0;
 	} else {
@@ -717,22 +820,14 @@ static int dag_activate(pcap_t* handle)
 	/* Obey opt.timeout (was to_ms) if supplied. This is a good idea!
 	 * Recommend 10-100ms. Calls will time out even if no data arrived.
 	 */
-	maxwait.tv_sec = handle->opt.timeout/1000;
-	maxwait.tv_usec = (handle->opt.timeout%1000) * 1000;
+	maxwait.tv_sec = p->opt.timeout/1000;
+	maxwait.tv_usec = (p->opt.timeout%1000) * 1000;
 
-	if (dag_set_stream_poll(handle->fd, handlep->dag_stream,
+	if (dag_set_stream_poll64(p->fd, pd->dag_stream,
 				mindata, &maxwait, &poll) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s", pcap_strerror(errno));
 		goto faildetach;
 	}
-
-#else
-	if((handlep->dag_mem_base = dag_mmap(handle->fd)) == MAP_FAILED) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,"dag_mmap %s: %s\n", device, pcap_strerror(errno));
-		goto failclose;
-	}
-
-#endif /* HAVE_DAG_STREAMS_API */
 
         /* XXX Not calling dag_configure() to set slen; this is unsafe in
 	 * multi-stream environments as the gpp config is global.
@@ -742,64 +837,51 @@ static int dag_activate(pcap_t* handle)
 	/* set the card snap length to the specified snaplen parameter */
 	/* This is a really bad idea, as different cards have different
 	 * valid slen ranges. Should fix in Config API. */
-	if (handle->snapshot == 0 || handle->snapshot > MAX_DAG_SNAPLEN) {
-		handle->snapshot = MAX_DAG_SNAPLEN;
+	if (p->snapshot == 0 || p->snapshot > MAX_DAG_SNAPLEN) {
+		p->snapshot = MAX_DAG_SNAPLEN;
 	} else if (snaplen < MIN_DAG_SNAPLEN) {
-		handle->snapshot = MIN_DAG_SNAPLEN;
+		p->snapshot = MIN_DAG_SNAPLEN;
 	}
 	/* snap len has to be a multiple of 4 */
-	pcap_snprintf(conf, 30, "varlen slen=%d", (snaplen + 3) & ~3);
-
-	if(dag_configure(handle->fd, conf) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,"dag_configure %s: %s\n", device, pcap_strerror(errno));
-		goto faildetach;
-	}
 #endif
 
-#ifdef HAVE_DAG_STREAMS_API
-	if(dag_start_stream(handle->fd, handlep->dag_stream) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_start_stream %s: %s\n", device, pcap_strerror(errno));
+	if(dag_start_stream(p->fd, pd->dag_stream) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_start_stream %s: %s", device, pcap_strerror(errno));
 		goto faildetach;
 	}
-#else
-	if(dag_start(handle->fd) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dag_start %s: %s\n", device, pcap_strerror(errno));
-		goto failclose;
-	}
-#endif /* HAVE_DAG_STREAMS_API */
 
 	/*
 	 * Important! You have to ensure bottom is properly
 	 * initialized to zero on startup, it won't give you
 	 * a compiler warning if you make this mistake!
 	 */
-	handlep->dag_mem_bottom = 0;
-	handlep->dag_mem_top = 0;
+	pd->dag_mem_bottom = 0;
+	pd->dag_mem_top = 0;
 
 	/*
 	 * Find out how many FCS bits we should strip.
 	 * First, query the card to see if it strips the FCS.
 	 */
-	daginf = dag_info(handle->fd);
+	daginf = dag_info(p->fd);
 	if ((0x4200 == daginf->device_code) || (0x4230 == daginf->device_code))	{
 		/* DAG 4.2S and 4.23S already strip the FCS.  Stripping the final word again truncates the packet. */
-		handlep->dag_fcs_bits = 0;
+		pd->dag_fcs_bits = 0;
 
 		/* Note that no FCS will be supplied. */
-		handle->linktype_ext = LT_FCS_DATALINK_EXT(0);
+		p->linktype_ext = LT_FCS_DATALINK_EXT(0);
 	} else {
 		/*
 		 * Start out assuming it's 32 bits.
 		 */
-		handlep->dag_fcs_bits = 32;
+		pd->dag_fcs_bits = 32;
 
 		/* Allow an environment variable to override. */
 		if ((s = getenv("ERF_FCS_BITS")) != NULL) {
 			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
-				handlep->dag_fcs_bits = n;
+				pd->dag_fcs_bits = n;
 			} else {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment\n", device, n);
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment", device, n);
 				goto failstop;
 			}
 		}
@@ -810,71 +892,65 @@ static int dag_activate(pcap_t* handle)
 		if ((s = getenv("ERF_DONT_STRIP_FCS")) != NULL) {
 			/* Yes.  Note the number of bytes that will be
 			   supplied. */
-			handle->linktype_ext = LT_FCS_DATALINK_EXT(handlep->dag_fcs_bits/16);
+			p->linktype_ext = LT_FCS_DATALINK_EXT(pd->dag_fcs_bits/16);
 
 			/* And don't strip them. */
-			handlep->dag_fcs_bits = 0;
+			pd->dag_fcs_bits = 0;
 		}
 	}
 
-	handlep->dag_timeout	= handle->opt.timeout;
+	pd->dag_timeout	= p->opt.timeout;
 
-	handle->linktype = -1;
-	if (dag_get_datalink(handle) < 0)
+	p->linktype = -1;
+	if (dag_get_datalink(p) < 0)
 		goto failstop;
 
-	handle->bufsize = 0;
+	p->bufsize = 0;
 
-	if (new_pcap_dag(handle) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s\n", device, pcap_strerror(errno));
+	if (new_pcap_dag(p) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "new_pcap_dag %s: %s", device, pcap_strerror(errno));
 		goto failstop;
 	}
 
 	/*
 	 * "select()" and "poll()" don't work on DAG device descriptors.
 	 */
-	handle->selectable_fd = -1;
+	p->selectable_fd = -1;
 
 	if (newDev != NULL) {
 		free((char *)newDev);
 	}
 
-	handle->read_op = dag_read;
-	handle->inject_op = dag_inject;
-	handle->setfilter_op = dag_setfilter;
-	handle->setdirection_op = NULL; /* Not implemented.*/
-	handle->set_datalink_op = dag_set_datalink;
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = dag_setnonblock;
-	handle->stats_op = dag_stats;
-	handle->cleanup_op = dag_platform_cleanup;
-	handlep->stat.ps_drop = 0;
-	handlep->stat.ps_recv = 0;
-	handlep->stat.ps_ifdrop = 0;
+	p->read_op = dag_read;
+	p->inject_op = dag_inject;
+	p->setfilter_op = dag_setfilter;
+	p->setdirection_op = NULL; /* Not implemented.*/
+	p->set_datalink_op = dag_set_datalink;
+	p->getnonblock_op = pcap_getnonblock_fd;
+	p->setnonblock_op = dag_setnonblock;
+	p->stats_op = dag_stats;
+	p->cleanup_op = dag_platform_cleanup;
+	pd->stat.ps_drop = 0;
+	pd->stat.ps_recv = 0;
+	pd->stat.ps_ifdrop = 0;
 	return 0;
 
-#ifdef HAVE_DAG_STREAMS_API
 failstop:
-	if (dag_stop_stream(handle->fd, handlep->dag_stream) < 0) {
+	if (dag_stop_stream(p->fd, pd->dag_stream) < 0) {
 		fprintf(stderr,"dag_stop_stream: %s\n", strerror(errno));
 	}
 
 faildetach:
-	if (dag_detach_stream(handle->fd, handlep->dag_stream) < 0)
+	if (dag_detach_stream(p->fd, pd->dag_stream) < 0)
 		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
-#else
-failstop:
-	if (dag_stop(handle->fd) < 0)
-		fprintf(stderr,"dag_stop: %s\n", strerror(errno));
-#endif /* HAVE_DAG_STREAMS_API */
 
 failclose:
-	if (dag_close(handle->fd) < 0)
+	if (dag_close(p->fd) < 0)
 		fprintf(stderr,"dag_close: %s\n", strerror(errno));
-	delete_pcap_dag(handle);
+	delete_pcap_dag(p);
 
 fail:
-	pcap_cleanup_live_common(handle);
+	pcap_cleanup_live_common(p);
 	if (newDev != NULL) {
 		free((char *)newDev);
 	}
@@ -888,9 +964,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	char *cpend;
 	long devnum;
 	pcap_t *p;
-#ifdef HAVE_DAG_STREAMS_API
 	long stream = 0;
-#endif
 
 	/* Does this look like a DAG device? */
 	cp = strrchr(device, '/');
@@ -905,34 +979,33 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 	/* Yes - is "dag" followed by a number from 0 to DAG_MAX_BOARDS-1 */
 	cp += 3;
 	devnum = strtol(cp, &cpend, 10);
-#ifdef HAVE_DAG_STREAMS_API
 	if (*cpend == ':') {
 		/* Followed by a stream number. */
 		stream = strtol(++cpend, &cpend, 10);
 	}
-#endif
+
 	if (cpend == cp || *cpend != '\0') {
 		/* Not followed by a number. */
 		*is_ours = 0;
 		return NULL;
 	}
+
 	if (devnum < 0 || devnum >= DAG_MAX_BOARDS) {
 		/* Followed by a non-valid number. */
 		*is_ours = 0;
 		return NULL;
 	}
-#ifdef HAVE_DAG_STREAMS_API
+
 	if (stream <0 || stream >= DAG_STREAM_MAX) {
 		/* Followed by a non-valid stream number. */
 		*is_ours = 0;
 		return NULL;
 	}
-#endif
 
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_dag));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_dag));
 	if (p == NULL)
 		return NULL;
 
@@ -974,16 +1047,10 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 }
 
 /*
- * Previously we just generated a list of all possible names and let
- * pcap_add_if() attempt to open each one, but with streams this adds up
- * to 81 possibilities which is inefficient.
- *
- * Since we know more about the devices we can prune the tree here.
- * pcap_add_if() will still retest each device but the total number of
- * open attempts will still be much less than the naive approach.
+ * Add all DAG devices.
  */
 int
-dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
+dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	char name[12];	/* XXX - pick a size */
 	int ret = 0;
@@ -993,51 +1060,49 @@ dag_findalldevs(pcap_if_t **devlistp, char *errbuf)
 	int dagfd;
 	dag_card_inf_t *inf;
 	char *description;
+	int stream, rxstreams;
 
 	/* Try all the DAGs 0-DAG_MAX_BOARDS */
 	for (c = 0; c < DAG_MAX_BOARDS; c++) {
 		pcap_snprintf(name, 12, "dag%d", c);
 		if (-1 == dag_parse_name(name, dagname, DAGNAME_BUFSIZE, &dagstream))
 		{
+			(void) pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "dag: device name %s can't be parsed", name);
 			return -1;
 		}
-		description = NULL;
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
+			description = NULL;
 			if ((inf = dag_pciinfo(dagfd)))
 				description = dag_device_name(inf->device_code, 1);
-			if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
+			if (add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 				/*
 				 * Failure.
 				 */
 				ret = -1;
 			}
-#ifdef HAVE_DAG_STREAMS_API
-			{
-				int stream, rxstreams;
-				rxstreams = dag_rx_get_stream_count(dagfd);
-				for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
-					if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
-						dag_detach_stream(dagfd, stream);
-
-						pcap_snprintf(name,  10, "dag%d:%d", c, stream);
-						if (pcap_add_if(devlistp, name, 0, description, errbuf) == -1) {
-							/*
-							 * Failure.
-							 */
-							ret = -1;
-						}
-
-						rxstreams--;
-						if(rxstreams <= 0) {
-							break;
-						}
+			rxstreams = dag_rx_get_stream_count(dagfd);
+			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
+				if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
+					dag_detach_stream(dagfd, stream);
+					
+					pcap_snprintf(name,  10, "dag%d:%d", c, stream);
+					if (add_dev(devlistp, name, 0, description, errbuf) == NULL) {
+						/*
+						 * Failure.
+						 */
+						ret = -1;
+					}
+					
+					rxstreams--;
+					if(rxstreams <= 0) {
+						break;
 					}
 				}
 			}
-#endif  /* HAVE_DAG_STREAMS_API */
 			dag_close(dagfd);
 		}
-
+		
 	}
 	return (ret);
 }
@@ -1075,50 +1140,47 @@ dag_set_datalink(pcap_t *p, int dlt)
 }
 
 static int
-dag_setnonblock(pcap_t *p, int nonblock, char *errbuf)
+dag_setnonblock(pcap_t *p, int nonblock)
 {
 	struct pcap_dag *pd = p->priv;
+	dag_size_t mindata;
+	struct timeval maxwait;
+	struct timeval poll;
 
 	/*
 	 * Set non-blocking mode on the FD.
 	 * XXX - is that necessary?  If not, don't bother calling it,
 	 * and have a "dag_getnonblock()" function that looks at
-	 * "pd->dag_offset_flags".
+	 * "pd->dag_flags".
 	 */
-	if (pcap_setnonblock_fd(p, nonblock, errbuf) < 0)
+	if (pcap_setnonblock_fd(p, nonblock) < 0)
 		return (-1);
-#ifdef HAVE_DAG_STREAMS_API
-	{
-		uint32_t mindata;
-		struct timeval maxwait;
-		struct timeval poll;
 
-		if (dag_get_stream_poll(p->fd, pd->dag_stream,
-					&mindata, &maxwait, &poll) < 0) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s\n", pcap_strerror(errno));
-			return -1;
-		}
-
-		/* Amount of data to collect in Bytes before calling callbacks.
-		 * Important for efficiency, but can introduce latency
-		 * at low packet rates if to_ms not set!
-		 */
-		if(nonblock)
-			mindata = 0;
-		else
-			mindata = 65536;
-
-		if (dag_set_stream_poll(p->fd, pd->dag_stream,
-					mindata, &maxwait, &poll) < 0) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s\n", pcap_strerror(errno));
-			return -1;
-		}
+	if (dag_get_stream_poll64(p->fd, pd->dag_stream,
+				&mindata, &maxwait, &poll) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_get_stream_poll: %s", pcap_strerror(errno));
+		return -1;
 	}
-#endif /* HAVE_DAG_STREAMS_API */
+
+	/* Amount of data to collect in Bytes before calling callbacks.
+	 * Important for efficiency, but can introduce latency
+	 * at low packet rates if to_ms not set!
+	 */
+	if(nonblock)
+		mindata = 0;
+	else
+		mindata = 65536;
+
+	if (dag_set_stream_poll64(p->fd, pd->dag_stream,
+				mindata, &maxwait, &poll) < 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_set_stream_poll: %s", pcap_strerror(errno));
+		return -1;
+	}
+
 	if (nonblock) {
-		pd->dag_offset_flags |= DAGF_NONBLOCK;
+		pd->dag_flags |= DAGF_NONBLOCK;
 	} else {
-		pd->dag_offset_flags &= ~DAGF_NONBLOCK;
+		pd->dag_flags &= ~DAGF_NONBLOCK;
 	}
 	return (0);
 }
@@ -1164,10 +1226,10 @@ dag_get_datalink(pcap_t *p)
 #endif
 		switch((types[index] & 0x7f)) {
 
-		case TYPE_HDLC_POS:
-		case TYPE_COLOR_HDLC_POS:
-		case TYPE_DSM_COLOR_HDLC_POS:
-		case TYPE_COLOR_HASH_POS:
+		case ERF_TYPE_HDLC_POS:
+		case ERF_TYPE_COLOR_HDLC_POS:
+		case ERF_TYPE_DSM_COLOR_HDLC_POS:
+		case ERF_TYPE_COLOR_HASH_POS:
 
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_CHDLC;
@@ -1178,10 +1240,10 @@ dag_get_datalink(pcap_t *p)
 				p->linktype = DLT_CHDLC;
 			break;
 
-		case TYPE_ETH:
-		case TYPE_COLOR_ETH:
-		case TYPE_DSM_COLOR_ETH:
-		case TYPE_COLOR_HASH_ETH:
+		case ERF_TYPE_ETH:
+		case ERF_TYPE_COLOR_ETH:
+		case ERF_TYPE_DSM_COLOR_ETH:
+		case ERF_TYPE_COLOR_HASH_ETH:
 			/*
 			 * This is (presumably) a real Ethernet capture; give it a
 			 * link-layer-type list with DLT_EN10MB and DLT_DOCSIS, so
@@ -1200,10 +1262,10 @@ dag_get_datalink(pcap_t *p)
 				p->linktype = DLT_EN10MB;
 			break;
 
-		case TYPE_ATM:
-		case TYPE_AAL5:
-		case TYPE_MC_ATM:
-		case TYPE_MC_AAL5:
+		case ERF_TYPE_ATM:
+		case ERF_TYPE_AAL5:
+		case ERF_TYPE_MC_ATM:
+		case ERF_TYPE_MC_AAL5:
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_ATM_RFC1483;
 				p->dlt_list[dlt_index++] = DLT_SUNATM;
@@ -1212,8 +1274,8 @@ dag_get_datalink(pcap_t *p)
 				p->linktype = DLT_ATM_RFC1483;
 			break;
 
-		case TYPE_COLOR_MC_HDLC_POS:
-		case TYPE_MC_HDLC:
+		case ERF_TYPE_COLOR_MC_HDLC_POS:
+		case ERF_TYPE_MC_HDLC:
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_CHDLC;
 				p->dlt_list[dlt_index++] = DLT_PPP_SERIAL;
@@ -1226,20 +1288,33 @@ dag_get_datalink(pcap_t *p)
 				p->linktype = DLT_CHDLC;
 			break;
 
-		case TYPE_IPV4:
-		case TYPE_IPV6:
+		case ERF_TYPE_IPV4:
+			if (p->dlt_list != NULL) {
+				p->dlt_list[dlt_index++] = DLT_RAW;
+				p->dlt_list[dlt_index++] = DLT_IPV4;
+			}
+			if(!p->linktype)
+				p->linktype = DLT_RAW;
+			break;
+			
+		case ERF_TYPE_IPV6:
+			if (p->dlt_list != NULL) {
+				p->dlt_list[dlt_index++] = DLT_RAW;
+				p->dlt_list[dlt_index++] = DLT_IPV6;
+			}
 			if(!p->linktype)
 				p->linktype = DLT_RAW;
 			break;
 
-		case TYPE_LEGACY:
-		case TYPE_MC_RAW:
-		case TYPE_MC_RAW_CHANNEL:
-		case TYPE_IP_COUNTER:
-		case TYPE_TCP_FLOW_COUNTER:
-		case TYPE_INFINIBAND:
-		case TYPE_RAW_LINK:
-		case TYPE_INFINIBAND_LINK:
+		case ERF_TYPE_LEGACY:
+		case ERF_TYPE_MC_RAW:
+		case ERF_TYPE_MC_RAW_CHANNEL:
+		case ERF_TYPE_IP_COUNTER:
+		case ERF_TYPE_TCP_FLOW_COUNTER:
+		case ERF_TYPE_INFINIBAND:
+		case ERF_TYPE_RAW_LINK:
+		case ERF_TYPE_INFINIBAND_LINK:
+		case ERF_TYPE_META:
 		default:
 			/* Libpcap cannot deal with these types yet */
 			/* Add no 'native' DLTs, but still covered by DLT_ERF */
@@ -1258,3 +1333,41 @@ dag_get_datalink(pcap_t *p)
 
 	return p->linktype;
 }
+
+#ifdef DAG_ONLY
+/*
+ * This libpcap build supports only DAG cards, not regular network
+ * interfaces.
+ */
+
+/*
+ * There are no regular interfaces, just DAG interfaces.
+ */
+int
+pcap_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
+{
+	return (0);
+}
+
+/*
+ * Attempts to open a regular interface fail.
+ */
+pcap_t *
+pcap_create_interface(const char *device, char *errbuf)
+{
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	    "This version of libpcap only supports DAG cards");
+	return NULL;
+}
+
+#include "pcap_version.h"
+
+/*
+ * Libpcap version string.
+ */
+const char *
+pcap_lib_version(void)
+{
+	return (PCAP_VERSION_STRING " (DAG-only)");
+}
+#endif

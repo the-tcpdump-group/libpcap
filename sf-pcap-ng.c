@@ -21,28 +21,11 @@
  * sf-pcap-ng.c - pcap-ng-file-format-specific code from savefile.c
  */
 
-#ifndef lint
-static const char rcsid[] _U_ =
-    "@(#) $Header$ (LBL)";
-#endif
-
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
-#ifdef _WIN32
-#include <pcap-stdinc.h>
-#else /* _WIN32 */
-#if HAVE_INTTYPES_H
-#include <inttypes.h>
-#elif HAVE_STDINT_H
-#include <stdint.h>
-#endif
-#ifdef HAVE_SYS_BITYPES_H
-#include <sys/bitypes.h>
-#endif
-#include <sys/types.h>
-#endif /* _WIN32 */
+#include <pcap/pcap-inttypes.h>
 
 #include <errno.h>
 #include <memory.h>
@@ -107,7 +90,7 @@ struct section_header_block {
 	bpf_u_int32	byte_order_magic;
 	u_short		major_version;
 	u_short		minor_version;
-	u_int64_t	section_length;
+	uint64_t	section_length;
 	/* followed by options and trailer */
 };
 
@@ -217,15 +200,47 @@ struct pcap_ng_if {
 	u_int tsresol;			/* time stamp resolution */
 	tstamp_scale_type_t scale_type;	/* how to scale */
 	u_int scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
-	u_int64_t tsoffset;		/* time stamp offset */
+	uint64_t tsoffset;		/* time stamp offset */
 };
 
+/*
+ * Per-pcap_t private data.
+ *
+ * max_blocksize is the maximum size of a block that we'll accept.  We
+ * reject blocks bigger than this, so we don't consume too much memory
+ * with a truly huge block.  It can change as we see IDBs with different
+ * link-layer header types.  (Currently, we don't support IDBs with
+ * different link-layer header types, but we will support it in the
+ * future, when we offer file-reading APIs that support it.)
+ *
+ * XXX - that's an issue on ILP32 platforms, where the maximum block
+ * size of 2^31-1 would eat all but one byte of the entire address space.
+ * It's less of an issue on ILP64/LLP64 platforms, but the actual size
+ * of the address space may be limited by 1) the number of *significant*
+ * address bits (currently, x86-64 only supports 48 bits of address), 2)
+ * any limitations imposed by the operating system; 3) any limitations
+ * imposed by the amount of available backing store for anonymous pages,
+ * so we impose a limit regardless of the size of a pointer.
+ */
 struct pcap_ng_sf {
 	u_int user_tsresol;		/* time stamp resolution requested by the user */
+	u_int max_blocksize;		/* don't grow buffer size past this */
 	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
 	bpf_u_int32 ifaces_size;	/* size of array below */
 	struct pcap_ng_if *ifaces;	/* array of interface information */
 };
+
+/*
+ * Maximum block size for a given maximum snapshot length; we calculate
+ * this based 
+ *
+ * We define it as the size of an EPB with a max_snaplen-sized
+ * packet and 128KB of options.
+ */
+#define MAX_BLOCKSIZE(max_snaplen)	(sizeof (struct block_header) + \
+					 sizeof (struct enhanced_packet_block) + \
+					 (max_snaplen) + 131072 + \
+					 sizeof (struct block_trailer))
 
 static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
@@ -259,10 +274,13 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 static int
 read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 {
+	struct pcap_ng_sf *ps;
 	int status;
 	struct block_header bhdr;
 	u_char *bdata;
 	size_t data_remaining;
+
+	ps = p->priv;
 
 	status = read_bytes(fp, &bhdr, sizeof(bhdr), 0, errbuf);
 	if (status <= 0)
@@ -305,10 +323,15 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 */
 	if (p->bufsize < bhdr.total_length) {
 		/*
-		 * No - make it big enough.
+		 * No - make it big enough, unless it's too big.
 		 */
 		void *bigger_buffer;
 
+		if (bhdr.total_length > ps->max_blocksize) {
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "block is larger than maximum block size %u",
+			    ps->max_blocksize);
+			return (-1);
+		}
 		bigger_buffer = realloc(p->buffer, bhdr.total_length);
 		if (bigger_buffer == NULL) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "out of memory");
@@ -410,7 +433,7 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 
 static int
 process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
-    u_int64_t *tsoffset, int *is_binary, char *errbuf)
+    uint64_t *tsoffset, int *is_binary, char *errbuf)
 {
 	struct option_header *opthdr;
 	void *optvalue;
@@ -533,7 +556,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
 	u_int tsresol;
-	u_int64_t tsoffset;
+	uint64_t tsoffset;
 	int is_binary;
 
 	ps = p->priv;
@@ -853,7 +876,11 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 *	Packet Block containing a full-size Ethernet frame, and
 	 *	leaving room for some options.
 	 *
-	 * If we find a bigger block, we reallocate the buffer.
+	 * If we find a bigger block, we reallocate the buffer, up to
+	 * the maximum size.  We start out with a maximum size based
+	 * on a maximum snapshot length of MAXIMUM_SNAPLEN; if we see
+	 * any link-layer header types with a larger maximum snapshot
+	 * length, we boost the maximum.
 	 */
 	p->bufsize = 2048;
 	if (p->bufsize < total_length)
@@ -865,6 +892,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		*err = 1;
 		return (NULL);
 	}
+	ps->max_blocksize = MAX_BLOCKSIZE(MAXIMUM_SNAPLEN);
 
 	/*
 	 * Copy the stuff we've read to the buffer, and read the rest
@@ -945,17 +973,6 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			}
 
 			/*
-			 * Interface capture length sanity check
-			 */
-			if (idbp->snaplen > MAXIMUM_SNAPLEN) {
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "invalid interface capture length %u, "
-				    "bigger than maximum of %u",
-				    idbp->snaplen, MAXIMUM_SNAPLEN);
-				goto fail;
-			}
-
-			/*
 			 * Try to add this interface.
 			 */
 			if (!add_interface(p, &cursor, errbuf))
@@ -986,8 +1003,27 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 done:
 	p->tzoff = 0;	/* XXX - not used in pcap */
 	p->snapshot = idbp->snaplen;
+	if (p->snapshot <= 0) {
+		/*
+		 * Bogus snapshot length; use the maximum for this
+		 * link-layer type as a fallback.
+		 *
+		 * XXX - the only reason why snapshot is signed is
+		 * that pcap_snapshot() returns an int, not an
+		 * unsigned int.
+		 */
+		p->snapshot = max_snaplen_for_dlt(idbp->linktype);
+	}
 	p->linktype = linktype_to_dlt(idbp->linktype);
 	p->linktype_ext = 0;
+
+	/*
+	 * If the maximum block size for a packet with the maximum
+	 * snapshot length for this DLT_ is bigger than the current
+	 * maximum block size, increase the maximum.
+	 */
+	if (MAX_BLOCKSIZE(max_snaplen_for_dlt(p->linktype)) > ps->max_blocksize)
+		ps->max_blocksize = MAX_BLOCKSIZE(max_snaplen_for_dlt(p->linktype));
 
 	p->next_packet_op = pcap_ng_next_packet;
 	p->cleanup_op = pcap_ng_cleanup;
@@ -1029,7 +1065,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	struct interface_description_block *idbp;
 	struct section_header_block *shbp;
 	FILE *fp = p->rfile;
-	u_int64_t t, sec, frac;
+	uint64_t t, sec, frac;
 
 	/*
 	 * Look for an Enhanced Packet Block, a Simple Packet Block,
@@ -1065,13 +1101,13 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				interface_id = SWAPLONG(epbp->interface_id);
 				hdr->caplen = SWAPLONG(epbp->caplen);
 				hdr->len = SWAPLONG(epbp->len);
-				t = ((u_int64_t)SWAPLONG(epbp->timestamp_high)) << 32 |
+				t = ((uint64_t)SWAPLONG(epbp->timestamp_high)) << 32 |
 				    SWAPLONG(epbp->timestamp_low);
 			} else {
 				interface_id = epbp->interface_id;
 				hdr->caplen = epbp->caplen;
 				hdr->len = epbp->len;
-				t = ((u_int64_t)epbp->timestamp_high) << 32 |
+				t = ((uint64_t)epbp->timestamp_high) << 32 |
 				    epbp->timestamp_low;
 			}
 			goto found;
@@ -1107,7 +1143,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * and the packet length.
 			 */
 			hdr->caplen = hdr->len;
-			if (hdr->caplen > p->snapshot)
+			if (hdr->caplen > (bpf_u_int32)p->snapshot)
 				hdr->caplen = p->snapshot;
 			t = 0;	/* no time stamps */
 			goto found;
@@ -1130,13 +1166,13 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				interface_id = SWAPSHORT(pbp->interface_id);
 				hdr->caplen = SWAPLONG(pbp->caplen);
 				hdr->len = SWAPLONG(pbp->len);
-				t = ((u_int64_t)SWAPLONG(pbp->timestamp_high)) << 32 |
+				t = ((uint64_t)SWAPLONG(pbp->timestamp_high)) << 32 |
 				    SWAPLONG(pbp->timestamp_low);
 			} else {
 				interface_id = pbp->interface_id;
 				hdr->caplen = pbp->caplen;
 				hdr->len = pbp->len;
-				t = ((u_int64_t)pbp->timestamp_high) << 32 |
+				t = ((uint64_t)pbp->timestamp_high) << 32 |
 				    pbp->timestamp_low;
 			}
 			goto found;
@@ -1173,7 +1209,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    idbp->linktype);
 				return (-1);
 			}
-			if (p->snapshot != idbp->snaplen) {
+			if ((bpf_u_int32)p->snapshot != idbp->snaplen) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the type of the first interface",
 				    idbp->snaplen);
@@ -1281,6 +1317,13 @@ found:
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "a packet arrived on interface %u, but there's no Interface Description Block for that interface",
 		    interface_id);
+		return (-1);
+	}
+
+	if (hdr->caplen > (bpf_u_int32)p->snapshot) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "invalid packet capture length %u, bigger than "
+		    "snaplen of %d", hdr->caplen, p->snapshot);
 		return (-1);
 	}
 
@@ -1392,8 +1435,23 @@ found:
 		frac /= ps->ifaces[interface_id].tsresol;
 		break;
 	}
-	hdr->ts.tv_sec = sec;
-	hdr->ts.tv_usec = frac;
+#ifdef _WIN32
+	/*
+	 * tv_sec and tv_used in the Windows struct timeval are both
+	 * longs.
+	 */
+	hdr->ts.tv_sec = (long)sec;
+	hdr->ts.tv_usec = (long)frac;
+#else
+	/*
+	 * tv_sec in the UN*X struct timeval is a time_t; tv_usec is
+	 * suseconds_t in UN*Xes that work the way the current Single
+	 * UNIX Standard specify - but not all older UN*Xes necessarily
+	 * support that type, so just cast to int.
+	 */
+	hdr->ts.tv_sec = (time_t)sec;
+	hdr->ts.tv_usec = (int)frac;
+#endif
 
 	/*
 	 * Get a pointer to the packet data.

@@ -1,10 +1,10 @@
-/* config.h.in.  Generated from configure.in by autoheader.  */
+/* config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if arpa/inet.h declares `ether_hostton' */
+#undef ARPA_INET_H_DECLARES_ETHER_HOSTTON
 
 /* Enable optimizer debugging */
 #undef BDEBUG
-
-/* define if you have a cloning BPF device */
-#undef HAVE_CLONING_BPF
 
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
@@ -15,18 +15,14 @@
 /* define if you have dag_get_stream_erf_types() */
 #undef HAVE_DAG_GET_STREAM_ERF_TYPES
 
-/* define if you have streams capable DAG API */
-#undef HAVE_DAG_STREAMS_API
+/* define if you have large streams capable DAG API */
+#undef HAVE_DAG_LARGE_STREAMS_API
 
 /* define if you have vdag_set_device_info() */
 #undef HAVE_DAG_VDAG
 
-/* Define to 1 if you have the declaration of `ether_hostton', and to 0 if you
-   don't. */
+/* Define to 1 if you have the declaration of `ether_hostton' */
 #undef HAVE_DECL_ETHER_HOSTTON
-
-/* define if you have a /dev/dlpi */
-#undef HAVE_DEV_DLPI
 
 /* if passive_req_t primitive exists */
 #undef HAVE_DLPI_PASSIVE
@@ -79,20 +75,17 @@
 /* Define to 1 if you have the <linux/if_bonding.h> header file. */
 #undef HAVE_LINUX_IF_BONDING_H
 
-/* Define to 1 if you have the <linux/if_packet.h> header file. */
-#undef HAVE_LINUX_IF_PACKET_H
-
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #undef HAVE_LINUX_NET_TSTAMP_H
+
+/* Define to 1 if you have the <linux/socket.h> header file. */
+#undef HAVE_LINUX_SOCKET_H
 
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #undef HAVE_LINUX_SOCKIOS_H
 
 /* if tp_vlan_tci exists */
 #undef HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
-
-/* Define to 1 if you have the <linux/types.h> header file. */
-#undef HAVE_LINUX_TYPES_H
 
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #undef HAVE_LINUX_USBDEVICE_FS_H
@@ -103,29 +96,38 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Define to 1 if you have the <netinet/ether.h> header file. */
-#undef HAVE_NETINET_ETHER_H
-
-/* Define to 1 if you have the <netinet/if_ether.h> header file. */
-#undef HAVE_NETINET_IF_ETHER_H
-
-/* Define to 1 if you have the <netpacket/if_packet.h> header file. */
-#undef HAVE_NETPACKET_IF_PACKET_H
-
 /* Define to 1 if you have the <netpacket/packet.h> header file. */
 #undef HAVE_NETPACKET_PACKET_H
+
+/* Define to 1 if you have the <net/bpf.h> header file. */
+#undef HAVE_NET_BPF_H
+
+/* Define to 1 if you have the <net/enet.h> header file. */
+#undef HAVE_NET_ENET_H
 
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #undef HAVE_NET_IF_MEDIA_H
 
+/* Define to 1 if you have the <net/nit.h> header file. */
+#undef HAVE_NET_NIT_H
+
+/* Define to 1 if you have the <net/pfilt.h> header file. */
+#undef HAVE_NET_PFILT_H
+
 /* Define to 1 if you have the <net/pfvar.h> header file. */
 #undef HAVE_NET_PFVAR_H
+
+/* Define to 1 if you have the <net/raw.h> header file. */
+#undef HAVE_NET_RAW_H
 
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #undef HAVE_OS_PROTO_H
 
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
+
+/* Define to 1 if remote packet capture is to be supported */
+#undef HAVE_REMOTE
 
 /* define if you have the Septel API */
 #undef HAVE_SEPTEL_API
@@ -163,8 +165,14 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the `strlcat' function. */
+#undef HAVE_STRLCAT
+
 /* Define to 1 if you have the `strlcpy' function. */
 #undef HAVE_STRLCPY
+
+/* Define to 1 if you have the `strtok_r' function. */
+#undef HAVE_STRTOK_R
 
 /* Define to 1 if the system has the type `struct BPF_TIMEVAL'. */
 #undef HAVE_STRUCT_BPF_TIMEVAL
@@ -172,20 +180,20 @@
 /* Define to 1 if the system has the type `struct ether_addr'. */
 #undef HAVE_STRUCT_ETHER_ADDR
 
-/* Define to 1 if you have the <sys/bitypes.h> header file. */
-#undef HAVE_SYS_BITYPES_H
-
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
 #undef HAVE_SYS_BUFMOD_H
 
 /* Define to 1 if you have the <sys/dlpi_ext.h> header file. */
 #undef HAVE_SYS_DLPI_EXT_H
 
+/* Define to 1 if you have the <sys/dlpi.h> header file. */
+#undef HAVE_SYS_DLPI_H
+
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #undef HAVE_SYS_IOCCOM_H
 
-/* Define to 1 if you have the <sys/select.h> header file. */
-#undef HAVE_SYS_SELECT_H
+/* Define to 1 if you have the <sys/net/nit.h> header file. */
+#undef HAVE_SYS_NET_NIT_H
 
 /* Define to 1 if you have the <sys/sockio.h> header file. */
 #undef HAVE_SYS_SOCKIO_H
@@ -208,14 +216,8 @@
 /* if struct usbdevfs_ctrltransfer has bRequestType */
 #undef HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 
-/* define if version.h is generated in the build procedure */
-#undef HAVE_VERSION_H
-
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
-
-/* define if the system supports zerocopy BPF */
-#undef HAVE_ZEROCOPY_BPF
 
 /* define if your compiler has __attribute__ */
 #undef HAVE___ATTRIBUTE__
@@ -234,6 +236,9 @@
 
 /* Define to 1 if netinet/if_ether.h declares `ether_hostton' */
 #undef NETINET_IF_ETHER_H_DECLARES_ETHER_HOSTTON
+
+/* Define to 1 if net/ethernet.h declares `ether_hostton' */
+#undef NET_ETHERNET_H_DECLARES_ETHER_HOSTTON
 
 /* do not use protochain */
 #undef NO_PROTOCHAIN
@@ -256,20 +261,11 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
-/* /dev/dlpi directory */
-#undef PCAP_DEV_PREFIX
-
 /* target host supports Bluetooth sniffing */
 #undef PCAP_SUPPORT_BT
 
 /* target host supports Bluetooth Monitor */
 #undef PCAP_SUPPORT_BT_MONITOR
-
-/* target host supports CAN sniffing */
-#undef PCAP_SUPPORT_CAN
-
-/* target host supports canusb */
-#undef PCAP_SUPPORT_CANUSB
 
 /* support D-Bus sniffing */
 #undef PCAP_SUPPORT_DBUS
@@ -277,8 +273,14 @@
 /* target host supports netfilter sniffing */
 #undef PCAP_SUPPORT_NETFILTER
 
+/* target host supports netmap */
+#undef PCAP_SUPPORT_NETMAP
+
 /* use Linux packet ring capture if available */
 #undef PCAP_SUPPORT_PACKET_RING
+
+/* target host supports RDMA sniffing */
+#undef PCAP_SUPPORT_RDMASNIFF
 
 /* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB
@@ -291,6 +293,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define to 1 if sys/ethernet.h declares `ether_hostton' */
+#undef SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON
 
 /* Enable parser debugging */
 #undef YYDEBUG
@@ -316,38 +321,11 @@
 /* define on AIX to get certain functions */
 #undef _SUN
 
-/* define if your compiler allows __attribute__((format)) without a warning */
-#undef __ATTRIBUTE___FORMAT_OK
-
 /* to handle Ultrix compilers that don't support const in prototypes */
 #undef const
 
 /* Define as token for inline if inlining supported */
 #undef inline
 
-/* Define to `short' if int16_t not defined. */
-#undef int16_t
-
-/* Define to `int' if int32_t not defined. */
-#undef int32_t
-
-/* Define to `long long' if int64_t not defined. */
-#undef int64_t
-
-/* Define to `signed char' if int8_t not defined. */
-#undef int8_t
-
 /* on sinix */
 #undef sinix
-
-/* Define to `unsigned short' if u_int16_t not defined. */
-#undef u_int16_t
-
-/* Define to `unsigned int' if u_int32_t not defined. */
-#undef u_int32_t
-
-/* Define to `unsigned long long' if u_int64_t not defined. */
-#undef u_int64_t
-
-/* Define to `unsigned char' if u_int8_t not defined. */
-#undef u_int8_t

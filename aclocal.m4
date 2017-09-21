@@ -102,6 +102,13 @@ AC_DEFUN(AC_LBL_C_INIT,
 	    # -Werror forces warnings to be errors.
 	    #
 	    ac_lbl_cc_force_warning_errors=-Werror
+
+	    #
+	    # Try to have the compiler default to hiding symbols,
+	    # so that only symbols explicitly exported with
+	    # PCAP_API will be visible outside (shared) libraries.
+	    #
+	    AC_LBL_CHECK_COMPILER_OPT($1, -fvisibility=hidden)
     else
 	    $2="$$2 -I/usr/local/include"
 	    LDFLAGS="$LDFLAGS -L/usr/local/lib"
@@ -114,6 +121,13 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # of which use -Werror to force warnings to be errors.
 		    #
 		    ac_lbl_cc_force_warning_errors=-Werror
+
+		    #
+		    # Try to have the compiler default to hiding symbols,
+		    # so that only symbols explicitly exported with
+		    # PCAP_API will be visible outside (shared) libraries.
+		    #
+		    AC_LBL_CHECK_COMPILER_OPT($1, -fvisibility=hidden)
 		    ;;
 
 	    hpux*)
@@ -188,6 +202,13 @@ AC_DEFUN(AC_LBL_C_INIT,
 		    # warnings to be treated as errors.
 		    #
 		    ac_lbl_cc_force_warning_errors=-errwarn
+
+		    #
+		    # Try to have the compiler default to hiding symbols,
+		    # so that only symbols explicitly exported with
+		    # PCAP_API will be visible outside (shared) libraries.
+		    #
+		    AC_LBL_CHECK_COMPILER_OPT($1, -xldscope=hidden)
 		    ;;
 
 	    ultrix*)
@@ -905,9 +926,12 @@ AC_DEFUN(AC_LBL_DEVEL,
 	    if test "$ac_lbl_cc_dont_try_gcc_dashW" != yes; then
 		    AC_LBL_CHECK_UNKNOWN_WARNING_OPTION_ERROR()
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wall)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wsign-compare)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-prototypes)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wstrict-prototypes)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshadow)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wdeclaration-after-statement)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wused-but-marked-unused)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #
@@ -1116,38 +1140,6 @@ else
   V_DEFS="$V_DEFS -D_U_=\"\""
 fi
 AC_MSG_RESULT($ac_cv___attribute___unused)
-])
-
-dnl
-dnl Test whether __attribute__((format)) can be used without warnings
-dnl
-
-AC_DEFUN(AC_C___ATTRIBUTE___FORMAT, [
-AC_MSG_CHECKING([whether __attribute__((format)) can be used without warnings])
-AC_CACHE_VAL(ac_cv___attribute___format, [
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <stdlib.h>
-
-extern int foo(const char *fmt, ...)
-		  __attribute__ ((format (printf, 1, 2)));
-
-int
-main(int argc, char **argv)
-{
-  foo("%s", "test");
-}
-  ]])],
-ac_cv___attribute___format=yes,
-ac_cv___attribute___format=no)])
-CFLAGS="$save_CFLAGS"
-if test "$ac_cv___attribute___format" = "yes"; then
-  AC_DEFINE(__ATTRIBUTE___FORMAT_OK, 1,
-    [define if your compiler allows __attribute__((format)) without a warning])
-fi
-AC_MSG_RESULT($ac_cv___attribute___format)
 ])
 
 dnl

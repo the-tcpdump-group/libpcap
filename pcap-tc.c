@@ -30,7 +30,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #endif
 
 #include <pcap.h>
@@ -120,8 +120,8 @@ typedef struct _TC_FUNCTIONS
 
 static pcap_if_t* TcCreatePcapIfFromPort(TC_PORT port);
 static int TcSetDatalink(pcap_t *p, int dlt);
-static int TcGetNonBlock(pcap_t *p, char *errbuf);
-static int TcSetNonBlock(pcap_t *p, int nonblock, char *errbuf);
+static int TcGetNonBlock(pcap_t *p);
+static int TcSetNonBlock(pcap_t *p, int nonblock);
 static void TcCleanup(pcap_t *p);
 static int TcInject(pcap_t *p, const void *buf, size_t size);
 static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user);
@@ -133,8 +133,8 @@ static int TcSetBuff(pcap_t *p, int dim);
 static int TcSetMode(pcap_t *p, int mode);
 static int TcSetMinToCopy(pcap_t *p, int size);
 static HANDLE TcGetReceiveWaitHandle(pcap_t *p);
-static int TcOidGetRequest(pcap_t *p, bpf_u_int32 oid, void *data, size_t len);
-static int TcOidSetRequest(pcap_t *p, bpf_u_int32 oid, const void *data, size_t len);
+static int TcOidGetRequest(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp);
+static int TcOidSetRequest(pcap_t *p, bpf_u_int32 oid, const void *data, size_t *lenp);
 static u_int TcSendqueueTransmit(pcap_t *p, pcap_send_queue *queue, int sync);
 static int TcSetUserBuffer(pcap_t *p, int size);
 static int TcLiveDump(pcap_t *p, char *filename, int maxsize, int maxpacks);
@@ -433,7 +433,7 @@ struct pcap_tc {
 };
 
 int
-TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
+TcFindAllDevs(pcap_if_list_t *devlist, char *errbuf)
 {
 	TC_API_LOAD_STATUS loadStatus;
 	ULONG numPorts;
@@ -476,13 +476,15 @@ TcFindAllDevs(pcap_if_t **alldevsp, char *errbuf)
 				/*
 				 * append it at the end
 				 */
-				if (*alldevsp == NULL)
+				if (devlistp->beginning == NULL)
 				{
-					*alldevsp = dev;
+					devlistp->beginning = dev;
 				}
 				else
 				{
-					for(cursor = *alldevsp; cursor->next != NULL; cursor = cursor->next);
+					for (cursor = devlistp->beginning;
+					    cursor->next != NULL;
+					    cursor = cursor->next);
 					cursor->next = dev;
 				}
 			}
@@ -570,6 +572,17 @@ TcActivate(pcap_t *p)
 	}
 
 	/*
+	 * Turn a negative snapshot value (invalid), a snapshot value of
+	 * 0 (unspecified), or a value bigger than the normal maximum
+	 * value, into the maximum allowed value.
+	 *
+	 * If some application really *needs* a bigger snapshot
+	 * length, we should just increase MAXIMUM_SNAPLEN.
+	 */
+	if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
+		p->snapshot = MAXIMUM_SNAPLEN;
+
+	/*
 	 * Initialize the PPI fixed fields
 	 */
 	pPpiHeader = (PPPI_HEADER)pt->PpiPacket;
@@ -584,7 +597,7 @@ TcActivate(pcap_t *p)
 	pPpiHeader->Dot3FieldHeader.PfhLength = sizeof(PPI_FIELD_802_3_EXTENSION);
 	pPpiHeader->Dot3FieldHeader.PfhType = PPI_FIELD_TYPE_802_3_EXTENSION;
 
-	status = g_TcFunctions.InstanceOpenByName(p->opt.source, &pt->TcInstance);
+	status = g_TcFunctions.InstanceOpenByName(p->opt.device, &pt->TcInstance);
 
 	if (status != TC_SUCCESS)
 	{
@@ -758,11 +771,12 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 	/* OK, it's probably ours. */
 	*is_ours = 1;
 
-	p = pcap_create_common(device, ebuf, sizeof (struct pcap_tc));
+	p = pcap_create_common(ebuf, sizeof (struct pcap_tc));
 	if (p == NULL)
 		return NULL;
 
 	p->activate_op = TcActivate;
+	p->setnonblock_op = TcSetNonBlock; /* not supported */
 	return p;
 }
 
@@ -774,20 +788,16 @@ static int TcSetDatalink(pcap_t *p, int dlt)
 	return 0;
 }
 
-static int TcGetNonBlock(pcap_t *p, char *errbuf)
+static int TcGetNonBlock(pcap_t *p)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Getting the non blocking status is not available for TurboCap ports");
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Getting the non blocking status is not available for TurboCap ports");
 		return -1;
 
 }
-static int TcSetNonBlock(pcap_t *p, int nonblock, char *errbuf)
+static int TcSetNonBlock(pcap_t *p, int nonblock)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Setting the non blocking status is not available for TurboCap ports");
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Setting the non blocking status is not available for TurboCap ports");
 		return -1;
 }
@@ -1166,7 +1176,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 		p->stat.ps_drop = 0xFFFFFFFF;
 	}
 
-#ifdef HAVE_REMOTE
+#if defined(_WIN32) && defined(HAVE_REMOTE)
 	p->stat.ps_capt = pt->TcAcceptedCount;
 #endif
 
@@ -1228,7 +1238,7 @@ TcGetReceiveWaitHandle(pcap_t *p)
 }
 
 static int
-TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t len _U_)
+TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a TurboCap device");
@@ -1237,7 +1247,7 @@ TcOidGetRequest(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_, size_t len _U_)
 
 static int
 TcOidSetRequest(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
-    size_t len _U_)
+    size_t *lenp _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a TurboCap device");

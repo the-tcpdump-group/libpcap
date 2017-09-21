@@ -40,19 +40,9 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-/*
- * Make sure Packet32.h doesn't define BPF structures that we've
- * probably already defined as a result of including <pcap/pcap.h>.
- */
-#define BPF_MAJOR_VERSION
-#include <Packet32.h>
-extern CRITICAL_SECTION g_PcapCompileCriticalSection;
-#endif /* _WIN32 */
-
 #ifdef MSDOS
-#include <fcntl.h>
-#include <io.h>
+  #include <fcntl.h>
+  #include <io.h>
 #endif
 
 #if (defined(_MSC_VER) && (_MSC_VER <= 1200)) /* we are compiling with Visual Studio 6, that doesn't support the LL suffix*/
@@ -76,14 +66,14 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
  * Swap byte ordering of unsigned long long timestamp on a big endian
  * machine.
  */
-#define SWAPLL(ull)  ((ull & 0xff00000000000000LL) >> 56) | \
-                      ((ull & 0x00ff000000000000LL) >> 40) | \
-                      ((ull & 0x0000ff0000000000LL) >> 24) | \
-                      ((ull & 0x000000ff00000000LL) >> 8)  | \
-                      ((ull & 0x00000000ff000000LL) << 8)  | \
-                      ((ull & 0x0000000000ff0000LL) << 24) | \
-                      ((ull & 0x000000000000ff00LL) << 40) | \
-                      ((ull & 0x00000000000000ffLL) << 56)
+#define SWAPLL(ull)  ((ull & 0xff00000000000000ULL) >> 56) | \
+                      ((ull & 0x00ff000000000000ULL) >> 40) | \
+                      ((ull & 0x0000ff0000000000ULL) >> 24) | \
+                      ((ull & 0x000000ff00000000ULL) >> 8)  | \
+                      ((ull & 0x00000000ff000000ULL) << 8)  | \
+                      ((ull & 0x0000000000ff0000ULL) << 24) | \
+                      ((ull & 0x000000000000ff00ULL) << 40) | \
+                      ((ull & 0x00000000000000ffULL) << 56)
 
 #endif /* _MSC_VER */
 
@@ -111,25 +101,38 @@ extern CRITICAL_SECTION g_PcapCompileCriticalSection;
 #define MAXIMUM_SNAPLEN		262144
 
 struct pcap_opt {
-	char	*source;
+	char	*device;
 	int	timeout;	/* timeout for buffering */
-	int	buffer_size;
+	u_int	buffer_size;
 	int	promisc;
 	int	rfmon;		/* monitor mode */
 	int	immediate;	/* immediate mode - deliver packets as soon as they arrive */
+	int	nonblock;	/* non-blocking mode - don't wait for packets to be delivered, return "no packets available" */
 	int	tstamp_type;
 	int	tstamp_precision;
+
+	/*
+	 * Platform-dependent options.
+	 */
+#ifdef __linux__
+	int	protocol;	/* protocol to use when creating PF_PACKET socket */
+#endif
+#ifdef _WIN32
+	int	nocapture_local;/* disable NPF loopback */
+#endif
 };
 
 typedef int	(*activate_op_t)(pcap_t *);
 typedef int	(*can_set_rfmon_op_t)(pcap_t *);
 typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
+typedef int	(*next_packet_op_t)(pcap_t *, struct pcap_pkthdr *, u_char **);
 typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
+typedef void	(*save_current_filter_op_t)(pcap_t *, const char *);
 typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
 typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
 typedef int	(*set_datalink_op_t)(pcap_t *, int);
-typedef int	(*getnonblock_op_t)(pcap_t *, char *);
-typedef int	(*setnonblock_op_t)(pcap_t *, int, char *);
+typedef int	(*getnonblock_op_t)(pcap_t *);
+typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
@@ -137,8 +140,8 @@ typedef int	(*setbuff_op_t)(pcap_t *, int);
 typedef int	(*setmode_op_t)(pcap_t *, int);
 typedef int	(*setmintocopy_op_t)(pcap_t *, int);
 typedef HANDLE	(*getevent_op_t)(pcap_t *);
-typedef int	(*oid_get_request_op_t)(pcap_t *, bpf_u_int32, void *, size_t);
-typedef int	(*oid_set_request_op_t)(pcap_t *, bpf_u_int32, const void *, size_t);
+typedef int	(*oid_get_request_op_t)(pcap_t *, bpf_u_int32, void *, size_t *);
+typedef int	(*oid_set_request_op_t)(pcap_t *, bpf_u_int32, const void *, size_t *);
 typedef u_int	(*sendqueue_transmit_op_t)(pcap_t *, pcap_send_queue *, int);
 typedef int	(*setuserbuffer_op_t)(pcap_t *, int);
 typedef int	(*live_dump_op_t)(pcap_t *, char *, int, int);
@@ -158,12 +161,12 @@ struct pcap {
 	read_op_t read_op;
 
 	/*
-	 * Method to call to read packets from a savefile.
+	 * Method to call to read the next packet from a savefile.
 	 */
-	int (*next_packet_op)(pcap_t *, struct pcap_pkthdr *, u_char **);
+	next_packet_op_t next_packet_op;
 
 #ifdef _WIN32
-	ADAPTER *adapter;
+	HANDLE handle;
 #else
 	int fd;
 	int selectable_fd;
@@ -172,7 +175,7 @@ struct pcap {
 	/*
 	 * Read buffer.
 	 */
-	int bufsize;
+	u_int bufsize;
 	void *buffer;
 	u_char *bp;
 	int cc;
@@ -181,9 +184,13 @@ struct pcap {
 
 	void *priv;		/* private data for methods */
 
+#ifdef HAVE_REMOTE
+	struct pcap_samp rmt_samp;	/* parameters related to the sampling process. */
+#endif
+
 	int swapped;
 	FILE *rfile;		/* null if live capture, non-null if savefile */
-	int fddipad;
+	u_int fddipad;
 	struct pcap *next;	/* list of open pcaps that need stuff cleared on close */
 
 	/*
@@ -243,6 +250,7 @@ struct pcap {
 	activate_op_t activate_op;
 	can_set_rfmon_op_t can_set_rfmon_op;
 	inject_op_t inject_op;
+	save_current_filter_op_t save_current_filter_op;
 	setfilter_op_t setfilter_op;
 	setdirection_op_t setdirection_op;
 	set_datalink_op_t set_datalink_op;
@@ -361,72 +369,15 @@ struct oneshot_userdata {
 	pcap_t *pd;
 };
 
-int	yylex(void);
-
 #ifndef min
 #define min(a, b) ((a) > (b) ? (b) : (a))
 #endif
 
-/* XXX should these be in pcap.h? */
 int	pcap_offline_read(pcap_t *, int, pcap_handler, u_char *);
-int	pcap_read(pcap_t *, int cnt, pcap_handler, u_char *);
-
-#ifndef HAVE_STRLCPY
-#define strlcpy(x, y, z) \
-	(strncpy((x), (y), (z)), \
-	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
-	 strlen((y)))
-#endif
 
 #include <stdarg.h>
 
-/*
- * For flagging arguments as format strings in MSVC.
- */
-#if _MSC_VER >= 1400
- #include <sal.h>
- #if _MSC_VER > 1400
-  #define FORMAT_STRING(p) _Printf_format_string_ p
- #else
-  #define FORMAT_STRING(p) __format_string p
- #endif
-#else
- #define FORMAT_STRING(p) p
-#endif
-
-/*
- * On Windows, snprintf(), with that name and with C99 behavior - i.e.,
- * guaranteeing that the formatted string is null-terminated - didn't
- * appear until Visual Studio 2015.  Prior to that, the C runtime had
- * only _snprintf(), which *doesn't* guarantee that the string is
- * null-terminated if it is truncated due to the buffer being too
- * small.  We therefore can't just define snprintf to be _snprintf
- * and define vsnprintf to be _vsnprintf, as we're relying on null-
- * termination of strings in all cases.
- *
- * We also want to allow this to be built with versions of Visual Studio
- * prior to VS 2015, so we can't rely on snprintf() being present.
- *
- * And we want to make sure that, if we support plugins in the future,
- * a routine with C99 snprintf() behavior will be available to them.
- * We also don't want it to collide with the C library snprintf() if
- * there is one.
- *
- * So we make pcap_snprintf() and pcap_vsnprintf() available, either by
- * #defining them to be snprintf or vsnprintf, respectively, or by
- * defining our own versions and exporting them.
- */
-#ifdef HAVE_SNPRINTF
-#define pcap_snprintf snprintf
-#else
-extern int pcap_snprintf(char *, size_t, FORMAT_STRING(const char *), ...);
-#endif
-
-#ifdef HAVE_VSNPRINTF
-#define pcap_vsnprintf vsnprintf
-#else
-extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
-#endif
+#include "portability.h"
 
 /*
  * Does the packet count argument to a module's read routine say
@@ -438,8 +389,8 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
  * Routines that most pcap implementations can use for non-blocking mode.
  */
 #if !defined(_WIN32) && !defined(MSDOS)
-int	pcap_getnonblock_fd(pcap_t *, char *);
-int	pcap_setnonblock_fd(pcap_t *p, int, char *);
+int	pcap_getnonblock_fd(pcap_t *);
+int	pcap_setnonblock_fd(pcap_t *p, int);
 #endif
 
 /*
@@ -454,7 +405,7 @@ int	pcap_setnonblock_fd(pcap_t *p, int, char *);
  * by pcap_create routines.
  */
 pcap_t	*pcap_create_interface(const char *, char *);
-pcap_t	*pcap_create_common(const char *, char *, size_t);
+pcap_t	*pcap_create_common(char *, size_t);
 int	pcap_do_addexit(pcap_t *);
 void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);
@@ -464,27 +415,43 @@ int	pcap_check_activated(pcap_t *);
 /*
  * Internal interfaces for "pcap_findalldevs()".
  *
- * "pcap_findalldevs_interfaces()" finds interfaces using the
- * "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
+ * A pcap_if_list_t * is a reference to a list of devices.
  *
- * "pcap_platform_finddevs()" is a platform-dependent routine to
- * add devices not found by the "standard" mechanisms.
+ * "pcap_platform_finddevs()" is the platform-dependent routine to
+ * find local network interfaces.
  *
- * "pcap_add_if()" adds an interface to the list of interfaces, for
- * use by various "find interfaces" routines.
+ * "pcap_findalldevs_interfaces()" is a helper to find those interfaces
+ * using the "standard" mechanisms (SIOCGIFCONF, "getifaddrs()", etc.).
+ *
+ * "add_dev()" adds an entry to a pcap_if_list_t.
+ *
+ * "find_dev()" tries to find a device, by name, in a pcap_if_list_t.
+ *
+ * "find_or_add_dev()" checks whether a device is already in a pcap_if_list_t
+ * and, if not, adds an entry for it.
  */
-int	pcap_findalldevs_interfaces(pcap_if_t **, char *);
-int	pcap_platform_finddevs(pcap_if_t **, char *);
-int	add_addr_to_iflist(pcap_if_t **, const char *, u_int, struct sockaddr *,
-	    size_t, struct sockaddr *, size_t, struct sockaddr *, size_t,
-	    struct sockaddr *, size_t, char *);
+struct pcap_if_list;
+typedef struct pcap_if_list pcap_if_list_t;
+int	pcap_platform_finddevs(pcap_if_list_t *, char *);
+#if !defined(_WIN32) && !defined(MSDOS)
+int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
+	    int (*)(const char *));
+#endif
+pcap_if_t *find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
+	    const char *, char *);
+pcap_if_t *find_dev(pcap_if_list_t *, const char *);
+pcap_if_t *add_dev(pcap_if_list_t *, const char *, bpf_u_int32, const char *,
+	    char *);
 int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
-int	pcap_add_if(pcap_if_t **, const char *, u_int, const char *, char *);
-struct sockaddr *dup_sockaddr(struct sockaddr *, size_t);
-int	add_or_find_if(pcap_if_t **, pcap_if_t **, const char *, u_int,
-	    const char *, char *);
+#ifndef _WIN32
+pcap_if_t *find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
+	    char *);
+int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t,
+	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
+#endif
 
 /*
  * Internal interfaces for "pcap_open_offline()".

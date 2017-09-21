@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2009 Felix Obenhuber
+ * Copyright (c) 2002 - 2005 NetGroup, Politecnico di Torino (Italy)
+ * Copyright (c) 2005 - 2009 CACE Technologies, Inc. Davis (California)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,9 +12,9 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote
- * products derived from this software without specific prior written
- * permission.
+ * 3. Neither the name of the Politecnico di Torino nor the names of its
+ * contributors may be used to endorse or promote products derived from
+ * this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -26,12 +27,32 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
+#ifndef pcap_types_h
+#define pcap_types_h
 
 /*
- * Prototypes for SocketCAN related functions
+ * Get u_int defined, by hook or by crook.
  */
-pcap_t* canusb_create(const char *device, char *ebuf, int *is_ours);
-int canusb_findalldevs(pcap_if_t **pdevlist, char* errbuf);
+#ifdef _WIN32
+  /*
+   * Avoids a compiler warning in case this was already defined
+   * (someone defined _WINSOCKAPI_ when including 'windows.h', in order
+   * to prevent it from including 'winsock.h')
+   */
+  #ifdef _WINSOCKAPI_
+    #undef _WINSOCKAPI_
+  #endif
 
+  /*
+   * This defines u_int.
+   */
+  #include <winsock2.h>
+#else /* _WIN32 */
+  /*
+   * This defines u_int, among other types.
+   */
+  #include <sys/types.h>
+#endif
+
+#endif /* pcap_types_h */
