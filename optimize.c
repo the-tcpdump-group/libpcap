@@ -51,15 +51,26 @@ extern int _w32_ffs (int mask);
 #define ffs _w32_ffs
 #endif
 
-/*
- * So is the check for _MSC_VER done because MinGW has this?
- */
-#if defined(_WIN32) && defined (_MSC_VER)
+#if defined(_WIN32)
 /*
  * ffs -- vax ffs instruction
- *
- * XXX - with versions of VS that have it, use _BitScanForward()?
  */
+#if defined(__MINGW32__)
+#define ffs __builtin_ffs
+#elif defined(_MSC_VER) && (_MSC_VER >= 1400) /* MSVC 8.0 (VS 2005) or later */
+#include <intrin.h>
+#pragma intrinsic(_BitScanForward)
+static __forceinline int
+ffs (int x)
+{
+	unsigned long i;
+
+	if (_BitScanForward(&i, x) != 0)
+	return i + 1;
+
+	return 0;
+}
+#else
 static int
 ffs(int mask)
 {
@@ -72,6 +83,7 @@ ffs(int mask)
 	return(bit);
 }
 #endif
+#endif /* _WIN32 */
 
 /*
  * Represents a deleted instruction.
