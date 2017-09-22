@@ -82,7 +82,7 @@ lowest_set_bit(int mask)
 	 * Don't sign-extend mask if long is longer than int.
 	 * (It's currently not, in MSVC, even on 64-bit platforms, but....)
 	 */
-	if (_BitScanForward(&index, (unsigned int)mask) == 0)
+	if (_BitScanForward(&bit, (unsigned int)mask) == 0)
 		return -1;	/* mask is zero */
 	return (int)bit;
 }
