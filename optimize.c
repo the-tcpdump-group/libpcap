@@ -46,44 +46,89 @@
 int pcap_optimizer_debug;
 #endif
 
-#if defined(MSDOS) && !defined(__DJGPP__)
-extern int _w32_ffs (int mask);
-#define ffs _w32_ffs
-#endif
-
-#if defined(_WIN32)
 /*
- * ffs -- vax ffs instruction
+ * lowest_set_bit().
+ *
+ * Takes a 32-bit integer as an argument.
+ *
+ * If handed a non-zero value, returns the index of the lowest set bit,
+ * counting upwards fro zero.
+ *
+ * If handed zero, the results are platform- and compiler-dependent.
+ * Keep it out of the light, don't give it any water, don't feed it
+ * after midnight, and don't pass zero to it.
+ *
+ * This is the same as the count of trailing zeroes in the word.
  */
-#if defined(__MINGW32__)
-#define ffs __builtin_ffs
-#elif defined(_MSC_VER) && (_MSC_VER >= 1400) /* MSVC 8.0 (VS 2005) or later */
+#if PCAP_IS_AT_LEAST_GNUC_VERSION(3, 4)
+  /*
+   * GCC 3.4 and later; we have __builtin_ctz().
+   */
+  #define lowest_set_bit(mask) __builtin_ctz(mask)
+#elif defined(_MSC_VER) && (_MSC_VER >= 1400)
+  /*
+   * Visual Studio 2005 and later; use _BitScanForward().
+   */
 #include <intrin.h>
 #pragma intrinsic(_BitScanForward)
+
 static __forceinline int
-ffs (int x)
+lowest_set_bit(int mask)
 {
-	unsigned long i;
+	unsigned long bit;
+	unsigned char mask_is_nonzero;
 
-	if (_BitScanForward(&i, x) != 0)
-	return i + 1;
-
-	return 0;
+	/*
+	 * Don't sign-extend mask if long is longer than int.
+	 * (It's currently not, in MSVC, even on 64-bit platforms, but....)
+	 */
+	if (_BitScanForward(&index, (unsigned int)mask) == 0)
+		return -1;	/* mask is zero */
+	return (int)bit;
 }
+#elif defined(MSDOS) && defined(__DJGPP__)
+  /*
+   * MS-DOS with DJGPP, which declares ffs() in <string.h>, which
+   * we've already included.
+   */
+  #define lowest_set_bit(mask)	(ffs((mask)) - 1)
+#elif (defined(MSDOS) && defined(__WATCOMC__)) || defined(STRINGS_H_DECLARES_FFS)
+  /*
+   * MS-DOS with Watcom C, which has <strings.h> and declares ffs() there,
+   * or some other platform (UN*X conforming to a sufficient recent version
+   * of the Single UNIX Specification).
+   */
+  #include <strings.h>
+  #define lowest_set_bit(mask)	(ffs((mask)) - 1)
 #else
+/*
+ * None of the above.
+ * Use a perfect-hash-function-based function.
+ */
 static int
-ffs(int mask)
+lowest_set_bit(int mask)
 {
-	int bit;
+	unsigned int v = (unsigned int)mask;
 
-	if (mask == 0)
-		return(0);
-	for (bit = 1; !(mask & 1); bit++)
-		mask >>= 1;
-	return(bit);
+	static const int MultiplyDeBruijnBitPosition[32] = {
+		0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+		31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+	};
+
+	/*
+	 * We strip off all but the lowermost set bit (v & ~v),
+	 * and perform a minimal perfect hash on it to look up the
+	 * number of low-order zero bits in a table.
+	 *
+	 * See:
+	 *
+	 *	http://7ooo.mooo.com/text/ComputingTrailingZerosHOWTO.pdf
+	 *
+	 *	http://supertech.csail.mit.edu/papers/debruijn.pdf
+	 */
+	return (MultiplyDeBruijnBitPosition[((v & -v) * 0x077CB531U) >> 27]);
 }
 #endif
-#endif /* _WIN32 */
 
 /*
  * Represents a deleted instruction.
@@ -1381,7 +1426,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 		register bpf_u_int32 x = ep->edom[i];
 
 		while (x != 0) {
-			k = ffs(x) - 1;
+			k = lowest_set_bit(x);
 			x &=~ (1 << k);
 			k += i * BITS_PER_WORD;
 

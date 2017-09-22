@@ -196,6 +196,21 @@ set(CMAKE_EXTRA_INCLUDE_FILES unistd.h)
 check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_SOCKADDR_SA_LEN)
 
 #
+# Do we have ffs(), and is it declared in <strings.h>?
+#
+include(CheckSymbolExists)
+check_function_exists(ether_hostton HAVE_FFS)
+if(HAVE_FFS)
+    #
+    # OK, we have ffs().  Is it declared in <strings.h>?
+    #
+    # This test fails if we don't have <strings.h> or if we do
+    # but it doesn't declare ffs().
+    #
+    check_symbol_exists(ffs strings.h STRINGS_H_DECLARES_FFS)
+endif()
+
+#
 # You are in a twisty little maze of UN*Xes, all different.
 # Some might not have ether_hostton().
 # Some might have it and declare it in <net/ethernet.h>.
@@ -207,7 +222,6 @@ check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_SOCKADDR_SA_L
 #
 # Before you is a C compiler.
 #
-include(CheckSymbolExists)
 check_function_exists(ether_hostton HAVE_ETHER_HOSTTON)
 if(HAVE_ETHER_HOSTTON)
     #

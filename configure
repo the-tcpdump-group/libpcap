@@ -4791,6 +4791,41 @@ esac
 fi
 
 #
+# Do we have ffs(), and is it declared in <strings.h>?
+#
+for ac_func in ffs
+do :
+  ac_fn_c_check_func "$LINENO" "ffs" "ac_cv_func_ffs"
+if test "x$ac_cv_func_ffs" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_FFS 1
+_ACEOF
+
+fi
+done
+
+if test "$ac_cv_func_ffs" = yes; then
+	#
+	# We have ffs(); is it declared in <strings.h>?
+	#
+	# This test fails if we don't have <strings.h> or if we do
+	# but it doesn't declare ffs().
+	#
+	ac_fn_c_check_decl "$LINENO" "ffs" "ac_cv_have_decl_ffs" "
+#include <strings.h>
+
+"
+if test "x$ac_cv_have_decl_ffs" = xyes; then :
+
+
+$as_echo "#define STRINGS_H_DECLARES_FFS /**/" >>confdefs.h
+
+
+fi
+
+fi
+
+#
 # Do this before checking for ether_hostton(), as it's a
 # "gethostbyname() -ish function".
 #

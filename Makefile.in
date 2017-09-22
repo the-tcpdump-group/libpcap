@@ -104,6 +104,7 @@ PUBHDR = \
 	pcap/bpf.h \
 	pcap/bluetooth.h \
 	pcap/can_socketcan.h \
+	pcap/compiler-tests.h \
 	pcap/dlt.h \
 	pcap/funcattrs.h \
 	pcap/pcap-inttypes.h \

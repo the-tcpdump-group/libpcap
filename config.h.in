@@ -30,6 +30,9 @@
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
 
+/* Define to 1 if you have the `ffs' function. */
+#undef HAVE_FFS
+
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
@@ -293,6 +296,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define to 1 if strings.h declares `ffs' */
+#undef STRINGS_H_DECLARES_FFS
 
 /* Define to 1 if sys/ethernet.h declares `ether_hostton' */
 #undef SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON

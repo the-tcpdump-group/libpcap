@@ -35,6 +35,8 @@
 #ifndef lib_pcap_funcattrs_h
 #define lib_pcap_funcattrs_h
 
+#include <pcap/compiler-tests.h>
+
 /*
  * Attributes to apply to functions and their arguments, using various
  * compiler-specific extensions.
@@ -49,83 +51,6 @@
  * PCAP_API must be used when *declaring* data or functions
  * exported from libpcap; PCAP_API_DEF won't work on all platforms.
  */
-
-/*
- * This was introduced by Clang:
- *
- *     http://clang.llvm.org/docs/LanguageExtensions.html#has-attribute
- *
- * in some version (which version?); it has been picked up by GCC 5.0.
- */
-#ifndef __has_attribute
-  /*
-   * It's a macro, so you can check whether it's defined to check
-   * whether it's supported.
-   *
-   * If it's not, define it to always return 0, so that we move on to
-   * the fallback checks.
-   */
-  #define __has_attribute(x) 0
-#endif
-
-/*
- * Check whether this is GCC major.minor or a later release, or some
- * compiler that claims to be "just like GCC" of that version or a
- * later release.
- */
-#define PCAP_IS_AT_LEAST_GNUC_VERSION(major, minor) \
-	(defined(__GNUC__) && \
-	    (__GNUC__ > (major) || \
-	     (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor))))
-
-/*
- * Check wehether this is Sun C/SunPro C/Oracle Studio major.minor
- * or a later release.
- *
- * The version number in __SUNPRO_C is encoded in hex BCD, with the
- * uppermost hex digit being the major version number, the next
- * one or two hex digits being the minor version number, and
- * the last digit being the patch version.
- *
- * It represents the *compiler* version, not the product version;
- * see
- *
- *    https://sourceforge.net/p/predef/wiki/Compilers/
- *
- * for a partial mapping, which we assume continues for later
- * 12.x product releases.
- */
-#define PCAP_SUNPRO_VERSION_TO_BCD(major, minor) \
-	(((minor) >= 10) ? \
-	    (((major) << 12) | (((minor)/10) << 8) | (((minor)%10) << 4)) : \
-	    (((major) << 8) | ((minor) << 4)))
-#define PCAP_IS_AT_LEAST_SUNC_VERSION(major, minor) \
-	(defined(__SUNPRO_C) && \
-	    (__SUNPRO_C >= PCAP_SUNPRO_VERSION_TO_BCD((major), (minor))))
-
-/*
- * Check wehether this is IBM XL C major.minor or a later release.
- *
- * The version number in __xlC__ has the major version in the
- * upper 8 bits and the minor version in the lower 8 bits.
- */
-#define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
-	(defined(__xlC__) && __xlC__ >= (((major) << 8) | (minor)))
-
-/*
- * Check wehether this is Sun C/SunPro C/Oracle Studio major.minor
- * or a later release.
- *
- * The version number in __HP_aCC is encoded in zero-padded decimal BCD,
- * with the "A." stripped off, the uppermost two decimal digits being
- * the major version number, the next two decimal digits being the minor
- * version number, and the last two decimal digits being the patch version.
- * (Strip off the A., remove the . between the major and minor version
- * number, and add two digits of patch.)
- */
-#define PCAP_IS_AT_LEAST_HP_C_VERSION(major, minor) \
-	(defined(__HP_aCC) && \
-	    (__HP_aCC >= ((major)*10000 + (minor)*100)))
 
 #if defined(_WIN32)
   #ifdef BUILDING_PCAP
