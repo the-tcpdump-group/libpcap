@@ -945,10 +945,17 @@ if(MSVC)
     if(BUILD_SHARED_LIBS)
         set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_OPTIONS "/Zi")
     endif(BUILD_SHARED_LIBS)
-    set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}_static" COMPILE_OPTIONS "/Z7")
-else(MSVC)
+    set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_OPTIONS "/Z7")
+elseif(MINGW)
+    #
+    # For compatibility, build the shared library without the "lib" prefix on
+    # MinGW as well.
+    #
+    set_target_properties(${LIBRARY_NAME} PROPERTIES PREFIX "" OUTPUT_NAME "${LIBRARY_NAME}")
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
-endif(MSVC)
+else()
+    set_target_properties(${LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${LIBRARY_NAME}")
+endif()
 
 if(BUILD_SHARED_LIBS)
     target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
