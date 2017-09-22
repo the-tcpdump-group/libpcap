@@ -980,10 +980,10 @@ if(WIN32)
                 RUNTIME DESTINATION bin/amd64
                 LIBRARY DESTINATION lib/amd64
                 ARCHIVE DESTINATION lib/amd64)
-        if(BUILD_SHARED_LIBS)
+        if(BUILD_SHARED_LIBS AND NOT MINGW)
             install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}>
                     DESTINATION bin/amd64 OPTIONAL)
-        endif(BUILD_SHARED_LIBS)
+        endif(BUILD_SHARED_LIBS AND NOT MINGW)
     else(CMAKE_CL_64)
         #
         # Install 32-bit code, and 64-bit code not built with MSVC
@@ -994,10 +994,10 @@ if(WIN32)
                 RUNTIME DESTINATION bin
                 LIBRARY DESTINATION lib
                 ARCHIVE DESTINATION lib)
-        if(BUILD_SHARED_LIBS)
+        if(BUILD_SHARED_LIBS AND NOT MINGW)
             install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}>
                     DESTINATION bin OPTIONAL)
-        endif(BUILD_SHARED_LIBS)
+        endif(BUILD_SHARED_LIBS AND NOT MINGW)
     endif(CMAKE_CL_64)
 else(WIN32)
     install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC} DESTINATION lib)
