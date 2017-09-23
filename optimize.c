@@ -76,7 +76,6 @@ static __forceinline int
 lowest_set_bit(int mask)
 {
 	unsigned long bit;
-	unsigned char mask_is_nonzero;
 
 	/*
 	 * Don't sign-extend mask if long is longer than int.
