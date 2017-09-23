@@ -313,13 +313,9 @@ EXTRA_DIST = \
 	missing/win_snprintf.c \
 	mkdep \
 	msdos/bin2c.c \
-	msdos/common.dj \
 	msdos/makefile \
 	msdos/makefile.dj \
 	msdos/makefile.wc \
-	msdos/ndis2.c \
-	msdos/ndis2.h \
-	msdos/ndis_0.asm \
 	msdos/pkt_rx0.asm \
 	msdos/pkt_rx1.s \
 	msdos/pktdrvr.c \
@@ -376,8 +372,6 @@ EXTRA_DIST = \
 	scanner.l \
 	tests/CMakeLists.txt \
 	version.c.in \
-	Win32/Include/Gnuc.h \
-	Win32/Include/net/if.h \
 	Win32/Prj/wpcap.sln \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
