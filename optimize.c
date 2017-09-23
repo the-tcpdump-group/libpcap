@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- *  Optimization module for tcpdump intermediate representation.
+ *  Optimization module for BPF code intermediate representation.
  */
 
 #ifdef HAVE_CONFIG_H
