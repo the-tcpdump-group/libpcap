@@ -280,9 +280,6 @@ main(int argc, char **argv)
 	else
 		cmdbuf = copy_argv(&argv[optind+1]);
 
-	if (!cmdbuf)
-		error("I need a filter to work with.");
-
 	pd = pcap_open_dead(dlt, snaplen);
 	if (pd == NULL)
 		error("Can't open fake pcap_t");
@@ -295,14 +292,17 @@ main(int argc, char **argv)
 		warn("Filter doesn't pass validation");
 
 #ifdef BDEBUG
-	// replace line feed with space
-	for (cp = cmdbuf; *cp != '\0'; ++cp) {
-		if (*cp == '\r' || *cp == '\n') {
-			*cp = ' ';
+	if (cmdbuf != NULL) {
+		// replace line feed with space
+		for (cp = cmdbuf; *cp != '\0'; ++cp) {
+			if (*cp == '\r' || *cp == '\n') {
+				*cp = ' ';
+			}
 		}
-	}
-	// only show machine code if BDEBUG defined, since dflag > 3
-	printf("machine codes for filter: %s\n", cmdbuf);
+		// only show machine code if BDEBUG defined, since dflag > 3
+		printf("machine codes for filter: %s\n", cmdbuf);
+	} else
+		printf("machine codes for empty filter:\n");
 #endif
 
 	bpf_dump(&fcode, dflag);
