@@ -26,9 +26,9 @@ endif()
 ###################################################################
 
 option(INET6 "Enable IPv6" ON)
-if(MSVC)
+if(WIN32)
     option(USE_STATIC_RT "Use static Runtime" ON)
-endif(MSVC)
+endif(WIN32)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 if(WIN32)
     set(PACKET_DLL_DIR "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
@@ -94,20 +94,22 @@ else(MSVC)
     add_definitions("-D_U_=")
 endif(MSVC)
 
-if(MSVC)
-    if(USE_STATIC_RT)
-        message(STATUS "Use STATIC runtime")
-        foreach(RT_FLAG
-            CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
-            CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-            CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-            CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-            string(REGEX REPLACE "/MD" "/MT" ${RT_FLAG} "${${RT_FLAG}}")
-        endforeach(RT_FLAG)
-    else (USE_STATIC_RT)
-        message(STATUS "Use DYNAMIC runtime")
-   endif(USE_STATIC_RT)
-endif(MSVC)
+if(USE_STATIC_RT)
+    message(STATUS "Use STATIC runtime")
+        if(MSVC)
+            foreach(RT_FLAG
+                CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+                CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
+                CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+                CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+                string(REGEX REPLACE "/MD" "/MT" ${RT_FLAG} "${${RT_FLAG}}")
+            endforeach(RT_FLAG)
+        elseif(MINGW)
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
+        endif()
+else (USE_STATIC_RT)
+    message(STATUS "Use DYNAMIC runtime")
+endif(USE_STATIC_RT)
 
 ###################################################################
 #   Detect available platform features
