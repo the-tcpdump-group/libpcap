@@ -143,7 +143,7 @@ if(HAVE_NET_PFVAR_H)
 int
 main(void)
 {
-	return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
+    return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
 }
 "
         HAVE_PF_NAT_THROUGH_PF_NORDR)
@@ -399,18 +399,18 @@ if(WIN32)
     # Check whether we have packet.dll.
     #
     if(HAVE_PACKET32)
-	#
-	# We have packet.dll.
-	# Set the capture type to NPF.
-	#
-	set(PCAP_TYPE npf)
+        #
+        # We have packet.dll.
+        # Set the capture type to NPF.
+        #
+        set(PCAP_TYPE npf)
     else()
-	#
-	# We don't have any capture type we know about, so just use
-	# the null capture type, and only support reading (and writing)
-	# capture files.
-	#
-	set(PCAP_TYPE null)
+        #
+        # We don't have any capture type we know about, so just use
+        # the null capture type, and only support reading (and writing)
+        # capture files.
+        #
+        set(PCAP_TYPE null)
     endif()
 else()
     #
@@ -435,52 +435,52 @@ else()
     check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
 
     if(HAVE_NET_BPF_H)
-	#
-	# BPF.
-	# Check this before DLPI, so that we pick BPF on
-	# Solaris 11 and later.
-	#
-	set(PCAP_TYPE bpf)
+        #
+        # BPF.
+        # Check this before DLPI, so that we pick BPF on
+        # Solaris 11 and later.
+        #
+        set(PCAP_TYPE bpf)
     elseif(HAVE_NET_PFILT_H)
         #
         # DEC OSF/1, Digital UNIX, Tru64 UNIX
         #
-	set(PCAP_TYPE pf)
+        set(PCAP_TYPE pf)
     elseif(HAVE_NET_ENET_H)
-	#
-	# Stanford Enetfilter.
-	#
+        #
+        # Stanford Enetfilter.
+        #
         set(PCAP_TYPE enet)
     elseif(HAVE_NET_NIT_H)
-	#
-	# SunOS 4.x STREAMS NIT.
-	#
+        #
+        # SunOS 4.x STREAMS NIT.
+        #
         set(PCAP_TYPE snit)
     elseif(HAVE_SYS_NET_NIT_H)
-	#
-	# Pre-SunOS 4.x non-STREAMS NIT.
-	#
+        #
+        # Pre-SunOS 4.x non-STREAMS NIT.
+        #
         set(PCAP_TYPE nit)
     elseif(HAVE_LINUX_SOCKET_H)
-	#
-	# No prizes for guessing this one.
-	#
+        #
+        # No prizes for guessing this one.
+        #
         set(PCAP_TYPE linux)
     elseif(HAVE_NET_RAW_H)
-	#
-	# IRIX snoop.
-	#
+        #
+        # IRIX snoop.
+        #
         set(PCAP_TYPE snoop)
     elseif(HAVE_SYS_DLPI_H)
-	#
-	# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
-	#
+        #
+        # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
+        #
         set(PCAP_TYPE dlpi)
     else()
-	#
-	# Nothing we support.
-	#
-	set(PCAP_TYPE null)
+        #
+        # Nothing we support.
+        #
+        set(PCAP_TYPE null)
     endif()
 endif(WIN32)
 message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
@@ -524,11 +524,11 @@ elseif(PCAP_TYPE STREQUAL "dlpi")
     check_function_exists(dlpi_walk HAVE_LIBDLPI)
     cmake_pop_check_state()
     if(HAVE_LIBDLPI)
-	#
-	# XXX - add -L/lib
-	#
-	set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
-	set(PCAP_TYPE libdlpi)
+        #
+        # XXX - add -L/lib
+        #
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
+        set(PCAP_TYPE libdlpi)
     endif()
 
     #
@@ -551,51 +551,51 @@ elseif(PCAP_TYPE STREQUAL "linux")
     # Do we have libnl?
     #
     if(BUILD_WITH_LIBNL)
-	#
-	# Try libnl 3.x first.
-	#
-	cmake_push_check_state()
-	set(CMAKE_REQUIRED_LIBRARIES nl-3)
-	check_function_exists(nl_socket_alloc HAVE_LIBNL)
-	cmake_pop_check_state()
-	if(HAVE_LIBNL)
-	    #
-	    # Yes, we have libnl 3.x.
-	    #
-	    set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
-	    set(HAVE_LIBNL_3_x ON)
-	    set(HAVE_LIBNL_NLE ON)
-	    set(HAVE_LIBNL_SOCKETS ON)
-	    include_directories("/usr/include/libnl3")
-	else()
-	    #
-	    # Try libnl 2.x.
-	    #
-	    cmake_push_check_state()
-	    set(CMAKE_REQUIRED_LIBRARIES nl)
-	    check_function_exists(nl_socket_alloc HAVE_LIBNL)
-	    cmake_pop_check_state()
-	    if(HAVE_LIBNL)
-		#
-		# Yes, we have libnl 2.x.
-		#
-		set(PCAP_LINK_LIBRARIES nl-genl nl ${PCAP_LINK_LIBRARIES})
-		set(HAVE_LIBNL_2_x ON)
-		set(HAVE_LIBNL_NLE ON)
-		set(HAVE_LIBNL_SOCKETS ON)
-	    else()
-		#
-		# No, we don't; do we have libnl 1.x?
-		#
-		cmake_push_check_state()
-		set(CMAKE_REQUIRED_LIBRARIES nl)
-		check_function_exists(nl_handle_alloc HAVE_LIBNL)
-		cmake_pop_check_state()
-		if(HAVE_LIBNL)
-		    set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
-		endif()
-	    endif()
-	endif()
+        #
+        # Try libnl 3.x first.
+        #
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES nl-3)
+        check_function_exists(nl_socket_alloc HAVE_LIBNL)
+        cmake_pop_check_state()
+        if(HAVE_LIBNL)
+            #
+            # Yes, we have libnl 3.x.
+            #
+            set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
+            set(HAVE_LIBNL_3_x ON)
+            set(HAVE_LIBNL_NLE ON)
+            set(HAVE_LIBNL_SOCKETS ON)
+            include_directories("/usr/include/libnl3")
+        else()
+            #
+            # Try libnl 2.x.
+            #
+            cmake_push_check_state()
+            set(CMAKE_REQUIRED_LIBRARIES nl)
+            check_function_exists(nl_socket_alloc HAVE_LIBNL)
+            cmake_pop_check_state()
+            if(HAVE_LIBNL)
+                #
+                # Yes, we have libnl 2.x.
+                #
+                set(PCAP_LINK_LIBRARIES nl-genl nl ${PCAP_LINK_LIBRARIES})
+                set(HAVE_LIBNL_2_x ON)
+                set(HAVE_LIBNL_NLE ON)
+                set(HAVE_LIBNL_SOCKETS ON)
+            else()
+                #
+                # No, we don't; do we have libnl 1.x?
+                #
+                cmake_push_check_state()
+                set(CMAKE_REQUIRED_LIBRARIES nl)
+                check_function_exists(nl_handle_alloc HAVE_LIBNL)
+                cmake_pop_check_state()
+                if(HAVE_LIBNL)
+                    set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
+                endif()
+            endif()
+        endif()
     endif()
 
     check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
@@ -816,7 +816,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
         # If we're using BPF, we need libodm and libcfg, as
         # we use them to load the BPF module.
         #
-	set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} odm cfg)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} odm cfg)
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
     #
