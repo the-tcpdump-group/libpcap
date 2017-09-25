@@ -950,7 +950,7 @@ if(WIN32)
     #
     # Add pcap-dll.rc to the list of sources.
     #
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${pcap_SOURCE_DIR}/Win32/pcap-dll.rc)
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${pcap_SOURCE_DIR}/pcap-dll.rc)
 endif(WIN32)
 
 ######################################
