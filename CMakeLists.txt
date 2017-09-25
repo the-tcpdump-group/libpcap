@@ -63,6 +63,10 @@ include(CheckFunctionExists)
 
 if(WIN32)
 
+    if(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../Common)
+        include_directories(${CMAKE_HOME_DIRECTORY}/../../Common)
+    endif(IS_DIRECTORY ${CMAKE_HOME_DIRECTORY}/../../Common)
+
     find_package(Packet)
     if(PACKET_FOUND)
         set(HAVE_PACKET32 TRUE)
