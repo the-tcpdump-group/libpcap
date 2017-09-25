@@ -23,7 +23,7 @@
         VALUE "FileDescription",  "System-Independent Interface for User-Level Packet Capture"
         VALUE "FileVersion",      "PACKAGE_VERSION_DLL"
         VALUE "InternalName",     "PACKAGE_NAME"
-        VALUE "LegalCopyright",   "Copyright (c) The TCPdump Team"
+        VALUE "LegalCopyright",   "Copyright (c) The TCPdump Group"
         VALUE "LegalTrademarks",  ""
         VALUE "OriginalFilename", "wpcap.dll"
         VALUE "ProductName",      "PACKAGE_NAME"
