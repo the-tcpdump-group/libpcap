@@ -252,11 +252,14 @@
 /* Define to the address where bug reports for this package should be sent. */
 #cmakedefine PACKAGE_BUGREPORT 1
 
+/* Define to the DLL-preferred version string of of this package. */
+#cmakedefine PACKAGE_VERSION_DLL @PACKAGE_VERSION_DLL@
+
 /* Define to the full name of this package. */
-#cmakedefine PACKAGE_NAME 1
+#cmakedefine PACKAGE_NAME @PACKAGE_NAME@
 
 /* Define to the full name and version of this package. */
-#cmakedefine PACKAGE_STRING 1
+#cmakedefine PACKAGE_STRING @PACKAGE_STRING@
 
 /* Define to the one symbol short name of this package. */
 #cmakedefine PACKAGE_TARNAME 1
@@ -265,7 +268,7 @@
 #cmakedefine PACKAGE_URL 1
 
 /* Define to the version of this package. */
-#cmakedefine PACKAGE_VERSION 1
+#cmakedefine PACKAGE_VERSION @PACKAGE_VERSION@
 
 /* target host supports Bluetooth sniffing */
 #cmakedefine PCAP_SUPPORT_BT 1
