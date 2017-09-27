@@ -48,6 +48,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(BUILD_WITH_LIBNL "Build with libnl" ON)
 endif()
 
+option(BDEBUG "Build optimizer debugging code" OFF)
+option(YYDEBUG "Build parser debugging code" OFF)
+
 ###################################################################
 #   Versioning
 ###################################################################
@@ -377,7 +380,6 @@ endif(INET6)
 #
 # XXX - add:
 #
-# Optimizer and parser debugging options
 # Checks for DAG API, Septel API, Myricom SNF API, Rivebed TurboCap API.
 # Check for USB sniffing support.
 # Check for netfilter sniffing support.
