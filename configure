@@ -5340,9 +5340,6 @@ $as_echo "$as_me: Enabling SITA ACN support" >&6;}
 
 else
 
-if test -z "$with_pcap" && test "$cross_compiling" = yes; then
-	as_fn_error $? "pcap type not determined when cross-compiling; use --with-pcap=..." "$LINENO" 5
-fi
 
 # Check whether --with-pcap was given.
 if test "${with_pcap+set}" = set; then :

@@ -321,17 +321,6 @@ AC_HELP_STRING([--with-sita],[include SITA support]),
 	fi
 ],
 [
-dnl
-dnl Not all versions of test support -c (character special) but it's a
-dnl better way of testing since the device might be protected. So we
-dnl check in our normal order using -r and then check the for the /dev
-dnl guys again using -c.
-dnl
-dnl XXX This could be done for cross-compiling, but for now it's not.
-dnl
-if test -z "$with_pcap" && test "$cross_compiling" = yes; then
-	AC_MSG_ERROR(pcap type not determined when cross-compiling; use --with-pcap=...)
-fi
 AC_ARG_WITH(pcap,
 AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 if test ! -z "$with_pcap" ; then
