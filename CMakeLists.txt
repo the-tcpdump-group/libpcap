@@ -374,10 +374,6 @@ if(INET6)
     message(STATUS "Use IPv6")
 endif(INET6)
 
-if(WIN32)
-    add_definitions(-DHAVE_ADDRINFO)
-endif(WIN32)
-
 ######################################
 # External dependencies
 ######################################
