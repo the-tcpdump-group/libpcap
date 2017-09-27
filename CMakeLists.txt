@@ -988,8 +988,8 @@ if(NOT DISABLE_DAG)
     # Do we have the dagapi.h header?
     #
     cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${DAG_ROOT})
-    check_include_file(dagapi.h HAVE_DAGAPI_h)
+    set(CMAKE_REQUIRED_INCLUDES ${DAG_ROOT}/include)
+    check_include_file(dagapi.h HAVE_DAGAPI_H)
     cmake_pop_check_state()
     if(HAVE_DAGAPI_H)
         #
