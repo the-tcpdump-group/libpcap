@@ -60,7 +60,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 option(DISABLE_DAG "Disable DAG card support" OFF)
-set(DAG_ROOT "/usr/local" CACHE PATH "Path to directory with include, lib, and tools subdirectories for DAG API")
+set(DAG_ROOT "/usr/local" CACHE PATH "Path to directory with include and lib subdirectories for DAG API")
+
+option(DISABLE_SEPTEL "Disable Septel card support" OFF)
+set(SEPTEL_ROOT "${CMAKE_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
+
+option(DISABLE_SNF "Disable Myricom SNF support" OFF)
+set(SNF_ROOT "/opt/snf" CACHE PATH "Path to directory with include and lib subdirectories for Myricom Sniffer API")
+
+option(DISABLE_TURBOCAP "Disable Riverbed TurboCap support" OFF)
+set(TURBOCAP_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for Riverbed TurboCap API")
 
 option(BDEBUG "Build optimizer debugging code" OFF)
 option(YYDEBUG "Build parser debugging code" OFF)
@@ -788,6 +797,141 @@ if(NOT WIN32)
     endif()
 endif()
 
+#
+# XXX - add:
+#
+# Check for USB sniffing support.
+# Check for netfilter sniffing support.
+# Check for netmap support.
+# Check for Bluetooth sniffing support.
+# Check for D-Bus sniffing support.
+# Check for hardware timestamping support.
+# Check for RDMA sniffing support.
+#
+
+# Check for Endace DAG card support.
+if(NOT DISABLE_DAG)
+    #
+    # Do we have the dagapi.h header?
+    #
+    set(DAG_INCLUDE_DIR "${DAG_ROOT}/include")
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
+    check_include_file(dagapi.h HAVE_DAGAPI_H)
+    cmake_pop_check_state()
+    if(HAVE_DAGAPI_H)
+        #
+        # Yes.
+        #
+        include_directories(AFTER ${DAG_INCLUDE_DIR})
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
+        set(HAVE_DAG_API TRUE)
+
+        #
+        # Check for various DAG API functions.
+        #
+        set(DAG_LIB_DIR ${DAG_ROOT}/lib)
+        check_library_exists(dag dag_attach_stream ${DAG_LIB_DIR} HAVE_DAG_STREAMS_API)
+        if(NOT HAVE_DAG_STREAMS_API)
+            message(FATAL_ERROR "DAG library lacks streams support")
+        endif()
+        check_library_exists(dag dag_attach_stream64 ${DAG_LIB_DIR} HAVE_DAG_LARGE_STREAMS_API)
+        check_library_exists(dag dag_get_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_ERF_TYPES)
+        check_library_exists(dag dag_get_stream_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_STREAM_ERF_TYPES)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dag)
+        link_directories(${DAG_LIB_DIR})
+
+        if(HAVE_DAG_LARGE_STREAMS_API)
+            check_library_exists(vdag vdag_set_device_info ${DAG_LIB_DIR} HAVE_DAG_VDAG)
+            if(HAVE_DAG_VDAG)
+                set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} pthread)
+            endif()
+        endif()
+    endif()
+endif() 
+
+# Check for Septel card support.
+set(PROJECT_EXTERNAL_OBJECT_LIST "")
+if(NOT DISABLE_SEPTEL)
+    #
+    # Do we have the msg.h header?
+    #
+    set(SEPTEL_INCLUDE_DIR "${SEPTEL_ROOT}/INC")
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_INCLUDES ${SEPTEL_INCLUDE_DIR})
+    check_include_file(msg.h HAVE_INC_MSG_H)
+    cmake_pop_check_state()
+    if(HAVE_INC_MSG_H)
+        #
+        # Yes.
+        #
+        include_directories(AFTER ${SEPTEL_INCLUDE_DIR})
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-septel.c)
+        set(PROJECT_EXTERNAL_OBJECT_LIST ${PROJECT_EXTERNAL_OBJECT_LIST} "${SEPTEL_ROOT}/asciibin.o ${SEPTEL_ROOT}/bit2byte.o ${SEPTEL_ROOT}/confirm.o ${SEPTEL_ROOT}/fmtmsg.o ${SEPTEL_ROOT}/gct_unix.o ${SEPTEL_ROOT}/hqueue.o ${SEPTEL_ROOT}/ident.o ${SEPTEL_ROOT}/mem.o ${SEPTEL_ROOT}/pack.o ${SEPTEL_ROOT}/parse.o ${SEPTEL_ROOT}/pool.o ${SEPTEL_ROOT}/sdlsig.o ${SEPTEL_ROOT}/strtonum.o ${SEPTEL_ROOT}/timer.o ${SEPTEL_ROOT}/trace.o")
+        set(HAVE_SEPTEL_API TRUE)
+    endif()
+endif() 
+
+# Check for Myricom SNF support.
+if(NOT DISABLE_SNF)
+    #
+    # Do we have the snf.h header?
+    #
+    set(SNF_INCLUDE_DIR "${SNF_ROOT}/include")
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_INCLUDES ${SNF_INCLUDE_DIR})
+    check_include_file(snf.h HAVE_SNF_H)
+    cmake_pop_check_state()
+    if(HAVE_SNF_H)
+        #
+        # Yes.  Can we link with the SNF library?
+        #
+        include_directories(AFTER ${SNF_INCLUDE_DIR})
+        set(SNF_LIB_DIR ${SNF_ROOT}/lib)
+        check_library_exists(snf snf_init ${SNFLIB_DIR} HAVE_SNF_API)
+        if(NOT HAVE_SNF_API)
+            message(FATAL_ERROR "SNF API cannot correctly be linked; check CMake errors")
+        endif()
+
+        #
+        # Yes.
+        #
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-snf.c)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} snf)
+        link_directories(${SNFLIB_DIR})
+    endif()
+endif() 
+
+# Check for Riverbed TurboCap support.
+if(NOT DISABLE_TURBOCAP)
+    #
+    # Do we have the TcApi.h header?
+    #
+    set(TURBOCAP_INCLUDE_DIR "${TURBOCAP_ROOT}/include")
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_INCLUDES ${TURBOCAP_INCLUDE_DIR})
+    check_include_file(TcApi.h HAVE_TCAPI_H)
+    cmake_pop_check_state()
+    if(HAVE_TCAPI_H)
+        #
+        # Yes.  Can we link with the TurboCap library?
+        #
+        include_directories(AFTER ${TURBOCAP_INCLUDE_DIR})
+        set(TURBOCAP_LIB_DIR ${TURBOCAP_ROOT}/lib)
+        check_library_exists(TcApi TcInstanceCreateByName ${TURBOCAPLIB_DIR} HAVE_TC_API)
+        if(NOT HAVE_TC_API)
+            message(FATAL_ERROR "TurboCap API cannot correctly be linked; check CMake errors")
+        endif()
+
+        #
+        # Yes.
+        #
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-tc.c)
+        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} TcApi pthread stdc++")
+        link_directories(${TURBOCAPLIB_DIR})
+    endif()
+endif() 
+
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
     *.h
     pcap/*.h
@@ -982,60 +1126,6 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h PROPERTIE
 #
 set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h)
 
-# Check for Endace DAG card support.
-if(NOT DISABLE_DAG)
-    #
-    # Do we have the dagapi.h header?
-    #
-    set(DAG_INCLUDE_DIR "${DAG_ROOT}/include")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
-    check_include_file(dagapi.h HAVE_DAGAPI_H)
-    cmake_pop_check_state()
-    if(HAVE_DAGAPI_H)
-        #
-        # Yes.
-        #
-        include_directories(AFTER ${DAG_INCLUDE_DIR})
-        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
-        set(HAVE_DAG_API TRUE)
-
-        #
-        # Check for various DAG API functions.
-        #
-        set(DAG_LIB_DIR ${DAG_ROOT}/lib)
-        check_library_exists(dag dag_attach_stream ${DAG_LIB_DIR} HAVE_DAG_STREAMS_API)
-        if(NOT HAVE_DAG_STREAMS_API)
-            message(FATAL_ERROR "DAG library lacks streams support")
-        endif()
-        check_library_exists(dag dag_attach_stream64 ${DAG_LIB_DIR} HAVE_DAG_LARGE_STREAMS_API)
-        check_library_exists(dag dag_get_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_ERF_TYPES)
-        check_library_exists(dag dag_get_stream_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_STREAM_ERF_TYPES)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dag)
-        link_directories(${DAG_LIB_DIR})
-
-        if(HAVE_DAG_LARGE_STREAMS_API)
-            check_library_exists(vdag vdag_set_device_info ${DAG_LIB_DIR} HAVE_DAG_VDAG)
-            if(HAVE_DAG_VDAG)
-                set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} pthread)
-            endif()
-        endif()
-    endif()
-endif() 
-
-#
-# XXX - add:
-#
-# Checks for Septel API, Myricom SNF API, Rivebed TurboCap API.
-# Check for USB sniffing support.
-# Check for netfilter sniffing support.
-# Check for netmap support.
-# Check for Bluetooth sniffing support.
-# Check for D-Bus sniffing support.
-# Check for hardware timestamping support.
-# Check for RDMA sniffing support.
-#
-
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 
@@ -1064,12 +1154,16 @@ add_custom_target(SerializeTarget
     ${CMAKE_CURRENT_BINARY_DIR}/version.c
 )
 
+set_source_files_properties(${PROJECT_EXTERNAL_OBJECT_LIST} PROPERTIES
+    EXTERNAL_OBJECT TRUE)
+
 if(BUILD_SHARED_LIBS)
     add_library(${LIBRARY_NAME} SHARED
         ${PROJECT_SOURCE_LIST_C}
         ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
         ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
         ${PROJECT_SOURCE_LIST_H}
+        ${PROJECT_EXTERNAL_OBJECT_LIST}
     )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
 endif(BUILD_SHARED_LIBS)
@@ -1079,6 +1173,7 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
     ${PROJECT_SOURCE_LIST_H}
+    ${PROJECT_EXTERNAL_OBJECT_LIST}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
 
