@@ -47,7 +47,6 @@ if(NOT PACKET_DLL_DIR)
 endif()
 
 # The 64-bit Packet.lib is located under /x64
-# MinGW users may manually define TARGET_IS_MINGW64 to point to /x64
 set(64BIT_SUBDIR "")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(64BIT_SUBDIR "/x64")

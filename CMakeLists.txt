@@ -552,147 +552,158 @@ else()
         endif()
     endif()
 endif(WIN32)
-message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
-set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
 
 #
 # Do capture-mechanism-dependent tests.
 #
-if(PCAP_TYPE STREQUAL "npf")
-    #
-    # Link with packet.dll before WinSock2.
-    #
-    set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARY} ${PCAP_LINK_LIBRARIES})
-elseif(PCAP_TYPE STREQUAL "dlpi")
-    #
-    # Needed for common functions used by pcap-[dlpi,libdlpi].c
-    #
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} dlpisubs.c)
-
-    #
-    # Checks for some header files.
-    #
-    check_include_file(sys/bufmod.h HAVE_SYS_BUFMOD_H)
-    check_include_file(sys/dlpi_ext.h HAVE_SYS_DLPI_EXT_H)
-
-    #
-    # Checks to see if Solaris has the public libdlpi(3LIB) library.
-    # Note: The existence of /usr/include/libdlpi.h does not mean it is the
-    # public libdlpi(3LIB) version. Before libdlpi was made public, a
-    # private version also existed, which did not have the same APIs.
-    # Due to a gcc bug, the default search path for 32-bit libraries does
-    # not include /lib, we add it explicitly here.
-    # [http://bugs.opensolaris.org/view_bug.do?bug_id=6619485].
-    # Also, due to the bug above applications that link to libpcap with
-    # libdlpi will have to add "-L/lib" option to "configure".
-    #
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_FLAGS "-L/lib")
-    set(CMAKE_REQUIRED_LIBRARIES dlpi)
-    check_function_exists(dlpi_walk HAVE_LIBDLPI)
-    cmake_pop_check_state()
-    if(HAVE_LIBDLPI)
+if(WIN32)
+    if(PCAP_TYPE STREQUAL "npf")
         #
-        # XXX - add -L/lib
+        # Link with packet.dll before WinSock2.
         #
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
-        set(PCAP_TYPE libdlpi)
+        set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARY} ${PCAP_LINK_LIBRARIES})
+    elseif(PCAP_TYPE STREQUAL "null")
+    else()
+        message(ERROR "${PCAP_TYPE} is not a valid pcap type")
     endif()
-
-    #
-    # This check is for Solaris with DLPI support for passive modes.
-    # See dlpi(7P) for more details.
-    #
-    # XXX - there's no check_struct() macro that's like
-    # check_struct_has_member() except that it only checks for the
-    # existence of the structure type, so we use
-    # check_struct_has_member() and look for dl_primitive.
-    #
-    check_struct_has_member("dl_passive_req_t" dl_primitive "sys/types.h;sys/dlpi.h" HAVE_DLPI_PASSIVE)
-elseif(PCAP_TYPE STREQUAL "linux")
-    #
-    # Do we have the wireless extensions?
-    #
-    check_include_file(linux/wireless.h HAVE_LINUX_WIRELESS_H)
-
-    #
-    # Do we have libnl?
-    #
-    if(BUILD_WITH_LIBNL)
+else(WIN32)
+    if(PCAP_TYPE STREQUAL "dlpi")
         #
-        # Try libnl 3.x first.
+        # Needed for common functions used by pcap-[dlpi,libdlpi].c
+        #
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} dlpisubs.c)
+
+        #
+        # Checks for some header files.
+        #
+        check_include_file(sys/bufmod.h HAVE_SYS_BUFMOD_H)
+        check_include_file(sys/dlpi_ext.h HAVE_SYS_DLPI_EXT_H)
+
+        #
+        # Checks to see if Solaris has the public libdlpi(3LIB) library.
+        # Note: The existence of /usr/include/libdlpi.h does not mean it is the
+        # public libdlpi(3LIB) version. Before libdlpi was made public, a
+        # private version also existed, which did not have the same APIs.
+        # Due to a gcc bug, the default search path for 32-bit libraries does
+        # not include /lib, we add it explicitly here.
+        # [http://bugs.opensolaris.org/view_bug.do?bug_id=6619485].
+        # Also, due to the bug above applications that link to libpcap with
+        # libdlpi will have to add "-L/lib" option to "configure".
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_LIBRARIES nl-3)
-        check_function_exists(nl_socket_alloc HAVE_LIBNL)
+        set(CMAKE_REQUIRED_FLAGS "-L/lib")
+        set(CMAKE_REQUIRED_LIBRARIES dlpi)
+        check_function_exists(dlpi_walk HAVE_LIBDLPI)
         cmake_pop_check_state()
-        if(HAVE_LIBNL)
+        if(HAVE_LIBDLPI)
             #
-            # Yes, we have libnl 3.x.
+            # XXX - add -L/lib
             #
-            set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
-            set(HAVE_LIBNL_3_x ON)
-            set(HAVE_LIBNL_NLE ON)
-            set(HAVE_LIBNL_SOCKETS ON)
-            include_directories("/usr/include/libnl3")
-        else()
+            set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dlpi)
+            set(PCAP_TYPE libdlpi)
+        endif()
+
+        #
+        # This check is for Solaris with DLPI support for passive modes.
+        # See dlpi(7P) for more details.
+        #
+        # XXX - there's no check_struct() macro that's like
+        # check_struct_has_member() except that it only checks for the
+        # existence of the structure type, so we use
+        # check_struct_has_member() and look for dl_primitive.
+        #
+        check_struct_has_member("dl_passive_req_t" dl_primitive "sys/types.h;sys/dlpi.h" HAVE_DLPI_PASSIVE)
+    elseif(PCAP_TYPE STREQUAL "linux")
+        #
+        # Do we have the wireless extensions?
+        #
+        check_include_file(linux/wireless.h HAVE_LINUX_WIRELESS_H)
+
+        #
+        # Do we have libnl?
+        #
+        if(BUILD_WITH_LIBNL)
             #
-            # Try libnl 2.x.
+            # Try libnl 3.x first.
             #
             cmake_push_check_state()
-            set(CMAKE_REQUIRED_LIBRARIES nl)
+            set(CMAKE_REQUIRED_LIBRARIES nl-3)
             check_function_exists(nl_socket_alloc HAVE_LIBNL)
             cmake_pop_check_state()
             if(HAVE_LIBNL)
                 #
-                # Yes, we have libnl 2.x.
+                # Yes, we have libnl 3.x.
                 #
-                set(PCAP_LINK_LIBRARIES nl-genl nl ${PCAP_LINK_LIBRARIES})
-                set(HAVE_LIBNL_2_x ON)
+                set(PCAP_LINK_LIBRARIES nl-genl-3 nl-3 ${PCAP_LINK_LIBRARIES})
+                set(HAVE_LIBNL_3_x ON)
                 set(HAVE_LIBNL_NLE ON)
                 set(HAVE_LIBNL_SOCKETS ON)
+                include_directories("/usr/include/libnl3")
             else()
                 #
-                # No, we don't; do we have libnl 1.x?
+                # Try libnl 2.x.
                 #
                 cmake_push_check_state()
                 set(CMAKE_REQUIRED_LIBRARIES nl)
-                check_function_exists(nl_handle_alloc HAVE_LIBNL)
+                check_function_exists(nl_socket_alloc HAVE_LIBNL)
                 cmake_pop_check_state()
                 if(HAVE_LIBNL)
-                    set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
+                    #
+                    # Yes, we have libnl 2.x.
+                    #
+                    set(PCAP_LINK_LIBRARIES nl-genl nl ${PCAP_LINK_LIBRARIES})
+                    set(HAVE_LIBNL_2_x ON)
+                    set(HAVE_LIBNL_NLE ON)
+                    set(HAVE_LIBNL_SOCKETS ON)
+                else()
+                    #
+                    # No, we don't; do we have libnl 1.x?
+                    #
+                    cmake_push_check_state()
+                    set(CMAKE_REQUIRED_LIBRARIES nl)
+                    check_function_exists(nl_handle_alloc HAVE_LIBNL)
+                    cmake_pop_check_state()
+                    if(HAVE_LIBNL)
+                        set(PCAP_LINK_LIBRARIES nl ${PCAP_LINK_LIBRARIES})
+                    endif()
                 endif()
             endif()
         endif()
-    endif()
 
-    check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
+        check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
 
-    #
-    # Checks to see if tpacket_stats is defined in linux/if_packet.h
-    # If so then pcap-linux.c can use this to report proper statistics.
-    #
-    check_struct_has_member("struct tpacket_stats" tp_packets linux/if_packet.h HAVE_TPACKET_STATS)
+        #
+        # Checks to see if tpacket_stats is defined in linux/if_packet.h
+        # If so then pcap-linux.c can use this to report proper statistics.
+        #
+        check_struct_has_member("struct tpacket_stats" tp_packets linux/if_packet.h HAVE_TPACKET_STATS)
 
-    check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
-    if(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
-        set(HAVE_LINUX_TPACKET_AUXDATA tp_vlan_tci)
-    endif()
-elseif(PCAP_TYPE STREQUAL "bpf")
-    #
-    # Check whether we have the *BSD-style ioctls.
-    #
-    check_include_files("sys/types.h;net/if_media.h" HAVE_NET_IF_MEDIA_H)
+        check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+        if(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+            set(HAVE_LINUX_TPACKET_AUXDATA tp_vlan_tci)
+        endif()
+    elseif(PCAP_TYPE STREQUAL "bpf")
+        #
+        # Check whether we have the *BSD-style ioctls.
+        #
+        check_include_files("sys/types.h;net/if_media.h" HAVE_NET_IF_MEDIA_H)
 
-    #
-    # Check whether we have struct BPF_TIMEVAL.
-    #
-    if(HAVE_SYS_IOCCOM_H)
-        check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;sys/ioccom.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
+        #
+        # Check whether we have struct BPF_TIMEVAL.
+        #
+        if(HAVE_SYS_IOCCOM_H)
+            check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;sys/ioccom.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
+        else()
+            check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
+        endif()
+    elseif(PCAP_TYPE STREQUAL "null")
     else()
-        check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
+        message(FATAL_ERROR "${PCAP_TYPE} is not a valid pcap type")
     endif()
-endif()
+endif(WIN32)
+
+message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
+set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
 
 #
 # Now figure out how we get a list of interfaces and addresses,
