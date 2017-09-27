@@ -107,9 +107,7 @@ if(WIN32)
     endif(PACKET_FOUND)
 
     include_directories(
-        ../Common/
         Win32/Include
-        Win32/WpdPack/Include
     )
 endif(WIN32)
 
