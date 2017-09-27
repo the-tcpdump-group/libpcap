@@ -38,6 +38,13 @@ endif(WIN32)
 option(NO_PROTOCHAIN "Disable protochain instruction" OFF)
 
 #
+# Start out with the capture mechanism type unspecified; the user
+# can explicitly specify it and, if they don't, we'll pick an
+# appropriate one.
+#
+set(PCAP_TYPE "" CACHE STRING "Packet capture type")
+
+#
 # Default to having remote capture support on Windows and, for now, to
 # not having it on UN*X.
 #
@@ -153,6 +160,7 @@ endif(USE_STATIC_RT)
 ###################################################################
 
 include(CheckIncludeFile)
+include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 
@@ -447,21 +455,27 @@ if(WIN32)
     set(PCAP_LINK_LIBRARIES ws2_32)
 
     #
-    # Check whether we have packet.dll.
+    # Has the user explicitly specified a capture type?
     #
-    if(HAVE_PACKET32)
+    if(PCAP_TYPE STREQUAL "")
         #
-        # We have packet.dll.
-        # Set the capture type to NPF.
+        # The user didn't explicitly specify a capture mechanism.
+        # Check whether we have packet.dll.
         #
-        set(PCAP_TYPE npf)
-    else()
-        #
-        # We don't have any capture type we know about, so just use
-        # the null capture type, and only support reading (and writing)
-        # capture files.
-        #
-        set(PCAP_TYPE null)
+        if(HAVE_PACKET32)
+            #
+            # We have packet.dll.
+            # Set the capture type to NPF.
+            #
+            set(PCAP_TYPE npf)
+        else()
+            #
+            # We don't have any capture type we know about, so just use
+            # the null capture type, and only support reading (and writing)
+            # capture files.
+            #
+            set(PCAP_TYPE null)
+        endif()
     endif()
 else()
     #
@@ -473,70 +487,73 @@ else()
     set(PCAP_LINK_LIBRARIES "")
 
     #
-    # Check for a bunch of headers for various packet capture mechanisms.
+    # Has the user explicitly specified a capture type?
     #
-    include(CheckIncludeFiles)
-    check_include_files("sys/types.h;net/bpf.h" HAVE_NET_BPF_H)
-    check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
-    check_include_file(net/enet.h HAVE_NET_ENET_H)
-    check_include_file(net/nit.h HAVE_NET_NIT_H)
-    check_include_file(sys/net/nit.h HAVE_SYS_NET_NIT_H)
-    check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
-    check_include_file(net/raw.h HAVE_NET_RAW_H)
-    check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
+    if(PCAP_TYPE STREQUAL "")
+        #
+        # Check for a bunch of headers for various packet capture mechanisms.
+        #
+        check_include_files("sys/types.h;net/bpf.h" HAVE_NET_BPF_H)
+        check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
+        check_include_file(net/enet.h HAVE_NET_ENET_H)
+        check_include_file(net/nit.h HAVE_NET_NIT_H)
+        check_include_file(sys/net/nit.h HAVE_SYS_NET_NIT_H)
+        check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
+        check_include_file(net/raw.h HAVE_NET_RAW_H)
+        check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
 
-    if(HAVE_NET_BPF_H)
-        #
-        # BPF.
-        # Check this before DLPI, so that we pick BPF on
-        # Solaris 11 and later.
-        #
-        set(PCAP_TYPE bpf)
-    elseif(HAVE_NET_PFILT_H)
-        #
-        # DEC OSF/1, Digital UNIX, Tru64 UNIX
-        #
-        set(PCAP_TYPE pf)
-    elseif(HAVE_NET_ENET_H)
-        #
-        # Stanford Enetfilter.
-        #
-        set(PCAP_TYPE enet)
-    elseif(HAVE_NET_NIT_H)
-        #
-        # SunOS 4.x STREAMS NIT.
-        #
-        set(PCAP_TYPE snit)
-    elseif(HAVE_SYS_NET_NIT_H)
-        #
-        # Pre-SunOS 4.x non-STREAMS NIT.
-        #
-        set(PCAP_TYPE nit)
-    elseif(HAVE_LINUX_SOCKET_H)
-        #
-        # No prizes for guessing this one.
-        #
-        set(PCAP_TYPE linux)
-    elseif(HAVE_NET_RAW_H)
-        #
-        # IRIX snoop.
-        #
-        set(PCAP_TYPE snoop)
-    elseif(HAVE_SYS_DLPI_H)
-        #
-        # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
-        #
-        set(PCAP_TYPE dlpi)
-    else()
-        #
-        # Nothing we support.
-        #
-        set(PCAP_TYPE null)
+        if(HAVE_NET_BPF_H)
+            #
+            # BPF.
+            # Check this before DLPI, so that we pick BPF on
+            # Solaris 11 and later.
+            #
+            set(PCAP_TYPE bpf)
+        elseif(HAVE_NET_PFILT_H)
+            #
+            # DEC OSF/1, Digital UNIX, Tru64 UNIX
+            #
+            set(PCAP_TYPE pf)
+        elseif(HAVE_NET_ENET_H)
+            #
+            # Stanford Enetfilter.
+            #
+            set(PCAP_TYPE enet)
+        elseif(HAVE_NET_NIT_H)
+            #
+            # SunOS 4.x STREAMS NIT.
+            #
+            set(PCAP_TYPE snit)
+        elseif(HAVE_SYS_NET_NIT_H)
+            #
+            # Pre-SunOS 4.x non-STREAMS NIT.
+            #
+            set(PCAP_TYPE nit)
+        elseif(HAVE_LINUX_SOCKET_H)
+            #
+            # No prizes for guessing this one.
+            #
+            set(PCAP_TYPE linux)
+        elseif(HAVE_NET_RAW_H)
+            #
+            # IRIX snoop.
+            #
+            set(PCAP_TYPE snoop)
+        elseif(HAVE_SYS_DLPI_H)
+            #
+            # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
+            #
+            set(PCAP_TYPE dlpi)
+        else()
+            #
+            # Nothing we support.
+            #
+            set(PCAP_TYPE null)
+        endif()
     endif()
 endif(WIN32)
 message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
-
 
 #
 # Do capture-mechanism-dependent tests.
