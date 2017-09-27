@@ -374,6 +374,20 @@ if(INET6)
     message(STATUS "Use IPv6")
 endif(INET6)
 
+#
+# XXX - add:
+#
+# Optimizer and parser debugging options
+# Checks for DAG API, Septel API, Myricom SNF API, Rivebed TurboCap API.
+# Check for USB sniffing support.
+# Check for netfilter sniffing support.
+# Check for netmap support.
+# Check for Bluetooth sniffing support.
+# Check for D-Bus sniffing support.
+# Check for hardware timestamping support.
+# Check for RDMA sniffing support.
+#
+
 ######################################
 # External dependencies
 ######################################
@@ -836,6 +850,9 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
+#
+# XXX - do man page directory stuff.
+#
 if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
     # Workaround to enable certain features
     set(_SUN TRUE)
