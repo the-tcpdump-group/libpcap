@@ -34,6 +34,9 @@ if(WIN32)
     set(PACKET_DLL_DIR "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
 endif(WIN32)
 
+# To pacify those who hate the protochain instruction
+option(NO_PROTOCHAIN "Disable protochain instruction" OFF)
+
 #
 # Default to having remote capture support on Windows and, for now, to
 # not having it on UN*X.
@@ -170,6 +173,9 @@ check_include_file(limits.h HAVE_LIMITS_H)
 check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
 check_include_file(net/pfvar.h HAVE_NET_PFVAR_H)
 if(HAVE_NET_PFVAR_H)
+    #
+    # Check for various PF actions.
+    #
     check_c_source_compiles(
 "#include <sys/types.h>
 #include <sys/socket.h>
