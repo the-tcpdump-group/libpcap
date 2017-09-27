@@ -837,6 +837,9 @@ if test "$want_dag" != no; then
 		# included if there's a found-action (arg 3).
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="-L$dag_lib_dir"
+		AC_CHECK_LIB([dag], [dag_attach_stream],
+		    [],
+		    [AC_MSG_ERROR(DAG library lacks streams support])
 		AC_CHECK_LIB([dag], [dag_attach_stream64], [dag_large_streams="1"], [dag_large_streams="0"])
 		AC_CHECK_LIB([dag],[dag_get_erf_types], [
 			AC_DEFINE(HAVE_DAG_GET_ERF_TYPES, 1, [define if you have dag_get_erf_types()])])
@@ -845,11 +848,11 @@ if test "$want_dag" != no; then
 
 		LDFLAGS=$saved_ldflags
 
+		LIBS="$LIBS -ldag"
+		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
+
 		if test "$dag_large_streams" = 1; then
 			AC_DEFINE(HAVE_DAG_LARGE_STREAMS_API, 1, [define if you have large streams capable DAG API])
-			LIBS="$LIBS -ldag"
-			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
-
 			AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
 			if test "$ac_dag_have_vdag" = 1; then
 				AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
