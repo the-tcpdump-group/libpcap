@@ -552,6 +552,7 @@ else()
         endif()
     endif()
 endif(WIN32)
+message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 
 #
 # Do capture-mechanism-dependent tests.
@@ -702,7 +703,6 @@ else(WIN32)
     endif()
 endif(WIN32)
 
-message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
 
 #
