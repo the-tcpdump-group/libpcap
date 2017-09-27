@@ -59,6 +59,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(BUILD_WITH_LIBNL "Build with libnl" ON)
 endif()
 
+option(DISABLE_DAG "Disable DAG card support" OFF)
+set(DAG_ROOT "/usr/local" CACHE PATH "Path to directory with include, lib, and tools subdirectories for DAG API")
+
 option(BDEBUG "Build optimizer debugging code" OFF)
 option(YYDEBUG "Build parser debugging code" OFF)
 
@@ -391,19 +394,6 @@ endif()
 if(INET6)
     message(STATUS "Use IPv6")
 endif(INET6)
-
-#
-# XXX - add:
-#
-# Checks for DAG API, Septel API, Myricom SNF API, Rivebed TurboCap API.
-# Check for USB sniffing support.
-# Check for netfilter sniffing support.
-# Check for netmap support.
-# Check for Bluetooth sniffing support.
-# Check for D-Bus sniffing support.
-# Check for hardware timestamping support.
-# Check for RDMA sniffing support.
-#
 
 ######################################
 # External dependencies
@@ -991,6 +981,58 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h PROPERTIE
 # Add pcap_version.h to the list of headers.
 #
 set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h)
+
+# Check for Endace DAG card support.
+if(NOT DISABLE_DAG)
+    #
+    # Do we have the dagapi.h header?
+    #
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_INCLUDES ${DAG_ROOT})
+    check_include_file(dagapi.h HAVE_DAGAPI_h)
+    cmake_pop_check_state()
+    if(HAVE_DAGAPI_H)
+        #
+        # Yes.
+        #
+        include_directories(AFTER ${DAG_ROOT}/include)
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
+        set(HAVE_DAG_API TRUE)
+
+        #
+        # Check for various DAG API functions.
+        #
+        check_library_exists(dag dag_attach_stream ${DAG_ROOT}/lib HAVE_DAG_STREAMS_API)
+        if(NOT HAVE_DAG_STREAMS_API)
+            message(FATAL_ERROR "DAG library lacks streams support")
+        endif()
+        check_library_exists(dag dag_attach_stream64 ${DAG_ROOT}/lib HAVE_DAG_LARGE_STREAMS_API)
+        check_library_exists(dag dag_get_erf_types ${DAG_ROOT}/lib HAVE_DAG_GET_ERF_TYPES)
+        check_library_exists(dag dag_get_stream_erf_types ${DAG_ROOT}/lib HAVE_DAG_GET_STREAM_ERF_TYPES)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dag)
+        link_directories(${DAG_ROOT}/lib)
+
+        if(HAVE_DAG_LARGE_STREAMS_API)
+            check_library_exists(vdag vdag_set_device_info ${DAG_ROOT}/lib HAVE_DAG_VDAG)
+            if(HAVE_DAG_VDAG)
+                set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} pthread)
+            endif()
+        endif()
+    endif()
+endif() 
+
+#
+# XXX - add:
+#
+# Checks for Septel API, Myricom SNF API, Rivebed TurboCap API.
+# Check for USB sniffing support.
+# Check for netfilter sniffing support.
+# Check for netmap support.
+# Check for Bluetooth sniffing support.
+# Check for D-Bus sniffing support.
+# Check for hardware timestamping support.
+# Check for RDMA sniffing support.
+#
 
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
