@@ -1396,7 +1396,7 @@ Optional Features:
   --disable-universal     don't build universal on macOS
   --enable-shared         build shared libraries [default=yes, if support
                           available]
-  --enable-usb            enable nusb support [default=yes, if support
+  --enable-usb            enable USB capture support [default=yes, if support
                           available]
   --enable-netmap         enable netmap support [default=yes, if support
                           available]
@@ -6324,11 +6324,58 @@ $as_echo "yes ($dag_include_dir)" >&6; }
 			 SSRC="$SSRC pcap-dag.c"
 		fi
 
-		# See if we can find a general version string.
+		# Check for various DAG API functions.
 		# Don't need to save and restore LIBS to prevent -ldag being
 		# included if there's a found-action (arg 3).
 		saved_ldflags=$LDFLAGS
 		LDFLAGS="-L$dag_lib_dir"
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_attach_stream in -ldag" >&5
+$as_echo_n "checking for dag_attach_stream in -ldag... " >&6; }
+if ${ac_cv_lib_dag_dag_attach_stream+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ldag  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dag_attach_stream ();
+int
+main ()
+{
+return dag_attach_stream ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_dag_dag_attach_stream=yes
+else
+  ac_cv_lib_dag_dag_attach_stream=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_dag_dag_attach_stream" >&5
+$as_echo "$ac_cv_lib_dag_dag_attach_stream" >&6; }
+if test "x$ac_cv_lib_dag_dag_attach_stream" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBDAG 1
+_ACEOF
+
+  LIBS="-ldag $LIBS"
+
+else
+  as_fn_error $? "DAG library lacks streams support" "$LINENO" 5
+fi
+
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dag_attach_stream64 in -ldag" >&5
 $as_echo_n "checking for dag_attach_stream64 in -ldag... " >&6; }
 if ${ac_cv_lib_dag_dag_attach_stream64+:} false; then :
@@ -6460,12 +6507,12 @@ fi
 
 		LDFLAGS=$saved_ldflags
 
+		LIBS="$LIBS -ldag"
+		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
+
 		if test "$dag_large_streams" = 1; then
 
 $as_echo "#define HAVE_DAG_LARGE_STREAMS_API 1" >>confdefs.h
-
-			LIBS="$LIBS -ldag"
-			LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for vdag_set_device_info in -lvdag" >&5
 $as_echo_n "checking for vdag_set_device_info in -lvdag... " >&6; }
