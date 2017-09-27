@@ -1850,15 +1850,6 @@ linux*)
 	;;
 esac
 
-dnl The packet ring capture facility of Linux, described in
-dnl Documentation/networking/packet_mmap.txt, is not 32/64-bit compatible before
-dnl version 2.6.27. A 32-bit kernel requires a 32-bit userland, and likewise for
-dnl 64-bit. The effect of this is that a 32-bit libpcap binary will not run
-dnl correctly on a 64-bit kernel (the binary will use the wrong offsets into a
-dnl kernel struct). This problem was solved in Linux 2.6.27. Use
-dnl --disable-packet-ring whenever a 32-bit application must run on a 64-bit
-dnl target host, and either the build host or the target host run Linux 2.6.26
-dnl or earlier.
 AC_ARG_ENABLE([packet-ring],
 [AC_HELP_STRING([--enable-packet-ring],[enable Linux packet ring support @<:@default=yes@:>@])],
 ,enable_packet_ring=yes)
