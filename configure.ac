@@ -832,7 +832,7 @@ if test "$want_dag" != no; then
 			 SSRC="$SSRC pcap-dag.c"
 		fi
 
-		# See if we can find a general version string.
+		# Check for various DAG API functions.
 		# Don't need to save and restore LIBS to prevent -ldag being
 		# included if there's a found-action (arg 3).
 		saved_ldflags=$LDFLAGS
