@@ -281,6 +281,7 @@ EXTRA_DIST = \
 	aclocal.m4 \
 	bpf/net/bpf_filter.c \
 	chmod_bpf \
+	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
 	cmake/FindLFS.cmake \
 	cmake/FindPacket.cmake \
