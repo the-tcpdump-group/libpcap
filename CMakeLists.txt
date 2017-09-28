@@ -1437,6 +1437,23 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINA
 
 set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
 
+function(install_manpage_symlink SOURCE TARGET MANDIR)
+    install(CODE
+        "message(STATUS \"Symlinking from ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+         execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"remove\" \"${TARGET}\"
+            WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
+          )
+         execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"create_symlink\" \"${SOURCE}\" \"${TARGET}\"
+            WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
+            RESULT_VARIABLE EXIT_STATUS
+          )
+          if(NOT EXIT_STATUS EQUAL 0)
+              message(FATAL_ERROR \"Could not create symbolic link from ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+          endif()")
+endfunction(install_manpage_symlink)
+
 set(MAN1_NOEXPAND pcap-config.1)
 set(MAN3PCAP_EXPAND
 	pcap.3pcap.in
@@ -1562,6 +1579,7 @@ else(WIN32)
         set(MAN1 ${MAN1} ${CMAKE_SOURCE_DIR}/${MANPAGE})
     endforeach(MANPAGE)
     install(FILES ${MAN1} DESTINATION man/man1)
+
     set(MAN3PCAP "")
     foreach(MANPAGE ${MAN3PCAP_NOEXPAND})
         set(MAN3PCAP ${MAN3PCAP} ${CMAKE_SOURCE_DIR}/${MANPAGE})
@@ -1572,6 +1590,23 @@ else(WIN32)
         set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MAN3PCAP} DESTINATION man/man3)
+    install_manpage_symlink(pcap_datalink_val_to_name.3pcap pcap_datalink_val_to_description.3pcap man/man3)
+    install_manpage_symlink(pcap_dump_open.3pcap pcap_dump_fopen.3pcap man/man3)
+    install_manpage_symlink(pcap_findalldevs.3pcap pcap_freealldevs.3pcap man/man3)
+    install_manpage_symlink(pcap_geterr.3pcap pcap_perror.3pcap man/man3)
+    install_manpage_symlink(pcap_inject.3pcap pcap_sendpacket.3pcap man/man3)
+    install_manpage_symlink(pcap_list_datalinks.3pcap pcap_free_datalinks.3pcap man/man3)
+    install_manpage_symlink(pcap_list_tstamp_types.3pcap pcap_free_tstamp_types.3pcap man/man3)
+    install_manpage_symlink(pcap_loop.3pcap pcap_dispatch.3pcap man/man3)
+    install_manpage_symlink(pcap_major_version.3pcap pcap_minor_version.3pcap man/man3)
+    install_manpage_symlink(pcap_next_ex.3pcap pcap_next.3pcap man/man3)
+    install_manpage_symlink(pcap_open_dead.3pcap pcap_open_dead_with_tstamp_precision.3pcap man/man3)
+    install_manpage_symlink(pcap_open_offline.3pcap pcap_open_offline_with_tstamp_precision.3pcap man/man3)
+    install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline.3pcap man/man3)
+    install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline_with_tstamp_precision.3pcap man/man3)
+    install_manpage_symlink(pcap_tstamp_type_val_to_name.3pcap pcap_tstamp_type_val_to_description.3pcap man/man3)
+    install_manpage_symlink(pcap_setnonblock.3pcap pcap_getnonblock.3pcap man/man3)
+
     set(MANFILE "")
     foreach(TEMPLATE_MANPAGE ${MANFILE_EXPAND})
         string(REPLACE ".manfile.in" ".${MAN_FILE_FORMATS}" MANPAGE ${TEMPLATE_MANPAGE})
@@ -1579,6 +1614,7 @@ else(WIN32)
         set(MANFILE ${MANFILE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MANFILE} DESTINATION man/man${MAN_FILE_FORMATS})
+
     set(MANMISC "")
     foreach(TEMPLATE_MANPAGE ${MANMISC_EXPAND})
         string(REPLACE ".manmisc.in" ".${MAN_MISC_INFO}" MANPAGE ${TEMPLATE_MANPAGE})
