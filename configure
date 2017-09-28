@@ -625,7 +625,6 @@ INSTALL_SCRIPT
 INSTALL_PROGRAM
 RDMA_SRC
 PCAP_SUPPORT_RDMASNIFF
-PCAP_SUPPORT_PACKET_RING
 DBUS_SRC
 PCAP_SUPPORT_DBUS
 PKGCONFIG
@@ -668,6 +667,7 @@ YACC
 LEXLIB
 LEX_OUTPUT_ROOT
 LEX
+PCAP_SUPPORT_PACKET_RING
 HAVE_LINUX_TPACKET_AUXDATA
 VALGRINDTEST
 LIBOBJS
@@ -741,6 +741,7 @@ enable_protochain
 with_sita
 with_pcap
 with_libnl
+enable_packet_ring
 enable_ipv6
 enable_optimizer_dbg
 enable_yydebug
@@ -759,7 +760,6 @@ enable_usb
 enable_netmap
 enable_bluetooth
 enable_dbus
-enable_packet_ring
 enable_rdma
 '
       ac_precious_vars='build_alias
@@ -1387,6 +1387,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
   --disable-protochain    disable \"protochain\" insn
+  --enable-packet-ring    enable Linux packet ring support [default=yes]
   --enable-ipv6           build IPv6-capable version [default=yes, if
                           getaddrinfo available]
   --enable-optimizer-dbg  build optimizer debugging code
@@ -1404,7 +1405,6 @@ Optional Features:
                           available]
   --enable-dbus           enable D-Bus capture support [default=yes, if
                           support available]
-  --enable-packet-ring    enable Linux packet ring support [default=yes]
   --enable-rdma           enable RDMA capture support [default=yes, if support
                           available]
 
@@ -6138,6 +6138,42 @@ fi
 fi
 
 
+case "$host_os" in
+linux*)
+	for ac_header in linux/net_tstamp.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "linux/net_tstamp.h" "ac_cv_header_linux_net_tstamp_h" "$ac_includes_default"
+if test "x$ac_cv_header_linux_net_tstamp_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LINUX_NET_TSTAMP_H 1
+_ACEOF
+
+fi
+
+done
+
+	;;
+*)
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: no hardware timestamp support implemented for $host_os" >&5
+$as_echo "$as_me: no hardware timestamp support implemented for $host_os" >&6;}
+	;;
+esac
+
+# Check whether --enable-packet-ring was given.
+if test "${enable_packet_ring+set}" = set; then :
+  enableval=$enable_packet_ring;
+else
+  enable_packet_ring=yes
+fi
+
+
+if test "x$enable_packet_ring" != "xno" ; then
+
+$as_echo "#define PCAP_SUPPORT_PACKET_RING 1" >>confdefs.h
+
+
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t" >&5
 $as_echo_n "checking for socklen_t... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -8938,42 +8974,6 @@ $as_echo "no" >&6; }
 			fi
 		fi
 	fi
-
-
-fi
-
-case "$host_os" in
-linux*)
-	for ac_header in linux/net_tstamp.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "linux/net_tstamp.h" "ac_cv_header_linux_net_tstamp_h" "$ac_includes_default"
-if test "x$ac_cv_header_linux_net_tstamp_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LINUX_NET_TSTAMP_H 1
-_ACEOF
-
-fi
-
-done
-
-	;;
-*)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: no hardware timestamp support implemented for $host_os" >&5
-$as_echo "$as_me: no hardware timestamp support implemented for $host_os" >&6;}
-	;;
-esac
-
-# Check whether --enable-packet-ring was given.
-if test "${enable_packet_ring+set}" = set; then :
-  enableval=$enable_packet_ring;
-else
-  enable_packet_ring=yes
-fi
-
-
-if test "x$enable_packet_ring" != "xno" ; then
-
-$as_echo "#define PCAP_SUPPORT_PACKET_RING 1" >>confdefs.h
 
 
 fi

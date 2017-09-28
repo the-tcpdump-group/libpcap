@@ -702,6 +702,25 @@ then
 fi
 ])
 
+dnl check for hardware timestamp support
+case "$host_os" in
+linux*)
+	AC_CHECK_HEADERS([linux/net_tstamp.h])
+	;;
+*)
+	AC_MSG_NOTICE(no hardware timestamp support implemented for $host_os)
+	;;
+esac
+
+AC_ARG_ENABLE([packet-ring],
+[AC_HELP_STRING([--enable-packet-ring],[enable Linux packet ring support @<:@default=yes@:>@])],
+,enable_packet_ring=yes)
+
+if test "x$enable_packet_ring" != "xno" ; then
+	AC_DEFINE(PCAP_SUPPORT_PACKET_RING, 1, [use Linux packet ring capture if available])
+	AC_SUBST(PCAP_SUPPORT_PACKET_RING)
+fi
+
 AC_MSG_CHECKING(for socklen_t)
 AC_TRY_COMPILE([
 	#include <sys/types.h>
@@ -1830,25 +1849,6 @@ if test "x$enable_dbus" != "xno"; then
 	fi
 	AC_SUBST(PCAP_SUPPORT_DBUS)
 	AC_SUBST(DBUS_SRC)
-fi
-
-dnl check for hardware timestamp support
-case "$host_os" in
-linux*)
-	AC_CHECK_HEADERS([linux/net_tstamp.h])
-	;;
-*)
-	AC_MSG_NOTICE(no hardware timestamp support implemented for $host_os)
-	;;
-esac
-
-AC_ARG_ENABLE([packet-ring],
-[AC_HELP_STRING([--enable-packet-ring],[enable Linux packet ring support @<:@default=yes@:>@])],
-,enable_packet_ring=yes)
-
-if test "x$enable_packet_ring" != "xno" ; then
-	AC_DEFINE(PCAP_SUPPORT_PACKET_RING, 1, [use Linux packet ring capture if available])
-	AC_SUBST(PCAP_SUPPORT_PACKET_RING)
 fi
 
 AC_ARG_ENABLE([rdma],
