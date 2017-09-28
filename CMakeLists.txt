@@ -817,6 +817,11 @@ if(NOT WIN32)
     endif()
 endif()
 
+# Check for hardware timestamp support.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    check_include_file(linux/net_tstamp.h HAVE_LINUX_NET_TSTAMP_H)
+endif()
+
 # Check for USB sniffing support on Linux.
 # On FreeBSD, it uses BPF, so we don't need to do anything special here.
 if(NOT DISABLE_USB)
@@ -1049,7 +1054,6 @@ endif()
 #
 # Check for netfilter sniffing support.
 # Check for netmap support.
-# Check for hardware timestamping support.
 #
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
