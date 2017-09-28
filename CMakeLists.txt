@@ -635,8 +635,9 @@ else(WIN32)
     elseif(PCAP_TYPE STREQUAL "linux")
         #
         # Do we have the wireless extensions?
+        # linux/wireless.h requires sys/socket.h.
         #
-        check_include_file(linux/wireless.h HAVE_LINUX_WIRELESS_H)
+        check_include_files("sys/socket.h;linux/wireless.h" HAVE_LINUX_WIRELESS_H)
 
         #
         # Do we have libnl?
