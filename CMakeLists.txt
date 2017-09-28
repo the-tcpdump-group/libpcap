@@ -1439,7 +1439,7 @@ set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
 
 function(install_manpage_symlink SOURCE TARGET MANDIR)
     install(CODE
-        "message(STATUS \"Symlinking from ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
+        "message(STATUS \"Symlinking: ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
          execute_process(
             COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"remove\" \"${TARGET}\"
             WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
