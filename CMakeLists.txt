@@ -998,7 +998,7 @@ if(NOT DISABLE_SNF)
         set(SNF_LIB_DIR ${SNF_ROOT}/lib)
         check_library_exists(snf snf_init ${SNFLIB_DIR} HAVE_SNF_API)
         if(NOT HAVE_SNF_API)
-            message(FATAL_ERROR "SNF API cannot correctly be linked; check CMake errors")
+            message(FATAL_ERROR "SNF API cannot correctly be linked; check CMakeFiles/CMakeError.log")
         endif()
 
         #
