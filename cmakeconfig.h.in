@@ -235,7 +235,7 @@
 #cmakedefine LBL_ALIGN 1
 
 /* path for device for USB sniffing */
-#cmakedefine LINUX_USB_MON_DEV ""
+#cmakedefine LINUX_USB_MON_DEV @LINUX_USB_MON_DEV@
 
 /* Define to 1 if netinet/ether.h declares `ether_hostton' */
 #cmakedefine NETINET_ETHER_H_DECLARES_ETHER_HOSTTON 1
