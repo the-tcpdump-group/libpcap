@@ -1192,8 +1192,13 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
 #
-# XXX - do man page directory stuff.
+# Assume, by default, V7/BSD convention for man pages (file formats in
+# section 5, miscellaneous info in section 7).
+# Individual cases can override this.
 #
+set(MAN_FILE_FORMATS 5)
+set(MAN_MISC_INFO 7)
+set(MAN_USERMOD_SECTION 8)
 if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
     # Workaround to enable certain features
     set(_SUN TRUE)
@@ -1205,7 +1210,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} odm cfg)
     endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
-    #
     if(CMAKE_SYSTEM_VERSION MATCHES "[A-Z.]*9\.[0-9]*")
         #
         # HP-UX 9.x.
@@ -1225,11 +1229,39 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
         #
         set(HAVE_HPUX10_20_OR_LATER TRUE)
     endif()
+
+    #
+    # Use System V conventions for man pages.
+    #
+    set(MAN_FILE_FORMATS 4)
+    set(MAN_MISC_INFO 5)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "IRIX" OR CMAKE_SYSTEM_NAME STREQUAL "IRIX64"))
+    #
+    # Use System V conventions for man pages.
+    #
+    set(MAN_FILE_FORMATS 4)
+    set(MAN_MISC_INFO 5)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
+    #
+    # DEC OSF/1, a/k/a Digial UNIX, a/k/a Tru64 UNIX.
+    # Use System V conventions for man pages.
+    #
+    set(MAN_FILE_FORMATS 4)
+    set(MAN_MISC_INFO 5)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
     #
     # SunOS 5.x.
     #
     set(HAVE_SOLARIS TRUE)
+    if(CMAKE_SYSTEM_VERSION STREQUAL "5.12")
+    else()
+        #
+        # Use System V conventions for man pages.
+        #
+        set(MAN_USERMOD_SECTION 1m)
+        set(MAN_FILE_FORMATS 4)
+        set(MAN_MISC_INFO 5)
+    endif()
 endif()
 
 if(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
@@ -1400,10 +1432,78 @@ endif(BUILD_SHARED_LIBS)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
 ######################################
-# Install pcap library and include files
+# Install pcap library, include files, and man pages
 ######################################
 
 set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
+
+set(MAN1_NOEXPAND pcap-config.1)
+set(MAN3PCAP_EXPAND
+	pcap.3pcap.in
+	pcap_compile.3pcap.in
+	pcap_datalink.3pcap.in
+	pcap_dump_open.3pcap.in
+	pcap_get_tstamp_precision.3pcap.in
+	pcap_list_datalinks.3pcap.in
+	pcap_list_tstamp_types.3pcap.in
+	pcap_open_dead.3pcap.in
+	pcap_open_offline.3pcap.in
+	pcap_set_tstamp_precision.3pcap.in
+	pcap_set_tstamp_type.3pcap.in
+)
+set(MAN3PCAP_NOEXPAND
+	pcap_activate.3pcap
+	pcap_breakloop.3pcap
+	pcap_can_set_rfmon.3pcap
+	pcap_close.3pcap
+	pcap_create.3pcap
+	pcap_datalink_name_to_val.3pcap
+	pcap_datalink_val_to_name.3pcap
+	pcap_dump.3pcap
+	pcap_dump_close.3pcap
+	pcap_dump_file.3pcap
+	pcap_dump_flush.3pcap
+	pcap_dump_ftell.3pcap
+	pcap_file.3pcap
+	pcap_fileno.3pcap
+	pcap_findalldevs.3pcap
+	pcap_freecode.3pcap
+	pcap_get_selectable_fd.3pcap
+	pcap_geterr.3pcap
+	pcap_inject.3pcap
+	pcap_is_swapped.3pcap
+	pcap_lib_version.3pcap
+	pcap_lookupdev.3pcap
+	pcap_lookupnet.3pcap
+	pcap_loop.3pcap
+	pcap_major_version.3pcap
+	pcap_next_ex.3pcap
+	pcap_offline_filter.3pcap
+	pcap_open_live.3pcap
+	pcap_set_buffer_size.3pcap
+	pcap_set_datalink.3pcap
+	pcap_set_immediate_mode.3pcap
+	pcap_set_promisc.3pcap
+	pcap_set_protocol.3pcap
+	pcap_set_rfmon.3pcap
+	pcap_set_snaplen.3pcap
+	pcap_set_timeout.3pcap
+	pcap_setdirection.3pcap
+	pcap_setfilter.3pcap
+	pcap_setnonblock.3pcap
+	pcap_snapshot.3pcap
+	pcap_stats.3pcap
+	pcap_statustostr.3pcap
+	pcap_strerror.3pcap
+	pcap_tstamp_type_name_to_val.3pcap
+	pcap_tstamp_type_val_to_name.3pcap
+)
+set(MANFILE_EXPAND pcap-savefile.manfile.in)
+set(MANMISC_EXPAND
+	pcap-filter.manmisc.in
+	pcap-linktype.manmisc.in
+	pcap-tstamp.manmisc.in
+)
 
 if(NOT BUILD_SHARED_LIBS)
     unset(LIBRARY_NAME)
@@ -1448,6 +1548,45 @@ if(WIN32)
     endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 else(WIN32)
     install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC} DESTINATION lib)
+
+    #
+    # Man pages.
+    #
+    # For each section of the manual for which we have man pages
+    # that require macro expansion, do the expansion.
+    #
+    # XXX - symlinks.
+    #
+    set(MAN1 "")
+    foreach(MANPAGE ${MAN1_NOEXPAND})
+        set(MAN1 ${MAN1} ${CMAKE_SOURCE_DIR}/${MANPAGE})
+    endforeach(MANPAGE)
+    install(FILES ${MAN1} DESTINATION man/man1)
+    set(MAN3PCAP "")
+    foreach(MANPAGE ${MAN3PCAP_NOEXPAND})
+        set(MAN3PCAP ${MAN3PCAP} ${CMAKE_SOURCE_DIR}/${MANPAGE})
+    endforeach(MANPAGE)
+    foreach(TEMPLATE_MANPAGE ${MAN3PCAP_EXPAND})
+        string(REPLACE ".in" "" MANPAGE ${TEMPLATE_MANPAGE})
+        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
+    endforeach(TEMPLATE_MANPAGE)
+    install(FILES ${MAN3PCAP} DESTINATION man/man3)
+    set(MANFILE "")
+    foreach(TEMPLATE_MANPAGE ${MANFILE_EXPAND})
+        string(REPLACE ".manfile.in" ".${MAN_FILE_FORMATS}" MANPAGE ${TEMPLATE_MANPAGE})
+        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        set(MANFILE ${MANFILE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
+    endforeach(TEMPLATE_MANPAGE)
+message(STATUS "MANFILE is ${MANFILE}")
+    install(FILES ${MANFILE} DESTINATION man/man${MAN_FILE_FORMATS})
+    set(MANMISC "")
+    foreach(TEMPLATE_MANPAGE ${MANMISC_EXPAND})
+        string(REPLACE ".manmisc.in" ".${MAN_MISC_INFO}" MANPAGE ${TEMPLATE_MANPAGE})
+        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        set(MANMISC ${MANMISC} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
+    endforeach(TEMPLATE_MANPAGE)
+    install(FILES ${MANMISC} DESTINATION man/man${MAN_MISC_INFO})
 endif(WIN32)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
