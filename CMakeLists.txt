@@ -229,7 +229,10 @@ endif()
 check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     check_include_file(linux/sockios.h HAVE_LINUX_SOCKIOS_H)
-    check_include_file(linux/if_bonding.h HAVE_LINUX_IF_BONDING_H)
+    #
+    # linux/if_bonding.h requires sys/socket.h.
+    #
+    check_include_files("sys/socket.h;linux/if_bonding.h" HAVE_LINUX_IF_BONDING_H)
 endif()
 
 #
