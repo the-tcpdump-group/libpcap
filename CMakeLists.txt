@@ -61,6 +61,7 @@ endif()
 
 option(DISABLE_USB "Disable USB sniffing support" OFF)
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
+option(DISABLE_NETMAP "Disable netmap support" OFF)
 #
 # We don't support D-Bus sniffing on macOS; see
 #
@@ -858,6 +859,57 @@ if(NOT DISABLE_USB)
     endif()
 endif()
 
+# Check for netfilter sniffing support.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    #
+    # Life's too short to deal with trying to get this to compile
+    # if you don't get the right types defined with
+    # __KERNEL_STRICT_NAMES getting defined by some other include.
+    #
+    # Check whether the includes Just Work.  If not, don't turn on
+    # netfilter support.
+    #
+    check_c_source_compiles(
+"#include <sys/socket.h>
+#include <netinet/in.h>
+#include <linux/types.h>
+
+#include <linux/netlink.h>
+#include <linux/netfilter.h>
+#include <linux/netfilter/nfnetlink.h>
+#include <linux/netfilter/nfnetlink_log.h>
+#include <linux/netfilter/nfnetlink_queue.h>
+
+int
+main(void)
+{
+    return 0;
+}
+"
+        PCAP_SUPPORT_NETFILTER)
+    if(PCAP_SUPPORT_NETFILTER)
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-netfilter-linux.c)
+    endif(PCAP_SUPPORT_NETFILTER)
+endif()
+
+# Check for netmap sniffing support.
+if(NOT DISABLE_NETMAP)
+    #
+    # Check whether net/netmap_user.h is usable if NETMAP_WITH_LIBS is
+    # defined; it's not usable on DragonFly BSD 4.6 if NETMAP_WITH_LIBS
+    # is defined, for example, as it includes a non-existent malloc.h
+    # header.
+    #
+    check_c_source_compiles(
+"#define NETMAP_WITH_LIBS
+#include <net/netmap_user.h>
+"
+        PCAP_SUPPORT_NETMAP)
+    if(PCAP_SUPPORT_NETMAP)
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-netmap.c)
+    endif(PCAP_SUPPORT_NETMAP)
+endif()
+
 # Check for Bluetooth sniffing support
 if(NOT DISABLE_BLUETOOTH)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -1048,13 +1100,6 @@ if(NOT DISABLE_TURBOCAP)
         link_directories(${TURBOCAPLIB_DIR})
     endif()
 endif() 
-
-#
-# XXX - add:
-#
-# Check for netfilter sniffing support.
-# Check for netmap support.
-#
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
     *.h
