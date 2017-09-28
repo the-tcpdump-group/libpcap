@@ -127,13 +127,15 @@ if(WIN32)
     find_package(Packet)
     if(PACKET_FOUND)
         set(HAVE_PACKET32 TRUE)
-        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARY})
         include_directories(${PACKET_INCLUDE_DIR})
         #
         # Check whether we have the NPcap PacketIsLoopbackAdapter()
         # function.
         #
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARY})
         check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
+        cmake_pop_check_state()
     endif(PACKET_FOUND)
 
 endif(WIN32)
