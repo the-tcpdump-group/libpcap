@@ -59,6 +59,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(BUILD_WITH_LIBNL "Build with libnl" ON)
 endif()
 
+option(DISABLE_USB "Disable USB sniffing support" OFF)
+option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
+#
+# We don't support D-Bus sniffing on macOS; see
+#
+# https://bugs.freedesktop.org/show_bug.cgi?id=74029
+#
+if(APPLE)
+    option(DISABLE_DBUS "Disable D-Bus sniffing support" ON)
+else(APPLE)
+    option(DISABLE_DBUS "Disable D-Bus sniffing support" OFF)
+endif(APPLE)
+option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
+
 option(DISABLE_DAG "Disable DAG card support" OFF)
 set(DAG_ROOT "/usr/local" CACHE PATH "Path to directory with include and lib subdirectories for DAG API")
 
@@ -799,17 +813,109 @@ if(NOT WIN32)
     endif()
 endif()
 
-#
-# XXX - add:
-#
-# Check for USB sniffing support.
-# Check for netfilter sniffing support.
-# Check for netmap support.
-# Check for Bluetooth sniffing support.
-# Check for D-Bus sniffing support.
-# Check for hardware timestamping support.
-# Check for RDMA sniffing support.
-#
+# Check for USB sniffing support on Linux.
+# On FreeBSD, it uses BPF, so we don't need to do anything special here.
+if(NOT DISABLE_USB)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(PCAP_SUPPORT_USB TRUE)
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-usb-linux.c)
+        set(LINUX_USB_MON_DEV /dev/usbmon)
+        #
+        # Do we have a version of <linux/compiler.h> available?
+        # If so, we might need it for <linux/usbdevice_fs.h>.
+        #
+        check_include_files("linux/compiler.h" HAVE_LINUX_COMPILER_H)
+        if(HAVE_LINUX_COMPILER_H)
+            #
+            # Yes - include it when testing for <linux/usbdevice_fs.h>.
+            #
+            check_include_files("linux/compiler.h;linux/usbdevice_fs.h" HAVE_LINUX_USBDEVICE_FS_H)
+        else(HAVE_LINUX_COMPILER_H)
+            check_include_files("linux/usbdevice_fs.h" HAVE_LINUX_USBDEVICE_FS_H)
+        endif(HAVE_LINUX_COMPILER_H)
+        if(HAVE_LINUX_USBDEVICE_FS_H)
+            #
+            # OK, does it define bRequestType?  Older versions of the kernel
+            # define fields with names like "requesttype, "request", and
+            # "value", rather than "bRequestType", "bRequest", and
+            # "wValue".
+            #
+            if(HAVE_LINUX_COMPILER_H)
+                check_struct_has_member("struct usbdevfs_ctrltransfer" bRequestType "linux/compiler.h;linux/usbdevice_fs.h" HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE)
+            else(HAVE_LINUX_COMPILER_H)
+                check_struct_has_member("struct usbdevfs_ctrltransfer" bRequestType "linux/usbdevice_fs.h" HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE)
+            endif(HAVE_LINUX_COMPILER_H)
+        endif()
+    endif()
+endif()
+
+# Check for Bluetooth sniffing support
+if(NOT DISABLE_BLUETOOTH)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        check_include_file(bluetooth/bluetooth.h HAVE_BLUETOOTH_BLUETOOTH_H)
+        if(HAVE_BLUETOOTH_BLUETOOTH_H)
+            set(PCAP_SUPPORT_BT TRUE)
+            set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-bt-linux.c)
+            #
+            # OK, does struct sockaddr_hci have an hci_channel
+            # member?
+            #
+            check_struct_has_member("struct sockaddr_hci" hci_channel "bluetooth/bluetooth.h;bluetooth/hci.h" SOCKADDR_HCI_HAS_HCI_CHANNEL)
+            if(SOCKADDR_HCI_HAS_HCI_CHANNEL)
+                #
+                # OK, is HCI_CHANNEL_MONITOR defined?
+                #
+               check_c_source_compiles(
+"#include <bluetooth/bluetooth.h>
+#include <bluetooth/hci.h>
+
+int
+main(void)
+{
+    u_int i = HCI_CHANNEL_MONITOR;
+    return 0;
+}
+"
+                   PCAP_SUPPORT_BT_MONITOR)
+            endif(SOCKADDR_HCI_HAS_HCI_CHANNEL)
+        endif(HAVE_BLUETOOTH_BLUETOOTH_H)
+    endif()
+endif()
+
+# Check for Bluetooth sniffing support
+if(NOT DISABLE_DBUS)
+    #
+    # We don't support D-Bus sniffing on macOS; see
+    #
+    # https://bugs.freedesktop.org/show_bug.cgi?id=74029
+    #
+    if(APPLE)
+        message(FATAL_ERROR "Due to freedesktop.org bug 74029, D-Bus capture support is not available on macOS")
+    endif(APPLE)
+    include(FindPkgConfig)
+    pkg_check_modules(DBUS dbus-1)
+    if(DBUS_FOUND)
+        set(PCAP_SUPPORT_DBUS TRUE)
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dbus.c)
+        include_directories(${DBUS_INCLUDE_DIR})
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DBUS_LIBRARY})
+    endif(DBUS_FOUND)
+endif(NOT DISABLE_DBUS)
+
+# Check for RDMA sniffing support
+if(NOT DISABLE_RDMA)
+    check_library_exists(ibverbs ibv_get_device_list "" LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+    if(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+        check_include_file(infiniband/verbs.h HAVE_INFINIBAND_VERBS_H)
+        if(HAVE_INFINIBAND_VERBS_H)
+            check_library_exists(ibverbs ibv_create_flow PCAP_SUPPORT_RDMASNIFF)
+            if(PCAP_SUPPORT_RDMASNIFF)
+                set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-rdmasniff.c)
+                set(PCAP_LINK_LIBRARIES ibverbs ${PCAP_LINK_LIBRARIES})
+            endif(PCAP_SUPPORT_RDMASNIFF)
+        endif(HAVE_INFINIBAND_VERBS_H)
+    endif(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
+endif(NOT DISABLE_RDMA)
 
 # Check for Endace DAG card support.
 if(NOT DISABLE_DAG)
@@ -933,6 +1039,14 @@ if(NOT DISABLE_TURBOCAP)
         link_directories(${TURBOCAPLIB_DIR})
     endif()
 endif() 
+
+#
+# XXX - add:
+#
+# Check for netfilter sniffing support.
+# Check for netmap support.
+# Check for hardware timestamping support.
+#
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
     *.h
