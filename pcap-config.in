@@ -4,8 +4,6 @@
 # Script to give the appropriate compiler flags and linker flags
 # to use when building code that uses libpcap.
 #
-prefix="@prefix@"
-exec_prefix="@exec_prefix@"
 includedir="@includedir@"
 libdir="@libdir@"
 V_RPATH_OPT="@V_RPATH_OPT@"
