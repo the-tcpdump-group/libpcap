@@ -132,6 +132,7 @@ include_directories(
 )
 
 include(CheckFunctionExists)
+include(CMakePushCheckState)
 
 if(WIN32)
 
