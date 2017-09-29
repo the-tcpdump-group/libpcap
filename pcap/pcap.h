@@ -71,6 +71,8 @@
 
 #include <pcap/funcattrs.h>
 
+#include <pcap/pcap-inttypes.h>
+
 #if defined(_WIN32)
   #include <winsock2.h>		/* u_int, u_char etc. */
   #include <io.h>		/* _get_osfhandle() */
