@@ -1,8 +1,13 @@
+@if exist ".devel" (
+	@echo on
+) else @if not exist ".devel" (
+	@echo off
+)
+
 REM
 REM Automatically generate pcap_version.h based on pcap_version.h.in
 REM for Windows
 REM The version string comes from VERSION
-REM @echo off
 REM
 
 setlocal enableextensions disabledelayedexpansion
