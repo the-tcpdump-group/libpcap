@@ -1628,6 +1628,46 @@ endif(WIN32)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 
+# On UN*X, generate pcap-config and arrange that it be installed.
+if(NOT WIN32)
+    set(prefix ${CMAKE_INSTALL_PREFIX})
+    set(exec_prefix "\${prefix}")
+    set(includedir "\${prefix}/include")
+    set(libdir "\${exec_prefix}/lib")
+    if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "DragonFly BSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+       CMAKE_SYSTEM_NAME STREQUAL "OSF1")
+        #
+        # Platforms where the linker is the GNU linker
+        # or accepts command-line arguments like
+        # those the GNU linker accepts.
+        #
+        set(V_RPATH_OPT "-Wl,-rpath,")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
+        #
+        # SunOS 5.x.
+        #
+        # XXX - this assumes GCC is using the Sun linker,
+        # rather than the GNU linker.
+        #
+        set(V_RPATH_OPT "-Wl,-R,")
+    else()
+        #
+        # No option needed to set the RPATH.
+        #
+        set(V_RPATH_OPT "")
+    endif()
+    set(LIBS "")
+    foreach(LIB ${PCAP_LINK_LIBRARIES})
+        set(LIBS "${LIBS} -l${LIB}")
+    endforeach(LIB)
+    configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
+    install(PROGRAMS pcap-config DESTINATION bin)
+endif(NOT WIN32)
+
 # uninstall target
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
