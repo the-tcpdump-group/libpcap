@@ -59,6 +59,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(BUILD_WITH_LIBNL "Build with libnl" ON)
 endif()
 
+#
+# Additional capture modules.
+#
 option(DISABLE_USB "Disable USB sniffing support" OFF)
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
 option(DISABLE_NETMAP "Disable netmap support" OFF)
@@ -86,6 +89,9 @@ set(SNF_ROOT "/opt/snf" CACHE PATH "Path to directory with include and lib subdi
 option(DISABLE_TURBOCAP "Disable Riverbed TurboCap support" OFF)
 set(TURBOCAP_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for Riverbed TurboCap API")
 
+#
+# Debugging options.
+#
 option(BDEBUG "Build optimizer debugging code" OFF)
 option(YYDEBUG "Build parser debugging code" OFF)
 
