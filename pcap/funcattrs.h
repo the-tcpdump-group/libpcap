@@ -196,7 +196,7 @@
 /*
  * For flagging arguments as format strings in MSVC.
  */
-#if _MSC_VER >= 1400
+#ifdef _MSC_VER
  #include <sal.h>
  #if _MSC_VER > 1400
   #define PCAP_FORMAT_STRING(p) _Printf_format_string_ p

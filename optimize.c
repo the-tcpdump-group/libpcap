@@ -65,9 +65,10 @@ int pcap_optimizer_debug;
    * GCC 3.4 and later; we have __builtin_ctz().
    */
   #define lowest_set_bit(mask) __builtin_ctz(mask)
-#elif defined(_MSC_VER) && (_MSC_VER >= 1400)
+#elif defined(_MSC_VER)
   /*
-   * Visual Studio 2005 and later; use _BitScanForward().
+   * Visual Studio; we support only 2005 and later, so use
+   * _BitScanForward().
    */
 #include <intrin.h>
 #pragma intrinsic(_BitScanForward)

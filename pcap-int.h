@@ -45,23 +45,6 @@ extern "C" {
   #include <io.h>
 #endif
 
-#if (defined(_MSC_VER) && (_MSC_VER <= 1200)) /* we are compiling with Visual Studio 6, that doesn't support the LL suffix*/
-
-/*
- * Swap byte ordering of unsigned long long timestamp on a big endian
- * machine.
- */
-#define SWAPLL(ull)  ((ull & 0xff00000000000000) >> 56) | \
-                      ((ull & 0x00ff000000000000) >> 40) | \
-                      ((ull & 0x0000ff0000000000) >> 24) | \
-                      ((ull & 0x000000ff00000000) >> 8)  | \
-                      ((ull & 0x00000000ff000000) << 8)  | \
-                      ((ull & 0x0000000000ff0000) << 24) | \
-                      ((ull & 0x000000000000ff00) << 40) | \
-                      ((ull & 0x00000000000000ff) << 56)
-
-#else /* A recent Visual studio compiler or not VC */
-
 /*
  * Swap byte ordering of unsigned long long timestamp on a big endian
  * machine.
@@ -74,8 +57,6 @@ extern "C" {
                       ((ull & 0x0000000000ff0000ULL) << 24) | \
                       ((ull & 0x000000000000ff00ULL) << 40) | \
                       ((ull & 0x00000000000000ffULL) << 56)
-
-#endif /* _MSC_VER */
 
 /*
  * Maximum snapshot length.
