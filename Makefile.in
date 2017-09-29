@@ -283,6 +283,7 @@ EXTRA_DIST = \
 	chmod_bpf \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
+	cmake/FindFseeko.cmake \
 	cmake/FindLFS.cmake \
 	cmake/FindPacket.cmake \
 	cmake/have_siocglifconf.c \

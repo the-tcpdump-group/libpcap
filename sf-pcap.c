@@ -1009,6 +1009,45 @@ pcap_dump_ftell(pcap_dumper_t *p)
 	return (ftell((FILE *)p));
 }
 
+#if defined(HAVE_FSEEKO)
+/*
+ * We have fseeko(), so we have ftello().
+ * If we have large file support (files larger than 2^31-1 bytes),
+ * ftello() will give us a current file position with more than 32
+ * bits.
+ */
+int64_t
+pcap_dump_ftell64(pcap_dumper_t *p)
+{
+	return (ftello((FILE *)p));
+}
+#elif defined(_MSC_VER)
+/*
+ * We have Visual Studio; we support only 2005 and later, so we have
+ * _ftelli64().
+ */
+int64_t
+pcap_dump_ftell64(pcap_dumper_t *p)
+{
+	return (_ftelli64((FILE *)p));
+}
+#else
+/*
+ * We don't have ftello() or _ftelli64(), so fall back on ftell().
+ * Either long is 64 bits, in which case ftell() should suffice,
+ * or this is probably an older 32-bit UN*X without large file
+ * support, which means you'll probably get errors trying to
+ * write files > 2^31-1, so it won't matter anyway.
+ *
+ * XXX - what about MinGW?
+ */
+int64_t
+pcap_dump_ftell64(pcap_dumper_t *p)
+{
+	return (ftell((FILE *)p));
+}
+#endif
+
 int
 pcap_dump_flush(pcap_dumper_t *p)
 {

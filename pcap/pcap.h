@@ -479,6 +479,7 @@ PCAP_API pcap_dumper_t *pcap_dump_fopen(pcap_t *, FILE *fp);
 PCAP_API pcap_dumper_t *pcap_dump_open_append(pcap_t *, const char *);
 PCAP_API FILE	*pcap_dump_file(pcap_dumper_t *);
 PCAP_API long	pcap_dump_ftell(pcap_dumper_t *);
+PCAP_API int64_t	pcap_dump_ftell64(pcap_dumper_t *);
 PCAP_API int	pcap_dump_flush(pcap_dumper_t *);
 PCAP_API void	pcap_dump_close(pcap_dumper_t *);
 PCAP_API void	pcap_dump(u_char *, const struct pcap_pkthdr *, const u_char *);

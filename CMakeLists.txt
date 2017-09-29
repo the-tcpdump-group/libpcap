@@ -425,6 +425,19 @@ if(NOT WIN32)
     #
     add_definitions(${LFS_DEFINITIONS})
   endif()
+
+  #
+  # Check for fseeko as well.
+  #
+  include(FindFseeko)
+  if(FSEEKO_FOUND)
+    set(HAVE_FSEEKO ON)
+
+    #
+    # Add the required #defines.
+    #
+    add_definitions(${FSEEKO_DEFINITIONS})
+  endif()
 endif()
 
 if(INET6)
