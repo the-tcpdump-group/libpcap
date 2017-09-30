@@ -746,7 +746,7 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 	if (f == stdout)
 		SET_BINMODE(f);
 	else
-		setbuf(f, NULL);
+		setvbuf(f, NULL, _IONBF, 0);
 #endif
 	if (sf_write_header(p, f, linktype, p->tzoff, p->snapshot) == -1) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't write to %s: %s",
@@ -887,7 +887,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	 * We turn off buffering.
 	 * XXX - why?  And why not on the standard output?
 	 */
-	setbuf(f, NULL);
+	setvbuf(f, NULL, _IONBF, 0);
 #endif
 
 	/*
