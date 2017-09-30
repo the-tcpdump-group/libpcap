@@ -34,6 +34,9 @@
 #ifndef __RPCAP_PROTOCOL_H__
 #define __RPCAP_PROTOCOL_H__
 
+#include "portability.h"
+#include <pcap/funcattrs.h>
+
 #define RPCAP_DEFAULT_NETPORT "2002" /* Default port on which the RPCAP daemon is waiting for connections. */
 /* Default port on which the client workstation is waiting for connections in case of active mode. */
 #define RPCAP_DEFAULT_NETPORT_ACTIVE "2003"
@@ -312,5 +315,21 @@ struct rpcap_sampling
 #define PCAP_ERR_SETSAMPLING	15	/* Error during the settings of sampling parameters */
 #define PCAP_ERR_WRONGMSG	16	/* The other end endpoint sent a message which has not been recognized */
 #define PCAP_ERR_WRONGVER	17	/* The other end endpoint has a version number that is not compatible with our */
+
+/*
+ * \brief Buffer used by socket functions to send-receive packets.
+ * In case you plan to have messages larger than this value, you have to increase it.
+ */
+#define RPCAP_NETBUF_SIZE 64000
+
+/*********************************************************
+ *                                                       *
+ * Routines used by the rpcap client and rpcap daemon    *
+ *                                                       *
+ *********************************************************/
+extern int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
+extern void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
+extern int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);
+extern int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 
 #endif

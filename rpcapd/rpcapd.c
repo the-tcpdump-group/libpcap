@@ -52,7 +52,6 @@
 #include "rpcapd.h"
 #include "fileconf.h"		// for the configuration file management
 #include "rpcap-protocol.h"
-#include "pcap-rpcap-int.h"
 #include "daemon.h"		// the true main() method of this daemon
 #include "utils.h"		// Missing calls and such
 

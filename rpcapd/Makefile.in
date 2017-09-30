@@ -82,7 +82,7 @@ SRC =	daemon.c \
 	rpcapd.c \
 	utils.c
 
-OBJ =	$(SRC:.c=.o)
+OBJ =	$(SRC:.c=.o) ../rpcap-protocol.o
 PUBHDR =
 
 HDR = $(PUBHDR)

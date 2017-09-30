@@ -480,7 +480,7 @@ endif(WIN32)
 
 if(HAVE_REMOTE)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        pcap-new.c pcap-rpcap.c sockutils.c)
+        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
 endif(HAVE_REMOTE)
 
 #

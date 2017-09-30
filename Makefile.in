@@ -370,6 +370,7 @@ EXTRA_DIST = \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	pcap_version.h.in \
+	rpcap-protocol.c \
 	sockutils.c \
 	sockutils.h \
 	scanner.l \

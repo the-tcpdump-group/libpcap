@@ -1210,7 +1210,7 @@ yes)	AC_MSG_RESULT(yes)
 	AC_WARN([to attacks by malicious remote capture servers!])
 	AC_DEFINE(HAVE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
-	SSRC="$SSRC pcap-new.c pcap-rpcap.c sockutils.c"
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
 	RPCAPD=rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
