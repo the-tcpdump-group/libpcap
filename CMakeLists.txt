@@ -1434,10 +1434,17 @@ if(WIN32)
     endif()
 else(WIN32) # UN*X
     if(BUILD_SHARED_LIBS)
-        set_target_properties(${LIBRARY_NAME} PROPERTIES
-            VERSION ${PACKAGE_VERSION}
-            SOVERSION ${PACKAGE_VERSION_MAJOR}
-        )
+        if(APPLE)
+            set_target_properties(${LIBRARY_NAME} PROPERTIES
+                VERSION ${PACKAGE_VERSION}
+                SOVERSION A
+            )
+        else(APPLE)
+            set_target_properties(${LIBRARY_NAME} PROPERTIES
+                VERSION ${PACKAGE_VERSION}
+                SOVERSION ${PACKAGE_VERSION_MAJOR}
+            )
+        endif(APPLE)
     endif(BUILD_SHARED_LIBS)
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES
         OUTPUT_NAME "${LIBRARY_NAME}"
