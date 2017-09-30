@@ -99,6 +99,13 @@ extern "C" {
   #endif
   #define setbuf(x, y) \
 	setvbuf((x), (y), _IONBF, 0)
+
+  /*
+   * Make fopen() call a wrapper that calls fopen_s(), to squelch
+   * warnings.
+   */
+  #include <stdio.h>
+
   #define fopen(x, y) \
 	fopen_safe((x), (y))
   FILE *fopen_safe(const char *filename, const char* mode);
