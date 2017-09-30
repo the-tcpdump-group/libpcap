@@ -19,9 +19,10 @@
  * (same value, but different string of characters), causing compiler warnings.
  *
  * If we include it here, and they're defined, that'll prevent scanner.c
- * from defining them.
+ * from defining them.  So we include <pcap/pcap-inttypes.h>, to get
+ * <inttypes.h> if we have it.
  */
-#include <pcap-types.h>
+#include <pcap/pcap-inttypes.h>
 }
 
 /*
