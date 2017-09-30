@@ -40,12 +40,9 @@
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
 #include "sockutils.h"
+#include "portability.h"
 #include "rpcap-protocol.h"
 #include <pcap/pcap.h>
-#if 0
-#include "pcap-rpcap.h"
-#include "pcap-rpcap-int.h"
-#endif
 
 /*
  * This file contains functions used both by the rpcap client and the

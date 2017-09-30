@@ -34,9 +34,6 @@
 #ifndef __RPCAP_PROTOCOL_H__
 #define __RPCAP_PROTOCOL_H__
 
-#include "portability.h"
-#include <pcap/funcattrs.h>
-
 #define RPCAP_DEFAULT_NETPORT "2002" /* Default port on which the RPCAP daemon is waiting for connections. */
 /* Default port on which the client workstation is waiting for connections in case of active mode. */
 #define RPCAP_DEFAULT_NETPORT_ACTIVE "2003"
@@ -327,6 +324,9 @@ struct rpcap_sampling
  * Routines used by the rpcap client and rpcap daemon    *
  *                                                       *
  *********************************************************/
+ 
+#include "sockutils.h"
+
 extern int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
 extern void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
 extern int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);
