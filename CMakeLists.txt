@@ -1135,6 +1135,33 @@ if(WIN32)
 endif(WIN32)
 
 #
+# Check and add warning options if we have a .devel file.
+#
+include(CheckCCompilerFlag)
+macro(check_and_add_dashW_compiler_option _option)
+    message(STATUS "Checking C compiler flag -W${_option}")
+    check_c_compiler_flag("-W${_option}" ${_option})
+    if(${${_option}})
+        set(C_WARNING_FLAGS ${C_WARNING_FLAGS} "-W${_option}")
+    endif()
+endmacro()
+
+set(C_WARNING_FLAGS "")
+if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
+    #
+    # -W options, used by GCC and compilers that try to behave like it.
+    #
+    check_and_add_dashW_compiler_option(all)
+    check_and_add_dashW_compiler_option(sign-compare)
+    check_and_add_dashW_compiler_option(missing-prototypes)
+    check_and_add_dashW_compiler_option(strict-prototypes)
+    check_and_add_dashW_compiler_option(shadow)
+    check_and_add_dashW_compiler_option(declaration-after-statement)
+    check_and_add_dashW_compiler_option(used-but-marked-unused)
+endif()
+message(STATUS "C warning flags ${C_WARNING_FLAGS}")
+
+#
 # {Flex} and YACC/Berkeley YACC/Bison.
 # From a mail message to the CMake mailing list by Andy Cedilnik of
 # Kitware.
@@ -1450,6 +1477,11 @@ else(WIN32) # UN*X
         OUTPUT_NAME "${LIBRARY_NAME}"
     )
 endif(WIN32)
+
+if(BUILD_SHARED_LIBS)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_OPTIONS "${C_WARNING_FLAGS}")
+endif(BUILD_SHARED_LIBS)
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_OPTIONS "${C_WARNING_FLAGS}")
 
 if(BUILD_SHARED_LIBS)
     target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
