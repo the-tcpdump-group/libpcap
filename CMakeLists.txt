@@ -1399,9 +1399,11 @@ add_library(${LIBRARY_NAME}_static STATIC
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
 
 if(WIN32)
-    set_target_properties(${LIBRARY_NAME} PROPERTIES
-        VERSION ${PACKAGE_VERSION_NOSUFFIX} # only MAJOR and MINOR are needed
-    )
+    if(BUILD_SHARED_LIBS)
+        set_target_properties(${LIBRARY_NAME} PROPERTIES
+            VERSION ${PACKAGE_VERSION_NOSUFFIX} # only MAJOR and MINOR are needed
+        )
+    endif(BUILD_SHARED_LIBS)
     if(MSVC)
         # XXX For DLLs, the TARGET_PDB_FILE generator expression can be used to locate
         # its PDB file's output directory for installation.
@@ -1431,10 +1433,12 @@ if(WIN32)
         )
     endif()
 else(WIN32) # UN*X
-    set_target_properties(${LIBRARY_NAME} PROPERTIES
-        VERSION ${PACKAGE_VERSION}
-        SOVERSION ${PACKAGE_VERSION_MAJOR}
-    )
+    if(BUILD_SHARED_LIBS)
+        set_target_properties(${LIBRARY_NAME} PROPERTIES
+            VERSION ${PACKAGE_VERSION}
+            SOVERSION ${PACKAGE_VERSION_MAJOR}
+        )
+    endif(BUILD_SHARED_LIBS)
     set_target_properties(${LIBRARY_NAME}_static PROPERTIES
         OUTPUT_NAME "${LIBRARY_NAME}"
     )
