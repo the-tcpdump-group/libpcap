@@ -1727,7 +1727,7 @@ if(NOT WIN32)
         set(LIBS "${LIBS} -l${LIB}")
     endforeach(LIB)
     configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
-    install(PROGRAMS pcap-config DESTINATION bin)
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
 endif(NOT WIN32)
 
 # uninstall target
