@@ -1138,28 +1138,52 @@ endif(WIN32)
 # Check and add warning options if we have a .devel file.
 #
 include(CheckCCompilerFlag)
-macro(check_and_add_dashW_compiler_option _option)
-    message(STATUS "Checking C compiler flag -W${_option}")
-    check_c_compiler_flag("-W${_option}" ${_option})
-    if(${${_option}})
-        set(C_WARNING_FLAGS ${C_WARNING_FLAGS} "-W${_option}")
+macro(check_and_add_compiler_option _option)
+    message(STATUS "Checking C compiler flag ${_option}")
+    string(REPLACE "=" "-" _temp_option_variable ${_option})
+    string(REGEX REPLACE "^-" "" _option_variable ${_temp_option_variable})
+    check_c_compiler_flag("${_option}" ${_option_variable})
+    if(${${_option_variable}})
+        set(C_ADDITIONAL_FLAGS ${C_ADDITIONAL_FLAGS} "${_option}")
     endif()
 endmacro()
 
-set(C_WARNING_FLAGS "")
+set(C_ADDITIONAL_FLAGS "")
 if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
     #
     # -W options, used by GCC and compilers that try to behave like it.
     #
-    check_and_add_dashW_compiler_option(all)
-    check_and_add_dashW_compiler_option(sign-compare)
-    check_and_add_dashW_compiler_option(missing-prototypes)
-    check_and_add_dashW_compiler_option(strict-prototypes)
-    check_and_add_dashW_compiler_option(shadow)
-    check_and_add_dashW_compiler_option(declaration-after-statement)
-    check_and_add_dashW_compiler_option(used-but-marked-unused)
+    check_and_add_compiler_option(-Wall)
+    check_and_add_compiler_option(-Wsign-compare)
+    check_and_add_compiler_option(-Wmissing-prototypes)
+    check_and_add_compiler_option(-Wstrict-prototypes)
+    check_and_add_compiler_option(-Wshadow)
+    check_and_add_compiler_option(-Wdeclaration-after-statement)
+    check_and_add_compiler_option(-Wused-but-marked-unused)
 endif()
-message(STATUS "C warning flags ${C_WARNING_FLAGS}")
+
+#
+# Try to have the compiler default to hiding symbols, so that only
+# symbols explicitly exported with PCAP_API will be visible outside
+# (shared) libraries.
+#
+# Not necessary with MSVC, as that's the default.
+#
+if(NOT MSVC)
+    if(CMAKE_C_COMPILER_ID MATCHES "SunPro")
+        #
+        # Sun C/Oracle Studio.
+        #
+        check_and_add_compiler_option(-xldscope=hidden)
+    else()
+        #
+        # Try this for all other compilers; it's what GCC uses,
+        # and a number of other compilers, such as Clang and Intel C,
+        # use it as well.
+        #
+        check_and_add_compiler_option(-fvisibility=hidden)
+    endif()
+endif(NOT MSVC)
 
 #
 # {Flex} and YACC/Berkeley YACC/Bison.
@@ -1479,9 +1503,9 @@ else(WIN32) # UN*X
 endif(WIN32)
 
 if(BUILD_SHARED_LIBS)
-    set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_OPTIONS "${C_WARNING_FLAGS}")
+    set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
 endif(BUILD_SHARED_LIBS)
-set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_OPTIONS "${C_WARNING_FLAGS}")
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
 
 if(BUILD_SHARED_LIBS)
     target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
