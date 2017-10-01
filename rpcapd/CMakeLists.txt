@@ -23,7 +23,6 @@ if(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
 
 if(WIN32)
 set(RPCAPD_EXTRA_SOURCES win32-svc.c ${pcap_SOURCE_DIR}/pcap-dll.rc)
-add_definitions(-DWIN32_LEAN_AND_MEAN -DBUILDING_RPCAPD)
 include_directories(${pcap_SOURCE_DIR}/rpcapd)
 endif(WIN32)
 
