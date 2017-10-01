@@ -468,7 +468,7 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 	struct rpcap_header header;	// RPCAP message general header
 	int retval;			// generic return value
 	uint32 totread = 0;		// number of bytes of the payload read from the socket
-	ssize_t nread;
+	int nread;
 	struct rpcap_auth auth;		// RPCAP authentication header
 	char *string1, *string2;	// two strings exchanged by the authentication message
 	unsigned int plen;		// length of the payload
@@ -917,7 +917,7 @@ static int daemon_opensource(SOCKET sockctrl, char *source, int srclen, uint32 p
 {
 	pcap_t *fp = NULL;			// pcap_t main variable
 	uint32 totread;				// number of bytes of the payload read from the socket
-	ssize_t nread;
+	int nread;
 	char sendbuf[RPCAP_NETBUF_SIZE];	// temporary buffer in which data to be sent is buffered
 	int sendbufidx = 0;			// index which keeps the number of bytes currently buffered
 	struct rpcap_openreply *openreply;	// open reply message
@@ -1002,7 +1002,7 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 	char peerhost[PCAP_BUF_SIZE];		// temp variable needed to derive the host name of our peer
 	struct session *session;		// saves state of session
 	uint32 totread;				// number of bytes of the payload read from the socket
-	ssize_t nread;
+	int nread;
 	char sendbuf[RPCAP_NETBUF_SIZE];	// temporary buffer in which data to be sent is buffered
 	int sendbufidx = 0;			// index which keeps the number of bytes currently buffered
 
@@ -1262,7 +1262,7 @@ static int daemon_endcapture(struct session *session, pthread_t *threaddata, cha
 
 static int daemon_unpackapplyfilter(struct session *session, uint32 *totread, uint32 *plen, char *errbuf)
 {
-	ssize_t nread;
+	int nread;
 	struct rpcap_filter filter;
 	struct rpcap_filterbpf_insn insn;
 	struct bpf_insn *bf_insn;
