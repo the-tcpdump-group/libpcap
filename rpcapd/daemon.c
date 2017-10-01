@@ -35,10 +35,6 @@
 
 #include "ftmacros.h"
 
-#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
-typedef int ssize_t;
-#endif
-
 #include <pcap.h>		// for libpcap/WinPcap calls
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
@@ -57,6 +53,10 @@ typedef int ssize_t;
 
 #ifdef linux
 #include <shadow.h>		// for password management
+#endif
+
+#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
+typedef int ssize_t;
 #endif
 
 #define RPCAP_TIMEOUT_INIT 90		/* Initial timeout for RPCAP connections (default: 90 sec) */
