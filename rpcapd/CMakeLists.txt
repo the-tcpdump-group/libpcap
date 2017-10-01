@@ -1,5 +1,4 @@
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
-find_package(Threads REQUIRED)
 if(NOT MSVC)
   find_package(Threads REQUIRED)
   if(CMAKE_USE_PTHREADS_INIT)
