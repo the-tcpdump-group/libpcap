@@ -22,7 +22,7 @@ endif(NOT MSVC)
 if(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
 
 if(WIN32)
-set(RPCAPD_EXTRA_SOURCES win32-svc.c ${pcap_SOURCE_DIR}/pcap-dll.rc)
+set(RPCAPD_EXTRA_SOURCES win32-svc.c ${pcap_SOURCE_DIR}/rpcapd.rc)
 include_directories(${pcap_SOURCE_DIR}/rpcapd)
 endif(WIN32)
 
