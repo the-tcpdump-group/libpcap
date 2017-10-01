@@ -97,13 +97,13 @@ static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_soc
 static void *daemon_thrdatamain(void *ptr);
 
 /*!
-	\brief Main serving funtion
+	\brief Main serving function
 	This function is the one which does the job. It is the main() of the child
 	thread, which is created as soon as a new connection is accepted.
 
 	\param ptr: a void pointer that keeps the reference of the 'pthread_chain'
-	value corrisponding to this thread. This variable is casted into a 'pthread_chain'
-	value in order to retrieve the socket we're currently using, the therad ID, and 
+	value corresponding to this thread. This variable is casted into a 'pthread_chain'
+	value in order to retrieve the socket we're currently using, the thread ID, and 
 	some pointers to the previous and next elements into this struct.
 
 	\return None.
@@ -340,7 +340,7 @@ auth_again:
 				}
 				else
 				{
-					SOCK_ASSERT("GetStats: this call should't be allowed here", 1);
+					SOCK_ASSERT("GetStats: this call shouldn't be allowed here", 1);
 
 					if (daemon_getstatsnopcap(pars->sockctrl, ifdrops, ifrecv, krnldrop, svrcapt, errbuf))
 						SOCK_ASSERT(errbuf, 1);
@@ -538,7 +538,7 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 		{
 			if (!nullAuthAllowed)
 			{
-				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed; NULL autentication not permitted.");
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed; NULL authentication not permitted.");
 				retcode = -2;
 				goto error;
 			}
@@ -744,8 +744,8 @@ int daemon_findalldevs(SOCKET sockctrl, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	// temporary buffer in which data to be sent is buffered
 	int sendbufidx = 0;			// index which keeps the number of bytes currently buffered
-	pcap_if_t *alldevs;			// pointer to the heade of the interface chain
-	pcap_if_t *d;				// temp pointer neede to scan the interface chain
+	pcap_if_t *alldevs;			// pointer to the header of the interface chain
+	pcap_if_t *d;				// temp pointer needed to scan the interface chain
 	uint16 plen = 0;			// length of the payload of this message
 	struct pcap_addr *address;		// pcap structure that keeps a network address of an interface
 	struct rpcap_findalldevs_if *findalldevs_if;// rpcap structure that packet all the data of an interface together
