@@ -93,7 +93,7 @@ static void printusage(void)
 {
 	char *usagetext =
 	"USAGE:\n"
-	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-6] [-l <host_list>] [-a <host,port>]\n"
+	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-4] [-l <host_list>] [-a <host,port>]\n"
 	"        [-n] [-v] [-d] [-s <file>] [-f <file>]\n"
 	"  -b <address>: the address to bind to (either numeric or literal).\n"
     "      Default: it binds to all local IPv4 addresses\n"
