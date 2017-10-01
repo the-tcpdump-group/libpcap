@@ -1,12 +1,23 @@
 #include "config.h"
 #include <winver.h>
 
+#ifdef BUILDING_RPCAPD
+#include <rpcapd.h>
+#undef PACKAGE_NAME
+#define PACKAGE_NAME PROGRAM_NAME
+#endif
+
   VS_VERSION_INFO VERSIONINFO
     FILEVERSION    PACKAGE_VERSION_DLL
     PRODUCTVERSION PACKAGE_VERSION_DLL
     FILEFLAGSMASK  0x3fL
     FILEOS         VOS__WINDOWS32
+#ifdef BUILDING_RPCAPD
+    FILETYPE       VFT_APP
+#else
     FILETYPE       VFT_DLL
+#endif
+
 #ifdef _DEBUG
     FILEFLAGS 0x1L
 #else
@@ -19,12 +30,20 @@
       BEGIN
         VALUE "Comments",         "https://github.com/the-tcpdump-group/libpcap/"
         VALUE "CompanyName",      "The TCPdump Group"
+#ifdef BUILDING_RPCAPD
+        VALUE "FileDescription",  "Remote Packet Capture Daemon"
+#else
         VALUE "FileDescription",  "System-Independent Interface for User-Level Packet Capture"
-        VALUE "FileVersion",      "PACKAGE_VERSION_DLL"
-        VALUE "InternalName",     "PACKAGE_NAME"
+#endif
+        VALUE "FileVersion",      "PACKAGE_VERSION_DLL\0"
+        VALUE "InternalName",     "PACKAGE_NAME\0"
         VALUE "LegalCopyright",   "Copyright (c) The TCPdump Group"
         VALUE "LegalTrademarks",  ""
+#ifdef BUILDING_RPCAPD
+        VALUE "OriginalFilename", "rpcapd.exe"
+#else
         VALUE "OriginalFilename", "wpcap.dll"
+#endif
         VALUE "ProductName",      "PACKAGE_NAME"
         VALUE "ProductVersion",   "PACKAGE_VERSION"
       END
