@@ -35,6 +35,10 @@
 
 #include "ftmacros.h"
 
+#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
+typedef int ssize_t;
+#endif
+
 #include <pcap.h>		// for libpcap/WinPcap calls
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
