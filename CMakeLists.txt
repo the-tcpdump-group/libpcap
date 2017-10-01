@@ -478,11 +478,6 @@ else()
     endif(NOT HAVE_STRTOK_R)
 endif(WIN32)
 
-if(HAVE_REMOTE)
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
-endif(HAVE_REMOTE)
-
 #
 # Determine the main pcap-XXX.c file to use, and the libraries with
 # which we need to link libpcap, if any.
@@ -1383,6 +1378,16 @@ if(WIN32)
     #
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${pcap_SOURCE_DIR}/pcap-dll.rc)
 endif(WIN32)
+
+######################################
+# Remote Packet Capture Support
+######################################
+
+if(HAVE_REMOTE)
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
+        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
+    add_subdirectory(rpcapd)
+endif(HAVE_REMOTE)
 
 ######################################
 # Register targets
