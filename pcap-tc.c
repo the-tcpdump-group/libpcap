@@ -776,7 +776,15 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 		return NULL;
 
 	p->activate_op = TcActivate;
-	p->setnonblock_op = TcSetNonBlock; /* not supported */
+	/*
+	 * Set these up front, so that, even if our client tries
+	 * to set non-blocking mode before we're activated, or
+	 * query the state of non-blocking mode, they get an error,
+	 * rather than having the non-blocking mode option set
+	 * for use later.
+	 */
+	p->getnonblock_op = TcGetNonBlock;
+	p->setnonblock_op = TcSetNonBlock;
 	return p;
 }
 
@@ -791,17 +799,16 @@ static int TcSetDatalink(pcap_t *p, int dlt)
 static int TcGetNonBlock(pcap_t *p)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Getting the non blocking status is not available for TurboCap ports");
-		return -1;
-
+	    "Non-blocking mode isn't supported for TurboCap ports");
+	return -1;
 }
+
 static int TcSetNonBlock(pcap_t *p, int nonblock)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Setting the non blocking status is not available for TurboCap ports");
-		return -1;
+	    "Non-blocking mode isn't supported for TurboCap ports");
+	return -1;
 }
-
 
 static void TcCleanup(pcap_t *p)
 {
