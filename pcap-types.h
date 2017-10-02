@@ -35,14 +35,6 @@
  * Get u_int defined, by hook or by crook.
  */
 #ifdef _WIN32
-  /*
-   * Avoids a compiler warning in case this was already defined
-   * (someone defined _WINSOCKAPI_ when including 'windows.h', in order
-   * to prevent it from including 'winsock.h')
-   */
-  #ifdef _WINSOCKAPI_
-    #undef _WINSOCKAPI_
-  #endif
 
   /*
    * This defines u_int.

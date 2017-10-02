@@ -38,14 +38,6 @@
 #endif
 
 #ifdef _WIN32
-  /* Windows */
-  /*
-   * Prevents a compiler warning in case this was already defined (to
-   * avoid that windows.h includes winsock.h)
-   */
-  #ifdef _WINSOCKAPI_
-    #undef _WINSOCKAPI_
-  #endif
   /* Need windef.h for defines used in winsock2.h under MingW32 */
   #ifdef __MINGW32__
     #include <windef.h>
