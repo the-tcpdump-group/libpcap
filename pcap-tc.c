@@ -791,7 +791,11 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 static int TcSetDatalink(pcap_t *p, int dlt)
 {
 	/*
-	 * always return 0, as the check is done by pcap_set_datalink
+	 * We don't have to do anything; pcap_set_datalink() checks
+	 * whether the value is in the list of DLT_ values we
+	 * supplied, so we don't have to, and, if it is valid, sets
+	 * p->linktype to the new value; we don't have to do anything
+	 * in hardware, we just use what's in p->linktype.
 	 */
 	return 0;
 }
