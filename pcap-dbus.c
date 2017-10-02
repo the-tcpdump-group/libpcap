@@ -145,6 +145,28 @@ dbus_cleanup(pcap_t *handle)
 	pcap_cleanup_live_common(handle);
 }
 
+/*
+ * We don't support non-blocking mode.  I'm not sure what we'd
+ * do to support it and, given that we don't support select()/
+ * poll()/epoll()/kqueue watch etc., it probably doesn't
+ * matter.
+ */
+static int
+dbus_getnonblock(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing on D-Bus");
+	return (-1);
+}
+
+static int
+dbus_setnonblock(pcap_t *p, int nonblock _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing on D-Bus");
+	return (-1);
+}
+
 static int
 dbus_activate(pcap_t *handle)
 {
@@ -209,8 +231,8 @@ dbus_activate(pcap_t *handle)
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;      /* can't change data link type */
 #ifndef _WIN32
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->getnonblock_op = dbus_getnonblock;
+	handle->setnonblock_op = dbus_setnonblock;
 #endif
 	handle->stats_op = dbus_stats;
 	handle->cleanup_op = dbus_cleanup;

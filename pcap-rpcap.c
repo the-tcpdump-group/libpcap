@@ -1846,6 +1846,23 @@ static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	return 0;
 }
 
+/* We don't currently support non-blocking mode. */
+static int
+pcap_getnonblock_rpcap(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing remotely with rpcap");
+	return (-1);
+}
+
+static int
+pcap_setnonblock_rpcap(pcap_t *p, int nonblock _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing remotely with rpcap");
+	return (-1);
+}
+
 /*
  * This function opens a remote adapter by opening an RPCAP connection and
  * so on.
@@ -2085,8 +2102,8 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	fp->read_op = pcap_read_rpcap;
 	fp->save_current_filter_op = pcap_save_current_filter_rpcap;
 	fp->setfilter_op = pcap_setfilter_rpcap;
-	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
-	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
+	fp->getnonblock_op = pcap_getnonblock_rpcap;
+	fp->setnonblock_op = pcap_setnonblock_rpcap;
 	fp->stats_op = pcap_stats_rpcap;
 #ifdef _WIN32
 	fp->stats_ex_op = pcap_stats_ex_rpcap;
