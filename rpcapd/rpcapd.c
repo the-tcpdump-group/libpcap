@@ -95,7 +95,7 @@ static void printusage(void)
 	"Compiled with %s\n\n", pcap_lib_version());
 	char *usagetext =
 	"USAGE:"
-	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-6] [-l <host_list>] [-a <host,port>]\n"
+	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-4] [-l <host_list>] [-a <host,port>]\n"
 	"              [-n] [-v] [-d] [-s <file>] [-f <file>]\n\n"
 	"  -b<address>     the address to bind to (either numeric or literal).\n"
 	"                  Default: binds to all local IPv4 and IPv6 addresses\n\n"
@@ -122,7 +122,6 @@ static void printusage(void)
 
 	printf("%s", usagetext);
 }
-
 
 
 //! Program main
