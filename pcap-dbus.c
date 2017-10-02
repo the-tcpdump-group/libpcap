@@ -230,10 +230,8 @@ dbus_activate(pcap_t *handle)
 	handle->setfilter_op = install_bpf_program; /* XXX, later add support for dbus_bus_add_match() */
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;      /* can't change data link type */
-#ifndef _WIN32
 	handle->getnonblock_op = dbus_getnonblock;
 	handle->setnonblock_op = dbus_setnonblock;
-#endif
 	handle->stats_op = dbus_stats;
 	handle->cleanup_op = dbus_cleanup;
 
