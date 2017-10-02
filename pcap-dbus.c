@@ -208,12 +208,16 @@ dbus_activate(pcap_t *handle)
 	handle->setfilter_op = install_bpf_program; /* XXX, later add support for dbus_bus_add_match() */
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;      /* can't change data link type */
+#ifndef _WIN32
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
+#endif
 	handle->stats_op = dbus_stats;
 	handle->cleanup_op = dbus_cleanup;
 
+#ifndef _WIN32
 	handle->selectable_fd = handle->fd = -1;
+#endif
 
 	if (handle->opt.rfmon) {
 		/*
