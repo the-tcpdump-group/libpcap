@@ -321,6 +321,17 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 		return (NULL);
 
 	p->activate_op = dbus_activate;
+#ifndef _WIN32
+	/*
+	 * Set these up front, so that, even if our client tries
+	 * to set non-blocking mode before we're activated, or
+	 * query the state of non-blocking mode, they get an error,
+	 * rather than having the non-blocking mode option set
+	 * for use later.
+	 */
+	p->getnonblock_op = dbus_getnonblock;
+	p->setnonblock_op = dbus_setnonblock;
+#endif
 	return (p);
 }
 
