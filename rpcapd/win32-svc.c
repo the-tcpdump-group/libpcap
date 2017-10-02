@@ -33,7 +33,6 @@
 
 #include "rpcapd.h"
 #include <signal.h>
-#include "windows.h"
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include "sockutils.h"	// for SOCK_ASSERT
 #include "fileconf.h"
