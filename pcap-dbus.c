@@ -216,6 +216,28 @@ dbus_activate(pcap_t *handle)
 	handle->cleanup_op = dbus_cleanup;
 
 #ifndef _WIN32
+	/*
+	 * Unfortunately, trying to do a select()/poll()/epoll()/
+	 * kqueue watch/etc. on a D-Bus connection isn't a simple
+	 * case of "give me an FD on which to wait".
+	 *
+	 * Apparently, you have to register "add watch", "remove watch",
+	 * and "toggle watch" functions with
+	 * dbus_connection_set_watch_functions(),
+	 * keep a *set* of FDs, add to that set in the "add watch"
+	 * function, subtract from it in the "remove watch" function,
+	 * and either add to or subtract from that set in the "toggle
+	 * watch" function, and do the wait on *all* of the FDs in the
+	 * set.  (Yes, you need the "toggle watch" function, so that
+	 * the main loop doesn't itself need to check for whether
+	 * a given watch is enabled or disabled - most libpcap programs
+	 * know nothing about D-Bus and shouldn't *have* to know anything
+	 * about D-Bus other than how to decode D-Bus messages.)
+	 *
+	 * Implementing that would require considerable changes in
+	 * the way libpcap exports "selectable FDs" to its client.
+	 * Until that's done, we just say "you can't do that".
+	 */
 	handle->selectable_fd = handle->fd = -1;
 #endif
 
