@@ -319,7 +319,6 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 		return (NULL);
 
 	p->activate_op = dbus_activate;
-#ifndef _WIN32
 	/*
 	 * Set these up front, so that, even if our client tries
 	 * to set non-blocking mode before we're activated, or
@@ -329,7 +328,6 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 	 */
 	p->getnonblock_op = dbus_getnonblock;
 	p->setnonblock_op = dbus_setnonblock;
-#endif
 	return (p);
 }
 
