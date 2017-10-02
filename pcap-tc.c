@@ -791,11 +791,15 @@ TcCreate(const char *device, char *ebuf, int *is_ours)
 static int TcSetDatalink(pcap_t *p, int dlt)
 {
 	/*
-	 * We don't have to do anything; pcap_set_datalink() checks
+	 * We don't have to do any work here; pcap_set_datalink() checks
 	 * whether the value is in the list of DLT_ values we
 	 * supplied, so we don't have to, and, if it is valid, sets
 	 * p->linktype to the new value; we don't have to do anything
 	 * in hardware, we just use what's in p->linktype.
+	 *
+	 * We do have to have a routine, however, so that pcap_set_datalink()
+	 * doesn't think we don't support setting the link-layer header
+	 * type at all.
 	 */
 	return 0;
 }
