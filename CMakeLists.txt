@@ -1714,8 +1714,9 @@ endif(WIN32)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 
-# On UN*X, generate pcap-config and arrange that it be installed.
-if(NOT WIN32)
+# On UN*X, and on Windows when not using MSVC, generate pcap-config and arrange
+# that it be installed.
+if(NOT MSVC)
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
     set(includedir "\${prefix}/include")
@@ -1752,7 +1753,7 @@ if(NOT WIN32)
     endforeach(LIB)
     configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
-endif(NOT WIN32)
+endif(NOT MSVC)
 
 # uninstall target
 configure_file(
