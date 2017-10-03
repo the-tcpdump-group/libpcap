@@ -1724,6 +1724,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 # On UN*X, and on Windows when not using MSVC, generate pcap-config and arrange
 # that it be installed.
 if(NOT MSVC)
+    set(PACKAGE_NAME ${LIBRARY_NAME})
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
     set(includedir "\${prefix}/include")
