@@ -78,7 +78,6 @@ endif(APPLE)
 option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
 option(DISABLE_DAG "Disable DAG card support" OFF)
-set(DAG_ROOT "/usr/local" CACHE PATH "Path to directory with include and lib subdirectories for DAG API")
 
 option(DISABLE_SEPTEL "Disable Septel card support" OFF)
 set(SEPTEL_ROOT "${CMAKE_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
@@ -1001,37 +1000,38 @@ endif(NOT DISABLE_RDMA)
 # Check for Endace DAG card support.
 if(NOT DISABLE_DAG)
     #
-    # Do we have the dagapi.h header?
+    # Try to find the DAG header file and library.
     #
-    set(DAG_INCLUDE_DIR "${DAG_ROOT}/include")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
-    check_include_file(dagapi.h HAVE_DAGAPI_H)
-    cmake_pop_check_state()
-    if(HAVE_DAGAPI_H)
+    find_package(DAG)
+
+    #
+    # Did we succeed?
+    #
+    if(FOUND_DAG)
         #
         # Yes.
-        #
-        include_directories(AFTER ${DAG_INCLUDE_DIR})
-        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
-        set(HAVE_DAG_API TRUE)
-
-        #
         # Check for various DAG API functions.
         #
-        set(DAG_LIB_DIR ${DAG_ROOT}/lib)
-        check_library_exists(dag dag_attach_stream ${DAG_LIB_DIR} HAVE_DAG_STREAMS_API)
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
+        set(CMAKE_REQUIRED_LIBRARIES ${DAG_LIBRARY})
+        check_function_exists(dag_attach_stream HAVE_DAG_STREAMS_API)
         if(NOT HAVE_DAG_STREAMS_API)
             message(FATAL_ERROR "DAG library lacks streams support")
         endif()
-        check_library_exists(dag dag_attach_stream64 ${DAG_LIB_DIR} HAVE_DAG_LARGE_STREAMS_API)
-        check_library_exists(dag dag_get_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_ERF_TYPES)
-        check_library_exists(dag dag_get_stream_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_STREAM_ERF_TYPES)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dag)
-        link_directories(${DAG_LIB_DIR})
+        check_function_exists(dag_attach_stream64 HAVE_DAG_LARGE_STREAMS_API)
+        check_function_exists(dag_get_erf_types HAVE_DAG_GET_ERF_TYPES)
+        check_function_exists(dag_get_stream_erf_types HAVE_DAG_GET_STREAM_ERF_TYPES)
+        cmake_pop_check_state()
+
+        include_directories(AFTER ${DAG_INCLUDE_DIR})
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
+        set(HAVE_DAG_API TRUE)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DAG_LIBRARY})
 
         if(HAVE_DAG_LARGE_STREAMS_API)
-            check_library_exists(vdag vdag_set_device_info ${DAG_LIB_DIR} HAVE_DAG_VDAG)
+            get_filename_component(DAG_LIBRARY_DIR ${DAG_LIBRARY} PATH)
+            check_library_exists(vdag vdag_set_device_info ${DAG_LIBRARY_DIR} HAVE_DAG_VDAG)
             if(HAVE_DAG_VDAG)
                 set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} pthread)
             endif()
