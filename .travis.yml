@@ -21,10 +21,10 @@ env:
     # usual processing: false.
     - coverity_scan_script_test_mode=false
   matrix:
-    - REMOTE=disable
-    - REMOTE=enable
-    - CMAKE=no
-    - CMAKE=yes
+    - REMOTE=disable CMAKE=no
+    - REMOTE=disable CMAKE=yes
+    - REMOTE=enable CMAKE=no
+    - REMOTE=enable CMAKE=yes
 
 matrix:
   fast_finish: true
