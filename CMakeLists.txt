@@ -1759,6 +1759,12 @@ if(NOT MSVC)
         set(LIBS "${LIBS} -l${LIB}")
     endforeach(LIB)
     configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
+    # replace hardcoded library name with ${LIBRARY_NAME}
+    if(WIN32)
+        file(READ "${CMAKE_CURRENT_BINARY_DIR}/pcap-config" PCAP_CONFIG_OLD)
+        string(REPLACE "-lpcap" "-lwpcap" PCAP_CONFIG_NEW "${PCAP_CONFIG_OLD}")
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/pcap-config" "${PCAP_CONFIG_NEW}")
+    endif(WIN32)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
 endif(NOT MSVC)
 
