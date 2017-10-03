@@ -30,7 +30,9 @@ matrix:
   fast_finish: true
   allow_failures:
     - os: linux
-      env: REMOTE=enable
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      env: REMOTE=enable CMAKE=yes
 
 addons:
   coverity_scan:
