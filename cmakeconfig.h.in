@@ -256,10 +256,10 @@
 #cmakedefine PACKAGE_VERSION_DLL @PACKAGE_VERSION_DLL@
 
 /* Define to the full name of this package. */
-#cmakedefine PACKAGE_NAME @PACKAGE_NAME@
+#cmakedefine PACKAGE_NAME "@PACKAGE_NAME@"
 
 /* Define to the full name and version of this package. */
-#cmakedefine PACKAGE_STRING @PACKAGE_STRING@
+#cmakedefine PACKAGE_STRING "@PACKAGE_STRING@"
 
 /* Define to the one symbol short name of this package. */
 #cmakedefine PACKAGE_TARNAME 1
@@ -268,7 +268,7 @@
 #cmakedefine PACKAGE_URL 1
 
 /* Define to the version of this package. */
-#cmakedefine PACKAGE_VERSION @PACKAGE_VERSION@
+#cmakedefine PACKAGE_VERSION "@PACKAGE_VERSION@"
 
 /* target host supports Bluetooth sniffing */
 #cmakedefine PCAP_SUPPORT_BT 1
