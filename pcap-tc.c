@@ -1106,7 +1106,7 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 		s.ps_drop = 0xFFFFFFFF;
 	}
 
-#if defined(_WIN32) && defined(HAVE_REMOTE)
+#if defined(_WIN32) && defined(ENABLE_REMOTE)
 	s.ps_capt = pt->TcAcceptedCount;
 #endif
 	*ps = s;
@@ -1191,7 +1191,7 @@ TcStatsEx(pcap_t *p, int *pcap_stat_size)
 		p->stat.ps_drop = 0xFFFFFFFF;
 	}
 
-#if defined(_WIN32) && defined(HAVE_REMOTE)
+#if defined(_WIN32) && defined(ENABLE_REMOTE)
 	p->stat.ps_capt = pt->TcAcceptedCount;
 #endif
 

@@ -130,7 +130,7 @@
 #cmakedefine HAVE_PF_NAT_THROUGH_PF_NORDR 1
 
 /* Define to 1 if remote packet capture is to be supported */
-#cmakedefine HAVE_REMOTE 1
+#cmakedefine ENABLE_REMOTE 1
 
 /* define if you have the Septel API */
 #cmakedefine HAVE_SEPTEL_API 1

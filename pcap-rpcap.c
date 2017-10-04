@@ -734,14 +734,14 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 		ps->ps_drop = 0;
 		ps->ps_ifdrop = 0;
 		ps->ps_recv = 0;
-#if defined(_WIN32) && defined(HAVE_REMOTE)
+#if defined(_WIN32) && defined(ENABLE_REMOTE)
 		if (mode == PCAP_STATS_EX)
 		{
 			ps->ps_capt = 0;
 			ps->ps_sent = 0;
 			ps->ps_netdrop = 0;
 		}
-#endif /* _WIN32 && HAVE_REMOTE */
+#endif /* _WIN32 && ENABLE_REMOTE */
 
 		return ps;
 	}
@@ -791,14 +791,14 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	ps->ps_drop = ntohl(netstats.krnldrop);
 	ps->ps_ifdrop = ntohl(netstats.ifdrop);
 	ps->ps_recv = ntohl(netstats.ifrecv);
-#if defined(_WIN32) && defined(HAVE_REMOTE)
+#if defined(_WIN32) && defined(ENABLE_REMOTE)
 	if (mode == PCAP_STATS_EX)
 	{
 		ps->ps_capt = pr->TotCapt;
 		ps->ps_netdrop = pr->TotNetDrops;
 		ps->ps_sent = ntohl(netstats.svrcapt);
 	}
-#endif /* _WIN32 && HAVE_REMOTE */
+#endif /* _WIN32 && ENABLE_REMOTE */
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
 	if (totread != ntohl(header.plen))

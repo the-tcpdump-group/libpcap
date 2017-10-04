@@ -165,7 +165,7 @@ struct pcap {
 
 	void *priv;		/* private data for methods */
 
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 	struct pcap_samp rmt_samp;	/* parameters related to the sampling process. */
 #endif
 

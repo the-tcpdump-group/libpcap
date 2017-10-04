@@ -78,7 +78,7 @@ struct pcap_win {
 	int	dag_fcs_bits;		/* Number of checksum bits from link layer */
 #endif
 
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 	int samp_npkt;			/* parameter needed for sampling, with '1 out of N' method has been requested */
 	struct timeval samp_time;	/* parameter needed for sampling, with '1 every N ms' method has been requested */
 #endif
@@ -210,7 +210,7 @@ pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 	p->stat.ps_recv = bstats.bs_recv;
 	p->stat.ps_drop = bstats.bs_drop;
 	p->stat.ps_ifdrop = bstats.ps_ifdrop;
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 	p->stat.ps_capt = bstats.bs_capt;
 #endif
 	return (&p->stat);
@@ -565,7 +565,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (pw->filtering_in_kernel ||
 		    p->fcode.bf_insns == NULL ||
 		    bpf_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 			switch (p->rmt_samp.method) {
 
 			case PCAP_SAMP_1_EVERY_N:
@@ -604,7 +604,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				}
 			    }
 			}
-#endif	/* HAVE_REMOTE */
+#endif	/* ENABLE_REMOTE */
 
 			/*
 			 * XXX A bpf_hdr matches a pcap_pkthdr.

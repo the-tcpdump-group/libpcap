@@ -6,6 +6,9 @@
 /* Enable optimizer debugging */
 #undef BDEBUG
 
+/* Define to 1 if remote packet capture is to be supported */
+#undef ENABLE_REMOTE
+
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 
@@ -131,9 +134,6 @@
 
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
-
-/* Define to 1 if remote packet capture is to be supported */
-#undef HAVE_REMOTE
 
 /* define if you have the Septel API */
 #undef HAVE_SEPTEL_API

@@ -49,9 +49,9 @@ set(PCAP_TYPE "" CACHE STRING "Packet capture type")
 # not having it on UN*X.
 #
 if(WIN32)
-    option(HAVE_REMOTE "Enable remote capture" ON)
+    option(ENABLE_REMOTE "Enable remote capture" ON)
 else()
-    option(HAVE_REMOTE "Enable remote capture" OFF)
+    option(ENABLE_REMOTE "Enable remote capture" OFF)
 endif(WIN32)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -477,10 +477,10 @@ else()
     endif(NOT HAVE_STRTOK_R)
 endif(WIN32)
 
-if(HAVE_REMOTE)
+if(ENABLE_REMOTE)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
-endif(HAVE_REMOTE)
+endif(ENABLE_REMOTE)
 
 #
 # Determine the main pcap-XXX.c file to use, and the libraries with

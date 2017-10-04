@@ -1334,7 +1334,7 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 }
 #endif /* !defined(_WIN32) && !defined(MSDOS) */
 
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 #include "pcap-rpcap.h"
 
 /*
@@ -2355,7 +2355,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 {
 	pcap_t *p;
 	int status;
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 	char host[PCAP_BUF_SIZE + 1];
 	char port[PCAP_BUF_SIZE + 1];
 	char name[PCAP_BUF_SIZE + 1];
@@ -2401,7 +2401,7 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 				device += strlen(PCAP_SRC_IF_STRING);
 		}
 	}
-#endif	/* HAVE_REMOTE */
+#endif	/* ENABLE_REMOTE */
 
 	p = pcap_create(device, errbuf);
 	if (p == NULL)
