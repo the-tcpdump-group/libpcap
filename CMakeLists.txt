@@ -957,6 +957,13 @@ main(void)
 }
 "
                    PCAP_SUPPORT_BT_MONITOR)
+               if(PCAP_SUPPORT_BT_MONITOR)
+                   #
+                   # Yes, so we can also support Bluetooth monitor
+                   # sniffing.
+                   #
+                   set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-bt-monitor-linux.c)
+               endif(PCAP_SUPPORT_BT_MONITOR)
             endif(SOCKADDR_HCI_HAS_HCI_CHANNEL)
         endif(HAVE_BLUETOOTH_BLUETOOTH_H)
     endif()
