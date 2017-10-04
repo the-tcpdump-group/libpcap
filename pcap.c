@@ -171,6 +171,14 @@ pcap_wsockinit(void)
 }
 #endif /* _WIN32 */
 
+/*
+ * String containing the library version.
+ * Not explicitly exported via a header file - the right API to use
+ * is pcap_lib_version() - but some programs included it, so we
+ * provide it.
+ */
+PCAP_API_DEF char pcap_version[] = PACKAGE_VERSION;
+
 static int
 pcap_not_initialized(pcap_t *pcap)
 {

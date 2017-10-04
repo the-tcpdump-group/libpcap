@@ -463,7 +463,6 @@ set(PROJECT_SOURCE_LIST_C
     savefile.c
     sf-pcap-ng.c
     sf-pcap.c
-    version.c
     bpf/net/bpf_filter.c
 )
 
