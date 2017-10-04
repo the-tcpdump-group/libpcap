@@ -14,23 +14,9 @@ dnl
 # config.sub.
 #
 
-AC_PREREQ(2.61)
+AC_PREREQ(2.64)
 
-#
-# XXX - the version is a required argument to AC_INIT and, to quote the
-# autoconf documentation, "The arguments of AC_INIT must be static,
-# i.e., there should not be any shell computation, quotes, or newlines",
-# so we can't get the version from the VERSION file.
-#
-# So we put a place holder here.  The alternative would be to eliminate
-# the VERSION file, directly set the version here, CMakeLists.txt,
-# and msdos/makefile.dj, have pcap_version.h and version.c not be
-# expanded from .in files but instead use PACKAGE_VERSION, use
-# @PACKAGE_VERSION@ in Makefile.in for the full version string, and do
-# what's necessary to get the version in .travis-coverity-scan-build.sh.
-# That would involve updating three files when the version changes.
-#
-AC_INIT(pcap, place-holder-version)
+AC_INIT(pcap, m4_esyscmd_s([cat VERSION]))
 AC_SUBST(PACKAGE_NAME)
 
 AC_CANONICAL_SYSTEM
