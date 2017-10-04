@@ -1716,8 +1716,6 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 	return (0);
 }
 
-#include "pcap_version.h"
-
 static const char *pcap_lib_version_string;
 
 #ifdef HAVE_VERSION_H

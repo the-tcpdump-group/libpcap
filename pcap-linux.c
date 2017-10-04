@@ -6955,8 +6955,6 @@ pcap_set_protocol(pcap_t *p, int protocol)
 	return (0);
 }
 
-#include "pcap_version.h"
-
 /*
  * Libpcap version string.
  */

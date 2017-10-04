@@ -36,6 +36,12 @@
 
 #include <pcap/pcap.h>
 
+/*
+ * Version string.
+ * Uses PACKAGE_VERSION from config.h.
+ */
+#define PCAP_VERSION_STRING "libpcap version " PACKAGE_VERSION
+
 #ifdef __cplusplus
 extern "C" {
 #endif

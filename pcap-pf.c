@@ -633,8 +633,6 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 	return (0);
 }
 
-#include "pcap_version.h"
-
 /*
  * Libpcap version string.
  */

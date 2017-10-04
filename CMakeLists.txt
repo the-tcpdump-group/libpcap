@@ -463,6 +463,7 @@ set(PROJECT_SOURCE_LIST_C
     savefile.c
     sf-pcap-ng.c
     sf-pcap.c
+    version.c
     bpf/net/bpf_filter.c
 )
 
@@ -1334,70 +1335,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
     endif()
 endif()
 
-if(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
-    #
-    # CMake does not love Windows.  Convert its UN*X-style paths to
-    # Windows-style paths to hand to Windows programs.
-    #
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GenVersion_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.c.in" version_c_in_path)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/version.c" version_c_path) 
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/pcap_version.h.in" pcap_version_h_in_path)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h" pcap_version_h_path)
-    add_custom_command( 
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c 
-        SOURCE ${pcap_SOURCE_DIR}/VERSION 
-        COMMAND ${GenVersion_path} ${VERSION_path} ${version_c_in_path} ${version_c_path} 
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.c.in
-    ) 
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
-        SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
-        COMMAND ${GenVersion_path} ${VERSION_path} ${pcap_version_h_in_path} ${pcap_version_h_path}
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
-    )
-else(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
-        SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
-        SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION
-    )
-
-    #
-    # Since version.c does not exists yet when cmake is run, mark
-    # it as generated.
-    #
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c PROPERTIES
-        GENERATED TRUE
-    )
-
-    #
-    # Add version.c to the list of sources.
-    #
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-endif(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
-
-#
-# Since pcap_version.h does not exists yet when cmake is run, mark
-# it as generated.
-#
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h PROPERTIES
-    GENERATED TRUE
-)
-
-#
-# Add pcap_version.h to the list of headers.
-#
-set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h)
-
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 
@@ -1423,7 +1360,6 @@ add_custom_target(SerializeTarget
     DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-    ${CMAKE_CURRENT_BINARY_DIR}/version.c
 )
 
 set_source_files_properties(${PROJECT_EXTERNAL_OBJECT_LIST} PROPERTIES

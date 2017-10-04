@@ -1,1 +1,0 @@
-#define PCAP_VERSION_STRING "libpcap version %%LIBPCAP_VERSION%%"

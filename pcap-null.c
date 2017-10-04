@@ -55,8 +55,6 @@ pcap_lookupnet(const char *device _U_, bpf_u_int32 *netp _U_,
 }
 #endif
 
-#include "pcap_version.h"
-
 /*
  * Libpcap version string.
  */
