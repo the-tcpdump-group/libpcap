@@ -1171,10 +1171,33 @@ case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
 	AC_WARN([Remote packet capture may expose libpcap-based applications])
 	AC_WARN([to attacks by malicious remote capture servers!])
+	#
+	# rpcapd requires pthreads on UN*X.
+	#
 	AC_LBL_PTHREADS(ac_lbl_have_pthreads_for_rpcapd, RPCAPD_LIBS)
 	if test "$ac_lbl_have_pthreads_for_rpcapd" != "found"; then
 		AC_MSG_ERROR([rpcapd requires pthreads, but we didn't find them])
 	fi
+	#
+	# It also requires crypt().
+	# Do we have it in the system libraries?
+	#
+	AC_CHECK_FUNC(crypt,,
+	    [
+		#
+		# No.  Do we have it in -lcrypt?
+		#
+		AC_CHECK_LIB(crypt, crypt,
+		    [
+			#
+			# Yes; add -lcrypt to the libraries for rpcapd.
+			#
+			RPCAPD_LIBS="$RPCAPD_LIBS -lcrypt"
+		    ],
+		    [
+			AC_MSG_ERROR([rpcapd requires crypt(), but we didn't find it])
+		    ])
+	    ])
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"

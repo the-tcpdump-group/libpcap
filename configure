@@ -6609,8 +6609,8 @@ if test "x$ac_cv_header_pthread_h" = xyes; then :
 		# OK, we have pthread.h.  Do we have pthread_create in the
 		# system libraries?
 		#
-		ac_fn_c_check_func "$LINENO" "pthread_create_life" "ac_cv_func_pthread_create_life"
-if test "x$ac_cv_func_pthread_create_life" = xyes; then :
+		ac_fn_c_check_func "$LINENO" "pthread_create" "ac_cv_func_pthread_create"
+if test "x$ac_cv_func_pthread_create" = xyes; then :
 
 			#
 			# Yes.
@@ -7125,6 +7125,9 @@ $as_echo "yes" >&6; }
 $as_echo "$as_me: WARNING: Remote packet capture may expose libpcap-based applications" >&2;}
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to attacks by malicious remote capture servers!" >&5
 $as_echo "$as_me: WARNING: to attacks by malicious remote capture servers!" >&2;}
+	#
+	# rpcapd requires pthreads on UN*X.
+	#
 
 	ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
 if test "x$ac_cv_header_pthread_h" = xyes; then :
@@ -7133,8 +7136,8 @@ if test "x$ac_cv_header_pthread_h" = xyes; then :
 		# OK, we have pthread.h.  Do we have pthread_create in the
 		# system libraries?
 		#
-		ac_fn_c_check_func "$LINENO" "pthread_create_life" "ac_cv_func_pthread_create_life"
-if test "x$ac_cv_func_pthread_create_life" = xyes; then :
+		ac_fn_c_check_func "$LINENO" "pthread_create" "ac_cv_func_pthread_create"
+if test "x$ac_cv_func_pthread_create" = xyes; then :
 
 			#
 			# Yes.
@@ -7269,6 +7272,70 @@ fi
 	if test "$ac_lbl_have_pthreads_for_rpcapd" != "found"; then
 		as_fn_error $? "rpcapd requires pthreads, but we didn't find them" "$LINENO" 5
 	fi
+	#
+	# It also requires crypt().
+	# Do we have it in the system libraries?
+	#
+	ac_fn_c_check_func "$LINENO" "crypt" "ac_cv_func_crypt"
+if test "x$ac_cv_func_crypt" = xyes; then :
+
+else
+
+		#
+		# No.  Do we have it in -lcrypt?
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for crypt in -lcrypt" >&5
+$as_echo_n "checking for crypt in -lcrypt... " >&6; }
+if ${ac_cv_lib_crypt_crypt+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypt  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char crypt ();
+int
+main ()
+{
+return crypt ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypt_crypt=yes
+else
+  ac_cv_lib_crypt_crypt=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypt_crypt" >&5
+$as_echo "$ac_cv_lib_crypt_crypt" >&6; }
+if test "x$ac_cv_lib_crypt_crypt" = xyes; then :
+
+			#
+			# Yes; add -lcrypt to the libraries for rpcapd.
+			#
+			RPCAPD_LIBS="$RPCAPD_LIBS -lcrypt"
+
+else
+
+			as_fn_error $? "rpcapd requires crypt(), but we didn't find it" "$LINENO" 5
+
+fi
+
+
+fi
+
 
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
