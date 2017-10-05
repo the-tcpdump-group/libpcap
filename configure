@@ -6965,6 +6965,34 @@ $as_echo "no" >&6; }
 	fi
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable remote packet capture" >&5
+$as_echo_n "checking whether to enable remote packet capture... " >&6; }
+# Check whether --enable-remote was given.
+if test "${enable_remote+set}" = set; then :
+  enableval=$enable_remote;
+else
+  enableval=no
+fi
+
+case "$enableval" in
+yes)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Remote packet capture may expose libpcap-based applications" >&5
+$as_echo "$as_me: WARNING: Remote packet capture may expose libpcap-based applications" >&2;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to attacks by malicious remote capture servers!" >&5
+$as_echo "$as_me: WARNING: to attacks by malicious remote capture servers!" >&2;}
+
+$as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
+
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	RPCAPD=rpcapd
+	INSTALL_RPCAPD=install-rpcapd
+	;;
+*)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	;;
+esac
+
 #
 # Look for {f}lex.
 #
@@ -7221,34 +7249,6 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
 	as_fn_error $? "$YACC is insufficient to compile libpcap.
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them." "$LINENO" 5
 fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable remote packet capture" >&5
-$as_echo_n "checking whether to enable remote packet capture... " >&6; }
-# Check whether --enable-remote was given.
-if test "${enable_remote+set}" = set; then :
-  enableval=$enable_remote;
-else
-  enableval=no
-fi
-
-case "$enableval" in
-yes)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Remote packet capture may expose libpcap-based applications" >&5
-$as_echo "$as_me: WARNING: Remote packet capture may expose libpcap-based applications" >&2;}
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: to attacks by malicious remote capture servers!" >&5
-$as_echo "$as_me: WARNING: to attacks by malicious remote capture servers!" >&2;}
-
-$as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
-
-	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
-	RPCAPD=rpcapd
-	INSTALL_RPCAPD=install-rpcapd
-	;;
-*)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	;;
-esac
 
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention

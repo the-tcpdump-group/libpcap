@@ -477,11 +477,6 @@ else()
     endif(NOT HAVE_STRTOK_R)
 endif(WIN32)
 
-if(ENABLE_REMOTE)
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
-endif(ENABLE_REMOTE)
-
 #
 # Determine the main pcap-XXX.c file to use, and the libraries with
 # which we need to link libpcap, if any.
@@ -1127,6 +1122,11 @@ if(NOT DISABLE_TURBOCAP)
         link_directories(${TURBOCAPLIB_DIR})
     endif()
 endif() 
+
+if(ENABLE_REMOTE)
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
+        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
+endif(ENABLE_REMOTE)
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
     *.h

@@ -1154,6 +1154,30 @@ if test "$want_turbocap" != no; then
 	fi
 fi
 
+dnl
+dnl Allow the user to enable remote capture.
+dnl It's off by default, as that increases the attack surface of
+dnl libpcap, exposing it to malicious servers.
+dnl
+AC_MSG_CHECKING([whether to enable remote packet capture])
+AC_ARG_ENABLE(remote,
+[  --enable-remote         enable remote packet capture @<:@default=no@:>@
+  --disable-remote        disable remote packet capture],,
+   enableval=no)
+case "$enableval" in
+yes)	AC_MSG_RESULT(yes)
+	AC_WARN([Remote packet capture may expose libpcap-based applications])
+	AC_WARN([to attacks by malicious remote capture servers!])
+	AC_DEFINE(ENABLE_REMOTE,,
+	    [Define to 1 if remote packet capture is to be supported])
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	RPCAPD=rpcapd
+	INSTALL_RPCAPD=install-rpcapd
+	;;
+*)	AC_MSG_RESULT(no)
+	;;
+esac
+
 #
 # Look for {f}lex.
 #
@@ -1196,30 +1220,6 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
 	AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them.])
 fi
-
-dnl
-dnl Allow the user to enable remote capture.
-dnl It's off by default, as that increases the attack surface of
-dnl libpcap, exposing it to malicious servers.
-dnl
-AC_MSG_CHECKING([whether to enable remote packet capture])
-AC_ARG_ENABLE(remote,
-[  --enable-remote         enable remote packet capture @<:@default=no@:>@
-  --disable-remote        disable remote packet capture],,
-   enableval=no)
-case "$enableval" in
-yes)	AC_MSG_RESULT(yes)
-	AC_WARN([Remote packet capture may expose libpcap-based applications])
-	AC_WARN([to attacks by malicious remote capture servers!])
-	AC_DEFINE(ENABLE_REMOTE,,
-	    [Define to 1 if remote packet capture is to be supported])
-	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
-	RPCAPD=rpcapd
-	INSTALL_RPCAPD=install-rpcapd
-	;;
-*)	AC_MSG_RESULT(no)
-	;;
-esac
 
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention
