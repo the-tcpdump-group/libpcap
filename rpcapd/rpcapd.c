@@ -91,30 +91,34 @@ static void main_cleanup_childs(int sign);
 */
 static void printusage(void)
 {
+	(void)fprintf(stderr, "RPCAPD, a remote packet capture daemon.\n"
+	"Compiled with %s\n\n", pcap_lib_version());
 	char *usagetext =
-	"USAGE:\n"
+	"USAGE:"
 	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-4] [-l <host_list>] [-a <host,port>]\n"
-	"        [-n] [-v] [-d] [-s <file>] [-f <file>]\n"
-	"  -b <address>: the address to bind to (either numeric or literal).\n"
-    "      Default: it binds to all local IPv4 addresses\n"
-	"  -p <port>: the port to bind to. Default: it binds to port " RPCAP_DEFAULT_NETPORT "\n"
-	"  -4: use only IPv4 (default both IPv4 and IPv6 waiting sockets are used)\n"
-	"  -l <host_list>: a file that keeps the list of the hosts which are allowed\n"
-	"      to connect to this server (if more than one, list them one per line).\n"
-	"      We suggest to use literal names (instead of numeric ones) in order to\n"
-	"      avoid problems with different address families\n"
-	"  -n: permit NULL authentication (usually used with '-l')\n"
-	"  -a <host,port>: run in active mode when connecting to 'host' on port 'port'\n"
-	"      In case 'port' is omitted, the default port (" RPCAP_DEFAULT_NETPORT_ACTIVE ") is used\n"
-	"  -v: run in active mode only (default: if '-a' is specified, it accepts\n"
-	"      passive connections as well\n"
-	"  -d: run in daemon mode (UNIX only) or as a service (Win32 only)\n"
-	"      Warning (Win32): this switch is provided automatically when the service\n"
-	"      is started from the control panel\n"
-	"  -s <file>: save the current configuration to file\n"
- 	"  -f <file>: load the current configuration from file; all the switches\n"
-  	"      specified from the command line are ignored\n"
-    "  -h: print this help screen\n\n";
+	"              [-n] [-v] [-d] [-s <file>] [-f <file>]\n\n"
+	"  -b<address>     the address to bind to (either numeric or literal).\n"
+	"                  Default: binds to all local IPv4 and IPv6 addresses\n\n"
+	"  -p<port>        the port to bind to.\n"
+	"                  Default: binds to port " RPCAP_DEFAULT_NETPORT "\n\n"
+	"  -4              use only IPv4.\n"
+	"                  Default: use both IPv4 and IPv6 waiting sockets\n\n"
+	"  -l<host_list>   a file that contains a list of hosts that are allowed\n"
+	"                  to connect to this server (if more than one, list them one per line).\n"
+	"                  We suggest to use literal names (instead of numeric ones) in\n" 
+	"                  order to avoid problems with different address families.\n\n"
+	"  -n              permit NULL authentication (usually used with '-l')\n\n"
+	"  -a<host,port>   run in active mode when connecting to 'host' on port 'port'\n"
+	"                  In case 'port' is omitted, the default port (" RPCAP_DEFAULT_NETPORT_ACTIVE ") is used\n\n"
+	"  -v              run in active mode only (default: if '-a' is specified, it accepts\n"
+	"                  passive connections as well\n\n"
+	"  -d              run in daemon mode (UNIX only) or as a service (Win32 only)\n"
+	"                  Warning (Win32): this switch is provided automatically when the service\n"
+	"                  is started from the control panel\n\n"
+	"  -s<file>        save the current configuration to file\n\n"
+	"  -f<file>        load the current configuration from file; all switches\n"
+	"                  specified from the command line are ignored\n\n"
+	"  -h              print this help screen\n\n";
 
 	printf("%s", usagetext);
 }
