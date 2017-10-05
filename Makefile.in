@@ -135,6 +135,7 @@ HDR = $(PUBHDR) \
 	portability.h \
 	ppp.h \
 	rpcap-protocol.h \
+	rpcapd/CMakeLists.txt \
 	rpcapd/Makefile.in \
 	rpcapd/daemon.c \
 	rpcapd/daemon.h \
@@ -142,6 +143,7 @@ HDR = $(PUBHDR) \
 	rpcapd/fileconf.h \
 	rpcapd/rpcapd.c \
 	rpcapd/rpcapd.h \
+	rpcapd/rpcapd.rc \
 	rpcapd/utils.c \
 	rpcapd/utils.h \
 	rpcapd/win32-svc.h \
