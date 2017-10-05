@@ -1126,6 +1126,7 @@ endif()
 if(ENABLE_REMOTE)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
+    add_subdirectory(rpcapd)
 endif(ENABLE_REMOTE)
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
