@@ -36,6 +36,12 @@
 
 #include <pcap/pcap.h>
 
+/*
+ * Version string.
+ * Uses PACKAGE_VERSION from config.h.
+ */
+#define PCAP_VERSION_STRING "libpcap version " PACKAGE_VERSION
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -165,7 +171,7 @@ struct pcap {
 
 	void *priv;		/* private data for methods */
 
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 	struct pcap_samp rmt_samp;	/* parameters related to the sampling process. */
 #endif
 

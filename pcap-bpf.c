@@ -3177,8 +3177,6 @@ pcap_set_datalink_bpf(pcap_t *p, int dlt)
 	return (0);
 }
 
-#include "pcap_version.h"
-
 /*
  * Platform-specific information.
  */

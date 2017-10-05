@@ -103,14 +103,14 @@ int main(int argc, char **argv)
   bpf_u_int32 net, mask;
   int exit_status = 0;
   char errbuf[PCAP_ERRBUF_SIZE+1];
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
   struct pcap_rmtauth auth;
   char username[128+1];
   char *p;
   char *password;
 #endif
 
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
   if (argc >= 2)
   {
     if (pcap_findalldevs_ex(argv[1], NULL, &alldevs, errbuf) == -1)

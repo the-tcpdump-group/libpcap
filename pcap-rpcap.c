@@ -734,14 +734,14 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 		ps->ps_drop = 0;
 		ps->ps_ifdrop = 0;
 		ps->ps_recv = 0;
-#if defined(_WIN32) && defined(HAVE_REMOTE)
+#if defined(_WIN32) && defined(ENABLE_REMOTE)
 		if (mode == PCAP_STATS_EX)
 		{
 			ps->ps_capt = 0;
 			ps->ps_sent = 0;
 			ps->ps_netdrop = 0;
 		}
-#endif /* _WIN32 && HAVE_REMOTE */
+#endif /* _WIN32 && ENABLE_REMOTE */
 
 		return ps;
 	}
@@ -791,14 +791,14 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	ps->ps_drop = ntohl(netstats.krnldrop);
 	ps->ps_ifdrop = ntohl(netstats.ifdrop);
 	ps->ps_recv = ntohl(netstats.ifrecv);
-#if defined(_WIN32) && defined(HAVE_REMOTE)
+#if defined(_WIN32) && defined(ENABLE_REMOTE)
 	if (mode == PCAP_STATS_EX)
 	{
 		ps->ps_capt = pr->TotCapt;
 		ps->ps_netdrop = pr->TotNetDrops;
 		ps->ps_sent = ntohl(netstats.svrcapt);
 	}
-#endif /* _WIN32 && HAVE_REMOTE */
+#endif /* _WIN32 && ENABLE_REMOTE */
 
 	/* Checks if all the data has been read; if not, discard the data in excess */
 	if (totread != ntohl(header.plen))
@@ -1846,6 +1846,23 @@ static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	return 0;
 }
 
+/* We don't currently support non-blocking mode. */
+static int
+pcap_getnonblock_rpcap(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing remotely with rpcap");
+	return (-1);
+}
+
+static int
+pcap_setnonblock_rpcap(pcap_t *p, int nonblock _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing remotely with rpcap");
+	return (-1);
+}
+
 /*
  * This function opens a remote adapter by opening an RPCAP connection and
  * so on.
@@ -2085,8 +2102,8 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	fp->read_op = pcap_read_rpcap;
 	fp->save_current_filter_op = pcap_save_current_filter_rpcap;
 	fp->setfilter_op = pcap_setfilter_rpcap;
-	fp->getnonblock_op = NULL;	/* This is not implemented in remote capture */
-	fp->setnonblock_op = NULL;	/* This is not implemented in remote capture */
+	fp->getnonblock_op = pcap_getnonblock_rpcap;
+	fp->setnonblock_op = pcap_setnonblock_rpcap;
 	fp->stats_op = pcap_stats_rpcap;
 #ifdef _WIN32
 	fp->stats_ex_op = pcap_stats_ex_rpcap;

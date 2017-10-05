@@ -1,0 +1,21 @@
+#
+# Try to find the DAG library.
+#
+
+# Try to find the header
+find_path(DAG_INCLUDE_DIR dagapi.h)
+
+# Try to find the library
+find_library(DAG_LIBRARY dag)
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(DAG
+  DEFAULT_MSG
+  DAG_INCLUDE_DIR
+  DAG_LIBRARY
+)
+
+mark_as_advanced(
+  DAG_INCLUDE_DIR
+  DAG_LIBRARY
+)

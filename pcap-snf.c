@@ -592,8 +592,6 @@ pcap_create_interface(const char *device, char *errbuf)
 	return NULL;
 }
 
-#include "pcap_version.h"
-
 /*
  * Libpcap version string.
  */

@@ -33,8 +33,6 @@
 
 #include "rpcapd.h"
 #include <signal.h>
-#define	_WINSOCKAPI_
-#include "windows.h"
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include "sockutils.h"	// for SOCK_ASSERT
 #include "fileconf.h"
@@ -96,7 +94,7 @@ void WINAPI svc_control_handler(DWORD Opcode)
 				This can be seen by placing a breakpoint at the end of svc_main(), in which you will 
 				see that is never reached. However, as soon as you set the service status to "stopped",
 				the StartServiceCtrlDispatcher() returns and the main thread ends. Then, Win32 has a good
-				authomatic cleanup, so that all the threads which are still running are stopped
+				automatic cleanup, so that all the threads which are still running are stopped
 				when the main thread ends.
 			*/
 			raise(SIGABRT);

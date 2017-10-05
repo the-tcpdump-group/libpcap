@@ -43,6 +43,7 @@
 
 static int septel_setfilter(pcap_t *p, struct bpf_program *fp);
 static int septel_stats(pcap_t *p, struct pcap_stat *ps);
+static int septel_getnonblock(pcap_t *p);
 static int septel_setnonblock(pcap_t *p, int nonblock);
 
 /*
@@ -219,7 +220,7 @@ static pcap_t *septel_activate(pcap_t* handle) {
   handle->inject_op = septel_inject;
   handle->setfilter_op = septel_setfilter;
   handle->set_datalink_op = NULL; /* can't change data link type */
-  handle->getnonblock_op = pcap_getnonblock_fd;
+  handle->getnonblock_op = septel_getnonblock;
   handle->setnonblock_op = septel_setnonblock;
   handle->stats_op = septel_stats;
 
@@ -248,7 +249,15 @@ pcap_t *septel_create(const char *device, char *ebuf, int *is_ours) {
 		return NULL;
 
 	p->activate_op = septel_activate;
-	p->setnonblock_op = septel_setnonblock; /* not supported */
+	/*
+	 * Set these up front, so that, even if our client tries
+	 * to set non-blocking mode before we're activated, or
+	 * query the state of non-blocking mode, they get an error,
+	 * rather than having the non-blocking mode option set
+	 * for use later.
+	 */
+	p->getnonblock_op = septel_getnonblock;
+	p->setnonblock_op = septel_setnonblock;
 	return p;
 }
 
@@ -297,9 +306,21 @@ static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
   return (0);
 }
 
+/*
+ * We don't support non-blocking mode.  I'm not sure what we'd
+ * do to support it and, given that we don't support select()/
+ * poll()/epoll()/kqueue watch etc., it probably doesn't
+ * matter.
+ */
+static int
+septel_getnonblock(pcap_t *p)
+{
+  fprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
+  return (-1);
+}
 
 static int
-septel_setnonblock(pcap_t *p, int nonblock)
+septel_setnonblock(pcap_t *p, int nonblock _U_)
 {
   fprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Non-blocking mode not supported on Septel devices");
   return (-1);
@@ -330,8 +351,6 @@ pcap_create_interface(const char *device, char *errbuf)
                 "This version of libpcap only supports Septel cards");
   return (NULL);
 }
-
-#include "pcap_version.h"
 
 /*
  * Libpcap version string.

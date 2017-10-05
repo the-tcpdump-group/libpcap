@@ -683,7 +683,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	done = 1;
 #endif
 
-#ifdef HAVE_REMOTE
+#ifdef ENABLE_REMOTE
 	/*
 	 * If the device on which we're capturing need to be notified
 	 * that a new filter is being compiled, do so.

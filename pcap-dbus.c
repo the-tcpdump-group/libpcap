@@ -145,6 +145,28 @@ dbus_cleanup(pcap_t *handle)
 	pcap_cleanup_live_common(handle);
 }
 
+/*
+ * We don't support non-blocking mode.  I'm not sure what we'd
+ * do to support it and, given that we don't support select()/
+ * poll()/epoll()/kqueue watch etc., it probably doesn't
+ * matter.
+ */
+static int
+dbus_getnonblock(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing on D-Bus");
+	return (-1);
+}
+
+static int
+dbus_setnonblock(pcap_t *p, int nonblock _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Non-blocking mode isn't supported for capturing on D-Bus");
+	return (-1);
+}
+
 static int
 dbus_activate(pcap_t *handle)
 {
@@ -208,12 +230,36 @@ dbus_activate(pcap_t *handle)
 	handle->setfilter_op = install_bpf_program; /* XXX, later add support for dbus_bus_add_match() */
 	handle->setdirection_op = NULL;
 	handle->set_datalink_op = NULL;      /* can't change data link type */
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
+	handle->getnonblock_op = dbus_getnonblock;
+	handle->setnonblock_op = dbus_setnonblock;
 	handle->stats_op = dbus_stats;
 	handle->cleanup_op = dbus_cleanup;
 
+#ifndef _WIN32
+	/*
+	 * Unfortunately, trying to do a select()/poll()/epoll()/
+	 * kqueue watch/etc. on a D-Bus connection isn't a simple
+	 * case of "give me an FD on which to wait".
+	 *
+	 * Apparently, you have to register "add watch", "remove watch",
+	 * and "toggle watch" functions with
+	 * dbus_connection_set_watch_functions(),
+	 * keep a *set* of FDs, add to that set in the "add watch"
+	 * function, subtract from it in the "remove watch" function,
+	 * and either add to or subtract from that set in the "toggle
+	 * watch" function, and do the wait on *all* of the FDs in the
+	 * set.  (Yes, you need the "toggle watch" function, so that
+	 * the main loop doesn't itself need to check for whether
+	 * a given watch is enabled or disabled - most libpcap programs
+	 * know nothing about D-Bus and shouldn't *have* to know anything
+	 * about D-Bus other than how to decode D-Bus messages.)
+	 *
+	 * Implementing that would require considerable changes in
+	 * the way libpcap exports "selectable FDs" to its client.
+	 * Until that's done, we just say "you can't do that".
+	 */
 	handle->selectable_fd = handle->fd = -1;
+#endif
 
 	if (handle->opt.rfmon) {
 		/*
@@ -273,6 +319,15 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 		return (NULL);
 
 	p->activate_op = dbus_activate;
+	/*
+	 * Set these up front, so that, even if our client tries
+	 * to set non-blocking mode before we're activated, or
+	 * query the state of non-blocking mode, they get an error,
+	 * rather than having the non-blocking mode option set
+	 * for use later.
+	 */
+	p->getnonblock_op = dbus_getnonblock;
+	p->setnonblock_op = dbus_setnonblock;
 	return (p);
 }
 

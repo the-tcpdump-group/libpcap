@@ -1871,8 +1871,6 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	return (p);
 }
 
-#include "pcap_version.h"
-
 /*
  * Libpcap version string.
  */

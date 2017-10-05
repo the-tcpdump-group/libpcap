@@ -49,9 +49,9 @@ set(PCAP_TYPE "" CACHE STRING "Packet capture type")
 # not having it on UN*X.
 #
 if(WIN32)
-    option(HAVE_REMOTE "Enable remote capture" ON)
+    option(ENABLE_REMOTE "Enable remote capture" ON)
 else()
-    option(HAVE_REMOTE "Enable remote capture" OFF)
+    option(ENABLE_REMOTE "Enable remote capture" OFF)
 endif(WIN32)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -78,7 +78,6 @@ endif(APPLE)
 option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
 option(DISABLE_DAG "Disable DAG card support" OFF)
-set(DAG_ROOT "/usr/local" CACHE PATH "Path to directory with include and lib subdirectories for DAG API")
 
 option(DISABLE_SEPTEL "Disable Septel card support" OFF)
 set(SEPTEL_ROOT "${CMAKE_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
@@ -953,6 +952,13 @@ main(void)
 }
 "
                    PCAP_SUPPORT_BT_MONITOR)
+               if(PCAP_SUPPORT_BT_MONITOR)
+                   #
+                   # Yes, so we can also support Bluetooth monitor
+                   # sniffing.
+                   #
+                   set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-bt-monitor-linux.c)
+               endif(PCAP_SUPPORT_BT_MONITOR)
             endif(SOCKADDR_HCI_HAS_HCI_CHANNEL)
         endif(HAVE_BLUETOOTH_BLUETOOTH_H)
     endif()
@@ -984,7 +990,7 @@ if(NOT DISABLE_RDMA)
     if(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
         check_include_file(infiniband/verbs.h HAVE_INFINIBAND_VERBS_H)
         if(HAVE_INFINIBAND_VERBS_H)
-            check_library_exists(ibverbs ibv_create_flow PCAP_SUPPORT_RDMASNIFF)
+            check_symbol_exists(ibv_create_flow infiniband/verbs.h PCAP_SUPPORT_RDMASNIFF)
             if(PCAP_SUPPORT_RDMASNIFF)
                 set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-rdmasniff.c)
                 set(PCAP_LINK_LIBRARIES ibverbs ${PCAP_LINK_LIBRARIES})
@@ -996,37 +1002,38 @@ endif(NOT DISABLE_RDMA)
 # Check for Endace DAG card support.
 if(NOT DISABLE_DAG)
     #
-    # Do we have the dagapi.h header?
+    # Try to find the DAG header file and library.
     #
-    set(DAG_INCLUDE_DIR "${DAG_ROOT}/include")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
-    check_include_file(dagapi.h HAVE_DAGAPI_H)
-    cmake_pop_check_state()
-    if(HAVE_DAGAPI_H)
+    find_package(DAG)
+
+    #
+    # Did we succeed?
+    #
+    if(DAG_FOUND)
         #
         # Yes.
-        #
-        include_directories(AFTER ${DAG_INCLUDE_DIR})
-        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
-        set(HAVE_DAG_API TRUE)
-
-        #
         # Check for various DAG API functions.
         #
-        set(DAG_LIB_DIR ${DAG_ROOT}/lib)
-        check_library_exists(dag dag_attach_stream ${DAG_LIB_DIR} HAVE_DAG_STREAMS_API)
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
+        set(CMAKE_REQUIRED_LIBRARIES ${DAG_LIBRARY})
+        check_function_exists(dag_attach_stream HAVE_DAG_STREAMS_API)
         if(NOT HAVE_DAG_STREAMS_API)
             message(FATAL_ERROR "DAG library lacks streams support")
         endif()
-        check_library_exists(dag dag_attach_stream64 ${DAG_LIB_DIR} HAVE_DAG_LARGE_STREAMS_API)
-        check_library_exists(dag dag_get_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_ERF_TYPES)
-        check_library_exists(dag dag_get_stream_erf_types ${DAG_LIB_DIR} HAVE_DAG_GET_STREAM_ERF_TYPES)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dag)
-        link_directories(${DAG_LIB_DIR})
+        check_function_exists(dag_attach_stream64 HAVE_DAG_LARGE_STREAMS_API)
+        check_function_exists(dag_get_erf_types HAVE_DAG_GET_ERF_TYPES)
+        check_function_exists(dag_get_stream_erf_types HAVE_DAG_GET_STREAM_ERF_TYPES)
+        cmake_pop_check_state()
+
+        include_directories(AFTER ${DAG_INCLUDE_DIR})
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
+        set(HAVE_DAG_API TRUE)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DAG_LIBRARY})
 
         if(HAVE_DAG_LARGE_STREAMS_API)
-            check_library_exists(vdag vdag_set_device_info ${DAG_LIB_DIR} HAVE_DAG_VDAG)
+            get_filename_component(DAG_LIBRARY_DIR ${DAG_LIBRARY} PATH)
+            check_library_exists(vdag vdag_set_device_info ${DAG_LIBRARY_DIR} HAVE_DAG_VDAG)
             if(HAVE_DAG_VDAG)
                 set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} pthread)
             endif()
@@ -1115,6 +1122,11 @@ if(NOT DISABLE_TURBOCAP)
         link_directories(${TURBOCAPLIB_DIR})
     endif()
 endif() 
+
+if(ENABLE_REMOTE)
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
+        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
+endif(ENABLE_REMOTE)
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
     *.h
@@ -1329,70 +1341,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
     endif()
 endif()
 
-if(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
-    #
-    # CMake does not love Windows.  Convert its UN*X-style paths to
-    # Windows-style paths to hand to Windows programs.
-    #
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/GenVersion.bat" GenVersion_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/VERSION" VERSION_path)
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/version.c.in" version_c_in_path)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/version.c" version_c_path) 
-    file(TO_NATIVE_PATH "${pcap_SOURCE_DIR}/pcap_version.h.in" pcap_version_h_in_path)
-    file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h" pcap_version_h_path)
-    add_custom_command( 
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c 
-        SOURCE ${pcap_SOURCE_DIR}/VERSION 
-        COMMAND ${GenVersion_path} ${VERSION_path} ${version_c_in_path} ${version_c_path} 
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.c.in
-    ) 
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
-        SOURCE ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
-        COMMAND ${GenVersion_path} ${VERSION_path} ${pcap_version_h_in_path} ${pcap_version_h_path}
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in
-    )
-else(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.c
-        SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/version.c.in ${CMAKE_CURRENT_BINARY_DIR}/version.c
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION
-    )
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
-        SOURCE ${pcap_SOURCE_DIR}/VERSION
-        COMMAND ${pcap_SOURCE_DIR}/gen_version.sh ${pcap_SOURCE_DIR}/VERSION ${pcap_SOURCE_DIR}/pcap_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h
-        DEPENDS ${pcap_SOURCE_DIR}/VERSION
-    )
-
-    #
-    # Since version.c does not exists yet when cmake is run, mark
-    # it as generated.
-    #
-    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c PROPERTIES
-        GENERATED TRUE
-    )
-
-    #
-    # Add version.c to the list of sources.
-    #
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/version.c)
-endif(WIN32 AND NOT MSYS AND NOT ${CMAKE_CROSSCOMPILING})
-
-#
-# Since pcap_version.h does not exists yet when cmake is run, mark
-# it as generated.
-#
-set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h PROPERTIES
-    GENERATED TRUE
-)
-
-#
-# Add pcap_version.h to the list of headers.
-#
-set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${CMAKE_CURRENT_BINARY_DIR}/pcap_version.h)
-
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
 source_group("Header Files" FILES ${PROJECT_SOURCE_LIST_H})
 
@@ -1428,7 +1376,6 @@ add_custom_target(SerializeTarget
     DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-    ${CMAKE_CURRENT_BINARY_DIR}/version.c
 )
 
 set_source_files_properties(${PROJECT_EXTERNAL_OBJECT_LIST} PROPERTIES
@@ -1525,6 +1472,13 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmakeconfig.h.in ${CMAKE_CURRENT_BINA
 ######################################
 # Install pcap library, include files, and man pages
 ######################################
+
+#
+# "Define GNU standard installation directories", which actually
+# are also defined, to some degree, by autotools, and at least
+# some of which are general UN*X conventions.
+#
+include(GNUInstallDirs)
 
 set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
 
@@ -1670,7 +1624,7 @@ else(WIN32)
     foreach(MANPAGE ${MAN1_NOEXPAND})
         set(MAN1 ${MAN1} ${CMAKE_SOURCE_DIR}/${MANPAGE})
     endforeach(MANPAGE)
-    install(FILES ${MAN1} DESTINATION man/man1)
+    install(FILES ${MAN1} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
     set(MAN3PCAP "")
     foreach(MANPAGE ${MAN3PCAP_NOEXPAND})
@@ -1681,23 +1635,23 @@ else(WIN32)
         configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
-    install(FILES ${MAN3PCAP} DESTINATION man/man3)
-    install_manpage_symlink(pcap_datalink_val_to_name.3pcap pcap_datalink_val_to_description.3pcap man/man3)
-    install_manpage_symlink(pcap_dump_open.3pcap pcap_dump_fopen.3pcap man/man3)
-    install_manpage_symlink(pcap_findalldevs.3pcap pcap_freealldevs.3pcap man/man3)
-    install_manpage_symlink(pcap_geterr.3pcap pcap_perror.3pcap man/man3)
-    install_manpage_symlink(pcap_inject.3pcap pcap_sendpacket.3pcap man/man3)
-    install_manpage_symlink(pcap_list_datalinks.3pcap pcap_free_datalinks.3pcap man/man3)
-    install_manpage_symlink(pcap_list_tstamp_types.3pcap pcap_free_tstamp_types.3pcap man/man3)
-    install_manpage_symlink(pcap_loop.3pcap pcap_dispatch.3pcap man/man3)
-    install_manpage_symlink(pcap_major_version.3pcap pcap_minor_version.3pcap man/man3)
-    install_manpage_symlink(pcap_next_ex.3pcap pcap_next.3pcap man/man3)
-    install_manpage_symlink(pcap_open_dead.3pcap pcap_open_dead_with_tstamp_precision.3pcap man/man3)
-    install_manpage_symlink(pcap_open_offline.3pcap pcap_open_offline_with_tstamp_precision.3pcap man/man3)
-    install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline.3pcap man/man3)
-    install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline_with_tstamp_precision.3pcap man/man3)
-    install_manpage_symlink(pcap_tstamp_type_val_to_name.3pcap pcap_tstamp_type_val_to_description.3pcap man/man3)
-    install_manpage_symlink(pcap_setnonblock.3pcap pcap_getnonblock.3pcap man/man3)
+    install(FILES ${MAN3PCAP} DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_datalink_val_to_name.3pcap pcap_datalink_val_to_description.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_dump_open.3pcap pcap_dump_fopen.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_findalldevs.3pcap pcap_freealldevs.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_geterr.3pcap pcap_perror.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_inject.3pcap pcap_sendpacket.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_list_datalinks.3pcap pcap_free_datalinks.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_list_tstamp_types.3pcap pcap_free_tstamp_types.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_loop.3pcap pcap_dispatch.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_major_version.3pcap pcap_minor_version.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_next_ex.3pcap pcap_next.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_open_dead.3pcap pcap_open_dead_with_tstamp_precision.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_open_offline.3pcap pcap_open_offline_with_tstamp_precision.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_open_offline.3pcap pcap_fopen_offline_with_tstamp_precision.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_tstamp_type_val_to_name.3pcap pcap_tstamp_type_val_to_description.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
+    install_manpage_symlink(pcap_setnonblock.3pcap pcap_getnonblock.3pcap ${CMAKE_INSTALL_MANDIR}/man3)
 
     set(MANFILE "")
     foreach(TEMPLATE_MANPAGE ${MANFILE_EXPAND})
@@ -1705,7 +1659,7 @@ else(WIN32)
         configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MANFILE ${MANFILE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
-    install(FILES ${MANFILE} DESTINATION man/man${MAN_FILE_FORMATS})
+    install(FILES ${MANFILE} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_FILE_FORMATS})
 
     set(MANMISC "")
     foreach(TEMPLATE_MANPAGE ${MANMISC_EXPAND})
@@ -1713,14 +1667,16 @@ else(WIN32)
         configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MANMISC ${MANMISC} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
-    install(FILES ${MANMISC} DESTINATION man/man${MAN_MISC_INFO})
+    install(FILES ${MANMISC} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_MISC_INFO})
 endif(WIN32)
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 
-# On UN*X, generate pcap-config and arrange that it be installed.
-if(NOT WIN32)
+# On UN*X, and on Windows when not using MSVC, generate pcap-config and arrange
+# that it be installed.
+if(NOT MSVC)
+    set(PACKAGE_NAME ${LIBRARY_NAME})
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
     set(includedir "\${prefix}/include")
@@ -1757,7 +1713,7 @@ if(NOT WIN32)
     endforeach(LIB)
     configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
-endif(NOT WIN32)
+endif(NOT MSVC)
 
 # uninstall target
 configure_file(
