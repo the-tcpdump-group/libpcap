@@ -33,6 +33,10 @@ matrix:
       env: REMOTE=enable CMAKE=no
     - os: linux
       env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: osx
+      env: REMOTE=enable CMAKE=no
+    - os: osx
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
 addons:
   coverity_scan:
