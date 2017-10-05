@@ -1126,6 +1126,7 @@ endif()
 if(ENABLE_REMOTE)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
+    add_subdirectory(rpcapd)
 endif(ENABLE_REMOTE)
 
 file(GLOB PROJECT_SOURCE_LIST_CORE_H
@@ -1350,16 +1351,6 @@ if(WIN32)
     #
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${pcap_SOURCE_DIR}/pcap-dll.rc)
 endif(WIN32)
-
-######################################
-# Remote Packet Capture Support
-######################################
-
-if(HAVE_REMOTE)
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
-    add_subdirectory(rpcapd)
-endif(HAVE_REMOTE)
 
 ######################################
 # Register targets
