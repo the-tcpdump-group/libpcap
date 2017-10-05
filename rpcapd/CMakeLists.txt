@@ -21,29 +21,29 @@ endif(NOT MSVC)
 
 if(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
 
-if(WIN32)
-  set(RPCAPD_EXTRA_SOURCES win32-svc.c ${pcap_SOURCE_DIR}/rpcapd.rc)
-  include_directories(${pcap_SOURCE_DIR}/rpcapd)
-endif(WIN32)
+  if(WIN32)
+    set(RPCAPD_EXTRA_SOURCES win32-svc.c ${pcap_SOURCE_DIR}/rpcapd.rc)
+    include_directories(${pcap_SOURCE_DIR}/rpcapd)
+  endif(WIN32)
 
-add_executable(rpcapd
-  daemon.c
-  fileconf.c
-  rpcapd.c
-  utils.c
-  ${RPCAPD_EXTRA_SOURCES}
-)
+  add_executable(rpcapd
+    daemon.c
+    fileconf.c
+    rpcapd.c
+    utils.c
+    ${RPCAPD_EXTRA_SOURCES}
+  )
 
-if(UNIX)
-  set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} crypt)
-endif(UNIX)
+  if(UNIX)
+    set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} crypt)
+  endif(UNIX)
 
-target_link_libraries(rpcapd ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
+  target_link_libraries(rpcapd ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
 
-if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-  install(TARGETS rpcapd DESTINATION bin/amd64)
-else(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-  install(TARGETS rpcapd DESTINATION bin)
-endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+  if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    install(TARGETS rpcapd DESTINATION bin/amd64)
+  else(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+    install(TARGETS rpcapd DESTINATION bin)
+  endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 
 endif(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
