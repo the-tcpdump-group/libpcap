@@ -444,10 +444,6 @@ if(INET6)
 endif(INET6)
 
 ######################################
-# External dependencies
-######################################
-
-######################################
 # Input files
 ######################################
 
@@ -837,6 +833,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     check_include_file(linux/net_tstamp.h HAVE_LINUX_NET_TSTAMP_H)
 endif()
 
+#
+# Check for additional native sniffing capabilities.
+#
+
 # Check for USB sniffing support on Linux.
 # On FreeBSD, it uses BPF, so we don't need to do anything special here.
 if(NOT DISABLE_USB)
@@ -999,6 +999,10 @@ if(NOT DISABLE_RDMA)
     endif(LIBIBVERBS_HAS_IBV_GET_DEVICE_LIST)
 endif(NOT DISABLE_RDMA)
 
+#
+# Check for sniffing capabilities using third-party APIs.
+#
+
 # Check for Endace DAG card support.
 if(NOT DISABLE_DAG)
     #
@@ -1122,6 +1126,10 @@ if(NOT DISABLE_TURBOCAP)
         link_directories(${TURBOCAPLIB_DIR})
     endif()
 endif() 
+
+#
+# Remote capture support.
+#
 
 if(ENABLE_REMOTE)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}

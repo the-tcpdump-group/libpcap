@@ -744,8 +744,6 @@ with_pcap
 with_libnl
 enable_packet_ring
 enable_ipv6
-enable_optimizer_dbg
-enable_yydebug
 with_dag
 with_dag_includes
 with_dag_libraries
@@ -755,6 +753,8 @@ with_snf_includes
 with_snf_libraries
 with_turbocap
 enable_remote
+enable_optimizer_dbg
+enable_yydebug
 enable_universal
 enable_shared
 enable_usb
@@ -1393,10 +1393,10 @@ Optional Features:
   --enable-packet-ring    enable Linux packet ring support [default=yes]
   --enable-ipv6           build IPv6-capable version [default=yes, if
                           getaddrinfo available]
-  --enable-optimizer-dbg  build optimizer debugging code
-  --enable-yydebug        build parser debugging code
   --enable-remote         enable remote packet capture [default=no]
   --disable-remote        disable remote packet capture
+  --enable-optimizer-dbg  build optimizer debugging code
+  --enable-yydebug        build parser debugging code
   --disable-universal     don't build universal on macOS
   --enable-shared         build shared libraries [default=yes, if support
                           available]
@@ -6237,36 +6237,6 @@ fi
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build optimizer debugging code" >&5
-$as_echo_n "checking whether to build optimizer debugging code... " >&6; }
-# Check whether --enable-optimizer-dbg was given.
-if test "${enable_optimizer_dbg+set}" = set; then :
-  enableval=$enable_optimizer_dbg;
-fi
-
-if test "$enable_optimizer_dbg" = "yes"; then
-
-$as_echo "#define BDEBUG 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_optimizer_dbg-no}" >&5
-$as_echo "${enable_optimizer_dbg-no}" >&6; }
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build parser debugging code" >&5
-$as_echo_n "checking whether to build parser debugging code... " >&6; }
-# Check whether --enable-yydebug was given.
-if test "${enable_yydebug+set}" = set; then :
-  enableval=$enable_yydebug;
-fi
-
-if test "$enable_yydebug" = "yes"; then
-
-$as_echo "#define YYDEBUG 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_yydebug-no}" >&5
-$as_echo "${enable_yydebug-no}" >&6; }
-
 # Check for Endace DAG card support.
 
 # Check whether --with-dag was given.
@@ -7348,6 +7318,36 @@ $as_echo "no" >&6; }
 	;;
 esac
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build optimizer debugging code" >&5
+$as_echo_n "checking whether to build optimizer debugging code... " >&6; }
+# Check whether --enable-optimizer-dbg was given.
+if test "${enable_optimizer_dbg+set}" = set; then :
+  enableval=$enable_optimizer_dbg;
+fi
+
+if test "$enable_optimizer_dbg" = "yes"; then
+
+$as_echo "#define BDEBUG 1" >>confdefs.h
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_optimizer_dbg-no}" >&5
+$as_echo "${enable_optimizer_dbg-no}" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build parser debugging code" >&5
+$as_echo_n "checking whether to build parser debugging code... " >&6; }
+# Check whether --enable-yydebug was given.
+if test "${enable_yydebug+set}" = set; then :
+  enableval=$enable_yydebug;
+fi
+
+if test "$enable_yydebug" = "yes"; then
+
+$as_echo "#define YYDEBUG 1" >>confdefs.h
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${enable_yydebug-no}" >&5
+$as_echo "${enable_yydebug-no}" >&6; }
+
 #
 # Look for {f}lex.
 #
@@ -7605,6 +7605,8 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them." "$LINENO" 5
 fi
 
+#
+# Do various checks for various OSes and versions of those OSes.
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention
 # for man pages (file formats in section 5, miscellaneous info in section 7).

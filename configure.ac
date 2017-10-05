@@ -753,22 +753,6 @@ if test "$enable_ipv6" != "no"; then
 	    ])
 fi
 
-AC_MSG_CHECKING(whether to build optimizer debugging code)
-AC_ARG_ENABLE(optimizer-dbg,
-AC_HELP_STRING([--enable-optimizer-dbg],[build optimizer debugging code]))
-if test "$enable_optimizer_dbg" = "yes"; then
-	AC_DEFINE(BDEBUG,1,[Enable optimizer debugging])
-fi
-AC_MSG_RESULT(${enable_optimizer_dbg-no})
-
-AC_MSG_CHECKING(whether to build parser debugging code)
-AC_ARG_ENABLE(yydebug,
-AC_HELP_STRING([--enable-yydebug],[build parser debugging code]))
-if test "$enable_yydebug" = "yes"; then
-	AC_DEFINE(YYDEBUG,1,[Enable parser debugging])
-fi
-AC_MSG_RESULT(${enable_yydebug-no})
-
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
@@ -1208,6 +1192,22 @@ yes)	AC_MSG_RESULT(yes)
 	;;
 esac
 
+AC_MSG_CHECKING(whether to build optimizer debugging code)
+AC_ARG_ENABLE(optimizer-dbg,
+AC_HELP_STRING([--enable-optimizer-dbg],[build optimizer debugging code]))
+if test "$enable_optimizer_dbg" = "yes"; then
+	AC_DEFINE(BDEBUG,1,[Enable optimizer debugging])
+fi
+AC_MSG_RESULT(${enable_optimizer_dbg-no})
+
+AC_MSG_CHECKING(whether to build parser debugging code)
+AC_ARG_ENABLE(yydebug,
+AC_HELP_STRING([--enable-yydebug],[build parser debugging code]))
+if test "$enable_yydebug" = "yes"; then
+	AC_DEFINE(YYDEBUG,1,[Enable parser debugging])
+fi
+AC_MSG_RESULT(${enable_yydebug-no})
+
 #
 # Look for {f}lex.
 #
@@ -1251,6 +1251,8 @@ if test $tcpdump_cv_capable_yacc = insufficient ; then
  libpcap requires Bison, Berkeley YACC, or another YACC compatible with them.])
 fi
 
+#
+# Do various checks for various OSes and versions of those OSes.
 #
 # Assume, by default, no support for shared libraries and V7/BSD convention
 # for man pages (file formats in section 5, miscellaneous info in section 7).
