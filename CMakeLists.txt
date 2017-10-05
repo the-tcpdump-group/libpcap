@@ -1014,7 +1014,7 @@ if(NOT DISABLE_DAG)
     #
     # Did we succeed?
     #
-    if(FOUND_DAG)
+    if(DAG_FOUND)
         #
         # Yes.
         # Check for various DAG API functions.
