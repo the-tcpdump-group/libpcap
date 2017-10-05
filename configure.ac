@@ -1868,6 +1868,17 @@ fi
 if test "x$enable_rdmasniff" != "xno"; then
 	AC_CHECK_LIB(ibverbs, ibv_get_device_list, [
 		AC_CHECK_HEADER(infiniband/verbs.h, [
+			#
+			# ibv_create_flow may be defined as a static inline
+			# function in infiniband/verbs.h, so we can't
+			# use AC_CHECK_LIB.
+			#
+			# Too bad autoconf has no AC_SYMBOL_EXISTS()
+			# macro that works like CMake's check_symbol_exists()
+			# function, to check do a compile check like
+			# this (they do a clever trick to avoid having
+			# to know the function's signature).
+			#
 			AC_MSG_CHECKING(whether libibverbs defines ibv_create_flow)
 			AC_TRY_LINK(
 				[
