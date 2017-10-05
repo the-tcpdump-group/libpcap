@@ -1072,6 +1072,70 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
     ])
 
 dnl
+dnl Check for pthread support and for the library required for it.
+dnl If found, set the variable whose name is specified as the first
+dnl argument to "found" and add the library to the end of the variable
+dnl whose name is supplied as the second argument.
+dnl If not found, set the variable whose name is specified as the first
+dnl variable to "not found".
+dnl
+AC_DEFUN(AC_LBL_PTHREADS,
+    [
+	AC_CHECK_HEADER(pthread.h,
+	    [
+		#
+		# OK, we have pthread.h.  Do we have pthread_create in the
+		# system libraries?
+		#
+		AC_CHECK_FUNC(pthread_create,
+		    [
+			#
+			# Yes.
+			#
+			$1="found"
+		    ],
+		    [
+			#
+			# No - do we have it in -lpthreads?
+			#
+			AC_CHECK_LIB(pthreads, pthread_create,
+			    [
+				#
+				# Yes - add -lpthreads.
+				#
+                                $1="found"
+				$2="$$2 -lpthreads"
+			    ],
+			    [
+				#
+				# No - do we have it in -lpthread?
+				#
+				AC_CHECK_LIB(pthread, pthread_create,
+				    [
+					#
+					# Yes - add -lpthread.
+					#
+	                                $1="found"
+					$2="$$2 -lpthread"
+				    ],
+				    [
+					#
+					# No.
+					#
+					$1="not found"
+				    ])
+			    ])
+		    ])
+	    ],
+	    [
+		#
+		# We didn't find pthread.h.
+		#
+		$1="not found"
+	    ])
+    ])
+
+dnl
 dnl Test for __attribute__
 dnl
 

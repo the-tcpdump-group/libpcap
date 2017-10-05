@@ -878,7 +878,10 @@ if test "$want_dag" != no; then
 			AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
 			if test "$ac_dag_have_vdag" = 1; then
 				AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
-				LIBS="$LIBS -lpthread"
+				AC_LBL_PTHREADS(ac_lbl_have_pthreads_for_dag, LIBS)
+				if test "$ac_lbl_have_pthreads_for_dag" != "found"; then
+					AC_MSG_ERROR([DAG requires pthreads, but we didn't find them])
+				fi
 			fi
 		fi
 
@@ -1168,6 +1171,10 @@ case "$enableval" in
 yes)	AC_MSG_RESULT(yes)
 	AC_WARN([Remote packet capture may expose libpcap-based applications])
 	AC_WARN([to attacks by malicious remote capture servers!])
+	AC_LBL_PTHREADS(ac_lbl_have_pthreads_for_rpcapd, RPCAPD_LIBS)
+	if test "$ac_lbl_have_pthreads_for_rpcapd" != "found"; then
+		AC_MSG_ERROR([rpcapd requires pthreads, but we didn't find them])
+	fi
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
@@ -1523,6 +1530,7 @@ AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_USERMOD_SECTION)
 AC_SUBST(RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
+AC_SUBST(RPCAPD_LIBS)
 
 AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable USB capture support @<:@default=yes, if support available@:>@])],

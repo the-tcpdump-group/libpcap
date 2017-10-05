@@ -62,6 +62,7 @@ DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
+RPCAPD_LIBS = @RPCAPD_LIBS@
 
 # Standard CFLAGS
 FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
@@ -101,7 +102,7 @@ EXTRA_DIST = \
 	Makefile-devel-adds
 
 rpcapd: $(OBJ) ../libpcap.a
-	$(CC) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS) $(RPCAPD_LIBS)
 clean:
 	rm -f $(CLEANFILES)
 
