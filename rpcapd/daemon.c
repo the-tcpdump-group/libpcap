@@ -682,6 +682,7 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	 * (chmod u+s rpcapd)
 	 */
 	struct passwd *user;
+	char *user_password;
 #ifdef linux
 	struct spwd *usersp;
 #endif
@@ -700,21 +701,19 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
 		return -1;
 	}
-	
-	if (strcmp(usersp->sp_pwdp, (char *) crypt(password, usersp->sp_pwdp)) != 0)
-	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: password incorrect");
-		return -1;
-	}
+	user_password = usersp->sp_pwdp;
+#else
+	/*
+	 * XXX - what about other platforms?
+	 */
+	user_password = user->pw_passwd;
 #endif
 
-#ifdef bsd
-	if (strcmp(user->pw_passwd, (char *) crypt(password, user->pw_passwd)) != 0)
+	if (strcmp(user_password, (char *) crypt(password, user_password)) != 0)
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: password incorrect");
 		return -1;
 	}
-#endif
 
 	if (setuid(user->pw_uid))
 	{
