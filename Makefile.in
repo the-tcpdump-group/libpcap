@@ -285,12 +285,12 @@ EXTRA_DIST = \
 	chmod_bpf \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
-	cmake/FindDAG.cmake \
-	cmake/FindFseeko.cmake \
-	cmake/FindLFS.cmake \
-	cmake/FindPacket.cmake \
-	cmake/FindSNF.cmake \
-	cmake/FindTC.cmake \
+	cmake/Modules/FindDAG.cmake \
+	cmake/Modules/FindFseeko.cmake \
+	cmake/Modules/FindLFS.cmake \
+	cmake/Modules/FindPacket.cmake \
+	cmake/Modules/FindSNF.cmake \
+	cmake/Modules/FindTC.cmake \
 	cmake/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
