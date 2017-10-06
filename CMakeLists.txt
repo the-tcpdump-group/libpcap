@@ -441,6 +441,25 @@ if(INET6)
     message(STATUS "Use IPv6")
 endif(INET6)
 
+#
+# Pthreads.
+# We might need them, because some libraries we use might use them,
+# but we don't necessarily need them.
+# That's only on UN*X; on Windows, if they use threads, we assume
+# they're native Windows threads.
+#
+if(NOT WIN32)
+  set(CMAKE_THREAD_PREFER_PTHREAD ON)
+  find_package(Threads)
+  if(NOT CMAKE_USE_PTHREADS_INIT)
+    #
+    # If it's not pthreads, we won't use it; we use it for libraries
+    # that require it.
+    #
+    set(CMAKE_THREAD_LIBS_INIT "")
+  endif(NOT CMAKE_USE_PTHREADS_INIT)
+endif(NOT WIN32)
+
 ######################################
 # Input files
 ######################################
@@ -1037,7 +1056,7 @@ if(NOT DISABLE_DAG)
             get_filename_component(DAG_LIBRARY_DIR ${DAG_LIBRARY} PATH)
             check_library_exists(vdag vdag_set_device_info ${DAG_LIBRARY_DIR} HAVE_DAG_VDAG)
             if(HAVE_DAG_VDAG)
-                set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} pthread)
+                set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
             endif()
         endif()
     endif()
@@ -1103,7 +1122,7 @@ if(NOT DISABLE_TC)
         include_directories(AFTER ${TC_INCLUDE_DIR})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-tc.c)
         set(HAVE_TC_API TRUE)
-        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARY} pthread stdc++")
+        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARY} ${CMAKE_USE_PTHREADS_INIT} stdc++")
     endif()
 endif() 
 
