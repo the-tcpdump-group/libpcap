@@ -39,6 +39,9 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
+/* Define to 1 if you have the `getspnam' function. */
+#undef HAVE_GETSPNAM
+
 /* on HP-UX 10.20 or later */
 #undef HAVE_HPUX10_20_OR_LATER
 

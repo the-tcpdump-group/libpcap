@@ -39,6 +39,13 @@ endif(UNIX)
 #
 if((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
 
+  if(UNIX)
+    #
+    # Do we have getspnam()?
+    #
+    check_function_exists(getspnam HAVE_GETSPNAM)
+  endif(UNIX)
+
   if(WIN32)
     set(RPCAPD_EXTRA_SOURCES win32-svc.c rpcapd.rc)
     include_directories(${pcap_SOURCE_DIR}/rpcapd)

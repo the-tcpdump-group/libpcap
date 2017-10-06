@@ -1182,6 +1182,12 @@ yes)	AC_MSG_RESULT(yes)
 			AC_MSG_ERROR([rpcapd requires crypt(), but we didn't find it])
 		    ])
 	    ])
+
+	#
+	# OK, we have crypt().  Do we have getspnam()?
+	#
+	AC_CHECK_FUNCS(getspnam)
+
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"

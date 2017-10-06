@@ -51,7 +51,7 @@
 #include <pwd.h>		// for password management
 #endif
 
-#ifdef linux
+#ifdef HAVE_GETSPNAM
 #include <shadow.h>		// for password management
 #endif
 
@@ -683,7 +683,7 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	 */
 	struct passwd *user;
 	char *user_password;
-#ifdef linux
+#ifdef HAVE_GETSPNAM
 	struct spwd *usersp;
 #endif
 
@@ -694,7 +694,7 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		return -1;
 	}
 
-#ifdef linux
+#ifdef HAVE_GETSPNAM
 	// This call is needed to get the password; otherwise 'x' is returned
 	if ((usersp = getspnam(username)) == NULL)
 	{

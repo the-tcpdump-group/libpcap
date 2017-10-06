@@ -7307,6 +7307,22 @@ fi
 fi
 
 
+	#
+	# OK, we have crypt().  Do we have getspnam()?
+	#
+	for ac_func in getspnam
+do :
+  ac_fn_c_check_func "$LINENO" "getspnam" "ac_cv_func_getspnam"
+if test "x$ac_cv_func_getspnam" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETSPNAM 1
+_ACEOF
+
+fi
+done
+
+
+
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"

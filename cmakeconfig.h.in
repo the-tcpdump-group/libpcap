@@ -36,6 +36,9 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO 1
 
+/* Define to 1 if you have the `getspnam' function. */
+#cmakedefine HAVE_GETSPNAM 1
+
 /* on HP-UX 10.20 or later */
 #cmakedefine HAVE_HPUX10_20_OR_LATER 1
 
