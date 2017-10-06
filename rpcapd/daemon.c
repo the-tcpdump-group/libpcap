@@ -666,20 +666,23 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 #else
 	/*
-	 * Standard user authentication:
+	 * See
 	 *
 	 *	http://www.unixpapa.com/incnote/passwd.html
 	 *
-	 * Problem: it is not able to merge the standard pwd file with
-	 * the shadow one
+	 * We use the Solaris/Linux shadow password authentication if
+	 * we have getspnam(), otherwise we just do traditional
+	 * authentication, which, on some platforms, might work, even
+	 * with shadow passwords, if we're running as root.  Traditional
+	 * authenticaion won't work if we're not running as root, as
+	 * I think these days all UN*Xes either won't return the password
+	 * at all with getpwnam() or will only do so if you're root.
 	 *
-	 * Shadow user authentication:
-	 *
-	 *	http://www.tldp.org/HOWTO/Shadow-Password-HOWTO-8.html
-	 *
-	 * Problem: the program must either (1) run as root, or (2) run
-	 * as user, but it must be owned by root and must be SUID root
-	 * (chmod u+s rpcapd)
+	 * XXX - perhaps what we *should* be using is PAM, if we have
+	 * it.  That might hide all the details of username/password
+	 * authentication, whether it's done with a visible-to-root-
+	 * only password database or some other authentication mechanism,
+	 * behind its API.
 	 */
 	struct passwd *user;
 	char *user_password;
@@ -705,6 +708,13 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 #else
 	/*
 	 * XXX - what about other platforms?
+	 * The unixpapa.com page claims this Just Works on *BSD if you're
+	 * running as root - it's from 2000, so it doesn't indicate whether
+	 * macOS (which didn't come out until 2001, under the name Mac OS
+	 * X) behaves like the *BSDs or not, and might also work on AIX.
+	 * HP-UX does something else.
+	 *
+	 * Again, hopefully PAM hides all that.
 	 */
 	user_password = user->pw_passwd;
 #endif
