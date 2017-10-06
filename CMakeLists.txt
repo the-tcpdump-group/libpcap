@@ -77,16 +77,14 @@ else(APPLE)
 endif(APPLE)
 option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 
-option(DISABLE_DAG "Disable DAG card support" OFF)
+option(DISABLE_DAG "Disable Endace DAG card support" OFF)
 
 option(DISABLE_SEPTEL "Disable Septel card support" OFF)
 set(SEPTEL_ROOT "${CMAKE_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
 
 option(DISABLE_SNF "Disable Myricom SNF support" OFF)
-set(SNF_ROOT "/opt/snf" CACHE PATH "Path to directory with include and lib subdirectories for Myricom Sniffer API")
 
-option(DISABLE_TURBOCAP "Disable Riverbed TurboCap support" OFF)
-set(TURBOCAP_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for Riverbed TurboCap API")
+option(DISABLE_TC "Disable Riverbed TurboCap support" OFF)
 
 #
 # Debugging options.
@@ -1070,60 +1068,42 @@ endif()
 # Check for Myricom SNF support.
 if(NOT DISABLE_SNF)
     #
-    # Do we have the snf.h header?
+    # Try to find the SNF header file and library.
     #
-    set(SNF_INCLUDE_DIR "${SNF_ROOT}/include")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${SNF_INCLUDE_DIR})
-    check_include_file(snf.h HAVE_SNF_H)
-    cmake_pop_check_state()
-    if(HAVE_SNF_H)
-        #
-        # Yes.  Can we link with the SNF library?
-        #
-        include_directories(AFTER ${SNF_INCLUDE_DIR})
-        set(SNF_LIB_DIR ${SNF_ROOT}/lib)
-        check_library_exists(snf snf_init ${SNFLIB_DIR} HAVE_SNF_API)
-        if(NOT HAVE_SNF_API)
-            message(FATAL_ERROR "SNF API cannot correctly be linked; check CMakeFiles/CMakeError.log")
-        endif()
+    find_package(SNF)
 
+    #
+    # Did we succeed?
+    #
+    if(SNF_FOUND)
         #
         # Yes.
         #
+        include_directories(AFTER ${SNF_INCLUDE_DIR})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-snf.c)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} snf)
-        link_directories(${SNFLIB_DIR})
+        set(HAVE_SNF_API TRUE)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${SNF_LIBRARY})
     endif()
 endif() 
 
 # Check for Riverbed TurboCap support.
-if(NOT DISABLE_TURBOCAP)
+if(NOT DISABLE_TC)
     #
-    # Do we have the TcApi.h header?
+    # Try to find the TurboCap header file and library.
     #
-    set(TURBOCAP_INCLUDE_DIR "${TURBOCAP_ROOT}/include")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${TURBOCAP_INCLUDE_DIR})
-    check_include_file(TcApi.h HAVE_TCAPI_H)
-    cmake_pop_check_state()
-    if(HAVE_TCAPI_H)
-        #
-        # Yes.  Can we link with the TurboCap library?
-        #
-        include_directories(AFTER ${TURBOCAP_INCLUDE_DIR})
-        set(TURBOCAP_LIB_DIR ${TURBOCAP_ROOT}/lib)
-        check_library_exists(TcApi TcInstanceCreateByName ${TURBOCAPLIB_DIR} HAVE_TC_API)
-        if(NOT HAVE_TC_API)
-            message(FATAL_ERROR "TurboCap API cannot correctly be linked; check CMake errors")
-        endif()
+    find_package(TC)
 
+    #
+    # Did we succeed?
+    #
+    if(TC_FOUND)
         #
         # Yes.
         #
+        include_directories(AFTER ${TC_INCLUDE_DIR})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-tc.c)
-        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} TcApi pthread stdc++")
-        link_directories(${TURBOCAPLIB_DIR})
+        set(HAVE_TC_API TRUE)
+        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARY} pthread stdc++")
     endif()
 endif() 
 

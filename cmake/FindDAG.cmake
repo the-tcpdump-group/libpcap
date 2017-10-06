@@ -1,5 +1,5 @@
 #
-# Try to find the DAG library.
+# Try to find the Endace DAG library.
 #
 
 # Try to find the header

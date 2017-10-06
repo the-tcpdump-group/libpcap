@@ -289,6 +289,8 @@ EXTRA_DIST = \
 	cmake/FindFseeko.cmake \
 	cmake/FindLFS.cmake \
 	cmake/FindPacket.cmake \
+	cmake/FindSNF.cmake \
+	cmake/FindTC.cmake \
 	cmake/have_siocglifconf.c \
 	config.guess \
 	config.h.in \
