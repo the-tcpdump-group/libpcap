@@ -19,7 +19,25 @@ else(NOT MSVC)
   endif(PTHREADS_FOUND)
 endif(NOT MSVC)
 
-if(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
+if(UNIX)
+  check_function_exists(crypt HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
+  if(HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
+    set(HAVE_CRYPT TRUE)
+  else(HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
+    check_library_exists(crypt crypt "" HAVE_CRYPT_IN_LIBCRYPT)
+    if(HAVE_CRYPT_IN_LIBCRYPT)
+      set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} crypt)
+      set(HAVE_CRYPT TRUE)
+    else(HAVE_CRYPT_IN_LIBCRYPT)
+      message(WARNING "crypt() not found. Won't be able to build rpcapd.")
+    endif(HAVE_CRYPT_IN_LIBCRYPT)
+  endif(HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
+endif(UNIX)
+
+#
+# We need pthreads and, on UN*X, we need crypt().
+#
+if((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
 
   if(WIN32)
     set(RPCAPD_EXTRA_SOURCES win32-svc.c rpcapd.rc)
@@ -34,18 +52,6 @@ if(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
     ${RPCAPD_EXTRA_SOURCES}
   )
 
-  if(UNIX)
-    check_function_exists(crypt HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
-    if(NOT HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
-      check_library_exists(crypt crypt "" HAVE_CRYPT_IN_LIBCRYPT)
-      if(NOT HAVE_CRYPT_IN_LIBCRYPT)
-        message(WARNING "crypt() not found. Won't be able to build rpcapd.")
-      else(NOT HAVE_CRYPT_IN_LIBCRYPT)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} crypt)
-      endif(NOT HAVE_CRYPT_IN_LIBCRYPT)
-    endif(NOT HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
-  endif(UNIX)
-
   target_link_libraries(rpcapd ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
 
   if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -54,4 +60,4 @@ if(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
     install(TARGETS rpcapd DESTINATION bin)
   endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 
-endif(CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND)
+endif((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
