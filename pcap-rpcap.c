@@ -1919,7 +1919,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	/* socket-related variables */
 	struct addrinfo hints;			/* temp, needed to open a socket connection */
 	struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
-	SOCKET sockctrl = 0;			/* socket descriptor of the control connection */
+	SOCKET sockctrl;			/* socket descriptor of the control connection */
 
 	/* RPCAP-related variables */
 	struct rpcap_header header;		/* header of the RPCAP packet */
@@ -2024,7 +2024,11 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		}
 
 		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
-			goto error;
+		{
+			freeaddrinfo(addrinfo);
+			pcap_close(fp);
+			return NULL;
+		}
 
 		freeaddrinfo(addrinfo);
 		addrinfo = NULL;
