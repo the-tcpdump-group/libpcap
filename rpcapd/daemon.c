@@ -470,7 +470,6 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 	uint32 totread = 0;		// number of bytes of the payload read from the socket
 	int nread;
 	struct rpcap_auth auth;		// RPCAP authentication header
-	char *string1, *string2;	// two strings exchanged by the authentication message
 	unsigned int plen;		// length of the payload
 	int retcode;			// the value we have to return to the caller
 
@@ -543,47 +542,56 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 
 		case RPCAP_RMTAUTH_PWD:
 		{
-			int len1, len2;
+			char *username, *passwd;
+			int usernamelen, passwdlen;
 
-			len1 = ntohs(auth.slen1);
-			len2 = ntohs(auth.slen2);
+			usernamelen = ntohs(auth.slen1);
+			passwdlen = ntohs(auth.slen2);
 
-			string1 = (char *) malloc (len1 + 1);
-			string2 = (char *) malloc (len2 + 1);
+			username = (char *) malloc (usernamelen + 1);
+			passwd = (char *) malloc (passwdlen + 1);
 
-			if ((string1 == NULL) || (string2 == NULL))
+			if ((username == NULL) || (passwd == NULL))
 			{
 				snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 				retcode = -1;
 				goto error;
 			}
 
-			nread = sock_recv(sockctrl, string1, len1,
+			nread = sock_recv(sockctrl, username, usernamelen,
 			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
 			if (nread == -1)
 			{
+				free(username);
+				free(passwd);
 				retcode = -1;
 				goto error;
 			}
 			totread += nread;
-			nread = sock_recv(sockctrl, string2, len2,
+			nread = sock_recv(sockctrl, passwd, passwdlen,
 			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
 			if (nread == -1)
 			{
+				free(username);
+				free(passwd);
 				retcode = -1;
 				goto error;
 			}
 			totread += nread;
 
-			string1[len1] = 0;
-			string2[len2] = 0;
+			username[usernamelen] = 0;
+			passwd[passwdlen] = 0;
 
-			if (daemon_AuthUserPwd(string1, string2, errbuf))
+			if (daemon_AuthUserPwd(username, passwd, errbuf))
 			{
+				free(username);
+				free(passwd);
 				retcode = -2;
 				goto error;
 			}
 
+			free(username);
+			free(passwd);
 			break;
 			}
 
