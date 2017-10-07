@@ -2563,8 +2563,10 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == -1)
 	{
 		SOCK_ASSERT(errbuf, 1);
+		freeaddrinfo(addrinfo);
 		return -2;
 	}
+	freeaddrinfo(addrinfo);
 
 	/* Connection creation */
 	fromlen = sizeof(struct sockaddr_storage);
