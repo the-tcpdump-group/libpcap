@@ -193,6 +193,17 @@ auth_again:
 			goto end;
 	}
 
+	//
+	// We don't have any statistics yet.
+	//
+	ifdrops = 0;
+	ifrecv = 0;
+	krnldrop = 0;
+	svrcapt = 0;
+
+	//
+	// Service requests.
+	//
 	while (1)
 	{
 		errbuf[0] = 0;	// clear errbuf
