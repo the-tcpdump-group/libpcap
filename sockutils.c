@@ -515,6 +515,8 @@ int sock_initaddress(const char *host, const char *port,
 	{
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): socket type not supported");
+		freeaddrinfo(*addrinfo);
+		*addrinfo = NULL;
 		return -1;
 	}
 
@@ -526,6 +528,8 @@ int sock_initaddress(const char *host, const char *port,
 	{
 		if (errbuf)
 			pcap_snprintf(errbuf, errbuflen, "getaddrinfo(): multicast addresses are not valid when using TCP streams");
+		freeaddrinfo(*addrinfo);
+		*addrinfo = NULL;
 		return -1;
 	}
 
@@ -926,6 +930,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 				if (sock_cmpaddr(from, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
 				{
 					free(temphostlist);
+					freeaddrinfo(addrinfo);
 					return 0;
 				}
 
