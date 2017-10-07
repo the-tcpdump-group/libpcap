@@ -2692,6 +2692,8 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 
 				if (sock_close(temp->sockctrl, errbuf, PCAP_ERRBUF_SIZE))
 				{
+					freeaddrinfo(addrinfo);
+
 					/* To avoid inconsistencies in the number of sock_init() */
 					sock_cleanup();
 
