@@ -518,7 +518,9 @@ static void main_passive(void *ptr)
 	socklen_t fromlen;			// keeps the length of the sockaddr_storage variable
 	SOCKET sockmain;
 
-#ifndef USE_THREADS
+#ifdef USE_THREADS
+	int pthread_error;
+#else
 	pid_t pid;
 #endif
 
@@ -578,6 +580,8 @@ static void main_passive(void *ptr)
 		if (pars == NULL)
 		{
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			rpcap_senderror(sockctrl, errbuf, PCAP_ERR_OPEN, NULL);
+			sock_close(sockctrl, NULL, 0);
 			continue;
 		}
 
@@ -590,10 +594,13 @@ static void main_passive(void *ptr)
 		/* GV otherwise, the thread handle is not destroyed  */
 		pthread_attr_init(&detachedAttribute); 
 		pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
-		if (pthread_create(&threadId, &detachedAttribute, (void *) &daemon_serviceloop, (void *) pars))
+		pthread_error = pthread_create(&threadId, &detachedAttribute, (void *) &daemon_serviceloop, (void *) pars);
+		if (pthread_error != 0)
 		{
-			SOCK_ASSERT("Error creating the child thread", 1);
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread: %s", pcap_strerror(pthread_error));
+			rpcap_senderror(sockctrl, errbuf, PCAP_ERR_OPEN, NULL);
 			pthread_attr_destroy(&detachedAttribute);
+			sock_close(sockctrl, NULL, 0);
 			continue;
 		}
 		pthread_attr_destroy(&detachedAttribute);
