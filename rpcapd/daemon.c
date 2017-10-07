@@ -259,12 +259,13 @@ auth_again:
 			case -2:	// The other endpoint send a message that is not allowed here
 			{
 				rpcap_senderror(pars->sockctrl, "The RPCAP daemon received a message that is not valid", PCAP_ERR_WRONGMSG, errbuf);
+				break;
 			}
 			case -1:	// The other endpoint has a version number that is not compatible with our
 			{
 				rpcap_senderror(pars->sockctrl, "RPCAP version number mismatch", PCAP_ERR_WRONGVER, errbuf);
+				break;
 			}
-			break;
 
 			case RPCAP_MSG_FINDALLIF_REQ:
 			{
