@@ -1505,6 +1505,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	 * the pathname.
 	 */
 	if (pcap_strcasecmp(scheme, "file") == 0) {
+		*schemep = scheme;
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
 			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
@@ -1851,6 +1852,7 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 		free(tmppath);
 		free(tmphost);
 		free(tmpuserinfo);
+		free(scheme);
 		return (0);
 	}
 
@@ -1865,6 +1867,7 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 		free(tmppath);
 		free(tmphost);
 		free(tmpuserinfo);
+		free(scheme);
 		return (0);
 	}
 
@@ -1879,6 +1882,7 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 	free(tmppath);
 	free(tmphost);
 	free(tmpuserinfo);
+	free(scheme);
 	return (0);
 }
 #endif
