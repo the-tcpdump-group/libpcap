@@ -1066,6 +1066,8 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 	{
 		rpcap_senderror(sockctrl, "Can't allocate session structure",
 		    PCAP_ERR_OPEN, NULL);
+		if (totread != plen)
+			sock_discard(sockctrl, plen - totread, NULL, 0);
 		return NULL;
 	}
 
@@ -1078,6 +1080,9 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 			errbuf)) == NULL)
 	{
 		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_OPEN, NULL);
+		if (totread != plen)
+			sock_discard(sockctrl, plen - totread, NULL, 0);
+		free(session);
 		return NULL;
 	}
 
