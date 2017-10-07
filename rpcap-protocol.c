@@ -268,7 +268,10 @@ rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 fir
 			if (len >= PCAP_ERRBUF_SIZE)
 			{
 				if (sock_recv(sock, errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE))
+				{
+					va_end(ap);
 					return -3;
+				}
 
 				sock_discard(sock, len - (PCAP_ERRBUF_SIZE - 1), NULL, 0);
 
