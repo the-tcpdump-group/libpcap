@@ -238,6 +238,7 @@ rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 fir
 	va_list ap;
 	uint8 type;
 	int32 len;
+	char remote_errbuf[PCAP_ERRBUF_SIZE];
 
 	va_start(ap, first);
 
@@ -267,7 +268,7 @@ rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 fir
 
 			if (len >= PCAP_ERRBUF_SIZE)
 			{
-				if (sock_recv(sock, errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE))
+				if (sock_recv(sock, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
 				{
 					va_end(ap);
 					return -3;
@@ -275,16 +276,32 @@ rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 fir
 
 				sock_discard(sock, len - (PCAP_ERRBUF_SIZE - 1), NULL, 0);
 
-				/* Put '\0' at the end of the string */
-				errbuf[PCAP_ERRBUF_SIZE - 1] = 0;
+				/*
+				 * Copy the received string to errbuf, and
+				 * null-terminate it.
+				 */
+				memcpy(errbuf, remote_errbuf, PCAP_ERRBUF_SIZE - 1);
+				errbuf[PCAP_ERRBUF_SIZE - 1] = '\0';
+			}
+			else if (len == 0)
+			{
+				/* Empty error string. */
+				errbuf[0] = '\0';
 			}
 			else
 			{
-				if (sock_recv(sock, errbuf, len, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+				if (sock_recv(sock, remote_errbuf, len, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+				{
+					va_end(ap);
 					return -3;
+				}
 
-				/* Put '\0' at the end of the string */
-				errbuf[len] = 0;
+				/*
+				 * Copy the received string to errbuf, and
+				 * null-terminate it.
+				 */
+				memcpy(errbuf, remote_errbuf, len - 1);
+				errbuf[len] = '\0';
 			}
 
 			va_end(ap);
