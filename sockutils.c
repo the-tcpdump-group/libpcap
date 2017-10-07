@@ -312,6 +312,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 			{
 				if (errbuf)
 					pcap_snprintf(errbuf, errbuflen, "setsockopt(IPV6_BINDV6ONLY)");
+				closesocket(sock);
 				return -1;
 			}
 		}
@@ -321,6 +322,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		if (bind(sock, addrinfo->ai_addr, (int) addrinfo->ai_addrlen) != 0)
 		{
 			sock_geterror("bind(): ", errbuf, errbuflen);
+			closesocket(sock);
 			return -1;
 		}
 
@@ -328,6 +330,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 			if (listen(sock, nconn) == -1)
 			{
 				sock_geterror("listen(): ", errbuf, errbuflen);
+				closesocket(sock);
 				return -1;
 			}
 
