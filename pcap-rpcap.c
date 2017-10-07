@@ -2211,7 +2211,10 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		}
 
 		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == -1)
-			goto error;
+		{
+			freeaddrinfo(addrinfo);
+			return -1;
+		}
 
 		/* addrinfo is no longer used */
 		freeaddrinfo(addrinfo);
