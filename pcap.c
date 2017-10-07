@@ -1880,6 +1880,7 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 	if (type)
 		*type = PCAP_SRC_IFLOCAL;
 	free(tmppath);
+	free(tmpport);
 	free(tmphost);
 	free(tmpuserinfo);
 	free(scheme);
