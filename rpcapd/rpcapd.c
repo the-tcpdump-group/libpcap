@@ -722,4 +722,6 @@ static void main_active(void *ptr)
 		if (activeclose == 1)
 			break;
 	}
+
+	freeaddrinfo(addrinfo);
 }
