@@ -871,6 +871,7 @@ rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
 			{
 				*isactive = 1;
+				freeaddrinfo(addrinfo);
 				return (temp->sockctrl);
 			}
 
