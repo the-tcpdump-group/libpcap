@@ -44,6 +44,15 @@
   #endif
   #include <winsock2.h>
   #include <ws2tcpip.h>
+
+  /*
+   * Winsock doesn't have this UN*X type; it's used in the UN*X
+   * sockets API.
+   *
+   * XXX - do we need to worry about UN*Xes so old that *they*
+   * don't have it, either?
+   */
+  typedef int socklen_t;
 #else
   /* UN*X */
   #include <stdio.h>
@@ -76,6 +85,14 @@
   #ifndef INVALID_SOCKET
     #define INVALID_SOCKET -1
   #endif
+
+  /*!
+   * \brief In Winsock, the close() call cannot be used on a socket;
+   * closesocket() must be used.
+   * We define closesocket() to be a wrapper around close() on UN*X,
+   * so that it can be used on both platforms.
+   */
+  #define closesocket(a) close(a)
 #endif
 
 /*
@@ -104,28 +121,6 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  * \addtogroup ExportedStruct
  * \{
  */
-
-/*
- * Some minor differences between UN*X sockets and and Winsock sockets.
- */
-#ifdef _WIN32
-  /*
-   * Winsock doesn't have these UN*X types; they're used in the UN*X
-   * sockets API.
-   *
-   * XXX - do we need to worry about UN*Xes so old that *they* don't
-   * have them, either?
-   */
-  typedef int socklen_t;
-#else
-  /*!
-   * \brief In Winsock, the close() call cannot be used on a socket;
-   * closesocket() must be used.
-   * We define closesocket() to be a wrapper around close() on UN*X,
-   * so that it can be used on both platforms.
-   */
-  #define closesocket(a) close(a)
-#endif
 
 /*
  * \brief DEBUG facility: it prints an error message on the screen (stderr)
