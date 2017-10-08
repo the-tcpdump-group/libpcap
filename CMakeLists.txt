@@ -1559,6 +1559,17 @@ include(GNUInstallDirs)
 set(LIBRARY_NAME_STATIC ${LIBRARY_NAME}_static)
 
 function(install_manpage_symlink SOURCE TARGET MANDIR)
+    if(MINGW)
+        find_program(LINK_EXECUTABLE ln)
+            if(LINK_EXECUTABLE)
+                set(LINK_COMMAND "\"${LINK_EXECUTABLE}\" \"-s\" \"${SOURCE}\" \"${TARGET}\"")
+            else(LINK_EXECUTABLE)
+                message(FATAL_ERROR "ln (http://pubs.opengroup.org/onlinepubs/9699919799/utilities/ln.html) not find.")
+            endif(LINK_EXECUTABLE)
+    else(MINGW)
+        set(LINK_COMMAND "\"${CMAKE_COMMAND}\" \"-E\" \"create_symlink\" \"${SOURCE}\" \"${TARGET}\"")
+    endif(MINGW)
+
     install(CODE
         "message(STATUS \"Symlinking: ${CMAKE_INSTALL_PREFIX}/${MANDIR}/${SOURCE} to ${TARGET}\")
          execute_process(
@@ -1566,7 +1577,7 @@ function(install_manpage_symlink SOURCE TARGET MANDIR)
             WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
           )
          execute_process(
-            COMMAND \"${CMAKE_COMMAND}\" \"-E\" \"create_symlink\" \"${SOURCE}\" \"${TARGET}\"
+            COMMAND ${LINK_COMMAND}
             WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${MANDIR}
             RESULT_VARIABLE EXIT_STATUS
           )
@@ -1687,14 +1698,57 @@ if(WIN32)
     endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
 else(WIN32)
     install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC} DESTINATION lib)
+endif(WIN32)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
+
+# On UN*X, and on Windows when not using MSVC, generate pcap-config and process
+# man pages and arrange that they be installed.
+if(NOT MSVC)
+    set(PACKAGE_NAME ${LIBRARY_NAME})
+    set(prefix ${CMAKE_INSTALL_PREFIX})
+    set(exec_prefix "\${prefix}")
+    set(includedir "\${prefix}/include")
+    set(libdir "\${exec_prefix}/lib")
+    if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "DragonFly BSD" OR
+       CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
+       CMAKE_SYSTEM_NAME STREQUAL "OSF1")
+        #
+        # Platforms where the linker is the GNU linker
+        # or accepts command-line arguments like
+        # those the GNU linker accepts.
+        #
+        set(V_RPATH_OPT "-Wl,-rpath,")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
+        #
+        # SunOS 5.x.
+        #
+        # XXX - this assumes GCC is using the Sun linker,
+        # rather than the GNU linker.
+        #
+        set(V_RPATH_OPT "-Wl,-R,")
+    else()
+        #
+        # No option needed to set the RPATH.
+        #
+        set(V_RPATH_OPT "")
+    endif()
+    set(LIBS "")
+    foreach(LIB ${PCAP_LINK_LIBRARIES})
+        set(LIBS "${LIBS} -l${LIB}")
+    endforeach(LIB)
+    configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
 
     #
     # Man pages.
     #
     # For each section of the manual for which we have man pages
     # that require macro expansion, do the expansion.
-    #
-    # XXX - symlinks.
     #
     set(MAN1 "")
     foreach(MANPAGE ${MAN1_NOEXPAND})
@@ -1744,51 +1798,6 @@ else(WIN32)
         set(MANMISC ${MANMISC} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MANMISC} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_MISC_INFO})
-endif(WIN32)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
-
-# On UN*X, and on Windows when not using MSVC, generate pcap-config and arrange
-# that it be installed.
-if(NOT MSVC)
-    set(PACKAGE_NAME ${LIBRARY_NAME})
-    set(prefix ${CMAKE_INSTALL_PREFIX})
-    set(exec_prefix "\${prefix}")
-    set(includedir "\${prefix}/include")
-    set(libdir "\${exec_prefix}/lib")
-    if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "DragonFly BSD" OR
-       CMAKE_SYSTEM_NAME STREQUAL "Linux" OR
-       CMAKE_SYSTEM_NAME STREQUAL "OSF1")
-        #
-        # Platforms where the linker is the GNU linker
-        # or accepts command-line arguments like
-        # those the GNU linker accepts.
-        #
-        set(V_RPATH_OPT "-Wl,-rpath,")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
-        #
-        # SunOS 5.x.
-        #
-        # XXX - this assumes GCC is using the Sun linker,
-        # rather than the GNU linker.
-        #
-        set(V_RPATH_OPT "-Wl,-R,")
-    else()
-        #
-        # No option needed to set the RPATH.
-        #
-        set(V_RPATH_OPT "")
-    endif()
-    set(LIBS "")
-    foreach(LIB ${PCAP_LINK_LIBRARIES})
-        set(LIBS "${LIBS} -l${LIB}")
-    endforeach(LIB)
-    configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
 endif(NOT MSVC)
 
 # uninstall target
