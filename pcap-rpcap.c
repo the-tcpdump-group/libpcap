@@ -2210,7 +2210,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 				return -1;
 		}
 
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 		{
 			freeaddrinfo(addrinfo);
 			return -1;
@@ -2564,7 +2564,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	}
 
 
-	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 	{
 		SOCK_ASSERT(errbuf, 1);
 		freeaddrinfo(addrinfo);
@@ -2582,7 +2582,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	closesocket(sockmain);
 	sockmain = 0;
 
-	if (sockctrl == -1)
+	if (sockctrl == INVALID_SOCKET)
 	{
 		sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
 		return -2;

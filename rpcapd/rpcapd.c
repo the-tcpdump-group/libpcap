@@ -380,7 +380,7 @@ void main_startup(void)
 		{
 			SOCKET *socktemp;
 
-			if ((sockmain = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+			if ((sockmain = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			{
 				SOCK_ASSERT(errbuf, 1);
 				tempaddrinfo = tempaddrinfo->ai_next;
@@ -546,7 +546,7 @@ static void main_passive(void *ptr)
 
 		sockctrl = accept(sockmain, (struct sockaddr *) &from, &fromlen);
 		
-		if (sockctrl == -1)
+		if (sockctrl == INVALID_SOCKET)
 		{
 			// The accept() call can return this error when a signal is catched
 			// In this case, we have simply to ignore this error code
@@ -684,7 +684,7 @@ static void main_active(void *ptr)
 	{
 		int activeclose;
 
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 		{
 			SOCK_ASSERT(errbuf, 1);
 

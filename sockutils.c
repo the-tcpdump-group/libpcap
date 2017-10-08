@@ -279,7 +279,7 @@ static int sock_ismcastaddr(const struct sockaddr *saddr)
  * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
  *
  * \return the socket that has been opened (that has to be used in the following sockets calls)
- * if everything is fine, '0' if some errors occurred. The error message is returned
+ * if everything is fine, INVALID_SOCKET if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen)
@@ -287,10 +287,10 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 	SOCKET sock;
 
 	sock = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol);
-	if (sock == -1)
+	if (sock == INVALID_SOCKET)
 	{
 		sock_geterror("socket(): ", errbuf, errbuflen);
-		return -1;
+		return INVALID_SOCKET;
 	}
 
 
@@ -313,7 +313,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 				if (errbuf)
 					pcap_snprintf(errbuf, errbuflen, "setsockopt(IPV6_BINDV6ONLY)");
 				closesocket(sock);
-				return -1;
+				return INVALID_SOCKET;
 			}
 		}
 #endif
@@ -323,7 +323,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		{
 			sock_geterror("bind(): ", errbuf, errbuflen);
 			closesocket(sock);
-			return -1;
+			return INVALID_SOCKET;
 		}
 
 		if (addrinfo->ai_socktype == SOCK_STREAM)
@@ -331,7 +331,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 			{
 				sock_geterror("listen(): ", errbuf, errbuflen);
 				closesocket(sock);
-				return -1;
+				return INVALID_SOCKET;
 			}
 
 		/* server side ended */
@@ -396,7 +396,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		if (tempaddrinfo == NULL)
 		{
 			closesocket(sock);
-			return -1;
+			return INVALID_SOCKET;
 		}
 		else
 			return sock;

@@ -1135,7 +1135,7 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 		if (sock_initaddress(peerhost, portdata, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 	}
 	else		// Data connection is opened by the client toward the server
@@ -1146,7 +1146,7 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 		if (sock_initaddress(NULL, "0", &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errbuf, PCAP_ERRBUF_SIZE)) == -1)
+		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 
 		// get the complete sockaddr structure used in the data connection
@@ -1211,7 +1211,7 @@ static struct session *daemon_startcapture(SOCKET sockctrl, pthread_t *threaddat
 
 		socktemp = accept(sockdata, (struct sockaddr *) &saddr, &saddrlen);
 		
-		if (socktemp == -1)
+		if (socktemp == INVALID_SOCKET)
 		{
 			sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
 			goto error;
