@@ -147,7 +147,6 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 			pcap_snprintf(errbuf, errbuflen, "%sUnable to get the exact error message", caller);
 		else
 			pcap_snprintf(errbuf, errbuflen, "Unable to get the exact error message");
-		return;
 	}
 	else
 	{
