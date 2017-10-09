@@ -24,12 +24,12 @@
         VALUE "CompanyName",      "The TCPdump Group"
         VALUE "FileDescription",  "Remote Packet Capture Daemon"
         VALUE "FileVersion",      "PACKAGE_VERSION_DLL"
-        VALUE "InternalName",     "PACKAGE_NAME"
+        VALUE "InternalName",     PACKAGE_NAME
         VALUE "LegalCopyright",   "Copyright (c) The TCPdump Group"
         VALUE "LegalTrademarks",  ""
         VALUE "OriginalFilename", "rpcapd.exe"
-        VALUE "ProductName",      "PACKAGE_NAME"
-        VALUE "ProductVersion",   "PACKAGE_VERSION"
+        VALUE "ProductName",      PACKAGE_NAME
+        VALUE "ProductVersion",   PACKAGE_VERSION
       END
     END
   BLOCK "VarFileInfo"

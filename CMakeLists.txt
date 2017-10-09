@@ -195,7 +195,7 @@ if(WIN32)
 
     # Append NANO (used for Windows internal versioning) to PCAP_VERSION_PREDLL
     # 0 means unused.
-    set(PACKAGE_VERSION_DLL "${PACKAGE_VERSION_PREDLL},0")
+    set(PACKAGE_VERSION_DLL ${PACKAGE_VERSION_PREDLL},0)
 endif(WIN32)
 
 set(PACKAGE_NAME "${LIBRARY_NAME}")
