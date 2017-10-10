@@ -109,8 +109,14 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	int count = 0;
 
 	if (!priv->cq_event) {
-		if (ibv_get_cq_event(priv->channel, &ev_cq, &ev_ctx) < 0) {
-			return 0;
+		while (ibv_get_cq_event(priv->channel, &ev_cq, &ev_ctx) < 0) {
+			if (errno != EINTR) {
+				return PCAP_ERROR;
+			}
+			if (handle->break_loop) {
+				handle->break_loop = 0;
+				return PCAP_ERROR_BREAK;
+			}
 		}
 		ibv_ack_cq_events(priv->cq, 1);
 		ibv_req_notify_cq(priv->cq, 0);
