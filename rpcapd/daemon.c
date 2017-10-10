@@ -567,6 +567,15 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 				retcode = -1;
 				goto error;
 			}
+			nread = sock_recv(sockctrl, username, usernamelen,
+			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
+			if (nread == -1)
+			{
+				free(username);
+				retcode = -1;
+				goto error;
+			}
+			totread += nread;
 
 			passwd = (char *) malloc (passwdlen + 1);
 			if (passwd == NULL)
@@ -576,17 +585,6 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 				retcode = -1;
 				goto error;
 			}
-
-			nread = sock_recv(sockctrl, username, usernamelen,
-			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
-			{
-				free(username);
-				free(passwd);
-				retcode = -1;
-				goto error;
-			}
-			totread += nread;
 			nread = sock_recv(sockctrl, passwd, passwdlen,
 			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
 			if (nread == -1)
