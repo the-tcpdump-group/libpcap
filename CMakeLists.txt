@@ -13,18 +13,23 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
 
-#
-# Call the library "wpcap" on Windows, for backwards compatibility.
-#
-if(WIN32)
-    set(LIBRARY_NAME wpcap)
-else()
-    set(LIBRARY_NAME pcap)
-endif()
-
 ###################################################################
 #   Parameters
 ###################################################################
+
+if(WIN32)
+    #
+    # On Windows, allow the library name to be overridden, for the
+    # benefit of projects that combine libpcap with their own
+    # kernel-mode code to support capturing.
+    #
+    set(LIBRARY_NAME pcap CACHE STRING "Library name")
+else()
+    #
+    # On UN*X, it's always been libpcap.
+    #
+    set(LIBRARY_NAME pcap)
+endif()
 
 option(INET6 "Enable IPv6" ON)
 if(WIN32)
