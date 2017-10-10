@@ -561,11 +561,18 @@ int daemon_checkauth(SOCKET sockctrl, int nullAuthAllowed, char *errbuf)
 			passwdlen = ntohs(auth.slen2);
 
 			username = (char *) malloc (usernamelen + 1);
-			passwd = (char *) malloc (passwdlen + 1);
-
-			if ((username == NULL) || (passwd == NULL))
+			if (username == NULL)
 			{
 				snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				retcode = -1;
+				goto error;
+			}
+
+			passwd = (char *) malloc (passwdlen + 1);
+			if (passwd == NULL)
+			{
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				free(username);
 				retcode = -1;
 				goto error;
 			}
