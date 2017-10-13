@@ -182,6 +182,12 @@ PCAP_API_DEF char pcap_version[] = PACKAGE_VERSION;
 static int
 pcap_not_initialized(pcap_t *pcap)
 {
+	if (pcap->activated) {
+		/* A module probably forgot to set the function pointer */
+		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		    "This operation isn't properly handled by that device");
+		return (PCAP_ERROR);
+	}
 	/* in case the caller doesn't check for PCAP_ERROR_NOT_ACTIVATED */
 	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
@@ -193,6 +199,12 @@ pcap_not_initialized(pcap_t *pcap)
 static void *
 pcap_not_initialized_ptr(pcap_t *pcap)
 {
+	if (pcap->activated) {
+		/* A module probably forgot to set the function pointer */
+		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		    "This operation isn't properly handled by that device");
+		return (NULL);
+	}
 	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (NULL);
@@ -201,6 +213,12 @@ pcap_not_initialized_ptr(pcap_t *pcap)
 static HANDLE
 pcap_getevent_not_initialized(pcap_t *pcap)
 {
+	if (pcap->activated) {
+		/* A module probably forgot to set the function pointer */
+		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		    "This operation isn't properly handled by that device");
+		return (INVALID_HANDLE_VALUE);
+	}
 	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (INVALID_HANDLE_VALUE);
@@ -209,6 +227,12 @@ pcap_getevent_not_initialized(pcap_t *pcap)
 static u_int
 pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, int sync)
 {
+	if (pcap->activated) {
+		/* A module probably forgot to set the function pointer */
+		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		    "This operation isn't properly handled by that device");
+		return (0);
+	}
 	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (0);
@@ -217,6 +241,12 @@ pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, in
 static PAirpcapHandle
 pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
 {
+	if (pcap->activated) {
+		/* A module probably forgot to set the function pointer */
+		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+		    "This operation isn't properly handled by that device");
+		return (NULL);
+	}
 	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
 	return (NULL);
