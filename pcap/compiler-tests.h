@@ -60,34 +60,12 @@
  * later release.
  */
 
-#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 3))
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_2_3 1
+#if ! defined(__GNUC__)
+#define PCAP_IS_AT_LEAST_GNUC_VERSION(major, minor) 0
 #else
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_2_3 0
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5))
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_2_5 1
-#else
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_2_5 0
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_3_1 1
-#else
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_3_1 0
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_3_4 1
-#else
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_3_4 0
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_4_5 1
-#else
-#define PCAP_IS_AT_LEAST_GNUC_VERSION_4_5 0
+#define PCAP_IS_AT_LEAST_GNUC_VERSION(major, minor) \
+	(__GNUC__ > (major) || \
+	 (__GNUC__ == (major) && __GNUC_MINOR__ >= (minor)))
 #endif
 
 /*
@@ -107,27 +85,16 @@
  * for a partial mapping, which we assume continues for later
  * 12.x product releases.
  */
+
+#if ! defined(__SUNPRO_C)
+#define PCAP_IS_AT_LEAST_SUNC_VERSION(major,minor) 0
+#else
 #define PCAP_SUNPRO_VERSION_TO_BCD(major, minor) \
 	(((minor) >= 10) ? \
 	    (((major) << 12) | (((minor)/10) << 8) | (((minor)%10) << 4)) : \
 	    (((major) << 8) | ((minor) << 4)))
-
-#if defined(__SUNPRO_C) && __SUNPRO_C >= PCAP_SUNPRO_VERSION_TO_BCD(5, 5)
-#define PCAP_IS_AT_LEAST_SUNC_VERSION_5_5 1
-#else
-#define PCAP_IS_AT_LEAST_SUNC_VERSION_5_5 0
-#endif
-
-#if defined(__SUNPRO_C) && __SUNPRO_C >= PCAP_SUNPRO_VERSION_TO_BCD(5, 9)
-#define PCAP_IS_AT_LEAST_SUNC_VERSION_5_9 1
-#else
-#define PCAP_IS_AT_LEAST_SUNC_VERSION_5_9 0
-#endif
-
-#if defined(__SUNPRO_C) && __SUNPRO_C >= PCAP_SUNPRO_VERSION_TO_BCD(5, 13)
-#define PCAP_IS_AT_LEAST_SUNC_VERSION_5_13 1
-#else
-#define PCAP_IS_AT_LEAST_SUNC_VERSION_5_13 0
+#define PCAP_IS_AT_LEAST_SUNC_VERSION(major,minor) \
+	(__SUNPRO_C >= PCAP_SUNPRO_VERSION_TO_BCD((major), (minor)))
 #endif
 
 /*
@@ -137,16 +104,11 @@
  * upper 8 bits and the minor version in the lower 8 bits.
  */
 
-#if defined(__xlC__) && __xlC__ >= ((10 << 8) | 1)
-#define PCAP_IS_AT_LEAST_XL_C_VERSION_10_1 1
+#if ! defined(__xlC__)
+#define PCAP_IS_AT_LEAST_XL_C_VERSION(major,minor) 0
 #else
-#define PCAP_IS_AT_LEAST_XL_C_VERSION_10_1 0
-#endif
-
-#if defined(__xlC__) && __xlC__ >= ((12 << 8) | 0)
-#define PCAP_IS_AT_LEAST_XL_C_VERSION_12_0 1
-#else
-#define PCAP_IS_AT_LEAST_XL_C_VERSION_12_0 0
+#define PCAP_IS_AT_LEAST_XL_C_VERSION(major, minor) \
+	(__xlC__ >= (((major) << 8) | (minor)))
 #endif
 
 /*
@@ -160,10 +122,11 @@
  * number, and add two digits of patch.)
  */
 
-#if defined(__HP_aCC) && (__HP_aCC >= (6*10000 + 10*100))
-#define PCAP_IS_AT_LEAST_HP_C_VERSION_6_10 1
+#if ! defined(__HP_aCC)
+#define PCAP_IS_AT_LEAST_HP_C_VERSION(major,minor) 0
 #else
-#define PCAP_IS_AT_LEAST_HP_C_VERSION_6_10 0
+#define PCAP_IS_AT_LEAST_HP_C_VERSION(major,minor) \
+	(__HP_aCC >= ((major)*10000 + (minor)*100))
 #endif
 
 #endif /* lib_pcap_funcattrs_h */

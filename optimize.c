@@ -60,7 +60,7 @@ int pcap_optimizer_debug;
  *
  * This is the same as the count of trailing zeroes in the word.
  */
-#if PCAP_IS_AT_LEAST_GNUC_VERSION_3_4
+#if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4)
   /*
    * GCC 3.4 and later; we have __builtin_ctz().
    */
