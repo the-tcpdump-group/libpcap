@@ -91,7 +91,7 @@
 #endif
 
 /*
- * Check wehether this is Sun C/SunPro C/Oracle Studio major.minor
+ * Check whether this is Sun C/SunPro C/Oracle Studio major.minor
  * or a later release.
  *
  * The version number in __SUNPRO_C is encoded in hex BCD, with the
@@ -131,7 +131,7 @@
 #endif
 
 /*
- * Check wehether this is IBM XL C major.minor or a later release.
+ * Check whether this is IBM XL C major.minor or a later release.
  *
  * The version number in __xlC__ has the major version in the
  * upper 8 bits and the minor version in the lower 8 bits.
@@ -150,8 +150,7 @@
 #endif
 
 /*
- * Check wehether this is Sun C/SunPro C/Oracle Studio major.minor
- * or a later release.
+ * Check whether this is HP aC++/HP C major.minor or a later release.
  *
  * The version number in __HP_aCC is encoded in zero-padded decimal BCD,
  * with the "A." stripped off, the uppermost two decimal digits being
