@@ -55,6 +55,26 @@
 #endif
 
 /*
+ * Note that the C90 spec's "6.8.1 Conditional inclusion" and the
+ * C99 spec's and C11 spec's "6.10.1 Conditional inclusion" say:
+ *
+ *    Prior to evaluation, macro invocations in the list of preprocessing
+ *    tokens that will become the controlling constant expression are
+ *    replaced (except for those macro names modified by the defined unary
+ *    operator), just as in normal text.  If the token "defined" is
+ *    generated as a result of this replacement process or use of the
+ *    "defined" unary operator does not match one of the two specified
+ *    forms prior to macro replacement, the behavior is undefined.
+ *
+ * so you shouldn't use defined() in a #define that's used in #if or
+ * #elif.  Some versions of Clang, for example, will warn about this.
+ *
+ * Instead, we check whether the pre-defined macros for particular
+ * compilers are defined and, if not, define the "is this version XXX
+ * or a later version of this compiler" macros as 0.
+ */
+
+/*
  * Check whether this is GCC major.minor or a later release, or some
  * compiler that claims to be "just like GCC" of that version or a
  * later release.
