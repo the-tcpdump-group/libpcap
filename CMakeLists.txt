@@ -1225,13 +1225,6 @@ file(GLOB PROJECT_SOURCE_LIST_CORE_H
 )
 set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${PROJECT_SOURCE_LIST_CORE_H})
 
-if(WIN32)
-    file(GLOB PROJECT_SOURCE_LIST_WIN32_H
-        Win32/Include/*.h
-    )
-    set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${PROJECT_SOURCE_LIST_WIN32_H})
-endif(WIN32)
-
 #
 # Check and add warning options if we have a .devel file.
 #
