@@ -337,7 +337,20 @@ else
 	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
 
-	if test "$ac_cv_header_net_bpf_h" = yes; then
+	if test "$ac_cv_header_linux_socket_h" = yes; then
+		#
+		# No prizes for guessing this one.
+		# Check this before BPF, because it appears that
+		# at least one Arch Linux system might have a net/bpf.h.
+		#
+		V_PCAP=linux
+
+		#
+		# XXX - this won't work with older kernels that have
+		# SOCK_PACKET sockets but not PF_PACKET sockets.
+		#
+		VALGRINDTEST=valgrindtest
+	elif test "$ac_cv_header_net_bpf_h" = yes; then
 		#
 		# BPF.
 		# Check this before DLPI, so that we pick BPF on
@@ -376,17 +389,6 @@ else
 		# Pre-SunOS 4.x non-STREAMS NIT.
 		#
 		V_PCAP=nit
-	elif test "$ac_cv_header_linux_socket_h" = yes; then
-		#
-		# No prizes for guessing this one.
-		#
-		V_PCAP=linux
-
-		#
-		# XXX - this won't work with older kernels that have
-		# SOCK_PACKET sockets but not PF_PACKET sockets.
-		#
-		VALGRINDTEST=valgrindtest
 	elif test "$ac_cv_header_net_raw_h" = yes; then
 		#
 		# IRIX snoop.

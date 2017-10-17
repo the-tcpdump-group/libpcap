@@ -631,7 +631,14 @@ else()
         check_include_file(net/raw.h HAVE_NET_RAW_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
 
-        if(HAVE_NET_BPF_H)
+        if(HAVE_LINUX_SOCKET_H)
+            #
+            # No prizes for guessing this one.
+            # Check this before BPF, because it appears that
+            # at least one Arch Linux system might have a net/bpf.h.
+            #
+            set(PCAP_TYPE linux)
+        elseif(HAVE_NET_BPF_H)
             #
             # BPF.
             # Check this before DLPI, so that we pick BPF on
@@ -658,11 +665,6 @@ else()
             # Pre-SunOS 4.x non-STREAMS NIT.
             #
             set(PCAP_TYPE nit)
-        elseif(HAVE_LINUX_SOCKET_H)
-            #
-            # No prizes for guessing this one.
-            #
-            set(PCAP_TYPE linux)
         elseif(HAVE_NET_RAW_H)
             #
             # IRIX snoop.
