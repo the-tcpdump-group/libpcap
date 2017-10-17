@@ -1219,11 +1219,10 @@ if(ENABLE_REMOTE)
     add_subdirectory(rpcapd)
 endif(ENABLE_REMOTE)
 
-file(GLOB PROJECT_SOURCE_LIST_CORE_H
+file(GLOB PROJECT_SOURCE_LIST_H
     *.h
     pcap/*.h
 )
-set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${PROJECT_SOURCE_LIST_CORE_H})
 
 #
 # Check and add warning options if we have a .devel file.
@@ -1460,7 +1459,6 @@ if(BUILD_SHARED_LIBS)
         ${PROJECT_SOURCE_LIST_C}
         ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
         ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-        ${PROJECT_SOURCE_LIST_H}
         ${PROJECT_EXTERNAL_OBJECT_LIST}
     )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
@@ -1470,7 +1468,6 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_SOURCE_LIST_C}
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-    ${PROJECT_SOURCE_LIST_H}
     ${PROJECT_EXTERNAL_OBJECT_LIST}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
