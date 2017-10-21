@@ -333,11 +333,38 @@ else
 	# Check for a bunch of headers for various packet
 	# capture mechanisms.
 	#
-	AC_CHECK_HEADERS(net/bpf.h net/pfilt.h net/enet.h)
+	AC_CHECK_HEADERS(net/bpf.h)
+	if test "$ac_cv_header_net_bpf_h" = yes; then
+		#
+		# Does it define BIOCSETIF?
+		# I.e., is it a header for an LBL/BSD-style capture
+		# mechanism, or is it just a header for a BPF filter
+		# engine?  Some versions of Arch Linux, for example,
+		# have a net/bpf.h that doesn't define BIOCSETIF;
+		# as it's a Linux, it should use packet sockets,
+		# instead.
+		#
+		AC_MSG_CHECKING(if net/bpf.h defines BIOCSETIF)
+		AC_CACHE_VAL(ac_cv_lbl_bpf_h_defines_biocsetif,
+			AC_TRY_COMPILE(
+[
+#include <sys/ioctl.h>
+#ifdef HAVE_SYS_IOCCOM_H
+#include <sys/ioccom.h>
+#endif
+#include <net/bpf.h>
+#include <net/if.h>
+],
+			[u_int i = BIOCSETIF;],
+			ac_cv_lbl_bpf_h_defines_biocsetif=yes,
+			ac_cv_lbl_bpf_h_defines_biocsetif=no))
+		AC_MSG_RESULT($ac_cv_lbl_bpf_h_defines_biocsetif)
+	fi
+	AC_CHECK_HEADERS(net/pfilt.h net/enet.h)
 	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
 
-	if test "$ac_cv_header_net_bpf_h" = yes; then
+	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
 		# BPF.
 		# Check this before DLPI, so that we pick BPF on
@@ -356,6 +383,17 @@ else
 			VALGRINDTEST=valgrindtest
 			;;
 		esac
+	elif test "$ac_cv_header_linux_socket_h" = yes; then
+		#
+		# No prizes for guessing this one.
+		#
+		V_PCAP=linux
+
+		#
+		# XXX - this won't work with older kernels that have
+		# SOCK_PACKET sockets but not PF_PACKET sockets.
+		#
+		VALGRINDTEST=valgrindtest
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
 	        #
 	        # DEC OSF/1, Digital UNIX, Tru64 UNIX
@@ -376,17 +414,6 @@ else
 		# Pre-SunOS 4.x non-STREAMS NIT.
 		#
 		V_PCAP=nit
-	elif test "$ac_cv_header_linux_socket_h" = yes; then
-		#
-		# No prizes for guessing this one.
-		#
-		V_PCAP=linux
-
-		#
-		# XXX - this won't work with older kernels that have
-		# SOCK_PACKET sockets but not PF_PACKET sockets.
-		#
-		VALGRINDTEST=valgrindtest
 	elif test "$ac_cv_header_net_raw_h" = yes; then
 		#
 		# IRIX snoop.
@@ -1191,7 +1218,7 @@ yes)	AC_MSG_RESULT(yes)
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
-	RPCAPD=rpcapd
+	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	AC_MSG_RESULT(no)
@@ -1559,7 +1586,7 @@ AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_USERMOD_SECTION)
-AC_SUBST(RPCAPD)
+AC_SUBST(BUILD_RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
 AC_SUBST(RPCAPD_LIBS)
 

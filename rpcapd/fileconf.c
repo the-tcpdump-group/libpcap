@@ -173,7 +173,7 @@ int fileconf_save(const char *savefile)
 		fprintf(fp, "# Format: ActiveClient = <name or address>, <port | DEFAULT>\n\n");
 
 
-		while ((activelist[i].address[0] != 0) && (i < MAX_ACTIVE_LIST))
+		while ((i < MAX_ACTIVE_LIST) && (activelist[i].address[0] != 0))
 		{
 			fprintf(fp, "ActiveClient = %s, %s\n", activelist[i].address, activelist[i].port);
 			i++;

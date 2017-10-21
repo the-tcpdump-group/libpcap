@@ -16,7 +16,7 @@ env:
     - secure: "SwNcek+I4lMVcnb5EGGmNm6ljWN6C/mnXzBr82a5rEQNKxAoJfdvvPpKIp0iEfg5j0PtYlcRHoIDyVZ/6QM/WEw0wrio9Z0cio9hkOS6kV8g2QouXfnoNtKJ5nNso7UD2GPJ9+M0GIR1GZ0Edvxr81sHlNAkpVKydYGBwCIMGyg="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
-    - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc'
+    - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc -a "$REMOTE" = enable -a "$CMAKE" = no'
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false

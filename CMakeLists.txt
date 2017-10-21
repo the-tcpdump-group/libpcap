@@ -13,18 +13,23 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
 
-#
-# Call the library "wpcap" on Windows, for backwards compatibility.
-#
-if(WIN32)
-    set(LIBRARY_NAME wpcap)
-else()
-    set(LIBRARY_NAME pcap)
-endif()
-
 ###################################################################
 #   Parameters
 ###################################################################
+
+if(WIN32)
+    #
+    # On Windows, allow the library name to be overridden, for the
+    # benefit of projects that combine libpcap with their own
+    # kernel-mode code to support capturing.
+    #
+    set(LIBRARY_NAME pcap CACHE STRING "Library name")
+else()
+    #
+    # On UN*X, it's always been libpcap.
+    #
+    set(LIBRARY_NAME pcap)
+endif()
 
 option(INET6 "Enable IPv6" ON)
 if(WIN32)
@@ -195,7 +200,7 @@ if(WIN32)
 
     # Append NANO (used for Windows internal versioning) to PCAP_VERSION_PREDLL
     # 0 means unused.
-    set(PACKAGE_VERSION_DLL "${PACKAGE_VERSION_PREDLL},0")
+    set(PACKAGE_VERSION_DLL ${PACKAGE_VERSION_PREDLL},0)
 endif(WIN32)
 
 set(PACKAGE_NAME "${LIBRARY_NAME}")
@@ -618,6 +623,18 @@ else()
         # Check for a bunch of headers for various packet capture mechanisms.
         #
         check_include_files("sys/types.h;net/bpf.h" HAVE_NET_BPF_H)
+        if(HAVE_NET_BPF_H)
+            #
+            # Does it define BIOCSETIF?
+            # I.e., is it a header for an LBL/BSD-style capture
+            # mechanism, or is it just a header for a BPF filter
+            # engine?  Some versions of Arch Linux, for example,
+            # have a net/bpf.h that doesn't define BIOCSETIF;
+            # as it's a Linux, it should use packet sockets,
+            # instead.
+            #
+            check_symbol_exists(BIOCSETIF net/bpf.h BPF_H_DEFINES_BIOCSETIF)
+        endif(HAVE_NET_BPF_H)
         check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
         check_include_file(net/enet.h HAVE_NET_ENET_H)
         check_include_file(net/nit.h HAVE_NET_NIT_H)
@@ -626,13 +643,18 @@ else()
         check_include_file(net/raw.h HAVE_NET_RAW_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
 
-        if(HAVE_NET_BPF_H)
+        if(BPF_H_DEFINES_BIOCSETIF)
             #
             # BPF.
             # Check this before DLPI, so that we pick BPF on
             # Solaris 11 and later.
             #
             set(PCAP_TYPE bpf)
+        elseif(HAVE_LINUX_SOCKET_H)
+            #
+            # No prizes for guessing this one.
+            #
+            set(PCAP_TYPE linux)
         elseif(HAVE_NET_PFILT_H)
             #
             # DEC OSF/1, Digital UNIX, Tru64 UNIX
@@ -653,11 +675,6 @@ else()
             # Pre-SunOS 4.x non-STREAMS NIT.
             #
             set(PCAP_TYPE nit)
-        elseif(HAVE_LINUX_SOCKET_H)
-            #
-            # No prizes for guessing this one.
-            #
-            set(PCAP_TYPE linux)
         elseif(HAVE_NET_RAW_H)
             #
             # IRIX snoop.
@@ -1214,18 +1231,10 @@ if(ENABLE_REMOTE)
     add_subdirectory(rpcapd)
 endif(ENABLE_REMOTE)
 
-file(GLOB PROJECT_SOURCE_LIST_CORE_H
+file(GLOB PROJECT_SOURCE_LIST_H
     *.h
     pcap/*.h
 )
-set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${PROJECT_SOURCE_LIST_CORE_H})
-
-if(WIN32)
-    file(GLOB PROJECT_SOURCE_LIST_WIN32_H
-        Win32/Include/*.h
-    )
-    set(PROJECT_SOURCE_LIST_H ${PROJECT_SOURCE_LIST_H} ${PROJECT_SOURCE_LIST_WIN32_H})
-endif(WIN32)
 
 #
 # Check and add warning options if we have a .devel file.
@@ -1462,7 +1471,6 @@ if(BUILD_SHARED_LIBS)
         ${PROJECT_SOURCE_LIST_C}
         ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
         ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-        ${PROJECT_SOURCE_LIST_H}
         ${PROJECT_EXTERNAL_OBJECT_LIST}
     )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
@@ -1472,7 +1480,6 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_SOURCE_LIST_C}
     ${CMAKE_CURRENT_BINARY_DIR}/grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/scanner.c
-    ${PROJECT_SOURCE_LIST_H}
     ${PROJECT_EXTERNAL_OBJECT_LIST}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)

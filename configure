@@ -639,7 +639,7 @@ USB_SRC
 PCAP_SUPPORT_USB
 RPCAPD_LIBS
 INSTALL_RPCAPD
-RPCAPD
+BUILD_RPCAPD
 MAN_USERMOD_SECTION
 MAN_MISC_INFO
 MAN_FILE_FORMATS
@@ -5358,7 +5358,63 @@ else
 	# Check for a bunch of headers for various packet
 	# capture mechanisms.
 	#
-	for ac_header in net/bpf.h net/pfilt.h net/enet.h
+	for ac_header in net/bpf.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "net/bpf.h" "ac_cv_header_net_bpf_h" "$ac_includes_default"
+if test "x$ac_cv_header_net_bpf_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_NET_BPF_H 1
+_ACEOF
+
+fi
+
+done
+
+	if test "$ac_cv_header_net_bpf_h" = yes; then
+		#
+		# Does it define BIOCSETIF?
+		# I.e., is it a header for an LBL/BSD-style capture
+		# mechanism, or is it just a header for a BPF filter
+		# engine?  Some versions of Arch Linux, for example,
+		# have a net/bpf.h that doesn't define BIOCSETIF;
+		# as it's a Linux, it should use packet sockets,
+		# instead.
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if net/bpf.h defines BIOCSETIF" >&5
+$as_echo_n "checking if net/bpf.h defines BIOCSETIF... " >&6; }
+		if ${ac_cv_lbl_bpf_h_defines_biocsetif+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <sys/ioctl.h>
+#ifdef HAVE_SYS_IOCCOM_H
+#include <sys/ioccom.h>
+#endif
+#include <net/bpf.h>
+#include <net/if.h>
+
+int
+main ()
+{
+u_int i = BIOCSETIF;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_lbl_bpf_h_defines_biocsetif=yes
+else
+  ac_cv_lbl_bpf_h_defines_biocsetif=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_bpf_h_defines_biocsetif" >&5
+$as_echo "$ac_cv_lbl_bpf_h_defines_biocsetif" >&6; }
+	fi
+	for ac_header in net/pfilt.h net/enet.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -5398,7 +5454,7 @@ fi
 done
 
 
-	if test "$ac_cv_header_net_bpf_h" = yes; then
+	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
 		# BPF.
 		# Check this before DLPI, so that we pick BPF on
@@ -5417,6 +5473,17 @@ done
 			VALGRINDTEST=valgrindtest
 			;;
 		esac
+	elif test "$ac_cv_header_linux_socket_h" = yes; then
+		#
+		# No prizes for guessing this one.
+		#
+		V_PCAP=linux
+
+		#
+		# XXX - this won't work with older kernels that have
+		# SOCK_PACKET sockets but not PF_PACKET sockets.
+		#
+		VALGRINDTEST=valgrindtest
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
 	        #
 	        # DEC OSF/1, Digital UNIX, Tru64 UNIX
@@ -5437,17 +5504,6 @@ done
 		# Pre-SunOS 4.x non-STREAMS NIT.
 		#
 		V_PCAP=nit
-	elif test "$ac_cv_header_linux_socket_h" = yes; then
-		#
-		# No prizes for guessing this one.
-		#
-		V_PCAP=linux
-
-		#
-		# XXX - this won't work with older kernels that have
-		# SOCK_PACKET sockets but not PF_PACKET sockets.
-		#
-		VALGRINDTEST=valgrindtest
 	elif test "$ac_cv_header_net_raw_h" = yes; then
 		#
 		# IRIX snoop.
@@ -7326,7 +7382,7 @@ done
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
-	RPCAPD=rpcapd
+	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5

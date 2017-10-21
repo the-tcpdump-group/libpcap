@@ -1342,6 +1342,13 @@
  */
 #define DLT_NORDIC_BLE		272
 
+/* 
+ * Excentis DOCSIS 3.1 RF sniffer (XRA-31)
+ *   per: bruno.verstuyft at excentis.com
+ */
+#define DLT_DOCSIS31_XRA31	273
+
+
 /*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
@@ -1352,7 +1359,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	272	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	273	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

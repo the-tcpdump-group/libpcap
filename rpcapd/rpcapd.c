@@ -324,7 +324,7 @@ void main_startup(void)
 	memset(errbuf, 0, sizeof(errbuf));
 
 	// Starts all the active threads
-	while ((activelist[i].address[0] != 0) && (i < MAX_ACTIVE_LIST))
+	while ((i < MAX_ACTIVE_LIST) && (activelist[i].address[0] != 0))
 	{
 		activelist[i].ai_family = mainhints.ai_family;
 		

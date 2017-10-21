@@ -1918,8 +1918,6 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	int active = 0;				/* '1' if we're in active mode */
 
 	/* socket-related variables */
-	struct addrinfo hints;			/* temp, needed to open a socket connection */
-	struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
 	SOCKET sockctrl;			/* socket descriptor of the control connection */
 
 	/* RPCAP-related variables */
@@ -1976,8 +1974,6 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		return NULL;
 	}
 
-	addrinfo = NULL;
-
 	/*
 	 * Warning: this call can be the first one called by the user.
 	 * For this reason, we have to initialize the WinSock support.
@@ -2001,6 +1997,9 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		 * We're not in active mode; let's try to open a new
 		 * control connection.
 		 */
+		struct addrinfo hints;		/* temp, needed to open a socket connection */
+		struct addrinfo *addrinfo;	/* temp, needed to open a socket connection */
+
 		memset(&hints, 0, sizeof(struct addrinfo));
 		hints.ai_family = PF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
@@ -2032,7 +2031,6 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		}
 
 		freeaddrinfo(addrinfo);
-		addrinfo = NULL;
 
 		if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
 			goto error;
@@ -2129,9 +2127,6 @@ error:
 	 */
 	if (totread != ntohl(header.plen))
 		sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0);
-
-	if (addrinfo)
-		freeaddrinfo(addrinfo);
 
 	if (!active)
 		sock_close(sockctrl, NULL, 0);

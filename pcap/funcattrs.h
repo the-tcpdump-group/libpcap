@@ -73,15 +73,15 @@
      * shared library by default, so we might have to explicitly mark
      * functions as exported.
      */
-    #if PCAP_IS_AT_LEAST_GNUC_VERSION(3, 4) \
-        || PCAP_IS_AT_LEAST_XL_C_VERSION(12, 0)
+    #if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4) \
+        || PCAP_IS_AT_LEAST_XL_C_VERSION(12,0)
       /*
        * GCC 3.4 or later, or some compiler asserting compatibility with
        * GCC 3.4 or later, or XL C 13.0 or later, so we have
        * __attribute__((visibility()).
        */
       #define PCAP_API_DEF	__attribute__((visibility("default")))
-    #elif PCAP_IS_AT_LEAST_SUNC_VERSION(5, 5)
+    #elif PCAP_IS_AT_LEAST_SUNC_VERSION(5,5)
       /*
        * Sun C 5.5 or later, so we have __global.
        * (Sun C 5.9 and later also have __attribute__((visibility()),
@@ -111,10 +111,10 @@
  * declaration, as the MSVC version has to go before the declaration.)
  */
 #if __has_attribute(noreturn) \
-    || PCAP_IS_AT_LEAST_GNUC_VERSION(2, 5) \
-    || PCAP_IS_AT_LEAST_SUNC_VERSION(5, 9) \
-    || PCAP_IS_AT_LEAST_XL_C_VERSION(10, 1) \
-    || PCAP_IS_AT_LEAST_HP_C_VERSION(6, 10)
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(2,5) \
+    || PCAP_IS_AT_LEAST_SUNC_VERSION(5,9) \
+    || PCAP_IS_AT_LEAST_XL_C_VERSION(10,1) \
+    || PCAP_IS_AT_LEAST_HP_C_VERSION(6,10)
   /*
    * Compiler with support for __attribute((noreturn)), or GCC 2.5 and
    * later, or Solaris Studio 12 (Sun C 5.9) and later, or IBM XL C 10.1
@@ -138,9 +138,9 @@
  * string".
  */
 #if __has_attribute(__format__) \
-    || PCAP_IS_AT_LEAST_GNUC_VERSION(2, 3) \
-    || PCAP_IS_AT_LEAST_XL_C_VERSION(10, 1) \
-    || PCAP_IS_AT_LEAST_HP_C_VERSION(6, 10)
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(2,3) \
+    || PCAP_IS_AT_LEAST_XL_C_VERSION(10,1) \
+    || PCAP_IS_AT_LEAST_HP_C_VERSION(6,10)
   /*
    * Compiler with support for it, or GCC 2.3 and later, or IBM XL C 10.1
    * and later (do any earlier versions of XL C support this?),
@@ -161,8 +161,8 @@
  * (Thank you, Microsoft, for requiring the function name.)
  */
 #if __has_attribute(deprecated) \
-    || PCAP_IS_AT_LEAST_GNUC_VERSION(4, 5) \
-    || PCAP_IS_AT_LEAST_SUNC_VERSION(5, 13)
+    || PCAP_IS_AT_LEAST_GNUC_VERSION(4,5) \
+    || PCAP_IS_AT_LEAST_SUNC_VERSION(5,13)
   /*
    * Compiler that supports __has_attribute and __attribute__((deprecated)),
    * or GCC 4.5 and later, or Sun/Oracle C 12.4 (Sun C 5.13) or later.
@@ -172,7 +172,7 @@
    * recent enough to support __attribute__((deprecated(msg)))).
    */
   #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated(msg)))
-#elif PCAP_IS_AT_LEAST_GNUC_VERSION(3, 1)
+#elif PCAP_IS_AT_LEAST_GNUC_VERSION(3,1)
   /*
    * GCC 3.1 through 4.4.
    *

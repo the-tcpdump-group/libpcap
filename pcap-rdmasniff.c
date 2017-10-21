@@ -59,7 +59,20 @@ struct pcap_rdmasniff {
 	u_char *			oneshot_buffer;
 	unsigned			port_num;
 	int                             cq_event;
+	u_int                           packets_recv;
 };
+
+static int
+rdmasniff_stats(pcap_t *handle, struct pcap_stat *stat)
+{
+	struct pcap_rdmasniff *priv = handle->priv;
+
+	stat->ps_recv = priv->packets_recv;
+	stat->ps_drop = 0;
+	stat->ps_ifdrop = 0;
+
+	return 0;
+}
 
 static void
 rdmasniff_cleanup(pcap_t *handle)
@@ -109,8 +122,14 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	int count = 0;
 
 	if (!priv->cq_event) {
-		if (ibv_get_cq_event(priv->channel, &ev_cq, &ev_ctx) < 0) {
-			return 0;
+		while (ibv_get_cq_event(priv->channel, &ev_cq, &ev_ctx) < 0) {
+			if (errno != EINTR) {
+				return PCAP_ERROR;
+			}
+			if (handle->break_loop) {
+				handle->break_loop = 0;
+				return PCAP_ERROR_BREAK;
+			}
 		}
 		ibv_ack_cq_events(priv->cq, 1);
 		ibv_req_notify_cq(priv->cq, 0);
@@ -139,6 +158,7 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (handle->fcode.bf_insns == NULL ||
 		    bpf_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
 			callback(user, &pkth, pktd);
+			++priv->packets_recv;
 			++count;
 		}
 
@@ -285,6 +305,7 @@ rdmasniff_activate(pcap_t *handle)
 
 	handle->offset = 0;
 	handle->read_op = rdmasniff_read;
+	handle->stats_op = rdmasniff_stats;
 	handle->cleanup_op = rdmasniff_cleanup;
 	handle->setfilter_op = install_bpf_program;
 	handle->setdirection_op = NULL;
