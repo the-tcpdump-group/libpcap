@@ -34,6 +34,8 @@
 #ifndef pcap_int_h
 #define	pcap_int_h
 
+#include <signal.h>
+
 #include <pcap/pcap.h>
 
 /*
@@ -167,7 +169,7 @@ struct pcap {
 	u_char *bp;
 	int cc;
 
-	int break_loop;		/* flag set to force break from packet-reading loop */
+	sig_atomic_t break_loop; /* flag set to force break from packet-reading loop */
 
 	void *priv;		/* private data for methods */
 
