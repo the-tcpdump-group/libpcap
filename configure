@@ -639,7 +639,7 @@ USB_SRC
 PCAP_SUPPORT_USB
 RPCAPD_LIBS
 INSTALL_RPCAPD
-RPCAPD
+BUILD_RPCAPD
 MAN_USERMOD_SECTION
 MAN_MISC_INFO
 MAN_FILE_FORMATS
@@ -7382,7 +7382,7 @@ done
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
-	RPCAPD=rpcapd
+	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5

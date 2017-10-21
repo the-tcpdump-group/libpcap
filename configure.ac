@@ -1218,7 +1218,7 @@ yes)	AC_MSG_RESULT(yes)
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
-	RPCAPD=rpcapd
+	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
 *)	AC_MSG_RESULT(no)
@@ -1586,7 +1586,7 @@ AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_USERMOD_SECTION)
-AC_SUBST(RPCAPD)
+AC_SUBST(BUILD_RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
 AC_SUBST(RPCAPD_LIBS)
 

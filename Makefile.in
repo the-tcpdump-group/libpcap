@@ -62,7 +62,7 @@ DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
-RPCAPD=@RPCAPD@
+BUILD_RPCAPD=@BUILD_RPCAPD@
 INSTALL_RPCAPD=@INSTALL_RPCAPD@
 RPCAPD_LIBS=@RPCAPD_LIBS@
 
@@ -382,7 +382,7 @@ EXTRA_DIST = \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
 
-all: libpcap.a shared $(RPCAPD) pcap-config
+all: libpcap.a shared $(BUILD_RPCAPD) pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
@@ -530,7 +530,7 @@ pcap-config: $(srcdir)/pcap-config.in ./config.status
 #
 # Remote pcap daemon.
 #
-rpcapd: libpcap.a
+build-rpcapd: libpcap.a
 	cd rpcapd; $(MAKE)
 
 #
