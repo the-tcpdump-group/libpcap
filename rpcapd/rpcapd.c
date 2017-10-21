@@ -91,8 +91,6 @@ static void main_cleanup_childs(int sign);
 */
 static void printusage(void)
 {
-	(void)fprintf(stderr, "RPCAPD, a remote packet capture daemon.\n"
-	"Compiled with %s\n\n", pcap_lib_version());
 	char *usagetext =
 	"USAGE:"
 	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-4] [-l <host_list>] [-a <host,port>]\n"
@@ -120,6 +118,8 @@ static void printusage(void)
 	"                  specified from the command line are ignored\n\n"
 	"  -h              print this help screen\n\n";
 
+	(void)fprintf(stderr, "RPCAPD, a remote packet capture daemon.\n"
+	"Compiled with %s\n\n", pcap_lib_version());
 	printf("%s", usagetext);
 }
 
