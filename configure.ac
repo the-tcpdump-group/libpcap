@@ -517,17 +517,25 @@ linux)
 	#
 	AC_ARG_WITH(libnl,
 	AC_HELP_STRING([--without-libnl],[disable libnl support @<:@default=yes, on Linux, if present@:>@]),
-		with_libnl=$withval,,)
+		with_libnl=$withval,with_libnl=if_available)
 
 	if test x$with_libnl != xno ; then
 		have_any_nl="no"
 
                 incdir=-I/usr/include/libnl3
                 libnldir=
-                if test x$withval != x ; then
-                  libnldir=-L${withval}/lib/.libs
-                  incdir=-I${withval}/include
-                fi
+                case "$with_libnl" in
+
+                yes|if_available)
+                  ;;
+
+                *)
+                  if test -d $withval; then
+                    libnldir=-L${withval}/lib/.libs
+                    incdir=-I${withval}/include
+                  fi
+                  ;;
+                esac
 
 		#
 		# Try libnl 3.x first.

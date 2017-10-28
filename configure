@@ -5727,6 +5727,8 @@ done
 # Check whether --with-libnl was given.
 if test "${with_libnl+set}" = set; then :
   withval=$with_libnl; with_libnl=$withval
+else
+  with_libnl=if_available
 fi
 
 
@@ -5735,10 +5737,16 @@ fi
 
                 incdir=-I/usr/include/libnl3
                 libnldir=
-                if test x$withval != x ; then
-                  libnldir=-L${withval}/lib/.libs
-                  incdir=-I${withval}/include
-                fi
+                case "$with_libnl" in
+                yes|if_available)
+                  ;;
+                *)
+                  if test -d $withval; then
+                    libnldir=-L${withval}/lib/.libs
+                    incdir=-I${withval}/include
+                  fi
+                  ;;
+                esac
 
 		#
 		# Try libnl 3.x first.
