@@ -98,7 +98,7 @@ static void *daemon_thrdatamain(void *ptr);
 	thread, which is created as soon as a new connection is accepted.
 
 	\param ptr: a void pointer that keeps the reference of the 'pthread_chain'
-	value corrisponding to this thread. This variable is casted into a 'pthread_chain'
+	value corresponding to this thread. This variable is casted into a 'pthread_chain'
 	value in order to retrieve the socket we're currently using, the thread ID, and
 	some pointers to the previous and next elements into this struct.
 
@@ -699,7 +699,7 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	 * we have getspnam(), otherwise we just do traditional
 	 * authentication, which, on some platforms, might work, even
 	 * with shadow passwords, if we're running as root.  Traditional
-	 * authenticaion won't work if we're not running as root, as
+	 * authentication won't work if we're not running as root, as
 	 * I think these days all UN*Xes either won't return the password
 	 * at all with getpwnam() or will only do so if you're root.
 	 *
