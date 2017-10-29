@@ -1342,7 +1342,7 @@
  */
 #define DLT_NORDIC_BLE		272
 
-/* 
+/*
  * Excentis DOCSIS 3.1 RF sniffer (XRA-31)
  *   per: bruno.verstuyft at excentis.com
  */

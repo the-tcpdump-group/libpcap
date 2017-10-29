@@ -121,7 +121,7 @@ void fileconf_read(int sign)
 			}
 		}
 
-		// clear the remaining fields of the active list 
+		// clear the remaining fields of the active list
 		while (i < MAX_ACTIVE_LIST)
 		{
 			activelist[i].address[0] = 0;
@@ -158,7 +158,7 @@ int fileconf_save(const char *savefile)
 
 		strncpy(temphostlist, hostlist, MAX_HOST_LIST);
 		temphostlist[MAX_HOST_LIST] = 0;
-	
+
 		token = pcap_strtok_r(temphostlist, RPCAP_HOSTLIST_SEP, &lasts);
 		while(token != NULL)
 		{

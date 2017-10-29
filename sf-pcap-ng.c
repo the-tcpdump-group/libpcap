@@ -232,7 +232,7 @@ struct pcap_ng_sf {
 
 /*
  * Maximum block size for a given maximum snapshot length; we calculate
- * this based 
+ * this based
  *
  * We define it as the size of an EPB with a max_snaplen-sized
  * packet and 128KB of options.

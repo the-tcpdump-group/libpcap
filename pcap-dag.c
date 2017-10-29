@@ -1085,7 +1085,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
 				if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
 					dag_detach_stream(dagfd, stream);
-					
+
 					pcap_snprintf(name,  10, "dag%d:%d", c, stream);
 					if (add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 						/*
@@ -1093,7 +1093,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 						 */
 						ret = -1;
 					}
-					
+
 					rxstreams--;
 					if(rxstreams <= 0) {
 						break;
@@ -1102,7 +1102,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			}
 			dag_close(dagfd);
 		}
-		
+
 	}
 	return (ret);
 }
@@ -1296,7 +1296,7 @@ dag_get_datalink(pcap_t *p)
 			if(!p->linktype)
 				p->linktype = DLT_RAW;
 			break;
-			
+
 		case ERF_TYPE_IPV6:
 			if (p->dlt_list != NULL) {
 				p->dlt_list[dlt_index++] = DLT_RAW;

@@ -1529,7 +1529,7 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	}
 	memcpy(scheme, source, scheme_len);
 	scheme[scheme_len] = '\0';
-	 
+
 	/*
 	 * Treat file: specially - take everything after file:// as
 	 * the pathname.

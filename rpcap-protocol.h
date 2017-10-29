@@ -100,7 +100,7 @@ struct rpcap_findalldevs_if
  *
  * Do *NOT* use struct sockaddr_storage, as the layout for that is
  * machine-dependent.
- * 
+ *
  * RFC 2553 gives two sample layouts, both of which are 128 bytes long,
  * both of which are aligned on an 8-byte boundary, and both of which
  * have 2 bytes before the address data.
@@ -324,7 +324,7 @@ struct rpcap_sampling
  * Routines used by the rpcap client and rpcap daemon    *
  *                                                       *
  *********************************************************/
- 
+
 #include "sockutils.h"
 
 extern int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
