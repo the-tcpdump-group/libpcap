@@ -112,7 +112,7 @@ void daemon_serviceloop(void *ptr)
 	struct session *session = NULL;		// struct session main variable
 	struct daemon_slpars *pars;		// parameters related to the present daemon loop
 
-	pthread_t threaddata = 0;		// handle to the 'read from daemon and send to client' thread
+	pthread_t threaddata;		// handle to the 'read from daemon and send to client' thread
 
 	unsigned int ifdrops, ifrecv, krnldrop, svrcapt;	// needed to save the values of the statistics
 
@@ -421,10 +421,10 @@ end:
 	// perform pcap_t cleanup, in case it has not been done
 	if (session)
 	{
-		if (threaddata)
+		if (pthread_equal(threaddata, pthread_self()))
 		{
 			pthread_cancel(threaddata);
-			threaddata = 0;
+			threaddata;
 		}
 		if (session->sockdata)
 		{
