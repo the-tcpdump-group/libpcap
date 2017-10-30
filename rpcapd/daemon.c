@@ -72,6 +72,7 @@ struct session {
 };
 
 // Locally defined functions
+static int daemon_msg_err(SOCKET sockctrl, uint32 plen);
 static int daemon_msg_auth_req(SOCKET sockctrl, uint32 plen, int nullAuthAllowed);
 static int daemon_AuthUserPwd(char *username, char *password, char *errbuf);
 
@@ -273,6 +274,7 @@ void daemon_serviceloop(void *ptr)
 				// an error message rather than a "let
 				// me log in" message, indicating that
 				// we're not allowed to connect to them?
+				(void)daemon_msg_err(pars->sockctrl, plen);
 				goto end;
 
 			case RPCAP_MSG_FINDALLIF_REQ:
@@ -434,8 +436,7 @@ void daemon_serviceloop(void *ptr)
 		//
 		// Did the client specify the version we negotiated?
 		//
-		// For now, there's only one version; we'd record the
-		// negotiated version in the
+		// For now, there's only one version.
 		//
 		if (header.ver != RPCAP_VERSION)
 		{
@@ -459,9 +460,9 @@ void daemon_serviceloop(void *ptr)
 		{
 			case RPCAP_MSG_ERROR:		// The other endpoint reported an error
 			{
+				(void)daemon_msg_err(pars->sockctrl, plen);
 				// Do nothing; just exit; the error code is already into the errbuf
 				// XXX - actually exit....
-				rpcapd_log(LOGPRIO_ERROR, "Error from client: %s", errbuf);
 				break;
 			}
 
@@ -731,6 +732,61 @@ end:
 		pthread_exit(0);
 #endif
 	}
+}
+
+/*
+ * This handles the RPCAP_MSG_ERR message.
+ */
+int daemon_msg_err(SOCKET sockctrl, uint32 plen)
+{
+	char errbuf[PCAP_ERRBUF_SIZE];
+	char remote_errbuf[PCAP_ERRBUF_SIZE];
+
+	if (plen >= PCAP_ERRBUF_SIZE)
+	{
+		/*
+		 * Message is too long; just read as much of it as we
+		 * can into the buffer provided, and discard the rest.
+		 */
+		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			// Network error.
+			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+			return -1;
+		}
+		if (rpcapd_discard(sockctrl, plen - (PCAP_ERRBUF_SIZE - 1)) == -1)
+		{
+			// Network error.
+			return -1;
+		}
+
+		/*
+		 * Null-terminate it.
+		 */
+		remote_errbuf[PCAP_ERRBUF_SIZE - 1] = '\0';
+	}
+	else if (plen == 0)
+	{
+		/* Empty error string. */
+		remote_errbuf[0] = '\0';
+	}
+	else
+	{
+		if (sock_recv(sockctrl, remote_errbuf, plen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			// Network error.
+			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+			return -1;
+		}
+
+		/*
+		 * Null-terminate it.
+		 */
+		remote_errbuf[plen] = '\0';
+	}
+	// Log the message
+	rpcapd_log(LOGPRIO_ERROR, "Error from client: %s", remote_errbuf);
+	return 0;
 }
 
 /*
