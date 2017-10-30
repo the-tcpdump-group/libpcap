@@ -102,7 +102,7 @@ static int rpcapd_discard(SOCKET sock, uint32 len);
 	thread, which is created as soon as a new connection is accepted.
 
 	\param ptr: a void pointer that keeps the reference of the 'pthread_chain'
-	value corrisponding to this thread. This variable is casted into a 'pthread_chain'
+	value corresponding to this thread. This variable is casted into a 'pthread_chain'
 	value in order to retrieve the socket we're currently using, the thread ID, and
 	some pointers to the previous and next elements into this struct.
 
