@@ -265,6 +265,8 @@ struct rpcap_sampling
 };
 
 /* Messages field coding */
+#define RPCAP_MSG_IS_REPLY		0x080	/* Flag indicating a reply */
+
 #define RPCAP_MSG_ERROR			1	/* Message that keeps an error notification */
 #define RPCAP_MSG_FINDALLIF_REQ		2	/* Request to list all the remote interfaces */
 #define RPCAP_MSG_OPEN_REQ		3	/* Request to open a remote device */
@@ -277,14 +279,14 @@ struct rpcap_sampling
 #define RPCAP_MSG_ENDCAP_REQ		10	/* Stops the current capture, keeping the device open */
 #define RPCAP_MSG_SETSAMPLING_REQ	11	/* Set sampling parameters */
 
-#define RPCAP_MSG_FINDALLIF_REPLY	(128+RPCAP_MSG_FINDALLIF_REQ)		/* Keeps the list of all the remote interfaces */
-#define RPCAP_MSG_OPEN_REPLY		(128+RPCAP_MSG_OPEN_REQ)		/* The remote device has been opened correctly */
-#define RPCAP_MSG_STARTCAP_REPLY	(128+RPCAP_MSG_STARTCAP_REQ)		/* The capture is starting correctly */
-#define RPCAP_MSG_UPDATEFILTER_REPLY	(128+RPCAP_MSG_UPDATEFILTER_REQ)	/* The filter has been applied correctly on the remote device */
-#define RPCAP_MSG_AUTH_REPLY		(128+RPCAP_MSG_AUTH_REQ)		/* Sends a message that says 'ok, authorization successful' */
-#define RPCAP_MSG_STATS_REPLY		(128+RPCAP_MSG_STATS_REQ)		/* Message that keeps the network statistics */
-#define RPCAP_MSG_ENDCAP_REPLY		(128+RPCAP_MSG_ENDCAP_REQ)		/* Confirms that the capture stopped successfully */
-#define RPCAP_MSG_SETSAMPLING_REPLY	(128+RPCAP_MSG_SETSAMPLING_REQ)		/* Confirms that the capture stopped successfully */
+#define RPCAP_MSG_FINDALLIF_REPLY	(RPCAP_MSG_FINDALLIF_REQ | RPCAP_MSG_IS_REPLY)		/* Keeps the list of all the remote interfaces */
+#define RPCAP_MSG_OPEN_REPLY		(RPCAP_MSG_OPEN_REQ | RPCAP_MSG_IS_REPLY)		/* The remote device has been opened correctly */
+#define RPCAP_MSG_STARTCAP_REPLY	(RPCAP_MSG_STARTCAP_REQ | RPCAP_MSG_IS_REPLY)		/* The capture is starting correctly */
+#define RPCAP_MSG_UPDATEFILTER_REPLY	(RPCAP_MSG_UPDATEFILTER_REQ | RPCAP_MSG_IS_REPLY)	/* The filter has been applied correctly on the remote device */
+#define RPCAP_MSG_AUTH_REPLY		(RPCAP_MSG_AUTH_REQ | RPCAP_MSG_IS_REPLY)		/* Sends a message that says 'ok, authorization successful' */
+#define RPCAP_MSG_STATS_REPLY		(RPCAP_MSG_STATS_REQ | RPCAP_MSG_IS_REPLY)		/* Message that keeps the network statistics */
+#define RPCAP_MSG_ENDCAP_REPLY		(RPCAP_MSG_ENDCAP_REQ | RPCAP_MSG_IS_REPLY)		/* Confirms that the capture stopped successfully */
+#define RPCAP_MSG_SETSAMPLING_REPLY	(RPCAP_MSG_SETSAMPLING_REQ | RPCAP_MSG_IS_REPLY)		/* Confirms that the capture stopped successfully */
 
 #define RPCAP_STARTCAPREQ_FLAG_PROMISC		0x00000001	/* Enables promiscuous mode (default: disabled) */
 #define RPCAP_STARTCAPREQ_FLAG_DGRAM		0x00000002	/* Use a datagram (i.e. UDP) connection for the data stream (default: use TCP)*/
@@ -327,8 +329,8 @@ struct rpcap_sampling
 
 #include "sockutils.h"
 
-extern int rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf);
 extern void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
+extern const char *rpcap_msg_type_string(uint8 type);
 extern int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);
 extern int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 

@@ -50,54 +50,6 @@
  */
 
 /*
- * This function checks whether the version contained into the message is
- * compatible with the one handled by this implementation.
- *
- * Right now, this function does not have any sophisticated task: if the
- * versions are different, it returns -1 and it discards the message.
- * If new versions of the protocol are created, there will need to be
- * a negotiation phase early in the process of connecting to our peer,
- * so that the highest version supported by both sides can be used.
- *
- * \param sock: the socket that has to be used to receive data. This
- * function can read data from socket in case the version contained into
- * the message is not compatible with ours. In that case, all the message
- * is purged from the socket, so that the following recv() calls will
- * return a new (clean) message.
- *
- * \param header: a pointer to and 'rpcap_header' structure that keeps
- * the data received from the network (still in network byte order) and
- * that has to be checked.
- *
- * \param errbuf: a pointer to a user-allocated buffer (of size
- * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
- * is one). The error message is "incompatible version".
- *
- * \return '0' if everything is fine, '-1' if some errors occurred. The
- * error message is returned in the 'errbuf' variable.
- */
-int
-rpcap_checkver(SOCKET sock, struct rpcap_header *header, char *errbuf)
-{
-	/*
-	 * This is a sample function.
-	 *
-	 * In the real world, you have to check the type code,
-	 * and decide accordingly.
-	 */
-	if (header->ver != RPCAP_VERSION)
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Incompatible version number: message discarded.");
-
-		/* we already have an error, so please discard this one */
-		sock_discard(sock, ntohl(header->plen), NULL, 0);
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
  * This function sends a RPCAP error to our peer.
  *
  * It has to be called when the main program detects an error.
@@ -185,6 +137,58 @@ rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 le
 }
 
 /*
+ * Convert a message type to a string containing the type name.
+ */
+static const char *requests[] =
+{
+	NULL,				/* not a valid message type */
+	"RPCAP_MSG_ERROR",
+	"RPCAP_MSG_FINDALLIF_REQ",
+	"RPCAP_MSG_OPEN_REQ",
+	"RPCAP_MSG_STARTCAP_REQ",
+	"RPCAP_MSG_UPDATEFILTER_REQ",
+	"RPCAP_MSG_CLOSE",
+	"RPCAP_MSG_PACKET",
+	"RPCAP_MSG_AUTH_REQ",
+	"RPCAP_MSG_STATS_REQ",
+	"RPCAP_MSG_ENDCAP_REQ",
+	"RPCAP_MSG_SETSAMPLING_REQ",
+};
+#define NUM_REQ_TYPES	(sizeof requests / sizeof requests[0])
+
+static const char *replies[] =
+{
+	NULL,
+	NULL,			/* this would be a reply to RPCAP_MSG_ERROR */
+	"RPCAP_MSG_FINDALLIF_REPLY",
+	"RPCAP_MSG_OPEN_REPLY",
+	"RPCAP_MSG_STARTCAP_REPLY",
+	"RPCAP_MSG_UPDATEFILTER_REPLY",
+	NULL,			/* this would be a reply to RPCAP_MSG_CLOSE */
+	NULL,			/* this would be a reply to RPCAP_MSG_PACKET */
+	"RPCAP_MSG_AUTH_REPLY",
+	"RPCAP_MSG_STATS_REPLY",
+	"RPCAP_MSG_ENDCAP_REPLY",
+	"RPCAP_MSG_SETSAMPLING_REPLY",
+};
+#define NUM_REPLY_TYPES	(sizeof replies / sizeof replies[0])
+
+const char *
+rpcap_msg_type_string(uint8 type)
+{
+	if (type & RPCAP_MSG_IS_REPLY) {
+		type &= ~RPCAP_MSG_IS_REPLY;
+		if (type >= NUM_REPLY_TYPES)
+			return NULL;
+		return replies[type];
+	} else {
+		if (type > NUM_REQ_TYPES)
+			return NULL;
+		return requests[type];
+	}
+}
+
+/*
  * This function checks whether the header of the received message is correct.
  *
  * It is a way to easily check if the message received, in a certain state
@@ -240,16 +244,24 @@ rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 fir
 	int32 len;
 	char remote_errbuf[PCAP_ERRBUF_SIZE];
 
-	va_start(ap, first);
-
 	/* Check if the present version of the protocol can handle this message */
-	if (rpcap_checkver(sock, header, errbuf))
+	if (header->ver != RPCAP_VERSION)
 	{
-		SOCK_ASSERT(errbuf, 1);
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Incompatible version number: message discarded.");
 
-		va_end(ap);
+		/*
+		 * Discard the rest of the packet.
+		 */
+		if (sock_discard(sock, ntohl(header->plen), NULL, 0) == -1) {
+			/*
+			 * Network error.
+			 */
+			return -3;
+		}
 		return -1;
 	}
+
+	va_start(ap, first);
 
 	type = first;
 

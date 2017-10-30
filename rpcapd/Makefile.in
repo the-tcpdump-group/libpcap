@@ -80,13 +80,14 @@ INSTALL_DATA = @INSTALL_DATA@
 
 SRC =	daemon.c \
 	fileconf.c \
+	log-stderr.c \
 	rpcapd.c \
 	utils.c
 
 OBJ =	$(SRC:.c=.o) ../rpcap-protocol.o
 PUBHDR =
 
-HDR = $(PUBHDR)
+HDR = $(PUBHDR) log.h
 
 TAGFILES = \
 	$(SRC) $(HDR)

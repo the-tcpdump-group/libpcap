@@ -141,6 +141,8 @@ HDR = $(PUBHDR) \
 	rpcapd/daemon.h \
 	rpcapd/fileconf.c \
 	rpcapd/fileconf.h \
+	rpcapd/log.h \
+	rpcapd/log-stderr.c \
 	rpcapd/rpcapd.c \
 	rpcapd/rpcapd.h \
 	rpcapd/rpcapd.rc \

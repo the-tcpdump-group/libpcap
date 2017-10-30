@@ -54,6 +54,7 @@ if((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
   add_executable(rpcapd
     daemon.c
     fileconf.c
+    log-stderr.c
     rpcapd.c
     utils.c
     ${RPCAPD_EXTRA_SOURCES}
