@@ -91,6 +91,7 @@ static int daemon_msg_setsampling_req(SOCKET sockctrl, uint32 plen, struct rpcap
 static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout);
 static void *daemon_thrdatamain(void *ptr);
 
+static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp);
 static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf);
 static int rpcapd_discard(SOCKET sock, uint32 len);
 
@@ -189,16 +190,15 @@ void daemon_serviceloop(void *ptr)
 		}
 
 		//
-		// Read a message from the client.
+		// Read the message header from the client.
 		//
-		if (sock_recv(pars->sockctrl, (char *) &header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (rpcapd_recv_msg_header(pars->sockctrl, &header) == -1)
 		{
 			// Network error.
-			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 			goto end;
 		}
 
-		plen = ntohl(header.plen);
+		plen = header.plen;
 
 		//
 		// Did the client specify a version we can handle?
@@ -421,16 +421,15 @@ void daemon_serviceloop(void *ptr)
 		}
 
 		//
-		// Read a message from the client.
+		// Read the message header from the client.
 		//
-		if (sock_recv(pars->sockctrl, (char *) &header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (rpcapd_recv_msg_header(pars->sockctrl, &header) == -1)
 		{
 			// Network error.
-			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 			goto end;
 		}
 
-		plen = ntohl(header.plen);
+		plen = header.plen;
 
 		//
 		// Did the client specify the version we negotiated?
@@ -2066,6 +2065,23 @@ void pthread_suspend(int msec)
 	pthread_mutex_destroy(&mutex);
 	pthread_cond_destroy(&cond);
 #endif
+}
+
+/*
+ * Read the header of a message.
+ */
+static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp)
+{
+	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
+
+	if (sock_recv(sock, (char *) headerp, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+	{
+		// Network error.
+		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+		return -1;
+	}
+	headerp->plen = ntohl(headerp->plen);
+	return 0;
 }
 
 /*
