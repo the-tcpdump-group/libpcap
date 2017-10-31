@@ -80,8 +80,8 @@ static int daemon_AuthUserPwd(char *username, char *password, char *errbuf);
 static int daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen);
 
 static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen);
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param);
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, pthread_t *threaddata);
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param);
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t *threaddata);
 
 static int daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen);
 static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, uint32 *plenp, char *errbuf);
@@ -122,7 +122,8 @@ void daemon_serviceloop(void *ptr)
 	struct daemon_slpars *pars;		// parameters related to the present daemon loop
 	const char *msg_type_string;		// string for message type
 
-	pthread_t threaddata = 0;		// handle to the 'read from daemon and send to client' thread
+	int have_thread = 0;			// 1 if threaddata refers to a thread we've created
+	pthread_t threaddata;			// handle to the 'read from daemon and send to client' thread
 
 	// needed to save the values of the statistics
 	struct pcap_stat stats;
@@ -571,7 +572,7 @@ void daemon_serviceloop(void *ptr)
 					break;
 				}
 
-				if (daemon_msg_startcap_req(pars, plen, &threaddata, source, pars->isactive, &session, &samp_param) == -1)
+				if (daemon_msg_startcap_req(pars, plen, &have_thread, &threaddata, source, pars->isactive, &session, &samp_param) == -1)
 				{
 					// Network error; a message has
 					// been logged, so just give up.
@@ -645,7 +646,7 @@ void daemon_serviceloop(void *ptr)
 						svrcapt = 0;
 					}
 
-					if (daemon_msg_endcap_req(pars, session, &threaddata) == -1)
+					if (daemon_msg_endcap_req(pars, session, &have_thread, &threaddata) == -1)
 					{
 						free(session);
 						session = NULL;
@@ -770,10 +771,10 @@ end:
 	// perform pcap_t cleanup, in case it has not been done
 	if (session)
 	{
-		if (threaddata)
+		if (have_thread)
 		{
 			pthread_cancel(threaddata);
-			threaddata = 0;
+			have_thread = 0;
 		}
 		if (session->sockdata)
 		{
@@ -1447,7 +1448,7 @@ error:
 	\param plen: the length of the current message (needed in order to be able
 	to discard excess data in the message, if present)
 */
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1669,6 +1670,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, pthr
 		pthread_attr_destroy(&detachedAttribute);
 		goto error;
 	}
+	*have_thread = 1;
 
 	pthread_attr_destroy(&detachedAttribute);
 	// Check if all the data has been read; if not, discard the data in excess
@@ -1688,8 +1690,11 @@ error:
 	if (addrinfo)
 		freeaddrinfo(addrinfo);
 
-	if (threaddata)
+	if (*have_thread)
+	{
 		pthread_cancel(*threaddata);
+		*have_thread = 0;
+	}
 
 	if (sockdata)
 		sock_close(sockdata, NULL, 0);
@@ -1726,8 +1731,11 @@ fatal_error:
 	if (addrinfo)
 		freeaddrinfo(addrinfo);
 
-	if (threaddata)
+	if (*have_thread)
+	{
 		pthread_cancel(*threaddata);
+		*have_thread = 0;
+	}
 
 	if (sockdata)
 		sock_close(sockdata, NULL, 0);
@@ -1739,15 +1747,15 @@ fatal_error:
 	return -1;
 }
 
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, pthread_t *threaddata)
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t *threaddata)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	struct rpcap_header header;
 
-	if (threaddata)
+	if (*have_thread)
 	{
 		pthread_cancel(*threaddata);
-		threaddata = 0;
+		*have_thread = 0;
 	}
 	if (session->sockdata)
 	{
