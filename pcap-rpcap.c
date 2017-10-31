@@ -1652,10 +1652,11 @@ static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, 
 	}
 
 	/*
-	 * THe server doesn't support the version we used in the initial
-	 * message, and it sent us back a reply with the maximum version
-	 * they do support, and we also support it.  *ver has been set to
-	 * that version; try authenticating again with that version.
+	 * The server doesn't support the version we used in the initial
+	 * message, and it sent us back a reply either with the maximum
+	 * version they do support, or with the version we sent, and we
+	 * support that version.  *ver has been set to that version; try
+	 * authenticating again with that version.
 	 */
 	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
 	if (status == -1)
@@ -1666,13 +1667,11 @@ static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, 
 	if (status == -2)
 	{
 		/*
-		 * The server doesn't support the version
-		 * it told us was the maximum version it
-		 * supported, so this is a fatal error.
-		 *
-		 * XXX - should we overwrite the error
-		 * string it gave us?
+		 * The server doesn't support that version, which
+		 * means there is no version we both support, so
+		 * this is a fatal error.
 		 */
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The server doesn't support any protocol version that we support");
 		return -1;
 	}
 	return 0;
@@ -1696,8 +1695,8 @@ static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, 
  * is one). It could be a network problem or the fact that the authorization
  * failed.
  *
- * \return '0' if everything is fine, '-2' if the server doesn't support
- * the protocol version we requested but does support a version we also
+ * \return '0' if everything is fine, '-2' if the server didn't reply with
+ * the protocol version we requested but replied with a version we do
  * support, or '-1' for other errors.  For errors, an error message string
  * is returned in the 'errbuf' variable.
  */
@@ -1815,14 +1814,17 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 		{
 			/*
 			 * The server didn't support the version we sent,
-			 * and replied with the maximum version it supports.
+			 * and replied with the maximum version it supports
+			 * if our version was too big or with the version
+			 * we sent if out version was too small.
+			 *
 			 * Do we also support it?
 			 */
 			if (header.ver < RPCAP_MIN_VERSION ||
 			    header.ver > RPCAP_MAX_VERSION)
 			{
 				/*
-				 * No, so there's no version we support.
+				 * No, so there's no version we both support.
 				 * This is an unrecoverable error.
 				 */
 				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The server doesn't support any protocol version that we support");

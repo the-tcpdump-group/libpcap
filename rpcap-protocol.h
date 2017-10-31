@@ -41,6 +41,102 @@
 
 /*
  * Minimum and maximum supported versions of the protocol.
+ *
+ * If new message types are added, the protocol version MUST be changed,
+ * so that a client knows, from the negotiated protocol version, what
+ * messages can be sent to the server.
+ *
+ * If the format of an existing message type is changed, the protocol
+ * version MUST be changed, so that each side knows, from the negotiated
+ * protocol version, what format should be used.
+ *
+ * The RPCAP_MSG_ERROR format MUST not change, as it's used to, among
+ * other things, report "incorrect version number" errors, where, if
+ * the format changed, the sender of the message might not know what
+ * versions the recipient would understand, or might know a version
+ * they support (the version number they sent) but might not know
+ * the format of the message in that version.
+ *
+ * Other message versions SHOULD not change, as that would complicate
+ * the process of interpreting the message, making it version-dependent.
+ * Introducing a new message with a new format is preferable.
+ *
+ * Version negotiation is done as part of the authentication process:
+ *
+ * The client sends an authentication request, with the version number
+ * in the request being the maximum version it supports.
+ *
+ * If the server supports that version, it attempts to authenticate the
+ * client, and replies as appropriate, with the version number in the
+ * reply being that version.
+ *
+ * If the server doesn't support that version because it's too large,
+ * it replies with a RPCAP_MSG_ERROR message, with the maximum version
+ * they support as the version number in the reply, and with the error
+ * code being PCAP_ERR_WRONGVER.
+ *
+ * If the server doesn't support that version because it's too small,
+ * it replies with a RPCAP_MSG_ERROR message, with that version as
+ * the version number in the reply, and with the error code being
+ * PCAP_ERR_WRONGVER.
+ *
+ * If the client supports that version, it retries the authentication
+ * with that version and, if that fails for any reason, including
+ * PCAP_ERR_WRONGVER, fails.  Otherwise, it fails, telling its caller
+ * that there's no version that both support.
+ *
+ * This requires that the set of versions supported by a client or
+ * server be a range of integers, with no gaps.  Thus:
+ *
+ * the client's version set is [Cmin, Cmax], with Cmin <= Cmax;
+ *
+ * the server's version set is [Smin, Smax], with Smin <= Smax;
+ *
+ * the client sends Cmax as the version number in the initial
+ * authentication request;
+ *
+ * if the server doesn't support the version sent by the client,
+ * either Smax < Cmax or Smin > Cmax (because the client sent Cmax
+ * to the server, and the server doesn't support it);
+ *
+ * if Smax < Cmax:
+ *
+ *    the server sends Smax as the version number in the RPCAP_MSG_ERROR/
+ *    PCAP_ERR_WRONGVER message - the client will accept this because
+ *    Cmax != 0, as these numbers are unsigned, and this means that
+ *    this isn't an old client that rejects all messages with a non-zero
+ *    version number, it's a new client that accepts RPCAP_MSG_ERROR
+ *    messages no matter what the version is;
+ *
+ *    if Smax >= Cmin, both the client and the server can use it, and
+ *    the client retries with Smax;
+ *
+ *    if Smax < Cmin, there is no version the client and server can
+ *    both support.
+ *
+ * if Smin > Cmax:
+ *
+ *    the server sends Cmax as the version number in the RPCAP_MSG_ERROR/
+ *    PCAP_ERR_WRONGVER message - the client will accept this because
+ *    Cmax is a valid client version number.
+ *
+ *    the client will retry with Cmax, get the same version failure,
+ *    and report that there is no version the client and server can
+ *    both support (as the version sets are disjoint).
+ *
+ * Old negotiation-unaware clients just send version 0 and, if they
+ * get back PCAP_ERR_WRONGVER, treat it as a fatal error.  This
+ * means they'll fail to talk to any server that can't handle
+ * version 0, which is the appropriate thing to do, as they can
+ * only use version 0.
+ *
+ * Old negotiation-unaware servers fail if they get a version other
+ * than 0, sending back PCAP_ERR_WRONGVER with version 0, which is
+ * the only version, and thus both the minimum and maximum version,
+ * they support.  The client will either fail if it doesn't support
+ * version 0, or will retry with version 0 and succeed, so it will
+ * fail with servers that can't handle version 0 or will negotiate
+ * version 0 with servers that can handle version 0.
  */
 #define RPCAP_MIN_VERSION 0
 #define RPCAP_MAX_VERSION 0

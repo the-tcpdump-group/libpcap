@@ -210,15 +210,35 @@ void daemon_serviceloop(void *ptr)
 		{
 			//
 			// Tell them it's not a valid protocol version.
-			// Send our maximum supported version as the
-			// version in the message.
 			//
-			// XXX - if we ever refuse to support version
-			// 0, for which older clients only handled
-			// version 0 in error replies, will this cause
-			// a problem?
-			//
-			if (rpcap_senderror(pars->sockctrl, RPCAP_MIN_VERSION,
+			uint8 reply_version;
+
+			if (header.ver < RPCAP_MIN_VERSION)
+			{
+				//
+				// Their maximum version is too old;
+				// there *is* no version we can both
+				// handle, and they might reject
+				// an error with a version they don't
+				// understand, so reply with the
+				// version they sent.  That may
+				// make them retry with that version,
+				// but they'll give up on that
+				// failure.
+				//
+				reply_version = header.ver;
+			}
+			else
+			{
+				//
+				// Their maximum version is too new,
+				// but they might be able to handle
+				// *our* maximum version, so reply
+				// with that version.
+				// 
+				reply_version = RPCAP_MAX_VERSION;
+			}
+			if (rpcap_senderror(pars->sockctrl, reply_version,
 			    PCAP_ERR_WRONGVER, "RPCAP version number mismatch",
 			    errbuf) == -1)
 			{
