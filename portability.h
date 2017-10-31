@@ -97,16 +97,6 @@ extern "C" {
   #ifndef strdup
   #define strdup	_strdup
   #endif
-
-  #include <stdio.h>
-
-  /*
-   * Make fopen() call a wrapper that calls fopen_s(), to squelch
-   * warnings.
-   */
-  #define fopen(x, y) \
-	fopen_safe((x), (y))
-  FILE *fopen_safe(const char *filename, const char* mode);
 #endif
 
 #ifdef _MSC_VER

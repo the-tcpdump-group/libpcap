@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "fopen.h"
+
 #include "pcap-int.h"
 
 #ifdef HAVE_OS_PROTO_H
@@ -245,22 +247,6 @@ sf_cleanup(pcap_t *p)
 	pcap_freecode(&p->fcode);
 }
 
-/*
-* fopen's safe version on Windows.
-*/
-#ifdef _MSC_VER
-FILE *fopen_safe(const char *filename, const char* mode)
-{
-	FILE *fp = NULL;
-	errno_t errno;
-	errno = fopen_s(&fp, filename, mode);
-	if (errno == 0)
-		return fp;
-	else
-		return NULL;
-}
-#endif
-
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
@@ -285,14 +271,12 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 #endif
 	}
 	else {
-#if !defined(_WIN32) && !defined(MSDOS)
-		fp = fopen(fname, "r");
-#else
-		fp = fopen(fname, "rb");
-#endif
-		if (fp == NULL) {
+		int err;
+
+		err = pcap_fopen(&fp, fname, "rb");
+		if (err != 0) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
-			    pcap_strerror(errno));
+			    pcap_strerror(err));
 			return (NULL);
 		}
 	}

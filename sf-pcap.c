@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "fopen.h"
+
 #include "pcap-int.h"
 
 #include "pcap-common.h"
@@ -795,14 +797,12 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		f = stdout;
 		fname = "standard output";
 	} else {
-#if !defined(_WIN32) && !defined(MSDOS)
-		f = fopen(fname, "w");
-#else
-		f = fopen(fname, "wb");
-#endif
-		if (f == NULL) {
+		int err;
+
+		err = pcap_fopen(&f, fname, "wb");
+		if (err != 0) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-			    fname, pcap_strerror(errno));
+			    fname, pcap_strerror(err));
 			return (NULL);
 		}
 	}
@@ -832,6 +832,7 @@ pcap_dump_fopen(pcap_t *p, FILE *f)
 pcap_dumper_t *
 pcap_dump_open_append(pcap_t *p, const char *fname)
 {
+	int err;
 	FILE *f;
 	int linktype;
 	size_t amt_read;
@@ -853,14 +854,10 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	if (fname[0] == '-' && fname[1] == '\0')
 		return (pcap_setup_dump(p, linktype, stdout, "standard output"));
 
-#if !defined(_WIN32) && !defined(MSDOS)
-	f = fopen(fname, "r+");
-#else
-	f = fopen(fname, "rb+");
-#endif
-	if (f == NULL) {
+	err = pcap_fopen(&f, fname, "rb+");
+	if (err != 0) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-		    fname, pcap_strerror(errno));
+		    fname, pcap_strerror(err));
 		return (NULL);
 	}
 
