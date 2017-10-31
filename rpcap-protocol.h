@@ -38,7 +38,12 @@
 /* Default port on which the client workstation is waiting for connections in case of active mode. */
 #define RPCAP_DEFAULT_NETPORT_ACTIVE "2003"
 #define RPCAP_DEFAULT_NETADDR ""	/* Default network address on which the RPCAP daemon binds to. */
-#define RPCAP_VERSION 0			/* Present version of the RPCAP protocol (0 = Experimental). */
+
+/*
+ * Minimum and maximum supported versions of the protocol.
+ */
+#define RPCAP_MIN_VERSION 0
+#define RPCAP_MAX_VERSION 0
 
 /*
  * Separators used for the host list.
@@ -329,9 +334,8 @@ struct rpcap_sampling
 
 #include "sockutils.h"
 
-extern void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
+extern void rpcap_createhdr(struct rpcap_header *header, uint8 ver, uint8 type, uint16 value, uint32 length);
 extern const char *rpcap_msg_type_string(uint8 type);
-extern int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);
-extern int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
+extern int rpcap_senderror(SOCKET sock, uint8 ver, uint16 errcode, char *error, char *errbuf);
 
 #endif

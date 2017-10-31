@@ -70,7 +70,6 @@
  *                                                       *
  *********************************************************/
 void rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length);
-int rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...);
 int rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf);
 
 #endif

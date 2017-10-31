@@ -81,6 +81,7 @@ struct activehosts
 {
 	struct sockaddr_storage host;
 	SOCKET sockctrl;
+	uint8 protocol_version;
 	struct activehosts *next;
 };
 
@@ -111,6 +112,8 @@ struct pcap_rpcap {
 	int rmt_flags;			/* we have to save flags, since they are passed by the pcap_open_live(), but they are used by the pcap_startcapture() */
 	int rmt_capstarted;		/* 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture() */
 	char *currentfilter;		/* Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on. */
+
+	uint8 protocol_version;		/* negotiated protocol version */
 
 	unsigned int TotNetDrops;	/* keeps the number of packets that have been dropped by the network */
 
@@ -150,7 +153,14 @@ static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *fp);
 static int pcap_startcapture_remote(pcap_t *fp);
-static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf);
+static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf);
+static int rpcap_recv_msg_header(SOCKET sock, struct rpcap_header *header, char *errbuf);
+static int rpcap_check_msg_ver(SOCKET sock, uint8 expected_ver, struct rpcap_header *header, char *errbuf);
+static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf);
+static int rpcap_process_msg_header(SOCKET sock, uint8 ver, uint8 request_type, struct rpcap_header *header, char *errbuf);
+static int rpcap_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errbuf);
+static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf);
+static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf);
 
 /****************************************************
  *                                                  *
@@ -419,26 +429,20 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		if (sock_recv(pr->rmt_sockdata, netbuf, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
+	header->plen = ntohl(header->plen);
 
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(p->errbuf, pr->rmt_sockdata, header, RPCAP_MSG_PACKET, 0);
+	/*
+	 * Did the server specify the version we negotiated?
+	 */
+	if (rpcap_check_msg_ver(pr->rmt_sockdata, pr->protocol_version,
+	    header, p->errbuf) == -1)
+		return 0;	/* Return 'no packets received' */
 
-	if (retval != RPCAP_MSG_PACKET)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-			return -1;	/* Do nothing; just exit from here; the error code is already into the errbuf */
-
-		case -2:		/* The other endpoint sent a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			return 0;	/* Return 'no packets received' */
-
-		default:
-			SOCK_ASSERT("Internal error", 1);
-			return 0;	/* Return 'no packets received' */
-		}
-	}
+	/*
+	 * Is this a RPCAP_MSG_PACKET message?
+	 */
+	if (header->type != RPCAP_MSG_PACKET)
+		return 0;	/* Return 'no packets received' */
 
 	/* In case of TCP, read the remaining of the packet from the socket */
 	if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
@@ -503,8 +507,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 
 			/* Checks if all the data has been read; if not, discard the data in excess */
 			/* This check has to be done only on TCP connections */
-			if (totread != ntohl(header->plen))
-				sock_discard(pr->rmt_sockdata, ntohl(header->plen) - totread, NULL, 0);
+			if (totread != header->plen)
+				sock_discard(pr->rmt_sockdata, header->plen - totread, NULL, 0);
 		}
 
 		/* Packet read successfully */
@@ -607,14 +611,16 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 
 	if (!active)
 	{
-		rpcap_createhdr(&header, RPCAP_MSG_CLOSE, 0, 0);
+		rpcap_createhdr(&header, pr->protocol_version,
+		    RPCAP_MSG_CLOSE, 0, 0);
 
 		/* I don't check for errors, since I'm going to close everything */
 		sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
 	}
 	else
 	{
-		rpcap_createhdr(&header, RPCAP_MSG_ENDCAP_REQ, 0, 0);
+		rpcap_createhdr(&header, pr->protocol_version,
+		    RPCAP_MSG_ENDCAP_REQ, 0, 0);
 
 		/* I don't check for errors, since I'm going to close everything */
 		sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
@@ -720,9 +726,7 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header header;		/* header of the RPCAP packet */
 	struct rpcap_stats netstats;		/* statistics sent on the network */
-	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
-	int nread;
-	int retval;				/* temp variable which stores functions return value */
+	uint32 plen;				/* data remaining in the message */
 
 	/*
 	 * If the capture has not yet started, we cannot request statistics
@@ -746,47 +750,24 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 		return ps;
 	}
 
-	rpcap_createhdr(&header, RPCAP_MSG_STATS_REQ, 0, 0);
+	rpcap_createhdr(&header, pr->protocol_version,
+	    RPCAP_MSG_STATS_REQ, 0, 0);
 
 	/* Send the PCAP_STATS command */
 	if (sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), p->errbuf, PCAP_ERRBUF_SIZE))
+		return NULL;		/* Unrecoverable network error */
+
+	/* Receive and process the reply message header. */
+	if (rpcap_process_msg_header(pr->rmt_sockctrl, pr->protocol_version,
+	    RPCAP_MSG_STATS_REQ, &header, p->errbuf) == -1)
+		return NULL;		/* Error */
+
+	plen = header.plen;
+
+	/* Read the reply body */
+	if (rpcap_recv(pr->rmt_sockctrl, (char *)&netstats,
+	    sizeof(struct rpcap_stats), &plen, p->errbuf) == -1)
 		goto error;
-
-	/* Receive the RPCAP stats reply message */
-	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
-
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(p->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_STATS_REPLY, RPCAP_MSG_ERROR, 0);
-
-	if (retval != RPCAP_MSG_STATS_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint send a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			goto error;
-
-		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
-			totread = ntohl(header.plen);
-
-			/* Do nothing; just exit; the error code is already into the errbuf */
-			goto error;
-
-		default:
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Internal error");
-			goto error;
-		}
-	}
-
-	nread = sock_recv(pr->rmt_sockctrl, (char *)&netstats,
-	    sizeof(struct rpcap_stats), SOCK_RECEIVEALL_YES,
-	    p->errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
-		goto error;
-	totread += nread;
 
 	ps->ps_drop = ntohl(netstats.krnldrop);
 	ps->ps_ifdrop = ntohl(netstats.ifdrop);
@@ -800,48 +781,44 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	}
 #endif /* _WIN32 && ENABLE_REMOTE */
 
-	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
-			goto error;
-	}
+	/* Discard the rest of the message. */
+	if (rpcap_discard(pr->rmt_sockctrl, plen, p->errbuf) == -1)
+		goto error;
 
 	return ps;
 
 error:
-	if (totread != ntohl(header.plen))
-		sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
+	/*
+	 * Discard the rest of the message.
+	 * We already reported an error; if this gets an error, just
+	 * drive on.
+	 */
+	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
 
 	return NULL;
 }
 
 /*
- * This function returns the socket currently used for this active connection
- * (active mode only) and provides an indication of whether this connection
- * is in active mode or not.
- *
- * It is just for internal use; it returns the socket ID of the active
- * connection currently opened.
+ * This function returns the entry in the list of active hosts for this
+ * active connection (active mode only), or NULL if there is no
+ * active connection or an error occurred.  It is just for internal
+ * use.
  *
  * \param host: a string that keeps the host name of the host for which we
  * want to get the socket ID for that active connection.
  *
- * \param isactive: a pointer to an int that is set to 1 if there's an
- * active connection to that host and 0 otherwise.
+ * \param error: a pointer to an int that is set to 1 if an error occurred
+ * and 0 otherwise.
  *
  * \param errbuf: a pointer to a user-allocated buffer (of size
  * PCAP_ERRBUF_SIZE) that will contain the error message (in case
  * there is one).
  *
- * \return the socket identifier if everything is fine, '0' if this host
- * is not in the active host list. An indication of whether this host
- * is in the active host list is returned into the isactive variable.
- * It returns 'INVALID_SOCKET' in case of error. The error message is
- * returned into the errbuf variable.
+ * \return the entry for this host in the list of active connections
+ * if found, NULL if it's not found or there's an error.
  */
-static SOCKET
-rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
+static struct activehosts *
+rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 {
 	struct activehosts *temp;			/* temp var needed to scan the host list chain */
 	struct addrinfo hints, *addrinfo, *ai_next;	/* temp var needed to translate between hostname to its address */
@@ -857,8 +834,8 @@ rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 	if (retval != 0)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
-		*isactive = 0;
-		return INVALID_SOCKET;
+		*error = 1;
+		return NULL;
 	}
 
 	temp = activeHosts;
@@ -870,9 +847,9 @@ rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 		{
 			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
 			{
-				*isactive = 1;
+				*error = 0;
 				freeaddrinfo(addrinfo);
-				return (temp->sockctrl);
+				return temp;
 			}
 
 			ai_next = ai_next->ai_next;
@@ -887,8 +864,8 @@ rpcap_remoteact_getsock(const char *host, int *isactive, char *errbuf)
 	 * The host for which you want to get the socket ID does not have an
 	 * active connection.
 	 */
-	*isactive = 0;
-	return 0;
+	*error = 0;
+	return NULL;
 }
 
 /*
@@ -910,9 +887,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	char portdata[PCAP_BUF_SIZE];		/* temp variable needed to keep the network port for the data connection */
-	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
-	int nread;
-	int retval;				/* store the return value of the functions */
+	uint32 plen;
 	int active = 0;				/* '1' if we're in active mode */
 	struct activehosts *temp;		/* temp var needed to scan the host list chain, to detect if we're in active mode */
 	char host[INET6_ADDRSTRLEN + 1];	/* numeric name of the other host */
@@ -967,7 +942,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	if (getpeername(pr->rmt_sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 	{
 		sock_geterror("getsockname(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
-		goto error;
+		goto error_nodiscard;
 	}
 	ai_family = ((struct sockaddr_storage *) &saddr)->ss_family;
 
@@ -976,7 +951,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		sizeof(host), NULL, 0, NI_NUMERICHOST))
 	{
 		sock_geterror("getnameinfo(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
-		goto error;
+		goto error_nodiscard;
 	}
 
 	/*
@@ -999,11 +974,11 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 		/* Let's the server pick up a free network port for us */
 		if (sock_initaddress(NULL, "0", &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-			goto error;
+			goto error_nodiscard;
 
 		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER,
 			1 /* max 1 connection in queue */, fp->errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
-			goto error;
+			goto error_nodiscard;
 
 		/* addrinfo is no longer used */
 		freeaddrinfo(addrinfo);
@@ -1014,7 +989,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		if (getsockname(sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
 			sock_geterror("getsockname(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
-			goto error;
+			goto error_nodiscard;
 		}
 
 		/* Get the local port the system picked up */
@@ -1022,7 +997,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			0, portdata, sizeof(portdata), NI_NUMERICSERV))
 		{
 			sock_geterror("getnameinfo(): ", fp->errbuf, PCAP_ERRBUF_SIZE);
-			goto error;
+			goto error_nodiscard;
 		}
 	}
 
@@ -1032,17 +1007,18 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	 */
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
+		goto error_nodiscard;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_STARTCAP_REQ, 0,
-		sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn));
+	rpcap_createhdr((struct rpcap_header *) sendbuf,
+	    pr->protocol_version, RPCAP_MSG_STARTCAP_REQ, 0,
+	    sizeof(struct rpcap_startcapreq) + sizeof(struct rpcap_filter) + fp->fcode.bf_len * sizeof(struct rpcap_filterbpf_insn));
 
 	/* Fill the structure needed to open an adapter remotely */
 	startcapreq = (struct rpcap_startcapreq *) &sendbuf[sendbufidx];
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_startcapreq), NULL,
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
+		goto error_nodiscard;
 
 	memset(startcapreq, 0, sizeof(struct rpcap_startcapreq));
 
@@ -1071,45 +1047,21 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 	/* Pack the capture filter */
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, &fp->fcode))
-		goto error;
+		goto error_nodiscard;
 
 	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
+		goto error_nodiscard;
+
+	/* Receive and process the reply message header. */
+	if (rpcap_process_msg_header(pr->rmt_sockctrl, pr->protocol_version,
+	    RPCAP_MSG_STARTCAP_REQ, &header, fp->errbuf) == -1)
+		goto error_nodiscard;
+
+	plen = header.plen;
+
+	if (rpcap_recv(pr->rmt_sockctrl, (char *)&startcapreply,
+	    sizeof(struct rpcap_startcapreply), &plen, fp->errbuf) == -1)
 		goto error;
-
-	/* Receive the RPCAP start capture reply message */
-	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
-
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(fp->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_STARTCAP_REPLY, RPCAP_MSG_ERROR, 0);
-
-	if (retval != RPCAP_MSG_STARTCAP_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint send a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			goto error;
-
-		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
-			totread = ntohl(header.plen);
-			/* Do nothing; just exit; the error code is already into the errbuf */
-			goto error;
-
-		default:
-			pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "Internal error");
-			goto error;
-		}
-	}
-
-	nread = sock_recv(pr->rmt_sockctrl, (char *)&startcapreply,
-	    sizeof(struct rpcap_startcapreply), SOCK_RECEIVEALL_YES,
-	    fp->errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
-		goto error;
-	totread += nread;
 
 	/*
 	 * In case of UDP data stream, the connection is always opened by the daemon
@@ -1230,12 +1182,9 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		goto error;
 	}
 
-	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
-			goto error;
-	}
+	/* Discard the rest of the message. */
+	if (rpcap_discard(pr->rmt_sockctrl, plen, fp->errbuf) == -1)
+		goto error;
 
 	/*
 	 * In case the user does not want to capture RPCAP packets, let's update the filter
@@ -1267,12 +1216,16 @@ error:
 	 * beginning of this function, if an error occur we return immediately with
 	 * a return NULL; when the connection is established, we have to come here
 	 * ('goto error;') in order to close everything properly.
-	 *
-	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
-	if (totread != ntohl(header.plen))
-		sock_discard(pr->rmt_sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
+	/*
+	 * Discard the rest of the message.
+	 * We already reported an error; if this gets an error, just
+	 * drive on.
+	 */
+	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
+
+error_nodiscard:
 	if ((sockdata) && (sockdata != -1))		/* we can be here because sockdata said 'error' */
 		sock_close(sockdata, NULL, 0);
 
@@ -1392,7 +1345,6 @@ static int pcap_pack_bpffilter(pcap_t *fp, char *sendbuf, int *sendbufidx, struc
 static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 {
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
-	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
@@ -1401,8 +1353,9 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_UPDATEFILTER_REQ, 0,
-		sizeof(struct rpcap_filter) + prog->bf_len * sizeof(struct rpcap_filterbpf_insn));
+	rpcap_createhdr((struct rpcap_header *) sendbuf,
+	    pr->protocol_version, RPCAP_MSG_UPDATEFILTER_REQ, 0,
+	    sizeof(struct rpcap_filter) + prog->bf_len * sizeof(struct rpcap_filterbpf_insn));
 
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, prog))
 		return -1;
@@ -1410,34 +1363,16 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	/* Waits for the answer */
-	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	/* Receive and process the reply message header. */
+	if (rpcap_process_msg_header(pr->rmt_sockctrl, pr->protocol_version,
+	    RPCAP_MSG_UPDATEFILTER_REQ, &header, fp->errbuf) == -1)
 		return -1;
 
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(fp->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_UPDATEFILTER_REPLY, 0);
-
-	if (retval != RPCAP_MSG_UPDATEFILTER_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint sent a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			/* Do nothing; just exit from here; the error code is already into the errbuf */
-			return -1;
-
-		default:
-			SOCK_ASSERT("Internal error", 0);
-			return -1;
-		}
-	}
-
-	if (ntohl(header.plen) != 0)	/* the message has an unexpected size */
-	{
-		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen), fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-			return -1;
-	}
+	/*
+	 * It shouldn't have any contents; discard it if it does.
+	 */
+	if (rpcap_discard(pr->rmt_sockctrl, header.plen, fp->errbuf) == -1)
+		return -1;
 
 	return 0;
 }
@@ -1624,7 +1559,6 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 static int pcap_setsampling_remote(pcap_t *fp)
 {
 	struct pcap_rpcap *pr = fp->priv;	/* structure used when doing a remote live capture */
-	int retval;				/* general variable used to keep the return value of other functions */
 	char sendbuf[RPCAP_NETBUF_SIZE];/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	struct rpcap_header header;		/* To keep the reply message */
@@ -1638,7 +1572,9 @@ static int pcap_setsampling_remote(pcap_t *fp)
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_SETSAMPLING_REQ, 0, sizeof(struct rpcap_sampling));
+	rpcap_createhdr((struct rpcap_header *) sendbuf,
+	    pr->protocol_version, RPCAP_MSG_SETSAMPLING_REQ, 0,
+	    sizeof(struct rpcap_sampling));
 
 	/* Fill the structure needed to open an adapter remotely */
 	sampling_pars = (struct rpcap_sampling *) &sendbuf[sendbufidx];
@@ -1655,38 +1591,18 @@ static int pcap_setsampling_remote(pcap_t *fp)
 	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	/* Waits for the answer */
-	if (sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
+	/* Receive and process the reply message header. */
+	if (rpcap_process_msg_header(pr->rmt_sockctrl, pr->protocol_version,
+	    RPCAP_MSG_SETSAMPLING_REQ, &header, fp->errbuf) == -1)
 		return -1;
 
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(fp->errbuf, pr->rmt_sockctrl, &header, RPCAP_MSG_SETSAMPLING_REPLY, 0);
-
-	if (retval != RPCAP_MSG_SETSAMPLING_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint sent a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-		case RPCAP_MSG_ERROR:
-			/* Do nothing; just exit from here; the error code is already into the errbuf */
-			return -1;
-
-		default:
-			SOCK_ASSERT("Internal error", 0);
-			return -1;
-		}
-	}
-
-	if (ntohl(header.plen) != 0)	/* the message has an unexpected size */
-	{
-		if (sock_discard(pr->rmt_sockctrl, ntohl(header.plen), fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
-			return -1;
-	}
+	/*
+	 * It shouldn't have any contents; discard it if it does.
+	 */
+	if (rpcap_discard(pr->rmt_sockctrl, header.plen, fp->errbuf) == -1)
+		return -1;
 
 	return 0;
-
 }
 
 /*********************************************************
@@ -1696,12 +1612,17 @@ static int pcap_setsampling_remote(pcap_t *fp)
  *********************************************************/
 
 /*
- * This function sends the authentication message.
- *
- * It sends the authentication parameters on the control socket.
- * It is required in order to open the connection with the other end party.
+ * This function performs authentication and protocol version
+ * negotiation.  It first tries to authenticate with the maximum
+ * version we support and, if that fails with an "I don't support
+ * that version" error from the server, and the version number in
+ * the reply from the server is one we support, tries again with
+ * that version.
  *
  * \param sock: the socket we are currently using.
+ *
+ * \param ver: pointer to variable holding protocol version number to send
+ * and to set to the protocol version number in the reply.
  *
  * \param auth: authentication parameters that have to be sent.
  *
@@ -1710,19 +1631,85 @@ static int pcap_setsampling_remote(pcap_t *fp)
  * is one). It could be a network problem or the fact that the authorization
  * failed.
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The
- * error message is returned in the 'errbuf' variable.
- * The error message could be also 'the authentication failed'.
+ * \return '0' if everything is fine, '-1' for an error.  For errors,
+ * an error message string is returned in the 'errbuf' variable.
  */
-static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
+static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf)
+{
+	int status;
+
+	/*
+	 * Send authentication to the remote machine.
+	 *
+	 * First try with the maximum version number we support.
+	 */
+	*ver = RPCAP_MAX_VERSION;
+	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
+	if (status == -1)
+	{
+		/* Unrecoverable error. */
+		return -1;
+	}
+
+	/*
+	 * THe server doesn't support the version we used in the initial
+	 * message, and it sent us back a reply with the maximum version
+	 * they do support, and we also support it.  *ver has been set to
+	 * that version; try authenticating again with that version.
+	 */
+	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
+	if (status == -1)
+	{
+		/* Unrecoverable error. */
+		return -1;
+	}
+	if (status == -2)
+	{
+		/*
+		 * The server doesn't support the version
+		 * it told us was the maximum version it
+		 * supported, so this is a fatal error.
+		 *
+		 * XXX - should we overwrite the error
+		 * string it gave us?
+		 */
+		return -1;
+	}
+	return 0;
+}
+
+/*
+ * This function sends the authentication message.
+ *
+ * It sends the authentication parameters on the control socket.
+ * It is required in order to open the connection with the other end party.
+ *
+ * \param sock: the socket we are currently using.
+ *
+ * \param ver: pointer to variable holding protocol version number to send
+ * and to set to the protocol version number in the reply.
+ *
+ * \param auth: authentication parameters that have to be sent.
+ *
+ * \param errbuf: a pointer to a user-allocated buffer (of size
+ * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
+ * is one). It could be a network problem or the fact that the authorization
+ * failed.
+ *
+ * \return '0' if everything is fine, '-2' if the server doesn't support
+ * the protocol version we requested but does support a version we also
+ * support, or '-1' for other errors.  For errors, an error message string
+ * is returned in the 'errbuf' variable.
+ */
+static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data that has to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	uint16 length;				/* length of the payload of this message */
+	uint16 errcode;
 	struct rpcap_auth *rpauth;
 	uint16 auth_type;
 	struct rpcap_header header;
-	int retval;				/* temp variable which stores functions return value */
 	size_t str_length;
 
 	if (auth)
@@ -1775,7 +1762,8 @@ static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_AUTH_REQ, 0, length);
+	rpcap_createhdr((struct rpcap_header *) sendbuf, *ver,
+	    RPCAP_MSG_AUTH_REQ, 0, length);
 
 	rpauth = (struct rpcap_auth *) &sendbuf[sendbufidx];
 
@@ -1814,35 +1802,53 @@ static int rpcap_sendauth(SOCKET sock, struct pcap_rmtauth *auth, char *errbuf)
 	if (sock_send(sock, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	if (sock_recv(sock, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+	/* Receive the reply */
+	if (rpcap_recv_msg_header(sock, &header, errbuf) == -1)
 		return -1;
 
-	retval = rpcap_checkmsg(errbuf, sock, &header, RPCAP_MSG_AUTH_REPLY, RPCAP_MSG_ERROR, 0);
-
-	if (retval != RPCAP_MSG_AUTH_REPLY)		/* the message is not the one expected */
+	if (rpcap_check_msg_type(sock, RPCAP_MSG_AUTH_REQ, &header,
+	    &errcode, errbuf) == -1)
 	{
-		switch (retval)
+		/* Error message - or something else, which is a protocol error. */
+		if (header.type == RPCAP_MSG_ERROR &&
+		    errcode == PCAP_ERR_WRONGVER)
 		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint sent a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			/* Do nothing; just exit from here; the error code is already into the errbuf */
-			return -1;
+			/*
+			 * The server didn't support the version we sent,
+			 * and replied with the maximum version it supports.
+			 * Do we also support it?
+			 */
+			if (header.ver < RPCAP_MIN_VERSION ||
+			    header.ver > RPCAP_MAX_VERSION)
+			{
+				/*
+				 * No, so there's no version we support.
+				 * This is an unrecoverable error.
+				 */
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The server doesn't support any protocol version that we support");
+				return -1;
+			}
 
-		case RPCAP_MSG_ERROR:
-			return -1;
-
-		default:
-			SOCK_ASSERT("Internal error", 0);
-			return -1;
+			/*
+			 * OK, use that version, and tell our caller to
+			 * try again.
+			 */
+			*ver = header.ver;
+			return -2;
 		}
+
+		/*
+		 * Other error - unrecoverable.
+		 */
+		return -1;
 	}
 
-	if (ntohl(header.plen))
-	{
-		if (sock_discard(sock, ntohl(header.plen), errbuf, PCAP_ERRBUF_SIZE))
-			return -1;
-	}
+	/*
+	 * OK, it's an "authentication succeeded" reply.
+	 * Discard the rest of it.
+	 */
+	if (rpcap_discard(sock, header.plen, errbuf) == -1)
+		return -1;
 
 	return 0;
 }
@@ -1909,16 +1915,15 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	char *source_str;
 	struct pcap_rpcap *pr;		/* structure used when doing a remote live capture */
 	char host[PCAP_BUF_SIZE], ctrlport[PCAP_BUF_SIZE], iface[PCAP_BUF_SIZE];
-
+	struct activehosts *activeconn;		/* active connection, if there is one */
+	int error;				/* '1' if rpcap_remoteact_getsock returned an error */
+	SOCKET sockctrl;
+	uint8 protocol_version;			/* negotiated protocol version */
+	int active;
+	uint32 plen;
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	uint32 totread = 0;			/* number of bytes of the payload read from the socket */
-	int nread;
 	int retval;				/* store the return value of the functions */
-	int active = 0;				/* '1' if we're in active mode */
-
-	/* socket-related variables */
-	SOCKET sockctrl;			/* socket descriptor of the control connection */
 
 	/* RPCAP-related variables */
 	struct rpcap_header header;		/* header of the RPCAP packet */
@@ -1984,22 +1989,32 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		return NULL;
 	}
 
-	sockctrl = rpcap_remoteact_getsock(host, &active, errbuf);
-	if (sockctrl == INVALID_SOCKET)
+	/* Check for active mode */
+	activeconn = rpcap_remoteact_getsock(host, &error, errbuf);
+	if (activeconn != NULL)
 	{
-		pcap_close(fp);
-		return NULL;
+		sockctrl = activeconn->sockctrl;
+		protocol_version = activeconn->protocol_version;
+		active = 1;
 	}
-
-	if (!active)
+	else
 	{
+		struct addrinfo hints;			/* temp, needed to open a socket connection */
+		struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
+
+		if (error)
+		{
+			/*
+			 * Call failed.
+			 */
+			pcap_close(fp);
+			return NULL;
+		}
+
 		/*
 		 * We're not in active mode; let's try to open a new
 		 * control connection.
 		 */
-		struct addrinfo hints;		/* temp, needed to open a socket connection */
-		struct addrinfo *addrinfo;	/* temp, needed to open a socket connection */
-
 		memset(&hints, 0, sizeof(struct addrinfo));
 		hints.ai_family = PF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
@@ -2015,7 +2030,6 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		}
 		else
 		{
-			/* the user chose not to specify the port */
 			if (sock_initaddress(host, ctrlport, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 			{
 				pcap_close(fp);
@@ -2030,10 +2044,16 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 			return NULL;
 		}
 
+		/* addrinfo is no longer used */
 		freeaddrinfo(addrinfo);
 
-		if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
-			goto error;
+		if (rpcap_doauth(sockctrl, &protocol_version, auth, errbuf) == -1)
+		{
+			sock_close(sockctrl, NULL, 0);
+			pcap_close(fp);
+			return NULL;
+		}
+		active = 0;
 	}
 
 	/*
@@ -2042,63 +2062,38 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	 */
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
+		goto error_nodiscard;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_OPEN_REQ, 0, (uint32) strlen(iface));
+	rpcap_createhdr((struct rpcap_header *) sendbuf, protocol_version,
+	    RPCAP_MSG_OPEN_REQ, 0, (uint32) strlen(iface));
 
 	if (sock_bufferize(iface, (int) strlen(iface), sendbuf, &sendbufidx,
 		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
-		goto error;
+		goto error_nodiscard;
 
 	if (sock_send(sockctrl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE))
+		goto error_nodiscard;
+
+	/* Receive and process the reply message header. */
+	if (rpcap_process_msg_header(sockctrl, protocol_version,
+	    RPCAP_MSG_OPEN_REQ, &header, errbuf) == -1)
+		goto error_nodiscard;
+	plen = header.plen;
+
+	/* Read the reply body */
+	if (rpcap_recv(sockctrl, (char *)&openreply,
+	    sizeof(struct rpcap_openreply), &plen, errbuf) == -1)
 		goto error;
 
-	/* Receive the RPCAP open reply message */
-	if (sock_recv(sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
-
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(errbuf, sockctrl, &header, RPCAP_MSG_OPEN_REPLY, RPCAP_MSG_ERROR, 0);
-
-	if (retval != RPCAP_MSG_OPEN_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:		/* Unrecoverable network error */
-		case -2:		/* The other endpoint send a message that is not allowed here */
-		case -1:		/* The other endpoint has a version number that is not compatible with our */
-			goto error;
-
-		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			/* Update totread, since the rpcap_checkmsg() already purged the buffer */
-			totread = ntohl(header.plen);
-			/* Do nothing; just exit; the error code is already into the errbuf */
-			goto error;
-
-		default:
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Internal error");
-			goto error;
-		}
-	}
-
-	nread = sock_recv(sockctrl, (char *)&openreply,
-	    sizeof(struct rpcap_openreply), SOCK_RECEIVEALL_YES,
-	    errbuf, PCAP_ERRBUF_SIZE);
-	if (nread == -1)
-		goto error;
-	totread += nread;
-
-	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
-			goto error;
-	}
+	/* Discard the rest of the message, if there is any. */
+	if (rpcap_discard(pr->rmt_sockctrl, plen, errbuf) == -1)
+		goto error_nodiscard;
 
 	/* Set proper fields into the pcap_t struct */
 	fp->linktype = ntohl(openreply.linktype);
 	fp->tzoff = ntohl(openreply.tzoff);
 	pr->rmt_sockctrl = sockctrl;
+	pr->protocol_version = protocol_version;
 	pr->rmt_clientside = 1;
 
 	/* This code is duplicated from the end of this function */
@@ -2122,12 +2117,16 @@ error:
 	 * beginning of this function, if an error occur we return immediately with
 	 * a return NULL; when the connection is established, we have to come here
 	 * ('goto error;') in order to close everything properly.
-	 *
-	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
-	if (totread != ntohl(header.plen))
-		sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0);
 
+	/*
+	 * Discard the rest of the message.
+	 * We already reported an error; if this gets an error, just
+	 * drive on.
+	 */
+	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
+
+error_nodiscard:
 	if (!active)
 		sock_close(sockctrl, NULL, 0);
 
@@ -2153,14 +2152,13 @@ freeaddr(struct pcap_addr *addr)
 int
 pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
+	struct activehosts *activeconn;	/* active connection, if there is one */
+	int error;			/* '1' if rpcap_remoteact_getsock returned an error */
+	uint8 protocol_version;		/* protocol version */
 	SOCKET sockctrl;		/* socket descriptor of the control connection */
-	uint32 totread = 0;		/* number of bytes of the payload read from the socket */
-	int nread;
-	struct addrinfo hints;		/* temp variable needed to resolve hostnames into to socket representation */
-	struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
+	uint32 plen;
 	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
 	int i, j;		/* temp variables */
-	int retval;		/* store the return value of the functions */
 	int nif;		/* Number of interfaces listed */
 	int active = 0;	/* 'true' if we the other end-party is in active mode */
 	int type;
@@ -2178,17 +2176,29 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		return -1;
 
 	/* Check for active mode */
-	sockctrl = rpcap_remoteact_getsock(host, &active, errbuf);
-	if (sockctrl == INVALID_SOCKET)
-		return -1;
+	activeconn = rpcap_remoteact_getsock(host, &error, errbuf);
+	if (activeconn != NULL)
+	{
+		sockctrl = activeconn->sockctrl;
+		protocol_version = activeconn->protocol_version;
+	}
+	else
+	{
+		struct addrinfo hints;		/* temp variable needed to resolve hostnames into to socket representation */
+		struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
 
-	if (!active) {
+		if (error)
+		{
+			/*
+			 * Call failed.
+			 */
+			return -1;
+		}
+
 		/*
 		 * We're not in active mode; let's try to open a new
 		 * control connection.
 		 */
-		addrinfo = NULL;
-
 		memset(&hints, 0, sizeof(struct addrinfo));
 		hints.ai_family = PF_UNSPEC;
 		hints.ai_socktype = SOCK_STREAM;
@@ -2215,7 +2225,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		freeaddrinfo(addrinfo);
 		addrinfo = NULL;
 
-		if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
+		if (rpcap_doauth(sockctrl, &protocol_version, auth, errbuf) == -1)
 		{
 			sock_close(sockctrl, NULL, 0);
 			return -1;
@@ -2223,39 +2233,21 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	}
 
 	/* RPCAP findalldevs command */
-	rpcap_createhdr(&header, RPCAP_MSG_FINDALLIF_REQ, 0, 0);
+	rpcap_createhdr(&header, protocol_version, RPCAP_MSG_FINDALLIF_REQ,
+	    0, 0);
 
 	if (sock_send(sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
+		goto error_nodiscard;
 
 	if (sock_recv(sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error;
+		goto error_nodiscard;
 
-	/* Checks if the message is correct */
-	retval = rpcap_checkmsg(errbuf, sockctrl, &header, RPCAP_MSG_FINDALLIF_REPLY, RPCAP_MSG_ERROR, 0);
+	/* Receive and process the reply message header. */
+	if (rpcap_process_msg_header(sockctrl, protocol_version,
+	    RPCAP_MSG_FINDALLIF_REQ, &header, errbuf) == -1)
+		goto error_nodiscard;
 
-	if (retval != RPCAP_MSG_FINDALLIF_REPLY)		/* the message is not the one expected */
-	{
-		switch (retval)
-		{
-		case -3:	/* Unrecoverable network error */
-		case -2:	/* The other endpoint send a message that is not allowed here */
-		case -1:	/* The other endpoint has a version number that is not compatible with our */
-			break;
-
-		case RPCAP_MSG_ERROR:		/* The other endpoint reported an error */
-			break;
-
-		default:
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Internal error");
-			break;
-		}
-
-		if (!active)
-			sock_close(sockctrl, NULL, 0);
-
-		return -1;
-	}
+	plen = header.plen;
 
 	/* read the number of interfaces */
 	nif = ntohs(header.value);
@@ -2271,12 +2263,9 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		tmpstring2[PCAP_BUF_SIZE] = 0;
 
 		/* receive the findalldevs structure from remote host */
-		nread = sock_recv(sockctrl, (char *)&findalldevs_if,
-		    sizeof(struct rpcap_findalldevs_if), SOCK_RECEIVEALL_YES,
-		    errbuf, PCAP_ERRBUF_SIZE);
-		if (nread == -1)
+		if (rpcap_recv(sockctrl, (char *)&findalldevs_if,
+		    sizeof(struct rpcap_findalldevs_if), &plen, errbuf) == -1)
 			goto error;
-		totread += nread;
 
 		findalldevs_if.namelen = ntohs(findalldevs_if.namelen);
 		findalldevs_if.desclen = ntohs(findalldevs_if.desclen);
@@ -2315,12 +2304,9 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			}
 
 			/* Retrieve adapter name */
-			nread = sock_recv(sockctrl, tmpstring,
-			    findalldevs_if.namelen, SOCK_RECEIVEALL_YES,
-			    errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
+			if (rpcap_recv(sockctrl, tmpstring,
+			    findalldevs_if.namelen, &plen, errbuf) == -1)
 				goto error;
-			totread += nread;
 
 			tmpstring[findalldevs_if.namelen] = 0;
 
@@ -2350,12 +2336,9 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			}
 
 			/* Retrieve adapter description */
-			nread = sock_recv(sockctrl, tmpstring,
-			    findalldevs_if.desclen, SOCK_RECEIVEALL_YES,
-			    errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
+			if (rpcap_recv(sockctrl, tmpstring,
+			    findalldevs_if.desclen, &plen, errbuf) == -1)
 				goto error;
-			totread += nread;
 
 			tmpstring[findalldevs_if.desclen] = 0;
 
@@ -2385,12 +2368,10 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			struct rpcap_findalldevs_ifaddr ifaddr;
 
 			/* Retrieve the interface addresses */
-			nread = sock_recv(sockctrl, (char *)&ifaddr,
+			if (rpcap_recv(sockctrl, (char *)&ifaddr,
 			    sizeof(struct rpcap_findalldevs_ifaddr),
-			    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
+			    &plen, errbuf) == -1)
 				goto error;
-			totread += nread;
 
 			/*
 			 * Deserialize all the address components.
@@ -2459,12 +2440,9 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		}
 	}
 
-	/* Checks if all the data has been read; if not, discard the data in excess */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - totread, errbuf, PCAP_ERRBUF_SIZE) == 1)
-			return -1;
-	}
+	/* Discard the rest of the message. */
+	if (rpcap_discard(sockctrl, plen, errbuf) == 1)
+		return -1;
 
 	/* Control connection has to be closed only in case the remote machine is in passive mode */
 	if (!active)
@@ -2493,12 +2471,9 @@ error:
 	 *
 	 * Checks if all the data has been read; if not, discard the data in excess
 	 */
-	if (totread != ntohl(header.plen))
-	{
-		if (sock_discard(sockctrl, ntohl(header.plen) - totread, NULL, 0) == 1)
-			return -1;
-	}
+	(void) rpcap_discard(sockctrl, plen, NULL);
 
+error_nodiscard:
 	/* Control connection has to be closed only in case the remote machine is in passive mode */
 	if (!active)
 		sock_close(sockctrl, NULL, 0);
@@ -2524,6 +2499,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	struct sockaddr_storage from;	/* generic sockaddr_storage variable */
 	socklen_t fromlen;				/* keeps the length of the sockaddr_storage variable */
 	SOCKET sockctrl;				/* keeps the main socket identifier */
+	uint8 protocol_version;			/* negotiated protocol version */
 	struct activehosts *temp, *prev;	/* temp var needed to scan he host list chain */
 
 	*connectinghost = 0;		/* just in case */
@@ -2587,7 +2563,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	if (getnameinfo((struct sockaddr *) &from, fromlen, connectinghost, RPCAP_HOSTLIST_SIZE, NULL, 0, NI_NUMERICHOST))
 	{
 		sock_geterror("getnameinfo(): ", errbuf, PCAP_ERRBUF_SIZE);
-		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
 		return -1;
 	}
@@ -2595,15 +2571,18 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	/* checks if the connecting host is among the ones allowed */
 	if (sock_check_hostlist((char *)hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
 	{
-		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
 		return -1;
 	}
 
-	/* Send authentication to the remote machine */
-	if (rpcap_sendauth(sockctrl, auth, errbuf) == -1)
+	/*
+	 * Send authentication to the remote machine.
+	 */
+	if (rpcap_doauth(sockctrl, &protocol_version, auth, errbuf) == -1)
 	{
-		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		/* Unrecoverable error. */
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
 		return -3;
 	}
@@ -2639,13 +2618,14 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	if (temp == NULL)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-		rpcap_senderror(sockctrl, errbuf, PCAP_ERR_REMOTEACCEPT, NULL);
+		rpcap_senderror(sockctrl, protocol_version, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
 		return -1;
 	}
 
 	memcpy(&temp->host, &from, fromlen);
 	temp->sockctrl = sockctrl;
+	temp->protocol_version = protocol_version;
 	temp->next = NULL;
 
 	return sockctrl;
@@ -2683,7 +2663,8 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 				struct rpcap_header header;
 
 				/* Close this connection */
-				rpcap_createhdr(&header, RPCAP_MSG_CLOSE, 0, 0);
+				rpcap_createhdr(&header, temp->protocol_version,
+				    RPCAP_MSG_CLOSE, 0, 0);
 
 				/* I don't check for errors, since I'm going to close everything */
 				sock_send(temp->sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE);
@@ -2783,5 +2764,235 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 		temp = temp->next;
 	}
 
+	return 0;
+}
+
+/*
+ * Receive the header of a message.
+ */
+static int rpcap_recv_msg_header(SOCKET sock, struct rpcap_header *header, char *errbuf)
+{
+	if (sock_recv(sock, (char *) header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+	{
+		/* Network error. */
+		return -1;
+	}
+	header->plen = ntohl(header->plen);
+	return 0;
+}
+
+/*
+ * Make sure the protocol version of a received message is what we were
+ * expecting.
+ */
+static int rpcap_check_msg_ver(SOCKET sock, uint8 expected_ver, struct rpcap_header *header, char *errbuf)
+{
+	/*
+	 * Did the server specify the version we negotiated?
+	 */
+	if (header->ver != expected_ver)
+	{
+		/*
+		 * Discard the rest of the message.
+		 */
+		if (rpcap_discard(sock, header->plen, errbuf) == -1)
+			return -1;
+
+		/*
+		 * Tell our caller that it's not the negotiated version.
+		 */
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Server sent us a message with version %u when we were expecting %u",
+		    header->ver, expected_ver);
+		return -1;
+	}
+	return 0;
+}
+
+/*
+ * Check the message type of a received message, which should either be
+ * the expected message type or RPCAP_MSG_ERROR.
+ */
+static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf)
+{
+	const char *request_type_string;
+	const char *msg_type_string;
+
+	/*
+	 * What type of message is it?
+	 */
+	if (header->type == RPCAP_MSG_ERROR)
+	{
+		/*
+		 * The server reported an error.
+		 * Hand that error back to our caller.
+		 */
+		*errcode = ntohs(header->value);
+		(void)rpcap_msg_err(sock, header->plen, errbuf);
+		return -1;
+	}
+
+	*errcode = 0;
+
+	/*
+	 * For a given request type value, the expected reply type value
+	 * is the request type value with ORed with RPCAP_MSG_IS_REPLY.
+	 */
+	if (header->type != (request_type | RPCAP_MSG_IS_REPLY))
+	{
+		/*
+		 * This isn't a reply to the request we sent.
+		 */
+
+		/*
+		 * Discard the rest of the message.
+		 */
+		if (rpcap_discard(sock, header->plen, errbuf) == -1)
+			return -1;
+
+		/*
+		 * Tell our caller about it.
+		 */
+		request_type_string = rpcap_msg_type_string(request_type);
+		msg_type_string = rpcap_msg_type_string(header->type);
+		if (request_type_string == NULL)
+		{
+			/* This should not happen. */
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "rpcap_check_msg_type called for request message with type %u", request_type);
+			return -1;
+		}
+		if (msg_type_string != NULL)
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s message received in response to a %s message", msg_type_string, request_type_string);
+		else
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Message of unknown type %u message received in response to a %s request", header->type, request_type_string);
+		return -1;
+	}
+	
+	return 0;
+}
+
+/*
+ * Receive and process the header of a message.
+ */
+static int rpcap_process_msg_header(SOCKET sock, uint8 expected_ver, uint8 request_type, struct rpcap_header *header, char *errbuf)
+{
+	uint16 errcode;
+
+	if (rpcap_recv_msg_header(sock, header, errbuf) == -1)
+	{
+		/* Network error. */
+		return -1;
+	}
+
+	/*
+	 * Did the server specify the version we negotiated?
+	 */
+	if (rpcap_check_msg_ver(sock, expected_ver, header, errbuf) == -1)
+		return -1;
+
+	/*
+	 * Check the message type.
+	 */
+	return rpcap_check_msg_type(sock, request_type, header,
+	    &errcode, errbuf);
+}
+
+/*
+ * Read data from a message.
+ * If we're trying to read more data that remains, puts an error
+ * message into errmsgbuf and returns -2.  Otherwise, tries to read
+ * the data and, if that succeeds, subtracts the amount read from
+ * the number of bytes of data that remains.
+ * Returns 0 on success, logs a message and returns -1 on a network
+ * error.
+ */
+static int rpcap_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errbuf)
+{
+	int nread;
+
+	if (toread < *plen)
+	{
+		/* The server sent us a bad message */
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
+		return -1;
+	}
+	nread = sock_recv(sock, buffer, toread,
+	    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
+	if (nread == -1)
+	{
+		return -1;
+	}
+	*plen -= nread;
+	return 0;
+}
+
+/*
+ * This handles the RPCAP_MSG_ERROR message.
+ */
+static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
+{
+	char errbuf[PCAP_ERRBUF_SIZE];
+
+	if (plen >= PCAP_ERRBUF_SIZE)
+	{
+		/*
+		 * Message is too long; just read as much of it as we
+		 * can into the buffer provided, and discard the rest.
+		 */
+		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			// Network error.
+			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read from client failed: %s", errbuf);
+			return -1;
+		}
+		if (rpcap_discard(sockctrl, plen - (PCAP_ERRBUF_SIZE - 1), remote_errbuf) == -1)
+		{
+			// Network error.
+			return -1;
+		}
+
+		/*
+		 * Null-terminate it.
+		 */
+		remote_errbuf[PCAP_ERRBUF_SIZE - 1] = '\0';
+	}
+	else if (plen == 0)
+	{
+		/* Empty error string. */
+		remote_errbuf[0] = '\0';
+	}
+	else
+	{
+		if (sock_recv(sockctrl, remote_errbuf, plen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			// Network error.
+			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read from client failed: %s", errbuf);
+			return -1;
+		}
+
+		/*
+		 * Null-terminate it.
+		 */
+		remote_errbuf[plen] = '\0';
+	}
+	return 0;
+}
+
+/*
+ * Discard data from a connection.
+ * Mostly used to discard wrong-sized messages.
+ * Returns 0 on success, logs a message and returns -1 on a network
+ * error.
+ */
+static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf)
+{
+	if (len != 0)
+	{
+		if (sock_discard(sock, len, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			// Network error.
+			return -1;
+		}
+	}
 	return 0;
 }

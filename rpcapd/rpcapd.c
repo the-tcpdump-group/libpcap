@@ -568,7 +568,7 @@ static void main_passive(void *ptr)
 		// checks if the connecting host is among the ones allowed
 		if (sock_check_hostlist(hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
 		{
-			rpcap_senderror(sockctrl, errbuf, PCAP_ERR_HOSTNOAUTH, NULL);
+			rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
 			sock_close(sockctrl, NULL, 0);
 			continue;
 		}

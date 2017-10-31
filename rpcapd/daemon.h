@@ -38,6 +38,7 @@
 struct daemon_slpars
 {
 	SOCKET sockctrl;	//!< SOCKET ID of the control connection
+	uint8 protocol_version;	//!< negotiated protocol version
 	int isactive;		//!< Not null if the daemon has to run in active mode
 	int nullAuthAllowed;	//!< '1' if we permit NULL authentication, '0' otherwise
 	int activeclose;	//!< '1' if the client closed the control connection explicitely; used in active mode only

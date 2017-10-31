@@ -61,12 +61,14 @@
  *
  * \param sock: the socket we are currently using.
  *
+ * \param ver: the protocol version we want to put in the reply.
+ *
+ * \param errcode: a integer which tells the other party the type of error
+ * we had.
+ *
  * \param error: an user-allocated (and '0' terminated) buffer that contains
  * the error description that has to be transmitted to our peer. The
  * error message cannot be longer than PCAP_ERRBUF_SIZE.
- *
- * \param errcode: a integer which tells the other party the type of error
- * we had; currently is is not too much used.
  *
  * \param errbuf: a pointer to a user-allocated buffer (of size
  * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
@@ -76,7 +78,7 @@
  * error message is returned in the 'errbuf' variable.
  */
 int
-rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf)
+rpcap_senderror(SOCKET sock, uint8 ver, unsigned short errcode, char *error, char *errbuf)
 {
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
@@ -87,7 +89,7 @@ rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf)
 	if (length > PCAP_ERRBUF_SIZE)
 		length = PCAP_ERRBUF_SIZE;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, RPCAP_MSG_ERROR, errcode, length);
+	rpcap_createhdr((struct rpcap_header *) sendbuf, ver, RPCAP_MSG_ERROR, errcode, length);
 
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
 		RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
@@ -113,10 +115,14 @@ rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf)
  * \param header: a pointer to a user-allocated buffer which will contain
  * the serialized header, ready to be sent on the network.
  *
- * \param type: a value (in the host by order) which will be placed into the
+ * \param ver: a value (in the host byte order) which will be placed into the
+ * header.ver field and that represents the protocol version number of the
+ * current message.
+ *
+ * \param type: a value (in the host byte order) which will be placed into the
  * header.type field and that represents the type of the current message.
  *
- * \param value: a value (in the host by order) which will be placed into
+ * \param value: a value (in the host byte order) which will be placed into
  * the header.value field and that has a message-dependent meaning.
  *
  * \param length: a value (in the host by order) which will be placed into
@@ -126,11 +132,11 @@ rpcap_senderror(SOCKET sock, char *error, unsigned short errcode, char *errbuf)
  * variable.
  */
 void
-rpcap_createhdr(struct rpcap_header *header, uint8 type, uint16 value, uint32 length)
+rpcap_createhdr(struct rpcap_header *header, uint8 ver, uint8 type, uint16 value, uint32 length)
 {
 	memset(header, 0, sizeof(struct rpcap_header));
 
-	header->ver = RPCAP_VERSION;
+	header->ver = ver;
 	header->type = type;
 	header->value = htons(value);
 	header->plen = htonl(length);
@@ -186,156 +192,4 @@ rpcap_msg_type_string(uint8 type)
 			return NULL;
 		return requests[type];
 	}
-}
-
-/*
- * This function checks whether the header of the received message is correct.
- *
- * It is a way to easily check if the message received, in a certain state
- * of the RPCAP protocol Finite State Machine, is valid. This function accepts,
- * as a parameter, the list of message types that are allowed in a certain
- * situation, and it returns the one that occurs.
- *
- * \param errbuf: a pointer to a user-allocated buffer (of size
- * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
- * is one). It could either be a problem that occurred inside this function
- * (e.g. a network problem in case it tries to send an error to our peer
- * and the send() call fails), an error message thathas been sent to us
- * from the other party, or a version error (the message received has a
- * version number that is incompatible with ours).
- *
- * \param sock: the socket that has to be used to receive data. This
- * function can read data from socket in case the version contained into
- * the message is not compatible with ours. In that case, all the message
- * is purged from the socket, so that the following recv() calls will
- * return a new message.
- *
- * \param header: a pointer to and 'rpcap_header' structure that keeps
- * the data received from the network (still in network byte order) and
- * that has to be checked.
- *
- * \param first: this function has a variable number of parameters. From
- * this point on, all the messages that are valid in this context must be
- * passed as parameters.  The message type list must be terminated with a
- * '0' value, the null message type, which means 'no more types to check'.
- * The RPCAP protocol does not define anything with message type equal to
- * zero, so there is no ambiguity in using this value as a list terminator.
- *
- * \return The message type of the message that has been detected. In case
- * of errors (e.g. the header contains a type that is not listed among the
- * allowed types), this function will return the following codes:
- * - (-1) if the version is incompatible.
- * - (-2) if the code is not among the one listed into the parameters list
- * - (-3) if a network error (connection reset, ...)
- * - RPCAP_MSG_ERROR if the message is an error message (it follows that
- * the RPCAP_MSG_ERROR could not be present in the allowed message-types
- * list, because this function checks for errors anyway)
- *
- * In case either the version is incompatible or nothing matches (i.e. it
- * returns '-1' or '-2'), it discards the message body (i.e. it reads the
- * remaining part of the message from the network and it discards it) so
- * that the application is ready to receive a new message.
- */
-int
-rpcap_checkmsg(char *errbuf, SOCKET sock, struct rpcap_header *header, uint8 first, ...)
-{
-	va_list ap;
-	uint8 type;
-	int32 len;
-	char remote_errbuf[PCAP_ERRBUF_SIZE];
-
-	/* Check if the present version of the protocol can handle this message */
-	if (header->ver != RPCAP_VERSION)
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Incompatible version number: message discarded.");
-
-		/*
-		 * Discard the rest of the packet.
-		 */
-		if (sock_discard(sock, ntohl(header->plen), NULL, 0) == -1) {
-			/*
-			 * Network error.
-			 */
-			return -3;
-		}
-		return -1;
-	}
-
-	va_start(ap, first);
-
-	type = first;
-
-	while (type != 0)
-	{
-		/*
-		 * The message matches with one of the types listed
-		 * There is no need of conversions since both values are uint8
-		 *
-		 * Check if the other side reported an error.
-		 * If yes, it retrieves it and it returns it back to the caller
-		 */
-		if (header->type == RPCAP_MSG_ERROR)
-		{
-			len = ntohl(header->plen);
-
-			if (len >= PCAP_ERRBUF_SIZE)
-			{
-				if (sock_recv(sock, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				{
-					va_end(ap);
-					return -3;
-				}
-
-				sock_discard(sock, len - (PCAP_ERRBUF_SIZE - 1), NULL, 0);
-
-				/*
-				 * Copy the received string to errbuf, and
-				 * null-terminate it.
-				 */
-				memcpy(errbuf, remote_errbuf, PCAP_ERRBUF_SIZE - 1);
-				errbuf[PCAP_ERRBUF_SIZE - 1] = '\0';
-			}
-			else if (len == 0)
-			{
-				/* Empty error string. */
-				errbuf[0] = '\0';
-			}
-			else
-			{
-				if (sock_recv(sock, remote_errbuf, len, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				{
-					va_end(ap);
-					return -3;
-				}
-
-				/*
-				 * Copy the received string to errbuf, and
-				 * null-terminate it.
-				 */
-				memcpy(errbuf, remote_errbuf, len - 1);
-				errbuf[len] = '\0';
-			}
-
-			va_end(ap);
-			return header->type;
-		}
-
-		if (header->type == type)
-		{
-			va_end(ap);
-			return header->type;
-		}
-
-		/* get next argument */
-		type = va_arg(ap, int);
-	}
-
-	/* we already have an error, so please discard this one */
-	sock_discard(sock, ntohl(header->plen), NULL, 0);
-
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The other endpoint sent a message that is not allowed here.");
-	SOCK_ASSERT(errbuf, 1);
-
-	va_end(ap);
-	return -2;
 }
