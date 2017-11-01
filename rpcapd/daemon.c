@@ -1711,14 +1711,14 @@ error:
 	{
 		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
-		goto fatal_error;
+		return -1;
 	}
 
 	// Check if all the data has been read; if not, discard the data in excess
 	if (rpcapd_discard(pars->sockctrl, plen) == -1)
 	{
 		// Network error.
-		goto fatal_error;
+		return -1;
 	}
 
 	return 0;
@@ -1728,6 +1728,8 @@ fatal_error:
 	// Fatal network error, so don't try to communicate with
 	// the client, just give up.
 	//
+	*sessionp = NULL;
+
 	if (addrinfo)
 		freeaddrinfo(addrinfo);
 
@@ -1740,9 +1742,12 @@ fatal_error:
 	if (sockdata)
 		sock_close(sockdata, NULL, 0);
 
-	if (session->fp)
-		pcap_close(session->fp);
-	free(session);
+	if (session)
+	{
+		if (session->fp)
+			pcap_close(session->fp);
+		free(session);
+	}
 
 	return -1;
 }
