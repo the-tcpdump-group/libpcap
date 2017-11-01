@@ -2248,7 +2248,7 @@ static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, c
 	int nread;
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 
-	if (toread < *plen)
+	if (toread > *plen)
 	{
 		// Tell the client and continue.
 		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
