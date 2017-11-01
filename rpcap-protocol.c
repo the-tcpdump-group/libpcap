@@ -188,7 +188,7 @@ rpcap_msg_type_string(uint8 type)
 			return NULL;
 		return replies[type];
 	} else {
-		if (type > NUM_REQ_TYPES)
+		if (type >= NUM_REQ_TYPES)
 			return NULL;
 		return requests[type];
 	}
