@@ -580,7 +580,7 @@ static void main_passive(void *ptr)
 		if (pars == NULL)
 		{
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
-			rpcap_senderror(sockctrl, errbuf, PCAP_ERR_OPEN, NULL);
+			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 			sock_close(sockctrl, NULL, 0);
 			continue;
 		}
@@ -598,7 +598,7 @@ static void main_passive(void *ptr)
 		if (pthread_error != 0)
 		{
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread: %s", pcap_strerror(pthread_error));
-			rpcap_senderror(sockctrl, errbuf, PCAP_ERR_OPEN, NULL);
+			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 			pthread_attr_destroy(&detachedAttribute);
 			sock_close(sockctrl, NULL, 0);
 			continue;
