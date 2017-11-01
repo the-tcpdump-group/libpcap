@@ -731,8 +731,12 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 	}
 	if (size > INT_MAX)
 	{
-		pcap_snprintf(errbuf, errbuflen, "Can't read more than %u bytes with sock_recv",
-		    INT_MAX);
+		if (errbuf)
+		{
+			pcap_snprintf(errbuf, errbuflen,
+			    "Can't read more than %u bytes with sock_recv",
+			    INT_MAX);
+		}
 		return -1;
 	}
 
