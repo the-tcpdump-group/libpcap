@@ -2258,9 +2258,6 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	if (sock_send(sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error_nodiscard;
 
-	if (sock_recv(sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
-		goto error_nodiscard;
-
 	/* Receive and process the reply message header. */
 	if (rpcap_process_msg_header(sockctrl, protocol_version,
 	    RPCAP_MSG_FINDALLIF_REQ, &header, errbuf) == -1)
