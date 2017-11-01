@@ -603,23 +603,40 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 		rpcap_createhdr(&header, pr->protocol_version,
 		    RPCAP_MSG_CLOSE, 0, 0);
 
-		/* I don't check for errors, since I'm going to close everything */
-		sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
+		/*
+		 * Send the close request; don't report any errors, as
+		 * we're closing this pcap_t, and have no place to report
+		 * the error.
+		 */
+		(void)sock_send(pr->rmt_sockctrl, (char *)&header,
+		    sizeof(struct rpcap_header), NULL, 0);
 	}
 	else
 	{
 		rpcap_createhdr(&header, pr->protocol_version,
 		    RPCAP_MSG_ENDCAP_REQ, 0, 0);
 
-		/* I don't check for errors, since I'm going to close everything */
-		sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), NULL, 0);
-
-		/* wait for the answer */
-		/* Don't check what we got, since the present libpcap does not uses this pcap_t anymore */
-		sock_recv(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, NULL, 0);
-
-		if (ntohl(header.plen) != 0)
-			sock_discard(pr->rmt_sockctrl, ntohl(header.plen), NULL, 0);
+		/*
+		 * Send the end capture request; don't report any errors,
+		 * as we're closing this pcap_t, and have no place to
+		 * report the error.
+		 */
+		if (sock_send(pr->rmt_sockctrl, (char *)&header,
+		    sizeof(struct rpcap_header), NULL, 0) == 0)
+		{
+			/*
+			 * Wait for the answer; don't report any errors,
+			 * as we're closing this pcap_t, and have no
+			 * place to report the error.
+			 */
+			if (rpcap_process_msg_header(pr->rmt_sockctrl,
+			    pr->protocol_version, RPCAP_MSG_ENDCAP_REQ,
+			    &header, NULL) == 0)
+			{
+				(void)rpcap_discard(pr->rmt_sockctrl,
+				    header.plen, NULL);
+			}
+		}
 	}
 
 	if (pr->rmt_sockdata)
@@ -2806,9 +2823,12 @@ static int rpcap_check_msg_ver(SOCKET sock, uint8 expected_ver, struct rpcap_hea
 		/*
 		 * Tell our caller that it's not the negotiated version.
 		 */
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Server sent us a message with version %u when we were expecting %u",
-		    header->ver, expected_ver);
+		if (errbuf != NULL)
+		{
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "Server sent us a message with version %u when we were expecting %u",
+			    header->ver, expected_ver);
+		}
 		return -1;
 	}
 	return 0;
@@ -2860,16 +2880,25 @@ static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_he
 		 */
 		request_type_string = rpcap_msg_type_string(request_type);
 		msg_type_string = rpcap_msg_type_string(header->type);
-		if (request_type_string == NULL)
+		if (errbuf != NULL)
 		{
-			/* This should not happen. */
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "rpcap_check_msg_type called for request message with type %u", request_type);
-			return -1;
+			if (request_type_string == NULL)
+			{
+				/* This should not happen. */
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "rpcap_check_msg_type called for request message with type %u",
+				    request_type);
+				return -1;
+			}
+			if (msg_type_string != NULL)
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "%s message received in response to a %s message",
+				    msg_type_string, request_type_string);
+			else
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "Message of unknown type %u message received in response to a %s request",
+				    header->type, request_type_string);
 		}
-		if (msg_type_string != NULL)
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s message received in response to a %s message", msg_type_string, request_type_string);
-		else
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Message of unknown type %u message received in response to a %s request", header->type, request_type_string);
 		return -1;
 	}
 	
