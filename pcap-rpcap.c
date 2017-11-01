@@ -158,7 +158,7 @@ static int rpcap_recv_msg_header(SOCKET sock, struct rpcap_header *header, char 
 static int rpcap_check_msg_ver(SOCKET sock, uint8 expected_ver, struct rpcap_header *header, char *errbuf);
 static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf);
 static int rpcap_process_msg_header(SOCKET sock, uint8 ver, uint8 request_type, struct rpcap_header *header, char *errbuf);
-static int rpcap_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errbuf);
+static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, char *errbuf);
 static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf);
 static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf);
 
@@ -370,8 +370,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	struct rpcap_header *header;		/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet */
 	char netbuf[RPCAP_NETBUF_SIZE];		/* size of the network buffer in which the packet is copied, just for UDP */
-	uint32 totread;				/* number of bytes (of payload) currently read from the network (referred to the current pkt) */
-	int nread;
+	uint32 plen;
 	int retval;				/* generic return value */
 
 	/* Structures needed for the select() call */
@@ -406,12 +405,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		return 0;
 
 	/*
-	 * data is here; so, let's copy it into the user buffer.
-	 * I'm going to read a new packet; so I reset the number of bytes (payload only) read
-	 */
-	totread = 0;
-
-	/*
 	 * We have to define 'header' as a pointer to a larger buffer,
 	 * because in case of UDP we have to read all the message within a single call
 	 */
@@ -444,16 +437,15 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	if (header->type != RPCAP_MSG_PACKET)
 		return 0;	/* Return 'no packets received' */
 
+	plen = header->plen;
+
 	/* In case of TCP, read the remaining of the packet from the socket */
 	if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
 		/* Read the RPCAP packet header from the network */
-		nread = sock_recv(pr->rmt_sockdata, (char *)net_pkt_header,
-		    sizeof(struct rpcap_pkthdr), SOCK_RECEIVEALL_YES,
-		    p->errbuf, PCAP_ERRBUF_SIZE);
-		if (nread == -1)
+		if (rpcap_recv(pr->rmt_sockdata, (char *)net_pkt_header,
+		    sizeof(struct rpcap_pkthdr), &plen, p->errbuf) == -1)
 			return -1;
-		totread += nread;
 	}
 
 	if ((ntohl(net_pkt_header->caplen) + sizeof(struct pcap_pkthdr)) <= p->bufsize)
@@ -498,17 +490,14 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 		else
 		{
 			/* In case of TCP, read the remaining of the packet from the socket */
-			nread = sock_recv(pr->rmt_sockdata, *pkt_data,
-			    (*pkt_header)->caplen, SOCK_RECEIVEALL_YES,
-			    p->errbuf, PCAP_ERRBUF_SIZE);
-			if (nread == -1)
+			if (rpcap_recv(pr->rmt_sockdata, *pkt_data,
+			    (*pkt_header)->caplen, &plen, p->errbuf) == -1)
 				return -1;
-			totread += nread;
 
-			/* Checks if all the data has been read; if not, discard the data in excess */
-			/* This check has to be done only on TCP connections */
-			if (totread != header->plen)
-				sock_discard(pr->rmt_sockdata, header->plen - totread, NULL, 0);
+			/* Discard the rest of the message. */
+			if (rpcap_discard(pr->rmt_sockdata, plen,
+			    p->errbuf) == -1)
+				return -1;
 		}
 
 		/* Packet read successfully */
@@ -2922,7 +2911,7 @@ static int rpcap_process_msg_header(SOCKET sock, uint8 expected_ver, uint8 reque
  * Returns 0 on success, logs a message and returns -1 on a network
  * error.
  */
-static int rpcap_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errbuf)
+static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, char *errbuf)
 {
 	int nread;
 
