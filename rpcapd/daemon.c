@@ -631,7 +631,7 @@ void daemon_serviceloop(void *ptr)
 
 			case RPCAP_MSG_ENDCAP_REQ:		// The other endpoint close the current capture session
 			{
-				if (session && session->fp)
+				if (session)
 				{
 					// Save statistics (we can need them in the future)
 					if (pcap_stats(session->fp, &stats))
