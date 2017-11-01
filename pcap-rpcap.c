@@ -2926,7 +2926,7 @@ static int rpcap_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, ch
 {
 	int nread;
 
-	if (toread < *plen)
+	if (toread > *plen)
 	{
 		/* The server sent us a bad message */
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
