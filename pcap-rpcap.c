@@ -2185,7 +2185,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	struct rpcap_header header;	/* structure that keeps the general header of the rpcap protocol */
 	int i, j;		/* temp variables */
 	int nif;		/* Number of interfaces listed */
-	int active = 0;	/* 'true' if we the other end-party is in active mode */
+	int active;			/* 'true' if we the other end-party is in active mode */
 	int type;
 	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE];
 	char tmpstring[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
@@ -2206,6 +2206,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	{
 		sockctrl = activeconn->sockctrl;
 		protocol_version = activeconn->protocol_version;
+		active = 1;
 	}
 	else
 	{
@@ -2255,6 +2256,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			sock_close(sockctrl, NULL, 0);
 			return -1;
 		}
+		active = 0;
 	}
 
 	/* RPCAP findalldevs command */
