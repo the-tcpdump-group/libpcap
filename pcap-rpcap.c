@@ -2685,24 +2685,40 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 			if (sock_cmpaddr(&temp->host, (struct sockaddr_storage *) ai_next->ai_addr) == 0)
 			{
 				struct rpcap_header header;
+				int status = 0;
 
 				/* Close this connection */
 				rpcap_createhdr(&header, temp->protocol_version,
 				    RPCAP_MSG_CLOSE, 0, 0);
 
-				/* I don't check for errors, since I'm going to close everything */
-				sock_send(temp->sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE);
-
-				if (sock_close(temp->sockctrl, errbuf, PCAP_ERRBUF_SIZE))
+				/*
+				 * Don't check for errors, since we're
+				 * just cleaning up.
+				 */
+				if (sock_send(temp->sockctrl,
+				    (char *)&header,
+				    sizeof(struct rpcap_header), errbuf,
+				    PCAP_ERRBUF_SIZE) == -1)
 				{
-					freeaddrinfo(addrinfo);
-
-					/* To avoid inconsistencies in the number of sock_init() */
-					sock_cleanup();
-
-					return -1;
+					/*
+					 * Let that error be the one we
+					 * report.
+					 */
+					(void)sock_close(temp->sockctrl, NULL,
+					   0);
+					status = -1;
+				}
+				else
+				{
+					if (sock_close(temp->sockctrl, errbuf,
+					   PCAP_ERRBUF_SIZE) == -1)
+						status = -1;
 				}
 
+				/*
+				 * Remove the host from the list of active
+				 * hosts.
+				 */
 				if (prev)
 					prev->next = temp->next;
 				else
@@ -2715,7 +2731,7 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 				/* To avoid inconsistencies in the number of sock_init() */
 				sock_cleanup();
 
-				return 0;
+				return status;
 			}
 
 			ai_next = ai_next->ai_next;
