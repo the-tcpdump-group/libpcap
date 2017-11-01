@@ -197,7 +197,7 @@ void daemon_serviceloop(void *ptr)
 		//
 		if (rpcapd_recv_msg_header(pars->sockctrl, &header) == -1)
 		{
-			// Network error.
+			// Fatal error.
 			goto end;
 		}
 
@@ -374,7 +374,7 @@ void daemon_serviceloop(void *ptr)
 				// Discard the rest of the message.
 				if (rpcapd_discard(pars->sockctrl, plen) == -1)
 				{
-					// Network error.
+					// Fatal error.
 					goto end;
 				}
 				break;
@@ -394,7 +394,7 @@ void daemon_serviceloop(void *ptr)
 				// Discard the rest of the message.
 				if (rpcapd_discard(pars->sockctrl, plen) == -1)
 				{
-					// Network error.
+					// Fatal error.
 					goto end;
 				}
 				break;
@@ -470,7 +470,7 @@ void daemon_serviceloop(void *ptr)
 		//
 		if (rpcapd_recv_msg_header(pars->sockctrl, &header) == -1)
 		{
-			// Network error.
+			// Fatal error.
 			goto end;
 		}
 
@@ -560,7 +560,7 @@ void daemon_serviceloop(void *ptr)
 					    "No capture device was specified",
 					    errbuf) == -1)
 					{
-						// Network error; log an
+						// Fatal error; log an
 						// error and  give up.
 						rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 						goto end;
@@ -574,7 +574,7 @@ void daemon_serviceloop(void *ptr)
 
 				if (daemon_msg_startcap_req(pars, plen, &have_thread, &threaddata, source, pars->isactive, &session, &samp_param) == -1)
 				{
-					// Network error; a message has
+					// Fatal error; a message has
 					// been logged, so just give up.
 					goto end;
 				}
@@ -587,7 +587,7 @@ void daemon_serviceloop(void *ptr)
 				{
 					if (daemon_msg_updatefilter_req(pars, session, plen) == -1)
 					{
-						// Network error; a message has
+						// Fatal error; a message has
 						// been logged, so just give up.
 						goto end;
 					}
@@ -622,7 +622,7 @@ void daemon_serviceloop(void *ptr)
 			{
 				if (daemon_msg_stats_req(pars, session, plen, &stats, svrcapt) == -1)
 				{
-					// Network error; a message has
+					// Fatal error; a message has
 					// been logged, so just give up.
 					goto end;
 				}
@@ -650,7 +650,7 @@ void daemon_serviceloop(void *ptr)
 					{
 						free(session);
 						session = NULL;
-						// Network error; a message has
+						// Fatal error; a message has
 						// been logged, so just give up.
 						goto end;
 					}
@@ -672,7 +672,7 @@ void daemon_serviceloop(void *ptr)
 			{
 				if (daemon_msg_setsampling_req(pars, plen, &samp_param) == -1)
 				{
-					// Network error; a message has
+					// Fatal error; a message has
 					// been logged, so just give up.
 					goto end;
 				}
@@ -698,7 +698,7 @@ void daemon_serviceloop(void *ptr)
 				// Discard the rest of the message.
 				if (rpcapd_discard(pars->sockctrl, plen) == -1)
 				{
-					// Network error.
+					// Fatal error.
 					goto end;
 				}
 				goto end;
@@ -736,7 +736,7 @@ void daemon_serviceloop(void *ptr)
 				// Discard the rest of the message.
 				if (rpcapd_discard(pars->sockctrl, plen) == -1)
 				{
-					// Network error.
+					// Fatal error.
 					goto end;
 				}
 				goto end;
@@ -757,7 +757,7 @@ void daemon_serviceloop(void *ptr)
 				// Discard the rest of the message.
 				if (rpcapd_discard(pars->sockctrl, plen) == -1)
 				{
-					// Network error.
+					// Fatal error.
 					goto end;
 				}
 				goto end;
