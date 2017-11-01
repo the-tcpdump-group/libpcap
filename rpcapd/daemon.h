@@ -46,6 +46,6 @@ struct daemon_slpars
 
 void daemon_serviceloop(void *ptr);
 
-void pthread_suspend(int msec);
+void sleep_secs(int secs);
 
 #endif

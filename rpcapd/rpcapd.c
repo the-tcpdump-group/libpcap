@@ -426,7 +426,13 @@ void main_startup(void)
 	// All the previous calls are no blocking, so the main line of execution goes here
 	// and I have to avoid that the program terminates
 	while (1)
-		pthread_suspend(10*60*1000); // it wakes up every 10 minutes; it seems to me reasonable
+	{
+#ifdef _WIN32
+		Sleep(INFINITE);
+#else
+		pause();
+#endif
+	}
 }
 
 
@@ -694,7 +700,7 @@ static void main_active(void *ptr)
 
 			SOCK_ASSERT(errbuf, 1);
 
-			pthread_suspend(RPCAP_ACTIVE_WAIT * 1000);
+			sleep_secs(RPCAP_ACTIVE_WAIT);
 
 			continue;
 		}

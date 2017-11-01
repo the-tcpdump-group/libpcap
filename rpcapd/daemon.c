@@ -984,7 +984,7 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 				// connection and reconnects, the suspension
 				// time does not have any effect.
 				//
-				pthread_suspend(RPCAP_SUSPEND_WRONGAUTH*1000);
+				sleep_secs(RPCAP_SUSPEND_WRONGAUTH);
 				goto error_noreply;
 			}
 
@@ -2187,38 +2187,22 @@ void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *
 	}
 }
 
-/*!
-	\brief Suspends a pthread for msec milliseconds.
 
-	This function is provided since pthreads do not have a suspend() call.
+/*!
+	\brief Suspends a thread for secs seconds.
 */
-void pthread_suspend(int msec)
+void sleep_secs(int secs)
 {
 #ifdef _WIN32
-	Sleep(msec);
+	Sleep(secs*1000);
 #else
-	struct timespec abstime;
-	struct timeval now;
+	unsigned secs_remaining;
 
-	pthread_cond_t cond;
-	pthread_mutex_t mutex;
-	pthread_mutexattr_t attr;
-
-	pthread_mutexattr_init(&attr);
-	pthread_mutex_init(&mutex, &attr);
-	pthread_mutex_lock(&mutex);
-
-	pthread_cond_init(&cond, NULL);
-
-	gettimeofday(&now, NULL);
-
-	abstime.tv_sec = now.tv_sec + msec/1000;
-	abstime.tv_nsec = now.tv_usec * 1000 + (msec%1000) * 1000 * 1000;
-
-	pthread_cond_timedwait(&cond, &mutex, &abstime);
-
-	pthread_mutex_destroy(&mutex);
-	pthread_cond_destroy(&cond);
+	if (secs <= 0)
+		return;
+	secs_remaining = secs;
+	while (secs_remaining != 0)
+		secs_remaining = sleep(secs_remaining);
 #endif
 }
 
