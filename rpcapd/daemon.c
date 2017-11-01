@@ -1460,7 +1460,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 	int sendbufidx = 0;			// index which keeps the number of bytes currently buffered
 
 	// socket-related variables
-	SOCKET sockdata = 0;			// socket descriptor of the data connection
+	SOCKET sockdata = INVALID_SOCKET;	// socket descriptor of the data connection
 	struct addrinfo hints;			// temp, needed to open a socket connection
 	struct addrinfo *addrinfo;		// temp, needed to open a socket connection
 	struct sockaddr_storage saddr;		// temp, needed to retrieve the network data port chosen on the local machine
@@ -1696,7 +1696,7 @@ error:
 		*have_thread = 0;
 	}
 
-	if (sockdata)
+	if (sockdata != INVALID_SOCKET)
 		sock_close(sockdata, NULL, 0);
 
 	if (session)
@@ -1739,7 +1739,7 @@ fatal_error:
 		*have_thread = 0;
 	}
 
-	if (sockdata)
+	if (sockdata != INVALID_SOCKET)
 		sock_close(sockdata, NULL, 0);
 
 	if (session)
