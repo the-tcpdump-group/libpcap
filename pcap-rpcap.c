@@ -1645,6 +1645,13 @@ static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, 
 	 */
 	*ver = RPCAP_MAX_VERSION;
 	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
+	if (status == 0)
+	{
+		//
+		// Success.
+		//
+		return 0;
+	}
 	if (status == -1)
 	{
 		/* Unrecoverable error. */
@@ -1659,6 +1666,13 @@ static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, 
 	 * authenticating again with that version.
 	 */
 	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
+	if (status == 0)
+	{
+		//
+		// Success.
+		//
+		return 0;
+	}
 	if (status == -1)
 	{
 		/* Unrecoverable error. */
@@ -1674,7 +1688,8 @@ static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, 
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The server doesn't support any protocol version that we support");
 		return -1;
 	}
-	return 0;
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "rpcap_sendauth() returned %d", status);
+	return -1;
 }
 
 /*
@@ -1846,7 +1861,9 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 	}
 
 	/*
-	 * OK, it's an "authentication succeeded" reply.
+	 * OK, it's an authentication reply, so they're OK with the
+	 * protocol version we sent.
+	 *
 	 * Discard the rest of it.
 	 */
 	if (rpcap_discard(sock, header.plen, errbuf) == -1)
