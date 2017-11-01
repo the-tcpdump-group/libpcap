@@ -159,7 +159,7 @@ static int rpcap_check_msg_ver(SOCKET sock, uint8 expected_ver, struct rpcap_hea
 static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf);
 static int rpcap_process_msg_header(SOCKET sock, uint8 ver, uint8 request_type, struct rpcap_header *header, char *errbuf);
 static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, char *errbuf);
-static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf);
+static void rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf);
 static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf);
 
 /****************************************************
@@ -2855,7 +2855,7 @@ static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_he
 		 * Hand that error back to our caller.
 		 */
 		*errcode = ntohs(header->value);
-		(void)rpcap_msg_err(sock, header->plen, errbuf);
+		rpcap_msg_err(sock, header->plen, errbuf);
 		return -1;
 	}
 
@@ -2965,7 +2965,7 @@ static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, ch
 /*
  * This handles the RPCAP_MSG_ERROR message.
  */
-static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
+static void rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 
@@ -2978,19 +2978,19 @@ static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
 		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
-			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read from client failed: %s", errbuf);
-			return -1;
-		}
-		if (rpcap_discard(sockctrl, plen - (PCAP_ERRBUF_SIZE - 1), remote_errbuf) == -1)
-		{
-			// Network error.
-			return -1;
+			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			return;
 		}
 
 		/*
 		 * Null-terminate it.
 		 */
 		remote_errbuf[PCAP_ERRBUF_SIZE - 1] = '\0';
+
+		/*
+		 * Throw away the rest.
+		 */
+		(void)rpcap_discard(sockctrl, plen - (PCAP_ERRBUF_SIZE - 1), remote_errbuf);
 	}
 	else if (plen == 0)
 	{
@@ -3002,8 +3002,8 @@ static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
 		if (sock_recv(sockctrl, remote_errbuf, plen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
-			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read from client failed: %s", errbuf);
-			return -1;
+			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			return;
 		}
 
 		/*
@@ -3011,7 +3011,6 @@ static int rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
 		 */
 		remote_errbuf[plen] = '\0';
 	}
-	return 0;
 }
 
 /*
