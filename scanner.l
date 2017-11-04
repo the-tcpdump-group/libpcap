@@ -435,6 +435,36 @@ icmp-ireq		{ yylval->i = 15; return NUM; }
 icmp-ireqreply		{ yylval->i = 16; return NUM; }
 icmp-maskreq		{ yylval->i = 17; return NUM; }
 icmp-maskreply		{ yylval->i = 18; return NUM; }
+
+icmp6type       { yylval->i = 0; return NUM; }
+icmp6code       { yylval->i = 1; return NUM; }
+
+icmp6-echo      { yylval->i = 128; return NUM; }
+icmp6-echoreply { yylval->i = 129; return NUM; }
+icmp6-multicastlistenerquery    { yylval->i = 130; return NUM; }
+icmp6-multicastlistenerreportv1 { yylval->i = 131; return NUM; }
+icmp6-multicastlistenerdone     { yylval->i = 132; return NUM; }
+icmp6-routersolicit   { yylval->i = 133; return NUM; }
+icmp6-routeradvert    { yylval->i = 134; return NUM; }
+icmp6-neighborsolicit { yylval->i = 135; return NUM; }
+icmp6-neighboradvert  { yylval->i = 136; return NUM; }
+icmp6-redirect    { yylval->i = 137; return NUM; }
+icmp6-routerrenum { yylval->i = 138; return NUM; }
+icmp6-nodeinformationquery      { yylval->i = 139; return NUM; }
+icmp6-nodeinformationresponse   { yylval->i = 140; return NUM; }
+icmp6-ineighbordiscoverysolicit { yylval->i = 141; return NUM; }
+icmp6-ineighbordiscoveryadvert  { yylval->i = 142; return NUM; }
+icmp6-multicastlistenerreportv2 { yylval->i = 143; return NUM; }
+icmp6-homeagentdiscoveryrequest { yylval->i = 144; return NUM; }
+icmp6-homeagentdiscoveryreply   { yylval->i = 145; return NUM; }
+icmp6-mobileprefixsolicit       { yylval->i = 146; return NUM; }
+icmp6-mobileprefixadvert        { yylval->i = 147; return NUM; }
+icmp6-certpathsolicit           { yylval->i = 148; return NUM; }
+icmp6-certpathadvert            { yylval->i = 149; return NUM; }
+icmp6-multicastrouteradvert     { yylval->i = 151; return NUM; }
+icmp6-multicastroutersolicit    { yylval->i = 152; return NUM; }
+icmp6-multicastrouterterm       { yylval->i = 153; return NUM; }
+
 tcpflags		{ yylval->i = 13; return NUM; }
 tcp-fin			{ yylval->i = 0x01; return NUM; }
 tcp-syn			{ yylval->i = 0x02; return NUM; }
