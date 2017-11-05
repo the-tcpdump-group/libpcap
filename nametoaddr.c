@@ -517,7 +517,6 @@ pcap_ether_hostton(const char *name)
 	register u_char *ap;
 	static FILE *fp = NULL;
 	static int init = 0;
-	int err;
 
 	if (!init) {
 		++init;
