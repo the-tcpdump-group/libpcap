@@ -1804,6 +1804,7 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 	return s;
 }
 
+
 static struct block *
 gen_uncond(compiler_state_t *cstate, int rsense)
 {
@@ -7045,8 +7046,58 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		inst->b = b;
 		break;
 	case Q_ICMPV6:
-		bpf_error(cstate, "IPv6 upper-layer protocol is not supported by proto[x]");
-		/*NOTREACHED*/
+        /*
+        * Do the computation only if the packet contains
+        * the protocol in question.
+        */
+        b = gen_proto_abbrev(cstate, Q_IPV6);
+        if (inst->b) {
+            gen_and(inst->b, b);
+        }
+        inst->b = b;
+
+        /*
+        * Check if we have an icmp6 next header
+        */
+        b = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, 58);
+        if (inst->b) {
+            gen_and(inst->b, b);
+        }
+        inst->b = b;
+
+
+        s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+        /*
+        * If "s" is non-null, it has code to arrange that the
+        * X register contains the variable part of the offset
+        * of the link-layer payload.  Add to it the offset
+        * computed into the register specified by "index",
+        * and move that into the X register.  Otherwise, just
+        * load into the X register the offset computed into
+        * the register specified by "index".
+        */
+        if (s != NULL) {
+            sappend(s, xfer_to_a(cstate, inst));
+            sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
+            sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
+        } else {
+            s = xfer_to_x(cstate, inst);
+        }
+
+        /*
+        * Load the item at the sum of the offset we've put in the
+        * X register, the offset of the start of the network
+        * layer header from the beginning of the link-layer
+        * payload, and the constant part of the offset of the
+        * start of the link-layer payload.
+        */
+        tmp = new_stmt(cstate, BPF_LD|BPF_IND|size);
+        tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 40;
+
+        sappend(s, tmp);
+        sappend(inst->s, s);
+
+        break;
 	}
 	inst->regno = regno;
 	s = new_stmt(cstate, BPF_ST);
