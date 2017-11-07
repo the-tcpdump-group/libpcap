@@ -64,7 +64,8 @@ blocked in pcap_dispatch(), pcap_loop(), pcap_next(), or pcap_next_ex(),
 a call to pcap_breakloop() in a different thread will not unblock that
 thread; you will need to use whatever mechanism the OS provides for
 breaking a thread out of blocking calls in order to unblock the thread,
-such as thread cancellation in systems that support POSIX threads.
+such as thread cancellation or thread signalling in systems that support
+POSIX threads.
 .ft R
 .PP
 Note that
