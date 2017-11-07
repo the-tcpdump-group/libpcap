@@ -403,7 +403,11 @@ else
 		#
 		# NOTE: FreeBSD 10's <net/bpf.h> requires that
 		# various BSD-style integer types be defined,
-		# so we include <sys/types.h>.
+		# so we include <sys/types.h>.  OpenBSD 5.9's
+		# <net/if.h> doesn't include <sys/socket.h>,
+		# but defines some structure fields as
+		# "struct sockaddr", so we need to include
+		# <sys/socket.h>.
 		#
 		AC_MSG_CHECKING(if net/bpf.h defines BIOCSETIF)
 		AC_CACHE_VAL(ac_cv_lbl_bpf_h_defines_biocsetif,
@@ -411,6 +415,7 @@ else
 [
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #ifdef HAVE_SYS_IOCCOM_H
 #include <sys/ioccom.h>
 #endif
