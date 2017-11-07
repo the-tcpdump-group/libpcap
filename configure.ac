@@ -1593,6 +1593,16 @@ solaris*)
 
 	DYEXT="so"
 
+	#
+	# Make sure errno is thread-safe, in case we're called in
+	# a multithreaded program.  We don't guarantee that two
+	# threads can use the *same* pcap_t safely, but the
+	# current version does guarantee that you can use different
+	# pcap_t's in different threads, and even that pcap_compile()
+	# is thread-safe (it wasn't thread-safe in some older versions).
+	#
+	V_CCOPT="$V_CCOPT -D_TS_ERRNO"
+
 	case "`uname -r`" in
 
 	5.12)
