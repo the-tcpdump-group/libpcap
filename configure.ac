@@ -288,6 +288,63 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	fi
 fi
 
+#
+# For various things that might use pthreads.
+#
+AC_CHECK_HEADER(pthread.h,
+    [
+	#
+	# OK, we have pthread.h.  Do we have pthread_create in the
+	# system libraries?
+	#
+	AC_CHECK_FUNC(pthread_create,
+	    [
+		#
+		# Yes.
+		#
+		ac_lbl_have_pthreads="found"
+	    ],
+	    [
+		#
+		# No - do we have it in -lpthreads?
+		#
+		AC_CHECK_LIB(pthreads, pthread_create,
+		    [
+			#
+			# Yes - add -lpthreads.
+			#
+			ac_lbl_have_pthreads="found"
+			PTHREAD_LIBS="$PTHREAD_LIBS -lpthreads"
+		    ],
+		    [
+			#
+			# No - do we have it in -lpthread?
+			#
+			AC_CHECK_LIB(pthread, pthread_create,
+			    [
+				#
+				# Yes - add -lpthread.
+				#
+                                ac_lbl_have_pthreads="found"
+				PTHREAD_LIBS="$PTHREAD_LIBS -lpthread"
+			    ],
+			    [
+				#
+				# No.
+				#
+				ac_lbl_have_pthreads="not found"
+			    ])
+		    ])
+	    ])
+    ],
+    [
+	#
+	# We didn't find pthread.h.
+	#
+	ac_lbl_have_pthreads="not found"
+    ]
+)
+
 dnl to pacify those who hate protochain insn
 AC_MSG_CHECKING(if --disable-protochain option is specified)
 AC_ARG_ENABLE(protochain,
@@ -897,10 +954,10 @@ if test "$want_dag" != no; then
 			AC_CHECK_LIB([vdag],[vdag_set_device_info], [ac_dag_have_vdag="1"], [ac_dag_have_vdag="0"])
 			if test "$ac_dag_have_vdag" = 1; then
 				AC_DEFINE(HAVE_DAG_VDAG, 1, [define if you have vdag_set_device_info()])
-				AC_LBL_PTHREADS(ac_lbl_have_pthreads_for_dag, LIBS)
-				if test "$ac_lbl_have_pthreads_for_dag" != "found"; then
+				if test "$ac_lbl_have_pthreads" != "found"; then
 					AC_MSG_ERROR([DAG requires pthreads, but we didn't find them])
 				fi
+				LIBS="$LIBS $PTHREAD_LIBS"
 			fi
 		fi
 
@@ -1193,8 +1250,7 @@ yes)	AC_MSG_RESULT(yes)
 	#
 	# rpcapd requires pthreads on UN*X.
 	#
-	AC_LBL_PTHREADS(ac_lbl_have_pthreads_for_rpcapd, RPCAPD_LIBS)
-	if test "$ac_lbl_have_pthreads_for_rpcapd" != "found"; then
+	if test "$ac_lbl_have_pthreads" != "found"; then
 		AC_MSG_ERROR([rpcapd requires pthreads, but we didn't find them])
 	fi
 	#
@@ -1594,6 +1650,7 @@ AC_SUBST(DYEXT)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_USERMOD_SECTION)
+AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(BUILD_RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
 AC_SUBST(RPCAPD_LIBS)

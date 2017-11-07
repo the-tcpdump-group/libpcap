@@ -62,6 +62,7 @@ DYEXT = @DYEXT@
 V_RPATH_OPT = @V_RPATH_OPT@
 DEPENDENCY_CFLAG = @DEPENDENCY_CFLAG@
 PROG=libpcap
+PTHREAD_LIBS=@PTHREAD_LIBS@
 BUILD_RPCAPD=@BUILD_RPCAPD@
 INSTALL_RPCAPD=@INSTALL_RPCAPD@
 RPCAPD_LIBS=@RPCAPD_LIBS@
@@ -162,7 +163,8 @@ TESTS = \
 	findalldevstest \
 	opentest \
 	reactivatetest \
-	selpolltest
+	selpolltest \
+	threadsignaltest
 
 TESTS_SRC = \
 	tests/valgrindtest.c \
@@ -172,7 +174,8 @@ TESTS_SRC = \
 	tests/findalldevstest.c \
 	tests/opentest.c \
 	tests/reactivatetest.c \
-	tests/selpolltest.c
+	tests/selpolltest.c \
+	tests/threadsignaltest.c
 
 GENHDR = \
 	scanner.h grammar.h
@@ -561,6 +564,9 @@ reactivatetest: tests/reactivatetest.c libpcap.a
 
 selpolltest: tests/selpolltest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o selpolltest $(srcdir)/tests/selpolltest.c libpcap.a $(LIBS)
+
+threadsignaltest: tests/threadsignaltest.c libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o threadsignaltest $(srcdir)/tests/threadsignaltest.c libpcap.a $(LIBS) $(PTHREAD_LIBS)
 
 valgrindtest: tests/valgrindtest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o valgrindtest $(srcdir)/tests/valgrindtest.c libpcap.a $(LIBS)

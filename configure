@@ -640,6 +640,7 @@ PCAP_SUPPORT_USB
 RPCAPD_LIBS
 INSTALL_RPCAPD
 BUILD_RPCAPD
+PTHREAD_LIBS
 MAN_USERMOD_SECTION
 MAN_MISC_INFO
 MAN_FILE_FORMATS
@@ -5298,6 +5299,150 @@ fi
 	fi
 fi
 
+#
+# For various things that might use pthreads.
+#
+ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
+if test "x$ac_cv_header_pthread_h" = xyes; then :
+
+	#
+	# OK, we have pthread.h.  Do we have pthread_create in the
+	# system libraries?
+	#
+	ac_fn_c_check_func "$LINENO" "pthread_create" "ac_cv_func_pthread_create"
+if test "x$ac_cv_func_pthread_create" = xyes; then :
+
+		#
+		# Yes.
+		#
+		ac_lbl_have_pthreads="found"
+
+else
+
+		#
+		# No - do we have it in -lpthreads?
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthreads" >&5
+$as_echo_n "checking for pthread_create in -lpthreads... " >&6; }
+if ${ac_cv_lib_pthreads_pthread_create+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthreads  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pthread_create ();
+int
+main ()
+{
+return pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_pthreads_pthread_create=yes
+else
+  ac_cv_lib_pthreads_pthread_create=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthreads_pthread_create" >&5
+$as_echo "$ac_cv_lib_pthreads_pthread_create" >&6; }
+if test "x$ac_cv_lib_pthreads_pthread_create" = xyes; then :
+
+			#
+			# Yes - add -lpthreads.
+			#
+			ac_lbl_have_pthreads="found"
+			PTHREAD_LIBS="$PTHREAD_LIBS -lpthreads"
+
+else
+
+			#
+			# No - do we have it in -lpthread?
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
+$as_echo_n "checking for pthread_create in -lpthread... " >&6; }
+if ${ac_cv_lib_pthread_pthread_create+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpthread  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pthread_create ();
+int
+main ()
+{
+return pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_pthread_pthread_create=yes
+else
+  ac_cv_lib_pthread_pthread_create=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_create" >&5
+$as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
+if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
+
+				#
+				# Yes - add -lpthread.
+				#
+                                ac_lbl_have_pthreads="found"
+				PTHREAD_LIBS="$PTHREAD_LIBS -lpthread"
+
+else
+
+				#
+				# No.
+				#
+				ac_lbl_have_pthreads="not found"
+
+fi
+
+
+fi
+
+
+fi
+
+
+else
+
+	#
+	# We didn't find pthread.h.
+	#
+	ac_lbl_have_pthreads="not found"
+
+
+fi
+
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if --disable-protochain option is specified" >&5
 $as_echo_n "checking if --disable-protochain option is specified... " >&6; }
 # Check whether --enable-protochain was given.
@@ -5738,8 +5883,10 @@ fi
                 incdir=-I/usr/include/libnl3
                 libnldir=
                 case "$with_libnl" in
+
                 yes|if_available)
                   ;;
+
                 *)
                   if test -d $withval; then
                     libnldir=-L${withval}/lib/.libs
@@ -6635,150 +6782,10 @@ fi
 
 $as_echo "#define HAVE_DAG_VDAG 1" >>confdefs.h
 
-
-	ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
-if test "x$ac_cv_header_pthread_h" = xyes; then :
-
-		#
-		# OK, we have pthread.h.  Do we have pthread_create in the
-		# system libraries?
-		#
-		ac_fn_c_check_func "$LINENO" "pthread_create" "ac_cv_func_pthread_create"
-if test "x$ac_cv_func_pthread_create" = xyes; then :
-
-			#
-			# Yes.
-			#
-			ac_lbl_have_pthreads_for_dag="found"
-
-else
-
-			#
-			# No - do we have it in -lpthreads?
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthreads" >&5
-$as_echo_n "checking for pthread_create in -lpthreads... " >&6; }
-if ${ac_cv_lib_pthreads_pthread_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthreads  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pthread_create ();
-int
-main ()
-{
-return pthread_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthreads_pthread_create=yes
-else
-  ac_cv_lib_pthreads_pthread_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthreads_pthread_create" >&5
-$as_echo "$ac_cv_lib_pthreads_pthread_create" >&6; }
-if test "x$ac_cv_lib_pthreads_pthread_create" = xyes; then :
-
-				#
-				# Yes - add -lpthreads.
-				#
-                                ac_lbl_have_pthreads_for_dag="found"
-				LIBS="$LIBS -lpthreads"
-
-else
-
-				#
-				# No - do we have it in -lpthread?
-				#
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
-$as_echo_n "checking for pthread_create in -lpthread... " >&6; }
-if ${ac_cv_lib_pthread_pthread_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pthread_create ();
-int
-main ()
-{
-return pthread_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthread_pthread_create=yes
-else
-  ac_cv_lib_pthread_pthread_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_create" >&5
-$as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
-if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
-
-					#
-					# Yes - add -lpthread.
-					#
-	                                ac_lbl_have_pthreads_for_dag="found"
-					LIBS="$LIBS -lpthread"
-
-else
-
-					#
-					# No.
-					#
-					ac_lbl_have_pthreads_for_dag="not found"
-
-fi
-
-
-fi
-
-
-fi
-
-
-else
-
-		#
-		# We didn't find pthread.h.
-		#
-		ac_lbl_have_pthreads_for_dag="not found"
-
-fi
-
-
-
-				if test "$ac_lbl_have_pthreads_for_dag" != "found"; then
+				if test "$ac_lbl_have_pthreads" != "found"; then
 					as_fn_error $? "DAG requires pthreads, but we didn't find them" "$LINENO" 5
 				fi
+				LIBS="$LIBS $PTHREAD_LIBS"
 			fi
 		fi
 
@@ -7162,148 +7169,7 @@ $as_echo "$as_me: WARNING: to attacks by malicious remote capture servers!" >&2;
 	#
 	# rpcapd requires pthreads on UN*X.
 	#
-
-	ac_fn_c_check_header_mongrel "$LINENO" "pthread.h" "ac_cv_header_pthread_h" "$ac_includes_default"
-if test "x$ac_cv_header_pthread_h" = xyes; then :
-
-		#
-		# OK, we have pthread.h.  Do we have pthread_create in the
-		# system libraries?
-		#
-		ac_fn_c_check_func "$LINENO" "pthread_create" "ac_cv_func_pthread_create"
-if test "x$ac_cv_func_pthread_create" = xyes; then :
-
-			#
-			# Yes.
-			#
-			ac_lbl_have_pthreads_for_rpcapd="found"
-
-else
-
-			#
-			# No - do we have it in -lpthreads?
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthreads" >&5
-$as_echo_n "checking for pthread_create in -lpthreads... " >&6; }
-if ${ac_cv_lib_pthreads_pthread_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthreads  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pthread_create ();
-int
-main ()
-{
-return pthread_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthreads_pthread_create=yes
-else
-  ac_cv_lib_pthreads_pthread_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthreads_pthread_create" >&5
-$as_echo "$ac_cv_lib_pthreads_pthread_create" >&6; }
-if test "x$ac_cv_lib_pthreads_pthread_create" = xyes; then :
-
-				#
-				# Yes - add -lpthreads.
-				#
-                                ac_lbl_have_pthreads_for_rpcapd="found"
-				RPCAPD_LIBS="$RPCAPD_LIBS -lpthreads"
-
-else
-
-				#
-				# No - do we have it in -lpthread?
-				#
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
-$as_echo_n "checking for pthread_create in -lpthread... " >&6; }
-if ${ac_cv_lib_pthread_pthread_create+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char pthread_create ();
-int
-main ()
-{
-return pthread_create ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_pthread_pthread_create=yes
-else
-  ac_cv_lib_pthread_pthread_create=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_create" >&5
-$as_echo "$ac_cv_lib_pthread_pthread_create" >&6; }
-if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
-
-					#
-					# Yes - add -lpthread.
-					#
-	                                ac_lbl_have_pthreads_for_rpcapd="found"
-					RPCAPD_LIBS="$RPCAPD_LIBS -lpthread"
-
-else
-
-					#
-					# No.
-					#
-					ac_lbl_have_pthreads_for_rpcapd="not found"
-
-fi
-
-
-fi
-
-
-fi
-
-
-else
-
-		#
-		# We didn't find pthread.h.
-		#
-		ac_lbl_have_pthreads_for_rpcapd="not found"
-
-fi
-
-
-
-	if test "$ac_lbl_have_pthreads_for_rpcapd" != "found"; then
+	if test "$ac_lbl_have_pthreads" != "found"; then
 		as_fn_error $? "rpcapd requires pthreads, but we didn't find them" "$LINENO" 5
 	fi
 	#
@@ -8844,6 +8710,7 @@ $as_echo "#define LBL_ALIGN 1" >>confdefs.h
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
+
 
 
 

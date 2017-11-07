@@ -38,5 +38,8 @@ if( NOT WIN32 )
     target_link_libraries ( selpolltest pcap )
 endif()
 
+ADD_EXECUTABLE (threadsignaltest threadsignaltest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
+target_link_libraries ( threadsignaltest pcap ${CMAKE_THREAD_LIBS_INIT} )
+
 ADD_EXECUTABLE (valgrindtest valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
 target_link_libraries ( valgrindtest pcap )
