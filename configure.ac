@@ -402,14 +402,14 @@ else
 		# instead.
 		#
 		# NOTE: FreeBSD 10's <net/bpf.h> requires that
-		# C99 types be defined, so we include <inttypes.h>.
-		# We now assume that all UN*Xes have it.
+		# various BSD-style integer types be defined,
+		# so we include <sys/types.h>.
 		#
 		AC_MSG_CHECKING(if net/bpf.h defines BIOCSETIF)
 		AC_CACHE_VAL(ac_cv_lbl_bpf_h_defines_biocsetif,
 			AC_TRY_COMPILE(
 [
-#include <inttypes.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
 #ifdef HAVE_SYS_IOCCOM_H
 #include <sys/ioccom.h>
