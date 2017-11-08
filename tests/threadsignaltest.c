@@ -109,16 +109,20 @@ capture_thread_func(void *arg)
 {
 	char *device = arg;
 	int packet_count;
+#ifndef _WIN32
 	struct sigaction action;
 	int status;
 	sigset_t mask;
+#endif
 
+#ifndef _WIN32
 	sigemptyset(&mask);
 	action.sa_handler = catch_sigusr1;
 	action.sa_mask = mask;
 	action.sa_flags = 0;
 	if (sigaction(SIGUSR1, &action, NULL) == -1)
 		error("Can't catch SIGUSR1: %s", strerror(errno));
+#endif
 
 	printf("Listening on %s\n", device);
 	for (;;) {
