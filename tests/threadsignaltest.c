@@ -36,6 +36,8 @@ The Regents of the University of California.  All rights reserved.\n";
 
   #define THREAD_HANDLE			HANDLE
   #define THREAD_FUNC_RETURN_TYPE	int
+
+  #include "getopt.h"
 #else
   #include <pthread.h>
   #include <signal.h>
