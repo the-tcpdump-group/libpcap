@@ -38,7 +38,6 @@ win32_strerror(DWORD error)
 {
   static char errbuf[ERRBUF_SIZE+1];
   size_t errlen;
-  char *p;
 
   FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
                 ERRBUF_SIZE, NULL);
