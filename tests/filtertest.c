@@ -199,7 +199,8 @@ main(int argc, char **argv)
 	struct bpf_program fcode;
 
 #ifdef _WIN32
-	if(wsockinit() != 0) return 1;
+	if (pcap_wsockinit() != 0)
+		return 1;
 #endif /* _WIN32 */
 
 #ifndef BDEBUG
