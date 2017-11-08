@@ -153,7 +153,7 @@ capture_thread_func(void *arg)
 		(void)fprintf(stderr, "%s: pcap_loop: %s\n",
 		    program_name, pcap_geterr(pd));
 	}
-	return NULL;
+	return 0;
 }
 
 int
