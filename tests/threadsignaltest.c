@@ -186,7 +186,9 @@ main(int argc, char **argv)
 	char ebuf[PCAP_ERRBUF_SIZE];
 	int status;
 	THREAD_HANDLE capture_thread;
+#ifndef _WIN32
 	void *retval;
+#endif
 
 	device = NULL;
 	if ((cp = strrchr(argv[0], '/')) != NULL)
