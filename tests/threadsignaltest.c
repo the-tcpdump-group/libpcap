@@ -260,7 +260,7 @@ main(int argc, char **argv)
 	pcap_breakloop(pd);
 #ifdef _WIN32
 	printf("Setting event\n");
-	if (!SetEvent(pcap_getevent(pd))
+	if (!SetEvent(pcap_getevent(pd)))
 		error("Can't set event for pcap_t: %s",
 		    win32_strerror(GetLastError()));
 	if (WaitForSingleObject(capture_thread, INFINITE) == WAIT_FAILED)
