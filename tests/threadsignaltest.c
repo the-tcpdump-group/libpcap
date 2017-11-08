@@ -104,6 +104,22 @@ catch_sigusr1(int sig _U_)
 }
 #endif
 
+static void
+sleep_secs(int secs)
+{
+#ifdef _WIN32
+	Sleep(secs*1000);
+#else
+	unsigned secs_remaining;
+
+	if (secs <= 0)
+		return;
+	secs_remaining = secs;
+	while (secs_remaining != 0)
+		secs_remaining = sleep(secs_remaining);
+#endif
+}
+
 static THREAD_FUNC_RETURN_TYPE
 capture_thread_func(void *arg)
 {
@@ -256,7 +272,7 @@ main(int argc, char **argv)
 	if (status != 0)
 		error("Can't create capture thread: %s", strerror(status));
 #endif
-	sleep(60);
+	sleep_secs(60);
 	pcap_breakloop(pd);
 #ifdef _WIN32
 	printf("Setting event\n");
