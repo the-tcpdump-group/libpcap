@@ -50,7 +50,9 @@ if(NOT WIN32)
   add_dependencies(tests threadsignaltest)
 endif()
 
-add_executable(valgrindtest EXCLUDE_FROM_ALL
-  valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C})
-target_link_libraries(valgrindtest pcap)  
-add_dependencies(tests valgrindtest)
+if(NOT WIN32)
+  add_executable(valgrindtest EXCLUDE_FROM_ALL
+    valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+  target_link_libraries(valgrindtest pcap)  
+  add_dependencies(tests valgrindtest)
+endif()
