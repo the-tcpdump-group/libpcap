@@ -31,9 +31,9 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdarg.h>
 #include <limits.h>
 #ifdef _WIN32
-#include "getopt.h"
+  #include "getopt.h"
 #else
-#include <unistd.h>
+  #include <unistd.h>
 #endif
 #include <errno.h>
 #include <sys/types.h>
@@ -41,6 +41,10 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <pcap.h>
 
 #include "pcap/funcattrs.h"
+
+#ifdef _WIN32
+  #include "portability.h"
+#endif
 
 static char *program_name;
 

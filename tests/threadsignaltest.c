@@ -40,6 +40,10 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+#ifdef _WIN32
+  #include "portability.h"
+#endif
+
 static char *program_name;
 
 /* Forwards */
