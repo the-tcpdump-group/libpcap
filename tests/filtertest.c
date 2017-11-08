@@ -35,9 +35,10 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 #ifdef _WIN32
-#include "getopt.h"
+  #include "getopt.h"
+  #include "unix.h"
 #else
-#include <unistd.h>
+  #include <unistd.h>
 #endif
 #include <fcntl.h>
 #include <errno.h>
