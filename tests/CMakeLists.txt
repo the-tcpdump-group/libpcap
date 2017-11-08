@@ -24,9 +24,7 @@ if(NOT WIN32)
   add_test_executable(selpolltest)
 endif()
 
-if(NOT WIN32)
-  add_test_executable(threadsignaltest ${CMAKE_THREAD_LIBS_INIT})
-endif()
+add_test_executable(threadsignaltest ${CMAKE_THREAD_LIBS_INIT})
 
 if(NOT WIN32)
   add_test_executable(valgrindtest)

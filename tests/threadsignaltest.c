@@ -30,9 +30,19 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
+#ifdef _WIN32
+  #include <windows.h>
+
+  #define THREAD_HANDLE			HANDLE
+  #define THREAD_FUNC_RETURN_TYPE	int
+#else
+  #include <pthread.h>
+  #include <signal.h>
+  #include <unistd.h>
+
+  #define THREAD_HANDLE			pthread_t
+  #define THREAD_FUNC_RETURN_TYPE	void *
+#endif
 #include <errno.h>
 #include <sys/types.h>
 
@@ -55,13 +65,43 @@ static char *copy_argv(char **);
 
 static pcap_t *pd;
 
+#ifdef _WIN32
+/*
+ * Generate a string for a Win32-specific error (i.e. an error generated when
+ * calling a Win32 API).
+ * For errors occurred during standard C calls, we still use pcap_strerror()
+ */
+#define ERRBUF_SIZE	1024
+static const char *
+win32_strerror(DWORD error)
+{
+  static char errbuf[ERRBUF_SIZE+1];
+  size_t errlen;
+
+  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
+                ERRBUF_SIZE, NULL);
+
+  /*
+   * "FormatMessage()" "helpfully" sticks CR/LF at the end of the
+   * message.  Get rid of it.
+   */
+  errlen = strlen(errbuf);
+  if (errlen >= 2) {
+    errbuf[errlen - 1] = '\0';
+    errbuf[errlen - 2] = '\0';
+    errlen -= 2;
+  }
+  return errbuf;
+}
+#else
 static void
 catch_sigusr1(int sig _U_)
 {
 	printf("Got SIGUSR1\n");
 }
+#endif
 
-static void *
+static THREAD_FUNC_RETURN_TYPE
 capture_thread_func(void *arg)
 {
 	char *device = arg;
@@ -120,7 +160,7 @@ main(int argc, char **argv)
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	int status;
-	pthread_t capture_thread;
+	THREAD_HANDLE capture_thread;
 	void *retval;
 
 	device = NULL;
@@ -196,17 +236,41 @@ main(int argc, char **argv)
 
 	if (pcap_setfilter(pd, &fcode) < 0)
 		error("%s", pcap_geterr(pd));
+
+#ifdef _WIN32
+	capture_thread = CreateThread(NULL, 0, capture_thread_func, device,
+	    0, NULL);
+	if (capture_thread == NULL)
+		error("Can't create capture thread: %s",
+		    win32_strerror(GetLastError()));
+#else
 	status = pthread_create(&capture_thread, NULL, capture_thread_func,
 	    device);
 	if (status != 0)
 		error("Can't create capture thread: %s", strerror(status));
+#endif
 	sleep(60);
 	pcap_breakloop(pd);
+#ifdef _WIN32
+	printf("Setting event\n");
+	if (!SetEvent(pcap_getevent(pd))
+		error("Can't set event for pcap_t: %s",
+		    win32_strerror(GetLastError()));
+	if (WaitForSingleObject(capture_thread, INFINITE) == WAIT_FAILED)
+		error("Wait for thread termination failed: %s",
+		    win32_strerror(GetLastError()));
+	CloseHandle(capture_thread);
+#else
 	printf("Sending SIGUSR1\n");
 	status = pthread_kill(capture_thread, SIGUSR1);
 	if (status != 0)
 		warning("Can't interrupt capture thread: %s", strerror(status));
 	status = pthread_join(capture_thread, &retval);
+	if (status != 0)
+		error("Wait for thread termination failed: %s",
+		    strerror(status));
+#endif
+
 	pcap_close(pd);
 	pcap_freecode(&fcode);
 	exit(status == -1 ? 1 : 0);
