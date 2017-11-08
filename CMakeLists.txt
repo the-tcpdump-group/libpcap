@@ -1450,6 +1450,16 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
     # SunOS 5.x.
     #
     set(HAVE_SOLARIS TRUE)
+    #
+    # Make sure errno is thread-safe, in case we're called in
+    # a multithreaded program.  We don't guarantee that two
+    # threads can use the *same* pcap_t safely, but the
+    # current version does guarantee that you can use different
+    # pcap_t's in different threads, and even that pcap_compile()
+    # is thread-safe (it wasn't thread-safe in some older versions).
+    #
+    add_definitions(-D_TS_ERRNO)
+
     if(CMAKE_SYSTEM_VERSION STREQUAL "5.12")
     else()
         #
