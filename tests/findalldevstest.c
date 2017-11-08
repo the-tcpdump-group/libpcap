@@ -6,13 +6,14 @@
 #include <string.h>
 #include <sys/types.h>
 #ifndef _WIN32
-#include <sys/socket.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
 #endif
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #ifdef _WIN32
   #include <windows.h>
+  #include <ws2ipdef.h>
 #else
   #include <unistd.h>
 #endif
