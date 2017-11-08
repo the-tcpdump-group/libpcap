@@ -1,7 +1,6 @@
 if(MSVC)
-    file(GLOB PROJECT_SOURCE_LIST_WIN32_C
-        ${pcap_SOURCE_DIR}/missing/getopt.c
-   )
+  file(GLOB PROJECT_SOURCE_LIST_WIN32_C ${pcap_SOURCE_DIR}/missing/getopt.c)
+  include_directories(${pcap_SOURCE_DIR}/missing)
 endif(MSVC)
 
 add_custom_target(tests)
