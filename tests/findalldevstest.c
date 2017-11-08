@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #ifdef _WIN32
-  #include <winsock2.h>
+  #include <windows.h>
 #else
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
-  #include <netdb.h>
   #include <pwd.h>
   #include <unistd.h>
 #endif
