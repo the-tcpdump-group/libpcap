@@ -109,9 +109,9 @@ capture_thread_func(void *arg)
 {
 	char *device = arg;
 	int packet_count;
+	int status;
 #ifndef _WIN32
 	struct sigaction action;
-	int status;
 	sigset_t mask;
 #endif
 
