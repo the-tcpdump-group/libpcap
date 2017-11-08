@@ -51,9 +51,8 @@ win32_strerror(DWORD error)
   if (errlen >= 2) {
     errbuf[errlen - 1] = '\0';
     errbuf[errlen - 2] = '\0';
+    errlen -= 2;
   }
-  p = strchr(errbuf, '\0');
-  pcap_snprintf(p, ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
   return errbuf;
 }
 
