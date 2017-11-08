@@ -35,7 +35,8 @@ The Regents of the University of California.  All rights reserved.\n";
   #include <windows.h>
 
   #define THREAD_HANDLE			HANDLE
-  #define THREAD_FUNC_RETURN_TYPE	int
+  #define THREAD_FUNC_ARG_TYPE		LPVOID
+  #define THREAD_FUNC_RETURN_TYPE	DWORD __stdcall
 
   #include "getopt.h"
 #else
@@ -44,6 +45,7 @@ The Regents of the University of California.  All rights reserved.\n";
   #include <unistd.h>
 
   #define THREAD_HANDLE			pthread_t
+  #define THREAD_FUNC_ARG_TYPE		void *
   #define THREAD_FUNC_RETURN_TYPE	void *
 #endif
 #include <errno.h>
@@ -121,7 +123,7 @@ sleep_secs(int secs)
 }
 
 static THREAD_FUNC_RETURN_TYPE
-capture_thread_func(void *arg)
+capture_thread_func(THREAD_FUNC_ARG_TYPE arg)
 {
 	char *device = arg;
 	int packet_count;
