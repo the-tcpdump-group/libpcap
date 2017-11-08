@@ -31,6 +31,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdarg.h>
 #include <limits.h>
 #ifdef _WIN32
+  #include <winsock2.h>
   #include <windows.h>
 
   #define THREAD_HANDLE			HANDLE
