@@ -401,13 +401,24 @@ else
 		# as it's a Linux, it should use packet sockets,
 		# instead.
 		#
-		# NOTE: FreeBSD 10's <net/bpf.h> requires that
-		# various BSD-style integer types be defined,
-		# so we include <sys/types.h>.  OpenBSD 5.9's
-		# <net/if.h> doesn't include <sys/socket.h>,
-		# but defines some structure fields as
-		# "struct sockaddr", so we need to include
-		# <sys/socket.h>.
+		# We need:
+		#
+		#  sys/types.h, because FreeBSD 10's net/bpf.h
+		#  requires that various BSD-style integer types
+		#  be defined;
+		#
+		#  sys/ioctl.h and, if we have it, sys/ioccom.h,
+		#  because net/bpf.h defines ioctls;
+		#
+		#  net/if.h, because it defines some structures
+		#  used in ioctls defined by net/bpf.h;
+		#
+		#  sys/socket.h, because OpenBSD 5.9's net/bpf.h
+		#  defines some structure fields as being
+		#  struct sockaddrs;
+		#
+		# and net/bpf.h doesn't necessarily include all
+		# of those headers itself.
 		#
 		AC_MSG_CHECKING(if net/bpf.h defines BIOCSETIF)
 		AC_CACHE_VAL(ac_cv_lbl_bpf_h_defines_biocsetif,

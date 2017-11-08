@@ -634,7 +634,31 @@ else()
             # as it's a Linux, it should use packet sockets,
             # instead.
             #
-            check_symbol_exists(BIOCSETIF net/bpf.h BPF_H_DEFINES_BIOCSETIF)
+            #
+            # We need:
+            #
+            #  sys/types.h, because FreeBSD 10's net/bpf.h
+            #  requires that various BSD-style integer types
+            #  be defined;
+            #
+            #  sys/ioctl.h and, if we have it, sys/ioccom.h,
+            #  because net/bpf.h defines ioctls;
+            #
+            #  net/if.h, because it defines some structures
+            #  used in ioctls defined by net/bpf.h;
+            #
+            #  sys/socket.h, because OpenBSD 5.9's net/bpf.h
+            #  defines some structure fields as being
+            #  struct sockaddrs;
+            #
+            # and net/bpf.h doesn't necessarily include all
+            # of those headers itself.
+            #
+            if(HAVE_SYS_IOCCOM_H)
+                check_symbol_exists(BIOCSETIF "sys/types.h;sys/ioctl.h;sys/socket.h;sys/ioccom.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
+            else(HAVE_SYS_IOCCOM_H)
+                check_symbol_exists(BIOCSETIF "sys/types.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
+            endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
         check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
         check_include_file(net/enet.h HAVE_NET_ENET_H)
