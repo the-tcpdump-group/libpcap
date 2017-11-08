@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #ifdef _WIN32
   #include <winsock2.h>
-  #include <ws2ipdef.h>
+  #include <ws2tcpip.h>
   #include <windows.h>
 #else
   #include <sys/socket.h>
