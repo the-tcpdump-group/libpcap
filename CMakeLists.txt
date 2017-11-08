@@ -338,6 +338,7 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 # NOTE: if you hand check_library_exists as its last argument a variable
 # that's been set, it skips the test, so we need different variables.
 #
+set(PCAP_LINK_LIBRARIES "")
 include(CheckLibraryExists)
 check_function_exists(gethostbyname STDLIBS_HAVE_GETHOSTBYNAME)
 if(NOT STDLIBS_HAVE_GETHOSTBYNAME)
@@ -582,7 +583,7 @@ if(WIN32)
     #
     # Windows; we need to link with WinSock2.
     #
-    set(PCAP_LINK_LIBRARIES ws2_32)
+    set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ws2_32)
 
     #
     # Has the user explicitly specified a capture type?
@@ -614,7 +615,6 @@ else()
     # Figure out what type of packet capture mechanism we have, and
     # what libraries we'd need to link libpcap with, if any.
     #
-    set(PCAP_LINK_LIBRARIES "")
 
     #
     # Has the user explicitly specified a capture type?
