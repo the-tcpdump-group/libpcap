@@ -1,45 +1,56 @@
-cmake_minimum_required( VERSION 2.8.8 )
-
-project( pcap_tests )
-
-######################################
-# Register targets
-######################################
-
-if( MSVC )
+if(MSVC)
     file(GLOB PROJECT_SOURCE_LIST_WIN32_C
         ${pcap_SOURCE_DIR}/missing/getopt.c
-    )
-endif( MSVC )
+   )
+endif(MSVC)
 
-ADD_EXECUTABLE (can_set_rfmon_test can_set_rfmon_test.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( can_set_rfmon_test pcap )
+add_custom_target(tests)
 
-ADD_EXECUTABLE (capturetest capturetest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( capturetest pcap )
+add_executable(can_set_rfmon_test EXCLUDE_FROM_ALL
+  can_set_rfmon_test.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(can_set_rfmon_test pcap)
+add_dependencies(tests can_set_rfmon_test)
 
-ADD_EXECUTABLE (filtertest filtertest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( filtertest pcap )
+add_executable(capturetest EXCLUDE_FROM_ALL
+  capturetest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(capturetest pcap)
+add_dependencies(tests capturetest)
 
-ADD_EXECUTABLE (indalldevstest findalldevstest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( indalldevstest pcap )
+add_executable(filtertest EXCLUDE_FROM_ALL
+  filtertest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(filtertest pcap)
+add_dependencies(tests filtertest)
 
-ADD_EXECUTABLE (opentest opentest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( opentest pcap )
+add_executable(findalldevstest EXCLUDE_FROM_ALL
+  findalldevstest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(findalldevstest pcap)
+add_dependencies(tests findalldevstest)
 
-#ADD_EXECUTABLE (pcap_compile_test pcap_compile_test.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-#target_link_libraries ( pcap_compile_test pcap )
+add_executable(opentest EXCLUDE_FROM_ALL
+  opentest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(opentest pcap)
+add_dependencies(tests opentest)
 
-ADD_EXECUTABLE (reactivatetest reactivatetest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( reactivatetest pcap )
+add_executable(reactivatetest EXCLUDE_FROM_ALL
+  reactivatetest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(reactivatetest pcap)
+add_dependencies(tests reactivatetest)
 
-if( NOT WIN32 )
-    ADD_EXECUTABLE (selpolltest selpolltest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-    target_link_libraries ( selpolltest pcap )
+if(NOT WIN32)
+  add_executable(selpolltest EXCLUDE_FROM_ALL
+    selpolltest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+  target_link_libraries(selpolltest pcap)
+  add_dependencies(tests selpolltest)
 endif()
 
-ADD_EXECUTABLE (threadsignaltest threadsignaltest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( threadsignaltest pcap ${CMAKE_THREAD_LIBS_INIT} )
+if(NOT WIN32)
+  add_executable(threadsignaltest EXCLUDE_FROM_ALL
+    threadsignaltest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+  target_link_libraries(threadsignaltest pcap ${CMAKE_THREAD_LIBS_INIT})
+  add_dependencies(tests threadsignaltest)
+endif()
 
-ADD_EXECUTABLE (valgrindtest valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C} )
-target_link_libraries ( valgrindtest pcap )
+add_executable(valgrindtest EXCLUDE_FROM_ALL
+  valgrindtest.c ${PROJECT_SOURCE_LIST_WIN32_C})
+target_link_libraries(valgrindtest pcap)  
+add_dependencies(tests valgrindtest)

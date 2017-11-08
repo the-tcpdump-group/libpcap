@@ -1481,6 +1481,8 @@ if(WIN32)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${pcap_SOURCE_DIR}/pcap-dll.rc)
 endif(WIN32)
 
+add_subdirectory(tests)
+
 ######################################
 # Register targets
 ######################################
