@@ -5,14 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/socket.h>
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #ifdef _WIN32
   #include <windows.h>
 #else
-  #include <pwd.h>
   #include <unistd.h>
 #endif
 
