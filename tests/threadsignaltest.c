@@ -152,7 +152,8 @@ capture_thread_func(THREAD_FUNC_ARG_TYPE arg)
 		if (status != 0) {
 			printf("%d packets seen, %d packets counted after pcap_dispatch returns\n",
 			    status, packet_count);
-		}
+		} else
+			printf("No packets seen by pcap_dispatch\n");
 	}
 	if (status == -2) {
 		/*
