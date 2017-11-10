@@ -35,6 +35,7 @@
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include "sockutils.h"	// for SOCK_ASSERT
+#include "portability.h"
 #include "fileconf.h"
 
 SERVICE_STATUS_HANDLE service_status_handle;
