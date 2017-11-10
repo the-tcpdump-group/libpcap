@@ -336,6 +336,7 @@ void main_startup(void)
 			SOCK_ASSERT("Error creating the active child threads", 1);
 			continue;
 		}
+		CloseHandle(threadId);
 #else
 		if ((pid = fork()) == 0)	// I am the child
 		{
@@ -399,6 +400,7 @@ void main_startup(void)
 				SOCK_ASSERT("Error creating the passive child thread", 1);
 				continue;
 			}
+			CloseHandle(threadId);
 #else
 			if ((pid = fork()) == 0)	// I am the child
 			{
@@ -597,6 +599,7 @@ main_passive(void *ptr)
 			sock_close(sockctrl, NULL, 0);
 			continue;
 		}
+		CloseHandle(threadId);
 #else
 		if ((pid = fork()) == 0)	// I am the child
 		{
