@@ -522,7 +522,7 @@ if(NOT WIN32)
 endif()
 
 if(INET6)
-    message(STATUS "Use IPv6")
+    message(STATUS "Support IPv6")
 endif(INET6)
 
 #
