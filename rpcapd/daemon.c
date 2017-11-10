@@ -818,7 +818,7 @@ end:
 
 		free(pars);
 #ifdef _WIN32
-		pthread_exit(0);
+		_endthreadex(0);
 #endif
 	}
 }
