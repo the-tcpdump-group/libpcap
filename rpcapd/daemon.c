@@ -80,8 +80,13 @@ static int daemon_AuthUserPwd(char *username, char *password, char *errbuf);
 static int daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen);
 
 static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen);
+#ifdef _WIN32
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param);
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, HANDLE threaddata);
+#else
 static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param);
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t *threaddata);
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t threaddata);
+#endif
 
 static int daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen);
 static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, uint32 *plenp, char *errbuf);
@@ -91,7 +96,11 @@ static int daemon_msg_stats_req(struct daemon_slpars *pars, struct session *sess
 static int daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap_sampling *samp_param);
 
 static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout);
+#ifdef _WIN32
+static unsigned __stdcall daemon_thrdatamain(void *ptr);
+#else
 static void *daemon_thrdatamain(void *ptr);
+#endif
 
 static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp);
 static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf);
@@ -123,7 +132,11 @@ void daemon_serviceloop(void *ptr)
 	const char *msg_type_string;		// string for message type
 
 	int have_thread = 0;			// 1 if threaddata refers to a thread we've created
+#ifdef _WIN32
+	HANDLE threaddata;			// handle to the 'read from daemon and send to client' thread
+#else
 	pthread_t threaddata;			// handle to the 'read from daemon and send to client' thread
+#endif
 
 	// needed to save the values of the statistics
 	struct pcap_stat stats;
@@ -140,6 +153,7 @@ void daemon_serviceloop(void *ptr)
 
 	*errbuf = 0;	// Initialize errbuf
 
+#ifndef _WIN32
 	// If we're in active mode, this is not a separate thread
 	if (! pars->isactive)
 	{
@@ -149,6 +163,7 @@ void daemon_serviceloop(void *ptr)
 		if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
 			goto end;
 	}
+#endif
 
 	//
 	// The client must first authenticate; loop until they send us a
@@ -646,7 +661,7 @@ void daemon_serviceloop(void *ptr)
 						svrcapt = 0;
 					}
 
-					if (daemon_msg_endcap_req(pars, session, &have_thread, &threaddata) == -1)
+					if (daemon_msg_endcap_req(pars, session, &have_thread, threaddata) == -1)
 					{
 						free(session);
 						session = NULL;
@@ -773,7 +788,13 @@ end:
 	{
 		if (have_thread)
 		{
+#ifdef _WIN32
+			pcap_breakloop(session->fp);
+			SetEvent(pcap_getevent(session->fp));
+			CloseHandle(threaddata);
+#else
 			pthread_cancel(threaddata);
+#endif
 			have_thread = 0;
 		}
 		if (session->sockdata)
@@ -1448,7 +1469,11 @@ error:
 	\param plen: the length of the current message (needed in order to be able
 	to discard excess data in the message, if present)
 */
+#ifdef _WIN32
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+#else
 static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+#endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1467,7 +1492,10 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 	socklen_t saddrlen;			// temp, needed to retrieve the network data port chosen on the local machine
 	int ret;				// return value from functions
 
+#ifdef _WIN32
+#else
 	pthread_attr_t detachedAttribute;	// temp, needed to set the created thread as detached
+#endif
 
 	// RPCAP-related variables
 	struct rpcap_startcapreq startcapreq;		// start capture request message
@@ -1658,21 +1686,34 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 
 	session->sockdata = sockdata;
 
+	// Now we have to create a new thread to receive packets
+#ifdef _WIN32
+	*threaddata = _beginthreadex(NULL, 0, daemon_thrdatamain, (void *) session, NULL, 0);
+	if (*threaddata == 0)
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
+		goto error;
+	}
+#else
 	/* GV we need this to create the thread as detached. */
 	/* GV otherwise, the thread handle is not destroyed  */
 	pthread_attr_init(&detachedAttribute);
 	pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
-
-	// Now we have to create a new thread to receive packets
-	if (pthread_create(threaddata, &detachedAttribute, daemon_thrdatamain, (void *) session))
+	ret = pthread_create(threaddata, &detachedAttribute,
+	    daemon_thrdatamain, (void *) session);
+	if (ret != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
+		char thread_errbuf[PCAP_ERRBUF_SIZE];
+
+		strerror_r(ret, thread_errbuf, PCAP_ERRBUF_SIZE);
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread: %s", thread_errbuf);
 		pthread_attr_destroy(&detachedAttribute);
 		goto error;
 	}
+	pthread_attr_destroy(&detachedAttribute);
+#endif
 	*have_thread = 1;
 
-	pthread_attr_destroy(&detachedAttribute);
 	// Check if all the data has been read; if not, discard the data in excess
 	if (rpcapd_discard(pars->sockctrl, plen) == -1)
 		goto fatal_error;
@@ -1692,7 +1733,16 @@ error:
 
 	if (*have_thread)
 	{
+#ifdef _WIN32
+		if (session->fp)
+		{
+			pcap_breakloop(session->fp);
+			SetEvent(pcap_getevent(session->fp));
+		}
+		CloseHandle(*threaddata);
+#else
 		pthread_cancel(*threaddata);
+#endif
 		*have_thread = 0;
 	}
 
@@ -1735,7 +1785,16 @@ fatal_error:
 
 	if (*have_thread)
 	{
+#ifdef _WIN32
+		if (session && session->fp)
+		{
+			pcap_breakloop(session->fp);
+			SetEvent(pcap_getevent(session->fp));
+		}
+		CloseHandle(*threaddata);
+#else
 		pthread_cancel(*threaddata);
+#endif
 		*have_thread = 0;
 	}
 
@@ -1752,14 +1811,24 @@ fatal_error:
 	return -1;
 }
 
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t *threaddata)
+#ifdef _WIN32
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, HANDLE threaddata)
+#else
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t threaddata)
+#endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	struct rpcap_header header;
 
 	if (*have_thread)
 	{
-		pthread_cancel(*threaddata);
+#ifdef _WIN32
+		pcap_breakloop(session->fp);
+		SetEvent(pcap_getevent(session->fp));
+		CloseHandle(threaddata);
+#else
+		pthread_cancel(threaddata);
+#endif
 		*have_thread = 0;
 	}
 	if (session->sockdata)
@@ -2034,7 +2103,12 @@ error:
 	return 0;
 }
 
-void *daemon_thrdatamain(void *ptr)
+#ifdef _WIN32
+static unsigned __stdcall
+#else
+static void *
+#endif
+daemon_thrdatamain(void *ptr)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// error buffer
 	struct session *session;		// pointer to the struct session for this session
@@ -2061,11 +2135,13 @@ void *daemon_thrdatamain(void *ptr)
 		goto error;
 	}
 
+#ifndef _WIN32
 	// Modify thread params so that it can be killed at any time
 	if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL))
 		goto error;
 	if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
 		goto error;
+#endif
 
 	// Retrieve the packets
 	while ((retval = pcap_next_ex(session->fp, &pkt_header, (const u_char **) &pkt_data)) >= 0)	// cast to avoid a compiler warning
@@ -2124,7 +2200,7 @@ error:
 
 	free(sendbuf);
 
-	return NULL;
+	return 0;
 }
 
 /*!

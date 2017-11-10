@@ -34,10 +34,6 @@
 #include <config.h>
 #endif
 
-#ifdef _WIN32
-#define USE_THREADS		// threads vs. subprocesses
-#endif
-
 #include "ftmacros.h"
 
 #include <errno.h>		// for the errno variable
@@ -45,7 +41,6 @@
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include <signal.h>		// for signal()
-#include <pthread.h>
 
 #include "sockutils.h"		// for socket calls
 #include "portability.h"
@@ -77,8 +72,13 @@ char port[MAX_LINE + 1];			//!< keeps the network port to bind to
 extern char *optarg;	// for getopt()
 
 // Function definition
-static void main_passive(void *ptr);
-static void main_active(void *ptr);
+#ifdef _WIN32
+static unsigned __stdcall main_passive(void *ptr);
+static unsigned __stdcall main_active(void *ptr);
+#else
+static void *main_passive(void *ptr);
+static void *main_active(void *ptr);
+#endif
 
 #ifndef _WIN32
 static void main_cleanup_childs(int sign);
@@ -312,9 +312,8 @@ void main_startup(void)
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	struct addrinfo *addrinfo;		// keeps the addrinfo chain; required to open a new socket
 	int i;
-#ifdef USE_THREADS
-	pthread_t threadId;			// Pthread variable that keeps the thread structures
-	pthread_attr_t detachedAttribute;	// PThread attribute needed to create the thread as detached
+#ifdef _WIN32
+	HANDLE threadId;			// handle for the subthread
 #else
 	pid_t pid;
 #endif
@@ -328,19 +327,14 @@ void main_startup(void)
 	{
 		activelist[i].ai_family = mainhints.ai_family;
 
-#ifdef USE_THREADS
-		/* GV we need this to create the thread as detached. */
-		/* GV otherwise, the thread handle is not destroyed  */
-		pthread_attr_init(&detachedAttribute);
-		pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
-
-		if (pthread_create(&threadId, &detachedAttribute, (void *) &main_active, (void *) &activelist[i]))
+#ifdef _WIN32
+		threadId = _beginthreadex(NULL, 0, main_active,
+		    (void *)&activelist[i], 0, NULL);
+		if (threadId == 0)
 		{
-			SOCK_ASSERT("Error creating the active child thread", 1);
-			pthread_attr_destroy(&detachedAttribute);
+			SOCK_ASSERT("Error creating the active child threads", 1);
 			continue;
 		}
-		pthread_attr_destroy(&detachedAttribute);
 #else
 		if ((pid = fork()) == 0)	// I am the child
 		{
@@ -389,27 +383,21 @@ void main_startup(void)
 
 			// This trick is needed in order to allow the child thread to save the 'sockmain' variable
 			// withouth getting it overwritten by the sock_open, in case we want to open more than one waiting sockets
-			// For instance, the pthread_create() will accept the socktemp variable, and it will deallocate immediately that variable
+			// For instance, the rpcapd_thread_create() will accept the socktemp variable, and it will deallocate immediately that variable
 			socktemp = (SOCKET *) malloc (sizeof (SOCKET));
 			if (socktemp == NULL)
 				exit(0);
 
 			*socktemp = sockmain;
 
-#ifdef USE_THREADS
-			/* GV we need this to create the thread as detached. */
-			/* GV otherwise, the thread handle is not destroyed  */
-			pthread_attr_init(&detachedAttribute);
-			pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
-
-			if (pthread_create(&threadId, &detachedAttribute, (void *) &main_passive, (void *) socktemp))
+#ifdef _WIN32
+			threadId = _beginthreadex(NULL, 0, main_passive,
+			    (void *) socktemp, 0, NULL);
+			if (threadId == 0)
 			{
 				SOCK_ASSERT("Error creating the passive child thread", 1);
-				pthread_attr_destroy(&detachedAttribute);
 				continue;
 			}
-
-			pthread_attr_destroy(&detachedAttribute);
 #else
 			if ((pid = fork()) == 0)	// I am the child
 			{
@@ -516,7 +504,12 @@ static void main_cleanup_childs(int sign)
 	represents the socket used in the main connection. It is a 'void *' just because pthreads
 	want this format.
 */
-static void main_passive(void *ptr)
+#ifdef _WIN32
+static unsigned __stdcall
+#else
+static void *
+#endif
+main_passive(void *ptr)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	SOCKET sockctrl;			// keeps the socket ID for this control connection
@@ -524,9 +517,7 @@ static void main_passive(void *ptr)
 	socklen_t fromlen;			// keeps the length of the sockaddr_storage variable
 	SOCKET sockmain;
 
-#ifdef USE_THREADS
-	int pthread_error;
-#else
+#ifndef _WIN32
 	pid_t pid;
 #endif
 
@@ -541,9 +532,8 @@ static void main_passive(void *ptr)
 	// main thread loop
 	while (1)
 	{
-#ifdef USE_THREADS
-		pthread_t threadId;		// Pthread variable that keeps the thread structures
-		pthread_attr_t detachedAttribute;
+#ifdef _WIN32
+		HANDLE threadId;		// handle for the subthread
 #endif
 		struct daemon_slpars *pars;	// parameters needed by the daemon_serviceloop()
 
@@ -580,7 +570,7 @@ static void main_passive(void *ptr)
 		}
 
 
-#ifdef USE_THREADS
+#ifdef _WIN32
 		// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
 		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 		if (pars == NULL)
@@ -596,21 +586,15 @@ static void main_passive(void *ptr)
 		pars->isactive = 0;
 		pars->nullAuthAllowed = nullAuthAllowed;
 
-		/* GV we need this to create the thread as detached. */
-		/* GV otherwise, the thread handle is not destroyed  */
-		pthread_attr_init(&detachedAttribute);
-		pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
-		pthread_error = pthread_create(&threadId, &detachedAttribute, (void *) &daemon_serviceloop, (void *) pars);
-		if (pthread_error != 0)
+		threadId = (HANDLE)_beginthreadex(NULL, 0, daemon_serviceloop,
+		    (void *) pars, 0, NULL);
+		if (threadId == 0)
 		{
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread: %s", pcap_strerror(pthread_error));
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
 			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-			pthread_attr_destroy(&detachedAttribute);
 			sock_close(sockctrl, NULL, 0);
 			continue;
 		}
-		pthread_attr_destroy(&detachedAttribute);
-
 #else
 		if ((pid = fork()) == 0)	// I am the child
 		{
@@ -641,19 +625,24 @@ static void main_passive(void *ptr)
 
 		// loop forever, until interrupted
 	}
+	return 0;
 }
 
 /*!
 	\brief 'true' main of the program in case the active mode is turned on.
 
-	It does not have any return value nor parameters.
 	This function loops forever trying to connect to the remote host, until the
 	daemon is turned down.
 
 	\param ptr: it keeps the 'activepars' parameters. It is a 'void *' just because pthreads
 	want this format.
 */
-static void main_active(void *ptr)
+#ifdef _WIN32
+static unsigned __stdcall
+#else
+static void *
+#endif
+main_active(void *ptr)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	SOCKET sockctrl;			// keeps the socket ID for this control connection
@@ -683,7 +672,7 @@ static void main_active(void *ptr)
 	if (sock_initaddress(activepars->address, activepars->port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
 		SOCK_ASSERT(errbuf, 1);
-		return;
+		return 0;
 	}
 
 	while (1)
@@ -730,4 +719,5 @@ static void main_active(void *ptr)
 	}
 
 	freeaddrinfo(addrinfo);
+	return 0;
 }

@@ -1,24 +1,3 @@
-set(CMAKE_THREAD_PREFER_PTHREAD 1)
-if(NOT MSVC)
-  find_package(Threads REQUIRED)
-  if(CMAKE_USE_PTHREADS_INIT)
-    set(RPCAPD_LINK_LIBRARIES ${RPCAPD_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
-  else(CMAKE_USE_PTHREADS_INIT)
-    message(WARNING "Pthreads not found. Won't be able to build rpcapd.")
-  endif(CMAKE_USE_PTHREADS_INIT)
-else(NOT MSVC)
-# tell cmake to look for pthreads-w32 so that it uses
-# our custom module in [pcap root]/cmake/FindPthreads-w32.cmake
-# instead of the standard FindThreads.cmake
-  find_package(Pthreads-w32 REQUIRED) 
-  if(PTHREADS_FOUND)
-    set(RPCAPD_LINK_LIBRARIES ${RPCAPD_LINK_LIBRARIES} ${PTHREADS_LIBRARY})
-    include_directories(${PTHREADS_INCLUDE_DIR})
-  else(PTHREADS_FOUND)
-    message(WARNING "Pthreads not found. Won't be able to build rpcapd.")
-  endif(PTHREADS_FOUND)
-endif(NOT MSVC)
-
 if(UNIX)
   check_function_exists(crypt HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
   if(HAVE_CRYPT_IN_SYSTEM_LIBRARIES)
@@ -35,10 +14,9 @@ if(UNIX)
 endif(UNIX)
 
 #
-# We need pthreads and, on UN*X, we need crypt().
+# On UN*X, we need pthreads and crypt().
 #
-if((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
-
+if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
   if(UNIX)
     #
     # Do we have getspnam()?
@@ -61,12 +39,11 @@ if((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
   )
 
   target_link_libraries(rpcapd ${LIBRARY_NAME}_static
-    ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES})
+    ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     install(TARGETS rpcapd DESTINATION bin/amd64)
   else(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     install(TARGETS rpcapd DESTINATION bin)
   endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-
-endif((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND (WIN32 OR HAVE_CRYPT))
+endif(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
