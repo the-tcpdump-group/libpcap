@@ -51,10 +51,11 @@
 #include "utils.h"		// Missing calls and such
 
 #ifdef _WIN32
-#include "win32-svc.h"		// for Win32 service stuff
+  #include <process.h>		// for thread stuff
+  #include "win32-svc.h"	// for Win32 service stuff
 #else
-#include <unistd.h>		// for exit()
-#include <sys/wait.h>		// waitpid()
+  #include <unistd.h>		// for exit()
+  #include <sys/wait.h>		// waitpid()
 #endif
 
 
@@ -500,9 +501,10 @@ static void main_cleanup_childs(int sign)
 	- if we're in daemon mode, the main program must terminate and a new child must be
 	created in order to create the daemon
 
-	\param ptr: it keeps the main socket handler (what's called 'sockmain' in the main()), that
-	represents the socket used in the main connection. It is a 'void *' just because pthreads
-	want this format.
+	\param ptr: it keeps the main socket handler (what's called
+	'sockmain' in the main()), that represents the socket used in
+	the main connection. It is a 'void *' just because the thread
+	APIs want this format.
 */
 #ifdef _WIN32
 static unsigned __stdcall
@@ -634,8 +636,8 @@ main_passive(void *ptr)
 	This function loops forever trying to connect to the remote host, until the
 	daemon is turned down.
 
-	\param ptr: it keeps the 'activepars' parameters. It is a 'void *' just because pthreads
-	want this format.
+	\param ptr: it keeps the 'activepars' parameters.  It is a 'void *'
+	just because the thread APIs want this format.
 */
 #ifdef _WIN32
 static unsigned __stdcall

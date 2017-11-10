@@ -45,12 +45,14 @@
 #include "daemon.h"
 #include "log.h"
 
-#ifndef _WIN32			// for select() and such
-#include <unistd.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <pwd.h>		// for password management
+#ifdef _WIN32
+  #include <process.h>		// for threads
+#else
+  #include <unistd.h>
+  #include <pthread.h>
+  #include <sys/time.h>
+  #include <sys/types.h>	// for select() and such
+  #include <pwd.h>		// for password management
 #endif
 
 #ifdef HAVE_GETSPNAM
