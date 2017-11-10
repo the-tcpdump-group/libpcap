@@ -72,7 +72,7 @@ void svc_geterr(char *str)
 				  NULL, val, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 				  (LPSTR) string, PCAP_ERRBUF_SIZE, NULL);
 
-	snprintf(message, PCAP_ERRBUF_SIZE, "%s failed with error %d: %s", str, val, string);
+	pcap_snprintf(message, PCAP_ERRBUF_SIZE, "%s failed with error %d: %s", str, val, string);
 
 	SOCK_ASSERT(message, 1);
 }

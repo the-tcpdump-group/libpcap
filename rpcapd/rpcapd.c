@@ -575,7 +575,7 @@ main_passive(void *ptr)
 		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 		if (pars == NULL)
 		{
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 			sock_close(sockctrl, NULL, 0);
 			continue;
@@ -590,7 +590,7 @@ main_passive(void *ptr)
 		    (void *) pars, 0, NULL);
 		if (threadId == 0)
 		{
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
 			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 			sock_close(sockctrl, NULL, 0);
 			continue;
@@ -602,7 +602,7 @@ main_passive(void *ptr)
 			pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 			if (pars == NULL)
 			{
-				snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 				exit(0);
 			}
 
@@ -660,7 +660,7 @@ main_active(void *ptr)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = activepars->ai_family;
 
-	snprintf(errbuf, PCAP_ERRBUF_SIZE, "Connecting to host %s, port %s, using protocol %s",
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Connecting to host %s, port %s, using protocol %s",
 			activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
 			(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
 	SOCK_ASSERT(errbuf, 1);
@@ -683,7 +683,7 @@ main_active(void *ptr)
 		{
 			SOCK_ASSERT(errbuf, 1);
 
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error connecting to host %s, port %s, using protocol %s",
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error connecting to host %s, port %s, using protocol %s",
 					activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
 					(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
 
@@ -697,7 +697,7 @@ main_active(void *ptr)
 		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 		if (pars == NULL)
 		{
-			snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 			continue;
 		}
 

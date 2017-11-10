@@ -925,7 +925,7 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 			if (!nullAuthAllowed)
 			{
 				// Send the client an error reply.
-				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Authentication failed; NULL authentication not permitted.");
+				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Authentication failed; NULL authentication not permitted.");
 				goto error;
 			}
 			break;
@@ -940,7 +940,7 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 			username = (char *) malloc (usernamelen + 1);
 			if (username == NULL)
 			{
-				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 				goto error;
 			}
 			status = rpcapd_recv(sockctrl, username, usernamelen, &plen, errmsgbuf);
@@ -960,7 +960,7 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 			passwd = (char *) malloc (passwdlen + 1);
 			if (passwd == NULL)
 			{
-				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 				free(username);
 				goto error;
 			}
@@ -1015,7 +1015,7 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 			}
 
 		default:
-			snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Authentication type not recognized.");
+			pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Authentication type not recognized.");
 			goto error;
 	}
 
@@ -1127,7 +1127,7 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// This call is needed to get the uid
 	if ((user = getpwnam(username)) == NULL)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
 		return -1;
 	}
 
@@ -1135,7 +1135,7 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// This call is needed to get the password; otherwise 'x' is returned
 	if ((usersp = getspnam(username)) == NULL)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
 		return -1;
 	}
 	user_password = usersp->sp_pwdp;
@@ -1155,20 +1155,20 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 	if (strcmp(user_password, (char *) crypt(password, user_password)) != 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: password incorrect");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: password incorrect");
 		return -1;
 	}
 
 	if (setuid(user->pw_uid))
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s", pcap_strerror(errno));
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s", pcap_strerror(errno));
 		return -1;
 	}
 
 /*	if (setgid(user->pw_gid))
 	{
 		SOCK_ASSERT("setgid failed", 1);
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s", pcap_strerror(errno));
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s", pcap_strerror(errno));
 		return -1;
 	}
 */
@@ -1394,7 +1394,7 @@ static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *so
 
 	if (plen > sourcelen - 1)
 	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Source string too long");
+		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Source string too long");
 		goto error;
 	}
 
@@ -1691,7 +1691,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 	*threaddata = _beginthreadex(NULL, 0, daemon_thrdatamain, (void *) session, NULL, 0);
 	if (*threaddata == 0)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
 		goto error;
 	}
 #else
@@ -1706,7 +1706,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 		char thread_errbuf[PCAP_ERRBUF_SIZE];
 
 		strerror_r(ret, thread_errbuf, PCAP_ERRBUF_SIZE);
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread: %s", thread_errbuf);
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread: %s", thread_errbuf);
 		pthread_attr_destroy(&detachedAttribute);
 		goto error;
 	}
@@ -1876,14 +1876,14 @@ static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, ui
 
 	if (ntohs(filter.filtertype) != RPCAP_UPDATEFILTER_BPF)
 	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Only BPF/NPF filters are currently supported");
+		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Only BPF/NPF filters are currently supported");
 		return -2;
 	}
 
 	bf_insn = (struct bpf_insn *) malloc (sizeof(struct bpf_insn) * bf_prog.bf_len);
 	if (bf_insn == NULL)
 	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
 		return -2;
 	}
 
@@ -1912,13 +1912,13 @@ static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, ui
 
 	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
 	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
+		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
 		return -2;
 	}
 
 	if (pcap_setfilter(session->fp, &bf_prog))
 	{
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
+		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
 		return -2;
 	}
 
@@ -2131,7 +2131,7 @@ daemon_thrdatamain(void *ptr)
 	sendbuf = (char *) malloc (sizeof(char) * RPCAP_NETBUF_SIZE);
 	if (sendbuf == NULL)
 	{
-		snprintf(errbuf, sizeof(errbuf) - 1, "Unable to create the buffer for this child thread");
+		pcap_snprintf(errbuf, sizeof(errbuf) - 1, "Unable to create the buffer for this child thread");
 		goto error;
 	}
 
@@ -2186,7 +2186,7 @@ daemon_thrdatamain(void *ptr)
 
 	if (retval == -1)
 	{
-		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error reading the packets: %s", pcap_geterr(session->fp));
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error reading the packets: %s", pcap_geterr(session->fp));
 		rpcap_senderror(session->sockctrl, session->protocol_version,
 		    PCAP_ERR_READEX, errbuf, NULL);
 		goto error;
@@ -2316,7 +2316,7 @@ static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, c
 	if (toread > *plen)
 	{
 		// Tell the client and continue.
-		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
+		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
 		return -2;
 	}
 	nread = sock_recv(sock, buffer, toread,
