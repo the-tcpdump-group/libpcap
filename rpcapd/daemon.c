@@ -39,7 +39,6 @@
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strlen(), ...
-#include <pthread.h>
 #include "sockutils.h"		// for socket calls
 #include "portability.h"
 #include "rpcap-protocol.h"
@@ -48,6 +47,7 @@
 
 #ifndef _WIN32			// for select() and such
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <pwd.h>		// for password management
