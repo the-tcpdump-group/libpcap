@@ -120,7 +120,11 @@ static int rpcapd_discard(SOCKET sock, uint32 len);
 
 	\return None.
 */
-void daemon_serviceloop(void *ptr)
+#ifdef _WIN32
+unsigned __stdcall daemon_serviceloop(void *ptr)
+#else
+void *daemon_serviceloop(void *ptr)
+#endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	char errmsgbuf[PCAP_ERRBUF_SIZE + 1];	// buffer for errors to send to the client
@@ -819,10 +823,8 @@ end:
 			sock_close(pars->sockctrl, NULL, 0);
 
 		free(pars);
-#ifdef _WIN32
-		_endthreadex(0);
-#endif
 	}
+	return 0;
 }
 
 /*

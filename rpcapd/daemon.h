@@ -44,7 +44,11 @@ struct daemon_slpars
 	int activeclose;	//!< '1' if the client closed the control connection explicitely; used in active mode only
 };
 
-void daemon_serviceloop(void *ptr);
+#ifdef _WIN32
+unsigned __stdcall daemon_serviceloop(void *ptr);
+#else
+void *daemon_serviceloop(void *ptr);
+#endif
 
 void sleep_secs(int secs);
 
