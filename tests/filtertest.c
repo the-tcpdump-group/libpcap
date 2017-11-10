@@ -44,7 +44,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <errno.h>
 #ifdef _WIN32
   #include <winsock2.h>
-  typedef unsigned __int32 in_addr_t;
+  #include <ws2tcpip.h>
 #else
   #include <arpa/inet.h>
 #endif
@@ -238,7 +238,7 @@ main(int argc, char **argv)
 			break;
 
 		case 'm': {
-			in_addr_t addr;
+			bpf_u_int32 addr;
 
 			switch (inet_pton(AF_INET, optarg, &addr)) {
 
