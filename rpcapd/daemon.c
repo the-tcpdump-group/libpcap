@@ -1692,7 +1692,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 
 	// Now we have to create a new thread to receive packets
 #ifdef _WIN32
-	*threaddata = _beginthreadex(NULL, 0, daemon_thrdatamain, (void *) session, NULL, 0);
+	*threaddata = (HANDLE)_beginthreadex(NULL, 0, daemon_thrdatamain, (void *) session, NULL, 0);
 	if (*threaddata == 0)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");

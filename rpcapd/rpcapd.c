@@ -329,7 +329,7 @@ void main_startup(void)
 		activelist[i].ai_family = mainhints.ai_family;
 
 #ifdef _WIN32
-		threadId = _beginthreadex(NULL, 0, main_active,
+		threadId = (HANDLE)_beginthreadex(NULL, 0, main_active,
 		    (void *)&activelist[i], 0, NULL);
 		if (threadId == 0)
 		{
@@ -393,7 +393,7 @@ void main_startup(void)
 			*socktemp = sockmain;
 
 #ifdef _WIN32
-			threadId = _beginthreadex(NULL, 0, main_passive,
+			threadId = (HANDLE)_beginthreadex(NULL, 0, main_passive,
 			    (void *) socktemp, 0, NULL);
 			if (threadId == 0)
 			{
