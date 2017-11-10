@@ -240,10 +240,21 @@ main(int argc, char **argv)
 		case 'm': {
 			in_addr_t addr;
 
-			addr = inet_addr(optarg);
-			if (addr == (in_addr_t)(-1))
+			switch (inet_pton(AF_INET, optarg, &addr)) {
+
+			case 0:                        
 				error("invalid netmask %s", optarg);
-			netmask = addr;
+				break;
+
+			case -1:
+				error("invalid netmask %s: %s", optarg,
+				    pcap_strerror(errno));
+				break;
+
+			case 1:
+				netmask = addr;
+				break;
+			}
 			break;
 		}
 
