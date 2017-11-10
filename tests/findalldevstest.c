@@ -168,9 +168,8 @@ int main(int argc, char **argv)
 static int ifprint(pcap_if_t *d)
 {
   pcap_addr_t *a;
-#ifdef INET6
-  char ntop_buf[INET6_ADDRSTRLEN];
-#endif
+  char ipv4_buf[INET_ADDRSTRLEN];
+  char ipv6_buf[INET6_ADDRSTRLEN];
   const char *sep;
   int status = 1; /* success */
 
@@ -200,16 +199,24 @@ static int ifprint(pcap_if_t *d)
         printf("\tAddress Family: AF_INET\n");
         if (a->addr)
           printf("\t\tAddress: %s\n",
-            inet_ntoa(((struct sockaddr_in *)(a->addr))->sin_addr));
+            inet_ntop(AF_INET,
+               &((struct sockaddr_in *)(a->addr))->sin_addr,
+               ipv4_buf, sizeof ipv4_buf));
         if (a->netmask)
           printf("\t\tNetmask: %s\n",
-            inet_ntoa(((struct sockaddr_in *)(a->netmask))->sin_addr));
+            inet_ntop(AF_INET,
+               &((struct sockaddr_in *)(a->netmask))->sin_addr,
+               ipv4_buf, sizeof ipv4_buf));
         if (a->broadaddr)
           printf("\t\tBroadcast Address: %s\n",
-            inet_ntoa(((struct sockaddr_in *)(a->broadaddr))->sin_addr));
+            inet_ntop(AF_INET,
+               &((struct sockaddr_in *)(a->broadaddr))->sin_addr,
+               ipv4_buf, sizeof ipv4_buf));
         if (a->dstaddr)
           printf("\t\tDestination Address: %s\n",
-            inet_ntoa(((struct sockaddr_in *)(a->dstaddr))->sin_addr));
+            inet_ntop(AF_INET,
+               &((struct sockaddr_in *)(a->dstaddr))->sin_addr,
+               ipv4_buf, sizeof ipv4_buf));
         break;
 #ifdef INET6
       case AF_INET6:
@@ -218,22 +225,22 @@ static int ifprint(pcap_if_t *d)
           printf("\t\tAddress: %s\n",
             inet_ntop(AF_INET6,
                ((struct sockaddr_in6 *)(a->addr))->sin6_addr.s6_addr,
-               ntop_buf, sizeof ntop_buf));
+               ipv6_buf, sizeof ipv6_buf));
         if (a->netmask)
           printf("\t\tNetmask: %s\n",
             inet_ntop(AF_INET6,
               ((struct sockaddr_in6 *)(a->netmask))->sin6_addr.s6_addr,
-               ntop_buf, sizeof ntop_buf));
+               ipv6_buf, sizeof ipv6_buf));
         if (a->broadaddr)
           printf("\t\tBroadcast Address: %s\n",
             inet_ntop(AF_INET6,
               ((struct sockaddr_in6 *)(a->broadaddr))->sin6_addr.s6_addr,
-               ntop_buf, sizeof ntop_buf));
+               ipv6_buf, sizeof ipv6_buf));
         if (a->dstaddr)
           printf("\t\tDestination Address: %s\n",
             inet_ntop(AF_INET6,
               ((struct sockaddr_in6 *)(a->dstaddr))->sin6_addr.s6_addr,
-               ntop_buf, sizeof ntop_buf));
+               ipv6_buf, sizeof ipv6_buf));
         break;
 #endif
       default:
