@@ -84,7 +84,7 @@ static void *main_active(void *ptr);
 
 static void main_terminate(int sign);
 #ifdef _WIN32
-static void main_abort(int sign)
+static void main_abort(int sign);
 #else
 static void main_reap_children(int sign);
 #endif
