@@ -105,40 +105,21 @@ static int sock_ismcastaddr(const struct sockaddr *saddr);
  ****************************************************/
 
 /*
- * \brief It retrieves the error message after an error occurred in the socket interface.
- *
- * This function is defined because of the different way errors are returned in UNIX
- * and Win32. This function provides a consistent way to retrieve the error message
- * (after a socket error occurred) on all the platforms.
- *
- * \param caller: a pointer to a user-allocated string which contains a message that has
- * to be printed *before* the true error message. It could be, for example, 'this error
- * comes from the recv() call at line 31'. It may be NULL.
- *
- * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
- * error message. This buffer has to be at least 'errbuflen' in length.
- * It can be NULL; in this case the error cannot be printed.
- *
- * \param errbuflen: length of the buffer that will contains the error. The error message cannot be
- * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
- *
- * \return No return values. The error message is returned in the 'string' parameter.
+ * Format an error message given an errno value (UN*X) or a WinSock error
+ * (Windows).
  */
-void sock_geterror(const char *caller, char *errbuf, int errbuflen)
+static void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 {
 #ifdef _WIN32
 	int retval;
-	int code;
 	TCHAR message[SOCK_ERRBUF_SIZE];	/* It will be char (if we're using ascii) or wchar_t (if we're using unicode) */
 
 	if (errbuf == NULL)
 		return;
 
-	code = GetLastError();
-
 	retval = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS |
 		FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		NULL, errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 		message, sizeof(message) / sizeof(TCHAR), NULL);
 
 	if (retval == 0)
@@ -161,12 +142,45 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 	if (errbuf == NULL)
 		return;
 
-	message = strerror(errno);
+	message = strerror(errcode);
 
 	if ((caller) && (*caller))
 		pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
 	else
 		pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
+#endif
+}
+
+/*
+ * \brief It retrieves the error message after an error occurred in the socket interface.
+ *
+ * This function is defined because of the different way errors are returned in UNIX
+ * and Win32. This function provides a consistent way to retrieve the error message
+ * (after a socket error occurred) on all the platforms.
+ *
+ * \param caller: a pointer to a user-allocated string which contains a message that has
+ * to be printed *before* the true error message. It could be, for example, 'this error
+ * comes from the recv() call at line 31'. It may be NULL.
+ *
+ * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
+ * error message. This buffer has to be at least 'errbuflen' in length.
+ * It can be NULL; in this case the error cannot be printed.
+ *
+ * \param errbuflen: length of the buffer that will contains the error. The error message cannot be
+ * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
+ *
+ * \return No return values. The error message is returned in the 'string' parameter.
+ */
+void sock_geterror(const char *caller, char *errbuf, int errbuflen)
+{
+#ifdef _WIN32
+	if (errbuf == NULL)
+		return;
+	sock_fmterror(caller, GetLastError(), errbuf, errbuflen);
+#else
+	if (errbuf == NULL)
+		return;
+	sock_fmterror(caller, errno, errbuf, errbuflen);
 #endif
 }
 
@@ -560,8 +574,9 @@ int sock_initaddress(const char *host, const char *port,
  * \param errbuflen: length of the buffer that will contains the error. The error message cannot be
  * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
- * in the 'errbuf' variable.
+ * \return '0' if everything is fine, '-1' if an error other than
+ * "connection reset" occurred, '-2' if "connection reset" occurred.
+ * For errors, an error message is returned in the 'errbuf' variable.
  */
 int sock_send(SOCKET sock, const char *buffer, int size, char *errbuf, int errbuflen)
 {
@@ -583,7 +598,24 @@ send:
 
 	if (nsent == -1)
 	{
-		sock_geterror("send(): ", errbuf, errbuflen);
+		/*
+		 * If the client closed the connection out from under us,
+		 * there's no need to log that as an error.
+		 */
+		int errcode;
+
+#ifdef _WIN32
+		errcode = GetLastError();
+
+		sock_fmterror("send(): ", errcode, errbuf, errbuflen);
+		if (errcode == WSAECONNRESET)
+			return -2;
+#else
+		errcode = errno;
+		sock_fmterror("send(): ", errcode, errbuf, errbuflen);
+		if (errcode == ECONNRESET)
+			return -2;
+#endif
 		return -1;
 	}
 

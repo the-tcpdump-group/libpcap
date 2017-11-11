@@ -99,7 +99,7 @@ rpcap_senderror(SOCKET sock, uint8 ver, unsigned short errcode, char *error, cha
 		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	if (sock_send(sock, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(sock, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) < 0)
 		return -1;
 
 	return 0;

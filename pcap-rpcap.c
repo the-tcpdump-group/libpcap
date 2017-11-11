@@ -765,7 +765,8 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	    RPCAP_MSG_STATS_REQ, 0, 0);
 
 	/* Send the PCAP_STATS command */
-	if (sock_send(pr->rmt_sockctrl, (char *)&header, sizeof(struct rpcap_header), p->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, (char *)&header,
+	    sizeof(struct rpcap_header), p->errbuf, PCAP_ERRBUF_SIZE) < 0)
 		return NULL;		/* Unrecoverable network error */
 
 	/* Receive and process the reply message header. */
@@ -1060,7 +1061,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, &fp->fcode))
 		goto error_nodiscard;
 
-	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf,
+	    PCAP_ERRBUF_SIZE) < 0)
 		goto error_nodiscard;
 
 	/* Receive and process the reply message header. */
@@ -1371,7 +1373,8 @@ static int pcap_updatefilter_remote(pcap_t *fp, struct bpf_program *prog)
 	if (pcap_pack_bpffilter(fp, &sendbuf[sendbufidx], &sendbufidx, prog))
 		return -1;
 
-	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf,
+	    PCAP_ERRBUF_SIZE) < 0)
 		return -1;
 
 	/* Receive and process the reply message header. */
@@ -1599,7 +1602,8 @@ static int pcap_setsampling_remote(pcap_t *fp)
 	sampling_pars->method = fp->rmt_samp.method;
 	sampling_pars->value = htonl(fp->rmt_samp.value);
 
-	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf,
+	    PCAP_ERRBUF_SIZE) < 0)
 		return -1;
 
 	/* Receive and process the reply message header. */
@@ -1824,7 +1828,7 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 		rpauth->slen2 = htons(rpauth->slen2);
 	}
 
-	if (sock_send(sock, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(sock, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) < 0)
 		return -1;
 
 	/* Receive the reply */
@@ -2101,7 +2105,8 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE))
 		goto error_nodiscard;
 
-	if (sock_send(sockctrl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE))
+	if (sock_send(sockctrl, sendbuf, sendbufidx, errbuf,
+	    PCAP_ERRBUF_SIZE) < 0)
 		goto error_nodiscard;
 
 	/* Receive and process the reply message header. */
@@ -2268,7 +2273,8 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	rpcap_createhdr(&header, protocol_version, RPCAP_MSG_FINDALLIF_REQ,
 	    0, 0);
 
-	if (sock_send(sockctrl, (char *)&header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
+	if (sock_send(sockctrl, (char *)&header, sizeof(struct rpcap_header),
+	    errbuf, PCAP_ERRBUF_SIZE) < 0)
 		goto error_nodiscard;
 
 	/* Receive and process the reply message header. */
@@ -2703,7 +2709,7 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 				if (sock_send(temp->sockctrl,
 				    (char *)&header,
 				    sizeof(struct rpcap_header), errbuf,
-				    PCAP_ERRBUF_SIZE) == -1)
+				    PCAP_ERRBUF_SIZE) < 0)
 				{
 					/*
 					 * Let that error be the one we
