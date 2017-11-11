@@ -52,6 +52,5 @@ extern int nullAuthAllowed;			//!< '1' if we permit NULL authentication, '0' oth
 extern char loadfile[MAX_LINE + 1];		//!< Name of the file from which we have to load the configuration
 
 void main_startup(void);
-void main_cleanup(int sign);
 
 #endif

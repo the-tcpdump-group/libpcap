@@ -82,8 +82,11 @@ static void *main_passive(void *ptr);
 static void *main_active(void *ptr);
 #endif
 
-#ifndef _WIN32
-static void main_cleanup_childs(int sign);
+static void main_terminate(int sign);
+#ifdef _WIN32
+static void main_abort(int sign)
+#else
+static void main_reap_children(int sign);
 #endif
 
 #define RPCAP_ACTIVE_WAIT 30		/* Waiting time between two attempts to open a connection, in active mode (default: 30 sec) */
@@ -243,8 +246,8 @@ int main(int argc, char *argv[], char *envp[])
 
 #ifndef _WIN32
 	// SIGTERM (i.e. kill -15) is not generated in Win32, although it is included for ANSI compatibility
-	signal(SIGTERM, main_cleanup);
-	signal(SIGCHLD, main_cleanup_childs);
+	signal(SIGTERM, main_terminate);
+	signal(SIGCHLD, main_reap_children);
 #endif
 
 	// forking a daemon, if it is needed
@@ -277,7 +280,7 @@ int main(int argc, char *argv[], char *envp[])
 //		chdir("/");
 #else
 		// We use the SIGABRT signal to kill the Win32 service
-		signal(SIGABRT, main_cleanup);
+		signal(SIGABRT, main_abort);
 
 		// If this call succeeds, it is blocking on Win32
 		if (svc_start() != 1)
@@ -290,7 +293,7 @@ int main(int argc, char *argv[], char *envp[])
 	else	// Console mode
 	{
 		// Enable the catching of Ctrl+C
-		signal(SIGINT, main_cleanup);
+		signal(SIGINT, main_terminate);
 
 #ifndef _WIN32
 		// generated under unix with 'kill -HUP', needed to reload the configuration
@@ -432,26 +435,54 @@ void main_startup(void)
 	\brief Closes gracefully (more or less) the program.
 
 	This function is called:
-	- when we're running in console
-	- when we're running as a Win32 service (in case we press STOP)
-
-	It is not called when we are running as a daemon on UNIX, since
-	we do not define a signal in order to terminate gracefully the daemon.
-
-	This function makes a fast cleanup (it does not clean everything, as
-	you can see from the fact that it uses kill() on UNIX), closes
-	the main socket, free winsock resources (on Win32) and exits the
-	program.
+	- when we're running in console and are terminated with ^C;
+	- on UN*X, when we're terminated with SIGTERM.
 */
-void main_cleanup(int sign)
+static void main_terminate(int sign)
 {
+	SOCK_ASSERT(PROGRAM_NAME " is closing.\n", 1);
+
 #ifndef _WIN32
-	// Sends a KILL signal to all the processes
-	// that share the same process group (i.e. kills all the childs)
+	//
+	// Sends a KILL signal to all the processes in this process's
+	// process group; i.e., it kills all the child processes
+	// we've created.
+	//
+	// XXX - that also includes us, so we will be killed as well;
+	// that may cause a message to be printed or logged.
+	//
 	kill(0, SIGKILL);
 #endif
 
-	SOCK_ASSERT(PROGRAM_NAME " is closing.\n", 1);
+	//
+	// Just leave.  We shouldn't need to clean up sockets or
+	// anything else, and if we try to do so, we'll could end
+	// up closing sockets, or shutting Winsock down, out from
+	// under service loops, causing all sorts of noisy error
+	// messages.
+	//
+	// We shouldn't need to worry about cleaning up any resources
+	// such as handles, sockets, threads, etc. - exit() should
+	// terminate the process, causing all those resources to be
+	// cleaned up.
+	//
+	// Note that, on Windows, this will happen only for ^C, and
+	// thus will happen on a thread created to run the ^C handler,
+	// which is how it manages to cause the aforementioned service
+	// loop issues in service loops in other threads.
+	//
+	exit(0);
+}
+
+#ifdef _WIN32
+static void main_abort(int sign)
+{
+	SOCK_ASSERT(PROGRAM_NAME " is closing due to a SIGABRT.\n", 1);
+
+	//
+	// XXX - there should be a way to poke the main thread to get
+	// it to shut down the service.
+	//
 
 	// FULVIO (bug)
 	// Here we close only the latest 'sockmain' created; if we opened more than one waiting sockets,
@@ -461,31 +492,23 @@ void main_cleanup(int sign)
 	sock_cleanup();
 
 	/*
-		This code is executed under the following conditions:
-		- SIGTERM: we're under UNIX, and the user kills us with 'kill -15'
-		(no matter is we're a daemon or in a console mode)
-		- SIGINT: we're in console mode and the user sends us a Ctrl+C
-		(SIGINT signal), no matter if we're UNIX or Win32
-
-		In all these cases, we have to terminate the program.
-		The case that still remains is if we're a Win32 service: in this case,
-		we're a child thread, and we want just to terminate ourself. This is because
-		the exit(0) will be invoked by the main thread, which is blocked waiting that
-		all childs terminates. We are forced to call exit from the main thread otherwise
-		the Win32 service control manager (SCM) does not work well.
-	*/
-	if ((sign == SIGTERM) || (sign == SIGINT))
-		exit(0);
-	else
-		return;
+	 * This is a Win32 service, so we're a child thread, and we want
+	 * just to terminate ourself. This is because the exit(0) will
+	 * be invoked by the main thread, which is blocked waiting that
+	 * all childs terminates. We are forced to call exit from the
+	 * main thread, otherwise the Win32 service control manager
+	 * (SCM) does not work well.
+	 */
 }
+#endif
 
 #ifndef _WIN32
-static void main_cleanup_childs(int sign)
+static void main_reap_children(int sign)
 {
 	pid_t pid;
 	int stat;
 
+	// Reap all child processes that have exited.
 	// For reference, Stevens, pg 128
 
 	while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
