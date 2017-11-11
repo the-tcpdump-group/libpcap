@@ -927,6 +927,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	int res;
 	socklen_t itemp;
 	int sockbufsize = 0;
+	uint32 server_sockbufsize;
 
 	/*
 	 * Let's check if sampling has been required.
@@ -1137,9 +1138,12 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	/* Let's save the socket of the data connection */
 	pr->rmt_sockdata = sockdata;
 
-	/* Allocates WinPcap/libpcap user buffer, which is a socket buffer in case of a remote capture */
-	/* It has the same size of the one used on the other side of the connection */
-	fp->bufsize = ntohl(startcapreply.bufsize);
+	/*
+	 * Set the size of the socket buffer for the data socket.
+	 * It has the same size as the local capture buffer used
+	 * on the other side of the connection.
+	 */
+	server_sockbufsize = ntohl(startcapreply.bufsize);
 
 	/* Let's get the actual size of the socket buffer */
 	itemp = sizeof(sockbufsize);
@@ -1152,45 +1156,55 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	}
 
 	/*
-	 * Warning: on some kernels (e.g. Linux), the size of the user buffer does not take
-	 * into account the pcap_header and such, and it is set equal to the snaplen.
-	 * In my view, this is wrong (the meaning of the bufsize became a bit strange).
-	 * So, here bufsize is the whole size of the user buffer.
-	 * In case the bufsize returned is too small, let's adjust it accordingly.
+	 * Warning: on some kernels (e.g. Linux), the size of the user
+	 * buffer does not take into account the pcap_header and such,
+	 * and it is set equal to the snaplen.
+	 *
+	 * In my view, this is wrong (the meaning of the bufsize became
+	 * a bit strange).  So, here bufsize is the whole size of the
+	 * user buffer.  In case the bufsize returned is too small,
+	 * let's adjust it accordingly.
 	 */
-	if (fp->bufsize <= (u_int) fp->snapshot)
-		fp->bufsize += sizeof(struct pcap_pkthdr);
+	if (server_sockbufsize <= (u_int) fp->snapshot)
+		server_sockbufsize += sizeof(struct pcap_pkthdr);
 
 	/* if the current socket buffer is smaller than the desired one */
-	if ((u_int) sockbufsize < fp->bufsize)
+	if ((u_int) sockbufsize < server_sockbufsize)
 	{
-		/* Loop until the buffer size is OK or the original socket buffer size is larger than this one */
+		/*
+		 * Loop until the buffer size is OK or the original
+		 * socket buffer size is larger than this one.
+		 */
 		while (1)
 		{
-			res = setsockopt(sockdata, SOL_SOCKET, SO_RCVBUF, (char *)&(fp->bufsize), sizeof(fp->bufsize));
+			res = setsockopt(sockdata, SOL_SOCKET, SO_RCVBUF,
+			    (char *)&(server_sockbufsize),
+			    sizeof(server_sockbufsize));
 
 			if (res == 0)
 				break;
 
 			/*
-			 * If something goes wrong, half the buffer size (checking that it does not become smaller than
-			 * the current one)
+			 * If something goes wrong, halve the buffer size
+			 * (checking that it does not become smaller than
+			 * the current one).
 			 */
-			fp->bufsize /= 2;
+			server_sockbufsize /= 2;
 
-			if ((u_int) sockbufsize >= fp->bufsize)
+			if ((u_int) sockbufsize >= server_sockbufsize)
 			{
-				fp->bufsize = sockbufsize;
+				server_sockbufsize = sockbufsize;
 				break;
 			}
 		}
 	}
 
 	/*
-	 * Let's allocate the packet; this is required in order to put the packet somewhere when
-	 * extracting data from the socket
-	 * Since buffering has already been done in the socket buffer, here we need just a buffer,
-	 * whose size is equal to the pcap header plus the snapshot length
+	 * Let's allocate the packet; this is required in order to put
+	 * the packet somewhere when extracting data from the socket.
+	 * Since buffering has already been done in the socket buffer,
+	 * here we need just a buffer whose size is equal to the
+	 * pcap header plus the snapshot length.
 	 */
 	fp->bufsize = fp->snapshot + sizeof(struct pcap_pkthdr);
 
