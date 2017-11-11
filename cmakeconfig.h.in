@@ -309,6 +309,12 @@
 /* Define to 1 if strings.h declares `ffs' */
 #cmakedefine STRINGS_H_DECLARES_FFS 1
 
+/* if struct msghdr has a msg_control member */
+#cmakedefine STRUCT_MSGHDR_HAS_MSG_CONTROL 1
+
+/* if struct msghdr has a msg_flags member */
+#cmakedefine STRUCT_MSGHDR_HAS_MSG_FLAGS 1
+
 /* Define to 1 if sys/ethernet.h declares `ether_hostton' */
 #cmakedefine SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON 1
 

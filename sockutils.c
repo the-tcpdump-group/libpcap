@@ -916,9 +916,13 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 	iov.iov_len = size;
 	message.msg_iov = &iov;
 	message.msg_iovlen = 1;
+#ifdef STRUCT_MSGHDR_HAS_MSG_CONTROL
 	message.msg_control = NULL;	/* we don't care about control information */
 	message.msg_controllen = 0;
+#endif
+#ifdef STRUCT_MSGHDR_HAS_MSG_FLAGS
 	message.msg_flags = 0;
+#endif
 	nread = recvmsg(sock, &message, 0);
 	if (nread == -1)
 	{

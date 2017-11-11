@@ -1251,6 +1251,11 @@ endif()
 #
 
 if(ENABLE_REMOTE)
+    #
+    # Check for various members of struct msghdr.
+    #
+    check_struct_has_member("struct msghdr" msg_control "sys/socket.h" STRUCT_MSGHDR_HAS_MSG_CONTROL)
+    check_struct_has_member("struct msghdr" msg_flags "sys/socket.h" STRUCT_MSGHDR_HAS_MSG_FLAGS)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
     add_subdirectory(rpcapd)

@@ -1300,6 +1300,32 @@ yes)	AC_MSG_RESULT(yes)
 	#
 	AC_CHECK_FUNCS(getspnam)
 
+	#
+	# Check for various members of struct msghdr.
+	#
+	AC_MSG_CHECKING(if struct msghdr has a msg_control member)
+	AC_CACHE_VAL(ac_cv_lbl_struct_msghdr_has_msg_control,
+	    AC_TRY_COMPILE([
+#	include <sys/socket.h>],
+		[u_int i = sizeof(((struct msghdr *)0)->msg_control)],
+		ac_cv_lbl_struct_msghdr_has_msg_control=yes,
+		ac_cv_lbl_struct_msghdr_has_msg_control=no))
+	AC_MSG_RESULT($ac_cv_lbl_struct_msghdr_has_msg_control)
+	if test $ac_cv_lbl_struct_msghdr_has_msg_control = yes ; then
+	    AC_DEFINE(STRUCT_MSGHDR_HAS_MSG_CONTROL,1,[if struct msghdr has a msg_control member])
+	fi
+	AC_MSG_CHECKING(if struct msghdr has a msg_flags member)
+	AC_CACHE_VAL(ac_cv_lbl_struct_msghdr_has_msg_flags,
+	    AC_TRY_COMPILE([
+#	include <sys/socket.h>],
+		[u_int i = sizeof(((struct msghdr *)0)->msg_flags)],
+		ac_cv_lbl_struct_msghdr_has_msg_flags=yes,
+		ac_cv_lbl_struct_msghdr_has_msg_flags=no))
+	AC_MSG_RESULT($ac_cv_lbl_struct_msghdr_has_msg_flags)
+	if test $ac_cv_lbl_struct_msghdr_has_msg_flags = yes ; then
+	    AC_DEFINE(STRUCT_MSGHDR_HAS_MSG_FLAGS,1,[if struct msghdr has a msg_flags member])
+	fi
+
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"

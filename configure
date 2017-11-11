@@ -7273,6 +7273,74 @@ fi
 done
 
 
+	#
+	# Check for various members of struct msghdr.
+	#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if struct msghdr has a msg_control member" >&5
+$as_echo_n "checking if struct msghdr has a msg_control member... " >&6; }
+	if ${ac_cv_lbl_struct_msghdr_has_msg_control+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#	include <sys/socket.h>
+int
+main ()
+{
+u_int i = sizeof(((struct msghdr *)0)->msg_control)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_lbl_struct_msghdr_has_msg_control=yes
+else
+  ac_cv_lbl_struct_msghdr_has_msg_control=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_struct_msghdr_has_msg_control" >&5
+$as_echo "$ac_cv_lbl_struct_msghdr_has_msg_control" >&6; }
+	if test $ac_cv_lbl_struct_msghdr_has_msg_control = yes ; then
+
+$as_echo "#define STRUCT_MSGHDR_HAS_MSG_CONTROL 1" >>confdefs.h
+
+	fi
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if struct msghdr has a msg_flags member" >&5
+$as_echo_n "checking if struct msghdr has a msg_flags member... " >&6; }
+	if ${ac_cv_lbl_struct_msghdr_has_msg_flags+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#	include <sys/socket.h>
+int
+main ()
+{
+u_int i = sizeof(((struct msghdr *)0)->msg_flags)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_lbl_struct_msghdr_has_msg_flags=yes
+else
+  ac_cv_lbl_struct_msghdr_has_msg_flags=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_struct_msghdr_has_msg_flags" >&5
+$as_echo "$ac_cv_lbl_struct_msghdr_has_msg_flags" >&6; }
+	if test $ac_cv_lbl_struct_msghdr_has_msg_flags = yes ; then
+
+$as_echo "#define STRUCT_MSGHDR_HAS_MSG_FLAGS 1" >>confdefs.h
+
+	fi
+
 
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 

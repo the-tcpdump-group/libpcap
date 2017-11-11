@@ -306,6 +306,12 @@
 /* Define to 1 if strings.h declares `ffs' */
 #undef STRINGS_H_DECLARES_FFS
 
+/* if struct msghdr has a msg_control member */
+#undef STRUCT_MSGHDR_HAS_MSG_CONTROL
+
+/* if struct msghdr has a msg_flags member */
+#undef STRUCT_MSGHDR_HAS_MSG_FLAGS
+
 /* Define to 1 if sys/ethernet.h declares `ether_hostton' */
 #undef SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON
 
