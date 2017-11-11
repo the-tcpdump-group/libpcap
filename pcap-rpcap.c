@@ -113,6 +113,9 @@ struct pcap_rpcap {
 	int rmt_capstarted;		/* 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture() */
 	char *currentfilter;		/* Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on. */
 
+	size_t netbufsize;		/* size of the network buffer */
+	char *netbuf;			/* network buffer in which the packet is copied, just for UDP */
+
 	uint8 protocol_version;		/* negotiated protocol version */
 
 	unsigned int TotNetDrops;	/* keeps the number of packets that have been dropped by the network */
@@ -369,7 +372,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
 	struct rpcap_header *header;		/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet */
-	char netbuf[RPCAP_NETBUF_SIZE];		/* size of the network buffer in which the packet is copied, just for UDP */
 	uint32 plen;
 	int retval;				/* generic return value */
 
@@ -408,20 +410,20 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	 * We have to define 'header' as a pointer to a larger buffer,
 	 * because in case of UDP we have to read all the message within a single call
 	 */
-	header = (struct rpcap_header *) netbuf;
-	net_pkt_header = (struct rpcap_pkthdr *) (netbuf + sizeof(struct rpcap_header));
+	header = (struct rpcap_header *) pr->netbuf;
+	net_pkt_header = (struct rpcap_pkthdr *) (pr->netbuf + sizeof(struct rpcap_header));
 
 	if (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
 	{
 		/* Read the entire message from the network */
-		if (sock_recv(pr->rmt_sockdata, netbuf, RPCAP_NETBUF_SIZE,
+		if (sock_recv(pr->rmt_sockdata, pr->netbuf, pr->netbufsize,
 		    SOCK_RECEIVEALL_NO|SOCK_EOF_IS_ERROR, p->errbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 	else
 	{
-		if (sock_recv(pr->rmt_sockdata, netbuf,
+		if (sock_recv(pr->rmt_sockdata, pr->netbuf,
 		    sizeof(struct rpcap_header),
 		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, p->errbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
@@ -476,12 +478,10 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 			unsigned int npkt;
 
 			/*
-			 * In case of UDP the packet has already been read, we have to copy it into 'buffer'.
-			 * Another option should be to declare 'netbuf' as 'static'. However this prevents
-			 * using several pcap instances within the same process (because the static buffer is shared among
-			 * all processes)
+			 * In case of UDP the packet has already been read,
+			 * we have to copy it into 'buffer'.
 			 */
-			memcpy(*pkt_data, netbuf + sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr), (*pkt_header)->caplen);
+			memcpy(*pkt_data, pr->netbuf + sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr), (*pkt_header)->caplen);
 
 			/* We're using UDP, so we need to update the counter of the packets dropped by the network */
 			npkt = ntohl(net_pkt_header->npkt);
@@ -654,6 +654,12 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 		sock_close(pr->rmt_sockctrl, NULL, 0);
 
 	pr->rmt_sockctrl = 0;
+
+	if (pr->netbuf)
+	{
+		free(pr->netbuf);
+		pr->netbuf = NULL;
+	}
 
 	if (pr->currentfilter)
 	{
@@ -1190,6 +1196,19 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 	fp->buffer = (u_char *)malloc(fp->bufsize);
 	if (fp->buffer == NULL)
+	{
+		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+		goto error;
+	}
+
+	/*
+	 * Allocate a buffer into which to receive packet messages.
+	 * It must be big enough for the message header, the packet
+	 * header, and the biggest possible packet.
+	 */
+	pr->netbufsize = sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr) + fp->snapshot;
+	pr->netbuf = (char *)malloc(pr->netbufsize);
+	if (pr->netbuf == NULL)
 	{
 		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 		goto error;
