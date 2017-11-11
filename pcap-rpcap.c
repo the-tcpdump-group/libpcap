@@ -410,8 +410,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	 * because in case of UDP we have to read all the message within a single call
 	 */
 	header = (struct rpcap_header *) p->buffer;
-	net_pkt_header = (struct rpcap_pkthdr *) (p->buffer + sizeof(struct rpcap_header));
-	net_pkt_data = p->buffer + sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr);
+	net_pkt_header = (struct rpcap_pkthdr *) ((char *)p->buffer + sizeof(struct rpcap_header));
+	net_pkt_data = (u_char *)p->buffer + sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr);
 
 	if (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
 	{
