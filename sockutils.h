@@ -168,10 +168,14 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 /* 'server' flag; it opens a server socket */
 #define SOCKOPEN_SERVER 1
 
-/* Changes the behaviour of the sock_recv(); it does not wait to receive all data */
-#define SOCK_RECEIVEALL_NO 0
-/* Changes the behaviour of the sock_recv(); it waits to receive all data */
-#define SOCK_RECEIVEALL_YES 1
+/*
+ * Flags for sock_recv().
+ */
+#define SOCK_RECEIVEALL_NO	0x00000000	/* Don't wait to receive all data */
+#define SOCK_RECEIVEALL_YES	0x00000001	/* Wait to receive all data */
+
+#define SOCK_EOF_ISNT_ERROR	0x00000000	/* Return 0 on EOF */
+#define SOCK_EOF_IS_ERROR	0x00000002	/* Return an error on EOF */
 
 /*
  * \}

@@ -690,9 +690,19 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
  * \param size: size of the allocated buffer. WARNING: this indicates the number of bytes
  * that we are expecting to be read.
  *
- * \param receiveall: if '0' (or SOCK_RECEIVEALL_NO), it returns as soon as some data
- * is ready; otherwise, (or SOCK_RECEIVEALL_YES) it waits until 'size' data has been
- * received (in case the socket does not have enough data available).
+ * \param flags:
+ *
+ *   SOCK_RECEIVALL_XXX:
+ *
+ * 	if SOCK_RECEIVEALL_NO, return as soon as some data is ready
+ *	if SOCK_RECEIVALL_YES, wait until 'size' data has been
+ *	    received (in case the socket does not have enough data available).
+ *
+ *   SOCK_EOF_XXX:
+ *
+ *	if SOCK_EOF_ISNT_ERROR, if the first read returns 0, just return 0,
+ *	    and return an error on any subsequent read that returns 0;
+ *	if SOCK_EOF_IS_ERROR, if any read returns 0, return an error.
  *
  * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
  * error message. This buffer has to be at least 'errbuflen' in length.
@@ -717,7 +727,7 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 typedef int ssize_t;
 #endif
 
-int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
+int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
     char *errbuf, int errbuflen)
 {
 	char *bufp = buffer;
@@ -762,19 +772,30 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
 
 		if (nread == 0)
 		{
-			if (errbuf)
+			if ((flags & SOCK_EOF_IS_ERROR) ||
+			    (remaining != (int) size))
 			{
-				pcap_snprintf(errbuf, errbuflen,
-				    "The other host terminated the connection.");
+				/*
+				 * Either we've already read some data,
+				 * or we're always supposed to return
+				 * an error on EOF.
+				 */
+				if (errbuf)
+				{
+					pcap_snprintf(errbuf, errbuflen,
+					    "The other host terminated the connection.");
+				}
+				return -1;
 			}
-			return -1;
+			else
+				return 0;
 		}
 
 		/*
 		 * Do we want to read the amount requested, or just return
 		 * what we got?
 		 */
-		if (!receiveall)
+		if (!(flags & SOCK_RECEIVEALL_YES))
 		{
 			/*
 			 * Just return what we got.

@@ -128,6 +128,7 @@ void *daemon_serviceloop(void *ptr)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	char errmsgbuf[PCAP_ERRBUF_SIZE + 1];	// buffer for errors to send to the client
+	int nrecv;
 	struct rpcap_header header;		// RPCAP message general header
 	uint32 plen;				// payload length from header
 	int authenticated = 0;			// 1 if the client has successfully authenticated
@@ -216,9 +217,15 @@ void *daemon_serviceloop(void *ptr)
 		//
 		// Read the message header from the client.
 		//
-		if (rpcapd_recv_msg_header(pars->sockctrl, &header) == -1)
+		nrecv = rpcapd_recv_msg_header(pars->sockctrl, &header);
+		if (nrecv == -1)
 		{
 			// Fatal error.
+			goto end;
+		}
+		if (nrecv == -2)
+		{
+			// Client closed the connection.
 			goto end;
 		}
 
@@ -489,9 +496,15 @@ void *daemon_serviceloop(void *ptr)
 		//
 		// Read the message header from the client.
 		//
-		if (rpcapd_recv_msg_header(pars->sockctrl, &header) == -1)
+		nrecv = rpcapd_recv_msg_header(pars->sockctrl, &header);
+		if (nrecv == -1)
 		{
 			// Fatal error.
+			goto end;
+		}
+		if (nrecv == -2)
+		{
+			// Client closed the connection.
 			goto end;
 		}
 
@@ -841,7 +854,9 @@ int daemon_msg_err(SOCKET sockctrl, uint32 plen)
 		 * Message is too long; just read as much of it as we
 		 * can into the buffer provided, and discard the rest.
 		 */
-		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1,
+		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
 			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
@@ -865,7 +880,9 @@ int daemon_msg_err(SOCKET sockctrl, uint32 plen)
 	}
 	else
 	{
-		if (sock_recv(sockctrl, remote_errbuf, plen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(sockctrl, remote_errbuf, plen,
+		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
 			rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
@@ -1402,7 +1419,8 @@ static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *so
 		goto error;
 	}
 
-	nread = sock_recv(pars->sockctrl, source, plen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
+	nread = sock_recv(pars->sockctrl, source, plen,
+	    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf, PCAP_ERRBUF_SIZE);
 	if (nread == -1)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
@@ -2292,13 +2310,21 @@ void sleep_secs(int secs)
  */
 static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp)
 {
+	int nread;
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 
-	if (sock_recv(sock, (char *) headerp, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+	nread = sock_recv(sock, (char *) headerp, sizeof(struct rpcap_header),
+	    SOCK_RECEIVEALL_YES|SOCK_EOF_ISNT_ERROR, errbuf, PCAP_ERRBUF_SIZE);
+	if (nread == -1)
 	{
 		// Network error.
 		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
 		return -1;
+	}
+	if (nread == 0)
+	{
+		// Immediate EOF; that's treated like a close message.
+		return -2;
 	}
 	headerp->plen = ntohl(headerp->plen);
 	return 0;
@@ -2325,7 +2351,7 @@ static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, c
 		return -2;
 	}
 	nread = sock_recv(sock, buffer, toread,
-	    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
+	    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf, PCAP_ERRBUF_SIZE);
 	if (nread == -1)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);

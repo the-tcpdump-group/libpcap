@@ -414,12 +414,17 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr **pkt_header, u_c
 	if (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP)
 	{
 		/* Read the entire message from the network */
-		if (sock_recv(pr->rmt_sockdata, netbuf, RPCAP_NETBUF_SIZE, SOCK_RECEIVEALL_NO, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(pr->rmt_sockdata, netbuf, RPCAP_NETBUF_SIZE,
+		    SOCK_RECEIVEALL_NO|SOCK_EOF_IS_ERROR, p->errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 	else
 	{
-		if (sock_recv(pr->rmt_sockdata, netbuf, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, p->errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(pr->rmt_sockdata, netbuf,
+		    sizeof(struct rpcap_header),
+		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, p->errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 			return -1;
 	}
 	header->plen = ntohl(header->plen);
@@ -2812,7 +2817,12 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
  */
 static int rpcap_recv_msg_header(SOCKET sock, struct rpcap_header *header, char *errbuf)
 {
-	if (sock_recv(sock, (char *) header, sizeof(struct rpcap_header), SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+	int nrecv;
+
+	nrecv = sock_recv(sock, (char *) header, sizeof(struct rpcap_header),
+	    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
+	    PCAP_ERRBUF_SIZE);
+	if (nrecv == -1)
 	{
 		/* Network error. */
 		return -1;
@@ -2969,7 +2979,7 @@ static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, ch
 		return -1;
 	}
 	nread = sock_recv(sock, buffer, toread,
-	    SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE);
+	    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf, PCAP_ERRBUF_SIZE);
 	if (nread == -1)
 	{
 		return -1;
@@ -2991,7 +3001,9 @@ static void rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
 		 * Message is too long; just read as much of it as we
 		 * can into the buffer provided, and discard the rest.
 		 */
-		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(sockctrl, remote_errbuf, PCAP_ERRBUF_SIZE - 1,
+		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
 			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
@@ -3015,7 +3027,9 @@ static void rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf)
 	}
 	else
 	{
-		if (sock_recv(sockctrl, remote_errbuf, plen, SOCK_RECEIVEALL_YES, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_recv(sockctrl, remote_errbuf, plen,
+		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
 			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
