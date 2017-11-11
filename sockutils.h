@@ -203,6 +203,8 @@ int sock_initaddress(const char *address, const char *port,
     char *errbuf, int errbuflen);
 int sock_recv(SOCKET sock, void *buffer, size_t size, int receiveall,
     char *errbuf, int errbuflen);
+int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
+    char *errbuf, int errbuflen);
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen);
 int sock_close(SOCKET sock, char *errbuf, int errbuflen);
 
