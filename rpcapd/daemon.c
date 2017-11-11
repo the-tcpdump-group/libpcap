@@ -2154,16 +2154,28 @@ daemon_thrdatamain(void *ptr)
 	sendbuf = (char *) malloc (sizeof(char) * RPCAP_NETBUF_SIZE);
 	if (sendbuf == NULL)
 	{
-		pcap_snprintf(errbuf, sizeof(errbuf) - 1, "Unable to create the buffer for this child thread");
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Unable to allocate the buffer for this child thread");
 		goto error;
 	}
 
 #ifndef _WIN32
 	// Modify thread params so that it can be killed at any time
-	if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL))
+	retval = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	if (retval != 0)
+	{
+		strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Can't set cancel state on data thread: %s", errbuf);
 		goto error;
+	}
 	if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
+	{
+		strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Can't set cancel type on data thread: %s", errbuf);
 		goto error;
+	}
 #endif
 
 	// Retrieve the packets
@@ -2177,7 +2189,12 @@ daemon_thrdatamain(void *ptr)
 		// Bufferize the general header
 		if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
 			RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			rpcapd_log(LOGPRIO_ERROR,
+			    "sock_bufferize() error sending packet message: %s",
+			    errbuf);
 			goto error;
+		}
 
 		rpcap_createhdr((struct rpcap_header *) sendbuf,
 		    session->protocol_version, RPCAP_MSG_PACKET, 0,
@@ -2188,7 +2205,12 @@ daemon_thrdatamain(void *ptr)
 		// Bufferize the pkt header
 		if (sock_bufferize(NULL, sizeof(struct rpcap_pkthdr), NULL, &sendbufidx,
 			RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			rpcapd_log(LOGPRIO_ERROR,
+			    "sock_bufferize() error sending packet message: %s",
+			    errbuf);
 			goto error;
+		}
 
 		net_pkt_header->caplen = htonl(pkt_header->caplen);
 		net_pkt_header->len = htonl(pkt_header->len);
@@ -2199,12 +2221,20 @@ daemon_thrdatamain(void *ptr)
 		// Bufferize the pkt data
 		if (sock_bufferize((char *) pkt_data, pkt_header->caplen, sendbuf, &sendbufidx,
 			RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			rpcapd_log(LOGPRIO_ERROR,
+			    "sock_bufferize() error sending packet message: %s",
+			    errbuf);
 			goto error;
+		}
 
 		// Send the packet
 		if (sock_send(session->sockdata, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		{
+			rpcapd_log(LOGPRIO_ERROR,
+			    "Send of packet to client failed: %s", errbuf);
 			goto error;
-
+		}
 	}
 
 	if (retval == -1)
@@ -2216,8 +2246,6 @@ daemon_thrdatamain(void *ptr)
 	}
 
 error:
-
-	SOCK_ASSERT(errbuf, 1);
  	closesocket(session->sockdata);
 	session->sockdata = 0;
 
