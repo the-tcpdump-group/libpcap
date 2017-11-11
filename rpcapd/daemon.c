@@ -2210,6 +2210,7 @@ daemon_thrdatamain(void *ptr)
 	struct rpcap_pkthdr *net_pkt_header;// header of the packet
 	struct pcap_pkthdr *pkt_header;		// pointer to the buffer that contains the header of the current packet
 	u_char *pkt_data;					// pointer to the buffer that contains the current packet
+	size_t sendbufsize;			// size for the send buffer
 	char *sendbuf;						// temporary buffer in which data to be sent is buffered
 	int sendbufidx;						// index which keeps the number of bytes currently buffered
 
@@ -2220,9 +2221,12 @@ daemon_thrdatamain(void *ptr)
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
 
-	// Some platforms (e.g. Win32) allow creating a static variable with this size
-	// However, others (e.g. BSD) do not, so we're forced to allocate this buffer dynamically
-	sendbuf = (char *) malloc (sizeof(char) * RPCAP_NETBUF_SIZE);
+	//
+	// We need a buffer large enough to hold a buffer large enough
+	// for a maximum-size packet for this pcap_t.
+	//
+	sendbufsize = sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr) + pcap_snapshot(session->fp);
+	sendbuf = (char *) malloc (sendbufsize);
 	if (sendbuf == NULL)
 	{
 		rpcapd_log(LOGPRIO_ERROR,
@@ -2258,8 +2262,9 @@ daemon_thrdatamain(void *ptr)
 		sendbufidx = 0;
 
 		// Bufferize the general header
-		if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
-			RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
+		    &sendbufidx, sendbufsize, SOCKBUF_CHECKONLY, errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
 			    "sock_bufferize() error sending packet message: %s",
@@ -2274,8 +2279,9 @@ daemon_thrdatamain(void *ptr)
 		net_pkt_header = (struct rpcap_pkthdr *) &sendbuf[sendbufidx];
 
 		// Bufferize the pkt header
-		if (sock_bufferize(NULL, sizeof(struct rpcap_pkthdr), NULL, &sendbufidx,
-			RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_bufferize(NULL, sizeof(struct rpcap_pkthdr), NULL,
+		    &sendbufidx, sendbufsize, SOCKBUF_CHECKONLY, errbuf,
+		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
 			    "sock_bufferize() error sending packet message: %s",
@@ -2290,8 +2296,9 @@ daemon_thrdatamain(void *ptr)
 		net_pkt_header->timestamp_usec = htonl(pkt_header->ts.tv_usec);
 
 		// Bufferize the pkt data
-		if (sock_bufferize((char *) pkt_data, pkt_header->caplen, sendbuf, &sendbufidx,
-			RPCAP_NETBUF_SIZE, SOCKBUF_BUFFERIZE, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		if (sock_bufferize((char *) pkt_data, pkt_header->caplen,
+		    sendbuf, &sendbufidx, sendbufsize, SOCKBUF_BUFFERIZE,
+		    errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
 			    "sock_bufferize() error sending packet message: %s",
