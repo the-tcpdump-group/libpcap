@@ -1345,6 +1345,7 @@
 /*
  * Excentis DOCSIS 3.1 RF sniffer (XRA-31)
  *   per: bruno.verstuyft at excentis.com
+ *        http://www.xra31.com/xra-header
  */
 #define DLT_DOCSIS31_XRA31	273
 
