@@ -1056,7 +1056,14 @@
  */
 #define LINKTYPE_NORDIC_BLE	272
 
-#define LINKTYPE_MATCHING_MAX	272		/* highest value in the "matching" range */
+/*
+ * Excentis DOCSIS 3.1 RF sniffer (XRA-31)
+ *   per: bruno.verstuyft at excentis.com
+ *        http://www.xra31.com/xra-header
+ */
+#define LINKTYPE_DOCSIS31_XRA31	273
+
+#define LINKTYPE_MATCHING_MAX	273		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
