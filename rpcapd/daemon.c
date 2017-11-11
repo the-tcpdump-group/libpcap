@@ -1698,11 +1698,13 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 		if (socktemp == INVALID_SOCKET)
 		{
 			sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "Accept of data connection failed: %s",
+			    errbuf);
 			goto error;
 		}
 
 		// Now that I accepted the connection, the server socket is no longer needed
-		sock_close(sockdata, errbuf, PCAP_ERRBUF_SIZE);
+		sock_close(sockdata, NULL, 0);
 		sockdata = socktemp;
 	}
 

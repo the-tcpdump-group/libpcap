@@ -48,6 +48,7 @@
 #include "fileconf.h"		// for the configuration file management
 #include "rpcap-protocol.h"
 #include "daemon.h"		// the true main() method of this daemon
+#include "log.h"
 #include "utils.h"		// Missing calls and such
 
 #ifdef _WIN32
@@ -561,7 +562,8 @@ main_passive(void *ptr)
 			// Don't check for errors here, since the error can be due to the fact that the thread
 			// has been killed
 			sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
-			SOCK_ASSERT(errbuf, 1);
+			rpcapd_log(LOGPRIO_ERROR, "Accept of control connection from client failed: %s",
+			    errbuf);
 			continue;
 		}
 
