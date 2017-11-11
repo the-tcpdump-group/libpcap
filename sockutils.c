@@ -132,9 +132,9 @@ static void sock_fmterror(const char *caller, int errcode, char *errbuf, int err
 	else
 	{
 		if ((caller) && (*caller))
-			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, code);
+			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errcode);
 		else
-			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, code);
+			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errcode);
 	}
 #else
 	char *message;
@@ -145,9 +145,9 @@ static void sock_fmterror(const char *caller, int errcode, char *errbuf, int err
 	message = strerror(errcode);
 
 	if ((caller) && (*caller))
-		pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errno);
+		pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errcode);
 	else
-		pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errno);
+		pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errcode);
 #endif
 }
 
