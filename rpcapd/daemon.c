@@ -1813,9 +1813,32 @@ fatal_error:
 #ifdef _WIN32
 		if (session && session->fp)
 		{
+			//
+			// Tell the data connection thread main capture
+			// loop to break out of that loop.
+			//
 			pcap_breakloop(session->fp);
+
+			//
+			// If it's currently blocked waiting for packets
+			// to arrive, try to wake it up, so it can see
+			// the "break out of the loop" indication.
+			//
 			SetEvent(pcap_getevent(session->fp));
 		}
+		
+		//
+		// Wait for the thread to exit, so we don't close
+		// sockets out from under it.
+		//
+		// XXX - have a timeout, so we don't wait forever?
+		//
+		WaitForSingleObject(*threaddata, INFINITE);
+
+		//
+		// Release the thread handle, as we're done with
+		// it.
+		//
 		CloseHandle(*threaddata);
 #else
 		pthread_cancel(*threaddata);
@@ -1848,8 +1871,31 @@ static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *ses
 	if (*have_thread)
 	{
 #ifdef _WIN32
+		//
+		// Tell the data connection thread main capture loop to
+		// break out of that loop.
+		//
 		pcap_breakloop(session->fp);
+
+		//
+		// If it's currently blocked waiting for packets to
+		// arrive, try to wake it up, so it can see the "break
+		// out of the loop" indication.
+		//
 		SetEvent(pcap_getevent(session->fp));
+		
+		//
+		// Wait for the thread to exit, so we don't close
+		// sockets out from under it.
+		//
+		// XXX - have a timeout, so we don't wait forever?
+		//
+		WaitForSingleObject(threaddata, INFINITE);
+
+		//
+		// Release the thread handle, as we're done with
+		// it.
+		//
 		CloseHandle(threaddata);
 #else
 		pthread_cancel(threaddata);
