@@ -898,7 +898,7 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 		sock_geterror("recv(): ", errbuf, errbuflen);
 		return -1;
 	}
-#else
+#else /* _WIN32 */
 	/*
 	 * The Single UNIX Specification says that a recv() on
 	 * a socket for a message-oriented protocol will discard
@@ -931,6 +931,12 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 		sock_geterror("recv(): ", errbuf, errbuflen);
 		return -1;
 	}
+#ifdef STRUCT_MSGHDR_HAS_MSG_FLAGS
+	/*
+	 * XXX - Solaris supports this, but only if you ask for the
+	 * X/Open version of recvmsg(); should we use that, or will
+	 * that cause other problems?
+	 */
 	if (message.msg_flags & MSG_TRUNC)
 	{
 		/*
@@ -942,7 +948,8 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 		pcap_snprintf(errbuf, errbuflen, "recv(): Message too long");
 		return -1;
 	}
-#endif
+#endif /* STRUCT_MSGHDR_HAS_MSG_FLAGS */
+#endif /* _WIN32 */
 	return nread;
 }
 
