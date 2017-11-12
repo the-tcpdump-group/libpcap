@@ -46,6 +46,7 @@ The Regents of the University of California.  All rights reserved.\n";
   #include <winsock2.h>
   #include <ws2tcpip.h>
 #else
+  #include <sys/socket.h>
   #include <arpa/inet.h>
 #endif
 #include <sys/types.h>
