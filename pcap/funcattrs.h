@@ -59,6 +59,11 @@
      * API.
      */
     #define PCAP_API_DEF	__declspec(dllexport)
+     /*
+     * Define PCAP_STATIC_LIB when linking your application statically.
+     */
+  #elif defined(PCAP_STATIC_LIB)
+    #define PCAP_API_DEF
   #else
     #define PCAP_API_DEF	__declspec(dllimport)
   #endif
