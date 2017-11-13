@@ -161,6 +161,7 @@ static int rpcap_process_msg_header(SOCKET sock, uint8 ver, uint8 request_type, 
 static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, char *errbuf);
 static void rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf);
 static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf);
+static int rpcap_read_packet_msg(SOCKET sock, pcap_t *p, size_t size);
 
 /****************************************************
  *                                                  *
@@ -397,6 +398,13 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	retval = select((int) pr->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
 	if (retval == -1)
 	{
+#ifndef _WIN32
+		if (errno == EINTR)
+		{
+			/* Interrupted. */
+			return 0;
+		}
+#endif
 		sock_geterror("select(): ", p->errbuf, PCAP_ERRBUF_SIZE);
 		return -1;
 	}
@@ -419,7 +427,10 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 		msglen = sock_recv_dgram(pr->rmt_sockdata, p->buffer,
 		    p->bufsize, p->errbuf, PCAP_ERRBUF_SIZE);
 		if (msglen == -1)
+		{
+			/* Network error. */
 			return -1;
+		}
 		if (msglen == -3)
 		{
 			/* Interrupted receive. */
@@ -434,8 +445,8 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			    "UDP packet message is shorter than an rpcap header");
 			return -1;
 		}
-		header->plen = ntohl(header->plen);
-		if ((size_t)msglen < sizeof(struct rpcap_header) + header->plen)
+		plen = ntohl(header->plen);
+		if ((size_t)msglen < sizeof(struct rpcap_header) + plen)
 		{
 			/*
 			 * Message is shorter than the header claims it
@@ -448,21 +459,74 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	}
 	else
 	{
-		msglen = sock_recv(pr->rmt_sockdata, p->buffer,
-		    sizeof(struct rpcap_header),
-		    SOCK_RECEIVEALL_YES|SOCK_EOF_IS_ERROR, p->errbuf,
-		    PCAP_ERRBUF_SIZE);
-		if (msglen == -1)
+		int status;
+
+		if ((size_t)p->cc < sizeof(struct rpcap_header))
+		{
+			/*
+			 * We haven't read any of the packet header yet.
+			 * The size we should get is the size of the
+			 * packet header.
+			 */
+			status = rpcap_read_packet_msg(pr->rmt_sockdata, p,
+			    sizeof(struct rpcap_header));
+			if (status == -1)
+			{
+				/* Network error. */
+				return -1;
+			}
+			if (status == -3)
+			{
+				/* Interrupted receive. */
+				return 0;
+			}
+		}
+
+		/*
+		 * We have the header, so we know how long the
+		 * message payload is.  The size we should get
+		 * is the size of the packet header plus the
+		 * size of the payload.
+		 */
+		plen = ntohl(header->plen);
+		if (plen > p->bufsize - sizeof(struct rpcap_header))
+		{
+			/*
+			 * This is bigger than the largest
+			 * record we'd expect.  (We do it by
+			 * subtracting in order to avoid an
+			 * overflow.)
+			 */
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Server sent us a message larger than the largest expected packet message");
 			return -1;
-		if (msglen == -3)
+		}
+		status = rpcap_read_packet_msg(pr->rmt_sockdata, p,
+		    sizeof(struct rpcap_header) + plen);
+		if (status == -1)
+		{
+			/* Network error. */
+			return -1;
+		}
+		if (status == -3)
 		{
 			/* Interrupted receive. */
 			return 0;
 		}
-		header->plen = ntohl(header->plen);
+
+		/*
+		 * We have the entire message; reset the buffer pointer
+		 * and count, as the next read should start a new
+		 * message.
+		 */
+		p->bp = p->buffer;
+		p->cc = 0;
 	}
 
-	plen = header->plen;
+	/*
+	 * We have the entire message.
+	 */
+	header->plen = plen;
 
 	/*
 	 * Did the server specify the version we negotiated?
@@ -470,14 +534,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	if (rpcap_check_msg_ver(pr->rmt_sockdata, pr->protocol_version,
 	    header, p->errbuf) == -1)
 	{
-		if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
-		{
-			/* Discard the rest of the message. */
-			if (rpcap_discard(pr->rmt_sockdata, plen,
-			    p->errbuf) == -1)
-				return -1;
-		}
-
 		return 0;	/* Return 'no packets received' */
 	}
 
@@ -486,30 +542,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	 */
 	if (header->type != RPCAP_MSG_PACKET)
 	{
-		if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
-		{
-			/* Discard the rest of the message. */
-			if (rpcap_discard(pr->rmt_sockdata, plen,
-			    p->errbuf) == -1)
-				return -1;
-		}
-
 		return 0;	/* Return 'no packets received' */
-	}
-
-	/* In case of TCP, read the remaining of the packet from the socket */
-	if (!(pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
-	{
-		/* Read the RPCAP packet header from the network */
-		msglen = rpcap_recv(pr->rmt_sockdata, (char *)net_pkt_header,
-		    sizeof(struct rpcap_pkthdr), &plen, p->errbuf);
-		if (msglen == -1)
-			return -1;
-		if (msglen == -3)
-		{
-			/* Interrupted receive. */
-			return 0;
-		}
 	}
 
 	if (ntohl(net_pkt_header->caplen) > plen)
@@ -546,24 +579,6 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			pr->TotNetDrops += (npkt - pr->TotCapt);
 			pr->TotCapt = npkt;
 		}
-	}
-	else
-	{
-		/* In case of TCP, read the remaining of the packet from the socket */
-		msglen = rpcap_recv(pr->rmt_sockdata, net_pkt_data,
-		    pkt_header->caplen, &plen, p->errbuf);
-		if (msglen == -1)
-			return -1;
-		if (msglen == -3)
-		{
-			/* Interrupted receive. */
-			return 0;
-		}
-
-		/* Discard the rest of the message. */
-		if (rpcap_discard(pr->rmt_sockdata, plen,
-		    p->errbuf) == -1)
-			return -1;
 	}
 
 	/* Packet read successfully */
@@ -1293,6 +1308,12 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
 		goto error;
 	}
+
+	/*
+	 * The buffer is currently empty.
+	 */
+	fp->bp = fp->buffer;
+	fp->cc = 0;
 
 	/* Discard the rest of the message. */
 	if (rpcap_discard(pr->rmt_sockctrl, plen, fp->errbuf) == -1)
@@ -3164,5 +3185,71 @@ static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf)
 			return -1;
 		}
 	}
+	return 0;
+}
+
+/*
+ * Read bytes into the pcap_t's buffer until we have the specified
+ * number of bytes read or we get an error or interrupt indication.
+ */
+static int rpcap_read_packet_msg(SOCKET sock, pcap_t *p, size_t size)
+{
+	u_char *bp;
+	int cc;
+	int bytes_read;
+
+	bp = p->bp;
+	cc = p->cc;
+
+	/*
+	 * Loop until we have the amount of data requested or we get
+	 * an error or interrupt.
+	 */
+	while ((size_t)cc < size)
+	{
+		/*
+		 * We haven't read all of the packet header yet.
+		 * Read what remains, which could be all of it.
+		 */
+		bytes_read = sock_recv(sock, bp, size - cc,
+		    SOCK_RECEIVEALL_NO|SOCK_EOF_IS_ERROR, p->errbuf,
+		    PCAP_ERRBUF_SIZE);
+		if (bytes_read == -1)
+		{
+			/*
+			 * Network error.  Update the read pointer and
+			 * byte count, and return an error indication.
+			 */
+			p->bp = bp;
+			p->cc = cc;
+			return -1;
+		}
+		if (bytes_read == -3)
+		{
+			/*
+			 * Interrupted receive.  Update the read
+			 * pointer and byte count, and return
+			 * an interrupted indication.
+			 */
+			p->bp = bp;
+			p->cc = cc;
+			return -3;
+		}
+		if (bytes_read == 0)
+		{
+			/*
+			 * EOF - server terminated the connection.
+			 * Update the read pointer and byte count, and
+			 * return an error indication.
+			 */
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "The server terminated the connection.");
+			return -1;
+		}
+		bp += bytes_read;
+		cc += bytes_read;
+	}
+	p->bp = bp;
+	p->cc = cc;
 	return 0;
 }
