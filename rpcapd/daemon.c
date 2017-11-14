@@ -1753,7 +1753,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 	{
 		char thread_errbuf[PCAP_ERRBUF_SIZE];
 
-		strerror_r(ret, thread_errbuf, PCAP_ERRBUF_SIZE);
+		(void)strerror_r(ret, thread_errbuf, PCAP_ERRBUF_SIZE);
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread: %s", thread_errbuf);
 		pthread_attr_destroy(&detachedAttribute);
 		goto error;
@@ -2239,14 +2239,14 @@ daemon_thrdatamain(void *ptr)
 	retval = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	if (retval != 0)
 	{
-		strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
+		(void)strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
 		rpcapd_log(LOGPRIO_ERROR,
 		    "Can't set cancel state on data thread: %s", errbuf);
 		goto error;
 	}
 	if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
 	{
-		strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
+		(void)strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
 		rpcapd_log(LOGPRIO_ERROR,
 		    "Can't set cancel type on data thread: %s", errbuf);
 		goto error;
