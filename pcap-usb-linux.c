@@ -765,7 +765,7 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	if (gettimeofday(&pkth.ts, NULL) < 0)
 	{
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Can't get timestamp for message '%s'");
+		    errno, "Can't get timestamp for message '%s'", string);
 		return -1;
 	}
 	uhdr->ts_sec = pkth.ts.tv_sec;
