@@ -2319,7 +2319,12 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 	int type;
 	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE];
 	char tmpstring[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
-	pcap_if_t *dev;		/* Previous device into the pcap_if_t chain */
+	pcap_if_t *lastdev;	/* Last device in the pcap_if_t list */
+	pcap_if_t *dev;		/* Device we're adding to the pcap_if_t list */
+
+	/* List starts out empty. */
+	(*alldevs) = NULL;
+	lastdev = NULL;
 
 	/* Retrieve the needed data for getting adapter list */
 	if (pcap_parsesrcstr(source, &type, host, port, NULL, errbuf) == -1)
@@ -2427,18 +2432,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		findalldevs_if.naddr = ntohs(findalldevs_if.naddr);
 
 		/* allocate the main structure */
-		if (i == 0)
-		{
-			(*alldevs) = (pcap_if_t *)malloc(sizeof(pcap_if_t));
-			dev = (*alldevs);
-		}
-		else
-		{
-			dev->next = (pcap_if_t *)malloc(sizeof(pcap_if_t));
-			dev = dev->next;
-		}
-
-		/* check that the malloc() didn't fail */
+		dev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 		if (dev == NULL)
 		{
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
@@ -2447,6 +2441,24 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 
 		/* Initialize the structure to 'zero' */
 		memset(dev, 0, sizeof(pcap_if_t));
+
+		/* Append it to the list. */
+		if (lastdev == NULL)
+		{
+			/*
+			 * List is empty, so it's also the first device.
+			 */
+			*alldevs = dev;
+		}
+		else
+		{
+			/*
+			 * Append after the last device.
+			 */
+			lastdev->next = dev;
+		}
+		/* It's now the last device. */
+		lastdev = dev;
 
 		/* allocate mem for name and description */
 		if (findalldevs_if.namelen)
@@ -2635,6 +2647,9 @@ error_nodiscard:
 
 	/* To avoid inconsistencies in the number of sock_init() */
 	sock_cleanup();
+
+	/* Free whatever interfaces we've allocated. */
+	pcap_freealldevs(*alldevs);
 
 	return -1;
 }

@@ -206,6 +206,7 @@ main(int argc, char **argv)
 	}
 	pcap_close(pd);
 	pcap_freecode(&fcode);
+	free(cmdbuf);
 	exit(status == -1 ? 1 : 0);
 }
 
