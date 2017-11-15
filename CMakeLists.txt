@@ -1261,7 +1261,6 @@ if(ENABLE_REMOTE)
     check_struct_has_member("struct msghdr" msg_flags "sys/socket.h" STRUCT_MSGHDR_HAS_MSG_FLAGS)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
-    add_subdirectory(rpcapd)
 endif(ENABLE_REMOTE)
 
 file(GLOB PROJECT_SOURCE_LIST_H
@@ -1296,6 +1295,14 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
     check_and_add_compiler_option(-Wdeclaration-after-statement)
     check_and_add_compiler_option(-Wused-but-marked-unused)
 endif()
+
+#
+# Add subdirectories after we've set C_ADDITIONAL_FLAGS, so they
+# pick up those flags.
+#
+if(ENABLE_REMOTE)
+    add_subdirectory(rpcapd)
+endif(ENABLE_REMOTE)
 
 #
 # Try to have the compiler default to hiding symbols, so that only
