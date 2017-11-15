@@ -42,6 +42,7 @@
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include <signal.h>		// for signal()
 
+#include "fmtutils.h"
 #include "sockutils.h"		// for socket calls
 #include "portability.h"
 #include "rpcapd.h"
@@ -604,7 +605,8 @@ main_passive(void *ptr)
 		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 		if (pars == NULL)
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc() failed");
 			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 			sock_close(sockctrl, NULL, 0);
 			continue;
@@ -632,7 +634,8 @@ main_passive(void *ptr)
 			pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 			if (pars == NULL)
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				exit(0);
 			}
 
@@ -727,7 +730,8 @@ main_active(void *ptr)
 		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 		if (pars == NULL)
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc() failed");
 			continue;
 		}
 

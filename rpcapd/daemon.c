@@ -39,6 +39,7 @@
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strlen(), ...
+#include "fmtutils.h"
 #include "sockutils.h"		// for socket calls
 #include "portability.h"
 #include "rpcap-protocol.h"
@@ -984,7 +985,8 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 			username = (char *) malloc (usernamelen + 1);
 			if (username == NULL)
 			{
-				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errmsgbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
 			status = rpcapd_recv(sockctrl, username, usernamelen, &plen, errmsgbuf);
@@ -1004,7 +1006,8 @@ int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAll
 			passwd = (char *) malloc (passwdlen + 1);
 			if (passwd == NULL)
 			{
-				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errmsgbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				free(username);
 				goto error;
 			}
@@ -1205,14 +1208,15 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 	if (setuid(user->pw_uid))
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "setuid");
 		return -1;
 	}
 
 /*	if (setgid(user->pw_gid))
 	{
-		SOCK_ASSERT("setgid failed", 1);
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "setgid");
 		return -1;
 	}
 */
@@ -1751,10 +1755,8 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 	    daemon_thrdatamain, (void *) session);
 	if (ret != 0)
 	{
-		char thread_errbuf[PCAP_ERRBUF_SIZE];
-
-		(void)strerror_r(ret, thread_errbuf, PCAP_ERRBUF_SIZE);
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread: %s", thread_errbuf);
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    ret, "Error creating the data thread");
 		pthread_attr_destroy(&detachedAttribute);
 		goto error;
 	}
@@ -1977,7 +1979,8 @@ static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, ui
 	bf_insn = (struct bpf_insn *) malloc (sizeof(struct bpf_insn) * bf_prog.bf_len);
 	if (bf_insn == NULL)
 	{
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errmsgbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc() failed");
 		return -2;
 	}
 
@@ -2239,14 +2242,17 @@ daemon_thrdatamain(void *ptr)
 	retval = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	if (retval != 0)
 	{
-		(void)strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    retval, "pthread_setcancelstate");
 		rpcapd_log(LOGPRIO_ERROR,
 		    "Can't set cancel state on data thread: %s", errbuf);
 		goto error;
 	}
-	if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
+	retval = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	if (retval != 0)
 	{
-		(void)strerror_r(retval, errbuf, PCAP_ERRBUF_SIZE);
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    retval, "pthread_setcanceltype");
 		rpcapd_log(LOGPRIO_ERROR,
 		    "Can't set cancel type on data thread: %s", errbuf);
 		goto error;

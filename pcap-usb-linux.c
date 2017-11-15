@@ -567,8 +567,9 @@ usb_activate(pcap_t* handle)
 				/*
 				 * Something went wrong.
 				 */
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-					"Can't open USB bus file %s: %s", full_path, strerror(errno));
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "Can't open USB bus file %s", full_path);
 				return PCAP_ERROR;
 			}
 		}
@@ -646,8 +647,10 @@ usb_activate(pcap_t* handle)
 					/*
 					 * Yes - return *that* error.
 					 */
-					pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-						"Can't open USB bus file %s: %s", full_path, strerror(errno));
+					pcap_fmt_errmsg_for_errno(handle->errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "Can't open USB bus file %s",
+					    full_path);
 					return PCAP_ERROR;
 				}
 
@@ -683,8 +686,8 @@ usb_activate(pcap_t* handle)
 	 * buffer */
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			 "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		close(handle->fd);
 		return PCAP_ERROR;
 	}
@@ -734,8 +737,8 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		if (errno == EAGAIN)
 			return 0;	/* no data there */
 
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't read from fd %d: %s", handle->fd, strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't read from fd %d", handle->fd);
 		return -1;
 	}
 
@@ -761,9 +764,8 @@ usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 	/* don't use usbmon provided timestamp, since it have low precision*/
 	if (gettimeofday(&pkth.ts, NULL) < 0)
 	{
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't get timestamp for message '%s' %d:%s",
-			string, errno, strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't get timestamp for message '%s'");
 		return -1;
 	}
 	uhdr->ts_sec = pkth.ts.tv_sec;
@@ -932,9 +934,9 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 			fd = open(string, O_RDONLY, 0);
 		}
 		if (fd < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				"Can't open USB stats file %s: %s",
-				string, strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "Can't open USB stats file %s", string);
 			return -1;
 		}
 	}
@@ -1001,8 +1003,8 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
 	ret = ioctl(handle->fd, MON_IOCG_STATS, &st);
 	if (ret < 0)
 	{
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"Can't read stats from fd %d:%s ", handle->fd, strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't read stats from fd %d", handle->fd);
 		return -1;
 	}
 
@@ -1044,8 +1046,8 @@ usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_cha
 		if (errno == EAGAIN)
 			return 0;	/* no data there */
 
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't read from fd %d: %s", handle->fd, strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't read from fd %d", handle->fd);
 		return -1;
 	}
 
@@ -1115,8 +1117,9 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			if (errno == EAGAIN)
 				return 0;	/* no data there */
 
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "Can't mfetch fd %d: %s", handle->fd, strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "Can't mfetch fd %d",
+			    handle->fd);
 			return -1;
 		}
 
@@ -1156,8 +1159,8 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 
 	/* flush pending events*/
 	if (ioctl(handle->fd, MON_IOCH_MFLUSH, nflush) == -1) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't mflush fd %d: %s", handle->fd, strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't mflush fd %d", handle->fd);
 		return -1;
 	}
 	return packets;

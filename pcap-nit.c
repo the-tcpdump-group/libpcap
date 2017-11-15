@@ -114,8 +114,8 @@ pcap_read_nit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		if (cc < 0) {
 			if (errno == EWOULDBLOCK)
 				return (0);
-			pcap_snprintf(p->errbuf, sizeof(p->errbuf), "pcap_read: %s",
-				pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			    errno, "pcap_read");
 			return (-1);
 		}
 		bp = (u_char *)p->buffer;
@@ -206,8 +206,8 @@ pcap_inject_nit(pcap_t *p, const void *buf, size_t size)
 	strncpy(sa.sa_data, device, sizeof(sa.sa_data));
 	ret = sendto(p->fd, buf, size, 0, &sa, sizeof(sa));
 	if (ret == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "send");
 		return (-1);
 	}
 	return (ret);
@@ -249,8 +249,8 @@ nit_setflags(pcap_t *p)
 		nioc.nioc_flags |= NF_PROMISC;
 
 	if (ioctl(p->fd, SIOCSNIT, &nioc) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCSNIT: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "SIOCSNIT");
 		return (-1);
 	}
 	return (0);
@@ -291,8 +291,8 @@ pcap_activate_nit(pcap_t *p)
 	memset(p, 0, sizeof(*p));
 	p->fd = fd = socket(AF_NIT, SOCK_RAW, NITPROTO_RAW);
 	if (fd < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "socket: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
 		goto bad;
 	}
 	snit.snit_family = AF_NIT;
@@ -306,8 +306,8 @@ pcap_activate_nit(pcap_t *p)
 		 * they might be the same error, if they both end up
 		 * meaning "NIT doesn't know about that device".
 		 */
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "bind: %s: %s", snit.snit_ifname, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "bind: %s", snit.snit_ifname);
 		goto bad;
 	}
 	if (nit_setflags(p) < 0)
@@ -321,7 +321,8 @@ pcap_activate_nit(pcap_t *p)
 	p->bufsize = BUFSPACE;
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		goto bad;
 	}
 

@@ -275,8 +275,8 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 
 		err = pcap_fopen(&fp, fname, "rb");
 		if (err != 0) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", fname,
-			    pcap_strerror(err));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    err, "%s", fname);
 			return (NULL);
 		}
 	}
@@ -305,14 +305,16 @@ pcap_t* pcap_hopen_offline_with_tstamp_precision(intptr_t osfd, u_int precision,
 	fd = _open_osfhandle(osfd, _O_RDONLY);
 	if ( fd < 0 )
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "_open_osfhandle");
 		return NULL;
 	}
 
 	file = _fdopen(fd, "rb");
 	if ( file == NULL )
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "_fdopen");
 		return NULL;
 	}
 
@@ -357,9 +359,8 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
 	if (amt_read != sizeof(magic)) {
 		if (ferror(fp)) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "error reading dump file");
 		} else {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "truncated dump file; tried to read %lu file header bytes, only got %lu",

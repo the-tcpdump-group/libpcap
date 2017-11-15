@@ -255,9 +255,8 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 	amt_read = fread(buf, 1, bytes_to_read, fp);
 	if (amt_read != bytes_to_read) {
 		if (ferror(fp)) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "error reading dump file");
 		} else {
 			if (amt_read == 0 && !fail_on_eof)
 				return (0);	/* EOF */
@@ -777,9 +776,8 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	amt_read = fread(&total_length, 1, sizeof(total_length), fp);
 	if (amt_read < sizeof(total_length)) {
 		if (ferror(fp)) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "error reading dump file");
 			*err = 1;
 			return (NULL);	/* fail */
 		}
@@ -793,9 +791,8 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	amt_read = fread(&byte_order_magic, 1, sizeof(byte_order_magic), fp);
 	if (amt_read < sizeof(byte_order_magic)) {
 		if (ferror(fp)) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "error reading dump file");
 			*err = 1;
 			return (NULL);	/* fail */
 		}

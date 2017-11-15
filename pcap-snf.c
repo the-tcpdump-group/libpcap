@@ -55,8 +55,8 @@ snf_pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	int rc;
 
 	if ((rc = snf_ring_getstats(snfps->snf_ring, &stats))) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_get_stats: %s",
-			 pcap_strerror(rc));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    rc, "snf_get_stats");
 		return -1;
 	}
 	ps->ps_recv = stats.ring_pkt_recv + stats.ring_pkt_overflow;
@@ -166,8 +166,8 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				continue;
 			}
 			else {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_read: %s",
-				 	 pcap_strerror(err));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, err, "snf_read");
 				return -1;
 			}
 		}
@@ -221,8 +221,8 @@ snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 	if (ps->snf_inj == NULL) {
 		rc = snf_inject_open(ps->snf_boardnum, 0, &ps->snf_inj);
 		if (rc) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				"snf_inject_open: %s", pcap_strerror(rc));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    rc, "snf_inject_open");
 			return (-1);
 		}
 	}
@@ -232,8 +232,8 @@ snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 		return (size);
 	}
 	else {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "snf_inject_send: %s",
-			 pcap_strerror(rc));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    rc, "snf_inject_send");
 		return (-1);
 	}
 #else
@@ -253,8 +253,7 @@ snf_activate(pcap_t* p)
 	int flags = -1, ring_id = -1;
 
 	if (device == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			 "device is NULL: %s", pcap_strerror(errno));
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
 		return -1;
 	}
 
@@ -281,8 +280,8 @@ snf_activate(pcap_t* p)
 			flags, /* may want pshared */
 			&ps->snf_handle);
 	if (err != 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			 "snf_open failed: %s", pcap_strerror(err));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    err, "snf_open failed");
 		return -1;
 	}
 
@@ -291,9 +290,8 @@ snf_activate(pcap_t* p)
 	}
 	err = snf_ring_open_id(ps->snf_handle, ring_id, &ps->snf_ring);
 	if (err != 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			 "snf_ring_open_id(ring=%d) failed: %s",
-			 ring_id, pcap_strerror(err));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    err, "snf_ring_open_id(ring=%d) failed", ring_id);
 		return -1;
 	}
 
@@ -315,8 +313,8 @@ snf_activate(pcap_t* p)
 
 	err = snf_start(ps->snf_handle);
 	if (err != 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			 "snf_start failed: %s", pcap_strerror(err));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    err, "snf_start failed");
 		return -1;
 	}
 
@@ -364,8 +362,8 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	if (snf_getifaddrs(&ifaddrs) || ifaddrs == NULL)
 	{
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			"snf_getifaddrs: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "snf_getifaddrs");
 		return (-1);
 	}
 	if ((nr = getenv("SNF_FLAGS")) && *nr) {
@@ -431,8 +429,9 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 
 			desc_str = strdup(desc);
 			if (desc_str == NULL) {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "snf_findalldevs strdup: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "snf_findalldevs strdup");
 				return -1;
 			}
 			free(dev->description);
@@ -463,7 +462,9 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 				/*
 				 * Error.
 				 */
-                                (void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,"sinf_findalldevs inet_pton: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "sinf_findalldevs inet_pton");
                                 return -1;
                         }
 #endif _WIN32
@@ -553,8 +554,8 @@ snf_create(const char *device, char *ebuf, int *is_ours)
 	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
+		    "malloc");
 		pcap_close(p);
 		return NULL;
 	}

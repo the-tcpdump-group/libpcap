@@ -127,8 +127,8 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 				(void)lseek(pc->fd, 0L, SEEK_SET);
 				goto again;
 			}
-			pcap_snprintf(pc->errbuf, sizeof(pc->errbuf), "pf read: %s",
-				pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(pc->errbuf,
+			    sizeof(pc->errbuf), errno, "pf read");
 			return (-1);
 		}
 		bp = (u_char *)pc->buffer + pc->offset;
@@ -232,8 +232,8 @@ pcap_inject_pf(pcap_t *p, const void *buf, size_t size)
 
 	ret = write(p->fd, buf, size);
 	if (ret == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "send");
 		return (-1);
 	}
 	return (ret);
@@ -302,6 +302,7 @@ pcap_activate_pf(pcap_t *p)
 	int backlog = -1;	/* request the most */
 	struct enfilter Filter;
 	struct endevp devparams;
+	int err;
 
 	/*
 	 * Initially try a read/write open (to allow the inject
@@ -329,9 +330,17 @@ pcap_activate_pf(pcap_t *p)
 	if (p->fd == -1 && errno == EACCES)
 		p->fd = pfopen(p->opt.device, O_RDONLY);
 	if (p->fd < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "pf open: %s: %s\n\
-your system may not be properly configured; see the packetfilter(4) man page\n",
-			p->opt.device, pcap_strerror(errno));
+		if (errno == EACCES) {
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "pf open: %s: Permission denied\n"
+"your system may not be properly configured; see the packetfilter(4) man page",
+			    p->opt.device);
+			err = PCAP_ERROR_PERM_DENIED;
+		} else {
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "pf open: %s", p->opt.device);
+			err = PCAP_ERROR;
+		}
 		goto bad;
 	}
 
@@ -353,8 +362,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	if (p->opt.promisc)
 		enmode |= ENPROMISC;
 	if (ioctl(p->fd, EIOCMBIS, (caddr_t)&enmode) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "EIOCMBIS: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "EIOCMBIS");
+		err = PCAP_ERROR;
 		goto bad;
 	}
 #ifdef	ENCOPYALL
@@ -364,14 +374,16 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 #endif
 	/* set the backlog */
 	if (ioctl(p->fd, EIOCSETW, (caddr_t)&backlog) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "EIOCSETW: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "EIOCSETW");
+		err = PCAP_ERROR;
 		goto bad;
 	}
 	/* discover interface type */
 	if (ioctl(p->fd, EIOCDEVP, (caddr_t)&devparams) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "EIOCDEVP: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "EIOCDEVP");
+		err = PCAP_ERROR;
 		goto bad;
 	}
 	/* HACK: to compile prior to Ultrix 4.2 */
@@ -454,6 +466,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		 */
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "unknown data-link type %u", devparams.end_dev_type);
+		err = PCAP_ERROR;
 		goto bad;
 	}
 	/* set truncation */
@@ -465,8 +478,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	} else
 		p->fddipad = 0;
 	if (ioctl(p->fd, EIOCTRUNCATE, (caddr_t)&p->snapshot) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "EIOCTRUNCATE: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "EIOCTRUNCATE");
+		err = PCAP_ERROR;
 		goto bad;
 	}
 	/* accept all packets */
@@ -474,8 +488,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	Filter.enf_Priority = 37;	/* anything > 2 */
 	Filter.enf_FilterLen = 0;	/* means "always true" */
 	if (ioctl(p->fd, EIOCSETF, (caddr_t)&Filter) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "EIOCSETF: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "EIOCSETF");
+		err = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -484,8 +499,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 		timeout.tv_sec = p->opt.timeout / 1000;
 		timeout.tv_usec = (p->opt.timeout * 1000) % 1000000;
 		if (ioctl(p->fd, EIOCSRTIMEOUT, (caddr_t)&timeout) < 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "EIOCSRTIMEOUT: %s",
-				pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "EIOCSRTIMEOUT");
+			err = PCAP_ERROR;
 			goto bad;
 		}
 	}
@@ -493,7 +509,9 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	p->bufsize = BUFSPACE;
 	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
-		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
+		err = PCAP_ERROR;
 		goto bad;
 	}
 
@@ -514,7 +532,7 @@ your system may not be properly configured; see the packetfilter(4) man page\n",
 	return (0);
  bad:
 	pcap_cleanup_live_common(p);
-	return (PCAP_ERROR);
+	return (err);
 }
 
 pcap_t *
@@ -572,8 +590,8 @@ pcap_setfilter_pf(pcap_t *p, struct bpf_program *fp)
 			 * Yes.  Try to install the filter.
 			 */
 			if (ioctl(p->fd, BIOCSETF, (caddr_t)fp) < 0) {
-				pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-				    "BIOCSETF: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    sizeof(p->errbuf), errno, "BIOCSETF");
 				return (-1);
 			}
 

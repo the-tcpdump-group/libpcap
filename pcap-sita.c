@@ -293,7 +293,8 @@ int acn_parse_hosts_file(char *errbuf) {				/* returns: -1 = error, 0 = OK */
 			continue;																	/* and ignore the entry */
 		}
 		if ((ptr2 = (char *)malloc(strlen(ptr) + 1)) == NULL) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			continue;
 		}
 		strcpy(ptr2, ptr);								/* copy the IP address into our malloc'ed memory */
@@ -582,7 +583,8 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 			ptr = u->imsg;													/* point to the start of the msg for this IOP */
 			while (ptr < (u->imsg + u->len)) {
 				if ((iff = malloc(sizeof(pcap_if_t))) == NULL) {
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno, "malloc");
 					return -1;
 				}
 				memset((char *)iff, 0, sizeof(pcap_if_t)); /* bzero() is deprecated, replaced with memset() */
@@ -591,7 +593,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 
 				if (*ptr) {													/* if there is a count for the name */
 					if ((iff->name = malloc(*ptr + 1)) == NULL) {			/* get that amount of space */
-						pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+						pcap_fmt_errmsg_for_errno(errbuf,
+						    PCAP_ERRBUF_SIZE, errno,
+						    "malloc");
 						return -1;
 					}
 					memcpy(iff->name, (ptr + 1), *ptr);						/* copy the name into the malloc'ed space */
@@ -602,7 +606,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 
 				if (*ptr) {													/* if there is a count for the description */
 					if ((iff->description = malloc(*ptr + 1)) == NULL) {	/* get that amount of space */
-						pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+						pcap_fmt_errmsg_for_errno(errbuf,
+						    PCAP_ERRBUF_SIZE, errno,
+						    "malloc");
 						return -1;
 					}
 					memcpy(iff->description, (ptr + 1), *ptr);				/* copy the name into the malloc'ed space */
@@ -622,7 +628,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 				prev_addr = 0;
 				while (address_count--) {
 					if ((addr = malloc(sizeof(pcap_addr_t))) == NULL) {
-						pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+						pcap_fmt_errmsg_for_errno(errbuf,
+						    PCAP_ERRBUF_SIZE, errno,
+						    "malloc");
 						return -1;
 					}
  					memset((char *)addr, 0, sizeof(pcap_addr_t)); /* bzero() is deprecated, replaced with memset() */
@@ -630,7 +638,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					if (prev_addr) prev_addr->next = addr;							/* insert a forward link */
 					if (*ptr) {														/* if there is a count for the address */
 						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {		/* get that amount of space */
-							pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+							pcap_fmt_errmsg_for_errno(errbuf,
+							    PCAP_ERRBUF_SIZE,
+							    errno, "malloc");
 							return -1;
 						}
 						memset((char *)s, 0, sizeof(struct sockaddr_in)); /* bzero() is deprecated, replaced with memset() */
@@ -642,7 +652,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					ptr++;													/* then forwards one more for the 'length of the address' field */
 					if (*ptr) {												/* process any netmask */
 						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {
-							pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+							pcap_fmt_errmsg_for_errno(errbuf,
+							    PCAP_ERRBUF_SIZE,
+							    errno, "malloc");
 							return -1;
 						}
 						/* bzero() is deprecated, replaced with memset() */
@@ -656,7 +668,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					ptr++;
 					if (*ptr) {												/* process any broadcast address */
 						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {
-							pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+							pcap_fmt_errmsg_for_errno(errbuf,
+							    PCAP_ERRBUF_SIZE,
+							    errno, "malloc");
 							return -1;
 						}
 						/* bzero() is deprecated, replaced with memset() */
@@ -670,7 +684,9 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 					ptr++;
 					if (*ptr) {												/* process any destination address */
 						if ((s = malloc(sizeof(struct sockaddr_in))) == NULL) {
-							pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+							pcap_fmt_errmsg_for_errno(errbuf,
+							    PCAP_ERRBUF_SIZE,
+							    errno, "malloc");
 							return -1;
 						}
 						/* bzero() is deprecated, replaced with memset() */
@@ -689,7 +705,8 @@ static int process_client_data (char *errbuf) {								/* returns: -1 = error, 0
 				newname = translate_IOP_to_pcap_name(u, iff->name, interfaceType);		/* add a translation entry and get a point to the mangled name */
 				bigger_buffer = realloc(iff->name, strlen(newname) + 1));
 				if (bigger_buffer == NULL) {	/* we now re-write the name stored in the interface list */
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "realloc: %s", pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno, "realloc");
 					return -1;
 				}
 				iff->name = bigger_buffer;
@@ -1011,8 +1028,8 @@ static int pcap_activate_sita(pcap_t *handle) {
 
 	handle->buffer	 = malloc(handle->bufsize + handle->offset);
 	if (!handle->buffer) {
-	        pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			 "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		pcap_cleanup_acn(handle);
 		return PCAP_ERROR;
 	}

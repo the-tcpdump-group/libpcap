@@ -368,8 +368,8 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 			if (data)
 				return (data);
 			if (ioctl(p->fd, BIOCROTZBUF, &bz) < 0) {
-				(void) pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "BIOCROTZBUF: %s", strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "BIOCROTZBUF");
 				return (PCAP_ERROR);
 			}
 			return (pcap_next_zbuf_shm(p, cc));
@@ -396,8 +396,8 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 			}
 			return (0);
 		} else if (r < 0) {
-			(void) pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "select: %s", strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "select");
 			return (PCAP_ERROR);
 		}
 	}
@@ -415,8 +415,8 @@ pcap_next_zbuf(pcap_t *p, int *cc)
 	 * data.
 	 */
 	if (ioctl(p->fd, BIOCROTZBUF, &bz) < 0) {
-		(void) pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "BIOCROTZBUF: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCROTZBUF");
 		return (PCAP_ERROR);
 	}
 	return (pcap_next_zbuf_shm(p, cc));
@@ -458,8 +458,8 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	p->tstamp_precision_count = 2;
 	p->tstamp_precision_list = malloc(2 * sizeof(u_int));
 	if (p->tstamp_precision_list == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
+		    "malloc");
 		free(p);
 		return (NULL);
 	}
@@ -507,9 +507,8 @@ bpf_open(char *errbuf)
 				fd = PCAP_ERROR_PERM_DENIED;
 			else
 				fd = PCAP_ERROR;
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			  "(cannot open device) %s: %s", cloning_device,
-			  pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "(cannot open device) %s", cloning_device);
 			return (fd);
 		}
 		no_cloning_bpf = 1;
@@ -578,9 +577,8 @@ bpf_open(char *errbuf)
 			 * if any.
 			 */
 			fd = PCAP_ERROR_PERM_DENIED;
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "(cannot open BPF device) %s: %s", device,
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "(cannot open BPF device) %s", device);
 			break;
 
 		default:
@@ -588,9 +586,8 @@ bpf_open(char *errbuf)
 			 * Some other problem.
 			 */
 			fd = PCAP_ERROR;
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "(cannot open BPF device) %s: %s", device,
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "(cannot open BPF device) %s", device);
 			break;
 		}
 	}
@@ -645,8 +642,8 @@ bpf_open_and_bind(const char *name, char *errbuf)
 			return (PCAP_ERROR_IFACE_NOT_UP);
 
 		default:
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "BIOCSETIF: %s: %s", name, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCSETIF: %s", name);
 			close(fd);
 			return (PCAP_ERROR);
 		}
@@ -669,14 +666,14 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 
 		bdlp->bfl_list = (u_int *) malloc(sizeof(u_int) * (bdlp->bfl_len + 1));
 		if (bdlp->bfl_list == NULL) {
-			(void)pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
 
 		if (ioctl(fd, BIOCGDLTLIST, (caddr_t)bdlp) < 0) {
-			(void)pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCGDLTLIST");
 			free(bdlp->bfl_list);
 			return (PCAP_ERROR);
 		}
@@ -730,8 +727,8 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 		 * this device"; don't treat it as an error.
 		 */
 		if (errno != EINVAL) {
-			(void)pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "BIOCGDLTLIST: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCGDLTLIST");
 			return (PCAP_ERROR);
 		}
 	}
@@ -797,8 +794,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 		}
 		fd = socket(AF_INET, SOCK_DGRAM, 0);
 		if (fd == -1) {
-			(void)pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "socket: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "socket");
 			return (PCAP_ERROR);
 		}
 		strlcpy(ifr.ifr_name, "wlt", sizeof(ifr.ifr_name));
@@ -852,9 +849,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			return (PCAP_ERROR_IFACE_NOT_UP);
 
 		default:
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "BIOCSETIF: %s: %s",
-			    p->opt.device, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCSETIF: %s", p->opt.device);
 			close(fd);
 			return (PCAP_ERROR);
 		}
@@ -916,8 +912,8 @@ pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
 	 * by libpcap, and thus not yet seen by the application.
 	 */
 	if (ioctl(p->fd, BIOCGSTATS, (caddr_t)&s) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGSTATS: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCGSTATS");
 		return (PCAP_ERROR);
 	}
 
@@ -1044,8 +1040,8 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				/* fall through */
 #endif
 			}
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "read");
 			return (PCAP_ERROR);
 		}
 		bp = (u_char *)p->buffer;
@@ -1218,9 +1214,8 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 		u_int spoof_eth_src = 0;
 
 		if (ioctl(p->fd, BIOCSHDRCMPLT, &spoof_eth_src) == -1) {
-			(void)pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "send: can't turn off BIOCSHDRCMPLT: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "send: can't turn off BIOCSHDRCMPLT");
 			return (PCAP_ERROR);
 		}
 
@@ -1231,8 +1226,8 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 	}
 #endif /* __APPLE__ */
 	if (ret == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "send: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "send");
 		return (PCAP_ERROR);
 	}
 	return (ret);
@@ -1320,8 +1315,8 @@ bpf_load(char *errbuf)
 
 	major = genmajor(BPF_NAME);
 	if (major == -1) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "bpf_load: genmajor failed: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "bpf_load: genmajor failed");
 		(void)bpf_odmcleanup(NULL);
 		return (PCAP_ERROR);
 	}
@@ -1330,9 +1325,8 @@ bpf_load(char *errbuf)
 	if (!minors) {
 		minors = genminor("bpf", major, 0, BPF_MINORS, 1, 1);
 		if (!minors) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "bpf_load: genminor failed: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "bpf_load: genminor failed");
 			(void)bpf_odmcleanup(NULL);
 			return (PCAP_ERROR);
 		}
@@ -1343,9 +1337,8 @@ bpf_load(char *errbuf)
 
 	rc = stat(BPF_NODE "0", &sbuf);
 	if (rc == -1 && errno != ENOENT) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "bpf_load: can't stat %s: %s",
-		    BPF_NODE "0", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "bpf_load: can't stat %s", BPF_NODE "0");
 		return (PCAP_ERROR);
 	}
 
@@ -1354,9 +1347,9 @@ bpf_load(char *errbuf)
 			sprintf(buf, "%s%d", BPF_NODE, i);
 			unlink(buf);
 			if (mknod(buf, S_IRUSR | S_IFCHR, domakedev(major, i)) == -1) {
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "bpf_load: can't mknod %s: %s",
-				    buf, pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "bpf_load: can't mknod %s", buf);
 				return (PCAP_ERROR);
 			}
 		}
@@ -1370,9 +1363,8 @@ bpf_load(char *errbuf)
 	    (cfg_ld.kmid == 0)) {
 		/* Driver isn't loaded, load it now */
 		if (sysconfig(SYS_SINGLELOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "bpf_load: could not load driver: %s",
-			    strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "bpf_load: could not load driver");
 			return (PCAP_ERROR);
 		}
 	}
@@ -1385,9 +1377,8 @@ bpf_load(char *errbuf)
 	for (i = 0; i < BPF_MINORS; i++) {
 		cfg_bpf.devno = domakedev(major, i);
 		if (sysconfig(SYS_CFGKMOD, (void *)&cfg_km, sizeof(cfg_km)) == -1) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "bpf_load: could not configure driver: %s",
-			    strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "bpf_load: could not configure driver");
 			return (PCAP_ERROR);
 		}
 	}
@@ -1551,9 +1542,10 @@ check_setif_failure(pcap_t *p, int error)
 					 * exist.
 					 */
 					err = PCAP_ERROR_NO_SUCH_DEVICE;
-					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-					    "SIOCGIFFLAGS on %s failed: %s",
-					    ifr.ifr_name, pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(p->errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "SIOCGIFFLAGS on %s failed",
+					    ifr.ifr_name);
 				} else {
 					/*
 					 * The underlying "enN" device
@@ -1575,9 +1567,9 @@ check_setif_failure(pcap_t *p, int error)
 				 * just report "no such device".
 				 */
 				err = PCAP_ERROR_NO_SUCH_DEVICE;
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "socket() failed: %s",
-				    pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    errno, PCAP_ERRBUF_SIZE,
+				    "socket() failed");
 			}
 			return (err);
 		}
@@ -1585,8 +1577,8 @@ check_setif_failure(pcap_t *p, int error)
 		/*
 		 * No such device.
 		 */
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF failed: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCSETIF failed");
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	} else if (errno == ENETDOWN) {
 		/*
@@ -1602,8 +1594,8 @@ check_setif_failure(pcap_t *p, int error)
 		 * Some other error; fill in the error string, and
 		 * return PCAP_ERROR.
 		 */
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
-		    p->opt.device, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCSETIF: %s", p->opt.device);
 		return (PCAP_ERROR);
 	}
 }
@@ -1675,8 +1667,8 @@ pcap_activate_bpf(pcap_t *p)
 	p->fd = fd;
 
 	if (ioctl(fd, BIOCVERSION, (caddr_t)&bv) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCVERSION: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCVERSION");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -1704,8 +1696,8 @@ pcap_activate_bpf(pcap_t *p)
 	 * Retrieve the zoneid of the zone we are currently executing in.
 	 */
 	if ((ifr.lifr_zoneid = getzoneid()) == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "getzoneid(): %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "getzoneid()");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -1731,16 +1723,15 @@ pcap_activate_bpf(pcap_t *p)
 		(void) strlcpy(path_zname, p->opt.device, znamelen + 1);
 		ifr.lifr_zoneid = getzoneidbyname(path_zname);
 		if (ifr.lifr_zoneid == -1) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "getzoneidbyname(%s): %s", path_zname,
-			pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "getzoneidbyname(%s)", path_zname);
 			status = PCAP_ERROR;
 			goto bad;
 		}
 		lnamep = strdup(zonesep + 1);
 		if (lnamep == NULL) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "strdup");
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -1751,8 +1742,8 @@ pcap_activate_bpf(pcap_t *p)
 
 	pb->device = strdup(p->opt.device);
 	if (pb->device == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "strdup: %s",
-		     pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "strdup");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -1806,10 +1797,10 @@ pcap_activate_bpf(pcap_t *p)
 							 * exist.
 							 */
 							status = PCAP_ERROR_NO_SUCH_DEVICE;
-							pcap_snprintf(p->errbuf,
+							pcap_fmt_errmsg_for_errno(p->errbuf,
 							    PCAP_ERRBUF_SIZE,
-							    "SIOCGIFFLAGS failed: %s",
-							    pcap_strerror(errno));
+							    errno,
+							    "SIOCGIFFLAGS failed");
 						} else
 							status = PCAP_ERROR_RFMON_NOTSUP;
 						close(sockfd);
@@ -1820,18 +1811,17 @@ pcap_activate_bpf(pcap_t *p)
 						 * report "no such device".
 						 */
 						status = PCAP_ERROR_NO_SUCH_DEVICE;
-						pcap_snprintf(p->errbuf,
-						    PCAP_ERRBUF_SIZE,
-						    "socket() failed: %s",
-						    pcap_strerror(errno));
+						pcap_fmt_errmsg_for_errno(p->errbuf,
+						    PCAP_ERRBUF_SIZE, errno,
+						    "socket() failed");
 					}
 					goto bad;
 				}
 				wltdev = malloc(strlen(p->opt.device) + 2);
 				if (wltdev == NULL) {
-					(void)pcap_snprintf(p->errbuf,
-					    PCAP_ERRBUF_SIZE, "malloc: %s",
-					    pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(p->errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "malloc");
 					status = PCAP_ERROR;
 					goto bad;
 				}
@@ -1871,9 +1861,9 @@ pcap_activate_bpf(pcap_t *p)
 			 */
 			s = socket(AF_LOCAL, SOCK_DGRAM, 0);
 			if (s < 0) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "Can't open socket: %s",
-				    pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errnoB(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "Can't open socket");
 				status = PCAP_ERROR;
 				goto bad;
 			}
@@ -1904,9 +1894,10 @@ pcap_activate_bpf(pcap_t *p)
 					    "Invalid USB bus interface %s",
 					    p->opt.device);
 				} else {
-					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-					    "Can't create interface for %s: %s",
-					    p->opt.device, pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(p->errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "Can't create interface for %s",
+					    p->opt.device);
 				}
 				close(s);
 				status = PCAP_ERROR;
@@ -1949,8 +1940,8 @@ pcap_activate_bpf(pcap_t *p)
 		 * size.
 		 */
 		if (ioctl(fd, BIOCGETZMAX, (caddr_t)&zbufmax) < 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGETZMAX: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCGETZMAX");
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -1976,8 +1967,8 @@ pcap_activate_bpf(pcap_t *p)
 		pb->zbuf2 = mmap(NULL, pb->zbufsize, PROT_READ | PROT_WRITE,
 		    MAP_ANON, -1, 0);
 		if (pb->zbuf1 == MAP_FAILED || pb->zbuf2 == MAP_FAILED) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "mmap: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "mmap");
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -1986,15 +1977,15 @@ pcap_activate_bpf(pcap_t *p)
 		bz.bz_bufb = pb->zbuf2;
 		bz.bz_buflen = pb->zbufsize;
 		if (ioctl(fd, BIOCSETZBUF, (caddr_t)&bz) < 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETZBUF: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCSETZBUF");
 			status = PCAP_ERROR;
 			goto bad;
 		}
 		(void)strncpy(ifrname, p->opt.device, ifnamsiz);
 		if (ioctl(fd, BIOCSETIF, (caddr_t)&ifr) < 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETIF: %s: %s",
-			    p->opt.device, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCSETIF: %s", p->opt.device);
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -2012,9 +2003,9 @@ pcap_activate_bpf(pcap_t *p)
 			 */
 			if (ioctl(fd, BIOCSBLEN,
 			    (caddr_t)&p->opt.buffer_size) < 0) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "BIOCSBLEN: %s: %s", p->opt.device,
-				    pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "BIOCSBLEN: %s", p->opt.device);
 				status = PCAP_ERROR;
 				goto bad;
 			}
@@ -2081,8 +2072,8 @@ pcap_activate_bpf(pcap_t *p)
 
 	/* Get the data link layer type. */
 	if (ioctl(fd, BIOCGDLT, (caddr_t)&v) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGDLT: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCGDLT");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -2326,8 +2317,8 @@ pcap_activate_bpf(pcap_t *p)
 	 * BSDs - check CVS log for "bpf.c"?
 	 */
 	if (ioctl(fd, BIOCSHDRCMPLT, &spoof_eth_src) == -1) {
-		(void)pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "BIOCSHDRCMPLT: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCSHDRCMPLT");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -2368,8 +2359,8 @@ pcap_activate_bpf(pcap_t *p)
 			bpf_to.tv_sec = p->opt.timeout / 1000;
 			bpf_to.tv_usec = (p->opt.timeout * 1000) % 1000000;
 			if (ioctl(p->fd, BIOCSRTIMEOUT, (caddr_t)&bpf_to) < 0) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "BIOCSRTIMEOUT: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    errno, PCAP_ERRBUF_SIZE, "BIOCSRTIMEOUT");
 				status = PCAP_ERROR;
 				goto bad;
 			}
@@ -2378,8 +2369,8 @@ pcap_activate_bpf(pcap_t *p)
 			to.tv_sec = p->opt.timeout / 1000;
 			to.tv_usec = (p->opt.timeout * 1000) % 1000000;
 			if (ioctl(p->fd, BIOCSRTIMEOUT, (caddr_t)&to) < 0) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "BIOCSRTIMEOUT: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    errno, PCAP_ERRBUF_SIZE, "BIOCSRTIMEOUT");
 				status = PCAP_ERROR;
 				goto bad;
 			}
@@ -2413,8 +2404,8 @@ pcap_activate_bpf(pcap_t *p)
 #endif /* _AIX */
 		v = 1;
 		if (ioctl(p->fd, BIOCIMMEDIATE, &v) < 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "BIOCIMMEDIATE: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCIMMEDIATE");
 			status = PCAP_ERROR;
 			goto bad;
 		}
@@ -2435,8 +2426,8 @@ pcap_activate_bpf(pcap_t *p)
 	if (p->opt.promisc) {
 		/* set promiscuous mode, just warn if it fails */
 		if (ioctl(p->fd, BIOCPROMISC, NULL) < 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCPROMISC: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "BIOCPROMISC");
 			status = PCAP_WARNING_PROMISC_NOTSUP;
 		}
 	}
@@ -2444,16 +2435,16 @@ pcap_activate_bpf(pcap_t *p)
 #ifdef BIOCSTSTAMP
 	v = BPF_T_BINTIME;
 	if (ioctl(p->fd, BIOCSTSTAMP, &v) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSTSTAMP: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCSTSTAMP");
 		status = PCAP_ERROR;
 		goto bad;
 	}
 #endif /* BIOCSTSTAMP */
 
 	if (ioctl(fd, BIOCGBLEN, (caddr_t)&v) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCGBLEN: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCGBLEN");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -2463,8 +2454,8 @@ pcap_activate_bpf(pcap_t *p)
 #endif
 	p->buffer = malloc(p->bufsize);
 	if (p->buffer == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -2494,8 +2485,8 @@ pcap_activate_bpf(pcap_t *p)
 	total_prog.bf_len = 1;
 	total_prog.bf_insns = &total_insn;
 	if (ioctl(p->fd, BIOCSETF, (caddr_t)&total_prog) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETF: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCSETF");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -2605,8 +2596,8 @@ check_bpf_bindable(const char *name)
 		en_name_len = strlen(name) - 1;
 		en_name = malloc(en_name_len + 1);
 		if (en_name == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			return (-1);
 		}
 		strcpy(en_name, "en");
@@ -2754,8 +2745,8 @@ monitor_mode(pcap_t *p, int set)
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "can't open socket: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "can't open socket");
 		return (PCAP_ERROR);
 	}
 
@@ -2786,8 +2777,8 @@ monitor_mode(pcap_t *p, int set)
 			return (PCAP_ERROR_RFMON_NOTSUP);
 
 		default:
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "SIOCGIFMEDIA 1: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "SIOCGIFMEDIA 1");
 			close(sock);
 			return (PCAP_ERROR);
 		}
@@ -2806,15 +2797,15 @@ monitor_mode(pcap_t *p, int set)
 	 */
 	media_list = malloc(req.ifm_count * sizeof(*media_list));
 	if (media_list == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		close(sock);
 		return (PCAP_ERROR);
 	}
 	req.ifm_ulist = media_list;
 	if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "SIOCGIFMEDIA: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "SIOCGIFMEDIA");
 		free(media_list);
 		close(sock);
 		return (PCAP_ERROR);
@@ -2874,8 +2865,8 @@ monitor_mode(pcap_t *p, int set)
 			    sizeof(ifr.ifr_name));
 			ifr.ifr_media = req.ifm_current | IFM_IEEE80211_MONITOR;
 			if (ioctl(sock, SIOCSIFMEDIA, &ifr) == -1) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				     "SIOCSIFMEDIA: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "SIOCSIFMEDIA");
 				close(sock);
 				return (PCAP_ERROR);
 			}
@@ -3099,8 +3090,8 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
 	 * some kernels.
 	 */
 	if (errno != EINVAL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "BIOCSETF: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "BIOCSETF");
 		return (-1);
 	}
 
@@ -3128,11 +3119,10 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 	direction = (d == PCAP_D_IN) ? BPF_D_IN :
 	    ((d == PCAP_D_OUT) ? BPF_D_OUT : BPF_D_INOUT);
 	if (ioctl(p->fd, BIOCSDIRECTION, &direction) == -1) {
-		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-		    "Cannot set direction to %s: %s",
+		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		    errno, "Cannot set direction to %s",
 		        (d == PCAP_D_IN) ? "PCAP_D_IN" :
-			((d == PCAP_D_OUT) ? "PCAP_D_OUT" : "PCAP_D_INOUT"),
-			strerror(errno));
+			((d == PCAP_D_OUT) ? "PCAP_D_OUT" : "PCAP_D_INOUT"));
 		return (-1);
 	}
 	return (0);
@@ -3150,10 +3140,9 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 
 	seesent = (d == PCAP_D_INOUT);
 	if (ioctl(p->fd, BIOCSSEESENT, &seesent) == -1) {
-		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-		    "Cannot set direction to %s: %s",
-		        (d == PCAP_D_INOUT) ? "PCAP_D_INOUT" : "PCAP_D_IN",
-			strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		    errno, "Cannot set direction to %s",
+		    (d == PCAP_D_INOUT) ? "PCAP_D_INOUT" : "PCAP_D_IN");
 		return (-1);
 	}
 	return (0);
@@ -3169,8 +3158,8 @@ pcap_set_datalink_bpf(pcap_t *p, int dlt)
 {
 #ifdef BIOCSDLT
 	if (ioctl(p->fd, BIOCSDLT, &dlt) == -1) {
-		(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-		    "Cannot set DLT %d: %s", dlt, strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		    errno, "Cannot set DLT %d", dlt);
 		return (-1);
 	}
 #endif

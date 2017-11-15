@@ -97,8 +97,8 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	 */
 	fd4 = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd4 < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "socket: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket: AF_INET");
 		return (-1);
 	}
 
@@ -107,8 +107,8 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	 */
 	fd6 = socket(AF_INET6, SOCK_DGRAM, 0);
 	if (fd6 < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "socket: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket: AF_INET6");
 		(void)close(fd4);
 		return (-1);
 	}
@@ -120,8 +120,8 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	ifn.lifn_flags = 0;
 	ifn.lifn_count = 0;
 	if (ioctl(fd4, SIOCGLIFNUM, (char *)&ifn) < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "SIOCGLIFNUM: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "SIOCGLIFNUM");
 		(void)close(fd6);
 		(void)close(fd4);
 		return (-1);
@@ -133,8 +133,8 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	buf_size = ifn.lifn_count * sizeof (struct lifreq);
 	buf = malloc(buf_size);
 	if (buf == NULL) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		(void)close(fd6);
 		(void)close(fd4);
 		return (-1);
@@ -149,8 +149,8 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 	ifc.lifc_flags = 0;
 	memset(buf, 0, buf_size);
 	if (ioctl(fd4, SIOCGLIFCONF, (char *)&ifc) < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "SIOCGLIFCONF: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "SIOCGLIFCONF");
 		(void)close(fd6);
 		(void)close(fd4);
 		free(buf);
@@ -198,11 +198,10 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		if (ioctl(fd, SIOCGLIFFLAGS, (char *)&ifrflags) < 0) {
 			if (errno == ENXIO)
 				continue;
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "SIOCGLIFFLAGS: %.*s: %s",
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "SIOCGLIFFLAGS: %.*s",
 			    (int)sizeof(ifrflags.lifr_name),
-			    ifrflags.lifr_name,
-			    pcap_strerror(errno));
+			    ifrflags.lifr_name);
 			ret = -1;
 			break;
 		}
@@ -221,11 +220,11 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 				 */
 				netmask = NULL;
 			} else {
-				(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "SIOCGLIFNETMASK: %.*s: %s",
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "SIOCGLIFNETMASK: %.*s",
 				    (int)sizeof(ifrnetmask.lifr_name),
-				    ifrnetmask.lifr_name,
-				    pcap_strerror(errno));
+				    ifrnetmask.lifr_name);
 				ret = -1;
 				break;
 			}
@@ -249,11 +248,11 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 					 */
 					broadaddr = NULL;
 				} else {
-					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "SIOCGLIFBRDADDR: %.*s: %s",
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "SIOCGLIFBRDADDR: %.*s",
 					    (int)sizeof(ifrbroadaddr.lifr_name),
-					    ifrbroadaddr.lifr_name,
-					    pcap_strerror(errno));
+					    ifrbroadaddr.lifr_name);
 					ret = -1;
 					break;
 				}
@@ -284,11 +283,11 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 					 */
 					dstaddr = NULL;
 				} else {
-					(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "SIOCGLIFDSTADDR: %.*s: %s",
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "SIOCGLIFDSTADDR: %.*s",
 					    (int)sizeof(ifrdstaddr.lifr_name),
-					    ifrdstaddr.lifr_name,
-					    pcap_strerror(errno));
+					    ifrdstaddr.lifr_name);
 					ret = -1;
 					break;
 				}

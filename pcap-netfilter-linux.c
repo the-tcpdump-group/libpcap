@@ -127,7 +127,8 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		} while ((len == -1) && (errno == EINTR || errno == ENOBUFS));
 
 		if (len < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't receive packet %d:%s", errno, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "Can't receive packet");
 			return PCAP_ERROR;
 		}
 
@@ -570,7 +571,8 @@ netfilter_activate(pcap_t* handle)
 	/* Create netlink socket */
 	handle->fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_NETFILTER);
 	if (handle->fd < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't create raw socket %d:%s", errno, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't create raw socket");
 		return PCAP_ERROR;
 	}
 
@@ -588,54 +590,68 @@ netfilter_activate(pcap_t* handle)
 
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't allocate dump buffer");
 		goto close_fail;
 	}
 
 	if (type == NFLOG) {
 		if (nflog_send_config_cmd(handle, 0, NFULNL_CFG_CMD_PF_UNBIND, AF_INET) < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_CFG_CMD_PF_UNBIND: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "NFULNL_CFG_CMD_PF_UNBIND");
 			goto close_fail;
 		}
 
 		if (nflog_send_config_cmd(handle, 0, NFULNL_CFG_CMD_PF_BIND, AF_INET) < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_CFG_CMD_PF_BIND: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "NFULNL_CFG_CMD_PF_BIND");
 			goto close_fail;
 		}
 
 		/* Bind socket to the nflog groups */
 		for (i = 0; i < group_count; i++) {
 			if (nflog_send_config_cmd(handle, groups[i], NFULNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't listen on group group index: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "Can't listen on group group index");
 				goto close_fail;
 			}
 
 			if (nflog_send_config_mode(handle, groups[i], NFULNL_COPY_PACKET, handle->snapshot) < 0) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFULNL_COPY_PACKET: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "NFULNL_COPY_PACKET");
 				goto close_fail;
 			}
 		}
 
 	} else {
 		if (nfqueue_send_config_cmd(handle, 0, NFQNL_CFG_CMD_PF_UNBIND, AF_INET) < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_CFG_CMD_PF_UNBIND: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "NFQNL_CFG_CMD_PF_UNBIND");
 			goto close_fail;
 		}
 
 		if (nfqueue_send_config_cmd(handle, 0, NFQNL_CFG_CMD_PF_BIND, AF_INET) < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_CFG_CMD_PF_BIND: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "NFQNL_CFG_CMD_PF_BIND");
 			goto close_fail;
 		}
 
 		/* Bind socket to the nfqueue groups */
 		for (i = 0; i < group_count; i++) {
 			if (nfqueue_send_config_cmd(handle, groups[i], NFQNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't listen on group group index: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "Can't listen on group group index");
 				goto close_fail;
 			}
 
 			if (nfqueue_send_config_mode(handle, groups[i], NFQNL_COPY_PACKET, handle->snapshot) < 0) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "NFQNL_COPY_PACKET: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "NFQNL_COPY_PACKET");
 				goto close_fail;
 			}
 		}
@@ -654,7 +670,8 @@ netfilter_activate(pcap_t* handle)
 		 * Set the socket buffer size to the specified value.
 		 */
 		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF, &handle->opt.buffer_size, sizeof(handle->opt.buffer_size)) == -1) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "SO_RCVBUF: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "SO_RCVBUF");
 			goto close_fail;
 		}
 	}
@@ -720,8 +737,8 @@ netfilter_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		/* if netlink is not supported this is not fatal */
 		if (errno == EAFNOSUPPORT || errno == EPROTONOSUPPORT)
 			return 0;
-		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE, "Can't open netlink socket %d:%s",
-			errno, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(err_str, PCAP_ERRBUF_SIZE,
+		    errno, "Can't open netlink socket");
 		return -1;
 	}
 	close(sock);

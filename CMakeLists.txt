@@ -327,6 +327,8 @@ endif()
 # Functions.
 #
 check_function_exists(strerror HAVE_STRERROR)
+check_function_exists(strerror_r HAVE_STRERROR_R)
+check_function_exists(strerror_s HAVE_STRERROR_S)
 check_function_exists(strlcpy HAVE_STRLCPY)
 check_function_exists(strlcat HAVE_STRLCAT)
 check_function_exists(snprintf HAVE_SNPRINTF)
@@ -552,6 +554,7 @@ set(PROJECT_SOURCE_LIST_C
     bpf_dump.c
     bpf_image.c
     etherent.c
+    fmtutils.c
     fopen.c
     gencode.c
     nametoaddr.c

@@ -40,10 +40,6 @@
 #include "pcap-bt-linux.h"
 #include "pcap/bluetooth.h"
 
-#ifdef NEED_STRERROR_H
-#include "strerror.h"
-#endif
-
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -87,8 +83,8 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		/* if bluetooth is not supported this this is not fatal*/
 		if (errno == EAFNOSUPPORT)
 			return 0;
-		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE,
-		    "Can't open raw Bluetooth socket: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(err_str, PCAP_ERRBUF_SIZE,
+		    errno, "Can't open raw Bluetooth socket");
 		return -1;
 	}
 
@@ -105,9 +101,8 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 
 	if (ioctl(sock, HCIGETDEVLIST, (void *) dev_list) < 0)
 	{
-		pcap_snprintf(err_str, PCAP_ERRBUF_SIZE,
-		    "Can't get Bluetooth device list via ioctl: %s",
-		    strerror(errno));
+		pcap_fmt_errmsg_for_errno(err_str, PCAP_ERRBUF_SIZE,
+		    errno, "Can't get Bluetooth device list via ioctl");
 		ret = -1;
 		goto free;
 	}
@@ -225,29 +220,29 @@ bt_activate(pcap_t* handle)
 	/* Create HCI socket */
 	handle->fd = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
 	if (handle->fd < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't create raw socket: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't create raw socket");
 		return PCAP_ERROR;
 	}
 
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't allocate dump buffer: %s",
-			pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't allocate dump buffer");
 		goto close_fail;
 	}
 
 	opt = 1;
 	if (setsockopt(handle->fd, SOL_HCI, HCI_DATA_DIR, &opt, sizeof(opt)) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't enable data direction info: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't enable data direction info");
 		goto close_fail;
 	}
 
 	opt = 1;
 	if (setsockopt(handle->fd, SOL_HCI, HCI_TIME_STAMP, &opt, sizeof(opt)) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't enable time stamp: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't enable time stamp");
 		goto close_fail;
 	}
 
@@ -257,8 +252,8 @@ bt_activate(pcap_t* handle)
 	memset((void *) &flt.type_mask, 0xff, sizeof(flt.type_mask));
 	memset((void *) &flt.event_mask, 0xff, sizeof(flt.event_mask));
 	if (setsockopt(handle->fd, SOL_HCI, HCI_FILTER, &flt, sizeof(flt)) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't set filter: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't set filter");
 		goto close_fail;
 	}
 
@@ -270,9 +265,8 @@ bt_activate(pcap_t* handle)
 	addr.hci_channel = HCI_CHANNEL_RAW;
 #endif
 	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't attach to device %d: %s", handlep->dev_id,
-		    strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't attach to device %d", handlep->dev_id);
 		goto close_fail;
 	}
 
@@ -291,8 +285,8 @@ bt_activate(pcap_t* handle)
 		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
 		    &handle->opt.buffer_size,
 		    sizeof(handle->opt.buffer_size)) == -1) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				 "SO_RCVBUF: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    errno, PCAP_ERRBUF_SIZE, "SO_RCVBUF");
 			goto close_fail;
 		}
 	}
@@ -339,8 +333,8 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't receive packet: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't receive packet");
 		return -1;
 	}
 
@@ -399,8 +393,8 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	} while ((ret == -1) && (errno == EINTR));
 
 	if (ret < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    "Can't get stats via ioctl: %s", strerror(errno));
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't get stats via ioctl");
 		return (-1);
 
 	}

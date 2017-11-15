@@ -220,8 +220,8 @@ pcap_activate_libdlpi(pcap_t *p)
 	 */
 	if (ioctl(p->fd, I_FLUSH, FLUSHR) != 0) {
 		status = PCAP_ERROR;
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "FLUSHR: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "FLUSHR");
 		goto bad;
 	}
 
@@ -320,8 +320,8 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	dlpi_walk(list_interfaces, &lw, 0);
 
 	if (lw.lw_err != 0) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "dlpi_walk: %s", pcap_strerror(lw.lw_err));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    lw.lw_err, "dlpi_walk");
 		retv = -1;
 		goto done;
 	}

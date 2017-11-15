@@ -38,6 +38,8 @@
 
 #include <pcap/pcap.h>
 
+#include "fmtutils.h"
+
 /*
  * Version string.
  * Uses PACKAGE_VERSION from config.h.

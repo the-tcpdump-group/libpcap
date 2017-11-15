@@ -358,7 +358,8 @@ pcap_alloc_databuf(pcap_t *p)
 	p->bufsize = PKTBUFSIZE;
 	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
-		strlcpy(p->errbuf, pcap_strerror(errno), PCAP_ERRBUF_SIZE);
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "");
 		return (-1);
 	}
 
@@ -392,6 +393,6 @@ strioctl(int fd, int cmd, int len, char *dp)
 static void
 pcap_stream_err(const char *func, int err, char *errbuf)
 {
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: %s", func, pcap_strerror(err));
+	pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, err, "%s", func);
 }
 #endif

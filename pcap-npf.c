@@ -1042,7 +1042,8 @@ pcap_activate_win32(pcap_t *p)
 		p->buffer = malloc(p->bufsize);
 		if (p->buffer == NULL)
 		{
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			goto bad;
 		}
 
@@ -1289,8 +1290,8 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 	/* Install a user level filter */
 	if (install_bpf_program(p, fp) < 0)
 	{
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-			"setfilter, unable to install the filter: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		    errno, "setfilter, unable to install the filter");
 		return (-1);
 	}
 

@@ -295,8 +295,8 @@ pcap_list_tstamp_types(pcap_t *p, int **tstamp_typesp)
 		*tstamp_typesp = (int*)calloc(sizeof(**tstamp_typesp),
 		    p->tstamp_type_count);
 		if (*tstamp_typesp == NULL) {
-			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
 		(void)memcpy(*tstamp_typesp, p->tstamp_type_list,
@@ -865,8 +865,8 @@ add_addr_to_dev(pcap_if_t *curdev,
 	 */
 	curaddr = (pcap_addr_t *)malloc(sizeof(pcap_addr_t));
 	if (curaddr == NULL) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return (-1);
 	}
 
@@ -874,8 +874,8 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (addr != NULL && addr_size != 0) {
 		curaddr->addr = (struct sockaddr *)dup_sockaddr(addr, addr_size);
 		if (curaddr->addr == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			free(curaddr);
 			return (-1);
 		}
@@ -885,8 +885,8 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (netmask != NULL && netmask_size != 0) {
 		curaddr->netmask = (struct sockaddr *)dup_sockaddr(netmask, netmask_size);
 		if (curaddr->netmask == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			if (curaddr->addr != NULL)
 				free(curaddr->addr);
 			free(curaddr);
@@ -898,8 +898,8 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (broadaddr != NULL && broadaddr_size != 0) {
 		curaddr->broadaddr = (struct sockaddr *)dup_sockaddr(broadaddr, broadaddr_size);
 		if (curaddr->broadaddr == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			if (curaddr->netmask != NULL)
 				free(curaddr->netmask);
 			if (curaddr->addr != NULL)
@@ -913,8 +913,8 @@ add_addr_to_dev(pcap_if_t *curdev,
 	if (dstaddr != NULL && dstaddr_size != 0) {
 		curaddr->dstaddr = (struct sockaddr *)dup_sockaddr(dstaddr, dstaddr_size);
 		if (curaddr->dstaddr == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			if (curaddr->broadaddr != NULL)
 				free(curaddr->broadaddr);
 			if (curaddr->netmask != NULL)
@@ -1035,8 +1035,8 @@ add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 
 	curdev = malloc(sizeof(pcap_if_t));
 	if (curdev == NULL) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return (NULL);
 	}
 
@@ -1046,8 +1046,8 @@ add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 	curdev->next = NULL;
 	curdev->name = strdup(name);
 	if (curdev->name == NULL) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		free(curdev);
 		return (NULL);
 	}
@@ -1062,8 +1062,8 @@ add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 		 */
 		curdev->description = strdup(description);
 		if (curdev->description == NULL) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			free(curdev->name);
 			free(curdev);
 			return (NULL);
@@ -1316,8 +1316,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "socket: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
 		return (-1);
 	}
 	memset(&ifr, 0, sizeof(ifr));
@@ -1331,9 +1331,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: no IPv4 address assigned", device);
 		} else {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "SIOCGIFADDR: %s: %s",
-			    device, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "SIOCGIFADDR: %s", device);
 		}
 		(void)close(fd);
 		return (-1);
@@ -1347,8 +1346,8 @@ pcap_lookupnet(device, netp, maskp, errbuf)
 #endif
 	(void)strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(fd, SIOCGIFNETMASK, (char *)&ifr) < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "SIOCGIFNETMASK: %s: %s", device, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "SIOCGIFNETMASK: %s", device);
 		(void)close(fd);
 		return (-1);
 	}
@@ -1385,8 +1384,8 @@ get_substring(const char *p, size_t len, char *ebuf)
 
 	token = malloc(len + 1);
 	if (token == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return (NULL);
 	}
 	memcpy(token, p, len);
@@ -1480,8 +1479,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		 */
 		*pathp = strdup(source);
 		if (*pathp == NULL) {
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			return (-1);
 		}
 		return (0);
@@ -1505,8 +1504,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		 */
 		*pathp = strdup(source);
 		if (*pathp == NULL) {
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			return (-1);
 		}
 		return (0);
@@ -1523,8 +1522,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	scheme_len = colonp - source;
 	scheme = malloc(scheme_len + 1);
 	if (scheme == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return (-1);
 	}
 	memcpy(scheme, source, scheme_len);
@@ -1538,8 +1537,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		*schemep = scheme;
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			return (-1);
 		}
 		return (0);
@@ -1564,8 +1563,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 		free(scheme);
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc");
 			return (-1);
 		}
 		return (0);
@@ -1742,8 +1741,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	else
 		path = strdup(endp + 1);
 	if (path == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		free(port);
 		free(host);
 		free(userinfo);
@@ -1950,8 +1949,9 @@ pcap_create(const char *device, char *errbuf)
 			length = wcslen((wchar_t *)device);
 			device_str = (char *)malloc(length + 1);
 			if (device_str == NULL) {
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				    "malloc: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "malloc");
 				return (NULL);
 			}
 
@@ -1962,8 +1962,8 @@ pcap_create(const char *device, char *errbuf)
 			device_str = strdup(device);
 	}
 	if (device_str == NULL) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return (NULL);
 	}
 
@@ -2083,8 +2083,8 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 */
 	chunk = malloc(sizeof (pcap_t) + size);
 	if (chunk == NULL) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "malloc: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return (NULL);
 	}
 	memset(chunk, 0, sizeof (pcap_t) + size);
@@ -2578,8 +2578,8 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 		 */
 		*dlt_buffer = (int*)malloc(sizeof(**dlt_buffer));
 		if (*dlt_buffer == NULL) {
-			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
 		**dlt_buffer = p->linktype;
@@ -2587,8 +2587,8 @@ pcap_list_datalinks(pcap_t *p, int **dlt_buffer)
 	} else {
 		*dlt_buffer = (int*)calloc(sizeof(**dlt_buffer), p->dlt_count);
 		if (*dlt_buffer == NULL) {
-			(void)pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-			    "malloc: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+			    errno, "malloc");
 			return (PCAP_ERROR);
 		}
 		(void)memcpy(*dlt_buffer, p->dlt_list,
@@ -3111,8 +3111,8 @@ pcap_getnonblock_fd(pcap_t *p)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "F_GETFL");
 		return (-1);
 	}
 	if (fdflags & O_NONBLOCK)
@@ -3157,8 +3157,8 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock)
 
 	fdflags = fcntl(p->fd, F_GETFL, 0);
 	if (fdflags == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_GETFL: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "F_GETFL");
 		return (-1);
 	}
 	if (nonblock)
@@ -3166,8 +3166,8 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock)
 	else
 		fdflags &= ~O_NONBLOCK;
 	if (fcntl(p->fd, F_SETFL, fdflags) == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "F_SETFL: %s",
-		    pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "F_SETFL");
 		return (-1);
 	}
 	return (0);

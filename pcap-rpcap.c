@@ -292,7 +292,8 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in));
 		if ((*sockaddrout) == NULL)
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc() failed");
 			return -1;
 		}
 		sockaddrin_ipv4 = (struct rpcap_sockaddr_in *) sockaddrin;
@@ -321,7 +322,8 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 		(*sockaddrout) = (struct sockaddr_storage *) malloc(sizeof(struct sockaddr_in6));
 		if ((*sockaddrout) == NULL)
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc() failed");
 			return -1;
 		}
 		sockaddrin_ipv6 = (struct rpcap_sockaddr_in6 *) sockaddrin;
@@ -943,7 +945,8 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 	retval = getaddrinfo(host, "0", &hints, &addrinfo);
 	if (retval != 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s",
+		    gai_strerror(retval));
 		*error = 1;
 		return NULL;
 	}
@@ -1305,7 +1308,8 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	fp->buffer = (u_char *)malloc(fp->bufsize);
 	if (fp->buffer == NULL)
 	{
-		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE, "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		goto error;
 	}
 
@@ -2090,8 +2094,8 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	}
 	source_str = strdup(source);
 	if (source_str == NULL) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
 		return NULL;
 	}
 
@@ -2435,7 +2439,8 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 		dev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 		if (dev == NULL)
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "malloc() failed");
 			goto error;
 		}
 
@@ -2486,7 +2491,8 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			dev->name = (char *)malloc(stringlen + 1);
 			if (dev->name == NULL)
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
 
@@ -2518,7 +2524,8 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 
 			if (dev->description == NULL)
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
 
@@ -2546,7 +2553,8 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			addr = (struct pcap_addr *) malloc(sizeof(struct pcap_addr));
 			if (addr == NULL)
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
 			addr->next = NULL;
@@ -2787,7 +2795,8 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 
 	if (temp == NULL)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc() failed");
 		rpcap_senderror(sockctrl, protocol_version, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
 		return -1;

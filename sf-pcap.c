@@ -174,9 +174,8 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	    sizeof(hdr) - sizeof(hdr.magic), fp);
 	if (amt_read != sizeof(hdr) - sizeof(hdr.magic)) {
 		if (ferror(fp)) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "error reading dump file");
 		} else {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
@@ -447,9 +446,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 	amt_read = fread(&sf_hdr, 1, ps->hdrsize, fp);
 	if (amt_read != ps->hdrsize) {
 		if (ferror(fp)) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "error reading dump file: %s",
-			    pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "error reading dump file");
 			return (-1);
 		} else {
 			if (amt_read != 0) {
@@ -595,9 +593,9 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		amt_read = fread(p->buffer, 1, p->bufsize, fp);
 		if (amt_read != p->bufsize) {
 			if (ferror(fp)) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "error reading dump file: %s",
-				    pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				     PCAP_ERRBUF_SIZE, errno,
+				    "error reading dump file");
 			} else {
 				/*
 				 * Yes, this uses hdr->caplen; technically,
@@ -626,9 +624,9 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			bytes_read += amt_read;
 			if (amt_read != bytes_to_read) {
 				if (ferror(fp)) {
-					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-					    "error reading dump file: %s",
-					    pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(p->errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "error reading dump file");
 				} else {
 					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 					    "truncated dump file; tried to read %u captured bytes, only got %lu",
@@ -675,9 +673,9 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		amt_read = fread(p->buffer, 1, hdr->caplen, fp);
 		if (amt_read != hdr->caplen) {
 			if (ferror(fp)) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "error reading dump file: %s",
-				    pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "error reading dump file");
 			} else {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "truncated dump file; tried to read %u captured bytes, only got %lu",
@@ -751,8 +749,8 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 		setvbuf(f, NULL, _IONBF, 0);
 #endif
 	if (sf_write_header(p, f, linktype, p->tzoff, p->snapshot) == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't write to %s: %s",
-		    fname, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't write to %s", fname);
 		if (f != stdout)
 			(void)fclose(f);
 		return (NULL);
@@ -801,8 +799,8 @@ pcap_dump_open(pcap_t *p, const char *fname)
 
 		err = pcap_fopen(&f, fname, "wb");
 		if (err != 0) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-			    fname, pcap_strerror(err));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    err, "%s", fname);
 			return (NULL);
 		}
 	}
@@ -856,8 +854,8 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 
 	err = pcap_fopen(&f, fname, "rb+");
 	if (err != 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-		    fname, pcap_strerror(err));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    err, "%s", fname);
 		return (NULL);
 	}
 
@@ -867,8 +865,8 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	amt_read = fread(&ph, 1, sizeof (ph), f);
 	if (amt_read != sizeof (ph)) {
 		if (ferror(f)) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "%s: %s",
-			    fname, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "%s", fname);
 			fclose(f);
 			return (NULL);
 		} else if (feof(f) && amt_read > 0) {
@@ -975,8 +973,8 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		 * A header isn't present; attempt to write it.
 		 */
 		if (sf_write_header(p, f, linktype, p->tzoff, p->snapshot) == -1) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't write to %s: %s",
-			    fname, pcap_strerror(errno));
+			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "Can't write to %s", fname);
 			(void)fclose(f);
 			return (NULL);
 		}
@@ -986,8 +984,8 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	 * Start writing at the end of the file.
 	 */
 	if (fseek(f, 0, SEEK_END) == -1) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Can't seek to end of %s: %s",
-		    fname, pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't seek to end of %s", fname);
 		(void)fclose(f);
 		return (NULL);
 	}

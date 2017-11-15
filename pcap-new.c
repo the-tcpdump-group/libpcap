@@ -134,7 +134,9 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 			dev->name = strdup(tmpstring);
 			if (dev->name == NULL)
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "malloc() failed");
 				pcap_freealldevs(*alldevs);
 				return -1;
 			}
@@ -154,7 +156,9 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 			dev->description = strdup(tmpstring);
 			if (dev->description == NULL)
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+				pcap_fmt_errmsg_for_errno(errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "malloc() failed");
 				pcap_freealldevs(*alldevs);
 				return -1;
 			}
@@ -247,7 +251,9 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 				dev = (pcap_if_t *)malloc(sizeof(pcap_if_t));
 				if (dev == NULL)
 				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "malloc() failed");
 					pcap_freealldevs(*alldevs);
 					return -1;
 				}
@@ -286,7 +292,9 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 				dev->name = (char *)malloc(stringlen + 1);
 				if (dev->name == NULL)
 				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "malloc() failed");
 					pcap_freealldevs(*alldevs);
 					return -1;
 				}
@@ -305,7 +313,9 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 
 				if (dev->description == NULL)
 				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "malloc() failed: %s", pcap_strerror(errno));
+					pcap_fmt_errmsg_for_errno(errbuf,
+					    PCAP_ERRBUF_SIZE, errno,
+					    "malloc() failed");
 					pcap_freealldevs(*alldevs);
 					return -1;
 				}

@@ -2304,8 +2304,8 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	p->fcode.bf_len = fp->bf_len;
 	p->fcode.bf_insns = (struct bpf_insn *)malloc(prog_size);
 	if (p->fcode.bf_insns == NULL) {
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
-			 "malloc: %s", pcap_strerror(errno));
+		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		    errno, "malloc");
 		return (-1);
 	}
 	memcpy(p->fcode.bf_insns, fp->bf_insns, prog_size);
