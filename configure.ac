@@ -28,9 +28,6 @@ AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
 AC_LBL_C_INLINE
 AC_C___ATTRIBUTE__
-if test "$ac_cv___attribute__" = "yes"; then
-	AC_C___ATTRIBUTE___UNUSED
-fi
 
 #
 # Try to arrange for large file support.

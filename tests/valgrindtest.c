@@ -19,6 +19,8 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+#include "varattrs.h"
+
 /*
  * This doesn't actually test libpcap itself; it tests whether
  * valgrind properly handles the APIs libpcap uses.  If it doesn't,

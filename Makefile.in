@@ -155,7 +155,8 @@ HDR = $(PUBHDR) \
 	rpcapd/win32-svc.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \
-	sunatmpos.h
+	sunatmpos.h \
+	varattrs.h
 
 TESTS = \
 	@VALGRINDTEST@ \

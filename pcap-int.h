@@ -38,6 +38,7 @@
 
 #include <pcap/pcap.h>
 
+#include "varattrs.h"
 #include "fmtutils.h"
 
 /*

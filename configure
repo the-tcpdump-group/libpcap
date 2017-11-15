@@ -3870,59 +3870,10 @@ if test "$ac_cv___attribute__" = "yes"; then
 
 $as_echo "#define HAVE___ATTRIBUTE__ 1" >>confdefs.h
 
-else
-  #
-  # We can't use __attribute__, so we can't use __attribute__((unused)),
-  # so we define _U_ to an empty string.
-  #
-  V_DEFS="$V_DEFS -D_U_=\"\""
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv___attribute__" >&5
 $as_echo "$ac_cv___attribute__" >&6; }
 
-if test "$ac_cv___attribute__" = "yes"; then
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether __attribute__((unused)) can be used without warnings" >&5
-$as_echo_n "checking whether __attribute__((unused)) can be used without warnings... " >&6; }
-if ${ac_cv___attribute___unused+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <stdlib.h>
-#include <stdio.h>
-
-int
-main(int argc  __attribute((unused)), char **argv __attribute((unused)))
-{
-  printf("Hello, world!\n");
-  return 0;
-}
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv___attribute___unused=yes
-else
-  ac_cv___attribute___unused=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-CFLAGS="$save_CFLAGS"
-if test "$ac_cv___attribute___unused" = "yes"; then
-  V_DEFS="$V_DEFS -D_U_=\"__attribute__((unused))\""
-else
-  V_DEFS="$V_DEFS -D_U_=\"\""
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv___attribute___unused" >&5
-$as_echo "$ac_cv___attribute___unused" >&6; }
-
-fi
 
 #
 # Try to arrange for large file support.
