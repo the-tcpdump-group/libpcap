@@ -2485,7 +2485,7 @@ scan_proc_net_dev(pcap_if_list_t *devlistp, char *errbuf)
 	 */
 	fd = socket(PF_UNIX, SOCK_RAW, 0);
 	if (fd < 0) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket");
 		(void)fclose(proc_net_f);
 		return (-1);
