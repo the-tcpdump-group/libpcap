@@ -1054,6 +1054,12 @@ if(NOT DISABLE_NETMAP)
     check_c_source_compiles(
 "#define NETMAP_WITH_LIBS
 #include <net/netmap_user.h>
+
+int
+main(void)
+{
+    return 0;
+}
 "
         PCAP_SUPPORT_NETMAP)
     if(PCAP_SUPPORT_NETMAP)
