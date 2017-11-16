@@ -1344,7 +1344,7 @@ bpf_load(char *errbuf)
 
 	if (rc == -1 || getmajor(sbuf.st_rdev) != major) {
 		for (i = 0; i < BPF_MINORS; i++) {
-			sprintf(buf, "%s%d", BPF_NODE, i);
+			pcap_snprintf(buf, sizeof(buf), "%s%d", BPF_NODE, i);
 			unlink(buf);
 			if (mknod(buf, S_IRUSR | S_IFCHR, domakedev(major, i)) == -1) {
 				pcap_fmt_errmsg_for_errno(errbuf,
@@ -1358,7 +1358,7 @@ bpf_load(char *errbuf)
 	/* Check if the driver is loaded */
 	memset(&cfg_ld, 0x0, sizeof(cfg_ld));
 	cfg_ld.path = buf;
-	sprintf(cfg_ld.path, "%s/%s", DRIVER_PATH, BPF_NAME);
+	pcap_snprintf(cfg_ld.path, sizeof(cfg_ld.path), "%s/%s", DRIVER_PATH, BPF_NAME);
 	if ((sysconfig(SYS_QUERYLOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) ||
 	    (cfg_ld.kmid == 0)) {
 		/* Driver isn't loaded, load it now */

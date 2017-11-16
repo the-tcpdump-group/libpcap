@@ -1618,7 +1618,7 @@ static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int 
 	// Now we have to create a new socket to send packets
 	if (serveropen_dp)		// Data connection is opened by the server toward the client
 	{
-		sprintf(portdata, "%d", ntohs(startcapreq.portdata));
+		pcap_snprintf(portdata, sizeof portdata, "%d", ntohs(startcapreq.portdata));
 
 		// Get the name of the other peer (needed to connect to that specific network address)
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, peerhost,
