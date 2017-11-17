@@ -900,18 +900,20 @@ if(NOT WIN32)
             # found we need to link libpcap with.
             #
             # It's in libsocket on Solaris and possibly other OSes;
-            # check there.
+            # as long as we're not linking with libxnet, check there.
             #
             # NOTE: if you hand check_library_exists as its last
             # argument a variable that's been set, it skips the test,
             # so we need different variables.
             #
-            check_library_exists(socket getifaddrs "" SOCKET_HAS_GETIFADDRS)
-            if(SOCKET_HAS_GETIFADDRS)
-                set(PCAP_LINK_LIBRARIES socket ${PCAP_LINK_LIBRARIES})
-                set(HAVE_GETIFADDRS TRUE)
+            if(NOT LIBXNET_HAS_GETHOSTBYNAME)
+                check_library_exists(socket getifaddrs "" SOCKET_HAS_GETIFADDRS)
+                if(SOCKET_HAS_GETIFADDRS)
+                    set(PCAP_LINK_LIBRARIES socket ${PCAP_LINK_LIBRARIES})
+                    set(HAVE_GETIFADDRS TRUE)
+                endif()
             endif()
-        endif()
+	endif()
         if(HAVE_GETIFADDRS)
             #
             # We have "getifaddrs()"; make sure we have <ifaddrs.h>
@@ -940,32 +942,26 @@ if(NOT WIN32)
             endif()
         else()
             #
-            # Well, we don't have "getifaddrs()", so we have to use
-            # some other mechanism; determine what that mechanism is.
+            # Well, we don't have "getifaddrs()", at least not with the
+            # libraries with which we've decided we need to link
+            # libpcap with, so we have to use some other mechanism.
             #
-            # The first thing we use is the type of capture mechanism,
-            # which is somewhat of a proxy for the OS we're using.
+            # Note that this may happen on Solaris, which has
+            # getifaddrs(), but in -lsocket, not in -lxnet, so we
+            # won't find it if we link with -lxnet, which we want
+            # to do for other reasons.
             #
-            if(PCAP_TYPE STREQUAL "dlpi" OR PCAP_TYPE STREQUAL "libdlpi")
-                #
-                # This might be Solaris 8 or later, with
-                # SIOCGLIFCONF, or it might be some other OS
-                # or some older version of Solaris, with
-                # just SIOCGIFCONF.
-                #
-                try_compile(HAVE_SIOCGLIFCONF ${CMAKE_CURRENT_BINARY_DIR} "${pcap_SOURCE_DIR}/cmake/have_siocglifconf.c" )
-                if(HAVE_SIOCGLIFCONF)
-                    set(FINDALLDEVS_TYPE glifc)
-                else()
-                    set(FINDALLDEVS_TYPE gifc)
-                endif()
+            # For now, we use either the SIOCGIFCONF ioctl or the
+            # SIOCGLIFCONF ioctl, preferring the latter if we have
+            # it; the latter is a Solarisism that first appeared
+            # in Solaris 8.  (Solaris's getifaddrs() appears to
+            # be built atop SIOCGLIFCONF; using it directly
+            # avoids a not-all-that-useful middleman.)
+            #
+            try_compile(HAVE_SIOCGLIFCONF ${CMAKE_CURRENT_BINARY_DIR} "${pcap_SOURCE_DIR}/cmake/have_siocglifconf.c" )
+            if(HAVE_SIOCGLIFCONF)
+                set(FINDALLDEVS_TYPE glifc)
             else()
-                #
-                # Assume we just have SIOCGIFCONF.
-                # (XXX - on at least later Linux kernels, there's
-                # another mechanism, and we should be using that
-                # instead.)
-                #
                 set(FINDALLDEVS_TYPE gifc)
             endif()
         endif()

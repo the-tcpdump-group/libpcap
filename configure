@@ -6261,33 +6261,34 @@ fi
 else
 
 		#
-		# Well, we don't have "getifaddrs()", so we have to use
-		# some other mechanism; determine what that mechanism is.
+		# Well, we don't have "getifaddrs()", at least not with the
+		# libraries with which we've decided we need to link
+		# libpcap with, so we have to use some other mechanism.
 		#
-		# The first thing we use is the type of capture mechanism,
-		# which is somewhat of a proxy for the OS we're using.
+		# Note that this may happen on Solaris, which has
+		# getifaddrs(), but in -lsocket, not in -lxnet, so we
+		# won't find it if we link with -lxnet, which we want
+		# to do for other reasons.
 		#
-		case "$V_PCAP" in
-
-		dlpi|libdlpi)
-			#
-			# This might be Solaris 8 or later, with
-			# SIOCGLIFCONF, or it might be some other OS
-			# or some older version of Solaris, with
-			# just SIOCGIFCONF.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have SIOCGLIFCONF" >&5
+		# For now, we use either the SIOCGIFCONF ioctl or the
+		# SIOCGLIFCONF ioctl, preferring the latter if we have
+		# it; the latter is a Solarisism that first appeared
+		# in Solaris 8.  (Solaris's getifaddrs() appears to
+		# be built atop SIOCGLIFCONF; using it directly
+		# avoids a not-all-that-useful middleman.)
+		#
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have SIOCGLIFCONF" >&5
 $as_echo_n "checking whether we have SIOCGLIFCONF... " >&6; }
-			if ${ac_cv_lbl_have_siocglifconf+:} false; then :
+		if ${ac_cv_lbl_have_siocglifconf+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <sys/param.h>
-				#include <sys/file.h>
-				#include <sys/ioctl.h>
-				#include <sys/socket.h>
-				#include <sys/sockio.h>
+			#include <sys/file.h>
+			#include <sys/ioctl.h>
+			#include <sys/socket.h>
+			#include <sys/sockio.h>
 int
 main ()
 {
@@ -6304,25 +6305,14 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_have_siocglifconf" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_have_siocglifconf" >&5
 $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
-			if test $ac_cv_lbl_have_siocglifconf = yes ; then
-				V_FINDALLDEVS=fad-glifc.c
-			else
-				V_FINDALLDEVS=fad-gifc.c
-			fi
-			;;
-
-		*)
-			#
-			# Assume we just have SIOCGIFCONF.
-			# (XXX - on at least later Linux kernels, there's
-			# another mechanism, and we should be using that
-			# instead.)
-			#
+		if test $ac_cv_lbl_have_siocglifconf = yes ; then
+			V_FINDALLDEVS=fad-glifc.c
+		else
 			V_FINDALLDEVS=fad-gifc.c
-			;;
-		esac
+		fi
+
 fi
 
 fi

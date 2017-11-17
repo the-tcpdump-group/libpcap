@@ -768,50 +768,40 @@ then
 		])
 	],[
 		#
-		# Well, we don't have "getifaddrs()", so we have to use
-		# some other mechanism; determine what that mechanism is.
+		# Well, we don't have "getifaddrs()", at least not with the
+		# libraries with which we've decided we need to link
+		# libpcap with, so we have to use some other mechanism.
 		#
-		# The first thing we use is the type of capture mechanism,
-		# which is somewhat of a proxy for the OS we're using.
+		# Note that this may happen on Solaris, which has
+		# getifaddrs(), but in -lsocket, not in -lxnet, so we
+		# won't find it if we link with -lxnet, which we want
+		# to do for other reasons.
 		#
-		case "$V_PCAP" in
-
-		dlpi|libdlpi)
-			#
-			# This might be Solaris 8 or later, with
-			# SIOCGLIFCONF, or it might be some other OS
-			# or some older version of Solaris, with
-			# just SIOCGIFCONF.
-			#
-			AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
-			AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
-			    AC_TRY_COMPILE(
-				[#include <sys/param.h>
-				#include <sys/file.h>
-				#include <sys/ioctl.h>
-				#include <sys/socket.h>
-				#include <sys/sockio.h>],
-				[ioctl(0, SIOCGLIFCONF, (char *)0);],
-				ac_cv_lbl_have_siocglifconf=yes,
-				ac_cv_lbl_have_siocglifconf=no))
-			AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
-			if test $ac_cv_lbl_have_siocglifconf = yes ; then
-				V_FINDALLDEVS=fad-glifc.c
-			else
-				V_FINDALLDEVS=fad-gifc.c
-			fi
-			;;
-
-		*)
-			#
-			# Assume we just have SIOCGIFCONF.
-			# (XXX - on at least later Linux kernels, there's
-			# another mechanism, and we should be using that
-			# instead.)
-			#
+		# For now, we use either the SIOCGIFCONF ioctl or the
+		# SIOCGLIFCONF ioctl, preferring the latter if we have
+		# it; the latter is a Solarisism that first appeared
+		# in Solaris 8.  (Solaris's getifaddrs() appears to
+		# be built atop SIOCGLIFCONF; using it directly
+		# avoids a not-all-that-useful middleman.)
+		#
+		AC_MSG_CHECKING(whether we have SIOCGLIFCONF)
+		AC_CACHE_VAL(ac_cv_lbl_have_siocglifconf,
+		    AC_TRY_COMPILE(
+			[#include <sys/param.h>
+			#include <sys/file.h>
+			#include <sys/ioctl.h>
+			#include <sys/socket.h>
+			#include <sys/sockio.h>],
+			[ioctl(0, SIOCGLIFCONF, (char *)0);],
+			ac_cv_lbl_have_siocglifconf=yes,
+			ac_cv_lbl_have_siocglifconf=no))
+		AC_MSG_RESULT($ac_cv_lbl_have_siocglifconf)
+		if test $ac_cv_lbl_have_siocglifconf = yes ; then
+			V_FINDALLDEVS=fad-glifc.c
+		else
 			V_FINDALLDEVS=fad-gifc.c
-			;;
-		esac])
+		fi
+	])
 fi
 ])
 
