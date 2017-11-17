@@ -1055,9 +1055,13 @@ dnl
 AC_DEFUN(AC_LBL_LIBRARY_NET, [
     # Most operating systems have gethostbyname() in the default searched
     # libraries (i.e. libc):
-    # Some OSes (eg. Solaris) place it in libnsl
+    # Some OSes (eg. Solaris) place it in libnsl, but in at least some
+    # versions of Solaris, there are alternate versions of these APIs
+    # in libxnet, and those versions conform to the Single UNIX
+    # Specification, meaning you can actually check for truncation
+    # of incoming datagrams in recvmsg(), so we prefer that.
     # Some strange OSes (SINIX) have it in libsocket:
-    AC_SEARCH_LIBS(gethostbyname, nsl socket resolv)
+    AC_SEARCH_LIBS(gethostbyname, xnet nsl socket resolv)
     # Unfortunately libsocket sometimes depends on libnsl and
     # AC_SEARCH_LIBS isn't up to the task of handling dependencies like this.
     if test "$ac_cv_search_gethostbyname" = "no"

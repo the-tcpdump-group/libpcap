@@ -49,6 +49,13 @@
  */
 #if defined(sun) || defined(__sun)
   #define __EXTENSIONS__
+
+  /*
+   * We also need to define _XPG4_2 in order to get
+   * the Single UNIX Specification version of
+   * recvmsg().
+   */
+  #define _XPG4_2
 #elif defined(_hpux) || defined(hpux) || defined(__hpux)
   #define _REENTRANT
 #elif defined(__linux__) || defined(linux) || defined(__linux)

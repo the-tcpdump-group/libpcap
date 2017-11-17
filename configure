@@ -4789,7 +4789,11 @@ fi
 
     # Most operating systems have gethostbyname() in the default searched
     # libraries (i.e. libc):
-    # Some OSes (eg. Solaris) place it in libnsl
+    # Some OSes (eg. Solaris) place it in libnsl, but in at least some
+    # versions of Solaris, there are alternate versions of these APIs
+    # in libxnet, and those versions conform to the Single UNIX
+    # Specification, meaning you can actually check for truncation
+    # of incoming datagrams in recvmsg(), so we prefer that.
     # Some strange OSes (SINIX) have it in libsocket:
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gethostbyname" >&5
 $as_echo_n "checking for library containing gethostbyname... " >&6; }
@@ -4815,7 +4819,7 @@ return gethostbyname ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' nsl socket resolv; do
+for ac_lib in '' xnet nsl socket resolv; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else
@@ -7235,6 +7239,7 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
+#	include "ftmacros.h"
 #	include <sys/socket.h>
 int
 main ()
@@ -7267,6 +7272,7 @@ else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
+#	include "ftmacros.h"
 #	include <sys/socket.h>
 int
 main ()

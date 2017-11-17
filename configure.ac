@@ -1303,6 +1303,7 @@ yes)	AC_MSG_RESULT(yes)
 	AC_MSG_CHECKING(if struct msghdr has a msg_control member)
 	AC_CACHE_VAL(ac_cv_lbl_struct_msghdr_has_msg_control,
 	    AC_TRY_COMPILE([
+#	include "ftmacros.h"
 #	include <sys/socket.h>],
 		[u_int i = sizeof(((struct msghdr *)0)->msg_control)],
 		ac_cv_lbl_struct_msghdr_has_msg_control=yes,
@@ -1314,6 +1315,7 @@ yes)	AC_MSG_RESULT(yes)
 	AC_MSG_CHECKING(if struct msghdr has a msg_flags member)
 	AC_CACHE_VAL(ac_cv_lbl_struct_msghdr_has_msg_flags,
 	    AC_TRY_COMPILE([
+#	include "ftmacros.h"
 #	include <sys/socket.h>],
 		[u_int i = sizeof(((struct msghdr *)0)->msg_flags)],
 		ac_cv_lbl_struct_msghdr_has_msg_flags=yes,
