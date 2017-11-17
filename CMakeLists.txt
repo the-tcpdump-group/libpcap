@@ -339,9 +339,14 @@ set(PCAP_LINK_LIBRARIES "")
 include(CheckLibraryExists)
 check_function_exists(gethostbyname STDLIBS_HAVE_GETHOSTBYNAME)
 if(NOT STDLIBS_HAVE_GETHOSTBYNAME)
-    check_library_exists(nsl gethostbyname "" LIBNSL_HAS_GETHOSTBYNAME)
-    if(LIBNSL_HAS_GETHOSTBYNAME)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} nsl)
+    check_library_exists(xnet gethostbyname "" LIBXNET_HAS_GETHOSTBYNAME)
+    if(LIBXNET_HAS_GETHOSTBYNAME)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} xnet)
+    else()
+        check_library_exists(nsl gethostbyname "" LIBNSL_HAS_GETHOSTBYNAME)
+        if(LIBNSL_HAS_GETHOSTBYNAME)
+            set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} nsl)
+        endif()
     endif()
 endif()
 
@@ -885,8 +890,14 @@ if(NOT WIN32)
     # any interfaces.
     #
     if(NOT PCAP_TYPE STREQUAL "null")
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
         check_function_exists(getifaddrs HAVE_GETIFADDRS)
+        cmake_pop_check_state()
         if(NOT HAVE_GETIFADDRS)
+            #
+            # It's not in the libraries that, at this point, we've
+            # found we need to link libpcap with.
             #
             # It's in libsocket on Solaris and possibly other OSes;
             # check there.
@@ -1252,8 +1263,8 @@ if(ENABLE_REMOTE)
     #
     # Check for various members of struct msghdr.
     #
-    check_struct_has_member("struct msghdr" msg_control "sys/socket.h" STRUCT_MSGHDR_HAS_MSG_CONTROL)
-    check_struct_has_member("struct msghdr" msg_flags "sys/socket.h" STRUCT_MSGHDR_HAS_MSG_FLAGS)
+    check_struct_has_member("struct msghdr" msg_control "ftmacros.h;sys/socket.h" STRUCT_MSGHDR_HAS_MSG_CONTROL)
+    check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" STRUCT_MSGHDR_HAS_MSG_FLAGS)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
 endif(ENABLE_REMOTE)
