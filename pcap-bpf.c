@@ -1861,7 +1861,7 @@ pcap_activate_bpf(pcap_t *p)
 			 */
 			s = socket(AF_LOCAL, SOCK_DGRAM, 0);
 			if (s < 0) {
-				pcap_fmt_errmsg_for_errnoB(p->errbuf,
+				pcap_fmt_errmsg_for_errno(p->errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
 				    "Can't open socket");
 				status = PCAP_ERROR;
