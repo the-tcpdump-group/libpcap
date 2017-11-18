@@ -359,7 +359,7 @@ pcap_alloc_databuf(pcap_t *p)
 	p->buffer = malloc(p->bufsize + p->offset);
 	if (p->buffer == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "");
+		    errno, "malloc");
 		return (-1);
 	}
 
