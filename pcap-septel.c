@@ -297,11 +297,8 @@ static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
 
   /* Make our private copy of the filter */
 
-  if (install_bpf_program(p, fp) < 0) {
-    pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf), errno,
-	     "malloc");
+  if (install_bpf_program(p, fp) < 0)
     return -1;
-  }
 
   return (0);
 }

@@ -1130,8 +1130,6 @@ TcSetFilter(pcap_t *p, struct bpf_program *fp)
 	/* Install a user level filter */
 	if (install_bpf_program(p, fp) < 0)
 	{
-		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
-		    errno, "setfilter, unable to install the filter");
 		return -1;
 	}
 
