@@ -49,7 +49,28 @@
 #
 
 if(NOT PACKET_DLL_DIR)
-  set(PACKET_DLL_DIR $ENV{PACKET_DLL_DIR})
+# Compile a source file to see if the library and include files are
+# already reachable.
+  include(CheckCSourceCompiles)
+  include(CMakePushCheckState)
+
+  cmake_push_check_state()
+  set(CMAKE_REQUIRED_QUIET true)
+  set(CMAKE_REQUIRED_LIBRARIES packet)
+  check_c_source_compiles(
+"#include <Packet32.h>
+
+int main()
+{
+  return 0;
+}" PACKET_SYSTEM_LIBRARY)
+  cmake_pop_check_state()
+
+  if(PACKET_SYSTEM_LIBRARY)
+    set(PACKET_LIBRARY packet)
+  else()
+    set(PACKET_DLL_DIR $ENV{PACKET_DLL_DIR})
+  endif()
 endif()
 
 # The 64-bit Packet.lib is located under /x64
@@ -64,12 +85,14 @@ find_path(PACKET_INCLUDE_DIR Packet32.h
   PATH_SUFFIXES include Include
 )
 
+if(PACKET_SYSTEM_LIBRARY)
 # Find the library
-find_library(PACKET_LIBRARY
-  NAMES Packet packet
-  HINTS "${PACKET_DLL_DIR}"
-  PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
-)
+  find_library(PACKET_LIBRARY
+    NAMES Packet packet
+    HINTS "${PACKET_DLL_DIR}"
+    PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
+  )
+endif()
 
 # Set PACKET_FOUND to TRUE if PACKET_INCLUDE_DIR and PACKET_LIBRARY are TRUE.
 include(FindPackageHandleStandardArgs)
