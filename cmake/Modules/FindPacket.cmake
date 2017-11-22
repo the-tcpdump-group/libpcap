@@ -28,16 +28,22 @@
 #
 # This module defines the following variables:
 #
-#    PACKET_INCLUDE_DIR   - absolute path to the directory containing Packet32.h.
-#    PACKET_LIBRARY       - absolute path to the Packet library to link with.
-#    PACKET_FOUND         - true if the Packet library *and* its headers are found.
+# PACKET_INCLUDE_DIR     - absolute path to the directory containing Packet32.h.
+#
+# PACKET_LIBRARY         - relative or absolute path to the Packet library to
+#                          link with. An absolute path is will be used if the
+#                          Packet library is not located in the compiler's
+#                          default search path. See e.g. PACKET_DLL_DIR
+#                          variable below.
+
+# PACKET_FOUND           - TRUE if the Packet library *and* header are found.
 #
 # Hints and Backward Compatibility
 # ================================
 #
 # To tell this module where to look, a user may set the environment variable
-# PACKET_DLL_DIR to point cmake to the *root* of a directory with include and lib
-# subdirectories for packet.dll (e.g WpdPack/npcap-sdk).
+# PACKET_DLL_DIR to point cmake to the *root* of a directory with include and
+# lib subdirectories for packet.dll (e.g WpdPack/npcap-sdk).
 # Alternatively, PACKET_DLL_DIR may also be set from cmake command line or GUI
 # (e.g cmake -DPACKET_DLL_DIR=/path/to/packet [...])
 #
@@ -58,12 +64,6 @@ find_path(PACKET_INCLUDE_DIR Packet32.h
   PATH_SUFFIXES include Include
 )
 
-if(PACKET_INCLUDE_DIR)
-  message(STATUS "Found Packet32.h: ${PACKET_INCLUDE_DIR}")
-# else()
-# message(FATAL_ERROR "Could not find Packet32.h. See README.Win32 for more information.")
-endif()
-
 # Find the library
 find_library(PACKET_LIBRARY
   NAMES Packet packet
@@ -71,15 +71,10 @@ find_library(PACKET_LIBRARY
   PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
 )
 
-if(PACKET_LIBRARY)
-  message(STATUS "Found Packet library: ${PACKET_LIBRARY}")
-  set(HAVE_PACKET ${PACKET_LIBRARY})
-# else()
-  # message(FATAL_ERROR "Could not find Packet library. See README.Win32 for more information.")
-endif()
-
-if(PACKET_INCLUDE_DIR AND PACKET_LIBRARY)
-  set(PACKET_FOUND TRUE)
-endif()
+# Set PACKET_FOUND to TRUE if PACKET_INCLUDE_DIR and PACKET_LIBRARY are TRUE.
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(PACKET
+  REQUIRED_VARS PACKET_INCLUDE_DIR PACKET_LIBRARY
+)
 
 mark_as_advanced(PACKET_INCLUDE_DIR PACKET_LIBRARY)
