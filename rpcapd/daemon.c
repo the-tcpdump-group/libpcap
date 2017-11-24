@@ -35,16 +35,9 @@
 
 #include "ftmacros.h"
 
-#include <pcap.h>		// for libpcap/WinPcap calls
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strlen(), ...
-#include "fmtutils.h"
-#include "sockutils.h"		// for socket calls
-#include "portability.h"
-#include "rpcap-protocol.h"
-#include "daemon.h"
-#include "log.h"
 
 #ifdef _WIN32
   #include <process.h>		// for threads
@@ -59,6 +52,15 @@
 #ifdef HAVE_GETSPNAM
 #include <shadow.h>		// for password management
 #endif
+
+#include <pcap.h>		// for libpcap/WinPcap calls
+
+#include "fmtutils.h"
+#include "sockutils.h"		// for socket calls
+#include "portability.h"
+#include "rpcap-protocol.h"
+#include "daemon.h"
+#include "log.h"
 
 #define RPCAP_TIMEOUT_INIT 90		/* Initial timeout for RPCAP connections (default: 90 sec) */
 #define RPCAP_TIMEOUT_RUNTIME 180	/* Run-time timeout for RPCAP connections (default: 3 min) */
