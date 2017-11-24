@@ -1675,6 +1675,66 @@ AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 AC_LBL_UNALIGNED_ACCESS
 
+#
+# Find out whether we need to link with -lsocket to get inet_ntop();
+# libpcap and rpcapd don't use inet_ntop(), but findalldevstest does,
+# and the libraries libpcap uses might not have it (e.g., in some
+# versions of Solaris, we link with -lxnet, to get the version of
+# recvmsg() that returns a "truncated datagram" indication, but
+# -lxnet doesn't have inet_ntop(), and you have to link with -lsocket
+# to get it.
+#
+# We assume inet_ntop() and inet_pton() are in the same libraries;
+# filtertest.c uses inet_pton(), so we need those libraries for it
+# as well.
+#
+AC_MSG_CHECKING(for additional libraries needed for inet_ntop)
+AC_LINK_IFELSE([AC_LANG_CALL([], [inet_ntop])],
+[
+	#
+	# Found - no additional libraries are needed.
+	#
+	AC_MSG_RESULT(none)
+],
+[
+	#
+	# Not found.
+	# Try with -lsocket.
+	#
+	save_LIBS="$LIBS"
+	LIBS="-lsocket $LIBS"
+	AC_LINK_IFELSE([AC_LANG_CALL([], [inet_ntop])],
+	[
+		#
+		# Found - link findalldevstest with -lsocket.
+		#
+		EXTRA_NETWORK_LIBS="-lsocket"
+		AC_MSG_RESULT(-lsocket)
+	],
+	[
+		#
+		# Not found - try with -lsocket -lnsl.
+		#
+		LIBS="-lsocket -lnsl $save_LIBS"
+		AC_LINK_IFELSE([AC_LANG_CALL([], [inet_ntop])],
+		[
+			#
+			# Found - link findalldevstest with -lsocket.
+			#
+			EXTRA_NETWORK_LIBS="-lsocket -lnsl"
+			AC_MSG_RESULT(-lsocket -lnsl)
+		],
+		[
+			#
+			# Not found - suppress build of findalldevstest?
+			#
+			AC_MSG_RESULT(good question!)
+		])
+	])
+	LIBS="$save_LIBS"
+])
+
+
 rm -f net
 ln -s ${srcdir}/bpf/net net
 
@@ -1700,6 +1760,7 @@ AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(BUILD_RPCAPD)
 AC_SUBST(INSTALL_RPCAPD)
 AC_SUBST(RPCAPD_LIBS)
+AC_SUBST(EXTRA_NETWORK_LIBS)
 
 AC_ARG_ENABLE([usb],
 [AC_HELP_STRING([--enable-usb],[enable USB capture support @<:@default=yes, if support available@:>@])],

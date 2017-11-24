@@ -1053,28 +1053,100 @@ dnl statically and happen to have a libresolv.a lying around (and no
 dnl libnsl.a).
 dnl
 AC_DEFUN(AC_LBL_LIBRARY_NET, [
+    #
     # Most operating systems have gethostbyname() in the default searched
-    # libraries (i.e. libc):
-    # Some OSes (eg. Solaris) place it in libnsl, but in at least some
-    # versions of Solaris, there are alternate versions of these APIs
-    # in libxnet, and those versions conform to the Single UNIX
-    # Specification, meaning you can actually check for truncation
-    # of incoming datagrams in recvmsg(), so we prefer that.
-    # Some strange OSes (SINIX) have it in libsocket:
-    AC_SEARCH_LIBS(gethostbyname, xnet nsl socket resolv)
-    # Unfortunately libsocket sometimes depends on libnsl and
-    # AC_SEARCH_LIBS isn't up to the task of handling dependencies like this.
-    if test "$ac_cv_search_gethostbyname" = "no"
-    then
-	AC_CHECK_LIB(socket, gethostbyname,
-                     LIBS="-lsocket -lnsl $LIBS", , -lnsl)
-    fi
-    AC_SEARCH_LIBS(socket, socket, ,
-	AC_CHECK_LIB(socket, socket, LIBS="-lsocket -lnsl $LIBS", , -lnsl))
+    # libraries (i.e. libc).  Check there first.
+    #
+    AC_CHECK_FUNC(gethostbyname,,
+    [
+	#
+	# Not found in the standard system libraries.
+	# Some OSes (eg. Solaris) place it in libnsl, but in at least some
+	# versions of Solaris, there are alternate versions of these APIs
+	# in libxnet, and those versions conform to the Single UNIX
+	# Specification, meaning you can actually check for truncation
+	# of incoming datagrams in recvmsg(), so we prefer that.
+	# Some strange OSes (SINIX) have it in libsocket, so try libxneet.
+	#
+	AC_CHECK_LIB(xnet, gethostbyname,
+	[
+	    #
+	    # OK, we found it in libxnet.
+	    # Unfortunately, on some versions of Solaris, getnameinfo()
+	    # getaddrinfo(), freeaddrinfo(), and gai_strerror() are *not*
+	    # in libxnet, they're only in libsocket.  In that case, we
+	    # want to link with libxnet followed by libsocket, so we get
+	    # the libxnet versions of everything that's in libxnet, and
+	    # the libsocket versions of everything that's not in libxnet
+	    # but is in libsocket.
+	    #
+	    # All we want is something close to a modern SUS UNIX, plus
+	    # whatever additional stuff we need.  Is this too much to
+	    # ask for?
+	    #
+	    AC_CHECK_LIB(xnet, getnameinfo,
+	    [
+		#
+		# Yay, it looks as if libxnet has it all!  Just add it.
+		#
+		LIBS="-lxnet $LIBS"
+	    ],
+	    [
+		#
+		# OK, do we find libsocket if we link only with
+		# libsocket?
+		#
+		AC_CHECK_LIB(socket, getnameinfo,
+		[
+		    #
+		    # Yes, so link with -lxnet and -lsocket.
+		    #
+		    LIBS="-lxnet -lsocket $LIBS"
+		],
+		[
+		    #
+		    # No, so maybe libsocket depends on libnsl, so
+		    # try with both of them.
+		    #
+		    AC_CHECK_LIB(socket, gethostbyname,
+		    [
+			#
+			# OK, it works with both libsocket and libnsl.
+			#
+			LIBS="-lxnet -lsocket -lnsl $LIBS"
+		    ], , -lnsl)
+		])
+	    ])
+	],
+	[
+	    #
+	    # OK, no gethostbyname in the standard system libraries
+	    # or libxnet, so try the other libraries.
+	    #
+	    AC_SEARCH_LIBS(gethostbyname, nsl socket resolv)
+
+	    #
+	    # Again, handle the case of libsocket depending on libnsl;
+	    # AC_SEARCH_LIBS can't handle that.
+	    #
+	    if test "$ac_cv_search_gethostbyname" = "no"
+	    then
+		AC_CHECK_LIB(socket, gethostbyname,
+		    LIBS="-lsocket -lnsl $LIBS", , -lnsl)
+	    fi
+	])
+
+	#
+	# Make sure we also have socket().
+	# (We don't worry about this if we have libxnet; we assume it
+	# has socket().)
+	#
+	AC_SEARCH_LIBS(socket, socket, ,
+	    AC_CHECK_LIB(socket, socket, LIBS="-lsocket -lnsl $LIBS", , -lnsl))
+    ])
     # DLPI needs putmsg under HPUX so test for -lstr while we're at it
     AC_SEARCH_LIBS(putmsg, str)
-    ])
-
+])
 
 dnl
 dnl Test for __attribute__

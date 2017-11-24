@@ -66,6 +66,7 @@ PTHREAD_LIBS=@PTHREAD_LIBS@
 BUILD_RPCAPD=@BUILD_RPCAPD@
 INSTALL_RPCAPD=@INSTALL_RPCAPD@
 RPCAPD_LIBS=@RPCAPD_LIBS@
+EXTRA_NETWORK_LIBS=@EXTRA_NETWORK_LIBS@
 
 # Standard CFLAGS
 FULL_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
@@ -552,10 +553,10 @@ can_set_rfmon_test: tests/can_set_rfmon_test.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o can_set_rfmon_test $(srcdir)/tests/can_set_rfmon_test.c libpcap.a $(LIBS)
 
 filtertest: tests/filtertest.c libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
 
 findalldevstest: tests/findalldevstest.c libpcap.a
-	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/tests/findalldevstest.c libpcap.a $(LIBS)
+	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/tests/findalldevstest.c libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
 
 opentest: tests/opentest.c libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/tests/opentest.c libpcap.a $(LIBS)
