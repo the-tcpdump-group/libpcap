@@ -43,9 +43,6 @@
  * to make non-POSIX APIs that we use unavailable.
  * XXX - is there no portable way to say "please pollute the
  * namespace to the maximum extent possible"?
- *
- * We also want to force crypt() to be declared on systems that use
- * GNU libc, such as most Linux distributions.
  */
 #if defined(sun) || defined(__sun)
   #define __EXTENSIONS__
@@ -59,7 +56,22 @@
 #elif defined(_hpux) || defined(hpux) || defined(__hpux)
   #define _REENTRANT
 #elif defined(__linux__) || defined(linux) || defined(__linux)
-  #define _GNU_SOURCE
+  /*
+   * We can't turn _GNU_SOURCE on because some versions of GNU Libc
+   * will give the GNU version of strerror_r(), which returns a
+   * string pointer and doesn't necessarily fill in the buffer,
+   * rather than the standard version of strerror_r(), which
+   * returns 0 or an errno and always fills in the buffer.  We
+   * require both of the latter behaviors.
+   *
+   * So we try turning everything else on that we can.  This includes
+   * defining _XOPEN_SOURCE as 600, because we want to force crypt()
+   * to be declared on systems that use GNU libc, such as most Linux
+   * distributions.
+   */
+  #define _POSIX_C_SOURCE 200809L
+  #define _XOPEN_SOURCE 600
+  #define _BSD_SOURCE
 #endif
 
 #endif

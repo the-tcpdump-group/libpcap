@@ -39,6 +39,8 @@
 #include <config.h>
 #endif
 
+#include "ftmacros.h"
+
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
