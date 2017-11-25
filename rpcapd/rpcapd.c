@@ -507,12 +507,12 @@ static void main_abort(int sign)
 static void main_reap_children(int sign)
 {
 	pid_t pid;
-	int stat;
+	int exitstat;
 
 	// Reap all child processes that have exited.
 	// For reference, Stevens, pg 128
 
-	while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
+	while ((pid = waitpid(-1, &exitstat, WNOHANG)) > 0)
 		SOCK_ASSERT("Child terminated", 1);
 
 	return;
