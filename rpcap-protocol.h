@@ -142,6 +142,19 @@
 #define RPCAP_MAX_VERSION 0
 
 /*
+ * Version numbers are unsigned, so if RPCAP_MIN_VERSION is 0, they
+ * are >= the minimum version, by definition; don't check against
+ * RPCAP_MIN_VERSION, as you may get compiler warnings that the
+ * comparison will always succeed.
+ */
+#if RPCAP_MIN_VERSION == 0
+#define RPCAP_VERSION_IS_SUPPORTED(v)	((v) <= RPCAP_MAX_VERSION)
+#else
+#define RPCAP_VERSION_IS_SUPPORTED(v)	\
+	((v) >= RPCAP_MIN_VERSION && (v) <= RPCAP_MAX_VERSION)
+#endif
+
+/*
  * Separators used for the host list.
  *
  * It is used:

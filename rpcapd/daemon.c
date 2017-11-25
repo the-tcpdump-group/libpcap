@@ -237,14 +237,19 @@ void *daemon_serviceloop(void *ptr)
 		//
 		// Did the client specify a version we can handle?
 		//
-		if (header.ver < RPCAP_MIN_VERSION ||
-		    header.ver > RPCAP_MAX_VERSION)
+		if (RPCAP_VERSION_IS_SUPPORTED(header.ver))
 		{
 			//
 			// Tell them it's not a valid protocol version.
 			//
 			uint8 reply_version;
 
+			//
+			// If RPCAP_MIN_VERSION is 0, no version is too
+			// old, as the oldest supported version is 0,
+			// and there are no negative versions.
+			//
+#if RPCAP_MIN_VERSION != 0
 			if (header.ver < RPCAP_MIN_VERSION)
 			{
 				//
@@ -261,6 +266,7 @@ void *daemon_serviceloop(void *ptr)
 				reply_version = header.ver;
 			}
 			else
+#endif
 			{
 				//
 				// Their maximum version is too new,

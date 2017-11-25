@@ -1974,8 +1974,7 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 			 *
 			 * Do we also support it?
 			 */
-			if (header.ver < RPCAP_MIN_VERSION ||
-			    header.ver > RPCAP_MAX_VERSION)
+			if (RPCAP_VERSION_IS_SUPPORTED(header.ver))
 			{
 				/*
 				 * No, so there's no version we both support.
