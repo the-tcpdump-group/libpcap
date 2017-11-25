@@ -875,7 +875,8 @@ end:
 /*
  * This handles the RPCAP_MSG_ERR message.
  */
-int daemon_msg_err(SOCKET sockctrl, uint32 plen)
+static int
+daemon_msg_err(SOCKET sockctrl, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char remote_errbuf[PCAP_ERRBUF_SIZE];
@@ -953,7 +954,8 @@ int daemon_msg_err(SOCKET sockctrl, uint32 plen)
  * returned in the 'errbuf' variable; this gives a message for the
  * unrecoverable error or for the authentication failure.
  */
-int daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAllowed)
+static int
+daemon_msg_auth_req(SOCKET sockctrl, uint8 ver, uint32 plen, int nullAuthAllowed)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1112,7 +1114,8 @@ error_noreply:
 	return -2;
 }
 
-int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
+static int
+daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 {
 #ifdef _WIN32
 	/*
@@ -1234,7 +1237,8 @@ int daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 }
 
-static int daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen)
+static int
+daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1438,7 +1442,8 @@ error:
 	\param plen: the length of the current message (needed in order to be able
 	to discard excess data in the message, if present)
 */
-static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen)
+static int
+daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1526,10 +1531,11 @@ error:
 	\param plen: the length of the current message (needed in order to be able
 	to discard excess data in the message, if present)
 */
+static int
 #ifdef _WIN32
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
 #else
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
 #endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -1892,10 +1898,11 @@ fatal_error:
 	return -1;
 }
 
+static int
 #ifdef _WIN32
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, HANDLE threaddata)
+daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, HANDLE threaddata)
 #else
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t threaddata)
+daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t threaddata)
 #endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -1956,7 +1963,8 @@ static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *ses
 	return 0;
 }
 
-static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, uint32 *plenp, char *errmsgbuf)
+static int
+daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, uint32 *plenp, char *errmsgbuf)
 {
 	int status;
 	struct rpcap_filter filter;
@@ -2030,7 +2038,8 @@ static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, ui
 	return 0;
 }
 
-int daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen)
+static int
+daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -2083,7 +2092,8 @@ error:
 /*!
 	\brief Received the sampling parameters from remote host and it stores in the pcap_t structure.
 */
-int daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap_sampling *samp_param)
+static int
+daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap_sampling *samp_param)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];
@@ -2141,7 +2151,8 @@ error:
 	return 0;
 }
 
-static int daemon_msg_stats_req(struct daemon_slpars *pars, struct session *session, uint32 plen, struct pcap_stat *stats, unsigned int svrcapt)
+static int
+daemon_msg_stats_req(struct daemon_slpars *pars, struct session *session, uint32 plen, struct pcap_stat *stats, unsigned int svrcapt)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -2363,7 +2374,8 @@ error:
 
 	\warning This function supports only AF_INET and AF_INET6 address families.
 */
-void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout)
+static void
+daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout)
 {
 	memset(sockaddrout, 0, sizeof(struct sockaddr_storage));
 
@@ -2428,7 +2440,8 @@ void sleep_secs(int secs)
 /*
  * Read the header of a message.
  */
-static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp)
+static int
+rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp)
 {
 	int nread;
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -2459,7 +2472,8 @@ static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp)
  * Returns 0 on success, logs a message and returns -1 on a network
  * error.
  */
-static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf)
+static int
+rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf)
 {
 	int nread;
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -2487,7 +2501,8 @@ static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, c
  * Returns 0 on success, logs a message and returns -1 on a network
  * error.
  */
-static int rpcapd_discard(SOCKET sock, uint32 len)
+static int
+rpcapd_discard(SOCKET sock, uint32 len)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 
