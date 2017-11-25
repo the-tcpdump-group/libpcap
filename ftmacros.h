@@ -55,6 +55,34 @@
   #define _XPG4_2
 #elif defined(_hpux) || defined(hpux) || defined(__hpux)
   #define _REENTRANT
+
+  /*
+   * We need this to get the versions of socket functions that
+   * use socklen_t.  Define it only if it's not already defined,
+   * so we don't get redefiniton warnings.
+   */
+  #ifndef _XOPEN_SOURCE_EXTENDED
+    #define _XOPEN_SOURCE_EXTENDED
+  #endif
+
+  /*
+   * XXX - the list of PA-RISC options for GCC makes it sound as if
+   * building code that uses a particular vintage of UNIX API/ABI
+   * is complicated:
+   *
+   *    https://gcc.gnu.org/onlinedocs/gcc/HPPA-Options.html
+   *
+   * See the description of the -munix flag.
+   *
+   * We probably want libpcap to work with programs built for any
+   * UN*X standard.  I'm not sure whether that's possible and, if
+   * it is, what sort of stuff it'd have to do.
+   *
+   * It might also be a requirement that we build with a special
+   * flag to allow the library to be used with threaded code, at
+   * least with HP's C compiler; hopefully doing so won't make it
+   * *not* work with *un*-threaded code.
+   */
 #elif defined(__linux__) || defined(linux) || defined(__linux)
   /*
    * We can't turn _GNU_SOURCE on because some versions of GNU Libc

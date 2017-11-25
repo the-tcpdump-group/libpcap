@@ -35,6 +35,8 @@
 #include <config.h>
 #endif
 
+#include "ftmacros.h"
+
 #include <string.h>		/* for strlen(), ... */
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
