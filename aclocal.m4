@@ -395,7 +395,7 @@ AC_DEFUN(AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT,
 			# We can't run mkdep, so have "make depend" do
 			# nothing.
 			#
-			MKDEP=nomkdep
+			MKDEP='${srcdir}/nomkdep'
 		fi
 		rm -rf conftest*
 	else
@@ -404,7 +404,7 @@ AC_DEFUN(AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT,
 		# We can't run mkdep, so have "make depend" do
 		# nothing.
 		#
-		MKDEP=nomkdep
+		MKDEP='${srcdir}/nomkdep'
 	fi
 	AC_SUBST(DEPENDENCY_CFLAG)
 	AC_SUBST(MKDEP)
