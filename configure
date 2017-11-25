@@ -8935,7 +8935,7 @@ $as_echo "no" >&6; }
 			# We can't run mkdep, so have "make depend" do
 			# nothing.
 			#
-			MKDEP=:
+			MKDEP=nomkdep
 		fi
 		rm -rf conftest*
 	else
@@ -8945,7 +8945,7 @@ $as_echo "no" >&6; }
 		# We can't run mkdep, so have "make depend" do
 		# nothing.
 		#
-		MKDEP=:
+		MKDEP=nomkdep
 	fi
 
 
