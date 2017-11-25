@@ -17,6 +17,13 @@ project(pcap)
 #   Parameters
 ###################################################################
 
+#
+# Try to enable as many C99 features as we can.
+# At minimum, we want C++/C99-style // comments.
+# (Sadly, this won't work with CMake prior to 3.1.)
+#
+set(CMAKE_C_STANDARD 99)
+
 if(WIN32)
     #
     # On Windows, allow the library name to be overridden, for the
