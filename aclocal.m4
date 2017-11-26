@@ -419,7 +419,7 @@ dnl	AC_LBL_SHLIBS_INIT
 dnl
 dnl results:
 dnl
-dnl	V_CCOPT (modified to build position-independent code)
+dnl	V_SHLIB_CCOPT (modified to build position-independent code)
 dnl	V_SHLIB_CMD
 dnl	V_SHLIB_OPT
 dnl	V_SONAME_OPT
@@ -470,13 +470,13 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 			esac
 			;;
 		    esac
-		    V_CCOPT="$V_CCOPT $PIC_OPT"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT $PIC_OPT"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    hpux*)
-		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 	    	    #
 		    # XXX - this assumes GCC is using the HP linker,
 		    # rather than the GNU linker, and that the "+h"
@@ -492,7 +492,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    ;;
 
 	    solaris*)
-		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    #
 		    # XXX - this assumes GCC is using the Sun linker,
 		    # rather than the GNU linker.
@@ -533,7 +533,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    #
 		    # "cc" is GCC.
 		    #
-		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
@@ -541,7 +541,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    ;;
 
 	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT +z"
 		    V_SHLIB_CMD="\$(LD)"
 		    V_SHLIB_OPT="-b"
 		    V_SONAME_OPT="+h "
@@ -564,7 +564,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    ;;
 
 	    solaris*)
-		    V_CCOPT="$V_CCOPT -Kpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -Kpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G"
 		    V_SONAME_OPT="-h "

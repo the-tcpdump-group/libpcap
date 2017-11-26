@@ -654,6 +654,7 @@ V_RPATH_OPT
 V_SONAME_OPT
 V_SHLIB_OPT
 V_SHLIB_CMD
+V_SHLIB_CCOPT
 V_PCAP
 V_LEX
 V_INCLS
@@ -3847,13 +3848,13 @@ $as_echo "#define const /**/" >>confdefs.h
 			esac
 			;;
 		    esac
-		    V_CCOPT="$V_CCOPT $PIC_OPT"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT $PIC_OPT"
 		    V_SONAME_OPT="-Wl,-soname,"
 		    V_RPATH_OPT="-Wl,-rpath,"
 		    ;;
 
 	    hpux*)
-		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 	    	    #
 		    # XXX - this assumes GCC is using the HP linker,
 		    # rather than the GNU linker, and that the "+h"
@@ -3869,7 +3870,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    ;;
 
 	    solaris*)
-		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    #
 		    # XXX - this assumes GCC is using the Sun linker,
 		    # rather than the GNU linker.
@@ -3910,7 +3911,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    #
 		    # "cc" is GCC.
 		    #
-		    V_CCOPT="$V_CCOPT -fpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-shared"
 		    V_SONAME_OPT="-Wl,-soname,"
@@ -3918,7 +3919,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    ;;
 
 	    hpux*)
-		    V_CCOPT="$V_CCOPT +z"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT +z"
 		    V_SHLIB_CMD="\$(LD)"
 		    V_SHLIB_OPT="-b"
 		    V_SONAME_OPT="+h "
@@ -3941,7 +3942,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    ;;
 
 	    solaris*)
-		    V_CCOPT="$V_CCOPT -Kpic"
+		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -Kpic"
 		    V_SHLIB_CMD="\$(CC)"
 		    V_SHLIB_OPT="-G"
 		    V_SONAME_OPT="-h "
@@ -9302,6 +9303,7 @@ rm -f core conftest.err conftest.$ac_objext \
 
 rm -f net
 ln -s ${srcdir}/bpf/net net
+
 
 
 
