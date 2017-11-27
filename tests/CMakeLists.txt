@@ -10,8 +10,13 @@ macro(add_test_executable _executable)
     ${_executable}.c ${PROJECT_SOURCE_LIST_WIN32_C})
   set_target_properties(${_executable} PROPERTIES
     COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
-  target_link_libraries(${_executable}
-    ${ARGN} ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
+  if(WIN32)
+    target_link_libraries(${_executable}
+      ${ARGN} ${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
+  else(WIN32)
+    target_link_libraries(${_executable}
+      ${ARGN} ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
+  endif(WIN32)
   add_dependencies(tests ${_executable})
 endmacro()
 
