@@ -148,6 +148,8 @@ HDR = $(PUBHDR) \
 	rpcapd/Makefile.in \
 	rpcapd/daemon.h \
 	rpcapd/daemon.c \
+	rpcapd/getopt.c \
+	rpcapd/getopt.h \
 	rpcapd/fileconf.c \
 	rpcapd/fileconf.h \
 	rpcapd/log.h \
@@ -155,8 +157,6 @@ HDR = $(PUBHDR) \
 	rpcapd/rpcapd.c \
 	rpcapd/rpcapd.h \
 	rpcapd/rpcapd.rc \
-	rpcapd/utils.c \
-	rpcapd/utils.h \
 	rpcapd/win32-svc.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \

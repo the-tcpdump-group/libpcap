@@ -25,7 +25,7 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
   endif(UNIX)
 
   if(WIN32)
-    set(RPCAPD_EXTRA_SOURCES win32-svc.c rpcapd.rc)
+    set(RPCAPD_EXTRA_SOURCES win32-svc.c getopt.c rpcapd.rc)
     include_directories(${pcap_SOURCE_DIR}/rpcapd)
   endif(WIN32)
 
@@ -34,7 +34,6 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     fileconf.c
     log-stderr.c
     rpcapd.c
-    utils.c
     ${RPCAPD_EXTRA_SOURCES}
   )
 

@@ -81,8 +81,7 @@ INSTALL_DATA = @INSTALL_DATA@
 SRC =	daemon.c \
 	fileconf.c \
 	log-stderr.c \
-	rpcapd.c \
-	utils.c
+	rpcapd.c
 
 OBJ =	$(SRC:.c=.o) ../rpcap-protocol.o
 PUBHDR =
@@ -95,12 +94,6 @@ TAGFILES = \
 CLEANFILES = $(OBJ) rpcapd
 
 MAN8 =
-
-
-EXTRA_DIST = \
-	CMakeLists.txt \
-	Makefile.in \
-	Makefile-devel-adds
 
 rpcapd: $(OBJ) ../libpcap.a
 	$(CC) $(CCOPT) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS) $(RPCAPD_LIBS)

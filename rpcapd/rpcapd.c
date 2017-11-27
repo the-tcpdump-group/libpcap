@@ -50,11 +50,11 @@
 #include "rpcap-protocol.h"
 #include "daemon.h"		// the true main() method of this daemon
 #include "log.h"
-#include "utils.h"		// Missing calls and such
 
 #ifdef _WIN32
   #include <process.h>		// for thread stuff
   #include "win32-svc.h"	// for Win32 service stuff
+  #include "getopt.h"		// for getopt()-for-Windows
 #else
   #include <unistd.h>		// for exit()
   #include <sys/wait.h>		// waitpid()
