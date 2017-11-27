@@ -13,16 +13,24 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
 
-###################################################################
-#   Parameters
-###################################################################
-
 #
 # Try to enable as many C99 features as we can.
 # At minimum, we want C++/C99-style // comments.
 # (Sadly, this won't work with CMake prior to 3.1.)
 #
 set(CMAKE_C_STANDARD 99)
+
+#
+# Build all runtimes in the top-level binary directory; that way,
+# on Windows, the executables will be in the same directory as
+# the DLLs, so the system will find pcap.dll when any of the
+# executables are run.
+#
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/run)
+
+###################################################################
+#   Parameters
+###################################################################
 
 if(WIN32)
     #

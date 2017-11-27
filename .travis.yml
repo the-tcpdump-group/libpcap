@@ -80,4 +80,5 @@ script:
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then echo '$ make install [...]' && echo -n travis_fold:start:script.make_install; fi
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then PATH=$PATH make install; fi
   - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then echo -n travis_fold:end:script.make_install; fi
-  - if [ "$COVERITY_SCAN_BRANCH" != 1 ]; then tests/findalldevstest; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 -a "$CMAKE" = no ]; then tests/findalldevstest; fi
+  - if [ "$COVERITY_SCAN_BRANCH" != 1 -a "$CMAKE" = yes ]; then run/findalldevstest; fi
