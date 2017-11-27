@@ -53,7 +53,7 @@
  */
 
 #if defined(_WIN32)
-  #ifdef BUILDING_PCAP
+  #ifdef pcap_EXPORTS
     /*
      * We're compiling libpcap, so we should export functions in our
      * API.
@@ -66,7 +66,7 @@
   /* XXX - does this need special treatment? */
   #define PCAP_API_DEF
 #else /* UN*X */
-  #ifdef BUILDING_PCAP
+  #ifdef pcap_EXPORTS
     /*
      * We're compiling libpcap, so we should export functions in our API.
      * The compiler might be configured not to export functions from a
@@ -180,7 +180,7 @@
    * __attribute__((deprecated(msg))).
    */
   #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated))
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(BUILDING_PCAP)
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(pcap_EXPORTS)
   /*
    * MSVC from Visual Studio 2008 or later, and we're not building
    * libpcap itself.
