@@ -40,8 +40,13 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
   set_target_properties(rpcapd PROPERTIES
     COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
 
-  target_link_libraries(rpcapd ${LIBRARY_NAME}_static
-    ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  if(WIN32)
+    target_link_libraries(rpcapd ${LIBRARY_NAME}
+      ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  else(WIN32)
+    target_link_libraries(rpcapd ${LIBRARY_NAME}_static
+      ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  endif(WIN32)
 
   if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     install(TARGETS rpcapd DESTINATION bin/amd64)
