@@ -141,20 +141,6 @@ HDR = $(PUBHDR) \
 	portability.h \
 	ppp.h \
 	rpcap-protocol.h \
-	rpcapd/CMakeLists.txt \
-	rpcapd/Makefile.in \
-	rpcapd/daemon.h \
-	rpcapd/daemon.c \
-	rpcapd/getopt.c \
-	rpcapd/getopt.h \
-	rpcapd/fileconf.c \
-	rpcapd/fileconf.h \
-	rpcapd/log.h \
-	rpcapd/log-stderr.c \
-	rpcapd/rpcapd.c \
-	rpcapd/rpcapd.h \
-	rpcapd/rpcapd.rc \
-	rpcapd/win32-svc.h \
 	sf-pcap.h \
 	sf-pcap-ng.h \
 	sunatmpos.h \
@@ -363,6 +349,20 @@ EXTRA_DIST = \
 	pcap-usb-linux.c \
 	pcap-usb-linux.h \
 	rpcap-protocol.c \
+	rpcapd/CMakeLists.txt \
+	rpcapd/Makefile.in \
+	rpcapd/daemon.h \
+	rpcapd/daemon.c \
+	rpcapd/getopt.c \
+	rpcapd/getopt.h \
+	rpcapd/fileconf.c \
+	rpcapd/fileconf.h \
+	rpcapd/log.h \
+	rpcapd/log-stderr.c \
+	rpcapd/rpcapd.c \
+	rpcapd/rpcapd.h \
+	rpcapd/rpcapd.rc \
+	rpcapd/win32-svc.h \
 	sockutils.c \
 	sockutils.h \
 	scanner.l \
