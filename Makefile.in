@@ -353,8 +353,6 @@ EXTRA_DIST = \
 	rpcapd/Makefile.in \
 	rpcapd/daemon.h \
 	rpcapd/daemon.c \
-	rpcapd/getopt.c \
-	rpcapd/getopt.h \
 	rpcapd/fileconf.c \
 	rpcapd/fileconf.h \
 	rpcapd/log.h \
