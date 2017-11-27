@@ -1547,6 +1547,8 @@ if(BUILD_SHARED_LIBS)
         ${PROJECT_EXTERNAL_OBJECT_LIST}
     )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES
+        COMPILE_DEFINITIONS BUILDING_PCAP)
 endif(BUILD_SHARED_LIBS)
 
 add_library(${LIBRARY_NAME}_static STATIC
@@ -1556,6 +1558,8 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_EXTERNAL_OBJECT_LIST}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES
+    COMPILE_DEFINITIONS BUILDING_PCAP)
 
 if(WIN32)
     if(BUILD_SHARED_LIBS)
