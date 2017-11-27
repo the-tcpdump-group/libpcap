@@ -1,0 +1,13 @@
+Makefile
+*~
+*.dSYM
+*.o
+valgrindtest
+capturetest
+can_set_rfmon_test
+filtertest
+findalldevstest
+opentest
+reactivatetest
+selpolltest
+threadsignaltest

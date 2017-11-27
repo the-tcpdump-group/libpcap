@@ -2162,5 +2162,5 @@ AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
 	pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap
 	pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap
-	pcap_set_tstamp_type.3pcap rpcapd/Makefile)
+	pcap_set_tstamp_type.3pcap rpcapd/Makefile tests/Makefile)
 exit 0

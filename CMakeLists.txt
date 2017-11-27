@@ -249,8 +249,6 @@ if(WIN32)
 
 endif(WIN32)
 
-add_definitions(-DBUILDING_PCAP)
-
 if(MSVC)
     add_definitions(-D__STDC__)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -1535,6 +1533,8 @@ if(BUILD_SHARED_LIBS)
         ${PROJECT_EXTERNAL_OBJECT_LIST}
     )
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
+    set_target_properties(${LIBRARY_NAME} PROPERTIES
+        COMPILE_DEFINITIONS BUILDING_PCAP)
 endif(BUILD_SHARED_LIBS)
 
 add_library(${LIBRARY_NAME}_static STATIC
@@ -1544,6 +1544,8 @@ add_library(${LIBRARY_NAME}_static STATIC
     ${PROJECT_EXTERNAL_OBJECT_LIST}
 )
 add_dependencies(${LIBRARY_NAME}_static SerializeTarget)
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES
+    COMPILE_DEFINITIONS BUILDING_PCAP)
 
 if(WIN32)
     if(BUILD_SHARED_LIBS)

@@ -70,10 +70,7 @@ RPCAPD_LIBS=@RPCAPD_LIBS@
 EXTRA_NETWORK_LIBS=@EXTRA_NETWORK_LIBS@
 
 # Standard CFLAGS for building members of a shared library
-FULL_SHLIB_CFLAGS = $(CCOPT) $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
-
-# Standard CFLAGS for building test programs
-FULL_TESTPROG_CFLAGS = $(CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
+FULL_CFLAGS = $(CCOPT) $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -88,7 +85,7 @@ YACC = @YACC@
 # problem if you don't own the file but can write to the directory.
 .c.o:
 	@rm -f $@
-	$(CC) $(FULL_SHLIB_CFLAGS) -c $(srcdir)/$*.c
+	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
 PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @BT_MONITOR_SRC@ @NETFILTER_SRC@ @DBUS_SRC@ @NETMAP_SRC@ @RDMA_SRC@
 FSRC =  @V_FINDALLDEVS@
@@ -163,24 +160,13 @@ HDR = $(PUBHDR) \
 	sunatmpos.h \
 	varattrs.h
 
-TESTS = \
-	@VALGRINDTEST@ \
-	capturetest \
-	can_set_rfmon_test \
-	filtertest \
-	findalldevstest \
-	opentest \
-	reactivatetest \
-	selpolltest \
-	threadsignaltest
-
 GENHDR = \
 	scanner.h grammar.h
 
 TAGFILES = \
 	$(SRC) $(HDR)
 
-CLEANFILES = $(OBJ) libpcap.* $(TESTS) \
+CLEANFILES = $(OBJ) libpcap.* \
 	$(PROG)-`cat $(srcdir)/VERSION`.tar.gz $(GENSRC) $(GENHDR) \
 	lex.yy.c pcap-config
 
@@ -381,6 +367,7 @@ EXTRA_DIST = \
 	sockutils.h \
 	scanner.l \
 	tests/CMakeLists.txt \
+	tests/Makefile.in \
 	tests/can_set_rfmon_test.c \
 	tests/capturetest.c \
 	tests/filtertest.c \
@@ -490,7 +477,7 @@ scanner.h: scanner.c
 	fi
 
 scanner.o: scanner.c grammar.h
-	$(CC) $(FULL_SHLIB_CFLAGS) -c scanner.c
+	$(CC) $(FULL_CFLAGS) -c scanner.c
 
 grammar.c: $(srcdir)/grammar.y
 	$(YACC) -p pcap_ -o grammar.c -d $<
@@ -502,23 +489,23 @@ grammar.h: grammar.c
 	fi
 
 grammar.o: grammar.c scanner.h
-	$(CC) $(FULL_SHLIB_CFLAGS) -c grammar.c
+	$(CC) $(FULL_CFLAGS) -c grammar.c
 
 gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
-	$(CC) $(FULL_SHLIB_CFLAGS) -c $(srcdir)/gencode.c
+	$(CC) $(FULL_CFLAGS) -c $(srcdir)/gencode.c
 
 snprintf.o: $(srcdir)/missing/snprintf.c
-	$(CC) $(FULL_SHLIB_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
 
 strtok_r.o: $(srcdir)/missing/strtok_r.c
-	$(CC) $(FULL_SHLIB_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
 
 bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
 	rm -f bpf_filter.c
 	ln -s $(srcdir)/bpf/net/bpf_filter.c bpf_filter.c
 
 bpf_filter.o: bpf_filter.c
-	$(CC) $(FULL_SHLIB_CFLAGS) -c bpf_filter.c
+	$(CC) $(FULL_CFLAGS) -c bpf_filter.c
 
 #
 # Generate the pcap-config script.
@@ -549,34 +536,10 @@ build-rpcapd: libpcap.a
 #
 # Test programs - not built by default, and not installed.
 #
-tests: $(TESTS)
+tests: FORCE
+	cd tests; $(MAKE)
 
-capturetest: tests/capturetest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o capturetest $(srcdir)/tests/capturetest.c libpcap.a $(LIBS)
-
-can_set_rfmon_test: tests/can_set_rfmon_test.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o can_set_rfmon_test $(srcdir)/tests/can_set_rfmon_test.c libpcap.a $(LIBS)
-
-filtertest: tests/filtertest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o filtertest $(srcdir)/tests/filtertest.c libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
-
-findalldevstest: tests/findalldevstest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/tests/findalldevstest.c libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
-
-opentest: tests/opentest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o opentest $(srcdir)/tests/opentest.c libpcap.a $(LIBS)
-
-reactivatetest: tests/reactivatetest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o reactivatetest $(srcdir)/tests/reactivatetest.c libpcap.a $(LIBS)
-
-selpolltest: tests/selpolltest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o selpolltest $(srcdir)/tests/selpolltest.c libpcap.a $(LIBS)
-
-threadsignaltest: tests/threadsignaltest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o threadsignaltest $(srcdir)/tests/threadsignaltest.c libpcap.a $(LIBS) $(PTHREAD_LIBS)
-
-valgrindtest: tests/valgrindtest.c libpcap.a
-	$(CC) $(FULL_TESTPROG_CFLAGS) -I. -L. -o valgrindtest $(srcdir)/tests/valgrindtest.c libpcap.a $(LIBS)
+FORCE:
 
 install: install-shared install-archive pcap-config @INSTALL_RPCAPD@
 	[ -d $(DESTDIR)$(libdir) ] || \
@@ -760,6 +723,7 @@ uninstall-rpcapd:
 clean:
 	rm -f $(CLEANFILES)
 	cd rpcapd; $(MAKE) clean
+	cd tests; $(MAKE) clean
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
@@ -768,6 +732,7 @@ distclean: clean
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
 	cd rpcapd; $(MAKE) distclean
+	cd tests; $(MAKE) distclean
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
@@ -787,3 +752,4 @@ releasetar:
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	$(MKDEP) -c $(CC) -m $(CFLAGS) $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
 	cd rpcapd; $(MAKE) depend
+	cd tests; $(MAKE) depend
