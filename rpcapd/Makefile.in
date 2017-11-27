@@ -97,7 +97,7 @@ CLEANFILES = $(OBJ) rpcapd
 MAN8 =
 
 rpcapd: $(OBJ) ../libpcap.a
-	$(CC) $(CCOPT) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS) $(RPCAPD_LIBS $(PTHREAD_LIBS))
+	$(CC) $(CCOPT) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS) $(RPCAPD_LIBS $(PTHREAD_LIBS)
 clean:
 	rm -f $(CLEANFILES)
 
