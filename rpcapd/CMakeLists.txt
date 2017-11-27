@@ -34,6 +34,8 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     fileconf.c
     log-stderr.c
     rpcapd.c
+    ${pcap_SOURCE_DIR}/rpcap-protocol.c
+    ${pcap_SOURCE_DIR}/sockutils.c
     ${RPCAPD_EXTRA_SOURCES}
   )
 
