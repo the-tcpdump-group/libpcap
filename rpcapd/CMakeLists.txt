@@ -25,7 +25,11 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
   endif(UNIX)
 
   if(WIN32)
-    set(RPCAPD_EXTRA_SOURCES win32-svc.c ${pcap_SOURCE_DIR}/missing/getopt.c rpcapd.rc)
+    set(RPCAPD_EXTRA_SOURCES
+        win32-svc.c
+        ${pcap_SOURCE_DIR}/missing/getopt.c
+        ${pcap_SOURCE_DIR}/missing/win_snprintf.c
+        rpcapd.rc)
     include_directories(${pcap_SOURCE_DIR}/rpcapd ${pcap_SOURCE_DIR}/missing)
   endif(WIN32)
 
