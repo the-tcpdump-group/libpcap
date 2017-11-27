@@ -1326,6 +1326,12 @@ endif(ENABLE_REMOTE)
 #
 # Not necessary with MSVC, as that's the default.
 #
+# XXX - we don't use ADD_COMPILER_EXPORT_FLAGS, because, as of CMake
+# 2.8.12.2, it doesn't know about Sun C/Oracle Studio, and, as of
+# CMake 2.8.6, it only sets the C++ compiler flags, rather than
+# allowing an arbitrary variable to be set with the "hide symbols
+# not explicitly exported" flag.
+#
 if(NOT MSVC)
     if(CMAKE_C_COMPILER_ID MATCHES "SunPro")
         #
@@ -1343,7 +1349,7 @@ if(NOT MSVC)
 endif(NOT MSVC)
 
 #
-# {Flex} and YACC/Berkeley YACC/Bison.
+# Flex/Lex and YACC/Berkeley YACC/Bison.
 # From a mail message to the CMake mailing list by Andy Cedilnik of
 # Kitware.
 #
@@ -1391,7 +1397,7 @@ message(STATUS "Parser generator: ${YACC_EXECUTABLE}")
 
 #
 # Create custom command for the scanner.
-# Find out whether it's Bison or notby looking at the last component
+# Find out whether it's Bison or not by looking at the last component
 # of the path (without a .exe extension, if this is Windows).
 #
 get_filename_component(YACC_NAME ${YACC_EXECUTABLE} NAME_WE)
