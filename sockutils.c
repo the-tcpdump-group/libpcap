@@ -310,26 +310,53 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 	/* This is a server socket */
 	if (server)
 	{
-#ifdef BSD
+#if defined(IPV6_V6ONLY) || defined(IPV6_BINDV6ONLY)
 		/*
-		 * Force the use of IPv6-only addresses; in BSD you can accept both v4 and v6
-		 * connections if you have a "NULL" pointer as the nodename in the getaddrinfo()
-		 * This behavior is not clear in the RFC 2553, so each system implements the
-		 * bind() differently from this point of view
+		 * Force the use of IPv6-only addresses.
+		 *
+		 * RFC 3493 indicates that you can support IPv4 on an
+		 * IPv6 socket:
+		 *
+		 *    https://tools.ietf.org/html/rfc3493#section-3.7
+		 *
+		 * and that this is the default behavior.  This means
+		 * that if we first create an IPv6 socket bound to the
+		 * "any" address, it is, in effect, also bound to the
+		 * IPv4 "any" address, so when we create an IPv4 socket
+		 * and try to bind it to the IPv4 "any" address, it gets
+		 * EADDRINUSE.
+		 *
+		 * Not all network stacks support IPv4 on IPv6 sockets;
+		 * pre-NT 6 Windows stacks don't support it, and the
+		 * OpenBSD stack doesn't support it for security reasons
+		 * (see the OpenBSD inet6(4) man page).  Therefore, we
+		 * don't want to rely on this behavior.
+		 *
+		 * So we try to disable it, using either the IPV6_V6ONLY
+		 * option from RFC 3493:
+		 *
+		 *    https://tools.ietf.org/html/rfc3493#section-5.3
+		 *
+		 * or the IPV6_BINDV6ONLY option from older UN*Xes.
 		 */
+#ifndef IPV6_V6ONLY
+  /* For older systems */
+  #define IPV6_V6ONLY IPV6_BINDV6ONLY
+#endif /* IPV6_V6ONLY */
 		if (addrinfo->ai_family == PF_INET6)
 		{
-			int on;
+			int on = 1;
 
-			if (setsockopt(sock, IPPROTO_IPV6, IPV6_BINDV6ONLY, (char *)&on, sizeof (int)) == -1)
+			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
+			    (char *)&on, sizeof (int)) == -1)
 			{
 				if (errbuf)
-					pcap_snprintf(errbuf, errbuflen, "setsockopt(IPV6_BINDV6ONLY)");
+					pcap_snprintf(errbuf, errbuflen, "setsockopt(IPV6_V6ONLY)");
 				closesocket(sock);
 				return INVALID_SOCKET;
 			}
 		}
-#endif
+#endif /* defined(IPV6_V6ONLY) || defined(IPV6_BINDV6ONLY) */
 
 		/* WARNING: if the address is a mcast one, I should place the proper Win32 code here */
 		if (bind(sock, addrinfo->ai_addr, (int) addrinfo->ai_addrlen) != 0)
