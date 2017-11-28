@@ -237,7 +237,7 @@ void *daemon_serviceloop(void *ptr)
 		//
 		// Did the client specify a version we can handle?
 		//
-		if (RPCAP_VERSION_IS_SUPPORTED(header.ver))
+		if (!RPCAP_VERSION_IS_SUPPORTED(header.ver))
 		{
 			//
 			// Tell them it's not a valid protocol version.
