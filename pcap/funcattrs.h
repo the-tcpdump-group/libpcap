@@ -82,7 +82,7 @@
    *    __declspec(dllimport);
    *
    *    otherwise, we define PCAP_API_DEF as nothing.
-   *
+   */
   #if defined(pcap_EXPORTS)
     /*
      * We're compiling libpcap, so we should export functions in our
