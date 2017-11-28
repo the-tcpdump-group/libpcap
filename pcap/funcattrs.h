@@ -53,14 +53,46 @@
  */
 
 #if defined(_WIN32)
-  #ifdef pcap_EXPORTS
+  /*
+   * For Windows:
+   *
+   *    when building libpcap:
+   *
+   *       if we're building it as a DLL, we have to declare API
+   *       functions with __declspec(dllexport);
+   *
+   *       if we're building it as a static library, we don't want
+   *       to do so.
+   *
+   *    when using libpcap:
+   *
+   *       if we're using the DLL, calls to its functions are a
+   *       little more efficient if they're declared with
+   *       __declspec(dllimport);
+   *
+   *       if we're not using the dll, we don't want to declare
+   *       them that way.
+   *
+   * So:
+   *
+   *    if pcap_EXPORTS is defined, we define PCAP_API_DEF as
+   *     __declspec(dllexport);
+   *
+   *    if PCAP_DLL is defined, we define PCAP_API_DEF as
+   *    __declspec(dllimport);
+   *
+   *    otherwise, we define PCAP_API_DEF as nothing.
+   *
+  #if defined(pcap_EXPORTS)
     /*
      * We're compiling libpcap, so we should export functions in our
      * API.
      */
     #define PCAP_API_DEF	__declspec(dllexport)
-  #else
+  #elif defined(PCAP_DLL)
     #define PCAP_API_DEF	__declspec(dllimport)
+  #else
+    #define PCAP_API_DEF
   #endif
 #elif defined(MSDOS)
   /* XXX - does this need special treatment? */
