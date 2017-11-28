@@ -99,6 +99,16 @@
    */
   #define _POSIX_C_SOURCE 200809L
   #define _XOPEN_SOURCE 600
+
+  /*
+   * We turn on both _DEFAULT_SOURCE and _BSD_SOURCE to try to get
+   * the BSD u_XXX types, such as u_int and u_short, defined.  We
+   * define _DEFAULT_SOURCE first, so that newer versions of GNU libc
+   * don't whine about _BSD_SOURCE being deprecated; we still have
+   * to define _BSD_SOURCE to handle older versions of GNU libc that
+   * don't support _DEFAULT_SOURCE.
+   */
+  #define _DEFAULT_SOURCE
   #define _BSD_SOURCE
 #endif
 
