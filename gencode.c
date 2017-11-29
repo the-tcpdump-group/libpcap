@@ -7722,8 +7722,18 @@ gen_inbound(compiler_state_t *cstate, int dir)
 	default:
 		/*
 		 * If we have packet meta-data indicating a direction,
-		 * check it, otherwise give up as this link-layer type
-		 * has nothing in the packet data.
+		 * and that metadata can be checked by BPF code, check
+		 * it.  Otherwise, give up, as this link-layer type has
+		 * nothing in the packet data.
+		 *
+		 * Currently, the only platform where a BPF filter can
+		 * check that metadata is Linux with the in-kernel
+		 * BPF interpreter.  If other packet capture mechanisms
+		 * and BPF filters also supported this, it would be
+		 * nice.  It would be even better if they made that
+		 * metadata available so that we could provide it
+		 * with newer capture APIs, allowing it to be saved
+		 * in pcapng files.
 		 */
 #if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
 		/*
