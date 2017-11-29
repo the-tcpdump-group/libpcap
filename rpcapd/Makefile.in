@@ -118,4 +118,4 @@ tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
 depend:
-	../$(MKDEP) -c $(CC) -m $(CFLAGS) $(DEPENDENCY_CFLAG) $(DEFS) $(INCLS) $(SRC)
+	../$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
