@@ -1277,9 +1277,20 @@ endif()
 if(ENABLE_REMOTE)
     #
     # Check for various members of struct msghdr.
+    # We need to include ftmacros.h on some platforms, to make sure we
+    # get the POSIX/Single USER Specification version of struct msghdr,
+    # which has those members, rather than the backwards-compatible
+    # version, which doesn't.  That's not a system header file, and
+    # at least some versions of CMake include it as <ftmacros.h>, which
+    # won't check the current directory, so we add the top-level
+    # source directory to the list of include directories when we do
+    # the check.
     #
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_SOURCE_DIR})
     check_struct_has_member("struct msghdr" msg_control "ftmacros.h;sys/socket.h" STRUCT_MSGHDR_HAS_MSG_CONTROL)
     check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" STRUCT_MSGHDR_HAS_MSG_FLAGS)
+    cmake_pop_check_state()
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
 endif(ENABLE_REMOTE)
