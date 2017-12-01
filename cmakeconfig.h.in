@@ -165,6 +165,12 @@
 /* Define to 1 if you have the `strerror' function. */
 #cmakedefine HAVE_STRERROR 1
 
+/* Define to 1 if you have the `strerror_r' function. */
+#cmakedefine HAVE_STRERROR_R 1
+
+/* Define to 1 if you have the `strerror_s' function. */
+#cmakedefine HAVE_STRERROR_S 1
+
 /* Define to 1 if you have the <strings.h> header file. */
 #cmakedefine HAVE_STRINGS_H 1
 
