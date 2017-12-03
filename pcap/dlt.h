@@ -1349,6 +1349,11 @@
  */
 #define DLT_DOCSIS31_XRA31	273
 
+/*
+ * mPackets, as specified by IEEE 802.3br Figure 99-4, starting
+ * with the preamble and always ending with a CRC field.
+ */
+#define DLT_ETHERNET_MPACKET	274
 
 /*
  * In case the code that includes this file (directly or indirectly)
@@ -1360,7 +1365,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	273	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	274	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

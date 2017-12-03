@@ -1063,7 +1063,13 @@
  */
 #define LINKTYPE_DOCSIS31_XRA31	273
 
-#define LINKTYPE_MATCHING_MAX	273		/* highest value in the "matching" range */
+/*
+ * mPackets, as specified by IEEE 802.3br Figure 99-4, starting
+ * with the preamble and always ending with a CRC field.
+ */
+#define LINKTYPE_ETHERNET_MPACKET	274
+
+#define LINKTYPE_MATCHING_MAX	274		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;

@@ -2909,6 +2909,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(TI_LLN_SNIFFER, "TI LLN sniffer frames"),
 	DLT_CHOICE(VSOCK, "Linux vsock"),
 	DLT_CHOICE(NORDIC_BLE, "Nordic Semiconductor Bluetooth LE sniffer frames"),
+	DLT_CHOICE(DOCSIS31_XRA31, "Excentis XRA-31 DOCSIS 3.1 RF sniffer frames"),
+	DLT_CHOICE(ETHERNET_MPACKET, "802.3br mPackets"),
 	DLT_CHOICE_SENTINEL
 };
 
