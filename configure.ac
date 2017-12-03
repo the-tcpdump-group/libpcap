@@ -366,7 +366,7 @@ AC_MSG_RESULT(${enable_protochain})
 # only tests with BPF and PF_PACKET sockets; only enable it if
 # we have BPF or PF_PACKET sockets.
 #
-VALGRINDTEST=
+VALGRINDTEST_SRC=
 
 #
 # SITA support is mutually exclusive with native capture support;
@@ -453,13 +453,13 @@ else
 
 		#
 		# We have BPF, so build valgrindtest with "make test"
-		# on macOS, FreeBSD, and Linux (add your OS once
-		# there's a valgrind for it).
+		# on macOS and FreeBSD (add your OS once there's a
+		# valgrind for it).
 		#
 		case "$host_os" in
 
 		freebsd*|darwin*|linux*)
-			VALGRINDTEST=valgrindtest
+			VALGRINDTEST_SRC=valgrindtest.c
 			;;
 		esac
 	elif test "$ac_cv_header_linux_socket_h" = yes; then
@@ -472,7 +472,7 @@ else
 		# XXX - this won't work with older kernels that have
 		# SOCK_PACKET sockets but not PF_PACKET sockets.
 		#
-		VALGRINDTEST=valgrindtest
+		VALGRINDTEST_SRC=valgrindtest.c
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
 	        #
 	        # DEC OSF/1, Digital UNIX, Tru64 UNIX
@@ -514,7 +514,7 @@ else
 fi
 AC_MSG_CHECKING(packet capture type)
 AC_MSG_RESULT($V_PCAP)
-AC_SUBST(VALGRINDTEST)
+AC_SUBST(VALGRINDTEST_SRC)
 
 #
 # Do capture-mechanism-dependent tests.

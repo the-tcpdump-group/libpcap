@@ -78,8 +78,7 @@ INSTALL_DATA = @INSTALL_DATA@
 	@rm -f $@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
-SRC = \
-	valgrindtest.c \
+SRC = @VALGRINDTEST_SRC@ \
 	capturetest.c \
 	can_set_rfmon_test.c \
 	filtertest.c \
@@ -89,16 +88,7 @@ SRC = \
 	selpolltest.c \
 	threadsignaltest.c
 
-TESTS = \
-	@VALGRINDTEST@ \
-	capturetest \
-	can_set_rfmon_test \
-	filtertest \
-	findalldevstest \
-	opentest \
-	reactivatetest \
-	selpolltest \
-	threadsignaltest
+TESTS = $(SRC:.c=)
 
 TAGFILES = \
 	$(SRC) $(HDR)
