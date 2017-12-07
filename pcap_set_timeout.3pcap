@@ -39,7 +39,8 @@ which is in units of milliseconds.  (See
 .BR pcap (3PCAP)
 for an explanation of the packet buffer timeout.)
 .LP
-The behavior, if the timeout isn't specified, is undefined.  We
+The behavior, if the timeout isn't specified, is undefined, as is the
+behavior if the timeout is set to zero or to a negative value.  We
 recommend always setting the timeout to a non-zero value unless
 immediate mode is set, in which case the timeout has no effect.
 .SH RETURN VALUE

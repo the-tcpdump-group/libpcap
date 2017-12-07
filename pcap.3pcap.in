@@ -174,6 +174,8 @@ Not all platforms support a packet buffer timeout; on platforms that
 don't, the packet buffer timeout is ignored.  A zero value for the
 timeout, on platforms that support a packet buffer timeout, will cause a
 read to wait forever to allow enough packets to arrive, with no timeout.
+A negative value is invalid; the result of setting the timeout to a
+negative value is unpredictable.
 .IP
 .BR NOTE :
 the packet buffer timeout cannot be used to cause calls that read

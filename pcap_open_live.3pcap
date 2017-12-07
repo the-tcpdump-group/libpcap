@@ -56,7 +56,8 @@ specifies the snapshot length to be set on the handle.
 specifies if the interface is to be put into promiscuous mode.
 .PP
 .I to_ms
-specifies the packet buffer timeout in milliseconds.  (See
+specifies the packet buffer timeout, as a non-negative value, in
+milliseconds.  (See
 .BR pcap (3PCAP)
 for an explanation of the packet buffer timeout.)
 .SH RETURN VALUE
