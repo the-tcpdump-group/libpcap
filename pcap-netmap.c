@@ -43,12 +43,15 @@
 #include "pcap-int.h"
 #include "pcap-netmap.h"
 
-#if defined (linux)
-/* On FreeBSD we use IFF_PPROMISC which is in ifr_flagshigh.
- * remap to IFF_PROMISC on linux
- */
-#define IFF_PPROMISC	IFF_PROMISC
-#endif /* linux */
+#ifndef __FreeBSD__
+  /*
+   * On FreeBSD we use IFF_PPROMISC which is in ifr_flagshigh.
+   * Remap to IFF_PROMISC on other platforms.
+   *
+   * XXX - DragonFly BSD?
+   */
+  #define IFF_PPROMISC	IFF_PROMISC
+#endif /* __FreeBSD__ */
 
 struct pcap_netmap {
 	struct nm_desc *d;	/* pointer returned by nm_open() */
@@ -142,8 +145,25 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 	strncpy(ifr.ifr_name, d->req.nr_name, sizeof(ifr.ifr_name));
 	switch (what) {
 	case SIOCSIFFLAGS:
+		/*
+		 * The flags we pass in are 32-bit and unsigned.
+		 *
+		 * On most if not all UN*Xes, ifr_flags is 16-bit and
+		 * signed, and the result of assigning a longer
+		 * unsigned value to a shorter signed value is
+		 * implementation-defined (even if, in practice, it'll
+		 * do what's intended on all platforms we support
+		 * result of assigning a 32-bit unsigned value).
+		 * So we mask out the upper 16 bits.
+		 */
 		ifr.ifr_flags = *if_flags & 0xffff;
 #ifdef __FreeBSD__
+		/*
+		 * In FreeBSD, we need to set the high-order flags,
+		 * as we're using IFF_PPROMISC, which is in those bits.
+		 *
+		 * XXX - DragonFly BSD?
+		 */
 		ifr.ifr_flagshigh = *if_flags >> 16;
 #endif /* __FreeBSD__ */
 		break;
@@ -152,8 +172,25 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 	if (!error) {
 		switch (what) {
 		case SIOCGIFFLAGS:
+			/*
+			 * The flags we return are 32-bit.
+			 *
+			 * On most if not all UN*Xes, ifr_flags is
+			 * 16-bit and signed, and will get sign-
+			 * extended, so that the upper 16 bits of
+			 * those flags will be forced on.  So we
+			 * mask out the upper 16 bits of the
+			 * sign-extended value.
+			 */
 			*if_flags = ifr.ifr_flags & 0xffff;
 #ifdef __FreeBSD__
+			/*
+			 * In FreeBSD, we need to return the
+			 * high-order flags, as we're using
+			 * IFF_PPROMISC, which is in those bits.
+			 *
+			 * XXX - DragonFly BSD?
+			 */
 			*if_flags |= (ifr.ifr_flagshigh << 16);
 #endif /* __FreeBSD__ */
 		}
