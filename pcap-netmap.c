@@ -142,7 +142,7 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 	strncpy(ifr.ifr_name, d->req.nr_name, sizeof(ifr.ifr_name));
 	switch (what) {
 	case SIOCSIFFLAGS:
-		ifr.ifr_flags = *if_flags;
+		ifr.ifr_flags = *if_flags & 0xffff;
 #ifdef __FreeBSD__
 		ifr.ifr_flagshigh = *if_flags >> 16;
 #endif /* __FreeBSD__ */
@@ -152,7 +152,7 @@ pcap_netmap_ioctl(pcap_t *p, u_long what, uint32_t *if_flags)
 	if (!error) {
 		switch (what) {
 		case SIOCGIFFLAGS:
-			*if_flags = ifr.ifr_flags;
+			*if_flags = ifr.ifr_flags & 0xffff;
 #ifdef __FreeBSD__
 			*if_flags |= (ifr.ifr_flagshigh << 16);
 #endif /* __FreeBSD__ */
