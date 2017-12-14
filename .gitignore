@@ -1,7 +1,7 @@
 Makefile
 *~
 *.o
-bpf_filter.c
+/bpf_filter.c
 capturetest
 can_set_rfmon_test
 CMakeCache.txt
