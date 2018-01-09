@@ -586,7 +586,7 @@ get_figure_of_merit(pcap_if_t *dev)
  * description available, it still might be nice to get some description
  * string based on the device type or something such as that.
  *
- * In OS X, the System Configuration framework can apparently return
+ * In macOS, the System Configuration framework can apparently return
  * names in 10.4 and later.
  *
  * It also appears that freedesktop.org's HAL offers an "info.product"

@@ -431,7 +431,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 	    # On platforms where we build a shared library:
 	    #
 	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in AIX and Darwin/OS X);
+	    #	if necessary (it's the default in AIX and Darwin/macOS);
 	    #
 	    #	define option to set the soname of the shared library,
 	    #	if the OS supports that;
@@ -506,7 +506,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 	    # where we build a shared library:
 	    #
 	    #	add options to generate position-independent code,
-	    #	if necessary (it's the default in Darwin/OS X);
+	    #	if necessary (it's the default in Darwin/macOS);
 	    #
 	    #	if we generate ".so" shared libraries, define the
 	    #	appropriate options for building the shared library;

@@ -283,13 +283,13 @@ packet capture on an interface probably requires that either
 promiscuous-mode or copy-all-mode operation, or both modes of
 operation, be enabled on that interface.
 .TP
-.B Under BSD (this includes Mac OS X):
+.B Under BSD (this includes macOS):
 You must have read access to
 .I /dev/bpf*
 on systems that don't have a cloning BPF device, or to
 .I /dev/bpf
 on systems that do.
-On BSDs with a devfs (this includes Mac OS X), this might involve more
+On BSDs with a devfs (this includes macOS), this might involve more
 than just having somebody with super-user access setting the ownership
 or permissions on the BPF devices - it might involve configuring devfs
 to set the ownership or permissions every time the system is booted,

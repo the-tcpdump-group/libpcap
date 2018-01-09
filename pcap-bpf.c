@@ -30,7 +30,7 @@
  * <net/bpf.h> defines ioctls, but doesn't include <sys/ioccom.h>.
  *
  * We include <sys/ioctl.h> as it might be necessary to declare ioctl();
- * at least on *BSD and Mac OS X, it also defines various SIOC ioctls -
+ * at least on *BSD and macOS, it also defines various SIOC ioctls -
  * we could include <sys/sockio.h>, but if we're already including
  * <sys/ioctl.h>, which includes <sys/sockio.h> on those platforms,
  * there's not much point in doing so.
@@ -227,8 +227,9 @@ static void remove_802_11(pcap_t *);
 #endif
 
 /*
- * On OS X, we don't even get any of the 802.11-plus-radio-header DLT_'s
- * defined, even though some of them are used by various Airport drivers.
+ * In some versions of macOS, we might not even get any of the
+ * 802.11-plus-radio-header DLT_'s defined, even though some
+ * of them are used by various Airport drivers in those versions.
  */
 #ifndef DLT_PRISM_HEADER
 #define DLT_PRISM_HEADER	119
@@ -748,7 +749,7 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 #endif
 
 	/*
-	 * The joys of monitor mode on OS X.
+	 * The joys of monitor mode on Mac OS X/OS X/macOS.
 	 *
 	 * Prior to 10.4, it's not supported at all.
 	 *
@@ -1194,13 +1195,13 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 #ifdef __APPLE__
 	if (ret == -1 && errno == EAFNOSUPPORT) {
 		/*
-		 * In Mac OS X, there's a bug wherein setting the
-		 * BIOCSHDRCMPLT flag causes writes to fail; see,
-		 * for example:
+		 * In some versions of macOS, there's a bug wherein setting
+		 * the BIOCSHDRCMPLT flag causes writes to fail; see, for
+		 * example:
 		 *
 		 *	http://cerberus.sourcefire.com/~jeff/archives/patches/macosx/BIOCSHDRCMPLT-10.3.3.patch
 		 *
-		 * So, if, on OS X, we get EAFNOSUPPORT from the write, we
+		 * So, if, on macOS, we get EAFNOSUPPORT from the write, we
 		 * assume it's due to that bug, and turn off that flag
 		 * and try again.  If we succeed, it either means that
 		 * somebody applied the fix from that URL, or other patches
@@ -1209,7 +1210,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 		 *	http://cerberus.sourcefire.com/~jeff/archives/patches/macosx/
 		 *
 		 * and are running a Darwin kernel with those fixes, or
-		 * that Apple fixed the problem in some OS X release.
+		 * that Apple fixed the problem in some macOS release.
 		 */
 		u_int spoof_eth_src = 0;
 

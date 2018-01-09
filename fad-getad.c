@@ -232,7 +232,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		/*
 		 * Note that, on some platforms, ifa_broadaddr and
 		 * ifa_dstaddr could be the same field (true on at
-		 * least some versions of *BSD and OS X), so we
+		 * least some versions of *BSD and macOS), so we
 		 * can't just check whether the broadcast address
 		 * is null and add it if so and check whether the
 		 * destination address is null and add it if so.

@@ -875,7 +875,7 @@
 
 /*
  * pfsync output; DLT_PFSYNC is 18, which collides with DLT_CIP in
- * SuSE 6.3, on OpenBSD, NetBSD, DragonFly BSD, and Mac OS X, and
+ * SuSE 6.3, on OpenBSD, NetBSD, DragonFly BSD, and macOS, and
  * is 121, which collides with DLT_HHDLC, in FreeBSD.  We pick a
  * shiny new link-layer header type value that doesn't collide with
  * anything, in the hopes that future pfsync savefiles, if any,
@@ -972,7 +972,7 @@
  * So I'll just give them one; hopefully this will show up in a
  * libpcap release in time for them to get this into 10.10 Big Sur
  * or whatever Mavericks' successor is called.  LINKTYPE_PKTAP
- * will be 258 *even on OS X*; that is *intentional*, so that
+ * will be 258 *even on macOS*; that is *intentional*, so that
  * PKTAP files look the same on *all* OSes (different OSes can have
  * different numerical values for a given DLT_, but *MUST NOT* have
  * different values for what goes in a file, as files can be moved

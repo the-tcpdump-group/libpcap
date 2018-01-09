@@ -1,5 +1,5 @@
-As with other systems using BPF, Mac OS X allows users with read access
-to the BPF devices to capture packets with libpcap and allows users with
+As with other systems using BPF, macOS allows users with read access to
+the BPF devices to capture packets with libpcap and allows users with
 write access to the BPF devices to send packets with libpcap.
 
 On some systems that use BPF, the BPF devices live on the root file
@@ -12,16 +12,16 @@ can be configured to set the permissions and/or ownership of those
 devices to give users other than root permission to read or write those
 devices.
 
-On Mac OS X, the BPF devices live on devfs, but the OS X version of
-devfs is based on an older (non-default) FreeBSD devfs, and that version
-of devfs cannot be configured to set the permissions and/or ownership of
+On macOS, the BPF devices live on devfs, but the macOS version of devfs
+is based on an older (non-default) FreeBSD devfs, and that version of
+devfs cannot be configured to set the permissions and/or ownership of
 those devices.
 
 Therefore, we supply:
 
-	a "startup item" for older versions of Mac OS X;
+	a "startup item" for older versions of macOS;
 
-	a launchd daemon for Tiger and later versions of Mac OS X;
+	a launchd daemon for Tiger and later versions of macOS;
 
 Both of them will change the ownership of the BPF devices so that the
 "admin" group owns them, and will change the permission of the BPF

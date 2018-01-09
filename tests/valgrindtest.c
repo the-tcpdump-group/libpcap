@@ -35,14 +35,14 @@
  *
  *	https://bugs.kde.org/show_bug.cgi?id=318203
  *
- * and valgrind bug 312989 for OS X:
+ * and valgrind bug 312989 for macOS:
  *
  *	https://bugs.kde.org/show_bug.cgi?id=312989
  *
  * The fixes for both of those are checked into the official valgrind
  * repository.
  *
- * The unofficial FreeBSD port has similar issues to the official OS X
+ * The unofficial FreeBSD port has similar issues to the official macOS
  * port, for similar reasons.
  */
 #ifndef lint

@@ -269,7 +269,7 @@ timestamp resolution if it finds it's running on a SS-1).
 FILES
 -----
 CHANGES		- description of differences between releases
-ChmodBPF/*	- Mac OS X startup item to set ownership and permissions
+ChmodBPF/*	- macOS startup item to set ownership and permissions
 		  on /dev/bpf*
 CMakeLists.txt	- CMake file
 CONTRIBUTING	- guidelines for contributing
@@ -282,7 +282,7 @@ README.aix	- notes on using libpcap on AIX
 README.dag	- notes on using libpcap to capture on Endace DAG devices
 README.hpux	- notes on using libpcap on HP-UX
 README.linux	- notes on using libpcap on Linux
-README.macosx	- notes on using libpcap on Mac OS X
+README.macos	- notes on using libpcap on macOS
 README.septel   - notes on using libpcap to capture on Intel/Septel devices
 README.sita	- notes on using libpcap to capture on SITA devices
 README.tru64	- notes on using libpcap on Digital/Tru64 UNIX

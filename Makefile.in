@@ -242,7 +242,7 @@ EXTRA_DIST = \
 	README.dag \
 	README.hpux \
 	README.linux \
-	README.macosx \
+	README.macos \
 	README.septel \
 	README.sita \
 	README.tru64 \
@@ -398,14 +398,12 @@ libpcap.so: $(OBJ)
 #
 # The following rule succeeds, but the result is untested.
 #
-# In Mac OS X, the libpcap dylib has the name "libpcap.A.dylib", with
-# its full path as the install_name, and with the compatibility and
-# current version both set to 1.  The compatibility version is set to
-# 1 so that programs built with a newer version of the library will run
-# against older versions; multi-platform software probably will fail if
-# it uses APIs added in the newer version, but Mac OS X-specific software
-# will use weak linking and check at run time whether those APIs are
-# available.
+# In macOS, the libpcap dylib has the name "libpcap.A.dylib", with its
+# full path as the install_name, and with the compatibility and current
+# version both set to 1.  The compatibility version is set to 1 so that
+# programs built with a newer version of the library will run against
+# older versions if they don't use APIs available in the newer version
+# but not in the older version.
 #
 # We also use "A" as the major version, and 1 as the compatibility version,
 # but set the current version to the value in VERSION, with any non-numeric
