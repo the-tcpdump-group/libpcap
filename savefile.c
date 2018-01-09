@@ -351,7 +351,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 
 	/*
 	 * Read the first 4 bytes of the file; the network analyzer dump
-	 * file formats we support (pcap and pcap-ng), and several other
+	 * file formats we support (pcap and pcapng), and several other
 	 * formats we might support in the future (such as snoop, DOS and
 	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
 	 * numbers that are unique in their first 4 bytes.

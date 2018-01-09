@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * sf-pcap-ng.c - pcap-ng-file-format-specific code from savefile.c
+ * sf-pcap-ng.c - pcapng-file-format-specific code from savefile.c
  */
 
 #ifdef HAVE_CONFIG_H
@@ -299,7 +299,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 */
 	if (bhdr.total_length > 16*1024*1024) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "pcap-ng block size %u > maximum %u",
+		    "pcapng block size %u > maximum %u",
 		    bhdr.total_length, 16*1024*1024);
 		    return (-1);
 	}
@@ -311,7 +311,7 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	if (bhdr.total_length < sizeof(struct block_header) +
 	    sizeof(struct block_trailer)) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "block in pcap-ng dump file has a length of %u < %lu",
+		    "block in pcapng dump file has a length of %u < %lu",
 		    bhdr.total_length,
 		    (unsigned long)(sizeof(struct block_header) + sizeof(struct block_trailer)));
 		return (-1);
@@ -370,7 +370,7 @@ get_from_block_data(struct block_cursor *cursor, size_t chunk_size,
 	 */
 	if (cursor->data_remaining < chunk_size) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "block of type %u in pcap-ng dump file is too short",
+		    "block of type %u in pcapng dump file is too short",
 		    cursor->block_type);
 		return (NULL);
 	}
@@ -589,7 +589,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 			 * However, it doesn't complain that one of the
 			 * multiplications below could overflow, which is
 			 * a real, albeit extremely unlikely, problem (you'd
-			 * need a pcap-ng file with tens of millions of
+			 * need a pcapng file with tens of millions of
 			 * interfaces).)
 			 */
 			new_ifaces_size = 1;
@@ -721,7 +721,7 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 }
 
 /*
- * Check whether this is a pcap-ng savefile and, if it is, extract the
+ * Check whether this is a pcapng savefile and, if it is, extract the
  * relevant information from the header.
  */
 pcap_t *
@@ -747,7 +747,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 	/*
 	 * Check whether the first 4 bytes of the file are the block
-	 * type for a pcap-ng savefile.
+	 * type for a pcapng savefile.
 	 */
 	if (magic != BT_SHB) {
 		/*
@@ -756,7 +756,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		 * UN*X and DOS/Windows text file format and, if it
 		 * does, look for the byte-order magic number in
 		 * the appropriate place and, if we find it, report
-		 * this as possibly being a pcap-ng file transferred
+		 * this as possibly being a pcapng file transferred
 		 * between UN*X and Windows in text file format?
 		 */
 		return (NULL);	/* nope */
@@ -784,7 +784,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 		/*
 		 * Possibly a weird short text file, so just say
-		 * "not pcap-ng".
+		 * "not pcapng".
 		 */
 		return (NULL);
 	}
@@ -799,7 +799,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 
 		/*
 		 * Possibly a weird short text file, so just say
-		 * "not pcap-ng".
+		 * "not pcapng".
 		 */
 		return (NULL);
 	}
@@ -807,7 +807,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		byte_order_magic = SWAPLONG(byte_order_magic);
 		if (byte_order_magic != BYTE_ORDER_MAGIC) {
 			/*
-			 * Not a pcap-ng file.
+			 * Not a pcapng file.
 			 */
 			return (NULL);
 		}
@@ -820,7 +820,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 */
 	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Section Header Block in pcap-ng dump file has a length of %u < %lu",
+		    "Section Header Block in pcapng dump file has a length of %u < %lu",
 		    total_length,
 		    (unsigned long)(sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)));
 		*err = 1;
@@ -828,7 +828,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	}
 
 	/*
-	 * OK, this is a good pcap-ng file.
+	 * OK, this is a good pcapng file.
 	 * Allocate a pcap_t for it.
 	 */
 	p = pcap_open_offline_common(errbuf, sizeof (struct pcap_ng_sf));
@@ -921,7 +921,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	if (! (shbp->major_version == PCAP_NG_VERSION_MAJOR &&
 	       shbp->minor_version == PCAP_NG_VERSION_MINOR)) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "unsupported pcap-ng savefile version %u.%u",
+		    "unsupported pcapng savefile version %u.%u",
 		    shbp->major_version, shbp->minor_version);
 		goto fail;
 	}
@@ -1278,7 +1278,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 */
 			if (shbp->major_version != PCAP_NG_VERSION_MAJOR) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "unknown pcap-ng savefile major version number %u",
+				    "unknown pcapng savefile major version number %u",
 				    shbp->major_version);
 				return (-1);
 			}

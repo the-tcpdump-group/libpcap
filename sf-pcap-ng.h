@@ -18,9 +18,9 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * sf-pcap-ng.h - pcap-ng-file-format-specific routines
+ * sf-pcap-ng.h - pcapng-file-format-specific routines
  *
- * Used to read pcap-ng savefiles.
+ * Used to read pcapng savefiles.
  */
 
 #ifndef sf_pcap_ng_h
