@@ -53,7 +53,7 @@
 #endif
 
 #include "sf-pcap.h"
-#include "sf-pcap-ng.h"
+#include "sf-pcapng.h"
 
 #ifdef _WIN32
 /*

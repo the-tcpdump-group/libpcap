@@ -18,13 +18,13 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * sf-pcap-ng.h - pcapng-file-format-specific routines
+ * sf-pcapng.h - pcapng-file-format-specific routines
  *
  * Used to read pcapng savefiles.
  */
 
-#ifndef sf_pcap_ng_h
-#define	sf_pcap_ng_h
+#ifndef sf_pcapng_h
+#define	sf_pcapng_h
 
 extern pcap_t *pcap_ng_check_header(bpf_u_int32 magic, FILE *fp,
     u_int precision, char *errbuf, int *err);

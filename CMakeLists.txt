@@ -575,7 +575,7 @@ set(PROJECT_SOURCE_LIST_C
     pcap-common.c
     pcap.c
     savefile.c
-    sf-pcap-ng.c
+    sf-pcapng.c
     sf-pcap.c
     bpf/net/bpf_filter.c
 )

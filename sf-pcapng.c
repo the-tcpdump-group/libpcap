@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * sf-pcap-ng.c - pcapng-file-format-specific code from savefile.c
+ * sf-pcapng.c - pcapng-file-format-specific code from savefile.c
  */
 
 #ifdef HAVE_CONFIG_H
@@ -41,7 +41,7 @@
 #include "os-proto.h"
 #endif
 
-#include "sf-pcap-ng.h"
+#include "sf-pcapng.h"
 
 /*
  * Block types.
