@@ -366,14 +366,15 @@ endif()
 #
 # Data types.
 #
-# XXX - there's no check_struct() macro that's like check_struct_has_member()
+# XXX - there's no check_type() macro that's like check_type_size()
 # except that it only checks for the existence of the structure type,
-# so we use check_struct_has_member() and look for ss_family.
+# so we use check_type_size() and ignore the size.
 #
-check_struct_has_member("struct sockaddr_storage" ss_family sys/socket.h  HAVE_SOCKADDR_STORAGE)
+cmake_push_check_state()
 set(CMAKE_EXTRA_INCLUDE_FILES unistd.h sys/socket.h)
+check_type_size("struct sockaddr_storage" SOCKADDR_STORAGE)
 check_type_size("socklen_t" SOCKLEN_T)
-set(CMAKE_EXTRA_INCLUDE_FILES unistd.h)
+cmake_pop_check_state()
 
 #
 # Structure fields.
@@ -504,9 +505,16 @@ if(HAVE_ETHER_HOSTTON)
     if(NOT HAVE_DECL_ETHER_HOSTTON)
         #
         # No, we'll have to declare it ourselves.
-        # Do we have "struct ether_addr" if we include<netinet/if_ether.h>?
+        # Do we have "struct ether_addr" if we include <netinet/if_ether.h>?
         #
-        check_struct_has_member("struct ether_addr" octet "sys/types.h;sys/socket.h;net/if.h;netinet/in.h;netinet/if_ether.h" HAVE_STRUCT_ETHER_ADDR)
+        # XXX - there's no check_type() macro that's like check_type_size()
+        # except that it only checks for the existence of the structure type,
+        # so we use check_type_size() and ignore the size.
+        #
+        cmake_push_check_state()
+        set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/socket.h net/if.h netinet/in.h netinet/if_ether.h)
+        check_type_size("struct ether_addr" STRUCT_ETHER_ADDR)
+        cmake_pop_check_state()
     endif()
 endif()
 
@@ -790,12 +798,14 @@ else(WIN32)
         # This check is for Solaris with DLPI support for passive modes.
         # See dlpi(7P) for more details.
         #
-        # XXX - there's no check_struct() macro that's like
-        # check_struct_has_member() except that it only checks for the
-        # existence of the structure type, so we use
-        # check_struct_has_member() and look for dl_primitive.
+        # XXX - there's no check_type() macro that's like check_type_size()
+        # except that it only checks for the existence of the structure type,
+        # so we use check_type_size() and ignore the size.
         #
-        check_struct_has_member("dl_passive_req_t" dl_primitive "sys/types.h;sys/dlpi.h" HAVE_DLPI_PASSIVE)
+        cmake_push_check_state()
+        set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/dlpi.h)
+        check_type_size(dl_passive_req_t DLPI_PASSIVE)
+        cmake_pop_check_state()
     elseif(PCAP_TYPE STREQUAL "linux")
         #
         # Do we have the wireless extensions?
@@ -860,7 +870,14 @@ else(WIN32)
         # Checks to see if tpacket_stats is defined in linux/if_packet.h
         # If so then pcap-linux.c can use this to report proper statistics.
         #
-        check_struct_has_member("struct tpacket_stats" tp_packets linux/if_packet.h HAVE_TPACKET_STATS)
+        # XXX - there's no check_type() macro that's like check_type_size()
+        # except that it only checks for the existence of the structure type,
+        # so we use check_type_size() and ignore the size.
+        #
+        cmake_push_check_state()
+        set(CMAKE_EXTRA_INCLUDE_FILES linux/if_packet.h)
+        check_type_size("struct tpacket_stats" TPACKET_STATS)
+        cmake_pop_check_state()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
         if(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
@@ -875,11 +892,19 @@ else(WIN32)
         #
         # Check whether we have struct BPF_TIMEVAL.
         #
+        # XXX - there's no check_type() macro that's like check_type_size()
+        # except that it only checks for the existence of the structure type,
+        # so we use check_type_size() and ignore the size.
+        #
+        cmake_push_check_state()
         if(HAVE_SYS_IOCCOM_H)
-            check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;sys/ioccom.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
+            set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/ioccom.h net/bpf.h)
+            check_type_size("struct BPF_TIMEVAL" STRUCT_BPF_TIMEVAL)
         else()
-            check_struct_has_member("struct BPF_TIMEVAL" tv_sec "sys/types.h;net/bpf.h" HAVE_STRUCT_BPF_TIMEVAL)
+            set(CMAKE_EXTRA_INCLUDE_FILES  sys/types.h net/bpf.h)
+            check_type_size("struct BPF_TIMEVAL" STRUCT_BPF_TIMEVAL)
         endif()
+        cmake_pop_check_state()
     elseif(PCAP_TYPE STREQUAL "null")
     else()
         message(FATAL_ERROR "${PCAP_TYPE} is not a valid pcap type")
