@@ -880,9 +880,6 @@ else(WIN32)
         cmake_pop_check_state()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
-        if(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
-            set(HAVE_LINUX_TPACKET_AUXDATA tp_vlan_tci)
-        endif()
     elseif(PCAP_TYPE STREQUAL "bpf")
         #
         # Check whether we have the *BSD-style ioctls.

@@ -1226,8 +1226,6 @@ AC_DEFUN(AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,
 	ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=no))
     AC_MSG_RESULT($ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci)
     if test $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci = yes ; then
-	    HAVE_LINUX_TPACKET_AUXDATA=tp_vlan_tci
-	    AC_SUBST(HAVE_LINUX_TPACKET_AUXDATA)
 	    AC_DEFINE(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI,1,[if tp_vlan_tci exists])
     fi])
 
