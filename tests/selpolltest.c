@@ -156,12 +156,6 @@ main(int argc, char **argv)
 
 	if (pcap_setfilter(pd, &fcode) < 0)
 		error("%s", pcap_geterr(pd));
-	if (pcap_get_selectable_fd(pd) == -1)
-		error("pcap_get_selectable_fd() fails");
-	if (dononblock) {
-		if (pcap_setnonblock(pd, 1, ebuf) == -1)
-			error("pcap_setnonblock failed: %s", ebuf);
-	}
 	selectable_fd = pcap_get_selectable_fd(pd);
 	if (selectable_fd == -1) {
 		printf("Listening on %s, using %s, with a timeout\n",
@@ -171,9 +165,22 @@ main(int argc, char **argv)
 			if (doselect || dopoll)
 				error("select()/poll() isn't supported on %s, even with a timeout",
 				    device);
+		/*
+		 * As we won't be notified by select() or poll() that
+		 * a read can be done, we'll have to periodically try
+		 * reading from the device every time the required
+		 * timeout expires, and we don't want those attempts
+		 * to block if nothing has arrived in that interval,
+		 * so we want to force non-blocking mode.
+		 */
+		dononblock = 1;
 	} else {
 		printf("Listening on %s, using %s\n", device, mechanism);
 		required_timeout = NULL;
+	}
+	if (dononblock) {
+		if (pcap_setnonblock(pd, 1, ebuf) == -1)
+			error("pcap_setnonblock failed: %s", ebuf);
 	}
 	if (doselect) {
 		for (;;) {
@@ -181,9 +188,11 @@ main(int argc, char **argv)
 			struct timeval seltimeout;
 
 			FD_ZERO(&setread);
-			FD_SET(selectable_fd, &setread);
-			FD_ZERO(&setexcept);
-			FD_SET(selectable_fd, &setexcept);
+			if (selectable_fd != -1) {
+				FD_SET(selectable_fd, &setread);
+				FD_ZERO(&setexcept);
+				FD_SET(selectable_fd, &setexcept);
+			}
 			if (dotimeout) {
 				seltimeout.tv_sec = 0;
 				if (required_timeout != NULL &&
@@ -198,7 +207,8 @@ main(int argc, char **argv)
 				status = select(selectable_fd + 1, &setread,
 				    NULL, &setexcept, &seltimeout);
 			} else {
-				status = select(selectable_fd + 1, &setread,
+				status = select((selectable_fd == -1) ?
+				    0 : selectable_fd + 1, &setread,
 				    NULL, &setexcept, NULL);
 			}
 			if (status == -1) {
@@ -209,14 +219,18 @@ main(int argc, char **argv)
 					printf("Select timed out: ");
 				else
 					printf("Select returned a descriptor: ");
-				if (FD_ISSET(selectable_fd, &setread))
-					printf("readable, ");
-				else
-					printf("not readable, ");
-				if (FD_ISSET(selectable_fd, &setexcept))
-					printf("exceptional condition\n");
-				else
-					printf("no exceptional condition\n");
+				if (selectable_fd == -1)
+					printf("couldn't do select() on FD\n");
+				else {
+					if (FD_ISSET(selectable_fd, &setread))
+						printf("readable, ");
+					else
+						printf("not readable, ");
+					if (FD_ISSET(selectable_fd, &setexcept))
+						printf("exceptional condition\n");
+					else
+						printf("no exceptional condition\n");
+				}
 				packet_count = 0;
 				status = pcap_dispatch(pd, -1, countme,
 				    (u_char *)&packet_count);
@@ -240,7 +254,7 @@ main(int argc, char **argv)
 				polltimeout = required_timeout->tv_usec/1000;
 			else
 				polltimeout = -1;
-			status = poll(&fd, 1, polltimeout);
+			status = poll(&fd, (selectable_fd == -1) ? 0 : 1, polltimeout);
 			if (status == -1) {
 				printf("Poll returns error (%s)\n",
 				    strerror(errno));
