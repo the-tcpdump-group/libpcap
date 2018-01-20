@@ -216,16 +216,16 @@ main(int argc, char **argv)
 				    strerror(errno));
 			} else {
 				if (status == 0)
-					printf("Select timed out: ");
+					printf("Select timed out");
 				else
-					printf("Select returned a descriptor: ");
+					printf("Select returned a descriptor");
 				if (selectable_fd == -1)
-					printf("couldn't do select() on FD\n");
+					printf("\n");
 				else {
 					if (FD_ISSET(selectable_fd, &setread))
-						printf("readable, ");
+						printf(": readable, ");
 					else
-						printf("not readable, ");
+						printf(": not readable, ");
 					if (FD_ISSET(selectable_fd, &setexcept))
 						printf("exceptional condition\n");
 					else
