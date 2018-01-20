@@ -306,7 +306,7 @@ static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
 /*
  * We don't support non-blocking mode.  I'm not sure what we'd
  * do to support it and, given that we don't support select()/
- * poll()/epoll()/kqueue watch etc., it probably doesn't
+ * poll()/epoll_wait()/kevent() etc., it probably doesn't
  * matter.
  */
 static int

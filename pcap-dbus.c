@@ -148,7 +148,7 @@ dbus_cleanup(pcap_t *handle)
 /*
  * We don't support non-blocking mode.  I'm not sure what we'd
  * do to support it and, given that we don't support select()/
- * poll()/epoll()/kqueue watch etc., it probably doesn't
+ * poll()/epoll_wait()/kevent() etc., it probably doesn't
  * matter.
  */
 static int
@@ -237,8 +237,8 @@ dbus_activate(pcap_t *handle)
 
 #ifndef _WIN32
 	/*
-	 * Unfortunately, trying to do a select()/poll()/epoll()/
-	 * kqueue watch/etc. on a D-Bus connection isn't a simple
+	 * Unfortunately, trying to do a select()/poll()/epoll_wait()/
+	 * kevent()/etc. on a D-Bus connection isn't a simple
 	 * case of "give me an FD on which to wait".
 	 *
 	 * Apparently, you have to register "add watch", "remove watch",

@@ -221,14 +221,14 @@ struct pcap {
 	int bpf_codegen_flags;
 
 #ifndef _WIN32
-	int selectable_fd;	/* FD on which select()/poll()/epoll()/kevent()/etc. can be done */
+	int selectable_fd;	/* FD on which select()/poll()/epoll_wait()/kevent()/etc. can be done */
 
 	/*
 	 * In case there either is no selectable FD, or there is but
 	 * it doesn't necessarily work (e.g., if it doesn't get notified
 	 * if the packet capture timeout expires before the buffer
 	 * fills up), this points to a timeout that should be used
-	 * in select()/poll()/epoll()/kevent() call.  The pcap_t should
+	 * in select()/poll()/epoll_wait()/kevent() call.  The pcap_t should
 	 * be put into non-blocking mode, and, if the timeout expires on
 	 * the call, an attempt should be made to read packets from all
 	 * pcap_t's with a required timeout, and the code must be

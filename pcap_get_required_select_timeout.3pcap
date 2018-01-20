@@ -38,7 +38,7 @@ returns, on UNIX, a pointer to a
 containing a value that must be used as the minimum timeout in
 .BR select() ,
 .BR poll() ,
-.BR epoll() ,
+.BR epoll_wait() ,
 and
 .B kevent()
 calls if
@@ -58,7 +58,7 @@ and an attempt must always be made to read packets from the device
 when the
 .BR select() ,
 .BR poll() ,
-.BR epoll() ,
+.BR epoll_wait() ,
 or
 .B kevent()
 call returns.
@@ -81,4 +81,4 @@ is returned if the timeout is required; otherwise
 is returned.
 .SH SEE ALSO
 pcap(3PCAP), pcap_get_selectable_fd(3PCAP), select(2), poll(2),
-epoll(2), kqueue(2)
+epoll_wait(2), kqueue(2)

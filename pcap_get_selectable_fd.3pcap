@@ -38,7 +38,7 @@ which one can
 do a
 .BR select() ,
 .BR poll() ,
-.BR epoll() ,
+.BR epoll_wait() ,
 .BR kevent() ,
 or other such call
 to wait for it to be possible to read packets without blocking, if such
@@ -142,4 +142,4 @@ A selectable file descriptor is returned if one exists; otherwise, \-1
 is returned.
 .SH SEE ALSO
 pcap(3PCAP), pcap_get_required_select_timeout(3PCAP),
-pcap_setnonblock(3PCAP), select(2), poll(2), epoll(2), kqueue(2)
+pcap_setnonblock(3PCAP), select(2), poll(2), epoll_wait(2), kqueue(2)
