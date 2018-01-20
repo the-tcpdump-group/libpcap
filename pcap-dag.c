@@ -185,6 +185,8 @@ struct pcap_dag {
 	int	dag_timeout;	/* timeout specified to pcap_open_live.
 				 * Same as in linux above, introduce
 				 * generally? */
+	struct timeval required_select_timeout;
+				/* Timeout caller must use in event loops */
 };
 
 typedef struct pcap_dag_node {
@@ -797,6 +799,13 @@ static int dag_activate(pcap_t* p)
 		    errno, "dag_get_stream_poll");
 		goto faildetach;
 	}
+
+	/* Use the poll time as the required select timeout for callers
+	 * who are using select()/etc. in an event loop waiting for
+	 * packets to arrive.
+	 */
+	pd->required_select_timeout = poll;
+	p->required_select_timeout = &pd->required_select_timeout;
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of

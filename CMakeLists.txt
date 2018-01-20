@@ -1719,6 +1719,7 @@ set(MAN3PCAP_NOEXPAND
 	pcap_fileno.3pcap
 	pcap_findalldevs.3pcap
 	pcap_freecode.3pcap
+	pcap_get_required_select_timeout.3pcap
 	pcap_get_selectable_fd.3pcap
 	pcap_geterr.3pcap
 	pcap_inject.3pcap

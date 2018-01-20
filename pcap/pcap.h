@@ -597,6 +597,7 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
    */
 
   PCAP_API int	pcap_get_selectable_fd(pcap_t *);
+  PCAP_API struct timeval *pcap_get_required_select_timeout(pcap_t *);
 
 #endif /* _WIN32/MSDOS/UN*X */
 

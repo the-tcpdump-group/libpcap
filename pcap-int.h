@@ -161,7 +161,6 @@ struct pcap {
 	HANDLE handle;
 #else
 	int fd;
-	int selectable_fd;
 #endif /* _WIN32 */
 
 	/*
@@ -210,7 +209,7 @@ struct pcap {
 	u_char *pkt;
 
 #ifdef _WIN32
-	struct pcap_stat stat;		/* used for pcap_stats_ex() */
+	struct pcap_stat stat;	/* used for pcap_stats_ex() */
 #endif
 
 	/* We're accepting only packets in this direction/these directions. */
@@ -220,6 +219,23 @@ struct pcap {
 	 * Flags to affect BPF code generation.
 	 */
 	int bpf_codegen_flags;
+
+#ifndef _WIN32
+	int selectable_fd;	/* FD on which select()/poll()/epoll()/kevent()/etc. can be done */
+
+	/*
+	 * In case there either is no selectable FD, or there is but
+	 * it doesn't necessarily work (e.g., if it doesn't get notified
+	 * if the packet capture timeout expires before the buffer
+	 * fills up), this points to a timeout that should be used
+	 * in select()/poll()/epoll()/kevent() call.  The pcap_t should
+	 * be put into non-blocking mode, and, if the timeout expires on
+	 * the call, an attempt should be made to read packets from all
+	 * pcap_t's with a required timeout, and the code must be
+	 * prepared not to see any packets from the attempt.
+	 */
+	struct timeval *required_select_timeout;
+#endif
 
 	/*
 	 * Placeholder for filter code if bpf not in kernel.

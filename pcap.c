@@ -2099,6 +2099,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 #else
 	p->fd = -1;	/* not opened yet */
 	p->selectable_fd = -1;
+	p->required_select_timeout = NULL;
 #endif
 
 	if (size == 0) {
@@ -3065,6 +3066,12 @@ int
 pcap_get_selectable_fd(pcap_t *p)
 {
 	return (p->selectable_fd);
+}
+
+struct timeval *
+pcap_get_required_select_timeout(pcap_t *p)
+{
+	return (p->required_select_timeout);
 }
 #endif
 
