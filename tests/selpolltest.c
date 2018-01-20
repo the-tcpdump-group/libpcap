@@ -70,16 +70,19 @@ main(int argc, char **argv)
 	bpf_u_int32 localnet, netmask;
 	register char *cp, *cmdbuf, *device;
 	int doselect, dopoll, dotimeout, dononblock;
+	char *mechanism;
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *devlist;
 	int selectable_fd;
+	struct timeval *required_timeout;
 	int status;
 	int packet_count;
 
 	device = NULL;
 	doselect = 0;
 	dopoll = 0;
+	mechanism = "pcap_dispatch()";
 	dotimeout = 0;
 	dononblock = 0;
 	if ((cp = strrchr(argv[0], '/')) != NULL)
@@ -97,10 +100,12 @@ main(int argc, char **argv)
 
 		case 's':
 			doselect = 1;
+			mechanism = "select() and pcap_dispatch()";
 			break;
 
 		case 'p':
 			dopoll = 1;
+			mechanism = "poll() and pcap_dispatch()";
 			break;
 
 		case 't':
@@ -158,7 +163,18 @@ main(int argc, char **argv)
 			error("pcap_setnonblock failed: %s", ebuf);
 	}
 	selectable_fd = pcap_get_selectable_fd(pd);
-	printf("Listening on %s\n", device);
+	if (selectable_fd == -1) {
+		printf("Listening on %s, using %s, with a timeout\n",
+		    device, mechanism);
+		required_timeout = pcap_get_required_select_timeout(pd);
+		if (required_timeout == NULL)
+			if (doselect || dopoll)
+				error("select()/poll() isn't supported on %s, even with a timeout",
+				    device);
+	} else {
+		printf("Listening on %s, using %s\n", device, mechanism);
+		required_timeout = NULL;
+	}
 	if (doselect) {
 		for (;;) {
 			fd_set setread, setexcept;
@@ -170,7 +186,15 @@ main(int argc, char **argv)
 			FD_SET(selectable_fd, &setexcept);
 			if (dotimeout) {
 				seltimeout.tv_sec = 0;
-				seltimeout.tv_usec = 1000;
+				if (required_timeout != NULL &&
+				    required_timeout->tv_usec < 1000)
+					seltimeout.tv_usec = required_timeout->tv_usec;
+				else
+					seltimeout.tv_usec = 1000;
+				status = select(selectable_fd + 1, &setread,
+				    NULL, &setexcept, &seltimeout);
+			} else if (required_timeout != NULL) {
+				seltimeout = *required_timeout;
 				status = select(selectable_fd + 1, &setread,
 				    NULL, &setexcept, &seltimeout);
 			} else {
@@ -211,6 +235,9 @@ main(int argc, char **argv)
 			fd.events = POLLIN;
 			if (dotimeout)
 				polltimeout = 1;
+			else if (required_timeout != NULL &&
+			    required_timeout->tv_usec >= 1000)
+				polltimeout = required_timeout->tv_usec/1000;
 			else
 				polltimeout = -1;
 			status = poll(&fd, 1, polltimeout);
