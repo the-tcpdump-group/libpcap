@@ -409,6 +409,7 @@ void main_startup(void)
 #else
 			if ((pid = fork()) == 0)	// I am the child
 			{
+				freeaddrinfo(addrinfo);
 				main_passive((void *) socktemp);
 				return;
 			}
