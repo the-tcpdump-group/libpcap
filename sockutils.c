@@ -943,11 +943,11 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 	iov.iov_len = size;
 	message.msg_iov = &iov;
 	message.msg_iovlen = 1;
-#ifdef STRUCT_MSGHDR_HAS_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	message.msg_control = NULL;	/* we don't care about control information */
 	message.msg_controllen = 0;
 #endif
-#ifdef STRUCT_MSGHDR_HAS_MSG_FLAGS
+#ifdef HAVE_STRUCT_MSGHDR_MSG_FLAGS
 	message.msg_flags = 0;
 #endif
 	nread = recvmsg(sock, &message, 0);
@@ -958,7 +958,7 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 		sock_geterror("recv(): ", errbuf, errbuflen);
 		return -1;
 	}
-#ifdef STRUCT_MSGHDR_HAS_MSG_FLAGS
+#ifdef HAVE_STRUCT_MSGHDR_MSG_FLAGS
 	/*
 	 * XXX - Solaris supports this, but only if you ask for the
 	 * X/Open version of recvmsg(); should we use that, or will
@@ -975,7 +975,7 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 		pcap_snprintf(errbuf, errbuflen, "recv(): Message too long");
 		return -1;
 	}
-#endif /* STRUCT_MSGHDR_HAS_MSG_FLAGS */
+#endif /* HAVE_STRUCT_MSGHDR_MSG_FLAGS */
 #endif /* _WIN32 */
 	return nread;
 }

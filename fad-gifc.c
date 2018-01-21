@@ -95,11 +95,11 @@ struct rtentry;		/* declarations in <net/if.h> */
  * address in an entry returned by SIOCGIFCONF.
  */
 #ifndef SA_LEN
-#ifdef HAVE_SOCKADDR_SA_LEN
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
 #define SA_LEN(addr)	((addr)->sa_len)
-#else /* HAVE_SOCKADDR_SA_LEN */
+#else /* HAVE_STRUCT_SOCKADDR_SA_LEN */
 #define SA_LEN(addr)	(sizeof (struct sockaddr))
-#endif /* HAVE_SOCKADDR_SA_LEN */
+#endif /* HAVE_STRUCT_SOCKADDR_SA_LEN */
 #endif /* SA_LEN */
 
 /*

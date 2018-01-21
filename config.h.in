@@ -27,8 +27,11 @@
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #undef HAVE_DECL_ETHER_HOSTTON
 
-/* if passive_req_t primitive exists */
-#undef HAVE_DLPI_PASSIVE
+/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
+#undef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
+
+/* Define to 1 if the system has the type `dl_passive_req_t'. */
+#undef HAVE_DL_PASSIVE_REQ_T
 
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
@@ -47,9 +50,6 @@
 
 /* on HP-UX 9.x */
 #undef HAVE_HPUX9
-
-/* if ppa_info_t_dl_module_id exists */
-#undef HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -95,9 +95,6 @@
 
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #undef HAVE_LINUX_SOCKIOS_H
-
-/* if tp_vlan_tci exists */
-#undef HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
 
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #undef HAVE_LINUX_USBDEVICE_FS_H
@@ -147,13 +144,7 @@
 /* Define to 1 if you have the `snprintf' function. */
 #undef HAVE_SNPRINTF
 
-/* if struct sockaddr has the sa_len member */
-#undef HAVE_SOCKADDR_SA_LEN
-
-/* if struct sockaddr_storage exists */
-#undef HAVE_SOCKADDR_STORAGE
-
-/* define if socklen_t is defined */
+/* Define to 1 if the system has the type `socklen_t'. */
 #undef HAVE_SOCKLEN_T
 
 /* On solaris */
@@ -195,6 +186,31 @@
 /* Define to 1 if the system has the type `struct ether_addr'. */
 #undef HAVE_STRUCT_ETHER_ADDR
 
+/* Define to 1 if `msg_control' is a member of `struct msghdr'. */
+#undef HAVE_STRUCT_MSGHDR_MSG_CONTROL
+
+/* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
+#undef HAVE_STRUCT_MSGHDR_MSG_FLAGS
+
+/* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
+#undef HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL
+
+/* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
+#undef HAVE_STRUCT_SOCKADDR_SA_LEN
+
+/* Define to 1 if the system has the type `struct sockaddr_storage'. */
+#undef HAVE_STRUCT_SOCKADDR_STORAGE
+
+/* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
+#undef HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI
+
+/* Define to 1 if the system has the type `struct tpacket_stats'. */
+#undef HAVE_STRUCT_TPACKET_STATS
+
+/* Define to 1 if `bRequestType' is a member of `struct
+   usbdevfs_ctrltransfer'. */
+#undef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
+
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
 #undef HAVE_SYS_BUFMOD_H
 
@@ -222,14 +238,8 @@
 /* define if you have the TurboCap API */
 #undef HAVE_TC_API
 
-/* if if_packet.h has tpacket_stats defined */
-#undef HAVE_TPACKET_STATS
-
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
-
-/* if struct usbdevfs_ctrltransfer has bRequestType */
-#undef HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF
@@ -303,20 +313,11 @@
 /* include ACN support */
 #undef SITA
 
-/* if struct sockaddr_hci has hci_channel member */
-#undef SOCKADDR_HCI_HAS_HCI_CHANNEL
-
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
 /* Define to 1 if strings.h declares `ffs' */
 #undef STRINGS_H_DECLARES_FFS
-
-/* if struct msghdr has a msg_control member */
-#undef STRUCT_MSGHDR_HAS_MSG_CONTROL
-
-/* if struct msghdr has a msg_flags member */
-#undef STRUCT_MSGHDR_HAS_MSG_FLAGS
 
 /* Define to 1 if sys/ethernet.h declares `ether_hostton' */
 #undef SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON

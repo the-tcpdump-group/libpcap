@@ -1982,6 +1982,63 @@ $as_echo "$ac_res" >&6; }
   eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
 
 } # ac_fn_c_check_type
+
+# ac_fn_c_check_member LINENO AGGR MEMBER VAR INCLUDES
+# ----------------------------------------------------
+# Tries to find if the field MEMBER exists in type AGGR, after including
+# INCLUDES, setting cache variable VAR accordingly.
+ac_fn_c_check_member ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $2.$3" >&5
+$as_echo_n "checking for $2.$3... " >&6; }
+if eval \${$4+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main ()
+{
+static $2 ac_aggr;
+if (ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$4=yes"
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+$5
+int
+main ()
+{
+static $2 ac_aggr;
+if (sizeof ac_aggr.$3)
+return 0;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  eval "$4=yes"
+else
+  eval "$4=no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+eval ac_res=\$$4
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_member
 cat >config.log <<_ACEOF
 This file contains any messages produced by compilers while
 running configure, to aid debugging if configure makes a mistake.
@@ -6196,42 +6253,25 @@ $as_echo "$ac_cv_sys_dlpi_usable" >&6; }
 	fi
 
 	#
-	# This check is for Solaris with DLPI support for passive modes.
+	# Check to see if Solaris has the dl_passive_req_t struct defined
+	# in <sys/dlpi.h>.
+	# This check is for DLPI support for passive modes.
 	# See dlpi(7P) for more details.
 	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if dl_passive_req_t struct exists" >&5
-$as_echo_n "checking if dl_passive_req_t struct exists... " >&6; }
-       if ${ac_cv_lbl_has_dl_passive_req_t+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+	ac_fn_c_check_type "$LINENO" "dl_passive_req_t" "ac_cv_type_dl_passive_req_t" "
+#include <sys/types.h>
+#include <sys/dlpi.h>,
 
-#       include <sys/types.h>
-#       include <sys/dlpi.h>
-int
-main ()
-{
-u_int i = sizeof(dl_passive_req_t)
-  ;
-  return 0;
-}
+"
+if test "x$ac_cv_type_dl_passive_req_t" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DL_PASSIVE_REQ_T 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_has_dl_passive_req_t=yes
-else
-  ac_cv_lbl_has_dl_passive_req_t=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_has_dl_passive_req_t" >&5
-$as_echo "$ac_cv_lbl_has_dl_passive_req_t" >&6; }
-    if test $ac_cv_lbl_has_dl_passive_req_t = yes ; then
-
-$as_echo "#define HAVE_DLPI_PASSIVE 1" >>confdefs.h
-
-    fi
 	;;
 
 linux)
@@ -6494,71 +6534,50 @@ fi
 
 done
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if if_packet.h has tpacket_stats defined" >&5
-$as_echo_n "checking if if_packet.h has tpacket_stats defined... " >&6; }
-   if ${ac_cv_lbl_tpacket_stats+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
-#  include <linux/if_packet.h>
-int
-main ()
-{
-struct tpacket_stats stats
-  ;
-  return 0;
-}
+	#
+	# Check to see if struct tpacket_stats is defined in
+	# <linux/if_packet.h>.  If so, then pcap-linux.c can use this
+	# to report proper statistics.
+	#
+	# -Scott Barron
+	#
+	ac_fn_c_check_type "$LINENO" "struct tpacket_stats" "ac_cv_type_struct_tpacket_stats" "
+#include <linux/if_packet.h>
+
+"
+if test "x$ac_cv_type_struct_tpacket_stats" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_TPACKET_STATS 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_tpacket_stats=yes
-else
-  ac_cv_lbl_tpacket_stats=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_tpacket_stats" >&5
-$as_echo "$ac_cv_lbl_tpacket_stats" >&6; }
-   if test $ac_cv_lbl_tpacket_stats = yes; then
 
-$as_echo "#define HAVE_TPACKET_STATS 1" >>confdefs.h
+	#
+	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
+	#
+	# NOTE: any failure means we conclude that it doesn't have that
+	# member, so if we don't have tpacket_auxdata, we conclude it
+	# doesn't have that member (which is OK, as either we won't be
+	# using code that would use that member, or we wouldn't compile
+	# in any case).
+	ac_fn_c_check_member "$LINENO" "struct tpacket_auxdata" "tp_vlan_tci" "ac_cv_member_struct_tpacket_auxdata_tp_vlan_tci" "
+#include <sys/types.h>
+#include <linux/if_packet.h>
 
-   fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if tpacket_auxdata struct has tp_vlan_tci member" >&5
-$as_echo_n "checking if tpacket_auxdata struct has tp_vlan_tci member... " >&6; }
-    if ${ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+"
+if test "x$ac_cv_member_struct_tpacket_auxdata_tp_vlan_tci" = xyes; then :
 
-#	include <sys/types.h>
-#	include <linux/if_packet.h>
-int
-main ()
-{
-u_int i = sizeof(((struct tpacket_auxdata *)0)->tp_vlan_tci)
-  ;
-  return 0;
-}
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=yes
-else
-  ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci" >&5
-$as_echo "$ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci" >&6; }
-    if test $ac_cv_lbl_linux_tpacket_auxdata_tp_vlan_tci = yes ; then
-
-$as_echo "#define HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI 1" >>confdefs.h
-
-    fi
 	;;
 
 bpf)
@@ -6769,35 +6788,23 @@ $as_echo "#define PCAP_SUPPORT_PACKET_RING 1" >>confdefs.h
 
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for socklen_t" >&5
-$as_echo_n "checking for socklen_t... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+#
+# Check for socklen_t.
+#
+ac_fn_c_check_type "$LINENO" "socklen_t" "ac_cv_type_socklen_t" "
+    #include <sys/types.h>
+    #include <sys/socket.h>
 
-	#include <sys/types.h>
-	#include <sys/socket.h>
+"
+if test "x$ac_cv_type_socklen_t" = xyes; then :
 
-int
-main ()
-{
- socklen_t x;
-  ;
-  return 0;
-}
+cat >>confdefs.h <<_ACEOF
+#define HAVE_SOCKLEN_T 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  have_socklen_t=yes
-else
-  have_socklen_t=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-if test "x$have_socklen_t" = "xyes"; then
 
-$as_echo "#define HAVE_SOCKLEN_T 1" >>confdefs.h
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_socklen_t" >&5
-$as_echo "$have_socklen_t" >&6; }
+
 
 # Check whether --enable-ipv6 was given.
 if test "${enable_ipv6+set}" = set; then :
@@ -7634,72 +7641,34 @@ done
 	#
 	# Check for various members of struct msghdr.
 	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if struct msghdr has a msg_control member" >&5
-$as_echo_n "checking if struct msghdr has a msg_control member... " >&6; }
-	if ${ac_cv_lbl_struct_msghdr_has_msg_control+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+	ac_fn_c_check_member "$LINENO" "struct msghdr" "msg_control" "ac_cv_member_struct_msghdr_msg_control" "
+#include \"ftmacros.h\"
+#include <sys/socket.h>
 
-#	include "ftmacros.h"
-#	include <sys/socket.h>
-int
-main ()
-{
-u_int i = sizeof(((struct msghdr *)0)->msg_control)
-  ;
-  return 0;
-}
+"
+if test "x$ac_cv_member_struct_msghdr_msg_control" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_MSGHDR_MSG_CONTROL 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_struct_msghdr_has_msg_control=yes
-else
-  ac_cv_lbl_struct_msghdr_has_msg_control=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_struct_msghdr_has_msg_control" >&5
-$as_echo "$ac_cv_lbl_struct_msghdr_has_msg_control" >&6; }
-	if test $ac_cv_lbl_struct_msghdr_has_msg_control = yes ; then
+	ac_fn_c_check_member "$LINENO" "struct msghdr" "msg_flags" "ac_cv_member_struct_msghdr_msg_flags" "
+#include \"ftmacros.h\"
+#include <sys/socket.h>
 
-$as_echo "#define STRUCT_MSGHDR_HAS_MSG_CONTROL 1" >>confdefs.h
+"
+if test "x$ac_cv_member_struct_msghdr_msg_flags" = xyes; then :
 
-	fi
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if struct msghdr has a msg_flags member" >&5
-$as_echo_n "checking if struct msghdr has a msg_flags member... " >&6; }
-	if ${ac_cv_lbl_struct_msghdr_has_msg_flags+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#	include "ftmacros.h"
-#	include <sys/socket.h>
-int
-main ()
-{
-u_int i = sizeof(((struct msghdr *)0)->msg_flags)
-  ;
-  return 0;
-}
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_MSGHDR_MSG_FLAGS 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_struct_msghdr_has_msg_flags=yes
-else
-  ac_cv_lbl_struct_msghdr_has_msg_flags=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_struct_msghdr_has_msg_flags" >&5
-$as_echo "$ac_cv_lbl_struct_msghdr_has_msg_flags" >&6; }
-	if test $ac_cv_lbl_struct_msghdr_has_msg_flags = yes ; then
-
-$as_echo "#define STRUCT_MSGHDR_HAS_MSG_FLAGS 1" >>confdefs.h
-
-	fi
 
 
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
@@ -8972,108 +8941,68 @@ $as_echo "$as_me: WARNING: can't find $name" >&2;}
 	    fi
     fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if sockaddr struct has the sa_len member" >&5
-$as_echo_n "checking if sockaddr struct has the sa_len member... " >&6; }
-    if ${ac_cv_lbl_sockaddr_has_sa_len+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+#
+# Check to see if the sockaddr struct has the 4.4 BSD sa_len member.
+#
+ac_fn_c_check_member "$LINENO" "struct sockaddr" "sa_len" "ac_cv_member_struct_sockaddr_sa_len" "
+    #include <sys/types.h>
+    #include <sys/socket.h>
 
-#	include <sys/types.h>
-#	include <sys/socket.h>
-int
-main ()
-{
-u_int i = sizeof(((struct sockaddr *)0)->sa_len)
-  ;
-  return 0;
-}
+"
+if test "x$ac_cv_member_struct_sockaddr_sa_len" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_SOCKADDR_SA_LEN 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_sockaddr_has_sa_len=yes
-else
-  ac_cv_lbl_sockaddr_has_sa_len=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_sockaddr_has_sa_len" >&5
-$as_echo "$ac_cv_lbl_sockaddr_has_sa_len" >&6; }
-    if test $ac_cv_lbl_sockaddr_has_sa_len = yes ; then
 
-$as_echo "#define HAVE_SOCKADDR_SA_LEN 1" >>confdefs.h
+#
+# Check to see if there's a sockaddr_storage structure.
+#
+ac_fn_c_check_type "$LINENO" "struct sockaddr_storage" "ac_cv_type_struct_sockaddr_storage" "
+    #include <sys/types.h>
+    #include <sys/socket.h>
 
-    fi
+"
+if test "x$ac_cv_type_struct_sockaddr_storage" = xyes; then :
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if sockaddr_storage struct exists" >&5
-$as_echo_n "checking if sockaddr_storage struct exists... " >&6; }
-    if ${ac_cv_lbl_has_sockaddr_storage+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#	include <sys/types.h>
-#	include <sys/socket.h>
-int
-main ()
-{
-u_int i = sizeof (struct sockaddr_storage)
-  ;
-  return 0;
-}
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_SOCKADDR_STORAGE 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_has_sockaddr_storage=yes
-else
-  ac_cv_lbl_has_sockaddr_storage=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_has_sockaddr_storage" >&5
-$as_echo "$ac_cv_lbl_has_sockaddr_storage" >&6; }
-    if test $ac_cv_lbl_has_sockaddr_storage = yes ; then
 
-$as_echo "#define HAVE_SOCKADDR_STORAGE 1" >>confdefs.h
+#
+# Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
+# dl_module_id_1 member.
+#
+# NOTE: any failure means we conclude that it doesn't have that member,
+# so if we don't have DLPI, don't have a <sys/dlpi_ext.h> header, or
+# have one that doesn't declare a dl_hp_ppa_info_t type, we conclude
+# it doesn't have that member (which is OK, as either we won't be
+# using code that would use that member, or we wouldn't compile in
+# any case).
+#
+ac_fn_c_check_member "$LINENO" "dl_hp_ppa_info_t" "dl_module_id_1" "ac_cv_member_dl_hp_ppa_info_t_dl_module_id_1" "
+    #include <sys/types.h>
+    #include <sys/dlpi.h>
+    #include <sys/dlpi_ext.h>
 
-    fi
+"
+if test "x$ac_cv_member_dl_hp_ppa_info_t_dl_module_id_1" = xyes; then :
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if dl_hp_ppa_info_t struct has dl_module_id_1 member" >&5
-$as_echo_n "checking if dl_hp_ppa_info_t struct has dl_module_id_1 member... " >&6; }
-    if ${ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#	include <sys/types.h>
-#	include <sys/dlpi.h>
-#	include <sys/dlpi_ext.h>
-int
-main ()
-{
-u_int i = sizeof(((dl_hp_ppa_info_t *)0)->dl_module_id_1)
-  ;
-  return 0;
-}
+cat >>confdefs.h <<_ACEOF
+#define HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=yes
-else
-  ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1" >&5
-$as_echo "$ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1" >&6; }
-    if test $ac_cv_lbl_dl_hp_ppa_info_t_has_dl_module_id_1 = yes ; then
-
-$as_echo "#define HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1 1" >>confdefs.h
-
-    fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if unaligned accesses fail" >&5
 $as_echo_n "checking if unaligned accesses fail... " >&6; }
@@ -9419,42 +9348,23 @@ done
 	  # "value", rather than "bRequestType", "bRequest", and
 	  # "wValue".
 	  #
-	  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if usbdevfs_ctrltransfer struct has bRequestType member" >&5
-$as_echo_n "checking if usbdevfs_ctrltransfer struct has bRequestType member... " >&6; }
-	  if ${ac_cv_usbdevfs_ctrltransfer_has_bRequestType+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
+	  ac_fn_c_check_member "$LINENO" "struct usbdevfs_ctrltransfer" "bRequestType" "ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" "
 $ac_includes_default
 #ifdef HAVE_LINUX_COMPILER_H
 #include <linux/compiler.h>
 #endif
 #include <linux/usbdevice_fs.h>
-int
-main ()
-{
-u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)
-  ;
-  return 0;
-}
+
+"
+if test "x$ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes
-else
-  ac_cv_usbdevfs_ctrltransfer_has_bRequestType=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 fi
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_usbdevfs_ctrltransfer_has_bRequestType" >&5
-$as_echo "$ac_cv_usbdevfs_ctrltransfer_has_bRequestType" >&6; }
-	    if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
-
-$as_echo "#define HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1" >>confdefs.h
-
-	    fi
 	fi
 	;;
     freebsd*)
@@ -9617,106 +9527,95 @@ if test "x$enable_bluetooth" != "xno" ; then
 		ac_fn_c_check_header_mongrel "$LINENO" "bluetooth/bluetooth.h" "ac_cv_header_bluetooth_bluetooth_h" "$ac_includes_default"
 if test "x$ac_cv_header_bluetooth_bluetooth_h" = xyes; then :
 
+		    #
+		    # We have bluetooth.h, so we support Bluetooth sniffing.
+		    #
 
 $as_echo "#define PCAP_SUPPORT_BT 1" >>confdefs.h
 
-		  BT_SRC=pcap-bt-linux.c
-		  { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
+		    BT_SRC=pcap-bt-linux.c
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
 $as_echo "$as_me: Bluetooth sniffing is supported" >&6;}
+		    ac_lbl_bluetooth_available=yes
 
-		  #
-		  # OK, does struct sockaddr_hci have an hci_channel
-		  # member?
-		  #
-		  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if struct sockaddr_hci has hci_channel member" >&5
-$as_echo_n "checking if struct sockaddr_hci has hci_channel member... " >&6; }
-		  if ${ac_cv_lbl_sockaddr_hci_has_hci_channel+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+		    #
+		    # OK, does struct sockaddr_hci have an hci_channel
+		    # member?
+		    #
+		    ac_fn_c_check_member "$LINENO" "struct sockaddr_hci" "hci_channel" "ac_cv_member_struct_sockaddr_hci_hci_channel" "
+			#include <bluetooth/bluetooth.h>
+			#include <bluetooth/hci.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
+"
+if test "x$ac_cv_member_struct_sockaddr_hci_hci_channel" = xyes; then :
 
-int
-main ()
-{
-u_int i = sizeof(((struct sockaddr_hci *)0)->hci_channel)
-  ;
-  return 0;
-}
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL 1
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_sockaddr_hci_has_hci_channel=yes
-else
-  ac_cv_lbl_sockaddr_hci_has_hci_channel=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_sockaddr_hci_has_hci_channel" >&5
-$as_echo "$ac_cv_lbl_sockaddr_hci_has_hci_channel" >&6; }
-		    if test $ac_cv_lbl_sockaddr_hci_has_hci_channel = yes ; then
-
-$as_echo "#define SOCKADDR_HCI_HAS_HCI_CHANNEL /**/" >>confdefs.h
 
 
-		      #
-		      # OK, is HCI_CHANNEL_MONITOR defined?
-		      #
-		      { $as_echo "$as_me:${as_lineno-$LINENO}: checking if HCI_CHANNEL_MONITOR is defined" >&5
+			#
+			# Yes; is HCI_CHANNEL_MONITOR defined?
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if HCI_CHANNEL_MONITOR is defined" >&5
 $as_echo_n "checking if HCI_CHANNEL_MONITOR is defined... " >&6; }
-		      if ${ac_cv_lbl_hci_channel_monitor_is_defined+:} false; then :
+			if ${ac_cv_lbl_hci_channel_monitor_is_defined+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
+			      #include <bluetooth/bluetooth.h>
+			      #include <bluetooth/hci.h>
 
 int
 main ()
 {
-u_int i = HCI_CHANNEL_MONITOR
+
+			      u_int i = HCI_CHANNEL_MONITOR;
+
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_lbl_hci_channel_monitor_is_defined=yes
-else
-  ac_cv_lbl_hci_channel_monitor_is_defined=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
 
-		      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_hci_channel_monitor_is_defined" >&5
-$as_echo "$ac_cv_lbl_hci_channel_monitor_is_defined" >&6; }
-		      if test $ac_cv_lbl_hci_channel_monitor_is_defined = yes ; then
+			      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_BT_MONITOR /**/" >>confdefs.h
 
-			BT_MONITOR_SRC=pcap-bt-monitor-linux.c
-		      fi
-		    fi
-		    ac_lbl_bluetooth_available=yes
+			      BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 
 else
-  ac_lbl_bluetooth_available=no
+
+			      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
 
 fi
 
 
-		if test "x$ac_lbl_bluetooth_available" == "xno" ; then
+else
+
+		    #
+		    # We don't have bluetooth.h, so we don't support
+		    # Bluetooth sniffing.
+		    #
 		    if test "x$enable_bluetooth" = "xyes" ; then
-			as_fn_error $? "Bluetooth sniffing is not supported; install bluez-lib devel to enable it" "$LINENO" 5
+		      as_fn_error $? "Bluetooth sniffing is not supported; install bluez-lib devel to enable it" "$LINENO" 5
 		    else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
+		      { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
 $as_echo "$as_me: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&6;}
 		    fi
-		fi
+
+fi
+
+
 		;;
 	*)
 		if test "x$enable_bluetooth" = "xyes" ; then

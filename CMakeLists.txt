@@ -372,14 +372,14 @@ endif()
 #
 cmake_push_check_state()
 set(CMAKE_EXTRA_INCLUDE_FILES unistd.h sys/socket.h)
-check_type_size("struct sockaddr_storage" SOCKADDR_STORAGE)
+check_type_size("struct sockaddr_storage" STRUCT_SOCKADDR_STORAGE)
 check_type_size("socklen_t" SOCKLEN_T)
 cmake_pop_check_state()
 
 #
 # Structure fields.
 #
-check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_SOCKADDR_SA_LEN)
+check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_STRUCT_SOCKADDR_SA_LEN)
 
 #
 # Do we have ffs(), and is it declared in <strings.h>?
@@ -804,7 +804,7 @@ else(WIN32)
         #
         cmake_push_check_state()
         set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/dlpi.h)
-        check_type_size(dl_passive_req_t DLPI_PASSIVE)
+        check_type_size(dl_passive_req_t DL_PASSIVE_REQ_T)
         cmake_pop_check_state()
     elseif(PCAP_TYPE STREQUAL "linux")
         #
@@ -876,10 +876,10 @@ else(WIN32)
         #
         cmake_push_check_state()
         set(CMAKE_EXTRA_INCLUDE_FILES linux/if_packet.h)
-        check_type_size("struct tpacket_stats" TPACKET_STATS)
+        check_type_size("struct tpacket_stats" STRUCT_TPACKET_STATS)
         cmake_pop_check_state()
 
-        check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+        check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #
         # Check whether we have the *BSD-style ioctls.
@@ -1042,9 +1042,9 @@ if(NOT DISABLE_USB)
             # "wValue".
             #
             if(HAVE_LINUX_COMPILER_H)
-                check_struct_has_member("struct usbdevfs_ctrltransfer" bRequestType "linux/compiler.h;linux/usbdevice_fs.h" HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE)
+                check_struct_has_member("struct usbdevfs_ctrltransfer" bRequestType "linux/compiler.h;linux/usbdevice_fs.h" HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE)
             else(HAVE_LINUX_COMPILER_H)
-                check_struct_has_member("struct usbdevfs_ctrltransfer" bRequestType "linux/usbdevice_fs.h" HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE)
+                check_struct_has_member("struct usbdevfs_ctrltransfer" bRequestType "linux/usbdevice_fs.h" HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE)
             endif(HAVE_LINUX_COMPILER_H)
         endif()
     endif()
@@ -1118,8 +1118,8 @@ if(NOT DISABLE_BLUETOOTH)
             # OK, does struct sockaddr_hci have an hci_channel
             # member?
             #
-            check_struct_has_member("struct sockaddr_hci" hci_channel "bluetooth/bluetooth.h;bluetooth/hci.h" SOCKADDR_HCI_HAS_HCI_CHANNEL)
-            if(SOCKADDR_HCI_HAS_HCI_CHANNEL)
+            check_struct_has_member("struct sockaddr_hci" hci_channel "bluetooth/bluetooth.h;bluetooth/hci.h" HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL)
+            if(HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL)
                 #
                 # OK, is HCI_CHANNEL_MONITOR defined?
                 #
@@ -1142,7 +1142,7 @@ main(void)
                    #
                    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-bt-monitor-linux.c)
                endif(PCAP_SUPPORT_BT_MONITOR)
-            endif(SOCKADDR_HCI_HAS_HCI_CHANNEL)
+            endif(HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL)
         endif(HAVE_BLUETOOTH_BLUETOOTH_H)
     endif()
 endif()
@@ -1310,8 +1310,8 @@ if(ENABLE_REMOTE)
     #
     cmake_push_check_state()
     set(CMAKE_REQUIRED_INCLUDES ${CMAKE_SOURCE_DIR})
-    check_struct_has_member("struct msghdr" msg_control "ftmacros.h;sys/socket.h" STRUCT_MSGHDR_HAS_MSG_CONTROL)
-    check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" STRUCT_MSGHDR_HAS_MSG_FLAGS)
+    check_struct_has_member("struct msghdr" msg_control "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_CONTROL)
+    check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_FLAGS)
     cmake_pop_check_state()
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)

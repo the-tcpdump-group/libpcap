@@ -261,7 +261,7 @@ bt_activate(pcap_t* handle)
 	/* Bind socket to the HCI device */
 	addr.hci_family = AF_BLUETOOTH;
 	addr.hci_dev = handlep->dev_id;
-#ifdef SOCKADDR_HCI_HAS_HCI_CHANNEL
+#ifdef HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL
 	addr.hci_channel = HCI_CHANNEL_RAW;
 #endif
 	if (bind(handle->fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {

@@ -424,7 +424,7 @@ probe_devices(int bus)
 		 * Sigh.  Different kernels have different member names
 		 * for this structure.
 		 */
-#ifdef HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
+#ifdef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
 		ctrl.bRequestType = USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 		ctrl.bRequest = USB_REQ_GET_DESCRIPTOR;
 		ctrl.wValue = USB_DT_DEVICE << 8;

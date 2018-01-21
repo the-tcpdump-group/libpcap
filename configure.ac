@@ -574,10 +574,16 @@ dlpi)
 	fi
 
 	#
-	# This check is for Solaris with DLPI support for passive modes.
+	# Check to see if Solaris has the dl_passive_req_t struct defined
+	# in <sys/dlpi.h>.
+	# This check is for DLPI support for passive modes.
 	# See dlpi(7P) for more details.
 	#
-	AC_LBL_DL_PASSIVE_REQ_T
+	AC_CHECK_TYPES(dl_passive_req_t,,,
+	    [
+#include <sys/types.h>
+#include <sys/dlpi.h>,
+	    ])
 	;;
 
 linux)
@@ -681,8 +687,32 @@ linux)
 AC_INCLUDES_DEFAULT
 #include <linux/types.h>
 	    ])
-	AC_LBL_TPACKET_STATS
-	AC_LBL_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI
+
+	#
+	# Check to see if struct tpacket_stats is defined in
+	# <linux/if_packet.h>.  If so, then pcap-linux.c can use this
+	# to report proper statistics.
+	#
+	# -Scott Barron
+	#
+	AC_CHECK_TYPES(struct tpacket_stats,,,
+	    [
+#include <linux/if_packet.h>
+	    ])
+
+	#
+	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
+	#
+	# NOTE: any failure means we conclude that it doesn't have that
+	# member, so if we don't have tpacket_auxdata, we conclude it
+	# doesn't have that member (which is OK, as either we won't be
+	# using code that would use that member, or we wouldn't compile
+	# in any case).
+	AC_CHECK_MEMBERS([struct tpacket_auxdata.tp_vlan_tci],,,
+	    [
+#include <sys/types.h>
+#include <linux/if_packet.h>
+	    ])
 	;;
 
 bpf)
@@ -828,18 +858,14 @@ if test "x$enable_packet_ring" != "xno" ; then
 	AC_SUBST(PCAP_SUPPORT_PACKET_RING)
 fi
 
-AC_MSG_CHECKING(for socklen_t)
-AC_TRY_COMPILE([
-	#include <sys/types.h>
-	#include <sys/socket.h>
-	],
-	[ socklen_t x; ],
-	have_socklen_t=yes,
-	have_socklen_t=no)
-if test "x$have_socklen_t" = "xyes"; then
-	AC_DEFINE(HAVE_SOCKLEN_T, 1, [define if socklen_t is defined])
-fi
-AC_MSG_RESULT($have_socklen_t)
+#
+# Check for socklen_t.
+#
+AC_CHECK_TYPES(socklen_t,,,
+  [
+    #include <sys/types.h>
+    #include <sys/socket.h>
+  ])
 
 AC_ARG_ENABLE(ipv6,
 AC_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes, if getaddrinfo available@:>@]),
@@ -1294,30 +1320,16 @@ yes)	AC_MSG_RESULT(yes)
 	#
 	# Check for various members of struct msghdr.
 	#
-	AC_MSG_CHECKING(if struct msghdr has a msg_control member)
-	AC_CACHE_VAL(ac_cv_lbl_struct_msghdr_has_msg_control,
-	    AC_TRY_COMPILE([
-#	include "ftmacros.h"
-#	include <sys/socket.h>],
-		[u_int i = sizeof(((struct msghdr *)0)->msg_control)],
-		ac_cv_lbl_struct_msghdr_has_msg_control=yes,
-		ac_cv_lbl_struct_msghdr_has_msg_control=no))
-	AC_MSG_RESULT($ac_cv_lbl_struct_msghdr_has_msg_control)
-	if test $ac_cv_lbl_struct_msghdr_has_msg_control = yes ; then
-	    AC_DEFINE(STRUCT_MSGHDR_HAS_MSG_CONTROL,1,[if struct msghdr has a msg_control member])
-	fi
-	AC_MSG_CHECKING(if struct msghdr has a msg_flags member)
-	AC_CACHE_VAL(ac_cv_lbl_struct_msghdr_has_msg_flags,
-	    AC_TRY_COMPILE([
-#	include "ftmacros.h"
-#	include <sys/socket.h>],
-		[u_int i = sizeof(((struct msghdr *)0)->msg_flags)],
-		ac_cv_lbl_struct_msghdr_has_msg_flags=yes,
-		ac_cv_lbl_struct_msghdr_has_msg_flags=no))
-	AC_MSG_RESULT($ac_cv_lbl_struct_msghdr_has_msg_flags)
-	if test $ac_cv_lbl_struct_msghdr_has_msg_flags = yes ; then
-	    AC_DEFINE(STRUCT_MSGHDR_HAS_MSG_FLAGS,1,[if struct msghdr has a msg_flags member])
-	fi
+	AC_CHECK_MEMBERS([struct msghdr.msg_control],,,
+	    [
+#include "ftmacros.h"
+#include <sys/socket.h>
+	    ])
+	AC_CHECK_MEMBERS([struct msghdr.msg_flags],,,
+	    [
+#include "ftmacros.h"
+#include <sys/socket.h>
+	    ])
 
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
@@ -1671,11 +1683,41 @@ AC_SUBST(LN_S)
 
 AC_LBL_DEVEL(V_CCOPT)
 
-AC_LBL_SOCKADDR_SA_LEN
+#
+# Check to see if the sockaddr struct has the 4.4 BSD sa_len member.
+#
+AC_CHECK_MEMBERS([struct sockaddr.sa_len],,,
+  [
+    #include <sys/types.h>
+    #include <sys/socket.h>
+  ])
 
-AC_LBL_SOCKADDR_STORAGE
+#
+# Check to see if there's a sockaddr_storage structure.
+#
+AC_CHECK_TYPES(struct sockaddr_storage,,,
+  [
+    #include <sys/types.h>
+    #include <sys/socket.h>
+  ])
 
-AC_LBL_HP_PPA_INFO_T_DL_MODULE_ID_1
+#
+# Check to see if the dl_hp_ppa_info_t struct has the HP-UX 11.00
+# dl_module_id_1 member.
+#
+# NOTE: any failure means we conclude that it doesn't have that member,
+# so if we don't have DLPI, don't have a <sys/dlpi_ext.h> header, or
+# have one that doesn't declare a dl_hp_ppa_info_t type, we conclude
+# it doesn't have that member (which is OK, as either we won't be
+# using code that would use that member, or we wouldn't compile in
+# any case).
+#
+AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
+  [
+    #include <sys/types.h>
+    #include <sys/dlpi.h>
+    #include <sys/dlpi_ext.h>
+  ])
 
 AC_LBL_UNALIGNED_ACCESS
 
@@ -1812,22 +1854,14 @@ if test "x$enable_usb" != "xno" ; then
 	  # "value", rather than "bRequestType", "bRequest", and
 	  # "wValue".
 	  #
-	  AC_MSG_CHECKING(if usbdevfs_ctrltransfer struct has bRequestType member)
-	  AC_CACHE_VAL(ac_cv_usbdevfs_ctrltransfer_has_bRequestType,
-	    AC_TRY_COMPILE([
+	  AC_CHECK_MEMBERS([struct usbdevfs_ctrltransfer.bRequestType],,,
+	      [
 AC_INCLUDES_DEFAULT
 #ifdef HAVE_LINUX_COMPILER_H
 #include <linux/compiler.h>
 #endif
-#include <linux/usbdevice_fs.h>],
-	      [u_int i = sizeof(((struct usbdevfs_ctrltransfer *)0)->bRequestType)],
-	      ac_cv_usbdevfs_ctrltransfer_has_bRequestType=yes,
-	      ac_cv_usbdevfs_ctrltransfer_has_bRequestType=no))
-	    AC_MSG_RESULT($ac_cv_usbdevfs_ctrltransfer_has_bRequestType)
-	    if test $ac_cv_usbdevfs_ctrltransfer_has_bRequestType = yes ; then
-	      AC_DEFINE(HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE,1,
-	        [if struct usbdevfs_ctrltransfer has bRequestType])
-	    fi
+#include <linux/usbdevice_fs.h>
+	      ])
 	fi
 	;;
     freebsd*)
@@ -1939,61 +1973,60 @@ if test "x$enable_bluetooth" != "xno" ; then
 	case "$host_os" in
 	linux*)
 		AC_CHECK_HEADER(bluetooth/bluetooth.h,
-		[
-		  AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
-		  BT_SRC=pcap-bt-linux.c
-		  AC_MSG_NOTICE(Bluetooth sniffing is supported)
-
-		  #
-		  # OK, does struct sockaddr_hci have an hci_channel
-		  # member?
-		  #
-		  AC_MSG_CHECKING(if struct sockaddr_hci has hci_channel member)
-		  AC_CACHE_VAL(ac_cv_lbl_sockaddr_hci_has_hci_channel,
-		    AC_TRY_COMPILE(
-[
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-],
-		      [u_int i = sizeof(((struct sockaddr_hci *)0)->hci_channel)],
-		      ac_cv_lbl_sockaddr_hci_has_hci_channel=yes,
-		      ac_cv_lbl_sockaddr_hci_has_hci_channel=no))
-		    AC_MSG_RESULT($ac_cv_lbl_sockaddr_hci_has_hci_channel)
-		    if test $ac_cv_lbl_sockaddr_hci_has_hci_channel = yes ; then
-		      AC_DEFINE(SOCKADDR_HCI_HAS_HCI_CHANNEL,,
-			[if struct sockaddr_hci has hci_channel member])
-
-		      #
-		      # OK, is HCI_CHANNEL_MONITOR defined?
-		      #
-		      AC_MSG_CHECKING(if HCI_CHANNEL_MONITOR is defined)
-		      AC_CACHE_VAL(ac_cv_lbl_hci_channel_monitor_is_defined,
-		      AC_TRY_COMPILE(
-[
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-],
-			[u_int i = HCI_CHANNEL_MONITOR],
-			ac_cv_lbl_hci_channel_monitor_is_defined=yes,
-			ac_cv_lbl_hci_channel_monitor_is_defined=no))
-		      AC_MSG_RESULT($ac_cv_lbl_hci_channel_monitor_is_defined)
-		      if test $ac_cv_lbl_hci_channel_monitor_is_defined = yes ; then
-			AC_DEFINE(PCAP_SUPPORT_BT_MONITOR,,
-			  [target host supports Bluetooth Monitor])
-			BT_MONITOR_SRC=pcap-bt-monitor-linux.c
-		      fi
-		    fi
+		  [
+		    #
+		    # We have bluetooth.h, so we support Bluetooth sniffing.
+		    #
+		    AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
+		    BT_SRC=pcap-bt-linux.c
+		    AC_MSG_NOTICE(Bluetooth sniffing is supported)
 		    ac_lbl_bluetooth_available=yes
-		],
-		ac_lbl_bluetooth_available=no
-		)
-		if test "x$ac_lbl_bluetooth_available" == "xno" ; then
+
+		    #
+		    # OK, does struct sockaddr_hci have an hci_channel
+		    # member?
+		    #
+		    AC_CHECK_MEMBERS([struct sockaddr_hci.hci_channel],
+		      [
+			#
+			# Yes; is HCI_CHANNEL_MONITOR defined?
+			#
+			AC_MSG_CHECKING(if HCI_CHANNEL_MONITOR is defined)
+			AC_CACHE_VAL(ac_cv_lbl_hci_channel_monitor_is_defined,
+			  AC_TRY_COMPILE(
+			    [
+			      #include <bluetooth/bluetooth.h>
+			      #include <bluetooth/hci.h>
+			    ],
+			    [
+			      u_int i = HCI_CHANNEL_MONITOR;
+			    ],
+			    [
+			      AC_MSG_RESULT(yes)
+			      AC_DEFINE(PCAP_SUPPORT_BT_MONITOR,,
+			        [target host supports Bluetooth Monitor])
+			      BT_MONITOR_SRC=pcap-bt-monitor-linux.c
+			    ],
+			    [
+			      AC_MSG_RESULT(no)
+			    ]))
+		      ],,
+		      [
+			#include <bluetooth/bluetooth.h>
+			#include <bluetooth/hci.h>
+		      ])
+		  ],
+		  [
+		    #
+		    # We don't have bluetooth.h, so we don't support
+		    # Bluetooth sniffing.
+		    #
 		    if test "x$enable_bluetooth" = "xyes" ; then
-			AC_MSG_ERROR(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+		      AC_MSG_ERROR(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
 		    else
-			AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
+		      AC_MSG_NOTICE(Bluetooth sniffing is not supported; install bluez-lib devel to enable it)
 		    fi
-		fi
+		  ])
 		;;
 	*)
 		if test "x$enable_bluetooth" = "xyes" ; then

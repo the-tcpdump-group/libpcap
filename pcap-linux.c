@@ -1712,7 +1712,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #else
 	struct sockaddr		from;
 #endif
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 	struct iovec		iov;
 	struct msghdr		msg;
 	struct cmsghdr		*cmsg;
@@ -1720,9 +1720,9 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		struct cmsghdr	cmsg;
 		char		buf[CMSG_SPACE(sizeof(struct tpacket_auxdata))];
 	} cmsg_buf;
-#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	socklen_t		fromlen;
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	int			packet_len, caplen;
 	struct pcap_pkthdr	pcap_header;
 
@@ -1761,7 +1761,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 */
 	bp = (u_char *)handle->buffer + handle->offset;
 
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 	msg.msg_name		= &from;
 	msg.msg_namelen		= sizeof(from);
 	msg.msg_iov		= &iov;
@@ -1772,7 +1772,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	iov.iov_len		= handle->bufsize - offset;
 	iov.iov_base		= bp + offset;
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 
 	do {
 		/*
@@ -1788,15 +1788,15 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			return PCAP_ERROR_BREAK;
 		}
 
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 		packet_len = recvmsg(handle->fd, &msg, MSG_TRUNC);
-#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 		fromlen = sizeof(from);
 		packet_len = recvfrom(
 			handle->fd, bp + offset,
 			handle->bufsize - offset, MSG_TRUNC,
 			(struct sockaddr *) &from, &fromlen);
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	} while (packet_len == -1 && errno == EINTR);
 
 	/* Check if an error occured */
@@ -1877,7 +1877,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		hdrp->sll_protocol = from.sll_protocol;
 	}
 
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI)
+#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 	if (handlep->vlan_offset != -1) {
 		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			struct tpacket_auxdata *aux;
@@ -1931,7 +1931,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			packet_len += VLAN_TAG_LEN;
 		}
 	}
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI) */
+#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 #endif /* HAVE_PF_PACKET_SOCKETS */
 
 	/*
@@ -2023,7 +2023,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * We count them here even if we can get the packet count
 	 * from the kernel, as we can only determine at run time
 	 * whether we'll be able to get it from the kernel (if
-	 * HAVE_TPACKET_STATS isn't defined, we can't get it from
+	 * HAVE_STRUCT_TPACKET_STATS isn't defined, we can't get it from
 	 * the kernel, but if it is defined, the library might
 	 * have been built with a 2.4 or later kernel, but we
 	 * might be running on a 2.2[.x] kernel without Alexey
@@ -2110,7 +2110,7 @@ static int
 pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_linux *handlep = handle->priv;
-#ifdef HAVE_TPACKET_STATS
+#ifdef HAVE_STRUCT_TPACKET_STATS
 #ifdef HAVE_TPACKET3
 	/*
 	 * For sockets using TPACKET_V1 or TPACKET_V2, the extra
@@ -2131,7 +2131,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct tpacket_stats kstats;
 #endif /* HAVE_TPACKET3 */
 	socklen_t len = sizeof (struct tpacket_stats);
-#endif /* HAVE_TPACKET_STATS */
+#endif /* HAVE_STRUCT_TPACKET_STATS */
 
 	long if_dropped = 0;
 
@@ -2145,7 +2145,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		handlep->stat.ps_ifdrop += (handlep->proc_dropped - if_dropped);
 	}
 
-#ifdef HAVE_TPACKET_STATS
+#ifdef HAVE_STRUCT_TPACKET_STATS
 	/*
 	 * Try to get the packet counts from the kernel.
 	 */

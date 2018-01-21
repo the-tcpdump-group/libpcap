@@ -156,7 +156,7 @@ static int dlokack(int, const char *, char *, char *);
 static int dlinforeq(int, char *);
 static int dlinfoack(int, char *, char *);
 
-#ifdef HAVE_DLPI_PASSIVE
+#ifdef HAVE_DL_PASSIVE_REQ_T
 static void dlpassive(int, char *);
 #endif
 
@@ -576,7 +576,7 @@ pcap_activate_dlpi(pcap_t *p)
 		goto bad;
 	}
 
-#ifdef HAVE_DLPI_PASSIVE
+#ifdef HAVE_DL_PASSIVE_REQ_T
 	/*
 	 * Enable Passive mode to be able to capture on aggregated link.
 	 * Not supported in all Solaris versions.
@@ -1453,7 +1453,7 @@ dlinfoack(int fd, char *bufp, char *ebuf)
 	return (recv_ack(fd, DL_INFO_ACK_SIZE, "info", bufp, ebuf, NULL));
 }
 
-#ifdef HAVE_DLPI_PASSIVE
+#ifdef HAVE_DL_PASSIVE_REQ_T
 /*
  * Enable DLPI passive mode. We do not care if this request fails, as this
  * indicates the underlying DLPI device does not support link aggregation.
@@ -1675,7 +1675,7 @@ get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
 	ipstart = (dl_hp_ppa_info_t *)ppa_data_buf;
 	ip = ipstart;
 
-#ifdef HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1
+#ifdef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
 	/*
 	 * The "dl_hp_ppa_info_t" structure has a "dl_module_id_1"
 	 * member that should, in theory, contain the part of the

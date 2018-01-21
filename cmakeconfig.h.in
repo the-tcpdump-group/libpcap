@@ -27,8 +27,11 @@
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #cmakedefine HAVE_DECL_ETHER_HOSTTON 1
 
-/* if passive_req_t primitive exists */
-#cmakedefine HAVE_DLPI_PASSIVE 1
+/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
+#cmakedefine HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1 1
+
+/* Define to 1 if the system has the type `dl_passive_req_t'. */
+#cmakedefine HAVE_DL_PASSIVE_REQ_T 1
 
 /* Define to 1 if you have the `ether_hostton' function. */
 #cmakedefine HAVE_ETHER_HOSTTON 1
@@ -44,9 +47,6 @@
 
 /* on HP-UX 9.x */
 #cmakedefine HAVE_HPUX9 1
-
-/* if ppa_info_t_dl_module_id exists */
-#cmakedefine HAVE_HP_PPA_INFO_T_DL_MODULE_ID_1 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H 1
@@ -89,9 +89,6 @@
 
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #cmakedefine HAVE_LINUX_SOCKIOS_H 1
-
-/* if tp_vlan_tci exists */
-#cmakedefine HAVE_LINUX_TPACKET_AUXDATA_TP_VLAN_TCI 1
 
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1
@@ -144,12 +141,6 @@
 /* Define to 1 if you have the `snprintf' function. */
 #cmakedefine HAVE_SNPRINTF 1
 
-/* if struct sockaddr has the sa_len member */
-#cmakedefine HAVE_SOCKADDR_SA_LEN 1
-
-/* if struct sockaddr_storage exists */
-#cmakedefine HAVE_SOCKADDR_STORAGE 1
-
 /* define if socklen_t is defined */
 #cmakedefine HAVE_SOCKLEN_T 1
 
@@ -192,6 +183,31 @@
 /* Define to 1 if the system has the type `struct ether_addr'. */
 #cmakedefine HAVE_STRUCT_ETHER_ADDR 1
 
+/* Define to 1 if `msg_control' is a member of `struct msghdr'. */
+#cmakedefine HAVE_STRUCT_MSGHDR_MSG_CONTROL 1
+
+/* Define to 1 if `msg_flags' is a member of `struct msghdr'. */
+#cmakedefine HAVE_STRUCT_MSGHDR_MSG_FLAGS 1
+
+/* Define to 1 if `hci_channel' is a member of `struct sockaddr_hci'. */
+#cmakedefine HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL 1
+
+/* Define to 1 if `sa_len' is a member of `struct sockaddr'. */
+#cmakedefine HAVE_STRUCT_SOCKADDR_SA_LEN 1
+
+/* Define to 1 if the system has the type `struct sockaddr_storage'. */
+#cmakedefine HAVE_STRUCT_SOCKADDR_STORAGE 1
+
+/* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
+#cmakedefine HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI 1
+
+/* Define to 1 if the system has the type `struct tpacket_stats'. */
+#cmakedefine HAVE_STRUCT_TPACKET_STATS 1
+
+/* Define to 1 if `bRequestType' is a member of `struct
+   usbdevfs_ctrltransfer'. */
+#cmakedefine HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
+
 /* Define to 1 if you have the <sys/bufmod.h> header file. */
 #cmakedefine HAVE_SYS_BUFMOD_H 1
 
@@ -219,14 +235,8 @@
 /* define if you have the TurboCap API */
 #cmakedefine HAVE_TC_API 1
 
-/* if if_packet.h has tpacket_stats defined */
-#cmakedefine HAVE_TPACKET_STATS 1
-
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
-
-/* if struct usbdevfs_ctrltransfer has bRequestType */
-#cmakedefine HAVE_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
@@ -306,20 +316,11 @@
 /* include ACN support */
 #cmakedefine SITA 1
 
-/* if struct sockaddr_hci has hci_channel member */
-#cmakedefine SOCKADDR_HCI_HAS_HCI_CHANNEL 1
-
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1
 
 /* Define to 1 if strings.h declares `ffs' */
 #cmakedefine STRINGS_H_DECLARES_FFS 1
-
-/* if struct msghdr has a msg_control member */
-#cmakedefine STRUCT_MSGHDR_HAS_MSG_CONTROL 1
-
-/* if struct msghdr has a msg_flags member */
-#cmakedefine STRUCT_MSGHDR_HAS_MSG_FLAGS 1
 
 /* Define to 1 if sys/ethernet.h declares `ether_hostton' */
 #cmakedefine SYS_ETHERNET_H_DECLARES_ETHER_HOSTTON 1
