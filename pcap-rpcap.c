@@ -1371,6 +1371,9 @@ error_nodiscard:
 	if (!active)
 		sock_close(pr->rmt_sockctrl, NULL, 0);
 
+	if (addrinfo != NULL)
+		freeaddrinfo(addrinfo);
+
 	/*
 	 * We do not have to call pcap_close() here, because this function is always called
 	 * by the user in case something bad happens
