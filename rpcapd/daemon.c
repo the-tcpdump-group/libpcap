@@ -1844,9 +1844,6 @@ fatal_error:
 	//
 	*sessionp = NULL;
 
-	if (addrinfo)
-		freeaddrinfo(addrinfo);
-
 	if (*have_thread)
 	{
 #ifdef _WIN32
