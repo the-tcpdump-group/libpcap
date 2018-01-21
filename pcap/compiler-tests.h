@@ -35,7 +35,6 @@
 #ifndef lib_pcap_compiler_tests_h
 #define lib_pcap_compiler_tests_h
 
-
 /*
  * This was introduced by Clang:
  *
