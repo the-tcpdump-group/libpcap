@@ -388,9 +388,23 @@ void main_startup(void)
 				continue;
 			}
 
-			// This trick is needed in order to allow the child thread to save the 'sockmain' variable
-			// withouth getting it overwritten by the sock_open, in case we want to open more than one waiting sockets
-			// For instance, the rpcapd_thread_create() will accept the socktemp variable, and it will deallocate immediately that variable
+			//
+			// This trick is needed in order to allow the child
+			// thread to save the 'sockmain' variable without
+			// getting it overwritten by the sock_open, in case
+			// we want to open more than one waiting socket.
+			//
+			// For instance, the rpcapd_thread_create() will
+			// accept the socktemp variable, and it will
+			// immediately deallocate that variable.
+			//
+			// XXX - this shouldn't be necessary if we're
+			// using subprocesses rather than threads, as
+			// the use and overwrite would be done in
+			// separate processes; we should be able to
+			// pass a pointer to sockmain in the child
+			// process.
+			//
 			socktemp = (SOCKET *) malloc (sizeof (SOCKET));
 			if (socktemp == NULL)
 				exit(0);
@@ -403,6 +417,7 @@ void main_startup(void)
 			if (threadId == 0)
 			{
 				SOCK_ASSERT("Error creating the passive child thread", 1);
+				free(socktemp);
 				continue;
 			}
 			CloseHandle(threadId);
@@ -413,6 +428,7 @@ void main_startup(void)
 				main_passive((void *) socktemp);
 				return;
 			}
+			free(socktemp);
 #endif
 			tempaddrinfo = tempaddrinfo->ai_next;
 		}
