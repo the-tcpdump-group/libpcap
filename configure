@@ -5707,11 +5707,11 @@ $as_echo "#define HAVE_DECL_ETHER_HOSTTON 1" >>confdefs.h
 		# <netinet/if_ether.h>?
 		#
 		ac_fn_c_check_type "$LINENO" "struct ether_addr" "ac_cv_type_struct_ether_addr" "
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/in.h>
-#include <netinet/if_ether.h>
+			#include <sys/types.h>
+			#include <sys/socket.h>
+			#include <net/if.h>
+			#include <netinet/in.h>
+			#include <netinet/if_ether.h>
 
 "
 if test "x$ac_cv_type_struct_ether_addr" = xyes; then :
@@ -6259,8 +6259,8 @@ $as_echo "$ac_cv_sys_dlpi_usable" >&6; }
 	# See dlpi(7P) for more details.
 	#
 	ac_fn_c_check_type "$LINENO" "dl_passive_req_t" "ac_cv_type_dl_passive_req_t" "
-#include <sys/types.h>
-#include <sys/dlpi.h>,
+		#include <sys/types.h>
+		#include <sys/dlpi.h>
 
 "
 if test "x$ac_cv_type_dl_passive_req_t" = xyes; then :
@@ -6543,7 +6543,7 @@ done
 	# -Scott Barron
 	#
 	ac_fn_c_check_type "$LINENO" "struct tpacket_stats" "ac_cv_type_struct_tpacket_stats" "
-#include <linux/if_packet.h>
+		#include <linux/if_packet.h>
 
 "
 if test "x$ac_cv_type_struct_tpacket_stats" = xyes; then :
@@ -6565,8 +6565,8 @@ fi
 	# using code that would use that member, or we wouldn't compile
 	# in any case).
 	ac_fn_c_check_member "$LINENO" "struct tpacket_auxdata" "tp_vlan_tci" "ac_cv_member_struct_tpacket_auxdata_tp_vlan_tci" "
-#include <sys/types.h>
-#include <linux/if_packet.h>
+		#include <sys/types.h>
+		#include <linux/if_packet.h>
 
 "
 if test "x$ac_cv_member_struct_tpacket_auxdata_tp_vlan_tci" = xyes; then :
@@ -6597,16 +6597,16 @@ fi
 done
 
 
-	    #
-	    # Check whether we have struct BPF_TIMEVAL.
-	    #
-	    ac_fn_c_check_type "$LINENO" "struct BPF_TIMEVAL" "ac_cv_type_struct_BPF_TIMEVAL" "
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#ifdef HAVE_SYS_IOCCOM_H
-#include <sys/ioccom.h>
-#endif
-#include <net/bpf.h>
+	#
+	# Check whether we have struct BPF_TIMEVAL.
+	#
+	ac_fn_c_check_type "$LINENO" "struct BPF_TIMEVAL" "ac_cv_type_struct_BPF_TIMEVAL" "
+		#include <sys/types.h>
+		#include <sys/ioctl.h>
+		#ifdef HAVE_SYS_IOCCOM_H
+		#include <sys/ioccom.h>
+		#endif
+		#include <net/bpf.h>
 
 "
 if test "x$ac_cv_type_struct_BPF_TIMEVAL" = xyes; then :
@@ -6792,8 +6792,8 @@ fi
 # Check for socklen_t.
 #
 ac_fn_c_check_type "$LINENO" "socklen_t" "ac_cv_type_socklen_t" "
-    #include <sys/types.h>
-    #include <sys/socket.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
 
 "
 if test "x$ac_cv_type_socklen_t" = xyes; then :
@@ -7642,8 +7642,8 @@ done
 	# Check for various members of struct msghdr.
 	#
 	ac_fn_c_check_member "$LINENO" "struct msghdr" "msg_control" "ac_cv_member_struct_msghdr_msg_control" "
-#include \"ftmacros.h\"
-#include <sys/socket.h>
+		#include \"ftmacros.h\"
+		#include <sys/socket.h>
 
 "
 if test "x$ac_cv_member_struct_msghdr_msg_control" = xyes; then :
@@ -7656,8 +7656,8 @@ _ACEOF
 fi
 
 	ac_fn_c_check_member "$LINENO" "struct msghdr" "msg_flags" "ac_cv_member_struct_msghdr_msg_flags" "
-#include \"ftmacros.h\"
-#include <sys/socket.h>
+		#include \"ftmacros.h\"
+		#include <sys/socket.h>
 
 "
 if test "x$ac_cv_member_struct_msghdr_msg_flags" = xyes; then :
@@ -8945,8 +8945,8 @@ $as_echo "$as_me: WARNING: can't find $name" >&2;}
 # Check to see if the sockaddr struct has the 4.4 BSD sa_len member.
 #
 ac_fn_c_check_member "$LINENO" "struct sockaddr" "sa_len" "ac_cv_member_struct_sockaddr_sa_len" "
-    #include <sys/types.h>
-    #include <sys/socket.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
 
 "
 if test "x$ac_cv_member_struct_sockaddr_sa_len" = xyes; then :
@@ -8963,8 +8963,8 @@ fi
 # Check to see if there's a sockaddr_storage structure.
 #
 ac_fn_c_check_type "$LINENO" "struct sockaddr_storage" "ac_cv_type_struct_sockaddr_storage" "
-    #include <sys/types.h>
-    #include <sys/socket.h>
+	#include <sys/types.h>
+	#include <sys/socket.h>
 
 "
 if test "x$ac_cv_type_struct_sockaddr_storage" = xyes; then :
@@ -8989,9 +8989,9 @@ fi
 # any case).
 #
 ac_fn_c_check_member "$LINENO" "dl_hp_ppa_info_t" "dl_module_id_1" "ac_cv_member_dl_hp_ppa_info_t_dl_module_id_1" "
-    #include <sys/types.h>
-    #include <sys/dlpi.h>
-    #include <sys/dlpi_ext.h>
+	#include <sys/types.h>
+	#include <sys/dlpi.h>
+	#include <sys/dlpi_ext.h>
 
 "
 if test "x$ac_cv_member_dl_hp_ppa_info_t_dl_module_id_1" = xyes; then :
@@ -9349,11 +9349,11 @@ done
 	  # "wValue".
 	  #
 	  ac_fn_c_check_member "$LINENO" "struct usbdevfs_ctrltransfer" "bRequestType" "ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" "
-$ac_includes_default
-#ifdef HAVE_LINUX_COMPILER_H
-#include <linux/compiler.h>
-#endif
-#include <linux/usbdevice_fs.h>
+		  $ac_includes_default
+		  #ifdef HAVE_LINUX_COMPILER_H
+		  #include <linux/compiler.h>
+		  #endif
+		  #include <linux/usbdevice_fs.h>
 
 "
 if test "x$ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" = xyes; then :
@@ -9527,24 +9527,25 @@ if test "x$enable_bluetooth" != "xno" ; then
 		ac_fn_c_check_header_mongrel "$LINENO" "bluetooth/bluetooth.h" "ac_cv_header_bluetooth_bluetooth_h" "$ac_includes_default"
 if test "x$ac_cv_header_bluetooth_bluetooth_h" = xyes; then :
 
-		    #
-		    # We have bluetooth.h, so we support Bluetooth sniffing.
-		    #
+			#
+			# We have bluetooth.h, so we support Bluetooth
+			# sniffing.
+			#
 
 $as_echo "#define PCAP_SUPPORT_BT 1" >>confdefs.h
 
-		    BT_SRC=pcap-bt-linux.c
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
+			BT_SRC=pcap-bt-linux.c
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
 $as_echo "$as_me: Bluetooth sniffing is supported" >&6;}
-		    ac_lbl_bluetooth_available=yes
+			ac_lbl_bluetooth_available=yes
 
-		    #
-		    # OK, does struct sockaddr_hci have an hci_channel
-		    # member?
-		    #
-		    ac_fn_c_check_member "$LINENO" "struct sockaddr_hci" "hci_channel" "ac_cv_member_struct_sockaddr_hci_hci_channel" "
-			#include <bluetooth/bluetooth.h>
-			#include <bluetooth/hci.h>
+			#
+			# OK, does struct sockaddr_hci have an hci_channel
+			# member?
+			#
+			ac_fn_c_check_member "$LINENO" "struct sockaddr_hci" "hci_channel" "ac_cv_member_struct_sockaddr_hci_hci_channel" "
+				#include <bluetooth/bluetooth.h>
+				#include <bluetooth/hci.h>
 
 "
 if test "x$ac_cv_member_struct_sockaddr_hci_hci_channel" = xyes; then :
@@ -9554,25 +9555,25 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-			#
-			# Yes; is HCI_CHANNEL_MONITOR defined?
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if HCI_CHANNEL_MONITOR is defined" >&5
+				#
+				# Yes; is HCI_CHANNEL_MONITOR defined?
+				#
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if HCI_CHANNEL_MONITOR is defined" >&5
 $as_echo_n "checking if HCI_CHANNEL_MONITOR is defined... " >&6; }
-			if ${ac_cv_lbl_hci_channel_monitor_is_defined+:} false; then :
+				if ${ac_cv_lbl_hci_channel_monitor_is_defined+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-			      #include <bluetooth/bluetooth.h>
-			      #include <bluetooth/hci.h>
+					    #include <bluetooth/bluetooth.h>
+					    #include <bluetooth/hci.h>
 
 int
 main ()
 {
 
-			      u_int i = HCI_CHANNEL_MONITOR;
+					    u_int i = HCI_CHANNEL_MONITOR;
 
   ;
   return 0;
@@ -9580,16 +9581,16 @@ main ()
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
 
-			      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+					    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_BT_MONITOR /**/" >>confdefs.h
 
-			      BT_MONITOR_SRC=pcap-bt-monitor-linux.c
+					    BT_MONITOR_SRC=pcap-bt-monitor-linux.c
 
 else
 
-			      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+					    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 fi
@@ -9602,16 +9603,16 @@ fi
 
 else
 
-		    #
-		    # We don't have bluetooth.h, so we don't support
-		    # Bluetooth sniffing.
-		    #
-		    if test "x$enable_bluetooth" = "xyes" ; then
-		      as_fn_error $? "Bluetooth sniffing is not supported; install bluez-lib devel to enable it" "$LINENO" 5
-		    else
-		      { $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
+			#
+			# We don't have bluetooth.h, so we don't support
+			# Bluetooth sniffing.
+			#
+			if test "x$enable_bluetooth" = "xyes" ; then
+				as_fn_error $? "Bluetooth sniffing is not supported; install bluez-lib devel to enable it" "$LINENO" 5
+			else
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&5
 $as_echo "$as_me: Bluetooth sniffing is not supported; install bluez-lib devel to enable it" >&6;}
-		    fi
+			fi
 
 fi
 
@@ -9619,9 +9620,9 @@ fi
 		;;
 	*)
 		if test "x$enable_bluetooth" = "xyes" ; then
-		    as_fn_error $? "no Bluetooth sniffing support implemented for $host_os" "$LINENO" 5
+			as_fn_error $? "no Bluetooth sniffing support implemented for $host_os" "$LINENO" 5
 		else
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: no Bluetooth sniffing support implemented for $host_os" >&5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: no Bluetooth sniffing support implemented for $host_os" >&5
 $as_echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
 		fi
 		;;
