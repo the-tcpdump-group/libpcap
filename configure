@@ -4070,50 +4070,6 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for __attribute__" >&5
-$as_echo_n "checking for __attribute__... " >&6; }
-if ${ac_cv___attribute__+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <stdlib.h>
-
-static void foo(void) __attribute__ ((noreturn));
-
-static void
-foo(void)
-{
-  exit(1);
-}
-
-int
-main(int argc, char **argv)
-{
-  foo();
-}
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv___attribute__=yes
-else
-  ac_cv___attribute__=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-if test "$ac_cv___attribute__" = "yes"; then
-
-$as_echo "#define HAVE___ATTRIBUTE__ 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv___attribute__" >&5
-$as_echo "$ac_cv___attribute__" >&6; }
-
-
 #
 # Try to arrange for large file support.
 #

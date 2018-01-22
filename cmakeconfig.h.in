@@ -244,9 +244,6 @@
 /* Define to 1 if you have the `PacketIsLoopbackAdapter' function. */
 #cmakedefine HAVE_PACKET_IS_LOOPBACK_ADAPTER 1
 
-/* define if your compiler has __attribute__ */
-#cmakedefine HAVE___ATTRIBUTE__ 1
-
 /* IPv6 */
 #cmakedefine INET6 1
 
