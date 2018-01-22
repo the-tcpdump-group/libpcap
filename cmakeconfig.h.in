@@ -141,7 +141,7 @@
 /* Define to 1 if you have the `snprintf' function. */
 #cmakedefine HAVE_SNPRINTF 1
 
-/* define if socklen_t is defined */
+/* Define to 1 if the system has the type `socklen_t'. */
 #cmakedefine HAVE_SOCKLEN_T 1
 
 /* On solaris */
