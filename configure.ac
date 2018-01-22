@@ -184,7 +184,7 @@ if test "$ac_cv_func_ether_hostton" = yes; then
 	if test "$ac_cv_have_decl_ether_hostton" != yes; then
 		#
 		# No, how about <sys/ethernet.h>, as on Solaris 10
-                # and later?
+		# and later?
 		#
 		# This test fails if we don't have <sys/ethernet.h>
 		# or if we do but it doesn't declare ether_hostton().
