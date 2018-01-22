@@ -107,7 +107,7 @@
 		unsigned char ether_addr_octet[6];
 	};
       #endif /* HAVE_STRUCT_ETHER_ADDR */
-    #endif
+    #endif /* what declares ether_hostton() */
 
     #ifdef NEED_NETINET_IF_ETHER_H
       #include <net/if.h>	/* Needed on some platforms */
@@ -120,7 +120,7 @@
        * No header declares it, so declare it ourselves.
        */
       extern int ether_hostton(const char *, struct ether_addr *);
-    #endif /* defined(HAVE_DECL_ETHER_HOSTTON) */
+    #endif /* !defined(HAVE_DECL_ETHER_HOSTTON) */
   #endif /* HAVE_ETHER_HOSTTON */
 
   #include <arpa/inet.h>
