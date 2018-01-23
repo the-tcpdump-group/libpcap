@@ -303,7 +303,7 @@ check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
 check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 check_include_file(limits.h HAVE_LIMITS_H)
 check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
-check_include_file(net/pfvar.h HAVE_NET_PFVAR_H)
+check_include_files("sys/types.h;sys/socket.h;net/if.h;net/pfvar.h" HAVE_NET_PFVAR_H)
 if(HAVE_NET_PFVAR_H)
     #
     # Check for various PF actions.
