@@ -2099,11 +2099,13 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 
 #ifdef _WIN32
 	p->handle = INVALID_HANDLE_VALUE;	/* not opened yet */
-#else
+#else /* _WIN32 */
 	p->fd = -1;	/* not opened yet */
+#ifndef MSDOS
 	p->selectable_fd = -1;
 	p->required_select_timeout = NULL;
-#endif
+#endif /* MSDOS */
+#endif /* _WIN32 */
 
 	if (size == 0) {
 		/* No private data was requested. */

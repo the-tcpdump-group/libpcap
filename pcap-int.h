@@ -220,7 +220,7 @@ struct pcap {
 	 */
 	int bpf_codegen_flags;
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(MSDOS)
 	int selectable_fd;	/* FD on which select()/poll()/epoll_wait()/kevent()/etc. can be done */
 
 	/*
