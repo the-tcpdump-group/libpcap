@@ -19,3 +19,6 @@ mark_as_advanced(
   TC_INCLUDE_DIR
   TC_LIBRARY
 )
+
+set(TC_INCLUDE_DIRS ${TC_INCLUDE_DIR})
+set(TC_LIBRARIES ${TC_LIBRARY})

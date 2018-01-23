@@ -244,13 +244,13 @@ if(WIN32)
     find_package(Packet)
     if(PACKET_FOUND)
         set(HAVE_PACKET32 TRUE)
-        include_directories(${PACKET_INCLUDE_DIR})
+        include_directories(${PACKET_INCLUDE_DIRS})
         #
         # Check whether we have the NPcap PacketIsLoopbackAdapter()
         # function.
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARY})
+        set(CMAKE_REQUIRED_LIBRARIES ${PACKET_LIBRARIES})
         check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
         cmake_pop_check_state()
     endif(PACKET_FOUND)
@@ -752,7 +752,7 @@ if(WIN32)
         #
         # Link with packet.dll before WinSock2.
         #
-        set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARY} ${PCAP_LINK_LIBRARIES})
+        set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARIES} ${PCAP_LINK_LIBRARIES})
     elseif(PCAP_TYPE STREQUAL "null")
     else()
         message(ERROR "${PCAP_TYPE} is not a valid pcap type")
@@ -1202,8 +1202,8 @@ if(NOT DISABLE_DAG)
         # Check for various DAG API functions.
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIR})
-        set(CMAKE_REQUIRED_LIBRARIES ${DAG_LIBRARY})
+        set(CMAKE_REQUIRED_INCLUDES ${DAG_INCLUDE_DIRS})
+        set(CMAKE_REQUIRED_LIBRARIES ${DAG_LIBRARIES})
         check_function_exists(dag_attach_stream HAVE_DAG_STREAMS_API)
         if(NOT HAVE_DAG_STREAMS_API)
             message(FATAL_ERROR "DAG library lacks streams support")
@@ -1213,10 +1213,10 @@ if(NOT DISABLE_DAG)
         check_function_exists(dag_get_stream_erf_types HAVE_DAG_GET_STREAM_ERF_TYPES)
         cmake_pop_check_state()
 
-        include_directories(AFTER ${DAG_INCLUDE_DIR})
+        include_directories(AFTER ${DAG_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dag.c)
         set(HAVE_DAG_API TRUE)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DAG_LIBRARY})
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DAG_LIBRARIES})
 
         if(HAVE_DAG_LARGE_STREAMS_API)
             get_filename_component(DAG_LIBRARY_DIR ${DAG_LIBRARY} PATH)
@@ -1234,16 +1234,16 @@ if(NOT DISABLE_SEPTEL)
     #
     # Do we have the msg.h header?
     #
-    set(SEPTEL_INCLUDE_DIR "${SEPTEL_ROOT}/INC")
+    set(SEPTEL_INCLUDE_DIRS "${SEPTEL_ROOT}/INC")
     cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${SEPTEL_INCLUDE_DIR})
+    set(CMAKE_REQUIRED_INCLUDES ${SEPTEL_INCLUDE_DIRS})
     check_include_file(msg.h HAVE_INC_MSG_H)
     cmake_pop_check_state()
     if(HAVE_INC_MSG_H)
         #
         # Yes.
         #
-        include_directories(AFTER ${SEPTEL_INCLUDE_DIR})
+        include_directories(AFTER ${SEPTEL_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-septel.c)
         set(PROJECT_EXTERNAL_OBJECT_LIST ${PROJECT_EXTERNAL_OBJECT_LIST} "${SEPTEL_ROOT}/asciibin.o ${SEPTEL_ROOT}/bit2byte.o ${SEPTEL_ROOT}/confirm.o ${SEPTEL_ROOT}/fmtmsg.o ${SEPTEL_ROOT}/gct_unix.o ${SEPTEL_ROOT}/hqueue.o ${SEPTEL_ROOT}/ident.o ${SEPTEL_ROOT}/mem.o ${SEPTEL_ROOT}/pack.o ${SEPTEL_ROOT}/parse.o ${SEPTEL_ROOT}/pool.o ${SEPTEL_ROOT}/sdlsig.o ${SEPTEL_ROOT}/strtonum.o ${SEPTEL_ROOT}/timer.o ${SEPTEL_ROOT}/trace.o")
         set(HAVE_SEPTEL_API TRUE)
@@ -1264,10 +1264,10 @@ if(NOT DISABLE_SNF)
         #
         # Yes.
         #
-        include_directories(AFTER ${SNF_INCLUDE_DIR})
+        include_directories(AFTER ${SNF_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-snf.c)
         set(HAVE_SNF_API TRUE)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${SNF_LIBRARY})
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${SNF_LIBRARIES})
     endif()
 endif() 
 
@@ -1285,10 +1285,10 @@ if(NOT DISABLE_TC)
         #
         # Yes.
         #
-        include_directories(AFTER ${TC_INCLUDE_DIR})
+        include_directories(AFTER ${TC_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-tc.c)
         set(HAVE_TC_API TRUE)
-        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARY} ${CMAKE_USE_PTHREADS_INIT} stdc++")
+        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARIES} ${CMAKE_USE_PTHREADS_INIT} stdc++")
     endif()
 endif() 
 

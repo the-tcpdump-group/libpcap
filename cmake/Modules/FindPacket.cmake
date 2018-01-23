@@ -101,3 +101,6 @@ find_package_handle_standard_args(PACKET
 )
 
 mark_as_advanced(PACKET_INCLUDE_DIR PACKET_LIBRARY)
+
+set(PACKET_INCLUDE_DIRS ${PACKET_INCLUDE_DIR})
+set(PACKET_LIBRARIES ${PACKET_LIBRARY})
