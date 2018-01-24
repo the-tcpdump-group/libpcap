@@ -385,7 +385,7 @@ check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_STRUCT_SOCKAD
 # Do we have ffs(), and is it declared in <strings.h>?
 #
 include(CheckSymbolExists)
-check_function_exists(ether_hostton HAVE_FFS)
+check_function_exists(ffs HAVE_FFS)
 if(HAVE_FFS)
     #
     # OK, we have ffs().  Is it declared in <strings.h>?
