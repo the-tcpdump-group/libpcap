@@ -22,6 +22,29 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     # Do we have getspnam()?
     #
     check_function_exists(getspnam HAVE_GETSPNAM)
+
+    #
+    # Find library needed for getaddrinfo.
+    # NOTE: if you hand check_library_exists as its last argument a variable
+    # that's been set, it skips the test, so we need different variables.
+    #
+    include(CheckLibraryExists)
+    check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
+    if(NOT STDLIBS_HAVE_GETADDRINFO)
+      check_library_exists(xnet getaddrinfo "" LIBXNET_HAS_GETADDRINFO)
+      if(LIBXNET_HAS_GETADDRINFO)
+        set(RPCAPD_LINK_LIBRARIES ${RPCAPD_LINK_LIBRARIES} xnet)
+      else(LIBXNET_HAS_GETADDRINFO)
+        include(CMakePushCheckState)
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES nsl)
+        check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
+        cmake_pop_check_state()
+        if(LIBSOCKET_HAS_GETADDRINFO)
+          set(RPCAPD_LINK_LIBRARIES ${RPCAPD_LINK_LIBRARIES} socket nsl)
+        endif(LIBSOCKET_HAS_GETADDRINFO)
+      endif(LIBXNET_HAS_GETADDRINFO)
+    endif(NOT STDLIBS_HAVE_GETADDRINFO)
   endif(UNIX)
 
   if(WIN32)
