@@ -493,7 +493,7 @@ endif(NETDB_H_DECLARES_GETNETBYNAME_R)
 # can be checked.)
 #
 check_symbol_exists(getprotobyname_r netdb.h NETDB_H_DECLARES_GETPROTOBYNAME_R)
-if(NETDB_H_DECLARES_GETNETBYNAME_R)
+if(NETDB_H_DECLARES_GETPROTOBYNAME_R)
     check_c_source_compiles(
 "#include <netdb.h>
 
@@ -538,7 +538,7 @@ main(void)
                 HAVE_AIX_GETPROTOBYNAME_R)
         endif(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
     endif(NOT HAVE_LINUX_GETPROTOBYNAME_R)
-endif(NETDB_H_DECLARES_GETNETBYNAME_R)
+endif(NETDB_H_DECLARES_GETPROTOBYNAME_R)
 
 #
 # Data types.
