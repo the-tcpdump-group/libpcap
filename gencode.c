@@ -49,7 +49,6 @@
 #endif
 
 #include "pcap-int.h"
-#include <netdb.h>
 
 #include "ethertype.h"
 #include "nlpid.h"
@@ -83,9 +82,9 @@
 #define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
 
-#ifdef INET6
 #ifdef _WIN32
-#if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
+  #ifdef INET6
+    #if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
 /* IPv6 address */
 struct in6_addr
   {
@@ -114,8 +113,10 @@ struct sockaddr_in6
     uint32_t sin6_flowinfo;	/* IPv6 flow information */
     struct in6_addr sin6_addr;	/* IPv6 address */
   };
+    #endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
+  #endif /* INET6 */
 
-#ifndef EAI_ADDRFAMILY
+  #ifndef EAI_ADDRFAMILY
 struct addrinfo {
 	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
 	int	ai_family;	/* PF_xxx */
@@ -126,12 +127,10 @@ struct addrinfo {
 	struct sockaddr *ai_addr;	/* binary address */
 	struct addrinfo *ai_next;	/* next structure in linked list */
 };
-#endif /* EAI_ADDRFAMILY */
-#endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
+  #endif /* EAI_ADDRFAMILY */
 #else /* _WIN32 */
-#include <netdb.h>	/* for "struct addrinfo" */
+  #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
-#endif /* INET6 */
 #include <pcap/namedb.h>
 
 #include "nametoaddr.h"
