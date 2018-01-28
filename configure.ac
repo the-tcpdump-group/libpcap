@@ -134,61 +134,69 @@ AC_LBL_LIBRARY_NET
 # NetBSD or OpenBSD, and may not use it on older versions of other
 # platforms.
 #
-AC_MSG_CHECKING([for the Linux getnetbyname_r()])
-AC_TRY_LINK(
-    [#include <netdb.h>],
+# Only do the check if we have a declaration of getnetbyname_r();
+# without it, we can't check which API it has.  (We assume that
+# if there's a declaration, it has a prototype, so that the API
+# can be checked.)
+#
+AC_CHECK_DECL(getnetbyname_r,
     [
-	struct netent netent_buf;
-	char buf[1024];
-	struct netent *resultp;
-	int h_errnoval;
-
-	return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
-    ],
-    [
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_LINUX_GETNETBYNAME_R, 1,
-	    [define if we have the Linux getnetbyname_r()])
-    ],
-    [
-	AC_MSG_RESULT(no)
-
-	AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
+	AC_MSG_CHECKING([for the Linux getnetbyname_r()])
 	AC_TRY_LINK(
 	    [#include <netdb.h>],
 	    [
 		struct netent netent_buf;
 		char buf[1024];
+		struct netent *resultp;
+		int h_errnoval;
 
-		return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
+		return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
 	    ],
 	    [
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SOLARIS_IRIX_GETNETBYNAME_R, 1,
-		    [define if we have the Solaris/IRIX getnetbyname_r()])
+		AC_DEFINE(HAVE_LINUX_GETNETBYNAME_R, 1,
+		    [define if we have the Linux getnetbyname_r()])
 	    ],
 	    [
 		AC_MSG_RESULT(no)
 
-		AC_MSG_CHECKING([for AIX getnetbyname_r()])
+		AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
 		AC_TRY_LINK(
 		    [#include <netdb.h>],
 		    [
 			struct netent netent_buf;
-			struct netent_data net_data;
+			char buf[1024];
 
-			return getnetbyname_r((const char *)0, &netent_buf, &net_data);
+			return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 		    ],
 		    [
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_AIX_GETNETBYNAME_R, 1,
-			    [define if we have the AIX getnetbyname_r()])
+			AC_DEFINE(HAVE_SOLARIS_IRIX_GETNETBYNAME_R, 1,
+			    [define if we have the Solaris/IRIX getnetbyname_r()])
 		    ],
 		    [
 			AC_MSG_RESULT(no)
+
+			AC_MSG_CHECKING([for AIX getnetbyname_r()])
+			AC_TRY_LINK(
+			    [#include <netdb.h>],
+			    [
+				struct netent netent_buf;
+				struct netent_data net_data;
+
+				return getnetbyname_r((const char *)0, &netent_buf, &net_data);
+			    ],
+			    [
+				AC_MSG_RESULT(yes)
+				AC_DEFINE(HAVE_AIX_GETNETBYNAME_R, 1,
+				    [define if we have the AIX getnetbyname_r()])
+			    ],
+			    [
+				AC_MSG_RESULT(no)
+			    ])
 		    ])
 	    ])
-    ])
+    ],,[#include <netdb.h>])
 
 #
 # Check for reentrant versions of getprotobyname_r(), as provided by
@@ -198,60 +206,68 @@ AC_TRY_LINK(
 # NetBSD or OpenBSD, and may not use it on older versions of other
 # platforms.
 #
-AC_MSG_CHECKING([for the Linux getprotobyname_r()])
-AC_TRY_LINK(
-    [#include <netdb.h>],
+# Only do the check if we have a declaration of getprotobyname_r();
+# without it, we can't check which API it has.  (We assume that
+# if there's a declaration, it has a prototype, so that the API
+# can be checked.)
+#
+AC_CHECK_DECL(getprotobyname_r,
     [
-	struct protoent protoent_buf;
-	char buf[1024];
-	struct protoent *resultp;
-
-	return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
-    ],
-    [
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_LINUX_GETPROTOBYNAME_R, 1,
-	    [define if we have the Linux getprotobyname_r()])
-    ],
-    [
-	AC_MSG_RESULT(no)
-
-	AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
+	AC_MSG_CHECKING([for the Linux getprotobyname_r()])
 	AC_TRY_LINK(
 	    [#include <netdb.h>],
 	    [
 		struct protoent protoent_buf;
 		char buf[1024];
+		struct protoent *resultp;
 
-		return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
+		return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
 	    ],
 	    [
 		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R, 1,
-		    [define if we have the Solaris/IRIX getprotobyname_r()])
+		AC_DEFINE(HAVE_LINUX_GETPROTOBYNAME_R, 1,
+		    [define if we have the Linux getprotobyname_r()])
 	    ],
 	    [
 		AC_MSG_RESULT(no)
 
-		AC_MSG_CHECKING([for AIX getprotobyname_r()])
+		AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
 		AC_TRY_LINK(
 		    [#include <netdb.h>],
 		    [
 			struct protoent protoent_buf;
-			struct protoent_data proto_data;
+			char buf[1024];
 
-			return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
+			return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 		    ],
 		    [
 			AC_MSG_RESULT(yes)
-			AC_DEFINE(HAVE_AIX_GETPROTOBYNAME_R, 1,
-			    [define if we have the AIX getprotobyname_r()])
+			AC_DEFINE(HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R, 1,
+			    [define if we have the Solaris/IRIX getprotobyname_r()])
 		    ],
 		    [
 			AC_MSG_RESULT(no)
+
+			AC_MSG_CHECKING([for AIX getprotobyname_r()])
+			AC_TRY_LINK(
+			    [#include <netdb.h>],
+			    [
+				struct protoent protoent_buf;
+				struct protoent_data proto_data;
+
+				return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
+			    ],
+			    [
+				AC_MSG_RESULT(yes)
+				AC_DEFINE(HAVE_AIX_GETPROTOBYNAME_R, 1,
+				    [define if we have the AIX getprotobyname_r()])
+			    ],
+			    [
+				AC_MSG_RESULT(no)
+			    ])
 		    ])
 	    ])
-    ])
+    ],,[#include <netdb.h>])
 
 #
 # You are in a twisty little maze of UN*Xes, all different.

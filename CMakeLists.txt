@@ -363,10 +363,6 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 # versions of gethostbyname() and getservbyname() on some platforms,
 # but not on all platforms.
 #
-# Unfortunately, there's no such portable thread-safe way to translate
-# network names or IP protocol names to values; we look for various
-# getnetbyname_r() and getprotoent_r() APIs.
-#
 # NOTE: if you hand check_library_exists as its last argument a variable
 # that's been set, it skips the test, so we need different variables.
 #
@@ -428,7 +424,15 @@ endif(NOT STDLIBS_HAVE_PUTMSG)
 # NetBSD or OpenBSD, and may not use it on older versions of other
 # platforms.
 #
-check_c_source_compiles(
+# Only do the check if we have a declaration of getnetbyname_r();
+# without it, we can't check which API it has.  (We assume that
+# if there's a declaration, it has a prototype, so that the API
+# can be checked.)
+#
+include(CheckSymbolExists)
+check_symbol_exists(getnetbyname_r netdb.h NETDB_H_DECLARES_GETNETBYNAME_R)
+if(NETDB_H_DECLARES_GETNETBYNAME_R)
+    check_c_source_compiles(
 "#include <netdb.h>
 
 int
@@ -442,9 +446,9 @@ main(void)
     return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
 }
 "
-    HAVE_LINUX_GETNETBYNAME_R)
-if(NOT HAVE_LINUX_GETNETBYNAME_R)
-    check_c_source_compiles(
+        HAVE_LINUX_GETNETBYNAME_R)
+    if(NOT HAVE_LINUX_GETNETBYNAME_R)
+        check_c_source_compiles(
 "#include <netdb.h>
 
 int
@@ -456,9 +460,9 @@ main(void)
     return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 }
 "
-        HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
-    if(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
-        check_c_source_compiles(
+            HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+        if(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+            check_c_source_compiles(
 "#include <netdb.h>
 
 int
@@ -470,9 +474,10 @@ main(void)
     return getnetbyname_r((const char *)0, &netent_buf, &net_data);
 }
 "
-            HAVE_AIX_GETNETBYNAME_R)
-    endif(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
-endif(NOT HAVE_LINUX_GETNETBYNAME_R)
+                HAVE_AIX_GETNETBYNAME_R)
+        endif(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+    endif(NOT HAVE_LINUX_GETNETBYNAME_R)
+endif(NETDB_H_DECLARES_GETNETBYNAME_R)
 
 #
 # Check for reentrant versions of getprotobyname_r(), as provided by
@@ -482,7 +487,14 @@ endif(NOT HAVE_LINUX_GETNETBYNAME_R)
 # NetBSD or OpenBSD, and may not use it on older versions of other
 # platforms.
 #
-check_c_source_compiles(
+# Only do the check if we have a declaration of getprotobyname_r();
+# without it, we can't check which API it has.  (We assume that
+# if there's a declaration, it has a prototype, so that the API
+# can be checked.)
+#
+check_symbol_exists(getprotobyname_r netdb.h NETDB_H_DECLARES_GETPROTOBYNAME_R)
+if(NETDB_H_DECLARES_GETNETBYNAME_R)
+    check_c_source_compiles(
 "#include <netdb.h>
 
 int
@@ -495,9 +507,9 @@ main(void)
     return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
 }
 "
-    HAVE_LINUX_GETPROTOBYNAME_R)
-if(NOT HAVE_LINUX_GETPROTOBYNAME_R)
-    check_c_source_compiles(
+        HAVE_LINUX_GETPROTOBYNAME_R)
+    if(NOT HAVE_LINUX_GETPROTOBYNAME_R)
+        check_c_source_compiles(
 "#include <netdb.h>
 
 int
@@ -509,9 +521,9 @@ main(void)
     return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 }
 "
-        HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
-    if(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
-        check_c_source_compiles(
+            HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+        if(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+            check_c_source_compiles(
 "#include <netdb.h>
 
 int
@@ -523,9 +535,10 @@ main(void)
     return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
 }
 "
-            HAVE_AIX_GETPROTOBYNAME_R)
-    endif(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
-endif(NOT HAVE_LINUX_GETPROTOBYNAME_R)
+                HAVE_AIX_GETPROTOBYNAME_R)
+        endif(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+    endif(NOT HAVE_LINUX_GETPROTOBYNAME_R)
+endif(NETDB_H_DECLARES_GETNETBYNAME_R)
 
 #
 # Data types.
@@ -548,7 +561,6 @@ check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_STRUCT_SOCKAD
 #
 # Do we have ffs(), and is it declared in <strings.h>?
 #
-include(CheckSymbolExists)
 check_function_exists(ffs HAVE_FFS)
 if(HAVE_FFS)
     #
