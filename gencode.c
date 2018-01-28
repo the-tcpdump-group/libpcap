@@ -113,10 +113,8 @@ struct sockaddr_in6
     uint32_t sin6_flowinfo;	/* IPv6 flow information */
     struct in6_addr sin6_addr;	/* IPv6 address */
   };
-    #endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
-  #endif /* INET6 */
 
-  #ifndef EAI_ADDRFAMILY
+      #ifndef EAI_ADDRFAMILY
 struct addrinfo {
 	int	ai_flags;	/* AI_PASSIVE, AI_CANONNAME */
 	int	ai_family;	/* PF_xxx */
@@ -127,7 +125,9 @@ struct addrinfo {
 	struct sockaddr *ai_addr;	/* binary address */
 	struct addrinfo *ai_next;	/* next structure in linked list */
 };
-  #endif /* EAI_ADDRFAMILY */
+      #endif /* EAI_ADDRFAMILY */
+    #endif /* defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF) */
+  #endif /* INET6 */
 #else /* _WIN32 */
   #include <netdb.h>	/* for "struct addrinfo" */
 #endif /* _WIN32 */
