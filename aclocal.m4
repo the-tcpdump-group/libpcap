@@ -1007,7 +1007,7 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
     # platforms.
     #
     AC_MSG_CHECKING([for the Linux getnetbyname_r()])
-    AC_TRY_COMPILE(
+    AC_TRY_LINK(
 	[#include <netdb.h>],
 	[
 	    struct netent netent_buf;
@@ -1015,7 +1015,7 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    struct netent *resultp;
 	    int h_errnoval;
 
-	    return getnetbyname_r(NULL, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+	    return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
 	],
 	[
 	    AC_MSG_RESULT(yes)
@@ -1026,13 +1026,13 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    AC_MSG_RESULT(no)
 
 	    AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
-	    AC_TRY_COMPILE(
+	    AC_TRY_LINK(
 		[#include <netdb.h>],
 		[
 		    struct netent netent_buf;
 		    char buf[1024];
 
-		    return getnetbyname_r(NULL, &netent_buf, buf, (int)sizeof buf) != NULL;
+		    return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 		],
 		[
 		    AC_MSG_RESULT(yes)
@@ -1043,13 +1043,13 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 		    AC_MSG_RESULT(no)
 
 		    AC_MSG_CHECKING([for AIX getnetbyname_r()])
-		    AC_TRY_COMPILE(
+		    AC_TRY_LINK(
 			[#include <netdb.h>],
 			[
 			    struct netent netent_buf;
 			    struct netent_data net_data;
 
-			    return getnetbyname_r(NULL, &netent_buf, &net_data);
+			    return getnetbyname_r((const char *)0, &netent_buf, &net_data);
 			],
 			[
 			    AC_MSG_RESULT(yes)
@@ -1071,14 +1071,14 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
     # platforms.
     #
     AC_MSG_CHECKING([for the Linux getprotobyname_r()])
-    AC_TRY_COMPILE(
+    AC_TRY_LINK(
 	[#include <netdb.h>],
 	[
 	    struct protoent protoent_buf;
 	    char buf[1024];
 	    struct protoent *resultp;
 
-	    return getprotobyname_r(NULL, &protoent_buf, buf, sizeof buf, &resultp);
+	    return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
 	],
 	[
 	    AC_MSG_RESULT(yes)
@@ -1089,13 +1089,13 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    AC_MSG_RESULT(no)
 
 	    AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
-	    AC_TRY_COMPILE(
+	    AC_TRY_LINK(
 		[#include <netdb.h>],
 		[
 		    struct protoent protoent_buf;
 		    char buf[1024];
 
-		    return getprotobyname_r(NULL, &protoent_buf, buf, (int)sizeof buf) != NULL;
+		    return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 		],
 		[
 		    AC_MSG_RESULT(yes)
@@ -1106,13 +1106,13 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 		    AC_MSG_RESULT(no)
 
 		    AC_MSG_CHECKING([for AIX getprotobyname_r()])
-		    AC_TRY_COMPILE(
+		    AC_TRY_LINK(
 			[#include <netdb.h>],
 			[
 			    struct protoent protoent_buf;
 			    struct protoent_data proto_data;
 
-			    return getprotobyname_r(NULL, &protoent_buf, &proto_data);
+			    return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
 			],
 			[
 			    AC_MSG_RESULT(yes)

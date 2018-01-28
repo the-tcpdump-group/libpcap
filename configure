@@ -5180,13 +5180,13 @@ main ()
 	    struct netent *resultp;
 	    int h_errnoval;
 
-	    return getnetbyname_r(NULL, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+	    return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5211,13 +5211,13 @@ main ()
 		    struct netent netent_buf;
 		    char buf[1024];
 
-		    return getnetbyname_r(NULL, &netent_buf, buf, (int)sizeof buf) != NULL;
+		    return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5242,13 +5242,13 @@ main ()
 			    struct netent netent_buf;
 			    struct netent_data net_data;
 
-			    return getnetbyname_r(NULL, &netent_buf, &net_data);
+			    return getnetbyname_r((const char *)0, &netent_buf, &net_data);
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5262,13 +5262,16 @@ else
 $as_echo "no" >&6; }
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
     #
     # Check for reentrant versions of getprotobyname_r(), as provided by
@@ -5291,13 +5294,13 @@ main ()
 	    char buf[1024];
 	    struct protoent *resultp;
 
-	    return getprotobyname_r(NULL, &protoent_buf, buf, sizeof buf, &resultp);
+	    return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5322,13 +5325,13 @@ main ()
 		    struct protoent protoent_buf;
 		    char buf[1024];
 
-		    return getprotobyname_r(NULL, &protoent_buf, buf, (int)sizeof buf) != NULL;
+		    return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5353,13 +5356,13 @@ main ()
 			    struct protoent protoent_buf;
 			    struct protoent_data proto_data;
 
-			    return getprotobyname_r(NULL, &protoent_buf, &proto_data);
+			    return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
 
   ;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -5373,13 +5376,16 @@ else
 $as_echo "no" >&6; }
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 
 #
