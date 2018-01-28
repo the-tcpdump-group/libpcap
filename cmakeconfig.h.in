@@ -9,6 +9,12 @@
 /* Define to 1 if remote packet capture is to be supported */
 #cmakedefine ENABLE_REMOTE 1
 
+/* define if we have the AIX getnetbyname_r() */
+#cmakedefine HAVE_AIX_GETNETBYNAME_R 1
+
+/* define if we have the AIX getprotobyname_r() */
+#cmakedefine HAVE_AIX_GETPROTOBYNAME_R 1
+
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
@@ -78,6 +84,12 @@
 /* Define to 1 if you have the <linux/ethtool.h> header file. */
 #cmakedefine HAVE_LINUX_ETHTOOL_H 1
 
+/* define if we have the Linux getnetbyname_r() */
+#cmakedefine HAVE_LINUX_GETNETBYNAME_R 1
+
+/* define if we have the Linux getprotobyname_r() */
+#cmakedefine HAVE_LINUX_GETPROTOBYNAME_R 1
+
 /* Define to 1 if you have the <linux/if_bonding.h> header file. */
 #cmakedefine HAVE_LINUX_IF_BONDING_H 1
 
@@ -146,6 +158,12 @@
 
 /* On solaris */
 #cmakedefine HAVE_SOLARIS 1
+
+/* define if we have the Solaris/IRIX getnetbyname_r() */
+#cmakedefine HAVE_SOLARIS_IRIX_GETNETBYNAME_R 1
+
+/* define if we have the Solaris/IRIX getprotobyname_r() */
+#cmakedefine HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H 1

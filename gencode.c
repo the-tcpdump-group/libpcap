@@ -49,6 +49,7 @@
 #endif
 
 #include "pcap-int.h"
+#include <netdb.h>
 
 #include "ethertype.h"
 #include "nlpid.h"
@@ -265,7 +266,6 @@ struct _compiler_state {
 	/* XXX */
 	u_int pcap_fddipad;
 
-#ifdef INET6
 	/*
 	 * As errors are handled by a longjmp, anything allocated must
 	 * be freed in the longjmp handler, so it must be reachable
@@ -276,7 +276,6 @@ struct _compiler_state {
 	 * any addrinfo structure that would need to be freed.
 	 */
 	struct addrinfo *ai;
-#endif
 
 	/*
 	 * Various code constructs need to know the layout of the packet.
@@ -517,7 +516,7 @@ static struct block *gen_host6(compiler_state_t *, struct in6_addr *,
 #endif
 #ifndef INET6
 static struct block *gen_gateway(compiler_state_t *, const u_char *,
-    bpf_u_int32 **, int, int);
+    struct addrinfo *, int, int);
 #endif
 static struct block *gen_ipfrag(compiler_state_t *);
 static struct block *gen_portatom(compiler_state_t *, int, bpf_int32);
@@ -4949,10 +4948,12 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 
 #ifndef INET6
 static struct block *
-gen_gateway(compiler_state_t *cstate, const u_char *eaddr, bpf_u_int32 **alist,
-    int proto, int dir)
+gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
+    struct addrinfo *alist, int proto, int dir)
 {
 	struct block *b0, *b1, *tmp;
+	struct addrinfo *ai;
+	struct sockaddr_in *sin;
 
 	if (dir != 0)
 		bpf_error(cstate, "direction applied to 'gateway'");
@@ -5000,12 +5001,48 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr, bpf_u_int32 **alist,
 			bpf_error(cstate,
 			    "'gateway' supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
 		}
-		b1 = gen_host(cstate, **alist++, 0xffffffff, proto, Q_OR, Q_HOST);
-		while (*alist) {
-			tmp = gen_host(cstate, **alist++, 0xffffffff, proto, Q_OR,
-			    Q_HOST);
-			gen_or(b1, tmp);
-			b1 = tmp;
+		b1 = NULL;
+		for (ai = alist; ai != NULL; ai = ai->ai_next) {
+			/*
+			 * Does it have an address?
+			 */
+			if (ai->ai_addr != NULL) {
+				/*
+				 * Yes.  Is it an IPv4 address?
+				 */
+				if (ai->ai_addr->sa_family == AF_INET) {
+					/*
+					 * Generate an entry for it.
+					 */
+					sin = (struct sockaddr_in *)ai->ai_addr;
+					tmp = gen_host(cstate,
+					    ntohl(sin->sin_addr.s_addr),
+					    0xffffffff, proto, Q_OR, Q_HOST);
+					/*
+					 * Is it the *first* IPv4 address?
+					 */
+					if (b1 == NULL) {
+						/*
+						 * Yes, so start with it.
+						 */
+						b1 = tmp;
+					} else {
+						/*
+						 * No, so OR it into the
+						 * existing set of
+						 * addresses.
+						 */
+						gen_or(b1, tmp);
+						b1 = tmp;
+					}
+				}
+			}
+		}
+		if (b1 == NULL) {
+			/*
+			 * No IPv4 addresses found.
+			 */
+			return (NULL);
 		}
 		gen_not(b1);
 		gen_and(b0, b1);
@@ -6243,13 +6280,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	int tproto;
 	u_char *eaddr;
 	bpf_u_int32 mask, addr;
-#ifndef INET6
-	bpf_u_int32 **alist;
-#else
-	int tproto6;
-	struct sockaddr_in *sin4;
-	struct sockaddr_in6 *sin6;
 	struct addrinfo *res, *res0;
+	struct sockaddr_in *sin4;
+#ifdef INET6
+	int tproto6;
+	struct sockaddr_in6 *sin6;
 	struct in6_addr mask128;
 #endif /*INET6*/
 	struct block *b, *tmp;
@@ -6348,46 +6383,39 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			 */
 			return (gen_host(cstate, dn_addr, 0, proto, dir, q.addr));
 		} else {
-#ifndef INET6
-			alist = pcap_nametoaddr(name);
-			if (alist == NULL || *alist == NULL)
-				bpf_error(cstate, "unknown host '%s'", name);
-			tproto = proto;
-			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
-			    tproto == Q_DEFAULT)
-				tproto = Q_IP;
-			b = gen_host(cstate, **alist++, 0xffffffff, tproto, dir, q.addr);
-			while (*alist) {
-				tmp = gen_host(cstate, **alist++, 0xffffffff,
-					       tproto, dir, q.addr);
-				gen_or(b, tmp);
-				b = tmp;
-			}
-			return b;
-#else
+#ifdef INET6
 			memset(&mask128, 0xff, sizeof(mask128));
+#endif
 			res0 = res = pcap_nametoaddrinfo(name);
 			if (res == NULL)
 				bpf_error(cstate, "unknown host '%s'", name);
 			cstate->ai = res;
 			b = tmp = NULL;
-			tproto = tproto6 = proto;
+			tproto = proto;
+#ifdef INET6
+			tproto6 = proto;
+#endif
 			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
 			    tproto == Q_DEFAULT) {
 				tproto = Q_IP;
+#ifdef INET6
 				tproto6 = Q_IPV6;
+#endif
 			}
 			for (res = res0; res; res = res->ai_next) {
 				switch (res->ai_family) {
 				case AF_INET:
+#ifdef INET6
 					if (tproto == Q_IPV6)
 						continue;
+#endif
 
 					sin4 = (struct sockaddr_in *)
 						res->ai_addr;
 					tmp = gen_host(cstate, ntohl(sin4->sin_addr.s_addr),
 						0xffffffff, tproto, dir, q.addr);
 					break;
+#ifdef INET6
 				case AF_INET6:
 					if (tproto6 == Q_IP)
 						continue;
@@ -6397,6 +6425,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 					tmp = gen_host6(cstate, &sin6->sin6_addr,
 						&mask128, tproto6, dir, q.addr);
 					break;
+#endif
 				default:
 					continue;
 				}
@@ -6413,7 +6442,6 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 					: " for specified address family");
 			}
 			return b;
-#endif /*INET6*/
 		}
 
 	case Q_PORT:
@@ -6511,11 +6539,15 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 		if (eaddr == NULL)
 			bpf_error(cstate, "unknown ether host: %s", name);
 
-		alist = pcap_nametoaddr(name);
-		if (alist == NULL || *alist == NULL)
+		res = pcap_nametoaddrinfo(name);
+		cstate->ai = res;
+		if (res == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
-		b = gen_gateway(cstate, eaddr, alist, proto, dir);
-		free(eaddr);
+		b = gen_gateway(cstate, eaddr, res, proto, dir);
+		cstate->ai = NULL;
+		freeaddrinfo(res);
+		if (b == NULL)
+			bpf_error(cstate, "unknown host '%s'", name);
 		return b;
 #else
 		bpf_error(cstate, "'gateway' not supported in this configuration");

@@ -344,24 +344,188 @@ check_function_exists(vsnprintf HAVE_VSNPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
 
 #
-# Find library needed for gethostbyname.
+# These tests are for network applications that need socket functions
+# and getaddrinfo()/getnameinfo()-ish functions.  We now require
+# getaddrinfo() and getnameinfo().  We also prefer versions of
+# recvmsg() that conform to the Single UNIX Specification, so that we
+# can check whether a datagram received with recvmsg() was truncated
+# when received due to the buffer being too small.
+#
+# On most operating systems, they're available in the system library.
+#
+# Under Solaris, we need to link with libsocket and libnsl to get
+# getaddrinfo() and getnameinfo() and, if we have libxnet, we need to
+# link with libxnet before libsocket to get a version of recvmsg()
+# that conforms to the Single UNIX Specification.
+#
+# We use getaddrinfo() because we want a portable thread-safe way
+# of getting information for a host name or port; there exist _r
+# versions of gethostbyname() and getservbyname() on some platforms,
+# but not on all platforms.
+#
+# Unfortunately, there's no such portable thread-safe way to translate
+# network names or IP protocol names to values; we look for various
+# getnetbyname_r() and getprotoent_r() APIs.
+#
 # NOTE: if you hand check_library_exists as its last argument a variable
 # that's been set, it skips the test, so we need different variables.
 #
 set(PCAP_LINK_LIBRARIES "")
 include(CheckLibraryExists)
-check_function_exists(gethostbyname STDLIBS_HAVE_GETHOSTBYNAME)
-if(NOT STDLIBS_HAVE_GETHOSTBYNAME)
-    check_library_exists(xnet gethostbyname "" LIBXNET_HAS_GETHOSTBYNAME)
-    if(LIBXNET_HAS_GETHOSTBYNAME)
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} xnet)
-    else()
-        check_library_exists(nsl gethostbyname "" LIBNSL_HAS_GETHOSTBYNAME)
-        if(LIBNSL_HAS_GETHOSTBYNAME)
-            set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} nsl)
-        endif()
-    endif()
-endif()
+check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
+if(NOT STDLIBS_HAVE_GETADDRINFO)
+    #
+    # Not found in the standard system libraries.
+    # Try libsocket, which requires libnsl.
+    #
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_LIBRARIES nsl)
+    check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
+    cmake_pop_check_state()
+    if(LIBSOCKET_HAS_GETADDRINFO)
+        #
+        # OK, we found it in libsocket.
+        #
+        set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
+    else(LIBSOCKET_HAS_GETADDRINFO)
+        #
+        # We didn't find it.
+        #
+        message(ERROR "getaddrinfo is required, but wasn't found")
+    endif(LIBSOCKET_HAS_GETADDRINFO)
+
+    #
+    # OK, do we have recvmsg() in libxnet?
+    # We also link with libsocket and libnsl.
+    #
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+    check_library_exists(xnet recvmsg "" LIBXNET_HAS_RECVMSG)
+    cmake_pop_check_state()
+    if(LIBXNET_HAS_RECVMSG)
+        #
+        # Yes - link with it as well.
+        #
+        set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
+    endif(LIBXNET_HAS_RECVMSG)
+endif(NOT STDLIBS_HAVE_GETADDRINFO)
+
+# DLPI needs putmsg under HPUX so test for -lstr while we're at it
+check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
+if(NOT STDLIBS_HAVE_PUTMSG)
+    check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
+    if(LIBSTR_HAS_PUTMSG)
+        set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
+    endif(LIBSTR_HAS_PUTMSG)
+endif(NOT STDLIBS_HAVE_PUTMSG)
+
+
+#
+# Check for reentrant versions of getnetbyname_r(), as provided by
+# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# If we don't find one, we just use getnetbyname(), which uses
+# thread-specific data on many platforms, but doesn't use it on
+# NetBSD or OpenBSD, and may not use it on older versions of other
+# platforms.
+#
+check_c_source_compiles(
+"#include <netdb.h>
+
+int
+main(void)
+{
+    struct netent netent_buf;
+    char buf[1024];
+    struct netent *resultp;
+    int h_errnoval;
+
+    return getnetbyname_r(NULL, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+}
+"
+    HAVE_LINUX_GETNETBYNAME_R)
+if(NOT HAVE_LINUX_GETNETBYNAME_R)
+    check_c_source_compiles(
+"#include <netdb.h>
+
+int
+main(void)
+{
+    struct netent netent_buf;
+    char buf[1024];
+
+    return getnetbyname_r(NULL, &netent_buf, buf, (int)sizeof buf) != NULL;
+}
+"
+        HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+    if(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+        check_c_source_compiles(
+"#include <netdb.h>
+
+int
+main(void)
+{
+    struct netent netent_buf;
+    struct netent_data net_data;
+
+    return getnetbyname_r(NULL, &netent_buf, &net_data);
+}
+"
+            HAVE_AIX_GETNETBYNAME_R)
+    endif(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+endif(NOT HAVE_LINUX_GETNETBYNAME_R)
+
+#
+# Check for reentrant versions of getprotobyname_r(), as provided by
+# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# If we don't find one, we just use getprotobyname(), which uses
+# thread-specific data on many platforms, but doesn't use it on
+# NetBSD or OpenBSD, and may not use it on older versions of other
+# platforms.
+#
+check_c_source_compiles(
+"#include <netdb.h>
+
+int
+main(void)
+{
+    struct protoent protoent_buf;
+    char buf[1024];
+    struct protoent *resultp;
+
+    return getprotobyname_r(NULL, &protoent_buf, buf, sizeof buf, &resultp);
+}
+"
+    HAVE_LINUX_GETPROTOBYNAME_R)
+if(NOT HAVE_LINUX_GETPROTOBYNAME_R)
+    check_c_source_compiles(
+"#include <netdb.h>
+
+int
+main(void)
+{
+    struct protoent protoent_buf;
+    char buf[1024];
+
+    return getprotobyname_r(NULL, &protoent_buf, buf, (int)sizeof buf) != NULL;
+}
+"
+        HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+    if(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+        check_c_source_compiles(
+"#include <netdb.h>
+
+int
+main(void)
+{
+    struct protoent protoent_buf;
+    struct protoent_data proto_data;
+
+    return getprotobyname_r(NULL, &protoent_buf, &proto_data);
+}
+"
+            HAVE_AIX_GETPROTOBYNAME_R)
+    endif(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
+endif(NOT HAVE_LINUX_GETPROTOBYNAME_R)
 
 #
 # Data types.
@@ -948,7 +1112,7 @@ if(NOT WIN32)
                     set(HAVE_GETIFADDRS TRUE)
                 endif()
             endif()
-	endif()
+        endif()
         if(HAVE_GETIFADDRS)
             #
             # We have "getifaddrs()"; make sure we have <ifaddrs.h>

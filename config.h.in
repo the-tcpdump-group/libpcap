@@ -9,6 +9,12 @@
 /* Define to 1 if remote packet capture is to be supported */
 #undef ENABLE_REMOTE
 
+/* define if we have the AIX getnetbyname_r() */
+#undef HAVE_AIX_GETNETBYNAME_R
+
+/* define if we have the AIX getprotobyname_r() */
+#undef HAVE_AIX_GETPROTOBYNAME_R
+
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 
@@ -84,6 +90,12 @@
 /* Define to 1 if you have the <linux/ethtool.h> header file. */
 #undef HAVE_LINUX_ETHTOOL_H
 
+/* define if we have the Linux getnetbyname_r() */
+#undef HAVE_LINUX_GETNETBYNAME_R
+
+/* define if we have the Linux getprotobyname_r() */
+#undef HAVE_LINUX_GETPROTOBYNAME_R
+
 /* Define to 1 if you have the <linux/if_bonding.h> header file. */
 #undef HAVE_LINUX_IF_BONDING_H
 
@@ -149,6 +161,12 @@
 
 /* On solaris */
 #undef HAVE_SOLARIS
+
+/* define if we have the Solaris/IRIX getnetbyname_r() */
+#undef HAVE_SOLARIS_IRIX_GETNETBYNAME_R
+
+/* define if we have the Solaris/IRIX getprotobyname_r() */
+#undef HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

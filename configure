@@ -4983,176 +4983,21 @@ fi
 #
 
     #
-    # Most operating systems have gethostbyname() in the default searched
+    # Most operating systems have getaddrinfo() in the default searched
     # libraries (i.e. libc).  Check there first.
     #
-    ac_fn_c_check_func "$LINENO" "gethostbyname" "ac_cv_func_gethostbyname"
-if test "x$ac_cv_func_gethostbyname" = xyes; then :
+    ac_fn_c_check_func "$LINENO" "getaddrinfo" "ac_cv_func_getaddrinfo"
+if test "x$ac_cv_func_getaddrinfo" = xyes; then :
 
 else
 
 	#
 	# Not found in the standard system libraries.
-	# Some OSes (eg. Solaris) place it in libnsl, but in at least some
-	# versions of Solaris, there are alternate versions of these APIs
-	# in libxnet, and those versions conform to the Single UNIX
-	# Specification, meaning you can actually check for truncation
-	# of incoming datagrams in recvmsg(), so we prefer that.
-	# Some strange OSes (SINIX) have it in libsocket, so try libxneet.
+	# Try libsocket, which requires libnsl.
 	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gethostbyname in -lxnet" >&5
-$as_echo_n "checking for gethostbyname in -lxnet... " >&6; }
-if ${ac_cv_lib_xnet_gethostbyname+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lxnet  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gethostbyname ();
-int
-main ()
-{
-return gethostbyname ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_xnet_gethostbyname=yes
-else
-  ac_cv_lib_xnet_gethostbyname=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xnet_gethostbyname" >&5
-$as_echo "$ac_cv_lib_xnet_gethostbyname" >&6; }
-if test "x$ac_cv_lib_xnet_gethostbyname" = xyes; then :
-
-	    #
-	    # OK, we found it in libxnet.
-	    # Unfortunately, on some versions of Solaris, getnameinfo()
-	    # getaddrinfo(), freeaddrinfo(), and gai_strerror() are *not*
-	    # in libxnet, they're only in libsocket.  In that case, we
-	    # want to link with libxnet followed by libsocket, so we get
-	    # the libxnet versions of everything that's in libxnet, and
-	    # the libsocket versions of everything that's not in libxnet
-	    # but is in libsocket.
-	    #
-	    # All we want is something close to a modern SUS UNIX, plus
-	    # whatever additional stuff we need.  Is this too much to
-	    # ask for?
-	    #
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for getnameinfo in -lxnet" >&5
-$as_echo_n "checking for getnameinfo in -lxnet... " >&6; }
-if ${ac_cv_lib_xnet_getnameinfo+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lxnet  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char getnameinfo ();
-int
-main ()
-{
-return getnameinfo ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_xnet_getnameinfo=yes
-else
-  ac_cv_lib_xnet_getnameinfo=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xnet_getnameinfo" >&5
-$as_echo "$ac_cv_lib_xnet_getnameinfo" >&6; }
-if test "x$ac_cv_lib_xnet_getnameinfo" = xyes; then :
-
-		#
-		# Yay, it looks as if libxnet has it all!  Just add it.
-		#
-		LIBS="-lxnet $LIBS"
-
-else
-
-		#
-		# OK, do we find libsocket if we link only with
-		# libsocket?
-		#
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for getnameinfo in -lsocket" >&5
-$as_echo_n "checking for getnameinfo in -lsocket... " >&6; }
-if ${ac_cv_lib_socket_getnameinfo+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsocket  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char getnameinfo ();
-int
-main ()
-{
-return getnameinfo ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_socket_getnameinfo=yes
-else
-  ac_cv_lib_socket_getnameinfo=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_socket_getnameinfo" >&5
-$as_echo "$ac_cv_lib_socket_getnameinfo" >&6; }
-if test "x$ac_cv_lib_socket_getnameinfo" = xyes; then :
-
-		    #
-		    # Yes, so link with -lxnet and -lsocket.
-		    #
-		    LIBS="-lxnet -lsocket $LIBS"
-
-else
-
-		    #
-		    # No, so maybe libsocket depends on libnsl, so
-		    # try with both of them.
-		    #
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gethostbyname in -lsocket" >&5
-$as_echo_n "checking for gethostbyname in -lsocket... " >&6; }
-if ${ac_cv_lib_socket_gethostbyname+:} false; then :
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo in -lsocket" >&5
+$as_echo_n "checking for getaddrinfo in -lsocket... " >&6; }
+if ${ac_cv_lib_socket_getaddrinfo+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -5166,223 +5011,54 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char gethostbyname ();
+char getaddrinfo ();
 int
 main ()
 {
-return gethostbyname ();
+return getaddrinfo ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_socket_gethostbyname=yes
+  ac_cv_lib_socket_getaddrinfo=yes
 else
-  ac_cv_lib_socket_gethostbyname=no
+  ac_cv_lib_socket_getaddrinfo=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_socket_gethostbyname" >&5
-$as_echo "$ac_cv_lib_socket_gethostbyname" >&6; }
-if test "x$ac_cv_lib_socket_gethostbyname" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_socket_getaddrinfo" >&5
+$as_echo "$ac_cv_lib_socket_getaddrinfo" >&6; }
+if test "x$ac_cv_lib_socket_getaddrinfo" = xyes; then :
 
-			#
-			# OK, it works with both libsocket and libnsl.
-			#
-			LIBS="-lxnet -lsocket -lnsl $LIBS"
-
-fi
-
-
-fi
-
-
-fi
-
+	    #
+	    # OK, we found it in libsocket.
+	    #
+	    LIBS="-lsocket -lnsl $LIBS"
 
 else
 
 	    #
-	    # OK, no gethostbyname in the standard system libraries
-	    # or libxnet, so try the other libraries.
+	    # We didn't find it.
 	    #
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing gethostbyname" >&5
-$as_echo_n "checking for library containing gethostbyname... " >&6; }
-if ${ac_cv_search_gethostbyname+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gethostbyname ();
-int
-main ()
-{
-return gethostbyname ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' nsl socket resolv; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_gethostbyname=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_gethostbyname+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_gethostbyname+:} false; then :
-
-else
-  ac_cv_search_gethostbyname=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gethostbyname" >&5
-$as_echo "$ac_cv_search_gethostbyname" >&6; }
-ac_res=$ac_cv_search_gethostbyname
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-
-	    #
-	    # Again, handle the case of libsocket depending on libnsl;
-	    # AC_SEARCH_LIBS can't handle that.
-	    #
-	    if test "$ac_cv_search_gethostbyname" = "no"
-	    then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gethostbyname in -lsocket" >&5
-$as_echo_n "checking for gethostbyname in -lsocket... " >&6; }
-if ${ac_cv_lib_socket_gethostbyname+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsocket -lnsl $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char gethostbyname ();
-int
-main ()
-{
-return gethostbyname ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_socket_gethostbyname=yes
-else
-  ac_cv_lib_socket_gethostbyname=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_socket_gethostbyname" >&5
-$as_echo "$ac_cv_lib_socket_gethostbyname" >&6; }
-if test "x$ac_cv_lib_socket_gethostbyname" = xyes; then :
-  LIBS="-lsocket -lnsl $LIBS"
-fi
-
-	    fi
+	    as_fn_error $? "getaddrinfo is required, but wasn't found" "$LINENO" 5
 
 fi
 
 
 	#
-	# Make sure we also have socket().
-	# (We don't worry about this if we have libxnet; we assume it
-	# has socket().)
+	# OK, do we have recvmsg() in libxnet?
+	# We also link with libsocket and libnsl.
 	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
-$as_echo_n "checking for library containing socket... " >&6; }
-if ${ac_cv_search_socket+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char socket ();
-int
-main ()
-{
-return socket ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' socket; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_socket=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_socket+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_socket+:} false; then :
-
-else
-  ac_cv_search_socket=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_socket" >&5
-$as_echo "$ac_cv_search_socket" >&6; }
-ac_res=$ac_cv_search_socket
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for socket in -lsocket" >&5
-$as_echo_n "checking for socket in -lsocket... " >&6; }
-if ${ac_cv_lib_socket_socket+:} false; then :
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for recvmsg in -lxnet" >&5
+$as_echo_n "checking for recvmsg in -lxnet... " >&6; }
+if ${ac_cv_lib_xnet_recvmsg+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsocket -lnsl $LIBS"
+LIBS="-lxnet -lsocket -lnsl $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -5392,29 +5068,32 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char socket ();
+char recvmsg ();
 int
 main ()
 {
-return socket ();
+return recvmsg ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_socket_socket=yes
+  ac_cv_lib_xnet_recvmsg=yes
 else
-  ac_cv_lib_socket_socket=no
+  ac_cv_lib_xnet_recvmsg=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_socket_socket" >&5
-$as_echo "$ac_cv_lib_socket_socket" >&6; }
-if test "x$ac_cv_lib_socket_socket" = xyes; then :
-  LIBS="-lsocket -lnsl $LIBS"
-fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xnet_recvmsg" >&5
+$as_echo "$ac_cv_lib_xnet_recvmsg" >&6; }
+if test "x$ac_cv_lib_xnet_recvmsg" = xyes; then :
+
+	    #
+	    # Yes - link with it as well.
+	    #
+	    LIBS="-lxnet $LIBS"
 
 fi
 
@@ -5478,6 +5157,229 @@ if test "$ac_res" != no; then :
 
 fi
 
+
+    #
+    # Check for reentrant versions of getnetbyname_r(), as provided by
+    # Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+    # If we don't find one, we just use getnetbyname(), which uses
+    # thread-specific data on many platforms, but doesn't use it on
+    # NetBSD or OpenBSD, and may not use it on older versions of other
+    # platforms.
+    #
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the Linux getnetbyname_r()" >&5
+$as_echo_n "checking for the Linux getnetbyname_r()... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netdb.h>
+int
+main ()
+{
+
+	    struct netent netent_buf;
+	    char buf[1024];
+	    struct netent *resultp;
+	    int h_errnoval;
+
+	    return getnetbyname_r(NULL, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_LINUX_GETNETBYNAME_R 1" >>confdefs.h
+
+
+else
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Solaris/IRIX getnetbyname_r()" >&5
+$as_echo_n "checking for Solaris/IRIX getnetbyname_r()... " >&6; }
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netdb.h>
+int
+main ()
+{
+
+		    struct netent netent_buf;
+		    char buf[1024];
+
+		    return getnetbyname_r(NULL, &netent_buf, buf, (int)sizeof buf) != NULL;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_SOLARIS_IRIX_GETNETBYNAME_R 1" >>confdefs.h
+
+
+else
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for AIX getnetbyname_r()" >&5
+$as_echo_n "checking for AIX getnetbyname_r()... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netdb.h>
+int
+main ()
+{
+
+			    struct netent netent_buf;
+			    struct netent_data net_data;
+
+			    return getnetbyname_r(NULL, &netent_buf, &net_data);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_AIX_GETNETBYNAME_R 1" >>confdefs.h
+
+
+else
+
+			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+    #
+    # Check for reentrant versions of getprotobyname_r(), as provided by
+    # Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+    # If we don't find one, we just use getprotobyname(), which uses
+    # thread-specific data on many platforms, but doesn't use it on
+    # NetBSD or OpenBSD, and may not use it on older versions of other
+    # platforms.
+    #
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the Linux getprotobyname_r()" >&5
+$as_echo_n "checking for the Linux getprotobyname_r()... " >&6; }
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netdb.h>
+int
+main ()
+{
+
+	    struct protoent protoent_buf;
+	    char buf[1024];
+	    struct protoent *resultp;
+
+	    return getprotobyname_r(NULL, &protoent_buf, buf, sizeof buf, &resultp);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_LINUX_GETPROTOBYNAME_R 1" >>confdefs.h
+
+
+else
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Solaris/IRIX getprotobyname_r()" >&5
+$as_echo_n "checking for Solaris/IRIX getprotobyname_r()... " >&6; }
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netdb.h>
+int
+main ()
+{
+
+		    struct protoent protoent_buf;
+		    char buf[1024];
+
+		    return getprotobyname_r(NULL, &protoent_buf, buf, (int)sizeof buf) != NULL;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R 1" >>confdefs.h
+
+
+else
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for AIX getprotobyname_r()" >&5
+$as_echo_n "checking for AIX getprotobyname_r()... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netdb.h>
+int
+main ()
+{
+
+			    struct protoent protoent_buf;
+			    struct protoent_data proto_data;
+
+			    return getprotobyname_r(NULL, &protoent_buf, &proto_data);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_AIX_GETPROTOBYNAME_R 1" >>confdefs.h
+
+
+else
+
+			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
 #

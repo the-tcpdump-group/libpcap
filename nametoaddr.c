@@ -61,7 +61,7 @@
   #endif /* INET6 */
 #else /* _WIN32 */
   #include <sys/param.h>
-  #include <sys/types.h>			/* concession to AIX */
+  #include <sys/types.h>
   #include <sys/socket.h>
   #include <sys/time.h>
 
@@ -155,6 +155,7 @@ static inline int xdtoi(int);
 /*
  *  Convert host name to internet address.
  *  Return 0 upon failure.
+ *  XXX - not thread-safe; don't use it inside libpcap.
  */
 bpf_u_int32 **
 pcap_nametoaddr(const char *name)
@@ -180,7 +181,6 @@ pcap_nametoaddr(const char *name)
 		return 0;
 }
 
-#ifdef INET6
 struct addrinfo *
 pcap_nametoaddrinfo(const char *name)
 {
@@ -197,23 +197,17 @@ pcap_nametoaddrinfo(const char *name)
 	else
 		return res;
 }
-#endif /*INET6*/
 
 /*
  *  Convert net name to internet address.
  *  Return 0 upon failure.
+ *  XXX - not guaranteed to be thread-safe!  See below for platforms
+ *  on which it is thread-safe and on which it isn't.
  */
 bpf_u_int32
 pcap_nametonetaddr(const char *name)
 {
-#ifndef _WIN32
-	struct netent *np;
-
-	if ((np = getnetbyname(name)) != NULL)
-		return np->n_net;
-	else
-		return 0;
-#else
+#ifdef _WIN32
 	/*
 	 * There's no "getnetbyname()" on Windows.
 	 *
@@ -227,7 +221,66 @@ pcap_nametonetaddr(const char *name)
 	 * of *UN*X* machines.)
 	 */
 	return 0;
-#endif
+#else
+	/*
+	 * UN*X.
+	 */
+	struct netent *np;
+  #if defined(HAVE_LINUX_GETNETBYNAME_R)
+	/*
+	 * We have Linux's reentrant getnetbyname_r().
+	 */
+	struct netent result_buf;
+	char buf[1024];	/* arbitrary size */
+	int h_errnoval;
+	int err;
+
+	err = getnetbyname_r(name, &result_buf, buf, sizeof buf, &np,
+	    &h_errnoval);
+	if (err != 0) {
+		/*
+		 * XXX - dynamically allocate the buffer, and make it
+		 * bigger if we get ERANGE back?
+		 */
+		return 0;
+	}
+  #elif defined(HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+	/*
+	 * We have Solaris's and IRIX's reentrant getnetbyname_r().
+	 */
+	struct netent result_buf;
+	char buf[1024];	/* arbitrary size */
+
+	np = getnetbyname_r(name, &result_buf, buf, (int)sizeof buf);
+  #elif defined(HAVE_AIX_GETNETBYNAME_R)
+	/*
+	 * We have AIX's reentrant getnetbyname_r().
+	 */
+	struct netent result_buf;
+	struct netent_data net_data;
+
+	if (getnetbyname_r(name, &result_buf, &net_data) == -1)
+		np = NULL;
+	else
+		np = &result_buf;
+  #else
+ 	/*
+ 	 * We don't have any getnetbyname_r(); either we have a
+ 	 * getnetbyname() that uses thread-specific data, in which
+ 	 * case we're thread-safe (sufficiently recent FreeBSD,
+ 	 * sufficiently recent Darwin-based OS, sufficiently recent
+ 	 * HP-UX, sufficiently recent Tru64 UNIX), or we have the
+ 	 * traditional getnetbyname() (everything else, including
+ 	 * current NetBSD and OpenBSD), in which case we're not
+ 	 * thread-safe.
+ 	 */
+	np = getnetbyname(name);
+  #endif
+	if (np != NULL)
+		return np->n_net;
+	else
+		return 0;
+#endif /* _WIN32 */
 }
 
 /*
@@ -238,20 +291,111 @@ pcap_nametonetaddr(const char *name)
 int
 pcap_nametoport(const char *name, int *port, int *proto)
 {
-	struct servent *sp;
+	struct addrinfo hints, *res, *ai;
+	int error;
+	struct sockaddr_in *in4;
+#ifdef INET6
+	struct sockaddr_in6 *in6;
+#endif
 	int tcp_port = -1;
 	int udp_port = -1;
 
 	/*
+	 * We check for both TCP and UDP in case there are
+	 * ambiguous entries.
+	 */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	error = getaddrinfo(NULL, name, &hints, &res);
+	if (error != 0) {
+		if (error != EAI_NONAME) {
+			/*
+			 * This is a real error, not just "there's
+			 * no such service name".
+			 * XXX - this doesn't return an error string.
+			 */
+			return 0;
+		}
+	} else {
+		/*
+		 * OK, we found it.  Did it find anything?
+		 */
+		for (ai = res; ai != NULL; ai = ai->ai_next) {
+			/*
+			 * Does it have an address?
+			 */
+			if (ai->ai_addr != NULL) {
+				/*
+				 * Yes.  Get a port number; we're done.
+				 */
+				if (ai->ai_addr->sa_family == AF_INET) {
+					in4 = (struct sockaddr_in *)ai->ai_addr;
+					tcp_port = ntohs(in4->sin_port);
+					break;
+				}
+#ifdef INET6
+				if (ai->ai_addr->sa_family == AF_INET6) {
+					in6 = (struct sockaddr_in6 *)ai->ai_addr;
+					tcp_port = ntohs(in6->sin6_port);
+					break;
+				}
+#endif
+			}
+		}
+		freeaddrinfo(res);
+	}
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+	error = getaddrinfo(NULL, name, &hints, &res);
+	if (error != 0) {
+		if (error != EAI_NONAME) {
+			/*
+			 * This is a real error, not just "there's
+			 * no such service name".
+			 * XXX - this doesn't return an error string.
+			 */
+			return 0;
+		}
+	} else {
+		/*
+		 * OK, we found it.  Did it find anything?
+		 */
+		for (ai = res; ai != NULL; ai = ai->ai_next) {
+			/*
+			 * Does it have an address?
+			 */
+			if (ai->ai_addr != NULL) {
+				/*
+				 * Yes.  Get a port number; we're done.
+				 */
+				if (ai->ai_addr->sa_family == AF_INET) {
+					in4 = (struct sockaddr_in *)ai->ai_addr;
+					udp_port = ntohs(in4->sin_port);
+					break;
+				}
+#ifdef INET6
+				if (ai->ai_addr->sa_family == AF_INET6) {
+					in6 = (struct sockaddr_in6 *)ai->ai_addr;
+					udp_port = ntohs(in6->sin6_port);
+					break;
+				}
+#endif
+			}
+		}
+		freeaddrinfo(res);
+	}
+
+	/*
 	 * We need to check /etc/services for ambiguous entries.
-	 * If we find the ambiguous entry, and it has the
+	 * If we find an ambiguous entry, and it has the
 	 * same port number, change the proto to PROTO_UNDEF
 	 * so both TCP and UDP will be checked.
 	 */
-	sp = getservbyname(name, "tcp");
-	if (sp != NULL) tcp_port = ntohs(sp->s_port);
-	sp = getservbyname(name, "udp");
-	if (sp != NULL) udp_port = ntohs(sp->s_port);
 	if (tcp_port >= 0) {
 		*port = tcp_port;
 		*proto = IPPROTO_TCP;
@@ -330,12 +474,62 @@ pcap_nametoportrange(const char *name, int *port1, int *port2, int *proto)
 	return 1;
 }
 
+/*
+ * XXX - not guaranteed to be thread-safe!  See below for platforms
+ * on which it is thread-safe and on which it isn't.
+ */
 int
 pcap_nametoproto(const char *str)
 {
 	struct protoent *p;
+  #if defined(HAVE_LINUX_GETNETBYNAME_R)
+	/*
+	 * We have Linux's reentrant getprotobyname_r().
+	 */
+	struct protoent result_buf;
+	char buf[1024];	/* arbitrary size */
+	int err;
 
+	err = getprotobyname_r(str, &result_buf, buf, sizeof buf, &p);
+	if (err != 0) {
+		/*
+		 * XXX - dynamically allocate the buffer, and make it
+		 * bigger if we get ERANGE back?
+		 */
+		return 0;
+	}
+  #elif defined(HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
+	/*
+	 * We have Solaris's and IRIX's reentrant getprotobyname_r().
+	 */
+	struct protoent result_buf;
+	char buf[1024];	/* arbitrary size */
+
+	p = getprotobyname_r(str, &result_buf, buf, (int)sizeof buf);
+  #elif defined(HAVE_AIX_GETNETBYNAME_R)
+	/*
+	 * We have AIX's reentrant getprotobyname_r().
+	 */
+	struct protoent result_buf;
+	struct protoent_data proto_data;
+
+	if (getprotobyname_r(str, &result_buf, &proto_data) == -1)
+		p = NULL;
+	else
+		p = &result_buf;
+  #else
+ 	/*
+ 	 * We don't have any getprotobyname_r(); either we have a
+ 	 * getprotobyname() that uses thread-specific data, in which
+ 	 * case we're thread-safe (sufficiently recent FreeBSD,
+ 	 * sufficiently recent Darwin-based OS, sufficiently recent
+ 	 * HP-UX, sufficiently recent Tru64 UNIX, Windows), or we have
+	 * the traditional getprotobyname() (everything else, including
+ 	 * current NetBSD and OpenBSD), in which case we're not
+ 	 * thread-safe.
+ 	 */
 	p = getprotobyname(str);
+  #endif
 	if (p != 0)
 		return p->p_proto;
 	else
@@ -508,6 +702,9 @@ pcap_ether_aton(const char *s)
 	return (e);
 }
 
+/*
+ * XXX - not thread-safe!
+ */
 #ifndef HAVE_ETHER_HOSTTON
 /* Roll our own */
 u_char *
@@ -557,6 +754,9 @@ pcap_ether_hostton(const char *name)
 }
 #endif
 
+/*
+ * XXX - not guaranteed to be thread-safe!
+ */
 int
 __pcap_nametodnaddr(const char *name, u_short *res)
 {

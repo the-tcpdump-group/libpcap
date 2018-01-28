@@ -935,130 +935,194 @@ fi
 dnl
 dnl AC_LBL_LIBRARY_NET
 dnl
-dnl This test is for network applications that need socket() and
-dnl gethostbyname() -ish functions.  Under Solaris, those applications
-dnl need to link with "-lsocket -lnsl".  Under IRIX, they need to link
-dnl with "-lnsl" but should *not* link with "-lsocket" because
-dnl libsocket.a breaks a number of things (for instance:
-dnl gethostbyname() under IRIX 5.2, and snoop sockets under most
-dnl versions of IRIX).
+dnl This test is for network applications that need socket functions and
+dnl getaddrinfo()/getnameinfo()-ish functions.  We now require
+dnl getaddrinfo() and getnameinfo().  We also prefer versions of
+dnl recvmsg() that conform to the Single UNIX Specification, so that we
+dnl can check whether a datagram received with recvmsg() was truncated
+dnl when received due to the buffer being too small.
 dnl
-dnl Unfortunately, many application developers are not aware of this,
-dnl and mistakenly write tests that cause -lsocket to be used under
-dnl IRIX.  It is also easy to write tests that cause -lnsl to be used
-dnl under operating systems where neither are necessary (or useful),
-dnl such as SunOS 4.1.4, which uses -lnsl for TLI.
+dnl On most operating systems, they're available in the system library.
 dnl
-dnl This test exists so that every application developer does not test
-dnl this in a different, and subtly broken fashion.
-
-dnl It has been argued that this test should be broken up into two
-dnl seperate tests, one for the resolver libraries, and one for the
-dnl libraries necessary for using Sockets API. Unfortunately, the two
-dnl are carefully intertwined and allowing the autoconf user to use
-dnl them independantly potentially results in unfortunate ordering
-dnl dependancies -- as such, such component macros would have to
-dnl carefully use indirection and be aware if the other components were
-dnl executed. Since other autoconf macros do not go to this trouble,
-dnl and almost no applications use sockets without the resolver, this
-dnl complexity has not been implemented.
+dnl Under Solaris, we need to link with libsocket and libnsl to get
+dnl getaddrinfo() and getnameinfo() and, if we have libxnet, we need to
+dnl link with libxnet before libsocket to get a version of recvmsg()
+dnl that conforms to the Single UNIX Specification.
 dnl
-dnl The check for libresolv is in case you are attempting to link
-dnl statically and happen to have a libresolv.a lying around (and no
-dnl libnsl.a).
+dnl We use getaddrinfo() because we want a portable thread-safe way
+dnl of getting information for a host name or port; there exist _r
+dnl versions of gethostbyname() and getservbyname() on some platforms,
+dnl but not on all platforms.
+dnl
+dnl Unfortunately, there's no such portable thread-safe way to translate
+dnl network names or IP protocol names to values; we look for various
+dnl getnetbyname_r() and getprotoent_r() APIs.
 dnl
 AC_DEFUN(AC_LBL_LIBRARY_NET, [
     #
-    # Most operating systems have gethostbyname() in the default searched
+    # Most operating systems have getaddrinfo() in the default searched
     # libraries (i.e. libc).  Check there first.
     #
-    AC_CHECK_FUNC(gethostbyname,,
+    AC_CHECK_FUNC(getaddrinfo,,
     [
 	#
 	# Not found in the standard system libraries.
-	# Some OSes (eg. Solaris) place it in libnsl, but in at least some
-	# versions of Solaris, there are alternate versions of these APIs
-	# in libxnet, and those versions conform to the Single UNIX
-	# Specification, meaning you can actually check for truncation
-	# of incoming datagrams in recvmsg(), so we prefer that.
-	# Some strange OSes (SINIX) have it in libsocket, so try libxneet.
+	# Try libsocket, which requires libnsl.
 	#
-	AC_CHECK_LIB(xnet, gethostbyname,
+	AC_CHECK_LIB(socket, getaddrinfo,
 	[
 	    #
-	    # OK, we found it in libxnet.
-	    # Unfortunately, on some versions of Solaris, getnameinfo()
-	    # getaddrinfo(), freeaddrinfo(), and gai_strerror() are *not*
-	    # in libxnet, they're only in libsocket.  In that case, we
-	    # want to link with libxnet followed by libsocket, so we get
-	    # the libxnet versions of everything that's in libxnet, and
-	    # the libsocket versions of everything that's not in libxnet
-	    # but is in libsocket.
+	    # OK, we found it in libsocket.
 	    #
-	    # All we want is something close to a modern SUS UNIX, plus
-	    # whatever additional stuff we need.  Is this too much to
-	    # ask for?
-	    #
-	    AC_CHECK_LIB(xnet, getnameinfo,
-	    [
-		#
-		# Yay, it looks as if libxnet has it all!  Just add it.
-		#
-		LIBS="-lxnet $LIBS"
-	    ],
-	    [
-		#
-		# OK, do we find libsocket if we link only with
-		# libsocket?
-		#
-		AC_CHECK_LIB(socket, getnameinfo,
-		[
-		    #
-		    # Yes, so link with -lxnet and -lsocket.
-		    #
-		    LIBS="-lxnet -lsocket $LIBS"
-		],
-		[
-		    #
-		    # No, so maybe libsocket depends on libnsl, so
-		    # try with both of them.
-		    #
-		    AC_CHECK_LIB(socket, gethostbyname,
-		    [
-			#
-			# OK, it works with both libsocket and libnsl.
-			#
-			LIBS="-lxnet -lsocket -lnsl $LIBS"
-		    ], , -lnsl)
-		])
-	    ])
+	    LIBS="-lsocket -lnsl $LIBS"
 	],
 	[
 	    #
-	    # OK, no gethostbyname in the standard system libraries
-	    # or libxnet, so try the other libraries.
+	    # We didn't find it.
 	    #
-	    AC_SEARCH_LIBS(gethostbyname, nsl socket resolv)
-
-	    #
-	    # Again, handle the case of libsocket depending on libnsl;
-	    # AC_SEARCH_LIBS can't handle that.
-	    #
-	    if test "$ac_cv_search_gethostbyname" = "no"
-	    then
-		AC_CHECK_LIB(socket, gethostbyname,
-		    LIBS="-lsocket -lnsl $LIBS", , -lnsl)
-	    fi
-	])
+	    AC_MSG_ERROR([getaddrinfo is required, but wasn't found])
+	], -lnsl)
 
 	#
-	# Make sure we also have socket().
-	# (We don't worry about this if we have libxnet; we assume it
-	# has socket().)
+	# OK, do we have recvmsg() in libxnet?
+	# We also link with libsocket and libnsl.
 	#
-	AC_SEARCH_LIBS(socket, socket, ,
-	    AC_CHECK_LIB(socket, socket, LIBS="-lsocket -lnsl $LIBS", , -lnsl))
+	AC_CHECK_LIB(xnet, recvmsg,
+	[
+	    #
+	    # Yes - link with it as well.
+	    #
+	    LIBS="-lxnet $LIBS"
+	], , -lsocket -lnsl)
     ])
     # DLPI needs putmsg under HPUX so test for -lstr while we're at it
     AC_SEARCH_LIBS(putmsg, str)
+
+    #
+    # Check for reentrant versions of getnetbyname_r(), as provided by
+    # Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+    # If we don't find one, we just use getnetbyname(), which uses
+    # thread-specific data on many platforms, but doesn't use it on
+    # NetBSD or OpenBSD, and may not use it on older versions of other
+    # platforms.
+    #
+    AC_MSG_CHECKING([for the Linux getnetbyname_r()])
+    AC_TRY_COMPILE(
+	[#include <netdb.h>],
+	[
+	    struct netent netent_buf;
+	    char buf[1024];
+	    struct netent *resultp;
+	    int h_errnoval;
+
+	    return getnetbyname_r(NULL, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+	],
+	[
+	    AC_MSG_RESULT(yes)
+	    AC_DEFINE(HAVE_LINUX_GETNETBYNAME_R, 1,
+		    [define if we have the Linux getnetbyname_r()])
+	],
+	[
+	    AC_MSG_RESULT(no)
+
+	    AC_MSG_CHECKING([for Solaris/IRIX getnetbyname_r()])
+	    AC_TRY_COMPILE(
+		[#include <netdb.h>],
+		[
+		    struct netent netent_buf;
+		    char buf[1024];
+
+		    return getnetbyname_r(NULL, &netent_buf, buf, (int)sizeof buf) != NULL;
+		],
+		[
+		    AC_MSG_RESULT(yes)
+		    AC_DEFINE(HAVE_SOLARIS_IRIX_GETNETBYNAME_R, 1,
+			    [define if we have the Solaris/IRIX getnetbyname_r()])
+		],
+		[
+		    AC_MSG_RESULT(no)
+
+		    AC_MSG_CHECKING([for AIX getnetbyname_r()])
+		    AC_TRY_COMPILE(
+			[#include <netdb.h>],
+			[
+			    struct netent netent_buf;
+			    struct netent_data net_data;
+
+			    return getnetbyname_r(NULL, &netent_buf, &net_data);
+			],
+			[
+			    AC_MSG_RESULT(yes)
+			    AC_DEFINE(HAVE_AIX_GETNETBYNAME_R, 1,
+				    [define if we have the AIX getnetbyname_r()])
+			],
+			[
+			    AC_MSG_RESULT(no)
+			])
+		])
+	])
+
+    #
+    # Check for reentrant versions of getprotobyname_r(), as provided by
+    # Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+    # If we don't find one, we just use getprotobyname(), which uses
+    # thread-specific data on many platforms, but doesn't use it on
+    # NetBSD or OpenBSD, and may not use it on older versions of other
+    # platforms.
+    #
+    AC_MSG_CHECKING([for the Linux getprotobyname_r()])
+    AC_TRY_COMPILE(
+	[#include <netdb.h>],
+	[
+	    struct protoent protoent_buf;
+	    char buf[1024];
+	    struct protoent *resultp;
+
+	    return getprotobyname_r(NULL, &protoent_buf, buf, sizeof buf, &resultp);
+	],
+	[
+	    AC_MSG_RESULT(yes)
+	    AC_DEFINE(HAVE_LINUX_GETPROTOBYNAME_R, 1,
+		    [define if we have the Linux getprotobyname_r()])
+	],
+	[
+	    AC_MSG_RESULT(no)
+
+	    AC_MSG_CHECKING([for Solaris/IRIX getprotobyname_r()])
+	    AC_TRY_COMPILE(
+		[#include <netdb.h>],
+		[
+		    struct protoent protoent_buf;
+		    char buf[1024];
+
+		    return getprotobyname_r(NULL, &protoent_buf, buf, (int)sizeof buf) != NULL;
+		],
+		[
+		    AC_MSG_RESULT(yes)
+		    AC_DEFINE(HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R, 1,
+			    [define if we have the Solaris/IRIX getprotobyname_r()])
+		],
+		[
+		    AC_MSG_RESULT(no)
+
+		    AC_MSG_CHECKING([for AIX getprotobyname_r()])
+		    AC_TRY_COMPILE(
+			[#include <netdb.h>],
+			[
+			    struct protoent protoent_buf;
+			    struct protoent_data proto_data;
+
+			    return getprotobyname_r(NULL, &protoent_buf, &proto_data);
+			],
+			[
+			    AC_MSG_RESULT(yes)
+			    AC_DEFINE(HAVE_AIX_GETPROTOBYNAME_R, 1,
+				    [define if we have the AIX getprotobyname_r()])
+			],
+			[
+			    AC_MSG_RESULT(no)
+			])
+		])
+		])
+	])
 ])
