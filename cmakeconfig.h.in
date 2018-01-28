@@ -319,7 +319,7 @@
 /* target host supports netmap */
 #cmakedefine PCAP_SUPPORT_NETMAP 1
 
-/* use Linux packet ring capture if available */
+/* use packet ring capture support on Linux if available */
 #cmakedefine PCAP_SUPPORT_PACKET_RING 1
 
 /* target host supports RDMA sniffing */

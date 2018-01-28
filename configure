@@ -1392,7 +1392,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
   --disable-protochain    disable \"protochain\" insn
-  --enable-packet-ring    enable Linux packet ring support [default=yes]
+  --enable-packet-ring    enable packet ring support on Linux [default=yes]
   --enable-ipv6           build IPv6-capable version [default=yes]
   --enable-remote         enable remote packet capture [default=no]
   --disable-remote        disable remote packet capture
