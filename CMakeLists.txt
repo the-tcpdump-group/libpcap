@@ -439,7 +439,7 @@ main(void)
     struct netent *resultp;
     int h_errnoval;
 
-    return getnetbyname_r(NULL, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+    return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
 }
 "
     HAVE_LINUX_GETNETBYNAME_R)
@@ -453,7 +453,7 @@ main(void)
     struct netent netent_buf;
     char buf[1024];
 
-    return getnetbyname_r(NULL, &netent_buf, buf, (int)sizeof buf) != NULL;
+    return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 }
 "
         HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
@@ -467,7 +467,7 @@ main(void)
     struct netent netent_buf;
     struct netent_data net_data;
 
-    return getnetbyname_r(NULL, &netent_buf, &net_data);
+    return getnetbyname_r((const char *)0, &netent_buf, &net_data);
 }
 "
             HAVE_AIX_GETNETBYNAME_R)
@@ -492,7 +492,7 @@ main(void)
     char buf[1024];
     struct protoent *resultp;
 
-    return getprotobyname_r(NULL, &protoent_buf, buf, sizeof buf, &resultp);
+    return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
 }
 "
     HAVE_LINUX_GETPROTOBYNAME_R)
@@ -506,7 +506,7 @@ main(void)
     struct protoent protoent_buf;
     char buf[1024];
 
-    return getprotobyname_r(NULL, &protoent_buf, buf, (int)sizeof buf) != NULL;
+    return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 }
 "
         HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
@@ -520,7 +520,7 @@ main(void)
     struct protoent protoent_buf;
     struct protoent_data proto_data;
 
-    return getprotobyname_r(NULL, &protoent_buf, &proto_data);
+    return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
 }
 "
             HAVE_AIX_GETPROTOBYNAME_R)
