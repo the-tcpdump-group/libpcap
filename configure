@@ -1393,8 +1393,7 @@ Optional Features:
   --disable-largefile     omit support for large files
   --disable-protochain    disable \"protochain\" insn
   --enable-packet-ring    enable Linux packet ring support [default=yes]
-  --enable-ipv6           build IPv6-capable version [default=yes, if
-                          getaddrinfo available]
+  --enable-ipv6           build IPv6-capable version [default=yes]
   --enable-remote         enable remote packet capture [default=no]
   --disable-remote        disable remote packet capture
   --enable-optimizer-dbg  build optimizer debugging code
@@ -4979,7 +4978,7 @@ fi
 
 #
 # Do this before checking for ether_hostton(), as it's a
-# "gethostbyname() -ish function".
+# "getaddrinfo()-ish function".
 #
 
     #
@@ -6674,27 +6673,16 @@ fi
 if test "${enable_ipv6+set}" = set; then :
   enableval=$enable_ipv6;
 else
-  enable_ipv6=ifavailable
+  enable_ipv6=yes
 fi
 
 if test "$enable_ipv6" != "no"; then
-	ac_fn_c_check_func "$LINENO" "getaddrinfo" "ac_cv_func_getaddrinfo"
-if test "x$ac_cv_func_getaddrinfo" = xyes; then :
-
+	#
+	# We've already made sure we have getaddrinfo above in
+	# AC_LBL_LIBRARY_NET.
+	#
 
 $as_echo "#define INET6 1" >>confdefs.h
-
-
-else
-
-		if test "$enable_ipv6" != "ifavailable"; then
-			{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "--enable-ipv6 was given, but getaddrinfo isn't available
-See \`config.log' for more details" "$LINENO" 5; }
-		fi
-
-fi
 
 fi
 

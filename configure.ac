@@ -122,7 +122,7 @@ fi
 
 #
 # Do this before checking for ether_hostton(), as it's a
-# "gethostbyname() -ish function".
+# "getaddrinfo()-ish function".
 #
 AC_LBL_LIBRARY_NET
 
@@ -867,19 +867,15 @@ AC_CHECK_TYPES(socklen_t,,,
     ])
 
 AC_ARG_ENABLE(ipv6,
-AC_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes, if getaddrinfo available@:>@]),
+AC_HELP_STRING([--enable-ipv6],[build IPv6-capable version @<:@default=yes@:>@]),
     [],
-    [enable_ipv6=ifavailable])
+    [enable_ipv6=yes])
 if test "$enable_ipv6" != "no"; then
-	AC_CHECK_FUNC(getaddrinfo,
-	    [
-		AC_DEFINE(INET6,1,[IPv6])
-	    ],
-	    [
-		if test "$enable_ipv6" != "ifavailable"; then
-			AC_MSG_FAILURE([--enable-ipv6 was given, but getaddrinfo isn't available])
-		fi
-	    ])
+	#
+	# We've already made sure we have getaddrinfo above in
+	# AC_LBL_LIBRARY_NET.
+	#
+	AC_DEFINE(INET6,1,[IPv6])
 fi
 
 # Check for Endace DAG card support.
