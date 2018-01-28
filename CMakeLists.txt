@@ -430,6 +430,8 @@ endif(NOT STDLIBS_HAVE_PUTMSG)
 # can be checked.)
 #
 include(CheckSymbolExists)
+cmake_push_check_state()
+set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
 check_symbol_exists(getnetbyname_r netdb.h NETDB_H_DECLARES_GETNETBYNAME_R)
 if(NETDB_H_DECLARES_GETNETBYNAME_R)
     check_c_source_compiles(
@@ -478,6 +480,7 @@ main(void)
         endif(NOT HAVE_SOLARIS_IRIX_GETNETBYNAME_R)
     endif(NOT HAVE_LINUX_GETNETBYNAME_R)
 endif(NETDB_H_DECLARES_GETNETBYNAME_R)
+cmake_pop_check_state()
 
 #
 # Check for reentrant versions of getprotobyname_r(), as provided by
@@ -492,6 +495,8 @@ endif(NETDB_H_DECLARES_GETNETBYNAME_R)
 # if there's a declaration, it has a prototype, so that the API
 # can be checked.)
 #
+cmake_push_check_state()
+set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
 check_symbol_exists(getprotobyname_r netdb.h NETDB_H_DECLARES_GETPROTOBYNAME_R)
 if(NETDB_H_DECLARES_GETPROTOBYNAME_R)
     check_c_source_compiles(
@@ -539,6 +544,7 @@ main(void)
         endif(NOT HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R)
     endif(NOT HAVE_LINUX_GETPROTOBYNAME_R)
 endif(NETDB_H_DECLARES_GETPROTOBYNAME_R)
+cmake_pop_check_state()
 
 #
 # Data types.
