@@ -702,11 +702,12 @@ pcap_ether_aton(const char *s)
 	return (e);
 }
 
-/*
- * XXX - not thread-safe!
- */
 #ifndef HAVE_ETHER_HOSTTON
-/* Roll our own */
+/*
+ * Roll our own.
+ * XXX - not thread-safe, because pcap_next_etherent() isn't thread-
+ * safe!  Needs a mutex or a thread-safe pcap_next_etherent().
+ */
 u_char *
 pcap_ether_hostton(const char *name)
 {
@@ -737,7 +738,10 @@ pcap_ether_hostton(const char *name)
 	return (NULL);
 }
 #else
-/* Use the os supplied routines */
+/*
+ * Use the OS-supplied routine.
+ * This *should* be thread-safe; the API doesn't have a static buffer.
+ */
 u_char *
 pcap_ether_hostton(const char *name)
 {
