@@ -5157,29 +5157,30 @@ if test "$ac_res" != no; then :
 fi
 
 
-    #
-    # Check for reentrant versions of getnetbyname_r(), as provided by
-    # Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
-    # If we don't find one, we just use getnetbyname(), which uses
-    # thread-specific data on many platforms, but doesn't use it on
-    # NetBSD or OpenBSD, and may not use it on older versions of other
-    # platforms.
-    #
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the Linux getnetbyname_r()" >&5
+
+#
+# Check for reentrant versions of getnetbyname_r(), as provided by
+# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# If we don't find one, we just use getnetbyname(), which uses
+# thread-specific data on many platforms, but doesn't use it on
+# NetBSD or OpenBSD, and may not use it on older versions of other
+# platforms.
+#
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the Linux getnetbyname_r()" >&5
 $as_echo_n "checking for the Linux getnetbyname_r()... " >&6; }
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netdb.h>
 int
 main ()
 {
 
-	    struct netent netent_buf;
-	    char buf[1024];
-	    struct netent *resultp;
-	    int h_errnoval;
+	struct netent netent_buf;
+	char buf[1024];
+	struct netent *resultp;
+	int h_errnoval;
 
-	    return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
+	return getnetbyname_r((const char *)0, &netent_buf, buf, sizeof buf, &resultp, &h_errnoval);
 
   ;
   return 0;
@@ -5187,7 +5188,7 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_LINUX_GETNETBYNAME_R 1" >>confdefs.h
@@ -5195,22 +5196,22 @@ $as_echo "#define HAVE_LINUX_GETNETBYNAME_R 1" >>confdefs.h
 
 else
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Solaris/IRIX getnetbyname_r()" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Solaris/IRIX getnetbyname_r()" >&5
 $as_echo_n "checking for Solaris/IRIX getnetbyname_r()... " >&6; }
-	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netdb.h>
 int
 main ()
 {
 
-		    struct netent netent_buf;
-		    char buf[1024];
+		struct netent netent_buf;
+		char buf[1024];
 
-		    return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
+		return getnetbyname_r((const char *)0, &netent_buf, buf, (int)sizeof buf) != NULL;
 
   ;
   return 0;
@@ -5218,7 +5219,7 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_SOLARIS_IRIX_GETNETBYNAME_R 1" >>confdefs.h
@@ -5226,22 +5227,22 @@ $as_echo "#define HAVE_SOLARIS_IRIX_GETNETBYNAME_R 1" >>confdefs.h
 
 else
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for AIX getnetbyname_r()" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for AIX getnetbyname_r()" >&5
 $as_echo_n "checking for AIX getnetbyname_r()... " >&6; }
-		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netdb.h>
 int
 main ()
 {
 
-			    struct netent netent_buf;
-			    struct netent_data net_data;
+			struct netent netent_buf;
+			struct netent_data net_data;
 
-			    return getnetbyname_r((const char *)0, &netent_buf, &net_data);
+			return getnetbyname_r((const char *)0, &netent_buf, &net_data);
 
   ;
   return 0;
@@ -5249,7 +5250,7 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_AIX_GETNETBYNAME_R 1" >>confdefs.h
@@ -5257,7 +5258,7 @@ $as_echo "#define HAVE_AIX_GETNETBYNAME_R 1" >>confdefs.h
 
 else
 
-			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 fi
@@ -5272,28 +5273,28 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
-    #
-    # Check for reentrant versions of getprotobyname_r(), as provided by
-    # Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
-    # If we don't find one, we just use getprotobyname(), which uses
-    # thread-specific data on many platforms, but doesn't use it on
-    # NetBSD or OpenBSD, and may not use it on older versions of other
-    # platforms.
-    #
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the Linux getprotobyname_r()" >&5
+#
+# Check for reentrant versions of getprotobyname_r(), as provided by
+# Linux (glibc), Solaris/IRIX, and AIX (with three different APIs!).
+# If we don't find one, we just use getprotobyname(), which uses
+# thread-specific data on many platforms, but doesn't use it on
+# NetBSD or OpenBSD, and may not use it on older versions of other
+# platforms.
+#
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for the Linux getprotobyname_r()" >&5
 $as_echo_n "checking for the Linux getprotobyname_r()... " >&6; }
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netdb.h>
 int
 main ()
 {
 
-	    struct protoent protoent_buf;
-	    char buf[1024];
-	    struct protoent *resultp;
+	struct protoent protoent_buf;
+	char buf[1024];
+	struct protoent *resultp;
 
-	    return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
+	return getprotobyname_r((const char *)0, &protoent_buf, buf, sizeof buf, &resultp);
 
   ;
   return 0;
@@ -5301,7 +5302,7 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_LINUX_GETPROTOBYNAME_R 1" >>confdefs.h
@@ -5309,22 +5310,22 @@ $as_echo "#define HAVE_LINUX_GETPROTOBYNAME_R 1" >>confdefs.h
 
 else
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-	    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Solaris/IRIX getprotobyname_r()" >&5
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Solaris/IRIX getprotobyname_r()" >&5
 $as_echo_n "checking for Solaris/IRIX getprotobyname_r()... " >&6; }
-	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netdb.h>
 int
 main ()
 {
 
-		    struct protoent protoent_buf;
-		    char buf[1024];
+		struct protoent protoent_buf;
+		char buf[1024];
 
-		    return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
+		return getprotobyname_r((const char *)0, &protoent_buf, buf, (int)sizeof buf) != NULL;
 
   ;
   return 0;
@@ -5332,7 +5333,7 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R 1" >>confdefs.h
@@ -5340,22 +5341,22 @@ $as_echo "#define HAVE_SOLARIS_IRIX_GETPROTOBYNAME_R 1" >>confdefs.h
 
 else
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for AIX getprotobyname_r()" >&5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for AIX getprotobyname_r()" >&5
 $as_echo_n "checking for AIX getprotobyname_r()... " >&6; }
-		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <netdb.h>
 int
 main ()
 {
 
-			    struct protoent protoent_buf;
-			    struct protoent_data proto_data;
+			struct protoent protoent_buf;
+			struct protoent_data proto_data;
 
-			    return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
+			return getprotobyname_r((const char *)0, &protoent_buf, &proto_data);
 
   ;
   return 0;
@@ -5363,7 +5364,7 @@ main ()
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
-			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 $as_echo "#define HAVE_AIX_GETPROTOBYNAME_R 1" >>confdefs.h
@@ -5371,7 +5372,7 @@ $as_echo "#define HAVE_AIX_GETPROTOBYNAME_R 1" >>confdefs.h
 
 else
 
-			    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 fi
@@ -5385,7 +5386,6 @@ rm -f core conftest.err conftest.$ac_objext \
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-
 
 #
 # You are in a twisty little maze of UN*Xes, all different.
