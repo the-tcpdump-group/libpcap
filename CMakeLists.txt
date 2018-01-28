@@ -579,6 +579,10 @@ if(HAVE_FFS)
 endif()
 
 #
+# This requires the libraries that we require, as ether_hostton might be
+# in one of those libraries.  That means we have to do this after
+# we check for those libraries.
+#
 # You are in a twisty little maze of UN*Xes, all different.
 # Some might not have ether_hostton().
 # Some might have it and declare it in <net/ethernet.h>.
@@ -590,6 +594,8 @@ endif()
 #
 # Before you is a C compiler.
 #
+cmake_push_check_state()
+set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
 check_function_exists(ether_hostton HAVE_ETHER_HOSTTON)
 if(HAVE_ETHER_HOSTTON)
     #
@@ -699,6 +705,7 @@ if(HAVE_ETHER_HOSTTON)
         cmake_pop_check_state()
     endif()
 endif()
+cmake_pop_check_state()
 
 #
 # Large file support on UN*X, a/k/a LFS.
