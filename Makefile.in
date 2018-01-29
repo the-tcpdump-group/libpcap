@@ -91,7 +91,7 @@ FSRC =  @V_FINDALLDEVS@
 SSRC =  @SSRC@
 CSRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
 	fmtutils.c \
-	savefile.c sf-pcap.c sf-pcapng.c fopen.c pcap-common.c \
+	savefile.c sf-pcap.c sf-pcapng.c pcap-common.c \
 	bpf_image.c bpf_dump.c
 GENSRC = scanner.c grammar.c bpf_filter.c
 LIBOBJS = @LIBOBJS@
@@ -126,7 +126,6 @@ HDR = $(PUBHDR) \
 	ethertype.h \
 	extract.h \
 	fmtutils.h \
-	fopen.h \
 	ftmacros.h \
 	gencode.h \
 	ieee80211.h \

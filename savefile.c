@@ -44,8 +44,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "fopen.h"
-
 #include "pcap-int.h"
 
 #ifdef HAVE_OS_PROTO_H
@@ -271,12 +269,16 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 #endif
 	}
 	else {
-		int err;
-
-		err = pcap_fopen(&fp, fname, "rb");
-		if (err != 0) {
+		/*
+		 * "b" is supported as of C90, so *all* UN*Xes should
+		 * support it, even though it does nothing.  It's
+		 * required on Windows, as the file is a binary file
+		 * and must be read in binary mode.
+		 */
+		fp = fopen(fname, "rb");
+		if (fp == NULL) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    err, "%s", fname);
+			    errno, "%s", fname);
 			return (NULL);
 		}
 	}

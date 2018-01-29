@@ -765,7 +765,6 @@ set(PROJECT_SOURCE_LIST_C
     bpf_image.c
     etherent.c
     fmtutils.c
-    fopen.c
     gencode.c
     nametoaddr.c
     optimize.c

@@ -133,8 +133,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "fopen.h"
-
 #include "pcap-int.h"
 
 #include "gencode.h"
@@ -717,8 +715,9 @@ pcap_ether_hostton(const char *name)
 	static int init = 0;
 
 	if (!init) {
+		fp = fopen(PCAP_ETHERS_FILE, "r");
 		++init;
-		if (pcap_fopen(&fp, PCAP_ETHERS_FILE, "r") != 0)
+		if (fp == NULL)
 			return (NULL);
 	} else if (fp == NULL)
 		return (NULL);

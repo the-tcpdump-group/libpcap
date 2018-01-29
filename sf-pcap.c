@@ -44,8 +44,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "fopen.h"
-
 #include "pcap-int.h"
 
 #include "pcap-common.h"
@@ -795,12 +793,16 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		f = stdout;
 		fname = "standard output";
 	} else {
-		int err;
-
-		err = pcap_fopen(&f, fname, "wb");
-		if (err != 0) {
+		/*
+		 * "b" is supported as of C90, so *all* UN*Xes should
+		 * support it, even though it does nothing.  It's
+		 * required on Windows, as the file is a binary file
+		 * and must be written in binary mode.
+		 */
+		f = fopen(fname, "wb");
+		if (f == NULL) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    err, "%s", fname);
+			    errno, "%s", fname);
 			return (NULL);
 		}
 	}
@@ -830,7 +832,6 @@ pcap_dump_fopen(pcap_t *p, FILE *f)
 pcap_dumper_t *
 pcap_dump_open_append(pcap_t *p, const char *fname)
 {
-	int err;
 	FILE *f;
 	int linktype;
 	size_t amt_read;
@@ -852,10 +853,15 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	if (fname[0] == '-' && fname[1] == '\0')
 		return (pcap_setup_dump(p, linktype, stdout, "standard output"));
 
-	err = pcap_fopen(&f, fname, "rb+");
-	if (err != 0) {
+	/*
+	 * "b" is supported as of C90, so *all* UN*Xes should support it,
+	 * even though it does nothing.  It's required on Windows, as the
+	 * file is a binary file and must be read in binary mode.
+	 */
+	f = fopen(fname, "rb+");
+	if (f == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    err, "%s", fname);
+		    errno, "%s", fname);
 		return (NULL);
 	}
 
