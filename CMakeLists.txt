@@ -375,7 +375,10 @@ if(WIN32)
     #
     # We need winsock2.h and ws2tcpip.h.
     #
-    check_symbol_exists(ws2_32 getaddrinfo "winsock2.h;ws2tcpip.h" LIBWS2_32_HAS_GETADDRINFO)
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_LIBRARIES ws2_32)
+    check_symbol_exists(getaddrinfo "winsock2.h;ws2tcpip.h" LIBWS2_32_HAS_GETADDRINFO)
+    cmake_pop_check_state()
     if(LIBWS2_32_HAS_GETADDRINFO)
         set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
     else(LIBWS2_32_HAS_GETADDRINFO)
