@@ -346,12 +346,14 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 #
 # These tests are for network applications that need socket functions
 # and getaddrinfo()/getnameinfo()-ish functions.  We now require
-# getaddrinfo() and getnameinfo().  We also prefer versions of
-# recvmsg() that conform to the Single UNIX Specification, so that we
-# can check whether a datagram received with recvmsg() was truncated
-# when received due to the buffer being too small.
+# getaddrinfo() and getnameinfo().  On UN*X systems, we also prefer
+# versions of recvmsg() that conform to the Single UNIX Specification,
+# so that we can check whether a datagram received with recvmsg() was
+# truncated when received due to the buffer being too small.
 #
-# On most operating systems, they're available in the system library.
+# On Windows, getaddrinfo() is in the ws2_32 library.
+
+# On most UN*X systems, they're available in the system library.
 #
 # Under Solaris, we need to link with libsocket and libnsl to get
 # getaddrinfo() and getnameinfo() and, if we have libxnet, we need to
@@ -368,43 +370,57 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 #
 set(PCAP_LINK_LIBRARIES "")
 include(CheckLibraryExists)
-check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
-if(NOT STDLIBS_HAVE_GETADDRINFO)
-    #
-    # Not found in the standard system libraries.
-    # Try libsocket, which requires libnsl.
-    #
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_LIBRARIES nsl)
-    check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
-    cmake_pop_check_state()
-    if(LIBSOCKET_HAS_GETADDRINFO)
-        #
-        # OK, we found it in libsocket.
-        #
+if(WIN32)
+    check_library_exists(ws2_32 getaddrinfo "" LIBWS2_32_HAS_GETADDRINFO)
+    if(LIBWS2_32_HAS_GETADDRINFO)
         set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
-    else(LIBSOCKET_HAS_GETADDRINFO)
-        #
-        # We didn't find it.
-        #
+    else(LIBWS2_32_HAS_GETADDRINFO)
         message(ERROR "getaddrinfo is required, but wasn't found")
-    endif(LIBSOCKET_HAS_GETADDRINFO)
+    endif(LIBWS2_32_HAS_GETADDRINFO)
+else(WIN32)
+    #
+    # UN*X.  First try the system libraries, then try the libraries
+    # for Solaris and possibly other systems that picked up the
+    # System V library split.
+    #
+    check_function_exists(getaddrinfo STDLIBS_HAVE_GETADDRINFO)
+    if(NOT STDLIBS_HAVE_GETADDRINFO)
+        #
+        # Not found in the standard system libraries.
+        # Try libsocket, which requires libnsl.
+        #
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES nsl)
+        check_library_exists(socket getaddrinfo "" LIBSOCKET_HAS_GETADDRINFO)
+        cmake_pop_check_state()
+        if(LIBSOCKET_HAS_GETADDRINFO)
+            #
+            # OK, we found it in libsocket.
+            #
+            set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
+        else(LIBSOCKET_HAS_GETADDRINFO)
+            #
+            # We didn't find it.
+            #
+            message(ERROR "getaddrinfo is required, but wasn't found")
+        endif(LIBSOCKET_HAS_GETADDRINFO)
 
-    #
-    # OK, do we have recvmsg() in libxnet?
-    # We also link with libsocket and libnsl.
-    #
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_LIBRARIES socket nsl)
-    check_library_exists(xnet recvmsg "" LIBXNET_HAS_RECVMSG)
-    cmake_pop_check_state()
-    if(LIBXNET_HAS_RECVMSG)
         #
-        # Yes - link with it as well.
+        # OK, do we have recvmsg() in libxnet?
+        # We also link with libsocket and libnsl.
         #
-        set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
-    endif(LIBXNET_HAS_RECVMSG)
-endif(NOT STDLIBS_HAVE_GETADDRINFO)
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES socket nsl)
+        check_library_exists(xnet recvmsg "" LIBXNET_HAS_RECVMSG)
+        cmake_pop_check_state()
+        if(LIBXNET_HAS_RECVMSG)
+            #
+            # Yes - link with it as well.
+            #
+            set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
+        endif(LIBXNET_HAS_RECVMSG)
+    endif(NOT STDLIBS_HAVE_GETADDRINFO)
+endif(WIN32)
 
 # DLPI needs putmsg under HPUX so test for -lstr while we're at it
 check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
@@ -793,10 +809,7 @@ endif(WIN32)
 #
 if(WIN32)
     #
-    # Windows; we need to link with WinSock2.
-    #
-    set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ws2_32)
-
+    # Windows.
     #
     # Has the user explicitly specified a capture type?
     #
