@@ -298,17 +298,20 @@ if(NOT HAVE_UNISTD_H)
     add_definitions(-DYY_NO_UNISTD_H)
 endif(NOT HAVE_UNISTD_H)
 check_include_file(bitypes.h HAVE_SYS_BITYPES_H)
-check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
-check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
-check_include_file(sys/select.h HAVE_SYS_SELECT_H)
+if(NOT WIN32)
+    check_include_file(sys/ioccom.h HAVE_SYS_IOCCOM_H)
+    check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
+    check_include_file(sys/select.h HAVE_SYS_SELECT_H)
+endif(NOT WIN32)
 check_include_file(limits.h HAVE_LIMITS_H)
-check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
-check_include_files("sys/types.h;sys/socket.h;net/if.h;net/pfvar.h" HAVE_NET_PFVAR_H)
-if(HAVE_NET_PFVAR_H)
-    #
-    # Check for various PF actions.
-    #
-    check_c_source_compiles(
+if(NOT WIN32)
+    check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
+    check_include_files("sys/types.h;sys/socket.h;net/if.h;net/pfvar.h" HAVE_NET_PFVAR_H)
+    if(HAVE_NET_PFVAR_H)
+        #
+        # Check for various PF actions.
+        #
+        check_c_source_compiles(
 "#include <sys/types.h>
 #include <sys/socket.h>
 #include <net/if.h>
@@ -320,16 +323,17 @@ main(void)
     return PF_NAT+PF_NONAT+PF_BINAT+PF_NOBINAT+PF_RDR+PF_NORDR;
 }
 "
-        HAVE_PF_NAT_THROUGH_PF_NORDR)
-endif()
-check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    check_include_file(linux/sockios.h HAVE_LINUX_SOCKIOS_H)
-    #
-    # linux/if_bonding.h requires sys/socket.h.
-    #
-    check_include_files("sys/socket.h;linux/if_bonding.h" HAVE_LINUX_IF_BONDING_H)
-endif()
+            HAVE_PF_NAT_THROUGH_PF_NORDR)
+    endif(HAVE_NET_PFVAR_H)
+    check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        check_include_file(linux/sockios.h HAVE_LINUX_SOCKIOS_H)
+        #
+        # linux/if_bonding.h requires sys/socket.h.
+        #
+        check_include_files("sys/socket.h;linux/if_bonding.h" HAVE_LINUX_IF_BONDING_H)
+    endif()
+endif(NOT WIN32)
 
 #
 # Functions.
@@ -427,17 +431,16 @@ else(WIN32)
             set(PCAP_LINK_LIBRARIES xnet ${PCAP_LINK_LIBRARIES})
         endif(LIBXNET_HAS_RECVMSG)
     endif(NOT STDLIBS_HAVE_GETADDRINFO)
+
+    # DLPI needs putmsg under HPUX so test for -lstr while we're at it
+    check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
+    if(NOT STDLIBS_HAVE_PUTMSG)
+        check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
+        if(LIBSTR_HAS_PUTMSG)
+            set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
+        endif(LIBSTR_HAS_PUTMSG)
+    endif(NOT STDLIBS_HAVE_PUTMSG)
 endif(WIN32)
-
-# DLPI needs putmsg under HPUX so test for -lstr while we're at it
-check_function_exists(putmsg STDLIBS_HAVE_PUTMSG)
-if(NOT STDLIBS_HAVE_PUTMSG)
-    check_library_exists(str putmsg "" LIBSTR_HAS_PUTMSG)
-    if(LIBSTR_HAS_PUTMSG)
-        set(PCAP_LINK_LIBRARIES str ${PCAP_LINK_LIBRARIES})
-    endif(LIBSTR_HAS_PUTMSG)
-endif(NOT STDLIBS_HAVE_PUTMSG)
-
 
 #
 # Check for reentrant versions of getnetbyname_r(), as provided by
@@ -576,7 +579,11 @@ cmake_pop_check_state()
 # so we use check_type_size() and ignore the size.
 #
 cmake_push_check_state()
-set(CMAKE_EXTRA_INCLUDE_FILES unistd.h sys/socket.h)
+if(WIN32)
+    set(CMAKE_EXTRA_INCLUDE_FILES winsock2.h)
+else(WIN32)
+    set(CMAKE_EXTRA_INCLUDE_FILES unistd.h sys/socket.h)
+endif(WIN32)
 check_type_size("struct sockaddr_storage" STRUCT_SOCKADDR_STORAGE)
 check_type_size("socklen_t" SOCKLEN_T)
 cmake_pop_check_state()
@@ -584,7 +591,11 @@ cmake_pop_check_state()
 #
 # Structure fields.
 #
-check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_STRUCT_SOCKADDR_SA_LEN)
+if(WIN32)
+    check_struct_has_member("struct sockaddr" sa_len winsock2.h HAVE_STRUCT_SOCKADDR_SA_LEN)
+else(WIN32)
+    check_struct_has_member("struct sockaddr" sa_len sys/socket.h HAVE_STRUCT_SOCKADDR_SA_LEN)
+endif(WIN32)
 
 #
 # Do we have ffs(), and is it declared in <strings.h>?
