@@ -370,8 +370,12 @@ check_function_exists(strtok_r HAVE_STRTOK_R)
 #
 set(PCAP_LINK_LIBRARIES "")
 include(CheckLibraryExists)
+include(CheckSymbolExists)
 if(WIN32)
-    check_library_exists(ws2_32 getaddrinfo "" LIBWS2_32_HAS_GETADDRINFO)
+    #
+    # We need winsock2.h and ws2tcpip.h.
+    #
+    check_symbol_exists(ws2_32 getaddrinfo "winsock2.h;ws2tcpip.h" LIBWS2_32_HAS_GETADDRINFO)
     if(LIBWS2_32_HAS_GETADDRINFO)
         set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
     else(LIBWS2_32_HAS_GETADDRINFO)
@@ -445,7 +449,6 @@ endif(NOT STDLIBS_HAVE_PUTMSG)
 # if there's a declaration, it has a prototype, so that the API
 # can be checked.)
 #
-include(CheckSymbolExists)
 cmake_push_check_state()
 set(CMAKE_REQUIRED_LIBRARIES ${PCAP_LINK_LIBRARIES})
 check_symbol_exists(getnetbyname_r netdb.h NETDB_H_DECLARES_GETNETBYNAME_R)
