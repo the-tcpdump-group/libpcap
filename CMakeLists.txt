@@ -373,11 +373,11 @@ include(CheckLibraryExists)
 include(CheckSymbolExists)
 if(WIN32)
     #
-    # We need winsock2.h, ws2tcpip.h and wspiapi.h.
+    # We need winsock2.h and ws2tcpip.h.
     #
     cmake_push_check_state()
     set(CMAKE_REQUIRED_LIBRARIES ws2_32)
-    check_symbol_exists(getaddrinfo "winsock2.h;ws2tcpip.h;wspiapi.h" LIBWS2_32_HAS_GETADDRINFO)
+    check_symbol_exists(getaddrinfo "winsock2.h;ws2tcpip.h" LIBWS2_32_HAS_GETADDRINFO)
     cmake_pop_check_state()
     if(LIBWS2_32_HAS_GETADDRINFO)
         set(PCAP_LINK_LIBRARIES ws2_32 ${PCAP_LINK_LIBRARIES})
