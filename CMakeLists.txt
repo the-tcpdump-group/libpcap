@@ -375,7 +375,7 @@ if(WIN32)
     if(LIBWS2_32_HAS_GETADDRINFO)
         set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
     else(LIBWS2_32_HAS_GETADDRINFO)
-        message(ERROR "getaddrinfo is required, but wasn't found")
+        message(FATAL_ERROR "getaddrinfo is required, but wasn't found")
     endif(LIBWS2_32_HAS_GETADDRINFO)
 else(WIN32)
     #
@@ -402,7 +402,7 @@ else(WIN32)
             #
             # We didn't find it.
             #
-            message(ERROR "getaddrinfo is required, but wasn't found")
+            message(FATAL_ERROR "getaddrinfo is required, but wasn't found")
         endif(LIBSOCKET_HAS_GETADDRINFO)
 
         #
