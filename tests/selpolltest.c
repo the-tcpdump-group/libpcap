@@ -82,7 +82,7 @@ main(int argc, char **argv)
 	device = NULL;
 	doselect = 0;
 	dopoll = 0;
-	mechanism = "pcap_dispatch()";
+	mechanism = NULL;
 	dotimeout = 0;
 	dononblock = 0;
 	if ((cp = strrchr(argv[0], '/')) != NULL)
@@ -153,31 +153,41 @@ main(int argc, char **argv)
 
 	if (pcap_compile(pd, &fcode, cmdbuf, 1, netmask) < 0)
 		error("%s", pcap_geterr(pd));
-
 	if (pcap_setfilter(pd, &fcode) < 0)
 		error("%s", pcap_geterr(pd));
-	selectable_fd = pcap_get_selectable_fd(pd);
-	if (selectable_fd == -1) {
-		printf("Listening on %s, using %s, with a timeout\n",
-		    device, mechanism);
-		required_timeout = pcap_get_required_select_timeout(pd);
-		if (required_timeout == NULL)
-			if (doselect || dopoll)
+
+	if (doselect || dopoll) {
+		/*
+		 * We need either an FD on which to do select()/poll()
+		 * or, if there isn't one, a timeout to use in select()/
+		 * poll().
+		 */
+		selectable_fd = pcap_get_selectable_fd(pd);
+		if (selectable_fd == -1) {
+			printf("Listening on %s, using %s, with a timeout\n",
+			    device, mechanism);
+			required_timeout = pcap_get_required_select_timeout(pd);
+			if (required_timeout == NULL)
 				error("select()/poll() isn't supported on %s, even with a timeout",
 				    device);
-		/*
-		 * As we won't be notified by select() or poll() that
-		 * a read can be done, we'll have to periodically try
-		 * reading from the device every time the required
-		 * timeout expires, and we don't want those attempts
-		 * to block if nothing has arrived in that interval,
-		 * so we want to force non-blocking mode.
-		 */
-		dononblock = 1;
-	} else {
-		printf("Listening on %s, using %s\n", device, mechanism);
-		required_timeout = NULL;
-	}
+
+			/*
+			 * As we won't be notified by select() or poll()
+			 * that a read can be done, we'll have to periodically
+			 * try reading from the device every time the required
+			 * timeout expires, and we don't want those attempts
+			 * to block if nothing has arrived in that interval,
+			 * so we want to force non-blocking mode.
+			 */
+			dononblock = 1;
+		} else {
+			printf("Listening on %s, using %s\n", device,
+			    mechanism);
+			required_timeout = NULL;
+		}
+	} else
+		printf("Listening on %s, using pcap_dispatch()\n", device);
+
 	if (dononblock) {
 		if (pcap_setnonblock(pd, 1, ebuf) == -1)
 			error("pcap_setnonblock failed: %s", ebuf);
@@ -245,7 +255,7 @@ main(int argc, char **argv)
 				 * a ton of "no packets" reports.
 				 */
 				if (status != 0 || packet_count != 0 ||
-				    selectable_fd != -1) {
+				    required_timeout != NULL) {
 					printf("%d packets seen, %d packets counted after select returns\n",
 					    status, packet_count);
 				}
@@ -309,7 +319,7 @@ main(int argc, char **argv)
 				 * a ton of "no packets" reports.
 				 */
 				if (status != 0 || packet_count != 0 ||
-				    selectable_fd != -1) {
+				    required_timeout != NULL) {
 					printf("%d packets seen, %d packets counted after poll returns\n",
 					    status, packet_count);
 				}
