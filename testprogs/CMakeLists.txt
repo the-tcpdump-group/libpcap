@@ -3,7 +3,7 @@ if(MSVC)
   include_directories(${pcap_SOURCE_DIR}/missing)
 endif(MSVC)
 
-add_custom_target(tests)
+add_custom_target(testprogs)
 
 macro(add_test_executable _executable)
   add_executable(${_executable} EXCLUDE_FROM_ALL
@@ -17,7 +17,7 @@ macro(add_test_executable _executable)
     target_link_libraries(${_executable}
       ${ARGN} ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
   endif(WIN32)
-  add_dependencies(tests ${_executable})
+  add_dependencies(testprogs ${_executable})
 endmacro()
 
 add_test_executable(can_set_rfmon_test)

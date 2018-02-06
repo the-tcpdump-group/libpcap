@@ -363,18 +363,18 @@ EXTRA_DIST = \
 	sockutils.c \
 	sockutils.h \
 	scanner.l \
-	tests/CMakeLists.txt \
-	tests/Makefile.in \
-	tests/can_set_rfmon_test.c \
-	tests/capturetest.c \
-	tests/filtertest.c \
-	tests/findalldevstest.c \
-	tests/opentest.c \
-	tests/reactivatetest.c \
-	tests/selpolltest.c \
-	tests/threadsignaltest.c \
-	tests/unix.h \
-	tests/valgrindtest.c \
+	testprogs/CMakeLists.txt \
+	testprogs/Makefile.in \
+	testprogs/can_set_rfmon_test.c \
+	testprogs/capturetest.c \
+	testprogs/filtertest.c \
+	testprogs/findalldevstest.c \
+	testprogs/opentest.c \
+	testprogs/reactivatetest.c \
+	testprogs/selpolltest.c \
+	testprogs/threadsignaltest.c \
+	testprogs/unix.h \
+	testprogs/valgrindtest.c \
 	Win32/Prj/wpcap.sln \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
@@ -531,8 +531,8 @@ build-rpcapd: libpcap.a
 #
 # Test programs - not built by default, and not installed.
 #
-tests: FORCE
-	cd tests; $(MAKE)
+testprogs: FORCE
+	cd testprogs; $(MAKE)
 
 FORCE:
 
@@ -718,7 +718,7 @@ uninstall-rpcapd:
 clean:
 	rm -f $(CLEANFILES)
 	cd rpcapd; $(MAKE) clean
-	cd tests; $(MAKE) clean
+	cd testprogs; $(MAKE) clean
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
@@ -727,7 +727,7 @@ distclean: clean
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
 	cd rpcapd; $(MAKE) distclean
-	cd tests; $(MAKE) distclean
+	cd testprogs; $(MAKE) distclean
 
 extags: $(TAGFILES)
 	ctags $(TAGFILES)
@@ -747,4 +747,4 @@ releasetar:
 depend:	$(GENSRC) $(GENHDR) bpf_filter.c
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	cd rpcapd; $(MAKE) depend
-	cd tests; $(MAKE) depend
+	cd testprogs; $(MAKE) depend
