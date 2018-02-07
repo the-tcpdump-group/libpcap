@@ -375,6 +375,7 @@ EXTRA_DIST = \
 	testprogs/threadsignaltest.c \
 	testprogs/unix.h \
 	testprogs/valgrindtest.c \
+	tests/shb-option-too-long.pcapng \
 	Win32/Prj/wpcap.sln \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
