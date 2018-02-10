@@ -206,6 +206,11 @@
 # endif /* PCAP_SUPPORT_PACKET_RING */
 #endif /* PF_PACKET */
 
+ /* check if kernel supports fanout for socket */
+# ifdef PACKET_FANOUT
+#  define HAVE_FANOUT
+# endif
+
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
 #include <linux/filter.h>
@@ -6943,6 +6948,26 @@ pcap_set_protocol(pcap_t *p, int protocol)
 		return (PCAP_ERROR_ACTIVATED);
 	p->opt.protocol = protocol;
 	return (0);
+}
+
+int
+
+pcap_set_fanout(pcap_t *handle, int flags, int group_id)
+{
+#ifdef HAVE_FANOUT
+    int val = group_id | flags << 16;
+    if (setsockopt(handle->fd, SOL_PACKET, PACKET_FANOUT,
+        &val, sizeof(val)) < 0) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "can't change fanout settings");
+		return -1;
+    }
+    return 0;
+#else
+	pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		errno, "funout is not supported");
+	return -1;
+#endif
 }
 
 /*

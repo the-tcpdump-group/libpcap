@@ -202,6 +202,7 @@ MAN3PCAP_NOEXPAND = \
 	pcap_set_buffer_size.3pcap \
 	pcap_set_datalink.3pcap \
 	pcap_set_immediate_mode.3pcap \
+	pcap_set_fanout.3pcap \
 	pcap_set_promisc.3pcap \
 	pcap_set_protocol.3pcap \
 	pcap_set_rfmon.3pcap \
