@@ -3872,6 +3872,30 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		gen_or(b0, b1);
 		return b1;
 
+	case Q_ADDR1:
+		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR2:
+		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR3:
+		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR4:
+		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_RA:
+		bpf_error(cstate, "'ra' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_TA:
+		bpf_error(cstate, "'ta' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		break;
+
 	default:
 		abort();
 	}
@@ -3912,6 +3936,30 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		b1 = gen_hostop6(cstate, addr, mask, Q_DST, proto, src_off, dst_off);
 		gen_or(b0, b1);
 		return b1;
+
+	case Q_ADDR1:
+		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR2:
+		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR3:
+		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR4:
+		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_RA:
+		bpf_error(cstate, "'ra' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_TA:
+		bpf_error(cstate, "'ta' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		break;
 
 	default:
 		abort();
@@ -3958,19 +4006,19 @@ gen_ehostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' is only supported on 802.11 with 802.11 headers");
+		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11 with 802.11 headers");
 		break;
 
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' is only supported on 802.11 with 802.11 headers");
+		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11 with 802.11 headers");
 		break;
 
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' is only supported on 802.11 with 802.11 headers");
+		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11 with 802.11 headers");
 		break;
 
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' is only supported on 802.11 with 802.11 headers");
+		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11 with 802.11 headers");
 		break;
 
 	case Q_RA:
@@ -4014,19 +4062,19 @@ gen_fhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' is only supported on 802.11");
+		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
 		break;
 
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' is only supported on 802.11");
+		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
 		break;
 
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' is only supported on 802.11");
+		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
 		break;
 
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' is only supported on 802.11");
+		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
 		break;
 
 	case Q_RA:
@@ -4070,19 +4118,19 @@ gen_thostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' is only supported on 802.11");
+		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
 		break;
 
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' is only supported on 802.11");
+		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
 		break;
 
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' is only supported on 802.11");
+		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
 		break;
 
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' is only supported on 802.11");
+		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
 		break;
 
 	case Q_RA:
@@ -4551,19 +4599,19 @@ gen_ipfchostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' is only supported on 802.11");
+		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
 		break;
 
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' is only supported on 802.11");
+		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
 		break;
 
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' is only supported on 802.11");
+		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
 		break;
 
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' is only supported on 802.11");
+		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
 		break;
 
 	case Q_RA:
@@ -8055,19 +8103,19 @@ gen_ahostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		return b1;
 
 	case Q_ADDR1:
-		bpf_error(cstate, "'addr1' is only supported on 802.11");
+		bpf_error(cstate, "'addr1' and 'address1' are only supported on 802.11");
 		break;
 
 	case Q_ADDR2:
-		bpf_error(cstate, "'addr2' is only supported on 802.11");
+		bpf_error(cstate, "'addr2' and 'address2' are only supported on 802.11");
 		break;
 
 	case Q_ADDR3:
-		bpf_error(cstate, "'addr3' is only supported on 802.11");
+		bpf_error(cstate, "'addr3' and 'address3' are only supported on 802.11");
 		break;
 
 	case Q_ADDR4:
-		bpf_error(cstate, "'addr4' is only supported on 802.11");
+		bpf_error(cstate, "'addr4' and 'address4' are only supported on 802.11");
 		break;
 
 	case Q_RA:
