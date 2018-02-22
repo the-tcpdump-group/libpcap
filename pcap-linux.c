@@ -140,6 +140,9 @@
 #ifdef HAVE_SYS_EVENTFD_H
 #include <sys/eventfd.h>
 #endif
+//#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+#include <sched.h>
+//#endif
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -308,6 +311,10 @@ struct pcap_linux {
 	struct pcap_stat stat;
 
 	char	*device;	/* device name */
+#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+	int     root_ns_fd;
+	int     ns_fd;
+#endif
 	int	filter_in_userland; /* must filter in userland */
 	int	blocks_to_filter_in_userland;
 	int	must_do_on_close; /* stuff we must do when we close */
@@ -334,6 +341,10 @@ struct pcap_linux {
 #endif
 };
 
+/* I am still confused on handle->opt.device vs priv->device vs functions that have handle and device passed in.
+ * I don't see an API call to change the device after the create.
+ */
+#define HDEV(h) ((struct pcap_linux*)h->priv)->device
 /*
  * Stuff to do when we close.
  */
@@ -507,23 +518,105 @@ static struct sock_fprog	total_fcode
 
 static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle);
 
+#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+#define NETNS_CURRENT "/proc/self/ns/net"
+#define NETNS_DIR_PATH "/var/run/netns"
+#define NETNS_DEV_PREFIX "NS:"
+#define NETNS_DEV_PREFIX_LEN 3
+
+void NETNS_ROOT_SET(	pcap_t *handle  )
+{
+	struct pcap_linux *hp = handle->priv;
+	if( hp->ns_fd >= 0 && hp->root_ns_fd != hp->ns_fd)
+		setns( hp->ns_fd, CLONE_NEWNET );
+}
+
+void NETNS_ROOT_RETURN(	pcap_t *handle  )
+{
+	struct pcap_linux *hp = handle->priv;
+	if( hp->ns_fd >= 0 && hp->root_ns_fd != hp->ns_fd)
+		setns( hp->root_ns_fd, CLONE_NEWNET );
+}
+
+#else
+#define NETNS_ROOT_SET(h) do{ }while(0)
+#define NETNS_ROOT_RETURN(h) do{ }while(0)
+#endif
+
 pcap_t *
 pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *handle;
+	const char *real_dev = device;
+        struct pcap_linux *handlep;
 
 	handle = pcap_create_common(ebuf, sizeof (struct pcap_linux));
 	if (handle == NULL)
 		return NULL;
+        handlep = handle->priv;
+#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+	if (strncmp(device, NETNS_DEV_PREFIX, NETNS_DEV_PREFIX_LEN) == 0 &&
+	    strstr( device + NETNS_DEV_PREFIX_LEN, ":") != NULL ) {
+		const char *name = device + NETNS_DEV_PREFIX_LEN;
+		const char *ne;
+		char fname[512];
 
+		ne = strstr( name, ":" );
+		snprintf( fname, sizeof(fname), NETNS_DIR_PATH "/%.*s", (int)(ne-name), name );
+		handlep->ns_fd = open( fname, O_RDONLY|O_CLOEXEC );
+                if (handlep->ns_fd <0) {
+		  pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to open network namespace (%s) %s",
+				fname, pcap_strerror(errno));
+		  return NULL;
+                }
+                handlep->root_ns_fd = open( NETNS_CURRENT, O_RDONLY|O_CLOEXEC );
+		setns( handlep->ns_fd, CLONE_NEWNET );
+		real_dev = ne+1;
+	}
+        else
+        {
+		handlep->ns_fd = -1;
+                handlep->root_ns_fd = -1;
+		real_dev = device;
+	}
+#else
+        real_dev = device;
+#endif
 	handle->activate_op = pcap_activate_linux;
-	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+
+	handlep->device	= strdup(real_dev);
+	if (handlep->device == NULL) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "strdup");
+                NETNS_ROOT_RETURN(handle);
+		pcap_close(handle);
+		return NULL;
+	}
+	/*
+	 * The "any" device is a special device which causes us not
+	 * to bind to a particular device and thus to look at all
+	 * devices.
+	 */
+	if (strcmp(real_dev, "any") == 0) {
+		if (handle->opt.promisc) {
+			handle->opt.promisc = 0;
+			/* Just a warning. */
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "Promiscuous mode not supported on the \"any\" device");
+			//status = PCAP_WARNING_PROMISC_NOTSUP;
+		}
+	}else{
+          handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+
+        }
+
 
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 	/*
 	 * See what time stamp types we support.
 	 */
-	if (iface_ethtool_get_ts_info(device, handle, ebuf) == -1) {
+	if (iface_ethtool_get_ts_info(real_dev, handle, ebuf) == -1) {
+                NETNS_ROOT_RETURN(handle);
 		pcap_close(handle);
 		return NULL;
 	}
@@ -543,6 +636,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	if (handle->tstamp_precision_list == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
+                NETNS_ROOT_RETURN(handle);
 		pcap_close(handle);
 		return NULL;
 	}
@@ -551,10 +645,10 @@ pcap_create_interface(const char *device, char *ebuf)
 #endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
 #ifdef HAVE_SYS_EVENTFD_H
-	struct pcap_linux *handlep = handle->priv;
 	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
 #endif
 
+        NETNS_ROOT_RETURN(handle);
 	return handle;
 }
 
@@ -1089,14 +1183,8 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	int sock_fd;
 	struct iwreq ireq;
 #endif
-
-	if (strcmp(handle->opt.device, "any") == 0) {
-		/*
-		 * Monitor mode makes no sense on the "any" device.
-		 */
-		return 0;
-	}
-
+        /*Now have create function set this function pointer based on any dev*/
+        NETNS_ROOT_SET(handle);
 #ifdef HAVE_LIBNL
 	/*
 	 * Bleah.  There doesn't seem to be a way to ask a mac80211
@@ -1110,12 +1198,16 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	 * wmaster device, so we don't bother checking whether
 	 * a mac80211 device supports the Wireless Extensions.
 	 */
-	ret = get_mac80211_phydev(handle, handle->opt.device, phydev_path,
+	ret = get_mac80211_phydev(handle, HDEV(handle), phydev_path,
 	    PATH_MAX);
-	if (ret < 0)
+	if (ret < 0){
+          NETNS_ROOT_RETURN(handle);
 		return ret;	/* error */
-	if (ret == 1)
-		return 1;	/* mac80211 device */
+        }
+	if (ret == 1){
+          NETNS_ROOT_RETURN(handle);
+          return 1;	/* mac80211 device */
+        }
 #endif
 
 #ifdef IW_MODE_MONITOR
@@ -1133,36 +1225,41 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	if (sock_fd == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket");
+                NETNS_ROOT_RETURN(handle);
 		return PCAP_ERROR;
 	}
 
-	if (is_bonding_device(sock_fd, handle->opt.device)) {
+	if (is_bonding_device(sock_fd, HDEV(handle))) {
 		/* It's a bonding device, so don't even try. */
 		close(sock_fd);
+                NETNS_ROOT_RETURN(handle);
 		return 0;
 	}
 
 	/*
 	 * Attempt to get the current mode.
 	 */
-	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.device,
+	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, HDEV(handle),
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
 		/*
 		 * Well, we got the mode; assume we can set it.
 		 */
 		close(sock_fd);
-		return 1;
+                NETNS_ROOT_RETURN(handle);
+                return 1;
 	}
 	if (errno == ENODEV) {
 		/* The device doesn't even exist. */
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "SIOCGIWMODE failed");
 		close(sock_fd);
+                NETNS_ROOT_RETURN(handle);
 		return PCAP_ERROR_NO_SUCH_DEVICE;
 	}
 	close(sock_fd);
 #endif
+        NETNS_ROOT_RETURN(handle);
 	return 0;
 }
 
@@ -1185,8 +1282,10 @@ linux_if_drops(const char * if_name)
 	long int dropped_pkts = 0;
 
 	file = fopen("/proc/net/dev", "r");
-	if (!file)
-		return 0;
+	if (!file){
+          printf("Failed to get if drops\n");
+          return 0;
+        }
 
 	while (!dropped_pkts && fgets( buffer, sizeof(buffer), file ))
 	{
@@ -1581,13 +1680,13 @@ static int
 pcap_activate_linux(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
-	const char	*device;
+	const char	*device = HDEV(handle);
 	int		is_any_device;
 	struct ifreq	ifr;
 	int		status = 0;
 	int		ret;
 
-	device = handle->opt.device;
+        NETNS_ROOT_SET(handle);
 
 	/*
 	 * Make sure the name we were handed will fit into the ioctls we
@@ -1628,14 +1727,7 @@ pcap_activate_linux(pcap_t *handle)
 #ifdef HAVE_SYS_EVENTFD_H
 	handle->breakloop_op = pcap_breakloop_linux;
 #endif
-
-	handlep->device	= strdup(device);
-	if (handlep->device == NULL) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "strdup");
-		status = PCAP_ERROR;
-		goto fail;
-	}
+        /*handlep->device set earlier*/
 
 	/*
 	 * The "any" device is a special device which causes us not
@@ -1726,6 +1818,7 @@ pcap_activate_linux(pcap_t *handle)
 			 * returning.
 			 */
 			set_poll_timeout(handlep);
+                        NETNS_ROOT_RETURN(handle);
 			return status;
 
 		case 0:
@@ -1799,10 +1892,12 @@ pcap_activate_linux(pcap_t *handle)
 	 * should work on it.
 	 */
 	handle->selectable_fd = handle->fd;
+        NETNS_ROOT_RETURN(handle);
 
 	return status;
 
 fail:
+        NETNS_ROOT_RETURN(handle);
 	pcap_cleanup_linux(handle);
 	return status;
 }
@@ -2356,6 +2451,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	long if_dropped = 0;
 
+        NETNS_ROOT_SET(handle);
 	/*
 	 *	To fill in ps_ifdrop, we parse /proc/net/dev for the number
 	 */
@@ -2422,6 +2518,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		handlep->stat.ps_recv += kstats.tp_packets;
 		handlep->stat.ps_drop += kstats.tp_drops;
 		*stats = handlep->stat;
+                NETNS_ROOT_RETURN(handle);
 		return 0;
 	}
 	else
@@ -2433,6 +2530,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * that doesn't, it works as it does if the library
 		 * is built on a system without "struct tpacket_stats".
 		 */
+                NETNS_ROOT_RETURN(handle);
 		if (errno != EOPNOTSUPP) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "pcap_stats");
@@ -2941,15 +3039,16 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	return 0;
 }
 
-int
-pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+static int
+pcap_platform_finddevs_prefix(pcap_if_list_t *devlistp, char *dev_prefix, char *errbuf)
 {
 	int ret;
+	char devname[120] = "any";
 
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+        if (pcap_findalldevs_interfaces(dev_prefix, devlistp, errbuf, can_be_bound,
 	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
@@ -2972,18 +3071,64 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 			return (-1);
 	}
 
+	if (dev_prefix)
+		snprintf( devname, sizeof(devname), "%sany", dev_prefix );
 	/*
 	 * Add the "any" device.
 	 * As it refers to all network devices, not to any particular
 	 * network device, the notion of "connected" vs. "disconnected"
 	 * doesn't apply.
 	 */
-	if (add_dev(devlistp, "any",
+	if (add_dev(devlistp, devname,
 	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    any_descr, errbuf) == NULL)
 		return (-1);
 
 	return (0);
+}
+
+int pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+{
+#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+	DIR *dir;
+	struct dirent *dent;
+	int root_ns_fd;
+	int fd;
+	int ret;
+
+	dir = opendir( NETNS_DIR_PATH );
+	root_ns_fd = open( NETNS_CURRENT, O_RDONLY|O_CLOEXEC );
+
+        pcap_platform_finddevs_prefix( devlistp, NULL, errbuf );
+
+	if (dir && root_ns_fd >= 0) {
+		dent = readdir(dir);
+		while ( dent ) {
+			if (dent->d_type == DT_REG ) {
+				char fname[512];
+
+				snprintf( fname, sizeof(fname), NETNS_DIR_PATH "/%s", dent->d_name );
+				fd = open( fname, O_RDONLY|O_CLOEXEC );
+				ret = setns( fd, CLONE_NEWNET );
+
+				snprintf( fname, sizeof(fname), NETNS_DEV_PREFIX "%s:", dent->d_name );
+				if (ret == 0){
+					pcap_platform_finddevs_prefix( devlistp, fname, errbuf );
+				}
+                                close(fd);
+			}else{
+			}
+			dent = readdir( dir );
+		}
+		/*Get back to original namespace*/
+                setns(root_ns_fd, CLONE_NEWNET);
+        }
+        close( root_ns_fd );
+        closedir(dir);
+	return 0;
+#else
+        return  pcap_platform_finddevs_prefix( devlistp, NULL, errbuf );
+#endif
 }
 
 /*
@@ -3759,7 +3904,7 @@ static int
 activate_new(pcap_t *handle, int is_any_device)
 {
 	struct pcap_linux *handlep = handle->priv;
-	const char		*device = handle->opt.device;
+	const char		*device = HDEV(handle);
 	int			sock_fd, arptype;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
@@ -3770,6 +3915,7 @@ activate_new(pcap_t *handle, int is_any_device)
 	int			bpf_extensions;
 	socklen_t		len = sizeof(bpf_extensions);
 #endif
+        NETNS_ROOT_SET(handle);
 
 	sock_fd = open_pf_packet_socket(handle, is_any_device);
 	if (sock_fd < 0) {
@@ -4093,6 +4239,7 @@ activate_new(pcap_t *handle, int is_any_device)
 	 * We've succeeded. Save the socket FD in the pcap structure.
 	 */
 	handle->fd = sock_fd;
+        NETNS_ROOT_RETURN(handle);
 
 #if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 	/*
@@ -4575,7 +4722,7 @@ create_ring(pcap_t *handle, int *status)
 			int mtu;
 			int offload;
 
-			mtu = iface_get_mtu(handle->fd, handle->opt.device,
+			mtu = iface_get_mtu(handle->fd, HDEV(handle),
 			    handle->errbuf);
 			if (mtu == -1) {
 				*status = PCAP_ERROR;
@@ -4720,7 +4867,7 @@ create_ring(pcap_t *handle, int *status)
 		hwconfig.rx_filter = HWTSTAMP_FILTER_ALL;
 
 		memset(&ifr, 0, sizeof(ifr));
-		pcap_strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
+		pcap_strlcpy(ifr.ifr_name, HDEV(handle), sizeof(ifr.ifr_name));
 		ifr.ifr_data = (void *)&hwconfig;
 
 		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
@@ -6805,7 +6952,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname,
 	struct ethtool_value eval;
 
 	memset(&ifr, 0, sizeof(ifr));
-	pcap_strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, HDEV(handle), sizeof(ifr.ifr_name));
 	eval.cmd = cmd;
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
@@ -6822,7 +6969,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname,
 		}
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "%s: SIOCETHTOOL(%s) ioctl failed",
-		    handle->opt.device, cmdname);
+                                          HDEV(handle), cmdname);
 		return -1;
 	}
 	return eval.data;

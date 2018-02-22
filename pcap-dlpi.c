@@ -1084,7 +1084,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(devlistp, errbuf, is_dlpi_interface,
+        if (pcap_findalldevs_interfaces(NULL, devlistp, errbuf, is_dlpi_interface,
 	    get_if_flags) == -1)
 		return (-1);	/* failure */
 

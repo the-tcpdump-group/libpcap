@@ -133,7 +133,7 @@ struct rtentry;		/* declarations in <net/if.h> */
  * we already have that.
  */
 int
-pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
+pcap_findalldevs_interfaces(const char *dev_prefix, pcap_if_list_t *devlistp, char *errbuf,
     int (*check_usable)(const char *), get_if_flags_func get_flags_func)
 {
 	register int fd;
