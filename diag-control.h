@@ -35,6 +35,8 @@
 #ifndef _diag_control_h
 #define _diag_control_h
 
+#include "pcap/compiler-tests.h"
+
 /*
  * Berkeley YACC gemerates a global declaration of yylval, or the
  * appropriately prefixed version of yylval, in grammar.h, *even
