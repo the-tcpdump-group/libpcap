@@ -38,7 +38,7 @@
 #include "pcap/compiler-tests.h"
 
 /*
- * Berkeley YACC gemerates a global declaration of yylval, or the
+ * Berkeley YACC generates a global declaration of yylval, or the
  * appropriately prefixed version of yylval, in grammar.h, *even
  * though it's been told to generate a pure parser, meaning it
  * doesn't have any global variables*.  Bison doesn't do this.
