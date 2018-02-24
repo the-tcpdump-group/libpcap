@@ -123,6 +123,7 @@ PUBHDR = \
 HDR = $(PUBHDR) \
 	arcnet.h \
 	atmuni31.h \
+	diag-control.h \
 	ethertype.h \
 	extract.h \
 	fmtutils.h \
