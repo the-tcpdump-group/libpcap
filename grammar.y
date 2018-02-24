@@ -262,6 +262,38 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
 	return -1;
 }
 #endif /* HAVE_NET_PFVAR_H */
+
+/*
+ * Berkeley YACC gemerates a global declaration of yylval, or the
+ * appropriately prefixed version of yylval, in grammar.h, *even
+ * though it's been told to generate a pure parser, meaning it
+ * doesn't have any global variables*.  Bison doesn't do this.
+ *
+ * That causes a warning due to the local declaration in the parser
+ * shadowing the global declaration.
+ *
+ * So, if this is Berkeley YACC, and we have _Pragma, and have pragmas
+ * to suppress diagnostics, we use it to turn off -Wshadow warnings.
+ */
+#ifdef YYBYACC
+  /*
+   * This is Berkeley YACC.
+   */
+  #define PCAP_DO_PRAGMA(x) _Pragma (#x)
+  #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+    /*
+     * This is Clang 2.8 or later; we can use "clang diagnostic
+     * ignored -Wxxx" and "clang diagnostic push/pop".
+     */
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow")
+  #elif PCAP_IS_AT_LEAST_GNUC(4,2)
+    /*
+     * This is GCC 4.2 or later, or a compiler claiming to be that.
+     * We can use "GCC diagnostic ignored -Wxxx".
+     */
+    PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wshadow")
+  #endif
+#endif
 %}
 
 %union {
