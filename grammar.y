@@ -286,7 +286,7 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
      * ignored -Wxxx" and "clang diagnostic push/pop".
      */
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow")
-  #elif PCAP_IS_AT_LEAST_GNUC(4,2)
+  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,2)
     /*
      * This is GCC 4.2 or later, or a compiler claiming to be that.
      * We can use "GCC diagnostic ignored -Wxxx".
