@@ -99,18 +99,6 @@ extern "C" {
   #endif
 #endif
 
-#ifdef _MSC_VER
-  /*
-   * MSVC.
-   */
-  #if _MSC_VER >= 1900
-    /*
-     * VS 2015 or newer; we have snprintf() function.
-     */
-    #define HAVE_SNPRINTF
-  #endif
-#endif
-
 /*
  * On Windows, snprintf(), with that name and with C99 behavior - i.e.,
  * guaranteeing that the formatted string is null-terminated - didn't
