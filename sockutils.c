@@ -90,6 +90,24 @@
 #define SOCKET_NO_PORT_AVAILABLE "No port available"
 #define SOCKET_NAME_NULL_DAD "Null address (possibly DAD Phase)"
 
+/*
+ * On UN*X, send() and recv() return ssize_t.
+ *
+ * On Windows, send() and recv() return an int.
+ *
+ *   Wth MSVC, there *is* no ssize_t.
+ *
+ *   With MinGW, there is an ssize_t type; it is either an int (32 bit)
+ *   or a long long (64 bit). 
+ *
+ * So, on Windows, if we don't have ssize_t defined, define it as an
+ * int, so we can use it, on all platforms, as the type of variables
+ * that hold the return values from send() and recv().
+ */
+#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
+typedef int ssize_t;
+#endif
+
 /****************************************************
  *                                                  *
  * Locally defined functions                        *
@@ -605,53 +623,65 @@ int sock_initaddress(const char *host, const char *port,
  * "connection reset" occurred, '-2' if "connection reset" occurred.
  * For errors, an error message is returned in the 'errbuf' variable.
  */
-int sock_send(SOCKET sock, const char *buffer, int size, char *errbuf, int errbuflen)
+int sock_send(SOCKET sock, const char *buffer, size_t size,
+    char *errbuf, int errbuflen)
 {
-	int nsent;
+	int remaining;
+	ssize_t nsent;
 
-send:
-#ifdef linux
-	/*
-	 * Another pain... in Linux there's this flag
-	 * MSG_NOSIGNAL
-	 * Requests not to send SIGPIPE on errors on stream-oriented
-	 * sockets when the other end breaks the connection.
-	 * The EPIPE error is still returned.
-	 */
-	nsent = send(sock, buffer, size, MSG_NOSIGNAL);
-#else
-	nsent = send(sock, buffer, size, 0);
-#endif
-
-	if (nsent == -1)
+	if (size > INT_MAX)
 	{
-		/*
-		 * If the client closed the connection out from under us,
-		 * there's no need to log that as an error.
-		 */
-		int errcode;
-
-#ifdef _WIN32
-		errcode = GetLastError();
-
-		sock_fmterror("send(): ", errcode, errbuf, errbuflen);
-		if (errcode == WSAECONNRESET)
-			return -2;
-#else
-		errcode = errno;
-		sock_fmterror("send(): ", errcode, errbuf, errbuflen);
-		if (errcode == ECONNRESET)
-			return -2;
-#endif
+		if (errbuf)
+		{
+			pcap_snprintf(errbuf, errbuflen,
+			    "Can't send more than %u bytes with sock_recv",
+			    INT_MAX);
+		}
 		return -1;
 	}
+	remaining = (int)size;
 
-	if (nsent != size)
-	{
-		size -= nsent;
+	do {
+#ifdef linux
+		/*
+		 * Another pain... in Linux there's this flag
+		 * MSG_NOSIGNAL
+		 * Requests not to send SIGPIPE on errors on stream-oriented
+		 * sockets when the other end breaks the connection.
+		 * The EPIPE error is still returned.
+		 */
+		nsent = send(sock, buffer, remaining, MSG_NOSIGNAL);
+#else
+		nsent = send(sock, buffer, remaining, 0);
+#endif
+
+		if (nsent == -1)
+		{
+			/*
+			 * If the client closed the connection out from
+			 * under us, there's no need to log that as an
+			 * error.
+			 */
+			int errcode;
+
+#ifdef _WIN32
+			errcode = GetLastError();
+
+			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
+			if (errcode == WSAECONNRESET)
+				return -2;
+#else
+			errcode = errno;
+			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
+			if (errcode == ECONNRESET)
+				return -2;
+#endif
+			return -1;
+		}
+
+		remaining -= nsent;
 		buffer += nsent;
-		goto send;
-	}
+	} while (remaining != 0);
 
 	return 0;
 }
@@ -773,18 +803,6 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
  * \return the number of bytes read if everything is fine, '-1' if some errors occurred.
  * The error message is returned in the 'errbuf' variable.
  */
-
-/*
- * On UN*X, recv() returns ssize_t.
- * On MSVC, there *is* no ssize_t, and it returns an int.
- * MinGW has ssize_t. It and returns either an int (32 bit)
- * or a long long (64 bit).
- * Define ssize_t as int only on MSVC and on those that don't define
- * _SSIZE_T_DEFINED so we can use it as the return value from recv().
- */
-#if defined(_WIN32) && !defined(_SSIZE_T_DEFINED)
-typedef int ssize_t;
-#endif
 
 int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
     char *errbuf, int errbuflen)
@@ -977,7 +995,12 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 	}
 #endif /* HAVE_STRUCT_MSGHDR_MSG_FLAGS */
 #endif /* _WIN32 */
-	return nread;
+
+	/*
+	 * The size we're reading fits in an int, so the return value
+	 * will fit in an int.
+	 */
+	return (int)nread;
 }
 
 /*
