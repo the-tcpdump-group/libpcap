@@ -249,6 +249,9 @@ int main(int argc, char *argv[], char *envp[])
 	// SIGTERM (i.e. kill -15) is not generated in Win32, although it is included for ANSI compatibility
 	signal(SIGTERM, main_terminate);
 	signal(SIGCHLD, main_reap_children);
+	// Ignore SIGPIPE - we'll get EPIPE when trying to write to a closed
+	// connection, we don't want to get killed by a signal in that case
+	signal(SIGPIPE, SIG_IGN);
 #endif
 
 	// forking a daemon, if it is needed

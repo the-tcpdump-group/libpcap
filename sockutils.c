@@ -316,6 +316,7 @@ static int sock_ismcastaddr(const struct sockaddr *saddr)
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen)
 {
 	SOCKET sock;
+	int on = 1;
 
 	sock = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol);
 	if (sock == INVALID_SOCKET)
@@ -324,6 +325,21 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		return INVALID_SOCKET;
 	}
 
+	/*
+	 * Disable SIGPIPE, if we have SO_NOSIGPIPE.  We don't want to
+	 * have to deal with signals if the peer closes the connection,
+	 * especially in client programs, which may not even be aware that
+	 * they're sending to sockets.
+	 */
+#ifdef SO_NOSIGPIPE
+	if (setsockopt(sock, SOL_SOCKET, SO_NOSIGPIPE, (char *)&on,
+	    sizeof (int)) == -1)
+	{
+		sock_geterror("setsockopt(SO_NOSIGPIPE)", errbuf, errbuflen);
+		closesocket(sock);
+		return INVALID_SOCKET;
+	}
+#endif
 
 	/* This is a server socket */
 	if (server)
@@ -363,8 +379,6 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 #endif /* IPV6_V6ONLY */
 		if (addrinfo->ai_family == PF_INET6)
 		{
-			int on = 1;
-
 			if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY,
 			    (char *)&on, sizeof (int)) == -1)
 			{
