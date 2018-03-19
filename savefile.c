@@ -473,6 +473,7 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	int status = 0;
 	int n = 0;
 	u_char *data;
+	u_int filter_out = -1;
 
 	while (status == 0) {
 		struct pcap_pkthdr h;
@@ -502,7 +503,11 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		if ((fcode = p->fcode.bf_insns) == NULL ||
-		    bpf_filter(fcode, data, h.len, h.caplen)) {
+		    (filter_out = bpf_filter(fcode, data, h.len, h.caplen))) {
+		   /* Google-specific fix for:
+		      https://github.com/the-tcpdump-group/libpcap/issues/438 */
+			if (h.caplen > filter_out)
+				h.caplen = filter_out;
 			(*callback)(user, &h, data);
 			if (++n >= cnt && cnt > 0)
 				break;
