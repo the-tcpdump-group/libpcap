@@ -17,8 +17,8 @@ install:
   - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
 
 build_script:
+  - type NUL >.devel
   - md build
   - cd build
-  - type NUL >.devel
   - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack -G"Visual Studio 12 2013" ..
   - msbuild -nologo -p:Configuration=Release pcap.sln
