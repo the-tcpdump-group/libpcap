@@ -817,8 +817,7 @@ pcap_freecode(struct bpf_program *program)
  * in each block is already resolved.
  */
 static void
-backpatch(list, target)
-	struct block *list, *target;
+backpatch(struct block *list, struct block *target)
 {
 	struct block *next;
 
@@ -839,8 +838,7 @@ backpatch(list, target)
  * which of jt and jf is the link.
  */
 static void
-merge(b0, b1)
-	struct block *b0, *b1;
+merge(struct block *b0, struct block *b1)
 {
 	register struct block **p = &b0;
 
@@ -902,8 +900,7 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 }
 
 void
-gen_and(b0, b1)
-	struct block *b0, *b1;
+gen_and(struct block *b0, struct block *b1)
 {
 	backpatch(b0, b1->head);
 	b0->sense = !b0->sense;
@@ -914,8 +911,7 @@ gen_and(b0, b1)
 }
 
 void
-gen_or(b0, b1)
-	struct block *b0, *b1;
+gen_or(struct block *b0, struct block *b1)
 {
 	b0->sense = !b0->sense;
 	backpatch(b0, b1->head);
@@ -925,8 +921,7 @@ gen_or(b0, b1)
 }
 
 void
-gen_not(b)
-	struct block *b;
+gen_not(struct block *b)
 {
 	b->sense = !b->sense;
 }
@@ -2928,8 +2923,7 @@ gen_abs_offset_varpart(compiler_state_t *cstate, bpf_abs_offset *off)
  * Map an Ethernet type to the equivalent PPP type.
  */
 static int
-ethertype_to_ppptype(proto)
-	int proto;
+ethertype_to_ppptype(int proto)
 {
 	switch (proto) {
 
@@ -5771,9 +5765,7 @@ lookup_proto(compiler_state_t *cstate, const char *name, int proto)
 
 #if 0
 struct stmt *
-gen_joinsp(s, n)
-	struct stmt **s;
-	int n;
+gen_joinsp(struct stmt **s, int n)
 {
 	return NULL;
 }
@@ -6875,8 +6867,7 @@ gen_ecode(compiler_state_t *cstate, const u_char *eaddr, struct qual q)
 }
 
 void
-sappend(s0, s1)
-	struct slist *s0, *s1;
+sappend(struct slist *s0, struct slist *s1)
 {
 	/*
 	 * This is definitely not the best way to do this, but the

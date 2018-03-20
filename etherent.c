@@ -44,8 +44,7 @@ static inline int skip_line(FILE *);
 
 /* Hex digit to integer. */
 static inline int
-xdtoi(c)
-	register int c;
+xdtoi(int c)
 {
 	if (isdigit(c))
 		return c - '0';
@@ -56,8 +55,7 @@ xdtoi(c)
 }
 
 static inline int
-skip_space(f)
-	FILE *f;
+skip_space(FILE *f)
 {
 	int c;
 
@@ -69,8 +67,7 @@ skip_space(f)
 }
 
 static inline int
-skip_line(f)
-	FILE *f;
+skip_line(FILE *f)
 {
 	int c;
 

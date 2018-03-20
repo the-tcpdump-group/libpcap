@@ -613,8 +613,7 @@ pcap_nametollc(const char *s)
 
 /* Hex digit to integer. */
 static inline int
-xdtoi(c)
-	register int c;
+xdtoi(int c)
 {
 	if (isdigit(c))
 		return c - '0';
