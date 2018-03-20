@@ -484,8 +484,7 @@ tcp-cwr			{ yylval->i = 0x80; return NUM; }
 
 /* Hex digit to integer. */
 static inline int
-xdtoi(c)
-	register int c;
+xdtoi(int c)
 {
 	if (isdigit(c))
 		return c - '0';
@@ -500,8 +499,7 @@ xdtoi(c)
  * preceding 0x or 0 and uses hex or octal instead of decimal.
  */
 static int
-stoi(s)
-	char *s;
+stoi(char *s)
 {
 	int base = 10;
 	int n = 0;
