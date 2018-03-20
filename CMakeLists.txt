@@ -1564,6 +1564,11 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
         #
         # Disable some pointless warnings that /Wall turns on.
         #
+        # We do *not* care whether some function is going to be
+        # expanded inline.
+        #
+        check_and_add_compiler_option(-wd4711)
+        #
         # We do *not* care whether we're adding padding bytes after
         # structure members.
         #
