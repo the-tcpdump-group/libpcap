@@ -338,7 +338,7 @@ find_dom(opt_state_t *opt_state, struct block *root)
 	x = opt_state->all_dom_sets;
 	i = opt_state->n_blocks * opt_state->nodewords;
 	while (--i >= 0)
-		*x++ = ~0;
+		*x++ = 0xFFFFFFFFU;
 	/* Root starts off empty. */
 	for (i = opt_state->nodewords; --i >= 0;)
 		root->dom[i] = 0;
@@ -378,7 +378,7 @@ find_edom(opt_state_t *opt_state, struct block *root)
 
 	x = opt_state->all_edge_sets;
 	for (i = opt_state->n_edges * opt_state->edgewords; --i >= 0; )
-		x[i] = ~0;
+		x[i] = 0xFFFFFFFFU;
 
 	/* root->level is the highest level no found. */
 	memset(root->et.edom, 0, opt_state->edgewords * sizeof(*(uset)0));
