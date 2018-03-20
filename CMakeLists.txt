@@ -1588,6 +1588,13 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
         #
         check_and_add_compiler_option(-wd4255)
         #
+        # Perhaps testing something #defined to be 0 with #ifdef is an
+        # error, and it should be tested with #if, but perhaps it's
+        # not, and Microsoft does that in its headers, so we squelch
+        # that warning.
+        #
+        check_and_add_compiler_option(-wd4574)
+        #
         # The Windows headers also test not-defined values in #if, so
         # we don't want warnings about that, either.
         #
