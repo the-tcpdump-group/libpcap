@@ -1581,6 +1581,18 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
         #
         check_and_add_compiler_option(-wd4100)
         #
+        # In theory, we care whether somebody uses f() rather than
+        # f(void) to declare a function with no arguments, but, in
+        # practice, there are places in the Windows header files
+        # that appear to do that, so we squelch that warning.
+        #
+        check_and_add_compiler_option(-wd4255)
+        #
+        # The Windows headers also test not-defined values in #if, so
+        # we don't want warnings about that, either.
+        #
+        check_and_add_compiler_option(-wd4668)
+        #
         # We do *not* care whether some function is, or isn't, going to be
         # expanded inline.
         #
