@@ -1588,6 +1588,10 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
         #
         check_and_add_compiler_option(-wd4255)
         #
+        # Windows FD_SET() generates this, so we suppress it.
+        #
+        check_and_add_compiler_option(-wd4548)
+        #
         # Perhaps testing something #defined to be 0 with #ifdef is an
         # error, and it should be tested with #if, but perhaps it's
         # not, and Microsoft does that in its headers, so we squelch
