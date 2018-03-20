@@ -441,7 +441,7 @@ void main_startup(void)
 
 	// All the previous calls are no blocking, so the main line of execution goes here
 	// and I have to avoid that the program terminates
-	while (1)
+	for (;;)
 	{
 #ifdef _WIN32
 		Sleep(INFINITE);
@@ -579,7 +579,7 @@ main_passive(void *ptr)
 	memset(errbuf, 0, sizeof(errbuf));
 
 	// main thread loop
-	while (1)
+	for (;;)
 	{
 #ifdef _WIN32
 		HANDLE threadId;		// handle for the subthread
@@ -728,7 +728,7 @@ main_active(void *ptr)
 		return 0;
 	}
 
-	while (1)
+	for (;;)
 	{
 		int activeclose;
 
