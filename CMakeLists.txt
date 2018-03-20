@@ -1560,7 +1560,14 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
     # -W options, used by GCC and compilers that try to behave like it including
     # the Clang/C2 toolsets (which is disguises as MSVC).
     if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
-        check_and_add_compiler_option(-W4)
+        check_and_add_compiler_option(-Wall)
+        #
+        # Disable some pointless warnings that /Wall turns on.
+        #
+        # We do *not* care whether we're adding padding bytes after
+        # structure members.
+        #
+        check_and_add_compiler_option(-wd4820)
     else()
         check_and_add_compiler_option(-Wall)
         check_and_add_compiler_option(-Wsign-compare)
