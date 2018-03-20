@@ -1557,15 +1557,19 @@ endmacro()
 set(C_ADDITIONAL_FLAGS "")
 if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
     #
-    # -W options, used by GCC and compilers that try to behave like it.
-    #
-    check_and_add_compiler_option(-Wall)
-    check_and_add_compiler_option(-Wsign-compare)
-    check_and_add_compiler_option(-Wmissing-prototypes)
-    check_and_add_compiler_option(-Wstrict-prototypes)
-    check_and_add_compiler_option(-Wshadow)
-    check_and_add_compiler_option(-Wdeclaration-after-statement)
-    check_and_add_compiler_option(-Wused-but-marked-unused)
+    # -W options, used by GCC and compilers that try to behave like it including
+    # the Clang/C2 toolsets (which is disguises as MSVC).
+    if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
+        check_and_add_compiler_option(-W4)
+    else()
+        check_and_add_compiler_option(-Wall)
+        check_and_add_compiler_option(-Wsign-compare)
+        check_and_add_compiler_option(-Wmissing-prototypes)
+        check_and_add_compiler_option(-Wstrict-prototypes)
+        check_and_add_compiler_option(-Wshadow)
+        check_and_add_compiler_option(-Wdeclaration-after-statement)
+        check_and_add_compiler_option(-Wused-but-marked-unused)
+    endif()
 endif()
 
 #

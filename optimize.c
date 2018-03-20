@@ -71,7 +71,10 @@ int pcap_optimizer_debug;
    * _BitScanForward().
    */
 #include <intrin.h>
+
+#ifndef __clang__
 #pragma intrinsic(_BitScanForward)
+#endif
 
 static __forceinline int
 lowest_set_bit(int mask)
