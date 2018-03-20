@@ -1210,8 +1210,7 @@ pcap_freealldevs(pcap_if_t *alldevs)
  * lowest unit number is preferred; loopback is ignored.
  */
 char *
-pcap_lookupdev(errbuf)
-	register char *errbuf;
+pcap_lookupdev(char *errbuf)
 {
 	pcap_if_t *alldevs;
 #ifdef _WIN32
@@ -1275,10 +1274,8 @@ pcap_lookupdev(errbuf)
  * use that.
  */
 int
-pcap_lookupnet(device, netp, maskp, errbuf)
-	register const char *device;
-	register bpf_u_int32 *netp, *maskp;
-	register char *errbuf;
+pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
+    char *errbuf)
 {
 	register int fd;
 	register struct sockaddr_in *sin4;

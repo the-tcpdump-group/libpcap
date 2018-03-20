@@ -1536,8 +1536,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
  */
 #define ADAPTERSNAME_LEN	8192
 char *
-pcap_lookupdev(errbuf)
-	register char *errbuf;
+pcap_lookupdev(char *errbuf)
 {
 	DWORD dwVersion;
 	DWORD dwWindowsMajorVersion;
@@ -1679,10 +1678,8 @@ pcap_lookupdev(errbuf)
  * much work to get just one device's netmask.
  */
 int
-pcap_lookupnet(device, netp, maskp, errbuf)
-	register const char *device;
-	register bpf_u_int32 *netp, *maskp;
-	register char *errbuf;
+pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
+    char *errbuf)
 {
 	/*
 	 * We need only the first IPv4 address, so we must scan the array returned by PacketGetNetInfo()
