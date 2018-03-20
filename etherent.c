@@ -106,13 +106,13 @@ pcap_next_etherent(FILE *fp)
 
 		/* must be the start of an address */
 		for (i = 0; i < 6; i += 1) {
-			d = xdtoi(c);
+			d = xdtoi((u_char)c);
 			c = getc(fp);
 			if (c == EOF)
 				return (NULL);
 			if (isxdigit(c)) {
 				d <<= 4;
-				d |= xdtoi(c);
+				d |= xdtoi((u_char)c);
 				c = getc(fp);
 				if (c == EOF)
 					return (NULL);
@@ -152,7 +152,7 @@ pcap_next_etherent(FILE *fp)
 		/* Use 'namesize' to prevent buffer overflow. */
 		namesize = sizeof(e.name) - 1;
 		do {
-			*bp++ = c;
+			*bp++ = (u_char)c;
 			c = getc(fp);
 			if (c == EOF)
 				return (NULL);
