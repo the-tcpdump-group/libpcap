@@ -454,7 +454,7 @@ void *daemon_serviceloop(void *ptr)
 	//
 	// Service requests.
 	//
-	while (1)
+	for (;;)
 	{
 		errbuf[0] = 0;	// clear errbuf
 
