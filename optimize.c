@@ -1480,7 +1480,7 @@ or_pullup(opt_state_t *opt_state, struct block *b)
 		diffp = &JF(b->in_edges->pred);
 
 	at_top = 1;
-	while (1) {
+	for (;;) {
 		if (*diffp == 0)
 			return;
 
@@ -1497,7 +1497,7 @@ or_pullup(opt_state_t *opt_state, struct block *b)
 		at_top = 0;
 	}
 	samep = &JF(*diffp);
-	while (1) {
+	for (;;) {
 		if (*samep == 0)
 			return;
 
@@ -1571,7 +1571,7 @@ and_pullup(opt_state_t *opt_state, struct block *b)
 		diffp = &JF(b->in_edges->pred);
 
 	at_top = 1;
-	while (1) {
+	for (;;) {
 		if (*diffp == 0)
 			return;
 
@@ -1588,7 +1588,7 @@ and_pullup(opt_state_t *opt_state, struct block *b)
 		at_top = 0;
 	}
 	samep = &JT(*diffp);
-	while (1) {
+	for (;;) {
 		if (*samep == 0)
 			return;
 
@@ -1812,7 +1812,7 @@ mark_code(struct icode *ic)
 static int
 eq_slist(struct slist *x, struct slist *y)
 {
-	while (1) {
+	for (;;) {
 		while (x && x->s.code == NOP)
 			x = x->next;
 		while (y && y->s.code == NOP)
@@ -2256,7 +2256,7 @@ icode_to_fcode(compiler_state_t *cstate, struct icode *ic,
 	 * Loop doing convert_code_r() until no branches remain
 	 * with too-large offsets.
 	 */
-	while (1) {
+	for (;;) {
 	    unMarkAll(ic);
 	    n = *lenp = count_stmts(ic, root);
 

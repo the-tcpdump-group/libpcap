@@ -632,7 +632,7 @@ __pcap_atoin(const char *s, bpf_u_int32 *addr)
 
 	*addr = 0;
 	len = 0;
-	while (1) {
+	for (;;) {
 		n = 0;
 		while (*s && *s != '.')
 			n = n * 10 + *s++ - '0';

@@ -527,7 +527,7 @@ pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	 */
 #define bhp ((struct bpf_hdr *)bp)
 	ep = bp + cc;
-	while (1) {
+	for (;;) {
 		register int caplen, hdrlen;
 
 		/*

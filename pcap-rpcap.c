@@ -1272,7 +1272,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 		 * Loop until the buffer size is OK or the original
 		 * socket buffer size is larger than this one.
 		 */
-		while (1)
+		for (;;)
 		{
 			res = setsockopt(sockdata, SOL_SOCKET, SO_RCVBUF,
 			    (char *)&(server_sockbufsize),

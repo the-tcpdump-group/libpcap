@@ -236,7 +236,7 @@ bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 	A = 0;
 	X = 0;
 	--pc;
-	while (1) {
+	for (;;) {
 		++pc;
 		switch (pc->code) {
 
