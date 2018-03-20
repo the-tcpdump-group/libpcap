@@ -1557,9 +1557,15 @@ endmacro()
 set(C_ADDITIONAL_FLAGS "")
 if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
     #
-    # -W options, used by GCC and compilers that try to behave like it including
-    # the Clang/C2 toolsets (which is disguises as MSVC).
+    # Warning options.
+    #
     if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
+        #
+        # MSVC, with Microsoft's front end and code generator.
+        # "MSVC" is also set for Microsoft's compiler with a Clang
+        # front end and their code generator ("Clang/C2"), so we
+        # check for clang.exe and treat that differently.
+        #
         check_and_add_compiler_option(-Wall)
         #
         # Disable some pointless warnings that /Wall turns on.
@@ -1575,6 +1581,10 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
         #
         check_and_add_compiler_option(-wd4820)
     else()
+        #
+        # GCC and compilers that try to behave like it, including
+        # MSVC with a Clang front end and Microsoft's code generator.
+        #
         check_and_add_compiler_option(-Wall)
         check_and_add_compiler_option(-Wsign-compare)
         check_and_add_compiler_option(-Wmissing-prototypes)
