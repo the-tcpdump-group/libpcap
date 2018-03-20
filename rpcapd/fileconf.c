@@ -74,7 +74,8 @@ void fileconf_read(int sign)
 			if (line[0] == '\r') continue;	// Blank line
 			if (line[0] == '#') continue;	// Comment
 
-			if ((ptr = strstr(line, "ActiveClient")))
+			ptr = strstr(line, "ActiveClient");
+			if (ptr)
 			{
 				char *address, *port;
 				char *lasts;
@@ -102,7 +103,8 @@ void fileconf_read(int sign)
 				continue;
 			}
 
-			if ((ptr = strstr(line, "PassiveClient")))
+			ptr = strstr(line, "PassiveClient");
+			if (ptr)
 			{
 				ptr = strchr(ptr, '=') + 1;
 				strlcat(hostlist, ptr, MAX_HOST_LIST);
@@ -110,7 +112,8 @@ void fileconf_read(int sign)
 				continue;
 			}
 
-			if ((ptr = strstr(line, "NullAuthPermit")))
+			ptr = strstr(line, "NullAuthPermit");
+			if (ptr)
 			{
 				ptr = strstr(ptr, "YES");
 				if (ptr)
