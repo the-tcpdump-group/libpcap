@@ -90,9 +90,9 @@ DIAG_ON_BYACC
 #include "os-proto.h"
 #endif
 
-#define QSET(q, p, d, a) (q).proto = (p),\
-			 (q).dir = (d),\
-			 (q).addr = (a)
+#define QSET(q, p, d, a) (q).proto = (unsigned char)(p),\
+			 (q).dir = (unsigned char)(d),\
+			 (q).addr = (unsigned char)(a)
 
 struct tok {
 	int v;			/* value */
