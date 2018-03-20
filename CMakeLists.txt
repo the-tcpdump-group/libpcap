@@ -1570,6 +1570,17 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
         #
         # Disable some pointless warnings that /Wall turns on.
         #
+        # Unfortunately, MSVC does not appear to have an equivalent
+        # to "__attribute__((unused))" to mark a particular function
+        # parameter as being known to be unused, so that the compiler
+        # won't warn about it (for example, the function might have
+        # that parameter because a pointer to it is being used, and
+        # the signature of that function includes that parameter).
+        # C++ lets you give a parameter a type but no name, but C
+        # doesn't have that.
+        #
+        check_and_add_compiler_option(-wd4100)
+        #
         # We do *not* care whether some function is, or isn't, going to be
         # expanded inline.
         #
