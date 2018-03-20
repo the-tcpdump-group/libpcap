@@ -148,8 +148,6 @@
 #define NTOHS(x) (x) = ntohs(x)
 #endif
 
-static inline int xdtoi(int);
-
 /*
  *  Convert host name to internet address.
  *  Return 0 upon failure.
@@ -611,16 +609,16 @@ pcap_nametollc(const char *s)
 	return PROTO_UNDEF;
 }
 
-/* Hex digit to integer. */
-static inline int
-xdtoi(int c)
+/* Hex digit to 8-bit unsigned integer. */
+static inline u_char
+xdtoi(u_char c)
 {
 	if (isdigit(c))
-		return c - '0';
+		return (u_char)(c - '0');
 	else if (islower(c))
-		return c - 'a' + 10;
+		return (u_char)(c - 'a' + 10);
 	else
-		return c - 'A' + 10;
+		return (u_char)(c - 'A' + 10);
 }
 
 int
@@ -679,7 +677,7 @@ u_char *
 pcap_ether_aton(const char *s)
 {
 	register u_char *ep, *e;
-	register u_int d;
+	register u_char d;
 
 	e = ep = (u_char *)malloc(6);
 	if (e == NULL)
