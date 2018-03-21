@@ -6659,7 +6659,6 @@ gen_mcode(compiler_state_t *cstate, const char *s1, const char *s2,
 		/* NOTREACHED */
 	}
 	/* NOTREACHED */
-	return NULL;
 }
 
 struct block *
@@ -6825,7 +6824,6 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 		bpf_error(cstate, "invalid qualifier against IPv6 address");
 		/* NOTREACHED */
 	}
-	return NULL;
 }
 #endif /*INET6*/
 
@@ -6863,7 +6861,6 @@ gen_ecode(compiler_state_t *cstate, const u_char *eaddr, struct qual q)
 	}
 	bpf_error(cstate, "ethernet address used in non-ether expression");
 	/* NOTREACHED */
-	return NULL;
 }
 
 void
@@ -7340,7 +7337,6 @@ alloc_reg(compiler_state_t *cstate)
 	}
 	bpf_error(cstate, "too many registers needed to evaluate expression");
 	/* NOTREACHED */
-	return 0;
 }
 
 /*
@@ -7495,7 +7491,6 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 	}
 	bpf_error(cstate, "only link-layer/IP broadcast filters supported");
 	/* NOTREACHED */
-	return NULL;
 }
 
 /*
@@ -7691,7 +7686,6 @@ gen_multicast(compiler_state_t *cstate, int proto)
 	}
 	bpf_error(cstate, "link-layer multicast filters supported only on ethernet/FDDI/token ring/ARCNET/802.11/ATM LANE/Fibre Channel");
 	/* NOTREACHED */
-	return NULL;
 }
 
 /*
@@ -7829,7 +7823,6 @@ gen_inbound(compiler_state_t *cstate, int dir)
 #else /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 		bpf_error(cstate, "inbound/outbound not supported on linktype %d",
 		    cstate->linktype);
-		b0 = NULL;
 		/* NOTREACHED */
 #endif /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 	}
@@ -8058,7 +8051,6 @@ gen_acode(compiler_state_t *cstate, const u_char *eaddr, struct qual q)
 	}
 	bpf_error(cstate, "ARCnet address used in non-arc expression");
 	/* NOTREACHED */
-	return NULL;
 }
 
 static struct block *
@@ -8411,7 +8403,6 @@ gen_mpls(compiler_state_t *cstate, int label_num)
             default:
                     bpf_error(cstate, "no MPLS support for data link type %d",
                           cstate->linktype);
-                    b0 = NULL;
                     /*NOTREACHED*/
                     break;
             }
