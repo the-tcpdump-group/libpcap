@@ -37,6 +37,19 @@
 
 #include "pcap/compiler-tests.h"
 
+/*
+ * Suppress Flex warnings.
+ */
+#if defined(_MSC_VER)
+  #define DIAG_OFF_FLEX \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4127))
+  #define DIAG_ON_FLEX  __pragma(warning(pop))
+#else
+  #define DIAG_OFF_FLEX
+  #define DIAG_ON_FLEX
+#endif
+
 #ifdef YYBYACC
   /*
    * Berkeley YACC.
