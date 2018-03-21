@@ -7950,7 +7950,6 @@ gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 {
 	bpf_error(cstate, "libpcap was compiled without pf support");
 	/* NOTREACHED */
-	return (NULL);
 }
 
 struct block *
@@ -7958,7 +7957,6 @@ gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/* NOTREACHED */
-	return (NULL);
 }
 
 struct block *
@@ -7966,7 +7964,6 @@ gen_pf_rnr(compiler_state_t *cstate, int rnr)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/* NOTREACHED */
-	return (NULL);
 }
 
 struct block *
@@ -7974,7 +7971,6 @@ gen_pf_srnr(compiler_state_t *cstate, int srnr)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/* NOTREACHED */
-	return (NULL);
 }
 
 struct block *
@@ -7982,7 +7978,6 @@ gen_pf_reason(compiler_state_t *cstate, int reason)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/* NOTREACHED */
-	return (NULL);
 }
 
 struct block *
@@ -7990,7 +7985,6 @@ gen_pf_action(compiler_state_t *cstate, int action)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/* NOTREACHED */
-	return (NULL);
 }
 #endif /* HAVE_NET_PFVAR_H */
 
