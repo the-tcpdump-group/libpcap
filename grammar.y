@@ -90,9 +90,9 @@ DIAG_ON_BYACC
 #include "os-proto.h"
 #endif
 
-#define QSET(q, p, d, a) (q).proto = (unsigned char)(p),\
-			 (q).dir = (unsigned char)(d),\
-			 (q).addr = (unsigned char)(a)
+#define QSET(q, p, d, a) (q).proto = (p),\
+			 (q).dir = (d),\
+			 (q).addr = (a)
 
 struct tok {
 	int v;			/* value */
@@ -272,6 +272,7 @@ DIAG_OFF_BYACC
 
 %union {
 	int i;
+	qualval q;
 	bpf_u_int32 h;
 	u_char *e;
 	char *s;
@@ -288,7 +289,7 @@ DIAG_OFF_BYACC
 
 %type	<blk>	expr id nid pid term rterm qid
 %type	<blk>	head
-%type	<i>	pqual dqual aqual ndaqual
+%type	<q>	pqual dqual aqual ndaqual
 %type	<a>	arth narth
 %type	<i>	byteop pname pnum relop irelop
 %type	<blk>	and or paren not null prog
