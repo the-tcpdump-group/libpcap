@@ -37,54 +37,69 @@
 
 #include "pcap/compiler-tests.h"
 
-/*
- * Berkeley YACC generates a global declaration of yylval, or the
- * appropriately prefixed version of yylval, in grammar.h, *even
- * though it's been told to generate a pure parser, meaning it
- * doesn't have any global variables*.  Bison doesn't do this.
- *
- * That causes a warning due to the local declaration in the parser
- * shadowing the global declaration.
- *
- * So, if this is Berkeley YACC, and we have _Pragma, and have pragmas
- * to suppress diagnostics, we use it to turn off -Wshadow warnings.
- */
 #ifdef YYBYACC
+  /*
+   * Berkeley YACC.
+   *
+   * It generates a global declaration of yylval, or the appropriately
+   * prefixed version of yylval, in grammar.h, *even though it's been
+   * told to generate a pure parser, meaning it doesn't have any global
+   * variables*.  Bison doesn't do this.
+   *
+   * That causes a warning due to the local declaration in the parser
+   * shadowing the global declaration.
+   *
+   * So, if we have _Pragma, and have pragmas to suppress diagnostics,
+   * we use it to turn off -Wshadow warnings.
+   */
   #define PCAP_DO_PRAGMA(x) _Pragma (#x)
   #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
      * ignored -Wxxx" and "clang diagnostic push/pop".
      */
-    #define DIAG_OFF_BYACC \
+    #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(clang diagnostic push) \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow")
-    #define DIAG_ON_BYACC \
+    #define DIAG_ON_BISON_BYACC \
     PCAP_DO_PRAGMA(clang diagnostic pop)
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,2)
     /*
      * This is GCC 4.2 or later, or a compiler claiming to be that.
      * We can use "GCC diagnostic ignored -Wxxx".
      */
-    #define DIAG_OFF_BYACC \
+    #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic push) \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wshadow")
-    #define DIAG_ON_BYACC \
+    #define DIAG_ON_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic pop)
   #else
     /*
      * Neither Clang 2.8 or later nor GCC 4.2 or later or a compiler
      * claiming to be that; there's nothing we know of that we can do.
      */
-    #define DIAG_OFF_BYACC
-    #define DIAG_ON_BYACC
+    #define DIAG_OFF_BISON_BYACC
+    #define DIAG_ON_BISON_BYACC
   #endif
 #else
   /*
-   * Not Berkeley YACC, so no warnings to worry about.
+   * Bison.
    */
-  #define DIAG_OFF_BYACC
-  #define DIAG_ON_BYACC
+  #if defined(_MSC_VER)
+    /*
+     * Suppress some /Wall warnings.
+     */
+    #define DIAG_OFF_BISON_BYACC \
+      __pragma(warning(push)) \
+      __pragma(warning(disable:4242))
+    #define DIAG_ON_FLEX  __pragma(warning(pop))
+  #else
+    /*
+     * Nothing to suppress.
+     */
+    #define DIAG_OFF_BISON_BYACC
+    #define DIAG_ON_BISON_BYACC
+  #endif
 #endif
 
 #endif /* _diag_control_h */

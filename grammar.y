@@ -72,9 +72,9 @@ struct rtentry;
 #include "pcap-int.h"
 
 #include "gencode.h"
-DIAG_OFF_BYACC
+DIAG_OFF_BISON_BYACC
 #include "grammar.h"
-DIAG_ON_BYACC
+DIAG_ON_BISON_BYACC
 #include "scanner.h"
 
 #ifdef HAVE_NET_PFVAR_H
@@ -267,7 +267,7 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
 }
 #endif /* HAVE_NET_PFVAR_H */
 
-DIAG_OFF_BYACC
+DIAG_OFF_BISON_BYACC
 %}
 
 %union {
