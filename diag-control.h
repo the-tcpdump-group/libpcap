@@ -92,7 +92,7 @@
     #define DIAG_OFF_BISON_BYACC \
       __pragma(warning(push)) \
       __pragma(warning(disable:4242))
-    #define DIAG_ON_FLEX  __pragma(warning(pop))
+    #define DIAG_ON_BISON_BYACC  __pragma(warning(pop))
   #else
     /*
      * Nothing to suppress.
