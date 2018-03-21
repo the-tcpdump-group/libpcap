@@ -316,7 +316,9 @@ static int sock_ismcastaddr(const struct sockaddr *saddr)
 SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf, int errbuflen)
 {
 	SOCKET sock;
+#if defined(SO_NOSIGPIPE) || defined(IPV6_V6ONLY) || defined(IPV6_BINDV6ONLY)
 	int on = 1;
+#endif
 
 	sock = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol);
 	if (sock == INVALID_SOCKET)
