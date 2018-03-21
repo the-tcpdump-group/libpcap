@@ -62,7 +62,7 @@
       PCAP_DO_PRAGMA(clang diagnostic push) \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow")
     #define DIAG_ON_BISON_BYACC \
-    PCAP_DO_PRAGMA(clang diagnostic pop)
+      PCAP_DO_PRAGMA(clang diagnostic pop)
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,2)
     /*
      * This is GCC 4.2 or later, or a compiler claiming to be that.
