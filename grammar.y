@@ -251,9 +251,6 @@ pfreason_to_num(compiler_state_t *cstate, const char *reason)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/*NOTREACHED*/
-
-	/* this is to make the VC compiler happy */
-	return -1;
 }
 
 static int
@@ -261,9 +258,6 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/*NOTREACHED*/
-
-	/* this is to make the VC compiler happy */
-	return -1;
 }
 #endif /* HAVE_NET_PFVAR_H */
 
