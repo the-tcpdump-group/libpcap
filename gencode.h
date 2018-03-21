@@ -55,9 +55,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* Type of a qualifier. */
-typedef unsigned char qualval;
-
 /* Address qualifiers. */
 
 #define Q_HOST		1
@@ -281,9 +278,9 @@ struct arth {
 };
 
 struct qual {
-	qualval addr;
-	qualval proto;
-	qualval dir;
+	unsigned char addr;
+	unsigned char proto;
+	unsigned char dir;
 	unsigned char pad;
 };
 
