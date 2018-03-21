@@ -91,7 +91,10 @@
      */
     #define DIAG_OFF_BISON_BYACC \
       __pragma(warning(push)) \
-      __pragma(warning(disable:4242))
+      __pragma(warning(disable:4127)) \
+      __pragma(warning(disable:4242)) \
+      __pragma(warning(disable:4244)) \
+      __pragma(warning(disable:4702))
     #define DIAG_ON_BISON_BYACC  __pragma(warning(pop))
   #else
     /*
