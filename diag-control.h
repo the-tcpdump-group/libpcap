@@ -37,6 +37,16 @@
 
 #include "pcap/compiler-tests.h"
 
+#ifndef _MSC_VER
+  /*
+   * Clang and GCC both support this way of putting pragmas into #defines.
+   * We don't use it unless we have a compiler that supports it; the
+   * warning-suppressing pragmas differ between Clang and GCC, so we test
+   * for both of those separately.
+   */
+  #define PCAP_DO_PRAGMA(x) _Pragma (#x)
+#endif
+
 /*
  * Suppress Flex warnings.
  */
@@ -46,8 +56,47 @@
     __pragma(warning(disable:4127))
   #define DIAG_ON_FLEX  __pragma(warning(pop))
 #else
-  #define DIAG_OFF_FLEX
-  #define DIAG_ON_FLEX
+  /*
+   * Suppress -Wsigned-compare warnings
+   *   -Wshorten-64-to-32 warnings, if the compiler *has* -Wshorten-64-to-32
+   *   -Wunreachable-code warnings
+   *
+   * We use DIAG_OFF() and DIAG_ON(), so we only use features that the
+   * compiler supports.
+   *
+   * We disable -Wshorten-64-to-32 if we're using Clang, or if __APPLE__
+   * is defined; that option was originally added to an Apple version of
+   * GCC, and at least some versions of Clang support it - given that
+   * the Clang work started at Apple, it may be in all versions of Clang.
+   *
+   * (Does no version of GCC or Clang support the same generic "you're
+   * narrowing a value, and you didn't throw in a cast to assert that
+   * you know what you're doing" warning that MSVC does?)
+   */
+  #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+    /*
+     * This is Clang 2.8 or later; we can use "clang diagnostic
+     * ignored -Wxxx" and "clang diagnostic push/pop".
+     */
+    #define DIAG_OFF_FLEX \
+      PCAP_DO_PRAGMA(clang diagnostic push) \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare")
+    #define DIAG_ON_FLEX \
+      PCAP_DO_PRAGMA(clang diagnostic pop)
+  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,2)
+    /*
+     * This is GCC 4.2 or later, or a compiler claiming to be that.
+     * We can use "GCC diagnostic ignored -Wxxx".
+     */
+    #define DIAG_OFF_FLEX \
+      PCAP_DO_PRAGMA(GCC diagnostic push) \
+      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wsign-compare")
+    #define DIAG_ON_FLEX \
+      PCAP_DO_PRAGMA(GCC diagnostic pop)
+  #else
+    #define DIAG_OFF_FLEX
+    #define DIAG_ON_FLEX
+  #endif
 #endif
 
 #ifdef YYBYACC
@@ -65,7 +114,6 @@
    * So, if we have _Pragma, and have pragmas to suppress diagnostics,
    * we use it to turn off -Wshadow warnings.
    */
-  #define PCAP_DO_PRAGMA(x) _Pragma (#x)
   #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
