@@ -51,27 +51,16 @@
  * Suppress Flex warnings.
  */
 #if defined(_MSC_VER)
+  /*
+   * Suppress signed-vs-unsigned comparison warnings.
+   */
   #define DIAG_OFF_FLEX \
     __pragma(warning(push)) \
     __pragma(warning(disable:4127))
   #define DIAG_ON_FLEX  __pragma(warning(pop))
 #else
   /*
-   * Suppress -Wsigned-compare warnings
-   *   -Wshorten-64-to-32 warnings, if the compiler *has* -Wshorten-64-to-32
-   *   -Wunreachable-code warnings
-   *
-   * We use DIAG_OFF() and DIAG_ON(), so we only use features that the
-   * compiler supports.
-   *
-   * We disable -Wshorten-64-to-32 if we're using Clang, or if __APPLE__
-   * is defined; that option was originally added to an Apple version of
-   * GCC, and at least some versions of Clang support it - given that
-   * the Clang work started at Apple, it may be in all versions of Clang.
-   *
-   * (Does no version of GCC or Clang support the same generic "you're
-   * narrowing a value, and you didn't throw in a cast to assert that
-   * you know what you're doing" warning that MSVC does?)
+   * Suppress -Wsigned-compare warnings.
    */
   #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
