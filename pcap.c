@@ -260,6 +260,9 @@ pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
 int
 pcap_can_set_rfmon(pcap_t *p)
 {
+	if (p->can_set_rfmon_op == NULL) {
+		return -1;
+	}
 	return (p->can_set_rfmon_op(p));
 }
 
@@ -388,6 +391,9 @@ pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 			return (status);
 	}
 
+	if (p->read_op == NULL) {
+		return -1;
+	}
 	/*
 	 * Return codes for pcap_read() are:
 	 *   -  0: timeout
@@ -2356,6 +2362,9 @@ pcap_activate(pcap_t *p)
 	 */
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);
+	if (p->activate_op == NULL) {
+		return (PCAP_ERROR_ACTIVATED);
+	}
 	status = p->activate_op(p);
 	if (status >= 0) {
 		/*
@@ -2363,6 +2372,9 @@ pcap_activate(pcap_t *p)
 		 * calling pcap_activate(), turn it on now.
 		 */
 		if (p->opt.nonblock) {
+			if (p->setnonblock_op == NULL) {
+				return (PCAP_ERROR_ACTIVATED);
+			}
 			status = p->setnonblock_op(p, 1);
 			if (status < 0) {
 				/*
@@ -3092,8 +3104,10 @@ pcap_geterr(pcap_t *p)
 int
 pcap_getnonblock(pcap_t *p, char *errbuf)
 {
+	if (p->getnonblock_op == NULL) {
+		return -1;
+	}
 	int ret;
-
 	ret = p->getnonblock_op(p);
 	if (ret == -1) {
 		/*
@@ -3136,6 +3150,9 @@ pcap_getnonblock_fd(pcap_t *p)
 int
 pcap_setnonblock(pcap_t *p, int nonblock, char *errbuf)
 {
+	if (p->setnonblock_op == NULL) {
+		return -1;
+	}
 	int ret;
 
 	ret = p->setnonblock_op(p, nonblock);
@@ -3305,6 +3322,9 @@ pcap_strerror(int errnum)
 int
 pcap_setfilter(pcap_t *p, struct bpf_program *fp)
 {
+	if (p->setfilter_op == NULL) {
+		return -1;
+	}
 	return (p->setfilter_op(p, fp));
 }
 
@@ -3328,6 +3348,9 @@ pcap_setdirection(pcap_t *p, pcap_direction_t d)
 int
 pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
+	if (p->stats_op == NULL) {
+		return -1;
+	}
 	return (p->stats_op(p, ps));
 }
 
@@ -3746,6 +3769,9 @@ pcap_open_dead(int linktype, int snaplen)
 int
 pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
 {
+	if (p->inject_op == NULL) {
+		return -1;
+	}
 	if (p->inject_op(p, buf, size) == -1)
 		return (-1);
 	return (0);
