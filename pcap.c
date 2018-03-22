@@ -3331,14 +3331,6 @@ pcap_stats(pcap_t *p, struct pcap_stat *ps)
 	return (p->stats_op(p, ps));
 }
 
-static int
-pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "Statistics aren't available from a pcap_open_dead pcap_t");
-	return (-1);
-}
-
 #ifdef _WIN32
 struct pcap_stat *
 pcap_stats_ex(pcap_t *p, int *pcap_stat_size)
@@ -3352,26 +3344,10 @@ pcap_setbuff(pcap_t *p, int dim)
 	return (p->setbuff_op(p, dim));
 }
 
-static int
-pcap_setbuff_dead(pcap_t *p, int dim)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "The kernel buffer size cannot be set on a pcap_open_dead pcap_t");
-	return (-1);
-}
-
 int
 pcap_setmode(pcap_t *p, int mode)
 {
 	return (p->setmode_op(p, mode));
-}
-
-static int
-pcap_setmode_dead(pcap_t *p, int mode)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "impossible to set mode on a pcap_open_dead pcap_t");
-	return (-1);
 }
 
 int
@@ -3380,26 +3356,10 @@ pcap_setmintocopy(pcap_t *p, int size)
 	return (p->setmintocopy_op(p, size));
 }
 
-static int
-pcap_setmintocopy_dead(pcap_t *p, int size)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
-	return (-1);
-}
-
 HANDLE
 pcap_getevent(pcap_t *p)
 {
 	return (p->getevent_op(p));
-}
-
-static HANDLE
-pcap_getevent_dead(pcap_t *p)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "A pcap_open_dead pcap_t has no event handle");
-	return (INVALID_HANDLE_VALUE);
 }
 
 int
@@ -3408,28 +3368,10 @@ pcap_oid_get_request(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
 	return (p->oid_get_request_op(p, oid, data, lenp));
 }
 
-static int
-pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
-    size_t *lenp _U_)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
-	return (PCAP_ERROR);
-}
-
 int
 pcap_oid_set_request(pcap_t *p, bpf_u_int32 oid, const void *data, size_t *lenp)
 {
 	return (p->oid_set_request_op(p, oid, data, lenp));
-}
-
-static int
-pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
-    size_t *lenp _U_)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");
-	return (PCAP_ERROR);
 }
 
 pcap_send_queue *
@@ -3487,26 +3429,10 @@ pcap_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
 	return (p->sendqueue_transmit_op(p, queue, sync));
 }
 
-static u_int
-pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");
-	return (0);
-}
-
 int
 pcap_setuserbuffer(pcap_t *p, int size)
 {
 	return (p->setuserbuffer_op(p, size));
-}
-
-static int
-pcap_setuserbuffer_dead(pcap_t *p, int size)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "The user buffer cannot be set on a pcap_open_dead pcap_t");
-	return (-1);
 }
 
 int
@@ -3515,26 +3441,10 @@ pcap_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	return (p->live_dump_op(p, filename, maxsize, maxpacks));
 }
 
-static int
-pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
-	return (-1);
-}
-
 int
 pcap_live_dump_ended(pcap_t *p, int sync)
 {
 	return (p->live_dump_ended_op(p, sync));
-}
-
-static int
-pcap_live_dump_ended_dead(pcap_t *p, int sync)
-{
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
-	return (-1);
 }
 
 PAirpcapHandle
@@ -3548,12 +3458,6 @@ pcap_get_airpcap_handle(pcap_t *p)
 		    "This isn't an AirPcap device");
 	}
 	return (handle);
-}
-
-static PAirpcapHandle
-pcap_get_airpcap_handle_dead(pcap_t *p)
-{
-	return (NULL);
 }
 #endif
 
@@ -3677,66 +3581,6 @@ pcap_cleanup_live_common(pcap_t *p)
 #endif
 }
 
-static void
-pcap_cleanup_dead(pcap_t *p _U_)
-{
-	/* Nothing to do. */
-}
-
-pcap_t *
-pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
-{
-	pcap_t *p;
-
-	switch (precision) {
-
-	case PCAP_TSTAMP_PRECISION_MICRO:
-	case PCAP_TSTAMP_PRECISION_NANO:
-		break;
-
-	default:
-		return NULL;
-	}
-	p = malloc(sizeof(*p));
-	if (p == NULL)
-		return NULL;
-	memset (p, 0, sizeof(*p));
-	p->snapshot = snaplen;
-	p->linktype = linktype;
-	p->opt.tstamp_precision = precision;
-	p->stats_op = pcap_stats_dead;
-#ifdef _WIN32
-	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
-	p->setbuff_op = pcap_setbuff_dead;
-	p->setmode_op = pcap_setmode_dead;
-	p->setmintocopy_op = pcap_setmintocopy_dead;
-	p->getevent_op = pcap_getevent_dead;
-	p->oid_get_request_op = pcap_oid_get_request_dead;
-	p->oid_set_request_op = pcap_oid_set_request_dead;
-	p->sendqueue_transmit_op = pcap_sendqueue_transmit_dead;
-	p->setuserbuffer_op = pcap_setuserbuffer_dead;
-	p->live_dump_op = pcap_live_dump_dead;
-	p->live_dump_ended_op = pcap_live_dump_ended_dead;
-	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
-#endif
-	p->cleanup_op = pcap_cleanup_dead;
-
-	/*
-	 * A "dead" pcap_t never requires special BPF code generation.
-	 */
-	p->bpf_codegen_flags = 0;
-
-	p->activated = 1;
-	return (p);
-}
-
-pcap_t *
-pcap_open_dead(int linktype, int snaplen)
-{
-	return (pcap_open_dead_with_tstamp_precision(linktype, snaplen,
-	    PCAP_TSTAMP_PRECISION_MICRO));
-}
-
 /*
  * API compatible with WinPcap's "send a packet" routine - returns -1
  * on error, 0 otherwise.
@@ -3786,6 +3630,243 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 		return (bpf_filter(fcode, pkt, h->len, h->caplen));
 	else
 		return (0);
+}
+
+static int
+pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
+    u_char *user _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packets aren't available from a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_inject_dead(pcap_t *p, const void *buf _U_, size_t size _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packets can't be sent on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_setfilter_dead(pcap_t *p, struct bpf_program *fp _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A filter cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_setdirection_dead(pcap_t *p, pcap_direction_t d _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The packet direction cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_set_datalink_dead(pcap_t *p, int dlt _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The link-layer header type cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_getnonblock_dead(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A pcap_open_dead pcap_t does not have a non-blocking mode setting");
+	return (-1);
+}
+
+static int
+pcap_setnonblock_dead(pcap_t *p, int nonblock _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A pcap_open_dead pcap_t does not have a non-blocking mode setting");
+	return (-1);
+}
+
+static int
+pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Statistics aren't available from a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+#ifdef _WIN32
+struct pcap_stat *
+pcap_stats_ex_dead(pcap_t *p, int *pcap_stat_size _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Statistics aren't available from a pcap_open_dead pcap_t");
+	return (NULL);
+}
+
+static int
+pcap_setbuff_dead(pcap_t *p, int dim)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The kernel buffer size cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_setmode_dead(pcap_t *p, int mode)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "impossible to set mode on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_setmintocopy_dead(pcap_t *p, int size)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static HANDLE
+pcap_getevent_dead(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "A pcap_open_dead pcap_t has no event handle");
+	return (INVALID_HANDLE_VALUE);
+}
+
+static int
+pcap_oid_get_request_dead(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
+    size_t *lenp _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID get request cannot be performed on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+static int
+pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
+    size_t *lenp _U_)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "An OID set request cannot be performed on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+static u_int
+pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");
+	return (0);
+}
+
+static int
+pcap_setuserbuffer_dead(pcap_t *p, int size)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "The user buffer cannot be set on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
+pcap_live_dump_ended_dead(pcap_t *p, int sync)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static PAirpcapHandle
+pcap_get_airpcap_handle_dead(pcap_t *p)
+{
+	return (NULL);
+}
+#endif /* _WIN32 */
+
+static void
+pcap_cleanup_dead(pcap_t *p _U_)
+{
+	/* Nothing to do. */
+}
+
+pcap_t *
+pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
+{
+	pcap_t *p;
+
+	switch (precision) {
+
+	case PCAP_TSTAMP_PRECISION_MICRO:
+	case PCAP_TSTAMP_PRECISION_NANO:
+		break;
+
+	default:
+		/*
+		 * This doesn't really matter, but we don't have any way
+		 * to report particular errors, so the only failure we
+		 * should have is a memory allocation failure.  Just
+		 * pick microsecond precision.
+		 */
+		precision = PCAP_TSTAMP_PRECISION_MICRO;
+		break;
+	}
+	p = malloc(sizeof(*p));
+	if (p == NULL)
+		return NULL;
+	memset (p, 0, sizeof(*p));
+	p->snapshot = snaplen;
+	p->linktype = linktype;
+	p->opt.tstamp_precision = precision;
+	p->read_op = pcap_read_dead;
+	p->inject_op = pcap_inject_dead;
+	p->setfilter_op = pcap_setfilter_dead;
+	p->setdirection_op = pcap_setdirection_dead;
+	p->set_datalink_op = pcap_set_datalink_dead;
+	p->getnonblock_op = pcap_getnonblock_dead;
+	p->setnonblock_op = pcap_setnonblock_dead;
+	p->stats_op = pcap_stats_dead;
+#ifdef _WIN32
+	p->stats_ex_op = pcap_stats_ex_dead;
+	p->setbuff_op = pcap_setbuff_dead;
+	p->setmode_op = pcap_setmode_dead;
+	p->setmintocopy_op = pcap_setmintocopy_dead;
+	p->getevent_op = pcap_getevent_dead;
+	p->oid_get_request_op = pcap_oid_get_request_dead;
+	p->oid_set_request_op = pcap_oid_set_request_dead;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_dead;
+	p->setuserbuffer_op = pcap_setuserbuffer_dead;
+	p->live_dump_op = pcap_live_dump_dead;
+	p->live_dump_ended_op = pcap_live_dump_ended_dead;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_dead;
+#endif
+	p->cleanup_op = pcap_cleanup_dead;
+
+	/*
+	 * A "dead" pcap_t never requires special BPF code generation.
+	 */
+	p->bpf_codegen_flags = 0;
+
+	p->activated = 1;
+	return (p);
+}
+
+pcap_t *
+pcap_open_dead(int linktype, int snaplen)
+{
+	return (pcap_open_dead_with_tstamp_precision(linktype, snaplen,
+	    PCAP_TSTAMP_PRECISION_MICRO));
 }
 
 #ifdef YYDEBUG
