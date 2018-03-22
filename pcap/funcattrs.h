@@ -85,13 +85,23 @@
    */
   #if defined(pcap_EXPORTS)
     /*
-     * We're compiling libpcap, so we should export functions in our
-     * API.
+     * We're compiling libpcap as a DLL, so we should export functions
+     * in our API.
      */
     #define PCAP_API_DEF	__declspec(dllexport)
   #elif defined(PCAP_DLL)
+    /*
+     * We're using libpcap as a DLL, so the calls will be a little more
+     * efficient if we explicitly import the functions.
+     */
     #define PCAP_API_DEF	__declspec(dllimport)
   #else
+    /*
+     * Either we're building libpcap as a static library, or we're using
+     * it as a static library, or we don't know for certain that we're
+     * using it as a dynamic library, so neither import nor export the
+     * functions explicitly.
+     */
     #define PCAP_API_DEF
   #endif
 #elif defined(MSDOS)
@@ -100,10 +110,10 @@
 #else /* UN*X */
   #ifdef pcap_EXPORTS
     /*
-     * We're compiling libpcap, so we should export functions in our API.
-     * The compiler might be configured not to export functions from a
-     * shared library by default, so we might have to explicitly mark
-     * functions as exported.
+     * We're compiling libpcap as a (dynamic) shared library, so we should
+     * export functions in our API.  The compiler might be configured not
+     * to export functions from a shared library by default, so we might
+     * have to explicitly mark functions as exported.
      */
     #if PCAP_IS_AT_LEAST_GNUC_VERSION(3,4) \
         || PCAP_IS_AT_LEAST_XL_C_VERSION(12,0)
