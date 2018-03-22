@@ -3633,6 +3633,14 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 }
 
 static int
+pcap_can_set_rfmon_dead(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Rfmon mode doesn't apply on a pcap_open_dead pcap_t");
+	return (PCAP_ERROR);
+}
+
+static int
 pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
     u_char *user _U_)
 {
@@ -3829,6 +3837,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->snapshot = snaplen;
 	p->linktype = linktype;
 	p->opt.tstamp_precision = precision;
+	p->can_set_rfmon_op = pcap_can_set_rfmon_dead;
 	p->read_op = pcap_read_dead;
 	p->inject_op = pcap_inject_dead;
 	p->setfilter_op = pcap_setfilter_dead;
