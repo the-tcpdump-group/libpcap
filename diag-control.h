@@ -83,10 +83,11 @@
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare")
     #define DIAG_ON_FLEX \
       PCAP_DO_PRAGMA(clang diagnostic pop)
-  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,2)
+  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
     /*
-     * This is GCC 4.2 or later, or a compiler claiming to be that.
-     * We can use "GCC diagnostic ignored -Wxxx".
+     * This is GCC 4.6 or later, or a compiler claiming to be that.
+     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2)
+     * and "GCC diagnostic push/pop" (introduced in 4.6).
      */
     #define DIAG_OFF_FLEX \
       PCAP_DO_PRAGMA(GCC diagnostic push) \
@@ -94,6 +95,10 @@
     #define DIAG_ON_FLEX \
       PCAP_DO_PRAGMA(GCC diagnostic pop)
   #else
+    /*
+     * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
+     * claiming to be that; there's nothing we know of that we can do.
+     */
     #define DIAG_OFF_FLEX
     #define DIAG_ON_FLEX
   #endif
@@ -124,10 +129,11 @@
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow")
     #define DIAG_ON_BISON_BYACC \
       PCAP_DO_PRAGMA(clang diagnostic pop)
-  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,2)
+  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
     /*
-     * This is GCC 4.2 or later, or a compiler claiming to be that.
-     * We can use "GCC diagnostic ignored -Wxxx".
+     * This is GCC 4.6 or later, or a compiler claiming to be that.
+     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2)
+     * and "GCC diagnostic push/pop" (introduced in 4.6).
      */
     #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic push) \
@@ -136,7 +142,7 @@
       PCAP_DO_PRAGMA(GCC diagnostic pop)
   #else
     /*
-     * Neither Clang 2.8 or later nor GCC 4.2 or later or a compiler
+     * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
      * claiming to be that; there's nothing we know of that we can do.
      */
     #define DIAG_OFF_BISON_BYACC
