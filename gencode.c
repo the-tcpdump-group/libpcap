@@ -8049,8 +8049,6 @@ gen_acode(compiler_state_t *cstate, const u_char *eaddr, struct qual q)
 		bpf_error(cstate, "aid supported only on ARCnet");
 		/* NOTREACHED */
 	}
-	bpf_error(cstate, "ARCnet address used in non-arc expression");
-	/* NOTREACHED */
 }
 
 static struct block *
