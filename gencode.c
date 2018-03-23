@@ -4721,7 +4721,7 @@ gen_mpls_linktype(compiler_state_t *cstate, int proto)
 
         case Q_IP:
                 /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(cstate, OR_LINKPL, -2, BPF_B, 0x01, 0x01);
+                b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
                 /* match the IPv4 version number */
                 b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x40, 0xf0);
                 gen_and(b0, b1);
@@ -4729,7 +4729,7 @@ gen_mpls_linktype(compiler_state_t *cstate, int proto)
 
        case Q_IPV6:
                 /* match the bottom-of-stack bit */
-                b0 = gen_mcmp(cstate, OR_LINKPL, -2, BPF_B, 0x01, 0x01);
+                b0 = gen_mcmp(cstate, OR_LINKPL, (u_int)-2, BPF_B, 0x01, 0x01);
                 /* match the IPv4 version number */
                 b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_B, 0x60, 0xf0);
                 gen_and(b0, b1);
