@@ -1073,10 +1073,10 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	 * Assume it's not raw ATM with a pseudo-header, for now.
 	 */
 	cstate->is_atm = 0;
-	cstate->off_vpi = -1;
-	cstate->off_vci = -1;
-	cstate->off_proto = -1;
-	cstate->off_payload = -1;
+	cstate->off_vpi = OFFSET_NOT_SET;
+	cstate->off_vci = OFFSET_NOT_SET;
+	cstate->off_proto = OFFSET_NOT_SET;
+	cstate->off_payload = OFFSET_NOT_SET;
 
 	/*
 	 * And not Geneve.
@@ -1091,12 +1091,12 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	/*
 	 * And assume we're not doing SS7.
 	 */
-	cstate->off_li = -1;
-	cstate->off_li_hsl = -1;
-	cstate->off_sio = -1;
-	cstate->off_opc = -1;
-	cstate->off_dpc = -1;
-	cstate->off_sls = -1;
+	cstate->off_li = OFFSET_NOT_SET;
+	cstate->off_li_hsl = OFFSET_NOT_SET;
+	cstate->off_sio = OFFSET_NOT_SET;
+	cstate->off_opc = OFFSET_NOT_SET;
+	cstate->off_dpc = OFFSET_NOT_SET;
+	cstate->off_sls = OFFSET_NOT_SET;
 
 	cstate->label_stack_depth = 0;
 	cstate->vlan_stack_depth = 0;
@@ -1106,7 +1106,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	case DLT_ARCNET:
 		cstate->off_linktype.constant_part = 2;
 		cstate->off_linkpl.constant_part = 6;
-		cstate->off_nl = 0;	/* XXX in reality, variable! */
+		cstate->off_nl = 0;		/* XXX in reality, variable! */
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
@@ -1420,7 +1420,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_linktype.constant_part = 4;
 		cstate->off_linkpl.constant_part = 4;
 		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
                 break;
 
 	case DLT_JUNIPER_ATM1:
@@ -1451,63 +1451,63 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_linktype.constant_part = 4;
 		cstate->off_linkpl.constant_part = 6;
 		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_GGSN:
 		cstate->off_linktype.constant_part = 6;
 		cstate->off_linkpl.constant_part = 12;
 		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_ES:
 		cstate->off_linktype.constant_part = 6;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
-		cstate->off_nl = -1;		/* not really a network layer but raw IP addresses */
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_MONITOR:
 		cstate->off_linktype.constant_part = 12;
 		cstate->off_linkpl.constant_part = 12;
-		cstate->off_nl = 0;		/* raw IP/IP6 header */
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl = 0;			/* raw IP/IP6 header */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_BACNET_MS_TP:
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_SERVICES:
 		cstate->off_linktype.constant_part = 12;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
-		cstate->off_nl = -1;		/* L3 proto location dep. on cookie type */
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_VP:
 		cstate->off_linktype.constant_part = 18;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_ST:
 		cstate->off_linktype.constant_part = 18;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_ISM:
 		cstate->off_linktype.constant_part = 8;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_VS:
@@ -1516,8 +1516,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	case DLT_JUNIPER_ATM_CEMIC:
 		cstate->off_linktype.constant_part = 8;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_MTP2:
@@ -1529,8 +1529,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_sls = 7;
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_MTP2_WITH_PHDR:
@@ -1542,8 +1542,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_sls = 11;
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_ERF:
@@ -1555,8 +1555,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_sls = 27;
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl = OFFSET_NOT_SET;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_PFSYNC:
@@ -1572,15 +1572,15 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 */
 		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
 		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = -1;		/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = -1;	/* no 802.2 LLC */
+		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_IPNET:
 		cstate->off_linktype.constant_part = 1;
 		cstate->off_linkpl.constant_part = 24;	/* ipnet header length */
 		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = -1;
+		cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_NETANALYZER:
@@ -1608,8 +1608,8 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		    cstate->linktype <= DLT_MATCHING_MAX) {
 			cstate->off_linktype.constant_part = OFFSET_NOT_SET;
 			cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-			cstate->off_nl = -1;
-			cstate->off_nl_nosnap = -1;
+			cstate->off_nl = OFFSET_NOT_SET;
+			cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		} else {
 			bpf_error(cstate, "unknown data link type %d", cstate->linktype);
 		}
@@ -8821,7 +8821,7 @@ gen_atmfield_code(compiler_state_t *cstate, int atmfield, bpf_int32 jvalue,
 	case A_VPI:
 		if (!cstate->is_atm)
 			bpf_error(cstate, "'vpi' supported only on raw ATM");
-		if (cstate->off_vpi == (u_int)-1)
+		if (cstate->off_vpi == OFFSET_NOT_SET)
 			abort();
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B, 0xffffffff, jtype,
 		    reverse, jvalue);
@@ -8830,21 +8830,21 @@ gen_atmfield_code(compiler_state_t *cstate, int atmfield, bpf_int32 jvalue,
 	case A_VCI:
 		if (!cstate->is_atm)
 			bpf_error(cstate, "'vci' supported only on raw ATM");
-		if (cstate->off_vci == (u_int)-1)
+		if (cstate->off_vci == OFFSET_NOT_SET)
 			abort();
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H, 0xffffffff, jtype,
 		    reverse, jvalue);
 		break;
 
 	case A_PROTOTYPE:
-		if (cstate->off_proto == (u_int)-1)
+		if (cstate->off_proto == OFFSET_NOT_SET)
 			abort();	/* XXX - this isn't on FreeBSD */
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B, 0x0f, jtype,
 		    reverse, jvalue);
 		break;
 
 	case A_MSGTYPE:
-		if (cstate->off_payload == (u_int)-1)
+		if (cstate->off_payload == OFFSET_NOT_SET)
 			abort();
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_payload + MSG_TYPE_POS, BPF_B,
 		    0xffffffff, jtype, reverse, jvalue);
@@ -8853,7 +8853,7 @@ gen_atmfield_code(compiler_state_t *cstate, int atmfield, bpf_int32 jvalue,
 	case A_CALLREFTYPE:
 		if (!cstate->is_atm)
 			bpf_error(cstate, "'callref' supported only on raw ATM");
-		if (cstate->off_proto == (u_int)-1)
+		if (cstate->off_proto == OFFSET_NOT_SET)
 			abort();
 		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B, 0xffffffff,
 		    jtype, reverse, jvalue);
@@ -9055,7 +9055,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 		/* FALLTHROUGH */
 
 	case M_SIO:
-		if (cstate->off_sio == (u_int)-1)
+		if (cstate->off_sio == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sio' supported only on SS7");
 		/* sio coded on 1 byte so max value 255 */
 		if(jvalue > 255)
@@ -9068,7 +9068,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 	case MH_OPC:
 		newoff_opc+=3;
         case M_OPC:
-	        if (cstate->off_opc == (u_int)-1)
+	        if (cstate->off_opc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'opc' supported only on SS7");
 		/* opc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
@@ -9092,7 +9092,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 		/* FALLTHROUGH */
 
 	case M_DPC:
-	        if (cstate->off_dpc == (u_int)-1)
+	        if (cstate->off_dpc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'dpc' supported only on SS7");
 		/* dpc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
@@ -9112,7 +9112,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 	case MH_SLS:
 	  newoff_sls+=3;
 	case M_SLS:
-	        if (cstate->off_sls == (u_int)-1)
+	        if (cstate->off_sls == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sls' supported only on SS7");
 		/* sls coded on 4 bits so max value 15 */
 		if (jvalue > 15)
