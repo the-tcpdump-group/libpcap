@@ -1711,6 +1711,22 @@ static int pcap_setsampling_remote(pcap_t *fp)
 	if (fp->rmt_samp.method == PCAP_SAMP_NOSAMP)
 		return 0;
 
+	/*
+	 * Check for sampling parameters that don't fit in a message.
+	 * We'll let the server complain about invalid parameters
+	 * that do fit into the message.
+	 */
+	if (fp->rmt_samp.method < 0 || fp->rmt_samp.method > 255) {
+		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    "Invalid sampling method %d", fp->rmt_samp.method);
+		return -1;
+	}
+	if (fp->rmt_samp.value < 0 || fp->rmt_samp.value > 65535) {
+		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+		    "Invalid sampling value %d", fp->rmt_samp.value);
+		return -1;
+	}
+
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, fp->errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
@@ -1728,8 +1744,8 @@ static int pcap_setsampling_remote(pcap_t *fp)
 
 	memset(sampling_pars, 0, sizeof(struct rpcap_sampling));
 
-	sampling_pars->method = fp->rmt_samp.method;
-	sampling_pars->value = htonl(fp->rmt_samp.value);
+	sampling_pars->method = (uint8)fp->rmt_samp.method;
+	sampling_pars->value = (uint16)htonl(fp->rmt_samp.value);
 
 	if (sock_send(pr->rmt_sockctrl, sendbuf, sendbufidx, fp->errbuf,
 	    PCAP_ERRBUF_SIZE) < 0)
