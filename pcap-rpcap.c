@@ -2712,7 +2712,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	/* Warning: this call can be the first one called by the user. */
 	/* For this reason, we have to initialize the WinSock support. */
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
-		return -1;
+		return (SOCKET)-1;
 
 	/* Do the work */
 	if ((port == NULL) || (port[0] == 0))
@@ -2720,7 +2720,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 		if (sock_initaddress(address, RPCAP_DEFAULT_NETPORT_ACTIVE, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			SOCK_ASSERT(errbuf, 1);
-			return -2;
+			return (SOCKET)-2;
 		}
 	}
 	else
@@ -2728,7 +2728,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 		if (sock_initaddress(address, port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			SOCK_ASSERT(errbuf, 1);
-			return -2;
+			return (SOCKET)-2;
 		}
 	}
 
@@ -2737,7 +2737,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	{
 		SOCK_ASSERT(errbuf, 1);
 		freeaddrinfo(addrinfo);
-		return -2;
+		return (SOCKET)-2;
 	}
 	freeaddrinfo(addrinfo);
 
@@ -2754,7 +2754,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	if (sockctrl == INVALID_SOCKET)
 	{
 		sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
-		return -2;
+		return (SOCKET)-2;
 	}
 
 	/* Get the numeric for of the name of the connecting host */
@@ -2763,7 +2763,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 		sock_geterror("getnameinfo(): ", errbuf, PCAP_ERRBUF_SIZE);
 		rpcap_senderror(sockctrl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
-		return -1;
+		return (SOCKET)-1;
 	}
 
 	/* checks if the connecting host is among the ones allowed */
@@ -2771,7 +2771,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	{
 		rpcap_senderror(sockctrl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
-		return -1;
+		return (SOCKET)-1;
 	}
 
 	/*
@@ -2782,7 +2782,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 		/* Unrecoverable error. */
 		rpcap_senderror(sockctrl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
-		return -3;
+		return (SOCKET)-3;
 	}
 
 	/* Checks that this host does not already have a cntrl connection in place */
@@ -2819,7 +2819,7 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 		    errno, "malloc() failed");
 		rpcap_senderror(sockctrl, protocol_version, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
-		return -1;
+		return (SOCKET)-1;
 	}
 
 	memcpy(&temp->host, &from, fromlen);
