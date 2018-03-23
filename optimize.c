@@ -2079,7 +2079,7 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 	struct slist *src;
 	u_int slen;
 	u_int off;
-	int extrajmps;		/* number of extra jumps inserted */
+	u_int extrajmps;	/* number of extra jumps inserted */
 	struct slist **offset = NULL;
 
 	if (p == 0 || isMarked(ic, p))
@@ -2157,7 +2157,11 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 					/*NOTREACHED*/
 				}
 
-				dst->jt = i - off - 1;
+				if (i - off - 1 >= 256) {
+					bpf_error(cstate, ljerr, "out-of-range jump", off);
+					/*NOTREACHED*/
+				}
+				dst->jt = (u_char)(i - off - 1);
 				jt++;
 			}
 			if (offset[i] == src->s.jf) {
@@ -2165,7 +2169,11 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 					bpf_error(cstate, ljerr, "multiple matches", off);
 					/*NOTREACHED*/
 				}
-				dst->jf = i - off - 1;
+				if (i - off - 1 >= 256) {
+					bpf_error(cstate, ljerr, "out-of-range jump", off);
+					/*NOTREACHED*/
+				}
+				dst->jf = (u_char)(i - off - 1);
 				jf++;
 			}
 		}
@@ -2197,6 +2205,10 @@ filled:
 			return(0);
 		    }
 		    /* branch if T to following jump */
+		    if (extrajmps >= 256) {
+			bpf_error(cstate, "too many extra jumps");
+			/*NOTREACHED*/
+		    }
 		    dst->jt = extrajmps;
 		    extrajmps++;
 		    dst[extrajmps].code = BPF_JMP|BPF_JA;
@@ -2214,6 +2226,10 @@ filled:
 		    }
 		    /* branch if F to following jump */
 		    /* if two jumps are inserted, F goes to second one */
+		    if (extrajmps >= 256) {
+			bpf_error(cstate, "too many extra jumps");
+			/*NOTREACHED*/
+		    }
 		    dst->jf = extrajmps;
 		    extrajmps++;
 		    dst[extrajmps].code = BPF_JMP|BPF_JA;
