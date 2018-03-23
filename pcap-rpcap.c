@@ -1888,8 +1888,6 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 
 	if (auth)
 	{
-		auth_type = auth->type;
-
 		switch (auth->type)
 		{
 		case RPCAP_RMTAUTH_NULL:
@@ -1924,6 +1922,8 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication type not recognized.");
 			return -1;
 		}
+
+		auth_type = (uint16)auth->type;
 	}
 	else
 	{
