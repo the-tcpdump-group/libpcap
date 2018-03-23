@@ -2209,13 +2209,13 @@ filled:
 			bpf_error(cstate, "too many extra jumps");
 			/*NOTREACHED*/
 		    }
-		    dst->jt = extrajmps;
+		    dst->jt = (u_char)extrajmps;
 		    extrajmps++;
 		    dst[extrajmps].code = BPF_JMP|BPF_JA;
 		    dst[extrajmps].k = off - extrajmps;
 		}
 		else
-		    dst->jt = off;
+		    dst->jt = (u_char)off;
 		off = JF(p)->offset - (p->offset + slen) - 1;
 		if (off >= 256) {
 		    /* offset too large for branch, must add a jump */
@@ -2230,13 +2230,13 @@ filled:
 			bpf_error(cstate, "too many extra jumps");
 			/*NOTREACHED*/
 		    }
-		    dst->jf = extrajmps;
+		    dst->jf = (u_char)extrajmps;
 		    extrajmps++;
 		    dst[extrajmps].code = BPF_JMP|BPF_JA;
 		    dst[extrajmps].k = off - extrajmps;
 		}
 		else
-		    dst->jf = off;
+		    dst->jf = (u_char)off;
 	}
 	return (1);
 }
