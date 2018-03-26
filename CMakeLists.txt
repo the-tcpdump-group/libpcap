@@ -1555,7 +1555,7 @@ macro(check_and_add_compiler_option _option)
 endmacro()
 
 set(C_ADDITIONAL_FLAGS "")
-if(EXISTS ${CMAKE_SOURCE_DIR}/.devel)
+if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
     #
     # Warning options.
     #
