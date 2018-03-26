@@ -1616,8 +1616,9 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         check_and_add_compiler_option(-wd4820)
     else()
         #
-        # GCC and compilers that try to behave like it, including
-        # MSVC with a Clang front end and Microsoft's code generator.
+        # Other compilers, including MSVC with a Clang front end and
+        # Microsoft's code generator.  We currently treat them as if
+        # they might support GCC-style -W options.
         #
         check_and_add_compiler_option(-Wall)
         check_and_add_compiler_option(-Wsign-compare)
