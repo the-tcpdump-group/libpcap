@@ -2361,13 +2361,11 @@ error:
 	that can be used to be sent on the network. Basically, it applies all the hton()
 	conversion required to the input variable.
 
-	\param sockaddrin: a 'sockaddr_storage' pointer to the variable that has to be
+	\param sockaddrin a 'sockaddr_storage' pointer to the variable that has to be
 	serialized. This variable can be both a 'sockaddr_in' and 'sockaddr_in6'.
 
-	\param sockaddrout: an 'rpcap_sockaddr' pointer to the variable that will contain
+	\param sockaddrout an 'rpcap_sockaddr' pointer to the variable that will contain
 	the serialized data. This variable has to be allocated by the user.
-
-	\return None
 
 	\warning This function supports only AF_INET and AF_INET6 address families.
 */
