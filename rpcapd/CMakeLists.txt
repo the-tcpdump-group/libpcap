@@ -67,8 +67,7 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     ${RPCAPD_EXTRA_SOURCES}
   )
 
-  set_target_properties(rpcapd PROPERTIES
-    COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
+  set_target_properties(rpcapd PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
 
   if(WIN32)
     target_link_libraries(rpcapd ${LIBRARY_NAME}

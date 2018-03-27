@@ -9,7 +9,7 @@ macro(add_test_executable _executable)
   add_executable(${_executable} EXCLUDE_FROM_ALL
     ${_executable}.c ${PROJECT_SOURCE_LIST_WIN32_C})
   set_target_properties(${_executable} PROPERTIES
-    COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
+    COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
   if(WIN32)
     target_link_libraries(${_executable}
       ${ARGN} ${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})

@@ -53,7 +53,7 @@ macro(check_and_add_compiler_option _option)
     string(REGEX REPLACE "^-" "" _option_variable ${_temp_option_variable})
     check_c_compiler_flag("${_option}" ${_option_variable})
     if(${${_option_variable}})
-        set(C_ADDITIONAL_FLAGS ${C_ADDITIONAL_FLAGS} "${_option}")
+        set(C_ADDITIONAL_FLAGS "${C_ADDITIONAL_FLAGS} ${_option}")
     endif()
 endmacro()
 
@@ -1977,9 +1977,9 @@ else(WIN32) # UN*X
 endif(WIN32)
 
 if(BUILD_SHARED_LIBS)
-    set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
+    set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
 endif(BUILD_SHARED_LIBS)
-set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_OPTIONS "${C_ADDITIONAL_FLAGS}")
+set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
 
 if(BUILD_SHARED_LIBS)
     target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
