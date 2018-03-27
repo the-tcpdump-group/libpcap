@@ -57,6 +57,7 @@ macro(check_and_add_compiler_option _option)
     endif()
 endmacro()
 
+set(C_ADDITIONAL_FLAGS "")
 if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR
    CMAKE_C_COMPILER_ID MATCHES "Clang")
     check_and_add_compiler_option("-std=gnu99")
@@ -1597,7 +1598,6 @@ file(GLOB PROJECT_SOURCE_LIST_H
 #
 # Check and add warning options if we have a .devel file.
 #
-set(C_ADDITIONAL_FLAGS "")
 if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
     #
     # Warning options.
