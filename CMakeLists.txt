@@ -1590,10 +1590,9 @@ if(ENABLE_REMOTE)
         pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
 endif(ENABLE_REMOTE)
 
-file(GLOB PROJECT_SOURCE_LIST_H
-    *.h
-    pcap/*.h
-)
+###################################################################
+#   Warning options
+###################################################################
 
 #
 # Check and add warning options if we have a .devel file.
@@ -1672,6 +1671,11 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         check_and_add_compiler_option(-Wused-but-marked-unused)
     endif()
 endif()
+
+file(GLOB PROJECT_SOURCE_LIST_H
+    *.h
+    pcap/*.h
+)
 
 #
 # Add subdirectories after we've set C_ADDITIONAL_FLAGS, so they
