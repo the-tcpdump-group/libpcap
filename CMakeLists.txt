@@ -1981,13 +1981,15 @@ else(WIN32) # UN*X
 endif(WIN32)
 
 if(BUILD_SHARED_LIBS)
-    set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
-endif(BUILD_SHARED_LIBS)
-set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
-
-if(BUILD_SHARED_LIBS)
+    if(NOT C_ADDITIONAL_FLAGS STREQUAL "")
+        set_target_properties(${LIBRARY_NAME} PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
+    endif()
     target_link_libraries(${LIBRARY_NAME} ${PCAP_LINK_LIBRARIES})
 endif(BUILD_SHARED_LIBS)
+
+if(NOT C_ADDITIONAL_FLAGS STREQUAL "")
+    set_target_properties(${LIBRARY_NAME}_static PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
+endif()
 
 ######################################
 # Write out the config.h file
