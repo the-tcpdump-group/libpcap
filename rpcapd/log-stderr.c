@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include "log.h"
 
 void
@@ -28,7 +29,7 @@ rpcapd_log(log_priority priority, const char *message, ...)
 		break;
 
 	default:
-		/* Don't do this. */
+		abort();
 		return;
 	}
 

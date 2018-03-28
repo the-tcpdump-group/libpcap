@@ -8822,6 +8822,9 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+		    # Warns about safeguards added in case the enums are
+		    # extended
+		    # AC_LBL_CHECK_COMPILER_OPT(V_CCOPT, -Wcovered-switch-default)
 	    fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports generating dependencies" >&5

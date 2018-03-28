@@ -850,6 +850,9 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wdocumentation)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wcomma)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-noreturn)
+		    # Warns about safeguards added in case the enums are
+		    # extended
+		    # AC_LBL_CHECK_COMPILER_OPT($1, -Wcovered-switch-default)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #
