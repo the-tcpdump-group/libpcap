@@ -1671,6 +1671,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         check_and_add_compiler_option(-Wused-but-marked-unused)
         check_and_add_compiler_option(-Wdocumentation)
         check_and_add_compiler_option(-Wcomma)
+        check_and_add_compiler_option(-Wmissing-noreturn)
     endif()
 endif()
 

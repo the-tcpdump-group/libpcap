@@ -417,7 +417,7 @@ struct _compiler_state {
 	int cur_chunk;
 };
 
-void
+void PCAP_NORETURN
 bpf_syntax_error(compiler_state_t *cstate, const char *msg)
 {
 	bpf_error(cstate, "syntax error in filter expression: %s", msg);
@@ -425,7 +425,7 @@ bpf_syntax_error(compiler_state_t *cstate, const char *msg)
 }
 
 /* VARARGS */
-void
+void PCAP_NORETURN
 bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 {
 	va_list ap;
@@ -646,7 +646,7 @@ gen_retblk(compiler_state_t *cstate, int v)
 	return b;
 }
 
-static inline void
+static inline PCAP_NORETURN  void
 syntax(compiler_state_t *cstate)
 {
 	bpf_error(cstate, "syntax error in filter expression");

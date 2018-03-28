@@ -459,7 +459,7 @@ void main_startup(void)
 	- when we're running in console and are terminated with ^C;
 	- on UN*X, when we're terminated with SIGTERM.
 */
-static void main_terminate(int sign)
+static PCAP_NORETURN void main_terminate(int sign)
 {
 	SOCK_ASSERT(PROGRAM_NAME " is closing.\n", 1);
 

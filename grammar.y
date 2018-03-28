@@ -199,7 +199,7 @@ str2tok(const char *str, const struct tok *toks)
 
 static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 
-static void
+static PCAP_NORETURN void
 yyerror(void *yyscanner, compiler_state_t *cstate, const char *msg)
 {
 	bpf_syntax_error(cstate, msg);
