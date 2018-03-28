@@ -61,6 +61,11 @@
 #else
   /*
    * Suppress -Wsigned-compare warnings.
+   *
+   * Suppress -Wdocumentation warnings with Clang; GCC doesn't
+   * support -Wdocumentation, at least according to the GCC 7.3
+   * documentation.  Apparently, Flex generates code that upsets
+   * at least some versions of Clang's -Wdocumentation.
    */
   #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
@@ -69,7 +74,8 @@
      */
     #define DIAG_OFF_FLEX \
       PCAP_DO_PRAGMA(clang diagnostic push) \
-      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare")
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare") \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation")
     #define DIAG_ON_FLEX \
       PCAP_DO_PRAGMA(clang diagnostic pop)
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
