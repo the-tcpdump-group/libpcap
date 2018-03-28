@@ -151,6 +151,12 @@
  * never returns".  (It must go before the function declaration, e.g.
  * "extern PCAP_NORETURN func(...)" rather than after the function
  * declaration, as the MSVC version has to go before the declaration.)
+ *
+ * PCAP_NORETURN_DEF, before a function *definition*, means "this
+ * function never returns"; it would be used only for static functions
+ * that are defined before any use, and thus have no declaration.
+ * (MSVC doesn't support that; I guess the "decl" in "__declspec"
+ * means "declaration", and __declspec doesn't work with definitions.)
  */
 #if __has_attribute(noreturn) \
     || PCAP_IS_AT_LEAST_GNUC_VERSION(2,5) \
@@ -164,13 +170,16 @@
    * HP aCC A.06.10 and later.
    */
   #define PCAP_NORETURN __attribute((noreturn))
+  #define PCAP_NORETURN_DEF __attribute((noreturn))
 #elif defined(_MSC_VER)
   /*
    * MSVC.
    */
   #define PCAP_NORETURN __declspec(noreturn)
+  #define PCAP_NORETURN_DEF
 #else
   #define PCAP_NORETURN
+  #define PCAP_NORETURN_DEF
 #endif
 
 /*

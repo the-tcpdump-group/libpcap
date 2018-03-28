@@ -646,7 +646,7 @@ gen_retblk(compiler_state_t *cstate, int v)
 	return b;
 }
 
-static inline PCAP_NORETURN  void
+static inline PCAP_NORETURN_DEF void
 syntax(compiler_state_t *cstate)
 {
 	bpf_error(cstate, "syntax error in filter expression");
