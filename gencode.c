@@ -574,7 +574,8 @@ newchunk(compiler_state_t *cstate, size_t n)
 
 	cp = &cstate->chunks[cstate->cur_chunk];
 	if (n > cp->n_left) {
-		++cp, k = ++cstate->cur_chunk;
+		++cp;
+		k = ++cstate->cur_chunk;
 		if (k >= NCHUNKS)
 			bpf_error(cstate, "out of memory");
 		size = CHUNK0SIZE << k;
