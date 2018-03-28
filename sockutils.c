@@ -62,6 +62,8 @@
 #define INT_MAX		2147483647
 #endif
 
+#include "pcap-int.h"
+
 #include "sockutils.h"
 #include "portability.h"
 
@@ -218,9 +220,9 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
  * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
  * in the 'errbuf' variable.
  */
+#ifdef _WIN32
 int sock_init(char *errbuf, int errbuflen)
 {
-#ifdef _WIN32
 	if (sockcount == 0)
 	{
 		WSADATA wsaData;			/* helper variable needed to initialize Winsock */
@@ -238,8 +240,10 @@ int sock_init(char *errbuf, int errbuflen)
 	}
 
 	sockcount++;
+#else
+int sock_init(char *errbuf _U_, int errbuflen _U_)
+{
 #endif
-
 	return 0;
 }
 

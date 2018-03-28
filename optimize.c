@@ -649,7 +649,7 @@ vstore(struct stmt *s, int *valp, int newval, int alter)
  * (Unary operators are handled elsewhere.)
  */
 static void
-fold_op(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
+fold_op(compiler_state_t *cstate, opt_state_t *opt_state,
     struct stmt *s, int v0, int v1)
 {
 	bpf_u_int32 a, b;
@@ -991,7 +991,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
  * evaluation and code transformations weren't folded together.
  */
 static void
-opt_stmt(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
+opt_stmt(compiler_state_t *cstate, opt_state_t *opt_state,
     struct stmt *s, int val[], int alter)
 {
 	int op;
@@ -1080,7 +1080,7 @@ opt_stmt(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
 				}
 			}
 			if (opt_state->vmap[val[A_ATOM]].is_const) {
-				fold_op(cstate, ic, opt_state, s, val[A_ATOM], K(s->k));
+				fold_op(cstate, opt_state, s, val[A_ATOM], K(s->k));
 				val[A_ATOM] = K(s->k);
 				break;
 			}
@@ -1101,7 +1101,7 @@ opt_stmt(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
 		op = BPF_OP(s->code);
 		if (alter && opt_state->vmap[val[X_ATOM]].is_const) {
 			if (opt_state->vmap[val[A_ATOM]].is_const) {
-				fold_op(cstate, ic, opt_state, s, val[A_ATOM], val[X_ATOM]);
+				fold_op(cstate, opt_state, s, val[A_ATOM], val[X_ATOM]);
 				val[A_ATOM] = K(s->k);
 			}
 			else {
@@ -1225,7 +1225,7 @@ opt_deadstores(opt_state_t *opt_state, register struct block *b)
 }
 
 static void
-opt_blk(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
+opt_blk(compiler_state_t *cstate, opt_state_t *opt_state,
     struct block *b, int do_stmts)
 {
 	struct slist *s;
@@ -1276,7 +1276,7 @@ opt_blk(compiler_state_t *cstate, struct icode *ic, opt_state_t *opt_state,
 	aval = b->val[A_ATOM];
 	xval = b->val[X_ATOM];
 	for (s = b->stmts; s; s = s->next)
-		opt_stmt(cstate, ic, opt_state, &s->s, b->val, do_stmts);
+		opt_stmt(cstate, opt_state, &s->s, b->val, do_stmts);
 
 	/*
 	 * This is a special case: if we don't use anything from this
@@ -1649,7 +1649,7 @@ opt_blks(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic,
 	find_inedges(opt_state, ic->root);
 	for (i = maxlevel; i >= 0; --i)
 		for (p = opt_state->levels[i]; p; p = p->link)
-			opt_blk(cstate, ic, opt_state, p, do_stmts);
+			opt_blk(cstate, opt_state, p, do_stmts);
 
 	if (do_stmts)
 		/*

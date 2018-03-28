@@ -84,7 +84,7 @@ static pcap_t *pcap_fopen_offline(FILE *, char *);
 #endif
 
 static int
-sf_getnonblock(pcap_t *p)
+sf_getnonblock(pcap_t *p _U_)
 {
 	/*
 	 * This is a savefile, not a live capture file, so never say
@@ -94,7 +94,7 @@ sf_getnonblock(pcap_t *p)
 }
 
 static int
-sf_setnonblock(pcap_t *p, int nonblock)
+sf_setnonblock(pcap_t *p, int nonblock _U_)
 {
 	/*
 	 * This is a savefile, not a live capture file, so reject
@@ -110,7 +110,7 @@ sf_setnonblock(pcap_t *p, int nonblock)
 }
 
 static int
-sf_stats(pcap_t *p, struct pcap_stat *ps)
+sf_stats(pcap_t *p, struct pcap_stat *ps _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from savefiles");
@@ -228,7 +228,7 @@ sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
  * single device? IN, OUT or both?
  */
 static int
-sf_setdirection(pcap_t *p, pcap_direction_t d)
+sf_setdirection(pcap_t *p, pcap_direction_t d _U_)
 {
 	pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 	    "Setting direction is not supported on savefiles");

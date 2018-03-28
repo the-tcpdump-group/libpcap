@@ -616,9 +616,9 @@ get_figure_of_merit(pcap_if_t *dev)
  * description?
  */
 static char *
+#ifdef SIOCGIFDESCR
 get_if_description(const char *name)
 {
-#ifdef SIOCGIFDESCR
 	char *description = NULL;
 	int s;
 	struct ifreq ifrdesc;
@@ -735,6 +735,8 @@ get_if_description(const char *name)
 #endif
 	return (description);
 #else /* SIOCGIFDESCR */
+get_if_description(const char *name _U_)
+{
 	return (NULL);
 #endif /* SIOCGIFDESCR */
 }

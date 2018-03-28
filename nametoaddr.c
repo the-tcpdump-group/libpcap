@@ -758,9 +758,9 @@ pcap_ether_hostton(const char *name)
  * XXX - not guaranteed to be thread-safe!
  */
 int
+#ifdef	DECNETLIB
 __pcap_nametodnaddr(const char *name, u_short *res)
 {
-#ifdef	DECNETLIB
 	struct nodeent *getnodebyname();
 	struct nodeent *nep;
 
@@ -771,6 +771,8 @@ __pcap_nametodnaddr(const char *name, u_short *res)
 	memcpy((char *)res, (char *)nep->n_addr, sizeof(unsigned short));
 	return(1);
 #else
+__pcap_nametodnaddr(const char *name _U_, u_short *res _U_)
+{
 	return(0);
 #endif
 }
