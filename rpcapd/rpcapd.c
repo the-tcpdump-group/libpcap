@@ -83,7 +83,7 @@ static void *main_passive(void *ptr);
 static void *main_active(void *ptr);
 #endif
 
-static void main_terminate(int sign);
+static void PCAP_NORETURN main_terminate(int sign);
 #ifdef _WIN32
 static void main_abort(int sign);
 #else
@@ -459,7 +459,7 @@ void main_startup(void)
 	- when we're running in console and are terminated with ^C;
 	- on UN*X, when we're terminated with SIGTERM.
 */
-static PCAP_NORETURN void main_terminate(int sign)
+static void main_terminate(int sign)
 {
 	SOCK_ASSERT(PROGRAM_NAME " is closing.\n", 1);
 
