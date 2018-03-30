@@ -1641,6 +1641,14 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         #
         check_and_add_compiler_option(-wd4574)
         #
+        # Yes, we have some functions that never return but that
+        # have a non-void return type.  That's because, on some
+        # platforms, they *do* return values but, on other
+        # platforms, including Windows, they just fail and
+        # longjmp out by calling bpf_error().
+        #
+        check_and_add_compiler_option(-wd4646)
+        #
         # The Windows headers also test not-defined values in #if, so
         # we don't want warnings about that, either.
         #
