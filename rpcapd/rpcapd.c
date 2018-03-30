@@ -81,7 +81,7 @@ char port[MAX_LINE + 1];			//!< keeps the network port to bind to
 #ifdef _WIN32
 static HANDLE shutdown_event;			//!< event to signal to shut down the main loop
 #else
-static int shutdown_server;			//!< '1' if the server is to shut down
+static volatile sig_atomic_t shutdown_server;	//!< '1' if the server is to shut down
 #endif
 
 extern char *optarg;	// for getopt()
