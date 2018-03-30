@@ -1641,14 +1641,6 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         #
         check_and_add_compiler_option(-wd4574)
         #
-        # Yes, we have some functions that never return but that
-        # have a non-void return type.  That's because, on some
-        # platforms, they *do* return values but, on other
-        # platforms, including Windows, they just fail and
-        # longjmp out by calling bpf_error().
-        #
-        check_and_add_compiler_option(-wd4646)
-        #
         # The Windows headers also test not-defined values in #if, so
         # we don't want warnings about that, either.
         #
@@ -1683,6 +1675,20 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         # Warns about safeguards added in case the enums are extended
         # check_and_add_compiler_option(-Wcovered-switch-default)
     endif()
+endif()
+
+#
+# Suppress some warnings we get with MSVC even without /Wall.
+#
+if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
+    #
+    # Yes, we have some functions that never return but that
+    # have a non-void return type.  That's because, on some
+    # platforms, they *do* return values but, on other
+    # platforms, including Windows, they just fail and
+    # longjmp out by calling bpf_error().
+    #
+    check_and_add_compiler_option(-wd4646)
 endif()
 
 file(GLOB PROJECT_SOURCE_LIST_H
