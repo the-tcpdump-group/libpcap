@@ -196,7 +196,7 @@ extern "C" {
 
 int sock_init(char *errbuf, int errbuflen);
 void sock_cleanup(void);
-/* It is 'public' because there are calls (like accept() ) which are not managed from inside the sockutils files */
+void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen);
 void sock_geterror(const char *caller, char *errbuf, int errbufsize);
 int sock_initaddress(const char *address, const char *port,
     struct addrinfo *hints, struct addrinfo **addrinfo,

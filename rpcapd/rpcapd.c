@@ -60,30 +60,42 @@
   #include <sys/wait.h>		// waitpid()
 #endif
 
+//
+// Element in list of sockets on which we're listening for connections.
+//
+struct listen_sock {
+	struct listen_sock *next;
+	SOCKET sock;
+};
 
 // Global variables
 char hostlist[MAX_HOST_LIST + 1];		//!< Keeps the list of the hosts that are allowed to connect to this server
 struct active_pars activelist[MAX_ACTIVE_LIST];		//!< Keeps the list of the hosts (host, port) on which I want to connect to (active mode)
 int nullAuthAllowed;				//!< '1' if we permit NULL authentication, '0' otherwise
-static SOCKET sockmain;				//!< keeps the main socket identifier
+static struct listen_sock *listen_socks;	//!< sockets on which we listen
 char loadfile[MAX_LINE + 1];			//!< Name of the file from which we have to load the configuration
 int passivemode = 1;				//!< '1' if we want to run in passive mode as well
 struct addrinfo mainhints;			//!< temporary struct to keep settings needed to open the new socket
 char address[MAX_LINE + 1];			//!< keeps the network address (either numeric or literal) to bind to
 char port[MAX_LINE + 1];			//!< keeps the network port to bind to
+#ifdef _WIN32
+static HANDLE shutdown_event;			//!< event to signal to shut down the main loop
+#else
+static int shutdown_server;			//!< '1' if the server is to shut down
+#endif
 
 extern char *optarg;	// for getopt()
 
 // Function definition
 #ifdef _WIN32
-static unsigned __stdcall main_passive(void *ptr);
 static unsigned __stdcall main_active(void *ptr);
+static BOOL WINAPI main_ctrl_event(DWORD);
 #else
-static void *main_passive(void *ptr);
 static void *main_active(void *ptr);
+static void main_terminate(int sign);
 #endif
-
-static void PCAP_NORETURN main_terminate(int sign);
+static void accept_connections(void);
+static void accept_connection(SOCKET listen_sock);
 #ifdef _WIN32
 static void main_abort(int sign);
 #else
@@ -245,7 +257,42 @@ int main(int argc, char *argv[], char *envp[])
 	if (loadfile[0])
 		fileconf_read(0);
 
-#ifndef _WIN32
+#ifdef WIN32
+	//
+	// Create a handle to signal when the main loop is to shut down.
+	//
+	// Events are a bit annoying if you're waiting for multiple
+	// events; unlike UN*X select() and poll(), which indicate
+	// which FDs are available, WaitForMultipleObjects() and
+	// WSAWaitForMultipleEvents() don't give you an indication
+	// of *all* of the events that are signaled, they just tell
+	// you the first one that's signaled.
+	//
+	// Therefore, we must use WaitForSingleObject() to test
+	// this event; that means it must not be auto-reset,
+	// as that means that once WSAWaitForMultipleEvents() is
+	// woken up, it's no longer signaled.
+	//
+	shutdown_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (shutdown_event == NULL)
+	{
+		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "Can't create shutdown event: %s",
+		    errbuf);
+		exit(2);
+	}
+
+	//
+	// Catch control signals.
+	//
+	if (!SetConsoleCtrlHandler(main_ctrl_event, TRUE))
+	{
+		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "Can't set control handler: %s",
+		    errbuf);
+		exit(2);
+	}
+#else
 	// SIGTERM (i.e. kill -15) is not generated in Win32, although it is included for ANSI compatibility
 	signal(SIGTERM, main_terminate);
 	signal(SIGCHLD, main_reap_children);
@@ -296,10 +343,10 @@ int main(int argc, char *argv[], char *envp[])
 	}
 	else	// Console mode
 	{
+#ifndef _WIN32
 		// Enable the catching of Ctrl+C
 		signal(SIGINT, main_terminate);
 
-#ifndef _WIN32
 		// generated under unix with 'kill -HUP', needed to reload the configuration
 		// We do not have this kind of signal in Win32
 		signal(SIGHUP, fileconf_read);
@@ -371,96 +418,49 @@ void main_startup(void)
 	{
 		struct addrinfo *tempaddrinfo;
 
-		// Do the work
+		//
+		// Get a list of sockets on which to listen.
+		//
 		if (sock_initaddress((address[0]) ? address : NULL, port, &mainhints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			SOCK_ASSERT(errbuf, 1);
 			return;
 		}
 
-		tempaddrinfo = addrinfo;
-
-		while (tempaddrinfo)
+		for (tempaddrinfo = addrinfo; tempaddrinfo;
+		     tempaddrinfo = tempaddrinfo->ai_next)
 		{
-			SOCKET *socktemp;
+			SOCKET sock;
+			struct listen_sock *sock_info;
 
-			if ((sockmain = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+			if ((sock = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			{
 				SOCK_ASSERT(errbuf, 1);
-				tempaddrinfo = tempaddrinfo->ai_next;
 				continue;
 			}
 
-			//
-			// This trick is needed in order to allow the child
-			// thread to save the 'sockmain' variable without
-			// getting it overwritten by the sock_open, in case
-			// we want to open more than one waiting socket.
-			//
-			// For instance, the rpcapd_thread_create() will
-			// accept the socktemp variable, and it will
-			// immediately deallocate that variable.
-			//
-			// XXX - this shouldn't be necessary if we're
-			// using subprocesses rather than threads, as
-			// the use and overwrite would be done in
-			// separate processes; we should be able to
-			// pass a pointer to sockmain in the child
-			// process.
-			//
-			socktemp = (SOCKET *) malloc (sizeof (SOCKET));
-			if (socktemp == NULL)
-				exit(0);
-
-			*socktemp = sockmain;
-
-#ifdef _WIN32
-			threadId = (HANDLE)_beginthreadex(NULL, 0, main_passive,
-			    (void *) socktemp, 0, NULL);
-			if (threadId == 0)
+			sock_info = (struct listen_sock *) malloc(sizeof (struct listen_sock));
+			if (sock_info == NULL)
 			{
-				SOCK_ASSERT("Error creating the passive child thread", 1);
-				free(socktemp);
-				continue;
+				rpcapd_log(LOGPRIO_ERROR, "Can't allocate structure for listen socket");
+				exit(2);
 			}
-			CloseHandle(threadId);
-#else
-			if ((pid = fork()) == 0)	// I am the child
-			{
-				freeaddrinfo(addrinfo);
-				main_passive((void *) socktemp);
-				return;
-			}
-			free(socktemp);
-#endif
-			tempaddrinfo = tempaddrinfo->ai_next;
+			sock_info->sock = sock;
+			sock_info->next = listen_socks;
+			listen_socks = sock_info;
 		}
 
 		freeaddrinfo(addrinfo);
+
+		//
+		// Now listen on all of them, waiting for connections.
+		//
+		accept_connections();
 	}
 
-	// All the previous calls are no blocking, so the main line of execution goes here
-	// and I have to avoid that the program terminates
-	for (;;)
-	{
-#ifdef _WIN32
-		Sleep(INFINITE);
-#else
-		pause();
-#endif
-	}
-}
-
-
-/*
-	\brief Closes gracefully (more or less) the program.
-
-	This function is called:
-	- when we're running in console and are terminated with ^C;
-	- on UN*X, when we're terminated with SIGTERM.
-*/
-static void main_terminate(int sign)
-{
+	//
+	// We're done; exit.
+	//
 	SOCK_ASSERT(PROGRAM_NAME " is closing.\n", 1);
 
 #ifndef _WIN32
@@ -487,17 +487,65 @@ static void main_terminate(int sign)
 	// terminate the process, causing all those resources to be
 	// cleaned up.
 	//
-	// Note that, on Windows, this will happen only for ^C, and
-	// thus will happen on a thread created to run the ^C handler,
-	// which is how it manages to cause the aforementioned service
-	// loop issues in service loops in other threads.
-	//
 	exit(0);
 }
 
 #ifdef _WIN32
+static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
+{
+	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
+
+	//
+	// ctrltype is one of:
+	//
+	// CTRL_C_EVENT - we got a ^C; this is like SIGINT
+	// CTRL_BREAK_EVENT - we got Ctrl+Break
+	// CTRL_CLOSE_EVENT - the console was closed; this is like SIGHUP
+	// CTRL_LOGOFF_EVENT - a user is logging off; this is received
+	//   only by services
+	// CTRL_SHUTDOWN_EVENT - the systemis shutting down; this is
+	//   received only by services
+	//
+	// For now, we treat all but CTRL_LOGOFF_EVENT as indications
+	// that we should shut down.
+	//
+	switch (ctrltype)
+	{
+		case CTRL_C_EVENT:
+		case CTRL_BREAK_EVENT:
+		case CTRL_CLOSE_EVENT:
+		case CTRL_SHUTDOWN_EVENT:
+			//
+			// Set the shutdown event.
+			//
+			if (!SetEvent(shutdown_event))
+			{
+				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+				rpcapd_log(LOGPRIO_ERROR, "SetEvent on shutdown event failed: %s", errbuf);
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	//
+	// We handled this.
+	//
+	return TRUE;
+}
+#else
+static void main_terminate(int sign)
+{
+	shutdown_server = 1;
+}
+#endif
+
+#ifdef _WIN32
 static void main_abort(int sign)
 {
+	struct listen_sock *sock_info;
+
 	SOCK_ASSERT(PROGRAM_NAME " is closing due to a SIGABRT.\n", 1);
 
 	//
@@ -505,11 +553,13 @@ static void main_abort(int sign)
 	// it to shut down the service.
 	//
 
-	// FULVIO (bug)
-	// Here we close only the latest 'sockmain' created; if we opened more than one waiting sockets,
-	// only the latest one is closed correctly.
-	if (sockmain)
-		closesocket(sockmain);
+	//
+	// Close all the listen sockets.
+	//
+	for (sock_info = listen_socks; sock_info; sock_info = sock_info->next)
+	{
+		closesocket(sock_info->sock);
+	}
 	sock_cleanup();
 
 	/*
@@ -539,97 +589,357 @@ static void main_reap_children(int sign)
 }
 #endif
 
-/*!
-	\brief 'true' main of the program.
-
-	It must be in a separate function because:
-	- if we're in 'console' mode, we have to put the main thread waiting for a Ctrl+C
-	(in order to be able to stop everything)
-	- if we're in daemon mode, the main program must terminate and a new child must be
-	created in order to create the daemon
-
-	\param ptr: it keeps the main socket handler (what's called
-	'sockmain' in the main()), that represents the socket used in
-	the main connection. It is a 'void *' just because the thread
-	APIs want this format.
-*/
+//
+// Loop waiting for incoming connections and accepting them.
+//
+static void
+accept_connections(void)
+{
 #ifdef _WIN32
-static unsigned __stdcall
+	struct listen_sock *sock_info;
+	DWORD num_events;
+	WSAEVENT *events;
+	int i;
+	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
+
+	//
+	// How big does the set of events need to be?
+	// One for the shutdown event, plus one for every socket on which
+	// we'll be listening.
+	//
+	num_events = 1;		// shutdown event
+	for (sock_info = listen_socks; sock_info;
+	    sock_info = sock_info->next)
+	{
+		if (num_events == WSA_MAXIMUM_WAIT_EVENTS)
+		{
+			//
+			// WSAWaitForMultipleEvents() doesn't support
+			// more than WSA_MAXIMUM_WAIT_EVENTS events
+			// on which to wait.
+			//
+			rpcapd_log(LOGPRIO_ERROR, "Too many sockets on which to listen");
+			exit(2);
+		}
+		num_events++;
+	}
+
+	//
+	// Allocate the array of events.
+	//
+	events = (WSAEVENT *) malloc(num_events * sizeof (WSAEVENT));
+	if (events == NULL)
+	{
+		rpcapd_log(LOGPRIO_ERROR, "Can't allocate array of events which to listen");
+		exit(2);
+	}
+
+	//
+	// Fill it in.
+	//
+	events[0] = shutdown_event;	// shutdown event first
+	for (sock_info = listen_socks, i = 1; sock_info;
+	    sock_info = sock_info->next, i++)
+	{
+		WSAEVENT event;
+
+		//
+		// Create an event that is signaled if there's a connection
+		// to accept on the socket in question.
+		//
+		event = WSACreateEvent();
+		if (event == WSA_INVALID_EVENT)
+		{
+			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "Can't create socket event: %s", errbuf);
+			exit(2);
+		}
+		if (WSAEventSelect(sock_info->sock, event, FD_ACCEPT) == SOCKET_ERROR)
+		{
+			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "Can't setup socket event: %s", errbuf);
+			exit(2);
+		}
+		events[i] = event;
+	}
+
+	for (;;)
+	{
+		//
+		// Wait for incoming connections.
+		//
+		DWORD ret;
+
+		ret = WSAWaitForMultipleEvents(num_events, events, FALSE,
+		    WSA_INFINITE, FALSE);
+		if (ret == WSA_WAIT_FAILED)
+		{
+			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "WSAWaitForMultipleEvents failed: %s", errbuf);
+			exit(2);
+		}
+
+		//
+		// Check the shutdown event.
+		//
+		if (WaitForSingleObject(shutdown_event, 0) == WAIT_OBJECT_0)
+		{
+			//
+			// Time to quit.
+			// Clear the event, for cleanliness.
+			//
+			if (!ResetEvent(shutdown_event))
+			{
+				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+				rpcapd_log(LOGPRIO_ERROR, "ResetEvent on shutdown event failed: %s", errbuf);
+			}
+
+			//
+			// Exit the loop, so we quit.
+			//
+			break;
+		}
+
+		//
+		// Check each socket.
+		//
+		for (sock_info = listen_socks, i = 1; sock_info;
+		    sock_info = sock_info->next, i++)
+		{
+			WSANETWORKEVENTS network_events;
+
+			if (WSAEnumNetworkEvents(sock_info->sock,
+			    events[i], &network_events) == SOCKET_ERROR)
+			{
+				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+				rpcapd_log(LOGPRIO_ERROR, "WSAEnumNetworkEvents failed: %s", errbuf);
+				exit(2);
+			}
+			if (network_events.lNetworkEvents & FD_ACCEPT)
+			{
+				//
+				// Did an error occur?
+				//
+			 	if (network_events.iErrorCode[FD_ACCEPT_BIT] != 0)
+			 	{
+					//
+					// Yes - report it and keep going.
+					//
+					sock_fmterror(NULL,
+					    network_events.iErrorCode[FD_ACCEPT_BIT],
+					    errbuf,
+					    PCAP_ERRBUF_SIZE);
+					rpcapd_log(LOGPRIO_ERROR, "Socket error: %s", errbuf);
+					continue;
+				}
+
+				//
+				// Accept the connection.
+				//
+				accept_connection(sock_info->sock);
+			}
+		}
+	}
 #else
-static void *
+	struct listen_sock *sock_info;
+	int num_sock_fds;
+
+	//
+	// How big does the bitset of sockets on which to select() have
+	// to be?
+	//
+	num_sock_fds = 0;
+	for (sock_info = listen_socks; sock_info; sock_info = sock_info->next)
+	{
+		if (sock_info->sock + 1 > num_sock_fds)
+		{
+			if (sock_info->sock + 1 > FD_SETSIZE)
+			{
+				rpcapd_log(LOGPRIO_ERROR, "Socket FD is too bit for an fd_set");
+				exit(2);
+			}
+			num_sock_fds = sock_info->sock + 1;
+		}
+	}
+
+	for (;;)
+	{
+		fd_set sock_fds;
+		int ret;
+
+		//
+		// Set up an fd_set for all the sockets on which we're
+		// listening.
+		//
+		// This set is modified by select(), so we have to
+		// construct it anew each time.
+		//
+		FD_ZERO(&sock_fds);
+		for (sock_info = listen_socks; sock_info;
+		    sock_info = sock_info->next)
+		{
+			FD_SET(sock_info->sock, &sock_fds);
+		}
+
+		//
+		// Wait for incoming connections.
+		//
+		ret = select(num_sock_fds, &sock_fds, NULL, NULL, NULL);
+		if (ret == -1)
+		{
+			if (errno == EINTR)
+			{
+				//
+				// If this is a "terminate the
+				// server" signal, exit the loop,
+				// otherwise just keep trying.
+				//
+				if (shutdown_server)
+					break;
+				else
+					continue;
+			}
+			else
+			{
+				rpcapd_log(LOGPRIO_ERROR, "select failed: %s",
+				    strerror(errno));
+				exit(2);
+			}
+		}
+
+		//
+		// Check each socket.
+		//
+		for (sock_info = listen_socks; sock_info;
+		    sock_info = sock_info->next)
+		{
+			if (FD_ISSET(sock_info->sock, &sock_fds))
+			{
+				//
+				// Accept the connection.
+				//
+				accept_connection(sock_info->sock);
+			}
+		}
+	}
 #endif
-main_passive(void *ptr)
+}
+
+//
+// Accept a connection and start a worker thread, on Windows, or a
+// worker process, on UN*X, to handle the connection.
+//
+static void
+accept_connection(SOCKET listen_sock)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	SOCKET sockctrl;			// keeps the socket ID for this control connection
 	struct sockaddr_storage from;		// generic sockaddr_storage variable
 	socklen_t fromlen;			// keeps the length of the sockaddr_storage variable
-	SOCKET sockmain;
 
-#ifndef _WIN32
+#ifdef _WIN32
+	HANDLE threadId;			// handle for the subthread
+#else
 	pid_t pid;
 #endif
-
-	sockmain = *((SOCKET *) ptr);
-
-	// Delete the pointer (which has been allocated in the main)
-	free(ptr);
+	struct daemon_slpars *pars;	// parameters needed by the daemon_serviceloop()
 
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
 
-	// main thread loop
 	for (;;)
 	{
-#ifdef _WIN32
-		HANDLE threadId;		// handle for the subthread
-#endif
-		struct daemon_slpars *pars;	// parameters needed by the daemon_serviceloop()
-
-		// Connection creation
+		// Accept the connection
 		fromlen = sizeof(struct sockaddr_storage);
 
-		sockctrl = accept(sockmain, (struct sockaddr *) &from, &fromlen);
+		sockctrl = accept(listen_sock, (struct sockaddr *) &from, &fromlen);
 
-		if (sockctrl == INVALID_SOCKET)
+		if (sockctrl != INVALID_SOCKET)
 		{
-			// The accept() call can return this error when a signal is catched
-			// In this case, we have simply to ignore this error code
-			// Stevens, pg 124
+			// Success.
+			break;
+		}
+
+		// The accept() call can return this error when a signal is catched
+		// In this case, we have simply to ignore this error code
+		// Stevens, pg 124
 #ifdef _WIN32
-			if (WSAGetLastError() == WSAEINTR)
+		if (WSAGetLastError() == WSAEINTR)
 #else
-			if (errno == EINTR)
+		if (errno == EINTR)
 #endif
-				continue;
-
-			// Don't check for errors here, since the error can be due to the fact that the thread
-			// has been killed
-			sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
-			rpcapd_log(LOGPRIO_ERROR, "Accept of control connection from client failed: %s",
-			    errbuf);
 			continue;
-		}
 
-		// checks if the connecting host is among the ones allowed
-		if (sock_check_hostlist(hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
-		{
-			rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-			sock_close(sockctrl, NULL, 0);
-			continue;
-		}
+		// Don't check for errors here, since the error can be due to the fact that the thread
+		// has been killed
+		sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "Accept of control connection from client failed: %s",
+		    errbuf);
+		return;
+	}
+
+	//
+	// We have a connection.
+	// Check whether the connecting host is among the ones allowed.
+	//
+	if (sock_check_hostlist(hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
+	{
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
 
 
 #ifdef _WIN32
-		// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
+	// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
+	pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
+	if (pars == NULL)
+	{
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc() failed");
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
+
+	pars->sockctrl = sockctrl;
+	pars->activeclose = 0;		// useless in passive mode
+	pars->isactive = 0;
+	pars->nullAuthAllowed = nullAuthAllowed;
+
+	threadId = (HANDLE)_beginthreadex(NULL, 0, daemon_serviceloop,
+	    (void *) pars, 0, NULL);
+	if (threadId == 0)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
+	CloseHandle(threadId);
+#else
+	pid = fork();
+	if (pid == -1)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child process");
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
+	if (pid == 0)
+	{
+		//
+		// Child process.
+		// This is passive mode, so this variable is deallocated
+		// by the daemon_serviceloop().
+		//
 		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 		if (pars == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "malloc() failed");
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Can't allocate memory for the child process");
 			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 			sock_close(sockctrl, NULL, 0);
-			continue;
+			return;
 		}
 
 		pars->sockctrl = sockctrl;
@@ -637,48 +947,23 @@ main_passive(void *ptr)
 		pars->isactive = 0;
 		pars->nullAuthAllowed = nullAuthAllowed;
 
-		threadId = (HANDLE)_beginthreadex(NULL, 0, daemon_serviceloop,
-		    (void *) pars, 0, NULL);
-		if (threadId == 0)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
-			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-			sock_close(sockctrl, NULL, 0);
-			continue;
-		}
-		CloseHandle(threadId);
-#else
-		if ((pid = fork()) == 0)	// I am the child
-		{
-			// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
-			pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
-			if (pars == NULL)
-			{
-				pcap_fmt_errmsg_for_errno(errbuf,
-				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
-				exit(0);
-			}
+		//
+		// Close the socket on which we're listening (must
+		// be open only in the parent).
+		//
+		closesocket(listen_sock);
 
-			pars->sockctrl = sockctrl;
-			pars->activeclose = 0;		// useless in passive mode
-			pars->isactive = 0;
-			pars->nullAuthAllowed = nullAuthAllowed;
-
-			// Close the main socket (must be open only in the parent)
-			closesocket(sockmain);
-
-			daemon_serviceloop((void *) pars);
-			exit(0);
-		}
-
-		// I am the parent
-		// Close the childsocket (must be open only in the child)
-		closesocket(sockctrl);
-#endif
-
-		// loop forever, until interrupted
+		//
+		// Run the service loop.
+		//
+		daemon_serviceloop((void *) pars);
+		exit(0);
 	}
-	return 0;
+
+	// I am the parent
+	// Close the socket for this session (must be open only in the child)
+	closesocket(sockctrl);
+#endif
 }
 
 /*!
