@@ -150,6 +150,9 @@ int main(int argc, char *argv[], char *envp[])
 	int isdaemon = 0;			// Not null if the user wants to run this program as a daemon
 	int retval;				// keeps the returning value from several functions
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
+#ifndef _WIN32
+	struct sigaction action;
+#endif
 
 	savefile[0] = 0;
 	loadfile[0] = 0;
@@ -293,9 +296,16 @@ int main(int argc, char *argv[], char *envp[])
 		exit(2);
 	}
 #else
-	// SIGTERM (i.e. kill -15) is not generated in Win32, although it is included for ANSI compatibility
-	signal(SIGTERM, main_terminate);
-	signal(SIGCHLD, main_reap_children);
+	memset(&action, 0, sizeof (action));
+	action.sa_handler = main_terminate;
+	action.sa_flags = 0;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGTERM, &action, NULL);
+	memset(&action, 0, sizeof (action));
+	action.sa_handler = main_reap_children;
+	action.sa_flags = 0;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGCHLD, &action, NULL);
 	// Ignore SIGPIPE - we'll get EPIPE when trying to write to a closed
 	// connection, we don't want to get killed by a signal in that case
 	signal(SIGPIPE, SIG_IGN);
@@ -316,7 +326,11 @@ int main(int argc, char *argv[], char *envp[])
 		setsid();
 
 		// generated under unix with 'kill -HUP', needed to reload the configuration
-		signal(SIGHUP, fileconf_read);
+		memset(&action, 0, sizeof (action));
+		action.sa_handler = fileconf_read;
+		action.sa_flags = 0;
+		sigemptyset(&action.sa_mask);
+		sigaction(SIGHUP, &action, NULL);
 
 		if ((pid = fork()) != 0)
 			exit(0);		// First child terminates
@@ -345,11 +359,19 @@ int main(int argc, char *argv[], char *envp[])
 	{
 #ifndef _WIN32
 		// Enable the catching of Ctrl+C
-		signal(SIGINT, main_terminate);
+		memset(&action, 0, sizeof (action));
+		action.sa_handler = main_terminate;
+		action.sa_flags = 0;
+		sigemptyset(&action.sa_mask);
+		sigaction(SIGINT, &action, NULL);
 
 		// generated under unix with 'kill -HUP', needed to reload the configuration
 		// We do not have this kind of signal in Win32
-		signal(SIGHUP, fileconf_read);
+		memset(&action, 0, sizeof (action));
+		action.sa_handler = fileconf_read;
+		action.sa_flags = 0;
+		sigemptyset(&action.sa_mask);
+		sigaction(SIGHUP, &action, NULL);
 #endif
 
 		printf("Press CTRL + C to stop the server...\n");
