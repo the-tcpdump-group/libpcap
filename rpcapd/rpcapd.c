@@ -82,6 +82,7 @@ char port[MAX_LINE + 1];			//!< keeps the network port to bind to
 static HANDLE shutdown_event;			//!< event to signal to shut down the main loop
 #else
 static volatile sig_atomic_t shutdown_server;	//!< '1' if the server is to shut down
+static volatile sig_atomic_t reread_config;	//!< '1' if the server is to re-read its configuration
 #endif
 
 extern char *optarg;	// for getopt()
@@ -93,6 +94,7 @@ static BOOL WINAPI main_ctrl_event(DWORD);
 #else
 static void *main_active(void *ptr);
 static void main_terminate(int sign);
+static void main_reread_config(int sign);
 #endif
 static void accept_connections(void);
 static void accept_connection(SOCKET listen_sock);
@@ -258,7 +260,7 @@ int main(int argc, char *argv[], char *envp[])
 
 	// If the file does not exist, it keeps the settings provided by the command line
 	if (loadfile[0])
-		fileconf_read(0);
+		fileconf_read();
 
 #ifdef WIN32
 	//
@@ -327,7 +329,7 @@ int main(int argc, char *argv[], char *envp[])
 
 		// generated under unix with 'kill -HUP', needed to reload the configuration
 		memset(&action, 0, sizeof (action));
-		action.sa_handler = fileconf_read;
+		action.sa_handler = main_reread_config;
 		action.sa_flags = 0;
 		sigemptyset(&action.sa_mask);
 		sigaction(SIGHUP, &action, NULL);
@@ -368,7 +370,7 @@ int main(int argc, char *argv[], char *envp[])
 		// generated under unix with 'kill -HUP', needed to reload the configuration
 		// We do not have this kind of signal in Win32
 		memset(&action, 0, sizeof (action));
-		action.sa_handler = fileconf_read;
+		action.sa_handler = main_reread_config;
 		action.sa_flags = 0;
 		sigemptyset(&action.sa_mask);
 		sigaction(SIGHUP, &action, NULL);
@@ -539,6 +541,7 @@ static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
 		case CTRL_SHUTDOWN_EVENT:
 			//
 			// Set the shutdown event.
+			// That will wake up WSAWaitForMultipleEvents().
 			//
 			if (!SetEvent(shutdown_event))
 			{
@@ -559,7 +562,22 @@ static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
 #else
 static void main_terminate(int sign)
 {
+	//
+	// Note that the server should shut down.
+	// select() should get an EINTR error when we return,
+	// so it will wake up and know it needs to check the flag.
+	//
 	shutdown_server = 1;
+}
+
+static void main_reread_config(int sign)
+{
+	//
+	// Note that the server should re-read its configuration file.
+	// select() should get an EINTR error when we return,
+	// so it will wake up and know it needs to check the flag.
+	//
+	reread_config = 1;
 }
 #endif
 
@@ -818,8 +836,21 @@ accept_connections(void)
 				//
 				if (shutdown_server)
 					break;
-				else
+				else {
+					if (reread_config)
+					{
+						//
+						// This is a "re-read the
+						// configuration file"
+						// signal.  Clear the
+						// flag and re-read
+						// the file.
+						//
+						reread_config = 0;
+						fileconf_read();
+					}
 					continue;
+				}
 			}
 			else
 			{

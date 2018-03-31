@@ -50,15 +50,11 @@
 
 static int strrem(char *string, char chr);
 
-void fileconf_read(int sign)
+void fileconf_read(void)
 {
 	FILE *fp;
 	char msg[PCAP_ERRBUF_SIZE + 1];
 	int i;
-
-#ifndef _WIN32
-	signal(SIGHUP, fileconf_read);
-#endif
 
 	if ((fp = fopen(loadfile, "r")) != NULL)
 	{

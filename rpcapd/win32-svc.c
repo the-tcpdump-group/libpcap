@@ -121,7 +121,7 @@ void WINAPI svc_control_handler(DWORD Opcode)
 		case SERVICE_CONTROL_CONTINUE:
 			service_status.dwCurrentState = SERVICE_RUNNING;
 			SetServiceStatus(service_status_handle, &service_status);
-			fileconf_read(0);
+			fileconf_read();
 			break;
 
 		case SERVICE_CONTROL_INTERROGATE:
