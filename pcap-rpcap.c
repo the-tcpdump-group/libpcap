@@ -841,6 +841,17 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	struct rpcap_stats netstats;		/* statistics sent on the network */
 	uint32 plen;				/* data remaining in the message */
 
+#ifdef _WIN32
+	if (mode != PCAP_STATS_STANDARD && mode != PCAP_STATS_EX)
+#else
+	if (mode != PCAP_STATS_STANDARD)
+#endif
+	{
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Invalid stats mode %d", mode);
+		return NULL;
+	}
+
 	/*
 	 * If the capture has not yet started, we cannot request statistics
 	 * for the capture from our peer, so we return 0 for all statistics,
