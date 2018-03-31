@@ -853,6 +853,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    # Warns about safeguards added in case the enums are
 		    # extended
 		    # AC_LBL_CHECK_COMPILER_OPT($1, -Wcovered-switch-default)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-variable-declarations)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #
