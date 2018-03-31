@@ -146,7 +146,7 @@ static void printusage(void)
 
 
 //! Program main
-int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[])
 {
 	char savefile[MAX_LINE + 1];		// name of the file on which we have to save the configuration
 	int isdaemon = 0;			// Not null if the user wants to run this program as a daemon
