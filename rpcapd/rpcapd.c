@@ -98,9 +98,7 @@ static void main_reread_config(int sign);
 #endif
 static void accept_connections(void);
 static void accept_connection(SOCKET listen_sock);
-#ifdef _WIN32
-static void main_abort(int sign);
-#else
+#ifndef _WIN32
 static void main_reap_children(int sign);
 #endif
 
@@ -346,9 +344,6 @@ int main(int argc, char *argv[])
 //		umask(0);
 //		chdir("/");
 #else
-		// We use the SIGABRT signal to kill the Win32 service
-		signal(SIGABRT, main_abort);
-
 		// If this call succeeds, it is blocking on Win32
 		if (svc_start() != 1)
 			SOCK_ASSERT("Unable to start the service", 1);
@@ -522,10 +517,20 @@ void main_startup(void)
 }
 
 #ifdef _WIN32
-static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
+void
+send_shutdown_event(void)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 
+	if (!SetEvent(shutdown_event))
+	{
+		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "SetEvent on shutdown event failed: %s", errbuf);
+	}
+}
+
+static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
+{
 	//
 	// ctrltype is one of:
 	//
@@ -550,11 +555,7 @@ static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
 			// Set the shutdown event.
 			// That will wake up WSAWaitForMultipleEvents().
 			//
-			if (!SetEvent(shutdown_event))
-			{
-				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-				rpcapd_log(LOGPRIO_ERROR, "SetEvent on shutdown event failed: %s", errbuf);
-			}
+			send_shutdown_event();
 			break;
 
 		default:
@@ -585,38 +586,6 @@ static void main_reread_config(int sign)
 	// so it will wake up and know it needs to check the flag.
 	//
 	reread_config = 1;
-}
-#endif
-
-#ifdef _WIN32
-static void main_abort(int sign)
-{
-	struct listen_sock *sock_info;
-
-	SOCK_ASSERT(PROGRAM_NAME " is closing due to a SIGABRT.\n", 1);
-
-	//
-	// XXX - there should be a way to poke the main thread to get
-	// it to shut down the service.
-	//
-
-	//
-	// Close all the listen sockets.
-	//
-	for (sock_info = listen_socks; sock_info; sock_info = sock_info->next)
-	{
-		closesocket(sock_info->sock);
-	}
-	sock_cleanup();
-
-	/*
-	 * This is a Win32 service, so we're a child thread, and we want
-	 * just to terminate ourself. This is because the exit(0) will
-	 * be invoked by the main thread, which is blocked waiting that
-	 * all childs terminates. We are forced to call exit from the
-	 * main thread, otherwise the Win32 service control manager
-	 * (SCM) does not work well.
-	 */
 }
 #endif
 
@@ -883,6 +852,15 @@ accept_connections(void)
 		}
 	}
 #endif
+
+	//
+	// Close all the listen sockets.
+	//
+	for (sock_info = listen_socks; sock_info; sock_info = sock_info->next)
+	{
+		closesocket(sock_info->sock);
+	}
+	sock_cleanup();
 }
 
 //

@@ -51,6 +51,9 @@ extern struct active_pars activelist[MAX_ACTIVE_LIST];		//!< Keeps the list of t
 extern int nullAuthAllowed;			//!< '1' if we permit NULL authentication, '0' otherwise
 extern char loadfile[MAX_LINE + 1];		//!< Name of the file from which we have to load the configuration
 
+#ifdef _WIN32
+void send_shutdown_event(void);		// Send event to shut down the daemon
+#endif
 void main_startup(void);
 
 #endif

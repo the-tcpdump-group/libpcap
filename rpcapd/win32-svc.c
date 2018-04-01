@@ -32,17 +32,17 @@
 
 
 #include "rpcapd.h"
-#include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include "sockutils.h"	// for SOCK_ASSERT
 #include "portability.h"
 #include "fileconf.h"
 
-SERVICE_STATUS_HANDLE service_status_handle;
-SERVICE_STATUS service_status;
+static SERVICE_STATUS_HANDLE service_status_handle;
+static SERVICE_STATUS service_status;
 
 void svc_geterr(char *str);
-void WINAPI svc_main(DWORD argc, char **argv);
+static void WINAPI svc_main(DWORD argc, char **argv);
+static void update_svc_status(DWORD state, DWORD progress_indicator);
 
 int svc_start(void)
 {
@@ -80,27 +80,26 @@ void svc_geterr(char *str)
 
 void WINAPI svc_control_handler(DWORD Opcode)
 {
-	service_status.dwWin32ExitCode = 0;
-	service_status.dwCheckPoint = 0;
-	service_status.dwWaitHint = 0;
-
 	switch(Opcode)
 	{
 		case SERVICE_CONTROL_STOP:
-			service_status.dwCurrentState = SERVICE_STOPPED;
+			//
+			// XXX - is this sufficient to clean up the service?
+			// To be really honest, only the main socket and
+			// such these stuffs are cleared; however the threads
+			// that are running are not stopped.
+			// This can be seen by placing a breakpoint at the
+			// end of svc_main(), in which you will see that is
+			// never reached. However, as soon as you set the
+			// service status to "stopped",	the
+			// StartServiceCtrlDispatcher() returns and the main
+			// thread ends. Then, Win32 has a good automatic
+			// cleanup, so that all the threads which are still
+			// running are stopped when the main thread ends.
+			//
+			send_shutdown_event();
 
-			/*
-				Uses ABORT to clean up the service. To be really honest, only the main socket and
-				such these stuffs are cleared; however the thread which are running are not stopped.
-				This can be seen by placing a breakpoint at the end of svc_main(), in which you will
-				see that is never reached. However, as soon as you set the service status to "stopped",
-				the StartServiceCtrlDispatcher() returns and the main thread ends. Then, Win32 has a good
-				automatic cleanup, so that all the threads which are still running are stopped
-				when the main thread ends.
-			*/
-			raise(SIGABRT);
-
-			SetServiceStatus(service_status_handle, &service_status);
+			update_svc_status(SERVICE_STOP_PENDING, 0);
 			break;
 
 		/*
@@ -114,21 +113,23 @@ void WINAPI svc_control_handler(DWORD Opcode)
 			can be needed according to the new configuration.
 		*/
 		case SERVICE_CONTROL_PAUSE:
-			service_status.dwCurrentState = SERVICE_PAUSED;
-			SetServiceStatus(service_status_handle, &service_status);
+			update_svc_status(SERVICE_PAUSED, 0);
 			break;
 
 		case SERVICE_CONTROL_CONTINUE:
-			service_status.dwCurrentState = SERVICE_RUNNING;
-			SetServiceStatus(service_status_handle, &service_status);
+			update_svc_status(SERVICE_RUNNING, 0);
 			fileconf_read();
 			break;
 
 		case SERVICE_CONTROL_INTERROGATE:
 			// Fall through to send current status.
 			//	WARNING: not implemented
-			SetServiceStatus(service_status_handle, &service_status);
+			update_svc_status(SERVICE_RUNNING, 0);
 			MessageBox(NULL, "Not implemented", "warning", MB_OK);
+			break;
+
+		case SERVICE_CONTROL_PARAMCHANGE:
+			fileconf_read();
 			break;
 	}
 
@@ -144,17 +145,29 @@ void WINAPI svc_main(DWORD argc, char **argv)
 		return;
 
 	service_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS;
-	service_status.dwCurrentState = SERVICE_RUNNING;
 	service_status.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE;
 	// | SERVICE_ACCEPT_SHUTDOWN ;
-	service_status.dwWin32ExitCode = 0;
-	service_status.dwServiceSpecificExitCode = 0;
-	service_status.dwCheckPoint = 0;
-	service_status.dwWaitHint = 0;
+	update_svc_status(SERVICE_RUNNING, 0);
 
-	SetServiceStatus(service_status_handle, &service_status);
-
+	//
+	// Service requests until we're told to stop.
+	//
 	main_startup();
+
+	//
+	// It returned, so we were told to stop.
+	//
+	update_svc_status(SERVICE_STOPPED, 0);
+}
+
+static void
+update_svc_status(DWORD state, DWORD progress_indicator)
+{
+	service_status.dwWin32ExitCode = NO_ERROR;
+	service_status.dwCurrentState = state;
+	service_status.dwCheckPoint = progress_indicator;
+	service_status.dwWaitHint = 0;
+	SetServiceStatus(service_status_handle, &service_status);
 }
 
 /*
