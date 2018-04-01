@@ -892,6 +892,7 @@ accept_connection(SOCKET listen_sock)
 
 #ifdef _WIN32
 	HANDLE threadId;			// handle for the subthread
+	u_long off = 0;
 #else
 	pid_t pid;
 #endif
@@ -942,8 +943,31 @@ accept_connection(SOCKET listen_sock)
 		return;
 	}
 
-
 #ifdef _WIN32
+	//
+	// Put the socket back into blocking mode; doing WSAEventSelect()
+	// on the listen socket makes that socket non-blocking, and it
+	// appears that sockets returned from an accept() on that socket
+	// are also non-blocking.
+	//
+	// First, we have to un-WSAEventSelect() this socket, and then
+	// we can turn non-blocking mode off.
+	//
+	if (WSAEventSelect(sockctrl, NULL, 0) == SOCKET_ERROR)
+	{
+		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
+	if (ioctlsocket(sockctrl, FIONBIO, &off) == SOCKET_ERROR)
+	{
+		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
+		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
+
 	// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
 	pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
 	if (pars == NULL)
