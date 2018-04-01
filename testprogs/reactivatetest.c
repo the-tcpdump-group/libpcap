@@ -36,7 +36,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include "pcap/funcattrs.h"
 
 /* Forwards */
-static void error(const char *, ...);
+static void PCAP_NORETURN error(const char *, ...);
 
 int
 main(void)
@@ -69,7 +69,7 @@ main(void)
 }
 
 /* VARARGS */
-static void PCAP_NORETURN
+static void
 error(const char *fmt, ...)
 {
 	va_list ap;

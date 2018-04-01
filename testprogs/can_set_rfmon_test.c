@@ -39,7 +39,7 @@ The Regents of the University of California.  All rights reserved.\n";
 static const char *program_name;
 
 /* Forwards */
-static void error(const char *, ...);
+static void PCAP_NORETURN error(const char *, ...);
 
 int
 main(int argc, char **argv)
@@ -77,7 +77,7 @@ main(int argc, char **argv)
 }
 
 /* VARARGS */
-static void PCAP_NORETURN
+static void
 error(const char *fmt, ...)
 {
 	va_list ap;
