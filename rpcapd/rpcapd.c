@@ -264,19 +264,7 @@ int main(int argc, char *argv[])
 	// Create a handle to signal the main loop to tell it to do
 	// something.
 	//
-	// Events are a bit annoying if you're waiting for multiple
-	// events; unlike UN*X select() and poll(), which indicate
-	// which FDs are available, WaitForMultipleObjects() and
-	// WSAWaitForMultipleEvents() don't give you an indication
-	// of *all* of the events that are signaled, they just tell
-	// you the first one that's signaled.
-	//
-	// Therefore, we must use WaitForSingleObject() to test
-	// this event; that means it must not be auto-reset,
-	// as that means that once WSAWaitForMultipleEvents() is
-	// woken up, it's no longer signaled.
-	//
-	state_change_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	state_change_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (state_change_event == NULL)
 	{
 		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
@@ -722,20 +710,11 @@ accept_connections(void)
 			exit(2);
 		}
 
-		//
-		// Check the state change event.
-		//
-		if (WaitForSingleObject(state_change_event, 0) == WAIT_OBJECT_0)
+		if (ret == WSA_WAIT_EVENT_0)
 		{
 			//
-			// Clear the event, for cleanliness.
+			// The state change event was set.
 			//
-			if (!ResetEvent(state_change_event))
-			{
-				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-				rpcapd_log(LOGPRIO_ERROR, "ResetEvent on shutdown event failed: %s", errbuf);
-			}
-
 			if (shutdown_server)
 			{
 				//
