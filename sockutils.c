@@ -640,7 +640,8 @@ int sock_initaddress(const char *host, const char *port,
  * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
  *
  * \return '0' if everything is fine, '-1' if an error other than
- * "connection reset" occurred, '-2' if "connection reset" occurred.
+ * "connection reset" or "peer has closed the receive side" occurred,
+ * '-2' if we got one of those errors.
  * For errors, an error message is returned in the 'errbuf' variable.
  */
 int sock_send(SOCKET sock, const char *buffer, size_t size,
@@ -686,15 +687,30 @@ int sock_send(SOCKET sock, const char *buffer, size_t size,
 
 #ifdef _WIN32
 			errcode = GetLastError();
-
-			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
-			if (errcode == WSAECONNRESET)
+			if (errcode == WSAECONNRESET ||
+			    errcode == WSAECONNABORTED)
+			{
+				/*
+				 * WSAECONNABORTED appears to be the error
+				 * returned in Winsock when you try to send
+				 * on a connection where the peer has closed
+				 * the receive side.
+				 */
 				return -2;
+			}
+			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
 #else
 			errcode = errno;
-			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
-			if (errcode == ECONNRESET)
+			if (errcode == ECONNRESET || errcode == EPIPE)
+			{
+				/*
+				 * EPIPE is what's returned on UN*X when
+				 * you try to send on a connection when
+				 * the peer has closed the receive side.
+				 */
 				return -2;
+			}
+			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
 #endif
 			return -1;
 		}

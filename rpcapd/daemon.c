@@ -2232,6 +2232,7 @@ daemon_thrdatamain(void *ptr)
 	size_t sendbufsize;			// size for the send buffer
 	char *sendbuf;						// temporary buffer in which data to be sent is buffered
 	int sendbufidx;						// index which keeps the number of bytes currently buffered
+	int status;
 
 	session = (struct session *) ptr;
 
@@ -2329,10 +2330,26 @@ daemon_thrdatamain(void *ptr)
 		}
 
 		// Send the packet
-		if (sock_send(session->sockdata, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) == -1)
+		// If the client dropped the connection, don't report an
+		// error, just quit.
+		status = sock_send(session->sockdata, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE);
+		if (status < 0)
 		{
-			rpcapd_log(LOGPRIO_ERROR,
-			    "Send of packet to client failed: %s", errbuf);
+			if (status == -1)
+			{
+				//
+				// Error other than "client closed the
+				// connection out from under us"; report
+				// it.
+				//
+				rpcapd_log(LOGPRIO_ERROR,
+				    "Send of packet to client failed: %s",
+				    errbuf);
+			}
+
+			//
+			// Give up in either case.
+			//
 			goto error;
 		}
 	}
