@@ -663,12 +663,11 @@ int sock_send(SOCKET sock, const char *buffer, size_t size,
 	remaining = (int)size;
 
 	do {
-#ifdef linux
+#ifdef MSG_NOSIGNAL
 		/*
-		 * Another pain... in Linux there's this flag
-		 * MSG_NOSIGNAL
-		 * Requests not to send SIGPIPE on errors on stream-oriented
-		 * sockets when the other end breaks the connection.
+		 * Send with MSG_NOSIGNAL, so that we don't get SIGPIPE
+		 * on errors on stream-oriented sockets when the other
+		 * end breaks the connection.
 		 * The EPIPE error is still returned.
 		 */
 		nsent = send(sock, buffer, remaining, MSG_NOSIGNAL);
