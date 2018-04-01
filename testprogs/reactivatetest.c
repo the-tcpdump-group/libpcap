@@ -69,7 +69,7 @@ main(void)
 }
 
 /* VARARGS */
-static void
+static void PCAP_NORETURN
 error(const char *fmt, ...)
 {
 	va_list ap;
