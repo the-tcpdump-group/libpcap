@@ -656,9 +656,8 @@ void *daemon_serviceloop(void *ptr)
 				// signal to the main that the user closed the control connection
 				// This is used only in case of active mode
 				pars->activeclose = 1;
-				SOCK_ASSERT("The other end system asked to close the connection.", 1);
+				SOCK_MESSAGE("The other end system asked to close the connection.");
 				goto end;
-				break;
 			}
 
 			case RPCAP_MSG_STATS_REQ:
@@ -859,8 +858,8 @@ end:
 	}
 
 	// Print message and exit
-	SOCK_ASSERT("I'm exiting from the child loop", 1);
-	SOCK_ASSERT(errbuf, 1);
+	SOCK_MESSAGE("I'm exiting from the child loop");
+	SOCK_MESSAGE(errbuf);
 
 	if (!pars->isactive)
 	{
