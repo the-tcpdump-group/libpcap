@@ -57,7 +57,8 @@
   #define DIAG_OFF_FLEX \
     __pragma(warning(push)) \
     __pragma(warning(disable:4127)) \
-    __pragma(warning(disable:4242))
+    __pragma(warning(disable:4242)) \
+    __pragma(warning(disable:4244))
   #define DIAG_ON_FLEX  __pragma(warning(pop))
 #else
   /*
