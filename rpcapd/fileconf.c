@@ -42,7 +42,7 @@
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
-#include "sockutils.h"		// for SOCK_ASSERT
+#include "sockutils.h"		// for SOCK_MESSAGE
 #include "portability.h"
 #include "rpcapd.h"
 #include "fileconf.h"
@@ -93,7 +93,7 @@ void fileconf_read(void)
 					activelist[i].port[MAX_LINE] = 0;
 				}
 				else
-					SOCK_ASSERT("Only MAX_ACTIVE_LIST active connections are currently supported.", 1);
+					SOCK_MESSAGE("Only MAX_ACTIVE_LIST active connections are currently supported.");
 
 				i++;
 				continue;
@@ -133,7 +133,7 @@ void fileconf_read(void)
 		strrem(hostlist, '\n');
 
 		pcap_snprintf(msg, PCAP_ERRBUF_SIZE, "New passive host list: %s\n\n", hostlist);
-		SOCK_ASSERT(msg, 1);
+		SOCK_MESSAGE(msg);
 		fclose(fp);
 	}
 }
