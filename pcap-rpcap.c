@@ -713,7 +713,7 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 		/*
 		 * Send the close request; don't report any errors, as
 		 * we're closing this pcap_t, and have no place to report
-		 * the error.
+		 * the error.  No reply is sent to this message.
 		 */
 		(void)sock_send(pr->rmt_sockctrl, (char *)&header,
 		    sizeof(struct rpcap_header), NULL, 0);
