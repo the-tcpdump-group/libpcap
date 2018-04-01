@@ -509,7 +509,14 @@ void main_startup(void)
 	// We shouldn't need to worry about cleaning up any resources
 	// such as handles, sockets, threads, etc. - exit() should
 	// terminate the process, causing all those resources to be
-	// cleaned up.
+	// cleaned up (including the threads; Microsoft claims in the
+	// ExitProcess() documentation that, if ExitProcess() is called,
+	// "If a thread is waiting on a kernel object, it will not be
+	// terminated until the wait has completed.", but claims in the
+	// _beginthread()/_beginthreadex() documentation that "All threads
+	// are terminated if any thread calls abort, exit, _exit, or
+	// ExitProcess." - the latter appears to be the case, even for
+	// threads waiting on the event for a pcap_t).
 	//
 	exit(0);
 }
