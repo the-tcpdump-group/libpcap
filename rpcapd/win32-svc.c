@@ -97,7 +97,7 @@ void WINAPI svc_control_handler(DWORD Opcode)
 			// cleanup, so that all the threads which are still
 			// running are stopped when the main thread ends.
 			//
-			send_shutdown_event();
+			send_shutdown_notification();
 
 			update_svc_status(SERVICE_STOP_PENDING, 0);
 			break;
@@ -118,7 +118,10 @@ void WINAPI svc_control_handler(DWORD Opcode)
 
 		case SERVICE_CONTROL_CONTINUE:
 			update_svc_status(SERVICE_RUNNING, 0);
-			fileconf_read();
+			//
+			// Tell the main loop to re-read the configuration.
+			//
+			send_reread_configuration_notification();
 			break;
 
 		case SERVICE_CONTROL_INTERROGATE:
@@ -129,7 +132,10 @@ void WINAPI svc_control_handler(DWORD Opcode)
 			break;
 
 		case SERVICE_CONTROL_PARAMCHANGE:
-			fileconf_read();
+			//
+			// Tell the main loop to re-read the configuration.
+			//
+			send_reread_configuration_notification();
 			break;
 	}
 
@@ -145,7 +151,7 @@ void WINAPI svc_main(DWORD argc, char **argv)
 		return;
 
 	service_status.dwServiceType = SERVICE_WIN32_OWN_PROCESS | SERVICE_INTERACTIVE_PROCESS;
-	service_status.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE;
+	service_status.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE | SERVICE_ACCEPT_PARAMCHANGE;
 	// | SERVICE_ACCEPT_SHUTDOWN ;
 	update_svc_status(SERVICE_RUNNING, 0);
 

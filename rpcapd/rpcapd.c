@@ -79,11 +79,10 @@ struct addrinfo mainhints;			//!< temporary struct to keep settings needed to op
 char address[MAX_LINE + 1];			//!< keeps the network address (either numeric or literal) to bind to
 char port[MAX_LINE + 1];			//!< keeps the network port to bind to
 #ifdef _WIN32
-static HANDLE shutdown_event;			//!< event to signal to shut down the main loop
-#else
+static HANDLE state_change_event;		//!< event to signal that a state change should take place
+#endif
 static volatile sig_atomic_t shutdown_server;	//!< '1' if the server is to shut down
 static volatile sig_atomic_t reread_config;	//!< '1' if the server is to re-read its configuration
-#endif
 
 extern char *optarg;	// for getopt()
 
@@ -262,7 +261,8 @@ int main(int argc, char *argv[])
 
 #ifdef WIN32
 	//
-	// Create a handle to signal when the main loop is to shut down.
+	// Create a handle to signal the main loop to tell it to do
+	// something.
 	//
 	// Events are a bit annoying if you're waiting for multiple
 	// events; unlike UN*X select() and poll(), which indicate
@@ -276,11 +276,11 @@ int main(int argc, char *argv[])
 	// as that means that once WSAWaitForMultipleEvents() is
 	// woken up, it's no longer signaled.
 	//
-	shutdown_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (shutdown_event == NULL)
+	state_change_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (state_change_event == NULL)
 	{
 		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-		rpcapd_log(LOGPRIO_ERROR, "Can't create shutdown event: %s",
+		rpcapd_log(LOGPRIO_ERROR, "Can't create state change event: %s",
 		    errbuf);
 		exit(2);
 	}
@@ -517,16 +517,44 @@ void main_startup(void)
 }
 
 #ifdef _WIN32
-void
-send_shutdown_event(void)
+static void
+send_state_change_event(void)
 {
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 
-	if (!SetEvent(shutdown_event))
+	if (!SetEvent(state_change_event))
 	{
 		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
 		rpcapd_log(LOGPRIO_ERROR, "SetEvent on shutdown event failed: %s", errbuf);
 	}
+}
+
+void
+send_shutdown_notification(void)
+{
+	//
+	// Indicate that the server should shut down.
+	//
+	shutdown_server = 1;
+
+	//
+	// Send a state change event, to wake up WSAWaitForMultipleEvents().
+	//
+	send_state_change_event();
+}
+
+void
+send_reread_configuration_notification(void)
+{
+	//
+	// Indicate that the server should re-read its configuration file.
+	//
+	reread_config = 1;
+
+	//
+	// Send a state change event, to wake up WSAWaitForMultipleEvents().
+	//
+	send_state_change_event();
 }
 
 static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
@@ -552,10 +580,9 @@ static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
 		case CTRL_CLOSE_EVENT:
 		case CTRL_SHUTDOWN_EVENT:
 			//
-			// Set the shutdown event.
-			// That will wake up WSAWaitForMultipleEvents().
+			// Set a shutdown notification.
 			//
-			send_shutdown_event();
+			send_shutdown_notification();
 			break;
 
 		default:
@@ -653,7 +680,7 @@ accept_connections(void)
 	//
 	// Fill it in.
 	//
-	events[0] = shutdown_event;	// shutdown event first
+	events[0] = state_change_event;	// state change event first
 	for (sock_info = listen_socks, i = 1; sock_info;
 	    sock_info = sock_info->next, i++)
 	{
@@ -696,24 +723,35 @@ accept_connections(void)
 		}
 
 		//
-		// Check the shutdown event.
+		// Check the state change event.
 		//
-		if (WaitForSingleObject(shutdown_event, 0) == WAIT_OBJECT_0)
+		if (WaitForSingleObject(state_change_event, 0) == WAIT_OBJECT_0)
 		{
 			//
-			// Time to quit.
 			// Clear the event, for cleanliness.
 			//
-			if (!ResetEvent(shutdown_event))
+			if (!ResetEvent(state_change_event))
 			{
 				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
 				rpcapd_log(LOGPRIO_ERROR, "ResetEvent on shutdown event failed: %s", errbuf);
 			}
 
-			//
-			// Exit the loop, so we quit.
-			//
-			break;
+			if (shutdown_server)
+			{
+				//
+				// Time to quit. Exit the loop.
+				//
+				break;
+			}
+			if (reread_config)
+			{
+				//
+				// We should re-read the configuration
+				// file.
+				//
+				reread_config = 0;	// clear the indicator
+				fileconf_read();
+			}
 		}
 
 		//
@@ -811,22 +849,26 @@ accept_connections(void)
 				// otherwise just keep trying.
 				//
 				if (shutdown_server)
+				{
+					//
+					// Time to quit.  Exit the loop.
+					//
 					break;
-				else {
-					if (reread_config)
-					{
-						//
-						// This is a "re-read the
-						// configuration file"
-						// signal.  Clear the
-						// flag and re-read
-						// the file.
-						//
-						reread_config = 0;
-						fileconf_read();
-					}
-					continue;
 				}
+				if (reread_config)
+				{
+					//
+					// We should re-read the configuration
+					// file.
+					//
+					reread_config = 0;	// clear the indicator
+					fileconf_read();
+				}
+
+				//
+				// Go back and wait again.
+				//
+				continue;
 			}
 			else
 			{

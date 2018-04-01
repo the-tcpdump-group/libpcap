@@ -52,7 +52,8 @@ extern int nullAuthAllowed;			//!< '1' if we permit NULL authentication, '0' oth
 extern char loadfile[MAX_LINE + 1];		//!< Name of the file from which we have to load the configuration
 
 #ifdef _WIN32
-void send_shutdown_event(void);		// Send event to shut down the daemon
+void send_shutdown_notification(void);	// Send notification to shut down the daemon
+void send_reread_configuration_notification(void);	// Send notification to re-read the configuration file
 #endif
 void main_startup(void);
 
