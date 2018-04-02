@@ -4320,7 +4320,7 @@ create_ring(pcap_t *handle, int *status)
 				 * Hardware timestamp, synchronized
 				 * with the system clock.
 				 */
-				timesource = SOF_TIMESTAMPING_SYS_HARDWARE;
+				timesource = SOF_TIMESTAMPING_RX_HARDWARE;
 			} else {
 				/*
 				 * PCAP_TSTAMP_ADAPTER_UNSYNCED - hardware
