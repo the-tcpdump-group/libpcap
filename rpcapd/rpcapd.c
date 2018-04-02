@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
-		SOCK_MESSAGE(errbuf);
+		SOCK_DEBUG_MESSAGE(errbuf);
 		exit(-1);
 	}
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 				}
 
 				if (i > MAX_ACTIVE_LIST)
-					SOCK_MESSAGE("Only MAX_ACTIVE_LIST active connections are currently supported.");
+					SOCK_DEBUG_MESSAGE("Only MAX_ACTIVE_LIST active connections are currently supported.");
 
 				// I don't initialize the remaining part of the structure, since
 				// it is already zeroed (it is a global var)
@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
 #endif
 
 	if (savefile[0] && fileconf_save(savefile))
-		SOCK_MESSAGE("Error when saving the configuration to file");
+		SOCK_DEBUG_MESSAGE("Error when saving the configuration to file");
 
 	// If the file does not exist, it keeps the settings provided by the command line
 	if (loadfile[0])
@@ -442,7 +442,7 @@ int main(int argc, char *argv[])
 		// If this call succeeds, it is blocking on Win32
 		//
 		if (svc_start() != 1)
-			SOCK_MESSAGE("Unable to start the service");
+			SOCK_DEBUG_MESSAGE("Unable to start the service");
 
 		// When the previous call returns, the entire application has to be stopped.
 		exit(0);
@@ -503,7 +503,7 @@ void main_startup(void)
 		    (void *)&activelist[i], 0, NULL);
 		if (threadId == 0)
 		{
-			SOCK_MESSAGE("Error creating the active child threads");
+			SOCK_DEBUG_MESSAGE("Error creating the active child threads");
 			continue;
 		}
 		CloseHandle(threadId);
@@ -538,7 +538,7 @@ void main_startup(void)
 		//
 		if (sock_initaddress((address[0]) ? address : NULL, port, &mainhints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
-			SOCK_MESSAGE(errbuf);
+			SOCK_DEBUG_MESSAGE(errbuf);
 			return;
 		}
 
@@ -550,7 +550,7 @@ void main_startup(void)
 
 			if ((sock = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			{
-				SOCK_MESSAGE(errbuf);
+				SOCK_DEBUG_MESSAGE(errbuf);
 				continue;
 			}
 
@@ -576,7 +576,7 @@ void main_startup(void)
 	//
 	// We're done; exit.
 	//
-	SOCK_MESSAGE(PROGRAM_NAME " is closing.\n");
+	SOCK_DEBUG_MESSAGE(PROGRAM_NAME " is closing.\n");
 
 #ifndef _WIN32
 	//
@@ -722,7 +722,7 @@ static void main_reap_children(int sign)
 	// For reference, Stevens, pg 128
 
 	while ((pid = waitpid(-1, &exitstat, WNOHANG)) > 0)
-		SOCK_MESSAGE("Child terminated");
+		SOCK_DEBUG_MESSAGE("Child terminated");
 
 	return;
 }
@@ -1197,7 +1197,7 @@ main_active(void *ptr)
 	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Connecting to host %s, port %s, using protocol %s",
 			activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
 			(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
-	SOCK_MESSAGE(errbuf);
+	SOCK_DEBUG_MESSAGE(errbuf);
 
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
@@ -1205,7 +1205,7 @@ main_active(void *ptr)
 	// Do the work
 	if (sock_initaddress(activepars->address, activepars->port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
-		SOCK_MESSAGE(errbuf);
+		SOCK_DEBUG_MESSAGE(errbuf);
 		return 0;
 	}
 
@@ -1215,13 +1215,13 @@ main_active(void *ptr)
 
 		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 		{
-			SOCK_MESSAGE(errbuf);
+			SOCK_DEBUG_MESSAGE(errbuf);
 
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error connecting to host %s, port %s, using protocol %s",
 					activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
 					(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
 
-			SOCK_MESSAGE(errbuf);
+			SOCK_DEBUG_MESSAGE(errbuf);
 
 			sleep_secs(RPCAP_ACTIVE_WAIT);
 

@@ -139,15 +139,15 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  * \return No return values.
  */
 #ifdef NDEBUG
-  #define SOCK_MESSAGE(msg) ((void)0)
+  #define SOCK_DEBUG_MESSAGE(msg) ((void)0)
 #else
   #if (defined(_WIN32) && defined(_MSC_VER))
     #include <crtdbg.h>				/* for _CrtDbgReport */
     /* Use MessageBox(NULL, msg, "warning", MB_OK)' instead of the other calls if you want to debug a Win32 service */
     /* Remember to activate the 'allow service to interact with desktop' flag of the service */
-    #define SOCK_MESSAGE(msg) { _CrtDbgReport(_CRT_WARN, NULL, 0, NULL, "%s\n", msg); fprintf(stderr, "%s\n", msg); }
+    #define SOCK_DEBUG_MESSAGE(msg) { _CrtDbgReport(_CRT_WARN, NULL, 0, NULL, "%s\n", msg); fprintf(stderr, "%s\n", msg); }
   #else
-    #define SOCK_MESSAGE(msg) { fprintf(stderr, "%s\n", msg); }
+    #define SOCK_DEBUG_MESSAGE(msg) { fprintf(stderr, "%s\n", msg); }
   #endif
 #endif
 

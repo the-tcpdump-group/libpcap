@@ -848,7 +848,7 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
 
 	if (size == 0)
 	{
-		SOCK_MESSAGE("I have been requested to read zero bytes");
+		SOCK_DEBUG_MESSAGE("I have been requested to read zero bytes");
 		return 0;
 	}
 	if (size > INT_MAX)
@@ -939,7 +939,7 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 
 	if (size == 0)
 	{
-		SOCK_MESSAGE("I have been requested to read zero bytes");
+		SOCK_DEBUG_MESSAGE("I have been requested to read zero bytes");
 		return 0;
 	}
 	if (size > INT_MAX)
@@ -1095,7 +1095,7 @@ int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
 			return -1;
 	}
 
-	SOCK_MESSAGE("I'm currently discarding data\n");
+	SOCK_DEBUG_MESSAGE("I'm currently discarding data\n");
 
 	return 0;
 }
@@ -1170,7 +1170,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 				if (errbuf)
 					pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
 
-				SOCK_MESSAGE(errbuf);
+				SOCK_DEBUG_MESSAGE(errbuf);
 
 				/* Get next token */
 				token = pcap_strtok_r(NULL, sep, &lasts);

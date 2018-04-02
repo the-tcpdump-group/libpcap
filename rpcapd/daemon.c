@@ -648,7 +648,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 				// This is used only in case of active mode.
 				//
 				client_told_us_to_close = 1;
-				SOCK_MESSAGE("The other end system asked to close the connection.");
+				SOCK_DEBUG_MESSAGE("The other end system asked to close the connection.");
 				goto end;
 			}
 
@@ -850,8 +850,8 @@ end:
 	}
 
 	// Print message and return
-	SOCK_MESSAGE("I'm exiting from the child loop");
-	SOCK_MESSAGE(errbuf);
+	SOCK_DEBUG_MESSAGE("I'm exiting from the child loop");
+	SOCK_DEBUG_MESSAGE(errbuf);
 
 	return client_told_us_to_close;
 }
