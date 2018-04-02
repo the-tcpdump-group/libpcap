@@ -45,6 +45,7 @@
 #include "sockutils.h"		// for SOCK_MESSAGE
 #include "portability.h"
 #include "rpcapd.h"
+#include "config_params.h"	// configuration file parameters
 #include "fileconf.h"
 #include "rpcap-protocol.h"
 

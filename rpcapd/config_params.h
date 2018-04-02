@@ -30,15 +30,27 @@
  *
  */
 
-#ifndef __RPCAPD_H__
-#define __RPCAPD_H__
+#ifndef __CONFIG_PARAMS_H__
+#define __CONFIG_PARAMS_H__
 
-#define PROGRAM_NAME "rpcapd"
-#define SOCKET_MAXCONN 10	/* Maximum number of connections queued into the accept() */
-#ifdef _WIN32
-void send_shutdown_notification(void);	// Send notification to shut down the daemon
-void send_reread_configuration_notification(void);	// Send notification to re-read the configuration file
-#endif
-void main_startup(void);
+//
+// Parameters set from the configuration file.
+//
+
+#define MAX_LINE 2048		/* Maximum chars allowed for the host list (in passive mode) */
+#define MAX_HOST_LIST 64000
+#define MAX_ACTIVE_LIST 10
+
+struct active_pars
+{
+	char address[MAX_LINE + 1];	// keeps the network address (either numeric or literal) to of the active client
+	char port[MAX_LINE + 1];	// keeps the network port to bind to
+	int ai_family;			// address faimly to use
+};
+
+extern char hostlist[MAX_HOST_LIST + 1];	//!< Keeps the list of the hosts that are allowed to connect to this server
+extern struct active_pars activelist[MAX_ACTIVE_LIST];		//!< Keeps the list of the hosts (host, port) on which I want to connect to (active mode)
+extern int nullAuthAllowed;			//!< '1' if we permit NULL authentication, '0' otherwise
+extern char loadfile[MAX_LINE + 1];		//!< Name of the file from which we have to load the configuration
 
 #endif

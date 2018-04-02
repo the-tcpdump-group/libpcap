@@ -46,6 +46,7 @@
 #include "sockutils.h"		// for socket calls
 #include "portability.h"
 #include "rpcapd.h"
+#include "config_params.h"	// configuration file parameters
 #include "fileconf.h"		// for the configuration file management
 #include "rpcap-protocol.h"
 #include "daemon.h"		// the true main() method of this daemon
@@ -56,6 +57,7 @@
   #include "win32-svc.h"	// for Win32 service stuff
   #include "getopt.h"		// for getopt()-for-Windows
 #else
+  #include <fcntl.h>		// for open()
   #include <unistd.h>		// for exit()
   #include <sys/wait.h>		// waitpid()
 #endif
@@ -100,6 +102,9 @@ static void accept_connection(SOCKET listen_sock);
 #ifndef _WIN32
 static void main_reap_children(int sign);
 #endif
+#ifdef _WIN32
+static unsigned __stdcall main_passive_serviceloop_thread(void *ptr);
+#endif
 
 #define RPCAP_ACTIVE_WAIT 30		/* Waiting time between two attempts to open a connection, in active mode (default: 30 sec) */
 
@@ -111,7 +116,11 @@ static void printusage(void)
 	char *usagetext =
 	"USAGE:"
 	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-4] [-l <host_list>] [-a <host,port>]\n"
-	"              [-n] [-v] [-d] [-s <file>] [-f <file>]\n\n"
+	"              [-n] [-v] [-d] "
+#ifndef _WIN32
+	"[-i] "
+#endif
+	"[-s <file>] [-f <file>]\n\n"
 	"  -b <address>    the address to bind to (either numeric or literal).\n"
 	"                  Default: binds to all local IPv4 and IPv6 addresses\n\n"
 	"  -p <port>       the port to bind to.\n"
@@ -119,17 +128,21 @@ static void printusage(void)
 	"  -4              use only IPv4.\n"
 	"                  Default: use both IPv4 and IPv6 waiting sockets\n\n"
 	"  -l <host_list>  a file that contains a list of hosts that are allowed\n"
-	"                  to connect to this server (if more than one, list them one per line).\n"
-	"                  We suggest to use literal names (instead of numeric ones) in\n"
-	"                  order to avoid problems with different address families.\n\n"
+	"                  to connect to this server (if more than one, list them one\n"
+	"                  per line).\n"
+	"                  We suggest to use literal names (instead of numeric ones)\n"
+	"                  in order to avoid problems with different address families.\n\n"
 	"  -n              permit NULL authentication (usually used with '-l')\n\n"
 	"  -a <host,port>  run in active mode when connecting to 'host' on port 'port'\n"
 	"                  In case 'port' is omitted, the default port (" RPCAP_DEFAULT_NETPORT_ACTIVE ") is used\n\n"
-	"  -v              run in active mode only (default: if '-a' is specified, it accepts\n"
-	"                  passive connections as well\n\n"
+	"  -v              run in active mode only (default: if '-a' is specified, it\n"
+	"                  accepts passive connections as well)\n\n"
 	"  -d              run in daemon mode (UNIX only) or as a service (Win32 only)\n"
-	"                  Warning (Win32): this switch is provided automatically when the service\n"
-	"                  is started from the control panel\n\n"
+	"                  Warning (Win32): this switch is provided automatically when\n"
+	"                  the service is started from the control panel\n\n"
+#ifndef _WIN32
+	"  -i              run in inetd mode (UNIX only)\n\n"
+#endif
 	"  -s <file>       save the current configuration to file\n\n"
 	"  -f <file>       load the current configuration from file; all switches\n"
 	"                  specified from the command line are ignored\n\n"
@@ -146,7 +159,10 @@ static void printusage(void)
 int main(int argc, char *argv[])
 {
 	char savefile[MAX_LINE + 1];		// name of the file on which we have to save the configuration
-	int isdaemon = 0;			// Not null if the user wants to run this program as a daemon
+	int isdaemon = 0;			// Non-zero if the user wants to run this program as a daemon
+#ifndef _WIN32
+	int isrunbyinetd = 0;			// Non-zero if this is being run by inetd or something inetd-like
+#endif
 	int retval;				// keeps the returning value from several functions
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 #ifndef _WIN32
@@ -177,7 +193,7 @@ int main(int argc, char *argv[])
 	mainhints.ai_socktype = SOCK_STREAM;
 
 	// Getting the proper command line options
-	while ((retval = getopt(argc, argv, "b:dhp:4l:na:s:f:v")) != -1)
+	while ((retval = getopt(argc, argv, "b:dhip:4l:na:s:f:v")) != -1)
 	{
 		switch (retval)
 		{
@@ -192,6 +208,14 @@ int main(int argc, char *argv[])
 				break;
 			case 'd':
 				isdaemon = 1;
+				break;
+			case 'i':
+#ifdef _WIN32
+				printusage();
+				exit(1);
+#else
+				isrunbyinetd = 1;
+#endif
 				break;
 			case 'n':
 				nullAuthAllowed = 1;
@@ -244,13 +268,23 @@ int main(int argc, char *argv[])
 			case 'h':
 				printusage();
 				exit(0);
+				break;
 			default:
+				exit(1);
 				break;
 		}
 	}
 
+#ifndef _WIN32
+	if (isdaemon && isrunbyinetd)
+	{
+		fprintf(stderr, "rpcapd: -d and -i can't be used together\n");
+		exit(1);
+	}
+#endif
+
 	if (savefile[0] && fileconf_save(savefile))
-			SOCK_MESSAGE("Error when saving the configuration to file");
+		SOCK_MESSAGE("Error when saving the configuration to file");
 
 	// If the file does not exist, it keeps the settings provided by the command line
 	if (loadfile[0])
@@ -296,13 +330,86 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	// forking a daemon, if it is needed
+#ifndef _WIN32
+	if (isrunbyinetd)
+	{
+		//
+		// -i was specified, indicating that this is being run
+		// by inetd or something that can run network daemons
+		// as if it were inetd (xinetd, launchd, systemd, etc.).
+		//
+		// Our standard input is the input side of a connection,
+		// and our standard output is the output side of a
+		// connection.
+		//
+		int sockctrl_in, sockctrl_out;
+		int devnull_fd;
+
+		//
+		// Duplicate the standard input and output, making them
+		// the input and output side of the control connection.
+		//
+		sockctrl_in = dup(0);
+		if (sockctrl_in == -1)
+		{
+			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "Can't dup standard input: %s",
+			    errbuf);
+			exit(2);
+		}
+		sockctrl_out = dup(1);
+		if (sockctrl_out == -1)
+		{
+			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "Can't dup standard output: %s",
+			    errbuf);
+			exit(2);
+		}
+
+		//
+		// Try to set the standard input and output to /dev/null.
+		//
+		devnull_fd = open("/dev/null", O_RDWR);
+		if (devnull_fd != -1)
+		{
+			//
+			// If this fails, just drive on.
+			//
+			(void)dup2(devnull_fd, 0);
+			(void)dup2(devnull_fd, 1);
+			close(devnull_fd);
+		}
+
+		//
+		// Handle this client.
+		// This is passive mode, so we don't care whether we were
+		// told by the client to close.
+		//
+		(void)daemon_serviceloop(sockctrl_in, sockctrl_out, 0,
+		    nullAuthAllowed);
+
+		//
+		// Nothing more to do.
+		//
+		exit(0);
+	}
+#endif
+
 	if (isdaemon)
 	{
+		//
+		// This is being run as a daemon.
+		// On UN*X, it might be manually run, or run from an
+		// rc file.
+		//
 #ifndef _WIN32
 		int pid;
 
+		//
+		// Daemonize ourselves.
+		//
 		// Unix Network Programming, pg 336
+		//
 		if ((pid = fork()) != 0)
 			exit(0);		// Parent terminates
 
@@ -329,7 +436,11 @@ int main(int argc, char *argv[])
 //		umask(0);
 //		chdir("/");
 #else
+		//
+		// This is being run as a service on Windows.
+		//
 		// If this call succeeds, it is blocking on Win32
+		//
 		if (svc_start() != 1)
 			SOCK_MESSAGE("Unable to start the service");
 
@@ -896,10 +1007,10 @@ accept_connection(SOCKET listen_sock)
 #ifdef _WIN32
 	HANDLE threadId;			// handle for the subthread
 	u_long off = 0;
+	SOCKET *sockctrl_temp;
 #else
 	pid_t pid;
 #endif
-	struct daemon_slpars *pars;	// parameters needed by the daemon_serviceloop()
 
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
@@ -971,9 +1082,15 @@ accept_connection(SOCKET listen_sock)
 		return;
 	}
 
-	// in case of passive mode, this variable is deallocated by the daemon_serviceloop()
-	pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
-	if (pars == NULL)
+	//
+	// Allocate a location to hold the value of sockctrl.
+	// It will be freed in the newly-created thread once it's
+	// finished with it.
+	// I guess we *could* just cast sockctrl to a void *, but that's
+	// a bit ugly.
+	//
+	sockctrl_temp = (SOCKET *)malloc(sizeof (SOCKET));
+	if (sockctrl_temp == NULL)
 	{
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc() failed");
@@ -981,19 +1098,16 @@ accept_connection(SOCKET listen_sock)
 		sock_close(sockctrl, NULL, 0);
 		return;
 	}
+	*sockctrl_temp = sockctrl;
 
-	pars->sockctrl = sockctrl;
-	pars->activeclose = 0;		// useless in passive mode
-	pars->isactive = 0;
-	pars->nullAuthAllowed = nullAuthAllowed;
-
-	threadId = (HANDLE)_beginthreadex(NULL, 0, daemon_serviceloop,
-	    (void *) pars, 0, NULL);
+	threadId = (HANDLE)_beginthreadex(NULL, 0,
+	    main_passive_serviceloop_thread, (void *) sockctrl_temp, 0, NULL);
 	if (threadId == 0)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
 		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
 		sock_close(sockctrl, NULL, 0);
+		free(sockctrl_temp);
 		return;
 	}
 	CloseHandle(threadId);
@@ -1010,33 +1124,36 @@ accept_connection(SOCKET listen_sock)
 	{
 		//
 		// Child process.
-		// This is passive mode, so this variable is deallocated
-		// by the daemon_serviceloop().
-		//
-		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
-		if (pars == NULL)
-		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Can't allocate memory for the child process");
-			rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-			sock_close(sockctrl, NULL, 0);
-			return;
-		}
-
-		pars->sockctrl = sockctrl;
-		pars->activeclose = 0;		// useless in passive mode
-		pars->isactive = 0;
-		pars->nullAuthAllowed = nullAuthAllowed;
-
 		//
 		// Close the socket on which we're listening (must
 		// be open only in the parent).
 		//
 		closesocket(listen_sock);
 
+#if 0
+		//
+		// Modify thread params so that it can be killed at any time
+		// XXX - is this necessary?  This is the main and, currently,
+		// only thread in the child process, and nobody tries to
+		// cancel us, although *we* may cancel the thread that's
+		// handling the capture loop.
+		//
+		if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL))
+			goto end;
+		if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL))
+			goto end;
+#endif
+
 		//
 		// Run the service loop.
+		// This is passive mode, so we don't care whether we were
+		// told by the client to close.
 		//
-		daemon_serviceloop((void *) pars);
+		(void)daemon_serviceloop(sockctrl, sockctrl, 0,
+		    nullAuthAllowed);
+
+		close(sockctrl);
+
 		exit(0);
 	}
 
@@ -1067,7 +1184,6 @@ main_active(void *ptr)
 	struct addrinfo hints;			// temporary struct to keep settings needed to open the new socket
 	struct addrinfo *addrinfo;		// keeps the addrinfo chain; required to open a new socket
 	struct active_pars *activepars;
-	struct daemon_slpars *pars;		// parameters needed by the daemon_serviceloop()
 
 	activepars = (struct active_pars *) ptr;
 
@@ -1112,24 +1228,10 @@ main_active(void *ptr)
 			continue;
 		}
 
-		pars = (struct daemon_slpars *) malloc (sizeof(struct daemon_slpars));
-		if (pars == NULL)
-		{
-			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "malloc() failed");
-			continue;
-		}
+		activeclose = daemon_serviceloop(sockctrl, sockctrl, 1,
+		    nullAuthAllowed);
 
-		pars->sockctrl = sockctrl;
-		pars->activeclose = 0;
-		pars->isactive = 1;
-		pars->nullAuthAllowed = nullAuthAllowed;
-
-		daemon_serviceloop((void *) pars);
-
-		activeclose = pars->activeclose;
-
-		free(pars);
+		sock_close(sockctrl, NULL, 0);
 
 		// If the connection is closed by the user explicitely, don't try to connect to it again
 		// just exit the program
@@ -1140,3 +1242,27 @@ main_active(void *ptr)
 	freeaddrinfo(addrinfo);
 	return 0;
 }
+
+#ifdef _WIN32
+//
+// Main routine of a passive-mode service thread.
+//
+unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
+{
+	SOCKET sockctrl;
+
+	sockctrl = *((SOCKET *)ptr);
+	free(ptr);
+
+	//
+	// Handle this client.
+	// This is passive mode, so we don't care whether we were
+	// told by the client to close.
+	//
+	(void)daemon_serviceloop(sockctrl, sockctrl, 0, nullAuthAllowed);
+
+	sock_close(sockctrl, NULL, 0);
+
+	return 0;
+}
+#endif

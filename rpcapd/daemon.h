@@ -33,22 +33,12 @@
 #ifndef __DAEMON_H__
 #define __DAEMON_H__
 
-//! Structure that keeps the parameters needed by the daemon_serviceloop()
-// function
-struct daemon_slpars
-{
-	SOCKET sockctrl;	//!< SOCKET ID of the control connection
-	uint8 protocol_version;	//!< negotiated protocol version
-	int isactive;		//!< Not null if the daemon has to run in active mode
-	int nullAuthAllowed;	//!< '1' if we permit NULL authentication, '0' otherwise
-	int activeclose;	//!< '1' if the client closed the control connection explicitely; used in active mode only
-};
-
-#ifdef _WIN32
-unsigned __stdcall daemon_serviceloop(void *ptr);
-#else
-void *daemon_serviceloop(void *ptr);
-#endif
+//
+// Returns 1 if the client closed the control connection explicitly, 0
+// otherwise; used in active mode only.
+//
+int daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive,
+    int nullAuthAllowed);
 
 void sleep_secs(int secs);
 

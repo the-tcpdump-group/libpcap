@@ -303,6 +303,7 @@ EXTRA_DIST = \
 	msdos/readme.dos \
 	nomkdep \
 	org.tcpdump.chmod_bpf.plist \
+	org.tcpdump.rpcapd.plist \
 	pcap-bpf.c \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \
@@ -351,6 +352,7 @@ EXTRA_DIST = \
 	rpcap-protocol.c \
 	rpcapd/CMakeLists.txt \
 	rpcapd/Makefile.in \
+	rpcapd/config_params.h \
 	rpcapd/daemon.h \
 	rpcapd/daemon.c \
 	rpcapd/fileconf.c \
