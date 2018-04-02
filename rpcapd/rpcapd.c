@@ -710,9 +710,7 @@ static void main_reread_config(int sign)
 	//
 	reread_config = 1;
 }
-#endif
 
-#ifndef _WIN32
 static void main_reap_children(int sign)
 {
 	pid_t pid;
