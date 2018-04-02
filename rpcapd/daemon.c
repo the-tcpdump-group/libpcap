@@ -86,10 +86,10 @@ static int daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen);
 
 static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen);
 #ifdef _WIN32
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param);
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param);
 static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, HANDLE threaddata);
 #else
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param);
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param);
 static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, int *have_thread, pthread_t threaddata);
 #endif
 
@@ -615,7 +615,7 @@ void *daemon_serviceloop(void *ptr)
 					break;
 				}
 
-				if (daemon_msg_startcap_req(pars, plen, &have_thread, &threaddata, source, pars->isactive, &session, &samp_param) == -1)
+				if (daemon_msg_startcap_req(pars, plen, &have_thread, &threaddata, source, &session, &samp_param) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -1532,9 +1532,9 @@ error:
 */
 static int
 #ifdef _WIN32
-daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param)
 #else
-daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, int active, struct session **sessionp, struct rpcap_sampling *samp_param)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param)
 #endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -1606,7 +1606,7 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_threa
 	- we're using TCP, and the user wants us to be in active mode
 	- we're using UDP
 	*/
-	serveropen_dp = (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_SERVEROPEN) || (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_DGRAM) || active;
+	serveropen_dp = (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_SERVEROPEN) || (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_DGRAM) || pars->isactive;
 
 	/*
 	Gets the sockaddr structure referred to the other peer in the ctrl connection
