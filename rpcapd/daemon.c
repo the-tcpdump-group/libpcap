@@ -34,6 +34,7 @@
 #endif
 
 #include "ftmacros.h"
+#include "varattrs.h"
 
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
@@ -1518,9 +1519,9 @@ error:
 */
 static int
 #ifdef _WIN32
-daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, HANDLE *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param _U_)
 #else
-daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_thread, pthread_t *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param _U_)
 #endif
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
@@ -1540,8 +1541,7 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, int *have_threa
 	socklen_t saddrlen;			// temp, needed to retrieve the network data port chosen on the local machine
 	int ret;				// return value from functions
 
-#ifdef _WIN32
-#else
+#ifndef _WIN32
 	pthread_attr_t detachedAttribute;	// temp, needed to set the created thread as detached
 #endif
 
