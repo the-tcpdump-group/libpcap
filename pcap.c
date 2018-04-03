@@ -181,7 +181,7 @@ pcap_wsockinit(void)
  * warnings we might get from compilers about the lack of a
  * declaration.
  */
-extern char pcap_version[];
+PCAP_API char pcap_version[];
 PCAP_API_DEF char pcap_version[] = PACKAGE_VERSION;
 
 static int

@@ -550,7 +550,7 @@ struct eproto {
  * warnings we might get from compilers about the lack of a
  * declaration.
  */
-extern struct eproto eproto_db[];
+PCAP_API struct eproto eproto_db[];
 PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "pup", ETHERTYPE_PUP },
 	{ "xns", ETHERTYPE_NS },
