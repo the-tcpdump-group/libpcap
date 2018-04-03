@@ -44,6 +44,7 @@
 
 #include "fmtutils.h"
 #include "sockutils.h"		// for socket calls
+#include "varattrs.h"		// for _U_
 #include "portability.h"
 #include "rpcapd.h"
 #include "config_params.h"	// configuration file parameters
@@ -691,7 +692,7 @@ static BOOL WINAPI main_ctrl_event(DWORD ctrltype)
 	return TRUE;
 }
 #else
-static void main_terminate(int sign)
+static void main_terminate(int sign _U_)
 {
 	//
 	// Note that the server should shut down.
@@ -701,7 +702,7 @@ static void main_terminate(int sign)
 	shutdown_server = 1;
 }
 
-static void main_reread_config(int sign)
+static void main_reread_config(int sign _U_)
 {
 	//
 	// Note that the server should re-read its configuration file.
@@ -711,7 +712,7 @@ static void main_reread_config(int sign)
 	reread_config = 1;
 }
 
-static void main_reap_children(int sign)
+static void main_reap_children(int sign _U_)
 {
 	pid_t pid;
 	int exitstat;

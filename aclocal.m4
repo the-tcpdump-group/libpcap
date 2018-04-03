@@ -854,6 +854,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    # extended
 		    # AC_LBL_CHECK_COMPILER_OPT($1, -Wcovered-switch-default)
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wmissing-variable-declarations)
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunused-parameter)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #

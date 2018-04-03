@@ -78,7 +78,8 @@
       PCAP_DO_PRAGMA(clang diagnostic push) \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare") \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation") \
-      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wmissing-noreturn")
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wmissing-noreturn") \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunused-parameter")
     #define DIAG_ON_FLEX \
       PCAP_DO_PRAGMA(clang diagnostic pop)
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
