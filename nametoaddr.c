@@ -545,7 +545,12 @@ struct eproto {
  * Debian, at least, so make it a public symbol, even though we
  * don't officially export it by declaring it in a header file.
  * (Programs *should* do this themselves, as tcpdump now does.)
+ *
+ * We declare it here, right before defining it, to squelch any
+ * warnings we might get from compilers about the lack of a
+ * declaration.
  */
+extern struct eproto eproto_db[];
 PCAP_API_DEF struct eproto eproto_db[] = {
 	{ "pup", ETHERTYPE_PUP },
 	{ "xns", ETHERTYPE_NS },

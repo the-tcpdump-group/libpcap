@@ -176,7 +176,12 @@ pcap_wsockinit(void)
  * Not explicitly exported via a header file - the right API to use
  * is pcap_lib_version() - but some programs included it, so we
  * provide it.
+ *
+ * We declare it here, right before defining it, to squelch any
+ * warnings we might get from compilers about the lack of a
+ * declaration.
  */
+extern char pcap_version[];
 PCAP_API_DEF char pcap_version[] = PACKAGE_VERSION;
 
 static int
