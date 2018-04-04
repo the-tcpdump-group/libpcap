@@ -300,7 +300,7 @@ close_fail:
 }
 
 static int
-bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	struct cmsghdr *cmsg;
 	struct msghdr msg;
@@ -370,7 +370,7 @@ bt_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *us
 }
 
 static int
-bt_inject_linux(pcap_t *handle, const void *buf, size_t size)
+bt_inject_linux(pcap_t *handle, const void *buf _U_, size_t size _U_)
 {
 	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
     		"bluetooth devices");
