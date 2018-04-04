@@ -51,7 +51,7 @@ struct pcap_dbus {
 };
 
 static int
-dbus_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+dbus_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	struct pcap_dbus *handlep = handle->priv;
 

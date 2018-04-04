@@ -1627,7 +1627,7 @@ fail:
  *  error occured.
  */
 static int
-pcap_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+pcap_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	/*
 	 * Currently, on Linux only one packet is delivered per read,

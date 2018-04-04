@@ -706,7 +706,7 @@ ascii_to_int(char c)
  * format description
  */
 static int
-usb_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+usb_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	/* see:
 	* /usr/src/linux/Documentation/usb/usbmon.txt
@@ -903,7 +903,7 @@ got:
 }
 
 static int
-usb_inject_linux(pcap_t *handle, const void *buf, size_t size)
+usb_inject_linux(pcap_t *handle, const void *buf _U_, size_t size _U_)
 {
 	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
 		"USB devices");
@@ -1019,7 +1019,7 @@ usb_stats_linux_bin(pcap_t *handle, struct pcap_stat *stats)
  * <linux-kernel-source>/drivers/usb/mon/mon_bin.c binary ABI
  */
 static int
-usb_read_linux_bin(pcap_t *handle, int max_packets, pcap_handler callback, u_char *user)
+usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
 {
 	struct pcap_usb_linux *handlep = handle->priv;
 	struct mon_bin_get info;

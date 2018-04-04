@@ -307,7 +307,7 @@ main(int argc, char **argv)
 }
 
 static void
-countme(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
+countme(u_char *user, const struct pcap_pkthdr *h _U_, const u_char *sp _U_)
 {
 	int *counterp = (int *)user;
 
