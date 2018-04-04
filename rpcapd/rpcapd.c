@@ -562,7 +562,7 @@ void main_startup(void)
 					rpcapd_log(LOGPRIO_WARNING, "Can't listen on socket for %s:%u: %s",
 					    inet_ntop(AF_INET, &in->sin_addr,
 						addrbuf, sizeof (addrbuf)),
-					    in->sin_port,
+					    ntohs(in->sin_port),
 					    errbuf);
 					break;
 				}
@@ -576,7 +576,7 @@ void main_startup(void)
 					rpcapd_log(LOGPRIO_WARNING, "Can't listen on socket for %s:%u: %s",
 					    inet_ntop(AF_INET6, &in6->sin6_addr,
 						addrbuf, sizeof (addrbuf)),
-					    in6->sin6_port,
+					    ntohs(in6->sin6_port),
 					    errbuf);
 					break;
 				}
