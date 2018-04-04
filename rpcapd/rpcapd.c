@@ -551,7 +551,42 @@ void main_startup(void)
 
 			if ((sock = sock_open(tempaddrinfo, SOCKOPEN_SERVER, SOCKET_MAXCONN, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			{
-				SOCK_DEBUG_MESSAGE(errbuf);
+				switch (tempaddrinfo->ai_family)
+				{
+				case AF_INET:
+				{
+					struct sockaddr_in *in;
+					char addrbuf[INET_ADDRSTRLEN];
+
+					in = (struct sockaddr_in *)tempaddrinfo->ai_addr;
+					rpcapd_log(LOGPRIO_WARNING, "Can't listen on socket for %s:%u: %s",
+					    inet_ntop(AF_INET, &in->sin_addr,
+						addrbuf, sizeof (addrbuf)),
+					    in->sin_port,
+					    errbuf);
+					break;
+				}
+
+				case AF_INET6:
+				{
+					struct sockaddr_in6 *in6;
+					char addrbuf[INET6_ADDRSTRLEN];
+
+					in6 = (struct sockaddr_in6 *)tempaddrinfo->ai_addr;
+					rpcapd_log(LOGPRIO_WARNING, "Can't listen on socket for %s:%u: %s",
+					    inet_ntop(AF_INET6, &in6->sin6_addr,
+						addrbuf, sizeof (addrbuf)),
+					    in6->sin6_port,
+					    errbuf);
+					break;
+				}
+
+				default:
+					rpcapd_log(LOGPRIO_WARNING, "Can't listen on socket for address family %u: %s",
+					    tempaddrinfo->ai_family,
+					    errbuf);
+					break;
+				}
 				continue;
 			}
 
@@ -567,6 +602,12 @@ void main_startup(void)
 		}
 
 		freeaddrinfo(addrinfo);
+
+		if (listen_socks == NULL)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "Can't listen on any address");
+			exit(2);
+		}
 
 		//
 		// Now listen on all of them, waiting for connections.
