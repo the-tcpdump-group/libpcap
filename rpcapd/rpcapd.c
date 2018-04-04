@@ -893,7 +893,8 @@ accept_connections(void)
 	{
 		if (sock_info->sock + 1 > num_sock_fds)
 		{
-			if (sock_info->sock + 1 > FD_SETSIZE)
+			if ((unsigned int)(sock_info->sock + 1) >
+			    (unsigned int)FD_SETSIZE)
 			{
 				rpcapd_log(LOGPRIO_ERROR, "Socket FD is too bit for an fd_set");
 				exit(2);
