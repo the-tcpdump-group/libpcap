@@ -70,7 +70,7 @@ main(int argc, char **argv)
 	bpf_u_int32 localnet, netmask;
 	register char *cp, *cmdbuf, *device;
 	int doselect, dopoll, dotimeout, dononblock;
-	char *mechanism;
+	const char *mechanism;
 	struct bpf_program fcode;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	pcap_if_t *devlist;

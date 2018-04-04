@@ -1735,7 +1735,7 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 
 	default:
 		abort();
-		return NULL;
+		/* NOTREACHED */
 	}
 	return s;
 }

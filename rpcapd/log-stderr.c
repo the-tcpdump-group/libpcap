@@ -30,7 +30,7 @@ rpcapd_log(log_priority priority, const char *message, ...)
 
 	default:
 		abort();
-		return;
+		/* NOTREACHED */
 	}
 
 	fprintf(stderr, "rpcapd: %s", tag);
