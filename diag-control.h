@@ -90,7 +90,8 @@
      */
     #define DIAG_OFF_FLEX \
       PCAP_DO_PRAGMA(GCC diagnostic push) \
-      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wsign-compare")
+      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wsign-compare") \
+      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunused-parameter")
     #define DIAG_ON_FLEX \
       PCAP_DO_PRAGMA(GCC diagnostic pop)
   #else
