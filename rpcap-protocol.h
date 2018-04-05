@@ -445,6 +445,6 @@ struct rpcap_sampling
 
 extern void rpcap_createhdr(struct rpcap_header *header, uint8 ver, uint8 type, uint16 value, uint32 length);
 extern const char *rpcap_msg_type_string(uint8 type);
-extern int rpcap_senderror(SOCKET sock, uint8 ver, uint16 errcode, char *error, char *errbuf);
+extern int rpcap_senderror(SOCKET sock, uint8 ver, uint16 errcode, const char *error, char *errbuf);
 
 #endif

@@ -114,7 +114,7 @@ static unsigned __stdcall main_passive_serviceloop_thread(void *ptr);
 */
 static void printusage(void)
 {
-	char *usagetext =
+	const char *usagetext =
 	"USAGE:"
 	" "  PROGRAM_NAME " [-b <address>] [-p <port>] [-4] [-l <host_list>] [-a <host,port>]\n"
 	"              [-n] [-v] [-d] "

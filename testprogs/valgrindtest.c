@@ -233,7 +233,7 @@ main(int argc, char **argv)
 	int dorfmon, useactivate;
 	char ebuf[PCAP_ERRBUF_SIZE];
 	char *infile;
-	char *cmdbuf;
+	const char *cmdbuf;
 	pcap_if_t *devlist;
 	pcap_t *pd;
 	int status = 0;
