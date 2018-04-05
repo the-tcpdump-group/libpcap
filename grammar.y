@@ -199,7 +199,7 @@ str2tok(const char *str, const struct tok *toks)
 
 static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 
-static PCAP_NORETURN void
+static PCAP_NORETURN_DEF void
 yyerror(void *yyscanner _U_, compiler_state_t *cstate, const char *msg)
 {
 	bpf_syntax_error(cstate, msg);
@@ -246,14 +246,14 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
 	}
 }
 #else /* !HAVE_NET_PFVAR_H */
-static int
+static PCAP_NORETURN_DEF int
 pfreason_to_num(compiler_state_t *cstate, const char *reason _U_)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
 	/*NOTREACHED*/
 }
 
-static int
+static PCAP_NORETURN_DEF int
 pfaction_to_num(compiler_state_t *cstate, const char *action _U_)
 {
 	bpf_error(cstate, "libpcap was compiled on a machine without pf support");
