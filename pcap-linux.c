@@ -410,6 +410,46 @@ static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 #endif
 
+/*
+ * In pre-3.0 kernels, the tp_vlan_tci field is set to whatever the
+ * vlan_tci field in the skbuff is.  0 can either mean "not on a VLAN"
+ * or "on VLAN 0".  There is no flag set in the tp_status field to
+ * distinguish between them.
+ *
+ * In 3.0 and later kernels, if there's a VLAN tag present, the tp_vlan_tci
+ * field is set to the VLAN tag, and the TP_STATUS_VLAN_VALID flag is set
+ * in the tp_status field, otherwise the tp_vlan_tci field is set to 0 and
+ * the TP_STATUS_VLAN_VALID flag isn't set in the tp_status field.
+ *
+ * With a pre-3.0 kernel, we cannot distinguish between packets with no
+ * VLAN tag and packets on VLAN 0, so we will mishandle some packets, and
+ * there's nothing we can do about that.
+ *
+ * So, on those systems, which never set the TP_STATUS_VLAN_VALID flag, we
+ * continue the behavior of earlier libpcaps, wherein we treated packets
+ * with a VLAN tag of 0 as being packets without a VLAN tag rather than packets
+ * on VLAN 0.  We do this by treating packets with a tp_vlan_tci of 0 and
+ * with the TP_STATUS_VLAN_VALID flag not set in tp_status as not having
+ * VLAN tags.  This does the right thing on 3.0 and later kernels, and
+ * continues the old unfixably-imperfect behavior on pre-3.0 kernels.
+ *
+ * If TP_STATUS_VLAN_VALID isn't defined, we test it as the 0x10 bit; it
+ * has that value in 3.0 and later kernels.
+ */
+#ifdef TP_STATUS_VLAN_VALID
+  #define VLAN_VALID(hdr, hv)	((hv)->tp_vlan_tci != 0 || ((hdr)->tp_status & TP_STATUS_VLAN_VALID))
+#else
+  /*
+   * This is being compiled on a system that lacks TP_STATUS_VLAN_VALID,
+   * so we testwith the value it has in the 3.0 and later kernels, so
+   * we can test it if we're running on a system that has it.  (If we're
+   * running on a system that doesn't have it, it won't be set in the
+   * tp_status field, so the tests of it will always fail; that means
+   * we behave the way we did before we introduced this macro.)
+   */
+  #define VLAN_VALID(hdr, hv)	((hv)->tp_vlan_tci != 0 || ((hdr)->tp_status & 0x10))
+#endif
+
 #ifdef TP_STATUS_VLAN_TPID_VALID
 # define VLAN_TPID(hdr, hv)	(((hv)->tp_vlan_tpid || ((hdr)->tp_status & TP_STATUS_VLAN_TPID_VALID)) ? (hv)->tp_vlan_tpid : ETH_P_8021Q)
 #else
@@ -1877,6 +1917,11 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		hdrp->sll_protocol = from.sll_protocol;
 	}
 
+	/*
+	 * Start out with no VLAN information.
+	 */
+	aux_data.vlan_tag_present = 0;
+	aux_data.vlan_tag = 0;
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 	if (handlep->vlan_offset != -1) {
 		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
@@ -1886,18 +1931,22 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 			if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
 			    cmsg->cmsg_level != SOL_PACKET ||
-			    cmsg->cmsg_type != PACKET_AUXDATA)
+			    cmsg->cmsg_type != PACKET_AUXDATA) {
+				/*
+				 * This isn't a PACKET_AUXDATA auxiliary
+				 * data item.
+				 */
 				continue;
+			}
 
 			aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
-#if defined(TP_STATUS_VLAN_VALID)
-			if ((aux->tp_vlan_tci == 0) && !(aux->tp_status & TP_STATUS_VLAN_VALID))
-#else
-			if (aux->tp_vlan_tci == 0) /* this is ambigious but without the
-						TP_STATUS_VLAN_VALID flag, there is
-						nothing that we can do */
-#endif
+			if (!VLAN_VALID(aux, aux)) {
+				/*
+				 * There is no VLAN information in the
+				 * auxiliary data.
+				 */
 				continue;
+			}
 
 			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
 			if (len < (u_int)handlep->vlan_offset)
@@ -1919,11 +1968,14 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			tag->vlan_tpid = htons(VLAN_TPID(aux, aux));
 			tag->vlan_tci = htons(aux->tp_vlan_tci);
 
-                        /* store vlan tci to bpf_aux_data struct for userland bpf filter */
-#if defined(TP_STATUS_VLAN_VALID)
-                        aux_data.vlan_tag = htons(aux->tp_vlan_tci) & 0x0fff;
-                        aux_data.vlan_tag_present = (aux->tp_status & TP_STATUS_VLAN_VALID);
-#endif
+			/*
+			 * Save a flag indicating that we have a VLAN tag,
+			 * and the VLAN TCI, to bpf_aux_data struct for
+			 * use by the BPF filter if we're doing the
+			 * filtering in userland.
+			 */
+			aux_data.vlan_tag_present = 1;
+			aux_data.vlan_tag = htons(aux->tp_vlan_tci) & 0x0fff;
 
 			/*
 			 * Add the tag to the packet lengths.
@@ -4745,8 +4797,8 @@ static int pcap_handle_packet_mmap(
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
 		struct bpf_aux_data aux_data;
 
-		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
+		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
 
 		if (bpf_filter_with_aux_data(handle->fcode.bf_insns,
 					     bp,
@@ -5032,11 +5084,7 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 				h.h2->tp_snaplen,
 				h.h2->tp_sec,
 				handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO ? h.h2->tp_nsec : h.h2->tp_nsec / 1000,
-#if defined(TP_STATUS_VLAN_VALID)
-				(h.h2->tp_vlan_tci || (h.h2->tp_status & TP_STATUS_VLAN_VALID)),
-#else
-				h.h2->tp_vlan_tci != 0,
-#endif
+				VLAN_VALID(h.h2, h.h2),
 				h.h2->tp_vlan_tci,
 				VLAN_TPID(h.h2, h.h2));
 		if (ret == 1) {
@@ -5150,11 +5198,7 @@ again:
 					tp3_hdr->tp_snaplen,
 					tp3_hdr->tp_sec,
 					handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO ? tp3_hdr->tp_nsec : tp3_hdr->tp_nsec / 1000,
-#if defined(TP_STATUS_VLAN_VALID)
-					(tp3_hdr->hv1.tp_vlan_tci || (tp3_hdr->tp_status & TP_STATUS_VLAN_VALID)),
-#else
-					tp3_hdr->hv1.tp_vlan_tci != 0,
-#endif
+					VLAN_VALID(tp3_hdr, &tp3_hdr->hv1),
 					tp3_hdr->hv1.tp_vlan_tci,
 					VLAN_TPID(tp3_hdr, &tp3_hdr->hv1));
 			if (ret == 1) {
