@@ -364,6 +364,7 @@ EXTRA_DIST = \
 	rpcapd/rpcapd.inetd.conf \
 	rpcapd/rpcapd.rc \
 	rpcapd/rpcapd.socket \
+	rpcapd/rpcapd.xinetd.conf \
 	rpcapd/rpcapd@.service \
 	rpcapd/win32-svc.h \
 	sockutils.c \
