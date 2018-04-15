@@ -484,9 +484,14 @@
 
 /*
  * IEEE 802.15.4, exactly as it appears in the spec (no padding, no
- * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ * nothing), and with the FCS at the end of the frame; requested by
+ * Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
+ *
+ * This should only be used if the FCS is present at the end of the
+ * frame; if the frame has no FCS, DLT_IEEE802_15_4_NOFCS should be
+ * used.
  */
-#define LINKTYPE_IEEE802_15_4	195
+#define LINKTYPE_IEEE802_15_4_WITHFCS	195
 
 /*
  * Various link-layer types, with a pseudo-header, for SITA

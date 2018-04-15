@@ -740,8 +740,13 @@
  * nothing); requested by Mikko Saarnivala <mikko.saarnivala@sensinode.com>.
  * For this one, we expect the FCS to be present at the end of the frame;
  * if the frame has no FCS, DLT_IEEE802_15_4_NOFCS should be used.
+ *
+ * We keep the name DLT_IEEE802_15_4 as an alias for backwards
+ * compatibility, but, again, this should *only* be used for 802.15.4
+ * frames that include the FCS.
  */
-#define DLT_IEEE802_15_4	195
+#define DLT_IEEE802_15_4_WITHFCS	195
+#define DLT_IEEE802_15_4		DLT_IEEE802_15_4_WITHFCS
 
 /*
  * Various link-layer types, with a pseudo-header, for SITA
