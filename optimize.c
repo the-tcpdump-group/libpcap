@@ -43,6 +43,9 @@
 #endif
 
 #ifdef BDEBUG
+#undef NDEBUG
+#include <assert.h>
+PCAP_API int pcap_optimizer_debug;
 int pcap_optimizer_debug;
 #endif
 
@@ -2062,7 +2065,9 @@ opt_init(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic)
  * and expect it to provide meaningful information.
  */
 #ifdef BDEBUG
-int bids[1000];
+#define MAX_BIDS 1000
+PCAP_API int bids[];
+int bids[MAX_BIDS];
 #endif
 
 /*
@@ -2190,6 +2195,7 @@ filled:
 		free(offset);
 
 #ifdef BDEBUG
+	assert(dst - conv_state->fstart < MAX_BIDS);
 	bids[dst - conv_state->fstart] = p->id + 1;
 #endif
 	dst->code = (u_short)p->s.code;

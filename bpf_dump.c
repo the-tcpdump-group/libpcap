@@ -48,9 +48,15 @@ bpf_dump(const struct bpf_program *p, int option)
 			       insn->code, insn->jt, insn->jf, insn->k);
 		return;
 	}
+#ifdef BDEBUG
+#undef NDEBUG
+#include <assert.h>
+extern int bids[];
+#define	MAX_BIDS 1000
+assert(n <= MAX_BIDS);
+#endif
 	for (i = 0; i < n; ++insn, ++i) {
 #ifdef BDEBUG
-		extern int bids[];
 		if (bids[i] > 0)
 			printf("[%02d]", bids[i] - 1);
 		else
