@@ -29,15 +29,47 @@
 .\"  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 .\"  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH rpcapd "8" "April 2018" "git-1.8.1-976" "Network Troubleshooting Utilities"
+.TH rpcapd 8 "April 20, 2018"
 .SH NAME
-rpcapd \- Capture daemon to be controlled by a remote libpcap application
+rpcapd \- capture daemon to be controlled by a remote libpcap application
 .SH SYNOPSIS
 .na
-rpcapd  [\-b <address>] [\-p <port>] [\-4] [\-l <host_list>] [\-a <host,port>]
+rpcapd
+[
+.B \-b
+.I address
+] [
+.B \-p
+.I port
+] [
+.B \-4
+] [
+.B \-l
+.I host_list
+]
 .br
 .ti +8
-[\-n] [\-v] [\-d] [\-i] [\-s <file>] [\-f <file>]
+[
+.B \-a
+.IR host , port
+] [
+.B \-n
+] [
+.B \-v
+] [
+.B \-d
+] [
+.B \-i
+] [
+.B \-s
+.I file
+]
+.br
+.ti +8
+[
+.B \-f
+.I file>
+]
 .br
 .ad
 .SH DESCRIPTION
@@ -46,55 +78,57 @@ rpcapd  [\-b <address>] [\-p <port>] [\-4] [\-l <host_list>] [\-a <host,port>]
 and filter part of libpcap to be run on a remote system.
 .SH OPTIONS
 .TP
-\fB\-b\fR <address>
+.BI \-b " address"
 the address to bind to (either numeric or literal).
 Default: binds to all local IPv4 and IPv6 addresses
 .TP
-\fB\-p\fR <port>
+.BI \-p " port"
 the port to bind to.
 Default: binds to port 2002
 .TP
-\fB\-4\fR
+.B \-4
 use only IPv4.
 Default: use both IPv4 and IPv6 waiting sockets
 .TP
-\fB\-l\fR <host_list>
+.BI -l " host_list"
 a file that contains a list of hosts that are allowed
 to connect to this server (if more than one, list them one
 per line).
 We suggest to use literal names (instead of numeric ones)
 in order to avoid problems with different address families.
 .TP
-\fB\-n\fR
+.B \-n
 permit NULL authentication (usually used with '\-l')
 .TP
-\fB\-a\fR <host,port>
+.BI \-a " host" , "port"
 run in active mode when connecting to 'host' on port 'port'
-In case 'port' is omitted, the default port (2003) is used
+In case
+.I port
+is omitted, the default port (2003) is used.
 .TP
-\fB\-v\fR
-run in active mode only (default: if '\-a' is specified, it
-accepts passive connections as well)
+.B -v
+run in active mode only (default: if
+.B \-a
+is specified, it accepts passive connections as well).
 .TP
-\fB\-d\fR
+.B \-d
 run in daemon mode (UNIX only) or as a service (Win32 only)
 Warning (Win32): this switch is provided automatically when
 the service is started from the control panel
 .TP
-\fB\-i\fR
-run in inetd mode (UNIX only)
+.B \-i
+run in inetd mode (UNIX only).
 .TP
-\fB\-s\fR <file>
+.BI \-s " file"
 save the current configuration to file
 .TP
-\fB\-f\fR <file>
+.B \-f " file"
 load the current configuration from file; all switches
 specified from the command line are ignored
 .TP
-\fB\-h\fR
+.B \-h
 print this help screen
 .br
 .ad
-.SH SEE ALSO
+.SH "SEE ALSO"
 pcap(3PCAP)
-
