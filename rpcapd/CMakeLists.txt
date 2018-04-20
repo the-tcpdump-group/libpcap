@@ -79,11 +79,40 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
       ${RPCAPD_LINK_LIBRARIES} ${PCAP_LINK_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
   endif(WIN32)
 
+  ######################################
+  # Install rpcap daemon and man pages
+  ######################################
+
+  #
+  # "Define GNU standard installation directories", which actually
+  # are also defined, to some degree, by autotools, and at least
+  # some of which are general UN*X conventions.
+  #
   include(GNUInstallDirs)
+
+  set(MANADMIN_EXPAND rpcapd.manadmin.in)
+
   if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     install(TARGETS rpcapd DESTINATION bin/amd64)
   else(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
     install(TARGETS rpcapd DESTINATION bin)
   endif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
-  install(FILES rpcapd.8 DESTINATION ${CMAKE_INSTALL_MANDIR}/man8)
+
+  # On UN*X, and on Windows when not using MSVC, generate process man
+  # pages and arrange that they be installed.
+  if(NOT MSVC)
+    #
+    # Man pages.
+    #
+    # For each section of the manual for which we have man pages
+    # that require macro expansion, do the expansion.
+    #
+    set(MANADMIN "")
+    foreach(TEMPLATE_MANPAGE ${MANADMIN_EXPAND})
+        string(REPLACE ".manadmin.in" ".${MAN_ADMIN_COMMANDS}" MANPAGE ${TEMPLATE_MANPAGE})
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        set(MANADMIN ${MANADMIN} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
+    endforeach(TEMPLATE_MANPAGE)
+    install(FILES ${MANADMIN} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_ADMIN_COMMANDS})
+  endif(NOT MSVC)
 endif(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))

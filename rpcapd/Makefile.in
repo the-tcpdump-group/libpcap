@@ -94,7 +94,8 @@ TAGFILES = \
 
 CLEANFILES = $(OBJ) rpcapd
 
-MAN8 =
+MANADMIN = \
+	rpcapd.manadmin.in
 
 rpcapd: $(OBJ) ../libpcap.a
 	$(CC) $(CCOPT) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) ../libpcap.a $(LIBS) $(RPCAPD_LIBS) $(PTHREAD_LIBS)
@@ -104,19 +105,23 @@ clean:
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
 	    config.h stamp-h stamp-h.in
+	rm -f $(MANADMIN:.in=)
 	rm -rf autom4te.cache
 
 install: rpcapd
 	[ -d $(DESTDIR)$(sbindir) ] || \
 	    (mkdir -p $(DESTDIR)$(sbindir); chmod 755 $(DESTDIR)$(sbindir))
 	$(INSTALL_PROGRAM) rpcapd $(DESTDIR)$(sbindir)/rpcapd
-	[ -d $(DESTDIR)$(mandir)/man8 ] || \
-	    (mkdir -p $(DESTDIR)$(mandir)/man8; chmod 755 $(DESTDIR)$(mandir)/man8)
-	$(INSTALL_PROGRAM) rpcapd.8 $(DESTDIR)$(mandir)/man8/rpcapd.8
+	[ -d $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@ ] || \
+	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@)
+	for i in $(MANADMIN); do \
+		$(INSTALL_DATA) `echo $$i | sed 's/.manadmin.in/.manadmin/'` \
+		    $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@/`echo $$i | sed 's/.manadmin.in/.@MAN_ADMIN_COMMANDS@/'`; done
 
 uninstall:
 	rm -f $(DESTDIR)$(sbindir)/rpcapd
-	rm -f $(DESTDIR)$(mandir)/man8/rpcapd.8
+	for i in $(MANADMIN); do \
+		rm -f $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@/`echo $$i | sed 's/.manadmin.in/.@MAN_ADMIN_COMMANDS@/'`; done
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)

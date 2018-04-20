@@ -29,7 +29,7 @@
 .\"  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 .\"  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.TH rpcapd 8 "April 20, 2018"
+.TH rpcapd @MAN_ADMIN_COMMANDS@ "April 20, 2018"
 .SH NAME
 rpcapd \- capture daemon to be controlled by a remote libpcap application
 .SH SYNOPSIS

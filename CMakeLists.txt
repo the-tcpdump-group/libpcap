@@ -1699,14 +1699,6 @@ file(GLOB PROJECT_SOURCE_LIST_H
 )
 
 #
-# Add subdirectories after we've set C_ADDITIONAL_FLAGS, so they
-# pick up those flags.
-#
-if(ENABLE_REMOTE)
-    add_subdirectory(rpcapd)
-endif(ENABLE_REMOTE)
-
-#
 # Try to have the compiler default to hiding symbols, so that only
 # symbols explicitly exported with PCAP_API will be visible outside
 # (shared) libraries.
@@ -1904,6 +1896,13 @@ if(WIN32)
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${pcap_SOURCE_DIR}/pcap-dll.rc)
 endif(WIN32)
 
+#
+# Add subdirectories after we've set various variables, so they pick up
+# pick up those variables.
+#
+if(ENABLE_REMOTE)
+    add_subdirectory(rpcapd)
+endif(ENABLE_REMOTE)
 add_subdirectory(testprogs)
 
 ######################################
