@@ -110,9 +110,13 @@ install: rpcapd
 	[ -d $(DESTDIR)$(sbindir) ] || \
 	    (mkdir -p $(DESTDIR)$(sbindir); chmod 755 $(DESTDIR)$(sbindir))
 	$(INSTALL_PROGRAM) rpcapd $(DESTDIR)$(sbindir)/rpcapd
+	[ -d $(DESTDIR)$(mandir)/man8 ] || \
+	    (mkdir -p $(DESTDIR)$(mandir)/man8; chmod 755 $(DESTDIR)$(mandir)/man8)
+	$(INSTALL_PROGRAM) rpcapd.8 $(DESTDIR)$(mandir)/man8/rpcapd.8
 
 uninstall:
 	rm -f $(DESTDIR)$(sbindir)/rpcapd
+	rm -f $(DESTDIR)$(mandir)/man8/rpcapd.8
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
