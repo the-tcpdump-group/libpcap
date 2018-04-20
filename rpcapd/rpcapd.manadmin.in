@@ -68,7 +68,7 @@ rpcapd
 .ti +8
 [
 .B \-f
-.I file>
+.I file
 ]
 .br
 .ad
@@ -122,7 +122,7 @@ run in inetd mode (UNIX only).
 .BI \-s " file"
 save the current configuration to file
 .TP
-.B \-f " file"
+.BI \-f " file"
 load the current configuration from file; all switches
 specified from the command line are ignored
 .TP
