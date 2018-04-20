@@ -1818,7 +1818,7 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #
 set(MAN_FILE_FORMATS 5)
 set(MAN_MISC_INFO 7)
-set(MAN_USERMOD_SECTION 8)
+set(MAN_ADMIN_COMMANDS 8)
 if(CMAKE_SYSTEM_NAME STREQUAL "AIX")
     # Workaround to enable certain features
     set(_SUN TRUE)
@@ -1888,7 +1888,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
         #
         # Use System V conventions for man pages.
         #
-        set(MAN_USERMOD_SECTION 1m)
+        set(MAN_ADMIN_COMMANDS 1m)
         set(MAN_FILE_FORMATS 4)
         set(MAN_MISC_INFO 5)
     endif()

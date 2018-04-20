@@ -245,7 +245,7 @@ that device.  A user can be given that privilege by, for example, adding
 that privilege to the user's
 .B defaultpriv
 key with the
-.B usermod (@MAN_USERMOD_SECTION@)
+.B usermod (@MAN_ADMIN_COMMANDS@)
 command.
 .TP
 .B Under HP-UX with DLPI:
@@ -922,7 +922,7 @@ script or some other configuration script to check whether the libpcap
 1.0 APIs are available and use them only if they are.
 .SH SEE ALSO
 autoconf(1), tcpdump(1), tcpslice(1), pcap-filter(@MAN_MISC_INFO@), pfconfig(8),
-usermod(@MAN_USERMOD_SECTION@)
+usermod(@MAN_ADMIN_COMMANDS@)
 .SH AUTHORS
 The original authors of libpcap are:
 .LP
