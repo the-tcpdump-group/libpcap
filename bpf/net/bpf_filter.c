@@ -290,15 +290,18 @@ bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			{
 #if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
 				int code = BPF_S_ANC_NONE;
-#define ANCILLARY(CODE) case SKF_AD_OFF + SKF_AD_##CODE:		\
-				code = BPF_S_ANC_##CODE;		\
-                                        if (!aux_data)                  \
-                                                return 0;               \
-                                        break;
 
 				switch (pc->k) {
-					ANCILLARY(VLAN_TAG);
-					ANCILLARY(VLAN_TAG_PRESENT);
+				case SKF_AD_OFF + SKF_AD_VLAN_TAG:
+					code = BPF_S_ANC_VLAN_TAG;
+                                        if (!aux_data)
+                                                return 0;
+                                        break;
+				case SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT:
+					code = BPF_S_ANC_VLAN_TAG_PRESENT;
+                                        if (!aux_data)
+                                                return 0;
+                                        break;
 				default :
 #endif
 					k = pc->k;
