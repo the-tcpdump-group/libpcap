@@ -1361,6 +1361,13 @@
 #define DLT_ETHERNET_MPACKET	274
 
 /*
+ * DisplayPort AUX channel monitoring data as specified by VESA
+ * DisplayPort(DP) Standard preceeded by a pseudo-header.
+ *    per dirk.eibach at gdsys.cc
+ */
+#define DLT_DISPLAYPORT_AUX	275
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1370,7 +1377,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	274	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	275	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
