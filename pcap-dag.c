@@ -41,6 +41,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "dagnew.h"
 #include "dagapi.h"
 #include "dagpci.h"
+#include "dag_config_api.h"
 
 #include "pcap-dag.h"
 
@@ -185,6 +186,7 @@ struct pcap_dag {
 	int	dag_timeout;	/* timeout specified to pcap_open_live.
 				 * Same as in linux above, introduce
 				 * generally? */
+	dag_card_ref_t dag_ref; /* DAG Configuration/Status API card reference */
 	struct timeval required_select_timeout;
 				/* Timeout caller must use in event loops */
 };
@@ -252,14 +254,14 @@ dag_platform_cleanup(pcap_t *p)
 	if(dag_detach_stream(p->fd, pd->dag_stream) < 0)
 		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
 
-	if(p->fd != -1) {
-		if(dag_close(p->fd) < 0)
-			fprintf(stderr,"dag_close: %s\n", strerror(errno));
+	if(pd->dag_ref != NULL) {
+		dag_config_dispose(pd->dag_ref);
 		p->fd = -1;
+		pd->dag_ref = NULL;
 	}
 	delete_pcap_dag(p);
 	pcap_cleanup_live_common(p);
-	/* Note: don't need to call close(p->fd) here as dag_close(p->fd) does this. */
+	/* Note: don't need to call close(p->fd) or dag_close(p->fd) as dag_config_dispose(pd->dag_ref) does this. */
 }
 
 static void
@@ -777,9 +779,15 @@ static int dag_activate(pcap_t* p)
 	}
 
 	/* setup device parameters */
-	if((p->fd = dag_open((char *)device)) < 0) {
+	if((pd->dag_ref = dag_config_init((char *)device)) == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_open %s", device);
+		    errno, "dag_config_init %s", device);
+		goto fail;
+	}
+
+	if((p->fd = dag_config_get_card_fd(pd->dag_ref)) < 0) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "dag_config_get_card_fd %s", device);
 		goto fail;
 	}
 
@@ -962,8 +970,7 @@ faildetach:
 		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
 
 failclose:
-	if (dag_close(p->fd) < 0)
-		fprintf(stderr,"dag_close: %s\n", strerror(errno));
+	dag_config_dispose(pd->dag_ref);
 	delete_pcap_dag(p);
 
 fail:

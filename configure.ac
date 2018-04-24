@@ -1071,10 +1071,7 @@ AC_HELP_STRING([--with-dag-libraries=LDIR],[Endace DAG library directory, if not
 	dag_lib_dir=$withval
 ],[])
 
-ac_cv_lbl_dag_api=no
 if test "$want_dag" != no; then
-
-	AC_MSG_CHECKING([whether we have DAG API headers])
 
 	# If necessary, set default paths for DAG API headers and libraries.
 	if test -z "$dag_root"; then
@@ -1089,18 +1086,11 @@ if test "$want_dag" != no; then
 		dag_lib_dir="$dag_root/lib"
 	fi
 
-	if test -z "$dag_tools_dir"; then
-		dag_tools_dir="$dag_root/tools"
-	fi
+	V_INCLS="$V_INCLS -I$dag_include_dir"
 
-	if test -r $dag_include_dir/dagapi.h; then
-		ac_cv_lbl_dag_api=yes
-	fi
+	AC_CHECK_HEADERS([dagapi.h])
 
-	if test "$ac_cv_lbl_dag_api" = yes; then
-		AC_MSG_RESULT([yes ($dag_include_dir)])
-
-		V_INCLS="$V_INCLS -I$dag_include_dir"
+	if test "$ac_cv_header_dagapi_h" = yes; then
 
 		if test $V_PCAP != dag ; then
 			 SSRC="$SSRC pcap-dag.c"
@@ -1122,7 +1112,7 @@ if test "$want_dag" != no; then
 
 		LDFLAGS=$saved_ldflags
 
-		LIBS="$LIBS -ldag"
+		LIBS="$LIBS -ldag -ldagconf"
 		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 
 		if test "$dag_large_streams" = 1; then
@@ -1139,7 +1129,6 @@ if test "$want_dag" != no; then
 
 		AC_DEFINE(HAVE_DAG_API, 1, [define if you have the DAG API])
 	else
-		AC_MSG_RESULT(no)
 
 		if test "$V_PCAP" = dag; then
 			# User requested "dag" capture type but we couldn't
