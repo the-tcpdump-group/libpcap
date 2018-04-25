@@ -1804,8 +1804,9 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 #set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${CMAKE_CURRENT_BINARY_DIR}/grammar.c)
 
 #
-# Assume, by default, V7/BSD convention for man pages (file formats in
-# section 5, miscellaneous info in section 7).
+# Assume, by default, no support for shared libraries and V7/BSD
+# convention for man pages (file formats in section 5, miscellaneous
+# info in section 7, administrative commands and daemons in section 8).
 # Individual cases can override this.
 #
 set(MAN_FILE_FORMATS 5)
@@ -1845,18 +1846,23 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "HP-UX")
     #
     # Use System V conventions for man pages.
     #
+    set(MAN_ADMIN_COMMANDS 1m)
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "IRIX" OR CMAKE_SYSTEM_NAME STREQUAL "IRIX64")
     #
-    # Use System V conventions for man pages.
+    # Use IRIX conventions for man pages; they're the same as the
+    # System V conventions, except that they use section 8 for
+    # administrative commands and daemons.
     #
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
     #
     # DEC OSF/1, a/k/a Digial UNIX, a/k/a Tru64 UNIX.
-    # Use System V conventions for man pages.
+    # Use Tru64 UNIX conventions for man pages; they're the same as the
+    # System V conventions except that they use section 8 for
+    # administrative commands and daemons.
     #
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)

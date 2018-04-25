@@ -1541,8 +1541,9 @@ fi
 #
 # Do various checks for various OSes and versions of those OSes.
 #
-# Assume, by default, no support for shared libraries and V7/BSD convention
-# for man pages (file formats in section 5, miscellaneous info in section 7).
+# Assume, by default, no support for shared libraries and V7/BSD
+# convention for man pages (file formats in section 5, miscellaneous
+# info in section 7, administrative commands and daemons in section 8).
 # Individual cases can override this.
 #
 DYEXT="none"
@@ -1685,6 +1686,7 @@ hpux9*)
 	#
 	# Use System V conventions for man pages.
 	#
+	MAN_ADMIN_COMMANDS=1m
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
 	;;
@@ -1694,6 +1696,7 @@ hpux10.0*)
 	#
 	# Use System V conventions for man pages.
 	#
+	MAN_ADMIN_COMMANDS=1m
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
 	;;
@@ -1703,6 +1706,7 @@ hpux10.1*)
 	#
 	# Use System V conventions for man pages.
 	#
+	MAN_ADMIN_COMMANDS=1m
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
 	;;
@@ -1736,7 +1740,9 @@ hpux*)
 
 irix*)
 	#
-	# Use System V conventions for man pages.
+	# Use IRIX conventions for man pages; they're the same as the
+	# System V conventions, except that they use section 8 for
+	# administrative commands and daemons.
 	#
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
@@ -1758,7 +1764,10 @@ osf*)
 	DYEXT="so"
 
 	#
-	# Use System V conventions for man pages.
+	# DEC OSF/1, a/k/a Digial UNIX, a/k/a Tru64 UNIX.
+	# Use Tru64 UNIX conventions for man pages; they're the same as
+	# the System V conventions except that they use section 8 for
+	# administrative commands and daemons.
 	#
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
