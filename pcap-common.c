@@ -1074,7 +1074,14 @@
  */
 #define LINKTYPE_ETHERNET_MPACKET	274
 
-#define LINKTYPE_MATCHING_MAX	274		/* highest value in the "matching" range */
+/*
+ * DisplayPort AUX channel monitoring data as specified by VESA
+ * DisplayPort(DP) Standard preceeded by a pseudo-header.
+ *    per dirk.eibach at gdsys.cc
+ */
+#define LINKTYPE_DISPLAYPORT_AUX	275
+
+#define LINKTYPE_MATCHING_MAX	275		/* highest value in the "matching" range */
 
 static struct linktype_map {
 	int	dlt;
