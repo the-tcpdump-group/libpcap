@@ -78,6 +78,8 @@ struct rtentry;		/* declarations in <net/if.h> */
 
 #include "pcap-int.h"
 
+#include "optimize.h"
+
 #ifdef HAVE_DAG_API
 #include "pcap-dag.h"
 #endif /* HAVE_DAG_API */
@@ -3928,8 +3930,6 @@ PCAP_API void pcap_set_optimizer_debug(int value);
 PCAP_API_DEF void
 pcap_set_optimizer_debug(int value)
 {
-	extern int pcap_optimizer_debug;
-
 	pcap_optimizer_debug = value;
 }
 #endif

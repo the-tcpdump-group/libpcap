@@ -133,6 +133,7 @@ HDR = $(PUBHDR) \
 	llc.h \
 	nametoaddr.h \
 	nlpid.h \
+	optimize.h \
 	pcap-common.h \
 	pcap-int.h \
 	pcap-rpcap.h \

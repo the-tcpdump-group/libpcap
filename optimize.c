@@ -37,6 +37,7 @@
 #include "pcap-int.h"
 
 #include "gencode.h"
+#include "optimize.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
@@ -2062,7 +2063,7 @@ opt_init(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic)
  * and expect it to provide meaningful information.
  */
 #ifdef BDEBUG
-int bids[1000];
+int bids[NBIDS];
 #endif
 
 /*
@@ -2190,7 +2191,8 @@ filled:
 		free(offset);
 
 #ifdef BDEBUG
-	bids[dst - conv_state->fstart] = p->id + 1;
+	if (dst - conv_state->fstart < NBIDS)
+		bids[dst - conv_state->fstart] = p->id + 1;
 #endif
 	dst->code = (u_short)p->s.code;
 	dst->k = p->s.k;
