@@ -121,7 +121,7 @@ static void printusage(void)
 #ifndef _WIN32
 	"[-i] "
 #endif
-	"[-s <file>] [-f <file>]\n\n"
+	"[-s <config_file>] [-f <config_file>]\n\n"
 	"  -b <address>    the address to bind to (either numeric or literal).\n"
 	"                  Default: binds to all local IPv4 and IPv6 addresses\n\n"
 	"  -p <port>       the port to bind to.\n"
@@ -144,8 +144,8 @@ static void printusage(void)
 #ifndef _WIN32
 	"  -i              run in inetd mode (UNIX only)\n\n"
 #endif
-	"  -s <file>       save the current configuration to file\n\n"
-	"  -f <file>       load the current configuration from file; all switches\n"
+	"  -s <config_file> save the current configuration to file\n\n"
+	"  -f <config_file> load the current configuration from file; all switches\n"
 	"                  specified from the command line are ignored\n\n"
 	"  -h              print this help screen\n\n";
 
