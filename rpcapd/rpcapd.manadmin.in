@@ -77,25 +77,30 @@ rpcapd
 .LP
 \fIRpcapd\fP is a daemon (Unix) or service (Win32) that allows the capture
 and filter part of libpcap to be run on a remote system.
-.TP
-Rpcapd can run in two modes: Passive Mode (default) and Active Mode
-
-In passive mode, the client (e.g. a network sniffer) connects to rpcapd.
+.LP
+Rpcapd can run in two modes: passive mode (default) and active mode.
+.LP
+In passive mode, the client (e.g., a network sniffer) connects to
+.BR rpcapd .
 It then sends hem the appropriate commands to start the capture.
-
-In active mode, rpcapd tries to establish a connection toward the client
-(e.g.  a network sniffer). The client then sends the appropriate commands
+.LP
+In active mode,
+.B rpcapd
+tries to establish a connection toward the client
+(e.g., a network sniffer). The client then sends the appropriate commands
 to rpcapd to start the capture.
-
-Active Mode is useful in case rpcapd is run behind a firewall and
+.LP
+Active mode is useful in case
+.B rpcapd
+is run behind a firewall and
 cannot receive connections from the external world. In this case,
-rpcapd can be configured to establish the connection to a given host,
+.B rpcapd
+can be configured to establish the connection to a given host,
 which has to be configured in order to wait for that connection. After
 establishing the connection, the protocol continues its job in almost
-the same way in both Active and Passive Mode.
-.TP
-Configuration file
-
+the same way in both active and passive mode.
+.SH Configuration file
+.LP
 The user can create a configuration file in the same folder of the
 executable, and put the configuration commands in there. In order for
 rpcapd to execute the commands, you have to restart it on Win32, i.e.
@@ -103,87 +108,115 @@ the initialization file is parsed only at the beginning). The UNIX
 version of rpcapd will reread the configuration file when receiving a
 HUP signel. In that case, all the existing connections remain in place,
 while the new connections will be created according to the new parameters.
-.br
+.LP
 In case a user does not want to create the configuration file manually,
 they can launch rpcapd with the requested parameters plus "-s filename".
 Rpcapd will parse all the parameters and save them into the specified
 configuration file.
-
-.TP
-Installing rpcapd on Win32
-
-The remote daemon is installed automatically when installing WinPcap. The installation process places the rpcapd file into the WinPcap folder. This file can be executed either from the command line, or as a service. For instance, the installation process updates the list of available services list and it creates a new item (Remote Packet Capture Protocol v.0 (experimental) ). To avoid security problems, the service is inactive and it has to be started manually (control panel - administrative tools - services - start).
-
-The service has a set of "standard" parameters, i.e. it is launched with the "-d" flag (in orde to make it running as a service) and the "-f rpcapd.ini" flag.
-
-.TP
-Starting rpcapd on Win32
-
-The rpcapd executable can be launched directly, i.e. it can run in the foreground as well (not as a daemon/service). The procedure is quite simple: you have to invoke the executable from the command line with all the requested parameters but the "-d" flag. The capture server will start in the foreground.
-.TP
-Installing rpcapd on Unix
-
+.SH Installing rpcapd on Win32
+.LP
+The remote daemon is installed automatically when installing WinPcap. 
+The installation process places the rpcapd file into the WinPcap folder. 
+This file can be executed either from the command line, or as a service. 
+For instance, the installation process updates the list of available
+services list and it creates a new item (Remote Packet Capture Protocol
+v.0 (experimental) ).  To avoid security problems, the service is
+inactive and it has to be started manually (control panel -
+administrative tools - services - start).
+.LP
+The service has a set of "standard" parameters, i.e. it is launched
+with the
+.B \-d
+flag (in order to make it run as a service) and the
+.B "-f rpcapd.ini"
+flag.
+.SH Starting rpcapd on Win32
+.LP
+The rpcapd executable can be launched directly, i.e.  it can run in the
+foreground as well (not as a daemon/service).  The procedure is quite
+simple: you have to invoke the executable from the command line with all
+the requested parameters except for the
+.B \-d
+flag.  The capture server will
+start in the foreground.
+.SH Installing rpcapd on Unix-like systems
 TBD
-.TP
-Starting rpcapd on Unix
-
-rpcapd needs sufficient privileges to perform packet capture, e.g.
+.SH Starting rpcapd on Unix-like systems
+.B rpcapd 
+needs sufficient privileges to perform packet capture, e.g.
 run as root or be owned by root and have suid set. Most operating
 systems provide more elegant solutions when run as user than the
 above solutions, all of them different.
-
 .SH OPTIONS
 .TP
 .BI \-b " address"
-the address to bind to (either numeric or literal).
-Default: binds to all local IPv4 and IPv6 addresses
+Bind to the IP address specified by
+.I address
+(either numeric or literal).
+By default,
+.B rpcapd
+binds to all local IPv4 and IPv6 addresses.
 .TP
 .BI \-p " port"
-the port to bind to.
-Default: binds to port 2002
+Bind to the port specified by
+.IR port .
+By default,
+.B rpcapd
+binds to port 2002.
 .TP
 .B \-4
-use only IPv4.
-Default: use both IPv4 and IPv6 waiting sockets
+Listen only on IPv4 addresses.
+By default,
+.B rpcapd
+listens on both IPv4 and IPv6 addresses.
 .TP
 .BI -l " host_list"
-a file that contains a list of hosts that are allowed
-to connect to this server (if more than one, list them one
-per line).
-We suggest to use literal names (instead of numeric ones)
+Only allow hosts specified in the
+.I host_list
+file to connect to this server.
+Hosts are listed one per line.
+We suggest that you use use host names rather than literal IP addresses
 in order to avoid problems with different address families.
 .TP
 .B \-n
-permit NULL authentication (usually used with '\-l')
+Permit NULL authentication (usually used with
+.BR \-l ).
 .TP
 .BI \-a " host" , "port"
-run in active mode when connecting to 'host' on port 'port'
+Run in active mode, connecting to host
+.I host
+on port
+.IR port .
 In case
 .I port
 is omitted, the default port (2003) is used.
 .TP
 .B -v
-run in active mode only (default: if
+Run in active mode only; by default, if
 .B \-a
-is specified, it accepts passive connections as well).
+is specified,
+.B rpcapd
+it accepts passive connections as well.
 .TP
 .B \-d
-run in daemon mode (UNIX only) or as a service (Win32 only)
+Run in daemon mode (UNIX only) or as a service (Win32 only)
 Warning (Win32): this switch is provided automatically when
-the service is started from the control panel
+the service is started from the control panel.
 .TP
 .B \-i
-run in inetd mode (UNIX only).
+Run in inetd mode (UNIX only).
 .TP
 .BI \-s " config_file"
-save the current configuration to file
+Save the current configuration to
+.IR config_file .
 .TP
 .BI \-f " config_file"
-load the current configuration from file; all switches
-specified from the command line are ignored
+Load the current configuration from
+.IR config_file ;
+all switches specified from the command line are ignored.
 .TP
 .B \-h
-print this help screen
+Print this help screen.
 .br
 .ad
 .SH "SEE ALSO"
