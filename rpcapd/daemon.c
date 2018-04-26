@@ -172,6 +172,20 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 
 	// We don't have a thread yet.
 	threaddata.have_thread = 0;
+	//
+	// We *shouldn't* have to initialize the thread indicator
+	// itself, because the compiler *should* realize that we
+	// only use this if have_thread isn't 0, but we *do* have
+	// to do it, because not all compilers *do* realize that.
+	//
+	// There is no "invalid thread handle" value for a UN*X
+	// pthread_t, so we just zero it out.
+	//
+#ifdef _WIN32
+	threaddata.thread = INVALID_HANDLE_VALUE;
+#else
+	memset(&threaddata.thread, 0, sizeof(threaddata.thread));
+#endif
 
 	*errbuf = 0;	// Initialize errbuf
 
