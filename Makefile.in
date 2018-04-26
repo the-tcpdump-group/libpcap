@@ -153,7 +153,7 @@ TAGFILES = \
 
 CLEANFILES = $(OBJ) libpcap.* \
 	$(PROG)-`cat $(srcdir)/VERSION`.tar.gz $(GENSRC) $(GENHDR) \
-	lex.yy.c pcap-config
+	lex.yy.c pcap-config libpcap.pc
 
 MAN1 = pcap-config.1
 
@@ -286,6 +286,7 @@ EXTRA_DIST = \
 	lbl/os-solaris2.h \
 	lbl/os-sunos4.h \
 	lbl/os-ultrix4.h \
+	libpcap.pc.in \
 	missing/getopt.c \
 	missing/getopt.h \
 	missing/snprintf.c \
@@ -388,7 +389,7 @@ EXTRA_DIST = \
 	Win32/Prj/wpcap.vcxproj \
 	Win32/Prj/wpcap.vcxproj.filters
 
-all: libpcap.a shared $(BUILD_RPCAPD) pcap-config
+all: libpcap.a shared $(BUILD_RPCAPD) libpcap.pc pcap-config
 
 libpcap.a: $(OBJ)
 	@rm -f $@
@@ -512,7 +513,7 @@ bpf_filter.o: bpf_filter.c
 	$(CC) $(FULL_CFLAGS) -c bpf_filter.c
 
 #
-# Generate the pcap-config script.
+# Generate the libpcap.pc file.
 #
 # Some Makes, e.g. AIX Make and Solaris Make, can't handle "--file=$@.tmp:$<";
 # for example, the Solaris 9 make man page says
@@ -523,7 +524,16 @@ bpf_filter.o: bpf_filter.c
 #
 # and this is an explicit target entry.
 #
-# Therefore, instead of using $<, we explicitly put in $(srcdir)/pcap-config.in.
+# Therefore, instead of using $<, we explicitly put in $(srcdir)/libpcap.pc.in.
+#
+libpcap.pc: $(srcdir)/libpcap.pc.in ./config.status
+	@rm -f $@ $@.tmp
+	./config.status --file=$@.tmp:$(srcdir)/libpcap.pc.in
+	mv $@.tmp $@
+	chmod a+x $@
+
+#
+# Generate the pcap-config script.  See above.
 #
 pcap-config: $(srcdir)/pcap-config.in ./config.status
 	@rm -f $@ $@.tmp
@@ -545,7 +555,7 @@ testprogs: FORCE
 
 FORCE:
 
-install: install-shared install-archive pcap-config @INSTALL_RPCAPD@
+install: install-shared install-archive libpcap.pc pcap-config @INSTALL_RPCAPD@
 	[ -d $(DESTDIR)$(libdir) ] || \
 	    (mkdir -p $(DESTDIR)$(libdir); chmod 755 $(DESTDIR)$(libdir))
 	[ -d $(DESTDIR)$(includedir) ] || \
@@ -566,6 +576,9 @@ install: install-shared install-archive pcap-config @INSTALL_RPCAPD@
 	[ -d $(DESTDIR)$(bindir) ] || \
 	    (mkdir -p $(DESTDIR)$(bindir); chmod 755 $(DESTDIR)$(bindir))
 	$(INSTALL_PROGRAM) pcap-config $(DESTDIR)$(bindir)/pcap-config
+	[ -d $(DESTDIR)$(libdir)/pkgconfig ] || \
+	    (mkdir -p $(DESTDIR)$(libdir)/pkgconfig; chmod 755 $(DESTDIR)$(libdir)/pkgconfig)
+	$(INSTALL_DATA) libpcap.pc $(DESTDIR)$(libdir)/pkgconfig/libpcap.pc
 	for i in $(MAN1); do \
 		$(INSTALL_DATA) $(srcdir)/$$i \
 		    $(DESTDIR)$(mandir)/man1/$$i; done
@@ -674,6 +687,7 @@ uninstall: uninstall-shared uninstall-rpcapd
 	for i in $(PUBHDR); do \
 		rm -f $(DESTDIR)$(includedir)/$$i; done
 	-rmdir $(DESTDIR)$(includedir)/pcap
+	rm -f $(DESTDIR)/$(libdir)/pkgconfig/libpcap.pc
 	rm -f $(DESTDIR)/$(bindir)/pcap-config
 	for i in $(MAN1); do \
 		rm -f $(DESTDIR)$(mandir)/man1/$$i; done
@@ -731,8 +745,8 @@ clean:
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
-	    config.h gnuc.h net os-proto.h bpf_filter.c pcap-config \
-	    stamp-h stamp-h.in
+	    config.h gnuc.h net os-proto.h bpf_filter.c libpcap.pc \
+	    pcap-config stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
 	cd rpcapd; $(MAKE) distclean

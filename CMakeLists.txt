@@ -2182,8 +2182,8 @@ endif(WIN32)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/pcap/ DESTINATION include/pcap)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pcap.h DESTINATION include)
 
-# On UN*X, and on Windows when not using MSVC, generate pcap-config and process
-# man pages and arrange that they be installed.
+# On UN*X, and on Windows when not using MSVC, generate libpcap.pc and
+# pcap-config and process man pages and arrange that they be installed.
 if(NOT MSVC)
     set(PACKAGE_NAME ${LIBRARY_NAME})
     set(prefix ${CMAKE_INSTALL_PREFIX})
@@ -2221,7 +2221,9 @@ if(NOT MSVC)
         set(LIBS "${LIBS} -l${LIB}")
     endforeach(LIB)
     configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
+    configure_file(${CMAKE_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc DESTINATION lib/pkgconfig)
 
     #
     # Man pages.
