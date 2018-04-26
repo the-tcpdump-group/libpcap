@@ -287,53 +287,40 @@ bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			continue;
 
 		case BPF_LD|BPF_B|BPF_ABS:
-			{
-#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
-				int code = BPF_S_ANC_NONE;
+			switch (pc->k) {
 
-				switch (pc->k) {
-				case SKF_AD_OFF + SKF_AD_VLAN_TAG:
-					code = BPF_S_ANC_VLAN_TAG;
-                                        if (!aux_data)
-                                                return 0;
-                                        break;
-				case SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT:
-					code = BPF_S_ANC_VLAN_TAG_PRESENT;
-                                        if (!aux_data)
-                                                return 0;
-                                        break;
-				default :
+#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+			case SKF_AD_OFF + SKF_AD_VLAN_TAG:
+				if (!aux_data)
+					return 0;
+				A = aux_data->vlan_tag;
+				break;
+
+			case SKF_AD_OFF + SKF_AD_VLAN_TAG_PRESENT:
+				if (!aux_data)
+					return 0;
+				A = aux_data->vlan_tag_present;
+				break;
 #endif
-					k = pc->k;
-					if (k >= buflen) {
+			default:
+				k = pc->k;
+				if (k >= buflen) {
 #if defined(KERNEL) || defined(_KERNEL)
-						if (m == NULL)
-							return 0;
-						n = m;
-						MINDEX(len, n, k);
-						A = mtod(n, u_char *)[k];
-						continue;
-#else
+					if (m == NULL)
 						return 0;
+					n = m;
+					MINDEX(len, n, k);
+					A = mtod(n, u_char *)[k];
+					continue;
+#else
+					return 0;
 #endif
-					}
-					A = p[k];
-#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
 				}
-				switch (code) {
-				case BPF_S_ANC_VLAN_TAG:
-					if (aux_data)
-						A = aux_data->vlan_tag;
-					break;
-
-				case BPF_S_ANC_VLAN_TAG_PRESENT:
-					if (aux_data)
-						A = aux_data->vlan_tag_present;
-					break;
-				}
-#endif
-				continue;
+				A = p[k];
+				break;
 			}
+			continue;
+
 		case BPF_LD|BPF_W|BPF_LEN:
 			A = wirelen;
 			continue;
