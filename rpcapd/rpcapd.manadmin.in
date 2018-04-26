@@ -186,10 +186,5 @@ specified from the command line are ignored
 print this help screen
 .br
 .ad
-.SH "KNOWN BUGS"
-FreeBSD: The first time pcap_stat() is called, the function takes
-several seconds to return. Therefore, client programs seem to hang
-for up to 30 seconds at the beginning of the capture if rpcapd is
-run on FReeBSD.
 .SH "SEE ALSO"
 pcap(3PCAP)
