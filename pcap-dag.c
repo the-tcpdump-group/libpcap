@@ -187,6 +187,8 @@ struct pcap_dag {
 				 * Same as in linux above, introduce
 				 * generally? */
 	dag_card_ref_t dag_ref; /* DAG Configuration/Status API card reference */
+	dag_component_t dag_root;	/* DAG CSAPI Root component */
+	attr_uuid_t drop_attr;  /* DAG Stream Drop Attribute handle, if available */
 	struct timeval required_select_timeout;
 				/* Timeout caller must use in event loops */
 };
@@ -439,12 +441,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			break;
 
 		default:
-			if (header->lctr) {
-				if (pd->stat.ps_drop > (UINT_MAX - ntohs(header->lctr))) {
-					pd->stat.ps_drop = UINT_MAX;
-				} else {
-					pd->stat.ps_drop += ntohs(header->lctr);
-				}
+			if ( (pd->drop_attr == kNullAttributeUuid) && (header->lctr) ) {
+				pd->stat.ps_drop += ntohs(header->lctr);
 			}
 		}
 
@@ -798,6 +796,14 @@ static int dag_activate(pcap_t* p)
 		goto failclose;
 	}
 
+	/* Try to find Stream Drop attribute */
+	pd->drop_attr = kNullAttributeUuid;
+	pd->dag_root = dag_config_get_root_component(pd->dag_ref);
+	if ( dag_component_get_subcomponent(pd->dag_root, kComponentStreamFeatures, 0) )
+	{
+		pd->drop_attr = dag_config_get_indexed_attribute_uuid(pd->dag_ref, kUint32AttributeStreamDropCount, pd->dag_stream/2);
+	}
+
 	/* Set up default poll parameters for stream
 	 * Can be overridden by pcap_set_nonblock()
 	 */
@@ -1059,11 +1065,19 @@ static int
 dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	struct pcap_dag *pd = p->priv;
 
-	/* This needs to be filled out correctly.  Hopefully a dagapi call will
-		 provide all necessary information.
-	*/
-	/*pd->stat.ps_recv = 0;*/
-	/*pd->stat.ps_drop = 0;*/
+	/*
+	 * Packet records received (ps_recv) are counted in dag_read().
+	 * Packet records dropped (ps_drop) are read from Stream Drop attribute if present,
+	 * otherwise integrate the ERF Header lctr counts (if available) in dag_read().
+	 * We are reporting that no records are dropped by the card/driver (ps_ifdrop).
+	 */
+
+	if(pd->drop_attr != kNullAttributeUuid) {
+		/* Note this counter will wrap at UINT_MAX.
+		 * The application is responsible for polling ps_drop frequently enough
+		 * to detect each wrap and integrate drop with a wider counter */
+		pd->stat.ps_drop = dag_config_get_uint32_attribute(pd->dag_ref, pd->drop_attr);
+	}
 
 	*ps = pd->stat;
 
