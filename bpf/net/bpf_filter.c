@@ -162,7 +162,7 @@ bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 		case BPF_LD|BPF_B|BPF_ABS:
 			switch (pc->k) {
 
-#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#if defined(SKF_AD_VLAN_TAG_PRESENT)
 			case SKF_AD_OFF + SKF_AD_VLAN_TAG:
 				if (!aux_data)
 					return 0;
