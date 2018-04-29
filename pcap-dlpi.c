@@ -1050,7 +1050,7 @@ is_dlpi_interface(const char *name)
 }
 
 int
-get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
+get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 {
 	/*
 	 * Nothing we can do.

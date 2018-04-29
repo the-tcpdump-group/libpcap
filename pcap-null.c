@@ -37,12 +37,10 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 }
 
 int
-get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
+get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 {
 	/*
-	 * Nothing we can do.
-	 * XXX - is there a way to find out whether an adapter has
-	 * something plugged into it?
+	 * There are no interfaces, so this will never be called.
 	 */
 	return (0);
 }
