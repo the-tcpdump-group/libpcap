@@ -41,6 +41,8 @@
 #include <pcap-int.h>
 #include <pcap/dlt.h>
 
+#include <ntstatus.h>
+
 /* Old-school MinGW have these headers in a different place.
  */
 #if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
