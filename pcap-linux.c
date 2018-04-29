@@ -336,6 +336,7 @@ struct pcap_linux {
 /*
  * Prototypes for internal functions and methods.
  */
+static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 #ifdef HAVE_PF_PACKET_SOCKETS
 static short int map_packet_type_to_sll_type(short int);
@@ -2647,13 +2648,14 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		}
 		fh = fopen(pathstr, "r");
 		if (fh != NULL) {
-			if (scanf(fh, "%u", &arptype) == 1) {
+			if (fscanf(fh, "%u", &arptype) == 1) {
 				/*
 				 * OK, we got an ARPHRD_ type; what is it?
 				 */
 				switch (arptype) {
 
-				case ARPHRD_LOOPBACK;
+#ifdef ARPHRD_LOOPBACK
+				case ARPHRD_LOOPBACK:
 					/*
 					 * These are types to which
 					 * "connected" and "disconnected"
@@ -2664,14 +2666,21 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 					 */
 					close(sock);
 					return 0;
+#endif
 
 				case ARPHRD_IRDA:
 				case ARPHRD_IEEE80211:
 				case ARPHRD_IEEE80211_PRISM:
 				case ARPHRD_IEEE80211_RADIOTAP:
+#ifdef ARPHRD_IEEE802154
 				case ARPHRD_IEEE802154:
+#endif
+#ifdef ARPHRD_IEEE802154_MONITOR
 				case ARPHRD_IEEE802154_MONITOR:
+#endif
+#ifdef ARPHRD_6LOWPAN
 				case ARPHRD_6LOWPAN:
+#endif
 					/*
 					 * Various wireless types.
 					 */
