@@ -420,6 +420,10 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	}
 
 	for (i = 0; i < numdev; ++i) {
+		/*
+		 * XXX - do the notions of "up", "running", or
+		 * "connected" apply here?
+		 */
 		if (!add_dev(devlistp, dev_list[i]->name, 0, "RDMA sniffer", err_str)) {
 			ret = -1;
 			goto out;

@@ -439,6 +439,12 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		} else {
 			/*
 			 * No.  Add an entry for it.
+			 *
+			 * XXX - is there a notion of "up" or "running",
+			 * and can we determine whether something's
+			 * plugged into the adapter and set
+			 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
+			 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
 			 */
 			dev = add_dev(devlistp, ifa->snf_ifa_name, 0, desc,
 			    errbuf);
@@ -481,7 +487,18 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		(void)pcap_snprintf(name,MAX_DESC_LENGTH,"snf%d",allports);
 		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
 			allports);
-		if (add_dev(devlistp, name, 0, desc, errbuf) == NULL)
+		/*
+		 * XXX - is there any notion of "up" and "running" that
+		 * would apply to this device, given that it handles
+		 * multiple ports?
+		 *
+		 * Presumably, there's no notion of "connected" vs.
+		 * "disconnected", as "is this plugged into a network?"
+		 * would be a per-port property.
+		 */
+		if (add_dev(devlistp, name,
+		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, desc,
+		    errbuf) == NULL)
 			return (-1);
 		/*
 		 * XXX - should we give it a list of addresses with all

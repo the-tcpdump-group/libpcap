@@ -1050,6 +1050,17 @@ is_dlpi_interface(const char *name)
 }
 
 int
+get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
+{
+	/*
+	 * Nothing we can do.
+	 * XXX - is there a way to find out whether an adapter has
+	 * something plugged into it?
+	 */
+	return (0);
+}
+
+int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 #ifdef HAVE_SOLARIS
@@ -1092,6 +1103,11 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	}
 	for (i = 0; i < buf.nunits; i++) {
 		pcap_snprintf(baname, sizeof baname, "ba%u", i);
+		/*
+		 * XXX - is there a notion of "up" and "running"?
+		 * And is there a way to determine whether the
+		 * interface is plugged into a network?
+		 */
 		if (add_dev(devlistp, baname, 0, NULL, errbuf) == NULL)
 			return (-1);
 	}

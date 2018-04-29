@@ -334,9 +334,17 @@ dbus_create(const char *device, char *ebuf, int *is_ours)
 int
 dbus_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
-	if (add_dev(devlistp, "dbus-system", 0, "D-Bus system bus", err_str) == NULL)
+	/*
+	 * The notion of "connected" vs. "disconnected" doesn't apply.
+	 * XXX - what about the notions of "up" and "running"?
+	 */
+	if (add_dev(devlistp, "dbus-system",
+	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, "D-Bus system bus",
+	    err_str) == NULL)
 		return -1;
-	if (add_dev(devlistp, "dbus-session", 0, "D-Bus session bus", err_str) == NULL)
+	if (add_dev(devlistp, "dbus-session",
+	    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE, "D-Bus session bus",
+	    err_str) == NULL)
 		return -1;
 	return 0;
 }

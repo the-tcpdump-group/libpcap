@@ -127,6 +127,63 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
 #endif
 
 static int
+oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
+    char *errbuf)
+{
+	PACKET_OID_DATA *oid_data_arg;
+	char errbuf[PCAP_ERRBUF_SIZE+1];
+
+	/*
+	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
+	 * It should be big enough to hold "*lenp" bytes of data; it
+	 * will actually be slightly larger, as PACKET_OID_DATA has a
+	 * 1-byte data array at the end, standing in for the variable-length
+	 * data that's actually there.
+	 */
+	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + *lenp);
+	if (oid_data_arg == NULL) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Couldn't allocate argument buffer for PacketRequest");
+		return (PCAP_ERROR);
+	}
+
+	/*
+	 * No need to copy the data - we're doing a fetch.
+	 */
+	oid_data_arg->Oid = oid;
+	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
+	if (!PacketRequest(adapter, FALSE, oid_data_arg)) {
+		int status;
+		DWORD request_error;
+
+		request_error = GetLastError();
+		if (request_error == NDIS_STATUS_INVALID_OID ||
+		    request_error == NDIS_STATUS_NOT_SUPPORTED ||
+		    request_error == NDIS_STATUS_NOT_RECOGNIZED)
+			status = PCAP_ERROR_OPERATION_NOTSUP;
+		else
+			status = PCAP_ERROR;
+		pcap_win32_err_to_str(request_error, errbuf);
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Error calling PacketRequest: %s", errbuf);
+		free(oid_data_arg);
+		return (status);
+	}
+
+	/*
+	 * Get the length actually supplied.
+	 */
+	*lenp = oid_data_arg->Length;
+
+	/*
+	 * Copy back the data we fetched.
+	 */
+	memcpy(data, oid_data_arg->Data, *lenp);
+	free(oid_data_arg);
+	return (0);
+}
+
+static int
 pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
 {
 	struct pcap_win *pw = p->priv;
@@ -275,47 +332,8 @@ static int
 pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
 {
 	struct pcap_win *pw = p->priv;
-	PACKET_OID_DATA *oid_data_arg;
-	char errbuf[PCAP_ERRBUF_SIZE+1];
 
-	/*
-	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
-	 * It should be big enough to hold "*lenp" bytes of data; it
-	 * will actually be slightly larger, as PACKET_OID_DATA has a
-	 * 1-byte data array at the end, standing in for the variable-length
-	 * data that's actually there.
-	 */
-	oid_data_arg = malloc(sizeof (PACKET_OID_DATA) + *lenp);
-	if (oid_data_arg == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Couldn't allocate argument buffer for PacketRequest");
-		return (PCAP_ERROR);
-	}
-
-	/*
-	 * No need to copy the data - we're doing a fetch.
-	 */
-	oid_data_arg->Oid = oid;
-	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
-	if (!PacketRequest(pw->adapter, FALSE, oid_data_arg)) {
-		pcap_win32_err_to_str(GetLastError(), errbuf);
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Error calling PacketRequest: %s", errbuf);
-		free(oid_data_arg);
-		return (PCAP_ERROR);
-	}
-
-	/*
-	 * Get the length actually supplied.
-	 */
-	*lenp = oid_data_arg->Length;
-
-	/*
-	 * Copy back the data we fetched.
-	 */
-	memcpy(data, oid_data_arg->Data, *lenp);
-	free(oid_data_arg);
-	return (0);
+	return (oid_get_request(pw->adapter, oid, data, lenp, p->errbuf));
 }
 
 static int
@@ -1409,6 +1427,173 @@ pcap_add_if_win32(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
 }
 
 int
+get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
+{
+	ADAPTER *adapter;
+	int status;
+#ifdef OID_GEN_PHYSICAL_MEDIUM
+	NDIS_PHYSICAL_MEDIUM phys_medium;
+	bpf_u_int32 gen_physical_medium_oids[] = {
+  #ifdef OID_GEN_PHYSICAL_MEDIUM_EX
+		OID_GEN_PHYSICAL_MEDIUM_EX,
+  #endif
+  		OID_GEN_PHYSICAL_MEDIUM
+  	};
+#define N_GEN_PHYSICAL_MEDIUM_OIDS	(sizeof gen_physical_medium_oids / sizeof gen_physical_medium_oids[0])
+#endif /* OID_GEN_PHYSICAL_MEDIUM */
+#ifdef OID_GEN_MEDIA_CONNECT_STATUS_EX
+	NET_IF_MEDIA_CONNECT_STATE connect_state_ex;
+#endif
+	int connect_state;
+
+	if (*flags & PCAP_IF_LOOPBACK) {
+		/*
+		 * Loopback interface, so the connection status doesn't
+		 * apply. and it's not wireless (or wired, for that
+		 * matter...).
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+		return (0);
+	}
+
+	/*
+	 * We need to open the adapter to get this information.
+	 */
+	adapter = PacketOpenAdapter(name);
+	if (adapter == NULL) {
+		/*
+		 * Give up; if they try to open this device, it'll fail.
+		 */
+		return (0);
+	}
+
+	/*
+	 * Get the network type.
+	 */
+#ifdef OID_GEN_PHYSICAL_MEDIUM
+	/*
+	 * Try the OIDs we have for this, in order.
+	 */
+	for (i = 0; i < N_GEN_PHYSICAL_MEDIUM_OIDS; i++) {
+		len = sizeof (phys_medium);
+		status = oid_get_request(adapter, gen_physical_medium_oids[i],
+		    &phys_medium, &len, errbuf);
+		if (status == PCAP_ERROR) {
+			/*
+			 * Failed with a hard error.
+			 */
+			PacketCloseAdapter(adapter);
+			return (-1);
+		}
+		if (status == 0) {
+			/*
+			 * Success.
+			 */
+			break;
+		}
+		/*
+		 * Failed with "I don't support that OID", so try the
+		 * next one, if we have a next one.
+		 */
+	}
+	if (status == 0) {
+		/*
+		 * We got the physical medium.
+		 */
+		switch (phys_medium) {
+
+		case NdisPhysicalMediumWirelessLan:
+		case NdisPhysicalMediumWirelessWan:
+		case NdisPhysicalMediumNative802_11:
+		case NdisPhysicalMediumBluetooth:
+		case NdisPhysicalMediumUWB:
+		case NdisPhysicalMediumIrda:
+			/*
+			 * Wireless.
+			 */
+			*flags |= PCAP_IF_WIRELESS;
+			break;
+		}
+	}
+#endif
+
+	/*
+	 * Get the connection status.
+	 */
+#ifdef OID_GEN_MEDIA_CONNECT_STATUS_EX
+	len = sizeof(connect_state_ex);
+	status = oid_get_request(adapter, OID_GEN_MEDIA_CONNECT_STATUS_EX,
+	    &connect_state_ex, &len, errbuf);
+	if (status == PCAP_ERROR) {
+		/*
+		 * Fatal error.
+		 */
+		PacketCloseAdapter(adapter);
+		return (-1);
+	}
+	if (status == 0) {
+		switch (connect_state_ex) {
+
+		case MediaConnectStateConnected:
+			/*
+			 * It's connected.
+			 */
+			*flags |= PCAP_IF_CONNECTION_STATUS_CONNECTED;
+			break;
+
+		case MediaConnectStateDisconnected:
+			/*
+			 * It's disconnected.
+			 */
+			*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+			break;
+		}
+	}
+#else
+	/*
+	 * OID_GEN_MEDIA_CONNECT_STATUS_EX isn't supported because it's
+	 * not in our SDK.
+	 */
+	status = PCAP_ERROR_OPERATION_NOTSUP;
+#endif
+	if (status == PCAP_ERROR_OPERATION_NOTSUP) {
+		/*
+		 * OK, OID_GEN_MEDIA_CONNECT_STATUS_EX isn't supported,
+		 * try OID_GEN_MEDIA_CONNECT_STATUS.
+		 */
+		status = oid_get_request(adapter, OID_GEN_MEDIA_CONNECT_STATUS,
+		    &connect_state, &len, errbuf);
+		if (status == PCAP_ERROR) {
+			/*
+			 * Fatal error.
+			 */
+			PacketCloseAdapter(adapter);
+			return (-1);
+		}
+		if (status == 0) {
+			switch (connect_state) {
+
+			case NdisMediaStateConnected:
+				/*
+				 * It's connected.
+				 */
+				*flags |= PCAP_IF_CONNECTION_STATUS_CONNECTED;
+				break;
+
+			case NdisMediaStateDisconnected:
+				/*
+				 * It's disconnected.
+				 */
+				*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+				break;
+			}
+		}
+	}
+	PacketCloseAdapter(adapter);
+	return (0);
+}
+
+int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	int ret = 0;
@@ -1505,6 +1690,14 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 			flags |= PCAP_IF_LOOPBACK;
 		}
 #endif
+
+		/*
+		 * XXX - get the link state here.
+		 * Does the OID we want depend on NDIS 5 vs. NDIS 6?
+		 * If so, that means that there should be a packet.dll
+		 * API for this.
+		 * Set the appropriate bits in flags.
+		 */
 
 		/*
 		 * Add an entry for this interface.

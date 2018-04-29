@@ -124,7 +124,7 @@ static int bpf_load(char *errbuf);
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_NET_IF_MEDIA_H
+#ifdef SIOCGIFMEDIA
 # include <net/if_media.h>
 #endif
 
@@ -2711,6 +2711,89 @@ finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 	}
 	free(name);
 	closedir(usbdir);
+	return (0);
+}
+#endif
+
+/*
+ * Get additional flags for a device, using SIOCGIFMEDIA.
+ */
+#ifdef SIOCGIFMEDIA
+int
+get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
+{
+	int sock;
+	struct ifmediareq req;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock == -1) {
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
+		    "Can't create socket to get media information for %s",
+		    name);
+		return (-1);
+	}
+	memset(&req, 0, sizeof(req));
+	strncpy(req.ifm_name, name, sizeof(req.ifm_name));
+	if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
+		if (errno == EOPNOTSUPP) {
+			/*
+			 * Not supported, so we can't provide any
+			 * additional information.  Assume that
+			 * this means that "connected" vs.
+			 * "disconnected" doesn't apply.
+			 */
+			*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+			close(sock);
+			return (0);
+		}
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
+		    "SIOCGIFMEDIA on %s failed", name);
+		close(sock);
+		return (-1);
+	}
+	close(sock);
+
+	/*
+	 * OK, what type of network is this?
+	 */
+	switch (IFM_TYPE(req.ifm_active)) {
+
+	case IFM_IEEE80211:
+		/*
+		 * Wireless.
+		 */
+		*flags |= PCAP_IF_WIRELESS;
+		break;
+	}
+
+	/*
+	 * Do we know whether it's connected?
+	 */
+	if (req.ifm_status & IFM_AVALID) {
+		/*
+		 * Yes.
+		 */
+		if (req.ifm_status & IFM_ACTIVE) {
+			/*
+			 * It's connected.
+			 */
+			*flags |= PCAP_IF_CONNECTION_STATUS_CONNECTED;
+		} else {
+			/*
+			 * It's disconnected.
+			 */
+			*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+		}
+	}
+	return (0);
+}
+#else
+int
+get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
+{
+	/*
+	 * Nothing we can do.
+	 */
 	return (0);
 }
 #endif

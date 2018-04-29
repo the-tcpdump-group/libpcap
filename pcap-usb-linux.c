@@ -230,13 +230,31 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 	char dev_name[10];
 	char dev_descr[30];
 	pcap_snprintf(dev_name, 10, USB_IFACE"%d", n);
-	if (n == 0)
-		pcap_snprintf(dev_descr, 30, "All USB buses");
-	else
+	/*
+	 * XXX - is there any notion of "up" and "running"?
+	 */
+	if (n == 0) {
+		/*
+		 * As this refers to all buses, there's no notion of
+		 * "connected" vs. "disconnected", as that's a property
+		 * that would apply to a particular USB interface.
+		 */
+		if (add_dev(devlistp, dev_name,
+		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
+		    "All USB buses", err_str) == NULL)
+			return -1;
+	} else {
+		/*
+		 * XXX - is there a way to determine whether anything's
+		 * plugged into this bus interface or not, and set
+		 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
+		 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
+		 */
 		pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
+		if (add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
+			return -1;
+	}
 
-	if (add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
-		return -1;
 	return 0;
 }
 

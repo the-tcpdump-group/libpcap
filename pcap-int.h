@@ -437,10 +437,14 @@ int	pcap_check_activated(pcap_t *);
  *
  * "find_or_add_dev()" checks whether a device is already in a pcap_if_list_t
  * and, if not, adds an entry for it.
+ *
+ * "get_if_flags()" is the platform-dependent routine to get additional
+ * pcap flags for an interface.
  */
 struct pcap_if_list;
 typedef struct pcap_if_list pcap_if_list_t;
 int	pcap_platform_finddevs(pcap_if_list_t *, char *);
+int	get_if_flags(const char *name, bpf_u_int32 *, char *);
 #if !defined(_WIN32) && !defined(MSDOS)
 int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
 	    int (*)(const char *));

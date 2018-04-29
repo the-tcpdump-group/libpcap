@@ -579,6 +579,9 @@ int pcap_platform_finddevs  (pcap_if_list_t *devlistp, char *errbuf)
 
     /*
      * XXX - find out whether it's up or running?  Does that apply here?
+     * Can we find out if anything's plugged into the adapter, if it's
+     * a wired device, and set PCAP_IF_CONNECTION_STATUS_CONNECTED
+     * or PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
      */
     if ((curdev = add_dev(devlistp, dev->name, 0,
                 dev->long_name, errbuf)) == NULL)

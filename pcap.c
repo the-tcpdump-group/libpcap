@@ -567,8 +567,28 @@ get_figure_of_merit(pcap_if_t *dev)
 		n |= 0x80000000;
 	if (!(dev->flags & PCAP_IF_UP))
 		n |= 0x40000000;
-	if (dev->flags & PCAP_IF_LOOPBACK)
+
+	/*
+	 * Give non-wireless interfaces that aren't disconnected a better
+	 * figure of merit than interfaces that are disconnected, as
+	 * "disconnected" should indicate that the interface isn't
+	 * plugged into a network and thus won't give you any traffic.
+	 *
+	 * For wireless interfaces, it means "associated with a network",
+	 * which we presume not to necessarily prevent capture, as you
+	 * might run the adapter in some flavor of monitor mode.
+	 */
+	if (!(dev->flags & PCAP_IF_WIRELESS) &&
+	    (dev->flags & PCAP_IF_CONNECTION_STATUS) == PCAP_IF_CONNECTION_STATUS_DISCONNECTED)
 		n |= 0x20000000;
+
+	/*
+	 * Sort loopback devices after non-loopback devices, *except* for
+	 * disconnected devices.
+	 */
+	if (dev->flags & PCAP_IF_LOOPBACK)
+		n |= 0x10000000;
+
 	return (n);
 }
 
@@ -992,7 +1012,21 @@ find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 	}
 
 	/*
-	 * No, we didn't find it.  Try to add it to the list of devices.
+	 * No, we didn't find it.
+	 */
+
+	/*
+	 * Try to get additional flags for the device.
+	 */
+	if (get_if_flags(name, &flags, errbuf) == -1) {
+		/*
+		 * Failed.
+		 */
+		return (NULL);
+	}
+
+	/*
+	 * Now, try to add it to the list of devices.
 	 */
 	return (add_dev(devlistp, name, flags, description, errbuf));
 }
@@ -3278,6 +3312,9 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
 		return ("That device doesn't support that time stamp precision");
+
+	case PCAP_ERROR_OPERATION_NOTSUP:
+		return ("That device doesn't support that operation");
 	}
 	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);

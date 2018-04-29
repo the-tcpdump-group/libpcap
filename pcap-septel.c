@@ -275,6 +275,9 @@ static int septel_stats(pcap_t *p, struct pcap_stat *ps) {
 int
 septel_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
+  /*
+   * XXX - do the notions of "up", "running", or "connected" apply here?
+   */
   if (add_dev(devlistp,"septel",0,"Intel/Septel device",errbuf) == NULL)
     return -1;
   return 0;

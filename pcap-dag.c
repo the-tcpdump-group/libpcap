@@ -1070,7 +1070,6 @@ int
 dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	char name[12];	/* XXX - pick a size */
-	int ret = 0;
 	int c;
 	char dagname[DAGNAME_BUFSIZE];
 	int dagstream;
@@ -1086,17 +1085,26 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		{
 			(void) pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "dag: device name %s can't be parsed", name);
-			return -1;
+			return (-1);
 		}
 		if ( (dagfd = dag_open(dagname)) >= 0 ) {
 			description = NULL;
 			if ((inf = dag_pciinfo(dagfd)))
 				description = dag_device_name(inf->device_code, 1);
+			/*
+			 * XXX - is there a way to determine whether
+			 * the card is plugged into a network or not?
+			 * If so, we should check that and set
+			 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
+			 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED.
+			 *
+			 * Also, are there notions of "up" and "running"?
+			 */
 			if (add_dev(devlistp, name, 0, description, errbuf) == NULL) {
 				/*
 				 * Failure.
 				 */
-				ret = -1;
+				return (-1);
 			}
 			rxstreams = dag_rx_get_stream_count(dagfd);
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
@@ -1108,7 +1116,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 						/*
 						 * Failure.
 						 */
-						ret = -1;
+						return (-1);
 					}
 
 					rxstreams--;
@@ -1121,7 +1129,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		}
 
 	}
-	return (ret);
+	return (0);
 }
 
 /*

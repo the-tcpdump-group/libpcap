@@ -287,6 +287,17 @@ is_dlpi_interface(const char *name _U_)
 	return (1);
 }
 
+int
+get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
+{
+	/*
+	 * Nothing we can do.
+	 * XXX - is there a way to find out whether an adapter has
+	 * something plugged into it?
+	 */
+	return (0);
+}
+
 /*
  * In Solaris, the "standard" mechanism" i.e SIOCGLIFCONF will only find
  * network links that are plumbed and are up. dlpi_walk(3DLPI) will find

@@ -260,9 +260,15 @@ struct pcap_if {
 	bpf_u_int32 flags;	/* PCAP_IF_ interface flags */
 };
 
-#define PCAP_IF_LOOPBACK	0x00000001	/* interface is loopback */
-#define PCAP_IF_UP		0x00000002	/* interface is up */
-#define PCAP_IF_RUNNING		0x00000004	/* interface is running */
+#define PCAP_IF_LOOPBACK				0x00000001	/* interface is loopback */
+#define PCAP_IF_UP					0x00000002	/* interface is up */
+#define PCAP_IF_RUNNING					0x00000004	/* interface is running */
+#define PCAP_IF_WIRELESS				0x00000008	/* interface is wireless (*NOT* necessarily Wi-Fi!) */
+#define PCAP_IF_CONNECTION_STATUS			0x00000030	/* connection status: */
+#define PCAP_IF_CONNECTION_STATUS_UNKNOWN		0x00000000	/* unknown */
+#define PCAP_IF_CONNECTION_STATUS_CONNECTED		0x00000010	/* connected */
+#define PCAP_IF_CONNECTION_STATUS_DISCONNECTED		0x00000020	/* disconnected */
+#define PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE	0x00000030	/* not applicable */
 
 /*
  * Representation of an interface address.
@@ -296,6 +302,7 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_ERROR_CANTSET_TSTAMP_TYPE	-10	/* this device doesn't support setting the time stamp type */
 #define PCAP_ERROR_PROMISC_PERM_DENIED	-11	/* you don't have permission to capture in promiscuous mode */
 #define PCAP_ERROR_TSTAMP_PRECISION_NOTSUP -12  /* the requested time stamp precision is not supported */
+#define PCAP_ERROR_OPERATION_NOTSUP	-13	/* OID operation not supported by adapter */
 
 /*
  * Warning codes for the pcap API.

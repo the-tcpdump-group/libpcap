@@ -114,12 +114,19 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		pcap_snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
 		pcap_snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
 
-		if (add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
+		/*
+		 * Bluetooth is a wireless technology.
+		 * XXX - if there's the notion of associating with a
+		 * network, and we can determine whether the interface
+		 * is associated with a network, check that and set
+		 * the status to PCAP_IF_CONNECTION_STATUS_CONNECTED
+		 * or PCAP_IF_CONNECTION_STATUS_DISCONNECTED.
+		 */
+		if (add_dev(devlistp, dev_name, PCAP_IF_WIRELESS, dev_descr, err_str)  == NULL)
 		{
 			ret = -1;
 			break;
 		}
-
 	}
 
 free:

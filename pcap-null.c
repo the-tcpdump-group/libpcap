@@ -37,6 +37,17 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 }
 
 int
+get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
+{
+	/*
+	 * Nothing we can do.
+	 * XXX - is there a way to find out whether an adapter has
+	 * something plugged into it?
+	 */
+	return (0);
+}
+
+int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	/*

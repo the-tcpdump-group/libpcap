@@ -190,6 +190,45 @@ static int ifprint(pcap_if_t *d)
     printf("%sLOOPBACK", sep);
     sep = ", ";
   }
+  if (d->flags & PCAP_IF_WIRELESS) {
+    printf("%sWIRELESS", sep);
+    switch (d->flags & PCAP_IF_CONNECTION_STATUS) {
+
+    case PCAP_IF_CONNECTION_STATUS_UNKNOWN:
+      printf(" (association unknown)");
+      break;
+
+    case PCAP_IF_CONNECTION_STATUS_CONNECTED:
+      printf(" (associated)");
+      break;
+
+    case PCAP_IF_CONNECTION_STATUS_DISCONNECTED:
+      printf(" (not associated)");
+      break;
+
+    case PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE:
+      break;
+    }
+  } else {
+    switch (d->flags & PCAP_IF_CONNECTION_STATUS) {
+
+    case PCAP_IF_CONNECTION_STATUS_UNKNOWN:
+      printf(" (connection status unknown)");
+      break;
+
+    case PCAP_IF_CONNECTION_STATUS_CONNECTED:
+      printf(" (connected)");
+      break;
+
+    case PCAP_IF_CONNECTION_STATUS_DISCONNECTED:
+      printf(" (disconnectted)");
+      break;
+
+    case PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE:
+      break;
+    }
+  }
+  sep = ", ";
   printf("\n");
 
   for(a=d->addresses;a;a=a->next) {

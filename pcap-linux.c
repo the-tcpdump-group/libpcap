@@ -2601,6 +2601,157 @@ can_be_bound(const char *name _U_)
 	return (1);
 }
 
+/*
+ * Get additional flags for a device, using SIOCGIFMEDIA.
+ */
+int
+get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
+{
+	int sock;
+	char *pathstr;
+	FILE *fh;
+	unsigned int arptype;
+	struct ifreq ifr;
+	struct ethtool_value info;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock == -1) {
+		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
+		    "Can't create socket to get ethtool information for %s",
+		    name);
+		return -1;
+	}
+
+	/*
+	 * OK, what type of network is this?
+	 * In particular, is it wired or wireless?
+	 */
+	if (is_wifi(sock, name)) {
+		/*
+		 * Wi-Fi, hence wireless.
+		 */
+		*flags |= PCAP_IF_WIRELESS;
+	} else {
+		/*
+		 * OK, what does /sys/class/net/{if}/type contain?
+		 * (We don't use that for Wi-Fi, as it'll report
+		 * "Ethernet", i.e. ARPHRD_ETHER, for non-monitor-
+		 * mode devices.)
+		 */
+		if (asprintf(&pathstr, "/sys/class/net/%s/type", name) == -1) {
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "%s: Can't generate path name string for /sys/class/net device",
+			    device);
+			close(sock);
+			return -1;
+		}
+		fh = fopen(pathstr, "r");
+		if (fh != NULL) {
+			if (scanf(fh, "%u", &arptype) == 1) {
+				/*
+				 * OK, we got an ARPHRD_ type; what is it?
+				 */
+				switch (arptype) {
+
+				case ARPHRD_LOOPBACK;
+					/*
+					 * These are types to which
+					 * "connected" and "disconnected"
+					 * don't apply, so don't bother
+					 * asking about it.
+					 *
+					 * XXX - add other types?
+					 */
+					close(sock);
+					return 0;
+
+				case ARPHRD_IRDA:
+				case ARPHRD_IEEE80211:
+				case ARPHRD_IEEE80211_PRISM:
+				case ARPHRD_IEEE80211_RADIOTAP:
+				case ARPHRD_IEEE802154:
+				case ARPHRD_IEEE802154_MONITOR:
+				case ARPHRD_6LOWPAN:
+					/*
+					 * Various wireless types.
+					 */
+					*flags |= PCAP_IF_WIRELESS;
+					break;
+				}
+			}
+			fclose(fh);
+		}
+	}
+	free(pathstr);
+
+#ifdef ETHTOOL_GLINK
+	memset(&ifr, 0, sizeof(ifr));
+	strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	info.cmd = ETHTOOL_GLINK;
+	ifr.ifr_data = (caddr_t)&info;
+	if (ioctl(sock, SIOCETHTOOL, &ifr) == -1) {
+		int save_errno = errno;
+
+		switch (save_errno) {
+
+		case EOPNOTSUPP:
+		case EINVAL:
+			/*
+			 * OK, this OS version or driver doesn't support
+			 * asking for this information.
+			 * XXX - distinguish between "this doesn't
+			 * support ethtool at all because it's not
+			 * that type of device" vs. "this doesn't
+			 * support ethtool even though it's that
+			 * type of device", and return "unknown".
+			 */
+			*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+			close(sock);
+			return 0;
+
+		case ENODEV:
+			/*
+			 * OK, no such device.
+			 * The user will find that out when they try to
+			 * activate the device; just say "OK" and
+			 * don't set anything.
+			 */
+			close(sock);
+			return 0;
+
+		default:
+			/*
+			 * Other error.
+			 */
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    save_errno,
+			    "%s: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed",
+			    device);
+			close(sock);
+			return -1;
+		}
+	}
+
+	/*
+	 * Is it connected?
+	 */
+	if (info.data) {
+		/*
+		 * It's connected.
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_CONNECTED;
+	} else {
+		/*
+		 * It's disconnected.
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
+	}
+#endif
+
+	close(sock);
+	return 0;
+}
+
 int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
@@ -2633,8 +2784,12 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	/*
 	 * Add the "any" device.
+	 * As it refers to all network devices, not to any particular
+	 * network device, the notion of "connected" vs. "disconnected"
+	 * doesn't apply.
 	 */
-	if (add_dev(devlistp, "any", PCAP_IF_UP|PCAP_IF_RUNNING,
+	if (add_dev(devlistp, "any",
+	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
 	    any_descr, errbuf) == NULL)
 		return (-1);
 
