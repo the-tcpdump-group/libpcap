@@ -1444,6 +1444,7 @@ pcap_add_if_win32(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
 int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
+	char *name_copy;
 	ADAPTER *adapter;
 	int status;
 	size_t len;
@@ -1475,8 +1476,14 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 
 	/*
 	 * We need to open the adapter to get this information.
+	 *
+	 * XXX - PacketOpenAdapter() takes a non-const pointer
+	 * as an argument, so we make a copy of the argument and
+	 * pass that to it.
 	 */
-	adapter = PacketOpenAdapter(name);
+	name_copy = strdup(name);
+	adapter = PacketOpenAdapter(name_copy);
+	free(name_copy);
 	if (adapter == NULL) {
 		/*
 		 * Give up; if they try to open this device, it'll fail.
