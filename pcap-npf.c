@@ -41,8 +41,6 @@
 #include <pcap-int.h>
 #include <pcap/dlt.h>
 
-#include <ntstatus.h>
-
 /* Old-school MinGW have these headers in a different place.
  */
 #if defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
@@ -138,7 +136,7 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
  * So we define them here.
  */
 #define NDIS_STATUS_INVALID_OID		0xc0010017
-#define NDIS_STATUS_NOT_SUPPORTED	STATUS_NOT_SUPPORTED
+#define NDIS_STATUS_NOT_SUPPORTED	0xc00000bb	/* STATUS_NOT_SUPPORTED */
 #define NDIS_STATUS_NOT_RECOGNIZED	0x00010001
 
 static int
