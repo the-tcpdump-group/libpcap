@@ -126,12 +126,24 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
 }
 #endif
 
+/*
+ * Sigh.  PacketRequest() will have made a DeviceIoControl()
+ * call to the NPF driver to perform the OID request, with a
+ * BIOCQUERYOID ioctl.  It looks as if the returned status
+ * will be an NDIS_STATUS_ value, but those aren't defined
+ * in any userland header.
+ *
+ * So we define them here.
+ */
+#define NDIS_STATUS_INVALID_OID		0xc0010017
+#define NDIS_STATUS_NOT_SUPPORTED	STATUS_NOT_SUPPORTED
+#define NDIS_STATUS_NOT_RECOGNIZED	0x00010001
+
 static int
 oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
     char *errbuf)
 {
 	PACKET_OID_DATA *oid_data_arg;
-	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	/*
 	 * Allocate a PACKET_OID_DATA structure to hand to PacketRequest().
@@ -155,6 +167,7 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	if (!PacketRequest(adapter, FALSE, oid_data_arg)) {
 		int status;
 		DWORD request_error;
+		char errmsgbuf[PCAP_ERRBUF_SIZE+1];
 
 		request_error = GetLastError();
 		if (request_error == NDIS_STATUS_INVALID_OID ||
@@ -163,9 +176,9 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 			status = PCAP_ERROR_OPERATION_NOTSUP;
 		else
 			status = PCAP_ERROR;
-		pcap_win32_err_to_str(request_error, errbuf);
+		pcap_win32_err_to_str(request_error, errmsgbuf);
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Error calling PacketRequest: %s", errbuf);
+		    "Error calling PacketRequest: %s", errmsgbuf);
 		free(oid_data_arg);
 		return (status);
 	}
@@ -1431,6 +1444,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
 	ADAPTER *adapter;
 	int status;
+	size_t len;
 #ifdef OID_GEN_PHYSICAL_MEDIUM
 	NDIS_PHYSICAL_MEDIUM phys_medium;
 	bpf_u_int32 gen_physical_medium_oids[] = {
@@ -1440,6 +1454,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
   		OID_GEN_PHYSICAL_MEDIUM
   	};
 #define N_GEN_PHYSICAL_MEDIUM_OIDS	(sizeof gen_physical_medium_oids / sizeof gen_physical_medium_oids[0])
+	size_t i;
 #endif /* OID_GEN_PHYSICAL_MEDIUM */
 #ifdef OID_GEN_MEDIA_CONNECT_STATUS_EX
 	NET_IF_MEDIA_CONNECT_STATE connect_state_ex;
