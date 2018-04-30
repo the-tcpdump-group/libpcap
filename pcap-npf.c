@@ -1481,6 +1481,31 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		return (0);
 	}
 
+#ifdef HAVE_AIRPCAP_API
+	/*
+	 * Airpcap.sys do not support the below 'OID_GEN_x' values.
+	 * Just set these flags (and none of the '*flags' entered with).
+	 */
+	if (PacketGetAirPcapHandle(adapter)) {
+		/*
+		 * Must be "up" and "running" if the above if succeeded.
+		 */
+		*flags = PCAP_IF_UP | PCAP_IF_RUNNING;
+
+		/*
+		 * An airpcap device is a wireless device (duh!)
+		 */
+		*flags |= PCAP_IF_WIRELESS;
+
+		/*
+		 * A "network assosiation state" makes no sense for airpcap.
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+		PacketCloseAdapter(adapter);
+		return (0);
+	}
+#endif
+
 	/*
 	 * Get the network type.
 	 */
