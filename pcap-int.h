@@ -425,6 +425,9 @@ int	pcap_check_activated(pcap_t *);
  *
  * A pcap_if_list_t * is a reference to a list of devices.
  *
+ * A get_if_flags_func is a platform-dependent function called to get
+ * additional interface flags.
+ *
  * "pcap_platform_finddevs()" is the platform-dependent routine to
  * find local network interfaces.
  *
@@ -437,20 +440,17 @@ int	pcap_check_activated(pcap_t *);
  *
  * "find_or_add_dev()" checks whether a device is already in a pcap_if_list_t
  * and, if not, adds an entry for it.
- *
- * "get_if_flags()" is the platform-dependent routine to get additional
- * pcap flags for an interface.
  */
 struct pcap_if_list;
 typedef struct pcap_if_list pcap_if_list_t;
+typedef int (*get_if_flags_func)(const char *, bpf_u_int32 *, char *);
 int	pcap_platform_finddevs(pcap_if_list_t *, char *);
-int	get_if_flags(const char *name, bpf_u_int32 *, char *);
 #if !defined(_WIN32) && !defined(MSDOS)
 int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
-	    int (*)(const char *));
+	    int (*)(const char *), get_if_flags_func);
 #endif
 pcap_if_t *find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
-	    const char *, char *);
+	    const char *, get_if_flags_func, char *);
 pcap_if_t *find_dev(pcap_if_list_t *, const char *);
 pcap_if_t *add_dev(pcap_if_list_t *, const char *, bpf_u_int32, const char *,
 	    char *);
@@ -459,8 +459,9 @@ int	add_addr_to_dev(pcap_if_t *, struct sockaddr *, size_t,
 	    struct sockaddr *dstaddr, size_t, char *errbuf);
 #ifndef _WIN32
 pcap_if_t *find_or_add_if(pcap_if_list_t *, const char *, bpf_u_int32,
-	    char *);
+	    get_if_flags_func, char *);
 int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
+	    get_if_flags_func,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t,
 	    struct sockaddr *, size_t, struct sockaddr *, size_t, char *);
 #endif

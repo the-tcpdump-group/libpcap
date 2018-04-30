@@ -145,7 +145,7 @@ get_sa_len(struct sockaddr *addr)
  */
 int
 pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
-    int (*check_usable)(const char *))
+    int (*check_usable)(const char *), get_if_flags_func get_flags_func)
 {
 	struct ifaddrs *ifap, *ifa;
 	struct sockaddr *addr, *netmask, *broadaddr, *dstaddr;
@@ -265,6 +265,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_if(devlistp, ifa->ifa_name, ifa->ifa_flags,
+		    get_flags_func,
 		    addr, addr_size, netmask, addr_size,
 		    broadaddr, broadaddr_size, dstaddr, dstaddr_size,
 		    errbuf) < 0) {

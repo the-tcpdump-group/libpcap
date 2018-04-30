@@ -558,7 +558,7 @@ can_be_bound(const char *name _U_)
 	return (1);
 }
 
-int
+static int
 get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 {
 	/*
@@ -572,7 +572,8 @@ get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	return (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound));
+	return (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+	    get_if_flags));
 }
 
 static int

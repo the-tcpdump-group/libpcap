@@ -2605,7 +2605,7 @@ can_be_bound(const char *name _U_)
 /*
  * Get additional flags for a device, using SIOCGIFMEDIA.
  */
-int
+static int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
 	int sock;
@@ -2770,7 +2770,8 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
 	/*

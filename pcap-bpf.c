@@ -2719,7 +2719,7 @@ finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
  * Get additional flags for a device, using SIOCGIFMEDIA.
  */
 #ifdef SIOCGIFMEDIA
-int
+static int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
 	int sock;
@@ -2788,7 +2788,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	return (0);
 }
 #else
-int
+static int
 get_if_flags(const char *name _U_, bpf_u_int32 flags _U_, char *errbuf _U_)
 {
 	/*
@@ -2804,7 +2804,8 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(devlistp, errbuf, check_bpf_bindable) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, check_bpf_bindable,
+	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)

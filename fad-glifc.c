@@ -76,7 +76,7 @@ struct rtentry;		/* declarations in <net/if.h> */
  */
 int
 pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
-    int (*check_usable)(const char *))
+    int (*check_usable)(const char *), get_if_flags_func get_flags_func)
 {
 	register int fd4, fd6, fd;
 	register struct lifreq *ifrp, *ifend;
@@ -328,7 +328,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_if(devlistp, ifrp->lifr_name,
-		    ifrflags.lifr_flags,
+		    ifrflags.lifr_flags, get_flags_func,
 		    (struct sockaddr *)&ifrp->lifr_addr,
 		    sizeof (struct sockaddr_storage),
 		    netmask, sizeof (struct sockaddr_storage),

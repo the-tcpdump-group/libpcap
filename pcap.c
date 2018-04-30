@@ -779,7 +779,7 @@ get_if_description(const char *name _U_)
  */
 pcap_if_t *
 find_or_add_if(pcap_if_list_t *devlistp, const char *name,
-    bpf_u_int32 if_flags, char *errbuf)
+    bpf_u_int32 if_flags, get_if_flags_func get_flags_func, char *errbuf)
 {
 	bpf_u_int32 pcap_flags;
 
@@ -813,7 +813,7 @@ find_or_add_if(pcap_if_list_t *devlistp, const char *name,
 	 * attempt to add one.
 	 */
 	return (find_or_add_dev(devlistp, name, pcap_flags,
-	    get_if_description(name), errbuf));
+	    get_if_description(name), get_flags_func, errbuf));
 }
 
 /*
@@ -836,7 +836,7 @@ find_or_add_if(pcap_if_list_t *devlistp, const char *name,
  */
 int
 add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
-    bpf_u_int32 if_flags,
+    bpf_u_int32 if_flags, get_if_flags_func get_flags_func,
     struct sockaddr *addr, size_t addr_size,
     struct sockaddr *netmask, size_t netmask_size,
     struct sockaddr *broadaddr, size_t broadaddr_size,
@@ -848,7 +848,8 @@ add_addr_to_if(pcap_if_list_t *devlistp, const char *name,
 	/*
 	 * Check whether the device exists and, if not, add it.
 	 */
-	curdev = find_or_add_if(devlistp, name, if_flags, errbuf);
+	curdev = find_or_add_if(devlistp, name, if_flags, get_flags_func,
+	    errbuf);
 	if (curdev == NULL) {
 		/*
 		 * Error - give up.
@@ -996,7 +997,7 @@ add_addr_to_dev(pcap_if_t *curdev,
  */
 pcap_if_t *
 find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
-    const char *description, char *errbuf)
+    const char *description, get_if_flags_func get_flags_func, char *errbuf)
 {
 	pcap_if_t *curdev;
 
@@ -1018,7 +1019,7 @@ find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
 	/*
 	 * Try to get additional flags for the device.
 	 */
-	if (get_if_flags(name, &flags, errbuf) == -1) {
+	if ((*get_flags_func)(name, &flags, errbuf) == -1) {
 		/*
 		 * Failed.
 		 */

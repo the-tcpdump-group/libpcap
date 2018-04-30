@@ -139,7 +139,7 @@ struct rtentry;		/* declarations in <net/if.h> */
  */
 int
 pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
-    int (*check_usable)(const char *))
+    int (*check_usable)(const char *), get_if_flags_func get_flags_func)
 {
 	register int fd;
 	register struct ifreq *ifrp, *ifend, *ifnext;
@@ -416,7 +416,7 @@ pcap_findalldevs_interfaces(pcap_if_list_t *devlistp, char *errbuf,
 		 * Add information for this address to the list.
 		 */
 		if (add_addr_to_if(devlistp, ifrp->ifr_name,
-		    ifrflags.ifr_flags,
+		    ifrflags.ifr_flags, get_flags_func,
 		    &ifrp->ifr_addr, SA_LEN(&ifrp->ifr_addr),
 		    netmask, netmask_size, broadaddr, broadaddr_size,
 		    dstaddr, dstaddr_size, errbuf) < 0) {

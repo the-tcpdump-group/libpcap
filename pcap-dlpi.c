@@ -1049,7 +1049,7 @@ is_dlpi_interface(const char *name)
 	return (1);
 }
 
-int
+static int
 get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 {
 	/*
@@ -1077,7 +1077,8 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-	if (pcap_findalldevs_interfaces(devlistp, errbuf, is_dlpi_interface) == -1)
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, is_dlpi_interface,
+	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
 #ifdef HAVE_SOLARIS
