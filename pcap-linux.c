@@ -2642,7 +2642,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		if (asprintf(&pathstr, "/sys/class/net/%s/type", name) == -1) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: Can't generate path name string for /sys/class/net device",
-			    device);
+			    name);
 			close(sock);
 			return -1;
 		}
@@ -2665,6 +2665,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 					 * XXX - add other types?
 					 */
 					close(sock);
+					fclose(fh);
 					return 0;
 #endif
 
@@ -2732,10 +2733,10 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			/*
 			 * Other error.
 			 */
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    save_errno,
 			    "%s: SIOCETHTOOL(ETHTOOL_GLINK) ioctl failed",
-			    device);
+			    name);
 			close(sock);
 			return -1;
 		}
