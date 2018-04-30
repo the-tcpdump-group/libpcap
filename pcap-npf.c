@@ -1431,7 +1431,7 @@ pcap_add_if_npf(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
 	return (res);
 }
 
-static int
+int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
 	char *name_copy;
