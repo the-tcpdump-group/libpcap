@@ -55,10 +55,10 @@
   #include <dagapi.h>
 #endif /* HAVE_DAG_API */
 
-static int pcap_setfilter_win32_npf(pcap_t *, struct bpf_program *);
+static int pcap_setfilter_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
-static int pcap_getnonblock_win32(pcap_t *);
-static int pcap_setnonblock_win32(pcap_t *, int);
+static int pcap_getnonblock_npf(pcap_t *);
+static int pcap_setnonblock_npf(pcap_t *, int);
 
 /*dimension of the buffer in the pcap_t structure*/
 #define	WIN32_DEFAULT_USER_BUFFER_SIZE 256000
@@ -118,7 +118,7 @@ static int
 PacketGetMonitorMode(PCHAR AdapterName _U_)
 {
 	/*
-	 * This should fail, so that pcap_activate_win32() returns
+	 * This should fail, so that pcap_activate_npf() returns
 	 * PCAP_ERROR_RFMON_NOTSUP if our caller requested monitor
 	 * mode.
 	 */
@@ -189,7 +189,7 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 }
 
 static int
-pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
+pcap_stats_npf(pcap_t *p, struct pcap_stat *ps)
 {
 	struct pcap_win *pw = p->priv;
 	struct bpf_stat bstats;
@@ -252,7 +252,7 @@ pcap_stats_win32(pcap_t *p, struct pcap_stat *ps)
  * possibly-bogus values for statistics we can't provide.
  */
 struct pcap_stat *
-pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
+pcap_stats_ex_npf(pcap_t *p, int *pcap_stat_size)
 {
 	struct pcap_win *pw = p->priv;
 	struct bpf_stat bstats;
@@ -284,7 +284,7 @@ pcap_stats_ex_win32(pcap_t *p, int *pcap_stat_size)
 
 /* Set the dimension of the kernel-level capture buffer */
 static int
-pcap_setbuff_win32(pcap_t *p, int dim)
+pcap_setbuff_npf(pcap_t *p, int dim)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -298,7 +298,7 @@ pcap_setbuff_win32(pcap_t *p, int dim)
 
 /* Set the driver working mode */
 static int
-pcap_setmode_win32(pcap_t *p, int mode)
+pcap_setmode_npf(pcap_t *p, int mode)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -313,7 +313,7 @@ pcap_setmode_win32(pcap_t *p, int mode)
 
 /*set the minimum amount of data that will release a read call*/
 static int
-pcap_setmintocopy_win32(pcap_t *p, int size)
+pcap_setmintocopy_npf(pcap_t *p, int size)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -326,7 +326,7 @@ pcap_setmintocopy_win32(pcap_t *p, int size)
 }
 
 static HANDLE
-pcap_getevent_win32(pcap_t *p)
+pcap_getevent_npf(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -334,7 +334,7 @@ pcap_getevent_win32(pcap_t *p)
 }
 
 static int
-pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
+pcap_oid_get_request_npf(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -342,7 +342,7 @@ pcap_oid_get_request_win32(pcap_t *p, bpf_u_int32 oid, void *data, size_t *lenp)
 }
 
 static int
-pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
+pcap_oid_set_request_npf(pcap_t *p, bpf_u_int32 oid, const void *data,
     size_t *lenp)
 {
 	struct pcap_win *pw = p->priv;
@@ -387,7 +387,7 @@ pcap_oid_set_request_win32(pcap_t *p, bpf_u_int32 oid, const void *data,
 }
 
 static u_int
-pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
+pcap_sendqueue_transmit_npf(pcap_t *p, pcap_send_queue *queue, int sync)
 {
 	struct pcap_win *pw = p->priv;
 	u_int res;
@@ -414,7 +414,7 @@ pcap_sendqueue_transmit_win32(pcap_t *p, pcap_send_queue *queue, int sync)
 }
 
 static int
-pcap_setuserbuffer_win32(pcap_t *p, int size)
+pcap_setuserbuffer_npf(pcap_t *p, int size)
 {
 	unsigned char *new_buff;
 
@@ -443,7 +443,7 @@ pcap_setuserbuffer_win32(pcap_t *p, int size)
 }
 
 static int
-pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
+pcap_live_dump_npf(pcap_t *p, char *filename, int maxsize, int maxpacks)
 {
 	struct pcap_win *pw = p->priv;
 	BOOLEAN res;
@@ -476,7 +476,7 @@ pcap_live_dump_win32(pcap_t *p, char *filename, int maxsize, int maxpacks)
 }
 
 static int
-pcap_live_dump_ended_win32(pcap_t *p, int sync)
+pcap_live_dump_ended_npf(pcap_t *p, int sync)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -484,7 +484,7 @@ pcap_live_dump_ended_win32(pcap_t *p, int sync)
 }
 
 static PAirpcapHandle
-pcap_get_airpcap_handle_win32(pcap_t *p)
+pcap_get_airpcap_handle_npf(pcap_t *p)
 {
 #ifdef HAVE_AIRPCAP_API
 	struct pcap_win *pw = p->priv;
@@ -496,7 +496,7 @@ pcap_get_airpcap_handle_win32(pcap_t *p)
 }
 
 static int
-pcap_read_win32_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
+pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	PACKET Packet;
 	int cc;
@@ -832,7 +832,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 /* Send a packet to the network */
 static int
-pcap_inject_win32(pcap_t *p, const void *buf, size_t size)
+pcap_inject_npf(pcap_t *p, const void *buf, size_t size)
 {
 	struct pcap_win *pw = p->priv;
 	PACKET pkt;
@@ -852,7 +852,7 @@ pcap_inject_win32(pcap_t *p, const void *buf, size_t size)
 }
 
 static void
-pcap_cleanup_win32(pcap_t *p)
+pcap_cleanup_npf(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -868,7 +868,7 @@ pcap_cleanup_win32(pcap_t *p)
 }
 
 static int
-pcap_activate_win32(pcap_t *p)
+pcap_activate_npf(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 	NetType type;
@@ -1172,31 +1172,31 @@ pcap_activate_win32(pcap_t *p)
 	{
 #endif /* HAVE_DAG_API */
 		/* install traditional npf handlers for read and setfilter */
-		p->read_op = pcap_read_win32_npf;
-		p->setfilter_op = pcap_setfilter_win32_npf;
+		p->read_op = pcap_read_npf;
+		p->setfilter_op = pcap_setfilter_npf;
 #ifdef HAVE_DAG_API
 	}
 #endif /* HAVE_DAG_API */
 	p->setdirection_op = NULL;	/* Not implemented. */
 	    /* XXX - can this be implemented on some versions of Windows? */
-	p->inject_op = pcap_inject_win32;
+	p->inject_op = pcap_inject_npf;
 	p->set_datalink_op = NULL;	/* can't change data link type */
-	p->getnonblock_op = pcap_getnonblock_win32;
-	p->setnonblock_op = pcap_setnonblock_win32;
-	p->stats_op = pcap_stats_win32;
-	p->stats_ex_op = pcap_stats_ex_win32;
-	p->setbuff_op = pcap_setbuff_win32;
-	p->setmode_op = pcap_setmode_win32;
-	p->setmintocopy_op = pcap_setmintocopy_win32;
-	p->getevent_op = pcap_getevent_win32;
-	p->oid_get_request_op = pcap_oid_get_request_win32;
-	p->oid_set_request_op = pcap_oid_set_request_win32;
-	p->sendqueue_transmit_op = pcap_sendqueue_transmit_win32;
-	p->setuserbuffer_op = pcap_setuserbuffer_win32;
-	p->live_dump_op = pcap_live_dump_win32;
-	p->live_dump_ended_op = pcap_live_dump_ended_win32;
-	p->get_airpcap_handle_op = pcap_get_airpcap_handle_win32;
-	p->cleanup_op = pcap_cleanup_win32;
+	p->getnonblock_op = pcap_getnonblock_npf;
+	p->setnonblock_op = pcap_setnonblock_npf;
+	p->stats_op = pcap_stats_npf;
+	p->stats_ex_op = pcap_stats_ex_npf;
+	p->setbuff_op = pcap_setbuff_npf;
+	p->setmode_op = pcap_setmode_npf;
+	p->setmintocopy_op = pcap_setmintocopy_npf;
+	p->getevent_op = pcap_getevent_npf;
+	p->oid_get_request_op = pcap_oid_get_request_npf;
+	p->oid_set_request_op = pcap_oid_set_request_npf;
+	p->sendqueue_transmit_op = pcap_sendqueue_transmit_npf;
+	p->setuserbuffer_op = pcap_setuserbuffer_npf;
+	p->live_dump_op = pcap_live_dump_npf;
+	p->live_dump_ended_op = pcap_live_dump_ended_npf;
+	p->get_airpcap_handle_op = pcap_get_airpcap_handle_npf;
+	p->cleanup_op = pcap_cleanup_npf;
 
 	/*
 	 * XXX - this is only done because WinPcap supported
@@ -1213,7 +1213,7 @@ pcap_activate_win32(pcap_t *p)
 
 	return (0);
 bad:
-	pcap_cleanup_win32(p);
+	pcap_cleanup_npf(p);
 	return (PCAP_ERROR);
 }
 
@@ -1221,7 +1221,7 @@ bad:
 * Check if rfmon mode is supported on the pcap_t for Windows systems.
 */
 static int
-pcap_can_set_rfmon_win32(pcap_t *p)
+pcap_can_set_rfmon_npf(pcap_t *p)
 {
 	return (PacketIsMonitorModeSupported(p->opt.device) == 1);
 }
@@ -1235,13 +1235,13 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 	if (p == NULL)
 		return (NULL);
 
-	p->activate_op = pcap_activate_win32;
-	p->can_set_rfmon_op = pcap_can_set_rfmon_win32;
+	p->activate_op = pcap_activate_npf;
+	p->can_set_rfmon_op = pcap_can_set_rfmon_npf;
 	return (p);
 }
 
 static int
-pcap_setfilter_win32_npf(pcap_t *p, struct bpf_program *fp)
+pcap_setfilter_npf(pcap_t *p, struct bpf_program *fp)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -1318,7 +1318,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 }
 
 static int
-pcap_getnonblock_win32(pcap_t *p)
+pcap_getnonblock_npf(pcap_t *p)
 {
 	struct pcap_win *pw = p->priv;
 
@@ -1331,7 +1331,7 @@ pcap_getnonblock_win32(pcap_t *p)
 }
 
 static int
-pcap_setnonblock_win32(pcap_t *p, int nonblock)
+pcap_setnonblock_npf(pcap_t *p, int nonblock)
 {
 	struct pcap_win *pw = p->priv;
 	int newtimeout;
@@ -1365,7 +1365,7 @@ pcap_setnonblock_win32(pcap_t *p, int nonblock)
 }
 
 static int
-pcap_add_if_win32(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
+pcap_add_if_npf(pcap_if_list_t *devlistp, char *name, bpf_u_int32 flags,
     const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
@@ -1699,7 +1699,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 		/*
 		 * Add an entry for this interface.
 		 */
-		if (pcap_add_if_win32(devlistp, name, flags, desc,
+		if (pcap_add_if_npf(devlistp, name, flags, desc,
 		    errbuf) == -1) {
 			/*
 			 * Failure.
