@@ -2609,7 +2609,6 @@ static int
 get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
 	int sock;
-	char *pathstr;
 	FILE *fh;
 	unsigned int arptype;
 	struct ifreq ifr;
@@ -2639,6 +2638,8 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		 * "Ethernet", i.e. ARPHRD_ETHER, for non-monitor-
 		 * mode devices.)
 		 */
+		char *pathstr;
+
 		if (asprintf(&pathstr, "/sys/class/net/%s/type", name) == -1) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: Can't generate path name string for /sys/class/net device",
@@ -2666,6 +2667,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 					 */
 					close(sock);
 					fclose(fh);
+					free(pathstr);
 					return 0;
 #endif
 
@@ -2690,9 +2692,9 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 				}
 			}
 			fclose(fh);
+			free(pathstr);
 		}
 	}
-	free(pathstr);
 
 #ifdef ETHTOOL_GLINK
 	memset(&ifr, 0, sizeof(ifr));
