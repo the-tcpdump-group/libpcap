@@ -195,7 +195,7 @@ static int ifprint(pcap_if_t *d)
     switch (d->flags & PCAP_IF_CONNECTION_STATUS) {
 
     case PCAP_IF_CONNECTION_STATUS_UNKNOWN:
-      printf(" (association unknown)");
+      printf(" (association status unknown)");
       break;
 
     case PCAP_IF_CONNECTION_STATUS_CONNECTED:
@@ -221,7 +221,7 @@ static int ifprint(pcap_if_t *d)
       break;
 
     case PCAP_IF_CONNECTION_STATUS_DISCONNECTED:
-      printf(" (disconnectted)");
+      printf(" (disconnected)");
       break;
 
     case PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE:
