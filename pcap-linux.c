@@ -336,6 +336,7 @@ struct pcap_linux {
 /*
  * Prototypes for internal functions and methods.
  */
+static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 #ifdef HAVE_PF_PACKET_SOCKETS
@@ -2364,7 +2365,7 @@ add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 	 * not already in the list.
 	 */
 	if (find_or_add_if(devlistp, name, ifrflags.ifr_flags,
-	    errbuf) == NULL) {
+	    get_if_flags, errbuf) == NULL) {
 		/*
 		 * Failure.
 		 */
