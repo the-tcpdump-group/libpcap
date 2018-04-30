@@ -129,11 +129,12 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
 /*
  * Sigh.  PacketRequest() will have made a DeviceIoControl()
  * call to the NPF driver to perform the OID request, with a
- * BIOCQUERYOID ioctl.  It looks as if the returned status
- * will be an NDIS_STATUS_ value, but those aren't defined
- * in any userland header.
- *
- * So we define them here.
+ * BIOCQUERYOID ioctl.  The kernel code should get back one
+ * of NDIS_STATUS_INVALID_OID, NDIS_STATUS_NOT_SUPPORTED,
+ * or NDIS_STATUS_NOT_RECOGNIZED if the OID request isn't
+ * supported by the OS or the driver, but that doesn't seem
+ * to make it to the caller of PacketRequest() in a
+ * reiable fashion.
  */
 #define NDIS_STATUS_INVALID_OID		0xc0010017
 #define NDIS_STATUS_NOT_SUPPORTED	0xc00000bb	/* STATUS_NOT_SUPPORTED */
@@ -165,22 +166,13 @@ oid_get_request(ADAPTER *adapter, bpf_u_int32 oid, void *data, size_t *lenp,
 	oid_data_arg->Oid = oid;
 	oid_data_arg->Length = (ULONG)(*lenp);	/* XXX - check for ridiculously large value? */
 	if (!PacketRequest(adapter, FALSE, oid_data_arg)) {
-		int status;
-		DWORD request_error;
 		char errmsgbuf[PCAP_ERRBUF_SIZE+1];
 
-		request_error = GetLastError();
-		if (request_error == NDIS_STATUS_INVALID_OID ||
-		    request_error == NDIS_STATUS_NOT_SUPPORTED ||
-		    request_error == NDIS_STATUS_NOT_RECOGNIZED)
-			status = PCAP_ERROR_OPERATION_NOTSUP;
-		else
-			status = PCAP_ERROR;
-		pcap_win32_err_to_str(request_error, errmsgbuf);
+		pcap_win32_err_to_str(GetLastError(), errmsgbuf);
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Error calling PacketRequest: %s", errmsgbuf);
 		free(oid_data_arg);
-		return (status);
+		return (-1);
 	}
 
 	/*
@@ -1500,13 +1492,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		len = sizeof (phys_medium);
 		status = oid_get_request(adapter, gen_physical_medium_oids[i],
 		    &phys_medium, &len, errbuf);
-		if (status == PCAP_ERROR) {
-			/*
-			 * Failed with a hard error.
-			 */
-			PacketCloseAdapter(adapter);
-			return (-1);
-		}
 		if (status == 0) {
 			/*
 			 * Success.
@@ -1514,8 +1499,10 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			break;
 		}
 		/*
-		 * Failed with "I don't support that OID", so try the
-		 * next one, if we have a next one.
+		 * Failed.  We can't determine whether it failed
+		 * because that particular OID isn't supported
+		 * or because some other problem occurred, so we
+		 * just drive on and try the next OID.
 		 */
 	}
 	if (status == 0) {
@@ -1546,13 +1533,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	len = sizeof(connect_state_ex);
 	status = oid_get_request(adapter, OID_GEN_MEDIA_CONNECT_STATUS_EX,
 	    &connect_state_ex, &len, errbuf);
-	if (status == PCAP_ERROR) {
-		/*
-		 * Fatal error.
-		 */
-		PacketCloseAdapter(adapter);
-		return (-1);
-	}
 	if (status == 0) {
 		switch (connect_state_ex) {
 
@@ -1576,22 +1556,15 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	 * OID_GEN_MEDIA_CONNECT_STATUS_EX isn't supported because it's
 	 * not in our SDK.
 	 */
-	status = PCAP_ERROR_OPERATION_NOTSUP;
+	status = -1;
 #endif
-	if (status == PCAP_ERROR_OPERATION_NOTSUP) {
+	if (status == -1) {
 		/*
-		 * OK, OID_GEN_MEDIA_CONNECT_STATUS_EX isn't supported,
+		 * OK, OID_GEN_MEDIA_CONNECT_STATUS_EX didn't work,
 		 * try OID_GEN_MEDIA_CONNECT_STATUS.
 		 */
 		status = oid_get_request(adapter, OID_GEN_MEDIA_CONNECT_STATUS,
 		    &connect_state, &len, errbuf);
-		if (status == PCAP_ERROR) {
-			/*
-			 * Fatal error.
-			 */
-			PacketCloseAdapter(adapter);
-			return (-1);
-		}
 		if (status == 0) {
 			switch (connect_state) {
 

@@ -3312,9 +3312,6 @@ pcap_statustostr(int errnum)
 
 	case PCAP_ERROR_TSTAMP_PRECISION_NOTSUP:
 		return ("That device doesn't support that time stamp precision");
-
-	case PCAP_ERROR_OPERATION_NOTSUP:
-		return ("That device doesn't support that operation");
 	}
 	(void)pcap_snprintf(ebuf, sizeof ebuf, "Unknown error: %d", errnum);
 	return(ebuf);
