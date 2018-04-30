@@ -1712,14 +1712,16 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 			flags |= PCAP_IF_LOOPBACK;
 		}
 #endif
-
 		/*
-		 * XXX - get the link state here.
-		 * Does the OID we want depend on NDIS 5 vs. NDIS 6?
-		 * If so, that means that there should be a packet.dll
-		 * API for this.
-		 * Set the appropriate bits in flags.
+		 * Get additional flags.
 		 */
+		if (get_if_flags(name, &flags, errbuf) == -1) {
+			/*
+			 * Failure.
+			 */
+			ret = -1;
+			break;
+		}
 
 		/*
 		 * Add an entry for this interface.
