@@ -92,8 +92,8 @@ SSRC =  @SSRC@
 CSRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
 	fmtutils.c \
 	savefile.c sf-pcap.c sf-pcapng.c pcap-common.c \
-	bpf_image.c bpf_dump.c
-GENSRC = scanner.c grammar.c bpf_filter.c
+	bpf_image.c bpf_filter.c bpf_dump.c
+GENSRC = scanner.c grammar.c
 LIBOBJS = @LIBOBJS@
 
 SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
@@ -253,7 +253,6 @@ EXTRA_DIST = \
 	TODO \
 	VERSION \
 	aclocal.m4 \
-	bpf/net/bpf_filter.c \
 	chmod_bpf \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
@@ -503,13 +502,6 @@ snprintf.o: $(srcdir)/missing/snprintf.c
 strtok_r.o: $(srcdir)/missing/strtok_r.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c
 
-bpf_filter.c: $(srcdir)/bpf/net/bpf_filter.c
-	rm -f bpf_filter.c
-	ln -s $(srcdir)/bpf/net/bpf_filter.c bpf_filter.c
-
-bpf_filter.o: bpf_filter.c
-	$(CC) $(FULL_CFLAGS) -c bpf_filter.c
-
 #
 # Generate the libpcap.pc file.
 #
@@ -743,7 +735,7 @@ clean:
 
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
-	    config.h gnuc.h net os-proto.h bpf_filter.c libpcap.pc \
+	    config.h gnuc.h net os-proto.h libpcap.pc \
 	    pcap-config stamp-h stamp-h.in
 	rm -f $(MAN3PCAP_EXPAND:.in=) $(MANFILE:.in=) $(MANMISC:.in=)
 	rm -rf autom4te.cache
@@ -765,7 +757,7 @@ releasetar:
 	   tar -c -z -f $$name.tar.gz $$name; \
 	   rm -rf $$name
 
-depend:	$(GENSRC) $(GENHDR) bpf_filter.c
+depend:	$(GENSRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	cd rpcapd; $(MAKE) depend
 	cd testprogs; $(MAKE) depend
