@@ -1868,9 +1868,6 @@ AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
 
 AC_LBL_UNALIGNED_ACCESS
 
-rm -f net
-ln -s ${srcdir}/bpf/net net
-
 AC_SUBST(V_CCOPT)
 AC_SUBST(V_DEFS)
 AC_SUBST(V_FINDALLDEVS)
@@ -2274,7 +2271,7 @@ AC_CONFIG_HEADER(config.h)
 
 AC_OUTPUT_COMMANDS([if test -f .devel; then
 	echo timestamp > stamp-h
-	cat Makefile-devel-adds >> Makefile
+	cat $srcdir/Makefile-devel-adds >> Makefile
 	make depend
 fi])
 AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc

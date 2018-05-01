@@ -850,6 +850,7 @@ endif(NOT WIN32)
 
 set(PROJECT_SOURCE_LIST_C
     bpf_dump.c
+    bpf_filter.c
     bpf_image.c
     etherent.c
     fmtutils.c
@@ -861,7 +862,6 @@ set(PROJECT_SOURCE_LIST_C
     savefile.c
     sf-pcapng.c
     sf-pcap.c
-    bpf/net/bpf_filter.c
 )
 
 if(WIN32)
