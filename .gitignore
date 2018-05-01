@@ -24,6 +24,7 @@ grammar.c
 grammar.h
 libpcap.a
 libpcap.*.dylib
+libpcap.pc
 libpcap.sl
 libpcap.so
 libpcap.so.*
