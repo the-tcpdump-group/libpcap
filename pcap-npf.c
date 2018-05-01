@@ -1591,6 +1591,12 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			 */
 			*flags |= PCAP_IF_WIRELESS;
 			break;
+
+		default:
+			/*
+			 * Not wireless.
+			 */
+			break;
 		}
 	}
 #endif
