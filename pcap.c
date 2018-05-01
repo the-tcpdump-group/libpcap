@@ -813,7 +813,7 @@ find_or_add_if(pcap_if_list_t *devlistp, const char *name,
 	 * attempt to add one.
 	 */
 	return (find_or_add_dev(devlistp, name, pcap_flags,
-	    get_if_description(name), get_flags_func, errbuf));
+	    get_flags_func, get_if_description(name), errbuf));
 }
 
 /*
@@ -997,7 +997,7 @@ add_addr_to_dev(pcap_if_t *curdev,
  */
 pcap_if_t *
 find_or_add_dev(pcap_if_list_t *devlistp, const char *name, bpf_u_int32 flags,
-    const char *description, get_if_flags_func get_flags_func, char *errbuf)
+    get_if_flags_func get_flags_func, const char *description, char *errbuf)
 {
 	pcap_if_t *curdev;
 

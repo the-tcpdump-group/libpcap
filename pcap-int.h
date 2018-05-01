@@ -450,7 +450,7 @@ int	pcap_findalldevs_interfaces(pcap_if_list_t *, char *,
 	    int (*)(const char *), get_if_flags_func);
 #endif
 pcap_if_t *find_or_add_dev(pcap_if_list_t *, const char *, bpf_u_int32,
-	    const char *, get_if_flags_func, char *);
+	    get_if_flags_func, const char *, char *);
 pcap_if_t *find_dev(pcap_if_list_t *, const char *);
 pcap_if_t *add_dev(pcap_if_list_t *, const char *, bpf_u_int32, const char *,
 	    char *);
