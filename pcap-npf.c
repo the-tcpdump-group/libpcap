@@ -1438,6 +1438,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	ADAPTER *adapter;
 	int status;
 	size_t len;
+	NDIS_HARDWARE_STATUS hardware_status;
 #ifdef OID_GEN_PHYSICAL_MEDIUM
 	NDIS_PHYSICAL_MEDIUM phys_medium;
 	bpf_u_int32 gen_physical_medium_oids[] = {
@@ -1458,9 +1459,9 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		/*
 		 * Loopback interface, so the connection status doesn't
 		 * apply. and it's not wireless (or wired, for that
-		 * matter...).
+		 * matter...).  We presume it's up and running.
 		 */
-		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+		*flags |= PCAP_IF_UP | PCAP_IF_RUNNING | PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 		return (0);
 	}
 
@@ -1505,6 +1506,50 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		return (0);
 	}
 #endif
+
+	/*
+	 * Get the hardware status, and derive "up" and "running" from
+	 * that.
+	 */
+	len = sizeof (hardware_status);
+	status = oid_get_request(adapter, OID_GEN_HARDWARE_STATUS OID,
+	    &hardware_status, &len, errbuf);
+	if (status == 0) {
+		switch (hardware_status) {
+
+		case NdisHardwareStatusReady:
+			/*
+			 * "Available and capable of sending and receiving
+			 * data over the wire", so up and running.
+			 */
+			*flags |= PCAP_IF_UP | PCAP_IF_RUNNING;
+			break;
+
+		case NdisHardwareStatusInitializing:
+		case NdisHardwareStatusReset:
+			/*
+			 * "Initializing" or "Resetting", so up, but
+			 * not running.
+			 */
+			*flags |= PCAP_IF_UP;
+			break;
+
+		case NdisHardwareStatusClosing:
+		case NdisHardwareStatusNotReady:
+			/*
+			 * "Closing" or "Not ready", so neither up nor
+			 * running.
+			 */
+			break;
+		}
+	} else {
+		/*
+		 * Can't get the hardware status, so assume both up and
+		 * running.
+		 */
+		*flags |= PCAP_IF_UP | PCAP_IF_RUNNING;
+		break;
+	}
 
 	/*
 	 * Get the network type.
