@@ -2,3 +2,4 @@ Makefile
 *~
 *.o
 rpcapd
+rpcapd.manadmin
