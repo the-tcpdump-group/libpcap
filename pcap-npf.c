@@ -1512,7 +1512,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	 * that.
 	 */
 	len = sizeof (hardware_status);
-	status = oid_get_request(adapter, OID_GEN_HARDWARE_STATUS OID,
+	status = oid_get_request(adapter, OID_GEN_HARDWARE_STATUS,
 	    &hardware_status, &len, errbuf);
 	if (status == 0) {
 		switch (hardware_status) {
@@ -1548,7 +1548,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		 * running.
 		 */
 		*flags |= PCAP_IF_UP | PCAP_IF_RUNNING;
-		break;
 	}
 
 	/*
