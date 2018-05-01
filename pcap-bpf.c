@@ -2747,7 +2747,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	memset(&req, 0, sizeof(req));
 	strncpy(req.ifm_name, name, sizeof(req.ifm_name));
 	if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
-		if (errno == EOPNOTSUPP || errno == EINVAL) {
+		if (errno == EOPNOTSUPP || errno == EINVAL || errno == ENOTTY) {
 			/*
 			 * Not supported, so we can't provide any
 			 * additional information.  Assume that
