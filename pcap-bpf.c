@@ -2641,6 +2641,17 @@ check_bpf_bindable(const char *name)
 
 #if defined(__FreeBSD__) && defined(SIOCIFCREATE2)
 static int
+get_usb_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
+{
+	/*
+	 * XXX - if there's a way to determine whether there's something
+	 * plugged into a given USB bus, use that to determine whether
+	 * this device is "connected" or not.
+	 */
+	return (0);
+}
+
+static int
 finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 {
 	DIR *usbdir;
@@ -2703,7 +2714,8 @@ finddevs_usb(pcap_if_list_t *devlistp, char *errbuf)
 		 * so we need to avoid adding multiple capture devices
 		 * for each bus.
 		 */
-		if (find_or_add_dev(devlistp, name, PCAP_IF_UP, NULL, errbuf) == NULL) {
+		if (find_or_add_dev(devlistp, name, PCAP_IF_UP,
+		    get_usb_if_flags, NULL, errbuf) == NULL) {
 			free(name);
 			closedir(usbdir);
 			return (PCAP_ERROR);
