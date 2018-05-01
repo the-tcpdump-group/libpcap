@@ -64,7 +64,16 @@ bt_monitor_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
     int         ret = 0;
 
-    if (add_dev(devlistp, INTERFACE_NAME, 0,
+    /*
+     * Bluetooth is a wireless technology.
+     *
+     * This is a device to monitor all Bluetooth interfaces, so
+     * there's no notion of "connected" or "disconnected", any
+     * more than there's a notion of "connected" or "disconnected"
+     * for the "any" device.
+     */
+    if (add_dev(devlistp, INTERFACE_NAME,
+                PCAP_IF_WIRELESS|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
                 "Bluetooth Linux Monitor", err_str) == NULL)
     {
         ret = -1;
