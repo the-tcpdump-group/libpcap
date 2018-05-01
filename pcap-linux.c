@@ -2615,6 +2615,15 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	struct ifreq ifr;
 	struct ethtool_value info;
 
+	if (*flags & PCAP_IF_LOOPBACK) {
+		/*
+		 * Loopback devices aren't wireless, and "connected"/
+		 * "disconnected" doesn't apply to them.
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+		return 0;
+	}
+
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sock == -1) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
