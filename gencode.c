@@ -8151,7 +8151,7 @@ gen_vlan_no_bpf_extensions(compiler_state_t *cstate, int vlan_num)
 	return b0;
 }
 
-#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#if defined(SKF_AD_VLAN_TAG_PRESENT)
 /* add v to variable part of off */
 static void
 gen_vlan_vloffset_add(compiler_state_t *cstate, bpf_abs_offset *off, int v, struct slist *s)
@@ -8330,7 +8330,7 @@ gen_vlan(compiler_state_t *cstate, int vlan_num)
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
-#if defined(SKF_AD_VLAN_TAG) && defined(SKF_AD_VLAN_TAG_PRESENT)
+#if defined(SKF_AD_VLAN_TAG_PRESENT)
 		/* Verify that this is the outer part of the packet and
 		 * not encapsulated somehow. */
 		if (cstate->vlan_stack_depth == 0 && !cstate->off_linkhdr.is_variable &&
