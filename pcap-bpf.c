@@ -2804,8 +2804,22 @@ static int
 get_if_flags(const char *name _U_, bpf_u_int32 *flags _U_, char *errbuf _U_)
 {
 	/*
-	 * Nothing we can do.
+	 * Nothing we can do other than mark loopback devices as "the
+	 * connected/disconnected status doesn't apply".
+	 *
+	 * XXX - on Solaris, can we do what the dladm command does,
+	 * i.e. get a connected/disconnected indication from a kstat?
+	 * (Note that you can also get the link speed, and possibly
+	 * other information, from a kstat as well.)
 	 */
+	if (*flags & PCAP_IF_LOOPBACK) {
+		/*
+		 * Loopback devices aren't wireless, and "connected"/
+		 * "disconnected" doesn't apply to them.
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+		return (0);
+	}
 	return (0);
 }
 #endif
