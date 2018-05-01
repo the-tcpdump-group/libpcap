@@ -343,8 +343,8 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * If it isn't already in the list of devices, try to
 		 * add it.
 		 */
-		if (find_or_add_dev(devlistp, entry->linkname, 0, NULL,
-		    errbuf) == NULL)
+		if (find_or_add_dev(devlistp, entry->linkname, 0, get_if_flags,
+		    NULL, errbuf) == NULL)
 			retv = -1;
 	}
 done:
