@@ -65,6 +65,10 @@ struct rtentry;
 #include <arpa/inet.h>
 #endif /* _WIN32 */
 
+#ifdef YYDEBUG
+extern int pcap_debug;
+#endif
+
 #include <stdio.h>
 
 #include "diag-control.h"
