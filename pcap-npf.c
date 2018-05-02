@@ -1450,10 +1450,10 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 #define N_GEN_PHYSICAL_MEDIUM_OIDS	(sizeof gen_physical_medium_oids / sizeof gen_physical_medium_oids[0])
 	size_t i;
 #endif /* OID_GEN_PHYSICAL_MEDIUM */
-#ifdef OID_GEN_MEDIA_CONNECT_STATUS_EX
-	NET_IF_MEDIA_CONNECT_STATE connect_state_ex;
+#ifdef OID_GEN_LINK_STATE
+	NDIS_LINK_STATE link_state;
 #endif
-	int connect_state;
+	int connect_status;
 
 	if (*flags & PCAP_IF_LOOPBACK) {
 		/*
@@ -1604,12 +1604,16 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	/*
 	 * Get the connection status.
 	 */
-#ifdef OID_GEN_MEDIA_CONNECT_STATUS_EX
-	len = sizeof(connect_state_ex);
-	status = oid_get_request(adapter, OID_GEN_MEDIA_CONNECT_STATUS_EX,
-	    &connect_state_ex, &len, errbuf);
+#ifdef OID_GEN_LINK_STATE
+	len = sizeof(link_state);
+	status = oid_get_request(adapter, OID_GEN_LINK_STATE, &link_state,
+	    &len, errbuf);
 	if (status == 0) {
-		switch (connect_state_ex) {
+		/*
+		 * NOTE: this also gives us the receive and transmit
+		 * link state.
+		 */
+		switch (link_state.MediaConnectState) {
 
 		case MediaConnectStateConnected:
 			/*
@@ -1628,20 +1632,19 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	}
 #else
 	/*
-	 * OID_GEN_MEDIA_CONNECT_STATUS_EX isn't supported because it's
-	 * not in our SDK.
+	 * OID_GEN_LINK_STATE isn't supported because it's not in our SDK.
 	 */
 	status = -1;
 #endif
 	if (status == -1) {
 		/*
-		 * OK, OID_GEN_MEDIA_CONNECT_STATUS_EX didn't work,
-		 * try OID_GEN_MEDIA_CONNECT_STATUS.
+		 * OK, OID_GEN_LINK_STATE didn't work, try
+		 * OID_GEN_MEDIA_CONNECT_STATUS.
 		 */
 		status = oid_get_request(adapter, OID_GEN_MEDIA_CONNECT_STATUS,
-		    &connect_state, &len, errbuf);
+		    &connect_status, &len, errbuf);
 		if (status == 0) {
-			switch (connect_state) {
+			switch (connect_status) {
 
 			case NdisMediaStateConnected:
 				/*
