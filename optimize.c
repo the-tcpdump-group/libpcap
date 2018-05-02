@@ -2187,7 +2187,7 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 	    {
 		u_int i;
 		int jt, jf;
-		const char *ljerr = "%s for block-local relative jump: off=%d";
+		const char ljerr[] = "%s for block-local relative jump: off=%d";
 
 #if 0
 		printf("code=%x off=%d %x %x\n", src->s.code,

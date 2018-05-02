@@ -1676,6 +1676,7 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         # check_and_add_compiler_option(-Wcovered-switch-default)
         check_and_add_compiler_option(-Wmissing-variable-declarations)
 	check_and_add_compiler_option(-Wunused-parameter)
+	check_and_add_compiler_option(-Wformat-nonliteral)
     endif()
 endif()
 
