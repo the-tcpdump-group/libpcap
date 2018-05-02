@@ -207,6 +207,7 @@ yyerror(void *yyscanner _U_, compiler_state_t *cstate, const char *msg)
 }
 
 #ifdef HAVE_NET_PFVAR_H
+#define PFVAR_RET $$ =
 static int
 pfreason_to_num(compiler_state_t *cstate, const char *reason)
 {
@@ -246,6 +247,7 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
 	}
 }
 #else /* !HAVE_NET_PFVAR_H */
+#define PFVAR_RET
 static PCAP_NORETURN_DEF int
 pfreason_to_num(compiler_state_t *cstate, const char *reason _U_)
 {
@@ -541,12 +543,12 @@ other:	  pqual TK_BROADCAST	{ $$ = gen_broadcast(cstate, $1); }
 	| pllc			{ $$ = $1; }
 	;
 
-pfvar:	  PF_IFNAME ID		{ $$ = gen_pf_ifname(cstate, $2); }
-	| PF_RSET ID		{ $$ = gen_pf_ruleset(cstate, $2); }
-	| PF_RNR NUM		{ $$ = gen_pf_rnr(cstate, $2); }
-	| PF_SRNR NUM		{ $$ = gen_pf_srnr(cstate, $2); }
-	| PF_REASON reason	{ $$ = gen_pf_reason(cstate, $2); }
-	| PF_ACTION action	{ $$ = gen_pf_action(cstate, $2); }
+pfvar:	  PF_IFNAME ID		{ PFVAR_RET gen_pf_ifname(cstate, $2); }
+	| PF_RSET ID		{ PFVAR_RET gen_pf_ruleset(cstate, $2); }
+	| PF_RNR NUM		{ PFVAR_RET gen_pf_rnr(cstate, $2); }
+	| PF_SRNR NUM		{ PFVAR_RET gen_pf_srnr(cstate, $2); }
+	| PF_REASON reason	{ PFVAR_RET gen_pf_reason(cstate, $2); }
+	| PF_ACTION action	{ PFVAR_RET gen_pf_action(cstate, $2); }
 	;
 
 p80211:   TYPE type SUBTYPE subtype
@@ -648,10 +650,10 @@ dir:	  NUM
 	;
 
 reason:	  NUM			{ $$ = $1; }
-	| ID			{ $$ = pfreason_to_num(cstate, $1); }
+	| ID			{ PFVAR_RET pfreason_to_num(cstate, $1); }
 	;
 
-action:	  ID			{ $$ = pfaction_to_num(cstate, $1); }
+action:	  ID			{ PFVAR_RET pfaction_to_num(cstate, $1); }
 	;
 
 relop:	  '>'			{ $$ = BPF_JGT; }
