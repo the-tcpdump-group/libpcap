@@ -64,7 +64,7 @@ static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 static void warn(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 
 #ifdef BDEBUG
-int dflag;
+static int dflag;
 #endif
 
 /*
