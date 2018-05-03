@@ -36,7 +36,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include "pcap/funcattrs.h"
 
 /* Forwards */
-static void PCAP_NORETURN error(const char *, ...);
+static void PCAP_NORETURN error(PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(1,2);
 
 int
 main(void)
