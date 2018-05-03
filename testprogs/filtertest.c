@@ -56,16 +56,22 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #include "pcap/funcattrs.h"
 
+#ifdef BDEBUG
+/*
+ * We have pcap_set_optimizer_debug() in libpcap; declare it (it's not declared
+ * by any libpcap header, because it's a special hack, only available if
+ * libpcap was configured to include it, and only intended for use by
+ * libpcap developers trying to debug the optimizer for filter expressions).
+ */
+PCAP_API void pcap_set_optimizer_debug(int);
+#endif
+
 static char *program_name;
 
 /* Forwards */
 static void PCAP_NORETURN usage(void);
 static void PCAP_NORETURN error(const char *, ...) PCAP_PRINTFLIKE(1, 2);
 static void warn(const char *, ...) PCAP_PRINTFLIKE(1, 2);
-
-#ifdef BDEBUG
-int dflag;
-#endif
 
 /*
  * On Windows, we need to open the file in binary mode, so that
@@ -187,9 +193,7 @@ main(int argc, char **argv)
 {
 	char *cp;
 	int op;
-#ifndef BDEBUG
 	int dflag;
-#endif
 	char *infile;
 	int Oflag;
 	long snaplen;
@@ -295,6 +299,10 @@ main(int argc, char **argv)
 		cmdbuf = read_infile(infile);
 	else
 		cmdbuf = copy_argv(&argv[optind+1]);
+
+#ifdef BDEBUG
+	pcap_set_optimizer_debug(dflag);
+#endif
 
 	pd = pcap_open_dead(dlt, snaplen);
 	if (pd == NULL)
