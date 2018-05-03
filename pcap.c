@@ -3941,8 +3941,6 @@ PCAP_API void pcap_set_parser_debug(int value);
 PCAP_API_DEF void
 pcap_set_parser_debug(int value)
 {
-	extern int pcap_debug;
-
 	pcap_debug = value;
 }
 #endif
