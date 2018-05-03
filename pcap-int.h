@@ -496,6 +496,10 @@ int	install_bpf_program(pcap_t *, struct bpf_program *);
 
 int	pcap_strcasecmp(const char *, const char *);
 
+#ifdef YYDEBUG
+extern int pcap_debug;
+#endif
+
 #ifdef __cplusplus
 }
 #endif
