@@ -10,12 +10,13 @@ Usage guide:
        ./configure --enable-optimizer-dbg
        make
        make testprogs
-2. Run filtertest to compile BPF expression, save to output a.txt
-       testprogs/filtertest EN10MB host 192.168.1.1 > a.txt
+2. Run filtertest to compile BPF expression and produce the CFG as a
+   DOT graph, save to output a.txt
+       testprogs/filtertest -g EN10MB host 192.168.1.1 > a.txt
 3. Send a.txt to this program's standard input
        cat a.txt | testprogs/visopts.py
 4. Step 2&3 can be merged:
-       testprogs/filtertest EN10MB host 192.168.1.1 | testprogs/visopts.py
+       testprogs/filtertest -g EN10MB host 192.168.1.1 | testprogs/visopts.py
 5. The standard output is something like this:
        generated files under directory: /tmp/visopts-W9ekBw
          the directory will be removed when this programs finished.
@@ -23,7 +24,7 @@ Usage guide:
 6. Using open link at the 3rd line `http://localhost:39062/expr1.html'
 
 Note:
-1. CFG graph is translated to SVG document, expr1.html embeded them as external
+1. The CFG is translated to SVG an document, expr1.html embeded them as external
    document. If you open expr1.html as local file using file:// protocol, some
    browsers will deny such requests so the web pages will not shown properly.
    For chrome, you can run it using following command to avoid this:

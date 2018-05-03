@@ -23,8 +23,6 @@
  * Some stuff for use when debugging the optimizer.
  */
 #ifdef BDEBUG
-extern int pcap_optimizer_debug;	/* optimizer debugging level */
-
 #define NBIDS	1000
 extern int bids[NBIDS];
 #endif

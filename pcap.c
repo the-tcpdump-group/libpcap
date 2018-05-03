@@ -3944,25 +3944,3 @@ pcap_set_parser_debug(int value)
 	pcap_debug = value;
 }
 #endif
-
-#ifdef BDEBUG
-/*
- * Set the internal "debug printout" flag for the filter expression optimizer.
- * The code to print that stuff is present only if BDEBUG is defined, so
- * the flag, and the routine to set it, are defined only if BDEBUG is
- * defined.
- *
- * This is intended for libpcap developers, not for general use.
- * If you want to set these in a program, you'll have to declare this
- * routine yourself, with the appropriate DLL import attribute on Windows;
- * it's not declared in any header file, and won't be declared in any
- * header file provided by libpcap.
- */
-PCAP_API void pcap_set_optimizer_debug(int value);
-
-PCAP_API_DEF void
-pcap_set_optimizer_debug(int value)
-{
-	pcap_optimizer_debug = value;
-}
-#endif

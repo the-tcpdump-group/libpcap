@@ -44,7 +44,56 @@
 #endif
 
 #ifdef BDEBUG
-int pcap_optimizer_debug;
+/*
+ * The internal "debug printout" flag for the filter expression optimizer.
+ * The code to print that stuff is present only if BDEBUG is defined, so
+ * the flag, and the routine to set it, are defined only if BDEBUG is
+ * defined.
+ */
+static int pcap_optimizer_debug;
+
+/*
+ * Routine to set that flag.
+ *
+ * This is intended for libpcap developers, not for general use.
+ * If you want to set these in a program, you'll have to declare this
+ * routine yourself, with the appropriate DLL import attribute on Windows;
+ * it's not declared in any header file, and won't be declared in any
+ * header file provided by libpcap.
+ */
+PCAP_API void pcap_set_optimizer_debug(int value);
+
+PCAP_API_DEF void
+pcap_set_optimizer_debug(int value)
+{
+	pcap_optimizer_debug = value;
+}
+
+/*
+ * The internal "print dot graph" flag for the filter expression optimizer.
+ * The code to print that stuff is present only if BDEBUG is defined, so
+ * the flag, and the routine to set it, are defined only if BDEBUG is
+ * defined.
+ */
+static int pcap_print_dot_graph;
+
+/*
+ * Routine to set that flag.
+ *
+ * This is intended for libpcap developers, not for general use.
+ * If you want to set these in a program, you'll have to declare this
+ * routine yourself, with the appropriate DLL import attribute on Windows;
+ * it's not declared in any header file, and won't be declared in any
+ * header file provided by libpcap.
+ */
+PCAP_API void pcap_set_print_dot_graph(int value);
+
+PCAP_API_DEF void
+pcap_set_print_dot_graph(int value)
+{
+	pcap_print_dot_graph = value;
+}
+
 #endif
 
 /*
@@ -1733,7 +1782,7 @@ opt_loop(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic,
 {
 
 #ifdef BDEBUG
-	if (pcap_optimizer_debug > 1) {
+	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("opt_loop(root, %d) begin\n", do_stmts);
 		opt_dump(cstate, ic);
 	}
@@ -1747,7 +1796,7 @@ opt_loop(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic,
 		find_edom(opt_state, ic->root);
 		opt_blks(cstate, opt_state, ic, do_stmts);
 #ifdef BDEBUG
-		if (pcap_optimizer_debug > 1) {
+		if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 			printf("opt_loop(root, %d) bottom, done=%d\n", do_stmts, opt_state->done);
 			opt_dump(cstate, ic);
 		}
@@ -1768,14 +1817,14 @@ bpf_optimize(compiler_state_t *cstate, struct icode *ic)
 	opt_loop(cstate, &opt_state, ic, 1);
 	intern_blocks(&opt_state, ic);
 #ifdef BDEBUG
-	if (pcap_optimizer_debug > 1) {
+	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("after intern_blocks()\n");
 		opt_dump(cstate, ic);
 	}
 #endif
 	opt_root(&ic->root);
 #ifdef BDEBUG
-	if (pcap_optimizer_debug > 1) {
+	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("after opt_root()\n");
 		opt_dump(cstate, ic);
 	}
@@ -2437,11 +2486,11 @@ plain_dump(compiler_state_t *cstate, struct icode *ic)
 static void
 opt_dump(compiler_state_t *cstate, struct icode *ic)
 {
-	/* if optimizer debugging is enabled, output DOT graph
-	 * `pcap_optimizer_debug=4' is equivalent to -dddd to follow -d/-dd/-ddd
-	 * convention in tcpdump command line
+	/*
+	 * If the CFG, in DOT format, is requested, output it rather than
+	 * the code that would be generated from that graph.
 	 */
-	if (pcap_optimizer_debug > 3)
+	if (pcap_print_dot_graph)
 		dot_dump(cstate, ic);
 	else
 		plain_dump(cstate, ic);

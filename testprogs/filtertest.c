@@ -58,12 +58,14 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #ifdef BDEBUG
 /*
- * We have pcap_set_optimizer_debug() in libpcap; declare it (it's not declared
- * by any libpcap header, because it's a special hack, only available if
- * libpcap was configured to include it, and only intended for use by
- * libpcap developers trying to debug the optimizer for filter expressions).
+ * We have pcap_set_optimizer_debug() and pcap_set_print_dot_graph() in
+ * libpcap; declare them (they're not declared by any libpcap header,
+ * because they're special hacks, only available if libpcap was configured
+ * to include them, and only intended for use by libpcap developers trying
+ * to debug the optimizer for filter expressions).
  */
 PCAP_API void pcap_set_optimizer_debug(int);
+PCAP_API void pcap_set_print_dot_graph(int);
 #endif
 
 static char *program_name;
@@ -194,6 +196,7 @@ main(int argc, char **argv)
 	char *cp;
 	int op;
 	int dflag;
+	int gflag;
 	char *infile;
 	int Oflag;
 	long snaplen;
@@ -210,15 +213,9 @@ main(int argc, char **argv)
 		return 1;
 #endif /* _WIN32 */
 
-#ifndef BDEBUG
 	dflag = 1;
-#else
-	/* if optimizer debugging is enabled, output DOT graph
-	 * `dflag=4' is equivalent to -dddd to follow -d/-dd/-ddd
-	 * convention in tcpdump command line
-	 */
-	dflag = 4;
-#endif
+	gflag = 0;
+
 	infile = NULL;
 	Oflag = 1;
 	snaplen = 68;
@@ -229,11 +226,19 @@ main(int argc, char **argv)
 		program_name = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "dF:m:Os:")) != -1) {
+	while ((op = getopt(argc, argv, "dF:gm:Os:")) != -1) {
 		switch (op) {
 
 		case 'd':
 			++dflag;
+			break;
+
+		case 'g':
+#ifdef BDEBUG
+			++gflag;
+#else
+			error("libpcap and filtertest not built with optimizer debugging enabled");
+#endif
 			break;
 
 		case 'F':
@@ -302,6 +307,7 @@ main(int argc, char **argv)
 
 #ifdef BDEBUG
 	pcap_set_optimizer_debug(dflag);
+	pcap_set_print_dot_graph(gflag);
 #endif
 
 	pd = pcap_open_dead(dlt, snaplen);
@@ -343,7 +349,11 @@ usage(void)
 	(void)fprintf(stderr, "%s, with %s\n", program_name,
 	    pcap_lib_version());
 	(void)fprintf(stderr,
+#ifdef BDEBUG
+	    "Usage: %s [-dgO] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
+#else
 	    "Usage: %s [-dO] [ -F file ] [ -m netmask] [ -s snaplen ] dlt [ expression ]\n",
+#endif
 	    program_name);
 	exit(1);
 }
