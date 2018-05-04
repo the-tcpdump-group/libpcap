@@ -72,9 +72,7 @@ struct rtentry;
 #include "pcap-int.h"
 
 #include "gencode.h"
-DIAG_OFF_BISON_BYACC
 #include "grammar.h"
-DIAG_ON_BISON_BYACC
 #include "scanner.h"
 
 #ifdef HAVE_NET_PFVAR_H
@@ -262,8 +260,6 @@ pfaction_to_num(compiler_state_t *cstate, const char *action _U_)
 	/*NOTREACHED*/
 }
 #endif /* HAVE_NET_PFVAR_H */
-
-DIAG_OFF_BISON_BYACC
 %}
 
 %union {
@@ -761,7 +757,6 @@ mtp3fieldvalue: NUM {
 	}
 	;
 mtp3listvalue: mtp3fieldvalue
-	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; }
+	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; DIAG_OFF_BISON_BYACC}
 	;
 %%
-DIAG_ON_BISON_BYACC

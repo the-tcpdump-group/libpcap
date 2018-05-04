@@ -164,9 +164,28 @@
       __pragma(warning(disable:4244)) \
       __pragma(warning(disable:4702))
     #define DIAG_ON_BISON_BYACC  __pragma(warning(pop))
+  #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+    /*
+     * This is Clang 2.8 or later; we can use "clang diagnostic
+     * ignored -Wxxx" and "clang diagnostic push/pop".
+     */
+    #define DIAG_OFF_BISON_BYACC \
+      PCAP_DO_PRAGMA(clang diagnostic push) \
+      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
+    #define DIAG_ON_BISON_BYACC \
+      PCAP_DO_PRAGMA(clang diagnostic pop)
+  #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
+    /*
+     * This is GCC 4.6 or later, or a compiler claiming to be that.
+     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2)
+     * and "GCC diagnostic push/pop" (introduced in 4.6).
+     */
+    #define DIAG_OFF_BISON_BYACC
+    #define DIAG_ON_BISON_BYACC
   #else
     /*
-     * Nothing to suppress.
+     * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
+     * claiming to be that; there's nothing we know of that we can do.
      */
     #define DIAG_OFF_BISON_BYACC
     #define DIAG_ON_BISON_BYACC
