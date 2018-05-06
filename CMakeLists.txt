@@ -1675,8 +1675,8 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         # Warns about safeguards added in case the enums are extended
         # check_and_add_compiler_option(-Wcovered-switch-default)
         check_and_add_compiler_option(-Wmissing-variable-declarations)
-	check_and_add_compiler_option(-Wunused-parameter)
-	check_and_add_compiler_option(-Wformat-nonliteral)
+        check_and_add_compiler_option(-Wunused-parameter)
+        check_and_add_compiler_option(-Wformat-nonliteral)
     endif()
 endif()
 
@@ -2069,71 +2069,71 @@ endfunction(install_manpage_symlink)
 
 set(MAN1_NOEXPAND pcap-config.1)
 set(MAN3PCAP_EXPAND
-	pcap.3pcap.in
-	pcap_compile.3pcap.in
-	pcap_datalink.3pcap.in
-	pcap_dump_open.3pcap.in
-	pcap_get_tstamp_precision.3pcap.in
-	pcap_list_datalinks.3pcap.in
-	pcap_list_tstamp_types.3pcap.in
-	pcap_open_dead.3pcap.in
-	pcap_open_offline.3pcap.in
-	pcap_set_tstamp_precision.3pcap.in
-	pcap_set_tstamp_type.3pcap.in
+    pcap.3pcap.in
+    pcap_compile.3pcap.in
+    pcap_datalink.3pcap.in
+    pcap_dump_open.3pcap.in
+    pcap_get_tstamp_precision.3pcap.in
+    pcap_list_datalinks.3pcap.in
+    pcap_list_tstamp_types.3pcap.in
+    pcap_open_dead.3pcap.in
+    pcap_open_offline.3pcap.in
+    pcap_set_tstamp_precision.3pcap.in
+    pcap_set_tstamp_type.3pcap.in
 )
 set(MAN3PCAP_NOEXPAND
-	pcap_activate.3pcap
-	pcap_breakloop.3pcap
-	pcap_can_set_rfmon.3pcap
-	pcap_close.3pcap
-	pcap_create.3pcap
-	pcap_datalink_name_to_val.3pcap
-	pcap_datalink_val_to_name.3pcap
-	pcap_dump.3pcap
-	pcap_dump_close.3pcap
-	pcap_dump_file.3pcap
-	pcap_dump_flush.3pcap
-	pcap_dump_ftell.3pcap
-	pcap_file.3pcap
-	pcap_fileno.3pcap
-	pcap_findalldevs.3pcap
-	pcap_freecode.3pcap
-	pcap_get_required_select_timeout.3pcap
-	pcap_get_selectable_fd.3pcap
-	pcap_geterr.3pcap
-	pcap_inject.3pcap
-	pcap_is_swapped.3pcap
-	pcap_lib_version.3pcap
-	pcap_lookupdev.3pcap
-	pcap_lookupnet.3pcap
-	pcap_loop.3pcap
-	pcap_major_version.3pcap
-	pcap_next_ex.3pcap
-	pcap_offline_filter.3pcap
-	pcap_open_live.3pcap
-	pcap_set_buffer_size.3pcap
-	pcap_set_datalink.3pcap
-	pcap_set_immediate_mode.3pcap
-	pcap_set_promisc.3pcap
-	pcap_set_protocol.3pcap
-	pcap_set_rfmon.3pcap
-	pcap_set_snaplen.3pcap
-	pcap_set_timeout.3pcap
-	pcap_setdirection.3pcap
-	pcap_setfilter.3pcap
-	pcap_setnonblock.3pcap
-	pcap_snapshot.3pcap
-	pcap_stats.3pcap
-	pcap_statustostr.3pcap
-	pcap_strerror.3pcap
-	pcap_tstamp_type_name_to_val.3pcap
-	pcap_tstamp_type_val_to_name.3pcap
+    pcap_activate.3pcap
+    pcap_breakloop.3pcap
+    pcap_can_set_rfmon.3pcap
+    pcap_close.3pcap
+    pcap_create.3pcap
+    pcap_datalink_name_to_val.3pcap
+    pcap_datalink_val_to_name.3pcap
+    pcap_dump.3pcap
+    pcap_dump_close.3pcap
+    pcap_dump_file.3pcap
+    pcap_dump_flush.3pcap
+    pcap_dump_ftell.3pcap
+    pcap_file.3pcap
+    pcap_fileno.3pcap
+    pcap_findalldevs.3pcap
+    pcap_freecode.3pcap
+    pcap_get_required_select_timeout.3pcap
+    pcap_get_selectable_fd.3pcap
+    pcap_geterr.3pcap
+    pcap_inject.3pcap
+    pcap_is_swapped.3pcap
+    pcap_lib_version.3pcap
+    pcap_lookupdev.3pcap
+    pcap_lookupnet.3pcap
+    pcap_loop.3pcap
+    pcap_major_version.3pcap
+    pcap_next_ex.3pcap
+    pcap_offline_filter.3pcap
+    pcap_open_live.3pcap
+    pcap_set_buffer_size.3pcap
+    pcap_set_datalink.3pcap
+    pcap_set_immediate_mode.3pcap
+    pcap_set_promisc.3pcap
+    pcap_set_protocol.3pcap
+    pcap_set_rfmon.3pcap
+    pcap_set_snaplen.3pcap
+    pcap_set_timeout.3pcap
+    pcap_setdirection.3pcap
+    pcap_setfilter.3pcap
+    pcap_setnonblock.3pcap
+    pcap_snapshot.3pcap
+    pcap_stats.3pcap
+    pcap_statustostr.3pcap
+    pcap_strerror.3pcap
+    pcap_tstamp_type_name_to_val.3pcap
+    pcap_tstamp_type_val_to_name.3pcap
 )
 set(MANFILE_EXPAND pcap-savefile.manfile.in)
 set(MANMISC_EXPAND
-	pcap-filter.manmisc.in
-	pcap-linktype.manmisc.in
-	pcap-tstamp.manmisc.in
+    pcap-filter.manmisc.in
+    pcap-linktype.manmisc.in
+    pcap-tstamp.manmisc.in
 )
 
 if(NOT BUILD_SHARED_LIBS)
