@@ -55,13 +55,15 @@
    * This is Microsoft Visual Studio; we can use __pragma(warning(disable:XXXX))
    * and __pragma(warning(push/pop)).
    *
-   * Suppress signed-vs-unsigned comparison and narrowing warnings.
+   * Suppress signed-vs-unsigned comparison, narrowing, and unreachable
+   * code warnings.
    */
   #define DIAG_OFF_FLEX \
     __pragma(warning(push)) \
     __pragma(warning(disable:4127)) \
     __pragma(warning(disable:4242)) \
-    __pragma(warning(disable:4244))
+    __pragma(warning(disable:4244)) \
+    __pragma(warning(disable:4702))
   #define DIAG_ON_FLEX  __pragma(warning(pop))
 #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
   /*
@@ -120,7 +122,18 @@
    * So, if we have _Pragma, and have pragmas to suppress diagnostics,
    * we use it to turn off -Wshadow warnings.
    */
-  #if PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
+  #if defined(_MSC_VER)
+    /*
+     * This is Microsoft Visual Studio; we can use
+     * __pragma(warning(disable:XXXX)) and __pragma(warning(push/pop)).
+     *
+     * Suppress unreachable code warnings.
+     */
+    #define DIAG_OFF_BISON_BYACC \
+      __pragma(warning(push)) \
+      __pragma(warning(disable:4702))
+    #define DIAG_ON_BISON_BYACC  __pragma(warning(pop))
+  #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
      * ignored -Wxxx" and "clang diagnostic push/pop".
