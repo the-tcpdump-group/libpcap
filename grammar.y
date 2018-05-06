@@ -762,4 +762,3 @@ mtp3listvalue: mtp3fieldvalue
 	| mtp3listvalue or mtp3fieldvalue { gen_or($1.b, $3.b); $$ = $3; }
 	;
 %%
-DIAG_ON_BISON_BYACC
