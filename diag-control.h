@@ -119,8 +119,7 @@
    * That causes a warning due to the local declaration in the parser
    * shadowing the global declaration.
    *
-   * So, if we have _Pragma, and have pragmas to suppress diagnostics,
-   * we use it to turn off -Wshadow warnings.
+   * So, if the compiler warns about that, we turn off -Wshadow warnings.
    */
   #if defined(_MSC_VER)
     /*
