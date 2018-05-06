@@ -88,6 +88,27 @@ struct rtentry;
 #include "os-proto.h"
 #endif
 
+#ifdef YYBYACC
+/*
+ * Both Berkeley YACC and Bison define yydebug (under whatever name
+ * it has) as a global, but Bison does so only if YYDEBUG is defined.
+ * Berkeley YACC define it even if YYDEBUG isn't defined; declare it
+ * here to suppress a warning.
+ */
+#if !defined(YYDEBUG)
+extern int yydebug;
+#endif
+
+/*
+ * In Berkeley YACC, yynerrs (under whatever name it has) is global,
+ * even if it's building a reentrant parser.  In Bison, it's local
+ * in reentrant parsers.
+ *
+ * Declare it to squelch a warning.
+ */
+extern int yynerrs;
+#endif
+
 #define QSET(q, p, d, a) (q).proto = (unsigned char)(p),\
 			 (q).dir = (unsigned char)(d),\
 			 (q).addr = (unsigned char)(a)
