@@ -1758,7 +1758,7 @@ add_custom_command(
 #
 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/scanner.c PROPERTIES
     GENERATED TRUE
-    OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/scanner.h
+    OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/grammar.h
 )
 
 #
@@ -1797,6 +1797,7 @@ add_custom_command(
 #
 set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
     GENERATED TRUE
+    OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/scanner.h
 )
 
 #
