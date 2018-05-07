@@ -236,10 +236,11 @@ pcap_netmap_activate(pcap_t *p)
 		pcap_cleanup_live_common(p);
 		return (PCAP_ERROR);
 	}
-	if (0)
-	    fprintf(stderr, "%s device %s priv %p fd %d ports %d..%d\n",
-		__FUNCTION__, p->opt.device, d, d->fd,
-		d->first_rx_ring, d->last_rx_ring);
+#if 0
+	fprintf(stderr, "%s device %s priv %p fd %d ports %d..%d\n",
+	    __FUNCTION__, p->opt.device, d, d->fd,
+	    d->first_rx_ring, d->last_rx_ring);
+#endif
 	pn->d = d;
 	p->fd = d->fd;
 
