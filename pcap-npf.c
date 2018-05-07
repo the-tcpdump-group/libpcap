@@ -1034,7 +1034,17 @@ pcap_activate_npf(pcap_t *p)
 	}
 	else
 	{
-		if (PacketSetHwFilter(pw->adapter,NDIS_PACKET_TYPE_ALL_LOCAL) == FALSE)
+		/* NDIS_PACKET_TYPE_ALL_LOCAL selects "All packets sent by installed
+		 * protocols and all packets indicated by the NIC" but if no protocol
+		 * drivers (like TCP/IP) are installed, NDIS_PACKET_TYPE_DIRECTED,
+		 * NDIS_PACKET_TYPE_BROADCAST, and NDIS_PACKET_TYPE_MULTICAST are needed to
+		 * capture incoming frames.
+		 */
+		if (PacketSetHwFilter(pw->adapter,
+			NDIS_PACKET_TYPE_ALL_LOCAL |
+			NDIS_PACKET_TYPE_DIRECTED |
+			NDIS_PACKET_TYPE_BROADCAST |
+			NDIS_PACKET_TYPE_MULTICAST) == FALSE)
 		{
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "failed to set hardware filter to non-promiscuous mode");
 			goto bad;
