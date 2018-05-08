@@ -1064,6 +1064,7 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 static int
 dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	struct pcap_dag *pd = p->priv;
+	uint32_t stream_drop;
 
 	/*
 	 * Packet records received (ps_recv) are counted in dag_read().
@@ -1073,10 +1074,14 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	 */
 
 	if(pd->drop_attr != kNullAttributeUuid) {
-		/* Note this counter will wrap at UINT_MAX.
+		/* Note this counter is cleared at start of capture and will wrap at UINT_MAX.
 		 * The application is responsible for polling ps_drop frequently enough
-		 * to detect each wrap and integrate drop with a wider counter */
-		pd->stat.ps_drop = dag_config_get_uint32_attribute(pd->dag_ref, pd->drop_attr);
+		 * to detect each wrap and integrate total drop with a wider counter */
+		if (dag_config_get_uint32_attribute_ex(pd->dag_ref, pd->drop_attr, &stream_drop) == kDagErrNone) {
+			pd->stat.ps_drop = stream_drop;
+		} else {
+			/* Currently not reporting errors reading stats */
+		}
 	}
 
 	*ps = pd->stat;
