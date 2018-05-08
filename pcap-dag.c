@@ -1065,6 +1065,7 @@ static int
 dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	struct pcap_dag *pd = p->priv;
 	uint32_t stream_drop;
+	dag_err_t dag_error;
 
 	/*
 	 * Packet records received (ps_recv) are counted in dag_read().
@@ -1077,10 +1078,12 @@ dag_stats(pcap_t *p, struct pcap_stat *ps) {
 		/* Note this counter is cleared at start of capture and will wrap at UINT_MAX.
 		 * The application is responsible for polling ps_drop frequently enough
 		 * to detect each wrap and integrate total drop with a wider counter */
-		if (dag_config_get_uint32_attribute_ex(pd->dag_ref, pd->drop_attr, &stream_drop) == kDagErrNone) {
+		if ((dag_error = dag_config_get_uint32_attribute_ex(pd->dag_ref, pd->drop_attr, &stream_drop) == kDagErrNone)) {
 			pd->stat.ps_drop = stream_drop;
 		} else {
-			/* Currently not reporting errors reading stats */
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "reading stream drop attribute: %s",
+				 dag_config_strerror(dag_error));
+			return -1;
 		}
 	}
 
