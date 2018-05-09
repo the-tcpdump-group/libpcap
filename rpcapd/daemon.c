@@ -2246,6 +2246,32 @@ daemon_thrdatamain(void *ptr)
 	// We need a buffer large enough to hold a buffer large enough
 	// for a maximum-size packet for this pcap_t.
 	//
+	if (pcap_snapshot(session->fp) < 0)
+	{
+		//
+		// The snapshot length is negative.
+		// This "should not happen".
+		//
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Unable to allocate the buffer for this child thread: snapshot length of %d is negative",
+		        pcap_snapshot(session->fp));
+		sendbuf = NULL;	// we can't allocate a buffer, so nothing to free
+		goto error;
+	}
+	if ((unsigned int)pcap_snapshot(session->fp) > SIZE_MAX - sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr))
+	{
+		//
+		// The snapshot length is so large that it would overflow
+		// a size_t.  (Unlikely, but not impossible, on ILP32
+		// platforms; impossible on LP64 and LLP64 platforms, as
+		// pcap_snapshot() returns an int).
+		//
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Unable to allocate the buffer for this child thread: snapshot length of %d is too large",
+		        pcap_snapshot(session->fp));
+		sendbuf = NULL;	// we can't allocate a buffer, so nothing to free
+		goto error;
+	}
 	sendbufsize = sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr) + pcap_snapshot(session->fp);
 	sendbuf = (char *) malloc (sendbufsize);
 	if (sendbuf == NULL)
