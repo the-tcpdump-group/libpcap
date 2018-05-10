@@ -569,9 +569,17 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 *
 		 * However, perhaps some versions of libpcap failed to
 		 * set the snapshot length currectly in the file header
-		 * or the per-packet header,  or perhaps this is a
+		 * or the per-packet header, or perhaps this is a
 		 * corrupted safefile or a savefile built/modified by a
-		 * fuzz tester, so we check anyway.
+		 * fuzz tester, so we check anyway.  We grow the buffer
+		 * to be big enough for the snapshot length, read up
+		 * to the snapshot length, discard the rest of the
+		 * packet, and report the snapshot length as the captured
+		 * length; we don't want to hand our caller a packet
+		 * bigger than the snapshot length, because they might
+		 * be assuming they'll never be handed such a packet,
+		 * and might copy the packet into a snapshot-length-
+		 * sized buffer, assuming it'll fit.
 		 */
 		size_t bytes_to_discard;
 		size_t bytes_to_read, bytes_read;
@@ -586,10 +594,10 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		}
 
 		/*
-		 * Read the first p->bufsize bytes into the buffer.
+		 * Read the first p->snapshot bytes into the buffer.
 		 */
-		amt_read = fread(p->buffer, 1, p->bufsize, fp);
-		if (amt_read != p->bufsize) {
+		amt_read = fread(p->buffer, 1, p->snapshot, fp);
+		if (amt_read != (bpf_u_int32)p->snapshot) {
 			if (ferror(fp)) {
 				pcap_fmt_errmsg_for_errno(p->errbuf,
 				     PCAP_ERRBUF_SIZE, errno,
@@ -604,7 +612,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				 */
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "truncated dump file; tried to read %u captured bytes, only got %lu",
-				    hdr->caplen, (unsigned long)amt_read);
+				    p->snapshot, (unsigned long)amt_read);
 			}
 			return (-1);
 		}
@@ -612,7 +620,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		/*
 		 * Now read and discard what's left.
 		 */
-		bytes_to_discard = hdr->caplen - p->bufsize;
+		bytes_to_discard = hdr->caplen - p->snapshot;
 		bytes_read = amt_read;
 		while (bytes_to_discard != 0) {
 			bytes_to_read = bytes_to_discard;
@@ -639,7 +647,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 * Adjust caplen accordingly, so we don't get confused later
 		 * as to how many bytes we have to play with.
 		 */
-		hdr->caplen = p->bufsize;
+		hdr->caplen = p->snapshot;
 	} else {
 		if (hdr->caplen > p->bufsize) {
 			/*
