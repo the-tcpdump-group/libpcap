@@ -41,6 +41,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "dagnew.h"
 #include "dagapi.h"
 #include "dagpci.h"
+#include "dag_config_api.h"
 
 #include "pcap-dag.h"
 
@@ -185,6 +186,9 @@ struct pcap_dag {
 	int	dag_timeout;	/* timeout specified to pcap_open_live.
 				 * Same as in linux above, introduce
 				 * generally? */
+	dag_card_ref_t dag_ref; /* DAG Configuration/Status API card reference */
+	dag_component_t dag_root;	/* DAG CSAPI Root component */
+	attr_uuid_t drop_attr;  /* DAG Stream Drop Attribute handle, if available */
 	struct timeval required_select_timeout;
 				/* Timeout caller must use in event loops */
 };
@@ -252,14 +256,14 @@ dag_platform_cleanup(pcap_t *p)
 	if(dag_detach_stream(p->fd, pd->dag_stream) < 0)
 		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
 
-	if(p->fd != -1) {
-		if(dag_close(p->fd) < 0)
-			fprintf(stderr,"dag_close: %s\n", strerror(errno));
+	if(pd->dag_ref != NULL) {
+		dag_config_dispose(pd->dag_ref);
 		p->fd = -1;
+		pd->dag_ref = NULL;
 	}
 	delete_pcap_dag(p);
 	pcap_cleanup_live_common(p);
-	/* Note: don't need to call close(p->fd) here as dag_close(p->fd) does this. */
+	/* Note: don't need to call close(p->fd) or dag_close(p->fd) as dag_config_dispose(pd->dag_ref) does this. */
 }
 
 static void
@@ -437,12 +441,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			break;
 
 		default:
-			if (header->lctr) {
-				if (pd->stat.ps_drop > (UINT_MAX - ntohs(header->lctr))) {
-					pd->stat.ps_drop = UINT_MAX;
-				} else {
-					pd->stat.ps_drop += ntohs(header->lctr);
-				}
+			if ( (pd->drop_attr == kNullAttributeUuid) && (header->lctr) ) {
+				pd->stat.ps_drop += ntohs(header->lctr);
 			}
 		}
 
@@ -777,9 +777,15 @@ static int dag_activate(pcap_t* p)
 	}
 
 	/* setup device parameters */
-	if((p->fd = dag_open((char *)device)) < 0) {
+	if((pd->dag_ref = dag_config_init((char *)device)) == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_open %s", device);
+		    errno, "dag_config_init %s", device);
+		goto fail;
+	}
+
+	if((p->fd = dag_config_get_card_fd(pd->dag_ref)) < 0) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "dag_config_get_card_fd %s", device);
 		goto fail;
 	}
 
@@ -788,6 +794,14 @@ static int dag_activate(pcap_t* p)
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_attach_stream");
 		goto failclose;
+	}
+
+	/* Try to find Stream Drop attribute */
+	pd->drop_attr = kNullAttributeUuid;
+	pd->dag_root = dag_config_get_root_component(pd->dag_ref);
+	if ( dag_component_get_subcomponent(pd->dag_root, kComponentStreamFeatures, 0) )
+	{
+		pd->drop_attr = dag_config_get_indexed_attribute_uuid(pd->dag_ref, kUint32AttributeStreamDropCount, pd->dag_stream/2);
 	}
 
 	/* Set up default poll parameters for stream
@@ -962,8 +976,7 @@ faildetach:
 		fprintf(stderr,"dag_detach_stream: %s\n", strerror(errno));
 
 failclose:
-	if (dag_close(p->fd) < 0)
-		fprintf(stderr,"dag_close: %s\n", strerror(errno));
+	dag_config_dispose(pd->dag_ref);
 	delete_pcap_dag(p);
 
 fail:
@@ -1051,12 +1064,28 @@ pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
 static int
 dag_stats(pcap_t *p, struct pcap_stat *ps) {
 	struct pcap_dag *pd = p->priv;
+	uint32_t stream_drop;
+	dag_err_t dag_error;
 
-	/* This needs to be filled out correctly.  Hopefully a dagapi call will
-		 provide all necessary information.
-	*/
-	/*pd->stat.ps_recv = 0;*/
-	/*pd->stat.ps_drop = 0;*/
+	/*
+	 * Packet records received (ps_recv) are counted in dag_read().
+	 * Packet records dropped (ps_drop) are read from Stream Drop attribute if present,
+	 * otherwise integrate the ERF Header lctr counts (if available) in dag_read().
+	 * We are reporting that no records are dropped by the card/driver (ps_ifdrop).
+	 */
+
+	if(pd->drop_attr != kNullAttributeUuid) {
+		/* Note this counter is cleared at start of capture and will wrap at UINT_MAX.
+		 * The application is responsible for polling ps_drop frequently enough
+		 * to detect each wrap and integrate total drop with a wider counter */
+		if ((dag_error = dag_config_get_uint32_attribute_ex(pd->dag_ref, pd->drop_attr, &stream_drop) == kDagErrNone)) {
+			pd->stat.ps_drop = stream_drop;
+		} else {
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "reading stream drop attribute: %s",
+				 dag_config_strerror(dag_error));
+			return -1;
+		}
+	}
 
 	*ps = pd->stat;
 

@@ -716,6 +716,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -814,6 +815,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1066,6 +1068,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1203,7 +1214,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1356,6 +1367,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -4097,7 +4109,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4143,7 +4155,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4167,7 +4179,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4212,7 +4224,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4236,7 +4248,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -6771,11 +6783,7 @@ if test "${with_dag_libraries+set}" = set; then :
 fi
 
 
-ac_cv_lbl_dag_api=no
 if test "$want_dag" != no; then
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have DAG API headers" >&5
-$as_echo_n "checking whether we have DAG API headers... " >&6; }
 
 	# If necessary, set default paths for DAG API headers and libraries.
 	if test -z "$dag_root"; then
@@ -6790,19 +6798,22 @@ $as_echo_n "checking whether we have DAG API headers... " >&6; }
 		dag_lib_dir="$dag_root/lib"
 	fi
 
-	if test -z "$dag_tools_dir"; then
-		dag_tools_dir="$dag_root/tools"
-	fi
+	V_INCLS="$V_INCLS -I$dag_include_dir"
 
-	if test -r $dag_include_dir/dagapi.h; then
-		ac_cv_lbl_dag_api=yes
-	fi
+	for ac_header in dagapi.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "dagapi.h" "ac_cv_header_dagapi_h" "$ac_includes_default"
+if test "x$ac_cv_header_dagapi_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_DAGAPI_H 1
+_ACEOF
 
-	if test "$ac_cv_lbl_dag_api" = yes; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes ($dag_include_dir)" >&5
-$as_echo "yes ($dag_include_dir)" >&6; }
+fi
 
-		V_INCLS="$V_INCLS -I$dag_include_dir"
+done
+
+
+	if test "$ac_cv_header_dagapi_h" = yes; then
 
 		if test $V_PCAP != dag ; then
 			 SSRC="$SSRC pcap-dag.c"
@@ -6991,7 +7002,7 @@ fi
 
 		LDFLAGS=$saved_ldflags
 
-		LIBS="$LIBS -ldag"
+		LIBS="$LIBS -ldag -ldagconf"
 		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 
 		if test "$dag_large_streams" = 1; then
@@ -7055,8 +7066,6 @@ $as_echo "#define HAVE_DAG_VDAG 1" >>confdefs.h
 $as_echo "#define HAVE_DAG_API 1" >>confdefs.h
 
 	else
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
 
 		if test "$V_PCAP" = dag; then
 			# User requested "dag" capture type but we couldn't
