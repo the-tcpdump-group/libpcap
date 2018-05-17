@@ -5,7 +5,12 @@
 # Try to find the header
 find_path(DAG_INCLUDE_DIR dagapi.h)
 
-# Try to find the library
+#
+# Try to find the libraries
+#
+# We assume that if we have libdag we have libdagconf, as they're
+# installed at the same time from the same package.
+#
 find_library(DAG_LIBRARY dag)
 find_library(DAGCONF_LIBRARY dagconf)
 

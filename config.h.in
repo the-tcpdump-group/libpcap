@@ -15,6 +15,9 @@
 /* define if we have the AIX getprotobyname_r() */
 #undef HAVE_AIX_GETPROTOBYNAME_R
 
+/* Define to 1 if you have the <dagapi.h> header file. */
+#undef HAVE_DAGAPI_H
+
 /* define if you have the DAG API */
 #undef HAVE_DAG_API
 

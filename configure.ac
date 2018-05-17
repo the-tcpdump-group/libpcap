@@ -1112,6 +1112,11 @@ if test "$want_dag" != no; then
 
 		LDFLAGS=$saved_ldflags
 
+		#
+		# We assume that if we have libdag we have libdagconf,
+		# as they're installed at the same time from the same
+		# package.
+		#
 		LIBS="$LIBS -ldag -ldagconf"
 		LDFLAGS="$LDFLAGS -L$dag_lib_dir"
 
