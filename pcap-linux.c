@@ -1691,7 +1691,7 @@ pcap_set_datalink_linux(pcap_t *handle, int dlt)
  * Do checks based on packet direction.
  */
 static inline int
-linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
+linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll, struct pcap_pkthdr *hdr)
 {
 	struct pcap_linux	*handlep = handle->priv;
 
@@ -1726,6 +1726,8 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 		 */
 		if (handle->direction == PCAP_D_IN)
 			return 0;
+
+		hdr->dir = PCAP_D_OUT;
 	} else {
 		/*
 		 * Incoming packet.
@@ -1733,6 +1735,8 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 		 */
 		if (handle->direction == PCAP_D_OUT)
 			return 0;
+
+		hdr->dir = PCAP_D_IN;
 	}
 	return 1;
 }
@@ -1892,7 +1896,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 * address returned for SOCK_PACKET is a "sockaddr_pkt"
 		 * which lacks the relevant packet type information.
 		 */
-		if (!linux_check_direction(handle, &from))
+		if (!linux_check_direction(handle, &from, &pcap_header))
 			return 0;
 	}
 #endif
@@ -4986,7 +4990,7 @@ static int pcap_handle_packet_mmap(
 			return 0;
 	}
 
-	if (!linux_check_direction(handle, sll))
+	if (!linux_check_direction(handle, sll, &pcaphdr))
 		return 0;
 
 	/* get required packet info from ring header */
