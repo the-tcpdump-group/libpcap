@@ -2258,7 +2258,7 @@ daemon_thrdatamain(void *ptr)
 		sendbuf = NULL;	// we can't allocate a buffer, so nothing to free
 		goto error;
 	}
-	if ((unsigned int)pcap_snapshot(session->fp) > SIZE_MAX - sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr))
+	if ((unsigned int)pcap_snapshot(session->fp) > SIZE_MAX - (sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr)))
 	{
 		//
 		// The snapshot length is so large that it would overflow
