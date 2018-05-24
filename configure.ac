@@ -1453,6 +1453,16 @@ yes)	AC_MSG_RESULT(yes)
 		#include <sys/socket.h>
 	    ])
 
+  #
+  # Optionally, we may want to forward packets over SSL:
+  #
+  PKG_CHECK_MODULES([OPENSSL], [openssl],
+    [AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
+     CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
+     LIBS="$LIBS $OPENSSL_LIBS"
+     HAVE_OPENSSL="yes"],
+    AC_MSG_NOTICE(No openssl detected))
+
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
 	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
@@ -1659,8 +1669,18 @@ darwin*)
 			# XXX - update if and when Apple drops support
 			# for 32-bit x86 code.
 			#
-			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386"
-			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386"
+			V_CCOPT="$V_CCOPT -arch x86_64"
+			LDFLAGS="$LDFLAGS -arch x86_64"
+			if test "$HAVE_OPENSSL" = yes; then
+				# If all else fail, look for openssl in /usr/local/opt:
+				CFLAGS="$CFLAGS -I/usr/local/opt/openssl/include"
+				LIBS="$LIBS -L/usr/local/opt/openssl/lib"
+			else
+				# Openssl installation on MacOS seems to install only the libs for
+				# the amd64 ABI; at least that's what brew does:
+				V_CCOPT="$V_CCOPT -arch i386"
+				LDFLAGS="$LDFLAGS -arch i386"
+			fi
 			;;
 		esac
 	fi
