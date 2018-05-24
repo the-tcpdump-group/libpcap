@@ -7883,7 +7883,7 @@ fi
 
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
-	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;

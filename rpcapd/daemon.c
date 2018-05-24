@@ -64,6 +64,11 @@
 #include "daemon.h"
 #include "log.h"
 
+#ifdef HAVE_OPENSSL
+#include <openssl/ssl.h>
+#include "sslutils.h"
+#endif
+
 #define RPCAP_TIMEOUT_INIT 90		/* Initial timeout for RPCAP connections (default: 90 sec) */
 #define RPCAP_TIMEOUT_RUNTIME 180	/* Run-time timeout for RPCAP connections (default: 3 min) */
 #define RPCAP_SUSPEND_WRONGAUTH 1	/* If the authentication is wrong, stops 1 sec before accepting a new auth message */
@@ -84,6 +89,9 @@ struct daemon_slpars
 struct session {
 	SOCKET sockctrl_out;
 	SOCKET sockdata;
+#ifdef HAVE_OPENSSL
+	SSL *ssl;		// optional SSL handler for the data transported in sockdata
+#endif
 	uint8 protocol_version;
 	pcap_t *fp;
 	unsigned int TotCapt;
@@ -134,6 +142,8 @@ static void *daemon_thrdatamain(void *ptr);
 static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp);
 static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf);
 static int rpcapd_discard(SOCKET sock, uint32 len);
+static void session_close(struct session *);
+static int session_send_data(struct session const *, const char *, size_t, char *, size_t);
 
 int
 daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nullAuthAllowed)
@@ -865,12 +875,8 @@ end:
 #endif
 			threaddata.have_thread = 0;
 		}
-		if (session->sockdata)
-		{
-			sock_close(session->sockdata, NULL, 0);
-			session->sockdata = 0;
-		}
-		pcap_close(session->fp);
+
+		session_close(session);
 		free(session);
 		session = NULL;
 	}
@@ -1593,6 +1599,10 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		goto error;
 	}
 
+#ifdef HAVE_OPENSSL
+	session->ssl = NULL;
+#endif
+
 	// Open the selected device
 	if ((session->fp = pcap_open_live(source,
 			ntohl(startcapreq.snaplen),
@@ -1725,6 +1735,10 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		startcapreply->portdata = htons(port);
 	}
 
+#ifdef HAVE_OPENSSL
+	startcapreply->ssl = !!uses_ssl;
+#endif
+
 	if (sock_send(pars->sockctrl_out, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
 		// That failed; log a message and give up.
@@ -1753,6 +1767,22 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		sock_close(sockdata, NULL, 0);
 		sockdata = socktemp;
 	}
+
+#ifdef HAVE_OPENSSL
+	if (uses_ssl)
+	{
+		/* In both active or passive cases, wait for the client to initiate the
+		 * TLS handshake. Yes during that time the control socket will not be
+		 * served, but the same was true from the above call to accept(). */
+		SSL *ssl = ssl_promotion(1, sockdata, errbuf, PCAP_ERRBUF_SIZE);
+		if (! ssl)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "TLS handshake failed: %s", errbuf);
+			goto error;
+		}
+		session->ssl = ssl;
+	}
+#endif
 
 	session->sockdata = sockdata;
 
@@ -1822,6 +1852,10 @@ error:
 	{
 		if (session->fp)
 			pcap_close(session->fp);
+#ifdef HAVE_OPENSSL
+		if (session->ssl)
+			SSL_free(session->ssl);
+#endif
 		free(session);
 	}
 
@@ -1894,6 +1928,10 @@ fatal_error:
 	{
 		if (session->fp)
 			pcap_close(session->fp);
+#ifdef HAVE_OPENSSL
+		if (session->ssl)
+			SSL_free(session->ssl);
+#endif
 		free(session);
 	}
 
@@ -1940,13 +1978,8 @@ daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, struc
 #endif
 		threaddata->have_thread = 0;
 	}
-	if (session->sockdata)
-	{
-		sock_close(session->sockdata, NULL, 0);
-		session->sockdata = 0;
-	}
 
-	pcap_close(session->fp);
+  session_close(session);
 
 	rpcap_createhdr(&header, pars->protocol_version,
 	    RPCAP_MSG_ENDCAP_REPLY, 0, 0);
@@ -2376,7 +2409,7 @@ daemon_thrdatamain(void *ptr)
 		// Send the packet
 		// If the client dropped the connection, don't report an
 		// error, just quit.
-		status = sock_send(session->sockdata, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE);
+		status = session_send_data(session, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE);
 		if (status < 0)
 		{
 			if (status == -1)
@@ -2407,8 +2440,7 @@ daemon_thrdatamain(void *ptr)
 	}
 
 error:
- 	closesocket(session->sockdata);
-	session->sockdata = 0;
+  session_close(session);
 
 	free(sendbuf);
 
@@ -2572,4 +2604,41 @@ rpcapd_discard(SOCKET sock, uint32 len)
 		}
 	}
 	return 0;
+}
+
+/*
+ * Close the socket associated with the session, the optional SSL handle,
+ * and the underlying packet capture handle.
+ */
+static void session_close(struct session *session)
+{
+#ifdef HAVE_OPENSSL
+	if (session->ssl)
+	{
+		SSL_free(session->ssl); // Must happen *before* the socket is closed
+		session->ssl = NULL;
+	}
+#endif
+
+	if (session->sockdata)
+	{
+		sock_close(session->sockdata, NULL, 0);
+		session->sockdata = 0;
+	}
+
+	pcap_close(session->fp);
+}
+
+static int session_send_data(struct session const *session, const char *buffer, size_t size, char *errbuf, size_t errbuflen)
+{
+#ifdef HAVE_OPENSSL
+	if (session->ssl)
+	{
+		return ssl_send(session->ssl, buffer, size, errbuf, errbuflen);
+	}
+	else
+#endif
+	{
+		return sock_send(session->sockdata, buffer, size, errbuf, errbuflen);
+	}
 }

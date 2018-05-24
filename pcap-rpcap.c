@@ -46,6 +46,10 @@
 #include "rpcap-protocol.h"
 #include "pcap-rpcap.h"
 
+#ifdef HAVE_OPENSSL
+#include "sslutils.h"
+#endif
+
 /*
  * This file contains the pcap module for capturing from a remote machine's
  * interfaces using the RPCAP protocol.
@@ -111,6 +115,9 @@ struct pcap_rpcap {
 
 	SOCKET rmt_sockctrl;		/* socket ID of the socket used for the control connection */
 	SOCKET rmt_sockdata;		/* socket ID of the socket used for the data connection */
+#ifdef HAVE_OPENSSL
+	SSL *ssl;			/* To transport rmt_sockdata via TLS */
+#endif
 	int rmt_flags;			/* we have to save flags, since they are passed by the pcap_open_live(), but they are used by the pcap_startcapture() */
 	int rmt_capstarted;		/* 'true' if the capture is already started (needed to knoe if we have to call the pcap_startcapture() */
 	char *currentfilter;		/* Pointer to a buffer (allocated at run-time) that stores the current filter. Needed when flag PCAP_OPENFLAG_NOCAPTURE_RPCAP is turned on. */
@@ -163,7 +170,7 @@ static int rpcap_process_msg_header(SOCKET sock, uint8 ver, uint8 request_type, 
 static int rpcap_recv(SOCKET sock, void *buffer, size_t toread, uint32 *plen, char *errbuf);
 static void rpcap_msg_err(SOCKET sockctrl, uint32 plen, char *remote_errbuf);
 static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf);
-static int rpcap_read_packet_msg(SOCKET sock, pcap_t *p, size_t size);
+static int rpcap_read_packet_msg(struct pcap_rpcap const *, pcap_t *p, size_t size);
 
 /****************************************************
  *                                                  *
@@ -390,27 +397,36 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	tv.tv_sec = p->opt.timeout / 1000;
 	tv.tv_usec = (suseconds_t)((p->opt.timeout - tv.tv_sec * 1000) * 1000);
 
-	/* Watch out sockdata to see if it has input */
-	FD_ZERO(&rfds);
-
-	/*
-	 * 'fp->rmt_sockdata' has always to be set before calling the select(),
-	 * since it is cleared by the select()
-	 */
-	FD_SET(pr->rmt_sockdata, &rfds);
-
-	retval = select((int) pr->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
-	if (retval == -1)
-	{
-#ifndef _WIN32
-		if (errno == EINTR)
-		{
-			/* Interrupted. */
-			return 0;
-		}
+#ifdef HAVE_OPENSSL
+	/* Check if we still have bytes available in the last decoded TLS record.
+	 * If that's the case, we know SSL_read will not block. */
+	retval = pr->ssl && SSL_pending(pr->ssl) > 0;
 #endif
-		sock_geterror("select(): ", p->errbuf, PCAP_ERRBUF_SIZE);
-		return -1;
+	if (! retval)
+	{
+		/* Watch out sockdata to see if it has input */
+		FD_ZERO(&rfds);
+
+		/*
+		 * 'fp->rmt_sockdata' has always to be set before calling the select(),
+		 * since it is cleared by the select()
+		 */
+		FD_SET(pr->rmt_sockdata, &rfds);
+
+		retval = select((int) pr->rmt_sockdata + 1, &rfds, NULL, NULL, &tv);
+
+		if (retval == -1)
+		{
+#ifndef _WIN32
+			if (errno == EINTR)
+			{
+				/* Interrupted. */
+				return 0;
+			}
+#endif
+			sock_geterror("select(): ", p->errbuf, PCAP_ERRBUF_SIZE);
+			return -1;
+		}
 	}
 
 	/* There is no data waiting, so return '0' */
@@ -472,8 +488,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			 * The size we should get is the size of the
 			 * packet header.
 			 */
-			status = rpcap_read_packet_msg(pr->rmt_sockdata, p,
-			    sizeof(struct rpcap_header));
+			status = rpcap_read_packet_msg(pr, p, sizeof(struct rpcap_header));
 			if (status == -1)
 			{
 				/* Network error. */
@@ -505,8 +520,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			    "Server sent us a message larger than the largest expected packet message");
 			return -1;
 		}
-		status = rpcap_read_packet_msg(pr->rmt_sockdata, p,
-		    sizeof(struct rpcap_header) + plen);
+		status = rpcap_read_packet_msg(pr, p, sizeof(struct rpcap_header) + plen);
 		if (status == -1)
 		{
 			/* Network error. */
@@ -1038,6 +1052,12 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	int sockbufsize = 0;
 	uint32 server_sockbufsize;
 
+#ifdef HAVE_OPENSSL
+	// Take the opportunity to clear pr->ssl before any goto error,
+	// as it seems pr->priv is not zeroed after its malloced.
+	pr->ssl = NULL;
+#endif
+
 	/*
 	 * Let's check if sampling has been required.
 	 * If so, let's set it first
@@ -1247,6 +1267,13 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	/* Let's save the socket of the data connection */
 	pr->rmt_sockdata = sockdata;
 
+#ifdef HAVE_OPENSSL
+	if (startcapreply.ssl) {
+		pr->ssl = ssl_promotion(0, sockdata, fp->errbuf, PCAP_ERRBUF_SIZE);
+		if (! pr->ssl) goto error;
+	}
+#endif
+
 	/*
 	 * Set the size of the socket buffer for the data socket.
 	 * It has the same size as the local capture buffer used
@@ -1377,6 +1404,13 @@ error:
 	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
 
 error_nodiscard:
+#ifdef HAVE_OPENSSL
+	if (pr->ssl) {
+		SSL_free(pr->ssl);  // Have to be done before the socket is closed
+		pr->ssl = NULL;
+	}
+#endif
+
 	if ((sockdata) && (sockdata != -1))		/* we can be here because sockdata said 'error' */
 		sock_close(sockdata, NULL, 0);
 
@@ -3247,7 +3281,7 @@ static int rpcap_discard(SOCKET sock, uint32 len, char *errbuf)
  * Read bytes into the pcap_t's buffer until we have the specified
  * number of bytes read or we get an error or interrupt indication.
  */
-static int rpcap_read_packet_msg(SOCKET sock, pcap_t *p, size_t size)
+static int rpcap_read_packet_msg(struct pcap_rpcap const *rp, pcap_t *p, size_t size)
 {
 	u_char *bp;
 	int cc;
@@ -3266,9 +3300,19 @@ static int rpcap_read_packet_msg(SOCKET sock, pcap_t *p, size_t size)
 		 * We haven't read all of the packet header yet.
 		 * Read what remains, which could be all of it.
 		 */
-		bytes_read = sock_recv(sock, bp, size - cc,
-		    SOCK_RECEIVEALL_NO|SOCK_EOF_IS_ERROR, p->errbuf,
-		    PCAP_ERRBUF_SIZE);
+#ifdef HAVE_OPENSSL
+		if (rp->ssl)
+		{
+			bytes_read = ssl_recv(rp->ssl, bp, size - cc, p->errbuf, PCAP_ERRBUF_SIZE);
+		}
+		else
+#endif
+		{
+			bytes_read = sock_recv(rp->rmt_sockdata, bp, size - cc,
+					SOCK_RECEIVEALL_NO|SOCK_EOF_IS_ERROR, p->errbuf,
+					PCAP_ERRBUF_SIZE);
+		}
+
 		if (bytes_read == -1)
 		{
 			/*

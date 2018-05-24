@@ -53,6 +53,10 @@
 #include "daemon.h"		// the true main() method of this daemon
 #include "log.h"
 
+#ifdef HAVE_OPENSSL
+#include "sslutils.h"
+#endif
+
 #ifdef _WIN32
   #include <process.h>		// for thread stuff
   #include "win32-svc.h"	// for Win32 service stuff
@@ -194,7 +198,15 @@ int main(int argc, char *argv[])
 	mainhints.ai_socktype = SOCK_STREAM;
 
 	// Getting the proper command line options
-	while ((retval = getopt(argc, argv, "b:dhip:4l:na:s:f:v")) != -1)
+#	ifdef HAVE_OPENSSL
+#		define SSL_CLOPTS  "SK:C:"
+#	else
+#		define SSL_CLOPTS ""
+#	endif
+
+#	define CLOPTS "b:dhip:4l:na:s:f:v" SSL_CLOPTS
+
+	while ((retval = getopt(argc, argv, CLOPTS)) != -1)
 	{
 		switch (retval)
 		{
@@ -266,6 +278,17 @@ int main(int argc, char *argv[])
 			case 's':
 				strlcpy(savefile, optarg, MAX_LINE);
 				break;
+#ifdef HAVE_OPENSSL
+			case 'S':
+				uses_ssl = 1;
+				break;
+			case 'K':
+				snprintf(ssl_keyfile, sizeof ssl_keyfile, "%s", optarg);
+				break;
+			case 'C':
+				snprintf(ssl_certfile, sizeof ssl_certfile, "%s", optarg);
+				break;
+#endif
 			case 'h':
 				printusage();
 				exit(0);
@@ -332,6 +355,9 @@ int main(int argc, char *argv[])
 #endif
 
 #ifndef _WIN32
+# ifdef HAVE_OPENSSL
+	if (uses_ssl) init_ssl_or_die(1);
+# endif
 	if (isrunbyinetd)
 	{
 		//

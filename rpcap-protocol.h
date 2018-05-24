@@ -316,6 +316,7 @@ struct rpcap_startcapreply
 	int32 bufsize;		/* Size of the user buffer allocated by WinPcap; it can be different from the one we chose */
 	uint16 portdata;	/* Network port on which the server is waiting at (passive mode only) */
 	uint16 dummy;		/* Must be zero */
+	uint8 ssl:1;    /* Only known flag so far: client must connect with TLS */
 };
 
 /*
