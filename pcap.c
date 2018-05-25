@@ -1589,7 +1589,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	 *
 	 * XXX - %-escaping?
 	 */
-	if (pcap_strcasecmp(scheme, "rpcap") == 0 &&
+	if ((pcap_strcasecmp(scheme, "rpcap") == 0 ||
+	    pcap_strcasecmp(scheme, "rpcaps") == 0) &&
 	    strchr(colonp + 3, '/') == NULL) {
 		/*
 		 * Local device.
@@ -1859,8 +1860,8 @@ pcap_createsrcstr(char *source, int type, const char *host, const char *port,
 }
 
 int
-pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
-    char *name, char *errbuf)
+pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
+    char *name, unsigned char *uses_ssl, char *errbuf)
 {
 	char *scheme, *tmpuserinfo, *tmphost, *tmpport, *tmppath;
 
@@ -1871,6 +1872,8 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 		*port = '\0';
 	if (name)
 		*name = '\0';
+	if (uses_ssl)
+		*uses_ssl = 0;
 
 	/* Parse the source string */
 	if (pcap_parse_source(source, &scheme, &tmpuserinfo, &tmphost,
@@ -1896,12 +1899,20 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 		return (0);
 	}
 
-	if (strcmp(scheme, "rpcap") == 0) {
+	int is_rpcap = 0;
+	if (strcmp(scheme, "rpcaps") == 0) {
+		is_rpcap = 1;
+		if (uses_ssl) *uses_ssl = 1;
+	} else if (strcmp(scheme, "rpcap") == 0) {
+		is_rpcap = 1;
+	}
+
+	if (is_rpcap) {
 		/*
-		 * rpcap://
+		 * rpcap[s]://
 		 *
 		 * pcap_parse_source() has already handled the case of
-		 * rpcap://device
+		 * rpcap[s]://device
 		 */
 		if (host && tmphost) {
 			if (tmpuserinfo)
@@ -1954,6 +1965,13 @@ pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
 	free(tmpuserinfo);
 	free(scheme);
 	return (0);
+}
+
+int
+pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
+    char *name, char *errbuf)
+{
+  return pcap_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf);
 }
 #endif
 

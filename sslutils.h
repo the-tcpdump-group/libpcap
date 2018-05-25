@@ -34,19 +34,18 @@
 #define __SSLUTILS_H__
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 #ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "sockutils.h"
+#include "pcap/pcap.h"  // for SOCKET
 
 /*
  * Configuration parameters
  */
 
-extern int uses_ssl;
 extern char ssl_keyfile[PATH_MAX];
 extern char ssl_certfile[PATH_MAX];
 extern char ssl_rootfile[PATH_MAX];
@@ -57,8 +56,14 @@ extern char ssl_rootfile[PATH_MAX];
 
 void init_ssl_or_die(int is_server);
 SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen);
+SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen);
 int ssl_send(SSL *, char const *buffer, size_t size, char *errbuf, size_t errbuflen);
-int ssl_recv(SSL *, unsigned char *buffer, size_t size, char *errbuf, size_t errbuflen);
+int ssl_recv(SSL *, char *buffer, size_t size, char *errbuf, size_t errbuflen);
+
+#else   // HAVE_OPENSSL
+
+// This saves us from a lot of ifdefs:
+#define SSL void const
 
 #endif  // HAVE_OPENSSL
 

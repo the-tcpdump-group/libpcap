@@ -526,6 +526,13 @@ int	install_bpf_program(pcap_t *, struct bpf_program *);
 
 int	pcap_strcasecmp(const char *, const char *);
 
+/*
+ * Internal interface for pcap_parsesrcstr with the additional bit of
+ * information regarding SSL support (rpcap:// vs rpcaps://)
+ */
+int pcap_parsesrcstr_ex(const char *source, int *type, char *host, char *port,
+                        char *name, unsigned char *uses_ssl, char *errbuf);
+
 #ifdef YYDEBUG
 extern int pcap_debug;
 #endif

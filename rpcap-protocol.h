@@ -316,7 +316,6 @@ struct rpcap_startcapreply
 	int32 bufsize;		/* Size of the user buffer allocated by WinPcap; it can be different from the one we chose */
 	uint16 portdata;	/* Network port on which the server is waiting at (passive mode only) */
 	uint16 dummy;		/* Must be zero */
-	uint8 ssl:1;    /* Only known flag so far: client must connect with TLS */
 };
 
 /*
@@ -446,9 +445,10 @@ struct rpcap_sampling
  *********************************************************/
 
 #include "sockutils.h"
+#include "sslutils.h"
 
 extern void rpcap_createhdr(struct rpcap_header *header, uint8 ver, uint8 type, uint16 value, uint32 length);
 extern const char *rpcap_msg_type_string(uint8 type);
-extern int rpcap_senderror(SOCKET sock, uint8 ver, uint16 errcode, const char *error, char *errbuf);
+extern int rpcap_senderror(SOCKET sock, SSL *ssl, uint8 ver, uint16 errcode, const char *error, char *errbuf);
 
 #endif

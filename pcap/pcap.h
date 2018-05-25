@@ -631,6 +631,9 @@ PCAP_API const char *pcap_lib_version(void);
  * - rpcap:// [lists all local adapters]
  * - rpcap://host:port/ [lists the devices available on a remote host]
  *
+ * In all the above, "rpcaps://" can be substituted for "rpcap://" to enable
+ * SSL (if it has been compiled in).
+ *
  * Referring to the 'host' and 'port' parameters, they can be either numeric or literal. Since
  * IPv6 is fully supported, these are the allowed formats:
  *

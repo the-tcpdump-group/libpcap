@@ -640,7 +640,7 @@ int sock_initaddress(const char *host, const char *port,
  * '-2' if we got one of those errors.
  * For errors, an error message is returned in the 'errbuf' variable.
  */
-int sock_send(SOCKET sock, const char *buffer, size_t size,
+int sock_send(SOCKET sock, SSL *ssl, const char *buffer, size_t size,
     char *errbuf, int errbuflen)
 {
 	int remaining;
@@ -659,6 +659,12 @@ int sock_send(SOCKET sock, const char *buffer, size_t size,
 	remaining = (int)size;
 
 	do {
+#ifdef HAVE_OPENSSL
+		if (ssl) return ssl_send(ssl, buffer, remaining, errbuf, errbuflen);
+#else
+		(void)ssl;
+#endif
+
 #ifdef MSG_NOSIGNAL
 		/*
 		 * Send with MSG_NOSIGNAL, so that we don't get SIGPIPE
@@ -835,7 +841,7 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
  * The error message is returned in the 'errbuf' variable.
  */
 
-int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
+int sock_recv(SOCKET sock, SSL *ssl, void *buffer, size_t size, int flags,
     char *errbuf, int errbuflen)
 {
 	char *bufp = buffer;
@@ -866,6 +872,16 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
 	 * Win32.
 	 */
 	for (;;) {
+#ifdef HAVE_OPENSSL
+		if (ssl)
+		{
+			nread = ssl_recv(ssl, bufp, remaining, errbuf, errbuflen);
+			if (nread == -2) return -1;
+		}
+		else
+#else
+		(void)ssl;
+#endif
 		nread = recv(sock, bufp, remaining, 0);
 
 		if (nread == -1)
@@ -924,7 +940,7 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
  *
  * Returns the size of the datagram on success or -1 on error.
  */
-int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
+int sock_recv_dgram(SOCKET sock, SSL *ssl, void *buffer, size_t size,
     char *errbuf, int errbuflen)
 {
 	ssize_t nread;
@@ -946,6 +962,13 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 			    "Can't read more than %u bytes with sock_recv_dgram",
 			    INT_MAX);
 		}
+		return -1;
+	}
+
+	// TODO: DTLS
+	if (ssl)
+	{
+		pcap_snprintf(errbuf, errbuflen, "DTLS not implemented yet");
 		return -1;
 	}
 
@@ -1059,7 +1082,7 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
  * \return '0' if everything is fine, '-1' if some errors occurred.
  * The error message is returned in the 'errbuf' variable.
  */
-int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
+int sock_discard(SOCKET sock, SSL *ssl, int size, char *errbuf, int errbuflen)
 {
 #define TEMP_BUF_SIZE 32768
 
@@ -1075,7 +1098,7 @@ int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
 	 */
 	while (size > TEMP_BUF_SIZE)
 	{
-		if (sock_recv(sock, buffer, TEMP_BUF_SIZE, SOCK_RECEIVEALL_YES, errbuf, errbuflen) == -1)
+		if (sock_recv(sock, ssl, buffer, TEMP_BUF_SIZE, SOCK_RECEIVEALL_YES, errbuf, errbuflen) == -1)
 			return -1;
 
 		size -= TEMP_BUF_SIZE;
@@ -1087,7 +1110,7 @@ int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
 	 */
 	if (size)
 	{
-		if (sock_recv(sock, buffer, size, SOCK_RECEIVEALL_YES, errbuf, errbuflen) == -1)
+		if (sock_recv(sock, ssl, buffer, size, SOCK_RECEIVEALL_YES, errbuf, errbuflen) == -1)
 			return -1;
 	}
 

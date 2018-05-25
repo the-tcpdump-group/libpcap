@@ -41,7 +41,6 @@
 #include "sslutils.h"
 #include "pcap/pcap.h"
 
-int uses_ssl; //!< '1' to use TLS over the data socket
 char ssl_keyfile[PATH_MAX]; //!< file containing the private key in PEM format
 char ssl_certfile[PATH_MAX];  //!< file containing the server's certificate in PEM format
 char ssl_rootfile[PATH_MAX];  //!< file containing the list of CAs trusted by the client
@@ -59,26 +58,40 @@ static int ssl_init_once(int is_server, char *errbuf, size_t errbuflen)
 	SSL_load_error_strings();
 	OpenSSL_add_ssl_algorithms();
 
+<<<<<<< HEAD
 	SSL_METHOD const *meth = SSLv23_method();
 	ctx = SSL_CTX_new(meth);
 	if (! ctx)
 	{
+=======
+	SSL_METHOD const *meth =
+		is_server ? SSLv23_server_method() : SSLv23_client_method();
+	ctx = SSL_CTX_new(meth);
+	if (! ctx) {
+>>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 		pcap_snprintf(errbuf, errbuflen, "Cannot get a new SSL context: %s", ERR_error_string(ERR_get_error(), NULL));
 		goto die;
 	}
 
 	SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
 
+<<<<<<< HEAD
 	if (is_server)
 	{
 		char const *certfile = ssl_certfile[0] ? ssl_certfile : "cert.pem";
 		if (1 != SSL_CTX_use_certificate_file(ctx, certfile, SSL_FILETYPE_PEM))
 		{
+=======
+	if (is_server) {
+		char const *certfile = ssl_certfile[0] ? ssl_certfile : "cert.pem";
+		if (1 != SSL_CTX_use_certificate_file(ctx, certfile, SSL_FILETYPE_PEM)) {
+>>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 			pcap_snprintf(errbuf, errbuflen, "Cannot read certificate file %s: %s", certfile, ERR_error_string(ERR_get_error(), NULL));
 			goto die;
 		}
 
 		char const *keyfile = ssl_keyfile[0] ? ssl_keyfile : "key.pem";
+<<<<<<< HEAD
 		if (1 != SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM))
 		{
 			pcap_snprintf(errbuf, errbuflen, "Cannot read private key file %s: %s", keyfile, ERR_error_string(ERR_get_error(), NULL));
@@ -97,19 +110,40 @@ static int ssl_init_once(int is_server, char *errbuf, size_t errbuflen)
 		}
 		else
 		{
+=======
+		if (1 != SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM)) {
+			pcap_snprintf(errbuf, errbuflen, "Cannot read private key file %s: %s", keyfile, ERR_error_string(ERR_get_error(), NULL));
+			goto die;
+		}
+	} else {
+		if (ssl_rootfile[0]) {
+			if (! SSL_CTX_load_verify_locations(ctx, ssl_rootfile, 0)) {
+				pcap_snprintf(errbuf, errbuflen, "Cannot read CA list from %s", ssl_rootfile);
+				goto die;
+			}
+		} else {
+>>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 			SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
 		}
 	}
 
 #if 0
+<<<<<<< HEAD
 	if (! RAND_load_file(RANDOM, 1024*1024))
 	{
+=======
+	if (! RAND_load_file(RANDOM, 1024*1024)) {
+>>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 		pcap_snprintf(errbuf, errbuflen, "Cannot init random");
 		goto die;
 	}
 
+<<<<<<< HEAD
 	if (is_server)
 	{
+=======
+	if (is_server) {
+>>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 		SSL_CTX_set_session_id_context(ctx, (void *)&s_server_session_id_context, sizeof(s_server_session_id_context));
 	}
 #endif
@@ -125,36 +159,37 @@ void init_ssl_or_die(int is_server)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 
+<<<<<<< HEAD
 	if (ssl_init_once(is_server, errbuf, sizeof errbuf) < 0)
 	{
 		fprintf(stderr, "%s\n", errbuf);
 		exit(3);
 	}
+=======
+	if (ssl_init_once(is_server, errbuf, sizeof errbuf) < 0) {
+		fprintf(stderr, "%s\n", errbuf);
+		exit(3);
+	}
 }
 
-SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
+SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen)
 {
-	if (ssl_init_once(is_server, errbuf, errbuflen) < 0)
-	{
+	if (ssl_init_once(is_server, errbuf, errbuflen) < 0) {
 		return NULL;
 	}
 
-	SSL *ssl = SSL_new(ctx);
-	SSL_set_fd(ssl, s);
+	SSL *ssl = SSL_new(ctx); // TODO: also a DTLS context
+	SSL_set_rfd(ssl, in);
+	SSL_set_wfd(ssl, out);
 
-	if (is_server)
-	{
-		if (SSL_accept(ssl) <= 0)
-		{
+	if (is_server) {
+		if (SSL_accept(ssl) <= 0) {
 			pcap_snprintf(errbuf, errbuflen, "SSL_accept(): %s",
 					ERR_error_string(ERR_get_error(), NULL));
 			return NULL;
 		}
-	}
-	else
-	{
-		if (SSL_connect(ssl) <= 0)
-		{
+	} else {
+		if (SSL_connect(ssl) <= 0) {
 			pcap_snprintf(errbuf, errbuflen, "SSL_connect(): %s",
 					ERR_error_string(ERR_get_error(), NULL));
 			return NULL;
@@ -162,6 +197,12 @@ SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
 	}
 
 	return ssl;
+>>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
+}
+
+SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
+{
+	return ssl_promotion_rw(is_server, s, s, errbuf, errbuflen);
 }
 
 // Same return value as sock_send:
@@ -193,9 +234,8 @@ int ssl_send(SSL *ssl, char const *buffer, size_t size, char *errbuf, size_t err
 	}
 }
 
-// Same return status as sock_recv(SOCK_EOF_IS_ERROR):
-// -3 for EINTR, -1 on error and EOF, or number of bytes read
-int ssl_recv(SSL *ssl, unsigned char *buffer, size_t size, char *errbuf, size_t errbuflen)
+// Returns the number of bytes read, or -1 on syserror, or -2 on SSL error.
+int ssl_recv(SSL *ssl, char *buffer, size_t size, char *errbuf, size_t errbuflen)
 {
 	int status = SSL_read(ssl, buffer, size);
 	if (status <= 0)
@@ -203,26 +243,24 @@ int ssl_recv(SSL *ssl, unsigned char *buffer, size_t size, char *errbuf, size_t 
 		int ssl_err = SSL_get_error(ssl, status);
 		if (ssl_err == SSL_ERROR_ZERO_RETURN)
 		{
-			pcap_snprintf(errbuf, errbuflen, "The other host terminated the connection.");
-			return -1;
+			return 0;
 		}
 		else if (ssl_err == SSL_ERROR_SYSCALL)
 		{
-#ifndef _WIN32
-			if (errno == EINTR)
-			{
-				return -3;
-			}
-			else
-			{
-				pcap_snprintf(errbuf, errbuflen, "SSL_read(): %s",
-				    ERR_error_string(ERR_get_error(), NULL));
-				return -1;
-			}
-#endif
+			return -1;
+		}
+		else
+		{
+			// Should not happen
+			pcap_snprintf(errbuf, errbuflen, "SSL_read(): %s",
+			    ERR_error_string(ERR_get_error(), NULL));
+			return -2;
 		}
 	}
-	return status;
+	else
+	{
+		return status;
+	}
 }
 
 #endif // HAVE_OPENSSL
