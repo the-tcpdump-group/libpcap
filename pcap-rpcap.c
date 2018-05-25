@@ -372,6 +372,7 @@ rpcap_deseraddr(struct rpcap_sockaddr *sockaddrin, struct sockaddr_storage **soc
 static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_char **pkt_data)
 {
 	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
+	struct rpcap_header *header;		/* general header according to the RPCAP format */
 	struct rpcap_pkthdr *net_pkt_header;	/* header of the packet, from the message */
 	u_char *net_pkt_data;			/* packet data from the message */
 	uint32 plen;
@@ -420,7 +421,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	 * We have to define 'header' as a pointer to a larger buffer,
 	 * because in case of UDP we have to read all the message within a single call
 	 */
-	struct rpcap_header *header = (struct rpcap_header *) p->buffer;
+	header = (struct rpcap_header *) p->buffer;
 	net_pkt_header = (struct rpcap_pkthdr *) ((char *)p->buffer + sizeof(struct rpcap_header));
 	net_pkt_data = (u_char *)p->buffer + sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr);
 
