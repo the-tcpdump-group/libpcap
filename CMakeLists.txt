@@ -251,7 +251,7 @@ option(YYDEBUG "Build parser debugging code" OFF)
 
 # Get, parse, format and set pcap's version string from [pcap_root]/VERSION
 # for later use.
- 
+
 # Get MAJOR, MINOR, PATCH & SUFFIX
 file(STRINGS ${pcap_SOURCE_DIR}/VERSION
     PACKAGE_VERSION
@@ -264,7 +264,7 @@ string(REGEX MATCH "^([0-9]+)" PACKAGE_VERSION_MAJOR "${PACKAGE_VERSION}")
 # Get MAJOR, MINOR & PATCH
 string(REGEX MATCH "^([0-9]+.)?([0-9]+.)?([0-9]+)" PACKAGE_VERSION_NOSUFFIX "${PACKAGE_VERSION}")
 
-if(WIN32) 
+if(WIN32)
     # Convert PCAP_VERSION_NOSUFFIX to Windows preferred version format
     string(REPLACE "." "," PACKAGE_VERSION_PREDLL ${PACKAGE_VERSION_NOSUFFIX})
 
@@ -1499,7 +1499,7 @@ if(NOT DISABLE_DAG)
             endif()
         endif()
     endif()
-endif() 
+endif()
 
 # Check for Septel card support.
 set(PROJECT_EXTERNAL_OBJECT_LIST "")
@@ -1521,7 +1521,7 @@ if(NOT DISABLE_SEPTEL)
         set(PROJECT_EXTERNAL_OBJECT_LIST ${PROJECT_EXTERNAL_OBJECT_LIST} "${SEPTEL_ROOT}/asciibin.o ${SEPTEL_ROOT}/bit2byte.o ${SEPTEL_ROOT}/confirm.o ${SEPTEL_ROOT}/fmtmsg.o ${SEPTEL_ROOT}/gct_unix.o ${SEPTEL_ROOT}/hqueue.o ${SEPTEL_ROOT}/ident.o ${SEPTEL_ROOT}/mem.o ${SEPTEL_ROOT}/pack.o ${SEPTEL_ROOT}/parse.o ${SEPTEL_ROOT}/pool.o ${SEPTEL_ROOT}/sdlsig.o ${SEPTEL_ROOT}/strtonum.o ${SEPTEL_ROOT}/timer.o ${SEPTEL_ROOT}/trace.o")
         set(HAVE_SEPTEL_API TRUE)
     endif()
-endif() 
+endif()
 
 # Check for Myricom SNF support.
 if(NOT DISABLE_SNF)
@@ -1542,7 +1542,7 @@ if(NOT DISABLE_SNF)
         set(HAVE_SNF_API TRUE)
         set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${SNF_LIBRARIES})
     endif()
-endif() 
+endif()
 
 # Check for Riverbed TurboCap support.
 if(NOT DISABLE_TC)
@@ -1563,7 +1563,7 @@ if(NOT DISABLE_TC)
         set(HAVE_TC_API TRUE)
         set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARIES} ${CMAKE_USE_PTHREADS_INIT} stdc++")
     endif()
-endif() 
+endif()
 
 #
 # Remote capture support.
@@ -1982,7 +1982,7 @@ if(WIN32)
         # For compatibility, build the shared library without the "lib" prefix on
         # MinGW as well.
         #
-        set_target_properties(${LIBRARY_NAME} PROPERTIES 
+        set_target_properties(${LIBRARY_NAME} PROPERTIES
             PREFIX ""
             OUTPUT_NAME "${LIBRARY_NAME}"
         )

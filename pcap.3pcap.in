@@ -181,7 +181,7 @@ negative value is unpredictable.
 the packet buffer timeout cannot be used to cause calls that read
 packets to return within a limited period of time, because, on some
 platforms, the packet buffer timeout isn't supported, and, on other
-platforms, the timer doesn't start until at least one packet arrives. 
+platforms, the timer doesn't start until at least one packet arrives.
 This means that the packet buffer timeout should
 .B NOT
 be used, for example, in an interactive application to allow the packet

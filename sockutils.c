@@ -100,7 +100,7 @@
  *   Wth MSVC, there *is* no ssize_t.
  *
  *   With MinGW, there is an ssize_t type; it is either an int (32 bit)
- *   or a long long (64 bit). 
+ *   or a long long (64 bit).
  *
  * So, on Windows, if we don't have ssize_t defined, define it as an
  * int, so we can use it, on all platforms, as the type of variables

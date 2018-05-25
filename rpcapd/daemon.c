@@ -287,7 +287,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 				// but they might be able to handle
 				// *our* maximum version, so reply
 				// with that version.
-				// 
+				//
 				reply_version = RPCAP_MAX_VERSION;
 			}
 			if (rpcap_senderror(pars.sockctrl_out, reply_version,
@@ -1438,7 +1438,7 @@ daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen)
 error:
 	if (alldevs)
 		pcap_freealldevs(alldevs);
-	
+
 	if (rpcap_senderror(pars->sockctrl_out, pars->protocol_version,
 	    PCAP_ERR_FINDALLIF, errmsgbuf, errbuf) == -1)
 	{
@@ -1867,7 +1867,7 @@ fatal_error:
 			//
 			SetEvent(pcap_getevent(session->fp));
 		}
-		
+
 		//
 		// Wait for the thread to exit, so we don't close
 		// sockets out from under it.
@@ -1921,7 +1921,7 @@ daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, struc
 		// out of the loop" indication.
 		//
 		SetEvent(pcap_getevent(session->fp));
-		
+
 		//
 		// Wait for the thread to exit, so we don't close
 		// sockets out from under it.

@@ -3110,7 +3110,7 @@ static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_he
 		}
 		return -1;
 	}
-	
+
 	return 0;
 }
 

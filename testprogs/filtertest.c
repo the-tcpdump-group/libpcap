@@ -254,7 +254,7 @@ main(int argc, char **argv)
 
 			switch (inet_pton(AF_INET, optarg, &addr)) {
 
-			case 0:                        
+			case 0:
 				error("invalid netmask %s", optarg);
 				break;
 

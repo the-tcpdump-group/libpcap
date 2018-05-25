@@ -4,11 +4,11 @@
 .\"  Copyright (c) 2005-2009 CACE Technologies
 .\"  Copyright (c) 2018-     The TCPdump Group
 .\"  All rights reserved.
-.\" 
+.\"
 .\"  Redistribution and use in source and binary forms, with or without
 .\"  modification, are permitted provided that the following conditions
 .\"  are met:
-.\" 
+.\"
 .\"  1. Redistributions of source code must retain the above copyright
 .\"  notice, this list of conditions and the following disclaimer.
 .\"  2. Redistributions in binary form must reproduce the above copyright
@@ -17,7 +17,7 @@
 .\"  3. Neither the name of the Politecnico di Torino nor the names of its
 .\"  contributors may be used to endorse or promote products derived from
 .\"  this software without specific prior written permission.
-.\" 
+.\"
 .\"  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 .\"  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 .\"  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -115,9 +115,9 @@ Rpcapd will parse all the parameters and save them into the specified
 configuration file.
 .SH Installing rpcapd on Win32
 .LP
-The remote daemon is installed automatically when installing WinPcap. 
-The installation process places the rpcapd file into the WinPcap folder. 
-This file can be executed either from the command line, or as a service. 
+The remote daemon is installed automatically when installing WinPcap.
+The installation process places the rpcapd file into the WinPcap folder.
+This file can be executed either from the command line, or as a service.
 For instance, the installation process updates the list of available
 services list and it creates a new item (Remote Packet Capture Protocol
 v.0 (experimental) ).  To avoid security problems, the service is
@@ -142,7 +142,7 @@ start in the foreground.
 .SH Installing rpcapd on Unix-like systems
 TBD
 .SH Starting rpcapd on Unix-like systems
-.B rpcapd 
+.B rpcapd
 needs sufficient privileges to perform packet capture, e.g.
 run as root or be owned by root and have suid set. Most operating
 systems provide more elegant solutions when run as user than the
