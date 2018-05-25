@@ -2279,7 +2279,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		goto error;
 
 	/* Discard the rest of the message, if there is any. */
-	if (rpcap_discard(pr->rmt_sockctrl, plen, errbuf) == -1)
+	if (rpcap_discard(sockctrl, plen, errbuf) == -1)
 		goto error_nodiscard;
 
 	/* Set proper fields into the pcap_t struct */
@@ -2317,7 +2317,7 @@ error:
 	 * We already reported an error; if this gets an error, just
 	 * drive on.
 	 */
-	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
+	(void)rpcap_discard(sockctrl, plen, NULL);
 
 error_nodiscard:
 	if (!active)
