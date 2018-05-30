@@ -151,8 +151,9 @@ static void printusage(void)
 #endif
 #ifdef HAVE_OPENSSL
 	"  -S              encrypt all communication with SSL (implements rpcaps://)\n"
+	"  -C              enable compression\n"
 	"  -K <pem_file>   uses the SSL private key in this file (default: key.pem)\n"
-	"  -C <pem_file>   uses the certificate from this file (default: cert.pem)\n"
+	"  -X <pem_file>   uses the certificate from this file (default: cert.pem)\n"
 #endif
 	"  -s <config_file> save the current configuration to file\n\n"
 	"  -f <config_file> load the current configuration from file; all switches\n"
@@ -178,6 +179,9 @@ int main(int argc, char *argv[])
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 #ifndef _WIN32
 	struct sigaction action;
+#endif
+#ifdef HAVE_OPENSSL
+	int enable_compression = 0;
 #endif
 
 	savefile[0] = 0;
@@ -205,7 +209,7 @@ int main(int argc, char *argv[])
 
 	// Getting the proper command line options
 #	ifdef HAVE_OPENSSL
-#		define SSL_CLOPTS  "SK:C:"
+#		define SSL_CLOPTS  "SK:X:C"
 #	else
 #		define SSL_CLOPTS ""
 #	endif
@@ -288,10 +292,13 @@ int main(int argc, char *argv[])
 			case 'S':
 				uses_ssl = 1;
 				break;
+			case 'C':
+				enable_compression = 1;
+				break;
 			case 'K':
 				snprintf(ssl_keyfile, sizeof ssl_keyfile, "%s", optarg);
 				break;
-			case 'C':
+			case 'X':
 				snprintf(ssl_certfile, sizeof ssl_certfile, "%s", optarg);
 				break;
 #endif
@@ -361,7 +368,7 @@ int main(int argc, char *argv[])
 #endif
 
 # ifdef HAVE_OPENSSL
-	if (uses_ssl) init_ssl_or_die(1);
+	if (uses_ssl) init_ssl_or_die(1, enable_compression);
 # endif
 
 #ifndef _WIN32

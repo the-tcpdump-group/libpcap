@@ -54,7 +54,7 @@ extern char ssl_rootfile[PATH_MAX];
  * Utility functions
  */
 
-void init_ssl_or_die(int is_server);
+void init_ssl_or_die(int is_server, int enable_compression);
 SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen);
 SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen);
 int ssl_send(SSL *, char const *buffer, size_t size, char *errbuf, size_t errbuflen);

@@ -49,7 +49,7 @@ char ssl_rootfile[PATH_MAX];  //!< file containing the list of CAs trusted by th
 // TODO: lock?
 static SSL_CTX *ctx;
 
-static int ssl_init_once(int is_server, char *errbuf, size_t errbuflen)
+static int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen)
 {
 	static int inited = 0;
 	if (inited) return 0;
@@ -57,41 +57,30 @@ static int ssl_init_once(int is_server, char *errbuf, size_t errbuflen)
 	SSL_library_init();
 	SSL_load_error_strings();
 	OpenSSL_add_ssl_algorithms();
+	if (enable_compression)
+		SSL_COMP_get_compression_methods();
 
-<<<<<<< HEAD
-	SSL_METHOD const *meth = SSLv23_method();
+	SSL_METHOD const *meth =
+	    is_server ? SSLv23_server_method() : SSLv23_client_method();
 	ctx = SSL_CTX_new(meth);
 	if (! ctx)
 	{
-=======
-	SSL_METHOD const *meth =
-		is_server ? SSLv23_server_method() : SSLv23_client_method();
-	ctx = SSL_CTX_new(meth);
-	if (! ctx) {
->>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 		pcap_snprintf(errbuf, errbuflen, "Cannot get a new SSL context: %s", ERR_error_string(ERR_get_error(), NULL));
 		goto die;
 	}
 
 	SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
 
-<<<<<<< HEAD
 	if (is_server)
 	{
 		char const *certfile = ssl_certfile[0] ? ssl_certfile : "cert.pem";
 		if (1 != SSL_CTX_use_certificate_file(ctx, certfile, SSL_FILETYPE_PEM))
 		{
-=======
-	if (is_server) {
-		char const *certfile = ssl_certfile[0] ? ssl_certfile : "cert.pem";
-		if (1 != SSL_CTX_use_certificate_file(ctx, certfile, SSL_FILETYPE_PEM)) {
->>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 			pcap_snprintf(errbuf, errbuflen, "Cannot read certificate file %s: %s", certfile, ERR_error_string(ERR_get_error(), NULL));
 			goto die;
 		}
 
 		char const *keyfile = ssl_keyfile[0] ? ssl_keyfile : "key.pem";
-<<<<<<< HEAD
 		if (1 != SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM))
 		{
 			pcap_snprintf(errbuf, errbuflen, "Cannot read private key file %s: %s", keyfile, ERR_error_string(ERR_get_error(), NULL));
@@ -110,40 +99,19 @@ static int ssl_init_once(int is_server, char *errbuf, size_t errbuflen)
 		}
 		else
 		{
-=======
-		if (1 != SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM)) {
-			pcap_snprintf(errbuf, errbuflen, "Cannot read private key file %s: %s", keyfile, ERR_error_string(ERR_get_error(), NULL));
-			goto die;
-		}
-	} else {
-		if (ssl_rootfile[0]) {
-			if (! SSL_CTX_load_verify_locations(ctx, ssl_rootfile, 0)) {
-				pcap_snprintf(errbuf, errbuflen, "Cannot read CA list from %s", ssl_rootfile);
-				goto die;
-			}
-		} else {
->>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 			SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, NULL);
 		}
 	}
 
 #if 0
-<<<<<<< HEAD
 	if (! RAND_load_file(RANDOM, 1024*1024))
 	{
-=======
-	if (! RAND_load_file(RANDOM, 1024*1024)) {
->>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 		pcap_snprintf(errbuf, errbuflen, "Cannot init random");
 		goto die;
 	}
 
-<<<<<<< HEAD
 	if (is_server)
 	{
-=======
-	if (is_server) {
->>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 		SSL_CTX_set_session_id_context(ctx, (void *)&s_server_session_id_context, sizeof(s_server_session_id_context));
 	}
 #endif
@@ -155,18 +123,12 @@ die:
 	return -1;
 }
 
-void init_ssl_or_die(int is_server)
+void init_ssl_or_die(int is_server, int enable_compression)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 
-<<<<<<< HEAD
-	if (ssl_init_once(is_server, errbuf, sizeof errbuf) < 0)
+	if (ssl_init_once(is_server, enable_compression, errbuf, sizeof errbuf) < 0)
 	{
-		fprintf(stderr, "%s\n", errbuf);
-		exit(3);
-	}
-=======
-	if (ssl_init_once(is_server, errbuf, sizeof errbuf) < 0) {
 		fprintf(stderr, "%s\n", errbuf);
 		exit(3);
 	}
@@ -174,7 +136,7 @@ void init_ssl_or_die(int is_server)
 
 SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen)
 {
-	if (ssl_init_once(is_server, errbuf, errbuflen) < 0) {
+	if (ssl_init_once(is_server, 1, errbuf, errbuflen) < 0) {
 		return NULL;
 	}
 
@@ -197,7 +159,6 @@ SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t
 	}
 
 	return ssl;
->>>>>>> b5063379... TLS for rpcap: also encrypt the control socket
 }
 
 SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
