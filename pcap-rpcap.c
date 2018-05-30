@@ -102,6 +102,7 @@ static struct activehosts *activeHosts;
  * pcap_remoteact_cleanup() for more details.
  */
 static SOCKET sockmain;
+static SSL *ssl_main;
 
 /*
  * Private data for capturing remotely using the rpcap protocol.
@@ -2320,6 +2321,9 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 			goto error_nodiscard;
 	}
 
+	/* All good so far, save the ssl handler */
+	ssl_main = ssl;
+
 	/*
 	 * Now it's time to start playing with the RPCAP protocol
 	 * RPCAP open command: create the request message
@@ -2810,7 +2814,7 @@ error_nodiscard:
  * to implement; we provide some APIs for it that work only with rpcap.
  */
 
-SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, char *errbuf)
+SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, int uses_ssl, char *errbuf)
 {
 	/* socket-related variables */
 	struct addrinfo hints;			/* temporary struct to keep settings needed to open the new socket */
@@ -2818,12 +2822,11 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	struct sockaddr_storage from;	/* generic sockaddr_storage variable */
 	socklen_t fromlen;				/* keeps the length of the sockaddr_storage variable */
 	SOCKET sockctrl;				/* keeps the main socket identifier */
-	SSL *ssl = NULL;       /* Optional SSL handler for sockctrl */
+	SSL *ssl = NULL;				/* Optional SSL handler for sockctrl */
 	uint8 protocol_version;			/* negotiated protocol version */
 	struct activehosts *temp, *prev;	/* temp var needed to scan he host list chain */
 
 	*connectinghost = 0;		/* just in case */
-	uint8 uses_ssl = 0;  // TODO: how to get this info and how to return the SSL*?
 
 	/* Prepare to open a new server socket */
 	memset(&hints, 0, sizeof(struct addrinfo));
@@ -3095,6 +3098,13 @@ void pcap_remoteact_cleanup(void)
 		sock_cleanup();
 	}
 
+#	ifdef HAVE_OPENSSL
+	if (ssl_main)
+	{
+		SSL_free(ssl_main);
+		ssl_main = NULL;
+	}
+#	endif
 }
 
 int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
