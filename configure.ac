@@ -1529,7 +1529,8 @@ AC_CACHE_CHECK([for capable yacc/bison], tcpdump_cv_capable_yacc,
 	fi)
 if test $tcpdump_cv_capable_yacc = insufficient ; then
 	AC_MSG_ERROR([$YACC is insufficient to compile libpcap.
- libpcap requires Bison, Berkeley YACC, or another YACC compatible with them.])
+ libpcap requires Bison, a newer version of Berkeley YACC with tupport
+ for reentrant parsers, or another YACC compatible with them.])
 fi
 
 #
