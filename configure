@@ -7844,7 +7844,7 @@ fi
 $as_echo "$tcpdump_cv_capable_yacc" >&6; }
 if test $tcpdump_cv_capable_yacc = insufficient ; then
 	as_fn_error $? "$YACC is insufficient to compile libpcap.
- libpcap requires Bison, a newer version of Berkeley YACC with tupport
+ libpcap requires Bison, a newer version of Berkeley YACC with support
  for reentrant parsers, or another YACC compatible with them." "$LINENO" 5
 fi
 
