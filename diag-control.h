@@ -168,8 +168,8 @@
   /*
    * Bison.
    *
-   * The generated code may have functions with unused parameters and
-   * unreachable code, so suppress warnings about those.
+   * The generated code may have functions with unreachable code, so
+   * suppress warnings about those.
    */
   #if defined(_MSC_VER)
     /*
@@ -192,7 +192,6 @@
      */
     #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(clang diagnostic push) \
-      PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunused-parameter") \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
     #define DIAG_ON_BISON_BYACC \
       PCAP_DO_PRAGMA(clang diagnostic pop)
@@ -204,7 +203,6 @@
      */
     #define DIAG_OFF_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic push) \
-      PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunused-parameter") \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
     #define DIAG_ON_BISON_BYACC \
       PCAP_DO_PRAGMA(GCC diagnostic pop)
