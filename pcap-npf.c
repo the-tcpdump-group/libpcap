@@ -134,7 +134,7 @@ PacketGetMonitorMode(PCHAR AdapterName _U_)
  * or NDIS_STATUS_NOT_RECOGNIZED if the OID request isn't
  * supported by the OS or the driver, but that doesn't seem
  * to make it to the caller of PacketRequest() in a
- * reiable fashion.
+ * reliable fashion.
  */
 #define NDIS_STATUS_INVALID_OID		0xc0010017
 #define NDIS_STATUS_NOT_SUPPORTED	0xc00000bb	/* STATUS_NOT_SUPPORTED */
