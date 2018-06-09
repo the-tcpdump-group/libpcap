@@ -2213,6 +2213,16 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	pr = fp->priv;
 	pr->rmt_flags = flags;
 
+	// Also, SSL is not supported with UDP at the moment, so if the user
+	// asks for both we'd better bail out now:
+	if (pr->uses_ssl && (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
+	{
+		pcap_close(fp);
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "SSL not supported with UDP forward of remote packets");
+		return NULL;
+	}
+
 	/*
 	 * determine the type of the source (NULL, file, local, remote)
 	 * You must have a valid source string even if we're in active mode, because otherwise

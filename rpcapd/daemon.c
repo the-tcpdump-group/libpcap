@@ -1590,6 +1590,15 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 
 	startcapreq.flags = ntohs(startcapreq.flags);
 
+	// Check that the client does not ask for UDP is the server has been asked
+	// to enforce encryption, as SSL is not supported yet with UDP:
+	if (uses_ssl && (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_DGRAM))
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "SSL not supported with UDP forward of remote packets");
+		goto error;
+	}
+
 	// Create a session structure
 	session = malloc(sizeof(struct session));
 	if (session == NULL)
@@ -1763,13 +1772,15 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 	}
 
 	SSL *ssl = NULL;
-	if (uses_ssl) {
+	if (uses_ssl)
+	{
 #ifdef HAVE_OPENSSL
 		/* In both active or passive cases, wait for the client to initiate the
 		 * TLS handshake. Yes during that time the control socket will not be
 		 * served, but the same was true from the above call to accept(). */
 		ssl = ssl_promotion(1, sockdata, errbuf, PCAP_ERRBUF_SIZE);
-		if (! ssl) {
+		if (! ssl)
+		{
 			rpcapd_log(LOGPRIO_ERROR, "TLS handshake failed: %s", errbuf);
 			goto error;
 		}
