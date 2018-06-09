@@ -53,6 +53,10 @@
 #include "sf-pcap.h"
 #include "sf-pcapng.h"
 
+#if defined(PCAP_SUPPORT_NETFILTER) && !defined(__APPLE__)
+#include "pcap-netfilter-linux.h"
+#endif
+
 #ifdef _WIN32
 /*
  * These aren't exported on Windows, because they would only work if both
@@ -500,8 +504,21 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				return (0);
 			return (status);
 		}
+		fcode = p->fcode.bf_insns;
+#if defined(PCAP_SUPPORT_NETFILTER) && !defined(__APPLE__)
+		if (fcode != NULL && p->linktype == DLT_NFLOG ) {
+		    struct pcap_pkthdr h2 = h;
+		    u_char *payload = data;
 
-		if ((fcode = p->fcode.bf_insns) == NULL ||
+		    if (nflog_get_payload(p, &h2, &payload) &&
+		        bpf_filter(fcode, payload, h2.len, h2.caplen)) {
+			    (*callback)(user, &h, data);
+			    if (++n >= cnt && cnt > 0)
+				break;
+		    }
+		}
+#endif
+		if (fcode == NULL ||
 		    bpf_filter(fcode, data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
 			if (++n >= cnt && cnt > 0)
