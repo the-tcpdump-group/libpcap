@@ -48,7 +48,9 @@ for
 .PP
 .B pcap_dump_fopen()
 is called to write data to an existing open stream
-.IR fp .
+.IR fp ;
+this stream will be closed by a subsequent call to 
+.BR pcap_dump_close() .
 Note that on Windows, that stream should be opened in binary mode.
 .PP
 .I p
