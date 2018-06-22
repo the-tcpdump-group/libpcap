@@ -661,7 +661,7 @@ F(opt_state_t *opt_state, int code, int v0, int v1)
 	int val;
 	struct valnode *p;
 
-	hash = (u_int)code ^ (v0 << 4) ^ (v1 << 8);
+	hash = (u_int)code ^ ((u_int)v0 << 4) ^ ((u_int)v1 << 8);
 	hash %= MODULUS;
 
 	for (p = opt_state->hashtbl[hash]; p; p = p->next)
