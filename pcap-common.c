@@ -1083,6 +1083,15 @@
 
 #define LINKTYPE_MATCHING_MAX	275		/* highest value in the "matching" range */
 
+/*
+ * The DLT_ and LINKTYPE_ values in the "matching" range should be the
+ * same, so DLT_MATCHING_MAX and LINKTYPE_MATCHING_MAX should be the
+ * same.
+ */
+#if LINKTYPE_MATCHING_MAX != DLT_MATCHING_MAX
+#error The LINKTYPE_ matching range doesn't match the DLT_ matching range
+#endif
+
 static struct linktype_map {
 	int	dlt;
 	int	linktype;
