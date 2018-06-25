@@ -69,10 +69,6 @@ before /usr/ucb or else:
 before running configure. (You might have to do a "make distclean"
 if you already ran configure once).
 
-Also note that "make depend" won't work; while all of the known
-universe uses -M, the SPARCompiler uses -xM to generate makefile
-dependencies.
-
 If you are trying to do packet capture with a FORE ATM card, you may or
 may not be able to. They usually only release their driver in object
 code so unless their driver supports packet capture, there's not much
