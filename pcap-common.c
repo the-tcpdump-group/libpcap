@@ -1089,7 +1089,7 @@
  * same.
  */
 #if LINKTYPE_MATCHING_MAX != DLT_MATCHING_MAX
-#error The LINKTYPE_ matching range doesn't match the DLT_ matching range
+#error The LINKTYPE_ matching range does not match the DLT_ matching range
 #endif
 
 static struct linktype_map {
