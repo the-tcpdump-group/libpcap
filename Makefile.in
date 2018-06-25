@@ -235,21 +235,13 @@ EXTRA_DIST = \
 	ChmodBPF/StartupParameters.plist \
 	CREDITS \
 	CMakeLists.txt \
-	INSTALL.txt \
+	INSTALL.md \
 	LICENSE \
 	Makefile.in \
 	Makefile-devel-adds \
-	README \
-	README.aix \
-	README.dag \
-	README.hpux \
-	README.linux \
-	README.macos \
-	README.septel \
-	README.sita \
-	README.tru64 \
-	README.Win32 \
-	CONTRIBUTING \
+	README.md \
+	doc \
+	CONTRIBUTING.md \
 	TODO \
 	VERSION \
 	aclocal.m4 \
@@ -751,7 +743,7 @@ tags: $(TAGFILES)
 releasetar:
 	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
-	   tar cf - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
+	   tar -c --exclude='*~' -f - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
 	      $(MAN3PCAP_NOEXPAND) $(MANFILE) $(MANMISC) $(EXTRA_DIST) | \
 	      (cd $$name; tar xf -); \
 	   tar -c -z -f $$name.tar.gz $$name; \
