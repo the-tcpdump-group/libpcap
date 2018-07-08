@@ -908,7 +908,7 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 
 	/* Discard the rest of the message. */
 	if (rpcap_discard(pr->rmt_sockctrl, plen, p->errbuf) == -1)
-		goto error;
+		goto error_nodiscard;
 
 	return ps;
 
@@ -920,6 +920,7 @@ error:
 	 */
 	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
 
+error_nodiscard:
 	return NULL;
 }
 
@@ -1334,7 +1335,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 
 	/* Discard the rest of the message. */
 	if (rpcap_discard(pr->rmt_sockctrl, plen, fp->errbuf) == -1)
-		goto error;
+		goto error_nodiscard;
 
 	/*
 	 * In case the user does not want to capture RPCAP packets, let's update the filter
@@ -2648,7 +2649,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 
 	/* Discard the rest of the message. */
 	if (rpcap_discard(sockctrl, plen, errbuf) == 1)
-		return -1;
+		goto error_nodiscard;
 
 	/* Control connection has to be closed only in case the remote machine is in passive mode */
 	if (!active)
