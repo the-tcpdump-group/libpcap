@@ -258,12 +258,18 @@ dag_platform_cleanup(pcap_t *p)
 
 	if(pd->dag_ref != NULL) {
 		dag_config_dispose(pd->dag_ref);
+		/*
+		 * Note: we don't need to call close(p->fd) or
+		 * dag_close(p->fd), as dag_config_dispose(pd->dag_ref)
+		 * does this.
+		 *
+		 * Set p->fd to -1 to make sure that's not done.
+		 */
 		p->fd = -1;
 		pd->dag_ref = NULL;
 	}
 	delete_pcap_dag(p);
 	pcap_cleanup_live_common(p);
-	/* Note: don't need to call close(p->fd) or dag_close(p->fd) as dag_config_dispose(pd->dag_ref) does this. */
 }
 
 static void
@@ -746,18 +752,20 @@ static int dag_activate(pcap_t* p)
 	daginf_t* daginf;
 	char * newDev = NULL;
 	char * device = p->opt.device;
+	int ret;
 	dag_size_t mindata;
 	struct timeval maxwait;
 	struct timeval poll;
 
 	if (device == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
-		return -1;
+		return PCAP_ERROR;
 	}
 
 	/* Initialize some components of the pcap structure. */
 	newDev = (char *)malloc(strlen(device) + 16);
 	if (newDev == NULL) {
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't allocate string for device name");
 		goto fail;
@@ -765,6 +773,13 @@ static int dag_activate(pcap_t* p)
 
 	/* Parse input name to get dag device and stream number if provided */
 	if (dag_parse_name(device, newDev, strlen(device) + 16, &pd->dag_stream) < 0) {
+		/*
+		 * XXX - it'd be nice if this indicated what was wrong
+		 * with the name.  Does this reliably set errno?
+		 * Should this return PCAP_ERROR_NO_SUCH_DEVICE in some
+		 * cases?
+		 */
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_parse_name");
 		goto fail;
@@ -772,25 +787,40 @@ static int dag_activate(pcap_t* p)
 	device = newDev;
 
 	if (pd->dag_stream%2) {
+		ret = PCAP_ERROR;
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "dag_parse_name: tx (even numbered) streams not supported for capture");
 		goto fail;
 	}
 
 	/* setup device parameters */
 	if((pd->dag_ref = dag_config_init((char *)device)) == NULL) {
+		/*
+		 * XXX - does this reliably set errno?
+		 */
+		if (errno == ENOENT)
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		else if (errno == EPERM || errno == EACCES)
+			ret = PCAP_ERROR_PERM_DENIED;
+		else
+			ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_config_init %s", device);
 		goto fail;
 	}
 
 	if((p->fd = dag_config_get_card_fd(pd->dag_ref)) < 0) {
+		/*
+		 * XXX - does this reliably set errno?
+		 */
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_config_get_card_fd %s", device);
-		goto fail;
+		goto failclose;
 	}
 
 	/* Open requested stream. Can fail if already locked or on error */
 	if (dag_attach_stream64(p->fd, pd->dag_stream, 0, 0) < 0) {
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_attach_stream");
 		goto failclose;
@@ -809,6 +839,7 @@ static int dag_activate(pcap_t* p)
 	 */
 	if (dag_get_stream_poll64(p->fd, pd->dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
+		ret = PCAP_ERRNO;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_get_stream_poll");
 		goto faildetach;
@@ -853,6 +884,7 @@ static int dag_activate(pcap_t* p)
 
 	if (dag_set_stream_poll64(p->fd, pd->dag_stream,
 				mindata, &maxwait, &poll) < 0) {
+		ret = PCAP_ERRNO;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_set_stream_poll");
 		goto faildetach;
@@ -875,6 +907,7 @@ static int dag_activate(pcap_t* p)
 #endif
 
 	if(dag_start_stream(p->fd, pd->dag_stream) < 0) {
+		ret = PCAP_ERRNO;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_start_stream %s", device);
 		goto faildetach;
@@ -910,6 +943,7 @@ static int dag_activate(pcap_t* p)
 			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
 				pd->dag_fcs_bits = n;
 			} else {
+				ret = PCAP_ERRNO;
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment", device, n);
 				goto failstop;
@@ -932,12 +966,17 @@ static int dag_activate(pcap_t* p)
 	pd->dag_timeout	= p->opt.timeout;
 
 	p->linktype = -1;
-	if (dag_get_datalink(p) < 0)
+	if (dag_get_datalink(p) < 0) {
+		ret = PCAP_ERRNO;
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "dag_get_datalink %s", device);
 		goto failstop;
+	}
 
 	p->bufsize = 0;
 
 	if (new_pcap_dag(p) < 0) {
+		ret = PCAP_ERRNO;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "new_pcap_dag %s", device);
 		goto failstop;
@@ -977,6 +1016,14 @@ faildetach:
 
 failclose:
 	dag_config_dispose(pd->dag_ref);
+	/*
+	 * Note: we don't need to call close(p->fd) or dag_close(p->fd),
+	 * as dag_config_dispose(pd->dag_ref) does this.
+	 *
+	 * Set p->fd to -1 to make sure that's not done.
+	 */
+	p->fd = -1;
+	pd->dag_ref = NULL;
 	delete_pcap_dag(p);
 
 fail:
@@ -985,7 +1032,7 @@ fail:
 		free((char *)newDev);
 	}
 
-	return PCAP_ERROR;
+	return ret;
 }
 
 pcap_t *dag_create(const char *device, char *ebuf, int *is_ours)
