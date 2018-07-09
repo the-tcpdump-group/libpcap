@@ -504,7 +504,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 					 */
 					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "Interface Description Block if_tsresol option resolution 2^-%u is too high",
-					    tsresol_opt & 0x7F);
+					    tsresol_shift);
 					return (-1);
 				}
 				*is_binary = 1;
