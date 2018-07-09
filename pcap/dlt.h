@@ -50,7 +50,7 @@
  *
  * See
  *
- *	http://www.tcpdump.org/linktypes.html
+ *	https://www.tcpdump.org/linktypes.html
  *
  * for detailed descriptions of some of these link-layer header types.
  */
