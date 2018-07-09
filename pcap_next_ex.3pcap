@@ -85,7 +85,7 @@ value also passed to
 .B pcap_loop()
 or
 .BR pcap_dispatch() .
-.I http://www.tcpdump.org/linktypes.html
+.I https://www.tcpdump.org/linktypes.html
 lists the values
 .B pcap_datalink()
 can return and describes the packet formats that

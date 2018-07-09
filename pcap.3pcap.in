@@ -304,7 +304,7 @@ link-layer header whose contents can differ for different network
 interfaces.  To determine the format of the packets supplied by the
 handle, call
 .BR pcap_datalink ();
-.I http://www.tcpdump.org/linktypes.html
+.I https://www.tcpdump.org/linktypes.html
 lists the values it returns and describes the packet formats that
 correspond to those values.
 .PP
@@ -934,7 +934,7 @@ Lawrence Berkeley National Laboratory, University of California, Berkeley, CA.
 The current version is available from "The Tcpdump Group"'s Web site at
 .LP
 .RS
-.I http://www.tcpdump.org/
+.I https://www.tcpdump.org/
 .RE
 .SH BUGS
 To report a security issue please send an e-mail to security@tcpdump.org.
