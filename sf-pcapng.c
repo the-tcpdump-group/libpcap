@@ -437,7 +437,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 	struct option_header *opthdr;
 	void *optvalue;
 	int saw_tsresol, saw_tsoffset;
-	u_char tsresol_opt;
+	uint8_t tsresol_opt;
 	u_int i;
 
 	saw_tsresol = 0;
@@ -495,31 +495,42 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 				/*
 				 * Resolution is negative power of 2.
 				 */
+				uint8_t tsresol_shift = (tsresol_opt & 0x7F);
+
+				if (tsresol_shift > 31) {
+					/*
+					 * Resolution is too high; 2^-{res}
+					 * won't fit in a 32-bit value.
+					 */
+					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					    "Interface Description Block if_tsresol option resolution 2^-%u is too high",
+					    tsresol_opt & 0x7F);
+					return (-1);
+				}
 				*is_binary = 1;
-				*tsresol = 1 << (tsresol_opt & 0x7F);
+				*tsresol = 1 << tsresol_shift;
 			} else {
 				/*
 				 * Resolution is negative power of 10.
 				 */
+				if (tsresol_opt > 9) {
+					/*
+					 * Resolution is too high; 2^-{res}
+					 * won't fit in a 32-bit value (the
+					 * largest power of 10 that fits
+					 * in a 32-bit value is 10^9, as
+					 * the largest 32-bit unsigned
+					 * value is ~4*10^9).
+					 */
+					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+					    "Interface Description Block if_tsresol option resolution 10^-%u is too high",
+					    tsresol_opt);
+					return (-1);
+				}
 				*is_binary = 0;
 				*tsresol = 1;
 				for (i = 0; i < tsresol_opt; i++)
 					*tsresol *= 10;
-			}
-			if (*tsresol == 0) {
-				/*
-				 * Resolution is too high.
-				 */
-				if (tsresol_opt & 0x80) {
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "Interface Description Block if_tsresol option resolution 2^-%u is too high",
-					    tsresol_opt & 0x7F);
-				} else {
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-					    "Interface Description Block if_tsresol option resolution 10^-%u is too high",
-					    tsresol_opt);
-				}
-				return (-1);
 			}
 			break;
 
