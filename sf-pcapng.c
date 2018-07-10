@@ -508,7 +508,7 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 					return (-1);
 				}
 				*is_binary = 1;
-				*tsresol = 1 << tsresol_shift;
+				*tsresol = 1U << tsresol_shift;
 			} else {
 				/*
 				 * Resolution is negative power of 10.
