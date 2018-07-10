@@ -197,7 +197,7 @@ typedef enum {
  * Per-interface information.
  */
 struct pcap_ng_if {
-	u_int tsresol;			/* time stamp resolution */
+	uint64_t tsresol;		/* time stamp resolution */
 	tstamp_scale_type_t scale_type;	/* how to scale */
 	u_int scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
 	uint64_t tsoffset;		/* time stamp offset */
@@ -223,7 +223,7 @@ struct pcap_ng_if {
  * so we impose a limit regardless of the size of a pointer.
  */
 struct pcap_ng_sf {
-	u_int user_tsresol;		/* time stamp resolution requested by the user */
+	uint64_t user_tsresol;		/* time stamp resolution requested by the user */
 	u_int max_blocksize;		/* don't grow buffer size past this */
 	bpf_u_int32 ifcount;		/* number of interfaces seen in this capture */
 	bpf_u_int32 ifaces_size;	/* size of array below */
@@ -431,7 +431,7 @@ get_optvalue_from_block_data(struct block_cursor *cursor,
 }
 
 static int
-process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
+process_idb_options(pcap_t *p, struct block_cursor *cursor, uint64_t *tsresol,
     uint64_t *tsoffset, int *is_binary, char *errbuf)
 {
 	struct option_header *opthdr;
@@ -497,10 +497,10 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 				 */
 				uint8_t tsresol_shift = (tsresol_opt & 0x7F);
 
-				if (tsresol_shift > 31) {
+				if (tsresol_shift > 63) {
 					/*
 					 * Resolution is too high; 2^-{res}
-					 * won't fit in a 32-bit value.
+					 * won't fit in a 64-bit value.
 					 */
 					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "Interface Description Block if_tsresol option resolution 2^-%u is too high",
@@ -508,19 +508,19 @@ process_idb_options(pcap_t *p, struct block_cursor *cursor, u_int *tsresol,
 					return (-1);
 				}
 				*is_binary = 1;
-				*tsresol = 1U << tsresol_shift;
+				*tsresol = ((uint64_t)1) << tsresol_shift;
 			} else {
 				/*
 				 * Resolution is negative power of 10.
 				 */
-				if (tsresol_opt > 9) {
+				if (tsresol_opt > 19) {
 					/*
 					 * Resolution is too high; 2^-{res}
-					 * won't fit in a 32-bit value (the
+					 * won't fit in a 64-bit value (the
 					 * largest power of 10 that fits
-					 * in a 32-bit value is 10^9, as
-					 * the largest 32-bit unsigned
-					 * value is ~4*10^9).
+					 * in a 64-bit value is 10^19, as
+					 * the largest 64-bit unsigned
+					 * value is ~1.8*10^19).
 					 */
 					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 					    "Interface Description Block if_tsresol option resolution 10^-%u is too high",
@@ -565,7 +565,7 @@ static int
 add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
 {
 	struct pcap_ng_sf *ps;
-	u_int tsresol;
+	uint64_t tsresol;
 	uint64_t tsoffset;
 	int is_binary;
 
