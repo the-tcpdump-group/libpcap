@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_DUMP_FTELL 3PCAP "3 January 2014"
+.TH PCAP_DUMP_FTELL 3PCAP "29 September 2017"
 .SH NAME
 pcap_dump_ftell, pcap_dump_ftell64 \- get the current file offset for a savefile being written
 .SH SYNOPSIS
