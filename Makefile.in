@@ -252,7 +252,6 @@ EXTRA_DIST = \
 	cmake/Modules/FindFseeko.cmake \
 	cmake/Modules/FindLFS.cmake \
 	cmake/Modules/FindPacket.cmake \
-	cmake/Modules/FindPthreads-w32.cmake \
 	cmake/Modules/FindSNF.cmake \
 	cmake/Modules/FindTC.cmake \
 	cmake/have_siocglifconf.c \
