@@ -23,7 +23,7 @@ Sunday, June 24, 2018, by mcr@sandelman.ca
     Added LORATAP DLT value
     Added DLT_VSOCK for http://qemu-project.org/Features/VirtioVsock
     probe_devices() fixes not to overrun buffer for name of device
-    Add linux-specific pcap_set_protocol() to allow specifying a specific capture protocol.
+    Add linux-specific pcap_set_protocol_linux() to allow specifying a specific capture protocol.
     RDMA sniffing support for pcap
     Add Nordic Semiconductor Bluetooth LE sniffer link-layer header type.
     fixes for reading /etc/ethers

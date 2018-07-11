@@ -7159,7 +7159,7 @@ reset_kernel_filter(pcap_t *handle)
 #endif
 
 int
-pcap_set_protocol(pcap_t *p, int protocol)
+pcap_set_protocol_linux(pcap_t *p, int protocol)
 {
 	if (pcap_check_activated(p))
 		return (PCAP_ERROR_ACTIVATED);

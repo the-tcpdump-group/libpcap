@@ -17,9 +17,9 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SET_PROTOCOL 3PCAP "24 August 2017"
+.TH PCAP_SET_PROTOCOL_LINUX 3PCAP "24 August 2017"
 .SH NAME
-pcap_set_protocol \- set capture protocol for a not-yet-activated
+pcap_set_protocol_linux \- set capture protocol for a not-yet-activated
 capture handle
 .SH SYNOPSIS
 .nf
@@ -27,12 +27,12 @@ capture handle
 #include <pcap/pcap.h>
 .LP
 .ft B
-int pcap_set_protocol(pcap_t *p, int protocol);
+int pcap_set_protocol_linux(pcap_t *p, int protocol);
 .ft
 .fi
 .SH DESCRIPTION
 On network interface devices on Linux,
-.B pcap_set_protocol()
+.B pcap_set_protocol_linux()
 sets the protocol to be used in the
 .BR socket (2)
 call to create a capture socket when the handle is activated.  The
@@ -56,9 +56,9 @@ socket-layer protocol type from the one in the link-layer header, that
 packet type cannot be filtered with a filter specified with
 .B pcap_setfilter()
 but can be filtered by specifying the socket-layer protocol type using
-.BR pcap_set_protocol() .
+.BR pcap_set_protocol_linux() .
 .SH RETURN VALUE
-.B pcap_set_protocol()
+.B pcap_set_protocol_linux()
 returns 0 on success or
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.
