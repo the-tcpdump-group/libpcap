@@ -26,10 +26,4 @@ DEVELOPER NOTES
 
 When allocating a new DLT_ value, a corresponding value needs to be
 added to pcap-common.c.
-It not necessary to copy to commonts from dlt.h to pcap-common.c.
-
-
-
-
-
-
+It not necessary to copy to comments from dlt.h to pcap-common.c.
