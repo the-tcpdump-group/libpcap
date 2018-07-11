@@ -917,7 +917,7 @@ AC_DEFUN(AC_LBL_DEVEL,
 		    # if it *can't* be evaluated at compile time
 		    # and 2) *doesn't* warn that the true or false
 		    # branch will never be reached.)
-		    # 
+		    #
 		    AC_LBL_CHECK_COMPILER_OPT($1, -Wunreachable-code,
 		      [
 #include <arpa/inet.h>
