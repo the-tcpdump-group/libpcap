@@ -1081,7 +1081,12 @@
  */
 #define LINKTYPE_DISPLAYPORT_AUX	275
 
-#define LINKTYPE_MATCHING_MAX	275		/* highest value in the "matching" range */
+/*
+ * Linux cooked sockets v2.
+ */
+#define LINKTYPE_LINUX_SLL2	276
+
+#define LINKTYPE_MATCHING_MAX	276		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
