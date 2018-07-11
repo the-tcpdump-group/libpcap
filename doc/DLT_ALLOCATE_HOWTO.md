@@ -19,11 +19,11 @@ LINKTYPE_ is allocated for actually writing to pcap files.  As much as
 possible going forward, the DLT_ and LINKTYPE_ value are identical, however,
 this was not always the case.  See pcap-common.c.
 
-The LINKTYPE_ values are not exported, but are on pcap-common.c only.
+The LINKTYPE_ values are not exported, but are in pcap-common.c only.
 
 DEVELOPER NOTES
 ---------------
 
 When allocating a new DLT_ value, a corresponding value needs to be
 added to pcap-common.c.
-It not necessary to copy to comments from dlt.h to pcap-common.c.
+It is not necessary to copy the comments from dlt.h to pcap-common.c.
