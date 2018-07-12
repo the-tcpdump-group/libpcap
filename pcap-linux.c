@@ -486,7 +486,7 @@ static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 #ifdef SO_ATTACH_FILTER
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode,
     int is_mapped);
-static int	fix_offset(struct bpf_insn *p);
+static int	fix_offset(pcap_t *handle, struct bpf_insn *p);
 static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
 static int	reset_kernel_filter(pcap_t *handle);
 
@@ -1750,7 +1750,6 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	int			offset;
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct sockaddr_ll	from;
-	struct sll_header	*hdrp;
 #else
 	struct sockaddr		from;
 #endif
@@ -1774,9 +1773,12 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * If this is a cooked device, leave extra room for a
 	 * fake packet header.
 	 */
-	if (handlep->cooked)
-		offset = SLL_HDR_LEN;
-	else
+	if (handlep->cooked) {
+		if (handle->linktype == DLT_LINUX_SLL2)
+			offset = SLL2_HDR_LEN;
+		else
+			offset = SLL_HDR_LEN;
+	} else
 		offset = 0;
 #else
 	/*
@@ -1906,17 +1908,37 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 * Add the length of the fake header to the length
 		 * of packet data we read.
 		 */
-		packet_len += SLL_HDR_LEN;
+		if (handle->linktype = DLT_LINUX_SLL2) {
+			struct sll2_header	*hdrp;
 
-		hdrp = (struct sll_header *)bp;
-		hdrp->sll_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
-		hdrp->sll_hatype = htons(from.sll_hatype);
-		hdrp->sll_halen = htons(from.sll_halen);
-		memcpy(hdrp->sll_addr, from.sll_addr,
-		    (from.sll_halen > SLL_ADDRLEN) ?
-		      SLL_ADDRLEN :
-		      from.sll_halen);
-		hdrp->sll_protocol = from.sll_protocol;
+			packet_len += SLL2_HDR_LEN;
+
+			hdrp = (struct sll2_header *)bp;
+			hdrp->sll2_protocol = from.sll_protocol;
+			hdrp->sll2_reserved_mbz = 0;
+			hdrp->sll2_if_index = htonl(from.sll_ifindex);
+			hdrp->sll2_hatype = from.sll_hatype;
+			hdrp->sll2_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
+			hdrp->sll2_halen = from.sll_halen;
+			memcpy(hdrp->sll2_addr, from.sll_addr,
+			    (from.sll_halen > SLL_ADDRLEN) ?
+			      SLL_ADDRLEN :
+			      from.sll_halen);
+		} else {
+			struct sll_header	*hdrp;
+
+			packet_len += SLL_HDR_LEN;
+
+			hdrp = (struct sll_header *)bp;
+			hdrp->sll_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
+			hdrp->sll_hatype = htons(from.sll_hatype);
+			hdrp->sll_halen = htons(from.sll_halen);
+			memcpy(hdrp->sll_addr, from.sll_addr,
+			    (from.sll_halen > SLL_ADDRLEN) ?
+			      SLL_ADDRLEN :
+			      from.sll_halen);
+			hdrp->sll_protocol = from.sll_protocol;
+		}
 	}
 
 	/*
@@ -2129,7 +2151,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 
 		if (handlep->cooked) {
 			/*
-			 * We don't support sending on the "any" device.
+			 * We don't support sending on cooked-mode sockets.
 			 *
 			 * XXX - how do you send on a bound cooked-mode
 			 * socket?
@@ -3558,6 +3580,45 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 
 /* ===== Functions to interface to the newer kernels ================== */
 
+#ifdef PACKET_RESERVE
+static void
+set_dlt_list_cooked(pcap_t *handle, int sock_fd)
+{
+	socklen_t		len;
+	unsigned int		tp_reserve;
+
+	/*
+	 * If we can't do PACKET_RESERVE, we can't reserve extra space
+	 * for a DLL_LINUX_SLL2 header, so we can't support DLT_LINUX_SLL2.
+	 */
+	len = sizeof(tp_reserve);
+	if (getsockopt(sock_fd, SOL_PACKET, PACKET_RESERVE, &tp_reserve,
+	    &len) == 0) {
+	    	/*
+	    	 * Yes, we can do DLL_LINUX_SLL2.
+	    	 */
+		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
+		/*
+		 * If that fails, just leave the list empty.
+		 */
+		if (handle->dlt_list != NULL) {
+			handle->dlt_list[0] = DLT_LINUX_SLL;
+			handle->dlt_list[1] = DLT_LINUX_SLL2;
+			handle->dlt_count = 2;
+		}
+	}
+}
+#else
+/*
+ * The build environment doesn't define PACKET_RESERVE, so we can't reserve
+ * extra space for a DLL_LINUX_SLL2 header, so we can't support DLT_LINUX_SLL2.
+ */
+static void
+set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
+{
+}
+#endif
+
 /*
  * Try to open a packet socket using the new kernel PF_PACKET interface.
  * Returns 1 on success, 0 on an error that means the new interface isn't
@@ -3737,6 +3798,7 @@ activate_new(pcap_t *handle)
 				free(handle->dlt_list);
 				handle->dlt_list = NULL;
 				handle->dlt_count = 0;
+				set_dlt_list_cooked(handle, sock_fd);
 			}
 
 			if (handle->linktype == -1) {
@@ -3797,6 +3859,9 @@ activate_new(pcap_t *handle)
 		 */
 		handlep->cooked = 1;
 		handle->linktype = DLT_LINUX_SLL;
+		handle->dlt_list = NULL;
+		handle->dlt_count = 0;
+		set_dlt_list_cooked(handle, sock_fd);
 
 		/*
 		 * We're not bound to a device.
@@ -3870,10 +3935,14 @@ activate_new(pcap_t *handle)
 	 * large enough to hold a "cooked mode" header plus
 	 * 1 byte of packet data (so we don't pass a byte
 	 * count of 0 to "recvfrom()").
+	 * XXX - we don't know whether this will be DLT_LINUX_SLL
+	 * or DLT_LINUX_SLL2, so make sure it's big enough for
+	 * a DLT_LINUX_SLL2 "cooked mode" header; a snapshot length
+	 * that small is silly anyway.
 	 */
 	if (handlep->cooked) {
-		if (handle->snapshot < SLL_HDR_LEN + 1)
-			handle->snapshot = SLL_HDR_LEN + 1;
+		if (handle->snapshot < SLL2_HDR_LEN + 1)
+			handle->snapshot = SLL2_HDR_LEN + 1;
 	}
 	handle->bufsize = handle->snapshot;
 
@@ -4359,7 +4428,7 @@ create_ring(pcap_t *handle, int *status)
 		if (getsockopt(handle->fd, SOL_SOCKET, SO_TYPE, &sk_type,
 		    &len) < 0) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "getsockopt");
+			    PCAP_ERRBUF_SIZE, errno, "getsockopt (SO_TYPE)");
 			*status = PCAP_ERROR;
 			return -1;
 		}
@@ -4374,14 +4443,50 @@ create_ring(pcap_t *handle, int *status)
 				 * as best we can.
 				 */
 				pcap_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno, "getsockopt");
+				    PCAP_ERRBUF_SIZE, errno,
+				    "getsockopt (PACKET_RESERVE)");
 				*status = PCAP_ERROR;
 				return -1;
 			}
-			tp_reserve = 0;	/* older kernel, reserve not supported */
+			/*
+			 * Older kernel, so we can't use PACKET_RESERVE;
+			 * this means we can't reserver extra space
+			 * for a DLT_LINUX_SLL2 header.
+			 */
+			tp_reserve = 0;
+		} else {
+			/*
+			 * We can reserve extra space for a DLT_LINUX_SLL2
+			 * header.  Do so.
+			 *
+			 * XXX - we assume that the kernel is still adding
+			 * 16 bytes of extra space; that happens to
+			 * correspond to SLL_HDR_LEN (whether intentionally
+			 * or not - the kernel code has a raw "16" in
+			 * the expression), so we subtract SLL_HDR_LEN
+			 * from SLL2_HDR_LEN to get the additional space
+			 * needed.
+			 *
+			 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
+			 */
+			tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
+			len = sizeof(tp_reserve);
+			if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
+			    &tp_reserve, len) < 0) {
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "setsockopt (PACKET_RESERVE)");
+				*status = PCAP_ERROR;
+				return -1;
+			}
 		}
 #else
-		tp_reserve = 0;	/* older kernel, reserve not supported */
+		/*
+		 * Build environment for an older kernel, so we can't
+		 * use PACKET_RESERVE; this means we can't reserve
+		 * extra space for a DLT_LINUX_SLL2 header.
+		 */
+		tp_reserve = 0;
 #endif
 		maclen = (sk_type == SOCK_DGRAM) ? 0 : MAX_LINKHEADER_SIZE;
 			/* XXX: in the kernel maclen is calculated from
@@ -4425,6 +4530,49 @@ create_ring(pcap_t *handle, int *status)
 
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
+		/*
+		 * If we have TPACKET_V3, we have PACKET_RESERVE.
+		 */
+		len = sizeof(tp_reserve);
+		if (getsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
+		    &tp_reserve, &len) < 0) {
+			/*
+			 * Even ENOPROTOOPT is an error - we wouldn't
+			 * be here if the kernel didn't support
+			 * TPACKET_V3, which means it supports
+			 * PACKET_RESERVE.
+			 */
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "getsockopt (PACKET_RESERVE)");
+			*status = PCAP_ERROR;
+			return -1;
+		}
+		/*
+		 * We can reserve extra space for a DLT_LINUX_SLL2
+		 * header.  Do so.
+		 *
+		 * XXX - we assume that the kernel is still adding
+		 * 16 bytes of extra space; that happens to
+		 * correspond to SLL_HDR_LEN (whether intentionally
+		 * or not - the kernel code has a raw "16" in
+		 * the expression), so we subtract SLL_HDR_LEN
+		 * from SLL2_HDR_LEN to get the additional space
+		 * needed.
+		 *
+		 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
+		 */
+		tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
+		len = sizeof(tp_reserve);
+		if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
+                    &tp_reserve, len) < 0) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "setsockopt (PACKET_RESERVE)");
+			*status = PCAP_ERROR;
+			return -1;
+		}
+
 		/* The "frames" for this are actually buffers that
 		 * contain multiple variable-sized frames.
 		 *
@@ -4932,44 +5080,87 @@ static int pcap_handle_packet_mmap(
 	/* if required build in place the sll header*/
 	sll = (void *)frame + TPACKET_ALIGN(handlep->tp_hdrlen);
 	if (handlep->cooked) {
-		struct sll_header *hdrp;
+		if (handle->linktype == DLT_LINUX_SLL2) {
+			struct sll2_header *hdrp;
 
-		/*
-		 * The kernel should have left us with enough
-		 * space for an sll header; back up the packet
-		 * data pointer into that space, as that'll be
-		 * the beginning of the packet we pass to the
-		 * callback.
-		 */
-		bp -= SLL_HDR_LEN;
+			/*
+			 * The kernel should have left us with enough
+			 * space for an sll header; back up the packet
+			 * data pointer into that space, as that'll be
+			 * the beginning of the packet we pass to the
+			 * callback.
+			 */
+			bp -= SLL2_HDR_LEN;
 
-		/*
-		 * Let's make sure that's past the end of
-		 * the tpacket header, i.e. >=
-		 * ((u_char *)thdr + TPACKET_HDRLEN), so we
-		 * don't step on the header when we construct
-		 * the sll header.
-		 */
-		if (bp < (u_char *)frame +
-				   TPACKET_ALIGN(handlep->tp_hdrlen) +
-				   sizeof(struct sockaddr_ll)) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				"cooked-mode frame doesn't have room for sll header");
-			return -1;
+			/*
+			 * Let's make sure that's past the end of
+			 * the tpacket header, i.e. >=
+			 * ((u_char *)thdr + TPACKET_HDRLEN), so we
+			 * don't step on the header when we construct
+			 * the sll header.
+			 */
+			if (bp < (u_char *)frame +
+					   TPACKET_ALIGN(handlep->tp_hdrlen) +
+					   sizeof(struct sockaddr_ll)) {
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"cooked-mode frame doesn't have room for sll header");
+				return -1;
+			}
+
+			/*
+			 * OK, that worked; construct the sll header.
+			 */
+			hdrp = (struct sll2_header *)bp;
+			hdrp->sll2_protocol = sll->sll_protocol;
+			hdrp->sll2_reserved_mbz = 0;
+			hdrp->sll2_if_index = htonl(sll->sll_ifindex);
+			hdrp->sll2_hatype = sll->sll_hatype;
+			hdrp->sll2_pkttype = map_packet_type_to_sll_type(
+							sll->sll_pkttype);
+			hdrp->sll2_halen = sll->sll_halen;
+			memcpy(hdrp->sll2_addr, sll->sll_addr, SLL_ADDRLEN);
+
+			snaplen += sizeof(struct sll2_header);
+		} else {
+			struct sll_header *hdrp;
+
+			/*
+			 * The kernel should have left us with enough
+			 * space for an sll header; back up the packet
+			 * data pointer into that space, as that'll be
+			 * the beginning of the packet we pass to the
+			 * callback.
+			 */
+			bp -= SLL_HDR_LEN;
+
+			/*
+			 * Let's make sure that's past the end of
+			 * the tpacket header, i.e. >=
+			 * ((u_char *)thdr + TPACKET_HDRLEN), so we
+			 * don't step on the header when we construct
+			 * the sll header.
+			 */
+			if (bp < (u_char *)frame +
+					   TPACKET_ALIGN(handlep->tp_hdrlen) +
+					   sizeof(struct sockaddr_ll)) {
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					"cooked-mode frame doesn't have room for sll header");
+				return -1;
+			}
+
+			/*
+			 * OK, that worked; construct the sll header.
+			 */
+			hdrp = (struct sll_header *)bp;
+			hdrp->sll_pkttype = map_packet_type_to_sll_type(
+							sll->sll_pkttype);
+			hdrp->sll_hatype = htons(sll->sll_hatype);
+			hdrp->sll_halen = htons(sll->sll_halen);
+			memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
+			hdrp->sll_protocol = sll->sll_protocol;
+
+			snaplen += sizeof(struct sll_header);
 		}
-
-		/*
-		 * OK, that worked; construct the sll header.
-		 */
-		hdrp = (struct sll_header *)bp;
-		hdrp->sll_pkttype = map_packet_type_to_sll_type(
-						sll->sll_pkttype);
-		hdrp->sll_hatype = htons(sll->sll_hatype);
-		hdrp->sll_halen = htons(sll->sll_halen);
-		memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
-		hdrp->sll_protocol = sll->sll_protocol;
-
-		snaplen += sizeof(struct sll_header);
 	}
 
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
@@ -4998,8 +5189,13 @@ static int pcap_handle_packet_mmap(
 	/* if required build in place the sll header*/
 	if (handlep->cooked) {
 		/* update packet len */
-		pcaphdr.caplen += SLL_HDR_LEN;
-		pcaphdr.len += SLL_HDR_LEN;
+		if (handle->linktype == DLT_LINUX_SLL2) {
+			pcaphdr.caplen += SLL2_HDR_LEN;
+			pcaphdr.len += SLL2_HDR_LEN;
+		} else {
+			pcaphdr.caplen += SLL_HDR_LEN;
+			pcaphdr.len += SLL_HDR_LEN;
+		}
 	}
 
 #if defined(HAVE_TPACKET2) || defined(HAVE_TPACKET3)
@@ -6950,7 +7146,7 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 					 * Yes, so we need to fix this
 					 * instruction.
 					 */
-					if (fix_offset(p) < 0) {
+					if (fix_offset(handle, p) < 0) {
 						/*
 						 * We failed to do so.
 						 * Return 0, so our caller
@@ -6968,38 +7164,74 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 }
 
 static int
-fix_offset(struct bpf_insn *p)
+fix_offset(pcap_t *handle, struct bpf_insn *p)
 {
-	/*
-	 * What's the offset?
-	 */
-	if (p->k >= SLL_HDR_LEN) {
+	bpf_u_int32 hdr_len;
+
+	if (handle->linktype == DLT_LINUX_SLL2) {
 		/*
-		 * It's within the link-layer payload; that starts at an
-		 * offset of 0, as far as the kernel packet filter is
-		 * concerned, so subtract the length of the link-layer
-		 * header.
+		 * What's the offset?
 		 */
-		p->k -= SLL_HDR_LEN;
-	} else if (p->k == 0) {
+		if (p->k >= SLL2_HDR_LEN) {
+			/*
+			 * It's within the link-layer payload; that starts
+			 * at an offset of 0, as far as the kernel packet
+			 * filter is concerned, so subtract the length of
+			 * the link-layer header.
+			 */
+			p->k -= SLL_HDR_LEN;
+		} else if (p->k == 0) {
+			/*
+			 * It's the protocol field; map it to the
+			 * special magic kernel offset for that field.
+			 */
+			p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
+		} else if (p->k == 10) {
+			/*
+			 * It's the packet type field; map it to the
+			 * special magic kernel offset for that field.
+			 */
+			p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
+		} else if ((bpf_int32)(p->k) > 0) {
+			/*
+			 * It's within the header, but it's not one of
+			 * those fields; we can't do that in the kernel,
+			 * so punt to userland.
+			 */
+			return -1;
+		}
+	} else {
 		/*
-		 * It's the packet type field; map it to the special magic
-		 * kernel offset for that field.
+		 * What's the offset?
 		 */
-		p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
-	} else if (p->k == 14) {
-		/*
-		 * It's the protocol field; map it to the special magic
-		 * kernel offset for that field.
-		 */
-		p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
-	} else if ((bpf_int32)(p->k) > 0) {
-		/*
-		 * It's within the header, but it's not one of those
-		 * fields; we can't do that in the kernel, so punt
-		 * to userland.
-		 */
-		return -1;
+		if (p->k >= SLL_HDR_LEN) {
+			/*
+			 * It's within the link-layer payload; that starts
+			 * at an offset of 0, as far as the kernel packet
+			 * filter is concerned, so subtract the length of
+			 * the link-layer header.
+			 */
+			p->k -= SLL_HDR_LEN;
+		} else if (p->k == 0) {
+			/*
+			 * It's the packet type field; map it to the
+			 * special magic kernel offset for that field.
+			 */
+			p->k = SKF_AD_OFF + SKF_AD_PKTTYPE;
+		} else if (p->k == 14) {
+			/*
+			 * It's the protocol field; map it to the
+			 * special magic kernel offset for that field.
+			 */
+			p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
+		} else if ((bpf_int32)(p->k) > 0) {
+			/*
+			 * It's within the header, but it's not one of
+			 * those fields; we can't do that in the kernel,
+			 * so punt to userland.
+			 */
+			return -1;
+		}
 	}
 	return 0;
 }
