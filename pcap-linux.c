@@ -3902,7 +3902,7 @@ activate_new(pcap_t *handle)
 		if (setsockopt(sock_fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP,
 		    &mr, sizeof(mr)) == -1) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "setsockopt");
+			    PCAP_ERRBUF_SIZE, errno, "setsockopt (PACKET_ADD_MEMBERSHIP)");
 			close(sock_fd);
 			return PCAP_ERROR;
 		}
@@ -3915,7 +3915,7 @@ activate_new(pcap_t *handle)
 	if (setsockopt(sock_fd, SOL_PACKET, PACKET_AUXDATA, &val,
 		       sizeof(val)) == -1 && errno != ENOPROTOOPT) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "setsockopt");
+		    errno, "setsockopt (PACKET_AUXDATA)");
 		close(sock_fd);
 		return PCAP_ERROR;
 	}
@@ -5766,7 +5766,7 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "getsockopt");
+		    errno, "getsockopt (SO_ERROR)");
 		return 0;
 	}
 
@@ -7030,7 +7030,7 @@ iface_bind_old(int fd, const char *device, char *ebuf)
 
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "getsockopt");
+		    errno, "getsockopt (SO_ERROR)");
 		return -1;
 	}
 
