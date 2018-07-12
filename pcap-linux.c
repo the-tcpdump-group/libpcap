@@ -1908,7 +1908,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 		 * Add the length of the fake header to the length
 		 * of packet data we read.
 		 */
-		if (handle->linktype = DLT_LINUX_SLL2) {
+		if (handle->linktype == DLT_LINUX_SLL2) {
 			struct sll2_header	*hdrp;
 
 			packet_len += SLL2_HDR_LEN;
@@ -7166,8 +7166,6 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 static int
 fix_offset(pcap_t *handle, struct bpf_insn *p)
 {
-	bpf_u_int32 hdr_len;
-
 	if (handle->linktype == DLT_LINUX_SLL2) {
 		/*
 		 * What's the offset?
