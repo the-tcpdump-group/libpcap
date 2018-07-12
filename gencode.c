@@ -1368,9 +1368,16 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
-	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket */
+	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket v1 */
 		cstate->off_linktype.constant_part = 14;
 		cstate->off_linkpl.constant_part = 16;
+		cstate->off_nl = 0;
+		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		break;
+
+	case DLT_LINUX_SLL2:	/* fake header for Linux cooked socket v2 */
+		cstate->off_linktype.constant_part = 0;
+		cstate->off_linkpl.constant_part = 20;
 		cstate->off_nl = 0;
 		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
@@ -7951,6 +7958,15 @@ gen_inbound(compiler_state_t *cstate, int dir)
 	case DLT_LINUX_SLL:
 		/* match outgoing packets */
 		b0 = gen_cmp(cstate, OR_LINKHDR, 0, BPF_H, LINUX_SLL_OUTGOING);
+		if (!dir) {
+			/* to filter on inbound traffic, invert the match */
+			gen_not(b0);
+		}
+		break;
+
+	case DLT_LINUX_SLL2:
+		/* match outgoing packets */
+		b0 = gen_cmp(cstate, OR_LINKHDR, 10, BPF_B, LINUX_SLL_OUTGOING);
 		if (!dir) {
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);

@@ -2850,7 +2850,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(FRELAY, "Frame Relay"),
 	DLT_CHOICE(LOOP, "OpenBSD loopback"),
 	DLT_CHOICE(ENC, "OpenBSD encapsulated IP"),
-	DLT_CHOICE(LINUX_SLL, "Linux cooked"),
+	DLT_CHOICE(LINUX_SLL, "Linux cooked v1"),
 	DLT_CHOICE(LTALK, "Localtalk"),
 	DLT_CHOICE(PFLOG, "OpenBSD pflog file"),
 	DLT_CHOICE(PFSYNC, "Packet filter state syncing"),
@@ -2968,6 +2968,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DOCSIS31_XRA31, "Excentis XRA-31 DOCSIS 3.1 RF sniffer frames"),
 	DLT_CHOICE(ETHERNET_MPACKET, "802.3br mPackets"),
 	DLT_CHOICE(DISPLAYPORT_AUX, "DisplayPort AUX channel monitoring data"),
+	DLT_CHOICE(LINUX_SLL2, "Linux cooked v2"),
 	DLT_CHOICE_SENTINEL
 };
 
