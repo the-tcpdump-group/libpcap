@@ -252,19 +252,19 @@ typedef struct {
  * True if a is in uset {p}
  */
 #define SET_MEMBER(p, a) \
-((p)[(unsigned)(a) / BITS_PER_WORD] & (1 << ((unsigned)(a) % BITS_PER_WORD)))
+((p)[(unsigned)(a) / BITS_PER_WORD] & ((bpf_u_int32)1 << ((unsigned)(a) % BITS_PER_WORD)))
 
 /*
  * Add 'a' to uset p.
  */
 #define SET_INSERT(p, a) \
-(p)[(unsigned)(a) / BITS_PER_WORD] |= (1 << ((unsigned)(a) % BITS_PER_WORD))
+(p)[(unsigned)(a) / BITS_PER_WORD] |= ((bpf_u_int32)1 << ((unsigned)(a) % BITS_PER_WORD))
 
 /*
  * Delete 'a' from uset p.
  */
 #define SET_DELETE(p, a) \
-(p)[(unsigned)(a) / BITS_PER_WORD] &= ~(1 << ((unsigned)(a) % BITS_PER_WORD))
+(p)[(unsigned)(a) / BITS_PER_WORD] &= ~((bpf_u_int32)1 << ((unsigned)(a) % BITS_PER_WORD))
 
 /*
  * a := a intersect b
@@ -1534,7 +1534,7 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 
 		while (x != 0) {
 			k = lowest_set_bit(x);
-			x &=~ (1 << k);
+			x &=~ ((bpf_u_int32)1 << k);
 			k += i * BITS_PER_WORD;
 
 			target = fold_edge(ep->succ, opt_state->edges[k]);
