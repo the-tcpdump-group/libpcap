@@ -7212,7 +7212,7 @@ fix_offset(pcap_t *handle, struct bpf_insn *p)
 			 * filter is concerned, so subtract the length of
 			 * the link-layer header.
 			 */
-			p->k -= SLL_HDR_LEN;
+			p->k -= SLL2_HDR_LEN;
 		} else if (p->k == 0) {
 			/*
 			 * It's the protocol field; map it to the
