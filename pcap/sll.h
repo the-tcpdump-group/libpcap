@@ -99,7 +99,7 @@ struct sll2_header {
 	uint16_t sll2_protocol;			/* protocol */
 	uint16_t sll2_reserved_mbz;		/* reserved - must be zero */
 	uint32_t sll2_if_index;			/* 1-based interface index */
-	uint8_t  sll2_hatype;			/* link-layer address type */
+	uint16_t sll2_hatype;			/* link-layer address type */
 	uint8_t  sll2_pkttype;			/* packet type */
 	uint8_t  sll2_halen;			/* link-layer address length */
 	uint8_t  sll2_addr[SLL_ADDRLEN];	/* link-layer address */

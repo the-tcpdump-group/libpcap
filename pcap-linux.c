@@ -1917,7 +1917,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			hdrp->sll2_protocol = from.sll_protocol;
 			hdrp->sll2_reserved_mbz = 0;
 			hdrp->sll2_if_index = htonl(from.sll_ifindex);
-			hdrp->sll2_hatype = from.sll_hatype;
+			hdrp->sll2_hatype = htons(from.sll_hatype);
 			hdrp->sll2_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
 			hdrp->sll2_halen = from.sll_halen;
 			memcpy(hdrp->sll2_addr, from.sll_addr,
@@ -5114,7 +5114,7 @@ static int pcap_handle_packet_mmap(
 			hdrp->sll2_protocol = sll->sll_protocol;
 			hdrp->sll2_reserved_mbz = 0;
 			hdrp->sll2_if_index = htonl(sll->sll_ifindex);
-			hdrp->sll2_hatype = sll->sll_hatype;
+			hdrp->sll2_hatype = htons(sll->sll_hatype);
 			hdrp->sll2_pkttype = map_packet_type_to_sll_type(
 							sll->sll_pkttype);
 			hdrp->sll2_halen = sll->sll_halen;
