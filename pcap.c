@@ -2124,14 +2124,23 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 * plus a structure following it of size "size".  The
 	 * structure following it is a private data structure
 	 * for the routines that handle this pcap_t.
+	 *
+	 * The structure following it must be aligned on
+	 * the appropriate alignment boundary for this platform.
+	 * We align on an 8-byte boundary as that's probably what
+	 * at least some platforms do, even with 32-bit integers,
+	 * and because we can't be sure that some values won't
+	 * require 8-byte alignment even on platforms with 32-bit
+	 * integers.
 	 */
-	chunk = malloc(sizeof (pcap_t) + size);
+#define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7) & ~0x7)
+	chunk = malloc(PCAP_T_ALIGNED_SIZE + size);
 	if (chunk == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (NULL);
 	}
-	memset(chunk, 0, sizeof (pcap_t) + size);
+	memset(chunk, 0, PCAP_T_ALIGNED_SIZE + size);
 
 	/*
 	 * Get a pointer to the pcap_t at the beginning.
@@ -2156,7 +2165,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 		 * Set the pointer to the private data; that's the structure
 		 * of size "size" following the pcap_t.
 		 */
-		p->priv = (void *)(chunk + sizeof (pcap_t));
+		p->priv = (void *)(chunk + PCAP_T_ALIGNED_SIZE);
 	}
 
 	return (p);
