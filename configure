@@ -716,6 +716,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -814,6 +815,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1066,6 +1068,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1203,7 +1214,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1356,6 +1367,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -4214,7 +4226,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4260,7 +4272,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4284,7 +4296,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4329,7 +4341,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4353,7 +4365,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -8604,20 +8616,20 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wsign-compare option" >&5
-$as_echo_n "checking whether the compiler supports the -Wsign-compare option... " >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wcomma option" >&5
+$as_echo_n "checking whether the compiler supports the -Wcomma option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wsign-compare" : "x-W.*" >/dev/null
+	if expr "x-Wcomma" : "x-W.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wsign-compare"
-	elif expr "x-Wsign-compare" : "x-f.*" >/dev/null
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wcomma"
+	elif expr "x-Wcomma" : "x-f.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
-	elif expr "x-Wsign-compare" : "x-m.*" >/dev/null
+	    CFLAGS="$CFLAGS -Werror -Wcomma"
+	elif expr "x-Wcomma" : "x-m.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
+	    CFLAGS="$CFLAGS -Werror -Wcomma"
 	else
-	    CFLAGS="$CFLAGS -Wsign-compare"
+	    CFLAGS="$CFLAGS -Wcomma"
 	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -8644,8 +8656,8 @@ $as_echo "yes" >&6; }
 		if test "x" != "x"
 		then
 		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wsign-compare " >&5
-$as_echo_n "checking whether -Wsign-compare ... " >&6; }
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wcomma " >&5
+$as_echo_n "checking whether -Wcomma ... " >&6; }
 		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -8673,253 +8685,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		CFLAGS="$save_CFLAGS"
 		if test x"$can_add_to_cflags" = "xyes"
 		then
-		    V_CCOPT="$V_CCOPT -Wsign-compare"
-		fi
-
-else
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		CFLAGS="$save_CFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-prototypes option" >&5
-$as_echo_n "checking whether the compiler supports the -Wmissing-prototypes option... " >&6; }
-	save_CFLAGS="$CFLAGS"
-	if expr "x-Wmissing-prototypes" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-prototypes"
-	elif expr "x-Wmissing-prototypes" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
-	elif expr "x-Wmissing-prototypes" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
-	else
-	    CFLAGS="$CFLAGS -Wmissing-prototypes"
-	fi
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-return 0
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		can_add_to_cflags=yes
-		#
-		# The compile supports this; do we have some C code for
-		# which the warning should *not* appear?
-		# We test the fourth argument because the third argument
-		# could contain quotes, breaking the test.
-		#
-		if test "x" != "x"
-		then
-		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wmissing-prototypes " >&5
-$as_echo_n "checking whether -Wmissing-prototypes ... " >&6; }
-		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-			#
-			# Not a problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-else
-
-			#
-			# A problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-			can_add_to_cflags=no
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-		fi
-		CFLAGS="$save_CFLAGS"
-		if test x"$can_add_to_cflags" = "xyes"
-		then
-		    V_CCOPT="$V_CCOPT -Wmissing-prototypes"
-		fi
-
-else
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		CFLAGS="$save_CFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wstrict-prototypes option" >&5
-$as_echo_n "checking whether the compiler supports the -Wstrict-prototypes option... " >&6; }
-	save_CFLAGS="$CFLAGS"
-	if expr "x-Wstrict-prototypes" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wstrict-prototypes"
-	elif expr "x-Wstrict-prototypes" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
-	elif expr "x-Wstrict-prototypes" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
-	else
-	    CFLAGS="$CFLAGS -Wstrict-prototypes"
-	fi
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-return 0
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		can_add_to_cflags=yes
-		#
-		# The compile supports this; do we have some C code for
-		# which the warning should *not* appear?
-		# We test the fourth argument because the third argument
-		# could contain quotes, breaking the test.
-		#
-		if test "x" != "x"
-		then
-		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wstrict-prototypes " >&5
-$as_echo_n "checking whether -Wstrict-prototypes ... " >&6; }
-		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-			#
-			# Not a problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-else
-
-			#
-			# A problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-			can_add_to_cflags=no
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-		fi
-		CFLAGS="$save_CFLAGS"
-		if test x"$can_add_to_cflags" = "xyes"
-		then
-		    V_CCOPT="$V_CCOPT -Wstrict-prototypes"
-		fi
-
-else
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		CFLAGS="$save_CFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshadow option" >&5
-$as_echo_n "checking whether the compiler supports the -Wshadow option... " >&6; }
-	save_CFLAGS="$CFLAGS"
-	if expr "x-Wshadow" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshadow"
-	elif expr "x-Wshadow" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wshadow"
-	elif expr "x-Wshadow" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wshadow"
-	else
-	    CFLAGS="$CFLAGS -Wshadow"
-	fi
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-return 0
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		can_add_to_cflags=yes
-		#
-		# The compile supports this; do we have some C code for
-		# which the warning should *not* appear?
-		# We test the fourth argument because the third argument
-		# could contain quotes, breaking the test.
-		#
-		if test "x" != "x"
-		then
-		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wshadow " >&5
-$as_echo_n "checking whether -Wshadow ... " >&6; }
-		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-			#
-			# Not a problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-else
-
-			#
-			# A problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-			can_add_to_cflags=no
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-		fi
-		CFLAGS="$save_CFLAGS"
-		if test x"$can_add_to_cflags" = "xyes"
-		then
-		    V_CCOPT="$V_CCOPT -Wshadow"
+		    V_CCOPT="$V_CCOPT -Wcomma"
 		fi
 
 else
@@ -9014,88 +8780,6 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wused-but-marked-unused option" >&5
-$as_echo_n "checking whether the compiler supports the -Wused-but-marked-unused option... " >&6; }
-	save_CFLAGS="$CFLAGS"
-	if expr "x-Wused-but-marked-unused" : "x-W.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wused-but-marked-unused"
-	elif expr "x-Wused-but-marked-unused" : "x-f.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
-	elif expr "x-Wused-but-marked-unused" : "x-m.*" >/dev/null
-	then
-	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
-	else
-	    CFLAGS="$CFLAGS -Wused-but-marked-unused"
-	fi
-	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-return 0
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		can_add_to_cflags=yes
-		#
-		# The compile supports this; do we have some C code for
-		# which the warning should *not* appear?
-		# We test the fourth argument because the third argument
-		# could contain quotes, breaking the test.
-		#
-		if test "x" != "x"
-		then
-		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wused-but-marked-unused " >&5
-$as_echo_n "checking whether -Wused-but-marked-unused ... " >&6; }
-		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-
-			#
-			# Not a problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-else
-
-			#
-			# A problem.
-			#
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-			can_add_to_cflags=no
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-		fi
-		CFLAGS="$save_CFLAGS"
-		if test x"$can_add_to_cflags" = "xyes"
-		then
-		    V_CCOPT="$V_CCOPT -Wused-but-marked-unused"
-		fi
-
-else
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		CFLAGS="$save_CFLAGS"
-
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wdocumentation option" >&5
 $as_echo_n "checking whether the compiler supports the -Wdocumentation option... " >&6; }
 	save_CFLAGS="$CFLAGS"
@@ -9178,20 +8862,20 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wcomma option" >&5
-$as_echo_n "checking whether the compiler supports the -Wcomma option... " >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wformat-nonliteral option" >&5
+$as_echo_n "checking whether the compiler supports the -Wformat-nonliteral option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wcomma" : "x-W.*" >/dev/null
+	if expr "x-Wformat-nonliteral" : "x-W.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wcomma"
-	elif expr "x-Wcomma" : "x-f.*" >/dev/null
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wformat-nonliteral"
+	elif expr "x-Wformat-nonliteral" : "x-f.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS -Werror -Wcomma"
-	elif expr "x-Wcomma" : "x-m.*" >/dev/null
+	    CFLAGS="$CFLAGS -Werror -Wformat-nonliteral"
+	elif expr "x-Wformat-nonliteral" : "x-m.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS -Werror -Wcomma"
+	    CFLAGS="$CFLAGS -Werror -Wformat-nonliteral"
 	else
-	    CFLAGS="$CFLAGS -Wcomma"
+	    CFLAGS="$CFLAGS -Wformat-nonliteral"
 	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -9218,8 +8902,8 @@ $as_echo "yes" >&6; }
 		if test "x" != "x"
 		then
 		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wcomma " >&5
-$as_echo_n "checking whether -Wcomma ... " >&6; }
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wformat-nonliteral " >&5
+$as_echo_n "checking whether -Wformat-nonliteral ... " >&6; }
 		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9247,7 +8931,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		CFLAGS="$save_CFLAGS"
 		if test x"$can_add_to_cflags" = "xyes"
 		then
-		    V_CCOPT="$V_CCOPT -Wcomma"
+		    V_CCOPT="$V_CCOPT -Wformat-nonliteral"
 		fi
 
 else
@@ -9341,9 +9025,88 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-		    # Warns about safeguards added in case the enums are
-		    # extended
-		    # AC_LBL_CHECK_COMPILER_OPT(V_CCOPT, -Wcovered-switch-default)
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-prototypes option" >&5
+$as_echo_n "checking whether the compiler supports the -Wmissing-prototypes option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wmissing-prototypes" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wmissing-prototypes"
+	elif expr "x-Wmissing-prototypes" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
+	elif expr "x-Wmissing-prototypes" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wmissing-prototypes"
+	else
+	    CFLAGS="$CFLAGS -Wmissing-prototypes"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wmissing-prototypes " >&5
+$as_echo_n "checking whether -Wmissing-prototypes ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -Wmissing-prototypes"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wmissing-variable-declarations option" >&5
 $as_echo_n "checking whether the compiler supports the -Wmissing-variable-declarations option... " >&6; }
@@ -9415,6 +9178,252 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		if test x"$can_add_to_cflags" = "xyes"
 		then
 		    V_CCOPT="$V_CCOPT -Wmissing-variable-declarations"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshadow option" >&5
+$as_echo_n "checking whether the compiler supports the -Wshadow option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wshadow" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshadow"
+	elif expr "x-Wshadow" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshadow"
+	elif expr "x-Wshadow" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshadow"
+	else
+	    CFLAGS="$CFLAGS -Wshadow"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wshadow " >&5
+$as_echo_n "checking whether -Wshadow ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -Wshadow"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wsign-compare option" >&5
+$as_echo_n "checking whether the compiler supports the -Wsign-compare option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wsign-compare" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wsign-compare"
+	elif expr "x-Wsign-compare" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
+	elif expr "x-Wsign-compare" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wsign-compare"
+	else
+	    CFLAGS="$CFLAGS -Wsign-compare"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wsign-compare " >&5
+$as_echo_n "checking whether -Wsign-compare ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -Wsign-compare"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wstrict-prototypes option" >&5
+$as_echo_n "checking whether the compiler supports the -Wstrict-prototypes option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wstrict-prototypes" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wstrict-prototypes"
+	elif expr "x-Wstrict-prototypes" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
+	elif expr "x-Wstrict-prototypes" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wstrict-prototypes"
+	else
+	    CFLAGS="$CFLAGS -Wstrict-prototypes"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wstrict-prototypes " >&5
+$as_echo_n "checking whether -Wstrict-prototypes ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -Wstrict-prototypes"
 		fi
 
 else
@@ -9509,20 +9518,20 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wformat-nonliteral option" >&5
-$as_echo_n "checking whether the compiler supports the -Wformat-nonliteral option... " >&6; }
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wused-but-marked-unused option" >&5
+$as_echo_n "checking whether the compiler supports the -Wused-but-marked-unused option... " >&6; }
 	save_CFLAGS="$CFLAGS"
-	if expr "x-Wformat-nonliteral" : "x-W.*" >/dev/null
+	if expr "x-Wused-but-marked-unused" : "x-W.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wformat-nonliteral"
-	elif expr "x-Wformat-nonliteral" : "x-f.*" >/dev/null
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wused-but-marked-unused"
+	elif expr "x-Wused-but-marked-unused" : "x-f.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS -Werror -Wformat-nonliteral"
-	elif expr "x-Wformat-nonliteral" : "x-m.*" >/dev/null
+	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
+	elif expr "x-Wused-but-marked-unused" : "x-m.*" >/dev/null
 	then
-	    CFLAGS="$CFLAGS -Werror -Wformat-nonliteral"
+	    CFLAGS="$CFLAGS -Werror -Wused-but-marked-unused"
 	else
-	    CFLAGS="$CFLAGS -Wformat-nonliteral"
+	    CFLAGS="$CFLAGS -Wused-but-marked-unused"
 	fi
 	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -9549,8 +9558,8 @@ $as_echo "yes" >&6; }
 		if test "x" != "x"
 		then
 		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
-		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wformat-nonliteral " >&5
-$as_echo_n "checking whether -Wformat-nonliteral ... " >&6; }
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wused-but-marked-unused " >&5
+$as_echo_n "checking whether -Wused-but-marked-unused ... " >&6; }
 		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -9578,7 +9587,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		CFLAGS="$save_CFLAGS"
 		if test x"$can_add_to_cflags" = "xyes"
 		then
-		    V_CCOPT="$V_CCOPT -Wformat-nonliteral"
+		    V_CCOPT="$V_CCOPT -Wused-but-marked-unused"
 		fi
 
 else
@@ -9590,6 +9599,9 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+		    # Warns about safeguards added in case the enums are
+		    # extended
+		    # AC_LBL_CHECK_COMPILER_OPT(V_CCOPT, -Wcovered-switch-default)
 		    #
 		    # This can cause problems with ntohs(), ntohl(),
 		    # htons(), and htonl() on some platforms, such
