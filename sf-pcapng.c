@@ -199,7 +199,7 @@ typedef enum {
 struct pcap_ng_if {
 	uint64_t tsresol;		/* time stamp resolution */
 	tstamp_scale_type_t scale_type;	/* how to scale */
-	u_int scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
+	uint64_t scale_factor;		/* time stamp scale factor for power-of-10 tsresol */
 	uint64_t tsoffset;		/* time stamp offset */
 };
 
