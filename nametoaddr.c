@@ -306,7 +306,8 @@ pcap_nametoport(const char *name, int *port, int *proto)
 	hints.ai_protocol = IPPROTO_TCP;
 	error = getaddrinfo(NULL, name, &hints, &res);
 	if (error != 0) {
-		if (error != EAI_NONAME) {
+		if (error != EAI_NONAME &&
+		    error != EAI_SERVICE) {
 			/*
 			 * This is a real error, not just "there's
 			 * no such service name".
@@ -349,7 +350,8 @@ pcap_nametoport(const char *name, int *port, int *proto)
 	hints.ai_protocol = IPPROTO_UDP;
 	error = getaddrinfo(NULL, name, &hints, &res);
 	if (error != 0) {
-		if (error != EAI_NONAME) {
+		if (error != EAI_NONAME &&
+		    error != EAI_SERVICE) {
 			/*
 			 * This is a real error, not just "there's
 			 * no such service name".
