@@ -1,5 +1,5 @@
 /*
- * pcap-dag.c: Packet capture interface for Emulex EndaceDAG cards.
+ * pcap-dag.c: Packet capture interface for Endace DAG cards.
  *
  * The functionality of this code attempts to mimic that of pcap-linux as much
  * as possible.  This code is compiled in several different ways depending on
@@ -12,7 +12,7 @@
  * Authors: Richard Littin, Sean Irvine ({richard,sean}@reeltwo.com)
  * Modifications: Jesper Peterson
  *                Koryn Grant
- *                Stephen Donnelly <stephen.donnelly@emulex.com>
+ *                Stephen Donnelly <stephen.donnelly@endace.com>
  */
 
 #ifdef HAVE_CONFIG_H
