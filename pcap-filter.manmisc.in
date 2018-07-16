@@ -567,7 +567,7 @@ are:
 and
 .B block
 and, with later versions of
-.BR pf (4)),
+.BR pf (4),
 .BR nat ,
 .BR rdr ,
 .B binat
