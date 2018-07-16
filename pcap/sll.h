@@ -108,9 +108,10 @@ struct sll2_header {
 /*
  * The LINUX_SLL_ values for "sll_pkttype" and LINUX_SLL2_ values for
  * "sll2_pkttype"; these correspond to the PACKET_ values on Linux,
- * but are defined here so that they're available even on systems other
- * than Linux, and so that they don't change even if the PACKET_ values
- * change.
+ * which are defined by a header under include/uapi in the current
+ * kernel source, and are thus not going to change on Linux.  We
+ * define them here so that they're available even on systems other
+ * than Linux.
  */
 #define LINUX_SLL_HOST		0
 #define LINUX_SLL_BROADCAST	1
