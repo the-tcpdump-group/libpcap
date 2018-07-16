@@ -339,9 +339,6 @@ struct pcap_linux {
 static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
-#ifdef HAVE_PF_PACKET_SOCKETS
-static short int map_packet_type_to_sll_type(short int);
-#endif
 static int pcap_activate_linux(pcap_t *);
 static int activate_old(pcap_t *);
 static int activate_new(pcap_t *);
@@ -1918,7 +1915,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			hdrp->sll2_reserved_mbz = 0;
 			hdrp->sll2_if_index = htonl(from.sll_ifindex);
 			hdrp->sll2_hatype = htons(from.sll_hatype);
-			hdrp->sll2_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
+			hdrp->sll2_pkttype = from.sll_pkttype;
 			hdrp->sll2_halen = from.sll_halen;
 			memcpy(hdrp->sll2_addr, from.sll_addr,
 			    (from.sll_halen > SLL_ADDRLEN) ?
@@ -1930,7 +1927,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			packet_len += SLL_HDR_LEN;
 
 			hdrp = (struct sll_header *)bp;
-			hdrp->sll_pkttype = map_packet_type_to_sll_type(from.sll_pkttype);
+			hdrp->sll_pkttype = htons(from.sll_pkttype);
 			hdrp->sll_hatype = htons(from.sll_hatype);
 			hdrp->sll_halen = htons(from.sll_halen);
 			memcpy(hdrp->sll_addr, from.sll_addr,
@@ -3046,41 +3043,6 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	    "Setting direction is not supported on SOCK_PACKET sockets");
 	return -1;
 }
-
-#ifdef HAVE_PF_PACKET_SOCKETS
-/*
- * Map the PACKET_ value to a LINUX_SLL_ value; we
- * want the same numerical value to be used in
- * the link-layer header even if the numerical values
- * for the PACKET_ #defines change, so that programs
- * that look at the packet type field will always be
- * able to handle DLT_LINUX_SLL captures.
- */
-static short int
-map_packet_type_to_sll_type(short int sll_pkttype)
-{
-	switch (sll_pkttype) {
-
-	case PACKET_HOST:
-		return htons(LINUX_SLL_HOST);
-
-	case PACKET_BROADCAST:
-		return htons(LINUX_SLL_BROADCAST);
-
-	case PACKET_MULTICAST:
-		return  htons(LINUX_SLL_MULTICAST);
-
-	case PACKET_OTHERHOST:
-		return htons(LINUX_SLL_OTHERHOST);
-
-	case PACKET_OUTGOING:
-		return htons(LINUX_SLL_OUTGOING);
-
-	default:
-		return -1;
-	}
-}
-#endif
 
 static int
 is_wifi(int sock_fd
@@ -5115,8 +5077,7 @@ static int pcap_handle_packet_mmap(
 			hdrp->sll2_reserved_mbz = 0;
 			hdrp->sll2_if_index = htonl(sll->sll_ifindex);
 			hdrp->sll2_hatype = htons(sll->sll_hatype);
-			hdrp->sll2_pkttype = map_packet_type_to_sll_type(
-							sll->sll_pkttype);
+			hdrp->sll2_pkttype = sll->sll_pkttype;
 			hdrp->sll2_halen = sll->sll_halen;
 			memcpy(hdrp->sll2_addr, sll->sll_addr, SLL_ADDRLEN);
 
@@ -5152,8 +5113,7 @@ static int pcap_handle_packet_mmap(
 			 * OK, that worked; construct the sll header.
 			 */
 			hdrp = (struct sll_header *)bp;
-			hdrp->sll_pkttype = map_packet_type_to_sll_type(
-							sll->sll_pkttype);
+			hdrp->sll_pkttype = htons(sll->sll_pkttype);
 			hdrp->sll_hatype = htons(sll->sll_hatype);
 			hdrp->sll_halen = htons(sll->sll_halen);
 			memcpy(hdrp->sll_addr, sll->sll_addr, SLL_ADDRLEN);
