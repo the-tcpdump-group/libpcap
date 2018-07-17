@@ -40,12 +40,11 @@ to the type specified by
 .B pcap_set_datalink()
 returns 0 on success and \-1 on failure.
 If \-1 is returned,
-.B pcap_geterr()
+.B pcap_geterr(3PCAP)
 or
-.B pcap_perror()
+.B pcap_perror(3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP),
-pcap_datalink_name_to_val(3PCAP)
+pcap(3PCAP), pcap_datalink_name_to_val(3PCAP)

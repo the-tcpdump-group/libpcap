@@ -42,7 +42,7 @@ is the number of bytes in the packet.
 Note that, even if you successfully open the network interface, you
 might not have permission to send packets on it, or it might not support
 sending packets; as
-.I pcap_open_live()
+.B pcap_open_live(3PCAP)
 doesn't have a flag to indicate whether to open for capturing, sending,
 or capturing and sending, you cannot request an open that supports
 sending and be notified at open time whether sending will be possible.
@@ -78,11 +78,11 @@ returns the number of bytes written on success and \-1 on failure.
 returns 0 on success and \-1 on failure.
 .PP
 If \-1 is returned,
-.B pcap_geterr()
+.B pcap_geterr(3PCAP)
 or
-.B pcap_perror()
+.B pcap_perror(3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP)
+pcap(3PCAP)
