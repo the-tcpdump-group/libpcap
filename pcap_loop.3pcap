@@ -47,7 +47,7 @@ processes packets from a live capture or ``savefile'' until
 .I cnt
 packets are processed, the end of the ``savefile'' is
 reached when reading from a ``savefile'',
-.B pcap_breakloop()
+.B pcap_breakloop(3PCAP)
 is called, or an error occurs.
 It does
 .B not
@@ -123,7 +123,7 @@ them.
 .PP
 The bytes of data from the packet begin with a link-layer header.  The
 format of the link-layer header is indicated by the return value of the
-.B pcap_datalink()
+.B pcap_datalink(3PCAP)
 routine when handed the
 .B pcap_t
 value also passed to
@@ -136,7 +136,7 @@ lists the values
 can return and describes the packet formats that
 correspond to those values.  The value it returns will be valid for all
 packets received unless and until
-.B pcap_set_datalink()
+.B pcap_set_datalink(3PCAP)
 is called; after a successful call to
 .BR pcap_set_datalink() ,
 all subsequent packets will have a link-layer header of the type
@@ -188,12 +188,11 @@ checking for a return value < 0.
 .ft R
 .PP
 If \-1 is returned,
-.B pcap_geterr()
+.B pcap_geterr(3PCAP)
 or
-.B pcap_perror()
+.B pcap_perror(3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP), pcap_breakloop(3PCAP),
-pcap_datalink(3PCAP)
+pcap(3PCAP)

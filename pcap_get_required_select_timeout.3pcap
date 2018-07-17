@@ -36,24 +36,24 @@ struct timeval *pcap_get_required_select_timeout(pcap_t *p);
 returns, on UNIX, a pointer to a
 .B struct timeval
 containing a value that must be used as the minimum timeout in
-.BR select() ,
-.BR poll() ,
-.BR epoll_wait() ,
+.BR select(2) ,
+.BR poll(2) ,
+.BR epoll_wait(2) ,
 and
 .B kevent()
 calls if
-.B pcap_get_selectable_fd()
+.B pcap_get_selectable_fd(3PCAP)
 returns \-1.
 .PP
 The timeout that should be used in those calls must be no larger than
 the smallest of all timeouts returned by
-.B pcap_get_required_select_timeout()
+.B \%pcap_get_required_select_timeout()
 for devices from which packets will be captured.
 .PP
 The device for which
 .B pcap_get_selectable_fd()
 returned \-1 must be put in non-blocking mode with
-.BR pcap_setnonblock() ,
+.BR pcap_setnonblock(3PCAP) ,
 and an attempt must always be made to read packets from the device
 when the
 .BR select() ,
@@ -66,9 +66,9 @@ call returns.
 Note that a device on which a read can be done without blocking may,
 on some platforms, not have any packets to read if the packet buffer
 timeout has expired.  A call to
-.B pcap_dispatch()
+.B pcap_dispatch(3PCAP)
 or
-.B pcap_next_ex()
+.B pcap_next_ex(3PCAP)
 will return 0 in this case, but will not block.
 .PP
 .B pcap_get_required_select_timeout()
@@ -80,5 +80,4 @@ is returned if the timeout is required; otherwise
 .B NULL
 is returned.
 .SH SEE ALSO
-pcap(3PCAP), pcap_get_selectable_fd(3PCAP), select(2), poll(2),
-epoll_wait(2), kqueue(2)
+pcap(3PCAP), kqueue(2)

@@ -59,12 +59,12 @@ you are limited to the capture device's default time stamp type.
 If
 .B PCAP_ERROR
 is returned,
-.B pcap_geterr()
+.B pcap_geterr(3PCAP)
 or
-.B pcap_perror()
+.B pcap_perror(3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_geterr(3PCAP), pcap_tstamp_type_val_to_name(3PCAP),
+pcap(3PCAP), pcap_tstamp_type_val_to_name(3PCAP),
 pcap-tstamp(@MAN_MISC_INFO@)
