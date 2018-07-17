@@ -8534,6 +8534,88 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 	CFLAGS="$save_CFLAGS"
 
 
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -W option" >&5
+$as_echo_n "checking whether the compiler supports the -W option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-W" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -W"
+	elif expr "x-W" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -W"
+	elif expr "x-W" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -W"
+	else
+	    CFLAGS="$CFLAGS -W"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -W " >&5
+$as_echo_n "checking whether -W ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -W"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wall option" >&5
 $as_echo_n "checking whether the compiler supports the -Wall option... " >&6; }
 	save_CFLAGS="$CFLAGS"
