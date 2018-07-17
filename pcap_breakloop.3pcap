@@ -33,9 +33,9 @@ void pcap_breakloop(pcap_t *);
 .SH DESCRIPTION
 .B pcap_breakloop()
 sets a flag that will force
-.B pcap_dispatch()
+.B pcap_dispatch(3PCAP)
 or
-.B pcap_loop()
+.B pcap_loop(3PCAP)
 to return rather than looping; they will return the number of packets
 that have been processed so far, or \-2 if no packets have been
 processed so far.
@@ -60,7 +60,7 @@ packets arrive and the call completes.
 .PP
 .ft B
 Note also that, in a multi-threaded application, if one thread is
-blocked in pcap_dispatch(), pcap_loop(), pcap_next(), or pcap_next_ex(),
+blocked in pcap_dispatch(), pcap_loop(), pcap_next(3PCAP), or pcap_next_ex(3PCAP),
 a call to pcap_breakloop() in a different thread will not unblock that
 thread.
 .ft R
@@ -107,4 +107,4 @@ the flag is cleared, so a subsequent call will resume reading packets.
 If a positive number is returned, the flag is not cleared, so a
 subsequent call will return \-2 and clear the flag.
 .SH SEE ALSO
-pcap(3PCAP), pcap_loop(3PCAP), pcap_next_ex(3PCAP)
+pcap(3PCAP)
