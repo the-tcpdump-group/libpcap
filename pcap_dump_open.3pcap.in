@@ -50,19 +50,19 @@ for
 is called to write data to an existing open stream
 .IR fp ;
 this stream will be closed by a subsequent call to
-.BR pcap_dump_close() .
+.BR pcap_dump_close(3PCAP) .
 Note that on Windows, that stream should be opened in binary mode.
 .PP
 .I p
 is a capture or ``savefile'' handle returned by an earlier call to
-.B pcap_create()
+.B pcap_create(3PCAP)
 and activated by an earlier call to
-.BR pcap_activate() ,
+.BR \%pcap_activate(3PCAP) ,
 or returned by an earlier call to
-.BR pcap_open_offline() ,
-.BR pcap_open_live() ,
+.BR \%pcap_open_offline(3PCAP) ,
+.BR pcap_open_live(3PCAP) ,
 or
-.BR pcap_open_dead() .
+.BR pcap_open_dead(3PCAP) .
 The time stamp precision, link-layer type, and snapshot length from
 .I p
 are used as the link-layer type and snapshot length of the output file.
@@ -80,19 +80,17 @@ it will write new packets at the end of the file.
 A pointer to a
 .B pcap_dumper_t
 structure to use in subsequent
-.B pcap_dump()
+.B pcap_dump(3PCAP)
 and
-.B pcap_dump_close()
+.B pcap_dump_close(3PCAP)
 calls is returned on success.
 .B NULL
 is returned on failure.
 If
 .B NULL
 is returned,
-.B pcap_geterr(\fIp\fB)
+.B pcap_geterr(3PCAP)
 can be used to get the error text.
 .SH SEE ALSO
-pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP),
-\%pcap_open_offline(3PCAP), pcap_open_live(3PCAP), pcap_open_dead(3PCAP),
-pcap_dump(3PCAP), pcap_dump_close(3PCAP), pcap_geterr(3PCAP),
+pcap(3PCAP),
 \%pcap-savefile(@MAN_FILE_FORMATS@)

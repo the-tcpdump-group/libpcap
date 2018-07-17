@@ -69,12 +69,11 @@ exclusion allowing only one thread to call it at any given time.
 .B pcap_compile()
 returns 0 on success and \-1 on failure.
 If \-1 is returned,
-.B pcap_geterr()
+.B pcap_geterr(3PCAP)
 or
-.B pcap_perror()
+.B pcap_perror(3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
 pcap(3PCAP), pcap_setfilter(3PCAP), pcap_freecode(3PCAP),
-pcap_geterr(3PCAP), pcap-filter(@MAN_MISC_INFO@)
