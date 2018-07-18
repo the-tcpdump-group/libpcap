@@ -74,7 +74,8 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 {
 	struct hci_dev_list_req *dev_list;
 	struct hci_dev_req *dev_req;
-	int i, sock;
+	int sock;
+	unsigned i;
 	int ret = 0;
 
 	sock  = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI);
@@ -109,10 +110,10 @@ bt_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 
 	dev_req = dev_list->dev_req;
 	for (i = 0; i < dev_list->dev_num; i++, dev_req++) {
-		char dev_name[20], dev_descr[30];
+		char dev_name[20], dev_descr[40];
 
-		pcap_snprintf(dev_name, 20, BT_IFACE"%d", dev_req->dev_id);
-		pcap_snprintf(dev_descr, 30, "Bluetooth adapter number %d", i);
+		pcap_snprintf(dev_name, sizeof(dev_name), BT_IFACE"%u", dev_req->dev_id);
+		pcap_snprintf(dev_descr, sizeof(dev_descr), "Bluetooth adapter number %u", i);
 
 		/*
 		 * Bluetooth is a wireless technology.
