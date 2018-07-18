@@ -385,7 +385,7 @@ struct icode {
 };
 
 void bpf_optimize(compiler_state_t *, struct icode *ic);
-void PCAP_NORETURN bpf_syntax_error(compiler_state_t *, const char *);
+void PCAP_NORETURN bpf_parser_error(compiler_state_t *, const char *);
 void PCAP_NORETURN bpf_error(compiler_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
 
