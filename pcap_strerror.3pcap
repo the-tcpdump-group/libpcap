@@ -36,5 +36,3 @@ is provided in case
 .BR strerror (3)
 isn't available.  It returns an error message string corresponding to
 .IR error .
-.SH SEE ALSO
-strerror(3)
