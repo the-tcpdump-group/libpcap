@@ -50,7 +50,7 @@ should, if possible, use calls that support large files on the return
 value of
 .B pcap_file()
 or the value returned by
-.B fileno()
+.B fileno(3)
 when passed the return value of
 .BR pcap_file() .
 .SH SEE ALSO
