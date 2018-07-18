@@ -33,7 +33,7 @@ int pcap_snapshot(pcap_t *p);
 .SH DESCRIPTION
 .B pcap_snapshot()
 returns the snapshot length specified when
-.B pcap_set_snapshot(3PCAP)
+.B pcap_set_snaplen(3PCAP)
 or
 .B pcap_open_live(3PCAP)
 was called, for a live capture, or the snapshot length from the capture
