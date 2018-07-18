@@ -418,9 +418,9 @@ struct _compiler_state {
 };
 
 void PCAP_NORETURN
-bpf_syntax_error(compiler_state_t *cstate, const char *msg)
+bpf_parser_error(compiler_state_t *cstate, const char *msg)
 {
-	bpf_error(cstate, "syntax error in filter expression: %s", msg);
+	bpf_error(cstate, "can't parse filter expression: %s", msg);
 	/* NOTREACHED */
 }
 

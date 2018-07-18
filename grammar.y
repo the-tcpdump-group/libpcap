@@ -221,7 +221,7 @@ static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 static PCAP_NORETURN_DEF void
 yyerror(void *yyscanner _U_, compiler_state_t *cstate, const char *msg)
 {
-	bpf_syntax_error(cstate, msg);
+	bpf_parser_error(cstate, msg);
 	/* NOTREACHED */
 }
 
