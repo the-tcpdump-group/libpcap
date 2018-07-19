@@ -35,7 +35,9 @@ FILE *pcap_file(pcap_t *p);
 returns the standard I/O stream of the ``savefile,'' if a ``savefile''
 was opened with
 .BR pcap_open_offline(3PCAP) ,
-or NULL, if a network device was opened with
+or
+.BR NULL ,
+if a network device was opened with
 .B pcap_create(3PCAP)
 and
 .BR \%pcap_activate(3PCAP) ,

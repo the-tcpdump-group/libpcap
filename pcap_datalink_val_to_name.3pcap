@@ -52,3 +52,5 @@ link-layer header type.
 is returned if the type value does not correspond to a known
 .B DLT_
 value.
+.SH SEE ALSO
+pcap(3PCAP)
