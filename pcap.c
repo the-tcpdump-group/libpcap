@@ -3251,7 +3251,7 @@ pcap_win32_err_to_str(DWORD error, char *errbuf)
 	size_t errlen;
 	char *p;
 
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
+	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
 	    PCAP_ERRBUF_SIZE, NULL);
 
 	/*
