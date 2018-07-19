@@ -1143,7 +1143,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		int error;
 
 		error = GetLastError();
-		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
+		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
 			PCAP_ERRBUF_SIZE, NULL);
 
 		return -1;
@@ -1156,7 +1156,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		int error;
 
 		error = GetLastError();
-		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
+		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
 			PCAP_ERRBUF_SIZE, NULL);
 
 		CloseHandle(Token);
