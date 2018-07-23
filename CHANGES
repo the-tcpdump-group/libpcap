@@ -1,3 +1,8 @@
+Sunday, July 22, 2018
+  Summary for 1.9.1 libpcap release
+    Mention pcap_get_required_select_timeout() in the main pcap man page
+    Fix pcap-usb-linux.c build on systems with musl
+
 Sunday, June 24, 2018, by mcr@sandelman.ca
   Summary for 1.9.0 libpcap release
     Added testing system to libpcap, independent of tcpdump
