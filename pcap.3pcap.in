@@ -631,7 +631,8 @@ or
 or other routines a platform offers to wait for any of a set of
 descriptors to be ready to read.  To obtain, for a handle, a descriptor
 that can be used in those routines, call
-.BR pcap_get_selectable_fd ().  If the routine indicates that data is
+.BR pcap_get_selectable_fd ().
+If the routine indicates that data is
 available to read on the descriptor, an attempt should be made to read
 from the device.
 .PP
