@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SET_DATALINK 3PCAP "3 January 2014"
+.TH PCAP_SET_DATALINK 3PCAP "25 July 2018"
 .SH NAME
 pcap_set_datalink \- set the link-layer header type to be used by a
 capture device
@@ -38,8 +38,11 @@ to the type specified by
 .IR dlt .
 .SH RETURN VALUE
 .B pcap_set_datalink()
-returns 0 on success and \-1 on failure.
-If \-1 is returned,
+returns 0 on success and
+.B PCAP_ERROR
+on failure. If
+.B PCAP_ERROR
+is returned,
 .B pcap_geterr(3PCAP)
 or
 .B pcap_perror(3PCAP)

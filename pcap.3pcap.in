@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3PCAP "20 April 2018"
+.TH PCAP 3PCAP "25 July 2018"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -638,7 +638,9 @@ from the device.
 .PP
 Not all handles have such a descriptor available;
 .BR pcap_get_selectable_fd ()
-will return \-1 if no such descriptor is available.  If no such
+will return
+.B PCAP_ERROR
+if no such descriptor is available.  If no such
 descriptor is available, this may be because the device must be polled
 periodically for packets; in that case,
 .BR pcap_get_required_select_timeout ()

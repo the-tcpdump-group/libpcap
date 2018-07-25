@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FILENO 3PCAP "7 April 2014"
+.TH PCAP_FILENO 3PCAP "25 July 2018"
 .SH NAME
 pcap_fileno \- get the file descriptor for a live capture
 .SH SYNOPSIS
@@ -59,6 +59,7 @@ that was created with
 .B pcap_create()
 but that has not yet been activated with
 .BR pcap_activate() ,
-it returns \-1.
+it returns
+.BR PCAP_ERROR .
 .SH SEE ALSO
 pcap(3PCAP)

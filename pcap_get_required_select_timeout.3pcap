@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_GET_REQUIRED_SELECT_TIMEOUT 3PCAP "20 January 2018"
+.TH PCAP_GET_REQUIRED_SELECT_TIMEOUT 3PCAP "25 July 2018"
 .SH NAME
 pcap_get_required_select_timeout \- get a file descriptor on which a
 select() can be done for a live capture
@@ -43,7 +43,8 @@ and
 .B kevent()
 calls if
 .B pcap_get_selectable_fd(3PCAP)
-returns \-1.
+returns
+.BR PCAP_ERROR .
 .PP
 The timeout that should be used in those calls must be no larger than
 the smallest of all timeouts returned by
@@ -52,7 +53,9 @@ for devices from which packets will be captured.
 .PP
 The device for which
 .B pcap_get_selectable_fd()
-returned \-1 must be put in non-blocking mode with
+returned
+.B PCAP_ERROR
+must be put in non-blocking mode with
 .BR pcap_setnonblock(3PCAP) ,
 and an attempt must always be made to read packets from the device
 when the

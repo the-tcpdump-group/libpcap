@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_NEXT_EX 3PCAP "20 January 2017"
+.TH PCAP_NEXT_EX 3PCAP "25 July 2018"
 .SH NAME
 pcap_next_ex, pcap_next \- read the next packet from a pcap_t
 .SH SYNOPSIS
@@ -114,9 +114,14 @@ for Ethernet.
 .B pcap_next_ex()
 returns 1 if the packet was read without problems, 0 if packets are
 being read from a live capture and the packet buffer timeout expired,
-\-1 if an error occurred while reading the packet, and \-2 if packets
+.B PCAP_ERROR
+if an error occurred while reading the packet, and
+.B PCAP_ERROR_BREAK
+if packets
 are being read from a ``savefile'' and there are no more packets to read
-from the savefile.  If \-1 is returned,
+from the savefile.  If
+.B PCAP_ERROR
+is returned,
 .B pcap_geterr(3PCAP)
 or
 .B pcap_perror(3PCAP)
