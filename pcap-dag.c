@@ -1137,7 +1137,7 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 			}
 			rxstreams = dag_rx_get_stream_count(dagfd);
 			for(stream=0;stream<DAG_STREAM_MAX;stream+=2) {
-				if (0 == dag_attach_stream(dagfd, stream, 0, 0)) {
+				if (0 == dag_attach_stream64(dagfd, stream, 0, 0)) {
 					dag_detach_stream(dagfd, stream);
 
 					pcap_snprintf(name,  10, "dag%d:%d", c, stream);
