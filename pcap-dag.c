@@ -839,7 +839,7 @@ static int dag_activate(pcap_t* p)
 	 */
 	if (dag_get_stream_poll64(p->fd, pd->dag_stream,
 				&mindata, &maxwait, &poll) < 0) {
-		ret = PCAP_ERRNO;
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_get_stream_poll");
 		goto faildetach;
@@ -884,7 +884,7 @@ static int dag_activate(pcap_t* p)
 
 	if (dag_set_stream_poll64(p->fd, pd->dag_stream,
 				mindata, &maxwait, &poll) < 0) {
-		ret = PCAP_ERRNO;
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_set_stream_poll");
 		goto faildetach;
@@ -907,7 +907,7 @@ static int dag_activate(pcap_t* p)
 #endif
 
 	if(dag_start_stream(p->fd, pd->dag_stream) < 0) {
-		ret = PCAP_ERRNO;
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_start_stream %s", device);
 		goto faildetach;
@@ -943,7 +943,7 @@ static int dag_activate(pcap_t* p)
 			if ((n = atoi(s)) == 0 || n == 16 || n == 32) {
 				pd->dag_fcs_bits = n;
 			} else {
-				ret = PCAP_ERRNO;
+				ret = PCAP_ERROR;
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 					"pcap_activate %s: bad ERF_FCS_BITS value (%d) in environment", device, n);
 				goto failstop;
@@ -967,7 +967,7 @@ static int dag_activate(pcap_t* p)
 
 	p->linktype = -1;
 	if (dag_get_datalink(p) < 0) {
-		ret = PCAP_ERRNO;
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "dag_get_datalink %s", device);
 		goto failstop;
@@ -976,7 +976,7 @@ static int dag_activate(pcap_t* p)
 	p->bufsize = 0;
 
 	if (new_pcap_dag(p) < 0) {
-		ret = PCAP_ERRNO;
+		ret = PCAP_ERROR;
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "new_pcap_dag %s", device);
 		goto failstop;
