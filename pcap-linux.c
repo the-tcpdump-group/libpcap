@@ -5029,7 +5029,7 @@ static int pcap_handle_packet_mmap(
 			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"corrupted frame on kernel ring mac "
 				"offset %u + caplen %u > frame len %d "
-				"(kernel %s version %s, machine %s)",
+				"(kernel %.32s version %s, machine %.16s)",
 				tp_mac, tp_snaplen, handle->bufsize,
 				utsname.release, utsname.version,
 				utsname.machine);
