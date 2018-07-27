@@ -5018,13 +5018,27 @@ static int pcap_handle_packet_mmap(
 	struct sockaddr_ll *sll;
 	struct pcap_pkthdr pcaphdr;
 	unsigned int snaplen = tp_snaplen;
+	struct utsname utsname;
 
 	/* perform sanity check on internal offset. */
 	if (tp_mac + tp_snaplen > handle->bufsize) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			"corrupted frame on kernel ring mac "
-			"offset %u + caplen %u > frame len %d",
-			tp_mac, tp_snaplen, handle->bufsize);
+		/*
+		 * Report some system information as a debugging aid.
+		 */
+		if (uname(&utsname) != -1) {
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"corrupted frame on kernel ring mac "
+				"offset %u + caplen %u > frame len %d "
+				"(kernel %s version %s, machine %s)",
+				tp_mac, tp_snaplen, handle->bufsize,
+				utsname.release, utsname.version,
+				utsname.machine);
+		} else {
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				"corrupted frame on kernel ring mac "
+				"offset %u + caplen %u > frame len %d",
+				tp_mac, tp_snaplen, handle->bufsize);
+		}
 		return -1;
 	}
 
