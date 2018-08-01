@@ -125,6 +125,7 @@ typedef struct pcap_addr pcap_addr_t;
  * of the flags used in the printout phases of tcpdump.
  * Many fields here are 32 bit ints so compilers won't insert unwanted
  * padding; these files need to be interchangeable across architectures.
+ * Documentation: https://www.tcpdump.org/manpages/pcap-savefile.5.txt.
  *
  * Do not change the layout of this structure, in any way (this includes
  * changes that only affect the length of fields in this structure).
@@ -162,8 +163,8 @@ struct pcap_file_header {
 	bpf_u_int32 magic;
 	u_short version_major;
 	u_short version_minor;
-	bpf_int32 thiszone;	/* gmt to local correction */
-	bpf_u_int32 sigfigs;	/* accuracy of timestamps */
+	bpf_int32 thiszone;	/* gmt to local correction; this is always 0 */
+	bpf_u_int32 sigfigs;	/* accuracy of timestamps; this is always 0 */
 	bpf_u_int32 snaplen;	/* max length saved portion of each pkt */
 	bpf_u_int32 linktype;	/* data link type (LINKTYPE_*) */
 };

@@ -699,7 +699,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 }
 
 static int
-sf_write_header(pcap_t *p, FILE *fp, int linktype, int thiszone, int snaplen)
+sf_write_header(pcap_t *p, FILE *fp, int linktype, int snaplen)
 {
 	struct pcap_file_header hdr;
 
@@ -707,9 +707,15 @@ sf_write_header(pcap_t *p, FILE *fp, int linktype, int thiszone, int snaplen)
 	hdr.version_major = PCAP_VERSION_MAJOR;
 	hdr.version_minor = PCAP_VERSION_MINOR;
 
-	hdr.thiszone = thiszone;
-	hdr.snaplen = snaplen;
+	/*
+	 * https://www.tcpdump.org/manpages/pcap-savefile.5.txt states:
+	 * thiszone: 4-byte time zone offset; this is always 0.
+	 * sigfigs:  4-byte number giving the accuracy of time stamps
+	 *           in the file; this is always 0.
+	 */
+	hdr.thiszone = 0;
 	hdr.sigfigs = 0;
+	hdr.snaplen = snaplen;
 	hdr.linktype = linktype;
 
 	if (fwrite((char *)&hdr, sizeof(hdr), 1, fp) != 1)
@@ -754,7 +760,7 @@ pcap_setup_dump(pcap_t *p, int linktype, FILE *f, const char *fname)
 	else
 		setvbuf(f, NULL, _IONBF, 0);
 #endif
-	if (sf_write_header(p, f, linktype, p->tzoff, p->snapshot) == -1) {
+	if (sf_write_header(p, f, linktype, p->snapshot) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "Can't write to %s", fname);
 		if (f != stdout)
@@ -986,7 +992,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		/*
 		 * A header isn't present; attempt to write it.
 		 */
-		if (sf_write_header(p, f, linktype, p->tzoff, p->snapshot) == -1) {
+		if (sf_write_header(p, f, linktype, p->snapshot) == -1) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "Can't write to %s", fname);
 			(void)fclose(f);
