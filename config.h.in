@@ -328,9 +328,6 @@
 /* target host supports USB sniffing */
 #undef PCAP_SUPPORT_USB
 
-/* include ACN support */
-#undef SITA
-
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 

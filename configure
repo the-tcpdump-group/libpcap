@@ -741,7 +741,6 @@ enable_option_checking
 with_gcc
 enable_largefile
 enable_protochain
-with_sita
 with_pcap
 with_libnl
 enable_packet_ring
@@ -1416,7 +1415,6 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --without-gcc           don't use gcc
-  --with-sita             include SITA support
   --with-pcap=TYPE        use packet capture TYPE
   --without-libnl         disable libnl support [default=yes, on Linux, if
                           present]
@@ -5902,25 +5900,6 @@ $as_echo "${enable_protochain}" >&6; }
 #
 VALGRINDTEST_SRC=
 
-#
-# SITA support is mutually exclusive with native capture support;
-# "--with-sita" selects SITA support.
-#
-
-# Check whether --with-sita was given.
-if test "${with_sita+set}" = set; then :
-  withval=$with_sita;
-	if test ! "x$withval" = "xno" ; then
-
-$as_echo "#define SITA 1" >>confdefs.h
-
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: Enabling SITA ACN support" >&5
-$as_echo "$as_me: Enabling SITA ACN support" >&6;}
-		V_PCAP=sita
-	fi
-
-else
-
 
 # Check whether --with-pcap was given.
 if test "${with_pcap+set}" = set; then :
@@ -6752,9 +6731,6 @@ $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
 fi
 
 fi
-
-fi
-
 
 case "$host_os" in
 linux*)

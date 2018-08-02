@@ -510,20 +510,6 @@ AC_MSG_RESULT(${enable_protochain})
 #
 VALGRINDTEST_SRC=
 
-#
-# SITA support is mutually exclusive with native capture support;
-# "--with-sita" selects SITA support.
-#
-AC_ARG_WITH(sita,
-AC_HELP_STRING([--with-sita],[include SITA support]),
-[
-	if test ! "x$withval" = "xno" ; then
-		AC_DEFINE(SITA,1,[include ACN support])
-		AC_MSG_NOTICE(Enabling SITA ACN support)
-		V_PCAP=sita
-	fi
-],
-[
 AC_ARG_WITH(pcap,
 AC_HELP_STRING([--with-pcap=TYPE],[use packet capture TYPE]))
 if test ! -z "$with_pcap" ; then
@@ -979,7 +965,6 @@ then
 		fi
 	])
 fi
-])
 
 dnl check for hardware timestamp support
 case "$host_os" in
