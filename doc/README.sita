@@ -1,3 +1,10 @@
+NOTE: this is not currently supported; the configure script doesn't
+support --with-sita, and CMake doesn't support enabling SITA ACN
+support.  The code currently does not compile; it should really be
+implemented as an additional remote capture mechanism, using a URL,
+rather than as a separate version of libpcap that supports only the ACN
+product, but the infrastructure for that isn't yet available.
+
 The following instructions apply if you have a Linux platform and want
 libpcap to support the 'ACN' WAN/LAN router product from SITA
 (http://www.sita.aero)
