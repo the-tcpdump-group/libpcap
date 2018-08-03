@@ -299,7 +299,6 @@ struct rpcap_findalldevs_ifaddr
 struct rpcap_openreply
 {
 	int32 linktype;	/* Link type */
-	int32 tzoff;	/* Timezone offset */
 };
 
 /* Format of the message that starts a remote capture (startcap command) */

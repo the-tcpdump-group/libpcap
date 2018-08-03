@@ -231,7 +231,6 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	p->swapped = swapped;
 	p->version_major = hdr.version_major;
 	p->version_minor = hdr.version_minor;
-	p->tzoff = hdr.thiszone;
 	p->snapshot = hdr.snaplen;
 	if (p->snapshot <= 0) {
 		/*

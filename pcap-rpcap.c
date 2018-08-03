@@ -2282,7 +2282,6 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 
 	/* Set proper fields into the pcap_t struct */
 	fp->linktype = ntohl(openreply.linktype);
-	fp->tzoff = ntohl(openreply.tzoff);
 	pr->rmt_sockctrl = sockctrl;
 	pr->protocol_version = protocol_version;
 	pr->rmt_clientside = 1;

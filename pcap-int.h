@@ -196,7 +196,6 @@ struct pcap {
 	int snapshot;
 	int linktype;		/* Network linktype */
 	int linktype_ext;       /* Extended information stored in the linktype field of a file */
-	int tzoff;		/* timezone offset */
 	int offset;		/* offset for proper alignment */
 	int activated;		/* true if the capture is really started */
 	int oldstyle;		/* if we're opening with pcap_open_live() */

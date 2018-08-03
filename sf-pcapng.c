@@ -1009,7 +1009,6 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	}
 
 done:
-	p->tzoff = 0;	/* XXX - not used in pcap */
 	p->snapshot = idbp->snaplen;
 	if (p->snapshot <= 0) {
 		/*
