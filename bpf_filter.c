@@ -44,6 +44,7 @@
 
 #include <pcap/pcap-inttypes.h>
 #include "pcap-types.h"
+#include "portability.h"
 
 #ifndef _WIN32
 #include <sys/param.h>
