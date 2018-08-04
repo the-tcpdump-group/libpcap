@@ -116,7 +116,7 @@ EXTRACT_BE_S_8(const void *p)
 		((uint64_t)ntohl(*((const uint32_t *)(p) + 1))) << 0));
 
 }
-#elif ND_IS_AT_LEAST_GNUC_VERSION(2,0) && \
+#elif PCAP_IS_AT_LEAST_GNUC_VERSION(2,0) && \
     (defined(__alpha) || defined(__alpha__) || \
      defined(__mips) || defined(__mips__))
 /*
