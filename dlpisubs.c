@@ -114,6 +114,20 @@ pcap_stats_dlpi(pcap_t *p, struct pcap_stat *ps)
 }
 
 /*
+ * Does the processor for which we're compiling this support aligned loads?
+ */
+#if (defined(__i386__) || defined(_M_IX86) || defined(__X86__) || defined(__x86_64__) || defined(_M_X64)) || \
+    (defined(__arm__) || defined(_M_ARM) || defined(__aarch64__)) || \
+    (defined(__m68k__) && (!defined(__mc68000__) && !defined(__mc68010__))) || \
+    (defined(__ppc__) || defined(__ppc64__) || defined(_M_PPC) || defined(_ARCH_PPC) || defined(_ARCH_PPC64)) || \
+    (defined(__s390__) || defined(__s390x__) || defined(__zarch__))
+    /* Yes, it does. */
+#else
+    /* No, it doesn't. */
+    #define REQUIRE_ALIGNMENT
+#endif
+
+/*
  * Loop through the packets and call the callback for each packet.
  * Return the number of packets read.
  */
@@ -127,7 +141,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 	struct pcap_pkthdr pkthdr;
 #ifdef HAVE_SYS_BUFMOD_H
 	struct sb_hdr *sbp;
-#ifdef LBL_ALIGN
+#ifdef REQUIRE_ALIGNMENT
 	struct sb_hdr sbhdr;
 #endif
 #endif
@@ -157,7 +171,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 				return (n);
 			}
 		}
-#ifdef LBL_ALIGN
+#ifdef REQUIRE_ALIGNMENT
 		if ((long)bufp & 3) {
 			sbp = &sbhdr;
 			memcpy(sbp, bufp, sizeof(*sbp));

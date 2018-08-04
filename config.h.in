@@ -268,9 +268,6 @@
 /* IPv6 */
 #undef INET6
 
-/* if unaligned access fails */
-#undef LBL_ALIGN
-
 /* path for device for USB sniffing */
 #undef LINUX_USB_MON_DEV
 

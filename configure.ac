@@ -1846,8 +1846,6 @@ AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
 	#include <sys/dlpi_ext.h>
     ])
 
-AC_LBL_UNALIGNED_ACCESS
-
 AC_SUBST(V_CCOPT)
 AC_SUBST(V_DEFS)
 AC_SUBST(V_FINDALLDEVS)

@@ -265,9 +265,6 @@
 /* IPv6 */
 #cmakedefine INET6 1
 
-/* if unaligned access fails */
-#cmakedefine LBL_ALIGN 1
-
 /* path for device for USB sniffing */
 #cmakedefine LINUX_USB_MON_DEV "@LINUX_USB_MON_DEV@"
 
