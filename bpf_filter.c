@@ -87,9 +87,9 @@ u_int
 bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
     u_int wirelen, u_int buflen, const struct bpf_aux_data *aux_data)
 {
-	register u_int32_t A, X;
+	register uint32_t A, X;
 	register bpf_u_int32 k;
-	u_int32_t mem[BPF_MEMWORDS];
+	uint32_t mem[BPF_MEMWORDS];
 
 	if (pc == 0)
 		/*
@@ -349,7 +349,7 @@ bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			 * can't be unsigned; throw some casts to
 			 * specify what we're trying to do.
 			 */
-			A = (u_int32_t)(-(int32_t)A);
+			A = (uint32_t)(-(int32_t)A);
 			continue;
 
 		case BPF_MISC|BPF_TAX:
