@@ -44,7 +44,10 @@
 
 #include <pcap/pcap-inttypes.h>
 #include "pcap-types.h"
-#include "portability.h"
+#include "extract.h"
+
+#define EXTRACT_SHORT	EXTRACT_BE_U_2
+#define EXTRACT_LONG	EXTRACT_BE_U_4
 
 #ifndef _WIN32
 #include <sys/param.h>
@@ -55,161 +58,6 @@
 #include <pcap/bpf.h>
 
 #include <stdlib.h>
-
-/*
- * If we have versions of GCC or Clang that support an __attribute__
- * to say "if we're building with unsigned behavior sanitization,
- * don't complain about undefined behavior in this function", we
- * label these functions with that attribute - we *know* it's undefined
- * in the C standard, but we *also* know it does what we want with
- * the ISA we're targeting and the compiler we're using.
- *
- * For GCC 4.9.0 and later, we use __attribute__((no_sanitize_undefined));
- * pre-5.0 GCC doesn't have __has_attribute, and I'm not sure whether
- * GCC or Clang first had __attribute__((no_sanitize(XXX)).
- *
- * For Clang, we check for __attribute__((no_sanitize(XXX)) with
- * __has_attribute, as there are versions of Clang that support
- * __attribute__((no_sanitize("undefined")) but don't support
- * __attribute__((no_sanitize_undefined)).
- *
- * We define this here, rather than in funcattrs.h, because we
- * only want it used here, we don't want it to be broadly used.
- * (Any printer will get this defined, but this should at least
- * make it harder for people to find.)
- */
-#if defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 409)
-#define UNALIGNED_OK	__attribute__((no_sanitize_undefined))
-#elif __has_attribute(no_sanitize)
-#define UNALIGNED_OK	__attribute__((no_sanitize("undefined")))
-#else
-#define UNALIGNED_OK
-#endif
-
-#if (defined(__i386__) || defined(_M_IX86) || defined(__X86__) || defined(__x86_64__) || defined(_M_X64)) || \
-    (defined(__arm__) || defined(_M_ARM) || defined(__aarch64__)) || \
-    (defined(__m68k__) && (!defined(__mc68000__) && !defined(__mc68010__))) || \
-    (defined(__ppc__) || defined(__ppc64__) || defined(_M_PPC) || defined(_ARCH_PPC) || defined(_ARCH_PPC64)) || \
-    (defined(__s390__) || defined(__s390x__) || defined(__zarch__))
-/*
- * The processor natively handles unaligned loads, so we can just
- * cast the pointer and fetch through it.
- *
- * XXX - are those all the x86 tests we need?
- * XXX - do we need to worry about ARMv1 through ARMv5, which didn't
- * support unaligned loads, and, if so, do we need to worry about all
- * of them, or just some of them, e.g. ARMv5?
- * XXX - are those the only 68k tests we need not to generated
- * unaligned accesses if the target is the 68000 or 68010?
- * XXX - are there any tests we don't need, because some definitions are for
- * compilers that also predefine the GCC symbols?
- * XXX - do we need to test for both 32-bit and 64-bit versions of those
- * architectures in all cases?
- */
-UNALIGNED_OK static inline uint16_t
-EXTRACT_SHORT(const void *p)
-{
-	return ((uint16_t)ntohs(*(const uint16_t *)(p)));
-}
-
-UNALIGNED_OK static inline uint32_t
-EXTRACT_LONG(const void *p)
-{
-	return ((uint32_t)ntohl(*(const uint32_t *)(p)));
-}
-
-#elif PCAP_IS_AT_LEAST_GNUC_VERSION(2,0) && \
-    (defined(__alpha) || defined(__alpha__) || \
-     defined(__mips) || defined(__mips__))
-/*
- * This is MIPS or Alpha, which don't natively handle unaligned loads,
- * but which have instructions that can help when doing unaligned
- * loads, and this is GCC 2.0 or later or a compiler that claims to
- * be GCC 2.0 or later, which we assume that mean we have
- * __attribute__((packed)), which we can use to convince the compiler
- * to generate those instructions.
- *
- * Declare packed structures containing a uint16_t and a uint32_t,
- * cast the pointer to point to one of those, and fetch through it;
- * the GCC manual doesn't appear to explicitly say that
- * __attribute__((packed)) causes the compiler to generate unaligned-safe
- * code, but it apppears to do so.
- *
- * We do this in case the compiler can generate code using those
- * instructions to do an unaligned load and pass stuff to "ntohs()" or
- * "ntohl()", which might be better than than the code to fetch the
- * bytes one at a time and assemble them.  (That might not be the
- * case on a little-endian platform, such as DEC's MIPS machines and
- * Alpha machines, where "ntohs()" and "ntohl()" might not be done
- * inline.)
- *
- * We do this only for specific architectures because, for example,
- * at least some versions of GCC, when compiling for 64-bit SPARC,
- * generate code that assumes alignment if we do this.
- *
- * XXX - add other architectures and compilers as possible and
- * appropriate.
- *
- * HP's C compiler, indicated by __HP_cc being defined, supports
- * "#pragma unaligned N" in version A.05.50 and later, where "N"
- * specifies a number of bytes at which the typedef on the next
- * line is aligned, e.g.
- *
- *	#pragma unalign 1
- *	typedef uint16_t unaligned_uint16_t;
- *
- * to define unaligned_uint16_t as a 16-bit unaligned data type.
- * This could be presumably used, in sufficiently recent versions of
- * the compiler, with macros similar to those below.  This would be
- * useful only if that compiler could generate better code for PA-RISC
- * or Itanium than would be generated by a bunch of shifts-and-ORs.
- *
- * DEC C, indicated by __DECC being defined, has, at least on Alpha,
- * an __unaligned qualifier that can be applied to pointers to get the
- * compiler to generate code that does unaligned loads and stores when
- * dereferencing the pointer in question.
- *
- * XXX - what if the native C compiler doesn't support
- * __attribute__((packed))?  How can we get it to generate unaligned
- * accesses for *specific* items?
- */
-typedef struct {
-	uint16_t	val;
-} __attribute__((packed)) unaligned_uint16_t;
-
-typedef struct {
-	uint32_t	val;
-} __attribute__((packed)) unaligned_uint32_t;
-
-UNALIGNED_OK static inline uint16_t
-EXTRACT_SHORT(const void *p)
-{
-	return ((uint16_t)ntohs(((const unaligned_uint16_t *)(p))->val));
-}
-
-UNALIGNED_OK static inline uint32_t
-EXTRACT_LONG(const void *p)
-{
-	return ((uint32_t)ntohl(((const unaligned_uint32_t *)(p))->val));
-}
-#else
-/*
- * This architecture doesn't natively support unaligned loads, and either
- * this isn't a GCC-compatible compiler, we don't have __attribute__,
- * or we do but we don't know of any better way with this instruction
- * set to do unaligned loads, so do unaligned loads of big-endian
- * quantities the hard way - fetch the bytes one at a time and
- * assemble them.
- */
-#define EXTRACT_SHORT(p) \
-	((uint16_t)(((uint16_t)(*((const uint8_t *)(p) + 0)) << 8) | \
-	            ((uint16_t)(*((const uint8_t *)(p) + 1)) << 0)))
-#define EXTRACT_LONG(p) \
-	((uint32_t)(((uint32_t)(*((const uint8_t *)(p) + 0)) << 24) | \
-	            ((uint32_t)(*((const uint8_t *)(p) + 1)) << 16) | \
-	            ((uint32_t)(*((const uint8_t *)(p) + 2)) << 8) | \
-	            ((uint32_t)(*((const uint8_t *)(p) + 3)) << 0)))
-#endif /* unaligned access checks */
 
 #ifdef __linux__
 #include <linux/types.h>

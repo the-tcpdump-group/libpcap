@@ -1283,7 +1283,7 @@ swap_linux_sll_header(const struct pcap_pkthdr *hdr, u_char *buf)
 		return;
 	}
 
-	protocol = EXTRACT_16BITS(&shdr->sll_protocol);
+	protocol = EXTRACT_BE_U_2(&shdr->sll_protocol);
 	if (protocol != LINUX_SLL_P_CAN && protocol != LINUX_SLL_P_CANFD)
 		return;
 
