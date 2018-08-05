@@ -365,9 +365,8 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 			    errno, "error reading dump file");
 		} else {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
-			    (unsigned long)sizeof(magic),
-			    (unsigned long)amt_read);
+			    "truncated dump file; tried to read %" PRIsize " file header bytes, only got %" PRIsize,
+			    sizeof(magic), amt_read);
 		}
 		return (NULL);
 	}

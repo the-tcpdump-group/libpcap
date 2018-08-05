@@ -177,9 +177,8 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			    errno, "error reading dump file");
 		} else {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %lu file header bytes, only got %lu",
-			    (unsigned long)sizeof(hdr),
-			    (unsigned long)amt_read);
+			    "truncated dump file; tried to read %" PRIsize " file header bytes, only got %" PRIsize,
+			    sizeof(hdr), amt_read);
 		}
 		*err = 1;
 		return (NULL);
@@ -457,9 +456,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		} else {
 			if (amt_read != 0) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %lu header bytes, only got %lu",
-				    (unsigned long)ps->hdrsize,
-				    (unsigned long)amt_read);
+				    "truncated dump file; tried to read %" PRIsize " header bytes, only got %" PRIsize,
+				    ps->hdrsize, amt_read);
 				return (-1);
 			}
 			/* EOF */
@@ -618,8 +616,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				 * the read finished.
 				 */
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %u captured bytes, only got %lu",
-				    p->snapshot, (unsigned long)amt_read);
+				    "truncated dump file; tried to read %u captured bytes, only got %" PRIsize,
+				    p->snapshot, amt_read);
 			}
 			return (-1);
 		}
@@ -642,8 +640,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 					    "error reading dump file");
 				} else {
 					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-					    "truncated dump file; tried to read %u captured bytes, only got %lu",
-					    hdr->caplen, (unsigned long)bytes_read);
+					    "truncated dump file; tried to read %u captured bytes, only got %" PRIsize,
+					    hdr->caplen, bytes_read);
 				}
 				return (-1);
 			}
@@ -694,8 +692,8 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    "error reading dump file");
 			} else {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %u captured bytes, only got %lu",
-				    hdr->caplen, (unsigned long)amt_read);
+				    "truncated dump file; tried to read %u captured bytes, only got %" PRIsize,
+				    hdr->caplen, amt_read);
 			}
 			return (-1);
 		}
