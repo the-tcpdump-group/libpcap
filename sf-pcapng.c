@@ -261,9 +261,8 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 			if (amt_read == 0 && !fail_on_eof)
 				return (0);	/* EOF */
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %lu bytes, only got %lu",
-			    (unsigned long)bytes_to_read,
-			    (unsigned long)amt_read);
+			    "truncated dump file; tried to read %" PRIsize " bytes, only got %" PRIsize,
+			    bytes_to_read, amt_read);
 		}
 		return (-1);
 	}
@@ -311,9 +310,9 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	if (bhdr.total_length < sizeof(struct block_header) +
 	    sizeof(struct block_trailer)) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "block in pcapng dump file has a length of %u < %lu",
+		    "block in pcapng dump file has a length of %u < %" PRIsize,
 		    bhdr.total_length,
-		    (unsigned long)(sizeof(struct block_header) + sizeof(struct block_trailer)));
+		    sizeof(struct block_header) + sizeof(struct block_trailer));
 		return (-1);
 	}
 
@@ -831,9 +830,9 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 */
 	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)) {
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Section Header Block in pcapng dump file has a length of %u < %lu",
+		    "Section Header Block in pcapng dump file has a length of %u < %" PRIsize,
 		    total_length,
-		    (unsigned long)(sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)));
+		    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer));
 		*err = 1;
 		return (NULL);
 	}
