@@ -1373,6 +1373,11 @@
 #define DLT_LINUX_SLL2	276
 
 /*
+ * Sercos Monitor, per Manuel Jacob <manuel.jacob at steinbeis-stg.de>
+ */
+#define DLT_SERCOS_MONITOR 277
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1382,7 +1387,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	276	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	277	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

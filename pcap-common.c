@@ -1086,7 +1086,13 @@
  */
 #define LINKTYPE_LINUX_SLL2	276
 
-#define LINKTYPE_MATCHING_MAX	276		/* highest value in the "matching" range */
+/*
+ * Sercos Monitor, per Manuel Jacob <manuel.jacob at steinbeis-stg.de>
+ */
+#define LINKTYPE_SERCOS_MONITOR 277
+
+
+#define LINKTYPE_MATCHING_MAX	277		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
