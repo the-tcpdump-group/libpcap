@@ -197,6 +197,8 @@ struct tls_alert {
 #define TLS_ALERT_LEVEL_FATAL		2
 #define TLS_ALERT_HANDSHAKE_FAILURE	40
 
+static int is_url(const char *source);
+
 int
 daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
     int nullAuthAllowed, int uses_ssl)
@@ -1791,8 +1793,13 @@ daemon_msg_open_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	source[nread] = '\0';
 	plen -= nread;
 
-	// XXX - make sure it's *not* a URL; we don't support opening
-	// remote devices here.
+	// Is this a URL rather than a device?
+	// If so, reject it.
+	if (is_url(source))
+	{
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Source string refers to a remote device");
+		goto error;
+	}
 
 	// Open the selected device
 	// This is a fake open, since we do that only to get the needed parameters, then we close the device again
@@ -2949,4 +2956,67 @@ static void session_close(struct session *session)
 		pcap_close(session->fp);
 		session->fp = NULL;
 	}
+}
+
+// Check whether a capture source string is a URL or not.
+// This includes URLs that refer to a local device; a scheme, followed
+// by ://, followed by *another* scheme and ://, is just silly, and
+// anybody who supplies that will get an error.
+//
+static int
+is_url(const char *source)
+{
+	char *colonp;
+
+	/*
+	 * RFC 3986 says:
+	 *
+	 *   URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+	 *
+	 *   hier-part   = "//" authority path-abempty
+	 *               / path-absolute
+	 *               / path-rootless
+	 *               / path-empty
+	 *
+	 *   authority   = [ userinfo "@" ] host [ ":" port ]
+	 *
+	 *   userinfo    = *( unreserved / pct-encoded / sub-delims / ":" )
+	 *
+	 * Step 1: look for the ":" at the end of the scheme.
+	 * A colon in the source is *NOT* sufficient to indicate that
+	 * this is a URL, as interface names on some platforms might
+	 * include colons (e.g., I think some Solaris interfaces
+	 * might).
+	 */
+	colonp = strchr(source, ':');
+	if (colonp == NULL)
+	{
+		/*
+		 * The source is the device to open.  It's not a URL.
+		 */
+		return (0);
+	}
+
+	/*
+	 * All schemes must have "//" after them, i.e. we only support
+	 * hier-part   = "//" authority path-abempty, not
+	 * hier-part   = path-absolute
+	 * hier-part   = path-rootless
+	 * hier-part   = path-empty
+	 *
+	 * We need that in order to distinguish between a local device
+	 * name that happens to contain a colon and a URI.
+	 */
+	if (strncmp(colonp + 1, "//", 2) != 0)
+	{
+		/*
+		 * The source is the device to open.  It's not a URL.
+		 */
+		return (0);
+	}
+
+	/*
+	 * It's a URL.
+	 */
+	return (1);
 }
