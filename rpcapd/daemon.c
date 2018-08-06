@@ -1458,6 +1458,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 #ifdef HAVE_GETSPNAM
 	struct spwd *usersp;
 #endif
+	char *crypt_password;
 
 	// This call is needed to get the uid
 	if ((user = getpwnam(username)) == NULL)
@@ -1488,7 +1489,13 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	user_password = user->pw_passwd;
 #endif
 
-	if (strcmp(user_password, (char *) crypt(password, user_password)) != 0)
+	crypt_password = crypt(password, user_password);
+	if (crypt_password == NULL)
+	{
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed");
+		return -1;
+	}
+	if (strcmp(user_password, crypt_password) != 0)
 	{
 		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
