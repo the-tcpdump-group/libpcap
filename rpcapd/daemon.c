@@ -1335,6 +1335,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 	pcap_if_t *d;				// temp pointer needed to scan the interface chain
 	struct pcap_addr *address;		// pcap structure that keeps a network address of an interface
 	struct rpcap_findalldevs_if *findalldevs_if;// rpcap structure that packet all the data of an interface together
+	uint32 replylen;			// length of reply payload
 	uint16 nif = 0;				// counts the number of interface listed
 
 	// Discard the rest of the message; there shouldn't be any payload.
@@ -1361,17 +1362,19 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		return 0;
 	}
 
-	// checks the number of interfaces and it computes the total length of the payload
+	// This checks the number of interfaces and computes the total
+	// length of the payload.
+	replylen = 0;
 	for (d = alldevs; d != NULL; d = d->next)
 	{
 		nif++;
 
 		if (d->description)
-			plen+= strlen(d->description);
+			replylen += strlen(d->description);
 		if (d->name)
-			plen+= strlen(d->name);
+			replylen += strlen(d->name);
 
-		plen+= sizeof(struct rpcap_findalldevs_if);
+		replylen += sizeof(struct rpcap_findalldevs_if);
 
 		for (address = d->addresses; address != NULL; address = address->next)
 		{
@@ -1384,7 +1387,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 #ifdef AF_INET6
 			case AF_INET6:
 #endif
-				plen+= (sizeof(struct rpcap_sockaddr) * 4);
+				replylen += (sizeof(struct rpcap_sockaddr) * 4);
 				break;
 
 			default:
@@ -1400,7 +1403,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		goto error;
 
 	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
-	    RPCAP_MSG_FINDALLIF_REPLY, nif, plen);
+	    RPCAP_MSG_FINDALLIF_REPLY, nif, replylen);
 
 	// send the interface list
 	for (d = alldevs; d != NULL; d = d->next)
