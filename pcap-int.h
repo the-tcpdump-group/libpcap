@@ -126,6 +126,7 @@ typedef int	(*set_datalink_op_t)(pcap_t *, int);
 typedef int	(*getnonblock_op_t)(pcap_t *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
+typedef void	(*breakloop_op_t)(pcap_t *);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
@@ -264,6 +265,7 @@ struct pcap {
 	getnonblock_op_t getnonblock_op;
 	setnonblock_op_t setnonblock_op;
 	stats_op_t stats_op;
+	breakloop_op_t breakloop_op;
 
 	/*
 	 * Routine to use as callback for pcap_next()/pcap_next_ex().
@@ -418,6 +420,7 @@ void	pcap_add_to_pcaps_to_close(pcap_t *);
 void	pcap_remove_from_pcaps_to_close(pcap_t *);
 void	pcap_cleanup_live_common(pcap_t *);
 int	pcap_check_activated(pcap_t *);
+void	pcap_breakloop_common(pcap_t *);
 
 /*
  * Internal interfaces for "pcap_findalldevs()".
