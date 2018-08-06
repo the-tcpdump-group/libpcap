@@ -2224,6 +2224,23 @@ daemon_msg_endcap_req(uint8 ver, struct daemon_slpars *pars,
 	return 0;
 }
 
+//
+// We impose a limit on the filter program size, so that, on Windows,
+// where there's only one server process with multiple threads, it's
+// harder to eat all the server address space by sending larger filter
+// programs.  (This isn't an issue on UN*X, where there are multiple
+// server processes, one per client connection.)
+//
+// We pick a value that limits each filter to 64K; that value is twice
+// the in-kernel limit for Linux and 16 times the in-kernel limit for
+// *BSD and macOS.
+//
+// It also prevents an overflow on 32-bit platforms when calculating
+// the total size of the filter program.  (It's not an issue on 64-bit
+// platforms with a 64-bit size_t, as the filter size is 32 bits.)
+//
+#define RPCAP_BPF_MAXINSNS	8192
+
 static int
 daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session, uint32 *plenp, char *errmsgbuf)
 {
@@ -2253,6 +2270,13 @@ daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session
 		return -2;
 	}
 
+	if (bf_prog.bf_len > RPCAP_BPF_MAXINSNS)
+	{
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
+		    "Filter program is larger than the maximum size of %u instructions",
+		    RPCAP_BPF_MAXINSNS);
+		return -2;
+	}
 	bf_insn = (struct bpf_insn *) malloc (sizeof(struct bpf_insn) * bf_prog.bf_len);
 	if (bf_insn == NULL)
 	{
