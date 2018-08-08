@@ -6641,10 +6641,23 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
  * if SIOCETHTOOL isn't defined, or we don't have any #defines for any
  * of the types of offloading, there's nothing we can do to check, so
  * we just say "no, we don't".
+ *
+ * We treat EOPNOTSUPP, EINVAL and, if eperm_ok is true, EPERM as
+ * indications that the operation isn't supported.  We do EPERM
+ * weirdly because the SIOCETHTOOL code in later kernels 1) doesn't
+ * support ETHTOOL_GUFO, 2) also doesn't include it in the list
+ * of ethtool operations that don't require CAP_NET_ADMIN privileges,
+ * and 3) does the "is this permitted" check before doing the "is
+ * this even supported" check, so it fails with "this is not permitted"
+ * rather than "this is not even supported".  To work around this
+ * annoyance, we only treat EPERM as an error for the first feature,
+ * and assume that they all do the same permission checks, so if the
+ * first one is allowed all the others are allowed if supported.
  */
 #if defined(SIOCETHTOOL) && (defined(ETHTOOL_GTSO) || defined(ETHTOOL_GUFO) || defined(ETHTOOL_GGSO) || defined(ETHTOOL_GFLAGS) || defined(ETHTOOL_GGRO))
 static int
-iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
+iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname,
+    int eperm_ok)
 {
 	struct ifreq	ifr;
 	struct ethtool_value eval;
@@ -6655,7 +6668,8 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
 	if (ioctl(handle->fd, SIOCETHTOOL, &ifr) == -1) {
-		if (errno == EOPNOTSUPP || errno == EINVAL) {
+		if (errno == EOPNOTSUPP || errno == EINVAL ||
+		    (errno == EPERM && eperm_ok)) {
 			/*
 			 * OK, let's just return 0, which, in our
 			 * case, either means "no, what we're asking
@@ -6672,25 +6686,32 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	return eval.data;
 }
 
+/*
+ * XXX - it's annoying that we have to check for offloading at all, but,
+ * given that we have to, it's still annoying that we have to check for
+ * particular types of offloading, especially that shiny new types of
+ * offloading may be added - and, worse, may not be checkable with
+ * a particular ETHTOOL_ operation; ETHTOOL_GFEATURES would, in
+ * theory, give those to you, but the actual flags being used are
+ * opaque (defined in a non-uapi header), and there doesn't seem to
+ * be any obvious way to ask the kernel what all the offloading flags
+ * are - at best, you can ask for a set of strings(!) to get *names*
+ * for various flags.  (That whole mechanism appears to have been
+ * designed for the sole purpose of letting ethtool report flags
+ * by name and set flags by name, with the names having no semantics
+ * ethtool understands.)
+ */
 static int
 iface_get_offload(pcap_t *handle)
 {
 	int ret;
 
 #ifdef ETHTOOL_GTSO
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO", 0);
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* TCP segmentation offloading on */
-#endif
-
-#ifdef ETHTOOL_GUFO
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO");
-	if (ret == -1)
-		return -1;
-	if (ret)
-		return 1;	/* UDP fragmentation offloading on */
 #endif
 
 #ifdef ETHTOOL_GGSO
@@ -6699,7 +6720,7 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on transmission?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO", 0);
 	if (ret == -1)
 		return -1;
 	if (ret)
@@ -6707,7 +6728,7 @@ iface_get_offload(pcap_t *handle)
 #endif
 
 #ifdef ETHTOOL_GFLAGS
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS", 0);
 	if (ret == -1)
 		return -1;
 	if (ret & ETH_FLAG_LRO)
@@ -6720,11 +6741,25 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on receipt?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO", 0);
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* generic (large) receive offloading on */
+#endif
+
+#ifdef ETHTOOL_GUFO
+	/*
+	 * Do this one last, as support for it was removed in later
+	 * kernels, and it fails with EPERM on those kernels rather
+	 * than with EOPNOTSUPP (see explanation in comment for
+	 * iface_ethtool_flag_ioctl()).
+	 */
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO", 1);
+	if (ret == -1)
+		return -1;
+	if (ret)
+		return 1;	/* UDP fragmentation offloading on */
 #endif
 
 	return 0;
