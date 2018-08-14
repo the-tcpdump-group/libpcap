@@ -72,10 +72,10 @@ script:
   - touch .devel configure
   - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo -n travis_fold:start:script.configure; fi
   - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
+  - if [ "$CMAKE" = no ]; then echo -n travis_fold:end:script.configure; fi
   - if [ "$CMAKE" = yes ]; then mkdir build; fi
   - if [ "$CMAKE" = yes ]; then cd build; fi
   - if [ "$CMAKE" = yes ]; then cmake -DCMAKE_INSTALL_PREFIX=/tmp $ENABLE_REMOTE ..; fi
-  - echo -n travis_fold:end:script.configure
   - make -s all
   - make -s testprogs
   - echo '$ make install [...]' && echo -n travis_fold:start:script.make_install
