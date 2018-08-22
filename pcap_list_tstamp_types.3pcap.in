@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LIST_TSTAMP_TYPES 3PCAP "22 August 2010"
+.TH PCAP_LIST_TSTAMP_TYPES 3PCAP "22 August 2018"
 .SH NAME
 pcap_list_tstamp_types, pcap_free_tstamp_types \- get a list of time
 stamp types supported by a capture device, and free that list
@@ -65,6 +65,9 @@ or
 may be called with
 .I p
 as an argument to fetch or display the error text.
+.SH BACKWARD COMPATIBILITY
+.PP
+These functions became available in libpcap release 1.2.1.
 .SH SEE ALSO
 pcap(3PCAP), pcap_tstamp_type_val_to_name(3PCAP),
 pcap-tstamp(@MAN_MISC_INFO@)

@@ -918,7 +918,7 @@ To get a string giving version information about libpcap, call
 .BR pcap_lib_version (3PCAP)
 get library version string
 .RE
-.SH BACKWARDS COMPATIBILITY
+.SH BACKWARD COMPATIBILITY
 .PP
 In versions of libpcap prior to 1.0, the
 .B pcap.h
