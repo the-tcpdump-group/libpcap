@@ -82,5 +82,7 @@ A pointer to a
 is returned if the timeout is required; otherwise
 .B NULL
 is returned.
+.SH BACKWARD COMPATIBILITY
+This function became available in libpcap release 1.9.0.
 .SH SEE ALSO
 pcap(3PCAP), kqueue(2)
