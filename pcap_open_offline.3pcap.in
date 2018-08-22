@@ -105,5 +105,10 @@ is filled in with an appropriate error message.
 is assumed to be able to hold at least
 .B PCAP_ERRBUF_SIZE
 chars.
+.SH BACKWARD COMPATIBILITY
+.B pcap_open_offline_with_tstamp_precision
+and
+.B pcap_fopen_offline_with_tstamp_precision
+became available in libpcap release 1.5.1.
 .SH SEE ALSO
 pcap(3PCAP), pcap-savefile(@MAN_FILE_FORMATS@)

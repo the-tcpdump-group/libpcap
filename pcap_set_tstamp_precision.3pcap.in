@@ -55,6 +55,8 @@ supported by the operating system,
 if operating system does not support requested time stamp precision,
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.
+.SH BACKWARD COMPATIBILITY
+This function became available in libpcap release 1.5.1.
 .SH SEE ALSO
 pcap(3PCAP),
 pcap_get_tstamp_precision(3PCAP),
