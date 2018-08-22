@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_SET_TSTAMP_TYPE 3PCAP "5 December 2014"
+.TH PCAP_SET_TSTAMP_TYPE 3PCAP "22 August 2018"
 .SH NAME
 pcap_set_tstamp_type \- set the time stamp type to be used by a
 capture device
@@ -58,6 +58,9 @@ capture device,
 if called on a capture handle that has been activated, and
 .B PCAP_ERROR_CANTSET_TSTAMP_TYPE
 if the capture device doesn't support setting the time stamp type.
+.SH BACKWARD COMPATIBILITY
+.PP
+This function became available in libpcap release 1.2.1.
 .SH SEE ALSO
 pcap(3PCAP),
 pcap_tstamp_type_name_to_val(3PCAP)
