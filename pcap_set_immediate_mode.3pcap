@@ -34,7 +34,8 @@ int pcap_set_immediate_mode(pcap_t *p, int immediate_mode);
 .SH DESCRIPTION
 .B pcap_set_immediate_mode()
 sets whether immediate mode should be set on a capture handle when
-the handle is activated.
+the handle is activated.  In immediate mode, packets are always
+delivered as soon as they arrive, with no buffering.
 If
 .I immediate_mode
 is non-zero, immediate mode will be set, otherwise it will not be set.
