@@ -218,6 +218,14 @@ The
 .B PCAP_IF_UP
 and
 .B PCAP_IF_RUNNING
-constants became available in libpcap release 1.6.1.
+constants became available in libpcap release 1.6.1.  The
+.BR PCAP_IF_WIRELESS ,
+.BR PCAP_IF_CONNECTION_STATUS ,
+.BR PCAP_IF_CONNECTION_STATUS_UNKNOWN ,
+.BR PCAP_IF_CONNECTION_STATUS_CONNECTED ,
+.BR PCAP_IF_CONNECTION_STATUS_DISCONNECTED ,
+and
+.B PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE
+constants became available in libpcap release 1.9.0.
 .SH SEE ALSO
 pcap(3PCAP)

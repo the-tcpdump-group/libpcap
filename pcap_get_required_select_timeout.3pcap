@@ -83,6 +83,16 @@ is returned if the timeout is required; otherwise
 .B NULL
 is returned.
 .SH BACKWARD COMPATIBILITY
-This function became available in libpcap release 1.9.0.
+This function became available in libpcap release 1.9.0.  In previous
+releases,
+.BR select() ,
+.BR poll() ,
+.BR epoll_wait() ,
+and
+.B kevent()
+cannot be used on any capture source for which
+.B pcap_get_selectable_fd
+returns \-1.
 .SH SEE ALSO
-pcap(3PCAP), kqueue(2)
+pcap(3PCAP), pcap_get_selectable_fd(3PCAP), select(2), poll(2),
+epoll_wait(2), kqueue(2)

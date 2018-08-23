@@ -1808,10 +1808,12 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 
 #
 # Assume, by default, no support for shared libraries and V7/BSD
-# convention for man pages (file formats in section 5, miscellaneous
-# info in section 7, administrative commands and daemons in section 8).
+# convention for man pages (devices in section 4, file formats in
+# section 5, miscellaneous info in section 7, administrative commands
+# and daemons in section 8).  Individual cases can override this.
 # Individual cases can override this.
 #
+set(MAN_DEVICES 4)
 set(MAN_FILE_FORMATS 5)
 set(MAN_MISC_INFO 7)
 set(MAN_ADMIN_COMMANDS 8)
@@ -1869,6 +1871,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
     #
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)
+    set(MAN_DEVICES 7)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
     #
     # SunOS 5.x.
@@ -1892,6 +1895,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
         set(MAN_ADMIN_COMMANDS 1m)
         set(MAN_FILE_FORMATS 4)
         set(MAN_MISC_INFO 5)
+        set(MAN_DEVICES 7D)
     endif()
 endif()
 
@@ -2079,6 +2083,7 @@ set(MAN3PCAP_EXPAND
     pcap_list_tstamp_types.3pcap.in
     pcap_open_dead.3pcap.in
     pcap_open_offline.3pcap.in
+    pcap_set_immediate_mode.3pcap.in
     pcap_set_tstamp_precision.3pcap.in
     pcap_set_tstamp_type.3pcap.in
 )
@@ -2114,7 +2119,6 @@ set(MAN3PCAP_NOEXPAND
     pcap_open_live.3pcap
     pcap_set_buffer_size.3pcap
     pcap_set_datalink.3pcap
-    pcap_set_immediate_mode.3pcap
     pcap_set_promisc.3pcap
     pcap_set_protocol_linux.3pcap
     pcap_set_rfmon.3pcap
