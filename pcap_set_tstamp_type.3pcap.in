@@ -60,7 +60,9 @@ if called on a capture handle that has been activated, and
 if the capture device doesn't support setting the time stamp type.
 .SH BACKWARD COMPATIBILITY
 .PP
-This function became available in libpcap release 1.2.1.
+This function became available in libpcap release 1.2.1.  In previous
+releases, the time stamp type cannot be set; only the default time stamp
+type offered by a capture source is available.
 .SH SEE ALSO
 pcap(3PCAP),
 pcap_tstamp_type_name_to_val(3PCAP)

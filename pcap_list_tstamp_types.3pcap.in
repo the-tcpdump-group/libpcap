@@ -67,7 +67,9 @@ may be called with
 as an argument to fetch or display the error text.
 .SH BACKWARD COMPATIBILITY
 .PP
-These functions became available in libpcap release 1.2.1.
+These functions became available in libpcap release 1.2.1.  In previous
+releases, the time stamp type cannot be set; only the default time stamp
+type offered by a capture source is available.
 .SH SEE ALSO
 pcap(3PCAP), pcap_tstamp_type_val_to_name(3PCAP),
 pcap-tstamp(@MAN_MISC_INFO@)

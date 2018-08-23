@@ -95,7 +95,9 @@ can be used to get the error text.
 .PP
 The
 .B pcap_dump_open_append()
-function became available in libpcap release 1.7.2.
+function became available in libpcap release 1.7.2.  In previous
+releases, there is no support for appending packets to an existing
+savefile.
 .SH SEE ALSO
 pcap(3PCAP),
 \%pcap-savefile(@MAN_FILE_FORMATS@)
