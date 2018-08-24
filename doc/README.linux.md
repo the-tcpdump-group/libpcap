@@ -97,7 +97,7 @@ reported by pcap_stats on Linux are as follows:
 2.2.x
 =====
 ps_recv   Number of packets that were accepted by the pcap filter
-ps_drop   Always 0, this statistic is not gatherd on this platform
+ps_drop   Always 0, this statistic is not gathered on this platform
 
 2.4.x
 =====
