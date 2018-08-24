@@ -38,3 +38,5 @@ add_test_executable(threadsignaltest ${CMAKE_THREAD_LIBS_INIT})
 if(NOT WIN32)
   add_test_executable(valgrindtest)
 endif()
+
+add_subdirectory(fuzz)
