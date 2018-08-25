@@ -81,7 +81,8 @@ or
 .B pcap_fopen_offline_with_tstamp_precision()
 to read dumped data from an existing open stream
 .IR fp .
-.B pcap_fopen_offline_with_tstamp_precision() takes an additional
+.B pcap_fopen_offline_with_tstamp_precision()
+takes an additional
 .I precision
 argument as described above.
 Note that on Windows, that stream should be opened in binary mode.
