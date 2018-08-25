@@ -112,4 +112,5 @@ and
 became available in libpcap release 1.5.1.  In previous releases, time
 stamps from a savefile are always given in seconds and microseconds.
 .SH SEE ALSO
-pcap(3PCAP), pcap-savefile(@MAN_FILE_FORMATS@)
+.BR pcap (3PCAP),
+.BR pcap-savefile (@MAN_FILE_FORMATS@)

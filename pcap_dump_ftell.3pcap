@@ -36,9 +36,9 @@ int64_t pcap_dump_ftell64(pcap_dumper_t *p);
 .B pcap_dump_ftell()
 returns the current file position for the ``savefile'', representing the
 number of bytes written by
-.B pcap_dump_open(3PCAP)
+.BR pcap_dump_open (3PCAP)
 and
-.BR pcap_dump(3PCAP) .
+.BR pcap_dump (3PCAP).
 .B PCAP_ERROR
 is returned on error. If the current file position does not fit in a
 .BR long ,
@@ -55,4 +55,4 @@ are supported, this will return the file offset without truncation.
 .B PCAP_ERROR
 is returned on error.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

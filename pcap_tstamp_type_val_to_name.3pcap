@@ -49,4 +49,5 @@ is returned on failure.
 .PP
 These functions became available in libpcap release 1.2.1.
 .SH SEE ALSO
-pcap(3PCAP), pcap_tstamp_type_name_to_val(3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_tstamp_type_name_to_val (3PCAP)

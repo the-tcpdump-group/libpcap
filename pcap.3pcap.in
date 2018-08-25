@@ -958,8 +958,12 @@ use an
 script or some other configuration script to check whether the libpcap
 1.0 APIs are available and use them only if they are.
 .SH SEE ALSO
-autoconf(1), tcpdump(1), tcpslice(1), pcap-filter(@MAN_MISC_INFO@), pfconfig(8),
-usermod(@MAN_ADMIN_COMMANDS@)
+.BR autoconf (1),
+.BR tcpdump (1),
+.BR tcpslice (1),
+.BR pcap-filter (@MAN_MISC_INFO@),
+.BR pfconfig (8),
+.BR usermod (@MAN_ADMIN_COMMANDS@)
 .SH AUTHORS
 The original authors of libpcap are:
 .LP

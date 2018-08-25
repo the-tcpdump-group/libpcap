@@ -48,7 +48,7 @@ other than a network interface, it will have no effect.
 .LP
 It should not be used in portable code; instead, a filter should be
 specified with
-.BR pcap_setfilter(3PCAP) .
+.BR pcap_setfilter (3PCAP).
 .LP
 If a given network interface provides a standard link-layer header, with
 a standard packet type, but provides some packet types with a different
@@ -65,4 +65,6 @@ if called on a capture handle that has been activated.
 .SH BACKWARD COMPATIBILITY
 This function became available in libpcap release 1.9.0.
 .SH SEE ALSO
-pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_create (3PCAP),
+.BR pcap_activate (3PCAP)
