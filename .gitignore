@@ -29,7 +29,7 @@ libpcap.sl
 libpcap.so
 libpcap.so.*
 libpcap-*.tar.gz
-net
+/net
 os-proto.h
 pcap-config
 pcap-filter.manmisc
