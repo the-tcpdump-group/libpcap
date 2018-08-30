@@ -2020,6 +2020,9 @@ daemon_unpackapplyfilter(SOCKET sockctrl_in, struct session *session, uint32 *pl
 		bf_insn++;
 	}
 
+	//
+	// XXX - pcap_setfilter() should do the validation for us.
+	//
 	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
 	{
 		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
