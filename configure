@@ -5963,6 +5963,10 @@ done
 		#  requires that various BSD-style integer types
 		#  be defined;
 		#
+		#  sys/time.h, because AIX 5.2 and 5.3's net/bpf.h
+		#  doesn't include it but does use struct timeval
+		#  in ioctl definitions;
+		#
 		#  sys/ioctl.h and, if we have it, sys/ioccom.h,
 		#  because net/bpf.h defines ioctls;
 		#
@@ -5985,6 +5989,7 @@ else
 /* end confdefs.h.  */
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_IOCCOM_H
