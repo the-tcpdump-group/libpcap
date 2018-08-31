@@ -931,12 +931,15 @@ else()
             # as it's a Linux, it should use packet sockets,
             # instead.
             #
-            #
             # We need:
             #
             #  sys/types.h, because FreeBSD 10's net/bpf.h
             #  requires that various BSD-style integer types
             #  be defined;
+            #
+            #  sys/time.h, because AIX 5.2 and 5.3's net/bpf.h
+            #  doesn't include it but does use struct timeval
+            #  in ioctl definitions;
             #
             #  sys/ioctl.h and, if we have it, sys/ioccom.h,
             #  because net/bpf.h defines ioctls;
@@ -952,9 +955,9 @@ else()
             # of those headers itself.
             #
             if(HAVE_SYS_IOCCOM_H)
-                check_symbol_exists(BIOCSETIF "sys/types.h;sys/ioctl.h;sys/socket.h;sys/ioccom.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
+                check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;sys/ioccom.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             else(HAVE_SYS_IOCCOM_H)
-                check_symbol_exists(BIOCSETIF "sys/types.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
+                check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
         check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
