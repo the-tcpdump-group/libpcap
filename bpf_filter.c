@@ -51,7 +51,7 @@
 #include <sys/time.h>
 #endif /* _WIN32 */
 
-#include <pcap/bpf.h>
+#include <pcap-int.h>
 
 #include <stdlib.h>
 

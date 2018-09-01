@@ -480,6 +480,28 @@ pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
 void	sf_cleanup(pcap_t *p);
 
 /*
+ * Internal interfaces for doing user-mode filtering of packets and
+ * validating filter programs.
+ */
+/*
+ * Auxiliary data, for use when interpreting a filter intended for the
+ * Linux kernel when the kernel rejects the filter (requiring us to
+ * run it in userland).  It contains VLAN tag information.
+ */
+struct bpf_aux_data {
+	u_short vlan_tag_present;
+	u_short vlan_tag;
+};
+
+/*
+ * Filtering routine that takes the auxiliary data as an additional
+ * argument.
+ */
+extern u_int bpf_filter_with_aux_data(const struct bpf_insn *pc,
+    const u_char *p, u_int wirelen, u_int buflen,
+    const struct bpf_aux_data *aux_data);
+
+/*
  * Internal interfaces for both "pcap_create()" and routines that
  * open savefiles.
  *
