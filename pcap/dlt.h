@@ -1378,6 +1378,17 @@
 #define DLT_SERCOS_MONITOR 277
 
 /*
+ * OpenVizsla http://openvizsla.org is open source USB analyzer hardware.
+ * It consists of FPGA with attached USB phy and FTDI chip for streaming
+ * the data to the host PC.
+ *
+ * Current OpenVizsla data encapsulation format is described here:
+ * https://github.com/matwey/libopenvizsla/wiki/OpenVizsla-protocol-description
+ *
+ */
+#define DLT_OPENVIZSLA	        278
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1387,7 +1398,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	277	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	278	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
