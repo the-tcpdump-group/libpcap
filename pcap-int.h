@@ -496,9 +496,8 @@ struct bpf_aux_data {
  * Filtering routine that takes the auxiliary data as an additional
  * argument.
  */
-extern u_int bpf_filter_with_aux_data(const struct bpf_insn *pc,
-    const u_char *p, u_int wirelen, u_int buflen,
-    const struct bpf_aux_data *aux_data);
+u_int	bpf_filter_with_aux_data(const struct bpf_insn *,
+    const u_char *, u_int, u_int, const struct bpf_aux_data *);
 
 /*
  * Internal interfaces for both "pcap_create()" and routines that
