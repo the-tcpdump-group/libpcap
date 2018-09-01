@@ -44,6 +44,7 @@
 
 #include <pcap/pcap-inttypes.h>
 #include "pcap-types.h"
+#include "varattrs.h"
 #include "extract.h"
 
 #define EXTRACT_SHORT	EXTRACT_BE_U_2
@@ -83,9 +84,15 @@ enum {
  *
  * Thanks to Ani Sinha <ani@arista.com> for providing initial implementation
  */
+#if defined(SKF_AD_VLAN_TAG_PRESENT)
 u_int
 bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
     u_int wirelen, u_int buflen, const struct bpf_aux_data *aux_data)
+#else
+u_int
+bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
+    u_int wirelen, u_int buflen, const struct bpf_aux_data *aux_data _U_)
+#endif
 {
 	register uint32_t A, X;
 	register bpf_u_int32 k;
@@ -369,7 +376,6 @@ bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
 {
 	return bpf_filter_with_aux_data(pc, p, wirelen, buflen, NULL);
 }
-
 
 /*
  * Return true if the 'fcode' is a valid filter program.
