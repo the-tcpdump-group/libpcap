@@ -254,9 +254,20 @@ struct bpf_aux_data {
 #define BPF_STMT(code, k) { (u_short)(code), 0, 0, k }
 #define BPF_JUMP(code, k, jt, jf) { (u_short)(code), jt, jf, k }
 
-PCAP_API int bpf_validate(const struct bpf_insn *, int);
-PCAP_API u_int bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+/*
+ * On at least some versions of NetBSD and QNX, we don't want to declare
+ * bpf_filter() here, as it's also be declared in <net/bpf.h>, with a
+ * different signature, but, on other BSD-flavored UN*Xes, it's not
+ * declared in <net/bpf.h>, so we *do* want to declare it here, so it's
+ * declared when we build pcap-bpf.c.
+ */
+#if !defined(__NetBSD__) && !defined(__QNX__)
+  PCAP_API u_int	bpf_filter(const struct bpf_insn *, const u_char *, u_int, u_int);
+#endif
 extern u_int bpf_filter_with_aux_data(const struct bpf_insn *, const u_char *, u_int, u_int, const struct bpf_aux_data *);
+PCAP_API int	bpf_validate(const struct bpf_insn *f, int len);
+PCAP_API char	*bpf_image(const struct bpf_insn *, int);
+PCAP_API void	bpf_dump(const struct bpf_program *, int);
 
 /*
  * Number of scratch memory words (for BPF_LD|BPF_MEM and BPF_ST).
