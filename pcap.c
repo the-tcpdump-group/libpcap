@@ -3682,7 +3682,7 @@ pcap_offline_filter(const struct bpf_program *fp, const struct pcap_pkthdr *h,
 	const struct bpf_insn *fcode = fp->bf_insns;
 
 	if (fcode != NULL)
-		return (bpf_filter(fcode, pkt, h->len, h->caplen));
+		return (pcap_filter(fcode, pkt, h->len, h->caplen));
 	else
 		return (0);
 }

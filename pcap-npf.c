@@ -585,13 +585,13 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 * in kernel, no need to do it now - we already know
 		 * the packet passed the filter.
 		 *
-		 * XXX - bpf_filter() should always return TRUE if
+		 * XXX - pcap_filter() should always return TRUE if
 		 * handed a null pointer for the program, but it might
 		 * just try to "run" the filter, so we check here.
 		 */
 		if (pw->filtering_in_kernel ||
 		    p->fcode.bf_insns == NULL ||
-		    bpf_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
+		    pcap_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
 #ifdef ENABLE_REMOTE
 			switch (p->rmt_samp.method) {
 
@@ -798,7 +798,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/* No underlaying filtering system. We need to filter on our own */
 		if (p->fcode.bf_insns)
 		{
-			if (bpf_filter(p->fcode.bf_insns, dp, packet_len, caplen) == 0)
+			if (pcap_filter(p->fcode.bf_insns, dp, packet_len, caplen) == 0)
 			{
 				/* Move to next packet */
 				header = (dag_record_t*)((char*)header + erf_record_len);

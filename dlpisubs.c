@@ -190,7 +190,7 @@ pcap_process_pkts(pcap_t *p, pcap_handler callback, u_char *user,
 		bufp += caplen;
 #endif
 		++pd->stat.ps_recv;
-		if (bpf_filter(p->fcode.bf_insns, pk, origlen, caplen)) {
+		if (pcap_filter(p->fcode.bf_insns, pk, origlen, caplen)) {
 #ifdef HAVE_SYS_BUFMOD_H
 			pkthdr.ts.tv_sec = sbp->sbh_timestamp.tv_sec;
 			pkthdr.ts.tv_usec = sbp->sbh_timestamp.tv_usec;

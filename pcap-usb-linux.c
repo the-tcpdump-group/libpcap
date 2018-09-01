@@ -912,7 +912,7 @@ got:
 		pkth.caplen = (bpf_u_int32)handle->snapshot;
 
 	if (handle->fcode.bf_insns == NULL ||
-	    bpf_filter(handle->fcode.bf_insns, handle->buffer,
+	    pcap_filter(handle->fcode.bf_insns, handle->buffer,
 	      pkth.len, pkth.caplen)) {
 		handlep->packets_read++;
 		callback(user, &pkth, handle->buffer);
@@ -1081,7 +1081,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 	pkth.ts.tv_usec = info.hdr->ts_usec;
 
 	if (handle->fcode.bf_insns == NULL ||
-	    bpf_filter(handle->fcode.bf_insns, handle->buffer,
+	    pcap_filter(handle->fcode.bf_insns, handle->buffer,
 	      pkth.len, pkth.caplen)) {
 		handlep->packets_read++;
 		callback(user, &pkth, handle->buffer);
@@ -1163,7 +1163,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 			pkth.ts.tv_usec = hdr->ts_usec;
 
 			if (handle->fcode.bf_insns == NULL ||
-			    bpf_filter(handle->fcode.bf_insns, (u_char*) hdr,
+			    pcap_filter(handle->fcode.bf_insns, (u_char*) hdr,
 			      pkth.len, pkth.caplen)) {
 				handlep->packets_read++;
 				callback(user, &pkth, (u_char*) hdr);

@@ -85,11 +85,11 @@ enum {
  */
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
 u_int
-bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
+pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
     u_int wirelen, u_int buflen, const struct bpf_aux_data *aux_data)
 #else
 u_int
-bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
+pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
     u_int wirelen, u_int buflen, const struct bpf_aux_data *aux_data _U_)
 #endif
 {
@@ -370,10 +370,10 @@ bpf_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 }
 
 u_int
-bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
+pcap_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
     u_int buflen)
 {
-	return bpf_filter_with_aux_data(pc, p, wirelen, buflen, NULL);
+	return pcap_filter_with_aux_data(pc, p, wirelen, buflen, NULL);
 }
 
 /*
@@ -388,7 +388,7 @@ bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
  * Otherwise, a bogus program could easily crash the system.
  */
 int
-bpf_validate(const struct bpf_insn *f, int len)
+pcap_validate_filter(const struct bpf_insn *f, int len)
 {
 	u_int i, from;
 	const struct bpf_insn *p;
@@ -509,4 +509,20 @@ bpf_validate(const struct bpf_insn *f, int len)
 		}
 	}
 	return BPF_CLASS(f[len - 1].code) == BPF_RET;
+}
+
+/*
+ * Exported because older versions of libpcap exported them.
+ */
+u_int
+bpf_filter(const struct bpf_insn *pc, const u_char *p, u_int wirelen,
+    u_int buflen)
+{
+	return pcap_filter(pc, p, wirelen, buflen);
+}
+
+int
+bpf_validate(const struct bpf_insn *f, int len)
+{
+	return pcap_validate_filter(f, len);
 }

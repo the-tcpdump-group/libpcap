@@ -283,7 +283,7 @@ pcap_read_one (pcap_t *p, pcap_handler callback, u_char *data)
       pcap.len    = rx_len;
 
       if (callback &&
-          (!p->fcode.bf_insns || bpf_filter(p->fcode.bf_insns, p->buffer, pcap.len, pcap.caplen)))
+          (!p->fcode.bf_insns || pcap_filter(p->fcode.bf_insns, p->buffer, pcap.len, pcap.caplen)))
       {
         filter_count++;
 

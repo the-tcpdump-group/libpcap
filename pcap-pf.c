@@ -201,7 +201,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		 * skipping that padding.
 		 */
 		if (pf->filtering_in_kernel ||
-		    bpf_filter(pc->fcode.bf_insns, p, sp->ens_count, buflen)) {
+		    pcap_filter(pc->fcode.bf_insns, p, sp->ens_count, buflen)) {
 			struct pcap_pkthdr h;
 			pf->TotAccepted++;
 			h.ts = sp->ens_tstamp;

@@ -2359,7 +2359,7 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	/*
 	 * Validate the program.
 	 */
-	if (!bpf_validate(fp->bf_insns, fp->bf_len)) {
+	if (!pcap_validate_filter(fp->bf_insns, fp->bf_len)) {
 		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 			"BPF program is not valid");
 		return (-1);

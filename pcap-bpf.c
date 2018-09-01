@@ -1116,7 +1116,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif
 		 */
 		if (pb->filtering_in_kernel ||
-		    bpf_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
+		    pcap_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
 			struct pcap_pkthdr pkthdr;
 #ifdef BIOCSTSTAMP
 			struct bintime bt;

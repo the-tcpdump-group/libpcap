@@ -318,7 +318,7 @@ main(int argc, char **argv)
 		error("%s", pcap_geterr(pd));
 
 	have_fcode = 1;
-	if (!bpf_validate(fcode.bf_insns, fcode.bf_len))
+	if (!pcap_validate_filter(fcode.bf_insns, fcode.bf_len))
 		warn("Filter doesn't pass validation");
 
 #ifdef BDEBUG

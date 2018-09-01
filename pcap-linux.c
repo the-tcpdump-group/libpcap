@@ -2045,7 +2045,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	/* Run the packet filter if not using kernel filter */
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
+		if (pcap_filter_with_aux_data(handle->fcode.bf_insns, bp,
 		    packet_len, caplen, &aux_data) == 0) {
 			/* rejected by filter */
 			return 0;
@@ -5143,11 +5143,11 @@ static int pcap_handle_packet_mmap(
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
 
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns,
-					     bp,
-					     tp_len,
-					     snaplen,
-					     &aux_data) == 0)
+		if (pcap_filter_with_aux_data(handle->fcode.bf_insns,
+					      bp,
+					      tp_len,
+					      snaplen,
+					      &aux_data) == 0)
 			return 0;
 	}
 

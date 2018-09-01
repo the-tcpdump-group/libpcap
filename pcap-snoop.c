@@ -126,7 +126,7 @@ again:
 	}
 
 	if (p->fcode.bf_insns == NULL ||
-	    bpf_filter(p->fcode.bf_insns, cp, datalen, caplen)) {
+	    pcap_filter(p->fcode.bf_insns, cp, datalen, caplen)) {
 		struct pcap_pkthdr h;
 		++psn->stat.ps_recv;
 		h.ts.tv_sec = sh->snoop_timestamp.tv_sec;

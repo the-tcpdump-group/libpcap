@@ -82,7 +82,7 @@ pcap_netmap_filter(u_char *arg, struct pcap_pkthdr *h, const u_char *buf)
 	const struct bpf_insn *pc = p->fcode.bf_insns;
 
 	++pn->rx_pkts;
-	if (pc == NULL || bpf_filter(pc, buf, h->len, h->caplen))
+	if (pc == NULL || pcap_filter(pc, buf, h->len, h->caplen))
 		pn->cb(pn->cb_arg, h, buf);
 }
 

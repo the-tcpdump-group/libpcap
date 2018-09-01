@@ -370,7 +370,7 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 	pkth.caplen+=sizeof(pcap_bluetooth_h4_header);
 	pkth.len = pkth.caplen;
 	if (handle->fcode.bf_insns == NULL ||
-	    bpf_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
+	    pcap_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
 		callback(user, &pkth, pktd);
 		return 1;
 	}
