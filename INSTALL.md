@@ -272,9 +272,8 @@ acconfig.h	- support for post-2.13 autoconf
 aclocal.m4	- autoconf macros
 arcnet.h	- ARCNET definitions
 atmuni31.h	- ATM Q.2931 definitions
-bpf/net		- copy of bpf_filter.c
 bpf_dump.c	- BPF program printing routines
-bpf_filter.c	- symlink to bpf/net/bpf_filter.c
+bpf_filter.c	- BPF filtering routines
 bpf_image.c	- BPF disassembly routine
 config.guess	- autoconf support
 config.h.in	- autoconf input
