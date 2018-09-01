@@ -44,7 +44,6 @@
 
 #include <pcap/pcap-inttypes.h>
 #include "pcap-types.h"
-#include "varattrs.h"
 #include "extract.h"
 
 #define EXTRACT_SHORT	EXTRACT_BE_U_2
@@ -56,7 +55,7 @@
 #include <sys/time.h>
 #endif /* _WIN32 */
 
-#include <pcap/bpf.h>
+#include <pcap-int.h>
 
 #include <stdlib.h>
 
