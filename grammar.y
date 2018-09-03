@@ -19,6 +19,14 @@
 %lex-param   {void *yyscanner}
 
 /*
+ * According to bison documentation, shift/reduce conflicts are not an issue
+ * in most parsers as long as the number does not evolve over time:
+ * https://www.gnu.org/software/bison/manual/html_node/Expect-Decl.html
+ * So, following the advice use %expect to check the amount of shift/reduce
+ * warnings.
+ */
+%expect 38
+/*
  * And we need to pass the compiler state to the scanner.
  */
 %parse-param { compiler_state_t *cstate }
