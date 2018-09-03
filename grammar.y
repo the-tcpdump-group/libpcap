@@ -24,8 +24,21 @@
  * https://www.gnu.org/software/bison/manual/html_node/Expect-Decl.html
  * So, following the advice use %expect to check the amount of shift/reduce
  * warnings.
+ *
+ * This doesn't appear to work in Berkeley YACC - 1.9 20170709; it still
+ * warns of 38 shift/reduce conflicts.
+ *
+ * The Berkeley YACC documentation:
+ *
+ *    https://invisible-island.net/byacc/manpage/yacc.html
+ *
+ * claims that "Bison's support for "%expect" is broken in more than one
+ * release.", but doesn't give details.  Hopefully, that only means that
+ * you get warnings even if you have the expected number of shift/reduce
+ * conflicts, not that anything else fails.
  */
 %expect 38
+
 /*
  * And we need to pass the compiler state to the scanner.
  */
