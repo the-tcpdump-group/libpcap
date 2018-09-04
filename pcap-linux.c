@@ -351,6 +351,7 @@ static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_inject_linux(pcap_t *, const void *, size_t);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
+static int pcap_stats_reset_linux(pcap_t *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
@@ -1518,6 +1519,7 @@ pcap_activate_linux(pcap_t *handle)
 	handle->cleanup_op = pcap_cleanup_linux;
 	handle->read_op = pcap_read_linux;
 	handle->stats_op = pcap_stats_linux;
+	handle->stats_op_reset = pcap_stats_reset_linux;
 
 	/*
 	 * The "any" device is a special device which causes us not
@@ -2150,6 +2152,16 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 		return (-1);
 	}
 	return (ret);
+}
+
+static int
+pcap_stats_reset_linux(pcap_t *handle)
+{
+       struct pcap_linux *handlep = handle->priv;
+       handlep->stat.ps_ifdrop = 0;
+       handlep->stat.ps_recv  = 0;
+       handlep->stat.ps_drop = 0;
+       return 0;
 }
 
 /*

@@ -2084,6 +2084,7 @@ initialize_ops(pcap_t *p)
 	p->set_datalink_op = (set_datalink_op_t)pcap_not_initialized;
 	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
 	p->stats_op = (stats_op_t)pcap_not_initialized;
+	p->stats_op_reset = (stats_op_reset_t)pcap_not_initialized;
 #ifdef _WIN32
 	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
 	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
@@ -3380,6 +3381,12 @@ pcap_setdirection(pcap_t *p, pcap_direction_t d)
 }
 
 int
+pcap_stats_reset(pcap_t *p)
+{
+       return (p->stats_op_reset(p));
+}
+
+int
 pcap_stats(pcap_t *p, struct pcap_stat *ps)
 {
 	return (p->stats_op(p, ps));
@@ -3752,6 +3759,14 @@ pcap_setnonblock_dead(pcap_t *p, int nonblock _U_)
 }
 
 static int
+pcap_stats_reset_dead(pcap_t *p)
+{
+	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	    "Statistics aren't available from a pcap_open_dead pcap_t");
+	return (-1);
+}
+
+static int
 pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -3900,6 +3915,7 @@ pcap_open_dead_with_tstamp_precision(int linktype, int snaplen, u_int precision)
 	p->getnonblock_op = pcap_getnonblock_dead;
 	p->setnonblock_op = pcap_setnonblock_dead;
 	p->stats_op = pcap_stats_dead;
+	p->stats_op_reset = pcap_stats_reset_dead;
 #ifdef _WIN32
 	p->stats_ex_op = pcap_stats_ex_dead;
 	p->setbuff_op = pcap_setbuff_dead;
