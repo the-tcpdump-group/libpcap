@@ -9,7 +9,7 @@ if(POLICY CMP0042)
     cmake_policy(SET CMP0042 OLD)
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
 
@@ -156,7 +156,7 @@ option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 option(DISABLE_DAG "Disable Endace DAG card support" OFF)
 
 option(DISABLE_SEPTEL "Disable Septel card support" OFF)
-set(SEPTEL_ROOT "${CMAKE_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
+set(SEPTEL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
 
 option(DISABLE_SNF "Disable Myricom SNF support" OFF)
 
@@ -1514,7 +1514,7 @@ if(ENABLE_REMOTE)
     # the check.
     #
     cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_SOURCE_DIR})
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
     check_struct_has_member("struct msghdr" msg_control "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_FLAGS)
     cmake_pop_check_state()
@@ -1529,7 +1529,7 @@ endif(ENABLE_REMOTE)
 #
 # Check and add warning options if we have a .devel file.
 #
-if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
     #
     # Warning options.
     #
@@ -2245,8 +2245,8 @@ if(NOT MSVC)
     foreach(LIB ${PCAP_LINK_LIBRARIES})
         set(LIBS "${LIBS} -l${LIB}")
     endforeach(LIB)
-    configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
-    configure_file(${CMAKE_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc DESTINATION lib/pkgconfig)
 
@@ -2258,17 +2258,17 @@ if(NOT MSVC)
     #
     set(MAN1 "")
     foreach(MANPAGE ${MAN1_NOEXPAND})
-        set(MAN1 ${MAN1} ${CMAKE_SOURCE_DIR}/${MANPAGE})
+        set(MAN1 ${MAN1} ${CMAKE_CURRENT_SOURCE_DIR}/${MANPAGE})
     endforeach(MANPAGE)
     install(FILES ${MAN1} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
     set(MAN3PCAP "")
     foreach(MANPAGE ${MAN3PCAP_NOEXPAND})
-        set(MAN3PCAP ${MAN3PCAP} ${CMAKE_SOURCE_DIR}/${MANPAGE})
+        set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_SOURCE_DIR}/${MANPAGE})
     endforeach(MANPAGE)
     foreach(TEMPLATE_MANPAGE ${MAN3PCAP_EXPAND})
         string(REPLACE ".in" "" MANPAGE ${TEMPLATE_MANPAGE})
-        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MAN3PCAP} DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
@@ -2292,7 +2292,7 @@ if(NOT MSVC)
     set(MANFILE "")
     foreach(TEMPLATE_MANPAGE ${MANFILE_EXPAND})
         string(REPLACE ".manfile.in" ".${MAN_FILE_FORMATS}" MANPAGE ${TEMPLATE_MANPAGE})
-        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MANFILE ${MANFILE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MANFILE} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_FILE_FORMATS})
@@ -2300,7 +2300,7 @@ if(NOT MSVC)
     set(MANMISC "")
     foreach(TEMPLATE_MANPAGE ${MANMISC_EXPAND})
         string(REPLACE ".manmisc.in" ".${MAN_MISC_INFO}" MANPAGE ${TEMPLATE_MANPAGE})
-        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MANMISC ${MANMISC} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MANMISC} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_MISC_INFO})
