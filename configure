@@ -9770,6 +9770,88 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshorten-64-to-32 option" >&5
+$as_echo_n "checking whether the compiler supports the -Wshorten-64-to-32 option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wshorten-64-to-32" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshorten-64-to-32"
+	elif expr "x-Wshorten-64-to-32" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshorten-64-to-32"
+	elif expr "x-Wshorten-64-to-32" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshorten-64-to-32"
+	else
+	    CFLAGS="$CFLAGS -Wshorten-64-to-32"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wshorten-64-to-32 " >&5
+$as_echo_n "checking whether -Wshorten-64-to-32 ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -Wshorten-64-to-32"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 	    fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports generating dependencies" >&5

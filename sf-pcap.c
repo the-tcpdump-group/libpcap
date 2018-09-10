@@ -731,7 +731,11 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	struct pcap_sf_pkthdr sf_hdr;
 
 	f = (FILE *)user;
-	sf_hdr.ts.tv_sec  = h->ts.tv_sec;
+	/*
+	 * Better not try writing pcap files after
+	 * 2038-01-19 03:14:07 UTC; switch to pcapng.
+	 */
+	sf_hdr.ts.tv_sec  = (bpf_int32)h->ts.tv_sec;
 	sf_hdr.ts.tv_usec = h->ts.tv_usec;
 	sf_hdr.caplen     = h->caplen;
 	sf_hdr.len        = h->len;

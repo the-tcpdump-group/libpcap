@@ -39,6 +39,7 @@
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strlen(), ...
+#include <limits.h>		// for INT_MAX
 
 #ifdef _WIN32
   #include <process.h>		// for threads
@@ -2270,7 +2271,21 @@ daemon_thrdatamain(void *ptr)
 	//
 	// So we don't need to make sure that sendbufsize will overflow.
 	//
+	// However, we *do* need to make sure its value fits in an int,
+	// because sock_send() can't send more than INT_MAX bytes (it could
+	// do so on 64-bit UN*Xes, but can't do so on Windows, not even
+	// 64-bit Windows, as the send() buffer size argument is an int
+	// in Winsock).
+	//
 	sendbufsize = sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr) + pcap_snapshot(session->fp);
+	if (sendbufsize > INT_MAX)
+	{
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Buffer size for this child thread would be larger than %d",
+		    INT_MAX);
+		sendbuf = NULL;	// we haven't allocated a buffer, so nothing to free
+		goto error;
+	}
 	sendbuf = (char *) malloc (sendbufsize);
 	if (sendbuf == NULL)
 	{
@@ -2311,7 +2326,7 @@ daemon_thrdatamain(void *ptr)
 
 		// Bufferize the general header
 		if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		    &sendbufidx, sendbufsize, SOCKBUF_CHECKONLY, errbuf,
+		    &sendbufidx, (int)sendbufsize, SOCKBUF_CHECKONLY, errbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
@@ -2328,7 +2343,7 @@ daemon_thrdatamain(void *ptr)
 
 		// Bufferize the pkt header
 		if (sock_bufferize(NULL, sizeof(struct rpcap_pkthdr), NULL,
-		    &sendbufidx, sendbufsize, SOCKBUF_CHECKONLY, errbuf,
+		    &sendbufidx, (int)sendbufsize, SOCKBUF_CHECKONLY, errbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
@@ -2345,7 +2360,7 @@ daemon_thrdatamain(void *ptr)
 
 		// Bufferize the pkt data
 		if (sock_bufferize((char *) pkt_data, pkt_header->caplen,
-		    sendbuf, &sendbufidx, sendbufsize, SOCKBUF_BUFFERIZE,
+		    sendbuf, &sendbufidx, (int)sendbufsize, SOCKBUF_BUFFERIZE,
 		    errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,

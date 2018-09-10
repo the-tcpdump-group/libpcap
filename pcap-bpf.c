@@ -974,7 +974,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		} else
 #endif
 		{
-			cc = read(p->fd, p->buffer, p->bufsize);
+			cc = (int)read(p->fd, p->buffer, p->bufsize);
 		}
 		if (cc < 0) {
 			/* Don't choke when we get ptraced */
@@ -1076,7 +1076,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		if (p->break_loop) {
 			p->bp = bp;
-			p->cc = ep - bp;
+			p->cc = (int)(ep - bp);
 			/*
 			 * ep is set based on the return value of read(),
 			 * but read() from a BPF device doesn't necessarily
@@ -1166,7 +1166,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			bp += BPF_WORDALIGN(caplen + hdrlen);
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
-				p->cc = ep - bp;
+				p->cc = (int)(ep - bp);
 				/*
 				 * See comment above about p->cc < 0.
 				 */
@@ -1189,7 +1189,17 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 static int
 pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 {
-	int ret;
+	ssize_t ret;
+
+	/*
+	 * We return the number of bytes written, so the number of
+	 * bytes to write must fit in an int.
+	 */
+	if (size > INT_MAX) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "More than %d bytes cannot be injected", INT_MAX);
+		return (PCAP_ERROR);
+	}
 
 	ret = write(p->fd, buf, size);
 #ifdef __APPLE__
@@ -1231,7 +1241,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 		    errno, "send");
 		return (PCAP_ERROR);
 	}
-	return (ret);
+	return ((int)ret);
 }
 
 #ifdef _AIX

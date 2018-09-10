@@ -202,7 +202,7 @@ static int strrem(char *string, char chr)
 {
 	char *pos;
 	int num = 0;
-	int len, i;
+	size_t len, i;
 
 	while ((pos = strchr(string, chr)) != NULL)
 	{
