@@ -59,6 +59,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -132,11 +133,21 @@ read_infile(char *fname)
 	if (fstat(fd, &buf) < 0)
 		error("can't stat %s: %s", fname, pcap_strerror(errno));
 
+	/*
+	 * _read(), on Windows, has an unsigned int byte count and an
+	 * int return value, so we can't handle a file bigger than
+	 * INT_MAX - 1 bytes (and have no reason to do so; a filter *that*
+	 * big will take forever to compile).  (The -1 is for the '\0' at
+	 * the end of the string.)
+	 */
+	if (buf.st_size > INT_MAX - 1)
+		error("%s is larger than %d bytes; that's too large", fname,
+		    INT_MAX - 1);
 	cp = malloc((u_int)buf.st_size + 1);
 	if (cp == NULL)
 		error("malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
-	cc = read(fd, cp, (u_int)buf.st_size);
+	cc = (int)read(fd, cp, (u_int)buf.st_size);
 	if (cc < 0)
 		error("read %s: %s", fname, pcap_strerror(errno));
 	if (cc != buf.st_size)

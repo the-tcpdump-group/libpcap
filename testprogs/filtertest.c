@@ -36,6 +36,7 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <limits.h>
 #ifdef _WIN32
   #include "getopt.h"
   #include "unix.h"
@@ -55,6 +56,8 @@ The Regents of the University of California.  All rights reserved.\n";
 #include <sys/stat.h>
 
 #include "pcap/funcattrs.h"
+
+#define MAXIMUM_SNAPLEN		262144
 
 #ifdef BDEBUG
 /*
@@ -99,11 +102,21 @@ read_infile(char *fname)
 	if (fstat(fd, &buf) < 0)
 		error("can't stat %s: %s", fname, pcap_strerror(errno));
 
+	/*
+	 * _read(), on Windows, has an unsigned int byte count and an
+	 * int return value, so we can't handle a file bigger than
+	 * INT_MAX - 1 bytes (and have no reason to do so; a filter *that*
+	 * big will take forever to compile).  (The -1 is for the '\0' at
+	 * the end of the string.)
+	 */
+	if (buf.st_size > INT_MAX - 1)
+		error("%s is larger than %d bytes; that's too large", fname,
+		    INT_MAX - 1);
 	cp = malloc((u_int)buf.st_size + 1);
 	if (cp == NULL)
 		error("malloc(%d) for %s: %s", (u_int)buf.st_size + 1,
 			fname, pcap_strerror(errno));
-	cc = read(fd, cp, (u_int)buf.st_size);
+	cc = (int)read(fd, cp, (u_int)buf.st_size);
 	if (cc < 0)
 		error("read %s: %s", fname, pcap_strerror(errno));
 	if (cc != buf.st_size)
@@ -199,7 +212,7 @@ main(int argc, char **argv)
 	int gflag;
 	char *infile;
 	int Oflag;
-	long snaplen;
+	int snaplen;
 	char *p;
 	int dlt;
 	int have_fcode = 0;
@@ -218,7 +231,7 @@ main(int argc, char **argv)
 
 	infile = NULL;
 	Oflag = 1;
-	snaplen = 68;
+	snaplen = MAXIMUM_SNAPLEN;
 
 	if ((cp = strrchr(argv[0], '/')) != NULL)
 		program_name = cp + 1;
@@ -272,13 +285,19 @@ main(int argc, char **argv)
 
 		case 's': {
 			char *end;
+			long long_snaplen;
 
-			snaplen = strtol(optarg, &end, 0);
+			long_snaplen = strtol(optarg, &end, 0);
 			if (optarg == end || *end != '\0'
-			    || snaplen < 0 || snaplen > 65535)
+			    || long_snaplen < 0
+			    || long_snaplen > MAXIMUM_SNAPLEN)
 				error("invalid snaplen %s", optarg);
-			else if (snaplen == 0)
-				snaplen = 65535;
+			else {
+				if (snaplen == 0)
+					snaplen = MAXIMUM_SNAPLEN;
+				else
+					snaplen = (int)long_snaplen;
+			}
 			break;
 		}
 
