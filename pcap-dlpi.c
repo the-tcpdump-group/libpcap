@@ -108,12 +108,7 @@
 #include <string.h>
 #include <stropts.h>
 #include <unistd.h>
-
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#else
-#define INT_MAX		2147483647
-#endif
 
 #include "pcap-int.h"
 #include "dlpisubs.h"

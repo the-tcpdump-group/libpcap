@@ -56,12 +56,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#ifdef HAVE_LIMITS_H
 #include <limits.h>
-#else
-#define INT_MAX		2147483647
-#endif
 
 #include "pcap-int.h"
 

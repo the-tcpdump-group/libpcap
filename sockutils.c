@@ -56,11 +56,7 @@
 #include <errno.h>	/* for the errno variable */
 #include <stdio.h>	/* for the stderr file */
 #include <stdlib.h>	/* for malloc() and free() */
-#ifdef HAVE_LIMITS_H
-#include <limits.h>
-#else
-#define INT_MAX		2147483647
-#endif
+#include <limits.h>	/* for INT_MAX */
 
 #include "pcap-int.h"
 

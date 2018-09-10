@@ -75,9 +75,6 @@
 /* libnl has new-style socket api */
 #cmakedefine HAVE_LIBNL_SOCKETS 1
 
-/* Define to 1 if you have the <limits.h> header file. */
-#cmakedefine HAVE_LIMITS_H 1
-
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #cmakedefine HAVE_LINUX_COMPILER_H 1
 

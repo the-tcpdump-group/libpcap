@@ -47,7 +47,7 @@ dnl in "aclocal.m4" uses it, so we would still have to test for it
 dnl and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
 dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h limits.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
 #include <sys/socket.h>
