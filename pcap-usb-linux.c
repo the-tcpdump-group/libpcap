@@ -935,6 +935,7 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_usb_linux *handlep = handle->priv;
 	int dummy, ret, consumed, cnt;
+	ssize_t read_ret;
 	char string[USB_LINE_LEN];
 	char token[USB_LINE_LEN];
 	char * ptr = string;
