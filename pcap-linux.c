@@ -1832,7 +1832,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			 * we were told to break out of the loop.
 			 */
 			handle->break_loop = 0;
-			return PCAP_ERROR_BREA	}
+			return PCAP_ERROR_BREAK;
+		}
 
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 		packet_len = recvmsg(handle->fd, &msg, MSG_TRUNC);
