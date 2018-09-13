@@ -69,7 +69,6 @@ find_path(PACKET_INCLUDE_DIR Packet32.h
 )
 
 # Find the library
-message(STATUS "Path suffixes Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}")
 find_library(PACKET_LIBRARY
   NAMES Packet packet
   HINTS "${PACKET_DLL_DIR}" ENV PACKET_DLL_DIR
