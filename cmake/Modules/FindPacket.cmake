@@ -53,6 +53,7 @@ set(64BIT_SUBDIR "")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   message(STATUS "This is a 64-bit build")
   set(64BIT_SUBDIR "/x64")
+  set(CMAKE_LIBRARY_ARCHITECTURE "x64")
 endif()
 
 # Find the header
