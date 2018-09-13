@@ -117,7 +117,7 @@ pcap_netmap_dispatch(pcap_t *p, int cnt, pcap_handler cb, u_char *user)
 
 /* XXX need to check the NIOCTXSYNC/poll */
 static int
-pcap_netmap_inject(pcap_t *p, const void *buf, size_t size)
+pcap_netmap_inject(pcap_t *p, const void *buf, int size)
 {
 	struct pcap_netmap *pn = p->priv;
 	struct nm_desc *d = pn->d;

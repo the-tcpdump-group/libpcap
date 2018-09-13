@@ -58,7 +58,7 @@
 /* forward declaration */
 static int bt_activate(pcap_t *);
 static int bt_read_linux(pcap_t *, int , pcap_handler , u_char *);
-static int bt_inject_linux(pcap_t *, const void *, size_t);
+static int bt_inject_linux(pcap_t *, const void *, int);
 static int bt_setdirection_linux(pcap_t *, pcap_direction_t);
 static int bt_stats_linux(pcap_t *, struct pcap_stat *);
 
@@ -346,7 +346,7 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 		return -1;
 	}
 
-	pkth.caplen = ret;
+	pkth.caplen = (bpf_u_int32)ret;
 
 	/* get direction and timestamp*/
 	cmsg = CMSG_FIRSTHDR(&msg);
@@ -378,7 +378,7 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 }
 
 static int
-bt_inject_linux(pcap_t *handle, const void *buf _U_, size_t size _U_)
+bt_inject_linux(pcap_t *handle, const void *buf _U_, int size _U_)
 {
 	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
     		"bluetooth devices");

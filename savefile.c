@@ -216,7 +216,7 @@ sf_get_airpcap_handle(pcap_t *pcap)
 #endif
 
 static int
-sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
+sf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
 	    PCAP_ERRBUF_SIZE);

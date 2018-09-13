@@ -736,7 +736,7 @@ pcap_dump(u_char *user, const struct pcap_pkthdr *h, const u_char *sp)
 	 * 2038-01-19 03:14:07 UTC; switch to pcapng.
 	 */
 	sf_hdr.ts.tv_sec  = (bpf_int32)h->ts.tv_sec;
-	sf_hdr.ts.tv_usec = h->ts.tv_usec;
+	sf_hdr.ts.tv_usec = (bpf_int32)h->ts.tv_usec;
 	sf_hdr.caplen     = h->caplen;
 	sf_hdr.len        = h->len;
 	/* XXX we should check the return status */

@@ -3641,6 +3641,12 @@ pcap_cleanup_live_common(pcap_t *p)
 int
 pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
 {
+	if (size <= 0) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "The number of bytes to be sent must be positive", INT_MAX);
+		return (PCAP_ERROR);
+	}
+
 	if (p->inject_op(p, buf, size) == -1)
 		return (-1);
 	return (0);
@@ -3653,7 +3659,23 @@ pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
 int
 pcap_inject(pcap_t *p, const void *buf, size_t size)
 {
-	return (p->inject_op(p, buf, size));
+	/*
+	 * We return the number of bytes written, so the number of
+	 * bytes to write must fit in an int.
+	 */
+	if (size > INT_MAX) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "More than %d bytes cannot be injected", INT_MAX);
+		return (PCAP_ERROR);
+	}
+
+	if (size == 0) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "The number of bytes to be injected must not be zero", INT_MAX);
+		return (PCAP_ERROR);
+	}
+
+	return (p->inject_op(p, buf, (int)size));
 }
 
 void
@@ -3701,7 +3723,7 @@ pcap_read_dead(pcap_t *p, int cnt _U_, pcap_handler callback _U_,
 }
 
 static int
-pcap_inject_dead(pcap_t *p, const void *buf _U_, size_t size _U_)
+pcap_inject_dead(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets can't be sent on a pcap_open_dead pcap_t");

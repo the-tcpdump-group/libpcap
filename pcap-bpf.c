@@ -1187,21 +1187,11 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
-pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
+pcap_inject_bpf(pcap_t *p, const void *buf, int size)
 {
-	ssize_t ret;
+	int ret;
 
-	/*
-	 * We return the number of bytes written, so the number of
-	 * bytes to write must fit in an int.
-	 */
-	if (size > INT_MAX) {
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "More than %d bytes cannot be injected", INT_MAX);
-		return (PCAP_ERROR);
-	}
-
-	ret = write(p->fd, buf, size);
+	ret = (int)write(p->fd, buf, size);
 #ifdef __APPLE__
 	if (ret == -1 && errno == EAFNOSUPPORT) {
 		/*
@@ -1233,7 +1223,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 		/*
 		 * Now try the write again.
 		 */
-		ret = write(p->fd, buf, size);
+		ret = (int)write(p->fd, buf, size);
 	}
 #endif /* __APPLE__ */
 	if (ret == -1) {
@@ -1241,7 +1231,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 		    errno, "send");
 		return (PCAP_ERROR);
 	}
-	return ((int)ret);
+	return (ret);
 }
 
 #ifdef _AIX

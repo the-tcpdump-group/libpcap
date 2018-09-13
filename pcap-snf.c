@@ -213,7 +213,7 @@ snf_setfilter(pcap_t *p, struct bpf_program *fp)
 }
 
 static int
-snf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
+snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 #ifdef SNF_HAVE_INJECT_API
 	struct pcap_snf *ps = p->priv;

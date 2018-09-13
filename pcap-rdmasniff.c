@@ -361,7 +361,7 @@ rdmasniff_create(const char *device, char *ebuf, int *is_ours)
 	int numdev;
 	size_t namelen;
 	const char *port;
-	unsigned port_num;
+	unsigned long port_num;
 	int i;
 	pcap_t *p = NULL;
 

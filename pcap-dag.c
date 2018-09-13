@@ -726,7 +726,7 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
-dag_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
+dag_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	strlcpy(p->errbuf, "Sending packets isn't supported on DAG cards",
 	    PCAP_ERRBUF_SIZE);

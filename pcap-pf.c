@@ -222,7 +222,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
-pcap_inject_pf(pcap_t *p, const void *buf, size_t size)
+pcap_inject_pf(pcap_t *p, const void *buf, int size)
 {
 	int ret;
 

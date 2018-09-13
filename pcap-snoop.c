@@ -140,7 +140,7 @@ again:
 }
 
 static int
-pcap_inject_snoop(pcap_t *p, const void *buf, size_t size)
+pcap_inject_snoop(pcap_t *p, const void *buf, int size)
 {
 	int ret;
 

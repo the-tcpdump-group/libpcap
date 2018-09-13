@@ -65,6 +65,14 @@
     __pragma(warning(disable:4244)) \
     __pragma(warning(disable:4702))
   #define DIAG_ON_FLEX  __pragma(warning(pop))
+
+  /*
+   * Suppress narrowing warnings.
+   */
+  #define DIAG_OFF_NARROWING \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4242))
+  #define DIAG_ON_NARROWING  __pragma(warning(pop))
 #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
   /*
    * This is Clang 2.8 or later; we can use "clang diagnostic
@@ -79,10 +87,21 @@
     PCAP_DO_PRAGMA(clang diagnostic push) \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wmissing-noreturn") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunused-parameter") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
   #define DIAG_ON_FLEX \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  /*
+   * Suppress the only narrowing warnings you get from Clang.
+   */
+  #define DIAG_OFF_NARROWING \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32")
+
+  #define DIAG_ON_NARROWING \
     PCAP_DO_PRAGMA(clang diagnostic pop)
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
@@ -97,6 +116,12 @@
     PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
   #define DIAG_ON_FLEX \
     PCAP_DO_PRAGMA(GCC diagnostic pop)
+
+  /*
+   * GCC currently doesn't issue any narrowing warnings.
+   */
+  #define DIAG_OFF_NARROWING
+  #define DIAG_ON_NARROWING
 #else
   /*
    * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
@@ -105,6 +130,8 @@
    */
   #define DIAG_OFF_FLEX
   #define DIAG_ON_FLEX
+  #define DIAG_OFF_NARROWING
+  #define DIAG_ON_NARROWING
 #endif
 
 #ifdef YYBYACC

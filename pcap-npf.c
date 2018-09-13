@@ -832,7 +832,7 @@ pcap_read_win32_dag(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 
 /* Send a packet to the network */
 static int
-pcap_inject_npf(pcap_t *p, const void *buf, size_t size)
+pcap_inject_npf(pcap_t *p, const void *buf, int size)
 {
 	struct pcap_win *pw = p->priv;
 	PACKET pkt;
@@ -848,7 +848,7 @@ pcap_inject_npf(pcap_t *p, const void *buf, size_t size)
 	 * "pcap_inject()" is expected to return the number of bytes
 	 * sent.
 	 */
-	return ((int)size);
+	return (size);
 }
 
 static void

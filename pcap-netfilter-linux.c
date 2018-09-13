@@ -91,7 +91,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 	struct pcap_netfilter *handlep = handle->priv;
 	register u_char *bp, *ep;
 	int count = 0;
-	int len;
+	ssize_t len;
 
 	/*
 	 * Has "pcap_breakloop()" been called?
@@ -152,7 +152,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		 */
 		if (handle->break_loop) {
 			handle->bp = bp;
-			handle->cc = ep - bp;
+			handle->cc = (int)(ep - bp);
 			if (count == 0) {
 				handle->break_loop = 0;
 				return PCAP_ERROR_BREAK;
@@ -264,12 +264,12 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		 * buffer.
 		 */
 		if (msg_len > ep - bp)
-			msg_len = ep - bp;
+			msg_len = (uint32_t)(ep - bp);
 
 		bp += msg_len;
 		if (count >= max_packets && !PACKET_COUNT_IS_UNLIMITED(max_packets)) {
 			handle->bp = bp;
-			handle->cc = ep - bp;
+			handle->cc = (int)(ep - bp);
 			if (handle->cc < 0)
 				handle->cc = 0;
 			return count;
@@ -299,7 +299,7 @@ netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 }
 
 static int
-netfilter_inject_linux(pcap_t *handle, const void *buf _U_, size_t size _U_)
+netfilter_inject_linux(pcap_t *handle, const void *buf _U_, int size _U_)
 {
 	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on netfilter devices");
 	return (-1);
@@ -361,7 +361,11 @@ netfilter_send_config_msg(const pcap_t *handle, uint16_t msg_type, int ack, u_in
 
 		/* ignore interrupt system call error */
 		do {
-			len = recvfrom(handle->fd, buf, sizeof(buf), 0, (struct sockaddr *) &snl, &addrlen);
+			/*
+			 * The buffer is not so big that its size won't
+			 * fit into an int.
+			 */
+			len = (int)recvfrom(handle->fd, buf, sizeof(buf), 0, (struct sockaddr *) &snl, &addrlen);
 		} while ((len == -1) && (errno == EINTR));
 
 		if (len <= 0)

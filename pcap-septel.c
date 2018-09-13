@@ -180,7 +180,7 @@ loop:
 
 
 static int
-septel_inject(pcap_t *handle, const void *buf _U_, size_t size _U_)
+septel_inject(pcap_t *handle, const void *buf _U_, int size _U_)
 {
   strlcpy(handle->errbuf, "Sending packets isn't supported on Septel cards",
           PCAP_ERRBUF_SIZE);

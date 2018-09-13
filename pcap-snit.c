@@ -208,7 +208,7 @@ pcap_read_snit(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
-pcap_inject_snit(pcap_t *p, const void *buf, size_t size)
+pcap_inject_snit(pcap_t *p, const void *buf, int size)
 {
 	struct strbuf ctl, data;
 

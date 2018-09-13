@@ -46,7 +46,7 @@
 /* Forwards. */
 static int dlpromiscon(pcap_t *, bpf_u_int32);
 static int pcap_read_libdlpi(pcap_t *, int, pcap_handler, u_char *);
-static int pcap_inject_libdlpi(pcap_t *, const void *, size_t);
+static int pcap_inject_libdlpi(pcap_t *, const void *, int);
 static void pcap_libdlpi_err(const char *, const char *, int, char *);
 static void pcap_cleanup_libdlpi(pcap_t *);
 
@@ -427,7 +427,7 @@ process_pkts:
 }
 
 static int
-pcap_inject_libdlpi(pcap_t *p, const void *buf, size_t size)
+pcap_inject_libdlpi(pcap_t *p, const void *buf, int size)
 {
 	struct pcap_dlpi *pd = p->priv;
 	int retv;

@@ -346,7 +346,7 @@ static int activate_mmap(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
-static int pcap_inject_linux(pcap_t *, const void *, size_t);
+static int pcap_inject_linux(pcap_t *, const void *, int);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
@@ -740,7 +740,9 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_NEW_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
+DIAG_OFF_NARROWING
 	NLA_PUT_STRING(msg, NL80211_ATTR_IFNAME, mondevice);
+DIAG_ON_NARROWING
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
 
 	err = nl_send_auto_complete(state->nl_sock, msg);
@@ -1159,7 +1161,8 @@ linux_if_drops(const char * if_name)
 	char buffer[512];
 	char * bufptr;
 	FILE * file;
-	int field_to_convert = 3, if_name_sz = strlen(if_name);
+	int field_to_convert = 3;
+	size_t if_name_sz = strlen(if_name);
 	long int dropped_pkts = 0;
 
 	file = fopen("/proc/net/dev", "r");
@@ -1381,7 +1384,7 @@ set_poll_timeout(struct pcap_linux *handlep)
 #ifdef HAVE_TPACKET3
 	struct utsname utsname;
 	char *version_component, *endp;
-	int major, minor;
+	long major, minor;
 	int broken_tpacket_v3 = 1;
 
 	/*
@@ -1761,7 +1764,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	socklen_t		fromlen;
 #endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-	int			packet_len, caplen;
+	ssize_t			packet_len;
+	int			caplen;
 	struct pcap_pkthdr	pcap_header;
 
         struct bpf_aux_data     aux_data;
@@ -1826,8 +1830,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			 * we were told to break out of the loop.
 			 */
 			handle->break_loop = 0;
-			return PCAP_ERROR_BREAK;
-		}
+			return PCAP_ERROR_BREA	}
 
 #if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
 		packet_len = recvmsg(handle->fd, &msg, MSG_TRUNC);
@@ -1947,7 +1950,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	if (handlep->vlan_offset != -1) {
 		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			struct tpacket_auxdata *aux;
-			unsigned int len;
+			size_t len;
 			struct vlan_tag *tag;
 
 			if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
@@ -1969,8 +1972,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 				continue;
 			}
 
-			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
-			if (len < (u_int)handlep->vlan_offset)
+			len = (size_t)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
+			if (len < (size_t)handlep->vlan_offset)
 				break;
 
 			/*
@@ -2128,7 +2131,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 }
 
 static int
-pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
+pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 {
 	struct pcap_linux *handlep = handle->priv;
 	int ret;
@@ -2162,7 +2165,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	}
 #endif
 
-	ret = send(handle->fd, buf, size, 0);
+	ret = (int)send(handle->fd, buf, size, 0);
 	if (ret == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "send");
@@ -4879,7 +4882,7 @@ pcap_setnonblock_mmap(pcap_t *handle, int nonblock)
 /*
  * Get the status field of the ring buffer frame at a specified offset.
  */
-static inline int
+static inline u_int
 pcap_get_ring_frame_status(pcap_t *handle, int offset)
 {
 	struct pcap_linux *handlep = handle->priv;
@@ -4888,10 +4891,18 @@ pcap_get_ring_frame_status(pcap_t *handle, int offset)
 	h.raw = RING_GET_FRAME_AT(handle, offset);
 	switch (handlep->tp_version) {
 	case TPACKET_V1:
-		return (h.h1->tp_status);
+		/*
+		 * This is an unsigned long, but only the lower 32
+		 * bits are used.
+		 */
+		return (u_int)(h.h1->tp_status);
 		break;
 	case TPACKET_V1_64:
-		return (h.h1_64->tp_status);
+		/*
+		 * This is an unsigned long in the kernel, which is 64-bit,
+		 * but only the lower 32 bits are used.
+		 */
+		return (u_int)(h.h1_64->tp_status);
 		break;
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:

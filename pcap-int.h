@@ -118,7 +118,7 @@ typedef int	(*activate_op_t)(pcap_t *);
 typedef int	(*can_set_rfmon_op_t)(pcap_t *);
 typedef int	(*read_op_t)(pcap_t *, int cnt, pcap_handler, u_char *);
 typedef int	(*next_packet_op_t)(pcap_t *, struct pcap_pkthdr *, u_char **);
-typedef int	(*inject_op_t)(pcap_t *, const void *, size_t);
+typedef int	(*inject_op_t)(pcap_t *, const void *, int);
 typedef void	(*save_current_filter_op_t)(pcap_t *, const char *);
 typedef int	(*setfilter_op_t)(pcap_t *, struct bpf_program *);
 typedef int	(*setdirection_op_t)(pcap_t *, pcap_direction_t);
