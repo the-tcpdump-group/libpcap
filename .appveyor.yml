@@ -33,5 +33,5 @@ build_script:
   - type NUL >.devel
   - md build
   - cd build
-  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\$(SDK) -G$(GENERATOR) ..
+  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\$Env:SDK -G$Env:GENERATOR ..
   - msbuild -nologo -p:Configuration=Release pcap.sln
