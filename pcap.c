@@ -3643,7 +3643,7 @@ pcap_sendpacket(pcap_t *p, const u_char *buf, int size)
 {
 	if (size <= 0) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "The number of bytes to be sent must be positive", INT_MAX);
+		    errno, "The number of bytes to be sent must be positive");
 		return (PCAP_ERROR);
 	}
 
