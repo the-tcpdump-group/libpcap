@@ -955,7 +955,7 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 	 * don't need to loop.
 	 */
 #ifdef _WIN32
-	nread = recv(sock, buffer, size, 0);
+	nread = recv(sock, buffer, (int)size, 0);
 	if (nread == SOCKET_ERROR)
 	{
 		/*

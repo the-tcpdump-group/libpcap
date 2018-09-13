@@ -213,7 +213,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 
 			FD_SET(pars.sockctrl_in, &rfds);
 
-			retval = select(pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
+			retval = select((int)pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
 				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
@@ -492,7 +492,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 
 			FD_SET(pars.sockctrl_in, &rfds);
 
-			retval = select(pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
+			retval = select((int)pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
 				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
