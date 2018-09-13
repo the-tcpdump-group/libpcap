@@ -4,7 +4,9 @@ branches:
   only:
   - master
 
-platform: Any CPU
+platform:
+  - x86
+  - x64
 
 clone_depth: 5
 
