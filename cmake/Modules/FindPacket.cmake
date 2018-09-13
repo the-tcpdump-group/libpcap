@@ -62,11 +62,13 @@ find_path(PACKET_INCLUDE_DIR Packet32.h
 )
 
 # Find the library
+message(STATUS "Path suffixes Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}")
 find_library(PACKET_LIBRARY
   NAMES Packet packet
   HINTS "${PACKET_DLL_DIR}" ENV PACKET_DLL_DIR
   PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
 )
+message(STATUS "PACKET_LIBRARY is ${PACKET_LIBRARY}")
 
 # Set PACKET_FOUND to TRUE if PACKET_INCLUDE_DIR and PACKET_LIBRARY are TRUE.
 include(FindPackageHandleStandardArgs)
