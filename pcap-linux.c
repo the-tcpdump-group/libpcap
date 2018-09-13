@@ -142,7 +142,7 @@
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
 
-#include "diag-control/h"
+#include "diag-control.h"
 
 /*
  * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
