@@ -2355,8 +2355,12 @@ daemon_thrdatamain(void *ptr)
 		net_pkt_header->caplen = htonl(pkt_header->caplen);
 		net_pkt_header->len = htonl(pkt_header->len);
 		net_pkt_header->npkt = htonl(++(session->TotCapt));
-		net_pkt_header->timestamp_sec = htonl(pkt_header->ts.tv_sec);
-		net_pkt_header->timestamp_usec = htonl(pkt_header->ts.tv_usec);
+		//
+		// This protocol needs to be updated with a new version
+		// before 2038-01-19 03:14:07 UTC.
+		//
+		net_pkt_header->timestamp_sec = (uint32)htonl(pkt_header->ts.tv_sec);
+		net_pkt_header->timestamp_usec = (uint32)htonl(pkt_header->ts.tv_usec);
 
 		// Bufferize the pkt data
 		if (sock_bufferize((char *) pkt_data, pkt_header->caplen,

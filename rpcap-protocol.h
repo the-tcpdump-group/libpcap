@@ -326,6 +326,10 @@ struct rpcap_startcapreply
  */
 struct rpcap_pkthdr
 {
+	/*
+	 * This protocol needs to be updated with a new version before
+	 * 2038-01-19 03:14:07 UTC.
+	 */
 	uint32 timestamp_sec;	/* 'struct timeval' compatible, it represents the 'tv_sec' field */
 	uint32 timestamp_usec;	/* 'struct timeval' compatible, it represents the 'tv_usec' field */
 	uint32 caplen;		/* Length of portion present in the capture */
