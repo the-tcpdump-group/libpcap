@@ -168,7 +168,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 
 		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || (u_int)len < nlh->nlmsg_len) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %d) (nlmsg_len: %u)", len, nlh->nlmsg_len);
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %zd) (nlmsg_len: %u)", len, nlh->nlmsg_len);
 			return -1;
 		}
 
