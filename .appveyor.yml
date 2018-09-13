@@ -4,6 +4,8 @@ branches:
   only:
   - master
 
+platform: Any CPU
+
 clone_depth: 5
 
 matrix:
