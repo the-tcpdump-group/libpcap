@@ -57,7 +57,7 @@ struct pcap_rdmasniff {
 	struct ibv_flow *               flow;
 	struct ibv_mr *			mr;
 	u_char *			oneshot_buffer;
-	unsigned			port_num;
+	unsigned long			port_num;
 	int                             cq_event;
 	u_int                           packets_recv;
 };
