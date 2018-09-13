@@ -934,8 +934,8 @@ static int
 usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_usb_linux *handlep = handle->priv;
-	int dummy, ret, consumed, cnt;
-	ssize_t read_ret;
+	int dummy, ret, cnt;
+	ssize_t read_ret, consumed;
 	char string[USB_LINE_LEN];
 	char token[USB_LINE_LEN];
 	char * ptr = string;
@@ -977,7 +977,7 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	string[read_ret] = 0;
 
 	/* extract info on dropped urbs */
-	for (consumed=0; consumed < ret; ) {
+	for (consumed=0; consumed < read_ret; ) {
 		/* from the sscanf man page:
  		 * The C standard says: "Execution of a %n directive does
  		 * not increment the assignment count returned at the completion
