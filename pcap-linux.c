@@ -2045,14 +2045,14 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * filter to the kernel.
 	 */
 
-	caplen = packet_len;
+	caplen = (int)packet_len;
 	if (caplen > handle->snapshot)
 		caplen = handle->snapshot;
 
 	/* Run the packet filter if not using kernel filter */
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
 		if (pcap_filter_with_aux_data(handle->fcode.bf_insns, bp,
-		    packet_len, caplen, &aux_data) == 0) {
+		    (int)packet_len, caplen, &aux_data) == 0) {
 			/* rejected by filter */
 			return 0;
 		}
@@ -2079,7 +2079,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
         }
 
 	pcap_header.caplen	= caplen;
-	pcap_header.len		= packet_len;
+	pcap_header.len		= (bpf_u_int32)packet_len;
 
 	/*
 	 * Count the packet.
