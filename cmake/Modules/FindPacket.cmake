@@ -49,22 +49,16 @@
 #
 
 # The 64-bit Packet.lib is located under /x64
-set(64BIT_SUBDIR "")
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   #
   # For the WinPcap and Npcap SDKs, the Lib subdirectory of the top-level
   # directory contains 32-bit libraries; the 64-bit libraries are in the
   # Lib/x64 directory.
   #
-  # At least on the Appveyor build, the only way to *FORCE* CMake to
-  # look in the Lib/x64 directory without searching in the Lib directory
-  # first appears to be to set CMAKE_LIBRARY_ARCHITECTURE to "x64".
+  # The only way to *FORCE* CMake to look in the Lib/x64 directory
+  # without searching in the Lib directory first appears to be to set
+  # CMAKE_LIBRARY_ARCHITECTURE to "x64".
   #
-  # However, at least on my Windows 7 virtual machine with CMake 3.9.1
-  # and Visual Studio 2015, that's not sufficient - we also need to
-  # set PATH_SUFFIXES.
-  #
-  set(64BIT_SUBDIR "/x64")
   set(CMAKE_LIBRARY_ARCHITECTURE "x64")
 endif()
 
@@ -78,7 +72,6 @@ find_path(PACKET_INCLUDE_DIR Packet32.h
 find_library(PACKET_LIBRARY
   NAMES Packet packet
   HINTS "${PACKET_DLL_DIR}" ENV PACKET_DLL_DIR
-  PATH_SUFFIXES Lib${64BIT_SUBDIR} lib${64BIT_SUBDIR}
 )
 
 # Set PACKET_FOUND to TRUE if PACKET_INCLUDE_DIR and PACKET_LIBRARY are TRUE.
