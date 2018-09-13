@@ -25,6 +25,6 @@ build_script:
   - cd ..
   - md build-x64
   - cd build-x64
-  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack -G"Visual Studio 12 2013 Win64" ..
+  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack\x64 -G"Visual Studio 12 2013 Win64" ..
   - msbuild -nologo -p:Configuration=Release pcap.sln
 
