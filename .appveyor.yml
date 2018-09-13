@@ -15,16 +15,28 @@ install:
   - win_bison --version
   - appveyor DownloadFile http://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
   - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
+  - appveyor DownloadFile https://nmap.org/npcap/dist/npcap-sdk-0.1.zip
+  - 7z x .\npcap-sdk-0.1.zip -oc:\projects\libpcap\Win32
 
 build_script:
   - type NUL >.devel
-  - md build-x86
-  - cd build-x86
+  - md build-x86-wpcap
+  - cd build-x86-wpcap
   - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack -G"Visual Studio 12 2013" ..
   - msbuild -nologo -p:Configuration=Release pcap.sln
   - cd ..
-  - md build-x64
-  - cd build-x64
+  - md build-x64-wpcap
+  - cd build-x64-wpcap
   - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack\x64 -G"Visual Studio 12 2013 Win64" ..
+  - msbuild -nologo -p:Configuration=Release pcap.sln
+  - cd ..
+  - md build-x86-npcap
+  - cd build-x86-npcap
+  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\npcap-sdk-0.1 -G"Visual Studio 12 2013" ..
+  - msbuild -nologo -p:Configuration=Release pcap.sln
+  - cd ..
+  - md build-x64-npcap
+  - cd build-x64-npcap
+  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\npcap-sdk-0.1\x64 -G"Visual Studio 12 2013 Win64" ..
   - msbuild -nologo -p:Configuration=Release pcap.sln
 
