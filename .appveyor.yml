@@ -4,10 +4,6 @@ branches:
   only:
   - master
 
-platform:
-  - x86
-  - x64
-
 clone_depth: 5
 
 matrix:
@@ -22,7 +18,13 @@ install:
 
 build_script:
   - type NUL >.devel
-  - md build
-  - cd build
+  - md build-x86
+  - cd build-x86
   - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack -G"Visual Studio 12 2013" ..
   - msbuild -nologo -p:Configuration=Release pcap.sln
+  - cd ..
+  - md build-x64
+  - cd build-x64
+  - cmake -DCMAKE_PREFIX_PATH=c:\projects\libpcap\Win32\WpdPack -G"Visual Studio 12 2013 Win64" ..
+  - msbuild -nologo -p:Configuration=Release pcap.sln
+
