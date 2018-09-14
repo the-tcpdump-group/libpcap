@@ -238,6 +238,9 @@
 /* Define to 1 if you have the <sys/dlpi.h> header file. */
 #undef HAVE_SYS_DLPI_H
 
+/* Define to 1 if you have the <sys/eventfd.h> header file. */
+#undef HAVE_SYS_EVENTFD_H
+
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #undef HAVE_SYS_IOCCOM_H
 
