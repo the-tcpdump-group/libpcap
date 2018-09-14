@@ -386,6 +386,7 @@ main(void)
         # linux/if_bonding.h requires sys/socket.h.
         #
         check_include_files("sys/socket.h;linux/if_bonding.h" HAVE_LINUX_IF_BONDING_H)
+        check_include_files("sys/eventfd.h" HAVE_SYS_EVENTFD_H)
     endif()
 endif(NOT WIN32)
 

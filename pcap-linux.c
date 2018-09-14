@@ -137,6 +137,9 @@
 #include <net/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
+#ifdef HAVE_SYS_EVENTFD_H
+#include <sys/eventfd.h>
+#endif
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -326,6 +329,10 @@ struct pcap_linux {
 	unsigned char *current_packet; /* Current packet within the TPACKET_V3 block. Move to next block if NULL. */
 	int packets_left; /* Unhandled packets left within the block from previous call to pcap_read_linux_mmap_v3 in case of TPACKET_V3. */
 #endif
+#ifdef HAVE_SYS_EVENTFD_H
+	int poll_breakloop_fd; /* fd to an eventfd to break from blocking operations */
+#endif
+
 };
 
 /*
@@ -537,6 +544,11 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 	handle->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 #endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
+
+#ifdef HAVE_SYS_EVENTFD_H
+	struct pcap_linux *handlep = handle->priv;
+	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
+#endif
 
 	return handle;
 }
@@ -1374,6 +1386,10 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		free(handlep->device);
 		handlep->device = NULL;
 	}
+
+#ifdef HAVE_SYS_EVENTFD_H
+	close(handlep->poll_breakloop_fd);
+#endif
 	pcap_cleanup_live_common(handle);
 }
 
@@ -1465,6 +1481,17 @@ set_poll_timeout(struct pcap_linux *handlep)
 	}
 }
 
+#ifdef HAVE_SYS_EVENTFD_H
+static void pcap_breakloop_linux(pcap_t *handle)
+{
+	pcap_breakloop_common(handle);
+	struct pcap_linux *handlep = handle->priv;
+
+	uint64_t value = 1;
+	write(handlep->poll_breakloop_fd, &value, sizeof(value));
+}
+#endif
+
 /*
  *  Get a handle for a live capture from the given device. You can
  *  pass NULL as device to get all packages (without link level
@@ -1520,6 +1547,9 @@ pcap_activate_linux(pcap_t *handle)
 	handle->cleanup_op = pcap_cleanup_linux;
 	handle->read_op = pcap_read_linux;
 	handle->stats_op = pcap_stats_linux;
+#ifdef HAVE_SYS_EVENTFD_H
+	handle->breakloop_op = pcap_breakloop_linux;
+#endif
 
 	/*
 	 * The "any" device is a special device which causes us not
@@ -4933,11 +4963,16 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 	char c;
-	struct pollfd pollinfo;
 	int ret;
-
-	pollinfo.fd = handle->fd;
-	pollinfo.events = POLLIN;
+#ifdef HAVE_SYS_EVENTFD_H
+	struct pollfd pollinfo[2];
+	pollinfo[1].fd = handlep->poll_breakloop_fd;
+	pollinfo[1].events = POLLIN;
+#else
+	struct pollfd pollinfo[1];
+#endif
+	pollinfo[0].fd = handle->fd;
+	pollinfo[0].events = POLLIN;
 
 	do {
 		/*
@@ -4948,26 +4983,31 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 		 * The timeout is 0 in non-blocking mode, so poll()
 		 * returns immediately.
 		 */
-		ret = poll(&pollinfo, 1, handlep->poll_timeout);
+
+#ifdef HAVE_SYS_EVENTFD_H
+		ret = poll(pollinfo, 2, handlep->poll_timeout);
+#else
+		ret = poll(pollinfo, 1, handlep->poll_timeout);
+#endif
 		if (ret < 0 && errno != EINTR) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno,
 			    "can't poll on packet socket");
 			return PCAP_ERROR;
-		} else if (ret > 0 &&
-			(pollinfo.revents & (POLLHUP|POLLRDHUP|POLLERR|POLLNVAL))) {
+		} else if (ret > 0 && pollinfo[0].revents &&
+			(pollinfo[0].revents & (POLLHUP|POLLRDHUP|POLLERR|POLLNVAL))) {
 			/*
 			 * There's some indication other than
 			 * "you can read on this descriptor" on
 			 * the descriptor.
 			 */
-			if (pollinfo.revents & (POLLHUP | POLLRDHUP)) {
+			if (pollinfo[0].revents & (POLLHUP | POLLRDHUP)) {
 				pcap_snprintf(handle->errbuf,
 					PCAP_ERRBUF_SIZE,
 					"Hangup on packet socket");
 				return PCAP_ERROR;
 			}
-			if (pollinfo.revents & POLLERR) {
+			if (pollinfo[0].revents & POLLERR) {
 				/*
 				 * A recv() will give us the actual error code.
 				 *
@@ -4996,13 +5036,21 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 				}
 				return PCAP_ERROR;
 			}
-			if (pollinfo.revents & POLLNVAL) {
+			if (pollinfo[0].revents & POLLNVAL) {
 				pcap_snprintf(handle->errbuf,
 					PCAP_ERRBUF_SIZE,
 					"Invalid polling request on packet socket");
 				return PCAP_ERROR;
 			}
 		}
+
+#ifdef HAVE_SYS_EVENTFD_H
+		if (pollinfo[1].revents & POLLIN) {
+			uint64_t value;
+			read(handlep->poll_breakloop_fd, &value, sizeof(value));
+		}
+#endif
+
 		/* check for break loop condition on interrupted syscall*/
 		if (handle->break_loop) {
 			handle->break_loop = 0;

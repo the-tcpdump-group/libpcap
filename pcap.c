@@ -2107,6 +2107,13 @@ initialize_ops(pcap_t *p)
 	 * be used for pcap_next()/pcap_next_ex().
 	 */
 	p->oneshot_callback = pcap_oneshot;
+
+    /*
+     * Default breakloop operation - implementations can override
+     * this, but should call pcap_breakloop_common() before doing
+     * their own logic.
+     */
+    p->breakloop_op = pcap_breakloop_common;
 }
 
 static pcap_t *
@@ -2597,7 +2604,7 @@ pcap_loop(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 void
 pcap_breakloop(pcap_t *p)
 {
-	p->break_loop = 1;
+	p->breakloop_op(p);
 }
 
 int
@@ -3599,6 +3606,13 @@ pcap_remove_from_pcaps_to_close(pcap_t *p)
 		}
 	}
 }
+
+void
+pcap_breakloop_common(pcap_t *p)
+{
+	p->break_loop = 1;
+}
+
 
 void
 pcap_cleanup_live_common(pcap_t *p)
