@@ -45,6 +45,7 @@ pcap_list_datalinks.3pcap
 pcap_list_tstamp_types.3pcap
 pcap_open_dead.3pcap
 pcap_open_offline.3pcap
+pcap_set_immediate_mode.3pcap
 pcap_set_tstamp_precision.3pcap
 pcap_set_tstamp_type.3pcap
 pcap_version.h

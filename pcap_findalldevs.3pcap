@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_FINDALLDEVS 3PCAP "25 July 2018"
+.TH PCAP_FINDALLDEVS 3PCAP "22 August 2018"
 .SH NAME
 pcap_findalldevs, pcap_freealldevs \- get a list of capture devices, and
 free that list
@@ -212,5 +212,20 @@ is filled in with an appropriate error message.
 is assumed to be able to hold at least
 .B PCAP_ERRBUF_SIZE
 chars.
+.SH BACKWARD COMPATIBILITY
+.PP
+The
+.B PCAP_IF_UP
+and
+.B PCAP_IF_RUNNING
+constants became available in libpcap release 1.6.1.  The
+.BR PCAP_IF_WIRELESS ,
+.BR PCAP_IF_CONNECTION_STATUS ,
+.BR PCAP_IF_CONNECTION_STATUS_UNKNOWN ,
+.BR PCAP_IF_CONNECTION_STATUS_CONNECTED ,
+.BR PCAP_IF_CONNECTION_STATUS_DISCONNECTED ,
+and
+.B PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE
+constants became available in libpcap release 1.9.0.
 .SH SEE ALSO
 pcap(3PCAP)

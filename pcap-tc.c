@@ -985,7 +985,7 @@ static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		/* No underlaying filtering system. We need to filter on our own */
 		if (p->fcode.bf_insns)
 		{
-			filterResult = bpf_filter(p->fcode.bf_insns, data, tcHeader.Length, tcHeader.CapturedLength);
+			filterResult = pcap_filter(p->fcode.bf_insns, data, tcHeader.Length, tcHeader.CapturedLength);
 
 			if (filterResult == 0)
 			{

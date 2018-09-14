@@ -6181,13 +6181,13 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 			 */
 			b0 = gen_linktype(cstate, LLCSAP_ISONS<<8 | LLCSAP_ISONS);
 			/* OSI in C-HDLC is stuffed with a fudge byte */
-			b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 1, BPF_B, (long)v);
+			b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 1, BPF_B, (bpf_int32)v);
 			gen_and(b0, b1);
 			return b1;
 
 		default:
 			b0 = gen_linktype(cstate, LLCSAP_ISONS);
-			b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 0, BPF_B, (long)v);
+			b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 0, BPF_B, (bpf_int32)v);
 			gen_and(b0, b1);
 			return b1;
 		}
@@ -6198,7 +6198,7 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 		 * 4 is the offset of the PDU type relative to the IS-IS
 		 * header.
 		 */
-		b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 4, BPF_B, (long)v);
+		b1 = gen_cmp(cstate, OR_LINKPL_NOSNAP, 4, BPF_B, (bpf_int32)v);
 		gen_and(b0, b1);
 		return b1;
 

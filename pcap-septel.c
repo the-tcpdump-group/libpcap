@@ -135,7 +135,7 @@ loop:
         caplen = packet_len;
       }
       /* Run the packet filter if there is one. */
-      if ((p->fcode.bf_insns == NULL) || bpf_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
+      if ((p->fcode.bf_insns == NULL) || pcap_filter(p->fcode.bf_insns, dp, packet_len, caplen)) {
 
 
         /*  get a time stamp , consisting of :
@@ -180,7 +180,7 @@ loop:
 
 
 static int
-septel_inject(pcap_t *handle, const void *buf _U_, size_t size _U_)
+septel_inject(pcap_t *handle, const void *buf _U_, int size _U_)
 {
   strlcpy(handle->errbuf, "Sending packets isn't supported on Septel cards",
           PCAP_ERRBUF_SIZE);

@@ -137,15 +137,15 @@
 #include <net/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
+#ifdef HAVE_SYS_EVENTFD_H
+#include <sys/eventfd.h>
+#endif
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
 #include "pcap/vlan.h"
 
-#ifdef HAVE_SYS_EVENTFD_H
-#include <sys/eventfd.h>
-#endif
-
+#include "diag-control.h"
 
 /*
  * If PF_PACKET is defined, we can use {SOCK_RAW,SOCK_DGRAM}/PF_PACKET
@@ -355,7 +355,7 @@ static int activate_mmap(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
-static int pcap_inject_linux(pcap_t *, const void *, size_t);
+static int pcap_inject_linux(pcap_t *, const void *, int);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
 static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
@@ -754,7 +754,9 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	genlmsg_put(msg, 0, 0, genl_family_get_id(state->nl80211), 0,
 		    0, NL80211_CMD_NEW_INTERFACE, 0);
 	NLA_PUT_U32(msg, NL80211_ATTR_IFINDEX, ifindex);
+DIAG_OFF_NARROWING
 	NLA_PUT_STRING(msg, NL80211_ATTR_IFNAME, mondevice);
+DIAG_ON_NARROWING
 	NLA_PUT_U32(msg, NL80211_ATTR_IFTYPE, NL80211_IFTYPE_MONITOR);
 
 	err = nl_send_auto_complete(state->nl_sock, msg);
@@ -1173,7 +1175,8 @@ linux_if_drops(const char * if_name)
 	char buffer[512];
 	char * bufptr;
 	FILE * file;
-	int field_to_convert = 3, if_name_sz = strlen(if_name);
+	int field_to_convert = 3;
+	size_t if_name_sz = strlen(if_name);
 	long int dropped_pkts = 0;
 
 	file = fopen("/proc/net/dev", "r");
@@ -1399,7 +1402,7 @@ set_poll_timeout(struct pcap_linux *handlep)
 #ifdef HAVE_TPACKET3
 	struct utsname utsname;
 	char *version_component, *endp;
-	int major, minor;
+	long major, minor;
 	int broken_tpacket_v3 = 1;
 
 	/*
@@ -1793,7 +1796,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 #else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
 	socklen_t		fromlen;
 #endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-	int			packet_len, caplen;
+	ssize_t			packet_len;
+	int			caplen;
 	struct pcap_pkthdr	pcap_header;
 
         struct bpf_aux_data     aux_data;
@@ -1979,7 +1983,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	if (handlep->vlan_offset != -1) {
 		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 			struct tpacket_auxdata *aux;
-			unsigned int len;
+			size_t len;
 			struct vlan_tag *tag;
 
 			if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
@@ -2001,8 +2005,8 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 				continue;
 			}
 
-			len = (u_int)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
-			if (len < (u_int)handlep->vlan_offset)
+			len = (size_t)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
+			if (len < (size_t)handlep->vlan_offset)
 				break;
 
 			/*
@@ -2071,14 +2075,14 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * filter to the kernel.
 	 */
 
-	caplen = packet_len;
+	caplen = (int)packet_len;
 	if (caplen > handle->snapshot)
 		caplen = handle->snapshot;
 
 	/* Run the packet filter if not using kernel filter */
 	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns, bp,
-		    packet_len, caplen, &aux_data) == 0) {
+		if (pcap_filter_with_aux_data(handle->fcode.bf_insns, bp,
+		    (int)packet_len, caplen, &aux_data) == 0) {
 			/* rejected by filter */
 			return 0;
 		}
@@ -2105,7 +2109,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
         }
 
 	pcap_header.caplen	= caplen;
-	pcap_header.len		= packet_len;
+	pcap_header.len		= (bpf_u_int32)packet_len;
 
 	/*
 	 * Count the packet.
@@ -2160,7 +2164,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 }
 
 static int
-pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
+pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 {
 	struct pcap_linux *handlep = handle->priv;
 	int ret;
@@ -2194,7 +2198,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 	}
 #endif
 
-	ret = send(handle->fd, buf, size, 0);
+	ret = (int)send(handle->fd, buf, size, 0);
 	if (ret == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "send");
@@ -4911,7 +4915,7 @@ pcap_setnonblock_mmap(pcap_t *handle, int nonblock)
 /*
  * Get the status field of the ring buffer frame at a specified offset.
  */
-static inline int
+static inline u_int
 pcap_get_ring_frame_status(pcap_t *handle, int offset)
 {
 	struct pcap_linux *handlep = handle->priv;
@@ -4920,10 +4924,18 @@ pcap_get_ring_frame_status(pcap_t *handle, int offset)
 	h.raw = RING_GET_FRAME_AT(handle, offset);
 	switch (handlep->tp_version) {
 	case TPACKET_V1:
-		return (h.h1->tp_status);
+		/*
+		 * This is an unsigned long, but only the lower 32
+		 * bits are used.
+		 */
+		return (u_int)(h.h1->tp_status);
 		break;
 	case TPACKET_V1_64:
-		return (h.h1_64->tp_status);
+		/*
+		 * This is an unsigned long in the kernel, which is 64-bit,
+		 * but only the lower 32 bits are used.
+		 */
+		return (u_int)(h.h1_64->tp_status);
 		break;
 #ifdef HAVE_TPACKET2
 	case TPACKET_V2:
@@ -5193,11 +5205,11 @@ static int pcap_handle_packet_mmap(
 		aux_data.vlan_tag_present = tp_vlan_tci_valid;
 		aux_data.vlan_tag = tp_vlan_tci & 0x0fff;
 
-		if (bpf_filter_with_aux_data(handle->fcode.bf_insns,
-					     bp,
-					     tp_len,
-					     snaplen,
-					     &aux_data) == 0)
+		if (pcap_filter_with_aux_data(handle->fcode.bf_insns,
+					      bp,
+					      tp_len,
+					      snaplen,
+					      &aux_data) == 0)
 			return 0;
 	}
 
@@ -6691,10 +6703,23 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
  * if SIOCETHTOOL isn't defined, or we don't have any #defines for any
  * of the types of offloading, there's nothing we can do to check, so
  * we just say "no, we don't".
+ *
+ * We treat EOPNOTSUPP, EINVAL and, if eperm_ok is true, EPERM as
+ * indications that the operation isn't supported.  We do EPERM
+ * weirdly because the SIOCETHTOOL code in later kernels 1) doesn't
+ * support ETHTOOL_GUFO, 2) also doesn't include it in the list
+ * of ethtool operations that don't require CAP_NET_ADMIN privileges,
+ * and 3) does the "is this permitted" check before doing the "is
+ * this even supported" check, so it fails with "this is not permitted"
+ * rather than "this is not even supported".  To work around this
+ * annoyance, we only treat EPERM as an error for the first feature,
+ * and assume that they all do the same permission checks, so if the
+ * first one is allowed all the others are allowed if supported.
  */
 #if defined(SIOCETHTOOL) && (defined(ETHTOOL_GTSO) || defined(ETHTOOL_GUFO) || defined(ETHTOOL_GGSO) || defined(ETHTOOL_GFLAGS) || defined(ETHTOOL_GGRO))
 static int
-iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
+iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname,
+    int eperm_ok)
 {
 	struct ifreq	ifr;
 	struct ethtool_value eval;
@@ -6705,7 +6730,8 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
 	if (ioctl(handle->fd, SIOCETHTOOL, &ifr) == -1) {
-		if (errno == EOPNOTSUPP || errno == EINVAL) {
+		if (errno == EOPNOTSUPP || errno == EINVAL ||
+		    (errno == EPERM && eperm_ok)) {
 			/*
 			 * OK, let's just return 0, which, in our
 			 * case, either means "no, what we're asking
@@ -6722,25 +6748,32 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname)
 	return eval.data;
 }
 
+/*
+ * XXX - it's annoying that we have to check for offloading at all, but,
+ * given that we have to, it's still annoying that we have to check for
+ * particular types of offloading, especially that shiny new types of
+ * offloading may be added - and, worse, may not be checkable with
+ * a particular ETHTOOL_ operation; ETHTOOL_GFEATURES would, in
+ * theory, give those to you, but the actual flags being used are
+ * opaque (defined in a non-uapi header), and there doesn't seem to
+ * be any obvious way to ask the kernel what all the offloading flags
+ * are - at best, you can ask for a set of strings(!) to get *names*
+ * for various flags.  (That whole mechanism appears to have been
+ * designed for the sole purpose of letting ethtool report flags
+ * by name and set flags by name, with the names having no semantics
+ * ethtool understands.)
+ */
 static int
 iface_get_offload(pcap_t *handle)
 {
 	int ret;
 
 #ifdef ETHTOOL_GTSO
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GTSO, "ETHTOOL_GTSO", 0);
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* TCP segmentation offloading on */
-#endif
-
-#ifdef ETHTOOL_GUFO
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO");
-	if (ret == -1)
-		return -1;
-	if (ret)
-		return 1;	/* UDP fragmentation offloading on */
 #endif
 
 #ifdef ETHTOOL_GGSO
@@ -6749,7 +6782,7 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on transmission?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGSO, "ETHTOOL_GGSO", 0);
 	if (ret == -1)
 		return -1;
 	if (ret)
@@ -6757,7 +6790,7 @@ iface_get_offload(pcap_t *handle)
 #endif
 
 #ifdef ETHTOOL_GFLAGS
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GFLAGS, "ETHTOOL_GFLAGS", 0);
 	if (ret == -1)
 		return -1;
 	if (ret & ETH_FLAG_LRO)
@@ -6770,11 +6803,25 @@ iface_get_offload(pcap_t *handle)
 	 * handed to PF_PACKET sockets on receipt?  If not,
 	 * this need not be checked.
 	 */
-	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO");
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GGRO, "ETHTOOL_GGRO", 0);
 	if (ret == -1)
 		return -1;
 	if (ret)
 		return 1;	/* generic (large) receive offloading on */
+#endif
+
+#ifdef ETHTOOL_GUFO
+	/*
+	 * Do this one last, as support for it was removed in later
+	 * kernels, and it fails with EPERM on those kernels rather
+	 * than with EOPNOTSUPP (see explanation in comment for
+	 * iface_ethtool_flag_ioctl()).
+	 */
+	ret = iface_ethtool_flag_ioctl(handle, ETHTOOL_GUFO, "ETHTOOL_GUFO", 1);
+	if (ret == -1)
+		return -1;
+	if (ret)
+		return 1;	/* UDP fragmentation offloading on */
 #endif
 
 	return 0;

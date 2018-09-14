@@ -124,7 +124,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
         return -1;
     }
 
-    pkth.caplen = ret - sizeof(hdr) + sizeof(pcap_bluetooth_linux_monitor_header);
+    pkth.caplen = (bpf_u_int32)(ret - sizeof(hdr) + sizeof(pcap_bluetooth_linux_monitor_header));
     pkth.len = pkth.caplen;
 
     for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
@@ -139,7 +139,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
     bthdr->opcode = htons(hdr.opcode);
 
     if (handle->fcode.bf_insns == NULL ||
-        bpf_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
+        pcap_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
         callback(user, &pkth, pktd);
         return 1;
     }
@@ -147,7 +147,7 @@ bt_monitor_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_ch
 }
 
 static int
-bt_monitor_inject(pcap_t *handle, const void *buf _U_, size_t size _U_)
+bt_monitor_inject(pcap_t *handle, const void *buf _U_, int size _U_)
 {
     pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported yet");
     return -1;

@@ -84,9 +84,6 @@
 /* libnl has new-style socket api */
 #undef HAVE_LIBNL_SOCKETS
 
-/* Define to 1 if you have the <limits.h> header file. */
-#undef HAVE_LIMITS_H
-
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #undef HAVE_LINUX_COMPILER_H
 

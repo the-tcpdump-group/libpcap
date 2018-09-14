@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-1999 Kungliga Tekniska HÃ¶gskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -525,6 +525,7 @@ pcap_asnprintf (char **ret, size_t max_sz, const char *format, ...)
 
   va_start(args, format);
   val = pcap_vasnprintf (ret, max_sz, format, args);
+  va_end(args);
 
 #ifdef PARANOIA
   {
@@ -534,14 +535,15 @@ pcap_asnprintf (char **ret, size_t max_sz, const char *format, ...)
     if (tmp == NULL)
       abort ();
 
+    va_start(args, format);
     ret2 = pcap_vsprintf (tmp, format, args);
+    va_end(args);
     if (val != ret2 || strcmp(*ret, tmp))
       abort ();
     free (tmp);
   }
 #endif
 
-  va_end(args);
   return val;
 }
 #endif

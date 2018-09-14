@@ -830,6 +830,7 @@ testme(unsigned short a)
 }
 		      ],
 		      [generates warnings from ntohs()])
+		    AC_LBL_CHECK_COMPILER_OPT($1, -Wshorten-64-to-32)
 	    fi
 	    AC_LBL_CHECK_DEPENDENCY_GENERATION_OPT()
 	    #

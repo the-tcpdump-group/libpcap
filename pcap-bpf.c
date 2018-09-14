@@ -974,7 +974,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		} else
 #endif
 		{
-			cc = read(p->fd, p->buffer, p->bufsize);
+			cc = (int)read(p->fd, p->buffer, p->bufsize);
 		}
 		if (cc < 0) {
 			/* Don't choke when we get ptraced */
@@ -1076,7 +1076,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		if (p->break_loop) {
 			p->bp = bp;
-			p->cc = ep - bp;
+			p->cc = (int)(ep - bp);
 			/*
 			 * ep is set based on the return value of read(),
 			 * but read() from a BPF device doesn't necessarily
@@ -1116,7 +1116,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #endif
 		 */
 		if (pb->filtering_in_kernel ||
-		    bpf_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
+		    pcap_filter(p->fcode.bf_insns, datap, bhp->bh_datalen, caplen)) {
 			struct pcap_pkthdr pkthdr;
 #ifdef BIOCSTSTAMP
 			struct bintime bt;
@@ -1166,7 +1166,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			bp += BPF_WORDALIGN(caplen + hdrlen);
 			if (++n >= cnt && !PACKET_COUNT_IS_UNLIMITED(cnt)) {
 				p->bp = bp;
-				p->cc = ep - bp;
+				p->cc = (int)(ep - bp);
 				/*
 				 * See comment above about p->cc < 0.
 				 */
@@ -1187,11 +1187,11 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 }
 
 static int
-pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
+pcap_inject_bpf(pcap_t *p, const void *buf, int size)
 {
 	int ret;
 
-	ret = write(p->fd, buf, size);
+	ret = (int)write(p->fd, buf, size);
 #ifdef __APPLE__
 	if (ret == -1 && errno == EAFNOSUPPORT) {
 		/*
@@ -1223,7 +1223,7 @@ pcap_inject_bpf(pcap_t *p, const void *buf, size_t size)
 		/*
 		 * Now try the write again.
 		 */
-		ret = write(p->fd, buf, size);
+		ret = (int)write(p->fd, buf, size);
 	}
 #endif /* __APPLE__ */
 	if (ret == -1) {

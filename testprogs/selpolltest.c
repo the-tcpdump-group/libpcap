@@ -272,7 +272,7 @@ main(int argc, char **argv)
 				polltimeout = 1;
 			else if (required_timeout != NULL &&
 			    required_timeout->tv_usec >= 1000)
-				polltimeout = required_timeout->tv_usec/1000;
+				polltimeout = (int)(required_timeout->tv_usec/1000);
 			else
 				polltimeout = -1;
 			status = poll(&fd, (selectable_fd == -1) ? 0 : 1, polltimeout);

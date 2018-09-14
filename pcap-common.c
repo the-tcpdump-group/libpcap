@@ -1086,7 +1086,23 @@
  */
 #define LINKTYPE_LINUX_SLL2	276
 
-#define LINKTYPE_MATCHING_MAX	276		/* highest value in the "matching" range */
+/*
+ * Sercos Monitor, per Manuel Jacob <manuel.jacob at steinbeis-stg.de>
+ */
+#define LINKTYPE_SERCOS_MONITOR 277
+
+/*
+ * OpenVizsla http://openvizsla.org is open source USB analyzer hardware.
+ * It consists of FPGA with attached USB phy and FTDI chip for streaming
+ * the data to the host PC.
+ *
+ * Current OpenVizsla data encapsulation format is described here:
+ * https://github.com/matwey/libopenvizsla/wiki/OpenVizsla-protocol-description
+ *
+ */
+#define LINKTYPE_OPENVIZSLA     278
+
+#define LINKTYPE_MATCHING_MAX	278		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

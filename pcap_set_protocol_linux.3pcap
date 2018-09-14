@@ -62,5 +62,7 @@ but can be filtered by specifying the socket-layer protocol type using
 returns 0 on success or
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.
+.SH BACKWARD COMPATIBILITY
+This function became available in libpcap release 1.9.0.
 .SH SEE ALSO
 pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP)

@@ -9,7 +9,7 @@ if(POLICY CMP0042)
     cmake_policy(SET CMP0042 OLD)
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
 
@@ -233,7 +233,7 @@ option(DISABLE_RDMA "Disable RDMA sniffing support" OFF)
 option(DISABLE_DAG "Disable Endace DAG card support" OFF)
 
 option(DISABLE_SEPTEL "Disable Septel card support" OFF)
-set(SEPTEL_ROOT "${CMAKE_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
+set(SEPTEL_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../septel" CACHE PATH "Path to directory with include and lib subdirectories for Septel API")
 
 option(DISABLE_SNF "Disable Myricom SNF support" OFF)
 
@@ -358,7 +358,6 @@ if(NOT WIN32)
     check_include_file(sys/sockio.h HAVE_SYS_SOCKIO_H)
     check_include_file(sys/select.h HAVE_SYS_SELECT_H)
 endif(NOT WIN32)
-check_include_file(limits.h HAVE_LIMITS_H)
 if(NOT WIN32)
     check_include_file(netpacket/packet.h HAVE_NETPACKET_PACKET_H)
     check_include_files("sys/types.h;sys/socket.h;net/if.h;net/pfvar.h" HAVE_NET_PFVAR_H)
@@ -932,12 +931,15 @@ else()
             # as it's a Linux, it should use packet sockets,
             # instead.
             #
-            #
             # We need:
             #
             #  sys/types.h, because FreeBSD 10's net/bpf.h
             #  requires that various BSD-style integer types
             #  be defined;
+            #
+            #  sys/time.h, because AIX 5.2 and 5.3's net/bpf.h
+            #  doesn't include it but does use struct timeval
+            #  in ioctl definitions;
             #
             #  sys/ioctl.h and, if we have it, sys/ioccom.h,
             #  because net/bpf.h defines ioctls;
@@ -953,9 +955,9 @@ else()
             # of those headers itself.
             #
             if(HAVE_SYS_IOCCOM_H)
-                check_symbol_exists(BIOCSETIF "sys/types.h;sys/ioctl.h;sys/socket.h;sys/ioccom.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
+                check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;sys/ioccom.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             else(HAVE_SYS_IOCCOM_H)
-                check_symbol_exists(BIOCSETIF "sys/types.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
+                check_symbol_exists(BIOCSETIF "sys/types.h;sys/time.h;sys/ioctl.h;sys/socket.h;net/bpf.h;net/if.h" BPF_H_DEFINES_BIOCSETIF)
             endif(HAVE_SYS_IOCCOM_H)
         endif(HAVE_NET_BPF_H)
         check_include_file(net/pfilt.h HAVE_NET_PFILT_H)
@@ -1583,7 +1585,7 @@ if(ENABLE_REMOTE)
     # the check.
     #
     cmake_push_check_state()
-    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_SOURCE_DIR})
+    set(CMAKE_REQUIRED_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
     check_struct_has_member("struct msghdr" msg_control "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_FLAGS)
     cmake_pop_check_state()
@@ -1598,7 +1600,7 @@ endif(ENABLE_REMOTE)
 #
 # Check and add warning options if we have a .devel file.
 #
-if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
     #
     # Warning options.
     #
@@ -1664,21 +1666,22 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.devel)
         # they might support GCC-style -W options.
         #
         check_and_add_compiler_option(-Wall)
-        check_and_add_compiler_option(-Wsign-compare)
-        check_and_add_compiler_option(-Wmissing-prototypes)
-        check_and_add_compiler_option(-Wstrict-prototypes)
-        check_and_add_compiler_option(-Wshadow)
-        check_and_add_compiler_option(-Wdeclaration-after-statement)
-        check_and_add_compiler_option(-Wused-but-marked-unused)
-        check_and_add_compiler_option(-Wdocumentation)
         check_and_add_compiler_option(-Wcomma)
-        check_and_add_compiler_option(-Wmissing-noreturn)
         # Warns about safeguards added in case the enums are extended
         # check_and_add_compiler_option(-Wcovered-switch-default)
-        check_and_add_compiler_option(-Wmissing-variable-declarations)
-        check_and_add_compiler_option(-Wunused-parameter)
+        check_and_add_compiler_option(-Wdeclaration-after-statement)
+        check_and_add_compiler_option(-Wdocumentation)
         check_and_add_compiler_option(-Wformat-nonliteral)
+        check_and_add_compiler_option(-Wmissing-noreturn)
+        check_and_add_compiler_option(-Wmissing-prototypes)
+        check_and_add_compiler_option(-Wmissing-variable-declarations)
+        check_and_add_compiler_option(-Wshadow)
+        check_and_add_compiler_option(-Wsign-compare)
+        check_and_add_compiler_option(-Wshorten-64-to-32)
+        check_and_add_compiler_option(-Wstrict-prototypes)
         check_and_add_compiler_option(-Wunreachable-code)
+        check_and_add_compiler_option(-Wunused-parameter)
+        check_and_add_compiler_option(-Wused-but-marked-unused)
     endif()
 endif()
 
@@ -1809,10 +1812,12 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/grammar.c PROPERTIES
 
 #
 # Assume, by default, no support for shared libraries and V7/BSD
-# convention for man pages (file formats in section 5, miscellaneous
-# info in section 7, administrative commands and daemons in section 8).
+# convention for man pages (devices in section 4, file formats in
+# section 5, miscellaneous info in section 7, administrative commands
+# and daemons in section 8).  Individual cases can override this.
 # Individual cases can override this.
 #
+set(MAN_DEVICES 4)
 set(MAN_FILE_FORMATS 5)
 set(MAN_MISC_INFO 7)
 set(MAN_ADMIN_COMMANDS 8)
@@ -1870,6 +1875,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "OSF1")
     #
     set(MAN_FILE_FORMATS 4)
     set(MAN_MISC_INFO 5)
+    set(MAN_DEVICES 7)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.][0-9.]*")
     #
     # SunOS 5.x.
@@ -1893,6 +1899,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
         set(MAN_ADMIN_COMMANDS 1m)
         set(MAN_FILE_FORMATS 4)
         set(MAN_MISC_INFO 5)
+        set(MAN_DEVICES 7D)
     endif()
 endif()
 
@@ -2080,6 +2087,7 @@ set(MAN3PCAP_EXPAND
     pcap_list_tstamp_types.3pcap.in
     pcap_open_dead.3pcap.in
     pcap_open_offline.3pcap.in
+    pcap_set_immediate_mode.3pcap.in
     pcap_set_tstamp_precision.3pcap.in
     pcap_set_tstamp_type.3pcap.in
 )
@@ -2115,7 +2123,6 @@ set(MAN3PCAP_NOEXPAND
     pcap_open_live.3pcap
     pcap_set_buffer_size.3pcap
     pcap_set_datalink.3pcap
-    pcap_set_immediate_mode.3pcap
     pcap_set_promisc.3pcap
     pcap_set_protocol_linux.3pcap
     pcap_set_rfmon.3pcap
@@ -2226,8 +2233,8 @@ if(NOT MSVC)
     foreach(LIB ${PCAP_LINK_LIBRARIES})
         set(LIBS "${LIBS} -l${LIB}")
     endforeach(LIB)
-    configure_file(${CMAKE_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
-    configure_file(${CMAKE_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/pcap-config.in ${CMAKE_CURRENT_BINARY_DIR}/pcap-config @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libpcap.pc.in ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc @ONLY)
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pcap-config DESTINATION bin)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libpcap.pc DESTINATION lib/pkgconfig)
 
@@ -2239,17 +2246,17 @@ if(NOT MSVC)
     #
     set(MAN1 "")
     foreach(MANPAGE ${MAN1_NOEXPAND})
-        set(MAN1 ${MAN1} ${CMAKE_SOURCE_DIR}/${MANPAGE})
+        set(MAN1 ${MAN1} ${CMAKE_CURRENT_SOURCE_DIR}/${MANPAGE})
     endforeach(MANPAGE)
     install(FILES ${MAN1} DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
     set(MAN3PCAP "")
     foreach(MANPAGE ${MAN3PCAP_NOEXPAND})
-        set(MAN3PCAP ${MAN3PCAP} ${CMAKE_SOURCE_DIR}/${MANPAGE})
+        set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_SOURCE_DIR}/${MANPAGE})
     endforeach(MANPAGE)
     foreach(TEMPLATE_MANPAGE ${MAN3PCAP_EXPAND})
         string(REPLACE ".in" "" MANPAGE ${TEMPLATE_MANPAGE})
-        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MAN3PCAP ${MAN3PCAP} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MAN3PCAP} DESTINATION ${CMAKE_INSTALL_MANDIR}/man3)
@@ -2273,7 +2280,7 @@ if(NOT MSVC)
     set(MANFILE "")
     foreach(TEMPLATE_MANPAGE ${MANFILE_EXPAND})
         string(REPLACE ".manfile.in" ".${MAN_FILE_FORMATS}" MANPAGE ${TEMPLATE_MANPAGE})
-        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MANFILE ${MANFILE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MANFILE} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_FILE_FORMATS})
@@ -2281,7 +2288,7 @@ if(NOT MSVC)
     set(MANMISC "")
     foreach(TEMPLATE_MANPAGE ${MANMISC_EXPAND})
         string(REPLACE ".manmisc.in" ".${MAN_MISC_INFO}" MANPAGE ${TEMPLATE_MANPAGE})
-        configure_file(${CMAKE_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${TEMPLATE_MANPAGE} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE} @ONLY)
         set(MANMISC ${MANMISC} ${CMAKE_CURRENT_BINARY_DIR}/${MANPAGE})
     endforeach(TEMPLATE_MANPAGE)
     install(FILES ${MANMISC} DESTINATION ${CMAKE_INSTALL_MANDIR}/man${MAN_MISC_INFO})

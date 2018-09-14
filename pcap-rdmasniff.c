@@ -57,7 +57,7 @@ struct pcap_rdmasniff {
 	struct ibv_flow *               flow;
 	struct ibv_mr *			mr;
 	u_char *			oneshot_buffer;
-	unsigned			port_num;
+	unsigned long			port_num;
 	int                             cq_event;
 	u_int                           packets_recv;
 };
@@ -156,7 +156,7 @@ rdmasniff_read(pcap_t *handle, int max_packets, pcap_handler callback, u_char *u
 		pktd = (u_char *) handle->buffer + wc.wr_id * RDMASNIFF_RECEIVE_SIZE;
 
 		if (handle->fcode.bf_insns == NULL ||
-		    bpf_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
+		    pcap_filter(handle->fcode.bf_insns, pktd, pkth.len, pkth.caplen)) {
 			callback(user, &pkth, pktd);
 			++priv->packets_recv;
 			++count;
@@ -361,7 +361,7 @@ rdmasniff_create(const char *device, char *ebuf, int *is_ours)
 	int numdev;
 	size_t namelen;
 	const char *port;
-	unsigned port_num;
+	unsigned long port_num;
 	int i;
 	pcap_t *p = NULL;
 

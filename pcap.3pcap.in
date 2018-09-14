@@ -191,6 +191,10 @@ expires even if no packets have arrived.
 .IP
 The packet buffer timeout is set with
 .BR pcap_set_timeout ().
+.IP "immediate mode"
+In immediate mode, packets are always delivered as soon as they arrive,
+with no buffering.  Immediate mode is set with
+.BR pcap_set_immediate_mode ().
 .IP "buffer size"
 Packets that arrive for a capture are stored in a buffer, so that they
 do not have to be read by the application as soon as they arrive.  On
@@ -413,6 +417,11 @@ for live capture
 .TP
 .BR pcap_set_timeout (3PCAP)
 set packet buffer timeout for a not-yet-activated
+.B pcap_t
+for live capture
+.TP
+.BR pcap_set_immediate mode (3PCAP)
+set immediate mode for a not-yet-activated
 .B pcap_t
 for live capture
 .TP
@@ -918,7 +927,7 @@ To get a string giving version information about libpcap, call
 .BR pcap_lib_version (3PCAP)
 get library version string
 .RE
-.SH BACKWARDS COMPATIBILITY
+.SH BACKWARD COMPATIBILITY
 .PP
 In versions of libpcap prior to 1.0, the
 .B pcap.h

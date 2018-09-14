@@ -47,7 +47,7 @@ dnl in "aclocal.m4" uses it, so we would still have to test for it
 dnl and set "HAVE_SYS_IOCCOM_H" if we have it, otherwise
 dnl "AC_LBL_FIXINCLUDES" wouldn't work on some platforms such as Solaris.
 dnl
-AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h limits.h)
+AC_CHECK_HEADERS(sys/ioccom.h sys/sockio.h)
 AC_CHECK_HEADERS(netpacket/packet.h)
 AC_CHECK_HEADERS(net/pfvar.h, , , [#include <sys/types.h>
 #include <sys/socket.h>
@@ -536,6 +536,10 @@ else
 		#  requires that various BSD-style integer types
 		#  be defined;
 		#
+		#  sys/time.h, because AIX 5.2 and 5.3's net/bpf.h
+		#  doesn't include it but does use struct timeval
+		#  in ioctl definitions;
+		#
 		#  sys/ioctl.h and, if we have it, sys/ioccom.h,
 		#  because net/bpf.h defines ioctls;
 		#
@@ -554,6 +558,7 @@ else
 			AC_TRY_COMPILE(
 [
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_IOCCOM_H
@@ -1522,11 +1527,12 @@ fi
 # Do various checks for various OSes and versions of those OSes.
 #
 # Assume, by default, no support for shared libraries and V7/BSD
-# convention for man pages (file formats in section 5, miscellaneous
-# info in section 7, administrative commands and daemons in section 8).
-# Individual cases can override this.
+# convention for man pages (devices in section 4, file formats in
+# section 5, miscellaneous info in section 7, administrative commands
+# and daemons in section 8).  Individual cases can override this.
 #
 DYEXT="none"
+MAN_DEVICES=4
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
 MAN_ADMIN_COMMANDS=8
@@ -1751,6 +1757,7 @@ osf*)
 	#
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
+	MAN_DEVICES=7
 	;;
 
 sinix*)
@@ -1794,6 +1801,7 @@ solaris*)
 		MAN_ADMIN_COMMANDS=1m
 		MAN_FILE_FORMATS=4
 		MAN_MISC_INFO=5
+		MAN_DEVICES=7D
 	esac
 	;;
 esac
@@ -1862,6 +1870,7 @@ AC_SUBST(ADDLOBJS)
 AC_SUBST(ADDLARCHIVEOBJS)
 AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
+AC_SUBST(MAN_DEVICES)
 AC_SUBST(MAN_FILE_FORMATS)
 AC_SUBST(MAN_MISC_INFO)
 AC_SUBST(MAN_ADMIN_COMMANDS)
@@ -2257,7 +2266,7 @@ AC_OUTPUT(Makefile pcap-filter.manmisc pcap-linktype.manmisc
 	pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap
 	pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap
 	pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap
-	pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap
-	pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin
-	testprogs/Makefile)
+	pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap
+	pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap
+	rpcapd/Makefile rpcapd/rpcapd.manadmin testprogs/Makefile)
 exit 0

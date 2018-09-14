@@ -53,6 +53,12 @@
    * don't have it, either?
    */
   typedef int socklen_t;
+
+  /*
+   * Winsock doesn't have this POSIX type; it's used for the
+   * tv_usec value of struct timeval.
+   */
+  typedef long suseconds_t;
 #else
   /* UN*X */
   #include <stdio.h>

@@ -65,6 +65,14 @@
     __pragma(warning(disable:4244)) \
     __pragma(warning(disable:4702))
   #define DIAG_ON_FLEX  __pragma(warning(pop))
+
+  /*
+   * Suppress narrowing warnings.
+   */
+  #define DIAG_OFF_NARROWING \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4242))
+  #define DIAG_ON_NARROWING  __pragma(warning(pop))
 #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
   /*
    * This is Clang 2.8 or later; we can use "clang diagnostic
@@ -79,10 +87,21 @@
     PCAP_DO_PRAGMA(clang diagnostic push) \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wsign-compare") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdocumentation") \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wmissing-noreturn") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunused-parameter") \
     PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
   #define DIAG_ON_FLEX \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  /*
+   * Suppress the only narrowing warnings you get from Clang.
+   */
+  #define DIAG_OFF_NARROWING \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshorten-64-to-32")
+
+  #define DIAG_ON_NARROWING \
     PCAP_DO_PRAGMA(clang diagnostic pop)
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
@@ -97,6 +116,12 @@
     PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
   #define DIAG_ON_FLEX \
     PCAP_DO_PRAGMA(GCC diagnostic pop)
+
+  /*
+   * GCC currently doesn't issue any narrowing warnings.
+   */
+  #define DIAG_OFF_NARROWING
+  #define DIAG_ON_NARROWING
 #else
   /*
    * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
@@ -105,6 +130,8 @@
    */
   #define DIAG_OFF_FLEX
   #define DIAG_ON_FLEX
+  #define DIAG_OFF_NARROWING
+  #define DIAG_ON_NARROWING
 #endif
 
 #ifdef YYBYACC
@@ -127,42 +154,33 @@
   #if defined(_MSC_VER)
     /*
      * This is Microsoft Visual Studio; we can use
-     * __pragma(warning(disable:XXXX)) and __pragma(warning(push/pop)).
+     * __pragma(warning(disable:XXXX)).
      */
     #define DIAG_OFF_BISON_BYACC \
-      __pragma(warning(push)) \
       __pragma(warning(disable:4702))
-    #define DIAG_ON_BISON_BYACC  __pragma(warning(pop))
   #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
-     * ignored -Wxxx" and "clang diagnostic push/pop".
+     * ignored -Wxxx".
      */
     #define DIAG_OFF_BISON_BYACC \
-      PCAP_DO_PRAGMA(clang diagnostic push) \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wshadow") \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
-    #define DIAG_ON_BISON_BYACC \
-      PCAP_DO_PRAGMA(clang diagnostic pop)
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
     /*
      * This is GCC 4.6 or later, or a compiler claiming to be that.
-     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2)
-     * and "GCC diagnostic push/pop" (introduced in 4.6).
+     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2,
+     * but it may not actually work very well prior to 4.6).
      */
     #define DIAG_OFF_BISON_BYACC \
-      PCAP_DO_PRAGMA(GCC diagnostic push) \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wshadow") \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
-    #define DIAG_ON_BISON_BYACC \
-      PCAP_DO_PRAGMA(GCC diagnostic pop)
   #else
     /*
      * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
      * claiming to be that; there's nothing we know of that we can do.
      */
     #define DIAG_OFF_BISON_BYACC
-    #define DIAG_ON_BISON_BYACC
   #endif
 #else
   /*
@@ -174,45 +192,36 @@
   #if defined(_MSC_VER)
     /*
      * This is Microsoft Visual Studio; we can use
-     * __pragma(warning(disable:XXXX)) and __pragma(warning(push/pop)).
+     * __pragma(warning(disable:XXXX)).
      *
      * Suppress some /Wall warnings.
      */
     #define DIAG_OFF_BISON_BYACC \
-      __pragma(warning(push)) \
       __pragma(warning(disable:4127)) \
       __pragma(warning(disable:4242)) \
       __pragma(warning(disable:4244)) \
       __pragma(warning(disable:4702))
-    #define DIAG_ON_BISON_BYACC  __pragma(warning(pop))
   #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
     /*
      * This is Clang 2.8 or later; we can use "clang diagnostic
-     * ignored -Wxxx" and "clang diagnostic push/pop".
+     * ignored -Wxxx".
      */
     #define DIAG_OFF_BISON_BYACC \
-      PCAP_DO_PRAGMA(clang diagnostic push) \
       PCAP_DO_PRAGMA(clang diagnostic ignored "-Wunreachable-code")
-    #define DIAG_ON_BISON_BYACC \
-      PCAP_DO_PRAGMA(clang diagnostic pop)
   #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
     /*
      * This is GCC 4.6 or later, or a compiler claiming to be that.
-     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2)
-     * and "GCC diagnostic push/pop" (introduced in 4.6).
+     * We can use "GCC diagnostic ignored -Wxxx" (introduced in 4.2,
+     * but it may not actually work very well prior to 4.6).
      */
     #define DIAG_OFF_BISON_BYACC \
-      PCAP_DO_PRAGMA(GCC diagnostic push) \
       PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wunreachable-code")
-    #define DIAG_ON_BISON_BYACC \
-      PCAP_DO_PRAGMA(GCC diagnostic pop)
   #else
     /*
      * Neither Clang 2.8 or later nor GCC 4.6 or later or a compiler
      * claiming to be that; there's nothing we know of that we can do.
      */
     #define DIAG_OFF_BISON_BYACC
-    #define DIAG_ON_BISON_BYACC
   #endif
 #endif
 

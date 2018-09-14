@@ -645,6 +645,7 @@ PTHREAD_LIBS
 MAN_ADMIN_COMMANDS
 MAN_MISC_INFO
 MAN_FILE_FORMATS
+MAN_DEVICES
 DYEXT
 SSRC
 ADDLARCHIVEOBJS
@@ -4853,7 +4854,7 @@ fi
 done
 
 
-for ac_header in sys/ioccom.h sys/sockio.h limits.h
+for ac_header in sys/ioccom.h sys/sockio.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -5941,6 +5942,10 @@ done
 		#  requires that various BSD-style integer types
 		#  be defined;
 		#
+		#  sys/time.h, because AIX 5.2 and 5.3's net/bpf.h
+		#  doesn't include it but does use struct timeval
+		#  in ioctl definitions;
+		#
 		#  sys/ioctl.h and, if we have it, sys/ioccom.h,
 		#  because net/bpf.h defines ioctls;
 		#
@@ -5963,6 +5968,7 @@ else
 /* end confdefs.h.  */
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_IOCCOM_H
@@ -7945,11 +7951,12 @@ fi
 # Do various checks for various OSes and versions of those OSes.
 #
 # Assume, by default, no support for shared libraries and V7/BSD
-# convention for man pages (file formats in section 5, miscellaneous
-# info in section 7, administrative commands and daemons in section 8).
-# Individual cases can override this.
+# convention for man pages (devices in section 4, file formats in
+# section 5, miscellaneous info in section 7, administrative commands
+# and daemons in section 8).  Individual cases can override this.
 #
 DYEXT="none"
+MAN_DEVICES=4
 MAN_FILE_FORMATS=5
 MAN_MISC_INFO=7
 MAN_ADMIN_COMMANDS=8
@@ -8178,6 +8185,7 @@ osf*)
 	#
 	MAN_FILE_FORMATS=4
 	MAN_MISC_INFO=5
+	MAN_DEVICES=7
 	;;
 
 sinix*)
@@ -8243,6 +8251,7 @@ $as_echo "#define HAVE_SOLARIS 1" >>confdefs.h
 		MAN_ADMIN_COMMANDS=1m
 		MAN_FILE_FORMATS=4
 		MAN_MISC_INFO=5
+		MAN_DEVICES=7D
 	esac
 	;;
 esac
@@ -9761,6 +9770,88 @@ $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports the -Wshorten-64-to-32 option" >&5
+$as_echo_n "checking whether the compiler supports the -Wshorten-64-to-32 option... " >&6; }
+	save_CFLAGS="$CFLAGS"
+	if expr "x-Wshorten-64-to-32" : "x-W.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS $ac_lbl_unknown_warning_option_error -Wshorten-64-to-32"
+	elif expr "x-Wshorten-64-to-32" : "x-f.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshorten-64-to-32"
+	elif expr "x-Wshorten-64-to-32" : "x-m.*" >/dev/null
+	then
+	    CFLAGS="$CFLAGS -Werror -Wshorten-64-to-32"
+	else
+	    CFLAGS="$CFLAGS -Wshorten-64-to-32"
+	fi
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+return 0
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		can_add_to_cflags=yes
+		#
+		# The compile supports this; do we have some C code for
+		# which the warning should *not* appear?
+		# We test the fourth argument because the third argument
+		# could contain quotes, breaking the test.
+		#
+		if test "x" != "x"
+		then
+		    CFLAGS="$CFLAGS $ac_lbl_cc_force_warning_errors"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether -Wshorten-64-to-32 " >&5
+$as_echo_n "checking whether -Wshorten-64-to-32 ... " >&6; }
+		    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+			#
+			# Not a problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+else
+
+			#
+			# A problem.
+			#
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			can_add_to_cflags=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+		fi
+		CFLAGS="$save_CFLAGS"
+		if test x"$can_add_to_cflags" = "xyes"
+		then
+		    V_CCOPT="$V_CCOPT -Wshorten-64-to-32"
+		fi
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+		CFLAGS="$save_CFLAGS"
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 	    fi
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports generating dependencies" >&5
@@ -9946,6 +10037,7 @@ _ACEOF
 
 
 fi
+
 
 
 
@@ -10711,7 +10803,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_commands="$ac_config_commands default-1"
 
-ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin testprogs/Makefile"
+ac_config_files="$ac_config_files Makefile pcap-filter.manmisc pcap-linktype.manmisc pcap-tstamp.manmisc pcap-savefile.manfile pcap.3pcap pcap_compile.3pcap pcap_datalink.3pcap pcap_dump_open.3pcap pcap_get_tstamp_precision.3pcap pcap_list_datalinks.3pcap pcap_list_tstamp_types.3pcap pcap_open_dead.3pcap pcap_open_offline.3pcap pcap_set_immediate_mode.3pcap pcap_set_tstamp_precision.3pcap pcap_set_tstamp_type.3pcap rpcapd/Makefile rpcapd/rpcapd.manadmin testprogs/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -11428,6 +11520,7 @@ do
     "pcap_list_tstamp_types.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_list_tstamp_types.3pcap" ;;
     "pcap_open_dead.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_open_dead.3pcap" ;;
     "pcap_open_offline.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_open_offline.3pcap" ;;
+    "pcap_set_immediate_mode.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_immediate_mode.3pcap" ;;
     "pcap_set_tstamp_precision.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_tstamp_precision.3pcap" ;;
     "pcap_set_tstamp_type.3pcap") CONFIG_FILES="$CONFIG_FILES pcap_set_tstamp_type.3pcap" ;;
     "rpcapd/Makefile") CONFIG_FILES="$CONFIG_FILES rpcapd/Makefile" ;;

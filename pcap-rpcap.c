@@ -388,7 +388,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 	 * 'timeout', in pcap_t, is in milliseconds; we have to convert it into sec and microsec
 	 */
 	tv.tv_sec = p->opt.timeout / 1000;
-	tv.tv_usec = (p->opt.timeout - tv.tv_sec * 1000) * 1000;
+	tv.tv_usec = (suseconds_t)((p->opt.timeout - tv.tv_sec * 1000) * 1000);
 
 	/* Watch out sockdata to see if it has input */
 	FD_ZERO(&rfds);
@@ -2277,7 +2277,7 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 		goto error;
 
 	/* Discard the rest of the message, if there is any. */
-	if (rpcap_discard(pr->rmt_sockctrl, plen, errbuf) == -1)
+	if (rpcap_discard(sockctrl, plen, errbuf) == -1)
 		goto error_nodiscard;
 
 	/* Set proper fields into the pcap_t struct */
@@ -2314,7 +2314,7 @@ error:
 	 * We already reported an error; if this gets an error, just
 	 * drive on.
 	 */
-	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
+	(void)rpcap_discard(sockctrl, plen, NULL);
 
 error_nodiscard:
 	if (!active)

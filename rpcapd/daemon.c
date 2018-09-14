@@ -39,6 +39,7 @@
 #include <errno.h>		// for the errno variable
 #include <stdlib.h>		// for malloc(), free(), ...
 #include <string.h>		// for strlen(), ...
+#include <limits.h>		// for INT_MAX
 
 #ifdef _WIN32
   #include <process.h>		// for threads
@@ -212,7 +213,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 
 			FD_SET(pars.sockctrl_in, &rfds);
 
-			retval = select(pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
+			retval = select((int)pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
 				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
@@ -491,7 +492,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, int isactive, int nu
 
 			FD_SET(pars.sockctrl_in, &rfds);
 
-			retval = select(pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
+			retval = select((int)pars.sockctrl_in + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
 				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
@@ -2020,6 +2021,9 @@ daemon_unpackapplyfilter(SOCKET sockctrl_in, struct session *session, uint32 *pl
 		bf_insn++;
 	}
 
+	//
+	// XXX - pcap_setfilter() should do the validation for us.
+	//
 	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
 	{
 		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
@@ -2267,7 +2271,21 @@ daemon_thrdatamain(void *ptr)
 	//
 	// So we don't need to make sure that sendbufsize will overflow.
 	//
+	// However, we *do* need to make sure its value fits in an int,
+	// because sock_send() can't send more than INT_MAX bytes (it could
+	// do so on 64-bit UN*Xes, but can't do so on Windows, not even
+	// 64-bit Windows, as the send() buffer size argument is an int
+	// in Winsock).
+	//
 	sendbufsize = sizeof(struct rpcap_header) + sizeof(struct rpcap_pkthdr) + pcap_snapshot(session->fp);
+	if (sendbufsize > INT_MAX)
+	{
+		rpcapd_log(LOGPRIO_ERROR,
+		    "Buffer size for this child thread would be larger than %d",
+		    INT_MAX);
+		sendbuf = NULL;	// we haven't allocated a buffer, so nothing to free
+		goto error;
+	}
 	sendbuf = (char *) malloc (sendbufsize);
 	if (sendbuf == NULL)
 	{
@@ -2308,7 +2326,7 @@ daemon_thrdatamain(void *ptr)
 
 		// Bufferize the general header
 		if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
-		    &sendbufidx, sendbufsize, SOCKBUF_CHECKONLY, errbuf,
+		    &sendbufidx, (int)sendbufsize, SOCKBUF_CHECKONLY, errbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
@@ -2325,7 +2343,7 @@ daemon_thrdatamain(void *ptr)
 
 		// Bufferize the pkt header
 		if (sock_bufferize(NULL, sizeof(struct rpcap_pkthdr), NULL,
-		    &sendbufidx, sendbufsize, SOCKBUF_CHECKONLY, errbuf,
+		    &sendbufidx, (int)sendbufsize, SOCKBUF_CHECKONLY, errbuf,
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,
@@ -2337,12 +2355,16 @@ daemon_thrdatamain(void *ptr)
 		net_pkt_header->caplen = htonl(pkt_header->caplen);
 		net_pkt_header->len = htonl(pkt_header->len);
 		net_pkt_header->npkt = htonl(++(session->TotCapt));
-		net_pkt_header->timestamp_sec = htonl(pkt_header->ts.tv_sec);
-		net_pkt_header->timestamp_usec = htonl(pkt_header->ts.tv_usec);
+		//
+		// This protocol needs to be updated with a new version
+		// before 2038-01-19 03:14:07 UTC.
+		//
+		net_pkt_header->timestamp_sec = (uint32)htonl(pkt_header->ts.tv_sec);
+		net_pkt_header->timestamp_usec = (uint32)htonl(pkt_header->ts.tv_usec);
 
 		// Bufferize the pkt data
 		if (sock_bufferize((char *) pkt_data, pkt_header->caplen,
-		    sendbuf, &sendbufidx, sendbufsize, SOCKBUF_BUFFERIZE,
+		    sendbuf, &sendbufidx, (int)sendbufsize, SOCKBUF_BUFFERIZE,
 		    errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
 			rpcapd_log(LOGPRIO_ERROR,

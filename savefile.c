@@ -216,7 +216,7 @@ sf_get_airpcap_handle(pcap_t *pcap)
 #endif
 
 static int
-sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
+sf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
 	    PCAP_ERRBUF_SIZE);
@@ -501,7 +501,7 @@ pcap_offline_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		}
 
 		if ((fcode = p->fcode.bf_insns) == NULL ||
-		    bpf_filter(fcode, data, h.len, h.caplen)) {
+		    pcap_filter(fcode, data, h.len, h.caplen)) {
 			(*callback)(user, &h, data);
 			if (++n >= cnt && cnt > 0)
 				break;
