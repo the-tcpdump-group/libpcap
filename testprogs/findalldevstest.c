@@ -94,7 +94,11 @@ getpass(const char *prompt)
 }
 #endif
 
+#ifdef ENABLE_REMOTE
 int main(int argc, char **argv)
+#else
+int main(int argc _U_, char **argv _U_)
+#endif
 {
   pcap_if_t *alldevs;
   pcap_if_t *d;
