@@ -100,6 +100,21 @@ The Regents of the University of California.  All rights reserved.\n";
 
 #endif
 
+/*
+ * Squelch a warning.
+ *
+ * We include system headers to be able to directly set the filter to
+ * a program with uninitialized content, to make sure what we're testing
+ * is Valgrind's checking of the system call to set the filter, and we
+ * also include <pcap.h> to open the device in the first place, and that
+ * means that we may get collisions between their definitions of
+ * BPF_STMT - and do, in fact, get them on Linux (the definitons may be
+ * semantically the same, but that's not sufficient to avoid the warnings,
+ * as the preprocessor doesn't know that u_short is just unsigned short).
+ *
+ * So we undefine BPF_STMT to avoid the warning.
+ */
+#undef BPF_STMT
 #include <pcap.h>
 
 static char *program_name;
