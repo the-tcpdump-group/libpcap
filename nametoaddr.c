@@ -135,6 +135,8 @@
 
 #include "pcap-int.h"
 
+#include "diag-control.h"
+
 #include "gencode.h"
 #include <pcap/namedb.h>
 #include "nametoaddr.h"
@@ -162,7 +164,23 @@ pcap_nametoaddr(const char *name)
 	bpf_u_int32 **p;
 	struct hostent *hp;
 
+	/*
+	 * gethostbyname() is deprecated on Windows, perhaps because
+	 * it's not thread-safe, or because it doesn't support IPv6,
+	 * or both.
+	 *
+	 * We deprecate pcap_nametoaddr() on all platforms because
+	 * it's not thread-safe; we supply it for backwards compatibility,
+	 * so suppress the deprecation warning.  We could, I guess,
+	 * use getaddrinfo() and construct the array ourselves, but
+	 * that's probably not worth the effort, as that wouldn't make
+	 * this thread-safe - we can't change the API to require that
+	 * our caller free the address array, so we still have to reuse
+	 * a local array.
+	 */
+DIAG_OFF_DEPRECATION
 	if ((hp = gethostbyname(name)) != NULL) {
+DIAG_ON_DEPRECATION
 #ifndef h_addr
 		hlist[0] = (bpf_u_int32 *)hp->h_addr;
 		NTOHL(hp->h_addr);

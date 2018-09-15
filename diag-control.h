@@ -64,7 +64,8 @@
     __pragma(warning(disable:4242)) \
     __pragma(warning(disable:4244)) \
     __pragma(warning(disable:4702))
-  #define DIAG_ON_FLEX  __pragma(warning(pop))
+  #define DIAG_ON_FLEX \
+    __pragma(warning(pop))
 
   /*
    * Suppress narrowing warnings.
@@ -72,7 +73,17 @@
   #define DIAG_OFF_NARROWING \
     __pragma(warning(push)) \
     __pragma(warning(disable:4242))
-  #define DIAG_ON_NARROWING  __pragma(warning(pop))
+  #define DIAG_ON_NARROWING \
+    __pragma(warning(pop))
+
+  /*
+   * Suppress deprecation warnings.
+   */
+  #define DIAG_OFF_DEPRECATION \
+    __pragma(warning(push)) \
+    __pragma(warning(disable:4996))
+  #define DIAG_ON_DEPRECATION \
+    __pragma(warning(pop))
 #elif PCAP_IS_AT_LEAST_CLANG_VERSION(2,8)
   /*
    * This is Clang 2.8 or later; we can use "clang diagnostic
@@ -103,6 +114,15 @@
 
   #define DIAG_ON_NARROWING \
     PCAP_DO_PRAGMA(clang diagnostic pop)
+
+  /*
+   * Suppress deprecation warnings.
+   */
+  #define DIAG_OFF_DEPRECATION \
+    PCAP_DO_PRAGMA(clang diagnostic push) \
+    PCAP_DO_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
+  #define DIAG_ON_DEPRECATION \
+    PCAP_DO_PRAGMA(clang diagnostic pop)
 #elif PCAP_IS_AT_LEAST_GNUC_VERSION(4,6)
   /*
    * This is GCC 4.6 or later, or a compiler claiming to be that.
@@ -122,6 +142,15 @@
    */
   #define DIAG_OFF_NARROWING
   #define DIAG_ON_NARROWING
+
+  /*
+   * Suppress deprecation warnings.
+   */
+  #define DIAG_OFF_DEPRECATION \
+    PCAP_DO_PRAGMA(GCC diagnostic push) \
+    PCAP_DO_PRAGMA(GCC diagnostic ignored "-Wdeprecated-declarations")
+  #define DIAG_ON_DEPRECATION \
+    PCAP_DO_PRAGMA(GCC diagnostic pop)
 #else
   /*
    * Neither Visual Studio, nor Clang 2.8 or later, nor GCC 4.6 or later
@@ -132,6 +161,8 @@
   #define DIAG_ON_FLEX
   #define DIAG_OFF_NARROWING
   #define DIAG_ON_NARROWING
+  #define DIAG_OFF_DEPRECATION
+  #define DIAG_ON_DEPRECATION
 #endif
 
 #ifdef YYBYACC
