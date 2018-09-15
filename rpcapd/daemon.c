@@ -2359,8 +2359,8 @@ daemon_thrdatamain(void *ptr)
 		// This protocol needs to be updated with a new version
 		// before 2038-01-19 03:14:07 UTC.
 		//
-		net_pkt_header->timestamp_sec = (uint32)htonl(pkt_header->ts.tv_sec);
-		net_pkt_header->timestamp_usec = (uint32)htonl(pkt_header->ts.tv_usec);
+		net_pkt_header->timestamp_sec = htonl((uint32)pkt_header->ts.tv_sec);
+		net_pkt_header->timestamp_usec = htonl((uint32)pkt_header->ts.tv_usec);
 
 		// Bufferize the pkt data
 		if (sock_bufferize((char *) pkt_data, pkt_header->caplen,
