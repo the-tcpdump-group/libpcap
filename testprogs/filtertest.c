@@ -176,7 +176,7 @@ static char *
 copy_argv(register char **argv)
 {
 	register char **p;
-	register u_int len = 0;
+	register size_t len = 0;
 	char *buf;
 	char *src, *dst;
 
