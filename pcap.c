@@ -3685,7 +3685,7 @@ pcap_inject(pcap_t *p, const void *buf, size_t size)
 
 	if (size == 0) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "The number of bytes to be injected must not be zero", INT_MAX);
+		    errno, "The number of bytes to be injected must not be zero");
 		return (PCAP_ERROR);
 	}
 
