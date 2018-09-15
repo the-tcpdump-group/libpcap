@@ -1673,7 +1673,6 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         check_and_add_compiler_option(-Wcomma)
         # Warns about safeguards added in case the enums are extended
         # check_and_add_compiler_option(-Wcovered-switch-default)
-        check_and_add_compiler_option(-Wdeclaration-after-statement)
         check_and_add_compiler_option(-Wdocumentation)
         check_and_add_compiler_option(-Wformat-nonliteral)
         check_and_add_compiler_option(-Wmissing-noreturn)
