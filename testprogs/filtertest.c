@@ -209,7 +209,9 @@ main(int argc, char **argv)
 	char *cp;
 	int op;
 	int dflag;
+#ifdef BDEBUG
 	int gflag;
+#endif
 	char *infile;
 	int Oflag;
 	int snaplen;
@@ -227,7 +229,9 @@ main(int argc, char **argv)
 #endif /* _WIN32 */
 
 	dflag = 1;
+#ifdef BDEBUG
 	gflag = 0;
+#endif
 
 	infile = NULL;
 	Oflag = 1;
