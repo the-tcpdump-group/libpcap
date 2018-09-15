@@ -3593,6 +3593,10 @@ if test "x$ac_cv_prog_cc_c99" != xno; then :
 fi
 
 
+if test "$ac_cv_prog_cc_c99" = "no"; then
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The C compiler does not support C99; there may be compiler errors" >&5
+$as_echo "$as_me: WARNING: The C compiler does not support C99; there may be compiler errors" >&2;}
+fi
 
 
 
