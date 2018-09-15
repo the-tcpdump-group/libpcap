@@ -1488,7 +1488,8 @@ static void pcap_breakloop_linux(pcap_t *handle)
 	struct pcap_linux *handlep = handle->priv;
 
 	uint64_t value = 1;
-	write(handlep->poll_breakloop_fd, &value, sizeof(value));
+	/* XXX - what if this fails? */
+	(void)write(handlep->poll_breakloop_fd, &value, sizeof(value));
 }
 #endif
 
@@ -5047,7 +5048,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 #ifdef HAVE_SYS_EVENTFD_H
 		if (pollinfo[1].revents & POLLIN) {
 			uint64_t value;
-			read(handlep->poll_breakloop_fd, &value, sizeof(value));
+			(void)read(handlep->poll_breakloop_fd, &value, sizeof(value));
 		}
 #endif
 
