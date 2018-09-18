@@ -2111,6 +2111,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= (bpf_u_int32)packet_len;
+	pcap_header.ifindex	= (bpf_u_int32)from.sll_ifindex;
 
 	/*
 	 * Count the packet.
@@ -5222,6 +5223,7 @@ static int pcap_handle_packet_mmap(
 	pcaphdr.ts.tv_usec = tp_usec;
 	pcaphdr.caplen = tp_snaplen;
 	pcaphdr.len = tp_len;
+	pcaphdr.ifindex = sll->sll_ifindex;
 
 	/* if required build in place the sll header*/
 	if (handlep->cooked) {

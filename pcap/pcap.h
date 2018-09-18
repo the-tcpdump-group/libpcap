@@ -201,6 +201,8 @@ struct pcap_pkthdr {
 	struct timeval ts;	/* time stamp */
 	bpf_u_int32 caplen;	/* length of portion present */
 	bpf_u_int32 len;	/* length this packet (off wire) */
+
+	bpf_u_int32 ifindex; /* ifindex received packet */
 };
 
 /*
