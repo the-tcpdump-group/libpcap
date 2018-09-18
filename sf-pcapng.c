@@ -231,16 +231,21 @@ struct pcap_ng_sf {
 };
 
 /*
- * Maximum block size for a given maximum snapshot length; we calculate
- * this based
- *
- * We define it as the size of an EPB with a max_snaplen-sized
- * packet and 128KB of options.
+ * The maximum block size we start with; we use an arbitrary value of
+ * 16 MiB.
  */
-#define MAX_BLOCKSIZE(max_snaplen)	(sizeof (struct block_header) + \
-					 sizeof (struct enhanced_packet_block) + \
-					 (max_snaplen) + 131072 + \
-					 sizeof (struct block_trailer))
+#define INITIAL_MAX_BLOCKSIZE	(16*1024*1024)
+
+/*
+ * Maximum block size for a given maximum snapshot length; we define it
+ * as the size of an EPB with a max_snaplen-sized packet and 128KB of
+ * options.
+ */
+#define MAX_BLOCKSIZE_FOR_SNAPLEN(max_snaplen) \
+	(sizeof (struct block_header) + \
+	 sizeof (struct enhanced_packet_block) + \
+	 (max_snaplen) + 131072 + \
+	 sizeof (struct block_trailer))
 
 static void pcap_ng_cleanup(pcap_t *p);
 static int pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr,
@@ -290,20 +295,6 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	}
 
 	/*
-	 * Is this block "too big"?
-	 *
-	 * We choose 16MB as "too big", for now, so that we handle
-	 * "reasonably" large buffers but don't chew up all the
-	 * memory if we read a malformed file.
-	 */
-	if (bhdr.total_length > 16*1024*1024) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "pcapng block size %u > maximum %u",
-		    bhdr.total_length, 16*1024*1024);
-		    return (-1);
-	}
-
-	/*
 	 * Is this block "too small" - i.e., is it shorter than a block
 	 * header plus a block trailer?
 	 */
@@ -321,12 +312,13 @@ read_block(FILE *fp, pcap_t *p, struct block_cursor *cursor, char *errbuf)
 	 */
 	if (p->bufsize < bhdr.total_length) {
 		/*
-		 * No - make it big enough, unless it's too big.
+		 * No - make it big enough, unless it's too big, in
+		 * which case we fail.
 		 */
 		void *bigger_buffer;
 
 		if (bhdr.total_length > ps->max_blocksize) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "block is larger than maximum block size %u",
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "pcapng block size %u > maximum %u", bhdr.total_length,
 			    ps->max_blocksize);
 			return (-1);
 		}
@@ -838,6 +830,17 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	}
 
 	/*
+	 * Make sure it's not too big.
+	 */
+	if (total_length > INITIAL_MAX_BLOCKSIZE) {
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "pcapng block size %u > maximum %u",
+		    total_length, INITIAL_MAX_BLOCKSIZE);
+		*err = 1;
+		return (NULL);
+	}
+
+	/*
 	 * OK, this is a good pcapng file.
 	 * Allocate a pcap_t for it.
 	 */
@@ -884,10 +887,10 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 *	leaving room for some options.
 	 *
 	 * If we find a bigger block, we reallocate the buffer, up to
-	 * the maximum size.  We start out with a maximum size based
-	 * on a maximum snapshot length of MAXIMUM_SNAPLEN; if we see
-	 * any link-layer header types with a larger maximum snapshot
-	 * length, we boost the maximum.
+	 * the maximum size.  We start out with a maximum size of
+	 * INITIAL_MAX_BLOCKSIZE; if we see any link-layer header types
+	 * with a maximum snapshot that results in a larger maximum
+	 * block length, we boost the maximum.
 	 */
 	p->bufsize = 2048;
 	if (p->bufsize < total_length)
@@ -899,7 +902,7 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		*err = 1;
 		return (NULL);
 	}
-	ps->max_blocksize = MAX_BLOCKSIZE(MAXIMUM_SNAPLEN);
+	ps->max_blocksize = INITIAL_MAX_BLOCKSIZE;
 
 	/*
 	 * Copy the stuff we've read to the buffer, and read the rest
@@ -1028,8 +1031,8 @@ done:
 	 * snapshot length for this DLT_ is bigger than the current
 	 * maximum block size, increase the maximum.
 	 */
-	if (MAX_BLOCKSIZE(max_snaplen_for_dlt(p->linktype)) > ps->max_blocksize)
-		ps->max_blocksize = MAX_BLOCKSIZE(max_snaplen_for_dlt(p->linktype));
+	if (MAX_BLOCKSIZE_FOR_SNAPLEN(max_snaplen_for_dlt(p->linktype)) > ps->max_blocksize)
+		ps->max_blocksize = MAX_BLOCKSIZE_FOR_SNAPLEN(max_snaplen_for_dlt(p->linktype));
 
 	p->next_packet_op = pcap_ng_next_packet;
 	p->cleanup_op = pcap_ng_cleanup;
