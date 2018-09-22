@@ -934,8 +934,8 @@ static int
 usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_usb_linux *handlep = handle->priv;
-	int dummy, ret, cnt;
-	ssize_t read_ret, consumed;
+	int dummy, cnt;
+	ssize_t ret, consumed;
 	char string[USB_LINE_LEN];
 	char token[USB_LINE_LEN];
 	char * ptr = string;
@@ -964,20 +964,20 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	/* read stats line */
 	do {
-		read_ret = read(fd, string, USB_LINE_LEN-1);
-	} while ((read_ret == -1) && (errno == EINTR));
+		ret = read(fd, string, USB_LINE_LEN-1);
+	} while ((ret == -1) && (errno == EINTR));
 	close(fd);
 
-	if (read_ret < 0)
+	if (ret < 0)
 	{
 		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			"Can't read stats from fd %d ", fd);
 		return -1;
 	}
-	string[read_ret] = 0;
+	string[ret] = 0;
 
 	/* extract info on dropped urbs */
-	for (consumed=0; consumed < read_ret; ) {
+	for (consumed=0; consumed < ret; ) {
 		/* from the sscanf man page:
  		 * The C standard says: "Execution of a %n directive does
  		 * not increment the assignment count returned at the completion
@@ -993,9 +993,9 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		consumed += cnt;
 		ptr += cnt;
 		if (strcmp(token, "nreaders") == 0)
-			ret = sscanf(ptr, "%d", &stats->ps_drop);
+			ntok = sscanf(ptr, "%d", &stats->ps_drop);
 		else
-			ret = sscanf(ptr, "%d", &dummy);
+			ntok = sscanf(ptr, "%d", &dummy);
 		if (ntok != 1)
 			break;
 		consumed += cnt;
