@@ -662,7 +662,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	compiler_state_t cstate;
 	const char * volatile xbuf = buf;
 	yyscan_t scanner = NULL;
-	YY_BUFFER_STATE in_buffer = NULL;
+	volatile YY_BUFFER_STATE in_buffer = NULL;
 	u_int len;
 	int  rc;
 
