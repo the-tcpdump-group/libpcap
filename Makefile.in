@@ -69,7 +69,7 @@ INSTALL_RPCAPD=@INSTALL_RPCAPD@
 EXTRA_NETWORK_LIBS=@EXTRA_NETWORK_LIBS@
 
 # Standard CFLAGS for building members of a shared library
-FULL_CFLAGS = $(CCOPT) $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
+FULL_CFLAGS = $(CCOPT) @V_LIB_CCOPT_FAT@ $(SHLIB_CCOPT) $(INCLS) $(DEFS) $(CFLAGS)
 
 INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -417,7 +417,7 @@ libpcap.dylib: $(OBJ)
 	MAJOR_VER=A; \
 	COMPAT_VER=1; \
 	CURRENT_VER=`sed 's/[^0-9.].*$$//' $(srcdir)/VERSION`; \
-	$(CC) -dynamiclib -undefined error $(LDFLAGS) \
+	$(CC) -dynamiclib -undefined error $(LDFLAGS) @V_LIB_LDFLAGS_FAT@ \
 	    -o libpcap.$$VER.dylib $(OBJ) $(ADDLOBJS) $(LIBS) \
 	    -install_name $(libdir)/libpcap.$$MAJOR_VER.dylib \
 	    -compatibility_version $$COMPAT_VER \
