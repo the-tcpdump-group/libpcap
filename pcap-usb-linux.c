@@ -974,6 +974,10 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	}
 	string[ret] = 0;
 
+	stats->ps_recv = handlep->packets_read;
+	stats->ps_drop = 0;	/* unless we find text_lost */
+	stats->ps_ifdrop = 0;
+
 	/* extract info on dropped urbs */
 	for (consumed=0; consumed < ret; ) {
 		/* from the sscanf man page:
@@ -990,18 +994,16 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 			break;
 		consumed += cnt;
 		ptr += cnt;
-		if (strcmp(token, "nreaders") == 0)
-			ntok = sscanf(ptr, "%d", &stats->ps_drop);
+		if (strcmp(token, "text_lost") == 0)
+			ntok = sscanf(ptr, "%d", &stats->ps_drop, &cnt);
 		else
-			ntok = sscanf(ptr, "%d", &dummy);
-		if (ntok != 1)
+			ntok = sscanf(ptr, "%d", &dummy, &cnt);
+		if ((ntok != 1) || (cnt < 0))
 			break;
 		consumed += cnt;
 		ptr += cnt;
 	}
 
-	stats->ps_recv = handlep->packets_read;
-	stats->ps_ifdrop = 0;
 	return 0;
 }
 
