@@ -1612,70 +1612,90 @@ darwin*)
 
 		darwin8.[0123]*)
 			#
-			# Tiger, prior to Intel support.  Build for 32-bit
-			# PowerPC and 64-bit PowerPC, with 32-bit PowerPC
-			# first.  (I'm guessing that's what Apple does.)
+			# Tiger, prior to Intel support.  Build
+			# libraries and executables for 32-bit PowerPC
+			# and 64-bit PowerPC, with 32-bit PowerPC first.
+			# (I'm guessing that's what Apple does.)
 			#
-			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64"
-			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64"
+			V_LIB_CCOPT_FAT="-arch ppc -arch ppc64"
+			V_LIB_LDFLAGS_FAT="-arch ppc -arch ppc64"
+			V_PROG_CCOPT_FAT="-arch ppc -arch ppc64"
+			V_PROG_LDFLAGS_FAT="-arch ppc -arch ppc64"
 			;;
 
 		darwin8.[456]*)
 			#
-			# Tiger, subsequent to Intel support but prior to
-			# x86-64 support.  Build for 32-bit PowerPC, 64-bit
-			# PowerPC, and x86, with 32-bit PowerPC first.
-			# (I'm guessing that's what Apple does.)
+			# Tiger, subsequent to Intel support but prior
+			# to x86-64 support.  Build libraries and
+			# executables for 32-bit PowerPC, 64-bit
+			# PowerPC, and 32-bit x86, with 32-bit PowerPC
+			# first.  (I'm guessing that's what Apple does.)
 			#
-			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386"
-			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386"
+			V_LIB_CCOPT_FAT="-arch ppc -arch ppc64 -arch i386"
+			V_LIB_LDFLAGS_FAT="-arch ppc -arch ppc64 -arch i386"
+			V_PROG_CCOPT_FAT="-arch ppc -arch ppc64 -arch i386"
+			V_PROG_LDFLAGS_FAT="-arch ppc -arch ppc64 -arch i386"
 			;;
 
 		darwin8.*)
 			#
 			# All other Tiger, so subsequent to x86-64
-			# support. Build for 32-bit PowerPC, 64-bit
-			# PowerPC, x86, and x86-64, and with 32-bit PowerPC
-			# first.  (I'm guessing that's what Apple does.)
+			# support.  Build libraries and executables for
+			# 32-bit PowerPC, 64-bit PowerPC, 32-bit x86,
+			# and x86-64, with 32-bit PowerPC first.  (I'm
+			# guessing that's what Apple does.)
 			#
-			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386 -arch x86_64"
-			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_LIB_CCOPT_FAT="-arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_LIB_LDFLAGS_FAT="-arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_PROG_CCOPT_FAT="-arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_PROG_LDFLAGS_FAT="-arch ppc -arch ppc64 -arch i386 -arch x86_64"
 			;;
 
 		darwin9.*)
 			#
-			# Leopard.  Build for 32-bit PowerPC, 64-bit
-			# PowerPC, x86, and x86-64, with 32-bit PowerPC
-			# first.  (That's what Apple does.)
+			# Leopard.  Build libraries for 32-bit PowerPC,
+			# 64-bit PowerPC, 32-bit x86, and x86-64, with
+			# 32-bit PowerPC first, and build executables
+			# for 32-bit x86 and 32-bit PowerPC, with 32-bit
+			# x86 first.  (That's what Apple does.)
 			#
-			V_CCOPT="$V_CCOPT -arch ppc -arch ppc64 -arch i386 -arch x86_64"
-			LDFLAGS="$LDFLAGS -arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_LIB_CCOPT_FAT="-arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_LIB_LDFLAGS_FAT="-arch ppc -arch ppc64 -arch i386 -arch x86_64"
+			V_PROG_CCOPT_FAT="-arch i386 -arch ppc"
+			V_PROG_LDFLAGS_FAT="-arch i386 -arch ppc"
 			;;
 
 		darwin10.*)
 			#
-			# Snow Leopard.  Build for x86-64, x86, and
-			# 32-bit PowerPC, with x86-64 first.  (That's
-			# what Apple does, even though Snow Leopard
-			# doesn't run on PPC, so PPC libpcap runs under
-			# Rosetta, and Rosetta doesn't support BPF
-			# ioctls, so PPC programs can't do live
-			# captures.)
+			# Snow Leopard.  Build libraries for x86-64,
+			# 32-bit x86, and 32-bit PowerPC, with x86-64
+			# first, and build executables for x86-64 and
+			# 32-bit x86, with x86-64 first.  (That's what
+			# Apple does, even though Snow Leopard doesn't
+			# run on PPC, so PPC libpcap runs under Rosetta,
+			# and Rosetta doesn't support BPF ioctls, so PPC
+			# programs can't do live captures.)
 			#
-			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386 -arch ppc"
-			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386 -arch ppc"
+			V_LIB_CCOPT_FAT="-arch x86_64 -arch i386 -arch ppc"
+			V_LIB_LDFLAGS_FAT="-arch x86_64 -arch i386 -arch ppc"
+			V_PROG_CCOPT_FAT="-arch x86_64 -arch i386"
+			V_PROG_LDFLAGS_FAT="-arch x86_64 -arch i386"
 			;;
 
 		darwin*)
 			#
-			# Post-Snow Leopard.  Build for x86-64 and
-			# x86, with x86-64 first.  (That's probably what
-			# Apple does, given that Rosetta is gone.)
+			# Post-Snow Leopard.  Build libraries for x86-64
+			# and 32-bit x86, with x86-64 first, and build
+			# executables only for x86-64.  (That's what
+			# Apple does.)  This requires no special flags
+			# for programs.
 			# XXX - update if and when Apple drops support
-			# for 32-bit x86 code.
+			# for 32-bit x86 code and if and when Apple adds
+			# ARM-based Macs.  (You're on your own for iOS
+			# etc.)
 			#
-			V_CCOPT="$V_CCOPT -arch x86_64 -arch i386"
-			LDFLAGS="$LDFLAGS -arch x86_64 -arch i386"
+			V_LIB_CCOPT_FAT="-arch x86_64 -arch i386"
+			V_LIB_LDFLAGS_FAT="-arch x86_64 -arch i386"
 			;;
 		esac
 	fi
@@ -1872,6 +1892,10 @@ AC_CHECK_MEMBERS([dl_hp_ppa_info_t.dl_module_id_1],,,
 AC_LBL_UNALIGNED_ACCESS
 
 AC_SUBST(V_CCOPT)
+AC_SUBST(V_LIB_CCOPT_FAT)
+AC_SUBST(V_LIB_LDFLAGS_FAT)
+AC_SUBST(V_PROG_CCOPT_FAT)
+AC_SUBST(V_PROG_LDFLAGS_FAT)
 AC_SUBST(V_DEFS)
 AC_SUBST(V_FINDALLDEVS)
 AC_SUBST(V_INCLS)
