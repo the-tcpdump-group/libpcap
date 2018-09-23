@@ -997,9 +997,9 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		consumed += cnt;
 		ptr += cnt;
 		if (strcmp(token, "text_lost") == 0)
-			ntok = sscanf(ptr, "%d", &stats->ps_drop, &cnt);
+			ntok = sscanf(ptr, "%d%n", &stats->ps_drop, &cnt);
 		else
-			ntok = sscanf(ptr, "%d", &dummy, &cnt);
+			ntok = sscanf(ptr, "%d%n", &dummy, &cnt);
 		if ((ntok != 1) || (cnt < 0))
 			break;
 		consumed += cnt;
