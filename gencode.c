@@ -8234,12 +8234,15 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
 	sappend(s, s2);
 	sjeq->s.jt = s2;
 
-	/* jump to the test in b_vid (bypass loading VID from packet data) */
+	/* Jump to the test in b_vid. We need to jump one instruction before
+	 * the end of the b_vid block so that we only skip loading the TCI
+	 * from packet data and not the 'and' instruction extractging VID.
+	 */
 	cnt = 0;
 	for (s2 = b_vid->stmts; s2; s2 = s2->next)
 		cnt++;
 	s2 = new_stmt(cstate, JMP(BPF_JA));
-	s2->s.k = cnt;
+	s2->s.k = cnt - 1;
 	sappend(s, s2);
 
 	/* insert our statements at the beginning of b_vid */
