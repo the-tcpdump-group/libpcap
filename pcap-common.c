@@ -549,15 +549,35 @@
  */
 #define LINKTYPE_LAPD		203
 
+
 /*
- * Variants of various link-layer headers, with a one-byte direction
- * pseudo-header prepended - zero means "received by this host",
- * non-zero (any non-zero value) means "sent by this host" - as per
- * Will Barker <w.barker@zen.co.uk>.
+ * PPP, with a one-byte direction pseudo-header prepended - zero means
+ * "received by this host", non-zero (any non-zero value) means "sent by
+ * this host" - as per Will Barker <w.barker@zen.co.uk>.
  */
-#define LINKTYPE_PPP_WITH_DIR	204	/* PPP */
+#define LINKTYPE_PPP_WITH_DIR	204	/* Don't confuse with LINKTYPE_PPP_PPPD */
+
+/*
+ * Cisco HDLC, with a one-byte direction pseudo-header prepended - zero
+ * means "received by this host", non-zero (any non-zero value) means
+ * "sent by this host" - as per Will Barker <w.barker@zen.co.uk>.
+ */
 #define LINKTYPE_C_HDLC_WITH_DIR 205	/* Cisco HDLC */
+
+/*
+ * Frame Relay, with a one-byte direction pseudo-header prepended - zero
+ * means "received by this host" (DCE -> DTE), non-zero (any non-zero
+ * value) means "sent by this host" (DTE -> DCE) - as per Will Barker
+ * <w.barker@zen.co.uk>.
+ */
 #define LINKTYPE_FRELAY_WITH_DIR 206	/* Frame Relay */
+
+/*
+ * LAPB, with a one-byte direction pseudo-header prepended - zero means
+ * "received by this host" (DCE -> DTE), non-zero (any non-zero value)
+ * means "sent by this host" (DTE -> DCE)- as per Will Barker
+ * <w.barker@zen.co.uk>.
+ */
 #define LINKTYPE_LAPB_WITH_DIR	207	/* LAPB */
 
 /*

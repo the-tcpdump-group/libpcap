@@ -805,15 +805,34 @@
 #define DLT_LAPD		203
 
 /*
- * Variants of various link-layer headers, with a one-byte direction
- * pseudo-header prepended - zero means "received by this host",
- * non-zero (any non-zero value) means "sent by this host" - as per
- * Will Barker <w.barker@zen.co.uk>.
+ * PPP, with a one-byte direction pseudo-header prepended - zero means
+ * "received by this host", non-zero (any non-zero value) means "sent by
+ * this host" - as per Will Barker <w.barker@zen.co.uk>.
  */
-#define DLT_PPP_WITH_DIR	204	/* PPP - don't confuse with DLT_PPP_WITH_DIRECTION */
-#define DLT_C_HDLC_WITH_DIR	205	/* Cisco HDLC */
-#define DLT_FRELAY_WITH_DIR	206	/* Frame Relay */
-#define DLT_LAPB_WITH_DIR	207	/* LAPB */
+#define DLT_PPP_WITH_DIR	204	/* Don't confuse with DLT_PPP_WITH_DIRECTION */
+
+/*
+ * Cisco HDLC, with a one-byte direction pseudo-header prepended - zero
+ * means "received by this host", non-zero (any non-zero value) means
+ * "sent by this host" - as per Will Barker <w.barker@zen.co.uk>.
+ */
+#define DLT_C_HDLC_WITH_DIR	205
+
+/*
+ * Frame Relay, with a one-byte direction pseudo-header prepended - zero
+ * means "received by this host" (DCE -> DTE), non-zero (any non-zero
+ * value) means "sent by this host" (DTE -> DCE) - as per Will Barker
+ * <w.barker@zen.co.uk>.
+ */
+#define DLT_FRELAY_WITH_DIR	206
+
+/*
+ * LAPB, with a one-byte direction pseudo-header prepended - zero means
+ * "received by this host" (DCE -> DTE), non-zero (any non-zero value)
+ * means "sent by this host" (DTE -> DCE)- as per Will Barker
+ * <w.barker@zen.co.uk>.
+ */
+#define DLT_LAPB_WITH_DIR	207
 
 /*
  * 208 is reserved for an as-yet-unspecified proprietary link-layer
