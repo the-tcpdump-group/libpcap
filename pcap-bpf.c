@@ -206,7 +206,7 @@ static int monitor_mode(pcap_t *, int);
 #  endif
 
 #  if defined(__APPLE__)
-static void remove_en(pcap_t *);
+static void remove_non_802_11(pcap_t *);
 static void remove_802_11(pcap_t *);
 #  endif
 
@@ -2187,7 +2187,7 @@ pcap_activate_bpf(pcap_t *p)
 					 * of link-layer types, as selecting
 					 * it will keep monitor mode off.
 					 */
-					remove_en(p);
+					remove_non_802_11(p);
 
 					/*
 					 * If the new mode we want isn't
@@ -3068,24 +3068,25 @@ find_802_11(struct bpf_dltlist *bdlp)
 
 #if defined(__APPLE__) && defined(BIOCGDLTLIST)
 /*
- * Remove DLT_EN10MB from the list of DLT_ values, as we're in monitor mode,
- * and DLT_EN10MB isn't supported in monitor mode.
+ * Remove non-802.11 header types from the list of DLT_ values, as we're in
+ * monitor mode, and those header types aren't supported in monitor mode.
  */
 static void
-remove_en(pcap_t *p)
+remove_non_802_11(pcap_t *p)
 {
 	int i, j;
 
 	/*
-	 * Scan the list of DLT_ values and discard DLT_EN10MB.
+	 * Scan the list of DLT_ values and discard non-802.11 ones.
 	 */
 	j = 0;
 	for (i = 0; i < p->dlt_count; i++) {
 		switch (p->dlt_list[i]) {
 
 		case DLT_EN10MB:
+		case DLT_RAW:
 			/*
-			 * Don't offer this one.
+			 * Not 802.11.  Don't offer this one.
 			 */
 			continue;
 
@@ -3131,6 +3132,7 @@ remove_802_11(pcap_t *p)
 		case DLT_AIRONET_HEADER:
 		case DLT_IEEE802_11_RADIO:
 		case DLT_IEEE802_11_RADIO_AVS:
+		case DLT_PPI:
 			/*
 			 * 802.11.  Don't offer this one.
 			 */
