@@ -8046,19 +8046,25 @@ fi
 	if test "$enable_universal" != "no"; then
 		case "$host_os" in
 
-		darwin0-7.*)
+		darwin[0-7].*)
 			#
 			# Pre-Tiger.  Build only for 32-bit PowerPC; no
 			# need for any special compiler or linker flags.
 			#
 			;;
 
-		darwin8.0123*)
+		darwin8.[0123]|darwin8.[0123].*)
 			#
 			# Tiger, prior to Intel support.  Build
 			# libraries and executables for 32-bit PowerPC
 			# and 64-bit PowerPC, with 32-bit PowerPC first.
 			# (I'm guessing that's what Apple does.)
+			#
+			# (The double brackets are needed because
+			# autotools/m4 use brackets as a quoting
+			# character; the double brackets turn into
+			# single brackets in the generated configure
+			# file.)
 			#
 			V_LIB_CCOPT_FAT="-arch ppc -arch ppc64"
 			V_LIB_LDFLAGS_FAT="-arch ppc -arch ppc64"
@@ -8066,13 +8072,19 @@ fi
 			V_PROG_LDFLAGS_FAT="-arch ppc -arch ppc64"
 			;;
 
-		darwin8.456*)
+		darwin8.[456]|darwin.[456].*)
 			#
 			# Tiger, subsequent to Intel support but prior
 			# to x86-64 support.  Build libraries and
 			# executables for 32-bit PowerPC, 64-bit
 			# PowerPC, and 32-bit x86, with 32-bit PowerPC
 			# first.  (I'm guessing that's what Apple does.)
+			#
+			# (The double brackets are needed because
+			# autotools/m4 use brackets as a quoting
+			# character; the double brackets turn into
+			# single brackets in the generated configure
+			# file.)
 			#
 			V_LIB_CCOPT_FAT="-arch ppc -arch ppc64 -arch i386"
 			V_LIB_LDFLAGS_FAT="-arch ppc -arch ppc64 -arch i386"
