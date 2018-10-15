@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> /* for INT_MAX */
 
 #include "pcap-int.h"
 
@@ -369,8 +370,14 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 			 * length will be misleading if you use it to figure
 			 * out why a capture doesn't have all the packet data,
 			 * but there's not much we can do to avoid that.
+			 *
+			 * But don't grow the snapshot length past the
+			 * maximum value of an int.
 			 */
-			p->snapshot += 14;
+			if (p->snapshot <= INT_MAX - 14)
+				p->snapshot += 14;
+			else
+				p->snapshot = INT_MAX;
 		}
 	} else
 		ps->hdrsize = sizeof(struct pcap_sf_pkthdr);
