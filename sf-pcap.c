@@ -649,6 +649,9 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		 */
 		hdr->caplen = p->snapshot;
 	} else {
+		/*
+		 * The packet is within the snapshot length for this file.
+		 */
 		if (hdr->caplen > p->bufsize) {
 			/*
 			 * Grow the buffer to the next power of 2, or
