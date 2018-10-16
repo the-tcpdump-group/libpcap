@@ -41,7 +41,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
     char errbuf[PCAP_ERRBUF_SIZE];
     const u_char *pkt;
     struct pcap_pkthdr *header;
-    struct pcap_stat stats;
     int r;
     size_t filterSize;
     char * filter;
