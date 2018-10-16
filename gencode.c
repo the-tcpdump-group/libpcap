@@ -3871,8 +3871,8 @@ gen_hostop(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_OR:
 	case Q_DEFAULT:
+	case Q_OR:
 		b0 = gen_hostop(cstate, addr, mask, Q_SRC, proto, src_off, dst_off);
 		b1 = gen_hostop(cstate, addr, mask, Q_DST, proto, src_off, dst_off);
 		gen_or(b0, b1);
@@ -3936,8 +3936,8 @@ gen_hostop6(compiler_state_t *cstate, struct in6_addr *addr,
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_OR:
 	case Q_DEFAULT:
+	case Q_OR:
 		b0 = gen_hostop6(cstate, addr, mask, Q_SRC, proto, src_off, dst_off);
 		b1 = gen_hostop6(cstate, addr, mask, Q_DST, proto, src_off, dst_off);
 		gen_or(b0, b1);
@@ -4437,6 +4437,68 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		gen_and(b1, b0);
 		return b0;
 
+	case Q_AND:
+		b0 = gen_wlanhostop(cstate, eaddr, Q_SRC);
+		b1 = gen_wlanhostop(cstate, eaddr, Q_DST);
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_DEFAULT:
+	case Q_OR:
+		b0 = gen_wlanhostop(cstate, eaddr, Q_SRC);
+		b1 = gen_wlanhostop(cstate, eaddr, Q_DST);
+		gen_or(b0, b1);
+		return b1;
+
+	/*
+	 * XXX - add BSSID keyword?
+	 */
+	case Q_ADDR1:
+		return (gen_bcmp(cstate, OR_LINKHDR, 4, 6, eaddr));
+
+	case Q_ADDR2:
+		/*
+		 * Not present in CTS or ACK control frames.
+		 */
+		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b1);
+		b2 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
+			IEEE80211_FC0_SUBTYPE_MASK);
+		gen_not(b2);
+		gen_and(b1, b2);
+		gen_or(b0, b2);
+		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
+		gen_and(b2, b1);
+		return b1;
+
+	case Q_ADDR3:
+		/*
+		 * Not present in control frames.
+		 */
+		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
+			IEEE80211_FC0_TYPE_MASK);
+		gen_not(b0);
+		b1 = gen_bcmp(cstate, OR_LINKHDR, 16, 6, eaddr);
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_ADDR4:
+		/*
+		 * Present only if the direction mask has both "From DS"
+		 * and "To DS" set.  Neither control frames nor management
+		 * frames should have both of those set, so we don't
+		 * check the frame type.
+		 */
+		b0 = gen_mcmp(cstate, OR_LINKHDR, 1, BPF_B,
+			IEEE80211_FC1_DIR_DSTODS, IEEE80211_FC1_DIR_MASK);
+		b1 = gen_bcmp(cstate, OR_LINKHDR, 24, 6, eaddr);
+		gen_and(b0, b1);
+		return b1;
+
 	case Q_RA:
 		/*
 		 * Not present in management frames; addr1 in other
@@ -4506,68 +4568,6 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 		 */
 		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
 		gen_and(b2, b1);
-		return b1;
-
-	/*
-	 * XXX - add BSSID keyword?
-	 */
-	case Q_ADDR1:
-		return (gen_bcmp(cstate, OR_LINKHDR, 4, 6, eaddr));
-
-	case Q_ADDR2:
-		/*
-		 * Not present in CTS or ACK control frames.
-		 */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
-			IEEE80211_FC0_TYPE_MASK);
-		gen_not(b0);
-		b1 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_CTS,
-			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_not(b1);
-		b2 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_SUBTYPE_ACK,
-			IEEE80211_FC0_SUBTYPE_MASK);
-		gen_not(b2);
-		gen_and(b1, b2);
-		gen_or(b0, b2);
-		b1 = gen_bcmp(cstate, OR_LINKHDR, 10, 6, eaddr);
-		gen_and(b2, b1);
-		return b1;
-
-	case Q_ADDR3:
-		/*
-		 * Not present in control frames.
-		 */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 0, BPF_B, IEEE80211_FC0_TYPE_CTL,
-			IEEE80211_FC0_TYPE_MASK);
-		gen_not(b0);
-		b1 = gen_bcmp(cstate, OR_LINKHDR, 16, 6, eaddr);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_ADDR4:
-		/*
-		 * Present only if the direction mask has both "From DS"
-		 * and "To DS" set.  Neither control frames nor management
-		 * frames should have both of those set, so we don't
-		 * check the frame type.
-		 */
-		b0 = gen_mcmp(cstate, OR_LINKHDR, 1, BPF_B,
-			IEEE80211_FC1_DIR_DSTODS, IEEE80211_FC1_DIR_MASK);
-		b1 = gen_bcmp(cstate, OR_LINKHDR, 24, 6, eaddr);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_AND:
-		b0 = gen_wlanhostop(cstate, eaddr, Q_SRC);
-		b1 = gen_wlanhostop(cstate, eaddr, Q_DST);
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_DEFAULT:
-	case Q_OR:
-		b0 = gen_wlanhostop(cstate, eaddr, Q_SRC);
-		b1 = gen_wlanhostop(cstate, eaddr, Q_DST);
-		gen_or(b0, b1);
 		return b1;
 	}
 	abort();
@@ -4676,8 +4676,8 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_OR:
 	case Q_DEFAULT:
+	case Q_OR:
 		/* Inefficient because we do our Calvinball dance twice */
 		b0 = gen_dnhostop(cstate, addr, Q_SRC);
 		b1 = gen_dnhostop(cstate, addr, Q_DST);
@@ -5423,17 +5423,41 @@ gen_portop(compiler_state_t *cstate, int port, int proto, int dir)
 		b1 = gen_portatom(cstate, 2, (bpf_int32)port);
 		break;
 
-	case Q_OR:
+	case Q_AND:
+		tmp = gen_portatom(cstate, 0, (bpf_int32)port);
+		b1 = gen_portatom(cstate, 2, (bpf_int32)port);
+		gen_and(tmp, b1);
+		break;
+
 	case Q_DEFAULT:
+	case Q_OR:
 		tmp = gen_portatom(cstate, 0, (bpf_int32)port);
 		b1 = gen_portatom(cstate, 2, (bpf_int32)port);
 		gen_or(tmp, b1);
 		break;
 
-	case Q_AND:
-		tmp = gen_portatom(cstate, 0, (bpf_int32)port);
-		b1 = gen_portatom(cstate, 2, (bpf_int32)port);
-		gen_and(tmp, b1);
+	case Q_ADDR1:
+		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for ports");
+		break;
+
+	case Q_ADDR2:
+		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for ports");
+		break;
+
+	case Q_ADDR3:
+		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for ports");
+		break;
+
+	case Q_ADDR4:
+		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for ports");
+		break;
+
+	case Q_RA:
+		bpf_error(cstate, "'ra' is not a valid qualifier for ports");
+		break;
+
+	case Q_TA:
+		bpf_error(cstate, "'ta' is not a valid qualifier for ports");
 		break;
 
 	default:
@@ -5508,17 +5532,17 @@ gen_portop6(compiler_state_t *cstate, int port, int proto, int dir)
 		b1 = gen_portatom6(cstate, 2, (bpf_int32)port);
 		break;
 
-	case Q_OR:
-	case Q_DEFAULT:
-		tmp = gen_portatom6(cstate, 0, (bpf_int32)port);
-		b1 = gen_portatom6(cstate, 2, (bpf_int32)port);
-		gen_or(tmp, b1);
-		break;
-
 	case Q_AND:
 		tmp = gen_portatom6(cstate, 0, (bpf_int32)port);
 		b1 = gen_portatom6(cstate, 2, (bpf_int32)port);
 		gen_and(tmp, b1);
+		break;
+
+	case Q_DEFAULT:
+	case Q_OR:
+		tmp = gen_portatom6(cstate, 0, (bpf_int32)port);
+		b1 = gen_portatom6(cstate, 2, (bpf_int32)port);
+		gen_or(tmp, b1);
 		break;
 
 	default:
@@ -5605,17 +5629,41 @@ gen_portrangeop(compiler_state_t *cstate, int port1, int port2, int proto,
 		b1 = gen_portrangeatom(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
 		break;
 
-	case Q_OR:
+	case Q_AND:
+		tmp = gen_portrangeatom(cstate, 0, (bpf_int32)port1, (bpf_int32)port2);
+		b1 = gen_portrangeatom(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
+		gen_and(tmp, b1);
+		break;
+
 	case Q_DEFAULT:
+	case Q_OR:
 		tmp = gen_portrangeatom(cstate, 0, (bpf_int32)port1, (bpf_int32)port2);
 		b1 = gen_portrangeatom(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
 		gen_or(tmp, b1);
 		break;
 
-	case Q_AND:
-		tmp = gen_portrangeatom(cstate, 0, (bpf_int32)port1, (bpf_int32)port2);
-		b1 = gen_portrangeatom(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
-		gen_and(tmp, b1);
+	case Q_ADDR1:
+		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for port ranges");
+		break;
+
+	case Q_ADDR2:
+		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for port ranges");
+		break;
+
+	case Q_ADDR3:
+		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for port ranges");
+		break;
+
+	case Q_ADDR4:
+		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for port ranges");
+		break;
+
+	case Q_RA:
+		bpf_error(cstate, "'ra' is not a valid qualifier for port ranges");
+		break;
+
+	case Q_TA:
+		bpf_error(cstate, "'ta' is not a valid qualifier for port ranges");
 		break;
 
 	default:
@@ -5701,17 +5749,17 @@ gen_portrangeop6(compiler_state_t *cstate, int port1, int port2, int proto,
 		b1 = gen_portrangeatom6(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
 		break;
 
-	case Q_OR:
-	case Q_DEFAULT:
-		tmp = gen_portrangeatom6(cstate, 0, (bpf_int32)port1, (bpf_int32)port2);
-		b1 = gen_portrangeatom6(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
-		gen_or(tmp, b1);
-		break;
-
 	case Q_AND:
 		tmp = gen_portrangeatom6(cstate, 0, (bpf_int32)port1, (bpf_int32)port2);
 		b1 = gen_portrangeatom6(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
 		gen_and(tmp, b1);
+		break;
+
+	case Q_DEFAULT:
+	case Q_OR:
+		tmp = gen_portrangeatom6(cstate, 0, (bpf_int32)port1, (bpf_int32)port2);
+		b1 = gen_portrangeatom6(cstate, 2, (bpf_int32)port1, (bpf_int32)port2);
+		gen_or(tmp, b1);
 		break;
 
 	default:
