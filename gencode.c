@@ -50,6 +50,8 @@
 
 #include "pcap-int.h"
 
+#include "extract.h"
+
 #include "ethertype.h"
 #include "nlpid.h"
 #include "llc.h"
@@ -975,13 +977,22 @@ gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 {
 	register struct block *b, *tmp;
 
+	/*
+	 * XXX - the actual *instructions* do unsigned comparisons on
+	 * most platforms, and the load instructions don't do sign
+	 * extension, so gen_cmp() should really take an unsigned
+	 * value argument.
+	 *
+	 * As the load instructons also don't do sign-extension, we
+	 * fetch the values from the byte array as unsigned.  We don't
+	 * want to use the signed versions of the extract calls.
+	 */
 	b = NULL;
 	while (size >= 4) {
 		register const u_char *p = &v[size - 4];
-		bpf_int32 w = ((bpf_int32)p[0] << 24) |
-		    ((bpf_int32)p[1] << 16) | ((bpf_int32)p[2] << 8) | p[3];
 
-		tmp = gen_cmp(cstate, offrel, offset + size - 4, BPF_W, w);
+		tmp = gen_cmp(cstate, offrel, offset + size - 4, BPF_W,
+		    (bpf_int32)EXTRACT_32BITS(p));
 		if (b != NULL)
 			gen_and(b, tmp);
 		b = tmp;
@@ -989,9 +1000,9 @@ gen_bcmp(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 	}
 	while (size >= 2) {
 		register const u_char *p = &v[size - 2];
-		bpf_int32 w = ((bpf_int32)p[0] << 8) | p[1];
 
-		tmp = gen_cmp(cstate, offrel, offset + size - 2, BPF_H, w);
+		tmp = gen_cmp(cstate, offrel, offset + size - 2, BPF_H,
+		    (bpf_int32)EXTRACT_16BITS(p));
 		if (b != NULL)
 			gen_and(b, tmp);
 		b = tmp;
