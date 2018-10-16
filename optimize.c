@@ -745,11 +745,39 @@ fold_op(compiler_state_t *cstate, opt_state_t *opt_state,
 		break;
 
 	case BPF_LSH:
-		a <<= b;
+		/*
+		 * A left shift of more than the width of the type
+		 * is undefined in C; we'll just treat it as shifting
+		 * all the bits out.
+		 *
+		 * XXX - the BPF interpreter doesn't check for this,
+		 * so its behavior is dependent on the behavior of
+		 * the processor on which it's running.  There are
+		 * processors on which it shifts all the bits out
+		 * and processors on which it does no shift.
+		 */
+		if (b < 32)
+			a <<= b;
+		else
+			a = 0;
 		break;
 
 	case BPF_RSH:
-		a >>= b;
+		/*
+		 * A right shift of more than the width of the type
+		 * is undefined in C; we'll just treat it as shifting
+		 * all the bits out.
+		 *
+		 * XXX - the BPF interpreter doesn't check for this,
+		 * so its behavior is dependent on the behavior of
+		 * the processor on which it's running.  There are
+		 * processors on which it shifts all the bits out
+		 * and processors on which it does no shift.
+		 */
+		if (b < 32)
+			a >>= b;
+		else
+			a = 0;
 		break;
 
 	default:
