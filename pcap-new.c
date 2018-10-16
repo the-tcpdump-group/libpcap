@@ -299,7 +299,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 					return -1;
 				}
 
-				strlcpy(dev->name, tmpstring, stringlen);
+				pcap_strlcpy(dev->name, tmpstring, stringlen);
 
 				dev->name[stringlen] = 0;
 
@@ -321,7 +321,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 				}
 
 				/* Copy the new device description into the correct memory location */
-				strlcpy(dev->description, tmpstring, stringlen + 1);
+				pcap_strlcpy(dev->description, tmpstring, stringlen + 1);
 
 				pcap_close(fp);
 			}
@@ -345,7 +345,7 @@ int pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth, pcap_if_t **all
 		return pcap_findalldevs_ex_remote(source, auth, alldevs, errbuf);
 
 	default:
-		strlcpy(errbuf, "Source type not supported", PCAP_ERRBUF_SIZE);
+		pcap_strlcpy(errbuf, "Source type not supported", PCAP_ERRBUF_SIZE);
 		return -1;
 	}
 }
@@ -389,7 +389,7 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 		return pcap_open_rpcap(source, snaplen, flags, read_timeout, auth, errbuf);
 
 	default:
-		strlcpy(errbuf, "Source type not supported", PCAP_ERRBUF_SIZE);
+		pcap_strlcpy(errbuf, "Source type not supported", PCAP_ERRBUF_SIZE);
 		return NULL;
 	}
 

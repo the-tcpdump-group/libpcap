@@ -45,46 +45,40 @@
 extern "C" {
 #endif
 
-#ifndef HAVE_STRLCPY
- /*
-  * Macro that does the same thing as strlcpy().
-  */
- #if defined(_MSC_VER) || defined(__MINGW32__)
-  /*
-   * strncpy_s() is supported at least back to Visual
-   * Studio 2005.
-   */
-  #define strlcpy(x, y, z) \
-	strncpy_s((x), (z), (y), _TRUNCATE)
-
- #else
-  #define strlcpy(x, y, z) \
-	(strncpy((x), (y), (z)), \
-	 ((z) <= 0 ? 0 : ((x)[(z) - 1] = '\0')), \
-	 (void) strlen((y)))
- #endif
+#ifdef HAVE_STRLCAT
+  #define pcap_strlcat	strlcat
+#else
+  #if defined(_MSC_VER) || defined(__MINGW32__)
+    /*
+     * strncat_s() is supported at least back to Visual
+     * Studio 2005.
+     */
+    #define pcap_strlcat(x, y, z) \
+	strncat_s((x), (z), (y), _TRUNCATE)
+  #else
+    /*
+     * Define it ourselves.
+     */
+    extern size_t pcap_strlcat(char * restrict dst, const char * restrict src, size_t dstsize);
+  #endif
 #endif
 
-#ifndef HAVE_STRLCAT
- /*
-  * Macro that does the same thing as strlcat().
-  */
- #if defined(_MSC_VER) || defined(__MINGW32__)
-  /*
-   * strncat_s() is supported at least back to Visual
-   * Studio 2005.
-   */
-  #define strlcat(x, y, z) \
-	strncat_s((x), (z), (y), _TRUNCATE)
- #else
-  /*
-   * ANSI C says strncat() always null-terminates its first argument,
-   * so 1) we don't need to explicitly null-terminate the string
-   * ourselves and 2) we need to leave room for the null terminator.
-   */
-  #define strlcat(x, y, z) \
-	strncat((x), (y), (z) - strlen((x)) - 1)
- #endif
+#ifdef HAVE_STRLCPY
+  #define pcap_strlcpy	strlcpy
+#else
+  #if defined(_MSC_VER) || defined(__MINGW32__)
+    /*
+     * strncpy_s() is supported at least back to Visual
+     * Studio 2005.
+     */
+    #define pcap_strlcpy(x, y, z) \
+	strncpy_s((x), (z), (y), _TRUNCATE)
+  #else
+    /*
+     * Define it ourselves.
+     */
+    extern size_t pcap_strlcpy(char * restrict dst, const char * restrict src, size_t dstsize);
+  #endif
 #endif
 
 #ifdef _MSC_VER
@@ -148,7 +142,6 @@ extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
     /*
      * Define it ourselves.
      */
-    #define NEED_STRTOK_R
     extern char *pcap_strtok_r(char *, const char *, char **);
   #endif
 #endif /* HAVE_STRTOK_R */

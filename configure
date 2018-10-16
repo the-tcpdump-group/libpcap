@@ -5024,7 +5024,7 @@ $as_echo "$ac_cv_lbl_gcc_fixincludes" >&6; }
 	    fi
     fi
 
-for ac_func in strerror strerror_r strerror_s strlcpy strlcat
+for ac_func in strerror strerror_r strerror_s
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -5056,6 +5056,52 @@ if test $needsnprintf = yes; then
 	case " $LIBOBJS " in
   *" snprintf.$ac_objext "* ) ;;
   *) LIBOBJS="$LIBOBJS snprintf.$ac_objext"
+ ;;
+esac
+
+fi
+
+needstrlcat=no
+for ac_func in strlcat
+do :
+  ac_fn_c_check_func "$LINENO" "strlcat" "ac_cv_func_strlcat"
+if test "x$ac_cv_func_strlcat" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRLCAT 1
+_ACEOF
+
+else
+  needstrlcat=yes
+fi
+done
+
+if test $needstrlcat = yes; then
+	case " $LIBOBJS " in
+  *" strlcat.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS strlcat.$ac_objext"
+ ;;
+esac
+
+fi
+
+needstrlcpy=no
+for ac_func in strlcpy
+do :
+  ac_fn_c_check_func "$LINENO" "strlcpy" "ac_cv_func_strlcpy"
+if test "x$ac_cv_func_strlcpy" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRLCPY 1
+_ACEOF
+
+else
+  needstrlcpy=yes
+fi
+done
+
+if test $needstrlcpy = yes; then
+	case " $LIBOBJS " in
+  *" strlcpy.$ac_objext "* ) ;;
+  *) LIBOBJS="$LIBOBJS strlcpy.$ac_objext"
  ;;
 esac
 

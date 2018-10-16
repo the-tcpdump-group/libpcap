@@ -1316,7 +1316,7 @@ pcap_setfilter_win32_dag(pcap_t *p, struct bpf_program *fp) {
 
 	if(!fp)
 	{
-		strlcpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
+		pcap_strlcpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
 		return (-1);
 	}
 

@@ -302,7 +302,7 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, int size)
 	 * it should check "p->linktype" and reject the send request if
 	 * it's anything other than DLT_EN10MB.
 	 */
-	strlcpy(p->errbuf, "send: Not supported on this version of this OS",
+	pcap_strlcpy(p->errbuf, "send: Not supported on this version of this OS",
 	    PCAP_ERRBUF_SIZE);
 	ret = -1;
 #endif /* raw mode */
@@ -358,9 +358,9 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	*/
 	cp = strrchr(name, '/');
 	if (cp == NULL)
-		strlcpy(dname, name, sizeof(dname));
+		pcap_strlcpy(dname, name, sizeof(dname));
 	else
-		strlcpy(dname, cp + 1, sizeof(dname));
+		pcap_strlcpy(dname, cp + 1, sizeof(dname));
 
 	/*
 	 * Split the device name into a device type name and a unit number;
@@ -410,7 +410,7 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 * device name.
 	 */
 	if (*name == '/')
-		strlcpy(dname, name, sizeof(dname));
+		pcap_strlcpy(dname, name, sizeof(dname));
 	else
 		pcap_snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
 		    name);
@@ -427,7 +427,7 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	 * Make a copy of the device pathname, and then remove the unit
 	 * number from the device pathname.
 	 */
-	strlcpy(dname2, dname, sizeof(dname));
+	pcap_strlcpy(dname2, dname, sizeof(dname));
 	*cp = '\0';
 
 	/* Try device without unit number */
@@ -963,7 +963,7 @@ dl_dohpuxbind(int fd, char *ebuf)
 		*ebuf = '\0';
 		hpsap++;
 		if (hpsap > 100) {
-			strlcpy(ebuf,
+			pcap_strlcpy(ebuf,
 			    "All SAPs from 22 through 100 are in use",
 			    PCAP_ERRBUF_SIZE);
 			return (-1);
@@ -1542,7 +1542,7 @@ get_release(char *buf, size_t bufsize, bpf_u_int32 *majorp,
 	*minorp = 0;
 	*microp = 0;
 	if (sysinfo(SI_RELEASE, buf, bufsize) < 0) {
-		strlcpy(buf, "?", bufsize);
+		pcap_strlcpy(buf, "?", bufsize);
 		return;
 	}
 	cp = buf;

@@ -279,6 +279,8 @@ EXTRA_DIST = \
 	missing/getopt.c \
 	missing/getopt.h \
 	missing/snprintf.c \
+	missing/strlcat.c \
+	missing/strlcpy.c \
 	missing/strtok_r.c \
 	missing/win_snprintf.c \
 	mkdep \
@@ -491,6 +493,12 @@ gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
 
 snprintf.o: $(srcdir)/missing/snprintf.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
+
+strlcat.o: $(srcdir)/missing/strlcat.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strlcat.c
+
+strlcpy.o: $(srcdir)/missing/strlcpy.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strlcpy.c
 
 strtok_r.o: $(srcdir)/missing/strtok_r.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/strtok_r.c

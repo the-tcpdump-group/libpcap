@@ -237,7 +237,7 @@ snf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 		return (-1);
 	}
 #else
-	strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
+	pcap_strlcpy(p->errbuf, "Sending packets isn't supported with this snf version",
 	    PCAP_ERRBUF_SIZE);
 	return (-1);
 #endif
