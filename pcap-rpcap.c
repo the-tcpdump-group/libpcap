@@ -2529,7 +2529,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			}
 
 			/* Copy the new device name into the correct memory location */
-			strlcpy(dev->name, tmpstring2, stringlen + 1);
+			pcap_strlcpy(dev->name, tmpstring2, stringlen + 1);
 		}
 
 		if (findalldevs_if.desclen)
@@ -2562,7 +2562,7 @@ pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **
 			}
 
 			/* Copy the new device description into the correct memory location */
-			strlcpy(dev->description, tmpstring2, stringlen + 1);
+			pcap_strlcpy(dev->description, tmpstring2, stringlen + 1);
 		}
 
 		dev->flags = ntohl(findalldevs_if.flags);
@@ -2984,7 +2984,7 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 			return -1;
 		}
 
-		strlcat(hostlist, hoststr, PCAP_ERRBUF_SIZE);
+		pcap_strlcat(hostlist, hoststr, PCAP_ERRBUF_SIZE);
 		hostlist[len - 1] = sep;
 		hostlist[len] = 0;
 

@@ -83,13 +83,27 @@ esac
 
 AC_LBL_FIXINCLUDES
 
-AC_CHECK_FUNCS(strerror strerror_r strerror_s strlcpy strlcat)
+AC_CHECK_FUNCS(strerror strerror_r strerror_s)
 
 needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
 	[needsnprintf=yes])
 if test $needsnprintf = yes; then
 	AC_LIBOBJ([snprintf])
+fi
+
+needstrlcat=no
+AC_CHECK_FUNCS(strlcat,,
+	[needstrlcat=yes])
+if test $needstrlcat = yes; then
+	AC_LIBOBJ([strlcat])
+fi
+
+needstrlcpy=no
+AC_CHECK_FUNCS(strlcpy,,
+	[needstrlcpy=yes])
+if test $needstrlcpy = yes; then
+	AC_LIBOBJ([strlcpy])
 fi
 
 needstrtok_r=no

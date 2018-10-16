@@ -610,7 +610,7 @@ sdup(compiler_state_t *cstate, const char *s)
 	size_t n = strlen(s) + 1;
 	char *cp = newchunk(cstate, n);
 
-	strlcpy(cp, s, n);
+	pcap_strlcpy(cp, s, n);
 	return (cp);
 }
 

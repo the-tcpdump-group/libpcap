@@ -1389,7 +1389,7 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 			(memcmp(&((struct sockaddr_in6 *) sockaddr)->sin6_addr, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", sizeof(struct in6_addr)) == 0))
 		{
 			if (address)
-				strlcpy(address, SOCKET_NAME_NULL_DAD, addrlen);
+				pcap_strlcpy(address, SOCKET_NAME_NULL_DAD, addrlen);
 			return retval;
 		}
 	}
@@ -1405,13 +1405,13 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 
 		if (address)
 		{
-			strlcpy(address, SOCKET_NO_NAME_AVAILABLE, addrlen);
+			pcap_strlcpy(address, SOCKET_NO_NAME_AVAILABLE, addrlen);
 			address[addrlen - 1] = 0;
 		}
 
 		if (port)
 		{
-			strlcpy(port, SOCKET_NO_PORT_AVAILABLE, portlen);
+			pcap_strlcpy(port, SOCKET_NO_PORT_AVAILABLE, portlen);
 			port[portlen - 1] = 0;
 		}
 

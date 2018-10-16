@@ -279,7 +279,7 @@ usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 * Split LINUX_USB_MON_DEV into a directory that we'll
 		 * scan and a file name prefix that we'll check for.
 		 */
-		strlcpy(usb_mon_dir, LINUX_USB_MON_DEV, sizeof usb_mon_dir);
+		pcap_strlcpy(usb_mon_dir, LINUX_USB_MON_DEV, sizeof usb_mon_dir);
 		usb_mon_prefix = strrchr(usb_mon_dir, '/');
 		if (usb_mon_prefix == NULL) {
 			/*

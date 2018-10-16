@@ -315,7 +315,7 @@ void fileconf_read(void)
 				// it.
 				//
 				*ptr++ = '\0';
-				result = strlcpy(activelist[num_active_clients].address, address, sizeof(activelist[num_active_clients].address));
+				result = pcap_strlcpy(activelist[num_active_clients].address, address, sizeof(activelist[num_active_clients].address));
 				if (result >= sizeof(activelist[num_active_clients].address))
 				{
 					//
@@ -328,9 +328,9 @@ void fileconf_read(void)
 					continue;
 				}
 				if (strcmp(port, "DEFAULT") == 0) // the user choose a custom port
-					result = strlcpy(activelist[num_active_clients].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof(activelist[num_active_clients].port));
+					result = pcap_strlcpy(activelist[num_active_clients].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof(activelist[num_active_clients].port));
 				else
-					result = strlcpy(activelist[num_active_clients].port, port, sizeof(activelist[num_active_clients].port));
+					result = pcap_strlcpy(activelist[num_active_clients].port, port, sizeof(activelist[num_active_clients].port));
 				if (result >= sizeof(activelist[num_active_clients].address))
 				{
 					//
@@ -390,7 +390,7 @@ void fileconf_read(void)
 					// The list is not empty, so prepend
 					// a comma before adding this host.
 					//
-					result = strlcat(hostlist, ",", sizeof(hostlist));
+					result = pcap_strlcat(hostlist, ",", sizeof(hostlist));
 					if (result >= sizeof(hostlist))
 					{
 						//
@@ -406,7 +406,7 @@ void fileconf_read(void)
 						continue;
 					}
 				}
-				result = strlcat(hostlist, host, sizeof(hostlist));
+				result = pcap_strlcat(hostlist, host, sizeof(hostlist));
 				if (result >= sizeof(hostlist))
 				{
 					//

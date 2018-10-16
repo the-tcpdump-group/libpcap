@@ -977,7 +977,7 @@ added:
 	 * Now configure the monitor interface up.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handlep->mondevice, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, handlep->mondevice, sizeof(ifr.ifr_name));
 	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "%s: Can't get flags for %s", device,
@@ -1038,7 +1038,7 @@ is_bonding_device(int fd, const char *device)
 	ifbond ifb;
 
 	memset(&ifr, 0, sizeof ifr);
-	strlcpy(ifr.ifr_name, device, sizeof ifr.ifr_name);
+	pcap_strlcpy(ifr.ifr_name, device, sizeof ifr.ifr_name);
 	memset(&ifb, 0, sizeof ifb);
 	ifr.ifr_data = (caddr_t)&ifb;
 	if (ioctl(fd, BOND_INFO_QUERY_IOCTL, &ifr) == 0)
@@ -1127,7 +1127,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	/*
 	 * Attempt to get the current mode.
 	 */
-	strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.device,
+	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, handle->opt.device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) != -1) {
 		/*
@@ -1250,7 +1250,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			 * in 2.0[.x] kernels.
 			 */
 			memset(&ifr, 0, sizeof(ifr));
-			strlcpy(ifr.ifr_name, handlep->device,
+			pcap_strlcpy(ifr.ifr_name, handlep->device,
 			    sizeof(ifr.ifr_name));
 			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 				fprintf(stderr,
@@ -1314,7 +1314,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			 */
 			oldflags = 0;
 			memset(&ifr, 0, sizeof(ifr));
-			strlcpy(ifr.ifr_name, handlep->device,
+			pcap_strlcpy(ifr.ifr_name, handlep->device,
 			    sizeof(ifr.ifr_name));
 			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) != -1) {
 				if (ifr.ifr_flags & IFF_UP) {
@@ -1328,7 +1328,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 			/*
 			 * Now restore the mode.
 			 */
-			strlcpy(ireq.ifr_ifrn.ifrn_name, handlep->device,
+			pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, handlep->device,
 			    sizeof ireq.ifr_ifrn.ifrn_name);
 			ireq.u.mode = handlep->oldmode;
 			if (ioctl(handle->fd, SIOCSIWMODE, &ireq) == -1) {
@@ -2121,7 +2121,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 			/*
 			 * We don't support sending on the "any" device.
 			 */
-			strlcpy(handle->errbuf,
+			pcap_strlcpy(handle->errbuf,
 			    "Sending packets isn't supported on the \"any\" device",
 			    PCAP_ERRBUF_SIZE);
 			return (-1);
@@ -2135,7 +2135,7 @@ pcap_inject_linux(pcap_t *handle, const void *buf, size_t size)
 			 * socket?
 			 * Is a "sendto()" required there?
 			 */
-			strlcpy(handle->errbuf,
+			pcap_strlcpy(handle->errbuf,
 			    "Sending packets isn't supported in cooked mode",
 			    PCAP_ERRBUF_SIZE);
 			return (-1);
@@ -2349,7 +2349,7 @@ add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 	/*
 	 * Get the flags for this interface.
 	 */
-	strlcpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
+	pcap_strlcpy(ifrflags.ifr_name, name, sizeof(ifrflags.ifr_name));
 	if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifrflags) < 0) {
 		if (errno == ENXIO || errno == ENODEV)
 			return (0);	/* device doesn't actually exist - ignore it */
@@ -2708,7 +2708,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 
 #ifdef ETHTOOL_GLINK
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
 	info.cmd = ETHTOOL_GLINK;
 	ifr.ifr_data = (caddr_t)&info;
 	if (ioctl(sock, SIOCETHTOOL, &ifr) == -1) {
@@ -2836,7 +2836,7 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 	if (!handle)
 		return -1;
 	if (!filter) {
-	        strlcpy(handle->errbuf, "setfilter: No filter specified",
+	        pcap_strlcpy(handle->errbuf, "setfilter: No filter specified",
 			PCAP_ERRBUF_SIZE);
 		return -1;
 	}
@@ -3940,7 +3940,7 @@ activate_new(pcap_t *handle)
 
 	return 1;
 #else /* HAVE_PF_PACKET_SOCKETS */
-	strlcpy(ebuf,
+	pcap_strlcpy(ebuf,
 		"New packet capturing interface not supported by build "
 		"environment", PCAP_ERRBUF_SIZE);
 	return 0;
@@ -4496,7 +4496,7 @@ create_ring(pcap_t *handle, int *status)
 		hwconfig.rx_filter = HWTSTAMP_FILTER_ALL;
 
 		memset(&ifr, 0, sizeof(ifr));
-		strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
+		pcap_strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 		ifr.ifr_data = (void *)&hwconfig;
 
 		if (ioctl(handle->fd, SIOCSHWTSTAMP, &ifr) < 0) {
@@ -5521,7 +5521,7 @@ iface_get_id(int fd, const char *device, char *ebuf)
 	struct ifreq	ifr;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFINDEX, &ifr) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
@@ -5606,7 +5606,7 @@ has_wext(int sock_fd, const char *device, char *ebuf)
 	if (is_bonding_device(sock_fd, device))
 		return 0;	/* bonding device, so don't even try */
 
-	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
 		return 1;	/* yes */
@@ -5743,7 +5743,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * return EOPNOTSUPP.
 	 */
 	memset(&ireq, 0, sizeof ireq);
-	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	ireq.u.data.pointer = (void *)args;
 	ireq.u.data.length = 0;
@@ -5943,7 +5943,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	/*
 	 * Get the old mode.
 	 */
-	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWMODE, &ireq) == -1) {
 		/*
@@ -5999,7 +5999,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * If it fails, just fall back on SIOCSIWMODE.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		ireq.u.data.length = 1;	/* 1 argument */
 		args[0] = 3;	/* request Prism header */
@@ -6031,7 +6031,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * might get EBUSY.
 	 */
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	if (ioctl(sock_fd, SIOCGIFFLAGS, &ifr) == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "%s: Can't get flags", device);
@@ -6052,7 +6052,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	/*
 	 * Then turn monitor mode on.
 	 */
-	strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+	pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	ireq.u.mode = IW_MODE_MONITOR;
 	if (ioctl(sock_fd, SIOCSIWMODE, &ireq) == -1) {
@@ -6092,7 +6092,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Try to select the radiotap header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 3;	/* request radiotap header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6103,7 +6103,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * That failed.  Try to select the AVS header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 2;	/* request AVS header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6114,7 +6114,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * That failed.  Try to select the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 1;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6132,7 +6132,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Select the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 3;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6144,7 +6144,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Get the current channel.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		if (ioctl(sock_fd, SIOCGIWFREQ, &ireq) == -1) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
@@ -6158,7 +6158,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * current value.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 1;		/* request Prism header */
 		args[1] = channel;	/* set channel */
@@ -6172,7 +6172,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 0;	/* disallow transmitting */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6184,7 +6184,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Force the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 1;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6196,7 +6196,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Force the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		ireq.u.data.length = 1;	/* 1 argument */
 		ireq.u.data.pointer = "1";
@@ -6209,7 +6209,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 		 * Force the Prism header.
 		 */
 		memset(&ireq, 0, sizeof ireq);
-		strlcpy(ireq.ifr_ifrn.ifrn_name, device,
+		pcap_strlcpy(ireq.ifr_ifrn.ifrn_name, device,
 		    sizeof ireq.ifr_ifrn.ifrn_name);
 		args[0] = 1;	/* request Prism header */
 		memcpy(ireq.u.name, args, sizeof (int));
@@ -6357,7 +6357,7 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 	}
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 	memset(&info, 0, sizeof(info));
 	info.cmd = ETHTOOL_GET_TS_INFO;
 	ifr.ifr_data = (caddr_t)&info;
@@ -6493,7 +6493,7 @@ iface_ethtool_flag_ioctl(pcap_t *handle, int cmd, const char *cmdname,
 	struct ethtool_value eval;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, handle->opt.device, sizeof(ifr.ifr_name));
 	eval.cmd = cmd;
 	eval.data = 0;
 	ifr.ifr_data = (caddr_t)&eval;
@@ -6657,7 +6657,7 @@ activate_old(pcap_t *handle)
 	/* Bind to the given device */
 
 	if (strcmp(device, "any") == 0) {
-		strlcpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
+		pcap_strlcpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
 			PCAP_ERRBUF_SIZE);
 		return PCAP_ERROR;
 	}
@@ -6686,7 +6686,7 @@ activate_old(pcap_t *handle)
 
 	if (handle->opt.promisc) {
 		memset(&ifr, 0, sizeof(ifr));
-		strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+		pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 		if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "SIOCGIFFLAGS");
@@ -6823,7 +6823,7 @@ iface_bind_old(int fd, const char *device, char *ebuf)
 	socklen_t	errlen = sizeof(err);
 
 	memset(&saddr, 0, sizeof(saddr));
-	strlcpy(saddr.sa_data, device, sizeof(saddr.sa_data));
+	pcap_strlcpy(saddr.sa_data, device, sizeof(saddr.sa_data));
 	if (bind(fd, &saddr, sizeof(saddr)) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "bind");
@@ -6862,7 +6862,7 @@ iface_get_mtu(int fd, const char *device, char *ebuf)
 		return BIGGER_THAN_ALL_MTUS;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFMTU, &ifr) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
@@ -6882,7 +6882,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	struct ifreq	ifr;
 
 	memset(&ifr, 0, sizeof(ifr));
-	strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
+	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFHWADDR, &ifr) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,

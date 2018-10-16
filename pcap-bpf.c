@@ -799,8 +799,8 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 			    errno, "socket");
 			return (PCAP_ERROR);
 		}
-		strlcpy(ifr.ifr_name, "wlt", sizeof(ifr.ifr_name));
-		strlcat(ifr.ifr_name, p->opt.device + 2, sizeof(ifr.ifr_name));
+		pcap_strlcpy(ifr.ifr_name, "wlt", sizeof(ifr.ifr_name));
+		pcap_strlcat(ifr.ifr_name, p->opt.device + 2, sizeof(ifr.ifr_name));
 		if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
 			/*
 			 * No such device?
@@ -1469,7 +1469,7 @@ pcap_cleanup_bpf(pcap_t *p)
 
 				s = socket(AF_LOCAL, SOCK_DGRAM, 0);
 				if (s >= 0) {
-					strlcpy(ifr.ifr_name, pb->device,
+					pcap_strlcpy(ifr.ifr_name, pb->device,
 					    sizeof(ifr.ifr_name));
 					ioctl(s, SIOCIFDESTROY, &ifr);
 					close(s);
@@ -1532,9 +1532,9 @@ check_setif_failure(pcap_t *p, int error)
 			 */
 			fd = socket(AF_INET, SOCK_DGRAM, 0);
 			if (fd != -1) {
-				strlcpy(ifr.ifr_name, "en",
+				pcap_strlcpy(ifr.ifr_name, "en",
 				    sizeof(ifr.ifr_name));
-				strlcat(ifr.ifr_name, p->opt.device + 3,
+				pcap_strlcat(ifr.ifr_name, p->opt.device + 3,
 				    sizeof(ifr.ifr_name));
 				if (ioctl(fd, SIOCGIFFLAGS, (char *)&ifr) < 0) {
 					/*
@@ -1721,7 +1721,7 @@ pcap_activate_bpf(pcap_t *p)
 			goto bad;
 		}
 		znamelen = zonesep - p->opt.device;
-		(void) strlcpy(path_zname, p->opt.device, znamelen + 1);
+		(void) pcap_strlcpy(path_zname, p->opt.device, znamelen + 1);
 		ifr.lifr_zoneid = getzoneidbyname(path_zname);
 		if (ifr.lifr_zoneid == -1) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -1786,7 +1786,7 @@ pcap_activate_bpf(pcap_t *p)
 					 */
 					sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 					if (sockfd != -1) {
-						strlcpy(ifrname,
+						pcap_strlcpy(ifrname,
 						    p->opt.device, ifnamsiz);
 						if (ioctl(sockfd, SIOCGIFFLAGS,
 						    (char *)&ifr) < 0) {
@@ -1888,7 +1888,7 @@ pcap_activate_bpf(pcap_t *p)
 			/*
 			 * Create the interface.
 			 */
-			strlcpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
+			pcap_strlcpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
 			if (ioctl(s, SIOCIFCREATE2, &ifr) < 0) {
 				if (errno == EINVAL) {
 					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,

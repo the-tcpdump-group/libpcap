@@ -179,7 +179,7 @@ sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
 static u_int
 sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
 {
-	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
+	pcap_strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
 	    PCAP_ERRBUF_SIZE);
 	return (0);
 }
@@ -218,7 +218,7 @@ sf_get_airpcap_handle(pcap_t *pcap)
 static int
 sf_inject(pcap_t *p, const void *buf _U_, size_t size _U_)
 {
-	strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
+	pcap_strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
 	    PCAP_ERRBUF_SIZE);
 	return (-1);
 }
