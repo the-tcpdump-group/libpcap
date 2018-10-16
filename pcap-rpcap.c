@@ -763,6 +763,8 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 		pr->currentfilter = NULL;
 	}
 
+	pcap_cleanup_live_common(fp);
+
 	/* To avoid inconsistencies in the number of sock_init() */
 	sock_cleanup();
 }
