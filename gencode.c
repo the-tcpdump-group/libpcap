@@ -4785,11 +4785,11 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	case Q_ARP:
 		return gen_hostop(cstate, addr, mask, dir, ETHERTYPE_ARP, 14, 24);
 
-	case Q_TCP:
-		bpf_error(cstate, "'tcp' modifier applied to %s", typestr);
-
 	case Q_SCTP:
 		bpf_error(cstate, "'sctp' modifier applied to %s", typestr);
+
+	case Q_TCP:
+		bpf_error(cstate, "'tcp' modifier applied to %s", typestr);
 
 	case Q_UDP:
 		bpf_error(cstate, "'udp' modifier applied to %s", typestr);
@@ -4803,35 +4803,23 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	case Q_IGRP:
 		bpf_error(cstate, "'igrp' modifier applied to %s", typestr);
 
-	case Q_PIM:
-		bpf_error(cstate, "'pim' modifier applied to %s", typestr);
-
-	case Q_VRRP:
-		bpf_error(cstate, "'vrrp' modifier applied to %s", typestr);
-
-	case Q_CARP:
-		bpf_error(cstate, "'carp' modifier applied to %s", typestr);
-
 	case Q_ATALK:
-		bpf_error(cstate, "ATALK host filtering not implemented");
-
-	case Q_AARP:
-		bpf_error(cstate, "AARP host filtering not implemented");
+		bpf_error(cstate, "AppleTalk host filtering not implemented");
 
 	case Q_DECNET:
 		return gen_dnhostop(cstate, addr, dir);
 
-	case Q_SCA:
-		bpf_error(cstate, "SCA host filtering not implemented");
-
 	case Q_LAT:
 		bpf_error(cstate, "LAT host filtering not implemented");
 
-	case Q_MOPDL:
-		bpf_error(cstate, "MOPDL host filtering not implemented");
+	case Q_SCA:
+		bpf_error(cstate, "SCA host filtering not implemented");
 
 	case Q_MOPRC:
 		bpf_error(cstate, "MOPRC host filtering not implemented");
+
+	case Q_MOPDL:
+		bpf_error(cstate, "MOPDL host filtering not implemented");
 
 	case Q_IPV6:
 		bpf_error(cstate, "'ip6' modifier applied to ip host");
@@ -4844,6 +4832,15 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 
 	case Q_ESP:
 		bpf_error(cstate, "'esp' modifier applied to %s", typestr);
+
+	case Q_PIM:
+		bpf_error(cstate, "'pim' modifier applied to %s", typestr);
+
+	case Q_VRRP:
+		bpf_error(cstate, "'vrrp' modifier applied to %s", typestr);
+
+	case Q_AARP:
+		bpf_error(cstate, "AARP host filtering not implemented");
 
 	case Q_ISO:
 		bpf_error(cstate, "ISO host filtering not implemented");
@@ -4866,8 +4863,32 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 	case Q_NETBEUI:
 		bpf_error(cstate, "'netbeui' modifier applied to %s", typestr);
 
+	case Q_ISIS_L1:
+		bpf_error(cstate, "'l1' modifier applied to %s", typestr);
+
+	case Q_ISIS_L2:
+		bpf_error(cstate, "'l2' modifier applied to %s", typestr);
+
+	case Q_ISIS_IIH:
+		bpf_error(cstate, "'iih' modifier applied to %s", typestr);
+
+	case Q_ISIS_SNP:
+		bpf_error(cstate, "'snp' modifier applied to %s", typestr);
+
+	case Q_ISIS_CSNP:
+		bpf_error(cstate, "'csnp' modifier applied to %s", typestr);
+
+	case Q_ISIS_PSNP:
+		bpf_error(cstate, "'psnp' modifier applied to %s", typestr);
+
+	case Q_ISIS_LSP:
+		bpf_error(cstate, "'lsp' modifier applied to %s", typestr);
+
 	case Q_RADIO:
 		bpf_error(cstate, "'radio' modifier applied to %s", typestr);
+
+	case Q_CARP:
+		bpf_error(cstate, "'carp' modifier applied to %s", typestr);
 
 	default:
 		abort();
@@ -4932,7 +4953,7 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 		bpf_error(cstate, "'carp' modifier applied to %s", typestr);
 
 	case Q_ATALK:
-		bpf_error(cstate, "ATALK host filtering not implemented");
+		bpf_error(cstate, "AppleTalk modifier applied to %s", typestr);
 
 	case Q_AARP:
 		bpf_error(cstate, "AARP host filtering not implemented");

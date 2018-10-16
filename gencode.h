@@ -113,16 +113,14 @@
 #define Q_ISIS_L2       32
 /* PDU types */
 #define Q_ISIS_IIH      33
-#define Q_ISIS_LAN_IIH  34
-#define Q_ISIS_PTP_IIH  35
-#define Q_ISIS_SNP      36
-#define Q_ISIS_CSNP     37
-#define Q_ISIS_PSNP     38
-#define Q_ISIS_LSP      39
+#define Q_ISIS_SNP      34
+#define Q_ISIS_CSNP     35
+#define Q_ISIS_PSNP     36
+#define Q_ISIS_LSP      37
 
-#define Q_RADIO		40
+#define Q_RADIO		38
 
-#define Q_CARP		41
+#define Q_CARP		39
 
 /* Directional qualifiers. */
 
