@@ -82,7 +82,7 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-  #define isascii	_isascii
+  #define isascii	__isascii
 
   /*
    * If <crtdbg.h> has been included, and _DEBUG is defined, and
