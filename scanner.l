@@ -397,14 +397,8 @@ hsls		return HSLS;
 "=="			return '=';
 "<<"			return LSH;
 ">>"			return RSH;
-${B}			{ yylval->e = pcap_ether_aton(((char *)yytext)+1);
-			  if (yylval->e == NULL)
-				bpf_error(yyextra, "malloc");
-			  return AID; }
-{MAC}			{ yylval->e = pcap_ether_aton((char *)yytext);
-			  if (yylval->e == NULL)
-				bpf_error(yyextra, "malloc");
-			  return EID; }
+${B}			{ yylval->s = sdup(yyextra, yytext); return AID; }
+{MAC}			{ yylval->s = sdup(yyextra, yytext); return EID; }
 {N}			{ yylval->i = stoi((char *)yytext); return NUM; }
 ({N}\.{N})|({N}\.{N}\.{N})|({N}\.{N}\.{N}\.{N})	{
 			yylval->s = sdup(yyextra, (char *)yytext); return HID; }

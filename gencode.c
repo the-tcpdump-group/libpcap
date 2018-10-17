@@ -279,6 +279,13 @@ struct _compiler_state {
 	struct addrinfo *ai;
 
 	/*
+	 * Another thing that's allocated is the result of pcap_ether_aton();
+	 * it must be freed with free().  This variable points to any
+	 * address that would need to be freed.
+	 */
+	u_char *e;
+
+	/*
 	 * Various code constructs need to know the layout of the packet.
 	 * These values give the necessary offsets from the beginning
 	 * of the packet data.
@@ -710,6 +717,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 #ifdef INET6
 	cstate.ai = NULL;
 #endif
+	cstate.e = NULL;
 	cstate.ic.root = NULL;
 	cstate.ic.cur_mark = 0;
 	cstate.bpf_pcap = p;
@@ -720,6 +728,8 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		if (cstate.ai != NULL)
 			freeaddrinfo(cstate.ai);
 #endif
+		if (cstate.e != NULL)
+			free(cstate.e);
 		rc = -1;
 		goto quit;
 	}
@@ -6909,36 +6919,49 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 #endif /*INET6*/
 
 struct block *
-gen_ecode(compiler_state_t *cstate, const u_char *eaddr, struct qual q)
+gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 {
 	struct block *b, *tmp;
 
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
+		cstate->e = pcap_ether_aton(s);
+		if (cstate->e == NULL)
+			bpf_error(cstate, "malloc");
 		switch (cstate->linktype) {
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
 			tmp = gen_prevlinkhdr_check(cstate);
-			b = gen_ehostop(cstate, eaddr, (int)q.dir);
+			b = gen_ehostop(cstate, cstate->e, (int)q.dir);
 			if (tmp != NULL)
 				gen_and(tmp, b);
-			return b;
+			break;
 		case DLT_FDDI:
-			return gen_fhostop(cstate, eaddr, (int)q.dir);
+			b = gen_fhostop(cstate, cstate->e, (int)q.dir);
+			break;
 		case DLT_IEEE802:
-			return gen_thostop(cstate, eaddr, (int)q.dir);
+			b = gen_thostop(cstate, cstate->e, (int)q.dir);
+			break;
 		case DLT_IEEE802_11:
 		case DLT_PRISM_HEADER:
 		case DLT_IEEE802_11_RADIO_AVS:
 		case DLT_IEEE802_11_RADIO:
 		case DLT_PPI:
-			return gen_wlanhostop(cstate, eaddr, (int)q.dir);
+			b = gen_wlanhostop(cstate, cstate->e, (int)q.dir);
+			break;
 		case DLT_IP_OVER_FC:
-			return gen_ipfchostop(cstate, eaddr, (int)q.dir);
+			b = gen_ipfchostop(cstate, cstate->e, (int)q.dir);
+			break;
 		default:
+			free(cstate->e);
+			cstate->e = NULL;
 			bpf_error(cstate, "ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
+			/* NOTREACHED */
 			break;
 		}
+		free(cstate->e);
+		cstate->e = NULL;
+		return (b);
 	}
 	bpf_error(cstate, "ethernet address used in non-ether expression");
 	/* NOTREACHED */
@@ -8111,16 +8134,24 @@ gen_p80211_fcdir(compiler_state_t *cstate, int fcdir)
 }
 
 struct block *
-gen_acode(compiler_state_t *cstate, const u_char *eaddr, struct qual q)
+gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 {
+	struct block *b;
+
 	switch (cstate->linktype) {
 
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
 		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
-		    q.proto == Q_LINK)
-			return (gen_ahostop(cstate, eaddr, (int)q.dir));
-		else {
+		    q.proto == Q_LINK) {
+			cstate->e = pcap_ether_aton(s);
+			if (cstate->e == NULL)
+				bpf_error(cstate, "malloc");
+			b = gen_ahostop(cstate, cstate->e, (int)q.dir);
+			free(cstate->e);
+			cstate->e = NULL;
+			return (b);
+		} else {
 			bpf_error(cstate, "ARCnet address used in non-arc expression");
 			/* NOTREACHED */
 		}
