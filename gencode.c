@@ -433,6 +433,25 @@ bpf_parser_error(compiler_state_t *cstate, const char *msg)
 	/* NOTREACHED */
 }
 
+/*
+ * For use by the optimizer, which needs to do its *own* cleanup before
+ * delivering a longjmp-based exception.
+ */
+void
+bpf_vset_error(compiler_state_t *cstate, const char *fmt, va_list ap)
+{
+	if (cstate->bpf_pcap != NULL)
+		(void)pcap_vsnprintf(pcap_geterr(cstate->bpf_pcap),
+		    PCAP_ERRBUF_SIZE, fmt, ap);
+}
+
+void PCAP_NORETURN
+bpf_abort_compilation(compiler_state_t *cstate)
+{
+	longjmp(cstate->top_ctx, 1);
+	/* NOTREACHED */
+}
+
 /* VARARGS */
 void PCAP_NORETURN
 bpf_error(compiler_state_t *cstate, const char *fmt, ...)
@@ -440,11 +459,9 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	if (cstate->bpf_pcap != NULL)
-		(void)pcap_vsnprintf(pcap_geterr(cstate->bpf_pcap),
-		    PCAP_ERRBUF_SIZE, fmt, ap);
+	bpf_vset_error(cstate, fmt, ap);
 	va_end(ap);
-	longjmp(cstate->top_ctx, 1);
+	bpf_abort_compilation(cstate);
 	/* NOTREACHED */
 }
 

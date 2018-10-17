@@ -384,8 +384,11 @@ struct icode {
 	int cur_mark;
 };
 
-void bpf_optimize(compiler_state_t *, struct icode *ic);
+void bpf_optimize(compiler_state_t *, struct icode *);
 void PCAP_NORETURN bpf_parser_error(compiler_state_t *, const char *);
+void bpf_vset_error(compiler_state_t *, const char *, va_list)
+    PCAP_PRINTFLIKE(2, 0);
+void PCAP_NORETURN bpf_abort_compilation(compiler_state_t *);
 void PCAP_NORETURN bpf_error(compiler_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
 

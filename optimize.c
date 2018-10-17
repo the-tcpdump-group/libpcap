@@ -323,6 +323,8 @@ typedef struct {
 
 static void opt_init(compiler_state_t *, opt_state_t *, struct icode *);
 static void opt_cleanup(opt_state_t *);
+static void PCAP_NORETURN opt_error(compiler_state_t *, opt_state_t *, const char *, ...)
+    PCAP_PRINTFLIKE(3, 4);
 
 static void intern_blocks(opt_state_t *, struct icode *);
 
@@ -722,13 +724,13 @@ fold_op(compiler_state_t *cstate, opt_state_t *opt_state,
 
 	case BPF_DIV:
 		if (b == 0)
-			bpf_error(cstate, "division by zero");
+			opt_error(cstate, opt_state, "division by zero");
 		a /= b;
 		break;
 
 	case BPF_MOD:
 		if (b == 0)
-			bpf_error(cstate, "modulus by zero");
+			opt_error(cstate, opt_state, "modulus by zero");
 		a %= b;
 		break;
 
@@ -1972,6 +1974,22 @@ opt_cleanup(opt_state_t *opt_state)
 }
 
 /*
+ * Like bpf_error(), but also cleans up the optimizer state.
+ */
+static void PCAP_NORETURN
+opt_error(compiler_state_t *cstate, opt_state_t *opt_state, const char *fmt, ...)
+{
+	va_list ap;
+
+	opt_cleanup(opt_state);
+	va_start(ap, fmt);
+	bpf_vset_error(cstate, fmt, ap);
+	va_end(ap);
+	bpf_abort_compilation(cstate);
+	/* NOTREACHED */
+}
+
+/*
  * Return the number of stmts in 's'.
  */
 static u_int
@@ -2075,15 +2093,20 @@ opt_init(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic)
 
 	opt_state->n_edges = 2 * opt_state->n_blocks;
 	opt_state->edges = (struct edge **)calloc(opt_state->n_edges, sizeof(*opt_state->edges));
-	if (opt_state->edges == NULL)
+	if (opt_state->edges == NULL) {
+		free(opt_state->blocks);
 		bpf_error(cstate, "malloc");
+	}
 
 	/*
 	 * The number of levels is bounded by the number of nodes.
 	 */
 	opt_state->levels = (struct block **)calloc(opt_state->n_blocks, sizeof(*opt_state->levels));
-	if (opt_state->levels == NULL)
+	if (opt_state->levels == NULL) {
+		free(opt_state->edges);
+		free(opt_state->blocks);
 		bpf_error(cstate, "malloc");
+	}
 
 	opt_state->edgewords = opt_state->n_edges / (8 * sizeof(bpf_u_int32)) + 1;
 	opt_state->nodewords = opt_state->n_blocks / (8 * sizeof(bpf_u_int32)) + 1;
@@ -2091,8 +2114,12 @@ opt_init(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic)
 	/* XXX */
 	opt_state->space = (bpf_u_int32 *)malloc(2 * opt_state->n_blocks * opt_state->nodewords * sizeof(*opt_state->space)
 				 + opt_state->n_edges * opt_state->edgewords * sizeof(*opt_state->space));
-	if (opt_state->space == NULL)
+	if (opt_state->space == NULL) {
+		free(opt_state->levels);
+		free(opt_state->edges);
+		free(opt_state->blocks);
 		bpf_error(cstate, "malloc");
+	}
 	p = opt_state->space;
 	opt_state->all_dom_sets = p;
 	for (i = 0; i < n; ++i) {
@@ -2129,9 +2156,22 @@ opt_init(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic)
 	 */
 	opt_state->maxval = 3 * max_stmts;
 	opt_state->vmap = (struct vmapinfo *)calloc(opt_state->maxval, sizeof(*opt_state->vmap));
-	opt_state->vnode_base = (struct valnode *)calloc(opt_state->maxval, sizeof(*opt_state->vnode_base));
-	if (opt_state->vmap == NULL || opt_state->vnode_base == NULL)
+	if (opt_state->vmap == NULL) {
+		free(opt_state->space);
+		free(opt_state->levels);
+		free(opt_state->edges);
+		free(opt_state->blocks);
 		bpf_error(cstate, "malloc");
+	}
+	opt_state->vnode_base = (struct valnode *)calloc(opt_state->maxval, sizeof(*opt_state->vnode_base));
+	if (opt_state->vnode_base == NULL) {
+		free(opt_state->vmap);
+		free(opt_state->space);
+		free(opt_state->levels);
+		free(opt_state->edges);
+		free(opt_state->blocks);
+		bpf_error(cstate, "malloc");
+	}
 }
 
 /*
@@ -2142,6 +2182,9 @@ opt_init(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic)
 #ifdef BDEBUG
 int bids[NBIDS];
 #endif
+
+static void PCAP_NORETURN conv_error(compiler_state_t *, conv_state_t *, const char *, ...)
+    PCAP_PRINTFLIKE(3, 4);
 
 /*
  * Returns true if successful.  Returns false if a branch has
@@ -2179,7 +2222,7 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 	if (slen) {
 		offset = (struct slist **)calloc(slen, sizeof(struct slist *));
 		if (!offset) {
-			bpf_error(cstate, "not enough core");
+			conv_error(cstate, conv_state, "not enough core");
 			/*NOTREACHED*/
 		}
 	}
@@ -2203,7 +2246,8 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 		if (BPF_CLASS(src->s.code) != BPF_JMP || src->s.code == (BPF_JMP|BPF_JA)) {
 #if 0
 			if (src->s.jt || src->s.jf) {
-				bpf_error(cstate, "illegal jmp destination");
+				free(offset);
+				conv_error(cstate, conv_state, "illegal jmp destination");
 				/*NOTREACHED*/
 			}
 #endif
@@ -2223,7 +2267,8 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 #endif
 
 		if (!src->s.jt || !src->s.jf) {
-			bpf_error(cstate, ljerr, "no jmp destination", off);
+			free(offset);
+			conv_error(cstate, conv_state, ljerr, "no jmp destination", off);
 			/*NOTREACHED*/
 		}
 
@@ -2231,12 +2276,14 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 		for (i = 0; i < slen; i++) {
 			if (offset[i] == src->s.jt) {
 				if (jt) {
-					bpf_error(cstate, ljerr, "multiple matches", off);
+					free(offset);
+					conv_error(cstate, conv_state, ljerr, "multiple matches", off);
 					/*NOTREACHED*/
 				}
 
 				if (i - off - 1 >= 256) {
-					bpf_error(cstate, ljerr, "out-of-range jump", off);
+					free(offset);
+					conv_error(cstate, conv_state, ljerr, "out-of-range jump", off);
 					/*NOTREACHED*/
 				}
 				dst->jt = (u_char)(i - off - 1);
@@ -2244,11 +2291,13 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 			}
 			if (offset[i] == src->s.jf) {
 				if (jf) {
-					bpf_error(cstate, ljerr, "multiple matches", off);
+					free(offset);
+					conv_error(cstate, conv_state, ljerr, "multiple matches", off);
 					/*NOTREACHED*/
 				}
 				if (i - off - 1 >= 256) {
-					bpf_error(cstate, ljerr, "out-of-range jump", off);
+					free(offset);
+					conv_error(cstate, conv_state, ljerr, "out-of-range jump", off);
 					/*NOTREACHED*/
 				}
 				dst->jf = (u_char)(i - off - 1);
@@ -2256,7 +2305,8 @@ convert_code_r(compiler_state_t *cstate, conv_state_t *conv_state,
 			}
 		}
 		if (!jt || !jf) {
-			bpf_error(cstate, ljerr, "no destination found", off);
+			free(offset);
+			conv_error(cstate, conv_state, ljerr, "no destination found", off);
 			/*NOTREACHED*/
 		}
 	    }
@@ -2285,7 +2335,7 @@ filled:
 		    }
 		    /* branch if T to following jump */
 		    if (extrajmps >= 256) {
-			bpf_error(cstate, "too many extra jumps");
+			conv_error(cstate, conv_state, "too many extra jumps");
 			/*NOTREACHED*/
 		    }
 		    dst->jt = (u_char)extrajmps;
@@ -2306,7 +2356,7 @@ filled:
 		    /* branch if F to following jump */
 		    /* if two jumps are inserted, F goes to second one */
 		    if (extrajmps >= 256) {
-			bpf_error(cstate, "too many extra jumps");
+			conv_error(cstate, conv_state, "too many extra jumps");
 			/*NOTREACHED*/
 		    }
 		    dst->jf = (u_char)extrajmps;
@@ -2369,6 +2419,23 @@ icode_to_fcode(compiler_state_t *cstate, struct icode *ic,
 	}
 
 	return fp;
+}
+
+/*
+ * Like bpf_error(), but also frees the array into which we're putting
+ * the generated BPF code.
+ */
+static void PCAP_NORETURN
+conv_error(compiler_state_t *cstate, conv_state_t *conv_state, const char *fmt, ...)
+{
+	va_list ap;
+
+	free(conv_state->fstart);
+	va_start(ap, fmt);
+	bpf_vset_error(cstate, fmt, ap);
+	va_end(ap);
+	bpf_abort_compilation(cstate);
+	/* NOTREACHED */
 }
 
 /*
