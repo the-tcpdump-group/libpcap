@@ -302,11 +302,17 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			continue;
 
 		case BPF_ALU|BPF_LSH|BPF_X:
-			A <<= X;
+			if (X < 32)
+				A <<= X;
+			else
+				A = 0;
 			continue;
 
 		case BPF_ALU|BPF_RSH|BPF_X:
-			A >>= X;
+			if (X < 32)
+				A >>= X;
+			else
+				A = 0;
 			continue;
 
 		case BPF_ALU|BPF_ADD|BPF_K:
