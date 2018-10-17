@@ -297,8 +297,8 @@ void gen_or(struct block *, struct block *);
 void gen_not(struct block *);
 
 struct block *gen_scode(compiler_state_t *, const char *, struct qual);
-struct block *gen_ecode(compiler_state_t *, const u_char *, struct qual);
-struct block *gen_acode(compiler_state_t *, const u_char *, struct qual);
+struct block *gen_ecode(compiler_state_t *, const char *, struct qual);
+struct block *gen_acode(compiler_state_t *, const char *, struct qual);
 struct block *gen_mcode(compiler_state_t *, const char *, const char *,
     unsigned int, struct qual);
 #ifdef INET6

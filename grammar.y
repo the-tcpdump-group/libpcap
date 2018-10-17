@@ -307,7 +307,6 @@ DIAG_OFF_BISON_BYACC
 %union {
 	int i;
 	bpf_u_int32 h;
-	u_char *e;
 	char *s;
 	struct stmt *stmt;
 	struct arth *a;
@@ -363,9 +362,7 @@ DIAG_OFF_BISON_BYACC
 %token	SIO OPC DPC SLS HSIO HOPC HDPC HSLS
 
 
-%type	<s> ID
-%type	<e> EID
-%type	<e> AID
+%type	<s> ID EID AID
 %type	<s> HID HID6
 %type	<i> NUM action reason type subtype type_subtype dir
 
@@ -437,24 +434,8 @@ nid:	  ID			{ $$.b = gen_scode(cstate, $1, $$.q = $<blk>0.q); }
 					"in this configuration");
 #endif /*INET6*/
 				}
-	| EID			{
-				  $$.b = gen_ecode(cstate, $1, $$.q = $<blk>0.q);
-				  /*
-				   * $1 was allocated by "pcap_ether_aton()",
-				   * so we must free it now that we're done
-				   * with it.
-				   */
-				  free($1);
-				}
-	| AID			{
-				  $$.b = gen_acode(cstate, $1, $$.q = $<blk>0.q);
-				  /*
-				   * $1 was allocated by "pcap_ether_aton()",
-				   * so we must free it now that we're done
-				   * with it.
-				   */
-				  free($1);
-				}
+	| EID			{ $$.b = gen_ecode(cstate, $1, $$.q = $<blk>0.q); }
+	| AID			{ $$.b = gen_acode(cstate, $1, $$.q = $<blk>0.q); }
 	| not id		{ gen_not($2.b); $$ = $2; }
 	;
 not:	  '!'			{ $$ = $<blk>0; }
