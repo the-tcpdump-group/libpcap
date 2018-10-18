@@ -1144,9 +1144,17 @@ opt_stmt(compiler_state_t *cstate, opt_state_t *opt_state,
 		op = BPF_OP(s->code);
 		if (alter) {
 			if (s->k == 0) {
-				/* don't optimize away "sub #0"
+				/*
+				 * Optimize operations where the constant
+				 * is zero.
+				 *
+				 * Don't optimize away "sub #0"
 				 * as it may be needed later to
-				 * fixup the generated math code */
+				 * fixup the generated math code.
+				 *
+				 * Fail if we're dividing by zero or taking
+				 * a modulus by zero.
+				 */
 				if (op == BPF_ADD ||
 				    op == BPF_LSH || op == BPF_RSH ||
 				    op == BPF_OR || op == BPF_XOR) {
@@ -1158,6 +1166,12 @@ opt_stmt(compiler_state_t *cstate, opt_state_t *opt_state,
 					val[A_ATOM] = K(s->k);
 					break;
 				}
+				if (op == BPF_DIV)
+					opt_error(cstate, opt_state,
+					    "division by zero");
+				if (op == BPF_MOD)
+					opt_error(cstate, opt_state,
+					    "modulus by zero");
 			}
 			if (opt_state->vmap[val[A_ATOM]].is_const) {
 				fold_op(cstate, opt_state, s, val[A_ATOM], K(s->k));
