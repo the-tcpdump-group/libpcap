@@ -7424,6 +7424,9 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0,
 	/*
 	 * Disallow division by, or modulus by, zero; we do this here
 	 * so that it gets done even if the optimizer is disabled.
+	 *
+	 * Also disallow shifts by a value greater than 31; we do this
+	 * here, for the same reason.
 	 */
 	if (code == BPF_DIV) {
 		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
@@ -7431,6 +7434,9 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0,
 	} else if (code == BPF_MOD) {
 		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
 			bpf_error(cstate, "modulus by zero");
+	} else if (code == BPF_LSH || code == BPF_RSH) {
+		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k > 31)
+			bpf_error(cstate, "shift by more than 31 bits");
 	}
 	s0 = xfer_to_x(cstate, a1);
 	s1 = xfer_to_a(cstate, a0);
