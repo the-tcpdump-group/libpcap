@@ -838,6 +838,7 @@ int sock_bufferize(const char *buffer, int size, char *tempbuf, int *offset, int
 int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
     char *errbuf, int errbuflen)
 {
+	int recv_flags = 0;
 	char *bufp = buffer;
 	int remaining;
 	ssize_t nread;
@@ -858,6 +859,9 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
 		return -1;
 	}
 
+	if (flags & SOCK_MSG_PEEK)
+		recv_flags |= MSG_PEEK;
+
 	bufp = (char *) buffer;
 	remaining = (int) size;
 
@@ -866,7 +870,7 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
 	 * Win32.
 	 */
 	for (;;) {
-		nread = recv(sock, bufp, remaining, 0);
+		nread = recv(sock, bufp, remaining, recv_flags);
 
 		if (nread == -1)
 		{

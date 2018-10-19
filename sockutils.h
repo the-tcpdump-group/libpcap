@@ -182,6 +182,8 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
 #define SOCK_EOF_ISNT_ERROR	0x00000000	/* Return 0 on EOF */
 #define SOCK_EOF_IS_ERROR	0x00000002	/* Return an error on EOF */
 
+#define SOCK_MSG_PEEK		0x00000004	/* Return data but leave it in the socket queue */
+
 /*
  * \}
  */
