@@ -4964,88 +4964,109 @@ gen_host6(compiler_state_t *cstate, struct in6_addr *addr,
 		bpf_error(cstate, "'arp' modifier applied to ip6 %s", typestr);
 
 	case Q_SCTP:
-		bpf_error(cstate, "'sctp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'sctp' modifier applied to ip6 %s", typestr);
 
 	case Q_TCP:
-		bpf_error(cstate, "'tcp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'tcp' modifier applied to ip6 %s", typestr);
 
 	case Q_UDP:
-		bpf_error(cstate, "'udp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'udp' modifier applied to ip6 %s", typestr);
 
 	case Q_ICMP:
-		bpf_error(cstate, "'icmp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'icmp' modifier applied to ip6 %s", typestr);
 
 	case Q_IGMP:
-		bpf_error(cstate, "'igmp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'igmp' modifier applied to ip6 %s", typestr);
 
 	case Q_IGRP:
-		bpf_error(cstate, "'igrp' modifier applied to %s", typestr);
-
-	case Q_PIM:
-		bpf_error(cstate, "'pim' modifier applied to %s", typestr);
-
-	case Q_VRRP:
-		bpf_error(cstate, "'vrrp' modifier applied to %s", typestr);
-
-	case Q_CARP:
-		bpf_error(cstate, "'carp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'igrp' modifier applied to ip6 %s", typestr);
 
 	case Q_ATALK:
-		bpf_error(cstate, "AppleTalk modifier applied to %s", typestr);
-
-	case Q_AARP:
-		bpf_error(cstate, "AARP host filtering not implemented");
+		bpf_error(cstate, "AppleTalk modifier applied to ip6 %s", typestr);
 
 	case Q_DECNET:
 		bpf_error(cstate, "'decnet' modifier applied to ip6 %s", typestr);
 
-	case Q_SCA:
-		bpf_error(cstate, "SCA host filtering not implemented");
-
 	case Q_LAT:
-		bpf_error(cstate, "LAT host filtering not implemented");
+		bpf_error(cstate, "'lat' modifier applied to ip6 %s", typestr);
 
-	case Q_MOPDL:
-		bpf_error(cstate, "MOPDL host filtering not implemented");
+	case Q_SCA:
+		bpf_error(cstate, "'sca' modifier applied to ip6 %s", typestr);
 
 	case Q_MOPRC:
-		bpf_error(cstate, "MOPRC host filtering not implemented");
+		bpf_error(cstate, "'moprc' modifier applied to ip6 %s", typestr);
+
+	case Q_MOPDL:
+		bpf_error(cstate, "'mopdl' modifier applied to ip6 %s", typestr);
 
 	case Q_IPV6:
 		return gen_hostop6(cstate, addr, mask, dir, ETHERTYPE_IPV6, 8, 24);
 
 	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6' modifier applied to %s", typestr);
+		bpf_error(cstate, "'icmp6' modifier applied to ip6 %s", typestr);
 
 	case Q_AH:
-		bpf_error(cstate, "'ah' modifier applied to %s", typestr);
+		bpf_error(cstate, "'ah' modifier applied to ip6 %s", typestr);
 
 	case Q_ESP:
-		bpf_error(cstate, "'esp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'esp' modifier applied to ip6 %s", typestr);
+
+	case Q_PIM:
+		bpf_error(cstate, "'pim' modifier applied to ip6 %s", typestr);
+
+	case Q_VRRP:
+		bpf_error(cstate, "'vrrp' modifier applied to ip6 %s", typestr);
+
+	case Q_AARP:
+		bpf_error(cstate, "'aarp' modifier applied to ip6 %s", typestr);
 
 	case Q_ISO:
-		bpf_error(cstate, "ISO host filtering not implemented");
+		bpf_error(cstate, "'iso' modifier applied to ip6 %s", typestr);
 
 	case Q_ESIS:
-		bpf_error(cstate, "'esis' modifier applied to %s", typestr);
+		bpf_error(cstate, "'esis' modifier applied to ip6 %s", typestr);
 
 	case Q_ISIS:
-		bpf_error(cstate, "'isis' modifier applied to %s", typestr);
+		bpf_error(cstate, "'isis' modifier applied to ip6 %s", typestr);
 
 	case Q_CLNP:
-		bpf_error(cstate, "'clnp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'clnp' modifier applied to ip6 %s", typestr);
 
 	case Q_STP:
-		bpf_error(cstate, "'stp' modifier applied to %s", typestr);
+		bpf_error(cstate, "'stp' modifier applied to ip6 %s", typestr);
 
 	case Q_IPX:
-		bpf_error(cstate, "IPX host filtering not implemented");
+		bpf_error(cstate, "'ipx' modifier applied to ip6 %s", typestr);
 
 	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui' modifier applied to %s", typestr);
+		bpf_error(cstate, "'netbeui' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_L1:
+		bpf_error(cstate, "'l1' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_L2:
+		bpf_error(cstate, "'l2' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_IIH:
+		bpf_error(cstate, "'iih' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_SNP:
+		bpf_error(cstate, "'snp' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_CSNP:
+		bpf_error(cstate, "'csnp' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_PSNP:
+		bpf_error(cstate, "'psnp' modifier applied to ip6 %s", typestr);
+
+	case Q_ISIS_LSP:
+		bpf_error(cstate, "'lsp' modifier applied to ip6 %s", typestr);
 
 	case Q_RADIO:
-		bpf_error(cstate, "'radio' modifier applied to %s", typestr);
+		bpf_error(cstate, "'radio' modifier applied to ip6 %s", typestr);
+
+	case Q_CARP:
+		bpf_error(cstate, "'carp' modifier applied to ip6 %s", typestr);
 
 	default:
 		abort();
