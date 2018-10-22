@@ -7459,7 +7459,13 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0,
 		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k == 0)
 			bpf_error(cstate, "modulus by zero");
 	} else if (code == BPF_LSH || code == BPF_RSH) {
-		if (a1->s->s.code == (BPF_LD|BPF_IMM) && a1->s->s.k > 31)
+		/*
+		 * XXX - we need to make up our minds as to what integers
+		 * are signed and what integers are unsigned in BPF programs
+		 * and in our IR.
+		 */
+		if (a1->s->s.code == (BPF_LD|BPF_IMM) &&
+		    (a1->s->s.k < 0 || a1->s->s.k > 31))
 			bpf_error(cstate, "shift by more than 31 bits");
 	}
 	s0 = xfer_to_x(cstate, a1);

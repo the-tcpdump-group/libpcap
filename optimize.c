@@ -1201,6 +1201,16 @@ opt_stmt(compiler_state_t *cstate, opt_state_t *opt_state,
 			else {
 				s->code = BPF_ALU|BPF_K|op;
 				s->k = opt_state->vmap[val[X_ATOM]].const_val;
+				/*
+				 * XXX - we need to make up our minds
+				 * as to what integers are signed and
+				 * what integers are unsigned in BPF
+				 * programs and in our IR.
+				 */
+				if ((op == BPF_LSH || op == BPF_RSH) &&
+				    (s->k < 0 || s->k > 31))
+					opt_error(cstate, opt_state,
+					    "shift by more than 31 bits");
 				opt_state->done = 0;
 				val[A_ATOM] =
 					F(opt_state, s->code, val[A_ATOM], K(s->k));
