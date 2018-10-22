@@ -4807,6 +4807,9 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		}
 		return b0;
 
+	case Q_LINK:
+		bpf_error(cstate, "link-layer modifier applied to %s", typestr);
+
 	case Q_IP:
 		return gen_hostop(cstate, addr, mask, dir, ETHERTYPE_IP, 12, 16);
 
