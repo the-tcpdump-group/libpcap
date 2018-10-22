@@ -1122,7 +1122,20 @@
  */
 #define LINKTYPE_OPENVIZSLA     278
 
-#define LINKTYPE_MATCHING_MAX	278		/* highest value in the "matching" range */
+/*
+ * The Elektrobit High Speed Capture and Replay (EBHSCR) protocol is produced
+ * by a PCIe Card for interfacing high speed automotive interfaces.
+ *
+ * The specification for this frame format can be found at:
+ *   http://www.elektrobit.com/ebhscr
+ *
+ * for Guenter.Ebermann at elektrobit.com
+ *
+ */
+#define LINKTYPE_EBHSCR	        279
+
+
+#define LINKTYPE_MATCHING_MAX	279		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
