@@ -432,6 +432,7 @@ PCAP_API int	pcap_get_tstamp_precision(pcap_t *);
 
 PCAP_AVAILABLE_1_0
 PCAP_API int	pcap_activate(pcap_t *);
+PCAP_API int	pcap_set_control_keepalive(pcap_t *, int, int, int, int);
 
 PCAP_AVAILABLE_1_2
 PCAP_API int	pcap_list_tstamp_types(pcap_t *, int **);

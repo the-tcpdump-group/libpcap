@@ -42,6 +42,11 @@
 #include <stdlib.h>		/* for malloc(), free(), ... */
 #include <stdarg.h>		/* for functions with variable number of arguments */
 #include <errno.h>		/* for the errno variable */
+
+#ifndef _WIN32
+  #include <netinet/tcp.h>		/* for TCP_KEEP* */
+#endif
+
 #include "sockutils.h"
 #include "pcap-int.h"
 #include "rpcap-protocol.h"
@@ -3499,5 +3504,48 @@ static int rpcap_read_packet_msg(struct pcap_rpcap const *rp, pcap_t *p, size_t 
 	}
 	p->bp = bp;
 	p->cc = cc;
+	return 0;
+}
+
+/*
+ * Set the keepalives parameters on the control socket.
+ * An rpcap-based application may detect more rapidly a network error.
+ *
+ * It may not be necessary to set them on the data socket as it may use UDP.
+ * See pcap_read_nocb_remote for the select logic that will take into
+ * account the error on the control socket.
+ */
+int
+pcap_set_control_keepalive(pcap_t *p, int enable, int keepcnt, int keepidle, int keepintvl)
+{
+	struct pcap_rpcap *pr = p->priv;	/* structure used when doing a remote live capture */
+
+	if (setsockopt(pr->rmt_sockctrl, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)) < 0)
+	{
+		sock_geterror("setsockopt(): ", p->errbuf, PCAP_ERRBUF_SIZE);
+		return -1;
+	}
+
+	/* when SO_KEEPALIVE isn't active, the following options aren't used */
+	if (!enable)
+		return 0;
+
+#if defined(TCP_KEEPCNT) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
+	if (setsockopt(pr->rmt_sockctrl, SOL_TCP, TCP_KEEPCNT, &keepcnt, sizeof(keepcnt)) < 0 ||
+	    setsockopt(pr->rmt_sockctrl, SOL_TCP, TCP_KEEPIDLE, &keepidle, sizeof(keepidle)) < 0 ||
+	    setsockopt(pr->rmt_sockctrl, SOL_TCP, TCP_KEEPINTVL, &keepintvl, sizeof(keepintvl)) < 0)
+	{
+		sock_geterror("setsockopt(): ", p->errbuf, PCAP_ERRBUF_SIZE);
+		return -1;
+	}
+#else
+	if (keepcnt || keepidle || keepintvl)
+	{
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "TCP_KEEPCNT, TCP_KEEPIDLE or TCP_KEEPINTVL not supported on this platform");
+		return -1;
+	}
+#endif
+
 	return 0;
 }
