@@ -4718,8 +4718,29 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 		gen_or(b0, b1);
 		return b1;
 
-	case Q_ISO:
-		bpf_error(cstate, "ISO host filtering not implemented");
+	case Q_ADDR1:
+		bpf_error(cstate, "'addr1' and 'address1' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR2:
+		bpf_error(cstate, "'addr2' and 'address2' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR3:
+		bpf_error(cstate, "'addr3' and 'address3' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_ADDR4:
+		bpf_error(cstate, "'addr4' and 'address4' are not valid qualifiers for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_RA:
+		bpf_error(cstate, "'ra' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		break;
+
+	case Q_TA:
+		bpf_error(cstate, "'ta' is not a valid qualifier for addresses other than 802.11 MAC addresses");
+		break;
 
 	default:
 		abort();
