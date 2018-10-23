@@ -8613,7 +8613,7 @@ gen_mpls(compiler_state_t *cstate, int label_num)
 
 	/* If a specific MPLS label is requested, check it */
 	if (label_num >= 0) {
-		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
+		label_num = (label_num & 0xfffff) << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, (bpf_int32)label_num,
 		    0xfffff000); /* only compare the first 20 bits */
 		gen_and(b0, b1);
