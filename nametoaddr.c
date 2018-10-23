@@ -221,7 +221,7 @@ pcap_nametonetaddr(const char *name)
 	/*
 	 * UN*X.
 	 */
-	struct netent *np = NULL;
+	struct netent *np;
   #if defined(HAVE_LINUX_GETNETBYNAME_R)
 	/*
 	 * We have Linux's reentrant getnetbyname_r().
@@ -231,7 +231,22 @@ pcap_nametonetaddr(const char *name)
 	int h_errnoval;
 	int err;
 
-	err = getnetbyname_r(name, &result_buf, buf, sizeof buf, &np,
+	/*
+	 * Apparently, the man page at
+	 *
+	 *    http://man7.org/linux/man-pages/man3/getnetbyname_r.3.html
+	 *
+	 * lies when it says
+	 *
+	 *    If the function call successfully obtains a network record,
+	 *    then *result is set pointing to result_buf; otherwise, *result
+	 *    is set to NULL.
+	 *
+	 * and, in fact, at least in some versions of GNU libc, it does
+	 * *not* always get set if getnetbyname_r() succeeds.
+	 */
+	np = NULL;
+ 	err = getnetbyname_r(name, &result_buf, buf, sizeof buf, &np,
 	    &h_errnoval);
 	if (err != 0) {
 		/*
