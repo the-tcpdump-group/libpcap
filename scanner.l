@@ -23,6 +23,7 @@
  * <inttypes.h> if we have it.
  */
 #include <pcap/pcap-inttypes.h>
+#include <limits.h>
 
 #include "diag-control.h"
 }
@@ -520,8 +521,12 @@ stoi(char *s)
 			s += 1;
 		}
 	}
-	while (*s)
+	while (*s) {
+		if (n > (INT_MAX - 0xFF)/base) {
+			return 0;
+		}
 		n = n * base + xdtoi(*s++);
+	}
 
 	return n;
 }
