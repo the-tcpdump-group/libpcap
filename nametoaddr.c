@@ -239,7 +239,7 @@ pcap_nametonetaddr(const char *name)
 	/*
 	 * UN*X.
 	 */
-	struct netent *np;
+	struct netent *np = NULL;
   #if defined(HAVE_LINUX_GETNETBYNAME_R)
 	/*
 	 * We have Linux's reentrant getnetbyname_r().
