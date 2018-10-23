@@ -1834,7 +1834,7 @@ static void
 opt_loop(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic,
     int do_stmts)
 {
-
+	int loopCounter = 0;
 #ifdef BDEBUG
 	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("opt_loop(root, %d) begin\n", do_stmts);
@@ -1855,6 +1855,10 @@ opt_loop(compiler_state_t *cstate, opt_state_t *opt_state, struct icode *ic,
 			opt_dump(cstate, ic);
 		}
 #endif
+		loopCounter++;
+		if (loopCounter > 1000) {
+			break;
+		}
 	} while (!opt_state->done);
 }
 
