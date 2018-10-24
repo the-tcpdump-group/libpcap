@@ -8308,19 +8308,24 @@ gen_vlan_tpid_test(compiler_state_t *cstate)
 }
 
 static struct block *
-gen_vlan_vid_test(compiler_state_t *cstate, int vlan_num)
+gen_vlan_vid_test(compiler_state_t *cstate, bpf_u_int32 vlan_num)
 {
+	if (vlan_num > 0x0fff) {
+		bpf_error(cstate, "VLAN tag %u greater than maximum %u",
+		    vlan_num, 0x0fff);
+	}
 	return gen_mcmp(cstate, OR_LINKPL, 0, BPF_H, (bpf_int32)vlan_num, 0x0fff);
 }
 
 static struct block *
-gen_vlan_no_bpf_extensions(compiler_state_t *cstate, int vlan_num)
+gen_vlan_no_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
+    int has_vlan_tag)
 {
 	struct block *b0, *b1;
 
 	b0 = gen_vlan_tpid_test(cstate);
 
-	if (vlan_num >= 0) {
+	if (has_vlan_tag) {
 		b1 = gen_vlan_vid_test(cstate, vlan_num);
 		gen_and(b0, b1);
 		b0 = b1;
@@ -8428,7 +8433,8 @@ gen_vlan_patch_vid_test(compiler_state_t *cstate, struct block *b_vid)
  * update variable part of the offsets
  */
 static struct block *
-gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
+gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
+    int has_vlan_tag)
 {
         struct block *b0, *b_tpid, *b_vid = NULL;
         struct slist *s;
@@ -8453,14 +8459,14 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
 	 * function but gen_vlan_bpf_extensions() isn't called in that case.
 	 */
 	b_tpid = gen_vlan_tpid_test(cstate);
-	if (vlan_num >= 0)
+	if (has_vlan_tag)
 		b_vid = gen_vlan_vid_test(cstate, vlan_num);
 
 	gen_vlan_patch_tpid_test(cstate, b_tpid);
 	gen_or(b0, b_tpid);
 	b0 = b_tpid;
 
-	if (vlan_num >= 0) {
+	if (has_vlan_tag) {
 		gen_vlan_patch_vid_test(cstate, b_vid);
 		gen_and(b0, b_vid);
 		b0 = b_vid;
@@ -8474,7 +8480,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, int vlan_num)
  * support IEEE 802.1Q VLAN trunk over ethernet
  */
 struct block *
-gen_vlan(compiler_state_t *cstate, int vlan_num)
+gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 {
 	struct	block	*b0;
 
@@ -8528,19 +8534,22 @@ gen_vlan(compiler_state_t *cstate, int vlan_num)
 			 * Do we need special VLAN handling?
 			 */
 			if (cstate->bpf_pcap->bpf_codegen_flags & BPF_SPECIAL_VLAN_HANDLING)
-				b0 = gen_vlan_bpf_extensions(cstate, vlan_num);
+				b0 = gen_vlan_bpf_extensions(cstate, vlan_num,
+				    has_vlan_tag);
 			else
-				b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
+				b0 = gen_vlan_no_bpf_extensions(cstate,
+				    vlan_num, has_vlan_tag);
 		} else
 #endif
-			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
+			b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num,
+			    has_vlan_tag);
                 break;
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
-		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num);
+		b0 = gen_vlan_no_bpf_extensions(cstate, vlan_num, has_vlan_tag);
 		break;
 
 	default:
@@ -8639,7 +8648,7 @@ gen_pppoed(compiler_state_t *cstate)
 }
 
 struct block *
-gen_pppoes(compiler_state_t *cstate, int sess_num)
+gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 {
 	struct block *b0, *b1;
 
@@ -8649,7 +8658,11 @@ gen_pppoes(compiler_state_t *cstate, int sess_num)
 	b0 = gen_linktype(cstate, (bpf_int32)ETHERTYPE_PPPOES);
 
 	/* If a specific session is requested, check PPPoE session id */
-	if (sess_num >= 0) {
+	if (has_sess_num) {
+		if (sess_num > 0x0000ffff) {
+			bpf_error(cstate, "PPPoE session number %u greater than maximum %u",
+			    sess_num, 0x0000ffff);
+		}
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W,
 		    (bpf_int32)sess_num, 0x0000ffff);
 		gen_and(b0, b1);
@@ -8713,7 +8726,7 @@ gen_pppoes(compiler_state_t *cstate, int sess_num)
 static struct block *
 gen_geneve_check(compiler_state_t *cstate,
     struct block *(*gen_portfn)(compiler_state_t *, int, int, int),
-    enum e_offrel offrel, int vni)
+    enum e_offrel offrel, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
 
@@ -8726,7 +8739,11 @@ gen_geneve_check(compiler_state_t *cstate,
 	gen_and(b0, b1);
 	b0 = b1;
 
-	if (vni >= 0) {
+	if (has_vni) {
+		if (vni > 0xffffff) {
+			bpf_error(cstate, "Geneve VNI %u greater than maximum %u",
+			    vni, 0xffffff);
+		}
 		vni <<= 8; /* VNI is in the upper 3 bytes */
 		b1 = gen_mcmp(cstate, offrel, 12, BPF_W, (bpf_int32)vni,
 			      0xffffff00);
@@ -8743,12 +8760,12 @@ gen_geneve_check(compiler_state_t *cstate,
  *   needed) into register A to be used later to compute
  *   the inner packet offsets. */
 static struct block *
-gen_geneve4(compiler_state_t *cstate, int vni)
+gen_geneve4(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
 	struct slist *s, *s1;
 
-	b0 = gen_geneve_check(cstate, gen_port, OR_TRAN_IPV4, vni);
+	b0 = gen_geneve_check(cstate, gen_port, OR_TRAN_IPV4, vni, has_vni);
 
 	/* Load the IP header length into A. */
 	s = gen_loadx_iphdrlen(cstate);
@@ -8769,12 +8786,12 @@ gen_geneve4(compiler_state_t *cstate, int vni)
 }
 
 static struct block *
-gen_geneve6(compiler_state_t *cstate, int vni)
+gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
 	struct slist *s, *s1;
 
-	b0 = gen_geneve_check(cstate, gen_port6, OR_TRAN_IPV6, vni);
+	b0 = gen_geneve_check(cstate, gen_port6, OR_TRAN_IPV6, vni, has_vni);
 
 	/* Load the IP header length. We need to account for a
 	 * variable length link prefix if there is one. */
@@ -8947,13 +8964,13 @@ gen_geneve_offsets(compiler_state_t *cstate)
 
 /* Check to see if this is a Geneve packet. */
 struct block *
-gen_geneve(compiler_state_t *cstate, int vni)
+gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 {
 	struct block *b0, *b1;
 	struct slist *s;
 
-	b0 = gen_geneve4(cstate, vni);
-	b1 = gen_geneve6(cstate, vni);
+	b0 = gen_geneve4(cstate, vni, has_vni);
+	b1 = gen_geneve6(cstate, vni, has_vni);
 
 	gen_or(b0, b1);
 	b0 = b1;

@@ -324,13 +324,13 @@ struct block *gen_llc_u(compiler_state_t *);
 struct block *gen_llc_s_subtype(compiler_state_t *, bpf_u_int32);
 struct block *gen_llc_u_subtype(compiler_state_t *, bpf_u_int32);
 
-struct block *gen_vlan(compiler_state_t *, int);
+struct block *gen_vlan(compiler_state_t *, bpf_u_int32, int);
 struct block *gen_mpls(compiler_state_t *, bpf_u_int32, int);
 
 struct block *gen_pppoed(compiler_state_t *);
-struct block *gen_pppoes(compiler_state_t *, int);
+struct block *gen_pppoes(compiler_state_t *, bpf_u_int32, int);
 
-struct block *gen_geneve(compiler_state_t *, int);
+struct block *gen_geneve(compiler_state_t *, bpf_u_int32, int);
 
 struct block *gen_atmfield_code(compiler_state_t *, int, bpf_int32,
     bpf_u_int32, int);
