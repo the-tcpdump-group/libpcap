@@ -8574,7 +8574,7 @@ gen_vlan(compiler_state_t *cstate, int vlan_num)
  * support for MPLS
  */
 struct block *
-gen_mpls(compiler_state_t *cstate, int label_num)
+gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
 {
 	struct	block	*b0, *b1;
 
@@ -8612,7 +8612,11 @@ gen_mpls(compiler_state_t *cstate, int label_num)
         }
 
 	/* If a specific MPLS label is requested, check it */
-	if (label_num >= 0) {
+	if (has_label_num) {
+		if (label_num > 0xFFFFF) {
+			bpf_error(cstate, "MPLS label %u greater than maximum %u",
+			    label_num, 0xFFFFF);
+		}
 		label_num = label_num << 12; /* label is shifted 12 bits on the wire */
 		b1 = gen_mcmp(cstate, OR_LINKPL, 0, BPF_W, (bpf_int32)label_num,
 		    0xfffff000); /* only compare the first 20 bits */
