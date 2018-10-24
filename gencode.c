@@ -6268,6 +6268,9 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 		gen_or(b0, b1);
 		return b1;
 
+	case Q_LINK:
+		return gen_linktype(cstate, v);
+
 	case Q_IP:
 		/*
 		 * For FDDI, RFC 1188 says that SNAP encapsulation is used,
@@ -6292,6 +6295,104 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 #endif
 		gen_and(b0, b1);
 		return b1;
+
+	case Q_ARP:
+		bpf_error(cstate, "arp does not encapsulate another protocol");
+		/* NOTREACHED */
+
+	case Q_RARP:
+		bpf_error(cstate, "rarp does not encapsulate another protocol");
+		/* NOTREACHED */
+
+	case Q_SCTP:
+		bpf_error(cstate, "'sctp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_TCP:
+		bpf_error(cstate, "'tcp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_UDP:
+		bpf_error(cstate, "'udp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_ICMP:
+		bpf_error(cstate, "'icmp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_IGMP:
+		bpf_error(cstate, "'igmp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_IGRP:
+		bpf_error(cstate, "'igrp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_ATALK:
+		bpf_error(cstate, "AppleTalk encapsulation is not specifiable");
+		/* NOTREACHED */
+
+	case Q_DECNET:
+		bpf_error(cstate, "DECNET encapsulation is not specifiable");
+		/* NOTREACHED */
+
+	case Q_LAT:
+		bpf_error(cstate, "LAT does not encapsulate another protocol");
+		/* NOTREACHED */
+
+	case Q_SCA:
+		bpf_error(cstate, "SCA does not encapsulate another protocol");
+		/* NOTREACHED */
+
+	case Q_MOPRC:
+		bpf_error(cstate, "MOPRC does not encapsulate another protocol");
+		/* NOTREACHED */
+
+	case Q_MOPDL:
+		bpf_error(cstate, "MOPDL does not encapsulate another protocol");
+		/* NOTREACHED */
+
+	case Q_IPV6:
+		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
+#ifndef CHASE_CHAIN
+		/*
+		 * Also check for a fragment header before the final
+		 * header.
+		 */
+		b2 = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, IPPROTO_FRAGMENT);
+		b1 = gen_cmp(cstate, OR_LINKPL, 40, BPF_B, (bpf_int32)v);
+		gen_and(b2, b1);
+		b2 = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, (bpf_int32)v);
+		gen_or(b2, b1);
+#else
+		b1 = gen_protochain(cstate, v, Q_IPV6);
+#endif
+		gen_and(b0, b1);
+		return b1;
+
+	case Q_ICMPV6:
+		bpf_error(cstate, "'icmp6 proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_AH:
+		bpf_error(cstate, "'ah proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_ESP:
+		bpf_error(cstate, "'ah proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_PIM:
+		bpf_error(cstate, "'pim proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_VRRP:
+		bpf_error(cstate, "'vrrp proto' is bogus");
+		/* NOTREACHED */
+
+	case Q_AARP:
+		bpf_error(cstate, "'aarp proto' is bogus");
+		/* NOTREACHED */
 
 	case Q_ISO:
 		switch (cstate->linktype) {
@@ -6337,6 +6438,10 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 			return b1;
 		}
 
+	case Q_ESIS:
+		bpf_error(cstate, "'esis proto' is bogus");
+		/* NOTREACHED */
+
 	case Q_ISIS:
 		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO, Q_DEFAULT);
 		/*
@@ -6347,115 +6452,57 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 		gen_and(b0, b1);
 		return b1;
 
-	case Q_ARP:
-		bpf_error(cstate, "arp does not encapsulate another protocol");
+	case Q_CLNP:
+		bpf_error(cstate, "'clnp proto' is not supported");
 		/* NOTREACHED */
 
-	case Q_RARP:
-		bpf_error(cstate, "rarp does not encapsulate another protocol");
+	case Q_STP:
+		bpf_error(cstate, "'stp proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_ATALK:
-		bpf_error(cstate, "atalk encapsulation is not specifiable");
+	case Q_IPX:
+		bpf_error(cstate, "'ipx proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_DECNET:
-		bpf_error(cstate, "decnet encapsulation is not specifiable");
+	case Q_NETBEUI:
+		bpf_error(cstate, "'netbeui proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_SCA:
-		bpf_error(cstate, "sca does not encapsulate another protocol");
+	case Q_ISIS_L1:
+		bpf_error(cstate, "'l1 proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_LAT:
-		bpf_error(cstate, "lat does not encapsulate another protocol");
+	case Q_ISIS_L2:
+		bpf_error(cstate, "'l2 proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_MOPRC:
-		bpf_error(cstate, "moprc does not encapsulate another protocol");
+	case Q_ISIS_IIH:
+		bpf_error(cstate, "'iih proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_MOPDL:
-		bpf_error(cstate, "mopdl does not encapsulate another protocol");
+	case Q_ISIS_SNP:
+		bpf_error(cstate, "'snp proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_LINK:
-		return gen_linktype(cstate, v);
-
-	case Q_UDP:
-		bpf_error(cstate, "'udp proto' is bogus");
+	case Q_ISIS_CSNP:
+		bpf_error(cstate, "'csnp proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_TCP:
-		bpf_error(cstate, "'tcp proto' is bogus");
+	case Q_ISIS_PSNP:
+		bpf_error(cstate, "'psnp proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_SCTP:
-		bpf_error(cstate, "'sctp proto' is bogus");
+	case Q_ISIS_LSP:
+		bpf_error(cstate, "'lsp proto' is bogus");
 		/* NOTREACHED */
 
-	case Q_ICMP:
-		bpf_error(cstate, "'icmp proto' is bogus");
-		/* NOTREACHED */
-
-	case Q_IGMP:
-		bpf_error(cstate, "'igmp proto' is bogus");
-		/* NOTREACHED */
-
-	case Q_IGRP:
-		bpf_error(cstate, "'igrp proto' is bogus");
-		/* NOTREACHED */
-
-	case Q_PIM:
-		bpf_error(cstate, "'pim proto' is bogus");
-		/* NOTREACHED */
-
-	case Q_VRRP:
-		bpf_error(cstate, "'vrrp proto' is bogus");
+	case Q_RADIO:
+		bpf_error(cstate, "'radio proto' is bogus");
 		/* NOTREACHED */
 
 	case Q_CARP:
 		bpf_error(cstate, "'carp proto' is bogus");
 		/* NOTREACHED */
-
-	case Q_IPV6:
-		b0 = gen_linktype(cstate, ETHERTYPE_IPV6);
-#ifndef CHASE_CHAIN
-		/*
-		 * Also check for a fragment header before the final
-		 * header.
-		 */
-		b2 = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, IPPROTO_FRAGMENT);
-		b1 = gen_cmp(cstate, OR_LINKPL, 40, BPF_B, (bpf_int32)v);
-		gen_and(b2, b1);
-		b2 = gen_cmp(cstate, OR_LINKPL, 6, BPF_B, (bpf_int32)v);
-		gen_or(b2, b1);
-#else
-		b1 = gen_protochain(cstate, v, Q_IPV6);
-#endif
-		gen_and(b0, b1);
-		return b1;
-
-	case Q_ICMPV6:
-		bpf_error(cstate, "'icmp6 proto' is bogus");
-
-	case Q_AH:
-		bpf_error(cstate, "'ah proto' is bogus");
-
-	case Q_ESP:
-		bpf_error(cstate, "'ah proto' is bogus");
-
-	case Q_STP:
-		bpf_error(cstate, "'stp proto' is bogus");
-
-	case Q_IPX:
-		bpf_error(cstate, "'ipx proto' is bogus");
-
-	case Q_NETBEUI:
-		bpf_error(cstate, "'netbeui proto' is bogus");
-
-	case Q_RADIO:
-		bpf_error(cstate, "'radio proto' is bogus");
 
 	default:
 		abort();
