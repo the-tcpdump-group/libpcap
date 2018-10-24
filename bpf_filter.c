@@ -96,6 +96,7 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 	register uint32_t A, X;
 	register bpf_u_int32 k;
 	uint32_t mem[BPF_MEMWORDS];
+	memset(mem, 0, BPF_MEMWORDS*sizeof(uint32_t));
 
 	if (pc == 0)
 		/*
