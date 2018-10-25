@@ -71,6 +71,11 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     set_target_properties(rpcapd PROPERTIES COMPILE_FLAGS ${C_ADDITIONAL_FLAGS})
   endif()
 
+  if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
+    set_target_properties(rpcapd PROPERTIES
+        LINK_FLAGS "${SANITIZER_FLAGS}")
+  endif()
+
   #
   # By default, build rpcapd universal with the appropriate set of
   # architectures for the OS on which we're doing the build.

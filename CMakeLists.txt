@@ -293,8 +293,7 @@ endif(USE_STATIC_RT)
 #
 # Test if the each of the sanitizers in the ENABLE_SANITIZERS list are
 # supported by the compiler, and, if so, adds the appropriate flags to
-# CMAKE_C_FLAGS, CMAKE_CXX_FLAGS, CMAKE_EXE_LINKER_FLAGS, and
-# CMAKE_SHARED_LINKER_FLAGS.  If not, it fails.
+# CMAKE_C_FLAGS, CMAKE_CXX_FLAGS, and SANITIZER_FLAGS.  If not, it fails.
 #
 set(SANITIZER_FLAGS "")
 foreach(sanitizer IN LISTS ENABLE_SANITIZERS)
@@ -344,8 +343,6 @@ endforeach()
 if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZER_FLAGS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZER_FLAGS}")
 endif()
 
 ###################################################################
@@ -1975,6 +1972,10 @@ if(BUILD_SHARED_LIBS)
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
         COMPILE_DEFINITIONS BUILDING_PCAP)
+    if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
+        set_target_properties(${LIBRARY_NAME} PROPERTIES
+            LINK_FLAGS "${SANITIZER_FLAGS}")
+    endif()
 endif(BUILD_SHARED_LIBS)
 
 add_library(${LIBRARY_NAME}_static STATIC
