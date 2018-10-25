@@ -1703,7 +1703,21 @@ darwin*)
 			V_PROG_CCOPT_FAT="-arch x86_64 -arch i386"
 			V_PROG_LDFLAGS_FAT="-arch x86_64 -arch i386"
 			;;
-
+		darwin18*)
+			#
+			# Post-Snow Leopard.  Build libraries for x86-64
+			# and 32-bit x86, with x86-64 first, and build
+			# executables only for x86-64.  (That's what
+			# Apple does.)  This requires no special flags
+			# for programs.
+			# XXX - update if and when Apple drops support
+			# for 32-bit x86 code and if and when Apple adds
+			# ARM-based Macs.  (You're on your own for iOS
+			# etc.)
+			#
+			V_LIB_CCOPT_FAT="-arch x86_64"
+			V_LIB_LDFLAGS_FAT="-arch x86_64"
+			;;
 		darwin*)
 			#
 			# Post-Snow Leopard.  Build libraries for x86-64
