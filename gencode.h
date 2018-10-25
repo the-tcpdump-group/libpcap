@@ -55,6 +55,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <setjmp.h>
+
 /* Address qualifiers. */
 
 #define Q_HOST		1
@@ -282,9 +284,15 @@ struct qual {
 	unsigned char pad;
 };
 
-struct _compiler_state;
+struct _codegen_state;
 
-typedef struct _compiler_state compiler_state_t;
+typedef struct _codegen_state codegen_state_t;
+
+typedef struct {
+	jmp_buf top_ctx;
+	pcap_t *bpf_pcap;
+	codegen_state_t *cgstate;
+} compiler_state_t;
 
 struct arth *gen_loadi(compiler_state_t *, int);
 struct arth *gen_load(compiler_state_t *, int, struct arth *, int);
@@ -384,19 +392,16 @@ struct icode {
 	int cur_mark;
 };
 
-void bpf_optimize(compiler_state_t *, struct icode *);
+int bpf_optimize(struct icode *, char *);
 void PCAP_NORETURN bpf_parser_error(compiler_state_t *, const char *);
-void bpf_vset_error(compiler_state_t *, const char *, va_list)
-    PCAP_PRINTFLIKE(2, 0);
-void PCAP_NORETURN bpf_abort_compilation(compiler_state_t *);
 void PCAP_NORETURN bpf_error(compiler_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
 
 void finish_parse(compiler_state_t *, struct block *);
 char *sdup(compiler_state_t *, const char *);
 
-struct bpf_insn *icode_to_fcode(compiler_state_t *, struct icode *,
-    struct block *, u_int *);
+struct bpf_insn *icode_to_fcode(struct icode *, struct block *, u_int *,
+    char *);
 void sappend(struct slist *, struct slist *);
 
 /*

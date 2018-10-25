@@ -41,7 +41,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
-#include <setjmp.h>
 #include <stdarg.h>
 
 #ifdef MSDOS
@@ -174,13 +173,13 @@ struct addrinfo {
  */
 #define PUSH_LINKHDR(cs, new_linktype, new_is_variable, new_constant_part, new_reg) \
 { \
-	(cs)->prevlinktype = (cs)->linktype; \
-	(cs)->off_prevlinkhdr = (cs)->off_linkhdr; \
-	(cs)->linktype = (new_linktype); \
-	(cs)->off_linkhdr.is_variable = (new_is_variable); \
-	(cs)->off_linkhdr.constant_part = (new_constant_part); \
-	(cs)->off_linkhdr.reg = (new_reg); \
-	(cs)->is_geneve = 0; \
+	(cs)->cgstate->prevlinktype = (cs)->cgstate->linktype; \
+	(cs)->cgstate->off_prevlinkhdr = (cs)->cgstate->off_linkhdr; \
+	(cs)->cgstate->linktype = (new_linktype); \
+	(cs)->cgstate->off_linkhdr.is_variable = (new_is_variable); \
+	(cs)->cgstate->off_linkhdr.constant_part = (new_constant_part); \
+	(cs)->cgstate->off_linkhdr.reg = (new_reg); \
+	(cs)->cgstate->is_geneve = 0; \
 }
 
 /*
@@ -245,10 +244,7 @@ struct chunk {
 
 /* Code generator state */
 
-struct _compiler_state {
-	jmp_buf top_ctx;
-	pcap_t *bpf_pcap;
-
+struct _codegen_state {
 	struct icode ic;
 
 	int snaplen;
@@ -433,25 +429,6 @@ bpf_parser_error(compiler_state_t *cstate, const char *msg)
 	/* NOTREACHED */
 }
 
-/*
- * For use by the optimizer, which needs to do its *own* cleanup before
- * delivering a longjmp-based exception.
- */
-void
-bpf_vset_error(compiler_state_t *cstate, const char *fmt, va_list ap)
-{
-	if (cstate->bpf_pcap != NULL)
-		(void)pcap_vsnprintf(pcap_geterr(cstate->bpf_pcap),
-		    PCAP_ERRBUF_SIZE, fmt, ap);
-}
-
-void PCAP_NORETURN
-bpf_abort_compilation(compiler_state_t *cstate)
-{
-	longjmp(cstate->top_ctx, 1);
-	/* NOTREACHED */
-}
-
 /* VARARGS */
 void PCAP_NORETURN
 bpf_error(compiler_state_t *cstate, const char *fmt, ...)
@@ -459,9 +436,10 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	bpf_vset_error(cstate, fmt, ap);
+	(void)pcap_vsnprintf(cstate->bpf_pcap->errbuf, PCAP_ERRBUF_SIZE,
+	    fmt, ap);
 	va_end(ap);
-	bpf_abort_compilation(cstate);
+	longjmp(cstate->top_ctx, 1);
 	/* NOTREACHED */
 }
 
@@ -577,10 +555,10 @@ initchunks(compiler_state_t *cstate)
 	int i;
 
 	for (i = 0; i < NCHUNKS; i++) {
-		cstate->chunks[i].n_left = 0;
-		cstate->chunks[i].m = NULL;
+		cstate->cgstate->chunks[i].n_left = 0;
+		cstate->cgstate->chunks[i].m = NULL;
 	}
-	cstate->cur_chunk = 0;
+	cstate->cgstate->cur_chunk = 0;
 }
 
 static void *
@@ -598,10 +576,10 @@ newchunk(compiler_state_t *cstate, size_t n)
 	n = ALIGN(n);
 #endif
 
-	cp = &cstate->chunks[cstate->cur_chunk];
+	cp = &cstate->cgstate->chunks[cstate->cgstate->cur_chunk];
 	if (n > cp->n_left) {
 		++cp;
-		k = ++cstate->cur_chunk;
+		k = ++cstate->cgstate->cur_chunk;
 		if (k >= NCHUNKS)
 			bpf_error(cstate, "out of memory");
 		size = CHUNK0SIZE << k;
@@ -623,8 +601,8 @@ freechunks(compiler_state_t *cstate)
 	int i;
 
 	for (i = 0; i < NCHUNKS; ++i)
-		if (cstate->chunks[i].m != NULL)
-			free(cstate->chunks[i].m);
+		if (cstate->cgstate->chunks[i].m != NULL)
+			free(cstate->cgstate->chunks[i].m);
 }
 
 /*
@@ -686,6 +664,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	static int done = 0;
 #endif
 	compiler_state_t cstate;
+	codegen_state_t cgstate;
 	const char * volatile xbuf = buf;
 	yyscan_t scanner = NULL;
 	volatile YY_BUFFER_STATE in_buffer = NULL;
@@ -729,32 +708,22 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		(p->save_current_filter_op)(p, buf);
 #endif
 
+	cstate.cgstate = &cgstate;
 	initchunks(&cstate);
-	cstate.no_optimize = 0;
+	cstate.cgstate->no_optimize = 0;
 #ifdef INET6
-	cstate.ai = NULL;
+	cstate.cgstate->ai = NULL;
 #endif
-	cstate.e = NULL;
-	cstate.ic.root = NULL;
-	cstate.ic.cur_mark = 0;
+	cstate.cgstate->e = NULL;
+	cstate.cgstate->ic.root = NULL;
+	cstate.cgstate->ic.cur_mark = 0;
 	cstate.bpf_pcap = p;
 	init_regs(&cstate);
 
-	if (setjmp(cstate.top_ctx)) {
-#ifdef INET6
-		if (cstate.ai != NULL)
-			freeaddrinfo(cstate.ai);
-#endif
-		if (cstate.e != NULL)
-			free(cstate.e);
-		rc = -1;
-		goto quit;
-	}
+	cstate.cgstate->netmask = mask;
 
-	cstate.netmask = mask;
-
-	cstate.snaplen = pcap_snapshot(p);
-	if (cstate.snaplen == 0) {
+	cstate.cgstate->snaplen = pcap_snapshot(p);
+	if (cstate.cgstate->snaplen == 0) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
 		rc = -1;
@@ -773,18 +742,41 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	pcap_set_extra(&cstate, scanner);
 
 	init_linktype(&cstate, p);
-	(void)pcap_parse(scanner, &cstate);
-
-	if (cstate.ic.root == NULL)
-		cstate.ic.root = gen_retblk(&cstate, cstate.snaplen);
-
-	if (optimize && !cstate.no_optimize) {
-		bpf_optimize(&cstate, &cstate.ic);
-		if (cstate.ic.root == NULL ||
-		    (cstate.ic.root->s.code == (BPF_RET|BPF_K) && cstate.ic.root->s.k == 0))
-			bpf_error(&cstate, "expression rejects all packets");
+	if (pcap_parse(scanner, &cstate) != 0) {
+#ifdef INET6
+		if (cstate.cgstate->ai != NULL)
+			freeaddrinfo(cstate.cgstate->ai);
+#endif
+		if (cstate.cgstate->e != NULL)
+			free(cstate.cgstate->e);
+		rc = -1;
+		goto quit;
 	}
-	program->bf_insns = icode_to_fcode(&cstate, &cstate.ic, cstate.ic.root, &len);
+
+	if (cstate.cgstate->ic.root == NULL)
+		cstate.cgstate->ic.root = gen_retblk(&cstate, cstate.cgstate->snaplen);
+
+	if (optimize && !cstate.cgstate->no_optimize) {
+		if (bpf_optimize(&cstate.cgstate->ic, p->errbuf) == -1) {
+			/* Failure */
+			rc = -1;
+			goto quit;
+		}
+		if (cstate.cgstate->ic.root == NULL ||
+		    (cstate.cgstate->ic.root->s.code == (BPF_RET|BPF_K) && cstate.cgstate->ic.root->s.k == 0)) {
+			(void)pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "expression rejects all packets");
+			rc = -1;
+			goto quit;
+		}
+	}
+	program->bf_insns = icode_to_fcode(&cstate.cgstate->ic,
+	    cstate.cgstate->ic.root, &len, p->errbuf);
+	if (program->bf_insns == NULL) {
+		/* Failure */
+		rc = -1;
+		goto quit;
+	}
 	program->bf_len = len;
 
 	rc = 0;  /* We're all okay */
@@ -923,10 +915,10 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 	if (ppi_dlt_check != NULL)
 		gen_and(ppi_dlt_check, p);
 
-	backpatch(p, gen_retblk(cstate, cstate->snaplen));
+	backpatch(p, gen_retblk(cstate, cstate->cgstate->snaplen));
 	p->sense = !p->sense;
 	backpatch(p, gen_retblk(cstate, 0));
-	cstate->ic.root = p->head;
+	cstate->cgstate->ic.root = p->head;
 }
 
 void
@@ -1077,90 +1069,90 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, bpf_u_int32 offset,
 static void
 init_linktype(compiler_state_t *cstate, pcap_t *p)
 {
-	cstate->pcap_fddipad = p->fddipad;
+	cstate->cgstate->pcap_fddipad = p->fddipad;
 
 	/*
 	 * We start out with only one link-layer header.
 	 */
-	cstate->outermostlinktype = pcap_datalink(p);
-	cstate->off_outermostlinkhdr.constant_part = 0;
-	cstate->off_outermostlinkhdr.is_variable = 0;
-	cstate->off_outermostlinkhdr.reg = -1;
+	cstate->cgstate->outermostlinktype = pcap_datalink(p);
+	cstate->cgstate->off_outermostlinkhdr.constant_part = 0;
+	cstate->cgstate->off_outermostlinkhdr.is_variable = 0;
+	cstate->cgstate->off_outermostlinkhdr.reg = -1;
 
-	cstate->prevlinktype = cstate->outermostlinktype;
-	cstate->off_prevlinkhdr.constant_part = 0;
-	cstate->off_prevlinkhdr.is_variable = 0;
-	cstate->off_prevlinkhdr.reg = -1;
+	cstate->cgstate->prevlinktype = cstate->cgstate->outermostlinktype;
+	cstate->cgstate->off_prevlinkhdr.constant_part = 0;
+	cstate->cgstate->off_prevlinkhdr.is_variable = 0;
+	cstate->cgstate->off_prevlinkhdr.reg = -1;
 
-	cstate->linktype = cstate->outermostlinktype;
-	cstate->off_linkhdr.constant_part = 0;
-	cstate->off_linkhdr.is_variable = 0;
-	cstate->off_linkhdr.reg = -1;
+	cstate->cgstate->linktype = cstate->cgstate->outermostlinktype;
+	cstate->cgstate->off_linkhdr.constant_part = 0;
+	cstate->cgstate->off_linkhdr.is_variable = 0;
+	cstate->cgstate->off_linkhdr.reg = -1;
 
 	/*
 	 * XXX
 	 */
-	cstate->off_linkpl.constant_part = 0;
-	cstate->off_linkpl.is_variable = 0;
-	cstate->off_linkpl.reg = -1;
+	cstate->cgstate->off_linkpl.constant_part = 0;
+	cstate->cgstate->off_linkpl.is_variable = 0;
+	cstate->cgstate->off_linkpl.reg = -1;
 
-	cstate->off_linktype.constant_part = 0;
-	cstate->off_linktype.is_variable = 0;
-	cstate->off_linktype.reg = -1;
+	cstate->cgstate->off_linktype.constant_part = 0;
+	cstate->cgstate->off_linktype.is_variable = 0;
+	cstate->cgstate->off_linktype.reg = -1;
 
 	/*
 	 * Assume it's not raw ATM with a pseudo-header, for now.
 	 */
-	cstate->is_atm = 0;
-	cstate->off_vpi = OFFSET_NOT_SET;
-	cstate->off_vci = OFFSET_NOT_SET;
-	cstate->off_proto = OFFSET_NOT_SET;
-	cstate->off_payload = OFFSET_NOT_SET;
+	cstate->cgstate->is_atm = 0;
+	cstate->cgstate->off_vpi = OFFSET_NOT_SET;
+	cstate->cgstate->off_vci = OFFSET_NOT_SET;
+	cstate->cgstate->off_proto = OFFSET_NOT_SET;
+	cstate->cgstate->off_payload = OFFSET_NOT_SET;
 
 	/*
 	 * And not Geneve.
 	 */
-	cstate->is_geneve = 0;
+	cstate->cgstate->is_geneve = 0;
 
 	/*
 	 * No variable length VLAN offset by default
 	 */
-	cstate->is_vlan_vloffset = 0;
+	cstate->cgstate->is_vlan_vloffset = 0;
 
 	/*
 	 * And assume we're not doing SS7.
 	 */
-	cstate->off_li = OFFSET_NOT_SET;
-	cstate->off_li_hsl = OFFSET_NOT_SET;
-	cstate->off_sio = OFFSET_NOT_SET;
-	cstate->off_opc = OFFSET_NOT_SET;
-	cstate->off_dpc = OFFSET_NOT_SET;
-	cstate->off_sls = OFFSET_NOT_SET;
+	cstate->cgstate->off_li = OFFSET_NOT_SET;
+	cstate->cgstate->off_li_hsl = OFFSET_NOT_SET;
+	cstate->cgstate->off_sio = OFFSET_NOT_SET;
+	cstate->cgstate->off_opc = OFFSET_NOT_SET;
+	cstate->cgstate->off_dpc = OFFSET_NOT_SET;
+	cstate->cgstate->off_sls = OFFSET_NOT_SET;
 
-	cstate->label_stack_depth = 0;
-	cstate->vlan_stack_depth = 0;
+	cstate->cgstate->label_stack_depth = 0;
+	cstate->cgstate->vlan_stack_depth = 0;
 
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_ARCNET:
-		cstate->off_linktype.constant_part = 2;
-		cstate->off_linkpl.constant_part = 6;
-		cstate->off_nl = 0;		/* XXX in reality, variable! */
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 2;
+		cstate->cgstate->off_linkpl.constant_part = 6;
+		cstate->cgstate->off_nl = 0;		/* XXX in reality, variable! */
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_ARCNET_LINUX:
-		cstate->off_linktype.constant_part = 4;
-		cstate->off_linkpl.constant_part = 8;
-		cstate->off_nl = 0;		/* XXX in reality, variable! */
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 4;
+		cstate->cgstate->off_linkpl.constant_part = 8;
+		cstate->cgstate->off_nl = 0;		/* XXX in reality, variable! */
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_EN10MB:
-		cstate->off_linktype.constant_part = 12;
-		cstate->off_linkpl.constant_part = 14;	/* Ethernet header length */
-		cstate->off_nl = 0;		/* Ethernet II */
-		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
+		cstate->cgstate->off_linktype.constant_part = 12;
+		cstate->cgstate->off_linkpl.constant_part = 14;	/* Ethernet header length */
+		cstate->cgstate->off_nl = 0;		/* Ethernet II */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
 	case DLT_SLIP:
@@ -1168,44 +1160,44 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * SLIP doesn't have a link level type.  The 16 byte
 		 * header is hacked into our SLIP driver.
 		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = 16;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = 16;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_SLIP_BSDOS:
 		/* XXX this may be the same as the DLT_PPP_BSDOS case */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
 		/* XXX end */
-		cstate->off_linkpl.constant_part = 24;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linkpl.constant_part = 24;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_NULL:
 	case DLT_LOOP:
-		cstate->off_linktype.constant_part = 0;
-		cstate->off_linkpl.constant_part = 4;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 0;
+		cstate->cgstate->off_linkpl.constant_part = 4;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_ENC:
-		cstate->off_linktype.constant_part = 0;
-		cstate->off_linkpl.constant_part = 12;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 0;
+		cstate->cgstate->off_linkpl.constant_part = 12;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_PPP:
 	case DLT_PPP_PPPD:
 	case DLT_C_HDLC:		/* BSD/OS Cisco HDLC */
 	case DLT_PPP_SERIAL:		/* NetBSD sync/async serial PPP */
-		cstate->off_linktype.constant_part = 2;	/* skip HDLC-like framing */
-		cstate->off_linkpl.constant_part = 4;	/* skip HDLC-like framing and protocol field */
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 2;	/* skip HDLC-like framing */
+		cstate->cgstate->off_linkpl.constant_part = 4;	/* skip HDLC-like framing and protocol field */
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_PPP_ETHER:
@@ -1213,17 +1205,17 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * This does no include the Ethernet header, and
 		 * only covers session state.
 		 */
-		cstate->off_linktype.constant_part = 6;
-		cstate->off_linkpl.constant_part = 8;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 6;
+		cstate->cgstate->off_linkpl.constant_part = 8;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_PPP_BSDOS:
-		cstate->off_linktype.constant_part = 5;
-		cstate->off_linkpl.constant_part = 24;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 5;
+		cstate->cgstate->off_linkpl.constant_part = 24;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_FDDI:
@@ -1235,12 +1227,12 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * is being used and pick out the encapsulated Ethernet type.
 		 * XXX - should we generate code to check for SNAP?
 		 */
-		cstate->off_linktype.constant_part = 13;
-		cstate->off_linktype.constant_part += cstate->pcap_fddipad;
-		cstate->off_linkpl.constant_part = 13;	/* FDDI MAC header length */
-		cstate->off_linkpl.constant_part += cstate->pcap_fddipad;
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->off_linktype.constant_part = 13;
+		cstate->cgstate->off_linktype.constant_part += cstate->cgstate->pcap_fddipad;
+		cstate->cgstate->off_linkpl.constant_part = 13;	/* FDDI MAC header length */
+		cstate->cgstate->off_linkpl.constant_part += cstate->cgstate->pcap_fddipad;
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_IEEE802:
@@ -1267,16 +1259,16 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * the 16-bit value at an offset of 14 (shifted right
 		 * 8 - figure out which byte that is).
 		 */
-		cstate->off_linktype.constant_part = 14;
-		cstate->off_linkpl.constant_part = 14;	/* Token Ring MAC header length */
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->off_linktype.constant_part = 14;
+		cstate->cgstate->off_linkpl.constant_part = 14;	/* Token Ring MAC header length */
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_PRISM_HEADER:
 	case DLT_IEEE802_11_RADIO_AVS:
 	case DLT_IEEE802_11_RADIO:
-		cstate->off_linkhdr.is_variable = 1;
+		cstate->cgstate->off_linkhdr.is_variable = 1;
 		/* Fall through, 802.11 doesn't have a variable link
 		 * prefix but is otherwise the same. */
 
@@ -1299,11 +1291,11 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * header or an AVS header, so, in practice, it's
 		 * variable-length.
 		 */
-		cstate->off_linktype.constant_part = 24;
-		cstate->off_linkpl.constant_part = 0;	/* link-layer header is variable-length */
-		cstate->off_linkpl.is_variable = 1;
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->off_linktype.constant_part = 24;
+		cstate->cgstate->off_linkpl.constant_part = 0;	/* link-layer header is variable-length */
+		cstate->cgstate->off_linkpl.is_variable = 1;
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_PPI:
@@ -1316,12 +1308,12 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * the encapsulated DLT should be DLT_IEEE802_11) we
 		 * generate code to check for this too.
 		 */
-		cstate->off_linktype.constant_part = 24;
-		cstate->off_linkpl.constant_part = 0;	/* link-layer header is variable-length */
-		cstate->off_linkpl.is_variable = 1;
-		cstate->off_linkhdr.is_variable = 1;
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->off_linktype.constant_part = 24;
+		cstate->cgstate->off_linkpl.constant_part = 0;	/* link-layer header is variable-length */
+		cstate->cgstate->off_linkpl.is_variable = 1;
+		cstate->cgstate->off_linkhdr.is_variable = 1;
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_ATM_RFC1483:
@@ -1337,10 +1329,10 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * or "pppoa and tcp port 80" and have it check for
 		 * PPPo{A,E} and a PPP protocol of IP and....
 		 */
-		cstate->off_linktype.constant_part = 0;
-		cstate->off_linkpl.constant_part = 0;	/* packet begins with LLC header */
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->off_linktype.constant_part = 0;
+		cstate->cgstate->off_linkpl.constant_part = 0;	/* packet begins with LLC header */
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_SUNATM:
@@ -1348,38 +1340,38 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * Full Frontal ATM; you get AALn PDUs with an ATM
 		 * pseudo-header.
 		 */
-		cstate->is_atm = 1;
-		cstate->off_vpi = SUNATM_VPI_POS;
-		cstate->off_vci = SUNATM_VCI_POS;
-		cstate->off_proto = PROTO_POS;
-		cstate->off_payload = SUNATM_PKT_BEGIN_POS;
-		cstate->off_linktype.constant_part = cstate->off_payload;
-		cstate->off_linkpl.constant_part = cstate->off_payload;	/* if LLC-encapsulated */
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->is_atm = 1;
+		cstate->cgstate->off_vpi = SUNATM_VPI_POS;
+		cstate->cgstate->off_vci = SUNATM_VCI_POS;
+		cstate->cgstate->off_proto = PROTO_POS;
+		cstate->cgstate->off_payload = SUNATM_PKT_BEGIN_POS;
+		cstate->cgstate->off_linktype.constant_part = cstate->cgstate->off_payload;
+		cstate->cgstate->off_linkpl.constant_part = cstate->cgstate->off_payload;	/* if LLC-encapsulated */
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_RAW:
 	case DLT_IPV4:
 	case DLT_IPV6:
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = 0;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = 0;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_LINUX_SLL:	/* fake header for Linux cooked socket v1 */
-		cstate->off_linktype.constant_part = 14;
-		cstate->off_linkpl.constant_part = 16;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 14;
+		cstate->cgstate->off_linkpl.constant_part = 16;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_LINUX_SLL2:	/* fake header for Linux cooked socket v2 */
-		cstate->off_linktype.constant_part = 0;
-		cstate->off_linkpl.constant_part = 20;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 0;
+		cstate->cgstate->off_linkpl.constant_part = 20;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_LTALK:
@@ -1388,10 +1380,10 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * but really it just indicates whether there is a "short" or
 		 * "long" DDP packet following.
 		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = 0;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = 0;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_IP_OVER_FC:
@@ -1405,10 +1397,10 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * XXX - should we generate code to check for SNAP? RFC
 		 * 2625 says SNAP should be used.
 		 */
-		cstate->off_linktype.constant_part = 16;
-		cstate->off_linkpl.constant_part = 16;
-		cstate->off_nl = 8;		/* 802.2+SNAP */
-		cstate->off_nl_nosnap = 3;	/* 802.2 */
+		cstate->cgstate->off_linktype.constant_part = 16;
+		cstate->cgstate->off_linkpl.constant_part = 16;
+		cstate->cgstate->off_nl = 8;		/* 802.2+SNAP */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.2 */
 		break;
 
 	case DLT_FRELAY:
@@ -1416,10 +1408,10 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * XXX - we should set this to handle SNAP-encapsulated
 		 * frames (NLPID of 0x80).
 		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = 0;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = 0;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
                 /*
@@ -1428,32 +1420,32 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
                  * so lets start with offset 4 for now and increments later on (FIXME);
                  */
 	case DLT_MFR:
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = 0;
-		cstate->off_nl = 4;
-		cstate->off_nl_nosnap = 0;	/* XXX - for now -> no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = 0;
+		cstate->cgstate->off_nl = 4;
+		cstate->cgstate->off_nl_nosnap = 0;	/* XXX - for now -> no 802.2 LLC */
 		break;
 
 	case DLT_APPLE_IP_OVER_IEEE1394:
-		cstate->off_linktype.constant_part = 16;
-		cstate->off_linkpl.constant_part = 18;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 16;
+		cstate->cgstate->off_linkpl.constant_part = 18;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 
 	case DLT_SYMANTEC_FIREWALL:
-		cstate->off_linktype.constant_part = 6;
-		cstate->off_linkpl.constant_part = 44;
-		cstate->off_nl = 0;		/* Ethernet II */
-		cstate->off_nl_nosnap = 0;	/* XXX - what does it do with 802.3 packets? */
+		cstate->cgstate->off_linktype.constant_part = 6;
+		cstate->cgstate->off_linkpl.constant_part = 44;
+		cstate->cgstate->off_nl = 0;		/* Ethernet II */
+		cstate->cgstate->off_nl_nosnap = 0;	/* XXX - what does it do with 802.3 packets? */
 		break;
 
 #ifdef HAVE_NET_PFVAR_H
 	case DLT_PFLOG:
-		cstate->off_linktype.constant_part = 0;
-		cstate->off_linkpl.constant_part = PFLOG_HDRLEN;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 0;
+		cstate->cgstate->off_linkpl.constant_part = PFLOG_HDRLEN;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 		break;
 #endif
 
@@ -1463,186 +1455,186 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
         case DLT_JUNIPER_PPP:
         case DLT_JUNIPER_CHDLC:
         case DLT_JUNIPER_FRELAY:
-		cstate->off_linktype.constant_part = 4;
-		cstate->off_linkpl.constant_part = 4;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 4;
+		cstate->cgstate->off_linkpl.constant_part = 4;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
                 break;
 
 	case DLT_JUNIPER_ATM1:
-		cstate->off_linktype.constant_part = 4;		/* in reality variable between 4-8 */
-		cstate->off_linkpl.constant_part = 4;	/* in reality variable between 4-8 */
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 10;
+		cstate->cgstate->off_linktype.constant_part = 4;		/* in reality variable between 4-8 */
+		cstate->cgstate->off_linkpl.constant_part = 4;	/* in reality variable between 4-8 */
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 10;
 		break;
 
 	case DLT_JUNIPER_ATM2:
-		cstate->off_linktype.constant_part = 8;		/* in reality variable between 8-12 */
-		cstate->off_linkpl.constant_part = 8;	/* in reality variable between 8-12 */
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 10;
+		cstate->cgstate->off_linktype.constant_part = 8;		/* in reality variable between 8-12 */
+		cstate->cgstate->off_linkpl.constant_part = 8;	/* in reality variable between 8-12 */
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 10;
 		break;
 
 		/* frames captured on a Juniper PPPoE service PIC
 		 * contain raw ethernet frames */
 	case DLT_JUNIPER_PPPOE:
         case DLT_JUNIPER_ETHER:
-		cstate->off_linkpl.constant_part = 14;
-		cstate->off_linktype.constant_part = 16;
-		cstate->off_nl = 18;		/* Ethernet II */
-		cstate->off_nl_nosnap = 21;	/* 802.3+802.2 */
+		cstate->cgstate->off_linkpl.constant_part = 14;
+		cstate->cgstate->off_linktype.constant_part = 16;
+		cstate->cgstate->off_nl = 18;		/* Ethernet II */
+		cstate->cgstate->off_nl_nosnap = 21;	/* 802.3+802.2 */
 		break;
 
 	case DLT_JUNIPER_PPPOE_ATM:
-		cstate->off_linktype.constant_part = 4;
-		cstate->off_linkpl.constant_part = 6;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 4;
+		cstate->cgstate->off_linkpl.constant_part = 6;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_GGSN:
-		cstate->off_linktype.constant_part = 6;
-		cstate->off_linkpl.constant_part = 12;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 6;
+		cstate->cgstate->off_linkpl.constant_part = 12;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_ES:
-		cstate->off_linktype.constant_part = 6;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
-		cstate->off_nl = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 6;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;	/* not really a network layer but raw IP addresses */
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_MONITOR:
-		cstate->off_linktype.constant_part = 12;
-		cstate->off_linkpl.constant_part = 12;
-		cstate->off_nl = 0;			/* raw IP/IP6 header */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 12;
+		cstate->cgstate->off_linkpl.constant_part = 12;
+		cstate->cgstate->off_nl = 0;			/* raw IP/IP6 header */
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_BACNET_MS_TP:
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_SERVICES:
-		cstate->off_linktype.constant_part = 12;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
-		cstate->off_nl = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = 12;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;	/* L3 proto location dep. on cookie type */
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_JUNIPER_VP:
-		cstate->off_linktype.constant_part = 18;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = 18;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_ST:
-		cstate->off_linktype.constant_part = 18;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = 18;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_ISM:
-		cstate->off_linktype.constant_part = 8;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = 8;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_JUNIPER_VS:
 	case DLT_JUNIPER_SRX_E2E:
 	case DLT_JUNIPER_FIBRECHANNEL:
 	case DLT_JUNIPER_ATM_CEMIC:
-		cstate->off_linktype.constant_part = 8;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = 8;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_MTP2:
-		cstate->off_li = 2;
-		cstate->off_li_hsl = 4;
-		cstate->off_sio = 3;
-		cstate->off_opc = 4;
-		cstate->off_dpc = 4;
-		cstate->off_sls = 7;
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_li = 2;
+		cstate->cgstate->off_li_hsl = 4;
+		cstate->cgstate->off_sio = 3;
+		cstate->cgstate->off_opc = 4;
+		cstate->cgstate->off_dpc = 4;
+		cstate->cgstate->off_sls = 7;
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_MTP2_WITH_PHDR:
-		cstate->off_li = 6;
-		cstate->off_li_hsl = 8;
-		cstate->off_sio = 7;
-		cstate->off_opc = 8;
-		cstate->off_dpc = 8;
-		cstate->off_sls = 11;
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_li = 6;
+		cstate->cgstate->off_li_hsl = 8;
+		cstate->cgstate->off_sio = 7;
+		cstate->cgstate->off_opc = 8;
+		cstate->cgstate->off_dpc = 8;
+		cstate->cgstate->off_sls = 11;
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_ERF:
-		cstate->off_li = 22;
-		cstate->off_li_hsl = 24;
-		cstate->off_sio = 23;
-		cstate->off_opc = 24;
-		cstate->off_dpc = 24;
-		cstate->off_sls = 27;
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_li = 22;
+		cstate->cgstate->off_li_hsl = 24;
+		cstate->cgstate->off_sio = 23;
+		cstate->cgstate->off_opc = 24;
+		cstate->cgstate->off_dpc = 24;
+		cstate->cgstate->off_sls = 27;
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_PFSYNC:
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-		cstate->off_linkpl.constant_part = 4;
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = 0;
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_linkpl.constant_part = 4;
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = 0;
 		break;
 
 	case DLT_AX25_KISS:
 		/*
 		 * Currently, only raw "link[N:M]" filtering is supported.
 		 */
-		cstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
-		cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-		cstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
+		cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;	/* variable, min 15, max 71 steps of 7 */
+		cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+		cstate->cgstate->off_nl = OFFSET_NOT_SET;	/* variable, min 16, max 71 steps of 7 */
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;	/* no 802.2 LLC */
 		break;
 
 	case DLT_IPNET:
-		cstate->off_linktype.constant_part = 1;
-		cstate->off_linkpl.constant_part = 24;	/* ipnet header length */
-		cstate->off_nl = 0;
-		cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		cstate->cgstate->off_linktype.constant_part = 1;
+		cstate->cgstate->off_linkpl.constant_part = 24;	/* ipnet header length */
+		cstate->cgstate->off_nl = 0;
+		cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		break;
 
 	case DLT_NETANALYZER:
-		cstate->off_linkhdr.constant_part = 4;	/* Ethernet header is past 4-byte pseudo-header */
-		cstate->off_linktype.constant_part = cstate->off_linkhdr.constant_part + 12;
-		cstate->off_linkpl.constant_part = cstate->off_linkhdr.constant_part + 14;	/* pseudo-header+Ethernet header length */
-		cstate->off_nl = 0;		/* Ethernet II */
-		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
+		cstate->cgstate->off_linkhdr.constant_part = 4;	/* Ethernet header is past 4-byte pseudo-header */
+		cstate->cgstate->off_linktype.constant_part = cstate->cgstate->off_linkhdr.constant_part + 12;
+		cstate->cgstate->off_linkpl.constant_part = cstate->cgstate->off_linkhdr.constant_part + 14;	/* pseudo-header+Ethernet header length */
+		cstate->cgstate->off_nl = 0;		/* Ethernet II */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
 	case DLT_NETANALYZER_TRANSPARENT:
-		cstate->off_linkhdr.constant_part = 12;	/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
-		cstate->off_linktype.constant_part = cstate->off_linkhdr.constant_part + 12;
-		cstate->off_linkpl.constant_part = cstate->off_linkhdr.constant_part + 14;	/* pseudo-header+preamble+SFD+Ethernet header length */
-		cstate->off_nl = 0;		/* Ethernet II */
-		cstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
+		cstate->cgstate->off_linkhdr.constant_part = 12;	/* MAC header is past 4-byte pseudo-header, preamble, and SFD */
+		cstate->cgstate->off_linktype.constant_part = cstate->cgstate->off_linkhdr.constant_part + 12;
+		cstate->cgstate->off_linkpl.constant_part = cstate->cgstate->off_linkhdr.constant_part + 14;	/* pseudo-header+preamble+SFD+Ethernet header length */
+		cstate->cgstate->off_nl = 0;		/* Ethernet II */
+		cstate->cgstate->off_nl_nosnap = 3;	/* 802.3+802.2 */
 		break;
 
 	default:
@@ -1650,19 +1642,19 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		 * For values in the range in which we've assigned new
 		 * DLT_ values, only raw "link[N:M]" filtering is supported.
 		 */
-		if (cstate->linktype >= DLT_MATCHING_MIN &&
-		    cstate->linktype <= DLT_MATCHING_MAX) {
-			cstate->off_linktype.constant_part = OFFSET_NOT_SET;
-			cstate->off_linkpl.constant_part = OFFSET_NOT_SET;
-			cstate->off_nl = OFFSET_NOT_SET;
-			cstate->off_nl_nosnap = OFFSET_NOT_SET;
+		if (cstate->cgstate->linktype >= DLT_MATCHING_MIN &&
+		    cstate->cgstate->linktype <= DLT_MATCHING_MAX) {
+			cstate->cgstate->off_linktype.constant_part = OFFSET_NOT_SET;
+			cstate->cgstate->off_linkpl.constant_part = OFFSET_NOT_SET;
+			cstate->cgstate->off_nl = OFFSET_NOT_SET;
+			cstate->cgstate->off_nl_nosnap = OFFSET_NOT_SET;
 		} else {
-			bpf_error(cstate, "unknown data link type %d", cstate->linktype);
+			bpf_error(cstate, "unknown data link type %d", cstate->cgstate->linktype);
 		}
 		break;
 	}
 
-	cstate->off_outermostlinkhdr = cstate->off_prevlinkhdr = cstate->off_linkhdr;
+	cstate->cgstate->off_outermostlinkhdr = cstate->cgstate->off_prevlinkhdr = cstate->cgstate->off_linkhdr;
 }
 
 /*
@@ -1722,31 +1714,31 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		break;
 
 	case OR_LINKHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkhdr, offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linkhdr, offset, size);
 		break;
 
 	case OR_PREVLINKHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_prevlinkhdr, offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_prevlinkhdr, offset, size);
 		break;
 
 	case OR_LLC:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linkpl, offset, size);
 		break;
 
 	case OR_PREVMPLSHDR:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl - 4 + offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linkpl, cstate->cgstate->off_nl - 4 + offset, size);
 		break;
 
 	case OR_LINKPL:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl + offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linkpl, cstate->cgstate->off_nl + offset, size);
 		break;
 
 	case OR_LINKPL_NOSNAP:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl_nosnap + offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linkpl, cstate->cgstate->off_nl_nosnap + offset, size);
 		break;
 
 	case OR_LINKTYPE:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linktype, offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linktype, offset, size);
 		break;
 
 	case OR_TRAN_IPV4:
@@ -1770,12 +1762,12 @@ gen_load_a(compiler_state_t *cstate, enum e_offrel offrel, u_int offset,
 		 * part in the offset of the load.
 		 */
 		s2 = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		s2->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + offset;
+		s2->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + offset;
 		sappend(s, s2);
 		break;
 
 	case OR_TRAN_IPV6:
-		s = gen_load_absoffsetrel(cstate, &cstate->off_linkpl, cstate->off_nl + 40 + offset, size);
+		s = gen_load_absoffsetrel(cstate, &cstate->cgstate->off_linkpl, cstate->cgstate->off_nl + 40 + offset, size);
 		break;
 
 	default:
@@ -1795,7 +1787,7 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 {
 	struct slist *s, *s2;
 
-	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+	s = gen_abs_offset_varpart(cstate, &cstate->cgstate->off_linkpl);
 	if (s != NULL) {
 		/*
 		 * The offset of the link-layer payload has a variable
@@ -1808,7 +1800,7 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 		 * the value from the X register.
 		 */
 		s2 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
-		s2->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		s2->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 		sappend(s, s2);
 		s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_K);
 		s2->s.k = 0xf;
@@ -1833,13 +1825,13 @@ gen_loadx_iphdrlen(compiler_state_t *cstate)
 		 *
 		 * This means we can use the 4*([k]&0xf) addressing
 		 * mode.  Load the length of the IPv4 header, which
-		 * is at an offset of cstate->off_nl from the beginning of
+		 * is at an offset of cstate->cgstate->off_nl from the beginning of
 		 * the link-layer payload, and thus at an offset of
-		 * cstate->off_linkpl.constant_part + cstate->off_nl from the beginning
+		 * cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl from the beginning
 		 * of the raw packet data, using that addressing mode.
 		 */
 		s = new_stmt(cstate, BPF_LDX|BPF_MSH|BPF_B);
-		s->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		s->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 	}
 	return s;
 }
@@ -2074,7 +2066,7 @@ gen_loopback_linktype(compiler_state_t *cstate, int proto)
 	 * For DLT_LOOP, the link-layer header is a 32-bit
 	 * word containing an AF_ value in *network* byte order.
 	 */
-	if (cstate->linktype == DLT_NULL || cstate->linktype == DLT_ENC) {
+	if (cstate->cgstate->linktype == DLT_NULL || cstate->cgstate->linktype == DLT_ENC) {
 		/*
 		 * The AF_ value is in host byte order, but the BPF
 		 * interpreter will convert it to network byte order.
@@ -2253,7 +2245,7 @@ gen_linux_sll_linktype(compiler_state_t *cstate, int proto)
 			 * then check the DSAP.
 			 */
 			b0 = gen_cmp(cstate, OR_LINKTYPE, 0, BPF_H, LINUX_SLL_P_802_2);
-			b1 = gen_cmp(cstate, OR_LINKHDR, cstate->off_linkpl.constant_part, BPF_B,
+			b1 = gen_cmp(cstate, OR_LINKHDR, cstate->cgstate->off_linkpl.constant_part, BPF_B,
 			     (bpf_int32)proto);
 			gen_and(b0, b1);
 			return b1;
@@ -2284,7 +2276,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 	 * we are generating jmp instructions within a normal
 	 * slist of instructions
 	 */
-	cstate->no_optimize = 1;
+	cstate->cgstate->no_optimize = 1;
 
 	/*
 	 * Generate code to load the length of the radio header into
@@ -2305,7 +2297,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 	 * but no known software generates headers that aren't 144
 	 * bytes long.
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->cgstate->off_linkhdr.reg != -1) {
 		/*
 		 * Load the cookie.
 		 */
@@ -2367,7 +2359,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * loading the length of the AVS header.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->cgstate->off_linkhdr.reg;
 		sappend(s1, s2);
 		sjcommon->s.jf = s2;
 
@@ -2394,7 +2386,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 	 * generated uses that prefix, so we don't need to generate any
 	 * code to load it.)
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->cgstate->off_linkhdr.reg != -1) {
 		/*
 		 * The 4 bytes at an offset of 4 from the beginning of
 		 * the AVS header are the length of the AVS header.
@@ -2408,7 +2400,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->cgstate->off_linkhdr.reg;
 		sappend(s1, s2);
 
 		/*
@@ -2434,7 +2426,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 	 * generated uses that prefix, so we don't need to generate any
 	 * code to load it.)
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->cgstate->off_linkhdr.reg != -1) {
 		/*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
@@ -2469,7 +2461,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->cgstate->off_linkhdr.reg;
 		sappend(s1, s2);
 
 		/*
@@ -2502,7 +2494,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 	 * into the register assigned to hold that length, if one has
 	 * been assigned.
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->cgstate->off_linkhdr.reg != -1) {
 		/*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
@@ -2537,7 +2529,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->cgstate->off_linkhdr.reg;
 		sappend(s1, s2);
 
 		/*
@@ -2571,7 +2563,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	struct slist *sjset_tsft_datapad, *sjset_notsft_datapad;
 	struct slist *s_roundup;
 
-	if (cstate->off_linkpl.reg == -1) {
+	if (cstate->cgstate->off_linkpl.reg == -1) {
 		/*
 		 * No register has been assigned to the offset of
 		 * the link-layer payload, which means nobody needs
@@ -2586,7 +2578,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * we are generating jmp instructions within a normal
 	 * slist of instructions
 	 */
-	cstate->no_optimize = 1;
+	cstate->cgstate->no_optimize = 1;
 
 	/*
 	 * If "s" is non-null, it has code to arrange that the X register
@@ -2603,18 +2595,18 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 *
 		 * Load the length of the fixed-length prefix preceding
 		 * the link-layer header (if any) into the X register,
-		 * and store it in the cstate->off_linkpl.reg register.
+		 * and store it in the cstate->cgstate->off_linkpl.reg register.
 		 * That length is off_outermostlinkhdr.constant_part.
 		 */
 		s = new_stmt(cstate, BPF_LDX|BPF_IMM);
-		s->s.k = cstate->off_outermostlinkhdr.constant_part;
+		s->s.k = cstate->cgstate->off_outermostlinkhdr.constant_part;
 	}
 
 	/*
 	 * The X register contains the offset of the beginning of the
 	 * link-layer header; add 24, which is the minimum length
 	 * of the MAC header for a data frame, to that, and store it
-	 * in cstate->off_linkpl.reg, and then load the Frame Control field,
+	 * in cstate->cgstate->off_linkpl.reg, and then load the Frame Control field,
 	 * which is at the offset in the X register, with an indexed load.
 	 */
 	s2 = new_stmt(cstate, BPF_MISC|BPF_TXA);
@@ -2623,7 +2615,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	s2->s.k = 24;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ST);
-	s2->s.k = cstate->off_linkpl.reg;
+	s2->s.k = cstate->cgstate->off_linkpl.reg;
 	sappend(s, s2);
 
 	s2 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
@@ -2659,19 +2651,19 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	sappend(s, sjset_qos);
 
 	/*
-	 * If it's set, add 2 to cstate->off_linkpl.reg, to skip the QoS
+	 * If it's set, add 2 to cstate->cgstate->off_linkpl.reg, to skip the QoS
 	 * field.
 	 * Otherwise, go to the first statement of the rest of the
 	 * program.
 	 */
 	sjset_qos->s.jt = s2 = new_stmt(cstate, BPF_LD|BPF_MEM);
-	s2->s.k = cstate->off_linkpl.reg;
+	s2->s.k = cstate->cgstate->off_linkpl.reg;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_IMM);
 	s2->s.k = 2;
 	sappend(s, s2);
 	s2 = new_stmt(cstate, BPF_ST);
-	s2->s.k = cstate->off_linkpl.reg;
+	s2->s.k = cstate->cgstate->off_linkpl.reg;
 	sappend(s, s2);
 
 	/*
@@ -2693,7 +2685,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * annoying padding don't have multiple antennae and therefore
 	 * do not generate radiotap headers with multiple presence words.
 	 */
-	if (cstate->linktype == DLT_IEEE802_11_RADIO) {
+	if (cstate->cgstate->linktype == DLT_IEEE802_11_RADIO) {
 		/*
 		 * Is the IEEE80211_RADIOTAP_FLAGS bit (0x0000002) set
 		 * in the first presence flag word?
@@ -2775,7 +2767,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * ANDing with ~3.
 		 */
 		s_roundup = new_stmt(cstate, BPF_LD|BPF_MEM);
-		s_roundup->s.k = cstate->off_linkpl.reg;
+		s_roundup->s.k = cstate->cgstate->off_linkpl.reg;
 		sappend(s, s_roundup);
 		s2 = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_IMM);
 		s2->s.k = 3;
@@ -2784,7 +2776,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		s2->s.k = ~3;
 		sappend(s, s2);
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkpl.reg;
+		s2->s.k = cstate->cgstate->off_linkpl.reg;
 		sappend(s, s2);
 
 		sjset_tsft_datapad->s.jt = s_roundup;
@@ -2807,9 +2799,9 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * includes the variable part of the header. Therefore,
 	 * if nobody else has allocated a register for the link
 	 * header and we need it, do it now. */
-	if (cstate->off_linkpl.reg != -1 && cstate->off_linkhdr.is_variable &&
-	    cstate->off_linkhdr.reg == -1)
-		cstate->off_linkhdr.reg = alloc_reg(cstate);
+	if (cstate->cgstate->off_linkpl.reg != -1 && cstate->cgstate->off_linkhdr.is_variable &&
+	    cstate->cgstate->off_linkhdr.reg == -1)
+		cstate->cgstate->off_linkhdr.reg = alloc_reg(cstate);
 
 	/*
 	 * For link-layer types that have a variable-length header
@@ -2822,7 +2814,7 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * some other protocol stack.  That's significantly more
 	 * complicated.
 	 */
-	switch (cstate->outermostlinktype) {
+	switch (cstate->cgstate->outermostlinktype) {
 
 	case DLT_PRISM_HEADER:
 		s = gen_load_prism_llprefixlen(cstate);
@@ -2850,7 +2842,7 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * header, generate code to load the offset of the link-layer
 	 * payload into the register assigned to that offset, if any.
 	 */
-	switch (cstate->outermostlinktype) {
+	switch (cstate->cgstate->outermostlinktype) {
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
@@ -2865,21 +2857,21 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * If there there is no initialization yet and we need variable
 	 * length offsets for VLAN, initialize them to zero
 	 */
-	if (s == NULL && cstate->is_vlan_vloffset) {
+	if (s == NULL && cstate->cgstate->is_vlan_vloffset) {
 		struct slist *s2;
 
-		if (cstate->off_linkpl.reg == -1)
-			cstate->off_linkpl.reg = alloc_reg(cstate);
-		if (cstate->off_linktype.reg == -1)
-			cstate->off_linktype.reg = alloc_reg(cstate);
+		if (cstate->cgstate->off_linkpl.reg == -1)
+			cstate->cgstate->off_linkpl.reg = alloc_reg(cstate);
+		if (cstate->cgstate->off_linktype.reg == -1)
+			cstate->cgstate->off_linktype.reg = alloc_reg(cstate);
 
 		s = new_stmt(cstate, BPF_LD|BPF_W|BPF_IMM);
 		s->s.k = 0;
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkpl.reg;
+		s2->s.k = cstate->cgstate->off_linkpl.reg;
 		sappend(s, s2);
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linktype.reg;
+		s2->s.k = cstate->cgstate->off_linktype.reg;
 		sappend(s, s2);
 	}
 
@@ -2901,7 +2893,7 @@ gen_ppi_dlt_check(compiler_state_t *cstate)
 	struct slist *s_load_dlt;
 	struct block *b;
 
-	if (cstate->linktype == DLT_PPI)
+	if (cstate->cgstate->linktype == DLT_PPI)
 	{
 		/* Create the statements that check for the DLT
 		 */
@@ -3024,10 +3016,10 @@ gen_prevlinkhdr_check(compiler_state_t *cstate)
 {
 	struct block *b0;
 
-	if (cstate->is_geneve)
+	if (cstate->cgstate->is_geneve)
 		return gen_geneve_ll_check(cstate);
 
-	switch (cstate->prevlinktype) {
+	switch (cstate->cgstate->prevlinktype) {
 
 	case DLT_SUNATM:
 		/*
@@ -3072,7 +3064,7 @@ gen_linktype(compiler_state_t *cstate, int proto)
 	const char *description;
 
 	/* are we checking MPLS-encapsulated packets? */
-	if (cstate->label_stack_depth > 0) {
+	if (cstate->cgstate->label_stack_depth > 0) {
 		switch (proto) {
 		case ETHERTYPE_IP:
 		case PPP_IP:
@@ -3090,14 +3082,14 @@ gen_linktype(compiler_state_t *cstate, int proto)
 		}
 	}
 
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
 	case DLT_NETANALYZER_TRANSPARENT:
 		/* Geneve has an EtherType regardless of whether there is an
 		 * L2 header. */
-		if (!cstate->is_geneve)
+		if (!cstate->cgstate->is_geneve)
 			b0 = gen_prevlinkhdr_check(cstate);
 		else
 			b0 = NULL;
@@ -3576,7 +3568,7 @@ gen_linktype(compiler_state_t *cstate, int proto)
 		 * so, off_linktype.constant_part will be the offset of that
 		 * field in the packet; if not, it will be OFFSET_NOT_SET.
 		 */
-		if (cstate->off_linktype.constant_part != OFFSET_NOT_SET) {
+		if (cstate->cgstate->off_linktype.constant_part != OFFSET_NOT_SET) {
 			/*
 			 * Yes; assume it's an Ethernet type.  (If
 			 * it's not, it needs to be handled specially
@@ -3587,13 +3579,13 @@ gen_linktype(compiler_state_t *cstate, int proto)
 			/*
 			 * No; report an error.
 			 */
-			description = pcap_datalink_val_to_description(cstate->linktype);
+			description = pcap_datalink_val_to_description(cstate->cgstate->linktype);
 			if (description != NULL) {
 				bpf_error(cstate, "%s link-layer type filtering not implemented",
 				    description);
 			} else {
 				bpf_error(cstate, "DLT %u link-layer type filtering not implemented",
-				    cstate->linktype);
+				    cstate->cgstate->linktype);
 			}
 		}
 		break;
@@ -3631,7 +3623,7 @@ gen_llc(compiler_state_t *cstate)
 {
 	struct block *b0, *b1;
 
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_EN10MB:
 		/*
@@ -3692,7 +3684,7 @@ gen_llc(compiler_state_t *cstate)
 		return b0;
 
 	default:
-		bpf_error(cstate, "'llc' not supported for linktype %d", cstate->linktype);
+		bpf_error(cstate, "'llc' not supported for linktype %d", cstate->cgstate->linktype);
 		/* NOTREACHED */
 	}
 }
@@ -4083,10 +4075,10 @@ gen_fhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 
 	switch (dir) {
 	case Q_SRC:
-		return gen_bcmp(cstate, OR_LINKHDR, 6 + 1 + cstate->pcap_fddipad, 6, eaddr);
+		return gen_bcmp(cstate, OR_LINKHDR, 6 + 1 + cstate->cgstate->pcap_fddipad, 6, eaddr);
 
 	case Q_DST:
-		return gen_bcmp(cstate, OR_LINKHDR, 0 + 1 + cstate->pcap_fddipad, 6, eaddr);
+		return gen_bcmp(cstate, OR_LINKHDR, 0 + 1 + cstate->cgstate->pcap_fddipad, 6, eaddr);
 
 	case Q_AND:
 		b0 = gen_fhostop(cstate, eaddr, Q_SRC);
@@ -4202,7 +4194,7 @@ gen_wlanhostop(compiler_state_t *cstate, const u_char *eaddr, int dir)
 	 * and wipes out some LD instructions generated by the below
 	 * code to validate the Frame Control bits
 	 */
-	cstate->no_optimize = 1;
+	cstate->cgstate->no_optimize = 1;
 #endif /* ENABLE_WLAN_FILTERING_PATCH */
 
 	switch (dir) {
@@ -4769,7 +4761,7 @@ gen_dnhostop(compiler_state_t *cstate, bpf_u_int32 addr, int dir)
 	gen_and(tmp, b2);
 	gen_or(b2, b1);
 
-	/* Combine with test for cstate->linktype */
+	/* Combine with test for cstate->cgstate->linktype */
 	gen_and(b0, b1);
 	return b1;
 }
@@ -4827,7 +4819,7 @@ gen_host(compiler_state_t *cstate, bpf_u_int32 addr, bpf_u_int32 mask,
 		 * Only check for non-IPv4 addresses if we're not
 		 * checking MPLS-encapsulated packets.
 		 */
-		if (cstate->label_stack_depth == 0) {
+		if (cstate->cgstate->label_stack_depth == 0) {
 			b1 = gen_host(cstate, addr, mask, Q_ARP, dir, type);
 			gen_or(b0, b1);
 			b0 = gen_host(cstate, addr, mask, Q_RARP, dir, type);
@@ -5116,7 +5108,7 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 	case Q_IP:
 	case Q_ARP:
 	case Q_RARP:
-		switch (cstate->linktype) {
+		switch (cstate->cgstate->linktype) {
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
@@ -5141,7 +5133,7 @@ gen_gateway(compiler_state_t *cstate, const u_char *eaddr,
 		case DLT_SUNATM:
 			/*
 			 * This is LLC-multiplexed traffic; if it were
-			 * LANE, cstate->linktype would have been set to
+			 * LANE, cstate->cgstate->linktype would have been set to
 			 * DLT_EN10MB.
 			 */
 			bpf_error(cstate,
@@ -5896,7 +5888,7 @@ lookup_proto(compiler_state_t *cstate, const char *name, int proto)
 		break;
 
 	case Q_LINK:
-		/* XXX should look up h/w protocol type based on cstate->linktype */
+		/* XXX should look up h/w protocol type based on cstate->cgstate->linktype */
 		v = pcap_nametoeproto(name);
 		if (v == PROTO_UNDEF) {
 			v = pcap_nametollc(name);
@@ -5972,10 +5964,10 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 	 * branches, and backward branch support is unlikely to appear
 	 * in kernel BPF engines.)
 	 */
-	if (cstate->off_linkpl.is_variable)
+	if (cstate->cgstate->off_linkpl.is_variable)
 		bpf_error(cstate, "'protochain' not supported with variable length headers");
 
-	cstate->no_optimize = 1; /* this code is not compatible with optimizer yet */
+	cstate->cgstate->no_optimize = 1; /* this code is not compatible with optimizer yet */
 
 	/*
 	 * s[0] is a dummy entry to protect other BPF insn from damage
@@ -5992,11 +5984,11 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 
 		/* A = ip->ip_p */
 		s[i] = new_stmt(cstate, BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 9;
+		s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + 9;
 		i++;
 		/* X = ip->ip_hl << 2 */
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_MSH|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 		i++;
 		break;
 
@@ -6005,7 +5997,7 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 
 		/* A = ip6->ip_nxt */
 		s[i] = new_stmt(cstate, BPF_LD|BPF_ABS|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 6;
+		s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + 6;
 		i++;
 		/* X = sizeof(struct ip6_hdr) */
 		s[i] = new_stmt(cstate, BPF_LDX|BPF_IMM);
@@ -6081,7 +6073,7 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 		 */
 		/* A = P[X + packet head] */
 		s[i] = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 		i++;
 		/* MEM[reg2] = A */
 		s[i] = new_stmt(cstate, BPF_ST);
@@ -6089,7 +6081,7 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 		i++;
 		/* A = P[X + packet head + 1]; */
 		s[i] = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
-		s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 1;
+		s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + 1;
 		i++;
 		/* A += 1 */
 		s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
@@ -6150,7 +6142,7 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 	i++;
 	/* A = P[X + packet head]; */
 	s[i] = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
-	s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+	s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 	i++;
 	/* MEM[reg2] = A */
 	s[i] = new_stmt(cstate, BPF_ST);
@@ -6168,7 +6160,7 @@ gen_protochain(compiler_state_t *cstate, int v, int proto, int dir)
 	i++;
 	/* A = P[X + packet head] */
 	s[i] = new_stmt(cstate, BPF_LD|BPF_IND|BPF_B);
-	s[i]->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+	s[i]->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 	i++;
 	/* A += 2 */
 	s[i] = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
@@ -6402,7 +6394,7 @@ gen_proto(compiler_state_t *cstate, int v, int proto, int dir)
 		/* NOTREACHED */
 
 	case Q_ISO:
-		switch (cstate->linktype) {
+		switch (cstate->cgstate->linktype) {
 
 		case DLT_FRELAY:
 			/*
@@ -6554,7 +6546,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_DEFAULT:
 	case Q_HOST:
 		if (proto == Q_LINK) {
-			switch (cstate->linktype) {
+			switch (cstate->cgstate->linktype) {
 
 			case DLT_EN10MB:
 			case DLT_NETANALYZER:
@@ -6635,13 +6627,13 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			res0 = res = pcap_nametoaddrinfo(name);
 			if (res == NULL)
 				bpf_error(cstate, "unknown host '%s'", name);
-			cstate->ai = res;
+			cstate->cgstate->ai = res;
 			b = tmp = NULL;
 			tproto = proto;
 #ifdef INET6
 			tproto6 = proto;
 #endif
-			if (cstate->off_linktype.constant_part == OFFSET_NOT_SET &&
+			if (cstate->cgstate->off_linktype.constant_part == OFFSET_NOT_SET &&
 			    tproto == Q_DEFAULT) {
 				tproto = Q_IP;
 #ifdef INET6
@@ -6679,7 +6671,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 					gen_or(b, tmp);
 				b = tmp;
 			}
-			cstate->ai = NULL;
+			cstate->cgstate->ai = NULL;
 			freeaddrinfo(res0);
 			if (b == NULL) {
 				bpf_error(cstate, "unknown host '%s'%s", name,
@@ -6786,11 +6778,11 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 			bpf_error(cstate, "unknown ether host: %s", name);
 
 		res = pcap_nametoaddrinfo(name);
-		cstate->ai = res;
+		cstate->cgstate->ai = res;
 		if (res == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
 		b = gen_gateway(cstate, eaddr, res, proto, dir);
-		cstate->ai = NULL;
+		cstate->cgstate->ai = NULL;
 		freeaddrinfo(res);
 		if (b == NULL)
 			bpf_error(cstate, "unknown host '%s'", name);
@@ -6992,7 +6984,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 	res = pcap_nametoaddrinfo(s1);
 	if (!res)
 		bpf_error(cstate, "invalid ip6 address %s", s1);
-	cstate->ai = res;
+	cstate->cgstate->ai = res;
 	if (res->ai_next)
 		bpf_error(cstate, "%s resolved to multiple address", s1);
 	addr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
@@ -7023,7 +7015,7 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 
 	case Q_NET:
 		b = gen_host6(cstate, addr, &mask, q.proto, q.dir, q.addr);
-		cstate->ai = NULL;
+		cstate->cgstate->ai = NULL;
 		freeaddrinfo(res);
 		return b;
 
@@ -7040,43 +7032,43 @@ gen_ecode(compiler_state_t *cstate, const char *s, struct qual q)
 	struct block *b, *tmp;
 
 	if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) && q.proto == Q_LINK) {
-		cstate->e = pcap_ether_aton(s);
-		if (cstate->e == NULL)
+		cstate->cgstate->e = pcap_ether_aton(s);
+		if (cstate->cgstate->e == NULL)
 			bpf_error(cstate, "malloc");
-		switch (cstate->linktype) {
+		switch (cstate->cgstate->linktype) {
 		case DLT_EN10MB:
 		case DLT_NETANALYZER:
 		case DLT_NETANALYZER_TRANSPARENT:
 			tmp = gen_prevlinkhdr_check(cstate);
-			b = gen_ehostop(cstate, cstate->e, (int)q.dir);
+			b = gen_ehostop(cstate, cstate->cgstate->e, (int)q.dir);
 			if (tmp != NULL)
 				gen_and(tmp, b);
 			break;
 		case DLT_FDDI:
-			b = gen_fhostop(cstate, cstate->e, (int)q.dir);
+			b = gen_fhostop(cstate, cstate->cgstate->e, (int)q.dir);
 			break;
 		case DLT_IEEE802:
-			b = gen_thostop(cstate, cstate->e, (int)q.dir);
+			b = gen_thostop(cstate, cstate->cgstate->e, (int)q.dir);
 			break;
 		case DLT_IEEE802_11:
 		case DLT_PRISM_HEADER:
 		case DLT_IEEE802_11_RADIO_AVS:
 		case DLT_IEEE802_11_RADIO:
 		case DLT_PPI:
-			b = gen_wlanhostop(cstate, cstate->e, (int)q.dir);
+			b = gen_wlanhostop(cstate, cstate->cgstate->e, (int)q.dir);
 			break;
 		case DLT_IP_OVER_FC:
-			b = gen_ipfchostop(cstate, cstate->e, (int)q.dir);
+			b = gen_ipfchostop(cstate, cstate->cgstate->e, (int)q.dir);
 			break;
 		default:
-			free(cstate->e);
-			cstate->e = NULL;
+			free(cstate->cgstate->e);
+			cstate->cgstate->e = NULL;
 			bpf_error(cstate, "ethernet addresses supported only on ethernet/FDDI/token ring/802.11/ATM LANE/Fibre Channel");
 			/* NOTREACHED */
 			break;
 		}
-		free(cstate->e);
-		cstate->e = NULL;
+		free(cstate->cgstate->e);
+		cstate->cgstate->e = NULL;
 		return (b);
 	}
 	bpf_error(cstate, "ethernet address used in non-ether expression");
@@ -7157,9 +7149,9 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		 * data, if we have a radio header.  (If we don't, this
 		 * is an error.)
 		 */
-		if (cstate->linktype != DLT_IEEE802_11_RADIO_AVS &&
-		    cstate->linktype != DLT_IEEE802_11_RADIO &&
-		    cstate->linktype != DLT_PRISM_HEADER)
+		if (cstate->cgstate->linktype != DLT_IEEE802_11_RADIO_AVS &&
+		    cstate->cgstate->linktype != DLT_IEEE802_11_RADIO &&
+		    cstate->cgstate->linktype != DLT_PRISM_HEADER)
 			bpf_error(cstate, "radio information not present in capture");
 
 		/*
@@ -7188,7 +7180,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		 * frame, so that 0 refers, for Ethernet LANE, to
 		 * the beginning of the destination address?
 		 */
-		s = gen_abs_offset_varpart(cstate, &cstate->off_linkhdr);
+		s = gen_abs_offset_varpart(cstate, &cstate->cgstate->off_linkhdr);
 
 		/*
 		 * If "s" is non-null, it has code to arrange that the
@@ -7214,7 +7206,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		 * into the X register and then added to the index).
 		 */
 		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		tmp->s.k = cstate->off_linkhdr.constant_part;
+		tmp->s.k = cstate->cgstate->off_linkhdr.constant_part;
 		sappend(s, tmp);
 		sappend(inst->s, s);
 		break;
@@ -7233,9 +7225,9 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		 * The offset is relative to the beginning of
 		 * the network-layer header.
 		 * XXX - are there any cases where we want
-		 * cstate->off_nl_nosnap?
+		 * cstate->cgstate->off_nl_nosnap?
 		 */
-		s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+		s = gen_abs_offset_varpart(cstate, &cstate->cgstate->off_linkpl);
 
 		/*
 		 * If "s" is non-null, it has code to arrange that the
@@ -7261,7 +7253,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		 * start of the link-layer payload.
 		 */
 		tmp = new_stmt(cstate, BPF_LD|BPF_IND|size);
-		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		tmp->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 		sappend(s, tmp);
 		sappend(inst->s, s);
 
@@ -7293,7 +7285,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		 * a variable-length header), in bytes.
 		 *
 		 * XXX - are there any cases where we want
-		 * cstate->off_nl_nosnap?
+		 * cstate->cgstate->off_nl_nosnap?
 		 * XXX - we should, if we're built with
 		 * IPv6 support, generate code to load either
 		 * IPv4, IPv6, or both, as appropriate.
@@ -7318,7 +7310,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
 		sappend(s, new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_X));
 		sappend(s, new_stmt(cstate, BPF_MISC|BPF_TAX));
 		sappend(s, tmp = new_stmt(cstate, BPF_LD|BPF_IND|size));
-		tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl;
+		tmp->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl;
 		sappend(inst->s, s);
 
 		/*
@@ -7354,7 +7346,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
         inst->b = b;
 
 
-        s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+        s = gen_abs_offset_varpart(cstate, &cstate->cgstate->off_linkpl);
         /*
         * If "s" is non-null, it has code to arrange that the
         * X register contains the variable part of the offset
@@ -7380,7 +7372,7 @@ gen_load(compiler_state_t *cstate, int proto, struct arth *inst, int size)
         * start of the link-layer payload.
         */
         tmp = new_stmt(cstate, BPF_LD|BPF_IND|size);
-        tmp->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 40;
+        tmp->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + 40;
 
         sappend(s, tmp);
         sappend(inst->s, s);
@@ -7547,8 +7539,8 @@ gen_arth(compiler_state_t *cstate, int code, struct arth *a0,
 static void
 init_regs(compiler_state_t *cstate)
 {
-	cstate->curreg = 0;
-	memset(cstate->regused, 0, sizeof cstate->regused);
+	cstate->cgstate->curreg = 0;
+	memset(cstate->cgstate->regused, 0, sizeof cstate->cgstate->regused);
 }
 
 /*
@@ -7560,11 +7552,11 @@ alloc_reg(compiler_state_t *cstate)
 	int n = BPF_MEMWORDS;
 
 	while (--n >= 0) {
-		if (cstate->regused[cstate->curreg])
-			cstate->curreg = (cstate->curreg + 1) % BPF_MEMWORDS;
+		if (cstate->cgstate->regused[cstate->cgstate->curreg])
+			cstate->cgstate->curreg = (cstate->cgstate->curreg + 1) % BPF_MEMWORDS;
 		else {
-			cstate->regused[cstate->curreg] = 1;
-			return cstate->curreg;
+			cstate->cgstate->regused[cstate->cgstate->curreg] = 1;
+			return cstate->cgstate->curreg;
 		}
 	}
 	bpf_error(cstate, "too many registers needed to evaluate expression");
@@ -7578,7 +7570,7 @@ alloc_reg(compiler_state_t *cstate)
 static void
 free_reg(compiler_state_t *cstate, int n)
 {
-	cstate->regused[n] = 0;
+	cstate->cgstate->regused[n] = 0;
 }
 
 static struct block *
@@ -7675,7 +7667,7 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		switch (cstate->linktype) {
+		switch (cstate->cgstate->linktype) {
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
 			return gen_ahostop(cstate, abroadcast, Q_DST);
@@ -7710,10 +7702,10 @@ gen_broadcast(compiler_state_t *cstate, int proto)
 		 * as an indication that we don't know the netmask, and fail
 		 * in that case.
 		 */
-		if (cstate->netmask == PCAP_NETMASK_UNKNOWN)
+		if (cstate->cgstate->netmask == PCAP_NETMASK_UNKNOWN)
 			bpf_error(cstate, "netmask not known, so 'ip broadcast' not supported");
 		b0 = gen_linktype(cstate, ETHERTYPE_IP);
-		hostmask = ~cstate->netmask;
+		hostmask = ~cstate->cgstate->netmask;
 		b1 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W, (bpf_int32)0, hostmask);
 		b2 = gen_mcmp(cstate, OR_LINKPL, 16, BPF_W,
 			      (bpf_int32)(~0 & hostmask), hostmask);
@@ -7753,7 +7745,7 @@ gen_multicast(compiler_state_t *cstate, int proto)
 
 	case Q_DEFAULT:
 	case Q_LINK:
-		switch (cstate->linktype) {
+		switch (cstate->cgstate->linktype) {
 		case DLT_ARCNET:
 		case DLT_ARCNET_LINUX:
 			/* all ARCnet multicasts use the same address */
@@ -7937,7 +7929,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 	/*
 	 * Only some data link types support inbound/outbound qualifiers.
 	 */
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 	case DLT_SLIP:
 		b0 = gen_relation(cstate, BPF_JEQ,
 			  gen_load(cstate, Q_LINK, gen_loadi(cstate, 0), 1),
@@ -8050,7 +8042,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		if (cstate->bpf_pcap->rfile != NULL) {
 			/* We have a FILE *, so this is a savefile */
 			bpf_error(cstate, "inbound/outbound not supported on linktype %d when reading savefiles",
-			    cstate->linktype);
+			    cstate->cgstate->linktype);
 			b0 = NULL;
 			/* NOTREACHED */
 		}
@@ -8063,7 +8055,7 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		}
 #else /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 		bpf_error(cstate, "inbound/outbound not supported on linktype %d",
-		    cstate->linktype);
+		    cstate->cgstate->linktype);
 		/* NOTREACHED */
 #endif /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 	}
@@ -8078,7 +8070,7 @@ gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 	struct block *b0;
 	u_int len, off;
 
-	if (cstate->linktype != DLT_PFLOG) {
+	if (cstate->cgstate->linktype != DLT_PFLOG) {
 		bpf_error(cstate, "ifname supported only on PF linktype");
 		/* NOTREACHED */
 	}
@@ -8099,7 +8091,7 @@ gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 {
 	struct block *b0;
 
-	if (cstate->linktype != DLT_PFLOG) {
+	if (cstate->cgstate->linktype != DLT_PFLOG) {
 		bpf_error(cstate, "ruleset supported only on PF linktype");
 		/* NOTREACHED */
 	}
@@ -8121,7 +8113,7 @@ gen_pf_rnr(compiler_state_t *cstate, int rnr)
 {
 	struct block *b0;
 
-	if (cstate->linktype != DLT_PFLOG) {
+	if (cstate->cgstate->linktype != DLT_PFLOG) {
 		bpf_error(cstate, "rnr supported only on PF linktype");
 		/* NOTREACHED */
 	}
@@ -8137,7 +8129,7 @@ gen_pf_srnr(compiler_state_t *cstate, int srnr)
 {
 	struct block *b0;
 
-	if (cstate->linktype != DLT_PFLOG) {
+	if (cstate->cgstate->linktype != DLT_PFLOG) {
 		bpf_error(cstate, "srnr supported only on PF linktype");
 		/* NOTREACHED */
 	}
@@ -8153,7 +8145,7 @@ gen_pf_reason(compiler_state_t *cstate, int reason)
 {
 	struct block *b0;
 
-	if (cstate->linktype != DLT_PFLOG) {
+	if (cstate->cgstate->linktype != DLT_PFLOG) {
 		bpf_error(cstate, "reason supported only on PF linktype");
 		/* NOTREACHED */
 	}
@@ -8169,7 +8161,7 @@ gen_pf_action(compiler_state_t *cstate, int action)
 {
 	struct block *b0;
 
-	if (cstate->linktype != DLT_PFLOG) {
+	if (cstate->cgstate->linktype != DLT_PFLOG) {
 		bpf_error(cstate, "action supported only on PF linktype");
 		/* NOTREACHED */
 	}
@@ -8228,7 +8220,7 @@ gen_p80211_type(compiler_state_t *cstate, int type, int mask)
 {
 	struct block *b0;
 
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
@@ -8251,7 +8243,7 @@ gen_p80211_fcdir(compiler_state_t *cstate, int fcdir)
 {
 	struct block *b0;
 
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_IEEE802_11:
 	case DLT_PRISM_HEADER:
@@ -8275,18 +8267,18 @@ gen_acode(compiler_state_t *cstate, const char *s, struct qual q)
 {
 	struct block *b;
 
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_ARCNET:
 	case DLT_ARCNET_LINUX:
 		if ((q.addr == Q_HOST || q.addr == Q_DEFAULT) &&
 		    q.proto == Q_LINK) {
-			cstate->e = pcap_ether_aton(s);
-			if (cstate->e == NULL)
+			cstate->cgstate->e = pcap_ether_aton(s);
+			if (cstate->cgstate->e == NULL)
 				bpf_error(cstate, "malloc");
-			b = gen_ahostop(cstate, cstate->e, (int)q.dir);
-			free(cstate->e);
-			cstate->e = NULL;
+			b = gen_ahostop(cstate, cstate->cgstate->e, (int)q.dir);
+			free(cstate->cgstate->e);
+			cstate->cgstate->e = NULL;
 			return (b);
 		} else {
 			bpf_error(cstate, "ARCnet address used in non-arc expression");
@@ -8398,8 +8390,8 @@ gen_vlan_no_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 	 * Both payload and link header type follow the VLAN tags so that
 	 * both need to be updated.
 	 */
-	cstate->off_linkpl.constant_part += 4;
-	cstate->off_linktype.constant_part += 4;
+	cstate->cgstate->off_linkpl.constant_part += 4;
+	cstate->cgstate->off_linktype.constant_part += 4;
 
 	return b0;
 }
@@ -8438,9 +8430,9 @@ gen_vlan_patch_tpid_test(compiler_state_t *cstate, struct block *b_tpid)
 
 	/* offset determined at run time, shift variable part */
 	s.next = NULL;
-	cstate->is_vlan_vloffset = 1;
-	gen_vlan_vloffset_add(cstate, &cstate->off_linkpl, 4, &s);
-	gen_vlan_vloffset_add(cstate, &cstate->off_linktype, 4, &s);
+	cstate->cgstate->is_vlan_vloffset = 1;
+	gen_vlan_vloffset_add(cstate, &cstate->cgstate->off_linkpl, 4, &s);
+	gen_vlan_vloffset_add(cstate, &cstate->cgstate->off_linktype, 4, &s);
 
 	/* we get a pointer to a chain of or-ed blocks, patch first of them */
 	sappend(s.next, b_tpid->head->stmts);
@@ -8548,7 +8540,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 	struct	block	*b0;
 
 	/* can't check for VLAN-encapsulated packets inside MPLS */
-	if (cstate->label_stack_depth > 0)
+	if (cstate->cgstate->label_stack_depth > 0)
 		bpf_error(cstate, "no VLAN match after MPLS");
 
 	/*
@@ -8582,7 +8574,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 	 * be done assuming a VLAN, even though the "or" could be viewed
 	 * as meaning "or, if this isn't a VLAN packet...".
 	 */
-	switch (cstate->linktype) {
+	switch (cstate->cgstate->linktype) {
 
 	case DLT_EN10MB:
 	case DLT_NETANALYZER:
@@ -8590,9 +8582,9 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 #if defined(SKF_AD_VLAN_TAG_PRESENT)
 		/* Verify that this is the outer part of the packet and
 		 * not encapsulated somehow. */
-		if (cstate->vlan_stack_depth == 0 && !cstate->off_linkhdr.is_variable &&
-		    cstate->off_linkhdr.constant_part ==
-		    cstate->off_outermostlinkhdr.constant_part) {
+		if (cstate->cgstate->vlan_stack_depth == 0 && !cstate->cgstate->off_linkhdr.is_variable &&
+		    cstate->cgstate->off_linkhdr.constant_part ==
+		    cstate->cgstate->off_outermostlinkhdr.constant_part) {
 			/*
 			 * Do we need special VLAN handling?
 			 */
@@ -8617,11 +8609,11 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 
 	default:
 		bpf_error(cstate, "no VLAN support for data link type %d",
-		      cstate->linktype);
+		      cstate->cgstate->linktype);
 		/*NOTREACHED*/
 	}
 
-        cstate->vlan_stack_depth++;
+        cstate->cgstate->vlan_stack_depth++;
 
 	return (b0);
 }
@@ -8634,7 +8626,7 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
 {
 	struct	block	*b0, *b1;
 
-        if (cstate->label_stack_depth > 0) {
+        if (cstate->cgstate->label_stack_depth > 0) {
             /* just match the bottom-of-stack bit clear */
             b0 = gen_mcmp(cstate, OR_PREVMPLSHDR, 2, BPF_B, 0, 0x01);
         } else {
@@ -8642,7 +8634,7 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
              * We're not in an MPLS stack yet, so check the link-layer
              * type against MPLS.
              */
-            switch (cstate->linktype) {
+            switch (cstate->cgstate->linktype) {
 
             case DLT_C_HDLC: /* fall through */
             case DLT_EN10MB:
@@ -8661,7 +8653,7 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
 
             default:
                     bpf_error(cstate, "no MPLS support for data link type %d",
-                          cstate->linktype);
+                          cstate->cgstate->linktype);
                     /*NOTREACHED*/
                     break;
             }
@@ -8694,9 +8686,9 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
          *
          * XXX - this is a bit of a kludge.  See comments in gen_vlan().
          */
-        cstate->off_nl_nosnap += 4;
-        cstate->off_nl += 4;
-        cstate->label_stack_depth++;
+        cstate->cgstate->off_nl_nosnap += 4;
+        cstate->cgstate->off_nl += 4;
+        cstate->cgstate->label_stack_depth++;
 	return (b0);
 }
 
@@ -8769,17 +8761,17 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 	 * starts at the first byte of the PPP packet.  For PPPoE,
 	 * that offset is relative to the beginning of the total
 	 * link-layer payload, including any 802.2 LLC header, so
-	 * it's 6 bytes past cstate->off_nl.
+	 * it's 6 bytes past cstate->cgstate->off_nl.
 	 */
-	PUSH_LINKHDR(cstate, DLT_PPP, cstate->off_linkpl.is_variable,
-	    cstate->off_linkpl.constant_part + cstate->off_nl + 6, /* 6 bytes past the PPPoE header */
-	    cstate->off_linkpl.reg);
+	PUSH_LINKHDR(cstate, DLT_PPP, cstate->cgstate->off_linkpl.is_variable,
+	    cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + 6, /* 6 bytes past the PPPoE header */
+	    cstate->cgstate->off_linkpl.reg);
 
-	cstate->off_linktype = cstate->off_linkhdr;
-	cstate->off_linkpl.constant_part = cstate->off_linkhdr.constant_part + 2;
+	cstate->cgstate->off_linktype = cstate->cgstate->off_linkhdr;
+	cstate->cgstate->off_linkpl.constant_part = cstate->cgstate->off_linkhdr.constant_part + 2;
 
-	cstate->off_nl = 0;
-	cstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
+	cstate->cgstate->off_nl = 0;
+	cstate->cgstate->off_nl_nosnap = 0;	/* no 802.2 LLC */
 
 	return b0;
 }
@@ -8858,7 +8850,7 @@ gen_geneve6(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 
 	/* Load the IP header length. We need to account for a
 	 * variable length link prefix if there is one. */
-	s = gen_abs_offset_varpart(cstate, &cstate->off_linkpl);
+	s = gen_abs_offset_varpart(cstate, &cstate->cgstate->off_linkpl);
 	if (s) {
 		s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
 		s1->s.k = 40;
@@ -8902,7 +8894,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	 * fixed sized headers (fixed link prefix, MAC length, and UDP
 	 * header). */
 	s = new_stmt(cstate, BPF_ALU|BPF_ADD|BPF_K);
-	s->s.k = cstate->off_linkpl.constant_part + cstate->off_nl + 8;
+	s->s.k = cstate->cgstate->off_linkpl.constant_part + cstate->cgstate->off_nl + 8;
 
 	/* Stash this in X since we'll need it later. */
 	s1 = new_stmt(cstate, BPF_MISC|BPF_TAX);
@@ -8914,12 +8906,12 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	s1->s.k = 2;
 	sappend(s, s1);
 
-	cstate->off_linktype.reg = alloc_reg(cstate);
-	cstate->off_linktype.is_variable = 1;
-	cstate->off_linktype.constant_part = 0;
+	cstate->cgstate->off_linktype.reg = alloc_reg(cstate);
+	cstate->cgstate->off_linktype.is_variable = 1;
+	cstate->cgstate->off_linktype.constant_part = 0;
 
 	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linktype.reg;
+	s1->s.k = cstate->cgstate->off_linktype.reg;
 	sappend(s, s1);
 
 	/* Load the Geneve option length and mask and shift to get the
@@ -8958,7 +8950,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	PUSH_LINKHDR(cstate, DLT_EN10MB, 1, 0, alloc_reg(cstate));
 
 	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linkhdr.reg;
+	s1->s.k = cstate->cgstate->off_linkhdr.reg;
 	sappend(s, s1);
 
 	/* Calculate whether we have an Ethernet header or just raw IP/
@@ -8967,7 +8959,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	 * seamlessly. Otherwise, keep what we've calculated already. */
 
 	/* We have a bare jmp so we can't use the optimizer. */
-	cstate->no_optimize = 1;
+	cstate->cgstate->no_optimize = 1;
 
 	/* Load the EtherType in the Geneve header, 2 bytes in. */
 	s1 = new_stmt(cstate, BPF_LD|BPF_IND|BPF_H);
@@ -8976,7 +8968,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 
 	/* Load X with the end of the Geneve header. */
 	s1 = new_stmt(cstate, BPF_LDX|BPF_MEM);
-	s1->s.k = cstate->off_linkhdr.reg;
+	s1->s.k = cstate->cgstate->off_linkhdr.reg;
 	sappend(s, s1);
 
 	/* Check if the EtherType is Transparent Ethernet Bridging. At the
@@ -8997,7 +8989,7 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	sappend(s, s1);
 
 	s1 = new_stmt(cstate, BPF_ST);
-	s1->s.k = cstate->off_linktype.reg;
+	s1->s.k = cstate->cgstate->off_linktype.reg;
 	sappend(s, s1);
 
 	/* Advance two bytes further to get the end of the Ethernet
@@ -9011,16 +9003,16 @@ gen_geneve_offsets(compiler_state_t *cstate)
 	sappend(s, s1);
 
 	/* Store the final result of our linkpl calculation. */
-	cstate->off_linkpl.reg = alloc_reg(cstate);
-	cstate->off_linkpl.is_variable = 1;
-	cstate->off_linkpl.constant_part = 0;
+	cstate->cgstate->off_linkpl.reg = alloc_reg(cstate);
+	cstate->cgstate->off_linkpl.is_variable = 1;
+	cstate->cgstate->off_linkpl.constant_part = 0;
 
 	s1 = new_stmt(cstate, BPF_STX);
-	s1->s.k = cstate->off_linkpl.reg;
+	s1->s.k = cstate->cgstate->off_linkpl.reg;
 	sappend(s, s1);
 	s_proto->s.jf = s1;
 
-	cstate->off_nl = 0;
+	cstate->cgstate->off_nl = 0;
 
 	return s;
 }
@@ -9049,7 +9041,7 @@ gen_geneve(compiler_state_t *cstate, bpf_u_int32 vni, int has_vni)
 
 	gen_and(b0, b1);
 
-	cstate->is_geneve = 1;
+	cstate->cgstate->is_geneve = 1;
 
 	return b1;
 }
@@ -9069,10 +9061,10 @@ gen_geneve_ll_check(compiler_state_t *cstate)
 	/* Geneve always generates pure variable offsets so we can
 	 * compare only the registers. */
 	s = new_stmt(cstate, BPF_LD|BPF_MEM);
-	s->s.k = cstate->off_linkhdr.reg;
+	s->s.k = cstate->cgstate->off_linkhdr.reg;
 
 	s1 = new_stmt(cstate, BPF_LDX|BPF_MEM);
-	s1->s.k = cstate->off_linkpl.reg;
+	s1->s.k = cstate->cgstate->off_linkpl.reg;
 	sappend(s, s1);
 
 	b0 = new_block(cstate, BPF_JMP|BPF_JEQ|BPF_X);
@@ -9092,43 +9084,43 @@ gen_atmfield_code(compiler_state_t *cstate, int atmfield, bpf_int32 jvalue,
 	switch (atmfield) {
 
 	case A_VPI:
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'vpi' supported only on raw ATM");
-		if (cstate->off_vpi == OFFSET_NOT_SET)
+		if (cstate->cgstate->off_vpi == OFFSET_NOT_SET)
 			abort();
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vpi, BPF_B, 0xffffffff, jtype,
+		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->cgstate->off_vpi, BPF_B, 0xffffffff, jtype,
 		    reverse, jvalue);
 		break;
 
 	case A_VCI:
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'vci' supported only on raw ATM");
-		if (cstate->off_vci == OFFSET_NOT_SET)
+		if (cstate->cgstate->off_vci == OFFSET_NOT_SET)
 			abort();
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_vci, BPF_H, 0xffffffff, jtype,
+		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->cgstate->off_vci, BPF_H, 0xffffffff, jtype,
 		    reverse, jvalue);
 		break;
 
 	case A_PROTOTYPE:
-		if (cstate->off_proto == OFFSET_NOT_SET)
+		if (cstate->cgstate->off_proto == OFFSET_NOT_SET)
 			abort();	/* XXX - this isn't on FreeBSD */
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B, 0x0f, jtype,
+		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->cgstate->off_proto, BPF_B, 0x0f, jtype,
 		    reverse, jvalue);
 		break;
 
 	case A_MSGTYPE:
-		if (cstate->off_payload == OFFSET_NOT_SET)
+		if (cstate->cgstate->off_payload == OFFSET_NOT_SET)
 			abort();
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_payload + MSG_TYPE_POS, BPF_B,
+		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->cgstate->off_payload + MSG_TYPE_POS, BPF_B,
 		    0xffffffff, jtype, reverse, jvalue);
 		break;
 
 	case A_CALLREFTYPE:
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'callref' supported only on raw ATM");
-		if (cstate->off_proto == OFFSET_NOT_SET)
+		if (cstate->cgstate->off_proto == OFFSET_NOT_SET)
 			abort();
-		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->off_proto, BPF_B, 0xffffffff,
+		b0 = gen_ncmp(cstate, OR_LINKHDR, cstate->cgstate->off_proto, BPF_B, 0xffffffff,
 		    jtype, reverse, jvalue);
 		break;
 
@@ -9147,7 +9139,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_METAC:
 		/* Get all packets in Meta signalling Circuit */
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'metac' supported only on raw ATM");
 		b0 = gen_atmfield_code(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(cstate, A_VCI, 1, BPF_JEQ, 0);
@@ -9156,7 +9148,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_BCC:
 		/* Get all packets in Broadcast Circuit*/
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'bcc' supported only on raw ATM");
 		b0 = gen_atmfield_code(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(cstate, A_VCI, 2, BPF_JEQ, 0);
@@ -9165,7 +9157,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAMF4SC:
 		/* Get all cells in Segment OAM F4 circuit*/
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'oam4sc' supported only on raw ATM");
 		b0 = gen_atmfield_code(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(cstate, A_VCI, 3, BPF_JEQ, 0);
@@ -9174,7 +9166,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_OAMF4EC:
 		/* Get all cells in End-to-End OAM F4 Circuit*/
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'oam4ec' supported only on raw ATM");
 		b0 = gen_atmfield_code(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(cstate, A_VCI, 4, BPF_JEQ, 0);
@@ -9183,7 +9175,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_SC:
 		/*  Get all packets in connection Signalling Circuit */
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'sc' supported only on raw ATM");
 		b0 = gen_atmfield_code(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(cstate, A_VCI, 5, BPF_JEQ, 0);
@@ -9192,7 +9184,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_ILMIC:
 		/* Get all packets in ILMI Circuit */
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'ilmic' supported only on raw ATM");
 		b0 = gen_atmfield_code(cstate, A_VPI, 0, BPF_JEQ, 0);
 		b1 = gen_atmfield_code(cstate, A_VCI, 16, BPF_JEQ, 0);
@@ -9201,7 +9193,7 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 
 	case A_LANE:
 		/* Get all LANE packets */
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'lane' supported only on raw ATM");
 		b1 = gen_atmfield_code(cstate, A_PROTOTYPE, PT_LANE, BPF_JEQ, 0);
 
@@ -9214,20 +9206,20 @@ gen_atmtype_abbrev(compiler_state_t *cstate, int type)
 		 * We assume LANE means Ethernet, not Token Ring.
 		 */
 		PUSH_LINKHDR(cstate, DLT_EN10MB, 0,
-		    cstate->off_payload + 2,	/* Ethernet header */
+		    cstate->cgstate->off_payload + 2,	/* Ethernet header */
 		    -1);
-		cstate->off_linktype.constant_part = cstate->off_linkhdr.constant_part + 12;
-		cstate->off_linkpl.constant_part = cstate->off_linkhdr.constant_part + 14;	/* Ethernet */
-		cstate->off_nl = 0;			/* Ethernet II */
-		cstate->off_nl_nosnap = 3;		/* 802.3+802.2 */
+		cstate->cgstate->off_linktype.constant_part = cstate->cgstate->off_linkhdr.constant_part + 12;
+		cstate->cgstate->off_linkpl.constant_part = cstate->cgstate->off_linkhdr.constant_part + 14;	/* Ethernet */
+		cstate->cgstate->off_nl = 0;			/* Ethernet II */
+		cstate->cgstate->off_nl_nosnap = 3;		/* 802.3+802.2 */
 		break;
 
 	case A_LLC:
 		/* Get all LLC-encapsulated packets */
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'llc' supported only on raw ATM");
 		b1 = gen_atmfield_code(cstate, A_PROTOTYPE, PT_LLC, BPF_JEQ, 0);
-		cstate->linktype = cstate->prevlinktype;
+		cstate->cgstate->linktype = cstate->cgstate->prevlinktype;
 		break;
 
 	default:
@@ -9251,57 +9243,57 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	switch (type) {
 
 	case M_FISU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
+		if ( (cstate->cgstate->linktype != DLT_MTP2) &&
+		     (cstate->cgstate->linktype != DLT_ERF) &&
+		     (cstate->cgstate->linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error(cstate, "'fisu' supported only on MTP2");
 		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B, 0x3f, BPF_JEQ, 0, 0);
+		b0 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li, BPF_B, 0x3f, BPF_JEQ, 0, 0);
 		break;
 
 	case M_LSSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
+		if ( (cstate->cgstate->linktype != DLT_MTP2) &&
+		     (cstate->cgstate->linktype != DLT_ERF) &&
+		     (cstate->cgstate->linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error(cstate, "'lssu' supported only on MTP2");
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B, 0x3f, BPF_JGT, 1, 2);
-		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B, 0x3f, BPF_JGT, 0, 0);
+		b0 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li, BPF_B, 0x3f, BPF_JGT, 1, 2);
+		b1 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li, BPF_B, 0x3f, BPF_JGT, 0, 0);
 		gen_and(b1, b0);
 		break;
 
 	case M_MSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
+		if ( (cstate->cgstate->linktype != DLT_MTP2) &&
+		     (cstate->cgstate->linktype != DLT_ERF) &&
+		     (cstate->cgstate->linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error(cstate, "'msu' supported only on MTP2");
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li, BPF_B, 0x3f, BPF_JGT, 0, 2);
+		b0 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li, BPF_B, 0x3f, BPF_JGT, 0, 2);
 		break;
 
 	case MH_FISU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
+		if ( (cstate->cgstate->linktype != DLT_MTP2) &&
+		     (cstate->cgstate->linktype != DLT_ERF) &&
+		     (cstate->cgstate->linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error(cstate, "'hfisu' supported only on MTP2_HSL");
 		/* gen_ncmp(cstate, offrel, offset, size, mask, jtype, reverse, value) */
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H, 0xff80, BPF_JEQ, 0, 0);
+		b0 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li_hsl, BPF_H, 0xff80, BPF_JEQ, 0, 0);
 		break;
 
 	case MH_LSSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
+		if ( (cstate->cgstate->linktype != DLT_MTP2) &&
+		     (cstate->cgstate->linktype != DLT_ERF) &&
+		     (cstate->cgstate->linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error(cstate, "'hlssu' supported only on MTP2_HSL");
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H, 0xff80, BPF_JGT, 1, 0x0100);
-		b1 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H, 0xff80, BPF_JGT, 0, 0);
+		b0 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li_hsl, BPF_H, 0xff80, BPF_JGT, 1, 0x0100);
+		b1 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li_hsl, BPF_H, 0xff80, BPF_JGT, 0, 0);
 		gen_and(b1, b0);
 		break;
 
 	case MH_MSU:
-		if ( (cstate->linktype != DLT_MTP2) &&
-		     (cstate->linktype != DLT_ERF) &&
-		     (cstate->linktype != DLT_MTP2_WITH_PHDR) )
+		if ( (cstate->cgstate->linktype != DLT_MTP2) &&
+		     (cstate->cgstate->linktype != DLT_ERF) &&
+		     (cstate->cgstate->linktype != DLT_MTP2_WITH_PHDR) )
 			bpf_error(cstate, "'hmsu' supported only on MTP2_HSL");
-		b0 = gen_ncmp(cstate, OR_PACKET, cstate->off_li_hsl, BPF_H, 0xff80, BPF_JGT, 0, 0x0100);
+		b0 = gen_ncmp(cstate, OR_PACKET, cstate->cgstate->off_li_hsl, BPF_H, 0xff80, BPF_JGT, 0, 0x0100);
 		break;
 
 	default:
@@ -9316,10 +9308,10 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 {
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
-	u_int newoff_sio = cstate->off_sio;
-	u_int newoff_opc = cstate->off_opc;
-	u_int newoff_dpc = cstate->off_dpc;
-	u_int newoff_sls = cstate->off_sls;
+	u_int newoff_sio = cstate->cgstate->off_sio;
+	u_int newoff_opc = cstate->cgstate->off_opc;
+	u_int newoff_dpc = cstate->cgstate->off_dpc;
+	u_int newoff_sls = cstate->cgstate->off_sls;
 
 	switch (mtp3field) {
 
@@ -9328,7 +9320,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 		/* FALLTHROUGH */
 
 	case M_SIO:
-		if (cstate->off_sio == OFFSET_NOT_SET)
+		if (cstate->cgstate->off_sio == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sio' supported only on SS7");
 		/* sio coded on 1 byte so max value 255 */
 		if(jvalue > 255)
@@ -9341,7 +9333,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 	case MH_OPC:
 		newoff_opc+=3;
         case M_OPC:
-	        if (cstate->off_opc == OFFSET_NOT_SET)
+	        if (cstate->cgstate->off_opc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'opc' supported only on SS7");
 		/* opc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
@@ -9365,7 +9357,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 		/* FALLTHROUGH */
 
 	case M_DPC:
-	        if (cstate->off_dpc == OFFSET_NOT_SET)
+	        if (cstate->cgstate->off_dpc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'dpc' supported only on SS7");
 		/* dpc coded on 14 bits so max value 16383 */
 		if (jvalue > 16383)
@@ -9385,7 +9377,7 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 	case MH_SLS:
 	  newoff_sls+=3;
 	case M_SLS:
-	        if (cstate->off_sls == OFFSET_NOT_SET)
+	        if (cstate->cgstate->off_sls == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sls' supported only on SS7");
 		/* sls coded on 4 bits so max value 15 */
 		if (jvalue > 15)
@@ -9453,13 +9445,13 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 	switch (type) {
 
 	case A_OAM:
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'oam' supported only on raw ATM");
 		b1 = gen_atmmulti_abbrev(cstate, A_OAMF4);
 		break;
 
 	case A_OAMF4:
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'oamf4' supported only on raw ATM");
 		/* OAM F4 type */
 		b0 = gen_atmfield_code(cstate, A_VCI, 3, BPF_JEQ, 0);
@@ -9474,7 +9466,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		 * Get Q.2931 signalling messages for switched
 		 * virtual connection
 		 */
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'connectmsg' supported only on raw ATM");
 		b0 = gen_msg_abbrev(cstate, A_SETUP);
 		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
@@ -9492,7 +9484,7 @@ gen_atmmulti_abbrev(compiler_state_t *cstate, int type)
 		break;
 
 	case A_METACONNECT:
-		if (!cstate->is_atm)
+		if (!cstate->cgstate->is_atm)
 			bpf_error(cstate, "'metaconnect' supported only on raw ATM");
 		b0 = gen_msg_abbrev(cstate, A_SETUP);
 		b1 = gen_msg_abbrev(cstate, A_CALLPROCEED);
