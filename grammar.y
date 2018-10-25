@@ -360,7 +360,18 @@ prog:	  null expr
 }
 	| null
 	;
-null:	  /* null */		{ $$.q = qerr; }
+null:	  /* null */		{
+				  /*
+				   * Establish this as the place to which
+				   * to longjmp, so that we can do
+				   * YYABORT to clean up anything
+				   * allocated by the parser itself.
+				   */
+				  if (setjmp(cstate->top_ctx)) {
+					YYABORT;
+				  }
+				  $$.q = qerr;
+				}
 	;
 expr:	  term
 	| expr and term		{ gen_and($1.b, $3.b); $$ = $3; }
