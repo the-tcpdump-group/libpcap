@@ -358,10 +358,13 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 		case BPF_ALU|BPF_NEG:
 			/*
 			 * Most BPF arithmetic is unsigned, but negation
-			 * can't be unsigned; throw some casts to
-			 * specify what we're trying to do.
+			 * can't be unsigned; respecify it as subtracting
+			 * the accumulator from 0U, so that 1) we don't
+			 * get compiler warnings about negating an unsigned
+			 * value and 2) don't get UBSan warnings about
+			 * the result of negating 0x80000000 being undefined.
 			 */
-			A = (uint32_t)(-(int32_t)A);
+			A = (0U - A);
 			continue;
 
 		case BPF_MISC|BPF_TAX:
