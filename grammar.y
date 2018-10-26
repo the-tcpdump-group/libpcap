@@ -237,7 +237,7 @@ str2tok(const char *str, const struct tok *toks)
 	return (-1);
 }
 
-static struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
+static const struct qual qerr = { Q_UNDEF, Q_UNDEF, Q_UNDEF, Q_UNDEF };
 
 static PCAP_NORETURN_DEF void
 yyerror(void *yyscanner _U_, compiler_state_t *cstate, const char *msg)
