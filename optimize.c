@@ -1144,7 +1144,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, int val[], int alter)
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const) {
 			s->code = BPF_LD|BPF_IMM;
 			if (opt_state->vmap[val[A_ATOM]].const_val > INT_MAX) {
-				opt_error(cstate, opt_state, "integer overflow");
+				opt_error(opt_state, "integer overflow");
 				break;
 			}
 			s->k = -opt_state->vmap[val[A_ATOM]].const_val;
