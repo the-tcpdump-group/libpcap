@@ -58,7 +58,6 @@
 #include <pcap-int.h>
 
 #include <stdlib.h>
-#include <limits.h>
 
 #ifdef __linux__
 #include <linux/types.h>
@@ -362,7 +361,7 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			 * can't be unsigned; throw some casts to
 			 * specify what we're trying to do.
 			 */
-			if (A > INT_MAX) {
+			if (A == 0x80000000) {
 				return 0;
 			}
 			A = (uint32_t)(-(int32_t)A);

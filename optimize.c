@@ -31,7 +31,6 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
-#include <limits.h>
 
 #include <errno.h>
 
@@ -1143,7 +1142,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, int val[], int alter)
 	case BPF_ALU|BPF_NEG:
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const) {
 			s->code = BPF_LD|BPF_IMM;
-			if (opt_state->vmap[val[A_ATOM]].const_val > INT_MAX) {
+			if (opt_state->vmap[val[A_ATOM]].const_val == 0x80000000) {
 				opt_error(opt_state, "integer overflow");
 				break;
 			}
