@@ -1142,11 +1142,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, int val[], int alter)
 	case BPF_ALU|BPF_NEG:
 		if (alter && opt_state->vmap[val[A_ATOM]].is_const) {
 			s->code = BPF_LD|BPF_IMM;
-			if (opt_state->vmap[val[A_ATOM]].const_val == 0x80000000) {
-				opt_error(opt_state, "integer overflow");
-				break;
-			}
-			s->k = -opt_state->vmap[val[A_ATOM]].const_val;
+			s->k = 0U - (uint32_t)opt_state->vmap[val[A_ATOM]].const_val;
 			val[A_ATOM] = K(s->k);
 		}
 		else

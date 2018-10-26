@@ -361,10 +361,7 @@ pcap_filter_with_aux_data(const struct bpf_insn *pc, const u_char *p,
 			 * can't be unsigned; throw some casts to
 			 * specify what we're trying to do.
 			 */
-			if (A == 0x80000000) {
-				return 0;
-			}
-			A = (uint32_t)(-(int32_t)A);
+			A = 0U - A;
 			continue;
 
 		case BPF_MISC|BPF_TAX:
