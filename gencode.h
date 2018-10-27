@@ -55,8 +55,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <setjmp.h>
-
 /* Address qualifiers. */
 
 #define Q_HOST		1
@@ -284,15 +282,9 @@ struct qual {
 	unsigned char pad;
 };
 
-struct _codegen_state;
+struct _compiler_state;
 
-typedef struct _codegen_state codegen_state_t;
-
-typedef struct {
-	jmp_buf top_ctx;
-	pcap_t *bpf_pcap;
-	codegen_state_t *cgstate;
-} compiler_state_t;
+typedef struct _compiler_state compiler_state_t;
 
 struct arth *gen_loadi(compiler_state_t *, int);
 struct arth *gen_load(compiler_state_t *, int, struct arth *, int);
@@ -349,29 +341,11 @@ struct block *gen_mtp2type_abbrev(compiler_state_t *, int type);
 struct block *gen_mtp3field_code(compiler_state_t *, int, bpf_u_int32,
     bpf_u_int32, int);
 
-#ifndef HAVE_NET_PFVAR_H
-PCAP_NORETURN
-#endif
 struct block *gen_pf_ifname(compiler_state_t *, const char *);
-#ifndef HAVE_NET_PFVAR_H
-PCAP_NORETURN
-#endif
 struct block *gen_pf_rnr(compiler_state_t *, int);
-#ifndef HAVE_NET_PFVAR_H
-PCAP_NORETURN
-#endif
 struct block *gen_pf_srnr(compiler_state_t *, int);
-#ifndef HAVE_NET_PFVAR_H
-PCAP_NORETURN
-#endif
 struct block *gen_pf_ruleset(compiler_state_t *, char *);
-#ifndef HAVE_NET_PFVAR_H
-PCAP_NORETURN
-#endif
 struct block *gen_pf_reason(compiler_state_t *, int);
-#ifndef HAVE_NET_PFVAR_H
-PCAP_NORETURN
-#endif
 struct block *gen_pf_action(compiler_state_t *, int);
 
 struct block *gen_p80211_type(compiler_state_t *, int, int);
@@ -393,8 +367,7 @@ struct icode {
 };
 
 int bpf_optimize(struct icode *, char *);
-void PCAP_NORETURN bpf_parser_error(compiler_state_t *, const char *);
-void PCAP_NORETURN bpf_error(compiler_state_t *, const char *, ...)
+void bpf_set_error(compiler_state_t *, const char *, ...)
     PCAP_PRINTFLIKE(2, 3);
 
 void finish_parse(compiler_state_t *, struct block *);
