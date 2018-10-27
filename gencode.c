@@ -6958,8 +6958,8 @@ struct block *
 gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 {
 	bpf_u_int32 mask;
-	int proto = q.proto;
-	int dir = q.dir;
+	int proto;
+	int dir;
 	register int vlen;
 
 	/*
@@ -6969,6 +6969,8 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	proto = q.proto;
+	dir = q.dir;
 	if (s == NULL)
 		vlen = 32;
 	else if (q.proto == Q_DECNET) {
