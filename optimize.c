@@ -350,7 +350,7 @@ static void intern_blocks(opt_state_t *, struct icode *);
 
 static void find_inedges(opt_state_t *, struct block *);
 #ifdef BDEBUG
-static void opt_dump(compiler_state_t *, struct icode *);
+static void opt_dump(opt_state_t *, struct icode *);
 #endif
 
 #ifndef MAX
@@ -1869,7 +1869,7 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 #ifdef BDEBUG
 	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("opt_loop(root, %d) begin\n", do_stmts);
-		opt_dump(cstate, ic);
+		opt_dump(opt_state, ic);
 	}
 #endif
 	do {
@@ -1883,7 +1883,7 @@ opt_loop(opt_state_t *opt_state, struct icode *ic, int do_stmts)
 #ifdef BDEBUG
 		if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 			printf("opt_loop(root, %d) bottom, done=%d\n", do_stmts, opt_state->done);
-			opt_dump(cstate, ic);
+			opt_dump(opt_state, ic);
 		}
 #endif
 	} while (!opt_state->done);
@@ -1911,14 +1911,14 @@ bpf_optimize(struct icode *ic, char *errbuf)
 #ifdef BDEBUG
 	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("after intern_blocks()\n");
-		opt_dump(cstate, ic);
+		opt_dump(&opt_state, ic);
 	}
 #endif
 	opt_root(&ic->root);
 #ifdef BDEBUG
 	if (pcap_optimizer_debug > 1 || pcap_print_dot_graph) {
 		printf("after opt_root()\n");
-		opt_dump(cstate, ic);
+		opt_dump(&opt_state, ic);
 	}
 #endif
 	opt_cleanup(&opt_state);
@@ -2621,16 +2621,16 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
  *  After install graphviz on http://www.graphviz.org/, save it as bpf.dot
  *  and run `dot -Tpng -O bpf.dot' to draw the graph.
  */
-static void
-dot_dump(compiler_state_t *cstate, struct icode *ic)
+static int
+dot_dump(struct icode *ic, char *errbuf)
 {
 	struct bpf_program f;
 	FILE *out = stdout;
 
 	memset(bids, 0, sizeof bids);
-	f.bf_insns = icode_to_fcode(cstate, ic, ic->root, &f.bf_len);
+	f.bf_insns = icode_to_fcode(ic, ic->root, &f.bf_len, errbuf);
 	if (f.bf_insns == NULL)
-		return;
+		return -1;
 
 	fprintf(out, "digraph BPF {\n");
 	unMarkAll(ic);
@@ -2640,32 +2640,39 @@ dot_dump(compiler_state_t *cstate, struct icode *ic)
 	fprintf(out, "}\n");
 
 	free((char *)f.bf_insns);
+	return 0;
 }
 
-static void
-plain_dump(compiler_state_t *cstate, struct icode *ic)
+static int
+plain_dump(struct icode *ic, char *errbuf)
 {
 	struct bpf_program f;
 
 	memset(bids, 0, sizeof bids);
-	f.bf_insns = icode_to_fcode(cstate, ic, ic->root, &f.bf_len);
+	f.bf_insns = icode_to_fcode(ic, ic->root, &f.bf_len, errbuf);
 	if (f.bf_insns == NULL)
-		return;
+		return -1;
 	bpf_dump(&f, 1);
 	putchar('\n');
 	free((char *)f.bf_insns);
+	return 0;
 }
 
 static void
-opt_dump(compiler_state_t *cstate, struct icode *ic)
+opt_dump(opt_state_t *opt_state, struct icode *ic)
 {
+	int status;
+	char errbuf[PCAP_ERRBUF_SIZE];
+
 	/*
 	 * If the CFG, in DOT format, is requested, output it rather than
 	 * the code that would be generated from that graph.
 	 */
 	if (pcap_print_dot_graph)
-		dot_dump(cstate, ic);
+		status = dot_dump(ic, errbuf);
 	else
-		plain_dump(cstate, ic);
+		status = plain_dump(ic, errbuf);
+	if (status == -1)
+		opt_error(opt_state, "opt_dump: icode_to_fcode failed: %s", errbuf);
 }
 #endif
