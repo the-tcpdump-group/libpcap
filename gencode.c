@@ -9724,10 +9724,10 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 {
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
-	u_int newoff_sio = cstate->off_sio;
-	u_int newoff_opc = cstate->off_opc;
-	u_int newoff_dpc = cstate->off_dpc;
-	u_int newoff_sls = cstate->off_sls;
+	u_int newoff_sio;
+	u_int newoff_opc;
+	u_int newoff_dpc;
+	u_int newoff_sls;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9736,6 +9736,10 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
 	if (setjmp(cstate->top_ctx))
 		return (NULL);
 
+	newoff_sio = cstate->off_sio;
+	newoff_opc = cstate->off_opc;
+	newoff_dpc = cstate->off_dpc;
+	newoff_sls = cstate->off_sls;
 	switch (mtp3field) {
 
 	case MH_SIO:
