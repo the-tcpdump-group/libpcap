@@ -468,6 +468,7 @@ static int alloc_reg(compiler_state_t *);
 static void free_reg(compiler_state_t *, int);
 
 static void initchunks(compiler_state_t *cstate);
+static void *newchunk_nolongjmp(compiler_state_t *cstate, size_t);
 static void *newchunk(compiler_state_t *cstate, size_t);
 static void freechunks(compiler_state_t *cstate);
 static inline struct block *new_block(compiler_state_t *cstate, int);
@@ -583,7 +584,7 @@ initchunks(compiler_state_t *cstate)
 }
 
 static void *
-newchunk(compiler_state_t *cstate, size_t n)
+newchunk_nolongjmp(compiler_state_t *cstate, size_t n)
 {
 	struct chunk *cp;
 	int k;
@@ -601,19 +602,38 @@ newchunk(compiler_state_t *cstate, size_t n)
 	if (n > cp->n_left) {
 		++cp;
 		k = ++cstate->cur_chunk;
-		if (k >= NCHUNKS)
-			bpf_error(cstate, "out of memory");
+		if (k >= NCHUNKS) {
+			bpf_set_error(cstate, "out of memory");
+			return (NULL);
+		}
 		size = CHUNK0SIZE << k;
 		cp->m = (void *)malloc(size);
-		if (cp->m == NULL)
-			bpf_error(cstate, "out of memory");
+		if (cp->m == NULL) {
+			bpf_set_error(cstate, "out of memory");
+			return (NULL);
+		}
 		memset((char *)cp->m, 0, size);
 		cp->n_left = size;
-		if (n > size)
-			bpf_error(cstate, "out of memory");
+		if (n > size) {
+			bpf_set_error(cstate, "out of memory");
+			return (NULL);
+		}
 	}
 	cp->n_left -= n;
 	return (void *)((char *)cp->m + cp->n_left);
+}
+
+static void *
+newchunk(compiler_state_t *cstate, size_t n)
+{
+	void *p;
+
+	p = newchunk_nolongjmp(cstate, n);
+	if (p == NULL) {
+		longjmp(cstate->top_ctx, 1);
+		/* NOTREACHED */
+	}
+	return (p);
 }
 
 static void
@@ -628,13 +648,18 @@ freechunks(compiler_state_t *cstate)
 
 /*
  * A strdup whose allocations are freed after code generation is over.
+ * This is used by the lexical analyzer, so it can't longjmp; it just
+ * returns NULL on an allocation error, and the callers must check
+ * for it.
  */
 char *
 sdup(compiler_state_t *cstate, const char *s)
 {
 	size_t n = strlen(s) + 1;
-	char *cp = newchunk(cstate, n);
+	char *cp = newchunk_nolongjmp(cstate, n);
 
+	if (cp == NULL)
+		return (NULL);
 	pcap_strlcpy(cp, s, n);
 	return (cp);
 }

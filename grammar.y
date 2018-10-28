@@ -403,12 +403,13 @@ id:	  nid
 						   $$.q = $<blk>0.q))); }
 	| paren pid ')'		{ $$ = $2; }
 	;
-nid:	  ID			{ CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.q = $<blk>0.q))); }
-	| HID '/' NUM		{ CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, NULL, $3,
+nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.q = $<blk>0.q))); }
+	| HID '/' NUM		{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, NULL, $3,
 				    $$.q = $<blk>0.q))); }
-	| HID NETMASK HID	{ CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, $3, 0,
+	| HID NETMASK HID	{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_mcode(cstate, $1, $3, 0,
 				    $$.q = $<blk>0.q))); }
 	| HID			{
+				  CHECK_PTR_VAL($1);
 				  /* Decide how to parse HID based on proto */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
@@ -438,6 +439,7 @@ nid:	  ID			{ CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.q = $<blk>0.q))); }
 #endif /*INET6*/
 				}
 	| HID6			{
+				  CHECK_PTR_VAL($1);
 #ifdef INET6
 				  CHECK_PTR_VAL(($$.b = gen_mcode6(cstate, $1, 0, 128,
 				    $$.q = $<blk>0.q)));
@@ -448,7 +450,7 @@ nid:	  ID			{ CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.q = $<blk>0.q))); }
 #endif /*INET6*/
 				}
 	| EID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_ecode(cstate, $1, $$.q = $<blk>0.q))); }
-	| AID			{ CHECK_PTR_VAL(($$.b = gen_acode(cstate, $1, $$.q = $<blk>0.q))); }
+	| AID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_acode(cstate, $1, $$.q = $<blk>0.q))); }
 	| not id		{ gen_not($2.b); $$ = $2; }
 	;
 not:	  '!'			{ $$ = $<blk>0; }
@@ -582,8 +584,8 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| pllc			{ $$ = $1; }
 	;
 
-pfvar:	  PF_IFNAME ID		{ CHECK_PTR_VAL(($$ = gen_pf_ifname(cstate, $2))); }
-	| PF_RSET ID		{ CHECK_PTR_VAL(($$ = gen_pf_ruleset(cstate, $2))); }
+pfvar:	  PF_IFNAME ID		{ CHECK_PTR_VAL($2); CHECK_PTR_VAL(($$ = gen_pf_ifname(cstate, $2))); }
+	| PF_RSET ID		{ CHECK_PTR_VAL($2); CHECK_PTR_VAL(($$ = gen_pf_ruleset(cstate, $2))); }
 	| PF_RNR NUM		{ CHECK_PTR_VAL(($$ = gen_pf_rnr(cstate, $2))); }
 	| PF_SRNR NUM		{ CHECK_PTR_VAL(($$ = gen_pf_srnr(cstate, $2))); }
 	| PF_REASON reason	{ CHECK_PTR_VAL(($$ = gen_pf_reason(cstate, $2))); }
@@ -606,7 +608,8 @@ p80211:   TYPE type SUBTYPE subtype
 	;
 
 type:	  NUM
-	| ID			{ $$ = str2tok($1, ieee80211_types);
+	| ID			{ CHECK_PTR_VAL($1);
+				  $$ = str2tok($1, ieee80211_types);
 				  if ($$ == -1) {
 				  	bpf_set_error(cstate, "unknown 802.11 type name");
 				  	YYABORT;
@@ -617,6 +620,7 @@ type:	  NUM
 subtype:  NUM
 	| ID			{ const struct tok *types = NULL;
 				  int i;
+				  CHECK_PTR_VAL($1);
 				  for (i = 0;; i++) {
 				  	if (ieee80211_type_subtypes[i].tok == NULL) {
 				  		/* Ran out of types */
@@ -638,6 +642,7 @@ subtype:  NUM
 	;
 
 type_subtype:	ID		{ int i;
+				  CHECK_PTR_VAL($1);
 				  for (i = 0;; i++) {
 				  	if (ieee80211_type_subtypes[i].tok == NULL) {
 				  		/* Ran out of types */
@@ -654,7 +659,8 @@ type_subtype:	ID		{ int i;
 		;
 
 pllc:	LLC			{ CHECK_PTR_VAL(($$ = gen_llc(cstate))); }
-	| LLC ID		{ if (pcap_strcasecmp($2, "i") == 0) {
+	| LLC ID		{ CHECK_PTR_VAL($2);
+				  if (pcap_strcasecmp($2, "i") == 0) {
 					CHECK_PTR_VAL(($$ = gen_llc_i(cstate)));
 				  } else if (pcap_strcasecmp($2, "s") == 0) {
 					CHECK_PTR_VAL(($$ = gen_llc_s(cstate)));
@@ -681,7 +687,8 @@ pllc:	LLC			{ CHECK_PTR_VAL(($$ = gen_llc(cstate))); }
 	;
 
 dir:	  NUM
-	| ID			{ if (pcap_strcasecmp($1, "nods") == 0)
+	| ID			{ CHECK_PTR_VAL($1);
+				  if (pcap_strcasecmp($1, "nods") == 0)
 					$$ = IEEE80211_FC1_DIR_NODS;
 				  else if (pcap_strcasecmp($1, "tods") == 0)
 					$$ = IEEE80211_FC1_DIR_TODS;
@@ -697,10 +704,10 @@ dir:	  NUM
 	;
 
 reason:	  NUM			{ $$ = $1; }
-	| ID			{ CHECK_INT_VAL(($$ = pfreason_to_num(cstate, $1))); }
+	| ID			{ CHECK_PTR_VAL($1); CHECK_INT_VAL(($$ = pfreason_to_num(cstate, $1))); }
 	;
 
-action:	  ID			{ CHECK_INT_VAL(($$ = pfaction_to_num(cstate, $1))); }
+action:	  ID			{ CHECK_PTR_VAL($1); CHECK_INT_VAL(($$ = pfaction_to_num(cstate, $1))); }
 	;
 
 relop:	  '>'			{ $$ = BPF_JGT; }
