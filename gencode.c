@@ -800,8 +800,16 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		goto quit;
 	}
 
-	if (cstate.ic.root == NULL)
+	if (cstate.ic.root == NULL) {
+		/*
+		 * Catch errors reported by gen_retblk().
+		 */
+		if (setjmp(cstate.top_ctx)) {
+			rc = -1;
+			goto quit;
+		}
 		cstate.ic.root = gen_retblk(&cstate, cstate.snaplen);
+	}
 
 	if (optimize && !cstate.no_optimize) {
 		if (bpf_optimize(&cstate.ic, p->errbuf) == -1) {
