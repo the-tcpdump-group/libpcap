@@ -461,7 +461,7 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	/* NOTREACHED */
 }
 
-static void init_linktype(compiler_state_t *, pcap_t *);
+static int init_linktype(compiler_state_t *, pcap_t *);
 
 static void init_regs(compiler_state_t *);
 static int alloc_reg(compiler_state_t *);
@@ -785,7 +785,10 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 */
 	pcap_set_extra(&cstate, scanner);
 
-	init_linktype(&cstate, p);
+	if (init_linktype(&cstate, p) == -1) {
+		rc = -1;
+		goto quit;
+	}
 	if (pcap_parse(scanner, &cstate) != 0) {
 #ifdef INET6
 		if (cstate.ai != NULL)
@@ -1110,7 +1113,7 @@ gen_ncmp(compiler_state_t *cstate, enum e_offrel offrel, bpf_u_int32 offset,
 	return b;
 }
 
-static void
+static int
 init_linktype(compiler_state_t *cstate, pcap_t *p)
 {
 	cstate->pcap_fddipad = p->fddipad;
@@ -1693,12 +1696,14 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 			cstate->off_nl = OFFSET_NOT_SET;
 			cstate->off_nl_nosnap = OFFSET_NOT_SET;
 		} else {
-			bpf_error(cstate, "unknown data link type %d", cstate->linktype);
+			bpf_set_error(cstate, "unknown data link type %d", cstate->linktype);
+			return (-1);
 		}
 		break;
 	}
 
 	cstate->off_outermostlinkhdr = cstate->off_prevlinkhdr = cstate->off_linkhdr;
+	return (0);
 }
 
 /*
