@@ -361,7 +361,7 @@ DIAG_OFF_BISON_BYACC
 %%
 prog:	  null expr
 {
-	finish_parse(cstate, $2.b);
+	CHECK_INT_VAL(finish_parse(cstate, $2.b));
 }
 	| null
 	;
