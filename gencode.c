@@ -927,10 +927,17 @@ merge(struct block *b0, struct block *b1)
 	*p = b1;
 }
 
-void
+int
 finish_parse(compiler_state_t *cstate, struct block *p)
 {
 	struct block *ppi_dlt_check;
+
+	/*
+	 * Catch errors reported by us and routines below us, and return -1
+	 * on an error.
+	 */
+	if (setjmp(cstate->top_ctx))
+		return (-1);
 
 	/*
 	 * Insert before the statements of the first (root) block any
@@ -974,6 +981,7 @@ finish_parse(compiler_state_t *cstate, struct block *p)
 	p->sense = !p->sense;
 	backpatch(p, gen_retblk(cstate, 0));
 	cstate->ic.root = p->head;
+	return (0);
 }
 
 void
