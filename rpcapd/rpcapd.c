@@ -269,10 +269,10 @@ int main(int argc, char *argv[])
 			case 'h':
 				printusage();
 				exit(0);
-				break;
+				/*NOTREACHED*/
 			default:
 				exit(1);
-				break;
+				/*NOTREACHED*/
 		}
 	}
 
