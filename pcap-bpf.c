@@ -737,10 +737,10 @@ get_dlt_list(int fd, int v, struct bpf_dltlist *bdlp, char *ebuf)
 }
 #endif
 
+#if defined(__APPLE__)
 static int
 pcap_can_set_rfmon_bpf(pcap_t *p)
 {
-#if defined(__APPLE__)
 	struct utsname osinfo;
 	struct ifreq ifr;
 	int fd;
@@ -880,7 +880,11 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	close(fd);
 #endif /* BIOCGDLTLIST */
 	return (0);
+}
 #elif defined(HAVE_BSD_IEEE80211)
+static int
+pcap_can_set_rfmon_bpf(pcap_t *p)
+{
 	int ret;
 
 	ret = monitor_mode(p, 0);
@@ -889,10 +893,14 @@ pcap_can_set_rfmon_bpf(pcap_t *p)
 	if (ret == 0)
 		return (1);	/* success */
 	return (ret);
-#else
-	return (0);
-#endif
 }
+#else
+static int
+pcap_can_set_rfmon_bpf(pcap_t *p _U_)
+{
+	return (0);
+}
+#endif
 
 static int
 pcap_stats_bpf(pcap_t *p, struct pcap_stat *ps)
