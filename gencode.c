@@ -9768,8 +9768,8 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 }
 
 struct block *
-gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
-    volatile bpf_u_int32 jtype, int reverse)
+gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
+    volatile bpf_u_int32 jvalue, bpf_u_int32 jtype, int reverse)
 {
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
