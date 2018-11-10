@@ -137,7 +137,8 @@ void fileconf_read(void)
 			// Is the next character alphabetic?  If not,
 			// this isn't a valid parameter name.
 			//
-			if (!isascii(*ptr) || !isalpha(*ptr))
+			if (!isascii((unsigned char)*ptr) ||
+			    !isalpha((unsigned char)*ptr))
 			{
 				rpcapd_log(LOGPRIO_ERROR,
 				    "%s, line %u doesn't have a valid parameter name",
@@ -151,8 +152,8 @@ void fileconf_read(void)
 			// That's the name of the parameter being set.
 			//
 			param = ptr;
-			while (isascii(*ptr) &&
-			    (isalnum(*ptr) || *ptr == '-' || *ptr == '_'))
+			while (isascii((unsigned char)*ptr) &&
+			    (isalnum((unsigned char)*ptr) || *ptr == '-' || *ptr == '_'))
 				ptr++;
 
 			//
@@ -235,8 +236,8 @@ void fileconf_read(void)
 				ptr += toklen;	// skip to the terminator
 				if (toklen == 0)
 				{
-					if (isascii(*ptr) &&
-					    (isspace(*ptr) || *ptr == '#' || *ptr == '\0'))
+					if (isascii((unsigned char)*ptr) &&
+					    (isspace((unsigned char)*ptr) || *ptr == '#' || *ptr == '\0'))
 					{
 						//
 						// The first character it saw
@@ -550,7 +551,7 @@ int fileconf_save(const char *savefile)
 //
 static char *skipws(char *ptr)
 {
-	while (isascii(*ptr) && isspace(*ptr)) {
+	while (isascii((unsigned char)*ptr) && isspace((unsigned char)*ptr)) {
 		if (*ptr == '\r' || *ptr == '\n')
 			return NULL;
 		*ptr++ = '\0';
