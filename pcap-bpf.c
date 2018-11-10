@@ -3232,10 +3232,10 @@ pcap_setfilter_bpf(pcap_t *p, struct bpf_program *fp)
  * Set direction flag: Which packets do we accept on a forwarding
  * single device? IN, OUT or both?
  */
+#if defined(BIOCSDIRECTION)
 static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 {
-#if defined(BIOCSDIRECTION)
 	u_int direction;
 
 	direction = (d == PCAP_D_IN) ? BPF_D_IN :
@@ -3248,7 +3248,11 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		return (-1);
 	}
 	return (0);
+}
 #elif defined(BIOCSSEESENT)
+static int
+pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
+{
 	u_int seesent;
 
 	/*
@@ -3268,25 +3272,35 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		return (-1);
 	}
 	return (0);
+}
 #else
+static int
+pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d _U_)
+{
 	(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
 	    "This system doesn't support BIOCSSEESENT, so the direction can't be set");
 	return (-1);
-#endif
 }
+#endif
 
+#ifdef BIOCSDLT
 static int
 pcap_set_datalink_bpf(pcap_t *p, int dlt)
 {
-#ifdef BIOCSDLT
 	if (ioctl(p->fd, BIOCSDLT, &dlt) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "Cannot set DLT %d", dlt);
 		return (-1);
 	}
-#endif
 	return (0);
 }
+#else
+static int
+pcap_set_datalink_bpf(pcap_t *p _U_, int dlt _U_)
+{
+	return (0);
+}
+#endif
 
 /*
  * Platform-specific information.
