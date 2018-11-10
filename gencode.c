@@ -8993,12 +8993,17 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 
 /*
  * support for MPLS
+ *
+ * The label_num_arg dance is to avoid annoying whining by compilers that
+ * label_num might be clobbered by longjmp - yeah, it might, but *WHO CARES*?
+ * It's not *used* after setjmp returns.
  */
 struct block *
-gen_mpls(compiler_state_t *cstate, volatile bpf_u_int32 label_num,
+gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
     int has_label_num)
 {
 	struct	block	*b0, *b1;
+	bpf_u_int32 label_num = label_num_arg;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9759,12 +9764,18 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 	return b0;
 }
 
+/*
+ * The jvalue_arg dance is to avoid annoying whining by compilers that
+ * jvalue might be clobbered by longjmp - yeah, it might, but *WHO CARES*?
+ * It's not *used* after setjmp returns.
+ */
 struct block *
 gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
-    volatile bpf_u_int32 jvalue, bpf_u_int32 jtype, int reverse)
+    bpf_u_int32 jvalue_arg, bpf_u_int32 jtype, int reverse)
 {
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
+	bpf_u_int32 jvalue = jvalue_arg;
 	u_int newoff_sio;
 	u_int newoff_opc;
 	u_int newoff_dpc;
