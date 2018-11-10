@@ -7675,9 +7675,15 @@ gen_loadi(compiler_state_t *cstate, int val)
 	return gen_loadi_internal(cstate, val);
 }
 
+/*
+ * The a_arg dance is to avoid annoying whining by compilers that
+ * a might be clobbered by longjmp - yeah, it might, but *WHO CARES*?
+ * It's not *used* after setjmp returns.
+ */
 struct arth *
-gen_neg(compiler_state_t *cstate, struct arth *a)
+gen_neg(compiler_state_t *cstate, struct arth *a_arg)
 {
+	struct arth *a = a_arg;
 	struct slist *s;
 
 	/*
@@ -7699,10 +7705,16 @@ gen_neg(compiler_state_t *cstate, struct arth *a)
 	return a;
 }
 
+/*
+ * The a0_arg dance is to avoid annoying whining by compilers that
+ * a0 might be clobbered by longjmp - yeah, it might, but *WHO CARES*?
+ * It's not *used* after setjmp returns.
+ */
 struct arth *
-gen_arth(compiler_state_t *cstate, int code, struct arth *a0,
+gen_arth(compiler_state_t *cstate, int code, struct arth *a0_arg,
     struct arth *a1)
 {
+	struct arth *a0 = a0_arg;
 	struct slist *s0, *s1, *s2;
 
 	/*
@@ -9002,8 +9014,8 @@ struct block *
 gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
     int has_label_num)
 {
-	struct	block	*b0, *b1;
 	bpf_u_int32 label_num = label_num_arg;
+	struct	block	*b0, *b1;
 
 	/*
 	 * Catch errors reported by us and routines below us, and return NULL
@@ -9773,9 +9785,9 @@ struct block *
 gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
     bpf_u_int32 jvalue_arg, bpf_u_int32 jtype, int reverse)
 {
+	bpf_u_int32 jvalue = jvalue_arg;
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
-	bpf_u_int32 jvalue = jvalue_arg;
 	u_int newoff_sio;
 	u_int newoff_opc;
 	u_int newoff_dpc;
