@@ -9002,7 +9002,8 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
  * support for MPLS
  */
 struct block *
-gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num, int has_label_num)
+gen_mpls(compiler_state_t *cstate, volatile bpf_u_int32 label_num,
+    int has_label_num)
 {
 	struct	block	*b0, *b1;
 
@@ -9768,7 +9769,7 @@ gen_mtp2type_abbrev(compiler_state_t *cstate, int type)
 
 struct block *
 gen_mtp3field_code(compiler_state_t *cstate, int mtp3field, bpf_u_int32 jvalue,
-    bpf_u_int32 jtype, int reverse)
+    volatile bpf_u_int32 jtype, int reverse)
 {
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
