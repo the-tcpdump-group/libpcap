@@ -8363,7 +8363,8 @@ gen_pf_ifname(compiler_state_t *cstate, const char *ifname)
 		    len-1);
 		/*NOTREACHED*/
 	}
-	b0 = gen_bcmp(cstate, OR_LINKHDR, off, strlen(ifname), (const u_char *)ifname);
+	b0 = gen_bcmp(cstate, OR_LINKHDR, off, (u_int)strlen(ifname),
+	    (const u_char *)ifname);
 	return (b0);
 }
 
@@ -8392,7 +8393,7 @@ gen_pf_ruleset(compiler_state_t *cstate, char *ruleset)
 	}
 
 	b0 = gen_bcmp(cstate, OR_LINKHDR, offsetof(struct pfloghdr, ruleset),
-	    strlen(ruleset), (const u_char *)ruleset);
+	    (u_int)strlen(ruleset), (const u_char *)ruleset);
 	return (b0);
 }
 
