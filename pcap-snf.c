@@ -182,8 +182,8 @@ snf_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			hdr.caplen = caplen;
 			hdr.len = req.length;
 			callback(user, &hdr, req.pkt_addr);
+			n++;
 		}
-		n++;
 
 		/* After one successful packet is received, we won't block
 		* again for that timeout. */
