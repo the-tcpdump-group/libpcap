@@ -213,17 +213,17 @@ lowest_set_bit(int mask)
  */
 struct valnode {
 	int code;
-	int v0, v1;
-	int val;
+	bpf_u_int32 v0, v1;
+	int val;		/* the value number */
 	struct valnode *next;
 };
 
 /* Integer constants mapped with the load immediate opcode. */
-#define K(i) F(opt_state, BPF_LD|BPF_IMM|BPF_W, i, 0L)
+#define K(i) F(opt_state, BPF_LD|BPF_IMM|BPF_W, i, 0U)
 
 struct vmapinfo {
 	int is_const;
-	bpf_int32 const_val;
+	bpf_u_int32 const_val;
 };
 
 typedef struct {
@@ -313,8 +313,8 @@ typedef struct {
 
 #define MODULUS 213
 	struct valnode *hashtbl[MODULUS];
-	int curval;
-	int maxval;
+	bpf_u_int32 curval;
+	bpf_u_int32 maxval;
 
 	struct vmapinfo *vmap;
 	struct valnode *vnode_base;
@@ -496,8 +496,11 @@ find_closure(opt_state_t *opt_state, struct block *root)
 }
 
 /*
- * Return the register number that is used by s.  If A and X are both
- * used, return AX_ATOM.  If no register is used, return -1.
+ * Return the register number that is used by s.
+ *
+ * Returns ATOM_A if A is used, ATOM_X if X is used, AX_ATOM if both A and X
+ * are used, the scratch memory location's number if a scratch memory
+ * location is used (e.g., 0 for M[0]), or -1 if none of those are used.
  *
  * The implementation should probably change to an array access.
  */
@@ -676,21 +679,40 @@ init_val(opt_state_t *opt_state)
 	memset((char *)opt_state->hashtbl, 0, sizeof opt_state->hashtbl);
 }
 
-/* Because we really don't have an IR, this stuff is a little messy. */
-static int
-F(opt_state_t *opt_state, int code, int v0, int v1)
+/*
+ * Because we really don't have an IR, this stuff is a little messy.
+ *
+ * This routine looks in the table of existing value number for a value
+ * with generated from an operation with the specified opcode and
+ * the specified values.  If it finds it, it returns its value number,
+ * otherwise it makes a new entry in the table and returns the
+ * value number of that entry.
+ */
+static bpf_u_int32
+F(opt_state_t *opt_state, int code, bpf_u_int32 v0, bpf_u_int32 v1)
 {
 	u_int hash;
-	int val;
+	bpf_u_int32 val;
 	struct valnode *p;
 
-	hash = (u_int)code ^ ((u_int)v0 << 4) ^ ((u_int)v1 << 8);
+	hash = (u_int)code ^ (v0 << 4) ^ (v1 << 8);
 	hash %= MODULUS;
 
 	for (p = opt_state->hashtbl[hash]; p; p = p->next)
 		if (p->code == code && p->v0 == v0 && p->v1 == v1)
 			return p->val;
 
+	/*
+	 * Not found.  Allocate a new value, and assign it a new
+	 * value number.
+	 *
+	 * opt_state->curval starts out as 0, which means VAL_UNKNOWN; we
+	 * increment it before using it as the new value number, which
+	 * means we never assign VAL_UNKNOWN.
+	 *
+	 * XXX - unless we overflow, but we probably won't have 2^32-1
+	 * values; we treat 32 bits as effectively infinite.
+	 */
 	val = ++opt_state->curval;
 	if (BPF_MODE(code) == BPF_IMM &&
 	    (BPF_CLASS(code) == BPF_LD || BPF_CLASS(code) == BPF_LDX)) {
@@ -709,7 +731,7 @@ F(opt_state_t *opt_state, int code, int v0, int v1)
 }
 
 static inline void
-vstore(struct stmt *s, int *valp, int newval, int alter)
+vstore(struct stmt *s, bpf_u_int32 *valp, bpf_u_int32 newval, int alter)
 {
 	if (alter && newval != VAL_UNKNOWN && *valp == newval)
 		s->code = NOP;
@@ -722,7 +744,7 @@ vstore(struct stmt *s, int *valp, int newval, int alter)
  * (Unary operators are handled elsewhere.)
  */
 static void
-fold_op(opt_state_t *opt_state, struct stmt *s, int v0, int v1)
+fold_op(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 v0, bpf_u_int32 v1)
 {
 	bpf_u_int32 a, b;
 
@@ -832,7 +854,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 {
 	struct slist *s;
 	struct slist *next, *last;
-	int val;
+	bpf_u_int32 val;
 
 	s = b->stmts;
 	if (s == 0)
@@ -1033,7 +1055,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	if (b->s.code == (BPF_JMP|BPF_K|BPF_JSET)) {
 		if (b->s.k == 0)
 			JT(b) = JF(b);
-		if ((u_int)b->s.k == 0xffffffffU)
+		if (b->s.k == 0xffffffffU)
 			JF(b) = JT(b);
 	}
 	/*
@@ -1043,7 +1065,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	 */
 	val = b->val[X_ATOM];
 	if (opt_state->vmap[val].is_const && BPF_SRC(b->s.code) == BPF_X) {
-		bpf_int32 v = opt_state->vmap[val].const_val;
+		bpf_u_int32 v = opt_state->vmap[val].const_val;
 		b->s.code &= ~BPF_X;
 		b->s.k = v;
 	}
@@ -1053,7 +1075,7 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	 */
 	val = b->val[A_ATOM];
 	if (opt_state->vmap[val].is_const && BPF_SRC(b->s.code) == BPF_K) {
-		bpf_int32 v = opt_state->vmap[val].const_val;
+		bpf_u_int32 v = opt_state->vmap[val].const_val;
 		switch (BPF_OP(b->s.code)) {
 
 		case BPF_JEQ:
@@ -1061,11 +1083,11 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 			break;
 
 		case BPF_JGT:
-			v = (unsigned)v > (unsigned)b->s.k;
+			v = v > b->s.k;
 			break;
 
 		case BPF_JGE:
-			v = (unsigned)v >= (unsigned)b->s.k;
+			v = v >= b->s.k;
 			break;
 
 		case BPF_JSET:
@@ -1091,10 +1113,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
  * evaluation and code transformations weren't folded together.
  */
 static void
-opt_stmt(opt_state_t *opt_state, struct stmt *s, int val[], int alter)
+opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 {
 	int op;
-	int v;
+	bpf_u_int32 v;
 
 	switch (s->code) {
 
@@ -1159,7 +1181,7 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, int val[], int alter)
 			 * about the result of negating 0x80000000 being
 			 * undefined.
 			 */
-			s->k = 0U - (bpf_u_int32)(opt_state->vmap[val[A_ATOM]].const_val);
+			s->k = 0U - opt_state->vmap[val[A_ATOM]].const_val;
 			val[A_ATOM] = K(s->k);
 		}
 		else
@@ -1236,14 +1258,8 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, int val[], int alter)
 			else {
 				s->code = BPF_ALU|BPF_K|op;
 				s->k = opt_state->vmap[val[X_ATOM]].const_val;
-				/*
-				 * XXX - we need to make up our minds
-				 * as to what integers are signed and
-				 * what integers are unsigned in BPF
-				 * programs and in our IR.
-				 */
 				if ((op == BPF_LSH || op == BPF_RSH) &&
-				    (s->k < 0 || s->k > 31))
+				    s->k > 31)
 					opt_error(opt_state,
 					    "shift by more than 31 bits");
 				opt_state->done = 0;
@@ -1369,7 +1385,7 @@ opt_blk(opt_state_t *opt_state, struct block *b, int do_stmts)
 	struct slist *s;
 	struct edge *p;
 	int i;
-	bpf_int32 aval, xval;
+	bpf_u_int32 aval, xval;
 
 #if 0
 	for (s = b->stmts; s && s->next; s = s->next)
@@ -1488,7 +1504,7 @@ static struct block *
 fold_edge(struct block *child, struct edge *ep)
 {
 	int sense;
-	int aval0, aval1, oval0, oval1;
+	bpf_u_int32 aval0, aval1, oval0, oval1;
 	int code = ep->code;
 
 	if (code < 0) {
@@ -1594,7 +1610,8 @@ opt_j(opt_state_t *opt_state, struct edge *ep)
 static void
 or_pullup(opt_state_t *opt_state, struct block *b)
 {
-	int val, at_top;
+	bpf_u_int32 val;
+	int at_top;
 	struct block *pull;
 	struct block **diffp, **samep;
 	struct edge *ep;
@@ -1686,7 +1703,8 @@ or_pullup(opt_state_t *opt_state, struct block *b)
 static void
 and_pullup(opt_state_t *opt_state, struct block *b)
 {
-	int val, at_top;
+	bpf_u_int32 val;
+	int at_top;
 	struct block *pull;
 	struct block **diffp, **samep;
 	struct edge *ep;

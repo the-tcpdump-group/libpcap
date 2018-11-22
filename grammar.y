@@ -231,8 +231,17 @@ str2tok(const char *str, const struct tok *toks)
 	int i;
 
 	for (i = 0; toks[i].s != NULL; i++) {
-		if (pcap_strcasecmp(toks[i].s, str) == 0)
+		if (pcap_strcasecmp(toks[i].s, str) == 0) {
+			/*
+			 * Just in case somebody is using this to
+			 * generate values of -1/0xFFFFFFFF.
+			 * That won't work, as it's indistinguishable
+			 * from an error.
+			 */
+			if (toks[i].v == -1)
+				abort();
 			return (toks[i].v);
+		}
 	}
 	return (-1);
 }
@@ -256,7 +265,7 @@ pfreason_to_num(compiler_state_t *cstate, const char *reason)
 		if (pcap_strcasecmp(reason, reasons[i]) == 0)
 			return (i);
 	}
-	bpf_set_error(cstate, "unknown PF reason");
+	bpf_set_error(cstate, "unknown PF reason \"%s\"", reason);
 	return (-1);
 }
 
@@ -280,7 +289,7 @@ pfaction_to_num(compiler_state_t *cstate, const char *action)
 		return (PF_NORDR);
 #endif
 	else {
-		bpf_set_error(cstate, "unknown PF action");
+		bpf_set_error(cstate, "unknown PF action \"%s\"", action);
 		return (-1);
 	}
 }
@@ -328,7 +337,8 @@ DIAG_OFF_BISON_BYACC
 %type	<blk>	head
 %type	<i>	pqual dqual aqual ndaqual
 %type	<a>	arth narth
-%type	<i>	byteop pname pnum relop irelop
+%type	<i>	byteop pname relop irelop
+%type	<h>	pnum
 %type	<blk>	and or paren not null prog
 %type	<rblk>	other pfvar p80211 pllc
 %type	<i>	atmtype atmmultitype
@@ -369,7 +379,8 @@ DIAG_OFF_BISON_BYACC
 
 %type	<s> ID EID AID
 %type	<s> HID HID6
-%type	<i> NUM action reason type subtype type_subtype dir
+%type	<h> NUM
+%type	<i> action reason type subtype type_subtype dir
 
 %left OR AND
 %nonassoc  '!'
@@ -399,7 +410,7 @@ and:	  AND			{ $$ = $<blk>0; }
 or:	  OR			{ $$ = $<blk>0; }
 	;
 id:	  nid
-	| pnum			{ CHECK_PTR_VAL(($$.b = gen_ncode(cstate, NULL, (bpf_u_int32)$1,
+	| pnum			{ CHECK_PTR_VAL(($$.b = gen_ncode(cstate, NULL, $1,
 						   $$.q = $<blk>0.q))); }
 	| paren pid ')'		{ $$ = $2; }
 	;
@@ -413,17 +424,17 @@ nid:	  ID			{ CHECK_PTR_VAL($1); CHECK_PTR_VAL(($$.b = gen_scode(cstate, $1, $$.
 				  /* Decide how to parse HID based on proto */
 				  $$.q = $<blk>0.q;
 				  if ($$.q.addr == Q_PORT) {
-				  	bpf_set_error(cstate, "'port' modifier applied to ip host");
-				  	YYABORT;
+					bpf_set_error(cstate, "'port' modifier applied to ip host");
+					YYABORT;
 				  } else if ($$.q.addr == Q_PORTRANGE) {
-				  	bpf_set_error(cstate, "'portrange' modifier applied to ip host");
-				  	YYABORT;
+					bpf_set_error(cstate, "'portrange' modifier applied to ip host");
+					YYABORT;
 				  } else if ($$.q.addr == Q_PROTO) {
-				  	bpf_set_error(cstate, "'proto' modifier applied to ip host");
-				  	YYABORT;
+					bpf_set_error(cstate, "'proto' modifier applied to ip host");
+					YYABORT;
 				  } else if ($$.q.addr == Q_PROTOCHAIN) {
-				  	bpf_set_error(cstate, "'protochain' modifier applied to ip host");
-				  	YYABORT;
+					bpf_set_error(cstate, "'protochain' modifier applied to ip host");
+					YYABORT;
 				  }
 				  CHECK_PTR_VAL(($$.b = gen_ncode(cstate, $1, 0, $$.q)));
 				}
@@ -461,7 +472,7 @@ pid:	  nid
 	| qid and id		{ gen_and($1.b, $3.b); $$ = $3; }
 	| qid or id		{ gen_or($1.b, $3.b); $$ = $3; }
 	;
-qid:	  pnum			{ CHECK_PTR_VAL(($$.b = gen_ncode(cstate, NULL, (bpf_u_int32)$1,
+qid:	  pnum			{ CHECK_PTR_VAL(($$.b = gen_ncode(cstate, NULL, $1,
 						   $$.q = $<blk>0.q))); }
 	| pid
 	;
@@ -535,7 +546,7 @@ pname:	  LINK			{ $$ = Q_LINK; }
 	| IGRP			{ $$ = Q_IGRP; }
 	| PIM			{ $$ = Q_PIM; }
 	| VRRP			{ $$ = Q_VRRP; }
-	| CARP 			{ $$ = Q_CARP; }
+	| CARP			{ $$ = Q_CARP; }
 	| ATALK			{ $$ = Q_ATALK; }
 	| AARP			{ $$ = Q_AARP; }
 	| DECNET		{ $$ = Q_DECNET; }
@@ -570,14 +581,14 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| CBYTE NUM byteop NUM	{ CHECK_PTR_VAL(($$ = gen_byteop(cstate, $3, $2, $4))); }
 	| INBOUND		{ CHECK_PTR_VAL(($$ = gen_inbound(cstate, 0))); }
 	| OUTBOUND		{ CHECK_PTR_VAL(($$ = gen_inbound(cstate, 1))); }
-	| VLAN pnum		{ CHECK_PTR_VAL(($$ = gen_vlan(cstate, (bpf_u_int32)$2, 1))); }
+	| VLAN pnum		{ CHECK_PTR_VAL(($$ = gen_vlan(cstate, $2, 1))); }
 	| VLAN			{ CHECK_PTR_VAL(($$ = gen_vlan(cstate, 0, 0))); }
-	| MPLS pnum		{ CHECK_PTR_VAL(($$ = gen_mpls(cstate, (bpf_u_int32)$2, 1))); }
+	| MPLS pnum		{ CHECK_PTR_VAL(($$ = gen_mpls(cstate, $2, 1))); }
 	| MPLS			{ CHECK_PTR_VAL(($$ = gen_mpls(cstate, 0, 0))); }
 	| PPPOED		{ CHECK_PTR_VAL(($$ = gen_pppoed(cstate))); }
-	| PPPOES pnum		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, (bpf_u_int32)$2, 1))); }
+	| PPPOES pnum		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, $2, 1))); }
 	| PPPOES		{ CHECK_PTR_VAL(($$ = gen_pppoes(cstate, 0, 0))); }
-	| GENEVE pnum		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, (bpf_u_int32)$2, 1))); }
+	| GENEVE pnum		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, $2, 1))); }
 	| GENEVE		{ CHECK_PTR_VAL(($$ = gen_geneve(cstate, 0, 0))); }
 	| pfvar			{ $$ = $1; }
 	| pqual p80211		{ $$ = $2; }
@@ -607,27 +618,37 @@ p80211:   TYPE type SUBTYPE subtype
 	| DIR dir		{ CHECK_PTR_VAL(($$ = gen_p80211_fcdir(cstate, $2))); }
 	;
 
-type:	  NUM
+type:	  NUM			{ if (($1 & (~IEEE80211_FC0_TYPE_MASK)) != 0) {
+					bpf_set_error(cstate, "invalid 802.11 type value 0x%02x", $1);
+					YYABORT;
+				  }
+				  $$ = (int)$1;
+				}
 	| ID			{ CHECK_PTR_VAL($1);
 				  $$ = str2tok($1, ieee80211_types);
 				  if ($$ == -1) {
-				  	bpf_set_error(cstate, "unknown 802.11 type name");
-				  	YYABORT;
+					bpf_set_error(cstate, "unknown 802.11 type name \"%s\"", $1);
+					YYABORT;
 				  }
 				}
 	;
 
-subtype:  NUM
+subtype:  NUM			{ if (($1 & (~IEEE80211_FC0_SUBTYPE_MASK)) != 0) {
+					bpf_set_error(cstate, "invalid 802.11 subtype value 0x%02x", $1);
+					YYABORT;
+				  }
+				  $$ = (int)$1;
+				}
 	| ID			{ const struct tok *types = NULL;
 				  int i;
 				  CHECK_PTR_VAL($1);
 				  for (i = 0;; i++) {
-				  	if (ieee80211_type_subtypes[i].tok == NULL) {
-				  		/* Ran out of types */
+					if (ieee80211_type_subtypes[i].tok == NULL) {
+						/* Ran out of types */
 						bpf_set_error(cstate, "unknown 802.11 type");
 						YYABORT;
 					}
-					if ($<i>-1 == ieee80211_type_subtypes[i].type) {
+					if (-1 == ieee80211_type_subtypes[i].type) {
 						types = ieee80211_type_subtypes[i].tok;
 						break;
 					}
@@ -635,7 +656,7 @@ subtype:  NUM
 
 				  $$ = str2tok($1, types);
 				  if ($$ == -1) {
-					bpf_set_error(cstate, "unknown 802.11 subtype name");
+					bpf_set_error(cstate, "unknown 802.11 subtype name \"%s\"", $1);
 					YYABORT;
 				  }
 				}
@@ -644,8 +665,8 @@ subtype:  NUM
 type_subtype:	ID		{ int i;
 				  CHECK_PTR_VAL($1);
 				  for (i = 0;; i++) {
-				  	if (ieee80211_type_subtypes[i].tok == NULL) {
-				  		/* Ran out of types */
+					if (ieee80211_type_subtypes[i].tok == NULL) {
+						/* Ran out of types */
 						bpf_set_error(cstate, "unknown 802.11 type name");
 						YYABORT;
 					}
@@ -675,9 +696,9 @@ pllc:	LLC			{ CHECK_PTR_VAL(($$ = gen_llc(cstate))); }
 					} else {
 						subtype = str2tok($2, llc_u_subtypes);
 						if (subtype == -1) {
-					  		bpf_set_error(cstate, "unknown LLC type name \"%s\"", $2);
-					  		YYABORT;
-					  	}
+							bpf_set_error(cstate, "unknown LLC type name \"%s\"", $2);
+							YYABORT;
+						}
 						CHECK_PTR_VAL(($$ = gen_llc_u_subtype(cstate, subtype)));
 					}
 				  }
@@ -686,7 +707,7 @@ pllc:	LLC			{ CHECK_PTR_VAL(($$ = gen_llc(cstate))); }
 	| LLC PF_RNR		{ CHECK_PTR_VAL(($$ = gen_llc_s_subtype(cstate, LLC_RNR))); }
 	;
 
-dir:	  NUM
+dir:	  NUM			{ $$ = (int)$1; }
 	| ID			{ CHECK_PTR_VAL($1);
 				  if (pcap_strcasecmp($1, "nods") == 0)
 					$$ = IEEE80211_FC1_DIR_NODS;
@@ -764,15 +785,15 @@ atmfield: VPI			{ $$.atmfieldtype = A_VPI; }
 	| VCI			{ $$.atmfieldtype = A_VCI; }
 	;
 atmvalue: atmfieldvalue
-	| relop NUM		{ CHECK_PTR_VAL(($$.b = gen_atmfield_code(cstate, $<blk>0.atmfieldtype, (bpf_int32)$2, (bpf_u_int32)$1, 0))); }
-	| irelop NUM		{ CHECK_PTR_VAL(($$.b = gen_atmfield_code(cstate, $<blk>0.atmfieldtype, (bpf_int32)$2, (bpf_u_int32)$1, 1))); }
+	| relop NUM		{ CHECK_PTR_VAL(($$.b = gen_atmfield_code(cstate, $<blk>0.atmfieldtype, $2, $1, 0))); }
+	| irelop NUM		{ CHECK_PTR_VAL(($$.b = gen_atmfield_code(cstate, $<blk>0.atmfieldtype, $2, $1, 1))); }
 	| paren atmlistvalue ')' { $$.b = $2.b; $$.q = qerr; }
 	;
 atmfieldvalue: NUM {
 	$$.atmfieldtype = $<blk>0.atmfieldtype;
 	if ($$.atmfieldtype == A_VPI ||
 	    $$.atmfieldtype == A_VCI)
-		CHECK_PTR_VAL(($$.b = gen_atmfield_code(cstate, $$.atmfieldtype, (bpf_int32) $1, BPF_JEQ, 0)));
+		CHECK_PTR_VAL(($$.b = gen_atmfield_code(cstate, $$.atmfieldtype, $1, BPF_JEQ, 0)));
 	}
 	;
 atmlistvalue: atmfieldvalue
@@ -797,8 +818,8 @@ mtp3field: SIO			{ $$.mtp3fieldtype = M_SIO; }
 	| HSLS                  { $$.mtp3fieldtype = MH_SLS; }
 	;
 mtp3value: mtp3fieldvalue
-	| relop NUM		{ CHECK_PTR_VAL(($$.b = gen_mtp3field_code(cstate, $<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 0))); }
-	| irelop NUM		{ CHECK_PTR_VAL(($$.b = gen_mtp3field_code(cstate, $<blk>0.mtp3fieldtype, (u_int)$2, (u_int)$1, 1))); }
+	| relop NUM		{ CHECK_PTR_VAL(($$.b = gen_mtp3field_code(cstate, $<blk>0.mtp3fieldtype, $2, $1, 0))); }
+	| irelop NUM		{ CHECK_PTR_VAL(($$.b = gen_mtp3field_code(cstate, $<blk>0.mtp3fieldtype, $2, $1, 1))); }
 	| paren mtp3listvalue ')' { $$.b = $2.b; $$.q = qerr; }
 	;
 mtp3fieldvalue: NUM {
@@ -811,7 +832,7 @@ mtp3fieldvalue: NUM {
 	    $$.mtp3fieldtype == MH_OPC ||
 	    $$.mtp3fieldtype == MH_DPC ||
 	    $$.mtp3fieldtype == MH_SLS)
-		CHECK_PTR_VAL(($$.b = gen_mtp3field_code(cstate, $$.mtp3fieldtype, (u_int) $1, BPF_JEQ, 0)));
+		CHECK_PTR_VAL(($$.b = gen_mtp3field_code(cstate, $$.mtp3fieldtype, $1, BPF_JEQ, 0)));
 	}
 	;
 mtp3listvalue: mtp3fieldvalue

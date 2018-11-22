@@ -204,7 +204,7 @@ struct stmt {
 	int code;
 	struct slist *jt;	/*only for relative jump in block*/
 	struct slist *jf;	/*only for relative jump in block*/
-	bpf_int32 k;
+	bpf_u_int32 k;
 };
 
 struct slist {
@@ -261,7 +261,7 @@ struct block {
 	atomset in_use;
 	atomset out_use;
 	int oval;
-	int val[N_ATOMS];
+	bpf_u_int32 val[N_ATOMS];
 };
 
 /*
@@ -286,8 +286,8 @@ struct _compiler_state;
 
 typedef struct _compiler_state compiler_state_t;
 
-struct arth *gen_loadi(compiler_state_t *, int);
-struct arth *gen_load(compiler_state_t *, int, struct arth *, int);
+struct arth *gen_loadi(compiler_state_t *, bpf_u_int32);
+struct arth *gen_load(compiler_state_t *, int, struct arth *, bpf_u_int32);
 struct arth *gen_loadlen(compiler_state_t *);
 struct arth *gen_neg(compiler_state_t *, struct arth *);
 struct arth *gen_arth(compiler_state_t *, int, struct arth *, struct arth *);
@@ -300,10 +300,10 @@ struct block *gen_scode(compiler_state_t *, const char *, struct qual);
 struct block *gen_ecode(compiler_state_t *, const char *, struct qual);
 struct block *gen_acode(compiler_state_t *, const char *, struct qual);
 struct block *gen_mcode(compiler_state_t *, const char *, const char *,
-    unsigned int, struct qual);
+    bpf_u_int32, struct qual);
 #ifdef INET6
 struct block *gen_mcode6(compiler_state_t *, const char *, const char *,
-    unsigned int, struct qual);
+    bpf_u_int32, struct qual);
 #endif
 struct block *gen_ncode(compiler_state_t *, const char *, bpf_u_int32,
     struct qual);
@@ -312,7 +312,7 @@ struct block *gen_relation(compiler_state_t *, int, struct arth *,
     struct arth *, int);
 struct block *gen_less(compiler_state_t *, int);
 struct block *gen_greater(compiler_state_t *, int);
-struct block *gen_byteop(compiler_state_t *, int, int, int);
+struct block *gen_byteop(compiler_state_t *, int, int, bpf_u_int32);
 struct block *gen_broadcast(compiler_state_t *, int);
 struct block *gen_multicast(compiler_state_t *, int);
 struct block *gen_inbound(compiler_state_t *, int);
@@ -332,14 +332,14 @@ struct block *gen_pppoes(compiler_state_t *, bpf_u_int32, int);
 
 struct block *gen_geneve(compiler_state_t *, bpf_u_int32, int);
 
-struct block *gen_atmfield_code(compiler_state_t *, int, bpf_int32,
-    bpf_u_int32, int);
-struct block *gen_atmtype_abbrev(compiler_state_t *, int type);
-struct block *gen_atmmulti_abbrev(compiler_state_t *, int type);
+struct block *gen_atmfield_code(compiler_state_t *, int, bpf_u_int32,
+    int, int);
+struct block *gen_atmtype_abbrev(compiler_state_t *, int);
+struct block *gen_atmmulti_abbrev(compiler_state_t *, int);
 
-struct block *gen_mtp2type_abbrev(compiler_state_t *, int type);
+struct block *gen_mtp2type_abbrev(compiler_state_t *, int);
 struct block *gen_mtp3field_code(compiler_state_t *, int, bpf_u_int32,
-    bpf_u_int32, int);
+    int, int);
 
 struct block *gen_pf_ifname(compiler_state_t *, const char *);
 struct block *gen_pf_rnr(compiler_state_t *, int);
@@ -348,8 +348,8 @@ struct block *gen_pf_ruleset(compiler_state_t *, char *);
 struct block *gen_pf_reason(compiler_state_t *, int);
 struct block *gen_pf_action(compiler_state_t *, int);
 
-struct block *gen_p80211_type(compiler_state_t *, int, int);
-struct block *gen_p80211_fcdir(compiler_state_t *, int);
+struct block *gen_p80211_type(compiler_state_t *, bpf_u_int32, bpf_u_int32);
+struct block *gen_p80211_fcdir(compiler_state_t *, bpf_u_int32);
 
 /*
  * Representation of a program as a tree of blocks, plus current mark.
