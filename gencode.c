@@ -2849,7 +2849,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		s2->s.k = 3;
 		sappend(s, s2);
 		s2 = new_stmt(cstate, BPF_ALU|BPF_AND|BPF_IMM);
-		s2->s.k = ~3;
+		s2->s.k = (bpf_u_int32)~3;
 		sappend(s, s2);
 		s2 = new_stmt(cstate, BPF_ST);
 		s2->s.k = cstate->off_linkpl.reg;
