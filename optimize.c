@@ -520,8 +520,12 @@ atomuse(struct stmt *s)
 
 	case BPF_LD:
 	case BPF_LDX:
+		/*
+		 * As there are fewer than 2^31 memory locations,
+		 * s->k should be convertable to int without problems.
+		 */
 		return (BPF_MODE(c) == BPF_IND) ? X_ATOM :
-			(BPF_MODE(c) == BPF_MEM) ? s->k : -1;
+			(BPF_MODE(c) == BPF_MEM) ? (int)s->k : -1;
 
 	case BPF_ST:
 		return A_ATOM;
