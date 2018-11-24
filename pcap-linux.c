@@ -2389,6 +2389,7 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 		}
 		map_arphrd_to_dlt(handle, arptype, device, 1);
 		if (handle->linktype == -1 ||
+		    handle->opt.cook ||
 		    handle->linktype == DLT_LINUX_SLL ||
 		    handle->linktype == DLT_LINUX_IRDA ||
 		    handle->linktype == DLT_LINUX_LAPD ||
