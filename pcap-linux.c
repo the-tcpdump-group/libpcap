@@ -1599,11 +1599,10 @@ pcap_activate_linux(pcap_t *handle)
 			/*
 			 * We failed to set up to use it, or the kernel
 			 * supports it, but we failed to enable it.
-			 * ret has been set to the error status to
+			 * status has been set to the error status to
 			 * return and, if it's PCAP_ERROR, handle->errbuf
 			 * contains the error message.
 			 */
-			status = ret;
 			goto fail;
 		}
 	}
