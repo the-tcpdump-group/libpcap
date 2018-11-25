@@ -1535,7 +1535,8 @@ pcap_activate_linux(pcap_t *handle)
 	if (handlep->device == NULL) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "strdup");
-		return PCAP_ERROR;
+		status = PCAP_ERROR;
+		goto fail;
 	}
 
 	/* copy timeout value */
