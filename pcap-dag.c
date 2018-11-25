@@ -968,8 +968,6 @@ static int dag_activate(pcap_t* p)
 	p->linktype = -1;
 	if (dag_get_datalink(p) < 0) {
 		ret = PCAP_ERROR;
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "dag_get_datalink %s", device);
 		goto failstop;
 	}
 
