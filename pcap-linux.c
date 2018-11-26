@@ -6860,8 +6860,17 @@ activate_old(pcap_t *handle)
 	struct utsname	utsname;
 	int		mtu;
 
-	/* Open the socket */
+	/*
+	 * PF_INET/SOCK_PACKET sockets must be bound to a device, so we
+	 * can't support the "any" device.
+	 */
+	if (strcmp(device, "any") == 0) {
+		pcap_strlcpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
+			PCAP_ERRBUF_SIZE);
+		return PCAP_ERROR;
+	}
 
+	/* Open the socket */
 	handle->fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
 	if (handle->fd == -1) {
 		err = errno;
@@ -6888,12 +6897,6 @@ activate_old(pcap_t *handle)
 	handlep->cooked = 0;
 
 	/* Bind to the given device */
-
-	if (strcmp(device, "any") == 0) {
-		pcap_strlcpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
-			PCAP_ERRBUF_SIZE);
-		return PCAP_ERROR;
-	}
 	if (iface_bind_old(handle->fd, device, handle->errbuf) == -1)
 		return PCAP_ERROR;
 
