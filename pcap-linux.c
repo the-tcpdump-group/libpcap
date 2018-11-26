@@ -6965,6 +6965,17 @@ activate_old(pcap_t *handle)
 		 *
 		 * We can safely pass "recvfrom()" a byte count
 		 * based on the snapshot length.
+		 *
+		 * XXX - this "should not happen", as 2.2[.x]
+		 * kernels all have PF_PACKET sockets, and there's
+		 * no configuration option to disable them without
+		 * disabling SOCK_PACKET sockets, because
+		 * SOCK_PACKET sockets are implemented in the same
+		 * source file, net/packet/af_packet.c.  There *is*
+		 * an option to disable SOCK_PACKET sockets so that
+		 * you only have PF_PACKET sockets, and the kernel
+		 * will log warning messages for code that uses
+		 * "obsolete (PF_INET,SOCK_PACKET)".
 		 */
 		handle->bufsize = (u_int)handle->snapshot;
 	}
