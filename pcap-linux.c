@@ -4139,7 +4139,7 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 	 * Probe whether kernel supports the specified TPACKET version;
 	 * this also gets the length of the header for that version.
 	 *
-	 * This socket option was introduced in 2.6.24.5, which was
+	 * This socket option was introduced in 2.6.27, which was
 	 * also the first release with TPACKET_V2 support.
 	 */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
@@ -4170,7 +4170,10 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 	}
 	handlep->tp_version = version;
 
-	/* Reserve space for VLAN tag reconstruction */
+	/*
+	 * Reserve space for VLAN tag reconstruction.
+	 * This option was also introduced in 2.6.27.
+	 */
 	val = VLAN_TAG_LEN;
 	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &val,
 			   sizeof(val)) < 0) {
