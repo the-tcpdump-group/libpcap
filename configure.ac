@@ -1723,8 +1723,28 @@ darwin*)
 			# ARM-based Macs.  (You're on your own for iOS
 			# etc.)
 			#
-			V_LIB_CCOPT_FAT="-arch x86_64 -arch i386"
-			V_LIB_LDFLAGS_FAT="-arch x86_64 -arch i386"
+			# XXX - check whether we *can* build for
+			# i386 and, if not, suggest that the user
+			# install the /usr/include headers if they
+			# want to build fat.
+			#
+			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
+			save_CFLAGS="$CFLAGS"
+			CFLAGS="$CFLAGS -arch i386"
+			AC_TRY_COMPILE(
+			    [],
+			    [return 0;],
+			    [
+				AC_MSG_RESULT(yes)
+				V_LIB_CCOPT_FAT="-arch x86_64 -arch i386"
+				V_LIB_LDFLAGS_FAT="-arch x86_64 -arch i386"
+			    ],
+			    [
+				AC_MSG_RESULT(no)
+				V_LIB_CCOPT_FAT="-arch x86_64"
+				V_LIB_LDFLAGS_FAT="-arch x86_64"
+				AC_MSG_WARN([Compiling for 32-bit x86 gives an error; try installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package])
+			    ])
 			;;
 		esac
 	fi
