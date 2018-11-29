@@ -2132,7 +2132,16 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         # for 32-bit x86 code and if and when Apple adds
         # ARM-based Macs.  (You're on your own for iOS etc.)
         #
-        set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
+	try_compile(I386_OK "${CMAKE_CURRENT_BINARY_DIR}" "${pcap_SOURCE_DIR}/cmake/test_arch_support.c"
+            CMAKE_FLAGS -DOSX_LIBRARY_ARCHITECTURE=i386
+         )
+        if(I386_OK)
+            message(STATUS "Building x86_64 and i386")
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
+        else()
+            message(STATUS "Building x86_64
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+        endif()
     endif()
     if(BUILD_SHARED_LIBS)
         set_target_properties(${LIBRARY_NAME} PROPERTIES
