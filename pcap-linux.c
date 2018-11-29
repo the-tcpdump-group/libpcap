@@ -4138,10 +4138,20 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 	/*
 	 * Probe whether kernel supports the specified TPACKET version;
 	 * this also gets the length of the header for that version.
+	 *
+	 * This socket option was introduced in 2.6.24.5, which was
+	 * also the first release with TPACKET_V2 support.
 	 */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
-		if (errno == ENOPROTOOPT || errno == EINVAL)
+		if (errno == ENOPROTOOPT || errno == EINVAL) {
+			/*
+			 * ENOPROTOOPT means the kernel is too old to
+			 * support PACKET_HDRLEN at all, which means
+			 * it either doesn't support TPACKET at all
+			 * or supports  only TPACKET_V1.
+			 */
 			return 1;	/* no */
+		}
 
 		/* Failed to even find out; this is a fatal error. */
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -4271,7 +4281,10 @@ prepare_tpacket_socket(pcap_t *handle)
 #endif /* HAVE_TPACKET2 */
 
 	/*
-	 * OK, we're using TPACKET_V1, as that's all the kernel supports.
+	 * OK, we're using TPACKET_V1, as either that's all the kernel
+	 * supports or it doesn't support TPACKET at all.  In the latter
+	 * case, create_ring() will fail, and we'll fall back on non-
+	 * memory-mapped capture.
 	 */
 	handlep->tp_version = TPACKET_V1;
 	handlep->tp_hdrlen = sizeof(struct tpacket_hdr);
