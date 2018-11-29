@@ -2132,7 +2132,27 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         # for 32-bit x86 code and if and when Apple adds
         # ARM-based Macs.  (You're on your own for iOS etc.)
         #
-        set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
+        # XXX - check whether we *can* build for i386 and, if not,
+        # suggest that the user install the /usr/include headers if
+        # they want to build fat.
+        #
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_FLAGS "-arch i386")
+        check_c_source_compiles(
+"int
+main(void)
+{
+    return 0;
+}
+"
+                   X86_32_BIT_SUPPORTED)
+        cmake_pop_check_state()
+        if(X86_32_BIT_SUPPORTED)
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
+        else()
+            set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+            message(WARNING "Compiling for 32-bit x86 gives an error; try installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
+        endif()
     endif()
     if(BUILD_SHARED_LIBS)
         set_target_properties(${LIBRARY_NAME} PROPERTIES
