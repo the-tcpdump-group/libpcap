@@ -8232,6 +8232,7 @@ $as_echo "$as_me: WARNING: Compiling for 32-bit x86 gives an error; try installi
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+			CFLAGS="$save_CFLAGS"
 			;;
 		esac
 	fi
