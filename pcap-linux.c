@@ -4170,18 +4170,6 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 	}
 	handlep->tp_version = version;
 
-	/*
-	 * Reserve space for VLAN tag reconstruction.
-	 * This option was also introduced in 2.6.27.
-	 */
-	val = VLAN_TAG_LEN;
-	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE, &val,
-			   sizeof(val)) < 0) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "can't set up reserve on packet socket");
-		return -1;
-	}
-
 	return 0;
 }
 #endif /* defined HAVE_TPACKET2 || defined HAVE_TPACKET3 */
@@ -4371,6 +4359,82 @@ create_ring(pcap_t *handle, int *status)
 	 */
 	*status = 0;
 
+#ifdef PACKET_RESERVE
+	/*
+	 * Reserve space for VLAN tag reconstruction.
+	 */
+	tp_reserve = VLAN_TAG_LEN;
+
+	/*
+	 * If we're using DLT_LINUX_SLL2, reserve space for a
+	 * DLT_LINUX_SLL2 header.
+	 *
+	 * XXX - we assume that the kernel is still adding
+	 * 16 bytes of extra space; that happens to
+	 * correspond to SLL_HDR_LEN (whether intentionally
+	 * or not - the kernel code has a raw "16" in
+	 * the expression), so we subtract SLL_HDR_LEN
+	 * from SLL2_HDR_LEN to get the additional space
+	 * needed.
+	 *
+	 * XXX - should we reserve space for a DLT_LINUX_SLL header
+	 * if we're using DLT_LINUX_SLL?
+	 *
+	 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
+	 */
+	if (handle->linktype == DLT_LINUX_SLL2)
+		tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
+
+	/*
+	 * Try to request that amount of reserve space.
+	 * This must be done before creating the ring buffer.
+	 * If PACKET_RESERVE is supported, creating the ring
+	 * buffer should be, although if creating the ring
+	 * buffer fails, the PACKET_RESERVE call has no effect,
+	 * so falling back on read-from-the-socket capturing
+	 * won't be affected.
+	 */
+	len = sizeof(tp_reserve);
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
+	    &tp_reserve, len) < 0) {
+		if (errno != ENOPROTOOPT) {
+			/*
+			 * ENOPROTOOPT means "kernel doesn't support
+			 * PACKET_RESERVE", in which case we fall back
+			 * as best we can.
+			 */
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "setsockopt (PACKET_RESERVE)");
+			*status = PCAP_ERROR;
+			return -1;
+		}
+		/*
+		 * Older kernel, so we can't use PACKET_RESERVE;
+		 * this means we can't reserver extra space
+		 * for a DLT_LINUX_SLL2 header.
+		 *
+		 * Those kernels don't supply the information
+		 * necessary to reconstruct the VLAN tag, so
+		 * that's not an issue here, and we don't allow
+		 * DLT_LINUX_SLL2 if we can't use PACKET_RESERVE,
+		 * so that shouldn't be an issue.
+		 */
+		tp_reserve = 0;	/* nothing reserved */
+	}
+#else
+	/*
+	 * Build environment for an older kernel, so we can't use
+	 * PACKET_RESERVE.
+	 *
+	 * Those kernels don't supply the information necessary
+	 * to reconstruct the VLAN tag, so that's not an issue
+	 * here, and we don't allow DLT_LINUX_SLL2 if we can't
+	 * use PACKET_RESERVE, so that shouldn't be an issue.
+	 */
+	tp_reserve = 0;	/* nothing reserved */
+#endif
+
 	switch (handlep->tp_version) {
 
 	case TPACKET_V1:
@@ -4447,62 +4511,6 @@ create_ring(pcap_t *handle, int *status)
 			*status = PCAP_ERROR;
 			return -1;
 		}
-#ifdef PACKET_RESERVE
-		len = sizeof(tp_reserve);
-		if (getsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
-		    &tp_reserve, &len) < 0) {
-			if (errno != ENOPROTOOPT) {
-				/*
-				 * ENOPROTOOPT means "kernel doesn't support
-				 * PACKET_RESERVE", in which case we fall back
-				 * as best we can.
-				 */
-				pcap_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "getsockopt (PACKET_RESERVE)");
-				*status = PCAP_ERROR;
-				return -1;
-			}
-			/*
-			 * Older kernel, so we can't use PACKET_RESERVE;
-			 * this means we can't reserver extra space
-			 * for a DLT_LINUX_SLL2 header.
-			 */
-			tp_reserve = 0;
-		} else {
-			/*
-			 * We can reserve extra space for a DLT_LINUX_SLL2
-			 * header.  Do so.
-			 *
-			 * XXX - we assume that the kernel is still adding
-			 * 16 bytes of extra space; that happens to
-			 * correspond to SLL_HDR_LEN (whether intentionally
-			 * or not - the kernel code has a raw "16" in
-			 * the expression), so we subtract SLL_HDR_LEN
-			 * from SLL2_HDR_LEN to get the additional space
-			 * needed.
-			 *
-			 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
-			 */
-			tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
-			len = sizeof(tp_reserve);
-			if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
-			    &tp_reserve, len) < 0) {
-				pcap_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno,
-				    "setsockopt (PACKET_RESERVE)");
-				*status = PCAP_ERROR;
-				return -1;
-			}
-		}
-#else
-		/*
-		 * Build environment for an older kernel, so we can't
-		 * use PACKET_RESERVE; this means we can't reserve
-		 * extra space for a DLT_LINUX_SLL2 header.
-		 */
-		tp_reserve = 0;
-#endif
 		maclen = (sk_type == SOCK_DGRAM) ? 0 : MAX_LINKHEADER_SIZE;
 			/* XXX: in the kernel maclen is calculated from
 			 * LL_ALLOCATED_SPACE(dev) and vnet_hdr.hdr_len
@@ -4545,49 +4553,6 @@ create_ring(pcap_t *handle, int *status)
 
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
-		/*
-		 * If we have TPACKET_V3, we have PACKET_RESERVE.
-		 */
-		len = sizeof(tp_reserve);
-		if (getsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
-		    &tp_reserve, &len) < 0) {
-			/*
-			 * Even ENOPROTOOPT is an error - we wouldn't
-			 * be here if the kernel didn't support
-			 * TPACKET_V3, which means it supports
-			 * PACKET_RESERVE.
-			 */
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno,
-			    "getsockopt (PACKET_RESERVE)");
-			*status = PCAP_ERROR;
-			return -1;
-		}
-		/*
-		 * We can reserve extra space for a DLT_LINUX_SLL2
-		 * header.  Do so.
-		 *
-		 * XXX - we assume that the kernel is still adding
-		 * 16 bytes of extra space; that happens to
-		 * correspond to SLL_HDR_LEN (whether intentionally
-		 * or not - the kernel code has a raw "16" in
-		 * the expression), so we subtract SLL_HDR_LEN
-		 * from SLL2_HDR_LEN to get the additional space
-		 * needed.
-		 *
-		 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
-		 */
-		tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
-		len = sizeof(tp_reserve);
-		if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
-                    &tp_reserve, len) < 0) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno,
-			    "setsockopt (PACKET_RESERVE)");
-			*status = PCAP_ERROR;
-			return -1;
-		}
-
 		/* The "frames" for this are actually buffers that
 		 * contain multiple variable-sized frames.
 		 *
