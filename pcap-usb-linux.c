@@ -515,6 +515,7 @@ usb_activate(pcap_t* handle)
 {
 	struct pcap_usb_linux *handlep = handle->priv;
 	char 		full_path[USB_LINE_LEN];
+	int		ret;
 
 	/*
 	 * Turn a negative snapshot value (invalid), a snapshot value of
@@ -647,38 +648,38 @@ usb_activate(pcap_t* handle)
 				handle->fd = open(full_path, O_RDONLY, 0);
 			}
 			if (handle->fd < 0) {
-				/*
-				 * Is the problem that we didn't have
-				 * sufficient permission to open it?
-				 */
-				if (errno == EACCES) {
+				if (errno == ENOENT)
+				{
 					/*
-					 * Yes - return that error.
+					 * The problem is that the file
+					 * doesn't exist.  Report that as
+					 * "no such device".  (That could
+					 * mean "no such USB bus" or
+					 * "monitoring not supported".)
 					 */
-					return PCAP_ERROR_PERM_DENIED;
+					ret = PCAP_ERROR_NO_SUCH_DEVICE;
 				}
-
-				/*
-				 * No - was the problem something other
-				 * than "it doesn't exist"?
-				 */
-				if (errno != ENOENT) {
+				else if (errno == EACCES)
+				{
 					/*
-					 * Yes - return *that* error.
+					 * The problem is that we don't
+					 * have sufficient permission to
+					 * open the file.  Report that.
 					 */
-					pcap_fmt_errmsg_for_errno(handle->errbuf,
-					    PCAP_ERRBUF_SIZE, errno,
-					    "Can't open USB bus file %s",
-					    full_path);
-					return PCAP_ERROR;
+					ret = PCAP_ERROR_PERM_DENIED;
 				}
-
-				/*
-				 * No.  Report that as "no such device".
-				 * (That could mean "no such USB bus"
-				 * or "monitoring not supported".)
-				 */
-				return PCAP_ERROR_NO_SUCH_DEVICE;
+				else
+				{
+					/*
+					 * Some other error.
+					 */
+					ret = PCAP_ERROR;
+				}
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "Can't open USB bus file %s",
+				    full_path);
+				return ret;
 			}
 		}
 
