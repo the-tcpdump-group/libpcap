@@ -3614,49 +3614,55 @@ set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
 }
 #endif
 
+#ifdef HAVE_PF_PACKET_SOCKETS
 /*
- * Try to open a packet socket using the new kernel PF_PACKET interface.
- * Returns 1 on success, 0 on an error that means the new interface isn't
- * present (so the old SOCK_PACKET interface should be tried), and a
- * PCAP_ERROR_ value on an error that means that the old mechanism won't
- * work either (so it shouldn't be tried).
+ * We need a special error return to indicate that PF_PACKET sockets
+ * aren't supported; that's not a fatal error, it's just an indication
+ * that we have a pre-2.2 kernel, and must fall back on PF_INET/SOCK_PACKET
+ * sockets.
+ *
+ * We assume, for now, that we won't have so many PCAP_ERROR_ values that
+ * -128 will be used, and use that as the error (it fits into a byte,
+ * so comparison against it should be doable without too big an immediate
+ * value - yeah, I know, premature optimization is the root of all evil...).
+ */
+#define PCAP_ERROR_NO_PF_PACKET_SOCKETS	-128
+
+/*
+ * Open a PF_PACKET socket.
  */
 static int
-activate_new(pcap_t *handle)
+open_pf_packet_socket(pcap_t *handle, int cooked)
 {
-#ifdef HAVE_PF_PACKET_SOCKETS
-	struct pcap_linux *handlep = handle->priv;
-	const char		*device = handle->opt.device;
-	int			is_any_device = (strcmp(device, "any") == 0);
-	int			protocol = pcap_protocol(handle);
-	int			sock_fd = -1, arptype, ret;
-#ifdef HAVE_PACKET_AUXDATA
-	int			val;
-#endif
-	int			err = 0;
-	struct packet_mreq	mr;
-#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
-	int			bpf_extensions;
-	socklen_t		len = sizeof(bpf_extensions);
-#endif
+	int	sock_fd, ret;
 
 	/*
-	 * Open a socket with protocol family packet. If the
-	 * "any" device was specified, we open a SOCK_DGRAM
-	 * socket for the cooked interface, otherwise we first
-	 * try a SOCK_RAW socket for the raw interface.
+	 * Open a socket with protocol family packet. If cooked is true,
+	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
+	 * we open a SOCK_RAW socket for the raw interface.
 	 */
-	sock_fd = is_any_device ?
+	sock_fd = cooked ?
 		socket(PF_PACKET, SOCK_DGRAM, 0) :
 		socket(PF_PACKET, SOCK_RAW, 0);
 
 	if (sock_fd == -1) {
 		if (errno == EINVAL || errno == EAFNOSUPPORT) {
 			/*
-			 * We don't support PF_PACKET/SOCK_whatever
-			 * sockets; try the old mechanism.
+			 * PF_PACKET sockets aren't supported.
+			 *
+			 * If this is the first attempt to open a PF_PACKET
+			 * socket, our caller will just want to try a
+			 * PF_INET/SOCK_PACKET socket; in other cases, we
+			 * already succeeded opening a PF_PACKET socket,
+			 * but are just switching to cooked from raw, in
+			 * which case this is a fatal error (and "can't
+			 * happen", because the kernel isn't going to
+			 * spontaneously drop its support for PF_PACKET
+			 * sockets).
 			 */
-			return 0;
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "PF_PACKET sockets not supported (this \"can't happen\"!");
+			return PCAP_ERROR_NO_PF_PACKET_SOCKETS;
 		}
 		if (errno == EPERM || errno == EACCES) {
 			/*
@@ -3673,6 +3679,59 @@ activate_new(pcap_t *handle)
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket");
 		return ret;
+	}
+	return sock_fd;
+}
+#endif
+
+/*
+ * Try to open a packet socket using the new kernel PF_PACKET interface.
+ * Returns 1 on success, 0 on an error that means the new interface isn't
+ * present (so the old SOCK_PACKET interface should be tried), and a
+ * PCAP_ERROR_ value on an error that means that the old mechanism won't
+ * work either (so it shouldn't be tried).
+ */
+static int
+activate_new(pcap_t *handle)
+{
+#ifdef HAVE_PF_PACKET_SOCKETS
+	struct pcap_linux *handlep = handle->priv;
+	const char		*device = handle->opt.device;
+	int			is_any_device = (strcmp(device, "any") == 0);
+	int			sock_fd = -1, arptype;
+#ifdef HAVE_PACKET_AUXDATA
+	int			val;
+#endif
+	int			err = 0;
+	struct packet_mreq	mr;
+#if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
+	int			bpf_extensions;
+	socklen_t		len = sizeof(bpf_extensions);
+#endif
+
+	/*
+	 * Try to open a PF_PACKET socket. If the "any" device was
+	 * specified, we open a SOCK_DGRAM socket for the cooked
+	 * interface, otherwise we first try a SOCK_RAW socket for
+	 * the raw interface.
+	 */
+	sock_fd = open_pf_packet_socket(handle, is_any_device);
+	if (sock_fd < 0) {
+		if (sock_fd == PCAP_ERROR_NO_PF_PACKET_SOCKETS) {
+			/*
+			 * We don't support PF_PACKET/SOCK_whatever
+			 * sockets; tell our caller to try the old
+			 * mechanism.
+			 */
+			return 0;
+		}
+
+		/*
+		 * Fatal error; the return value is the error code,
+		 * and handle->errbuf has been set to an appropriate
+		 * error message.
+		 */
+		return sock_fd;
 	}
 
 	/* It seems the kernel supports the new interface. */
@@ -3765,23 +3824,30 @@ activate_new(pcap_t *handle)
 				    PCAP_ERRBUF_SIZE, errno, "close");
 				return PCAP_ERROR;
 			}
-			sock_fd = socket(PF_PACKET, SOCK_DGRAM, protocol);
-			if (sock_fd == -1) {
-				if (errno == EPERM || errno == EACCES) {
+			sock_fd = open_pf_packet_socket(handle, 1);
+			if (sock_fd < 0) {
+				if (sock_fd == PCAP_ERROR_NO_PF_PACKET_SOCKETS) {
 					/*
-					 * You don't have permission to
-					 * open the socket.
+					 * We don't support PF_PACKET/SOCK_whatever
+					 * sockets.  This should never happen,
+					 * because we don't support cooked mode
+					 * without those sockets, so we
+					 * shouldn't get called if we're
+					 * running on a kernel old enough
+					 * not to support them.
+					 *
+					 * The error message has already been
+					 * filled in appropriately.
 					 */
-					ret = PCAP_ERROR_PERM_DENIED;
-				} else {
-					/*
-					 * Other error.
-					 */
-					ret = PCAP_ERROR;
+					sock_fd = PCAP_ERROR;
 				}
-				pcap_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno, "socket");
-				return ret;
+				/*
+				 * Fatal error; the return value is the
+				 * error code, and handle->errbuf has
+				 * been set to an appropriate error
+				 * message.
+				 */
+				return sock_fd;
 			}
 			handlep->cooked = 1;
 
