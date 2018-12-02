@@ -350,8 +350,12 @@ static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_old(pcap_t *);
-static int activate_new(pcap_t *);
+#ifdef HAVE_PF_PACKET_SOCKETS
+static int activate_new(pcap_t *, int, int);
+#ifdef HAVE_PACKET_RING
 static int activate_mmap(pcap_t *, int *);
+#endif
+#endif /* HAVE_PF_PACKET_SOCKETS */
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -1493,6 +1497,77 @@ static void pcap_breakloop_linux(pcap_t *handle)
 }
 #endif
 
+#ifdef HAVE_PF_PACKET_SOCKETS
+/*
+ * We need a special error return to indicate that PF_PACKET sockets
+ * aren't supported; that's not a fatal error, it's just an indication
+ * that we have a pre-2.2 kernel, and must fall back on PF_INET/SOCK_PACKET
+ * sockets.
+ *
+ * We assume, for now, that we won't have so many PCAP_ERROR_ values that
+ * -128 will be used, and use that as the error (it fits into a byte,
+ * so comparison against it should be doable without too big an immediate
+ * value - yeah, I know, premature optimization is the root of all evil...).
+ */
+#define PCAP_ERROR_NO_PF_PACKET_SOCKETS	-128
+
+/*
+ * Open a PF_PACKET socket.
+ */
+static int
+open_pf_packet_socket(pcap_t *handle, int cooked)
+{
+	int	protocol = pcap_protocol(handle);
+	int	sock_fd, ret;
+
+	/*
+	 * Open a socket with protocol family packet. If cooked is true,
+	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
+	 * we open a SOCK_RAW socket for the raw interface.
+	 */
+	sock_fd = cooked ?
+		socket(PF_PACKET, SOCK_DGRAM, protocol) :
+		socket(PF_PACKET, SOCK_RAW, protocol);
+
+	if (sock_fd == -1) {
+		if (errno == EINVAL || errno == EAFNOSUPPORT) {
+			/*
+			 * PF_PACKET sockets aren't supported.
+			 *
+			 * If this is the first attempt to open a PF_PACKET
+			 * socket, our caller will just want to try a
+			 * PF_INET/SOCK_PACKET socket; in other cases, we
+			 * already succeeded opening a PF_PACKET socket,
+			 * but are just switching to cooked from raw, in
+			 * which case this is a fatal error (and "can't
+			 * happen", because the kernel isn't going to
+			 * spontaneously drop its support for PF_PACKET
+			 * sockets).
+			 */
+			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "PF_PACKET sockets not supported (this \"can't happen\"!");
+			return PCAP_ERROR_NO_PF_PACKET_SOCKETS;
+		}
+		if (errno == EPERM || errno == EACCES) {
+			/*
+			 * You don't have permission to open the
+			 * socket.
+			 */
+			ret = PCAP_ERROR_PERM_DENIED;
+		} else {
+			/*
+			 * Other error.
+			 */
+			ret = PCAP_ERROR;
+		}
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
+		return ret;
+	}
+	return sock_fd;
+}
+#endif
+
 /*
  *  Get a handle for a live capture from the given device. You can
  *  pass NULL as device to get all packages (without link level
@@ -1506,6 +1581,7 @@ pcap_activate_linux(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 	const char	*device;
+	int		is_any_device;
 	struct ifreq	ifr;
 	int		status = 0;
 	int		ret;
@@ -1552,12 +1628,21 @@ pcap_activate_linux(pcap_t *handle)
 	handle->breakloop_op = pcap_breakloop_linux;
 #endif
 
+	handlep->device	= strdup(device);
+	if (handlep->device == NULL) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "strdup");
+		status = PCAP_ERROR;
+		goto fail;
+	}
+
 	/*
 	 * The "any" device is a special device which causes us not
 	 * to bind to a particular device and thus to look at all
 	 * devices.
 	 */
-	if (strcmp(device, "any") == 0) {
+	is_any_device = (strcmp(device, "any") == 0);
+	if (is_any_device) {
 		if (handle->opt.promisc) {
 			handle->opt.promisc = 0;
 			/* Just a warning. */
@@ -1565,14 +1650,6 @@ pcap_activate_linux(pcap_t *handle)
 			    "Promiscuous mode not supported on the \"any\" device");
 			status = PCAP_WARNING_PROMISC_NOTSUP;
 		}
-	}
-
-	handlep->device	= strdup(device);
-	if (handlep->device == NULL) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "strdup");
-		status = PCAP_ERROR;
-		goto fail;
 	}
 
 	/* copy timeout value */
@@ -1586,6 +1663,7 @@ pcap_activate_linux(pcap_t *handle)
 	if (handle->opt.promisc)
 		handlep->proc_dropped = linux_if_drops(handlep->device);
 
+#ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * Current Linux kernels use the protocol family PF_PACKET to
 	 * allow direct access to all packets on the network while
@@ -1594,18 +1672,56 @@ pcap_activate_linux(pcap_t *handle)
 	 * While this old implementation is kind of obsolete we need
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
+	 *
+	 * Try to open a PF_PACKET socket. If the "any" device was
+	 * specified, we open a SOCK_DGRAM socket for the cooked
+	 * interface, otherwise we first try a SOCK_RAW socket for
+	 * the raw interface.
 	 */
-	ret = activate_new(handle);
-	if (ret < 0) {
+	int sock_fd = open_pf_packet_socket(handle, is_any_device);
+	if (sock_fd < 0) {
+		if (sock_fd != PCAP_ERROR_NO_PF_PACKET_SOCKETS) {
+			/*
+			 * Fatal error; the return value is the error code,
+			 * and handle->errbuf has been set to an appropriate
+			 * error message.
+			 */
+			return sock_fd;
+		}
+
 		/*
-		 * Fatal error with the new way; just fail.
-		 * ret has the error return; if it's PCAP_ERROR,
-		 * handle->errbuf has been set appropriately.
+		 * We don't support PF_PACKET/SOCK_whatever
+		 * sockets; try the old mechanism.
 		 */
-		status = ret;
-		goto fail;
-	}
-	if (ret == 1) {
+		ret = activate_old(handle);
+		if (ret != 0) {
+			/*
+			 * Both methods to open the packet socket
+			 * failed.
+			 *
+			 * Tidy up and report our failure
+			 * (handle->errbuf is expected to be set
+			 * by the functions above).
+			 */
+			status = ret;
+			goto fail;
+		}
+	} else {
+		/*
+		 * We have a PF_PACKET socket.
+		 * Try setting it up.
+		 */
+		ret = activate_new(handle, sock_fd, is_any_device);
+		if (ret < 0) {
+			/*
+			 * Failure.  ret has the error return, and
+			 * handle->errbuf has been set appropriately.
+			 */
+			status = ret;
+			goto fail;
+		}
+
+#ifdef HAVE_PACKET_RING
 		/*
 		 * Success.
 		 * Try to use memory-mapped access.
@@ -1634,27 +1750,35 @@ pcap_activate_linux(pcap_t *handle)
 
 		case -1:
 			/*
-			 * We failed to set up to use it, or the kernel
-			 * supports it, but we failed to enable it.
-			 * status has been set to the error status to
-			 * return and, if it's PCAP_ERROR, handle->errbuf
-			 * contains the error message.
+			 * We failed to set up to use it, or the
+			 * kernel supports it, but we failed to
+			 * enable it.  status has been set to the
+			 * error status to return and, if it's
+			 * PCAP_ERROR, handle->errbuf contains
+			 * the error message.
 			 */
 			goto fail;
 		}
+#endif /* HAVE_PACKET_RING */
 	}
-	else if (ret == 0) {
-		/* Non-fatal error; try old way */
-		if ((ret = activate_old(handle)) != 1) {
-			/*
-			 * Both methods to open the packet socket failed.
-			 * Tidy up and report our failure (handle->errbuf
-			 * is expected to be set by the functions above).
-			 */
-			status = ret;
-			goto fail;
-		}
+#else /* HAVE_PF_PACKET_SOCKETS */
+	/*
+	 * We don't support PF_PACKET/SOCK_whatever sockets, so we must
+	 * try the old mechanism.
+	 */
+	ret = activate_old(handle);
+	if (ret != 0) {
+		/*
+		 * That failed.
+		 *
+		 * Tidy up and report our failure
+		 * (handle->errbuf is expected to be set
+		 * by the functions above).
+		 */
+		status = ret;
+		goto fail;
 	}
+#endif /* HAVE_PF_PACKET_SOCKETS */
 
 	/*
 	 * We set up the socket, but not with memory-mapped access.
@@ -3577,6 +3701,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 	}
 }
 
+#ifdef HAVE_PF_PACKET_SOCKETS
 /* ===== Functions to interface to the newer kernels ================== */
 
 #ifdef PACKET_RESERVE
@@ -3607,7 +3732,7 @@ set_dlt_list_cooked(pcap_t *handle, int sock_fd)
 		}
 	}
 }
-#else
+#else/* PACKET_RESERVE */
 /*
  * The build environment doesn't define PACKET_RESERVE, so we can't reserve
  * extra space for a DLL_LINUX_SLL2 header, so we can't support DLT_LINUX_SLL2.
@@ -3616,94 +3741,18 @@ static void
 set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
 {
 }
-#endif
-
-#ifdef HAVE_PF_PACKET_SOCKETS
-/*
- * We need a special error return to indicate that PF_PACKET sockets
- * aren't supported; that's not a fatal error, it's just an indication
- * that we have a pre-2.2 kernel, and must fall back on PF_INET/SOCK_PACKET
- * sockets.
- *
- * We assume, for now, that we won't have so many PCAP_ERROR_ values that
- * -128 will be used, and use that as the error (it fits into a byte,
- * so comparison against it should be doable without too big an immediate
- * value - yeah, I know, premature optimization is the root of all evil...).
- */
-#define PCAP_ERROR_NO_PF_PACKET_SOCKETS	-128
+#endif /* PACKET_RESERVE */
 
 /*
- * Open a PF_PACKET socket.
+ * Try to set up a PF_PACKET socket.
+ * Returns 0 on success and a PCAP_ERROR_ value on failure.
  */
 static int
-open_pf_packet_socket(pcap_t *handle, int cooked)
+activate_new(pcap_t *handle, int sock_fd, int is_any_device)
 {
-	int	protocol = pcap_protocol(handle);
-	int	sock_fd, ret;
-
-	/*
-	 * Open a socket with protocol family packet. If cooked is true,
-	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
-	 * we open a SOCK_RAW socket for the raw interface.
-	 */
-	sock_fd = cooked ?
-		socket(PF_PACKET, SOCK_DGRAM, protocol) :
-		socket(PF_PACKET, SOCK_RAW, protocol);
-
-	if (sock_fd == -1) {
-		if (errno == EINVAL || errno == EAFNOSUPPORT) {
-			/*
-			 * PF_PACKET sockets aren't supported.
-			 *
-			 * If this is the first attempt to open a PF_PACKET
-			 * socket, our caller will just want to try a
-			 * PF_INET/SOCK_PACKET socket; in other cases, we
-			 * already succeeded opening a PF_PACKET socket,
-			 * but are just switching to cooked from raw, in
-			 * which case this is a fatal error (and "can't
-			 * happen", because the kernel isn't going to
-			 * spontaneously drop its support for PF_PACKET
-			 * sockets).
-			 */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "PF_PACKET sockets not supported (this \"can't happen\"!");
-			return PCAP_ERROR_NO_PF_PACKET_SOCKETS;
-		}
-		if (errno == EPERM || errno == EACCES) {
-			/*
-			 * You don't have permission to open the
-			 * socket.
-			 */
-			ret = PCAP_ERROR_PERM_DENIED;
-		} else {
-			/*
-			 * Other error.
-			 */
-			ret = PCAP_ERROR;
-		}
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
-		return ret;
-	}
-	return sock_fd;
-}
-#endif
-
-/*
- * Try to open a packet socket using the new kernel PF_PACKET interface.
- * Returns 1 on success, 0 on an error that means the new interface isn't
- * present (so the old SOCK_PACKET interface should be tried), and a
- * PCAP_ERROR_ value on an error that means that the old mechanism won't
- * work either (so it shouldn't be tried).
- */
-static int
-activate_new(pcap_t *handle)
-{
-#ifdef HAVE_PF_PACKET_SOCKETS
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
-	int			is_any_device = (strcmp(device, "any") == 0);
-	int			sock_fd = -1, arptype;
+	int			arptype;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
 #endif
@@ -3713,31 +3762,6 @@ activate_new(pcap_t *handle)
 	int			bpf_extensions;
 	socklen_t		len = sizeof(bpf_extensions);
 #endif
-
-	/*
-	 * Try to open a PF_PACKET socket. If the "any" device was
-	 * specified, we open a SOCK_DGRAM socket for the cooked
-	 * interface, otherwise we first try a SOCK_RAW socket for
-	 * the raw interface.
-	 */
-	sock_fd = open_pf_packet_socket(handle, is_any_device);
-	if (sock_fd < 0) {
-		if (sock_fd == PCAP_ERROR_NO_PF_PACKET_SOCKETS) {
-			/*
-			 * We don't support PF_PACKET/SOCK_whatever
-			 * sockets; tell our caller to try the old
-			 * mechanism.
-			 */
-			return 0;
-		}
-
-		/*
-		 * Fatal error; the return value is the error code,
-		 * and handle->errbuf has been set to an appropriate
-		 * error message.
-		 */
-		return sock_fd;
-	}
 
 	/* It seems the kernel supports the new interface. */
 	handlep->sock_packet = 0;
@@ -4071,13 +4095,7 @@ activate_new(pcap_t *handle)
 	}
 #endif /* defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT) */
 
-	return 1;
-#else /* HAVE_PF_PACKET_SOCKETS */
-	pcap_strlcpy(ebuf,
-		"New packet capturing interface not supported by build "
-		"environment", PCAP_ERRBUF_SIZE);
 	return 0;
-#endif /* HAVE_PF_PACKET_SOCKETS */
 }
 
 #ifdef HAVE_PACKET_RING
@@ -4175,15 +4193,6 @@ activate_mmap(pcap_t *handle, int *status)
 	handle->selectable_fd = handle->fd;
 	return 1;
 }
-#else /* HAVE_PACKET_RING */
-static int
-activate_mmap(pcap_t *handle _U_, int *status _U_)
-{
-	return 0;
-}
-#endif /* HAVE_PACKET_RING */
-
-#ifdef HAVE_PACKET_RING
 
 #if defined(HAVE_TPACKET2) || defined(HAVE_TPACKET3)
 /*
@@ -5791,11 +5800,8 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	handlep->filter_in_userland = 1;
 	return ret;
 }
-
 #endif /* HAVE_PACKET_RING */
 
-
-#ifdef HAVE_PF_PACKET_SOCKETS
 /*
  *  Return the index of the given device name. Fill ebuf and return
  *  -1 on failure.
@@ -6904,7 +6910,7 @@ iface_get_offload(pcap_t *handle _U_)
 
 /*
  * Try to open a packet socket using the old kernel interface.
- * Returns 1 on success and a PCAP_ERROR_ value on an error.
+ * Returns 0 on success and a PCAP_ERROR_ value on an error.
  */
 static int
 activate_old(pcap_t *handle)
@@ -7112,7 +7118,7 @@ activate_old(pcap_t *handle)
 	 */
 	handlep->vlan_offset = -1; /* unknown */
 
-	return 1;
+	return 0;
 }
 
 /*
