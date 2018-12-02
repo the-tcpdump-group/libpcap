@@ -3633,7 +3633,7 @@ activate_new(pcap_t *handle)
 	const char		*device = handle->opt.device;
 	int			is_any_device = (strcmp(device, "any") == 0);
 	int			protocol = pcap_protocol(handle);
-	int			sock_fd = -1, arptype;
+	int			sock_fd = -1, arptype, ret;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
 #endif
@@ -3662,21 +3662,21 @@ activate_new(pcap_t *handle)
 			 */
 			return 0;
 		}
-
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
 		if (errno == EPERM || errno == EACCES) {
 			/*
 			 * You don't have permission to open the
 			 * socket.
 			 */
-			return PCAP_ERROR_PERM_DENIED;
+			ret = PCAP_ERROR_PERM_DENIED;
 		} else {
 			/*
 			 * Other error.
 			 */
-			return PCAP_ERROR;
+			ret = PCAP_ERROR;
 		}
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
+		return ret;
 	}
 
 	/* It seems the kernel supports the new interface. */
@@ -3771,20 +3771,21 @@ activate_new(pcap_t *handle)
 			}
 			sock_fd = socket(PF_PACKET, SOCK_DGRAM, protocol);
 			if (sock_fd == -1) {
-				pcap_fmt_errmsg_for_errno(handle->errbuf,
-				    PCAP_ERRBUF_SIZE, errno, "socket");
 				if (errno == EPERM || errno == EACCES) {
 					/*
 					 * You don't have permission to
 					 * open the socket.
 					 */
-					return PCAP_ERROR_PERM_DENIED;
+					ret = PCAP_ERROR_PERM_DENIED;
 				} else {
 					/*
 					 * Other error.
 					 */
-					return PCAP_ERROR;
+					ret = PCAP_ERROR;
 				}
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "socket");
+				return ret;
 			}
 			handlep->cooked = 1;
 
@@ -5822,6 +5823,7 @@ static int
 has_wext(int sock_fd, const char *device, char *ebuf)
 {
 	struct iwreq ireq;
+	int ret;
 
 	if (is_bonding_device(sock_fd, device))
 		return 0;	/* bonding device, so don't even try */
@@ -5830,11 +5832,13 @@ has_wext(int sock_fd, const char *device, char *ebuf)
 	    sizeof ireq.ifr_ifrn.ifrn_name);
 	if (ioctl(sock_fd, SIOCGIWNAME, &ireq) >= 0)
 		return 1;	/* yes */
+	if (errno == ENODEV)
+		ret = PCAP_ERROR_NO_SUCH_DEVICE;
+	else
+		ret = 0;
 	pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE, errno,
 	    "%s: SIOCGIWNAME", device);
-	if (errno == ENODEV)
-		return PCAP_ERROR_NO_SUCH_DEVICE;
-	return 0;
+	return ret;
 }
 
 /*
@@ -7114,20 +7118,22 @@ static int
 iface_get_arptype(int fd, const char *device, char *ebuf)
 {
 	struct ifreq	ifr;
+	int		ret;
 
 	memset(&ifr, 0, sizeof(ifr));
 	pcap_strlcpy(ifr.ifr_name, device, sizeof(ifr.ifr_name));
 
 	if (ioctl(fd, SIOCGIFHWADDR, &ifr) == -1) {
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-		    errno, "SIOCGIFHWADDR");
 		if (errno == ENODEV) {
 			/*
 			 * No such device.
 			 */
-			return PCAP_ERROR_NO_SUCH_DEVICE;
-		}
-		return PCAP_ERROR;
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		} else
+			ret = PCAP_ERROR;
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "SIOCGIFHWADDR");
+		return ret;
 	}
 
 	return ifr.ifr_hwaddr.sa_family;
