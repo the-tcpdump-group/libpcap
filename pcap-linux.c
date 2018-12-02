@@ -3835,12 +3835,9 @@ activate_new(pcap_t *handle)
 		}
 
 		if ((err = iface_bind(sock_fd, handlep->ifindex,
-		    handle->errbuf, protocol)) != 1) {
+		    handle->errbuf, protocol)) != 0) {
 		    	close(sock_fd);
-			if (err < 0)
-				return err;
-			else
-				return 0;	/* try old mechanism */
+			return err;
 		}
 	} else {
 		/*
@@ -5755,14 +5752,13 @@ iface_get_id(int fd, const char *device, char *ebuf)
 
 /*
  *  Bind the socket associated with FD to the given device.
- *  Return 1 on success, 0 if we should try a SOCK_PACKET socket,
- *  or a PCAP_ERROR_ value on a hard error.
+ *  Return 0 on success or a PCAP_ERROR_ value on a hard error.
  */
 static int
 iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 {
 	struct sockaddr_ll	sll;
-	int			err;
+	int			ret, err;
 	socklen_t		errlen = sizeof(err);
 
 	memset(&sll, 0, sizeof(sll));
@@ -5780,11 +5776,14 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 			 * libpcap developers.
 			 */
 			return PCAP_ERROR_IFACE_NOT_UP;
-		} else {
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-			    errno, "bind");
-			return PCAP_ERROR;
 		}
+		if (errno == ENODEV)
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
+		else
+			ret = PCAP_ERROR;
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+		    errno, "bind");
+		return ret;
 	}
 
 	/* Any pending errors, e.g., network is down? */
@@ -5792,7 +5791,7 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "getsockopt (SO_ERROR)");
-		return 0;
+		return PCAP_ERROR;
 	}
 
 	if (err == ENETDOWN) {
@@ -5807,10 +5806,10 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 	} else if (err > 0) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    err, "bind");
-		return 0;
+		return PCAP_ERROR;
 	}
 
-	return 1;
+	return 0;
 }
 
 #ifdef IW_MODE_MONITOR
