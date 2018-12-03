@@ -349,9 +349,9 @@ static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
-static int activate_old(pcap_t *);
+static int activate_old(pcap_t *, int);
 #ifdef HAVE_PF_PACKET_SOCKETS
-static int activate_new(pcap_t *, int, int);
+static int activate_new(pcap_t *, int);
 #ifdef HAVE_PACKET_RING
 static int activate_mmap(pcap_t *, int *);
 #endif
@@ -1673,27 +1673,27 @@ pcap_activate_linux(pcap_t *handle)
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 *
-	 * Try to open a PF_PACKET socket. If the "any" device was
-	 * specified, we open a SOCK_DGRAM socket for the cooked
+	 * Try to activate with a PF_PACKET socket. If the "any" device
+	 * was specified, we open a SOCK_DGRAM socket for the cooked
 	 * interface, otherwise we first try a SOCK_RAW socket for
 	 * the raw interface.
 	 */
-	int sock_fd = open_pf_packet_socket(handle, is_any_device);
-	if (sock_fd < 0) {
-		if (sock_fd != PCAP_ERROR_NO_PF_PACKET_SOCKETS) {
+	ret = activate_new(handle, is_any_device);
+	if (ret < 0) {
+		if (ret != PCAP_ERROR_NO_PF_PACKET_SOCKETS) {
 			/*
 			 * Fatal error; the return value is the error code,
 			 * and handle->errbuf has been set to an appropriate
 			 * error message.
 			 */
-			return sock_fd;
+			return ret;
 		}
 
 		/*
 		 * We don't support PF_PACKET/SOCK_whatever
 		 * sockets; try the old mechanism.
 		 */
-		ret = activate_old(handle);
+		ret = activate_old(handle, is_any_device);
 		if (ret != 0) {
 			/*
 			 * Both methods to open the packet socket
@@ -1707,20 +1707,6 @@ pcap_activate_linux(pcap_t *handle)
 			goto fail;
 		}
 	} else {
-		/*
-		 * We have a PF_PACKET socket.
-		 * Try setting it up.
-		 */
-		ret = activate_new(handle, sock_fd, is_any_device);
-		if (ret < 0) {
-			/*
-			 * Failure.  ret has the error return, and
-			 * handle->errbuf has been set appropriately.
-			 */
-			status = ret;
-			goto fail;
-		}
-
 #ifdef HAVE_PACKET_RING
 		/*
 		 * Success.
@@ -1766,7 +1752,7 @@ pcap_activate_linux(pcap_t *handle)
 	 * We don't support PF_PACKET/SOCK_whatever sockets, so we must
 	 * try the old mechanism.
 	 */
-	ret = activate_old(handle);
+	ret = activate_old(handle, is_any_device);
 	if (ret != 0) {
 		/*
 		 * That failed.
@@ -3748,11 +3734,11 @@ set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
  * Returns 0 on success and a PCAP_ERROR_ value on failure.
  */
 static int
-activate_new(pcap_t *handle, int sock_fd, int is_any_device)
+activate_new(pcap_t *handle, int is_any_device)
 {
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
-	int			arptype;
+	int			sock_fd, arptype;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
 #endif
@@ -3762,6 +3748,14 @@ activate_new(pcap_t *handle, int sock_fd, int is_any_device)
 	int			bpf_extensions;
 	socklen_t		len = sizeof(bpf_extensions);
 #endif
+
+	sock_fd = open_pf_packet_socket(handle, is_any_device);
+	if (sock_fd < 0) {
+		/*
+		 * Failed; return its return value.
+		 */
+		return sock_fd;
+	}
 
 	/* It seems the kernel supports the new interface. */
 	handlep->sock_packet = 0;
@@ -6913,7 +6907,7 @@ iface_get_offload(pcap_t *handle _U_)
  * Returns 0 on success and a PCAP_ERROR_ value on an error.
  */
 static int
-activate_old(pcap_t *handle)
+activate_old(pcap_t *handle, int is_any_device)
 {
 	struct pcap_linux *handlep = handle->priv;
 	int		err;
@@ -6927,7 +6921,7 @@ activate_old(pcap_t *handle)
 	 * PF_INET/SOCK_PACKET sockets must be bound to a device, so we
 	 * can't support the "any" device.
 	 */
-	if (strcmp(device, "any") == 0) {
+	if (is_any_device) {
 		pcap_strlcpy(handle->errbuf, "pcap_activate: The \"any\" device isn't supported on 2.0[.x]-kernel systems",
 			PCAP_ERRBUF_SIZE);
 		return PCAP_ERROR;
@@ -6960,15 +6954,19 @@ activate_old(pcap_t *handle)
 	handlep->cooked = 0;
 
 	/* Bind to the given device */
-	if (iface_bind_old(handle->fd, device, handle->errbuf) == -1)
+	if (iface_bind_old(handle->fd, device, handle->errbuf) == -1) {
+		close(handle->fd);
 		return PCAP_ERROR;
+	}
 
 	/*
 	 * Try to get the link-layer type.
 	 */
 	arptype = iface_get_arptype(handle->fd, device, handle->errbuf);
-	if (arptype < 0)
-		return PCAP_ERROR;
+	if (arptype < 0) {
+		close(handle->fd);
+		return arptype;
+	}
 
 	/*
 	 * Try to find the DLT_ type corresponding to that
@@ -6989,6 +6987,7 @@ activate_old(pcap_t *handle)
 		if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "SIOCGIFFLAGS");
+			close(handle->fd);
 			return PCAP_ERROR;
 		}
 		if ((ifr.ifr_flags & IFF_PROMISC) == 0) {
@@ -7010,6 +7009,7 @@ activate_old(pcap_t *handle)
 				 * the interface in promiscuous
 				 * mode, just give up.
 				 */
+				close(handle->fd);
 				return PCAP_ERROR;
 			}
 
@@ -7080,8 +7080,10 @@ activate_old(pcap_t *handle)
 		 * to work well.
 		 */
 		mtu = iface_get_mtu(handle->fd, device, handle->errbuf);
-		if (mtu == -1)
+		if (mtu == -1) {
+			close(handle->fd);
 			return PCAP_ERROR;
+		}
 		handle->bufsize = MAX_LINKHEADER_SIZE + mtu;
 		if (handle->bufsize < (u_int)handle->snapshot)
 			handle->bufsize = (u_int)handle->snapshot;
