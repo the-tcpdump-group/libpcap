@@ -1366,8 +1366,8 @@ bpf_load(char *errbuf)
 
 	/* Check if the driver is loaded */
 	memset(&cfg_ld, 0x0, sizeof(cfg_ld));
+	pcap_snprintf(buf, sizeof(buf), "%s/%s", DRIVER_PATH, BPF_NAME);
 	cfg_ld.path = buf;
-	pcap_snprintf(cfg_ld.path, sizeof(cfg_ld.path), "%s/%s", DRIVER_PATH, BPF_NAME);
 	if ((sysconfig(SYS_QUERYLOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) ||
 	    (cfg_ld.kmid == 0)) {
 		/* Driver isn't loaded, load it now */
