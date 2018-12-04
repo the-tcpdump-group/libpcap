@@ -1743,7 +1743,26 @@ darwin*)
 				AC_MSG_RESULT(no)
 				V_LIB_CCOPT_FAT="-arch x86_64"
 				V_LIB_LDFLAGS_FAT="-arch x86_64"
-				AC_MSG_WARN([Compiling for 32-bit x86 gives an error; try installing the command-line tools and, on Mojave, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package])
+				case "$host_os" in
+
+				darwin18.*)
+					#
+					# Mojave; you need to install the
+					# /usr/include headers to get
+					# 32-bit x86 builds to work.
+					#
+					AC_MSG_WARN([Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package])
+					;;
+
+				*)
+					#
+					# Pre-Mojave; the command-line
+					# tools should be sufficient to
+					# enable 32-bit x86 builds.
+					#
+					AC_MSG_WARN([Compiling for 32-bit x86 gives an error; try installing the command-line tools])
+					;;
+				esac
 			    ])
 			CFLAGS="$save_CFLAGS"
 			;;
