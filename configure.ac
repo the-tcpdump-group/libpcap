@@ -2306,15 +2306,15 @@ fi
 AC_ARG_ENABLE([rdma],
 [AC_HELP_STRING([--enable-rdma],[enable RDMA capture support @<:@default=yes, if support available@:>@])],
     [],
-    [enable_rdmasniff=ifavailable])
+    [enable_rdma=ifavailable])
 
 if test "xxx_only" = yes; then
 	# User requested something-else-only pcap, so they don't
 	# want RDMA support.
-	enable_rdmasniff=no
+	enable_rdma=no
 fi
 
-if test "x$enable_rdmasniff" != "xno"; then
+if test "x$enable_rdma" != "xno"; then
 	AC_CHECK_LIB(ibverbs, ibv_get_device_list, [
 		AC_CHECK_HEADER(infiniband/verbs.h, [
 			#

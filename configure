@@ -10677,17 +10677,17 @@ fi
 if test "${enable_rdma+set}" = set; then :
   enableval=$enable_rdma;
 else
-  enable_rdmasniff=ifavailable
+  enable_rdma=ifavailable
 fi
 
 
 if test "xxx_only" = yes; then
 	# User requested something-else-only pcap, so they don't
 	# want RDMA support.
-	enable_rdmasniff=no
+	enable_rdma=no
 fi
 
-if test "x$enable_rdmasniff" != "xno"; then
+if test "x$enable_rdma" != "xno"; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ibv_get_device_list in -libverbs" >&5
 $as_echo_n "checking for ibv_get_device_list in -libverbs... " >&6; }
 if ${ac_cv_lib_ibverbs_ibv_get_device_list+:} false; then :
