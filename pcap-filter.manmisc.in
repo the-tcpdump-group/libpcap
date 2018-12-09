@@ -460,8 +460,6 @@ Token Ring packets (no check is done for LLC frames);
 FDDI packets (no check is done for LLC frames);
 .IP
 LLC-encapsulated ATM packets, for SunATM on Solaris.
-.IP
-
 .IP "\fBllc\fP \Fitype\fR"
 True if the packet has an 802.2 LLC header and has the specified
 .IR type .
