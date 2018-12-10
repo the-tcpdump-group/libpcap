@@ -926,8 +926,8 @@ got:
 static int
 usb_inject_linux(pcap_t *handle, const void *buf _U_, int size _U_)
 {
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on "
-		"USB devices");
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packet injection is not supported on USB devices");
 	return (-1);
 }
 
