@@ -301,7 +301,8 @@ netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int
 netfilter_inject_linux(pcap_t *handle, const void *buf _U_, size_t size _U_)
 {
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "inject not supported on netfilter devices");
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	    "Packet injection is not supported on netfilter devices");
 	return (-1);
 }
 
