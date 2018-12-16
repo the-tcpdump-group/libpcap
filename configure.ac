@@ -2128,6 +2128,53 @@ AC_INCLUDES_DEFAULT
 	AC_SUBST(NETMAP_SRC)
 fi
 
+# Check for DPDK support.
+AC_ARG_WITH([dpdk-includes],
+AC_HELP_STRING([--with-dpdk-includes=IDIR],[Endace DPDK include directory, if not DIR/include]),
+[
+	# User wants DPDK support and has specified a header directory, so use the provided value.
+	enable_dpdk=yes
+	dpdk_include_dir=$withval
+],[])
+
+AC_ARG_WITH([dpdk-libraries],
+AC_HELP_STRING([--with-dpdk-libraries=LDIR],[Endace DPDK library directory, if not DIR/lib]),
+[
+	# User wants DPDK support and has specified a library directory, so use the provided value.
+	enable_dpdk=yes
+	dpdk_lib_dir=$withval
+],[])
+
+if test "x$enable_dpdk" != "xno" ; then
+	# If necessary, set default paths for DPDK API headers and libraries.
+	if test -z "$dpdk_root"; then
+		dpdk_root=/usr/local
+	fi
+
+	if test -z "$dpdk_include_dir"; then
+		dpdk_include_dir="$dpdk_root/include/dpdk"
+	fi
+
+	if test -z "$dpdk_lib_dir"; then
+		dpdk_lib_dir="$dpdk_root/lib"
+	fi
+	DPDK_MACHINE_CFLAGS="-march=native"
+	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_include_dir"
+	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
+	DPDK_LIBS=$DPDK_LDFLAGS
+	CFLAGS="$CFLAGS $DPDK_CFLAGS"
+	LIBS="$LIBS $DPDK_LIBS"
+	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+	V_INCLS="$V_INCLS $DPDK_CFLAGS"
+	AC_MSG_CHECKING(whether we can compile the dpdk support)
+	if test $enable_dpdk = yes ; then
+		AC_DEFINE(PCAP_SUPPORT_DPDK, 1,
+		[target host supports dpdk])
+		DPDK_SRC=pcap-dpdk.c
+	fi
+	AC_SUBST(PCAP_SUPPORT_DPDK)
+	AC_SUBST(DPDK_SRC)
+fi
 
 AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
