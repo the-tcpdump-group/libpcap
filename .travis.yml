@@ -67,6 +67,7 @@ before_install:
   - date
 
 install:
+  - sudo apt-get install linux-headers-`uname -r`
   - if [ "$ENABLE_DPDK" = yes ]; then git clone https://github.com/DPDK/dpdk.git /tmp/dpdk && export RTE_SDK=/tmp/dpdk && export RTE_TARGET=build && cd /tmp/dpdk/ && make defconfig && sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config && make && sudo make install ; fi 
 before_script:
 
