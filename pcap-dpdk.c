@@ -111,7 +111,6 @@ USER1: dpdk: lcoreid=0 runs for portid=0
 #include <rte_launch.h>
 #include <rte_atomic.h>
 #include <rte_cycles.h>
-#include <rte_prefetch.h>
 #include <rte_lcore.h>
 #include <rte_per_lcore.h>
 #include <rte_branch_prediction.h>
@@ -185,7 +184,7 @@ static struct rte_eth_conf port_conf = {
 	},
 };
 
-int dpdk_init_timer(struct pcap_dpdk *pd){
+static int dpdk_init_timer(struct pcap_dpdk *pd){
 	gettimeofday(&(pd->ts_helper.start_time),NULL);
 	pd->ts_helper.start_cycles = rte_get_timer_cycles();
 	pd->ts_helper.hz = rte_get_timer_hz();
@@ -232,7 +231,7 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	int max_cnt = pd->max_cnt;
 	pcap_handler cb = pd->cb;
 	u_char *cb_arg = pd->cb_arg;
-	unsigned nb_rx=0;
+	int nb_rx=0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	struct pcap_pkthdr pcap_header;
@@ -243,7 +242,7 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	u_char *bp = NULL;
 	int i=0;
 	unsigned int gather_len =0;
-	uint64_t pkt_cnt = 0;
+	int pkt_cnt = 0;
 	int is_accepted=0;
 		
 	if(lcore_id == master_lcore_id){
@@ -259,7 +258,7 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 		if (pd->break_loop){
 			break;
 		}
-		nb_rx = rte_eth_rx_burst(portid, 0, pkts_burst, MAX_PKT_BURST);
+		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, MAX_PKT_BURST);
 		pkt_cnt += nb_rx;
 		for ( i = 0; i < nb_rx; i++) {
 			m = pkts_burst[i];
@@ -331,7 +330,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *p
 	return pd->rx_pkts;	
 }
 
-static int pcap_dpdk_inject(pcap_t *p, const void *buf, int size)
+static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	//not implemented yet
 	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -367,8 +366,8 @@ static int pcap_dpdk_setfilter(pcap_t *p, struct bpf_program *fp)
 	}
 	return ret;
 }
-static void
-nic_stats_display(uint16_t portid)
+
+static void nic_stats_display(uint16_t portid)
 {
 	struct rte_eth_stats stats;
 	rte_eth_stats_get(portid, &stats);
@@ -376,6 +375,7 @@ nic_stats_display(uint16_t portid)
 	       "  RX-bytes:  %-10"PRIu64"  RX-Imissed:  %-10"PRIu64"\n", portid, stats.ipackets, stats.ierrors,
 	       stats.ibytes,stats.imissed);
 }
+
 static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 {
 	struct pcap_dpdk *pd = p->priv;
@@ -384,13 +384,11 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	ps->ps_drop = pd->stats.ierrors;
 	ps->ps_drop += pd->bpf_drop;
 	ps->ps_ifdrop = pd->stats.imissed;
-#if DPDK_DEBUG
 	nic_stats_display(pd->portid);
-#endif
 	return 0;
 }
 
-static int pcap_dpdk_setnonblock(pcap_t *p, int fd){
+static int pcap_dpdk_setnonblock(pcap_t *p, int fd _U_){
 	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		errno, "dpdk error: setnonblock not support");
 	return 0;
@@ -402,7 +400,7 @@ static int pcap_dpdk_getnonblock(pcap_t *p){
 	return 0;
 }
 
-int check_link_status(uint16_t portid, struct rte_eth_link *plink)
+static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
 	uint8_t count = 0;
 	int is_port_up = 0;
@@ -423,7 +421,7 @@ int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 }
 
 // return portid by device name, otherwise return -1
-uint16_t portid_by_device(char * device)
+static uint16_t portid_by_device(char * device)
 {
 	uint16_t ret = -1;
 	int len = strlen(device);
@@ -447,7 +445,6 @@ int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 	int cnt=0;
 	memset(dargv,0,sizeof(dargv[0])*DPDK_ARGC_MAX);	
 	//current process name
-	int prev_pos =0;
 	int skip_space = 1;
 	int i=0;
 	RTE_LOG(INFO, USER1,"dpdk cfg: %s\n",dpdk_cfg);
