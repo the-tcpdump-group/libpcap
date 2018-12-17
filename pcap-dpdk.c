@@ -440,7 +440,7 @@ static uint16_t portid_by_device(char * device)
 	return ret;
 }
 
-int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
+static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 {
 	int cnt=0;
 	memset(dargv,0,sizeof(dargv[0])*DPDK_ARGC_MAX);	
