@@ -631,6 +631,8 @@ PKGCONFIG
 BT_MONITOR_SRC
 BT_SRC
 PCAP_SUPPORT_BT
+DPDK_SRC
+PCAP_SUPPORT_DPDK
 NETMAP_SRC
 PCAP_SUPPORT_NETMAP
 NETFILTER_SRC
@@ -721,6 +723,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -765,6 +768,9 @@ enable_universal
 enable_shared
 enable_usb
 enable_netmap
+enable_dpdk
+with_dpdk_includes
+with_dpdk_libraries
 enable_bluetooth
 enable_dbus
 enable_rdma
@@ -818,6 +824,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1070,6 +1077,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1207,7 +1223,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1360,6 +1376,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1409,6 +1426,7 @@ Optional Features:
                           available]
   --enable-netmap         enable netmap support [default=yes, if support
                           available]
+  --enable-dpdk           enable dpdk support [default=no]
   --enable-bluetooth      enable Bluetooth support [default=yes, if support
                           available]
   --enable-dbus           enable D-Bus capture support [default=yes, if
@@ -1440,6 +1458,10 @@ Optional Packages:
   --with-turbocap[=DIR]   include Riverbed TurboCap support (located in
                           directory DIR, if supplied). [default=yes, if
                           present]
+  --with-dpdk-includes=IDIR
+                          Endace DPDK include directory, if not DIR/include
+  --with-dpdk-libraries=LDIR
+                          Endace DPDK library directory, if not DIR/lib
 
 Some influential environment variables:
   CC          C compiler command
@@ -4221,7 +4243,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4267,7 +4289,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4291,7 +4313,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4336,7 +4358,7 @@ else
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -4360,7 +4382,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
     We can't simply define LARGE_OFF_T to be 9223372036854775807,
     since some C++ compilers masquerading as C compilers
     incorrectly reject 9223372036854775807.  */
-#define LARGE_OFF_T (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+#define LARGE_OFF_T ((((off_t) 1 << 31) << 31) - 1 + (((off_t) 1 << 31) << 31))
   int off_t_is_large[(LARGE_OFF_T % 2147483629 == 721
 		       && LARGE_OFF_T % 2147483647 == 1)
 		      ? 1 : -1];
@@ -10397,6 +10419,74 @@ $as_echo "#define PCAP_SUPPORT_NETMAP 1" >>confdefs.h
 
 fi
 
+# Check for DPDK support, defualt no.
+# Check whether --enable-dpdk was given.
+if test "${enable_dpdk+set}" = set; then :
+  enableval=$enable_dpdk; enable_dpdk=$enableval
+else
+  enable_dpdk=no
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: \"!!!!!!!!!!DPDK DEBUG enable_dpdk=$enable_dpdk\"" >&5
+$as_echo "$as_me: \"!!!!!!!!!!DPDK DEBUG enable_dpdk=$enable_dpdk\"" >&6;}
+
+
+# Check whether --with-dpdk-includes was given.
+if test "${with_dpdk_includes+set}" = set; then :
+  withval=$with_dpdk_includes;
+	# User wants DPDK support and has specified a header directory, so use the provided value.
+	enable_dpdk=yes
+	dpdk_include_dir=$withval
+
+fi
+
+
+
+# Check whether --with-dpdk-libraries was given.
+if test "${with_dpdk_libraries+set}" = set; then :
+  withval=$with_dpdk_libraries;
+	# User wants DPDK support and has specified a library directory, so use the provided value.
+	enable_dpdk=yes
+	dpdk_lib_dir=$withval
+
+fi
+
+
+if test "x$enable_dpdk" != "xno" ; then
+	# If necessary, set default paths for DPDK API headers and libraries.
+	if test -z "$dpdk_root"; then
+		dpdk_root=/usr/local
+	fi
+
+	if test -z "$dpdk_include_dir"; then
+		dpdk_include_dir="$dpdk_root/include/dpdk"
+	fi
+
+	if test -z "$dpdk_lib_dir"; then
+		dpdk_lib_dir="$dpdk_root/lib"
+	fi
+	DPDK_MACHINE_CFLAGS="-march=native"
+	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_include_dir"
+	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
+	DPDK_LIBS=$DPDK_LDFLAGS
+	CFLAGS="$CFLAGS $DPDK_CFLAGS"
+	LIBS="$LIBS $DPDK_LIBS"
+	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+	V_INCLS="$V_INCLS $DPDK_CFLAGS"
+	if test $enable_dpdk = yes ; then
+
+$as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
+
+		DPDK_SRC=pcap-dpdk.c
+	fi
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: \"!!!!!!!!!!DPDK DEBUG DPDK_LDFLAGS=$DPDK_LDFLAGS, DPDK_CFLAGS=$DPDK_CFLAGS\"" >&5
+$as_echo "$as_me: \"!!!!!!!!!!DPDK DEBUG DPDK_LDFLAGS=$DPDK_LDFLAGS, DPDK_CFLAGS=$DPDK_CFLAGS\"" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: \"!!!!!!!!!!DPDK DEBUG PCAP_SUPPORT_DPDK=$PCAP_SUPPORT_DPDK, DPDK_SRC=$DPDK_SRC\"" >&5
+$as_echo "$as_me: \"!!!!!!!!!!DPDK DEBUG PCAP_SUPPORT_DPDK=$PCAP_SUPPORT_DPDK, DPDK_SRC=$DPDK_SRC\"" >&6;}
 
 # Check whether --enable-bluetooth was given.
 if test "${enable_bluetooth+set}" = set; then :

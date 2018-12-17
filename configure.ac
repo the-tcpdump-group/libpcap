@@ -2128,7 +2128,12 @@ AC_INCLUDES_DEFAULT
 	AC_SUBST(NETMAP_SRC)
 fi
 
-# Check for DPDK support.
+# Check for DPDK support, defualt no.
+AC_ARG_ENABLE([dpdk],
+[AC_HELP_STRING([--enable-dpdk],[enable dpdk support @<:@default=no@:>@])],
+    [enable_dpdk=$enableval],
+    [enable_dpdk=no])
+
 AC_ARG_WITH([dpdk-includes],
 AC_HELP_STRING([--with-dpdk-includes=IDIR],[Endace DPDK include directory, if not DIR/include]),
 [
@@ -2166,15 +2171,14 @@ if test "x$enable_dpdk" != "xno" ; then
 	LIBS="$LIBS $DPDK_LIBS"
 	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 	V_INCLS="$V_INCLS $DPDK_CFLAGS"
-	AC_MSG_CHECKING(whether we can compile the dpdk support)
 	if test $enable_dpdk = yes ; then
 		AC_DEFINE(PCAP_SUPPORT_DPDK, 1,
 		[target host supports dpdk])
 		DPDK_SRC=pcap-dpdk.c
 	fi
-	AC_SUBST(PCAP_SUPPORT_DPDK)
-	AC_SUBST(DPDK_SRC)
 fi
+AC_SUBST(PCAP_SUPPORT_DPDK)
+AC_SUBST(DPDK_SRC)
 
 AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],
