@@ -1,13 +1,13 @@
 sudo: false
 language: c
-cache:
-    directories:
-	- /tmp/dpdk
+
 os:
   - linux
+  - osx
 
 compiler:
   - gcc
+  - clang
 
 env:
   global:
@@ -21,15 +21,10 @@ env:
     # usual processing: false.
     - coverity_scan_script_test_mode=false
   matrix:
-    #- REMOTE=disable CMAKE=no
-    #- ENABLE_REMOTE="" CMAKE=yes
-    #- REMOTE=enable CMAKE=no
-    #- ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    # test when DPDK is enabled
-    - ENABLE_DPDK=yes REMOTE=disable CMAKE=no
-    - ENABLE_DPDK=yes ENABLE_REMOTE="" CMAKE=yes
-    #- ENABLE_DPDK=yes REMOTE=enable CMAKE=no
-    #- ENABLE_DPDK=yes ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - REMOTE=disable CMAKE=no
+    - ENABLE_REMOTE="" CMAKE=yes
+    - REMOTE=enable CMAKE=no
+    - ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
 matrix:
   fast_finish: true
@@ -59,7 +54,6 @@ addons:
       - libbluetooth-dev
       - libnl-genl-3-dev
       - libibverbs-dev
-      - libnuma-dev
 
 git:
   quiet: true
@@ -68,25 +62,21 @@ git:
 before_install:
   - uname -a
   - date
+
 install:
 
 before_script:
-  # install linux kernel header for dpdk
-  - sudo apt-get install linux-headers-`uname -r`
-  # build dpdk and install it to /usr/local/
-  - if [ ! -f /tmp/dpdk/cache ]; then if [ "$ENABLE_DPDK" = yes ]; then git clone https://github.com/DPDK/dpdk.git /tmp/dpdk && export RTE_SDK=/tmp/dpdk && export RTE_TARGET=build && cd /tmp/dpdk/ && make defconfig && sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config && make -s all && sudo make install && touch $RTE_SDK/cache && cd - ; fi ; fi 
-  - if [ "$ENABLE_DPDK" = yes ]; then if [ "$CMAKE" = yes ]; then export DPDK_OPT="-DCMAKE_INSTALL_PREFIX=/tmp -DDISABLE_DPDK=OFF -DDPDK_INC_DIR=$RTE_SDK/$RTE_TARGET/include/dpdk -DDPDK_LIB_DIR=$RTE_SDK/$RTE_TARGET/lib"  ;else export DPDK_OPT="--enable-dpdk --with-dpdk-includes=$RTE_SDK/$RTE_TARGET/include/dpdk --with-dpdk-libraries=$RTE_SDK/$RTE_TARGET/lib" ; fi ; fi ; echo -n "DPDK_OPT=${DPDK_OPT}"
 
 script:
   - if [ "$COVERITY_SCAN_BRANCH" = 1 ]; then exit 0; fi
   - touch .devel configure
   - if [ "$CMAKE" = no ]; then echo '$ ./configure [...]' && echo -n travis_fold:start:script.configure; fi
-  - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote" $DPDK_OPT; fi
+  - if [ "$CMAKE" = no ]; then ./configure --prefix=/tmp "--${REMOTE}-remote"; fi
   - if [ "$CMAKE" = no ]; then echo -n travis_fold:end:script.configure; fi
   - if [ "$CMAKE" = yes ]; then mkdir build; fi
   - if [ "$CMAKE" = yes ]; then cd build; fi
   - if [ "$CMAKE" = yes ]; then echo -n travis_fold:start:script.cmake; fi
-  - if [ "$CMAKE" = yes ]; then cmake -DCMAKE_INSTALL_PREFIX=/tmp $ENABLE_REMOTE $DPDK_OPT ..; fi
+  - if [ "$CMAKE" = yes ]; then cmake -DCMAKE_INSTALL_PREFIX=/tmp $ENABLE_REMOTE ..; fi
   - if [ "$CMAKE" = yes ]; then echo -n travis_fold:end:script.cmake; fi
   - make -s all
   - make -s testprogs
