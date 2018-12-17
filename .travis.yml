@@ -25,8 +25,11 @@ env:
     - ENABLE_REMOTE="" CMAKE=yes
     - REMOTE=enable CMAKE=no
     - ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    - ENABLE_DPDK=yes CMAKE=no
-    - ENABLE_DPDK=yes CMAKE=yes
+    # test when DPDK is enabled
+    - ENABLE_DPDK=yes REMOTE=disable CMAKE=no
+    - ENABLE_DPDK=yes ENABLE_REMOTE="" CMAKE=yes
+    - ENABLE_DPDK=yes REMOTE=enable CMAKE=no
+    - ENABLE_DPDK=yes ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
 matrix:
   fast_finish: true
