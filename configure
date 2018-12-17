@@ -10428,9 +10428,6 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: \"!!!!!!!!!!DPDK DEBUG enable_dpdk=$enable_dpdk\"" >&5
-$as_echo "$as_me: \"!!!!!!!!!!DPDK DEBUG enable_dpdk=$enable_dpdk\"" >&6;}
-
 
 # Check whether --with-dpdk-includes was given.
 if test "${with_dpdk_includes+set}" = set; then :
@@ -10483,10 +10480,6 @@ $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: \"!!!!!!!!!!DPDK DEBUG DPDK_LDFLAGS=$DPDK_LDFLAGS, DPDK_CFLAGS=$DPDK_CFLAGS\"" >&5
-$as_echo "$as_me: \"!!!!!!!!!!DPDK DEBUG DPDK_LDFLAGS=$DPDK_LDFLAGS, DPDK_CFLAGS=$DPDK_CFLAGS\"" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: \"!!!!!!!!!!DPDK DEBUG PCAP_SUPPORT_DPDK=$PCAP_SUPPORT_DPDK, DPDK_SRC=$DPDK_SRC\"" >&5
-$as_echo "$as_me: \"!!!!!!!!!!DPDK DEBUG PCAP_SUPPORT_DPDK=$PCAP_SUPPORT_DPDK, DPDK_SRC=$DPDK_SRC\"" >&6;}
 
 # Check whether --enable-bluetooth was given.
 if test "${enable_bluetooth+set}" = set; then :
