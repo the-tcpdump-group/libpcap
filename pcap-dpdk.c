@@ -493,7 +493,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		char *ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
 		if (ptr_dpdk_cfg == NULL)
 		{
-			RTE_LOG(INFO,USER1,"dpdk cfg is unset using default: %s\n",DPDK_DEF_CFG);
+			RTE_LOG(INFO,USER1,"env $DPDK_CFG is unset, so using default: %s\n",DPDK_DEF_CFG);
 			ptr_dpdk_cfg = DPDK_DEF_CFG;
 		}
 		memset(dpdk_cfg_buf,0,sizeof(dpdk_cfg_buf));
