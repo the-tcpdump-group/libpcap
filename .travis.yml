@@ -25,6 +25,8 @@ env:
     - ENABLE_REMOTE="" CMAKE=yes
     - REMOTE=enable CMAKE=no
     - ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - ENABLE_DPDK=yes CMAKE=no
+    - ENABLE_DPDK=yes CMAKE=yes
 
 matrix:
   fast_finish: true
@@ -65,7 +67,7 @@ before_install:
   - date
 
 install:
-
+  - if [ "$ENABLE_DPDK" = yes ]; then git clone https://github.com/DPDK/dpdk.git /tmp/dpdk && export RTE_SDK=/tmp/dpdk && export RTE_TARGET=build && cd /tmp/dpdk/ && make defconfig && sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config && make && sudo make install ; fi 
 before_script:
 
 script:
