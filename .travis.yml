@@ -1,8 +1,7 @@
 sudo: false
+
 language: c
-cache:
-    directories:
-	- /tmp/dpdk
+
 os:
   - linux
 
@@ -27,7 +26,8 @@ env:
     #- ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
     # test when DPDK is enabled
     - ENABLE_DPDK=yes REMOTE=disable CMAKE=no
-    - ENABLE_DPDK=yes ENABLE_REMOTE="" CMAKE=yes
+    # when CMAKE=no, compile error but I don know why
+    #- ENABLE_DPDK=yes ENABLE_REMOTE="" CMAKE=yes
     #- ENABLE_DPDK=yes REMOTE=enable CMAKE=no
     #- ENABLE_DPDK=yes ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
@@ -74,7 +74,7 @@ before_script:
   # install linux kernel header for dpdk
   - sudo apt-get install linux-headers-`uname -r`
   # build dpdk and install it to /usr/local/
-  - if [ ! -f /tmp/dpdk/cache ]; then if [ "$ENABLE_DPDK" = yes ]; then git clone https://github.com/DPDK/dpdk.git /tmp/dpdk && export RTE_SDK=/tmp/dpdk && export RTE_TARGET=build && cd /tmp/dpdk/ && make defconfig && sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config && make -s all && sudo make install && touch $RTE_SDK/cache && cd - ; fi ; fi 
+  - if [ "$ENABLE_DPDK" = yes ]; then git clone https://github.com/DPDK/dpdk.git /tmp/dpdk && export RTE_SDK=/tmp/dpdk && export RTE_TARGET=build && cd /tmp/dpdk/ && make defconfig && sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config && make -s all && sudo make install && cd - ; fi
   - if [ "$ENABLE_DPDK" = yes ]; then if [ "$CMAKE" = yes ]; then export DPDK_OPT="-DCMAKE_INSTALL_PREFIX=/tmp -DDISABLE_DPDK=OFF -DDPDK_INC_DIR=$RTE_SDK/$RTE_TARGET/include/dpdk -DDPDK_LIB_DIR=$RTE_SDK/$RTE_TARGET/lib"  ;else export DPDK_OPT="--enable-dpdk --with-dpdk-includes=$RTE_SDK/$RTE_TARGET/include/dpdk --with-dpdk-libraries=$RTE_SDK/$RTE_TARGET/lib" ; fi ; fi ; echo -n "DPDK_OPT=${DPDK_OPT}"
 
 script:
