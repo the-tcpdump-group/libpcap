@@ -443,6 +443,7 @@ PCAP_API const u_char *pcap_next(pcap_t *, struct pcap_pkthdr *);
 PCAP_API int 	pcap_next_ex(pcap_t *, struct pcap_pkthdr **, const u_char **);
 PCAP_API void	pcap_breakloop(pcap_t *);
 PCAP_API int	pcap_stats(pcap_t *, struct pcap_stat *);
+PCAP_API int	pcap_stats_reset(pcap_t *);
 PCAP_API int	pcap_setfilter(pcap_t *, struct bpf_program *);
 PCAP_API int 	pcap_setdirection(pcap_t *, pcap_direction_t);
 PCAP_API int	pcap_getnonblock(pcap_t *, char *);

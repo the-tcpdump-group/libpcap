@@ -126,6 +126,7 @@ typedef int	(*set_datalink_op_t)(pcap_t *, int);
 typedef int	(*getnonblock_op_t)(pcap_t *);
 typedef int	(*setnonblock_op_t)(pcap_t *, int);
 typedef int	(*stats_op_t)(pcap_t *, struct pcap_stat *);
+typedef int	(*stats_op_reset_t)(pcap_t *);
 #ifdef _WIN32
 typedef struct pcap_stat *(*stats_ex_op_t)(pcap_t *, int *);
 typedef int	(*setbuff_op_t)(pcap_t *, int);
@@ -265,6 +266,7 @@ struct pcap {
 	getnonblock_op_t getnonblock_op;
 	setnonblock_op_t setnonblock_op;
 	stats_op_t stats_op;
+	stats_op_reset_t stats_op_reset;
 
 	/*
 	 * Routine to use as callback for pcap_next()/pcap_next_ex().
