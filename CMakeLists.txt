@@ -148,6 +148,9 @@ endif()
 option(DISABLE_USB "Disable USB sniffing support" OFF)
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
 option(DISABLE_NETMAP "Disable netmap support" OFF)
+# By default, DPDK is not supported, unless providing DISABLE_DPDK=OFF, DPDK_INC_DIR and DPDK_LIB_DIR
+option(DISABLE_DPDK "Disable DPDK support" ON)
+
 #
 # We don't support D-Bus sniffing on macOS; see
 #
@@ -1408,6 +1411,16 @@ main(void)
     if(PCAP_SUPPORT_NETMAP)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-netmap.c)
     endif(PCAP_SUPPORT_NETMAP)
+endif()
+
+# Check for DPDK sniffing support
+if (NOT DISABLE_DPDK)
+	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-march=native")
+	include_directories(AFTER ${DPDK_INC_DIR})
+	link_directories(AFTER ${DPDK_LIB_DIR})
+	set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dpdk rt m numa dl)
+	set(PCAP_SUPPORT_DPDK TRUE)
+	set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
 endif()
 
 # Check for Bluetooth sniffing support
