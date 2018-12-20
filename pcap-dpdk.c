@@ -167,7 +167,12 @@ struct pcap_dpdk{
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
 	struct ether_addr eth_addr;
-	struct rte_eth_stats stats;
+	struct timeval prev_ts;
+	struct rte_eth_stats prev_stats;
+	struct timeval curr_ts;
+	struct rte_eth_stats curr_stats;
+	uint64_t pps;
+	uint64_t bps;
 	struct rte_mempool * pktmbuf_pool;
 	struct dpdk_ts_helper ts_helper;
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
@@ -367,24 +372,39 @@ static int pcap_dpdk_setfilter(pcap_t *p, struct bpf_program *fp)
 	return ret;
 }
 
-static void nic_stats_display(uint16_t portid)
+static void nic_stats_display(struct pcap_dpdk *pd)
 {
+	uint16_t portid = pd->portid;
 	struct rte_eth_stats stats;
 	rte_eth_stats_get(portid, &stats);
 	RTE_LOG(INFO,USER1, "portid:%d, RX-packets: %-10"PRIu64"  RX-errors:  %-10"PRIu64
 	       "  RX-bytes:  %-10"PRIu64"  RX-Imissed:  %-10"PRIu64"\n", portid, stats.ipackets, stats.ierrors,
 	       stats.ibytes,stats.imissed);
+	RTE_LOG(INFO,USER1, "portid:%d, RX-PPS: %-10"PRIu64" RX-Mbps: %.2lf\n", portid, pd->pps, pd->bps/1e6f );
 }
 
 static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 {
 	struct pcap_dpdk *pd = p->priv;
-	rte_eth_stats_get(pd->portid,&(pd->stats));
-	ps->ps_recv = pd->stats.ipackets;
-	ps->ps_drop = pd->stats.ierrors;
+	calculate_timestamp(&(pd->ts_helper), &(pd->curr_ts));
+	rte_eth_stats_get(pd->portid,&(pd->curr_stats));
+
+	ps->ps_recv = pd->curr_stats.ipackets;
+	ps->ps_drop = pd->curr_stats.ierrors;
 	ps->ps_drop += pd->bpf_drop;
-	ps->ps_ifdrop = pd->stats.imissed;
-	nic_stats_display(pd->portid);
+	ps->ps_ifdrop = pd->curr_stats.imissed;
+	
+	uint64_t delta_pkt = pd->curr_stats.ipackets - pd->prev_stats.ipackets;
+	struct timeval delta_tm;
+	timersub(&(pd->curr_ts),&(pd->prev_ts), &delta_tm);
+	uint64_t delta_usec = delta_tm.tv_sec*1e6+delta_tm.tv_usec;
+	uint64_t delta_bit = (pd->curr_stats.ibytes-pd->prev_stats.ibytes)*8;
+	RTE_LOG(INFO, USER1, "delta_usec: %-10"PRIu64" delta_pkt: %-10"PRIu64" delta_bit: %-10"PRIu64"\n", delta_usec, delta_pkt, delta_bit);
+	pd->pps = (uint64_t)(delta_pkt*1e6f/delta_usec);
+	pd->bps = (uint64_t)(delta_bit*1e6f/delta_usec);
+	nic_stats_display(pd);
+	pd->prev_stats = pd->curr_stats;
+	pd->prev_ts = pd->curr_ts;
 	return 0;
 }
 
@@ -404,7 +424,7 @@ static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
 	uint8_t count = 0;
 	int is_port_up = 0;
-	int max_check_time = 2;
+	int max_check_time = 50;
 	int check_interval = 100; // 100ms
 	for (count = 0; count <= max_check_time; count++) {
 		memset(plink, 0, sizeof(struct rte_eth_link));
@@ -651,6 +671,8 @@ static int pcap_dpdk_activate(pcap_t *p)
 		}
 		// reset statistics
 		rte_eth_stats_reset(pd->portid);
+		calculate_timestamp(&(pd->ts_helper), &(pd->prev_ts));
+		rte_eth_stats_get(pd->portid,&(pd->prev_stats));	
 		// format pcap_t 
 		pd->portid = portid;
 		p->fd = pd->portid; 
