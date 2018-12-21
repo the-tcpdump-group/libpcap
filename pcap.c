@@ -2972,6 +2972,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(ETHERNET_MPACKET, "802.3br mPackets"),
 	DLT_CHOICE(DISPLAYPORT_AUX, "DisplayPort AUX channel monitoring data"),
 	DLT_CHOICE(LINUX_SLL2, "Linux cooked v2"),
+	DLT_CHOICE(OPENVIZSLA, "OpenVizsla USB"),
+	DLT_CHOICE(EBHSCR, "Elektrobit High Speed Capture and Replay (EBHSCR)"),
 	DLT_CHOICE_SENTINEL
 };
 
