@@ -251,9 +251,9 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	int is_accepted=0;
 		
 	if(lcore_id == master_lcore_id){
-		RTE_LOG(INFO, USER1, "dpdk: lcoreid=%u runs for portid=%u\n", lcore_id, portid);
+		RTE_LOG(DEBUG, USER1, "dpdk: lcoreid=%u runs for portid=%u\n", lcore_id, portid);
 	}else{
-		RTE_LOG(INFO, USER1, "dpdk: lcore %u has nothing to do\n", lcore_id);
+		RTE_LOG(DEBUG, USER1, "dpdk: lcore %u has nothing to do\n", lcore_id);
 	}
 	//only use master lcore
 	if (lcore_id != master_lcore_id){
@@ -397,7 +397,7 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	timersub(&(pd->curr_ts),&(pd->prev_ts), &delta_tm);
 	uint64_t delta_usec = delta_tm.tv_sec*1e6+delta_tm.tv_usec;
 	uint64_t delta_bit = (pd->curr_stats.ibytes-pd->prev_stats.ibytes)*8;
-	RTE_LOG(INFO, USER1, "delta_usec: %-10"PRIu64" delta_pkt: %-10"PRIu64" delta_bit: %-10"PRIu64"\n", delta_usec, delta_pkt, delta_bit);
+	RTE_LOG(DEBUG, USER1, "delta_usec: %-10"PRIu64" delta_pkt: %-10"PRIu64" delta_bit: %-10"PRIu64"\n", delta_usec, delta_pkt, delta_bit);
 	pd->pps = (uint64_t)(delta_pkt*1e6f/delta_usec);
 	pd->bps = (uint64_t)(delta_bit*1e6f/delta_usec);
 	nic_stats_display(pd);
