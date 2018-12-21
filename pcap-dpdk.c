@@ -284,10 +284,6 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 					bp = pd->pcap_tmp_buf;
 					pcap_header.caplen = gather_len;
 					pcap_header.len = gather_len;
-				}else{
-					// size too large
-					// why only free this pkt
-					rte_pktmbuf_free(m);
 				}
 			}
 			if (bp){
@@ -306,6 +302,8 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 					pd->bpf_drop++;
 				}
 			}
+			//free all pktmbuf
+			rte_pktmbuf_free(m);
 		}
 	}	
 	pd->rx_pkts = pkt_cnt;
