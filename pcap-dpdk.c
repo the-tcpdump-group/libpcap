@@ -126,13 +126,20 @@ USER1: dpdk: lcoreid=0 runs for portid=0
 #include "pcap-int.h"
 #include "pcap-dpdk.h"
 
+#define DPDK_DEF_LOG_LEV RTE_LOG_ERR
+static int is_dpdk_pre_inited=0;
 #define DPDK_LIB_NAME "libpcap_dpdk"
+#define DPDK_DESC "Data Plane Development Kit (DPDK) Interface"
 #define DPDK_ARGC_MAX 64 
 #define DPDK_CFG_MAX_LEN 1024
+#define DPDK_DEV_NAME_MAX 32
+#define DPDK_DEV_DESC_MAX 512 
 #define DPDK_CFG_ENV_NAME "DPDK_CFG"
 static char dpdk_cfg_buf[DPDK_CFG_MAX_LEN];
+#define DPDK_MAC_ADDR_SIZE 32
+#define DPDK_DEF_MAC_ADDR "00:00:00:00:00:00"
 #define DPDK_PCI_ADDR_SIZE 16
-#define DPDK_DEF_CFG "--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so"
+#define DPDK_DEF_CFG "--log-level=error -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so"
 #define DPDK_PREFIX "dpdk:"
 #define MBUF_POOL_NAME "mbuf_pool"
 #define DPDK_TX_BUF_NAME "tx_buffer"
@@ -167,6 +174,7 @@ struct pcap_dpdk{
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
 	struct ether_addr eth_addr;
+	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -437,7 +445,30 @@ static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 	}
 	return is_port_up;
 }
-
+static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
+{
+	int offset=0;
+	if (addrp == NULL){
+		pcap_snprintf(mac_str, len-1, DPDK_DEF_MAC_ADDR);
+		return;
+	}
+	for (int i=0; i<6; i++)
+	{
+		if (offset >= len)
+		{ // buffer overflow
+			return;
+		}
+		if (i==0)
+		{
+			pcap_snprintf(mac_str+offset, len-1-offset, "%02X",addrp->addr_bytes[i]);
+			offset+=2; // FF
+		}else{
+			pcap_snprintf(mac_str+offset, len-1-offset, ":%02X", addrp->addr_bytes[i]);
+			offset+=3; // :FF
+		}
+	}
+	return;
+}
 // return portid by device name, otherwise return -1
 static uint16_t portid_by_device(char * device)
 {
@@ -481,6 +512,40 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 	dargv[cnt]=NULL;
 	return cnt;
 }
+
+// only called once
+static int dpdk_pre_init()
+{
+	int dargv_cnt=0;
+	char *dargv[DPDK_ARGC_MAX];
+	char *ptr_dpdk_cfg = NULL;
+	int ret = -1; //default is error
+	// globale var
+	if (is_dpdk_pre_inited)
+	{
+		// already inited
+		return 0;
+	}
+	// init EAL
+	ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
+	// set default log level to debug
+	rte_log_set_global_level(DPDK_DEF_LOG_LEV);
+	if (ptr_dpdk_cfg == NULL)
+	{
+		RTE_LOG(INFO,USER1,"env $DPDK_CFG is unset, so using default: %s\n",DPDK_DEF_CFG);
+		ptr_dpdk_cfg = DPDK_DEF_CFG;
+	}
+	memset(dpdk_cfg_buf,0,sizeof(dpdk_cfg_buf));
+	snprintf(dpdk_cfg_buf,DPDK_CFG_MAX_LEN-1,"%s %s",DPDK_LIB_NAME,ptr_dpdk_cfg);
+	dargv_cnt = parse_dpdk_cfg(dpdk_cfg_buf,dargv);
+	ret = rte_eal_init(dargv_cnt,dargv);
+	// if init successed, we do not need to do it again later.
+	if (ret == 0){
+		is_dpdk_pre_inited = 1;
+	}
+	return ret;
+}
+
 static int pcap_dpdk_activate(pcap_t *p)
 {
 	struct pcap_dpdk *pd = p->priv;
@@ -502,19 +567,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 
 	do{
 		//init EAL
-		rte_log_set_global_level(RTE_LOG_DEBUG);
-		int dargv_cnt=0;
-		char * dargv[DPDK_ARGC_MAX];
-		char *ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
-		if (ptr_dpdk_cfg == NULL)
-		{
-			RTE_LOG(INFO,USER1,"env $DPDK_CFG is unset, so using default: %s\n",DPDK_DEF_CFG);
-			ptr_dpdk_cfg = DPDK_DEF_CFG;
-		}
-		memset(dpdk_cfg_buf,0,sizeof(dpdk_cfg_buf));
-		snprintf(dpdk_cfg_buf,DPDK_CFG_MAX_LEN-1,"%s %s",DPDK_LIB_NAME,ptr_dpdk_cfg);
-		dargv_cnt = parse_dpdk_cfg(dpdk_cfg_buf,dargv);
-		ret = rte_eal_init(dargv_cnt,dargv);
+		ret = dpdk_pre_init();
 		if (ret < 0)
 		{
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -603,6 +656,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		}
 		// get MAC addr
 		rte_eth_macaddr_get(portid, &(pd->eth_addr));
+		eth_addr_str(&(pd->eth_addr), pd->mac_addr, DPDK_MAC_ADDR_SIZE-1);
 
 		// init one RX queue
 		rxq_conf = dev_info.default_rxconf;
@@ -692,23 +746,13 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->breakloop_op = pcap_dpdk_breakloop;
 		ret = 0; // OK
 	}while(0);
+
 	rte_eth_dev_get_name_by_port(portid,pd->pci_addr);
-	RTE_LOG(INFO, USER1,"%s device %s portid %d, pci_addr: %s\n", __FUNCTION__, p->opt.device, portid, pd->pci_addr);
+	RTE_LOG(INFO, USER1,"Port %d device: %s, MAC:%s, PCI:%s\n", portid, p->opt.device, pd->mac_addr, pd->pci_addr);
 	RTE_LOG(INFO, USER1,"Port %d Link Up. Speed %u Mbps - %s\n",
 						portid, link.link_speed,
 				(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
 					("full-duplex") : ("half-duplex\n"));
-	RTE_LOG(INFO, USER1,"Port %u, MAC address:", portid);
-	for (int i=0; i<6; i++)
-	{
-		if (i==0)
-		{
-			fprintf(stderr,"%02X",pd->eth_addr.addr_bytes[i]);
-		}else{
-			fprintf(stderr,":%02X", pd->eth_addr.addr_bytes[i]);
-		}
-	}
-	fprintf(stderr,"\n\n");
 	if (ret == PCAP_ERROR)
 	{
 		pcap_cleanup_live_common(p);
@@ -734,7 +778,43 @@ pcap_t * pcap_dpdk_create(const char *device, char *ebuf, int *is_ours)
 	return p;
 }
 
-int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp _U_, char *err_str _U_)
+int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 {
-	return 0;
+	int ret=0;
+	int nb_ports = 0;
+	char dpdk_name[DPDK_DEV_NAME_MAX];
+	char dpdk_desc[DPDK_DEV_DESC_MAX];
+	struct ether_addr eth_addr;
+	char mac_addr[DPDK_MAC_ADDR_SIZE];
+	char pci_addr[DPDK_PCI_ADDR_SIZE];
+	do{
+		ret = dpdk_pre_init();
+		if (ret < 0)
+		{
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "error: Init failed with device");
+			ret = PCAP_ERROR;
+			break;
+		}
+		nb_ports = rte_eth_dev_count_avail();
+		if (nb_ports == 0)
+		{
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "DPDK error: No Ethernet ports");
+			ret = PCAP_ERROR;
+			break;
+		}
+		for (int i=0; i<nb_ports; i++){
+			pcap_snprintf(dpdk_name,DPDK_DEV_NAME_MAX-1,"dpdk:%d",i);
+			// mac addr 
+			rte_eth_macaddr_get(i, &eth_addr);
+			eth_addr_str(&eth_addr,mac_addr,DPDK_MAC_ADDR_SIZE);	
+			// PCI addr
+			rte_eth_dev_get_name_by_port(i,pci_addr);
+			pcap_snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
+			// continue add all dev, even error happens
+			add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf);
+		}	
+	}while(0);	
+	return ret;
 }
