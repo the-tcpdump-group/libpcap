@@ -110,6 +110,7 @@ static char dpdk_cfg_buf[DPDK_CFG_MAX_LEN];
 #define DPDK_PCI_ADDR_SIZE 16
 #define DPDK_DEF_CFG "--log-level=error -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so"
 #define DPDK_PREFIX "dpdk:"
+#define DPDK_PORTID_MAX 65535U
 #define MBUF_POOL_NAME "mbuf_pool"
 #define DPDK_TX_BUF_NAME "tx_buffer"
 //The number of elements in the mbuf pool.
@@ -441,20 +442,27 @@ static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
 // return portid by device name, otherwise return -1
 static uint16_t portid_by_device(char * device)
 {
-	uint16_t ret = -1;
+	uint16_t ret = DPDK_PORTID_MAX; 
 	int len = strlen(device);
 	int prefix_len = strlen(DPDK_PREFIX);
 	unsigned long ret_ul = 0L;
-
+	char *pEnd;
 	if (len<=prefix_len || strncmp(device, DPDK_PREFIX, prefix_len)) // check prefix dpdk:
 	{
 		return ret;
 	}
-	if (device[prefix_len]>='0' && device[prefix_len]<='9')
-	{ // is digital
-		ret_ul = strtoul(&(device[prefix_len]), NULL, 10);
-		ret = (uint16_t)ret_ul;
+	//check all chars are digital
+	for (int i=prefix_len; device[i]; i++){
+		if (device[i]<'0' || device[i]>'9'){
+			return ret;	
+		}
 	}
+	ret_ul = strtoul(&(device[prefix_len]), &pEnd, 10);
+	// too large for portid
+	if (ret_ul >= DPDK_PORTID_MAX){ 
+		return ret;
+	}
+	ret = (uint16_t)ret_ul;
 	return ret;
 }
 
@@ -521,7 +529,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 	pd->orig = p;
 	int ret = PCAP_ERROR;
 	uint16_t nb_ports=0;
-	uint16_t portid=-1;
+	uint16_t portid= DPDK_PORTID_MAX;
 	unsigned nb_mbufs = DPDK_NB_MBUFS;
 	struct rte_eth_rxconf rxq_conf;
 	struct rte_eth_txconf txq_conf;
@@ -529,11 +537,6 @@ static int pcap_dpdk_activate(pcap_t *p)
 	struct rte_eth_dev_info dev_info;
 	int is_port_up = 0;
 	struct rte_eth_link link;
-	if (p == NULL)
-	{
-		return PCAP_ERROR;
-	}
-
 	do{
 		//init EAL
 		ret = dpdk_pre_init();
@@ -563,9 +566,9 @@ static int pcap_dpdk_activate(pcap_t *p)
 			ret = PCAP_ERROR;
 			break;
 		}
-		// parse portid
+
 		portid = portid_by_device(p->opt.device);
-		if (portid == -1){
+		if (portid == DPDK_PORTID_MAX){
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "dpdk error: portid is invalid. device %s",
 			    p->opt.device);
@@ -716,15 +719,16 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = 0; // OK
 	}while(0);
 
-	rte_eth_dev_get_name_by_port(portid,pd->pci_addr);
-	RTE_LOG(INFO, USER1,"Port %d device: %s, MAC:%s, PCI:%s\n", portid, p->opt.device, pd->mac_addr, pd->pci_addr);
-	RTE_LOG(INFO, USER1,"Port %d Link Up. Speed %u Mbps - %s\n",
-						portid, link.link_speed,
-				(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
-					("full-duplex") : ("half-duplex\n"));
 	if (ret == PCAP_ERROR)
 	{
 		pcap_cleanup_live_common(p);
+	}else{
+		rte_eth_dev_get_name_by_port(portid,pd->pci_addr);
+		RTE_LOG(INFO, USER1,"Port %d device: %s, MAC:%s, PCI:%s\n", portid, p->opt.device, pd->mac_addr, pd->pci_addr);
+		RTE_LOG(INFO, USER1,"Port %d Link Up. Speed %u Mbps - %s\n",
+							portid, link.link_speed,
+					(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
+						("full-duplex") : ("half-duplex\n"));
 	}
 	return ret;
 }
