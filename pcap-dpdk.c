@@ -99,6 +99,7 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 static int is_dpdk_pre_inited=0;
 #define DPDK_LIB_NAME "libpcap_dpdk"
 #define DPDK_DESC "Data Plane Development Kit (DPDK) Interface"
+#define DPDK_ERR_PERM_MSG "permission denied, DPDK needs root permission"
 #define DPDK_ARGC_MAX 64 
 #define DPDK_CFG_MAX_LEN 1024
 #define DPDK_DEV_NAME_MAX 32
@@ -395,25 +396,11 @@ static int pcap_dpdk_getnonblock(pcap_t *p){
 		errno, "dpdk error: getnonblock not support");
 	return 0;
 }
-
 static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
-	uint8_t count = 0;
-	int is_port_up = 0;
-	int max_check_time = 50;
-	int check_interval = 100; // 100ms
-	for (count = 0; count <= max_check_time; count++) {
-		memset(plink, 0, sizeof(struct rte_eth_link));
-		rte_eth_link_get_nowait(portid, plink);
-		if (plink->link_status == ETH_LINK_UP)
-		{
-			is_port_up = 1;
-			break;
-		}else{
-			rte_delay_ms(check_interval);
-		}
-	}
-	return is_port_up;
+	// wait up to 9 seconds to get link status
+	rte_eth_link_get(portid, plink);
+	return plink->link_status == ETH_LINK_UP;
 }
 static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
 {
@@ -491,17 +478,27 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 }
 
 // only called once
-static int dpdk_pre_init()
+static int dpdk_pre_init(char * ebuf)
 {
 	int dargv_cnt=0;
 	char *dargv[DPDK_ARGC_MAX];
 	char *ptr_dpdk_cfg = NULL;
-	int ret = -1; //default is error
+	int ret = PCAP_ERROR; 
 	// globale var
 	if (is_dpdk_pre_inited)
 	{
 		// already inited
 		return 0;
+	}
+	// check for root permission
+	if( geteuid() != 0)
+	{
+		RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "dpdk error: %s",
+			    DPDK_ERR_PERM_MSG);
+		ret = PCAP_ERROR_PERM_DENIED;
+		return ret;	
 	}
 	// init EAL
 	ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
@@ -539,7 +536,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 	struct rte_eth_link link;
 	do{
 		//init EAL
-		ret = dpdk_pre_init();
+		ret = dpdk_pre_init(p->errbuf);
 		if (ret < 0)
 		{
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -572,19 +569,12 @@ static int pcap_dpdk_activate(pcap_t *p)
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "dpdk error: portid is invalid. device %s",
 			    p->opt.device);
-			ret = PCAP_ERROR;
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			break;
 		}
 
-		if (portid >= nb_ports)
-		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: portid(%u) is larger than nb_ports(%u)",
-			    portid, nb_ports);
-			ret = PCAP_ERROR;
-			break;
-		}
 		pd->portid = portid;
+
 		if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
 		{
 			p->snapshot = MAXIMUM_SNAPLEN;
@@ -682,15 +672,17 @@ static int pcap_dpdk_activate(pcap_t *p)
 			ret = PCAP_ERROR;
 			break;
 		}
-		// set promisc mode
-		pd->must_clear_promisc=1;
-		rte_eth_promiscuous_enable(portid);
+		// set promiscuous mode
+		if (p->opt.promisc){
+			pd->must_clear_promisc=1;
+			rte_eth_promiscuous_enable(portid);
+		}
 		// check link status
 		is_port_up = check_link_status(portid, &link);
 		if (!is_port_up){
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "dpdk error: link is down, port=%u",portid);
-			ret = PCAP_ERROR;
+			ret = PCAP_ERROR_IFACE_NOT_UP;
 			break;
 		}
 		// reset statistics
@@ -761,7 +753,7 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	do{
-		ret = dpdk_pre_init();
+		ret = dpdk_pre_init(ebuf);
 		if (ret < 0)
 		{
 			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
