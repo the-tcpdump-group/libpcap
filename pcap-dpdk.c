@@ -1,16 +1,4 @@
 /*
- * Copyright (C) 2018 All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *   1. Redistributions of source code must retain the above copyright
- *      notice, this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright
- *      notice, this list of conditions and the following disclaimer in the
- *      documentation and/or other materials provided with the distribution.
- *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS''AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -61,30 +49,11 @@ autoreconf
 Then, run configure with dpdk options.
 For Ubuntu, they are --with-dpdk-includes=/usr/local/include/dpdk/ --with-dpdk-libraries=/usr/local/lib
 
-4. link your own program with libpcap, and use DPDK with the device name as dpdk[portid], such as dpdk:0.
+4. link your own program with libpcap, and use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 And you shall set DPDK configure options by environment variable DPDK_CFG
 For example, the testprogs/capturetest could be lanched by: 
 
 env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so" ./capturetest -i dpdk:0
-
-The program will print the following message on my computer:
-
-USER1: dpdk cfg: libpcap_dpdk --log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so
-EAL: Detected 4 lcore(s)
-EAL: Detected 1 NUMA nodes
-EAL: Multi-process socket /var/run/dpdk/rte/mp_socket
-EAL: No free hugepages reported in hugepages-1048576kB
-EAL: Probing VFIO support...
-EAL: PCI device 0000:00:19.0 on NUMA socket -1
-EAL:   Invalid NUMA socket, default to 0
-EAL:   probe driver: 8086:1559 net_e1000_em
-USER1: pcap_dpdk_activate device dpdk:0 portid 0, pci_addr: 0000:00:19.0
-USER1: Port 0 Link Up. Speed 1000 Mbps - full-duplex
-USER1: Port 0, MAC address: [MAC ADDR]
-
-Listening on dpdk:0
-USER1: dpdk: lcoreid=0 runs for portid=0
-
 */
 
 #ifdef HAVE_CONFIG_H
