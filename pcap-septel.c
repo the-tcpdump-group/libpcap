@@ -41,7 +41,6 @@
 
 #include "pcap-septel.h"
 
-static int septel_setfilter(pcap_t *p, struct bpf_program *fp);
 static int septel_stats(pcap_t *p, struct pcap_stat *ps);
 static int septel_getnonblock(pcap_t *p);
 static int septel_setnonblock(pcap_t *p, int nonblock);
@@ -218,7 +217,7 @@ static pcap_t *septel_activate(pcap_t* handle) {
 
   handle->read_op = septel_read;
   handle->inject_op = septel_inject;
-  handle->setfilter_op = septel_setfilter;
+  handle->setfilter_op = install_bpf_program;
   handle->set_datalink_op = NULL; /* can't change data link type */
   handle->getnonblock_op = septel_getnonblock;
   handle->setnonblock_op = septel_setnonblock;
@@ -283,28 +282,6 @@ septel_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
   return 0;
 }
 
-
-/*
- * Installs the given bpf filter program in the given pcap structure.  There is
- * no attempt to store the filter in kernel memory as that is not supported
- * with Septel cards.
- */
-static int septel_setfilter(pcap_t *p, struct bpf_program *fp) {
-  if (!p)
-    return -1;
-  if (!fp) {
-    strncpy(p->errbuf, "setfilter: No filter specified",
-	    sizeof(p->errbuf));
-    return -1;
-  }
-
-  /* Make our private copy of the filter */
-
-  if (install_bpf_program(p, fp) < 0)
-    return -1;
-
-  return (0);
-}
 
 /*
  * We don't support non-blocking mode.  I'm not sure what we'd

@@ -126,7 +126,6 @@ static void TcCleanup(pcap_t *p);
 static int TcInject(pcap_t *p, const void *buf, int size);
 static int TcRead(pcap_t *p, int cnt, pcap_handler callback, u_char *user);
 static int TcStats(pcap_t *p, struct pcap_stat *ps);
-static int TcSetFilter(pcap_t *p, struct bpf_program *fp);
 #ifdef _WIN32
 static struct pcap_stat *TcStatsEx(pcap_t *p, int *pcap_stat_size);
 static int TcSetBuff(pcap_t *p, int dim);
@@ -663,7 +662,7 @@ TcActivate(pcap_t *p)
 	}
 
 	p->read_op = TcRead;
-	p->setfilter_op = TcSetFilter;
+	p->setfilter_op = install_bpf_program;
 	p->setdirection_op = NULL;	/* Not implemented. */
 	p->set_datalink_op = TcSetDatalink;
 	p->getnonblock_op = TcGetNonBlock;
@@ -1099,27 +1098,6 @@ TcStats(pcap_t *p, struct pcap_stat *ps)
 	return 0;
 }
 
-
-/*
- * We filter at user level, since the kernel driver does't process the packets
- */
-static int
-TcSetFilter(pcap_t *p, struct bpf_program *fp)
-{
-	if(!fp)
-	{
-		strncpy(p->errbuf, "setfilter: No filter specified", sizeof(p->errbuf));
-		return -1;
-	}
-
-	/* Install a user level filter */
-	if (install_bpf_program(p, fp) < 0)
-	{
-		return -1;
-	}
-
-	return 0;
-}
 
 #ifdef _WIN32
 static struct pcap_stat *
