@@ -1134,8 +1134,14 @@
  */
 #define LINKTYPE_EBHSCR	        279
 
+/*
+ * The http://fd.io vpp graph dispatch tracer produces pcap trace files
+ * in the format documented here:
+ * https://fdio-vpp.readthedocs.io/en/latest/gettingstarted/developers/vnet.html#graph-dispatcher-pcap-tracing
+ */
+#define LINKTYPE_VPP_DISPATCH	280
 
-#define LINKTYPE_MATCHING_MAX	279		/* highest value in the "matching" range */
+#define LINKTYPE_MATCHING_MAX	280		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

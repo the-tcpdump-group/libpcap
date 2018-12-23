@@ -1420,6 +1420,13 @@
 #define DLT_EBHSCR	        279
 
 /*
+ * The http://fd.io vpp graph dispatch tracer produces pcap trace files
+ * in the format documented here:
+ * https://fdio-vpp.readthedocs.io/en/latest/gettingstarted/developers/vnet.html#graph-dispatcher-pcap-tracing
+ */
+#define DLT_VPP_DISPATCH	280
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1429,7 +1436,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	279	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	280	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and
