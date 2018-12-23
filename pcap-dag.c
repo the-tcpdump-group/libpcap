@@ -216,7 +216,6 @@ static unsigned char TempPkt[MAX_DAG_PACKET];
 #define dag_size_t uint32_t
 #endif
 
-static int dag_setfilter(pcap_t *p, struct bpf_program *fp);
 static int dag_stats(pcap_t *p, struct pcap_stat *ps);
 static int dag_set_datalink(pcap_t *p, int dlt);
 static int dag_get_datalink(pcap_t *p);
@@ -991,7 +990,7 @@ static int dag_activate(pcap_t* p)
 
 	p->read_op = dag_read;
 	p->inject_op = dag_inject;
-	p->setfilter_op = dag_setfilter;
+	p->setfilter_op = install_bpf_program;
 	p->setdirection_op = NULL; /* Not implemented.*/
 	p->set_datalink_op = dag_set_datalink;
 	p->getnonblock_op = pcap_getnonblock_fd;
@@ -1203,30 +1202,6 @@ dag_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		}
 
 	}
-	return (0);
-}
-
-/*
- * Installs the given bpf filter program in the given pcap structure.  There is
- * no attempt to store the filter in kernel memory as that is not supported
- * with DAG cards.
- */
-static int
-dag_setfilter(pcap_t *p, struct bpf_program *fp)
-{
-	if (!p)
-		return -1;
-	if (!fp) {
-		strncpy(p->errbuf, "setfilter: No filter specified",
-			sizeof(p->errbuf));
-		return -1;
-	}
-
-	/* Make our private copy of the filter */
-
-	if (install_bpf_program(p, fp) < 0)
-		return -1;
-
 	return (0);
 }
 
