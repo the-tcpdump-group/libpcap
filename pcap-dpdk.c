@@ -168,7 +168,6 @@ struct pcap_dpdk{
 	struct dpdk_ts_helper ts_helper;
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
-	volatile sig_atomic_t break_loop;
 };
 
 static struct rte_eth_conf port_conf = {
@@ -211,13 +210,7 @@ static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *
 	return total_len;
 }
 
-static void pcap_dpdk_breakloop(pcap_t *p)
-{
-	pcap_breakloop_common(p);
-	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
-	pd->break_loop = p->break_loop;	
-}
-static void dpdk_dispatch_inter(void *dpdk_user)
+static void dpdk_dispatch_internal(void *dpdk_user)
 {
 	if (dpdk_user == NULL){
 		return;
@@ -255,7 +248,7 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 		return;
 	}
 	while( max_cnt==-1 || pkt_cnt < max_cnt){
-		if (pd->break_loop){
+		if (p->break_loop){
 			break;
 		}
 		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, MAX_PKT_BURST);
@@ -316,11 +309,7 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	}	
 	pd->rx_pkts = pkt_cnt;
 }
-static int launch_one_lcore(void *dpdk_user)
-{
-	dpdk_dispatch_inter(dpdk_user);
-	return 0;
-}
+
 static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *pcap_user)
 {
 	unsigned lcore_id = 0;	
@@ -331,13 +320,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *p
 	pd->max_cnt = max_cnt;
 	pd->orig = p;
 	void *dpdk_user = p;	
-	// launch_one_lcore func will be called on every lcore include master core.
-	rte_eal_mp_remote_launch(launch_one_lcore, dpdk_user, CALL_MASTER);
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		if (rte_eal_wait_lcore(lcore_id) < 0) {
-			break;
-		}
-	}
+	dpdk_dispatch_internal(dpdk_user);	
 	return pd->rx_pkts;	
 }
 
@@ -382,12 +365,12 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	struct pcap_dpdk *pd = p->priv;
 	calculate_timestamp(&(pd->ts_helper), &(pd->curr_ts));
 	rte_eth_stats_get(pd->portid,&(pd->curr_stats));
-
-	ps->ps_recv = pd->curr_stats.ipackets;
-	ps->ps_drop = pd->curr_stats.ierrors;
-	ps->ps_drop += pd->bpf_drop;
-	ps->ps_ifdrop = pd->curr_stats.imissed;
-	
+	if (ps){
+		ps->ps_recv = pd->curr_stats.ipackets;
+		ps->ps_drop = pd->curr_stats.ierrors;
+		ps->ps_drop += pd->bpf_drop;
+		ps->ps_ifdrop = pd->curr_stats.imissed;
+	}
 	uint64_t delta_pkt = pd->curr_stats.ipackets - pd->prev_stats.ipackets;
 	struct timeval delta_tm;
 	timersub(&(pd->curr_ts),&(pd->prev_ts), &delta_tm);
@@ -726,7 +709,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->setnonblock_op = pcap_dpdk_setnonblock;
 		p->stats_op = pcap_dpdk_stats;
 		p->cleanup_op = pcap_dpdk_close;
-		p->breakloop_op = pcap_dpdk_breakloop;
+		p->breakloop_op = pcap_breakloop_common;
 		ret = 0; // OK
 	}while(0);
 
