@@ -218,6 +218,7 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 	pcap_t *p = dpdk_user;
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
 	int max_cnt = pd->max_cnt;
+	int burst_cnt = 0;
 	pcap_handler cb = pd->cb;
 	u_char *cb_arg = pd->cb_arg;
 	int nb_rx=0;
@@ -247,11 +248,16 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 	if (lcore_id != master_lcore_id){
 		return;
 	}
+	if (max_cnt>0 && max_cnt < MAX_PKT_BURST){
+		burst_cnt = max_cnt;
+	}else{
+		burst_cnt = MAX_PKT_BURST;
+	}
 	while( max_cnt==-1 || pkt_cnt < max_cnt){
 		if (p->break_loop){
 			break;
 		}
-		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, MAX_PKT_BURST);
+		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, burst_cnt);
 		pkt_cnt += nb_rx;
 		for ( i = 0; i < nb_rx; i++) {
 			m = pkts_burst[i];
