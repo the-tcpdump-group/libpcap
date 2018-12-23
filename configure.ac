@@ -2128,7 +2128,7 @@ AC_INCLUDES_DEFAULT
 	AC_SUBST(NETMAP_SRC)
 fi
 
-# Check for DPDK support, defualt no.
+# Check for DPDK support, defualt no. --enable-dpdk shall be setted explicitly. 
 AC_ARG_ENABLE([dpdk],
 [AC_HELP_STRING([--enable-dpdk],[enable dpdk support @<:@default=no@:>@])],
     [enable_dpdk=$enableval],
@@ -2138,7 +2138,6 @@ AC_ARG_WITH([dpdk-includes],
 AC_HELP_STRING([--with-dpdk-includes=IDIR],[Endace DPDK include directory, if not DIR/include]),
 [
 	# User wants DPDK support and has specified a header directory, so use the provided value.
-	enable_dpdk=yes
 	dpdk_include_dir=$withval
 ],[])
 
@@ -2146,22 +2145,17 @@ AC_ARG_WITH([dpdk-libraries],
 AC_HELP_STRING([--with-dpdk-libraries=LDIR],[Endace DPDK library directory, if not DIR/lib]),
 [
 	# User wants DPDK support and has specified a library directory, so use the provided value.
-	enable_dpdk=yes
 	dpdk_lib_dir=$withval
 ],[])
 
 if test "x$enable_dpdk" != "xno" ; then
 	# If necessary, set default paths for DPDK API headers and libraries.
-	if test -z "$dpdk_root"; then
-		dpdk_root=/usr/local
-	fi
-
 	if test -z "$dpdk_include_dir"; then
-		dpdk_include_dir="$dpdk_root/include/dpdk"
+		dpdk_include_dir="$RTE_SDK/$RTE_TARGET/include"
 	fi
 
 	if test -z "$dpdk_lib_dir"; then
-		dpdk_lib_dir="$dpdk_root/lib"
+		dpdk_lib_dir="$RTE_SDK/$RTE_TARGET/lib"
 	fi
 	DPDK_MACHINE_CFLAGS="-march=native"
 	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_include_dir"

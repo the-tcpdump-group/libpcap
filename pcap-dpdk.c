@@ -28,20 +28,22 @@
 Date: Dec 16, 2018
 
 Description:
-1. Pcap-dpdk provides libpcap the ability to use DPDK with the device name as dpdk:[portid], such as dpdk:0.
+1. Pcap-dpdk provides libpcap the ability to use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 2. DPDK is a set of libraries and drivers for fast packet processing. (https://www.dpdk.org/) 
+3. The testprogs/capturetest provides 6.4Gbps/800,000 pps on Intel 10-Gigabit X540-AT2 with DPDK 18.11.
 
 Limitations:
-1. By default enable_dpdk is no, unless you set inlcudes and lib dir
-by --with-dpdk-includes= --with-dpdk-libraries=
+1. By default DPDK support is no, unless you explicitly set --enable-dpdk with ./configure or -DDISABLE_DPDK=OFF with cmake.
 2. Only support link libdpdk.so dynamicly, because the libdpdk.a will not work correctly.
 3. Only support read operation, and packet injection has not been supported yet.
-4. I have tested on DPDK v18.11.
+
 Usage:
 1. compile DPDK as shared library and install.(https://github.com/DPDK/dpdk.git)
 
 You shall modify the file $RTE_SDK/$RTE_TARGET/.config and set:
 CONFIG_RTE_BUILD_SHARED_LIB=y
+By the following command:
+sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config
 
 2. launch l2fwd that is one of DPDK examples correctly, and get device information.
 
@@ -53,13 +55,18 @@ $RTE_SDK/examples/l2fwd/$RTE_TARGET/l2fwd -dlibrte_pmd_e1000.so -dlibrte_pmd_ixg
 
 3. compile libpcap with dpdk options.
 
-you shall run the following command to generate a new configure
+In order to find inlucde and lib automatically, you shall export DPDK envionment variable which are used for compiling DPDK.
 
-make clean
-autoreconf
+export RTE_SDK={your DPDK base directory}
+export RTE_TARGET={your target name}
 
-Then, run configure with dpdk options.
-For Ubuntu, they are --with-dpdk-includes=/usr/local/include/dpdk/ --with-dpdk-libraries=/usr/local/lib
+3.1 with configure
+
+./configure --enable-dpdk --with-dpdk-includes=$RTE_SDK/$RTE_TARGET/include --with-dpdk-libraries=$RTE_SDK/$RTE_TARGET/lib && make -s all && make -s testprogs && make install
+
+3.2 with cmake
+
+mkdir -p build && cd build && cmake -DDISABLE_DPDK=OFF -DDPDK_INC_DIR=$RTE_SDK/$RTE_TARGET/include -DDPDK_LIB_DIR=$RTE_SDK/$RTE_TARGET/lib" ../ && make -s all && make -s testprogs && make install 
 
 4. link your own program with libpcap, and use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 And you shall set DPDK configure options by environment variable DPDK_CFG
