@@ -1415,6 +1415,12 @@ endif()
 
 # Check for DPDK sniffing support
 if (NOT DISABLE_DPDK)
+	if (NOT DEFINED DPDK_INC_DIR)
+		set(DPDK_INC_DIR $ENV{RTE_SDK}/$ENV{RTE_TARGET}/include)
+	endif()
+	if (NOT DEFINED DPDK_LIB_DIR)
+		set(DPDK_LIB_DIR $ENV{RTE_SDK}/$ENV{RTE_TARGET}/lib)
+	endif()
 	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-march=native")
 	include_directories(AFTER ${DPDK_INC_DIR})
 	link_directories(AFTER ${DPDK_LIB_DIR})

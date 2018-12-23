@@ -54,6 +54,7 @@ addons:
       - libbluetooth-dev
       - libnl-genl-3-dev
       - libibverbs-dev
+      - libnuma-dev
 
 git:
   quiet: true

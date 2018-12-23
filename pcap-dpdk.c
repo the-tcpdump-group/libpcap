@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 All rights reserved.
+ * Copyright (C) 2018 jingle YANG. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,20 +28,22 @@
 Date: Dec 16, 2018
 
 Description:
-1. Pcap-dpdk provides libpcap the ability to use DPDK with the device name as dpdk:[portid], such as dpdk:0.
+1. Pcap-dpdk provides libpcap the ability to use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 2. DPDK is a set of libraries and drivers for fast packet processing. (https://www.dpdk.org/) 
+3. The testprogs/capturetest provides 6.4Gbps/800,000 pps on Intel 10-Gigabit X540-AT2 with DPDK 18.11.
 
 Limitations:
-1. By default enable_dpdk is no, unless you set inlcudes and lib dir
-by --with-dpdk-includes= --with-dpdk-libraries=
+1. By default DPDK support is no, unless you explicitly set --enable-dpdk with ./configure or -DDISABLE_DPDK=OFF with cmake.
 2. Only support link libdpdk.so dynamicly, because the libdpdk.a will not work correctly.
 3. Only support read operation, and packet injection has not been supported yet.
-4. I have tested on DPDK v18.11.
+
 Usage:
 1. compile DPDK as shared library and install.(https://github.com/DPDK/dpdk.git)
 
 You shall modify the file $RTE_SDK/$RTE_TARGET/.config and set:
 CONFIG_RTE_BUILD_SHARED_LIB=y
+By the following command:
+sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config
 
 2. launch l2fwd that is one of DPDK examples correctly, and get device information.
 
@@ -53,38 +55,24 @@ $RTE_SDK/examples/l2fwd/$RTE_TARGET/l2fwd -dlibrte_pmd_e1000.so -dlibrte_pmd_ixg
 
 3. compile libpcap with dpdk options.
 
-you shall run the following command to generate a new configure
+In order to find inlucde and lib automatically, you shall export DPDK envionment variable which are used for compiling DPDK.
 
-make clean
-autoreconf
+export RTE_SDK={your DPDK base directory}
+export RTE_TARGET={your target name}
 
-Then, run configure with dpdk options.
-For Ubuntu, they are --with-dpdk-includes=/usr/local/include/dpdk/ --with-dpdk-libraries=/usr/local/lib
+3.1 with configure
 
-4. link your own program with libpcap, and use DPDK with the device name as dpdk[portid], such as dpdk:0.
+./configure --enable-dpdk --with-dpdk-includes=$RTE_SDK/$RTE_TARGET/include --with-dpdk-libraries=$RTE_SDK/$RTE_TARGET/lib && make -s all && make -s testprogs && make install
+
+3.2 with cmake
+
+mkdir -p build && cd build && cmake -DDISABLE_DPDK=OFF -DDPDK_INC_DIR=$RTE_SDK/$RTE_TARGET/include -DDPDK_LIB_DIR=$RTE_SDK/$RTE_TARGET/lib" ../ && make -s all && make -s testprogs && make install 
+
+4. link your own program with libpcap, and use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 And you shall set DPDK configure options by environment variable DPDK_CFG
 For example, the testprogs/capturetest could be lanched by: 
 
 env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so" ./capturetest -i dpdk:0
-
-The program will print the following message on my computer:
-
-USER1: dpdk cfg: libpcap_dpdk --log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so
-EAL: Detected 4 lcore(s)
-EAL: Detected 1 NUMA nodes
-EAL: Multi-process socket /var/run/dpdk/rte/mp_socket
-EAL: No free hugepages reported in hugepages-1048576kB
-EAL: Probing VFIO support...
-EAL: PCI device 0000:00:19.0 on NUMA socket -1
-EAL:   Invalid NUMA socket, default to 0
-EAL:   probe driver: 8086:1559 net_e1000_em
-USER1: pcap_dpdk_activate device dpdk:0 portid 0, pci_addr: 0000:00:19.0
-USER1: Port 0 Link Up. Speed 1000 Mbps - full-duplex
-USER1: Port 0, MAC address: [MAC ADDR]
-
-Listening on dpdk:0
-USER1: dpdk: lcoreid=0 runs for portid=0
-
 */
 
 #ifdef HAVE_CONFIG_H
@@ -126,14 +114,23 @@ USER1: dpdk: lcoreid=0 runs for portid=0
 #include "pcap-int.h"
 #include "pcap-dpdk.h"
 
+#define DPDK_DEF_LOG_LEV RTE_LOG_ERR
+static int is_dpdk_pre_inited=0;
 #define DPDK_LIB_NAME "libpcap_dpdk"
+#define DPDK_DESC "Data Plane Development Kit (DPDK) Interface"
+#define DPDK_ERR_PERM_MSG "permission denied, DPDK needs root permission"
 #define DPDK_ARGC_MAX 64 
 #define DPDK_CFG_MAX_LEN 1024
+#define DPDK_DEV_NAME_MAX 32
+#define DPDK_DEV_DESC_MAX 512 
 #define DPDK_CFG_ENV_NAME "DPDK_CFG"
 static char dpdk_cfg_buf[DPDK_CFG_MAX_LEN];
+#define DPDK_MAC_ADDR_SIZE 32
+#define DPDK_DEF_MAC_ADDR "00:00:00:00:00:00"
 #define DPDK_PCI_ADDR_SIZE 16
-#define DPDK_DEF_CFG "--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so"
+#define DPDK_DEF_CFG "--log-level=error -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so"
 #define DPDK_PREFIX "dpdk:"
+#define DPDK_PORTID_MAX 65535U
 #define MBUF_POOL_NAME "mbuf_pool"
 #define DPDK_TX_BUF_NAME "tx_buffer"
 //The number of elements in the mbuf pool.
@@ -167,6 +164,7 @@ struct pcap_dpdk{
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
 	struct ether_addr eth_addr;
+	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -177,7 +175,6 @@ struct pcap_dpdk{
 	struct dpdk_ts_helper ts_helper;
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
-	volatile sig_atomic_t break_loop;
 };
 
 static struct rte_eth_conf port_conf = {
@@ -209,10 +206,10 @@ static inline void calculate_timestamp(struct dpdk_ts_helper *helper,struct time
 	timeradd(&(helper->start_time), &cur_time, ts);
 }
 
-static unsigned int dpdk_gather_data(unsigned char *data, struct rte_mbuf *mbuf)
+static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *mbuf)
 {
-	unsigned int total_len = 0;
-	while (mbuf && (total_len+mbuf->data_len) < RTE_ETH_PCAP_SNAPLEN ){
+	uint32_t total_len = 0;
+	while (mbuf && (total_len+mbuf->data_len) < len ){
 		rte_memcpy(data+total_len, rte_pktmbuf_mtod(mbuf,void *),mbuf->data_len);
 		total_len+=mbuf->data_len;
 		mbuf=mbuf->next;
@@ -220,13 +217,7 @@ static unsigned int dpdk_gather_data(unsigned char *data, struct rte_mbuf *mbuf)
 	return total_len;
 }
 
-static void pcap_dpdk_breakloop(pcap_t *p)
-{
-	pcap_breakloop_common(p);
-	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
-	pd->break_loop = p->break_loop;	
-}
-static void dpdk_dispatch_inter(void *dpdk_user)
+static void dpdk_dispatch_internal(void *dpdk_user)
 {
 	if (dpdk_user == NULL){
 		return;
@@ -234,6 +225,7 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	pcap_t *p = dpdk_user;
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
 	int max_cnt = pd->max_cnt;
+	int burst_cnt = 0;
 	pcap_handler cb = pd->cb;
 	u_char *cb_arg = pd->cb_arg;
 	int nb_rx=0;
@@ -243,12 +235,16 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	uint16_t portid = pd->portid;
 	unsigned lcore_id = rte_lcore_id();
 	unsigned master_lcore_id = rte_get_master_lcore();
+	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
 	uint16_t data_len = 0;
+	uint32_t pkt_len = 0;
+	int caplen = 0;
 	u_char *bp = NULL;
 	int i=0;
 	unsigned int gather_len =0;
 	int pkt_cnt = 0;
 	int is_accepted=0;
+	u_char *large_buffer=NULL;
 		
 	if(lcore_id == master_lcore_id){
 		RTE_LOG(DEBUG, USER1, "dpdk: lcoreid=%u runs for portid=%u\n", lcore_id, portid);
@@ -259,18 +255,27 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	if (lcore_id != master_lcore_id){
 		return;
 	}
+	if (max_cnt>0 && max_cnt < MAX_PKT_BURST){
+		burst_cnt = max_cnt;
+	}else{
+		burst_cnt = MAX_PKT_BURST;
+	}
 	while( max_cnt==-1 || pkt_cnt < max_cnt){
-		if (pd->break_loop){
+		if (p->break_loop){
 			break;
 		}
-		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, MAX_PKT_BURST);
+		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, burst_cnt);
 		pkt_cnt += nb_rx;
 		for ( i = 0; i < nb_rx; i++) {
 			m = pkts_burst[i];
 			calculate_timestamp(&(pd->ts_helper),&(pcap_header.ts));
 			data_len = rte_pktmbuf_data_len(m);
-			pcap_header.caplen = data_len; 
-			pcap_header.len = data_len; 
+			pkt_len = rte_pktmbuf_pkt_len(m);
+			// caplen = min(pkt_len, p->snapshot);
+			// caplen will not be changed, no matter how long the rte_pktmbuf
+			caplen = pkt_len < p->snapshot ? pkt_len: p->snapshot; 
+			pcap_header.caplen = caplen;
+			pcap_header.len = pkt_len; 
 			// volatile prefetch
 			rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 			bp = NULL;
@@ -278,13 +283,18 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 			{
 				bp = rte_pktmbuf_mtod(m, u_char *);
 			}else{
-				if (m->pkt_len <= ETHER_MAX_JUMBO_FRAME_LEN)
+				// use fast buffer pcap_tmp_buf if pkt_len is small, no need to call malloc and free
+				if ( pkt_len <= ETHER_MAX_JUMBO_FRAME_LEN)
 				{
-					gather_len = dpdk_gather_data(pd->pcap_tmp_buf, m);
+					gather_len = dpdk_gather_data(pd->pcap_tmp_buf, RTE_ETH_PCAP_SNAPLEN, m);
 					bp = pd->pcap_tmp_buf;
-					pcap_header.caplen = gather_len;
-					pcap_header.len = gather_len;
+				}else{ 
+					// need call free later
+					large_buffer = (u_char *)malloc(caplen*sizeof(u_char));
+					gather_len = dpdk_gather_data(large_buffer, caplen, m); 
+					bp = large_buffer;
 				}
+				
 			}
 			if (bp){
 				//default accpet all
@@ -304,15 +314,15 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 			}
 			//free all pktmbuf
 			rte_pktmbuf_free(m);
+			if (large_buffer){
+				free(large_buffer);
+				large_buffer=NULL;
+			}
 		}
 	}	
 	pd->rx_pkts = pkt_cnt;
 }
-static int launch_one_lcore(void *dpdk_user)
-{
-	dpdk_dispatch_inter(dpdk_user);
-	return 0;
-}
+
 static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *pcap_user)
 {
 	unsigned lcore_id = 0;	
@@ -323,13 +333,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *p
 	pd->max_cnt = max_cnt;
 	pd->orig = p;
 	void *dpdk_user = p;	
-	// launch_one_lcore func will be called on every lcore include master core.
-	rte_eal_mp_remote_launch(launch_one_lcore, dpdk_user, CALL_MASTER);
-	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
-		if (rte_eal_wait_lcore(lcore_id) < 0) {
-			break;
-		}
-	}
+	dpdk_dispatch_internal(dpdk_user);	
 	return pd->rx_pkts;	
 }
 
@@ -358,18 +362,6 @@ static void pcap_dpdk_close(pcap_t *p)
 	pcap_cleanup_live_common(p);
 } 
 
-static int pcap_dpdk_setfilter(pcap_t *p, struct bpf_program *fp)
-{
-	//init bpf for dpdk, only support userspace bfp 
-	struct pcap_dpdk * pd = p->priv;
-	int ret=0;
-	ret = install_bpf_program(p, fp); 
-	if (ret==0){
-		pd->filter_in_userland = 1;
-	}
-	return ret;
-}
-
 static void nic_stats_display(struct pcap_dpdk *pd)
 {
 	uint16_t portid = pd->portid;
@@ -386,12 +378,12 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	struct pcap_dpdk *pd = p->priv;
 	calculate_timestamp(&(pd->ts_helper), &(pd->curr_ts));
 	rte_eth_stats_get(pd->portid,&(pd->curr_stats));
-
-	ps->ps_recv = pd->curr_stats.ipackets;
-	ps->ps_drop = pd->curr_stats.ierrors;
-	ps->ps_drop += pd->bpf_drop;
-	ps->ps_ifdrop = pd->curr_stats.imissed;
-	
+	if (ps){
+		ps->ps_recv = pd->curr_stats.ipackets;
+		ps->ps_drop = pd->curr_stats.ierrors;
+		ps->ps_drop += pd->bpf_drop;
+		ps->ps_ifdrop = pd->curr_stats.imissed;
+	}
 	uint64_t delta_pkt = pd->curr_stats.ipackets - pd->prev_stats.ipackets;
 	struct timeval delta_tm;
 	timersub(&(pd->curr_ts),&(pd->prev_ts), &delta_tm);
@@ -417,44 +409,60 @@ static int pcap_dpdk_getnonblock(pcap_t *p){
 		errno, "dpdk error: getnonblock not support");
 	return 0;
 }
-
 static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
-	uint8_t count = 0;
-	int is_port_up = 0;
-	int max_check_time = 50;
-	int check_interval = 100; // 100ms
-	for (count = 0; count <= max_check_time; count++) {
-		memset(plink, 0, sizeof(struct rte_eth_link));
-		rte_eth_link_get_nowait(portid, plink);
-		if (plink->link_status == ETH_LINK_UP)
+	// wait up to 9 seconds to get link status
+	rte_eth_link_get(portid, plink);
+	return plink->link_status == ETH_LINK_UP;
+}
+static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
+{
+	int offset=0;
+	if (addrp == NULL){
+		pcap_snprintf(mac_str, len-1, DPDK_DEF_MAC_ADDR);
+		return;
+	}
+	for (int i=0; i<6; i++)
+	{
+		if (offset >= len)
+		{ // buffer overflow
+			return;
+		}
+		if (i==0)
 		{
-			is_port_up = 1;
-			break;
+			pcap_snprintf(mac_str+offset, len-1-offset, "%02X",addrp->addr_bytes[i]);
+			offset+=2; // FF
 		}else{
-			rte_delay_ms(check_interval);
+			pcap_snprintf(mac_str+offset, len-1-offset, ":%02X", addrp->addr_bytes[i]);
+			offset+=3; // :FF
 		}
 	}
-	return is_port_up;
+	return;
 }
-
 // return portid by device name, otherwise return -1
 static uint16_t portid_by_device(char * device)
 {
-	uint16_t ret = -1;
+	uint16_t ret = DPDK_PORTID_MAX; 
 	int len = strlen(device);
 	int prefix_len = strlen(DPDK_PREFIX);
 	unsigned long ret_ul = 0L;
-
+	char *pEnd;
 	if (len<=prefix_len || strncmp(device, DPDK_PREFIX, prefix_len)) // check prefix dpdk:
 	{
 		return ret;
 	}
-	if (device[prefix_len]>='0' && device[prefix_len]<='9')
-	{ // is digital
-		ret_ul = strtoul(&(device[prefix_len]), NULL, 10);
-		ret = (uint16_t)ret_ul;
+	//check all chars are digital
+	for (int i=prefix_len; device[i]; i++){
+		if (device[i]<'0' || device[i]>'9'){
+			return ret;	
+		}
 	}
+	ret_ul = strtoul(&(device[prefix_len]), &pEnd, 10);
+	// too large for portid
+	if (ret_ul >= DPDK_PORTID_MAX){ 
+		return ret;
+	}
+	ret = (uint16_t)ret_ul;
 	return ret;
 }
 
@@ -481,13 +489,57 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 	dargv[cnt]=NULL;
 	return cnt;
 }
+
+// only called once
+static int dpdk_pre_init(char * ebuf)
+{
+	int dargv_cnt=0;
+	char *dargv[DPDK_ARGC_MAX];
+	char *ptr_dpdk_cfg = NULL;
+	int ret = PCAP_ERROR; 
+	// globale var
+	if (is_dpdk_pre_inited)
+	{
+		// already inited
+		return 0;
+	}
+	// check for root permission
+	if( geteuid() != 0)
+	{
+		RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "dpdk error: %s",
+			    DPDK_ERR_PERM_MSG);
+		ret = PCAP_ERROR_PERM_DENIED;
+		return ret;	
+	}
+	// init EAL
+	ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
+	// set default log level to debug
+	rte_log_set_global_level(DPDK_DEF_LOG_LEV);
+	if (ptr_dpdk_cfg == NULL)
+	{
+		RTE_LOG(INFO,USER1,"env $DPDK_CFG is unset, so using default: %s\n",DPDK_DEF_CFG);
+		ptr_dpdk_cfg = DPDK_DEF_CFG;
+	}
+	memset(dpdk_cfg_buf,0,sizeof(dpdk_cfg_buf));
+	snprintf(dpdk_cfg_buf,DPDK_CFG_MAX_LEN-1,"%s %s",DPDK_LIB_NAME,ptr_dpdk_cfg);
+	dargv_cnt = parse_dpdk_cfg(dpdk_cfg_buf,dargv);
+	ret = rte_eal_init(dargv_cnt,dargv);
+	// if init successed, we do not need to do it again later.
+	if (ret == 0){
+		is_dpdk_pre_inited = 1;
+	}
+	return ret;
+}
+
 static int pcap_dpdk_activate(pcap_t *p)
 {
 	struct pcap_dpdk *pd = p->priv;
 	pd->orig = p;
 	int ret = PCAP_ERROR;
 	uint16_t nb_ports=0;
-	uint16_t portid=-1;
+	uint16_t portid= DPDK_PORTID_MAX;
 	unsigned nb_mbufs = DPDK_NB_MBUFS;
 	struct rte_eth_rxconf rxq_conf;
 	struct rte_eth_txconf txq_conf;
@@ -495,26 +547,9 @@ static int pcap_dpdk_activate(pcap_t *p)
 	struct rte_eth_dev_info dev_info;
 	int is_port_up = 0;
 	struct rte_eth_link link;
-	if (p == NULL)
-	{
-		return PCAP_ERROR;
-	}
-
 	do{
 		//init EAL
-		rte_log_set_global_level(RTE_LOG_DEBUG);
-		int dargv_cnt=0;
-		char * dargv[DPDK_ARGC_MAX];
-		char *ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
-		if (ptr_dpdk_cfg == NULL)
-		{
-			RTE_LOG(INFO,USER1,"env $DPDK_CFG is unset, so using default: %s\n",DPDK_DEF_CFG);
-			ptr_dpdk_cfg = DPDK_DEF_CFG;
-		}
-		memset(dpdk_cfg_buf,0,sizeof(dpdk_cfg_buf));
-		snprintf(dpdk_cfg_buf,DPDK_CFG_MAX_LEN-1,"%s %s",DPDK_LIB_NAME,ptr_dpdk_cfg);
-		dargv_cnt = parse_dpdk_cfg(dpdk_cfg_buf,dargv);
-		ret = rte_eal_init(dargv_cnt,dargv);
+		ret = dpdk_pre_init(p->errbuf);
 		if (ret < 0)
 		{
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -541,25 +576,18 @@ static int pcap_dpdk_activate(pcap_t *p)
 			ret = PCAP_ERROR;
 			break;
 		}
-		// parse portid
+
 		portid = portid_by_device(p->opt.device);
-		if (portid == -1){
+		if (portid == DPDK_PORTID_MAX){
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "dpdk error: portid is invalid. device %s",
 			    p->opt.device);
-			ret = PCAP_ERROR;
+			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			break;
 		}
 
-		if (portid >= nb_ports)
-		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: portid(%u) is larger than nb_ports(%u)",
-			    portid, nb_ports);
-			ret = PCAP_ERROR;
-			break;
-		}
 		pd->portid = portid;
+
 		if (p->snapshot <= 0 || p->snapshot > MAXIMUM_SNAPLEN)
 		{
 			p->snapshot = MAXIMUM_SNAPLEN;
@@ -603,6 +631,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		}
 		// get MAC addr
 		rte_eth_macaddr_get(portid, &(pd->eth_addr));
+		eth_addr_str(&(pd->eth_addr), pd->mac_addr, DPDK_MAC_ADDR_SIZE-1);
 
 		// init one RX queue
 		rxq_conf = dev_info.default_rxconf;
@@ -656,15 +685,17 @@ static int pcap_dpdk_activate(pcap_t *p)
 			ret = PCAP_ERROR;
 			break;
 		}
-		// set promisc mode
-		pd->must_clear_promisc=1;
-		rte_eth_promiscuous_enable(portid);
+		// set promiscuous mode
+		if (p->opt.promisc){
+			pd->must_clear_promisc=1;
+			rte_eth_promiscuous_enable(portid);
+		}
 		// check link status
 		is_port_up = check_link_status(portid, &link);
 		if (!is_port_up){
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "dpdk error: link is down, port=%u",portid);
-			ret = PCAP_ERROR;
+			ret = PCAP_ERROR_IFACE_NOT_UP;
 			break;
 		}
 		// reset statistics
@@ -682,36 +713,29 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->selectable_fd = p->fd;
 		p->read_op = pcap_dpdk_dispatch;
 		p->inject_op = pcap_dpdk_inject;
-		p->setfilter_op = pcap_dpdk_setfilter;
+		// DPDK only support filter in userland now
+		pd->filter_in_userland = 1;
+		p->setfilter_op = install_bpf_program;
 		p->setdirection_op = NULL;
 		p->set_datalink_op = NULL;
 		p->getnonblock_op = pcap_dpdk_getnonblock;
 		p->setnonblock_op = pcap_dpdk_setnonblock;
 		p->stats_op = pcap_dpdk_stats;
 		p->cleanup_op = pcap_dpdk_close;
-		p->breakloop_op = pcap_dpdk_breakloop;
+		p->breakloop_op = pcap_breakloop_common;
 		ret = 0; // OK
 	}while(0);
-	rte_eth_dev_get_name_by_port(portid,pd->pci_addr);
-	RTE_LOG(INFO, USER1,"%s device %s portid %d, pci_addr: %s\n", __FUNCTION__, p->opt.device, portid, pd->pci_addr);
-	RTE_LOG(INFO, USER1,"Port %d Link Up. Speed %u Mbps - %s\n",
-						portid, link.link_speed,
-				(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
-					("full-duplex") : ("half-duplex\n"));
-	RTE_LOG(INFO, USER1,"Port %u, MAC address:", portid);
-	for (int i=0; i<6; i++)
-	{
-		if (i==0)
-		{
-			fprintf(stderr,"%02X",pd->eth_addr.addr_bytes[i]);
-		}else{
-			fprintf(stderr,":%02X", pd->eth_addr.addr_bytes[i]);
-		}
-	}
-	fprintf(stderr,"\n\n");
+
 	if (ret == PCAP_ERROR)
 	{
 		pcap_cleanup_live_common(p);
+	}else{
+		rte_eth_dev_get_name_by_port(portid,pd->pci_addr);
+		RTE_LOG(INFO, USER1,"Port %d device: %s, MAC:%s, PCI:%s\n", portid, p->opt.device, pd->mac_addr, pd->pci_addr);
+		RTE_LOG(INFO, USER1,"Port %d Link Up. Speed %u Mbps - %s\n",
+							portid, link.link_speed,
+					(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
+						("full-duplex") : ("half-duplex\n"));
 	}
 	return ret;
 }
@@ -734,7 +758,43 @@ pcap_t * pcap_dpdk_create(const char *device, char *ebuf, int *is_ours)
 	return p;
 }
 
-int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp _U_, char *err_str _U_)
+int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 {
-	return 0;
+	int ret=0;
+	int nb_ports = 0;
+	char dpdk_name[DPDK_DEV_NAME_MAX];
+	char dpdk_desc[DPDK_DEV_DESC_MAX];
+	struct ether_addr eth_addr;
+	char mac_addr[DPDK_MAC_ADDR_SIZE];
+	char pci_addr[DPDK_PCI_ADDR_SIZE];
+	do{
+		ret = dpdk_pre_init(ebuf);
+		if (ret < 0)
+		{
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "error: Init failed with device");
+			ret = PCAP_ERROR;
+			break;
+		}
+		nb_ports = rte_eth_dev_count_avail();
+		if (nb_ports == 0)
+		{
+			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			    errno, "DPDK error: No Ethernet ports");
+			ret = PCAP_ERROR;
+			break;
+		}
+		for (int i=0; i<nb_ports; i++){
+			pcap_snprintf(dpdk_name,DPDK_DEV_NAME_MAX-1,"dpdk:%d",i);
+			// mac addr 
+			rte_eth_macaddr_get(i, &eth_addr);
+			eth_addr_str(&eth_addr,mac_addr,DPDK_MAC_ADDR_SIZE);	
+			// PCI addr
+			rte_eth_dev_get_name_by_port(i,pci_addr);
+			pcap_snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
+			// continue add all dev, even error happens
+			add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf);
+		}	
+	}while(0);	
+	return ret;
 }
