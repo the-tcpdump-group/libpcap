@@ -366,18 +366,6 @@ static void pcap_dpdk_close(pcap_t *p)
 	pcap_cleanup_live_common(p);
 } 
 
-static int pcap_dpdk_setfilter(pcap_t *p, struct bpf_program *fp)
-{
-	//init bpf for dpdk, only support userspace bfp 
-	struct pcap_dpdk * pd = p->priv;
-	int ret=0;
-	ret = install_bpf_program(p, fp); 
-	if (ret==0){
-		pd->filter_in_userland = 1;
-	}
-	return ret;
-}
-
 static void nic_stats_display(struct pcap_dpdk *pd)
 {
 	uint16_t portid = pd->portid;
@@ -729,7 +717,9 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->selectable_fd = p->fd;
 		p->read_op = pcap_dpdk_dispatch;
 		p->inject_op = pcap_dpdk_inject;
-		p->setfilter_op = pcap_dpdk_setfilter;
+		// DPDK only support filter in userland now
+		pd->filter_in_userland = 1;
+		p->setfilter_op = install_bpf_program;
 		p->setdirection_op = NULL;
 		p->set_datalink_op = NULL;
 		p->getnonblock_op = pcap_dpdk_getnonblock;
