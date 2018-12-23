@@ -200,10 +200,10 @@ static inline void calculate_timestamp(struct dpdk_ts_helper *helper,struct time
 	timeradd(&(helper->start_time), &cur_time, ts);
 }
 
-static unsigned int dpdk_gather_data(unsigned char *data, struct rte_mbuf *mbuf)
+static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *mbuf)
 {
-	unsigned int total_len = 0;
-	while (mbuf && (total_len+mbuf->data_len) < RTE_ETH_PCAP_SNAPLEN ){
+	uint32_t total_len = 0;
+	while (mbuf && (total_len+mbuf->data_len) < len ){
 		rte_memcpy(data+total_len, rte_pktmbuf_mtod(mbuf,void *),mbuf->data_len);
 		total_len+=mbuf->data_len;
 		mbuf=mbuf->next;
@@ -234,12 +234,16 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 	uint16_t portid = pd->portid;
 	unsigned lcore_id = rte_lcore_id();
 	unsigned master_lcore_id = rte_get_master_lcore();
+	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
 	uint16_t data_len = 0;
+	uint32_t pkt_len = 0;
+	int caplen = 0;
 	u_char *bp = NULL;
 	int i=0;
 	unsigned int gather_len =0;
 	int pkt_cnt = 0;
 	int is_accepted=0;
+	u_char *large_buffer=NULL;
 		
 	if(lcore_id == master_lcore_id){
 		RTE_LOG(DEBUG, USER1, "dpdk: lcoreid=%u runs for portid=%u\n", lcore_id, portid);
@@ -260,8 +264,12 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 			m = pkts_burst[i];
 			calculate_timestamp(&(pd->ts_helper),&(pcap_header.ts));
 			data_len = rte_pktmbuf_data_len(m);
-			pcap_header.caplen = data_len; 
-			pcap_header.len = data_len; 
+			pkt_len = rte_pktmbuf_pkt_len(m);
+			// caplen = min(pkt_len, p->snapshot);
+			// caplen will not be changed, no matter how long the rte_pktmbuf
+			caplen = pkt_len < p->snapshot ? pkt_len: p->snapshot; 
+			pcap_header.caplen = caplen;
+			pcap_header.len = pkt_len; 
 			// volatile prefetch
 			rte_prefetch0(rte_pktmbuf_mtod(m, void *));
 			bp = NULL;
@@ -269,13 +277,18 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 			{
 				bp = rte_pktmbuf_mtod(m, u_char *);
 			}else{
-				if (m->pkt_len <= ETHER_MAX_JUMBO_FRAME_LEN)
+				// use fast buffer pcap_tmp_buf if pkt_len is small, no need to call malloc and free
+				if ( pkt_len <= ETHER_MAX_JUMBO_FRAME_LEN)
 				{
-					gather_len = dpdk_gather_data(pd->pcap_tmp_buf, m);
+					gather_len = dpdk_gather_data(pd->pcap_tmp_buf, RTE_ETH_PCAP_SNAPLEN, m);
 					bp = pd->pcap_tmp_buf;
-					pcap_header.caplen = gather_len;
-					pcap_header.len = gather_len;
+				}else{ 
+					// need call free later
+					large_buffer = (u_char *)malloc(caplen*sizeof(u_char));
+					gather_len = dpdk_gather_data(large_buffer, caplen, m); 
+					bp = large_buffer;
 				}
+				
 			}
 			if (bp){
 				//default accpet all
@@ -295,6 +308,10 @@ static void dpdk_dispatch_inter(void *dpdk_user)
 			}
 			//free all pktmbuf
 			rte_pktmbuf_free(m);
+			if (large_buffer){
+				free(large_buffer);
+				large_buffer=NULL;
+			}
 		}
 	}	
 	pd->rx_pkts = pkt_cnt;
