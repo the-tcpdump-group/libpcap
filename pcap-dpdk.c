@@ -414,6 +414,9 @@ static uint16_t portid_by_device(char * device)
 		}
 	}
 	ret_ul = strtoul(&(device[prefix_len]), &pEnd, 10);
+	if (pEnd == &(device[prefix_len]) || *pEnd != '\0'){
+		return ret;
+	}
 	// too large for portid
 	if (ret_ul >= DPDK_PORTID_MAX){ 
 		return ret;
@@ -682,7 +685,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = 0; // OK
 	}while(0);
 
-	if (ret == PCAP_ERROR)
+	if (ret <= PCAP_ERROR) // all kinds of error code
 	{
 		pcap_cleanup_live_common(p);
 	}else{
