@@ -156,15 +156,10 @@ struct dpdk_ts_helper{
 struct pcap_dpdk{
 	pcap_t * orig;
 	uint16_t portid; // portid of DPDK
-	pcap_handler cb; //callback and argument
-	u_char *cb_arg;
-	int max_cnt;
 	int must_clear_promisc;
 	int filter_in_userland;
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
-	struct ether_addr eth_addr;
-	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -173,6 +168,8 @@ struct pcap_dpdk{
 	uint64_t bps;
 	struct rte_mempool * pktmbuf_pool;
 	struct dpdk_ts_helper ts_helper;
+	struct ether_addr eth_addr;
+	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
 };
@@ -217,26 +214,16 @@ static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *
 	return total_len;
 }
 
-static void dpdk_dispatch_internal(void *dpdk_user)
+static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *cb_arg)
 {
-	if (dpdk_user == NULL){
-		return;
-	}
-	pcap_t *p = dpdk_user;
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
-	int max_cnt = pd->max_cnt;
 	int burst_cnt = 0;
-	pcap_handler cb = pd->cb;
-	u_char *cb_arg = pd->cb_arg;
 	int nb_rx=0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	struct pcap_pkthdr pcap_header;
 	uint16_t portid = pd->portid;
-	unsigned lcore_id = rte_lcore_id();
-	unsigned master_lcore_id = rte_get_master_lcore();
 	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
-	uint16_t data_len = 0;
 	uint32_t pkt_len = 0;
 	int caplen = 0;
 	u_char *bp = NULL;
@@ -245,21 +232,14 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 	int pkt_cnt = 0;
 	int is_accepted=0;
 	u_char *large_buffer=NULL;
-		
-	if(lcore_id == master_lcore_id){
-		RTE_LOG(DEBUG, USER1, "dpdk: lcoreid=%u runs for portid=%u\n", lcore_id, portid);
-	}else{
-		RTE_LOG(DEBUG, USER1, "dpdk: lcore %u has nothing to do\n", lcore_id);
-	}
-	//only use master lcore
-	if (lcore_id != master_lcore_id){
-		return;
-	}
+	
+	pd->rx_pkts = 0;
 	if (max_cnt>0 && max_cnt < MAX_PKT_BURST){
 		burst_cnt = max_cnt;
 	}else{
 		burst_cnt = MAX_PKT_BURST;
 	}
+
 	while( max_cnt==-1 || pkt_cnt < max_cnt){
 		if (p->break_loop){
 			break;
@@ -269,7 +249,6 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 		for ( i = 0; i < nb_rx; i++) {
 			m = pkts_burst[i];
 			calculate_timestamp(&(pd->ts_helper),&(pcap_header.ts));
-			data_len = rte_pktmbuf_data_len(m);
 			pkt_len = rte_pktmbuf_pkt_len(m);
 			// caplen = min(pkt_len, p->snapshot);
 			// caplen will not be changed, no matter how long the rte_pktmbuf
@@ -321,20 +300,7 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 		}
 	}	
 	pd->rx_pkts = pkt_cnt;
-}
-
-static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *pcap_user)
-{
-	unsigned lcore_id = 0;	
-	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
-	pd->rx_pkts=0;
-	pd->cb = cb;
-	pd->cb_arg = pcap_user;
-	pd->max_cnt = max_cnt;
-	pd->orig = p;
-	void *dpdk_user = p;	
-	dpdk_dispatch_internal(dpdk_user);	
-	return pd->rx_pkts;	
+	return pd->rx_pkts;
 }
 
 static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
