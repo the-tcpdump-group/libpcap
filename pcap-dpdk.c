@@ -672,8 +672,8 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->selectable_fd = p->fd;
 		p->read_op = pcap_dpdk_dispatch;
 		p->inject_op = pcap_dpdk_inject;
-		// DPDK only support filter in userland now
 		pd->filter_in_userland = 1;
+		// using pcap_filter currently, though DPDK provides their own BPF function. Because DPDK BPF needs load a ELF file as a filter.
 		p->setfilter_op = install_bpf_program;
 		p->setdirection_op = NULL;
 		p->set_datalink_op = NULL;
@@ -751,8 +751,10 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 			// PCI addr
 			rte_eth_dev_get_name_by_port(i,pci_addr);
 			pcap_snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
-			// continue add all dev, even error happens
-			add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf);
+			if (add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf)==NULL){
+				ret = PCAP_ERROR;
+				break;
+			}
 		}	
 	}while(0);	
 	return ret;
