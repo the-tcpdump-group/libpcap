@@ -234,7 +234,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	u_char *large_buffer=NULL;
 	
 	pd->rx_pkts = 0;
-	if (max_cnt>0 && max_cnt < MAX_PKT_BURST){
+	if ( !PACKET_COUNT_IS_UNLIMITED(max_cnt) && max_cnt < MAX_PKT_BURST){
 		burst_cnt = max_cnt;
 	}else{
 		burst_cnt = MAX_PKT_BURST;
@@ -276,16 +276,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 				
 			}
 			if (bp){
-				//default accpet all
-				is_accepted=1;
-				if (pd->filter_in_userland && p->fcode.bf_insns!=NULL)
-				{
-					if (!pcap_filter(p->fcode.bf_insns, bp, pcap_header.len, pcap_header.caplen)){
-						//rejected
-						is_accepted=0;
-					}
-				}
-				if (is_accepted){
+				if (p->fcode.bf_insns==NULL || pcap_filter(p->fcode.bf_insns, bp, pcap_header.len, pcap_header.caplen)){
 					cb(cb_arg, &pcap_header, bp);
 				}else{
 					pd->bpf_drop++;
@@ -307,7 +298,7 @@ static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	//not implemented yet
 	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: Inject function has not be implemented yet");
+		errno, "dpdk error: Inject function has not been implemented yet");
 	return PCAP_ERROR;
 }
 
@@ -324,7 +315,6 @@ static void pcap_dpdk_close(pcap_t *p)
 	}
 	rte_eth_dev_stop(pd->portid);
 	rte_eth_dev_close(pd->portid);
-	// free pcap_dpdk?
 	pcap_cleanup_live_common(p);
 } 
 
@@ -443,11 +433,11 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 	// find first non space char
 	// The last opt is NULL
 	for (i=0;dpdk_cfg[i] && cnt<DPDK_ARGC_MAX-1;i++){
-		if (skip_space && dpdk_cfg[i]!=0x20){ // not space
+		if (skip_space && dpdk_cfg[i]!=' '){ // not space
 			skip_space=!skip_space; // skip normal char
 			dargv[cnt++] = dpdk_cfg+i;
 		}
-		if (!skip_space && dpdk_cfg[i]==0x20){ // fint a space
+		if (!skip_space && dpdk_cfg[i]==' '){ // fint a space
 			dpdk_cfg[i]=0x00; // end of this opt
 			skip_space=!skip_space; // skip space char
 		}
