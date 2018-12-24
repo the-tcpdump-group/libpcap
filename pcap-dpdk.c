@@ -124,6 +124,7 @@ static int is_dpdk_pre_inited=0;
 #define DPDK_DEV_NAME_MAX 32
 #define DPDK_DEV_DESC_MAX 512 
 #define DPDK_CFG_ENV_NAME "DPDK_CFG"
+#define DPDK_DEF_MIN_SLEEP_MS 100
 static char dpdk_cfg_buf[DPDK_CFG_MAX_LEN];
 #define DPDK_MAC_ADDR_SIZE 32
 #define DPDK_DEF_MAC_ADDR "00:00:00:00:00:00"
@@ -159,6 +160,7 @@ struct pcap_dpdk{
 	int must_clear_promisc;
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
+	int nonblock;
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -353,16 +355,15 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	return 0;
 }
 
-static int pcap_dpdk_setnonblock(pcap_t *p, int fd _U_){
-	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: setnonblock not support");
+static int pcap_dpdk_setnonblock(pcap_t *p, int nonblock){
+	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
+	pd->nonblock = nonblock;
 	return 0;
 }
 
 static int pcap_dpdk_getnonblock(pcap_t *p){
-	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: getnonblock not support");
-	return 0;
+	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
+	return pd->nonblock;
 }
 static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
