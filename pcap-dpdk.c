@@ -124,6 +124,7 @@ static int is_dpdk_pre_inited=0;
 #define DPDK_DEV_NAME_MAX 32
 #define DPDK_DEV_DESC_MAX 512 
 #define DPDK_CFG_ENV_NAME "DPDK_CFG"
+#define DPDK_DEF_MIN_SLEEP_MS 1
 static char dpdk_cfg_buf[DPDK_CFG_MAX_LEN];
 #define DPDK_MAC_ADDR_SIZE 32
 #define DPDK_DEF_MAC_ADDR "00:00:00:00:00:00"
@@ -157,9 +158,9 @@ struct pcap_dpdk{
 	pcap_t * orig;
 	uint16_t portid; // portid of DPDK
 	int must_clear_promisc;
-	int filter_in_userland;
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
+	int nonblock;
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -214,11 +215,40 @@ static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *
 	return total_len;
 }
 
+
+static int dpdk_read_with_timeout(pcap_t *p, uint16_t portid, uint16_t queueid,struct rte_mbuf **pkts_burst, const uint16_t burst_cnt){
+	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
+	int nb_rx = 0;	
+	int timeout_ms = p->opt.timeout;
+	int sleep_ms = 0;
+	if (pd->nonblock){
+		// In non-blocking mode, just read once, no mater how many packets are captured.
+		nb_rx = (int)rte_eth_rx_burst(pd->portid, 0, pkts_burst, burst_cnt);
+	}else{
+		// In blocking mode, read many times until packets are captured or timeout or break_loop is setted.	
+		// if timeout_ms == 0, it may be blocked forever.
+		while (timeout_ms == 0 || sleep_ms < timeout_ms){
+			nb_rx = (int)rte_eth_rx_burst(pd->portid, 0, pkts_burst, burst_cnt);
+			if (nb_rx){ // got packets within timeout_ms
+				break;	
+			}else{ // no packet arrives at this round.
+				if (p->break_loop){
+					break;
+				}
+				// sleep for a very short while, but do not block CPU.
+				rte_delay_us_block(DPDK_DEF_MIN_SLEEP_MS*1000);
+				sleep_ms += DPDK_DEF_MIN_SLEEP_MS;
+			}
+		}
+	}
+	return nb_rx;
+}
+
 static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *cb_arg)
 {
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
 	int burst_cnt = 0;
-	int nb_rx=0;
+	int nb_rx = 0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	struct pcap_pkthdr pcap_header;
@@ -232,7 +262,8 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	int pkt_cnt = 0;
 	int is_accepted=0;
 	u_char *large_buffer=NULL;
-	
+	int timeout_ms = p->opt.timeout;
+
 	pd->rx_pkts = 0;
 	if ( !PACKET_COUNT_IS_UNLIMITED(max_cnt) && max_cnt < MAX_PKT_BURST){
 		burst_cnt = max_cnt;
@@ -242,9 +273,27 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 
 	while( PACKET_COUNT_IS_UNLIMITED(max_cnt) || pkt_cnt < max_cnt){
 		if (p->break_loop){
-			break;
+			p->break_loop = 1;
+			return PCAP_ERROR_BREAK;
 		}
-		nb_rx = (int)rte_eth_rx_burst(portid, 0, pkts_burst, burst_cnt);
+		// read once in non-blocking mode, or try many times waiting for timeout_ms.
+		// if timeout_ms == 0, it will be blocked until one packet arrives or break_loop is setted.
+		nb_rx = dpdk_read_with_timeout(p, portid, 0, pkts_burst, burst_cnt);
+		if (nb_rx == 0){ 
+			if (pd->nonblock){
+				RTE_LOG(DEBUG, USER1, "dpdk: no packets available in non-blocking mode.\n");
+			}else{
+				if (p->break_loop){
+					RTE_LOG(DEBUG, USER1, "dpdk: no packets available and break_loop is setted in blocking mode.\n");
+					p->break_loop = 1;
+					return PCAP_ERROR_BREAK;
+
+				}
+				RTE_LOG(DEBUG, USER1, "dpdk: no packets available for timeout %d ms in blocking mode.\n", timeout_ms);
+			}
+			// break if dpdk reads 0 packet, no matter in blocking(timeout) or non-blocking mode.
+			break;	
+		}
 		pkt_cnt += nb_rx;
 		for ( i = 0; i < nb_rx; i++) {
 			m = pkts_burst[i];
@@ -354,16 +403,15 @@ static int pcap_dpdk_stats(pcap_t *p, struct pcap_stat *ps)
 	return 0;
 }
 
-static int pcap_dpdk_setnonblock(pcap_t *p, int fd _U_){
-	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: setnonblock not support");
+static int pcap_dpdk_setnonblock(pcap_t *p, int nonblock){
+	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
+	pd->nonblock = nonblock;
 	return 0;
 }
 
 static int pcap_dpdk_getnonblock(pcap_t *p){
-	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: getnonblock not support");
-	return 0;
+	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
+	return pd->nonblock;
 }
 static int check_link_status(uint16_t portid, struct rte_eth_link *plink)
 {
@@ -672,7 +720,6 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->selectable_fd = p->fd;
 		p->read_op = pcap_dpdk_dispatch;
 		p->inject_op = pcap_dpdk_inject;
-		pd->filter_in_userland = 1;
 		// using pcap_filter currently, though DPDK provides their own BPF function. Because DPDK BPF needs load a ELF file as a filter.
 		p->setfilter_op = install_bpf_program;
 		p->setdirection_op = NULL;
