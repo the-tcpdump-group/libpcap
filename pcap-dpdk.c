@@ -156,15 +156,10 @@ struct dpdk_ts_helper{
 struct pcap_dpdk{
 	pcap_t * orig;
 	uint16_t portid; // portid of DPDK
-	pcap_handler cb; //callback and argument
-	u_char *cb_arg;
-	int max_cnt;
 	int must_clear_promisc;
 	int filter_in_userland;
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
-	struct ether_addr eth_addr;
-	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -173,6 +168,8 @@ struct pcap_dpdk{
 	uint64_t bps;
 	struct rte_mempool * pktmbuf_pool;
 	struct dpdk_ts_helper ts_helper;
+	struct ether_addr eth_addr;
+	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	unsigned char pcap_tmp_buf[RTE_ETH_PCAP_SNAPLEN];
 };
@@ -217,26 +214,16 @@ static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *
 	return total_len;
 }
 
-static void dpdk_dispatch_internal(void *dpdk_user)
+static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *cb_arg)
 {
-	if (dpdk_user == NULL){
-		return;
-	}
-	pcap_t *p = dpdk_user;
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
-	int max_cnt = pd->max_cnt;
 	int burst_cnt = 0;
-	pcap_handler cb = pd->cb;
-	u_char *cb_arg = pd->cb_arg;
 	int nb_rx=0;
 	struct rte_mbuf *pkts_burst[MAX_PKT_BURST];
 	struct rte_mbuf *m;
 	struct pcap_pkthdr pcap_header;
 	uint16_t portid = pd->portid;
-	unsigned lcore_id = rte_lcore_id();
-	unsigned master_lcore_id = rte_get_master_lcore();
 	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
-	uint16_t data_len = 0;
 	uint32_t pkt_len = 0;
 	int caplen = 0;
 	u_char *bp = NULL;
@@ -245,22 +232,15 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 	int pkt_cnt = 0;
 	int is_accepted=0;
 	u_char *large_buffer=NULL;
-		
-	if(lcore_id == master_lcore_id){
-		RTE_LOG(DEBUG, USER1, "dpdk: lcoreid=%u runs for portid=%u\n", lcore_id, portid);
-	}else{
-		RTE_LOG(DEBUG, USER1, "dpdk: lcore %u has nothing to do\n", lcore_id);
-	}
-	//only use master lcore
-	if (lcore_id != master_lcore_id){
-		return;
-	}
-	if (max_cnt>0 && max_cnt < MAX_PKT_BURST){
+	
+	pd->rx_pkts = 0;
+	if ( !PACKET_COUNT_IS_UNLIMITED(max_cnt) && max_cnt < MAX_PKT_BURST){
 		burst_cnt = max_cnt;
 	}else{
 		burst_cnt = MAX_PKT_BURST;
 	}
-	while( max_cnt==-1 || pkt_cnt < max_cnt){
+
+	while( PACKET_COUNT_IS_UNLIMITED(max_cnt) || pkt_cnt < max_cnt){
 		if (p->break_loop){
 			break;
 		}
@@ -269,7 +249,6 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 		for ( i = 0; i < nb_rx; i++) {
 			m = pkts_burst[i];
 			calculate_timestamp(&(pd->ts_helper),&(pcap_header.ts));
-			data_len = rte_pktmbuf_data_len(m);
 			pkt_len = rte_pktmbuf_pkt_len(m);
 			// caplen = min(pkt_len, p->snapshot);
 			// caplen will not be changed, no matter how long the rte_pktmbuf
@@ -297,16 +276,7 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 				
 			}
 			if (bp){
-				//default accpet all
-				is_accepted=1;
-				if (pd->filter_in_userland && p->fcode.bf_insns!=NULL)
-				{
-					if (!pcap_filter(p->fcode.bf_insns, bp, pcap_header.len, pcap_header.caplen)){
-						//rejected
-						is_accepted=0;
-					}
-				}
-				if (is_accepted){
+				if (p->fcode.bf_insns==NULL || pcap_filter(p->fcode.bf_insns, bp, pcap_header.len, pcap_header.caplen)){
 					cb(cb_arg, &pcap_header, bp);
 				}else{
 					pd->bpf_drop++;
@@ -321,27 +291,14 @@ static void dpdk_dispatch_internal(void *dpdk_user)
 		}
 	}	
 	pd->rx_pkts = pkt_cnt;
-}
-
-static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *pcap_user)
-{
-	unsigned lcore_id = 0;	
-	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
-	pd->rx_pkts=0;
-	pd->cb = cb;
-	pd->cb_arg = pcap_user;
-	pd->max_cnt = max_cnt;
-	pd->orig = p;
-	void *dpdk_user = p;	
-	dpdk_dispatch_internal(dpdk_user);	
-	return pd->rx_pkts;	
+	return pd->rx_pkts;
 }
 
 static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	//not implemented yet
 	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: Inject function has not be implemented yet");
+		errno, "dpdk error: Inject function has not been implemented yet");
 	return PCAP_ERROR;
 }
 
@@ -358,7 +315,6 @@ static void pcap_dpdk_close(pcap_t *p)
 	}
 	rte_eth_dev_stop(pd->portid);
 	rte_eth_dev_close(pd->portid);
-	// free pcap_dpdk?
 	pcap_cleanup_live_common(p);
 } 
 
@@ -458,6 +414,9 @@ static uint16_t portid_by_device(char * device)
 		}
 	}
 	ret_ul = strtoul(&(device[prefix_len]), &pEnd, 10);
+	if (pEnd == &(device[prefix_len]) || *pEnd != '\0'){
+		return ret;
+	}
 	// too large for portid
 	if (ret_ul >= DPDK_PORTID_MAX){ 
 		return ret;
@@ -477,11 +436,11 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 	// find first non space char
 	// The last opt is NULL
 	for (i=0;dpdk_cfg[i] && cnt<DPDK_ARGC_MAX-1;i++){
-		if (skip_space && dpdk_cfg[i]!=0x20){ // not space
+		if (skip_space && dpdk_cfg[i]!=' '){ // not space
 			skip_space=!skip_space; // skip normal char
 			dargv[cnt++] = dpdk_cfg+i;
 		}
-		if (!skip_space && dpdk_cfg[i]==0x20){ // fint a space
+		if (!skip_space && dpdk_cfg[i]==' '){ // fint a space
 			dpdk_cfg[i]=0x00; // end of this opt
 			skip_space=!skip_space; // skip space char
 		}
@@ -713,8 +672,8 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->selectable_fd = p->fd;
 		p->read_op = pcap_dpdk_dispatch;
 		p->inject_op = pcap_dpdk_inject;
-		// DPDK only support filter in userland now
 		pd->filter_in_userland = 1;
+		// using pcap_filter currently, though DPDK provides their own BPF function. Because DPDK BPF needs load a ELF file as a filter.
 		p->setfilter_op = install_bpf_program;
 		p->setdirection_op = NULL;
 		p->set_datalink_op = NULL;
@@ -726,7 +685,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = 0; // OK
 	}while(0);
 
-	if (ret == PCAP_ERROR)
+	if (ret <= PCAP_ERROR) // all kinds of error code
 	{
 		pcap_cleanup_live_common(p);
 	}else{
@@ -792,8 +751,10 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 			// PCI addr
 			rte_eth_dev_get_name_by_port(i,pci_addr);
 			pcap_snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
-			// continue add all dev, even error happens
-			add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf);
+			if (add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf)==NULL){
+				ret = PCAP_ERROR;
+				break;
+			}
 		}	
 	}while(0);	
 	return ret;
