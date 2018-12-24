@@ -240,7 +240,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 		burst_cnt = MAX_PKT_BURST;
 	}
 
-	while( max_cnt==-1 || pkt_cnt < max_cnt){
+	while( PACKET_COUNT_IS_UNLIMITED(max_cnt) || pkt_cnt < max_cnt){
 		if (p->break_loop){
 			break;
 		}
