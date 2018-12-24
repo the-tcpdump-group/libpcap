@@ -157,7 +157,6 @@ struct pcap_dpdk{
 	pcap_t * orig;
 	uint16_t portid; // portid of DPDK
 	int must_clear_promisc;
-	int filter_in_userland;
 	uint64_t rx_pkts;
 	uint64_t bpf_drop;
 	struct timeval prev_ts;
@@ -672,7 +671,6 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->selectable_fd = p->fd;
 		p->read_op = pcap_dpdk_dispatch;
 		p->inject_op = pcap_dpdk_inject;
-		pd->filter_in_userland = 1;
 		// using pcap_filter currently, though DPDK provides their own BPF function. Because DPDK BPF needs load a ELF file as a filter.
 		p->setfilter_op = install_bpf_program;
 		p->setdirection_op = NULL;
