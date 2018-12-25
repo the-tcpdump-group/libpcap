@@ -160,6 +160,7 @@ struct pcap_dpdk{
 	int must_clear_promisc;
 	uint64_t bpf_drop;
 	int nonblock;
+	struct timeval required_select_timeout;
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -727,6 +728,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->stats_op = pcap_dpdk_stats;
 		p->cleanup_op = pcap_dpdk_close;
 		p->breakloop_op = pcap_breakloop_common;
+		// set default timeout
+		pd->required_select_timeout.tv_sec = 0;
+		pd->required_select_timeout.tv_usec = DPDK_DEF_MIN_SLEEP_MS*1000;
+		p->required_select_timeout = &pd->required_select_timeout;
 		ret = 0; // OK
 	}while(0);
 
