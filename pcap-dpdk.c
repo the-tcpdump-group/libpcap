@@ -235,7 +235,8 @@ static int dpdk_read_with_timeout(pcap_t *p, uint16_t portid, uint16_t queueid,s
 				if (p->break_loop){
 					break;
 				}
-				// sleep for a very short while, but do not block CPU.
+				// sleep for a very short while.
+				// block sleep is the only choice, since usleep() will impact performance dramatically.
 				rte_delay_us_block(DPDK_DEF_MIN_SLEEP_MS*1000);
 				sleep_ms += DPDK_DEF_MIN_SLEEP_MS;
 			}
