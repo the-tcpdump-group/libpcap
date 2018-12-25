@@ -158,9 +158,9 @@ struct pcap_dpdk{
 	pcap_t * orig;
 	uint16_t portid; // portid of DPDK
 	int must_clear_promisc;
-	uint64_t rx_pkts;
 	uint64_t bpf_drop;
 	int nonblock;
+	struct timeval required_select_timeout;
 	struct timeval prev_ts;
 	struct rte_eth_stats prev_stats;
 	struct timeval curr_ts;
@@ -235,7 +235,8 @@ static int dpdk_read_with_timeout(pcap_t *p, uint16_t portid, uint16_t queueid,s
 				if (p->break_loop){
 					break;
 				}
-				// sleep for a very short while, but do not block CPU.
+				// sleep for a very short while.
+				// block sleep is the only choice, since usleep() will impact performance dramatically.
 				rte_delay_us_block(DPDK_DEF_MIN_SLEEP_MS*1000);
 				sleep_ms += DPDK_DEF_MIN_SLEEP_MS;
 			}
@@ -264,7 +265,6 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	u_char *large_buffer=NULL;
 	int timeout_ms = p->opt.timeout;
 
-	pd->rx_pkts = 0;
 	if ( !PACKET_COUNT_IS_UNLIMITED(max_cnt) && max_cnt < MAX_PKT_BURST){
 		burst_cnt = max_cnt;
 	}else{
@@ -273,7 +273,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 
 	while( PACKET_COUNT_IS_UNLIMITED(max_cnt) || pkt_cnt < max_cnt){
 		if (p->break_loop){
-			p->break_loop = 1;
+			p->break_loop = 0;
 			return PCAP_ERROR_BREAK;
 		}
 		// read once in non-blocking mode, or try many times waiting for timeout_ms.
@@ -285,7 +285,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			}else{
 				if (p->break_loop){
 					RTE_LOG(DEBUG, USER1, "dpdk: no packets available and break_loop is setted in blocking mode.\n");
-					p->break_loop = 1;
+					p->break_loop = 0;
 					return PCAP_ERROR_BREAK;
 
 				}
@@ -339,8 +339,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			}
 		}
 	}	
-	pd->rx_pkts = pkt_cnt;
-	return pd->rx_pkts;
+	return pkt_cnt;
 }
 
 static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
@@ -729,6 +728,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 		p->stats_op = pcap_dpdk_stats;
 		p->cleanup_op = pcap_dpdk_close;
 		p->breakloop_op = pcap_breakloop_common;
+		// set default timeout
+		pd->required_select_timeout.tv_sec = 0;
+		pd->required_select_timeout.tv_usec = DPDK_DEF_MIN_SLEEP_MS*1000;
+		p->required_select_timeout = &pd->required_select_timeout;
 		ret = 0; // OK
 	}while(0);
 
