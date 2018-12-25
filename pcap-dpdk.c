@@ -158,7 +158,6 @@ struct pcap_dpdk{
 	pcap_t * orig;
 	uint16_t portid; // portid of DPDK
 	int must_clear_promisc;
-	uint64_t rx_pkts;
 	uint64_t bpf_drop;
 	int nonblock;
 	struct timeval prev_ts;
@@ -265,7 +264,6 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	u_char *large_buffer=NULL;
 	int timeout_ms = p->opt.timeout;
 
-	pd->rx_pkts = 0;
 	if ( !PACKET_COUNT_IS_UNLIMITED(max_cnt) && max_cnt < MAX_PKT_BURST){
 		burst_cnt = max_cnt;
 	}else{
@@ -340,8 +338,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			}
 		}
 	}	
-	pd->rx_pkts = pkt_cnt;
-	return pd->rx_pkts;
+	return pkt_cnt;
 }
 
 static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
