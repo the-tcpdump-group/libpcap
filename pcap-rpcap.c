@@ -2343,7 +2343,7 @@ freeaddr(struct pcap_addr *addr)
 }
 
 int
-pcap_findalldevs_ex_remote(char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
+pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
 	struct activehosts *activeconn;	/* active connection, if there is one */
 	int error;			/* '1' if rpcap_remoteact_getsock returned an error */

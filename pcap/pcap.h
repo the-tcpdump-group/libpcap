@@ -858,8 +858,8 @@ PCAP_API int	pcap_parsesrcstr(const char *source, int *type, char *host,
  * For listing remote capture devices, pcap_findalldevs_ex() is currently
  * the only API available.
  */
-PCAP_API int	pcap_findalldevs_ex(char *source, struct pcap_rmtauth *auth,
-	    pcap_if_t **alldevs, char *errbuf);
+PCAP_API int	pcap_findalldevs_ex(const char *source,
+	    struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf);
 
 /*
  * Sampling methods.
