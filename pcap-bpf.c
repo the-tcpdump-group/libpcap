@@ -2756,12 +2756,21 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	strncpy(req.ifm_name, name, sizeof(req.ifm_name));
 	if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
 		if (errno == EOPNOTSUPP || errno == EINVAL || errno == ENOTTY ||
-		    errno == ENODEV) {
+		    errno == ENODEV || errno == EPERM) {
 			/*
 			 * Not supported, so we can't provide any
 			 * additional information.  Assume that
 			 * this means that "connected" vs.
 			 * "disconnected" doesn't apply.
+			 *
+			 * The ioctl routine for Apple's pktap devices,
+			 * annoyingly, checks for "are you root?" before
+			 * checking whether the ioctl is valid, so it
+			 * returns EPERM, rather than ENOTSUP, for the
+			 * invalid SIOCGIFMEDIA, unless you're root.
+			 * So, just as we do for some ethtool ioctls
+			 * on Linux, which makes the same mistake, we
+			 * also treat EPERM as meaning "not supported".
 			 */
 			*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 			close(sock);
@@ -2898,7 +2907,7 @@ monitor_mode(pcap_t *p, int set)
 
 		default:
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "SIOCGIFMEDIA 1");
+			    errno, "SIOCGIFMEDIA");
 			close(sock);
 			return (PCAP_ERROR);
 		}
