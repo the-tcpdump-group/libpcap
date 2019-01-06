@@ -309,6 +309,8 @@ EXTRA_DIST = \
 	pcap-dlpi.c \
 	pcap-dos.c \
 	pcap-dos.h \
+	pcap-dpdk.c \
+	pcap-dpdk.h \
 	pcap-enet.c \
 	pcap-int.h \
 	pcap-libdlpi.c \
