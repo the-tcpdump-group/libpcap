@@ -1,14 +1,6 @@
 /*
  * pcap-dag.c: Packet capture interface for Endace DAG cards.
  *
- * The functionality of this code attempts to mimic that of pcap-linux as much
- * as possible.  This code is compiled in several different ways depending on
- * whether DAG_ONLY and HAVE_DAG_API are defined.  If HAVE_DAG_API is not
- * defined it should not get compiled in, otherwise if DAG_ONLY is defined then
- * the 'dag_' function calls are renamed to 'pcap_' equivalents.  If DAG_ONLY
- * is not defined then nothing is altered - the dag_ functions will be
- * called as required from their pcap-linux/bpf equivalents.
- *
  * Authors: Richard Littin, Sean Irvine ({richard,sean}@reeltwo.com)
  * Modifications: Jesper Peterson
  *                Koryn Grant
