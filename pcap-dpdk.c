@@ -809,3 +809,38 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 	}while(0);	
 	return ret;
 }
+
+#ifdef DPDK_ONLY
+/*
+ * This libpcap build supports only DPDK, not regular network interfaces.
+ */
+
+/*
+ * There are no regular interfaces, just DPDK interfaces.
+ */
+int
+pcap_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
+{
+	return (0);
+}
+
+/*
+ * Attempts to open a regular interface fail.
+ */
+pcap_t *
+pcap_create_interface(const char *device, char *errbuf)
+{
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	    "This version of libpcap only supports DPDK");
+	return NULL;
+}
+
+/*
+ * Libpcap version string.
+ */
+const char *
+pcap_lib_version(void)
+{
+	return (PCAP_VERSION_STRING " (DPDK-only)");
+}
+#endif
