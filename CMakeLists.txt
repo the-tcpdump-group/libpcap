@@ -148,8 +148,7 @@ endif()
 option(DISABLE_USB "Disable USB sniffing support" OFF)
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
 option(DISABLE_NETMAP "Disable netmap support" OFF)
-# By default, DPDK is not supported, unless providing DISABLE_DPDK=OFF, DPDK_INC_DIR and DPDK_LIB_DIR
-option(DISABLE_DPDK "Disable DPDK support" ON)
+option(DISABLE_DPDK "Disable DPDK support" OFF)
 
 #
 # We don't support D-Bus sniffing on macOS; see
@@ -1415,18 +1414,36 @@ endif()
 
 # Check for DPDK sniffing support
 if (NOT DISABLE_DPDK)
-	if (NOT DEFINED DPDK_INC_DIR)
-		set(DPDK_INC_DIR $ENV{RTE_SDK}/$ENV{RTE_TARGET}/include)
+	if (NOT DEFINED DPDK_DIR)
+		set(DPDK_INC_DIR /usr/local/include/dpdk)
+		set(DPDK_LIB_DIR /usr/local/lib)
+	else()
+		set(DPDK_INC_DIR ${DPDK_DIR}/include)
+		set(DPDK_LIB_DIR ${DPDK_DIR}/lib)
 	endif()
-	if (NOT DEFINED DPDK_LIB_DIR)
-		set(DPDK_LIB_DIR $ENV{RTE_SDK}/$ENV{RTE_TARGET}/lib)
+	set(DPDK_C_FLAGS "-march=native")
+	set(DPDK_LIB dpdk rt m numa dl)
+	
+	cmake_push_check_state()
+	set(CMAKE_REQUIRED_FLAGS "-L${DPDK_LIB_DIR}")
+	set(CMAKE_REQUIRED_INCLUDES ${DPDK_INC_DIR})
+	set(CMAKE_REQUIRED_LIBRARIES ${DPDK_LIB})
+	check_c_source_compiles(
+"
+#include <rte_common.h>
+int main(){
+    return 0;
+}
+"	
+	PCAP_SUPPORT_DPDK)
+	cmake_pop_check_state()
+	if (PCAP_SUPPORT_DPDK)
+		set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${DPDK_C_FLAGS})
+		include_directories(AFTER ${DPDK_INC_DIR})
+		link_directories(AFTER ${DPDK_LIB_DIR})
+		set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DPDK_LIB})
+		set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
 	endif()
-	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-march=native")
-	include_directories(AFTER ${DPDK_INC_DIR})
-	link_directories(AFTER ${DPDK_LIB_DIR})
-	set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} dpdk rt m numa dl)
-	set(PCAP_SUPPORT_DPDK TRUE)
-	set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
 endif()
 
 # Check for Bluetooth sniffing support
