@@ -48,6 +48,10 @@ addons:
     # Pattern to match selecting branches that will run analysis
     branch_pattern: coverity_scan
   apt:
+    #
+    # We can't use dpdk-dev with trusty, only in xenial; Trusty didn't
+    # have DPDK support.
+    #
     packages:
       - libusb-1.0-0-dev
       - libdbus-glib-1-dev
@@ -55,7 +59,6 @@ addons:
       - libnl-genl-3-dev
       - libibverbs-dev
       - libnuma-dev
-      - dpdk-dev
 
 git:
   quiet: true
