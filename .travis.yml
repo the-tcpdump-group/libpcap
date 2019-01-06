@@ -55,6 +55,7 @@ addons:
       - libnl-genl-3-dev
       - libibverbs-dev
       - libnuma-dev
+      - dpdk-dev
 
 git:
   quiet: true
