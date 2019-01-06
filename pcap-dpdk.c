@@ -33,19 +33,19 @@ Description:
 3. The testprogs/capturetest provides 6.4Gbps/800,000 pps on Intel 10-Gigabit X540-AT2 with DPDK 18.11.
 
 Limitations:
-1. By default DPDK support is no, unless you explicitly set --enable-dpdk with ./configure or -DDISABLE_DPDK=OFF with cmake.
+1. DPDK support will be on if DPDK is available. Please set DIR for --with-dpdk[=DIR] with ./configure or -DDPDK_DIR[=DIR] with cmake if DPDK is installed manually.
 2. Only support link libdpdk.so dynamicly, because the libdpdk.a will not work correctly.
 3. Only support read operation, and packet injection has not been supported yet.
 
 Usage:
-1. compile DPDK as shared library and install.(https://github.com/DPDK/dpdk.git)
+1. Compile DPDK as shared library and install.(https://github.com/DPDK/dpdk.git)
 
 You shall modify the file $RTE_SDK/$RTE_TARGET/.config and set:
 CONFIG_RTE_BUILD_SHARED_LIB=y
 By the following command:
 sed -i 's/CONFIG_RTE_BUILD_SHARED_LIB=n/CONFIG_RTE_BUILD_SHARED_LIB=y/' $RTE_SDK/$RTE_TARGET/.config
 
-2. launch l2fwd that is one of DPDK examples correctly, and get device information.
+2. Launch l2fwd that is one of DPDK examples correctly, and get device information.
 
 You shall learn how to bind nic with DPDK-compatible driver by $RTE_SDK/usertools/dpdk-devbind.py, such as igb_uio.
 And enable hugepages by dpdk-setup.sh
@@ -53,22 +53,22 @@ And enable hugepages by dpdk-setup.sh
 Then launch the l2fwd with dynamic dirver support. For example:
 $RTE_SDK/examples/l2fwd/$RTE_TARGET/l2fwd -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so -dlibrte_mempool_ring.so -- -p 0x1
 
-3. compile libpcap with dpdk options.
+3. Compile libpcap with dpdk options.
 
-In order to find inlucde and lib automatically, you shall export DPDK envionment variable which are used for compiling DPDK.
+If DPDK has not been found automatically, you shall export DPDK envionment variable which are used for compiling DPDK. And then pass $RTE_SDK/$RTE_TARGET to --with-dpdk or -DDPDK_DIR
 
 export RTE_SDK={your DPDK base directory}
 export RTE_TARGET={your target name}
 
-3.1 with configure
+3.1 With configure
 
-./configure --enable-dpdk --with-dpdk-includes=$RTE_SDK/$RTE_TARGET/include --with-dpdk-libraries=$RTE_SDK/$RTE_TARGET/lib && make -s all && make -s testprogs && make install
+./configure --with-dpdk=$RTE_SDK/$RTE_TARGET && make -s all && make -s testprogs && make install
 
-3.2 with cmake
+3.2 With cmake
 
-mkdir -p build && cd build && cmake -DDISABLE_DPDK=OFF -DDPDK_INC_DIR=$RTE_SDK/$RTE_TARGET/include -DDPDK_LIB_DIR=$RTE_SDK/$RTE_TARGET/lib" ../ && make -s all && make -s testprogs && make install 
+mkdir -p build && cd build && cmake -DDPDK_DIR=$RTE_SDK/$RTE_TARGET ../ && make -s all && make -s testprogs && make install 
 
-4. link your own program with libpcap, and use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
+4. Link your own program with libpcap, and use DPDK with the device name as dpdk:{portid}, such as dpdk:0.
 And you shall set DPDK configure options by environment variable DPDK_CFG
 For example, the testprogs/capturetest could be lanched by: 
 

@@ -902,6 +902,15 @@ dag)
 	xxx_only=yes
 	;;
 
+dpdk)
+	#
+	# --with-pcap=dpdk is the only way to get here, and it means
+	# "DPDK support but nothing else"
+	#
+	V_DEFS="$V_DEFS -DDPDK_ONLY"
+	xxx_only=yes
+	;;
+
 septel)
 	#
 	# --with-pcap=septel is the only way to get here, and it means
@@ -2128,47 +2137,91 @@ AC_INCLUDES_DEFAULT
 	AC_SUBST(NETMAP_SRC)
 fi
 
-# Check for DPDK support, defualt no. --enable-dpdk shall be setted explicitly. 
-AC_ARG_ENABLE([dpdk],
-[AC_HELP_STRING([--enable-dpdk],[enable dpdk support @<:@default=no@:>@])],
-    [enable_dpdk=$enableval],
-    [enable_dpdk=no])
-
-AC_ARG_WITH([dpdk-includes],
-AC_HELP_STRING([--with-dpdk-includes=IDIR],[Endace DPDK include directory, if not DIR/include]),
+# Check for DPDK support.
+AC_ARG_WITH([dpdk],
+AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
 [
-	# User wants DPDK support and has specified a header directory, so use the provided value.
-	dpdk_include_dir=$withval
-],[])
-
-AC_ARG_WITH([dpdk-libraries],
-AC_HELP_STRING([--with-dpdk-libraries=LDIR],[Endace DPDK library directory, if not DIR/lib]),
-[
-	# User wants DPDK support and has specified a library directory, so use the provided value.
-	dpdk_lib_dir=$withval
-],[])
-
-if test "x$enable_dpdk" != "xno" ; then
-	# If necessary, set default paths for DPDK API headers and libraries.
-	if test -z "$dpdk_include_dir"; then
-		dpdk_include_dir="$RTE_SDK/$RTE_TARGET/include"
+	if test "$withval" = no
+	then
+		# User doesn't want DPDK support.
+		want_dpdk=no
+	elif test "$withval" = yes
+	then
+		# User wants DPDK support but hasn't specified a directory.
+		want_dpdk=yes
+	else
+		# User wants DPDK support and has specified a directory, so use the provided value.
+		want_dpdk=yes
+		dpdk_dir=$withval
+		dpdk_inc_dir="$dpdk_dir/include"
+		dpdk_lib_dir="$dpdk_dir/lib"
 	fi
+],[
+	if test "$V_PCAP" = dpdk; then
+		# User requested DPDK-only libpcap, so we'd better have
+		# the DPDK API.
+		want_dpdk=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want DAG support.
+		want_dpdk=no
+	else
+		#
+		# Use DAG API if present, otherwise don't
+		#
+		want_dag=ifpresent
+	fi
+])
 
-	if test -z "$dpdk_lib_dir"; then
-		dpdk_lib_dir="$RTE_SDK/$RTE_TARGET/lib"
+if test "$want_dpdk" != no; then
+	if test -z "$dpdk_dir"; then
+		dpdk_inc_dir="/usr/local/include/dpdk"
+		dpdk_lib_dir="/usr/local/lib"
 	fi
 	DPDK_MACHINE_CFLAGS="-march=native"
-	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_include_dir"
+	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_inc_dir"
 	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
-	DPDK_LIBS=$DPDK_LDFLAGS
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
 	CFLAGS="$CFLAGS $DPDK_CFLAGS"
-	LIBS="$LIBS $DPDK_LIBS"
+	LIBS="$LIBS $DPDK_LDFLAGS"
 	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
-	V_INCLS="$V_INCLS $DPDK_CFLAGS"
-	if test $enable_dpdk = yes ; then
+
+	AC_MSG_CHECKING(whether we can compile the DPDK support)
+	AC_CACHE_VAL(ac_cv_dpdk_can_compile,
+	AC_TRY_COMPILE([
+AC_INCLUDES_DEFAULT
+#include <rte_common.h>],
+	    [],
+	    ac_cv_dpdk_can_compile=yes,
+	    ac_cv_dpdk_can_compile=no))
+	AC_MSG_RESULT($ac_cv_dpdk_can_compile)
+
+	CFLAGS=$save_LDFLAGS
+	LIBS=$save_LIBS
+	LDFLAGS=$save_LDFLAGS
+	
+	if test "$ac_cv_dpdk_can_compile" = yes; then
+		CFLAGS="$CFLAGS $DPDK_CFLAGS"
+		LIBS="$LIBS $DPDK_LDFLAGS"
+		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+		V_INCLS="$V_INCLS $DPDK_CFLAGS"
 		AC_DEFINE(PCAP_SUPPORT_DPDK, 1,
 		[target host supports dpdk])
 		DPDK_SRC=pcap-dpdk.c
+	else
+		if test "$V_PCAP" = dpdk; then
+			# User requested "dpdk" capture type but we couldn't
+			# find the DPDK API support.
+			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+		fi
+
+		if test "$want_dag" = yes; then
+	        	# User wanted DPDK support but we couldn't find it.
+			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+		fi
 	fi
 fi
 AC_SUBST(PCAP_SUPPORT_DPDK)
