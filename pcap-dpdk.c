@@ -770,7 +770,7 @@ pcap_t * pcap_dpdk_create(const char *device, char *ebuf, int *is_ours)
 int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 {
 	int ret=0;
-	int nb_ports = 0;
+	unsigned int nb_ports = 0;
 	char dpdk_name[DPDK_DEV_NAME_MAX];
 	char dpdk_desc[DPDK_DEV_DESC_MAX];
 	struct ether_addr eth_addr;
@@ -793,8 +793,9 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 			ret = PCAP_ERROR;
 			break;
 		}
-		for (int i=0; i<nb_ports; i++){
-			pcap_snprintf(dpdk_name,DPDK_DEV_NAME_MAX-1,"dpdk:%d",i);
+		for (unsigned int i=0; i<nb_ports; i++){
+			pcap_snprintf(dpdk_name, DPDK_DEV_NAME_MAX-1,
+			    "%s%u", DPDK_PREFIX, i);
 			// mac addr 
 			rte_eth_macaddr_get(i, &eth_addr);
 			eth_addr_str(&eth_addr,mac_addr,DPDK_MAC_ADDR_SIZE);	
