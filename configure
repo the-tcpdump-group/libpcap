@@ -6699,7 +6699,7 @@ dag)
 dpdk)
 	#
 	# --with-pcap=dpdk is the only way to get here, and it means
-	# "DAG support but nothing else"
+	# "DPDK support but nothing else"
 	#
 	V_DEFS="$V_DEFS -DDPDK_ONLY"
 	xxx_only=yes
