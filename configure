@@ -631,6 +631,8 @@ PKGCONFIG
 BT_MONITOR_SRC
 BT_SRC
 PCAP_SUPPORT_BT
+DPDK_SRC
+PCAP_SUPPORT_DPDK
 NETMAP_SRC
 PCAP_SUPPORT_NETMAP
 NETFILTER_SRC
@@ -765,6 +767,7 @@ enable_universal
 enable_shared
 enable_usb
 enable_netmap
+with_dpdk
 enable_bluetooth
 enable_dbus
 enable_rdma
@@ -1440,6 +1443,8 @@ Optional Packages:
   --with-turbocap[=DIR]   include Riverbed TurboCap support (located in
                           directory DIR, if supplied). [default=yes, if
                           present]
+  --with-dpdk[=DIR]       include DPDK support (located in directory DIR, if
+                          supplied). [default=yes, if present]
 
 Some influential environment variables:
   CC          C compiler command
@@ -6691,6 +6696,15 @@ dag)
 	xxx_only=yes
 	;;
 
+dpdk)
+	#
+	# --with-pcap=dpdk is the only way to get here, and it means
+	# "DAG support but nothing else"
+	#
+	V_DEFS="$V_DEFS -DDPDK_ONLY"
+	xxx_only=yes
+	;;
+
 septel)
 	#
 	# --with-pcap=septel is the only way to get here, and it means
@@ -10396,6 +10410,120 @@ $as_echo "#define PCAP_SUPPORT_NETMAP 1" >>confdefs.h
 
 
 fi
+
+# Check for DPDK support.
+
+# Check whether --with-dpdk was given.
+if test "${with_dpdk+set}" = set; then :
+  withval=$with_dpdk;
+	if test "$withval" = no
+	then
+		# User doesn't want DPDK support.
+		want_dpdk=no
+	elif test "$withval" = yes
+	then
+		# User wants DPDK support but hasn't specified a directory.
+		want_dpdk=yes
+	else
+		# User wants DPDK support and has specified a directory, so use the provided value.
+		want_dpdk=yes
+		dpdk_dir=$withval
+		dpdk_inc_dir="$dpdk_dir/include"
+		dpdk_lib_dir="$dpdk_dir/lib"
+	fi
+
+else
+
+	if test "$V_PCAP" = dpdk; then
+		# User requested DPDK-only libpcap, so we'd better have
+		# the DPDK API.
+		want_dpdk=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want DAG support.
+		want_dpdk=no
+	else
+		#
+		# Use DAG API if present, otherwise don't
+		#
+		want_dag=ifpresent
+	fi
+
+fi
+
+
+if test "$want_dpdk" != no; then
+	if test -z "$dpdk_dir"; then
+		dpdk_inc_dir="/usr/local/include/dpdk"
+		dpdk_lib_dir="/usr/local/lib"
+	fi
+	DPDK_MACHINE_CFLAGS="-march=native"
+	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_inc_dir"
+	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+	CFLAGS="$CFLAGS $DPDK_CFLAGS"
+	LIBS="$LIBS $DPDK_LDFLAGS"
+	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the DPDK support" >&5
+$as_echo_n "checking whether we can compile the DPDK support... " >&6; }
+	if ${ac_cv_dpdk_can_compile+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+$ac_includes_default
+#include <rte_common.h>
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_dpdk_can_compile=yes
+else
+  ac_cv_dpdk_can_compile=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_dpdk_can_compile" >&5
+$as_echo "$ac_cv_dpdk_can_compile" >&6; }
+
+	CFLAGS=$save_LDFLAGS
+	LIBS=$save_LIBS
+	LDFLAGS=$save_LDFLAGS
+
+	if test "$ac_cv_dpdk_can_compile" = yes; then
+		CFLAGS="$CFLAGS $DPDK_CFLAGS"
+		LIBS="$LIBS $DPDK_LDFLAGS"
+		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+		V_INCLS="$V_INCLS $DPDK_CFLAGS"
+
+$as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
+
+		DPDK_SRC=pcap-dpdk.c
+	else
+		if test "$V_PCAP" = dpdk; then
+			# User requested "dpdk" capture type but we couldn't
+			# find the DPDK API support.
+			as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
+		fi
+
+		if test "$want_dag" = yes; then
+	        	# User wanted DPDK support but we couldn't find it.
+			as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
+		fi
+	fi
+fi
+
 
 
 # Check whether --enable-bluetooth was given.

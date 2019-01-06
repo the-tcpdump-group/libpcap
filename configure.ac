@@ -902,6 +902,15 @@ dag)
 	xxx_only=yes
 	;;
 
+dpdk)
+	#
+	# --with-pcap=dpdk is the only way to get here, and it means
+	# "DPDK support but nothing else"
+	#
+	V_DEFS="$V_DEFS -DDPDK_ONLY"
+	xxx_only=yes
+	;;
+
 septel)
 	#
 	# --with-pcap=septel is the only way to get here, and it means
@@ -2128,6 +2137,95 @@ AC_INCLUDES_DEFAULT
 	AC_SUBST(NETMAP_SRC)
 fi
 
+# Check for DPDK support.
+AC_ARG_WITH([dpdk],
+AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
+[
+	if test "$withval" = no
+	then
+		# User doesn't want DPDK support.
+		want_dpdk=no
+	elif test "$withval" = yes
+	then
+		# User wants DPDK support but hasn't specified a directory.
+		want_dpdk=yes
+	else
+		# User wants DPDK support and has specified a directory, so use the provided value.
+		want_dpdk=yes
+		dpdk_dir=$withval
+		dpdk_inc_dir="$dpdk_dir/include"
+		dpdk_lib_dir="$dpdk_dir/lib"
+	fi
+],[
+	if test "$V_PCAP" = dpdk; then
+		# User requested DPDK-only libpcap, so we'd better have
+		# the DPDK API.
+		want_dpdk=yes
+	elif test "xxx_only" = yes; then
+		# User requested something-else-only pcap, so they don't
+		# want DAG support.
+		want_dpdk=no
+	else
+		#
+		# Use DAG API if present, otherwise don't
+		#
+		want_dag=ifpresent
+	fi
+])
+
+if test "$want_dpdk" != no; then
+	if test -z "$dpdk_dir"; then
+		dpdk_inc_dir="/usr/local/include/dpdk"
+		dpdk_lib_dir="/usr/local/lib"
+	fi
+	DPDK_MACHINE_CFLAGS="-march=native"
+	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_inc_dir"
+	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
+
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
+	save_LDFLAGS="$LDFLAGS"
+	CFLAGS="$CFLAGS $DPDK_CFLAGS"
+	LIBS="$LIBS $DPDK_LDFLAGS"
+	LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+
+	AC_MSG_CHECKING(whether we can compile the DPDK support)
+	AC_CACHE_VAL(ac_cv_dpdk_can_compile,
+	AC_TRY_COMPILE([
+AC_INCLUDES_DEFAULT
+#include <rte_common.h>],
+	    [],
+	    ac_cv_dpdk_can_compile=yes,
+	    ac_cv_dpdk_can_compile=no))
+	AC_MSG_RESULT($ac_cv_dpdk_can_compile)
+
+	CFLAGS=$save_LDFLAGS
+	LIBS=$save_LIBS
+	LDFLAGS=$save_LDFLAGS
+	
+	if test "$ac_cv_dpdk_can_compile" = yes; then
+		CFLAGS="$CFLAGS $DPDK_CFLAGS"
+		LIBS="$LIBS $DPDK_LDFLAGS"
+		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
+		V_INCLS="$V_INCLS $DPDK_CFLAGS"
+		AC_DEFINE(PCAP_SUPPORT_DPDK, 1,
+		[target host supports dpdk])
+		DPDK_SRC=pcap-dpdk.c
+	else
+		if test "$V_PCAP" = dpdk; then
+			# User requested "dpdk" capture type but we couldn't
+			# find the DPDK API support.
+			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+		fi
+
+		if test "$want_dag" = yes; then
+	        	# User wanted DPDK support but we couldn't find it.
+			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
+		fi
+	fi
+fi
+AC_SUBST(PCAP_SUPPORT_DPDK)
+AC_SUBST(DPDK_SRC)
 
 AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],

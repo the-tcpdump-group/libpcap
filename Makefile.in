@@ -86,7 +86,7 @@ YACC = @YACC@
 	@rm -f $@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @BT_MONITOR_SRC@ @NETFILTER_SRC@ @DBUS_SRC@ @NETMAP_SRC@ @RDMA_SRC@
+PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @BT_MONITOR_SRC@ @NETFILTER_SRC@ @DBUS_SRC@ @NETMAP_SRC@ @RDMA_SRC@ @DPDK_SRC@
 FSRC =  @V_FINDALLDEVS@
 SSRC =  @SSRC@
 CSRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
@@ -762,3 +762,5 @@ depend:	$(GENSRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	cd rpcapd; $(MAKE) depend
 	cd testprogs; $(MAKE) depend
+
+
