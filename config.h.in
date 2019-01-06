@@ -310,7 +310,7 @@
 /* support D-Bus sniffing */
 #undef PCAP_SUPPORT_DBUS
 
-/* target host supports dpdk */
+/* target host supports DPDK */
 #undef PCAP_SUPPORT_DPDK
 
 /* target host supports netfilter sniffing */

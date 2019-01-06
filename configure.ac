@@ -2208,9 +2208,10 @@ AC_INCLUDES_DEFAULT
 		LIBS="$LIBS $DPDK_LDFLAGS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
 		V_INCLS="$V_INCLS $DPDK_CFLAGS"
-		AC_DEFINE(PCAP_SUPPORT_DPDK, 1,
-		[target host supports dpdk])
-		DPDK_SRC=pcap-dpdk.c
+		AC_DEFINE(PCAP_SUPPORT_DPDK, 1, [target host supports DPDK])
+		if test $V_PCAP != dpdk ; then
+			 SSRC="$SSRC pcap-dpdk.c"
+		fi
 	else
 		if test "$V_PCAP" = dpdk; then
 			# User requested "dpdk" capture type but we couldn't
@@ -2225,7 +2226,6 @@ AC_INCLUDES_DEFAULT
 	fi
 fi
 AC_SUBST(PCAP_SUPPORT_DPDK)
-AC_SUBST(DPDK_SRC)
 
 AC_ARG_ENABLE([bluetooth],
 [AC_HELP_STRING([--enable-bluetooth],[enable Bluetooth support @<:@default=yes, if support available@:>@])],

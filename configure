@@ -631,7 +631,6 @@ PKGCONFIG
 BT_MONITOR_SRC
 BT_SRC
 PCAP_SUPPORT_BT
-DPDK_SRC
 PCAP_SUPPORT_DPDK
 NETMAP_SRC
 PCAP_SUPPORT_NETMAP
@@ -10509,7 +10508,9 @@ $as_echo "$ac_cv_dpdk_can_compile" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 
-		DPDK_SRC=pcap-dpdk.c
+		if test $V_PCAP != dpdk ; then
+			 SSRC="$SSRC pcap-dpdk.c"
+		fi
 	else
 		if test "$V_PCAP" = dpdk; then
 			# User requested "dpdk" capture type but we couldn't
@@ -10523,7 +10524,6 @@ $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 		fi
 	fi
 fi
-
 
 
 # Check whether --enable-bluetooth was given.
