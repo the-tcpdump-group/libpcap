@@ -2163,13 +2163,13 @@ AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 		want_dpdk=yes
 	elif test "xxx_only" = yes; then
 		# User requested something-else-only pcap, so they don't
-		# want DAG support.
+		# want DPDK support.
 		want_dpdk=no
 	else
 		#
-		# Use DAG API if present, otherwise don't
+		# Use DPDK API if present, otherwise don't
 		#
-		want_dag=ifpresent
+		want_dpdk=ifpresent
 	fi
 ])
 
@@ -2218,7 +2218,7 @@ AC_INCLUDES_DEFAULT
 			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
 		fi
 
-		if test "$want_dag" = yes; then
+		if test "$want_dpdk" = yes; then
 	        	# User wanted DPDK support but we couldn't find it.
 			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
 		fi
