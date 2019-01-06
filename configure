@@ -623,20 +623,13 @@ ac_subst_vars='LTLIBOBJS
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
-RDMA_SRC
 PCAP_SUPPORT_RDMASNIFF
-DBUS_SRC
 PCAP_SUPPORT_DBUS
 PKGCONFIG
-BT_MONITOR_SRC
-BT_SRC
 PCAP_SUPPORT_BT
 PCAP_SUPPORT_DPDK
-NETMAP_SRC
 PCAP_SUPPORT_NETMAP
-NETFILTER_SRC
 PCAP_SUPPORT_NETFILTER
-USB_SRC
 PCAP_SUPPORT_USB
 EXTRA_NETWORK_LIBS
 RPCAPD_LIBS
@@ -649,6 +642,7 @@ MAN_FILE_FORMATS
 MAN_DEVICES
 DYEXT
 SSRC
+MSRC
 ADDLARCHIVEOBJS
 ADDLOBJS
 V_YACC
@@ -6989,7 +6983,7 @@ done
 	if test "$ac_cv_header_dagapi_h" = yes; then
 
 		if test $V_PCAP != dag ; then
-			 SSRC="$SSRC pcap-dag.c"
+			 MSRC="$MSRC pcap-dag.c"
 		fi
 
 		# Check for various DAG API functions.
@@ -7321,7 +7315,7 @@ $as_echo "yes ($septel_include_dir)" >&6; }
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
-			 SSRC="$SSRC pcap-septel.c"
+			 MSRC="$MSRC pcap-septel.c"
 		fi
 
 
@@ -7483,7 +7477,7 @@ $as_echo "yes ($snf_root)" >&6; }
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 
 		if test "$V_PCAP" != snf ; then
-			SSRC="$SSRC pcap-snf.c"
+			MSRC="$MSRC pcap-snf.c"
 		fi
 
 
@@ -7581,7 +7575,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-		SSRC="$SSRC pcap-tc.c"
+		MSRC="$MSRC pcap-tc.c"
 		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
 		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
 
@@ -7736,7 +7730,7 @@ fi
 
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
-	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	MSRC="$MSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
@@ -10162,6 +10156,7 @@ fi
 
 
 
+
 # Check whether --enable-usb was given.
 if test "${enable_usb+set}" = set; then :
   enableval=$enable_usb;
@@ -10184,7 +10179,7 @@ $as_echo_n "checking for USB sniffing support... " >&6; }
 
 $as_echo "#define PCAP_SUPPORT_USB 1" >>confdefs.h
 
-	USB_SRC=pcap-usb-linux.c
+	MSRC="$MSRC pcap-usb-linux.c"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
@@ -10288,7 +10283,6 @@ esac
 fi
 
 
-
 if test "xxx_only" != yes; then
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the platform could support netfilter sniffing" >&5
 $as_echo_n "checking whether the platform could support netfilter sniffing... " >&6; }
@@ -10344,7 +10338,7 @@ $as_echo "$ac_cv_netfilter_can_compile" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_NETFILTER 1" >>confdefs.h
 
-		  NETFILTER_SRC=pcap-netfilter-linux.c
+		  MSRC="$MSRC pcap-netfilter-linux.c"
 		fi
 		;;
 	*)
@@ -10353,7 +10347,6 @@ $as_echo "no" >&6; }
 		;;
 	esac
 fi
-
 
 
 # Check whether --enable-netmap was given.
@@ -10404,9 +10397,8 @@ $as_echo "$ac_cv_net_netmap_user_can_compile" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_NETMAP 1" >>confdefs.h
 
-	    NETMAP_SRC=pcap-netmap.c
+	    MSRC="$MSRC pcap-netmap.c"
 	fi
-
 
 fi
 
@@ -10509,7 +10501,7 @@ $as_echo "$ac_cv_dpdk_can_compile" >&6; }
 $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 
 		if test $V_PCAP != dpdk ; then
-			 SSRC="$SSRC pcap-dpdk.c"
+			MSRC="$MSRC pcap-dpdk.c"
 		fi
 	else
 		if test "$V_PCAP" = dpdk; then
@@ -10553,7 +10545,7 @@ if test "x$ac_cv_header_bluetooth_bluetooth_h" = xyes; then :
 
 $as_echo "#define PCAP_SUPPORT_BT 1" >>confdefs.h
 
-			BT_SRC=pcap-bt-linux.c
+			MSRC="$MSRC pcap-bt-linux.c"
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
 $as_echo "$as_me: Bluetooth sniffing is supported" >&6;}
 			ac_lbl_bluetooth_available=yes
@@ -10605,7 +10597,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_BT_MONITOR /**/" >>confdefs.h
 
-					    BT_MONITOR_SRC=pcap-bt-monitor-linux.c
+					    MSRC="$MSRC pcap-bt-monitor-linux.c"
 
 else
 
@@ -10646,8 +10638,6 @@ $as_echo "$as_me: no Bluetooth sniffing support implemented for $host_os" >&6;}
 		fi
 		;;
 	esac
-
-
 
 fi
 
@@ -10773,7 +10763,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_DBUS 1" >>confdefs.h
 
-				DBUS_SRC=pcap-dbus.c
+				MSRC="$MSRC pcap-dbus.c"
 				V_INCLS="$V_INCLS $DBUS_CFLAGS"
 
 else
@@ -10797,7 +10787,6 @@ $as_echo "no" >&6; }
 			fi
 		fi
 	fi
-
 
 fi
 
@@ -10893,7 +10882,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_RDMASNIFF /**/" >>confdefs.h
 
-					RDMA_SRC=pcap-rdmasniff.c
+					MSRC="$MSRC pcap-rdmasniff.c"
 					LIBS="-libverbs $LIBS"
 
 else
@@ -10911,7 +10900,6 @@ fi
 
 
 fi
-
 
 
 fi

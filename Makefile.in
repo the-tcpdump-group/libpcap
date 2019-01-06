@@ -86,7 +86,8 @@ YACC = @YACC@
 	@rm -f $@
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/$*.c
 
-PSRC =	pcap-@V_PCAP@.c @USB_SRC@ @BT_SRC@ @BT_MONITOR_SRC@ @NETFILTER_SRC@ @DBUS_SRC@ @NETMAP_SRC@ @RDMA_SRC@
+PSRC =	pcap-@V_PCAP@.c
+MSRC =	@MSRC@
 FSRC =  @V_FINDALLDEVS@
 SSRC =  @SSRC@
 CSRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
@@ -96,11 +97,11 @@ CSRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
 GENSRC = scanner.c grammar.c
 LIBOBJS = @LIBOBJS@
 
-SRC =	$(PSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
+SRC =	$(PSRC) $(MSRC) $(FSRC) $(CSRC) $(SSRC) $(GENSRC)
 
 # We would like to say "OBJ = $(SRC:.c=.o)" but Ultrix's make cannot
 # hack the extra indirection
-OBJ =	$(PSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
+OBJ =	$(PSRC:.c=.o) $(MSRC:.c=.o) $(FSRC:.c=.o) $(CSRC:.c=.o) $(SSRC:.c=.o) $(GENSRC:.c=.o) $(LIBOBJS)
 PUBHDR = \
 	pcap.h \
 	pcap-bpf.h \

@@ -1117,7 +1117,7 @@ if test "$want_dag" != no; then
 	if test "$ac_cv_header_dagapi_h" = yes; then
 
 		if test $V_PCAP != dag ; then
-			 SSRC="$SSRC pcap-dag.c"
+			 MSRC="$MSRC pcap-dag.c"
 		fi
 
 		# Check for various DAG API functions.
@@ -1228,7 +1228,7 @@ if test "$with_septel" != no; then
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
-			 SSRC="$SSRC pcap-septel.c"
+			 MSRC="$MSRC pcap-septel.c"
 		fi
 
 		AC_DEFINE(HAVE_SEPTEL_API, 1, [define if you have the Septel API])
@@ -1335,7 +1335,7 @@ if test "$with_snf" != no; then
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 
 		if test "$V_PCAP" != snf ; then
-			SSRC="$SSRC pcap-snf.c"
+			MSRC="$MSRC pcap-snf.c"
 		fi
 
 		AC_DEFINE(HAVE_SNF_API, 1, [define if you have the Myricom SNF API])
@@ -1412,7 +1412,7 @@ if test "$want_turbocap" != no; then
 	if test $ac_cv_lbl_turbocap_api = yes; then
 		AC_MSG_RESULT(yes)
 
-		SSRC="$SSRC pcap-tc.c"
+		MSRC="$MSRC pcap-tc.c"
 		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
 		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
 
@@ -1489,7 +1489,7 @@ yes)	AC_MSG_RESULT(yes)
 
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
-	SSRC="$SSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	MSRC="$MSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
@@ -1978,6 +1978,7 @@ AC_SUBST(V_RPATH_OPT)
 AC_SUBST(V_YACC)
 AC_SUBST(ADDLOBJS)
 AC_SUBST(ADDLARCHIVEOBJS)
+AC_SUBST(MSRC)
 AC_SUBST(SSRC)
 AC_SUBST(DYEXT)
 AC_SUBST(MAN_DEVICES)
@@ -2007,7 +2008,7 @@ if test "x$enable_usb" != "xno" ; then
    case "$host_os" in
    linux*)
 	AC_DEFINE(PCAP_SUPPORT_USB, 1, [target host supports USB sniffing])
-	USB_SRC=pcap-usb-linux.c
+	MSRC="$MSRC pcap-usb-linux.c"
 	AC_MSG_RESULT(yes)
 	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
 	if test $? -ne 0 ; then
@@ -2059,7 +2060,6 @@ if test "x$enable_usb" != "xno" ; then
 esac
 fi
 AC_SUBST(PCAP_SUPPORT_USB)
-AC_SUBST(USB_SRC)
 
 dnl check for netfilter sniffing support
 if test "xxx_only" != yes; then
@@ -2095,7 +2095,7 @@ AC_INCLUDES_DEFAULT
 		if test $ac_cv_netfilter_can_compile = yes ; then
 		  AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
 		    [target host supports netfilter sniffing])
-		  NETFILTER_SRC=pcap-netfilter-linux.c
+		  MSRC="$MSRC pcap-netfilter-linux.c"
 		fi
 		;;
 	*)
@@ -2104,7 +2104,6 @@ AC_INCLUDES_DEFAULT
 	esac
 fi
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
-AC_SUBST(NETFILTER_SRC)
 
 AC_ARG_ENABLE([netmap],
 [AC_HELP_STRING([--enable-netmap],[enable netmap support @<:@default=yes, if support available@:>@])],
@@ -2131,10 +2130,9 @@ AC_INCLUDES_DEFAULT
 	if test $ac_cv_net_netmap_user_can_compile = yes ; then
 	  AC_DEFINE(PCAP_SUPPORT_NETMAP, 1,
 	    [target host supports netmap])
-	    NETMAP_SRC=pcap-netmap.c
+	    MSRC="$MSRC pcap-netmap.c"
 	fi
 	AC_SUBST(PCAP_SUPPORT_NETMAP)
-	AC_SUBST(NETMAP_SRC)
 fi
 
 # Check for DPDK support.
@@ -2210,7 +2208,7 @@ AC_INCLUDES_DEFAULT
 		V_INCLS="$V_INCLS $DPDK_CFLAGS"
 		AC_DEFINE(PCAP_SUPPORT_DPDK, 1, [target host supports DPDK])
 		if test $V_PCAP != dpdk ; then
-			 SSRC="$SSRC pcap-dpdk.c"
+			MSRC="$MSRC pcap-dpdk.c"
 		fi
 	else
 		if test "$V_PCAP" = dpdk; then
@@ -2249,7 +2247,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 			# sniffing.
 			#
 			AC_DEFINE(PCAP_SUPPORT_BT, 1, [target host supports Bluetooth sniffing])
-			BT_SRC=pcap-bt-linux.c
+			MSRC="$MSRC pcap-bt-linux.c"
 			AC_MSG_NOTICE(Bluetooth sniffing is supported)
 			ac_lbl_bluetooth_available=yes
 
@@ -2276,7 +2274,7 @@ if test "x$enable_bluetooth" != "xno" ; then
 					    AC_MSG_RESULT(yes)
 					    AC_DEFINE(PCAP_SUPPORT_BT_MONITOR,,
 					      [target host supports Bluetooth Monitor])
-					    BT_MONITOR_SRC=pcap-bt-monitor-linux.c
+					    MSRC="$MSRC pcap-bt-monitor-linux.c"
 					],
 					[
 					    AC_MSG_RESULT(no)
@@ -2308,8 +2306,6 @@ if test "x$enable_bluetooth" != "xno" ; then
 		;;
 	esac
 	AC_SUBST(PCAP_SUPPORT_BT)
-	AC_SUBST(BT_SRC)
-	AC_SUBST(BT_MONITOR_SRC)
 fi
 
 AC_ARG_ENABLE([dbus],
@@ -2379,7 +2375,7 @@ if test "x$enable_dbus" != "xno"; then
 			    [
 				AC_MSG_RESULT([yes])
 				AC_DEFINE(PCAP_SUPPORT_DBUS, 1, [support D-Bus sniffing])
-				DBUS_SRC=pcap-dbus.c
+				MSRC="$MSRC pcap-dbus.c"
 				V_INCLS="$V_INCLS $DBUS_CFLAGS"
 			    ],
 			    [
@@ -2398,7 +2394,6 @@ if test "x$enable_dbus" != "xno"; then
 		fi
 	fi
 	AC_SUBST(PCAP_SUPPORT_DBUS)
-	AC_SUBST(DBUS_SRC)
 fi
 
 AC_ARG_ENABLE([rdma],
@@ -2438,7 +2433,7 @@ if test "x$enable_rdma" != "xno"; then
 				[
 					AC_MSG_RESULT([yes])
 					AC_DEFINE(PCAP_SUPPORT_RDMASNIFF, , [target host supports RDMA sniffing])
-					RDMA_SRC=pcap-rdmasniff.c
+					MSRC="$MSRC pcap-rdmasniff.c"
 					LIBS="-libverbs $LIBS"
 				],
 				[
@@ -2448,7 +2443,6 @@ if test "x$enable_rdma" != "xno"; then
 		])
 	])
 	AC_SUBST(PCAP_SUPPORT_RDMASNIFF)
-	AC_SUBST(RDMA_SRC)
 fi
 
 AC_PROG_INSTALL
