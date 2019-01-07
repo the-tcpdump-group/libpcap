@@ -208,11 +208,15 @@ Run in inetd mode (UNIX only).
 .TP
 .BI \-s " config_file"
 Save the current configuration to
-.IR config_file .
+.I config_file
+in the format specified by
+.BR rpcapd-config (@MAN_FILE_FORMATS@).
 .TP
 .BI \-f " config_file"
 Load the current configuration from
-.IR config_file ;
+.I config_file
+in the format specified by
+.BR rpcapd-config (@MAN_FILE_FORMATS@);
 all switches specified from the command line are ignored.
 .TP
 .B \-h
@@ -220,4 +224,4 @@ Print this help screen.
 .br
 .ad
 .SH "SEE ALSO"
-pcap(3PCAP)
+pcap(3PCAP), rpcapd-config(@MAN_FILE_FORMATS@)
