@@ -355,6 +355,7 @@ EXTRA_DIST = \
 	rpcapd/rpcapd.h \
 	rpcapd/rpcapd.inetd.conf \
 	rpcapd/rpcapd.manadmin.in \
+	rpcapd/rpcapd-config.manfile.in \
 	rpcapd/rpcapd.rc \
 	rpcapd/rpcapd.socket \
 	rpcapd/rpcapd.xinetd.conf \
