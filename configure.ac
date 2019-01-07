@@ -1487,15 +1487,17 @@ yes)	AC_MSG_RESULT(yes)
 		#include <sys/socket.h>
 	    ])
 
-  #
-  # Optionally, we may want to forward packets over SSL:
-  #
-  PKG_CHECK_MODULES([OPENSSL], [openssl],
-    [AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
-     CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
-     LIBS="$LIBS $OPENSSL_LIBS"
-     HAVE_OPENSSL="yes"],
-    AC_MSG_NOTICE(No openssl detected))
+	#
+	# Optionally, we may want to support SSL.
+	#
+	PKG_CHECK_MODULES([OPENSSL], [openssl],
+	    [
+		AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
+		CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
+		LIBS="$LIBS $OPENSSL_LIBS"
+		HAVE_OPENSSL="yes"
+	    ],
+	    AC_MSG_NOTICE(OpenSSL not found))
 
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])

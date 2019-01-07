@@ -7746,9 +7746,9 @@ _ACEOF
 fi
 
 
-  #
-  # Optionally, we may want to forward packets over SSL:
-  #
+	#
+	# Optionally, we may want to support SSL.
+	#
 
 
 
@@ -7928,24 +7928,26 @@ fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$OPENSSL_PKG_ERRORS" >&5
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: No openssl detected" >&5
-$as_echo "$as_me: No openssl detected" >&6;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: OpenSSL not found" >&5
+$as_echo "$as_me: OpenSSL not found" >&6;}
 elif test $pkg_failed = untried; then
      	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: No openssl detected" >&5
-$as_echo "$as_me: No openssl detected" >&6;}
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: OpenSSL not found" >&5
+$as_echo "$as_me: OpenSSL not found" >&6;}
 else
 	OPENSSL_CFLAGS=$pkg_cv_OPENSSL_CFLAGS
 	OPENSSL_LIBS=$pkg_cv_OPENSSL_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
+
 $as_echo "#define HAVE_OPENSSL 1" >>confdefs.h
 
-     CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
-     LIBS="$LIBS $OPENSSL_LIBS"
-     HAVE_OPENSSL="yes"
+		CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
+		LIBS="$LIBS $OPENSSL_LIBS"
+		HAVE_OPENSSL="yes"
+
 fi
 
 
