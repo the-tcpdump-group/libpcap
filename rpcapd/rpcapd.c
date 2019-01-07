@@ -160,7 +160,7 @@ static void printusage(void)
 int main(int argc, char *argv[])
 {
 	char savefile[MAX_LINE + 1];		// name of the file on which we have to save the configuration
-	int log_to_systemlog = 1;		// Non-zero if we should log to the "system log" rather than the standard error
+	int log_to_systemlog = 0;		// Non-zero if we should log to the "system log" rather than the standard error
 	int isdaemon = 0;			// Non-zero if the user wants to run this program as a daemon
 #ifndef _WIN32
 	int isrunbyinetd = 0;			// Non-zero if this is being run by inetd or something inetd-like
