@@ -33,7 +33,6 @@
 
 #include "rpcapd.h"
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
-#include "sockutils.h"		// for SOCK_DEBUG_MESSAGE
 #include "portability.h"
 #include "fileconf.h"
 
@@ -73,9 +72,7 @@ void svc_geterr(char *str)
 				  NULL, val, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 				  (LPSTR) string, PCAP_ERRBUF_SIZE, NULL);
 
-	pcap_snprintf(message, PCAP_ERRBUF_SIZE, "%s failed with error %d: %s", str, val, string);
-
-	SOCK_DEBUG_MESSAGE(message);
+	rpcapd_log(LOGPRIO_ERROR, "%s failed with error %d: %s", str, val, string);
 }
 
 void WINAPI svc_control_handler(DWORD Opcode)

@@ -3,6 +3,7 @@
 extern void rpcapd_log_init(void);
 
 typedef enum {
+	LOGPRIO_DEBUG,
 	LOGPRIO_INFO,
 	LOGPRIO_WARNING,
 	LOGPRIO_ERROR
