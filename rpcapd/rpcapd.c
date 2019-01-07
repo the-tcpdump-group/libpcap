@@ -368,7 +368,14 @@ int main(int argc, char *argv[])
 #endif
 
 # ifdef HAVE_OPENSSL
-	if (uses_ssl) init_ssl_or_die(1, enable_compression);
+	if (uses_ssl) {
+		if (ssl_init_once(1, enable_compression, errbuf, PCAP_ERRBUF_SIZE) < 0)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "Can't initialize SSL: %s",
+			    errbuf);
+			exit(2);
+		}
+	}
 # endif
 
 #ifndef _WIN32

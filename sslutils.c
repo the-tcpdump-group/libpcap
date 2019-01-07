@@ -49,7 +49,7 @@ char ssl_rootfile[PATH_MAX];  //!< file containing the list of CAs trusted by th
 // TODO: lock?
 static SSL_CTX *ctx;
 
-static int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen)
+int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen)
 {
 	static int inited = 0;
 	if (inited) return 0;
@@ -121,17 +121,6 @@ static int ssl_init_once(int is_server, int enable_compression, char *errbuf, si
 
 die:
 	return -1;
-}
-
-void init_ssl_or_die(int is_server, int enable_compression)
-{
-	char errbuf[PCAP_ERRBUF_SIZE];
-
-	if (ssl_init_once(is_server, enable_compression, errbuf, sizeof errbuf) < 0)
-	{
-		fprintf(stderr, "%s\n", errbuf);
-		exit(3);
-	}
 }
 
 SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen)
