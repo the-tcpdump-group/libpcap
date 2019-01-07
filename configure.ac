@@ -2229,9 +2229,9 @@ AC_INCLUDES_DEFAULT
 	    ac_cv_dpdk_can_compile=no))
 	AC_MSG_RESULT($ac_cv_dpdk_can_compile)
 
-	CFLAGS=$save_LDFLAGS
-	LIBS=$save_LIBS
-	LDFLAGS=$save_LDFLAGS
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	LDFLAGS="$save_LDFLAGS"
 	
 	if test "$ac_cv_dpdk_can_compile" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
