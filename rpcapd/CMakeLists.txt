@@ -59,7 +59,7 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
   add_executable(rpcapd
     daemon.c
     fileconf.c
-    log-stderr.c
+    log.c
     rpcapd.c
     ${pcap_SOURCE_DIR}/rpcap-protocol.c
     ${pcap_SOURCE_DIR}/sockutils.c

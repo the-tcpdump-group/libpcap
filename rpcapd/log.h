@@ -1,6 +1,6 @@
 #include "pcap/funcattrs.h"
 
-extern void rpcapd_log_init(void);
+extern void rpcapd_log_set(int, int);
 
 typedef enum {
 	LOGPRIO_DEBUG,
