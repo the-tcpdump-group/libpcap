@@ -33,10 +33,6 @@
 #ifndef __SSLUTILS_H__
 #define __SSLUTILS_H__
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/err.h>
