@@ -2826,7 +2826,7 @@ error_nodiscard:
  * to implement; we provide some APIs for it that work only with rpcap.
  */
 
-SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, int uses_ssl, char *errbuf)
+SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, int uses_ssl, char *errbuf)
 {
 	/* socket-related variables */
 	struct addrinfo hints;			/* temporary struct to keep settings needed to open the new socket */
@@ -2996,6 +2996,11 @@ SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *
 	temp->next = NULL;
 
 	return sockctrl;
+}
+
+SOCKET pcap_remoteact_accept(const char *address, const char *port, const char *hostlist, char *connectinghost, struct pcap_rmtauth *auth, char *errbuf)
+{
+	return pcap_remoteact_accept_ex(address, port, hostlist, connectinghost, auth, 0, errbuf);
 }
 
 int pcap_remoteact_close(const char *host, char *errbuf)

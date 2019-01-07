@@ -950,6 +950,9 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
+	    struct pcap_rmtauth *auth, char *errbuf);
+PCAP_API SOCKET	pcap_remoteact_accept_ex(const char *address, const char *port,
+	    const char *hostlist, char *connectinghost,
 	    struct pcap_rmtauth *auth, int uses_ssl, char *errbuf);
 PCAP_API int	pcap_remoteact_list(char *hostlist, char sep, int size,
 	    char *errbuf);
