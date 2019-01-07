@@ -366,6 +366,8 @@ EXTRA_DIST = \
 	rpcapd/win32-svc.h \
 	sockutils.c \
 	sockutils.h \
+	sslutils.c \
+	sslutils.h \
 	scanner.l \
 	testprogs/CMakeLists.txt \
 	testprogs/Makefile.in \

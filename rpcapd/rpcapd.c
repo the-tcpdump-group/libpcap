@@ -53,6 +53,10 @@
 #include "daemon.h"		// the true main() method of this daemon
 #include "log.h"
 
+#ifdef HAVE_OPENSSL
+#include "sslutils.h"
+#endif
+
 #ifdef _WIN32
   #include <process.h>		// for thread stuff
   #include "win32-svc.h"	// for Win32 service stuff
@@ -86,6 +90,7 @@ static HANDLE state_change_event;		//!< event to signal that a state change shou
 #endif
 static volatile sig_atomic_t shutdown_server;	//!< '1' if the server is to shut down
 static volatile sig_atomic_t reread_config;	//!< '1' if the server is to re-read its configuration
+static int uses_ssl; //!< '1' to use TLS over the data socket
 
 extern char *optarg;	// for getopt()
 
@@ -144,6 +149,12 @@ static void printusage(void)
 #ifndef _WIN32
 	"  -i              run in inetd mode (UNIX only)\n\n"
 #endif
+#ifdef HAVE_OPENSSL
+	"  -S              encrypt all communication with SSL (implements rpcaps://)\n"
+	"  -C              enable compression\n"
+	"  -K <pem_file>   uses the SSL private key in this file (default: key.pem)\n"
+	"  -X <pem_file>   uses the certificate from this file (default: cert.pem)\n"
+#endif
 	"  -s <config_file> save the current configuration to file\n\n"
 	"  -f <config_file> load the current configuration from file; all switches\n"
 	"                  specified from the command line are ignored\n\n"
@@ -168,6 +179,9 @@ int main(int argc, char *argv[])
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 #ifndef _WIN32
 	struct sigaction action;
+#endif
+#ifdef HAVE_OPENSSL
+	int enable_compression = 0;
 #endif
 
 	savefile[0] = 0;
@@ -194,7 +208,15 @@ int main(int argc, char *argv[])
 	mainhints.ai_socktype = SOCK_STREAM;
 
 	// Getting the proper command line options
-	while ((retval = getopt(argc, argv, "b:dhip:4l:na:s:f:v")) != -1)
+#	ifdef HAVE_OPENSSL
+#		define SSL_CLOPTS  "SK:X:C"
+#	else
+#		define SSL_CLOPTS ""
+#	endif
+
+#	define CLOPTS "b:dhip:4l:na:s:f:v" SSL_CLOPTS
+
+	while ((retval = getopt(argc, argv, CLOPTS)) != -1)
 	{
 		switch (retval)
 		{
@@ -266,6 +288,20 @@ int main(int argc, char *argv[])
 			case 's':
 				pcap_strlcpy(savefile, optarg, MAX_LINE);
 				break;
+#ifdef HAVE_OPENSSL
+			case 'S':
+				uses_ssl = 1;
+				break;
+			case 'C':
+				enable_compression = 1;
+				break;
+			case 'K':
+				snprintf(ssl_keyfile, sizeof ssl_keyfile, "%s", optarg);
+				break;
+			case 'X':
+				snprintf(ssl_certfile, sizeof ssl_certfile, "%s", optarg);
+				break;
+#endif
 			case 'h':
 				printusage();
 				exit(0);
@@ -331,6 +367,10 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
+# ifdef HAVE_OPENSSL
+	if (uses_ssl) init_ssl_or_die(1, enable_compression);
+# endif
+
 #ifndef _WIN32
 	if (isrunbyinetd)
 	{
@@ -381,13 +421,26 @@ int main(int argc, char *argv[])
 			close(devnull_fd);
 		}
 
+		SSL *ssl = NULL;
+#ifdef HAVE_OPENSSL
+		if (uses_ssl)
+		{
+			ssl = ssl_promotion_rw(1, sockctrl_in, sockctrl_out, errbuf, PCAP_ERRBUF_SIZE);
+			if (! ssl)
+			{
+				rpcapd_log(LOGPRIO_ERROR, "TLS handshake on control connection failed: %s",
+				    errbuf);
+				exit(2);
+			}
+		}
+#endif
 		//
 		// Handle this client.
 		// This is passive mode, so we don't care whether we were
 		// told by the client to close.
 		//
-		(void)daemon_serviceloop(sockctrl_in, sockctrl_out, 0,
-		    nullAuthAllowed);
+		(void)daemon_serviceloop(sockctrl_in, sockctrl_out, ssl, 0,
+		    nullAuthAllowed, uses_ssl);
 
 		//
 		// Nothing more to do.
@@ -1033,6 +1086,22 @@ accept_connections(void)
 	sock_cleanup();
 }
 
+#ifdef _WIN32
+//
+// A structure to hold the parameter to the windows thread
+// (on unix there is no need for this explicit copy since the
+// fork "inherits" the parent stack)
+//
+struct sock_copy {
+	SOCKET sockctrl;
+#	ifdef HAVE_OPENSSL
+	SSL *ssl;
+#	else
+	void *ssl;
+#	endif
+};
+#endif
+
 //
 // Accept a connection and start a worker thread, on Windows, or a
 // worker process, on UN*X, to handle the connection.
@@ -1045,10 +1114,12 @@ accept_connection(SOCKET listen_sock)
 	struct sockaddr_storage from;		// generic sockaddr_storage variable
 	socklen_t fromlen;			// keeps the length of the sockaddr_storage variable
 
+	SSL *ssl = NULL;
+
 #ifdef _WIN32
 	HANDLE threadId;			// handle for the subthread
 	u_long off = 0;
-	SOCKET *sockctrl_temp;
+	struct sock_copy *sock_copy = NULL;
 #else
 	pid_t pid;
 #endif
@@ -1087,15 +1158,29 @@ accept_connection(SOCKET listen_sock)
 		return;
 	}
 
+#ifdef HAVE_OPENSSL
+	/* We have to upgrade to TLS as soon as possible so that the whole protocol
+	 * goes through the encrypted tunnel, including early error messages. */
+	if (uses_ssl)
+	{
+		ssl = ssl_promotion(1, sockctrl, errbuf, PCAP_ERRBUF_SIZE);
+		if (! ssl)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "TLS handshake on control connection failed: %s",
+			    errbuf);
+			goto error;
+		}
+	}
+#endif
+
 	//
 	// We have a connection.
 	// Check whether the connecting host is among the ones allowed.
 	//
 	if (sock_check_hostlist(hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
 	{
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
+		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
+		goto error;
 	}
 
 #ifdef _WIN32
@@ -1111,16 +1196,14 @@ accept_connection(SOCKET listen_sock)
 	if (WSAEventSelect(sockctrl, NULL, 0) == SOCKET_ERROR)
 	{
 		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
+		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
+		goto error;
 	}
 	if (ioctlsocket(sockctrl, FIONBIO, &off) == SOCKET_ERROR)
 	{
 		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
+		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
+		goto error;
 	}
 
 	//
@@ -1130,26 +1213,24 @@ accept_connection(SOCKET listen_sock)
 	// I guess we *could* just cast sockctrl to a void *, but that's
 	// a bit ugly.
 	//
-	sockctrl_temp = (SOCKET *)malloc(sizeof (SOCKET));
-	if (sockctrl_temp == NULL)
+	sock_copy = malloc(sizeof(*sock_copy));
+	if (sock_copy == NULL)
 	{
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc() failed");
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
+		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		goto error;
 	}
-	*sockctrl_temp = sockctrl;
+	sock_copy->sockctrl = sockctrl;
+	sock_copy->ssl = NULL;
 
 	threadId = (HANDLE)_beginthreadex(NULL, 0,
-	    main_passive_serviceloop_thread, (void *) sockctrl_temp, 0, NULL);
+	    main_passive_serviceloop_thread, (void *) sock_copy, 0, NULL);
 	if (threadId == 0)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		free(sockctrl_temp);
-		return;
+		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		goto error;
 	}
 	CloseHandle(threadId);
 #else
@@ -1157,9 +1238,8 @@ accept_connection(SOCKET listen_sock)
 	if (pid == -1)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child process");
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
+		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		goto error;
 	}
 	if (pid == 0)
 	{
@@ -1190,8 +1270,8 @@ accept_connection(SOCKET listen_sock)
 		// This is passive mode, so we don't care whether we were
 		// told by the client to close.
 		//
-		(void)daemon_serviceloop(sockctrl, sockctrl, 0,
-		    nullAuthAllowed);
+		(void)daemon_serviceloop(sockctrl, sockctrl, ssl, 0,
+		    nullAuthAllowed, uses_ssl);
 
 		close(sockctrl);
 
@@ -1200,8 +1280,25 @@ accept_connection(SOCKET listen_sock)
 
 	// I am the parent
 	// Close the socket for this session (must be open only in the child)
+#ifdef HAVE_OPENSSL
+	if (ssl)
+	{
+		SSL_free(ssl);
+		ssl = NULL;
+	}
+#endif
 	closesocket(sockctrl);
 #endif
+  return;
+
+error:
+#ifdef _WIN32
+	if (sock_copy) free(sock_copy);
+#endif
+#ifdef HAVE_OPENSSL
+	if (ssl) SSL_free(ssl);  // Have to be done before closing soskctrl
+#endif
+	sock_close(sockctrl, NULL, 0);
 }
 
 /*!
@@ -1225,6 +1322,7 @@ main_active(void *ptr)
 	struct addrinfo hints;			// temporary struct to keep settings needed to open the new socket
 	struct addrinfo *addrinfo;		// keeps the addrinfo chain; required to open a new socket
 	struct active_pars *activepars;
+	SSL *ssl = NULL;
 
 	activepars = (struct active_pars *) ptr;
 
@@ -1269,9 +1367,28 @@ main_active(void *ptr)
 			continue;
 		}
 
-		activeclose = daemon_serviceloop(sockctrl, sockctrl, 1,
-		    nullAuthAllowed);
+#ifdef HAVE_OPENSSL
+		/* Even in active mode the other other end has to initiate the TLS handshake
+		 * as we still are the server as far as TLS is concerned: */
+		if (uses_ssl)
+		{
+			ssl = ssl_promotion(1, sockctrl, errbuf, PCAP_ERRBUF_SIZE);
+			if (! ssl)
+			{
+				rpcapd_log(LOGPRIO_ERROR, "TLS handshake on control connection failed: %s",
+				    errbuf);
+				sock_close(sockctrl, NULL, 0);
+				continue;
+			}
+		}
+#endif
 
+		activeclose = daemon_serviceloop(sockctrl, sockctrl, ssl, 1,
+		    nullAuthAllowed, uses_ssl);
+
+#ifdef HAVE_OPENSSL
+		if (ssl) SSL_free(ssl);
+#endif
 		sock_close(sockctrl, NULL, 0);
 
 		// If the connection is closed by the user explicitely, don't try to connect to it again
@@ -1290,9 +1407,7 @@ main_active(void *ptr)
 //
 unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
 {
-	SOCKET sockctrl;
-
-	sockctrl = *((SOCKET *)ptr);
+	struct sock_copy sock = *(struct sock_copy *)ptr;
 	free(ptr);
 
 	//
@@ -1300,9 +1415,10 @@ unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
 	// This is passive mode, so we don't care whether we were
 	// told by the client to close.
 	//
-	(void)daemon_serviceloop(sockctrl, sockctrl, 0, nullAuthAllowed);
+	(void)daemon_serviceloop(sock.sockctrl, sock.sockctrl, sock.ssl, 0,
+	    nullAuthAllowed, uses_ssl);
 
-	sock_close(sockctrl, NULL, 0);
+	sock_close(sock.sockctrl, NULL, 0);
 
 	return 0;
 }
