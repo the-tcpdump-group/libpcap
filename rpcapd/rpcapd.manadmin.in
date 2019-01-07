@@ -61,15 +61,30 @@ rpcapd
 .B \-d
 ] [
 .B \-i
-] [
-.B \-s
-.I config_file
 ]
 .br
 .ti +8
 [
+.B \-s
+.I config_file
+]
+[
 .B \-f
 .I config_file
+]
+[
+.B \-S
+]
+.br
+.ti +8
+[
+.B \-K
+.I ssl_keyfile
+] [
+.B \-X
+.I ssl_certfile
+] [
+.B \-C
 ]
 .br
 .ad
@@ -217,6 +232,28 @@ all switches specified from the command line are ignored.
 .TP
 .B \-h
 Print this help screen.
+.LP
+If rpcapd was compiled with SSL support, these options are also
+available:
+.TP
+.B \-S
+Require that SSL be used on connections.
+.TP
+.B \-C
+With SSL enabled, XXX - I'm not sure how *fetching* the list of
+compression mechanisms does anything to compression.
+.TP
+.B \-S
+.I ssl_keyfile
+With SSL enabled, use
+.I ssl_keyfile
+as the SSL key file.
+.TP
+.B \-X
+.I ssl_certfile
+With SSL enabled, use
+.I ssl_certfile
+as the SSL certificate file.
 .br
 .ad
 .SH "SEE ALSO"
