@@ -1193,17 +1193,25 @@ accept_connection(SOCKET listen_sock)
 	// First, we have to un-WSAEventSelect() this socket, and then
 	// we can turn non-blocking mode off.
 	//
+	// If this fails, we aren't guaranteed that, for example, any
+	// of the error message will be sent - if it can't be put in
+	// the socket queue, the send will just fail.
+	//
+	// So we just log the message and close the connection.
+	//
 	if (WSAEventSelect(sockctrl, NULL, 0) == SOCKET_ERROR)
 	{
-		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
-		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-		goto error;
+		sock_geterror("WSAEventSelect: ", errbuf, PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
+		sock_close(sockctrl, NULL, 0);
+		return;
 	}
 	if (ioctlsocket(sockctrl, FIONBIO, &off) == SOCKET_ERROR)
 	{
 		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
-		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-		goto error;
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
+		sock_close(sockctrl, NULL, 0);
+		return;
 	}
 
 	//
@@ -1289,7 +1297,7 @@ accept_connection(SOCKET listen_sock)
 #endif
 	closesocket(sockctrl);
 #endif
-  return;
+	return;
 
 error:
 #ifdef _WIN32
