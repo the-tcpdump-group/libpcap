@@ -61,17 +61,21 @@ static void rpcapd_vlog_systemlog(log_priority,
     PCAP_FORMAT_STRING(const char *), va_list) PCAP_PRINTFLIKE(2, 0);
 
 #ifdef _WIN32
-static HANDLE log_handle = INVALID_HANDLE;
-
 #define MESSAGE_SUBKEY \
     "SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\rpcapd"
 
-static void rpcapd_log_init(void)
+static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
+    va_list ap)
 {
-	if (log_to_systemlog)
-	{
-		HKEY hey_handle;
+	static int initialized = 0;
+	HKEY hey_handle;
+	static HANDLE log_handle;
+	WORD eventlog_type;
+	DWORD event_id;
+	char msgbuf[1024];
+	char *strings[1];
 
+	if (!initialized) {
 		/*
 		 * Register our message stuff in the Registry.
 		 *
@@ -82,27 +86,17 @@ static void rpcapd_log_init(void)
 		if (RegCreateKey(HKEY_LOCAL_MACHINE, MESSAGE_SUBKEY,
 		    &key_handle) != ERROR_SUCCESS) {
 			/*
-			 * Failed - give up and just log to the
+			 * Failed - give up and just log this message,
+			 * and all subsequent messages, to the
 			 * standard error.
 			 */
 			log_to_systemlog = 0;
+			initialized = 1;
+			rpcapd_vlog_stderr(priority, message, ap);
 			return;
 		}
 		log_handle = RegisterEventSource(NULL, "rpcapd");
-	}
-}
-
-static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
-    va_list ap)
-{
-	WORD eventlog_type;
-	DWORD event_id;
-	char msgbuf[1024];
-	char *strings[1];
-
-	if (log_handle == INVALID_HANDLE) {
-		/* Failed to initialize, or haven't tried */
-		return;
+		initialized = 1;
 	}
 
 	switch (priority) {
@@ -145,18 +139,19 @@ static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
 	    strings, NULL);
 }
 #else
-static void rpcapd_log_init(void)
-{
-	if (log_to_systemlog)
-	{
-		openlog("rpcapd", LOG_PID, LOG_DAEMON);
-	}
-}
-
 static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
     va_list ap)
 {
+	static int initialized = 0;
 	int syslog_priority;
+
+	if (!initialized) {
+		//
+		// Open the log.
+		//
+		openlog("rpcapd", LOG_PID, LOG_DAEMON);
+		initialized = 1;
+	}
 
 	switch (priority) {
 
@@ -193,16 +188,7 @@ void rpcapd_log_set(int log_to_systemlog_arg, int log_debug_messages_arg)
 
 void rpcapd_log(log_priority priority, const char *message, ...)
 {
-	static int initialized = 0;
 	va_list ap;
-
-	if (!initialized) {
-		//
-		// Initialize the logging system.
-		//
-		rpcapd_log_init();
-		initialized = 1;
-	}
 
 	if (priority != LOGPRIO_DEBUG || log_debug_messages) {
 		va_start(ap, message);
