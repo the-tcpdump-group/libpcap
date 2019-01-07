@@ -867,6 +867,19 @@ if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g ${SANITIZER_FLAGS} -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
+#
+# OpenSSL/libressl.
+#
+find_package(OPENSSL)
+if(OPENSSL_FOUND)
+  #
+  # We have OpenSSL.
+  #
+  include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
+  set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${OPENSSL_LIBRARIES})
+  set(HAVE_OPENSSL YES)
+endif(OPENSSL_FOUND)
+
 ######################################
 # Input files
 ######################################
@@ -1653,7 +1666,7 @@ if(ENABLE_REMOTE)
     check_struct_has_member("struct msghdr" msg_flags "ftmacros.h;sys/socket.h" HAVE_STRUCT_MSGHDR_MSG_FLAGS)
     cmake_pop_check_state()
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c)
+        pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c)
 endif(ENABLE_REMOTE)
 
 ###################################################################
@@ -2168,13 +2181,20 @@ if(APPLE AND "${CMAKE_OSX_ARCHITECTURES}" STREQUAL "")
         # for 32-bit x86 code and if and when Apple adds
         # ARM-based Macs.  (You're on your own for iOS etc.)
         #
-        # XXX - check whether we *can* build for i386 and, if not,
-        # suggest that the user install the /usr/include headers if
-        # they want to build fat.
+        # First, check whether we're building with OpenSSL.
+        # If so, don't bother trying to build fat.
         #
-        cmake_push_check_state()
-        set(CMAKE_REQUIRED_FLAGS "-arch i386")
-        check_c_source_compiles(
+        if(HAVE_OPENSSL)
+          set(X86_32_BIT_SUPPORTED NO)
+          set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+          message(WARNING "We're assuming the OpenSSL libraries are 64-bit only, so we're not compiling for 32-bit x86")
+        else()
+          #
+          # Now, check whether we *can* build for i386.
+          #
+          cmake_push_check_state()
+          set(CMAKE_REQUIRED_FLAGS "-arch i386")
+          check_c_source_compiles(
 "int
 main(void)
 {
@@ -2182,20 +2202,25 @@ main(void)
 }
 "
                    X86_32_BIT_SUPPORTED)
-        cmake_pop_check_state()
-        if(X86_32_BIT_SUPPORTED)
-            set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
-        else()
-            set(OSX_LIBRARY_ARCHITECTURES "x86_64")
-            if(SYSTEM_VERSION_MAJOR LESS 18)
-                #
-                # Pre-Mojave; the command-line tools should be sufficient to
-                # enable 32-bit x86 builds.
-                #
-                message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools")
-            else()
-                message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
-            endif()
+          cmake_pop_check_state()
+          if(X86_32_BIT_SUPPORTED)
+              set(OSX_LIBRARY_ARCHITECTURES "x86_64;i386")
+          else()
+              set(OSX_LIBRARY_ARCHITECTURES "x86_64")
+              #
+              # We can't build fat; suggest that the user install the
+              # /usr/include headers if they want to build fat.
+              #
+              if(SYSTEM_VERSION_MAJOR LESS 18)
+                  #
+                  # Pre-Mojave; the command-line tools should be sufficient to
+                  # enable 32-bit x86 builds.
+                  #
+                  message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools")
+              else()
+                  message(WARNING "Compiling for 32-bit x86 gives an error; try installing the command-line tools and, after that, installing the /usr/include headers from the /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg package")
+              endif()
+          endif()
         endif()
     endif()
     if(BUILD_SHARED_LIBS)

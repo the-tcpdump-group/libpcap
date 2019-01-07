@@ -132,6 +132,9 @@
 /* Define to 1 if you have the <net/raw.h> header file. */
 #cmakedefine HAVE_NET_RAW_H 1
 
+/* Use OpenSSL */
+#cmakedefine HAVE_OPENSSL 1
+
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #cmakedefine HAVE_OS_PROTO_H 1
 
