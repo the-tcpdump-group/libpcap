@@ -43,7 +43,6 @@
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
-#include "sockutils.h"		// for SOCK_DEBUG_MESSAGE
 #include "portability.h"
 #include "rpcapd.h"
 #include "config_params.h"	// configuration file parameters
@@ -63,7 +62,6 @@ static char *skipws(char *ptr);
 void fileconf_read(void)
 {
 	FILE *fp;
-	char msg[PCAP_ERRBUF_SIZE + 1];
 	unsigned int num_active_clients;
 
 	if ((fp = fopen(loadfile, "r")) != NULL)
@@ -478,8 +476,7 @@ done:
 			num_active_clients++;
 		}
 
-		pcap_snprintf(msg, PCAP_ERRBUF_SIZE, "New passive host list: %s\n\n", hostlist);
-		SOCK_DEBUG_MESSAGE(msg);
+		rpcapd_log(LOGPRIO_DEBUG, "New passive host list: %s", hostlist);
 		fclose(fp);
 	}
 }

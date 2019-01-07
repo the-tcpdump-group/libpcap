@@ -683,7 +683,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, SSL *ssl, int isacti
 				// This is used only in case of active mode.
 				//
 				client_told_us_to_close = 1;
-				SOCK_DEBUG_MESSAGE("The other end system asked to close the connection.");
+				rpcapd_log(LOGPRIO_DEBUG, "The other end system asked to close the connection.");
 				goto end;
 			}
 
@@ -881,8 +881,8 @@ end:
 	}
 
 	// Print message and return
-	SOCK_DEBUG_MESSAGE("I'm exiting from the child loop");
-	SOCK_DEBUG_MESSAGE(errbuf);
+	rpcapd_log(LOGPRIO_DEBUG, "I'm exiting from the child loop");
+	rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 
 	return client_told_us_to_close;
 }

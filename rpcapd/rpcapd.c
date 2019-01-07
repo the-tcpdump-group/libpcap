@@ -191,12 +191,6 @@ int main(int argc, char *argv[])
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
 
-	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
-	{
-		SOCK_DEBUG_MESSAGE(errbuf);
-		exit(-1);
-	}
-
 	strncpy(address, RPCAP_DEFAULT_NETADDR, MAX_LINE);
 	strncpy(port, RPCAP_DEFAULT_NETPORT, MAX_LINE);
 
@@ -276,7 +270,7 @@ int main(int argc, char *argv[])
 				}
 
 				if (i > MAX_ACTIVE_LIST)
-					SOCK_DEBUG_MESSAGE("Only MAX_ACTIVE_LIST active connections are currently supported.");
+					rpcapd_log(LOGPRIO_ERROR, "Only MAX_ACTIVE_LIST active connections are currently supported.");
 
 				// I don't initialize the remaining part of the structure, since
 				// it is already zeroed (it is a global var)
@@ -315,13 +309,19 @@ int main(int argc, char *argv[])
 #ifndef _WIN32
 	if (isdaemon && isrunbyinetd)
 	{
-		fprintf(stderr, "rpcapd: -d and -i can't be used together\n");
+		rpcapd_log(LOGPRIO_ERROR, "rpcapd: -d and -i can't be used together");
 		exit(1);
 	}
 #endif
 
+	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
+	{
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
+		exit(-1);
+	}
+
 	if (savefile[0] && fileconf_save(savefile))
-		SOCK_DEBUG_MESSAGE("Error when saving the configuration to file");
+		rpcapd_log(LOGPRIO_DEBUG, "Error when saving the configuration to file");
 
 	// If the file does not exist, it keeps the settings provided by the command line
 	if (loadfile[0])
@@ -503,7 +503,7 @@ int main(int argc, char *argv[])
 		// If this call succeeds, it is blocking on Win32
 		//
 		if (svc_start() != 1)
-			SOCK_DEBUG_MESSAGE("Unable to start the service");
+			rpcapd_log(LOGPRIO_DEBUG, "Unable to start the service");
 
 		// When the previous call returns, the entire application has to be stopped.
 		exit(0);
@@ -564,7 +564,7 @@ void main_startup(void)
 		    (void *)&activelist[i], 0, NULL);
 		if (threadId == 0)
 		{
-			SOCK_DEBUG_MESSAGE("Error creating the active child threads");
+			rpcapd_log(LOGPRIO_DEBUG, "Error creating the active child threads");
 			continue;
 		}
 		CloseHandle(threadId);
@@ -599,7 +599,7 @@ void main_startup(void)
 		//
 		if (sock_initaddress((address[0]) ? address : NULL, port, &mainhints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
-			SOCK_DEBUG_MESSAGE(errbuf);
+			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 			return;
 		}
 
@@ -678,7 +678,7 @@ void main_startup(void)
 	//
 	// We're done; exit.
 	//
-	SOCK_DEBUG_MESSAGE(PROGRAM_NAME " is closing.\n");
+	rpcapd_log(LOGPRIO_DEBUG, PROGRAM_NAME " is closing.\n");
 
 #ifndef _WIN32
 	//
@@ -822,7 +822,7 @@ static void main_reap_children(int sign _U_)
 	// For reference, Stevens, pg 128
 
 	while ((pid = waitpid(-1, &exitstat, WNOHANG)) > 0)
-		SOCK_DEBUG_MESSAGE("Child terminated");
+		rpcapd_log(LOGPRIO_DEBUG, "Child terminated");
 
 	return;
 }
@@ -1348,10 +1348,9 @@ main_active(void *ptr)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_family = activepars->ai_family;
 
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Connecting to host %s, port %s, using protocol %s",
-			activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
-			(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
-	SOCK_DEBUG_MESSAGE(errbuf);
+	rpcapd_log(LOGPRIO_DEBUG, "Connecting to host %s, port %s, using protocol %s",
+	    activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
+	    (hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
 
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
@@ -1359,7 +1358,7 @@ main_active(void *ptr)
 	// Do the work
 	if (sock_initaddress(activepars->address, activepars->port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
-		SOCK_DEBUG_MESSAGE(errbuf);
+		rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 		return 0;
 	}
 
@@ -1369,13 +1368,13 @@ main_active(void *ptr)
 
 		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 		{
-			SOCK_DEBUG_MESSAGE(errbuf);
+			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error connecting to host %s, port %s, using protocol %s",
 					activepars->address, activepars->port, (hints.ai_family == AF_INET) ? "IPv4":
 					(hints.ai_family == AF_INET6) ? "IPv6" : "Unspecified");
 
-			SOCK_DEBUG_MESSAGE(errbuf);
+			rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 
 			sleep_secs(RPCAP_ACTIVE_WAIT);
 

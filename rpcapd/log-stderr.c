@@ -29,6 +29,10 @@ rpcapd_log(log_priority priority, const char *message, ...)
 
 	switch (priority) {
 
+	case LOGPRIO_DEBUG:
+		tag = "";
+		break;
+
 	case LOGPRIO_INFO:
 		tag = "";
 		break;
