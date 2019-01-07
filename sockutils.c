@@ -651,7 +651,7 @@ int sock_send(SOCKET sock, SSL *ssl, const char *buffer, size_t size,
 		if (errbuf)
 		{
 			pcap_snprintf(errbuf, errbuflen,
-			    "Can't send more than %u bytes with sock_recv",
+			    "Can't send more than %u bytes with sock_send",
 			    INT_MAX);
 		}
 		return -1;
