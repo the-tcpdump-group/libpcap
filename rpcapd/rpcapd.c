@@ -160,10 +160,12 @@ static void printusage(void)
 int main(int argc, char *argv[])
 {
 	char savefile[MAX_LINE + 1];		// name of the file on which we have to save the configuration
+	int log_to_systemlog = 1;		// Non-zero if we should log to the "system log" rather than the standard error
 	int isdaemon = 0;			// Non-zero if the user wants to run this program as a daemon
 #ifndef _WIN32
 	int isrunbyinetd = 0;			// Non-zero if this is being run by inetd or something inetd-like
 #endif
+	int log_debug_messages = 0;		// Non-zero if the user wants debug messages logged
 	int retval;				// keeps the returning value from several functions
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 #ifndef _WIN32
@@ -188,10 +190,14 @@ int main(int argc, char *argv[])
 	mainhints.ai_socktype = SOCK_STREAM;
 
 	// Getting the proper command line options
-	while ((retval = getopt(argc, argv, "b:dhip:4l:na:s:f:v")) != -1)
+	while ((retval = getopt(argc, argv, "b:dDhip:4l:na:s:f:v")) != -1)
 	{
 		switch (retval)
 		{
+			case 'D':
+				log_debug_messages = 1;
+				rpcapd_log_set(log_to_systemlog, log_debug_messages);
+				break;
 			case 'b':
 				strncpy(address, optarg, MAX_LINE);
 				break;
@@ -203,6 +209,8 @@ int main(int argc, char *argv[])
 				break;
 			case 'd':
 				isdaemon = 1;
+				log_to_systemlog = 1;
+				rpcapd_log_set(log_to_systemlog, log_debug_messages);
 				break;
 			case 'i':
 #ifdef _WIN32
@@ -210,6 +218,8 @@ int main(int argc, char *argv[])
 				exit(1);
 #else
 				isrunbyinetd = 1;
+				log_to_systemlog = 1;
+				rpcapd_log_set(log_to_systemlog, log_debug_messages);
 #endif
 				break;
 			case 'n':
