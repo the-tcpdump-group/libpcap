@@ -97,6 +97,9 @@ CLEANFILES = $(OBJ) rpcapd
 MANADMIN = \
 	rpcapd.manadmin.in
 
+MANFILE = \
+	rpcapd-config.manfile.in
+
 rpcapd: $(OBJ) ../libpcap.a
 	$(CC) $(CCOPT) $(CFLAGS) $(LDFLAGS) @V_PROG_LDFLAGS_FAT@ \
 	    -o $@ $(OBJ) ../libpcap.a $(LIBS) $(RPCAPD_LIBS) $(PTHREAD_LIBS)
@@ -106,7 +109,7 @@ clean:
 distclean: clean
 	rm -f Makefile config.cache config.log config.status \
 	    config.h stamp-h stamp-h.in
-	rm -f $(MANADMIN:.in=)
+	rm -f $(MANADMIN:.in=) $(MANFILE:.in=)
 	rm -rf autom4te.cache
 
 install: rpcapd
@@ -118,11 +121,16 @@ install: rpcapd
 	for i in $(MANADMIN); do \
 		$(INSTALL_DATA) `echo $$i | sed 's/.manadmin.in/.manadmin/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@/`echo $$i | sed 's/.manadmin.in/.@MAN_ADMIN_COMMANDS@/'`; done
+	for i in $(MANFILE); do \
+		$(INSTALL_DATA) `echo $$i | sed 's/.manfile.in/.manfile/'` \
+		    $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 
 uninstall:
 	rm -f $(DESTDIR)$(sbindir)/rpcapd
 	for i in $(MANADMIN); do \
 		rm -f $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@/`echo $$i | sed 's/.manadmin.in/.@MAN_ADMIN_COMMANDS@/'`; done
+	for i in $(MANFILE); do \
+		rm -f $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@/`echo $$i | sed 's/.manfile.in/.@MAN_FILE_FORMATS@/'`; done
 
 tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
