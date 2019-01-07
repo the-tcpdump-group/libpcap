@@ -56,10 +56,16 @@ SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t
 int ssl_send(SSL *, char const *buffer, int size, char *errbuf, size_t errbuflen);
 int ssl_recv(SSL *, char *buffer, int size, char *errbuf, size_t errbuflen);
 
+// The SSL parameters are used
+#define _U_NOSSL_
+
 #else   // HAVE_OPENSSL
 
 // This saves us from a lot of ifdefs:
 #define SSL void const
+
+// The SSL parameters are unused
+#define _U_NOSSL_	_U_
 
 #endif  // HAVE_OPENSSL
 
