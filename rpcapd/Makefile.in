@@ -118,6 +118,8 @@ install: rpcapd
 	$(INSTALL_PROGRAM) rpcapd $(DESTDIR)$(sbindir)/rpcapd
 	[ -d $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@ ] || \
 	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@)
+	[ -d $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@ ] || \
+	    (mkdir -p $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@; chmod 755 $(DESTDIR)$(mandir)/man@MAN_FILE_FORMATS@)
 	for i in $(MANADMIN); do \
 		$(INSTALL_DATA) `echo $$i | sed 's/.manadmin.in/.manadmin/'` \
 		    $(DESTDIR)$(mandir)/man@MAN_ADMIN_COMMANDS@/`echo $$i | sed 's/.manadmin.in/.@MAN_ADMIN_COMMANDS@/'`; done
