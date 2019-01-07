@@ -1487,9 +1487,19 @@ yes)	AC_MSG_RESULT(yes)
 		#include <sys/socket.h>
 	    ])
 
+  #
+  # Optionally, we may want to forward packets over SSL:
+  #
+  PKG_CHECK_MODULES([OPENSSL], [openssl],
+    [AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
+     CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
+     LIBS="$LIBS $OPENSSL_LIBS"
+     HAVE_OPENSSL="yes"],
+    AC_MSG_NOTICE(No openssl detected))
+
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
-	MSRC="$MSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c"
+	MSRC="$MSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
@@ -1738,8 +1748,20 @@ darwin*)
 			    [return 0;],
 			    [
 				AC_MSG_RESULT(yes)
-				V_LIB_CCOPT_FAT="-arch x86_64 -arch i386"
-				V_LIB_LDFLAGS_FAT="-arch x86_64 -arch i386"
+				V_LIB_CCOPT_FAT="-arch x86_64"
+				V_LIB_LDFLAGS_FAT="-arch x86_64"
+
+				#
+				# OpenSSL installation on macOS seems
+				# to install only the libs for 64-bit
+				# x86 - at least that's what Brew does:
+				# only configure 32-bit builds if we
+				# don't have OpenSSL.
+				#
+				if test "$HAVE_OPENSSL" != yes; then
+					V_LIB_CCOPT_FAT="$V_LIB_CCOPT_FAT -arch i386"
+					V_LIB_LDFLAGS_FAT="$V_LIB_LDFLAGS_FAT -arch i386"
+				fi
 			    ],
 			    [
 				AC_MSG_RESULT(no)
@@ -1767,6 +1789,14 @@ darwin*)
 				esac
 			    ])
 			CFLAGS="$save_CFLAGS"
+			if test "$HAVE_OPENSSL" = yes; then
+				#
+				# If all else fails, look for OpenSSL in
+				# /usr/local/opt.
+				#
+				CFLAGS="$CFLAGS -I/usr/local/opt/openssl/include"
+				LIBS="$LIBS -L/usr/local/opt/openssl/lib"
+			fi
 			;;
 		esac
 	fi

@@ -30,22 +30,41 @@
  *
  */
 
-#ifndef __DAEMON_H__
-#define __DAEMON_H__
+#ifndef __SSLUTILS_H__
+#define __SSLUTILS_H__
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
-#include "sslutils.h"
+#ifdef HAVE_OPENSSL
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "pcap/pcap.h"  // for SOCKET
 
-//
-// Returns 1 if the client closed the control connection explicitly, 0
-// otherwise; used in active mode only.
-//
-int daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, SSL *ssl,
-    int isactive, int nullAuthAllowed, int uses_ssl);
+/*
+ * Configuration parameters
+ */
 
-void sleep_secs(int secs);
+extern char ssl_keyfile[PATH_MAX];
+extern char ssl_certfile[PATH_MAX];
+extern char ssl_rootfile[PATH_MAX];
 
-#endif
+/*
+ * Utility functions
+ */
+
+void init_ssl_or_die(int is_server, int enable_compression);
+SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen);
+SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen);
+int ssl_send(SSL *, char const *buffer, size_t size, char *errbuf, size_t errbuflen);
+int ssl_recv(SSL *, char *buffer, size_t size, char *errbuf, size_t errbuflen);
+
+#else   // HAVE_OPENSSL
+
+// This saves us from a lot of ifdefs:
+#define SSL void const
+
+#endif  // HAVE_OPENSSL
+
+#endif  // __SSLUTILS_H__
