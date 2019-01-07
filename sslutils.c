@@ -168,7 +168,7 @@ SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
 
 // Same return value as sock_send:
 // 0 on OK, -1 on error but closed connection (-2).
-int ssl_send(SSL *ssl, char const *buffer, size_t size, char *errbuf, size_t errbuflen)
+int ssl_send(SSL *ssl, char const *buffer, int size, char *errbuf, size_t errbuflen)
 {
 	int status = SSL_write(ssl, buffer, size);
 	if (status > 0)
@@ -196,7 +196,7 @@ int ssl_send(SSL *ssl, char const *buffer, size_t size, char *errbuf, size_t err
 }
 
 // Returns the number of bytes read, or -1 on syserror, or -2 on SSL error.
-int ssl_recv(SSL *ssl, char *buffer, size_t size, char *errbuf, size_t errbuflen)
+int ssl_recv(SSL *ssl, char *buffer, int size, char *errbuf, size_t errbuflen)
 {
 	int status = SSL_read(ssl, buffer, size);
 	if (status <= 0)
