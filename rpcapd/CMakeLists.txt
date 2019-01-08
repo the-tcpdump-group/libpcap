@@ -63,6 +63,7 @@ if(WIN32 OR ((CMAKE_USE_PTHREADS_INIT OR PTHREADS_FOUND) AND HAVE_CRYPT))
     rpcapd.c
     ${pcap_SOURCE_DIR}/rpcap-protocol.c
     ${pcap_SOURCE_DIR}/sockutils.c
+    ${pcap_SOURCE_DIR}/sslutils.c
     ${pcap_SOURCE_DIR}/fmtutils.c
     ${RPCAPD_EXTRA_SOURCES}
   )
