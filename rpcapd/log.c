@@ -67,6 +67,7 @@ static void rpcapd_vlog_systemlog(log_priority,
 static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
     va_list ap)
 {
+#if 0
 	static int initialized = 0;
 	HKEY hey_handle;
 	static HANDLE log_handle;
@@ -137,6 +138,9 @@ static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
 	 */
 	(void) ReportEvent(log_handle, eventlog_type, 0, event_id, NULL, 1, 0,
 	    strings, NULL);
+#else
+	rpcapd_vlog_stderr(priority, message, ap);
+#endif
 }
 #else
 static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
