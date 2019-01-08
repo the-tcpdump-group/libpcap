@@ -1053,6 +1053,20 @@ accept_connections(void)
 	sock_cleanup();
 }
 
+#ifdef _WIN32
+//
+// A structure to hold the parameters to the daemon service loop
+// thread on Windows.
+//
+// (On UN*X, there is no need for this explicit copy since the
+// fork "inherits" the parent stack.)
+//
+struct params_copy {
+	SOCKET sockctrl;
+	char *hostlist;
+};
+#endif
+
 //
 // Accept a connection and start a worker thread, on Windows, or a
 // worker process, on UN*X, to handle the connection.
@@ -1068,7 +1082,7 @@ accept_connection(SOCKET listen_sock)
 #ifdef _WIN32
 	HANDLE threadId;			// handle for the subthread
 	u_long off = 0;
-	SOCKET *sockctrl_temp;
+	struct params_copy *parms_copy = NULL;
 #else
 	pid_t pid;
 #endif
@@ -1139,29 +1153,45 @@ accept_connection(SOCKET listen_sock)
 	}
 
 	//
-	// Allocate a location to hold the value of sockctrl.
-	// It will be freed in the newly-created thread once it's
-	// finished with it.
-	// I guess we *could* just cast sockctrl to a void *, but that's
-	// a bit ugly.
+	// Make a copy of the host list to pass to the new thread, so that
+	// if we update it in the main thread, it won't catch us in the
+	// middle of updating it.
 	//
-	sockctrl_temp = (SOCKET *)malloc(sizeof (SOCKET));
-	if (sockctrl_temp == NULL)
+	// daemon_serviceloop() will free it once it's done with it.
+	//
+	char *hostlist_copy = strdup(hostlist);
+	if (hostlist_copy == NULL)
 	{
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "malloc() failed");
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
+		rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
 		sock_close(sockctrl, NULL, 0);
 		return;
 	}
-	*sockctrl_temp = sockctrl;
+
+	//
+	// Allocate a location to hold the values of sockctrl.
+	// It will be freed in the newly-created thread once it's
+	// finished with it.
+	//
+	params_copy = malloc(sizeof(*params_copy));
+	if (params_copy == NULL)
+	{
+		rpcapd_log(LOGPRIO_ERROR, "Out of memory allocating the parameter copy structure");
+		free(hostlist_copy);
+		sock_close(sockctrl, NULL, 0);
+		return;
+	}
+	params_copy->sockctrl = sockctrl;
+	params_copy->hostlist = hostlist_copy;
 
 	threadId = (HANDLE)_beginthreadex(NULL, 0,
-	    main_passive_serviceloop_thread, (void *) sockctrl_temp, 0, NULL);
+	    main_passive_serviceloop_thread, (void *) params_copy, 0, NULL);
 	if (threadId == 0)
 	{
 		rpcapd_log(LOG_ERROR, "Error creating the child thread");
-		goto error;
+		free(params_copy);
+		free(hostlist_copy);
+		sock_close(sockctrl, NULL, 0);
+		return;
 	}
 	CloseHandle(threadId);
 #else /* _WIN32 */
@@ -1170,7 +1200,8 @@ accept_connection(SOCKET listen_sock)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "Error creating the child process: %s",
 		    strerror(errno));
-		goto error;
+		sock_close(sockctrl, NULL, 0);
+		return;
 	}
 	if (pid == 0)
 	{
@@ -1219,13 +1250,6 @@ accept_connection(SOCKET listen_sock)
 	// Close the socket for this session (must be open only in the child)
 	closesocket(sockctrl);
 #endif /* _WIN32 */
-	return;
-
-error:
-#ifdef _WIN32
-	if (sockctrl_temp) free(sockctrl_temp);
-#endif
-	sock_close(sockctrl, NULL, 0);
 }
 
 /*!
@@ -1325,9 +1349,7 @@ main_active(void *ptr)
 //
 unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
 {
-	SOCKET sockctrl;
-
-	sockctrl = *((SOCKET *)ptr);
+	struct params_copy params = *(struct params_copy *)ptr;
 	free(ptr);
 
 	//
@@ -1335,10 +1357,10 @@ unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
 	// This is passive mode, so we don't care whether we were
 	// told by the client to close.
 	//
-	(void)daemon_serviceloop(sock.sockctrl, sock.sockctrl, 0,
-	    nullAuthAllowed);
+	(void)daemon_serviceloop(params.sockctrl, params.sockctrl, 0,
+	    params.hostlist, nullAuthAllowed);
 
-	sock_close(sockctrl, NULL, 0);
+	sock_close(params.sockctrl, NULL, 0);
 
 	return 0;
 }
