@@ -378,7 +378,8 @@ int main(int argc, char *argv[])
 		}
 
 		//
-		// Try to set the standard input and output to /dev/null.
+		// Try to set the standard input, output, and error
+		// to /dev/null.
 		//
 		devnull_fd = open("/dev/null", O_RDWR);
 		if (devnull_fd != -1)
@@ -388,6 +389,7 @@ int main(int argc, char *argv[])
 			//
 			(void)dup2(devnull_fd, 0);
 			(void)dup2(devnull_fd, 1);
+			(void)dup2(devnull_fd, 2);
 			close(devnull_fd);
 		}
 
@@ -396,8 +398,16 @@ int main(int argc, char *argv[])
 		// This is passive mode, so we don't care whether we were
 		// told by the client to close.
 		//
+		char *hostlist_copy = strdup(hostlist);
+		if (hostlist_copy == NULL)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
+			exit(0);
+		}
 		(void)daemon_serviceloop(sockctrl_in, sockctrl_out, 0,
-		    nullAuthAllowed);
+		    hostlist_copy, nullAuthAllowed);
+
+		sock_close(sockctrl_out, NULL, 0);
 
 		//
 		// Nothing more to do.
@@ -1097,17 +1107,6 @@ accept_connection(SOCKET listen_sock)
 		return;
 	}
 
-	//
-	// We have a connection.
-	// Check whether the connecting host is among the ones allowed.
-	//
-	if (sock_check_hostlist(hostlist, RPCAP_HOSTLIST_SEP, &from, errbuf, PCAP_ERRBUF_SIZE) < 0)
-	{
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
-	}
-
 #ifdef _WIN32
 	//
 	// Put the socket back into blocking mode; doing WSAEventSelect()
@@ -1161,21 +1160,17 @@ accept_connection(SOCKET listen_sock)
 	    main_passive_serviceloop_thread, (void *) sockctrl_temp, 0, NULL);
 	if (threadId == 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child thread");
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		free(sockctrl_temp);
-		return;
+		rpcapd_log(LOG_ERROR, "Error creating the child thread");
+		goto error;
 	}
 	CloseHandle(threadId);
-#else
+#else /* _WIN32 */
 	pid = fork();
 	if (pid == -1)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the child process");
-		rpcap_senderror(sockctrl, 0, PCAP_ERR_OPEN, errbuf, NULL);
-		sock_close(sockctrl, NULL, 0);
-		return;
+		rpcapd_log(LOGPRIO_ERROR, "Error creating the child process: %s",
+		    strerror(errno));
+		goto error;
 	}
 	if (pid == 0)
 	{
@@ -1206,10 +1201,16 @@ accept_connection(SOCKET listen_sock)
 		// This is passive mode, so we don't care whether we were
 		// told by the client to close.
 		//
+		char *hostlist_copy = strdup(hostlist);
+		if (hostlist_copy == NULL)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
+			exit(0);
+		}
 		(void)daemon_serviceloop(sockctrl, sockctrl, 0,
-		    nullAuthAllowed);
+		    hostlist_copy, nullAuthAllowed);
 
-		close(sockctrl);
+		sock_close(sockctrl, NULL, 0);
 
 		exit(0);
 	}
@@ -1217,7 +1218,14 @@ accept_connection(SOCKET listen_sock)
 	// I am the parent
 	// Close the socket for this session (must be open only in the child)
 	closesocket(sockctrl);
+#endif /* _WIN32 */
+	return;
+
+error:
+#ifdef _WIN32
+	if (sockctrl_temp) free(sockctrl_temp);
 #endif
+	sock_close(sockctrl, NULL, 0);
 }
 
 /*!
@@ -1284,8 +1292,20 @@ main_active(void *ptr)
 			continue;
 		}
 
-		activeclose = daemon_serviceloop(sockctrl, sockctrl, 1,
-		    nullAuthAllowed);
+		char *hostlist_copy = strdup(hostlist);
+		if (hostlist_copy == NULL)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
+			activeclose = 0;
+		}
+		else
+		{
+			//
+			// daemon_serviceloop() will free the copy.
+			//
+			activeclose = daemon_serviceloop(sockctrl, sockctrl, 1,
+			    hostlist_copy, nullAuthAllowed);
+		}
 
 		sock_close(sockctrl, NULL, 0);
 
@@ -1315,7 +1335,8 @@ unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
 	// This is passive mode, so we don't care whether we were
 	// told by the client to close.
 	//
-	(void)daemon_serviceloop(sockctrl, sockctrl, 0, nullAuthAllowed);
+	(void)daemon_serviceloop(sock.sockctrl, sock.sockctrl, 0,
+	    nullAuthAllowed);
 
 	sock_close(sockctrl, NULL, 0);
 
