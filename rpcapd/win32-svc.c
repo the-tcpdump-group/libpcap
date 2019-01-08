@@ -35,6 +35,7 @@
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 #include "portability.h"
 #include "fileconf.h"
+#include "log.h"
 
 static SERVICE_STATUS_HANDLE service_status_handle;
 static SERVICE_STATUS service_status;
