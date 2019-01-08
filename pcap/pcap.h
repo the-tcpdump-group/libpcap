@@ -929,6 +929,9 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 
 /*
  * Some minor differences between UN*X sockets and and Winsock sockets.
+ * These are also defined by pcap/pcap.h, due to some APIs from WinPcap
+ * for active-mode remote captures returning sockets, so we check to
+ * make sure they aren't already defined.
  */
 #ifndef _WIN32
   /*!
@@ -937,7 +940,9 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
    * We define SOCKET to be a signed integer on UN*X, so that it can
    * be used on both platforms.
    */
-  #define SOCKET int
+  #ifndef SOCKET
+    #define SOCKET int
+  #endif
 
   /*!
    * \brief In Winsock, the error return if socket() fails is INVALID_SOCKET;
@@ -945,7 +950,9 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
    * We define INVALID_SOCKET to be -1 on UN*X, so that it can be used on
    * both platforms.
    */
-  #define INVALID_SOCKET -1
+  #ifndef INVALID_SOCKET
+    #define INVALID_SOCKET -1
+  #endif
 #endif
 
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
