@@ -300,10 +300,10 @@ int main(int argc, char *argv[])
 				enable_compression = 1;
 				break;
 			case 'K':
-				snprintf(ssl_keyfile, sizeof ssl_keyfile, "%s", optarg);
+				ssl_set_keyfile(optarg);
 				break;
 			case 'X':
-				snprintf(ssl_certfile, sizeof ssl_certfile, "%s", optarg);
+				ssl_set_certfile(optarg);
 				break;
 #endif
 			case 'h':

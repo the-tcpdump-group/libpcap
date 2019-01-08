@@ -39,17 +39,11 @@
 #include "pcap/pcap.h"  // for SOCKET
 
 /*
- * Configuration parameters
- */
-
-extern char ssl_keyfile[PATH_MAX];
-extern char ssl_certfile[PATH_MAX];
-extern char ssl_rootfile[PATH_MAX];
-
-/*
  * Utility functions
  */
 
+void ssl_set_certfile(const char *certfile);
+void ssl_set_keyfile(const char *keyfile);
 int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen);
 SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen);
 SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen);

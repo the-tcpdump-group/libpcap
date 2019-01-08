@@ -41,13 +41,23 @@
 #include "sslutils.h"
 #include "pcap/pcap.h"
 
-char ssl_keyfile[PATH_MAX]; //!< file containing the private key in PEM format
-char ssl_certfile[PATH_MAX];  //!< file containing the server's certificate in PEM format
-char ssl_rootfile[PATH_MAX];  //!< file containing the list of CAs trusted by the client
+static const char *ssl_keyfile = "";   //!< file containing the private key in PEM format
+static const char *ssl_certfile = "";  //!< file containing the server's certificate in PEM format
+static const char *ssl_rootfile = "";  //!< file containing the list of CAs trusted by the client
 // TODO: a way to set ssl_rootfile from the command line, or an envvar?
 
 // TODO: lock?
 static SSL_CTX *ctx;
+
+void ssl_set_certfile(const char *certfile)
+{
+	ssl_certfile = certfile;
+}
+
+void ssl_set_keyfile(const char *keyfile)
+{
+	ssl_keyfile = keyfile;
+}
 
 int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t errbuflen)
 {
