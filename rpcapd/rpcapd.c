@@ -1082,7 +1082,7 @@ accept_connection(SOCKET listen_sock)
 #ifdef _WIN32
 	HANDLE threadId;			// handle for the subthread
 	u_long off = 0;
-	struct params_copy *parms_copy = NULL;
+	struct params_copy *params_copy = NULL;
 #else
 	pid_t pid;
 #endif
@@ -1187,7 +1187,7 @@ accept_connection(SOCKET listen_sock)
 	    main_passive_serviceloop_thread, (void *) params_copy, 0, NULL);
 	if (threadId == 0)
 	{
-		rpcapd_log(LOG_ERROR, "Error creating the child thread");
+		rpcapd_log(LOGPRIO_ERROR, "Error creating the child thread");
 		free(params_copy);
 		free(hostlist_copy);
 		sock_close(sockctrl, NULL, 0);
