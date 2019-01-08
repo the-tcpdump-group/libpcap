@@ -144,11 +144,14 @@ static int rpcapd_discard(SOCKET sock, SSL *, uint32 len);
 static void session_close(struct session *);
 
 int
-daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, SSL *ssl, int isactive, int nullAuthAllowed, int uses_ssl)
+daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out,
+    int isactive, char *passiveClients, int nullAuthAllowed, int uses_ssl)
 {
 	struct daemon_slpars pars;		// service loop parameters
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	char errmsgbuf[PCAP_ERRBUF_SIZE + 1];	// buffer for errors to send to the client
+	int host_port_ok;
+	SSL *ssl = NULL;
 	int nrecv;
 	struct rpcap_header header;		// RPCAP message general header
 	uint32 plen;				// payload length from header
@@ -172,14 +175,6 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, SSL *ssl, int isacti
 	struct timeval tv;			// maximum time the select() can block waiting for data
 	int retval;				// select() return value
 
-	// Set parameters structure
-	pars.sockctrl_in = sockctrl_in;
-	pars.sockctrl_out = sockctrl_out;
-	pars.ssl = ssl;
-	pars.protocol_version = 0;		// not yet known
-	pars.isactive = isactive;		// active mode
-	pars.nullAuthAllowed = nullAuthAllowed;
-
 	// We don't have a thread yet.
 	threaddata.have_thread = 0;
 	//
@@ -198,6 +193,86 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, SSL *ssl, int isacti
 #endif
 
 	*errbuf = 0;	// Initialize errbuf
+
+#ifdef HAVE_OPENSSL
+	//
+	// We have to upgrade to TLS as soon as possible, so that the
+	// whole protocol goes through the encrypted tunnel, including
+	// early error messages.
+	//
+	// Even in active mode, the other end has to initiate the TLS
+	// handshake as we still are the server as far as TLS is concerned,
+	// so we don't check isactive.
+	//
+	if (uses_ssl)
+	{
+		ssl = ssl_promotion_rw(1, pars.sockctrl_in, pars.sockctrl_out, errbuf, PCAP_ERRBUF_SIZE);
+		if (! ssl)
+		{
+			rpcapd_log(LOGPRIO_ERROR, "TLS handshake on control connection failed: %s",
+			    errbuf);
+			goto end;
+		}
+	}
+#endif
+
+	// Set parameters structure
+	pars.sockctrl_in = sockctrl_in;
+	pars.sockctrl_out = sockctrl_out;
+	pars.ssl = ssl;
+	pars.protocol_version = 0;		// not yet known
+	pars.isactive = isactive;		// active mode
+	pars.nullAuthAllowed = nullAuthAllowed;
+
+	//
+	// We have a connection.
+	//
+	// If it's a passive mode connection, check whether the connecting
+	// host is among the ones allowed.
+	//
+	// In either case, we were handed a copy of the host list; free it
+	// as soon as we're done with it.
+	//
+	if (pars.isactive)
+	{
+		// Nothing to do.
+		free(passiveClients);
+		passiveClients = NULL;
+	}
+	else
+	{
+		struct sockaddr_storage from;
+		socklen_t fromlen;
+
+		//
+		// Get the address of the other end of the connection.
+		//
+		fromlen = sizeof(struct sockaddr_storage);
+		if (getpeername(pars.sockctrl_in, (struct sockaddr *)&from,
+		    &fromlen) == -1)
+		{
+			sock_geterror("getpeername(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
+			if (rpcap_senderror(pars.sockctrl_out, pars.ssl, 0, PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
+				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+			goto end;
+		}
+
+		//
+		// Are they in the list of host/port combinations we allow?
+		//
+		host_port_ok = (sock_check_hostlist(passiveClients, RPCAP_HOSTLIST_SEP, &from, errmsgbuf, PCAP_ERRBUF_SIZE) == 0);
+		free(passiveClients);
+		passiveClients = NULL;
+		if (!host_port_ok)
+		{
+			//
+			// Sorry, you're not on the guest list.
+			//
+			if (rpcap_senderror(pars.sockctrl_out, pars.ssl, 0, PCAP_ERR_HOSTNOAUTH, errmsgbuf, errbuf) == -1)
+				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+			goto end;
+		}
+	}
 
 	//
 	// The client must first authenticate; loop until they send us a
@@ -879,6 +954,13 @@ end:
 		free(session);
 		session = NULL;
 	}
+
+#ifdef HAVE_OPENSSL
+	if (ssl)
+	{
+		SSL_free(ssl);
+	}
+#endif
 
 	// Print message and return
 	rpcapd_log(LOGPRIO_DEBUG, "I'm exiting from the child loop");

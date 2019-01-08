@@ -43,8 +43,8 @@
 // Returns 1 if the client closed the control connection explicitly, 0
 // otherwise; used in active mode only.
 //
-int daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out, SSL *ssl,
-    int isactive, int nullAuthAllowed, int uses_ssl);
+int daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out,
+    int isactive, char *passiveClients, int nullAuthAllowed, int uses_ssl);
 
 void sleep_secs(int secs);
 
