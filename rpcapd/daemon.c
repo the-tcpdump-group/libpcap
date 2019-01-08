@@ -194,6 +194,13 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out,
 
 	*errbuf = 0;	// Initialize errbuf
 
+	// Set parameters structure
+	pars.sockctrl_in = sockctrl_in;
+	pars.sockctrl_out = sockctrl_out;
+	pars.protocol_version = 0;		// not yet known
+	pars.isactive = isactive;		// active mode
+	pars.nullAuthAllowed = nullAuthAllowed;
+
 #ifdef HAVE_OPENSSL
 	//
 	// We have to upgrade to TLS as soon as possible, so that the
@@ -215,14 +222,7 @@ daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out,
 		}
 	}
 #endif
-
-	// Set parameters structure
-	pars.sockctrl_in = sockctrl_in;
-	pars.sockctrl_out = sockctrl_out;
 	pars.ssl = ssl;
-	pars.protocol_version = 0;		// not yet known
-	pars.isactive = isactive;		// active mode
-	pars.nullAuthAllowed = nullAuthAllowed;
 
 	//
 	// We have a connection.
