@@ -46,6 +46,7 @@ static void update_svc_status(DWORD state, DWORD progress_indicator);
 
 int svc_start(void)
 {
+	int rc;
 	SERVICE_TABLE_ENTRY ste[] =
 	{
 		{ PROGRAM_NAME, svc_main },
@@ -55,7 +56,7 @@ int svc_start(void)
 
 	// This call is blocking. A new thread is created which will launch
 	// the svc_main() function
-	if (StartServiceCtrlDispatcher(ste) == 0) {
+	if ((rc = StartServiceCtrlDispatcher(ste)) == 0) {
 		pcap_win32_err_to_str(GetLastError(), string);
 		rpcapd_log(LOGPRIO_ERROR,
 		    "StartServiceCtrlDispatcher() failed: %s", string);
