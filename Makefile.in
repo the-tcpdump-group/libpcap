@@ -118,6 +118,7 @@ PUBHDR = \
 	pcap/nflog.h \
 	pcap/pcap.h \
 	pcap/sll.h \
+	pcap/socket.h \
 	pcap/vlan.h \
 	pcap/usb.h
 

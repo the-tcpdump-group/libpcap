@@ -37,6 +37,8 @@
 #ifdef HAVE_OPENSSL
 #include <stdlib.h>
 
+#include "portability.h"
+
 #include "sslutils.h"
 
 static const char *ssl_keyfile = "";   //!< file containing the private key in PEM format

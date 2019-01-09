@@ -36,7 +36,7 @@
 #ifdef HAVE_OPENSSL
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "portability.h"  // for SOCKET
+#include "pcap/socket.h"  // for SOCKET
 
 /*
  * Utility functions
