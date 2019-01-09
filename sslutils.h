@@ -34,9 +34,9 @@
 #define __SSLUTILS_H__
 
 #ifdef HAVE_OPENSSL
+#include "pcap/socket.h"  // for SOCKET
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include "pcap/socket.h"  // for SOCKET
 
 /*
  * Utility functions
