@@ -1228,12 +1228,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	HANDLE Token;
 	if (LogonUser(username, ".", password, LOGON32_LOGON_NETWORK, LOGON32_PROVIDER_DEFAULT, &Token) == 0)
 	{
-		int error;
-
-		error = GetLastError();
-		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
-			PCAP_ERRBUF_SIZE, NULL);
-
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		return -1;
 	}
 
@@ -1241,12 +1236,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// I didn't test it.
 	if (ImpersonateLoggedOnUser(Token) == 0)
 	{
-		int error;
-
-		error = GetLastError();
-		FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
-			PCAP_ERRBUF_SIZE, NULL);
-
+		pcap_win32_err_to_str(GetLastError(), errbuf);
 		CloseHandle(Token);
 		return -1;
 	}
