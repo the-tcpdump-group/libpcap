@@ -3,3 +3,4 @@ Makefile
 *.o
 rpcapd
 rpcapd.manadmin
+rpcapd-config.manfile
