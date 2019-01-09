@@ -250,6 +250,7 @@ EXTRA_DIST = \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
 	cmake/Modules/FindDAG.cmake \
+	cmake/Modules/Finddpdk.cmake \
 	cmake/Modules/FindFseeko.cmake \
 	cmake/Modules/FindLFS.cmake \
 	cmake/Modules/FindPacket.cmake \
