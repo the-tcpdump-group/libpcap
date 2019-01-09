@@ -127,7 +127,6 @@ static int sock_ismcastaddr(const struct sockaddr *saddr);
 void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 {
 #ifdef _WIN32
-	int retval;
 	char message[SOCK_ERRBUF_SIZE];	/* We're forcing "ANSI" */
 
 	if (errbuf == NULL)
