@@ -126,7 +126,7 @@ static void printusage(void)
 #ifndef _WIN32
 	"[-i] "
 #endif
-	"[-s <config_file>] [-f <config_file>]\n\n"
+        "[-D] [-s <config_file>] [-f <config_file>]\n\n"
 	"  -b <address>    the address to bind to (either numeric or literal).\n"
 	"                  Default: binds to all local IPv4 and IPv6 addresses\n\n"
 	"  -p <port>       the port to bind to.\n"
@@ -149,6 +149,7 @@ static void printusage(void)
 #ifndef _WIN32
 	"  -i              run in inetd mode (UNIX only)\n\n"
 #endif
+	"  -D              log debugging messages\n\n"
 #ifdef HAVE_OPENSSL
 	"  -S              encrypt all communication with SSL (implements rpcaps://)\n"
 	"  -C              enable compression\n"

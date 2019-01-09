@@ -65,6 +65,8 @@ rpcapd
 .br
 .ti +8
 [
+.B \-D
+] [
 .B \-s
 .I config_file
 ]
@@ -220,6 +222,9 @@ the service is started from the control panel.
 .TP
 .B \-i
 Run in inetd mode (UNIX only).
+.TP
+.B \-D
+Log debugging messages.
 .TP
 .BI \-s " config_file"
 Save the current configuration to
