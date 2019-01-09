@@ -134,9 +134,9 @@ void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 
 	pcap_win32_err_to_str(errcode, message);
 	if ((caller) && (*caller))
-		pcap_snprintf(errbuf, errbuflen, "%s%s", caller, message, errcode);
+		pcap_snprintf(errbuf, errbuflen, "%s%s", caller, message);
 	else
-		pcap_snprintf(errbuf, errbuflen, "%s", message, errcode);
+		pcap_snprintf(errbuf, errbuflen, "%s", message);
 #else
 	char *message;
 
