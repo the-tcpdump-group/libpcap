@@ -84,6 +84,8 @@
   #include <sys/time.h>
 #endif /* _WIN32/MSDOS/UN*X */
 
+#include <pcap/socket.h>	/* for SOCKET, as the active-mode rpcap APIs use it */
+
 #ifndef PCAP_DONT_INCLUDE_PCAP_BPF_H
 #include <pcap/bpf.h>
 #endif
@@ -936,34 +938,6 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 
 /* Maximum length of an host name (needed for the RPCAP active mode) */
 #define RPCAP_HOSTLIST_SIZE 1024
-
-/*
- * Some minor differences between UN*X sockets and and Winsock sockets.
- * These are also defined by pcap/pcap.h, due to some APIs from WinPcap
- * for active-mode remote captures returning sockets, so we check to
- * make sure they aren't already defined.
- */
-#ifndef _WIN32
-  /*!
-   * \brief In Winsock, a socket handle is of type SOCKET; in UN*X, it's
-   * a file descriptor, and therefore a signed integer.
-   * We define SOCKET to be a signed integer on UN*X, so that it can
-   * be used on both platforms.
-   */
-  #ifndef SOCKET
-    #define SOCKET int
-  #endif
-
-  /*!
-   * \brief In Winsock, the error return if socket() fails is INVALID_SOCKET;
-   * in UN*X, it's -1.
-   * We define INVALID_SOCKET to be -1 on UN*X, so that it can be used on
-   * both platforms.
-   */
-  #ifndef INVALID_SOCKET
-    #define INVALID_SOCKET -1
-  #endif
-#endif
 
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,
