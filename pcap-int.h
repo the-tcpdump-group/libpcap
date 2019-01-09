@@ -509,10 +509,6 @@ u_int	bpf_filter_with_aux_data(const struct bpf_insn *,
  */
 void	pcap_oneshot(u_char *, const struct pcap_pkthdr *, const u_char *);
 
-#ifdef _WIN32
-void	pcap_win32_err_to_str(DWORD, char *);
-#endif
-
 int	install_bpf_program(pcap_t *, struct bpf_program *);
 
 int	pcap_strcasecmp(const char *, const char *);

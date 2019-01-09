@@ -129,3 +129,59 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	pcap_snprintf(p, errbuflen_remaining, "%s", pcap_strerror(errnum));
 #endif
 }
+
+#ifdef _WIN32
+/*
+ * Generate a string for a Win32-specific error (i.e. an error generated when
+ * calling a Win32 API).
+ * For errors occurred during standard C calls, we still use pcap_strerror().
+ */
+void
+pcap_win32_err_to_str(DWORD error, char *errbuf)
+{
+	DWORD retval;
+	size_t errlen;
+	char *p;
+
+	/*
+	 * XXX - what language ID to use?
+	 *
+	 * For UN*Xes, pcap_strerror() may or may not return localized
+	 * strings.
+	 *
+	 * We currently don't have localized messages for libpcap, but
+	 * we might want to do so.  On the other hand, if most of these
+	 * messages are going to be read by libpcap developers and
+	 * perhaps by developers of libpcap-based applications, English
+	 * might be a better choice, so the developer doesn't have to
+	 * get the message translated if it's in a language they don't
+	 * happen to understand.
+	 */
+	retval = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_MAX_WIDTH_MASK,
+	    NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+	    errbuf, PCAP_ERRBUF_SIZE, NULL);
+	if (retval == 0) {
+		/*
+		 * Failed.
+		 */
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Couldn't get error message for error (%lu)", error);
+		return;
+	}
+
+	/*
+	 * "FormatMessage()" "helpfully" sticks CR/LF at the end of the
+	 * message.  Get rid of it.
+	 *
+	 * XXX - still true with FORMAT_MESSAGE_MAX_WIDTH_MASK?
+	 */
+	errlen = strlen(errbuf);
+	if (errlen >= 2 &&
+	    errbuf[errlen - 2] == '\r' && errbuf[errlen - 1] == '\n') {
+		errbuf[errlen - 2] = '\0';
+		errbuf[errlen - 1] = '\0';
+	}
+	p = strchr(errbuf, '\0');
+	pcap_snprintf(p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
+}
+#endif

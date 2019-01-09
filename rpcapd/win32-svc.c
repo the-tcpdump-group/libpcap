@@ -33,6 +33,7 @@
 
 #include "rpcapd.h"
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
+#include "fmtutils.h"
 #include "portability.h"
 #include "fileconf.h"
 #include "log.h"
@@ -40,40 +41,27 @@
 static SERVICE_STATUS_HANDLE service_status_handle;
 static SERVICE_STATUS service_status;
 
-void svc_geterr(char *str);
 static void WINAPI svc_main(DWORD argc, char **argv);
 static void update_svc_status(DWORD state, DWORD progress_indicator);
 
 int svc_start(void)
 {
-	int rc;
 	SERVICE_TABLE_ENTRY ste[] =
 	{
 		{ PROGRAM_NAME, svc_main },
 		{ NULL, NULL }
 	};
+	char string[PCAP_ERRBUF_SIZE];
 
 	// This call is blocking. A new thread is created which will launch
 	// the svc_main() function
-	if ( (rc = StartServiceCtrlDispatcher(ste)) == 0)
-		svc_geterr("StartServiceCtrlDispatcher()");
+	if (StartServiceCtrlDispatcher(ste) == 0) {
+		pcap_win32_err_to_str(GetLastError(), string);
+		rpcapd_log(LOGPRIO_ERROR,
+		    "StartServiceCtrlDispatcher() failed: %s", string);
+	}
 
 	return rc; // FALSE if this is not started as a service
-}
-
-void svc_geterr(char *str)
-{
-	char message[PCAP_ERRBUF_SIZE];
-	char string[PCAP_ERRBUF_SIZE];
-	int val;
-
-	val = GetLastError();
-	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS |
-				  FORMAT_MESSAGE_MAX_WIDTH_MASK,
-				  NULL, val, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				  (LPSTR) string, PCAP_ERRBUF_SIZE, NULL);
-
-	rpcapd_log(LOGPRIO_ERROR, "%s failed with error %d: %s", str, val, string);
 }
 
 void WINAPI svc_control_handler(DWORD Opcode)

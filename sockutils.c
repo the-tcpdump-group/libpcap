@@ -137,25 +137,11 @@ void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 	if (errbuf == NULL)
 		return;
 
-	retval = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS |
-		FORMAT_MESSAGE_MAX_WIDTH_MASK,
-		NULL, errcode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		message, sizeof(message) / sizeof(TCHAR), NULL);
-
-	if (retval == 0)
-	{
-		if ((caller) && (*caller))
-			pcap_snprintf(errbuf, errbuflen, "%sUnable to get the exact error message", caller);
-		else
-			pcap_snprintf(errbuf, errbuflen, "Unable to get the exact error message");
-	}
+	pcap_win32_err_to_str(errcode, message);
+	if ((caller) && (*caller))
+		pcap_snprintf(errbuf, errbuflen, "%s%s", caller, message, errcode);
 	else
-	{
-		if ((caller) && (*caller))
-			pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errcode);
-		else
-			pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errcode);
-	}
+		pcap_snprintf(errbuf, errbuflen, "%s", message, errcode);
 #else
 	char *message;
 
@@ -165,9 +151,9 @@ void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 	message = strerror(errcode);
 
 	if ((caller) && (*caller))
-		pcap_snprintf(errbuf, errbuflen, "%s%s (code %d)", caller, message, errcode);
+		pcap_snprintf(errbuf, errbuflen, "%s%s (%d)", caller, message, errcode);
 	else
-		pcap_snprintf(errbuf, errbuflen, "%s (code %d)", message, errcode);
+		pcap_snprintf(errbuf, errbuflen, "%s (%d)", message, errcode);
 #endif
 }
 

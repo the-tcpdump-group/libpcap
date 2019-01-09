@@ -3240,35 +3240,6 @@ pcap_setnonblock_fd(pcap_t *p, int nonblock)
 }
 #endif
 
-#ifdef _WIN32
-/*
- * Generate a string for a Win32-specific error (i.e. an error generated when
- * calling a Win32 API).
- * For errors occurred during standard C calls, we still use pcap_strerror()
- */
-void
-pcap_win32_err_to_str(DWORD error, char *errbuf)
-{
-	size_t errlen;
-	char *p;
-
-	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0, errbuf,
-	    PCAP_ERRBUF_SIZE, NULL);
-
-	/*
-	 * "FormatMessage()" "helpfully" sticks CR/LF at the end of the
-	 * message.  Get rid of it.
-	 */
-	errlen = strlen(errbuf);
-	if (errlen >= 2) {
-		errbuf[errlen - 1] = '\0';
-		errbuf[errlen - 2] = '\0';
-	}
-	p = strchr(errbuf, '\0');
-	pcap_snprintf (p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
-}
-#endif
-
 /*
  * Generate error strings for PCAP_ERROR_ and PCAP_WARNING_ values.
  */
