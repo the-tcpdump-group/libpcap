@@ -1368,7 +1368,28 @@ if(NOT DISABLE_DBUS)
         set(PCAP_SUPPORT_DBUS TRUE)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dbus.c)
         include_directories(${DBUS_INCLUDE_DIRS})
-        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DBUS_LIBRARIES})
+
+        #
+        # This "helpfully" supplies DBUS_LIBRARIES as a bunch of
+        # library names - not paths - and DBUS_LIBRARY_DIRS as
+        # a bunch of directories.
+        #
+        # CMake *really* doesn't like the notion of specifying "here are
+        # the directories in which to look for libraries" except in
+        # find_library() calls; it *really* prefers using full paths to
+        # library files, rather than library names.
+        #
+        # Find the libraries and add their full paths.
+        #
+        set(DBUS_LIBRARY_FULLPATHS)
+        foreach(_lib IN LISTS DBUS_LIBRARIES)
+            #
+            # Try to find this library, so we get its full path.
+            #
+            find_library(_libfullpath ${_lib} HINTS ${DBUS_LIBRARY_DIRS})
+            list(APPEND DBUS_LIBRARY_FULLPATHS ${_libfullpath})
+        endforeach()
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${DBUS_LIBRARY_FULLPATHS})
     endif(DBUS_FOUND)
 endif(NOT DISABLE_DBUS)
 
