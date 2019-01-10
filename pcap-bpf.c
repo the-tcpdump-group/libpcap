@@ -2898,15 +2898,9 @@ monitor_mode(pcap_t *p, int set)
 			close(sock);
 			return (PCAP_ERROR_NO_SUCH_DEVICE);
 
-		case EOPNOTUSPP:
 		case EINVAL:
-		case ENOTTY:
-		case ENODEV:
-		case EPERM:
 			/*
 			 * Interface doesn't support SIOC{G,S}IFMEDIA.
-			 * (See above comment for why EPERM is interpreted
-			 * as meaning "not supported".)
 			 */
 			close(sock);
 			return (PCAP_ERROR_RFMON_NOTSUP);
