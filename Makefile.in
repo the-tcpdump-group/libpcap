@@ -353,7 +353,7 @@ EXTRA_DIST = \
 	rpcapd/fileconf.c \
 	rpcapd/fileconf.h \
 	rpcapd/log.h \
-	rpcapd/log-stderr.c \
+	rpcapd/log.c \
 	rpcapd/org.tcpdump.rpcapd.plist \
 	rpcapd/rpcapd.c \
 	rpcapd/rpcapd.h \
