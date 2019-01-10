@@ -377,6 +377,14 @@ EXTRA_DIST = \
 	testprogs/capturetest.c \
 	testprogs/filtertest.c \
 	testprogs/findalldevstest.c \
+	testprogs/fuzz/CMakeLists.txt \
+	testprogs/fuzz/fuzz_both.c \
+	testprogs/fuzz/fuzz_both.options \
+	testprogs/fuzz/fuzz_filter.c \
+	testprogs/fuzz/fuzz_filter.options \
+	testprogs/fuzz/fuzz_pcap.c \
+	testprogs/fuzz/fuzz_pcap.options \
+	testprogs/fuzz/onefile.c \
 	testprogs/opentest.c \
 	testprogs/reactivatetest.c \
 	testprogs/selpolltest.c \
