@@ -1045,6 +1045,11 @@ if test "$enable_ipv6" != "no"; then
 	AC_DEFINE(INET6,1,[IPv6])
 fi
 
+#
+# Do we have pkg-config?
+#
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
+
 # Check for Endace DAG card support.
 AC_ARG_WITH([dag],
 AC_HELP_STRING([--with-dag@<:@=DIR@:>@],[include Endace DAG support (located in directory DIR, if supplied).  @<:@default=yes, if present@:>@]),
@@ -1489,15 +1494,52 @@ yes)	AC_MSG_RESULT(yes)
 
 	#
 	# Optionally, we may want to support SSL.
+	# Check for OpenSSL/libressl.
 	#
-	PKG_CHECK_MODULES([OPENSSL], [openssl],
-	    [
+	# We check for it first with pkg-config, in case you're
+	# unlucky enough to be running on one of the versions
+	# of macOS where Apple decided to get everybody to use
+	# their Shiny New SSL and took away the OpenSSL header
+	# files, even though they keep the shared libraries
+	# around for binary compatibility, and installed your
+	# own version.
+	#
+	if test "x$PKGCONFIG" != "xno"; then
+		#
+		# We have pkg-config; see if we have it installed
+		# as a package.
+		#
+		AC_MSG_CHECKING([for OpenSSL/libressl with pkg-config])
+		if "$PKGCONFIG" openssl; then
+			AC_MSG_RESULT([found])
+			OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
+			OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
+			HAVE_OPENSSL=yes
+		else
+			AC_MSG_RESULT([not found])
+		fi
+	fi
+	if test "x$HAVE_OPENSSL" != "xyes"; then
+		#
+		# We didn't find it as a package; try looking for
+		# it as a regular system library.
+		#
+		AC_CHECK_LIB(SSL_library_init, ssl,
+		    [
+			#
+			# Yes - add -lssl.
+			#
+			HAVE_OPENSSL=yes
+			OPENSSL_LIBS="-lssl -lcrypto"
+		    ], -lcrypto)
+	fi
+	if test "x$HAVE_OPENSSL" = "xyes"; then
 		AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
 		CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
 		LIBS="$LIBS $OPENSSL_LIBS"
-		HAVE_OPENSSL="yes"
-	    ],
-	    AC_MSG_NOTICE(OpenSSL not found))
+	else
+		AC_MSG_NOTICE(OpenSSL not found)
+	fi
 
 	AC_DEFINE(ENABLE_REMOTE,,
 	    [Define to 1 if remote packet capture is to be supported])
@@ -2384,7 +2426,6 @@ if test "x$enable_dbus" != "xno"; then
 fi
 
 if test "x$enable_dbus" != "xno"; then
-	AC_CHECK_PROG([PKGCONFIG], [pkg-config], [pkg-config], [no])
 	if test "x$PKGCONFIG" != "xno"; then
 		AC_MSG_CHECKING([for D-Bus])
 		if "$PKGCONFIG" dbus-1; then
