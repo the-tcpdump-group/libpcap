@@ -133,15 +133,14 @@ die:
 	return -1;
 }
 
-SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t errbuflen)
+SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
 {
 	if (ssl_init_once(is_server, 1, errbuf, errbuflen) < 0) {
 		return NULL;
 	}
 
 	SSL *ssl = SSL_new(ctx); // TODO: also a DTLS context
-	SSL_set_rfd(ssl, in);
-	SSL_set_wfd(ssl, out);
+	SSL_set_fd(ssl, s);
 
 	if (is_server) {
 		if (SSL_accept(ssl) <= 0) {
@@ -158,11 +157,6 @@ SSL *ssl_promotion_rw(int is_server, SOCKET in, SOCKET out, char *errbuf, size_t
 	}
 
 	return ssl;
-}
-
-SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
-{
-	return ssl_promotion_rw(is_server, s, s, errbuf, errbuflen);
 }
 
 // Same return value as sock_send:

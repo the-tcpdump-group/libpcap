@@ -397,30 +397,23 @@ int main(int argc, char *argv[])
 		// by inetd or something that can run network daemons
 		// as if it were inetd (xinetd, launchd, systemd, etc.).
 		//
-		// Our standard input is the input side of a connection,
-		// and our standard output is the output side of a
-		// connection.
+		// We assume that the program that launched us just
+		// duplicated a single socket for the connection
+		// to our standard input, output, and error, so we
+		// can just use the standard input as our control
+		// socket.
 		//
-		int sockctrl_in, sockctrl_out;
+		int sockctrl;
 		int devnull_fd;
 
 		//
-		// Duplicate the standard input and output, making them
-		// the input and output side of the control connection.
+		// Duplicate the standard input as the control socket.
 		//
-		sockctrl_in = dup(0);
-		if (sockctrl_in == -1)
+		sockctrl = dup(0);
+		if (sockctrl == -1)
 		{
 			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
 			rpcapd_log(LOGPRIO_ERROR, "Can't dup standard input: %s",
-			    errbuf);
-			exit(2);
-		}
-		sockctrl_out = dup(1);
-		if (sockctrl_out == -1)
-		{
-			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-			rpcapd_log(LOGPRIO_ERROR, "Can't dup standard output: %s",
 			    errbuf);
 			exit(2);
 		}
@@ -452,10 +445,8 @@ int main(int argc, char *argv[])
 			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
 			exit(0);
 		}
-		(void)daemon_serviceloop(sockctrl_in, sockctrl_out, 0,
-		    hostlist_copy, nullAuthAllowed, uses_ssl);
-
-		sock_close(sockctrl_out, NULL, 0);
+		(void)daemon_serviceloop(sockctrl, 0, hostlist_copy,
+		    nullAuthAllowed, uses_ssl);
 
 		//
 		// Nothing more to do.
@@ -1286,10 +1277,8 @@ accept_connection(SOCKET listen_sock)
 			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
 			exit(0);
 		}
-		(void)daemon_serviceloop(sockctrl, sockctrl, 0,
-		    hostlist_copy, nullAuthAllowed, uses_ssl);
-
-		sock_close(sockctrl, NULL, 0);
+		(void)daemon_serviceloop(sockctrl, 0, hostlist_copy,
+		    nullAuthAllowed, uses_ssl);
 
 		exit(0);
 	}
@@ -1369,17 +1358,16 @@ main_active(void *ptr)
 		{
 			rpcapd_log(LOGPRIO_ERROR, "Out of memory copying the host/port list");
 			activeclose = 0;
+			sock_close(sockctrl, NULL, 0);
 		}
 		else
 		{
 			//
 			// daemon_serviceloop() will free the copy.
 			//
-			activeclose = daemon_serviceloop(sockctrl, sockctrl, 1,
+			activeclose = daemon_serviceloop(sockctrl, 1,
 			    hostlist_copy, nullAuthAllowed, uses_ssl);
 		}
-
-		sock_close(sockctrl, NULL, 0);
 
 		// If the connection is closed by the user explicitely, don't try to connect to it again
 		// just exit the program
@@ -1405,10 +1393,8 @@ unsigned __stdcall main_passive_serviceloop_thread(void *ptr)
 	// This is passive mode, so we don't care whether we were
 	// told by the client to close.
 	//
-	(void)daemon_serviceloop(params.sockctrl, params.sockctrl, 0,
-	    params.hostlist, nullAuthAllowed, uses_ssl);
-
-	sock_close(params.sockctrl, NULL, 0);
+	(void)daemon_serviceloop(params.sockctrl, 0, params.hostlist,
+	    nullAuthAllowed, uses_ssl);
 
 	return 0;
 }
