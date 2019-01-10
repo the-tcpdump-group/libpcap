@@ -1524,7 +1524,7 @@ yes)	AC_MSG_RESULT(yes)
 		# We didn't find it as a package; try looking for
 		# it as a regular system library.
 		#
-		AC_CHECK_LIB(SSL_library_init, ssl,
+		AC_CHECK_LIB(ssl, SSL_library_init,
 		    [
 			#
 			# Yes - add -lssl.

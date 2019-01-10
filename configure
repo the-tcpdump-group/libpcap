@@ -7804,13 +7804,13 @@ $as_echo "not found" >&6; }
 		# We didn't find it as a package; try looking for
 		# it as a regular system library.
 		#
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ssl in -lSSL_library_init" >&5
-$as_echo_n "checking for ssl in -lSSL_library_init... " >&6; }
-if ${ac_cv_lib_SSL_library_init_ssl+:} false; then :
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
+$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lSSL_library_init  $LIBS"
+LIBS="-lssl  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -7820,27 +7820,27 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char ssl ();
+char SSL_library_init ();
 int
 main ()
 {
-return ssl ();
+return SSL_library_init ();
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_SSL_library_init_ssl=yes
+  ac_cv_lib_ssl_SSL_library_init=yes
 else
-  ac_cv_lib_SSL_library_init_ssl=no
+  ac_cv_lib_ssl_SSL_library_init=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_SSL_library_init_ssl" >&5
-$as_echo "$ac_cv_lib_SSL_library_init_ssl" >&6; }
-if test "x$ac_cv_lib_SSL_library_init_ssl" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
+$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
+if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
 
 			#
 			# Yes - add -lssl.
