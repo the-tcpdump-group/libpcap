@@ -38,8 +38,8 @@
 // otherwise; the return value is used only by callers that call us
 // for active mode.
 //
-int daemon_serviceloop(SOCKET sockctrl_in, SOCKET sockctrl_out,
-    int isactive, char *passiveClients, int nullAuthAllowed);
+int daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
+    int nullAuthAllowed);
 
 void sleep_secs(int secs);
 
