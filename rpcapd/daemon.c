@@ -140,7 +140,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	struct daemon_slpars pars;		// service loop parameters
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	char errmsgbuf[PCAP_ERRBUF_SIZE + 1];	// buffer for errors to send to the client
-	int host_port_ok;
+	int host_port_check_status;
 	int nrecv;
 	struct rpcap_header header;		// RPCAP message general header
 	uint32 plen;				// payload length from header
@@ -225,13 +225,13 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		//
 		// Are they in the list of host/port combinations we allow?
 		//
-		host_port_ok = (sock_check_hostlist(passiveClients, RPCAP_HOSTLIST_SEP, &from, errmsgbuf, PCAP_ERRBUF_SIZE) == 0);
+		host_port_check_status = sock_check_hostlist(passiveClients, RPCAP_HOSTLIST_SEP, &from, errmsgbuf, PCAP_ERRBUF_SIZE);
 		free(passiveClients);
 		passiveClients = NULL;
-		if (!host_port_ok)
+		if (host_port_check_status < 0)
 		{
 			//
-			// Sorry, you're not on the guest list.
+			// Sorry, we can't let you in.
 			//
 			if (rpcap_senderror(pars.sockctrl, 0, PCAP_ERR_HOSTNOAUTH, errmsgbuf, errbuf) == -1)
 				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
