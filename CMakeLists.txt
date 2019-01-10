@@ -870,7 +870,7 @@ endif()
 #
 # OpenSSL/libressl.
 #
-find_package(OPENSSL)
+find_package(OpenSSL)
 if(OPENSSL_FOUND)
   #
   # We have OpenSSL.
