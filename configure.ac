@@ -96,6 +96,11 @@ AC_LBL_FIXINCLUDES
 
 AC_CHECK_FUNCS(strerror strerror_r strerror_s)
 
+#
+# Thanks, IBM, for not providing vsyslog() in AIX!
+#
+AC_CHECK_FUNCS(vsyslog)
+
 needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
 	[needsnprintf=yes])

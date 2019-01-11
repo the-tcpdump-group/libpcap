@@ -5035,6 +5035,21 @@ fi
 done
 
 
+#
+# Thanks, IBM, for not providing vsyslog() in AIX!
+#
+for ac_func in vsyslog
+do :
+  ac_fn_c_check_func "$LINENO" "vsyslog" "ac_cv_func_vsyslog"
+if test "x$ac_cv_func_vsyslog" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_VSYSLOG 1
+_ACEOF
+
+fi
+done
+
+
 needsnprintf=no
 for ac_func in vsnprintf snprintf
 do :
