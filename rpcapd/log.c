@@ -1,3 +1,28 @@
+/*
+ * Copyright (c) 1993, 1994, 1995, 1996, 1998
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that: (1) source code distributions
+ * retain the above copyright notice and this paragraph in its entirety, (2)
+ * distributions including binary code include the above copyright notice and
+ * this paragraph in its entirety in the documentation or other materials
+ * provided with the distribution, and (3) all advertising materials mentioning
+ * features or use of this software display the following acknowledgement:
+ * ``This product includes software developed by the University of California,
+ * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
+ * the University nor the names of its contributors may be used to endorse
+ * or promote products derived from this software without specific prior
+ * written permission.
+ * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -7,6 +32,8 @@
 #else
 #include <syslog.h>
 #endif
+
+#include "portability.h"
 
 #include "log.h"
 
@@ -180,7 +207,31 @@ static void rpcapd_vlog_systemlog(log_priority priority, const char *message,
 		return;
 	}
 
+#ifdef HAVE_VSYSLOG
 	vsyslog(syslog_priority, message, ap);
+#else
+	/*
+	 * Thanks, IBM, for not providing vsyslog() in AIX!
+	 *
+	 * They also warn that the syslog functions shouldn't
+	 * be used in multithreaded programs, but the only thing
+	 * obvious that seems to make the syslog_r functions
+	 * better is that they have an additional argument
+	 * that points to the information that's static to
+	 * the syslog code in non-thread-safe versions.  Most
+	 * of that data is set by openlog(); since we already
+	 * do an openlog before doing logging, and don't
+	 * change that data afterwards, I suspect that, in
+	 * practice, the regular syslog routines are OK for
+	 * us (especially given that we'd end up having one
+	 * static struct syslog_data anyway, which means we'd
+	 * just be like the non-thread-safe version).
+	 */
+	char logbuf[1024+1];
+
+	pcap_vsnprintf(logbuf, sizeof logbuf, message, ap);
+	syslog(syslog_priority, "%s", logbuf);
+#endif
 }
 #endif
 

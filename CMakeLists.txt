@@ -267,6 +267,11 @@ include(CheckStructHasMember)
 include(CheckTypeSize)
 
 #
+# Tests are a bit expensive with Visual Studio on Windows, so, on
+# Windows, we skip tests for UN*X-only headers and functions.
+#
+
+#
 # Header files.
 #
 check_include_file(inttypes.h HAVE_INTTYPES_H)
@@ -324,6 +329,9 @@ check_function_exists(strlcat HAVE_STRLCAT)
 check_function_exists(snprintf HAVE_SNPRINTF)
 check_function_exists(vsnprintf HAVE_VSNPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
+if(NOT WIN32)
+    check_function_exists(vsyslog HAVE_VSYSLOG)
+endif()
 
 #
 # These tests are for network applications that need socket functions
