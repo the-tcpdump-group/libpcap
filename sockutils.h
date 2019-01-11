@@ -39,39 +39,9 @@
 
 #include "pcap/socket.h"
 
-#ifdef _WIN32
-#else
+#ifndef _WIN32
   /* UN*X */
-  #include <stdio.h>
-  #include <string.h>	/* for memset() */
-  #include <sys/types.h>
-  #include <sys/socket.h>
-  #include <netdb.h>	/* DNS lookup */
   #include <unistd.h>	/* close() */
-  #include <errno.h>	/* errno() */
-  #include <netinet/in.h> /* for sockaddr_in, in BSD at least */
-  #include <arpa/inet.h>
-  #include <net/if.h>
-
-  /*!
-   * \brief In Winsock, a socket handle is of type SOCKET; in UN*X, it's
-   * a file descriptor, and therefore a signed integer.
-   * We define SOCKET to be a signed integer on UN*X, so that it can
-   * be used on both platforms.
-   */
-  #ifndef SOCKET
-    #define SOCKET int
-  #endif
-
-  /*!
-   * \brief In Winsock, the error return if socket() fails is INVALID_SOCKET;
-   * in UN*X, it's -1.
-   * We define INVALID_SOCKET to be -1 on UN*X, so that it can be used on
-   * both platforms.
-   */
-  #ifndef INVALID_SOCKET
-    #define INVALID_SOCKET -1
-  #endif
 
   /*!
    * \brief In Winsock, the close() call cannot be used on a socket;
