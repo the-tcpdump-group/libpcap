@@ -867,6 +867,16 @@ pcap_cleanup_npf(pcap_t *p)
 	pcap_cleanup_live_common(p);
 }
 
+static void
+pcap_breakloop_npf(pcap_t *p)
+{
+	pcap_breakloop_common(p);
+	struct pcap_win *pw = p->priv;
+
+	/* XXX - what if this fails? */
+	SetEvent(PacketGetReadEvent(pw->adapter));
+}
+
 static int
 pcap_activate_npf(pcap_t *p)
 {
@@ -1194,6 +1204,7 @@ pcap_activate_npf(pcap_t *p)
 	p->getnonblock_op = pcap_getnonblock_npf;
 	p->setnonblock_op = pcap_setnonblock_npf;
 	p->stats_op = pcap_stats_npf;
+	p->breakloop_op = pcap_breakloop_npf;
 	p->stats_ex_op = pcap_stats_ex_npf;
 	p->setbuff_op = pcap_setbuff_npf;
 	p->setmode_op = pcap_setmode_npf;
