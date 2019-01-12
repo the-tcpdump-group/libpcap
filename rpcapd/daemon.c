@@ -2533,7 +2533,7 @@ static void session_close(struct session *session)
 		//
 		CloseHandle(session->thread);
 		session->have_thread = 0;
-		session->thread = INVALID_HANDLE;
+		session->thread = INVALID_HANDLE_VALUE;
 #else
 		//
 		// Send a SIGUSR1 signal to the thread, so that, if
