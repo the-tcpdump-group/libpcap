@@ -175,7 +175,7 @@ int
 daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
     int nullAuthAllowed, int uses_ssl)
 {
-	uint8 first_2_octets[2];
+	uint8 first_octet;
 	struct tls_record_header tls_header;
 	struct tls_alert tls_alert;
 	struct daemon_slpars pars;		// service loop parameters
@@ -220,13 +220,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	// messages; if we ever get to rpcapd version 21, and want to
 	// introduce a new version after that, we'll jump to version 23.
 	//
-	// We read an rpcapd header's worth of data, to let us do some
-	// additional checks.
-	//
-	nrecv = sock_recv(sockctrl, NULL, (char *)&first_2_octets,
-	    sizeof(first_2_octets), 
-	    SOCK_RECEIVEALL_YES|SOCK_EOF_ISNT_ERROR|SOCK_MSG_PEEK,
-	    errbuf, PCAP_ERRBUF_SIZE);
+	nrecv = sock_recv(sockctrl, NULL, (char *)&first_octet, 1,
+	    SOCK_EOF_ISNT_ERROR|SOCK_MSG_PEEK, errbuf, PCAP_ERRBUF_SIZE);
 	if (nrecv == -1)
 	{
 		// Fatal error.
@@ -258,7 +253,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		// The first octet of a TLS handshake is
 		// TLS_RECORD_TYPE_HANDSHAKE.
 		//
-		if (first_2_octets[0] != TLS_RECORD_TYPE_HANDSHAKE)
+		if (first_octet != TLS_RECORD_TYPE_HANDSHAKE)
 		{
 			//
 			// We assume this is a non-TLS rpcapd message.
@@ -317,36 +312,10 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		// looks, instead, like a TLS handshake message, send
 		// a TLS handshake_failed alert.
 		//
-		// The first byte of an rpcapd request is the version
-		// number; the first byte of a TLS handshake message
-		// is 22.  We permanently reserve an rpcapd version
-		// number of 22, so that we can distinguish between
-		// rpcapd messages and TLS handshake messages; if we
-		// ever get to rpcapd version 21, and want to introduce
-		// a new version after that, we'll jump to version 23.
+		// The first octet of a TLS handshake is
+		// TLS_RECORD_TYPE_HANDSHAKE.
 		//
-		// If this is a TLS handshake message, the second
-		// octet is the SSL/TLS (legacy) major version number.
-		// For SSL, that's a number <= 3, as the last SSL
-		// version was 3.x; TLS continues those version
-		// numbers, but, as of TLS 1.3, it's a "legacy" version
-		// field, which must have a major version of 3.
-		//
-		// If this is a non-TLS rpcapd message, the second octet
-		// is the message type; only error, "find all interfaces",
-		// and open messages have types <= 3, and the first
-		// message we receive should be an authentication request,
-		// with a type of 8.
-		//
-		// So if the first octet is 22 and the second octet is <= 3,
-		// we assume it's a TLS handshake message, otherwise we
-		// assume it's an rpcapd message.  (That way, if some
-		// client decides to request protocol version 22, we can
-		// tell them we don't support it - we never will support
-		// that version, for the reasons described above.)
-		//
-		if (first_2_octets[0] == TLS_RECORD_TYPE_HANDSHAKE &&
-		    first_2_octets[1] <= 3)
+		if (first_octet == TLS_RECORD_TYPE_HANDSHAKE)
 		{
 			//
 			// TLS handshake.
