@@ -142,16 +142,40 @@
 #define RPCAP_MAX_VERSION 0
 
 /*
+ * So that the server can distinguish between a non-TLS rpcapd
+ * message, the first byte of which is the version number, and
+ * a TLS client hello, the first byte of which is 22, we don't
+ * allow 22 as an rpcap version number.
+ */
+#define RPCAP_UNUSED_VERSION 22
+
+/*
+ * Make sure nobody makes the mistake of making the "must not use" version
+ * the minimum or maximum version; we *must* allow at least one version
+ * other than that version.
+ */
+#if RPCAP_MIN_VERSION == RPCAP_UNUSED_VERSION
+  #error Minimum protocol version is a version that must not be used
+#elif RPCAP_MAX_VERSION == RPCAP_UNUSED_VERSION
+  #error Maximum protocol version is a version that must not be used
+#endif
+
+/*
  * Version numbers are unsigned, so if RPCAP_MIN_VERSION is 0, they
  * are >= the minimum version, by definition; don't check against
  * RPCAP_MIN_VERSION, as you may get compiler warnings that the
  * comparison will always succeed.
+ *
+ * We *never* allow version RPCAP_UNUSED_VERSION, even if it's
+ * otherwise in the allowed range.
  */
 #if RPCAP_MIN_VERSION == 0
-#define RPCAP_VERSION_IS_SUPPORTED(v)	((v) <= RPCAP_MAX_VERSION)
+#define RPCAP_VERSION_IS_SUPPORTED(v)	\
+	((v) <= RPCAP_MAX_VERSION && (v) != RPCAP_UNUSED_VERSION)
 #else
 #define RPCAP_VERSION_IS_SUPPORTED(v)	\
-	((v) >= RPCAP_MIN_VERSION && (v) <= RPCAP_MAX_VERSION)
+	((v) >= RPCAP_MIN_VERSION && (v) <= RPCAP_MAX_VERSION && \
+	 (v) != RPCAP_UNUSED_VERSION)
 #endif
 
 /*

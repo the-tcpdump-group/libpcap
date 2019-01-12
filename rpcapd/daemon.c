@@ -138,10 +138,46 @@ static int rpcapd_recv(SOCKET sock, SSL *, char *buffer, size_t toread, uint32 *
 static int rpcapd_discard(SOCKET sock, SSL *, uint32 len);
 static void session_close(struct session *);
 
+//
+// TLS record layer header; used when processing the first message from
+// the client, in case we aren't doing TLS but they are.
+//
+struct tls_record_header {
+	uint8 type;		// ContentType - will be 22, for Handshake
+	uint8 version_major;	// TLS protocol major version
+	uint8 version_injor;	// TLS protocol minor version
+	// This is *not* aligned on a 2-byte boundary; we just
+	// declare it as two bytes.  Don't assume any particular
+	// compiler's mechanism for saying "packed"!
+	uint8 length_hi;	// Upper 8 bits of payload length
+	uint8 length_lo;	// Low 8 bits of payload length
+};
+
+#define TLS_RECORD_HEADER_LEN	5	// Don't use sizeof in case it's padded
+
+#define TLS_RECORD_TYPE_ALERT		21
+#define TLS_RECORD_TYPE_HANDSHAKE	22
+
+//
+// TLS alert message.
+//
+struct tls_alert {
+	uint8 alert_level;
+	uint8 alert_description;
+};
+
+#define TLS_ALERT_LEN			2
+
+#define TLS_ALERT_LEVEL_FATAL		2
+#define TLS_ALERT_HANDSHAKE_FAILURE	40
+
 int
 daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
     int nullAuthAllowed, int uses_ssl)
 {
+	uint8 first_2_octets[2];
+	struct tls_record_header tls_header;
+	struct tls_alert tls_alert;
 	struct daemon_slpars pars;		// service loop parameters
 	char errbuf[PCAP_ERRBUF_SIZE + 1];	// keeps the error string, prior to be printed
 	char errmsgbuf[PCAP_ERRBUF_SIZE + 1];	// buffer for errors to send to the client
@@ -173,6 +209,36 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 
 	*errbuf = 0;	// Initialize errbuf
 
+	//
+	// Peek into the socket to determine whether the client sent us
+	// a TLS handshake message or a non-TLS rpcapd message.
+	//
+	// The first byte of an rpcapd request is the version number;
+	// the first byte of a TLS handshake message is 22.  We
+	// permanently reserve an rpcapd version number of 22, so that
+	// we can distinguish between rpcapd messages and TLS handshake
+	// messages; if we ever get to rpcapd version 21, and want to
+	// introduce a new version after that, we'll jump to version 23.
+	//
+	// We read an rpcapd header's worth of data, to let us do some
+	// additional checks.
+	//
+	nrecv = sock_recv(sockctrl, NULL, (char *)&first_2_octets,
+	    sizeof(first_2_octets), 
+	    SOCK_RECEIVEALL_YES|SOCK_EOF_ISNT_ERROR|SOCK_MSG_PEEK,
+	    errbuf, PCAP_ERRBUF_SIZE);
+	if (nrecv == -1)
+	{
+		// Fatal error.
+		rpcapd_log(LOGPRIO_ERROR, "Peek from client failed: %s", errbuf);
+		goto end;
+	}
+	if (nrecv == 0)
+	{
+		// Client closed the connection.
+		goto end;
+	}
+
 #ifdef HAVE_OPENSSL
 	//
 	// We have to upgrade to TLS as soon as possible, so that the
@@ -185,6 +251,56 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	//
 	if (uses_ssl)
 	{
+		//
+		// We're expecting a TLS handshake message.  If this
+		// isn't one, assume it's a non-TLS rpcapd message.
+		//
+		// The first octet of a TLS handshake is
+		// TLS_RECORD_TYPE_HANDSHAKE.
+		//
+		if (first_2_octets[0] != TLS_RECORD_TYPE_HANDSHAKE)
+		{
+			//
+			// We assume this is a non-TLS rpcapd message.
+			//
+			// Read the message header from the client.
+			//
+			nrecv = rpcapd_recv_msg_header(sockctrl, NULL, &header);
+			if (nrecv == -1)
+			{
+				// Fatal error.
+				goto end;
+			}
+			if (nrecv == -2)
+			{
+				// Client closed the connection.
+				goto end;
+			}
+			plen = header.plen;
+
+			// Discard the rest of the message.
+			if (rpcapd_discard(sockctrl, NULL, plen) == -1)
+			{
+				// Network error.
+				goto end;
+			}
+
+			//
+			// Send an authentication error, indicating
+			// that we require TLS.
+			//
+			if (rpcap_senderror(sockctrl, NULL, header.ver,
+			    PCAP_ERR_AUTH, "TLS is required by this server",
+			    "") == -1)
+			{
+				// That failed; log a message and give up.
+				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+				goto end;
+			}
+
+			// Shut the session down.
+			goto end;
+		}
 		ssl = ssl_promotion(1, sockctrl, errbuf, PCAP_ERRBUF_SIZE);
 		if (! ssl)
 		{
@@ -193,7 +309,103 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			goto end;
 		}
 	}
+	else
 #endif
+	{
+		//
+		// We're expecting a non-TLS rpcapd message.  If this
+		// looks, instead, like a TLS handshake message, send
+		// a TLS handshake_failed alert.
+		//
+		// The first byte of an rpcapd request is the version
+		// number; the first byte of a TLS handshake message
+		// is 22.  We permanently reserve an rpcapd version
+		// number of 22, so that we can distinguish between
+		// rpcapd messages and TLS handshake messages; if we
+		// ever get to rpcapd version 21, and want to introduce
+		// a new version after that, we'll jump to version 23.
+		//
+		// If this is a TLS handshake message, the second
+		// octet is the SSL/TLS (legacy) major version number.
+		// For SSL, that's a number <= 3, as the last SSL
+		// version was 3.x; TLS continues those version
+		// numbers, but, as of TLS 1.3, it's a "legacy" version
+		// field, which must have a major version of 3.
+		//
+		// If this is a non-TLS rpcapd message, the second octet
+		// is the message type; only error, "find all interfaces",
+		// and open messages have types <= 3, and the first
+		// message we receive should be an authentication request,
+		// with a type of 8.
+		//
+		// So if the first octet is 22 and the second octet is <= 3,
+		// we assume it's a TLS handshake message, otherwise we
+		// assume it's an rpcapd message.  (That way, if some
+		// client decides to request protocol version 22, we can
+		// tell them we don't support it - we never will support
+		// that version, for the reasons described above.)
+		//
+		if (first_2_octets[0] == TLS_RECORD_TYPE_HANDSHAKE &&
+		    first_2_octets[1] <= 3)
+		{
+			//
+			// TLS handshake.
+			// Read the record header.
+			//
+			nrecv = sock_recv(sockctrl, ssl, (char *) &tls_header,
+			    sizeof tls_header, SOCK_RECEIVEALL_YES|SOCK_EOF_ISNT_ERROR,
+			    errbuf, PCAP_ERRBUF_SIZE);
+			if (nrecv == -1)
+			{
+				// Network error.
+				rpcapd_log(LOGPRIO_ERROR, "Read from client failed: %s", errbuf);
+				goto end;
+			}
+			if (nrecv == 0)
+			{
+				// Immediate EOF
+				goto end;
+			}
+			plen = (tls_header.length_hi << 8) | tls_header.length_lo;
+
+			// Discard the rest of the message.
+			if (rpcapd_discard(sockctrl, NULL, plen) == -1)
+			{
+				// Network error.
+				goto end;
+			}
+
+			//
+			// Send a TLS handshake failure alert.
+			// Use the same version the client sent us.
+			//
+			tls_header.type = TLS_RECORD_TYPE_ALERT;
+			tls_header.length_hi = 0;
+			tls_header.length_lo = TLS_ALERT_LEN;
+
+			if (sock_send(sockctrl, NULL, (char *) &tls_header,
+			    TLS_RECORD_HEADER_LEN, errbuf, PCAP_ERRBUF_SIZE) == -1)
+			{
+				// That failed; log a messsage and give up.
+				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+				goto end;
+			}
+
+			tls_alert.alert_level = TLS_ALERT_LEVEL_FATAL;
+			tls_alert.alert_description = TLS_ALERT_HANDSHAKE_FAILURE;
+			if (sock_send(sockctrl, NULL, (char *) &tls_alert,
+			    TLS_ALERT_LEN, errbuf, PCAP_ERRBUF_SIZE) == -1)
+			{
+				// That failed; log a messsage and give up.
+				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+				goto end;
+			}
+			//
+			// Give up anyway.
+			//
+			goto end;
+		}
+	}
 
 	// Set parameters structure
 	pars.sockctrl = sockctrl;
