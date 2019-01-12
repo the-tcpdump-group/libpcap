@@ -193,12 +193,6 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 
 	*errbuf = 0;	// Initialize errbuf
 
-	// Set parameters structure
-	pars.sockctrl = sockctrl;
-	pars.protocol_version = 0;		// not yet known
-	pars.isactive = isactive;		// active mode
-	pars.nullAuthAllowed = nullAuthAllowed;
-
 #ifdef HAVE_OPENSSL
 	//
 	// We have to upgrade to TLS as soon as possible, so that the
@@ -211,7 +205,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	//
 	if (uses_ssl)
 	{
-		ssl = ssl_promotion(1, pars.sockctrl, errbuf, PCAP_ERRBUF_SIZE);
+		ssl = ssl_promotion(1, sockctrl, errbuf, PCAP_ERRBUF_SIZE);
 		if (! ssl)
 		{
 			rpcapd_log(LOGPRIO_ERROR, "TLS handshake on control connection failed: %s",
@@ -220,7 +214,13 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		}
 	}
 #endif
+
+	// Set parameters structure
+	pars.sockctrl = sockctrl;
 	pars.ssl = ssl;
+	pars.protocol_version = 0;		// not yet known
+	pars.isactive = isactive;		// active mode
+	pars.nullAuthAllowed = nullAuthAllowed;
 
 	//
 	// We have a connection.
