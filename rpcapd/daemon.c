@@ -45,6 +45,7 @@
 #else
   #include <unistd.h>
   #include <pthread.h>
+  #include <signal.h>
   #include <sys/time.h>
   #include <sys/types.h>	// for select() and such
   #include <pwd.h>		// for password management
@@ -76,26 +77,20 @@ struct daemon_slpars
 	int nullAuthAllowed;	//!< '1' if we permit NULL authentication, '0' otherwise
 };
 
-/*
- * Data for a session managed by a thread.
- */
-struct session {
-	SOCKET sockctrl;
-	SOCKET sockdata;
-	uint8 protocol_version;
-	pcap_t *fp;
-	unsigned int TotCapt;
-};
-
 //
-// Structure to refer to a thread.
+// Data for a session managed by a thread.
 // It includes both a Boolean indicating whether we *have* a thread,
 // and a platform-dependent (UN*X vs. Windows) identifier for the
 // thread; on Windows, we could use an invalid handle to indicate
 // that we don't have a thread, but there *is* no portable "no thread"
 // value for a pthread_t on UN*X.
 //
-struct thread_handle {
+struct session {
+	SOCKET sockctrl;
+	SOCKET sockdata;
+	uint8 protocol_version;
+	pcap_t *fp;
+	unsigned int TotCapt;
 	int	have_thread;
 #ifdef _WIN32
 	HANDLE thread;
@@ -112,8 +107,8 @@ static int daemon_AuthUserPwd(char *username, char *password, char *errbuf);
 static int daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen);
 
 static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen);
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_handle *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param);
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, struct thread_handle *threaddata);
+static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, char *source, struct session **sessionp, struct rpcap_sampling *samp_param);
+static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session);
 
 static int daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen);
 static int daemon_unpackapplyfilter(SOCKET sockctrl, struct session *session, uint32 *plenp, char *errbuf);
@@ -127,11 +122,13 @@ static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_soc
 static unsigned __stdcall daemon_thrdatamain(void *ptr);
 #else
 static void *daemon_thrdatamain(void *ptr);
+static void noop_handler(int sign);
 #endif
 
 static int rpcapd_recv_msg_header(SOCKET sock, struct rpcap_header *headerp);
 static int rpcapd_recv(SOCKET sock, char *buffer, size_t toread, uint32 *plen, char *errmsgbuf);
 static int rpcapd_discard(SOCKET sock, uint32 len);
+static void session_close(struct session *);
 
 int
 daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
@@ -147,11 +144,12 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	int authenticated = 0;			// 1 if the client has successfully authenticated
 	char source[PCAP_BUF_SIZE+1];		// keeps the string that contains the interface to open
 	int got_source = 0;			// 1 if we've gotten the source from an open request
+#ifndef _WIN32
+	struct sigaction action;
+#endif
 	struct session *session = NULL;		// struct session main variable
 	const char *msg_type_string;		// string for message type
 	int client_told_us_to_close = 0;	// 1 if the client told us to close the capture
-
-	struct thread_handle threaddata;	// 'read from daemon and send to client' thread
 
 	// needed to save the values of the statistics
 	struct pcap_stat stats;
@@ -163,23 +161,6 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	fd_set rfds;				// set of socket descriptors we have to check
 	struct timeval tv;			// maximum time the select() can block waiting for data
 	int retval;				// select() return value
-
-	// We don't have a thread yet.
-	threaddata.have_thread = 0;
-	//
-	// We *shouldn't* have to initialize the thread indicator
-	// itself, because the compiler *should* realize that we
-	// only use this if have_thread isn't 0, but we *do* have
-	// to do it, because not all compilers *do* realize that.
-	//
-	// There is no "invalid thread handle" value for a UN*X
-	// pthread_t, so we just zero it out.
-	//
-#ifdef _WIN32
-	threaddata.thread = INVALID_HANDLE_VALUE;
-#else
-	memset(&threaddata.thread, 0, sizeof(threaddata.thread));
-#endif
 
 	*errbuf = 0;	// Initialize errbuf
 
@@ -238,6 +219,23 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			goto end;
 		}
 	}
+
+#ifndef _WIN32
+	//
+	// Catch SIGUSR1, but do nothing.  We use it to interrupt the
+	// capture thread to break it out of a loop in which it's
+	// blocked waiting for packets to arrive.
+	//
+	// We don't want interrupted system calls to restart, so that
+	// the read routine for the pcap_t gets EINTR rather than
+	// restarting if it's blocked in a system call.
+	//
+	memset(&action, 0, sizeof (action));
+	action.sa_handler = noop_handler;
+	action.sa_flags = 0;
+	sigemptyset(&action.sa_mask);
+	sigaction(SIGUSR1, &action, NULL);
+#endif
 
 	//
 	// The client must first authenticate; loop until they send us a
@@ -679,7 +677,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 					break;
 				}
 
-				if (daemon_msg_startcap_req(&pars, plen, &threaddata, source, &session, &samp_param) == -1)
+				if (daemon_msg_startcap_req(&pars, plen, source, &session, &samp_param) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -755,7 +753,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 						svrcapt = 0;
 					}
 
-					if (daemon_msg_endcap_req(&pars, session, &threaddata) == -1)
+					if (daemon_msg_endcap_req(&pars, session) == -1)
 					{
 						free(session);
 						session = NULL;
@@ -875,51 +873,11 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	}
 
 end:
-	// The child thread is about to end
-
-	// perform pcap_t cleanup, in case it has not been done
+	// The service loop is finishing up.
+	// If we have a capture session running, close it.
 	if (session)
 	{
-		if (threaddata.have_thread)
-		{
-#ifdef _WIN32
-			//
-			// Tell the data connection thread main capture
-			// loop to break out of that loop.
-			//
-			pcap_breakloop(session->fp);
-
-			//
-			// If it's currently blocked waiting for packets
-			// to arrive, try to wake it up, so it can see
-			// the "break out of the loop" indication.
-			//
-			SetEvent(pcap_getevent(session->fp));
-
-			//
-			// Wait for the thread to exit, so we don't close
-			// sockets out from under it.
-			//
-			// XXX - have a timeout, so we don't wait forever?
-			//
-			WaitForSingleObject(threaddata.thread, INFINITE);
-
-			//
-			// Release the thread handle, as we're done with
-			// it.
-			//
-			CloseHandle(threaddata.thread);
-#else
-			pthread_cancel(threaddata.thread);
-#endif
-			threaddata.have_thread = 0;
-		}
-		if (session->sockdata)
-		{
-			sock_close(session->sockdata, NULL, 0);
-			session->sockdata = 0;
-		}
-		pcap_close(session->fp);
+		session_close(session);
 		free(session);
 		session = NULL;
 	}
@@ -1584,7 +1542,7 @@ error:
 	to discard excess data in the message, if present)
 */
 static int
-daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_handle *threaddata, char *source, struct session **sessionp, struct rpcap_sampling *samp_param _U_)
+daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, char *source, struct session **sessionp, struct rpcap_sampling *samp_param _U_)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1596,16 +1554,11 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 	int sendbufidx = 0;			// index which keeps the number of bytes currently buffered
 
 	// socket-related variables
-	SOCKET sockdata = INVALID_SOCKET;	// socket descriptor of the data connection
 	struct addrinfo hints;			// temp, needed to open a socket connection
 	struct addrinfo *addrinfo;		// temp, needed to open a socket connection
 	struct sockaddr_storage saddr;		// temp, needed to retrieve the network data port chosen on the local machine
 	socklen_t saddrlen;			// temp, needed to retrieve the network data port chosen on the local machine
 	int ret;				// return value from functions
-
-#ifndef _WIN32
-	pthread_attr_t detachedAttribute;	// temp, needed to set the created thread as detached
-#endif
 
 	// RPCAP-related variables
 	struct rpcap_startcapreq startcapreq;		// start capture request message
@@ -1634,6 +1587,24 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Can't allocate session structure");
 		goto error;
 	}
+
+	session->sockdata = INVALID_SOCKET;
+	// We don't have a thread yet.
+	session->have_thread = 0;
+	//
+	// We *shouldn't* have to initialize the thread indicator
+	// itself, because the compiler *should* realize that we
+	// only use this if have_thread isn't 0, but we *do* have
+	// to do it, because not all compilers *do* realize that.
+	//
+	// There is no "invalid thread handle" value for a UN*X
+	// pthread_t, so we just zero it out.
+	//
+#ifdef _WIN32
+	session->thread = INVALID_HANDLE_VALUE;
+#else
+	memset(&session->thread, 0, sizeof(session->thread));
+#endif
 
 	// Open the selected device
 	if ((session->fp = pcap_open_live(source,
@@ -1692,7 +1663,7 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		if (sock_initaddress(peerhost, portdata, &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if ((sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		if ((session->sockdata = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 	}
 	else		// Data connection is opened by the client toward the server
@@ -1703,12 +1674,12 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		if (sock_initaddress(NULL, "0", &hints, &addrinfo, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 			goto error;
 
-		if ((sockdata = sock_open(addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		if ((session->sockdata = sock_open(addrinfo, SOCKOPEN_SERVER, 1 /* max 1 connection in queue */, errmsgbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 			goto error;
 
 		// get the complete sockaddr structure used in the data connection
 		saddrlen = sizeof(struct sockaddr_storage);
-		if (getsockname(sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
+		if (getsockname(session->sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
 			sock_geterror("getsockname(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
 			goto error;
@@ -1781,7 +1752,7 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		// Connection creation
 		saddrlen = sizeof(struct sockaddr_storage);
 
-		socktemp = accept(sockdata, (struct sockaddr *) &saddr, &saddrlen);
+		socktemp = accept(session->sockdata, (struct sockaddr *) &saddr, &saddrlen);
 
 		if (socktemp == INVALID_SOCKET)
 		{
@@ -1792,38 +1763,30 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, struct thread_h
 		}
 
 		// Now that I accepted the connection, the server socket is no longer needed
-		sock_close(sockdata, NULL, 0);
-		sockdata = socktemp;
+		sock_close(session->sockdata, NULL, 0);
+		session->sockdata = socktemp;
 	}
-
-	session->sockdata = sockdata;
 
 	// Now we have to create a new thread to receive packets
 #ifdef _WIN32
-	threaddata->thread = (HANDLE)_beginthreadex(NULL, 0, daemon_thrdatamain,
+	session->thread = (HANDLE)_beginthreadex(NULL, 0, daemon_thrdatamain,
 	    (void *) session, 0, NULL);
-	if (threaddata->thread == 0)
+	if (session->thread == 0)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
 		goto error;
 	}
 #else
-	/* GV we need this to create the thread as detached. */
-	/* GV otherwise, the thread handle is not destroyed  */
-	pthread_attr_init(&detachedAttribute);
-	pthread_attr_setdetachstate(&detachedAttribute, PTHREAD_CREATE_DETACHED);
-	ret = pthread_create(&threaddata->thread, &detachedAttribute,
-	    daemon_thrdatamain, (void *) session);
+	ret = pthread_create(&session->thread, NULL, daemon_thrdatamain,
+	    (void *) session);
 	if (ret != 0)
 	{
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    ret, "Error creating the data thread");
-		pthread_attr_destroy(&detachedAttribute);
 		goto error;
 	}
-	pthread_attr_destroy(&detachedAttribute);
 #endif
-	threaddata->have_thread = 1;
+	session->have_thread = 1;
 
 	// Check if all the data has been read; if not, discard the data in excess
 	if (rpcapd_discard(pars->sockctrl, plen) == -1)
@@ -1842,28 +1805,9 @@ error:
 	if (addrinfo)
 		freeaddrinfo(addrinfo);
 
-	if (threaddata->have_thread)
-	{
-#ifdef _WIN32
-		if (session->fp)
-		{
-			pcap_breakloop(session->fp);
-			SetEvent(pcap_getevent(session->fp));
-		}
-		CloseHandle(threaddata->thread);
-#else
-		pthread_cancel(threaddata->thread);
-#endif
-		threaddata->have_thread = 0;
-	}
-
-	if (sockdata != INVALID_SOCKET)
-		sock_close(sockdata, NULL, 0);
-
 	if (session)
 	{
-		if (session->fp)
-			pcap_close(session->fp);
+		session_close(session);
 		free(session);
 	}
 
@@ -1891,51 +1835,9 @@ fatal_error:
 	//
 	*sessionp = NULL;
 
-	if (threaddata->have_thread)
-	{
-#ifdef _WIN32
-		if (session && session->fp)
-		{
-			//
-			// Tell the data connection thread main capture
-			// loop to break out of that loop.
-			//
-			pcap_breakloop(session->fp);
-
-			//
-			// If it's currently blocked waiting for packets
-			// to arrive, try to wake it up, so it can see
-			// the "break out of the loop" indication.
-			//
-			SetEvent(pcap_getevent(session->fp));
-		}
-
-		//
-		// Wait for the thread to exit, so we don't close
-		// sockets out from under it.
-		//
-		// XXX - have a timeout, so we don't wait forever?
-		//
-		WaitForSingleObject(threaddata->thread, INFINITE);
-
-		//
-		// Release the thread handle, as we're done with
-		// it.
-		//
-		CloseHandle(threaddata->thread);
-#else
-		pthread_cancel(threaddata->thread);
-#endif
-		threaddata->have_thread = 0;
-	}
-
-	if (sockdata != INVALID_SOCKET)
-		sock_close(sockdata, NULL, 0);
-
 	if (session)
 	{
-		if (session->fp)
-			pcap_close(session->fp);
+		session_close(session);
 		free(session);
 	}
 
@@ -1943,52 +1845,12 @@ fatal_error:
 }
 
 static int
-daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session, struct thread_handle *threaddata)
+daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	struct rpcap_header header;
 
-	if (threaddata->have_thread)
-	{
-#ifdef _WIN32
-		//
-		// Tell the data connection thread main capture loop to
-		// break out of that loop.
-		//
-		pcap_breakloop(session->fp);
-
-		//
-		// If it's currently blocked waiting for packets to
-		// arrive, try to wake it up, so it can see the "break
-		// out of the loop" indication.
-		//
-		SetEvent(pcap_getevent(session->fp));
-
-		//
-		// Wait for the thread to exit, so we don't close
-		// sockets out from under it.
-		//
-		// XXX - have a timeout, so we don't wait forever?
-		//
-		WaitForSingleObject(threaddata->thread, INFINITE);
-
-		//
-		// Release the thread handle, as we're done with
-		// it.
-		//
-		CloseHandle(threaddata->thread);
-#else
-		pthread_cancel(threaddata->thread);
-#endif
-		threaddata->have_thread = 0;
-	}
-	if (session->sockdata)
-	{
-		sock_close(session->sockdata, NULL, 0);
-		session->sockdata = 0;
-	}
-
-	pcap_close(session->fp);
+	session_close(session);
 
 	rpcap_createhdr(&header, pars->protocol_version,
 	    RPCAP_MSG_ENDCAP_REPLY, 0, 0);
@@ -2276,6 +2138,9 @@ daemon_thrdatamain(void *ptr)
 	char *sendbuf;						// temporary buffer in which data to be sent is buffered
 	int sendbufidx;						// index which keeps the number of bytes currently buffered
 	int status;
+#ifndef _WIN32
+	sigset_t sigusr1;			// signal set with just SIGUSR1
+#endif
 
 	session = (struct session *) ptr;
 
@@ -2320,30 +2185,36 @@ daemon_thrdatamain(void *ptr)
 	}
 
 #ifndef _WIN32
-	// Modify thread params so that it can be killed at any time
-	retval = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	if (retval != 0)
-	{
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    retval, "pthread_setcancelstate");
-		rpcapd_log(LOGPRIO_ERROR,
-		    "Can't set cancel state on data thread: %s", errbuf);
-		goto error;
-	}
-	retval = pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	if (retval != 0)
-	{
-		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    retval, "pthread_setcanceltype");
-		rpcapd_log(LOGPRIO_ERROR,
-		    "Can't set cancel type on data thread: %s", errbuf);
-		goto error;
-	}
+	//
+	// Set the signal set to include just SIGUSR1, and block that
+	// signal; we only want it unblocked when we're reading
+	// packets - we dn't want any other system calls, such as
+	// ones being used to send to the client or to log messages,
+	// to be interrupted.
+	//
+	sigemptyset(&sigusr1);
+	sigaddset(&sigusr1, SIGUSR1);
+	sigprocmask(SIG_BLOCK, &sigusr1, NULL);
 #endif
 
 	// Retrieve the packets
-	while ((retval = pcap_next_ex(session->fp, &pkt_header, (const u_char **) &pkt_data)) >= 0)	// cast to avoid a compiler warning
+	for (;;)
 	{
+#ifndef _WIN32
+		//
+		// Unblock SIGUSR1 while we might be waiting for packets.
+		//
+		sigprocmask(SIG_UNBLOCK, &sigusr1, NULL);
+#endif
+		retval = pcap_next_ex(session->fp, &pkt_header, (const u_char **) &pkt_data);	// cast to avoid a compiler warning
+#ifndef _WIN32
+		//
+		// Now block it again.
+		//
+		sigprocmask(SIG_BLOCK, &sigusr1, NULL);
+#endif
+		if (retval < 0)
+			break;		// error
 		if (retval == 0)	// Read timeout elapsed
 			continue;
 
@@ -2419,22 +2290,39 @@ daemon_thrdatamain(void *ptr)
 		}
 	}
 
-	if (retval == -1)
+	if (retval < 0 && retval != PCAP_ERROR_BREAK)
 	{
+		//
+		// Failed with an error other than "we were told to break
+		// out of the loop".
+		//
+		// The latter just means that the client told us to stop
+		// capturing, so there's no error to report.
+		//
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error reading the packets: %s", pcap_geterr(session->fp));
 		rpcap_senderror(session->sockctrl, session->protocol_version,
 		    PCAP_ERR_READEX, errbuf, NULL);
-		goto error;
 	}
 
 error:
- 	closesocket(session->sockdata);
-	session->sockdata = 0;
-
+	//
+	// The main thread will clean up the session structure.
+	//
 	free(sendbuf);
 
 	return 0;
 }
+
+#ifndef _WIN32
+//
+// Do-nothing handler for SIGUSR1; the sole purpose of SIGUSR1 is to
+// interrupt the data thread if it's blocked in a system call waiting
+// for packets to arrive.
+//
+static void noop_handler(int sign _U_)
+{
+}
+#endif
 
 /*!
 	\brief It serializes a network address.
@@ -2593,4 +2481,90 @@ rpcapd_discard(SOCKET sock, uint32 len)
 		}
 	}
 	return 0;
+}
+
+//
+// Shut down any packet-capture thread associated with the session,
+// close the SSL handle for the data socket if we have one, close
+// the data socket if we have one, and close the underlying packet
+// capture handle if we have one.
+//
+// We do not, of course, touch the controlling socket that's also
+// copied into the session, as the service loop might still use it.
+//
+static void session_close(struct session *session)
+{
+	if (session->have_thread)
+	{
+		//
+		// Tell the data connection thread main capture loop to
+		// break out of that loop.
+		//
+		// This may be sufficient to wake up a blocked thread,
+		// but it's not guaranteed to be sufficient.
+		//
+		pcap_breakloop(session->fp);
+
+#ifdef _WIN32
+		//
+		// Set the event on which a read would block, so that,
+		// if it's currently blocked waiting for packets to
+		// arrive, it'll wake up, so it can see the "break
+		// out of the loop" indication.  (pcap_breakloop()
+		// might do this, but older versions don't.  Setting
+		// it twice should, at worst, cause an extra wakeup,
+		// which shouldn't be a problem.)
+		//
+		// XXX - what about modules other than NPF?
+		//
+		SetEvent(pcap_getevent(session->fp));
+
+		//
+		// Wait for the thread to exit, so we don't close
+		// sockets out from under it.
+		//
+		// XXX - have a timeout, so we don't wait forever?
+		//
+		WaitForSingleObject(session->thread, INFINITE);
+
+		//
+		// Release the thread handle, as we're done with
+		// it.
+		//
+		CloseHandle(session->thread);
+		session->have_thread = 0;
+		session->thread = INVALID_HANDLE;
+#else
+		//
+		// Send a SIGUSR1 signal to the thread, so that, if
+		// it's currently blocked waiting for packets to arrive,
+		// it'll wake up (we've turned off SA_RESTART for
+		// SIGUSR1, so that the system call in which it's blocked
+		// should return EINTR rather than restarting).
+		//
+		pthread_kill(session->thread, SIGUSR1);
+
+		//
+		// Wait for the thread to exit, so we don't close
+		// sockets out from under it.
+		//
+		// XXX - have a timeout, so we don't wait forever?
+		//
+		pthread_join(session->thread, NULL);
+		session->have_thread = 0;
+		memset(&session->thread, 0, sizeof(session->thread));
+#endif
+	}
+
+	if (session->sockdata != INVALID_SOCKET)
+	{
+		sock_close(session->sockdata, NULL, 0);
+		session->sockdata = INVALID_SOCKET;
+	}
+
+	if (session->fp)
+	{
+		pcap_close(session->fp);
+		session->fp = NULL;
+	}
 }
