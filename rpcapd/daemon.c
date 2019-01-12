@@ -886,7 +886,6 @@ end:
 
 	// Print message and return
 	rpcapd_log(LOGPRIO_DEBUG, "I'm exiting from the child loop");
-	rpcapd_log(LOGPRIO_DEBUG, "%s", errbuf);
 
 	return client_told_us_to_close;
 }
