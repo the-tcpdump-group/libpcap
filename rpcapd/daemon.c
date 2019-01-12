@@ -286,7 +286,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			//
 			if (rpcap_senderror(sockctrl, NULL, header.ver,
 			    PCAP_ERR_AUTH, "TLS is required by this server",
-			    "") == -1)
+			    errbuf) == -1)
 			{
 				// That failed; log a message and give up.
 				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
