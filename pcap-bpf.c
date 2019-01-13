@@ -3049,8 +3049,12 @@ find_802_11(struct bpf_dltlist *bdlp)
 				new_dlt = bdlp->bfl_list[i];
 			break;
 
+#ifdef DLT_PRISM_HEADER
 		case DLT_PRISM_HEADER:
+#endif
+#ifdef DLT_AIRONET_HEADER
 		case DLT_AIRONET_HEADER:
+#endif
 		case DLT_IEEE802_11_RADIO_AVS:
 			/*
 			 * 802.11 with radio, but not radiotap.
@@ -3145,11 +3149,17 @@ remove_802_11(pcap_t *p)
 		switch (p->dlt_list[i]) {
 
 		case DLT_IEEE802_11:
+#ifdef DLT_PRISM_HEADER
 		case DLT_PRISM_HEADER:
+#endif
+#ifdef DLT_AIRONET_HEADER
 		case DLT_AIRONET_HEADER:
+#endif
 		case DLT_IEEE802_11_RADIO:
 		case DLT_IEEE802_11_RADIO_AVS:
+#ifdef DLT_PPI
 		case DLT_PPI:
+#endif
 			/*
 			 * 802.11.  Don't offer this one.
 			 */
