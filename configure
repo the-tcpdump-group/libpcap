@@ -7788,86 +7788,75 @@ fi
 	# Optionally, we may want to support SSL.
 	# Check for OpenSSL/libressl.
 	#
-	# We check for it first with pkg-config, in case you're
-	# unlucky enough to be running on one of the versions
-	# of macOS where Apple decided to get everybody to use
-	# their Shiny New SSL and took away the OpenSSL header
-	# files, even though they keep the shared libraries
-	# around for binary compatibility, and installed your
-	# own version.
+	# First, try looking for it as a regular system library.
+	# Make sure we can find SSL_library_init() using the
+	# standard headers, just in case we're running a version
+	# of macOS that ships with the OpenSSL library but not
+	# the OpenSSL headers, and have also installed another
+	# version of OpenSSL with headers.
 	#
-	if test "x$PKGCONFIG" != "xno"; then
-		#
-		# We have pkg-config; see if we have it installed
-		# as a package.
-		#
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL/libressl with pkg-config" >&5
-$as_echo_n "checking for OpenSSL/libressl with pkg-config... " >&6; }
-		if "$PKGCONFIG" openssl; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-			OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
-			OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
-			HAVE_OPENSSL=yes
-		else
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-		fi
-	fi
-	if test "x$HAVE_OPENSSL" != "xyes"; then
-		#
-		# We didn't find it as a package; try looking for
-		# it as a regular system library.
-		#
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for SSL_library_init in -lssl" >&5
-$as_echo_n "checking for SSL_library_init in -lssl... " >&6; }
-if ${ac_cv_lib_ssl_SSL_library_init+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lssl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+	save_LIBS="$LIBS"
+	LIBS="-lssl -lcrypto"
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have a system OpenSSL/libressl that we can use" >&5
+$as_echo_n "checking whether we have a system OpenSSL/libressl that we can use... " >&6; }
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char SSL_library_init ();
+#include <openssl/ssl.h>
+
 int
 main ()
 {
-return SSL_library_init ();
+
+SSL_library_init();
+return 0;
+
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ssl_SSL_library_init=yes
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+		HAVE_OPENSSL=yes
+		OPENSSL_LIBS="-lssl -lcrypto"
+
 else
-  ac_cv_lib_ssl_SSL_library_init=no
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_library_init" >&5
-$as_echo "$ac_cv_lib_ssl_SSL_library_init" >&6; }
-if test "x$ac_cv_lib_ssl_SSL_library_init" = xyes; then :
+	LIBS="$save_LIBS"
 
+	#
+	# If we didn't find it, check for it with pkg-config.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes"; then
+		if test "x$PKGCONFIG" != "xno"; then
 			#
-			# Yes - add -lssl.
+			# We have pkg-config; see if we have OpenSSL/
+			# libressl installed as a package.
 			#
-			HAVE_OPENSSL=yes
-			OPENSSL_LIBS="-lssl -lcrypto"
-
-else
-  -lcrypto
-fi
-
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for OpenSSL/libressl with pkg-config" >&5
+$as_echo_n "checking for OpenSSL/libressl with pkg-config... " >&6; }
+			if "$PKGCONFIG" openssl; then
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+				HAVE_OPENSSL=yes
+				OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
+				OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
+			else
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+			fi
+		fi
 	fi
+
+	#
+	# OK, did we find it?
+	#
 	if test "x$HAVE_OPENSSL" = "xyes"; then
 
 $as_echo "#define HAVE_OPENSSL 1" >>confdefs.h

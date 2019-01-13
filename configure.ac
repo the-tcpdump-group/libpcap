@@ -1501,43 +1501,56 @@ yes)	AC_MSG_RESULT(yes)
 	# Optionally, we may want to support SSL.
 	# Check for OpenSSL/libressl.
 	#
-	# We check for it first with pkg-config, in case you're
-	# unlucky enough to be running on one of the versions
-	# of macOS where Apple decided to get everybody to use
-	# their Shiny New SSL and took away the OpenSSL header
-	# files, even though they keep the shared libraries
-	# around for binary compatibility, and installed your
-	# own version.
+	# First, try looking for it as a regular system library.
+	# Make sure we can find SSL_library_init() using the
+	# standard headers, just in case we're running a version
+	# of macOS that ships with the OpenSSL library but not
+	# the OpenSSL headers, and have also installed another
+	# version of OpenSSL with headers.
 	#
-	if test "x$PKGCONFIG" != "xno"; then
-		#
-		# We have pkg-config; see if we have it installed
-		# as a package.
-		#
-		AC_MSG_CHECKING([for OpenSSL/libressl with pkg-config])
-		if "$PKGCONFIG" openssl; then
-			AC_MSG_RESULT([found])
-			OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
-			OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
-			HAVE_OPENSSL=yes
-		else
-			AC_MSG_RESULT([not found])
+	save_LIBS="$LIBS"
+	LIBS="-lssl -lcrypto"
+	AC_MSG_CHECKING(whether we have a system OpenSSL/libressl that we can use)
+	AC_TRY_LINK(
+	    [
+#include <openssl/ssl.h>
+	    ],
+	    [
+SSL_library_init();
+return 0;
+	    ],
+	    [
+		AC_MSG_RESULT(yes)
+		HAVE_OPENSSL=yes
+		OPENSSL_LIBS="-lssl -lcrypto"
+	    ],
+	    AC_MSG_RESULT(no))
+	LIBS="$save_LIBS"
+
+	#
+	# If we didn't find it, check for it with pkg-config.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes"; then
+		if test "x$PKGCONFIG" != "xno"; then
+			#
+			# We have pkg-config; see if we have OpenSSL/
+			# libressl installed as a package.
+			#
+			AC_MSG_CHECKING([for OpenSSL/libressl with pkg-config])
+			if "$PKGCONFIG" openssl; then
+				AC_MSG_RESULT([found])
+				HAVE_OPENSSL=yes
+				OPENSSL_CFLAGS=`"$PKGCONFIG" --cflags openssl`
+				OPENSSL_LIBS=`"$PKGCONFIG" --libs openssl`
+			else
+				AC_MSG_RESULT([not found])
+			fi
 		fi
 	fi
-	if test "x$HAVE_OPENSSL" != "xyes"; then
-		#
-		# We didn't find it as a package; try looking for
-		# it as a regular system library.
-		#
-		AC_CHECK_LIB(ssl, SSL_library_init,
-		    [
-			#
-			# Yes - add -lssl.
-			#
-			HAVE_OPENSSL=yes
-			OPENSSL_LIBS="-lssl -lcrypto"
-		    ], -lcrypto)
-	fi
+
+	#
+	# OK, did we find it?
+	#
 	if test "x$HAVE_OPENSSL" = "xyes"; then
 		AC_DEFINE([HAVE_OPENSSL], [1], [Use OpenSSL])
 		CFLAGS="$CFLAGS $OPENSSL_CFLAGS"
