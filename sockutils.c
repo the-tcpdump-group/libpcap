@@ -504,6 +504,147 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
 }
 
 /*
+ * gai_errstring() has some problems:
+ *
+ * 1) on Windows, Microsoft explicitly says it's not thread-safe;
+ * 2) on UN*X, the Single UNIX Specification doesn't say it *is*
+ *    thread-safe, so an implementation might use a static buffer
+ *    for unknown error codes;
+ * 3) the error message for the most likely error, EAI_NONAME, is
+ *    truly horrible on several platforms ("nodename nor servname
+ *    provided, or not known"?  It's typically going to be "not
+ *    known", not "oopsie, I passed null pointers for the host name
+ *    and service name", not to mention they forgot the "neither");
+ *
+ * so we roll our own.
+ */
+static void
+get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
+    const char *hostname, const char *portname)
+{
+	char hostport[PCAP_ERRBUF_SIZE];
+
+	if (hostname != NULL && portname != NULL)
+		pcap_snprintf(hostport, PCAP_ERRBUF_SIZE, "%s:%s",
+		    hostname, portname);
+	else if (hostname != NULL)
+		pcap_snprintf(hostport, PCAP_ERRBUF_SIZE, "%s",
+		    hostname);
+	else if (portname != NULL)
+		pcap_snprintf(hostport, PCAP_ERRBUF_SIZE, ":%s",
+		    portname);
+	else
+		pcap_snprintf(hostport, PCAP_ERRBUF_SIZE, "<no host or port!>");
+	switch (err)
+	{
+#ifdef EAI_ADDRFAMILY
+		case EAI_ADDRFAMILY:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sAddress family for %s not supported",
+			    prefix, hostport);
+			break;
+#endif
+
+		case EAI_AGAIN:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%s%s could not be resolved at this time",
+			    prefix, hostport);
+			break;
+
+		case EAI_BADFLAGS:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sThe ai_flags parameter for looking up %s had an invalid value",
+			    prefix, hostport);
+			break;
+
+		case EAI_FAIL:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sA non-recoverable error occurred when attempting to resolve %s",
+			    prefix, hostport);
+			break;
+
+		case EAI_FAMILY:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sThe address family for looking up %s was not recognized",
+			    prefix, hostport);
+			break;
+
+		case EAI_MEMORY:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sOut of memory trying to allocate storage when looking up %s",
+			    prefix, hostport);
+			break;
+
+#ifdef EAI_NODATA
+		case EAI_NODATA:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sNo address associated with %s",
+			    prefix, hostport);
+			break;
+#endif
+
+		case EAI_NONAME:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sThe host name %s couldn't be resolved",
+			    prefix, hostport);
+			break;
+
+		case EAI_SERVICE:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sThe service value specified when looking up %s as not recognized for the socket type",
+			    prefix, hostport);
+			break;
+
+		case EAI_SOCKTYPE:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sThe socket type specified when looking up %s as not recognized",
+			    prefix, hostport);
+			break;
+
+#ifdef EAI_SYSTEM
+		case EAI_SYSTEM:
+			/*
+			 * Assumed to be UN*X.
+			 */
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sAn error occurred when looking up %s: %s",
+			    prefix, hostport, pcap_strerror(errno));
+			break;
+#endif
+
+#ifdef EAI_BADHINTS
+		case EAI_BADHINTS:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sInvalid value for hints when looking up %s",
+			    prefix, hostport);
+			break;
+#endif
+
+#ifdef EAI_PROTOCOL
+		case EAI_PROTOCOL:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sResolved protocol when looking up %s is unknown",
+			    prefix, hostport);
+			break;
+#endif
+
+#ifdef EAI_OVERFLOW
+		case EAI_OVERFLOW:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sArgument buffer overflow when looking up %s",
+			    prefix, hostport);
+			break;
+#endif
+
+		default:
+			pcap_snprintf(errbuf, errbuflen,
+			    "%sgetaddrinfo() error %d when looking up %s",
+			    prefix, err, hostport);
+			break;
+	}
+}
+
+/*
  * \brief Checks that the address, port and flags given are valids and it returns an 'addrinfo' structure.
  *
  * This function basically calls the getaddrinfo() calls, and it performs a set of sanity checks
@@ -549,17 +690,10 @@ int sock_initaddress(const char *host, const char *port,
 	retval = getaddrinfo(host, port, hints, addrinfo);
 	if (retval != 0)
 	{
-		/*
-		 * if the getaddrinfo() fails, you have to use gai_strerror(), instead of using the standard
-		 * error routines (errno) in UNIX; Winsock suggests using the GetLastError() instead.
-		 */
 		if (errbuf)
 		{
-#ifdef _WIN32
-			sock_geterror("getaddrinfo(): ", errbuf, errbuflen);
-#else
-			pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
-#endif
+			get_gai_errstring(errbuf, errbuflen, "", retval,
+			    host, port);
 		}
 		return -1;
 	}
@@ -833,7 +967,6 @@ int sock_recv(SOCKET sock, void *buffer, size_t size, int flags,
 
 	if (size == 0)
 	{
-		SOCK_DEBUG_MESSAGE("I have been requested to read zero bytes");
 		return 0;
 	}
 	if (size > INT_MAX)
@@ -924,7 +1057,6 @@ int sock_recv_dgram(SOCKET sock, void *buffer, size_t size,
 
 	if (size == 0)
 	{
-		SOCK_DEBUG_MESSAGE("I have been requested to read zero bytes");
 		return 0;
 	}
 	if (size > INT_MAX)
@@ -1080,8 +1212,6 @@ int sock_discard(SOCKET sock, int size, char *errbuf, int errbuflen)
 			return -1;
 	}
 
-	SOCK_DEBUG_MESSAGE("I'm currently discarding data\n");
-
 	return 0;
 }
 
@@ -1122,6 +1252,7 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 		struct addrinfo *addrinfo, *ai_next;
 		char *temphostlist;
 		char *lasts;
+		int getaddrinfo_failed = 0;
 
 		/*
 		 * The problem is that strtok modifies the original variable by putting '0' at the end of each token
@@ -1149,13 +1280,19 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			hints.ai_family = PF_UNSPEC;
 			hints.ai_socktype = SOCK_STREAM;
 
-			retval = getaddrinfo(token, "0", &hints, &addrinfo);
+			retval = getaddrinfo(token, NULL, &hints, &addrinfo);
 			if (retval != 0)
 			{
 				if (errbuf)
-					pcap_snprintf(errbuf, errbuflen, "getaddrinfo() %s", gai_strerror(retval));
+					get_gai_errstring(errbuf, errbuflen,
+					    "Allowed host list error: ",
+					    retval, token, NULL);
 
-				SOCK_DEBUG_MESSAGE(errbuf);
+				/*
+				 * Note that at least one call to getaddrinfo()
+				 * failed.
+				 */
+				getaddrinfo_failed = 1;
 
 				/* Get next token */
 				token = pcap_strtok_r(NULL, sep, &lasts);
@@ -1193,8 +1330,14 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			addrinfo = NULL;
 		}
 
-		if (errbuf)
-			pcap_snprintf(errbuf, errbuflen, "The host is not in the allowed host list. Connection refused.");
+		if (!getaddrinfo_failed) {
+			/*
+			 * All getaddrinfo() calls succeeded, but
+			 * the host wasn't in the list.
+			 */
+			if (errbuf)
+				pcap_snprintf(errbuf, errbuflen, "The host is not in the allowed host list. Connection refused.");
+		}
 
 		free(temphostlist);
 		return -1;
