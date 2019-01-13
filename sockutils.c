@@ -571,7 +571,17 @@ get_gai_errstring(char *errbuf, int errbuflen, const char *prefix, int err,
 			    prefix, hostport);
 			break;
 
-#ifdef EAI_NODATA
+		/*
+		 * RFC 2553 had both EAI_NODATA and EAI_NONAME.
+		 *
+		 * RFC 3493 has only EAI_NONAME.
+		 *
+		 * Some implementations define EAI_NODATA and EAI_NONAME
+		 * to the same value, others don't.  If EAI_NODATA is
+		 * defined and isn't the same as EAI_NONAME, we handle
+		 * EAI_NODATA.
+		 */
+#if defined(EAI_NODATA) && EAI_NODATA != EAI_NONAME
 		case EAI_NODATA:
 			pcap_snprintf(errbuf, errbuflen,
 			    "%sNo address associated with %s",
