@@ -1307,7 +1307,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 	if (res == -1)
 	{
 		sock_geterror("pcap_startcapture_remote()", fp->errbuf, PCAP_ERRBUF_SIZE);
-		SOCK_DEBUG_MESSAGE(fp->errbuf);
+		goto error;
 	}
 
 	/*
@@ -2857,7 +2857,6 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	{
 		if (sock_initaddress(address, RPCAP_DEFAULT_NETPORT_ACTIVE, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
-			SOCK_DEBUG_MESSAGE(errbuf);
 			return (SOCKET)-2;
 		}
 	}
@@ -2865,7 +2864,6 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	{
 		if (sock_initaddress(address, port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
 		{
-			SOCK_DEBUG_MESSAGE(errbuf);
 			return (SOCKET)-2;
 		}
 	}
@@ -2873,7 +2871,6 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 
 	if ((sockmain = sock_open(addrinfo, SOCKOPEN_SERVER, 1, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
 	{
-		SOCK_DEBUG_MESSAGE(errbuf);
 		freeaddrinfo(addrinfo);
 		return (SOCKET)-2;
 	}

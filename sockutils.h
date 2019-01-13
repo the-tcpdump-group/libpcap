@@ -81,35 +81,6 @@ int WSAAPI getnameinfo(const struct sockaddr*,socklen_t,char*,DWORD,
  * \{
  */
 
-/*
- * \brief DEBUG facility: it prints an error message on the screen (stderr)
- *
- * This macro prints the error on the standard error stream (stderr);
- * if we are working in debug mode (i.e. there is no NDEBUG defined) and we are in
- * Microsoft Visual C++, the error message will appear on the MSVC console as well.
- *
- * When NDEBUG is defined, this macro is empty.
- *
- * \param msg: the message you want to print.
- *
- * \param expr: 'false' if you want to abort the program, 'true' it you want
- * to print the message and continue.
- *
- * \return No return values.
- */
-#ifdef NDEBUG
-  #define SOCK_DEBUG_MESSAGE(msg) ((void)0)
-#else
-  #if (defined(_WIN32) && defined(_MSC_VER))
-    #include <crtdbg.h>				/* for _CrtDbgReport */
-    /* Use MessageBox(NULL, msg, "warning", MB_OK)' instead of the other calls if you want to debug a Win32 service */
-    /* Remember to activate the 'allow service to interact with desktop' flag of the service */
-    #define SOCK_DEBUG_MESSAGE(msg) { _CrtDbgReport(_CRT_WARN, NULL, 0, NULL, "%s\n", msg); fprintf(stderr, "%s\n", msg); }
-  #else
-    #define SOCK_DEBUG_MESSAGE(msg) { fprintf(stderr, "%s\n", msg); }
-  #endif
-#endif
-
 /****************************************************
  *                                                  *
  * Exported functions / definitions                 *
