@@ -211,6 +211,13 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		passiveClients = NULL;
 		if (host_port_check_status < 0)
 		{
+			if (host_port_check_status == -2) {
+				//
+				// We got an error; log it.
+				//
+				rpcapd_log(LOGPRIO_ERROR, "%s", errmsgbuf);
+			}
+
 			//
 			// Sorry, we can't let you in.
 			//

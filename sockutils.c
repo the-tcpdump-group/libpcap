@@ -1340,17 +1340,25 @@ int sock_check_hostlist(char *hostlist, const char *sep, struct sockaddr_storage
 			addrinfo = NULL;
 		}
 
-		if (!getaddrinfo_failed) {
+		free(temphostlist);
+
+		if (getaddrinfo_failed) {
+			/*
+			 * At least one getaddrinfo() call failed;
+			 * treat that as an error, so rpcapd knows
+			 * that it should log it locally as well
+			 * as telling the client about it.
+			 */
+			return -2;
+		} else {
 			/*
 			 * All getaddrinfo() calls succeeded, but
 			 * the host wasn't in the list.
 			 */
 			if (errbuf)
 				pcap_snprintf(errbuf, errbuflen, "The host is not in the allowed host list. Connection refused.");
+			return -1;
 		}
-
-		free(temphostlist);
-		return -1;
 	}
 
 	/* No hostlist, so we have to return 'empty list' */
