@@ -242,7 +242,7 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 		 */
 		if (add_dev(devlistp, dev_name,
 		    PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
-		    "All USB buses", err_str) == NULL)
+		    "Raw USB traffic, all USB buses", err_str) == NULL)
 			return -1;
 	} else {
 		/*
@@ -251,7 +251,7 @@ usb_dev_add(pcap_if_list_t *devlistp, int n, char *err_str)
 		 * PCAP_IF_CONNECTION_STATUS_CONNECTED or
 		 * PCAP_IF_CONNECTION_STATUS_DISCONNECTED?
 		 */
-		pcap_snprintf(dev_descr, 30, "USB bus number %d", n);
+		pcap_snprintf(dev_descr, 30, "Raw USB traffic, bus number %d", n);
 		if (add_dev(devlistp, dev_name, 0, dev_descr, err_str) == NULL)
 			return -1;
 	}
