@@ -1141,7 +1141,13 @@
  */
 #define LINKTYPE_VPP_DISPATCH	280
 
-#define LINKTYPE_MATCHING_MAX	280		/* highest value in the "matching" range */
+/*
+ * Broadcom Ethernet switches (ROBO switch) 4 bytes proprietary tagging format.
+ */
+#define LINKTYPE_DSA_TAG_BRCM	281
+#define LINKTYPE_DSA_TAG_BRCM_PREPEND	282
+
+#define LINKTYPE_MATCHING_MAX	282		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
