@@ -2467,7 +2467,7 @@ daemon_thrdatamain(void *ptr)
 	//
 	sigemptyset(&sigusr1);
 	sigaddset(&sigusr1, SIGUSR1);
-	sigprocmask(SIG_BLOCK, &sigusr1, NULL);
+	pthread_sigmask(SIG_BLOCK, &sigusr1, NULL);
 #endif
 
 	// Retrieve the packets
@@ -2477,14 +2477,14 @@ daemon_thrdatamain(void *ptr)
 		//
 		// Unblock SIGUSR1 while we might be waiting for packets.
 		//
-		sigprocmask(SIG_UNBLOCK, &sigusr1, NULL);
+		pthread_sigmask(SIG_UNBLOCK, &sigusr1, NULL);
 #endif
 		retval = pcap_next_ex(session->fp, &pkt_header, (const u_char **) &pkt_data);	// cast to avoid a compiler warning
 #ifndef _WIN32
 		//
 		// Now block it again.
 		//
-		sigprocmask(SIG_BLOCK, &sigusr1, NULL);
+		pthread_sigmask(SIG_BLOCK, &sigusr1, NULL);
 #endif
 		if (retval < 0)
 			break;		// error
