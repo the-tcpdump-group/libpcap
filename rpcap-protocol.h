@@ -176,6 +176,12 @@
  * for better alignment.
  * These structures have been created in order to be correctly aligned to
  * a 32-bit boundary, but be careful in any case.
+ *
+ * The layout of these structures MUST not be changed.  If a packet
+ * format is different in different versions of the protocol, versions
+ * of the structure should be provided for all the different versions or
+ * version ranges (if more than one version of the protocol has the same
+ * layout) that we support.
  */
 
 /*
@@ -378,7 +384,12 @@ struct rpcap_sampling
 	uint32 value;	/* Parameter related to the sampling method */
 };
 
-/* Messages field coding */
+/*
+ * Messages field coding.
+ *
+ * These values are used in messages sent over the network, and MUST
+ * not be changed.
+ */
 #define RPCAP_MSG_IS_REPLY		0x080	/* Flag indicating a reply */
 
 #define RPCAP_MSG_ERROR			1	/* Message that keeps an error notification */
@@ -410,7 +421,12 @@ struct rpcap_sampling
 
 #define RPCAP_UPDATEFILTER_BPF 1			/* This code tells us that the filter is encoded with the BPF/NPF syntax */
 
-/* Network error codes */
+/*
+ * Network error codes.
+ *
+ * These values are used in messages sent over the network, and MUST
+ * not be changed.
+ */
 #define PCAP_ERR_NETW		1	/* Network error */
 #define PCAP_ERR_INITTIMEOUT	2	/* The RPCAP initial timeout has expired */
 #define PCAP_ERR_AUTH		3	/* Generic authentication error */
