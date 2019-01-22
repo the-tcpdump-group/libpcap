@@ -1736,6 +1736,14 @@ daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_
 
 	memset(openreply, 0, sizeof(struct rpcap_openreply));
 	openreply->linktype = htonl(pcap_datalink(fp));
+	/*
+	 * This is always 0 for live captures; we no longer support it
+	 * as something we read from capture files and supply to
+	 * clients, but we have to send it over the wire, as open
+	 * replies are expected to have 8 bytes of payload by
+	 * existing clients.
+	 */
+	openreply->tzoff = 0;
 
 	// We're done with the pcap_t.
 	pcap_close(fp);
