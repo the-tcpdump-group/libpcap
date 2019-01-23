@@ -2477,7 +2477,7 @@ filled:
  * done with the filter program.  See the pcap man page.
  */
 struct bpf_insn *
-icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp, 
+icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp,
     char *errbuf)
 {
 	u_int n;

@@ -1301,7 +1301,7 @@ linktype_to_dlt(int linktype)
  * Return the maximum snapshot length for a given DLT_ value.
  *
  * For most link-layer types, we use MAXIMUM_SNAPLEN.
- * 
+ *
  * For DLT_DBUS, the maximum is 134217728, as per
  *
  *    https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-messages

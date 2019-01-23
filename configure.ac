@@ -2292,7 +2292,7 @@ AC_INCLUDES_DEFAULT
 	CFLAGS="$save_CFLAGS"
 	LIBS="$save_LIBS"
 	LDFLAGS="$save_LDFLAGS"
-	
+
 	if test "$ac_cv_dpdk_can_compile" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LDFLAGS"

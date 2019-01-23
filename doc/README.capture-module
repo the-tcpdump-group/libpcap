@@ -6,7 +6,7 @@ incompatible fashion.  If you submit your module to the libpcap
 developers for inclusion in libpcap, not only does that make it more
 likely that it will be available in the libpcap provided by operating
 system vendors (such as Linux distributions), but it also means that we
-will attempt to update it to handle future changes to this interface. 
+will attempt to update it to handle future changes to this interface.
 If we add new capabilities, we may have to ask you how to provide those
 additional capabilities if you're using an underlying mechanism for
 which we have neither the source code nor the documentation.
@@ -143,7 +143,7 @@ your module, and return NULL.
 
 If it *is* one of those devices, it should call pcap_create_common,
 passing to it the error message buffer as the first argument and the
-size of the per-opened instance data structure as the second argument. 
+size of the per-opened instance data structure as the second argument.
 If it fails, it will return NULL; you must return NULL in this case.
 
 If it succeeds, the pcap_t pointed to by the return value has been
@@ -242,7 +242,7 @@ structure:
 
 	cleanup_op
 		called if the activate routine fails or pcap_close() is
-		called 
+		called
 
 and must also set the linktype member to the DLT_ value for the device.
 
@@ -321,7 +321,7 @@ routine's main loop, checking the flag and, if it's set, calling
 pcap_filter(), passing it the fcode.bf_insns member of the pcap_t, the
 raw packet data, the on-the-wire length of the packet, and the captured
 length of the packet, and only passing the packet to the callback
-routine, and counting it, if pcap_filter() returns a non-zero value. 
+routine, and counting it, if pcap_filter() returns a non-zero value.
 (If the flag is not set, all packets should be passed to the callback
 routine and counted, as the filtering is being done by the mechanism
 used by the module.)  If install_bpf_program() returns a negative value,
@@ -341,7 +341,7 @@ install_bpf_program; the module does not need a routine of its own to
 handle that.
 
 The setdirection routine is passed a pointer to the pcap_t and a
-pcap_direction_t indicating which packet directions should be accepted. 
+pcap_direction_t indicating which packet directions should be accepted.
 If the module can't arrange to handle only incoming packets or only
 outgoing packets, it can set the pointer to the setdirection routine to
 NULL, and calls to pcap_setdirection() will fail with an error message

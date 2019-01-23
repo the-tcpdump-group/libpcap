@@ -21,7 +21,7 @@
 .SH NAME
 rpcapd-config \- rpcapd configuration file format
 .SH DESCRIPTION
-An 
+An
 .B rpcapd
 configuration file allows parameters to be set for
 .BR rpcapd (@MAN_ADMIN_COMMANDS@).
