@@ -332,7 +332,6 @@ struct pcap_linux {
 #ifdef HAVE_SYS_EVENTFD_H
 	int poll_breakloop_fd; /* fd to an eventfd to break from blocking operations */
 #endif
-
 };
 
 /*
@@ -505,6 +504,9 @@ static struct sock_filter	total_insn
 static struct sock_fprog	total_fcode
 	= { 1, &total_insn };
 #endif /* SO_ATTACH_FILTER */
+
+static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle,
+    char *ebuf);
 
 pcap_t *
 pcap_create_interface(const char *device, char *ebuf)
@@ -3298,6 +3300,28 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * others?
 		 */
 		if (!is_wifi(sock_fd, device)) {
+			int ret;
+
+			/*
+			 * This is not a Wi-Fi device but it could be
+			 * a DSA master/management network device.
+			 */
+			ret = iface_dsa_get_proto_info(device, handle,
+						       handle->errbuf);
+			if (ret < 0)
+				return;
+
+			if (ret == 1) {
+				/*
+				 * This is a DSA master/management network
+				 * device linktype is already set by
+				 * iface_dsa_get_proto_info() set an
+				 * appropriate offset here.
+				 */
+				handle->offset = 2;
+				break;
+			}
+
 			/*
 			 * It's not a Wi-Fi device; offer DOCSIS.
 			 */
@@ -6899,6 +6923,78 @@ iface_get_offload(pcap_t *handle _U_)
 #endif /* HAVE_PACKET_RING */
 
 #endif /* HAVE_PF_PACKET_SOCKETS */
+
+static struct dsa_proto {
+	const char *name;
+	bpf_u_int32 linktype;
+} dsa_protos[] = {
+	/*
+	 * None is special and indicates that the interface does not have
+	 * any tagging protocol configured, and is therefore a standard
+	 * Ethernet interface.
+	 */
+	{ "none", DLT_EN10MB },
+	{ "brcm", DLT_DSA_TAG_BRCM },
+	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
+};
+
+static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle,
+    char *ebuf)
+{
+	char *pathstr;
+	unsigned int i;
+	char buf[256];
+	ssize_t r;
+	int fd;
+
+	fd = asprintf(&pathstr, "/sys/class/net/%s/dsa/tagging", device);
+	if (fd < 0) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+					  fd, "asprintf");
+		return PCAP_ERROR;
+	}
+
+	fd = open(pathstr, O_RDONLY);
+	free(pathstr);
+	/*
+	 * This is not fatal, kernel >= 4.20 *might* expose this attribute
+	 */
+	if (fd < 0)
+		return 0;
+
+	r = read(fd, buf, sizeof(buf) - 1);
+	close(fd);
+	if (r <= 0) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+					  r, "read");
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * Buffer should be LF terminated.
+	 */
+	if (buf[r - 1] == '\n')
+		r--;
+	buf[r] = '\0';
+
+	for (i = 0; i < sizeof(dsa_protos) / sizeof(dsa_protos[0]); i++) {
+		if (strlen(dsa_protos[i].name) == r &&
+		    !strcmp(buf, dsa_protos[i].name)) {
+			handle->linktype = dsa_protos[i].linktype;
+			switch (dsa_protos[i].linktype) {
+			case DLT_EN10MB:
+				return 0;
+			default:
+				return 1;
+			}
+		}
+	}
+
+	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		      "unsupported DSA tag: %s", buf);
+
+	return PCAP_ERROR;
+}
 
 /* ===== Functions to interface to the older kernels ================== */
 

@@ -3002,6 +3002,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(LINUX_SLL2, "Linux cooked v2"),
 	DLT_CHOICE(OPENVIZSLA, "OpenVizsla USB"),
 	DLT_CHOICE(EBHSCR, "Elektrobit High Speed Capture and Replay (EBHSCR)"),
+	DLT_CHOICE(DSA_TAG_BRCM, "Broadcom tag"),
+	DLT_CHOICE(DSA_TAG_BRCM_PREPEND, "Broadcom tag (prepended)"),
 	DLT_CHOICE_SENTINEL
 };
 
