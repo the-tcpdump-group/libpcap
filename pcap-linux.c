@@ -505,8 +505,7 @@ static struct sock_fprog	total_fcode
 	= { 1, &total_insn };
 #endif /* SO_ATTACH_FILTER */
 
-static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle,
-    char *ebuf);
+static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle);
 
 pcap_t *
 pcap_create_interface(const char *device, char *ebuf)
@@ -3306,8 +3305,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 			 * This is not a Wi-Fi device but it could be
 			 * a DSA master/management network device.
 			 */
-			ret = iface_dsa_get_proto_info(device, handle,
-						       handle->errbuf);
+			ret = iface_dsa_get_proto_info(device, handle);
 			if (ret < 0)
 				return;
 
@@ -6938,8 +6936,8 @@ static struct dsa_proto {
 	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
 };
 
-static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle,
-    char *ebuf)
+static int
+iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 {
 	char *pathstr;
 	unsigned int i;
