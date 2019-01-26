@@ -6961,12 +6961,13 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 		return 0;
 
 	r = read(fd, buf, sizeof(buf) - 1);
-	close(fd);
 	if (r <= 0) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-					  r, "read");
+					  errno, "read");
+		close(fd);
 		return PCAP_ERROR;
 	}
+	close(fd);
 
 	/*
 	 * Buffer should be LF terminated.
