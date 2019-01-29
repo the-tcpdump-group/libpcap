@@ -190,20 +190,23 @@ void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 }
 
 /*
- * \brief It initializes sockets.
+ * \brief This function initializes the socket mechanism if it hasn't
+ * already been initialized or reinitializes it after it has been
+ * cleaned up.
  *
- * This function is pretty useless on UNIX, since socket initialization is not required.
- * However it is required on Win32. In UNIX, this function appears to be completely empty.
+ * On UN*Xes, it doesn't need to do anything; on Windows, it needs to
+ * initialize Winsock.
  *
- * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
- * error message. This buffer has to be at least 'errbuflen' in length.
- * It can be NULL; in this case the error cannot be printed.
+ * \param errbuf: a pointer to an user-allocated buffer that will contain
+ * the complete error message. This buffer has to be at least 'errbuflen'
+ * in length. It can be NULL; in this case no error message is supplied.
  *
- * \param errbuflen: length of the buffer that will contains the error. The error message cannot be
- * larger than 'errbuflen - 1' because the last char is reserved for the string terminator.
+ * \param errbuflen: length of the buffer that will contains the error.
+ * The error message cannot be larger than 'errbuflen - 1' because the
+ * last char is reserved for the string terminator.
  *
- * \return '0' if everything is fine, '-1' if some errors occurred. The error message is returned
- * in the 'errbuf' variable.
+ * \return '0' if everything is fine, '-1' if some errors occurred. The
+ * error message is returned in the buffer pointed to by 'errbuf' variable.
  */
 #ifdef _WIN32
 int sock_init(char *errbuf, int errbuflen)
@@ -225,18 +228,24 @@ int sock_init(char *errbuf, int errbuflen)
 	}
 
 	sockcount++;
+	return 0;
+}
 #else
 int sock_init(char *errbuf _U_, int errbuflen _U_)
 {
-#endif
+	/*
+	 * Nothing to do on UN*Xes.
+	 */
 	return 0;
 }
+#endif
 
 /*
- * \brief It deallocates sockets.
+ * \brief This function cleans up the socket mechanism if we have no
+ * sockets left open.
  *
- * This function is pretty useless on UNIX, since socket deallocation is not required.
- * However it is required on Win32. In UNIX, this function appears to be completely empty.
+ * On UN*Xes, it doesn't need to do anything; on Windows, it needs
+ * to clean up Winsock.
  *
  * \return No error values.
  */
