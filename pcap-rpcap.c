@@ -2062,6 +2062,103 @@ pcap_setnonblock_rpcap(pcap_t *p, int nonblock _U_)
 	return (-1);
 }
 
+static int
+rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
+    int *activep, SOCKET *sockctrlp, uint8 *protocol_versionp,
+    char *host, char *port, char *iface, char *errbuf)
+{
+	int type;
+	struct activehosts *activeconn;		/* active connection, if there is one */
+	int error;				/* 1 if rpcap_remoteact_getsock got an error */
+
+	/*
+	 * Determine the type of the source (NULL, file, local, remote).
+	 * You must have a valid source string even if we're in active mode,
+	 * because otherwise the call to the following function will fail.
+	 */
+	if (pcap_parsesrcstr(source, &type, host, port, iface, errbuf) == -1)
+		return -1;
+
+	/*
+	 * It must be remote.
+	 */
+	if (type != PCAP_SRC_IFREMOTE)
+	{
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Non-remote interface passed to remote capture routine");
+		return -1;
+	}
+
+	/* Warning: this call can be the first one called by the user. */
+	/* For this reason, we have to initialize the WinSock support. */
+	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
+		return -1;
+
+	/* Check for active mode */
+	activeconn = rpcap_remoteact_getsock(host, &error, errbuf);
+	if (activeconn != NULL)
+	{
+		*activep = 1;
+		*sockctrlp = activeconn->sockctrl;
+		*protocol_versionp = activeconn->protocol_version;
+	}
+	else
+	{
+		*activep = 0;
+		struct addrinfo hints;		/* temp variable needed to resolve hostnames into to socket representation */
+		struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
+
+		if (error)
+		{
+			/*
+			 * Call failed.
+			 */
+			return -1;
+		}
+
+		/*
+		 * We're not in active mode; let's try to open a new
+		 * control connection.
+		 */
+		memset(&hints, 0, sizeof(struct addrinfo));
+		hints.ai_family = PF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+
+		if (port[0] == 0)
+		{
+			/* the user chose not to specify the port */
+			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT,
+			    &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
+				return -1;
+		}
+		else
+		{
+			if (sock_initaddress(host, port, &hints, &addrinfo,
+			    errbuf, PCAP_ERRBUF_SIZE) == -1)
+				return -1;
+		}
+
+		if ((*sockctrlp = sock_open(addrinfo, SOCKOPEN_CLIENT, 0,
+		    errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
+		{
+			freeaddrinfo(addrinfo);
+			return -1;
+		}
+
+		/* addrinfo is no longer used */
+		freeaddrinfo(addrinfo);
+		addrinfo = NULL;
+
+		if (rpcap_doauth(*sockctrlp, protocol_versionp, auth,
+		    errbuf) == -1)
+		{
+			sock_close(*sockctrlp, NULL, 0);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 /*
  * This function opens a remote adapter by opening an RPCAP connection and
  * so on.
@@ -2107,15 +2204,12 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	char *source_str;
 	struct pcap_rpcap *pr;		/* structure used when doing a remote live capture */
 	char host[PCAP_BUF_SIZE], ctrlport[PCAP_BUF_SIZE], iface[PCAP_BUF_SIZE];
-	struct activehosts *activeconn;		/* active connection, if there is one */
-	int error;				/* '1' if rpcap_remoteact_getsock returned an error */
 	SOCKET sockctrl;
 	uint8 protocol_version;			/* negotiated protocol version */
 	int active;
 	uint32 plen;
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
-	int retval;				/* store the return value of the functions */
 
 	/* RPCAP-related variables */
 	struct rpcap_header header;		/* header of the RPCAP packet */
@@ -2154,98 +2248,14 @@ pcap_t *pcap_open_rpcap(const char *source, int snaplen, int flags, int read_tim
 	pr->rmt_flags = flags;
 
 	/*
-	 * determine the type of the source (NULL, file, local, remote)
-	 * You must have a valid source string even if we're in active mode, because otherwise
-	 * the call to the following function will fail.
+	 * Attempt to set up the session with the server.
 	 */
-	if (pcap_parsesrcstr(fp->opt.device, &retval, host, ctrlport, iface, errbuf) == -1)
+	if (rpcap_setup_session(fp->opt.device, auth, &active, &sockctrl,
+	    &protocol_version, host, ctrlport, iface, errbuf) == -1)
 	{
+		/* Session setup failed. */
 		pcap_close(fp);
 		return NULL;
-	}
-
-	if (retval != PCAP_SRC_IFREMOTE)
-	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "This function is able to open only remote interfaces");
-		pcap_close(fp);
-		return NULL;
-	}
-
-	/*
-	 * Warning: this call can be the first one called by the user.
-	 * For this reason, we have to initialize the WinSock support.
-	 */
-	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
-	{
-		pcap_close(fp);
-		return NULL;
-	}
-
-	/* Check for active mode */
-	activeconn = rpcap_remoteact_getsock(host, &error, errbuf);
-	if (activeconn != NULL)
-	{
-		sockctrl = activeconn->sockctrl;
-		protocol_version = activeconn->protocol_version;
-		active = 1;
-	}
-	else
-	{
-		struct addrinfo hints;			/* temp, needed to open a socket connection */
-		struct addrinfo *addrinfo;		/* temp, needed to open a socket connection */
-
-		if (error)
-		{
-			/*
-			 * Call failed.
-			 */
-			pcap_close(fp);
-			return NULL;
-		}
-
-		/*
-		 * We're not in active mode; let's try to open a new
-		 * control connection.
-		 */
-		memset(&hints, 0, sizeof(struct addrinfo));
-		hints.ai_family = PF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-
-		if (ctrlport[0] == 0)
-		{
-			/* the user chose not to specify the port */
-			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-			{
-				pcap_close(fp);
-				return NULL;
-			}
-		}
-		else
-		{
-			if (sock_initaddress(host, ctrlport, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-			{
-				pcap_close(fp);
-				return NULL;
-			}
-		}
-
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
-		{
-			freeaddrinfo(addrinfo);
-			pcap_close(fp);
-			return NULL;
-		}
-
-		/* addrinfo is no longer used */
-		freeaddrinfo(addrinfo);
-
-		if (rpcap_doauth(sockctrl, &protocol_version, auth, errbuf) == -1)
-		{
-			sock_close(sockctrl, NULL, 0);
-			pcap_close(fp);
-			return NULL;
-		}
-		active = 0;
 	}
 
 	/*
@@ -2345,8 +2355,6 @@ freeaddr(struct pcap_addr *addr)
 int
 pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_if_t **alldevs, char *errbuf)
 {
-	struct activehosts *activeconn;	/* active connection, if there is one */
-	int error;			/* '1' if rpcap_remoteact_getsock returned an error */
 	uint8 protocol_version;		/* protocol version */
 	SOCKET sockctrl;		/* socket descriptor of the control connection */
 	uint32 plen;
@@ -2354,7 +2362,6 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 	int i, j;		/* temp variables */
 	int nif;		/* Number of interfaces listed */
 	int active;			/* 'true' if we the other end-party is in active mode */
-	int type;
 	char host[PCAP_BUF_SIZE], port[PCAP_BUF_SIZE];
 	char tmpstring[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
 	pcap_if_t *lastdev;	/* Last device in the pcap_if_t list */
@@ -2364,72 +2371,14 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 	(*alldevs) = NULL;
 	lastdev = NULL;
 
-	/* Retrieve the needed data for getting adapter list */
-	if (pcap_parsesrcstr(source, &type, host, port, NULL, errbuf) == -1)
-		return -1;
-
-	/* Warning: this call can be the first one called by the user. */
-	/* For this reason, we have to initialize the WinSock support. */
-	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
-		return -1;
-
-	/* Check for active mode */
-	activeconn = rpcap_remoteact_getsock(host, &error, errbuf);
-	if (activeconn != NULL)
+	/*
+	 * Attempt to set up the session with the server.
+	 */
+	if (rpcap_setup_session(source, auth, &active, &sockctrl,
+	    &protocol_version, host, port, NULL, errbuf) == -1)
 	{
-		sockctrl = activeconn->sockctrl;
-		protocol_version = activeconn->protocol_version;
-		active = 1;
-	}
-	else
-	{
-		struct addrinfo hints;		/* temp variable needed to resolve hostnames into to socket representation */
-		struct addrinfo *addrinfo;	/* temp variable needed to resolve hostnames into to socket representation */
-
-		if (error)
-		{
-			/*
-			 * Call failed.
-			 */
-			return -1;
-		}
-
-		/*
-		 * We're not in active mode; let's try to open a new
-		 * control connection.
-		 */
-		memset(&hints, 0, sizeof(struct addrinfo));
-		hints.ai_family = PF_UNSPEC;
-		hints.ai_socktype = SOCK_STREAM;
-
-		if (port[0] == 0)
-		{
-			/* the user chose not to specify the port */
-			if (sock_initaddress(host, RPCAP_DEFAULT_NETPORT, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-		}
-		else
-		{
-			if (sock_initaddress(host, port, &hints, &addrinfo, errbuf, PCAP_ERRBUF_SIZE) == -1)
-				return -1;
-		}
-
-		if ((sockctrl = sock_open(addrinfo, SOCKOPEN_CLIENT, 0, errbuf, PCAP_ERRBUF_SIZE)) == INVALID_SOCKET)
-		{
-			freeaddrinfo(addrinfo);
-			return -1;
-		}
-
-		/* addrinfo is no longer used */
-		freeaddrinfo(addrinfo);
-		addrinfo = NULL;
-
-		if (rpcap_doauth(sockctrl, &protocol_version, auth, errbuf) == -1)
-		{
-			sock_close(sockctrl, NULL, 0);
-			return -1;
-		}
-		active = 0;
+		/* Session setup failed. */
+		return -1;
 	}
 
 	/* RPCAP findalldevs command */
