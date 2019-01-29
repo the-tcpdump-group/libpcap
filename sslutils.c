@@ -159,6 +159,25 @@ SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
 	return ssl;
 }
 
+// Finish using an SSL handle; shut down the connection and free the
+// handle.
+void ssl_finish(SSL *ssl)
+{
+	//
+	// We won't be using this again, so we can just send the
+	// shutdown alert and free up the handle, and have our
+	// caller close the socket.
+	//
+	// XXX - presumably, if the connection is shut down on
+	// our side, either our peer won't have a problem sending
+	// their shutdown alert or will not treat such a problem
+	// as an error.  If this causes errors to be reported,
+	// fix that as appropriate.
+	//
+	SSL_shutdown(ssl);
+	SSL_free(ssl);
+}
+
 // Same return value as sock_send:
 // 0 on OK, -1 on error but closed connection (-2).
 int ssl_send(SSL *ssl, char const *buffer, int size, char *errbuf, size_t errbuflen)

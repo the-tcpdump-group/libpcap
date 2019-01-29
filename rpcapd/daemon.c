@@ -1103,13 +1103,15 @@ end:
 	}
 
 	//
-	// Free the SSL handle for the control socket, if we have one,
-	// and close the control socket.
+	// Finish using the SSL handle for the control socket, if we
+	// have an SSL connection, and close the control socket.
 	//
 #ifdef HAVE_OPENSSL
 	if (ssl)
 	{
-		SSL_free(ssl);
+		// Finish using the SSL handle for the socket.
+		// This must be done *before* the socket is closed.
+		ssl_finish(ssl);
 	}
 #endif
 	sock_close(sockctrl, NULL, 0);
@@ -2844,7 +2846,9 @@ static void session_close(struct session *session)
 #ifdef HAVE_OPENSSL
 	if (session->data_ssl)
 	{
-		SSL_free(session->data_ssl); // Must happen *before* the socket is closed
+		// Finish using the SSL handle for the socket.
+		// This must be done *before* the socket is closed.
+		ssl_finish(session->data_ssl);
 		session->data_ssl = NULL;
 	}
 #endif

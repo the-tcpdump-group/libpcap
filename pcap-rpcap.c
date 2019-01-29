@@ -694,7 +694,9 @@ static int pcap_read_rpcap(pcap_t *p, int cnt, pcap_handler callback, u_char *us
 }
 
 /*
- * This function sends a CLOSE command to the capture server.
+ * This function sends a CLOSE command to the capture server if we're in
+ * passive mode and an ENDCAP command to the capture server if we're in
+ * active mode.
  *
  * It is called when the user calls pcap_close().  It sends a command
  * to our peer that says 'ok, let's stop capturing'.
@@ -766,7 +768,9 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 #ifdef HAVE_OPENSSL
 		if (pr->data_ssl)
 		{
-			SSL_free(pr->data_ssl); // Has to be done before the socket is closed
+			// Finish using the SSL handle for the data socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(pr->data_ssl);
 			pr->data_ssl = NULL;
 		}
 #endif
@@ -779,7 +783,9 @@ static void pcap_cleanup_rpcap(pcap_t *fp)
 #ifdef HAVE_OPENSSL
 		if (pr->ctrl_ssl)
 		{
-			SSL_free(pr->ctrl_ssl);
+			// Finish using the SSL handle for the control socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(pr->ctrl_ssl);
 			pr->ctrl_ssl = NULL;
 		}
 #endif
@@ -1426,7 +1432,9 @@ error_nodiscard:
 #ifdef HAVE_OPENSSL
 	if (pr->data_ssl)
 	{
-		SSL_free(pr->data_ssl);  // Have to be done before the socket is closed
+		// Finish using the SSL handle for the data socket.
+		// This must be done *before* the socket is closed.
+		ssl_finish(pr->data_ssl);
 		pr->data_ssl = NULL;
 	}
 #endif
@@ -1439,7 +1447,9 @@ error_nodiscard:
 #ifdef HAVE_OPENSSL
 		if (pr->ctrl_ssl)
 		{
-			SSL_free(pr->ctrl_ssl);
+			// Finish using the SSL handle for the control socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(pr->ctrl_ssl);
 			pr->ctrl_ssl = NULL;
 		}
 #endif
@@ -2414,7 +2424,12 @@ error_nodiscard:
 	if (!active)
 	{
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl);  // Have to be done before the socket is closed
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		sock_close(sockctrl, NULL, 0);
 	}
@@ -2543,7 +2558,13 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 		if (rpcap_doauth(sockctrl, ssl, &protocol_version, auth, errbuf) == -1)
 		{
 #ifdef HAVE_OPENSSL
-			if (ssl) SSL_free(ssl); // Must be done before the socket is closed
+			if (ssl)
+			{
+				// Finish using the SSL handle for the socket.
+				// This must be done *before* the socket is
+				// closed.
+				ssl_finish(ssl);
+			}
 #endif
 			sock_close(sockctrl, NULL, 0);
 			return -1;
@@ -2776,7 +2797,12 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 	{
 		/* DO not send RPCAP_CLOSE, since we did not open a pcap_t; no need to free resources */
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl); // Has to be done before the socket is closed
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		if (sock_close(sockctrl, errbuf, PCAP_ERRBUF_SIZE))
 			return -1;
@@ -2808,7 +2834,12 @@ error_nodiscard:
 	if (!active)
 	{
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl); // Has to be done before the socket is closed
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		sock_close(sockctrl, NULL, 0);
 	}
@@ -2918,7 +2949,12 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 		sock_geterror("getnameinfo(): ", errbuf, PCAP_ERRBUF_SIZE);
 		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl);
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		sock_close(sockctrl, NULL, 0);
 		return (SOCKET)-1;
@@ -2929,7 +2965,12 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	{
 		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl);
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		sock_close(sockctrl, NULL, 0);
 		return (SOCKET)-1;
@@ -2943,7 +2984,12 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 		/* Unrecoverable error. */
 		rpcap_senderror(sockctrl, ssl, 0, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl);
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		sock_close(sockctrl, NULL, 0);
 		return (SOCKET)-3;
@@ -2983,7 +3029,12 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 		    errno, "malloc() failed");
 		rpcap_senderror(sockctrl, ssl, protocol_version, PCAP_ERR_REMOTEACCEPT, errbuf, NULL);
 #ifdef HAVE_OPENSSL
-		if (ssl) SSL_free(ssl);
+		if (ssl)
+		{
+			// Finish using the SSL handle for the socket.
+			// This must be done *before* the socket is closed.
+			ssl_finish(ssl);
+		}
 #endif
 		sock_close(sockctrl, NULL, 0);
 		return (SOCKET)-1;
@@ -3053,7 +3104,14 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 					 * report.
 					 */
 #ifdef HAVE_OPENSSL
-					if (temp->ssl) SSL_free(temp->ssl);
+					if (temp->ssl)
+					{
+						// Finish using the SSL handle
+						// for the socket.
+						// This must be done *before*
+						// the socket is closed.
+						ssl_finish(temp->ssl);
+					}
 #endif
 					(void)sock_close(temp->sockctrl, NULL,
 					   0);
@@ -3062,7 +3120,14 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 				else
 				{
 #ifdef HAVE_OPENSSL
-					if (temp->ssl) SSL_free(temp->ssl);
+					if (temp->ssl)
+					{
+						// Finish using the SSL handle
+						// for the socket.
+						// This must be done *before*
+						// the socket is closed.
+						ssl_finish(temp->ssl);
+					}
 #endif
 					if (sock_close(temp->sockctrl, errbuf,
 					   PCAP_ERRBUF_SIZE) == -1)
@@ -3106,6 +3171,16 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 
 void pcap_remoteact_cleanup(void)
 {
+#	ifdef HAVE_OPENSSL
+	if (ssl_main)
+	{
+		// Finish using the SSL handle for the main active socket.
+		// This must be done *before* the socket is closed.
+		ssl_finish(ssl_main);
+		ssl_main = NULL;
+	}
+#	endif
+
 	/* Very dirty, but it works */
 	if (sockmain)
 	{
@@ -3114,14 +3189,6 @@ void pcap_remoteact_cleanup(void)
 		/* To avoid inconsistencies in the number of sock_init() */
 		sock_cleanup();
 	}
-
-#	ifdef HAVE_OPENSSL
-	if (ssl_main)
-	{
-		SSL_free(ssl_main);
-		ssl_main = NULL;
-	}
-#	endif
 }
 
 int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
