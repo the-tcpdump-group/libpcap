@@ -64,9 +64,27 @@
 #include "daemon.h"
 #include "log.h"
 
-#define RPCAP_TIMEOUT_INIT 90		/* Initial timeout for RPCAP connections (default: 90 sec) */
-#define RPCAP_TIMEOUT_RUNTIME 180	/* Run-time timeout for RPCAP connections (default: 3 min) */
-#define RPCAP_SUSPEND_WRONGAUTH 1	/* If the authentication is wrong, stops 1 sec before accepting a new auth message */
+//
+// Timeout, in seconds, when we're waiting for a client to send us an
+// authentication request; if they don't send us a request within that
+// interval, we drop the connection, so we don't stay stuck forever.
+//
+#define RPCAP_TIMEOUT_INIT 90
+
+//
+// Timeout, in seconds, when we're waiting for an authenticated client
+// to send us a request, if a capture isn't in progress; if they don't
+// send us a request within that interval, we drop the connection, so
+// we don't stay stuck forever.
+//
+#define RPCAP_TIMEOUT_RUNTIME 180
+
+//
+// Time, in seconds, that we wait after a failed authentication attempt
+// before processing the next request; this prevents a client from
+// rapidly trying different accounts or passwords.
+//
+#define RPCAP_SUSPEND_WRONGAUTH 1
 
 // Parameters for the service loop.
 struct daemon_slpars
@@ -253,10 +271,11 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	while (!authenticated)
 	{
 		//
-		// If we're in active mode, we have to check for the
-		// initial timeout.
-		//
-		// XXX - do this on *every* trip through the loop?
+		// If we're not in active mode, we use select(), with a
+		// timeout, to wait for an authentication request; if
+		// the timeout expires, we drop the connection, so that
+		// a client can't just connect to us and leave us
+		// waiting forever.
 		//
 		if (!pars.isactive)
 		{
