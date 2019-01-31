@@ -97,7 +97,6 @@ struct daemon_slpars
 {
 	SOCKET sockctrl;	//!< SOCKET ID of the control connection
 	SSL *ssl;		//!< Optional SSL handler for the controlling sockets
-	uint8 protocol_version;	//!< negotiated protocol version
 	int isactive;		//!< Not null if the daemon has to run in active mode
 	int nullAuthAllowed;	//!< '1' if we permit NULL authentication, '0' otherwise
 };
@@ -130,18 +129,27 @@ static int daemon_msg_err(SOCKET sockctrl, SSL *, uint32 plen);
 static int daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen);
 static int daemon_AuthUserPwd(char *username, char *password, char *errbuf);
 
-static int daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen);
+static int daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars,
+    uint32 plen);
 
-static int daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen);
-static int daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, char *source, struct session **sessionp, struct rpcap_sampling *samp_param, int uses_ssl);
-static int daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session);
+static int daemon_msg_open_req(uint8 ver, struct daemon_slpars *pars,
+    uint32 plen, char *source, size_t sourcelen);
+static int daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars,
+    uint32 plen, char *source, struct session **sessionp,
+    struct rpcap_sampling *samp_param, int uses_ssl);
+static int daemon_msg_endcap_req(uint8 ver, struct daemon_slpars *pars,
+    struct session *session);
 
-static int daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen);
+static int daemon_msg_updatefilter_req(uint8 ver, struct daemon_slpars *pars,
+    struct session *session, uint32 plen);
 static int daemon_unpackapplyfilter(SOCKET sockctrl, SSL *, struct session *session, uint32 *plenp, char *errbuf);
 
-static int daemon_msg_stats_req(struct daemon_slpars *pars, struct session *session, uint32 plen, struct pcap_stat *stats, unsigned int svrcapt);
+static int daemon_msg_stats_req(uint8 ver, struct daemon_slpars *pars,
+    struct session *session, uint32 plen, struct pcap_stat *stats,
+    unsigned int svrcapt);
 
-static int daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap_sampling *samp_param);
+static int daemon_msg_setsampling_req(uint8 ver, struct daemon_slpars *pars,
+    uint32 plen, struct rpcap_sampling *samp_param);
 
 static void daemon_seraddr(struct sockaddr_storage *sockaddrin, struct rpcap_sockaddr *sockaddrout);
 #ifdef _WIN32
@@ -232,11 +240,12 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	// a TLS handshake message or a non-TLS rpcapd message.
 	//
 	// The first byte of an rpcapd request is the version number;
-	// the first byte of a TLS handshake message is 22.  We
-	// permanently reserve an rpcapd version number of 22, so that
-	// we can distinguish between rpcapd messages and TLS handshake
-	// messages; if we ever get to rpcapd version 21, and want to
-	// introduce a new version after that, we'll jump to version 23.
+	// the first byte of a TLS handshake message is 22.  The
+	// first request to an rpcapd server must be an authentication
+	// request or a close request, and must have a version number
+	// of 0, so it will be possible to distinguish between an
+	// initial plaintext request to a server and an initial TLS
+	// handshake message.
 	//
 	nrecv = sock_recv(sockctrl, NULL, (char *)&first_octet, 1,
 	    SOCK_EOF_ISNT_ERROR|SOCK_MSG_PEEK, errbuf, PCAP_ERRBUF_SIZE);
@@ -397,7 +406,6 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 	// Set parameters structure
 	pars.sockctrl = sockctrl;
 	pars.ssl = ssl;
-	pars.protocol_version = 0;		// not yet known
 	pars.isactive = isactive;		// active mode
 	pars.nullAuthAllowed = nullAuthAllowed;
 
@@ -536,49 +544,17 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		plen = header.plen;
 
 		//
-		// Did the client specify a version we can handle?
+		// While we're in the authentication pharse, all requests
+		// must use version 0.
 		//
-		if (!RPCAP_VERSION_IS_SUPPORTED(header.ver))
+		if (header.ver != 0)
 		{
 			//
-			// Tell them it's not a valid protocol version.
+			// Send it back to them with their version.
 			//
-			uint8 reply_version;
-
-			//
-			// If RPCAP_MIN_VERSION is 0, no version is too
-			// old, as the oldest supported version is 0,
-			// and there are no negative versions.
-			//
-#if RPCAP_MIN_VERSION != 0
-			if (header.ver < RPCAP_MIN_VERSION)
-			{
-				//
-				// Their maximum version is too old;
-				// there *is* no version we can both
-				// handle, and they might reject
-				// an error with a version they don't
-				// understand, so reply with the
-				// version they sent.  That may
-				// make them retry with that version,
-				// but they'll give up on that
-				// failure.
-				//
-				reply_version = header.ver;
-			}
-			else
-#endif
-			{
-				//
-				// Their maximum version is too new,
-				// but they might be able to handle
-				// *our* maximum version, so reply
-				// with that version.
-				//
-				reply_version = RPCAP_MAX_VERSION;
-			}
-			if (rpcap_senderror(pars.sockctrl, pars.ssl, reply_version,
-			    PCAP_ERR_WRONGVER, "RPCAP version number mismatch",
+			if (rpcap_senderror(pars.sockctrl, pars.ssl, header.ver,
+			    PCAP_ERR_WRONGVER,
+			    "RPCAP version in requests in the authentication phase must be 0",
 			    errbuf) == -1)
 			{
 				// That failed; log a message and give up.
@@ -586,21 +562,11 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				goto end;
 			}
 
-			// Discard the rest of the message.
-			if (rpcapd_discard(pars.sockctrl, pars.ssl, plen) == -1)
-			{
-				// Network error.
-				goto end;
-			}
-
-			// Let them try again.
-			continue;
+			// Discard the rest of the message and drop the
+			// connection.
+			(void)rpcapd_discard(pars.sockctrl, pars.ssl, plen);
+			goto end;
 		}
-
-		//
-		// OK, we use the version the client specified.
-		//
-		pars.protocol_version = header.ver;
 
 		switch (header.type)
 		{
@@ -667,7 +633,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message of type %u sent before authentication was completed", header.type);
 				}
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version, PCAP_ERR_WRONGMSG,
+				    header.ver, PCAP_ERR_WRONGMSG,
 				    errmsgbuf, errbuf) == -1)
 				{
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -703,7 +669,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message of type %u received from client", header.type);
 				}
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version, PCAP_ERR_WRONGMSG,
+				    header.ver, PCAP_ERR_WRONGMSG,
 				    errmsgbuf, errbuf) == -1)
 				{
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -723,7 +689,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				//
 				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version, PCAP_ERR_WRONGMSG,
+				    header.ver, PCAP_ERR_WRONGMSG,
 				    errmsgbuf, errbuf) == -1)
 				{
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -783,7 +749,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			{
 				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version, PCAP_ERR_NETW,
+				    header.ver, PCAP_ERR_NETW,
 				    errmsgbuf, errbuf) == -1)
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
@@ -794,7 +760,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			if (retval == 0)
 			{
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version,
+				    header.ver,
 				    PCAP_ERR_INITTIMEOUT,
 				    "The RPCAP initial timeout has expired",
 				    errbuf) == -1)
@@ -821,21 +787,20 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		plen = header.plen;
 
 		//
-		// Did the client specify the version we negotiated?
+		// Did the client specify a protocol version that we
+		// support?
 		//
-		// For now, there's only one version.
-		//
-		if (header.ver != pars.protocol_version)
+		if (!RPCAP_VERSION_IS_SUPPORTED(header.ver))
 		{
 			//
-			// Tell them it's not the negotiated version.
+			// Tell them it's not a supported version.
 			// Send the error message with their version,
 			// so they don't reject it as having the wrong
 			// version.
 			//
 			if (rpcap_senderror(pars.sockctrl, pars.ssl,
 			    header.ver, PCAP_ERR_WRONGVER,
-			    "RPCAP version in message isn't the negotiated version",
+			    "RPCAP version in message isn't supported by the server",
 			    errbuf) == -1)
 			{
 				// That failed; log a message and give up.
@@ -861,7 +826,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 
 			case RPCAP_MSG_FINDALLIF_REQ:
 			{
-				if (daemon_msg_findallif_req(&pars, plen) == -1)
+				if (daemon_msg_findallif_req(header.ver, &pars, plen) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -881,7 +846,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				// us multiple open requests, the last
 				// one wins.
 				//
-				retval = daemon_msg_open_req(&pars, plen, source, sizeof(source));
+				retval = daemon_msg_open_req(header.ver, &pars,
+				    plen, source, sizeof(source));
 				if (retval == -1)
 				{
 					// Fatal error; a message has
@@ -899,7 +865,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 					// They never told us what device
 					// to capture on!
 					if (rpcap_senderror(pars.sockctrl, pars.ssl,
-					    pars.protocol_version,
+					    header.ver,
 					    PCAP_ERR_STARTCAPTURE,
 					    "No capture device was specified",
 					    errbuf) == -1)
@@ -916,7 +882,9 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 					break;
 				}
 
-				if (daemon_msg_startcap_req(&pars, plen, source, &session, &samp_param, uses_ssl) == -1)
+				if (daemon_msg_startcap_req(header.ver, &pars,
+				    plen, source, &session, &samp_param,
+				    uses_ssl) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -929,7 +897,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			{
 				if (session)
 				{
-					if (daemon_msg_updatefilter_req(&pars, session, plen) == -1)
+					if (daemon_msg_updatefilter_req(header.ver,
+					    &pars, session, plen) == -1)
 					{
 						// Fatal error; a message has
 						// been logged, so just give up.
@@ -939,7 +908,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				else
 				{
 					if (rpcap_senderror(pars.sockctrl, pars.ssl,
-					    pars.protocol_version,
+					    header.ver,
 					    PCAP_ERR_UPDATEFILTER,
 					    "Device not opened. Cannot update filter",
 					    errbuf) == -1)
@@ -966,7 +935,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 
 			case RPCAP_MSG_STATS_REQ:
 			{
-				if (daemon_msg_stats_req(&pars, session, plen, &stats, svrcapt) == -1)
+				if (daemon_msg_stats_req(header.ver, &pars,
+				    session, plen, &stats, svrcapt) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -992,7 +962,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 						svrcapt = 0;
 					}
 
-					if (daemon_msg_endcap_req(&pars, session) == -1)
+					if (daemon_msg_endcap_req(header.ver,
+					    &pars, session) == -1)
 					{
 						free(session);
 						session = NULL;
@@ -1006,7 +977,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				else
 				{
 					rpcap_senderror(pars.sockctrl, pars.ssl,
-					    pars.protocol_version,
+					    header.ver,
 					    PCAP_ERR_ENDCAPTURE,
 					    "Device not opened. Cannot close the capture",
 					    errbuf);
@@ -1016,7 +987,8 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 
 			case RPCAP_MSG_SETSAMPLING_REQ:
 			{
-				if (daemon_msg_setsampling_req(&pars, plen, &samp_param) == -1)
+				if (daemon_msg_setsampling_req(header.ver,
+				    &pars, plen, &samp_param) == -1)
 				{
 					// Fatal error; a message has
 					// been logged, so just give up.
@@ -1033,7 +1005,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				//
 				rpcapd_log(LOGPRIO_INFO, "The client sent an RPCAP_MSG_AUTH_REQ message after authentication was completed");
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version,
+				    header.ver,
 				    PCAP_ERR_WRONGMSG,
 				    "RPCAP_MSG_AUTH_REQ request sent after authentication was completed",
 				    errbuf) == -1)
@@ -1073,7 +1045,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message of type %u received from client", header.type);
 				}
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version, PCAP_ERR_WRONGMSG,
+				    header.ver, PCAP_ERR_WRONGMSG,
 				    errmsgbuf, errbuf) == -1)
 				{
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1094,7 +1066,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				rpcapd_log(LOGPRIO_INFO, "The client sent a message of type %u", header.type);
 				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
-				    pars.protocol_version, PCAP_ERR_WRONGMSG,
+				    header.ver, PCAP_ERR_WRONGMSG,
 				    errbuf, errmsgbuf) == -1)
 				{
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1228,9 +1200,11 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
-	struct rpcap_header header;		// RPCAP message general header
 	int status;
 	struct rpcap_auth auth;			// RPCAP authentication header
+	char sendbuf[RPCAP_NETBUF_SIZE];	// temporary buffer in which data to be sent is buffered
+	int sendbufidx = 0;			// index which keeps the number of bytes currently buffered
+	struct rpcap_authreply *authreply;	// authentication reply message
 
 	status = rpcapd_recv(pars->sockctrl, pars->ssl, (char *) &auth, sizeof(struct rpcap_auth), &plen, errmsgbuf);
 	if (status == -1)
@@ -1314,8 +1288,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 				free(username);
 				free(passwd);
 				if (rpcap_senderror(pars->sockctrl, pars->ssl,
-				    pars->protocol_version,
-				    PCAP_ERR_AUTH, errmsgbuf, errbuf) == -1)
+				    0, PCAP_ERR_AUTH, errmsgbuf, errbuf) == -1)
 				{
 					// That failed; log a message and give up.
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1347,10 +1320,28 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 	}
 
 	// The authentication succeeded; let the client know.
-	rpcap_createhdr(&header, pars->protocol_version, RPCAP_MSG_AUTH_REPLY, 0, 0);
+	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL, &sendbufidx,
+	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+		goto error;
 
-	// Send the ok message back
-	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
+	rpcap_createhdr((struct rpcap_header *) sendbuf, 0,
+	    RPCAP_MSG_AUTH_REPLY, 0, sizeof(struct rpcap_authreply));
+
+	authreply = (struct rpcap_authreply *) &sendbuf[sendbufidx];
+
+	if (sock_bufferize(NULL, sizeof(struct rpcap_authreply), NULL, &sendbufidx,
+	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
+		goto error;
+
+	//
+	// Indicate to our peer what versions we support.
+	//
+	memset(authreply, 0, sizeof(struct rpcap_authreply));
+	authreply->minvers = RPCAP_MIN_VERSION;
+	authreply->maxvers = RPCAP_MAX_VERSION;
+
+	// Send the reply.
+	if (sock_send(pars->sockctrl, pars->ssl, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
 		// That failed; log a messsage and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1366,8 +1357,8 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 	return 0;
 
 error:
-	if (rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
-	    PCAP_ERR_AUTH, errmsgbuf, errbuf) == -1)
+	if (rpcap_senderror(pars->sockctrl, pars->ssl, 0, PCAP_ERR_AUTH,
+	    errmsgbuf, errbuf) == -1)
 	{
 		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1498,7 +1489,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 }
 
 static int
-daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen)
+daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1523,7 +1514,7 @@ daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen)
 
 	if (alldevs == NULL)
 	{
-		if (rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
+		if (rpcap_senderror(pars->sockctrl, pars->ssl, ver,
 			PCAP_ERR_NOREMOTEIF,
 			"No interfaces found! Make sure libpcap/WinPcap is properly installed"
 			" and you have the right to access to the remote device.",
@@ -1573,7 +1564,7 @@ daemon_msg_findallif_req(struct daemon_slpars *pars, uint32 plen)
 	    PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, pars->protocol_version,
+	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
 	    RPCAP_MSG_FINDALLIF_REPLY, nif, plen);
 
 	// send the interface list
@@ -1689,7 +1680,7 @@ error:
 	if (alldevs)
 		pcap_freealldevs(alldevs);
 
-	if (rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
+	if (rpcap_senderror(pars->sockctrl, pars->ssl, ver,
 	    PCAP_ERR_FINDALLIF, errmsgbuf, errbuf) == -1)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1703,7 +1694,8 @@ error:
 	to discard excess data in the message, if present)
 */
 static int
-daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_t sourcelen)
+daemon_msg_open_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
+    char *source, size_t sourcelen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1746,7 +1738,7 @@ daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_
 	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, pars->protocol_version,
+	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
 	    RPCAP_MSG_OPEN_REPLY, 0, sizeof(struct rpcap_openreply));
 
 	openreply = (struct rpcap_openreply *) &sendbuf[sendbufidx];
@@ -1778,8 +1770,8 @@ daemon_msg_open_req(struct daemon_slpars *pars, uint32 plen, char *source, size_
 	return 0;
 
 error:
-	if (rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
-	    PCAP_ERR_OPEN, errmsgbuf, errbuf) == -1)
+	if (rpcap_senderror(pars->sockctrl, pars->ssl, ver, PCAP_ERR_OPEN,
+	    errmsgbuf, errbuf) == -1)
 	{
 		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1799,7 +1791,9 @@ error:
 	to discard excess data in the message, if present)
 */
 static int
-daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, char *source, struct session **sessionp, struct rpcap_sampling *samp_param _U_, int uses_ssl)
+daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
+    char *source, struct session **sessionp,
+    struct rpcap_sampling *samp_param _U_, int uses_ssl)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -1968,7 +1962,7 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, char *source, s
 	// Needed to send an error on the ctrl connection
 	session->sockctrl = pars->sockctrl;
 	session->ctrl_ssl = pars->ssl;
-	session->protocol_version = pars->protocol_version;
+	session->protocol_version = ver;
 
 	// Now I can set the filter
 	ret = daemon_unpackapplyfilter(pars->sockctrl, pars->ssl, session, &plen, errmsgbuf);
@@ -1988,7 +1982,7 @@ daemon_msg_startcap_req(struct daemon_slpars *pars, uint32 plen, char *source, s
 	    RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, pars->protocol_version,
+	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
 	    RPCAP_MSG_STARTCAP_REPLY, 0, sizeof(struct rpcap_startcapreply));
 
 	startcapreply = (struct rpcap_startcapreply *) &sendbuf[sendbufidx];
@@ -2096,7 +2090,7 @@ error:
 		free(session);
 	}
 
-	if (rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
+	if (rpcap_senderror(pars->sockctrl, pars->ssl, ver,
 	    PCAP_ERR_STARTCAPTURE, errmsgbuf, errbuf) == -1)
 	{
 		// That failed; log a message and give up.
@@ -2130,15 +2124,15 @@ fatal_error:
 }
 
 static int
-daemon_msg_endcap_req(struct daemon_slpars *pars, struct session *session)
+daemon_msg_endcap_req(uint8 ver, struct daemon_slpars *pars,
+    struct session *session)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	struct rpcap_header header;
 
 	session_close(session);
 
-	rpcap_createhdr(&header, pars->protocol_version,
-	    RPCAP_MSG_ENDCAP_REPLY, 0, 0);
+	rpcap_createhdr(&header, ver, RPCAP_MSG_ENDCAP_REPLY, 0, 0);
 
 	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof(struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
@@ -2229,7 +2223,8 @@ daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session
 }
 
 static int
-daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session, uint32 plen)
+daemon_msg_updatefilter_req(uint8 ver, struct daemon_slpars *pars,
+    struct session *session, uint32 plen)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -2256,8 +2251,7 @@ daemon_msg_updatefilter_req(struct daemon_slpars *pars, struct session *session,
 	}
 
 	// A response is needed, otherwise the other host does not know that everything went well
-	rpcap_createhdr(&header, pars->protocol_version,
-	    RPCAP_MSG_UPDATEFILTER_REPLY, 0, 0);
+	rpcap_createhdr(&header, ver, RPCAP_MSG_UPDATEFILTER_REPLY, 0, 0);
 
 	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), pcap_geterr(session->fp), PCAP_ERRBUF_SIZE))
 	{
@@ -2273,8 +2267,8 @@ error:
 	{
 		return -1;
 	}
-	rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
-	    PCAP_ERR_UPDATEFILTER, errmsgbuf, NULL);
+	rpcap_senderror(pars->sockctrl, pars->ssl, ver, PCAP_ERR_UPDATEFILTER,
+	    errmsgbuf, NULL);
 
 	return 0;
 }
@@ -2283,7 +2277,8 @@ error:
 	\brief Received the sampling parameters from remote host and it stores in the pcap_t structure.
 */
 static int
-daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap_sampling *samp_param)
+daemon_msg_setsampling_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
+    struct rpcap_sampling *samp_param)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];
@@ -2306,8 +2301,7 @@ daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap
 	samp_param->value = ntohl(rpcap_samp.value);
 
 	// A response is needed, otherwise the other host does not know that everything went well
-	rpcap_createhdr(&header, pars->protocol_version,
-	    RPCAP_MSG_SETSAMPLING_REPLY, 0, 0);
+	rpcap_createhdr(&header, ver, RPCAP_MSG_SETSAMPLING_REPLY, 0, 0);
 
 	if (sock_send(pars->sockctrl, pars->ssl, (char *) &header, sizeof (struct rpcap_header), errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
@@ -2324,8 +2318,8 @@ daemon_msg_setsampling_req(struct daemon_slpars *pars, uint32 plen, struct rpcap
 	return 0;
 
 error:
-	if (rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
-	    PCAP_ERR_AUTH, errmsgbuf, errbuf) == -1)
+	if (rpcap_senderror(pars->sockctrl, pars->ssl, ver, PCAP_ERR_AUTH,
+	    errmsgbuf, errbuf) == -1)
 	{
 		// That failed; log a message and give up.
 		rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -2342,7 +2336,9 @@ error:
 }
 
 static int
-daemon_msg_stats_req(struct daemon_slpars *pars, struct session *session, uint32 plen, struct pcap_stat *stats, unsigned int svrcapt)
+daemon_msg_stats_req(uint8 ver, struct daemon_slpars *pars,
+    struct session *session, uint32 plen, struct pcap_stat *stats,
+    unsigned int svrcapt)
 {
 	char errbuf[PCAP_ERRBUF_SIZE];		// buffer for network errors
 	char errmsgbuf[PCAP_ERRBUF_SIZE];	// buffer for errors to send to the client
@@ -2361,7 +2357,7 @@ daemon_msg_stats_req(struct daemon_slpars *pars, struct session *session, uint32
 	    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf, PCAP_ERRBUF_SIZE) == -1)
 		goto error;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, pars->protocol_version,
+	rpcap_createhdr((struct rpcap_header *) sendbuf, ver,
 	    RPCAP_MSG_STATS_REPLY, 0, (uint16) sizeof(struct rpcap_stats));
 
 	netstats = (struct rpcap_stats *) &sendbuf[sendbufidx];
@@ -2404,8 +2400,8 @@ daemon_msg_stats_req(struct daemon_slpars *pars, struct session *session, uint32
 	return 0;
 
 error:
-	rpcap_senderror(pars->sockctrl, pars->ssl, pars->protocol_version,
-	    PCAP_ERR_GETSTATS, errmsgbuf, NULL);
+	rpcap_senderror(pars->sockctrl, pars->ssl, ver, PCAP_ERR_GETSTATS,
+	    errmsgbuf, NULL);
 	return 0;
 }
 
