@@ -155,7 +155,6 @@ static void pcap_save_current_filter_rpcap(pcap_t *fp, const char *filter);
 static int pcap_setfilter_rpcap(pcap_t *fp, struct bpf_program *prog);
 static int pcap_setsampling_remote(pcap_t *fp);
 static int pcap_startcapture_remote(pcap_t *fp);
-static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf);
 static int rpcap_recv_msg_header(SOCKET sock, struct rpcap_header *header, char *errbuf);
 static int rpcap_check_msg_ver(SOCKET sock, uint8 expected_ver, struct rpcap_header *header, char *errbuf);
 static int rpcap_check_msg_type(SOCKET sock, uint8 request_type, struct rpcap_header *header, uint16 *errcode, char *errbuf);
@@ -1787,16 +1786,25 @@ static int pcap_setsampling_remote(pcap_t *fp)
 
 /*
  * This function performs authentication and protocol version
- * negotiation.  It first tries to authenticate with the maximum
- * version we support and, if that fails with an "I don't support
- * that version" error from the server, and the version number in
- * the reply from the server is one we support, tries again with
- * that version.
+ * negotiation.  It is required in order to open the connection
+ * with the other end party.
+ *
+ * It sends authentication parameters on the control socket and
+ * reads the reply.  If the reply is a success indication, it
+ * checks whether the reply includes minimum and maximum supported
+ * versions from the server; if not, it assumes both are 0, as
+ * that means it's an older server that doesn't return supported
+ * version numbers in authentication replies, so it only supports
+ * version 0.  It then tries to determine the maximum version
+ * supported both by us and by the server.  If it can find such a
+ * version, it sets us up to use that version; otherwise, it fails,
+ * indicating that there is no version supported by us and by the
+ * server.
  *
  * \param sock: the socket we are currently using.
  *
- * \param ver: pointer to variable holding protocol version number to send
- * and to set to the protocol version number in the reply.
+ * \param ver: pointer to variable to which to set the protocol version
+ * number we selected.
  *
  * \param auth: authentication parameters that have to be sent.
  *
@@ -1810,95 +1818,16 @@ static int pcap_setsampling_remote(pcap_t *fp)
  */
 static int rpcap_doauth(SOCKET sockctrl, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf)
 {
-	int status;
-
-	/*
-	 * Send authentication to the remote machine.
-	 *
-	 * First try with the maximum version number we support.
-	 */
-	*ver = RPCAP_MAX_VERSION;
-	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
-	if (status == 0)
-	{
-		//
-		// Success.
-		//
-		return 0;
-	}
-	if (status == -1)
-	{
-		/* Unrecoverable error. */
-		return -1;
-	}
-
-	/*
-	 * The server doesn't support the version we used in the initial
-	 * message, and it sent us back a reply either with the maximum
-	 * version they do support, or with the version we sent, and we
-	 * support that version.  *ver has been set to that version; try
-	 * authenticating again with that version.
-	 */
-	status = rpcap_sendauth(sockctrl, ver, auth, errbuf);
-	if (status == 0)
-	{
-		//
-		// Success.
-		//
-		return 0;
-	}
-	if (status == -1)
-	{
-		/* Unrecoverable error. */
-		return -1;
-	}
-	if (status == -2)
-	{
-		/*
-		 * The server doesn't support that version, which
-		 * means there is no version we both support, so
-		 * this is a fatal error.
-		 */
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The server doesn't support any protocol version that we support");
-		return -1;
-	}
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "rpcap_sendauth() returned %d", status);
-	return -1;
-}
-
-/*
- * This function sends the authentication message.
- *
- * It sends the authentication parameters on the control socket.
- * It is required in order to open the connection with the other end party.
- *
- * \param sock: the socket we are currently using.
- *
- * \param ver: pointer to variable holding protocol version number to send
- * and to set to the protocol version number in the reply.
- *
- * \param auth: authentication parameters that have to be sent.
- *
- * \param errbuf: a pointer to a user-allocated buffer (of size
- * PCAP_ERRBUF_SIZE) that will contain the error message (in case there
- * is one). It could be a network problem or the fact that the authorization
- * failed.
- *
- * \return '0' if everything is fine, '-2' if the server didn't reply with
- * the protocol version we requested but replied with a version we do
- * support, or '-1' for other errors.  For errors, an error message string
- * is returned in the 'errbuf' variable.
- */
-static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, char *errbuf)
-{
 	char sendbuf[RPCAP_NETBUF_SIZE];	/* temporary buffer in which data that has to be sent is buffered */
 	int sendbufidx = 0;			/* index which keeps the number of bytes currently buffered */
 	uint16 length;				/* length of the payload of this message */
-	uint16 errcode;
 	struct rpcap_auth *rpauth;
 	uint16 auth_type;
 	struct rpcap_header header;
 	size_t str_length;
+	uint32 plen;
+	struct rpcap_authreply authreply;	/* authentication reply message */
+	uint8 ourvers;
 
 	if (auth)
 	{
@@ -1945,12 +1874,11 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 		length = sizeof(struct rpcap_auth);
 	}
 
-
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
 		&sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errbuf, PCAP_ERRBUF_SIZE))
 		return -1;
 
-	rpcap_createhdr((struct rpcap_header *) sendbuf, *ver,
+	rpcap_createhdr((struct rpcap_header *) sendbuf, 0,
 	    RPCAP_MSG_AUTH_REQ, 0, length);
 
 	rpauth = (struct rpcap_auth *) &sendbuf[sendbufidx];
@@ -1987,62 +1915,102 @@ static int rpcap_sendauth(SOCKET sock, uint8 *ver, struct pcap_rmtauth *auth, ch
 		rpauth->slen2 = htons(rpauth->slen2);
 	}
 
-	if (sock_send(sock, sendbuf, sendbufidx, errbuf, PCAP_ERRBUF_SIZE) < 0)
+	if (sock_send(sockctrl, sendbuf, sendbufidx, errbuf,
+	    PCAP_ERRBUF_SIZE) < 0)
 		return -1;
 
-	/* Receive the reply */
-	if (rpcap_recv_msg_header(sock, &header, errbuf) == -1)
+	/* Receive and process the reply message header */
+	if (rpcap_process_msg_header(sockctrl, 0, RPCAP_MSG_AUTH_REQ,
+	    &header, errbuf) == -1)
 		return -1;
 
-	if (rpcap_check_msg_type(sock, RPCAP_MSG_AUTH_REQ, &header,
-	    &errcode, errbuf) == -1)
+	/*
+	 * OK, it's an authentication reply, so we're logged in.
+	 *
+	 * Did it send any additional information?
+	 */
+	plen = header.plen;
+	if (plen != 0)
 	{
-		/* Error message - or something else, which is a protocol error. */
-		if (header.type == RPCAP_MSG_ERROR &&
-		    errcode == PCAP_ERR_WRONGVER)
+		/* Yes - is it big enough to be version information? */
+		if (plen < sizeof(struct rpcap_authreply))
 		{
-			/*
-			 * The server didn't support the version we sent,
-			 * and replied with the maximum version it supports
-			 * if our version was too big or with the version
-			 * we sent if out version was too small.
-			 *
-			 * Do we also support it?
-			 */
-			if (!RPCAP_VERSION_IS_SUPPORTED(header.ver))
-			{
-				/*
-				 * No, so there's no version we both support.
-				 * This is an unrecoverable error.
-				 */
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The server doesn't support any protocol version that we support");
-				return -1;
-			}
-
-			/*
-			 * OK, use that version, and tell our caller to
-			 * try again.
-			 */
-			*ver = header.ver;
-			return -2;
+			/* No - discard it and fail. */
+			(void)rpcap_discard(sockctrl, plen, NULL);
+			return -1;
 		}
 
+		/* Read the reply body */
+		if (rpcap_recv(sockctrl, (char *)&authreply,
+		    sizeof(struct rpcap_authreply), &plen, errbuf) == -1)
+		{
+			(void)rpcap_discard(sockctrl, plen, NULL);
+			return -1;
+		}
+
+		/* Discard the rest of the message, if there is any. */
+		if (rpcap_discard(sockctrl, plen, errbuf) == -1)
+			return -1;
+
 		/*
-		 * Other error - unrecoverable.
+		 * Check the minimum and maximum versions for sanity;
+		 * the minimum must be <= the maximum.
 		 */
-		return -1;
+		if (authreply.minvers > authreply.maxvers)
+		{
+			/*
+			 * Bogus - give up on this server.
+			 */
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "The server's minimum supported protocol version is greater than its maximum supported protocol version");
+			return -1;
+		}
+	}
+	else
+	{
+		/* No - it supports only version 0. */
+		authreply.minvers = 0;
+		authreply.maxvers = 0;
 	}
 
 	/*
-	 * OK, it's an authentication reply, so they're OK with the
-	 * protocol version we sent.
-	 *
-	 * Discard the rest of it.
+	 * OK, let's start with the maximum version the server supports.
 	 */
-	if (rpcap_discard(sock, header.plen, errbuf) == -1)
-		return -1;
+	ourvers = authreply.maxvers;
 
+	/*
+	 * If that's less than the minimum version we support, we
+	 * can't communicate.
+	 */
+	if (ourvers < RPCAP_MIN_VERSION)
+		goto novers;
+
+	/*
+	 * If that's greater than the maximum version we support,
+	 * choose the maximum version we support.
+	 */
+	if (ourvers > RPCAP_MAX_VERSION)
+	{
+		ourvers = RPCAP_MAX_VERSION;
+
+		/*
+		 * If that's less than the minimum version they
+		 * support, we can't communicate.
+		 */
+		if (ourvers < authreply.minvers)
+			goto novers;
+	}
+
+	*ver = ourvers;
 	return 0;
+
+novers:
+	/*
+	 * There is no version we both support; that is a fatal error.
+	 */
+	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	    "The server doesn't support any protocol version that we support");
+	return -1;
 }
 
 /* We don't currently support non-blocking mode. */
