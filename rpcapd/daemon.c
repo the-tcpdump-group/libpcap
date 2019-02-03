@@ -1387,6 +1387,15 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	 * policies, user right assignment)
 	 * However, it seems to me that if you run it as a service, this
 	 * right should be provided by default.
+	 *
+	 * XXX - hopefully, this returns errors such as ERROR_LOGON_FAILURE,
+	 * which merely indicates that the user name or password is
+	 * incorrect, not whether it's the user name or the password
+	 * that's incorrect, so a client that's trying to brute-force
+	 * accounts doesn't know whether it's the user name or the
+	 * password that's incorrect, so it doesn't know whether to
+	 * stop trying to log in with a given user name and move on
+	 * to another user name.
 	 */
 	HANDLE Token;
 	if (LogonUser(username, ".", password, LOGON32_LOGON_NETWORK, LOGON32_PROVIDER_DEFAULT, &Token) == 0)
@@ -1436,7 +1445,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// This call is needed to get the uid
 	if ((user = getpwnam(username)) == NULL)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
 	}
 
@@ -1444,7 +1453,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// This call is needed to get the password; otherwise 'x' is returned
 	if ((usersp = getspnam(username)) == NULL)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: no such user");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
 	}
 	user_password = usersp->sp_pwdp;
@@ -1464,7 +1473,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 	if (strcmp(user_password, (char *) crypt(password, user_password)) != 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: password incorrect");
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
 	}
 
