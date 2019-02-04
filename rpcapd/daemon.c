@@ -531,7 +531,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			if (retval == -1)
 			{
 				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
-				if (rpcap_senderror(pars.sockctrl, header.ver,
+				if (rpcap_senderror(pars.sockctrl, 0,
 				    PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
@@ -541,7 +541,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			// So, this was a fake connection. Drop it down
 			if (retval == 0)
 			{
-				if (rpcap_senderror(pars.sockctrl, header.ver,
+				if (rpcap_senderror(pars.sockctrl, 0,
 				    PCAP_ERR_INITTIMEOUT,
 				    "The RPCAP initial timeout has expired",
 				    errbuf) == -1)
