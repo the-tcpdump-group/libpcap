@@ -1234,6 +1234,11 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			uint32 usernamelen, passwdlen;
 
 			usernamelen = ntohs(auth.slen1);
+			if (usernamelen >= 0xFFFFFFFF) {
+				pcap_fmt_errmsg_for_errno(errmsgbuf,
+				    PCAP_ERRBUF_SIZE, errno, "usernamelen overflows");
+				goto error;
+			}
 			username = (char *) malloc (usernamelen + 1);
 			if (username == NULL)
 			{
