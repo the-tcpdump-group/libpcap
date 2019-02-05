@@ -120,6 +120,29 @@ static int sock_ismcastaddr(const struct sockaddr *saddr);
  *                                                  *
  ****************************************************/
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+const uint8_t *fuzzBuffer;
+size_t fuzzSize;
+size_t fuzzPos;
+
+void sock_initfuzz(const uint8_t *Data, size_t Size) {
+	fuzzPos = 0;
+	fuzzSize = Size;
+	fuzzBuffer = Data;
+}
+
+static int fuzz_recv(char *bufp, int remaining) {
+	if (remaining > fuzzSize - fuzzPos) {
+		remaining = fuzzSize - fuzzPos;
+	}
+	if (fuzzPos < fuzzSize) {
+		memcpy(bufp, fuzzBuffer + fuzzPos, remaining);
+	}
+	fuzzPos += remaining;
+	return remaining;
+}
+#endif
+
 /*
  * Format an error message given an errno value (UN*X) or a Winsock error
  * (Windows).
@@ -415,7 +438,9 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		 */
 		while (tempaddrinfo)
 		{
-
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+			break;
+#endif
 			if (connect(sock, tempaddrinfo->ai_addr, (int) tempaddrinfo->ai_addrlen) == -1)
 			{
 				size_t msglen;
@@ -794,6 +819,9 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
 		if (ssl) return ssl_send(ssl, buffer, remaining, errbuf, errbuflen);
 #endif
 
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+		nsent = remaining;
+#else
 #ifdef MSG_NOSIGNAL
 		/*
 		 * Send with MSG_NOSIGNAL, so that we don't get SIGPIPE
@@ -805,6 +833,7 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
 #else
 		nsent = send(sock, buffer, remaining, 0);
 #endif
+#endif //FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
 
 		if (nsent == -1)
 		{
@@ -1004,7 +1033,9 @@ int sock_recv(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
 	 * Win32.
 	 */
 	for (;;) {
-#ifdef HAVE_OPENSSL
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+		nread = fuzz_recv(bufp, remaining);
+#elif defined(HAVE_OPENSSL)
 		if (ssl)
 		{
 			/*
@@ -1158,7 +1189,11 @@ int sock_recv_dgram(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
 #ifdef HAVE_STRUCT_MSGHDR_MSG_FLAGS
 	message.msg_flags = 0;
 #endif
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+	nread = fuzz_recv(buffer, size);
+#else
 	nread = recvmsg(sock, &message, 0);
+#endif
 	if (nread == -1)
 	{
 		if (errno == EINTR)
