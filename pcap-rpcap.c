@@ -2049,12 +2049,14 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 	 */
 	ourvers = authreply.maxvers;
 
+#if RPCAP_MIN_VERSION != 0
 	/*
 	 * If that's less than the minimum version we support, we
 	 * can't communicate.
 	 */
 	if (ourvers < RPCAP_MIN_VERSION)
 		goto novers;
+#endif
 
 	/*
 	 * If that's greater than the maximum version we support,
