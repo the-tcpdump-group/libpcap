@@ -2436,8 +2436,9 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 			tmpstring[findalldevs_if.namelen] = 0;
 
 			/* Create the new device identifier */
-			if (pcap_createsrcstr(tmpstring2, PCAP_SRC_IFREMOTE, host, port, tmpstring, errbuf) == -1)
-				return -1;
+			if (pcap_createsrcstr(tmpstring2, PCAP_SRC_IFREMOTE,
+			    host, port, tmpstring, errbuf) == -1)
+				goto error;
 
 			stringlen = strlen(tmpstring2);
 
