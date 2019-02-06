@@ -1443,6 +1443,7 @@ if (NOT DISABLE_DPDK)
 		link_directories(AFTER ${dpdk_LIBRARIES})
 		set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${dpdk_LIBRARIES})
 		set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
+		set(PCAP_SUPPORT_DPDK TRUE)
 	endif()
 endif()
 
