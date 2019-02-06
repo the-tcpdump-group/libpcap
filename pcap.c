@@ -1806,8 +1806,8 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 }
 
 int
-pcap_createsrcstr(char *source, int type, const char *host, const char *port,
-    const char *name, char *errbuf)
+pcap_createsrcstr_ex(char *source, int type, const char *host, const char *port,
+    const char *name, unsigned char uses_ssl, char *errbuf)
 {
 	switch (type) {
 
@@ -1823,7 +1823,9 @@ pcap_createsrcstr(char *source, int type, const char *host, const char *port,
 		}
 
 	case PCAP_SRC_IFREMOTE:
-		pcap_strlcpy(source, PCAP_SRC_IF_STRING, PCAP_BUF_SIZE);
+		pcap_strlcpy(source,
+		    (uses_ssl ? "rpcaps://" : PCAP_SRC_IF_STRING),
+		    PCAP_BUF_SIZE);
 		if (host != NULL && *host != '\0') {
 			if (strchr(host, ':') != NULL) {
 				/*
@@ -1867,6 +1869,14 @@ pcap_createsrcstr(char *source, int type, const char *host, const char *port,
 		    "The interface type is not valid.");
 		return (-1);
 	}
+}
+
+
+int
+pcap_createsrcstr(char *source, int type, const char *host, const char *port,
+    const char *name, char *errbuf)
+{
+	return (pcap_createsrcstr_ex(source, type, host, port, name, 0, errbuf));
 }
 
 int
