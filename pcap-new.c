@@ -54,11 +54,14 @@
 
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_FILE "File"
+#define PCAP_TEXT_SOURCE_FILE_LEN (sizeof PCAP_TEXT_SOURCE_FILE - 1)
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ADAPTER "Network adapter"
+#define PCAP_TEXT_SOURCE_ADAPTER_LEN (sizeof "Network adapter" - 1)
 
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ON_LOCAL_HOST "on local host"
+#define PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN (sizeof PCAP_TEXT_SOURCE_ON_LOCAL_HOST + 1)
 
 /****************************************************
  *                                                  *
@@ -70,6 +73,8 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 {
 	int type;
 	char name[PCAP_BUF_SIZE], path[PCAP_BUF_SIZE], filename[PCAP_BUF_SIZE];
+	size_t pathlen;
+	size_t stringlen;
 	pcap_t *fp;
 	char tmpstring[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
 	pcap_if_t *lastdev;	/* Last device in the pcap_if_t list */
@@ -123,6 +128,8 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 		dev = *alldevs;
 		while (dev)
 		{
+			char *localdesc, *desc;
+
 			/* Create the new device identifier */
 			if (pcap_createsrcstr(tmpstring, PCAP_SRC_IFLOCAL, NULL, NULL, dev->name, errbuf) == -1)
 				return -1;
@@ -141,20 +148,23 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 				return -1;
 			}
 
-			/* Create the new device description */
+			/*
+			 * Create the description.
+			 * First, allocate a buffer large enough
+			 * for the name.
+			 */
 			if ((dev->description == NULL) || (dev->description[0] == 0))
-				pcap_snprintf(tmpstring, sizeof(tmpstring) - 1, "%s '%s' %s", PCAP_TEXT_SOURCE_ADAPTER,
-				dev->name, PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
+				localdesc = dev->name;
 			else
-				pcap_snprintf(tmpstring, sizeof(tmpstring) - 1, "%s '%s' %s", PCAP_TEXT_SOURCE_ADAPTER,
-				dev->description, PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
-
-			/* Delete the old pointer */
-			free(dev->description);
-
-			/* Make a copy of the description */
-			dev->description = strdup(tmpstring);
-			if (dev->description == NULL)
+				localdesc = dev->description;
+			stringlen = PCAP_TEXT_SOURCE_ADAPTER_LEN
+			    + 1 + 1 /* space and ' */
+			    + strlen(localdesc)
+			    + 1 + 1 /* space and ' */
+			    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
+			    + 1; /* terminating '\0' */
+			desc= (char *)malloc(stringlen);
+			if (desc == NULL)
 			{
 				pcap_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
@@ -162,6 +172,13 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 				pcap_freealldevs(*alldevs);
 				return -1;
 			}
+			pcap_snprintf(desc, stringlen, "%s '%s' %s",
+			    PCAP_TEXT_SOURCE_ADAPTER, localdesc,
+			    PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
+
+			/* Now overwrite the description */
+			free(dev->description);
+			dev->description = desc;
 
 			dev = dev->next;
 		}
@@ -170,7 +187,6 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 
 	case PCAP_SRC_FILE:
 	{
-		size_t stringlen;
 #ifdef _WIN32
 		WIN32_FIND_DATA filedata;
 		HANDLE filehandle;
@@ -202,6 +218,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 
 		/* Save the path for future reference */
 		pcap_snprintf(path, sizeof(path), "%s", name);
+		pathlen = strlen(path);
 
 #ifdef _WIN32
 		/* To perform directory listing, Win32 must have an 'asterisk' as ending char */
@@ -236,10 +253,14 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 		/* Add all files we find to the list. */
 		do
 		{
-
 #ifdef _WIN32
-			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata.cFileName);
+			/* Skip the file if the pathname won't fit in the buffer */
+			if (pathlen + strlen(filedata.cFileName) >= sizeof(filename))
+				continue;
+			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata->d_name);
 #else
+			if (pathlen + strlen(filedata->d_name) >= sizeof(filename))
+				continue;
 			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata->d_name);
 #endif
 
@@ -297,11 +318,18 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					return -1;
 				}
 
-				/* Create the description */
-				pcap_snprintf(tmpstring, sizeof(tmpstring) - 1, "%s '%s' %s", PCAP_TEXT_SOURCE_FILE,
-					filename, PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
-
-				dev->description = strdup(tmpstring);
+				/*
+				 * Create the description.
+				 * First, allocate a buffer large enough
+				 * for the name.
+				 */
+				stringlen = PCAP_TEXT_SOURCE_FILE_LEN
+				    + 1 + 1 /* space and ' */
+				    + strlen(filename)
+				    + 1 + 1 /* space and ' */
+				    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
+				    + 1; /* terminating '\0' */
+				dev->description = (char *)malloc(stringlen);
 				if (dev->description == NULL)
 				{
 					pcap_fmt_errmsg_for_errno(errbuf,
@@ -310,6 +338,17 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					pcap_freealldevs(*alldevs);
 					return -1;
 				}
+
+				/*
+				 * Now format the new device description
+				 * into that buffer.
+				 *
+				 * (Dear ISO C committee: I can haz
+				 * asprintf() in the standard?)
+				 */
+				pcap_snprintf(dev->description, stringlen,
+				    "%s '%s' %s", PCAP_TEXT_SOURCE_FILE,
+				    filename, PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
 
 				pcap_close(fp);
 			}
