@@ -6941,7 +6941,14 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 {
 	char *pathstr;
 	unsigned int i;
-	char buf[256];
+	/*
+	 * Make this significantly smaller than PCAP_ERRBUF_SIZE;
+	 * the tag *shouldn't* have some huge long name, and making
+	 * it smaller keeps newer versions of GCC from whining that
+	 * the error message if we don't support the tag could
+	 * overflow the error message buffer.
+	 */
+	char buf[128];
 	ssize_t r;
 	int fd;
 
