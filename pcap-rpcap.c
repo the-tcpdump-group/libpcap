@@ -2437,8 +2437,10 @@ error_nodiscard:
 
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ADAPTER "Network adapter"
+#define PCAP_TEXT_SOURCE_ADAPTER_LEN (sizeof PCAP_TEXT_SOURCE_ADAPTER - 1)
 /* String identifier to be used in the pcap_findalldevs_ex() */
 #define PCAP_TEXT_SOURCE_ON_REMOTE_HOST "on remote node"
+#define PCAP_TEXT_SOURCE_ON_REMOTE_HOST_LEN (sizeof PCAP_TEXT_SOURCE_ON_REMOTE_HOST - 1)
 
 static void
 freeaddr(struct pcap_addr *addr)
@@ -2570,18 +2572,13 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 			    host, port, tmpstring, uses_ssl, errbuf) == -1)
 				goto error;
 
-			stringlen = strlen(tmpstring2);
-
-			dev->name = (char *)malloc(stringlen + 1);
+			dev->name = strdup(tmpstring2);
 			if (dev->name == NULL)
 			{
 				pcap_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
-
-			/* Copy the new device name into the correct memory location */
-			pcap_strlcpy(dev->name, tmpstring2, stringlen + 1);
 		}
 
 		if (findalldevs_if.desclen)
@@ -2599,13 +2596,15 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			tmpstring[findalldevs_if.desclen] = 0;
 
-			pcap_snprintf(tmpstring2, sizeof(tmpstring2) - 1, "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
-				tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host);
-
-			stringlen = strlen(tmpstring2);
-
-			dev->description = (char *)malloc(stringlen + 1);
-
+			stringlen = PCAP_TEXT_SOURCE_ADAPTER_LEN
+			    + 1 + 1 /* space and ' */
+			    + strlen(tmpstring)
+			    + 1 + 1 /* ' and space */
+			    + PCAP_TEXT_SOURCE_ON_REMOTE_HOST_LEN
+			    + 1 /* space */
+			    + strlen(host)
+			    + 1; /* terminating '\0' */
+			dev->description = (char *)malloc(stringlen);
 			if (dev->description == NULL)
 			{
 				pcap_fmt_errmsg_for_errno(errbuf,
@@ -2613,8 +2612,13 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 				goto error;
 			}
 
-			/* Copy the new device description into the correct memory location */
-			pcap_strlcpy(dev->description, tmpstring2, stringlen + 1);
+			/*
+			 * Now format the new device description into
+			 * that buffer.
+			 */
+			pcap_snprintf(dev->description, stringlen,
+			    "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
+			    tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host);
 		}
 
 		dev->flags = ntohl(findalldevs_if.flags);
