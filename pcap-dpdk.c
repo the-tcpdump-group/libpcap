@@ -115,6 +115,12 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 #include "pcap-dpdk.h"
 
 #define DPDK_DEF_LOG_LEV RTE_LOG_ERR
+//
+// This is set to 0 if we haven't initialized DPDK yet, 1 if we've
+// successfully initialized it, a negative value, which is the negative
+// of the rte_errno from rte_eal_init(), if we tried to initialize it
+// and got an error.
+//
 static int is_dpdk_pre_inited=0;
 #define DPDK_LIB_NAME "libpcap_dpdk"
 #define DPDK_DESC "Data Plane Development Kit (DPDK) Interface"
@@ -542,22 +548,43 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 }
 
 // only called once
-static int dpdk_pre_init(void)
+// Returns:
+//
+//    1 on success;
+//
+//    0 if "the EAL cannot initialize on this system", which we treat as
+//    meaning "DPDK isn't available";
+//
+//    a PCAP_ERROR_ code for other errors.
+static int dpdk_pre_init(char * ebuf)
 {
 	int dargv_cnt=0;
 	char *dargv[DPDK_ARGC_MAX];
 	char *ptr_dpdk_cfg = NULL;
-	int ret = PCAP_ERROR;
+	int ret;
 	// globale var
-	if (is_dpdk_pre_inited)
+	if (is_dpdk_pre_inited != 0)
 	{
-		// already inited
-		return 0;
+		// already inited; did that succeed?
+		if (is_dpdk_pre_inited < 0)
+		{
+			// failed
+			goto error;
+		}
+		else
+		{
+			// succeeded
+			return 1;
+		}
 	}
 	// check for root permission
+	// XXX - is it sufficient to call rte_eal_init() and check for
+	// EACCES?
 	if( geteuid() != 0)
 	{
 		RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
+		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		    "DPDK requires that it run as root");
 		return PCAP_ERROR_PERM_DENIED;
 	}
 	// init EAL
@@ -575,12 +602,119 @@ static int dpdk_pre_init(void)
 	ret = rte_eal_init(dargv_cnt,dargv);
 	if (ret == -1)
 	{
-		// Error.
-		return PCAP_ERROR;
+		// Indicate that we've called rte_eal_init() by setting
+		// is_dpdk_pre_inited to the negative of the error code,
+		// and process the error.
+		is_dpdk_pre_inited = -rte_errno;
+		goto error;
 	}
 	// init succeeded, so we do not need to do it again later.
 	is_dpdk_pre_inited = 1;
-	return 0;
+	return 1;
+
+error:
+	switch (-is_dpdk_pre_inited)
+	{
+		case EACCES:
+			// This "indicates a permissions issue.".
+			RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "DPDK requires that it run as root");
+			return PCAP_ERROR_PERM_DENIED;
+
+		case EAGAIN:
+			// This "indicates either a bus or system
+			// resource was not available, setup may
+			// be attempted again."
+			// There's no such error in pcap, so I'm
+			// not sure what we should do here.
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "Bus or system resource was not available");
+			break;
+
+		case EALREADY:
+			// This "indicates that the rte_eal_init
+			// function has already been called, and
+			// cannot be called again."
+			// That's not an error; set the "we've
+			// been here before" flag and return
+			// success.
+			is_dpdk_pre_inited = 1;
+			return 1;
+
+		case EFAULT:
+			// This "indicates the tailq configuration
+			// name was not found in memory configuration."
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "The tailq configuration name was not found in the memory configuration");
+			return PCAP_ERROR;
+
+		case EINVAL:
+			// This "indicates invalid parameters were
+			// passed as argv/argc."  Those came from
+			// the configuration file.
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "The configuration file has invalid parameters");
+			break;
+
+		case ENOMEM:
+			// This "indicates failure likely caused by
+			// an out-of-memory condition."
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "Out of memory");
+			break;
+
+		case ENODEV:
+			// This "indicates memory setup issues."
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "An error occurred setting up memory");
+			break;
+
+		case ENOTSUP:
+			// This "indicates that the EAL cannot
+			// initialize on this system."  We treat
+			// that as meaning DPDK isn't available
+			// on this machine, rather than as a
+			// fatal error, and let our caller decide
+			// whether that's a fatal error (if trying
+			// to activate a DPDK device) or not (if
+			// trying to enumerate devices).
+			return 0;
+
+		case EPROTO:
+			// This "indicates that the PCI bus is
+			// either not present, or is not readable
+			// by the eal."  Does "the PCI bus is not
+			// present" mean "this machine has no PCI
+			// bus", which strikes me as a "not available"
+			// case?  If so, should "is not readable by
+			// the EAL" also something we should treat
+			// as a "not available" case?  If not, we
+			// can't distinguish between the two, so
+			// we're stuck.
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "PCI bus is not present or not readable by the EAL");
+			break;
+
+		case ENOEXEC:
+			// This "indicates that a service core
+			// failed to launch successfully."
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "A service core failed to launch successfully");
+			break;
+
+		default:
+			//
+			// That's not in the list of errors in
+			// the documentation; let it be reported
+			// as an error.
+			//
+			dpdk_fmt_errmsg_for_rte_errno(ebuf,
+			    PCAP_ERRBUF_SIZE, -is_dpdk_pre_inited);
+			break;
+	}
+	// Error.
+	return PCAP_ERROR;
 }
 
 static int pcap_dpdk_activate(pcap_t *p)
@@ -599,33 +733,26 @@ static int pcap_dpdk_activate(pcap_t *p)
 	struct rte_eth_link link;
 	do{
 		//init EAL
-		ret = dpdk_pre_init();
+		char dpdk_pre_init_errbuf[PCAP_ERRBUF_SIZE];
+		ret = dpdk_pre_init(dpdk_pre_init_errbuf);
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
-			// That's either PCAP_ERROR_PERM_DENIED if
-			// you're not running as root, or PCAP_ERROR
-			// if rte_eal_init() fails.
-			//
-			// If it returned PCAP_ERROR, provide an error
-			// message based on rte_errno.  Otherwise, the
-			// error message has already been filled in.
-			if (ret == PCAP_ERROR)
-			{
-				dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
-				    PCAP_ERRBUF_SIZE, rte_errno,
-				    "dpdk error: Init failed with device %s",
-				    p->opt.device);
-			}
-			else
-			{
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "Can't open device %s: DPDK requires that it run as root",
-				    p->opt.device);
-			}
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't open device %s: %s",
+			    p->opt.device, dpdk_pre_init_errbuf);
 			// ret is set to the correct error
 			break;
 		}
+		if (ret == 0)
+		{
+			// This means DPDK isn't available on this machine.
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't open device %s: DPDK is not available on this machine",
+			    p->opt.device);
+			return PCAP_ERROR_NO_SUCH_DEVICE;
+		}
+			
 		ret = dpdk_init_timer(pd);
 		if (ret<0)
 		{
@@ -845,37 +972,28 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	do{
-		ret = dpdk_pre_init();
+		char dpdk_pre_init_errbuf[PCAP_ERRBUF_SIZE];
+		ret = dpdk_pre_init(dpdk_pre_init_errbuf);
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
-			// That's either PCAP_ERROR_PERM_DENIED if
-			// you're not running as root, or PCAP_ERROR
-			// if rte_eal_init() fails.
-			//
-			// If it returned PCAP_ERROR, provide an error
-			// message based on rte_errno.  Otherwise, the
-			// error message has already been filled in.
-			if (ret == PCAP_ERROR)
-			{
-				dpdk_fmt_errmsg_for_rte_errno(ebuf,
-				    PCAP_ERRBUF_SIZE, rte_errno,
-				    "dpdk error: Init failed");
-			}
-			else
-			{
-				pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-				    "DPDK requires that it run as root");
-			}
-			// ret is set to the correct error
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't open device %s: %s",
+			    p->opt.device, dpdk_pre_init_errbuf);
+			ret = PCAP_ERRNO;
+			break;
+		}
+		if (ret == 0)
+		{
+			// This means DPDK isn't available on this machine.
+			// That just means "don't return any devices".
 			break;
 		}
 		nb_ports = rte_eth_dev_count_avail();
 		if (nb_ports == 0)
 		{
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-			    "DPDK error: No Ethernet ports");
-			ret = PCAP_ERROR;
+			// That just means "don't return any devices".
+			ret = 0;
 			break;
 		}
 		for (unsigned int i=0; i<nb_ports; i++){
