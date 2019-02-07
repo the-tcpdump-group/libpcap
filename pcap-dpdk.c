@@ -110,6 +110,7 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 #include <rte_mempool.h>
 #include <rte_mbuf.h>
 #include <rte_bus.h>
+#include <rte_errno.h>
 
 #include "pcap-int.h"
 #include "pcap-dpdk.h"
@@ -119,6 +120,7 @@ static int is_dpdk_pre_inited=0;
 #define DPDK_LIB_NAME "libpcap_dpdk"
 #define DPDK_DESC "Data Plane Development Kit (DPDK) Interface"
 #define DPDK_ERR_PERM_MSG "permission denied, DPDK needs root permission"
+#define DPDK_ERR_RTE_EAL_INIT_FAIL "rte_eal_init() failure"
 #define DPDK_ARGC_MAX 64
 #define DPDK_CFG_MAX_LEN 1024
 #define DPDK_DEV_NAME_MAX 32
@@ -513,11 +515,11 @@ static int dpdk_pre_init(char * ebuf)
 	if( geteuid() != 0)
 	{
 		RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
+		errno = EACCES;
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "dpdk error: %s",
 			    DPDK_ERR_PERM_MSG);
-		ret = PCAP_ERROR_PERM_DENIED;
-		return ret;
+		return PCAP_ERROR_PERM_DENIED;
 	}
 	// init EAL
 	ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
@@ -532,10 +534,18 @@ static int dpdk_pre_init(char * ebuf)
 	snprintf(dpdk_cfg_buf,DPDK_CFG_MAX_LEN-1,"%s %s",DPDK_LIB_NAME,ptr_dpdk_cfg);
 	dargv_cnt = parse_dpdk_cfg(dpdk_cfg_buf,dargv);
 	ret = rte_eal_init(dargv_cnt,dargv);
-	// if init successed, we do not need to do it again later.
-	if (ret == 0){
-		is_dpdk_pre_inited = 1;
+	/* Copy the errno */
+	errno = rte_errno;
+
+	if (ret != 0){
+		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
+			EACCES, "dpdk error: %s",
+			DPDK_ERR_RTE_EAL_INIT_FAIL);
+		errno = rte_errno;
+		return PCAP_ERROR_DPDK_NOT_INIT;
 	}
+	// if init successed, we do not need to do it again later.
+	is_dpdk_pre_inited = 1;
 	return ret;
 }
 
@@ -559,10 +569,9 @@ static int pcap_dpdk_activate(pcap_t *p)
 		if (ret < 0)
 		{
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: Init failed with device %s",
-			    p->opt.device);
+				errno, "dpdk error: Init failed with device %s",
+				p->opt.device);
 			ret = PCAP_ERROR;
-			break;
 		}
 		ret = dpdk_init_timer(pd);
 		if (ret<0)
@@ -780,9 +789,7 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 		ret = dpdk_pre_init(ebuf);
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-			    errno, "error: Init failed with device");
-			ret = PCAP_ERROR;
+			/* Return the error received from dpdk_pre_init()*/
 			break;
 		}
 		nb_ports = rte_eth_dev_count_avail();
