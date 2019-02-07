@@ -578,7 +578,7 @@ static int dpdk_pre_init(void)
 		// Error.
 		return PCAP_ERROR;
 	}
-	// init successed, so we do not need to do it again later.
+	// init succeeded, so we do not need to do it again later.
 	is_dpdk_pre_inited = 1;
 	return 0;
 }
