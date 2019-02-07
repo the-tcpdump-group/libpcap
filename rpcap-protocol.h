@@ -381,23 +381,26 @@ struct rpcap_sampling
  * These values are used in messages sent over the network, and MUST
  * not be changed.
  */
-#define PCAP_ERR_NETW		1	/* Network error */
-#define PCAP_ERR_INITTIMEOUT	2	/* The RPCAP initial timeout has expired */
-#define PCAP_ERR_AUTH		3	/* Generic authentication error */
-#define PCAP_ERR_FINDALLIF	4	/* Generic findalldevs error */
-#define PCAP_ERR_NOREMOTEIF	5	/* The findalldevs was ok, but the remote end had no interfaces to list */
-#define PCAP_ERR_OPEN		6	/* Generic pcap_open error */
-#define PCAP_ERR_UPDATEFILTER	7	/* Generic updatefilter error */
-#define PCAP_ERR_GETSTATS	8	/* Generic pcap_stats error */
-#define PCAP_ERR_READEX		9	/* Generic pcap_next_ex error */
-#define PCAP_ERR_HOSTNOAUTH	10	/* The host is not authorized to connect to this server */
-#define PCAP_ERR_REMOTEACCEPT	11	/* Generic pcap_remoteaccept error */
-#define PCAP_ERR_STARTCAPTURE	12	/* Generic pcap_startcapture error */
-#define PCAP_ERR_ENDCAPTURE	13	/* Generic pcap_endcapture error */
-#define PCAP_ERR_RUNTIMETIMEOUT	14	/* The RPCAP run-time timeout has expired */
-#define PCAP_ERR_SETSAMPLING	15	/* Error during the settings of sampling parameters */
-#define PCAP_ERR_WRONGMSG	16	/* The other end endpoint sent a message which has not been recognized */
-#define PCAP_ERR_WRONGVER	17	/* The other end endpoint has a version number that is not compatible with our */
+#define PCAP_ERR_NETW			1	/* Network error */
+#define PCAP_ERR_INITTIMEOUT		2	/* The RPCAP initial timeout has expired */
+#define PCAP_ERR_AUTH			3	/* Generic authentication error */
+#define PCAP_ERR_FINDALLIF		4	/* Generic findalldevs error */
+#define PCAP_ERR_NOREMOTEIF		5	/* The findalldevs was ok, but the remote end had no interfaces to list */
+#define PCAP_ERR_OPEN			6	/* Generic pcap_open error */
+#define PCAP_ERR_UPDATEFILTER		7	/* Generic updatefilter error */
+#define PCAP_ERR_GETSTATS		8	/* Generic pcap_stats error */
+#define PCAP_ERR_READEX			9	/* Generic pcap_next_ex error */
+#define PCAP_ERR_HOSTNOAUTH		10	/* The host is not authorized to connect to this server */
+#define PCAP_ERR_REMOTEACCEPT		11	/* Generic pcap_remoteaccept error */
+#define PCAP_ERR_STARTCAPTURE		12	/* Generic pcap_startcapture error */
+#define PCAP_ERR_ENDCAPTURE		13	/* Generic pcap_endcapture error */
+#define PCAP_ERR_RUNTIMETIMEOUT		14	/* The RPCAP run-time timeout has expired */
+#define PCAP_ERR_SETSAMPLING		15	/* Error during the settings of sampling parameters */
+#define PCAP_ERR_WRONGMSG		16	/* The other end endpoint sent a message which has not been recognized */
+#define PCAP_ERR_WRONGVER		17	/* The other end endpoint has a version number that is not compatible with our */
+#define PCAP_ERR_AUTH_FAILED		18	/* The user couldn't be authenticated */
+#define PCAP_ERR_TLS_REQUIRED		19	/* The server requires TLS to connect */
+#define PCAP_ERR_AUTH_TYPE_NOTSUP	20	/* The authentication type isn't supported */
 
 /*
  * \brief Buffer used by socket functions to send-receive packets.

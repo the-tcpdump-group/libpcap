@@ -986,8 +986,16 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			if (!pars->nullAuthAllowed)
 			{
 				// Send the client an error reply.
-				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Authentication failed; NULL authentication not permitted.");
-				goto error;
+				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
+				    "Authentication failed; NULL authentication not permitted.");
+				if (rpcap_senderror(pars->sockctrl, 0,
+				    PCAP_ERR_AUTH_FAILED, errmsgbuf, errbuf) == -1)
+				{
+					// That failed; log a message and give up.
+					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+					return -1;
+				}
+				goto error_noreply;
 			}
 			break;
 		}
@@ -1051,7 +1059,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 				free(username);
 				free(passwd);
 				if (rpcap_senderror(pars->sockctrl, 0,
-				    PCAP_ERR_AUTH, errmsgbuf, errbuf) == -1)
+				    PCAP_ERR_AUTH_FAILED, errmsgbuf, errbuf) == -1)
 				{
 					// That failed; log a message and give up.
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1078,8 +1086,16 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			}
 
 		default:
-			pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Authentication type not recognized.");
-			goto error;
+			pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
+			    "Authentication type not recognized.");
+			if (rpcap_senderror(pars->sockctrl, 0,
+			    PCAP_ERR_AUTH_TYPE_NOTSUP, errmsgbuf, errbuf) == -1)
+			{
+				// That failed; log a message and give up.
+				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
+				return -1;
+			}
+			goto error_noreply;
 	}
 
 	// The authentication succeeded; let the client know.
@@ -2051,7 +2067,7 @@ daemon_msg_setsampling_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	return 0;
 
 error:
-	if (rpcap_senderror(pars->sockctrl, ver, PCAP_ERR_AUTH,
+	if (rpcap_senderror(pars->sockctrl, ver, PCAP_ERR_SETSAMPLING,
 	    errmsgbuf, errbuf) == -1)
 	{
 		// That failed; log a message and give up.
