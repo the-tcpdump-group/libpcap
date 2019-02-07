@@ -160,7 +160,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 			stringlen = PCAP_TEXT_SOURCE_ADAPTER_LEN
 			    + 1 + 1 /* space and ' */
 			    + strlen(localdesc)
-			    + 1 + 1 /* space and ' */
+			    + 1 + 1 /* ' and space */
 			    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
 			    + 1; /* terminating '\0' */
 			desc = (char *)malloc(stringlen);
@@ -326,7 +326,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 				stringlen = PCAP_TEXT_SOURCE_FILE_LEN
 				    + 1 + 1 /* space and ' */
 				    + strlen(filename)
-				    + 1 + 1 /* space and ' */
+				    + 1 + 1 /* ' and space */
 				    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
 				    + 1; /* terminating '\0' */
 				dev->description = (char *)malloc(stringlen);
