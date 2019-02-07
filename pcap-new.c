@@ -163,7 +163,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 			    + 1 + 1 /* space and ' */
 			    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
 			    + 1; /* terminating '\0' */
-			desc= (char *)malloc(stringlen);
+			desc = (char *)malloc(stringlen);
 			if (desc == NULL)
 			{
 				pcap_fmt_errmsg_for_errno(errbuf,
