@@ -184,6 +184,50 @@ static struct rte_eth_conf port_conf = {
 	},
 };
 
+/*
+ * Generate an error message based on a format, arguments, and an
+ * rte_errno, with a message for the rte_errno after the formatted output.
+ */
+static void dpdk_fmt_errmsg_for_rte_errno(char *errbuf, size_t errbuflen,
+    int errnum, const char *fmt, ...)
+{
+	va_list ap;
+	size_t msglen;
+	char *p;
+	size_t errbuflen_remaining;
+
+	va_start(ap, fmt);
+	pcap_vsnprintf(errbuf, errbuflen, fmt, ap);
+	va_end(ap);
+	msglen = strlen(errbuf);
+
+	/*
+	 * Do we have enough space to append ": "?
+	 * Including the terminating '\0', that's 3 bytes.
+	 */
+	if (msglen + 3 > errbuflen) {
+		/* No - just give them what we've produced. */
+		return;
+	}
+	p = errbuf + msglen;
+	errbuflen_remaining = errbuflen - msglen;
+	*p++ = ':';
+	*p++ = ' ';
+	*p = '\0';
+	msglen += 2;
+	errbuflen_remaining -= 2;
+
+	/*
+	 * Now append the string for the error code.
+	 * rte_strerror() is thread-safe, at least as of dpdk 18.11,
+	 * unlike strerror() - it uses strerror_r() rather than strerror()
+	 * for UN*X errno values, and prints to what I assume is a per-thread
+	 * buffer (based on the "PER_LCORE" in "RTE_DEFINE_PER_LCORE" used
+	 * to declare the buffers statically) for DPDK errors.
+	 */
+	pcap_snprintf(p, errbuflen_remaining, "%s", rte_strerror(errnum));
+}
+
 static int dpdk_init_timer(struct pcap_dpdk *pd){
 	gettimeofday(&(pd->ts_helper.start_time),NULL);
 	pd->ts_helper.start_cycles = rte_get_timer_cycles();
@@ -345,8 +389,9 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 static int pcap_dpdk_inject(pcap_t *p, const void *buf _U_, int size _U_)
 {
 	//not implemented yet
-	pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		errno, "dpdk error: Inject function has not been implemented yet");
+	pcap_strlcpy(p->errbuf,
+	    "dpdk error: Inject function has not been implemented yet",
+	    PCAP_ERRBUF_SIZE);
 	return PCAP_ERROR;
 }
 
@@ -497,7 +542,7 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 }
 
 // only called once
-static int dpdk_pre_init(char * ebuf)
+static int dpdk_pre_init(void)
 {
 	int dargv_cnt=0;
 	char *dargv[DPDK_ARGC_MAX];
@@ -513,11 +558,7 @@ static int dpdk_pre_init(char * ebuf)
 	if( geteuid() != 0)
 	{
 		RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
-		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: %s",
-			    DPDK_ERR_PERM_MSG);
-		ret = PCAP_ERROR_PERM_DENIED;
-		return ret;
+		return PCAP_ERROR_PERM_DENIED;
 	}
 	// init EAL
 	ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
@@ -532,11 +573,14 @@ static int dpdk_pre_init(char * ebuf)
 	snprintf(dpdk_cfg_buf,DPDK_CFG_MAX_LEN-1,"%s %s",DPDK_LIB_NAME,ptr_dpdk_cfg);
 	dargv_cnt = parse_dpdk_cfg(dpdk_cfg_buf,dargv);
 	ret = rte_eal_init(dargv_cnt,dargv);
-	// if init successed, we do not need to do it again later.
-	if (ret == 0){
-		is_dpdk_pre_inited = 1;
+	if (ret == -1)
+	{
+		// Error.
+		return PCAP_ERROR;
 	}
-	return ret;
+	// init successed, so we do not need to do it again later.
+	is_dpdk_pre_inited = 1;
+	return 0;
 }
 
 static int pcap_dpdk_activate(pcap_t *p)
@@ -555,20 +599,38 @@ static int pcap_dpdk_activate(pcap_t *p)
 	struct rte_eth_link link;
 	do{
 		//init EAL
-		ret = dpdk_pre_init(p->errbuf);
+		ret = dpdk_pre_init();
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: Init failed with device %s",
-			    p->opt.device);
-			ret = PCAP_ERROR;
+			// This returns a negative value on an error.
+			// That's either PCAP_ERROR_PERM_DENIED if
+			// you're not running as root, or PCAP_ERROR
+			// if rte_eal_init() fails.
+			//
+			// If it returned PCAP_ERROR, provide an error
+			// message based on rte_errno.  Otherwise, the
+			// error message has already been filled in.
+			if (ret == PCAP_ERROR)
+			{
+				dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+				    PCAP_ERRBUF_SIZE, rte_errno,
+				    "dpdk error: Init failed with device %s",
+				    p->opt.device);
+			}
+			else
+			{
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "Can't open device %s: DPDK requires that it run as root",
+				    p->opt.device);
+			}
+			// ret is set to the correct error
 			break;
 		}
 		ret = dpdk_init_timer(pd);
 		if (ret<0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-				errno, "dpdk error: Init timer error with device %s",
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				"dpdk error: Init timer is zero with device %s",
 				p->opt.device);
 			ret = PCAP_ERROR;
 			break;
@@ -577,16 +639,16 @@ static int pcap_dpdk_activate(pcap_t *p)
 		nb_ports = rte_eth_dev_count_avail();
 		if (nb_ports == 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: No Ethernet ports");
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "dpdk error: No Ethernet ports");
 			ret = PCAP_ERROR;
 			break;
 		}
 
 		portid = portid_by_device(p->opt.device);
 		if (portid == DPDK_PORTID_MAX){
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: portid is invalid. device %s",
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "dpdk error: portid is invalid. device %s",
 			    p->opt.device);
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
 			break;
@@ -604,8 +666,9 @@ static int pcap_dpdk_activate(pcap_t *p)
 			rte_socket_id());
 		if (pd->pktmbuf_pool == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: Cannot init mbuf pool");
+			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, rte_errno,
+			    "dpdk error: Cannot init mbuf pool");
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -619,9 +682,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = rte_eth_dev_configure(portid, 1, 1, &local_port_conf);
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: Cannot configure device: err=%d, port=%u",
-			    ret, portid);
+			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, -ret,
+			    "dpdk error: Cannot configure device: port=%u",
+			    portid);
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -629,9 +693,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = rte_eth_dev_adjust_nb_rx_tx_desc(portid, &nb_rxd, &nb_txd);
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: Cannot adjust number of descriptors: err=%d, port=%u",
-			    ret, portid);
+			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, -ret,
+			    "dpdk error: Cannot adjust number of descriptors: port=%u",
+			    portid);
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -648,9 +713,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 					     pd->pktmbuf_pool);
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: rte_eth_rx_queue_setup:err=%d, port=%u",
-			    ret, portid);
+			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, -ret,
+			    "dpdk error: rte_eth_rx_queue_setup:port=%u",
+			    portid);
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -663,9 +729,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 				&txq_conf);
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: rte_eth_tx_queue_setup:err=%d, port=%u",
-			    ret, portid);
+			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, -ret,
+			    "dpdk error: rte_eth_tx_queue_setup:port=%u",
+			    portid);
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -675,8 +742,8 @@ static int pcap_dpdk_activate(pcap_t *p)
 				rte_eth_dev_socket_id(portid));
 		if (tx_buffer == NULL)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: Cannot allocate buffer for tx on port %u", portid);
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "dpdk error: Cannot allocate buffer for tx on port %u", portid);
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -685,9 +752,10 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = rte_eth_dev_start(portid);
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: rte_eth_dev_start:err=%d, port=%u",
-			    ret, portid);
+			dpdk_fmt_errmsg_for_rte_errno(p->errbuf,
+			    PCAP_ERRBUF_SIZE, -ret,
+			    "dpdk error: rte_eth_dev_start:port=%u",
+			    portid);
 			ret = PCAP_ERROR;
 			break;
 		}
@@ -699,8 +767,8 @@ static int pcap_dpdk_activate(pcap_t *p)
 		// check link status
 		is_port_up = check_link_status(portid, &link);
 		if (!is_port_up){
-			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-			    errno, "dpdk error: link is down, port=%u",portid);
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			    "dpdk error: link is down, port=%u",portid);
 			ret = PCAP_ERROR_IFACE_NOT_UP;
 			break;
 		}
@@ -777,19 +845,36 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	do{
-		ret = dpdk_pre_init(ebuf);
+		ret = dpdk_pre_init();
 		if (ret < 0)
 		{
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-			    errno, "error: Init failed with device");
-			ret = PCAP_ERROR;
+			// This returns a negative value on an error.
+			// That's either PCAP_ERROR_PERM_DENIED if
+			// you're not running as root, or PCAP_ERROR
+			// if rte_eal_init() fails.
+			//
+			// If it returned PCAP_ERROR, provide an error
+			// message based on rte_errno.  Otherwise, the
+			// error message has already been filled in.
+			if (ret == PCAP_ERROR)
+			{
+				dpdk_fmt_errmsg_for_rte_errno(ebuf,
+				    PCAP_ERRBUF_SIZE, rte_errno,
+				    "dpdk error: Init failed");
+			}
+			else
+			{
+				pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+				    "DPDK requires that it run as root");
+			}
+			// ret is set to the correct error
 			break;
 		}
 		nb_ports = rte_eth_dev_count_avail();
 		if (nb_ports == 0)
 		{
-			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
-			    errno, "DPDK error: No Ethernet ports");
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "DPDK error: No Ethernet ports");
 			ret = PCAP_ERROR;
 			break;
 		}
