@@ -342,9 +342,6 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 				/*
 				 * Now format the new device description
 				 * into that buffer.
-				 *
-				 * (Dear ISO C committee: I can haz
-				 * asprintf() in the standard?)
 				 */
 				pcap_snprintf(dev->description, stringlen,
 				    "%s '%s' %s", PCAP_TEXT_SOURCE_FILE,
