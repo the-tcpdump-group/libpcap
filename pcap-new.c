@@ -287,9 +287,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					return -1;
 				}
 
-				stringlen = strlen(tmpstring);
-
-				dev->name = (char *)malloc(stringlen + 1);
+				dev->name = strdup(tmpstring);
 				if (dev->name == NULL)
 				{
 					pcap_fmt_errmsg_for_errno(errbuf,
@@ -299,18 +297,11 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					return -1;
 				}
 
-				pcap_strlcpy(dev->name, tmpstring, stringlen);
-
-				dev->name[stringlen] = 0;
-
 				/* Create the description */
 				pcap_snprintf(tmpstring, sizeof(tmpstring) - 1, "%s '%s' %s", PCAP_TEXT_SOURCE_FILE,
 					filename, PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
 
-				stringlen = strlen(tmpstring);
-
-				dev->description = (char *)malloc(stringlen + 1);
-
+				dev->description = strdup(tmpstring);
 				if (dev->description == NULL)
 				{
 					pcap_fmt_errmsg_for_errno(errbuf,
@@ -319,9 +310,6 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					pcap_freealldevs(*alldevs);
 					return -1;
 				}
-
-				/* Copy the new device description into the correct memory location */
-				pcap_strlcpy(dev->description, tmpstring, stringlen + 1);
 
 				pcap_close(fp);
 			}
