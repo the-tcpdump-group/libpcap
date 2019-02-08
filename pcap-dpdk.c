@@ -91,6 +91,7 @@ env DPDK_CFG="--log-level=debug -l0 -dlibrte_pmd_e1000.so -dlibrte_pmd_ixgbe.so 
 #include <sys/time.h>
 
 //header for calling dpdk
+#include <rte_config.h>
 #include <rte_common.h>
 #include <rte_log.h>
 #include <rte_malloc.h>
