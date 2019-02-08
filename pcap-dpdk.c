@@ -271,13 +271,13 @@ static uint32_t dpdk_gather_data(unsigned char *data, int len, struct rte_mbuf *
 }
 
 
-static int dpdk_read_with_timeout(pcap_t *p, uint16_t portid, uint16_t queueid,struct rte_mbuf **pkts_burst, const uint16_t burst_cnt){
+static int dpdk_read_with_timeout(pcap_t *p, uint16_t portid, struct rte_mbuf **pkts_burst, const uint16_t burst_cnt){
 	struct pcap_dpdk *pd = (struct pcap_dpdk*)(p->priv);
 	int nb_rx = 0;
 	int timeout_ms = p->opt.timeout;
 	int sleep_ms = 0;
 	if (pd->nonblock){
-		// In non-blocking mode, just read once, no mater how many packets are captured.
+		// In non-blocking mode, just read once, no matter how many packets are captured.
 		nb_rx = (int)rte_eth_rx_burst(pd->portid, 0, pkts_burst, burst_cnt);
 	}else{
 		// In blocking mode, read many times until packets are captured or timeout or break_loop is setted.
@@ -311,12 +311,11 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 	uint16_t portid = pd->portid;
 	// In DPDK, pkt_len is sum of lengths for all segments. And data_len is for one segment
 	uint32_t pkt_len = 0;
-	int caplen = 0;
+	uint32_t caplen = 0;
 	u_char *bp = NULL;
 	int i=0;
 	unsigned int gather_len =0;
 	int pkt_cnt = 0;
-	int is_accepted=0;
 	u_char *large_buffer=NULL;
 	int timeout_ms = p->opt.timeout;
 
@@ -333,7 +332,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 		}
 		// read once in non-blocking mode, or try many times waiting for timeout_ms.
 		// if timeout_ms == 0, it will be blocked until one packet arrives or break_loop is setted.
-		nb_rx = dpdk_read_with_timeout(p, portid, 0, pkts_burst, burst_cnt);
+		nb_rx = dpdk_read_with_timeout(p, portid, pkts_burst, burst_cnt);
 		if (nb_rx == 0){
 			if (pd->nonblock){
 				RTE_LOG(DEBUG, USER1, "dpdk: no packets available in non-blocking mode.\n");
@@ -356,7 +355,7 @@ static int pcap_dpdk_dispatch(pcap_t *p, int max_cnt, pcap_handler cb, u_char *c
 			pkt_len = rte_pktmbuf_pkt_len(m);
 			// caplen = min(pkt_len, p->snapshot);
 			// caplen will not be changed, no matter how long the rte_pktmbuf
-			caplen = pkt_len < p->snapshot ? pkt_len: p->snapshot;
+			caplen = pkt_len < (uint32_t)p->snapshot ? pkt_len: (uint32_t)p->snapshot;
 			pcap_header.caplen = caplen;
 			pcap_header.len = pkt_len;
 			// volatile prefetch
@@ -983,10 +982,10 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "Can't open device %s: %s",
-			    p->opt.device, dpdk_pre_init_errbuf);
-			ret = PCAP_ERRNO;
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			    "Can't look for DPDK devices: %s",
+			    dpdk_pre_init_errbuf);
+			ret = PCAP_ERROR;
 			break;
 		}
 		if (ret == 0)
