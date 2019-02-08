@@ -5,9 +5,9 @@ os:
   - linux
   - osx
 
-dist:
-  - trusty
-  - xenial
+#dist:
+#  - trusty
+#  - xenial
 
 compiler:
   - gcc
