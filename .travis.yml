@@ -162,6 +162,7 @@ before_install:
   - uname -a
   - date
   - eval "${MATRIX_EVAL}"
+  - env
 
 install:
 
