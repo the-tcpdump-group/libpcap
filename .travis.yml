@@ -1,269 +1,13 @@
 sudo: false
 language: c
 
-#
-# On macOS:
-#
-#  gcc is an alias for clang;
-#  the "distribution" doesn't matter;
-#
-# so we set up a custom matrix to avoid redundant builds.
-#
-# We build on:
-#
-#    Ubuntu Trusty, with the default GCC and clang, and with APT
-#    developer packages for libusb-1.0-0, libdbus-glib-1, libbluetooth,
-#    libnl-genl-3, libibverbs, and libnuma;
-#
-#    Ubuntu Xenial, with the default GCC and clang, and with APT
-#    developer packages for libusb-1.0-0, libdbus-glib-1, libbluetooth,
-#    libnl-genl-3, libibverbs, libnuma, and DPDK;
-#
-#    the default macOS, with the default clang.
-#
-# (We can't use dpdk-dev with trusty, only in xenial; Trusty didn't
-# have DPDK support.)
-#
-matrix:
-  fast_finish: true
-  include:
-    # autotools, no remote capture support
-    - os: linux
-      dist: trusty
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: REMOTE=disable CMAKE=no
-    - os: linux
-      dist: trusty
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: REMOTE=disable CMAKE=no
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: REMOTE=disable CMAKE=no
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: REMOTE=disable CMAKE=no
-    - os: osx
-      compiler: clang
-      env: REMOTE=disable CMAKE=no
+os:
+  - linux
+  - osx
 
-    # CMake, no remote capture support
-    - os: linux
-      dist: trusty
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: ENABLE_REMOTE="" CMAKE=yes
-    - os: linux
-      dist: trusty
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: ENABLE_REMOTE="" CMAKE=yes
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: ENABLE_REMOTE="" CMAKE=yes
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: ENABLE_REMOTE="" CMAKE=yes
-    - os: osx
-      compiler: clang
-      env: ENABLE_REMOTE="" CMAKE=yes
-
-    # autotools, remote capture support
-    # This is the only configuration for which we do Coverity scan stuff
-    # and we only do that on Xenial with GCC.
-    - os: linux
-      dist: trusty
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: REMOTE=enable CMAKE=no
-    - os: linux
-      dist: trusty
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: REMOTE=enable CMAKE=no
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: REMOTE=enable CMAKE=no
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: REMOTE=enable CMAKE=no
-    - os: osx
-      compiler: clang
-      env: REMOTE=enable CMAKE=no
-
-    # CMake, remote capture support
-    - os: linux
-      dist: trusty
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    - os: linux
-      dist: trusty
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    - os: linux
-      dist: xenial
-      compiler: gcc
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-        apt:
-          packages:
-            - libusb-1.0-0-dev
-            - libdbus-glib-1-dev
-            - libbluetooth-dev
-            - libnl-genl-3-dev
-            - libibverbs-dev
-            - libnuma-dev
-            - dpdk-dev
-      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    - os: osx
-      compiler: clang
-      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+compiler:
+  - gcc
+  - clang
 
 env:
   global:
@@ -276,6 +20,14 @@ env:
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
+  matrix:
+    - REMOTE=disable CMAKE=no
+    - ENABLE_REMOTE="" CMAKE=yes
+    - REMOTE=enable CMAKE=no
+    - ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+
+matrix:
+  fast_finish: true
 
 addons:
   coverity_scan:
@@ -295,6 +47,18 @@ addons:
     build_command: make
     # Pattern to match selecting branches that will run analysis
     branch_pattern: coverity_scan
+  apt:
+    #
+    # We can't use dpdk-dev with trusty, only in xenial; Trusty didn't
+    # have DPDK support.
+    #
+    packages:
+      - libusb-1.0-0-dev
+      - libdbus-glib-1-dev
+      - libbluetooth-dev
+      - libnl-genl-3-dev
+      - libibverbs-dev
+      - libnuma-dev
 
 git:
   quiet: true
