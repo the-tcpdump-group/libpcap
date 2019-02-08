@@ -30,10 +30,18 @@ matrix:
     - os: linux
       dist: xenial
       compiler: gcc
+      addons:
+        apt:
+          packages:
+            - dpdk-dev
       env: REMOTE=disable CMAKE=no
     - os: linux
       dist: xenial
       compiler: clang
+      addons:
+        apt:
+          packages:
+            - dpdk-dev
       env: REMOTE=disable CMAKE=no
     - os: osx
       compiler: clang
