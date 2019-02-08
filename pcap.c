@@ -186,76 +186,165 @@ pcap_wsockinit(void)
 PCAP_API char pcap_version[];
 PCAP_API_DEF char pcap_version[] = PACKAGE_VERSION;
 
-static int
-pcap_not_initialized(pcap_t *pcap)
+static void
+pcap_set_not_initialized_message(pcap_t *pcap)
 {
 	if (pcap->activated) {
 		/* A module probably forgot to set the function pointer */
 		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 		    "This operation isn't properly handled by that device");
-		return (PCAP_ERROR);
+		return;
 	}
 	/* in case the caller doesn't check for PCAP_ERROR_NOT_ACTIVATED */
 	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "This handle hasn't been activated yet");
+}
+
+static int
+pcap_read_not_initialized(pcap_t *pcap, int cnt _U_, pcap_handler callback _U_,
+    u_char *user _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_inject_not_initialized(pcap_t *pcap, const void * buf _U_, int size _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_setfilter_not_initialized(pcap_t *pcap, struct bpf_program *fp _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_setdirection_not_initialized(pcap_t *pcap, pcap_direction_t d _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_set_datalink_not_initialized(pcap_t *pcap, int dlt _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_getnonblock_not_initialized(pcap_t *pcap)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_stats_not_initialized(pcap_t *pcap, struct pcap_stat *ps _U_)
+{
+	pcap_set_not_initialized_message(pcap);
 	/* this means 'not initialized' */
 	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
 #ifdef _WIN32
-static void *
-pcap_not_initialized_ptr(pcap_t *pcap)
+struct pcap_stat *
+pcap_stats_ex_not_initialized(pcap_t *pcap, int *pcap_stat_size _U_)
 {
-	if (pcap->activated) {
-		/* A module probably forgot to set the function pointer */
-		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-		    "This operation isn't properly handled by that device");
-		return (NULL);
-	}
-	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-	    "This handle hasn't been activated yet");
+	pcap_set_not_initialized_message(pcap);
 	return (NULL);
+}
+
+static int
+pcap_setbuff_not_initialized(pcap_t *pcap, int dim _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_setmode_not_initialized(pcap_t *pcap, int mode _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_setmintocopy_not_initialized(pcap_t *pcap, int size _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	/* this means 'not initialized' */
+	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
 static HANDLE
 pcap_getevent_not_initialized(pcap_t *pcap)
 {
-	if (pcap->activated) {
-		/* A module probably forgot to set the function pointer */
-		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-		    "This operation isn't properly handled by that device");
-		return (INVALID_HANDLE_VALUE);
-	}
-	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-	    "This handle hasn't been activated yet");
+	pcap_set_not_initialized_message(pcap);
 	return (INVALID_HANDLE_VALUE);
+}
+
+static int
+pcap_oid_get_request_not_initialized(pcap_t *pcap, bpf_u_int32 oid _U_,
+    void *data _U_, size_t *lenp _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_oid_set_request_not_initialized(pcap_t *pcap, bpf_u_int32 oid _U_,
+    const void *data _U_, size_t *lenp _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
 static u_int
 pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, int sync)
 {
-	if (pcap->activated) {
-		/* A module probably forgot to set the function pointer */
-		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-		    "This operation isn't properly handled by that device");
-		return (0);
-	}
-	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-	    "This handle hasn't been activated yet");
+	pcap_set_not_initialized_message(pcap);
 	return (0);
+}
+
+static int
+pcap_setuserbuffer_not_initialized(pcap_t *pcap, int size _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_live_dump_not_initialized(pcap_t *pcap, char *filename _U_, int maxsize _U_,
+    int maxpacks _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	return (PCAP_ERROR_NOT_ACTIVATED);
+}
+
+static int
+pcap_live_dump_ended_not_initialized(pcap_t *pcap, int sync _U_)
+{
+	pcap_set_not_initialized_message(pcap);
+	return (PCAP_ERROR_NOT_ACTIVATED);
 }
 
 static PAirpcapHandle
 pcap_get_airpcap_handle_not_initialized(pcap_t *pcap)
 {
-	if (pcap->activated) {
-		/* A module probably forgot to set the function pointer */
-		(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-		    "This operation isn't properly handled by that device");
-		return (NULL);
-	}
-	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
-	    "This handle hasn't been activated yet");
+	pcap_set_not_initialized_message(pcap);
 	return (NULL);
 }
 #endif
@@ -2111,25 +2200,25 @@ initialize_ops(pcap_t *p)
 	 * an activated pcap_t to point to a routine that returns
 	 * a "this isn't activated" error.
 	 */
-	p->read_op = (read_op_t)pcap_not_initialized;
-	p->inject_op = (inject_op_t)pcap_not_initialized;
-	p->setfilter_op = (setfilter_op_t)pcap_not_initialized;
-	p->setdirection_op = (setdirection_op_t)pcap_not_initialized;
-	p->set_datalink_op = (set_datalink_op_t)pcap_not_initialized;
-	p->getnonblock_op = (getnonblock_op_t)pcap_not_initialized;
-	p->stats_op = (stats_op_t)pcap_not_initialized;
+	p->read_op = pcap_read_not_initialized;
+	p->inject_op = pcap_inject_not_initialized;
+	p->setfilter_op = pcap_setfilter_not_initialized;
+	p->setdirection_op = pcap_setdirection_not_initialized;
+	p->set_datalink_op = pcap_set_datalink_not_initialized;
+	p->getnonblock_op = pcap_getnonblock_not_initialized;
+	p->stats_op = pcap_stats_not_initialized;
 #ifdef _WIN32
-	p->stats_ex_op = (stats_ex_op_t)pcap_not_initialized_ptr;
-	p->setbuff_op = (setbuff_op_t)pcap_not_initialized;
-	p->setmode_op = (setmode_op_t)pcap_not_initialized;
-	p->setmintocopy_op = (setmintocopy_op_t)pcap_not_initialized;
+	p->stats_ex_op = pcap_stats_ex_not_initialized;
+	p->setbuff_op = pcap_setbuff_not_initialized;
+	p->setmode_op = pcap_setmode_not_initialized;
+	p->setmintocopy_op = pcap_setmintocopy_not_initialized;
 	p->getevent_op = pcap_getevent_not_initialized;
-	p->oid_get_request_op = (oid_get_request_op_t)pcap_not_initialized;
-	p->oid_set_request_op = (oid_set_request_op_t)pcap_not_initialized;
+	p->oid_get_request_op = pcap_get_request_not_initialized;
+	p->oid_set_request_op = pcap_set_request_not_initialized;
 	p->sendqueue_transmit_op = pcap_sendqueue_transmit_not_initialized;
-	p->setuserbuffer_op = (setuserbuffer_op_t)pcap_not_initialized;
-	p->live_dump_op = (live_dump_op_t)pcap_not_initialized;
-	p->live_dump_ended_op = (live_dump_ended_op_t)pcap_not_initialized;
+	p->setuserbuffer_op = pcap_setuserbuffer_not_initialized;
+	p->live_dump_op = pcap_live_dump_not_initialized;
+	p->live_dump_ended_op = pcap_live_dump_ended_not_initialized;
 	p->get_airpcap_handle_op = pcap_get_airpcap_handle_not_initialized;
 #endif
 
