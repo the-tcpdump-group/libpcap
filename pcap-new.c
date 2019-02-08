@@ -257,7 +257,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 			/* Skip the file if the pathname won't fit in the buffer */
 			if (pathlen + strlen(filedata.cFileName) >= sizeof(filename))
 				continue;
-			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata->d_name);
+			pcap_snprintf(filename, sizeof(filename), "%s%s", path, filedata.cFileName);
 #else
 			if (pathlen + strlen(filedata->d_name) >= sizeof(filename))
 				continue;
