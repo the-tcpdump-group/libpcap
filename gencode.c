@@ -9009,7 +9009,7 @@ struct block *
 gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
     int has_label_num)
 {
-	bpf_u_int32 label_num = label_num_arg;
+	volatile bpf_u_int32 label_num = label_num_arg;
 	struct	block	*b0, *b1;
 
 	/*
@@ -9786,7 +9786,7 @@ struct block *
 gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
     bpf_u_int32 jvalue_arg, int jtype, int reverse)
 {
-	bpf_u_int32 jvalue = jvalue_arg;
+	volatile bpf_u_int32 jvalue = jvalue_arg;
 	struct block *b0;
 	bpf_u_int32 val1 , val2 , val3;
 	u_int newoff_sio;
