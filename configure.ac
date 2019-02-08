@@ -2240,11 +2240,10 @@ AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 		# User wants DPDK support but hasn't specified a directory.
 		want_dpdk=yes
 	else
-		# User wants DPDK support and has specified a directory, so use the provided value.
+		# User wants DPDK support and has specified a directory,
+		# so use the provided value.
 		want_dpdk=yes
 		dpdk_dir=$withval
-		dpdk_inc_dir="$dpdk_dir/include"
-		dpdk_lib_dir="$dpdk_dir/lib"
 	fi
 ],[
 	if test "$V_PCAP" = dpdk; then
@@ -2265,9 +2264,31 @@ AC_HELP_STRING([--with-dpdk@<:@=DIR@:>@],[include DPDK support (located in direc
 
 if test "$want_dpdk" != no; then
 	if test -z "$dpdk_dir"; then
-		dpdk_inc_dir="/usr/local/include/dpdk"
-		dpdk_lib_dir="/usr/local/lib"
+		#
+		# The user didn't specify a directory containing
+		# the DPDK headers and libraries.  If we find
+		# a /usr/local/include/dpdk directory, assume
+		# it's /usr/local, otherwise assume it's /usr.
+		#
+		if test -d "/usr/local/include/dpdk"; then
+			dpdk_dir="/usr/local"
+		else
+			dpdk_dir="/usr"
+		fi
 	fi
+	#
+	# The convention appears to be that 1) there's a "dpdk"
+	# subdirectory of the include directory, containing DPDK
+	# headers (at least in the installation on Ubuntu with
+	# the system DPDK packages) and 2) includes of DPDK
+	# headers don't use "dpdk/{header}" (at least from the
+	# way the DPDK documentation is written).
+	#
+	# So we add "/dpdk" to the include directory, and always
+	# add that to the list of include directories to search.
+	#
+	dpdk_inc_dir="$dpdk_dir/include/dpdk"
+	dpdk_lib_dir="$dpdk_dir/lib"
 	DPDK_MACHINE_CFLAGS="-march=native"
 	DPDK_CFLAGS="$DPDK_MACHINE_CFLAGS -I$dpdk_inc_dir"
 	DPDK_LDFLAGS="-L$dpdk_lib_dir -ldpdk -lrt -lm -lnuma -ldl -pthread"
