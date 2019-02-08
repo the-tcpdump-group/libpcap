@@ -7,16 +7,87 @@ language: c
 #  gcc is an alias for clang;
 #  the "distribution" doesn't matter;
 #
-# so we set up a ccustom matrix to avoid redundant builds.
+# so we set up a custom matrix to avoid redundant builds.
 #
 matrix:
+  fast_finish: true
   include:
     - os: linux
+      dist: trusty
       compiler: gcc
       env: REMOTE=disable CMAKE=no
     - os: linux
+      dist: trusty
+      compiler: clang
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: xenial
       compiler: gcc
-      env: REMOTE=disable CMAKE=yes
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: REMOTE=disable CMAKE=no
+    - os: macos
+      compiler: clang
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: macos
+      compiler: clang
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: REMOTE=enable CMAKE=no
+    - os: macos
+      compiler: clang
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: macos
+      compiler: clang
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
 env:
   global:
@@ -29,9 +100,6 @@ env:
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
-
-matrix:
-  fast_finish: true
 
 addons:
   coverity_scan:
