@@ -2179,8 +2179,8 @@ initialize_ops(pcap_t *p)
 	p->setmode_op = pcap_setmode_not_initialized;
 	p->setmintocopy_op = pcap_setmintocopy_not_initialized;
 	p->getevent_op = pcap_getevent_not_initialized;
-	p->oid_get_request_op = pcap_get_request_not_initialized;
-	p->oid_set_request_op = pcap_set_request_not_initialized;
+	p->oid_get_request_op = pcap_oid_get_request_not_initialized;
+	p->oid_set_request_op = pcap_oid)set_request_not_initialized;
 	p->sendqueue_transmit_op = pcap_sendqueue_transmit_not_initialized;
 	p->setuserbuffer_op = pcap_setuserbuffer_not_initialized;
 	p->live_dump_op = pcap_live_dump_not_initialized;
