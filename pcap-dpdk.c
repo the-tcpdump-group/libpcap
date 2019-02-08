@@ -190,6 +190,9 @@ static struct rte_eth_conf port_conf = {
 	},
 };
 
+static void	dpdk_fmt_errmsg_for_rte_errno(char *, size_t, int,
+    PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(4, 5);
+
 /*
  * Generate an error message based on a format, arguments, and an
  * rte_errno, with a message for the rte_errno after the formatted output.
@@ -710,7 +713,8 @@ error:
 			// as an error.
 			//
 			dpdk_fmt_errmsg_for_rte_errno(ebuf,
-			    PCAP_ERRBUF_SIZE, -is_dpdk_pre_inited);
+			    PCAP_ERRBUF_SIZE, -is_dpdk_pre_inited,
+			    "dpdk error: dpdk_pre_init failed");
 			break;
 	}
 	// Error.
