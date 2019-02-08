@@ -1334,6 +1334,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		cstate->off_linkhdr.is_variable = 1;
 		/* Fall through, 802.11 doesn't have a variable link
 		 * prefix but is otherwise the same. */
+		/* FALLTHROUGH */
 
 	case DLT_IEEE802_11:
 		/*
@@ -9823,7 +9824,9 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 		break;
 
 	case MH_OPC:
-		newoff_opc+=3;
+		newoff_opc += 3;
+
+		/* FALLTHROUGH */
         case M_OPC:
 	        if (cstate->off_opc == OFFSET_NOT_SET)
 			bpf_error(cstate, "'opc' supported only on SS7");
@@ -9867,7 +9870,9 @@ gen_mtp3field_code(compiler_state_t *cstate, int mtp3field,
 		break;
 
 	case MH_SLS:
-	  newoff_sls+=3;
+		newoff_sls += 3;
+		/* FALLTHROUGH */
+
 	case M_SLS:
 	        if (cstate->off_sls == OFFSET_NOT_SET)
 			bpf_error(cstate, "'sls' supported only on SS7");
