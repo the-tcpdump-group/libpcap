@@ -710,7 +710,8 @@ error:
 			// as an error.
 			//
 			dpdk_fmt_errmsg_for_rte_errno(ebuf,
-			    PCAP_ERRBUF_SIZE, -is_dpdk_pre_inited);
+			    PCAP_ERRBUF_SIZE, -is_dpdk_pre_inited,
+			    "Not in the list of errors %d",-is_dpdk_pre_inited);
 			break;
 	}
 	// Error.
@@ -977,10 +978,10 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-			    "Can't open device %s: %s",
-			    p->opt.device, dpdk_pre_init_errbuf);
-			ret = PCAP_ERRNO;
+			pcap_snprintf(dpdk_pre_init_errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't open DPDK device: %s",
+			    dpdk_pre_init_errbuf);
+			ret = PCAP_ERROR;
 			break;
 		}
 		if (ret == 0)
