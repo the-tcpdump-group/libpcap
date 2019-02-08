@@ -1433,18 +1433,28 @@ main(void)
 endif()
 
 # Check for DPDK sniffing support
-if (NOT DISABLE_DPDK)
-	find_package(dpdk)
-	if (dpdk_FOUND)
-                set(DPDK_C_FLAGS "-march=native")
-                set(DPDK_LIB dpdk rt m numa dl)
-		set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${DPDK_C_FLAGS})
-		include_directories(AFTER ${dpdk_INCLUDE_DIRS})
-		link_directories(AFTER ${dpdk_LIBRARIES})
-		set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${dpdk_LIBRARIES})
-		set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
-		set(PCAP_SUPPORT_DPDK TRUE)
-	endif()
+if(NOT DISABLE_DPDK)
+    find_package(dpdk)
+    if(dpdk_FOUND)
+        #
+        # We use rte_delay_us_block(), and older versions of DPDK
+        # didn't have it, so check for it.
+        #
+        cmake_push_check_state()
+        set(CMAKE_REQUIRED_LIBRARIES ${dpdk_LIBRARIES})
+        check_function_exists(rte_delay_us_block HAVE_RTE_DELAY_US_BLOCK)
+        cmake_pop_check_state()
+        if(HAVE_RTE_DELAY_US_BLOCK)
+            set(DPDK_C_FLAGS "-march=native")
+            set(DPDK_LIB dpdk rt m numa dl)
+            set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${DPDK_C_FLAGS})
+            include_directories(AFTER ${dpdk_INCLUDE_DIRS})
+            link_directories(AFTER ${dpdk_LIBRARIES})
+            set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${dpdk_LIBRARIES})
+            set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-dpdk.c)
+            set(PCAP_SUPPORT_DPDK TRUE)
+        endif()
+    endif()
 endif()
 
 # Check for Bluetooth sniffing support

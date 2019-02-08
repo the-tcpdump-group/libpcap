@@ -2310,11 +2310,19 @@ AC_INCLUDES_DEFAULT
 	    ac_cv_dpdk_can_compile=no))
 	AC_MSG_RESULT($ac_cv_dpdk_can_compile)
 
+	#
+	# We use rte_delay_us_block(), and older versions of DPDK
+	# didn't have it, so check for it.
+	#
+	if test "$ac_cv_dpdk_can_compile" = yes; then
+		AC_CHECK_FUNC(rte_delay_us_block)
+	fi
+
 	CFLAGS="$save_CFLAGS"
 	LIBS="$save_LIBS"
 	LDFLAGS="$save_LDFLAGS"
 
-	if test "$ac_cv_dpdk_can_compile" = yes; then
+	if test "$ac_cv_func_rte_delay_us_block" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LDFLAGS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"
