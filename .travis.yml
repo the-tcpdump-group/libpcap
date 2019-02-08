@@ -161,6 +161,7 @@ git:
 before_install:
   - uname -a
   - date
+  - eval "${MATRIX_EVAL}"
 
 install:
 
