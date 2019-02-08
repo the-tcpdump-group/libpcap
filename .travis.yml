@@ -11,102 +11,82 @@ language: c
 #
 matrix:
   include:
-  - os: linux
-    dist: trusty
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="REMOTE=disable && CMAKE=no"
-  - os: linux
-    dist: trusty
-    compiler: clang
-    env:
-      - MATRIX_EVAL="REMOTE=disable && CMAKE=no"
-  - os: linux
-    dist: xenial
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="REMOTE=disable && CMAKE=no"
-  - os: linux
-    dist: xenial
-    compiler: clang
-    env:
-      - MATRIX_EVAL="REMOTE=disable && CMAKE=no"
-  - os: macos
-    compiler: clang
-    env:
-      - MATRIX_EVAL="REMOTE=disable && CMAKE=no"
-  - os: linux
-    dist: trusty
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"\" && CMAKE=yes"
-  - os: linux
-    dist: trusty
-    compiler: clang
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"\" && CMAKE=yes"
-  - os: linux
-    dist: xenial
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"\" && CMAKE=yes"
-  - os: linux
-    dist: xenial
-    compiler: clang
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"\" && CMAKE=yes"
-  - os: macos
-    compiler: clang
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"\" && CMAKE=yes"
-  - os: linux
-    dist: trusty
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="REMOTE=enable && CMAKE=no"
-  - os: linux
-    dist: trusty
-    compiler: clang
-    env:
-      - MATRIX_EVAL="REMOTE=enable && CMAKE=no"
-  - os: linux
-    dist: xenial
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="REMOTE=enable && CMAKE=no"
-  - os: linux
-    dist: xenial
-    compiler: clang
-    env:
-      - MATRIX_EVAL="REMOTE=enable && CMAKE=no"
-  - os: macos
-    compiler: clang
-    env:
-      - MATRIX_EVAL="REMOTE=enable && CMAKE=no"
-  - os: linux
-    dist: trusty
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"-DENABLE_REMOTE=ON\" && CMAKE=yes"
-  - os: linux
-    dist: trusty
-    compiler: clang
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"-DENABLE_REMOTE=ON\" && CMAKE=yes"
-  - os: linux
-    dist: xenial
-    compiler: gcc
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"-DENABLE_REMOTE=ON\" && CMAKE=yes"
-  - os: linux
-    dist: xenial
-    compiler: clang
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"-DENABLE_REMOTE=ON\" && CMAKE=yes"
-  - os: macos
-    compiler: clang
-    env:
-      - MATRIX_EVAL="ENABLE_REMOTE=\"-DENABLE_REMOTE=ON\" && CMAKE=yes"
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: REMOTE=disable CMAKE=no
+    - os: macos
+      compiler: clang
+      env: REMOTE=disable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: macos
+      compiler: clang
+      env: ENABLE_REMOTE="" CMAKE=yes
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: REMOTE=enable CMAKE=no
+    - os: macos
+      compiler: clang
+      env: REMOTE=enable CMAKE=no
+    - os: linux
+      dist: trusty
+      compiler: gcc
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: linux
+      dist: trusty
+      compiler: clang
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: linux
+      dist: xenial
+      compiler: clang
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
+    - os: macos
+      compiler: clang
+      env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
 env:
   global:
