@@ -9,9 +9,16 @@ language: c
 #
 # so we set up a custom matrix to avoid redundant builds.
 #
+# We build on:
+#
+#    Ubuntu Trusty, with the default GCC and clang;
+#    Ubuntu Xenial, with the default GCC and clang;
+#    the default macOS, with the default clang.
+#
 matrix:
   fast_finish: true
   include:
+    # autotools, no remote capture support
     - os: linux
       dist: trusty
       compiler: gcc
@@ -28,9 +35,11 @@ matrix:
       dist: xenial
       compiler: clang
       env: REMOTE=disable CMAKE=no
-    - os: macos
+    - os: osx
       compiler: clang
       env: REMOTE=disable CMAKE=no
+
+    # CMake, no remote capture support
     - os: linux
       dist: trusty
       compiler: gcc
@@ -47,9 +56,11 @@ matrix:
       dist: xenial
       compiler: clang
       env: ENABLE_REMOTE="" CMAKE=yes
-    - os: macos
+    - os: osx
       compiler: clang
       env: ENABLE_REMOTE="" CMAKE=yes
+
+    # autotools, remote capture support
     - os: linux
       dist: trusty
       compiler: gcc
@@ -66,9 +77,11 @@ matrix:
       dist: xenial
       compiler: clang
       env: REMOTE=enable CMAKE=no
-    - os: macos
+    - os: osx
       compiler: clang
       env: REMOTE=enable CMAKE=no
+
+    # CMake, remote capture support
     - os: linux
       dist: trusty
       compiler: gcc
@@ -85,7 +98,7 @@ matrix:
       dist: xenial
       compiler: clang
       env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
-    - os: macos
+    - os: osx
       compiler: clang
       env: ENABLE_REMOTE="-DENABLE_REMOTE=ON" CMAKE=yes
 
@@ -139,8 +152,6 @@ git:
 before_install:
   - uname -a
   - date
-  - eval "${MATRIX_EVAL}"
-  - env
 
 install:
 
