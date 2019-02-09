@@ -809,7 +809,7 @@ if(WIN32)
     # that uses _vscprintf() to determine how big the string needs to be.
     #
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        missing/win_snprintf.c, missing/win_asprintf.c)
+        missing/win_snprintf.c missing/win_asprintf.c)
 else()
     #
     # Either:
