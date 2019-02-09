@@ -715,7 +715,8 @@ error:
 			//
 			dpdk_fmt_errmsg_for_rte_errno(ebuf,
 			    PCAP_ERRBUF_SIZE, -is_dpdk_pre_inited,
-			    "dpdk error: dpdk_pre_init failed");
+
+			    "Not in the list of errors %d",-is_dpdk_pre_inited);
 			break;
 	}
 	// Error.
@@ -982,8 +983,13 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
+<<<<<<< HEAD
 			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "Can't look for DPDK devices: %s",
+=======
+			pcap_snprintf(dpdk_pre_init_errbuf, PCAP_ERRBUF_SIZE,
+			    "Can't open DPDK device: %s",
+>>>>>>> d8038bb84212696667d2f9b2cd97a0e12352fbdf
 			    dpdk_pre_init_errbuf);
 			ret = PCAP_ERROR;
 			break;
