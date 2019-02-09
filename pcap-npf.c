@@ -2033,11 +2033,13 @@ pcap_lib_version(void)
 			 * same version of WinPcap), so we report both
 			 * versions.
 			 */
-			if (pcap_asprintf(&pcap_lib_version_string,
+			char *full_pcap_version_string;
+
+			if (pcap_asprintf(&full_pcap_version_string,
 			    WINPCAP_PRODUCT_NAME " version " WINPCAP_VER_STRING " (packet.dll version %s), based on " PCAP_VERSION_STRING,
-			    packet_version_string) == -1) {
-				/* Failed. */
-				pcap_lib_version_string = NULL;
+			    packet_version_string) != -1) {
+				/* Success */
+				pcap_lib_version_string = full_pcap_version_string;
 			}
 		}
 	}
@@ -2058,11 +2060,13 @@ pcap_lib_version(void)
 		 * Generate the version string.  Report the packet.dll
 		 * version.
 		 */
-		if (pcap_asprintf(&pcap_lib_version_string,
+		char *full_pcap_version_string;
+
+		if (pcap_asprintf(&full_pcap_version_string,
 		    PCAP_VERSION_STRING " (packet.dll version %s)",
-		    PacketGetVersion()) == -1) {
-			/* Failed. */
-			pcap_lib_version_string = NULL;
+		    PacketGetVersion()) != -1) {
+			/* Success */
+			pcap_lib_version_string = full_pcap_version_string;
 		}
 	}
 	return (pcap_lib_version_string);
