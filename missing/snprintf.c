@@ -31,6 +31,10 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * We use this for platforms that don't have snprintf() at all.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -42,7 +46,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 
-#include <pcap-int.h>
+#include "portability.h"
 
 enum format_flags {
     minus_flag     =  1,

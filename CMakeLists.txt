@@ -340,6 +340,8 @@ check_function_exists(strlcpy HAVE_STRLCPY)
 check_function_exists(strlcat HAVE_STRLCAT)
 check_function_exists(snprintf HAVE_SNPRINTF)
 check_function_exists(vsnprintf HAVE_VSNPRINTF)
+check_function_exists(asprintf HAVE_ASPRINTF)
+check_function_exists(vasprintf HAVE_VASPRINTF)
 check_function_exists(strtok_r HAVE_STRTOK_R)
 if(NOT WIN32)
     check_function_exists(vsyslog HAVE_VSYSLOG)
@@ -908,11 +910,55 @@ set(PROJECT_SOURCE_LIST_C
 )
 
 if(WIN32)
-    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/win_snprintf.c)
+    #
+    # For now, we assume we don't have snprintf() or that it's not one
+    # that behaves enough like C99's snprintf() for our purposes (i.e.,
+    # it doesn't null-terminate the string if it truncates it to fit in
+    # the buffer), so we have to provide our own (a wrapper around
+    # _snprintf() that null-terminates the buffer).
+    #
+    # We also assume we don't have asprintf(), and provide an implementation
+    # that uses _vscprintf() to determine how big the string needs to be.
+    #
+    set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
+        missing/win_snprintf.c, missing/win_asprintf.c)
 else()
+    #
+    # Either:
+    #
+    #	we have snprintf() and vsnprintf(), and have asprintf() and
+    #	vasprintf();
+    #
+    #	we have snprintf() and vsnprintf(), but don't have asprintf()
+    #	or vasprintf();
+    #
+    #	we have neither snprintf() nor vsnprintf(), and don't have
+    #	asprintf() or vasprintf(), either.
+    #
+    # We assume that if we have asprintf() we have vasprintf(), as well
+    # as snprintf() and vsnprintf(), and that if we have snprintf() we
+    # have vsnprintf().
+    #
+    # For the first case, we don't need any replacement routines.
+    # For the second case, we need replacement asprintf()/vasprintf()
+    # routines.
+    # For the third case, we need replacement snprintf()/vsnprintf() and
+    # asprintf()/vasprintf() routines.
+    #
     if(NOT HAVE_SNPRINTF)
+        #
+        # We assume we have none of them; missing/snprintf.c supplies
+        # all of them.
+        #
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/snprintf.c)
-    endif(NOT HAVE_SNPRINTF)
+    elif(NOT HAVE_ASPRINTF)
+        #
+        # We assume we have snprintf()/vsnprintf() but lack
+        # asprintf()/vasprintf(); missing/asprintf.c supplies
+        # the latter (using vsnprintf()).
+        #
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/asprintf.c)
+    endif()
     if(NOT HAVE_STRLCAT)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/strlcat.c)
     endif(NOT HAVE_STRLCAT)

@@ -15,6 +15,9 @@
 /* define if we have the AIX getprotobyname_r() */
 #undef HAVE_AIX_GETPROTOBYNAME_R
 
+/* Define to 1 if you have the `asprintf' function. */
+#undef HAVE_ASPRINTF
+
 /* Define to 1 if you have the <dagapi.h> header file. */
 #undef HAVE_DAGAPI_H
 
@@ -264,6 +267,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vasprintf' function. */
+#undef HAVE_VASPRINTF
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #undef HAVE_VSNPRINTF

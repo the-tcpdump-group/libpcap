@@ -101,11 +101,47 @@ AC_CHECK_FUNCS(strerror strerror_r strerror_s)
 #
 AC_CHECK_FUNCS(vsyslog)
 
+#
+# Either:
+#
+#	we have snprintf() and vsnprintf(), and have asprintf() and
+#	vasprintf();
+#
+#	we have snprintf() and vsnprintf(), but don't have asprintf()
+#	or vasprintf();
+#
+#	we have neither snprintf() nor vsnprintf(), and don't have
+#	asprintf() or vasprintf(), either.
+#
+# We assume that if we have asprintf() we have vasprintf(), as well
+# as snprintf() and vsnprintf(), and that if we have snprintf() we
+# have vsnprintf().
+#
+# For the first case, we don't need any replacement routines.
+# For the second case, we need replacement asprintf()/vasprintf()
+# routines.
+# For the third case, we need replacement snprintf()/vsnprintf() and
+# asprintf()/vasprintf() routines.
+#
 needsnprintf=no
 AC_CHECK_FUNCS(vsnprintf snprintf,,
 	[needsnprintf=yes])
+needasprintf=no
+AC_CHECK_FUNCS(vasprintf asprintf,,
+	[needasprintf=yes])
 if test $needsnprintf = yes; then
+	#
+	# We assume we have none of them; missing/snprintf.c supplies
+	# all of them.
+	#
 	AC_LIBOBJ([snprintf])
+elif test $needasprintf = yes; then
+	#
+	# We assume we have snprintf()/vsnprintf() but lack
+	# asprintf()/vasprintf(); missing/asprintf.c supplies
+	# the latter (using vsnprintf()).
+	#
+	AC_LIBOBJ([asprintf])
 fi
 
 needstrlcat=no

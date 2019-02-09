@@ -15,6 +15,9 @@
 /* define if we have the AIX getprotobyname_r() */
 #cmakedefine HAVE_AIX_GETPROTOBYNAME_R 1
 
+/* Define to 1 if you have the `asprintf' function. */
+#cmakedefine HAVE_ASPRINTF 1
+
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
@@ -258,6 +261,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
+
+/* Define to 1 if you have the `vasprintf' function. */
+#cmakedefine HAVE_VASPRINTF 1
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1

@@ -1684,8 +1684,6 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 		char peeraddress[128];
 		char peerctrlport[128];
 		char *newfilter;
-		const int newstringsize = 1024;
-		size_t currentfiltersize;
 
 		/* Get the name/port of our peer */
 		saddrlen = sizeof(struct sockaddr_storage);
@@ -1732,24 +1730,41 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			return -1;
 		}
 
-		currentfiltersize = pr->currentfilter ? strlen(pr->currentfilter) : 0;
-
-		newfilter = (char *)malloc(currentfiltersize + newstringsize + 1);
-
-		if (currentfiltersize)
+		if (pr->currentfilter && pr->currentfilter[0] != '\0')
 		{
-			pcap_snprintf(newfilter, currentfiltersize + newstringsize,
-				"(%s) and not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
-				pr->currentfilter, myaddress, peeraddress, myctrlport, peerctrlport, myaddress, peeraddress, mydataport);
+			/*
+			 * We have a current filter; add items to it to
+			 * filter out this rpcap session.
+			 */
+			if (pcap_asprintf(&newfilter,
+			    "(%s) and not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
+			    pr->currentfilter, myaddress, peeraddress,
+			    myctrlport, peerctrlport, myaddress, peeraddress,
+			    mydataport) == -1)
+			{
+				/* Failed. */
+				pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+				    "Can't allocate memory for new filter");
+				return -1;
+			}
 		}
 		else
 		{
-			pcap_snprintf(newfilter, currentfiltersize + newstringsize,
-				"not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
-				myaddress, peeraddress, myctrlport, peerctrlport, myaddress, peeraddress, mydataport);
+			/*
+			 * We have no current filter; construct a filter to
+			 * filter out this rpcap session.
+			 */
+			if (pcap_asprintf(&newfilter,
+			    "not (host %s and host %s and port %s and port %s) and not (host %s and host %s and port %s)",
+			    myaddress, peeraddress, myctrlport, peerctrlport,
+			    myaddress, peeraddress, mydataport) == -1)
+			{
+				/* Failed. */
+				pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+				    "Can't allocate memory for new filter");
+				return -1;
+			}
 		}
-
-		newfilter[currentfiltersize + newstringsize] = 0;
 
 		/*
 		 * This is only an hack to prevent the save_current_filter
@@ -2506,7 +2521,6 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 	{
 		struct rpcap_findalldevs_if findalldevs_if;
 		char tmpstring2[PCAP_BUF_SIZE + 1];		/* Needed to convert names and descriptions from 'old' syntax to the 'new' one */
-		size_t stringlen;
 		struct pcap_addr *addr, *prevaddr;
 
 		tmpstring2[PCAP_BUF_SIZE] = 0;
@@ -2596,29 +2610,14 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			tmpstring[findalldevs_if.desclen] = 0;
 
-			stringlen = PCAP_TEXT_SOURCE_ADAPTER_LEN
-			    + 1 + 1 /* space and ' */
-			    + strlen(tmpstring)
-			    + 1 + 1 /* ' and space */
-			    + PCAP_TEXT_SOURCE_ON_REMOTE_HOST_LEN
-			    + 1 /* space */
-			    + strlen(host)
-			    + 1; /* terminating '\0' */
-			dev->description = (char *)malloc(stringlen);
-			if (dev->description == NULL)
+			if (pcap_asprintf(&dev->description,
+			    "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
+			    tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host) == -1)
 			{
 				pcap_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno, "malloc() failed");
 				goto error;
 			}
-
-			/*
-			 * Now format the new device description into
-			 * that buffer.
-			 */
-			pcap_snprintf(dev->description, stringlen,
-			    "%s '%s' %s %s", PCAP_TEXT_SOURCE_ADAPTER,
-			    tmpstring, PCAP_TEXT_SOURCE_ON_REMOTE_HOST, host);
 		}
 
 		dev->flags = ntohl(findalldevs_if.flags);
