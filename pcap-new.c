@@ -150,21 +150,14 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 
 			/*
 			 * Create the description.
-			 * First, allocate a buffer large enough
-			 * for the name.
 			 */
 			if ((dev->description == NULL) || (dev->description[0] == 0))
 				localdesc = dev->name;
 			else
 				localdesc = dev->description;
-			stringlen = PCAP_TEXT_SOURCE_ADAPTER_LEN
-			    + 1 + 1 /* space and ' */
-			    + strlen(localdesc)
-			    + 1 + 1 /* ' and space */
-			    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
-			    + 1; /* terminating '\0' */
-			desc = (char *)malloc(stringlen);
-			if (desc == NULL)
+			if (pcap_asprintf(&desc, "%s '%s' %s",
+			    PCAP_TEXT_SOURCE_ADAPTER, localdesc,
+			    PCAP_TEXT_SOURCE_ON_LOCAL_HOST) == -1)
 			{
 				pcap_fmt_errmsg_for_errno(errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
@@ -172,9 +165,6 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 				pcap_freealldevs(*alldevs);
 				return -1;
 			}
-			pcap_snprintf(desc, stringlen, "%s '%s' %s",
-			    PCAP_TEXT_SOURCE_ADAPTER, localdesc,
-			    PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
 
 			/* Now overwrite the description */
 			free(dev->description);
@@ -320,17 +310,10 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 
 				/*
 				 * Create the description.
-				 * First, allocate a buffer large enough
-				 * for the name.
 				 */
-				stringlen = PCAP_TEXT_SOURCE_FILE_LEN
-				    + 1 + 1 /* space and ' */
-				    + strlen(filename)
-				    + 1 + 1 /* ' and space */
-				    + PCAP_TEXT_SOURCE_ON_LOCAL_HOST_LEN
-				    + 1; /* terminating '\0' */
-				dev->description = (char *)malloc(stringlen);
-				if (dev->description == NULL)
+				if (pcap_asprintf(&dev->description,
+				    "%s '%s' %s", PCAP_TEXT_SOURCE_FILE,
+				    filename, PCAP_TEXT_SOURCE_ON_LOCAL_HOST) == -1)
 				{
 					pcap_fmt_errmsg_for_errno(errbuf,
 					    PCAP_ERRBUF_SIZE, errno,
@@ -338,14 +321,6 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 					pcap_freealldevs(*alldevs);
 					return -1;
 				}
-
-				/*
-				 * Now format the new device description
-				 * into that buffer.
-				 */
-				pcap_snprintf(dev->description, stringlen,
-				    "%s '%s' %s", PCAP_TEXT_SOURCE_FILE,
-				    filename, PCAP_TEXT_SOURCE_ON_LOCAL_HOST);
 
 				pcap_close(fp);
 			}

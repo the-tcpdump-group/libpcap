@@ -38,6 +38,7 @@
  * Helpers for portability between Windows and UN*X and between different
  * flavors of UN*X.
  */
+#include <stdarg.h>	/* we declare varargs functions on some platforms */
 
 #include "pcap/funcattrs.h"
 
@@ -128,6 +129,23 @@ extern int pcap_snprintf(char *, size_t, PCAP_FORMAT_STRING(const char *), ...)
 #define pcap_vsnprintf vsnprintf
 #else
 extern int pcap_vsnprintf(char *, size_t, const char *, va_list ap);
+#endif
+
+/*
+ * We also want asprintf(), for some cases where we use it to construct
+ * dynamically-allocated variable-length strings.
+ */
+#ifdef HAVE_ASPRINTF
+#define pcap_asprintf asprintf
+#else
+extern int pcap_asprintf(char **, PCAP_FORMAT_STRING(const char *), ...)
+    PCAP_PRINTFLIKE(2, 3);
+#endif
+
+#ifdef HAVE_VASPRINTF
+#define pcap_vasprintf vasprintf
+#else
+extern int pcap_vasprintf(char **, const char *, va_list ap);
 #endif
 
 #ifdef HAVE_STRTOK_R

@@ -830,20 +830,13 @@ get_if_description(const char *name)
 				 * OK, it's a valid number that's not
 				 * bigger than INT_MAX.  Construct
 				 * a description from it.
+				 * (If that fails, we don't worry about
+				 * it, we just return NULL.)
 				 */
-				static const char descr_prefix[] = "USB bus number ";
-				size_t descr_size;
-
-				/*
-				 * Allow enough room for a 32-bit bus number.
-				 * sizeof (descr_prefix) includes the
-				 * terminating NUL.
-				 */
-				descr_size = sizeof (descr_prefix) + 10;
-				description = malloc(descr_size);
-				if (description != NULL) {
-					pcap_snprintf(description, descr_size,
-					    "%s%ld", descr_prefix, busnum);
+				if (pcap_asprintf(&description,
+				    "USB bus number %ld", busnum) == -1) {
+					/* Failed. */
+					description = NULL;
 				}
 			}
 		}

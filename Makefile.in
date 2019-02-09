@@ -277,12 +277,14 @@ EXTRA_DIST = \
 	lbl/os-sunos4.h \
 	lbl/os-ultrix4.h \
 	libpcap.pc.in \
+	missing/asprintf.c \
 	missing/getopt.c \
 	missing/getopt.h \
 	missing/snprintf.c \
 	missing/strlcat.c \
 	missing/strlcpy.c \
 	missing/strtok_r.c \
+	missing/win_asprintf.c \
 	missing/win_snprintf.c \
 	mkdep \
 	msdos/bin2c.c \
@@ -492,6 +494,9 @@ grammar.o: grammar.c scanner.h
 
 gencode.o: $(srcdir)/gencode.c grammar.h scanner.h
 	$(CC) $(FULL_CFLAGS) -c $(srcdir)/gencode.c
+
+asprintf.o: $(srcdir)/missing/asprintf.c
+	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/asprintf.c
 
 snprintf.o: $(srcdir)/missing/snprintf.c
 	$(CC) $(FULL_CFLAGS) -o $@ -c $(srcdir)/missing/snprintf.c
