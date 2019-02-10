@@ -153,6 +153,9 @@
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #undef HAVE_PF_NAT_THROUGH_PF_NORDR
 
+/* Define to 1 if you have the <rte_bus.h> header file. */
+#undef HAVE_RTE_BUS_H
+
 /* define if you have the Septel API */
 #undef HAVE_SEPTEL_API
 

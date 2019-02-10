@@ -10724,14 +10724,21 @@ fi
 $as_echo "$ac_cv_dpdk_can_compile" >&6; }
 
 	#
-	# We use rte_delay_us_block(), and older versions of DPDK
+	# We include rte_bus.h, and older versions of DPDK
 	# didn't have it, so check for it.
 	#
 	if test "$ac_cv_dpdk_can_compile" = yes; then
-		ac_fn_c_check_func "$LINENO" "rte_delay_us_block" "ac_cv_func_rte_delay_us_block"
-if test "x$ac_cv_func_rte_delay_us_block" = xyes; then :
+		for ac_header in rte_bus.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "rte_bus.h" "ac_cv_header_rte_bus_h" "$ac_includes_default"
+if test "x$ac_cv_header_rte_bus_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_RTE_BUS_H 1
+_ACEOF
 
 fi
+
+done
 
 	fi
 
@@ -10739,7 +10746,7 @@ fi
 	LIBS="$save_LIBS"
 	LDFLAGS="$save_LDFLAGS"
 
-	if test "$ac_cv_func_rte_delay_us_block" = yes; then
+	if test "$ac_cv_header_rte_bus_h" = yes; then
 		CFLAGS="$CFLAGS $DPDK_CFLAGS"
 		LIBS="$LIBS $DPDK_LDFLAGS"
 		LDFLAGS="$LDFLAGS $DPDK_LDFLAGS"

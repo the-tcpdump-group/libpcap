@@ -1483,14 +1483,14 @@ if(NOT DISABLE_DPDK)
     find_package(dpdk)
     if(dpdk_FOUND)
         #
-        # We use rte_delay_us_block(), and older versions of DPDK
-        # didn't have it, so check for it.
+        # We include rte_bus.h, and older versions of DPDK didn't have
+        # it, so check for it.
         #
         cmake_push_check_state()
-        set(CMAKE_REQUIRED_LIBRARIES ${dpdk_LIBRARIES})
-        check_function_exists(rte_delay_us_block HAVE_RTE_DELAY_US_BLOCK)
+        set(CMAKE_REQUIRED_INCLUDES ${dpdk_INCLUDE_DIRS})
+        check_include_file(rte_bus.h HAVE_RTE_BUS_H)
         cmake_pop_check_state()
-        if(HAVE_RTE_DELAY_US_BLOCK)
+        if(HAVE_RTE_BUS_H)
             set(DPDK_C_FLAGS "-march=native")
             set(DPDK_LIB dpdk rt m numa dl)
             set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${DPDK_C_FLAGS})
