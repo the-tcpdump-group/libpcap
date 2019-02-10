@@ -49,10 +49,8 @@ addons:
     branch_pattern: coverity_scan
   apt:
     #
-    # These are the packages we want from the standard repository for
-    # Trusty. Trusty didn't have a DPDK package, so we can't install
-    # it from that repository (and Xenial's is DPDK 2.2, which is too
-    # old to support the libpcap DPDK code).
+    # We can't use dpdk-dev with trusty, only in xenial; Trusty didn't
+    # have DPDK support.
     #
     packages:
       - libusb-1.0-0-dev
@@ -61,14 +59,6 @@ addons:
       - libnl-genl-3-dev
       - libibverbs-dev
       - libnuma-dev
-    #
-    # Try installing DPDK from the jessie-backports repository, as it's
-    # DPDK 16.11.
-    #
-    sources:
-      - sourceline: 'deb http://ftp.debian.org/debian jessie-backports main'
-    packages:
-      - libdpdk-dev
 
 git:
   quiet: true
