@@ -560,7 +560,13 @@ static int parse_dpdk_cfg(char* dpdk_cfg,char** dargv)
 //    meaning "DPDK isn't available";
 //
 //    a PCAP_ERROR_ code for other errors.
-static int dpdk_pre_init(char * ebuf)
+//
+// If eaccess_not_fatal is non-zero, treat "a permissions issue" the way
+// we treat "the EAL cannot initialize on this system".  We use that
+// when trying to find DPDK devices, as we don't want to fail to return
+// *any* devices just because we can't support DPDK; when we're trying
+// to open a device, we need to return a permissions error in that case.
+static int dpdk_pre_init(char * ebuf, int eaccess_not_fatal)
 {
 	int dargv_cnt=0;
 	char *dargv[DPDK_ARGC_MAX];
@@ -612,6 +618,11 @@ error:
 		case EACCES:
 			// This "indicates a permissions issue.".
 			RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
+			// If we were told to treat this as just meaning
+			// DPDK isn't available, do so.
+			if (eaccess_not_fatal)
+				return 0;
+			// Otherwise report a fatal error.
 			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "DPDK requires that it run as root");
 			return PCAP_ERROR_PERM_DENIED;
@@ -727,9 +738,9 @@ static int pcap_dpdk_activate(pcap_t *p)
 	int is_port_up = 0;
 	struct rte_eth_link link;
 	do{
-		//init EAL
+		//init EAL; fail if we have insufficient permission
 		char dpdk_pre_init_errbuf[PCAP_ERRBUF_SIZE];
-		ret = dpdk_pre_init(dpdk_pre_init_errbuf);
+		ret = dpdk_pre_init(dpdk_pre_init_errbuf, 0);
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
@@ -967,8 +978,10 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 	char mac_addr[DPDK_MAC_ADDR_SIZE];
 	char pci_addr[DPDK_PCI_ADDR_SIZE];
 	do{
+		// init EAL; return "DPDK not available" if we
+		// have insufficient permission
 		char dpdk_pre_init_errbuf[PCAP_ERRBUF_SIZE];
-		ret = dpdk_pre_init(dpdk_pre_init_errbuf);
+		ret = dpdk_pre_init(dpdk_pre_init_errbuf, 1);
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
