@@ -581,16 +581,6 @@ static int dpdk_pre_init(char * ebuf)
 			return 1;
 		}
 	}
-	// check for root permission
-	// XXX - is it sufficient to call rte_eal_init() and check for
-	// EACCES?
-	if( geteuid() != 0)
-	{
-		RTE_LOG(ERR, USER1, "%s\n", DPDK_ERR_PERM_MSG);
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
-		    "DPDK requires that it run as root");
-		return PCAP_ERROR_PERM_DENIED;
-	}
 	// init EAL
 	ptr_dpdk_cfg = getenv(DPDK_CFG_ENV_NAME);
 	// set default log level to debug
