@@ -1663,13 +1663,14 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 	 * the pathname.
 	 */
 	if (pcap_strcasecmp(scheme, "file") == 0) {
-		*schemep = scheme;
 		*pathp = strdup(colonp + 3);
 		if (*pathp == NULL) {
 			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
+			free(scheme);
 			return (-1);
 		}
+		*schemep = scheme;
 		return (0);
 	}
 
