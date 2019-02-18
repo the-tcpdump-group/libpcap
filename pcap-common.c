@@ -1147,7 +1147,15 @@
 #define LINKTYPE_DSA_TAG_BRCM	281
 #define LINKTYPE_DSA_TAG_BRCM_PREPEND	282
 
-#define LINKTYPE_MATCHING_MAX	282		/* highest value in the "matching" range */
+/*
+ * IEEE 802.15.4 with pseudo-header and optional meta-data TLVs, PHY payload
+ * exactly as it appears in the spec (no padding, no nothing), and FCS if
+ * specified by FCS Type TLV;  requested by James Ko <jck@exegin.com>.
+ * Specification at https://github.com/jkcko/ieee802.15.4-tap
+ */
+#define LINKTYPE_IEEE802_15_4_TAP       283
+
+#define LINKTYPE_MATCHING_MAX	283		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
