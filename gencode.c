@@ -3580,6 +3580,7 @@ gen_linktype(compiler_state_t *cstate, bpf_u_int32 ll_proto)
 	case DLT_IEEE802_15_4_LINUX:
 	case DLT_IEEE802_15_4_NONASK_PHY:
 	case DLT_IEEE802_15_4_NOFCS:
+	case DLT_IEEE802_15_4_TAP:
 		bpf_error(cstate, "IEEE 802.15.4 link-layer type filtering not implemented");
 
 	case DLT_IEEE802_16_MAC_CPS_RADIO:
