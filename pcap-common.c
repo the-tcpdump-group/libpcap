@@ -936,7 +936,7 @@
  *
  * Requested by Chris Bontje <chris_bontje@selinc.com>.
  */
-#define DLT_RTAC_SERIAL		250
+#define LINKTYPE_RTAC_SERIAL		250
 
 /*
  * Bluetooth Low Energy air interface link-layer packets.
