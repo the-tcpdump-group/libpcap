@@ -3008,7 +3008,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(GPF_T, "GPF-T"),
 	DLT_CHOICE(GPF_F, "GPF-F"),
 	DLT_CHOICE(JUNIPER_PIC_PEER, "Juniper PIC Peer"),
-	DLT_CHOICE(ERF_ETH,	"Ethernet with Endace ERF header"),
+	DLT_CHOICE(ERF_ETH, "Ethernet with Endace ERF header"),
 	DLT_CHOICE(ERF_POS, "Packet-over-SONET with Endace ERF header"),
 	DLT_CHOICE(LINUX_LAPD, "Linux vISDN LAPD"),
 	DLT_CHOICE(JUNIPER_ETHER, "Juniper Ethernet"),
