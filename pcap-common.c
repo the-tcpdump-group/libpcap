@@ -1155,7 +1155,12 @@
  */
 #define LINKTYPE_IEEE802_15_4_TAP       283
 
-#define LINKTYPE_MATCHING_MAX	283		/* highest value in the "matching" range */
+/*
+ * Marvell Ethernet switches mv88e6xxx 4 byte proprietary taggging format.
+ */
+#define LINKTYPE_DSA_TAG_MDSA	284
+
+#define LINKTYPE_MATCHING_MAX	284		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
