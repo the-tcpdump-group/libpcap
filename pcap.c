@@ -1774,7 +1774,12 @@ pcap_parse_source(const char *source, char **schemep, char **userinfop,
 			 * Treat verything up to the closing square
 			 * bracket as the IP-Literal; we don't worry
 			 * about whether it's a valid IPv6address or
-			 * IPvFuture.
+			 * IPvFuture (or an IPv4address, for that
+			 * matter, just in case we get handed a
+			 * URL with an IPv4 IP-Literal, of the sort
+			 * that pcap_createsrcstr() used to generate,
+			 * and that pcap_parsesrcstr(), in the original
+			 * WinPcap code, accepted).
 			 */
 			bracketp = strchr(parsep, ']');
 			if (bracketp == NULL) {
