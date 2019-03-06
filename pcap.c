@@ -210,7 +210,7 @@ pcap_read_not_initialized(pcap_t *pcap, int cnt _U_, pcap_handler callback _U_,
 }
 
 static int
-pcap_inject_not_initialized(pcap_t *pcap, const void * buf _U_, int size _U_)
+pcap_inject_not_initialized(pcap_t *pcap, const void * buf _U_, size_t size _U_)
 {
 	pcap_set_not_initialized_message(pcap);
 	/* this means 'not initialized' */
