@@ -859,17 +859,15 @@ pcap_dump_hopen(pcap_t *p, intptr_t osfd)
 	int fd;
 	FILE *file;
 
-	fd = _open_osfhandle( osfd, _O_APPEND );
-	if ( fd < 0 )
-	{
+	fd = _open_osfhandle(osfd, _O_APPEND);
+	if (fd < 0) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "_openosfhandle");
 		return NULL;
 	}
 
 	file = _fdopen(fd, "wb");
-	if ( file == NULL )
-	{
+	if (file == NULL) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "_fdopen");
 		return NULL;
