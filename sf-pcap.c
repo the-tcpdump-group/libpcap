@@ -110,6 +110,20 @@
 
 static int pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **datap);
 
+#ifdef _WIN32
+/*
+ * This isn't exported on Windows, because it would only work if both
+ * libpcap and the code using it were using the same C runtime; otherwise they
+ * would be using different definitions of a FILE structure.
+ *
+ * Instead we define this as a macro in pcap/pcap.h that wraps the hopen
+ * version that we do export, passing it a raw OS HANDLE, as defined by the
+ * Win32 / Win64 ABI, obtained from the _fileno() and _get_osfhandle()
+ * functions of the appropriate CRT.
+ */
+static pcap_dumper_t *pcap_dump_fopen(pcap_t *p, FILE *f);
+#endif /* _WIN32 */
+
 /*
  * Private data for reading pcap savefiles.
  */
@@ -834,9 +848,42 @@ pcap_dump_open(pcap_t *p, const char *fname)
 	return (pcap_setup_dump(p, linktype, f, fname));
 }
 
+#ifdef _WIN32
+/*
+ * Initialize so that sf_write() will output to a stream wrapping the given raw
+ * OS file HANDLE.
+ */
+pcap_dumper_t *
+pcap_dump_hopen(pcap_t *p, intptr_t osfd)
+{
+	int fd;
+	FILE *file;
+
+	fd = _open_osfhandle(osfd, _O_APPEND);
+	if (fd < 0) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "_open_osfhandle");
+		return NULL;
+	}
+
+	file = _fdopen(fd, "wb");
+	if (file == NULL) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "_fdopen");
+		_close(fd);
+		return NULL;
+	}
+
+	return pcap_dump_fopen(p, file);
+}
+#endif /* _WIN32 */
+
 /*
  * Initialize so that sf_write() will output to the given stream.
  */
+#ifdef _WIN32
+static
+#endif /* _WIN32 */
 pcap_dumper_t *
 pcap_dump_fopen(pcap_t *p, FILE *f)
 {
