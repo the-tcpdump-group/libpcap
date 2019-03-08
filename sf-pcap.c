@@ -861,6 +861,7 @@ pcap_dump_hopen(pcap_t *p, intptr_t osfd)
 	if (file == NULL) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "_fdopen");
+		_close(fd);
 		return NULL;
 	}
 
