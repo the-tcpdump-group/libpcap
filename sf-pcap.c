@@ -853,7 +853,7 @@ pcap_dump_hopen(pcap_t *p, intptr_t osfd)
 	fd = _open_osfhandle(osfd, _O_APPEND);
 	if (fd < 0) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "_openosfhandle");
+		    errno, "_open_osfhandle");
 		return NULL;
 	}
 
