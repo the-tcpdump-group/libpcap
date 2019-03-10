@@ -641,6 +641,7 @@ else
 	AC_CHECK_HEADERS(net/pfilt.h net/enet.h)
 	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
+	AC_CHECK_HEADERS(config/HaikuConfig.h)
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
@@ -702,6 +703,11 @@ else
 		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
 		#
 		V_PCAP=dlpi
+	elif test "$ac_cv_header_config_HaikuConfig_h" = yes; then
+		#
+		# Haiku.
+		#
+		V_PCAP=haiku
 	else
 		#
 		# Nothing we support.

@@ -18,6 +18,9 @@
 /* Define to 1 if you have the `asprintf' function. */
 #undef HAVE_ASPRINTF
 
+/* Define to 1 if you have the <config/HaikuConfig.h> header file. */
+#undef HAVE_CONFIG_HAIKUCONFIG_H
+
 /* Define to 1 if you have the <dagapi.h> header file. */
 #undef HAVE_DAGAPI_H
 
