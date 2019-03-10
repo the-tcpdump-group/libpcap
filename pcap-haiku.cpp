@@ -111,7 +111,7 @@ pcap_read_haiku(pcap_t* handle, int maxPackets, pcap_handler callback,
 
 
 static int
-pcap_inject_haiku(pcap_t *handle, const void *buffer, size_t size)
+pcap_inject_haiku(pcap_t *handle, const void *buffer, int size)
 {
 	// we don't support injecting packets yet
 	// TODO: use the AF_LINK protocol (we need another socket for this) to
@@ -275,13 +275,29 @@ pcap_create_interface(const char *device, char *errorBuffer)
 }
 
 static int
-canBeBound(const char *name)
+can_be_bound(const char *name)
 {
 	return 1;
 }
 
-extern "C" int
-pcap_platform_finddevs(pcap_if_t** _allDevices, char* errorBuffer)
+static int
+get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 {
-	return pcap_findalldevs_interfaces(_allDevices, errorBuffer, canBeBound);
+	/* TODO */
+	if (*flags & PCAP_IF_LOOPBACK) {
+		/*
+		 * Loopback devices aren't wireless, and "connected"/
+		 * "disconnected" doesn't apply to them.
+		 */
+		*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
+		return (0);
+	}
+	return (0);
+}
+
+extern "C" int
+pcap_platform_finddevs(pcap_if_list_t* _allDevices, char* errorBuffer)
+{
+	return pcap_findalldevs_interfaces(_allDevices, errorBuffer, can_be_bound,
+		get_if_flags);
 }
