@@ -798,6 +798,13 @@ dlpi)
 	    ])
 	;;
 
+haiku)
+	#
+	# Just for the sake of it.
+	#
+	AC_CHECK_HEADERS(net/if.h net/if_dl.h net/if_types.h)
+	;;
+
 linux)
 	#
 	# Do we have the wireless extensions?
