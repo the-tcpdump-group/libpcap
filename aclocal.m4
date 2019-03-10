@@ -956,10 +956,19 @@ AC_DEFUN(AC_LBL_LIBRARY_NET, [
 	    LIBS="-lsocket -lnsl $LIBS"
 	],
 	[
-	    #
-	    # We didn't find it.
-	    #
-	    AC_MSG_ERROR([getaddrinfo is required, but wasn't found])
+		AC_CHECK_LIB(network, getaddrinfo,
+		[
+		    #
+		    # OK, we found it in libnetwork on Haiku.
+		    #
+		    LIBS="-lnetwork $LIBS"
+		],
+		[
+		    #
+		    # We didn't find it.
+		    #
+		    AC_MSG_ERROR([getaddrinfo is required, but wasn't found])
+		])
 	], -lnsl)
 
 	#
