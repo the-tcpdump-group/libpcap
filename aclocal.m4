@@ -484,7 +484,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 	    aix*)
 		    ;;
 
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*)
 	    	    #
 		    # Platforms where the linker is the GNU linker
 		    # or accepts command-line arguments like
