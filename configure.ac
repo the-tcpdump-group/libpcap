@@ -90,6 +90,13 @@ linux*|uclinux*)
 	#
 	AC_CHECK_HEADERS(sys/eventfd.h)
 	;;
+
+haiku*)
+	#
+	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
+	#
+	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+	;;
 esac
 
 AC_LBL_FIXINCLUDES
