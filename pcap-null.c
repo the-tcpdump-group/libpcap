@@ -37,7 +37,7 @@ pcap_create_interface(const char *device _U_, char *ebuf)
 }
 
 int
-pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
+pcap_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf _U_)
 {
 	/*
 	 * There are no interfaces on which we can capture.
