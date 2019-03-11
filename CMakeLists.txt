@@ -1070,6 +1070,7 @@ else()
         check_include_file(linux/socket.h HAVE_LINUX_SOCKET_H)
         check_include_file(net/raw.h HAVE_NET_RAW_H)
         check_include_file(sys/dlpi.h HAVE_SYS_DLPI_H)
+        check_include_file(config/HaikuConfig.h HAVE_CONFIG_HAIKUCONFIG_H)
 
         if(BPF_H_DEFINES_BIOCSETIF)
             #
@@ -1113,6 +1114,11 @@ else()
             # DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
             #
             set(PCAP_TYPE dlpi)
+        elseif(HAVE_CONFIG_HAIKUCONFIG_H)
+            #
+            # Haiku.
+            #
+            set(PCAP_TYPE haiku)
         else()
             #
             # Nothing we support.
@@ -1281,13 +1287,23 @@ else(WIN32)
             check_type_size("struct BPF_TIMEVAL" STRUCT_BPF_TIMEVAL)
         endif()
         cmake_pop_check_state()
+    elseif(PCAP_TYPE STREQUAL "haiku")
+        #
+        # Check for some headers just in case.
+        #
+        check_include_files("net/if.h;net/if_dl.h;net/if_types.h" HAVE_NET_IF_TYPES_H)
+        set(PCAP_SRC pcap-${PCAP_TYPE}.cpp)
     elseif(PCAP_TYPE STREQUAL "null")
     else()
         message(FATAL_ERROR "${PCAP_TYPE} is not a valid pcap type")
     endif()
 endif(WIN32)
 
-set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-${PCAP_TYPE}.c)
+if(NOT DEFINED PCAP_SRC)
+set(PCAP_SRC pcap-${PCAP_TYPE}.c)
+endif()
+
+set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} ${PCAP_SRC})
 
 #
 # Now figure out how we get a list of interfaces and addresses,
