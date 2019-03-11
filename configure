@@ -640,8 +640,10 @@ MAN_MISC_INFO
 MAN_FILE_FORMATS
 MAN_DEVICES
 DYEXT
-SSRC
-MSRC
+REMOTE_C_SRC
+MODULE_C_SRC
+PLATFORM_CXX_SRC
+PLATFORM_C_SRC
 ADDLARCHIVEOBJS
 ADDLOBJS
 V_YACC
@@ -650,10 +652,8 @@ V_SONAME_OPT
 V_SHLIB_OPT
 V_SHLIB_CMD
 V_SHLIB_CCOPT
-V_PCAP
 V_LEX
 V_INCLS
-V_FINDALLDEVS
 V_DEFS
 V_PROG_LDFLAGS_FAT
 V_PROG_CCOPT_FAT
@@ -4002,7 +4002,7 @@ $as_echo "#define const /**/" >>confdefs.h
 	    aix*)
 		    ;;
 
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*)
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*)
 	    	    #
 		    # Platforms where the linker is the GNU linker
 		    # or accepts command-line arguments like
@@ -4974,6 +4974,13 @@ fi
 done
 
 	;;
+
+haiku*)
+	#
+	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
+	#
+	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+	;;
 esac
 
 if test "$GCC" = yes ; then
@@ -5294,10 +5301,58 @@ if test "x$ac_cv_lib_socket_getaddrinfo" = xyes; then :
 
 else
 
-	    #
-	    # We didn't find it.
-	    #
-	    as_fn_error $? "getaddrinfo is required, but wasn't found" "$LINENO" 5
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for getaddrinfo in -lnetwork" >&5
+$as_echo_n "checking for getaddrinfo in -lnetwork... " >&6; }
+if ${ac_cv_lib_network_getaddrinfo+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnetwork  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char getaddrinfo ();
+int
+main ()
+{
+return getaddrinfo ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_network_getaddrinfo=yes
+else
+  ac_cv_lib_network_getaddrinfo=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_network_getaddrinfo" >&5
+$as_echo "$ac_cv_lib_network_getaddrinfo" >&6; }
+if test "x$ac_cv_lib_network_getaddrinfo" = xyes; then :
+
+		    #
+		    # OK, we found it in libnetwork on Haiku.
+		    #
+		    LIBS="-lnetwork $LIBS"
+
+else
+
+		    #
+		    # We didn't find it.
+		    #
+		    as_fn_error $? "getaddrinfo is required, but wasn't found" "$LINENO" 5
+
+fi
+
 
 fi
 
@@ -6174,6 +6229,18 @@ fi
 
 done
 
+	for ac_header in config/HaikuConfig.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "config/HaikuConfig.h" "ac_cv_header_config_HaikuConfig_h" "$ac_includes_default"
+if test "x$ac_cv_header_config_HaikuConfig_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_CONFIG_HAIKUCONFIG_H 1
+_ACEOF
+
+fi
+
+done
+
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
@@ -6235,6 +6302,11 @@ done
 		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
 		#
 		V_PCAP=dlpi
+	elif test "$ac_cv_header_config_HaikuConfig_h" = yes; then
+		#
+		# Haiku.
+		#
+		V_PCAP=haiku
 	else
 		#
 		# Nothing we support.
@@ -6253,15 +6325,10 @@ $as_echo "$V_PCAP" >&6; }
 
 
 #
-# Do capture-mechanism-dependent tests.
+# Handle each capture type.
 #
 case "$V_PCAP" in
 dlpi)
-	#
-	# Needed for common functions used by pcap-[dlpi,libdlpi].c
-	#
- 	SSRC="dlpisubs.c"
-
 	#
 	# Checks for some header files.
 	#
@@ -6333,11 +6400,25 @@ if test "x$ac_cv_lib_dlpi_dlpi_walk" = xyes; then :
 			LIBS="-ldlpi $LIBS"
 			V_PCAP=libdlpi
 
+			#
+			# Capture module plus common code needed for
+			# common functions used by pcap-[dlpi,libdlpi].c
+			#
+		 	PLATFORM_C_SRC="pcap-libdlpi.c dlpisubs.c"
+
 $as_echo "#define HAVE_LIBDLPI 1" >>confdefs.h
 
 
 else
-  V_PCAP=dlpi
+
+			V_PCAP=dlpi
+
+			#
+			# Capture module plus common code needed for
+			# common functions used by pcap-[dlpi,libdlpi].c
+			#
+		 	PLATFORM_C_SRC="pcap-dlpi.c dlpisubs.c"
+
 fi
 
 	LDFLAGS=$saved_ldflags
@@ -6402,7 +6483,43 @@ fi
 
 	;;
 
+enet)
+	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-enet.c"
+	;;
+
+haiku)
+	#
+	# Capture module
+	#
+ 	PLATFORM_CXX_SRC="pcap-haiku.cpp"
+
+	#
+	# Just for the sake of it.
+	#
+	for ac_header in net/if.h net/if_dl.h net/if_types.h
+do :
+  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+  cat >>confdefs.h <<_ACEOF
+#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+	;;
+
 linux)
+	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-linux.c"
+
 	#
 	# Do we have the wireless extensions?
 	#
@@ -6710,6 +6827,11 @@ fi
 
 bpf)
 	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-bpf.c"
+
+	#
 	# Check whether we have the *BSD-style ioctls.
 	#
 	for ac_header in net/if_media.h
@@ -6748,12 +6870,34 @@ fi
 
 	;;
 
+pf)
+	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-pf.c"
+	;;
+
+snit)
+	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-snit.c"
+	;;
+
+snoop)
+	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-snoop.c"
+	;;
+
 dag)
 	#
 	# --with-pcap=dag is the only way to get here, and it means
 	# "DAG support but nothing else"
 	#
 	V_DEFS="$V_DEFS -DDAG_ONLY"
+	PLATFORM_C_SRC="pcap-dag.c"
 	xxx_only=yes
 	;;
 
@@ -6763,6 +6907,7 @@ dpdk)
 	# "DPDK support but nothing else"
 	#
 	V_DEFS="$V_DEFS -DDPDK_ONLY"
+	PLATFORM_C_SRC="pcap-dpdk.c"
 	xxx_only=yes
 	;;
 
@@ -6772,6 +6917,7 @@ septel)
 	# "Septel support but nothing else"
 	#
 	V_DEFS="$V_DEFS -DSEPTEL_ONLY"
+	PLATFORM_C_SRC="pcap-septel.c"
 	xxx_only=yes
 	;;
 
@@ -6781,10 +6927,15 @@ snf)
 	# "SNF support but nothing else"
 	#
 	V_DEFS="$V_DEFS -DSNF_ONLY"
+	PLATFORM_C_SRC="pcap-snf.c"
 	xxx_only=yes
 	;;
 
 null)
+	#
+	# Capture module
+	#
+ 	PLATFORM_C_SRC="pcap-null.c"
 	;;
 
 *)
@@ -6808,7 +6959,7 @@ if test "x$ac_cv_header_ifaddrs_h" = xyes; then :
 		    # We have the header, so we use "getifaddrs()" to
 		    # get the list of interfaces.
 		    #
-		    V_FINDALLDEVS=fad-getad.c
+		    PLATFORM_C_SRC="$PLATFORM_C_SRC fad-getad.c"
 
 else
 
@@ -6877,9 +7028,9 @@ fi
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lbl_have_siocglifconf" >&5
 $as_echo "$ac_cv_lbl_have_siocglifconf" >&6; }
 		if test $ac_cv_lbl_have_siocglifconf = yes ; then
-			V_FINDALLDEVS=fad-glifc.c
+			PLATFORM_C_SRC="$PLATFORM_C_SRC fad-glifc.c"
 		else
-			V_FINDALLDEVS=fad-gifc.c
+			PLATFORM_C_SRC="$PLATFORM_C_SRC fad-gifc.c"
 		fi
 
 fi
@@ -7093,7 +7244,7 @@ done
 	if test "$ac_cv_header_dagapi_h" = yes; then
 
 		if test $V_PCAP != dag ; then
-			 MSRC="$MSRC pcap-dag.c"
+			 MODULE_C_SRC="$MODULE_C_SRC pcap-dag.c"
 		fi
 
 		# Check for various DAG API functions.
@@ -7425,7 +7576,7 @@ $as_echo "yes ($septel_include_dir)" >&6; }
 		ADDLARCHIVEOBJS="$ADDLARCHIVEOBJS $septel_tools_dir/asciibin.o $septel_tools_dir/bit2byte.o $septel_tools_dir/confirm.o $septel_tools_dir/fmtmsg.o $septel_tools_dir/gct_unix.o $septel_tools_dir/hqueue.o $septel_tools_dir/ident.o $septel_tools_dir/mem.o $septel_tools_dir/pack.o $septel_tools_dir/parse.o $septel_tools_dir/pool.o $septel_tools_dir/sdlsig.o $septel_tools_dir/strtonum.o $septel_tools_dir/timer.o $septel_tools_dir/trace.o"
 
 		if test "$V_PCAP" != septel ; then
-			 MSRC="$MSRC pcap-septel.c"
+			 MODULE_C_SRC="$MODULE_C_SRC pcap-septel.c"
 		fi
 
 
@@ -7587,7 +7738,7 @@ $as_echo "yes ($snf_root)" >&6; }
 		LDFLAGS="$LDFLAGS -L$snf_lib_dir"
 
 		if test "$V_PCAP" != snf ; then
-			MSRC="$MSRC pcap-snf.c"
+			MODULE_C_SRC="$MODULE_C_SRC pcap-snf.c"
 		fi
 
 
@@ -7685,7 +7836,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
-		MSRC="$MSRC pcap-tc.c"
+		MODULE_C_SRC="$MODULE_C_SRC pcap-tc.c"
 		V_INCLS="$V_INCLS $TURBOCAP_CFLAGS"
 		LIBS="$LIBS $TURBOCAP_LIBS -lTcApi -lpthread -lstdc++"
 
@@ -7924,7 +8075,7 @@ $as_echo "$as_me: OpenSSL not found" >&6;}
 
 $as_echo "#define ENABLE_REMOTE /**/" >>confdefs.h
 
-	MSRC="$MSRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
+	REMOTE_C_SRC="$REMOTE_C_SRC pcap-new.c pcap-rpcap.c rpcap-protocol.c sockutils.c sslutils.c"
 	BUILD_RPCAPD=build-rpcapd
 	INSTALL_RPCAPD=install-rpcapd
 	;;
@@ -8545,7 +8696,7 @@ irix*)
 	MAN_MISC_INFO=5
 	;;
 
-linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*)
+linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*)
 	DYEXT="so"
 
 	#
@@ -10393,7 +10544,7 @@ $as_echo_n "checking for USB sniffing support... " >&6; }
 
 $as_echo "#define PCAP_SUPPORT_USB 1" >>confdefs.h
 
-	MSRC="$MSRC pcap-usb-linux.c"
+	MODULE_C_SRC="$MODULE_C_SRC pcap-usb-linux.c"
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
@@ -10552,7 +10703,7 @@ $as_echo "$ac_cv_netfilter_can_compile" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_NETFILTER 1" >>confdefs.h
 
-		  MSRC="$MSRC pcap-netfilter-linux.c"
+		  MODULE_C_SRC="$MODULE_C_SRC pcap-netfilter-linux.c"
 		fi
 		;;
 	*)
@@ -10611,7 +10762,7 @@ $as_echo "$ac_cv_net_netmap_user_can_compile" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_NETMAP 1" >>confdefs.h
 
-	    MSRC="$MSRC pcap-netmap.c"
+	    MODULE_C_SRC="$MODULE_C_SRC pcap-netmap.c"
 	fi
 
 fi
@@ -10755,7 +10906,7 @@ done
 $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 
 		if test $V_PCAP != dpdk ; then
-			MSRC="$MSRC pcap-dpdk.c"
+			MODULE_C_SRC="$MODULE_C_SRC pcap-dpdk.c"
 		fi
 	else
 		if test "$V_PCAP" = dpdk; then
@@ -10799,7 +10950,7 @@ if test "x$ac_cv_header_bluetooth_bluetooth_h" = xyes; then :
 
 $as_echo "#define PCAP_SUPPORT_BT 1" >>confdefs.h
 
-			MSRC="$MSRC pcap-bt-linux.c"
+			MODULE_C_SRC="$MODULE_C_SRC pcap-bt-linux.c"
 			{ $as_echo "$as_me:${as_lineno-$LINENO}: Bluetooth sniffing is supported" >&5
 $as_echo "$as_me: Bluetooth sniffing is supported" >&6;}
 			ac_lbl_bluetooth_available=yes
@@ -10851,7 +11002,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_BT_MONITOR /**/" >>confdefs.h
 
-					    MSRC="$MSRC pcap-bt-monitor-linux.c"
+					    MODULE_C_SRC="$MODULE_C_SRC pcap-bt-monitor-linux.c"
 
 else
 
@@ -10979,7 +11130,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_DBUS 1" >>confdefs.h
 
-				MSRC="$MSRC pcap-dbus.c"
+				MODULE_C_SRC="$MODULE_C_SRC pcap-dbus.c"
 				V_INCLS="$V_INCLS $DBUS_CFLAGS"
 
 else
@@ -11098,7 +11249,7 @@ $as_echo "yes" >&6; }
 
 $as_echo "#define PCAP_SUPPORT_RDMASNIFF /**/" >>confdefs.h
 
-					MSRC="$MSRC pcap-rdmasniff.c"
+					MODULE_C_SRC="$MODULE_C_SRC pcap-rdmasniff.c"
 					LIBS="-libverbs $LIBS"
 
 else
