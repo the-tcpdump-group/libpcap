@@ -2064,6 +2064,11 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND CMAKE_SYSTEM_VERSION MATCHES "5[.]
         set(MAN_MISC_INFO 5)
         set(MAN_DEVICES 7D)
     endif()
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+    #
+    # Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
+    #
+    add_definitions(-D_BSD_SOURCE)
 endif()
 
 source_group("Source Files" FILES ${PROJECT_SOURCE_LIST_C})
