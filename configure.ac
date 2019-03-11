@@ -90,6 +90,13 @@ linux*|uclinux*)
 	#
 	AC_CHECK_HEADERS(sys/eventfd.h)
 	;;
+
+haiku*)
+	#
+	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
+	#
+	CFLAGS="$CFLAGS -D_BSD_SOURCE"
+	;;
 esac
 
 AC_LBL_FIXINCLUDES
@@ -641,6 +648,7 @@ else
 	AC_CHECK_HEADERS(net/pfilt.h net/enet.h)
 	AC_CHECK_HEADERS(net/nit.h sys/net/nit.h)
 	AC_CHECK_HEADERS(linux/socket.h net/raw.h sys/dlpi.h)
+	AC_CHECK_HEADERS(config/HaikuConfig.h)
 
 	if test "$ac_cv_lbl_bpf_h_defines_biocsetif" = yes; then
 		#
@@ -702,6 +710,11 @@ else
 		# DLPI on pre-Solaris 11 SunOS 5, HP-UX, possibly others.
 		#
 		V_PCAP=dlpi
+	elif test "$ac_cv_header_config_HaikuConfig_h" = yes; then
+		#
+		# Haiku.
+		#
+		V_PCAP=haiku
 	else
 		#
 		# Nothing we support.
@@ -783,6 +796,13 @@ dlpi)
 		#include <sys/types.h>
 		#include <sys/dlpi.h>
 	    ])
+	;;
+
+haiku)
+	#
+	# Just for the sake of it.
+	#
+	AC_CHECK_HEADERS(net/if.h net/if_dl.h net/if_types.h)
 	;;
 
 linux)
@@ -1968,7 +1988,7 @@ irix*)
 	MAN_MISC_INFO=5
 	;;
 
-linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*)
+linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*)
 	DYEXT="so"
 
 	#

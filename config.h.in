@@ -18,6 +18,9 @@
 /* Define to 1 if you have the `asprintf' function. */
 #undef HAVE_ASPRINTF
 
+/* Define to 1 if you have the <config/HaikuConfig.h> header file. */
+#undef HAVE_CONFIG_HAIKUCONFIG_H
+
 /* Define to 1 if you have the <dagapi.h> header file. */
 #undef HAVE_DAGAPI_H
 
@@ -129,8 +132,17 @@
 /* Define to 1 if you have the <net/enet.h> header file. */
 #undef HAVE_NET_ENET_H
 
+/* Define to 1 if you have the <net/if_dl.h> header file. */
+#undef HAVE_NET_IF_DL_H
+
+/* Define to 1 if you have the <net/if.h> header file. */
+#undef HAVE_NET_IF_H
+
 /* Define to 1 if you have the <net/if_media.h> header file. */
 #undef HAVE_NET_IF_MEDIA_H
+
+/* Define to 1 if you have the <net/if_types.h> header file. */
+#undef HAVE_NET_IF_TYPES_H
 
 /* Define to 1 if you have the <net/nit.h> header file. */
 #undef HAVE_NET_NIT_H
