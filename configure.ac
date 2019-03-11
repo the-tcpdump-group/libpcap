@@ -31,6 +31,15 @@ AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
 	AC_MSG_WARN([The C compiler does not support C99; there may be compiler errors])
 fi
+case "$host_os" in
+haiku*)
+	#
+	# Haiku's platform file is in C++.
+	#
+	AC_PROG_CXX
+	;;
+esac
+
 AC_LBL_C_INIT(V_CCOPT, V_INCLS)
 AC_LBL_SHLIBS_INIT
 AC_LBL_C_INLINE
