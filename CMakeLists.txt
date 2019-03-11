@@ -410,10 +410,18 @@ else(WIN32)
             #
             set(PCAP_LINK_LIBRARIES socket nsl ${PCAP_LINK_LIBRARIES})
         else(LIBSOCKET_HAS_GETADDRINFO)
-            #
-            # We didn't find it.
-            #
-            message(FATAL_ERROR "getaddrinfo is required, but wasn't found")
+            check_library_exists(network getaddrinfo "" LIBNETWORK_HAS_GETADDRINFO)
+            if(LIBNETWORK_HAS_GETADDRINFO)
+                #
+                # OK, we found it in libnetwork (Haiku).
+                #
+                set(PCAP_LINK_LIBRARIES network ${PCAP_LINK_LIBRARIES})
+            else(LIBNETWORK_HAS_GETADDRINFO)
+                #
+                # We didn't find it.
+                #
+                message(FATAL_ERROR "getaddrinfo is required, but wasn't found")
+            endif(LIBNETWORK_HAS_GETADDRINFO)
         endif(LIBSOCKET_HAS_GETADDRINFO)
 
         #
