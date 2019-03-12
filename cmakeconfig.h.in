@@ -18,6 +18,9 @@
 /* Define to 1 if you have the `asprintf' function. */
 #cmakedefine HAVE_ASPRINTF 1
 
+/* Define to 1 if you have the <config/HaikuConfig.h> header file. */
+#cmakedefine HAVE_CONFIG_HAIKUCONFIG_H 1
+
 /* define if you have the DAG API */
 #cmakedefine HAVE_DAG_API 1
 
@@ -322,14 +325,14 @@
 /* support D-Bus sniffing */
 #cmakedefine PCAP_SUPPORT_DBUS 1
 
+/* target host supports DPDK */
+#cmakedefine PCAP_SUPPORT_DPDK 1
+
 /* target host supports netfilter sniffing */
 #cmakedefine PCAP_SUPPORT_NETFILTER 1
 
 /* target host supports netmap */
 #cmakedefine PCAP_SUPPORT_NETMAP 1
-
-/* target host supports DPDK */
-#cmakedefine PCAP_SUPPORT_DPDK 1
 
 /* use packet ring capture support on Linux if available */
 #cmakedefine PCAP_SUPPORT_PACKET_RING 1
