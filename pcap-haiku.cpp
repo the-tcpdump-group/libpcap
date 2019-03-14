@@ -84,6 +84,14 @@ pcap_read_haiku(pcap_t* handle, int maxPackets, pcap_handler callback,
 	if (captureLength > handle->snapshot)
 		captureLength = handle->snapshot;
 
+	// run the packet filter
+	if (handle->fcode.bf_insns) {
+		if (pcap_filter(handle->fcode.bf_insns, buffer, bytesReceived,
+				captureLength) == 0) {
+			// packet got rejected
+			return 0;
+		}
+	}
 
 	// fill in pcap_header
 	pcap_pkthdr header;
@@ -108,20 +116,6 @@ pcap_inject_haiku(pcap_t *handle, const void *buffer, int size)
 	strlcpy(handle->errbuf, "Sending packets isn't supported yet",
 		PCAP_ERRBUF_SIZE);
 	return -1;
-}
-
-
-static int
-pcap_setfilter_haiku(pcap_t *handle, struct bpf_program *filter)
-{
-	// Make our private copy of the filter
-	if (install_bpf_program(handle, filter) < 0) {
-		// install_bpf_program() filled in errbuf
-		return -1;
-	}
-
-	// we don't support kernel filters at all
-	return 0;
 }
 
 
@@ -158,7 +152,7 @@ pcap_activate_haiku(pcap_t *handle)
 	const char* device = handle->opt.device;
 
 	handle->read_op = pcap_read_haiku;
-	handle->setfilter_op = pcap_setfilter_haiku;
+	handle->setfilter_op = install_bpf_program; /* no kernel filtering */
 	handle->inject_op = pcap_inject_haiku;
 	handle->stats_op = pcap_stats_haiku;
 
