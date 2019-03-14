@@ -84,25 +84,14 @@ pcap_read_haiku(pcap_t* handle, int maxPackets, pcap_handler callback,
 	if (captureLength > handle->snapshot)
 		captureLength = handle->snapshot;
 
-/*
-	// run the packet filter
-	if (!handle->md.use_bpf && handle->fcode.bf_insns) {
-		if (bpf_filter(handle->fcode.bf_insns, buffer, bytesReceived,
-				captureLength) == 0) {
-			// packet got rejected
-			return 0;
-		}
-	}
-*/
 
 	// fill in pcap_header
-
 	pcap_pkthdr header;
 	header.caplen = captureLength;
 	header.len = bytesReceived;
 	header.ts.tv_usec = system_time() % 1000000;
 	header.ts.tv_sec = system_time() / 1000000;
-		// TODO: get timing from packet!!!
+	// TODO: get timing from packet!!!
 
 	/* Call the user supplied callback function */
 	callback(userdata, &header, buffer);
@@ -132,7 +121,6 @@ pcap_setfilter_haiku(pcap_t *handle, struct bpf_program *filter)
 	}
 
 	// we don't support kernel filters at all
-	//handle->md.use_bpf = 0;
 	return 0;
 }
 
@@ -177,7 +165,6 @@ pcap_activate_haiku(pcap_t *handle)
 	// use default hooks where possible
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
-	//handle->close_op = pcap_close_common;
 
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
@@ -187,7 +174,7 @@ pcap_activate_haiku(pcap_t *handle)
 	}
 	
 	handle->bufsize = 65536;
-		// TODO: should be determined by interface MTU
+	// TODO: should be determined by interface MTU
 
 	// allocate buffer for monitoring the device
 	handle->buffer = (u_char*)malloc(handle->bufsize);
@@ -199,7 +186,7 @@ pcap_activate_haiku(pcap_t *handle)
 
 	handle->offset = 0;
 	handle->linktype = DLT_EN10MB;
-		// TODO: check interface type!
+	// TODO: check interface type!
 
 	return 0;
 }
@@ -238,7 +225,7 @@ pcap_create_interface(const char *device, char *errorBuffer)
 	}
 
 	close(socket);
-		// no longer needed after this point
+	// no longer needed after this point
 
 	// get link level interface for this interface
 
@@ -269,7 +256,6 @@ pcap_create_interface(const char *device, char *errorBuffer)
 	handle->fd = socket;
 	
 	handle->activate_op = pcap_activate_haiku;
-	//handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
 
 	return handle;
 }
