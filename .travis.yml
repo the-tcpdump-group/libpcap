@@ -62,6 +62,7 @@ git:
 before_install:
   - uname -a
   - date
+  - if [ "$TRAVIS_OS_NAME" = linux ]; then dpkg-query -f '${Package}__${Version}__${Architecture}\n' -W 'lib*-dev'; fi
 
 install:
 
