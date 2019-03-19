@@ -51,6 +51,9 @@
 /* Define to 1 if you have the `getspnam' function. */
 #cmakedefine HAVE_GETSPNAM 1
 
+/* Define to 1 if you have a GNU-style `strerror_r' function. */
+#cmakedefine HAVE_GNU_STRERROR_R 1
+
 /* on HP-UX 10.20 or later */
 #cmakedefine HAVE_HPUX10_20_OR_LATER 1
 
@@ -144,6 +147,9 @@
 /* Define to 1 if Packet32 API (WinPcap NPF driver) is available */
 #cmakedefine HAVE_PACKET32 1
 
+/* Define to 1 if you have a POSIX-style `strerror_r' function. */
+#cmakedefine HAVE_POSIX_STRERROR_R 1
+
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #cmakedefine HAVE_PF_NAT_THROUGH_PF_NORDR 1
 
@@ -176,9 +182,6 @@
 
 /* Define to 1 if you have the `strerror' function. */
 #cmakedefine HAVE_STRERROR 1
-
-/* Define to 1 if you have the `strerror_r' function. */
-#cmakedefine HAVE_STRERROR_R 1
 
 /* Define to 1 if you have the `strerror_s' function. */
 #cmakedefine HAVE_STRERROR_S 1

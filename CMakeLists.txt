@@ -323,7 +323,34 @@ endif(NOT WIN32)
 #
 check_function_exists(strerror HAVE_STRERROR)
 check_function_exists(strerror_r HAVE_STRERROR_R)
-check_function_exists(strerror_s HAVE_STRERROR_S)
+if(HAVE_STRERROR_R)
+    #
+    # We have strerror_r; if we define _GNU_SOURCE, is it a
+    # POSIX-compliant strerror_r() or a GNU strerror_r()?
+    #
+    check_c_source_compiles(
+"#define _GNU_SOURCE
+#include <string.h>
+
+/* Define it GNU-style; that will cause an error if it's not GNU-style */
+extern char *strerror_r(int, char *, size_t);
+
+int
+main(void)
+{
+	return 0;
+}
+"
+            HAVE_GNU_STRERROR_R)
+    if(NOT HAVE_GNU_STRERROR_R)
+        set(HAVE_POSIX_STRERROR_R YES)
+    endif(NOT HAVE_GNU_STRERROR_R)
+else(HAVE_STRERROR_R)
+    #
+    # We don't have strerror_r; do we have strerror_s?
+    #
+    check_function_exists(strerror_s HAVE_STRERROR_S)
+endif(HAVE_STRERROR_R)
 check_function_exists(strlcpy HAVE_STRLCPY)
 check_function_exists(strlcat HAVE_STRLCAT)
 check_function_exists(snprintf HAVE_SNPRINTF)

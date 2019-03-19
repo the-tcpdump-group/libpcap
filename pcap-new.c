@@ -35,6 +35,8 @@
 #include <config.h>
 #endif
 
+#include "ftmacros.h"
+
 /*
  * sockutils.h may include <crtdbg.h> on Windows, and pcap-int.h will
  * include portability.h, and portability.h, on Windows, expects that
