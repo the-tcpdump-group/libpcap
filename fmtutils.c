@@ -65,11 +65,6 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	size_t msglen;
 	char *p;
 	size_t errbuflen_remaining;
-#if defined(HAVE_STRERROR_S)
-	errno_t err;
-#elif defined(HAVE_STRERROR_R)
-	int err;
-#endif
 
 	va_start(ap, fmt);
 	pcap_vsnprintf(errbuf, errbuflen, fmt, ap);
@@ -96,7 +91,10 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	 * Now append the string for the error code.
 	 */
 #if defined(HAVE_STRERROR_S)
-	err = strerror_s(p, errbuflen_remaining, errnum);
+	/*
+	 * We have a Windows-style strerror_s().
+	 */
+	errno_t err = strerror_s(p, errbuflen_remaining, errnum);
 	if (err != 0) {
 		/*
 		 * It doesn't appear to be documented anywhere obvious
@@ -104,8 +102,24 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 		 */
 		pcap_snprintf(p, errbuflen_remaining, "Error %d", errnum);
 	}
-#elif defined(HAVE_STRERROR_R)
-	err = strerror_r(errnum, p, errbuflen_remaining);
+#elif defined(HAVE_GNU_STRERROR_R)
+	/*
+	 * We have a GNU-style strerror_r(), which is *not* guaranteed to
+	 * do anything to the buffer handed to it, and which returns a
+	 * pointer to the error string, which may or may not be in
+	 * the buffer.
+	 *
+	 * It is, however, guaranteed to succeed.
+	 */
+	char strerror_buf[PCAP_ERRBUF_SIZE];
+	char *errstring = strerror_r(errnum, strerror_buf, PCAP_ERRBUF_SIZE);
+	pcap_snprintf(p, errbuflen_remaining, "%s", errstring);
+#elif defined(HAVE_POSIX_STRERROR_R)
+	/*
+	 * We have a POSIX-style strerror_r(), which is guaranteed to fill
+	 * in the buffer, but is not guaranteed to succeed.
+	 */
+	int err = strerror_r(errnum, p, errbuflen_remaining);
 	if (err == EINVAL) {
 		/*
 		 * UNIX 03 says this isn't guaranteed to produce a

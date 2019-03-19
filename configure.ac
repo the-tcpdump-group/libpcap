@@ -110,7 +110,48 @@ esac
 
 AC_LBL_FIXINCLUDES
 
-AC_CHECK_FUNCS(strerror strerror_r strerror_s)
+AC_CHECK_FUNCS(strerror)
+AC_CHECK_FUNC(strerror_r,
+    [
+	#
+	# We have strerror_r; if we define _GNU_SOURCE, is it a
+	# POSIX-compliant strerror_r() or a GNU strerror_r()?
+	#
+	AC_MSG_CHECKING(whether strerror_r is GNU-style)
+	AC_COMPILE_IFELSE(
+	    [
+		AC_LANG_SOURCE(
+#define _GNU_SOURCE
+#include <string.h>
+
+/* Define it GNU-style; that will cause an error if it's not GNU-style */
+extern char *strerror_r(int, char *, size_t);
+
+int
+main(void)
+{
+	return 0;
+}
+)
+	    ],
+	    [
+	        # GNU-style
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_GNU_STRERROR_R,,
+		    [Define to 1 if you have a GNU-style `strerror_r' function.])
+	    ],
+	    [
+		AC_MSG_RESULT(no)
+		AC_DEFINE(HAVE_POSIX_STRERROR_R,,
+		    [Define to 1 if you have a POSIX-style `strerror_r' function.])
+	    ])
+    ],
+    [
+	#
+	# We don't have strerror_r; do we have strerror_s?
+	#
+	AC_CHECK_FUNCS(strerror_s)
+    ])
 
 #
 # Thanks, IBM, for not providing vsyslog() in AIX!

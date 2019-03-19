@@ -5340,17 +5340,81 @@ $as_echo "$ac_cv_lbl_gcc_fixincludes" >&6; }
 	    fi
     fi
 
-for ac_func in strerror strerror_r strerror_s
+for ac_func in strerror
 do :
-  as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
-ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
-if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
+  ac_fn_c_check_func "$LINENO" "strerror" "ac_cv_func_strerror"
+if test "x$ac_cv_func_strerror" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_func" | $as_tr_cpp` 1
+#define HAVE_STRERROR 1
 _ACEOF
 
 fi
 done
+
+ac_fn_c_check_func "$LINENO" "strerror_r" "ac_cv_func_strerror_r"
+if test "x$ac_cv_func_strerror_r" = xyes; then :
+
+	#
+	# We have strerror_r; if we define _GNU_SOURCE, is it a
+	# POSIX-compliant strerror_r() or a GNU strerror_r()?
+	#
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether strerror_r is GNU-style" >&5
+$as_echo_n "checking whether strerror_r is GNU-style... " >&6; }
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#define _GNU_SOURCE
+#include <string.h>
+
+/* Define it GNU-style; that will cause an error if it's not GNU-style */
+extern char *strerror_r(int, char *, size_t);
+
+int
+main(void)
+{
+	return 0;
+}
+
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+
+	        # GNU-style
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_GNU_STRERROR_R /**/" >>confdefs.h
+
+
+else
+
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+$as_echo "#define HAVE_POSIX_STRERROR_R /**/" >>confdefs.h
+
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+else
+
+	#
+	# We don't have strerror_r; do we have strerror_s?
+	#
+	for ac_func in strerror_s
+do :
+  ac_fn_c_check_func "$LINENO" "strerror_s" "ac_cv_func_strerror_s"
+if test "x$ac_cv_func_strerror_s" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STRERROR_S 1
+_ACEOF
+
+fi
+done
+
+
+fi
 
 
 #
