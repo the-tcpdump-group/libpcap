@@ -388,7 +388,7 @@ usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 #define MAX_RING_SIZE	(1200*1024)
 
 static int
-usb_set_ring_size(pcap_t* handle, size_t header_size)
+usb_set_ring_size(pcap_t* handle, int header_size)
 {
 	/*
 	 * A packet from binary usbmon has:
@@ -412,7 +412,7 @@ usb_set_ring_size(pcap_t* handle, size_t header_size)
 	 */
 	int ring_size;
 
-	if ((size_t)handle->snapshot < header_size)
+	if (handle->snapshot < header_size)
 		handle->snapshot = header_size;
 	/* The maximum snapshot size is small enough that this won't overflow */
 	ring_size = (handle->snapshot - header_size) * 5;
@@ -460,7 +460,7 @@ int usb_mmap(pcap_t* handle)
 	 * length, reducing the snapshot length if that'd make the ring
 	 * bigger than the kernel supports.
 	 */
-	len = usb_set_ring_size(handle, sizeof(pcap_usb_header_mmapped));
+	len = usb_set_ring_size(handle, (int)sizeof(pcap_usb_header_mmapped));
 	if (len == -1) {
 		/* Failed.  Fall back on non-memory-mapped access. */
 		return 0;
@@ -715,7 +715,7 @@ usb_activate(pcap_t* handle)
 		 * if that'd make the ring bigger than the kernel
 		 * supports.
 		 */
-		if (usb_set_ring_size(handle, sizeof(pcap_usb_header)) == -1) {
+		if (usb_set_ring_size(handle, (int)sizeof(pcap_usb_header)) == -1) {
 			/* Failed. */
 			close(handle->fd);
 			return PCAP_ERROR;
