@@ -9,6 +9,8 @@ compiler:
   - gcc
   - clang
 
+cache: ccache
+
 env:
   global:
     # encrypted COVERITY_SCAN_TOKEN from
@@ -20,6 +22,7 @@ env:
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
+    - MAKEFLAGS='-j 2' # Travis CI VMs come with 2 cores
   matrix:
     - REMOTE=disable CMAKE=no
     - ENABLE_REMOTE="" CMAKE=yes
