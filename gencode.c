@@ -3605,7 +3605,8 @@ gen_linktype(compiler_state_t *cstate, int proto)
 	case DLT_RAIF1:
 		bpf_error(cstate, "RAIF1 link-layer type filtering not implemented");
 
-	case DLT_IPMB:
+	case DLT_IPMB_KONTRON:
+	case DLT_IPMB_LINUX:
 		bpf_error(cstate, "IPMB link-layer type filtering not implemented");
 
 	case DLT_AX25_KISS:
