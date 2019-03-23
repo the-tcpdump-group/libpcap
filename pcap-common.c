@@ -514,11 +514,20 @@
 #define LINKTYPE_RAIF1		198
 
 /*
- * IPMB packet for IPMI, beginning with the I2C slave address, followed
- * by the netFn and LUN, etc..  Requested by Chanthy Toeung
- * <chanthy.toeung@ca.kontron.com>.
+ * IPMB packet for IPMI, beginning with a 2-byte header, followed by
+ * the I2C slave address, followed by the netFn and LUN, etc..
+ * Requested by Chanthy Toeung <chanthy.toeung@ca.kontron.com>.
+ *
+ * XXX - its DLT_ value used to be called DLT_IPMB, back when we got the
+ * impression from the email thread requesting it that the packet
+ * had no extra 2-byte header.  We've renamed it; if anybody used
+ * DLT_IPMB and assumed no 2-byte header, this will cause the compile
+ * to fail, at which point we'll have to figure out what to do about
+ * the two header types using the same DLT_/LINKTYPE_ value.  If that
+ * doesn't happen, we'll assume nobody used it and that the redefinition
+ * is safe.
  */
-#define LINKTYPE_IPMB		199
+#define LINKTYPE_IPMB_KONTRON	199
 
 /*
  * Juniper-private data link type, as per request from
