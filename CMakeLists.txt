@@ -1982,6 +1982,16 @@ if(BUILD_SHARED_LIBS)
     add_dependencies(${LIBRARY_NAME} SerializeTarget)
     set_target_properties(${LIBRARY_NAME} PROPERTIES
         COMPILE_DEFINITIONS BUILDING_PCAP)
+    #
+    # No matter what the library is called - it might be called "wpcap"
+    # in a Windows build - the symbol to define to indicate that we're
+    # building the library, rather than a program using the library,
+    # and thus that we're exporting functions defined in our public
+    # header files, rather than importing those functions, is
+    # pcap_EXPORTS.
+    #
+    set_target_properties(${LIBRARY_NAME} PROPERTIES
+        DEFINE_SYMBOL pcap_EXPORTS)
 endif(BUILD_SHARED_LIBS)
 
 add_library(${LIBRARY_NAME}_static STATIC
