@@ -5,6 +5,8 @@ os:
   - linux
   - osx
 
+dist: xenial
+
 compiler:
   - gcc
   - clang
