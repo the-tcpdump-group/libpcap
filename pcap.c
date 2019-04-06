@@ -3113,6 +3113,8 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(EBHSCR, "Elektrobit High Speed Capture and Replay (EBHSCR)"),
 	DLT_CHOICE(DSA_TAG_BRCM, "Broadcom tag"),
 	DLT_CHOICE(DSA_TAG_BRCM_PREPEND, "Broadcom tag (prepended)"),
+	DLT_CHOICE(DSA_TAG_DSA, "Marvell DSA"),
+	DLT_CHOICE(DSA_TAG_EDSA, "Marvell EDSA"),
 	DLT_CHOICE_SENTINEL
 };
 
