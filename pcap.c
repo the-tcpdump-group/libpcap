@@ -2079,7 +2079,7 @@ int
 pcap_parsesrcstr(const char *source, int *type, char *host, char *port,
     char *name, char *errbuf)
 {
-  return pcap_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf);
+	return (pcap_parsesrcstr_ex(source, type, host, port, name, NULL, errbuf));
 }
 #endif
 
@@ -2588,6 +2588,16 @@ pcap_open_live(const char *device, int snaplen, int promisc, int to_ms, char *er
 	char port[PCAP_BUF_SIZE + 1];
 	char name[PCAP_BUF_SIZE + 1];
 	int srctype;
+
+	/*
+	 * A null device name is equivalent to the "any" device -
+	 * which might not be supported on this platform, but
+	 * this means that you'll get a "not supported" error
+	 * rather than, say, a crash when we try to dereference
+	 * the null pointer.
+	 */
+	if (device == NULL)
+		device = "any";
 
 	/*
 	 * Retrofit - we have to make older applications compatible with

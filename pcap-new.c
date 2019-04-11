@@ -358,6 +358,16 @@ pcap_t *pcap_open(const char *source, int snaplen, int flags, int read_timeout, 
 	pcap_t *fp;
 	int status;
 
+	/*
+	 * A null device name is equivalent to the "any" device -
+	 * which might not be supported on this platform, but
+	 * this means that you'll get a "not supported" error
+	 * rather than, say, a crash when we try to dereference
+	 * the null pointer.
+	 */
+	if (source == NULL)
+		source = "any";
+
 	if (strlen(source) > PCAP_BUF_SIZE)
 	{
 		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The source string is too long. Cannot handle it correctly.");
