@@ -3107,6 +3107,21 @@ pcap_datalink_val_to_description(int dlt)
 	return (NULL);
 }
 
+const char *
+pcap_datalink_val_to_description_or_dlt(int dlt)
+{
+        static char unkbuf[40];
+        const char *description;
+
+        description = pcap_datalink_val_to_description(dlt);
+        if (description != NULL) {
+                return description;
+        } else {
+                (void)pcap_snprintf(unkbuf, sizeof(unkbuf), "DLT %u", dlt);
+                return unkbuf;
+        }
+}
+
 struct tstamp_type_choice {
 	const char *name;
 	const char *description;

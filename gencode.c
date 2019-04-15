@@ -3638,14 +3638,9 @@ gen_linktype(compiler_state_t *cstate, int proto)
 			/*
 			 * No; report an error.
 			 */
-			description = pcap_datalink_val_to_description(cstate->linktype);
-			if (description != NULL) {
-				bpf_error(cstate, "%s link-layer type filtering not implemented",
-				    description);
-			} else {
-				bpf_error(cstate, "DLT %u link-layer type filtering not implemented",
-				    cstate->linktype);
-			}
+			description = pcap_datalink_val_to_description_or_dlt(cstate->linktype);
+			bpf_error(cstate, "%s link-layer type filtering not implemented",
+			    description);
 			/*NOTREACHED */
 		}
 	}
@@ -3743,7 +3738,8 @@ gen_llc_internal(compiler_state_t *cstate)
 		return b0;
 
 	default:
-		bpf_error(cstate, "'llc' not supported for linktype %d", cstate->linktype);
+		bpf_error(cstate, "'llc' not supported for %s",
+			  pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 		/*NOTREACHED*/
 	}
 }
@@ -8318,8 +8314,8 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		 */
 		if (cstate->bpf_pcap->rfile != NULL) {
 			/* We have a FILE *, so this is a savefile */
-			bpf_error(cstate, "inbound/outbound not supported on linktype %d when reading savefiles",
-			    cstate->linktype);
+			bpf_error(cstate, "inbound/outbound not supported on %s when reading savefiles",
+			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 			b0 = NULL;
 			/*NOTREACHED*/
 		}
@@ -8331,8 +8327,8 @@ gen_inbound(compiler_state_t *cstate, int dir)
 			gen_not(b0);
 		}
 #else /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
-		bpf_error(cstate, "inbound/outbound not supported on linktype %d",
-		    cstate->linktype);
+		bpf_error(cstate, "inbound/outbound not supported on %s",
+		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 		/*NOTREACHED*/
 #endif /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
 	}
@@ -8996,8 +8992,8 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		break;
 
 	default:
-		bpf_error(cstate, "no VLAN support for data link type %d",
-		      cstate->linktype);
+		bpf_error(cstate, "no VLAN support for %s",
+		      pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 		/*NOTREACHED*/
 	}
 
@@ -9053,8 +9049,8 @@ gen_mpls(compiler_state_t *cstate, bpf_u_int32 label_num_arg,
                      * leave it for now */
 
             default:
-                    bpf_error(cstate, "no MPLS support for data link type %d",
-                          cstate->linktype);
+                    bpf_error(cstate, "no MPLS support for %s",
+                          pcap_datalink_val_to_description_or_dlt(cstate->linktype));
                     /*NOTREACHED*/
             }
         }
