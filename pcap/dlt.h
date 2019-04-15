@@ -1450,6 +1450,12 @@
 #define DLT_IEEE802_15_4_TAP    283
 
 /*
+ * Marvell (Ethertype) Distributed Switch Architecture proprietary tagging format.
+ */
+#define DLT_DSA_TAG_DSA		284
+#define DLT_DSA_TAG_EDSA	285
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1459,7 +1465,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	283	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	285	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

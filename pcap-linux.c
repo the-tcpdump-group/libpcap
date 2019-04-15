@@ -6934,6 +6934,8 @@ static struct dsa_proto {
 	{ "none", DLT_EN10MB },
 	{ "brcm", DLT_DSA_TAG_BRCM },
 	{ "brcm-prepend", DLT_DSA_TAG_BRCM_PREPEND },
+	{ "dsa", DLT_DSA_TAG_DSA },
+	{ "edsa", DLT_DSA_TAG_EDSA },
 };
 
 static int

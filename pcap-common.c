@@ -1164,7 +1164,13 @@
  */
 #define LINKTYPE_IEEE802_15_4_TAP       283
 
-#define LINKTYPE_MATCHING_MAX	283		/* highest value in the "matching" range */
+/*
+ * Marvell (Ethertype) Distributed Switch Architecture proprietary tagging format.
+ */
+#define LINKTYPE_DSA_TAG_DSA	284
+#define LINKTYPE_DSA_TAG_EDSA	285
+
+#define LINKTYPE_MATCHING_MAX	285		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
