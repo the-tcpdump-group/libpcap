@@ -471,6 +471,7 @@ PCAP_API void	pcap_free_datalinks(int *);
 PCAP_API int	pcap_datalink_name_to_val(const char *);
 PCAP_API const char *pcap_datalink_val_to_name(int);
 PCAP_API const char *pcap_datalink_val_to_description(int);
+PCAP_API const char *pcap_datalink_val_to_description_or_dlt(int);
 PCAP_API int	pcap_snapshot(pcap_t *);
 PCAP_API int	pcap_is_swapped(pcap_t *);
 PCAP_API int	pcap_major_version(pcap_t *);
