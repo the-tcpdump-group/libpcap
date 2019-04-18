@@ -2234,12 +2234,12 @@ initialize_ops(pcap_t *p)
 	 */
 	p->oneshot_callback = pcap_oneshot;
 
-    /*
-     * Default breakloop operation - implementations can override
-     * this, but should call pcap_breakloop_common() before doing
-     * their own logic.
-     */
-    p->breakloop_op = pcap_breakloop_common;
+	/*
+	 * Default breakloop operation - implementations can override
+	 * this, but should call pcap_breakloop_common() before doing
+	 * their own logic.
+	 */
+	p->breakloop_op = pcap_breakloop_common;
 }
 
 static pcap_t *
