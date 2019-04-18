@@ -442,6 +442,11 @@ found:
 	p->oneshot_callback = pcap_oneshot;
 
 	/*
+	 * Default breakloop operation.
+	 */
+	p->breakloop_op = pcap_breakloop_common;
+
+	/*
 	 * Savefiles never require special BPF code generation.
 	 */
 	p->bpf_codegen_flags = 0;
