@@ -266,7 +266,7 @@ doc/README.macos	- notes on using libpcap on macOS
 doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
 doc/README.sita	- notes on using libpcap to capture on SITA devices
 doc/README.tru64	- notes on using libpcap on Digital/Tru64 UNIX
-doc/README.Win32	- notes on using libpcap on Win32 systems (with WinPcap)
+doc/README.Win32	- notes on using libpcap on Win32 systems (with Npcap)
 VERSION		- version of this release
 acconfig.h	- support for post-2.13 autoconf
 aclocal.m4	- autoconf macros

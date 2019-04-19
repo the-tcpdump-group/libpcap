@@ -747,7 +747,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * filter for this pcap_t; we might be running it from userland
 	 * on captured packets to do packet classification.  We really
 	 * need a better way of handling this, but this is all that
-	 * the WinPcap code did.
+	 * the WinPcap remote capture code did.
 	 */
 	if (p->save_current_filter_op != NULL)
 		(p->save_current_filter_op)(p, buf);
