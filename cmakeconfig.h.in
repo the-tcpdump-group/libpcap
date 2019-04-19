@@ -147,8 +147,11 @@
 /* if there's an os_proto.h for this platform, to use additional prototypes */
 #cmakedefine HAVE_OS_PROTO_H 1
 
-/* Define to 1 if Packet32 API (WinPcap NPF driver) is available */
+/* Define to 1 if Packet32 API (Npcap driver) is available */
 #cmakedefine HAVE_PACKET32 1
+
+/* Define to 1 if NPcap's version.h is available */
+#cmakedefine HAVE_VERSION_H 1
 
 /* Define to 1 if you have a POSIX-style `strerror_r' function. */
 #cmakedefine HAVE_POSIX_STRERROR_R 1
