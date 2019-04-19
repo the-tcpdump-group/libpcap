@@ -141,6 +141,9 @@
 /* Define to 1 if Packet32 API (WinPcap NPF driver) is available */
 #cmakedefine HAVE_PACKET32 1
 
+/* Define to 1 if NPcap's version.h is available */
+#cmakedefine HAVE_VERSION_H 1
+
 /* define if net/pfvar.h defines PF_NAT through PF_NORDR */
 #cmakedefine HAVE_PF_NAT_THROUGH_PF_NORDR 1
 
