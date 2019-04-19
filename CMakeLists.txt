@@ -221,6 +221,7 @@ include_directories(
 
 include(CheckFunctionExists)
 include(CMakePushCheckState)
+include(CheckSymbolExists)
 
 if(WIN32)
 
@@ -241,6 +242,14 @@ if(WIN32)
         check_function_exists(PacketIsLoopbackAdapter HAVE_PACKET_IS_LOOPBACK_ADAPTER)
         cmake_pop_check_state()
     endif(PACKET_FOUND)
+
+    message(STATUS "checking for Npcap's version.h")
+    check_symbol_exists(WINPCAP_PRODUCT_NAME "../../version.h" HAVE_VERSION_H)
+    if(HAVE_VERSION_H)
+	    message(STATUS "HAVE version.h")
+    else(HAVE_VERSION_H)
+	    message(STATUS "MISSING version.h")
+    endif(HAVE_VERSION_H)
 
 endif(WIN32)
 
@@ -401,7 +410,6 @@ endif()
 #
 set(PCAP_LINK_LIBRARIES "")
 include(CheckLibraryExists)
-include(CheckSymbolExists)
 if(WIN32)
     #
     # We need winsock2.h and ws2tcpip.h.
