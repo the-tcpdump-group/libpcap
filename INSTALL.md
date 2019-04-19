@@ -265,7 +265,7 @@ FILES
 	doc/README.septel   - notes on using libpcap to capture on Intel/Septel devices
 	doc/README.sita	    - notes on using libpcap to capture on SITA devices
 	doc/README.tru64    - notes on using libpcap on Digital/Tru64 UNIX
-	doc/README.Win32    - notes on using libpcap on Win32 systems (with WinPcap)
+	doc/README.Win32.md - notes on using libpcap on Win32 systems (with Npcap)
 	VERSION		    - version of this release
 	acconfig.h	    - support for post-2.13 autoconf
 	aclocal.m4	    - autoconf macros
@@ -324,7 +324,7 @@ FILES
 	pcap-namedb.h	    - header for backwards compatibility
 	pcap-nit.c	    - SunOS Network Interface Tap support
 	pcap-nit.h	    - SunOS Network Interface Tap definitions
-	pcap-npf.c	    - WinPcap capture support
+	pcap-npf.c	    - Npcap capture support
 	pcap-null.c	    - dummy monitor support (allows offline use of libpcap)
 	pcap-pf.c	    - Ultrix and Digital/Tru64 UNIX Packet Filter support
 	pcap-pf.h	    - Ultrix and Digital/Tru64 UNIX Packet Filter definitions

@@ -120,7 +120,7 @@ int pcap_findalldevs_ex(const char *source, struct pcap_rmtauth *auth, pcap_if_t
 		if (*alldevs == NULL)
 		{
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-				"No interfaces found! Make sure libpcap/WinPcap is properly installed"
+				"No interfaces found! Make sure libpcap/Npcap is properly installed"
 				" on the local machine.");
 			return -1;
 		}
