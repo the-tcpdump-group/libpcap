@@ -83,6 +83,14 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "Intel")
 endif()
 
 #
+# Treat source files as being in UTF-8 with MSVC.
+# We assume that UTF-8 source is OK with other compilers.
+#
+if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
+    set(C_ADDITIONAL_FLAGS "${C_ADDITIONAL_FLAGS} -utf-8")
+endif(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
+
+#
 # Build all runtimes in the top-level binary directory; that way,
 # on Windows, the executables will be in the same directory as
 # the DLLs, so the system will find pcap.dll when any of the
