@@ -345,16 +345,13 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 	if (server)
 	{
 		/*
-		 * Allow a new server to bind the socket after the old one exited,
-		 * even if lingering sockets are still present.
+		 * Allow a new server to bind the socket after the old one
+		 * exited, even if lingering sockets are still present.
+		 *
+		 * Don't treat an error as a failure.
 		 */
 		int optval = 1;
-		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
-		{
-			sock_geterror("socket(): ", errbuf, errbuflen);
-			/* dont treat an error as a failure */
-			SOCK_DEBUG_MESSAGE(errbuf);
-		}
+		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
 #if defined(IPV6_V6ONLY) || defined(IPV6_BINDV6ONLY)
 		/*
