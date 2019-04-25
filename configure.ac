@@ -1920,7 +1920,7 @@ irix*)
 	MAN_MISC_INFO=5
 	;;
 
-linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*)
+linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|midipix*)
 	DYEXT="so"
 
 	#
