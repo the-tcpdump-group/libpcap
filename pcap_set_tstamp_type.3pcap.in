@@ -38,10 +38,10 @@ sets the type of time stamp desired for packets captured on the pcap
 descriptor to the type specified by
 .IR tstamp_type .
 It must be called on a pcap descriptor created by
-.B pcap_create(3PCAP)
+.BR pcap_create (3PCAP)
 that has not yet been activated by
-.BR pcap_activate(3PCAP) .
-.B pcap_list_tstamp_types(3PCAP)
+.BR pcap_activate (3PCAP).
+.BR pcap_list_tstamp_types (3PCAP)
 will give a list of the time stamp types supported by a given capture
 device.
 See
@@ -64,5 +64,5 @@ This function became available in libpcap release 1.2.1.  In previous
 releases, the time stamp type cannot be set; only the default time stamp
 type offered by a capture source is available.
 .SH SEE ALSO
-pcap(3PCAP),
-pcap_tstamp_type_name_to_val(3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_tstamp_type_name_to_val (3PCAP)

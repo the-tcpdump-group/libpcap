@@ -33,9 +33,9 @@ void pcap_breakloop(pcap_t *);
 .SH DESCRIPTION
 .B pcap_breakloop()
 sets a flag that will force
-.B pcap_dispatch(3PCAP)
+.BR pcap_dispatch (3PCAP)
 or
-.B pcap_loop(3PCAP)
+.BR pcap_loop (3PCAP)
 to return rather than looping; they will return the number of packets
 that have been processed so far, or
 .B PCAP_ERROR_BREAK
@@ -112,4 +112,4 @@ subsequent call will return
 .B PCAP_ERROR_BREAK
 and clear the flag.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

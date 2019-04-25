@@ -49,9 +49,9 @@ and the packet data are not to be freed by the caller, and are not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
 .BR pcap_next() ,
-.BR pcap_loop(3PCAP) ,
+.BR pcap_loop (3PCAP),
 or
-.BR pcap_dispatch(3PCAP) ;
+.BR pcap_dispatch (3PCAP);
 if the code needs them to remain valid, it must make a copy of them.
 .PP
 .B pcap_next()
@@ -78,7 +78,7 @@ is filled in with the appropriate values for the packet.
 .PP
 The bytes of data from the packet begin with a link-layer header.  The
 format of the link-layer header is indicated by the return value of the
-.B pcap_datalink(PCAP)
+.BR pcap_datalink (3PCAP)
 routine when handed the
 .B pcap_t
 value also passed to
@@ -91,7 +91,7 @@ lists the values
 can return and describes the packet formats that
 correspond to those values.  The value it returns will be valid for all
 packets received unless and until
-.B pcap_set_datalink(3PCAP)
+.BR pcap_set_datalink (3PCAP)
 is called; after a successful call to
 .BR pcap_set_datalink() ,
 all subsequent packets will have a link-layer header of the type
@@ -122,9 +122,9 @@ are being read from a ``savefile'' and there are no more packets to read
 from the savefile.  If
 .B PCAP_ERROR
 is returned,
-.B pcap_geterr(3PCAP)
+.BR pcap_geterr (3PCAP)
 or
-.B pcap_perror(3PCAP)
+.BR pcap_perror (3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
@@ -141,4 +141,4 @@ non-blocking mode and no packets were available to be read), or if no
 more packets are available in a ``savefile.'' Unfortunately, there is no
 way to determine whether an error occurred or not.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

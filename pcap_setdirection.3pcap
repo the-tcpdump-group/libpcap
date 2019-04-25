@@ -62,11 +62,11 @@ returns 0 on success and
 on failure. If
 .B PCAP_ERROR
 is returned,
-.B pcap_geterr(3PCAP)
+.BR pcap_geterr (3PCAP)
 or
-.B pcap_perror(3PCAP)
+.BR pcap_perror (3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

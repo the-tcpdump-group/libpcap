@@ -52,18 +52,18 @@ returned.
 In
 ``non-blocking'' mode, an attempt to read from the capture descriptor
 with
-.B pcap_dispatch(3PCAP)
+.BR pcap_dispatch (3PCAP)
 will, if no packets are currently available to be read, return 0
 immediately rather than blocking waiting for packets to arrive.
-.B pcap_loop(3PCAP)
+.BR pcap_loop (3PCAP)
 and
-.B pcap_next(3PCAP)
+.BR pcap_next (3PCAP)
 will not work in ``non-blocking'' mode.
 .PP
 When first activated with
-.B pcap_activate(3PCAP)
+.BR pcap_activate (3PCAP)
 or opened with
-.B pcap_open_live(3PCAP) ,
+.BR pcap_open_live (3PCAP) ,
 a capture handle is not in ``non-blocking mode''; a call to
 .B pcap_setnonblock()
 is required in order to put it into ``non-blocking'' mode.
@@ -82,4 +82,6 @@ is assumed to be able to hold at least
 .B PCAP_ERRBUF_SIZE
 chars.
 .SH SEE ALSO
-pcap(3PCAP), pcap_next_ex(3PCAP), pcap_geterr(3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_next_ex (3PCAP),
+.BR pcap_geterr (3PCAP)

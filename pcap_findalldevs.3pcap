@@ -40,11 +40,11 @@ void pcap_freealldevs(pcap_if_t *alldevs);
 .SH DESCRIPTION
 .B pcap_findalldevs()
 constructs a list of network devices that can be opened with
-.B pcap_create(3PCAP)
+.BR pcap_create (3PCAP)
 and
-.B pcap_activate(3PCAP)
+.BR pcap_activate (3PCAP)
 or with
-.BR pcap_open_live(3PCAP) .
+.BR pcap_open_live (3PCAP).
 (Note that there may be network devices that cannot be opened by the
 process calling
 .BR pcap_findalldevs() ,
@@ -194,7 +194,7 @@ for IPv6 addresses, it can be interpreted as if it pointed to a
 .BR "struct sockaddr_in6".
 .PP
 The list of devices must be freed with
-.BR pcap_freealldevs(3PCAP) ,
+.BR pcap_freealldevs (3PCAP),
 which frees the list pointed to by
 .IR alldevs .
 .SH RETURN VALUE
@@ -228,4 +228,4 @@ and
 .B PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE
 constants became available in libpcap release 1.9.0.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

@@ -48,4 +48,4 @@ prints the text of the last pcap library error on
 prefixed by
 .IR prefix .
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

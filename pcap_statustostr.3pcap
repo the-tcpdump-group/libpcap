@@ -38,4 +38,4 @@ or
 .B PCAP_WARNING_
 value returned by a libpcap routine to an error string.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

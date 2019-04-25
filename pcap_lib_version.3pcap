@@ -36,4 +36,4 @@ returns a pointer to a string giving information about the version of
 the libpcap library being used; note that it contains more information
 than just a version number.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)

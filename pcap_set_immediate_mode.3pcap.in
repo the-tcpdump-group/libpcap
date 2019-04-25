@@ -54,11 +54,11 @@ immediate mode must be turned on with a
 .B BIOCIMMEDIATE
 .BR ioctl (2),
 as documented in
-.BR bpf(@MAN_DEVICES@) ,
+.BR bpf (@MAN_DEVICES@),
 on the descriptor returned by
-.B pcap_fileno(3PCAP),
+.BR pcap_fileno (3PCAP),
 after
-.BR pcap_activate(3PCAP)
+.BR pcap_activate (3PCAP)
 is called;
 .IP
 on Solaris 10 and earlier versions of Solaris, immediate mode must be
@@ -70,13 +70,13 @@ on Digital UNIX/Tru64 UNIX, immediate mode must be turned on by doing a
 .B BIOCMBIC
 .BR ioctl ,
 as documented in
-.BR packetfilter(7) ,
+.BR packetfilter (7),
 to clear the
 .B ENBATCH
 flag on the descriptor returned by
-.B pcap_fileno(3PCAP),
+.BR pcap_fileno (3PCAP),
 after
-.BR pcap_activate(3PCAP)
+.BR pcap_activate (3PCAP)
 is called;
 .IP
 on Windows, immediate mode must be turned on by calling
@@ -92,4 +92,6 @@ is available, it should be used.
 .PP
 On other platforms, capture devices are always in immediate mode.
 .SH SEE ALSO
-pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_create (3PCAP),
+.BR pcap_activate (3PCAP)

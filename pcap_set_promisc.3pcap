@@ -43,4 +43,6 @@ returns 0 on success or
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.
 .SH SEE ALSO
-pcap(3PCAP), pcap_create(3PCAP), pcap_activate(3PCAP)
+.BR pcap (3PCAP),
+.BR pcap_create (3PCAP),
+.BR pcap_activate (3PCAP)

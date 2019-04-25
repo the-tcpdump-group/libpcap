@@ -74,9 +74,9 @@ returns 0 on success and
 on failure. If
 .B PCAP_ERROR
 is returned,
-.B pcap_geterr(3PCAP)
+.BR pcap_geterr (3PCAP)
 or
-.B pcap_perror(3PCAP)
+.BR pcap_perror (3PCAP)
 may be called with
 .I p
 as an argument to fetch or display the error text.
@@ -86,4 +86,6 @@ The
 .B PCAP_NETMASK_UNKNOWN
 constant became available in libpcap release 1.1.0.
 .SH SEE ALSO
-pcap(3PCAP), pcap_setfilter(3PCAP), pcap_freecode(3PCAP),
+.BR pcap (3PCAP),
+.BR pcap_setfilter (3PCAP),
+.BR pcap_freecode (3PCAP)

@@ -63,4 +63,4 @@ is assumed to be able to hold at least
 .B PCAP_ERRBUF_SIZE
 chars.
 .SH SEE ALSO
-pcap(3PCAP)
+.BR pcap (3PCAP)
