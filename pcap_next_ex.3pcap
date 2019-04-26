@@ -19,7 +19,8 @@
 .\"
 .TH PCAP_NEXT_EX 3PCAP "25 July 2018"
 .SH NAME
-pcap_next_ex, pcap_next \- read the next packet from a pcap_t
+pcap_next_ex, pcap_next_ex_with_sf_offset, pcap_next
+\- read the next packet from a pcap_t
 .SH SYNOPSIS
 .nf
 .ft B
@@ -30,7 +31,14 @@ pcap_next_ex, pcap_next \- read the next packet from a pcap_t
 int pcap_next_ex(pcap_t *p, struct pcap_pkthdr **pkt_header,
 .ti +8
 const u_char **pkt_data);
+.ft B
+int pcap_next_ex_with_sf_offset(pcap_t *p, struct pcap_pkthdr **pkt_header,
+.ti +8
+const u_char **pkt_data, long *sf_offset);
+.BR
+.ft B
 const u_char *pcap_next(pcap_t *p, struct pcap_pkthdr *h);
+.LP
 .ft
 .fi
 .SH DESCRIPTION
@@ -48,6 +56,7 @@ argument is set to point to the data in the packet.  The
 and the packet data are not to be freed by the caller, and are not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
+.BR pcap_next_ex_with_sf_offset() ,
 .BR pcap_next() ,
 .BR pcap_loop (3PCAP),
 or
@@ -65,6 +74,7 @@ pointer to the data in that packet.  The
 packet data is not to be freed by the caller, and is not
 guaranteed to be valid after the next call to
 .BR pcap_next_ex() ,
+.BR pcap_next_ex_with_sf_offset() ,
 .BR pcap_next() ,
 .BR pcap_loop() ,
 or
@@ -75,6 +85,15 @@ The
 structure pointed to by
 .I h
 is filled in with the appropriate values for the packet.
+.PP
+.B pcap_next_ex_with_sf_offset()
+is the same as
+.B pcap_next_ex()
+except that it takes an additional
+.I sf_offset
+pointer argument. The pointed variable will be set to the extracted
+packet's ``savefile`` offset. If the packets are being read from a live capture, the
+pointed variable will be set to -1.
 .PP
 The bytes of data from the packet begin with a link-layer header.  The
 format of the link-layer header is indicated by the return value of the
@@ -112,8 +131,10 @@ have some other data link type, such as
 for Ethernet.
 .SH RETURN VALUE
 .B pcap_next_ex()
-returns 1 if the packet was read without problems, 0 if packets are
-being read from a live capture and the packet buffer timeout expired,
+and
+.B pcap_next_ex_with_sf_offset()
+both return 1 if the packet was read without problems, 0
+if packets are being read from a live capture and the timeout expired,
 .B PCAP_ERROR
 if an error occurred while reading the packet, and
 .B PCAP_ERROR_BREAK

@@ -947,6 +947,12 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	bhdrp->block_type = magic;
 	bhdrp->total_length = total_length;
 	shbp->byte_order_magic = byte_order_magic;
+
+	/*
+	 * We initialize current_offset to the end of the SHB
+	 */
+	p->current_offset = bhdrp->total_length;
+
 	if (read_bytes(fp,
 	    (u_char *)p->buffer + (sizeof(magic) + sizeof(total_length) + sizeof(byte_order_magic)),
 	    total_length - (sizeof(magic) + sizeof(total_length) + sizeof(byte_order_magic)),
@@ -996,6 +1002,12 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		}
 		if (status == -1)
 			goto fail;	/* error */
+
+		/*
+		 * Add to current_offset the length of the section we just read
+		 */
+		p->current_offset += cursor.data_remaining + sizeof(struct block_header)
+			+ sizeof(struct block_trailer);
 		switch (cursor.block_type) {
 
 		case BT_IDB:
@@ -1070,7 +1082,6 @@ done:
 
 	p->next_packet_op = pcap_ng_next_packet;
 	p->cleanup_op = pcap_ng_cleanup;
-
 	return (p);
 
 fail:
@@ -1124,6 +1135,23 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			return (1);	/* EOF */
 		if (status == -1)
 			return (-1);	/* error */
+		if (p->rfile != NULL) {
+			/*
+			 * We set lastpkt_offset to current offset and we add the length of
+			 * the section we just read to the current_offset
+			 *
+			 * When we will read a packet block (from any kind), we will add to
+			 * lastpkt_offset the length of a block header and the length of our
+			 * packet block's header
+			 * This way, the lastpkt_offset variable will be set to the
+			 * packet savefile's offset
+			 * offset in his original savefile.
+			 */
+			p->lastpkt_offset = p->current_offset;
+			p->current_offset += cursor.data_remaining
+				+ sizeof(struct block_header)
+				+ sizeof(struct block_trailer);
+		}
 		switch (cursor.block_type) {
 
 		case BT_EPB:
@@ -1132,7 +1160,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * EPB.
 			 */
 			epbp = get_from_block_data(&cursor, sizeof(*epbp),
-			    p->errbuf);
+						   p->errbuf);
 			if (epbp == NULL)
 				return (-1);	/* error */
 
@@ -1153,6 +1181,10 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				t = ((uint64_t)epbp->timestamp_high) << 32 |
 				    epbp->timestamp_low;
 			}
+			if (p->rfile != NULL) {
+				p->lastpkt_offset += sizeof(struct block_header)
+					+ sizeof(struct enhanced_packet_block);
+			}
 			goto found;
 
 		case BT_SPB:
@@ -1161,7 +1193,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * SPB.
 			 */
 			spbp = get_from_block_data(&cursor, sizeof(*spbp),
-			    p->errbuf);
+						   p->errbuf);
 			if (spbp == NULL)
 				return (-1);	/* error */
 
@@ -1189,6 +1221,11 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			if (hdr->caplen > (bpf_u_int32)p->snapshot)
 				hdr->caplen = p->snapshot;
 			t = 0;	/* no time stamps */
+
+			if (p->rfile != NULL) {
+				p->lastpkt_offset += sizeof(struct block_header)
+					+ sizeof(struct simple_packet_block);
+			}
 			goto found;
 
 		case BT_PB:
@@ -1197,7 +1234,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			 * PB.
 			 */
 			pbp = get_from_block_data(&cursor, sizeof(*pbp),
-			    p->errbuf);
+						  p->errbuf);
 			if (pbp == NULL)
 				return (-1);	/* error */
 
@@ -1217,6 +1254,10 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				hdr->len = pbp->len;
 				t = ((uint64_t)pbp->timestamp_high) << 32 |
 				    pbp->timestamp_low;
+			}
+			if (p->rfile != NULL) {
+				p->lastpkt_offset += sizeof(struct block_header)
+					+ sizeof(struct packet_block);
 			}
 			goto found;
 
