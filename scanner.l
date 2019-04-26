@@ -359,6 +359,8 @@ vci		return VCI;
 connectmsg	return CONNECTMSG;
 metaconnect	return METACONNECT;
 
+cop		return COP;
+
 on|ifname	return PF_IFNAME;
 rset|ruleset	return PF_RSET;
 rnr|rulenum	return PF_RNR;

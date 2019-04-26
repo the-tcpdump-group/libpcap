@@ -318,6 +318,18 @@ bpf_image(const struct bpf_insn *p, int n)
 		op = "txa";
 		operand = "";
 		break;
+
+	case BPF_MISC|BPF_COP:
+		op = "cop";
+		(void)pcap_snprintf(operand_buf, sizeof operand_buf, "#%d", p->k);
+		operand = operand_buf;
+		break;
+
+	case BPF_MISC|BPF_COPX:
+		op = "copx";
+		operand = "x";
+		break;
+
 	}
 	if (BPF_CLASS(p->code) == BPF_JMP && BPF_OP(p->code) != BPF_JA) {
 		(void)pcap_snprintf(image, sizeof image,

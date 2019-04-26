@@ -198,11 +198,11 @@ struct bpf_program {
 /*				0x08	reserved */
 /*				0x10	reserved */
 /*				0x18	reserved */
-/* #define	BPF_COP		0x20	NetBSD "coprocessor" extensions */
+#define		BPF_COP		0x20	/* NetBSD "coprocessor" extension */
 /*				0x28	reserved */
 /*				0x30	reserved */
 /*				0x38	reserved */
-/* #define	BPF_COPX	0x40	NetBSD "coprocessor" extensions */
+#define		BPF_COPX	0x40	/* NetBSD "coprocessor" extension */
 /*					also used on BSD/OS */
 /*				0x48	reserved */
 /*				0x50	reserved */
