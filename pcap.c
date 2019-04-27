@@ -2103,11 +2103,28 @@ pcap_create(const char *device, char *errbuf)
 	else {
 #ifdef _WIN32
 		/*
-		 * If the string appears to be little-endian UCS-2/UTF-16,
-		 * convert it to ASCII.
+		 * On Windows, for backwards compatibility reasons,
+		 * pcap_lookupdev() returns a pointer to a sequence of
+		 * pairs of UTF-16LE device names and local code page
+		 * description strings.
 		 *
-		 * XXX - to UTF-8 instead?  Or report an error if any
-		 * character isn't ASCII?
+		 * This means that if a program uses pcap_lookupdev()
+		 * to get a default device, and hands that to an API
+		 * that opens devices, we'll get handed a UTF-16LE
+		 * string, not a string in the local code page.
+		 *
+		 * To work around that, we check whether the string
+		 * looks as if it might be a UTF-16LE strinh and, if
+		 * so, convert it back to the local code page's
+		 * extended ASCII.
+		 *
+		 * XXX - you *cannot* reliably detect whether a
+		 * string is UTF-16LE or not; "a" could either
+		 * be a one-character ASCII string or the first
+		 * character of a UTF-16LE string.  This particular
+		 * version of this heuristic dates back to WinPcap
+		 * 4.1.1; prior to that, PacketOpenAdapter() did
+		 * its own heuristic, with the exact same vulnerability.
 		 */
 		if (device[0] != '\0' && device[1] == '\0') {
 			size_t length;
