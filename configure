@@ -4313,7 +4313,7 @@ $as_echo "#define const /**/" >>confdefs.h
 	    aix*)
 		    ;;
 
-	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*)
+	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*|midipix*)
 	    	    #
 		    # Platforms where the linker is the GNU linker
 		    # or accepts command-line arguments like
@@ -9071,7 +9071,7 @@ irix*)
 	MAN_MISC_INFO=5
 	;;
 
-linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*)
+linux*|freebsd*|netbsd*|openbsd*|dragonfly*|kfreebsd*|gnu*|haiku*|midipix*)
 	DYEXT="so"
 
 	#
