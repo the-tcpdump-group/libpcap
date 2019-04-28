@@ -2089,8 +2089,8 @@ pcap_create(const char *device, char *errbuf)
 		 * be a one-character ASCII string or the first
 		 * character of a UTF-16LE string.  This particular
 		 * version of this heuristic dates back to WinPcap
-		 * 4.1.1; prior to that, PacketOpenAdapter() did
-		 * its own heuristic, with the exact same vulnerability.
+		 * 4.1.1; PacketOpenAdapter() does uses the same
+		 * heuristic, with the exact same vulnerability.
 		 */
 		if (device[0] != '\0' && device[1] == '\0') {
 			size_t length;
