@@ -87,7 +87,7 @@ endif()
 # We assume that UTF-8 source is OK with other compilers.
 #
 if(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
-    set(C_ADDITIONAL_FLAGS "${C_ADDITIONAL_FLAGS} -utf-8")
+    set(C_ADDITIONAL_FLAGS "${C_ADDITIONAL_FLAGS} /utf-8")
 endif(MSVC AND NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
 
 #
