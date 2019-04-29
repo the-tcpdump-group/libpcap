@@ -232,22 +232,6 @@ sf_cleanup(pcap_t *p)
 	pcap_freecode(&p->fcode);
 }
 
-/*
-* fopen's safe version on Windows.
-*/
-#ifdef _MSC_VER
-FILE *fopen_safe(const char *filename, const char* mode)
-{
-	FILE *fp = NULL;
-	errno_t errno;
-	errno = fopen_s(&fp, filename, mode);
-	if (errno == 0)
-		return fp;
-	else
-		return NULL;
-}
-#endif
-
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
