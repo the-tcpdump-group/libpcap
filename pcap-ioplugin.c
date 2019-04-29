@@ -98,8 +98,15 @@ stdio_open_read(const char *fname, char *errbuf)
 
 	if (strcmp(fname, "-") == 0) {
 		fp = stdin;
+		SET_BINMODE(fp);
 	} else {
-		fp = fopen(fname, "r");
+		/*
+		 * "b" is supported as of C90, so *all* UN*Xes should
+		 * support it, even though it does nothing.  It's
+		 * required on Windows, as the file is a binary file
+		 * and must be written in binary mode.
+		 */
+		fp = fopen(fname, "rb");
 		if (fp == NULL) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: fopen: %s", fname,
 				pcap_strerror(errno));
@@ -107,7 +114,6 @@ stdio_open_read(const char *fname, char *errbuf)
 		}
 	}
 
-	SET_BINMODE(fp);
 	return fp;
 }
 
@@ -118,8 +124,15 @@ stdio_open_write(const char *fname, char *errbuf)
 
 	if (strcmp(fname, "-") == 0) {
 		fp = stdout;
+		SET_BINMODE(fp);
 	} else {
-		fp = fopen(fname, "w");
+		/*
+		 * "b" is supported as of C90, so *all* UN*Xes should
+		 * support it, even though it does nothing.  It's
+		 * required on Windows, as the file is a binary file
+		 * and must be written in binary mode.
+		 */
+		fp = fopen(fname, "wb");
 		if (fp == NULL) {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "%s: fopen: %s", fname,
 				pcap_strerror(errno));
@@ -127,7 +140,6 @@ stdio_open_write(const char *fname, char *errbuf)
 		}
 	}
 
-	SET_BINMODE(fp);
 	return fp;
 }
 
