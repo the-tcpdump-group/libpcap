@@ -33,8 +33,6 @@
 #endif
 
 #include <pcap-types.h>
-#include "ftmacros.h"
-
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
