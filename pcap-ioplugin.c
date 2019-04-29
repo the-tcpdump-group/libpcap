@@ -78,7 +78,8 @@
  * fopen's safe version on Windows.
  */
 #ifdef _MSC_VER
-FILE *fopen_safe(const char *filename, const char* mode)
+FILE *
+fopen_safe(const char *filename, const char* mode)
 {
 	FILE *fp = NULL;
 	errno_t errno;
@@ -142,7 +143,8 @@ stdio_open_write(const char *fname, char *errbuf)
 	return fp;
 }
 
-static const pcap_ioplugin_t* pcap_ioplugin_stdio() {
+static const pcap_ioplugin_t*
+pcap_ioplugin_stdio() {
 	static pcap_ioplugin_t plugin = {
 		.open_read = stdio_open_read,
 		.open_write = stdio_open_write
@@ -159,7 +161,8 @@ static const pcap_ioplugin_t* pcap_ioplugin_stdio() {
  *     stdio-based output if the plugin fails to load
  */
 
-const pcap_ioplugin_t* pcap_ioplugin_init(const char *name)
+const pcap_ioplugin_t*
+pcap_ioplugin_init(const char *name)
 {
 	void *lib = NULL;
 	if (name == NULL) {
@@ -196,7 +199,8 @@ static struct {
 static int registered_atexit = 0;
 static int running_atexit = 0;
 
-static void pcap_ioplugin_closeall()
+static void
+pcap_ioplugin_closeall(void)
 {
 	struct file_entry *entry = file_list.head;
 
@@ -212,7 +216,8 @@ static void pcap_ioplugin_closeall()
 	file_list.head = NULL;
 }
 
-void pcap_ioplugin_register_fp_cookie(FILE *fp, const void *cookie)
+void
+pcap_ioplugin_register_fp_cookie(FILE *fp, const void *cookie)
 {
 	struct file_entry *entry = malloc(sizeof *entry);
 	if (!entry) {
@@ -231,7 +236,8 @@ void pcap_ioplugin_register_fp_cookie(FILE *fp, const void *cookie)
 	file_list.head = entry;
 }
 
-void pcap_ioplugin_unregister_fp_cookie(const void *cookie)
+void
+pcap_ioplugin_unregister_fp_cookie(const void *cookie)
 {
 	struct file_entry *entry = file_list.head;
 
