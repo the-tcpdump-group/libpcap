@@ -347,7 +347,8 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		 * Don't treat an error as a failure.
 		 */
 		int optval = 1;
-		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+		(void)setsockopt(sock, SOL_SOCKET, SO_REUSEADDR,
+		    (char *)&optval, sizeof (optval));
 
 #if defined(IPV6_V6ONLY) || defined(IPV6_BINDV6ONLY)
 		/*
