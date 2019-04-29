@@ -42,17 +42,17 @@
 /* Define to 1 if you have the declaration of `ether_hostton' */
 #undef HAVE_DECL_ETHER_HOSTTON
 
-/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
-#undef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
-
-/* Define to 1 if the system has the type `dl_passive_req_t'. */
-#undef HAVE_DL_PASSIVE_REQ_T
-
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
 /* Define to 1 if you have the `dlopen' function. */
 #undef HAVE_DLOPEN
+
+/* Define to 1 if `dl_module_id_1' is a member of `dl_hp_ppa_info_t'. */
+#undef HAVE_DL_HP_PPA_INFO_T_DL_MODULE_ID_1
+
+/* Define to 1 if the system has the type `dl_passive_req_t'. */
+#undef HAVE_DL_PASSIVE_REQ_T
 
 /* Define to 1 if you have the `ether_hostton' function. */
 #undef HAVE_ETHER_HOSTTON
