@@ -1869,13 +1869,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         #
         # We do *not* care about every single place the compiler would
         # have inserted Spectre mitigation if only we had told it to
-        # do so with /Qspectre.  I guess the theory is that it's seeing
-        # bounds checks that would prevent out-of-bounds loads and that
-        # those out-of-bounds loads could be done speculatively and that
-        # the Spectre attack could detect the value of the out-of-bounds
-        # data *if* it's within our address space, but unless I'm
-        # missing something I don't see that as being any form of
-        # security hole.
+        # do so with /Qspectre.  Maybe it's worth it, as that's in
+        # Bison-generated code that we don't control.
         #
         # XXX - add /Qspectre if that is really worth doing.
         #
