@@ -8310,7 +8310,6 @@ gen_inbound(compiler_state_t *cstate, int dir)
 			/* We have a FILE *, so this is a savefile */
 			bpf_error(cstate, "inbound/outbound not supported on %s when reading savefiles",
 			    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
-			b0 = NULL;
 			/*NOTREACHED*/
 		}
 		/* match outgoing packets */
