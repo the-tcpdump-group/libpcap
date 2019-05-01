@@ -154,11 +154,7 @@ pcap_findalldevs_interfaces(const char *dev_prefix, pcap_if_list_t *devlistp, ch
 	char *p, *q;
 	char devbuf[120];
 	char *devname;
-	int plen = 0;
 
-	if (dev_prefix) {
-		plen = strlen(dev_prefix);
-	}
 	/*
 	 * Get the list of interface addresses.
 	 *
