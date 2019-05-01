@@ -337,6 +337,8 @@ len|length	return LEN;
 inbound		return INBOUND;
 outbound	return OUTBOUND;
 
+ifindex		return IFINDEX;
+
 vlan		return VLAN;
 mpls		return MPLS;
 pppoed		return PPPOED;

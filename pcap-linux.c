@@ -5923,6 +5923,12 @@ fix_offset(pcap_t *handle, struct bpf_insn *p)
 			 * special magic kernel offset for that field.
 			 */
 			p->k = SKF_AD_OFF + SKF_AD_PROTOCOL;
+		} else if (p->k == 4) {
+			/*
+			 * It's the ifindex field; map it to the
+			 * special magic kernel offset for that field.
+			 */
+			p->k = SKF_AD_OFF + SKF_AD_IFINDEX;
 		} else if (p->k == 10) {
 			/*
 			 * It's the packet type field; map it to the
