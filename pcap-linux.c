@@ -140,9 +140,9 @@
 #ifdef HAVE_SYS_EVENTFD_H
 #include <sys/eventfd.h>
 #endif
-//#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+#ifdef HAVE_LINUX_NETWORK_NAMESPACE
 #include <sched.h>
-//#endif
+#endif
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -583,6 +583,7 @@ pcap_create_interface(const char *device, char *ebuf)
         real_dev = device;
 #endif
 	handle->activate_op = pcap_activate_linux;
+        handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
 
 	handlep->device	= strdup(real_dev);
 	if (handlep->device == NULL) {
@@ -591,25 +592,7 @@ pcap_create_interface(const char *device, char *ebuf)
                 NETNS_ROOT_RETURN(handle);
 		pcap_close(handle);
 		return NULL;
-	}
-	/*
-	 * The "any" device is a special device which causes us not
-	 * to bind to a particular device and thus to look at all
-	 * devices.
-	 */
-	if (strcmp(real_dev, "any") == 0) {
-		if (handle->opt.promisc) {
-			handle->opt.promisc = 0;
-			/* Just a warning. */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "Promiscuous mode not supported on the \"any\" device");
-			//status = PCAP_WARNING_PROMISC_NOTSUP;
-		}
-	}else{
-          handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
-
         }
-
 
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 	/*
@@ -1183,8 +1166,17 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	int sock_fd;
 	struct iwreq ireq;
 #endif
-        /*Now have create function set this function pointer based on any dev*/
-        NETNS_ROOT_SET(handle);
+
+	if (strcmp(HDEV(handle), "any") == 0) {
+		/*
+		 * Monitor mode makes no sense on the "any" device.
+		 */
+		return 0;
+	}
+
+	/*Now have create function set this function pointer based on any dev*/
+	NETNS_ROOT_SET(handle);
+
 #ifdef HAVE_LIBNL
 	/*
 	 * Bleah.  There doesn't seem to be a way to ask a mac80211
@@ -1282,10 +1274,8 @@ linux_if_drops(const char * if_name)
 	long int dropped_pkts = 0;
 
 	file = fopen("/proc/net/dev", "r");
-	if (!file){
-          printf("Failed to get if drops\n");
-          return 0;
-        }
+	if (!file)
+		return 0;
 
 	while (!dropped_pkts && fgets( buffer, sizeof(buffer), file ))
 	{
