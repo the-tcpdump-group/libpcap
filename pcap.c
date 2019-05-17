@@ -3132,6 +3132,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(DSA_TAG_BRCM_PREPEND, "Broadcom tag (prepended)"),
 	DLT_CHOICE(DSA_TAG_DSA, "Marvell DSA"),
 	DLT_CHOICE(DSA_TAG_EDSA, "Marvell EDSA"),
+	DLT_CHOICE(ELEE, "ELEE lawful intercept packets"),
 	DLT_CHOICE_SENTINEL
 };
 

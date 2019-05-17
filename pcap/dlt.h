@@ -1456,6 +1456,13 @@
 #define DLT_DSA_TAG_EDSA	285
 
 /*
+ * Payload of lawful intercept packets using the ELEE protocol;
+ * http://socket.hr/draft-dfranusic-opsawg-elee-00.xml
+ * http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=http://socket.hr/draft-dfranusic-opsawg-elee-00.xml&modeAsFormat=html/ascii
+ */
+#define DLT_ELEE		286
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1465,7 +1472,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	285	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	286	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

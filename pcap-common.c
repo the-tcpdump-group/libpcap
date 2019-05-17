@@ -558,7 +558,6 @@
  */
 #define LINKTYPE_LAPD		203
 
-
 /*
  * PPP, with a one-byte direction pseudo-header prepended - zero means
  * "received by this host", non-zero (any non-zero value) means "sent by
@@ -1170,7 +1169,14 @@
 #define LINKTYPE_DSA_TAG_DSA	284
 #define LINKTYPE_DSA_TAG_EDSA	285
 
-#define LINKTYPE_MATCHING_MAX	285		/* highest value in the "matching" range */
+/*
+ * Payload of lawful intercept packets using the ELEE protocol;
+ * http://socket.hr/draft-dfranusic-opsawg-elee-00.xml
+ * http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=http://socket.hr/draft-dfranusic-opsawg-elee-00.xml&modeAsFormat=html/ascii
+ */
+#define LINKTYPE_ELEE		286
+
+#define LINKTYPE_MATCHING_MAX	286		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the
