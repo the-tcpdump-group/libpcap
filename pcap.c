@@ -802,7 +802,7 @@ get_if_description(const char *name)
 		}
 #endif /* __FreeBSD__ */
 		close(s);
-		if (description != NULL && strlen(description) == 0) {
+		if (description != NULL && description[0] == '\0') {
 			/*
 			 * Description is empty, so discard it.
 			 */
