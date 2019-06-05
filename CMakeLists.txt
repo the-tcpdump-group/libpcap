@@ -955,6 +955,7 @@ set(PROJECT_SOURCE_LIST_C
     optimize.c
     pcap-common.c
     pcap.c
+    pcap-ioplugin.c
     savefile.c
     sf-pcapng.c
     sf-pcap.c

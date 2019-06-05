@@ -539,6 +539,11 @@ int	pcap_parsesrcstr_ex(const char *, int *, char *, char *,
 extern int pcap_debug;
 #endif
 
+/*
+ * Internal interfaces for I/O plugins
+ */
+const pcap_ioplugin_t* pcap_ioplugin_init(const char *name);
+
 #ifdef __cplusplus
 }
 #endif
