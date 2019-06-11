@@ -1016,6 +1016,12 @@ pcap_activate_npf(pcap_t *p)
 		p->linktype = DLT_PPI;
 		break;
 
+#ifdef NdisMediumWirelessWan
+	case NdisMediumWirelessWan:
+		p->linktype = DLT_RAW;
+		break;
+#endif
+
 	default:
 		p->linktype = DLT_EN10MB;			/*an unknown adapter is assumed to be ethernet*/
 		break;
