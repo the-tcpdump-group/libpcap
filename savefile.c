@@ -359,7 +359,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
 	 * numbers that are unique in their first 4 bytes.
 	 */
-	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
+	amt_read = fread(&magic, sizeof(magic), 1, fp);
 	if (amt_read != sizeof(magic)) {
 		if (ferror(fp)) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
