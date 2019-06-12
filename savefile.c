@@ -332,7 +332,7 @@ pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
 }
 #endif
 
-static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, u_int, char *, int *) = {
+static pcap_t *(*check_headers[])(const uint8_t *, FILE *, u_int, char *, int *) = {
 	pcap_check_header,
 	pcap_ng_check_header
 };
@@ -347,7 +347,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
     char *errbuf)
 {
 	register pcap_t *p;
-	bpf_u_int32 magic;
+	uint8_t magic[4];
 	size_t amt_read;
 	u_int i;
 	int err;
@@ -359,8 +359,8 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
 	 * numbers that are unique in their first 4 bytes.
 	 */
-	amt_read = fread(&magic, sizeof(magic), 1, fp);
-	if (amt_read != 1) {
+	amt_read = fread(&magic, 1, sizeof(magic), fp);
+	if (amt_read != sizeof(magic)) {
 		if (ferror(fp)) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "error reading dump file");

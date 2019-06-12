@@ -761,9 +761,10 @@ add_interface(pcap_t *p, struct block_cursor *cursor, char *errbuf)
  * relevant information from the header.
  */
 pcap_t *
-pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
-    int *err)
+pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
+    char *errbuf, int *err)
 {
+	bpf_u_int32 magic_int;
 	size_t amt_read;
 	bpf_u_int32 total_length;
 	bpf_u_int32 byte_order_magic;
@@ -785,7 +786,8 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 * Check whether the first 4 bytes of the file are the block
 	 * type for a pcapng savefile.
 	 */
-	if (magic != BT_SHB) {
+	memcpy(&magic_int, magic, sizeof(magic_int));
+	if (magic_int != BT_SHB) {
 		/*
 		 * XXX - check whether this looks like what the block
 		 * type would be after being munged by mapping between
@@ -944,12 +946,12 @@ pcap_ng_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 */
 	bhdrp = (struct block_header *)p->buffer;
 	shbp = (struct section_header_block *)((u_char *)p->buffer + sizeof(struct block_header));
-	bhdrp->block_type = magic;
+	bhdrp->block_type = magic_int;
 	bhdrp->total_length = total_length;
 	shbp->byte_order_magic = byte_order_magic;
 	if (read_bytes(fp,
-	    (u_char *)p->buffer + (sizeof(magic) + sizeof(total_length) + sizeof(byte_order_magic)),
-	    total_length - (sizeof(magic) + sizeof(total_length) + sizeof(byte_order_magic)),
+	    (u_char *)p->buffer + (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
+	    total_length - (sizeof(magic_int) + sizeof(total_length) + sizeof(byte_order_magic)),
 	    1, errbuf) == -1)
 		goto fail;
 

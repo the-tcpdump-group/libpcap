@@ -150,9 +150,10 @@ struct pcap_sf {
  * relevant information from the header.
  */
 pcap_t *
-pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
+pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 		  int *err)
 {
+	bpf_u_int32 magic_int;
 	struct pcap_file_header hdr;
 	size_t amt_read;
 	pcap_t *p;
@@ -169,11 +170,14 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 * number for a pcap savefile, or for a byte-swapped pcap
 	 * savefile.
 	 */
-	if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC &&
-	    magic != NSEC_TCPDUMP_MAGIC) {
-		magic = SWAPLONG(magic);
-		if (magic != TCPDUMP_MAGIC && magic != KUZNETZOV_TCPDUMP_MAGIC &&
-		    magic != NSEC_TCPDUMP_MAGIC)
+	memcpy(&magic_int, magic, sizeof(magic_int));
+	if (magic_int != TCPDUMP_MAGIC &&
+	    magic_int != KUZNETZOV_TCPDUMP_MAGIC &&
+	    magic_int != NSEC_TCPDUMP_MAGIC) {
+		magic_int = SWAPLONG(magic_int);
+		if (magic_int != TCPDUMP_MAGIC &&
+		    magic_int != KUZNETZOV_TCPDUMP_MAGIC &&
+		    magic_int != NSEC_TCPDUMP_MAGIC)
 			return (NULL);	/* nope */
 		swapped = 1;
 	}
@@ -182,7 +186,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	 * They are.  Put the magic number in the header, and read
 	 * the rest of the header.
 	 */
-	hdr.magic = magic;
+	hdr.magic = magic_int;
 	amt_read = fread(((char *)&hdr) + sizeof hdr.magic, 1,
 	    sizeof(hdr) - sizeof(hdr.magic), fp);
 	if (amt_read != sizeof(hdr) - sizeof(hdr.magic)) {
@@ -273,7 +277,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 	switch (precision) {
 
 	case PCAP_TSTAMP_PRECISION_MICRO:
-		if (magic == NSEC_TCPDUMP_MAGIC) {
+		if (magic_int == NSEC_TCPDUMP_MAGIC) {
 			/*
 			 * The file has nanoseconds, the user
 			 * wants microseconds; scale the
@@ -290,7 +294,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		break;
 
 	case PCAP_TSTAMP_PRECISION_NANO:
-		if (magic == NSEC_TCPDUMP_MAGIC) {
+		if (magic_int == NSEC_TCPDUMP_MAGIC) {
 			/*
 			 * The file has nanoseconds, the
 			 * user wants nanoseconds; nothing to do.
@@ -344,7 +348,7 @@ pcap_check_header(bpf_u_int32 magic, FILE *fp, u_int precision, char *errbuf,
 		break;
 	}
 
-	if (magic == KUZNETZOV_TCPDUMP_MAGIC) {
+	if (magic_int == KUZNETZOV_TCPDUMP_MAGIC) {
 		/*
 		 * XXX - the patch that's in some versions of libpcap
 		 * changes the packet header but not the magic number,
