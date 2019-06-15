@@ -2029,12 +2029,18 @@ intern_blocks(opt_state_t *opt_state, struct icode *ic)
 static void
 opt_cleanup(opt_state_t *opt_state)
 {
-	free((void *)opt_state->vnode_base);
-	free((void *)opt_state->vmap);
-	free((void *)opt_state->edges);
-	free((void *)opt_state->space);
-	free((void *)opt_state->levels);
-	free((void *)opt_state->blocks);
+	if (opt_state->vnode_base)
+		free((void *)opt_state->vnode_base);
+	if (opt_state->vmap)
+		free((void *)opt_state->vmap);
+	if (opt_state->edges)
+		free((void *)opt_state->edges);
+	if (opt_state->space)
+		free((void *)opt_state->space);
+	if (opt_state->levels)
+		free((void *)opt_state->levels);
+	if (opt_state->blocks)
+		free((void *)opt_state->blocks);
 }
 
 /*
@@ -2161,6 +2167,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	opt_state->edges = (struct edge **)calloc(opt_state->n_edges, sizeof(*opt_state->edges));
 	if (opt_state->edges == NULL) {
 		free(opt_state->blocks);
+		opt_state->blocks = NULL;
 		opt_error(opt_state, "malloc");
 	}
 
@@ -2171,6 +2178,8 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	if (opt_state->levels == NULL) {
 		free(opt_state->edges);
 		free(opt_state->blocks);
+		opt_state->edges = NULL;
+		opt_state->blocks = NULL;
 		opt_error(opt_state, "malloc");
 	}
 
@@ -2184,6 +2193,9 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 		free(opt_state->levels);
 		free(opt_state->edges);
 		free(opt_state->blocks);
+		opt_state->levels = NULL;
+		opt_state->edges = NULL;
+		opt_state->blocks = NULL;
 		opt_error(opt_state, "malloc");
 	}
 	p = opt_state->space;
@@ -2227,6 +2239,10 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 		free(opt_state->levels);
 		free(opt_state->edges);
 		free(opt_state->blocks);
+		opt_state->space = NULL;
+		opt_state->levels = NULL;
+		opt_state->edges = NULL;
+		opt_state->blocks = NULL;
 		opt_error(opt_state, "malloc");
 	}
 	opt_state->vnode_base = (struct valnode *)calloc(opt_state->maxval, sizeof(*opt_state->vnode_base));
@@ -2236,6 +2252,11 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 		free(opt_state->levels);
 		free(opt_state->edges);
 		free(opt_state->blocks);
+		opt_state->vmap = NULL;
+		opt_state->space = NULL;
+		opt_state->levels = NULL;
+		opt_state->edges = NULL;
+		opt_state->blocks = NULL;
 		opt_error(opt_state, "malloc");
 	}
 }
