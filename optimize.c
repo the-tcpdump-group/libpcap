@@ -2051,18 +2051,12 @@ intern_blocks(opt_state_t *opt_state, struct icode *ic)
 static void
 opt_cleanup(opt_state_t *opt_state)
 {
-	if (opt_state->vnode_base)
-		free((void *)opt_state->vnode_base);
-	if (opt_state->vmap)
-		free((void *)opt_state->vmap);
-	if (opt_state->edges)
-		free((void *)opt_state->edges);
-	if (opt_state->space)
-		free((void *)opt_state->space);
-	if (opt_state->levels)
-		free((void *)opt_state->levels);
-	if (opt_state->blocks)
-		free((void *)opt_state->blocks);
+	free((void *)opt_state->vnode_base);
+	free((void *)opt_state->vmap);
+	free((void *)opt_state->edges);
+	free((void *)opt_state->space);
+	free((void *)opt_state->levels);
+	free((void *)opt_state->blocks);
 }
 
 /*
