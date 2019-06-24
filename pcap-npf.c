@@ -70,7 +70,7 @@ static int pcap_setnonblock_npf(pcap_t *, int);
 #define SWAPS(_X) ((_X & 0xff) << 8) | (_X >> 8)
 
 /*
- * Private data for capturing on WinPcap devices.
+ * Private data for capturing on WinPcap/Npcap devices.
  */
 struct pcap_win {
 	ADAPTER *adapter;		/* the packet32 ADAPTER for the device */
@@ -2017,9 +2017,9 @@ static const char *pcap_lib_version_string;
  * tree.  Include version.h from that source tree to get the WinPcap/Npcap
  * version.
  *
- * XXX - it'd be nice if we could somehow generate the WinPcap version number
- * when building WinPcap.  (It'd be nice to do so for the packet.dll version
- * number as well.)
+ * XXX - it'd be nice if we could somehow generate the WinPcap/Npcap version
+ * number when building as part of WinPcap/Npcap.  (It'd be nice to do so
+ * for the packet.dll version number as well.)
  */
 #include "../../version.h"
 
@@ -2037,17 +2037,17 @@ pcap_lib_version(void)
 
 		if (strcmp(WINPCAP_VER_STRING, packet_version_string) == 0) {
 			/*
-			 * WinPcap version string and packet.dll version
-			 * string are the same; just report the WinPcap
+			 * WinPcap/Npcap version string and packet.dll version
+			 * string are the same; just report the WinPcap/Npcap
 			 * version.
 			 */
 			pcap_lib_version_string = pcap_version_string;
 		} else {
 			/*
-			 * WinPcap version string and packet.dll version
+			 * WinPcap/Npcap version string and packet.dll version
 			 * string are different; that shouldn't be the
 			 * case (the two libraries should come from the
-			 * same version of WinPcap), so we report both
+			 * same version of WinPcap/Npcap), so we report both
 			 * versions.
 			 */
 			char *full_pcap_version_string;
