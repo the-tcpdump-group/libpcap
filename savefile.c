@@ -56,8 +56,8 @@
 #ifdef _WIN32
 /*
  * These aren't exported on Windows, because they would only work if both
- * WinPcap and the code using it were to use the Universal CRT; otherwise,
- * a FILE structure in WinPcap and a FILE structure in the code using it
+ * WinPcap/Npcap and the code using it were to use the Universal CRT; otherwise,
+ * a FILE structure in WinPcap/Npcap and a FILE structure in the code using it
  * could be different if they're using different versions of the C runtime.
  *
  * Instead, pcap/pcap.h defines them as macros that wrap the hopen versions,

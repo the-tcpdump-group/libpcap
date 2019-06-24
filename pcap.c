@@ -139,7 +139,7 @@ BOOL WINAPI DllMain(
 
 /*
  * Start WinSock.
- * Exported in case some applications using WinPcap called it,
+ * Exported in case some applications using WinPcap/Npcap called it,
  * even though it wasn't exported.
  */
 int
