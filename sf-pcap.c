@@ -930,11 +930,19 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		return (pcap_setup_dump(p, linktype, stdout, "standard output"));
 
 	/*
+	 * "a" will cause the file *not* to be truncated if it exists
+	 * but will cause it to be created if it doesn't.  It will
+	 * also cause all writes to be done at the end of the file,
+	 * but will allow reads to be done anywhere in the file.  This
+	 * is what we need, because we need to read from the beginning
+	 * of the file to see if it already has a header and packets
+	 * or if it doesn't.
+	 *
 	 * "b" is supported as of C90, so *all* UN*Xes should support it,
 	 * even though it does nothing.  It's required on Windows, as the
 	 * file is a binary file and must be read in binary mode.
 	 */
-	f = fopen(fname, "rb+");
+	f = fopen(fname, "ab+");
 	if (f == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "%s", fname);
@@ -943,18 +951,33 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 
 	/*
 	 * Try to read a pcap header.
+	 *
+	 * We do not assume that the file will be positioned at the
+	 * beginning immediately after we've opened it - we seek to
+	 * the beginning.  ISO C says it's implementation-defined
+	 * whether the file position indicator is at the beginning
+	 * or the end of the file after an append-mode open, and
+	 * it wasn't obvious from the Single UNIX Specification
+	 * or the Microsoft documentation how that works on SUS-
+	 * compliant systems or on Windows.
 	 */
+	if (fseek(f, 0, SEEK_SET) == -1) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "Can't seek to the beginning of %s", fname);
+		(void)fclose(f);
+		return (NULL);
+	}
 	amt_read = fread(&ph, 1, sizeof (ph), f);
 	if (amt_read != sizeof (ph)) {
 		if (ferror(f)) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "%s", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 		} else if (feof(f) && amt_read > 0) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: truncated pcap file header", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 		}
 	}
@@ -990,7 +1013,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 			if (p->opt.tstamp_precision != PCAP_TSTAMP_PRECISION_MICRO) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: different time stamp precision, cannot append to file", fname);
-				fclose(f);
+				(void)fclose(f);
 				return (NULL);
 			}
 			break;
@@ -999,7 +1022,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 			if (p->opt.tstamp_precision != PCAP_TSTAMP_PRECISION_NANO) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: different time stamp precision, cannot append to file", fname);
-				fclose(f);
+				(void)fclose(f);
 				return (NULL);
 			}
 			break;
@@ -1008,7 +1031,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		case SWAPLONG(NSEC_TCPDUMP_MAGIC):
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different byte order, cannot append to file", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 
 		case KUZNETZOV_TCPDUMP_MAGIC:
@@ -1017,13 +1040,13 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 		case SWAPLONG(NAVTEL_TCPDUMP_MAGIC):
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: not a pcap file to which we can append", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 
 		default:
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: not a pcap file", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 		}
 
@@ -1035,19 +1058,19 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: version is %u.%u, cannot append to file", fname,
 			    ph.version_major, ph.version_minor);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 		}
 		if ((bpf_u_int32)linktype != ph.linktype) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different linktype, cannot append to file", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 		}
 		if ((bpf_u_int32)p->snapshot != ph.snaplen) {
 			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: different snaplen, cannot append to file", fname);
-			fclose(f);
+			(void)fclose(f);
 			return (NULL);
 		}
 	} else {
@@ -1064,10 +1087,14 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 
 	/*
 	 * Start writing at the end of the file.
+	 *
+	 * XXX - this shouldn't be necessary, given that we're opening
+	 * the file in append mode, and ISO C specifies that all writes
+	 * are done at the end of the file in that mode.
 	 */
 	if (fseek(f, 0, SEEK_END) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "Can't seek to end of %s", fname);
+		    errno, "Can't seek to the end of %s", fname);
 		(void)fclose(f);
 		return (NULL);
 	}
