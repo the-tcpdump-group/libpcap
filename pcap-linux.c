@@ -3937,7 +3937,7 @@ activate_new(pcap_t *handle, int is_any_device)
 			    handle->linktype != DLT_LINUX_LAPD &&
 			    handle->linktype != DLT_NETLINK)
 				handle->linktype = DLT_LINUX_SLL;
-			if (handle->linkype == -1) {
+			if (handle->linktype == -1) {
 				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				    "unknown arptype %d, defaulting to cooked mode",
 				    arptype);
