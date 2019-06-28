@@ -883,6 +883,7 @@ pcap_activate_npf(pcap_t *p)
 	struct pcap_win *pw = p->priv;
 	NetType type;
 	int res;
+	int status = 0;
 	char errbuf[PCAP_ERRBUF_SIZE+1];
 
 	if (p->opt.rfmon) {
@@ -1023,7 +1024,22 @@ pcap_activate_npf(pcap_t *p)
 #endif
 
 	default:
-		p->linktype = DLT_EN10MB;			/*an unknown adapter is assumed to be ethernet*/
+		/*
+		 * An unknown medium type is assumed to supply Ethernet
+		 * headers; if not, the user will have to report it,
+		 * so that the medium type and link-layer header type
+		 * can be determined.  If we were to fail here, we
+		 * might get the link-layer type in the error, but
+		 * the user wouldn't get a capture, so we wouldn't
+		 * be able to determine the link-layer type; we report
+		 * a warning with the link-layer type, so at least
+		 * some programs will report the warning.
+		 */
+		p->linktype = DLT_EN10MB;
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		    "Unknown NdisMedium value %d, defaulting to DLT_EN10MB",
+		    type.LinkType);
+		status = PCAP_WARNING;
 		break;
 	}
 
@@ -1238,7 +1254,7 @@ pcap_activate_npf(pcap_t *p)
 	 */
 	p->handle = pw->adapter->hFile;
 
-	return (0);
+	return (status);
 bad:
 	pcap_cleanup_npf(p);
 	return (PCAP_ERROR);

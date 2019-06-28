@@ -3760,6 +3760,7 @@ activate_new(pcap_t *handle, int is_any_device)
 {
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
+	int			status = 0;
 	int			sock_fd, arptype;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
@@ -3863,6 +3864,10 @@ activate_new(pcap_t *handle, int is_any_device)
 			 * type we can only determine by using
 			 * APIs that may be different on different
 			 * kernels) - reopen in cooked mode.
+			 *
+			 * If the type is unknown, return a warning;
+			 * map_arphrd_to_dlt() has already set the
+			 * warning message.
 			 */
 			if (close(sock_fd) == -1) {
 				pcap_fmt_errmsg_for_errno(handle->errbuf,
@@ -3932,6 +3937,12 @@ activate_new(pcap_t *handle, int is_any_device)
 			    handle->linktype != DLT_LINUX_LAPD &&
 			    handle->linktype != DLT_NETLINK)
 				handle->linktype = DLT_LINUX_SLL;
+			if (handle->linkype == -1) {
+				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				    "unknown arptype %d, defaulting to cooked mode",
+				    arptype);
+				status = PCAP_WARNING;
+			}
 		}
 
 		handlep->ifindex = iface_get_id(sock_fd, device,
@@ -4111,7 +4122,7 @@ activate_new(pcap_t *handle, int is_any_device)
 	}
 #endif /* defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT) */
 
-	return 0;
+	return status;
 }
 
 #ifdef HAVE_PACKET_RING
