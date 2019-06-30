@@ -1020,7 +1020,8 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case EWOULDBLOCK:
 				return (0);
 
-			case ENXIO:
+			case ENXIO:	/* FreeBSD, DragonFly BSD, and Darwin */
+			case EIO:	/* OpenBSD */
 				/*
 				 * The device on which we're capturing
 				 * went away.
