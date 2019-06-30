@@ -222,7 +222,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 		if (getpeername(pars.sockctrl, (struct sockaddr *)&from,
 		    &fromlen) == -1)
 		{
-			sock_geterror("getpeername(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterror("getpeername()", errmsgbuf, PCAP_ERRBUF_SIZE);
 			if (rpcap_senderror(pars.sockctrl, 0, PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 				rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 			goto end;
@@ -296,7 +296,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			retval = select(pars.sockctrl + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
-				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
+				sock_geterror("select() failed", errmsgbuf, PCAP_ERRBUF_SIZE);
 				if (rpcap_senderror(pars.sockctrl, 0, PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
 				goto end;
@@ -530,7 +530,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 			retval = select(pars.sockctrl + 1, &rfds, NULL, NULL, &tv);
 			if (retval == -1)
 			{
-				sock_geterror("select failed: ", errmsgbuf, PCAP_ERRBUF_SIZE);
+				sock_geterror("select() failed", errmsgbuf, PCAP_ERRBUF_SIZE);
 				if (rpcap_senderror(pars.sockctrl, 0,
 				    PCAP_ERR_NETW, errmsgbuf, errbuf) == -1)
 					rpcapd_log(LOGPRIO_ERROR, "Send to client failed: %s", errbuf);
@@ -1179,7 +1179,8 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	HANDLE Token;
 	if (LogonUser(username, ".", password, LOGON32_LOGON_NETWORK, LOGON32_PROVIDER_DEFAULT, &Token) == 0)
 	{
-		pcap_win32_err_to_str(GetLastError(), errbuf);
+		pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+		    GetLastError(), "LogonUser() failed");
 		return -1;
 	}
 
@@ -1187,7 +1188,8 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// I didn't test it.
 	if (ImpersonateLoggedOnUser(Token) == 0)
 	{
-		pcap_win32_err_to_str(GetLastError(), errbuf);
+		pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+		    GetLastError(), "ImpersonateLoggedOnUser() failed");
 		CloseHandle(Token);
 		return -1;
 	}
@@ -1670,7 +1672,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	saddrlen = sizeof(struct sockaddr_storage);
 	if (getpeername(pars->sockctrl, (struct sockaddr *) &saddr, &saddrlen) == -1)
 	{
-		sock_geterror("getpeername(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
+		sock_geterror("getpeername()", errmsgbuf, PCAP_ERRBUF_SIZE);
 		goto error;
 	}
 
@@ -1687,7 +1689,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, peerhost,
 				sizeof(peerhost), NULL, 0, NI_NUMERICHOST))
 		{
-			sock_geterror("getnameinfo(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterror("getnameinfo()", errmsgbuf, PCAP_ERRBUF_SIZE);
 			goto error;
 		}
 
@@ -1712,7 +1714,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 		saddrlen = sizeof(struct sockaddr_storage);
 		if (getsockname(session->sockdata, (struct sockaddr *) &saddr, &saddrlen) == -1)
 		{
-			sock_geterror("getsockname(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterror("getsockname()", errmsgbuf, PCAP_ERRBUF_SIZE);
 			goto error;
 		}
 
@@ -1720,7 +1722,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, NULL,
 				0, portdata, sizeof(portdata), NI_NUMERICSERV))
 		{
-			sock_geterror("getnameinfo(): ", errmsgbuf, PCAP_ERRBUF_SIZE);
+			sock_geterror("getnameinfo()", errmsgbuf, PCAP_ERRBUF_SIZE);
 			goto error;
 		}
 	}
@@ -1787,7 +1789,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 
 		if (socktemp == INVALID_SOCKET)
 		{
-			sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
+			sock_geterror("accept()", errbuf, PCAP_ERRBUF_SIZE);
 			rpcapd_log(LOGPRIO_ERROR, "Accept of data connection failed: %s",
 			    errbuf);
 			goto error;
