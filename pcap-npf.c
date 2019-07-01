@@ -523,7 +523,34 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		 */
 		PacketInitPacket(&Packet, (BYTE *)p->buffer, p->bufsize);
 		if (!PacketReceivePacket(pw->adapter, &Packet, TRUE)) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "read error: PacketReceivePacket failed");
+			/*
+			 * Did the device go away?
+			 * If so, the error we get is ERROR_GEN_FAILURE.
+			 */
+			DWORD errcode = GetLastError();
+
+			if (errcode == ERROR_GEN_FAILURE) {
+				/*
+				 * The device on which we're capturing
+				 * went away, or it became unusable
+				 * by NPF due to a suspend/resume.
+				 *
+				 * XXX - hopefully no other error
+				 * conditions are indicated by this.
+				 *
+				 * XXX - we really should return an
+				 * appropriate error for that, but
+				 * pcap_dispatch() etc. aren't
+				 * documented as having error returns
+				 * other than PCAP_ERROR or PCAP_ERROR_BREAK.
+				 */
+				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				    "The interface disappeared");
+			} else {
+				pcap_fmt_errmsg_for_win32_err(p->errbuf,
+				    PCAP_ERRBUF_SIZE, errcode,
+				    "PacketReceivePacket error");
+			}
 			return (PCAP_ERROR);
 		}
 
