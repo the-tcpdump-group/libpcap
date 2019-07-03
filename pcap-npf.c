@@ -938,14 +938,28 @@ pcap_activate_npf(pcap_t *p)
 
 	if (pw->adapter == NULL)
 	{
-		/* Adapter detected but we are not able to open it. Return failure. */
-		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
-		    GetLastError(), "Error opening adapter");
-		if (pw->rfmon_selfstart)
-		{
-			PacketSetMonitorMode(p->opt.device, 0);
+		DWORD errcode = GetLastError();
+
+		/*
+		 * What error did we get when trying to open the adapter?
+		 */
+		if (errcode == ERROR_BAD_UNIT) {
+			/*
+			 * There's no such device.
+			 */
+			return (PCAP_ERROR_NO_SUCH_DEVICE);
+		} else {
+			/*
+			 * Unknown - report details.
+			 */
+			pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
+			    errcode, "Error opening adapter");
+			if (pw->rfmon_selfstart)
+			{
+				PacketSetMonitorMode(p->opt.device, 0);
+			}
+			return (PCAP_ERROR);
 		}
-		return (PCAP_ERROR);
 	}
 
 	/*get network type*/
