@@ -1274,6 +1274,7 @@ if(WIN32)
         #
         set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARIES} ${PCAP_LINK_LIBRARIES})
     elseif(PCAP_TYPE STREQUAL "null")
+	elseif(PCAP_TYPE STREQUAL "etw")
     else()
         message(FATAL_ERROR "${PCAP_TYPE} is not a valid pcap type")
     endif()
