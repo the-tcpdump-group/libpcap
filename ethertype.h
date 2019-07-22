@@ -67,6 +67,9 @@
 #ifndef ETHERTYPE_SCA
 #define ETHERTYPE_SCA		0x6007
 #endif
+#ifndef ETHERTYPE_TEB
+#define ETHERTYPE_TEB		0x6558
+#endif
 #ifndef ETHERTYPE_REVARP
 #define ETHERTYPE_REVARP	0x8035
 #endif
