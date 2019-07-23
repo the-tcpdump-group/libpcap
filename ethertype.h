@@ -40,9 +40,6 @@
 #ifndef ETHERTYPE_ARP
 #define ETHERTYPE_ARP		0x0806	/* Addr. resolution protocol */
 #endif
-#ifndef ETHERTYPE_REVARP
-#define ETHERTYPE_REVARP	0x8035	/* reverse Addr. resolution protocol */
-#endif
 #ifndef ETHERTYPE_NS
 #define ETHERTYPE_NS		0x0600
 #endif
@@ -71,7 +68,7 @@
 #define ETHERTYPE_TEB		0x6558
 #endif
 #ifndef ETHERTYPE_REVARP
-#define ETHERTYPE_REVARP	0x8035
+#define ETHERTYPE_REVARP	0x8035	/* reverse Addr. resolution protocol */
 #endif
 #ifndef	ETHERTYPE_LANBRIDGE
 #define ETHERTYPE_LANBRIDGE	0x8038
