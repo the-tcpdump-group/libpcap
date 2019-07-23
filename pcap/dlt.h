@@ -1463,6 +1463,16 @@
 #define DLT_ELEE		286
 
 /*
+ * Serial frames transmitted between a host and a Z-Wave chip.
+ */
+#define DLT_Z_WAVE_SERIAL	287
+
+/*
+ * USB 2.0, 1.1, and 1.0 packets as transmitted over the cable.
+ */
+#define DLT_USB_2_0		288
+
+/*
  * In case the code that includes this file (directly or indirectly)
  * has also included OS files that happen to define DLT_MATCHING_MAX,
  * with a different value (perhaps because that OS hasn't picked up
@@ -1472,7 +1482,7 @@
 #ifdef DLT_MATCHING_MAX
 #undef DLT_MATCHING_MAX
 #endif
-#define DLT_MATCHING_MAX	286	/* highest value in the "matching" range */
+#define DLT_MATCHING_MAX	288	/* highest value in the "matching" range */
 
 /*
  * DLT and savefile link type values are split into a class and

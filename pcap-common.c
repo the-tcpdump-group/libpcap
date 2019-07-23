@@ -1176,7 +1176,17 @@
  */
 #define LINKTYPE_ELEE		286
 
-#define LINKTYPE_MATCHING_MAX	286		/* highest value in the "matching" range */
+/*
+ * Serial frames transmitted between a host and a Z-Wave chip.
+ */
+#define LINKTYPE_Z_WAVE_SERIAL	287
+
+/*
+ * USB 2.0, 1.1, and 1.0 packets as transmitted over the cable.
+ */
+#define LINKTYPE_USB_2_0	288
+
+#define LINKTYPE_MATCHING_MAX	288		/* highest value in the "matching" range */
 
 /*
  * The DLT_ and LINKTYPE_ values in the "matching" range should be the

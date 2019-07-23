@@ -3128,11 +3128,15 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(LINUX_SLL2, "Linux cooked v2"),
 	DLT_CHOICE(OPENVIZSLA, "OpenVizsla USB"),
 	DLT_CHOICE(EBHSCR, "Elektrobit High Speed Capture and Replay (EBHSCR)"),
+	DLT_CHOICE(VPP_DISPATCH, "VPP graph dispatch tracer"),
 	DLT_CHOICE(DSA_TAG_BRCM, "Broadcom tag"),
 	DLT_CHOICE(DSA_TAG_BRCM_PREPEND, "Broadcom tag (prepended)"),
+	DLT_CHOICE(IEEE802_15_4_TAP, "IEEE 802.15.4 with pseudo-header"),
 	DLT_CHOICE(DSA_TAG_DSA, "Marvell DSA"),
 	DLT_CHOICE(DSA_TAG_EDSA, "Marvell EDSA"),
 	DLT_CHOICE(ELEE, "ELEE lawful intercept packets"),
+	DLT_CHOICE(Z_WAVE_SERIAL, "Z-Wave serial frames between host and chip"),
+	DLT_CHOICE(USB_2_0, "USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE_SENTINEL
 };
 
