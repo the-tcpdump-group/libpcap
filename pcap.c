@@ -2279,7 +2279,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 * require 8-byte alignment even on platforms with 32-bit
 	 * integers.
 	 */
-#define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7) & ~0x7)
+#define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7U) & ~0x7U)
 	chunk = malloc(PCAP_T_ALIGNED_SIZE + size);
 	if (chunk == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
