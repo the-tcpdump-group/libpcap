@@ -249,8 +249,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	p->swapped = swapped;
 	p->version_major = hdr.version_major;
 	p->version_minor = hdr.version_minor;
-	p->snapshot = hdr.snaplen;
-	if (p->snapshot <= 0) {
+	if (hdr.snaplen == 0 || hdr.snaplen > INT_MAX) {
 		/*
 		 * Bogus snapshot length; use the maximum for this
 		 * link-layer type as a fallback.
@@ -260,7 +259,8 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 		 * unsigned int.
 		 */
 		p->snapshot = max_snaplen_for_dlt(hdr.linktype);
-	}
+	} else
+		p->snapshot = hdr.snaplen;
 	p->linktype = linktype_to_dlt(LT_LINKTYPE(hdr.linktype));
 	p->linktype_ext = LT_LINKTYPE_EXT(hdr.linktype);
 
