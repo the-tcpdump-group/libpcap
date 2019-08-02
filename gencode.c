@@ -84,6 +84,11 @@
 #define offsetof(s, e) ((size_t)&((s *)0)->e)
 #endif
 
+/* Maximum number of instructions in a BPF filter (for raw filters) */
+#ifndef PCAP_MAXINSNS
+#define PCAP_MAXINSNS 4096
+#endif
+
 #ifdef _WIN32
   #ifdef INET6
     #if defined(__MINGW32__) && defined(DEFINE_ADDITIONAL_IPV6_STUFF)
@@ -714,6 +719,103 @@ syntax(compiler_state_t *cstate)
 }
 
 int
+pcap_is_raw(const char *bpf_string)
+{
+	char sp, separator1 = ',', separator2 = '\n';
+	unsigned short bpf_len;
+
+	if (bpf_string == NULL)
+		return 0;
+
+	if (sscanf(bpf_string, "%hu%c", &bpf_len, &sp) != 2 ||
+			(sp != separator1 && sp != separator2))
+		return 0;
+
+	return 1;
+}
+
+int
+pcap_compile_raw(pcap_t *p, struct bpf_program *program, const char *bpf_string)
+{
+	const char *token;
+	char sp, separator, separator1 = ',', separator2 = '\n';
+	unsigned short bpf_len, i = 0, line = 0;
+	size_t size;
+	struct bpf_insn tmp;
+
+	program->bf_len = 0;
+
+	if (sscanf(bpf_string, "%hu%c", &bpf_len, &sp) != 2 ||
+			(sp != separator1 && sp != separator2) ||
+			bpf_len > PCAP_MAXINSNS || bpf_len == 0) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				"syntax error in head length encoding!");
+		return (-1);
+	}
+	separator = sp;
+
+	/* allocate the fcode buffer */
+	program->bf_len = bpf_len;
+	size = sizeof(struct bpf_insn) * program->bf_len;
+	program->bf_insns = (struct bpf_insn *)malloc(size);
+	if (program->bf_insns == NULL) {
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				"error mallocing the program");
+		return (-1);
+	}
+	memset(program->bf_insns, 0, size);
+
+	/* fill it up */
+	token = bpf_string;
+	while ((token = strchr(token, separator)) && (++token)[0]) {
+		line++;
+		/* consume whitespaces */
+		while (*token == ' ' || *token == '\t')
+			++token;
+		/* skip empty lines and comments */
+		if (*token == separator || *token == '\n' || strlen(token) < 1 ||
+				token[0] == '#')
+			continue;
+
+		if (i >= bpf_len) {
+			program->bf_len = 0;
+			free(program->bf_insns);
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					"program exceeds encoded length!");
+			return (-1);
+		}
+
+		if (sscanf(token, "%hu %hhu %hhu %u%c",
+				&tmp.code, &tmp.jt, &tmp.jf, &tmp.k, &sp) != 5) {
+			program->bf_len = 0;
+			free(program->bf_insns);
+			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					"syntax error at line %d!", line);
+			return (-1);
+		}
+
+		program->bf_insns[i].code = tmp.code;
+		program->bf_insns[i].jt = tmp.jt;
+		program->bf_insns[i].jf = tmp.jf;
+		program->bf_insns[i].k = tmp.k;
+
+		i++;
+	}
+
+	if (i != bpf_len) {
+		program->bf_len = 0;
+		free(program->bf_insns);
+		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				"syntax error exceeding encoded length!");
+		return (-1);
+	}
+
+	program->bf_len = bpf_len;
+	p->skip_validate = 1;
+	return 0;
+}
+
+int
 pcap_compile(pcap_t *p, struct bpf_program *program,
 	     const char *buf, int optimize, bpf_u_int32 mask)
 {
@@ -736,6 +838,13 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		    "not-yet-activated pcap_t passed to pcap_compile");
 		return (-1);
 	}
+	/*
+	 * support for raw filters
+	 */
+	if (pcap_is_raw(buf))
+		return pcap_compile_raw(p, program, buf);
+
+	p->skip_validate = 0;
 
 #ifdef _WIN32
 	if (!done)

@@ -458,6 +458,8 @@ PCAP_API char	*pcap_geterr(pcap_t *);
 PCAP_API void	pcap_perror(pcap_t *, const char *);
 PCAP_API int	pcap_compile(pcap_t *, struct bpf_program *, const char *, int,
 	    bpf_u_int32);
+PCAP_API int  pcap_is_raw(const char *);
+PCAP_API int  pcap_compile_raw(pcap_t *, struct bpf_program *, const char *);
 PCAP_API int	pcap_compile_nopcap(int, int, struct bpf_program *,
 	    const char *, int, bpf_u_int32);
 PCAP_API void	pcap_freecode(struct bpf_program *);
