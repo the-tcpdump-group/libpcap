@@ -877,7 +877,9 @@ The following ICMP type field values are available: \fBicmp-echoreply\fP,
 \fBicmp-tstampreply\fP, \fBicmp-ireq\fP, \fBicmp-ireqreply\fP,
 \fBicmp-maskreq\fP, \fBicmp-maskreply\fP.
 
-The following ICMPv6 type fields are available: \fBicmp6-echo\fP,
+The following ICMPv6 type fields are available: \fBicmp6-destinationrunreach\fP,
+\fBicmp6-packettoobig\fP, \fBicmp6-timeexceeded\fP, 
+\fBicmp6-parameterproblem\fP, \fBicmp6-echo\fP,
 \fBicmp6-echoreply\fP, \fBicmp6-multicastlistenerquery\fP,
 \fBicmp6-multicastlistenerreportv1\fP, \fBicmp6-multicastlistenerdone\fP,
 \fBicmp6-routersolicit\fP, \fBicmp6-routeradvert\fP,
@@ -1024,6 +1026,8 @@ ping packets):
 .nf
 .B
 icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply
+.B
+icmp6[icmp6type] != icmp6-echo and icmp6[icmp6type] != icmp6-echoreply
 .fi
 .RE
 .SH "SEE ALSO"
@@ -1045,7 +1049,9 @@ correctly handle 802.11 data packets with both To DS and From DS set.
 .BR "ip6 proto"
 should chase header chain, but at this moment it does not.
 .BR "ip6 protochain"
-is supplied for this behavior.
+is supplied for this behavior.  For example, to match ipv6 fragments:
+.B
+ip6 protochain 44
 .LP
 Arithmetic expression against transport layer headers, like \fBtcp[0]\fP,
 does not work against IPv6 packets.

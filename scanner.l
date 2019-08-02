@@ -436,6 +436,10 @@ icmp-maskreply		{ yylval->h = 18; return NUM; }
 icmp6type       { yylval->h = 0; return NUM; }
 icmp6code       { yylval->h = 1; return NUM; }
 
+icmp6-destinationunreach	{ yylval->h = 1; return NUM; }
+icmp6-packettoobig		{ yylval->h = 2; return NUM; }
+icmp6-timeexceeded		{ yylval->h = 3; return NUM; }
+icmp6-parameterproblem		{ yylval->h = 4; return NUM; }
 icmp6-echo      { yylval->h = 128; return NUM; }
 icmp6-echoreply { yylval->h = 129; return NUM; }
 icmp6-multicastlistenerquery    { yylval->h = 130; return NUM; }
