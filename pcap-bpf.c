@@ -2848,7 +2848,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-        if (pcap_findalldevs_interfaces(NULL, devlistp, errbuf, check_bpf_bindable,
+	if (pcap_findalldevs_interfaces(NULL, devlistp, errbuf, check_bpf_bindable,
 	    get_if_flags) == -1)
 		return (-1);	/* failure */
 

@@ -548,12 +548,12 @@ pcap_create_interface(const char *device, char *ebuf)
 {
 	pcap_t *handle;
 	const char *real_dev = device;
-        struct pcap_linux *handlep;
+	struct pcap_linux *handlep;
 
 	handle = pcap_create_common(ebuf, sizeof (struct pcap_linux));
 	if (handle == NULL)
 		return NULL;
-        handlep = handle->priv;
+	handlep = handle->priv;
 #ifdef HAVE_LINUX_NETWORK_NAMESPACE
 	if (strncmp(device, NETNS_DEV_PREFIX, NETNS_DEV_PREFIX_LEN) == 0 &&
 	    strstr( device + NETNS_DEV_PREFIX_LEN, ":") != NULL ) {
@@ -564,42 +564,43 @@ pcap_create_interface(const char *device, char *ebuf)
 		ne = strstr( name, ":" );
 		snprintf( fname, sizeof(fname), NETNS_DIR_PATH "/%.*s", (int)(ne-name), name );
 		handlep->ns_fd = open( fname, O_RDONLY|O_CLOEXEC );
-                if (handlep->ns_fd <0) {
-		  pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to open network namespace (%s) %s",
-				fname, pcap_strerror(errno));
-		  return NULL;
-                }
-                handlep->root_ns_fd = open( NETNS_CURRENT, O_RDONLY|O_CLOEXEC );
+		if (handlep->ns_fd <0) {
+			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "failed to open network namespace (%s) %s",
+				      fname, pcap_strerror(errno));
+			pcap_close(handle);
+			return NULL;
+		}
+		handlep->root_ns_fd = open( NETNS_CURRENT, O_RDONLY|O_CLOEXEC );
 		setns( handlep->ns_fd, CLONE_NEWNET );
 		real_dev = ne+1;
 	}
-        else
-        {
+	else
+	{
 		handlep->ns_fd = -1;
-                handlep->root_ns_fd = -1;
+		handlep->root_ns_fd = -1;
 		real_dev = device;
 	}
 #else
-        real_dev = device;
+	real_dev = device;
 #endif
 	handle->activate_op = pcap_activate_linux;
-        handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
+	handle->can_set_rfmon_op = pcap_can_set_rfmon_linux;
 
 	handlep->device	= strdup(real_dev);
 	if (handlep->device == NULL) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "strdup");
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		pcap_close(handle);
 		return NULL;
-        }
+	}
 
 #if defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP)
 	/*
 	 * See what time stamp types we support.
 	 */
 	if (iface_ethtool_get_ts_info(real_dev, handle, ebuf) == -1) {
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		pcap_close(handle);
 		return NULL;
 	}
@@ -619,7 +620,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	if (handle->tstamp_precision_list == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		pcap_close(handle);
 		return NULL;
 	}
@@ -631,7 +632,7 @@ pcap_create_interface(const char *device, char *ebuf)
 	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
 #endif
 
-        NETNS_ROOT_RETURN(handle);
+	NETNS_ROOT_RETURN(handle);
 	return handle;
 }
 
@@ -1193,13 +1194,13 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	ret = get_mac80211_phydev(handle, HDEV(handle), phydev_path,
 	    PATH_MAX);
 	if (ret < 0){
-          NETNS_ROOT_RETURN(handle);
+	  NETNS_ROOT_RETURN(handle);
 		return ret;	/* error */
-        }
+	}
 	if (ret == 1){
-          NETNS_ROOT_RETURN(handle);
-          return 1;	/* mac80211 device */
-        }
+	  NETNS_ROOT_RETURN(handle);
+	  return 1;	/* mac80211 device */
+	}
 #endif
 
 #ifdef IW_MODE_MONITOR
@@ -1217,14 +1218,14 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 	if (sock_fd == -1) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket");
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		return PCAP_ERROR;
 	}
 
 	if (is_bonding_device(sock_fd, HDEV(handle))) {
 		/* It's a bonding device, so don't even try. */
 		close(sock_fd);
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		return 0;
 	}
 
@@ -1238,20 +1239,20 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 		 * Well, we got the mode; assume we can set it.
 		 */
 		close(sock_fd);
-                NETNS_ROOT_RETURN(handle);
-                return 1;
+		NETNS_ROOT_RETURN(handle);
+		return 1;
 	}
 	if (errno == ENODEV) {
 		/* The device doesn't even exist. */
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "SIOCGIWMODE failed");
 		close(sock_fd);
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		return PCAP_ERROR_NO_SUCH_DEVICE;
 	}
 	close(sock_fd);
 #endif
-        NETNS_ROOT_RETURN(handle);
+	NETNS_ROOT_RETURN(handle);
 	return 0;
 }
 
@@ -1882,12 +1883,12 @@ pcap_activate_linux(pcap_t *handle)
 	 * should work on it.
 	 */
 	handle->selectable_fd = handle->fd;
-        NETNS_ROOT_RETURN(handle);
+	NETNS_ROOT_RETURN(handle);
 
 	return status;
 
 fail:
-        NETNS_ROOT_RETURN(handle);
+	NETNS_ROOT_RETURN(handle);
 	pcap_cleanup_linux(handle);
 	return status;
 }
@@ -1997,7 +1998,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	int			caplen;
 	struct pcap_pkthdr	pcap_header;
 
-        struct bpf_aux_data     aux_data;
+	struct bpf_aux_data	aux_data;
 #ifdef HAVE_PF_PACKET_SOCKETS
 	/*
 	 * If this is a cooked device, leave extra room for a
@@ -2295,7 +2296,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			    PCAP_ERRBUF_SIZE, errno, "SIOCGSTAMPNS");
 			return PCAP_ERROR;
 		}
-        } else
+	} else
 #endif
 	{
 		if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
@@ -2303,7 +2304,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			    PCAP_ERRBUF_SIZE, errno, "SIOCGSTAMP");
 			return PCAP_ERROR;
 		}
-        }
+	}
 
 	pcap_header.caplen	= caplen;
 	pcap_header.len		= (bpf_u_int32)packet_len;
@@ -2441,7 +2442,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 
 	long if_dropped = 0;
 
-        NETNS_ROOT_SET(handle);
+	NETNS_ROOT_SET(handle);
 	/*
 	 *	To fill in ps_ifdrop, we parse /proc/net/dev for the number
 	 */
@@ -2508,7 +2509,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		handlep->stat.ps_recv += kstats.tp_packets;
 		handlep->stat.ps_drop += kstats.tp_drops;
 		*stats = handlep->stat;
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		return 0;
 	}
 	else
@@ -2520,7 +2521,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * that doesn't, it works as it does if the library
 		 * is built on a system without "struct tpacket_stats".
 		 */
-                NETNS_ROOT_RETURN(handle);
+		NETNS_ROOT_RETURN(handle);
 		if (errno != EOPNOTSUPP) {
 			pcap_fmt_errmsg_for_errno(handle->errbuf,
 			    PCAP_ERRBUF_SIZE, errno, "pcap_stats");
@@ -3038,7 +3039,7 @@ pcap_platform_finddevs_prefix(pcap_if_list_t *devlistp, char *dev_prefix, char *
 	/*
 	 * Get the list of regular interfaces first.
 	 */
-        if (pcap_findalldevs_interfaces(dev_prefix, devlistp, errbuf, can_be_bound,
+	if (pcap_findalldevs_interfaces(dev_prefix, devlistp, errbuf, can_be_bound,
 	    get_if_flags) == -1)
 		return (-1);	/* failure */
 
@@ -3089,7 +3090,7 @@ int pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	dir = opendir( NETNS_DIR_PATH );
 	root_ns_fd = open( NETNS_CURRENT, O_RDONLY|O_CLOEXEC );
 
-        pcap_platform_finddevs_prefix( devlistp, NULL, errbuf );
+	pcap_platform_finddevs_prefix( devlistp, NULL, errbuf );
 
 	if (dir && root_ns_fd >= 0) {
 		dent = readdir(dir);
@@ -3105,19 +3106,19 @@ int pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 				if (ret == 0){
 					pcap_platform_finddevs_prefix( devlistp, fname, errbuf );
 				}
-                                close(fd);
+				close(fd);
 			}else{
 			}
 			dent = readdir( dir );
 		}
 		/*Get back to original namespace*/
-                setns(root_ns_fd, CLONE_NEWNET);
-        }
-        close( root_ns_fd );
-        closedir(dir);
+		setns(root_ns_fd, CLONE_NEWNET);
+	}
+	close( root_ns_fd );
+	closedir(dir);
 	return 0;
 #else
-        return  pcap_platform_finddevs_prefix( devlistp, NULL, errbuf );
+	return	pcap_platform_finddevs_prefix( devlistp, NULL, errbuf );
 #endif
 }
 
@@ -3905,7 +3906,7 @@ activate_new(pcap_t *handle, int is_any_device)
 	int			bpf_extensions;
 	socklen_t		len = sizeof(bpf_extensions);
 #endif
-        NETNS_ROOT_SET(handle);
+	NETNS_ROOT_SET(handle);
 
 	sock_fd = open_pf_packet_socket(handle, is_any_device);
 	if (sock_fd < 0) {
@@ -4229,7 +4230,7 @@ activate_new(pcap_t *handle, int is_any_device)
 	 * We've succeeded. Save the socket FD in the pcap structure.
 	 */
 	handle->fd = sock_fd;
-        NETNS_ROOT_RETURN(handle);
+	NETNS_ROOT_RETURN(handle);
 
 #if defined(SO_BPF_EXTENSIONS) && defined(SKF_AD_VLAN_TAG_PRESENT)
 	/*
