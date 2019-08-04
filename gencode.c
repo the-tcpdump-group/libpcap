@@ -139,10 +139,6 @@ struct addrinfo {
 
 #define ETHERMTU	1500
 
-#ifndef ETHERTYPE_TEB
-#define ETHERTYPE_TEB 0x6558
-#endif
-
 #ifndef IPPROTO_HOPOPTS
 #define IPPROTO_HOPOPTS 0
 #endif

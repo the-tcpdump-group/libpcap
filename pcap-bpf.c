@@ -1020,18 +1020,21 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 			case EWOULDBLOCK:
 				return (0);
 
-			case ENXIO:
+			case ENXIO:	/* FreeBSD, DragonFly BSD, and Darwin */
+			case EIO:	/* OpenBSD */
+					/* NetBSD appears not to return an error in this case */
 				/*
 				 * The device on which we're capturing
 				 * went away.
 				 *
 				 * XXX - we should really return
-				 * PCAP_ERROR_IFACE_NOT_UP, but
-				 * pcap_dispatch() etc. aren't
-				 * defined to retur that.
+				 * an appropriate error for that,
+				 * but pcap_dispatch() etc. aren't
+				 * documented as having error returns
+				 * other than PCAP_ERROR or PCAP_ERROR_BREAK.
 				 */
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "The interface went down");
+				    "The interface disappeared");
 				return (PCAP_ERROR);
 
 #if defined(sun) && !defined(BSD) && !defined(__svr4__) && !defined(__SVR4)

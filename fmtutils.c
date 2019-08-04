@@ -146,18 +146,44 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 
 #ifdef _WIN32
 /*
- * Generate a string for a Win32-specific error (i.e. an error generated when
- * calling a Win32 API).
- * For errors occurred during standard C calls, we still use pcap_strerror().
+ * Generate an error message based on a format, arguments, and a
+ * Win32 error, with a message for the Win32 error after the formatted output.
  */
 void
-pcap_win32_err_to_str(DWORD error, char *errbuf)
+pcap_fmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
+    const char *fmt, ...)
 {
-	DWORD retval;
-	size_t errlen;
+	va_list ap;
+	size_t msglen;
 	char *p;
+	size_t errbuflen_remaining;
+	DWORD retval;
+	char win32_errbuf[PCAP_ERRBUF_SIZE+1];
+
+	va_start(ap, fmt);
+	pcap_vsnprintf(errbuf, errbuflen, fmt, ap);
+	va_end(ap);
+	msglen = strlen(errbuf);
 
 	/*
+	 * Do we have enough space to append ": "?
+	 * Including the terminating '\0', that's 3 bytes.
+	 */
+	if (msglen + 3 > errbuflen) {
+		/* No - just give them what we've produced. */
+		return;
+	}
+	p = errbuf + msglen;
+	errbuflen_remaining = errbuflen - msglen;
+	*p++ = ':';
+	*p++ = ' ';
+	*p = '\0';
+	msglen += 2;
+	errbuflen_remaining -= 2;
+
+	/*
+	 * Now append the string for the error code.
+	 *
 	 * XXX - what language ID to use?
 	 *
 	 * For UN*Xes, pcap_strerror() may or may not return localized
@@ -172,30 +198,17 @@ pcap_win32_err_to_str(DWORD error, char *errbuf)
 	 * happen to understand.
 	 */
 	retval = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_MAX_WIDTH_MASK,
-	    NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-	    errbuf, PCAP_ERRBUF_SIZE, NULL);
+	    NULL, errnum, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+	    win32_errbuf, PCAP_ERRBUF_SIZE, NULL);
 	if (retval == 0) {
 		/*
 		 * Failed.
 		 */
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Couldn't get error message for error (%lu)", error);
+		pcap_snprintf(p, errbuflen_remaining,
+		    "Couldn't get error message for error (%lu)", errnum);
 		return;
 	}
 
-	/*
-	 * "FormatMessage()" "helpfully" sticks CR/LF at the end of the
-	 * message.  Get rid of it.
-	 *
-	 * XXX - still true with FORMAT_MESSAGE_MAX_WIDTH_MASK?
-	 */
-	errlen = strlen(errbuf);
-	if (errlen >= 2 &&
-	    errbuf[errlen - 2] == '\r' && errbuf[errlen - 1] == '\n') {
-		errbuf[errlen - 2] = '\0';
-		errbuf[errlen - 1] = '\0';
-	}
-	p = strchr(errbuf, '\0');
-	pcap_snprintf(p, PCAP_ERRBUF_SIZE+1-(p-errbuf), " (%lu)", error);
+	pcap_snprintf(p, errbuflen_remaining, "%s (%lu)", win32_errbuf, errnum);
 }
 #endif

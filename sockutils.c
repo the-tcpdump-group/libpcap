@@ -126,29 +126,15 @@ static int sock_ismcastaddr(const struct sockaddr *saddr);
  */
 void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 {
+	if (errbuf == NULL)
+		return;
+
 #ifdef _WIN32
-	char message[SOCK_ERRBUF_SIZE];	/* We're forcing "ANSI" */
-
-	if (errbuf == NULL)
-		return;
-
-	pcap_win32_err_to_str(errcode, message);
-	if ((caller) && (*caller))
-		pcap_snprintf(errbuf, errbuflen, "%s%s", caller, message);
-	else
-		pcap_snprintf(errbuf, errbuflen, "%s", message);
+	pcap_fmt_errmsg_for_win32_err(errbuf, errbuflen, errcode,
+	    "%s", caller);
 #else
-	char *message;
-
-	if (errbuf == NULL)
-		return;
-
-	message = strerror(errcode);
-
-	if ((caller) && (*caller))
-		pcap_snprintf(errbuf, errbuflen, "%s%s (%d)", caller, message, errcode);
-	else
-		pcap_snprintf(errbuf, errbuflen, "%s (%d)", message, errcode);
+	pcap_fmt_errmsg_for_errno(errbuf, errbuflen, errcode,
+	    "%s", caller);
 #endif
 }
 
@@ -161,7 +147,7 @@ void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
  *
  * \param caller: a pointer to a user-allocated string which contains a message that has
  * to be printed *before* the true error message. It could be, for example, 'this error
- * comes from the recv() call at line 31'. It may be NULL.
+ * comes from the recv() call at line 31'.
  *
  * \param errbuf: a pointer to an user-allocated buffer that will contain the complete
  * error message. This buffer has to be at least 'errbuflen' in length.
@@ -175,12 +161,8 @@ void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)
 void sock_geterror(const char *caller, char *errbuf, int errbuflen)
 {
 #ifdef _WIN32
-	if (errbuf == NULL)
-		return;
 	sock_fmterror(caller, GetLastError(), errbuf, errbuflen);
 #else
-	if (errbuf == NULL)
-		return;
 	sock_fmterror(caller, errno, errbuf, errbuflen);
 #endif
 }
@@ -317,7 +299,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 	sock = socket(addrinfo->ai_family, addrinfo->ai_socktype, addrinfo->ai_protocol);
 	if (sock == INVALID_SOCKET)
 	{
-		sock_geterror("socket(): ", errbuf, errbuflen);
+		sock_geterror("socket()", errbuf, errbuflen);
 		return INVALID_SOCKET;
 	}
 
@@ -399,7 +381,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		/* WARNING: if the address is a mcast one, I should place the proper Win32 code here */
 		if (bind(sock, addrinfo->ai_addr, (int) addrinfo->ai_addrlen) != 0)
 		{
-			sock_geterror("bind(): ", errbuf, errbuflen);
+			sock_geterror("bind()", errbuf, errbuflen);
 			closesocket(sock);
 			return INVALID_SOCKET;
 		}
@@ -407,7 +389,7 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 		if (addrinfo->ai_socktype == SOCK_STREAM)
 			if (listen(sock, nconn) == -1)
 			{
-				sock_geterror("listen(): ", errbuf, errbuflen);
+				sock_geterror("listen()", errbuf, errbuflen);
 				closesocket(sock);
 				return INVALID_SOCKET;
 			}
@@ -444,13 +426,14 @@ SOCKET sock_open(struct addrinfo *addrinfo, int server, int nconn, char *errbuf,
 				 * We have to retrieve the error message before any other socket call completes, otherwise
 				 * the error message is lost
 				 */
-				sock_geterror(NULL, SocketErrorMessage, sizeof(SocketErrorMessage));
+				sock_geterror("Connect to socket failed",
+				    SocketErrorMessage, sizeof(SocketErrorMessage));
 
 				/* Returns the numeric address of the host that triggered the error */
 				sock_getascii_addrport((struct sockaddr_storage *) tempaddrinfo->ai_addr, TmpBuffer, sizeof(TmpBuffer), NULL, 0, NI_NUMERICHOST, TmpBuffer, sizeof(TmpBuffer));
 
 				pcap_snprintf(errbufptr, bufspaceleft,
-				    "Is the server properly installed on %s?  connect() failed: %s", TmpBuffer, SocketErrorMessage);
+				    "Is the server properly installed on %s?  %s", TmpBuffer, SocketErrorMessage);
 
 				/* In case more then one 'connect' fails, we manage to keep all the error messages */
 				msglen = strlen(errbufptr);
@@ -508,7 +491,7 @@ int sock_close(SOCKET sock, char *errbuf, int errbuflen)
 	 */
 	if (shutdown(sock, SHUT_WR))
 	{
-		sock_geterror("shutdown(): ", errbuf, errbuflen);
+		sock_geterror("shutdown()", errbuf, errbuflen);
 		/* close the socket anyway */
 		closesocket(sock);
 		return -1;
@@ -845,7 +828,7 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
 				 */
 				return -2;
 			}
-			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
+			sock_fmterror("send()", errcode, errbuf, errbuflen);
 #else
 			errcode = errno;
 			if (errcode == ECONNRESET || errcode == EPIPE)
@@ -857,7 +840,7 @@ int sock_send(SOCKET sock, SSL *ssl _U_NOSSL_, const char *buffer, size_t size,
 				 */
 				return -2;
 			}
-			sock_fmterror("send(): ", errcode, errbuf, errbuflen);
+			sock_fmterror("send()", errcode, errbuf, errbuflen);
 #endif
 			return -1;
 		}
@@ -1042,7 +1025,7 @@ int sock_recv(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
 			if (errno == EINTR)
 				return -3;
 #endif
-			sock_geterror("recv(): ", errbuf, errbuflen);
+			sock_geterror("recv()", errbuf, errbuflen);
 			return -1;
 		}
 
@@ -1147,7 +1130,7 @@ int sock_recv_dgram(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
 		 * supplied to us, the excess data is discarded,
 		 * and we'll report an error.
 		 */
-		sock_geterror("recv(): ", errbuf, errbuflen);
+		sock_geterror("recv()", errbuf, errbuflen);
 		return -1;
 	}
 #else /* _WIN32 */
@@ -1180,7 +1163,7 @@ int sock_recv_dgram(SOCKET sock, SSL *ssl _U_NOSSL_, void *buffer, size_t size,
 	{
 		if (errno == EINTR)
 			return -3;
-		sock_geterror("recv(): ", errbuf, errbuflen);
+		sock_geterror("recv()", errbuf, errbuflen);
 		return -1;
 	}
 #ifdef HAVE_STRUCT_MSGHDR_MSG_FLAGS
@@ -1502,7 +1485,7 @@ int sock_getmyinfo(SOCKET sock, char *address, int addrlen, char *port, int port
 
 	if (getsockname(sock, (struct sockaddr *) &mysockaddr, &sockaddrlen) == -1)
 	{
-		sock_geterror("getsockname(): ", errbuf, errbuflen);
+		sock_geterror("getsockname()", errbuf, errbuflen);
 		return 0;
 	}
 
@@ -1590,7 +1573,7 @@ int sock_getascii_addrport(const struct sockaddr_storage *sockaddr, char *addres
 		/* If the user wants to receive an error message */
 		if (errbuf)
 		{
-			sock_geterror("getnameinfo(): ", errbuf, errbuflen);
+			sock_geterror("getnameinfo()", errbuf, errbuflen);
 			errbuf[errbuflen - 1] = 0;
 		}
 

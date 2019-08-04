@@ -346,9 +346,9 @@ int main(int argc, char *argv[])
 	state_change_event = CreateEvent(NULL, FALSE, FALSE, NULL);
 	if (state_change_event == NULL)
 	{
-		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-		rpcapd_log(LOGPRIO_ERROR, "Can't create state change event: %s",
-		    errbuf);
+		sock_geterror("Can't create state change event", errbuf,
+		    PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 		exit(2);
 	}
 
@@ -357,9 +357,9 @@ int main(int argc, char *argv[])
 	//
 	if (!SetConsoleCtrlHandler(main_ctrl_event, TRUE))
 	{
-		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-		rpcapd_log(LOGPRIO_ERROR, "Can't set control handler: %s",
-		    errbuf);
+		sock_geterror("Can't set control handler", errbuf,
+		    PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 		exit(2);
 	}
 #else
@@ -412,9 +412,9 @@ int main(int argc, char *argv[])
 		sockctrl = dup(0);
 		if (sockctrl == -1)
 		{
-			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-			rpcapd_log(LOGPRIO_ERROR, "Can't dup standard input: %s",
-			    errbuf);
+			sock_geterror("Can't dup standard input", errbuf,
+			    PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 			exit(2);
 		}
 
@@ -721,8 +721,9 @@ send_state_change_event(void)
 
 	if (!SetEvent(state_change_event))
 	{
-		sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-		rpcapd_log(LOGPRIO_ERROR, "SetEvent on shutdown event failed: %s", errbuf);
+		sock_geterror("SetEvent on shutdown event failed", errbuf,
+		    PCAP_ERRBUF_SIZE);
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 	}
 }
 
@@ -888,14 +889,16 @@ accept_connections(void)
 		event = WSACreateEvent();
 		if (event == WSA_INVALID_EVENT)
 		{
-			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-			rpcapd_log(LOGPRIO_ERROR, "Can't create socket event: %s", errbuf);
+			sock_geterror("Can't create socket event", errbuf,
+			    PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 			exit(2);
 		}
 		if (WSAEventSelect(sock_info->sock, event, FD_ACCEPT) == SOCKET_ERROR)
 		{
-			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-			rpcapd_log(LOGPRIO_ERROR, "Can't setup socket event: %s", errbuf);
+			sock_geterror("Can't setup socket event", errbuf,
+			    PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 			exit(2);
 		}
 		events[i] = event;
@@ -912,8 +915,9 @@ accept_connections(void)
 		    WSA_INFINITE, FALSE);
 		if (ret == WSA_WAIT_FAILED)
 		{
-			sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-			rpcapd_log(LOGPRIO_ERROR, "WSAWaitForMultipleEvents failed: %s", errbuf);
+			sock_geterror("WSAWaitForMultipleEvents failed", errbuf,
+			    PCAP_ERRBUF_SIZE);
+			rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 			exit(2);
 		}
 
@@ -951,8 +955,9 @@ accept_connections(void)
 			if (WSAEnumNetworkEvents(sock_info->sock,
 			    events[i], &network_events) == SOCKET_ERROR)
 			{
-				sock_geterror(NULL, errbuf, PCAP_ERRBUF_SIZE);
-				rpcapd_log(LOGPRIO_ERROR, "WSAEnumNetworkEvents failed: %s", errbuf);
+				sock_geterror("WSAEnumNetworkEvents failed",
+				    errbuf, PCAP_ERRBUF_SIZE);
+				rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 				exit(2);
 			}
 			if (network_events.lNetworkEvents & FD_ACCEPT)
@@ -965,11 +970,11 @@ accept_connections(void)
 					//
 					// Yes - report it and keep going.
 					//
-					sock_fmterror(NULL,
+					sock_fmterror("Socket error",
 					    network_events.iErrorCode[FD_ACCEPT_BIT],
 					    errbuf,
 					    PCAP_ERRBUF_SIZE);
-					rpcapd_log(LOGPRIO_ERROR, "Socket error: %s", errbuf);
+					rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 					continue;
 				}
 
@@ -1154,7 +1159,7 @@ accept_connection(SOCKET listen_sock)
 
 		// Don't check for errors here, since the error can be due to the fact that the thread
 		// has been killed
-		sock_geterror("accept(): ", errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterror("accept()", errbuf, PCAP_ERRBUF_SIZE);
 		rpcapd_log(LOGPRIO_ERROR, "Accept of control connection from client failed: %s",
 		    errbuf);
 		return;
@@ -1178,14 +1183,14 @@ accept_connection(SOCKET listen_sock)
 	//
 	if (WSAEventSelect(sockctrl, NULL, 0) == SOCKET_ERROR)
 	{
-		sock_geterror("WSAEventSelect: ", errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterror("WSAEventSelect()", errbuf, PCAP_ERRBUF_SIZE);
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 		sock_close(sockctrl, NULL, 0);
 		return;
 	}
 	if (ioctlsocket(sockctrl, FIONBIO, &off) == SOCKET_ERROR)
 	{
-		sock_geterror("ioctlsocket(FIONBIO): ", errbuf, PCAP_ERRBUF_SIZE);
+		sock_geterror("ioctlsocket(FIONBIO)", errbuf, PCAP_ERRBUF_SIZE);
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
 		sock_close(sockctrl, NULL, 0);
 		return;

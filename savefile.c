@@ -56,8 +56,8 @@
 #ifdef _WIN32
 /*
  * These aren't exported on Windows, because they would only work if both
- * WinPcap and the code using it were to use the Universal CRT; otherwise,
- * a FILE structure in WinPcap and a FILE structure in the code using it
+ * WinPcap/Npcap and the code using it were to use the Universal CRT; otherwise,
+ * a FILE structure in WinPcap/Npcap and a FILE structure in the code using it
  * could be different if they're using different versions of the C runtime.
  *
  * Instead, pcap/pcap.h defines them as macros that wrap the hopen versions,
@@ -332,7 +332,7 @@ pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
 }
 #endif
 
-static pcap_t *(*check_headers[])(bpf_u_int32, FILE *, u_int, char *, int *) = {
+static pcap_t *(*check_headers[])(const uint8_t *, FILE *, u_int, char *, int *) = {
 	pcap_check_header,
 	pcap_ng_check_header
 };
@@ -347,7 +347,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
     char *errbuf)
 {
 	register pcap_t *p;
-	bpf_u_int32 magic;
+	uint8_t magic[4];
 	size_t amt_read;
 	u_int i;
 	int err;
@@ -359,7 +359,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	 * Windows Sniffer, and Microsoft Network Monitor) all have magic
 	 * numbers that are unique in their first 4 bytes.
 	 */
-	amt_read = fread((char *)&magic, 1, sizeof(magic), fp);
+	amt_read = fread(&magic, 1, sizeof(magic), fp);
 	if (amt_read != sizeof(magic)) {
 		if (ferror(fp)) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,

@@ -1922,6 +1922,8 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.devel OR EXISTS ${CMAKE_BINARY_DIR}/.deve
         check_and_add_compiler_option(-Wmissing-noreturn)
         check_and_add_compiler_option(-Wmissing-prototypes)
         check_and_add_compiler_option(-Wmissing-variable-declarations)
+        check_and_add_compiler_option(-Wpointer-arith)
+        check_and_add_compiler_option(-Wpointer-sign)
         check_and_add_compiler_option(-Wshadow)
         check_and_add_compiler_option(-Wsign-compare)
         check_and_add_compiler_option(-Wshorten-64-to-32)

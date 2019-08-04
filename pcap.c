@@ -139,7 +139,7 @@ BOOL WINAPI DllMain(
 
 /*
  * Start WinSock.
- * Exported in case some applications using WinPcap called it,
+ * Exported in case some applications using WinPcap/Npcap called it,
  * even though it wasn't exported.
  */
 int
@@ -802,7 +802,7 @@ get_if_description(const char *name)
 		}
 #endif /* __FreeBSD__ */
 		close(s);
-		if (description != NULL && strlen(description) == 0) {
+		if (description != NULL && description[0] == '\0') {
 			/*
 			 * Description is empty, so discard it.
 			 */
@@ -2279,7 +2279,7 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 * require 8-byte alignment even on platforms with 32-bit
 	 * integers.
 	 */
-#define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7) & ~0x7)
+#define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7U) & ~0x7U)
 	chunk = malloc(PCAP_T_ALIGNED_SIZE + size);
 	if (chunk == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
@@ -3128,10 +3128,15 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(LINUX_SLL2, "Linux cooked v2"),
 	DLT_CHOICE(OPENVIZSLA, "OpenVizsla USB"),
 	DLT_CHOICE(EBHSCR, "Elektrobit High Speed Capture and Replay (EBHSCR)"),
+	DLT_CHOICE(VPP_DISPATCH, "VPP graph dispatch tracer"),
 	DLT_CHOICE(DSA_TAG_BRCM, "Broadcom tag"),
 	DLT_CHOICE(DSA_TAG_BRCM_PREPEND, "Broadcom tag (prepended)"),
+	DLT_CHOICE(IEEE802_15_4_TAP, "IEEE 802.15.4 with pseudo-header"),
 	DLT_CHOICE(DSA_TAG_DSA, "Marvell DSA"),
 	DLT_CHOICE(DSA_TAG_EDSA, "Marvell EDSA"),
+	DLT_CHOICE(ELEE, "ELEE lawful intercept packets"),
+	DLT_CHOICE(Z_WAVE_SERIAL, "Z-Wave serial frames between host and chip"),
+	DLT_CHOICE(USB_2_0, "USB 2.0/1.1/1.0 as transmitted over the cable"),
 	DLT_CHOICE_SENTINEL
 };
 
