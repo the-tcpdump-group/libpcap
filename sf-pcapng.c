@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h> /* for INT_MAX */
 
 #include "pcap-int.h"
 
@@ -1048,19 +1047,8 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	}
 
 done:
-	if (idbp->snaplen == 0 || idbp->snaplen > INT_MAX) {
-		/*
-		 * Bogus snapshot length; use the maximum for this
-		 * link-layer type as a fallback.
-		 *
-		 * XXX - the only reason why snapshot is signed is
-		 * that pcap_snapshot() returns an int, not an
-		 * unsigned int.
-		 */
-		p->snapshot = max_snaplen_for_dlt(idbp->linktype);
-	} else
-		p->snapshot = idbp->snaplen;
 	p->linktype = linktype_to_dlt(idbp->linktype);
+	p->snapshot = pcap_adjust_snapshot(p->linktype, idbp->snaplen);
 	p->linktype_ext = 0;
 
 	/*
@@ -1255,7 +1243,13 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    idbp->linktype);
 				return (-1);
 			}
-			if ((bpf_u_int32)p->snapshot != idbp->snaplen) {
+
+			/*
+			 * Check against the *adjusted* value of this IDB's
+			 * snapshot length.
+			 */
+			if ((bpf_u_int32)p->snapshot !=
+			    pcap_adjust_snapshot(p->linktype, idbp->snaplen)) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "an interface has a snapshot length %u different from the type of the first interface",
 				    idbp->snaplen);

@@ -249,20 +249,9 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	p->swapped = swapped;
 	p->version_major = hdr.version_major;
 	p->version_minor = hdr.version_minor;
-	if (hdr.snaplen == 0 || hdr.snaplen > INT_MAX) {
-		/*
-		 * Bogus snapshot length; use the maximum for this
-		 * link-layer type as a fallback.
-		 *
-		 * XXX - the only reason why snapshot is signed is
-		 * that pcap_snapshot() returns an int, not an
-		 * unsigned int.
-		 */
-		p->snapshot = max_snaplen_for_dlt(hdr.linktype);
-	} else
-		p->snapshot = hdr.snaplen;
 	p->linktype = linktype_to_dlt(LT_LINKTYPE(hdr.linktype));
 	p->linktype_ext = LT_LINKTYPE_EXT(hdr.linktype);
+	p->snapshot = pcap_adjust_snapshot(p->linktype, hdr.snaplen);
 
 	p->next_packet_op = pcap_next_packet;
 

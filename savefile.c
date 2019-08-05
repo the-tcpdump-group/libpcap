@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h> /* for INT_MAX */
 
 #include "pcap-int.h"
 
@@ -52,6 +53,7 @@
 
 #include "sf-pcap.h"
 #include "sf-pcapng.h"
+#include "pcap-common.h"
 
 #ifdef _WIN32
 /*
@@ -331,6 +333,33 @@ pcap_t* pcap_hopen_offline(intptr_t osfd, char *errbuf)
 	    PCAP_TSTAMP_PRECISION_MICRO, errbuf);
 }
 #endif
+
+/*
+ * Given a link-layer header type and snapshot length, return a
+ * snapshot length to use when reading the file; it's guaranteed
+ * to be > 0 and <= INT_MAX.
+ *
+ * XXX - the only reason why we limit it to <= INT_MAX is so that
+ * it fits in p->snapshot, and the only reason that p->snapshot is
+ * signed is that pcap_snapshot() returns an int, not an unsigned int.
+ */
+bpf_u_int32
+pcap_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen)
+{
+	if (snaplen == 0 || snaplen > INT_MAX) {
+		/*
+		 * Bogus snapshot length; use the maximum for this
+		 * link-layer type as a fallback.
+		 *
+		 * XXX - we don't clamp snapshot lengths that are
+		 * <= INT_MAX but > max_snaplen_for_dlt(linktype),
+		 * so a capture file could cause us to allocate
+		 * a Really Big Buffer.
+		 */
+		snaplen = max_snaplen_for_dlt(linktype);
+	}
+	return snaplen;
+}
 
 static pcap_t *(*check_headers[])(const uint8_t *, FILE *, u_int, char *, int *) = {
 	pcap_check_header,

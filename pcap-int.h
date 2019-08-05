@@ -474,11 +474,15 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
  * "pcap_open_offline_common()" allocates and fills in a pcap_t, for use
  * by pcap_open_offline routines.
  *
+ * "pcap_adjust_snapshot()" adjusts the snapshot to be non-zero and
+ * fit within an int.
+ *
  * "sf_cleanup()" closes the file handle associated with a pcap_t, if
  * appropriate, and frees all data common to all modules for handling
  * savefile types.
  */
 pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
+bpf_u_int32 pcap_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen);
 void	sf_cleanup(pcap_t *p);
 
 /*
