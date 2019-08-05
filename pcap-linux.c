@@ -1157,16 +1157,16 @@ static long int
 linux_if_drops(const char * if_name)
 {
 	char buffer[512];
-	char * bufptr;
-	FILE * file;
-	int field_to_convert = 3, if_name_sz = strlen(if_name);
+	FILE *file;
+	char *bufptr, *nameptr, *colonptr;
+	int field_to_convert = 3;
 	long int dropped_pkts = 0;
 
 	file = fopen("/proc/net/dev", "r");
 	if (!file)
 		return 0;
 
-	while (!dropped_pkts && fgets( buffer, sizeof(buffer), file ))
+	while (fgets(buffer, sizeof(buffer), file) != NULL)
 	{
 		/* 	search for 'bytes' -- if its in there, then
 			that means we need to grab the fourth field. otherwise
@@ -1177,26 +1177,71 @@ linux_if_drops(const char * if_name)
 			continue;
 		}
 
-		/* find iface and make sure it actually matches -- space before the name and : after it */
-		if ((bufptr = strstr(buffer, if_name)) &&
-			(bufptr == buffer || *(bufptr-1) == ' ') &&
-			*(bufptr + if_name_sz) == ':')
+		/*
+		 * See whether this line corresponds to this device.
+		 * The line should have zero or more leading blanks,
+		 * followed by a device name, followed by a colon,
+		 * followed by the statistics.
+		 */
+		bufptr = buffer;
+		/* Skip leading blanks */
+		while (*bufptr == ' ')
+			bufptr++;
+		nameptr = bufptr;
+		/* Look for the colon */
+		colonptr = strchr(nameptr, ':');
+		if (colonptr == NULL)
 		{
-			bufptr = bufptr + if_name_sz + 1;
+			/*
+			 * Not found; this could, for example, be the
+			 * header line.
+			 */
+			continue;
+		}
+		/* Null-terminate the interface name. */
+		*colonptr = '\0';
+		if (strcmp(if_name, nameptr) == 0)
+		{
+			/*
+			 * OK, this line has the statistics for the interface.
+			 * Skip past the interface name.
+			 */
+			bufptr = colonptr + 1;
 
 			/* grab the nth field from it */
-			while( --field_to_convert && *bufptr != '\0')
+			while (--field_to_convert && *bufptr != '\0')
 			{
-				while (*bufptr != '\0' && *(bufptr++) == ' ');
-				while (*bufptr != '\0' && *(bufptr++) != ' ');
+				/*
+				 * This isn't the field we want.
+				 * First, skip any leading blanks before
+				 * the field.
+				 */
+				while (*bufptr == ' ')
+					bufptr++;
+
+				/*
+				 * Now skip the non-blank characters of
+				 * the field.
+				 */
+				while (*bufptr != '\0' && *bufptr != ' ')
+					bufptr++;
 			}
 
-			/* get rid of any final spaces */
-			while (*bufptr != '\0' && *bufptr == ' ') bufptr++;
+			if (field_to_convert == 0)
+			{
+				/*
+				 * We've found the field we want.
+				 * Skip any leading blanks before it.
+				 */
+				while (*bufptr == ' ')
+					bufptr++;
 
-			if (*bufptr != '\0')
-				dropped_pkts = strtol(bufptr, NULL, 10);
-
+				/*
+				 * Now extract the value, if we have one.
+				 */
+				if (*bufptr != '\0')
+					dropped_pkts = strtol(bufptr, NULL, 10);
+			}
 			break;
 		}
 	}
