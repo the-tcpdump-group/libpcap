@@ -266,7 +266,7 @@ int acn_parse_hosts_file(char *errbuf) {				/* returns: -1 = error, 0 = OK */
 
 	empty_unit_table();
 	if ((fp = fopen("/etc/hosts", "r")) == NULL) {										/* try to open the hosts file and if it fails */
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot open '/etc/hosts' for reading.");	/* return the nohostsfile error response */
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Cannot open '/etc/hosts' for reading.");	/* return the nohostsfile error response */
 		return -1;
 	}
 	while (fgets(buf, MAX_LINE_SIZE-1, fp)) {			/* while looping over the file */
@@ -289,7 +289,7 @@ int acn_parse_hosts_file(char *errbuf) {				/* returns: -1 = error, 0 = OK */
 		geoslot = *(ptr2 + 5) - '0';					/* and geo-slot number */
 		if (chassis < 1 || chassis > MAX_CHASSIS ||
 			geoslot < 1 || geoslot > MAX_GEOSLOT) {		/* if the chassis and/or slot numbers appear to be bad... */
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid ACN name in '/etc/hosts'.");	/* warn the user */
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid ACN name in '/etc/hosts'.");	/* warn the user */
 			continue;																	/* and ignore the entry */
 		}
 		if ((ptr2 = (char *)malloc(strlen(ptr) + 1)) == NULL) {
@@ -407,14 +407,14 @@ static void acn_freealldevs(void) {
 
 static void nonUnified_IOP_port_name(char *buf, size_t bufsize, const char *proto, unit_t *u) {
 
-	pcap_snprintf(buf, bufsize, "%s_%d_%d", proto, u->chassis, u->geoslot);
+	snprintf(buf, bufsize, "%s_%d_%d", proto, u->chassis, u->geoslot);
 }
 
 static void unified_IOP_port_name(char *buf, size_t bufsize, const char *proto, unit_t *u, int IOPportnum) {
 	int			portnum;
 
 	portnum = ((u->chassis - 1) * 64) + ((u->geoslot - 1) * 8) + IOPportnum + 1;
-	pcap_snprintf(buf, bufsize, "%s_%d", proto, portnum);
+	snprintf(buf, bufsize, "%s_%d", proto, portnum);
 }
 
 static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 iftype) {
@@ -916,7 +916,7 @@ static int pcap_setfilter_acn(pcap_t *handle, struct bpf_program *bpf) {
 }
 
 static int pcap_setdirection_acn(pcap_t *handle, pcap_direction_t d) {
-	pcap_snprintf(handle->errbuf, sizeof(handle->errbuf),
+	snprintf(handle->errbuf, sizeof(handle->errbuf),
 	    "Setting direction is not supported on ACN adapters");
 	return -1;
 }

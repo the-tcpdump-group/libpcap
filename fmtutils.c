@@ -67,7 +67,7 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	size_t errbuflen_remaining;
 
 	va_start(ap, fmt);
-	pcap_vsnprintf(errbuf, errbuflen, fmt, ap);
+	vsnprintf(errbuf, errbuflen, fmt, ap);
 	va_end(ap);
 	msglen = strlen(errbuf);
 
@@ -100,7 +100,7 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 		 * It doesn't appear to be documented anywhere obvious
 		 * what the error returns from strerror_s().
 		 */
-		pcap_snprintf(p, errbuflen_remaining, "Error %d", errnum);
+		snprintf(p, errbuflen_remaining, "Error %d", errnum);
 	}
 #elif defined(HAVE_GNU_STRERROR_R)
 	/*
@@ -113,7 +113,7 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	 */
 	char strerror_buf[PCAP_ERRBUF_SIZE];
 	char *errstring = strerror_r(errnum, strerror_buf, PCAP_ERRBUF_SIZE);
-	pcap_snprintf(p, errbuflen_remaining, "%s", errstring);
+	snprintf(p, errbuflen_remaining, "%s", errstring);
 #elif defined(HAVE_POSIX_STRERROR_R)
 	/*
 	 * We have a POSIX-style strerror_r(), which is guaranteed to fill
@@ -125,14 +125,14 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 		 * UNIX 03 says this isn't guaranteed to produce a
 		 * fallback error message.
 		 */
-		pcap_snprintf(p, errbuflen_remaining, "Unknown error: %d",
+		snprintf(p, errbuflen_remaining, "Unknown error: %d",
 		    errnum);
 	} else if (err == ERANGE) {
 		/*
 		 * UNIX 03 says this isn't guaranteed to produce a
 		 * fallback error message.
 		 */
-		pcap_snprintf(p, errbuflen_remaining,
+		snprintf(p, errbuflen_remaining,
 		    "Message for error %d is too long", errnum);
 	}
 #else
@@ -140,7 +140,7 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	 * We have neither strerror_s() nor strerror_r(), so we're
 	 * stuck with using pcap_strerror().
 	 */
-	pcap_snprintf(p, errbuflen_remaining, "%s", pcap_strerror(errnum));
+	snprintf(p, errbuflen_remaining, "%s", pcap_strerror(errnum));
 #endif
 }
 
@@ -161,7 +161,7 @@ pcap_fmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
 	char win32_errbuf[PCAP_ERRBUF_SIZE+1];
 
 	va_start(ap, fmt);
-	pcap_vsnprintf(errbuf, errbuflen, fmt, ap);
+	vsnprintf(errbuf, errbuflen, fmt, ap);
 	va_end(ap);
 	msglen = strlen(errbuf);
 
@@ -204,11 +204,11 @@ pcap_fmt_errmsg_for_win32_err(char *errbuf, size_t errbuflen, DWORD errnum,
 		/*
 		 * Failed.
 		 */
-		pcap_snprintf(p, errbuflen_remaining,
+		snprintf(p, errbuflen_remaining,
 		    "Couldn't get error message for error (%lu)", errnum);
 		return;
 	}
 
-	pcap_snprintf(p, errbuflen_remaining, "%s (%lu)", win32_errbuf, errnum);
+	snprintf(p, errbuflen_remaining, "%s (%lu)", win32_errbuf, errnum);
 }
 #endif

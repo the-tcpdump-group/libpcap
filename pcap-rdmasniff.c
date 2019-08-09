@@ -197,21 +197,21 @@ rdmasniff_activate(pcap_t *handle)
 
 	priv->context = ibv_open_device(priv->rdma_device);
 	if (!priv->context) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to open device %s", handle->opt.device);
 		goto error;
 	}
 
 	priv->pd = ibv_alloc_pd(priv->context);
 	if (!priv->pd) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to alloc PD for device %s", handle->opt.device);
 		goto error;
 	}
 
 	priv->channel = ibv_create_comp_channel(priv->context);
 	if (!priv->channel) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to create comp channel for device %s", handle->opt.device);
 		goto error;
 	}
@@ -219,7 +219,7 @@ rdmasniff_activate(pcap_t *handle)
 	priv->cq = ibv_create_cq(priv->context, RDMASNIFF_NUM_RECEIVES,
 				 NULL, priv->channel, 0);
 	if (!priv->cq) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to create CQ for device %s", handle->opt.device);
 		goto error;
 	}
@@ -233,7 +233,7 @@ rdmasniff_activate(pcap_t *handle)
 	qp_init_attr.qp_type = IBV_QPT_RAW_PACKET;
 	priv->qp = ibv_create_qp(priv->pd, &qp_init_attr);
 	if (!priv->qp) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to create QP for device %s", handle->opt.device);
 		goto error;
 	}
@@ -242,7 +242,7 @@ rdmasniff_activate(pcap_t *handle)
 	qp_attr.qp_state = IBV_QPS_INIT;
 	qp_attr.port_num = priv->port_num;
 	if (ibv_modify_qp(priv->qp, &qp_attr, IBV_QP_STATE | IBV_QP_PORT)) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to modify QP to INIT for device %s", handle->opt.device);
 		goto error;
 	}
@@ -250,7 +250,7 @@ rdmasniff_activate(pcap_t *handle)
 	memset(&qp_attr, 0, sizeof qp_attr);
 	qp_attr.qp_state = IBV_QPS_RTR;
 	if (ibv_modify_qp(priv->qp, &qp_attr, IBV_QP_STATE)) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to modify QP to RTR for device %s", handle->opt.device);
 		goto error;
 	}
@@ -261,7 +261,7 @@ rdmasniff_activate(pcap_t *handle)
 	flow_attr.port = priv->port_num;
 	priv->flow = ibv_create_flow(priv->qp, &flow_attr);
 	if (!priv->flow) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to create flow for device %s", handle->opt.device);
 		goto error;
 	}
@@ -269,21 +269,21 @@ rdmasniff_activate(pcap_t *handle)
 	handle->bufsize = RDMASNIFF_NUM_RECEIVES * RDMASNIFF_RECEIVE_SIZE;
 	handle->buffer = malloc(handle->bufsize);
 	if (!handle->buffer) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to allocate receive buffer for device %s", handle->opt.device);
 		goto error;
 	}
 
 	priv->oneshot_buffer = malloc(RDMASNIFF_RECEIVE_SIZE);
 	if (!priv->oneshot_buffer) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to allocate oneshot buffer for device %s", handle->opt.device);
 		goto error;
 	}
 
 	priv->mr = ibv_reg_mr(priv->pd, handle->buffer, handle->bufsize, IBV_ACCESS_LOCAL_WRITE);
 	if (!priv->mr) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			      "Failed to register MR for device %s", handle->opt.device);
 		goto error;
 	}

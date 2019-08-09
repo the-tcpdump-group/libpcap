@@ -443,7 +443,7 @@ bpf_set_error(compiler_state_t *cstate, const char *fmt, ...)
 	 */
 	if (!cstate->error_set) {
 		va_start(ap, fmt);
-		(void)pcap_vsnprintf(cstate->bpf_pcap->errbuf, PCAP_ERRBUF_SIZE,
+		(void)vsnprintf(cstate->bpf_pcap->errbuf, PCAP_ERRBUF_SIZE,
 		    fmt, ap);
 		va_end(ap);
 		cstate->error_set = 1;
@@ -463,7 +463,7 @@ bpf_error(compiler_state_t *cstate, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	(void)pcap_vsnprintf(cstate->bpf_pcap->errbuf, PCAP_ERRBUF_SIZE,
+	(void)vsnprintf(cstate->bpf_pcap->errbuf, PCAP_ERRBUF_SIZE,
 	    fmt, ap);
 	va_end(ap);
 	longjmp(cstate->top_ctx, 1);
@@ -732,7 +732,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 	 * link-layer type, so we can't use it.
 	 */
 	if (!p->activated) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "not-yet-activated pcap_t passed to pcap_compile");
 		return (-1);
 	}
@@ -780,7 +780,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 
 	cstate.snaplen = pcap_snapshot(p);
 	if (cstate.snaplen == 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			 "snaplen of 0 rejects all packets");
 		rc = -1;
 		goto quit;
@@ -831,7 +831,7 @@ pcap_compile(pcap_t *p, struct bpf_program *program,
 		}
 		if (cstate.ic.root == NULL ||
 		    (cstate.ic.root->s.code == (BPF_RET|BPF_K) && cstate.ic.root->s.k == 0)) {
-			(void)pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			(void)snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "expression rejects all packets");
 			rc = -1;
 			goto quit;

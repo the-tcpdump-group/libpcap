@@ -208,7 +208,7 @@ static void dpdk_fmt_errmsg_for_rte_errno(char *errbuf, size_t errbuflen,
 	size_t errbuflen_remaining;
 
 	va_start(ap, fmt);
-	pcap_vsnprintf(errbuf, errbuflen, fmt, ap);
+	vsnprintf(errbuf, errbuflen, fmt, ap);
 	va_end(ap);
 	msglen = strlen(errbuf);
 
@@ -236,7 +236,7 @@ static void dpdk_fmt_errmsg_for_rte_errno(char *errbuf, size_t errbuflen,
 	 * buffer (based on the "PER_LCORE" in "RTE_DEFINE_PER_LCORE" used
 	 * to declare the buffers statically) for DPDK errors.
 	 */
-	pcap_snprintf(p, errbuflen_remaining, "%s", rte_strerror(errnum));
+	snprintf(p, errbuflen_remaining, "%s", rte_strerror(errnum));
 }
 
 static int dpdk_init_timer(struct pcap_dpdk *pd){
@@ -477,7 +477,7 @@ static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
 {
 	int offset=0;
 	if (addrp == NULL){
-		pcap_snprintf(mac_str, len-1, DPDK_DEF_MAC_ADDR);
+		snprintf(mac_str, len-1, DPDK_DEF_MAC_ADDR);
 		return;
 	}
 	for (int i=0; i<6; i++)
@@ -488,10 +488,10 @@ static void eth_addr_str(struct ether_addr *addrp, char* mac_str, int len)
 		}
 		if (i==0)
 		{
-			pcap_snprintf(mac_str+offset, len-1-offset, "%02X",addrp->addr_bytes[i]);
+			snprintf(mac_str+offset, len-1-offset, "%02X",addrp->addr_bytes[i]);
 			offset+=2; // FF
 		}else{
-			pcap_snprintf(mac_str+offset, len-1-offset, ":%02X", addrp->addr_bytes[i]);
+			snprintf(mac_str+offset, len-1-offset, ":%02X", addrp->addr_bytes[i]);
 			offset+=3; // :FF
 		}
 	}
@@ -623,7 +623,7 @@ error:
 			if (eaccess_not_fatal)
 				return 0;
 			// Otherwise report a fatal error.
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "DPDK requires that it run as root");
 			return PCAP_ERROR_PERM_DENIED;
 
@@ -633,7 +633,7 @@ error:
 			// be attempted again."
 			// There's no such error in pcap, so I'm
 			// not sure what we should do here.
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "Bus or system resource was not available");
 			break;
 
@@ -650,7 +650,7 @@ error:
 		case EFAULT:
 			// This "indicates the tailq configuration
 			// name was not found in memory configuration."
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "The tailq configuration name was not found in the memory configuration");
 			return PCAP_ERROR;
 
@@ -658,20 +658,20 @@ error:
 			// This "indicates invalid parameters were
 			// passed as argv/argc."  Those came from
 			// the configuration file.
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "The configuration file has invalid parameters");
 			break;
 
 		case ENOMEM:
 			// This "indicates failure likely caused by
 			// an out-of-memory condition."
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "Out of memory");
 			break;
 
 		case ENODEV:
 			// This "indicates memory setup issues."
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "An error occurred setting up memory");
 			break;
 
@@ -697,14 +697,14 @@ error:
 			// as a "not available" case?  If not, we
 			// can't distinguish between the two, so
 			// we're stuck.
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "PCI bus is not present or not readable by the EAL");
 			break;
 
 		case ENOEXEC:
 			// This "indicates that a service core
 			// failed to launch successfully."
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "A service core failed to launch successfully");
 			break;
 
@@ -744,7 +744,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't open device %s: %s",
 			    p->opt.device, dpdk_pre_init_errbuf);
 			// ret is set to the correct error
@@ -753,7 +753,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		if (ret == 0)
 		{
 			// This means DPDK isn't available on this machine.
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Can't open device %s: DPDK is not available on this machine",
 			    p->opt.device);
 			return PCAP_ERROR_NO_SUCH_DEVICE;
@@ -762,7 +762,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		ret = dpdk_init_timer(pd);
 		if (ret<0)
 		{
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				"dpdk error: Init timer is zero with device %s",
 				p->opt.device);
 			ret = PCAP_ERROR;
@@ -772,7 +772,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		nb_ports = rte_eth_dev_count_avail();
 		if (nb_ports == 0)
 		{
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: No Ethernet ports");
 			ret = PCAP_ERROR;
 			break;
@@ -780,7 +780,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 
 		portid = portid_by_device(p->opt.device);
 		if (portid == DPDK_PORTID_MAX){
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: portid is invalid. device %s",
 			    p->opt.device);
 			ret = PCAP_ERROR_NO_SUCH_DEVICE;
@@ -875,7 +875,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 				rte_eth_dev_socket_id(portid));
 		if (tx_buffer == NULL)
 		{
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: Cannot allocate buffer for tx on port %u", portid);
 			ret = PCAP_ERROR;
 			break;
@@ -900,7 +900,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 		// check link status
 		is_port_up = check_link_status(portid, &link);
 		if (!is_port_up){
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "dpdk error: link is down, port=%u",portid);
 			ret = PCAP_ERROR_IFACE_NOT_UP;
 			break;
@@ -985,7 +985,7 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 		if (ret < 0)
 		{
 			// This returns a negative value on an error.
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "Can't look for DPDK devices: %s",
 			    dpdk_pre_init_errbuf);
 			ret = PCAP_ERROR;
@@ -1005,14 +1005,14 @@ int pcap_dpdk_findalldevs(pcap_if_list_t *devlistp, char *ebuf)
 			break;
 		}
 		for (unsigned int i=0; i<nb_ports; i++){
-			pcap_snprintf(dpdk_name, DPDK_DEV_NAME_MAX-1,
+			snprintf(dpdk_name, DPDK_DEV_NAME_MAX-1,
 			    "%s%u", DPDK_PREFIX, i);
 			// mac addr
 			rte_eth_macaddr_get(i, &eth_addr);
 			eth_addr_str(&eth_addr,mac_addr,DPDK_MAC_ADDR_SIZE);
 			// PCI addr
 			rte_eth_dev_get_name_by_port(i,pci_addr);
-			pcap_snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
+			snprintf(dpdk_desc,DPDK_DEV_DESC_MAX-1,"%s %s, MAC:%s, PCI:%s", DPDK_DESC, dpdk_name, mac_addr, pci_addr);
 			if (add_dev(devlistp, dpdk_name, 0, dpdk_desc, ebuf)==NULL){
 				ret = PCAP_ERROR;
 				break;
@@ -1042,7 +1042,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp _U_, char *errbuf)
 pcap_t *
 pcap_create_interface(const char *device, char *errbuf)
 {
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(errbuf, PCAP_ERRBUF_SIZE,
 	    "This version of libpcap only supports DPDK");
 	return NULL;
 }

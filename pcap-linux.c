@@ -618,7 +618,7 @@ get_mac80211_phydev(pcap_t *handle, const char *device, char *phydev_path,
 	 * Generate the path string for the symlink to the physical device.
 	 */
 	if (asprintf(&pathstr, "/sys/class/net/%s/phy80211", device) == -1) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: Can't generate path name string for /sys/class/net device",
 		    device);
 		return PCAP_ERROR;
@@ -689,20 +689,20 @@ nl80211_init(pcap_t *handle, struct nl80211_state *state, const char *device)
 
 	state->nl_sock = nl_socket_alloc();
 	if (!state->nl_sock) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to allocate netlink handle", device);
 		return PCAP_ERROR;
 	}
 
 	if (genl_connect(state->nl_sock)) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to connect to generic netlink", device);
 		goto out_handle_destroy;
 	}
 
 	err = genl_ctrl_alloc_cache(state->nl_sock, &state->nl_cache);
 	if (err < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to allocate generic netlink cache: %s",
 		    device, get_nl_errmsg(-err));
 		goto out_handle_destroy;
@@ -710,7 +710,7 @@ nl80211_init(pcap_t *handle, struct nl80211_state *state, const char *device)
 
 	state->nl80211 = genl_ctrl_search_by_name(state->nl_cache, "nl80211");
 	if (!state->nl80211) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: nl80211 not found", device);
 		goto out_cache_free;
 	}
@@ -751,7 +751,7 @@ add_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 
 	msg = nlmsg_alloc();
 	if (!msg) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to allocate netlink msg", device);
 		return PCAP_ERROR;
 	}
@@ -785,7 +785,7 @@ DIAG_ON_NARROWING
 			 * Real failure, not just "that device is not
 			 * available.
 			 */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_send_auto_complete failed adding %s interface: %s",
 			    device, mondevice, get_nl_errmsg(-err));
 			nlmsg_free(msg);
@@ -813,7 +813,7 @@ DIAG_ON_NARROWING
 			 * Real failure, not just "that device is not
 			 * available.
 			 */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: nl_wait_for_ack failed adding %s interface: %s",
 			    device, mondevice, get_nl_errmsg(-err));
 			nlmsg_free(msg);
@@ -842,7 +842,7 @@ DIAG_ON_NARROWING
 	return 1;
 
 nla_put_failure:
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 	    "%s: nl_put failed adding %s interface",
 	    device, mondevice);
 	nlmsg_free(msg);
@@ -863,7 +863,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 
 	msg = nlmsg_alloc();
 	if (!msg) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: failed to allocate netlink msg", device);
 		return PCAP_ERROR;
 	}
@@ -874,7 +874,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 
 	err = nl_send_auto_complete(state->nl_sock, msg);
 	if (err < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: nl_send_auto_complete failed deleting %s interface: %s",
 		    device, mondevice, get_nl_errmsg(-err));
 		nlmsg_free(msg);
@@ -882,7 +882,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	}
 	err = nl_wait_for_ack(state->nl_sock);
 	if (err < 0) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: nl_wait_for_ack failed adding %s interface: %s",
 		    device, mondevice, get_nl_errmsg(-err));
 		nlmsg_free(msg);
@@ -896,7 +896,7 @@ del_mon_if(pcap_t *handle, int sock_fd, struct nl80211_state *state,
 	return 1;
 
 nla_put_failure:
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 	    "%s: nl_put failed deleting %s interface",
 	    device, mondevice);
 	nlmsg_free(msg);
@@ -941,7 +941,7 @@ enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
 		 */
 		char mondevice[3+10+1];	/* mon{UINT_MAX}\0 */
 
-		pcap_snprintf(mondevice, sizeof mondevice, "mon%u", n);
+		snprintf(mondevice, sizeof mondevice, "mon%u", n);
 		ret = add_mon_if(handle, sock_fd, &nlstate, device, mondevice);
 		if (ret == 1) {
 			/*
@@ -960,7 +960,7 @@ enter_rfmon_mode_mac80211(pcap_t *handle, int sock_fd, const char *device)
 		}
 	}
 
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 	    "%s: No free monN interfaces", device);
 	nl80211_cleanup(&nlstate);
 	return PCAP_ERROR;
@@ -1589,7 +1589,7 @@ open_pf_packet_socket(pcap_t *handle, int cooked)
 			 * spontaneously drop its support for PF_PACKET
 			 * sockets).
 			 */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "PF_PACKET sockets not supported (this \"can't happen\"!");
 			return PCAP_ERROR_NO_PF_PACKET_SOCKETS;
 		}
@@ -1691,7 +1691,7 @@ pcap_activate_linux(pcap_t *handle)
 		if (handle->opt.promisc) {
 			handle->opt.promisc = 0;
 			/* Just a warning. */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			    "Promiscuous mode not supported on the \"any\" device");
 			status = PCAP_WARNING_PROMISC_NOTSUP;
 		}
@@ -2048,7 +2048,7 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 			 * PCAP_ERROR_IFACE_NOT_UP, but pcap_dispatch()
 			 * etc. aren't defined to return that.
 			 */
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"The interface went down");
 			return PCAP_ERROR;
 
@@ -2670,7 +2670,7 @@ scan_sys_class_net(pcap_if_list_t *devlistp, char *errbuf)
 		 * for devices, newer kernels have symlinks to
 		 * directories.)
 		 */
-		pcap_snprintf(subsystem_path, sizeof subsystem_path,
+		snprintf(subsystem_path, sizeof subsystem_path,
 		    "/sys/class/net/%s/ifindex", ent->d_name);
 		if (lstat(subsystem_path, &statb) != 0) {
 			/*
@@ -2862,7 +2862,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		char *pathstr;
 
 		if (asprintf(&pathstr, "/sys/class/net/%s/type", name) == -1) {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "%s: Can't generate path name string for /sys/class/net device",
 			    name);
 			close(sock);
@@ -3231,7 +3231,7 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	 * We're not using PF_PACKET sockets, so we can't determine
 	 * the direction of the packet.
 	 */
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 	    "Setting direction is not supported on SOCK_PACKET sockets");
 	return -1;
 }
@@ -3964,7 +3964,7 @@ activate_new(pcap_t *handle, int is_any_device)
 				 * update "map_arphrd_to_dlt()"
 				 * to handle the new type.
 				 */
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"arptype %d not "
 					"supported by libpcap - "
 					"falling back to cooked "
@@ -3982,7 +3982,7 @@ activate_new(pcap_t *handle, int is_any_device)
 			    handle->linktype != DLT_NETLINK)
 				handle->linktype = DLT_LINUX_SLL;
 			if (handle->linktype == -1) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				    "unknown arptype %d, defaulting to cooked mode",
 				    arptype);
 				status = PCAP_WARNING;
@@ -4137,7 +4137,7 @@ activate_new(pcap_t *handle, int is_any_device)
 		int nsec_tstamps = 1;
 
 		if (setsockopt(sock_fd, SOL_SOCKET, SO_TIMESTAMPNS, &nsec_tstamps, sizeof(nsec_tstamps)) < 0) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "setsockopt: unable to set SO_TIMESTAMPNS");
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "setsockopt: unable to set SO_TIMESTAMPNS");
 			close(sock_fd);
 			return PCAP_ERROR;
 		}
@@ -4722,7 +4722,7 @@ create_ring(pcap_t *handle, int *status)
 		break;
 #endif
 	default:
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "Internal error: unknown TPACKET_ value %u",
 		    handlep->tp_version);
 		*status = PCAP_ERROR;
@@ -5135,7 +5135,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			 * the descriptor.
 			 */
 			if (pollinfo[0].revents & (POLLHUP | POLLRDHUP)) {
-				pcap_snprintf(handle->errbuf,
+				snprintf(handle->errbuf,
 					PCAP_ERRBUF_SIZE,
 					"Hangup on packet socket");
 				return PCAP_ERROR;
@@ -5159,7 +5159,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 					 * pcap_dispatch() etc. aren't
 					 * defined to return that.
 					 */
-					pcap_snprintf(handle->errbuf,
+					snprintf(handle->errbuf,
 						PCAP_ERRBUF_SIZE,
 						"The interface went down");
 				} else {
@@ -5170,7 +5170,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 				return PCAP_ERROR;
 			}
 			if (pollinfo[0].revents & POLLNVAL) {
-				pcap_snprintf(handle->errbuf,
+				snprintf(handle->errbuf,
 					PCAP_ERRBUF_SIZE,
 					"Invalid polling request on packet socket");
 				return PCAP_ERROR;
@@ -5221,7 +5221,7 @@ static int pcap_handle_packet_mmap(
 		 * Report some system information as a debugging aid.
 		 */
 		if (uname(&utsname) != -1) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"corrupted frame on kernel ring mac "
 				"offset %u + caplen %u > frame len %d "
 				"(kernel %.32s version %s, machine %.16s)",
@@ -5229,7 +5229,7 @@ static int pcap_handle_packet_mmap(
 				utsname.release, utsname.version,
 				utsname.machine);
 		} else {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"corrupted frame on kernel ring mac "
 				"offset %u + caplen %u > frame len %d",
 				tp_mac, tp_snaplen, handle->bufsize);
@@ -5273,7 +5273,7 @@ static int pcap_handle_packet_mmap(
 			if (bp < (u_char *)frame +
 					   TPACKET_ALIGN(handlep->tp_hdrlen) +
 					   sizeof(struct sockaddr_ll)) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"cooked-mode frame doesn't have room for sll header");
 				return -1;
 			}
@@ -5313,7 +5313,7 @@ static int pcap_handle_packet_mmap(
 			if (bp < (u_char *)frame +
 					   TPACKET_ALIGN(handlep->tp_hdrlen) +
 					   sizeof(struct sockaddr_ll)) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 					"cooked-mode frame doesn't have room for sll header");
 				return -1;
 			}
@@ -6116,7 +6116,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	ireq.u.data.length = 0;
 	ireq.u.data.flags = 0;
 	if (ioctl(sock_fd, SIOCGIWPRIV, &ireq) != -1) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    "%s: SIOCGIWPRIV with a zero-length buffer didn't fail!",
 		    device);
 		return PCAP_ERROR;
@@ -7053,7 +7053,7 @@ iface_dsa_get_proto_info(const char *device, pcap_t *handle)
 		}
 	}
 
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 		      "unsupported DSA tag: %s", buf);
 
 	return PCAP_ERROR;
@@ -7133,7 +7133,7 @@ activate_old(pcap_t *handle, int is_any_device)
 	 */
 	map_arphrd_to_dlt(handle, handle->fd, arptype, device, 0);
 	if (handle->linktype == -1) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 			 "unknown arptype %d", arptype);
 		return PCAP_ERROR;
 	}

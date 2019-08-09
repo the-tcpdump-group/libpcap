@@ -68,7 +68,7 @@ dbus_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *us
 	while (!message) {
 		/* XXX handle->opt.timeout = timeout_ms; */
 		if (!dbus_connection_read_write(handlep->conn, 100)) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Connection closed");
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Connection closed");
 			return -1;
 		}
 
@@ -81,7 +81,7 @@ dbus_read(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *us
 	}
 
 	if (dbus_message_is_signal(message, DBUS_INTERFACE_LOCAL, "Disconnected")) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Disconnected");
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Disconnected");
 		return -1;
 	}
 
@@ -112,7 +112,7 @@ dbus_write(pcap_t *handle, const void *buf, int size)
 	DBusMessage *msg;
 
 	if (!(msg = dbus_message_demarshal(buf, size, &error))) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dbus_message_demarshal() failed: %s", error.message);
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "dbus_message_demarshal() failed: %s", error.message);
 		dbus_error_free(&error);
 		return -1;
 	}
@@ -154,7 +154,7 @@ dbus_cleanup(pcap_t *handle)
 static int
 dbus_getnonblock(pcap_t *p)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Non-blocking mode isn't supported for capturing on D-Bus");
 	return (-1);
 }
@@ -162,7 +162,7 @@ dbus_getnonblock(pcap_t *p)
 static int
 dbus_setnonblock(pcap_t *p, int nonblock _U_)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Non-blocking mode isn't supported for capturing on D-Bus");
 	return (-1);
 }
@@ -189,14 +189,14 @@ dbus_activate(pcap_t *handle)
 
 	if (strcmp(dev, "dbus-system") == 0) {
 		if (!(handlep->conn = dbus_bus_get(DBUS_BUS_SYSTEM, &error))) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to get system bus: %s", error.message);
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to get system bus: %s", error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
 		}
 
 	} else if (strcmp(dev, "dbus-session") == 0) {
 		if (!(handlep->conn = dbus_bus_get(DBUS_BUS_SESSION, &error))) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to get session bus: %s", error.message);
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to get session bus: %s", error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
 		}
@@ -205,19 +205,19 @@ dbus_activate(pcap_t *handle)
 		const char *addr = dev + 7;
 
 		if (!(handlep->conn = dbus_connection_open(addr, &error))) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to open connection to: %s: %s", addr, error.message);
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to open connection to: %s: %s", addr, error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
 		}
 
 		if (!dbus_bus_register(handlep->conn, &error)) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to register bus %s: %s\n", addr, error.message);
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to register bus %s: %s\n", addr, error.message);
 			dbus_error_free(&error);
 			return PCAP_ERROR;
 		}
 
 	} else {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get bus address from %s", handle->opt.device);
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Can't get bus address from %s", handle->opt.device);
 		return PCAP_ERROR;
 	}
 
@@ -289,7 +289,7 @@ dbus_activate(pcap_t *handle)
 			/* try without eavesdrop */
 			dbus_bus_add_match(handlep->conn, rules[i] + strlen(EAVESDROPPING_RULE), &error);
 			if (dbus_error_is_set(&error)) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to add bus match: %s\n", error.message);
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Failed to add bus match: %s\n", error.message);
 				dbus_error_free(&error);
 				dbus_cleanup(handle);
 				return PCAP_ERROR;

@@ -310,7 +310,7 @@ pcap_activate_snoop(pcap_t *p)
 		p->linktype = DLT_NULL;
 		ll_hdrlen = 4;
 	} else {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "snoop: unknown physical layer type");
 		goto bad;
 	}

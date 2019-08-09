@@ -168,7 +168,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		}
 
 		if (nlh->nlmsg_len < sizeof(struct nlmsghdr) || (u_int)len < nlh->nlmsg_len) {
-			pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %zd) (nlmsg_len: %u)", len, nlh->nlmsg_len);
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Message truncated: (got: %zd) (nlmsg_len: %u)", len, nlh->nlmsg_len);
 			return -1;
 		}
 
@@ -190,7 +190,7 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 				const struct nfattr *payload_attr = NULL;
 
 				if (nlh->nlmsg_len < HDR_LENGTH) {
-					pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Malformed message: (nlmsg_len: %u)", nlh->nlmsg_len);
+					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE, "Malformed message: (nlmsg_len: %u)", nlh->nlmsg_len);
 					return -1;
 				}
 
@@ -301,7 +301,7 @@ netfilter_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int
 netfilter_inject_linux(pcap_t *handle, const void *buf _U_, int size _U_)
 {
-	pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packet injection is not supported on netfilter devices");
 	return (-1);
 }
@@ -513,7 +513,7 @@ netfilter_activate(pcap_t* handle)
 			char *end_dev;
 
 			if (group_count == 32) {
-				pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 						"Maximum 32 netfilter groups! dev: %s",
 						handle->opt.device);
 				return PCAP_ERROR;
@@ -522,7 +522,7 @@ netfilter_activate(pcap_t* handle)
 			group_id = strtol(dev, &end_dev, 0);
 			if (end_dev != dev) {
 				if (group_id < 0 || group_id > 65535) {
-					pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+					snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 							"Netfilter group range from 0 to 65535 (got %ld)",
 							group_id);
 					return PCAP_ERROR;
@@ -538,7 +538,7 @@ netfilter_activate(pcap_t* handle)
 	}
 
 	if (type == OTHER || *dev) {
-		pcap_snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
 				"Can't get netfilter group(s) index from %s",
 				handle->opt.device);
 		return PCAP_ERROR;

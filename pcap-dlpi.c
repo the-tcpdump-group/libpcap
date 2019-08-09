@@ -263,7 +263,7 @@ pcap_inject_dlpi(pcap_t *p, const void *buf, int size)
 	}
 #elif defined(DL_HP_RAWDLS)
 	if (pd->send_fd < 0) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "send: Output FD couldn't be opened");
 		return (-1);
 	}
@@ -412,7 +412,7 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 	if (*name == '/')
 		pcap_strlcpy(dname, name, sizeof(dname));
 	else
-		pcap_snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
+		snprintf(dname, sizeof(dname), "%s/%s", PCAP_DEV_PREFIX,
 		    name);
 
 	/*
@@ -470,7 +470,7 @@ open_dlpi_device(const char *name, u_int *ppa, char *errbuf)
 				 * interface is just a symptom of that
 				 * inability.
 				 */
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "%s: No DLPI device found", name);
 			} else {
 				if (errno == EPERM || errno == EACCES)
@@ -800,7 +800,7 @@ pcap_activate_dlpi(pcap_t *p)
 	get_release(release, sizeof (release), &osmajor, &osminor, &osmicro);
 	if (osmajor == 5 && (osminor <= 2 || (osminor == 3 && osmicro < 2)) &&
 	    getenv("BUFMOD_FIXED") == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		"WARNING: bufmod is broken in SunOS %s; ignoring snaplen.",
 		    release);
 		ss = 0;
@@ -875,7 +875,7 @@ split_dname(char *device, u_int *unitp, char *ebuf)
 	 */
 	cp = device + strlen(device) - 1;
 	if (*cp < '0' || *cp > '9') {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s missing unit number",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s missing unit number",
 		    device);
 		return (NULL);
 	}
@@ -887,16 +887,16 @@ split_dname(char *device, u_int *unitp, char *ebuf)
 	errno = 0;
 	unit = strtol(cp, &eos, 10);
 	if (*eos != '\0') {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s bad unit number", device);
 		return (NULL);
 	}
 	if (errno == ERANGE || unit > INT_MAX) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number too large",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number too large",
 		    device);
 		return (NULL);
 	}
 	if (unit < 0) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number is negative",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "%s unit number is negative",
 		    device);
 		return (NULL);
 	}
@@ -1110,7 +1110,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 		return (-1);
 	}
 	for (i = 0; i < buf.nunits; i++) {
-		pcap_snprintf(baname, sizeof baname, "ba%u", i);
+		snprintf(baname, sizeof baname, "ba%u", i);
 		/*
 		 * XXX - is there a notion of "up" and "running"?
 		 * And is there a way to determine whether the
@@ -1197,7 +1197,7 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 			break;
 
 		default:
-			pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+			snprintf(ebuf, PCAP_ERRBUF_SIZE,
 			    "recv_ack: %s: %s", what,
 			    dlstrerror(errmsgbuf, sizeof (errmsgbuf), dlp->error_ack.dl_errno));
 			if (dlp->error_ack.dl_errno == DL_BADPPA)
@@ -1209,14 +1209,14 @@ recv_ack(int fd, int size, const char *what, char *bufp, char *ebuf, int *uerror
 		return (PCAP_ERROR);
 
 	default:
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Unexpected primitive ack %s",
 		    what, dlprim(dlprimbuf, sizeof (dlprimbuf), dlp->dl_primitive));
 		return (PCAP_ERROR);
 	}
 
 	if (ctl.len < size) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "recv_ack: %s: Ack too small (%d < %d)",
 		    what, ctl.len, size);
 		return (PCAP_ERROR);
@@ -1327,7 +1327,7 @@ dlstrerror(char *errbuf, size_t errbufsize, bpf_u_int32 dl_errno)
 		return ("Pending outstanding connect indications");
 
 	default:
-		pcap_snprintf(errbuf, errbufsize, "Error %02x", dl_errno);
+		snprintf(errbuf, errbufsize, "Error %02x", dl_errno);
 		return (errbuf);
 	}
 }
@@ -1419,7 +1419,7 @@ dlprim(char *primbuf, size_t primbufsize, bpf_u_int32 prim)
 		return ("DL_RESET_CON");
 
 	default:
-		pcap_snprintf(primbuf, primbufsize, "unknown primitive 0x%x",
+		snprintf(primbuf, primbufsize, "unknown primitive 0x%x",
 		    prim);
 		return (primbuf);
 	}
@@ -1646,21 +1646,21 @@ get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
 		return (PCAP_ERROR);
 	}
 	if (ctl.len == -1) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa getmsg: control buffer has no data");
 		return (PCAP_ERROR);
 	}
 
 	dlp = (dl_hp_ppa_ack_t *)ctl.buf;
 	if (dlp->dl_primitive != DL_HP_PPA_ACK) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa unexpected primitive ack 0x%x",
 		    (bpf_u_int32)dlp->dl_primitive);
 		return (PCAP_ERROR);
 	}
 
 	if ((size_t)ctl.len < DL_HP_PPA_ACK_SIZE) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
 		     ctl.len, (unsigned long)DL_HP_PPA_ACK_SIZE);
 		return (PCAP_ERROR);
@@ -1683,12 +1683,12 @@ get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
 		return (PCAP_ERROR);
 	}
 	if (ctl.len == -1) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa getmsg: control buffer has no data");
 		return (PCAP_ERROR);
 	}
 	if ((u_int)ctl.len < dlp->dl_length) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "get_dlpi_ppa: hpppa ack too small (%d < %lu)",
 		    ctl.len, (unsigned long)dlp->dl_length);
 		free(ppa_data_buf);
@@ -1745,7 +1745,7 @@ get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
 		 * device number of a device with the name "/dev/<dev><unit>",
 		 * if such a device exists, as the old code did.
 		 */
-		pcap_snprintf(dname, sizeof(dname), "/dev/%s%u", device, unit);
+		snprintf(dname, sizeof(dname), "/dev/%s%u", device, unit);
 		if (stat(dname, &statbuf) < 0) {
 			pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 			    errno, "stat: %s", dname);
@@ -1764,12 +1764,12 @@ get_dlpi_ppa(register int fd, register const char *device, register u_int unit,
 		}
 	}
 	if (i == ap->dl_count) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "can't find /dev/dlpi PPA for %s%u", device, unit);
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
 	}
 	if (ip->dl_hdw_state == HDW_DEAD) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "%s%d: hardware state: DOWN\n", device, unit);
 		free(ppa_data_buf);
 		return (PCAP_ERROR);
@@ -1808,12 +1808,12 @@ get_dlpi_ppa(register int fd, register const char *ifname, register u_int unit,
 	if (cp != NULL)
 		ifname = cp + 1;
 	if (nlist(path_vmunix, &nl) < 0) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "nlist %s failed",
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "nlist %s failed",
 		    path_vmunix);
 		return (PCAP_ERROR);
 	}
 	if (nl[NL_IFNET].n_value == 0) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE,
 		    "could't find %s kernel symbol",
 		    nl[NL_IFNET].n_name);
 		return (PCAP_ERROR);
@@ -1844,7 +1844,7 @@ get_dlpi_ppa(register int fd, register const char *ifname, register u_int unit,
 		}
 	}
 
-	pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't find %s", ifname);
+	snprintf(ebuf, PCAP_ERRBUF_SIZE, "Can't find %s", ifname);
 	return (PCAP_ERROR_NO_SUCH_DEVICE);
 }
 
@@ -1865,7 +1865,7 @@ dlpi_kread(register int fd, register off_t addr,
 		    errno, "read");
 		return (-1);
 	} else if (cc != len) {
-		pcap_snprintf(ebuf, PCAP_ERRBUF_SIZE, "short read (%d != %d)", cc,
+		snprintf(ebuf, PCAP_ERRBUF_SIZE, "short read (%d != %d)", cc,
 		    len);
 		return (-1);
 	}

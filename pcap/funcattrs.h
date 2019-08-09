@@ -233,10 +233,10 @@
    * __attribute__((deprecated(msg))).
    */
   #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated))
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1500)) && !defined(BUILDING_PCAP)
+#elif (defined(_MSC_VER) && !defined(BUILDING_PCAP)
   /*
-   * MSVC from Visual Studio 2008 or later, and we're not building
-   * libpcap itself.
+   * MSVC, and we're not building libpcap itself; it's VS 2015
+   * or later, so we have the deprecated pragma.
    *
    * If we *are* building libpcap, we don't want this, as it'll warn
    * us even if we *define* the function.
@@ -251,11 +251,7 @@
  */
 #ifdef _MSC_VER
  #include <sal.h>
- #if _MSC_VER > 1400
-  #define PCAP_FORMAT_STRING(p) _Printf_format_string_ p
- #else
-  #define PCAP_FORMAT_STRING(p) __format_string p
- #endif
+ #define PCAP_FORMAT_STRING(p) _Printf_format_string_ p
 #else
  #define PCAP_FORMAT_STRING(p) p
 #endif

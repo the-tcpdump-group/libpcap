@@ -461,7 +461,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			/*
 			 * Message is shorter than an rpcap header.
 			 */
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "UDP packet message is shorter than an rpcap header");
 			return -1;
 		}
@@ -472,7 +472,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			 * Message is shorter than the header claims it
 			 * is.
 			 */
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "UDP packet message is shorter than its rpcap header claims");
 			return -1;
 		}
@@ -516,7 +516,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 			 * subtracting in order to avoid an
 			 * overflow.)
 			 */
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "Server sent us a message larger than the largest expected packet message");
 			return -1;
 		}
@@ -565,7 +565,7 @@ static int pcap_read_nocb_remote(pcap_t *p, struct pcap_pkthdr *pkt_header, u_ch
 
 	if (ntohl(net_pkt_header->caplen) > plen)
 	{
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Packet's captured data goes past the end of the received packet message.");
 		return -1;
 	}
@@ -886,7 +886,7 @@ static struct pcap_stat *rpcap_stats_rpcap(pcap_t *p, struct pcap_stat *ps, int 
 	if (mode != PCAP_STATS_STANDARD)
 #endif
 	{
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "Invalid stats mode %d", mode);
 		return NULL;
 	}
@@ -998,7 +998,7 @@ rpcap_remoteact_getsock(const char *host, int *error, char *errbuf)
 	retval = getaddrinfo(host, "0", &hints, &addrinfo);
 	if (retval != 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s",
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s",
 		    gai_strerror(retval));
 		*error = 1;
 		return NULL;
@@ -1253,7 +1253,7 @@ static int pcap_startcapture_remote(pcap_t *fp)
 			memset(&hints, 0, sizeof(struct addrinfo));
 			hints.ai_family = ai_family;		/* Use the same address family of the control socket */
 			hints.ai_socktype = (pr->rmt_flags & PCAP_OPENFLAG_DATATX_UDP) ? SOCK_DGRAM : SOCK_STREAM;
-			pcap_snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
+			snprintf(portdata, PCAP_BUF_SIZE, "%d", ntohs(startcapreply.portdata));
 
 			/* Let's the server pick up a free network port for us */
 			if (sock_initaddress(host, portdata, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)
@@ -1743,7 +1743,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			    mydataport) == -1)
 			{
 				/* Failed. */
-				pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
 				    "Can't allocate memory for new filter");
 				return -1;
 			}
@@ -1760,7 +1760,7 @@ static int pcap_createfilter_norpcappkt(pcap_t *fp, struct bpf_program *prog)
 			    myaddress, peeraddress, mydataport) == -1)
 			{
 				/* Failed. */
-				pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
 				    "Can't allocate memory for new filter");
 				return -1;
 			}
@@ -1816,12 +1816,12 @@ static int pcap_setsampling_remote(pcap_t *fp)
 	 * that do fit into the message.
 	 */
 	if (fp->rmt_samp.method < 0 || fp->rmt_samp.method > 255) {
-		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
 		    "Invalid sampling method %d", fp->rmt_samp.method);
 		return -1;
 	}
 	if (fp->rmt_samp.value < 0 || fp->rmt_samp.value > 65535) {
-		pcap_snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(fp->errbuf, PCAP_ERRBUF_SIZE,
 		    "Invalid sampling value %d", fp->rmt_samp.value);
 		return -1;
 	}
@@ -1930,7 +1930,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 				str_length = strlen(auth->username);
 				if (str_length > 65535)
 				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "User name is too long (> 65535 bytes)");
+					snprintf(errbuf, PCAP_ERRBUF_SIZE, "User name is too long (> 65535 bytes)");
 					return -1;
 				}
 				length += (uint16)str_length;
@@ -1940,7 +1940,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 				str_length = strlen(auth->password);
 				if (str_length > 65535)
 				{
-					pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Password is too long (> 65535 bytes)");
+					snprintf(errbuf, PCAP_ERRBUF_SIZE, "Password is too long (> 65535 bytes)");
 					return -1;
 				}
 				length += (uint16)str_length;
@@ -1948,7 +1948,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 			break;
 
 		default:
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication type not recognized.");
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication type not recognized.");
 			return -1;
 		}
 
@@ -2047,7 +2047,7 @@ static int rpcap_doauth(SOCKET sockctrl, SSL *ssl, uint8 *ver, struct pcap_rmtau
 			/*
 			 * Bogus - give up on this server.
 			 */
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "The server's minimum supported protocol version is greater than its maximum supported protocol version");
 			return -1;
 		}
@@ -2096,7 +2096,7 @@ novers:
 	/*
 	 * There is no version we both support; that is a fatal error.
 	 */
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(errbuf, PCAP_ERRBUF_SIZE,
 	    "The server doesn't support any protocol version that we support");
 	return -1;
 }
@@ -2105,7 +2105,7 @@ novers:
 static int
 pcap_getnonblock_rpcap(pcap_t *p)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Non-blocking mode isn't supported for capturing remotely with rpcap");
 	return (-1);
 }
@@ -2113,7 +2113,7 @@ pcap_getnonblock_rpcap(pcap_t *p)
 static int
 pcap_setnonblock_rpcap(pcap_t *p, int nonblock _U_)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Non-blocking mode isn't supported for capturing remotely with rpcap");
 	return (-1);
 }
@@ -2142,7 +2142,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 	 */
 	if (type != PCAP_SRC_IFREMOTE)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Non-remote interface passed to remote capture routine");
 		return -1;
 	}
@@ -2154,7 +2154,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 	 */
 	if (*uses_sslp && (rmt_flags & PCAP_OPENFLAG_DATATX_UDP))
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "TLS not supported with UDP forward of remote packets");
 		return -1;
 	}
@@ -2231,7 +2231,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 				return -1;
 			}
 #else
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "No TLS support");
 			sock_close(*sockctrlp, NULL, 0);
 			return -1;
@@ -2570,7 +2570,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 
 			if (findalldevs_if.namelen >= sizeof(tmpstring))
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Interface name too long");
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Interface name too long");
 				goto error;
 			}
 
@@ -2599,7 +2599,7 @@ pcap_findalldevs_ex_remote(const char *source, struct pcap_rmtauth *auth, pcap_i
 		{
 			if (findalldevs_if.desclen >= sizeof(tmpstring))
 			{
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Interface description too long");
+				snprintf(errbuf, PCAP_ERRBUF_SIZE, "Interface description too long");
 				goto error;
 			}
 
@@ -2851,7 +2851,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 			return (SOCKET)-1;
 		}
 #else
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "No TLS support");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "No TLS support");
 		sock_close(sockctrl, NULL, 0);
 		return (SOCKET)-1;
 #endif
@@ -2986,7 +2986,7 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	retval = getaddrinfo(host, "0", &hints, &addrinfo);
 	if (retval != 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "getaddrinfo() %s", gai_strerror(retval));
 		return -1;
 	}
 
@@ -3079,7 +3079,7 @@ int pcap_remoteact_close(const char *host, char *errbuf)
 	/* To avoid inconsistencies in the number of sock_init() */
 	sock_cleanup();
 
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The host you want to close the active connection is not known");
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "The host you want to close the active connection is not known");
 	return -1;
 }
 
@@ -3134,7 +3134,7 @@ int pcap_remoteact_list(char *hostlist, char sep, int size, char *errbuf)
 
 		if ((size < 0) || (len >= (size_t)size))
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "The string you provided is not able to keep "
+			snprintf(errbuf, PCAP_ERRBUF_SIZE, "The string you provided is not able to keep "
 				"the hostnames for all the active connections");
 			return -1;
 		}
@@ -3190,7 +3190,7 @@ static int rpcap_check_msg_ver(SOCKET sock, SSL *ssl, uint8 expected_ver, struct
 		 */
 		if (errbuf != NULL)
 		{
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "Server sent us a message with version %u when we were expecting %u",
 			    header->ver, expected_ver);
 		}
@@ -3250,17 +3250,17 @@ static int rpcap_check_msg_type(SOCKET sock, SSL *ssl, uint8 request_type, struc
 			if (request_type_string == NULL)
 			{
 				/* This should not happen. */
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "rpcap_check_msg_type called for request message with type %u",
 				    request_type);
 				return -1;
 			}
 			if (msg_type_string != NULL)
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "%s message received in response to a %s message",
 				    msg_type_string, request_type_string);
 			else
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "Message of unknown type %u message received in response to a %s request",
 				    header->type, request_type_string);
 		}
@@ -3312,7 +3312,7 @@ static int rpcap_recv(SOCKET sock, SSL *ssl, void *buffer, size_t toread, uint32
 	if (toread > *plen)
 	{
 		/* The server sent us a bad message */
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
 		return -1;
 	}
 	nread = sock_recv(sock, ssl, buffer, toread,
@@ -3343,7 +3343,7 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
-			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
 			return;
 		}
 
@@ -3369,7 +3369,7 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		    PCAP_ERRBUF_SIZE) == -1)
 		{
 			// Network error.
-			pcap_snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
+			snprintf(remote_errbuf, PCAP_ERRBUF_SIZE, "Read of error message from client failed: %s", errbuf);
 			return;
 		}
 
@@ -3454,7 +3454,7 @@ static int rpcap_read_packet_msg(struct pcap_rpcap const *rp, pcap_t *p, size_t 
 			 * Update the read pointer and byte count, and
 			 * return an error indication.
 			 */
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "The server terminated the connection.");
 			return -1;
 		}

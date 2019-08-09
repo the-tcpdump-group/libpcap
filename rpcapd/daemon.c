@@ -626,11 +626,11 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				msg_type_string = rpcap_msg_type_string(header.type);
 				if (msg_type_string != NULL)
 				{
-					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "%s request sent before authentication was completed", msg_type_string);
+					snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "%s request sent before authentication was completed", msg_type_string);
 				}
 				else
 				{
-					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message of type %u sent before authentication was completed", header.type);
+					snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message of type %u sent before authentication was completed", header.type);
 				}
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    header.ver, PCAP_ERR_WRONGMSG,
@@ -662,11 +662,11 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				msg_type_string = rpcap_msg_type_string(header.type);
 				if (msg_type_string != NULL)
 				{
-					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message %s received from client", msg_type_string);
+					snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message %s received from client", msg_type_string);
 				}
 				else
 				{
-					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message of type %u received from client", header.type);
+					snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message of type %u received from client", header.type);
 				}
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    header.ver, PCAP_ERR_WRONGMSG,
@@ -687,7 +687,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				//
 				// Unknown message type.
 				//
-				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
+				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    header.ver, PCAP_ERR_WRONGMSG,
 				    errmsgbuf, errbuf) == -1)
@@ -1036,12 +1036,12 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				if (msg_type_string != NULL)
 				{
 					rpcapd_log(LOGPRIO_INFO, "The client sent a %s server-to-client message", msg_type_string);
-					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message %s received from client", msg_type_string);
+					snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message %s received from client", msg_type_string);
 				}
 				else
 				{
 					rpcapd_log(LOGPRIO_INFO, "The client sent a server-to-client message of type %u", header.type);
-					pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message of type %u received from client", header.type);
+					snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Server-to-client message of type %u received from client", header.type);
 				}
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    header.ver, PCAP_ERR_WRONGMSG,
@@ -1063,7 +1063,7 @@ daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
 				// Unknown message type.
 				//
 				rpcapd_log(LOGPRIO_INFO, "The client sent a message of type %u", header.type);
-				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
+				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Unknown message type %u", header.type);
 				if (rpcap_senderror(pars.sockctrl, pars.ssl,
 				    header.ver, PCAP_ERR_WRONGMSG,
 				    errbuf, errmsgbuf) == -1)
@@ -1222,7 +1222,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			if (!pars->nullAuthAllowed)
 			{
 				// Send the client an error reply.
-				pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
 				    "Authentication failed; NULL authentication not permitted.");
 				if (rpcap_senderror(pars->sockctrl, pars->ssl,
 				    0, PCAP_ERR_AUTH_FAILED, errmsgbuf, errbuf) == -1)
@@ -1322,7 +1322,7 @@ daemon_msg_auth_req(struct daemon_slpars *pars, uint32 plen)
 			}
 
 		default:
-			pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errmsgbuf, PCAP_ERRBUF_SIZE,
 			    "Authentication type not recognized.");
 			if (rpcap_senderror(pars->sockctrl, pars->ssl,
 			    0, PCAP_ERR_AUTH_TYPE_NOTSUP, errmsgbuf, errbuf) == -1)
@@ -1462,7 +1462,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// This call is needed to get the uid
 	if ((user = getpwnam(username)) == NULL)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
 	}
 
@@ -1470,7 +1470,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	// This call is needed to get the password; otherwise 'x' is returned
 	if ((usersp = getspnam(username)) == NULL)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
 	}
 	user_password = usersp->sp_pwdp;
@@ -1490,7 +1490,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 	if (strcmp(user_password, (char *) crypt(password, user_password)) != 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Authentication failed: user name or password incorrect");
 		return -1;
 	}
 
@@ -1733,7 +1733,7 @@ daemon_msg_open_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 
 	if (plen > sourcelen - 1)
 	{
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Source string too long");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Source string too long");
 		goto error;
 	}
 
@@ -1861,7 +1861,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	// to enforce encryption, as SSL is not supported yet with UDP:
 	if (uses_ssl && (startcapreq.flags & RPCAP_STARTCAPREQ_FLAG_DGRAM))
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "SSL not supported with UDP forward of remote packets");
 		goto error;
 	}
@@ -1870,7 +1870,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	session = malloc(sizeof(struct session));
 	if (session == NULL)
 	{
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Can't allocate session structure");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Can't allocate session structure");
 		goto error;
 	}
 
@@ -1937,7 +1937,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	// Now we have to create a new socket to send packets
 	if (serveropen_dp)		// Data connection is opened by the server toward the client
 	{
-		pcap_snprintf(portdata, sizeof portdata, "%d", ntohs(startcapreq.portdata));
+		snprintf(portdata, sizeof portdata, "%d", ntohs(startcapreq.portdata));
 
 		// Get the name of the other peer (needed to connect to that specific network address)
 		if (getnameinfo((struct sockaddr *) &saddr, saddrlen, peerhost,
@@ -2078,7 +2078,7 @@ daemon_msg_startcap_req(uint8 ver, struct daemon_slpars *pars, uint32 plen,
 	    (void *) session, 0, NULL);
 	if (session->thread == 0)
 	{
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error creating the data thread");
 		goto error;
 	}
 #else
@@ -2195,7 +2195,7 @@ daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session
 
 	if (ntohs(filter.filtertype) != RPCAP_UPDATEFILTER_BPF)
 	{
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Only BPF/NPF filters are currently supported");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Only BPF/NPF filters are currently supported");
 		return -2;
 	}
 
@@ -2235,13 +2235,13 @@ daemon_unpackapplyfilter(SOCKET sockctrl, SSL *ctrl_ssl, struct session *session
 	//
 	if (bpf_validate(bf_prog.bf_insns, bf_prog.bf_len) == 0)
 	{
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "The filter contains bogus instructions");
 		return -2;
 	}
 
 	if (pcap_setfilter(session->fp, &bf_prog))
 	{
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "RPCAP error: %s", pcap_geterr(session->fp));
 		return -2;
 	}
 
@@ -2396,7 +2396,7 @@ daemon_msg_stats_req(uint8 ver, struct daemon_slpars *pars,
 	{
 		if (pcap_stats(session->fp, stats) == -1)
 		{
-			pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "%s", pcap_geterr(session->fp));
+			snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "%s", pcap_geterr(session->fp));
 			goto error;
 		}
 
@@ -2627,7 +2627,7 @@ daemon_thrdatamain(void *ptr)
 		// The latter just means that the client told us to stop
 		// capturing, so there's no error to report.
 		//
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error reading the packets: %s", pcap_geterr(session->fp));
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Error reading the packets: %s", pcap_geterr(session->fp));
 		rpcap_senderror(session->sockctrl, session->ctrl_ssl, session->protocol_version,
 		    PCAP_ERR_READEX, errbuf, NULL);
 	}
@@ -2774,7 +2774,7 @@ rpcapd_recv(SOCKET sock, SSL *ssl, char *buffer, size_t toread, uint32 *plen, ch
 	if (toread > *plen)
 	{
 		// Tell the client and continue.
-		pcap_snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
+		snprintf(errmsgbuf, PCAP_ERRBUF_SIZE, "Message payload is too short");
 		return -2;
 	}
 	nread = sock_recv(sock, ssl, buffer, toread,

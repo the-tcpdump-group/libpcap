@@ -522,7 +522,7 @@ bpf_open(char *errbuf)
 		 * that isn't in use.
 		 */
 		do {
-			(void)pcap_snprintf(device, sizeof(device), "/dev/bpf%d", n++);
+			(void)snprintf(device, sizeof(device), "/dev/bpf%d", n++);
 			/*
 			 * Initially try a read/write open (to allow the inject
 			 * method to work).  If that fails due to permission
@@ -557,7 +557,7 @@ bpf_open(char *errbuf)
 				 * means we probably have no BPF
 				 * devices.
 				 */
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "(there are no BPF devices)");
 			} else {
 				/*
@@ -566,7 +566,7 @@ bpf_open(char *errbuf)
 				 * devices, but all the ones
 				 * that exist are busy.
 				 */
-				pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				    "(all BPF devices are busy)");
 			}
 			break;
@@ -1033,7 +1033,7 @@ pcap_read_bpf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 				 * documented as having error returns
 				 * other than PCAP_ERROR or PCAP_ERROR_BREAK.
 				 */
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "The interface disappeared");
 				return (PCAP_ERROR);
 
@@ -1254,7 +1254,7 @@ bpf_odminit(char *errbuf)
 	if (odm_initialize() == -1) {
 		if (odm_err_msg(odmerrno, &errstr) == -1)
 			errstr = "Unknown error";
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_initialize failed: %s",
 		    errstr);
 		return (PCAP_ERROR);
@@ -1263,7 +1263,7 @@ bpf_odminit(char *errbuf)
 	if ((odmlockid = odm_lock("/etc/objrepos/config_lock", ODM_WAIT)) == -1) {
 		if (odm_err_msg(odmerrno, &errstr) == -1)
 			errstr = "Unknown error";
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "bpf_load: odm_lock of /etc/objrepos/config_lock failed: %s",
 		    errstr);
 		(void)odm_terminate();
@@ -1282,7 +1282,7 @@ bpf_odmcleanup(char *errbuf)
 		if (errbuf != NULL) {
 			if (odm_err_msg(odmerrno, &errstr) == -1)
 				errstr = "Unknown error";
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: odm_unlock failed: %s",
 			    errstr);
 		}
@@ -1293,7 +1293,7 @@ bpf_odmcleanup(char *errbuf)
 		if (errbuf != NULL) {
 			if (odm_err_msg(odmerrno, &errstr) == -1)
 				errstr = "Unknown error";
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "bpf_load: odm_terminate failed: %s",
 			    errstr);
 		}
@@ -1356,7 +1356,7 @@ bpf_load(char *errbuf)
 
 	if (rc == -1 || getmajor(sbuf.st_rdev) != major) {
 		for (i = 0; i < BPF_MINORS; i++) {
-			pcap_snprintf(buf, sizeof(buf), "%s%d", BPF_NODE, i);
+			snprintf(buf, sizeof(buf), "%s%d", BPF_NODE, i);
 			unlink(buf);
 			if (mknod(buf, S_IRUSR | S_IFCHR, domakedev(major, i)) == -1) {
 				pcap_fmt_errmsg_for_errno(errbuf,
@@ -1369,7 +1369,7 @@ bpf_load(char *errbuf)
 
 	/* Check if the driver is loaded */
 	memset(&cfg_ld, 0x0, sizeof(cfg_ld));
-	pcap_snprintf(buf, sizeof(buf), "%s/%s", DRIVER_PATH, BPF_NAME);
+	snprintf(buf, sizeof(buf), "%s/%s", DRIVER_PATH, BPF_NAME);
 	cfg_ld.path = buf;
 	if ((sysconfig(SYS_QUERYLOAD, (void *)&cfg_ld, sizeof(cfg_ld)) == -1) ||
 	    (cfg_ld.kmid == 0)) {
@@ -1686,7 +1686,7 @@ pcap_activate_bpf(pcap_t *p)
 	}
 	if (bv.bv_major != BPF_MAJOR_VERSION ||
 	    bv.bv_minor < BPF_MINOR_VERSION) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "kernel bpf filter out of date");
 		status = PCAP_ERROR;
 		goto bad;
@@ -1726,7 +1726,7 @@ pcap_activate_bpf(pcap_t *p)
 		char *lnamep;
 
 		if (ifr.lifr_zoneid != GLOBAL_ZONEID) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "zonename/linkname only valid in global zone.");
 			status = PCAP_ERROR;
 			goto bad;
@@ -1889,7 +1889,7 @@ pcap_activate_bpf(pcap_t *p)
 				 * "atexit()" failed; don't create the
 				 * interface, just give up.
 				 */
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				     "atexit failed");
 				close(s);
 				status = PCAP_ERROR;
@@ -1902,7 +1902,7 @@ pcap_activate_bpf(pcap_t *p)
 			pcap_strlcpy(ifr.ifr_name, p->opt.device, sizeof(ifr.ifr_name));
 			if (ioctl(s, SIOCIFCREATE2, &ifr) < 0) {
 				if (errno == EINVAL) {
-					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+					snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 					    "Invalid USB bus interface %s",
 					    p->opt.device);
 				} else {
@@ -2073,7 +2073,7 @@ pcap_activate_bpf(pcap_t *p)
 			}
 
 			if (v == 0) {
-				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 				    "BIOCSBLEN: %s: No buffer size worked",
 				    p->opt.device);
 				status = PCAP_ERROR;
@@ -2117,7 +2117,7 @@ pcap_activate_bpf(pcap_t *p)
 		/*
 		 * We don't know what to map this to yet.
 		 */
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown interface type %u",
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown interface type %u",
 		    v);
 		status = PCAP_ERROR;
 		goto bad;
@@ -2429,7 +2429,7 @@ pcap_activate_bpf(pcap_t *p)
 		/*
 		 * We don't support immediate mode.  Fail.
 		 */
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Immediate mode not supported");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "Immediate mode not supported");
 		status = PCAP_ERROR;
 		goto bad;
 	}
@@ -3281,7 +3281,7 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 	 * We don't support PCAP_D_OUT.
 	 */
 	if (d == PCAP_D_OUT) {
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+		snprintf(p->errbuf, sizeof(p->errbuf),
 		    "Setting direction to PCAP_D_OUT is not supported on BPF");
 		return -1;
 	}
@@ -3299,7 +3299,7 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d _U_)
 {
-	(void) pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+	(void) snprintf(p->errbuf, sizeof(p->errbuf),
 	    "This system doesn't support BIOCSSEESENT, so the direction can't be set");
 	return (-1);
 }

@@ -315,7 +315,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 pcap_t *
 pcap_create_interface(const char *device, char *errbuf)
 {
-  pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+  snprintf(errbuf, PCAP_ERRBUF_SIZE,
                 "This version of libpcap only supports Septel cards");
   return (NULL);
 }

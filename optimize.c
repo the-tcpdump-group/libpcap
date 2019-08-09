@@ -2069,7 +2069,7 @@ opt_error(opt_state_t *opt_state, const char *fmt, ...)
 
 	if (opt_state->errbuf != NULL) {
 		va_start(ap, fmt);
-		(void)pcap_vsnprintf(opt_state->errbuf,
+		(void)vsnprintf(opt_state->errbuf,
 		    PCAP_ERRBUF_SIZE, fmt, ap);
 		va_end(ap);
 	}
@@ -2486,7 +2486,7 @@ icode_to_fcode(struct icode *ic, struct block *root, u_int *lenp,
 
 	    fp = (struct bpf_insn *)malloc(sizeof(*fp) * n);
 	    if (fp == NULL) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "malloc");
 		free(fp);
 		return NULL;
@@ -2513,7 +2513,7 @@ conv_error(conv_state_t *conv_state, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	(void)pcap_vsnprintf(conv_state->errbuf,
+	(void)vsnprintf(conv_state->errbuf,
 	    PCAP_ERRBUF_SIZE, fmt, ap);
 	va_end(ap);
 	longjmp(conv_state->top_ctx, 1);
@@ -2537,7 +2537,7 @@ install_bpf_program(pcap_t *p, struct bpf_program *fp)
 	 * Validate the program.
 	 */
 	if (!pcap_validate_filter(fp->bf_insns, fp->bf_len)) {
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+		snprintf(p->errbuf, sizeof(p->errbuf),
 			"BPF program is not valid");
 		return (-1);
 	}

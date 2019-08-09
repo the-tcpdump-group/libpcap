@@ -158,7 +158,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 			}
 		}
 		if (cc < sizeof(*sp)) {
-			pcap_snprintf(pc->errbuf, sizeof(pc->errbuf),
+			snprintf(pc->errbuf, sizeof(pc->errbuf),
 			    "pf short read (%d)", cc);
 			return (-1);
 		}
@@ -168,7 +168,7 @@ pcap_read_pf(pcap_t *pc, int cnt, pcap_handler callback, u_char *user)
 		} else
 			sp = (struct enstamp *)bp;
 		if (sp->ens_stamplen != sizeof(*sp)) {
-			pcap_snprintf(pc->errbuf, sizeof(pc->errbuf),
+			snprintf(pc->errbuf, sizeof(pc->errbuf),
 			    "pf short stamplen (%d)",
 			    sp->ens_stamplen);
 			return (-1);
@@ -327,7 +327,7 @@ pcap_activate_pf(pcap_t *p)
 		p->fd = pfopen(p->opt.device, O_RDONLY);
 	if (p->fd < 0) {
 		if (errno == EACCES) {
-			pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "pf open: %s: Permission denied\n"
 "your system may not be properly configured; see the packetfilter(4) man page",
 			    p->opt.device);
@@ -460,7 +460,7 @@ pcap_activate_pf(pcap_t *p)
 		 * framing", there's not much we can do, as that
 		 * doesn't specify a particular type of header.
 		 */
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 		    "unknown data-link type %u", devparams.end_dev_type);
 		err = PCAP_ERROR;
 		goto bad;

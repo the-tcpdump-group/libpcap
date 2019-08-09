@@ -75,7 +75,7 @@ int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t er
 	ctx = SSL_CTX_new(meth);
 	if (! ctx)
 	{
-		pcap_snprintf(errbuf, errbuflen, "Cannot get a new SSL context: %s", ERR_error_string(ERR_get_error(), NULL));
+		snprintf(errbuf, errbuflen, "Cannot get a new SSL context: %s", ERR_error_string(ERR_get_error(), NULL));
 		goto die;
 	}
 
@@ -86,14 +86,14 @@ int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t er
 		char const *certfile = ssl_certfile[0] ? ssl_certfile : "cert.pem";
 		if (1 != SSL_CTX_use_certificate_file(ctx, certfile, SSL_FILETYPE_PEM))
 		{
-			pcap_snprintf(errbuf, errbuflen, "Cannot read certificate file %s: %s", certfile, ERR_error_string(ERR_get_error(), NULL));
+			snprintf(errbuf, errbuflen, "Cannot read certificate file %s: %s", certfile, ERR_error_string(ERR_get_error(), NULL));
 			goto die;
 		}
 
 		char const *keyfile = ssl_keyfile[0] ? ssl_keyfile : "key.pem";
 		if (1 != SSL_CTX_use_PrivateKey_file(ctx, keyfile, SSL_FILETYPE_PEM))
 		{
-			pcap_snprintf(errbuf, errbuflen, "Cannot read private key file %s: %s", keyfile, ERR_error_string(ERR_get_error(), NULL));
+			snprintf(errbuf, errbuflen, "Cannot read private key file %s: %s", keyfile, ERR_error_string(ERR_get_error(), NULL));
 			goto die;
 		}
 	}
@@ -103,7 +103,7 @@ int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t er
 		{
 			if (! SSL_CTX_load_verify_locations(ctx, ssl_rootfile, 0))
 			{
-				pcap_snprintf(errbuf, errbuflen, "Cannot read CA list from %s", ssl_rootfile);
+				snprintf(errbuf, errbuflen, "Cannot read CA list from %s", ssl_rootfile);
 				goto die;
 			}
 		}
@@ -116,7 +116,7 @@ int ssl_init_once(int is_server, int enable_compression, char *errbuf, size_t er
 #if 0
 	if (! RAND_load_file(RANDOM, 1024*1024))
 	{
-		pcap_snprintf(errbuf, errbuflen, "Cannot init random");
+		snprintf(errbuf, errbuflen, "Cannot init random");
 		goto die;
 	}
 
@@ -144,13 +144,13 @@ SSL *ssl_promotion(int is_server, SOCKET s, char *errbuf, size_t errbuflen)
 
 	if (is_server) {
 		if (SSL_accept(ssl) <= 0) {
-			pcap_snprintf(errbuf, errbuflen, "SSL_accept(): %s",
+			snprintf(errbuf, errbuflen, "SSL_accept(): %s",
 					ERR_error_string(ERR_get_error(), NULL));
 			return NULL;
 		}
 	} else {
 		if (SSL_connect(ssl) <= 0) {
-			pcap_snprintf(errbuf, errbuflen, "SSL_connect(): %s",
+			snprintf(errbuf, errbuflen, "SSL_connect(): %s",
 					ERR_error_string(ERR_get_error(), NULL));
 			return NULL;
 		}
@@ -201,7 +201,7 @@ int ssl_send(SSL *ssl, char const *buffer, int size, char *errbuf, size_t errbuf
 			if (errno == ECONNRESET || errno == EPIPE) return -2;
 #endif
 		}
-		pcap_snprintf(errbuf, errbuflen, "SSL_write(): %s",
+		snprintf(errbuf, errbuflen, "SSL_write(): %s",
 		    ERR_error_string(ERR_get_error(), NULL));
 		return -1;
 	}
@@ -225,7 +225,7 @@ int ssl_recv(SSL *ssl, char *buffer, int size, char *errbuf, size_t errbuflen)
 		else
 		{
 			// Should not happen
-			pcap_snprintf(errbuf, errbuflen, "SSL_read(): %s",
+			snprintf(errbuf, errbuflen, "SSL_read(): %s",
 			    ERR_error_string(ERR_get_error(), NULL));
 			return -2;
 		}

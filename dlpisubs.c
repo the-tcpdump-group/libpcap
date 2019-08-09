@@ -300,7 +300,7 @@ pcap_process_mactype(pcap_t *p, u_int mactype)
 #endif
 
 	default:
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype 0x%x",
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "unknown mactype 0x%x",
 		    mactype);
 		retv = -1;
 	}

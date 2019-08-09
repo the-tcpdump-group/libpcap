@@ -106,7 +106,7 @@ sf_setnonblock(pcap_t *p, int nonblock _U_)
 	 * as it would have to handle reading partial packets and
 	 * keeping the state of the read.)
 	 */
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Savefiles cannot be put into non-blocking mode");
 	return (-1);
 }
@@ -114,7 +114,7 @@ sf_setnonblock(pcap_t *p, int nonblock _U_)
 static int
 sf_stats(pcap_t *p, struct pcap_stat *ps _U_)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from savefiles");
 	return (-1);
 }
@@ -123,7 +123,7 @@ sf_stats(pcap_t *p, struct pcap_stat *ps _U_)
 static struct pcap_stat *
 sf_stats_ex(pcap_t *p, int *size)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from savefiles");
 	return (NULL);
 }
@@ -131,7 +131,7 @@ sf_stats_ex(pcap_t *p, int *size)
 static int
 sf_setbuff(pcap_t *p, int dim)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The kernel buffer size cannot be set while reading from a file");
 	return (-1);
 }
@@ -139,7 +139,7 @@ sf_setbuff(pcap_t *p, int dim)
 static int
 sf_setmode(pcap_t *p, int mode)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "impossible to set mode while reading from a file");
 	return (-1);
 }
@@ -147,7 +147,7 @@ sf_setmode(pcap_t *p, int mode)
 static int
 sf_setmintocopy(pcap_t *p, int size)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set while reading from a file");
 	return (-1);
 }
@@ -155,7 +155,7 @@ sf_setmintocopy(pcap_t *p, int size)
 static HANDLE
 sf_getevent(pcap_t *pcap)
 {
-	(void)pcap_snprintf(pcap->errbuf, sizeof(pcap->errbuf),
+	(void)snprintf(pcap->errbuf, sizeof(pcap->errbuf),
 	    "The read event cannot be retrieved while reading from a file");
 	return (INVALID_HANDLE_VALUE);
 }
@@ -164,7 +164,7 @@ static int
 sf_oid_get_request(pcap_t *p, bpf_u_int32 oid _U_, void *data _U_,
     size_t *lenp _U_)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID get request cannot be performed on a file");
 	return (PCAP_ERROR);
 }
@@ -173,7 +173,7 @@ static int
 sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
     size_t *lenp _U_)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "An OID set request cannot be performed on a file");
 	return (PCAP_ERROR);
 }
@@ -189,7 +189,7 @@ sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
 static int
 sf_setuserbuffer(pcap_t *p, int size)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The user buffer cannot be set when reading from a file");
 	return (-1);
 }
@@ -197,7 +197,7 @@ sf_setuserbuffer(pcap_t *p, int size)
 static int
 sf_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed when reading from a file");
 	return (-1);
 }
@@ -205,7 +205,7 @@ sf_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
 static int
 sf_live_dump_ended(pcap_t *p, int sync)
 {
-	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
 	return (-1);
 }
@@ -232,7 +232,7 @@ sf_inject(pcap_t *p, const void *buf _U_, int size _U_)
 static int
 sf_setdirection(pcap_t *p, pcap_direction_t d _U_)
 {
-	pcap_snprintf(p->errbuf, sizeof(p->errbuf),
+	snprintf(p->errbuf, sizeof(p->errbuf),
 	    "Setting direction is not supported on savefiles");
 	return (-1);
 }
@@ -255,7 +255,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	pcap_t *p;
 
 	if (fname == NULL) {
-		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "A null pointer was supplied as the file name");
 		return (NULL);
 	}
@@ -394,7 +394,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "error reading dump file");
 		} else {
-			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "truncated dump file; tried to read %zu file header bytes, only got %zu",
 			    sizeof(magic), amt_read);
 		}
@@ -421,7 +421,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	/*
 	 * Well, who knows what this mess is....
 	 */
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
+	snprintf(errbuf, PCAP_ERRBUF_SIZE, "unknown file format");
 	return (NULL);
 
 found:

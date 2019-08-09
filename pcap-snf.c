@@ -234,7 +234,7 @@ snf_activate(pcap_t* p)
 	int flags = -1, ring_id = -1;
 
 	if (device == NULL) {
-		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
+		snprintf(p->errbuf, PCAP_ERRBUF_SIZE, "device is NULL");
 		return -1;
 	}
 
@@ -336,7 +336,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 	const char *nr = NULL;
 
 	if (snf_init(SNF_VERSION_API)) {
-		(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "snf_getifaddrs: snf_init failed");
 		return (-1);
 	}
@@ -351,7 +351,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		errno = 0;
 		merge = strtol(nr, NULL, 0);
 		if (errno) {
-			(void)pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			(void)snprintf(errbuf, PCAP_ERRBUF_SIZE,
 				"snf_getifaddrs: SNF_FLAGS is not a valid number");
 			return (-1);
 		}
@@ -389,7 +389,7 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		 * entry for the device, if they're not already in the
 		 * list of IP addresses for the device?
  		 */
-		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
+		(void)snprintf(desc,MAX_DESC_LENGTH,"Myricom %ssnf%d",
 			merge ? "Merge Bitmask Port " : "",
 			merge ? 1 << ifa->snf_ifa_portnum : ifa->snf_ifa_portnum);
 		/*
@@ -465,8 +465,8 @@ snf_findalldevs(pcap_if_list_t *devlistp, char *errbuf)
 		/*
 		 * Add a new entry with all ports bitmask
 		 */
-		(void)pcap_snprintf(name,MAX_DESC_LENGTH,"snf%d",allports);
-		(void)pcap_snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
+		(void)snprintf(name,MAX_DESC_LENGTH,"snf%d",allports);
+		(void)snprintf(desc,MAX_DESC_LENGTH,"Myricom Merge Bitmask All Ports snf%d",
 			allports);
 		/*
 		 * XXX - is there any notion of "up" and "running" that
@@ -586,7 +586,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 pcap_t *
 pcap_create_interface(const char *device, char *errbuf)
 {
-	pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
+	snprintf(errbuf, PCAP_ERRBUF_SIZE,
 	    "This version of libpcap only supports SNF cards");
 	return NULL;
 }

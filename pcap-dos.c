@@ -215,7 +215,7 @@ static int pcap_activate_dos (pcap_t *pcap)
   }
   else if (stricmp(active_dev->name,pcap->opt.device))
   {
-    pcap_snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
+    snprintf (pcap->errbuf, PCAP_ERRBUF_SIZE,
                    "Cannot use different devices simultaneously "
                    "(`%s' vs. `%s')", active_dev->name, pcap->opt.device);
     /* XXX - free pcap->buffer? */
@@ -539,7 +539,7 @@ int pcap_lookupnet (const char *device, bpf_u_int32 *localnet,
        net = IN_CLASSC_NET;
     else
     {
-      pcap_snprintf (errbuf, PCAP_ERRBUF_SIZE, "inet class for 0x%lx unknown", mask);
+      snprintf (errbuf, PCAP_ERRBUF_SIZE, "inet class for 0x%lx unknown", mask);
       return (-1);
     }
   }
@@ -667,7 +667,7 @@ open_driver (const char *dev_name, char *ebuf, int promisc)
 
       if (!(*dev->probe)(dev))    /* call the xx_probe() function */
       {
-        pcap_snprintf (ebuf, PCAP_ERRBUF_SIZE, "failed to detect device `%s'", dev_name);
+        snprintf (ebuf, PCAP_ERRBUF_SIZE, "failed to detect device `%s'", dev_name);
         return (NULL);
       }
       probed_dev = dev;  /* device is probed okay and may be used */
@@ -689,7 +689,7 @@ open_driver (const char *dev_name, char *ebuf, int promisc)
 
     if (!(*dev->open)(dev))
     {
-      pcap_snprintf (ebuf, PCAP_ERRBUF_SIZE, "failed to activate device `%s'", dev_name);
+      snprintf (ebuf, PCAP_ERRBUF_SIZE, "failed to activate device `%s'", dev_name);
       if (pktInfo.error && !strncmp(dev->name,"pkt",3))
       {
         strcat (ebuf, ": ");
@@ -711,14 +711,14 @@ open_driver (const char *dev_name, char *ebuf, int promisc)
    */
   if (!dev)
   {
-    pcap_snprintf (ebuf, PCAP_ERRBUF_SIZE, "device `%s' not supported", dev_name);
+    snprintf (ebuf, PCAP_ERRBUF_SIZE, "device `%s' not supported", dev_name);
     return (NULL);
   }
 
 not_probed:
   if (!probed_dev)
   {
-    pcap_snprintf (ebuf, PCAP_ERRBUF_SIZE, "device `%s' not probed", dev_name);
+    snprintf (ebuf, PCAP_ERRBUF_SIZE, "device `%s' not probed", dev_name);
     return (NULL);
   }
   return (dev);
@@ -1005,7 +1005,7 @@ static int init_watt32 (struct pcap *pcap, const char *dev_name, char *err_buf)
   }
   else if (rc && using_pktdrv)
   {
-    pcap_snprintf (err_buf, PCAP_ERRBUF_SIZE, "sock_init() failed, code %d", rc);
+    snprintf (err_buf, PCAP_ERRBUF_SIZE, "sock_init() failed, code %d", rc);
     return (0);
   }
 
