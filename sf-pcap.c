@@ -195,7 +195,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 			    errno, "error reading dump file");
 		} else {
 			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %" PRIsize " file header bytes, only got %" PRIsize,
+			    "truncated dump file; tried to read %zu file header bytes, only got %zu",
 			    sizeof(hdr), amt_read);
 		}
 		*err = 1;
@@ -462,7 +462,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 		} else {
 			if (amt_read != 0) {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %" PRIsize " header bytes, only got %" PRIsize,
+				    "truncated dump file; tried to read %zu header bytes, only got %zu",
 				    ps->hdrsize, amt_read);
 				return (-1);
 			}
@@ -622,7 +622,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				 * the read finished.
 				 */
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %u captured bytes, only got %" PRIsize,
+				    "truncated dump file; tried to read %u captured bytes, only got %zu",
 				    p->snapshot, amt_read);
 			}
 			return (-1);
@@ -646,7 +646,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 					    "error reading dump file");
 				} else {
 					pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-					    "truncated dump file; tried to read %u captured bytes, only got %" PRIsize,
+					    "truncated dump file; tried to read %u captured bytes, only got %zu",
 					    hdr->caplen, bytes_read);
 				}
 				return (-1);
@@ -698,7 +698,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 				    "error reading dump file");
 			} else {
 				pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "truncated dump file; tried to read %u captured bytes, only got %" PRIsize,
+				    "truncated dump file; tried to read %u captured bytes, only got %zu",
 				    hdr->caplen, amt_read);
 			}
 			return (-1);
