@@ -49,6 +49,8 @@
  * If the target is MS-DOS, we assume we have <inttypes.h> - and support
  * for %zu in the formatted printing functions.
  */
+#include <inttypes.h>
+
 #if defined(_MSC_VER)
   /*
    * Compiler is MSVC.  Make sure we have VS 2015 or later.
