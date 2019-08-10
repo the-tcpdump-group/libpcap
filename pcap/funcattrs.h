@@ -233,7 +233,7 @@
    * __attribute__((deprecated(msg))).
    */
   #define PCAP_DEPRECATED(func, msg)	__attribute__((deprecated))
-#elif (defined(_MSC_VER) && !defined(BUILDING_PCAP)
+#elif defined(_MSC_VER) && !defined(BUILDING_PCAP)
   /*
    * MSVC, and we're not building libpcap itself; it's VS 2015
    * or later, so we have the deprecated pragma.
