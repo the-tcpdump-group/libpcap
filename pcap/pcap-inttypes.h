@@ -48,8 +48,9 @@
  *
  * If the target is MS-DOS, we assume we have <inttypes.h> - and support
  * for %zu in the formatted printing functions.
+ *
+ * I.e., assume we have <inttypes.h> and that it suffices.
  */
-#include <inttypes.h>
 
 #if defined(_MSC_VER)
   /*
@@ -58,50 +59,13 @@
   #if _MSC_VER < 1900
     #error "Building libpcap requires VS 2015 or later"
   #endif
-
-  /*
-   * These may be defined by <inttypes.h>.
-   *
-   * XXX - given the assumptions above, will they ever *not* be
-   * defined by <inttypes.h>?
-   *
-   * XXX - for MSVC, we always want the _MSC_EXTENSIONS versions.
-   * What about other compilers?  If, as the MinGW Web site says MinGW
-   * does, the other compilers just use Microsoft's run-time library,
-   * then they should probably use the _MSC_EXTENSIONS even if the
-   * compiler doesn't define _MSC_EXTENSIONS.
-   */
-  #ifndef PRId64
-    #ifdef _MSC_EXTENSIONS
-      #define PRId64	"I64d"
-    #else
-      #define PRId64	"lld"
-    #endif
-  #endif /* PRId64 */
-
-  #ifndef PRIo64
-    #ifdef _MSC_EXTENSIONS
-      #define PRIo64	"I64o"
-    #else
-      #define PRIo64	"llo"
-    #endif
-  #endif /* PRIo64 */
-
-  #ifndef PRIx64
-    #ifdef _MSC_EXTENSIONS
-      #define PRIx64	"I64x"
-    #else
-      #define PRIx64	"llx"
-    #endif
-  #endif
-
-  #ifndef PRIu64
-    #ifdef _MSC_EXTENSIONS
-      #define PRIu64	"I64u"
-    #else
-      #define PRIu64	"llu"
-    #endif
-  #endif
 #endif
+
+/*
+ * XXX - somehow make sure we have enough C99 support with other
+ * compilers and support libraries?
+ */
+
+#include <inttypes.h>
 
 #endif /* pcap/pcap-inttypes.h */
