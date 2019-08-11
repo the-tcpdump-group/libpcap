@@ -32,7 +32,25 @@
 #define pcap_pcap_inttypes_h
 
 /*
- * Get the integer types and PRi[doux]64 values from C99 <inttypes.h>
+ * If we're compiling with Visual Studio, make sure we have at least
+ * VS 2015 or later, so we have sufficient C99 support.
+ *
+ * XXX - verify that we have at least C99 support on UN*Xes?
+ *
+ * What about MinGW or various DOS toolchains?  We're currently assuming
+ * sufficient C99 support there.
+ */
+#if defined(_MSC_VER)
+  /*
+   * Compiler is MSVC.  Make sure we have VS 2015 or later.
+   */
+  #if _MSC_VER < 1900
+    #error "Building libpcap requires VS 2015 or later"
+  #endif
+#endif
+
+/*
+ * Include <inttypes.h> to get the integer types and PRi[doux]64 values
  * defined.
  *
  * If the compiler is MSVC, we require VS 2015 or newer, so we
@@ -51,15 +69,6 @@
  *
  * I.e., assume we have <inttypes.h> and that it suffices.
  */
-
-#if defined(_MSC_VER)
-  /*
-   * Compiler is MSVC.  Make sure we have VS 2015 or later.
-   */
-  #if _MSC_VER < 1900
-    #error "Building libpcap requires VS 2015 or later"
-  #endif
-#endif
 
 /*
  * XXX - somehow make sure we have enough C99 support with other
