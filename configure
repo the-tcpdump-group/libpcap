@@ -2654,8 +2654,9 @@ fi
     fi
 
 #
-# Try to enable as many C99 features as we can.
-# At minimum, we want C++/C99-style // comments.
+# We require C99 or later.
+# Try to get it, which may involve adding compiler flags;
+# if that fails, give up.
 #
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -3624,8 +3625,7 @@ fi
 
 
 if test "$ac_cv_prog_cc_c99" = "no"; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The C compiler does not support C99; there may be compiler errors" >&5
-$as_echo "$as_me: WARNING: The C compiler does not support C99; there may be compiler errors" >&2;}
+	as_fn_error $? "The C compiler does not support C99" "$LINENO" 5
 fi
 case "$host_os" in
 haiku*)

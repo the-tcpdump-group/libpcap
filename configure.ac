@@ -24,12 +24,13 @@ AC_CANONICAL_SYSTEM
 
 AC_LBL_C_INIT_BEFORE_CC(V_CCOPT, V_INCLS)
 #
-# Try to enable as many C99 features as we can.
-# At minimum, we want C++/C99-style // comments.
+# We require C99 or later.
+# Try to get it, which may involve adding compiler flags;
+# if that fails, give up.
 #
 AC_PROG_CC_C99
 if test "$ac_cv_prog_cc_c99" = "no"; then
-	AC_MSG_WARN([The C compiler does not support C99; there may be compiler errors])
+	AC_MSG_ERROR([The C compiler does not support C99])
 fi
 case "$host_os" in
 haiku*)

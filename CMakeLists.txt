@@ -20,10 +20,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
 
+include(CheckCCompilerFlag)
+
 #
 # For checking if a compiler flag works and adding it if it does.
 #
-include(CheckCCompilerFlag)
 macro(check_and_add_compiler_option _option)
     message(STATUS "Checking C compiler flag ${_option}")
     string(REPLACE "=" "-" _temp_option_variable ${_option})
@@ -58,6 +59,22 @@ if(MSVC)
     endif(NOT ${CMAKE_C_COMPILER} MATCHES "clang*")
 else(MSVC)
     #
+    # For checking if a compiler flag works, failing if it doesn't,
+    # and adding it otherwise.
+    #
+    macro(require_and_add_compiler_option _option)
+        message(STATUS "Checking C compiler flag ${_option}")
+        string(REPLACE "=" "-" _temp_option_variable ${_option})
+        string(REGEX REPLACE "^-" "" _option_variable ${_temp_option_variable})
+        check_c_compiler_flag("${_option}" ${_option_variable})
+        if(${${_option_variable}})
+            set(C_ADDITIONAL_FLAGS "${C_ADDITIONAL_FLAGS} ${_option}")
+        else()
+            message(FATAL_ERROR "C99 support is required, but the compiler doesn't support a compiler flag to enable it")
+        endif()
+    endmacro()
+
+    #
     # Try to enable as many C99 features as we can.
     # At minimum, we want C++/C99-style // comments.
     #
@@ -80,27 +97,26 @@ else(MSVC)
     # See the CMake documentation for the CMAKE_<LANG>_COMPILER_ID variables
     # for a list of compiler IDs.
     #
-    # XXX - this just tests whether the option works and adds it if it does.
-    # We don't test whether it's necessary in order to get the C99 features
-    # that we use; if we ever have a user who tries to compile with a compiler
-    # that can't be made to support those features, we can add a test to make
-    # sure we actually *have* C99 support.
+    # XXX - this just tests whether the option works, fails if it doesn't,
+    # and adds it if it does.  We don't test whether it's necessary in order
+    # to get the C99 features that we use, or whether, if it's used, it
+    # enables all the features that we require.
     #
     if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR
        CMAKE_C_COMPILER_ID MATCHES "Clang")
-        check_and_add_compiler_option("-std=gnu99")
+        require_and_add_compiler_option("-std=gnu99")
     elseif(CMAKE_C_COMPILER_ID MATCHES "XL")
         #
         # We want support for extensions picked up for GNU C compatibility,
         # so we use -qlanglvl=extc99.
         #
-        check_and_add_compiler_option("-qlanglvl=extc99")
+        require_and_add_compiler_option("-qlanglvl=extc99")
     elseif(CMAKE_C_COMPILER_ID MATCHES "HP")
-        check_and_add_compiler_option("-AC99")
+        require_and_add_compiler_option("-AC99")
     elseif(CMAKE_C_COMPILER_ID MATCHES "Sun")
-        check_and_add_compiler_option("-xc99")
+        require_and_add_compiler_option("-xc99")
     elseif(CMAKE_C_COMPILER_ID MATCHES "Intel")
-        check_and_add_compiler_option("-c99")
+        require_and_add_compiler_option("-c99")
     endif()
 endif(MSVC)
 
