@@ -2362,7 +2362,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 	 * but no known software generates headers that aren't 144
 	 * bytes long.
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * Load the cookie.
 		 */
@@ -2424,7 +2424,7 @@ gen_load_prism_llprefixlen(compiler_state_t *cstate)
 		 * loading the length of the AVS header.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 		sjcommon->s.jf = s2;
 
@@ -2451,7 +2451,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 	 * generated uses that prefix, so we don't need to generate any
 	 * code to load it.)
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * The 4 bytes at an offset of 4 from the beginning of
 		 * the AVS header are the length of the AVS header.
@@ -2465,7 +2465,7 @@ gen_load_avs_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 
 		/*
@@ -2491,7 +2491,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 	 * generated uses that prefix, so we don't need to generate any
 	 * code to load it.)
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
@@ -2526,7 +2526,7 @@ gen_load_radiotap_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 
 		/*
@@ -2559,7 +2559,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 	 * into the register assigned to hold that length, if one has
 	 * been assigned.
 	 */
-	if (cstate->off_linkhdr.reg != -1) {
+	if (cstate->off_outermostlinkhdr->reg != -1) {
 		/*
 		 * The 2 bytes at offsets of 2 and 3 from the beginning
 		 * of the radiotap header are the length of the radiotap
@@ -2594,7 +2594,7 @@ gen_load_ppi_llprefixlen(compiler_state_t *cstate)
 		 * it.
 		 */
 		s2 = new_stmt(cstate, BPF_ST);
-		s2->s.k = cstate->off_linkhdr.reg;
+		s2->s.k = cstate->off_outermostlinkhdr->reg;
 		sappend(s1, s2);
 
 		/*
@@ -2750,7 +2750,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * annoying padding don't have multiple antennae and therefore
 	 * do not generate radiotap headers with multiple presence words.
 	 */
-	if (cstate->linktype == DLT_IEEE802_11_RADIO) {
+	if (cstate->outermostlinktype == DLT_IEEE802_11_RADIO) {
 		/*
 		 * Is the IEEE80211_RADIOTAP_FLAGS bit (0x0000002) set
 		 * in the first presence flag word?
@@ -2864,9 +2864,9 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	 * includes the variable part of the header. Therefore,
 	 * if nobody else has allocated a register for the link
 	 * header and we need it, do it now. */
-	if (cstate->off_linkpl.reg != -1 && cstate->off_linkhdr.is_variable &&
-	    cstate->off_linkhdr.reg == -1)
-		cstate->off_linkhdr.reg = alloc_reg(cstate);
+	if (cstate->off_linkpl.reg != -1 && cstate->off_outermostlinkhdr->is_variable &&
+	    cstate->off_outermostlinkhdr->reg == -1)
+		cstate->off_outermostlinkhdr->reg = alloc_reg(cstate);
 
 	/*
 	 * For link-layer types that have a variable-length header
