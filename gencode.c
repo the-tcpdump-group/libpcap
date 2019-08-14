@@ -172,6 +172,7 @@ struct addrinfo {
 { \
 	(cs)->prevlinktype = (cs)->linktype; \
 	(cs)->off_prevlinkhdr = (cs)->off_linkhdr; \
+	(cs)->off_outermostlinkhdr = &((cs)->off_prevlinkhdr); \
 	(cs)->linktype = (new_linktype); \
 	(cs)->off_linkhdr.is_variable = (new_is_variable); \
 	(cs)->off_linkhdr.constant_part = (new_constant_part); \
@@ -302,10 +303,9 @@ struct _compiler_state {
 	bpf_abs_offset off_prevlinkhdr;
 
 	/*
-	 * This is the equivalent information for the outermost layers'
-	 * link-layer header.
+	 * This is a pointer to either off_linkhdr of off_prevlinkhdr.
 	 */
-	bpf_abs_offset off_outermostlinkhdr;
+	bpf_abs_offset *off_outermostlinkhdr;
 
 	/*
 	 * Absolute offset of the beginning of the link-layer payload.
@@ -1140,14 +1140,7 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 	 * We start out with only one link-layer header.
 	 */
 	cstate->outermostlinktype = pcap_datalink(p);
-	cstate->off_outermostlinkhdr.constant_part = 0;
-	cstate->off_outermostlinkhdr.is_variable = 0;
-	cstate->off_outermostlinkhdr.reg = -1;
-
-	cstate->prevlinktype = cstate->outermostlinktype;
-	cstate->off_prevlinkhdr.constant_part = 0;
-	cstate->off_prevlinkhdr.is_variable = 0;
-	cstate->off_prevlinkhdr.reg = -1;
+	cstate->off_outermostlinkhdr = &(cstate->off_linkhdr);
 
 	cstate->linktype = cstate->outermostlinktype;
 	cstate->off_linkhdr.constant_part = 0;
@@ -1721,7 +1714,6 @@ init_linktype(compiler_state_t *cstate, pcap_t *p)
 		break;
 	}
 
-	cstate->off_outermostlinkhdr = cstate->off_prevlinkhdr = cstate->off_linkhdr;
 	return (0);
 }
 
@@ -2659,7 +2651,7 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 	 * header.
 	 *
 	 * Otherwise, the length of the prefix preceding the link-layer
-	 * header is "off_outermostlinkhdr.constant_part".
+	 * header is "off_outermostlinkhdr->constant_part".
 	 */
 	if (s == NULL) {
 		/*
@@ -2669,10 +2661,10 @@ gen_load_802_11_header_len(compiler_state_t *cstate, struct slist *s, struct sli
 		 * Load the length of the fixed-length prefix preceding
 		 * the link-layer header (if any) into the X register,
 		 * and store it in the cstate->off_linkpl.reg register.
-		 * That length is off_outermostlinkhdr.constant_part.
+		 * That length is off_outermostlinkhdr->constant_part.
 		 */
 		s = new_stmt(cstate, BPF_LDX|BPF_IMM);
-		s->s.k = cstate->off_outermostlinkhdr.constant_part;
+		s->s.k = cstate->off_outermostlinkhdr->constant_part;
 	}
 
 	/*
@@ -8956,8 +8948,7 @@ gen_vlan(compiler_state_t *cstate, bpf_u_int32 vlan_num, int has_vlan_tag)
 		/* Verify that this is the outer part of the packet and
 		 * not encapsulated somehow. */
 		if (cstate->vlan_stack_depth == 0 && !cstate->off_linkhdr.is_variable &&
-		    cstate->off_linkhdr.constant_part ==
-		    cstate->off_outermostlinkhdr.constant_part) {
+		    cstate->off_outermostlinkhdr == &(cstate->off_linkhdr)) {
 			/*
 			 * Do we need special VLAN handling?
 			 */
