@@ -758,7 +758,7 @@ static int pcap_dpdk_activate(pcap_t *p)
 			    p->opt.device);
 			return PCAP_ERROR_NO_SUCH_DEVICE;
 		}
-			
+
 		ret = dpdk_init_timer(pd);
 		if (ret<0)
 		{

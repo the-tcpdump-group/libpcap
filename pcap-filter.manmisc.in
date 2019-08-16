@@ -878,7 +878,7 @@ The following ICMP type field values are available: \fBicmp-echoreply\fP,
 \fBicmp-maskreq\fP, \fBicmp-maskreply\fP.
 
 The following ICMPv6 type fields are available: \fBicmp6-destinationrunreach\fP,
-\fBicmp6-packettoobig\fP, \fBicmp6-timeexceeded\fP, 
+\fBicmp6-packettoobig\fP, \fBicmp6-timeexceeded\fP,
 \fBicmp6-parameterproblem\fP, \fBicmp6-echo\fP,
 \fBicmp6-echoreply\fP, \fBicmp6-multicastlistenerquery\fP,
 \fBicmp6-multicastlistenerreportv1\fP, \fBicmp6-multicastlistenerdone\fP,
