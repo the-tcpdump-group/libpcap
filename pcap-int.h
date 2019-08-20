@@ -86,7 +86,12 @@ extern "C" {
  *    2) small enough not to cause attempts to allocate huge amounts of
  *       memory; some applications might use the snapshot length in a
  *       savefile header to control the size of the buffer they allocate,
- *       so a size of, say, 2^31-1 might not work well.
+ *       so a size of, say, 2^31-1 might not work well.  (libpcap uses it
+ *       as a hint, but doesn't start out allocating a buffer bigger than
+ *       2 KiB, and grows the buffer as necessary, but not beyond the
+ *       per-linktype maximum snapshot length.  Other code might naively
+ *       use it; we want to avoid writing a too-large snapshot length,
+ *       in order not to cause that code problems.)
  *
  * We don't enforce this in pcap_set_snaplen(), but we use it internally.
  */
