@@ -1274,18 +1274,30 @@ linktype_to_dlt(int linktype)
 /*
  * Return the maximum snapshot length for a given DLT_ value.
  *
- * For most link-layer types, we use MAXIMUM_SNAPLEN, but for DLT_DBUS,
- * the maximum is 134217728, as per
+ * For most link-layer types, we use MAXIMUM_SNAPLEN.
+ *
+ * For DLT_DBUS, the maximum is 128MiB, as per
  *
  *    https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-messages
+ *
+ * For DLT_USBPCAP, the maximum is 1MiB, as per
+ *
+ *    https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=15985
  */
 u_int
 max_snaplen_for_dlt(int dlt)
 {
-	if (dlt == DLT_DBUS)
-		return 134217728;
-	else
+	switch (dlt) {
+
+	case DLT_DBUS:
+		return 128*1024*1024;
+
+	case DLT_USBPCAP:
+		return 1024*1024;
+
+	default:
 		return MAXIMUM_SNAPLEN;
+	}
 }
 
 /*
