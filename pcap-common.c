@@ -1347,13 +1347,17 @@ linktype_to_dlt(int linktype)
  *
  * For most link-layer types, we use MAXIMUM_SNAPLEN.
  *
- * For DLT_DBUS, the maximum is 134217728, as per
+ * For DLT_DBUS, the maximum is 128MiB, as per
  *
  *    https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-messages
  *
- * For DLT_EBHSCR, the maximum is 8MB, as per
+ * For DLT_EBHSCR, the maximum is 8MiB, as per
  *
  *    https://www.elektrobit.com/ebhscr
+ *
+ * For DLT_USBPCAP, the maximum is 1MiB, as per
+ *
+ *    https://bugs.wireshark.org/bugzilla/show_bug.cgi?id=15985
  */
 u_int
 max_snaplen_for_dlt(int dlt)
@@ -1361,10 +1365,13 @@ max_snaplen_for_dlt(int dlt)
 	switch (dlt) {
 
 	case DLT_DBUS:
-		return 134217728;
+		return 128*1024*1024;
 
 	case DLT_EBHSCR:
 		return 8*1024*1024;
+
+	case DLT_USBPCAP:
+		return 1024*1024;
 
 	default:
 		return MAXIMUM_SNAPLEN;
