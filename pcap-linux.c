@@ -2894,8 +2894,12 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 
 				case ARPHRD_IRDA:
 				case ARPHRD_IEEE80211:
+#ifdef ARPHRD_IEEE80211_PRISM
 				case ARPHRD_IEEE80211_PRISM:
+#endif
+#ifdef ARPHRD_IEEE80211_RADIOTAP
 				case ARPHRD_IEEE80211_RADIOTAP:
+#endif
 #ifdef ARPHRD_IEEE802154
 				case ARPHRD_IEEE802154:
 #endif
