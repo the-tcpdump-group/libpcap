@@ -134,7 +134,7 @@
 #include <linux/sockios.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
-#include <net/if_arp.h>
+#include <linux/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
 #ifdef HAVE_SYS_EVENTFD_H
