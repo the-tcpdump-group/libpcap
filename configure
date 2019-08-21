@@ -4023,7 +4023,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    sparc64*)
 			case "$host_os" in
 
-			freebsd*|openbsd*)
+			freebsd*|openbsd*|linux*)
 			    PIC_OPT=-fPIC
 			    ;;
 			esac
