@@ -501,7 +501,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    sparc64*)
 			case "$host_os" in
 
-			freebsd*|openbsd*)
+			freebsd*|openbsd*|linux*)
 			    PIC_OPT=-fPIC
 			    ;;
 			esac
