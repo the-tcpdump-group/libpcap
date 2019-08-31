@@ -9139,29 +9139,8 @@ gen_pppoes(compiler_state_t *cstate, bpf_u_int32 sess_num, int has_sess_num)
 	 * the PPP packet, and note that this is PPPoE rather than
 	 * raw PPP.
 	 *
-	 * XXX - this is a bit of a kludge.  If we were to split the
-	 * compiler into a parser that parses an expression and
-	 * generates an expression tree, and a code generator that
-	 * takes an expression tree (which could come from our
-	 * parser or from some other parser) and generates BPF code,
-	 * we could perhaps make the offsets parameters of routines
-	 * and, in the handler for an "AND" node, pass to subnodes
-	 * other than the PPPoE node the adjusted offsets.
-	 *
-	 * This would mean that "pppoes" would, instead of changing the
-	 * behavior of *all* tests after it, change only the behavior
-	 * of tests ANDed with it.  That would change the documented
-	 * semantics of "pppoes", which might break some expressions.
-	 * However, it would mean that "(pppoes and ip) or ip" would check
-	 * both for VLAN-encapsulated IP and IP-over-Ethernet, rather than
-	 * checking only for VLAN-encapsulated IP, so that could still
-	 * be considered worth doing; it wouldn't break expressions
-	 * that are of the form "pppoes and ..." which I suspect are the
-	 * most common expressions involving "pppoes".  "pppoes or ..."
-	 * doesn't necessarily do what the user would really want, now,
-	 * as all the "or ..." tests would be done assuming PPPoE, even
-	 * though the "or" could be viewed as meaning "or, if this isn't
-	 * a PPPoE packet...".
+	 * XXX - this is a bit of a kludge.  See the comments in
+	 * gen_vlan().
 	 *
 	 * The "network-layer" protocol is PPPoE, which has a 6-byte
 	 * PPPoE header, followed by a PPP packet.
