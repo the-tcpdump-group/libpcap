@@ -2528,7 +2528,7 @@ add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 	 */
 	p = ifname;
 	q = &name[0];
-	while (*p != '\0' && isascii(*p) && !isspace(*p)) {
+	while (*p != '\0' && (*p < 128) && !isspace(*p)) {
 		if (*p == ':') {
 			/*
 			 * This could be the separator between a
@@ -2542,7 +2542,7 @@ add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 			 * next field.
 			 */
 			saveq = q;
-			while (isascii(*p) && isdigit(*p))
+			while ((*p < 128) && isdigit(*p))
 				*q++ = *p++;
 			if (*p != ':') {
 				/*
@@ -2769,7 +2769,7 @@ scan_proc_net_dev(pcap_if_list_t *devlistp, char *errbuf)
 		/*
 		 * Skip leading white space.
 		 */
-		while (*p != '\0' && isascii(*p) && isspace(*p))
+		while (*p != '\0' && (*p < 128) && isspace(*p))
 			p++;
 		if (*p == '\0' || *p == '\n')
 			continue;	/* blank line */
