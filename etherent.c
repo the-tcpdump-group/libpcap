@@ -63,7 +63,7 @@ skip_space(FILE *f)
 
 	do {
 		c = getc(f);
-	} while (PCAP_ISLWSP(c) || c == '\r');
+	} while (c == ' ' || c == '\t' || c == '\r');
 
 	return c;
 }
@@ -129,7 +129,7 @@ pcap_next_etherent(FILE *fp)
 		}
 
 		/* Must be whitespace */
-		if (!PCAP_ISSPACE(c)) {
+		if (c != ' ' && c != '\t' && c != '\r' && c != '\n') {
 			c = skip_line(fp);
 			if (c == EOF)
 				return (NULL);
@@ -159,7 +159,8 @@ pcap_next_etherent(FILE *fp)
 			c = getc(fp);
 			if (c == EOF)
 				return (NULL);
-		} while (!PCAP_ISSPACE(c) && --namesize != 0);
+		} while (c != ' ' && c != '\t' && c != '\r' && c != '\n'
+		    && --namesize != 0);
 		*bp = '\0';
 
 		/* Eat trailing junk */

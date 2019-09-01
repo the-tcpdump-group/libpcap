@@ -2527,7 +2527,7 @@ add_linux_if(pcap_if_list_t *devlistp, const char *ifname, int fd, char *errbuf)
 	 */
 	p = ifname;
 	q = &name[0];
-	while (*p != '\0' && PCAP_ISSPACE(*p)) {
+	while (*p != '\0' && *p != ' ' && *p != '\t' && *p != '\n') {
 		if (*p == ':') {
 			/*
 			 * This could be the separator between a
@@ -2768,7 +2768,7 @@ scan_proc_net_dev(pcap_if_list_t *devlistp, char *errbuf)
 		/*
 		 * Skip leading white space.
 		 */
-		while (*p != '\0' && PCAP_ISSPACE(*p))
+		while (*p == ' ' || *p == '\t')
 			p++;
 		if (*p == '\0' || *p == '\n')
 			continue;	/* blank line */
