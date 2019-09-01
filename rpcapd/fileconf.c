@@ -59,17 +59,14 @@
 static char *skipws(char *ptr);
 
 /*
- * Locale-independent version checks for alphabetical, alphanumerical,
- * and white space characters that also can handle being handed a char
- * value that might be negative (and that don't treat FF or VT as white
- * space - they don't belong in our text files as separating space).
+ * Locale-independent version checks for alphabetical and alphanumerical
+ * characters that also can handle being handed a char value that might
+ * be negative.
  */
 #define FILECONF_ISALPHA(c) \
 	(((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
 #define FILECONF_ISALNUM(c) \
 	(FILECONF_ISALPHA(c) || ((c) >= '0' && (c) <= '9'))
-#define FILECONF_ISSPACE(c) \
-	((c) == ' ' || (c) == '\t' || (c) == '\r' || (c) == '\n')
 
 void fileconf_read(void)
 {
@@ -244,12 +241,15 @@ void fileconf_read(void)
 				ptr += toklen;	// skip to the terminator
 				if (toklen == 0)
 				{
-					if (FILECONF_ISSPACE(*ptr) || *ptr == '#' || *ptr == '\0')
+					if (*ptr == ' ' || *ptr == '\t' ||
+					    *ptr == '\r' || *ptr == '\n' ||
+					    *ptr == '#' || *ptr == '\0')
 					{
 						//
 						// The first character it saw
 						// was a whitespace character
-						// or a comment character.
+						// or a comment character,
+						// or we ran out of characters.
 						// This means that there's
 						// no value.
 						//
@@ -557,7 +557,7 @@ int fileconf_save(const char *savefile)
 //
 static char *skipws(char *ptr)
 {
-	while (FILECONF_ISSPACE(*ptr)) {
+	while (*ptr == ' ' || *ptr == '\t' || *ptr == '\r' || *ptr == '\n') {
 		if (*ptr == '\r' || *ptr == '\n')
 			return NULL;
 		*ptr++ = '\0';
