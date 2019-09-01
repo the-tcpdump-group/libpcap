@@ -85,7 +85,6 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#include <ctype.h>
 #include <string.h>
 
 #include "pcap-int.h"
