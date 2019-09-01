@@ -127,7 +127,6 @@
   #include <netdb.h>
 #endif /* _WIN32 */
 
-#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -653,9 +652,9 @@ pcap_nametollc(const char *s)
 static inline u_char
 xdtoi(u_char c)
 {
-	if (isdigit(c))
+	if (c >= '0' && c < '9')
 		return (u_char)(c - '0');
-	else if (islower(c))
+	else if (c >= 'a' && c <= 'f')
 		return (u_char)(c - 'a' + 10);
 	else
 		return (u_char)(c - 'A' + 10);
@@ -727,7 +726,7 @@ pcap_ether_aton(const char *s)
 		if (*s == ':' || *s == '.' || *s == '-')
 			s += 1;
 		d = xdtoi(*s++);
-		if (isxdigit((unsigned char)*s)) {
+		if (PCAP_ISXDIGIT(*s)) {
 			d <<= 4;
 			d |= xdtoi(*s++);
 		}

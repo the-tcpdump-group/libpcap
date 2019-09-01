@@ -83,8 +83,6 @@ extern "C" {
 #endif
 
 #ifdef _MSC_VER
-  #define isascii	__isascii
-
   /*
    * If <crtdbg.h> has been included, and _DEBUG is defined, and
    * __STDC__ is zero, <crtdbg.h> will define strdup() to call

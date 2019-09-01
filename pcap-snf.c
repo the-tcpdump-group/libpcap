@@ -10,7 +10,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include <ctype.h>
 #ifndef _WIN32
 #include <netinet/in.h>
 #include <sys/mman.h>

@@ -96,7 +96,6 @@
 #include <net/if.h>
 #endif
 
-#include <ctype.h>
 #ifdef HAVE_HPUX9
 #include <nlist.h>
 #endif
@@ -1546,7 +1545,7 @@ get_release(char *buf, size_t bufsize, bpf_u_int32 *majorp,
 		return;
 	}
 	cp = buf;
-	if (!isdigit((unsigned char)*cp))
+	if (!PCAP_ISDIGIT((unsigned char)*cp))
 		return;
 	*majorp = strtol(cp, &cp, 10);
 	if (*cp++ != '.')

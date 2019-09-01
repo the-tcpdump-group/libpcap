@@ -115,7 +115,6 @@ static int bpf_load(char *errbuf);
 
 #endif /* _AIX */
 
-#include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <netdb.h>
@@ -2177,9 +2176,9 @@ pcap_activate_bpf(pcap_t *p)
 	 * we try to select DLT_IEEE802_11.
 	 */
 	if (have_osinfo) {
-		if (isdigit((unsigned)osinfo.release[0]) &&
+		if (PCAP_ISDIGIT((unsigned)osinfo.release[0]) &&
 		     (osinfo.release[0] == '9' ||
-		     isdigit((unsigned)osinfo.release[1]))) {
+		     PCAP_ISDIGIT((unsigned)osinfo.release[1]))) {
 			/*
 			 * 10.5 (Darwin 9.x), or later.
 			 */

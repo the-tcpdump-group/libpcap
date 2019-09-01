@@ -53,7 +53,6 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include <netinet/in.h>
 #endif /* _WIN32 */
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -881,7 +880,7 @@ find_or_add_if(pcap_if_list_t *devlistp, const char *name,
 	 * see if it looks like a loopback device.
 	 */
 	if (name[0] == 'l' && name[1] == 'o' &&
-	    (isdigit((unsigned char)(name[2])) || name[2] == '\0')
+	    (PCAP_ISDIGIT(name[2]) || name[2] == '\0')
 		pcap_flags |= PCAP_IF_LOOPBACK;
 #endif
 #ifdef IFF_UP

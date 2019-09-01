@@ -29,7 +29,6 @@
 #endif
 
 #include <poll.h>
-#include <ctype.h>
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>

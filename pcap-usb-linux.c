@@ -45,7 +45,6 @@
 #include "strerror.h"
 #endif
 
-#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -363,9 +362,9 @@ usb_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 				len = strlen(name);
 
 				/* if this file name does not end with a number it's not of our interest */
-				if ((len < 1) || !isdigit(name[--len]))
+				if ((len < 1) || !PCAP_ISDIGIT(name[--len]))
 					continue;
-				while (isdigit(name[--len]));
+				while (PCAP_ISDIGIT(name[--len]));
 				if (sscanf(&name[len+1], "%d", &n) != 1)
 					continue;
 

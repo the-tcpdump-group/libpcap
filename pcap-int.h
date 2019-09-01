@@ -97,6 +97,25 @@ extern "C" {
  */
 #define MAXIMUM_SNAPLEN		262144
 
+/*
+ * Locale-independent macros for testing character types.
+ * These can be passed any integral value, without worrying about, for
+ * example, sign-extending char values, unlike the C macros.
+ *
+ * Note that PCAP_ISSPACE doesn't worry about form feeds or vertical
+ * tabs; it only matches space, tab, CR, and LF.
+ */
+#define PCAP_ISDIGIT(c) \
+	((c) >= '0' && (c) <= '9')
+#define PCAP_ISXDIGIT(c) \
+	(((c) >= '0' && (c) <= '9') || \
+	 ((c) >= 'A' && (c) <= 'F') || \
+	 ((c) >= 'a' && (c) <= 'f'))
+#define PCAP_ISLWSP(c) \
+	((c) == ' ' || (c) == '\t')
+#define PCAP_ISSPACE(c)	\
+	((c) == ' ' || (c) == '\t' || (c) == '\r' || (c) == '\n')
+
 struct pcap_opt {
 	char	*device;
 	int	timeout;	/* timeout for buffering */
