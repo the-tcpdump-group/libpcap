@@ -39,7 +39,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <signal.h>
 #include <pcap.h>		// for PCAP_ERRBUF_SIZE
 
@@ -58,6 +57,19 @@
 #define PARAM_NULLAUTHPERMIT	"NullAuthPermit"
 
 static char *skipws(char *ptr);
+
+/*
+ * Locale-independent version checks for alphabetical, alphanumerical,
+ * and white space characters that also can handle being handed a char
+ * value that might be negative (and that don't treat FF or VT as white
+ * space - they don't belong in our text files as separating space).
+ */
+#define FILECONF_ISALPHA(c) \
+	(((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z'))
+#define FILECONF_ISALNUM(c) \
+	(FILECONF_ISALPHA(c) || ((c) >= '0' && (c) <= '9'))
+#define FILECONF_ISSPACE(c) \
+	((c) == ' ' || (c) == '\t' || (c) == '\r' || (c) == '\n')
 
 void fileconf_read(void)
 {
@@ -135,8 +147,7 @@ void fileconf_read(void)
 			// Is the next character alphabetic?  If not,
 			// this isn't a valid parameter name.
 			//
-			if (!isascii((unsigned char)*ptr) ||
-			    !isalpha((unsigned char)*ptr))
+			if (FILECONF_ISALPHA(*ptr))
 			{
 				rpcapd_log(LOGPRIO_ERROR,
 				    "%s, line %u doesn't have a valid parameter name",
@@ -150,8 +161,7 @@ void fileconf_read(void)
 			// That's the name of the parameter being set.
 			//
 			param = ptr;
-			while (isascii((unsigned char)*ptr) &&
-			    (isalnum((unsigned char)*ptr) || *ptr == '-' || *ptr == '_'))
+			while (FILECONF_ISALNUM(*ptr) || *ptr == '-' || *ptr == '_')
 				ptr++;
 
 			//
@@ -234,8 +244,7 @@ void fileconf_read(void)
 				ptr += toklen;	// skip to the terminator
 				if (toklen == 0)
 				{
-					if (isascii((unsigned char)*ptr) &&
-					    (isspace((unsigned char)*ptr) || *ptr == '#' || *ptr == '\0'))
+					if (FILECONF_ISSPACE(*ptr) || *ptr == '#' || *ptr == '\0')
 					{
 						//
 						// The first character it saw
@@ -548,7 +557,7 @@ int fileconf_save(const char *savefile)
 //
 static char *skipws(char *ptr)
 {
-	while (isascii((unsigned char)*ptr) && isspace((unsigned char)*ptr)) {
+	while (FILECONF_ISSPACE(*ptr)) {
 		if (*ptr == '\r' || *ptr == '\n')
 			return NULL;
 		*ptr++ = '\0';
