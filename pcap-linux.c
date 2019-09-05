@@ -4752,7 +4752,26 @@ retry:
 
 #ifdef HAVE_TPACKET3
 	/* timeout value to retire block - use the configured buffering timeout, or default if <0. */
-	req.tp_retire_blk_tov = (handlep->timeout>=0)?handlep->timeout:0;
+	if (handlep->timeout > 0) {
+		/* Use the user specified timeout as the block timeout */
+		req.tp_retire_blk_tov = handlep->timeout;
+	} else if (handlep->timeout == 0) {
+		/*
+		 * In pcap, this means "infinite timeout"; TPACKET_V3
+		 * doesn't support that, so just set it to UINT_MAX
+		 * milliseconds.  In the TPACKET_V3 loop, if the
+		 * timeout is 0, and we haven't yet seen any packets,
+		 * and we block and still don't have any packets, we
+		 * keep blocking until we do.
+		 */
+		req.tp_retire_blk_tov = UINT_MAX;
+	} else {
+		/*
+		 * XXX - this is not valid; use 0, meaning "have the
+		 * kernel pick a default", for now.
+		 */
+		req.tp_retire_blk_tov = 0;
+	}
 	/* private data not used */
 	req.tp_sizeof_priv = 0;
 	/* Rx ring - feature request bits - none (rxhash will not be filled) */
