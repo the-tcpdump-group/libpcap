@@ -57,7 +57,9 @@ capture device,
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated, and
 .B PCAP_ERROR_CANTSET_TSTAMP_TYPE
-if the capture device doesn't support setting the time stamp type.
+if the capture device doesn't support setting the time stamp type (only
+older versions of libpcap will return that; newer versions will always
+allow the time stamp type to be set to the default type).
 .SH BACKWARD COMPATIBILITY
 .PP
 This function became available in libpcap release 1.2.1.  In previous

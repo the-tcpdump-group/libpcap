@@ -54,8 +54,14 @@ which frees the list pointed to by
 returns the number of time stamp types in the array on success and
 .B PCAP_ERROR
 on failure.
-A return value of zero means that you cannot specify a time stamp type;
-you are limited to the capture device's default time stamp type.
+A return value of one means that the only time stamp type supported is
+the one in the list, which is the capture device's default time stamp
+type.  A return value of zero means that the only time stamp type
+supported is
+.BR PCAP_TSTAMP_HOST ,
+which is the capture device's default time stamp type (only older
+versions of libpcap will return that; newer versions will always return
+one or more types).
 If
 .B PCAP_ERROR
 is returned,
