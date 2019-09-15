@@ -59,6 +59,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   # without searching in the Lib directory first appears to be to set
   # CMAKE_LIBRARY_ARCHITECTURE to "x64".
   #
+  set(CMAKE_C_LIBRARY_ARCHITECTURE "x64")
   set(CMAKE_LIBRARY_ARCHITECTURE "x64")
 endif()
 
