@@ -44,7 +44,7 @@ static inline int skip_line(FILE *);
 static inline u_char
 xdtoi(u_char c)
 {
-	if (c >= '0' && c < '9')
+	if (c >= '0' && c <= '9')
 		return (u_char)(c - '0');
 	else if (c >= 'a' && c <= 'f')
 		return (u_char)(c - 'a' + 10);
