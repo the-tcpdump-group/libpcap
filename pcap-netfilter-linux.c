@@ -316,6 +316,7 @@ static int
 netfilter_send_config_msg(const pcap_t *handle, uint16_t msg_type, int ack, u_int8_t family, u_int16_t res_id, const struct my_nfattr *mynfa)
 {
 	char buf[1024] __attribute__ ((aligned));
+	memset(buf, 0, sizeof(buf));
 
 	struct nlmsghdr *nlh = (struct nlmsghdr *) buf;
 	struct nfgenmsg *nfg = (struct nfgenmsg *) (buf + sizeof(struct nlmsghdr));
