@@ -85,7 +85,7 @@ struct option_header {
  * Section Header Block.
  */
 #define BT_SHB			0x0A0D0D0A
-#define BT_SHB_INSANE_MAX       1024*1024*1  /* 1MB should be enough */
+#define BT_SHB_INSANE_MAX       1024U*1024U*1U  /* 1MB should be enough */
 struct section_header_block {
 	bpf_u_int32	byte_order_magic;
 	u_short		major_version;
@@ -859,10 +859,10 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer) ||
             (total_length > BT_SHB_INSANE_MAX)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Section Header Block in pcapng dump file has invalid length %zu < _%lu_ < %lu (BT_SHB_INSANE_MAX)",
-                              sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer),
-                              total_length,
-                              BT_SHB_INSANE_MAX);
+		    "Section Header Block in pcapng dump file has invalid length %zu < _%u_ < %u (BT_SHB_INSANE_MAX)",
+		    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer),
+		    total_length,
+		    BT_SHB_INSANE_MAX);
 
 		*err = 1;
 		return (NULL);
