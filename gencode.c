@@ -568,7 +568,7 @@ static struct block *gen_portrangeop6(compiler_state_t *, u_int, u_int,
 static struct block *gen_portrange6(compiler_state_t *, u_int, u_int, int, int);
 static int lookup_proto(compiler_state_t *, const char *, int);
 static struct block *gen_protochain(compiler_state_t *, bpf_u_int32, int);
-static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int, int);
+static struct block *gen_proto(compiler_state_t *, bpf_u_int32, int);
 static struct slist *xfer_to_x(compiler_state_t *, struct arth *);
 static struct slist *xfer_to_a(compiler_state_t *, struct arth *);
 static struct block *gen_mac_multicast(compiler_state_t *, int);
@@ -5303,25 +5303,25 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 	switch (proto) {
 
 	case Q_SCTP:
-		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_SCTP, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_SCTP, Q_IP);
+		b0 = gen_proto(cstate, IPPROTO_SCTP, Q_IPV6);
 		gen_or(b0, b1);
 		break;
 
 	case Q_TCP:
-		b1 = gen_proto(cstate, IPPROTO_TCP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_TCP, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_TCP, Q_IP);
+		b0 = gen_proto(cstate, IPPROTO_TCP, Q_IPV6);
 		gen_or(b0, b1);
 		break;
 
 	case Q_UDP:
-		b1 = gen_proto(cstate, IPPROTO_UDP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_UDP, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_UDP, Q_IP);
+		b0 = gen_proto(cstate, IPPROTO_UDP, Q_IPV6);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ICMP:
-		b1 = gen_proto(cstate, IPPROTO_ICMP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_ICMP, Q_IP);
 		break;
 
 #ifndef	IPPROTO_IGMP
@@ -5329,14 +5329,14 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_IGMP:
-		b1 = gen_proto(cstate, IPPROTO_IGMP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_IGMP, Q_IP);
 		break;
 
 #ifndef	IPPROTO_IGRP
 #define	IPPROTO_IGRP	9
 #endif
 	case Q_IGRP:
-		b1 = gen_proto(cstate, IPPROTO_IGRP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_IGRP, Q_IP);
 		break;
 
 #ifndef IPPROTO_PIM
@@ -5344,8 +5344,8 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_PIM:
-		b1 = gen_proto(cstate, IPPROTO_PIM, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_PIM, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_PIM, Q_IP);
+		b0 = gen_proto(cstate, IPPROTO_PIM, Q_IPV6);
 		gen_or(b0, b1);
 		break;
 
@@ -5354,7 +5354,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_VRRP:
-		b1 = gen_proto(cstate, IPPROTO_VRRP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_VRRP, Q_IP);
 		break;
 
 #ifndef IPPROTO_CARP
@@ -5362,7 +5362,7 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #endif
 
 	case Q_CARP:
-		b1 = gen_proto(cstate, IPPROTO_CARP, Q_IP, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_CARP, Q_IP);
 		break;
 
 	case Q_IP:
@@ -5416,15 +5416,15 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #define IPPROTO_ICMPV6	58
 #endif
 	case Q_ICMPV6:
-		b1 = gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_ICMPV6, Q_IPV6);
 		break;
 
 #ifndef IPPROTO_AH
 #define IPPROTO_AH	51
 #endif
 	case Q_AH:
-		b1 = gen_proto(cstate, IPPROTO_AH, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_AH, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_AH, Q_IP);
+		b0 = gen_proto(cstate, IPPROTO_AH, Q_IPV6);
 		gen_or(b0, b1);
 		break;
 
@@ -5432,8 +5432,8 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 #define IPPROTO_ESP	50
 #endif
 	case Q_ESP:
-		b1 = gen_proto(cstate, IPPROTO_ESP, Q_IP, Q_DEFAULT);
-		b0 = gen_proto(cstate, IPPROTO_ESP, Q_IPV6, Q_DEFAULT);
+		b1 = gen_proto(cstate, IPPROTO_ESP, Q_IP);
+		b0 = gen_proto(cstate, IPPROTO_ESP, Q_IPV6);
 		gen_or(b0, b1);
 		break;
 
@@ -5442,75 +5442,75 @@ gen_proto_abbrev_internal(compiler_state_t *cstate, int proto)
 		break;
 
 	case Q_ESIS:
-		b1 = gen_proto(cstate, ISO9542_ESIS, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(cstate, ISO9542_ESIS, Q_ISO);
 		break;
 
 	case Q_ISIS:
-		b1 = gen_proto(cstate, ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
 		break;
 
 	case Q_ISIS_L1: /* all IS-IS Level1 PDU-Types */
-		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS); /* FIXME extract the circuit-type bits */
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_L2: /* all IS-IS Level2 PDU-Types */
-		b0 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT); /* FIXME extract the circuit-type bits */
+		b0 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS); /* FIXME extract the circuit-type bits */
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_IIH: /* all IS-IS Hello PDU-Types */
-		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_LAN_IIH, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_LAN_IIH, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_PTP_IIH, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_LSP:
-		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_LSP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_LSP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_SNP:
-		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
 		gen_or(b0, b1);
-		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_CSNP:
-		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_CSNP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_CSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_ISIS_PSNP:
-		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS, Q_DEFAULT);
-		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISIS_L1_PSNP, Q_ISIS);
+		b1 = gen_proto(cstate, ISIS_L2_PSNP, Q_ISIS);
 		gen_or(b0, b1);
 		break;
 
 	case Q_CLNP:
-		b1 = gen_proto(cstate, ISO8473_CLNP, Q_ISO, Q_DEFAULT);
+		b1 = gen_proto(cstate, ISO8473_CLNP, Q_ISO);
 		break;
 
 	case Q_STP:
@@ -6363,20 +6363,17 @@ gen_check_802_11_data_frame(compiler_state_t *cstate)
  * against Q_IP and Q_IPV6.
  */
 static struct block *
-gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
+gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto)
 {
 	struct block *b0, *b1;
 #ifndef CHASE_CHAIN
 	struct block *b2;
 #endif
 
-	if (dir != Q_DEFAULT)
-		bpf_error(cstate, "direction applied to 'proto'");
-
 	switch (proto) {
 	case Q_DEFAULT:
-		b0 = gen_proto(cstate, v, Q_IP, dir);
-		b1 = gen_proto(cstate, v, Q_IPV6, dir);
+		b0 = gen_proto(cstate, v, Q_IP);
+		b1 = gen_proto(cstate, v, Q_IPV6);
 		gen_or(b0, b1);
 		return b1;
 
@@ -6554,7 +6551,7 @@ gen_proto(compiler_state_t *cstate, bpf_u_int32 v, int proto, int dir)
 		/*NOTREACHED*/
 
 	case Q_ISIS:
-		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO, Q_DEFAULT);
+		b0 = gen_proto(cstate, ISO10589_ISIS, Q_ISO);
 		/*
 		 * 4 is the offset of the PDU type relative to the IS-IS
 		 * header.
@@ -6913,7 +6910,7 @@ gen_scode(compiler_state_t *cstate, const char *name, struct qual q)
 	case Q_PROTO:
 		real_proto = lookup_proto(cstate, name, proto);
 		if (real_proto >= 0)
-			return gen_proto(cstate, real_proto, proto, dir);
+			return gen_proto(cstate, real_proto, proto);
 		else
 			bpf_error(cstate, "unknown protocol: %s", name);
 
@@ -7086,7 +7083,7 @@ gen_ncode(compiler_state_t *cstate, const char *s, bpf_u_int32 v, struct qual q)
 		/*NOTREACHED*/
 
 	case Q_PROTO:
-		return gen_proto(cstate, v, proto, dir);
+		return gen_proto(cstate, v, proto);
 
 	case Q_PROTOCHAIN:
 		return gen_protochain(cstate, v, proto);
