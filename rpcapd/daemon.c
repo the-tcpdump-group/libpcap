@@ -1193,7 +1193,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 			pcap_fmt_errmsg_for_win32_err(errmsgbuf,
 			    PCAP_ERRBUF_SIZE, error, "LogonUser() failed");
 			rpcapd_log(LOGPRIO_ERROR, "%s", errmsgbuf);
-		}		    
+		}
 		return -1;
 	}
 
