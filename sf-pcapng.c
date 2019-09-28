@@ -868,8 +868,6 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 		return (NULL);
 	}
 
-
-
 	/*
 	 * OK, this is a good pcapng file.
 	 * Allocate a pcap_t for it.
