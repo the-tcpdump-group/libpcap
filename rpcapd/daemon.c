@@ -2985,6 +2985,7 @@ static void session_close(struct session *session)
 	}
 }
 
+//
 // Check whether a capture source string is a URL or not.
 // This includes URLs that refer to a local device; a scheme, followed
 // by ://, followed by *another* scheme and ://, is just silly, and
