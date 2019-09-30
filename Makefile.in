@@ -789,6 +789,12 @@ releasetar:
 	   tar -c -z -f $$name.tar.gz $$name; \
 	   rm -rf $$name
 
+rc1 rc2 rc3 rc4 rc5:
+	@VER=`cat $(srcdir)/VERSION`; \
+	sed -i "s/$$VER/$${VER}$@/" VERSION ; \
+	make distclean; autoconf; ./configure; make releasetar; \
+	git checkout VERSION
+
 depend:	$(GENERATED_C_SRC) $(GENHDR)
 	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	cd rpcapd; $(MAKE) depend
