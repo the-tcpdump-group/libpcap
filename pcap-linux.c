@@ -7496,6 +7496,14 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 static int
 fix_offset(pcap_t *handle, struct bpf_insn *p)
 {
+	/*
+	 * Existing references to auxiliary data shouldn't be adjusted.
+	 *
+	 * Note that SKF_AD_OFF is negative, but p->k is unsigned, so
+	 * we use >= and cast SKF_AD_OFF to unsigned.
+	 */
+	if (p->k >= (bpf_u_int32)SKF_AD_OFF)
+		return 0;
 	if (handle->linktype == DLT_LINUX_SLL2) {
 		/*
 		 * What's the offset?
