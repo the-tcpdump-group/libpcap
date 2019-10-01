@@ -793,7 +793,7 @@ releasetar:
 rc1 rc2 rc3 rc4 rc5:
 	@VER=`cat $(srcdir)/VERSION`; \
 	sed -i "s/$$VER/$${VER}$@/" VERSION ; \
-	make distclean; autoconf; ./configure; make releasetar; \
+	make releasetar; \
 	git checkout VERSION
 
 depend:	$(GENERATED_C_SRC) $(GENHDR)
