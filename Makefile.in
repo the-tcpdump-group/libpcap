@@ -760,7 +760,8 @@ tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
 releasetar:
-	@cwd=`pwd` ; dir=`basename $$cwd` ; name=$(PROG)-`cat VERSION` ; \
+	@autoreconf -f; \
+	name=$(PROG)-`cat VERSION` ; \
 	   mkdir $$name; \
 	   tar -c --exclude='*~' -f - $(CSRC) $(HDR) $(MAN1) $(MAN3PCAP_EXPAND) \
 	      $(MAN3PCAP_NOEXPAND) $(MANFILE) $(MANMISC) $(EXTRA_DIST) | \
