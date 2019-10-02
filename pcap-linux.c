@@ -1166,108 +1166,39 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 }
 
 /*
- * Grabs the number of dropped packets by the interface from /proc/net/dev.
+ * Grabs the number of missed packets by the interface from
+ * /sys/class/net/statistics/{if_name}/rx_{missed,fifo}_errors.
  *
- * XXX - what about /sys/class/net/{interface name}/rx_*?  There are
- * individual devices giving, in ASCII, various rx_ and tx_ statistics.
- *
- * Or can we get them in binary form from netlink?
+ * Compared to /proc/net/dev this avoids counting software drops,
+ * but may be unimplemented and just return 0.
+ * The author has found no straigthforward way to check for support.
  */
+static long int
+linux_get_stat(const char * if_name, const char * stat) {
+	ssize_t bytes_read;
+	int fd;
+	char buffer[PATH_MAX];
+
+	snprintf(buffer, sizeof(buffer), "/sys/class/net/%s/statistics/%s", if_name, stat);
+	fd = open(buffer, O_RDONLY);
+	if (fd == -1)
+		return 0;
+
+	bytes_read = read(fd, buffer, sizeof(buffer) - 1);
+	close(fd);
+	if (bytes_read == -1)
+		return 0;
+	buffer[bytes_read] = '\0';
+
+	return strtol(buffer, NULL, 10);
+}
+
 static long int
 linux_if_drops(const char * if_name)
 {
-	char buffer[512];
-	FILE *file;
-	char *bufptr, *nameptr, *colonptr;
-	int field_to_convert = 3;
-	long int dropped_pkts = 0;
-
-	file = fopen("/proc/net/dev", "r");
-	if (!file)
-		return 0;
-
-	while (fgets(buffer, sizeof(buffer), file) != NULL)
-	{
-		/* 	search for 'bytes' -- if its in there, then
-			that means we need to grab the fourth field. otherwise
-			grab the third field. */
-		if (field_to_convert != 4 && strstr(buffer, "bytes"))
-		{
-			field_to_convert = 4;
-			continue;
-		}
-
-		/*
-		 * See whether this line corresponds to this device.
-		 * The line should have zero or more leading blanks,
-		 * followed by a device name, followed by a colon,
-		 * followed by the statistics.
-		 */
-		bufptr = buffer;
-		/* Skip leading blanks */
-		while (*bufptr == ' ')
-			bufptr++;
-		nameptr = bufptr;
-		/* Look for the colon */
-		colonptr = strchr(nameptr, ':');
-		if (colonptr == NULL)
-		{
-			/*
-			 * Not found; this could, for example, be the
-			 * header line.
-			 */
-			continue;
-		}
-		/* Null-terminate the interface name. */
-		*colonptr = '\0';
-		if (strcmp(if_name, nameptr) == 0)
-		{
-			/*
-			 * OK, this line has the statistics for the interface.
-			 * Skip past the interface name.
-			 */
-			bufptr = colonptr + 1;
-
-			/* grab the nth field from it */
-			while (--field_to_convert && *bufptr != '\0')
-			{
-				/*
-				 * This isn't the field we want.
-				 * First, skip any leading blanks before
-				 * the field.
-				 */
-				while (*bufptr == ' ')
-					bufptr++;
-
-				/*
-				 * Now skip the non-blank characters of
-				 * the field.
-				 */
-				while (*bufptr != '\0' && *bufptr != ' ')
-					bufptr++;
-			}
-
-			if (field_to_convert == 0)
-			{
-				/*
-				 * We've found the field we want.
-				 * Skip any leading blanks before it.
-				 */
-				while (*bufptr == ' ')
-					bufptr++;
-
-				/*
-				 * Now extract the value, if we have one.
-				 */
-				if (*bufptr != '\0')
-					dropped_pkts = strtol(bufptr, NULL, 10);
-			}
-			break;
-		}
-	}
-
-	fclose(file);
-	return dropped_pkts;
+	long int missed = linux_get_stat(if_name, "rx_missed_errors");
+	long int fifo = linux_get_stat(if_name, "rx_fifo_errors");
+	return missed + fifo;
 }
 
 
