@@ -3708,8 +3708,28 @@ pcap_close_all(void)
 {
 	struct pcap *handle;
 
-	while ((handle = pcaps_to_close) != NULL)
+	while ((handle = pcaps_to_close) != NULL) {
 		pcap_close(handle);
+
+		/*
+		 * If a pcap module adds a pcap_t to the "close all"
+		 * list by calling pcap_add_to_pcaps_to_close(), it
+		 * must have a cleanup routine that removes it from the
+		 * list, by calling pcap_remove_from_pcaps_to_close(),
+		 * and must make that cleanup routine the cleanup_op
+		 * for the pcap_t.
+		 *
+		 * That means that, after pcap_close() - which calls
+		 * the cleanup_op for the pcap_t - the pcap_t must
+		 * have been removed from the list, so pcaps_to_close
+		 * must not be equal to handle.
+		 *
+		 * We check for that, and abort if handle is still
+		 * at the head of the list, to prevent infinite loops.
+		 */
+		if (pcaps_to_close == handle)
+			abort();
+	}
 }
 
 int
