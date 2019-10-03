@@ -158,6 +158,17 @@ static void session_close(struct session *);
 
 static int is_url(const char *source);
 
+/*
+ * Maximum sizes for fixed-bit-width values.
+ */
+#ifndef UINT16_MAX
+#define UINT16_MAX	65535U
+#endif
+
+#ifndef UINT32_MAX
+#define UINT32_MAX	4294967295U
+#endif
+
 int
 daemon_serviceloop(SOCKET sockctrl, int isactive, char *passiveClients,
     int nullAuthAllowed)
@@ -1324,6 +1335,18 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 
 }
 
+/*
+ * Make sure that the reply length won't overflow 32 bits if we add the
+ * specified amount to it.  If it won't, add that amount to it.
+ */
+#define CHECK_AND_INCREASE_REPLY_LEN(itemlen) \
+	if (replylen + (itemlen) < replylen) { \
+		pcap_strlcpy(errmsgbuf, "Reply length doesn't fit in 32 bits", \
+		    sizeof (errmsgbuf)); \
+		goto error; \
+	} \
+	replylen += (uint32)itemlen;
+
 static int
 daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 {
@@ -1369,13 +1392,30 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 	{
 		nif++;
 
-		if (d->description)
-			replylen += strlen(d->description);
-		if (d->name)
-			replylen += strlen(d->name);
+		if (d->description) {
+			size_t stringlen = strlen(d->description);
+			if (stringlen > UINT16_MAX) {
+				pcap_strlcpy(errmsgbuf,
+				    "Description length doesn't fit in 16 bits",
+				    sizeof (errmsgbuf));
+				goto error;
+			}
+			CHECK_AND_INCREASE_REPLY_LEN(stringlen);
+		}
+		if (d->name) {
+			size_t stringlen = strlen(d->name);
+			if (stringlen > UINT16_MAX) {
+				pcap_strlcpy(errmsgbuf,
+				    "Name length doesn't fit in 16 bits",
+				    sizeof (errmsgbuf));
+				goto error;
+			}
+			CHECK_AND_INCREASE_REPLY_LEN(stringlen);
+		}
 
-		replylen += sizeof(struct rpcap_findalldevs_if);
+		CHECK_AND_INCREASE_REPLY_LEN(sizeof(struct rpcap_findalldevs_if));
 
+		uint16_t naddrs = 0;
 		for (address = d->addresses; address != NULL; address = address->next)
 		{
 			/*
@@ -1387,7 +1427,14 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 #ifdef AF_INET6
 			case AF_INET6:
 #endif
-				replylen += (sizeof(struct rpcap_sockaddr) * 4);
+				CHECK_AND_INCREASE_REPLY_LEN(sizeof(struct rpcap_sockaddr) * 4);
+				if (naddrs == UINT16_MAX) {
+					pcap_strlcpy(errmsgbuf,
+					    "Number of interfaces doesn't fit in 16 bits",
+					    sizeof (errmsgbuf));
+					goto error;
+				}
+				naddrs++;
 				break;
 
 			default:
@@ -1396,7 +1443,7 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 		}
 	}
 
-	// RPCAP findalldevs command
+	// RPCAP findalldevs reply
 	if (sock_bufferize(NULL, sizeof(struct rpcap_header), NULL,
 	    &sendbufidx, RPCAP_NETBUF_SIZE, SOCKBUF_CHECKONLY, errmsgbuf,
 	    PCAP_ERRBUF_SIZE) == -1)
@@ -1418,10 +1465,18 @@ daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
 
 		memset(findalldevs_if, 0, sizeof(struct rpcap_findalldevs_if));
 
-		if (d->description) ldescr = (short) strlen(d->description);
-		else ldescr = 0;
-		if (d->name) lname = (short) strlen(d->name);
-		else lname = 0;
+		/*
+		 * We've already established that the string lengths
+		 * fit in 16 bits.
+		 */
+		if (d->description)
+			ldescr = (uint16) strlen(d->description);
+		else
+			ldescr = 0;
+		if (d->name)
+			lname = (uint16) strlen(d->name);
+		else
+			lname = 0;
 
 		findalldevs_if->desclen = htons(ldescr);
 		findalldevs_if->namelen = htons(lname);
