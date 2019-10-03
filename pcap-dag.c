@@ -419,7 +419,8 @@ dag_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		rlen = ntohs(header->rlen);
 		if (rlen < dag_record_size)
 		{
-			strncpy(p->errbuf, "dag_read: record too small", PCAP_ERRBUF_SIZE);
+			pcap_strlcpy(p->errbuf, "dag_read: record too small",
+			    PCAP_ERRBUF_SIZE);
 			return -1;
 		}
 		pd->dag_mem_bottom += rlen;
