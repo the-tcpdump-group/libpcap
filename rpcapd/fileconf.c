@@ -498,8 +498,7 @@ int fileconf_save(const char *savefile)
 		fprintf(fp, "# Hosts which are allowed to connect to this server (passive mode)\n");
 		fprintf(fp, "# Format: PassiveClient = <name or address>\n\n");
 
-		strncpy(temphostlist, hostlist, MAX_HOST_LIST);
-		temphostlist[MAX_HOST_LIST] = 0;
+		pcap_strlcpy(temphostlist, hostlist, sizeof (temphostlist));
 
 		token = pcap_strtok_r(temphostlist, RPCAP_HOSTLIST_SEP, &lasts);
 		while(token != NULL)

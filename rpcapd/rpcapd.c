@@ -180,8 +180,8 @@ int main(int argc, char *argv[])
 	// Initialize errbuf
 	memset(errbuf, 0, sizeof(errbuf));
 
-	strncpy(address, RPCAP_DEFAULT_NETADDR, MAX_LINE);
-	strncpy(port, RPCAP_DEFAULT_NETPORT, MAX_LINE);
+	pcap_strlcpy(address, RPCAP_DEFAULT_NETADDR, sizeof (address));
+	pcap_strlcpy(port, RPCAP_DEFAULT_NETPORT, sizeof (port));
 
 	// Prepare to open a new server socket
 	memset(&mainhints, 0, sizeof(struct addrinfo));
@@ -200,10 +200,10 @@ int main(int argc, char *argv[])
 				rpcapd_log_set(log_to_systemlog, log_debug_messages);
 				break;
 			case 'b':
-				strncpy(address, optarg, MAX_LINE);
+				pcap_strlcpy(address, optarg, sizeof (address));
 				break;
 			case 'p':
-				strncpy(port, optarg, MAX_LINE);
+				pcap_strlcpy(port, optarg, sizeof (port));
 				break;
 			case '4':
 				mainhints.ai_family = PF_INET;		// IPv4 server only
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'l':
 			{
-				strncpy(hostlist, optarg, sizeof(hostlist));
+				pcap_strlcpy(hostlist, optarg, sizeof(hostlist));
 				break;
 			}
 			case 'a':
@@ -246,12 +246,12 @@ int main(int argc, char *argv[])
 				{
 					tmpport = pcap_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
 
-					pcap_strlcpy(activelist[i].address, tmpaddress, MAX_LINE);
+					pcap_strlcpy(activelist[i].address, tmpaddress, sizeof (activelist[i].address));
 
 					if ((tmpport == NULL) || (strcmp(tmpport, "DEFAULT") == 0)) // the user choose a custom port
-						pcap_strlcpy(activelist[i].port, RPCAP_DEFAULT_NETPORT_ACTIVE, MAX_LINE);
+						pcap_strlcpy(activelist[i].port, RPCAP_DEFAULT_NETPORT_ACTIVE, sizeof (activelist[i].port));
 					else
-						pcap_strlcpy(activelist[i].port, tmpport, MAX_LINE);
+						pcap_strlcpy(activelist[i].port, tmpport, sizeof (activelist[i].port));
 
 					tmpaddress = pcap_strtok_r(NULL, RPCAP_HOSTLIST_SEP, &lasts);
 
@@ -266,10 +266,10 @@ int main(int argc, char *argv[])
 				break;
 			}
 			case 'f':
-				pcap_strlcpy(loadfile, optarg, MAX_LINE);
+				pcap_strlcpy(loadfile, optarg, sizeof (loadfile));
 				break;
 			case 's':
-				pcap_strlcpy(savefile, optarg, MAX_LINE);
+				pcap_strlcpy(savefile, optarg, sizeof (savefile));
 				break;
 			case 'h':
 				printusage();
