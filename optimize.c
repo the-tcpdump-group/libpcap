@@ -137,7 +137,7 @@ lowest_set_bit(int mask)
 	 * (It's currently not, in MSVC, even on 64-bit platforms, but....)
 	 */
 	if (_BitScanForward(&bit, (unsigned int)mask) == 0)
-		return -1;	/* mask is zero */
+		abort();	/* mask is zero */
 	return (int)bit;
 }
 #elif defined(MSDOS) && defined(__DJGPP__)
