@@ -1338,17 +1338,17 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 /*
  * Make sure that the reply length won't overflow 32 bits if we add the
  * specified amount to it.  If it won't, add that amount to it.
+ *
+ * We check whether replylen + itemlen > UINT32_MAX, but subtract itemlen
+ * from both sides, to prevent overflow.
  */
-#define CHECK_AND_INCREASE_REPLY_LEN(itemlen) { \
-	size_t replylen_before = replylen; \
-\
-	replylen += (uint32)(itemlen); \
-	if (replylen < replylen_before) { \
+#define CHECK_AND_INCREASE_REPLY_LEN(itemlen) \
+	if (replylen > UINT32_MAX - (itemlen)) { \
 		pcap_strlcpy(errmsgbuf, "Reply length doesn't fit in 32 bits", \
 		    sizeof (errmsgbuf)); \
 		goto error; \
 	} \
-}
+	replylen += (uint32)(itemlen);
 
 static int
 daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
