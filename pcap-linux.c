@@ -303,7 +303,7 @@ typedef int		socklen_t;
  */
 struct pcap_linux {
 	u_int	packets_read;	/* count of packets read with recvfrom() */
-	long	proc_dropped;	/* packets reported dropped by /proc/net/dev */
+	long	sysfs_dropped;	/* packets reported dropped by /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors */
 	struct pcap_stat stat;
 
 	char	*device;	/* device name */
@@ -1167,7 +1167,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
 
 /*
  * Grabs the number of missed packets by the interface from
- * /sys/class/net/statistics/{if_name}/rx_{missed,fifo}_errors.
+ * /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors.
  *
  * Compared to /proc/net/dev this avoids counting software drops,
  * but may be unimplemented and just return 0.
@@ -1633,10 +1633,10 @@ pcap_activate_linux(pcap_t *handle)
 	/*
 	 * If we're in promiscuous mode, then we probably want
 	 * to see when the interface drops packets too, so get an
-	 * initial count from /proc/net/dev
+	 * initial count from /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors
 	 */
 	if (handle->opt.promisc)
-		handlep->proc_dropped = linux_if_drops(handlep->device);
+		handlep->sysfs_dropped = linux_if_drops(handlep->device);
 
 #ifdef HAVE_PF_PACKET_SOCKETS
 	/*
@@ -2331,13 +2331,15 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	long if_dropped = 0;
 
 	/*
-	 *	To fill in ps_ifdrop, we parse /proc/net/dev for the number
+	 * To fill in ps_ifdrop, we parse
+	 * /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors
+	 * for the numbers
 	 */
 	if (handle->opt.promisc)
 	{
-		if_dropped = handlep->proc_dropped;
-		handlep->proc_dropped = linux_if_drops(handlep->device);
-		handlep->stat.ps_ifdrop += (handlep->proc_dropped - if_dropped);
+		if_dropped = handlep->sysfs_dropped;
+		handlep->sysfs_dropped = linux_if_drops(handlep->device);
+		handlep->stat.ps_ifdrop += (handlep->sysfs_dropped - if_dropped);
 	}
 
 #ifdef HAVE_STRUCT_TPACKET_STATS
@@ -2426,7 +2428,8 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 *	"ps_drop" is not supported.
 	 *
 	 *	"ps_ifdrop" is supported. It will return the number
-	 *	of drops the interface reports in /proc/net/dev,
+	 *	of drops the interface reports in
+	 *	/sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors,
 	 *	if that is available.
 	 *
 	 *	"ps_recv" doesn't include packets not yet read from
