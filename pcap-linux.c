@@ -559,9 +559,9 @@ pcap_create_interface(const char *device, char *ebuf)
 
 #ifdef HAVE_LIBNL
 /*
- * If interface {if} is a mac80211 driver, the file
- * /sys/class/net/{if}/phy80211 is a symlink to
- * /sys/class/ieee80211/{phydev}, for some {phydev}.
+ * If interface {if_name} is a mac80211 driver, the file
+ * /sys/class/net/{if_name}/phy80211 is a symlink to
+ * /sys/class/ieee80211/{phydev_name}, for some {phydev_name}.
  *
  * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
  * least, has a "wmaster0" device and a "wlan0" device; the
@@ -572,24 +572,30 @@ pcap_create_interface(const char *device, char *ebuf)
  * airmon-ng searches through /sys/class/net for devices named
  * monN, starting with mon0; as soon as one *doesn't* exist,
  * it chooses that as the monitor device name.  If the "iw"
- * command exists, it does "iw dev {if} interface add {monif}
- * type monitor", where {monif} is the monitor device.  It
- * then (sigh) sleeps .1 second, and then configures the
- * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
- * is a file, it writes {mondev}, without a newline, to that file,
- * and again (sigh) sleeps .1 second, and then iwconfig's that
- * device into monitor mode and configures it up.  Otherwise,
- * you can't do monitor mode.
+ * command exists, it does
+ *
+ *    iw dev {if_name} interface add {monif_name} type monitor
+ *
+ * where {monif_name} is the monitor device.  It then (sigh) sleeps
+ * .1 second, and then configures the device up.  Otherwise, if
+ * /sys/class/ieee80211/{phydev_name}/add_iface is a file, it writes
+ * {mondev_name}, without a newline, to that file, and again (sigh)
+ * sleeps .1 second, and then iwconfig's that device into monitor
+ * mode and configures it up.  Otherwise, you can't do monitor mode.
  *
  * All these devices are "glued" together by having the
- * /sys/class/net/{device}/phy80211 links pointing to the same
+ * /sys/class/net/{if_name}/phy80211 links pointing to the same
  * place, so, given a wmaster, wlan, or mon device, you can
  * find the other devices by looking for devices with
  * the same phy80211 link.
  *
  * To turn monitor mode off, delete the monitor interface,
- * either with "iw dev {monif} interface del" or by sending
- * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
+ * either with
+ *
+ *    iw dev {monif_name} interface del
+ *
+ * or by sending {monif_name}, with no NL, down
+ * /sys/class/ieee80211/{phydev_name}/remove_iface
  *
  * Note: if you try to create a monitor device named "monN", and
  * there's already a "monN" device, it fails, as least with
@@ -1633,7 +1639,8 @@ pcap_activate_linux(pcap_t *handle)
 	/*
 	 * If we're in promiscuous mode, then we probably want
 	 * to see when the interface drops packets too, so get an
-	 * initial count from /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors
+	 * initial count from
+	 * /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors
 	 */
 	if (handle->opt.promisc)
 		handlep->sysfs_dropped = linux_if_drops(handlep->device);
@@ -2610,7 +2617,7 @@ scan_sys_class_net(pcap_if_list_t *devlistp, char *errbuf)
 			 * Stat failed.  Either there was an error
 			 * other than ENOENT, and we don't know if
 			 * this is an interface, or it's ENOENT,
-			 * and either some part of "/sys/class/net/{if}"
+			 * and either some part of "/sys/class/net/{if_name}"
 			 * disappeared, in which case it probably means
 			 * the interface disappeared, or there's no
 			 * "ifindex" file, which means it's not a
@@ -2787,7 +2794,7 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 		*flags |= PCAP_IF_WIRELESS;
 	} else {
 		/*
-		 * OK, what does /sys/class/net/{if}/type contain?
+		 * OK, what does /sys/class/net/{if_name}/type contain?
 		 * (We don't use that for Wi-Fi, as it'll report
 		 * "Ethernet", i.e. ARPHRD_ETHER, for non-monitor-
 		 * mode devices.)
@@ -5974,10 +5981,13 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 *
 	 * Atheros cards might require that a separate "monitor virtual access
 	 * point" be created, with later versions of the madwifi driver.
-	 * airmon-ng does "wlanconfig ath create wlandev {if} wlanmode
-	 * monitor -bssid", which apparently spits out a line "athN"
-	 * where "athN" is the monitor mode device.  To leave monitor
-	 * mode, it destroys the monitor mode device.
+	 * airmon-ng does
+	 *
+	 *    wlanconfig ath create wlandev {if_name} wlanmode monitor -bssid
+	 *
+	 * which apparently spits out a line "athN" where "athN" is the
+	 * monitor mode device.  To leave monitor mode, it destroys the
+	 * monitor mode device.
 	 *
 	 * Some Intel Centrino adapters might require private ioctls to get
 	 * radio headers; the ipw2200 and ipw3945 drivers allow you to
@@ -5988,9 +5998,9 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * It would be Truly Wonderful if mac80211 and nl80211 cleaned this
 	 * up, and if all drivers were converted to mac80211 drivers.
 	 *
-	 * If interface {if} is a mac80211 driver, the file
-	 * /sys/class/net/{if}/phy80211 is a symlink to
-	 * /sys/class/ieee80211/{phydev}, for some {phydev}.
+	 * If interface {if_name} is a mac80211 driver, the file
+	 * /sys/class/net/{if_name}/phy80211 is a symlink to
+	 * /sys/class/ieee80211/{phydev_name}, for some {phydev_name}.
 	 *
 	 * On Fedora 9, with a 2.6.26.3-29 kernel, my Zydas stick, at
 	 * least, has a "wmaster0" device and a "wlan0" device; the
@@ -6001,24 +6011,30 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	 * airmon-ng searches through /sys/class/net for devices named
 	 * monN, starting with mon0; as soon as one *doesn't* exist,
 	 * it chooses that as the monitor device name.  If the "iw"
-	 * command exists, it does "iw dev {if} interface add {monif}
-	 * type monitor", where {monif} is the monitor device.  It
-	 * then (sigh) sleeps .1 second, and then configures the
-	 * device up.  Otherwise, if /sys/class/ieee80211/{phydev}/add_iface
-	 * is a file, it writes {mondev}, without a newline, to that file,
-	 * and again (sigh) sleeps .1 second, and then iwconfig's that
-	 * device into monitor mode and configures it up.  Otherwise,
-	 * you can't do monitor mode.
+	 * command exists, it does
+	 *
+	 *    iw dev {if_name} interface add {monif_name} type monitor"
+	 *
+	 * where {monif_name} is the monitor device.  It then (sigh) sleeps
+	 * .1 second, and then configures the device up.  Otherwise, if
+	 * /sys/class/ieee80211/{phydev_name}/add_iface is a file, it writes
+	 * {mondev_name}, without a newline, to that file, and again (sigh)
+	 * sleeps .1 second, and then iwconfig's that device into monitor
+	 * mode and configures it up.  Otherwise, you can't do monitor mode.
 	 *
 	 * All these devices are "glued" together by having the
-	 * /sys/class/net/{device}/phy80211 links pointing to the same
+	 * /sys/class/net/{device_name}/phy80211 links pointing to the same
 	 * place, so, given a wmaster, wlan, or mon device, you can
 	 * find the other devices by looking for devices with
 	 * the same phy80211 link.
 	 *
 	 * To turn monitor mode off, delete the monitor interface,
-	 * either with "iw dev {monif} interface del" or by sending
-	 * {monif}, with no NL, down /sys/class/ieee80211/{phydev}/remove_iface
+	 * either with
+	 *
+	 *    iw dev {monif_name} interface del
+	 *
+	 * or by sending {monif_name}, with no NL, down
+	 * /sys/class/ieee80211/{phydev_name}/remove_iface
 	 *
 	 * Note: if you try to create a monitor device named "monN", and
 	 * there's already a "monN" device, it fails, as least with
@@ -6390,7 +6406,7 @@ enter_rfmon_mode_wext(pcap_t *handle, int sock_fd, const char *device)
 	}
 
 	/*
-	 * XXX - airmon-ng does "iwconfig {if} key off" after setting
+	 * XXX - airmon-ng does "iwconfig {if_name} key off" after setting
 	 * monitor mode and setting the channel, and then does
 	 * "iwconfig up".
 	 */
