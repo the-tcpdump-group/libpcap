@@ -299,7 +299,7 @@ typedef int		socklen_t;
  */
 struct pcap_linux {
 	u_int	packets_read;	/* count of packets read with recvfrom() */
-	long	sysfs_dropped;	/* packets reported dropped by /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors */
+	long long sysfs_dropped; /* packets reported dropped by /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors */
 	struct pcap_stat stat;
 
 	char	*device;	/* device name */
@@ -1159,7 +1159,7 @@ pcap_can_set_rfmon_linux(pcap_t *handle)
  * but may be unimplemented and just return 0.
  * The author has found no straigthforward way to check for support.
  */
-static long int
+static long long int
 linux_get_stat(const char * if_name, const char * stat) {
 	ssize_t bytes_read;
 	int fd;
@@ -1176,14 +1176,14 @@ linux_get_stat(const char * if_name, const char * stat) {
 		return 0;
 	buffer[bytes_read] = '\0';
 
-	return strtol(buffer, NULL, 10);
+	return strtoll(buffer, NULL, 10);
 }
 
-static long int
+static long long int
 linux_if_drops(const char * if_name)
 {
-	long int missed = linux_get_stat(if_name, "rx_missed_errors");
-	long int fifo = linux_get_stat(if_name, "rx_fifo_errors");
+	long long int missed = linux_get_stat(if_name, "rx_missed_errors");
+	long long int fifo = linux_get_stat(if_name, "rx_fifo_errors");
 	return missed + fifo;
 }
 
@@ -2189,7 +2189,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	socklen_t len = sizeof (struct tpacket_stats);
 #endif /* HAVE_STRUCT_TPACKET_STATS */
 
-	long if_dropped = 0;
+	long long if_dropped = 0;
 
 	/*
 	 * To fill in ps_ifdrop, we parse
@@ -2198,9 +2198,37 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	 */
 	if (handle->opt.promisc)
 	{
+		/*
+		 * XXX - is there any reason to do this by remembering
+		 * the last counts value, subtracting it from the
+		 * current counts value, and adding that to stat.ps_ifdrop,
+		 * maintaining stat.ps_ifdrop as a count, rather than just
+		 * saving the *initial* counts value and setting
+		 * stat.ps_ifdrop to the difference between the current
+		 * value and the initial value?
+		 *
+		 * One reason might be to handle the count wrapping
+		 * around, on platforms where the count is 32 bits
+		 * and where you might get more than 2^32 dropped
+		 * packets; is there any other reason?
+		 *
+		 * (We maintain the count as a long long int so that,
+		 * if the kernel maintains the counts as 64-bit even
+		 * on 32-bit platforms, we can handle the real count.
+		 *
+		 * Unfortunately, we can't report 64-bit counts; we
+		 * need a better API for reporting statistics, such as
+		 * one that reports them in a style similar to the
+		 * pcapng Interface Statistics Block, so that 1) the
+		 * counts are 64-bit, 2) it's easier to add new statistics
+		 * without breaking the ABI, and 3) it's easier to
+		 * indicate to a caller that wants one particular
+		 * statistic that it's not available by just not supplying
+		 * it.)
+		 */
 		if_dropped = handlep->sysfs_dropped;
 		handlep->sysfs_dropped = linux_if_drops(handlep->device);
-		handlep->stat.ps_ifdrop += (handlep->sysfs_dropped - if_dropped);
+		handlep->stat.ps_ifdrop += (u_int)(handlep->sysfs_dropped - if_dropped);
 	}
 
 #ifdef HAVE_STRUCT_TPACKET_STATS
