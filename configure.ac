@@ -1813,7 +1813,7 @@ darwin*)
 			AC_MSG_CHECKING(whether building for 32-bit x86 is supported)
 			save_CFLAGS="$CFLAGS"
 			CFLAGS="$CFLAGS -arch i386"
-			AC_TRY_COMPILE(
+			AC_TRY_LINK(
 			    [],
 			    [return 0;],
 			    [
