@@ -5149,6 +5149,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 					snprintf(handle->errbuf,
 						PCAP_ERRBUF_SIZE,
 						"The interface went down");
+					continue;
 				} else {
 					pcap_fmt_errmsg_for_errno(handle->errbuf,
 					    PCAP_ERRBUF_SIZE, errno,
