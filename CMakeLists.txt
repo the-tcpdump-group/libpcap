@@ -333,6 +333,38 @@ include(CheckTypeSize)
 check_include_file(inttypes.h HAVE_INTTYPES_H)
 check_include_file(stdint.h HAVE_STDINT_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
+check_include_file(sys/capability.h HAVE_SYS_CAPABILITY_H)
+if(HAVE_SYS_CAPABILITY_H)
+  add_definitions(-DHAVE_SYS_CAPABILITY=1)
+check_c_source_compiles(
+"#define _GNU_SOURCE
+#include <sched.h>
+
+int
+main(void)
+{
+    int i = setns( 0, CLONE_NEWNET );
+    return 0;
+}
+"
+HAVE_LINUX_NETWORK_NAMESPACE)
+if(HAVE_LINUX_NETWORK_NAMESPACE)
+  add_definitions(-DHAVE_LINUX_NETWORK_NAMESPACE=1)
+endif(HAVE_LINUX_NETWORK_NAMESPACE)
+endif(HAVE_SYS_CAPABILITY_H)
+
+check_c_source_compiles(
+"# include <sys/capability.h>
+
+int
+main(void)
+{
+    cap_value_t cap_list[3] = { CAP_NET_ADMIN, CAP_NET_RAW, CAP_SYS_ADMIN };
+    return 0;
+}
+"
+HAVE_SYS_CAPABILITY)
+
 if(NOT HAVE_UNISTD_H)
     add_definitions(-DYY_NO_UNISTD_H)
 endif(NOT HAVE_UNISTD_H)

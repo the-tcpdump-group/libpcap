@@ -82,6 +82,9 @@
 #else /* UN*X */
   #include <sys/types.h>	/* u_int, u_char etc. */
   #include <sys/time.h>
+#ifdef HAVE_SYS_CAPABILITY
+  #include <sys/capability.h>
+#endif
 #endif /* _WIN32/MSDOS/UN*X */
 
 #include <pcap/socket.h>	/* for SOCKET, as the active-mode rpcap APIs use it */
@@ -950,6 +953,10 @@ PCAP_API struct pcap_samp *pcap_setsampling(pcap_t *p);
 
 /* Maximum length of an host name (needed for the RPCAP active mode) */
 #define RPCAP_HOSTLIST_SIZE 1024
+
+#ifdef HAVE_SYS_CAPABILITY
+PCAP_API int pcap_get_caps(cap_value_t *cap_list, int cap_cnt);
+#endif
 
 PCAP_API SOCKET	pcap_remoteact_accept(const char *address, const char *port,
 	    const char *hostlist, char *connectinghost,

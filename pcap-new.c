@@ -463,3 +463,20 @@ struct pcap_samp *pcap_setsampling(pcap_t *p)
 {
 	return &p->rmt_samp;
 }
+
+#ifdef HAVE_SYS_CAPABILITY
+int pcap_get_caps(cap_value_t *cap_list, int cap_cnt)
+{
+	int ii = 0;
+
+	if (ii < cap_cnt)
+		cap_list[ii++] = CAP_NET_ADMIN;
+	if (ii < cap_cnt)
+		cap_list[ii++] = CAP_NET_RAW;
+#ifdef HAVE_LINUX_NETWORK_NAMESPACE
+	if (ii < cap_cnt)
+		cap_list[ii++] = CAP_SYS_ADMIN;
+#endif
+	return ii;
+}
+#endif
