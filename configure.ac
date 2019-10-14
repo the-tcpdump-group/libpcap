@@ -697,11 +697,6 @@ else
 		# No prizes for guessing this one.
 		#
 		V_PCAP=linux
-
-		#
-		# XXX - this won't work with older kernels that have
-		# SOCK_PACKET sockets but not PF_PACKET sockets.
-		#
 		VALGRINDTEST_SRC=valgrindtest.c
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
 	        #
