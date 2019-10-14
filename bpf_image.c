@@ -32,6 +32,14 @@
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
+
+/*
+ * We want our versions of these #defines, not Linux's version.
+ * (The two should be the same; if not, we have a problem; all BPF
+ * implementations *should* be source-compatible supersets of ours.)
+ */
+#undef BPF_STMT
+#undef BPF_JUMP
 #endif
 
 #include "pcap-int.h"
