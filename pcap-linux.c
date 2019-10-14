@@ -108,19 +108,14 @@
 /* check for memory mapped access avaibility. We assume every needed
  * struct is defined if the macro TPACKET_HDRLEN is defined, because it
  * uses many ring related structs and macros */
-#ifdef PCAP_SUPPORT_PACKET_RING
-#ifdef TPACKET_HDRLEN
-# define HAVE_PACKET_RING
-# ifdef TPACKET3_HDRLEN
-#  define HAVE_TPACKET3
-# endif /* TPACKET3_HDRLEN */
-# ifdef TPACKET2_HDRLEN
-#  define HAVE_TPACKET2
-# else  /* TPACKET2_HDRLEN */
-#  define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
-# endif /* TPACKET2_HDRLEN */
-#endif /* TPACKET_HDRLEN */
-#endif /* PCAP_SUPPORT_PACKET_RING */
+#ifdef TPACKET3_HDRLEN
+# define HAVE_TPACKET3
+#endif /* TPACKET3_HDRLEN */
+#ifdef TPACKET2_HDRLEN
+# define HAVE_TPACKET2
+#else  /* TPACKET2_HDRLEN */
+# define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
+#endif /* TPACKET2_HDRLEN */
 
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
@@ -236,9 +231,7 @@ static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_sock(pcap_t *, int);
-#ifdef HAVE_PACKET_RING
 static int activate_mmap(pcap_t *, int *);
-#endif
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -282,7 +275,6 @@ union thdr {
 	u_char				*raw;
 };
 
-#ifdef HAVE_PACKET_RING
 #define RING_GET_FRAME_AT(h, offset) (((u_char **)h->buffer)[(offset)])
 #define RING_GET_CURRENT_FRAME(h) RING_GET_FRAME_AT(h, h->offset)
 
@@ -303,7 +295,6 @@ static int pcap_setnonblock_mmap(pcap_t *p, int nonblock);
 static int pcap_getnonblock_mmap(pcap_t *p);
 static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
-#endif
 
 /*
  * In pre-3.0 kernels, the tp_vlan_tci field is set to whatever the
@@ -367,9 +358,7 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
 static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
     char *ebuf);
 #endif
-#ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
-#endif
 
 #ifdef SO_ATTACH_FILTER
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode,
@@ -1464,7 +1453,6 @@ pcap_activate_linux(pcap_t *handle)
 		 */
 		return ret;
 	} else {
-#ifdef HAVE_PACKET_RING
 		/*
 		 * Success.
 		 * Try to use memory-mapped access.
@@ -1502,7 +1490,6 @@ pcap_activate_linux(pcap_t *handle)
 			 */
 			goto fail;
 		}
-#endif /* HAVE_PACKET_RING */
 	}
 
 	/*
@@ -3836,7 +3823,6 @@ activate_sock(pcap_t *handle, int is_any_device)
 	return status;
 }
 
-#ifdef HAVE_PACKET_RING
 /*
  * Attempt to activate with memory-mapped access.
  *
@@ -5557,7 +5543,6 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	handlep->filter_in_userland = 1;
 	return ret;
 }
-#endif /* HAVE_PACKET_RING */
 
 /*
  *  Return the index of the given device name. Fill ebuf and return
@@ -6525,7 +6510,6 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
 
 #endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 
-#ifdef HAVE_PACKET_RING
 /*
  * Find out if we have any form of fragmentation/reassembly offloading.
  *
@@ -6667,8 +6651,6 @@ iface_get_offload(pcap_t *handle _U_)
 	return 0;
 }
 #endif /* SIOCETHTOOL */
-
-#endif /* HAVE_PACKET_RING */
 
 static struct dsa_proto {
 	const char *name;
@@ -7154,15 +7136,11 @@ pcap_set_protocol_linux(pcap_t *p, int protocol)
 const char *
 pcap_lib_version(void)
 {
-#ifdef HAVE_PACKET_RING
- #if defined(HAVE_TPACKET3)
+#if defined(HAVE_TPACKET3)
 	return (PCAP_VERSION_STRING " (with TPACKET_V3)");
- #elif defined(HAVE_TPACKET2)
+#elif defined(HAVE_TPACKET2)
 	return (PCAP_VERSION_STRING " (with TPACKET_V2)");
- #else
-	return (PCAP_VERSION_STRING " (with TPACKET_V1)");
- #endif
 #else
-	return (PCAP_VERSION_STRING " (without TPACKET)");
+	return (PCAP_VERSION_STRING " (with TPACKET_V1)");
 #endif
 }

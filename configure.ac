@@ -1158,11 +1158,6 @@ AC_ARG_ENABLE([packet-ring],
 [AC_HELP_STRING([--enable-packet-ring],[enable packet ring support on Linux @<:@default=yes@:>@])],
 ,enable_packet_ring=yes)
 
-if test "x$enable_packet_ring" != "xno" ; then
-	AC_DEFINE(PCAP_SUPPORT_PACKET_RING, 1, [use packet ring capture support on Linux if available])
-	AC_SUBST(PCAP_SUPPORT_PACKET_RING)
-fi
-
 #
 # Check for socklen_t.
 #
