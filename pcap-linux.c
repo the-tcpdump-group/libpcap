@@ -225,9 +225,8 @@ struct pcap_linux {
 /*
  * Stuff to do when we close.
  */
-#define MUST_CLEAR_PROMISC	0x00000001	/* clear promiscuous mode */
-#define MUST_CLEAR_RFMON	0x00000002	/* clear rfmon (monitor) mode */
-#define MUST_DELETE_MONIF	0x00000004	/* delete monitor-mode interface */
+#define MUST_CLEAR_RFMON	0x00000001	/* clear rfmon (monitor) mode */
+#define MUST_DELETE_MONIF	0x00000002	/* delete monitor-mode interface */
 
 /*
  * Prototypes for internal functions and methods.
@@ -1120,45 +1119,6 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		 * There's something we have to do when closing this
 		 * pcap_t.
 		 */
-		if (handlep->must_do_on_close & MUST_CLEAR_PROMISC) {
-			/*
-			 * We put the interface into promiscuous mode;
-			 * take it out of promiscuous mode.
-			 *
-			 * XXX - if somebody else wants it in promiscuous
-			 * mode, this code cannot know that, so it'll take
-			 * it out of promiscuous mode.  That's not fixable
-			 * in 2.0[.x] kernels.
-			 */
-			memset(&ifr, 0, sizeof(ifr));
-			pcap_strlcpy(ifr.ifr_name, handlep->device,
-			    sizeof(ifr.ifr_name));
-			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
-				fprintf(stderr,
-				    "Can't restore interface %s flags (SIOCGIFFLAGS failed: %s).\n"
-				    "Please adjust manually.\n"
-				    "Hint: This can't happen with Linux >= 2.2.0.\n",
-				    handlep->device, strerror(errno));
-			} else {
-				if (ifr.ifr_flags & IFF_PROMISC) {
-					/*
-					 * Promiscuous mode is currently on;
-					 * turn it off.
-					 */
-					ifr.ifr_flags &= ~IFF_PROMISC;
-					if (ioctl(handle->fd, SIOCSIFFLAGS,
-					    &ifr) == -1) {
-						fprintf(stderr,
-						    "Can't restore interface %s flags (SIOCSIFFLAGS failed: %s).\n"
-						    "Please adjust manually.\n"
-						    "Hint: This can't happen with Linux >= 2.2.0.\n",
-						    handlep->device,
-						    strerror(errno));
-					}
-				}
-			}
-		}
-
 #ifdef HAVE_LIBNL
 		if (handlep->must_do_on_close & MUST_DELETE_MONIF) {
 			ret = nl80211_init(handle, &nlstate, handlep->device);
