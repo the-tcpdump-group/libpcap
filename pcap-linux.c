@@ -179,28 +179,6 @@
 typedef int		socklen_t;
 #endif
 
-#ifndef MSG_TRUNC
-/*
- * This is being compiled on a system that lacks MSG_TRUNC; define it
- * with the value it has in the 2.2 and later kernels, so that, on
- * those kernels, when we pass it in the flags argument to "recvfrom()"
- * we're passing the right value and thus get the MSG_TRUNC behavior
- * we want.  (We don't get that behavior on 2.0[.x] kernels, because
- * they didn't support MSG_TRUNC.)
- */
-#define MSG_TRUNC	0x20
-#endif
-
-#ifndef SOL_PACKET
-/*
- * This is being compiled on a system that lacks SOL_PACKET; define it
- * with the value it has in the 2.2 and later kernels, so that we can
- * set promiscuous mode in the good modern way rather than the old
- * 2.0-kernel crappy way.
- */
-#define SOL_PACKET	263
-#endif
-
 #define MAX_LINKHEADER_SIZE	256
 
 /*
