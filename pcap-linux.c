@@ -189,7 +189,7 @@ typedef int		socklen_t;
 #define BIGGER_THAN_ALL_MTUS	(64*1024)
 
 /*
- * Private data for capturing on Linux SOCK_PACKET or PF_PACKET sockets.
+ * Private data for capturing on Linux PF_PACKET sockets.
  */
 struct pcap_linux {
 	u_int	packets_read;	/* count of packets read with recvfrom() */
@@ -2506,7 +2506,7 @@ scan_proc_net_dev(pcap_if_list_t *devlistp, char *errbuf)
 static const char any_descr[] = "Pseudo-device that captures on all interfaces";
 
 /*
- * A SOCK_PACKET or PF_PACKET socket can be bound to any network interface.
+ * A PF_PACKET socket can be bound to any network interface.
  */
 static int
 can_be_bound(const char *name _U_)
