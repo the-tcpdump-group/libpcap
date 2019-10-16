@@ -84,7 +84,6 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	*p++ = ':';
 	*p++ = ' ';
 	*p = '\0';
-	msglen += 2;
 	errbuflen_remaining -= 2;
 
 	/*
