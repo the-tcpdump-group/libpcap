@@ -1089,15 +1089,13 @@ linux_if_drops(const char * if_name)
 
 
 /*
- * With older kernels promiscuous mode is kind of interesting because we
- * have to reset the interface before exiting. The problem can't really
- * be solved without some daemon taking care of managing usage counts.
- * If we put the interface into promiscuous mode, we set a flag indicating
- * that we must take it out of that mode when the interface is closed,
- * and, when closing the interface, if that flag is set we take it out
- * of promiscuous mode.
- *
- * Even with newer kernels, we have the same issue with rfmon mode.
+ * Monitor mode is kind of interesting because we have to reset the
+ * interface before exiting. The problem can't really be solved without
+ * some daemon taking care of managing usage counts.  If we put the
+ * interface into monitor mode, we set a flag indicating that we must
+ * take it out of that mode when the interface is closed, and, when
+ * closing the interface, if that flag is set we take it out of monitor
+ * mode.
  */
 
 static void	pcap_cleanup_linux( pcap_t *handle )
