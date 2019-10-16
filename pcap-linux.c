@@ -370,7 +370,6 @@ static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
 #ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
 #endif
-static int 	iface_bind_old(int fd, const char *device, char *ebuf);
 
 #ifdef SO_ATTACH_FILTER
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode,
