@@ -2981,8 +2981,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 static int
 pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 {
-	struct pcap_linux *handlep = handle->priv;
-
 	handle->direction = d;
 	return 0;
 }
