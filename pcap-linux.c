@@ -4923,7 +4923,7 @@ static int pcap_handle_packet_mmap(
 	bp = frame + tp_mac;
 
 	/* if required build in place the sll header*/
-	sll = (void *)frame + TPACKET_ALIGN(handlep->tp_hdrlen);
+	sll = (void *)(frame + TPACKET_ALIGN(handlep->tp_hdrlen));
 	if (handlep->cooked) {
 		if (handle->linktype == DLT_LINUX_SLL2) {
 			struct sll2_header *hdrp;
