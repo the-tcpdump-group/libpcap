@@ -279,11 +279,11 @@ union thdr {
 #ifdef HAVE_TPACKET3
 	struct tpacket_block_desc	*h3;
 #endif
-	void				*raw;
+	u_char				*raw;
 };
 
 #ifdef HAVE_PACKET_RING
-#define RING_GET_FRAME_AT(h, offset) (((union thdr **)h->buffer)[(offset)])
+#define RING_GET_FRAME_AT(h, offset) (((u_char **)h->buffer)[(offset)])
 #define RING_GET_CURRENT_FRAME(h) RING_GET_FRAME_AT(h, h->offset)
 
 static void destroy_ring(pcap_t *handle);
@@ -4599,7 +4599,7 @@ retry:
 	/* fill the header ring with proper frame ptr*/
 	handle->offset = 0;
 	for (i=0; i<req.tp_block_nr; ++i) {
-		void *base = &handlep->mmapbuf[i*req.tp_block_size];
+		u_char *base = &handlep->mmapbuf[i*req.tp_block_size];
 		for (j=0; j<frames_per_block; ++j, ++handle->offset) {
 			RING_GET_CURRENT_FRAME(handle) = base;
 			base += req.tp_frame_size;
