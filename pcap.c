@@ -630,39 +630,26 @@ dup_sockaddr(struct sockaddr *sa, size_t sa_length)
  *
  * The figure of merit, which is lower the "better" the interface is,
  * has the uppermost bit set if the interface isn't running, the bit
- * below that set if the interface isn't up, the bit below that set
- * if the interface is a loopback interface, and the interface index
- * in the 29 bits below that.  (Yes, we assume u_int is 32 bits.)
+ * below that set if the interface isn't up, the bit below that
+ * set if the interface is a loopback interface, and the bit below
+ * that set if it's the "any" interface.
+ *
+ * Note: we don't sort by unit number because 1) not all interfaces have
+ * a unit number (systemd, for example, might assign interface names
+ * based on the interface's MAC address or on the physical location of
+ * the adapter's connector), and 2) if the name does end with a simple
+ * unit number, it's not a global property of the interface, it's only
+ * useful as a sort key for device names with the same prefix, so xyz0
+ * shouldn't necessarily sort before abc2.  This means that interfaces
+ * with the same figure of merit will be sorted by the order in which
+ * the mechanism from which we're getting the interfaces supplies them.
  */
 static u_int
 get_figure_of_merit(pcap_if_t *dev)
 {
-	const char *cp;
 	u_int n;
 
-	if (strcmp(dev->name, "any") == 0) {
-		/*
-		 * Give the "any" device an artificially high instance
-		 * number, so it shows up after all other non-loopback
-		 * interfaces.
-		 */
-		n = 0x1FFFFFFF;	/* 29 all-1 bits */
-	} else {
-		/*
-		 * A number at the end of the device name string is
-		 * assumed to be an instance number.  Add 1 to the
-		 * instance number, and use 0 for "no instance
-		 * number", so we don't put "no instance number"
-		 * devices and "instance 0" devices together.
-		 */
-		cp = dev->name + strlen(dev->name) - 1;
-		while (cp-1 >= dev->name && *(cp-1) >= '0' && *(cp-1) <= '9')
-			cp--;
-		if (*cp >= '0' && *cp <= '9')
-			n = atoi(cp) + 1;
-		else
-			n = 0;
-	}
+	n = 0;
 	if (!(dev->flags & PCAP_IF_RUNNING))
 		n |= 0x80000000;
 	if (!(dev->flags & PCAP_IF_UP))
@@ -688,6 +675,13 @@ get_figure_of_merit(pcap_if_t *dev)
 	 */
 	if (dev->flags & PCAP_IF_LOOPBACK)
 		n |= 0x10000000;
+
+	/*
+	 * Sort the "any" device before loopback and disconnected devices,
+	 * but after all other devices.
+	 */
+	if (strcmp(dev->name, "any") == 0)
+		n |= 0x08000000;
 
 	return (n);
 }
