@@ -1,0 +1,76 @@
+.\" Copyright (c) 1994, 1996, 1997
+.\"	The Regents of the University of California.  All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that: (1) source code distributions
+.\" retain the above copyright notice and this paragraph in its entirety, (2)
+.\" distributions including binary code include the above copyright notice and
+.\" this paragraph in its entirety in the documentation or other materials
+.\" provided with the distribution, and (3) all advertising materials mentioning
+.\" features or use of this software display the following acknowledgement:
+.\" ``This product includes software developed by the University of California,
+.\" Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
+.\" the University nor the names of its contributors may be used to endorse
+.\" or promote products derived from this software without specific prior
+.\" written permission.
+.\" THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
+.\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+.\"
+.TH PCAP_SET_FANOUT 3PCAP "16 April 2020"
+.SH NAME
+pcap_set_fanout_linux \- set fanout group for load balancing
+among processes
+.SH SYNOPSIS
+.nf
+.ft B
+#include <linux/if_packet.h>
+#include <pcap/pcap.h>
+.LP
+.ft B
+int pcap_set_fanout_linux(pcap_t *p, int enable, uint16_t mode, uint16_t group_id);
+.ft
+.fi
+.SH DESCRIPTION
+On Linux network interface devices,
+.B pcap_set_fanout_linux()
+sets the fanout configuration to be used in the
+.BR socket (2)
+call to create a capture socket when the handle is activated.
+.LP
+Using fanout is required if you want to load-balance multiple processes and/or
+threads to handle the intercepted traffic. When preparing the socket to be used,
+it is required to set a group_id in order to distinguish between different
+consumers.
+.LP
+A single fanout groups load-balances the handling of intercepted traffic.
+.LP
+It is possible to have any combination of fanout groups or "normal" consumers,
+as it is possible with only "normal" consumers ("normal" - non fanout).
+.LP
+This function is only provided on Linux, and, if it is used on any device other
+than a network interface, it will have no effect.
+.LP
+.IR enable
+is a boolean flag to control if fanout is enabled (default is FALSE).
+.LP
+.IR mode
+is the fanout mode and flags to use. More information on the various modes can
+be found in
+.BR packet (7)\c
+\&.
+.LP
+.IR group_id
+is a unique identifier of the socket group.
+.LP
+.BR pcap_set_fanout_linux()
+should not be used in portable code.
+
+.SH RETURN VALUE
+Returns 0 on success or
+.B PCAP_ERROR_ACTIVATED
+if called on a capture handle that has been activated.
+.SH SEE ALSO
+.BR pcap (3PCAP)
+.BR socket (2)
+.BR packet (7)

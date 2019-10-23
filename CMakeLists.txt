@@ -2619,6 +2619,7 @@ set(MAN3PCAP_NOEXPAND
     pcap_open_live.3pcap
     pcap_set_buffer_size.3pcap
     pcap_set_datalink.3pcap
+    pcap_set_fanout_linux.3pcap
     pcap_set_promisc.3pcap
     pcap_set_protocol_linux.3pcap
     pcap_set_rfmon.3pcap
