@@ -942,7 +942,7 @@ static int acn_read_n_bytes_with_timeout(pcap_t *handle, int count) {
 		retval = select(fd + 1, &w_fds, NULL, NULL, &tv);
 		if (retval == -1) {											/* an error occured !!!!! */
 //			fprintf(stderr, "error during packet data read\n");
-			return -1;												/* but we need to return a good indication to prevent unneccessary popups */
+			return -1;										/* but we need to return a good indication to prevent unnecessary popups */
 		} else if (retval == 0) {									/* timeout occured, so process what we've got sofar and return */
 //			fprintf(stderr, "timeout during packet data read\n");
 			return -1;
