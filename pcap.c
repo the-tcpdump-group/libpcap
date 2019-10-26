@@ -2089,7 +2089,7 @@ pcap_create(const char *device, char *errbuf)
 		 * string, not a string in the local code page.
 		 *
 		 * To work around that, we check whether the string
-		 * looks as if it might be a UTF-16LE strinh and, if
+		 * looks as if it might be a UTF-16LE string and, if
 		 * so, convert it back to the local code page's
 		 * extended ASCII.
 		 *
