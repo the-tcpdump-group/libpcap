@@ -39,7 +39,7 @@ Winter Usenix paper ``The BSD Packet Filter: A New Architecture for
 User-level Packet Capture''.  A compressed PostScript version can be
 found at
 
-https://www.tcpdump.org/papers/bpf-usenix93.ps.Z
+  https://www.tcpdump.org/papers/bpf-usenix93.ps.Z
 
 and a gzipped version can be found at
 
