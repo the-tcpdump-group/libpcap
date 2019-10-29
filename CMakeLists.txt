@@ -9,6 +9,16 @@ if(POLICY CMP0042)
     cmake_policy(SET CMP0042 OLD)
 endif()
 
+#
+# We want find_file() and find_library() to honor {packagename}_ROOT,
+# as that appears to be the only way, with the Visual Studio 2019 IDE
+# and its CMake support, to tell CMake where to look for the Npcap
+# or WinPcap SDK.
+#
+if(POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+endif()
+
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
 project(pcap)
@@ -107,7 +117,7 @@ if(WIN32)
 endif(WIN32)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 if(WIN32)
-    set(PACKET_DLL_DIR "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
+    set(Packet_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
 endif(WIN32)
 
 # To pacify those who hate the protochain instruction
