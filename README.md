@@ -12,7 +12,8 @@ Now maintained by "The Tcpdump Group"
 https://www.tcpdump.org
 
 Anonymous Git is available via:
-         <https://github.com/the-tcpdump-group/libpcap.git>
+
+  https://github.com/the-tcpdump-group/libpcap.git
 
 formerly from 	Lawrence Berkeley National Laboratory
 		Network Research Group <libpcap@ee.lbl.gov>

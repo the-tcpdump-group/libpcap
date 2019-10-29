@@ -206,7 +206,7 @@ it appears that completely new code would need to be written to capture
 network traffic.  SCO do not appear to provide tcpdump binaries for
 OpenServer 5 or OpenServer 6 as part of SCO Skunkware:
 
-        http://www.sco.com/skunkware/
+  http://www.sco.com/skunkware/
 
 If you use UnixWare, you might be able to build libpcap from this
 release, or you might not.  We do not have a machine running UnixWare,
@@ -221,7 +221,7 @@ a Sun4, your version of Bison is broken. In any case version 1.16 or
 higher is recommended (1.14 is known to cause problems 1.16 is known to
 work). Either pick up a current version from:
 
-        http://ftp.gnu.org/gnu/bison/
+  http://ftp.gnu.org/gnu/bison/
 
 or hack around it by inserting the lines:
 
