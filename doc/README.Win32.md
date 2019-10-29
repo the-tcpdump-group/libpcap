@@ -52,13 +52,13 @@ can be downloaded from
 It is a command-line tool; a GUI tool, Chocolatey GUI, is provided as a
 Chocolatey package, which can be installed from the command line:
 
-	C:\ choco install chocolateygui
+	choco install chocolateygui
 
 For convenience, the "choco install" command can be run with the "-y"
 flag, forcing it to automatically answer all questions asked of the user
 with "yes":
 
-	C:\ choco install -y chocolateygui
+	choco install -y chocolateygui
 
 The required tools are:
 
@@ -82,7 +82,7 @@ PATH for all users and to create the desktop icon.
 
 CMake can also be installed as the Chocolatey package "cmake":
 
-	C:\ choco install -y cmake
+	choco install -y cmake
 
 Visual Studio 2017 and later provide CMake, so you will not need to
 install CMake if you have installed Visual Studio 2017 or later.  They
