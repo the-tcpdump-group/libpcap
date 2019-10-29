@@ -22,18 +22,18 @@ Windows Vista, which is the earliest version supported by Npcap.
 
 Npcap and its SDK can be downloaded from its home page:
 
-	https://npcap.org
+        https://npcap.org
 
 The SDK is a ZIP archive; create a folder on your C: drive, e.g.
 C:\npcap-sdk, and put the contents of the ZIP archive into that folder.
 
 The WinPcap installer can be downloaded from
 
-	https://www.winpcap.org/install/default.htm
+        https://www.winpcap.org/install/default.htm
 
 and the WinPcap Developer's Kit can be downloaded from
 
-	https://www.winpcap.org/devel.htm
+        https://www.winpcap.org/devel.htm
 
 The Developer's Kit is a ZIP archive; it contains a folder named
 WpdPack, which you should place on your C: drive, e.g. C:\WpdPack.
@@ -41,13 +41,13 @@ WpdPack, which you should place on your C: drive, e.g. C:\WpdPack.
 Building libpcap on Windows requires Visual Studio 2015 or later.  The
 Community Edition of Visual Studio can be downloaded at no cost from
 
-	https://visualstudio.microsoft.com
+        https://visualstudio.microsoft.com
 
 Additional tools are also required.  Chocolatey is a package manager for
 Windows with which those tools, and other tools, can be installed; it
 can be downloaded from
 
-	https://chocolatey.org
+        https://chocolatey.org
 
 It is a command-line tool; a GUI tool, Chocolatey GUI, is provided as a
 Chocolatey package, which can be installed from the command line:
@@ -75,7 +75,7 @@ systems.
 Visual Studio 2015 does not provide CMake; an installer can be
 downloaded from
 
-	https://cmake.org/download/
+        https://cmake.org/download/
 
 When you run the installer, you should choose to add CMake to the system
 PATH for all users and to create the desktop icon.
@@ -88,7 +88,7 @@ Visual Studio 2017 and later provide CMake, so you will not need to
 install CMake if you have installed Visual Studio 2017 or later.  They
 include built-in support for CMake-based projects:
 
-	https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/
+        https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/
 
 winflexbison:
 
@@ -96,7 +96,7 @@ libpcap uses the Flex lexical-analyzer generator and the Bison or
 Berkeley YACC parser generators to generate the parser for filter
 expressions.  Windows versions of Flex and Bison can be downloaded from
 
-	https://sourceforge.net/projects/winflexbison/
+        https://sourceforge.net/projects/winflexbison/
 
 The downloaded file is a ZIP archive; create a folder on your C: drive,
 e.g. C:\Program Files\winflexbison, and put the contents of the ZIP
