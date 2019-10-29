@@ -43,11 +43,11 @@ found at
 
 and a gzipped version can be found at
 
-https://www.tcpdump.org/papers/bpf-usenix93.ps.gz
+  https://www.tcpdump.org/papers/bpf-usenix93.ps.gz
 
 A PDF version can be found at
 
-https://www.tcpdump.org/papers/bpf-usenix93.pdf
+  https://www.tcpdump.org/papers/bpf-usenix93.pdf
 
 Although most packet capture interfaces support in-kernel filtering,
 libpcap utilizes in-kernel filtering only for the BPF interface.
@@ -64,7 +64,7 @@ interface but has been extended to accept BPF filters (which libpcap
 utilizes).  Also, you can add BPF filter support to Ultrix using the
 kernel source and/or object patches available in:
 
-https://www.tcpdump.org/other/bpfext42.tar.Z
+  https://www.tcpdump.org/other/bpfext42.tar.Z
 
 Linux has a number of BPF based systems, and libpcap does not support
 any of the eBPF mechanisms as yet, although it supports many of the
