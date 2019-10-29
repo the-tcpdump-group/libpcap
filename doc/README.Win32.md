@@ -90,6 +90,10 @@ include built-in support for CMake-based projects:
 
   https://devblogs.microsoft.com/cppblog/cmake-support-in-visual-studio/
 
+For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
+installed; for Visual Studio 2019, make sure "C++ CMake tools for
+Windows" is intalled.
+
 winflexbison:
 
 libpcap uses the Flex lexical-analyzer generator and the Bison or
@@ -110,13 +114,38 @@ Visual Studio 2017 and later.
 
 Building from the Visual Studio GUI:
 
+Visual Studio 2017:
+
+Open the folder containing the libpcap source with Open > Folder. 
+Visual Studio will run CMake; however, you will need to indicate where
+the Npcap or WinPcap SDK is installed.
+
+To do this, go to Project > "Change CMake Settings" > pcap and:
+
+Choose which configuration type to build, if you don't want the default
+Debug build.
+
+In the CMakeSettings.json tab, change cmakeCommandArgs to include
+
+	-DPacket_ROOT={path-to-sdk}
+
+where {path-to-sdk} is the path of the directory cntaining the Npcap or
+WinPcap SDK.  Note that backslashes in the path must be specified as two
+backslashes.
+
+Save the configuration changes with File > "Save CMakeSettings.json" or
+with control-S.
+
+Visual Studio will then re-run CMake.  If that completes without errors,
+you can build with CMake > "Build All".
+
 Visual Studio 2019:
 
 Open the folder containing the libpcap source with Open > Folder. 
 Visual Studio will run CMake; however, you will need to indicate where
 the Npcap or WinPcap SDK is installed.
 
-To do this, go to Project > CMake Settings for pcap and:
+To do this, go to Project > "CMake Settings for pcap" and:
 
 Choose which configuration type to build, if you don't want the default
 Debug build.
@@ -126,10 +155,11 @@ looking for the entry for Packet_ROOT, and either type in the path of
 the directory containing the Npcap or WinPcap SDK or use the "Browse..."
 button to browse for that directory.
 
-Save the configuration changes with File > Save CMakeSettings.json or
+Save the configuration changes with File > "Save CMakeSettings.json" or
 with control-S.
 
-Visual Studio will then re-run CMake.
+Visual Studio will then re-run CMake.  If that completes without errors,
+you can build with Build > "Build All".
 
 Building from the command line:
 
@@ -141,10 +171,11 @@ of the libpcap source directory.
 
 Run the command
 
-	cmake "-DPacket_ROOT=C:\Npcap SDK" {path-to-libpcap-source}
+	cmake "-DPacket_ROOT={path-to-sdk}" {path-to-libpcap-source}
 
-where {path-to-libpcap-source} is the pathname of the top-level source
-directory for libpcap.
+where {path-to-sdk} is the path of the directory cntaining the Npcap or
+WinPcap SDK and {path-to-libpcap-source} is the pathname of the
+top-level source directory for libpcap.
 
 Run the command
 
