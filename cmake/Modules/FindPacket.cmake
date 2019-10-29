@@ -33,8 +33,7 @@
 # PACKET_LIBRARY         - relative or absolute path to the Packet library to
 #                          link with. An absolute path is will be used if the
 #                          Packet library is not located in the compiler's
-#                          default search path. See e.g. PACKET_DLL_DIR
-#                          variable below.
+#                          default search path.
 
 # PACKET_FOUND           - TRUE if the Packet library *and* header are found.
 #
@@ -42,10 +41,10 @@
 # ================================
 #
 # To tell this module where to look, a user may set the environment variable
-# PACKET_DLL_DIR to point cmake to the *root* of a directory with include and
-# lib subdirectories for packet.dll (e.g WpdPack/npcap-sdk).
-# Alternatively, PACKET_DLL_DIR may also be set from cmake command line or GUI
-# (e.g cmake -DPACKET_DLL_DIR=/path/to/packet [...])
+# Packet_ROOT to point cmake to the *root* of a directory with include and
+@ lib subdirectories for packet.dll (e.g WpdPack or npcap-sdk).
+# Alternatively, Packet_ROOT may also be set from cmake command line or GUI
+# (e.g cmake -DPacket_ROOT=C:\path\to\packet [...])
 #
 
 # The 64-bit Packet.lib is located under /x64
@@ -64,14 +63,12 @@ endif()
 
 # Find the header
 find_path(PACKET_INCLUDE_DIR Packet32.h
-  HINTS "${PACKET_DLL_DIR}" ENV PACKET_DLL_DIR
   PATH_SUFFIXES include Include
 )
 
 # Find the library
 find_library(PACKET_LIBRARY
   NAMES Packet packet
-  HINTS "${PACKET_DLL_DIR}" ENV PACKET_DLL_DIR
 )
 
 # Set PACKET_FOUND to TRUE if PACKET_INCLUDE_DIR and PACKET_LIBRARY are TRUE.
