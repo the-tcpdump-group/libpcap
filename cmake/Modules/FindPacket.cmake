@@ -42,7 +42,7 @@
 #
 # To tell this module where to look, a user may set the environment variable
 # Packet_ROOT to point cmake to the *root* of a directory with include and
-@ lib subdirectories for packet.dll (e.g WpdPack or npcap-sdk).
+# lib subdirectories for packet.dll (e.g WpdPack or npcap-sdk).
 # Alternatively, Packet_ROOT may also be set from cmake command line or GUI
 # (e.g cmake -DPacket_ROOT=C:\path\to\packet [...])
 #
