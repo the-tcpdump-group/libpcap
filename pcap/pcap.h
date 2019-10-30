@@ -728,7 +728,7 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
 #define PCAP_OPENFLAG_DATATX_UDP		0x00000002
 
 /*
- * Specifies wheether the remote probe will capture its own generated
+ * Specifies whether the remote probe will capture its own generated
  * traffic.
  *
  * In case the remote probe uses the same interface to capture traffic
