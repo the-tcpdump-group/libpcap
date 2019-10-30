@@ -192,7 +192,7 @@ pcap_activate_haiku(pcap_t *handle)
 extern "C" pcap_t *
 pcap_create_interface(const char *device, char *errorBuffer)
 {
-	// TODO: handle promiscous mode!
+	// TODO: handle promiscuous mode!
 
 	// we need a socket to talk to the networking stack
 	int socket = ::socket(AF_INET, SOCK_DGRAM, 0);
