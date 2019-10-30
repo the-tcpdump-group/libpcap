@@ -71,7 +71,7 @@ with "yes":
 
 The required tools are:
 
-CMake:
+### CMake ###
 
 libpcap does not provide supported project files for Visual Studio
 (there are currently unsupported project files provided, but we do not
@@ -103,7 +103,7 @@ For Visual Studio 2017, make sure "Visual C++ tools for CMake" is
 installed; for Visual Studio 2019, make sure "C++ CMake tools for
 Windows" is intalled.
 
-winflexbison:
+### winflexbison ###
 
 libpcap uses the Flex lexical-analyzer generator and the Bison or
 Berkeley YACC parser generators to generate the parser for filter
@@ -127,7 +127,7 @@ Visual Studio 2017 and later.
 Building from the Visual Studio GUI
 -----------------------------------
 
-Visual Studio 2017:
+### Visual Studio 2017 ###
 
 Open the folder containing the libpcap source with Open > Folder. 
 Visual Studio will run CMake; however, you will need to indicate where
@@ -152,7 +152,7 @@ with control-S.
 Visual Studio will then re-run CMake.  If that completes without errors,
 you can build with CMake > "Build All".
 
-Visual Studio 2019:
+### Visual Studio 2019 ###
 
 Open the folder containing the libpcap source with Open > Folder. 
 Visual Studio will run CMake; however, you will need to indicate where
