@@ -698,7 +698,7 @@ open_driver (const char *dev_name, char *ebuf, int promisc)
       return (NULL);
     }
 
-    /* Some devices need this to operate in promiscous mode
+    /* Some devices need this to operate in promiscuous mode
      */
     if (promisc && dev->set_multicast_list)
        (*dev->set_multicast_list) (dev);
