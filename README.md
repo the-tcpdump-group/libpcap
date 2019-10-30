@@ -1,3 +1,14 @@
+LIBPCAP 1.x.y
+=============
+
+Now maintained by "The Tcpdump Group"
+
+  https://www.tcpdump.org
+
+formerly from 	Lawrence Berkeley National Laboratory
+		Network Research Group <libpcap@ee.lbl.gov>
+		ftp://ftp.ee.lbl.gov/old/libpcap-0.4a7.tar.Z
+
 To report a security issue please send an e-mail to security@tcpdump.org.
 
 To report bugs and other problems, contribute patches, request a
@@ -7,17 +18,9 @@ feature, provide generic feedback etc please see the file
 The directory doc/ has README files about specific operating systems and
 options.
 
-LIBPCAP 1.x.y
-Now maintained by "The Tcpdump Group"
-https://www.tcpdump.org
-
 Anonymous Git is available via:
 
   https://github.com/the-tcpdump-group/libpcap.git
-
-formerly from 	Lawrence Berkeley National Laboratory
-		Network Research Group <libpcap@ee.lbl.gov>
-		ftp://ftp.ee.lbl.gov/old/libpcap-0.4a7.tar.Z
 
 This directory contains source code for libpcap, a system-independent
 interface for user-level packet capture.  libpcap provides a portable
@@ -84,7 +87,3 @@ that.
 We've been maintaining binary compatibility between libpcap releases for
 quite a while; there's no reason to tie a binary linked with libpcap to
 a particular release of libpcap.
-
-Current versions can be found at https://www.tcpdump.org.
-
- - The TCPdump group
