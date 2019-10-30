@@ -1,4 +1,11 @@
-cmake_minimum_required(VERSION 2.8.6)
+if(WIN32)
+    #
+    # We need 3.12 or later, so that we can set policy CMP0074; see
+    # below.
+    cmake_minimum_required(VERSION 3.12)
+else(WIN32)
+    cmake_minimum_required(VERSION 2.8.6)
+endif(WIN32)
 
 #
 # Apple doesn't build with an install_name starting with @rpath, and
