@@ -1359,7 +1359,7 @@ open_pf_packet_socket(pcap_t *handle, int cooked)
  *  Get a handle for a live capture from the given device. You can
  *  pass NULL as device to get all packages (without link level
  *  information of course). If you pass 1 as promisc the interface
- *  will be set to promiscous mode (XXX: I think this usage should
+ *  will be set to promiscuous mode (XXX: I think this usage should
  *  be deprecated and functions be added to select that later allow
  *  modification of that values -- Torsten).
  */
