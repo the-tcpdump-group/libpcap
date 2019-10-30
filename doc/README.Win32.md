@@ -1,3 +1,6 @@
+Building libpcap on Windows with Visual Studio
+==============================================
+
 Unlike the UN*Xes on which libpcap can capture network traffic, Windows
 has no network traffic capture mechanism that libpcap can use. 
 Therefore, libpcap requires a driver, and a library to access the
@@ -7,6 +10,9 @@ Those projects include versions of libpcap built to use that driver and
 library; these instructions are for people who want to build libpcap
 source releases, or libpcap from the Git repository, as a replacement
 for the version provided with Npcap or WinPcap.
+
+Npcap and WinPcap SDK
+---------------------
 
 In order to build libpcap, you will need to download Npcap and its
 software development kit (SDK) or WinPcap and its software development
@@ -34,6 +40,9 @@ The WinPcap installer can be downloaded from
 and the WinPcap Developer's Kit can be downloaded from
 
   https://www.winpcap.org/devel.htm
+
+Required build tools
+--------------------
 
 The Developer's Kit is a ZIP archive; it contains a folder named
 WpdPack, which you should place on your C: drive, e.g. C:\WpdPack.
@@ -107,12 +116,16 @@ e.g. C:\Program Files\winflexbison, and put the contents of the ZIP
 archive into that folder.  Then add that folder to the system PATH
 environment variable.
 
+Git
+---
+
 An optional tool, required only if you will be building from a Git
 repository rather than from a release source tarball, is Git.  Git is
 provided as an optional installation component, "Git for Windows", with
 Visual Studio 2017 and later.
 
-Building from the Visual Studio GUI:
+Building from the Visual Studio GUI
+-----------------------------------
 
 Visual Studio 2017:
 
@@ -161,7 +174,8 @@ with control-S.
 Visual Studio will then re-run CMake.  If that completes without errors,
 you can build with Build > "Build All".
 
-Building from the command line:
+Building from the command line
+------------------------------
 
 Start the appropriate Native Tools command line prompt.
 
