@@ -91,7 +91,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-tc.h"
 #endif /* HAVE_TC_API */
 
-#ifdef PCAP_SUPPORT_USB
+#ifdef PCAP_SUPPORT_LINUX_USBMON
 #include "pcap-usb-linux.h"
 #endif
 
@@ -533,7 +533,7 @@ static struct capture_source_type {
 #ifdef PCAP_SUPPORT_BT_MONITOR
 	{ bt_monitor_findalldevs, bt_monitor_create },
 #endif
-#ifdef PCAP_SUPPORT_USB
+#ifdef PCAP_SUPPORT_LINUX_USBMON
 	{ usb_findalldevs, usb_create },
 #endif
 #ifdef PCAP_SUPPORT_NETFILTER
@@ -1427,7 +1427,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 #ifdef PCAP_SUPPORT_BT
 	    || strstr(device, "bluetooth") != NULL
 #endif
-#ifdef PCAP_SUPPORT_USB
+#ifdef PCAP_SUPPORT_LINUX_USBMON
 	    || strstr(device, "usbmon") != NULL
 #endif
 #ifdef HAVE_SNF_API

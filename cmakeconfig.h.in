@@ -334,6 +334,9 @@
 /* target host supports DPDK */
 #cmakedefine PCAP_SUPPORT_DPDK 1
 
+/* target host supports Linux usbmon for USB sniffing */
+#cmakedefine PCAP_SUPPORT_LINUX_USBMON 1
+
 /* target host supports netfilter sniffing */
 #cmakedefine PCAP_SUPPORT_NETFILTER 1
 
@@ -345,9 +348,6 @@
 
 /* target host supports RDMA sniffing */
 #cmakedefine PCAP_SUPPORT_RDMASNIFF 1
-
-/* target host supports USB sniffing */
-#cmakedefine PCAP_SUPPORT_USB 1
 
 /* Define to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS 1

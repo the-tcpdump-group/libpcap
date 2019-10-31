@@ -202,7 +202,9 @@ endif()
 #
 # Additional capture modules.
 #
-option(DISABLE_USB "Disable USB sniffing support" OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(DISABLE_LINUX_USBMON "Disable Linux usbmon USB sniffing support" OFF)
+endif()
 option(DISABLE_BLUETOOTH "Disable Bluetooth sniffing support" OFF)
 option(DISABLE_NETMAP "Disable netmap support" OFF)
 option(DISABLE_DPDK "Disable DPDK support" OFF)
@@ -1476,11 +1478,13 @@ endif()
 # Check for additional native sniffing capabilities.
 #
 
-# Check for USB sniffing support on Linux.
-# On FreeBSD, it uses BPF, so we don't need to do anything special here.
-if(NOT DISABLE_USB)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(PCAP_SUPPORT_USB TRUE)
+#
+# Various Linux-specific mechanisms.
+#
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # Check for usbmon USB sniffing support.
+    if(NOT DISABLE_LINUX_USBMON)
+        set(PCAP_SUPPORT_LINUX_USBMON TRUE)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-usb-linux.c)
         set(LINUX_USB_MON_DEV /dev/usbmon)
         #
@@ -1510,10 +1514,9 @@ if(NOT DISABLE_USB)
             endif(HAVE_LINUX_COMPILER_H)
         endif()
     endif()
-endif()
 
-# Check for netfilter sniffing support.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    #
+    # Check for netfilter sniffing support.
     #
     # Life's too short to deal with trying to get this to compile
     # if you don't get the right types defined with

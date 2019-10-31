@@ -2217,93 +2217,77 @@ AC_SUBST(INSTALL_RPCAPD)
 AC_SUBST(RPCAPD_LIBS)
 AC_SUBST(EXTRA_NETWORK_LIBS)
 
+#
+# Various Linux-specific mechanisms.
+#
 AC_ARG_ENABLE([usb],
-[AC_HELP_STRING([--enable-usb],[enable USB capture support @<:@default=yes, if support available@:>@])],
+[AC_HELP_STRING([--enable-usb],[enable Linux usbmon USB capture support @<:@default=yes, if support available@:>@])],
     [],
     [enable_usb=yes])
 
-if test "xxx_only" = yes; then
-	# User requested something-else-only pcap, so they don't
-	# want USB support.
-	enable_usb=no
-fi
-
-if test "x$enable_usb" != "xno" ; then
-   dnl check for USB sniffing support
-   AC_MSG_CHECKING(for USB sniffing support)
-   case "$host_os" in
-   linux*)
-	AC_DEFINE(PCAP_SUPPORT_USB, 1, [target host supports USB sniffing])
-	MODULE_C_SRC="$MODULE_C_SRC pcap-usb-linux.c"
-	AC_MSG_RESULT(yes)
-	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
-	if test $? -ne 0 ; then
-	  ac_usb_dev_name="usbmon"
-	fi
-	AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
-	AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
-	#
-	# Do we have a version of <linux/compiler.h> available?
-	# If so, we might need it for <linux/usbdevice_fs.h>.
-	#
-	AC_CHECK_HEADERS(linux/compiler.h)
-	if test "$ac_cv_header_linux_compiler_h" = yes; then
-	  #
-	  # Yes - include it when testing for <linux/usbdevice_fs.h>.
-	  #
-	  AC_CHECK_HEADERS(linux/usbdevice_fs.h,,,[#include <linux/compiler.h>])
-	else
-	  AC_CHECK_HEADERS(linux/usbdevice_fs.h)
-	fi
-	if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
-	  #
-	  # OK, does it define bRequestType?  Older versions of the kernel
-	  # define fields with names like "requesttype, "request", and
-	  # "value", rather than "bRequestType", "bRequest", and
-	  # "wValue".
-	  #
-	  AC_CHECK_MEMBERS([struct usbdevfs_ctrltransfer.bRequestType],,,
-	      [
-		  AC_INCLUDES_DEFAULT
-		  #ifdef HAVE_LINUX_COMPILER_H
-		  #include <linux/compiler.h>
-		  #endif
-		  #include <linux/usbdevice_fs.h>
-	      ])
-	fi
-	;;
-    freebsd*)
-	#
-	# This just uses BPF in FreeBSD 8.4 and later; we don't need
-	# to check for anything special for capturing.
-	#
-	AC_MSG_RESULT([yes, in FreeBSD 8.4 and later])
-	;;
-
-    *)
-	AC_MSG_RESULT(no)
-	;;
-esac
-fi
-AC_SUBST(PCAP_SUPPORT_USB)
-
-dnl check for netfilter sniffing support
+#
+# If somebody requested an XXX-only pcap, that doesn't include
+# additional mechanisms.
+#
 if test "xxx_only" != yes; then
-	AC_MSG_CHECKING(whether the platform could support netfilter sniffing)
-	case "$host_os" in
-	linux*)
-		AC_MSG_RESULT(yes)
-		#
-		# Life's too short to deal with trying to get this to compile
-		# if you don't get the right types defined with
-		# __KERNEL_STRICT_NAMES getting defined by some other include.
-		#
-		# Check whether the includes Just Work.  If not, don't turn on
-		# netfilter support.
-		#
-		AC_MSG_CHECKING(whether we can compile the netfilter support)
-		AC_CACHE_VAL(ac_cv_netfilter_can_compile,
-		  AC_TRY_COMPILE([
+  case "$host_os" in
+  linux*)
+    dnl check for USB sniffing support
+    AC_MSG_CHECKING(for Linux usbmon USB sniffing support)
+    if test "x$enable_usb" != "xno" ; then
+      AC_DEFINE(PCAP_SUPPORT_LINUX_USBMON, 1, [target host supports Linux usbmon for USB sniffing])
+      MODULE_C_SRC="$MODULE_C_SRC pcap-usb-linux.c"
+      AC_MSG_RESULT(yes)
+      ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
+      if test $? -ne 0 ; then
+        ac_usb_dev_name="usbmon"
+      fi
+      AC_DEFINE_UNQUOTED(LINUX_USB_MON_DEV, "/dev/$ac_usb_dev_name", [path for device for USB sniffing])
+      AC_MSG_NOTICE(Device for USB sniffing is /dev/$ac_usb_dev_name)
+      #
+      # Do we have a version of <linux/compiler.h> available?
+      # If so, we might need it for <linux/usbdevice_fs.h>.
+      #
+      AC_CHECK_HEADERS(linux/compiler.h)
+      if test "$ac_cv_header_linux_compiler_h" = yes; then
+        #
+        # Yes - include it when testing for <linux/usbdevice_fs.h>.
+        #
+        AC_CHECK_HEADERS(linux/usbdevice_fs.h,,,[#include <linux/compiler.h>])
+      else
+        AC_CHECK_HEADERS(linux/usbdevice_fs.h)
+      fi
+      if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
+        #
+        # OK, does it define bRequestType?  Older versions of the kernel
+        # define fields with names like "requesttype, "request", and
+        # "value", rather than "bRequestType", "bRequest", and
+        # "wValue".
+        #
+        AC_CHECK_MEMBERS([struct usbdevfs_ctrltransfer.bRequestType],,,
+          [
+            AC_INCLUDES_DEFAULT
+            #ifdef HAVE_LINUX_COMPILER_H
+            #include <linux/compiler.h>
+            #endif
+            #include <linux/usbdevice_fs.h>
+          ])
+      fi
+    else
+      AC_MSG_RESULT(no)
+    fi
+
+    #
+    # Life's too short to deal with trying to get this to compile
+    # if you don't get the right types defined with
+    # __KERNEL_STRICT_NAMES getting defined by some other include.
+    #
+    # Check whether the includes Just Work.  If not, don't turn on
+    # netfilter support.
+    #
+    AC_MSG_CHECKING(whether we can compile the netfilter support)
+    AC_CACHE_VAL(ac_cv_netfilter_can_compile,
+      AC_TRY_COMPILE([
 AC_INCLUDES_DEFAULT
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -2314,21 +2298,19 @@ AC_INCLUDES_DEFAULT
 #include <linux/netfilter/nfnetlink.h>
 #include <linux/netfilter/nfnetlink_log.h>
 #include <linux/netfilter/nfnetlink_queue.h>],
-		    [],
-		    ac_cv_netfilter_can_compile=yes,
-		    ac_cv_netfilter_can_compile=no))
-		AC_MSG_RESULT($ac_cv_netfilter_can_compile)
-		if test $ac_cv_netfilter_can_compile = yes ; then
-		  AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
-		    [target host supports netfilter sniffing])
-		  MODULE_C_SRC="$MODULE_C_SRC pcap-netfilter-linux.c"
-		fi
-		;;
-	*)
-		AC_MSG_RESULT(no)
-		;;
-	esac
+        [],
+        ac_cv_netfilter_can_compile=yes,
+        ac_cv_netfilter_can_compile=no))
+    AC_MSG_RESULT($ac_cv_netfilter_can_compile)
+    if test $ac_cv_netfilter_can_compile = yes ; then
+      AC_DEFINE(PCAP_SUPPORT_NETFILTER, 1,
+        [target host supports netfilter sniffing])
+      MODULE_C_SRC="$MODULE_C_SRC pcap-netfilter-linux.c"
+    fi
+    ;;
+  esac
 fi
+AC_SUBST(PCAP_SUPPORT_LINUX_USBMON)
 AC_SUBST(PCAP_SUPPORT_NETFILTER)
 
 AC_ARG_ENABLE([netmap],
