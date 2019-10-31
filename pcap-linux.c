@@ -1165,7 +1165,7 @@ linux_get_stat(const char * if_name, const char * stat) {
 	int fd;
 	char buffer[PATH_MAX];
 
-	snprintf(buffer, sizeof(buffer), "/sys/class/net/%s/statistics/%s", if_name, stat);
+	pcap_snprintf(buffer, sizeof(buffer), "/sys/class/net/%s/statistics/%s", if_name, stat);
 	fd = open(buffer, O_RDONLY);
 	if (fd == -1)
 		return 0;

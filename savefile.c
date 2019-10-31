@@ -263,7 +263,7 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	{
 		fp = stdin;
 		if (stdin == NULL) {
-			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 			    "The standard input is not open");
 			return (NULL);
 		}
@@ -394,7 +394,7 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	 * didn't bother to make sure the FILE * isn't null.
 	 */
 	if (fp == NULL) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		pcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,
 		    "Null FILE * pointer provided to savefile open routine");
 		return (NULL);
 	}
