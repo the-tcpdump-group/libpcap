@@ -548,7 +548,6 @@ libpcap.pc: $(srcdir)/libpcap.pc.in ./config.status
 	@rm -f $@ $@.tmp
 	./config.status --file=$@.tmp:$(srcdir)/libpcap.pc.in
 	mv $@.tmp $@
-	chmod a+x $@
 
 #
 # Generate the pcap-config script.  See above.
