@@ -1348,7 +1348,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 		    sizeof (errmsgbuf)); \
 		goto error; \
 	} \
-	replylen += (uint32)(itemlen);
+	replylen += (uint32)(itemlen)
 
 static int
 daemon_msg_findallif_req(uint8 ver, struct daemon_slpars *pars, uint32 plen)
