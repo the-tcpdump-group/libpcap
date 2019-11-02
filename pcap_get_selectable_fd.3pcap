@@ -49,9 +49,9 @@ if no such descriptor exists.
 Some network devices opened with
 .B pcap_create(3PCAP)
 and
-.BR pcap_activate(3PCAP) ,
+.BR pcap_activate (3PCAP),
 or with
-.BR pcap_open_live(3PCAP) ,
+.BR pcap_open_live (3PCAP),
 do not support those calls (for example, regular network devices on
 FreeBSD 4.3 and 4.4, and Endace DAG devices), so
 .B PCAP_ERROR
@@ -64,7 +64,7 @@ for the device for which
 returned
 .BR PCAP_ERROR ,
 the device must be put in non-blocking mode with a call to
-.BR \%pcap_setnonblock(3PCAP) ,
+.BR \%pcap_setnonblock (3PCAP),
 and an attempt must always be made to read packets from the device
 when the call returns.  If
 .B \%pcap_get_required_select_timeout()

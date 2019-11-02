@@ -29,11 +29,11 @@ pcap-filter \- packet filter syntax
 is used to compile a string into a filter program.
 The resulting filter program can then be applied to
 some stream of packets to determine which packets will be supplied to
-.BR pcap_loop(3PCAP) ,
-.BR pcap_dispatch(3PCAP) ,
-.BR pcap_next(3PCAP) ,
+.BR pcap_loop (3PCAP),
+.BR pcap_dispatch (3PCAP),
+.BR pcap_next (3PCAP),
 or
-.BR pcap_next_ex(3PCAP) .
+.BR pcap_next_ex (3PCAP).
 .LP
 The \fIfilter expression\fP consists of one or more
 .IR primitives .
