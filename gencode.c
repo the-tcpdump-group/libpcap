@@ -7131,10 +7131,10 @@ gen_mcode6(compiler_state_t *cstate, const char *s1, const char *s2,
 		bpf_error(cstate, "%s resolved to multiple address", s1);
 	addr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
 
-	if (sizeof(mask) * 8 < masklen)
-		bpf_error(cstate, "mask length must be <= %u", (unsigned int)(sizeof(mask) * 8));
+	if (masklen > sizeof(mask.s6_addr) * 8)
+		bpf_error(cstate, "mask length must be <= %u", (unsigned int)(sizeof(mask.s6_addr) * 8));
 	memset(&mask, 0, sizeof(mask));
-	memset(&mask, 0xff, masklen / 8);
+	memset(&mask.s6_addr, 0xff, masklen / 8);
 	if (masklen % 8) {
 		mask.s6_addr[masklen / 8] =
 			(0xff << (8 - masklen % 8)) & 0xff;

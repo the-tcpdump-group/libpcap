@@ -262,6 +262,11 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	if (fname[0] == '-' && fname[1] == '\0')
 	{
 		fp = stdin;
+		if (stdin == NULL) {
+			snprintf(errbuf, PCAP_ERRBUF_SIZE,
+			    "The standard input is not open");
+			return (NULL);
+		}
 #if defined(_WIN32) || defined(MSDOS)
 		/*
 		 * We're reading from the standard input, so put it in binary
@@ -380,6 +385,19 @@ pcap_fopen_offline_with_tstamp_precision(FILE *fp, u_int precision,
 	size_t amt_read;
 	u_int i;
 	int err;
+
+	/*
+	 * Fail if we were passed a NULL fp.
+	 *
+	 * That shouldn't happen if we're opening with a path name, but
+	 * it could happen if buggy code is opening with a FILE * and
+	 * didn't bother to make sure the FILE * isn't null.
+	 */
+	if (fp == NULL) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "Null FILE * pointer provided to savefile open routine");
+		return (NULL);
+	}
 
 	/*
 	 * Read the first 4 bytes of the file; the network analyzer dump

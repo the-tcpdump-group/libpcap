@@ -629,7 +629,7 @@ PCAP_SUPPORT_BT
 PCAP_SUPPORT_DPDK
 PCAP_SUPPORT_NETMAP
 PCAP_SUPPORT_NETFILTER
-PCAP_SUPPORT_USB
+PCAP_SUPPORT_LINUX_USBMON
 EXTRA_NETWORK_LIBS
 RPCAPD_LIBS
 INSTALL_RPCAPD
@@ -1407,8 +1407,8 @@ Optional Features:
   --disable-universal     don't build universal on macOS
   --enable-shared         build shared libraries [default=yes, if support
                           available]
-  --enable-usb            enable USB capture support [default=yes, if support
-                          available]
+  --enable-usb            enable Linux usbmon USB capture support
+                          [default=yes, if support available]
   --enable-netmap         enable netmap support [default=yes, if support
                           available]
   --enable-bluetooth      enable Bluetooth support [default=yes, if support
@@ -6606,11 +6606,6 @@ done
 		# No prizes for guessing this one.
 		#
 		V_PCAP=linux
-
-		#
-		# XXX - this won't work with older kernels that have
-		# SOCK_PACKET sockets but not PF_PACKET sockets.
-		#
 		VALGRINDTEST_SRC=valgrindtest.c
 	elif test "$ac_cv_header_net_pfilt_h" = yes; then
 	        #
@@ -8906,7 +8901,7 @@ return 0;
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -8955,7 +8950,8 @@ $as_echo "$as_me: WARNING: Compiling for 32-bit x86 gives an error; try installi
 				esac
 
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 			CFLAGS="$save_CFLAGS"
 			if test "$HAVE_OPENSSL" = yes; then
 				#
@@ -11026,6 +11022,9 @@ fi
 
 
 
+#
+# Various Linux-specific mechanisms.
+#
 # Check whether --enable-usb was given.
 if test "${enable_usb+set}" = set; then :
   enableval=$enable_usb;
@@ -11034,39 +11033,38 @@ else
 fi
 
 
-if test "xxx_only" = yes; then
-	# User requested something-else-only pcap, so they don't
-	# want USB support.
-	enable_usb=no
-fi
+#
+# If somebody requested an XXX-only pcap, that doesn't include
+# additional mechanisms.
+#
+if test "xxx_only" != yes; then
+  case "$host_os" in
+  linux*)
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for Linux usbmon USB sniffing support" >&5
+$as_echo_n "checking for Linux usbmon USB sniffing support... " >&6; }
+    if test "x$enable_usb" != "xno" ; then
 
-if test "x$enable_usb" != "xno" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for USB sniffing support" >&5
-$as_echo_n "checking for USB sniffing support... " >&6; }
-   case "$host_os" in
-   linux*)
+$as_echo "#define PCAP_SUPPORT_LINUX_USBMON 1" >>confdefs.h
 
-$as_echo "#define PCAP_SUPPORT_USB 1" >>confdefs.h
-
-	MODULE_C_SRC="$MODULE_C_SRC pcap-usb-linux.c"
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+      MODULE_C_SRC="$MODULE_C_SRC pcap-usb-linux.c"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
-	if test $? -ne 0 ; then
-	  ac_usb_dev_name="usbmon"
-	fi
+      ac_usb_dev_name=`udevinfo -q name -p /sys/class/usb_device/usbmon 2>/dev/null`
+      if test $? -ne 0 ; then
+        ac_usb_dev_name="usbmon"
+      fi
 
 cat >>confdefs.h <<_ACEOF
 #define LINUX_USB_MON_DEV "/dev/$ac_usb_dev_name"
 _ACEOF
 
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: Device for USB sniffing is /dev/$ac_usb_dev_name" >&5
+      { $as_echo "$as_me:${as_lineno-$LINENO}: Device for USB sniffing is /dev/$ac_usb_dev_name" >&5
 $as_echo "$as_me: Device for USB sniffing is /dev/$ac_usb_dev_name" >&6;}
-	#
-	# Do we have a version of <linux/compiler.h> available?
-	# If so, we might need it for <linux/usbdevice_fs.h>.
-	#
-	for ac_header in linux/compiler.h
+      #
+      # Do we have a version of <linux/compiler.h> available?
+      # If so, we might need it for <linux/usbdevice_fs.h>.
+      #
+      for ac_header in linux/compiler.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "linux/compiler.h" "ac_cv_header_linux_compiler_h" "$ac_includes_default"
 if test "x$ac_cv_header_linux_compiler_h" = xyes; then :
@@ -11078,11 +11076,11 @@ fi
 
 done
 
-	if test "$ac_cv_header_linux_compiler_h" = yes; then
-	  #
-	  # Yes - include it when testing for <linux/usbdevice_fs.h>.
-	  #
-	  for ac_header in linux/usbdevice_fs.h
+      if test "$ac_cv_header_linux_compiler_h" = yes; then
+        #
+        # Yes - include it when testing for <linux/usbdevice_fs.h>.
+        #
+        for ac_header in linux/usbdevice_fs.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "linux/usbdevice_fs.h" "ac_cv_header_linux_usbdevice_fs_h" "#include <linux/compiler.h>
 "
@@ -11095,8 +11093,8 @@ fi
 
 done
 
-	else
-	  for ac_header in linux/usbdevice_fs.h
+      else
+        for ac_header in linux/usbdevice_fs.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "linux/usbdevice_fs.h" "ac_cv_header_linux_usbdevice_fs_h" "$ac_includes_default"
 if test "x$ac_cv_header_linux_usbdevice_fs_h" = xyes; then :
@@ -11108,20 +11106,20 @@ fi
 
 done
 
-	fi
-	if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
-	  #
-	  # OK, does it define bRequestType?  Older versions of the kernel
-	  # define fields with names like "requesttype, "request", and
-	  # "value", rather than "bRequestType", "bRequest", and
-	  # "wValue".
-	  #
-	  ac_fn_c_check_member "$LINENO" "struct usbdevfs_ctrltransfer" "bRequestType" "ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" "
-		  $ac_includes_default
-		  #ifdef HAVE_LINUX_COMPILER_H
-		  #include <linux/compiler.h>
-		  #endif
-		  #include <linux/usbdevice_fs.h>
+      fi
+      if test "$ac_cv_header_linux_usbdevice_fs_h" = yes; then
+        #
+        # OK, does it define bRequestType?  Older versions of the kernel
+        # define fields with names like "requesttype, "request", and
+        # "value", rather than "bRequestType", "bRequest", and
+        # "wValue".
+        #
+        ac_fn_c_check_member "$LINENO" "struct usbdevfs_ctrltransfer" "bRequestType" "ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" "
+            $ac_includes_default
+            #ifdef HAVE_LINUX_COMPILER_H
+            #include <linux/compiler.h>
+            #endif
+            #include <linux/usbdevice_fs.h>
 
 "
 if test "x$ac_cv_member_struct_usbdevfs_ctrltransfer_bRequestType" = xyes; then :
@@ -11133,43 +11131,23 @@ _ACEOF
 
 fi
 
-	fi
-	;;
-    freebsd*)
-	#
-	# This just uses BPF in FreeBSD 8.4 and later; we don't need
-	# to check for anything special for capturing.
-	#
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, in FreeBSD 8.4 and later" >&5
-$as_echo "yes, in FreeBSD 8.4 and later" >&6; }
-	;;
-
-    *)
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+      fi
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-	;;
-esac
-fi
+    fi
 
-
-if test "xxx_only" != yes; then
-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the platform could support netfilter sniffing" >&5
-$as_echo_n "checking whether the platform could support netfilter sniffing... " >&6; }
-	case "$host_os" in
-	linux*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-		#
-		# Life's too short to deal with trying to get this to compile
-		# if you don't get the right types defined with
-		# __KERNEL_STRICT_NAMES getting defined by some other include.
-		#
-		# Check whether the includes Just Work.  If not, don't turn on
-		# netfilter support.
-		#
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the netfilter support" >&5
+    #
+    # Life's too short to deal with trying to get this to compile
+    # if you don't get the right types defined with
+    # __KERNEL_STRICT_NAMES getting defined by some other include.
+    #
+    # Check whether the includes Just Work.  If not, don't turn on
+    # netfilter support.
+    #
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile the netfilter support" >&5
 $as_echo_n "checking whether we can compile the netfilter support... " >&6; }
-		if ${ac_cv_netfilter_can_compile+:} false; then :
+    if ${ac_cv_netfilter_can_compile+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
@@ -11201,21 +11179,18 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_netfilter_can_compile" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_netfilter_can_compile" >&5
 $as_echo "$ac_cv_netfilter_can_compile" >&6; }
-		if test $ac_cv_netfilter_can_compile = yes ; then
+    if test $ac_cv_netfilter_can_compile = yes ; then
 
 $as_echo "#define PCAP_SUPPORT_NETFILTER 1" >>confdefs.h
 
-		  MODULE_C_SRC="$MODULE_C_SRC pcap-netfilter-linux.c"
-		fi
-		;;
-	*)
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-		;;
-	esac
+      MODULE_C_SRC="$MODULE_C_SRC pcap-netfilter-linux.c"
+    fi
+    ;;
+  esac
 fi
+
 
 
 # Check whether --enable-netmap was given.

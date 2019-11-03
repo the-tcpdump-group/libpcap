@@ -337,6 +337,9 @@
 /* target host supports DPDK */
 #undef PCAP_SUPPORT_DPDK
 
+/* target host supports Linux usbmon for USB sniffing */
+#undef PCAP_SUPPORT_LINUX_USBMON
+
 /* target host supports netfilter sniffing */
 #undef PCAP_SUPPORT_NETFILTER
 
@@ -348,9 +351,6 @@
 
 /* target host supports RDMA sniffing */
 #undef PCAP_SUPPORT_RDMASNIFF
-
-/* target host supports USB sniffing */
-#undef PCAP_SUPPORT_USB
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

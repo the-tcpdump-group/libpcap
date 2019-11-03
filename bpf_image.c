@@ -28,11 +28,103 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __linux__
+#include <linux/types.h>
+#include <linux/if_packet.h>
+#include <linux/filter.h>
+
+/*
+ * We want our versions of these #defines, not Linux's version.
+ * (The two should be the same; if not, we have a problem; all BPF
+ * implementations *should* be source-compatible supersets of ours.)
+ */
+#undef BPF_STMT
+#undef BPF_JUMP
+#endif
+
 #include "pcap-int.h"
 
 #ifdef HAVE_OS_PROTO_H
 #include "os-proto.h"
 #endif
+
+#ifdef SKF_AD_OFF
+/*
+ * Symbolic names for offsets that refer to the special Linux BPF locations.
+ */
+static const char *offsets[SKF_AD_MAX] = {
+#ifdef SKF_AD_PROTOCOL
+	[SKF_AD_PROTOCOL] = "proto",
+#endif
+#ifdef SKF_AD_PKTTYPE
+	[SKF_AD_PKTTYPE] = "type",
+#endif
+#ifdef SKF_AD_IFINDEX
+	[SKF_AD_IFINDEX] = "ifidx",
+#endif
+#ifdef SKF_AD_NLATTR
+	[SKF_AD_NLATTR] = "nla",
+#endif
+#ifdef SKF_AD_NLATTR_NEST
+	[SKF_AD_NLATTR_NEST] = "nlan",
+#endif
+#ifdef SKF_AD_MARK
+	[SKF_AD_MARK] = "mark",
+#endif
+#ifdef SKF_AD_QUEUE
+	[SKF_AD_QUEUE] = "queue",
+#endif
+#ifdef SKF_AD_HATYPE
+	[SKF_AD_HATYPE] = "hatype",
+#endif
+#ifdef SKF_AD_RXHASH
+	[SKF_AD_RXHASH] = "rxhash",
+#endif
+#ifdef SKF_AD_CPU
+	[SKF_AD_CPU] = "cpu",
+#endif
+#ifdef SKF_AD_ALU_XOR_X
+	[SKF_AD_ALU_XOR_X] = "xor_x",
+#endif
+#ifdef SKF_AD_VLAN_TAG
+	[SKF_AD_VLAN_TAG] = "vlan_tci",
+#endif
+#ifdef SKF_AD_VLAN_TAG_PRESENT
+	[SKF_AD_VLAN_TAG_PRESENT] = "vlanp",
+#endif
+#ifdef SKF_AD_PAY_OFFSET
+	[SKF_AD_PAY_OFFSET] = "poff",
+#endif
+#ifdef SKF_AD_RANDOM
+	[SKF_AD_RANDOM] = "random",
+#endif
+#ifdef SKF_AD_VLAN_TPID
+	[SKF_AD_VLAN_TPID] = "vlan_tpid"
+#endif
+};
+#endif
+
+static void
+bpf_print_abs_load_operand(char *buf, size_t bufsize, const struct bpf_insn *p)
+{
+#ifdef SKF_AD_OFF
+	const char *sym;
+
+	/*
+	 * It's an absolute load.
+	 * Is the offset a special Linux offset that we know about?
+	 */
+	if (p->k >= (bpf_u_int32)SKF_AD_OFF &&
+	    p->k < (bpf_u_int32)(SKF_AD_OFF + SKF_AD_MAX) &&
+	    (sym = offsets[p->k - (bpf_u_int32)SKF_AD_OFF]) != NULL) {
+		/*
+		 * Yes.  Print the offset symbolically.
+		 */
+		(void)snprintf(buf, bufsize, "[%s]", sym);
+	} else
+#endif
+		(void)snprintf(buf, bufsize, "[%d]", p->k);
+}
 
 char *
 bpf_image(const struct bpf_insn *p, int n)
@@ -63,19 +155,19 @@ bpf_image(const struct bpf_insn *p, int n)
 
 	case BPF_LD|BPF_W|BPF_ABS:
 		op = "ld";
-		(void)snprintf(operand_buf, sizeof operand_buf, "[%d]", p->k);
+		bpf_print_abs_load_operand(operand_buf, sizeof operand_buf, p);
 		operand = operand_buf;
 		break;
 
 	case BPF_LD|BPF_H|BPF_ABS:
 		op = "ldh";
-		(void)snprintf(operand_buf, sizeof operand_buf, "[%d]", p->k);
+		bpf_print_abs_load_operand(operand_buf, sizeof operand_buf, p);
 		operand = operand_buf;
 		break;
 
 	case BPF_LD|BPF_B|BPF_ABS:
 		op = "ldb";
-		(void)snprintf(operand_buf, sizeof operand_buf, "[%d]", p->k);
+		bpf_print_abs_load_operand(operand_buf, sizeof operand_buf, p);
 		operand = operand_buf;
 		break;
 

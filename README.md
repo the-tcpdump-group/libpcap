@@ -1,3 +1,18 @@
+LIBPCAP 1.x.y
+=============
+
+[![Build Status](https://travis-ci.org/the-tcpdump-group/tcpdump.svg?branch=master)](https://travis-ci.org/the-tcpdump-group/libpcap)
+
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/the-tcpdump-group/tcpdump?branch=master&svg=true)](https://ci.appveyor.com/project/guyharris/libpcap)
+
+Now maintained by "The Tcpdump Group"
+
+  https://www.tcpdump.org
+
+formerly from 	Lawrence Berkeley National Laboratory
+		Network Research Group <libpcap@ee.lbl.gov>
+		ftp://ftp.ee.lbl.gov/old/libpcap-0.4a7.tar.Z
+
 To report a security issue please send an e-mail to security@tcpdump.org.
 
 To report bugs and other problems, contribute patches, request a
@@ -7,16 +22,9 @@ feature, provide generic feedback etc please see the file
 The directory doc/ has README files about specific operating systems and
 options.
 
-LIBPCAP 1.x.y
-Now maintained by "The Tcpdump Group"
-https://www.tcpdump.org
-
 Anonymous Git is available via:
-        https://github.com/the-tcpdump-group/libpcap.git
 
-formerly from 	Lawrence Berkeley National Laboratory
-		Network Research Group <libpcap@ee.lbl.gov>
-		ftp://ftp.ee.lbl.gov/old/libpcap-0.4a7.tar.Z
+  https://github.com/the-tcpdump-group/libpcap.git
 
 This directory contains source code for libpcap, a system-independent
 interface for user-level packet capture.  libpcap provides a portable
@@ -39,19 +47,15 @@ Winter Usenix paper ``The BSD Packet Filter: A New Architecture for
 User-level Packet Capture''.  A compressed PostScript version can be
 found at
 
-	ftp://ftp.ee.lbl.gov/papers/bpf-usenix93.ps.Z
-
-or
-
-	https://www.tcpdump.org/papers/bpf-usenix93.ps.Z
+  https://www.tcpdump.org/papers/bpf-usenix93.ps.Z
 
 and a gzipped version can be found at
 
-	https://www.tcpdump.org/papers/bpf-usenix93.ps.gz
+  https://www.tcpdump.org/papers/bpf-usenix93.ps.gz
 
 A PDF version can be found at
 
-	https://www.tcpdump.org/papers/bpf-usenix93.pdf
+  https://www.tcpdump.org/papers/bpf-usenix93.pdf
 
 Although most packet capture interfaces support in-kernel filtering,
 libpcap utilizes in-kernel filtering only for the BPF interface.
@@ -68,7 +72,7 @@ interface but has been extended to accept BPF filters (which libpcap
 utilizes).  Also, you can add BPF filter support to Ultrix using the
 kernel source and/or object patches available in:
 
-	https://www.tcpdump.org/other/bpfext42.tar.Z
+  https://www.tcpdump.org/other/bpfext42.tar.Z
 
 Linux has a number of BPF based systems, and libpcap does not support
 any of the eBPF mechanisms as yet, although it supports many of the
@@ -87,7 +91,3 @@ that.
 We've been maintaining binary compatibility between libpcap releases for
 quite a while; there's no reason to tie a binary linked with libpcap to
 a particular release of libpcap.
-
-Current versions can be found at https://www.tcpdump.org.
-
- - The TCPdump group

@@ -91,7 +91,7 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-tc.h"
 #endif /* HAVE_TC_API */
 
-#ifdef PCAP_SUPPORT_USB
+#ifdef PCAP_SUPPORT_LINUX_USBMON
 #include "pcap-usb-linux.h"
 #endif
 
@@ -533,7 +533,7 @@ static struct capture_source_type {
 #ifdef PCAP_SUPPORT_BT_MONITOR
 	{ bt_monitor_findalldevs, bt_monitor_create },
 #endif
-#ifdef PCAP_SUPPORT_USB
+#ifdef PCAP_SUPPORT_LINUX_USBMON
 	{ usb_findalldevs, usb_create },
 #endif
 #ifdef PCAP_SUPPORT_NETFILTER
@@ -630,39 +630,26 @@ dup_sockaddr(struct sockaddr *sa, size_t sa_length)
  *
  * The figure of merit, which is lower the "better" the interface is,
  * has the uppermost bit set if the interface isn't running, the bit
- * below that set if the interface isn't up, the bit below that set
- * if the interface is a loopback interface, and the interface index
- * in the 29 bits below that.  (Yes, we assume u_int is 32 bits.)
+ * below that set if the interface isn't up, the bit below that
+ * set if the interface is a loopback interface, and the bit below
+ * that set if it's the "any" interface.
+ *
+ * Note: we don't sort by unit number because 1) not all interfaces have
+ * a unit number (systemd, for example, might assign interface names
+ * based on the interface's MAC address or on the physical location of
+ * the adapter's connector), and 2) if the name does end with a simple
+ * unit number, it's not a global property of the interface, it's only
+ * useful as a sort key for device names with the same prefix, so xyz0
+ * shouldn't necessarily sort before abc2.  This means that interfaces
+ * with the same figure of merit will be sorted by the order in which
+ * the mechanism from which we're getting the interfaces supplies them.
  */
 static u_int
 get_figure_of_merit(pcap_if_t *dev)
 {
-	const char *cp;
 	u_int n;
 
-	if (strcmp(dev->name, "any") == 0) {
-		/*
-		 * Give the "any" device an artificially high instance
-		 * number, so it shows up after all other non-loopback
-		 * interfaces.
-		 */
-		n = 0x1FFFFFFF;	/* 29 all-1 bits */
-	} else {
-		/*
-		 * A number at the end of the device name string is
-		 * assumed to be an instance number.  Add 1 to the
-		 * instance number, and use 0 for "no instance
-		 * number", so we don't put "no instance number"
-		 * devices and "instance 0" devices together.
-		 */
-		cp = dev->name + strlen(dev->name) - 1;
-		while (cp-1 >= dev->name && *(cp-1) >= '0' && *(cp-1) <= '9')
-			cp--;
-		if (*cp >= '0' && *cp <= '9')
-			n = atoi(cp) + 1;
-		else
-			n = 0;
-	}
+	n = 0;
 	if (!(dev->flags & PCAP_IF_RUNNING))
 		n |= 0x80000000;
 	if (!(dev->flags & PCAP_IF_UP))
@@ -688,6 +675,13 @@ get_figure_of_merit(pcap_if_t *dev)
 	 */
 	if (dev->flags & PCAP_IF_LOOPBACK)
 		n |= 0x10000000;
+
+	/*
+	 * Sort the "any" device before loopback and disconnected devices,
+	 * but after all other devices.
+	 */
+	if (strcmp(dev->name, "any") == 0)
+		n |= 0x08000000;
 
 	return (n);
 }
@@ -1433,7 +1427,7 @@ pcap_lookupnet(const char *device, bpf_u_int32 *netp, bpf_u_int32 *maskp,
 #ifdef PCAP_SUPPORT_BT
 	    || strstr(device, "bluetooth") != NULL
 #endif
-#ifdef PCAP_SUPPORT_USB
+#ifdef PCAP_SUPPORT_LINUX_USBMON
 	    || strstr(device, "usbmon") != NULL
 #endif
 #ifdef HAVE_SNF_API
@@ -2122,7 +2116,7 @@ pcap_create(const char *device, char *errbuf)
 		 * string, not a string in the local code page.
 		 *
 		 * To work around that, we check whether the string
-		 * looks as if it might be a UTF-16LE strinh and, if
+		 * looks as if it might be a UTF-16LE string and, if
 		 * so, convert it back to the local code page's
 		 * extended ASCII.
 		 *
@@ -3708,8 +3702,28 @@ pcap_close_all(void)
 {
 	struct pcap *handle;
 
-	while ((handle = pcaps_to_close) != NULL)
+	while ((handle = pcaps_to_close) != NULL) {
 		pcap_close(handle);
+
+		/*
+		 * If a pcap module adds a pcap_t to the "close all"
+		 * list by calling pcap_add_to_pcaps_to_close(), it
+		 * must have a cleanup routine that removes it from the
+		 * list, by calling pcap_remove_from_pcaps_to_close(),
+		 * and must make that cleanup routine the cleanup_op
+		 * for the pcap_t.
+		 *
+		 * That means that, after pcap_close() - which calls
+		 * the cleanup_op for the pcap_t - the pcap_t must
+		 * have been removed from the list, so pcaps_to_close
+		 * must not be equal to handle.
+		 *
+		 * We check for that, and abort if handle is still
+		 * at the head of the list, to prevent infinite loops.
+		 */
+		if (pcaps_to_close == handle)
+			abort();
+	}
 }
 
 int

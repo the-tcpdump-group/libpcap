@@ -157,8 +157,24 @@ int main(int argc _U_, char **argv _U_)
   {
     if (pcap_lookupnet(alldevs->name, &net, &mask, errbuf) < 0)
     {
-      fprintf(stderr,"Error in pcap_lookupnet: %s\n",errbuf);
-      exit_status = 2;
+      /*
+       * XXX - this doesn't distinguish between "a real error
+       * occurred" and "this interface doesn't *have* an IPv4
+       * address".  The latter shouldn't be treated as an error.
+       *
+       * We look for the interface name, followed by a colon and
+       * a space, and, if we find it,w e see if what follows it
+       * is "no IPv4 address assigned".
+       */
+      size_t devnamelen = strlen(alldevs->name);
+      if (strncmp(errbuf, alldevs->name, devnamelen) == 0 &&
+          strncmp(errbuf + devnamelen, ": ", 2) == 0 &&
+          strcmp(errbuf + devnamelen + 2, "no IPv4 address assigned") == 0)
+        printf("Preferred device is not on an IPv4 network\n");
+      else {
+        fprintf(stderr,"Error in pcap_lookupnet: %s\n",errbuf);
+        exit_status = 2;
+      }
     }
     else
     {

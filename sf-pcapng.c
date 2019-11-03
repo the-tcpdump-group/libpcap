@@ -85,7 +85,7 @@ struct option_header {
  * Section Header Block.
  */
 #define BT_SHB			0x0A0D0D0A
-
+#define BT_SHB_INSANE_MAX       1024U*1024U*1U  /* 1MB should be enough */
 struct section_header_block {
 	bpf_u_int32	byte_order_magic;
 	u_short		major_version;
@@ -266,7 +266,7 @@ read_bytes(FILE *fp, void *buf, size_t bytes_to_read, int fail_on_eof,
 			if (amt_read == 0 && !fail_on_eof)
 				return (0);	/* EOF */
 			snprintf(errbuf, PCAP_ERRBUF_SIZE,
-			    "truncated dump file; tried to read %zu bytes, only got %zu",
+			    "truncated pcapng dump file; tried to read %zu bytes, only got %zu",
 			    bytes_to_read, amt_read);
 		}
 		return (-1);
@@ -856,22 +856,14 @@ pcap_ng_check_header(const uint8_t *magic, FILE *fp, u_int precision,
 	/*
 	 * Check the sanity of the total length.
 	 */
-	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)) {
+	if (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer) ||
+            (total_length > BT_SHB_INSANE_MAX)) {
 		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "Section Header Block in pcapng dump file has a length of %u < %zu",
+		    "Section Header Block in pcapng dump file has invalid length %zu < _%u_ < %u (BT_SHB_INSANE_MAX)",
+		    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer),
 		    total_length,
-		    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer));
-		*err = 1;
-		return (NULL);
-	}
+		    BT_SHB_INSANE_MAX);
 
-	/*
-	 * Make sure it's not too big.
-	 */
-	if (total_length > INITIAL_MAX_BLOCKSIZE) {
-		snprintf(errbuf, PCAP_ERRBUF_SIZE,
-		    "pcapng block size %u > maximum %u",
-		    total_length, INITIAL_MAX_BLOCKSIZE);
 		*err = 1;
 		return (NULL);
 	}
