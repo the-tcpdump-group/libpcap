@@ -2551,19 +2551,19 @@ endif(NOT BUILD_SHARED_LIBS)
 if(WIN32)
     if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
         #
-        # Install 64-bit code built with MSVC in the amd64 subdirectories,
+        # Install 64-bit code built with MSVC in the x64 subdirectories,
         # as that's where it expects it to be.
         #
         install(TARGETS ${LIBRARY_NAME} ${LIBRARY_NAME_STATIC}
-                RUNTIME DESTINATION bin/amd64
-                LIBRARY DESTINATION lib/amd64
-                ARCHIVE DESTINATION lib/amd64)
+                RUNTIME DESTINATION bin/x64
+                LIBRARY DESTINATION lib/x64
+                ARCHIVE DESTINATION lib/x64)
         if(NOT MINGW)
             install(FILES $<TARGET_FILE_DIR:${LIBRARY_NAME_STATIC}>/${LIBRARY_NAME_STATIC}.pdb
-                    DESTINATION bin/amd64 OPTIONAL)
+                    DESTINATION bin/x64 OPTIONAL)
             if(BUILD_SHARED_LIBS)
                 install(FILES $<TARGET_PDB_FILE:${LIBRARY_NAME}>
-                        DESTINATION bin/amd64 OPTIONAL)
+                        DESTINATION bin/x64 OPTIONAL)
             endif(BUILD_SHARED_LIBS)
         endif(NOT MINGW)
     else(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 8)
