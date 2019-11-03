@@ -58,6 +58,10 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   # without searching in the Lib directory first appears to be to set
   # CMAKE_LIBRARY_ARCHITECTURE to "x64".
   #
+  # In newer versions of CMake, CMAKE_LIBRARY_ARCHITECTURE is set according to
+  # the language, e.g., CMAKE_<LANG>_LIBRARY_ARCHITECTURE. Consequently, it makes
+  # better sense to set CMAKE_C_LIBRARY_ARCHITECTURE as well.
+  #
   set(CMAKE_C_LIBRARY_ARCHITECTURE "x64")
   set(CMAKE_LIBRARY_ARCHITECTURE "x64")
 endif()
