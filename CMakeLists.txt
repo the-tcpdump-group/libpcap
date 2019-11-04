@@ -93,6 +93,15 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "Intel")
 endif()
 
 #
+# If we're building with MinGW, we need to specify _WIN32_WINNT as
+# 0x0600 ("NT 6.0", a/k/a Vista/Windows Server 2008) in order to
+# get the full IPv6 API, including inet_ntop().
+#
+if(MINGW)
+    add_definitions(-D_WIN32_WINNT=0x0600)
+endif(MINGW)
+
+#
 # Build all runtimes in the top-level binary directory; that way,
 # on Windows, the executables will be in the same directory as
 # the DLLs, so the system will find pcap.dll when any of the
