@@ -36,7 +36,7 @@ build_script:
   # Appveyor defaults to cmd.exe, so use cmd.exe syntax.
   #
   - type NUL >.devel
-  - if "%GENERATOR%"=="MinGW Makefiles" dir %MINGW_PATH%
+  - if "%GENERATOR%"=="MinGW Makefiles" dir %MINGW_PATH%\mingw64
   - md build
   - cd build
   # Remove the default MinGW path
