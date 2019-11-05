@@ -55,6 +55,8 @@
   #include <dagapi.h>
 #endif /* HAVE_DAG_API */
 
+#include "diag-control.h"
+
 static int pcap_setfilter_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
 static int pcap_getnonblock_npf(pcap_t *);
@@ -246,7 +248,7 @@ pcap_stats_npf(pcap_t *p, struct pcap_stat *ps)
  * statistics we are and are *not* providing, rather than having to provide
  * possibly-bogus values for statistics we can't provide.
  */
-struct pcap_stat *
+static struct pcap_stat *
 pcap_stats_ex_npf(pcap_t *p, int *pcap_stat_size)
 {
 	struct pcap_win *pw = p->priv;
@@ -1872,10 +1874,10 @@ pcap_lookupdev(char *errbuf)
 	DWORD dwVersion;
 	DWORD dwWindowsMajorVersion;
 
-#pragma warning (push)
-#pragma warning (disable: 4996) /* disable MSVC's GetVersion() deprecated warning here */
+/* disable MSVC's GetVersion() deprecated warning here */
+DIAG_OFF_DEPRECATION
 	dwVersion = GetVersion();	/* get the OS version */
-#pragma warning (pop)
+DIAG_ON_DEPRECATION
 	dwWindowsMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
 
 	if (dwVersion >= 0x80000000 && dwWindowsMajorVersion >= 4) {
