@@ -17,6 +17,14 @@ install:
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GENERATOR: "MinGW Makefiles"
+      SDK: WpdPack
+      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GENERATOR: "MinGW Makefiles"
+      SDK: npcap-sdk-0.1
+      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
       SDK: WpdPack
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
@@ -40,20 +48,13 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: npcap-sdk-0.1
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "MinGW Makefiles"
-      SDK: WpdPack
-      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      GENERATOR: "MinGW Makefiles"
-      SDK: npcap-sdk-0.1
-      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
 
 build_script:
   #
   # Appveyor defaults to cmd.exe, so use cmd.exe syntax.
   #
   - type NUL >.devel
+  - if "%GENERATOR%"=="MinGW Makefiles" dir %MINGW_PATH%
   - md build
   - cd build
   # Remove the default MinGW path
