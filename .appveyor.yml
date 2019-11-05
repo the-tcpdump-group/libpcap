@@ -40,6 +40,12 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: npcap-sdk-0.1
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GENERATOR: "MinGW Makefiles"
+      SDK: WpdPack
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      GENERATOR: "MinGW Makefiles"
+      SDK: WpdPack
 
 build_script:
   #
@@ -49,4 +55,6 @@ build_script:
   - md build
   - cd build
   - cmake -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" ..
-  - msbuild /m /nologo /p:Configuration=Release pcap.sln
+  - if "%GENERATOR%"=="MinGW Makefiles" set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0;%PATH%
+  - if NOT "%GENERATOR"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
+  - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
