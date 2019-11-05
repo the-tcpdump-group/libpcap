@@ -55,6 +55,8 @@ build_script:
   - md build
   - cd build
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0;%PATH%
+  # Workaround for CMake not wanting sh.exe on PATH for MinGW
+  - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
   - cmake -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" ..
   - if NOT "%GENERATOR%"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
   - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
