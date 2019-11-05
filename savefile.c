@@ -121,7 +121,7 @@ sf_stats(pcap_t *p, struct pcap_stat *ps _U_)
 
 #ifdef _WIN32
 static struct pcap_stat *
-sf_stats_ex(pcap_t *p, int *size)
+sf_stats_ex(pcap_t *p, int *size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Statistics aren't available from savefiles");
@@ -129,7 +129,7 @@ sf_stats_ex(pcap_t *p, int *size)
 }
 
 static int
-sf_setbuff(pcap_t *p, int dim)
+sf_setbuff(pcap_t *p, int dim _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The kernel buffer size cannot be set while reading from a file");
@@ -137,7 +137,7 @@ sf_setbuff(pcap_t *p, int dim)
 }
 
 static int
-sf_setmode(pcap_t *p, int mode)
+sf_setmode(pcap_t *p, int mode _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "impossible to set mode while reading from a file");
@@ -145,7 +145,7 @@ sf_setmode(pcap_t *p, int mode)
 }
 
 static int
-sf_setmintocopy(pcap_t *p, int size)
+sf_setmintocopy(pcap_t *p, int size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set while reading from a file");
@@ -179,7 +179,7 @@ sf_oid_set_request(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
 }
 
 static u_int
-sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
+sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue _U_, int sync _U_)
 {
 	pcap_strlcpy(p->errbuf, "Sending packets isn't supported on savefiles",
 	    PCAP_ERRBUF_SIZE);
@@ -187,7 +187,7 @@ sf_sendqueue_transmit(pcap_t *p, pcap_send_queue *queue, int sync)
 }
 
 static int
-sf_setuserbuffer(pcap_t *p, int size)
+sf_setuserbuffer(pcap_t *p, int size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The user buffer cannot be set when reading from a file");
@@ -195,7 +195,7 @@ sf_setuserbuffer(pcap_t *p, int size)
 }
 
 static int
-sf_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
+sf_live_dump(pcap_t *p, char *filename _U_, int maxsize _U_, int maxpacks _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed when reading from a file");
@@ -203,7 +203,7 @@ sf_live_dump(pcap_t *p, char *filename, int maxsize, int maxpacks)
 }
 
 static int
-sf_live_dump_ended(pcap_t *p, int sync)
+sf_live_dump_ended(pcap_t *p, int sync _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
@@ -211,7 +211,7 @@ sf_live_dump_ended(pcap_t *p, int sync)
 }
 
 static PAirpcapHandle
-sf_get_airpcap_handle(pcap_t *pcap)
+sf_get_airpcap_handle(pcap_t *pcap _U_)
 {
 	return (NULL);
 }

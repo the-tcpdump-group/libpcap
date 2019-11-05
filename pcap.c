@@ -129,9 +129,9 @@ struct rtentry;		/* declarations in <net/if.h> */
  * DllMain(), required when built as a Windows DLL.
  */
 BOOL WINAPI DllMain(
-  HANDLE hinstDLL,
-  DWORD dwReason,
-  LPVOID lpvReserved
+  HANDLE hinstDLL _U_,
+  DWORD dwReason _U_,
+  LPVOID lpvReserved _U_
 )
 {
 	return (TRUE);
@@ -258,7 +258,7 @@ pcap_stats_not_initialized(pcap_t *pcap, struct pcap_stat *ps _U_)
 }
 
 #ifdef _WIN32
-struct pcap_stat *
+static struct pcap_stat *
 pcap_stats_ex_not_initialized(pcap_t *pcap, int *pcap_stat_size _U_)
 {
 	pcap_set_not_initialized_message(pcap);
@@ -313,7 +313,8 @@ pcap_oid_set_request_not_initialized(pcap_t *pcap, bpf_u_int32 oid _U_,
 }
 
 static u_int
-pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue, int sync)
+pcap_sendqueue_transmit_not_initialized(pcap_t *pcap, pcap_send_queue* queue _U_,
+    int sync _U_)
 {
 	pcap_set_not_initialized_message(pcap);
 	return (0);
@@ -3892,7 +3893,7 @@ pcap_stats_dead(pcap_t *p, struct pcap_stat *ps _U_)
 }
 
 #ifdef _WIN32
-struct pcap_stat *
+static struct pcap_stat *
 pcap_stats_ex_dead(pcap_t *p, int *pcap_stat_size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
@@ -3901,7 +3902,7 @@ pcap_stats_ex_dead(pcap_t *p, int *pcap_stat_size _U_)
 }
 
 static int
-pcap_setbuff_dead(pcap_t *p, int dim)
+pcap_setbuff_dead(pcap_t *p, int dim _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The kernel buffer size cannot be set on a pcap_open_dead pcap_t");
@@ -3909,7 +3910,7 @@ pcap_setbuff_dead(pcap_t *p, int dim)
 }
 
 static int
-pcap_setmode_dead(pcap_t *p, int mode)
+pcap_setmode_dead(pcap_t *p, int mode _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "impossible to set mode on a pcap_open_dead pcap_t");
@@ -3917,7 +3918,7 @@ pcap_setmode_dead(pcap_t *p, int mode)
 }
 
 static int
-pcap_setmintocopy_dead(pcap_t *p, int size)
+pcap_setmintocopy_dead(pcap_t *p, int size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The mintocopy parameter cannot be set on a pcap_open_dead pcap_t");
@@ -3951,7 +3952,7 @@ pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
 }
 
 static u_int
-pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
+pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");
@@ -3959,7 +3960,7 @@ pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync)
 }
 
 static int
-pcap_setuserbuffer_dead(pcap_t *p, int size)
+pcap_setuserbuffer_dead(pcap_t *p, int size _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "The user buffer cannot be set on a pcap_open_dead pcap_t");
@@ -3967,7 +3968,8 @@ pcap_setuserbuffer_dead(pcap_t *p, int size)
 }
 
 static int
-pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
+pcap_live_dump_dead(pcap_t *p, char *filename _U_, int maxsize _U_,
+    int maxpacks _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
@@ -3975,7 +3977,7 @@ pcap_live_dump_dead(pcap_t *p, char *filename, int maxsize, int maxpacks)
 }
 
 static int
-pcap_live_dump_ended_dead(pcap_t *p, int sync)
+pcap_live_dump_ended_dead(pcap_t *p, int sync _U_)
 {
 	pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Live packet dumping cannot be performed on a pcap_open_dead pcap_t");
@@ -3983,7 +3985,7 @@ pcap_live_dump_ended_dead(pcap_t *p, int sync)
 }
 
 static PAirpcapHandle
-pcap_get_airpcap_handle_dead(pcap_t *p)
+pcap_get_airpcap_handle_dead(pcap_t *p _U_)
 {
 	return (NULL);
 }
