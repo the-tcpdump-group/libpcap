@@ -16,6 +16,12 @@ install:
 
 environment:
   matrix:
+    - GENERATOR: "MinGW Makefiles"
+      SDK: WpdPack
+      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
+    - GENERATOR: "MinGW Makefiles"
+      SDK: npcap-sdk-0.1
+      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
     - GENERATOR: "Visual Studio 12 2013"
       SDK: WpdPack
     - GENERATOR: "Visual Studio 12 2013 Win64"
@@ -24,18 +30,13 @@ environment:
       SDK: npcap-sdk-0.1
     - GENERATOR: "Visual Studio 12 2013 Win64"
       SDK: npcap-sdk-0.1
-    - GENERATOR: "MinGW Makefiles"
-      SDK: WpdPack
-      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
-    - GENERATOR: "MinGW Makefiles"
-      SDK: npcap-sdk-0.1
-      MINGW_PATH: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
 
 build_script:
   #
   # Appveyor defaults to cmd.exe, so use cmd.exe syntax.
   #
   - type NUL >.devel
+  - if "%GENERATOR%"=="MinGW Makefiles" dir %MINGW_PATH%
   - md build
   - cd build
   # Remove the default MinGW path
