@@ -24,6 +24,10 @@ environment:
       SDK: npcap-sdk-0.1
     - GENERATOR: "Visual Studio 12 2013 Win64"
       SDK: npcap-sdk-0.1
+    - GENERATOR: "MinGW Makefiles"
+      SDK: WpdPack
+    - GENERATOR: "MinGW Makefiles"
+      SDK: WpdPack
 
 build_script:
   #
@@ -33,4 +37,6 @@ build_script:
   - md build
   - cd build
   - cmake -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" ..
-  - msbuild /m /nologo /p:Configuration=Release pcap.sln
+  - if "%GENERATOR%"=="MinGW Makefiles" set PATH=C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0;%PATH%
+  - if NOT "%GENERATOR"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
+  - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
