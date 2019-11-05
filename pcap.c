@@ -2283,13 +2283,12 @@ pcap_alloc_pcap_t(char *ebuf, size_t size)
 	 * integers.
 	 */
 #define PCAP_T_ALIGNED_SIZE	((sizeof(pcap_t) + 7U) & ~0x7U)
-	chunk = malloc(PCAP_T_ALIGNED_SIZE + size);
+	chunk = calloc(PCAP_T_ALIGNED_SIZE + size, 1);
 	if (chunk == NULL) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "malloc");
 		return (NULL);
 	}
-	memset(chunk, 0, PCAP_T_ALIGNED_SIZE + size);
 
 	/*
 	 * Get a pointer to the pcap_t at the beginning.
