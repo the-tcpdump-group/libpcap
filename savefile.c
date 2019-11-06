@@ -57,19 +57,18 @@
 
 #ifdef _WIN32
 /*
- * These aren't exported on Windows, because they would only work if both
+ * This isn't exported on Windows, because it would only work if both
  * WinPcap/Npcap and the code using it were to use the Universal CRT; otherwise,
  * a FILE structure in WinPcap/Npcap and a FILE structure in the code using it
  * could be different if they're using different versions of the C runtime.
  *
- * Instead, pcap/pcap.h defines them as macros that wrap the hopen versions,
- * with the wrappers calling _fileno() and _get_osfhandle() themselves,
- * so that they convert the appropriate CRT version's FILE structure to
+ * Instead, pcap/pcap.h defines it as a macro that wraps the hopen version,
+ * with the wrapper calling _fileno() and _get_osfhandle() themselves,
+ * so that it convert the appropriate CRT version's FILE structure to
  * a HANDLE (which is OS-defined, not CRT-defined, and is part of the Win32
  * and Win64 ABIs).
  */
 static pcap_t *pcap_fopen_offline_with_tstamp_precision(FILE *, u_int, char *);
-static pcap_t *pcap_fopen_offline(FILE *, char *);
 #endif
 
 /*
