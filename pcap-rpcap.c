@@ -1378,7 +1378,8 @@ error:
 	(void)rpcap_discard(pr->rmt_sockctrl, plen, NULL);
 
 error_nodiscard:
-	if ((sockdata) && (sockdata != -1))		/* we can be here because sockdata said 'error' */
+	/* we can be here because sockdata said 'error' */
+	if ((sockdata != 0) && (sockdata != INVALID_SOCKET))
 		sock_close(sockdata, NULL, 0);
 
 	if (!active)
