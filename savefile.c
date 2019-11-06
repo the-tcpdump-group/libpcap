@@ -32,10 +32,6 @@
 #include <config.h>
 #endif
 
-#ifndef BUILDING_PCAP
-#error "Wait, how can we not be building pcap?"
-#endif
-
 #include <pcap-types.h>
 #ifdef _WIN32
 #include <io.h>
@@ -502,15 +498,19 @@ found:
 	return (p);
 }
 
-#ifdef _WIN32
-static
-#endif
+/*
+ * This isn't needed on Windows; we #define pcap_fopen_offline() as
+ * a wrapper around pcap_hopen_offline(), and we don't call it from
+ * inside this file, so it's unused.
+ */
+#ifndef _WIN32
 pcap_t *
 pcap_fopen_offline(FILE *fp, char *errbuf)
 {
 	return (pcap_fopen_offline_with_tstamp_precision(fp,
 	    PCAP_TSTAMP_PRECISION_MICRO, errbuf));
 }
+#endif
 
 /*
  * Read packets from a capture file, and call the callback for each
