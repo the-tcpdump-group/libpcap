@@ -200,10 +200,10 @@ pcap_nametoaddrinfo(const char *name)
  *  XXX - not guaranteed to be thread-safe!  See below for platforms
  *  on which it is thread-safe and on which it isn't.
  */
-bpf_u_int32
-pcap_nametonetaddr(const char *name)
-{
 #ifdef _WIN32
+bpf_u_int32
+pcap_nametonetaddr(const char *name _U_)
+{
 	/*
 	 * There's no "getnetbyname()" on Windows.
 	 *
@@ -217,7 +217,11 @@ pcap_nametonetaddr(const char *name)
 	 * of *UN*X* machines.)
 	 */
 	return 0;
-#else
+}
+#else /* _WIN32 */
+bpf_u_int32
+pcap_nametonetaddr(const char *name)
+{
 	/*
 	 * UN*X.
 	 */
@@ -291,8 +295,8 @@ pcap_nametonetaddr(const char *name)
 		return np->n_net;
 	else
 		return 0;
-#endif /* _WIN32 */
 }
+#endif /* _WIN32 */
 
 /*
  * Convert a port name to its port and protocol numbers.
