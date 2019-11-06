@@ -4026,7 +4026,8 @@ pcap_oid_set_request_dead(pcap_t *p, bpf_u_int32 oid _U_, const void *data _U_,
 }
 
 static u_int
-pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue, int sync _U_)
+pcap_sendqueue_transmit_dead(pcap_t *p, pcap_send_queue *queue _U_,
+    int sync _U_)
 {
 	snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 	    "Packets cannot be transmitted on a pcap_open_dead pcap_t");

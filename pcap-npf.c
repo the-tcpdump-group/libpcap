@@ -474,17 +474,21 @@ pcap_live_dump_ended_npf(pcap_t *p, int sync)
 	return (PacketIsDumpEnded(pw->adapter, (BOOLEAN)sync));
 }
 
+#ifdef HAVE_AIRPCAP_API
 static PAirpcapHandle
 pcap_get_airpcap_handle_npf(pcap_t *p)
 {
-#ifdef HAVE_AIRPCAP_API
 	struct pcap_win *pw = p->priv;
 
 	return (PacketGetAirPcapHandle(pw->adapter));
-#else
-	return (NULL);
-#endif /* HAVE_AIRPCAP_API */
 }
+#else /* HAVE_AIRPCAP_API */
+static PAirpcapHandle
+pcap_get_airpcap_handle_npf(pcap_t *p _U_)
+{
+	return (NULL);
+}
+#endif /* HAVE_AIRPCAP_API */
 
 static int
 pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
@@ -1607,6 +1611,12 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			/*
 			 * "Closing" or "Not ready", so neither up nor
 			 * running.
+			 */
+			break;
+
+		default:
+			/*
+			 * Unknown.
 			 */
 			break;
 		}
