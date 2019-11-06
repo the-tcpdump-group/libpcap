@@ -1695,6 +1695,12 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			 */
 			*flags |= PCAP_IF_CONNECTION_STATUS_DISCONNECTED;
 			break;
+
+		default:
+			/*
+			 * It's unknown whether it's connected or not.
+			 */
+			break;
 		}
 	}
 #else
