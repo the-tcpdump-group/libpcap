@@ -101,9 +101,9 @@ endif()
 # a newer version of the C library, i.e. Visual Studio 2015 or
 # later, as it depends on C99 features introduced in VS 2015.
 #
-if(MINGW)
-    add_definitions(-D_WIN32_WINNT=0x0600)
-endif(MINGW)
+#if(MINGW)
+#    add_definitions(-D_WIN32_WINNT=0x0600)
+#endif(MINGW)
 
 #
 # Build all runtimes in the top-level binary directory; that way,
