@@ -32,6 +32,10 @@
 #include <config.h>
 #endif
 
+#ifndef BUILDING_PCAP
+#error "Wait, how can we not be building pcap?"
+#endif
+
 #include <pcap-types.h>
 #ifdef _WIN32
 #include <io.h>
