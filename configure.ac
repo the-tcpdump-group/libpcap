@@ -778,7 +778,7 @@ dlpi)
 			# Capture module plus common code needed for
 			# common functions used by pcap-[dlpi,libdlpi].c
 			#
-		 	PLATFORM_C_SRC="pcap-libdlpi.c dlpisubs.c"
+			PLATFORM_C_SRC="pcap-libdlpi.c dlpisubs.c"
 			AC_DEFINE(HAVE_LIBDLPI,1,[if libdlpi exists])
 		],
 		[
@@ -788,7 +788,7 @@ dlpi)
 			# Capture module plus common code needed for
 			# common functions used by pcap-[dlpi,libdlpi].c
 			#
-		 	PLATFORM_C_SRC="pcap-dlpi.c dlpisubs.c"
+			PLATFORM_C_SRC="pcap-dlpi.c dlpisubs.c"
 		])
 	LDFLAGS=$saved_ldflags
 
@@ -1310,7 +1310,7 @@ if test "$want_dag" != no; then
 		fi
 
 		if test "$want_dag" = yes; then
-	        	# User wanted DAG support but we couldn't find it.
+			# User wanted DAG support but we couldn't find it.
 			AC_MSG_ERROR([DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
 		fi
 	fi
@@ -1386,7 +1386,7 @@ if test "$with_septel" != no; then
 		fi
 
 		if test "$want_septel" = yes; then
-	        	# User wanted Septel support but we couldn't find it.
+			# User wanted Septel support but we couldn't find it.
 			AC_MSG_ERROR([Septel support requested with --with-septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support])
 		fi
 	fi
@@ -1565,7 +1565,7 @@ if test "$want_turbocap" != no; then
 		AC_MSG_RESULT(no)
 
 		if test "$want_turbocap" = yes; then
-	        	# User wanted Turbo support but we couldn't find it.
+			# User wanted Turbo support but we couldn't find it.
 			AC_MSG_ERROR([TurboCap support requested with --with-turbocap, but the TurboCap headers weren't found: make sure the TurboCap support is installed or don't request TurboCap support])
 		fi
 	fi
@@ -2455,7 +2455,7 @@ AC_INCLUDES_DEFAULT
 		fi
 
 		if test "$want_dpdk" = yes; then
-	        	# User wanted DPDK support but we couldn't find it.
+			# User wanted DPDK support but we couldn't find it.
 			AC_MSG_ERROR([DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support])
 		fi
 	fi

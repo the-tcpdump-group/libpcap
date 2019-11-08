@@ -965,8 +965,8 @@ accept_connections(void)
 				//
 				// Did an error occur?
 				//
-			 	if (network_events.iErrorCode[FD_ACCEPT_BIT] != 0)
-			 	{
+				if (network_events.iErrorCode[FD_ACCEPT_BIT] != 0)
+				{
 					//
 					// Yes - report it and keep going.
 					//

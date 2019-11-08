@@ -4314,7 +4314,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|haiku*|midipix*)
-	    	    #
+		    #
 		    # Platforms where the linker is the GNU linker
 		    # or accepts command-line arguments like
 		    # those the GNU linker accepts.
@@ -4343,7 +4343,7 @@ $as_echo "#define const /**/" >>confdefs.h
 
 	    hpux*)
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
-	    	    #
+		    #
 		    # XXX - this assumes GCC is using the HP linker,
 		    # rather than the GNU linker, and that the "+h"
 		    # option is used on all HP-UX platforms, both .sl
@@ -4419,7 +4419,7 @@ $as_echo "#define const /**/" >>confdefs.h
 		    ;;
 
 	    osf*)
-	    	    #
+		    #
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
 		    # Tru64 UNIX.
 		    #
@@ -6739,7 +6739,7 @@ if test "x$ac_cv_lib_dlpi_dlpi_walk" = xyes; then :
 			# Capture module plus common code needed for
 			# common functions used by pcap-[dlpi,libdlpi].c
 			#
-		 	PLATFORM_C_SRC="pcap-libdlpi.c dlpisubs.c"
+			PLATFORM_C_SRC="pcap-libdlpi.c dlpisubs.c"
 
 $as_echo "#define HAVE_LIBDLPI 1" >>confdefs.h
 
@@ -6752,7 +6752,7 @@ else
 			# Capture module plus common code needed for
 			# common functions used by pcap-[dlpi,libdlpi].c
 			#
-		 	PLATFORM_C_SRC="pcap-dlpi.c dlpisubs.c"
+			PLATFORM_C_SRC="pcap-dlpi.c dlpisubs.c"
 
 fi
 
@@ -7842,7 +7842,7 @@ $as_echo "#define HAVE_DAG_API 1" >>confdefs.h
 		fi
 
 		if test "$want_dag" = yes; then
-	        	# User wanted DAG support but we couldn't find it.
+			# User wanted DAG support but we couldn't find it.
 			as_fn_error $? "DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support" "$LINENO" 5
 		fi
 	fi
@@ -7928,7 +7928,7 @@ $as_echo "no" >&6; }
 		fi
 
 		if test "$want_septel" = yes; then
-	        	# User wanted Septel support but we couldn't find it.
+			# User wanted Septel support but we couldn't find it.
 			as_fn_error $? "Septel support requested with --with-septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support" "$LINENO" 5
 		fi
 	fi
@@ -8183,7 +8183,7 @@ $as_echo "#define HAVE_TC_API 1" >>confdefs.h
 $as_echo "no" >&6; }
 
 		if test "$want_turbocap" = yes; then
-	        	# User wanted Turbo support but we couldn't find it.
+			# User wanted Turbo support but we couldn't find it.
 			as_fn_error $? "TurboCap support requested with --with-turbocap, but the TurboCap headers weren't found: make sure the TurboCap support is installed or don't request TurboCap support" "$LINENO" 5
 		fi
 	fi
@@ -11395,7 +11395,7 @@ $as_echo "#define PCAP_SUPPORT_DPDK 1" >>confdefs.h
 		fi
 
 		if test "$want_dpdk" = yes; then
-	        	# User wanted DPDK support but we couldn't find it.
+			# User wanted DPDK support but we couldn't find it.
 			as_fn_error $? "DPDK support requested with --with-pcap=dpdk, but the DPDK headers weren't found at $dpdk_inc_dir: make sure the DPDK support is installed, specify a different path or paths if necessary, or don't request DPDK support" "$LINENO" 5
 		fi
 	fi
