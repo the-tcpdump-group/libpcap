@@ -3307,7 +3307,7 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 	 */
 	if (d == PCAP_D_OUT) {
 		snprintf(p->errbuf, sizeof(p->errbuf),
-		    "Setting direction to PCAP_D_OUT is not supported on BPF");
+		    "Setting direction to \"outgoing only\" is not supported on this operating system");
 		return -1;
 	}
 
