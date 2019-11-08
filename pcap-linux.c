@@ -2916,7 +2916,19 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 static int
 pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 {
-	handle->direction = d;
+	switch (d) {
+
+	case PCAP_D_IN:
+	case PCAP_D_OUT:
+	case PCAP_D_INOUT:
+		handle->direction = d;
+		break;
+
+	default:
+		snprintf(handle->errbuf, sizeof(handle->errbuf),
+		    "Invalid direction");
+		return -1;
+	}
 	return 0;
 }
 

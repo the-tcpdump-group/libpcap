@@ -3383,7 +3383,7 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		 * Outgoing, but not incoming; we can't specify that.
 		 */
 		snprintf(p->errbuf, sizeof(p->errbuf),
-		    "Setting direction to \"outgoing only\" is not supported on this operating system");
+		    "Setting direction to \"outgoing only\" is not supported on this device");
 		return (-1);
 
 	case PCAP_D_INOUT:
@@ -3412,7 +3412,7 @@ static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d _U_)
 {
 	(void) snprintf(p->errbuf, sizeof(p->errbuf),
-	    "Setting direction is not supported on this operating system");
+	    "Setting direction is not supported on this device");
 	return (-1);
 }
 #endif
