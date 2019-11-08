@@ -1246,7 +1246,7 @@ if test "$want_dag" != no; then
 		fi
 
 		if test "$want_dag" = yes; then
-	        	# User wanted DAG support but we couldn't find it.
+			# User wanted DAG support but we couldn't find it.
 			AC_MSG_ERROR([DAG support requested with --with-dag, but the DAG headers weren't found at $dag_include_dir: make sure the DAG support is installed, specify a different path or paths if necessary, or don't request DAG support])
 		fi
 	fi
@@ -1322,7 +1322,7 @@ if test "$with_septel" != no; then
 		fi
 
 		if test "$want_septel" = yes; then
-	        	# User wanted Septel support but we couldn't find it.
+			# User wanted Septel support but we couldn't find it.
 			AC_MSG_ERROR([Septel support requested with --with-septel, but the Septel headers weren't found at $septel_include_dir: make sure the Septel support is installed, specify a different path or paths if necessary, or don't request Septel support])
 		fi
 	fi
@@ -1501,7 +1501,7 @@ if test "$want_turbocap" != no; then
 		AC_MSG_RESULT(no)
 
 		if test "$want_turbocap" = yes; then
-	        	# User wanted Turbo support but we couldn't find it.
+			# User wanted Turbo support but we couldn't find it.
 			AC_MSG_ERROR([TurboCap support requested with --with-turbocap, but the TurboCap headers weren't found: make sure the TurboCap support is installed or don't request TurboCap support])
 		fi
 	fi

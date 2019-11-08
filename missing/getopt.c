@@ -114,7 +114,7 @@ getopt(int nargc, char * const *nargv, const char *ostr)
 				    __progname, optopt);
 			return (BADCH);
 		}
-	 	else				/* white space */
+		else				/* white space */
 			optarg = nargv[optind];
 		place = EMSG;
 		++optind;

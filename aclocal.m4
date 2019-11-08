@@ -485,7 +485,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    ;;
 
 	    freebsd*|netbsd*|openbsd*|dragonfly*|linux*|osf*|midipix*)
-	    	    #
+		    #
 		    # Platforms where the linker is the GNU linker
 		    # or accepts command-line arguments like
 		    # those the GNU linker accepts.
@@ -514,7 +514,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 
 	    hpux*)
 		    V_SHLIB_CCOPT="$V_SHLIB_CCOPT -fpic"
-	    	    #
+		    #
 		    # XXX - this assumes GCC is using the HP linker,
 		    # rather than the GNU linker, and that the "+h"
 		    # option is used on all HP-UX platforms, both .sl
@@ -590,7 +590,7 @@ AC_DEFUN(AC_LBL_SHLIBS_INIT,
 		    ;;
 
 	    osf*)
-	    	    #
+		    #
 		    # Presumed to be DEC OSF/1, Digital UNIX, or
 		    # Tru64 UNIX.
 		    #
