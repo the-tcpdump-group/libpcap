@@ -155,13 +155,6 @@ bt_monitor_inject(pcap_t *handle, const void *buf _U_, size_t size _U_)
 }
 
 static int
-bt_monitor_setdirection(pcap_t *p, pcap_direction_t d)
-{
-    p->direction = d;
-    return 0;
-}
-
-static int
 bt_monitor_stats(pcap_t *handle _U_, struct pcap_stat *stats)
 {
     stats->ps_recv = 0;
@@ -200,7 +193,7 @@ bt_monitor_activate(pcap_t* handle)
     handle->read_op = bt_monitor_read;
     handle->inject_op = bt_monitor_inject;
     handle->setfilter_op = install_bpf_program; /* no kernel filtering */
-    handle->setdirection_op = bt_monitor_setdirection;
+    handle->setdirection_op = NULL; /* Not implemented */
     handle->set_datalink_op = NULL; /* can't change data link type */
     handle->getnonblock_op = pcap_getnonblock_fd;
     handle->setnonblock_op = pcap_setnonblock_fd;
