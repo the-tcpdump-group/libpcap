@@ -991,10 +991,10 @@ opt_peep(opt_state_t *opt_state, struct block *b)
 	 */
 	if (b->s.code == (BPF_JMP|BPF_JEQ|BPF_K) &&
 	    !ATOMELEM(b->out_use, A_ATOM)) {
-	    	/*
-	    	 * We can optimize away certain subtractions of the
-	    	 * X register.
-	    	 */
+		/*
+		 * We can optimize away certain subtractions of the
+		 * X register.
+		 */
 		if (last->s.code == (BPF_ALU|BPF_SUB|BPF_X)) {
 			val = b->val[X_ATOM];
 			if (opt_state->vmap[val].is_const) {
@@ -2401,7 +2401,7 @@ filled:
 		if (off >= 256) {
 		    /* offset too large for branch, must add a jump */
 		    if (p->longjt == 0) {
-		    	/* mark this instruction and retry */
+			/* mark this instruction and retry */
 			p->longjt++;
 			return(0);
 		    }
@@ -2421,7 +2421,7 @@ filled:
 		if (off >= 256) {
 		    /* offset too large for branch, must add a jump */
 		    if (p->longjf == 0) {
-		    	/* mark this instruction and retry */
+			/* mark this instruction and retry */
 			p->longjf++;
 			return(0);
 		    }

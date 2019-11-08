@@ -459,7 +459,7 @@ pcap_live_dump_npf(pcap_t *p, char *filename, int maxsize, int maxpacks)
 	res = PacketSetDumpLimits(pw->adapter, maxsize, maxpacks);
 	if(res == FALSE) {
 		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    		"Error setting dump limit");
+				"Error setting dump limit");
 		return (-1);
 	}
 
@@ -1128,8 +1128,8 @@ pcap_activate_npf(pcap_t *p)
 		 * If the buffer size wasn't explicitly set, default to
 		 * WIN32_DEFAULT_KERNEL_BUFFER_SIZE.
 		 */
-	 	if (p->opt.buffer_size == 0)
-	 		p->opt.buffer_size = WIN32_DEFAULT_KERNEL_BUFFER_SIZE;
+		if (p->opt.buffer_size == 0)
+			p->opt.buffer_size = WIN32_DEFAULT_KERNEL_BUFFER_SIZE;
 
 		if(PacketSetBuff(pw->adapter,p->opt.buffer_size)==FALSE)
 		{

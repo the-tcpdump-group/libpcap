@@ -3451,9 +3451,9 @@ set_dlt_list_cooked(pcap_t *handle, int sock_fd)
 	len = sizeof(tp_reserve);
 	if (getsockopt(sock_fd, SOL_PACKET, PACKET_RESERVE, &tp_reserve,
 	    &len) == 0) {
-	    	/*
-	    	 * Yes, we can do DLL_LINUX_SLL2.
-	    	 */
+		/*
+		 * Yes, we can do DLL_LINUX_SLL2.
+		 */
 		handle->dlt_list = (u_int *) malloc(sizeof(u_int) * 2);
 		/*
 		 * If that fails, just leave the list empty.
@@ -3661,7 +3661,7 @@ activate_sock(pcap_t *handle, int is_any_device)
 
 		if ((err = iface_bind(sock_fd, handlep->ifindex,
 		    handle->errbuf, pcap_protocol(handle))) != 0) {
-		    	close(sock_fd);
+			close(sock_fd);
 			return err;
 		}
 	} else {

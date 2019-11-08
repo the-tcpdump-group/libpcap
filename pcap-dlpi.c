@@ -633,7 +633,7 @@ pcap_activate_dlpi(pcap_t *p)
 	**/
 	if (dlbindreq(p->fd, 0, p->errbuf) < 0 ||
 	    dlbindack(p->fd, (char *)buf, p->errbuf, NULL) < 0) {
-	    	status = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 #endif /* AIX vs. HP-UX vs. other */
@@ -761,7 +761,7 @@ pcap_activate_dlpi(pcap_t *p)
 	*/
 	if (dlinforeq(p->fd, p->errbuf) < 0 ||
 	    dlinfoack(p->fd, (char *)buf, p->errbuf) < 0) {
-	    	status = PCAP_ERROR;
+		status = PCAP_ERROR;
 		goto bad;
 	}
 
