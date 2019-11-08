@@ -3486,7 +3486,7 @@ pcap_setdirection(pcap_t *p, pcap_direction_t d)
 {
 	if (p->setdirection_op == NULL) {
 		pcap_snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Setting direction is not implemented on this platform");
+		    "Setting direction is not supported on this device");
 		return (-1);
 	} else
 		return (p->setdirection_op(p, d));

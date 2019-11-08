@@ -362,9 +362,21 @@ bt_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char
 		}
 		cmsg = CMSG_NXTHDR(&msg, cmsg);
 	}
-	if ((in && (handle->direction == PCAP_D_OUT)) ||
-				((!in) && (handle->direction == PCAP_D_IN)))
-		return 0;
+	switch (handle->direction) {
+
+	case PCAP_D_IN:
+		if (!in)
+			return 0;
+		break;
+
+	case PCAP_D_OUT:
+		if (in)
+			return 0;
+		break;
+
+	default:
+		break;
+	}
 
 	bthdr->direction = htonl(in != 0);
 	pkth.caplen+=sizeof(pcap_bluetooth_h4_header);
@@ -418,6 +430,17 @@ bt_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int
 bt_setdirection_linux(pcap_t *p, pcap_direction_t d)
 {
-	p->direction = d;
+	switch (d) {
+
+	case PCAP_D_IN:
+	case PCAP_D_OUT:
+	case PCAP_D_INOUT:
+		p->direction = d;
+		break;
+
+	default:
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
+		return (-1);
+	}
 	return 0;
 }

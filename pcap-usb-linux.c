@@ -1108,7 +1108,18 @@ usb_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 static int
 usb_setdirection_linux(pcap_t *p, pcap_direction_t d)
 {
-	p->direction = d;
+	switch (d) {
+
+	case PCAP_D_IN:
+	case PCAP_D_OUT:
+	case PCAP_D_INOUT:
+		p->direction = d;
+		break;
+
+	default:
+		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
+		return -1;
+	}
 	return 0;
 }
 
