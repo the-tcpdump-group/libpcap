@@ -3258,17 +3258,48 @@ static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 {
 	u_int direction;
+	const char *direction_name;
 
 	/*
 	 * FreeBSD and NetBSD.
 	 */
-	direction = (d == PCAP_D_IN) ? BPF_D_IN :
-	    ((d == PCAP_D_OUT) ? BPF_D_OUT : BPF_D_INOUT);
+	switch (d) {
+
+	case PCAP_D_IN:
+		/*
+		 * Incoming, but not outgoing, so accept only
+		 * incoming packets.
+		 */
+		direction = BPF_D_IN;
+		direction_name = "\"incoming only\"";
+		break;
+
+	case PCAP_D_OUT:
+		/*
+		 * Outgoing, but not incoming, so accept only
+		 * outgoing packets.
+		 */
+		direction = BPF_D_OUT;
+		direction_name = "\"outgoing only\"";
+		break;
+
+	case PCAP_D_INOUT:
+		/*
+		 * Incoming and outgoing, so accept both
+		 * incoming and outgoing packets.
+		 */
+		direction = BPF_D_INOUT;
+		direction_name = "\"incoming and outgoing\"";
+		break;
+
+	default:
+		snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
+		return (-1);
+	}
+		
 	if (ioctl(p->fd, BIOCSDIRECTION, &direction) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
-		    errno, "Cannot set direction to %s",
-		        (d == PCAP_D_IN) ? "PCAP_D_IN" :
-			((d == PCAP_D_OUT) ? "PCAP_D_OUT" : "PCAP_D_INOUT"));
+		    errno, "Cannot set direction to %s", direction_name);
 		return (-1);
 	}
 	return (0);
@@ -3277,7 +3308,8 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 {
-	u_int direction;
+	u_int dirfilt;
+	const char *direction_name;
 
 	/*
 	 * OpenBSD; same functionality, different names, different
@@ -3285,13 +3317,42 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 	 * that direction", not "*capture only* packets in that
 	 * direction").
 	 */
-	direction = (d == PCAP_D_IN) ? BPF_DIRECTION_OUT :
-	    ((d == PCAP_D_OUT) ? BPF_DIRECTION_IN : 0);
-	if (ioctl(p->fd, BIOCSDIRFILT, &direction) == -1) {
+	switch (d) {
+
+	case PCAP_D_IN:
+		/*
+		 * Incoming, but not outgoing, so filter out
+		 * outgoing packets.
+		 */
+		dirfilt = BPF_DIRECTION_OUT;
+		direction_name = "\"incoming only\"";
+		break;
+
+	case PCAP_D_OUT:
+		/*
+		 * Outgoing, but not incoming, so filter out
+		 * incoming packets.
+		 */
+		dirfilt = BPF_DIRECTION_IN;
+		direction_name = "\"outgoing only\"";
+		break;
+
+	case PCAP_D_INOUT:
+		/*
+		 * Incoming and outgoing, so don't filter out
+		 * any packets based on direction.
+		 */
+		dirfilt = 0;
+		direction_name = "\"incoming and outgoing\"";
+		break;
+
+	default:
+		snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
+		return (-1);
+	}
+	if (ioctl(p->fd, BIOCSDIRFILT, &dirfilt) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
-		    errno, "Cannot set direction to %s",
-		        (d == PCAP_D_IN) ? "PCAP_D_IN" :
-			((d == PCAP_D_OUT) ? "PCAP_D_OUT" : "PCAP_D_INOUT"));
+		    errno, "Cannot set direction to %s", direction_name);
 		return (-1);
 	}
 	return (0);
@@ -3301,21 +3362,47 @@ static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 {
 	u_int seesent;
+	const char *direction_name;
 
 	/*
-	 * We don't support PCAP_D_OUT.
+	 * OS with just BIOCSSEESENT.
 	 */
-	if (d == PCAP_D_OUT) {
+	switch (d) {
+
+	case PCAP_D_IN:
+		/*
+		 * Incoming, but not outgoing, so we don't want to
+		 * see transmitted packets.
+		 */
+		seesent = 0;
+		direction_name = "\"incoming only\"";
+		break;
+
+	case PCAP_D_OUT:
+		/*
+		 * Outgoing, but not incoming; we can't specify that.
+		 */
 		snprintf(p->errbuf, sizeof(p->errbuf),
 		    "Setting direction to \"outgoing only\" is not supported on this operating system");
-		return -1;
-	}
+		return (-1);
 
-	seesent = (d == PCAP_D_INOUT);
+	case PCAP_D_INOUT:
+		/*
+		 * Incoming and outgoing, so we want to see transmitted
+		 * packets.
+		 */
+		seesent = 1;
+		direction_name = "\"incoming and outgoing\"";
+		break;
+
+	default:
+		snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
+		return (-1);
+	}
+		
 	if (ioctl(p->fd, BIOCSSEESENT, &seesent) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
-		    errno, "Cannot set direction to %s",
-		    (d == PCAP_D_INOUT) ? "PCAP_D_INOUT" : "PCAP_D_IN");
+		    errno, "Cannot set direction to %s", direction_name);
 		return (-1);
 	}
 	return (0);
@@ -3325,7 +3412,7 @@ static int
 pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d _U_)
 {
 	(void) snprintf(p->errbuf, sizeof(p->errbuf),
-	    "This system doesn't support BIOCSSEESENT, so the direction can't be set");
+	    "Setting direction is not supported on this operating system");
 	return (-1);
 }
 #endif
