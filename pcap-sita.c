@@ -915,12 +915,6 @@ static int pcap_setfilter_acn(pcap_t *handle, struct bpf_program *bpf) {
 	return 0;
 }
 
-static int pcap_setdirection_acn(pcap_t *handle, pcap_direction_t d) {
-	snprintf(handle->errbuf, sizeof(handle->errbuf),
-	    "Setting direction is not supported on ACN adapters");
-	return -1;
-}
-
 static int acn_read_n_bytes_with_timeout(pcap_t *handle, int count) {
 	struct		timeval tv;
 	int			retval, fd;
@@ -997,7 +991,7 @@ static int pcap_activate_sita(pcap_t *handle) {
 
 	handle->inject_op = pcap_inject_acn;
 	handle->setfilter_op = pcap_setfilter_acn;
-	handle->setdirection_op = pcap_setdirection_acn;
+	handle->setdirection_op = NULL; /* Not implemented */
 	handle->set_datalink_op = NULL;	/* can't change data link type */
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
