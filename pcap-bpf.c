@@ -3259,9 +3259,35 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 {
 	u_int direction;
 
+	/*
+	 * FreeBSD and NetBSD.
+	 */
 	direction = (d == PCAP_D_IN) ? BPF_D_IN :
 	    ((d == PCAP_D_OUT) ? BPF_D_OUT : BPF_D_INOUT);
 	if (ioctl(p->fd, BIOCSDIRECTION, &direction) == -1) {
+		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
+		    errno, "Cannot set direction to %s",
+		        (d == PCAP_D_IN) ? "PCAP_D_IN" :
+			((d == PCAP_D_OUT) ? "PCAP_D_OUT" : "PCAP_D_INOUT"));
+		return (-1);
+	}
+	return (0);
+}
+#elif defined(BIOCSDIRFILT)
+static int
+pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
+{
+	u_int direction;
+
+	/*
+	 * OpenBSD; same functionality, different names, different
+	 * semantics (the flags mean "*don't* capture packets in
+	 * that direction", not "*capture only* packets in that
+	 * direction").
+	 */
+	direction = (d == PCAP_D_IN) ? BPF_DIRECTION_OUT :
+	    ((d == PCAP_D_OUT) ? BPF_DIRECTION_IN : 0);
+	if (ioctl(p->fd, BIOCSDIRFILT, &direction) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "Cannot set direction to %s",
 		        (d == PCAP_D_IN) ? "PCAP_D_IN" :
