@@ -2401,6 +2401,28 @@ int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
 	return pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound, get_if_flags);
+
+	int ret;
+
+	/*
+	 * Get the list of regular interfaces first.
+	 */
+	if (pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound,
+	    get_if_flags) == -1)
+		return (-1);	/* failure */
+
+	/*
+	 * Add the "any" device.
+	 * As it refers to all network devices, not to any particular
+	 * network device, the notion of "connected" vs. "disconnected"
+	 * doesn't apply.
+	 */
+	if (add_dev(devlistp, "any",
+	    PCAP_IF_UP|PCAP_IF_RUNNING|PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE,
+	    any_descr, errbuf) == NULL)
+		return (-1);
+
+	return (0);
 }
 
 /*
