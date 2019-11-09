@@ -2400,10 +2400,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 int
 pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 {
-	return pcap_findalldevs_interfaces(devlistp, errbuf, can_be_bound, get_if_flags);
-
-	int ret;
-
 	/*
 	 * Get the list of regular interfaces first.
 	 */
