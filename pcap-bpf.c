@@ -3284,18 +3284,18 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		direction_name = "\"outgoing only\"";
 		break;
 
-	case PCAP_D_INOUT:
+	default:
 		/*
 		 * Incoming and outgoing, so accept both
 		 * incoming and outgoing packets.
+		 *
+		 * It's guaranteed, at this point, that d is a valid
+		 * direction value, so we know that this is PCAP_D_INOUT
+		 * if it's not PCAP_D_IN or PCAP_D_OUT.
 		 */
 		direction = BPF_D_INOUT;
 		direction_name = "\"incoming and outgoing\"";
 		break;
-
-	default:
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
-		return (-1);
 	}
 		
 	if (ioctl(p->fd, BIOCSDIRECTION, &direction) == -1) {
@@ -3338,18 +3338,18 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		direction_name = "\"outgoing only\"";
 		break;
 
-	case PCAP_D_INOUT:
+	default:
 		/*
 		 * Incoming and outgoing, so don't filter out
 		 * any packets based on direction.
+		 *
+		 * It's guaranteed, at this point, that d is a valid
+		 * direction value, so we know that this is PCAP_D_INOUT
+		 * if it's not PCAP_D_IN or PCAP_D_OUT.
 		 */
 		dirfilt = 0;
 		direction_name = "\"incoming and outgoing\"";
 		break;
-
-	default:
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
-		return (-1);
 	}
 	if (ioctl(p->fd, BIOCSDIRFILT, &dirfilt) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
@@ -3387,18 +3387,18 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		    "Setting direction to \"outgoing only\" is not supported on this device");
 		return (-1);
 
-	case PCAP_D_INOUT:
+	default:
 		/*
 		 * Incoming and outgoing, so we want to see transmitted
 		 * packets.
+		 *
+		 * It's guaranteed, at this point, that d is a valid
+		 * direction value, so we know that this is PCAP_D_INOUT
+		 * if it's not PCAP_D_IN or PCAP_D_OUT.
 		 */
 		seesent = 1;
 		direction_name = "\"incoming and outgoing\"";
 		break;
-
-	default:
-		pcap_snprintf(p->errbuf, sizeof(p->errbuf), "Invalid direction");
-		return (-1);
 	}
 		
 	if (ioctl(p->fd, BIOCSSEESENT, &seesent) == -1) {

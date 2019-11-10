@@ -3045,19 +3045,11 @@ pcap_setdirection_linux(pcap_t *handle, pcap_direction_t d)
 	struct pcap_linux *handlep = handle->priv;
 
 	if (!handlep->sock_packet) {
-		switch (d) {
-
-		case PCAP_D_IN:
-		case PCAP_D_OUT:
-		case PCAP_D_INOUT:
-			handle->direction = d;
-			break;
-
-		default:
-			pcap_snprintf(handle->errbuf, sizeof(handle->errbuf),
-			    "Invalid direction");
-			return -1;
-		}
+		/*
+		 * It's guaranteed, at this point, that d is a valid
+		 * direction value.
+		 */
+		handle->direction = d;
 		return 0;
 	}
 #endif
