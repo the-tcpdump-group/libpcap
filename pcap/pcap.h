@@ -477,6 +477,8 @@ PCAP_API int	pcap_is_swapped(pcap_t *);
 PCAP_API int	pcap_major_version(pcap_t *);
 PCAP_API int	pcap_minor_version(pcap_t *);
 PCAP_API int	pcap_bufsize(pcap_t *);
+PCAP_API int    dlt_to_linktype(int dlt);
+PCAP_API int    linktype_to_dlt(int dlt);
 
 /* XXX */
 PCAP_API FILE	*pcap_file(pcap_t *);
