@@ -787,7 +787,7 @@ PCAP_API const char *pcap_lib_version(void);
 #define RPCAP_RMTAUTH_PWD 1
 
 /*
- * This structure keeps the information needed to autheticate the user
+ * This structure keeps the information needed to authenticate the user
  * on a remote machine.
  *
  * The remote machine can either grant or refuse the access according
