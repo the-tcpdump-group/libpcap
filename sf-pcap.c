@@ -292,7 +292,7 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 			ps->scale_type = PASS_THROUGH;
 		} else {
 			/*
-			 * The file has microoseconds, the user
+			 * The file has microseconds, the user
 			 * wants nanoseconds; scale the
 			 * precision up.
 			 */
