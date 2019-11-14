@@ -797,7 +797,7 @@ PCAP_API void	bpf_dump(const struct bpf_program *, int);
 #define RPCAP_RMTAUTH_PWD 1
 
 /*
- * This structure keeps the information needed to autheticate the user
+ * This structure keeps the information needed to authenticate the user
  * on a remote machine.
  *
  * The remote machine can either grant or refuse the access according
