@@ -207,7 +207,7 @@ main(int argc, char **argv)
 		/*
 		 * Error.  Report it.
 		 */
-		(void)fprintf(stderr, "%s: pcap_loop: %s\n",
+		(void)fprintf(stderr, "%s: pcap_dispatch: %s\n",
 		    program_name, pcap_geterr(pd));
 	}
 	pcap_close(pd);

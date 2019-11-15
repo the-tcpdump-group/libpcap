@@ -171,7 +171,7 @@ capture_thread_func(THREAD_FUNC_ARG_TYPE arg)
 		/*
 		 * Error.  Report it.
 		 */
-		(void)fprintf(stderr, "%s: pcap_loop: %s\n",
+		(void)fprintf(stderr, "%s: pcap_dispatch: %s\n",
 		    program_name, pcap_geterr(pd));
 	}
 	return 0;
