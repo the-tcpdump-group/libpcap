@@ -110,9 +110,14 @@ system's clock.
 .TP 5
 .BR PCAP_TSTAMP_HOST_HIPREC " - " host_hiprec
 Time stamp provided by the host on which the capture is being done.
-This is a high-precision time stamp; it might or might not be
-synchronized with the host operating system's clock.  It might be more
-expensive to fetch than
+This is a high-precision time stamp, synchronized with the host
+operating system's clock. It might be more expensive to fetch than
+.BR PCAP_TSTAMP_HOST_LOWPREC .
+.TP 5
+.BR PCAP_TSTAMP_HOST_HIPREC_UNSYNCED " - " host_hiprec_unsynced
+Time stamp provided by the host on which the capture is being done.
+This is a high-precision time stamp, not synchronized with the host
+operating system's clock. It might be more expensive to fetch than
 .BR PCAP_TSTAMP_HOST_LOWPREC .
 .TP 5
 .BR PCAP_TSTAMP_ADAPTER " - " adapter
@@ -125,6 +130,18 @@ Time stamp provided by the network adapter on which the capture is being
 done.  This is a high-precision time stamp; it is not synchronized with
 the host operating system's clock.
 .RE
+.LP
+Time stamps synchronized with the system clock can go backwards, as the
+system clock can go backwards. If a clock is not in sync with the
+system clock, that could be because the system clock isn't keeping
+accurate time, because the other clock isn't keeping accurate time, or
+both.
+.LP
+Host-provided time stamps generally correspond to the time when the
+time-stamping code sees the packet; this could be some unknown amount of
+time after the first or last bit of the packet is received by the
+network adapter, due to batching of interrupts for packet arrival,
+queueing delays, etc..
 .LP
 By default, when performing a live capture or reading from a savefile,
 time stamps are supplied as seconds since January 1, 1970, 00:00:00 UTC,

@@ -3161,6 +3161,7 @@ static struct tstamp_type_choice tstamp_type_choices[] = {
 	{ "host_hiprec", "Host, high precision", PCAP_TSTAMP_HOST_HIPREC },
 	{ "adapter", "Adapter", PCAP_TSTAMP_ADAPTER },
 	{ "adapter_unsynced", "Adapter, not synced with system time", PCAP_TSTAMP_ADAPTER_UNSYNCED },
+	{ "host_hiprec_unsynced", "Host, high precision, not synced with system time", PCAP_TSTAMP_HOST_HIPREC_UNSYNCED },
 	{ NULL, NULL, 0 }
 };
 
