@@ -3463,7 +3463,7 @@ activate_sock(pcap_t *handle, int is_any_device)
 }
 
 /*
- * Activate with memory-mapped access.
+ * Attempt to activate with memory-mapped access.
  *
  * On success, returns 1, and sets *status to 0 if there are no warnings
  * or to a PCAP_WARNING_ code if there is a warning.
