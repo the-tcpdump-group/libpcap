@@ -1323,17 +1323,21 @@ static void pcap_breakloop_linux(pcap_t *handle)
 static int
 open_pf_packet_socket(pcap_t *handle, int cooked)
 {
-	int	protocol = pcap_protocol(handle);
 	int	sock_fd, ret;
 
 	/*
 	 * Open a socket with protocol family packet. If cooked is true,
 	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
 	 * we open a SOCK_RAW socket for the raw interface.
+	 *
+	 * The protocol is set to 0.  This means we will receive no
+	 * packets until we "bind" the socket with a non-zero
+	 * protocol.  This allows us to setup the ring buffers without
+	 * dropping any packets.
 	 */
 	sock_fd = cooked ?
-		socket(PF_PACKET, SOCK_DGRAM, protocol) :
-		socket(PF_PACKET, SOCK_RAW, protocol);
+		socket(PF_PACKET, SOCK_DGRAM, 0) :
+		socket(PF_PACKET, SOCK_RAW, 0);
 
 	if (sock_fd == -1) {
 		if (errno == EPERM || errno == EACCES) {
@@ -1371,6 +1375,7 @@ pcap_activate_linux(pcap_t *handle)
 	int		is_any_device;
 	struct ifreq	ifr;
 	int		status = 0;
+	int		status2 = 0;
 	int		ret;
 
 	device = handle->opt.device;
@@ -1469,29 +1474,8 @@ pcap_activate_linux(pcap_t *handle)
 		 * Success.
 		 * Try to use memory-mapped access.
 		 */
-		switch (activate_mmap(handle, &status)) {
-
-		case 1:
-			/*
-			 * We succeeded.  status has been
-			 * set to the status to return,
-			 * which might be 0, or might be
-			 * a PCAP_WARNING_ value.
-			 *
-			 * Set the timeout to use in poll() before
-			 * returning.
-			 */
-			set_poll_timeout(handlep);
-			return status;
-
-		case 0:
-			/*
-			 * Kernel doesn't support it - just continue
-			 * with non-memory-mapped access.
-			 */
-			break;
-
-		case -1:
+		ret = activate_mmap(handle, &status);
+		if (ret == -1) {
 			/*
 			 * We failed to set up to use it, or the
 			 * kernel supports it, but we failed to
@@ -1502,7 +1486,46 @@ pcap_activate_linux(pcap_t *handle)
 			 */
 			goto fail;
 		}
+
+
+		if (ret == 1) {
+			/*
+			 * We succeeded.  status has been
+			 * set to the status to return,
+			 * which might be 0, or might be
+			 * a PCAP_WARNING_ value.
+			 */
+			/*
+			 * Now that we have activated the mmap ring, we can
+			 * set the correct protocol.
+			 */
+			if ((status2 = iface_bind(handle->fd, handlep->ifindex,
+			     handle->errbuf, pcap_protocol(handle))) != 0) {
+				status = status2;
+				goto fail;
+			}
+			/*
+			 * Set the timeout to use in poll() before
+			 * returning.
+			 */
+			set_poll_timeout(handlep);
+			return status;
+		}
+
+		/*
+		 * Kernel doesn't support it (mmap) - just continue
+		 * with non-memory-mapped access.
+		 */
 #endif /* HAVE_PACKET_RING */
+	}
+
+	/*
+	 * We need to set the correct protocol.
+	 */
+	if ((status2 = iface_bind(handle->fd, handlep->ifindex,
+	    handle->errbuf, pcap_protocol(handle))) != 0) {
+		status = status2;
+		goto fail;
 	}
 
 	/*
@@ -3358,7 +3381,7 @@ activate_sock(pcap_t *handle, int is_any_device)
 		}
 
 		if ((err = iface_bind(sock_fd, handlep->ifindex,
-		    handle->errbuf, pcap_protocol(handle))) != 0) {
+		    handle->errbuf, 0)) != 0) {
 			close(sock_fd);
 			return err;
 		}
@@ -5279,7 +5302,7 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 
 	memset(&sll, 0, sizeof(sll));
 	sll.sll_family		= AF_PACKET;
-	sll.sll_ifindex		= ifindex;
+	sll.sll_ifindex		= ifindex < 0 ? 0 : ifindex;
 	sll.sll_protocol	= protocol;
 
 	if (bind(fd, (struct sockaddr *) &sll, sizeof(sll)) == -1) {
