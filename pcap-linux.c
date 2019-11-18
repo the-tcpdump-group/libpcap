@@ -1457,6 +1457,7 @@ pcap_activate_linux(pcap_t *handle)
 	const char	*device;
 	struct ifreq	ifr;
 	int		status = 0;
+	int		status2 = 0;
 	int		ret;
 
 	device = handle->opt.device;
@@ -1557,37 +1558,42 @@ pcap_activate_linux(pcap_t *handle)
 		 * Success.
 		 * Try to use memory-mapped access.
 		 */
-		switch (activate_mmap(handle, &status)) {
+		ret = activate_mmap(handle, &status);
+		if (ret == -1) {
+			/*
+			 * We failed to set up to use it, or the
+			 * kernel supports it, but we failed to
+			 * enable it.  status has been set to the
+			 * error status to return and, if it's
+			 * PCAP_ERROR, handle->errbuf contains
+			 * the error message.
+			 */
+			goto fail;
+		}
 
-		case 1:
+
+		if (ret == 1) {
 			/*
 			 * We succeeded.  status has been
 			 * set to the status to return,
 			 * which might be 0, or might be
 			 * a PCAP_WARNING_ value.
-			 *
+			 */
+			/*
+			 * Now that we have activated the mmap ring, we can
+			 * set the correct protocol.
+			 */
+			if ((status2 = iface_bind(handle->fd, handlep->ifindex,
+			     handle->errbuf, pcap_protocol(handle))) != 0) {
+				status = status2;
+				goto fail;
+			}
+			/*
 			 * Set the timeout to use in poll() before
 			 * returning.
 			 */
 			set_poll_timeout(handlep);
 			return status;
-
-		case 0:
-			/*
-			 * Kernel doesn't support it - just continue
-			 * with non-memory-mapped access.
-			 */
-			break;
-
-		case -1:
-			/*
-			 * We failed to set up to use it, or the kernel
-			 * supports it, but we failed to enable it.
-			 * status has been set to the error status to
-			 * return and, if it's PCAP_ERROR, handle->errbuf
-			 * contains the error message.
-			 */
-			goto fail;
 		}
 	}
 	else if (ret == 0) {
@@ -1601,6 +1607,15 @@ pcap_activate_linux(pcap_t *handle)
 			status = ret;
 			goto fail;
 		}
+	}
+
+	/*
+	 * We need to set the correct protocol.
+	 */
+	if ((status2 = iface_bind(handle->fd, handlep->ifindex,
+	    handle->errbuf, pcap_protocol(handle))) != 0) {
+		status = status2;
+		goto fail;
 	}
 
 	/*
@@ -3632,8 +3647,8 @@ activate_new(pcap_t *handle)
 	 * try a SOCK_RAW socket for the raw interface.
 	 */
 	sock_fd = is_any_device ?
-		socket(PF_PACKET, SOCK_DGRAM, protocol) :
-		socket(PF_PACKET, SOCK_RAW, protocol);
+		socket(PF_PACKET, SOCK_DGRAM, 0) :
+		socket(PF_PACKET, SOCK_RAW, 0);
 
 	if (sock_fd == -1) {
 		if (errno == EINVAL || errno == EAFNOSUPPORT) {
@@ -3816,7 +3831,7 @@ activate_new(pcap_t *handle)
 		}
 
 		if ((err = iface_bind(sock_fd, handlep->ifindex,
-		    handle->errbuf, protocol)) != 0) {
+		    handle->errbuf, 0)) != 0) {
 			close(sock_fd);
 			return err;
 		}
@@ -5766,7 +5781,7 @@ iface_bind(int fd, int ifindex, char *ebuf, int protocol)
 
 	memset(&sll, 0, sizeof(sll));
 	sll.sll_family		= AF_PACKET;
-	sll.sll_ifindex		= ifindex;
+	sll.sll_ifindex		= ifindex < 0 ? 0 : ifindex;
 	sll.sll_protocol	= protocol;
 
 	if (bind(fd, (struct sockaddr *) &sll, sizeof(sll)) == -1) {
