@@ -530,7 +530,7 @@ PCAP_API void	pcap_freealldevs(pcap_if_t *);
  * version string directly.
  *
  * On at least some UNIXes, if you import data from a shared library into
- * an program, the data is bound into the program binary, so if the string
+ * a program, the data is bound into the program binary, so if the string
  * in the version of the library with which the program was linked isn't
  * the same as the string in the version of the library with which the
  * program is being run, various undesirable things may happen (warnings,
