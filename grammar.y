@@ -375,6 +375,7 @@ DIAG_OFF_BISON_BYACC
 %token	RADIO
 %token	FISU LSSU MSU HFISU HLSSU HMSU
 %token	SIO OPC DPC SLS HSIO HOPC HDPC HSLS
+%token	COP
 %token	LEX_ERROR
 
 %type	<s> ID EID AID
@@ -579,6 +580,7 @@ other:	  pqual TK_BROADCAST	{ CHECK_PTR_VAL(($$ = gen_broadcast(cstate, $1))); }
 	| LESS NUM		{ CHECK_PTR_VAL(($$ = gen_less(cstate, $2))); }
 	| GREATER NUM		{ CHECK_PTR_VAL(($$ = gen_greater(cstate, $2))); }
 	| CBYTE NUM byteop NUM	{ CHECK_PTR_VAL(($$ = gen_byteop(cstate, $3, $2, $4))); }
+	| COP NUM NUM NUM	{ CHECK_PTR_VAL(($$ = gen_cop(cstate, $2, $3, $4))); }
 	| INBOUND		{ CHECK_PTR_VAL(($$ = gen_inbound(cstate, 0))); }
 	| OUTBOUND		{ CHECK_PTR_VAL(($$ = gen_inbound(cstate, 1))); }
 	| VLAN pnum		{ CHECK_PTR_VAL(($$ = gen_vlan(cstate, $2, 1))); }

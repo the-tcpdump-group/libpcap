@@ -18,7 +18,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP-FILTER @MAN_MISC_INFO@ "5 November 2017"
+.TH PCAP-FILTER @MAN_MISC_INFO@ "26 April 2019"
 .SH NAME
 pcap-filter \- packet filter syntax
 .br
@@ -815,6 +815,17 @@ Connect Ack, Release, or Release Done message.
 True if the packet is an ATM packet, for SunATM on Solaris, and is
 on a meta signaling circuit and is a Q.2931 Setup, Call Proceeding, Connect,
 Release, or Release Done message.
+.IP "\fBcop \fIaccum \fIindex \fIretval\fR"
+Sets the accumulator register to
+.IR accum
+and invokes the BPF coprocessor function given the
+.IR index .
+True if the value returned by the function matches
+.IR retval .
+If the coprocessor is not set or the function index is out of range,
+then the program will be aborted.
+This keyword is applicable only for the custom BPF interpreters which
+have the coprocessor support.
 .IP  "\fIexpr relop expr\fR"
 True if the relation holds, where \fIrelop\fR is one of >, <, >=, <=, =,
 !=, and \fIexpr\fR is an arithmetic expression composed of integer

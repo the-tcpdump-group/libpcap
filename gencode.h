@@ -313,6 +313,7 @@ struct block *gen_relation(compiler_state_t *, int, struct arth *,
 struct block *gen_less(compiler_state_t *, int);
 struct block *gen_greater(compiler_state_t *, int);
 struct block *gen_byteop(compiler_state_t *, int, int, bpf_u_int32);
+struct block *gen_cop(compiler_state_t *, int, int, int);
 struct block *gen_broadcast(compiler_state_t *, int);
 struct block *gen_multicast(compiler_state_t *, int);
 struct block *gen_inbound(compiler_state_t *, int);

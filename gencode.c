@@ -7896,6 +7896,25 @@ gen_byteop(compiler_state_t *cstate, int op, int idx, bpf_u_int32 val)
 	return b;
 }
 
+struct block *
+gen_cop(compiler_state_t *cstate, int accum, int idx, int ret)
+{
+	struct slist *s1, *s2;
+	struct block *b;
+
+	s1 = new_stmt(cstate, BPF_LD|BPF_IMM);
+	s1->s.k = accum;
+
+	s2 = new_stmt(cstate, BPF_MISC|BPF_COP);
+	s2->s.k = idx;
+	sappend(s1, s2);
+
+	b = new_block(cstate, JMP(BPF_JEQ));
+	b->stmts = s1;
+	b->s.k = ret;
+	return b;
+}
+
 static const u_char abroadcast[] = { 0x0 };
 
 struct block *

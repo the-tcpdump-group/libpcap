@@ -1319,6 +1319,11 @@ opt_stmt(opt_state_t *opt_state, struct stmt *s, bpf_u_int32 val[], int alter)
 		vstore(s, &val[X_ATOM], val[A_ATOM], alter);
 		break;
 
+	case BPF_MISC|BPF_COP:
+		v = F(opt_state, s->code, 0, 0);
+		vstore(s, &val[A_ATOM], v, alter);
+		break;
+
 	case BPF_LDX|BPF_MEM:
 		v = val[s->k];
 		if (alter && opt_state->vmap[v].is_const) {
