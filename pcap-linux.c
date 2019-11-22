@@ -1595,6 +1595,18 @@ pcap_activate_linux(pcap_t *handle)
 			set_poll_timeout(handlep);
 			return status;
 		}
+
+		/*
+		 * Kernel doesn't support it (mmap) - just continue
+		 * with non-memory-mapped access.
+		 *
+		 * We need to set the correct protocol.
+		 */
+		if ((status2 = iface_bind(handle->fd, handlep->ifindex,
+		    handle->errbuf, pcap_protocol(handle))) != 0) {
+			status = status2;
+			goto fail;
+		}
 	}
 	else if (ret == 0) {
 		/* Non-fatal error; try old way */
@@ -1607,15 +1619,12 @@ pcap_activate_linux(pcap_t *handle)
 			status = ret;
 			goto fail;
 		}
-	}
 
-	/*
-	 * We need to set the correct protocol.
-	 */
-	if ((status2 = iface_bind(handle->fd, handlep->ifindex,
-	    handle->errbuf, pcap_protocol(handle))) != 0) {
-		status = status2;
-		goto fail;
+		/*
+		 * We succeeded.  SOCK_PACKET sockets have no notion of
+		 * being bound to a protocol, so there's no "set the
+		 * correct protocol" to be done here.
+		 */
 	}
 
 	/*
