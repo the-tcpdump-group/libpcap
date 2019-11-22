@@ -3645,6 +3645,11 @@ activate_new(pcap_t *handle)
 	 * "any" device was specified, we open a SOCK_DGRAM
 	 * socket for the cooked interface, otherwise we first
 	 * try a SOCK_RAW socket for the raw interface.
+	 *
+	 * The protocol is set to 0.  This means we will receive no
+	 * packets until we "bind" the socket with a non-zero
+	 * protocol.  This allows us to setup the ring buffers without
+	 * dropping any packets.
 	 */
 	sock_fd = is_any_device ?
 		socket(PF_PACKET, SOCK_DGRAM, 0) :
@@ -3765,7 +3770,7 @@ activate_new(pcap_t *handle)
 				    PCAP_ERRBUF_SIZE, errno, "close");
 				return PCAP_ERROR;
 			}
-			sock_fd = socket(PF_PACKET, SOCK_DGRAM, protocol);
+			sock_fd = socket(PF_PACKET, SOCK_DGRAM, 0);
 			if (sock_fd == -1) {
 				if (errno == EPERM || errno == EACCES) {
 					/*
