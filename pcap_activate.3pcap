@@ -118,5 +118,12 @@ codes as errors.
 .BR pcap_statustostr (3PCAP)
 can be called, with a warning or error code as an argument, to fetch a
 message describing the warning or error code.
+.LP
+If
+.B pcap_activate()
+fails, the
+.I pcap_t *
+is not closed and freed; it should be closed using
+.BR pcap_close() .
 .SH SEE ALSO
 .BR pcap (3PCAP)

@@ -41,6 +41,10 @@ other interface on which the capture should be done, call
 .BR pcap_create (),
 set the appropriate options on the handle, and then activate it with
 .BR pcap_activate ().
+If
+.BR pcap_activate ()
+fails, the handle should be closed with
+.BR pcap_close() .
 .PP
 To obtain a list of devices that can be opened for a live capture, call
 .BR pcap_findalldevs ();
