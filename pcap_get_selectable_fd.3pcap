@@ -32,7 +32,7 @@ int pcap_get_selectable_fd(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_get_selectable_fd()
+.BR pcap_get_selectable_fd ()
 returns, on UNIX, a file descriptor number for a file descriptor on
 which one can
 do a
@@ -60,14 +60,14 @@ those devices.  In that case, those calls must be given a timeout less
 than or equal to the timeout returned by
 .BR pcap_get_required_select_timeout (3PCAP)
 for the device for which
-.B pcap_get_selectable_fd()
+.BR pcap_get_selectable_fd ()
 returned
 .BR PCAP_ERROR ,
 the device must be put in non-blocking mode with a call to
 .BR \%pcap_setnonblock (3PCAP),
 and an attempt must always be made to read packets from the device
 when the call returns.  If
-.B \%pcap_get_required_select_timeout()
+.BR \%pcap_get_required_select_timeout ()
 returns
 .BR NULL ,
 it is not possible to wait for packets to arrive on the device in an
@@ -91,18 +91,18 @@ OpenBSD prior to OpenBSD 2.4;
 .IP
 Mac OS X prior to Mac OS X 10.7;
 .PP
-.BR select() ,
-.BR poll() ,
+.BR select (),
+.BR poll (),
 and
-.B kevent()
+.BR kevent ()
 do not work correctly on BPF devices;
-.B pcap_get_selectable_fd()
+.BR pcap_get_selectable_fd ()
 will return a file descriptor on most of those versions (the exceptions
 being FreeBSD 4.3 and 4.4), but a simple
-.BR select() ,
-.BR poll() ,
+.BR select (),
+.BR poll (),
 or
-.B kevent()
+.BR kevent ()
 call will not indicate that the descriptor is readable until a full
 buffer's worth of packets is received, even if the packet timeout
 expires before then.  To work around this, code that uses
@@ -119,29 +119,29 @@ work correctly on BPF devices, so the workaround isn't necessary,
 although it does no harm.)
 .PP
 Note also that
-.B poll()
+.BR poll ()
 and
-.B kevent()
+.BR kevent ()
 doesn't work on character special files, including BPF devices, in Mac
 OS X 10.4 and 10.5, so, while
-.B select()
+.BR select ()
 can be used on the descriptor returned by
-.BR pcap_get_selectable_fd() ,
-.B poll()
+.BR pcap_get_selectable_fd (),
+.BR poll ()
 and
-.B kevent()
+.BR kevent ()
 cannot be used on it those versions of Mac OS X.
-.BR poll() ,
+.BR poll (),
 but not
-.BR kevent() ,
+.BR kevent (),
 works on that descriptor in Mac OS X releases prior to
 10.4;
-.B poll()
+.BR poll ()
 and
-.B kevent()
+.BR kevent ()
 work on that descriptor in Mac OS X 10.6 and later.
 .PP
-.B pcap_get_selectable_fd()
+.BR pcap_get_selectable_fd ()
 is not available on Windows.
 .SH RETURN VALUE
 A selectable file descriptor is returned if one exists; otherwise,

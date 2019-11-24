@@ -31,7 +31,7 @@ int pcap_setdirection(pcap_t *p, pcap_direction_t d);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_setdirection()
+.BR pcap_setdirection ()
 is used to specify a direction that packets will be captured.
 .I d
 is one of the constants
@@ -48,7 +48,7 @@ will capture packets received by or sent by the device.
 .B PCAP_D_INOUT
 is the default setting if this function is not called.
 .PP
-.B pcap_setdirection()
+.BR pcap_setdirection ()
 isn't necessarily fully supported on all platforms; some platforms might
 return an error for all values, and some other platforms might not
 support
@@ -56,7 +56,7 @@ support
 .PP
 This operation is not supported if a ``savefile'' is being read.
 .SH RETURN VALUE
-.B pcap_setdirection()
+.BR pcap_setdirection ()
 returns 0 on success and
 .B PCAP_ERROR
 on failure. If

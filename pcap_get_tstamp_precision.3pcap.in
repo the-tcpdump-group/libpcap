@@ -34,11 +34,11 @@ int pcap_get_tstamp_precision(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_get_tstamp_precision()
+.BR pcap_get_tstamp_precision ()
 returns the precision of the time stamp returned in packet captures on the pcap
 descriptor.
 .SH RETURN VALUE
-.B pcap_get_tstamp_precision()
+.BR pcap_get_tstamp_precision ()
 returns
 .B PCAP_TSTAMP_PRECISION_MICRO
 or

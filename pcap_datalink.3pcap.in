@@ -31,7 +31,7 @@ int pcap_datalink(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_datalink()
+.BR pcap_datalink ()
 returns the link-layer header type for the live capture or ``savefile''
 specified by
 .IR p .
@@ -43,7 +43,7 @@ that has not yet been activated by
 .PP
 .I https://www.tcpdump.org/linktypes.html
 lists the values
-.B pcap_datalink()
+.BR pcap_datalink ()
 can return and describes the packet formats that
 correspond to those values.
 .PP
@@ -60,7 +60,7 @@ have some other data link type, such as
 .B DLT_EN10MB
 for Ethernet.
 .SH RETURN VALUE
-.B pcap_datalink()
+.BR pcap_datalink ()
 returns the link-layer header type on success and
 .B PCAP_ERROR_NOT_ACTIVATED
 if called on a capture handle that has been created but not activated.

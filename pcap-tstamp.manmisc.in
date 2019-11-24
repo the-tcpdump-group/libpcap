@@ -87,9 +87,9 @@ The list might be empty, in which case no choice of time stamp type is
 offered for that capture device.  If the list is not empty, the
 .BR pcap_set_tstamp_type (3PCAP)
 routine can be used after a
-.B pcap_create()
+.BR pcap_create ()
 call and before a
-.B pcap_activate()
+.BR pcap_activate ()
 call to specify the type of time stamp to be used on the device.
 The time stamp types are listed here; the first value is the #define to
 use in code, the second value is the value returned by
@@ -154,15 +154,15 @@ discarded.
 The
 .BR pcap_set_tstamp_precision (3PCAP)
 routine can be used after a
-.B pcap_create()
+.BR pcap_create ()
 call and after a
-.B pcap_activate()
+.BR pcap_activate ()
 call to specify the resolution of the time stamps to get for the device.
 If the hardware or software cannot supply a higher-resolution time
 stamp, the
-.B pcap_set_tstamp_precision()
+.BR pcap_set_tstamp_precision ()
 call will fail, and the time stamps supplied after the
-.B pcap_activate()
+.BR pcap_activate ()
 call will have microsecond resolution.
 .LP
 When opening a savefile, the

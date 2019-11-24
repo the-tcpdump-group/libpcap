@@ -31,7 +31,7 @@ int pcap_setfilter(pcap_t *p, struct bpf_program *fp);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_setfilter()
+.BR pcap_setfilter ()
 is used to specify a filter program.
 .I fp
 is a pointer to a
@@ -39,7 +39,7 @@ is a pointer to a
 struct, usually the result of a call to
 .BR \%pcap_compile (3PCAP).
 .SH RETURN VALUE
-.B pcap_setfilter()
+.BR pcap_setfilter ()
 returns 0 on success and
 .B PCAP_ERROR
 on failure. If

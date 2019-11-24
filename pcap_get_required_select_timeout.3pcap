@@ -32,7 +32,7 @@ struct timeval *pcap_get_required_select_timeout(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_get_required_select_timeout()
+.BR pcap_get_required_select_timeout ()
 returns, on UNIX, a pointer to a
 .B struct timeval
 containing a value that must be used as the minimum timeout in
@@ -48,22 +48,22 @@ returns
 .PP
 The timeout that should be used in those calls must be no larger than
 the smallest of all timeouts returned by
-.B \%pcap_get_required_select_timeout()
+.BR \%pcap_get_required_select_timeout ()
 for devices from which packets will be captured.
 .PP
 The device for which
-.B pcap_get_selectable_fd()
+.BR pcap_get_selectable_fd ()
 returned
 .B PCAP_ERROR
 must be put in non-blocking mode with
 .BR pcap_setnonblock (3PCAP),
 and an attempt must always be made to read packets from the device
 when the
-.BR select() ,
-.BR poll() ,
-.BR epoll_wait() ,
+.BR select (),
+.BR poll (),
+.BR epoll_wait (),
 or
-.B kevent()
+.BR kevent ()
 call returns.
 .PP
 Note that a device on which a read can be done without blocking may,
@@ -74,7 +74,7 @@ or
 .BR pcap_next_ex (3PCAP)
 will return 0 in this case, but will not block.
 .PP
-.B pcap_get_required_select_timeout()
+.BR pcap_get_required_select_timeout ()
 is not available on Windows.
 .SH RETURN VALUE
 A pointer to a
@@ -85,13 +85,13 @@ is returned.
 .SH BACKWARD COMPATIBILITY
 This function became available in libpcap release 1.9.0.  In previous
 releases,
-.BR select() ,
-.BR poll() ,
-.BR epoll_wait() ,
+.BR select (),
+.BR poll (),
+.BR epoll_wait (),
 and
-.B kevent()
+.BR kevent ()
 cannot be used on any capture source for which
-.B pcap_get_selectable_fd
+.BR pcap_get_selectable_fd ()
 returns \-1.
 .SH SEE ALSO
 .BR pcap (3PCAP),

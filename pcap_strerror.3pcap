@@ -31,7 +31,7 @@ const char *pcap_strerror(int error);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_strerror()
+.BR pcap_strerror ()
 is provided in case
 .BR strerror (3)
 isn't available.  It returns an error message string corresponding to

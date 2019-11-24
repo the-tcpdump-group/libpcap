@@ -38,7 +38,7 @@ int promisc, int to_ms, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_open_live()
+.BR pcap_open_live ()
 is used to obtain a packet capture handle to look
 at packets on the network.
 .I device
@@ -61,7 +61,7 @@ milliseconds.  (See
 .BR pcap (3PCAP)
 for an explanation of the packet buffer timeout.)
 .SH RETURN VALUE
-.B pcap_open_live()
+.BR pcap_open_live ()
 returns a
 .I pcap_t *
 on success and
@@ -74,11 +74,11 @@ is returned,
 is filled in with an appropriate error message.
 .I errbuf
 may also be set to warning text when
-.B pcap_open_live()
+.BR pcap_open_live ()
 succeeds; to detect this case the caller should store a zero-length string in
 .I errbuf
 before calling
-.B pcap_open_live()
+.BR pcap_open_live ()
 and display the warning to the user if
 .I errbuf
 is no longer a zero-length string.

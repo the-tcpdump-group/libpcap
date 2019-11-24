@@ -31,12 +31,12 @@ int pcap_activate(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_activate()
+.BR pcap_activate ()
 is used to activate a packet capture handle to look
 at packets on the network, with the options that were set on the handle
 being in effect.
 .SH RETURN VALUE
-.B pcap_activate()
+.BR pcap_activate ()
 returns 0 on success without warnings, a non-zero positive value on
 success with warnings, and a negative value on error.
 A non-zero return value indicates what warning or error condition
@@ -89,9 +89,9 @@ The capture source device is not up.
 .TP
 .B PCAP_ERROR
 Another error occurred.
-.B pcap_geterr()
+.BR pcap_geterr ()
 or
-.B pcap_perror()
+.BR pcap_perror ()
 may be called with
 .I p
 as an argument to fetch or display a message describing the error.
@@ -102,9 +102,9 @@ If
 or
 .B PCAP_ERROR_PERM_DENIED
 is returned,
-.B pcap_geterr()
+.BR pcap_geterr ()
 or
-.B pcap_perror()
+.BR pcap_perror ()
 may be called with
 .I p
 as an argument to fetch or display an message giving additional details
@@ -120,10 +120,10 @@ can be called, with a warning or error code as an argument, to fetch a
 message describing the warning or error code.
 .LP
 If
-.B pcap_activate()
+.BR pcap_activate ()
 fails, the
 .I pcap_t *
 is not closed and freed; it should be closed using
-.BR pcap_close() .
+.BR pcap_close ().
 .SH SEE ALSO
 .BR pcap (3PCAP)

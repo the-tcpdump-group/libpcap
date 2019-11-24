@@ -38,7 +38,7 @@ int pcap_getnonblock(pcap_t *p, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_setnonblock()
+.BR pcap_setnonblock ()
 puts a capture handle into ``non-blocking'' mode, or takes it out
 of ``non-blocking'' mode, depending on whether the
 .I nonblock
@@ -65,10 +65,10 @@ When first activated with
 or opened with
 .BR pcap_open_live (3PCAP) ,
 a capture handle is not in ``non-blocking mode''; a call to
-.B pcap_setnonblock()
+.BR pcap_setnonblock ()
 is required in order to put it into ``non-blocking'' mode.
 .SH RETURN VALUE
-.B pcap_getnonblock()
+.BR pcap_getnonblock ()
 returns the current ``non-blocking'' state of the capture descriptor; it
 always returns 0 on ``savefiles''.
 If there is an error,

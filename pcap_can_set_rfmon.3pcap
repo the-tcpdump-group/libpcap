@@ -31,11 +31,11 @@ int pcap_can_set_rfmon(pcap_t *p);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_can_set_rfmon()
+.BR pcap_can_set_rfmon ()
 checks whether monitor mode could be set on a capture handle when
 the handle is activated.
 .SH RETURN VALUE
-.B pcap_can_set_rfmon()
+.BR pcap_can_set_rfmon ()
 returns 0 if monitor mode could not be set,
 1 if monitor mode could be set, and a negative value on error.
 A negative return value indicates what error condition occurred.

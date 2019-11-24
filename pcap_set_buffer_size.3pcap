@@ -31,13 +31,13 @@ int pcap_set_buffer_size(pcap_t *p, int buffer_size);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_set_buffer_size()
+.BR pcap_set_buffer_size ()
 sets the buffer size that will be used on a capture handle when
 the handle is activated to
 .IR buffer_size ,
 which is in units of bytes.
 .SH RETURN VALUE
-.B pcap_set_buffer_size()
+.BR pcap_set_buffer_size ()
 returns 0 on success or
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.

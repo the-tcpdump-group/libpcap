@@ -33,7 +33,7 @@ u_char *sp);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_dump()
+.BR pcap_dump ()
 outputs a packet to the ``savefile'' opened with
 .BR pcap_dump_open (3PCAP).
 Note that its calling arguments are suitable for use with
@@ -45,6 +45,6 @@ If called directly, the
 parameter is of type
 .B pcap_dumper_t
 as returned by
-.BR pcap_dump_open() .
+.BR pcap_dump_open ().
 .SH SEE ALSO
 .BR pcap (3PCAP)

@@ -32,7 +32,7 @@ int pcap_sendpacket(pcap_t *p, const u_char *buf, int size);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_inject()
+.BR pcap_inject ()
 sends a raw packet through the network interface;
 .I buf
 points to the data of the packet, including the link-layer header, and
@@ -51,7 +51,7 @@ Note also that some devices might not support sending packets.
 Note that, on some platforms, the link-layer header of the packet that's
 sent might not be the same as the link-layer header of the packet
 supplied to
-.BR pcap_inject() ,
+.BR pcap_inject (),
 as the source link-layer address, if the header contains such an
 address, might be changed to be the address assigned to the interface on
 which the packet it sent, if the platform doesn't support sending
@@ -61,22 +61,22 @@ libpcap used when attaching to the device, even on platforms that
 .I do
 nominally support sending completely raw and unchanged packets.
 .PP
-.B pcap_sendpacket()
+.BR pcap_sendpacket ()
 is like
-.BR pcap_inject() ,
+.BR pcap_inject (),
 but it returns 0 on success, rather than returning the number of bytes
 written.
-.RB ( pcap_inject()
+.RB ( pcap_inject ()
 comes from OpenBSD;
-.B pcap_sendpacket()
+.BR pcap_sendpacket ()
 comes from WinPcap.  Both are provided for compatibility.)
 .SH RETURN VALUE
-.B pcap_inject()
+.BR pcap_inject ()
 returns the number of bytes written on success and
 .B PCAP_ERROR
 on failure.
 .PP
-.B pcap_sendpacket()
+.BR pcap_sendpacket ()
 returns 0 on success and
 .B PCAP_ERROR
 on failure.

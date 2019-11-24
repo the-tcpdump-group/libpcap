@@ -40,7 +40,7 @@ and
 .BR pcap_activate (3PCAP),
 or using
 .BR pcap_open_live (3PCAP),
-.B pcap_fileno()
+.BR pcap_fileno ()
 returns the file descriptor from which captured packets are read.
 .LP
 If
@@ -56,9 +56,9 @@ opened using
 or a
 .B pcap_t
 that was created with
-.B pcap_create()
+.BR pcap_create ()
 but that has not yet been activated with
-.BR pcap_activate() ,
+.BR pcap_activate (),
 it returns
 .BR PCAP_ERROR .
 .SH SEE ALSO

@@ -38,7 +38,7 @@ so they are sometimes called "DLT_ values".
 The values stored in the link-layer header type field in the savefile
 header are, in most but not all cases, the same as the values returned
 by
-.BR pcap_datalink() .
+.BR pcap_datalink ().
 The names for those values begin with
 .BR LINKTYPE_ .
 .PP

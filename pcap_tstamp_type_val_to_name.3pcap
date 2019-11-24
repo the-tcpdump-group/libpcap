@@ -34,13 +34,13 @@ const char *pcap_tstamp_type_val_to_description(int tstamp_type);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_tstamp_type_val_to_name()
+.BR pcap_tstamp_type_val_to_name ()
 translates a time stamp type value to the corresponding time stamp type
 name.
 .B NULL
 is returned on failure.
 .PP
-.B pcap_tstamp_type_val_to_description()
+.BR pcap_tstamp_type_val_to_description ()
 translates a time stamp type value to a short description of that time
 stamp type.
 .B NULL

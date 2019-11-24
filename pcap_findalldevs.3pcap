@@ -38,7 +38,7 @@ void pcap_freealldevs(pcap_if_t *alldevs);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_findalldevs()
+.BR pcap_findalldevs ()
 constructs a list of network devices that can be opened with
 .BR pcap_create (3PCAP)
 and
@@ -47,12 +47,12 @@ or with
 .BR pcap_open_live (3PCAP).
 (Note that there may be network devices that cannot be opened by the
 process calling
-.BR pcap_findalldevs() ,
+.BR pcap_findalldevs (),
 because, for example, that process does not have sufficient privileges
 to open them for capturing; if so, those devices will not appear on the
 list.)
 If
-.B pcap_findalldevs()
+.BR pcap_findalldevs ()
 succeeds, the pointer pointed to by
 .I alldevsp
 is set to point to the first element of the list, or to
@@ -72,7 +72,7 @@ for the last element of the list
 .TP
 .B name
 a pointer to a string giving a name for the device to pass to
-.B pcap_open_live()
+.BR pcap_open_live ()
 .TP
 .B description
 if not
@@ -198,7 +198,7 @@ The list of devices must be freed with
 which frees the list pointed to by
 .IR alldevs .
 .SH RETURN VALUE
-.B pcap_findalldevs()
+.BR pcap_findalldevs ()
 returns 0 on success and
 .B PCAP_ERROR
 on failure; as indicated, finding no

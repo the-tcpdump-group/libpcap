@@ -32,7 +32,7 @@ int pcap_set_immediate_mode(pcap_t *p, int immediate_mode);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_set_immediate_mode()
+.BR pcap_set_immediate_mode ()
 sets whether immediate mode should be set on a capture handle when
 the handle is activated.  In immediate mode, packets are always
 delivered as soon as they arrive, with no buffering.
@@ -40,7 +40,7 @@ If
 .I immediate_mode
 is non-zero, immediate mode will be set, otherwise it will not be set.
 .SH RETURN VALUE
-.B pcap_set_immediate_mode()
+.BR pcap_set_immediate_mode ()
 returns 0 on success or
 .B PCAP_ERROR_ACTIVATED
 if called on a capture handle that has been activated.
@@ -80,14 +80,14 @@ after
 is called;
 .IP
 on Windows, immediate mode must be turned on by calling
-.B pcap_setmintocopy()
+.BR pcap_setmintocopy ()
 with a size of 0.
 .PP
 On Linux, with previous releases of libpcap, capture devices are always
 in immediate mode; however, in 1.5.0 and later, they are, by default,
 .B not
 in immediate mode, so if
-.B pcap_set_immediate_mode()
+.BR pcap_set_immediate_mode ()
 is available, it should be used.
 .PP
 On other platforms, capture devices are always in immediate mode.

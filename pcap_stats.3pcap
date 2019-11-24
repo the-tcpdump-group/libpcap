@@ -31,13 +31,13 @@ int pcap_stats(pcap_t *p, struct pcap_stat *ps);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_stats()
+.BR pcap_stats ()
 fills in the
 .B struct pcap_stat
 pointed to by its second argument.  The values represent
 packet statistics from the start of the run to the time of the call.
 .PP
-.B pcap_stats()
+.BR pcap_stats ()
 is supported only on live captures, not on ``savefiles''; no statistics
 are stored in ``savefiles'', so no statistics are available when reading
 from a ``savefile''.
@@ -82,7 +82,7 @@ no packets were dropped by the interface, or it might mean that the
 statistic is unavailable, so it should not be treated as an indication
 that the interface did not drop any packets.
 .SH RETURN VALUE
-.B pcap_stats()
+.BR pcap_stats ()
 returns 0 on success and returns
 .B PCAP_ERROR
 if there is an error or if

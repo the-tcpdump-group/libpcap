@@ -36,7 +36,7 @@ pcap_t *pcap_create(const char *source, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_create()
+.BR pcap_create ()
 is used to create a packet capture handle to look
 at packets on the network.
 .I source
@@ -53,7 +53,7 @@ before packets can be captured
 with it; options for the capture, such as promiscuous mode, can be set
 on the handle before activating it.
 .SH RETURN VALUE
-.B pcap_create()
+.BR pcap_create ()
 returns a
 .I pcap_t *
 on success and

@@ -34,10 +34,10 @@ void pcap_free_tstamp_types(int *tstamp_types);
 .ft
 .fi
 .SH DESCRIPTION
-.B pcap_list_tstamp_types()
+.BR pcap_list_tstamp_types ()
 is used to get a list of the supported time stamp types of the interface
 associated with the pcap descriptor.
-.B pcap_list_tstamp_types()
+.BR pcap_list_tstamp_types ()
 allocates an array to hold the list and sets
 .I *tstamp_typesp
 to point to the array.
@@ -46,11 +46,11 @@ See
 for a list of all the time stamp types.
 .PP
 The caller is responsible for freeing the array with
-.BR pcap_free_tstamp_types() ,
+.BR pcap_free_tstamp_types (),
 which frees the list pointed to by
 .IR tstamp_types .
 .SH RETURN VALUE
-.B pcap_list_tstamp_types()
+.BR pcap_list_tstamp_types ()
 returns the number of time stamp types in the array on success and
 .B PCAP_ERROR
 on failure.

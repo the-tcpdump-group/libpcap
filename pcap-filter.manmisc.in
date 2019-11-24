@@ -25,7 +25,7 @@ pcap-filter \- packet filter syntax
 .ad
 .SH DESCRIPTION
 .LP
-.B pcap_compile()
+.BR pcap_compile ()
 is used to compile a string into a filter program.
 The resulting filter program can then be applied to
 some stream of packets to determine which packets will be supplied to
