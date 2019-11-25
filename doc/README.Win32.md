@@ -187,7 +187,7 @@ Run the command
 
 	cmake "-DPacket_ROOT={path-to-sdk}" {path-to-libpcap-source}
 
-where {path-to-sdk} is the path of the directory cntaining the Npcap or
+where {path-to-sdk} is the path of the directory containing the Npcap or
 WinPcap SDK and {path-to-libpcap-source} is the pathname of the
 top-level source directory for libpcap.
 
