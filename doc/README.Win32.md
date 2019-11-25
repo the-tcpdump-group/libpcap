@@ -142,7 +142,7 @@ In the CMakeSettings.json tab, change cmakeCommandArgs to include
 
 	-DPacket_ROOT={path-to-sdk}
 
-where {path-to-sdk} is the path of the directory cntaining the Npcap or
+where {path-to-sdk} is the path of the directory containing the Npcap or
 WinPcap SDK.  Note that backslashes in the path must be specified as two
 backslashes.
 
