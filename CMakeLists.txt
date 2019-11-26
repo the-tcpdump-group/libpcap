@@ -1650,6 +1650,8 @@ main(void)
             endif(HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL)
         endif(HAVE_BLUETOOTH_BLUETOOTH_H)
     endif()
+else()
+    unset(PCAP_SUPPORT_BT_MONITOR CACHE)
 endif()
 
 # Check for Bluetooth sniffing support
