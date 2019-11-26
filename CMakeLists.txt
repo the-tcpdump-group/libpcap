@@ -1329,6 +1329,8 @@ else(WIN32)
                     endif()
                 endif()
             endif()
+        else()
+            unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache
         endif()
 
         check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
