@@ -368,7 +368,11 @@ rdmasniff_create(const char *device, char *ebuf, int *is_ours)
 	*is_ours = 0;
 
 	dev_list = ibv_get_device_list(&numdev);
-	if (!dev_list || !numdev) {
+	if (!dev_list) {
+		return NULL;
+	}
+	if (!numdev) {
+		ibv_free_device_list(dev_list);
 		return NULL;
 	}
 
