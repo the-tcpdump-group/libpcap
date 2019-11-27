@@ -415,7 +415,7 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 	int ret = 0;
 
 	dev_list = ibv_get_device_list(&numdev);
-	if (!dev_list || !numdev) {
+	if (!dev_list) {
 		return 0;
 	}
 
@@ -426,11 +426,10 @@ rdmasniff_findalldevs(pcap_if_list_t *devlistp, char *err_str)
 		 */
 		if (!add_dev(devlistp, dev_list[i]->name, 0, "RDMA sniffer", err_str)) {
 			ret = -1;
-			goto out;
+			break;
 		}
 	}
 
-out:
 	ibv_free_device_list(dev_list);
 	return ret;
 }
