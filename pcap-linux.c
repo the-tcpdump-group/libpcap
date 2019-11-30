@@ -236,8 +236,9 @@ static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_sock(pcap_t *, int);
+static int setup_non_mmapped(pcap_t *);
 #ifdef HAVE_PACKET_RING
-static int activate_mmap(pcap_t *, int *);
+static int setup_mmapped(pcap_t *, int *);
 #endif
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
@@ -1468,56 +1469,56 @@ pcap_activate_linux(pcap_t *handle)
 		 * error message.
 		 */
 		return ret;
-	} else {
+	}
 #ifdef HAVE_PACKET_RING
+	/*
+	 * Success.
+	 * Try to set up memory-mapped access.
+	 */
+	ret = setup_mmapped(handle, &status);
+	if (ret == -1) {
 		/*
-		 * Success.
-		 * Try to use memory-mapped access.
+		 * We failed to set up to use it, or the
+		 * kernel supports it, but we failed to
+		 * enable it.  status has been set to the
+		 * error status to return and, if it's
+		 * PCAP_ERROR, handle->errbuf contains
+		 * the error message.
 		 */
-		ret = activate_mmap(handle, &status);
-		if (ret == -1) {
-			/*
-			 * We failed to set up to use it, or the
-			 * kernel supports it, but we failed to
-			 * enable it.  status has been set to the
-			 * error status to return and, if it's
-			 * PCAP_ERROR, handle->errbuf contains
-			 * the error message.
-			 */
+		goto fail;
+	}
+
+	if (ret == 1) {
+		/*
+		 * We succeeded.  status has been
+		 * set to the status to return,
+		 * which might be 0, or might be
+		 * a PCAP_WARNING_ value.
+		 */
+		/*
+		 * Now that we have activated the mmap ring, we can
+		 * set the correct protocol.
+		 */
+		if ((status2 = iface_bind(handle->fd, handlep->ifindex,
+		     handle->errbuf, pcap_protocol(handle))) != 0) {
+			status = status2;
 			goto fail;
 		}
-
-
-		if (ret == 1) {
-			/*
-			 * We succeeded.  status has been
-			 * set to the status to return,
-			 * which might be 0, or might be
-			 * a PCAP_WARNING_ value.
-			 */
-			/*
-			 * Now that we have activated the mmap ring, we can
-			 * set the correct protocol.
-			 */
-			if ((status2 = iface_bind(handle->fd, handlep->ifindex,
-			     handle->errbuf, pcap_protocol(handle))) != 0) {
-				status = status2;
-				goto fail;
-			}
-			/*
-			 * Set the timeout to use in poll() before
-			 * returning.
-			 */
-			set_poll_timeout(handlep);
-			return status;
-		}
-
-		/*
-		 * Kernel doesn't support it (mmap) - just continue
-		 * with non-memory-mapped access.
-		 */
-#endif /* HAVE_PACKET_RING */
+		return status;
 	}
+
+	/*
+	 * Kernel doesn't support it (mmap) - just continue
+	 * with non-memory-mapped access.
+	 */
+#endif /* HAVE_PACKET_RING */
+	/*
+	 * We set up the socket, but not with memory-mapped access.
+	 * Set up the socket buffer.
+	 */
+	status = setup_non_mmapped(handle);
+	if (status < 0)
+		goto fail;
 
 	/*
 	 * We need to set the correct protocol.
@@ -1527,39 +1528,6 @@ pcap_activate_linux(pcap_t *handle)
 		status = status2;
 		goto fail;
 	}
-
-	/*
-	 * We set up the socket, but not with memory-mapped access.
-	 */
-	if (handle->opt.buffer_size != 0) {
-		/*
-		 * Set the socket buffer size to the specified value.
-		 */
-		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
-		    &handle->opt.buffer_size,
-		    sizeof(handle->opt.buffer_size)) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "SO_RCVBUF");
-			status = PCAP_ERROR;
-			goto fail;
-		}
-	}
-
-	/* Allocate the buffer */
-
-	handle->buffer	 = malloc(handle->bufsize + handle->offset);
-	if (!handle->buffer) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "malloc");
-		status = PCAP_ERROR;
-		goto fail;
-	}
-
-	/*
-	 * "handle->fd" is a socket, so "select()" and "poll()"
-	 * should work on it.
-	 */
-	handle->selectable_fd = handle->fd;
 
 	return status;
 
@@ -3545,9 +3513,46 @@ activate_sock(pcap_t *handle, int is_any_device)
 	return status;
 }
 
+static int
+setup_non_mmapped(pcap_t *handle)
+{
+	/*
+	 * We're not using memory-mapped access; set the socket buffer
+	 * size if a size was specified.
+	 */
+	if (handle->opt.buffer_size != 0) {
+		/*
+		 * Set the socket buffer size to the specified value.
+		 */
+		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
+		    &handle->opt.buffer_size,
+		    sizeof(handle->opt.buffer_size)) == -1) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno, "SO_RCVBUF");
+			return PCAP_ERROR;
+		}
+	}
+
+	/* Allocate the user-mode buffer. */
+	handle->buffer = malloc(handle->bufsize + handle->offset);
+	if (handle->buffer == NULL) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "malloc");
+		return PCAP_ERROR;
+	}
+
+	/*
+	 * "handle->fd" is a socket, so "select()" and "poll()"
+	 * should work on it.
+	 */
+	handle->selectable_fd = handle->fd;
+
+	return 0;
+}
+
 #ifdef HAVE_PACKET_RING
 /*
- * Attempt to activate with memory-mapped access.
+ * Attempt to setup memory-mapped access.
  *
  * On success, returns 1, and sets *status to 0 if there are no warnings
  * or to a PCAP_WARNING_ code if there is a warning.
@@ -3559,7 +3564,7 @@ activate_sock(pcap_t *handle, int is_any_device)
  * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
  */
 static int
-activate_mmap(pcap_t *handle, int *status)
+setup_mmapped(pcap_t *handle, int *status)
 {
 	struct pcap_linux *handlep = handle->priv;
 	int ret;
@@ -3638,6 +3643,12 @@ activate_mmap(pcap_t *handle, int *status)
 	handle->getnonblock_op = pcap_getnonblock_mmap;
 	handle->oneshot_callback = pcap_oneshot_mmap;
 	handle->selectable_fd = handle->fd;
+
+	/*
+	 * Set the timeout to use in poll() before returning.
+	 */
+	set_poll_timeout(handlep);
+
 	return 1;
 }
 
