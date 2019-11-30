@@ -1468,7 +1468,8 @@ pcap_activate_linux(pcap_t *handle)
 		 * and handle->errbuf has been set to an appropriate
 		 * error message.
 		 */
-		return ret;
+		status = ret;
+		goto fail;
 	}
 #ifdef HAVE_PACKET_RING
 	/*
