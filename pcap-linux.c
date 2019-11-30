@@ -1319,48 +1319,6 @@ static void pcap_breakloop_linux(pcap_t *handle)
 #endif
 
 /*
- * Open a PF_PACKET socket.
- */
-static int
-open_pf_packet_socket(pcap_t *handle, int cooked)
-{
-	int	sock_fd, ret;
-
-	/*
-	 * Open a socket with protocol family packet. If cooked is true,
-	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
-	 * we open a SOCK_RAW socket for the raw interface.
-	 *
-	 * The protocol is set to 0.  This means we will receive no
-	 * packets until we "bind" the socket with a non-zero
-	 * protocol.  This allows us to setup the ring buffers without
-	 * dropping any packets.
-	 */
-	sock_fd = cooked ?
-		socket(PF_PACKET, SOCK_DGRAM, 0) :
-		socket(PF_PACKET, SOCK_RAW, 0);
-
-	if (sock_fd == -1) {
-		if (errno == EPERM || errno == EACCES) {
-			/*
-			 * You don't have permission to open the
-			 * socket.
-			 */
-			ret = PCAP_ERROR_PERM_DENIED;
-		} else {
-			/*
-			 * Other error.
-			 */
-			ret = PCAP_ERROR;
-		}
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "socket");
-		return ret;
-	}
-	return sock_fd;
-}
-
-/*
  *  Get a handle for a live capture from the given device. You can
  *  pass NULL as device to get all packages (without link level
  *  information of course). If you pass 1 as promisc the interface
@@ -3187,12 +3145,36 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 	socklen_t		len = sizeof(bpf_extensions);
 #endif
 
-	sock_fd = open_pf_packet_socket(handle, is_any_device);
-	if (sock_fd < 0) {
-		/*
-		 * Failed; return its return value.
-		 */
-		return sock_fd;
+	/*
+	 * Open a socket with protocol family packet. If cooked is true,
+	 * we open a SOCK_DGRAM socket for the cooked interface, otherwise
+	 * we open a SOCK_RAW socket for the raw interface.
+	 *
+	 * The protocol is set to 0.  This means we will receive no
+	 * packets until we "bind" the socket with a non-zero
+	 * protocol.  This allows us to setup the ring buffers without
+	 * dropping any packets.
+	 */
+	sock_fd = is_any_device ?
+		socket(PF_PACKET, SOCK_DGRAM, 0) :
+		socket(PF_PACKET, SOCK_RAW, 0);
+
+	if (sock_fd == -1) {
+		if (errno == EPERM || errno == EACCES) {
+			/*
+			 * You don't have permission to open the
+			 * socket.
+			 */
+			status = PCAP_ERROR_PERM_DENIED;
+		} else {
+			/*
+			 * Other error.
+			 */
+			status = PCAP_ERROR;
+		}
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "socket");
+		return status;
 	}
 
 	/*
@@ -3286,15 +3268,19 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 				    PCAP_ERRBUF_SIZE, errno, "close");
 				return PCAP_ERROR;
 			}
-			sock_fd = open_pf_packet_socket(handle, 1);
+			sock_fd = socket(PF_PACKET, SOCK_DGRAM, 0);
 			if (sock_fd < 0) {
 				/*
-				 * Fatal error; the return value is the
-				 * error code, and handle->errbuf has
-				 * been set to an appropriate error
-				 * message.
+				 * Fatal error.  We treat this as
+				 * a generic error; we already know
+				 * that we were able to open a
+				 * PF_PACKET/SOCK_RAW socket, so
+				 * any failure is a "this shouldn't
+				 * happen" case.
 				 */
-				return sock_fd;
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno, "socket");
+				return PCAP_ERROR;
 			}
 			handlep->cooked = 1;
 
