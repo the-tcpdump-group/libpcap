@@ -340,8 +340,8 @@ static int get_if_flags(const char *, bpf_u_int32 *, char *);
 static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
-static int activate_old(pcap_t *);
-static int activate_new(pcap_t *);
+static int activate_sock_packet(pcap_t *);
+static int activate_pf_packet(pcap_t *);
 static int activate_mmap(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
@@ -1543,7 +1543,7 @@ pcap_activate_linux(pcap_t *handle)
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 */
-	ret = activate_new(handle);
+	ret = activate_pf_packet(handle);
 	if (ret < 0) {
 		/*
 		 * Fatal error with the new way; just fail.
@@ -1610,7 +1610,7 @@ pcap_activate_linux(pcap_t *handle)
 	}
 	else if (ret == 0) {
 		/* Non-fatal error; try old way */
-		if ((ret = activate_old(handle)) != 1) {
+		if ((ret = activate_sock_packet(handle)) != 1) {
 			/*
 			 * Both methods to open the packet socket failed.
 			 * Tidy up and report our failure (handle->errbuf
@@ -3187,7 +3187,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * XXX - are there any other sorts of "fake Ethernet" that
 		 * have ARPHRD_ETHER but that shouldn't offer DLT_DOCSIS as
 		 * a Cisco CMTS won't put traffic onto it or get traffic
-		 * bridged onto it?  ISDN is handled in "activate_new()",
+		 * bridged onto it?  ISDN is handled in "activate_pf_packet()",
 		 * as we fall back on cooked mode there, and we use
 		 * is_wifi() to check for 802.11 devices; are there any
 		 * others?
@@ -3522,7 +3522,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		/* We need to save packet direction for IrDA decoding,
 		 * so let's use "Linux-cooked" mode. Jean II
 		 *
-		 * XXX - this is handled in activate_new(). */
+		 * XXX - this is handled in activate_pf_packet(). */
 		/* handlep->cooked = 1; */
 		break;
 
@@ -3564,7 +3564,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * pick up the netlink protocol type such as NETLINK_ROUTE,
 		 * NETLINK_GENERIC, NETLINK_FIB_LOOKUP, etc.
 		 *
-		 * XXX - this is handled in activate_new().
+		 * XXX - this is handled in activate_pf_packet().
 		 */
 		/* handlep->cooked = 1; */
 		break;
@@ -3631,7 +3631,7 @@ set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
  * work either (so it shouldn't be tried).
  */
 static int
-activate_new(pcap_t *handle)
+activate_pf_packet(pcap_t *handle)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct pcap_linux *handlep = handle->priv;
@@ -4087,7 +4087,7 @@ activate_mmap(pcap_t *handle, int *status)
 	 * warnings or to a PCAP_WARNING_ value if there is a warning.
 	 *
 	 * Override some defaults and inherit the other fields from
-	 * activate_new.
+	 * activate_pf_packet().
 	 * handle->offset is used to get the current position into the rx ring.
 	 * handle->cc is used to store the ring size.
 	 */
@@ -6881,7 +6881,7 @@ iface_get_offload(pcap_t *handle _U_)
  * Returns 1 on success and a PCAP_ERROR_ value on an error.
  */
 static int
-activate_old(pcap_t *handle)
+activate_sock_packet(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 	int		err;
