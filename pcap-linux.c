@@ -341,7 +341,7 @@ static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_sock_packet(pcap_t *);
-static int activate_pf_packet(pcap_t *);
+static int activate_pf_packet(pcap_t *, int);
 static int activate_mmap(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
@@ -1455,6 +1455,7 @@ pcap_activate_linux(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 	const char	*device;
+	int		is_any_device;
 	struct ifreq	ifr;
 	int		status = 0;
 	int		status2 = 0;
@@ -1499,12 +1500,21 @@ pcap_activate_linux(pcap_t *handle)
 	handle->read_op = pcap_read_linux;
 	handle->stats_op = pcap_stats_linux;
 
+	handlep->device	= strdup(device);
+	if (handlep->device == NULL) {
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "strdup");
+		status = PCAP_ERROR;
+		goto fail;
+	}
+
 	/*
 	 * The "any" device is a special device which causes us not
 	 * to bind to a particular device and thus to look at all
 	 * devices.
 	 */
-	if (strcmp(device, "any") == 0) {
+	is_any_device = (strcmp(device, "any") == 0);
+	if (is_any_device) {
 		if (handle->opt.promisc) {
 			handle->opt.promisc = 0;
 			/* Just a warning. */
@@ -1512,14 +1522,6 @@ pcap_activate_linux(pcap_t *handle)
 			    "Promiscuous mode not supported on the \"any\" device");
 			status = PCAP_WARNING_PROMISC_NOTSUP;
 		}
-	}
-
-	handlep->device	= strdup(device);
-	if (handlep->device == NULL) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "strdup");
-		status = PCAP_ERROR;
-		goto fail;
 	}
 
 	/* copy timeout value */
@@ -1543,12 +1545,18 @@ pcap_activate_linux(pcap_t *handle)
 	 * to be compatible with older kernels for a while so we are
 	 * trying both methods with the newer method preferred.
 	 */
-	ret = activate_pf_packet(handle);
+
+	/*
+	 * If the "any" device is specified, try to open a SOCK_DGRAM.
+	 * Otherwise, open a SOCK_RAW.
+	 */
+	ret = activate_pf_packet(handle, is_any_device);
 	if (ret < 0) {
 		/*
 		 * Fatal error with the new way; just fail.
-		 * ret has the error return; if it's PCAP_ERROR,
-		 * handle->errbuf has been set appropriately.
+		 * The return value is the error code, and
+		 * handle->errbuf has been set to an appropriate
+		 * error message.
 		 */
 		status = ret;
 		goto fail;
@@ -3631,12 +3639,11 @@ set_dlt_list_cooked(pcap_t *handle _U_, int sock_fd _U_)
  * work either (so it shouldn't be tried).
  */
 static int
-activate_pf_packet(pcap_t *handle)
+activate_pf_packet(pcap_t *handle, int is_any_device)
 {
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
-	int			is_any_device = (strcmp(device, "any") == 0);
 	int			protocol = pcap_protocol(handle);
 	int			sock_fd = -1, arptype, ret;
 #ifdef HAVE_PACKET_AUXDATA
