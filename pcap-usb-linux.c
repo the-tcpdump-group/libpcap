@@ -1213,7 +1213,7 @@ usb_read_linux_bin(pcap_t *handle, int max_packets _U_, pcap_handler callback, u
 		 */
 		pkth.len = sizeof(pcap_usb_header) + info.hdr->urb_len;
 	}
-	pkth.ts.tv_sec = info.hdr->ts_sec;
+	pkth.ts.tv_sec = (time_t)info.hdr->ts_sec;
 	pkth.ts.tv_usec = info.hdr->ts_usec;
 
 	if (handle->fcode.bf_insns == NULL ||
@@ -1328,7 +1328,7 @@ usb_read_linux_mmap(pcap_t *handle, int max_packets, pcap_handler callback, u_ch
 				pkth.len = sizeof(pcap_usb_header_mmapped) +
 				    (hdr->ndesc * sizeof (usb_isodesc)) + hdr->urb_len;
 			}
-			pkth.ts.tv_sec = hdr->ts_sec;
+			pkth.ts.tv_sec = (time_t)hdr->ts_sec;
 			pkth.ts.tv_usec = hdr->ts_usec;
 
 			if (handle->fcode.bf_insns == NULL ||
