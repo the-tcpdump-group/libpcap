@@ -159,7 +159,18 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 			} else
 				return count;
 		}
-		if (ep - bp < NLMSG_SPACE(0)) {
+		/*
+		 * NLMSG_SPACE(0) might be signed or might be unsigned,
+		 * depending on whether the kernel defines NLMSG_ALIGNTO
+		 * as 4, which older kernels do, or as 4U, which newer
+		 * kernels do.
+		 *
+		 * ep - bp is of type ptrdiff_t, which is signed.
+		 *
+		 * To squelch warnings, we cast both to size_t, which
+		 * is unsigned; ep >= bp, so the cast is safe.
+		 */
+		if ((size_t)(ep - bp) < (size_t)NLMSG_SPACE(0)) {
 			/*
 			 * There's less than one netlink message left
 			 * in the buffer.  Give up.
@@ -262,8 +273,15 @@ netfilter_read_linux(pcap_t *handle, int max_packets, pcap_handler callback, u_c
 		 * If the message length would run past the end of the
 		 * buffer, truncate it to the remaining space in the
 		 * buffer.
+		 *
+		 * To squelch warnings, we cast ep - bp to uint32_t, which
+		 * is unsigned and is the type of msg_len; ep >= bp, and
+		 * len should fit in 32 bits (either it's set from an int
+		 * or it's set from a recv() call with a buffer size that's
+		 * an int, and we're assuming either ILP32 or LP64), so
+		 * the cast is safe.
 		 */
-		if (msg_len > ep - bp)
+		if (msg_len > (uint32_t)(ep - bp))
 			msg_len = (uint32_t)(ep - bp);
 
 		bp += msg_len;
