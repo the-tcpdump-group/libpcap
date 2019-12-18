@@ -69,6 +69,49 @@
 #ifndef lib_pcap_pcap_h
 #define lib_pcap_pcap_h
 
+/*
+ * Some software that uses libpcap/WinPcap/Npcap defines _MSC_VER before
+ * includeing pcap.h if it's not defined - and it defines it to 1500.
+ * (I'm looking at *you*, lwIP!)
+ *
+ * Attempt to detect this, and undefine _MSC_VER so that we can *reliably*
+ * use it to know what compiler is being used and, if it's Visual Studio,
+ * what version is being used.
+ */
+#if defined(_MSC_VER)
+  /*
+   * We assume here that software such as that doesn't define _MSC_FULL_VER
+   * as well and that it defines _MSC_VER with a value > 1200.
+   *
+   * DO NOT BREAK THESE ASSUMPTIONS.  IF YOU FEEL YOU MUST DEFINE _MSC_VER
+   * WITH A COMPILER THAT'S NOT MICROSOFT'S C COMPILER, PLEASE CONTACT
+   * US SO THAT WE CAN MAKE IT SO THAT YOU DON'T HAVE TO DO THAT.  THANK
+   * YOU.
+   *
+   * OK, is _MSC_FULL_VER defined?
+   */
+  #if !defined(_MSC_FULL_VER)
+    /*
+     * According to
+     *
+     *    https://sourceforge.net/p/predef/wiki/Compilers/
+     *
+     * with "Visual C++ 6.0 Processor Pack"/Visual C++ 6.0 SP6 and
+     * later, _MSC_FULL_VER is defined, so either this is an older
+     * version of Visual C++ or it's not Visual C++ at all.
+     *
+     * For Visual C++ 6.0, _MSC_VER is defined as 1200.
+     */
+    #if _MSC_VER > 1200
+      /*
+       * If this is Visual C++, _MSC_FULL_VER should be defined, so we
+       * assume this isn't Visual C++, and undo the lie that it is.
+       */
+      #undef _MSC_VER
+    #endif
+  #endif
+#endif
+
 #include <pcap/funcattrs.h>
 
 #include <pcap/pcap-inttypes.h>
