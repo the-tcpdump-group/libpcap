@@ -489,8 +489,10 @@ int usb_mmap(pcap_t* handle)
 #define USB_REQ_GET_DESCRIPTOR	6
 
 #define USB_DT_DEVICE		1
+#define USB_DT_CONFIG		2
 
 #define USB_DEVICE_DESCRIPTOR_SIZE	18
+#define USB_CONFIG_DESCRIPTOR_SIZE	9
 
 /* probe the descriptors of the devices attached to the bus */
 /* the descriptors will end up in the captured packet stream */
@@ -504,7 +506,8 @@ probe_devices(int bus)
 	int ret = 0;
 	char busdevpath[sizeof("/dev/bus/usb/000/") + NAME_MAX];
 	DIR* dir;
-	char descriptor[USB_DEVICE_DESCRIPTOR_SIZE];
+	uint8_t descriptor[USB_DEVICE_DESCRIPTOR_SIZE];
+	uint8_t configdesc[USB_CONFIG_DESCRIPTOR_SIZE];
 
 	/* scan usb bus directories for device nodes */
 	snprintf(busdevpath, sizeof(busdevpath), "/dev/bus/usb/%03d", bus);
@@ -547,6 +550,30 @@ probe_devices(int bus)
 
 		ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
 
+		/* Request CONFIGURATION descriptor alone to know wTotalLength */
+#ifdef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
+		ctrl.wValue = USB_DT_CONFIG << 8;
+		ctrl.wLength = sizeof(configdesc);
+#else
+		ctrl.value = USB_DT_CONFIG << 8;
+		ctrl.length = sizeof(configdesc);
+#endif
+		ctrl.data = configdesc;
+		ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
+		if (ret >= 0) {
+			uint16_t wtotallength;
+			wtotallength = (configdesc[2]) | (configdesc[3] << 8);
+#ifdef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE
+			ctrl.wLength = wtotallength;
+#else
+			ctrl.length = wtotallength;
+#endif
+			ctrl.data = malloc(wtotallength);
+			if (ctrl.data) {
+				ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
+				free(ctrl.data);
+			}
+		}
 		close(fd);
 	}
 	closedir(dir);
