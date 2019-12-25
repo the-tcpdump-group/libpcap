@@ -490,6 +490,8 @@ int usb_mmap(pcap_t* handle)
 
 #define USB_DT_DEVICE		1
 
+#define USB_DEVICE_DESCRIPTOR_SIZE	18
+
 /* probe the descriptors of the devices attached to the bus */
 /* the descriptors will end up in the captured packet stream */
 /* and be decoded by external apps like wireshark */
@@ -500,12 +502,13 @@ probe_devices(int bus)
 	struct usbdevfs_ctrltransfer ctrl;
 	struct dirent* data;
 	int ret = 0;
-	char buf[sizeof("/dev/bus/usb/000/") + NAME_MAX];
+	char busdevpath[sizeof("/dev/bus/usb/000/") + NAME_MAX];
 	DIR* dir;
+	char descriptor[USB_DEVICE_DESCRIPTOR_SIZE];
 
 	/* scan usb bus directories for device nodes */
-	snprintf(buf, sizeof(buf), "/dev/bus/usb/%03d", bus);
-	dir = opendir(buf);
+	snprintf(busdevpath, sizeof(busdevpath), "/dev/bus/usb/%03d", bus);
+	dir = opendir(busdevpath);
 	if (!dir)
 		return;
 
@@ -516,9 +519,9 @@ probe_devices(int bus)
 		if (name[0] == '.')
 			continue;
 
-		snprintf(buf, sizeof(buf), "/dev/bus/usb/%03d/%s", bus, data->d_name);
+		snprintf(busdevpath, sizeof(busdevpath), "/dev/bus/usb/%03d/%s", bus, data->d_name);
 
-		fd = open(buf, O_RDWR);
+		fd = open(busdevpath, O_RDWR);
 		if (fd == -1)
 			continue;
 
@@ -531,15 +534,15 @@ probe_devices(int bus)
 		ctrl.bRequest = USB_REQ_GET_DESCRIPTOR;
 		ctrl.wValue = USB_DT_DEVICE << 8;
 		ctrl.wIndex = 0;
- 		ctrl.wLength = sizeof(buf);
+ 		ctrl.wLength = sizeof(descriptor);
 #else
 		ctrl.requesttype = USB_DIR_IN | USB_TYPE_STANDARD | USB_RECIP_DEVICE;
 		ctrl.request = USB_REQ_GET_DESCRIPTOR;
 		ctrl.value = USB_DT_DEVICE << 8;
 		ctrl.index = 0;
- 		ctrl.length = sizeof(buf);
+ 		ctrl.length = sizeof(descriptor);
 #endif
-		ctrl.data = buf;
+		ctrl.data = descriptor;
 		ctrl.timeout = CTRL_TIMEOUT;
 
 		ret = ioctl(fd, USBDEVFS_CONTROL, &ctrl);
