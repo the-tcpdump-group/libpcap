@@ -217,7 +217,7 @@ pcap_nametoaddrinfo(const char *name)
  *  XXX - not guaranteed to be thread-safe!  See below for platforms
  *  on which it is thread-safe and on which it isn't.
  */
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 bpf_u_int32
 pcap_nametonetaddr(const char *name _U_)
 {
