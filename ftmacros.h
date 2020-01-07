@@ -83,7 +83,7 @@
    * least with HP's C compiler; hopefully doing so won't make it
    * *not* work with *un*-threaded code.
    */
-#elif defined(__linux__) || defined(linux) || defined(__linux)
+#elif defined(__linux__) || defined(linux) || defined(__linux) || defined(__CYGWIN__)
   /*
    * Turn on _GNU_SOURCE to get everything GNU libc has to offer,
    * including asprintf().
