@@ -17,7 +17,7 @@ To report a security issue please send an e-mail to security@tcpdump.org.
 
 To report bugs and other problems, contribute patches, request a
 feature, provide generic feedback etc please see the file
-[CONTRIBUTING](CONTRIBUTING.md) in the libpcap source tree root.
+[CONTRIBUTING.md](CONTRIBUTING.md) in the libpcap source tree root.
 
 The directory doc/ has README files about specific operating systems and
 options.

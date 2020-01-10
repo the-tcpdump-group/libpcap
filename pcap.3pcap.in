@@ -17,7 +17,7 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP 3PCAP "25 July 2018"
+.TH PCAP 3PCAP "10 January 2020"
 .SH NAME
 pcap \- Packet Capture library
 .SH SYNOPSIS
@@ -986,5 +986,5 @@ To report a security issue please send an e-mail to security@tcpdump.org.
 .LP
 To report bugs and other problems, contribute patches, request a
 feature, provide generic feedback etc please see the file
-.I CONTRIBUTING
+.I CONTRIBUTING.md
 in the libpcap source tree root.
