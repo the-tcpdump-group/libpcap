@@ -2626,7 +2626,7 @@ dot_dump_edge(struct icode *ic, struct block *block, FILE *out)
     	"block1":sw -> "block3":n [label="F"];
     }
  *
- *  After install graphviz on http://www.graphviz.org/, save it as bpf.dot
+ *  After install graphviz on https://www.graphviz.org/, save it as bpf.dot
  *  and run `dot -Tpng -O bpf.dot' to draw the graph.
  */
 static int

@@ -8,7 +8,7 @@ Note that packet-capture programs such as tcpdump may, on HP-UX, not be
 able to see packets sent from the machine on which they're running.
 Some articles on groups.google.com discussing this are:
 
-	http://groups.google.com/groups?selm=82ld3v%2480i%241%40mamenchi.zrz.TU-Berlin.DE
+	https://groups.google.com/groups?selm=82ld3v%2480i%241%40mamenchi.zrz.TU-Berlin.DE
 
 which says:
 
@@ -69,7 +69,7 @@ which says:
 
 and
 
-	http://groups.google.com/groups?selm=38AA973E.96BE7DF7%40cc.uit.no
+	https://groups.google.com/groups?selm=38AA973E.96BE7DF7%40cc.uit.no
 
 which says:
 
@@ -118,7 +118,7 @@ And another message to tcpdump-workers@tcpdump.org, from Rick Jones:
 
 Another posting:
 
-	http://groups.google.com/groups?selm=7d6gvn%24b3%241%40ocean.cup.hp.com
+	https://groups.google.com/groups?selm=7d6gvn%24b3%241%40ocean.cup.hp.com
 
 indicates that you need to install the optional STREAMS product to do
 captures on HP-UX 9.x:

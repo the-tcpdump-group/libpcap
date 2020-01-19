@@ -242,7 +242,7 @@ pcap_stats_npf(pcap_t *p, struct pcap_stat *ps)
  * have an API that returns data in a form like the Options section of a
  * pcapng Interface Statistics Block:
  *
- *    http://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=https://raw.githubusercontent.com/pcapng/pcapng/master/draft-tuexen-opsawg-pcapng.xml&modeAsFormat=html/ascii&type=ascii#rfc.section.4.6
+ *    https://xml2rfc.tools.ietf.org/cgi-bin/xml2rfc.cgi?url=https://raw.githubusercontent.com/pcapng/pcapng/master/draft-tuexen-opsawg-pcapng.xml&modeAsFormat=html/ascii&type=ascii#rfc.section.4.6
  *
  * which would let us add new statistics straightforwardly and indicate which
  * statistics we are and are *not* providing, rather than having to provide

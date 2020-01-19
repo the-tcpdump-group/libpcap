@@ -1463,7 +1463,7 @@ daemon_AuthUserPwd(char *username, char *password, char *errbuf)
 	/*
 	 * See
 	 *
-	 *	http://www.unixpapa.com/incnote/passwd.html
+	 *	https://www.unixpapa.com/incnote/passwd.html
 	 *
 	 * We use the Solaris/Linux shadow password authentication if
 	 * we have getspnam(), otherwise we just do traditional

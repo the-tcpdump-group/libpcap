@@ -93,7 +93,7 @@ Sunday, June 24, 2018, by mcr@sandelman.ca
     Make VLAN filter handle both metadata and inline tags
     D-Bus captures can now be up to 128MB in size
     Added LORATAP DLT value
-    Added DLT_VSOCK for http://qemu-project.org/Features/VirtioVsock
+    Added DLT_VSOCK for https://qemu-project.org/Features/VirtioVsock
     probe_devices() fixes not to overrun buffer for name of device
     Add linux-specific pcap_set_protocol_linux() to allow specifying a specific capture protocol.
     RDMA sniffing support for pcap
@@ -369,7 +369,7 @@ Summary for 1.2 libpcap release
         Noted real nature of LINKTYPE_ARCNET.
         Add a link-layer type for DVB-CI.
         Fix configure-script discovery of VLAN acceleration support.
-         see http://netoptimizer.blogspot.com/2010/09/tcpdump-vs-vlan-tags.html
+         see https://netoptimizer.blogspot.com/2010/09/tcpdump-vs-vlan-tags.html
         Linux, HP-UX, AIX, NetBSD and OpenBSD compilation/conflict fixes.
         Protect against including AIX 5.x's <net/bpf.h> having been included.
         Add DLT_DBUS, for raw D-Bus messages.

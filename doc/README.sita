@@ -7,7 +7,7 @@ product, but the infrastructure for that isn't yet available.
 
 The following instructions apply if you have a Linux platform and want
 libpcap to support the 'ACN' WAN/LAN router product from SITA
-(http://www.sita.aero)
+(https://www.sita.aero)
 
 This might also work on non-Linux Unix-compatible platforms, but that
 has not been tested.

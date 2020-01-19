@@ -30,7 +30,7 @@ Note:
    For chrome, you can run it using following command to avoid this:
        chromium --disable-web-security
    That's why this program start a localhost http server.
-2. expr1.html use jquery from http://ajax.googleapis.com, so you need internet
+2. expr1.html use jquery from https://ajax.googleapis.com, so you need internet
    access to show the web page.
 """
 
@@ -52,7 +52,7 @@ html_template = string.Template("""
       }
     </style>
 
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"/></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"/></script>
     <!--script type="text/javascript" src="./jquery.min.js"/></script-->
     <script type="text/javascript">
       var expr = '$expr';
@@ -142,7 +142,7 @@ html_template = string.Template("""
       }
       function load_left(index) {
         var url = gurl(index);
-        var frag = "<embed id='leftsvgc'  type='image/svg+xml' pluginspage='http://www.adobe.com/svg/viewer/install/' src='" + url + "'/>";
+        var frag = "<embed id='leftsvgc'  type='image/svg+xml' pluginspage='https://www.adobe.com/svg/viewer/install/' src='" + url + "'/>";
         $$("#lsvg").html(frag);
         $$("#lcomment").html(logs[index]);
         $$("#lsvglink").attr("href", url);
@@ -151,7 +151,7 @@ html_template = string.Template("""
       }
       function load_right(index) {
         var url = gurl(index);
-        var frag = "<embed id='rightsvgc' type='image/svg+xml' pluginspage='http://www.adobe.com/svg/viewer/install/' src='" + url + "'/>";
+        var frag = "<embed id='rightsvgc' type='image/svg+xml' pluginspage='https://www.adobe.com/svg/viewer/install/' src='" + url + "'/>";
         $$("#rsvg").html(frag);
         $$("#rcomment").html(logs[index]);
         $$("#rsvglink").attr("href", url);

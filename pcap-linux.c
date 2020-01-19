@@ -2961,7 +2961,7 @@ static void map_arphrd_to_dlt(pcap_t *handle, int sock_fd, int arptype,
 		 * Back in 2002, Donald Lee at Cray wanted a DLT_ for
 		 * IP-over-FC:
 		 *
-		 *	http://www.mail-archive.com/tcpdump-workers@sandelman.ottawa.on.ca/msg01043.html
+		 *	https://www.mail-archive.com/tcpdump-workers@sandelman.ottawa.on.ca/msg01043.html
 		 *
 		 * and one was assigned.
 		 *

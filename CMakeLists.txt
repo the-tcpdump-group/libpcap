@@ -2193,7 +2193,7 @@ add_subdirectory(testprogs)
 #
 # See
 #
-#  http://public.kitware.com/pipermail/cmake/2013-August/055510.html
+#  https://public.kitware.com/pipermail/cmake/2013-August/055510.html
 #
 add_custom_target(SerializeTarget
     DEPENDS

@@ -41,8 +41,8 @@ You will need either Bison, Berkeley YACC, or a version of YACC
 compatible with them (if any exist), to build libpcap.  The configure
 script will abort if there isn't any such program.  If you don't have
 any such program, the current version of Bison can be found at
-http://ftp.gnu.org/gnu/bison/ and the current version of Berkeley YACC
-can be found at http://invisible-island.net/byacc/.
+https://ftp.gnu.org/gnu/bison/ and the current version of Berkeley YACC
+can be found at https://invisible-island.net/byacc/.
 
 Sometimes the stock C compiler does not interact well with Flex and
 Bison. The list of problems includes undefined references for alloca.
@@ -221,7 +221,7 @@ a Sun4, your version of Bison is broken. In any case version 1.16 or
 higher is recommended (1.14 is known to cause problems 1.16 is known to
 work). Either pick up a current version from:
 
-  http://ftp.gnu.org/gnu/bison/
+  https://ftp.gnu.org/gnu/bison/
 
 or hack around it by inserting the lines:
 

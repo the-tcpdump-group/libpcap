@@ -672,7 +672,7 @@ pcap_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 
 			new_bufsize = hdr->caplen;
 			/*
-			 * http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+			 * https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
 			 */
 			new_bufsize--;
 			new_bufsize |= new_bufsize >> 1;

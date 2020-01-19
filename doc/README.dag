@@ -1,7 +1,7 @@
 
 The following instructions apply if you have a Linux or FreeBSD platform and
 want libpcap to support the DAG range of passive network monitoring cards from
-Endace (http://www.endace.com, see below for further contact details).
+Endace (https://www.endace.com, see below for further contact details).
 
 1) Install and build the DAG software distribution by following the
 instructions supplied with that package. Current Endace customers can download
@@ -117,6 +117,6 @@ Please submit bug reports via <support@endace.com>.
 
 Please also visit our Web site at:
 
-        http://www.endace.com/
+        https://www.endace.com/
 
 For more information about Endace DAG cards contact <sales@endace.com>.

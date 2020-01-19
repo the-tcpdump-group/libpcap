@@ -1,6 +1,6 @@
 The following instructions apply if you have a Linux platform and want
 libpcap to support the Septel range of passive network monitoring cards
-from Intel (http://www.intel.com)
+from Intel (https://www.intel.com)
 
 1) Install and build the Septel software distribution by following the
 instructions supplied with that package.

@@ -77,7 +77,7 @@ extern "C" {
  *    1) big enough for maximum-size Linux loopback packets (65549)
  *       and some USB packets captured with USBPcap:
  *
- *           http://desowin.org/usbpcap/
+ *           https://desowin.org/usbpcap/
  *
  *       (> 131072, < 262144)
  *
