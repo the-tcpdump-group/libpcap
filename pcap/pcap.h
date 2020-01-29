@@ -662,7 +662,7 @@ PCAP_API const char *pcap_lib_version(void);
    */
 
   PCAP_API int	pcap_get_selectable_fd(pcap_t *);
-  PCAP_API struct timeval *pcap_get_required_select_timeout(pcap_t *);
+  PCAP_API const struct timeval *pcap_get_required_select_timeout(pcap_t *);
 
 #endif /* _WIN32/MSDOS/UN*X */
 

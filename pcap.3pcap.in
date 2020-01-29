@@ -652,7 +652,7 @@ from the device.
 Not all handles have such a descriptor available;
 .BR pcap_get_selectable_fd ()
 will return
-.B PCAP_ERROR
+.B \-1
 if no such descriptor is available.  If no such
 descriptor is available, this may be because the device must be polled
 periodically for packets; in that case,
@@ -727,13 +727,12 @@ and
 .BR poll (2)
 .TP
 .BR pcap_get_required_select_timeout (3PCAP)
-if no descriptor usable with
+attempt to get a timeout required for using a
+.B pcap_t
+in calls such as
 .BR select (2)
 and
 .BR poll (2)
-is available for the
-.BR pcap_t ,
-attempt to get a timeout usable with those routines
 .RE
 .SS Filters
 In order to cause only certain packets to be returned when reading

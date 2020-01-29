@@ -204,6 +204,7 @@ struct pcap_linux {
 	int	cooked;		/* using SOCK_DGRAM rather than SOCK_RAW */
 	int	ifindex;	/* interface index of device we're bound to */
 	int	lo_ifindex;	/* interface index of the loopback device */
+	int	netdown;	/* we got an ENETDOWN and haven't resolved it */
 	bpf_u_int32 oldmode;	/* mode to restore when turning monitor mode off */
 	char	*mondevice;	/* mac80211 monitor device we created */
 	u_char	*mmapbuf;	/* memory-mapped region pointer */
@@ -351,6 +352,14 @@ static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 #else
 # define VLAN_TPID(hdr, hv)	ETH_P_8021Q
 #endif
+
+/*
+ * Required select timeout if we're polling for an "interface disappeared"
+ * indication - 1 millisecond.
+ */
+static const struct timeval netdown_timeout = {
+	0, 1000		/* 1000 microseconds = 1 millisecond */
+};
 
 /*
  * Wrap some ioctl calls
@@ -1570,6 +1579,53 @@ linux_check_direction(const pcap_t *handle, const struct sockaddr_ll *sll)
 }
 
 /*
+ * Check whether the device to which the pcap_t is bound still exists.
+ * We do so by asking what address the socket is bound to, and checking
+ * whether the ifindex in the address is -1, meaning "that device is gone",
+ * or some other value, meaning "that device still exists".
+ */
+static int
+device_still_exists(pcap_t *handle)
+{
+	struct pcap_linux *handlep = handle->priv;
+	struct sockaddr_ll addr;
+	socklen_t addr_len;
+
+	/*
+	 * If handlep->ifindex is -1, the socket isn't bound, meaning
+	 * we're capturing on the "any" device; that device never
+	 * disappears.  (It should also never be configured down, so
+	 * we shouldn't even get here, but let's make sure.)
+	 */
+	if (handlep->ifindex == -1)
+		return (1);	/* it's still here */
+
+	/*
+	 * OK, now try to get the address for the socket.
+	 */
+	addr_len = sizeof (addr);
+	if (getsockname(handle->fd, (struct sockaddr *) &addr, &addr_len) == -1) {
+		/*
+		 * Error - report an error and return -1.
+		 */
+		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    errno, "getsockname failed");
+		return (-1);
+	}
+	if (addr.sll_ifindex == -1) {
+		/*
+		 * This means the device went away.
+		 */
+		return (0);
+	}
+
+	/*
+	 * The device presumably just went down.
+	 */
+	return (1);
+}
+
+/*
  *  Read a packet from the socket calling the handler provided by
  *  the user. Returns the number of packets received or -1 if an
  *  error occured.
@@ -1616,13 +1672,6 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 	 * loop, the signal handler should call pcap_breakloop()
 	 * to set handle->break_loop (we ignore it on other
 	 * platforms as well).
-	 * We also ignore ENETDOWN, so that we can continue to
-	 * capture traffic if the interface goes down and comes
-	 * back up again; comments in the kernel indicate that
-	 * we'll just block waiting for packets if we try to
-	 * receive from a socket that delivered ENETDOWN, and,
-	 * if we're using a memory-mapped buffer, we won't even
-	 * get notified of "network down" events.
 	 */
 	bp = (u_char *)handle->buffer + handle->offset;
 
@@ -1674,14 +1723,40 @@ pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
 
 		case ENETDOWN:
 			/*
-			 * The device on which we're capturing went away.
+			 * The device on which we're capturing went away
+			 * or the interface was taken down.
 			 *
-			 * XXX - we should really return
-			 * PCAP_ERROR_IFACE_NOT_UP, but pcap_dispatch()
-			 * etc. aren't defined to return that.
+			 * Check whether the device still exists.
+			 */
+			if (device_still_exists(handle)) {
+				/*
+				 * It does.  Just ignore this; on the
+				 * *BSDs and Darwin, we don't even
+				 * get told whether the interface
+				 * went down, and both there and on
+				 * Linux, if it comes back up again,
+				 * and new packes arrive or are sent,
+				 * they'll be delivered.
+				 *
+				 * XXX - ideally, we'd return an
+				 * "interface went down" warning,
+				 * so the user can be told, but
+				 * pcap_dispatch() etc. aren't
+				 * defined to return warnings.
+				 */
+				return 0;
+			}
+
+			/*
+			 * It doesn't; report that.
+			 *
+			 * XXX - we should really return an appropriate
+			 * error for that, but pcap_dispatch() etc. aren't
+			 * documented as having error returns other than
+			 * PCAP_ERROR or PCAP_ERROR_BREAK.
 			 */
 			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-				"The interface went down");
+			    "The interface disappeared");
 			return PCAP_ERROR;
 
 		default:
@@ -4488,7 +4563,8 @@ pcap_get_ring_frame_status(pcap_t *handle, int offset)
 static int pcap_wait_for_frames_mmap(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
-	char c;
+	int timeout;
+	struct ifreq ifr;
 	int ret;
 #ifdef HAVE_SYS_EVENTFD_H
 	struct pollfd pollinfo[2];
@@ -4500,8 +4576,47 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 	pollinfo[0].fd = handle->fd;
 	pollinfo[0].events = POLLIN;
 
-	do {
-		/*
+	/*
+	 * Keep polling until we either get some packets to read, see
+	 * that we got told to break out of the loop, get a fatal error,
+	 * or discover that the device went away.
+	 *
+	 * In non-blocking mode, we must still do one poll() to catch
+	 * any pending error indications, but the poll() has a timeout
+	 * of 0, so that it doesn't block, and we quit after that one
+	 * poll().
+	 *
+	 * If we've seen an ENETDOWN, it might be the first indication
+	 * that the device went away, or it might just be that it was
+	 * configured down.  Unfortunately, there's no guarantee that
+	 * the device has actually been removed as an interface, because:
+	 *
+	 * 1) if, as appears to be the case at least some of the time,
+	 * the PF_PACKET socket code first gets a NETDEV_DOWN indication
+	 * for the device and then gets a NETDEV_UNREGISTER indication
+	 * for it, the first indication will cause a wakeup with ENETDOWN
+	 * but won't set the packet socket's field for the interface index
+	 * to -1, and the second indication won't cause a wakeup (because
+	 * the first indication also caused the protocol hook to be
+	 * unregistered) but will set the packet socket's field for the
+	 * interface index to -1;
+	 *
+	 * 2) even if just a NETDEV_UNREGISTER indication is registered,
+	 * the packet socket's field for the interface index only gets
+	 * set to -1 after the wakeup, so there's a small but non-zero
+	 * risk that a thread blocked waiting for the wakeup will get
+	 * to the "fetch the socket name" code before the interface index
+	 * gets set to -1, so it'll get the old interface index.
+	 *
+	 * Therefore, if we got an ENETDOWN and haven't seen a packet
+	 * since then, we assume that we might be waiting for the interface
+	 * to disappear, and poll with a timeout to try again in a short
+	 * period of time.  If we *do* see a packet, the interface has
+	 * come back up again, and is *definitely* still there, so we
+	 * don't need to poll.
+	 */
+	for (;;) {
+	 	/*
 		 * Yes, we do this even in non-blocking mode, as it's
 		 * the only way to get error indications from a
 		 * tpacket socket.
@@ -4509,80 +4624,250 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 		 * The timeout is 0 in non-blocking mode, so poll()
 		 * returns immediately.
 		 */
+		timeout = handlep->poll_timeout;
 
+		/*
+		 * If we got an ENETDOWN and haven't gotten an indication
+		 * that the device has gone away or that the device is up,
+		 * we don't yet know for certain whether the device has
+		 * gone away or not, do a poll() with a 1-millisecond timeout,
+		 * as we have to poll indefinitely for "device went away"
+		 * indications until we either get one or see that the
+		 * device is up.
+		 */
+		if (handlep->netdown) {
+			if (timeout != 0)
+				timeout = 1;
+		}
 #ifdef HAVE_SYS_EVENTFD_H
-		ret = poll(pollinfo, 2, handlep->poll_timeout);
+		ret = poll(pollinfo, 2, timeout);
 #else
-		ret = poll(pollinfo, 1, handlep->poll_timeout);
+		ret = poll(pollinfo, 1, timeout);
 #endif
-		if (ret < 0 && errno != EINTR) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno,
-			    "can't poll on packet socket");
-			return PCAP_ERROR;
-		} else if (ret > 0 && pollinfo[0].revents &&
-			(pollinfo[0].revents & (POLLHUP|POLLRDHUP|POLLERR|POLLNVAL))) {
+		if (ret < 0) {
 			/*
-			 * There's some indication other than
-			 * "you can read on this descriptor" on
-			 * the descriptor.
+			 * Error.  If it's not EINTR, report it.
 			 */
-			if (pollinfo[0].revents & (POLLHUP | POLLRDHUP)) {
-				snprintf(handle->errbuf,
-					PCAP_ERRBUF_SIZE,
-					"Hangup on packet socket");
+			if (errno != EINTR) {
+				pcap_fmt_errmsg_for_errno(handle->errbuf,
+				    PCAP_ERRBUF_SIZE, errno,
+				    "can't poll on packet socket");
 				return PCAP_ERROR;
 			}
-			if (pollinfo[0].revents & POLLERR) {
+
+			/*
+			 * It's EINTR; if we were told to break out of
+			 * the loop, do so.
+			 */
+			if (handle->break_loop) {
+				handle->break_loop = 0;
+				return PCAP_ERROR_BREAK;
+			}
+		} else if (ret > 0) {
+			/*
+			 * OK, some descriptor is ready.
+			 * Check the socket descriptor first.
+			 *
+			 * As I read the Linux man page, pollinfo[0].revents
+			 * will either be POLLIN, POLLERR, POLLHUP, or POLLNVAL.
+			 */
+			if (pollinfo[0].revents == POLLIN) {
 				/*
-				 * A recv() will give us the actual error code.
-				 *
-				 * XXX - make the socket non-blocking?
+				 * OK, we may have packets to
+				 * read.
 				 */
-				if (recv(handle->fd, &c, sizeof c,
-					MSG_PEEK) != -1)
-					continue;	/* what, no error? */
-				if (errno == ENETDOWN) {
+				break;
+			}
+			if (pollinfo[0].revents != 0) {
+				/*
+				 * There's some indication other than
+				 * "you can read on this descriptor" on
+				 * the descriptor.
+				 */
+				if (pollinfo[0].revents & POLLNVAL) {
+					snprintf(handle->errbuf,
+					    PCAP_ERRBUF_SIZE,
+					    "Invalid polling request on packet socket");
+					return PCAP_ERROR;
+				}
+				if (pollinfo[0].revents & (POLLHUP | POLLRDHUP)) {
+					snprintf(handle->errbuf,
+					    PCAP_ERRBUF_SIZE,
+					    "Hangup on packet socket");
+					return PCAP_ERROR;
+				}
+				if (pollinfo[0].revents & POLLERR) {
 					/*
-					 * The device on which we're
-					 * capturing went away.
+					 * Get the error.
+					 */
+					int err;
+					socklen_t errlen;
+
+					errlen = sizeof(err);
+					if (getsockopt(handle->fd, SOL_SOCKET,
+					    SO_ERROR, &err, &errlen) == -1) {
+						/*
+						 * The call *itself* returned
+						 * an error; make *that*
+						 * the error.
+						 */
+						err = errno;
+					}
+
+					/*
+					 * OK, we have the error.
+					 */
+					if (err == ENETDOWN) {
+						/*
+						 * The device on which we're
+						 * capturing went away or the
+						 * interface was taken down.
+						 *
+						 * We don't know for certain
+						 * which happened, and the
+						 * next poll() may indicate
+						 * that there are packets
+						 * to be read, so just set
+						 * a flag to get us to do
+						 * checks later, and set
+						 * the required select
+						 * timeout to 1 millisecond
+						 * so that event loops that
+						 * check our socket descriptor
+						 * also time out so that
+						 * they can call us and we
+						 * can do the checks.
+						 */
+						handlep->netdown = 1;
+						handle->required_select_timeout = &netdown_timeout;
+					} else if (err == 0) {
+						/*
+						 * This shouldn't happen, so
+						 * report a special indication
+						 * that it did.
+						 */
+						snprintf(handle->errbuf,
+						    PCAP_ERRBUF_SIZE,
+						    "Error condition on packet socket: Reported error was 0");
+						return PCAP_ERROR;
+					} else {
+						pcap_fmt_errmsg_for_errno(handle->errbuf,
+						    PCAP_ERRBUF_SIZE,
+						    err,
+						    "Error condition on packet socket");
+						return PCAP_ERROR;
+					}
+				}
+			}
+#ifdef HAVE_SYS_EVENTFD_H
+			/*
+			 * Now check the event device.
+			 */
+			if (pollinfo[1].revents & POLLIN) {
+				uint64_t value;
+				(void)read(handlep->poll_breakloop_fd, &value,
+				    sizeof(value));
+
+				/*
+				 * This event gets signaled by a
+				 * pcap_breakloop() call; if we were told
+				 * to break out of the loop, do so.
+				 */
+				if (handle->break_loop) {
+					handle->break_loop = 0;
+					return PCAP_ERROR_BREAK;
+				}
+			}
+#endif
+		}
+
+		/*
+		 * Either:
+		 *
+		 *   1) we got neither an error from poll() nor any
+		 *      readable descriptors, in which case there
+		 *      are no packets waiting to read
+		 *
+		 * or
+		 *
+		 *   2) We got readable descriptors but the PF_PACKET
+		 *      socket wasn't one of them, in which case there
+		 *      are no packets waiting to read
+		 *
+		 * so, if we got an ENETDOWN, we've drained whatever
+		 * packets were available to read at the point of the
+		 * ENETDOWN.
+		 *
+		 * So, if we got an ENETDOWN and haven't gotten an indication
+		 * that the device has gone away or that the device is up,
+		 * we don't yet know for certain whether the device has
+		 * gone away or not, check whether the device exists and is
+		 * up.
+		 */
+		if (handlep->netdown) {
+			if (!device_still_exists(handle)) {
+				/*
+				 * The device doesn't exist any more;
+				 * report that.
+				 *
+				 * XXX - we should really return an
+				 * appropriate error for that, but
+				 * pcap_dispatch() etc. aren't documented
+				 * as having error returns other than
+				 * PCAP_ERROR or PCAP_ERROR_BREAK.
+				 */
+				snprintf(handle->errbuf,  PCAP_ERRBUF_SIZE,
+				    "The interface disappeared");
+				return PCAP_ERROR;
+			}
+
+			/*
+			 * The device still exists; try to see if it's up.
+			 */
+			memset(&ifr, 0, sizeof(ifr));
+			pcap_strlcpy(ifr.ifr_name, handlep->device,
+			    sizeof(ifr.ifr_name));
+			if (ioctl(handle->fd, SIOCGIFFLAGS, &ifr) == -1) {
+				if (errno == ENXIO || errno == ENODEV) {
+					/*
+					 * OK, *now* it's gone.
 					 *
-					 * XXX - we should really return
-					 * PCAP_ERROR_IFACE_NOT_UP, but
-					 * pcap_dispatch() etc. aren't
-					 * defined to return that.
+					 * XXX - see above comment.
 					 */
 					snprintf(handle->errbuf,
-						PCAP_ERRBUF_SIZE,
-						"The interface went down");
+					    PCAP_ERRBUF_SIZE,
+					    "The interface disappeared");
+					return PCAP_ERROR;
 				} else {
 					pcap_fmt_errmsg_for_errno(handle->errbuf,
 					    PCAP_ERRBUF_SIZE, errno,
-					    "Error condition on packet socket");
+					    "%s: Can't get flags",
+					    handlep->device);
+					return PCAP_ERROR;
 				}
-				return PCAP_ERROR;
 			}
-			if (pollinfo[0].revents & POLLNVAL) {
-				snprintf(handle->errbuf,
-					PCAP_ERRBUF_SIZE,
-					"Invalid polling request on packet socket");
-				return PCAP_ERROR;
+			if (ifr.ifr_flags & IFF_UP) {
+				/*
+				 * It's up, so it definitely still exists.
+				 * Cancel the ENETDOWN indication - we
+				 * presumably got it due to the interface
+				 * going down rather than the device going
+				 * away - and revert to "no required select
+				 * timeout.
+				 */
+				handlep->netdown = 0;
+				handle->required_select_timeout = NULL;
 			}
 		}
 
-#ifdef HAVE_SYS_EVENTFD_H
-		if (pollinfo[1].revents & POLLIN) {
-			uint64_t value;
-			(void)read(handlep->poll_breakloop_fd, &value, sizeof(value));
-		}
-#endif
-
-		/* check for break loop condition on interrupted syscall*/
-		if (handle->break_loop) {
-			handle->break_loop = 0;
-			return PCAP_ERROR_BREAK;
-		}
-	} while (ret < 0);
+		/*
+		 * If we're in non-blocking mode, just quit now, rather
+		 * than spinning in a loop doing poll()s that immediately
+		 * time out if there's no indication on any descriptor.
+		 */
+		if (handlep->poll_timeout == 0)
+			break;
+	}
 	return 0;
 }
 

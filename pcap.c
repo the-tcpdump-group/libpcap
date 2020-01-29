@@ -3312,7 +3312,7 @@ pcap_get_selectable_fd(pcap_t *p)
 	return (p->selectable_fd);
 }
 
-struct timeval *
+const struct timeval *
 pcap_get_required_select_timeout(pcap_t *p)
 {
 	return (p->required_select_timeout);

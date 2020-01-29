@@ -251,7 +251,7 @@ struct pcap {
 	 * pcap_t's with a required timeout, and the code must be
 	 * prepared not to see any packets from the attempt.
 	 */
-	struct timeval *required_select_timeout;
+	const struct timeval *required_select_timeout;
 #endif
 
 	/*
