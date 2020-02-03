@@ -14,3 +14,6 @@ task:
     - touch .devel
     - ./configure --enable-remote
     - make -s all
+    - make -s testprogs
+    - testprogs/findalldevstest
+
