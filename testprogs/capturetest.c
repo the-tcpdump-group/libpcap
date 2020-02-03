@@ -103,8 +103,10 @@ main(int argc, char **argv)
 	int timeout = 1000;
 	int immediate = 0;
 	int nonblock = 0;
+#ifndef _WIN32
 	int sigrestart = 0;
 	int catchsigint = 0;
+#endif
 	pcap_if_t *devlist;
 	bpf_u_int32 localnet, netmask;
 	struct bpf_program fcode;
