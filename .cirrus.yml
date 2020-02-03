@@ -11,7 +11,6 @@ task:
       - image_family: freebsd-13-0-snap
   script:
     - pkg install -qy git autoconf
-    - (cd .. && git clone --depth ${CIRRUS_CLONE_DEPTH} --branch=master --quiet git://github.com/the-tcpdump-group/libpcap.git && cd libpcap && ./configure -enable-remote && make -j${MAXJOBS})
     - touch .devel
-    - ./configure
+    - ./configure --enable-remote
     - make -s all
