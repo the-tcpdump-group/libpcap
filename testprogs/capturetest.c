@@ -195,7 +195,7 @@ main(int argc, char **argv)
 		struct sigaction action;
 
 		action.sa_handler = sigint_handler;
-		action.sa_mask = 0;
+		sigemptyset(&action.sa_mask);
 
 		/*
 		 * Should SIGINT interrrupt, or restart, system calls?
