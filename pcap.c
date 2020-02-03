@@ -3553,7 +3553,7 @@ pcap_setdirection(pcap_t *p, pcap_direction_t d)
 			    "Invalid direction");
 			return (-1);
 		}
-	}	
+	}
 }
 
 int

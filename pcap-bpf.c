@@ -3296,7 +3296,7 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		direction_name = "\"incoming and outgoing\"";
 		break;
 	}
-		
+
 	if (ioctl(p->fd, BIOCSDIRECTION, &direction) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "Cannot set direction to %s", direction_name);
@@ -3399,7 +3399,7 @@ pcap_setdirection_bpf(pcap_t *p, pcap_direction_t d)
 		direction_name = "\"incoming and outgoing\"";
 		break;
 	}
-		
+
 	if (ioctl(p->fd, BIOCSSEESENT, &seesent) == -1) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, sizeof(p->errbuf),
 		    errno, "Cannot set direction to %s", direction_name);
