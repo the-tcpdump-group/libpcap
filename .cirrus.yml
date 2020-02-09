@@ -10,6 +10,7 @@ task:
       - image_family: freebsd-12-1-snap
       - image_family: freebsd-13-0-snap
   script:
+    - pkg update -f
     - pkg install -qy git autoconf
     - touch .devel
     - ./configure --enable-remote
