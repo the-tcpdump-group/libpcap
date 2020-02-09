@@ -208,7 +208,6 @@ else()
 endif(WIN32)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    option(PCAP_SUPPORT_PACKET_RING "Enable Linux packet ring support" ON)
     option(BUILD_WITH_LIBNL "Build with libnl" ON)
 endif()
 

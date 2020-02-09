@@ -108,19 +108,14 @@
 /* check for memory mapped access avaibility. We assume every needed
  * struct is defined if the macro TPACKET_HDRLEN is defined, because it
  * uses many ring related structs and macros */
-#ifdef PCAP_SUPPORT_PACKET_RING
-#ifdef TPACKET_HDRLEN
-# define HAVE_PACKET_RING
-# ifdef TPACKET3_HDRLEN
-#  define HAVE_TPACKET3
-# endif /* TPACKET3_HDRLEN */
-# ifdef TPACKET2_HDRLEN
-#  define HAVE_TPACKET2
-# else  /* TPACKET2_HDRLEN */
-#  define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
-# endif /* TPACKET2_HDRLEN */
-#endif /* TPACKET_HDRLEN */
-#endif /* PCAP_SUPPORT_PACKET_RING */
+#ifdef TPACKET3_HDRLEN
+# define HAVE_TPACKET3
+#endif /* TPACKET3_HDRLEN */
+#ifdef TPACKET2_HDRLEN
+# define HAVE_TPACKET2
+#else  /* TPACKET2_HDRLEN */
+# define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
+#endif /* TPACKET2_HDRLEN */
 
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
@@ -237,10 +232,7 @@ static int is_wifi(int, const char *);
 static void map_arphrd_to_dlt(pcap_t *, int, int, const char *, int);
 static int pcap_activate_linux(pcap_t *);
 static int activate_pf_packet(pcap_t *, int);
-static int setup_non_mmapped(pcap_t *);
-#ifdef HAVE_PACKET_RING
 static int setup_mmapped(pcap_t *, int *);
-#endif
 static int pcap_can_set_rfmon_linux(pcap_t *);
 static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
 static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
@@ -284,7 +276,6 @@ union thdr {
 	u_char				*raw;
 };
 
-#ifdef HAVE_PACKET_RING
 #define RING_GET_FRAME_AT(h, offset) (((u_char **)h->buffer)[(offset)])
 #define RING_GET_CURRENT_FRAME(h) RING_GET_FRAME_AT(h, h->offset)
 
@@ -305,7 +296,6 @@ static int pcap_setnonblock_mmap(pcap_t *p, int nonblock);
 static int pcap_getnonblock_mmap(pcap_t *p);
 static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
-#endif
 
 /*
  * In pre-3.0 kernels, the tp_vlan_tci field is set to whatever the
@@ -377,9 +367,7 @@ static int	enter_rfmon_mode(pcap_t *handle, int sock_fd,
 static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
     char *ebuf);
 #endif
-#ifdef HAVE_PACKET_RING
 static int	iface_get_offload(pcap_t *handle);
-#endif
 
 #ifdef SO_ATTACH_FILTER
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode,
@@ -1438,7 +1426,6 @@ pcap_activate_linux(pcap_t *handle)
 		status = ret;
 		goto fail;
 	}
-#ifdef HAVE_PACKET_RING
 	/*
 	 * Success.
 	 * Try to set up memory-mapped access.
@@ -1456,40 +1443,13 @@ pcap_activate_linux(pcap_t *handle)
 		goto fail;
 	}
 
-	if (ret == 1) {
-		/*
-		 * We succeeded.  status has been
-		 * set to the status to return,
-		 * which might be 0, or might be
-		 * a PCAP_WARNING_ value.
-		 */
-		/*
-		 * Now that we have activated the mmap ring, we can
-		 * set the correct protocol.
-		 */
-		if ((status2 = iface_bind(handle->fd, handlep->ifindex,
-		     handle->errbuf, pcap_protocol(handle))) != 0) {
-			status = status2;
-			goto fail;
-		}
-		return status;
-	}
-
 	/*
-	 * Kernel doesn't support it (mmap) - just continue
-	 * with non-memory-mapped access.
+	 * We succeeded.  status has been set to the status to return,
+	 * which might be 0, or might be a PCAP_WARNING_ value.
 	 */
-#endif /* HAVE_PACKET_RING */
 	/*
-	 * We set up the socket, but not with memory-mapped access.
-	 * Set up the socket buffer.
-	 */
-	status = setup_non_mmapped(handle);
-	if (status < 0)
-		goto fail;
-
-	/*
-	 * We need to set the correct protocol.
+	 * Now that we have activated the mmap ring, we can
+	 * set the correct protocol.
 	 */
 	if ((status2 = iface_bind(handle->fd, handlep->ifindex,
 	    handle->errbuf, pcap_protocol(handle))) != 0) {
@@ -3575,52 +3535,11 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 	return status;
 }
 
-static int
-setup_non_mmapped(pcap_t *handle)
-{
-	/*
-	 * We're not using memory-mapped access; set the socket buffer
-	 * size if a size was specified.
-	 */
-	if (handle->opt.buffer_size != 0) {
-		/*
-		 * Set the socket buffer size to the specified value.
-		 */
-		if (setsockopt(handle->fd, SOL_SOCKET, SO_RCVBUF,
-		    &handle->opt.buffer_size,
-		    sizeof(handle->opt.buffer_size)) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "SO_RCVBUF");
-			return PCAP_ERROR;
-		}
-	}
-
-	/* Allocate the user-mode buffer. */
-	handle->buffer = malloc(handle->bufsize + handle->offset);
-	if (handle->buffer == NULL) {
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "malloc");
-		return PCAP_ERROR;
-	}
-
-	/*
-	 * "handle->fd" is a socket, so "select()" and "poll()"
-	 * should work on it.
-	 */
-	handle->selectable_fd = handle->fd;
-
-	return 0;
-}
-
-#ifdef HAVE_PACKET_RING
 /*
  * Attempt to setup memory-mapped access.
  *
  * On success, returns 1, and sets *status to 0 if there are no warnings
  * or to a PCAP_WARNING_ code if there is a warning.
- *
- * On failure due to lack of support for memory-mapped capture, returns
- * 0.
  *
  * On error, returns -1, and sets *status to the appropriate error code;
  * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
@@ -3654,14 +3573,6 @@ setup_mmapped(pcap_t *handle, int *status)
 		return ret;
 	}
 	ret = create_ring(handle, status);
-	if (ret == 0) {
-		/*
-		 * We don't support memory-mapped capture; our caller
-		 * will fall back on reading from the socket.
-		 */
-		free(handlep->oneshot_buffer);
-		return 0;
-	}
 	if (ret == -1) {
 		/*
 		 * Error attempting to enable memory-mapped capture;
@@ -3922,9 +3833,6 @@ prepare_tpacket_socket(pcap_t *handle)
  *
  * On success, returns 1, and sets *status to 0 if there are no warnings
  * or to a PCAP_WARNING_ code if there is a warning.
- *
- * On failure due to lack of support for memory-mapped capture, returns
- * 0.
  *
  * On error, returns -1, and sets *status to the appropriate error code;
  * if that is PCAP_ERROR, sets handle->errbuf to the appropriate message.
@@ -4351,12 +4259,6 @@ retry:
 			else
 				req.tp_frame_nr -= req.tp_frame_nr/20;
 			goto retry;
-		}
-		if (errno == ENOPROTOOPT) {
-			/*
-			 * We don't have ring buffer support in this kernel.
-			 */
-			return 0;
 		}
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "can't create rx ring on packet socket");
@@ -5549,7 +5451,6 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	handlep->filter_in_userland = 1;
 	return ret;
 }
-#endif /* HAVE_PACKET_RING */
 
 /*
  *  Return the index of the given device name. Fill ebuf and return
@@ -6517,7 +6418,6 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf _U_)
 
 #endif /* defined(HAVE_LINUX_NET_TSTAMP_H) && defined(PACKET_TIMESTAMP) */
 
-#ifdef HAVE_PACKET_RING
 /*
  * Find out if we have any form of fragmentation/reassembly offloading.
  *
@@ -6659,8 +6559,6 @@ iface_get_offload(pcap_t *handle _U_)
 	return 0;
 }
 #endif /* SIOCETHTOOL */
-
-#endif /* HAVE_PACKET_RING */
 
 static struct dsa_proto {
 	const char *name;
@@ -7146,15 +7044,11 @@ pcap_set_protocol_linux(pcap_t *p, int protocol)
 const char *
 pcap_lib_version(void)
 {
-#ifdef HAVE_PACKET_RING
- #if defined(HAVE_TPACKET3)
+#if defined(HAVE_TPACKET3)
 	return (PCAP_VERSION_STRING " (with TPACKET_V3)");
- #elif defined(HAVE_TPACKET2)
+#elif defined(HAVE_TPACKET2)
 	return (PCAP_VERSION_STRING " (with TPACKET_V2)");
- #else
-	return (PCAP_VERSION_STRING " (with TPACKET_V1)");
- #endif
 #else
-	return (PCAP_VERSION_STRING " (without TPACKET)");
+	return (PCAP_VERSION_STRING " (with TPACKET_V1)");
 #endif
 }
