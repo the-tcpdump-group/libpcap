@@ -671,7 +671,6 @@ LEXLIB
 LEX_OUTPUT_ROOT
 LEX
 PKGCONFIG
-PCAP_SUPPORT_PACKET_RING
 VALGRINDTEST_SRC
 LIBOBJS
 EGREP
@@ -746,7 +745,6 @@ enable_largefile
 enable_protochain
 with_pcap
 with_libnl
-enable_packet_ring
 enable_ipv6
 with_dag
 with_dag_includes
@@ -1398,7 +1396,6 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-largefile     omit support for large files
   --disable-protochain    disable \"protochain\" insn
-  --enable-packet-ring    enable packet ring support on Linux [default=yes]
   --enable-ipv6           build IPv6-capable version [default=yes]
   --enable-remote         enable remote packet capture [default=no]
   --disable-remote        disable remote packet capture
@@ -7392,21 +7389,6 @@ done
 $as_echo "$as_me: no hardware timestamp support implemented for $host_os" >&6;}
 	;;
 esac
-
-# Check whether --enable-packet-ring was given.
-if test "${enable_packet_ring+set}" = set; then :
-  enableval=$enable_packet_ring;
-else
-  enable_packet_ring=yes
-fi
-
-
-if test "x$enable_packet_ring" != "xno" ; then
-
-$as_echo "#define PCAP_SUPPORT_PACKET_RING 1" >>confdefs.h
-
-
-fi
 
 #
 # Check for socklen_t.

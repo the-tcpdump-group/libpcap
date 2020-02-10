@@ -346,9 +346,6 @@
 /* target host supports netmap */
 #undef PCAP_SUPPORT_NETMAP
 
-/* use packet ring capture support on Linux if available */
-#undef PCAP_SUPPORT_PACKET_RING
-
 /* target host supports RDMA sniffing */
 #undef PCAP_SUPPORT_RDMASNIFF
 
