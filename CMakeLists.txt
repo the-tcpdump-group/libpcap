@@ -2600,7 +2600,7 @@ if(NOT MSVC)
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
     set(includedir "\${prefix}/include")
-    set(libdir "\${exec_prefix}/lib")
+    set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
     if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
        CMAKE_SYSTEM_NAME STREQUAL "NetBSD" OR
        CMAKE_SYSTEM_NAME STREQUAL "OpenBSD" OR
