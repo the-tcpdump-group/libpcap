@@ -8376,6 +8376,54 @@ $as_echo "not found" >&6; }
 	fi
 
 	#
+	# If we didn't find it, check for it under /usr/local/opt/openssl;
+	# that's where Homebrew puts it on macOS.  Feel free to add other
+	# -L directories as necessary; the "system library" check should
+	# also handle "add-on library under /usr/local", so that shouldn't
+	# be necessary here.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes"; then
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		CFLAGS="$CFLAGS -L/usr/local/opt/openssl/include"
+		LIBS="$LIBS -L/usr/local/opt/openssl/lib -lssl -lcrypto"
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we have OpenSSL/libressl in /usr/local/opt that we can use" >&5
+$as_echo_n "checking whether we have OpenSSL/libressl in /usr/local/opt that we can use... " >&6; }
+		cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/ssl.h>
+
+int
+main ()
+{
+
+SSL_library_init();
+return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+			HAVE_OPENSSL=yes
+			OPENSSL_CFLAGS="-I/usr/local/opt/openssl/include"
+			OPENSSL_LIBS="-L/usr/local/opt/openssl/lib -lssl -lcrypto"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+	fi
+
+	#
 	# OK, did we find it?
 	#
 	if test "x$HAVE_OPENSSL" = "xyes"; then
@@ -8935,14 +8983,6 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 			CFLAGS="$save_CFLAGS"
-			if test "$HAVE_OPENSSL" = yes; then
-				#
-				# If all else fails, look for OpenSSL in
-				# /usr/local/opt.
-				#
-				CFLAGS="$CFLAGS -I/usr/local/opt/openssl/include"
-				LIBS="$LIBS -L/usr/local/opt/openssl/lib"
-			fi
 			;;
 		esac
 	fi

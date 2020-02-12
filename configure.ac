@@ -1674,6 +1674,38 @@ return 0;
 	fi
 
 	#
+	# If we didn't find it, check for it under /usr/local/opt/openssl;
+	# that's where Homebrew puts it on macOS.  Feel free to add other
+	# -L directories as necessary; the "system library" check should
+	# also handle "add-on library under /usr/local", so that shouldn't
+	# be necessary here.
+	#
+	if test "x$HAVE_OPENSSL" != "xyes"; then
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+		CFLAGS="$CFLAGS -L/usr/local/opt/openssl/include"
+		LIBS="$LIBS -L/usr/local/opt/openssl/lib -lssl -lcrypto"
+		AC_MSG_CHECKING(whether we have OpenSSL/libressl in /usr/local/opt that we can use)
+		AC_TRY_LINK(
+		    [
+#include <openssl/ssl.h>
+		    ],
+		    [
+SSL_library_init();
+return 0;
+		    ],
+		    [
+			AC_MSG_RESULT(yes)
+			HAVE_OPENSSL=yes
+			OPENSSL_CFLAGS="-I/usr/local/opt/openssl/include"
+			OPENSSL_LIBS="-L/usr/local/opt/openssl/lib -lssl -lcrypto"
+		    ],
+		    AC_MSG_RESULT(no))
+		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+	fi
+
+	#
 	# OK, did we find it?
 	#
 	if test "x$HAVE_OPENSSL" = "xyes"; then
@@ -1976,14 +2008,6 @@ darwin*)
 				esac
 			    ])
 			CFLAGS="$save_CFLAGS"
-			if test "$HAVE_OPENSSL" = yes; then
-				#
-				# If all else fails, look for OpenSSL in
-				# /usr/local/opt.
-				#
-				CFLAGS="$CFLAGS -I/usr/local/opt/openssl/include"
-				LIBS="$LIBS -L/usr/local/opt/openssl/lib"
-			fi
 			;;
 		esac
 	fi
