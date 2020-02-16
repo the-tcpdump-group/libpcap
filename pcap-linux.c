@@ -111,11 +111,6 @@
 #ifdef TPACKET3_HDRLEN
 # define HAVE_TPACKET3
 #endif /* TPACKET3_HDRLEN */
-#ifdef TPACKET2_HDRLEN
-# define HAVE_TPACKET2
-#else  /* TPACKET2_HDRLEN */
-# define TPACKET_V1	0    /* Old kernel with only V1, so no TPACKET_Vn defined */
-#endif /* TPACKET2_HDRLEN */
 
 #ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
@@ -187,7 +182,6 @@ typedef int		socklen_t;
  * Private data for capturing on Linux PF_PACKET sockets.
  */
 struct pcap_linux {
-	u_int	packets_read;	/* count of packets read with recvfrom() */
 	long long sysfs_dropped; /* packets reported dropped by /sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors */
 	struct pcap_stat stat;
 
@@ -234,8 +228,6 @@ static int pcap_activate_linux(pcap_t *);
 static int activate_pf_packet(pcap_t *, int);
 static int setup_mmapped(pcap_t *, int *);
 static int pcap_can_set_rfmon_linux(pcap_t *);
-static int pcap_read_linux(pcap_t *, int, pcap_handler, u_char *);
-static int pcap_read_packet(pcap_t *, pcap_handler, u_char *);
 static int pcap_inject_linux(pcap_t *, const void *, int);
 static int pcap_stats_linux(pcap_t *, struct pcap_stat *);
 static int pcap_setfilter_linux(pcap_t *, struct bpf_program *);
@@ -243,33 +235,8 @@ static int pcap_setdirection_linux(pcap_t *, pcap_direction_t);
 static int pcap_set_datalink_linux(pcap_t *, int);
 static void pcap_cleanup_linux(pcap_t *);
 
-/*
- * This is what the header structure looks like in a 64-bit kernel;
- * we use this, rather than struct tpacket_hdr, if we're using
- * TPACKET_V1 in 32-bit code running on a 64-bit kernel.
- */
-struct tpacket_hdr_64 {
-	uint64_t	tp_status;
-	unsigned int	tp_len;
-	unsigned int	tp_snaplen;
-	unsigned short	tp_mac;
-	unsigned short	tp_net;
-	unsigned int	tp_sec;
-	unsigned int	tp_usec;
-};
-
-/*
- * We use this internally as the tpacket version for TPACKET_V1 in
- * 32-bit code on a 64-bit kernel.
- */
-#define TPACKET_V1_64 99
-
 union thdr {
-	struct tpacket_hdr		*h1;
-	struct tpacket_hdr_64		*h1_64;
-#ifdef HAVE_TPACKET2
 	struct tpacket2_hdr		*h2;
-#endif
 #ifdef HAVE_TPACKET3
 	struct tpacket_block_desc	*h3;
 #endif
@@ -283,11 +250,7 @@ static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle, int *status);
 static int prepare_tpacket_socket(pcap_t *handle);
 static void pcap_cleanup_linux_mmap(pcap_t *);
-static int pcap_read_linux_mmap_v1(pcap_t *, int, pcap_handler , u_char *);
-static int pcap_read_linux_mmap_v1_64(pcap_t *, int, pcap_handler , u_char *);
-#ifdef HAVE_TPACKET2
 static int pcap_read_linux_mmap_v2(pcap_t *, int, pcap_handler , u_char *);
-#endif
 #ifdef HAVE_TPACKET3
 static int pcap_read_linux_mmap_v3(pcap_t *, int, pcap_handler , u_char *);
 #endif
@@ -370,8 +333,7 @@ static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
 static int	iface_get_offload(pcap_t *handle);
 
 #ifdef SO_ATTACH_FILTER
-static int	fix_program(pcap_t *handle, struct sock_fprog *fcode,
-    int is_mapped);
+static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
 static int	fix_offset(pcap_t *handle, struct bpf_insn *p);
 static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
 static int	reset_kernel_filter(pcap_t *handle);
@@ -1370,7 +1332,6 @@ pcap_activate_linux(pcap_t *handle)
 	handle->getnonblock_op = pcap_getnonblock_fd;
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->cleanup_op = pcap_cleanup_linux;
-	handle->read_op = pcap_read_linux;
 	handle->stats_op = pcap_stats_linux;
 #ifdef HAVE_SYS_EVENTFD_H
 	handle->breakloop_op = pcap_breakloop_linux;
@@ -1462,21 +1423,6 @@ pcap_activate_linux(pcap_t *handle)
 fail:
 	pcap_cleanup_linux(handle);
 	return status;
-}
-
-/*
- *  Read at most max_packets from the capture stream and call the callback
- *  for each of them. Returns the number of packets handled or -1 if an
- *  error occured.
- */
-static int
-pcap_read_linux(pcap_t *handle, int max_packets _U_, pcap_handler callback, u_char *user)
-{
-	/*
-	 * Currently, on Linux only one packet is delivered per read,
-	 * so we don't loop.
-	 */
-	return pcap_read_packet(handle, callback, user);
 }
 
 static int
@@ -1585,396 +1531,6 @@ device_still_exists(pcap_t *handle)
 	return (1);
 }
 
-/*
- *  Read a packet from the socket calling the handler provided by
- *  the user. Returns the number of packets received or -1 if an
- *  error occured.
- */
-static int
-pcap_read_packet(pcap_t *handle, pcap_handler callback, u_char *userdata)
-{
-	struct pcap_linux	*handlep = handle->priv;
-	u_char			*bp;
-	int			offset;
-	struct sockaddr_ll	from;
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
-	struct iovec		iov;
-	struct msghdr		msg;
-	struct cmsghdr		*cmsg;
-	union {
-		struct cmsghdr	cmsg;
-		char		buf[CMSG_SPACE(sizeof(struct tpacket_auxdata))];
-	} cmsg_buf;
-#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-	socklen_t		fromlen;
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-	ssize_t			packet_len;
-	int			caplen;
-	struct pcap_pkthdr	pcap_header;
-
-        struct bpf_aux_data     aux_data;
-	/*
-	 * If this is a cooked device, leave extra room for a
-	 * fake packet header.
-	 */
-	if (handlep->cooked) {
-		if (handle->linktype == DLT_LINUX_SLL2)
-			offset = SLL2_HDR_LEN;
-		else
-			offset = SLL_HDR_LEN;
-	} else
-		offset = 0;
-
-	/*
-	 * Receive a single packet from the kernel.
-	 * We ignore EINTR, as that might just be due to a signal
-	 * being delivered - if the signal should interrupt the
-	 * loop, the signal handler should call pcap_breakloop()
-	 * to set handle->break_loop (we ignore it on other
-	 * platforms as well).
-	 */
-	bp = (u_char *)handle->buffer + handle->offset;
-
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
-	msg.msg_name		= &from;
-	msg.msg_namelen		= sizeof(from);
-	msg.msg_iov		= &iov;
-	msg.msg_iovlen		= 1;
-	msg.msg_control		= &cmsg_buf;
-	msg.msg_controllen	= sizeof(cmsg_buf);
-	msg.msg_flags		= 0;
-
-	iov.iov_len		= handle->bufsize - offset;
-	iov.iov_base		= bp + offset;
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-
-	do {
-		/*
-		 * Has "pcap_breakloop()" been called?
-		 */
-		if (handle->break_loop) {
-			/*
-			 * Yes - clear the flag that indicates that it has,
-			 * and return PCAP_ERROR_BREAK as an indication that
-			 * we were told to break out of the loop.
-			 */
-			handle->break_loop = 0;
-			return PCAP_ERROR_BREAK;
-		}
-
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
-		packet_len = recvmsg(handle->fd, &msg, MSG_TRUNC);
-#else /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-		fromlen = sizeof(from);
-		packet_len = recvfrom(
-			handle->fd, bp + offset,
-			handle->bufsize - offset, MSG_TRUNC,
-			(struct sockaddr *) &from, &fromlen);
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-	} while (packet_len == -1 && errno == EINTR);
-
-	/* Check if an error occured */
-
-	if (packet_len == -1) {
-		switch (errno) {
-
-		case EAGAIN:
-			return 0;	/* no packet there */
-
-		case ENETDOWN:
-			/*
-			 * The device on which we're capturing went away
-			 * or the interface was taken down.
-			 *
-			 * Check whether the device still exists.
-			 */
-			if (device_still_exists(handle)) {
-				/*
-				 * It does.  Just ignore this; on the
-				 * *BSDs and Darwin, we don't even
-				 * get told whether the interface
-				 * went down, and both there and on
-				 * Linux, if it comes back up again,
-				 * and new packes arrive or are sent,
-				 * they'll be delivered.
-				 *
-				 * XXX - ideally, we'd return an
-				 * "interface went down" warning,
-				 * so the user can be told, but
-				 * pcap_dispatch() etc. aren't
-				 * defined to return warnings.
-				 */
-				return 0;
-			}
-
-			/*
-			 * It doesn't; report that.
-			 *
-			 * XXX - we should really return an appropriate
-			 * error for that, but pcap_dispatch() etc. aren't
-			 * documented as having error returns other than
-			 * PCAP_ERROR or PCAP_ERROR_BREAK.
-			 */
-			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
-			    "The interface disappeared");
-			return PCAP_ERROR;
-
-		default:
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "recvfrom");
-			return PCAP_ERROR;
-		}
-	}
-
-	/*
-	 * Unfortunately, there is a window between socket() and
-	 * bind() where the kernel may queue packets from any
-	 * interface.  If we're bound to a particular interface,
-	 * discard packets not from that interface.
-	 *
-	 * (If socket filters are supported, we could do the
-	 * same thing we do when changing the filter; however,
-	 * that won't handle packet sockets without socket
-	 * filter support, and it's a bit more complicated.
-	 * It would save some instructions per packet, however.)
-	 */
-	if (handlep->ifindex != -1 &&
-	    from.sll_ifindex != handlep->ifindex)
-		return 0;
-
-	/* Do checks based on packet direction. */
-	if (!linux_check_direction(handle, &from))
-		return 0;
-
-	/*
-	 * If this is a cooked device, fill in the fake packet header.
-	 */
-	if (handlep->cooked) {
-		/*
-		 * Add the length of the fake header to the length
-		 * of packet data we read.
-		 */
-		if (handle->linktype == DLT_LINUX_SLL2) {
-			struct sll2_header	*hdrp;
-
-			packet_len += SLL2_HDR_LEN;
-
-			hdrp = (struct sll2_header *)bp;
-			hdrp->sll2_protocol = from.sll_protocol;
-			hdrp->sll2_reserved_mbz = 0;
-			hdrp->sll2_if_index = htonl(from.sll_ifindex);
-			hdrp->sll2_hatype = htons(from.sll_hatype);
-			hdrp->sll2_pkttype = from.sll_pkttype;
-			hdrp->sll2_halen = from.sll_halen;
-			memcpy(hdrp->sll2_addr, from.sll_addr,
-			    (from.sll_halen > SLL_ADDRLEN) ?
-			      SLL_ADDRLEN :
-			      from.sll_halen);
-		} else {
-			struct sll_header	*hdrp;
-
-			packet_len += SLL_HDR_LEN;
-
-			hdrp = (struct sll_header *)bp;
-			hdrp->sll_pkttype = htons(from.sll_pkttype);
-			hdrp->sll_hatype = htons(from.sll_hatype);
-			hdrp->sll_halen = htons(from.sll_halen);
-			memcpy(hdrp->sll_addr, from.sll_addr,
-			    (from.sll_halen > SLL_ADDRLEN) ?
-			      SLL_ADDRLEN :
-			      from.sll_halen);
-			hdrp->sll_protocol = from.sll_protocol;
-		}
-	}
-
-	/*
-	 * Start out with no VLAN information.
-	 */
-	aux_data.vlan_tag_present = 0;
-	aux_data.vlan_tag = 0;
-#if defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
-	if (handlep->vlan_offset != -1) {
-		for (cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-			struct tpacket_auxdata *aux;
-			size_t len;
-			struct vlan_tag *tag;
-
-			if (cmsg->cmsg_len < CMSG_LEN(sizeof(struct tpacket_auxdata)) ||
-			    cmsg->cmsg_level != SOL_PACKET ||
-			    cmsg->cmsg_type != PACKET_AUXDATA) {
-				/*
-				 * This isn't a PACKET_AUXDATA auxiliary
-				 * data item.
-				 */
-				continue;
-			}
-
-			aux = (struct tpacket_auxdata *)CMSG_DATA(cmsg);
-			if (!VLAN_VALID(aux, aux)) {
-				/*
-				 * There is no VLAN information in the
-				 * auxiliary data.
-				 */
-				continue;
-			}
-
-			len = (size_t)packet_len > iov.iov_len ? iov.iov_len : (u_int)packet_len;
-			if (len < (size_t)handlep->vlan_offset)
-				break;
-
-			/*
-			 * Move everything in the header, except the
-			 * type field, down VLAN_TAG_LEN bytes, to
-			 * allow us to insert the VLAN tag between
-			 * that stuff and the type field.
-			 */
-			bp -= VLAN_TAG_LEN;
-			memmove(bp, bp + VLAN_TAG_LEN, handlep->vlan_offset);
-
-			/*
-			 * Now insert the tag.
-			 */
-			tag = (struct vlan_tag *)(bp + handlep->vlan_offset);
-			tag->vlan_tpid = htons(VLAN_TPID(aux, aux));
-			tag->vlan_tci = htons(aux->tp_vlan_tci);
-
-			/*
-			 * Save a flag indicating that we have a VLAN tag,
-			 * and the VLAN TCI, to bpf_aux_data struct for
-			 * use by the BPF filter if we're doing the
-			 * filtering in userland.
-			 */
-			aux_data.vlan_tag_present = 1;
-			aux_data.vlan_tag = htons(aux->tp_vlan_tci) & 0x0fff;
-
-			/*
-			 * Add the tag to the packet lengths.
-			 */
-			packet_len += VLAN_TAG_LEN;
-		}
-	}
-#endif /* defined(HAVE_PACKET_AUXDATA) && defined(HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI) */
-
-	/*
-	 * XXX: According to the kernel source we should get the real
-	 * packet len if calling recvfrom with MSG_TRUNC set. It does
-	 * not seem to work here :(, but it is supported by this code
-	 * anyway.
-	 * To be honest the code RELIES on that feature so this is really
-	 * broken with 2.2.x kernels.
-	 * I spend a day to figure out what's going on and I found out
-	 * that the following is happening:
-	 *
-	 * The packet comes from a random interface and the packet_rcv
-	 * hook is called with a clone of the packet. That code inserts
-	 * the packet into the receive queue of the packet socket.
-	 * If a filter is attached to that socket that filter is run
-	 * first - and there lies the problem. The default filter always
-	 * cuts the packet at the snaplen:
-	 *
-	 * # tcpdump -d
-	 * (000) ret      #68
-	 *
-	 * So the packet filter cuts down the packet. The recvfrom call
-	 * says "hey, it's only 68 bytes, it fits into the buffer" with
-	 * the result that we don't get the real packet length. This
-	 * is valid at least until kernel 2.2.17pre6.
-	 *
-	 * We currently handle this by making a copy of the filter
-	 * program, fixing all "ret" instructions with non-zero
-	 * operands to have an operand of MAXIMUM_SNAPLEN so that the
-	 * filter doesn't truncate the packet, and supplying that modified
-	 * filter to the kernel.
-	 */
-
-	caplen = (int)packet_len;
-	if (caplen > handle->snapshot)
-		caplen = handle->snapshot;
-
-	/* Run the packet filter if not using kernel filter */
-	if (handlep->filter_in_userland && handle->fcode.bf_insns) {
-		if (pcap_filter_with_aux_data(handle->fcode.bf_insns, bp,
-		    (int)packet_len, caplen, &aux_data) == 0) {
-			/* rejected by filter */
-			return 0;
-		}
-	}
-
-	/* Fill in our own header data */
-
-	/* get timestamp for this packet */
-#if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
-	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
-		if (ioctl(handle->fd, SIOCGSTAMPNS, &pcap_header.ts) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "SIOCGSTAMPNS");
-			return PCAP_ERROR;
-		}
-        } else
-#endif
-	{
-		if (ioctl(handle->fd, SIOCGSTAMP, &pcap_header.ts) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "SIOCGSTAMP");
-			return PCAP_ERROR;
-		}
-        }
-
-	pcap_header.caplen	= caplen;
-	pcap_header.len		= (bpf_u_int32)packet_len;
-
-	/*
-	 * Count the packet.
-	 *
-	 * Arguably, we should count them before we check the filter,
-	 * as on many other platforms "ps_recv" counts packets
-	 * handed to the filter rather than packets that passed
-	 * the filter, but if filtering is done in the kernel, we
-	 * can't get a count of packets that passed the filter,
-	 * and that would mean the meaning of "ps_recv" wouldn't
-	 * be the same on all Linux systems.
-	 *
-	 * XXX - it's not the same on all systems in any case;
-	 * ideally, we should have a "get the statistics" call
-	 * that supplies more counts and indicates which of them
-	 * it supplies, so that we supply a count of packets
-	 * handed to the filter only on platforms where that
-	 * information is available.
-	 *
-	 * We count them here even if we can get the packet count
-	 * from the kernel, as we can only determine at run time
-	 * whether we'll be able to get it from the kernel (if
-	 * HAVE_STRUCT_TPACKET_STATS isn't defined, we can't get it from
-	 * the kernel, but if it is defined, the library might
-	 * have been built with a 2.4 or later kernel, but we
-	 * might be running on a 2.2[.x] kernel without Alexey
-	 * Kuznetzov's turbopacket patches, and thus the kernel
-	 * might not be able to supply those statistics).  We
-	 * could, I guess, try, when opening the socket, to get
-	 * the statistics, and if we can not increment the count
-	 * here, but it's not clear that always incrementing
-	 * the count is more expensive than always testing a flag
-	 * in memory.
-	 *
-	 * We keep the count in "handlep->packets_read", and use that
-	 * for "ps_recv" if we can't get the statistics from the kernel.
-	 * We do that because, if we *can* get the statistics from
-	 * the kernel, we use "handlep->stat.ps_recv" and
-	 * "handlep->stat.ps_drop" as running counts, as reading the
-	 * statistics from the kernel resets the kernel statistics,
-	 * and if we directly increment "handlep->stat.ps_recv" here,
-	 * that means it will count packets *twice* on systems where
-	 * we can get kernel statistics - once here, and once in
-	 * pcap_stats_linux().
-	 */
-	handlep->packets_read++;
-
-	/* Call the user supplied callback function */
-	callback(userdata, &pcap_header, bp);
-
-	return 1;
-}
-
 static int
 pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 {
@@ -2016,27 +1572,20 @@ pcap_inject_linux(pcap_t *handle, const void *buf, int size)
 
 /*
  *  Get the statistics for the given packet capture handle.
- *  Reports the number of dropped packets iff the kernel supports
- *  the PACKET_STATISTICS "getsockopt()" argument (2.4 and later
- *  kernels, and 2.2[.x] kernels with Alexey Kuznetzov's turbopacket
- *  patches); otherwise, that information isn't available, and we lie
- *  and report 0 as the count of dropped packets.
  */
 static int
 pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 {
 	struct pcap_linux *handlep = handle->priv;
-#ifdef HAVE_STRUCT_TPACKET_STATS
 #ifdef HAVE_TPACKET3
 	/*
-	 * For sockets using TPACKET_V1 or TPACKET_V2, the extra
-	 * stuff at the end of a struct tpacket_stats_v3 will not
-	 * be filled in, and we don't look at it so this is OK even
-	 * for those sockets.  In addition, the PF_PACKET socket
-	 * code in the kernel only uses the length parameter to
-	 * compute how much data to copy out and to indicate how
-	 * much data was copied out, so it's OK to base it on the
-	 * size of a struct tpacket_stats.
+	 * For sockets using TPACKET_V2, the extra stuff at the end
+	 * of a struct tpacket_stats_v3 will not be filled in, and
+	 * we don't look at it so this is OK even for those sockets.
+	 * In addition, the PF_PACKET socket code in the kernel only
+	 * uses the length parameter to compute how much data to
+	 * copy out and to indicate how much data was copied out, so
+	 * it's OK to base it on the size of a struct tpacket_stats.
 	 *
 	 * XXX - it's probably OK, in fact, to just use a
 	 * struct tpacket_stats for V3 sockets, as we don't
@@ -2047,7 +1596,6 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 	struct tpacket_stats kstats;
 #endif /* HAVE_TPACKET3 */
 	socklen_t len = sizeof (struct tpacket_stats);
-#endif /* HAVE_STRUCT_TPACKET_STATS */
 
 	long long if_dropped = 0;
 
@@ -2091,38 +1639,34 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		handlep->stat.ps_ifdrop += (u_int)(handlep->sysfs_dropped - if_dropped);
 	}
 
-#ifdef HAVE_STRUCT_TPACKET_STATS
 	/*
 	 * Try to get the packet counts from the kernel.
 	 */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_STATISTICS,
 			&kstats, &len) > -1) {
 		/*
-		 * On systems where the PACKET_STATISTICS "getsockopt()"
-		 * argument is supported on PF_PACKET sockets:
+		 * "ps_recv" counts only packets that *passed* the
+		 * filter, not packets that didn't pass the filter.
+		 * This includes packets later dropped because we
+		 * ran out of buffer space.
 		 *
-		 *	"ps_recv" counts only packets that *passed* the
-		 *	filter, not packets that didn't pass the filter.
-		 *	This includes packets later dropped because we
-		 *	ran out of buffer space.
+		 * "ps_drop" counts packets dropped because we ran
+		 * out of buffer space.  It doesn't count packets
+		 * dropped by the interface driver.  It counts only
+		 * packets that passed the filter.
 		 *
-		 *	"ps_drop" counts packets dropped because we ran
-		 *	out of buffer space.  It doesn't count packets
-		 *	dropped by the interface driver.  It counts only
-		 *	packets that passed the filter.
+		 * See above for ps_ifdrop.
 		 *
-		 *	See above for ps_ifdrop.
+		 * Both statistics include packets not yet read from
+		 * the kernel by libpcap, and thus not yet seen by
+		 * the application.
 		 *
-		 *	Both statistics include packets not yet read from
-		 *	the kernel by libpcap, and thus not yet seen by
-		 *	the application.
-		 *
-		 * In "linux/net/packet/af_packet.c", at least in the
-		 * 2.4.9 kernel, "tp_packets" is incremented for every
-		 * packet that passes the packet filter *and* is
-		 * successfully queued on the socket; "tp_drops" is
+		 * In "linux/net/packet/af_packet.c", at least in 2.6.26
+		 * through 5.6 kernels, "tp_packets" is incremented for
+		 * every packet that passes the packet filter *and* is
+		 * successfully copied to the ring buffer; "tp_drops" is
 		 * incremented for every packet dropped because there's
-		 * not enough free space in the socket buffer.
+		 * not enough free space in the ring buffer.
 		 *
 		 * When the statistics are returned for a PACKET_STATISTICS
 		 * "getsockopt()" call, "tp_drops" is added to "tp_packets",
@@ -2149,52 +1693,10 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		*stats = handlep->stat;
 		return 0;
 	}
-	else
-	{
-		/*
-		 * If the error was EOPNOTSUPP, fall through, so that
-		 * if you build the library on a system with
-		 * "struct tpacket_stats" and run it on a system
-		 * that doesn't, it works as it does if the library
-		 * is built on a system without "struct tpacket_stats".
-		 */
-		if (errno != EOPNOTSUPP) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "pcap_stats");
-			return -1;
-		}
-	}
-#endif
-	/*
-	 * On systems where the PACKET_STATISTICS "getsockopt()" argument
-	 * is not supported on PF_PACKET sockets:
-	 *
-	 *	"ps_recv" counts only packets that *passed* the filter,
-	 *	not packets that didn't pass the filter.  It does not
-	 *	count packets dropped because we ran out of buffer
-	 *	space.
-	 *
-	 *	"ps_drop" is not supported.
-	 *
-	 *	"ps_ifdrop" is supported. It will return the number
-	 *	of drops the interface reports in
-	 *	/sys/class/net/{if_name}/statistics/rx_{missed,fifo}_errors,
-	 *	if that is available.
-	 *
-	 *	"ps_recv" doesn't include packets not yet read from
-	 *	the kernel by libpcap.
-	 *
-	 * We maintain the count of packets processed by libpcap in
-	 * "handlep->packets_read", for reasons described in the comment
-	 * at the end of pcap_read_packet().  We have no idea how many
-	 * packets were dropped by the kernel buffers -- but we know
-	 * how many the interface dropped, so we can return that.
-	 */
 
-	stats->ps_recv = handlep->packets_read;
-	stats->ps_drop = 0;
-	stats->ps_ifdrop = handlep->stat.ps_ifdrop;
-	return 0;
+	pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE, errno,
+	    "failed to get statistics from socket");
+	return -1;
 }
 
 /*
@@ -2410,8 +1912,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
  *  Attach the given BPF code to the packet capture device.
  */
 static int
-pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
-    int is_mmapped)
+pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter)
 {
 	struct pcap_linux *handlep;
 #ifdef SO_ATTACH_FILTER
@@ -2474,7 +1975,7 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 		 * link-layer payload begins at 0; "fix_program()" will do
 		 * that.
 		 */
-		switch (fix_program(handle, &fcode, is_mmapped)) {
+		switch (fix_program(handle, &fcode)) {
 
 		case -1:
 		default:
@@ -2584,7 +2085,7 @@ pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter,
 static int
 pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 {
-	return pcap_setfilter_linux_common(handle, filter, 0);
+	return pcap_setfilter_linux_common(handle, filter);
 }
 
 
@@ -3593,17 +3094,10 @@ setup_mmapped(pcap_t *handle, int *status)
 	 */
 
 	switch (handlep->tp_version) {
-	case TPACKET_V1:
-		handle->read_op = pcap_read_linux_mmap_v1;
-		break;
-	case TPACKET_V1_64:
-		handle->read_op = pcap_read_linux_mmap_v1_64;
-		break;
-#ifdef HAVE_TPACKET2
+
 	case TPACKET_V2:
 		handle->read_op = pcap_read_linux_mmap_v2;
 		break;
-#endif
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
 		handle->read_op = pcap_read_linux_mmap_v3;
@@ -3625,7 +3119,6 @@ setup_mmapped(pcap_t *handle, int *status)
 	return 1;
 }
 
-#if defined(HAVE_TPACKET2) || defined(HAVE_TPACKET3)
 /*
  * Attempt to set the socket to the specified version of the memory-mapped
  * header.
@@ -3648,14 +3141,17 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 	 * also the first release with TPACKET_V2 support.
 	 */
 	if (getsockopt(handle->fd, SOL_PACKET, PACKET_HDRLEN, &val, &len) < 0) {
-		if (errno == ENOPROTOOPT || errno == EINVAL) {
+		if (errno == EINVAL) {
 			/*
-			 * ENOPROTOOPT means the kernel is too old to
-			 * support PACKET_HDRLEN at all, which means
-			 * it either doesn't support TPACKET at all
-			 * or supports  only TPACKET_V1.
+			 * EINVAL means this specific version of TPACKET
+			 * is not supported. Tell the caller they can try
+			 * with a different one.
 			 */
-			return 1;	/* no */
+			pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE, errno,
+			    "kernel doesn't support %s sockets;\n"
+			    "it's either too old or built without PACKET_MMAP support",
+			    version_str);
+			return 1;
 		}
 
 		/* Failed to even find out; this is a fatal error. */
@@ -3677,54 +3173,19 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 
 	return 0;
 }
-#endif /* defined HAVE_TPACKET2 || defined HAVE_TPACKET3 */
-
-/*
- * If the instruction set for which we're compiling has both 32-bit
- * and 64-bit versions, and Linux support for the 64-bit version
- * predates TPACKET_V2, define ISA_64_BIT as the .machine value
- * you get from uname() for the 64-bit version.  Otherwise, leave
- * it undefined.  (This includes ARM, which has a 64-bit version,
- * but Linux support for it appeared well after TPACKET_V2 support
- * did, so there should never be a case where 32-bit ARM code is
- * running o a 64-bit kernel that only supports TPACKET_V1.)
- *
- * If we've omitted your favorite such architecture, please contribute
- * a patch.  (No patch is needed for architectures that are 32-bit-only
- * or for which Linux has no support for 32-bit userland - or for which,
- * as noted, 64-bit support appeared in Linux after TPACKET_V2 support
- * did.)
- */
-#if defined(__i386__)
-#define ISA_64_BIT	"x86_64"
-#elif defined(__ppc__)
-#define ISA_64_BIT	"ppc64"
-#elif defined(__sparc__)
-#define ISA_64_BIT	"sparc64"
-#elif defined(__s390__)
-#define ISA_64_BIT	"s390x"
-#elif defined(__mips__)
-#define ISA_64_BIT	"mips64"
-#elif defined(__hppa__)
-#define ISA_64_BIT	"parisc64"
-#endif
 
 /*
  * Attempt to set the socket to version 3 of the memory-mapped header and,
  * if that fails because version 3 isn't supported, attempt to fall
- * back to version 2.  If version 2 isn't supported, just leave it at
- * version 1.
+ * back to version 2.  If version 2 isn't supported, just fail.
  *
- * Return 1 if we succeed or if we fail because neither version 2 nor 3 is
- * supported; return -1 on any other error, and set handle->errbuf.
+ * Return 0 if we succeed and -1 on any other error, and set handle->errbuf.
  */
 static int
 prepare_tpacket_socket(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
-#if defined(HAVE_TPACKET2) || defined(HAVE_TPACKET3)
 	int ret;
-#endif
 
 #ifdef HAVE_TPACKET3
 	/*
@@ -3744,7 +3205,7 @@ prepare_tpacket_socket(pcap_t *handle)
 			/*
 			 * Success.
 			 */
-			return 1;
+			return 0;
 		}
 		if (ret == -1) {
 			/*
@@ -3756,7 +3217,6 @@ prepare_tpacket_socket(pcap_t *handle)
 	}
 #endif /* HAVE_TPACKET3 */
 
-#ifdef HAVE_TPACKET2
 	/*
 	 * Try setting the version to TPACKET_V2.
 	 */
@@ -3765,65 +3225,13 @@ prepare_tpacket_socket(pcap_t *handle)
 		/*
 		 * Success.
 		 */
-		return 1;
+		return 0;
 	}
-	if (ret == -1) {
-		/*
-		 * We failed for some reason other than "the
-		 * kernel doesn't support TPACKET_V2".
-		 */
-		return -1;
-	}
-#endif /* HAVE_TPACKET2 */
 
 	/*
-	 * OK, we're using TPACKET_V1, as either that's all the kernel
-	 * supports or it doesn't support TPACKET at all.  In the latter
-	 * case, create_ring() will fail, and we'll fall back on non-
-	 * memory-mapped capture.
+	 * We failed.
 	 */
-	handlep->tp_version = TPACKET_V1;
-	handlep->tp_hdrlen = sizeof(struct tpacket_hdr);
-
-#ifdef ISA_64_BIT
-	/*
-	 * 32-bit userspace + 64-bit kernel + TPACKET_V1 are not compatible with
-	 * each other due to platform-dependent data type size differences.
-	 *
-	 * If we have a 32-bit userland and a 64-bit kernel, use an
-	 * internally-defined TPACKET_V1_64, with which we use a 64-bit
-	 * version of the data structures.
-	 */
-	if (sizeof(long) == 4) {
-		/*
-		 * This is 32-bit code.
-		 */
-		struct utsname utsname;
-
-		if (uname(&utsname) == -1) {
-			/*
-			 * Failed.
-			 */
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno, "uname failed");
-			return -1;
-		}
-		if (strcmp(utsname.machine, ISA_64_BIT) == 0) {
-			/*
-			 * uname() tells us the machine is 64-bit,
-			 * so we presumably have a 64-bit kernel.
-			 *
-			 * XXX - this presumes that uname() won't lie
-			 * in 32-bit code and claim that the machine
-			 * has the 32-bit version of the ISA.
-			 */
-			handlep->tp_version = TPACKET_V1_64;
-			handlep->tp_hdrlen = sizeof(struct tpacket_hdr_64);
-		}
-	}
-#endif
-
-	return 1;
+	return -1;
 }
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
@@ -3844,9 +3252,9 @@ create_ring(pcap_t *handle, int *status)
 	unsigned i, j, frames_per_block;
 #ifdef HAVE_TPACKET3
 	/*
-	 * For sockets using TPACKET_V1 or TPACKET_V2, the extra
-	 * stuff at the end of a struct tpacket_req3 will be
-	 * ignored, so this is OK even for those sockets.
+	 * For sockets using TPACKET_V2, the extra stuff at the end of a
+	 * struct tpacket_req3 will be ignored, so this is OK even for
+	 * those sockets.
 	 */
 	struct tpacket_req3 req;
 #else
@@ -3861,15 +3269,6 @@ create_ring(pcap_t *handle, int *status)
 	 */
 	*status = 0;
 
-#ifdef TPACKET_RESERVE
-	/*
-	 * TPACKET_V2 and PACKET_RESERVE were both introduced in
-	 * 2.6.27.  If tp_version is for TPACKET_V1, that means
-	 * the kernel doesn't support TPACKET_V2, so it won't
-	 * support PACKET_RESERVE, either.
-	 */
-	if (handle->tp_version != TPACKET_V1 &&
-	    handle->tp_version != TPACKET_V1_64) {
 		/*
 		 * Reserve space for VLAN tag reconstruction.
 		 */
@@ -3916,40 +3315,10 @@ create_ring(pcap_t *handle, int *status)
 			*status = PCAP_ERROR;
 			return -1;
 		}
-	} else {
-		/*
-		 * Older kernel, so we can't use PACKET_RESERVE;
-		 * this means we can't reserver extra space
-		 * for a DLT_LINUX_SLL2 header.
-		 *
-		 * Those kernels don't supply the information
-		 * necessary to reconstruct the VLAN tag, so
-		 * that's not an issue here, and we don't allow
-		 * DLT_LINUX_SLL2 if we can't use PACKET_RESERVE,
-		 * so that shouldn't be an issue.
-		 */
-		tp_reserve = 0;	/* nothing reserved */
-	}
-#else
-	/*
-	 * Build environment for an older kernel, so we can't use
-	 * PACKET_RESERVE.
-	 *
-	 * Those kernels don't supply the information necessary
-	 * to reconstruct the VLAN tag, so that's not an issue
-	 * here, and we don't allow DLT_LINUX_SLL2 if we can't
-	 * use PACKET_RESERVE, so that shouldn't be an issue.
-	 */
-	tp_reserve = 0;	/* nothing reserved */
-#endif
 
 	switch (handlep->tp_version) {
 
-	case TPACKET_V1:
-	case TPACKET_V1_64:
-#ifdef HAVE_TPACKET2
 	case TPACKET_V2:
-#endif
 		/* Note that with large snapshot length (say 256K, which is
 		 * the default for recent versions of tcpdump, Wireshark,
 		 * TShark, dumpcap or 64K, the value that "-s 0" has given for
@@ -4426,25 +3795,9 @@ pcap_get_ring_frame_status(pcap_t *handle, int offset)
 
 	h.raw = RING_GET_FRAME_AT(handle, offset);
 	switch (handlep->tp_version) {
-	case TPACKET_V1:
-		/*
-		 * This is an unsigned long, but only the lower 32
-		 * bits are used.
-		 */
-		return (u_int)(h.h1->tp_status);
-		break;
-	case TPACKET_V1_64:
-		/*
-		 * This is an unsigned long in the kernel, which is 64-bit,
-		 * but only the lower 32 bits are used.
-		 */
-		return (u_int)(h.h1_64->tp_status);
-		break;
-#ifdef HAVE_TPACKET2
 	case TPACKET_V2:
 		return (h.h2->tp_status);
 		break;
-#endif
 #ifdef HAVE_TPACKET3
 	case TPACKET_V3:
 		return (h.h3->hdr.bh1.block_status);
@@ -4947,7 +4300,6 @@ static int pcap_handle_packet_mmap(
 		}
 	}
 
-#if defined(HAVE_TPACKET2) || defined(HAVE_TPACKET3)
 	if (tp_vlan_tci_valid &&
 		handlep->vlan_offset != -1 &&
 		tp_snaplen >= (unsigned int) handlep->vlan_offset)
@@ -4975,7 +4327,6 @@ static int pcap_handle_packet_mmap(
 		pcaphdr.caplen += VLAN_TAG_LEN;
 		pcaphdr.len += VLAN_TAG_LEN;
 	}
-#endif
 
 	/*
 	 * The only way to tell the kernel to cut off the
@@ -4995,175 +4346,6 @@ static int pcap_handle_packet_mmap(
 	return 1;
 }
 
-static int
-pcap_read_linux_mmap_v1(pcap_t *handle, int max_packets, pcap_handler callback,
-		u_char *user)
-{
-	struct pcap_linux *handlep = handle->priv;
-	union thdr h;
-	int pkts = 0;
-	int ret;
-
-	/* wait for frames availability.*/
-	h.raw = RING_GET_CURRENT_FRAME(handle);
-	if (h.h1->tp_status == TP_STATUS_KERNEL) {
-		/*
-		 * The current frame is owned by the kernel; wait for
-		 * a frame to be handed to us.
-		 */
-		ret = pcap_wait_for_frames_mmap(handle);
-		if (ret) {
-			return ret;
-		}
-	}
-
-	/* non-positive values of max_packets are used to require all
-	 * packets currently available in the ring */
-	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
-		/*
-		 * Get the current ring buffer frame, and break if
-		 * it's still owned by the kernel.
-		 */
-		h.raw = RING_GET_CURRENT_FRAME(handle);
-		if (h.h1->tp_status == TP_STATUS_KERNEL)
-			break;
-
-		ret = pcap_handle_packet_mmap(
-				handle,
-				callback,
-				user,
-				h.raw,
-				h.h1->tp_len,
-				h.h1->tp_mac,
-				h.h1->tp_snaplen,
-				h.h1->tp_sec,
-				h.h1->tp_usec,
-				0,
-				0,
-				0);
-		if (ret == 1) {
-			pkts++;
-			handlep->packets_read++;
-		} else if (ret < 0) {
-			return ret;
-		}
-
-		/*
-		 * Hand this block back to the kernel, and, if we're
-		 * counting blocks that need to be filtered in userland
-		 * after having been filtered by the kernel, count
-		 * the one we've just processed.
-		 */
-		h.h1->tp_status = TP_STATUS_KERNEL;
-		if (handlep->blocks_to_filter_in_userland > 0) {
-			handlep->blocks_to_filter_in_userland--;
-			if (handlep->blocks_to_filter_in_userland == 0) {
-				/*
-				 * No more blocks need to be filtered
-				 * in userland.
-				 */
-				handlep->filter_in_userland = 0;
-			}
-		}
-
-		/* next block */
-		if (++handle->offset >= handle->cc)
-			handle->offset = 0;
-
-		/* check for break loop condition*/
-		if (handle->break_loop) {
-			handle->break_loop = 0;
-			return PCAP_ERROR_BREAK;
-		}
-	}
-	return pkts;
-}
-
-static int
-pcap_read_linux_mmap_v1_64(pcap_t *handle, int max_packets, pcap_handler callback,
-		u_char *user)
-{
-	struct pcap_linux *handlep = handle->priv;
-	union thdr h;
-	int pkts = 0;
-	int ret;
-
-	/* wait for frames availability.*/
-	h.raw = RING_GET_CURRENT_FRAME(handle);
-	if (h.h1_64->tp_status == TP_STATUS_KERNEL) {
-		/*
-		 * The current frame is owned by the kernel; wait for
-		 * a frame to be handed to us.
-		 */
-		ret = pcap_wait_for_frames_mmap(handle);
-		if (ret) {
-			return ret;
-		}
-	}
-
-	/* non-positive values of max_packets are used to require all
-	 * packets currently available in the ring */
-	while ((pkts < max_packets) || PACKET_COUNT_IS_UNLIMITED(max_packets)) {
-		/*
-		 * Get the current ring buffer frame, and break if
-		 * it's still owned by the kernel.
-		 */
-		h.raw = RING_GET_CURRENT_FRAME(handle);
-		if (h.h1_64->tp_status == TP_STATUS_KERNEL)
-			break;
-
-		ret = pcap_handle_packet_mmap(
-				handle,
-				callback,
-				user,
-				h.raw,
-				h.h1_64->tp_len,
-				h.h1_64->tp_mac,
-				h.h1_64->tp_snaplen,
-				h.h1_64->tp_sec,
-				h.h1_64->tp_usec,
-				0,
-				0,
-				0);
-		if (ret == 1) {
-			pkts++;
-			handlep->packets_read++;
-		} else if (ret < 0) {
-			return ret;
-		}
-
-		/*
-		 * Hand this block back to the kernel, and, if we're
-		 * counting blocks that need to be filtered in userland
-		 * after having been filtered by the kernel, count
-		 * the one we've just processed.
-		 */
-		h.h1_64->tp_status = TP_STATUS_KERNEL;
-		if (handlep->blocks_to_filter_in_userland > 0) {
-			handlep->blocks_to_filter_in_userland--;
-			if (handlep->blocks_to_filter_in_userland == 0) {
-				/*
-				 * No more blocks need to be filtered
-				 * in userland.
-				 */
-				handlep->filter_in_userland = 0;
-			}
-		}
-
-		/* next block */
-		if (++handle->offset >= handle->cc)
-			handle->offset = 0;
-
-		/* check for break loop condition*/
-		if (handle->break_loop) {
-			handle->break_loop = 0;
-			return PCAP_ERROR_BREAK;
-		}
-	}
-	return pkts;
-}
-
-#ifdef HAVE_TPACKET2
 static int
 pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 		u_char *user)
@@ -5212,7 +4394,6 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 				VLAN_TPID(h.h2, h.h2));
 		if (ret == 1) {
 			pkts++;
-			handlep->packets_read++;
 		} else if (ret < 0) {
 			return ret;
 		}
@@ -5247,7 +4428,6 @@ pcap_read_linux_mmap_v2(pcap_t *handle, int max_packets, pcap_handler callback,
 	}
 	return pkts;
 }
-#endif /* HAVE_TPACKET2 */
 
 #ifdef HAVE_TPACKET3
 static int
@@ -5326,7 +4506,6 @@ again:
 					VLAN_TPID(tp3_hdr, &tp3_hdr->hv1));
 			if (ret == 1) {
 				pkts++;
-				handlep->packets_read++;
 			} else if (ret < 0) {
 				handlep->current_packet = NULL;
 				return ret;
@@ -5389,7 +4568,7 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	 * want to, as, by not rewriting them, the kernel can avoid
 	 * copying extra data.
 	 */
-	ret = pcap_setfilter_linux_common(handle, filter, 1);
+	ret = pcap_setfilter_linux_common(handle, filter);
 	if (ret < 0)
 		return ret;
 
@@ -6695,7 +5874,7 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 
 #ifdef SO_ATTACH_FILTER
 static int
-fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
+fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
 	struct pcap_linux *handlep = handle->priv;
 	size_t prog_size;
@@ -6726,39 +5905,6 @@ fix_program(pcap_t *handle, struct sock_fprog *fcode, int is_mmapped)
 		 * What type of instruction is this?
 		 */
 		switch (BPF_CLASS(p->code)) {
-
-		case BPF_RET:
-			/*
-			 * It's a return instruction; are we capturing
-			 * in memory-mapped mode?
-			 */
-			if (!is_mmapped) {
-				/*
-				 * No; is the snapshot length a constant,
-				 * rather than the contents of the
-				 * accumulator?
-				 */
-				if (BPF_MODE(p->code) == BPF_K) {
-					/*
-					 * Yes - if the value to be returned,
-					 * i.e. the snapshot length, is
-					 * anything other than 0, make it
-					 * MAXIMUM_SNAPLEN, so that the packet
-					 * is truncated by "recvfrom()",
-					 * not by the filter.
-					 *
-					 * XXX - there's nothing we can
-					 * easily do if it's getting the
-					 * value from the accumulator; we'd
-					 * have to insert code to force
-					 * non-zero values to be
-					 * MAXIMUM_SNAPLEN.
-					 */
-					if (p->k != 0)
-						p->k = MAXIMUM_SNAPLEN;
-				}
-			}
-			break;
 
 		case BPF_LD:
 		case BPF_LDX:
@@ -7046,9 +6192,7 @@ pcap_lib_version(void)
 {
 #if defined(HAVE_TPACKET3)
 	return (PCAP_VERSION_STRING " (with TPACKET_V3)");
-#elif defined(HAVE_TPACKET2)
-	return (PCAP_VERSION_STRING " (with TPACKET_V2)");
 #else
-	return (PCAP_VERSION_STRING " (with TPACKET_V1)");
+	return (PCAP_VERSION_STRING " (with TPACKET_V2)");
 #endif
 }
