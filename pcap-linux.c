@@ -94,9 +94,7 @@
 #include <linux/if_arp.h>
 #include <poll.h>
 #include <dirent.h>
-#ifdef HAVE_SYS_EVENTFD_H
 #include <sys/eventfd.h>
-#endif
 
 #include "pcap-int.h"
 #include "pcap/sll.h"
@@ -213,9 +211,7 @@ struct pcap_linux {
 	unsigned char *current_packet; /* Current packet within the TPACKET_V3 block. Move to next block if NULL. */
 	int packets_left; /* Unhandled packets left within the block from previous call to pcap_read_linux_mmap_v3 in case of TPACKET_V3. */
 #endif
-#ifdef HAVE_SYS_EVENTFD_H
 	int poll_breakloop_fd; /* fd to an eventfd to break from blocking operations */
-#endif
 };
 
 /*
@@ -394,10 +390,8 @@ pcap_create_interface(const char *device, char *ebuf)
 	handle->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
 #endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
-#ifdef HAVE_SYS_EVENTFD_H
 	struct pcap_linux *handlep = handle->priv;
 	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
-#endif
 
 	return handle;
 }
@@ -1189,9 +1183,7 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		handlep->device = NULL;
 	}
 
-#ifdef HAVE_SYS_EVENTFD_H
 	close(handlep->poll_breakloop_fd);
-#endif
 	pcap_cleanup_live_common(handle);
 }
 
@@ -1283,7 +1275,6 @@ set_poll_timeout(struct pcap_linux *handlep)
 	}
 }
 
-#ifdef HAVE_SYS_EVENTFD_H
 static void pcap_breakloop_linux(pcap_t *handle)
 {
 	pcap_breakloop_common(handle);
@@ -1293,7 +1284,6 @@ static void pcap_breakloop_linux(pcap_t *handle)
 	/* XXX - what if this fails? */
 	(void)write(handlep->poll_breakloop_fd, &value, sizeof(value));
 }
-#endif
 
 /*
  *  Get a handle for a live capture from the given device. You can
@@ -1351,9 +1341,7 @@ pcap_activate_linux(pcap_t *handle)
 	handle->setnonblock_op = pcap_setnonblock_fd;
 	handle->cleanup_op = pcap_cleanup_linux;
 	handle->stats_op = pcap_stats_linux;
-#ifdef HAVE_SYS_EVENTFD_H
 	handle->breakloop_op = pcap_breakloop_linux;
-#endif
 
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
@@ -3854,15 +3842,11 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 	int timeout;
 	struct ifreq ifr;
 	int ret;
-#ifdef HAVE_SYS_EVENTFD_H
 	struct pollfd pollinfo[2];
-	pollinfo[1].fd = handlep->poll_breakloop_fd;
-	pollinfo[1].events = POLLIN;
-#else
-	struct pollfd pollinfo[1];
-#endif
 	pollinfo[0].fd = handle->fd;
 	pollinfo[0].events = POLLIN;
+	pollinfo[1].fd = handlep->poll_breakloop_fd;
+	pollinfo[1].events = POLLIN;
 
 	/*
 	 * Keep polling until we either get some packets to read, see
@@ -3927,11 +3911,7 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 			if (timeout != 0)
 				timeout = 1;
 		}
-#ifdef HAVE_SYS_EVENTFD_H
 		ret = poll(pollinfo, 2, timeout);
-#else
-		ret = poll(pollinfo, 1, timeout);
-#endif
 		if (ret < 0) {
 			/*
 			 * Error.  If it's not EINTR, report it.
@@ -4047,7 +4027,6 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 					}
 				}
 			}
-#ifdef HAVE_SYS_EVENTFD_H
 			/*
 			 * Now check the event device.
 			 */
@@ -4066,7 +4045,6 @@ static int pcap_wait_for_frames_mmap(pcap_t *handle)
 					return PCAP_ERROR_BREAK;
 				}
 			}
-#endif
 		}
 
 		/*
