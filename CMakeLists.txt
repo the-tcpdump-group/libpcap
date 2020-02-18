@@ -1327,19 +1327,6 @@ else(WIN32)
 
         check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
 
-        #
-        # Checks to see if tpacket_stats is defined in linux/if_packet.h
-        # If so then pcap-linux.c can use this to report proper statistics.
-        #
-        # XXX - there's no check_type() macro that's like check_type_size()
-        # except that it only checks for the existence of the structure type,
-        # so we use check_type_size() and ignore the size.
-        #
-        cmake_push_check_state()
-        set(CMAKE_EXTRA_INCLUDE_FILES linux/if_packet.h)
-        check_type_size("struct tpacket_stats" STRUCT_TPACKET_STATS)
-        cmake_pop_check_state()
-
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #

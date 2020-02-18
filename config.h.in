@@ -243,9 +243,6 @@
 /* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
 #undef HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI
 
-/* Define to 1 if the system has the type `struct tpacket_stats'. */
-#undef HAVE_STRUCT_TPACKET_STATS
-
 /* Define to 1 if `bRequestType' is a member of `struct
    usbdevfs_ctrltransfer'. */
 #undef HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE

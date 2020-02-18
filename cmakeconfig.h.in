@@ -231,9 +231,6 @@
 /* Define to 1 if `tp_vlan_tci' is a member of `struct tpacket_auxdata'. */
 #cmakedefine HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI 1
 
-/* Define to 1 if the system has the type `struct tpacket_stats'. */
-#cmakedefine HAVE_STRUCT_TPACKET_STATS 1
-
 /* Define to 1 if `bRequestType' is a member of `struct
    usbdevfs_ctrltransfer'. */
 #cmakedefine HAVE_STRUCT_USBDEVFS_CTRLTRANSFER_BREQUESTTYPE 1

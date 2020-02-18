@@ -7097,27 +7097,6 @@ done
 
 
 	#
-	# Check to see if struct tpacket_stats is defined in
-	# <linux/if_packet.h>.  If so, then pcap-linux.c can use this
-	# to report proper statistics.
-	#
-	# -Scott Barron
-	#
-	ac_fn_c_check_type "$LINENO" "struct tpacket_stats" "ac_cv_type_struct_tpacket_stats" "
-		#include <linux/if_packet.h>
-
-"
-if test "x$ac_cv_type_struct_tpacket_stats" = xyes; then :
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_STRUCT_TPACKET_STATS 1
-_ACEOF
-
-
-fi
-
-
-	#
 	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
 	#
 	# NOTE: any failure means we conclude that it doesn't have that

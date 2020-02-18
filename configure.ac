@@ -947,18 +947,6 @@ AC_INCLUDES_DEFAULT
 	    ])
 
 	#
-	# Check to see if struct tpacket_stats is defined in
-	# <linux/if_packet.h>.  If so, then pcap-linux.c can use this
-	# to report proper statistics.
-	#
-	# -Scott Barron
-	#
-	AC_CHECK_TYPES(struct tpacket_stats,,,
-	    [
-		#include <linux/if_packet.h>
-	    ])
-
-	#
 	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
 	#
 	# NOTE: any failure means we conclude that it doesn't have that
