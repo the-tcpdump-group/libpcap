@@ -255,10 +255,9 @@ static int pcap_read_linux_mmap_v2(pcap_t *, int, pcap_handler , u_char *);
 #ifdef HAVE_TPACKET3
 static int pcap_read_linux_mmap_v3(pcap_t *, int, pcap_handler , u_char *);
 #endif
-static int pcap_setfilter_linux_mmap(pcap_t *, struct bpf_program *);
-static int pcap_setnonblock_mmap(pcap_t *p, int nonblock);
-static int pcap_getnonblock_mmap(pcap_t *p);
-static void pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
+static int pcap_setnonblock_linux(pcap_t *p, int nonblock);
+static int pcap_getnonblock_linux(pcap_t *p);
+static void pcap_oneshot_linux(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes);
 
 /*
@@ -1333,16 +1332,6 @@ pcap_activate_linux(pcap_t *handle)
 	if (handle->snapshot <= 0 || handle->snapshot > MAXIMUM_SNAPLEN)
 		handle->snapshot = MAXIMUM_SNAPLEN;
 
-	handle->inject_op = pcap_inject_linux;
-	handle->setfilter_op = pcap_setfilter_linux;
-	handle->setdirection_op = pcap_setdirection_linux;
-	handle->set_datalink_op = pcap_set_datalink_linux;
-	handle->getnonblock_op = pcap_getnonblock_fd;
-	handle->setnonblock_op = pcap_setnonblock_fd;
-	handle->cleanup_op = pcap_cleanup_linux;
-	handle->stats_op = pcap_stats_linux;
-	handle->breakloop_op = pcap_breakloop_linux;
-
 	handlep->device	= strdup(device);
 	if (handlep->device == NULL) {
 		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
@@ -1423,6 +1412,30 @@ pcap_activate_linux(pcap_t *handle)
 		status = status2;
 		goto fail;
 	}
+
+	handle->inject_op = pcap_inject_linux;
+	handle->setfilter_op = pcap_setfilter_linux;
+	handle->setdirection_op = pcap_setdirection_linux;
+	handle->set_datalink_op = pcap_set_datalink_linux;
+	handle->setnonblock_op = pcap_setnonblock_linux;
+	handle->getnonblock_op = pcap_getnonblock_linux;
+	handle->cleanup_op = pcap_cleanup_linux;
+	handle->stats_op = pcap_stats_linux;
+	handle->breakloop_op = pcap_breakloop_linux;
+
+	switch (handlep->tp_version) {
+
+	case TPACKET_V2:
+		handle->read_op = pcap_read_linux_mmap_v2;
+		break;
+#ifdef HAVE_TPACKET3
+	case TPACKET_V3:
+		handle->read_op = pcap_read_linux_mmap_v3;
+		break;
+#endif
+	}
+	handle->oneshot_callback = pcap_oneshot_linux;
+	handle->selectable_fd = handle->fd;
 
 	return status;
 
@@ -1913,187 +1926,6 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 
 	return (0);
 }
-
-/*
- *  Attach the given BPF code to the packet capture device.
- */
-static int
-pcap_setfilter_linux_common(pcap_t *handle, struct bpf_program *filter)
-{
-	struct pcap_linux *handlep;
-#ifdef SO_ATTACH_FILTER
-	struct sock_fprog	fcode;
-	int			can_filter_in_kernel;
-	int			err = 0;
-#endif
-
-	if (!handle)
-		return -1;
-	if (!filter) {
-	        pcap_strlcpy(handle->errbuf, "setfilter: No filter specified",
-			PCAP_ERRBUF_SIZE);
-		return -1;
-	}
-
-	handlep = handle->priv;
-
-	/* Make our private copy of the filter */
-
-	if (install_bpf_program(handle, filter) < 0)
-		/* install_bpf_program() filled in errbuf */
-		return -1;
-
-	/*
-	 * Run user level packet filter by default. Will be overriden if
-	 * installing a kernel filter succeeds.
-	 */
-	handlep->filter_in_userland = 1;
-
-	/* Install kernel level filter if possible */
-
-#ifdef SO_ATTACH_FILTER
-#ifdef USHRT_MAX
-	if (handle->fcode.bf_len > USHRT_MAX) {
-		/*
-		 * fcode.len is an unsigned short for current kernel.
-		 * I have yet to see BPF-Code with that much
-		 * instructions but still it is possible. So for the
-		 * sake of correctness I added this check.
-		 */
-		fprintf(stderr, "Warning: Filter too complex for kernel\n");
-		fcode.len = 0;
-		fcode.filter = NULL;
-		can_filter_in_kernel = 0;
-	} else
-#endif /* USHRT_MAX */
-	{
-		/*
-		 * Oh joy, the Linux kernel uses struct sock_fprog instead
-		 * of struct bpf_program and of course the length field is
-		 * of different size. Pointed out by Sebastian
-		 *
-		 * Oh, and we also need to fix it up so that all "ret"
-		 * instructions with non-zero operands have MAXIMUM_SNAPLEN
-		 * as the operand if we're not capturing in memory-mapped
-		 * mode, and so that, if we're in cooked mode, all memory-
-		 * reference instructions use special magic offsets in
-		 * references to the link-layer header and assume that the
-		 * link-layer payload begins at 0; "fix_program()" will do
-		 * that.
-		 */
-		switch (fix_program(handle, &fcode)) {
-
-		case -1:
-		default:
-			/*
-			 * Fatal error; just quit.
-			 * (The "default" case shouldn't happen; we
-			 * return -1 for that reason.)
-			 */
-			return -1;
-
-		case 0:
-			/*
-			 * The program performed checks that we can't make
-			 * work in the kernel.
-			 */
-			can_filter_in_kernel = 0;
-			break;
-
-		case 1:
-			/*
-			 * We have a filter that'll work in the kernel.
-			 */
-			can_filter_in_kernel = 1;
-			break;
-		}
-	}
-
-	/*
-	 * NOTE: at this point, we've set both the "len" and "filter"
-	 * fields of "fcode".  As of the 2.6.32.4 kernel, at least,
-	 * those are the only members of the "sock_fprog" structure,
-	 * so we initialize every member of that structure.
-	 *
-	 * If there is anything in "fcode" that is not initialized,
-	 * it is either a field added in a later kernel, or it's
-	 * padding.
-	 *
-	 * If a new field is added, this code needs to be updated
-	 * to set it correctly.
-	 *
-	 * If there are no other fields, then:
-	 *
-	 *	if the Linux kernel looks at the padding, it's
-	 *	buggy;
-	 *
-	 *	if the Linux kernel doesn't look at the padding,
-	 *	then if some tool complains that we're passing
-	 *	uninitialized data to the kernel, then the tool
-	 *	is buggy and needs to understand that it's just
-	 *	padding.
-	 */
-	if (can_filter_in_kernel) {
-		if ((err = set_kernel_filter(handle, &fcode)) == 0)
-		{
-			/*
-			 * Installation succeded - using kernel filter,
-			 * so userland filtering not needed.
-			 */
-			handlep->filter_in_userland = 0;
-		}
-		else if (err == -1)	/* Non-fatal error */
-		{
-			/*
-			 * Print a warning if we weren't able to install
-			 * the filter for a reason other than "this kernel
-			 * isn't configured to support socket filters.
-			 */
-			if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
-				fprintf(stderr,
-				    "Warning: Kernel filter failed: %s\n",
-					pcap_strerror(errno));
-			}
-		}
-	}
-
-	/*
-	 * If we're not using the kernel filter, get rid of any kernel
-	 * filter that might've been there before, e.g. because the
-	 * previous filter could work in the kernel, or because some other
-	 * code attached a filter to the socket by some means other than
-	 * calling "pcap_setfilter()".  Otherwise, the kernel filter may
-	 * filter out packets that would pass the new userland filter.
-	 */
-	if (handlep->filter_in_userland) {
-		if (reset_kernel_filter(handle) == -1) {
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno,
-			    "can't remove kernel filter");
-			err = -2;	/* fatal error */
-		}
-	}
-
-	/*
-	 * Free up the copy of the filter that was made by "fix_program()".
-	 */
-	if (fcode.filter != NULL)
-		free(fcode.filter);
-
-	if (err == -2)
-		/* Fatal error */
-		return -1;
-#endif /* SO_ATTACH_FILTER */
-
-	return 0;
-}
-
-static int
-pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
-{
-	return pcap_setfilter_linux_common(handle, filter);
-}
-
 
 /*
  * Set direction flag: Which packets do we accept on a forwarding
@@ -3093,28 +2925,9 @@ setup_mmapped(pcap_t *handle, int *status)
 	 * Success.  *status has been set either to 0 if there are no
 	 * warnings or to a PCAP_WARNING_ value if there is a warning.
 	 *
-	 * Override some defaults and inherit the other fields from
-	 * activate_pf_packet().
 	 * handle->offset is used to get the current position into the rx ring.
 	 * handle->cc is used to store the ring size.
 	 */
-
-	switch (handlep->tp_version) {
-
-	case TPACKET_V2:
-		handle->read_op = pcap_read_linux_mmap_v2;
-		break;
-#ifdef HAVE_TPACKET3
-	case TPACKET_V3:
-		handle->read_op = pcap_read_linux_mmap_v3;
-		break;
-#endif
-	}
-	handle->setfilter_op = pcap_setfilter_linux_mmap;
-	handle->setnonblock_op = pcap_setnonblock_mmap;
-	handle->getnonblock_op = pcap_getnonblock_mmap;
-	handle->oneshot_callback = pcap_oneshot_mmap;
-	handle->selectable_fd = handle->fd;
 
 	/*
 	 * Set the timeout to use in poll() before returning.
@@ -3750,7 +3563,7 @@ destroy_ring(pcap_t *handle)
  * pcap_next() or pcap_next_ex().
  */
 static void
-pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
+pcap_oneshot_linux(u_char *user, const struct pcap_pkthdr *h,
     const u_char *bytes)
 {
 	struct oneshot_userdata *sp = (struct oneshot_userdata *)user;
@@ -3763,7 +3576,7 @@ pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 }
 
 static int
-pcap_getnonblock_mmap(pcap_t *handle)
+pcap_getnonblock_linux(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 
@@ -3772,7 +3585,7 @@ pcap_getnonblock_mmap(pcap_t *handle)
 }
 
 static int
-pcap_setnonblock_mmap(pcap_t *handle, int nonblock)
+pcap_setnonblock_linux(pcap_t *handle, int nonblock)
 {
 	struct pcap_linux *handlep = handle->priv;
 
@@ -4566,29 +4379,184 @@ again:
 }
 #endif /* HAVE_TPACKET3 */
 
+/*
+ *  Attach the given BPF code to the packet capture device.
+ */
 static int
-pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
+pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 {
-	struct pcap_linux *handlep = handle->priv;
-	int n, offset;
-	int ret;
+	struct pcap_linux *handlep;
+#ifdef SO_ATTACH_FILTER
+	struct sock_fprog	fcode;
+	int			can_filter_in_kernel;
+	int			err = 0;
+#endif
+	int			n, offset;
+
+	if (!handle)
+		return -1;
+	if (!filter) {
+	        pcap_strlcpy(handle->errbuf, "setfilter: No filter specified",
+			PCAP_ERRBUF_SIZE);
+		return -1;
+	}
+
+	handlep = handle->priv;
+
+	/* Make our private copy of the filter */
+
+	if (install_bpf_program(handle, filter) < 0)
+		/* install_bpf_program() filled in errbuf */
+		return -1;
 
 	/*
-	 * Don't rewrite "ret" instructions; we don't need to, as
-	 * we're not reading packets with recvmsg(), and we don't
-	 * want to, as, by not rewriting them, the kernel can avoid
-	 * copying extra data.
+	 * Run user level packet filter by default. Will be overriden if
+	 * installing a kernel filter succeeds.
 	 */
-	ret = pcap_setfilter_linux_common(handle, filter);
-	if (ret < 0)
-		return ret;
+	handlep->filter_in_userland = 1;
+
+	/* Install kernel level filter if possible */
+
+#ifdef SO_ATTACH_FILTER
+#ifdef USHRT_MAX
+	if (handle->fcode.bf_len > USHRT_MAX) {
+		/*
+		 * fcode.len is an unsigned short for current kernel.
+		 * I have yet to see BPF-Code with that much
+		 * instructions but still it is possible. So for the
+		 * sake of correctness I added this check.
+		 */
+		fprintf(stderr, "Warning: Filter too complex for kernel\n");
+		fcode.len = 0;
+		fcode.filter = NULL;
+		can_filter_in_kernel = 0;
+	} else
+#endif /* USHRT_MAX */
+	{
+		/*
+		 * Oh joy, the Linux kernel uses struct sock_fprog instead
+		 * of struct bpf_program and of course the length field is
+		 * of different size. Pointed out by Sebastian
+		 *
+		 * Oh, and we also need to fix it up so that all "ret"
+		 * instructions with non-zero operands have MAXIMUM_SNAPLEN
+		 * as the operand if we're not capturing in memory-mapped
+		 * mode, and so that, if we're in cooked mode, all memory-
+		 * reference instructions use special magic offsets in
+		 * references to the link-layer header and assume that the
+		 * link-layer payload begins at 0; "fix_program()" will do
+		 * that.
+		 */
+		switch (fix_program(handle, &fcode)) {
+
+		case -1:
+		default:
+			/*
+			 * Fatal error; just quit.
+			 * (The "default" case shouldn't happen; we
+			 * return -1 for that reason.)
+			 */
+			return -1;
+
+		case 0:
+			/*
+			 * The program performed checks that we can't make
+			 * work in the kernel.
+			 */
+			can_filter_in_kernel = 0;
+			break;
+
+		case 1:
+			/*
+			 * We have a filter that'll work in the kernel.
+			 */
+			can_filter_in_kernel = 1;
+			break;
+		}
+	}
+
+	/*
+	 * NOTE: at this point, we've set both the "len" and "filter"
+	 * fields of "fcode".  As of the 2.6.32.4 kernel, at least,
+	 * those are the only members of the "sock_fprog" structure,
+	 * so we initialize every member of that structure.
+	 *
+	 * If there is anything in "fcode" that is not initialized,
+	 * it is either a field added in a later kernel, or it's
+	 * padding.
+	 *
+	 * If a new field is added, this code needs to be updated
+	 * to set it correctly.
+	 *
+	 * If there are no other fields, then:
+	 *
+	 *	if the Linux kernel looks at the padding, it's
+	 *	buggy;
+	 *
+	 *	if the Linux kernel doesn't look at the padding,
+	 *	then if some tool complains that we're passing
+	 *	uninitialized data to the kernel, then the tool
+	 *	is buggy and needs to understand that it's just
+	 *	padding.
+	 */
+	if (can_filter_in_kernel) {
+		if ((err = set_kernel_filter(handle, &fcode)) == 0)
+		{
+			/*
+			 * Installation succeded - using kernel filter,
+			 * so userland filtering not needed.
+			 */
+			handlep->filter_in_userland = 0;
+		}
+		else if (err == -1)	/* Non-fatal error */
+		{
+			/*
+			 * Print a warning if we weren't able to install
+			 * the filter for a reason other than "this kernel
+			 * isn't configured to support socket filters.
+			 */
+			if (errno != ENOPROTOOPT && errno != EOPNOTSUPP) {
+				fprintf(stderr,
+				    "Warning: Kernel filter failed: %s\n",
+					pcap_strerror(errno));
+			}
+		}
+	}
+
+	/*
+	 * If we're not using the kernel filter, get rid of any kernel
+	 * filter that might've been there before, e.g. because the
+	 * previous filter could work in the kernel, or because some other
+	 * code attached a filter to the socket by some means other than
+	 * calling "pcap_setfilter()".  Otherwise, the kernel filter may
+	 * filter out packets that would pass the new userland filter.
+	 */
+	if (handlep->filter_in_userland) {
+		if (reset_kernel_filter(handle) == -1) {
+			pcap_fmt_errmsg_for_errno(handle->errbuf,
+			    PCAP_ERRBUF_SIZE, errno,
+			    "can't remove kernel filter");
+			err = -2;	/* fatal error */
+		}
+	}
+
+	/*
+	 * Free up the copy of the filter that was made by "fix_program()".
+	 */
+	if (fcode.filter != NULL)
+		free(fcode.filter);
+
+	if (err == -2)
+		/* Fatal error */
+		return -1;
+#endif /* SO_ATTACH_FILTER */
 
 	/*
 	 * If we're filtering in userland, there's nothing to do;
 	 * the new filter will be used for the next packet.
 	 */
 	if (handlep->filter_in_userland)
-		return ret;
+		return 0;
 
 	/*
 	 * We're filtering in the kernel; the packets present in
@@ -4639,7 +4607,8 @@ pcap_setfilter_linux_mmap(pcap_t *handle, struct bpf_program *filter)
 	 */
 	handlep->blocks_to_filter_in_userland = handle->cc - n;
 	handlep->filter_in_userland = 1;
-	return ret;
+
+	return 0;
 }
 
 /*
