@@ -1667,7 +1667,7 @@ pcap_stats_linux(pcap_t *handle, struct pcap_stat *stats)
 		 * the kernel by libpcap, and thus not yet seen by
 		 * the application.
 		 *
-		 * In "linux/net/packet/af_packet.c", at least in 2.6.26
+		 * In "linux/net/packet/af_packet.c", at least in 2.6.27
 		 * through 5.6 kernels, "tp_packets" is incremented for
 		 * every packet that passes the packet filter *and* is
 		 * successfully copied to the ring buffer; "tp_drops" is
@@ -3151,19 +3151,32 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 			/*
 			 * EINVAL means this specific version of TPACKET
 			 * is not supported. Tell the caller they can try
-			 * with a different one.
+			 * with a different one; if they've run out of
+			 * others to try, let them set the error message
+			 * appropriately.
 			 */
-			pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE, errno,
-			    "kernel doesn't support %s sockets;\n"
-			    "it's either too old or built without PACKET_MMAP support",
-			    version_str);
 			return 1;
 		}
 
-		/* Failed to even find out; this is a fatal error. */
-		pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "can't get %s header len on packet socket",
-		    version_str);
+		/*
+		 * All other errors are fatal.
+		 */
+		if (errno == ENOPROTOOPT) {
+			/*
+			 * PACKET_HDRLEN isn't supported, which means
+			 * that memory-mapped capture isn't supported.
+			 * Indicate that in the message.
+			 */
+			snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    "Kernel doesn't support memory-mapped capture; a 2.6.27 or later 2.x kernel is required, with CONFIG_PACKET_MMAP specified for 2.x kernels");
+		} else {
+			/*
+			 * Some unexpected error.
+			 */
+			pcap_fmt_errmsg_for_errno(handle->errbuf, PCAP_ERRBUF_SIZE,
+			    errno, "can't get %s header len on packet socket",
+			    version_str);
+		}
 		return -1;
 	}
 	handlep->tp_hdrlen = val;
@@ -3220,6 +3233,11 @@ prepare_tpacket_socket(pcap_t *handle)
 			 */
 			return -1;
 		}
+
+		/*
+		 * This means it returned 1, which means "the kernel
+		 * doesn't support TPACKET_V3"; try TPACKET_V2.
+		 */
 	}
 #endif /* HAVE_TPACKET3 */
 
@@ -3232,6 +3250,15 @@ prepare_tpacket_socket(pcap_t *handle)
 		 * Success.
 		 */
 		return 0;
+	}
+
+	if (ret == 1) {
+		/*
+		 * OK, the kernel supports memory-mapped capture, but
+		 * not TPACKET_V2.  Set the error message appropriately.
+		 */
+		snprintf(handle->errbuf, PCAP_ERRBUF_SIZE,
+		    "Kernel doesn't support TPACKET_V2; a 2.6.27 or later kernel is required");
 	}
 
 	/*
