@@ -95,12 +95,6 @@ linux*|uclinux*)
 #include <linux/if.h>
 	])
 
-	#
-	# Check for the eventfd header.
-	#
-	AC_CHECK_HEADERS(sys/eventfd.h)
-	;;
-
 haiku*)
 	#
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.
