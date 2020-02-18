@@ -67,7 +67,7 @@
 #include "grammar.h"
 #include "scanner.h"
 
-#if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+#if defined(linux)
 #include <linux/types.h>
 #include <linux/if_packet.h>
 #include <linux/filter.h>
@@ -8302,9 +8302,9 @@ gen_inbound(compiler_state_t *cstate, int dir)
 		 * with newer capture APIs, allowing it to be saved
 		 * in pcapng files.
 		 */
-#if defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER)
+#if defined(linux)
 		/*
-		 * This is Linux with PF_PACKET support.
+		 * This is Linux; we assume it has PF_PACKET support.
 		 * If this is a *live* capture, we can look at
 		 * special meta-data in the filter expression;
 		 * if it's a savefile, we can't.
@@ -8322,11 +8322,11 @@ gen_inbound(compiler_state_t *cstate, int dir)
 			/* to filter on inbound traffic, invert the match */
 			gen_not(b0);
 		}
-#else /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
+#else /* defined(linux) */
 		bpf_error(cstate, "inbound/outbound not supported on %s",
 		    pcap_datalink_val_to_description_or_dlt(cstate->linktype));
 		/*NOTREACHED*/
-#endif /* defined(linux) && defined(PF_PACKET) && defined(SO_ATTACH_FILTER) */
+#endif /* defined(linux) */
 	}
 	return (b0);
 }

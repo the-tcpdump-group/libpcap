@@ -117,10 +117,8 @@
 # define HAVE_TPACKET3
 #endif /* TPACKET3_HDRLEN */
 
-#ifdef SO_ATTACH_FILTER
 #include <linux/types.h>
 #include <linux/filter.h>
-#endif
 
 #ifdef HAVE_LINUX_NET_TSTAMP_H
 #include <linux/net_tstamp.h>
@@ -322,7 +320,6 @@ static int	iface_ethtool_get_ts_info(const char *device, pcap_t *handle,
 #endif
 static int	iface_get_offload(pcap_t *handle);
 
-#ifdef SO_ATTACH_FILTER
 static int	fix_program(pcap_t *handle, struct sock_fprog *fcode);
 static int	fix_offset(pcap_t *handle, struct bpf_insn *p);
 static int	set_kernel_filter(pcap_t *handle, struct sock_fprog *fcode);
@@ -332,7 +329,6 @@ static struct sock_filter	total_insn
 	= BPF_STMT(BPF_RET | BPF_K, 0);
 static struct sock_fprog	total_fcode
 	= { 1, &total_insn };
-#endif /* SO_ATTACH_FILTER */
 
 static int	iface_dsa_get_proto_info(const char *device, pcap_t *handle);
 
@@ -4376,11 +4372,9 @@ static int
 pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 {
 	struct pcap_linux *handlep;
-#ifdef SO_ATTACH_FILTER
 	struct sock_fprog	fcode;
 	int			can_filter_in_kernel;
 	int			err = 0;
-#endif
 	int			n, offset;
 
 	if (!handle)
@@ -4407,7 +4401,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 
 	/* Install kernel level filter if possible */
 
-#ifdef SO_ATTACH_FILTER
 #ifdef USHRT_MAX
 	if (handle->fcode.bf_len > USHRT_MAX) {
 		/*
@@ -4539,7 +4532,6 @@ pcap_setfilter_linux(pcap_t *handle, struct bpf_program *filter)
 	if (err == -2)
 		/* Fatal error */
 		return -1;
-#endif /* SO_ATTACH_FILTER */
 
 	/*
 	 * If we're filtering in userland, there's nothing to do;
@@ -5842,7 +5834,6 @@ iface_get_arptype(int fd, const char *device, char *ebuf)
 	return ifr.ifr_hwaddr.sa_family;
 }
 
-#ifdef SO_ATTACH_FILTER
 static int
 fix_program(pcap_t *handle, struct sock_fprog *fcode)
 {
@@ -6143,7 +6134,6 @@ reset_kernel_filter(pcap_t *handle)
 		return -1;
 	return 0;
 }
-#endif
 
 int
 pcap_set_protocol_linux(pcap_t *p, int protocol)
