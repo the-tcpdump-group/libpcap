@@ -3214,7 +3214,6 @@ init_tpacket(pcap_t *handle, int version, const char *version_str)
 static int
 prepare_tpacket_socket(pcap_t *handle)
 {
-	struct pcap_linux *handlep = handle->priv;
 	int ret;
 
 #ifdef HAVE_TPACKET3
