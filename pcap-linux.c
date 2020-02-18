@@ -104,6 +104,12 @@
 
 #include "diag-control.h"
 
+/*
+ * We require TPACKET_V2 support.
+ */
+#ifndef TPACKET_V2
+#error "Libpcap will only work if TPACKET_V2 is supported"
+#endif
 
 /* check for memory mapped access avaibility. We assume every needed
  * struct is defined if the macro TPACKET_HDRLEN is defined, because it
