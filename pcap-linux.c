@@ -107,7 +107,7 @@
 /*
  * We require TPACKET_V2 support.
  */
-#ifndef TPACKET_V2
+#ifndef TPACKET2_HDRLEN
 #error "Libpcap will only work if TPACKET_V2 is supported"
 #endif
 
