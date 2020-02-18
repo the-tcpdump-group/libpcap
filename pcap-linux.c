@@ -106,7 +106,7 @@
  * We require TPACKET_V2 support.
  */
 #ifndef TPACKET2_HDRLEN
-#error "Libpcap will only work if TPACKET_V2 is supported"
+#error "Libpcap will only work if TPACKET_V2 is supported; you must build for a 2.6.27 or later kernel"
 #endif
 
 /* check for memory mapped access avaibility. We assume every needed
