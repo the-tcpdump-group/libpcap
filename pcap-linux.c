@@ -1780,7 +1780,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 				 */
 				switch (arptype) {
 
-#ifdef ARPHRD_LOOPBACK
 				case ARPHRD_LOOPBACK:
 					/*
 					 * These are types to which
@@ -1794,7 +1793,6 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 					fclose(fh);
 					free(pathstr);
 					return 0;
-#endif
 
 				case ARPHRD_IRDA:
 				case ARPHRD_IEEE80211:
