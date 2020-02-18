@@ -255,7 +255,6 @@ union thdr {
 static void destroy_ring(pcap_t *handle);
 static int create_ring(pcap_t *handle, int *status);
 static int prepare_tpacket_socket(pcap_t *handle);
-static void pcap_cleanup_linux_mmap(pcap_t *);
 static int pcap_read_linux_mmap_v2(pcap_t *, int, pcap_handler , u_char *);
 #ifdef HAVE_TPACKET3
 static int pcap_read_linux_mmap_v3(pcap_t *, int, pcap_handler , u_char *);
@@ -1166,6 +1165,19 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 		 * have to take the interface out of some mode.
 		 */
 		pcap_remove_from_pcaps_to_close(handle);
+	}
+
+	if (handle->fd != -1) {
+		/*
+		 * Destroy the ring buffer (assuming we've set it up),
+		 * and unmap it if it's mapped.
+		 */
+		destroy_ring(handle);
+	}
+
+	if (handlep->oneshot_buffer != NULL) {
+		free(handlep->oneshot_buffer);
+		handlep->oneshot_buffer = NULL;
 	}
 
 	if (handlep->mondevice != NULL) {
@@ -3110,7 +3122,6 @@ setup_mmapped(pcap_t *handle, int *status)
 		break;
 #endif
 	}
-	handle->cleanup_op = pcap_cleanup_linux_mmap;
 	handle->setfilter_op = pcap_setfilter_linux_mmap;
 	handle->setnonblock_op = pcap_setnonblock_mmap;
 	handle->getnonblock_op = pcap_getnonblock_mmap;
@@ -3715,10 +3726,14 @@ destroy_ring(pcap_t *handle)
 {
 	struct pcap_linux *handlep = handle->priv;
 
-	/* tell the kernel to destroy the ring*/
+	/*
+	 * Tell the kernel to destroy the ring.
+	 * We don't check for setsockopt failure, as 1) we can't recover
+	 * from an error and 2) we might not yet have set it up in the
+	 * first place.
+	 */
 	struct tpacket_req req;
 	memset(&req, 0, sizeof(req));
-	/* do not test for setsockopt failure, as we can't recover from any error */
 	(void)setsockopt(handle->fd, SOL_PACKET, PACKET_RX_RING,
 				(void *) &req, sizeof(req));
 
@@ -3759,20 +3774,6 @@ pcap_oneshot_mmap(u_char *user, const struct pcap_pkthdr *h,
 	memcpy(handlep->oneshot_buffer, bytes, h->caplen);
 	*sp->pkt = handlep->oneshot_buffer;
 }
-
-static void
-pcap_cleanup_linux_mmap( pcap_t *handle )
-{
-	struct pcap_linux *handlep = handle->priv;
-
-	destroy_ring(handle);
-	if (handlep->oneshot_buffer != NULL) {
-		free(handlep->oneshot_buffer);
-		handlep->oneshot_buffer = NULL;
-	}
-	pcap_cleanup_linux(handle);
-}
-
 
 static int
 pcap_getnonblock_mmap(pcap_t *handle)
