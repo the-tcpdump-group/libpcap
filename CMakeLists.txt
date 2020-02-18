@@ -397,7 +397,6 @@ main(void)
     endif(HAVE_NET_PFVAR_H)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        check_include_file(linux/sockios.h HAVE_LINUX_SOCKIOS_H)
         #
         # linux/if_bonding.h requires sys/socket.h.
         #

@@ -105,9 +105,6 @@
 /* Define to 1 if you have the <linux/socket.h> header file. */
 #cmakedefine HAVE_LINUX_SOCKET_H 1
 
-/* Define to 1 if you have the <linux/sockios.h> header file. */
-#cmakedefine HAVE_LINUX_SOCKIOS_H 1
-
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #cmakedefine HAVE_LINUX_USBDEVICE_FS_H 1
 

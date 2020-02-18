@@ -5248,17 +5248,16 @@ linux*|uclinux*)
 	#
 	# linux/if_bonding.h requires sys/socket.h.
 	#
-	for ac_header in linux/sockios.h linux/if_bonding.h
+	for ac_header in linux/if_bonding.h
 do :
-  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
-ac_fn_c_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "
+  ac_fn_c_check_header_compile "$LINENO" "linux/if_bonding.h" "ac_cv_header_linux_if_bonding_h" "
 #include <sys/socket.h>
 #include <linux/if.h>
 
 "
-if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
+if test "x$ac_cv_header_linux_if_bonding_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
+#define HAVE_LINUX_IF_BONDING_H 1
 _ACEOF
 
 fi

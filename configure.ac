@@ -89,7 +89,7 @@ linux*|uclinux*)
 	#
 	# linux/if_bonding.h requires sys/socket.h.
 	#
-	AC_CHECK_HEADERS(linux/sockios.h linux/if_bonding.h,,,
+	AC_CHECK_HEADERS(linux/if_bonding.h,,,
 	[
 #include <sys/socket.h>
 #include <linux/if.h>

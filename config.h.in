@@ -114,9 +114,6 @@
 /* Define to 1 if you have the <linux/socket.h> header file. */
 #undef HAVE_LINUX_SOCKET_H
 
-/* Define to 1 if you have the <linux/sockios.h> header file. */
-#undef HAVE_LINUX_SOCKIOS_H
-
 /* Define to 1 if you have the <linux/usbdevice_fs.h> header file. */
 #undef HAVE_LINUX_USBDEVICE_FS_H
 

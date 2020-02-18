@@ -125,10 +125,6 @@
 #include <linux/net_tstamp.h>
 #endif
 
-#ifdef HAVE_LINUX_SOCKIOS_H
-#include <linux/sockios.h>
-#endif
-
 #ifdef HAVE_LINUX_IF_BONDING_H
 #include <linux/if_bonding.h>
 
