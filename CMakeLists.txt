@@ -1324,8 +1324,6 @@ else(WIN32)
             endif()
         endif()
 
-        check_include_file(linux/ethtool.h HAVE_LINUX_ETHTOOL_H)
-
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
     elseif(PCAP_TYPE STREQUAL "bpf")
         #

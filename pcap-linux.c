@@ -89,6 +89,7 @@
 #include <linux/if.h>
 #include <linux/if_packet.h>
 #include <linux/sockios.h>
+#include <linux/ethtool.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <linux/if_arp.h>
@@ -157,13 +158,6 @@
 #include <netlink/msg.h>
 #include <netlink/attr.h>
 #endif /* HAVE_LIBNL */
-
-/*
- * Got ethtool support?
- */
-#ifdef HAVE_LINUX_ETHTOOL_H
-#include <linux/ethtool.h>
-#endif
 
 #ifndef HAVE_SOCKLEN_T
 typedef int		socklen_t;

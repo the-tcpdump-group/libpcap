@@ -7078,23 +7078,6 @@ fi
 		fi
 	fi
 
-	for ac_header in linux/ethtool.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "linux/ethtool.h" "ac_cv_header_linux_ethtool_h" "
-$ac_includes_default
-#include <linux/types.h>
-
-"
-if test "x$ac_cv_header_linux_ethtool_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LINUX_ETHTOOL_H 1
-_ACEOF
-
-fi
-
-done
-
-
 	#
 	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
 	#

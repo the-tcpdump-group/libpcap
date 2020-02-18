@@ -940,12 +940,6 @@ linux)
 		fi
 	fi
 
-	AC_CHECK_HEADERS(linux/ethtool.h,,,
-	    [
-AC_INCLUDES_DEFAULT
-#include <linux/types.h>
-	    ])
-
 	#
 	# Check to see if the tpacket_auxdata struct has a tp_vlan_tci member.
 	#

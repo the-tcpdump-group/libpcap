@@ -96,9 +96,6 @@
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #undef HAVE_LINUX_COMPILER_H
 
-/* Define to 1 if you have the <linux/ethtool.h> header file. */
-#undef HAVE_LINUX_ETHTOOL_H
-
 /* define if we have the Linux getnetbyname_r() */
 #undef HAVE_LINUX_GETNETBYNAME_R
 

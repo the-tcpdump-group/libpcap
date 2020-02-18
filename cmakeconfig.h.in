@@ -87,9 +87,6 @@
 /* Define to 1 if you have the <linux/compiler.h> header file. */
 #cmakedefine HAVE_LINUX_COMPILER_H 1
 
-/* Define to 1 if you have the <linux/ethtool.h> header file. */
-#cmakedefine HAVE_LINUX_ETHTOOL_H 1
-
 /* define if we have the Linux getnetbyname_r() */
 #cmakedefine HAVE_LINUX_GETNETBYNAME_R 1
 
