@@ -5266,23 +5266,6 @@ fi
 done
 
 
-	#
-	# Check for the eventfd header.
-	#
-	for ac_header in sys/eventfd.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "sys/eventfd.h" "ac_cv_header_sys_eventfd_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_eventfd_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_SYS_EVENTFD_H 1
-_ACEOF
-
-fi
-
-done
-
-	;;
-
 haiku*)
 	#
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.

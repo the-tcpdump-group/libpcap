@@ -247,9 +247,6 @@
 /* Define to 1 if you have the <sys/dlpi.h> header file. */
 #cmakedefine HAVE_SYS_DLPI_H 1
 
-/* Define to 1 if you have the <sys/eventfd.h> header file. */
-#cmakedefine HAVE_SYS_EVENTFD_H 1
-
 /* Define to 1 if you have the <sys/ioccom.h> header file. */
 #cmakedefine HAVE_SYS_IOCCOM_H 1
 
