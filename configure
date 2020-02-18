@@ -5265,6 +5265,7 @@ fi
 
 done
 
+	;;
 
 haiku*)
 	#

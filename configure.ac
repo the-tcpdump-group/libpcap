@@ -94,6 +94,7 @@ linux*|uclinux*)
 #include <sys/socket.h>
 #include <linux/if.h>
 	])
+	;;
 
 haiku*)
 	#
