@@ -3612,10 +3612,6 @@ pcap_get_ring_frame_status(pcap_t *handle, int offset)
 	return 0;
 }
 
-#ifndef POLLRDHUP
-#define POLLRDHUP 0
-#endif
-
 /*
  * Block waiting for frames to be available.
  */
