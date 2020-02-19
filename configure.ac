@@ -85,17 +85,6 @@ if test "$ac_cv_header_net_pfvar_h" = yes; then
 fi
 
 case "$host_os" in
-linux*|uclinux*)
-	#
-	# linux/if_bonding.h requires sys/socket.h.
-	#
-	AC_CHECK_HEADERS(linux/if_bonding.h,,,
-	[
-#include <sys/socket.h>
-#include <linux/if.h>
-	])
-	;;
-
 haiku*)
 	#
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.

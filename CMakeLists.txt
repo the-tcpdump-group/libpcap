@@ -396,12 +396,6 @@ main(void)
             HAVE_PF_NAT_THROUGH_PF_NORDR)
     endif(HAVE_NET_PFVAR_H)
     check_include_file(netinet/if_ether.h HAVE_NETINET_IF_ETHER_H)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        #
-        # linux/if_bonding.h requires sys/socket.h.
-        #
-        check_include_files("sys/socket.h;linux/if_bonding.h" HAVE_LINUX_IF_BONDING_H)
-    endif()
 endif(NOT WIN32)
 
 #

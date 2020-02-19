@@ -5244,28 +5244,6 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
 case "$host_os" in
-linux*|uclinux*)
-	#
-	# linux/if_bonding.h requires sys/socket.h.
-	#
-	for ac_header in linux/if_bonding.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "linux/if_bonding.h" "ac_cv_header_linux_if_bonding_h" "
-#include <sys/socket.h>
-#include <linux/if.h>
-
-"
-if test "x$ac_cv_header_linux_if_bonding_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LINUX_IF_BONDING_H 1
-_ACEOF
-
-fi
-
-done
-
-	;;
-
 haiku*)
 	#
 	# Haiku needs _BSD_SOURCE for the _IO* macros because it doesn't use them.

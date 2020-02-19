@@ -102,9 +102,6 @@
 /* define if we have the Linux getprotobyname_r() */
 #undef HAVE_LINUX_GETPROTOBYNAME_R
 
-/* Define to 1 if you have the <linux/if_bonding.h> header file. */
-#undef HAVE_LINUX_IF_BONDING_H
-
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #undef HAVE_LINUX_NET_TSTAMP_H
 

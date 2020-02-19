@@ -93,9 +93,6 @@
 /* define if we have the Linux getprotobyname_r() */
 #cmakedefine HAVE_LINUX_GETPROTOBYNAME_R 1
 
-/* Define to 1 if you have the <linux/if_bonding.h> header file. */
-#cmakedefine HAVE_LINUX_IF_BONDING_H 1
-
 /* Define to 1 if you have the <linux/net_tstamp.h> header file. */
 #cmakedefine HAVE_LINUX_NET_TSTAMP_H 1
 
