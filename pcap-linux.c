@@ -346,7 +346,6 @@ pcap_create_interface(const char *device, char *ebuf)
 	}
 #endif
 
-#if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
 	/*
 	 * We claim that we support microsecond and nanosecond time
 	 * stamps.
@@ -365,7 +364,6 @@ pcap_create_interface(const char *device, char *ebuf)
 	}
 	handle->tstamp_precision_list[0] = PCAP_TSTAMP_PRECISION_MICRO;
 	handle->tstamp_precision_list[1] = PCAP_TSTAMP_PRECISION_NANO;
-#endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
 	struct pcap_linux *handlep = handle->priv;
 	handlep->poll_breakloop_fd = eventfd(0, EFD_NONBLOCK);
@@ -2811,7 +2809,6 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 		break;
 	}
 
-#if defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS)
 	if (handle->opt.tstamp_precision == PCAP_TSTAMP_PRECISION_NANO) {
 		int nsec_tstamps = 1;
 
@@ -2821,7 +2818,6 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 			return PCAP_ERROR;
 		}
 	}
-#endif /* defined(SIOCGSTAMPNS) && defined(SO_TIMESTAMPNS) */
 
 	/*
 	 * We've succeeded. Save the socket FD in the pcap structure.
