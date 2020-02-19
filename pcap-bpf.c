@@ -2758,7 +2758,11 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	strncpy(req.ifm_name, name, sizeof(req.ifm_name));
 	if (ioctl(sock, SIOCGIFMEDIA, &req) < 0) {
 		if (errno == EOPNOTSUPP || errno == EINVAL || errno == ENOTTY ||
-		    errno == ENODEV || errno == EPERM) {
+		    errno == ENODEV || errno == EPERM
+#ifdef EPWROFF
+		    || errno == EPWROFF
+#endif
+		    ) {
 			/*
 			 * Not supported, so we can't provide any
 			 * additional information.  Assume that
@@ -2773,6 +2777,18 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 			 * So, just as we do for some ethtool ioctls
 			 * on Linux, which makes the same mistake, we
 			 * also treat EPERM as meaning "not supported".
+			 *
+			 * And it appears that Apple's llw0 device, which
+			 * appears to be part of the Skywalk subsystem:
+			 *
+			 *    http://newosxbook.com/bonus/vol1ch16.html
+			 *
+			 * can sometimes return EPWROFF ("Device power
+			 * is off") for that ioctl, so we treat *that*
+			 * as another indication that we can't get a
+			 * connection status.  (If it *isn't* "powered
+			 * off", it's reported as a wireless device,
+			 * complete with an active/inactive state.)
 			 */
 			*flags |= PCAP_IF_CONNECTION_STATUS_NOT_APPLICABLE;
 			close(sock);
