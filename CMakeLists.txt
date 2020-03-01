@@ -1316,6 +1316,8 @@ else(WIN32)
                     endif()
                 endif()
             endif()
+        else()
+            unset(HAVE_LIBNL CACHE) # check_function_exists stores results in cache
         endif()
 
         check_struct_has_member("struct tpacket_auxdata" tp_vlan_tci linux/if_packet.h HAVE_STRUCT_TPACKET_AUXDATA_TP_VLAN_TCI)
@@ -1620,6 +1622,8 @@ main(void)
             endif(HAVE_STRUCT_SOCKADDR_HCI_HCI_CHANNEL)
         endif(HAVE_BLUETOOTH_BLUETOOTH_H)
     endif()
+else()
+    unset(PCAP_SUPPORT_BT_MONITOR CACHE)
 endif()
 
 # Check for Bluetooth sniffing support
