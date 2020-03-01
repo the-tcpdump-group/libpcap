@@ -1160,6 +1160,44 @@ static void	pcap_cleanup_linux( pcap_t *handle )
 	pcap_cleanup_live_common(handle);
 }
 
+#ifdef HAVE_TPACKET3
+/*
+ * Some versions of TPACKET_V3 have annoying bugs/misfeatures
+ * around which we have to work.  Determine if we have those
+ * problems or not.
+ * 3.19 is the first release with a fixed version of
+ * TPACKET_V3.  We treat anything before that as
+ * not having a fixed version; that may really mean
+ * it has *no* version.
+ */
+static int has_broken_tpacket_v3(void)
+{
+	struct utsname utsname;
+	const char *release;
+	long major, minor;
+	int matches, verlen;
+
+	/* No version information, assume broken. */
+	if (uname(&utsname) == -1)
+		return 1;
+	release = utsname.release;
+
+	/* A malformed version, ditto. */
+	matches = sscanf(release, "%ld.%ld%n", &major, &minor, &verlen);
+	if (matches != 2)
+		return 1;
+	if (release[verlen] != '.' && release[verlen] != '\0')
+		return 1;
+
+	/* OK, a fixed version. */
+	if (major > 3 || (major == 3 && minor >= 19))
+		return 0;
+
+	/* Too old :( */
+	return 1;
+}
+#endif
+
 /*
  * Set the timeout to be used in poll() with memory-mapped packet capture.
  */
@@ -1167,45 +1205,7 @@ static void
 set_poll_timeout(struct pcap_linux *handlep)
 {
 #ifdef HAVE_TPACKET3
-	struct utsname utsname;
-	char *version_component, *endp;
-	long major, minor;
-	int broken_tpacket_v3 = 1;
-
-	/*
-	 * Some versions of TPACKET_V3 have annoying bugs/misfeatures
-	 * around which we have to work.  Determine if we have those
-	 * problems or not.
-	 */
-	if (uname(&utsname) == 0) {
-		/*
-		 * 3.19 is the first release with a fixed version of
-		 * TPACKET_V3.  We treat anything before that as
-		 * not haveing a fixed version; that may really mean
-		 * it has *no* version.
-		 */
-		version_component = utsname.release;
-		major = strtol(version_component, &endp, 10);
-		if (endp != version_component && *endp == '.') {
-			/*
-			 * OK, that was a valid major version.
-			 * Get the minor version.
-			 */
-			version_component = endp + 1;
-			minor = strtol(version_component, &endp, 10);
-			if (endp != version_component &&
-			    (*endp == '.' || *endp == '\0')) {
-				/*
-				 * OK, that was a valid minor version.
-				 * Is this 3.19 or newer?
-				 */
-				if (major >= 4 || (major == 3 && minor >= 19)) {
-					/* Yes. TPACKET_V3 works correctly. */
-					broken_tpacket_v3 = 0;
-				}
-			}
-		}
-	}
+	int broken_tpacket_v3 = has_broken_tpacket_v3();
 #endif
 	if (handlep->timeout == 0) {
 #ifdef HAVE_TPACKET3
