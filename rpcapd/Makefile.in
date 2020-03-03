@@ -38,6 +38,7 @@ mandir = @mandir@
 
 # VPATH
 srcdir = @srcdir@
+top_srcdir = @top_srcdir@
 VPATH = @srcdir@
 
 #
@@ -138,4 +139,4 @@ tags: $(TAGFILES)
 	ctags -wtd $(TAGFILES)
 
 depend:
-	../$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
+	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
