@@ -798,6 +798,6 @@ rc1 rc2 rc3 rc4 rc5:
 	git checkout VERSION
 
 depend:	$(GENERATED_C_SRC) $(GENHDR)
-	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
+	$(MKDEP) -c "$(CC)" -m "$(DEPENDENCY_CFLAG)" -s "$(srcdir)" $(CFLAGS) $(DEFS) $(INCLS) $(SRC)
 	cd rpcapd; $(MAKE) depend
 	cd testprogs; $(MAKE) depend
