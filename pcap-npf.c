@@ -949,17 +949,22 @@ pcap_activate_npf(pcap_t *p)
 		/*
 		 * What error did we get when trying to open the adapter?
 		 */
-		if (errcode == ERROR_BAD_UNIT) {
+		switch (errcode) {
+
+		case ERROR_BAD_UNIT:
 			/*
 			 * There's no such device.
-			 *
-			 * XXX - what about ERROR_NO_SUCH_DEVICE?  That's
-			 * 433, and in at least some cases users are
-			 * getting that error when trying to open the
-			 * loopback adapter; see issue nmap/nmap/#1948.
 			 */
 			return (PCAP_ERROR_NO_SUCH_DEVICE);
-		} else {
+
+		case ERROR_ACCESS_DENIED:
+			/*
+			 * There is, but we don't have permission to
+			 * use it.
+			 */
+			return (PCAP_ERROR_PERM_DENIED);
+
+		default:
 			/*
 			 * Unknown - report details.
 			 */
