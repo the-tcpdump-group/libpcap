@@ -53,7 +53,10 @@ can be used to capture packets from all interfaces.
 specifies the snapshot length to be set on the handle.
 .PP
 .I promisc
-specifies if the interface is to be put into promiscuous mode.
+specifies whether the interface is to be put into promiscuous mode.
+If
+.I promisc
+is non-zero, promiscuous mode will be set, otherwise it will not be set.
 .PP
 .I to_ms
 specifies the packet buffer timeout, as a non-negative value, in
