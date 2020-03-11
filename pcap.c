@@ -2999,7 +2999,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(RAW, "Raw IP"),
 	DLT_CHOICE(SLIP_BSDOS, "BSD/OS SLIP"),
 	DLT_CHOICE(PPP_BSDOS, "BSD/OS PPP"),
-	DLT_CHOICE(ATM_CLIP, "Linux Classical IP-over-ATM"),
+	DLT_CHOICE(ATM_CLIP, "Linux Classical IP over ATM"),
 	DLT_CHOICE(PPP_SERIAL, "PPP over serial"),
 	DLT_CHOICE(PPP_ETHER, "PPPoE"),
 	DLT_CHOICE(SYMANTEC_FIREWALL, "Symantec Firewall"),

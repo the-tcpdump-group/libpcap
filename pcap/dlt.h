@@ -136,7 +136,7 @@
 #define DLT_PFSYNC	18
 #endif
 
-#define DLT_ATM_CLIP	19	/* Linux Classical-IP over ATM */
+#define DLT_ATM_CLIP	19	/* Linux Classical IP over ATM */
 
 /*
  * Apparently Redback uses this for its SmartEdge 400/800.  I hope
