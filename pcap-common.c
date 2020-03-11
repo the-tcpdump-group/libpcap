@@ -1319,11 +1319,20 @@ linktype_to_dlt(int linktype)
 		return (DLT_PKTAP);
 
 	/*
-	 * For all other values in the matching range, the LINKTYPE
-	 * value is the same as the DLT value.
+	 * For all other values in the matching range, except for
+	 * LINKTYPE_ATM_CLIP, the LINKTYPE value is the same as
+	 * the DLT value.
+	 *
+	 * LINKTYPE_ATM_CLIP is a special case.  DLT_ATM_CLIP is
+	 * not on all platforms, but, so far, there don't appear
+	 * to be any platforms that define it as anything other
+	 * than 19; we define LINKTYPE_ATM_CLIP as something
+	 * other than 19, just in case.  That value is in the
+	 * matching range, so we have to check for it.
 	 */
 	if (linktype >= LINKTYPE_MATCHING_MIN &&
-	    linktype <= LINKTYPE_MATCHING_MAX)
+	    linktype <= LINKTYPE_MATCHING_MAX &&
+	    linktype != LINKTYPE_ATM_CLIP)
 		return (linktype);
 
 	/*
