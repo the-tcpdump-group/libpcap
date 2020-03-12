@@ -1243,7 +1243,7 @@ pcap_ng_next_packet(pcap_t *p, struct pcap_pkthdr *hdr, u_char **data)
 			if ((bpf_u_int32)p->snapshot !=
 			    pcap_adjust_snapshot(p->linktype, idbp->snaplen)) {
 				snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-				    "an interface has a snapshot length %u different from the type of the first interface",
+				    "an interface has a snapshot length %u different from the snapshot length of the first interface",
 				    idbp->snaplen);
 				return (-1);
 			}
