@@ -3139,7 +3139,7 @@ static struct dlt_choice dlt_choices[] = {
 	DLT_CHOICE(ELEE, "ELEE lawful intercept packets"),
 	DLT_CHOICE(Z_WAVE_SERIAL, "Z-Wave serial frames between host and chip"),
 	DLT_CHOICE(USB_2_0, "USB 2.0/1.1/1.0 as transmitted over the cable"),
-	DLT_CHOICE(ATSC_ALP, "ATSC Link-Layer Protocol (A/330) packets"),
+	DLT_CHOICE(ATSC_ALP, "ATSC Link-Layer Protocol packets"),
 	DLT_CHOICE_SENTINEL
 };
 
