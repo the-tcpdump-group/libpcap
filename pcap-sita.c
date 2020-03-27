@@ -292,12 +292,12 @@ int acn_parse_hosts_file(char *errbuf) {				/* returns: -1 = error, 0 = OK */
 			snprintf(errbuf, PCAP_ERRBUF_SIZE, "Invalid ACN name in '/etc/hosts'.");	/* warn the user */
 			continue;																	/* and ignore the entry */
 		}
-		if ((ptr2 = (char *)malloc(strlen(ptr) + 1)) == NULL) {
+		ptr2 = strdup(ptr);					/* copy the IP address into our malloc'ed memory */
+		if (ptr2 == NULL) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "malloc");
 			continue;
 		}
-		strcpy(ptr2, ptr);								/* copy the IP address into our malloc'ed memory */
 		u = &units[chassis][geoslot];
 		u->ip = ptr2;									/* and remember the whole shebang */
 		u->chassis = chassis;
@@ -419,7 +419,6 @@ static void unified_IOP_port_name(char *buf, size_t bufsize, const char *proto, 
 
 static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 iftype) {
 	iface_t		*iface_ptr, *iface;
-	char		*name;
 	char		buf[32];
 	char		*proto;
 	char		*port;
@@ -434,14 +433,11 @@ static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 if
 
 	iface->iftype = iftype;					/* remember the interface type of this interface */
 
-	name = malloc(strlen(IOPname) + 1);		/* get memory for the IOP's name */
-        if (name == NULL) {    /* oops, we didn't get the memory requested     */
+	iface->IOPname = strdup(IOPnam);			/* copy it and stick it into the structure */
+        if (iface->IOPname == NULL) {    /* oops, we didn't get the memory requested     */
                 fprintf(stderr, "Error...couldn't allocate memory for IOPname...value of errno is: %d\n", errno);
                 return NULL;
         }
-
-	strcpy(name, IOPname);					/* and copy it in */
-	iface->IOPname = name;					/* and stick it into the structure */
 
 	if (strncmp(IOPname, "lo", 2) == 0) {
 		IOPportnum = atoi(&IOPname[2]);
@@ -478,14 +474,11 @@ static char *translate_IOP_to_pcap_name(unit_t *u, char *IOPname, bpf_u_int32 if
 		return NULL;
 	}
 
-	name = malloc(strlen(buf) + 1);			/* get memory for that name */
-        if (name == NULL) {    /* oops, we didn't get the memory requested     */
+	iface->name = strdup(buf);					/* make a copy and stick it into the structure */
+        if (iface->name == NULL) {    /* oops, we didn't get the memory requested     */
                 fprintf(stderr, "Error...couldn't allocate memory for IOP port name...value of errno is: %d\n", errno);
                 return NULL;
         }
-
-	strcpy(name, buf);						/* and copy it in */
-	iface->name = name;						/* and stick it into the structure */
 
 	if (u->iface == 0) {					/* if this is the first name */
 		u->iface = iface;					/* stick this entry at the head of the list */
