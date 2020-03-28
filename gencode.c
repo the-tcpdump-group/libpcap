@@ -2927,7 +2927,7 @@ insert_compute_vloffsets(compiler_state_t *cstate, struct block *b)
 	}
 
 	/*
-	 * If there there is no initialization yet and we need variable
+	 * If there is no initialization yet and we need variable
 	 * length offsets for VLAN, initialize them to zero
 	 */
 	if (s == NULL && cstate->is_vlan_vloffset) {
@@ -8878,7 +8878,7 @@ gen_vlan_bpf_extensions(compiler_state_t *cstate, bpf_u_int32 vlan_num,
 
 	/*
 	 * This is tricky. We need to insert the statements updating variable
-	 * parts of offsets before the the traditional TPID and VID tests so
+	 * parts of offsets before the traditional TPID and VID tests so
 	 * that they are called whenever SKF_AD_VLAN_TAG_PRESENT fails but
 	 * we do not want this update to affect those checks. That's why we
 	 * generate both test blocks first and insert the statements updating

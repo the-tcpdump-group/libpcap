@@ -638,7 +638,7 @@ netfilter_activate(pcap_t* handle)
 			if (nflog_send_config_cmd(handle, groups[i], NFULNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
 				pcap_fmt_errmsg_for_errno(handle->errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
-				    "Can't listen on group group index");
+				    "Can't listen on group index");
 				goto close_fail;
 			}
 
@@ -668,7 +668,7 @@ netfilter_activate(pcap_t* handle)
 			if (nfqueue_send_config_cmd(handle, groups[i], NFQNL_CFG_CMD_BIND, AF_UNSPEC) < 0) {
 				pcap_fmt_errmsg_for_errno(handle->errbuf,
 				    PCAP_ERRBUF_SIZE, errno,
-				    "Can't listen on group group index");
+				    "Can't listen on group index");
 				goto close_fail;
 			}
 

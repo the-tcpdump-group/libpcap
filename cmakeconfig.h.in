@@ -289,7 +289,7 @@
 /* Define to the address where bug reports for this package should be sent. */
 #cmakedefine PACKAGE_BUGREPORT 1
 
-/* Define to the DLL-preferred version string of of this package. */
+/* Define to the DLL-preferred version string of this package. */
 #cmakedefine PACKAGE_VERSION_DLL @PACKAGE_VERSION_DLL@
 
 /* Define to the full name of this package. */
