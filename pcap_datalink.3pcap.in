@@ -55,6 +55,8 @@ any given link-layer header type, such as
 for Ethernet.  For example, the "any" device on Linux will have a
 link-layer header type of
 .B DLT_LINUX_SLL
+or
+.B DLT_LINUX_SLL2
 even if all devices on the system at the time the "any" device is opened
 have some other data link type, such as
 .B DLT_EN10MB
