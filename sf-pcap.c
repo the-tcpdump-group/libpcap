@@ -206,8 +206,8 @@ pcap_check_header(const uint8_t *magic, FILE *fp, u_int precision, char *errbuf,
 	if (swapped) {
 		hdr.version_major = SWAPSHORT(hdr.version_major);
 		hdr.version_minor = SWAPSHORT(hdr.version_minor);
-		hdr.thiszone = SWAPLONG(hdr.thiszone);
-		hdr.sigfigs = SWAPLONG(hdr.sigfigs);
+		hdr.reserved1 = SWAPLONG(hdr.reserved1);
+		hdr.reserved2 = SWAPLONG(hdr.reserved2);
 		hdr.snaplen = SWAPLONG(hdr.snaplen);
 		hdr.linktype = SWAPLONG(hdr.linktype);
 	}
@@ -731,12 +731,11 @@ sf_write_header(pcap_t *p, FILE *fp, int linktype, int snaplen)
 
 	/*
 	 * https://www.tcpdump.org/manpages/pcap-savefile.5.txt states:
-	 * thiszone: 4-byte time zone offset; this is always 0.
-	 * sigfigs:  4-byte number giving the accuracy of time stamps
-	 *           in the file; this is always 0.
+	 * reserved1: 4-byte not used - SHOULD be filled with 0
+	 * reserved2: 4-byte not used - SHOULD be filled with 0
 	 */
-	hdr.thiszone = 0;
-	hdr.sigfigs = 0;
+	hdr.reserved1 = 0;
+	hdr.reserved2 = 0;
 	hdr.snaplen = snaplen;
 	hdr.linktype = linktype;
 
