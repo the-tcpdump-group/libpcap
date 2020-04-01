@@ -350,17 +350,17 @@ struct rpcap_sampling
  */
 #define RPCAP_MSG_IS_REPLY		0x080	/* Flag indicating a reply */
 
-#define RPCAP_MSG_ERROR			1	/* Message that keeps an error notification */
-#define RPCAP_MSG_FINDALLIF_REQ		2	/* Request to list all the remote interfaces */
-#define RPCAP_MSG_OPEN_REQ		3	/* Request to open a remote device */
-#define RPCAP_MSG_STARTCAP_REQ		4	/* Request to start a capture on a remote device */
-#define RPCAP_MSG_UPDATEFILTER_REQ	5	/* Send a compiled filter into the remote device */
-#define RPCAP_MSG_CLOSE			6	/* Close the connection with the remote peer */
-#define RPCAP_MSG_PACKET		7	/* This is a 'data' message, which carries a network packet */
-#define RPCAP_MSG_AUTH_REQ		8	/* Message that keeps the authentication parameters */
-#define RPCAP_MSG_STATS_REQ		9	/* It requires to have network statistics */
-#define RPCAP_MSG_ENDCAP_REQ		10	/* Stops the current capture, keeping the device open */
-#define RPCAP_MSG_SETSAMPLING_REQ	11	/* Set sampling parameters */
+#define RPCAP_MSG_ERROR			0x01	/* Message that keeps an error notification */
+#define RPCAP_MSG_FINDALLIF_REQ		0x02	/* Request to list all the remote interfaces */
+#define RPCAP_MSG_OPEN_REQ		0x03	/* Request to open a remote device */
+#define RPCAP_MSG_STARTCAP_REQ		0x04	/* Request to start a capture on a remote device */
+#define RPCAP_MSG_UPDATEFILTER_REQ	0x05	/* Send a compiled filter into the remote device */
+#define RPCAP_MSG_CLOSE			0x06	/* Close the connection with the remote peer */
+#define RPCAP_MSG_PACKET		0x07	/* This is a 'data' message, which carries a network packet */
+#define RPCAP_MSG_AUTH_REQ		0x08	/* Message that keeps the authentication parameters */
+#define RPCAP_MSG_STATS_REQ		0x09	/* It requires to have network statistics */
+#define RPCAP_MSG_ENDCAP_REQ		0x0A	/* Stops the current capture, keeping the device open */
+#define RPCAP_MSG_SETSAMPLING_REQ	0x0B	/* Set sampling parameters */
 
 #define RPCAP_MSG_FINDALLIF_REPLY	(RPCAP_MSG_FINDALLIF_REQ | RPCAP_MSG_IS_REPLY)		/* Keeps the list of all the remote interfaces */
 #define RPCAP_MSG_OPEN_REPLY		(RPCAP_MSG_OPEN_REQ | RPCAP_MSG_IS_REPLY)		/* The remote device has been opened correctly */
