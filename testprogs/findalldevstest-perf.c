@@ -76,8 +76,8 @@ int main(int argc _U_, char **argv _U_)
   end_kticks.HighPart = end_ktime.dwHighDateTime;
   end_uticks.LowPart = end_utime.dwLowDateTime;
   end_uticks.HighPart = end_utime.dwHighDateTime;
-  ktime = end_ticks.QuadPart - start_ticks.QuadPart;
-  utime = end_ticks.QuadPart - start_ticks.QuadPart;
+  ktime = end_kticks.QuadPart - start_kticks.QuadPart;
+  utime = end_uticks.QuadPart - start_uticks.QuadPart;
   tottime = ktime + utime;
   printf("Total CPU secs: kernel %g, user %g, total %g\n",
       ((double)ktime) / 10000000.0,
