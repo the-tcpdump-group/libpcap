@@ -30,6 +30,7 @@ add_test_executable(can_set_rfmon_test)
 add_test_executable(capturetest)
 add_test_executable(filtertest)
 add_test_executable(findalldevstest)
+add_test_executable(findalldevstest-perf)
 add_test_executable(opentest)
 add_test_executable(reactivatetest)
 

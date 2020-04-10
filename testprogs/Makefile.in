@@ -84,6 +84,7 @@ SRC = @VALGRINDTEST_SRC@ \
 	can_set_rfmon_test.c \
 	filtertest.c \
 	findalldevstest.c \
+	findalldevstest-perf.c \
 	opentest.c \
 	reactivatetest.c \
 	selpolltest.c \
@@ -109,6 +110,9 @@ filtertest: $(srcdir)/filtertest.c ../libpcap.a
 
 findalldevstest: $(srcdir)/findalldevstest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest $(srcdir)/findalldevstest.c ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
+
+findalldevstest-perf: $(srcdir)/findalldevstest-perf.c ../libpcap.a
+	$(CC) $(FULL_CFLAGS) -I. -L. -o findalldevstest-perf $(srcdir)/findalldevstest-perf.c ../libpcap.a $(EXTRA_NETWORK_LIBS) $(LIBS)
 
 opentest: $(srcdir)/opentest.c ../libpcap.a
 	$(CC) $(FULL_CFLAGS) -I. -L. -o opentest $(srcdir)/opentest.c ../libpcap.a $(LIBS)
