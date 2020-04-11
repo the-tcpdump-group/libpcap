@@ -126,6 +126,23 @@ struct rtentry;		/* declarations in <net/if.h> */
 #ifdef _WIN32
 /*
  * DllMain(), required when built as a Windows DLL.
+ *
+ * To quote the WSAStartup() documentation:
+ *
+ *   The WSAStartup function typically leads to protocol-specific helper
+ *   DLLs being loaded. As a result, the WSAStartup function should not
+ *   be called from the DllMain function in a application DLL. This can
+ *   potentially cause deadlocks.
+ *
+ * and the WSACleanup() documentation:
+ *
+ *   The WSACleanup function typically leads to protocol-specific helper
+ *   DLLs being unloaded. As a result, the WSACleanup function should not
+ *   be called from the DllMain function in a application DLL. This can
+ *   potentially cause deadlocks.
+ *
+ * So we don't actually do anything here.  pcap_init() should be called
+ * to initialize pcap on both UN*X and Windows.
  */
 BOOL WINAPI DllMain(
   HANDLE hinstDLL _U_,
@@ -137,40 +154,158 @@ BOOL WINAPI DllMain(
 }
 
 /*
- * Start WinSock.
+ * Start Winsock.
+ * Internal routine.
+ */
+static int
+internal_wsockinit(char *errbuf)
+{
+	WORD wVersionRequested;
+	WSADATA wsaData;
+	static int err = -1;
+	static int done = 0;
+	int status;
+
+	if (done)
+		return (err);
+
+	/*
+	 * Versions of Windows that don't support Winsock 2.2 are
+	 * too old for us.
+	 */
+	wVersionRequested = MAKEWORD(2, 2);
+	status = WSAStartup(wVersionRequested, &wsaData);
+	done = 1;
+	if (status != 0) {
+		if (errbuf != NULL) {
+			pcap_fmt_errmsg_for_win32_err(errbuf, PCAP_ERRBUF_SIZE,
+			    status, "WSAStartup() failed");
+		}
+		return (err);
+	}
+	atexit ((void(*)(void))WSACleanup);
+	err = 0;
+	return (err);
+}
+
+/*
  * Exported in case some applications using WinPcap/Npcap called it,
  * even though it wasn't exported.
  */
 int
 wsockinit(void)
 {
-	WORD wVersionRequested;
-	WSADATA wsaData;
-	static int err = -1;
-	static int done = 0;
-
-	if (done)
-		return (err);
-
-	wVersionRequested = MAKEWORD( 1, 1);
-	err = WSAStartup( wVersionRequested, &wsaData );
-	atexit ((void(*)(void))WSACleanup);
-	done = 1;
-
-	if ( err != 0 )
-		err = -1;
-	return (err);
+	return (internal_wsockinit(NULL));
 }
 
 /*
  * This is the exported function; new programs should call this.
+ * *Newer* programs should call pcap_init().
  */
 int
 pcap_wsockinit(void)
 {
-       return (wsockinit());
+	return (internal_wsockinit(NULL));
 }
 #endif /* _WIN32 */
+
+/*
+ * Do whatever initialization is needed for libpcap.
+ *
+ * The argument specifies whether we use the local code page or UTF-8
+ * for strings; on UN*X, we just assume UTF-8 in places where the encoding
+ * would matter, whereas, on Windows, we use the local code page for
+ * PCAP_CHAR_ENC_LOCAL and UTF-8 for PCAP_CHAR_ENC_UTF_8.
+ *
+ * On Windows, we also disable the hack in pcap_create() to deal with
+ * being handed UTF-16 strings, because if the user calls this they're
+ * explicitly declaring that they will either be passing local code
+ * page strings or UTF-8 strings, so we don't need to allow UTF-16LE
+ * strings to be passed.  For good measure, on Windows *and* UN*X,
+ * we disable pcap_lookupdev(), to prevent anybody from even
+ * *trying* to pass the result of pcap_lookupdev() - which might be
+ * UTF-16LE on Windows, for ugly compatibility reasons - to pcap_create()
+ * or pcap_open_live() or pcap_open().
+ *
+ * Returns 0 on success, -1 on error.
+ */
+int pcap_new_api;		/* pcap_lookupdev() always fails */
+int pcap_utf_8_mode;		/* Strings should be in UTF-8. */
+
+int
+pcap_init(unsigned int opts, char *errbuf)
+{
+	static int initialized;
+
+	/*
+	 * Don't allow multiple calls that set different modes; that
+	 * may mean a library is initializing pcap in one mode and
+	 * a program using that library, or another library used by
+	 * that program, is initializing it in another mode.
+	 */
+	switch (opts) {
+
+	case PCAP_CHAR_ENC_LOCAL:
+		/* Leave "UTF-8 mode" off. */
+		if (initialized) {
+			if (pcap_utf_8_mode) {
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "Multiple pcap_init calls with different character encodings");
+				return (-1);
+			}
+		}
+		break;
+
+	case PCAP_CHAR_ENC_UTF_8:
+		/* Turn on "UTF-8 mode". */
+		if (initialized) {
+			if (!pcap_utf_8_mode) {
+				snprintf(errbuf, PCAP_ERRBUF_SIZE,
+				    "Multiple pcap_init calls with different character encodings");
+				return (-1);
+			}
+		}
+		pcap_utf_8_mode = 1;
+		break;
+
+	default:
+		snprintf(errbuf, PCAP_ERRBUF_SIZE, "Unknown options specified");
+		return (-1);
+	}
+
+	/*
+	 * Turn the appropriate mode on for error messages; those routines
+	 * are also used in rpcapd, which has no access to pcap's internal
+	 * UTF-8 mode flag, so we have to call a routine to set its
+	 * UTF-8 mode flag.
+	 */
+	pcap_fmt_set_encoding(opts);
+
+	if (initialized) {
+		/*
+		 * Nothing more to do; for example, on Windows, we've
+		 * already initialized Winsock.
+		 */
+		return (0);
+	}
+
+#ifdef _WIN32
+	/*
+	 * Now set up Winsock.
+	 */
+	if (internal_wsockinit(errbuf) == -1) {
+		/* Failed. */
+		return (-1);
+	}
+#endif
+
+	/*
+	 * We're done.
+	 */
+	initialized = 1;
+	pcap_new_api = 1;
+	return (0);
+}
 
 /*
  * String containing the library version.
@@ -1365,6 +1500,22 @@ pcap_lookupdev(char *errbuf)
 	static char device[IF_NAMESIZE + 1];
 	char *ret;
 
+	/*
+	 * We disable this in "new API" mode, because 1) in WinPcap/Npcap,
+	 * it may return UTF-16 strings, for backwards-compatibility
+	 * reasons, and we're also disabling the hack to make that work,
+	 * for not-going-past-the-end-of-a-string reasons, and 2) we
+	 * want its behavior to be consistent.
+	 *
+	 * In addition, it's not thread-safe, so we've marked it as
+	 * deprecated.
+	 */
+	if (pcap_new_api) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "pcap_lookupdev() is deprecated and is not supported in programs calling pcap_init()");
+		return (NULL);
+	}
+
 	if (pcap_findalldevs(&alldevs, errbuf) == -1)
 		return (NULL);
 
@@ -2121,15 +2272,27 @@ pcap_create(const char *device, char *errbuf)
 		 * so, convert it back to the local code page's
 		 * extended ASCII.
 		 *
-		 * XXX - you *cannot* reliably detect whether a
-		 * string is UTF-16LE or not; "a" could either
-		 * be a one-character ASCII string or the first
-		 * character of a UTF-16LE string.  This particular
-		 * version of this heuristic dates back to WinPcap
-		 * 4.1.1; PacketOpenAdapter() does uses the same
-		 * heuristic, with the exact same vulnerability.
+		 * We disable that check in "new API" mode, because:
+		 *
+		 *   1) You *cannot* reliably detect whether a
+		 *   string is UTF-16LE or not; "a" could either
+		 *   be a one-character ASCII string or the first
+		 *   character of a UTF-16LE string.
+		 *
+		 *   2) Doing that test can run past the end of
+		 *   the string, if it's a 1-character ASCII
+		 *   string
+		 *
+		 * This particular version of this heuristic dates
+		 * back to WinPcap 4.1.1; PacketOpenAdapter() does
+		 * uses the same heuristic, with the exact same
+		 * vulnerability.
+		 *
+		 * That's why we disable this in "new API" mode.
+		 * We keep it around in legacy mode for backwards
+		 * compatibility.
 		 */
-		if (device[0] != '\0' && device[1] == '\0') {
+		if (!pcap_new_api && device[0] != '\0' && device[1] == '\0') {
 			size_t length;
 
 			length = wcslen((wchar_t *)device);

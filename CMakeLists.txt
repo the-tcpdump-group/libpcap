@@ -427,9 +427,9 @@ main(void)
     endif(NOT HAVE_GNU_STRERROR_R)
 else(HAVE_STRERROR_R)
     #
-    # We don't have strerror_r; do we have strerror_s?
+    # We don't have strerror_r; do we have _wcserror_s?
     #
-    check_function_exists(strerror_s HAVE_STRERROR_S)
+    check_function_exists(_wcserror_s HAVE__WCSERROR_S)
 endif(HAVE_STRERROR_R)
 
 #
@@ -1027,11 +1027,14 @@ set(PROJECT_SOURCE_LIST_C
 
 if(WIN32)
     #
+    # We add the character set conversion routines; they're Windows-only
+    # for now.
+    #
     # We assume we don't have asprintf(), and provide an implementation
     # that uses _vscprintf() to determine how big the string needs to be.
     #
     set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C}
-        missing/win_asprintf.c)
+        charconv.c missing/win_asprintf.c)
 else()
     if(NOT HAVE_ASPRINTF)
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} missing/asprintf.c)
@@ -1204,7 +1207,7 @@ message(STATUS "Packet capture mechanism type: ${PCAP_TYPE}")
 if(WIN32)
     if(PCAP_TYPE STREQUAL "npf")
         #
-        # Link with packet.dll before WinSock2.
+        # Link with packet.dll before Winsock2.
         #
         set(PCAP_LINK_LIBRARIES ${PACKET_LIBRARIES} ${PCAP_LINK_LIBRARIES})
     elseif(PCAP_TYPE STREQUAL "null")
@@ -2486,6 +2489,7 @@ set(MAN3PCAP_NOEXPAND
     pcap_get_required_select_timeout.3pcap
     pcap_get_selectable_fd.3pcap
     pcap_geterr.3pcap
+    pcap_init.3pcap
     pcap_inject.3pcap
     pcap_is_swapped.3pcap
     pcap_lib_version.3pcap

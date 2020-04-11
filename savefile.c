@@ -54,6 +54,7 @@
 #include "sf-pcap.h"
 #include "sf-pcapng.h"
 #include "pcap-common.h"
+#include "charconv.h"
 
 #ifdef _WIN32
 /*
@@ -246,6 +247,102 @@ sf_cleanup(pcap_t *p)
 	pcap_freecode(&p->fcode);
 }
 
+#ifdef _WIN32
+/*
+ * Wrapper for fopen() and _wfopen().
+ *
+ * If we're in UTF-8 mode, map the pathname from UTF-8 to UTF-16LE and
+ * call _wfopen().
+ *
+ * If we're not, just use fopen(); that'll treat it as being in the
+ * local code page.
+ */
+FILE *
+charset_fopen(const char *path, const char *mode)
+{
+	wchar_t *utf16_path;
+#define MAX_MODE_LEN	16
+	wchar_t utf16_mode[MAX_MODE_LEN+1];
+	int i;
+	char c;
+	FILE *fp;
+	int save_errno;
+
+	if (pcap_utf_8_mode) {
+		/*
+		 * Map from UTF-8 to UTF-16LE.
+		 * Fail if there are invalid characters in the input
+		 * string, rather than converting them to REPLACEMENT
+		 * CHARACTER; the latter is appropriate for strings
+		 * to be displayed to the user, but for file names
+		 * you just want the attempt to open the file to fail.
+		 */
+		utf16_path = cp_to_utf_16le(CP_UTF8, path,
+		    MB_ERR_INVALID_CHARS);
+		if (utf16_path == NULL) {
+			/*
+			 * Error.  Assume errno has been set.
+			 *
+			 * XXX - what about Windows errors?
+			 */
+			return (NULL);
+		}
+
+		/*
+		 * Now convert the mode to UTF-16LE as well.
+		 * We assume the mode is ASCII, and that
+		 * it's short, so that's easy.
+		 */
+		for (i = 0; (c = *mode) != '\0'; i++, mode++) {
+			if (c > 0x7F) {
+				/* Not an ASCII character; fail with EINVAL. */
+				free(utf16_path);
+				errno = EINVAL;
+				return (NULL);
+			}
+			if (i >= MAX_MODE_LEN) {
+				/* The mode string is longer than we allow. */
+				free(utf16_path);
+				errno = EINVAL;
+				return (NULL);
+			}
+			utf16_mode[i] = c;
+		}
+		utf16_mode[i] = '\0';
+		
+		/*
+		 * OK, we have UTF-16LE strings; hand them to
+		 * _wfopen().
+		 */
+		fp = _wfopen(utf16_path, utf16_mode);
+
+		/*
+		 * Make sure freeing the UTF-16LE string doesn't
+		 * overwrite the error code we got from _wfopen().
+		 */
+		save_errno = errno;
+		free(utf16_path);
+		errno = save_errno;
+
+		return (fp);
+	} else {
+		/*
+		 * This takes strings in the local code page as an
+		 * argument.
+		 */
+		return (fopen(path, mode));
+	}
+}
+#else
+/*
+ * On other OSes, just use Boring Old fopen().
+ *
+ * "b" is supported as of C90, so *all* UN*Xes should support it, even
+ * though it does nothing.  For MS-DOS, we again need it.
+ */
+#define charset_fopen_read(path, mode)	fopen((path), (mode))
+#endif
+
 pcap_t *
 pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 					char *errbuf)
@@ -276,12 +373,16 @@ pcap_open_offline_with_tstamp_precision(const char *fname, u_int precision,
 	}
 	else {
 		/*
+		 * Use charset_fopen(); on Windows, it tests whether we're
+		 * in "local code page" or "UTF-8" mode, and treats the
+		 * pathname appropriately, and on other platforms, it just
+		 * wraps fopen().
+		 *
 		 * "b" is supported as of C90, so *all* UN*Xes should
-		 * support it, even though it does nothing.  It's
-		 * required on Windows, as the file is a binary file
-		 * and must be read in binary mode.
+		 * support it, even though it does nothing.  For MS-DOS,
+		 * we again need it.
 		 */
-		fp = fopen(fname, "rb");
+		fp = charset_fopen(fname, "rb");
 		if (fp == NULL) {
 			pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "%s", fname);

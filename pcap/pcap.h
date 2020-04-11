@@ -365,6 +365,26 @@ typedef void (*pcap_handler)(u_char *, const struct pcap_pkthdr *,
 #define PCAP_NETMASK_UNKNOWN	0xffffffff
 
 /*
+ * Initialize pcap.  If this isn't called, pcap is initialized to
+ * a mode source-compatible and binary-compatible with older versions
+ * that lack this routine.
+ */
+
+/*
+ * Initialization options.
+ * All bits not listed here are reserved for expansion.
+ *
+ * On UNIX-like systems, the local character encoding is assumed to be
+ * UTF-8, so no character encoding transformations are done.
+ *
+ * On Windows, the local character encoding is the local ANSI code page.
+ */
+#define PCAP_CHAR_ENC_LOCAL	0x00000000U	/* strings are in the local character encoding */
+#define PCAP_CHAR_ENC_UTF_8	0x00000001U	/* strings are in UTF-8 */
+
+PCAP_API int	pcap_init(unsigned int, char *);
+
+/*
  * We're deprecating pcap_lookupdev() for various reasons (not
  * thread-safe, can behave weirdly with WinPcap).  Callers
  * should use pcap_findalldevs() and use the first device.

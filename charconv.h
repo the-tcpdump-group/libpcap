@@ -1,5 +1,6 @@
+/* -*- Mode: c; tab-width: 8; indent-tabs-mode: 1; c-basic-offset: 8; -*- */
 /*
- * Copyright (c) 1994, 1995, 1996
+ * Copyright (c) 1993, 1994, 1995, 1996, 1997
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,27 +32,13 @@
  * SUCH DAMAGE.
  */
 
-#ifndef fmtutils_h
-#define	fmtutils_h
-
-#include "pcap/funcattrs.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void	pcap_fmt_set_encoding(unsigned int);
-
-void	pcap_fmt_errmsg_for_errno(char *, size_t, int,
-    PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(4, 5);
+#ifndef charonv_h
+#define charonv_h
 
 #ifdef _WIN32
-void	pcap_fmt_errmsg_for_win32_err(char *, size_t, DWORD,
-    PCAP_FORMAT_STRING(const char *), ...) PCAP_PRINTFLIKE(4, 5);
-#endif
-
-#ifdef __cplusplus
-}
+extern wchar_t *cp_to_utf_16le(UINT codepage, const char *cp_string, DWORD flags);
+extern char *utf_16le_to_cp(UINT codepage, const wchar_t *utf16le_string);
+extern void utf_8_to_acp_truncated(char *);
 #endif
 
 #endif

@@ -180,9 +180,6 @@
 /* Define to 1 if you have the `strerror' function. */
 #cmakedefine HAVE_STRERROR 1
 
-/* Define to 1 if you have the `strerror_s' function. */
-#cmakedefine HAVE_STRERROR_S 1
-
 /* Define to 1 if you have the <strings.h> header file. */
 #cmakedefine HAVE_STRINGS_H 1
 
@@ -264,6 +261,9 @@
 
 /* Define to 1 if you have the `vsyslog' function. */
 #cmakedefine HAVE_VSYSLOG 1
+
+/* Define to 1 if you have the `_wcserror_s' function. */
+#cmakedefine HAVE__WCSERROR_S 1
 
 /* Define to 1 if you have the `PacketIsLoopbackAdapter' function. */
 #cmakedefine HAVE_PACKET_IS_LOOPBACK_ADAPTER 1

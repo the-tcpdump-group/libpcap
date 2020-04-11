@@ -133,9 +133,9 @@ main(void)
     ],
     [
 	#
-	# We don't have strerror_r; do we have strerror_s?
+	# We don't have strerror_r; do we have _wcserror_s?
 	#
-	AC_CHECK_FUNCS(strerror_s)
+	AC_CHECK_FUNCS(_wcserror_s)
     ])
 
 #

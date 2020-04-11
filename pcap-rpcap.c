@@ -46,6 +46,10 @@
 #include "rpcap-protocol.h"
 #include "pcap-rpcap.h"
 
+#ifdef _WIN32
+#include "charconv.h"		/* for utf_8_to_acp_truncated() */
+#endif
+
 #ifdef HAVE_OPENSSL
 #include "sslutils.h"
 #endif
@@ -2161,7 +2165,7 @@ rpcap_setup_session(const char *source, struct pcap_rmtauth *auth,
 	}
 
 	/* Warning: this call can be the first one called by the user. */
-	/* For this reason, we have to initialize the WinSock support. */
+	/* For this reason, we have to initialize the Winsock support. */
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return -1;
 
@@ -2797,7 +2801,7 @@ SOCKET pcap_remoteact_accept_ex(const char *address, const char *port, const cha
 	hints.ai_socktype = SOCK_STREAM;
 
 	/* Warning: this call can be the first one called by the user. */
-	/* For this reason, we have to initialize the WinSock support. */
+	/* For this reason, we have to initialize the Winsock support. */
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
 		return (SOCKET)-1;
 
@@ -3352,6 +3356,15 @@ static void rpcap_msg_err(SOCKET sockctrl, SSL *ssl, uint32 plen, char *remote_e
 		 * Null-terminate it.
 		 */
 		remote_errbuf[PCAP_ERRBUF_SIZE - 1] = '\0';
+
+#ifdef _WIN32
+		/*
+		 * If we're not in UTF-8 mode, convert it to the local
+		 * code page.
+		 */
+		if (!pcap_utf_8_mode)
+			utf_8_to_acp_truncated(remote_errbuf);
+#endif
 
 		/*
 		 * Throw away the rest.

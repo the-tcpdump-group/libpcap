@@ -51,6 +51,33 @@
 extern "C" {
 #endif
 
+/*
+ * If pcap_new_api is set, we disable pcap_lookupdev(), because:
+ *
+ *    it's not thread-safe, and is marked as deprecated, on all
+ *    platforms;
+ *
+ *    on Windows, it may return UTF-16LE strings, which the program
+ *    might then pass to pcap_create() (or to pcap_open_live(), which
+ *    then passes them to pcap_create()), requiring pcap_create() to
+ *    check for UTF-16LE strings using a hack, and that hack 1)
+ *    *cannot* be 100% reliable and 2) runs the risk of going past the
+ *    end of the string.
+ *
+ * We keep it around in legacy mode for compatibility.
+ *
+ * We also disable the aforementioned hack in pcap_create().
+ */
+extern int pcap_new_api;
+
+/*
+ * If pcap_utf_8_mode is set, on Windows we treat strings as UTF-8.
+ *
+ * On UN*Xes, we assume all strings are and should be in UTF-8, regardless
+ * of the setting of this flag.
+ */
+extern int pcap_utf_8_mode;
+
 #ifdef MSDOS
   #include <fcntl.h>
   #include <io.h>
@@ -260,6 +287,9 @@ struct pcap {
 	struct bpf_program fcode;
 
 	char errbuf[PCAP_ERRBUF_SIZE + 1];
+#ifdef _WIN32
+	char acp_errbuf[PCAP_ERRBUF_SIZE + 1];	/* buffer for local code page error strings */
+#endif
 	int dlt_count;
 	u_int *dlt_list;
 	int tstamp_type_count;
@@ -486,7 +516,8 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
 #endif
 
 /*
- * Internal interfaces for "pcap_open_offline()".
+ * Internal interfaces for "pcap_open_offline()" and other savefile
+ * I/O routines.
  *
  * "pcap_open_offline_common()" allocates and fills in a pcap_t, for use
  * by pcap_open_offline routines.
@@ -497,10 +528,22 @@ int	add_addr_to_if(pcap_if_list_t *, const char *, bpf_u_int32,
  * "sf_cleanup()" closes the file handle associated with a pcap_t, if
  * appropriate, and frees all data common to all modules for handling
  * savefile types.
+ *
+ * "charset_fopen()", in UTF-8 mode on Windows, does an fopen() that
+ * treats the pathname as being in UTF-8, rather than the local
+ * code page, on Windows.
  */
 pcap_t	*pcap_open_offline_common(char *ebuf, size_t size);
 bpf_u_int32 pcap_adjust_snapshot(bpf_u_int32 linktype, bpf_u_int32 snaplen);
 void	sf_cleanup(pcap_t *p);
+#ifdef _WIN32
+FILE	*charset_fopen(const char *path, const char *mode);
+#else
+/*
+ * On UN*X, just use Boring Old fopen().
+ */
+#define charset_fopen(path, mode)	fopen((path), (mode))
+#endif
 
 /*
  * Internal interfaces for doing user-mode filtering of packets and

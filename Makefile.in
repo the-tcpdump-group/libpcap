@@ -203,6 +203,7 @@ MAN3PCAP_NOEXPAND = \
 	pcap_get_required_select_timeout.3pcap \
 	pcap_get_selectable_fd.3pcap \
 	pcap_geterr.3pcap \
+	pcap_init.3pcap \
 	pcap_inject.3pcap \
 	pcap_is_swapped.3pcap \
 	pcap_lib_version.3pcap \

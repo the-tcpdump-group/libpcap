@@ -67,7 +67,7 @@
   /*
    * Winsock initialization.
    *
-   * Ask for WinSock 2.2.
+   * Ask for Winsock 2.2.
    */
   #define WINSOCK_MAJOR_VERSION 2
   #define WINSOCK_MINOR_VERSION 2
@@ -121,7 +121,7 @@ static int sock_ismcastaddr(const struct sockaddr *saddr);
  ****************************************************/
 
 /*
- * Format an error message given an errno value (UN*X) or a WinSock error
+ * Format an error message given an errno value (UN*X) or a Winsock error
  * (Windows).
  */
 void sock_fmterror(const char *caller, int errcode, char *errbuf, int errbuflen)

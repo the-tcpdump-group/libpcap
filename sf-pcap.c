@@ -831,7 +831,7 @@ pcap_dump_open(pcap_t *p, const char *fname)
 		 * required on Windows, as the file is a binary file
 		 * and must be written in binary mode.
 		 */
-		f = fopen(fname, "wb");
+		f = charset_fopen(fname, "wb");
 		if (f == NULL) {
 			pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 			    errno, "%s", fname);
@@ -931,7 +931,7 @@ pcap_dump_open_append(pcap_t *p, const char *fname)
 	 * even though it does nothing.  It's required on Windows, as the
 	 * file is a binary file and must be read in binary mode.
 	 */
-	f = fopen(fname, "ab+");
+	f = charset_fopen(fname, "ab+");
 	if (f == NULL) {
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
 		    errno, "%s", fname);

@@ -35,6 +35,52 @@ on the network, even those destined for other hosts, are accessible
 through this mechanism.
 It also supports saving captured packets to a ``savefile'', and reading
 packets from a ``savefile''.
+.SS Initializing
+.BR pcap_init ()
+initializes the library.  It takes an argument giving options;
+currently, the options are:
+.TP
+.B PCAP_CHAR_ENC_LOCAL
+Treat all strings supplied as arguments, and return all strings to the
+caller, as being in the local character encoding.
+.TP
+.B PCAP_CHAR_ENC_UTF_8
+Treat all strings supplied as arguments, and return all strings to the
+caller, as being in UTF-8.
+.PP
+On UNIX-like systems, the local character encoding is assumed to be
+UTF-8, so no character encoding transformations are done.
+.PP
+On Windows, the local character encoding is the local ANSI code page.
+.PP
+If
+.BR pcap_init ()
+is called, the deprecated
+.BR pcap_lookupdev ()
+routine always fails, so it should not be used, and, on Windows,
+.BR pcap_create ()
+does not attempt to handle UTF-16LE strings.
+.PP
+If
+.BR pcap_init ()
+is not called, strings are treated as being in the local ANSI code page
+on Windows,
+.BR pcap_lookupdev ()
+will succeed if there is a device on which to capture, and
+.BR pcap_create ()
+makes an attempt to check whether the string passed as an argument is a
+UTF-16LE string - note that this attempt is unsafe, as it may run past
+the end of the string - to handle
+.BR pcap_lookupdev ()
+returning a UTF-16LE string. Programs that don't call
+.BR pcap_init ()
+should, on Windows, call
+.BR pcap_wsockinit ()
+to initialize Winsock; this is not necessary if
+.BR pcap_init ()
+is called, as
+.BR pcap_init ()
+will initialize Winsock itself on Windows.
 .SS Opening a capture handle for reading
 To open a handle for a live capture, given the name of the network or
 other interface on which the capture should be done, call

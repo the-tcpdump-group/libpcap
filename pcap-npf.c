@@ -937,7 +937,7 @@ pcap_activate_npf(pcap_t *p)
 		}
 	}
 
-	/* Init WinSock */
+	/* Init Winsock if it hasn't already been initialized */
 	pcap_wsockinit();
 
 	pw->adapter = PacketOpenAdapter(p->opt.device);
@@ -1897,6 +1897,22 @@ pcap_lookupdev(char *errbuf)
 {
 	DWORD dwVersion;
 	DWORD dwWindowsMajorVersion;
+
+	/*
+	 * We disable this in "new API" mode, because 1) in WinPcap/Npcap,
+	 * it may return UTF-16 strings, for backwards-compatibility
+	 * reasons, and we're also disabling the hack to make that work,
+	 * for not-going-past-the-end-of-a-string reasons, and 2) we
+	 * want its behavior to be consistent.
+	 *
+	 * In addition, it's not thread-safe, so we've marked it as
+	 * deprecated.
+	 */
+	if (pcap_new_api) {
+		snprintf(errbuf, PCAP_ERRBUF_SIZE,
+		    "pcap_lookupdev() is deprecated and is not supported in programs calling pcap_init()");
+		return (NULL);
+	}
 
 /* disable MSVC's GetVersion() deprecated warning here */
 DIAG_OFF_DEPRECATION

@@ -325,6 +325,16 @@ int main(int argc, char *argv[])
 	}
 #endif
 
+	//
+	// We want UTF-8 error messages.
+	//
+	if (pcap_init(PCAP_CHAR_ENC_UTF_8, errbuf) == -1)
+	{
+		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);
+		exit(-1);
+	}
+	pcap_fmt_set_encoding(PCAP_CHAR_ENC_UTF_8);
+
 	if (sock_init(errbuf, PCAP_ERRBUF_SIZE) == -1)
 	{
 		rpcapd_log(LOGPRIO_ERROR, "%s", errbuf);

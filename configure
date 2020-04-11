@@ -5358,14 +5358,14 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 else
 
 	#
-	# We don't have strerror_r; do we have strerror_s?
+	# We don't have strerror_r; do we have _wcserror_s?
 	#
-	for ac_func in strerror_s
+	for ac_func in _wcserror_s
 do :
-  ac_fn_c_check_func "$LINENO" "strerror_s" "ac_cv_func_strerror_s"
-if test "x$ac_cv_func_strerror_s" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "_wcserror_s" "ac_cv_func__wcserror_s"
+if test "x$ac_cv_func__wcserror_s" = xyes; then :
   cat >>confdefs.h <<_ACEOF
-#define HAVE_STRERROR_S 1
+#define HAVE__WCSERROR_S 1
 _ACEOF
 
 fi

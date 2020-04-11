@@ -17,9 +17,9 @@
 .\" WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 .\" MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 .\"
-.TH PCAP_LOOKUPDEV 3PCAP "8 September 2017"
+.TH PCAP_INIT 3PCAP "11 April 2020"
 .SH NAME
-pcap_lookupdev \- find the default device on which to capture
+pcap_init \- initialize the library
 .SH SYNOPSIS
 .nf
 .ft B
@@ -32,39 +32,53 @@ char errbuf[PCAP_ERRBUF_SIZE];
 .ft
 .LP
 .ft B
-[DEPRECATED] char *pcap_lookupdev(char *errbuf);
+int pcap_init(unsigned int opts, char *errbuf);
 .ft
 .fi
 .SH DESCRIPTION
-.B This interface is obsoleted by
-.BR pcap_findalldevs (3PCAP).
-To find a default device on which to capture, call
-.BR pcap_findalldevs ()
-and, if the list it returns is not empty, use the first device in the
-list.  (If the list is empty, there are no devices on which capture is
-possible.)
-.LP
-.B If
-.BR pcap_init (3PCAP)
-.B has been called, this interface always returns
-.BR NULL .
-.LP
-.BR pcap_lookupdev ()
-returns a pointer to a string giving the name of a network device
-suitable for use with
+.BR pcap_init ()
+is used to initialize the Packet Capture library.
+.I opts
+specifies options for the library;
+currently, the options are:
+.TP
+.B PCAP_CHAR_ENC_LOCAL
+Treat all strings supplied as arguments, and return all strings to the
+caller, as being in the local character encoding.
+.TP
+.B PCAP_CHAR_ENC_UTF_8
+Treat all strings supplied as arguments, and return all strings to the
+caller, as being in UTF-8.
+.PP
+On UNIX-like systems, the local character encoding is assumed to be
+UTF-8, so no character encoding transformations are done.
+.PP
+On Windows, the local character encoding is the local ANSI code page.
+.PP
+If
+.BR pcap_init ()
+is not called, strings are treated as being in the local ANSI code page
+on Windows,
+.BR pcap_lookupdev (3PCAP)
+will succeed if there is a device on which to capture, and
 .BR pcap_create (3PCAP)
-and
-.BR \%pcap_activate (3PCAP),
-or with
-.BR pcap_open_live (3PCAP),
-and with
-.BR pcap_lookupnet (3PCAP).
-If there is an error,
-or if
-.BR pcap_init (3PCAP)
-has been called,
-.B NULL
-is returned and
+makes an attempt to check whether the string passed as an argument is a
+UTF-16LE string - note that this attempt is unsafe, as it may run past
+the end of the string - to handle
+.BR pcap_lookupdev ()
+returning a UTF-16LE string. Programs that don't call
+.BR pcap_init ()
+should, on Windows, call
+.BR pcap_wsockinit ()
+to initialize Winsock; this is not necessary if
+.BR pcap_init ()
+is called, as
+.BR pcap_init ()
+will initialize Winsock itself on Windows.
+.SH RETURN VALUE
+.BR pcap_init ()
+returns 0 on success and \-1 on failure.
+If \-1 is returned,
 .I errbuf
 is filled in with an appropriate error message.
 .I errbuf
@@ -73,15 +87,3 @@ is assumed to be able to hold at least
 chars.
 .SH SEE ALSO
 .BR pcap (3PCAP)
-.SH BUGS
-The pointer returned by
-.BR pcap_lookupdev ()
-points to a static buffer; subsequent calls to
-.BR pcap_lookupdev ()
-in the same thread, or calls to
-.BR pcap_lookupdev ()
-in another thread, may overwrite that buffer.
-.LP
-In WinPcap, this function may return a UTF-16 string rather than an
-ASCII or UTF-8 string.
-
