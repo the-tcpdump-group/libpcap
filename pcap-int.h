@@ -540,7 +540,7 @@ void	sf_cleanup(pcap_t *p);
 FILE	*charset_fopen(const char *path, const char *mode);
 #else
 /*
- * On UN*X, just use Boring Old fopen().
+ * On other OSes, just use Boring Old fopen().
  */
 #define charset_fopen(path, mode)	fopen((path), (mode))
 #endif

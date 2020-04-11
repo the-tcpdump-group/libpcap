@@ -333,14 +333,6 @@ charset_fopen(const char *path, const char *mode)
 		return (fopen(path, mode));
 	}
 }
-#else
-/*
- * On other OSes, just use Boring Old fopen().
- *
- * "b" is supported as of C90, so *all* UN*Xes should support it, even
- * though it does nothing.  For MS-DOS, we again need it.
- */
-#define charset_fopen_read(path, mode)	fopen((path), (mode))
 #endif
 
 pcap_t *
