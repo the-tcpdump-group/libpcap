@@ -36,6 +36,8 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include <pcap/pcap.h>	/* Needed for PCAP_ERRBUF_SIZE */
+
 #include "charconv.h"
 
 wchar_t *
