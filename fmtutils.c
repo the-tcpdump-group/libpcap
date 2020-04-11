@@ -101,7 +101,8 @@ pcap_fmt_set_encoding(unsigned int opts _U_)
 #define REPLACEMENT_CHARACTER	0x0FFFD
 
 static char *
-utf_16le_to_utf_8_truncated(wchar_t *utf_16, char *utf_8, size_t utf_8_len)
+utf_16le_to_utf_8_truncated(const wchar_t *utf_16, char *utf_8,
+    size_t utf_8_len)
 {
 	wchar_t c, c2;
 	uint32_t uc;
@@ -302,7 +303,7 @@ pcap_fmt_errmsg_for_errno(char *errbuf, size_t errbuflen, int errnum,
 	 * Generate a UTF-16LE error message.
 	 */
 	wchar_t utf_16_errbuf[PCAP_ERRBUF_SIZE];
-	errno_t err = _wcserror_s(utf_16_errbuf, sizeof (utf_16_errbuf), errnum);
+	errno_t err = _wcserror_s(utf_16_errbuf, PCAP_ERRBUF_SIZE, errnum);
 	if (err != 0) {
 		/*
 		 * It doesn't appear to be documented anywhere obvious
