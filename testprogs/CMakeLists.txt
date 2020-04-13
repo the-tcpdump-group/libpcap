@@ -20,8 +20,8 @@ macro(add_test_executable _executable)
       ${ARGN} ${LIBRARY_NAME}_static ${PCAP_LINK_LIBRARIES})
   endif(WIN32)
   if(NOT "${LINKER_FLAGS}" STREQUAL "")
-      set_target_properties(${LIBRARY_NAME} PROPERTIES
-          LINK_FLAGS "${LINKER_FLAGS}")
+    set_target_properties(${_executable} PROPERTIES
+      LINK_FLAGS "${LINKER_FLAGS}")
   endif()
   add_dependencies(testprogs ${_executable})
 endmacro()
