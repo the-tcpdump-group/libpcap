@@ -1014,6 +1014,18 @@ if(OPENSSL_FOUND)
   set(HAVE_OPENSSL YES)
 endif(OPENSSL_FOUND)
 
+#
+# Additional linker flags.
+#
+set(LINKER_FLAGS "${SANITIZER_FLAGS}")
+if(ENABLE_PROFILING)
+    if(MSVC)
+        set(LINKER_FLAGS " /PROFILE")
+    else()
+        set(LINKER_FLAGS " -pg")
+    endif()
+endif()
+
 ######################################
 # Input files
 ######################################
@@ -2212,14 +2224,6 @@ if(BUILD_SHARED_LIBS)
     #
     set_target_properties(${LIBRARY_NAME} PROPERTIES
         DEFINE_SYMBOL pcap_EXPORTS)
-    set(LINKER_FLAGS "${SANITIZER_FLAGS}")
-    if(ENABLE_PROFILING)
-        if(MSVC)
-            set(LINKER_FLAGS " /PROFILE")
-        else()
-            set(LINKER_FLAGS " -pg")
-        endif()
-    endif()
     if(NOT "${LINKER_FLAGS}" STREQUAL "")
         set_target_properties(${LIBRARY_NAME} PROPERTIES
             LINK_FLAGS "${LINKER_FLAGS}")
