@@ -187,6 +187,8 @@ if(WIN32)
     set(Packet_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
 endif(WIN32)
 
+option(ENABLE_PROFILING "Enable code profiling" OFF)
+
 # To pacify those who hate the protochain instruction
 option(NO_PROTOCHAIN "Disable protochain instruction" OFF)
 
@@ -904,6 +906,13 @@ if(NOT WIN32)
     set(CMAKE_THREAD_LIBS_INIT "")
   endif(NOT CMAKE_USE_PTHREADS_INIT)
 endif(NOT WIN32)
+
+if(ENABLE_PROFILING)
+    if(NOT MSVC)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+    endif()
+endif()
 
 #
 # Based on
@@ -2203,9 +2212,17 @@ if(BUILD_SHARED_LIBS)
     #
     set_target_properties(${LIBRARY_NAME} PROPERTIES
         DEFINE_SYMBOL pcap_EXPORTS)
-    if(NOT "${SANITIZER_FLAGS}" STREQUAL "")
+    set(LINKER_FLAGS "${SANITIZER_FLAGS}")
+    if(ENABLE_PROFILING)
+        if(MSVC)
+            set(LINKER_FLAGS " /PROFILE")
+        else()
+            set(LINKER_FLAGS " -pg")
+        endif()
+    endif()
+    if(NOT "${LINKER_FLAGS}" STREQUAL "")
         set_target_properties(${LIBRARY_NAME} PROPERTIES
-            LINK_FLAGS "${SANITIZER_FLAGS}")
+            LINK_FLAGS "${LINKER_FLAGS}")
     endif()
 endif(BUILD_SHARED_LIBS)
 
