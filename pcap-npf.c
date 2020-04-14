@@ -567,7 +567,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 #define bhp ((struct bpf_hdr *)bp)
 	ep = bp + cc;
 	for (;;) {
-		register int caplen, hdrlen;
+		register u_int caplen, hdrlen;
 
 		/*
 		 * Has "pcap_breakloop()" been called?
