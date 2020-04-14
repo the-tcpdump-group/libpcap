@@ -489,13 +489,13 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 {
 	PACKET Packet;
 	int cc;
-	int n = 0;
+	int n;
 	register u_char *bp, *ep;
 	u_char *datap;
 	struct pcap_win *pw = p->priv;
 
 	cc = p->cc;
-	if (p->cc == 0) {
+	if (cc == 0) {
 		/*
 		 * Has "pcap_breakloop()" been called?
 		 */
@@ -565,6 +565,7 @@ pcap_read_npf(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 	 * Loop through each packet.
 	 */
 #define bhp ((struct bpf_hdr *)bp)
+	n = 0;
 	ep = bp + cc;
 	for (;;) {
 		register u_int caplen, hdrlen;
