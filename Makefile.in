@@ -93,7 +93,7 @@ PLATFORM_CXX_SRC =	@PLATFORM_CXX_SRC@
 MODULE_C_SRC =		@MODULE_C_SRC@
 REMOTE_C_SRC =		@REMOTE_C_SRC@
 COMMON_C_SRC =	pcap.c gencode.c optimize.c nametoaddr.c etherent.c \
-		charconv.c fmtutils.c \
+		fmtutils.c \
 		savefile.c sf-pcap.c sf-pcapng.c pcap-common.c \
 		bpf_image.c bpf_filter.c bpf_dump.c
 GENERATED_C_SRC = scanner.c grammar.c
@@ -134,7 +134,6 @@ PUBHDR = \
 HDR = $(PUBHDR) \
 	arcnet.h \
 	atmuni31.h \
-	charconv.h \
 	diag-control.h \
 	ethertype.h \
 	extract.h \
@@ -258,6 +257,8 @@ EXTRA_DIST = \
 	TODO \
 	VERSION \
 	aclocal.m4 \
+	charconv.c \
+	charconv.h \
 	chmod_bpf \
 	cmake_uninstall.cmake.in \
 	cmakeconfig.h.in \
