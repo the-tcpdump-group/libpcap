@@ -385,12 +385,6 @@ pcap_sendqueue_transmit_npf(pcap_t *p, pcap_send_queue *queue, int sync)
 	struct pcap_win *pw = p->priv;
 	u_int res;
 
-	if (pw->adapter==NULL) {
-		snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
-		    "Cannot transmit a queue to an offline capture or to a TurboCap port");
-		return (0);
-	}
-
 	res = PacketSendPackets(pw->adapter,
 		queue->buffer,
 		queue->len,
