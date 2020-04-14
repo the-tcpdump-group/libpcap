@@ -392,7 +392,7 @@ pcap_sendqueue_transmit_npf(pcap_t *p, pcap_send_queue *queue, int sync)
 
 	if(res != queue->len){
 		pcap_fmt_errmsg_for_win32_err(p->errbuf, PCAP_ERRBUF_SIZE,
-		    GetLastError(), "Error opening adapter");
+		    GetLastError(), "Error queueing packets");
 	}
 
 	return (res);
