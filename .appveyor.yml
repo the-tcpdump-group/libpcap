@@ -11,8 +11,8 @@ install:
   - win_bison --version
   - appveyor DownloadFile https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
   - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
-  - appveyor DownloadFile https://nmap.org/npcap/dist/npcap-sdk-0.1.zip
-  - 7z x .\npcap-sdk-0.1.zip -oc:\projects\libpcap\Win32
+  - appveyor DownloadFile https://nmap.org/npcap/dist/npcap-sdk-1.05.zip
+  - 7z x .\npcap-sdk-1.05.zip -oc:\projects\libpcap\Win32
 
 environment:
   matrix:
@@ -22,7 +22,7 @@ environment:
       MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "MinGW Makefiles"
-      SDK: npcap-sdk-0.1
+      SDK: npcap-sdk-1.05
       MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
@@ -32,10 +32,10 @@ environment:
       SDK: WpdPack
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
-      SDK: npcap-sdk-0.1
+      SDK: npcap-sdk-1.05
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
-      SDK: npcap-sdk-0.1
+      SDK: npcap-sdk-1.05
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: WpdPack
@@ -44,10 +44,10 @@ environment:
       SDK: WpdPack
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
-      SDK: npcap-sdk-0.1
+      SDK: npcap-sdk-1.05
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
-      SDK: npcap-sdk-0.1
+      SDK: npcap-sdk-1.05
 
 build_script:
   #
