@@ -1650,7 +1650,7 @@ else()
     unset(PCAP_SUPPORT_BT_MONITOR CACHE)
 endif()
 
-# Check for Bluetooth sniffing support
+# Check for D-Bus sniffing support
 if(NOT DISABLE_DBUS)
     #
     # We don't support D-Bus sniffing on macOS; see
