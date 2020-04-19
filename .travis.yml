@@ -1,5 +1,9 @@
 language: c
 
+#
+# Try building on these 4 architectures; all are 64-bit, and all but
+# "s390x", a/k/a z/Architecture, are little-endian.
+#
 arch:
   - amd64
   - ppc64le
@@ -16,6 +20,28 @@ compiler:
   - gcc
   - clang
 
+#
+# Linux runs on all of the architectures listed above; macOS currently
+# runs only on 64-bit x86, although the Spaceshipologists are all in a
+# tizzy about the possibility of Arm-based Macs.  Suppress the macOS
+# builds that don't work.
+#
+# In addition, with newer versions of macOS, Apple ships a "gcc" that's
+# just another front end to Clang, presumably for backwards
+# compatibility with build scripts etc. that expect the compiler to be
+# "gcc", so don't bother doing "gcc" builds on macOS.
+#
+jobs:
+  exclude:
+  - arch: ppc64le
+    os: osx
+  - arch: s390x
+    os: osx
+  - arch: arm64
+    os: osx
+  - compiler: gcc
+    os: osx
+
 cache: ccache
 
 env:
@@ -25,7 +51,7 @@ env:
     - secure: "SwNcek+I4lMVcnb5EGGmNm6ljWN6C/mnXzBr82a5rEQNKxAoJfdvvPpKIp0iEfg5j0PtYlcRHoIDyVZ/6QM/WEw0wrio9Z0cio9hkOS6kV8g2QouXfnoNtKJ5nNso7UD2GPJ9+M0GIR1GZ0Edvxr81sHlNAkpVKydYGBwCIMGyg="
     # Coverity run condition (avoid matrix multiple runs), need customized
     # build script. Need an update if new matrix cases.
-    - coverity_scan_run_condition='"$TRAVIS_OS_NAME" = linux -a "$CC" = gcc -a "$REMOTE" = enable -a "$CMAKE" = no'
+    - coverity_scan_run_condition='"$TRAVIS_CPU_ARCH" = amd64 -a "$TRAVIS_OS_NAME" = linux -a "$CC" = gcc -a "$REMOTE" = enable -a "$CMAKE" = no'
     # Coverity script test mode (if true no uploading, avoid reaching the quota)
     # usual processing: false.
     - coverity_scan_script_test_mode=false
