@@ -83,14 +83,18 @@
    * least with HP's C compiler; hopefully doing so won't make it
    * *not* work with *un*-threaded code.
    */
-#elif defined(__linux__) || defined(linux) || defined(__linux) || defined(__CYGWIN__)
+#else
   /*
    * Turn on _GNU_SOURCE to get everything GNU libc has to offer,
-   * including asprintf().
+   * including asprintf(), if we're using GNU libc.
    *
    * Unfortunately, one thing it has to offer is a strerror_r()
    * that's not POSIX-compliant, but we deal with that in
    * pcap_fmt_errmsg_for_errno().
+   *
+   * We don't limit this to, for example, Linux and Cygwin, because
+   * this might, for example, be GNU/HURD or one of Debian's kFreeBSD
+   * OSes ("GNU/FreeBSD").
    */
   #define _GNU_SOURCE
 
