@@ -90,6 +90,7 @@
 #include <linux/if_packet.h>
 #include <linux/sockios.h>
 #include <linux/ethtool.h>
+#include <linux/netlink.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
 #include <linux/if_arp.h>
@@ -1728,6 +1729,24 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	}
 
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock == -1) {
+		int save_errno = errno;
+		sock = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+		/*
+		 * In the case of EOPNOTSUPP we suppose that .ioctl in the Linux
+		 * netlink_ops is set to sock_no_ioctl and AF_NETLINK socket does
+		 * not support ioctls yet. So, provide saved errno to the error
+		 * message.
+		 */
+		if (sock == -1 && errno == EOPNOTSUPP)
+			errno = save_errno;
+		else {
+			fprintf(stderr,
+				"Warning: Can't create socket to get ethtool information for %s: %s\n"
+				"Fallback to NETLINK socket\n",
+				name, pcap_strerror(save_errno));
+		}
+	}
 	if (sock == -1) {
 		pcap_fmt_errmsg_for_errno(errbuf, PCAP_ERRBUF_SIZE, errno,
 		    "Can't create socket to get ethtool information for %s",
@@ -5426,6 +5445,24 @@ iface_ethtool_get_ts_info(const char *device, pcap_t *handle, char *ebuf)
 	 * Create a socket from which to fetch time stamping capabilities.
 	 */
 	fd = socket(PF_UNIX, SOCK_RAW, 0);
+	if (fd < 0) {
+		int save_errno = errno;
+		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_GENERIC);
+		/*
+		 * In the case of EOPNOTSUPP we suppose that .ioctl in the Linux
+		 * netlink_ops is set to sock_no_ioctl and AF_NETLINK socket does
+		 * not support ioctls yet. So, provide saved errno to the error
+		 * message.
+		 */
+		if (fd < 0 && errno == EOPNOTSUPP)
+			errno = save_errno;
+		else {
+			fprintf(stderr,
+				"Warning: Can't create socket for SIOCETHTOOL(ETHTOOL_GET_TS_INFO)\n"
+				"Fallback to NETLINK socket\n",
+				pcap_strerror(save_errno));
+		}
+	}
 	if (fd < 0) {
 		pcap_fmt_errmsg_for_errno(ebuf, PCAP_ERRBUF_SIZE,
 		    errno, "socket for SIOCETHTOOL(ETHTOOL_GET_TS_INFO)");
