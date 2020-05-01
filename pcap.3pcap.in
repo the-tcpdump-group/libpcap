@@ -81,6 +81,13 @@ to initialize Winsock; this is not necessary if
 is called, as
 .BR pcap_init ()
 will initialize Winsock itself on Windows.
+.TP
+.B Routines
+.RS
+.TP
+.BR pcap_init (3PCAP)
+initialize the library
+.RE
 .SS Opening a capture handle for reading
 To open a handle for a live capture, given the name of the network or
 other interface on which the capture should be done, call
