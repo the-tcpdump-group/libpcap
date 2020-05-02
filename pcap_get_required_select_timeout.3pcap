@@ -73,7 +73,7 @@ timeout argument to
 if the
 .B EVFILT_TIMER
 event for a particular selectable descriptor signals an event,
-.BR pcap_dispatch (2)
+.BR pcap_dispatch (3PCAP)
 should be called for the corresponding
 .BR pcap_t .
 .PP
@@ -86,7 +86,7 @@ argument to
 .BR epoll_wait ();
 if the
 timer object for a particular selectable descriptor signals an event,
-.BR pcap_dispatch (2)
+.BR pcap_dispatch (3PCAP)
 should be called for the corresponding
 .BR pcap_t .
 .PP
@@ -96,7 +96,7 @@ the smallest of all timeouts returned by
 for devices from which packets will be captured and any other timeouts
 to be used in the call should be used as the timeout for the call, and,
 when the call returns,
-.BR pcap_dispatch (2)
+.BR pcap_dispatch (3PCAP)
 should be called for all
 .BR pcap_t s
 for which a
