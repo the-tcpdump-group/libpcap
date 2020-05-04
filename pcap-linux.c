@@ -3619,7 +3619,6 @@ activate_pf_packet(pcap_t *handle, int is_any_device)
 #ifdef HAVE_PF_PACKET_SOCKETS
 	struct pcap_linux *handlep = handle->priv;
 	const char		*device = handle->opt.device;
-	int			protocol = pcap_protocol(handle);
 	int			sock_fd = -1, arptype, ret;
 #ifdef HAVE_PACKET_AUXDATA
 	int			val;
