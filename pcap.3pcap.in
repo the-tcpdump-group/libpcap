@@ -319,14 +319,11 @@ setuid to root.
 .TP
 .B Under Linux:
 You must be root or the application capturing packets must be installed
-setuid to root (unless your distribution has a kernel
+setuid to root, unless your distribution has a kernel
 that supports capability bits such as CAP_NET_RAW and code to allow
 those capability bits to be given to particular accounts and to cause
 those bits to be set on a user's initial processes when they log in, in
-which case you  must have CAP_NET_RAW in order to capture and
-CAP_NET_ADMIN to enumerate network devices with, for example, the
-.B \-D
-flag).
+which case you must have CAP_NET_RAW in order to capture.
 .TP
 .B Under ULTRIX and Digital UNIX/Tru64 UNIX:
 Any user may capture network traffic.
