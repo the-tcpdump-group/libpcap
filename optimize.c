@@ -2205,7 +2205,7 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	if (opt_state->n_edges && edge_memsize / sizeof(*opt_state->space) / opt_state->n_edges != opt_state->edgewords) {
 		opt_error(opt_state, "integer multiply overflow");
 	}
-	if (block_memsize > SIZE_T_MAX - edge_memsize) {
+	if (block_memsize > SIZE_MAX - edge_memsize) {
 		opt_error(opt_state, "size_t overflow");
 	}
 
