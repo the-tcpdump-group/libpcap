@@ -2750,6 +2750,17 @@ get_if_flags(const char *name, bpf_u_int32 *flags, char *errbuf)
 	memset(&ifr, 0, sizeof(ifr));
 	pcap_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
 	info.cmd = ETHTOOL_GLINK;
+	/*
+	 * XXX - while Valgrind handles SIOCETHTOOL and knows that
+	 * the ETHTOOL_GLINK command sets the .data member of the
+	 * structure, Memory Sanitizer doesn't yet do so:
+	 *
+	 *    https://bugs.llvm.org/show_bug.cgi?id=45814
+	 *
+	 * For now, we zero it out to squelch warnings; if the bug
+	 * in question is fixed, we can remove this.
+	 */
+	info.data = 0;
 	ifr.ifr_data = (caddr_t)&info;
 	if (ioctl(sock, SIOCETHTOOL, &ifr) == -1) {
 		int save_errno = errno;
