@@ -2164,7 +2164,7 @@ static void
 opt_init(opt_state_t *opt_state, struct icode *ic)
 {
 	bpf_u_int32 *p;
-	int i, n, max_stmts;
+	int i, n, max_stmts, block_memsize, edge_memsize;
 
 	/*
 	 * First, count the blocks, so we can malloc an array to map
@@ -2196,9 +2196,17 @@ opt_init(opt_state_t *opt_state, struct icode *ic)
 	opt_state->edgewords = opt_state->n_edges / (8 * sizeof(bpf_u_int32)) + 1;
 	opt_state->nodewords = opt_state->n_blocks / (8 * sizeof(bpf_u_int32)) + 1;
 
+	/*
+	 * Check integer overflow.
+	 */
+	block_memsize = 2 * opt_state->n_blocks * opt_state->nodewords * sizeof(*opt_state->space);
+	edge_memsize = opt_state->n_edges * opt_state->edgewords * sizeof(*opt_state->space);
+	if (opt_state->n_edges && edge_memsize / sizeof(*opt_state->space) / opt_state->n_edges != opt_state->edgewords) {
+		opt_error(opt_state, "integer overflow");
+	}
+
 	/* XXX */
-	opt_state->space = (bpf_u_int32 *)malloc(2 * opt_state->n_blocks * opt_state->nodewords * sizeof(*opt_state->space)
-				 + opt_state->n_edges * opt_state->edgewords * sizeof(*opt_state->space));
+	opt_state->space = (bpf_u_int32 *)malloc(block_memsize + edge_memsize);
 	if (opt_state->space == NULL) {
 		opt_error(opt_state, "malloc");
 	}
