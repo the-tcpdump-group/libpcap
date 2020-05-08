@@ -546,6 +546,17 @@ FILE	*charset_fopen(const char *path, const char *mode);
 #endif
 
 /*
+ * Internal interfaces for loading code at run time.
+ */
+#ifdef _WIN32
+#define pcap_code_handle_t	HMODULE
+#define pcap_funcptr_t		FARPROC
+
+pcap_code_handle_t	pcap_load_code(const char *);
+pcap_funcptr_t		pcap_find_function(pcap_code_handle_t, const char *);
+#endif
+
+/*
  * Internal interfaces for doing user-mode filtering of packets and
  * validating filter programs.
  */

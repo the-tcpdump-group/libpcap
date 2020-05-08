@@ -123,6 +123,10 @@ struct rtentry;		/* declarations in <net/if.h> */
 #include "pcap-dpdk.h"
 #endif
 
+#ifdef HAVE_AIRPCAP_API
+#include "pcap-airpcap.h"
+#endif
+
 #ifdef _WIN32
 /*
  * DllMain(), required when built as a Windows DLL.
@@ -141,8 +145,10 @@ struct rtentry;		/* declarations in <net/if.h> */
  *   be called from the DllMain function in a application DLL. This can
  *   potentially cause deadlocks.
  *
- * So we don't actually do anything here.  pcap_init() should be called
- * to initialize pcap on both UN*X and Windows.
+ * So we don't initialize Winsock here.  pcap_init() should be called
+ * to initialize pcap on both UN*X and Windows; it will initialize
+ * Winsock on Windows.  (It will also be initialized as needed if
+ * pcap_init() hasn't been called.)
  */
 BOOL WINAPI DllMain(
   HANDLE hinstDLL _U_,
@@ -686,6 +692,9 @@ static struct capture_source_type {
 #endif
 #ifdef PCAP_SUPPORT_DPDK
 	{ pcap_dpdk_findalldevs, pcap_dpdk_create },
+#endif
+#ifdef HAVE_AIRPCAP_API
+	{ airpcap_findalldevs, airpcap_create },
 #endif
 	{ NULL, NULL }
 };
@@ -4056,6 +4065,71 @@ pcap_close(pcap_t *p)
 	p->cleanup_op(p);
 	free(p);
 }
+
+/*
+ * Helpers for safely loding code at run time.
+ * Currently Windows-only.
+ */
+#ifdef _WIN32
+//
+// This wrapper around loadlibrary appends the system folder (usually
+// C:\Windows\System32) to the relative path of the DLL, so that the DLL
+// is always loaded from an absolute path (it's no longer possible to
+// load modules from the application folder).
+// This solves the DLL Hijacking issue discovered in August 2010
+// http://blog.metasploit.com/2010/08/exploiting-dll-hijacking-flaws.html
+//
+pcap_code_handle_t
+pcap_load_code(const char *name)
+{
+	/*
+	 * XXX - should this work in UTF-16LE rather than in the local
+	 * ANSI code page?
+	 */
+	CHAR path[MAX_PATH];
+	CHAR fullFileName[MAX_PATH];
+	UINT res;
+	HMODULE hModule = NULL;
+
+	do
+	{
+		res = GetSystemDirectoryA(path, MAX_PATH);
+
+		if (res == 0) {
+			//
+			// some bad failure occurred;
+			//
+			break;
+		}
+
+		if (res > MAX_PATH) {
+			//
+			// the buffer was not big enough
+			//
+			SetLastError(ERROR_INSUFFICIENT_BUFFER);
+			break;
+		}
+
+		if (res + 1 + strlen(name) + 1 < MAX_PATH) {
+			memcpy(fullFileName, path, res * sizeof(TCHAR));
+			fullFileName[res] = '\\';
+			memcpy(&fullFileName[res + 1], name, (strlen(name) + 1) * sizeof(TCHAR));
+
+			hModule = LoadLibraryA(fullFileName);
+		} else
+			SetLastError(ERROR_INSUFFICIENT_BUFFER);
+
+	} while(FALSE);
+
+	return hModule;
+}
+
+pcap_funcptr_t
+pcap_find_function(pcap_code_handle_t code, const char *func)
+{
+	return (GetProcAddress(code, func));
+}
+#endif
 
 /*
  * Given a BPF program, a pcap_pkthdr structure for a packet, and the raw

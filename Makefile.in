@@ -310,6 +310,8 @@ EXTRA_DIST = \
 	msdos/readme.dos \
 	nomkdep \
 	org.tcpdump.chmod_bpf.plist \
+	pcap-airpcap.c \
+	pcap-airpcap.h \
 	pcap-bpf.c \
 	pcap-bt-linux.c \
 	pcap-bt-linux.h \

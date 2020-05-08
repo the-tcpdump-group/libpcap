@@ -57,6 +57,8 @@
 
 #include "diag-control.h"
 
+#include "pcap-airpcap.h"
+
 static int pcap_setfilter_npf(pcap_t *, struct bpf_program *);
 static int pcap_setfilter_win32_dag(pcap_t *, struct bpf_program *);
 static int pcap_getnonblock_npf(pcap_t *);
@@ -1838,6 +1840,18 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	name = &AdaptersName[0];
 	while (*name != '\0') {
 		bpf_u_int32 flags = 0;
+
+		/*
+		 * Is this an AirPcap device?
+		 * If so, ignore it; it'll get added later, by the
+		 * AirPcap code.
+		 */
+		if (device_is_airpcap(name, errbuf) == 1) {
+			name += strlen(name) + 1;
+			desc += strlen(desc) + 1;
+			continue;
+		}
+
 #ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
 		/*
 		 * Is this a loopback interface?

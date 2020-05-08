@@ -185,6 +185,7 @@ endif(WIN32)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 if(WIN32)
     set(Packet_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for packet.dll")
+    set(AirPcap_ROOT "" CACHE PATH "Path to directory with include and lib subdirectories for airpcap.dll")
 endif(WIN32)
 
 option(ENABLE_PROFILING "Enable code profiling" OFF)
@@ -1794,6 +1795,27 @@ if(NOT DISABLE_SNF)
     endif()
 endif()
 
+# Check for Riverbed AirPcap support.
+if(NOT DISABLE_AIRPCAP)
+    #
+    # Try to find the AirPcap header file and library.
+    #
+    find_package(AirPcap)
+
+    #
+    # Did we succeed?
+    #
+    if(AIRPCAP_FOUND)
+        #
+        # Yes.
+        #
+        include_directories(AFTER ${AIRPCAP_INCLUDE_DIRS})
+        set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-airpcap.c)
+        set(HAVE_AIRPCAP_API TRUE)
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${AIRPCAP_LIBRARIES})
+    endif()
+endif()
+
 # Check for Riverbed TurboCap support.
 if(NOT DISABLE_TC)
     #
@@ -1811,7 +1833,7 @@ if(NOT DISABLE_TC)
         include_directories(AFTER ${TC_INCLUDE_DIRS})
         set(PROJECT_SOURCE_LIST_C ${PROJECT_SOURCE_LIST_C} pcap-tc.c)
         set(HAVE_TC_API TRUE)
-        set(PCAP_LINK_LIBRARIES "${PCAP_LINK_LIBRARIES} ${TC_LIBRARIES} ${CMAKE_USE_PTHREADS_INIT} stdc++")
+        set(PCAP_LINK_LIBRARIES ${PCAP_LINK_LIBRARIES} ${TC_LIBRARIES} ${CMAKE_USE_PTHREADS_INIT} stdc++)
     endif()
 endif()
 
