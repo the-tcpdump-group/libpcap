@@ -605,7 +605,7 @@ airpcap_read(pcap_t *p, int cnt, pcap_handler callback, u_char *user)
 		// Read the data.
 		// p_AirpcapRead doesn't block.
 		//
-		if (!p_AirpcapRead(pa->adapter, (char *)p->buffer,
+		if (!p_AirpcapRead(pa->adapter, (PBYTE)p->buffer,
 		    p->bufsize, &bytes_read)) {
 			snprintf(p->errbuf, PCAP_ERRBUF_SIZE,
 			    "AirpcapRead() failed: %s",
