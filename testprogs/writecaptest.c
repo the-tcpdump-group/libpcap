@@ -82,7 +82,7 @@ int
 main(int argc, char **argv)
 {
 	register int op;
-	register char *cp, *cmdbuf, *device, *savefile;
+	register char *cp, *cmdbuf, *device, *savefile = NULL;
 	pcap_if_t *devlist;
 	int show_dlt_types = 0;
 	int ndlts;
