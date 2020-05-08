@@ -1841,6 +1841,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 	while (*name != '\0') {
 		bpf_u_int32 flags = 0;
 
+#ifdef HAVE_AIRPCAP_API
 		/*
 		 * Is this an AirPcap device?
 		 * If so, ignore it; it'll get added later, by the
@@ -1851,6 +1852,7 @@ pcap_platform_finddevs(pcap_if_list_t *devlistp, char *errbuf)
 			desc += strlen(desc) + 1;
 			continue;
 		}
+#endif
 
 #ifdef HAVE_PACKET_IS_LOOPBACK_ADAPTER
 		/*
