@@ -13,41 +13,55 @@ install:
   - 7z x .\WpdPack_4_1_2.zip -oc:\projects\libpcap\Win32
   - appveyor DownloadFile https://nmap.org/npcap/dist/npcap-sdk-1.05.zip
   - 7z x .\npcap-sdk-1.05.zip -oc:\projects\libpcap\Win32\npcap-sdk-1.05
+  - appveyor DownloadFile https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu
+  - 7z x .\AirPcap_Devpack_4_1_1_1838.zip -oc:\projects\libpcap\Win32\airpcap-sdk
 
 environment:
   matrix:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "MinGW Makefiles"
       SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
       MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "MinGW Makefiles"
       SDK: npcap-sdk-1.05
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
       MINGW_ROOT: C:\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
       SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
       SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015"
       SDK: npcap-sdk-1.05
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       GENERATOR: "Visual Studio 14 2015 Win64"
       SDK: npcap-sdk-1.05
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: WpdPack
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: WpdPack
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017"
       SDK: npcap-sdk-1.05
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       GENERATOR: "Visual Studio 15 2017 Win64"
       SDK: npcap-sdk-1.05
+      AIRPCAP: -DDISABLE_AIRPCAP=YES
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      GENERATOR: "Visual Studio 15 2017 Win64"
+      SDK: npcap-sdk-1.05
+      AIRPCAP: -DDISABLE_AIRPCAP=NO
 
 build_script:
   #
@@ -64,6 +78,6 @@ build_script:
   # that breaks MinGW builds - CMake checks for that and fails in the
   # configuration stage
   - if "%GENERATOR%"=="MinGW Makefiles" set PATH=%PATH:C:\Program Files\Git\usr\bin;=%
-  - cmake -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" ..
+  - cmake %AIRPCAP% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -DPacket_ROOT=c:\projects\libpcap\Win32\%SDK% -G"%GENERATOR%" -DAirPcap_ROOT=c:\projects\libpcap\Win32\Airpcap_Devpack -G"%GENERATOR%" ..
   - if NOT "%GENERATOR%"=="MinGW Makefiles" msbuild /m /nologo /p:Configuration=Release pcap.sln
   - if "%GENERATOR%"=="MinGW Makefiles" mingw32-make
