@@ -14,6 +14,7 @@ install:
   - appveyor DownloadFile https://nmap.org/npcap/dist/npcap-sdk-1.05.zip
   - 7z x .\npcap-sdk-1.05.zip -oc:\projects\libpcap\Win32\npcap-sdk-1.05
   - appveyor DownloadFile https://support.riverbed.com/bin/support/download?sid=l3vk3eu649usgu3rj60uncjqqu
+  - dir
   - 7z x .\AirPcap_Devpack_4_1_1_1838.zip -oc:\projects\libpcap\Win32\airpcap-sdk
 
 environment:
