@@ -3094,52 +3094,52 @@ create_ring(pcap_t *handle, int *status)
 	 */
 	*status = 0;
 
-		/*
-		 * Reserve space for VLAN tag reconstruction.
-		 */
-		tp_reserve = VLAN_TAG_LEN;
+	/*
+	 * Reserve space for VLAN tag reconstruction.
+	 */
+	tp_reserve = VLAN_TAG_LEN;
 
-		/*
-		 * If we're using DLT_LINUX_SLL2, reserve space for a
-		 * DLT_LINUX_SLL2 header.
-		 *
-		 * XXX - we assume that the kernel is still adding
-		 * 16 bytes of extra space; that happens to
-		 * correspond to SLL_HDR_LEN (whether intentionally
-		 * or not - the kernel code has a raw "16" in
-		 * the expression), so we subtract SLL_HDR_LEN
-		 * from SLL2_HDR_LEN to get the additional space
-		 * needed.  That also means we don't bother reserving
-		 * any additional space if we're using DLT_LINUX_SLL.
-		 *
-		 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
-		 */
-		if (handle->linktype == DLT_LINUX_SLL2)
-			tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
+	/*
+	 * If we're using DLT_LINUX_SLL2, reserve space for a
+	 * DLT_LINUX_SLL2 header.
+	 *
+	 * XXX - we assume that the kernel is still adding
+	 * 16 bytes of extra space; that happens to
+	 * correspond to SLL_HDR_LEN (whether intentionally
+	 * or not - the kernel code has a raw "16" in
+	 * the expression), so we subtract SLL_HDR_LEN
+	 * from SLL2_HDR_LEN to get the additional space
+	 * needed.  That also means we don't bother reserving
+	 * any additional space if we're using DLT_LINUX_SLL.
+	 *
+	 * XXX - should we use TPACKET_ALIGN(SLL2_HDR_LEN - SLL_HDR_LEN)?
+	 */
+	if (handle->linktype == DLT_LINUX_SLL2)
+		tp_reserve += SLL2_HDR_LEN - SLL_HDR_LEN;
 
+	/*
+	 * Try to request that amount of reserve space.
+	 * This must be done before creating the ring buffer.
+	 * If PACKET_RESERVE is supported, creating the ring
+	 * buffer should be, although if creating the ring
+	 * buffer fails, the PACKET_RESERVE call has no effect,
+	 * so falling back on read-from-the-socket capturing
+	 * won't be affected.
+	 */
+	len = sizeof(tp_reserve);
+	if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
+	    &tp_reserve, len) < 0) {
 		/*
-		 * Try to request that amount of reserve space.
-		 * This must be done before creating the ring buffer.
-		 * If PACKET_RESERVE is supported, creating the ring
-		 * buffer should be, although if creating the ring
-		 * buffer fails, the PACKET_RESERVE call has no effect,
-		 * so falling back on read-from-the-socket capturing
-		 * won't be affected.
+		 * We treat ENOPROTOOPT as an error, as we
+		 * already determined that we support
+		 * TPACKET_V2 and later; see above.
 		 */
-		len = sizeof(tp_reserve);
-		if (setsockopt(handle->fd, SOL_PACKET, PACKET_RESERVE,
-		    &tp_reserve, len) < 0) {
-			/*
-			 * We treat ENOPROTOOPT as an error, as we
-			 * already determined that we support
-			 * TPACKET_V2 and later; see above.
-			 */
-			pcap_fmt_errmsg_for_errno(handle->errbuf,
-			    PCAP_ERRBUF_SIZE, errno,
-			    "setsockopt (PACKET_RESERVE)");
-			*status = PCAP_ERROR;
-			return -1;
-		}
+		pcap_fmt_errmsg_for_errno(handle->errbuf,
+		    PCAP_ERRBUF_SIZE, errno,
+		    "setsockopt (PACKET_RESERVE)");
+		*status = PCAP_ERROR;
+		return -1;
+	}
 
 	switch (handlep->tp_version) {
 
