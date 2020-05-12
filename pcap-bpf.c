@@ -1969,6 +1969,7 @@ pcap_activate_bpf(pcap_t *p)
 			 * it when the pcap_t is closed.
 			 */
 			int s;
+			struct ifreq ifr;
 
 			/*
 			 * Open a socket to use for ioctls to
