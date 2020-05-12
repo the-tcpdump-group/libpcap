@@ -735,20 +735,11 @@ bpf_open_and_bind(const char *name, char *errbuf)
 	return (fd);
 }
 
+#ifdef __APPLE__
 static int
 device_exists(int fd, const char *name, char *errbuf)
 {
 	int status;
-#ifdef LIFNAMSIZ
-	struct lifreq ifr;
-
-	if (strlen(name) >= sizeof(ifr.lifr_name)) {
-		/* The name is too long, so it can't possibly exist. */
-		return (PCAP_ERROR_NO_SUCH_DEVICE);
-	}
-	(void)pcap_strlcpy(ifr.lifr_name, name, sizeof(ifr.lifr_name));
-	status = ioctl(fd, SIOCGLIFFLAGS, (caddr_t)&ifr);
-#else
 	struct ifreq ifr;
 
 	if (strlen(name) >= sizeof(ifr.ifr_name)) {
@@ -757,7 +748,6 @@ device_exists(int fd, const char *name, char *errbuf)
 	}
 	(void)pcap_strlcpy(ifr.ifr_name, name, sizeof(ifr.ifr_name));
 	status = ioctl(fd, SIOCGIFFLAGS, (caddr_t)&ifr);
-#endif
 
 	if (status < 0) {
 		if (errno == ENXIO || errno == EINVAL) {
@@ -784,6 +774,7 @@ device_exists(int fd, const char *name, char *errbuf)
 	 */
 	return (0);
 }
+#endif
 
 #ifdef BIOCGDLTLIST
 static int
