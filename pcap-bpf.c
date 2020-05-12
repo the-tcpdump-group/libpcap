@@ -1643,19 +1643,17 @@ pcap_cleanup_bpf(pcap_t *p)
 	pcap_cleanup_live_common(p);
 }
 
+#ifdef __APPLE__
 static int
 check_setif_failure(pcap_t *p, int error)
 {
-#ifdef __APPLE__
 	int fd;
 	int err;
-#endif
 
 	if (error == PCAP_ERROR_NO_SUCH_DEVICE) {
 		/*
 		 * No such device exists.
 		 */
-#ifdef __APPLE__
 		if (p->opt.rfmon && strncmp(p->opt.device, "wlt", 3) == 0) {
 			/*
 			 * Monitor mode was requested, and we're trying
@@ -1713,7 +1711,7 @@ check_setif_failure(pcap_t *p, int error)
 			}
 			return (err);
 		}
-#endif
+
 		/*
 		 * No such device.
 		 */
@@ -1726,6 +1724,17 @@ check_setif_failure(pcap_t *p, int error)
 	 */
 	return (error);
 }
+#else
+static int
+check_setif_failure(pcap_t *p _U_, int error)
+{
+	/*
+	 * Just return the error status; it's what we want, and, if it's
+	 * PCAP_ERROR, the error string has been filled in.
+	 */
+	return (error);
+}
+#endif
 
 /*
  * Default capture buffer size.
