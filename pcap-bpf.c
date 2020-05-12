@@ -1588,10 +1588,8 @@ check_setif_failure(pcap_t *p, int error)
 		/*
 		 * No such device.
 		 */
-		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "BIOCSETIF failed");
 		return (PCAP_ERROR_NO_SUCH_DEVICE);
-	} else if (errno == ENETDOWN) {
+	} else if (error == ENETDOWN) {
 		/*
 		 * Return a "network down" indication, so that
 		 * the application can report that rather than
@@ -1606,7 +1604,7 @@ check_setif_failure(pcap_t *p, int error)
 		 * return PCAP_ERROR.
 		 */
 		pcap_fmt_errmsg_for_errno(p->errbuf, PCAP_ERRBUF_SIZE,
-		    errno, "BIOCSETIF: %s", p->opt.device);
+		    error, "BIOCSETIF: %s", p->opt.device);
 		return (PCAP_ERROR);
 	}
 }
